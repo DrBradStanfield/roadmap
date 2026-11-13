@@ -32,6 +32,10 @@ interface ScreeningQuestionsProps {
 
 // Cancer screening, for an age with a screening due. The caller checks both,
 // so My health draws no empty Screening topic (US-62 AC17).
+const PSA_ROW = 'psa-inline-row';
+/** Whether `el` is in the PSA row, whose blur commits the PSA: a closing tab moves the focus out first (HealthTool, US-06 AC15). */
+export const inPsaRow = (el: Element) => el.closest(`.${PSA_ROW}`) !== null;
+
 export function ScreeningQuestions(props: ScreeningQuestionsProps) {
   const { place, form, screenings, onScreeningChange, psaDate, onPsaDateChange, onPsaCommit, bloodTestHistory, age, writeScreening, renderScreeningDateInput } = props;
   const { inputs, rawInputs, setRawInputs, errors, updateField, readable, unreadable, range, typeIn, blurOnWheel, settleOnEnter, autoSaveGate, rangeWait } = form;
@@ -317,7 +321,7 @@ export function ScreeningQuestions(props: ScreeningQuestionsProps) {
                   <div className="health-field">
                     <label htmlFor="psa-input">{SCREENING_TEXT.psaLabel}</label>
                     {/* Saves once focus leaves the row, so a date picked after the value counts (US-06 AC15). */}
-                    <div className="psa-inline-row" onBlur={(e) => {
+                    <div className={PSA_ROW} onBlur={(e) => {
                       if (autoSaveGate && !unreadable.psa && !e.currentTarget.contains(e.relatedTarget as Node | null)) onPsaCommit(false);
                     }}>
                       <input

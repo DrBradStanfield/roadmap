@@ -38,7 +38,7 @@ vi.mock('./discord-bot-send.server', async (importOriginal) => {
   return { ...actual, sendAnswer: (...args: Parameters<typeof actual.sendAnswer>) =>
     (edge.send ? edge.send(...args) : actual.sendAnswer(...args)) };
 });
-vi.mock('./supabase.server', () => ({ supabaseAdmin: {
+vi.mock('./supabase-client.server', () => ({ supabaseAdmin: {
   from: () => {
     const query = { select: () => query, eq: () => query, gte: () => query,
       order: () => query, limit: () => query,
@@ -71,9 +71,9 @@ function failingMessage(id: string, kind: 'discord' | 'plain') {
 
 async function deliver(message: ReturnType<typeof failingMessage>) {
   edge.listeners.get('message')!(message);
-  // The 50 ms wait is a margin for any timer or I/O hop the handler may gain;
-  // the microtask drain alone settles it today.
-  await settle(); await new Promise((r) => setTimeout(r, 50)); await settle();
+  // The one timer hop is a margin for any timer or I/O hop the handler may
+  // gain; the microtask drain alone settles it today.
+  await settle(); await new Promise((r) => setTimeout(r, 0)); await settle();
 }
 
 // Every argument of every Sentry call, serialized deep.

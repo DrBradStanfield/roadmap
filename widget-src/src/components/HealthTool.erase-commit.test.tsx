@@ -202,16 +202,16 @@ const writers: Record<string, Writer> = {
     written: file => [file.profile.sex, file.profile.birthYear, file.profile.birthMonth].filter(v => v !== undefined),
   },
   'a vitals field, left, then flushed as the page hides': {
-    // A record past the four answers: the whole form, the waist a first-time field (US-01 AC3).
-    seed: () => seedGuest(PROFILE, [['ldl', 3]]),
+    // The profile with no weight: the onboarding's weight box, beside the height (US-62 AC13).
+    seed: () => seedGuest(PROFILE),
     // Typed before the erase; left (the save's erase is taken here) after it is read.
     open: async view => {
-      await waitFor(() => expect(view.container.querySelector('#waistCm')).not.toBeNull());
-      fireEvent.change(view.container.querySelector('#waistCm')!, { target: { value: '90' } });
+      await waitFor(() => expect(view.container.querySelector('#weightKg')).not.toBeNull());
+      fireEvent.change(view.container.querySelector('#weightKg')!, { target: { value: '90' } });
     },
-    onOld: view => view.container.querySelector<HTMLInputElement>('#waistCm')?.value === '90',
-    fire: view => { fireEvent.blur(view.container.querySelector('#waistCm')!); leave(); },
-    written: rowsNaming('waist'),
+    onOld: view => view.container.querySelector<HTMLInputElement>('#weightKg')?.value === '90',
+    fire: view => { fireEvent.blur(view.container.querySelector('#weightKg')!); leave(); },
+    written: rowsNaming('weight'),
   },
   'a medication dose, flushed as the page hides': {
     seed: seedProfile,

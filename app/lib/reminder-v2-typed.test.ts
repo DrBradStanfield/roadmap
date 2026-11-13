@@ -40,7 +40,7 @@ function makeQuery(): Record<string, unknown> {
   return q;
 }
 
-vi.mock('./supabase.server', () => ({
+vi.mock('./supabase-client.server', () => ({
   supabaseAdmin: makeQuery(),
 }));
 
@@ -93,6 +93,15 @@ describe('US-23 AC4 — dueAt must be a real calendar date', () => {
   it('rejects regex-valid impossible dates (they make the email builders throw)', () => {
     const poisoned = [{ category: 'annual_checkin', label: 'Annual health check-in', dueAt: '2026-99-99' }];
     expect(scheduleSchema.safeParse(poisoned).success).toBe(false);
+  });
+
+  it('rejects a shape-valid day the month does not have (Date.parse would roll it into the next month)', () => {
+    for (const dueAt of ['2026-02-30', '2026-04-31']) {
+      expect(scheduleSchema.safeParse([{ ...VALID_ITEM, dueAt }]).success, dueAt).toBe(false);
+    }
+    for (const dueAt of ['2026-10-23', '2027-12-31']) {
+      expect(scheduleSchema.safeParse([{ ...VALID_ITEM, dueAt }]).success, dueAt).toBe(true);
+    }
   });
 });
 

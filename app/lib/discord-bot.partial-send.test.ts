@@ -34,7 +34,7 @@ vi.mock('./chat-dedup.server', () => ({ claimChatTurn: async (_scope: string, me
   return dup ? { kind: 'duplicate', content: dup.content } : { kind: 'run', release: () => undefined };
 } }));
 vi.mock('./cron-helpers.server', () => ({ sleep: edge.sleep }));
-vi.mock('./supabase.server', () => ({ supabaseAdmin: {
+vi.mock('./supabase-client.server', () => ({ supabaseAdmin: {
   from: (table: string) => {
     const query = { select: () => query, eq: () => query, gte: () => query,
       order: () => query, limit: () => query, update: () => query,
@@ -84,7 +84,7 @@ function makeMessage(id: string, o: { replies?: Outcome[]; sends?: Outcome[]; no
 
 async function deliver(message: ReturnType<typeof makeMessage>) {
   edge.listeners.get('message')!(message);
-  await settle(); await new Promise((r) => setTimeout(r, 50)); await settle();
+  await settle(); await new Promise((r) => setTimeout(r, 0)); await settle();
 }
 
 const replyTexts = (m: ReturnType<typeof makeMessage>) => m.reply.mock.calls.map((c) => (c[0] as { content: string }).content);

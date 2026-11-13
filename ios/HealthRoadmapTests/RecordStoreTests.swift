@@ -158,6 +158,60 @@ final class RecordStoreTests: XCTestCase {
         XCTAssertEqual(store.shownChart(for: "waist")?.history, a)
     }
 
+    /// US-58 AC4c (S25): a failed history read is not kept for its revision, so Try again, or the
+    /// page opened again, calls the engine again; a chart that lands is kept and read once.
+    func testAFailedReadIsNotKeptSoAskingAgainReadsAgain_US58() async throws {
+        let url = try XCTUnwrap(Bundle.main.url(forResource: "health-engine", withExtension: "js"))
+        let source = try String(contentsOf: url, encoding: .utf8) + """
+
+        globalThis.__historyCalls = 0;
+        globalThis.__historyFails = true;
+        HealthEngine = Object.assign({}, HealthEngine, { historyJson: (door => function () {
+          __historyCalls += 1;
+          if (__historyFails) throw new Error('test: the history read fails');
+          return door.apply(this, arguments);
+        })(HealthEngine.historyJson) });
+
+        """
+        let engine = try HealthEngine(source: source, sourceURL: url)
+        let store = try RecordStore(folder: folder, engine: engine, deviceId: "test")
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 80, day: "2026-10-20")))
+        let calls = { try engine.blocking { try $0.evaluate("__historyCalls").toInt32() } }
+        let before = try calls()
+        let revision = store.revision
+
+        let failed = await store.chart(for: "weight")
+        XCTAssertNil(failed, "the engine threw")
+        XCTAssertNil(store.shownChart(for: "weight"), "a failure is not kept")
+        XCTAssertEqual(try calls(), before + 1)
+        let again = await store.chart(for: "weight")
+        XCTAssertNil(again)
+        XCTAssertEqual(try calls(), before + 2, "the same revision asked again calls the engine again")
+
+        _ = try engine.blocking { try $0.evaluate("__historyFails = false") }
+        let landed = await store.chart(for: "weight")
+        XCTAssertEqual(landed?.history.rows.map(\.value), ["80.0"], "Try again lands the values")
+        XCTAssertEqual(try calls(), before + 3)
+        _ = await store.chart(for: "weight")
+        XCTAssertEqual(try calls(), before + 3, "a chart that landed is kept: no fourth call")
+        XCTAssertEqual(store.revision, revision, "all at one revision")
+    }
+
+    /// S25, owner's R1 ruling (US-58 AC4c): whether a failed read's page says its values are kept
+    /// rests on the screen last drawn, and never on one from before an erase whose draw failed.
+    func testAScreenFromBeforeAFailedEraseDrawSaysNothing_US58() async throws {
+        let store = try store()
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 80, day: "2026-10-20")))
+        let weight = try XCTUnwrap(store.myData?.vitals.first { $0.metric == "weight" })
+        let waist = try XCTUnwrap(store.myData?.vitals.first { $0.metric == "waist" })
+        XCTAssertEqual(MetricDetailView.screenHasReading(weight, in: store), true)
+        XCTAssertEqual(MetricDetailView.screenHasReading(waist, in: store), false)
+        // An erased cloud view handed over before the screen shown: its draw fails, the erase counts.
+        await store.showErased(HealthEngine.CloudView(record: store.recordJSON, erase: "e1", session: 1, order: 0)).value
+        XCTAssertNotNil(store.myData, "the old screen still draws")
+        XCTAssertNil(MetricDetailView.screenHasReading(weight, in: store), "it predates the erase")
+    }
+
     /// Adversary R2, Codex (US-25 AC9, AC20): a history read for an older record or unit is
     /// never current, and a correction's "Now" hint comes only from a history in the sheet's
     /// own unit. Lp(a) at 100 nmol/L, the unit moves to mg/dL, a tap before the history is
@@ -470,6 +524,63 @@ final class RecordStoreTests: XCTestCase {
         store.unpinScreen()
         // 80 typed in the weight's own units: 80 kg, or 80 lb (36.3 kg).
         XCTAssertEqual(try storedWeight(store), other == "si" ? 80 : 36.287, accuracy: 0.01)
+    }
+
+    /// US-25 AC11g, the phone twin of CloudSyncTests' R1 (I-1 design note, erase-epoch gap): a
+    /// sheet pinned before an erase of the phone's file. Its Screen holds no eraseEpoch and both
+    /// sides' cloud erase are nil, so only a pin that tells the erase apart refuses the old
+    /// sheet's value: Screen carries the eraseEpoch and erase count, checked by Mark.holds.
+    func testASheetOpenedBeforeAPhoneEraseCannotSaveIntoTheErasedRecord_US25_AC11g() async throws {
+        let store = try store()
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 80, day: "2026-10-01")))
+        store.pinScreen() // a sheet opens on the pre-erase record
+        guard case .erased = await store.erasePhone(historyJSON: nil, keepChat: { _, _ in true }) else { return XCTFail("not erased") }
+        let erased = try String(contentsOf: file, encoding: .utf8)
+        guard case .refused = await store.apply(.add(metric: "weight", value: 81, day: "2026-10-02")) else {
+            return XCTFail("the old sheet's value must not land in the erased record")
+        }
+        XCTAssertEqual(try String(contentsOf: file, encoding: .utf8), erased, "nothing written")
+        store.unpinScreen()
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 81, day: "2026-10-02")), "a sheet opened after the erase saves")
+    }
+
+    /// US-25 AC11g, the document path: a lab review pinned before an erase of the phone's file
+    /// files no document text into the erased record. Both cloud erases are nil, so only the
+    /// pin's eraseEpoch and erase count (Mark.holds) tell the erase apart.
+    func testADocumentFromAReviewOpenedBeforeAPhoneEraseIsRefused_US25_AC11g() async throws {
+        let store = try store()
+        store.pinScreen() // the review opens on the pre-erase record
+        guard case .erased = await store.erasePhone(historyJSON: nil, keepChat: { _, _ in true }) else { return XCTFail("not erased") }
+        let erased = try String(contentsOf: file, encoding: .utf8)
+        let letter = ##"{"classification":"clinic_letter","reportDate":null,"values":[],"additionalValues":[],"document":{"classification":"clinic_letter","title":"Cardiology follow-up","documentDate":null,"contentMarkdown":"# Letter","metadata":{}}}"##
+        let choice = DocumentChoice(kind: .document, sourceFileName: "Letter.pdf", title: "Cardiology follow-up", documentDate: nil, mimeType: "application/pdf", contentHash: "")
+        guard case .refused = await store.saveDocument(extractionJSON: letter, choice: choice, original: nil) else {
+            return XCTFail("the old review's document must not land in the erased record")
+        }
+        XCTAssertEqual(try String(contentsOf: file, encoding: .utf8), erased, "nothing written")
+        XCTAssertFalse(store.recordJSON.contains("# Letter"))
+        store.unpinScreen()
+    }
+
+    /// US-25 AC11g, the lab path: a lab review pinned before an erase of the phone's file is
+    /// refused as a whole, with applyInTurn's words, and nothing is written. A behaviour pin:
+    /// applyInTurn already refused the values; the guard now refuses before the summary is read.
+    func testALabImportFromAReviewOpenedBeforeAPhoneEraseIsRefused_US25_AC11g() async throws {
+        let store = try store()
+        store.pinScreen() // the review opens on the pre-erase record
+        guard case .erased = await store.erasePhone(historyJSON: nil, keepChat: { _, _ in true }) else { return XCTFail("not erased") }
+        let erased = try String(contentsOf: file, encoding: .utf8)
+        let extraction = #"""
+        {"classification":"lab_report","reportDate":"2026-10-01",
+         "values":[{"metric":"ldl","valueSI":3.1,"displayValue":3.1,"displayUnit":"mmol/L","displaySystem":"si","confidence":"high"}],
+         "additionalValues":[], "refusedValues":[]}
+        """#
+        guard case .failure(let refusal) = await store.importLabs(extractionJSON: extraction, refs: ["v0"], reportDay: "2026-10-01") else {
+            return XCTFail("the old review's values must not land in the erased record")
+        }
+        XCTAssertEqual(refusal.message, RecordStore.recordChanged)
+        XCTAssertEqual(try String(contentsOf: file, encoding: .utf8), erased, "nothing written")
+        store.unpinScreen()
     }
 
     func testTheMasterSwitchClearsEveryChoice() async throws {

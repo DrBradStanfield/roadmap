@@ -46,7 +46,9 @@ const RECENT = monthsAgo(6);
 const SOON = monthsAgo(-2);
 const FU_DONE = monthsAgo(3);
 
-interface Fixture { name: string; s: ScreeningInputs; psaRow?: number }
+/** A saved PSA row: value, day, and the lab's comparator when it printed a limit ("< 5"). */
+type PsaRow = [value: number, day: string, comparator?: '<' | '<=' | '>' | '>='];
+interface Fixture { name: string; s: ScreeningInputs; psaRow?: number; psaRows?: PsaRow[] }
 const fx = (name: string, s: ScreeningInputs, psaRow?: number): Fixture => ({ name, s, ...(psaRow === undefined ? {} : { psaRow }) });
 
 /** The field names of one screening type's chain, camelCase. */
@@ -105,7 +107,7 @@ function prostateFixtures(): Fixture[] {
   const out: Fixture[] = [];
   for (const d of [undefined, 'not_yet', 'elected_not_to', 'will_screen'] as const) {
     for (const last of [undefined, RECENT]) {
-      for (const psa of [undefined, 3.9, 4.0, 4.1]) {
+      for (const psa of [undefined, 2.4, 2.5, 3.9, 4.0, 4.1]) {
         const s: ScreeningInputs = {};
         if (d) s.prostateDiscussion = d;
         if (last) s.prostateLastDate = last;
@@ -115,7 +117,7 @@ function prostateFixtures(): Fixture[] {
     }
   }
   // The newest saved PSA measurement overrides the answers (US-06 AC14).
-  for (const psa of [3.9, 4.0, 4.1]) {
+  for (const psa of [2.4, 2.5, 3.9, 4.0, 4.1]) {
     out.push(fx(`prostate:will_screen,psa-row=${psa}@2026-04-10`, { prostateDiscussion: 'will_screen' }, psa));
     out.push(fx(`prostate:no-discussion,psa-row=${psa}@2026-04-10`, {}, psa));
   }
@@ -270,6 +272,15 @@ function boundaryCases(): Array<[string, string, Fixture]> {
     const [profile, make] = post[key];
     for (const n of around(interval)) out.push([`C post-followup ${key}=${interval}mo ${profile} fu=${monthsAgo(n)} (${n}mo ago)`, profile, fx(key, make(monthsAgo(n)))]);
   }
+  // The next PSA by level (US-06 AC21): 24 months below 2.5, 12 from 2.5, 3 at 4.0 or above whatever the answer.
+  for (const [psa, interval] of [[2.4, 24], [2.5, 12], [3.9, 12]] as const) {
+    for (const n of around(interval)) out.push([`C interval will_screen psa=${psa} ${interval}mo m55 last=${monthsAgo(n)} (${n}mo ago)`, 'm55',
+      fx('psa band', { prostateDiscussion: 'will_screen', prostateLastDate: monthsAgo(n), prostatePsaValue: psa })]);
+  }
+  for (const d of [undefined, 'elected_not_to', 'will_screen'] as const) {
+    for (const n of around(3)) out.push([`C interval ${d ?? 'no-discussion'} psa=4.1 3mo m55 last=${monthsAgo(n)} (${n}mo ago)`, 'm55',
+      fx('psa raised', { ...(d ? { prostateDiscussion: d } : {}), prostateLastDate: monthsAgo(n), prostatePsaValue: 4.1 })]);
+  }
   // The follow-up reminders (US-17 AC15): organize is due at the last screening's month, a scheduled one 3 months on.
   for (const n of [-1, 0, 1, 2, 3, 4]) {
     const l = monthsAgo(n);
@@ -297,6 +308,11 @@ function recordOf(p: Profile, f: Fixture): unknown {
   file.screenings = { ...file.screenings, ...f.s };
   if (f.psaRow !== undefined) {
     file.measurements = [createMeasurement({ id: 'psa', metricType: 'psa', value: f.psaRow, recordedAt: '2026-04-10', createdAt: '2026-04-10T08:00:00Z' })];
+  }
+  if (f.psaRows) {
+    file.measurements = f.psaRows.map(([value, day, comparator], i) => createMeasurement({
+      id: `psa-${i}`, metricType: 'psa', value, recordedAt: day, createdAt: `${day}T08:00:00Z`, ...(comparator ? { comparator } : {}),
+    }));
   }
   return JSON.parse(JSON.stringify(file));
 }
@@ -388,6 +404,20 @@ export function screeningGolden(setNow: (d: Date) => void) {
   // A last date this month and next month: the mapping drops a "last done" date after this month.
   for (const n of [0, -1]) {
     add(`D m50 fit_annual last=${monthsAgo(n)} (${n}mo ago)`, profileOf('m50'), fx('future', { colorectalMethod: 'fit_annual', colorectalLastDate: monthsAgo(n) }));
+  }
+  // E. Two dated PSA rows: a raised one, then a newer limit (US-06 AC21 item 6, Brad 2026-11-13). A limit that does
+  // not show the PSA below 4.0 ("< 5", "<= 4.0") keeps the 3-month rule from the newest test; one that does ("< 3") ends it.
+  const RAISED: PsaRow = [4.5, '2026-03-10'];
+  const history: Array<[string, ScreeningInputs, PsaRow]> = [
+    ['will_screen', { prostateDiscussion: 'will_screen' }, [5, '2026-06-10', '<']],
+    ['elected_not_to', { prostateDiscussion: 'elected_not_to' }, [5, '2026-06-10', '<']],
+    ['no-discussion', {}, [5, '2026-06-10', '<']],
+    ['will_screen', { prostateDiscussion: 'will_screen' }, [3, '2026-06-10', '<']],
+    ['will_screen', { prostateDiscussion: 'will_screen' }, [4, '2026-06-10', '<=']],
+  ];
+  for (const [d, s, newer] of history) {
+    const name = `E m55 prostate:${d},psa-rows=4.5@${RAISED[1]},${newer[2]}${newer[0]}@${newer[1]}`;
+    add(name, profileOf('m55'), { name, s, psaRows: [RAISED, newer] });
   }
   setNow(GOLDEN_NOW);
 

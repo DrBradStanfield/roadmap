@@ -29,7 +29,7 @@ beforeEach(() => {
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe('US-09 AC47: the Google token exchange', () => {
-  it.each([401, 400])('maps Google\'s %s invalid_client to 502, without the description', async (status) => {
+  it.each([401, 400, 403])('maps Google\'s %s invalid_client to 502, without the description', async (status) => {
     vi.stubGlobal('fetch', vi.fn(async () => Response.json({ error: 'invalid_client', error_description: 'Unauthorized' }, { status })));
     const res = await action({ request: refreshRequest('203.0.113.70') } as never);
     expect(res.status).toBe(502);
@@ -41,6 +41,8 @@ describe('US-09 AC47: the Google token exchange', () => {
     [400, 'invalid_grant'],
     [401, 'unauthorized_client'],
     [403, 'access_denied'],
+    // A 5xx invalid_client is Google's outage, not this server's secret: not remapped.
+    [503, 'invalid_client'],
   ])('passes a %s %s through as it did', async (status, error) => {
     vi.stubGlobal('fetch', vi.fn(async () => Response.json({ error, error_description: 'test description' }, { status })));
     const res = await action({ request: refreshRequest('203.0.113.71') } as never);

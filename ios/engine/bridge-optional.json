@@ -20,7 +20,7 @@
       "optionalArgs": [
         "firstSeenJson"
       ],
-      "optionalReturns": "firstSeen (US-17 AC15): the day each follow-up reminder was first seen on this phone, keyed <category>:<organize|checkin>, returned only when the app sent firstSeenJson; the app keeps it on the phone and sends it back, so a follow-up fires the first morning it is seen and then every 90 days from that day. An app before it sends none and gets none, and its follow-ups repeat from the due day as before; an engine before it ignores the argument and sends no firstSeen, and the app leaves what it keeps unchanged."
+      "optionalReturns": "firstSeen (US-17 AC15): the day each follow-up reminder was first seen on this phone, keyed <category>:<organize|checkin|repeat>:<due day>, so a moved due date starts a new reminder, returned only when the app sent firstSeenJson; the app keeps it on the phone and sends it back, so a follow-up fires the first morning it is seen and then every 90 days from that day. An app before it sends none and gets none, and its follow-ups repeat from the due day as before; an engine before it ignores the argument and sends no firstSeen, and the app leaves what it keeps unchanged."
     }
   },
   "optionalDoors": {
@@ -41,6 +41,10 @@
         "request"
       ],
       "returns": "Shared upload PR 3 (US-52 AC7): the upload's verdicts for one pick, by health-core upload-rules (fileVerdict, zipMemberVerdict, UPLOAD_LIMITS.phone), as JSON {limits: {fileBytes, zipBytes, filesPerPick, zipMembers, pdfPages, textPageChars, folderBytes, photoPx}, files: [verdict], zipMembers: [verdict]} for request {files: [{name, bytes}], zipMembers: [path]}, in order; each verdict \"keep\", \"tooLarge\", \"unsupported\" or \"hidden\". An engine before it has no such door: the app reads that as unavailable (optionalCall answers nil) and keeps LabFileReader's Swift rules, which answer the same today (lead U14: delete them once the engine floor guarantees the door)."
+    },
+    "cloudOnline": {
+      "args": [],
+      "returns": "US-09 AC30: '{}'. The app calls it when NWPathMonitor reports the network satisfied again: the open cloud session retries a failed save (at most once a minute; this trigger never after a refused sign-in) and catches up as a return does, and that catch-up's re-read still retries a failed save first, a refused sign-in's included (lead A25); nothing when no cloud is open. An engine before it has no such door: optionalCall answers nil and nothing is retried on that trigger, never a crash."
     }
   }
 }

@@ -7,8 +7,8 @@
  */
 import { readCappedBytes } from './capped-body.server';
 import { getClientIp } from './local-first-route.server';
-import { createQuotaCounter, DAY_MS, machineFiles } from './rate-limiter';
-import { supabaseAdmin } from './supabase.server';
+import { createQuotaCounter, dailyFileCap, DAY_MS, envCap, machineFiles } from './rate-limiter';
+import { supabaseAdmin } from './supabase-client.server';
 import {
   assertionSignatureValid, attestConfig, AttestError, devBypassAllowed, parseAssertion,
   requestClientData, validKeyId, CHALLENGE_TTL_MS, type AttestEnvironment, type AttestedKey,
@@ -78,15 +78,13 @@ export function appRoutesOff(env: NodeJS.ProcessEnv = process.env): boolean {
   return env.CHAT_SURFACE === 'brand';
 }
 
-const num = (v: string | undefined, d: number) => (v && Number.isFinite(Number(v)) && Number(v) >= 0 ? Number(v) : d);
-
 /** Per IP per day, and per machine per day: in memory (D8 says why). */
 export const appLimits = {
   ip: { chat: createQuotaCounter(200, DAY_MS, 30 * 60_000), lab: createQuotaCounter(200, DAY_MS, 30 * 60_000) },
   machine: {
-    chat: createQuotaCounter(num(process.env.APP_CHAT_DAILY_CAP, 500), DAY_MS, 30 * 60_000),
+    chat: createQuotaCounter(envCap('APP_CHAT_DAILY_CAP', process.env.APP_CHAT_DAILY_CAP, 500), DAY_MS, 30 * 60_000),
     // Never more than 15% of the web's shared file cap, whatever the env says (AC4, Codex R7).
-    lab: createQuotaCounter(Math.min(num(process.env.APP_LAB_DAILY_CAP, 300), Math.floor(0.15 * num(process.env.AI_DAILY_FILE_CAP, 2000))), DAY_MS, 30 * 60_000),
+    lab: createQuotaCounter(Math.min(envCap('APP_LAB_DAILY_CAP', process.env.APP_LAB_DAILY_CAP, 300), Math.floor(0.15 * dailyFileCap(process.env.AI_DAILY_FILE_CAP))), DAY_MS, 30 * 60_000),
   },
   /** Signed requests refused before their signature verified, per IP per day; past it, no key lookup or body read (adversary code R3). A backstop: a verified key's failures are its own (AC4c). */
   failures: createQuotaCounter(200, DAY_MS, 30 * 60_000),

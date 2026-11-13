@@ -4,20 +4,18 @@
 // through the slots this hands its `children`.
 import { SectionIcon } from './icons';
 import { useState, useEffect, useLayoutEffect, useMemo, useRef, type MutableRefObject, type ReactNode } from 'react';
-import { InfoTooltip } from './InfoTooltip';
 import { type HealthInputs, type HealthResults, type ScreeningInputs, type MedicationInputs } from '@roadmap/health-core/types';
 import type { CorrectFn, Refused, SaveTask } from '../lib/matrix-save';
-import { blockBadNumericKeys, blockNonIntegerKeys, bpSysAdvance, mayStillFit, type Grading } from '../lib/blood-test-cell';
+import { blockBadNumericKeys, mayStillFit, type Grading } from '../lib/blood-test-cell';
 import { useRangeWait } from '../lib/useRangeWait';
 import { useAutoAdvance } from '../lib/useAutoAdvance';
 import type { ApiLabValue, ApiSupplement } from '../lib/api-types';
 import type { FieldUnitToggle, UnitSwitchSource } from '../lib/useBloodDraftUnits';
-import { loadFromLocalStorage } from '../lib/storage';
 import { useLeaveField, type PanelOnboarding } from '../hooks/useOnboarding';
 
-import { FIELD_METRIC_MAP, type ApiMeasurement, type ApiMedication, type ApiScreening, METRIC_TO_FIELD, VITAL_METRICS } from '@roadmap/health-core/mappings';
+import { FIELD_METRIC_MAP, type ApiMeasurement, type ApiMedication, type ApiScreening, METRIC_TO_FIELD } from '@roadmap/health-core/mappings';
 import { type WeightMedicationTrigger, type LipidMarker } from '@roadmap/health-core/suggestions';
-import { type UnitSystem, fromCanonicalValue, toCanonicalValue, getDisplayLabel, getDisplayRange, UNIT_DEFS, hasUnitChoice, bpTargetFor } from '@roadmap/health-core/units';
+import { type UnitSystem, fromCanonicalValue, toCanonicalValue, getDisplayLabel, getDisplayRange, UNIT_DEFS, hasUnitChoice } from '@roadmap/health-core/units';
 import { identityFieldRange } from '@roadmap/health-core/validation';
 import { formatValue } from '@roadmap/health-core/lab-limits';
 import { parseLocalisedNumber } from '@roadmap/health-core/parseNumber';
@@ -38,7 +36,7 @@ import { previousReference, WEIGHT_STILL_COUNTS_ID, WeightStillCounts } from './
 import { AddLabTest } from './AddLabTest';
 import { SupplementsSection } from './SupplementsSection';
 import type { FormSlots, Placement } from './MyHealth';
-import { focusById, interceptHistory, type FormKit } from './form-kit';
+import { type FormKit } from './form-kit';
 import { ScreeningQuestions } from './ScreeningQuestions';
 import { LipidMedications } from './LipidMedications';
 import { WeightMedications } from './WeightMedications';
@@ -48,17 +46,9 @@ import { AboutRows, AlcoholField, BirthFields, HeightField, SexField, useHeightP
 interface FieldConfig {
   field: keyof HealthInputs;
   name: string;
-  step?: { si: string; conv: string };
-  hint?: { si: string; conv: string };
-  hintMale?: { si: string; conv: string };
-  hintFemale?: { si: string; conv: string };
 }
 
 const WEIGHT_FIELD: FieldConfig = { field: 'weightKg', name: 'Weight' };
-const BASIC_LONGITUDINAL_FIELDS: FieldConfig[] = [
-  WEIGHT_FIELD,
-  { field: 'waistCm', name: 'Waist Circumference' },
-];
 
 /** What the form reads from the plan, so it never recommends, targets or
  *  steps through what the plan does not (US-06 AC5). HealthTool computes it
@@ -125,8 +115,6 @@ interface InputPanelProps {
    *  a save without waiting for the 500ms tail. */
   flushLongitudinalSave: () => void;
   isSavingLongitudinal: boolean;
-  /** Counts the saves of the first-time vitals fields. */
-  fieldsSaved: number;
   hasApiResponse: boolean;
   // Forwarded to each matrix, so the parent (HealthTool) can commit its
   // draft before the upload modal's own save.
@@ -134,9 +122,9 @@ interface InputPanelProps {
   vitalsFlushRef?: MutableRefObject<(() => Promise<void>) | null>;
   // Forwarded to BloodTestTimeline so the chatbot can pre-fill a blood-test cell.
   bloodTestPrefillRef?: MutableRefObject<BloodTestPrefillFn | null>;
-  // Forwarded to StartingInfoVitals (matrix mode only) so the chatbot can
-  // pre-fill + flash a vitals cell. Non-null on the ref ⇒ the vitals matrix is
-  // mounted; HealthTool uses that to route vitals chat edits here vs the field.
+  // Forwarded to StartingInfoVitals so the chatbot can pre-fill + flash a
+  // vitals cell. Non-null on the ref ⇒ the vitals matrix is mounted (the whole
+  // form shows); HealthTool uses that to route vitals chat edits here vs the field.
   vitalsPrefillRef?: MutableRefObject<VitalsPrefillFn | null>;
   onboarding: PanelOnboarding;
   setShowUploadModal?: (show: boolean) => void;
@@ -161,7 +149,7 @@ export function InputPanel({
   screenings, onScreeningChange, psaDate, onPsaDateChange, onPsaCommit,
   supplements, onSupplementChange, onSupplementDelete,
   scheduleLongitudinalSave, flushLongitudinalSave,
-  isSavingLongitudinal, fieldsSaved, hasApiResponse,
+  isSavingLongitudinal, hasApiResponse,
   bloodTestFlushRef, vitalsFlushRef, bloodTestPrefillRef, vitalsPrefillRef,
   onboarding, setShowUploadModal, planBasis, grading, revealCell = null,
 }: InputPanelProps) {
@@ -181,36 +169,9 @@ export function InputPanel({
   const advanceToWeight = useAutoAdvance();
   const advanceToMyHealth = useAutoAdvance(true);
   const weightRef = useLeaveField(left); // the weight's box or matrix cell (one shows): leaving it ends a landing (US-62 AC25b)
-  const advanceToDiastolic = useAutoAdvance();
-  // Shared keydown combos: numeric-only guard (US-02 AC4) + Enter-to-save.
+  // Shared keydown combo: numeric-only guard (US-02 AC4) + Enter-to-save.
   const onNumericEnter = (e: React.KeyboardEvent<HTMLInputElement>) => { blockBadNumericKeys(e); settleOnEnter(e); autoSaveOnEnterKey(e); };
-  const onIntegerEnter = (e: React.KeyboardEvent<HTMLInputElement>) => { blockNonIntegerKeys(e); settleOnEnter(e); autoSaveOnEnterKey(e); };
   const settleOnEnter = (e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === 'Enter') rangeWait.settle(); };
-
-  // Expand/collapse state for display-first longitudinal fields.
-  // (Blood tests have their own matrix UI in BloodTestTimeline; no expand state here.)
-  const [expandedVitals, setExpandedVitals] = useState<Set<string>>(new Set());
-  // Latched synchronously at mount from the mirror. Avoids the flash of the
-  // legacy form before async data hydrates. The mirror keeps saved vitals
-  // only as `previousMeasurements` rows (its `inputs` hold the profile
-  // fields), so one check covers every returning user. First-time users (no
-  // saved vitals) get 'legacy'; everyone returning gets 'matrix'.
-  const [vitalsViewMode] = useState<'legacy' | 'matrix'>(() =>
-    loadFromLocalStorage()?.previousMeasurements.some(r => VITAL_METRICS.includes(r.metricType)) ? 'matrix' : 'legacy');
-  const [bpExpanded, setBpExpanded] = useState(false);
-  const focusFieldRef = useRef<string | null>(null);
-
-  // Auto-focus and scroll to the field that triggered an expand
-  useEffect(() => {
-    if (!focusFieldRef.current) return;
-    const field = focusFieldRef.current;
-    focusFieldRef.current = null;
-    requestAnimationFrame(() => {
-      const input = document.getElementById(field);
-      input?.focus();
-      input?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    });
-  }, [expandedVitals, bpExpanded]);
 
   /** Prevent scroll wheel from changing number input values. */
   const blurOnWheel = (e: React.WheelEvent<HTMLInputElement>) => e.currentTarget.blur();
@@ -264,18 +225,6 @@ export function InputPanel({
   // transform only) while its rows fade in; the cards below slide up, so the
   // next card takes its place on screen. Reduced motion moves it at once.
   const aboutRef = useRef<HTMLDivElement>(null);
-  // With About you low the person is in the returning layout, so the vitals
-  // are rows. If the focus went into a first-time vitals field as the profile
-  // card was left, or one holds a value not yet saved, the rows wait until
-  // the focus leaves the vitals card: no field goes from under the cursor.
-  const vitalsRef = useRef<HTMLDivElement>(null);
-  const [vitalsLeft, setVitalsLeft] = useState(aboutYouLow);
-  useEffect(() => {
-    // An erase takes About you back to the top: the next record starts again (Codex R2, adversary R4).
-    setVitalsLeft(aboutYouLow && !vitalsRef.current?.contains(document.activeElement));
-  }, [aboutYouLow]);
-  const vitalPending = (['weightKg', 'waistCm', 'systolicBp', 'diastolicBp'] as const).some(f => inputs[f] !== undefined);
-  const vitalsAsRows = aboutYouLow && vitalsLeft && !vitalPending;
   const flipFrom = useRef<Map<Element, number> | null>(null);
   // A press inside the card is not leaving it: Safari gives a focusout with
   // no next target for a click on a button (Male, the unit pill) or on text.
@@ -326,8 +275,8 @@ export function InputPanel({
   // The onboarding asks the weight beside the height (US-62 AC13). A weight
   // typed there stays there for this visit, so the whole form opening, or the
   // weight cleared to retype, never moves the field being typed in; the
-  // first-time vitals then leave it out. Otherwise it joins the vitals when
-  // the whole form opens, shown once, and sex sits beside the height.
+  // vitals then leave it out. Otherwise it joins the vitals' rows when the
+  // whole form opens, shown once, and sex sits beside the height.
   const weightShown = useRef(false);
   const weightTyped = useRef(false);
   if (weightShown.current && inputs.weightKg !== undefined) weightTyped.current = true;
@@ -392,14 +341,6 @@ export function InputPanel({
     return metric && m.comparator ? formatValue(metric, m.value, fieldUnit(field), m.comparator) : toDisplay(field, m.value);
   };
 
-  const getPreviousPlaceholder = (field: string): string | undefined => {
-    const metric = FIELD_METRIC_MAP[field];
-    if (!metric) return undefined;
-    const measurement = previousMeasurements.find(m => m.metricType === metric);
-    if (!measurement) return undefined;
-    return savedText(field, measurement);
-  };
-
   /** A field's latest saved value, and its text in the person's unit: "82 kg". */
   const savedOf = (field: string) => { const metric = FIELD_METRIC_MAP[field], previous = metric ? previousMeasurements.find(m => m.metricType === metric) : undefined;
     return { previous, shown: metric && previous ? `${savedText(field, previous)} ${getDisplayLabel(metric, fieldUnit(field))}` : '' }; };
@@ -410,25 +351,6 @@ export function InputPanel({
     const metric = FIELD_METRIC_MAP[field];
     return !!metric && previousMeasurements.some(m => m.metricType === metric);
   };
-
-  /** Whether any basic vital has saved data (for per-metric collapse). */
-  const hasBpPreviousData = (hasPreviousValue('systolicBp') || hasPreviousValue('diastolicBp'));
-
-  // Close the vitals fields a save emptied. A count of saves, not the saving
-  // flag: React batches the flag's true and false into one render, so an
-  // effect waiting for it to fall never ran and a saved field stayed open.
-  useEffect(() => {
-    if (bpExpanded && inputs.systolicBp === undefined && inputs.diastolicBp === undefined) {
-      setBpExpanded(false);
-    }
-    setExpandedVitals(prev => {
-      const next = new Set(prev);
-      for (const field of prev) {
-        if (inputs[field as keyof typeof inputs] === undefined) next.delete(field);
-      }
-      return next.size === prev.size ? prev : next;
-    });
-  }, [fieldsSaved]);
 
   /** A screening date: one select of whole months, each choice one write (US-06 AC16); none before `min` (US-07 AC1j). */
   const renderScreeningDateInput = (scr: ScreeningInputs, key: string, label: string, options?: { futureOnly?: boolean; min?: string }) => {
@@ -450,26 +372,14 @@ export function InputPanel({
     );
   };
 
-  /** Resolve sex-specific hint for a field config. */
-  const resolveHint = (config: FieldConfig) => {
-    const { hint, hintMale, hintFemale } = config;
-    return (inputs.sex === 'male' && hintMale) ? hintMale
-      : (inputs.sex === 'female' && hintFemale) ? hintFemale : hint;
-  };
-
-  /** `box`: the onboarding's weight (US-62 AC13), a plain box like the
-   *  height's beside it, holding the saved value; a number typed over it saves
-   *  through the same path (one active row per day, US-03 AC3). */
-  const renderLongitudinalField = (config: FieldConfig, box = false) => {
-    const { field, name, step } = config;
-    const effectiveHint = resolveHint(config);
+  /** The onboarding's weight (US-62 AC13), a plain box like the height's
+   *  beside it, holding the saved value; a number typed over it saves through
+   *  the same path (one active row per day, US-03 AC3). */
+  const renderLongitudinalField = (config: FieldConfig) => {
+    const { field, name } = config;
     const r = range(field);
     const { previous, shown } = savedOf(field);
-    const previousLabel = previous && !box ? `${shown} · ${formatShortDate(previous.recordedAt)}` : null;
     const needsAttention = field === 'weightKg' && formStage === 1 && inputs.heightCm !== undefined && inputs.weightKg === undefined;
-    // In expanded mode with previous data, show "Previous:" reference instead of placeholder
-    // (blood tests no longer use this render path — they use BloodTestTimeline).
-    const isExpandedWithData = !!previous && expandedVitals.has(field);
     return (
       <div className={`health-field${needsAttention ? ' field-attention' : ''}`} key={field}>
         <label htmlFor={field}>
@@ -487,15 +397,12 @@ export function InputPanel({
             FIELD_METRIC_MAP[field] ? <span>({getDisplayLabel(FIELD_METRIC_MAP[field]!, fieldUnit(field))})</span> : null
           )}
         </label>
-        {isExpandedWithData && previous && (
-          <span className="previous-reference">{previousReference(shown, previous.recordedAt)}</span>
-        )}
         <div className="longitudinal-input-row">
           <input
             type="number"
             id={field} ref={field === 'weightKg' ? weightRef : undefined}
-            onWheel={blurOnWheel} aria-describedby={box && previous && rawInputs[field] === '' ? WEIGHT_STILL_COUNTS_ID : undefined}
-            value={rawInputs[field] !== undefined ? rawInputs[field] : toDisplay(field, (inputs[field] as number | undefined) ?? (box ? previous?.value : undefined))}
+            onWheel={blurOnWheel} aria-describedby={previous && rawInputs[field] === '' ? WEIGHT_STILL_COUNTS_ID : undefined}
+            value={rawInputs[field] !== undefined ? rawInputs[field] : toDisplay(field, (inputs[field] as number | undefined) ?? previous?.value)}
             onChange={(e) => {
               const raw = e.target.value;
               typeIn(field, raw);
@@ -516,12 +423,11 @@ export function InputPanel({
               rangeWait.settle();
               if (unreadable[field]) return;
               // A saved weight cleared stays cleared when left (US-62 AC38).
-              if (!box || !previous || rawInputs[field] !== '') setRawInputs(prev => { const next = { ...prev }; delete next[field]; return next; });
+              if (!previous || rawInputs[field] !== '') setRawInputs(prev => { const next = { ...prev }; delete next[field]; return next; });
               autoSaveOnBlur();
             }}
             onKeyDown={onNumericEnter}
-            placeholder={isExpandedWithData || box ? '' : getPreviousPlaceholder(field)}
-            step={step ? (fieldUnit(field) === 'si' ? step.si : step.conv) : undefined}
+            placeholder=""
             min={r.min}
             max={r.max}
             className={errors[field] ? 'error' : ''}
@@ -530,162 +436,15 @@ export function InputPanel({
             <CommitTickButton ariaLabel={`Save ${field}`} onClick={flushLongitudinalSave}/>
           )}
         </div>
-        {box && previous && inputs[field] !== undefined && (
+        {previous && inputs[field] !== undefined && (
           <span className="previous-reference">{previousReference(shown, previous.recordedAt)}</span>
         )}
         {/* The box shows a saved value of any age: say when it was saved, unless today. */}
-        {box && previous && inputs[field] === undefined && rawInputs[field] === undefined && dayOf(previous.recordedAt) !== localDay(new Date()) && (
+        {previous && inputs[field] === undefined && rawInputs[field] === undefined && dayOf(previous.recordedAt) !== localDay(new Date()) && (
           <span className="previous-reference">Saved {formatShortDate(previous.recordedAt)}</span>
         )}
         {(unreadable[field] || errors[field]) && (
           <span className="error-message">{unreadable[field] ? 'Enter a number' : errors[field]}</span>
-        )}
-        {(effectiveHint || (!isExpandedWithData && previousLabel)) && (
-          <div className="field-meta">
-            {effectiveHint && (
-              <span className="field-hint">
-                {fieldUnit(field) === 'si' ? effectiveHint.si : effectiveHint.conv}
-              </span>
-            )}
-            {!isExpandedWithData && previousLabel && (
-              <a
-                className="previous-value"
-                href="#health-history"
-                onClick={interceptHistory(FIELD_METRIC_MAP[field])}
-                target="_blank"
-                rel="noopener noreferrer"
-              >{previousLabel}</a>
-            )}
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  /** Render a collapsed read-only display for a longitudinal field. */
-  const renderCollapsedField = (config: FieldConfig, onExpand: () => void) => {
-    const { field, name } = config;
-    const metric = FIELD_METRIC_MAP[field]!;
-    const measurement = previousMeasurements.find(m => m.metricType === metric);
-    const effectiveHint = resolveHint(config);
-
-    // No data — show label + [+] button only
-    if (!measurement) {
-      return (
-        <div className="health-field" key={field}>
-          <div className="collapsed-field-row collapsed-field-row--empty">
-            <span className="collapsed-field-label collapsed-field-label--empty">{name}</span>
-            <button type="button" className="collapsed-field-add" onClick={onExpand} title="Add new value">+</button>
-          </div>
-          {effectiveHint && (
-            <div className="field-meta">
-              <span className="field-hint">
-                {fieldUnit(field) === 'si' ? effectiveHint.si : effectiveHint.conv}
-              </span>
-            </div>
-          )}
-        </div>
-      );
-    }
-
-    const displayValue = savedText(field, measurement);
-    const unitLabel = getDisplayLabel(metric, fieldUnit(field));
-    const date = formatShortDate(measurement.recordedAt);
-
-    return (
-      <div className="health-field" key={field}>
-        <div className="collapsed-field-row">
-          <a
-            className="collapsed-field-label"
-            href="#health-history"
-            onClick={interceptHistory(metric)}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {name}
-          </a>
-          {/* Whole value column expands the row — Clarity showed users dead-clicking
-              the value/unit text expecting exactly that (the 28px + button was the
-              only target). A press on the unit pill stays a toggle; it reaches the page's unit listeners (hooks/useUnits). */}
-          <span className="collapsed-field-value" onClick={(e) => { if (!(e.target as Element).closest('[data-unit-control]')) onExpand(); }} title="Add new value">
-            {displayValue}{' '}
-            {hasUnitToggle(field) ? (
-              <button
-                type="button"
-                className="unit-toggle-pill" data-unit-control
-                onClick={(e) => { e.preventDefault(); onToggleFieldUnit(field); }}
-                title={`Switch to ${fieldUnit(field) === 'si' ? 'conventional' : 'metric'} units`}
-              >
-                {unitLabel}
-              </button>
-            ) : (
-              <span className="collapsed-field-unit" title="This unit is fixed">{unitLabel}</span>
-            )}
-          </span>
-          <span className="collapsed-field-date">{date}</span>
-          <button type="button" className="collapsed-field-add" onClick={onExpand} title="Add new value">+</button>
-        </div>
-        {effectiveHint && (
-          <div className="field-meta">
-            <span className="field-hint">
-              {fieldUnit(field) === 'si' ? effectiveHint.si : effectiveHint.conv}
-            </span>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  /** Shared BP data for collapsed and label rendering. */
-  const getBpPreviousData = (): { sysVal: number; diaVal: number; latestDate: string } | null => {
-    const sysMetric = FIELD_METRIC_MAP['systolicBp'];
-    const diaMetric = FIELD_METRIC_MAP['diastolicBp'];
-    const sysMeasurement = sysMetric ? previousMeasurements.find(m => m.metricType === sysMetric) : null;
-    const diaMeasurement = diaMetric ? previousMeasurements.find(m => m.metricType === diaMetric) : null;
-    // A half-pair rendered as "120/?" reads as broken and invites repair clicks
-    // (top dead-click target in the 2026-08 Clarity audit). BP is atomic
-    // (bpPairReady) — treat a half-pair as no previous BP at all.
-    if (!sysMeasurement || !diaMeasurement) return null;
-
-    const sysVal = Math.round(sysMeasurement.value);
-    const diaVal = Math.round(diaMeasurement.value);
-    const dates = [sysMeasurement?.recordedAt, diaMeasurement?.recordedAt].filter(Boolean) as string[];
-    const latestDate = dates.sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0];
-    return { sysVal, diaVal, latestDate };
-  };
-
-  const knownMinor = grading === null;
-  /** BP target text based on the plan's age; none with no plan (US-06 AC5)
-   *  or for a known minor, whose plan holds no adult reading (US-07 AC6). */
-  const bpTargetText = planBasis && !knownMinor ? `Target: <${bpTargetFor(planBasis.age)}/80 mmHg` : null;
-
-  /** Render collapsed BP display. */
-  const renderCollapsedBp = (data: { sysVal: number; diaVal: number; latestDate: string }) => {
-
-    return (
-      <div className="health-field">
-        <div className="collapsed-field-row">
-          <a
-            className="collapsed-field-label"
-            href="#health-history"
-            onClick={interceptHistory('systolic_bp')}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Blood Pressure
-          </a>
-          <span
-            className="collapsed-field-value"
-            onClick={() => { focusFieldRef.current = 'systolicBp'; setBpExpanded(true); }}
-            title="Add new value"
-          >{data.sysVal}/{data.diaVal} <span className="collapsed-field-unit" title="Blood pressure is always measured in mmHg">mmHg</span></span>
-          <span className="collapsed-field-date">{formatShortDate(data.latestDate)}</span>
-          <button type="button" className="collapsed-field-add" onClick={() => { focusFieldRef.current = 'systolicBp'; setBpExpanded(true); }} title="Add new value">+</button>
-        </div>
-        {bpTargetText && (
-          <div className="field-meta">
-            <span className="field-hint">{bpTargetText}</span>
-          </div>
         )}
       </div>
     );
@@ -695,7 +454,8 @@ export function InputPanel({
   const heightField = (
     <HeightField form={form} pair={heightPair} unitSystem={unitSystem}
       toDisplay={toDisplay} parseAndConvert={parseAndConvert}
-      mayAdvanceToWeight={inputs.weightKg === undefined && !hasPreviousValue('weightKg')} advanceToWeight={advanceToWeight}/>
+      // Only to a weight box on screen: a record with data but no weight shows a Weight row instead.
+      mayAdvanceToWeight={weightInProfile && inputs.weightKg === undefined && !hasPreviousValue('weightKg')} advanceToWeight={advanceToWeight}/>
   );
   const sexField = <SexField form={form} aboutYouLow={aboutYouLow}/>;
   const birthFields = (
@@ -746,7 +506,7 @@ export function InputPanel({
             <>
               <div className="sex-height-row">
                 {heightField}
-                {weightInProfile && renderLongitudinalField(WEIGHT_FIELD, true)}
+                {weightInProfile && renderLongitudinalField(WEIGHT_FIELD)}
                 {sexInRow && sexField}
               </div>
               {weightInProfile && rawInputs.weightKg === '' && <WeightStillCounts {...savedOf('weightKg')} onOpen={openPage}/>}
@@ -764,6 +524,7 @@ export function InputPanel({
     </>
   );
 
+  const knownMinor = grading === null;
   const renderVitalsMatrix = () => (
     <section className="health-section">
       <StartingInfoVitals
@@ -785,105 +546,6 @@ export function InputPanel({
       />
     </section>
   );
-
-  /** A first-time vitals field: its saved value with a +, or the field. It
-   *  saves when left (500 ms later), one active row per day (US-03 AC3). */
-  const renderVital = (cfg: FieldConfig) => {
-    if (hasPreviousValue(cfg.field) && !expandedVitals.has(cfg.field)) {
-      return renderCollapsedField(cfg, () => {
-        focusFieldRef.current = cfg.field;
-        setExpandedVitals(prev => new Set(prev).add(cfg.field));
-      });
-    }
-    return renderLongitudinalField(cfg);
-  };
-
-  // Legacy inline weight / waist / BP fields — kept for first-time users.
-  // The matrix above shows historical context + a draft column, which is
-  // overkill (and visually noisy) for someone entering their very first
-  // measurement. Returning users with any saved vitals get the matrix.
-  const renderVitalsLegacy = () => {
-    const bpData = getBpPreviousData();
-    const bpShown = bpData ? `${bpData.sysVal}/${bpData.diaVal} mmHg` : '';
-    const bpLabel = bpData ? `${bpShown} · ${formatShortDate(bpData.latestDate)}` : null;
-    return (
-      <section className="health-section">
-        <h3 className="health-section-title"><SectionIcon section="vitals"/>Vitals</h3>
-        {BASIC_LONGITUDINAL_FIELDS.filter(cfg => !(weightInProfile && cfg === WEIGHT_FIELD)).map(renderVital)}
-
-        {hasBpPreviousData && !bpExpanded && bpData ? (
-          <div>{renderCollapsedBp(bpData)}</div>
-        ) : (
-          <div className="health-field">
-            <label>Blood Pressure (mmHg)
-              <InfoTooltip ariaLabel="How to measure blood pressure">
-                Use a home blood pressure monitor or ask your doctor at your next visit.{' '}
-                <a href="https://www.heart.org/en/health-topics/high-blood-pressure/understanding-blood-pressure-readings/monitoring-your-blood-pressure-at-home" target="_blank" rel="noopener noreferrer">Learn more &rarr;</a>
-              </InfoTooltip>
-            </label>
-            {bpExpanded && bpData && (
-              <span className="previous-reference">{previousReference(bpShown, bpData.latestDate)}</span>
-            )}
-            <div className="longitudinal-input-row">
-              <div className="bp-fieldset">
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  id="systolicBp"
-                  onWheel={blurOnWheel}
-                  value={inputs.systolicBp ?? ''}
-                  onChange={(e) => {
-                    typeIn('systolicBp', e.target.value);
-                    updateField('systolicBp', parseLocalisedNumber(e.target.value));
-                    // US-02 AC6: hop to diastolic once systolic is unambiguous; anything else cancels the wait (AC6c).
-                    const adv = bpSysAdvance(e.target.value);
-                    advanceToDiastolic(adv !== 'stay' && inputs.diastolicBp === undefined
-                      ? { ambiguous: adv === 'defer', advance: () => focusById('diastolicBp') } : null);
-                  }}
-                  onBlur={() => { rangeWait.settle(); autoSaveOnBlur(); }}
-                  onKeyDown={onIntegerEnter}
-                  placeholder={bpExpanded ? '' : getPreviousPlaceholder('systolicBp')}
-                  min={60}
-                  max={250}
-                  className={errors.systolicBp ? 'error' : ''}
-                />
-                <span className="bp-separator">/</span>
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  id="diastolicBp"
-                  onWheel={blurOnWheel}
-                  value={inputs.diastolicBp ?? ''}
-                  onChange={(e) => { typeIn('diastolicBp', e.target.value); updateField('diastolicBp', parseLocalisedNumber(e.target.value)); }}
-                  onBlur={() => { rangeWait.settle(); autoSaveOnBlur(); }}
-                  onKeyDown={onIntegerEnter}
-                  placeholder={bpExpanded ? '' : getPreviousPlaceholder('diastolicBp')}
-                  min={40}
-                  max={150}
-                  className={errors.diastolicBp ? 'error' : ''}
-                />
-                {autoSaveGate && (inputs.systolicBp !== undefined || inputs.diastolicBp !== undefined) && (
-                  <CommitTickButton ariaLabel="Save blood pressure" onClick={flushLongitudinalSave}/>
-                )}
-              </div>
-            </div>
-            {errors.systolicBp && <span className="error-message">{errors.systolicBp}</span>}
-            {/* A pair the wrong way up is one error on both halves (US-02 AC8): said once. */}
-            {errors.diastolicBp && errors.diastolicBp !== errors.systolicBp && <span className="error-message">{errors.diastolicBp}</span>}
-            <div className="field-meta">
-              {bpTargetText && <span className="field-hint">{bpTargetText}</span>}
-              {!bpExpanded && bpLabel && (
-                <a className="previous-value"
-                   href="#health-history"
-            onClick={interceptHistory('systolic_bp')}
-                   target="_blank" rel="noopener noreferrer">{bpLabel}</a>
-              )}
-            </div>
-          </div>
-        )}
-      </section>
-    );
-  };
 
   // One move for both blood-test matrices: their headers pick it, the panel sits between them (US-04 AC5).
   const move = useMoveTest({ api: moveTest, unitSystem, unitOverrides, bloodTestHistory, labValues });
@@ -981,24 +643,14 @@ export function InputPanel({
     </div>
   );
 
-  // The vitals' rows stand in for their fields once saved (a returning record, or the
-  // onboarding's card left); a first visit's fields stay while they are typed in.
-  const vitalsRows = vitalsViewMode === 'matrix' || vitalsAsRows || (vitalsHistory.length > 0 && fieldsSaved === 0);
-
   return children({
     panelRef, messages: panelMessages, aboutCard, aboutYouLow, unitPill, fullForm, planReady: !!planBasis,
     pageOpen: !!pageShown,
     renderPage: tiles => pageShown && (
       <ValuePage key={JSON.stringify(pageShown)} subject={pageShown} history={[...vitalsHistory, ...bloodTestHistory]} labValues={labValues}
-                 ctx={rowCtx} tiles={tiles} onSave={onSaveBloodTestBatch} onCorrect={onCorrectValue} onLabAdded={onLabValueAdded} onClose={closePage} onOpen={switchPage} dirtyRef={pageDirty}/>
+                 ctx={rowCtx} tiles={tiles} onSave={onSaveBloodTestBatch} onCorrect={onCorrectValue} onLabAdded={onLabValueAdded} onClose={closePage} onOpen={switchPage} dirtyRef={pageDirty} onWeightAnswered={answered && (() => answered(null))}/>
     ),
-    rows: { ctx: rowCtx, open: openPage, vitals: vitalsHistory, blood: bloodTestHistory, labs: labValues, vitalsAsRows: vitalsRows, withoutWeight: weightInProfile },
-    legacyVitals: !vitalsRows && (
-      <div ref={vitalsRef} className="section-card stage-reveal"
-           onBlurCapture={aboutYouLow && !vitalsLeft ? e => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setVitalsLeft(true); } : undefined}>
-        {renderVitalsLegacy()}
-      </div>
-    ),
+    rows: { ctx: rowCtx, open: openPage, vitals: vitalsHistory, blood: bloodTestHistory, labs: labValues, withoutWeight: weightInProfile },
     vitalsCue: unsavedCue(draftedVitals),
     bloodCue: unsavedCue(draftedBlood),
     tableShown,
@@ -1008,7 +660,7 @@ export function InputPanel({
     table: (
       <div className="md-table" hidden={!tableShown}>
         <button type="button" className="md-back md-table-back" onClick={() => showTable(false)}>‹ Show as rows</button>
-        {vitalsRows && renderVitalsMatrix()}
+        {renderVitalsMatrix()}
         {renderBloodTests()}
         {move.panel}
         <AdditionalLabRows labValues={labValues} coreValues={bloodTestHistory} onAdded={onLabValueAdded} onCorrect={onCorrectValue} move={move.headers}/>

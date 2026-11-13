@@ -53,9 +53,15 @@ Status vocabulary:
 
 - **done**: the end state exists on `main`. Evidence names the file or symbol.
 - **partial**: some of it exists. Evidence says what is left.
+- **in progress**: a PR or branch is doing it now. Evidence names it.
 - **not started**: the old state is still in the code. Evidence cites it.
-- **superseded**: the code it refers to is gone or changed, so the fix is moot.
+- **closed**: finished without code: the code it refers to is gone (superseded),
+  the owner decided to leave it, or no change is needed. Evidence gives the reason.
 - **cannot tell**: the audit gave too little to check. Evidence says what was looked at.
+
+No other word: `tools/untangle-ledger.test.ts` refuses any status outside
+the list, so a typo cannot count as done. Detail (which deploy, which PR)
+goes in `evidence`, not `status`.
 
 ### Some rows are added later
 
@@ -76,8 +82,11 @@ Count from the files; no copy is kept here, since every fix PR would have to
 edit it and two PRs would collide:
 
 ```bash
-python3 -c "import csv,glob,collections;print(collections.Counter(r['status'] for f in glob.glob('docs/untangle/leads/*.csv') for r in csv.DictReader(open(f))))"
+node tools/untangle-progress.mjs
 ```
+
+It prints both ledgers by status and section, and percent done: done and
+closed count 1, partial 0.5, the rest 0.
 
 ## state-leads/
 
@@ -101,8 +110,9 @@ Status here comes from the survey sessions' notes and the merged PR list
 on 2026-11-10. It was not rechecked line by line against the code. Rows may be
 added later, as above.
 
-Extra status words: **decided: leave** and **decided: change** (Brad chose;
-the second still needs its PR), **awaits Brad**, **no change needed**.
+Extra status words: **decided: change** (Brad or the owner chose a change;
+it still needs its PR) and **awaits Brad**. A lead decided to leave is
+**closed**, with the decision in `evidence`.
 
 `kind` says what the lead is: a bug, a hidden link (two places that must
 change together with nothing saying so), an implicit state, surplus code,

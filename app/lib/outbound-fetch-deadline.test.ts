@@ -24,7 +24,7 @@ const sentry = vi.hoisted(() => {
 });
 vi.mock('@sentry/react-router', () => ({ captureException: sentry.captureException, captureMessage: vi.fn() }));
 // The bot starts only with an admin client; the tick never reaches it here.
-vi.mock('./supabase.server', () => ({ supabaseAdmin: {} }));
+vi.mock('./supabase-client.server', () => ({ supabaseAdmin: {} }));
 
 const APP = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -225,7 +225,13 @@ describe('US-09 AC31: a stalled provider is abandoned at the deadline', () => {
   });
 
   describe('the YouTube bot tick', () => {
-    beforeEach(() => { process.env.YOUTUBE_BOT_FORCE_START = 'true'; sentry.captureException.mockClear(); });
+    beforeEach(() => {
+      // A fresh bot module per case: youtube-bot-api caches the access token one
+      // case fetched, so the next would skip the token call (T7, shuffle seed 3).
+      vi.resetModules();
+      process.env.YOUTUBE_BOT_FORCE_START = 'true';
+      sentry.captureException.mockClear();
+    });
     afterEach(async () => { (await import('./youtube-bot.server')).stopYouTubeBot(); delete process.env.YOUTUBE_BOT_FORCE_START; });
 
     /** Starts the bot, runs its first tick (30 s after start) and reports

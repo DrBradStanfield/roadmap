@@ -6,7 +6,7 @@
  * colorectalMethod stays as the person answered it, on every method. Completed with no usable date:
  * a card asks for it, and no reminder until it is added. Breast, cervical, lung and DEXA keep the
  * shared follow-up path in suggestions.ts and reminder-schedule.ts.
- * The words are frozen: docs/drafts/screening-change-2b-words-2026-11-12.md.
+ * The words are frozen in CARDS below.
  */
 import { getPostFollowupDueDate, type ScreeningInputs, type Suggestion } from './types';
 import { chainKeys, opensFollowup, ruleOf } from './screening-rules';

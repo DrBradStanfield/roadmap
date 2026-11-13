@@ -263,18 +263,20 @@ export { SCREENING_RANGES, screeningRange, screeningsToInputs, type ApiScreening
  * The newer by date wins over the old answers; in the same month the row
  * wins, since the answer gives no day. A PSA printed as a limit is graded
  * only when the limit decides against 4.0 (US-12 AC20): otherwise it has no
- * value, and its day still counts.
+ * value, and its day still counts; `planPsa`'s `raisedBefore` rides on the
+ * limit (US-06 AC21 item 6).
  */
 export function withPsaMeasurement(
   screenings: import('./types').ScreeningInputs,
-  psa: { value: number; recordedAt: string; comparator?: unknown } | undefined,
+  psa: { value: number; recordedAt: string; comparator?: unknown; raisedBefore?: true } | undefined,
 ): import('./types').ScreeningInputs {
   const day = psa?.recordedAt.slice(0, 10);
   if (!psa || !day || (screenings.prostateLastDate ?? '') > day) return screenings;
   const { comparator } = comparatorOf(psa);
   if (!comparator) return { ...screenings, prostatePsaValue: psa.value, prostatePsaLimit: undefined, prostateLastDate: day };
   const graded = limitRepresentative('psa', comparator, psa.value);
-  return { ...screenings, prostatePsaValue: graded ?? undefined, prostatePsaLimit: { comparator, bound: psa.value }, prostateLastDate: day };
+  const limit = { comparator, bound: psa.value, ...(psa.raisedBefore && graded === null && { raisedBefore: true as const }) };
+  return { ...screenings, prostatePsaValue: graded ?? undefined, prostatePsaLimit: limit, prostateLastDate: day };
 }
 
 /** API profile shape (camelCase, as returned by API endpoints). */

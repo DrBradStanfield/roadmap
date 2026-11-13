@@ -8,6 +8,7 @@ import { MAX_NAME_LENGTH } from './lab-extraction';
 import { oneLine, printable, REPO_PUBLIC } from './plan';
 import { UNIT_DEFS } from './units';
 import { type McpRefusalReason } from './product-events';
+import { EXTRA_METRIC_NAMES } from './scrub-vocabulary';
 import { EMAIL_SOURCE } from './sentry-scrub';
 import * as z from './zod';
 import {
@@ -37,11 +38,52 @@ const VALUE_WITH_UNIT = new RegExp(
   'i',
 );
 
-/** Every word a metric or catalogued test is known by; 2 over-refuses on purpose. */
-const METRIC_WORDS = new Set([...metricNameWords(2), 'vit']); // "vit" typed for vitamin (US-73 AC8)
-
 /** Words as the guard reads them; a number keeps its decimal ("3.2", "hba1c"). */
 const FEEDBACK_WORD = /[a-z0-9]+(?:[.,]\d+)?/g;
+
+/** The Sentry scrub's names that no metric or catalogue name spells, as the guard splits each one. */
+const EXTRA_NAMES = EXTRA_METRIC_NAMES.map((name) => foldLpa(name).match(FEEDBACK_WORD) ?? []);
+
+/**
+ * Every word a metric or catalogued test is known by; 2 over-refuses on purpose.
+ * The one-word names the Sentry scrub adds join them, so "vit" (typed for
+ * vitamin, US-73 AC8), "a1c", "bmi" and "height" are names here too (US-32 AC9a).
+ */
+const METRIC_WORDS = new Set([...metricNameWords(2), ...EXTRA_NAMES.filter((name) => name.length === 1).flat()]);
+/** The number a word ends in, with any comma or dot just before it ("140", ",140", "3.2"). */
+const TRAILING_NUMBER = /^[.,]?(\d+(?:[.,]\d+)?)$/;
+/** The longest name the guard reads, so a cut is looked for only that far into a word. */
+const LONGEST_NAME = Math.max(...[...METRIC_WORDS].map((name) => name.length));
+
+/**
+ * A word that is not itself a name and ends in a number, read as two words:
+ * split after the longest name it starts with that leaves only a number after
+ * it ("b12300" is "b12 300", "ldl,140" is "ldl 140"), or else after its last
+ * letter ("pressure140" is "pressure 140", "tab2" is "tab 2"), with a comma or
+ * dot at the split dropped (US-32 AC9a). A name keeps its digits ("igf1",
+ * "b12"). The scan looks no further than the longest name, so a long run stays
+ * linear (US-32 AC58).
+ */
+function splitTrailingNumber(word: string): string[] {
+  // A word holds only a-z, digits and a comma or dot, so a letter is anything from "a" up.
+  let end = word.length;
+  while (end > 0 && word[end - 1] < 'a') end--;
+  const number = end > 0 && TRAILING_NUMBER.exec(word.slice(end));
+  if (!number || METRIC_WORDS.has(word)) return [word];
+  for (let cut = LONGEST_NAME; cut > end; cut--) {
+    const value = METRIC_WORDS.has(word.slice(0, cut)) && TRAILING_NUMBER.exec(word.slice(cut));
+    if (value) return [word.slice(0, cut), value[1]];
+  }
+  return [word.slice(0, end), number[1]];
+}
+
+/**
+ * The words of `text`, with the number a word ends in split off as its own
+ * word (US-32 AC9a, `splitTrailingNumber`).
+ */
+function feedbackWords(text: string): string[] {
+  return (foldLpa(text).match(FEEDBACK_WORD) ?? []).flatMap(splitTrailingNumber);
+}
 /** A number and nothing else — what a metric name next to it turns into a value. */
 const BARE_NUMBER = /^\d+(?:[.,]\d+)?$/;
 /** How many words from a metric name a number still reads as that metric's value. */
@@ -55,11 +97,12 @@ const METRIC_DISTANCE = 3;
  */
 const METRIC_PHRASES = [...new Set(LAB_CATALOG.flatMap((entry) => [entry.label, ...entry.aliases]).map(foldLpa))]
   .map((name) => name.match(FEEDBACK_WORD) ?? [])
+  .concat(EXTRA_NAMES)
   .filter((phrase) => phrase.length > 1);
 
 /** "My LDL is 3.2" — a bare number a few words from a name this record knows. */
 function valueNearMetric(text: string): string | null {
-  const words = foldLpa(text).match(FEEDBACK_WORD) ?? [];
+  const words = feedbackWords(text);
   // Where a name sits: one word, or a whole phrase from its first word to its last.
   const names: Array<[number, number]> = [];
   for (const [i, word] of words.entries()) {
@@ -127,7 +170,9 @@ function unsafeFeedback(text: string): { reason: McpRefusalReason; text: string 
     return {
       reason: 'health-value',
       text: `“${value}” reads as a health value, so nothing was prepared. A report leaves the user’s machine when ` +
-        'they submit it: say which tool or screen was wrong and what you expected, not what the record holds.',
+        'they submit it: say which tool or screen was wrong and what you expected, not what the record holds. ' +
+        'If the number is no record value (a report like “line-height 1.5” holds none), drop the number, or say it ' +
+        'without the name or unit beside it.',
     };
   }
   if (EMAIL.test(text) || phoneShaped(text) || URL_WITH_QUERY.test(text) || FILENAME.test(text)) {

@@ -46,16 +46,18 @@ export const SCREENING_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'screening-prostate': {
-    reason: 'Prostate cancer screening via PSA testing is a shared decision between patient and doctor. The benefits (early detection) must be weighed against the risks (overdiagnosis and overtreatment of slow-growing cancers). Long-term follow-up of the Prostate Cancer Prevention Trial showed that 5-alpha reductase inhibitors can reduce prostate cancer incidence.',
+    reason: 'Prostate cancer screening via PSA testing is a shared decision between patient and doctor. The benefits (early detection) must be weighed against the risks (overdiagnosis and overtreatment of slow-growing cancers). Long-term follow-up of the Prostate Cancer Prevention Trial showed that 5-alpha reductase inhibitors can reduce prostate cancer incidence. If you choose to be tested, the American Cancer Society suggests retesting every 2 years if your PSA is below 2.5 ng/mL, and every year if it is 2.5 or higher.',
     guidelines: [],
     references: [
       ...REFS_SCREENING_ACS,
       { label: 'Goodman 2019 – Finasteride & prostate cancer mortality (NEJM)', url: 'https://doi.org/10.1056/NEJMc1809961' },
+      // The retest intervals (screening Change 4, Brad 2026-11-12).
+      { label: 'American Cancer Society – Recommendations for Prostate Cancer Early Detection', url: 'https://www.cancer.org/cancer/types/prostate-cancer/detection-diagnosis-staging/acs-recommendations.html' },
     ],
   },
 
   'screening-prostate-elevated': {
-    reason: 'Many doctors use a PSA of 4.0 ng/mL or higher as the level for further tests; some use a lower level. A raised PSA can have several causes, including an enlarged prostate (benign prostatic hyperplasia), infection or prostate cancer, and a level below 4.0 does not rule out cancer. Your doctor can help find the cause.',
+    reason: 'Many doctors use a PSA of 4.0 ng/mL or higher as the level for further tests; some use a lower level. A raised PSA can have several causes, including an enlarged prostate (benign prostatic hyperplasia), infection or prostate cancer, and a level below 4.0 does not rule out cancer. Your doctor can help find the cause. Dr Brad suggests repeating the PSA every 3 months while it stays at 4.0 or higher, whether or not you chose routine screening. This is his suggestion; the American Cancer Society notes only that some doctors repeat an abnormal PSA after about a month.',
     guidelines: [],
     references: [
       ...REFS_SCREENING_ACS,

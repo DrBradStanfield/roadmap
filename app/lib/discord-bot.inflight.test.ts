@@ -26,22 +26,22 @@ vi.mock('@sentry/react-router', () => ({ captureException: edge.capture, capture
 vi.mock('./platform-chat.server', () => ({ platformChatCompletion: edge.complete }));
 vi.mock('./chat.server', () => ({ reportChatFallback: vi.fn(), generateTitle: () => 'Synthetic title', CHAT_MODEL: 'synthetic' }));
 vi.mock('./chat-router.server', () => ({ ROUTER_VERSION: 'synthetic', sanitizeForRouter: (s: string) => s }));
+const chatTables = vi.hoisted(() => (table: string) => {
+  const query = { select: () => query, eq: () => query, gte: () => query,
+    order: () => query, limit: () => query, update: () => query,
+    maybeSingle: async () => ({ data: null, error: null }),
+    then: (onOk: (v: unknown) => unknown) => Promise.resolve({ data: [], error: null }).then(onOk),
+    insert: (row: Record<string, unknown>) => { edge.inserts.push({ table, row }); return query; },
+    single: async () => ({ data: { id: 'conv-new' }, error: null }) };
+  return query;
+});
+// One client: the turn claim's store for single_use_claims, the chat tables above for the rest.
 vi.mock('./supabase-client.server', async (actual) => {
   const helpers = await import('./single-use-claims.test-helpers');
   claims.state ??= helpers.newClaimsState();
-  return { ...(await actual<object>()), supabaseAdmin: helpers.claimsAdmin(claims.state) };
+  const claimStore = helpers.claimsAdmin(claims.state);
+  return { ...(await actual<object>()), supabaseAdmin: { from: (table: string) => (table === 'single_use_claims' ? claimStore.from(table) : chatTables(table)) } };
 });
-vi.mock('./supabase.server', () => ({ supabaseAdmin: {
-  from: (table: string) => {
-    const query = { select: () => query, eq: () => query, gte: () => query,
-      order: () => query, limit: () => query, update: () => query,
-      maybeSingle: async () => ({ data: null, error: null }),
-      then: (onOk: (v: unknown) => unknown) => Promise.resolve({ data: [], error: null }).then(onOk),
-      insert: (row: Record<string, unknown>) => { edge.inserts.push({ table, row }); return query; },
-      single: async () => ({ data: { id: 'conv-new' }, error: null }) };
-    return query;
-  },
-} }));
 
 const settle = async () => { for (let i = 0; i < 40; i++) await Promise.resolve(); };
 const QUESTION = 'Synthetic question about sleep';
@@ -57,7 +57,7 @@ function makeMessage(id: string) {
 
 async function deliver(message: ReturnType<typeof makeMessage>) {
   edge.listeners.get('message')!(message);
-  await settle(); await new Promise((r) => setTimeout(r, 50)); await settle();
+  await settle(); await new Promise((r) => setTimeout(r, 0)); await settle();
 }
 
 const completion = { content: 'Synthetic answer', usage: { inputTokens: 1, outputTokens: 1, cacheCreationTokens: 0, cacheReadTokens: 0 },
@@ -95,7 +95,7 @@ describe('US-15 AC63 — Discord: an identical message while the first is answer
     expect(second.reply).not.toHaveBeenCalled();
     expect(second.send).not.toHaveBeenCalled();
     answer();
-    await settle(); await new Promise((r) => setTimeout(r, 50)); await settle();
+    await settle(); await new Promise((r) => setTimeout(r, 0)); await settle();
     expect(first.reply).toHaveBeenCalledTimes(1);
     expect(edge.inserts.filter((i) => i.table === 'chat_messages' && i.row.role === 'user')).toHaveLength(1);
     expect(edge.captureMessage).toHaveBeenCalledWith('chat: turn already running',

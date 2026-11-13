@@ -6,7 +6,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 
 vi.mock('@sentry/react-router', () => ({ captureException: vi.fn(), captureMessage: vi.fn() }));
-vi.mock('./supabase.server', () => ({ supabaseAdmin: null }));
+vi.mock('./supabase-client.server', () => ({ supabaseAdmin: null }));
 
 process.env.ANTHROPIC_API_KEY ??= 'sk-test-dummy';
 

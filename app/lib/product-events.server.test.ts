@@ -37,7 +37,8 @@ describe('parseProductEvent', () => {
       if (['tool_opened', 'onboarding_step', 'signin_opened'].includes(eventName)) continue;
       // US-61 AC8: the two US product events need their product; US-07 AC11: measurement_added its measure.
       const metadata = eventName.startsWith('us_product_') ? { metadata: { product: 'sleep' } }
-        : eventName === 'measurement_added' ? { metadata: { measure: 'waist' } } : {};
+        : eventName === 'measurement_added' ? { metadata: { measure: 'waist' } }
+        : eventName === 'save_retry' ? { metadata: { trigger: 'online', outcome: 'landed' } } : {}; // US-09 AC30: needs its trigger
       expect(parseProductEvent({ eventName, visitorId: VISITOR, ...metadata })).toEqual({
         eventName,
         visitorId: VISITOR,

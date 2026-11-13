@@ -68,7 +68,7 @@ vi.mock('./youtube-bot-store.server', async (orig) => ({
   persistYouTubeTurn: async (p: Record<string, unknown>) => { persisted.push(p); },
 }));
 
-vi.mock('./supabase.server', async () => {
+vi.mock('./supabase-client.server', async () => {
   const { createClient } = await import('@supabase/supabase-js');
   const json = (v: unknown, status = 200, headers: Record<string, string> = {}) =>
     new Response(JSON.stringify(v), { status, headers: { 'content-type': 'application/json', ...headers } });
@@ -220,13 +220,13 @@ async function googleFetch(input: RequestInfo | URL, init?: RequestInit): Promis
 // Harness
 // ---------------------------------------------------------------------------
 
-type Bot = typeof import('./youtube-bot.server');
+type Bot = typeof import('./youtube-bot.server') & Pick<typeof import('./youtube-bot-store.server'), 'readPostingCaps'>;
 let machines: Bot[] = [];
 
 /** A fresh process on the shared table: a new module instance, which auto-starts on import. */
 async function bootMachine(): Promise<Bot> {
   vi.resetModules();
-  const m = await import('./youtube-bot.server');
+  const m = { ...(await import('./youtube-bot.server')), readPostingCaps: (await import('./youtube-bot-store.server')).readPostingCaps };
   machines.push(m);
   return m;
 }

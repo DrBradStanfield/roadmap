@@ -16,6 +16,9 @@ export function useTabs(rootRef: RefObject<HTMLDivElement | null>) {
   activeTabRef.current = activeTab;
   const scrollByTab = useRef<Partial<Record<TabId, number>>>({});
   const scrollOnSwitch = useRef(false);
+  /** The chat's card (ChatEmbed) and the tab bar (BottomTabBar), measured on a switch. */
+  const chatCardRef = useRef<HTMLDivElement>(null);
+  const tabBarRef = useRef<HTMLDivElement>(null);
   const selectTab = useCallback((tab: TabId) => {
     if (tab === activeTabRef.current) return;
     scrollByTab.current[activeTabRef.current] = window.scrollY;
@@ -31,15 +34,15 @@ export function useTabs(rootRef: RefObject<HTMLDivElement | null>) {
     // inset in its panel) and the tab bar (styles.css, --hr-chat-top, --hr-tabbar-h).
     const sticky = stickyTop();
     const panel = document.getElementById(panelDomId(tabIds, activeTab));
-    const card = panel?.querySelector('.chat-embed');
+    const card = chatCardRef.current && panel?.contains(chatCardRef.current) ? chatCardRef.current : null;
     const inset = panel && card ? card.getBoundingClientRect().top - panel.getBoundingClientRect().top : 0;
     rootRef.current?.style.setProperty('--hr-chat-top', `${Math.round(sticky + inset)}px`);
-    rootRef.current?.style.setProperty('--hr-tabbar-h', `${Math.round(rootRef.current.querySelector('.hr-tabbar')?.getBoundingClientRect().height ?? 51)}px`);
+    rootRef.current?.style.setProperty('--hr-tabbar-h', `${Math.round(tabBarRef.current?.getBoundingClientRect().height ?? 51)}px`);
     const top = (panel?.getBoundingClientRect().top ?? 0) - sticky;
     // At once: the theme's smooth scrolling would slide the page from the top.
     if (saved !== undefined) window.scrollTo({ top: saved, behavior: 'instant' });
     else if (top !== 0) window.scrollTo({ top: window.scrollY + top, behavior: 'instant' });
   }, [activeTab]);
 
-  return { activeTab, selectTab, tabIds };
+  return { activeTab, selectTab, tabIds, chatCardRef, tabBarRef };
 }

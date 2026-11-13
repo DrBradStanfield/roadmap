@@ -27,6 +27,11 @@ import {
   validateTypedValue,
 } from '../lib/blood-test-cell';
 
+/** The highlight on the cell being filled, by the user or the chat (styles.css). */
+export const ACTIVE_CELL = 'bt-input-active';
+/** The first highlighted cell in `root`: a phone's chat hand-off scrolls to it and focuses it (US-16 AC2). */
+export const activeCellIn = (root: ParentNode | null | undefined) => root?.querySelector<HTMLElement>(`.${ACTIVE_CELL}`) ?? null;
+
 export interface NumericInputCellProps {
   /** Omit for free-form rows (lab values not in the algorithm). Without a
    *  metric the cell has no range or status preview; it only asks about an
@@ -140,7 +145,7 @@ export function NumericInputCell({
       aria-describedby={describedBy(comparator && limitId, ariaDescribedBy, ungraded && ungradedId, error && errorId)}
       autoFocus={autoFocus}
       disabled={disabled}
-      className={`${inputClass}${active ? ' bt-input-active' : ''}${error ? ' bt-input-error' : ''}`}
+      className={`${inputClass}${active ? ` ${ACTIVE_CELL}` : ''}${error ? ' bt-input-error' : ''}`}
     />
   );
   return (

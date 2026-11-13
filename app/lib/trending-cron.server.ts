@@ -14,25 +14,25 @@
  * tick ≥ TARGET_HOUR_NZ, distributed lock via Supabase.
  */
 import { unauthenticated } from '../shopify.server';
-import type { CronLockName } from './supabase.server';
+import type { CronLockName } from './supabase-cron-lock.server';
 import { loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
 import { withTimeout, nzNowParts } from './cron-helpers.server';
 import { dailyCron, MACHINE_LABEL } from './daily-cron.server';
+import { SHOP_DOMAIN, STORE_KIND, storeKind } from './store.server';
 
 // 3am NZ. DST-aware via nzNowParts (Pacific/Auckland through Intl) and
 // lock_date is NZ-local so the day boundary matches NZ midnight, not UTC.
 const TARGET_HOUR_NZ = 3;
-const SHOP_DOMAIN = process.env.SHOPIFY_SHOP_DOMAIN || 'microvitamin.myshopify.com';
 
 // The education store runs as a SEPARATE Fly app (`health-tool-edu`) from the
 // SAME codebase, but it SHARES this app's Supabase project. So both apps' crons
 // contend for the same `cron_lock` rows. Each store therefore needs its OWN
 // trending lock, or only one store's metafield gets written per day (whichever
-// machine wins the shared lock). The lock name is selected by shop domain; the
-// edu store's lock row is seeded in supabase/rls-policies.sql.
-const EDU_SHOP_DOMAIN = 'sz5utw-1r.myshopify.com';
+// machine wins the shared lock). The lock name is selected by the store this
+// app serves (store.server.ts); the edu store's lock row is seeded in
+// supabase/rls-policies.sql.
 const TRENDING_LOCK_NAME: CronLockName =
-  SHOP_DOMAIN === EDU_SHOP_DOMAIN ? 'trending_cron_edu' : 'trending_cron';
+  STORE_KIND === 'edu' ? 'trending_cron_edu' : 'trending_cron';
 
 // Articles younger than this are dropped — they don't have a clean baseline
 // window. Must be >= the leading edge of QUERY_PRIOR_BASELINE (-45d), otherwise
@@ -271,7 +271,7 @@ export function buildStoreHandleMap(
 ): Map<string, StoreHandle> {
   const map = new Map<string, StoreHandle>();
   for (const entry of entries) {
-    if (shopDomain === EDU_SHOP_DOMAIN) {
+    if (storeKind(shopDomain) === 'edu') {
       map.set(entry.handle, { storeHandle: entry.handle, entry });
       continue;
     }

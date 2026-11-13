@@ -5,7 +5,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('@sentry/react-router', () => ({ captureException: vi.fn(), captureMessage: vi.fn() }));
-vi.mock('./supabase.server', () => ({ supabaseAdmin: null }));
+vi.mock('./supabase-client.server', () => ({ supabaseAdmin: null }));
 vi.mock('./chat-classifier.server', async (orig) => ({
   ...(await orig<typeof import('./chat-classifier.server')>()),
   classifyMessage: vi.fn(async () => ({ classification: 'SPAM' })),

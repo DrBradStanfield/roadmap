@@ -34,7 +34,7 @@ function cancerCard(sex: 'female' | 'male' | undefined, age: number, screenings:
     labValues: [], onSaveBloodTestBatch: vi.fn(async () => new Map()), onDraftValue: vi.fn(),
     medications: [], onMedicationChange: vi.fn(), screenings: rows(screenings), onScreeningChange: vi.fn(),
     supplements: [], onSupplementChange: vi.fn(), onSupplementDelete: vi.fn(),
-    scheduleLongitudinalSave: vi.fn(), flushLongitudinalSave: vi.fn(), isSavingLongitudinal: false, fieldsSaved: 0,
+    scheduleLongitudinalSave: vi.fn(), flushLongitudinalSave: vi.fn(), isSavingLongitudinal: false,
     hasApiResponse: false, onboarding: { stage: 4 as const, reached: 4 as const, fullForm: true, aboutYouLow: true }, planBasis: { age }, grading: {},
   };
   const { container } = render(<InputPanel {...(props as unknown as Parameters<typeof InputPanel>[0])} />);

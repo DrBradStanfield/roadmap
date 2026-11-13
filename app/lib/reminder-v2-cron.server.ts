@@ -17,7 +17,7 @@ import * as Sentry from '@sentry/react-router';
 import { GROUP_COOLDOWNS, getCategoryGroup, type ReminderCategory } from '../../packages/health-core/src/reminders';
 import { buildReminderV2EmailHtml, sendReminderEmail } from './email.server';
 import { dailyCron, LOCK_LOST, MACHINE_ID, MACHINE_LABEL } from './daily-cron.server';
-import { stillHoldsLock } from './supabase.server';
+import { stillHoldsLock } from './supabase-cron-lock.server';
 import { utcNowParts } from './cron-helpers.server';
 import { buildUnsubscribeUrl, getOptinsBatch, inQuietPeriod, purgeTombstones, recordSent, type ReminderV2Optin } from './reminder-v2.server';
 import { stampReminderDay } from './reminder-v2-day-stamp.server';

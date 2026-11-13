@@ -20,6 +20,8 @@ import { getDeviceId } from './device-id';
 import { BACKEND_KEY, clearOffFileHealthData, dropDraftsOnScreen, healthWritesAllowed, logOffId, noteCloudPage, noteDevicePage, ownsOffFileData, safeGetItem, safeRemoveItem, safeSetItem, type LogOffId } from '../lib/storage';
 import { clearedEraseFor, noteClearedFor } from '../lib/cleared-erase';
 import { Sentry } from '../lib/sentry';
+import { trackProductEvent } from '../lib/server-api';
+import type { SaveRetry } from '@roadmap/health-core/save-retry-words';
 import { failureTags, recordFailure, storageCauseClass, storageFailureClass } from '../lib/error-diagnostics';
 
 /**
@@ -143,6 +145,7 @@ export function webRecordHost(store: StorageAdapter): RecordHost {
     },
     remoteChanged: (change: RemoteChange) => notify(REMOTE_CHANGED_EVENT, change),
     saveStatusChanged: (status: SaveStatus) => notify(SAVE_STATUS_EVENT, status),
+    saveRetried: (retry: SaveRetry) => trackProductEvent('save_retry', { trigger: retry.trigger, outcome: retry.outcome }), // US-09 AC30
     failureCause: storageFailureClass,
     report(error: unknown, at: { op: RecordFailureOp; cause?: string; repeat: boolean }) {
       // The erase's best-effort steps: an orphaned server row or chat history

@@ -398,12 +398,16 @@ describe('US-63 C3/R7: the cap holds across overlapping runs', () => {
     writeFileSync(lock, 'crashed-owner');
     const old = new Date(Date.now() - 3_600_000);
     utimesSync(lock, old, old);
-    const r = await go(['post', 'hi']);
+    const sleep = vi.fn(async (_ms: number) => {});
+    const r = await go(['post', 'hi'], { sleep });
     expect(r.code).toBe(1);
+    // The real wait, injected instant here: 100 retries, 50 ms apart.
+    expect(sleep).toHaveBeenCalledTimes(100);
+    expect(sleep.mock.calls.every(([ms]) => ms === 50)).toBe(true);
     expect(r.stderr).toContain('delete it and try again');
     expect(fetchMock).not.toHaveBeenCalled();
     expect(readFileSync(lock, 'utf8')).toBe('crashed-owner');
-  }, 15_000);
+  });
   it('US-63 X4: separate processes sharing the lock lose no update and leave no lock', async () => {
     const lock = join(home, '.health-roadmap', 'agent-channel-state.json.lock');
     mkdirSync(join(home, '.health-roadmap'), { recursive: true });

@@ -15,10 +15,19 @@
  * holds no connection, so a hidden page keeps it and reads nothing; its
  * return re-reads only when the stored revision moved since this page last
  * read or wrote it, so a lone page never re-reads at all.
+ *
+ * The same moments retry a failed cloud save (US-09 AC30): the page showing
+ * again and the device coming back online, at most once a minute per page.
+ * The minute poll never retries. The device tier never does: a full or
+ * blocked store does not heal when the network comes back.
  */
 import type { RecordHost } from './record-host';
 import { REMOTE_POLL_MS, REMOTE_THROTTLE_MS, type RecordSession } from './record-session';
 import { ROADMAP_FILE_NAME } from './adapter';
+import type { SaveRetry } from './save-retry-words';
+
+/** At most one retry of a failed save per this long, per page (US-09 AC30). */
+export const SAVE_RETRY_MS = 60_000;
 
 export interface LiveRefreshOptions {
   /** Re-read the record and merge it in (the store's refreshFromRemote). */
@@ -39,6 +48,8 @@ export class LiveRefresh {
   private hiddenAt = 0;
   private poll: unknown = null;
   private running = false;
+  /** When this page's last retry started a pass, on the host clock. */
+  private lastRetry = -Infinity;
 
   constructor(
     private readonly session: RecordSession,
@@ -63,8 +74,23 @@ export class LiveRefresh {
     this.stopWatch = null;
   }
 
-  /** The page shows again, or is still showing (a poll tick, a focus). */
+  /** The page shows again, or is still showing (a focus): retry a failed
+   *  save, then catch up. A retry that starts a pass makes the re-read stand
+   *  aside (writePending). */
   visible(): void {
+    this.retryIfDue('focus');
+    this.catchUp();
+  }
+
+  /** The device is back online: retry a failed save, whatever the page's
+   *  visibility; catch up as a return does only while it shows. */
+  online(): void {
+    this.retryIfDue('online');
+    if (this.opts.isVisible()) this.catchUp();
+  }
+
+  /** Catch up on what the page missed (a return, or a poll tick). */
+  private catchUp(): void {
     this.startWatch();
     const sync = this.host.sync;
     if (sync && sync.revision(ROADMAP_FILE_NAME) === this.session.seenRevision) return;
@@ -100,6 +126,17 @@ export class LiveRefresh {
     }, wait);
   }
 
+  /** Retry a failed save, on the cloud tier, unless a retry started a pass
+   *  in the last minute. Only one that started a pass counts: a session with
+   *  nothing owed answers null and holds off nothing. Reports how it ended. */
+  private retryIfDue(trigger: SaveRetry['trigger']): void {
+    if (this.host.tier !== 'cloud' || this.host.clock.now() - this.lastRetry < SAVE_RETRY_MS) return;
+    const run = this.session.retry();
+    if (!run) return;
+    this.lastRetry = this.host.clock.now();
+    void run.then((landed) => this.host.saveRetried?.({ trigger, outcome: landed ? 'landed' : 'failed' })).catch(() => {});
+  }
+
   /** A failed re-read is not the user's problem and not a lost write: the
    *  next trigger tries again, and nothing here is waiting on the answer. */
   private reread(): void {
@@ -121,7 +158,7 @@ export class LiveRefresh {
     this.poll = this.host.timers.set(() => {
       this.poll = null;
       try {
-        if (this.opts.isVisible()) this.visible();
+        if (this.opts.isVisible()) this.catchUp(); // never a retry (US-09 AC30)
         else this.hidden();
       } finally {
         // A tick that throws (a host's revision read, say) must not end the poll.

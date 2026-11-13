@@ -13,7 +13,7 @@ import { UploadError, KEY_ERROR_MESSAGES, BUSY_NOTICE_TEXT, BATCH_THRESHOLD, sho
 import { attachOriginals, synthesizeLabArchiveEntries, connectorDocumentEntries } from '../lib/archive-payloads';
 import { createUploadBundleLoader } from '../lib/upload-bundle';
 import { Sentry } from '../lib/sentry';
-import { recordFailure } from '../lib/error-diagnostics';
+import { recordFailure, WritesStoppedError } from '../lib/error-diagnostics';
 import { SHOPIFY_SURFACE } from '../lib/build-flags';
 import { isDocx } from '../lib/file-kinds';
 import { transition, INITIAL_UPLOAD, NO_OUTCOME, type SaveOutcome, type Progress, type RunCounts } from '../lib/upload-flow-state';
@@ -350,10 +350,11 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
       // rejected write must not release another archive that is still saving.
       // A throw is a programming error, not a store result: report it (tag
       // only — no payload, names or values) and keep the review for a retry.
+      // A log-off refusal keeps the review too, unreported (US-09 AC2c, A19).
       let threw = false;
       const failed = <T,>(branch: string, fallback: T) => (err: unknown) => {
         threw = true;
-        Sentry.captureException(recordFailure(err, 'Upload save failed'), { tags: { area: 'upload-save', branch } });
+        if (!(err instanceof WritesStoppedError)) Sentry.captureException(recordFailure(err, 'Upload save failed'), { tags: { area: 'upload-save', branch } });
         return fallback;
       };
       const [savedValues, savedDocs, savedLabValues] = await Promise.all([
@@ -386,7 +387,7 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
       }
 
       // A re-read that fails, at once or later, is only reported: what saved stays saved.
-      const reportReread = (err: unknown) => { Sentry.captureException(recordFailure(err, 'Upload save failed'), { tags: { area: 'upload-save', branch: 'reread' } }); };
+      const reportReread = (err: unknown) => { if (!(err instanceof WritesStoppedError)) Sentry.captureException(recordFailure(err, 'Upload save failed'), { tags: { area: 'upload-save', branch: 'reread' } }); };
       const reread = () => { try { return Promise.resolve(onComplete()).catch(reportReread); } catch (err) { reportReread(err); return Promise.resolve(); } };
       if (!saveFailed) {
         dispatch({ type: 'saved', attempt });

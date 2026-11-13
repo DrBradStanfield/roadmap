@@ -1,6 +1,6 @@
 import { useCallback, useRef } from 'react';
 import { labEgfrOf } from '@roadmap/health-core/plan';
-import { newestUsablePsa } from '@roadmap/health-core/measurement-history';
+import { planPsa } from '@roadmap/health-core/measurement-history';
 import type { LatestMeasurementsResult } from '../lib/api-types';
 import { loadAllHistory, loadAllHistorySync, loadLabValues, loadLatestMeasurements } from '../lib/roadmap-data';
 import { loadFromLocalStorage, patchMirror, saveToLocalStorage } from '../lib/storage';
@@ -9,10 +9,11 @@ import type { useRecordState } from './useRecordState';
 type RecordSetters = Pick<ReturnType<typeof useRecordState>, 'setPreviousMeasurements' | 'setHistory' | 'setLabValueHistory'>;
 
 /** The chat mirror (US-15 AC10): the record as read, for the storefront chat
- *  embed and the bubble, with the lab eGFR and the newest usable PSA. */
+ *  embed and the bubble, with the lab eGFR and the newest usable PSA, its
+ *  `raisedBefore` worked out here from the full record (US-06 AC21 item 6). */
 export async function mirrorRecord(result: LatestMeasurementsResult): Promise<void> {
   saveToLocalStorage(result.inputs, result.previousMeasurements, result.medications, result.screenings, undefined,
-    labEgfrOf(await loadLabValues() ?? []), newestUsablePsa(loadAllHistorySync(), new Date()));
+    labEgfrOf(await loadLabValues() ?? []), planPsa(loadAllHistorySync(), new Date()));
 }
 
 /**
