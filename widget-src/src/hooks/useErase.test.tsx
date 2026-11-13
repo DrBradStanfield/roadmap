@@ -29,6 +29,7 @@ import { useErase } from './useErase';
 import { ERASE_DONE, ERASE_FAILED, WRITE_REFUSED } from '../lib/erase-copy';
 import { trackProductEvent } from '../lib/server-api';
 import { Sentry } from '../lib/sentry';
+import { WritesStoppedError } from '../lib/error-diagnostics';
 
 const id = (epoch: number) => JSON.stringify([epoch, `2026-11-0${epoch}T10:00:00.000Z`]);
 
@@ -284,6 +285,20 @@ describe('US-16 AC2a: this tab\'s erase', () => {
     expect(Sentry.captureException).toHaveBeenCalledTimes(1);
     expect(Sentry.captureException).toHaveBeenCalledWith(new Error('Erase failed'), { tags: { area: 'erase', op: 'delete-all' } });
     expect(vi.mocked(Sentry.captureException).mock.calls[0][0]).not.toBe(thrown); // a fresh error: no provider text
+    expect(result.current.erasing).toBe(false);
+    expect(doors.forget).not.toHaveBeenCalled();
+    expect(alerts).toEqual([ERASE_FAILED]);
+  });
+
+  it.each([
+    { name: 'a log-off refusal', error: () => new WritesStoppedError(), reports: 0 },
+    { name: 'any other throw', error: () => new Error('network'), reports: 1 },
+  ])('US-09 AC2c, lead A19: an erase whose write throws $name reports $reports time(s) and says the same', async ({ error, reports }) => {
+    const { doors, result } = setup();
+    store.next = () => Promise.reject(error());
+    vi.mocked(Sentry.captureException).mockClear();
+    await act(async () => { expect(await result.current.eraseAll()).toBe(false); });
+    expect(Sentry.captureException).toHaveBeenCalledTimes(reports);
     expect(result.current.erasing).toBe(false);
     expect(doors.forget).not.toHaveBeenCalled();
     expect(alerts).toEqual([ERASE_FAILED]);

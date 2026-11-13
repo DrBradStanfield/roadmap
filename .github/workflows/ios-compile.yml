@@ -1,0 +1,39 @@
+# iOS compile: compile-only and advisory. It builds the app and its test targets for the simulator; it runs no
+# tests, builds no engine bundle and signs nothing. Not a required check, and listed as advisory in
+# tools/merge-gated.sh: that list matches the job's check name, so keep the job name `ios-compile`. Brad approved
+# it 2026-11-13 (warns, does not block). Fallback if the xcode-27 label will not start: runs-on macos-26 with
+# Xcode 26.6.
+name: iOS compile
+
+on:
+  pull_request:
+    paths:
+      - 'ios/**'
+      - '.github/workflows/ios-compile.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ios-compile-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  ios-compile:
+    name: ios-compile
+    runs-on: xcode-27
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - run: sudo xcode-select -s /Applications/Xcode_27.2.app
+      - run: xcodebuild -version
+      - working-directory: ios
+        run: >-
+          xcodebuild build-for-testing
+          -project HealthRoadmap.xcodeproj
+          -scheme HealthRoadmap
+          -destination 'generic/platform=iOS Simulator'
+          CODE_SIGNING_ALLOWED=NO

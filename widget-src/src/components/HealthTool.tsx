@@ -12,7 +12,7 @@ import { chatContextOf, type ChatContextPayload } from '@roadmap/health-core/cha
 import { statTiles } from '@roadmap/health-core/stat-tiles';
 import { medicationForm, screeningForm } from '@roadmap/health-core/input-form';
 import { localDay, dayOf } from '@roadmap/health-core/merge';
-import { newestUsablePsa } from '@roadmap/health-core/measurement-history';
+import { planPsa } from '@roadmap/health-core/measurement-history';
 import type { BloodTestPrefillFn } from './BloodTestTimeline';
 import type { MoveTestApi } from './MoveTestPanel';
 import type { VitalsPrefillFn } from './StartingInfoVitals';
@@ -30,6 +30,8 @@ import { listConversations } from '../lib/chat-api';
 import { UploadModal } from './UploadModal';
 import { useIsMobile, useIsWideDesktop } from '../lib/useIsMobile';
 import { BottomTabBar, panelDomId, tabDomId, type TabId } from './BottomTabBar';
+import { activeCellIn } from './NumericInputCell';
+import { inPsaRow } from './ScreeningQuestions';
 import {
   saveToLocalStorage,
   clearLocalStorage,
@@ -130,6 +132,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   const [chatPrefetch, setChatPrefetch] = useState<ChatPrefetch | null>(null);
 
   const rootRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null), readyTitleRef = useRef<HTMLHeadingElement>(null); // My health's, for the landings' focus
   // The unit system and each field's own unit (hooks/useUnits, US-05); the record's, held while a field has the focus (hooks/units-machine).
   const { unitSystem, unitOverrides, startUnitOf, metricUnitOverrides, handleToggleFieldUnit, onSwitch, record: units } = useUnits(setInputs, rootRef);
 
@@ -245,8 +248,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   } = onboarding;
   const dismissPlanReady = useCallback(() => {
     leavePlanReady();
-    // The focus stays on the page, not lost with the button.
-    rootRef.current?.querySelector<HTMLElement>('.mh-title')?.focus({ preventScroll: true });
+    titleRef.current?.focus({ preventScroll: true }); // the focus stays on the page, not lost with the button
   }, [leavePlanReady]);
   // An erase closes the floating chat: its conversation belongs to the old record.
   useEffect(() => { setFloatingChatOpen(false); }, [epoch]);
@@ -315,7 +317,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   useEffect(() => {
     const stage = (closing: boolean) => {
       const focused = document.activeElement;
-      if (closing && focused instanceof HTMLElement && focused.closest('.psa-inline-row')) focused.blur();
+      if (closing && focused instanceof HTMLElement && inPsaRow(focused)) focused.blur();
       profileTimer.flush();
       stagePendingSave();
       // The waiting medication, screening and supplement saves, each with the
@@ -377,7 +379,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
       unitSystem,
       medicationsToInputs(medications),
       // US-06 AC14: the prostate cards read the newest usable saved PSA, as computePlan does.
-      withPsaMeasurement(screeningsToInputs(screenings), newestUsablePsa(history, new Date())),
+      withPsaMeasurement(screeningsToInputs(screenings), planPsa(history, new Date())),
       metricUnitOverrides,
     );
     // The form follows the plan: its recommendations, targets and cascade
@@ -412,7 +414,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   const isWideDesktop = useIsWideDesktop(1200);
   const floatingChat = !isMobile && !isWideDesktop && reached === 4;
   // The phone's three tabs, each keeping its own scroll (hooks/useTabs, US-20 AC6).
-  const { activeTab, selectTab, tabIds } = useTabs(rootRef);
+  const { activeTab, selectTab, tabIds, chatCardRef, tabBarRef } = useTabs(rootRef);
 
   // US-62 AC4: the redesign's denominator, once per tab, with the layout chosen
   // at mount (a later resize does not change it). Shopify only, like every event.
@@ -461,8 +463,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   const [revealCell, setRevealCell] = useState<{ field: string; grid: boolean } | null>(null);
   useEffect(() => {
     if (!revealCell || !isMobileRef.current) return;
-    const panel = rootRef.current?.querySelector('.health-input-panel');
-    const cell = panel?.querySelector<HTMLElement>('.bt-input-active') ?? document.getElementById(revealCell.field);
+    const cell = activeCellIn(document.getElementById(panelDomId(tabIds, 'health'))) ?? document.getElementById(revealCell.field);
     cell?.scrollIntoView({ block: 'center' });
     cell?.focus({ preventScroll: true });
   }, [revealCell]);
@@ -543,9 +544,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   const landOnMyHealth = useCallback(() => {
     selectTab('health');
     requestAnimationFrame(() => {
-      const ready = rootRef.current?.querySelector<HTMLElement>('.mh-ready-title');
-      if (ready) ready.focus({ preventScroll: true });
-      else revealAndFocus(rootRef.current?.querySelector<HTMLElement>('.mh-title'), 'start', false);
+      if (readyTitleRef.current) readyTitleRef.current.focus({ preventScroll: true });
+      else revealAndFocus(titleRef.current, 'start', false);
     });
   }, [selectTab]);
 
@@ -596,7 +596,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   const closeSettings = useCallback(() => {
     setSettingsOpen(false);
     if (isMobileRef.current) selectTab('health');
-    requestAnimationFrame(() => (isMobileRef.current ? rootRef.current?.querySelector<HTMLElement>('.mh-title') : personRef.current)?.focus());
+    requestAnimationFrame(() => (isMobileRef.current ? titleRef.current : personRef.current)?.focus());
   }, [selectTab]);
   // Back closes Settings, as it closes a value page (US-62 AC24).
   useEffect(() => {
@@ -612,7 +612,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   const storageCard = syncControl?.({ hasData: plan.planned || (isMobile && settingsShown), attention: plan.attention });
 
   const myHealthProps = {
-    plan, tiles, series, egfrCurrent, sectionsRef, setShowUploadModal,
+    plan, tiles, series, egfrCurrent, sectionsRef, setShowUploadModal, titleRef, readyTitleRef,
     // On My health's title line on desktop; on a phone, on the Account tab's (US-62 AC34).
     storageBar,
     personButton,
@@ -711,7 +711,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   const healthForm = <fieldset className="health-form-lock" disabled={isDeleting}><InputPanel {...inputPanelProps}>{myHealth}</InputPanel></fieldset>;
   const chat = (
     <div className="health-tool-chat">
-      <ChatEmbed isLoggedIn={chatSectionProps.isLoggedIn} guestInputs={chatSectionProps.guestInputs} muted={formStage < 4} onProposeEdit={chatEditTarget}/>
+      <ChatEmbed isLoggedIn={chatSectionProps.isLoggedIn} guestInputs={chatSectionProps.guestInputs} muted={formStage < 4} onProposeEdit={chatEditTarget} cardRef={chatCardRef}/>
     </div>
   );
   return (
@@ -723,7 +723,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
           {/* US-01 AC5: a refused save is said on the open tab, here too (US-62 AC34). */}
           {panel('chat', <>{saveAlert}{chat}</>)}
           {panel('account', <fieldset className="health-form-lock mh-account" disabled={isDeleting} ref={setAccountHost}/>)}
-          <BottomTabBar activeTab={activeTab} onTabChange={selectTab} idPrefix={tabIds} />
+          <BottomTabBar activeTab={activeTab} onTabChange={selectTab} idPrefix={tabIds} barRef={tabBarRef} />
         </>
       ) : (
         <div className="health-tool-content">

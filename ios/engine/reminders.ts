@@ -16,6 +16,7 @@ export const PHONE_REMINDER_LIMIT = 64;
 const FOLLOWUP_LABEL: Record<FollowupKind, (name: string) => string> = {
   organize: (name) => `Follow-up to organize: ${name}`,
   checkin: (name) => `Follow-up check-in: ${name}`,
+  repeat: (name) => name, // "Repeat PSA (your last result)" (US-06 AC21, Brad 2026-11-12)
 };
 
 /** The hour a notification shows on its day: ReminderScheduler.hour in Swift (a test pins the two). */
@@ -44,7 +45,7 @@ export interface PhoneReminders {
   /** The soonest notifications, at most `limit` (iOS's 64 by default). */
   notifications: PhoneNotification[];
   /** Only when the app sent first-seen days: the day each current follow-up item
-   *  (`<category>:<organize|checkin>`) was first seen, for the app to keep and send
+   *  and due date (`<category>:<organize|checkin|repeat>:<due day>`) was first seen, for the app to keep and send
    *  back. An item that is no longer a follow-up is left out, so its entry clears. */
   firstSeen?: Record<string, string>;
 }
@@ -71,12 +72,15 @@ export function phoneReminders(
   // wait up to 90 days. With the app's first-seen days it fires the first morning
   // the phone sees it (this one, or tomorrow's after the hour), then every step
   // from there. A lost entry fires once more and is kept from then on; a kept day
-  // after this start (a clock that was set ahead) heals to it.
+  // after this start (a clock that was set ahead) heals to it. The key holds the due
+  // date, so a moved due date is a new item (lead M19): kept by item alone, an old
+  // first-seen day outlived the move, and a new due date already past waited up to
+  // a cooldown. A key from before (no due date) reads as unseen and fires once.
   const firstSeen: Record<string, string> = {};
   const startOf = (item: ReminderScheduleItem): string => {
     const followup = followups[item.category];
     if (!followup || !seenBefore) return item.dueAt;
-    const key = `${item.category}:${followup.kind}`;
+    const key = `${item.category}:${followup.kind}:${item.dueAt}`;
     const slot = now.getHours() < NOTIFY_HOUR ? today : addDays(today, 1);
     const kept = seenBefore[key];
     const seen = firstSeen[key] = kept && kept <= slot ? kept : slot;

@@ -1,0 +1,270 @@
+// The contract between the native app and its JavaScript engine (I-2, ios/architecture.md D3,
+// D14): the one source. contract-json.ts generates bridge-contract.json (hashed: its first 16
+// SHA-256 hex digits are the bridge id) and bridge-optional.json (additions that keep the id)
+// from it, byte for byte; contract.test.ts fails when either file drifts from it. Edit here,
+// then regenerate: npx tsx ios/scripts/gen-contract.ts
+//
+// Per door: how it answers (kind), its arguments in order with their wire types, and the
+// prose the app reads (returns). Results are opaque for now (step 1). A door's optionalArgs and
+// optionalReturns are bridge-optional.json's both-way additions; optionalAt is the door's place
+// in that file. An optionalDoor is exported but left out of the hashed file.
+import * as z from '../../packages/health-core/src/zod';
+
+/** How a door answers: JSON text now, a Promise, or a settle handle read with settledJson. */
+export type DoorKind = 'sync' | 'promise' | 'settle';
+/** One positional argument: its name in entry.ts and its wire type. */
+export type Arg = readonly [name: string, type: z.ZodType];
+
+export interface Door {
+  kind: DoorKind;
+  args: readonly Arg[];
+  /** What the door answers, in words: hashed for a contract door. */
+  returns: string;
+  /** The answer's wire type; left out (opaque) until the door's answer is typed. */
+  result?: z.ZodType;
+  /** A whole door outside the hashed file (bridge-optional.json optionalDoors). */
+  optionalDoor?: true;
+  /** The door's place among bridge-optional.json's doors, when it has additions there. */
+  optionalAt?: number;
+  optionalArgs?: readonly Arg[];
+  optionalReturns?: string;
+}
+
+// Wire types. Positional values JavaScriptCore hands the engine.
+const text = z.string();
+const nullableText = z.string().nullable();
+const number = z.number();
+const flag = z.boolean();
+const provider = z.enum(['dropbox', 'google-drive']);
+const nullableBytes = z.custom<ArrayBuffer>((v) => v instanceof ArrayBuffer).nullable();
+const callback = z.custom<(...args: never[]) => unknown>((v) => typeof v === 'function');
+
+export const CONTRACT_ABOUT = "The contract between the native app and its JavaScript engine (ios/architecture.md D3, US-25 AC18). The app's bridge id is the first 16 hex digits of this file's SHA-256 (EngineRelease.bridge in Swift); a downloaded engine is accepted only for the same id. Any change here is a new bridge, so an engine that needs it waits for an app update. bridge.test.ts and EngineBridgeContractTests.swift fail if either side drifts from this file.";
+
+export const OPTIONAL_ABOUT = "Additions to bridge-contract.json that work both ways, so they do not feed its hash and keep the bridge id (ios/architecture.md D3, D14). Three kinds only. An optional trailing argument: an app built before it sends one fewer, and the engine must answer as it did before when the argument is undefined. An optional return field: an engine built before it leaves it out, and the app must read its absence as none; an app built before it ignores a field it does not know. An optional door (optionalDoors, 2026-11-05, orchestrator decision): a whole new door entry.ts exports but bridge-contract.json leaves out, so adding it keeps the bridge id. An old app never calls a door it does not know. A new app normally runs an engine at least as new as its bundled one (the version must beat the bundled engine, anti-rollback), so the door is normally there, but safety does not rest on that: Swift calls an optional door only through HealthEngine.optionalCall, which reads a missing door as the feature being unavailable, never a crash. That nil is the insurance, not the expected path. A door's arguments and answer are frozen once added (bridge.test.ts snapshots them): append-only, a field may be added, never renamed, retyped or dropped. Anything else, or anything an older app cannot do without, belongs in bridge-contract.json and is a new bridge. bridge.test.ts and EngineBridgeContractTests.swift count each door's arity as its contract args plus these; bridge.test.ts also checks each optional argument trails the contract ones by name and that a call with only the contract args answers as one with them undefined. An optional return field's absence is tested per feature (US-61: USProductsTests). A real bridge change never goes here.";
+
+/** Host functions the engine calls (shim.ts Natives, cloud-adapters.ts CloudNatives). */
+export const NATIVES: Record<string, string> = {
+  http: "(method, url, headersJson, body ArrayBuffer|null, done(status, statusText, headersJson, body ArrayBuffer|null, error|null)) -> id. Swift sends only the allow-listed provider calls; an Authorization header must be 'Bearer native-token:<provider>', which Swift swaps for the real token.",
+  cancelHttp: "(id) -> void",
+  setTimer: "(ms, run) -> id",
+  clearTimer: "(id) -> void",
+  utf8Encode: "(text) -> ArrayBuffer",
+  utf8Decode: "(ArrayBuffer) -> text",
+  accessToken: "(provider 'dropbox'|'google-drive', force, done(token|null, error|null, signIn)). The token is the sentinel 'native-token:<provider>', never the real one.",
+  phoneRead: "() -> '{\"text\": string|null}' or '{\"error\": string}'",
+  phoneWrite: "(text) -> '' when written, else the error",
+  phoneRemove: "() -> void",
+  pending: "('get'|'set'|'clear-if:<generation>') -> the marker's generation after (0: not set); 'set' raises it, 'clear-if' clears only that generation",
+  notify: "(event, payload, session) -> void",
+};
+
+/** What notify sends. */
+export const EVENTS: readonly string[] = ['changed', 'failed', 'saved', 'saving', 'synced'];
+
+/** Values the engine exports beside its doors. */
+export const VALUES: Record<string, string> = {
+  engineVersion: "number, UTC yyyymmddHHMM",
+  schemaVersion: "number, the record schema the engine writes",
+};
+
+/** Every door, contract doors in the hashed file's order, then the optional doors. */
+export const DOORS = {
+  applyEditJson: {
+    kind: 'sync',
+    args: [['recordJson', text], ['editJson', text], ['nowIso', text], ['deviceId', text], ['unitsJson', text]],
+    returns: "{ok:true, record} or {ok:false, reason, message}; the edit kinds include healthRecords {kind:'healthRecords', records:[{sourceId, resourceType, fhirVersion, json}]} (US-72), whose answer adds healthRecords {added, corrected, withdrawn, alreadyInRecord, notRead}; an engine without that kind must not reach an app that sends it",
+  },
+  chatContextJson: {
+    kind: 'sync',
+    args: [['recordJson', text], ['nowIso', text], ['deviceId', text]],
+    returns: "chat context JSON; the app forwards every top-level key it holds, labEgfrOutdated included (US-07 AC8: true when a newer creatinine outdates the lab eGFR, so the server's chat plan withholds potassium advice as the engine does); and limits (US-12 AC20: a lab result printed as a limit, by input field, {comparator, bound, graded}; the field itself never holds the plan's representative, and the server grades the limit again); an app whose allow-list lacks a key the engine produces must not run this engine",
+  },
+  chatEditsJson: {
+    kind: 'sync',
+    args: [['recordJson', text], ['editsJson', text], ['nowIso', text], ['deviceId', text], ['today', text], ['unitsJson', text]],
+    returns: "{medications: {lines: [{text}], undo: Edit} | null, review: {lines: [{text, replaces}], refusal} | null} JSON: what the chat's proposedEdits would do, in the phone's units (US-67 AC3); apply with the chatEdits and chatUndo edits through applyEditJson or cloudEdit",
+    optionalAt: 2,
+    optionalReturns: "review.seen: opaque JSON, what the record held for each review line (US-67 AC3). The app passes it back as `seen` on the review part's chatEdits edit, and the engine refuses that Save when the record has changed since. An engine before it sends none, and the app sends no seen; an edit without seen saves as before. Also medications.refusal (string or null; with a refusal, lines is [] and undo is null): the reply's medication change could not be read, so nothing is saved and the app says so. An engine before it sends medications null instead, and an app before it ignores the field.",
+  },
+  chatDeleteJson: {
+    kind: 'settle',
+    args: [['historyText', nullableText], ['conversationId', text], ['nowIso', text], ['deviceId', text]],
+    returns: "settle handle; read with settledJson",
+  },
+  chatListJson: {
+    kind: 'settle',
+    args: [['historyText', nullableText], ['nowIso', text], ['deviceId', text]],
+    returns: "conversation list JSON",
+  },
+  chatMessagesJson: {
+    kind: 'settle',
+    args: [['historyText', nullableText], ['conversationId', text], ['nowIso', text], ['deviceId', text]],
+    returns: "messages JSON",
+  },
+  chatRecordExchangeJson: {
+    kind: 'settle',
+    args: [['historyText', nullableText], ['exchangeJson', text], ['nowIso', text], ['deviceId', text]],
+    returns: "settle handle; read with settledJson",
+  },
+  cloudClose: {
+    kind: 'promise',
+    args: [['copyDown', flag]],
+    returns: "Promise of JSON",
+  },
+  cloudEdit: {
+    kind: 'sync',
+    args: [['editJson', text], ['erase', text], ['shownUnits', text], ['nowIso', text], ['unitsJson', text], ['shownLpaUnit', text]],
+    returns: "JSON outcome; for a healthRecords edit it adds healthRecords, as applyEditJson's",
+  },
+  cloudErase: {
+    kind: 'promise',
+    args: [['historyText', nullableText], ['nowIso', text], ['keepChat', callback]],
+    returns: "Promise of JSON",
+  },
+  cloudFlush: {
+    kind: 'promise',
+    args: [],
+    returns: "Promise of JSON",
+  },
+  cloudHidden: {
+    kind: 'sync',
+    args: [],
+    returns: "JSON",
+  },
+  cloudLabImport: {
+    kind: 'sync',
+    args: [['extractionJson', text], ['refsJson', text], ['reportDay', text], ['erase', text], ['shownUnits', text], ['nowIso', text], ['unitsJson', text]],
+    returns: "cloudEdit's JSON outcome with the labSaveSummary taken in the same step (US-52 AC8)",
+  },
+  cloudOpen: {
+    kind: 'promise',
+    args: [['provider', provider], ['deviceId', text], ['firstConnect', flag], ['mergePhone', flag]],
+    returns: "Promise of JSON",
+  },
+  cloudRefresh: {
+    kind: 'promise',
+    args: [],
+    returns: "Promise of JSON",
+  },
+  cloudVisible: {
+    kind: 'sync',
+    args: [],
+    returns: "JSON",
+  },
+  documentSave: {
+    kind: 'promise',
+    args: [['recordJson', text], ['extractionJson', text], ['choiceJson', text], ['original', nullableBytes], ['erase', text], ['nowIso', text], ['deviceId', text]],
+    returns: "Promise of JSON: {ok, record, erase?, saved, unstored, stored} or {ok:false, reason, message}; files one document or a lab report's original through health-core's saveDocuments (US-52 AC13d)",
+  },
+  erasePhoneJson: {
+    kind: 'settle',
+    args: [['recordText', text], ['historyText', nullableText], ['nowIso', text], ['deviceId', text]],
+    returns: "settle handle; read with settledJson",
+  },
+  healthWritesJson: {
+    kind: 'sync',
+    args: [['recordJson', text], ['nowIso', text], ['deviceId', text]],
+    returns: "[HealthWrite] JSON",
+  },
+  historyJson: {
+    kind: 'sync',
+    args: [['recordJson', text], ['metric', text], ['nowIso', text], ['deviceId', text], ['unitsJson', text]],
+    returns: "MetricHistory JSON",
+    optionalAt: 0,
+    optionalArgs: [['series', text]],
+    optionalReturns: "rows[].bound and rows[].note (US-12 AC20): a lab result printed as a limit carries bound, its number in the row's unit, and its value reads \"> 60\"; the chart plots it at bound, hollow and out of the line. note is the plan's word on an active limit the shared rule (row-grade.ts limitUngraded) leaves ungraded, shown in place of \"Used in your plan\"; since US-12 AC21 also on weight, waist and blood pressure rows. An engine before them sends neither, so the app draws every point from value as before; an app before them finds no number in a limit's value, so it leaves that point off the chart and still lists it with its symbol. Also, for series \"lab\" (US-25 AC25): metric is a lab test's series key and the answer is that test's history (labHistory), the same shape; every row carries unit (its own, as displayed) and an exact row number (its value unrounded, for the chart; a limit has bound instead); unitsNote (health-core mixedUnitsNote) is present only for a series reported in more than one unit, so the page draws no chart. An engine before it takes no series and answers a lab key as no core metric (the read fails), so the app shows no history; an app before it sends none. Also, for series \"egfr\" and \"whtr\" (US-73 AC7): the worked-out series of that name, metric unread, in the same shape, one row a day, newest first, each row's id \"<series>:<source row id>\" (read only: a correction by it finds no row) and its number; an egfr row carries source (\"lab\" or \"calculated\"), and the whtr answer carries target (\"Normal <0.5\", health-core WHTR_TARGET). The egfr answer also carries plan {day, source}: the day and source (\"lab\" or \"calculated\") of the eGFR the plan uses now, a lab limit included (no point in the series), left out when the plan has none; an engine before it sends none, and the app draws the series' newest point as before. An engine before them answers these two series as a core metric of that name, an empty or failed history, so the app shows none; an app before them sends none. Also, for blood_pressure, rows[].systolicLimit and rows[].diastolicLimit (US-12 AC20a, #922): a half printed as a limit, as read (\"< 125\"), absent for an exact half; the chart draws that half hollow and out of its line. An engine before them sends neither, so the app draws every half as an exact point; an app before them ignores both.",
+  },
+  labReviewJson: {
+    kind: 'sync',
+    args: [['extractionJson', text], ['nowIso', text], ['recordJson', text], ['sourceFileName', text], ['contentHash', text], ['deviceId', text]],
+    returns: "lab review JSON, with the document card (US-52 AC13d)",
+  },
+  labSaveSummaryJson: {
+    kind: 'sync',
+    args: [['recordJson', text], ['extractionJson', text], ['refsJson', text], ['reportDay', text], ['nowIso', text], ['deviceId', text]],
+    returns: "summary JSON",
+  },
+  mergeJson: {
+    kind: 'sync',
+    args: [['localJson', text], ['remoteJson', text], ['nowIso', text], ['deviceId', text]],
+    returns: "merged record JSON",
+  },
+  newRecordJson: {
+    kind: 'sync',
+    args: [['nowIso', text], ['deviceId', text], ['locale', text], ['timeZone', text]],
+    returns: "record JSON",
+  },
+  numberJson: {
+    kind: 'sync',
+    args: [['text', text]],
+    returns: "number or null JSON",
+  },
+  convertJson: {
+    kind: 'sync',
+    args: [['metric', text], ['value', number], ['from', text], ['to', text]],
+    returns: "{value, text, feetInches|null} JSON: a typed value in the other units by health-core's factors, for onboarding's entry-only unit switches (US-54 AC6)",
+  },
+  planJson: {
+    kind: 'sync',
+    args: [['recordJson', text], ['nowIso', text], ['deviceId', text], ['unitsJson', text]],
+    returns: "Plan JSON",
+  },
+  remindersJson: {
+    kind: 'sync',
+    args: [['recordJson', text], ['nowIso', text], ['deviceId', text]],
+    returns: "PhoneReminders JSON",
+    optionalAt: 3,
+    optionalArgs: [['firstSeenJson', text]],
+    optionalReturns: "firstSeen (US-17 AC15): the day each follow-up reminder was first seen on this phone, keyed <category>:<organize|checkin|repeat>:<due day>, so a moved due date starts a new reminder, returned only when the app sent firstSeenJson; the app keeps it on the phone and sends it back, so a follow-up fires the first morning it is seen and then every 90 days from that day. An app before it sends none and gets none, and its follow-ups repeat from the due day as before; an engine before it ignores the argument and sends no firstSeen, and the app leaves what it keeps unchanged.",
+  },
+  screenJson: {
+    kind: 'sync',
+    args: [['recordJson', text], ['nowIso', text], ['deviceId', text], ['unitsJson', text]],
+    returns: "{myData: MyData, plan: {sections: [PlanSection], tiles: [StatTile], ms} or {error, planError}} JSON from one read and one computePlan: My data and the Plan tab's layout and summary tiles, the web's Quick Stats (US-25 AC2, AC22), each tile with its required `about` line (US-57 AC5); tiles [] when they cannot be drawn; myData.vo2Bands is the VO2 max bands row {sex, fromAge, toAge, p20, p50, p80} or null (US-56 AC8), where p20 is the Low line: FRIEND's P20, or from age 60 Apple's Low Cardio Fitness alert line, which can exceed p50 (men 80 to 89), so an app that assumes p20 < p50 must not receive it; ms the whole milliseconds from computePlan through the tiles and the layout; planError true for health-core's PlanError; throws when My data cannot be drawn",
+    optionalAt: 1,
+    optionalArgs: [['isUS', flag]],
+    optionalReturns: "plan.usProducts: us-products.ts's usProductSections, the [PlanSection] ready to draw, for isUS true (the App Store storefront USA) and a known adult: on the Supplements section each product card's suggestion carries usProduct {product, name, line, url} and its US description and references, and the section carries ownershipLine. Left out when no block shows (US-61). An app before it sends no isUS, so it gets none; an engine before it sends no usProducts, so the app draws the plain sections. Its first shape (2026-10-31, {blocks, ownershipLine}) was read by no shipped app, so the change is safe for builds 3 and 4. Also myData.vitals[], bloodTests[] and psa rows' target (health-core rowTarget(...).bare, or null) and previous (the newest earlier day's value in the row's units, or null), US-62 AC8/AC9: an engine before them sends neither, and the app draws the row with its date alone and no bracketed value; an app before them ignores both. Also every such row's status (health-core row-grade.ts valueStatus or pressureStatus: \"ok\", \"warn\", \"bad\" or null) and gradeWords (gradeWords: the words a screen reader says after an off-target value, or null), US-62 AC8 / US-25 AC17, and myData.labTests, the lab tests beyond the core ones as rows of the same shape (lab-series.ts groupLabValues, the web's MyDataRows.tsx labRows): an engine before them sends none, and the app draws every value plain, speaks no grade and lists no lab test row; an app before them ignores all three. Also every such row's note (US-12 AC21): \"Printed as a limit, so the plan cannot grade it against its cutoff.\" for a latest value printed as a limit the rule leaves ungraded, else null, which the app says where the grade would be; an engine before it sends none, and the app says nothing there; an app before it ignores it. Also myData.labTests rows' series: \"lab\" (US-25 AC25): the app opens, reads and adds to a lab test by it, never by name, so a lab test named like a core metric keeps its own page; an engine before it sends no labTests at all. Also movedRecord (US-66 AC14): the record as text when reading recordJson moved its blood tests into one table; the app opening the phone's file writes it there once. An engine before it sends none, so the file stays in the old shape until the next edit, as before; an app before it ignores it. Also plan.topics (US-73 AC3): health-core topicSections over usProducts when it shows, else sections, placed against myData's medication and screening questions: {sections: [{topic, title, cards, ownershipLine?}], medicines: [{key, suggestions}], screenings: [{group, suggestions}]}; every suggestion is in a card or a row, an urgent one in both; topic ids are weight, sleep, fitness, bloodPressure, cholesterol, screening, skin, bloodTests, supplements and other, and the app draws an id it does not know under Other. Left out when the plan cannot be laid out by topic. An engine before it sends none, and the app draws the sections; an app before it ignores it. Also myData.supplements' active and stopped rows' stoppedDay (US-73 AC10b): a stopped one's latest stop, YYYY-MM-DD on the phone, null when active or no stop is recorded; the app says \"Stopped <day>\" on a stopped row. An engine before it sends none, and the app says \"Stopped\" alone; an app before it ignores it. Also myData.documents (US-73 AC12, documents.ts documentShelf): {scans, others}, each [{id, title, typeLabel, day (YYYY-MM-DD or null), content (the extracted markdown), sourceFileName (or null), original ({name, mimeType}, null for a text-only row)}], newest first and an undated one last; live rows only and never a lab report's archive row, as the web's Documents list. An engine before it sends none, and the app lists no documents; an app before it ignores it.",
+  },
+  sectionsJson: {
+    kind: 'sync',
+    args: [['planJson', text]],
+    returns: "[PlanSection] JSON",
+  },
+  fileNamesJson: {
+    kind: 'sync',
+    args: [['filesJson', text]],
+    returns: "JSON array: each file's sourceFileName by health-core's rules (zipMemberName for {zip, path}, fileNameLine and the 255 cap for {name}), one call per read (US-52 AC13d)",
+  },
+  settledJson: {
+    kind: 'sync',
+    args: [],
+    returns: "the last settled async door's answer",
+  },
+  labSearchJson: {
+    kind: 'sync',
+    optionalDoor: true,
+    args: [['text', text]],
+    returns: "US-73 AC8: the core and catalogue blood tests a typed name finds, best first, as JSON [{name, key, kind (\"core\" or \"catalogue\"), units (the stored unit first)}] (health-core labSearch); [] for blank text. An engine before it has no such door: the app reads that as no search (optionalCall answers nil), never a crash.",
+  },
+  documentOriginal: {
+    kind: 'promise',
+    optionalDoor: true,
+    args: [['id', text]],
+    returns: "US-73 AC12: a Promise of the listed document's original as an ArrayBuffer, read from the open cloud by the document's id (the record's fileRef, never a path from the app); rejects when no cloud is open, the record names no original for that id, or the cloud cannot give it. Since review R6 of PR 972 the rejection's message is failure JSON, {kind, detail}: kind \"not-open\", \"no-original\", or the cloud's failure as a save classes it (\"sign-in\", \"unreachable\", \"storage-full\", \"too-new\"); an app before it reads any rejection as the original not loading. An engine before it has no such door: the app reads that as no original to open (optionalCall answers nil), never a crash.",
+  },
+  uploadVerdictsJson: {
+    kind: 'sync',
+    optionalDoor: true,
+    args: [['request', text]],
+    returns: "Shared upload PR 3 (US-52 AC7): the upload's verdicts for one pick, by health-core upload-rules (fileVerdict, zipMemberVerdict, UPLOAD_LIMITS.phone), as JSON {limits: {fileBytes, zipBytes, filesPerPick, zipMembers, pdfPages, textPageChars, folderBytes, photoPx}, files: [verdict], zipMembers: [verdict]} for request {files: [{name, bytes}], zipMembers: [path]}, in order; each verdict \"keep\", \"tooLarge\", \"unsupported\" or \"hidden\". An engine before it has no such door: the app reads that as unavailable (optionalCall answers nil) and keeps LabFileReader's Swift rules, which answer the same today (lead U14: delete them once the engine floor guarantees the door).",
+  },
+  cloudOnline: {
+    kind: 'sync',
+    optionalDoor: true,
+    args: [],
+    returns: "US-09 AC30: '{}'. The app calls it when NWPathMonitor reports the network satisfied again: the open cloud session retries a failed save (at most once a minute; this trigger never after a refused sign-in) and catches up as a return does, and that catch-up's re-read still retries a failed save first, a refused sign-in's included (lead A25); nothing when no cloud is open. An engine before it has no such door: optionalCall answers nil and nothing is retried on that trigger, never a crash.",
+  },
+} satisfies Record<string, Door>;
+
+export type DoorName = keyof typeof DOORS;

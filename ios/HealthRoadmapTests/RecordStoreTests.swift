@@ -511,6 +511,63 @@ final class RecordStoreTests: XCTestCase {
         XCTAssertEqual(try storedWeight(store), other == "si" ? 80 : 36.287, accuracy: 0.01)
     }
 
+    /// US-25 AC11g, the phone twin of CloudSyncTests' R1 (I-1 design note, erase-epoch gap): a
+    /// sheet pinned before an erase of the phone's file. Its Screen holds no eraseEpoch and both
+    /// sides' cloud erase are nil, so only a pin that tells the erase apart refuses the old
+    /// sheet's value: Screen carries the eraseEpoch and erase count, checked by Mark.holds.
+    func testASheetOpenedBeforeAPhoneEraseCannotSaveIntoTheErasedRecord_US25_AC11g() async throws {
+        let store = try store()
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 80, day: "2026-10-01")))
+        store.pinScreen() // a sheet opens on the pre-erase record
+        guard case .erased = await store.erasePhone(historyJSON: nil, keepChat: { _, _ in true }) else { return XCTFail("not erased") }
+        let erased = try String(contentsOf: file, encoding: .utf8)
+        guard case .refused = await store.apply(.add(metric: "weight", value: 81, day: "2026-10-02")) else {
+            return XCTFail("the old sheet's value must not land in the erased record")
+        }
+        XCTAssertEqual(try String(contentsOf: file, encoding: .utf8), erased, "nothing written")
+        store.unpinScreen()
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 81, day: "2026-10-02")), "a sheet opened after the erase saves")
+    }
+
+    /// US-25 AC11g, the document path: a lab review pinned before an erase of the phone's file
+    /// files no document text into the erased record. Both cloud erases are nil, so only the
+    /// pin's eraseEpoch and erase count (Mark.holds) tell the erase apart.
+    func testADocumentFromAReviewOpenedBeforeAPhoneEraseIsRefused_US25_AC11g() async throws {
+        let store = try store()
+        store.pinScreen() // the review opens on the pre-erase record
+        guard case .erased = await store.erasePhone(historyJSON: nil, keepChat: { _, _ in true }) else { return XCTFail("not erased") }
+        let erased = try String(contentsOf: file, encoding: .utf8)
+        let letter = ##"{"classification":"clinic_letter","reportDate":null,"values":[],"additionalValues":[],"document":{"classification":"clinic_letter","title":"Cardiology follow-up","documentDate":null,"contentMarkdown":"# Letter","metadata":{}}}"##
+        let choice = DocumentChoice(kind: .document, sourceFileName: "Letter.pdf", title: "Cardiology follow-up", documentDate: nil, mimeType: "application/pdf", contentHash: "")
+        guard case .refused = await store.saveDocument(extractionJSON: letter, choice: choice, original: nil) else {
+            return XCTFail("the old review's document must not land in the erased record")
+        }
+        XCTAssertEqual(try String(contentsOf: file, encoding: .utf8), erased, "nothing written")
+        XCTAssertFalse(store.recordJSON.contains("# Letter"))
+        store.unpinScreen()
+    }
+
+    /// US-25 AC11g, the lab path: a lab review pinned before an erase of the phone's file is
+    /// refused as a whole, with applyInTurn's words, and nothing is written. A behaviour pin:
+    /// applyInTurn already refused the values; the guard now refuses before the summary is read.
+    func testALabImportFromAReviewOpenedBeforeAPhoneEraseIsRefused_US25_AC11g() async throws {
+        let store = try store()
+        store.pinScreen() // the review opens on the pre-erase record
+        guard case .erased = await store.erasePhone(historyJSON: nil, keepChat: { _, _ in true }) else { return XCTFail("not erased") }
+        let erased = try String(contentsOf: file, encoding: .utf8)
+        let extraction = #"""
+        {"classification":"lab_report","reportDate":"2026-10-01",
+         "values":[{"metric":"ldl","valueSI":3.1,"displayValue":3.1,"displayUnit":"mmol/L","displaySystem":"si","confidence":"high"}],
+         "additionalValues":[], "refusedValues":[]}
+        """#
+        guard case .failure(let refusal) = await store.importLabs(extractionJSON: extraction, refs: ["v0"], reportDay: "2026-10-01") else {
+            return XCTFail("the old review's values must not land in the erased record")
+        }
+        XCTAssertEqual(refusal.message, RecordStore.recordChanged)
+        XCTAssertEqual(try String(contentsOf: file, encoding: .utf8), erased, "nothing written")
+        store.unpinScreen()
+    }
+
     func testTheMasterSwitchClearsEveryChoice() async throws {
         let store = try store()
         let (record, other) = otherUnits(store)

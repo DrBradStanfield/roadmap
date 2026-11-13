@@ -21,6 +21,9 @@
 #      SKIPPED (9), and a check named exactly `test` is SUCCESS (10). Every entry counts, even two of one name:
 #      any red one refuses, whichever is newer (re-run the job to replace it). --commit-checks skips this step:
 #      it is for CI started by workflow_dispatch, whose runs do not reach the PR's rollup; step 4 is its gate.
+#      Advisory checks are the exception: an entry named exactly `ios-compile` (iOS compile workflow; Brad
+#      2026-11-13: it warns, it does not block) never refuses. Pending or not green, it gets one stderr note. The
+#      list is a literal in the jq filter below, so nothing at call time can widen it.
 #   6. no Deploy run is unfinished (12). First one snapshot of the newest 100 runs, unfiltered: one call is atomic
 #      for the runs it lists, so no status change hides a run among them. Then, for an unfinished run older than
 #      that, one call per status in the order requested, waiting, pending, queued, in_progress, all twice: forward
@@ -103,14 +106,23 @@ case "$verdict" in
 esac
 
 if [ "$mode" = rollup ]; then
+  # Line 1 is the verdict, from the non-advisory entries only. Any later lines name an advisory check (the literal
+  # list below, exact names) that is pending or not green; they go to stderr and never refuse.
   verdict=$(gh pr view "$pr" --json statusCheckRollup --jq '[.statusCheckRollup[]
-      | {n: (.name // .context), s: (if .__typename == "StatusContext" then (if .state == "PENDING" or .state == "EXPECTED" then "PENDING" else "COMPLETED" end) else .status end),
-         c: (if .__typename == "StatusContext" then .state else .conclusion end)}] as $a
-    | if ($a | length) == 0 then "7 the PR has no checks"
+      | {n: (.name // .context | if type == "string" then gsub("[\n\r]"; " ") else . end), s: (if .__typename == "StatusContext" then (if .state == "PENDING" or .state == "EXPECTED" then "PENDING" else "COMPLETED" end) else .status end),
+         c: (if .__typename == "StatusContext" then .state else .conclusion end)}] as $all
+    | ["ios-compile"] as $adv
+    | [$all[] | select(.n | IN($adv[]) | not)] as $a
+    | (if ($a | length) == 0 then "7 the PR has no checks"
       elif any($a[]; .s != "COMPLETED") then "8 still running: \([$a[] | select(.s != "COMPLETED") | .n] | join(", "))"
       elif any($a[]; .c != "SUCCESS" and .c != "SKIPPED") then "9 not green: \([$a[] | select(.c != "SUCCESS" and .c != "SKIPPED") | "\(.n)=\(.c)"] | join(", "))"
       elif any($a[]; .n == "test" and .c == "SUCCESS") then "ok"
-      else "10 no check named test succeeded" end') || die "gh pr view $pr --json statusCheckRollup failed" 4
+      else "10 no check named test succeeded" end),
+      ($all[] | select(.n | IN($adv[])) | select(.s != "COMPLETED" or (.c != "SUCCESS" and .c != "SKIPPED"))
+        | "advisory check \(.n) is \(if .s != "COMPLETED" then .s else .c end); not blocking")') \
+    || die "gh pr view $pr --json statusCheckRollup failed" 4
+  printf '%s\n' "$verdict" | sed -n '2,$s/^/merge-gated: note: /p' >&2
+  verdict=$(printf '%s\n' "$verdict" | sed -n '1p')
   case "$verdict" in
     ok) ;;
     7" "*|8" "*|9" "*|10" "*) die "${verdict#* }" "${verdict%% *}" ;;
