@@ -93,10 +93,6 @@ export const TOOL_LAYER_VERSION = 3;
 /** ISO calendar day — the only date shape a tool takes. */
 const DAY = z.string().regex(ISO_DATE, 'Use a calendar day, YYYY-MM-DD');
 
-/*
- * Each `describe` below is published: `tools/list` shows these schemas as JSON Schema generated
- * from them (mcp-tool-catalogue.ts, US-32 AC51b), so a field's bounds and its words live in one place.
- */
 export const readRecordInput = z.object({
   metric: z.string().min(1).max(MAX_NAME_LENGTH).describe('One metric or test name, e.g. "ldl" or "ferritin". Omit for everything.').optional(),
   since: DAY.describe('Only rows recorded on or after this day.').optional(),
@@ -104,16 +100,12 @@ export const readRecordInput = z.object({
 
 export const getPlanInput = z.object({}).strict();
 
-/** The words every dated write publishes for its day. */
-const LOCAL_DAY = 'The user’s local calendar date, YYYY-MM-DD. Ask if you do not know it.';
-
 export const addMeasurementInput = z.object({
-  // The one deliberate divergence: the client is shown the closed list so it picks a real metric, while
-  // zod stays an open string so health-core owns the refusal and says which metric. `enum` is published only.
+  // Published only, not enforced (US-32 AC51b): the client picks from the list; health-core refuses by name.
   metricType: z.string().min(1).max(MAX_NAME_LENGTH).meta({ enum: [...METRIC_TYPES], description: 'The core metric.' }),
   value: z.number().describe('The number, in SI units unless `unit` says otherwise.'),
   unit: z.string().min(1).max(MAX_NAME_LENGTH).describe('The unit `value` is in, e.g. "mg/dL". Omit if it is already SI.').optional(),
-  recordedAt: DAY.describe(LOCAL_DAY),
+  recordedAt: DAY.describe('The user’s local calendar date, YYYY-MM-DD. Ask if you do not know it.'),
 }).strict();
 
 /** One row of a panel. Exported so the parity test can read the nested shape. */
@@ -123,7 +115,7 @@ export const labValueInput = z.object({
   unit: z.string().min(1).max(MAX_NAME_LENGTH).describe('The unit as the lab printed it.'),
   referenceLow: z.number().nullable().describe('Lower reference bound, if the report gives one.').optional(),
   referenceHigh: z.number().nullable().describe('Upper reference bound, if the report gives one.').optional(),
-  recordedAt: DAY.describe(LOCAL_DAY),
+  recordedAt: DAY.describe('The user’s local calendar date, YYYY-MM-DD. Ask if you do not know it.'),
 }).strict();
 
 export const addLabValuesInput = z.object({
@@ -153,7 +145,6 @@ const CONFIRM = z.string().max(MAX_RECEIPT_LENGTH).describe('Hosted server, seco
  * request, and never stores, logs, hashes or echoes it; stdio ignores it.
  */
 export const MAX_APPROVAL_LENGTH = 200;
-/** Published bare to fit tools/list (US-36 AC11): its name and the descriptions say what it carries; the hosted server refuses a blank one. */
 const APPROVAL = z.string().max(MAX_APPROVAL_LENGTH).optional();
 
 export const correctValueInput = z.object({
@@ -220,16 +211,10 @@ export const importCommitInput = z.object({
 
 /** `commit` stands alone; the tool refuses it beside a source in its own words. */
 export const importDocumentsInput = z.object({
-  fileNames: z.array(z.string().min(1).max(MAX_FILE_NAME_LENGTH)).max(MAX_IMPORT_FILES_PER_CALL)
-    .describe('Folder route: the file names to read, as listed. Omit to read every importable file in the folder root.').optional(),
-  /** The user's own answer to "what date was this test?" for a file that printed none (AC13); it wins over the file's date. */
-  fileDates: z.array(z.object({
-    file: z.string().min(1).max(MAX_FILE_NAME_LENGTH).describe('The file name as listed in files.'),
-    date: z.string().regex(ISO_DATE).describe('The date the test was taken, YYYY-MM-DD.'),
-  }).strict()).max(MAX_IMPORT_FILES_PER_CALL)
-    .describe('For a lab file that printed no date: the date the test was taken, from the user, e.g. [{ "file": "results.pdf", "date": "2026-08-12" }]. Wins over the file’s own date.').optional(),
-  /** US-37: this extract answers a read's folder nudge; carried on the extract's counter, nothing else. */
-  fromNudge: z.boolean().describe('True when this import answers the folder list a read returned. Counted, nothing else.').optional(),
+  fileNames: z.array(z.string().min(1).max(MAX_FILE_NAME_LENGTH)).max(MAX_IMPORT_FILES_PER_CALL).describe('Folder route: the file names to read, as listed. Omit to read every importable file in the folder root.').optional(),
+  fileDates: z.array(z.object({ file: z.string().min(1).max(MAX_FILE_NAME_LENGTH).describe('The file name as listed in files.'), date: z.string().regex(ISO_DATE).describe('The date the test was taken, YYYY-MM-DD.') }).strict())
+    .max(MAX_IMPORT_FILES_PER_CALL).describe('For a lab file that printed no date: the date the test was taken, from the user, e.g. [{ "file": "results.pdf", "date": "2026-08-12" }]. Wins over the file’s own date.').optional(),
+  fromNudge: z.boolean().describe('True when this import answers the folder list a read returned. Counted, nothing else.').optional(), // US-37
   commit: importCommitInput.describe('Second step, on its own: the receipt from the extract and the user’s selection.').optional(),
 }).strict();
 
