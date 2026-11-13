@@ -13,6 +13,8 @@ enum ReminderMode: Equatable {
 
     nonisolated static func transition(_ mode: ReminderMode, _ event: ReminderEvent) -> (ReminderMode, ReminderEffect?) {
         switch (mode, event) {
+        // An erase on this phone, even one held with no record to read: the opt-in ends (US-11).
+        case (_, .erased): (.off, nil)
         case (.off, .tappedOn(let attempt)): (.asking(attempt: attempt), .askPermission(attempt: attempt))
         case (.off, .tappedOff), (.off, .asked), (.off, .read): (.off, nil)
 
@@ -47,6 +49,8 @@ enum ReminderEvent: Equatable {
     case asked(attempt: Int, granted: Bool, epoch: Int?, askedAt: Int?, lastRead: Int?)
     /// A refresh read the record: its erase epoch, or nil when it could not be read.
     case read(epoch: Int?)
+    /// The record was erased on this phone since the last refresh, drawn or not (S52).
+    case erased
 }
 
 enum ReminderEffect: Equatable {

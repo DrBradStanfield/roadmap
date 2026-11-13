@@ -18,6 +18,8 @@ final class ReminderSchedulerTests: XCTestCase {
     /// resumed: a read in flight across a record switch (S41).
     private var holdsReads = false
     private var heldReads: [CheckedContinuation<Void, Never>] = []
+    /// The store's erase count (RecordStore.erasures), as the app hands it in.
+    private var erasureCount = 0
 
     override func tearDown() async throws {
         try? FileManager.default.removeItem(at: folder)
@@ -32,10 +34,11 @@ final class ReminderSchedulerTests: XCTestCase {
         sentFirstSeen = []
         holdsReads = false
         heldReads = []
+        erasureCount = 0
     }
 
     private func scheduler() -> ReminderScheduler {
-        ReminderScheduler(center: center, folder: folder) { [unowned self] firstSeen in
+        ReminderScheduler(center: center, folder: folder, erasures: { [unowned self] in erasureCount }) { [unowned self] firstSeen in
             sentFirstSeen.append(firstSeen)
             let fails = engineFails, output = engineOutput
             if holdsReads { await withCheckedContinuation { heldReads.append($0) } }
@@ -294,6 +297,103 @@ final class ReminderSchedulerTests: XCTestCase {
         engineOutput = reminders(epoch: 1, days: ["2027-01-15"])
         await scheduler.refresh()
         XCTAssertFalse(firstSeenKept)
+    }
+
+    private var optInKept: Bool {
+        FileManager.default.fileExists(atPath: folder.appending(path: "reminders-opt-in").path(percentEncoded: false))
+    }
+
+    /// US-25 AC12b (S52): an erase held with no record to read still ends reminders. The failed
+    /// read alone is not an erase, but the store's erase count moved: the erase words say
+    /// reminders are deleted, so the opt-in and the first-seen days go.
+    func testAnEraseHeldWithNoRecordEndsReminders_US25_AC12b() async {
+        engineOutput.firstSeen = ["screening_colorectal:organize": "2026-11-05"]
+        let scheduler = scheduler()
+        _ = await scheduler.optIn()
+        XCTAssertTrue(optInKept)
+        XCTAssertTrue(firstSeenKept)
+        erasureCount = 1
+        engineFails = true
+        await scheduler.refresh()
+        XCTAssertFalse(scheduler.optedIn, "the erase ends the opt-in though nothing could be read")
+        XCTAssertFalse(optInKept)
+        XCTAssertFalse(firstSeenKept)
+        XCTAssertEqual(center.pending.count, 0)
+    }
+
+    /// US-25 AC12b (S52): after a held erase, the user turns reminders on again under the new
+    /// record, and that opt-in holds: the count was already seen.
+    func testAnOptInAfterAHeldEraseHolds() async {
+        let scheduler = scheduler()
+        _ = await scheduler.optIn()
+        erasureCount = 1
+        engineFails = true
+        await scheduler.refresh()
+        XCTAssertFalse(scheduler.optedIn)
+        engineFails = false
+        engineOutput = reminders(epoch: 1, days: ["2027-01-15"])
+        let on = await scheduler.optIn()
+        XCTAssertTrue(on)
+        XCTAssertEqual(center.pending.count, 1)
+        await scheduler.refresh()
+        XCTAssertTrue(scheduler.optedIn, "the erase was seen once; it ends nothing more")
+        XCTAssertEqual(center.pending.count, 1)
+    }
+
+    /// Owner pin 1a (S52): an erase made on another device reaches this phone as a record whose
+    /// erase epoch moved. This phone's erase count does not move for it (only RecordStore's
+    /// own erases count), so the epoch rule ends the opt-in, and both files go the same way.
+    func testARemoteEraseSeenHereEndsRemindersTheSameWay_US25_AC12b() async {
+        engineOutput.firstSeen = ["screening_colorectal:organize": "2026-11-05"]
+        let scheduler = scheduler()
+        _ = await scheduler.optIn()
+        engineOutput = reminders(epoch: 1, days: ["2027-01-15"])
+        await scheduler.refresh()
+        XCTAssertFalse(scheduler.optedIn)
+        XCTAssertFalse(optInKept)
+        XCTAssertFalse(firstSeenKept)
+        XCTAssertEqual(center.pending.count, 0)
+    }
+
+    /// Owner pin 1b (S52): an own erase whose record draws at once moves both the count and the
+    /// epoch in one refresh. Reminders end once: one mode change, no effect, one engine read.
+    func testAnOwnDrawnEraseEndsRemindersExactlyOnce_US25_AC12b() async {
+        engineOutput.firstSeen = ["screening_colorectal:organize": "2026-11-05"]
+        let scheduler = scheduler()
+        _ = await scheduler.optIn()
+        let (asks, reads) = (center.permissionAsks, sentFirstSeen.count)
+        erasureCount = 1
+        engineOutput = reminders(epoch: 1, days: ["2027-01-15"])
+        await scheduler.refresh()
+        XCTAssertFalse(scheduler.optedIn)
+        XCTAssertFalse(optInKept)
+        XCTAssertFalse(firstSeenKept)
+        XCTAssertEqual(center.pending.count, 0)
+        XCTAssertEqual(center.permissionAsks, asks, "no ask")
+        XCTAssertEqual(sentFirstSeen.count, reads + 1, "one read: no refresh effect ran a second")
+        // The two events that refresh sent: the first ends the opt-in, the epoch rule then has nothing to end.
+        let (afterErase, eraseEffect) = ReminderMode.transition(.on(epoch: 0), .erased)
+        let (afterRead, readEffect) = ReminderMode.transition(afterErase, .read(epoch: 1))
+        XCTAssertEqual([afterErase, afterRead], [.off, .off])
+        XCTAssertEqual([eraseEffect, readEffect], [nil, nil])
+    }
+
+    /// Owner pin 2, the kill limit (S52): killed between the store's erase and the refresh, the
+    /// next launch's scheduler starts from the store's fresh count (0), so the count cannot tell.
+    /// Its first good read, at the new epoch, ends the opt-in through the epoch rule.
+    func testAKillBetweenTheEraseAndTheRefreshEndsRemindersAtTheNextGoodRead_US25_AC12b() async {
+        engineOutput.firstSeen = ["screening_colorectal:organize": "2026-11-05"]
+        _ = await scheduler().optIn()
+        erasureCount = 1 // the store erased; the app was killed before the refresh
+        erasureCount = 0 // the next launch: a new store's count
+        engineOutput = reminders(epoch: 1, days: ["2027-01-15"])
+        let relaunched = scheduler()
+        XCTAssertTrue(relaunched.optedIn, "the saved opt-in, before any read")
+        await relaunched.refresh()
+        XCTAssertFalse(relaunched.optedIn)
+        XCTAssertFalse(optInKept)
+        XCTAssertFalse(firstSeenKept)
+        XCTAssertEqual(center.pending.count, 0)
     }
 
     /// US-17 AC15: the real engine answers first-seen days when the app sends them.
