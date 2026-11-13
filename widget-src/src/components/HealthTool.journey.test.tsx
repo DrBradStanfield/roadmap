@@ -1696,14 +1696,14 @@ describe('US-11: an erase made here', () => {
   // alert is the normal one.
   it('the reminder cancel succeeds: the alert says the record is deleted', async () => {
     await returningGuest();
-    setPreEraseHook(async () => {});
+    setPreEraseHook(async () => null);
     try {
       vi.spyOn(window, 'alert').mockImplementation(() => {});
       fireEvent.click(deleteButton());
       await waitFor(() => expect(window.alert).toHaveBeenCalledWith(ERASE_DONE));
       expect(await loadAllHistory()).toEqual([]);
     } finally {
-      setPreEraseHook(async () => {});
+      setPreEraseHook(async () => null);
     }
   });
 });
