@@ -834,6 +834,93 @@ describe('US-16 AC1: before the whole form, one chat reply\'s edits all wait in 
   });
 });
 
+// Brad, 2026-11-13: a value drives the plan only once the person has
+// confirmed it. "A. When the grid saves (leaving the grid, Enter, or the
+// tick)." Until then the plan and the chat read the record.
+describe('US-03 AC6, US-16 AC1 (Brad 2026-11-13): only a saved value drives the plan and the chat', () => {
+  const propose = (fields: Record<string, number>) => act(() => chat.proposeEdit!(Object.entries(fields).map(([field, displayValue]) =>
+    ({ kind: 'field', field, displayValue, unitSystem: 'si', date: null }) as ProposedEdit)));
+  const cue = (view: RenderResult) => view.queryByRole('button', { name: 'Unsaved values: review' });
+
+  it('US-03 AC6 (Brad 2026-11-13): a weight typed in the vitals grid leaves the plan and the chat to the record until the grid is left; the saved value then drives both', async () => {
+    const view = await returningGuest(); // 82 kg on 1 Sep
+    typeInto(draftInput(vitalsMatrix(view.container), 'Weight'), '84');
+    await wait(200);
+    expect(chat.context?.weightKg).toBe(82);
+    expect(await activeOn('weight')).toEqual([[82, '2026-09-01']]);
+
+    leaveVitals(view.container);
+    await waitFor(async () => expect(await activeOn('weight')).toEqual([[82, '2026-09-01'], [84, localToday()]]));
+    await waitFor(() => expect(chat.context?.weightKg).toBe(84));
+  });
+
+  it('US-03 AC6: half a blood pressure in the vitals grid drives nothing; the record\'s pair stays in the plan and the chat', async () => {
+    await guest({ weight: 82 });
+    await addMeasurement('systolic_bp', 130, '2026-09-01');
+    await addMeasurement('diastolic_bp', 85, '2026-09-01');
+    const view = await secondVisit();
+    await waitFor(() => expect([chat.context?.systolicBp, chat.context?.diastolicBp]).toEqual([130, 85]));
+    typeInto(bpHalf(vitalsMatrix(view.container), 'Systolic'), '150');
+    await wait(200);
+    expect([chat.context?.systolicBp, chat.context?.diastolicBp]).toEqual([130, 85]);
+
+    leaveVitals(view.container); // half a pair cannot save
+    await wait(1000);
+    expect([chat.context?.systolicBp, chat.context?.diastolicBp]).toEqual([130, 85]);
+    expect(await activeOn('systolic_bp')).toEqual([[130, '2026-09-01']]);
+  });
+
+  it('US-16 AC1: a chat LDL handed to the blood-test grid drives nothing until the person confirms it; the Unsaved values cue shows', async () => {
+    const view = await ldlOnRecord(3.9, '2026-09-10');
+    await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
+    propose({ ldlC: 2.1 });
+    const cell = () => draftInput(bloodMatrix(view.container), 'LDL Cholesterol');
+    await waitFor(() => expect(cell().value).toBe('2.1'));
+    await wait(200);
+    expect(ldlTile(view.container)).toBe('3.9 mmol/L');
+    expect(ldlInChat()).toEqual([3.9, 3.9]);
+    expect(cue(view)).toBeTruthy();
+    expect(await activeOn('ldl')).toEqual([[3.9, '2026-09-10']]);
+
+    press(cell());
+    fireEvent.keyDown(cell(), { key: 'Enter' }); // the person confirms it
+    await waitFor(async () => expect(await activeOn('ldl')).toEqual([[2.1, localToday()], [3.9, '2026-09-10']]));
+    await waitFor(() => expect(ldlTile(view.container)).toBe('2.1 mmol/L'));
+    expect(ldlInChat()).toEqual([2.1, 2.1]);
+  });
+
+  it('US-16 AC1 (R1): a chat waist sent before the form opens drives neither the plan nor the chat; after the hand-over it waits in the grid', async () => {
+    await guest(); // the weight missing: no grid yet
+    const view = render(<HealthTool />);
+    const box = await shown<HTMLInputElement>(view.container, '#weightKg');
+    await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
+    propose({ waistCm: 90 });
+    await wait(200);
+    expect(chat.context?.waistCm).toBeUndefined();
+
+    await typeAndLeave(box, '84'); // the last answer: the whole form opens
+    await waitFor(() => expect(draftInput(vitalsMatrix(view.container), 'Waist Circumference').value).toBe('90'));
+    await waitFor(async () => expect(await activeOn('weight')).toEqual([[84, localToday()]]));
+    await wait(200);
+    expect(chat.context?.waistCm).toBeUndefined();
+    expect(await rowsOf('waist')).toEqual([]);
+  });
+
+  // H72: the fields' save read a waiting chat waist or pressure out of the
+  // form and wrote it under today, though the person never confirmed it.
+  it('US-16 AC1 (R1): a weight-box save before the form opens writes no waiting chat waist or pressure', async () => {
+    await guest({ born: false }); // the weight box stays beside the height: the form does not open
+    const view = render(<HealthTool />);
+    const box = await shown<HTMLInputElement>(view.container, '#weightKg');
+    await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
+    propose({ waistCm: 90, systolicBp: 120, diastolicBp: 80 });
+    await typeAndLeave(box, '84');
+    await waitFor(async () => expect(await activeOn('weight')).toEqual([[84, localToday()]]));
+    await wait(300);
+    expect([...await rowsOf('waist'), ...await rowsOf('systolic_bp'), ...await rowsOf('diastolic_bp')]).toEqual([]);
+  });
+});
+
 describe('US-03 AC5: a matrix commits what is typed when you leave it; the page hiding keeps the draft', () => {
   it('the vitals matrix commits when you leave it, never while you move between its cells', async () => {
     const view = await returningGuest();

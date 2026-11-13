@@ -7,11 +7,12 @@
  * a test can lend a dated draft value as the blood-test matrix does.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, waitFor, act } from '@testing-library/react';
+import { render, waitFor, act, fireEvent } from '@testing-library/react';
 import { buildChatContextJson, type ChatContextPayload } from '@roadmap/health-core/chat-context';
 import { calculateEGFR } from '@roadmap/health-core/calculations';
 import type { HealthResults } from '@roadmap/health-core/types';
 import { useHealthToolLifecycle } from '../testing/health-tool-harness';
+import { pickDraftDate, typeInto } from '../testing/matrix-gestures';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { addMeasurement, bulkSaveLabValues, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
 
@@ -24,11 +25,15 @@ vi.mock('../lib/server-api', async (importOriginal) => ({
 }));
 vi.mock('../lib/chat-api', () => ({ listConversations: () => Promise.resolve(null), getChatGate: () => null }));
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const seen = vi.hoisted(() => ({ panel: null as null | Record<string, any>, results: null as HealthResults | null, tiles: [] as Array<{ label: string; value: string }>, chat: null as null | (() => ChatContextPayload | null) }));
+const seen = vi.hoisted(() => ({ panel: null as null | Record<string, any>, results: null as HealthResults | null, tiles: [] as Array<{ label: string; value: string }>, chat: null as null | (() => ChatContextPayload | null), realPanel: false }));
 vi.mock('./ChatEmbed', () => ({ ChatEmbed: ({ guestInputs }: { guestInputs: () => ChatContextPayload | null }) => { seen.chat = guestInputs; return null; } }));
 vi.mock('./ChatSection', () => ({ ChatSection: () => null }));
 vi.mock('./UploadModal', () => ({ UploadModal: () => null }));
-vi.mock('./InputPanel', () => ({ InputPanel: (props: Record<string, unknown>) => { seen.panel = props; return null; } }));
+// The form is a stub that hands back HealthTool's handlers, or the real form when a test types into it.
+vi.mock('./InputPanel', async (importOriginal) => {
+  const { InputPanel: Real } = await importOriginal<typeof import('./InputPanel')>();
+  return { InputPanel: (props: Parameters<typeof Real>[0]) => { seen.panel = props; return seen.realPanel ? <Real {...props}/> : null; } };
+});
 vi.mock('./ResultsPanel', async (importOriginal) => {
   const real = await importOriginal<typeof import('./ResultsPanel')>();
   // The plan My health draws (US-62 phase 5): what usePlanView is given.
@@ -54,7 +59,7 @@ const eGFRTile = (_container: HTMLElement) => seen.tiles
 const chatEGFR = () => JSON.parse(buildChatContextJson(seen.chat!()!)!).derivedValues.eGFR;
 
 useHealthToolLifecycle();
-beforeEach(() => { seen.panel = null; seen.results = null; seen.chat = null; });
+beforeEach(() => { seen.panel = null; seen.results = null; seen.chat = null; seen.realPanel = false; });
 
 describe('US-07 AC7: the widget reads the lab eGFR', () => {
   it('US-07 AC7: a misread creatinine (15 µmol/L) saved on the lab eGFR\'s day: tile 40, protein 1.0 g/kg, no high-potassium card, chat eGFR 40', async () => {
@@ -79,6 +84,28 @@ describe('US-07 AC7: the widget reads the lab eGFR', () => {
     await waitFor(() => expect(seen.results?.eGFR).toBe(40));
 
     act(() => seen.panel!.onDraftValue('creatinine', 80, '2026-08-15'));
+    const age = seen.results!.age!;
+    await waitFor(() => expect(seen.results?.eGFR).toBe(Math.round(calculateEGFR(80, age, 'female'))));
+    expect(seen.results?.eGFRFromLab).toBeUndefined();
+  });
+
+  it('US-07 AC7: a creatinine typed in the grid moves the eGFR only once saved, dated by its saved day', async () => {
+    // Saved creatinine before the lab eGFR; one typed and dated after it.
+    await seed([[80, '2026-06-01']], [40, '2026-08-01']);
+    seen.realPanel = true;
+    const view = render(<HealthTool />);
+    await waitFor(() => expect(seen.results?.eGFR).toBe(40));
+    const matrix = () => view.container.querySelector('.bt-timeline-title')!.closest('.bt-timeline') as HTMLElement;
+    const cell = () => [...matrix().querySelectorAll('.bt-row')]
+      .find((r) => r.querySelector('.bt-name-label')?.textContent === 'Creatinine')!.querySelector('.bt-cell-draft input') as HTMLInputElement;
+    await waitFor(() => expect(matrix()).toBeTruthy());
+    pickDraftDate(matrix(), '2026-08-15');
+    typeInto(cell(), '80');
+    await act(async () => { await new Promise((r) => setTimeout(r, 100)); });
+    expect(seen.results?.eGFR).toBe(40); // typed, not saved: the lab's eGFR still stands
+    expect(seen.results?.eGFRFromLab).toBe(true);
+
+    fireEvent.keyDown(cell(), { key: 'Enter' }); // saved on 15 Aug, after the lab's day
     const age = seen.results!.age!;
     await waitFor(() => expect(seen.results?.eGFR).toBe(Math.round(calculateEGFR(80, age, 'female'))));
     expect(seen.results?.eGFRFromLab).toBeUndefined();
