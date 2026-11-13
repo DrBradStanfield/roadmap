@@ -5,7 +5,9 @@
  * the body is read, so a script with no key never makes us buffer its upload.
  * Fails closed: no config or no key store is a 503, never a pass.
  */
+import { isIP } from 'node:net';
 import { readCappedBytes } from './capped-body.server';
+import { parseIpv6 } from './ip-groups.server';
 import { getClientIp } from './local-first-route.server';
 import { createQuotaCounter, dailyFileCap, DAY_MS, envCap, machineFiles } from './rate-limiter';
 import { supabaseAdmin } from './supabase-client.server';
@@ -60,18 +62,33 @@ export const supabaseKeyStore: KeyStore = {
  * The per-IP bucket. IPv6 is keyed on its /64, which one subscriber holds
  * whole (adversary R4); IPv4 on the address, so many phones behind one
  * carrier NAT share a bucket, the price of having one at all.
+ *
+ * Total (US-52 AC4g): every spelling of one address is one key. Brackets, a
+ * port and an IPv6 zone are dropped; IPv4-mapped IPv6, dotted or hex, is its
+ * IPv4 address. Anything `isIP` does not take (IPv4 with leading zeros
+ * included) is the one key `unknown`, `getClientIp`'s own fallback, so no
+ * value becomes its own key. Never through `new URL`: it rewrites the dotted
+ * mapped form to hex.
  */
-export function ipBucket(ip: string): string {
-  const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/i.exec(ip);
-  if (mapped) return mapped[1];
-  if (!ip.includes(':')) return ip;
-  const [head] = ip.split('%');
-  const halves = head.split('::');
-  const left = halves[0] ? halves[0].split(':') : [];
-  const right = halves.length > 1 && halves[1] ? halves[1].split(':') : [];
-  const groups = halves.length > 1 ? [...left, ...Array(8 - left.length - right.length).fill('0'), ...right] : left;
-  return groups.slice(0, 4).map((g) => g.toLowerCase().replace(/^0+(?=.)/, '')).join(':') + '::/64';
+export function ipBucket(raw: string | undefined): string {
+  let ip = (raw ?? '').trim();
+  if (ip.length > 64) return UNKNOWN_IP;
+  const hostPort = /^\[([^\]]+)\](?::(\d{1,5}))?$/.exec(ip) ?? /^(\d+\.\d+\.\d+\.\d+):(\d{1,5})$/.exec(ip);
+  if (hostPort && Number(hostPort[2] ?? 0) > 65535) return UNKNOWN_IP;
+  if (hostPort) ip = hostPort[1];
+  const zone = ip.indexOf('%');
+  if (zone >= 0 && isIP(ip.slice(0, zone)) === 6) ip = ip.slice(0, zone);
+  const family = isIP(ip);
+  if (family === 4) return hostPort?.[0].startsWith('[') ? UNKNOWN_IP : ip;
+  const g = family === 6 ? parseIpv6(ip) : null;
+  if (!g) return UNKNOWN_IP;
+  if (g.slice(0, 5).every((x) => x === 0) && g[5] === 0xffff) {
+    return [g[6] >> 8, g[6] & 255, g[7] >> 8, g[7] & 255].join('.');
+  }
+  return g.slice(0, 4).map((x) => x.toString(16)).join(':') + '::/64';
 }
+
+const UNKNOWN_IP = 'unknown';
 
 /** The app's routes run on the education app only: on the brand surface they answer 503 (AC2, adversary R13). */
 export function appRoutesOff(env: NodeJS.ProcessEnv = process.env): boolean {

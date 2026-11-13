@@ -104,6 +104,7 @@ export function createQuotaCounter(limit: number, windowMs: number, cleanupMs: n
     return entry && isLive(entry.resetAt, Date.now()) ? entry : null;
   };
   const charge = (key: string, n: number) => {
+    if (n > limit) return null; // refused before it takes a place (US-52 AC4i)
     let entry = live(key);
     if (!entry) {
       room(key, Date.now());

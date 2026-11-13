@@ -15,6 +15,7 @@ import type { McpOAuthDetail } from '../../packages/health-core/src/product-even
 import { clientHmacKey } from './mcp-config.server';
 import { b64url } from './mcp-seal.server';
 import { readCapped } from './capped-body.server';
+import { parseIpv6 } from './ip-groups.server';
 
 /**
  * Which assistant is calling, as a closed enum. Free text in a counter is how
@@ -325,48 +326,6 @@ export function isPublicAddress(address: string, family: number): boolean {
 
 function isPublicIpv4(address: string): boolean {
   return isPublicAddress(address, 4);
-}
-
-function ipv4Groups(dotted: string): [number, number] | null {
-  const parts = dotted.split('.');
-  if (parts.length !== 4) return null;
-  const nums = parts.map(Number);
-  if (nums.some((n) => !Number.isInteger(n) || n < 0 || n > 255)) return null;
-  return [(nums[0] << 8) | nums[1], (nums[2] << 8) | nums[3]];
-}
-
-function parseIpv6(address: string): number[] | null {
-  const ip = address.toLowerCase();
-  if (ip.includes('%') || ip.includes('/')) return null;
-  const halves = ip.split('::');
-  if (halves.length > 2) return null;
-  const parseSide = (side: string): number[] | null => {
-    if (side === '') return [];
-    const bits = side.split(':');
-    const groups: number[] = [];
-    for (let i = 0; i < bits.length; i++) {
-      const bit = bits[i];
-      if (bit.includes('.')) {
-        if (i !== bits.length - 1) return null;
-        const pair = ipv4Groups(bit);
-        if (!pair) return null;
-        groups.push(pair[0], pair[1]);
-      } else if (!/^[0-9a-f]{1,4}$/.test(bit)) {
-        return null;
-      } else {
-        groups.push(parseInt(bit, 16));
-      }
-    }
-    return groups;
-  };
-  const head = parseSide(halves[0]);
-  if (!head) return null;
-  if (halves.length === 1) return head.length === 8 ? head : null;
-  const tail = parseSide(halves[1]);
-  if (!tail) return null;
-  const missing = 8 - head.length - tail.length;
-  if (missing < 1) return null;
-  return [...head, ...Array(missing).fill(0), ...tail];
 }
 
 function isPublicIpv6(address: string): boolean {
