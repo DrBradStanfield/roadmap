@@ -610,8 +610,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     // US-07 AC6: no reminders for a known minor, who is never enrolled and must see no mailing-list box.
     reminders: plan.planned && !results?.knownMinor ? remindersSection : null,
     storageCard,
-    onDelete: async () => { if (await eraseAll()) closeSettings(); },
-    isDeleting,
+    // While a record exists, drawn as a plan or not, or after a failed first read; never for a truly empty visitor (US-11 AC10, H114).
+    onDelete: eraseStore.getSnapshot().read === 'failed' || unreadable > 0 || Object.keys(inputs).length > 0 || [previousMeasurements, medications, screenings, supplements, documentHistory, labValueHistory].some(list => list.length > 0) ? async () => { if (await eraseAll()) closeSettings(); } : undefined, isDeleting,
     storageAtFoot: getBackendKind() === 'local',
     onPlanReadyDismiss: planReady ? dismissPlanReady : undefined,
     healthDocuments: documentHistory,

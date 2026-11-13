@@ -86,7 +86,8 @@ export interface MyHealthProps {
    *  record lives (US-09; first, under the title, for a phone's true guest, AC34) and Delete all my data. */
   reminders?: ReactNode;
   storageCard?: ReactNode;
-  onDelete: () => void;
+  /** Delete all my data; absent for a truly empty new visitor (US-11 AC10, H114). */
+  onDelete?: () => void;
   isDeleting?: boolean;
   /** A guest's storage card shows at the foot while Settings are shut; a connected one waits
    *  there hidden, so the picker it hosts still opens from every way in (US-09 AC13). */
@@ -241,7 +242,7 @@ export function MyHealth({ form, plan, tiles, series, egfrCurrent, storageBar, p
     ),
     <Fragment key="reminders">{reminders}</Fragment>,
     !storageFirst && storage,
-    plan.planned && (
+    onDelete && (
       <div key="delete" className="delete-data-section">
         <button className="delete-data-link" onClick={onDelete} disabled={isDeleting}>
           {isDeleting ? 'Deleting...' : 'Delete all my data'}
