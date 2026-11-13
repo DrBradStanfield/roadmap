@@ -87,10 +87,13 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
    and run it again.
    Stop the line (US-64 AC35): when the newest completed `ci.yml` run on main (a push, nightly or manual run)
    ended failure, timed_out or startup_failure, it refuses (18), naming the run: main must be fixed first. A
-   re-run of the newest run still counts as red while it runs, and a cancelled run is passed over, so the run
-   before it is judged; a skipped run does not stop the line. The nightly shuffled run (`ci-shuffle.yml`, TA-X03)
+   re-run created at or after that run still counts as red while it runs (GitHub keeps a re-run's start time, so
+   a re-run of an older run can sit under newer ones), and a cancelled run is passed over, so the run
+   before it is judged; a skipped run does not stop the line. Fork pull_request runs on a branch named main
+   cannot crowd main's own runs out: it also reads the newest push, nightly and manual runs separately. The nightly shuffled run (`ci-shuffle.yml`, TA-X03)
    is its own workflow, so its red run never stops the line: read its seed and fix the order-dependent test. `fix-main` is only for the PR that fixes main:
-   that PR merges on a red main, and the script posts one comment on it naming the red run's id. When main has
+   that PR merges on a red main, and the script posts one comment on it naming the run's id and whether it was
+   red or re-running. When main has
    moved since the PR's merge base, it prints one note with how many commits; it never refuses for that, but
    read the note: CI may have tested an older main.
    A PR that changes a gate file (`tools/merge-gated.sh`, `tools/generated-files.json` or

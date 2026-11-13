@@ -144,11 +144,11 @@ function moveMain(r: ReturnType<typeof repos>, files: Record<string, string>) {
   pushMain(r.work);
 }
 
-function gate(r: ReturnType<typeof repos>, sha: string, files: string[]) {
+function gate(r: ReturnType<typeof repos>, sha: string, files: string[], at: { cwd?: string; script?: string } = {}) {
   const log = join(r.d, `log-${Math.random()}`);
   const before = { refs: git(r.caller, 'for-each-ref', '--format=%(refname)', 'refs/heads'), head: git(r.caller, 'rev-parse', 'HEAD'), status: git(r.caller, 'status', '--porcelain') };
-  const res = spawnSync('/bin/sh', [join(r.caller, 'tools', 'merge-gated.sh'), '123', sha], {
-    cwd: r.caller, encoding: 'utf8',
+  const res = spawnSync('/bin/sh', [at.script ?? join(r.caller, 'tools', 'merge-gated.sh'), '123', sha], {
+    cwd: at.cwd ?? r.caller, encoding: 'utf8',
     env: {
       HOME: process.env.HOME, ...GIT_ENV, PATH: join(S, 'bin'), CMDLOG: log, TMPDIR: r.tmp, HEAD_SHA: sha,
       FILES: JSON.stringify({ changedFiles: files.length, files: files.map((path) => ({ path })) }),
@@ -313,6 +313,40 @@ describe('US-64 AC34 merge-gated.sh refuses a PR whose generated file main has m
     expect(g.merges).toEqual([]);
   });
 
+  it("T-13: a PR that renames the manifest away (gh lists only the new path) is judged by main's rows", () => {
+    const r = repos();
+    git(r.work, 'checkout', '-q', '-b', 'pr');
+    writeFileSync(join(r.work, 'in.txt'), 'b\n');
+    git(r.work, 'mv', 'tools/generated-files.json', 'tools/old manifest é.json');
+    git(r.work, 'commit', '-q', '-am', 'rename the manifest');
+    const sha = git(r.work, 'rev-parse', 'HEAD');
+    pushPr(r.work, sha);
+    git(r.work, 'checkout', '-q', 'main');
+    moveMain(r, { 'out.txt': 'o2\n' });
+    // The caller runs a copy whose manifest beside it has no rows, so only main's copy can refuse.
+    writeFileSync(join(r.caller, 'tools', 'generated-files.json'), '{"rows":[]}');
+    const g = gate(r, sha, ['in.txt', 'tools/old manifest é.json']);
+    expect(g.stderr).toContain("main's copy judges it");
+    expect(g.status).toBe(REFUSED);
+    expect(g.merges).toEqual([]);
+    expect(g.untouched).toBe(true);
+  });
+
+  it("T-13: a PR that renames tools/merge-gated.sh away is judged by main's copy (git's paths, not gh's)", () => {
+    const r = repos();
+    git(r.work, 'checkout', '-q', '-b', 'pr');
+    git(r.work, 'mv', 'tools/merge-gated.sh', 'tools/merge gated (old).sh');
+    git(r.work, 'commit', '-q', '-m', 'rename the gate');
+    const sha = git(r.work, 'rev-parse', 'HEAD');
+    pushPr(r.work, sha);
+    git(r.work, 'checkout', '-q', 'main');
+    const g = gate(r, sha, ['tools/merge gated (old).sh']);
+    expect(g.stderr).toContain("main's copy judges it");
+    expect(g.status).toBe(0);
+    expect(g.merges).toHaveLength(1);
+    expect(g.untouched).toBe(true);
+  });
+
   it('runs nothing in step 6 but gh, git, jq and perl: no node, npx, sh -c or manifest command', () => {
     const r = repos();
     const sha = openPr(r, { 'in.txt': 'b\n' });
@@ -324,5 +358,41 @@ describe('US-64 AC34 merge-gated.sh refuses a PR whose generated file main has m
     const count = (names: string[]) => names.filter((n) => !['git', 'jq', 'perl'].includes(n)).sort();
     expect(count(hit.names)).toEqual(count(plain.names)); // a matched row adds only git and jq calls
     expect(hit.gits).toEqual(['fetch', 'cat-file', 'merge-base', 'rev-list', '-c', 'log']);
+  });
+
+  describe('T-12: finds generated-files.json beside the script from any working folder', () => {
+    it('`sh merge-gated.sh` run inside tools/ reads tools/generated-files.json: refuses a stale row (9), merges a clean PR', () => {
+      const r = repos();
+      const stale = openPr(r, { 'in.txt': 'b\n' });
+      moveMain(r, { 'out.txt': 'o2\n' });
+      const here = { cwd: join(r.caller, 'tools'), script: 'merge-gated.sh' };
+      const g = gate(r, stale, ['in.txt'], here);
+      expect(g.stderr).toContain('out.txt: main has changed it or its generator script');
+      expect(g.status).toBe(REFUSED);
+      expect(g.merges).toEqual([]);
+      const c = repos();
+      const tidy = openPr(c, { README: 'changed\n' });
+      moveMain(c, { 'out.txt': 'o2\n' });
+      const clean = gate(c, tidy, ['README'], { cwd: join(c.caller, 'tools'), script: 'merge-gated.sh' });
+      expect(clean.status).toBe(0);
+      expect(clean.merges).toHaveLength(1);
+    });
+
+    it('a copy run by absolute path from another folder reads the manifest beside the copy, not the one in the working folder', () => {
+      const r = repos();
+      const sha = openPr(r, { 'in.txt': 'b\n' });
+      moveMain(r, { 'out.txt': 'o2\n' });
+      const copy = join(r.d, 'elsewhere');
+      mkdirSync(copy);
+      copyFileSync(join(TOOLS, 'merge-gated.sh'), join(copy, 'merge-gated.sh'));
+      // Beside the copy: no rows, so it merges. The caller's tools/generated-files.json would refuse.
+      writeFileSync(join(copy, 'generated-files.json'), '{"rows":[]}');
+      const g = gate(r, sha, ['in.txt'], { cwd: r.caller, script: join(copy, 'merge-gated.sh') });
+      expect(g.status).toBe(0);
+      expect(g.merges).toHaveLength(1);
+      // And with the test manifest beside it, the same copy refuses.
+      writeFileSync(join(copy, 'generated-files.json'), TEST_MANIFEST);
+      expect(gate(r, sha, ['in.txt'], { cwd: r.caller, script: join(copy, 'merge-gated.sh') }).status).toBe(REFUSED);
+    });
   });
 });

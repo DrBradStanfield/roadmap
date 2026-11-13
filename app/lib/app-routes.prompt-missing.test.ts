@@ -23,15 +23,12 @@ const supa = vi.hoisted(() => ({
 vi.mock('./supabase-identity.server', async (o) => ({ ...await o<object>(), logAudit: supa.logAudit }));
 vi.mock('./supabase-guest.server', async (o) => ({ ...await o<object>(), getOrCreateGuestSession: supa.getOrCreateGuestSession, GuestRateLimitError: supa.GuestRateLimitError }));
 vi.mock('./supabase-account.server', async (o) => ({ ...await o<object>(), getProfile: supa.getProfile, updateSubscriptionPlan: supa.updateSubscriptionPlan }));
-vi.mock('./chat.server', async (original) => ({
+vi.mock('./chat.server', async (original) => (await import('./chat-server.test-helpers')).chatServerStub(await original<typeof import('./chat.server')>(), {
   resolveChatContext: () => ({ userContextJson: 'null' }),
-  buildSystemBlocks: () => [],
   buildConversationMessages: (history: unknown[], message: string) => [...history, { role: 'user', content: message }],
-  loadMatchedArticlesFromHandles: () => null,
   DOCTOR_POSTURE: 'doctor', BRAND_POSTURE: 'brand',
   getChatCompletion: mocks.getChatCompletion,
-  reportChatFallback: vi.fn(), generateTitle: () => 't', CHAT_MODEL: 'test',
-  MAX_MESSAGE_LENGTH: (await original<typeof import('./chat.server')>()).MAX_MESSAGE_LENGTH,
+  generateTitle: () => 't',
 }));
 vi.mock('./chat-router.server', async (original) => ({
   ...await original<typeof import('./chat-router.server')>(),

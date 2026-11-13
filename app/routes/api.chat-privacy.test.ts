@@ -22,13 +22,10 @@ vi.mock('../lib/supabase-identity.server', async (o) => ({ ...await o<object>(),
 vi.mock('../lib/supabase-guest.server', async (o) => ({ ...await o<object>(), getOrCreateGuestSession: supa.getOrCreateGuestSession, GuestRateLimitError: supa.GuestRateLimitError }));
 vi.mock('../lib/supabase-account.server', async (o) => ({ ...await o<object>(), getProfile: supa.getProfile, updateSubscriptionPlan: supa.updateSubscriptionPlan }));
 vi.mock('../lib/supabase-client.server', async (o) => ({ ...await o<object>(), createUserClient: supa.createUserClient }));
-vi.mock('../lib/chat.server', () => ({
-  resolveChatContext: () => ({ userContextJson: '{}' }),
-  buildSystemBlocks: () => [], buildConversationMessages: mocks.buildConversationMessages,
-  loadMatchedArticlesFromHandles: () => null,
-  DOCTOR_POSTURE: '', BRAND_POSTURE: '',
+// A fixed 4000-character limit, and the real module never loads.
+vi.mock('../lib/chat.server', async () => (await import('../lib/chat-server.test-helpers')).chatServerStub({ MAX_MESSAGE_LENGTH: 4000 }, {
+  buildConversationMessages: mocks.buildConversationMessages,
   getChatCompletion: async () => ({ content: 'Synthetic answer', usage: { inputTokens: 1, outputTokens: 1, cacheReadTokens: 0, cacheCreationTokens: 0 }, isFallback: false }),
-  reportChatFallback: vi.fn(), generateTitle: () => 'Synthetic title', CHAT_MODEL: 'test', MAX_MESSAGE_LENGTH: 4000,
 }));
 vi.mock('../lib/chat-router.server', () => ({ sanitizeForRouter: (text: string) => text, reportRouterFailure: vi.fn(), ROUTER_VERSION: 'test' }));
 vi.mock('../lib/chat-classifier.server', () => ({ classifyMessage: async () => ({ routerSkipped: true, classification: 'SKIP', latencyMs: 0 }), shouldFireRouter: () => false }));

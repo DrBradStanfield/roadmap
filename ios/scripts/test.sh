@@ -3,6 +3,7 @@
 # The zone is fixed at process launch because JavaScriptCore reads it once.
 # A skipped parity test fails the run: a skip would mean the zone pin was lost.
 # Each zone's run takes the shared simulator's lock (sim-run.sh, US-71 AC7).
+# A failed zone does not stop the other: both run, and the script fails if either did.
 #   ios/scripts/test.sh
 set -eu
 cd "$(dirname "$0")/.."
@@ -14,9 +15,12 @@ STATUS="build/sim-run-status"
 DERIVED="${HR_DERIVED_DATA:-${TMPDIR:-/tmp}/HealthRoadmap-$(pwd | shasum | cut -c1-8)}"
 mkdir -p build
 trap scripts/clean-test-clones.sh EXIT
+FAILED=""
 for ZONE in UTC Pacific/Auckland; do
   echo "== tests in $ZONE"
-  rm -f "$STATUS"
+  # A failed zone's log is copied here, since the next zone's run overwrites $LOG.
+  ZLOG="build/test-output-$(echo "$ZONE" | tr / -).txt"
+  rm -f "$STATUS" "$ZLOG"
   # sim-run adds the shared device, -parallel-testing-enabled NO and a time limit. Its exit code is
   # kept in $STATUS: the pipe drops it. 75 means it refused or gave up waiting, so no test ran (US-71
   # AC7, AC8); 76 means another simulator booted during the run and it stopped (AC7).
@@ -28,9 +32,14 @@ for ZONE in UTC Pacific/Auckland; do
     75) echo "NOT RUN in $ZONE: sim-run refused or gave up; see its line above (not a test failure)"; exit 75;;
     76) echo "STOPPED in $ZONE: another simulator booted during the run; see sim-run's line above (not a test failure)"; exit 76;;
   esac
-  grep -q "TEST SUCCEEDED" "$LOG" || { echo "FAILED in $ZONE"; exit 1; }
-  if grep -q "testEveryFixtureMatchesTheSourceInThisZone().*skipped" "$LOG"; then
-    echo "FAILED: the parity test skipped in $ZONE, so the zone pin did not reach it"; exit 1
+  if ! grep -q "TEST SUCCEEDED" "$LOG"; then
+    cp "$LOG" "$ZLOG"; echo "FAILED in $ZONE (log: ios/$ZLOG)"; FAILED="$FAILED $ZONE"
+  elif grep -q "testEveryFixtureMatchesTheSourceInThisZone().*skipped" "$LOG"; then
+    cp "$LOG" "$ZLOG"
+    echo "FAILED: the parity test skipped in $ZONE, so the zone pin did not reach it (log: ios/$ZLOG)"; FAILED="$FAILED $ZONE"
+  else
+    echo "passed in $ZONE"
   fi
 done
+[ -z "$FAILED" ] || { echo "iOS tests FAILED in:$FAILED"; exit 1; }
 echo "All iOS tests passed in UTC and Pacific/Auckland."

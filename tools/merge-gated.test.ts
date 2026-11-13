@@ -27,15 +27,17 @@ printf '%s\\t' "$@" >> "$LOG"; echo >> "$LOG"
 [ -n "\${GH_PARENT:-}" ] && ps -o args= -p "$PPID" >> "$GH_PARENT"
 case "$*" in *"\${GH_FAIL:-@@none@@}"*) echo "gh: HTTP 502" >&2; exit 1 ;; esac
 case "$*" in *"\${GH_HANG:-@@none@@}"*) trap '' ALRM TERM; sleep 30; exit 0 ;; esac
-jqf=; prev=; st=; lim=20
-for a in "$@"; do [ "$prev" = --jq ] && jqf=$a; [ "$prev" = --status ] && st=$a; [ "$prev" = --limit ] && lim=$a; prev=$a; done
+jqf=; prev=; st=; ev=; lim=20
+for a in "$@"; do [ "$prev" = --jq ] && jqf=$a; [ "$prev" = --status ] && st=$a; [ "$prev" = --event ] && ev=$a; [ "$prev" = --limit ] && lim=$a; prev=$a; done
 json() { printf '%s\\n' "$1" | jq -r "$jqf"; }
 case "$*" in
   *"pr view"*state,headRefOid*) json "$PR" ;;
   *"pr view"*changedFiles*) json "$FILES" ;;
   *"pr view"*statusCheckRollup*) json "{\\"statusCheckRollup\\":$ROLLUP}" ;;
   *"pr view"*labels*) json "{\\"labels\\":$LABELS}" ;;
-  *"run list --workflow ci.yml --branch main"*) json "$MAINRUNS" ;;
+  # Main's runs: newest first, filtered by --event, then cut to --limit, as the API does.
+  *"run list --workflow ci.yml --branch main"*) json "$(printf '%s\\n' "$MAINRUNS" | jq -c --arg e "$ev" --argjson n "$lim" \\
+      '[.[] | select($e == "" or .event == $e)] | sort_by(.createdAt, .databaseId) | reverse | .[0:$n]')" ;;
   *"run list"*ci.yml*) json "$CIRUNS" ;;
   *"run list"*deploy.yml*) runs=$RUNS
     # FLIP=<id>:<k>: in the status-filtered reads, run <id> is pending for the first k and in_progress after.
@@ -63,7 +65,7 @@ case "$1" in
   cat-file) ;;
   merge-base) [ "$2" = refs/remotes/origin/main ] || exit 1; echo ${'b'.repeat(40)} ;;
   rev-list) [ -z "\${GIT_REVLIST_FAIL:-}" ] || { echo "fatal: bad revision" >&2; exit 128; }; echo "\${GIT_BEHIND:-0}" ;;
-  diff) echo tools/wait-run.sh ;;
+  diff) printf '%s\\n' "\${GIT_DIFF:-tools/wait-run.sh}" ;;
   *) echo "unexpected git call: $*" >&2; exit 1 ;;
 esac
 `);
@@ -210,6 +212,55 @@ describe('US-64 AC32 merge-gated.sh', () => {
       const hundred = Array.from({ length: 100 }, (_, i) => ({ path: `f${i}.ts` }));
       expect(gate(['123', SHA], { files: { changedFiles: 183, files: hundred } }).status).toBe(17);
       expect(gate(['123', SHA], { files: { changedFiles: 183, files: [...hundred.slice(1), { path: 'tools/merge-gated.sh' }] } }).status).toBe(16);
+    });
+
+    describe("T-13: judges gate files by git's path list (renames split), not only gh's", () => {
+      const ROUTED = ['fetch', 'cat-file', 'merge-base', 'rev-list', '-c', 'fetch', 'show', 'show'];
+      it("a PR with more files than gh lists: a gate file past gh's page sends it to main's copy, not 17", () => {
+        const hundred = Array.from({ length: 100 }, (_, i) => ({ path: `f${i}.ts` }));
+        const all = [...Array.from({ length: 182 }, (_, i) => `f${i}.ts`), 'tools/merge-gated.sh'].join('\n');
+        const r = gate(['123', SHA], { files: { changedFiles: 183, files: hundred } }, { GIT_DIFF: all, MAIN_COPY: fakeMain(0) });
+        expect(r.stderr).toContain(`main copy: marker=1 args=123 ${SHA}`);
+        expect(r.status).toBe(0);
+        expect(r.gits.map((c) => c[1])).toEqual(ROUTED);
+        expect(r.merges).toEqual([]);
+      });
+      it("a renamed gate file (gh lists only the new path) is judged by main's copy: each of the three", () => {
+        for (const gatePath of ['tools/merge-gated.sh', 'tools/generated-files.json', '.github/workflows/ci.yml']) {
+          const files = { changedFiles: 1, files: [{ path: 'tools/old-gate.txt' }] };
+          const r = gate(['123', SHA], { files }, { GIT_DIFF: `tools/old-gate.txt\n${gatePath}`, MAIN_COPY: fakeMain(9) });
+          expect(r.status, gatePath).toBe(9);
+          expect(r.stderr).toContain("main's copy judges it");
+          expect(r.merges).toEqual([]);
+          // No copy on main: refuses 16, as a gate file gh lists does.
+          expect(gate(['123', SHA], { files }, { GIT_DIFF: `tools/old-gate.txt\n${gatePath}` }).status).toBe(16);
+        }
+      });
+      it("a renamed ci.yml gets its note once, from main's copy, and merges when green", () => {
+        const files = { changedFiles: 1, files: [{ path: '.github/workflows/old.yml' }] };
+        const r = gate(['123', SHA], { files }, { GIT_DIFF: '.github/workflows/ci.yml\n.github/workflows/old.yml', MAIN_COPY: SCRIPT });
+        expect(r.status).toBe(0);
+        expect(r.stderr.match(/changes \.github\/workflows\/ci\.yml, so its own CI result/g)).toHaveLength(1);
+        expect(r.merges).toEqual([MERGE_ARGV]);
+      });
+      it('paths with spaces and non-ASCII: the gate file among them routes; near names do not', () => {
+        const odd = ['docs/my notes.md', 'blog/café ünï.md', 'tools/merge-gated.sh'].join('\n');
+        const r = gate(['123', SHA], {}, { GIT_DIFF: odd, MAIN_COPY: fakeMain(7) });
+        expect(r.status).toBe(7);
+        expect(r.merges).toEqual([]);
+        const near = ['tools/merge-gated.sh ', ' tools/merge-gated.sh', 'x/tools/merge-gated.sh', 'tools/merge-gated.sh.bak',
+          'tools/merge gated.sh', 'tools/generated-files.json~', '.github/workflows/ci.yml.orig', 'café/tools/merge-gated.sh'].join('\n');
+        const p = gate(['123', SHA], {}, { GIT_DIFF: near, MAIN_COPY: fakeMain(7) });
+        expect(p.status).toBe(0);
+        expect(p.stderr).not.toMatch(/main's copy|main copy/);
+        expect(p.merges).toEqual([MERGE_ARGV]);
+      });
+      it("main's copy, run with the marker, does not route again on git's list", () => {
+        const r = gate(['123', SHA], {}, { GIT_DIFF: 'tools/merge-gated.sh', MERGE_GATED_FROM_MAIN: '1' });
+        expect(r.status).toBe(0);
+        expect(r.gits.map((c) => c[1])).toEqual(['fetch', 'cat-file', 'merge-base', 'rev-list', '-c']);
+        expect(r.merges).toEqual([MERGE_ARGV]);
+      });
     });
   });
 
@@ -438,6 +489,56 @@ describe('US-64 AC32 merge-gated.sh', () => {
       expect(r.status).toBe(0);
       expect(r.merges).toEqual([MERGE_ARGV]);
       expect(r.stderr).toMatch(/merge-gated: note: .*comment.*failed/);
+    });
+    describe('T-14: re-runs of older runs, the fix-main comment, the run-list limit', () => {
+      const rerun = (id: number, createdAt: string, status = 'in_progress') => mainRun(id, createdAt, null, 'push', status, 2);
+      it('(a) a re-run of an older run, still going under a newer first attempt (running or cancelled), is red (18)', () => {
+        const green = mainRun(70, '2026-11-13T01:00:00Z');
+        for (const newer of [mainRun(79, '2026-11-13T06:00:00Z', null, 'push', 'in_progress'), mainRun(79, '2026-11-13T06:00:00Z', 'cancelled')]) {
+          for (const status of ['in_progress', 'queued']) {
+            const r = gate(['123', SHA], { main: [newer, rerun(77, '2026-11-13T05:00:00Z', status), green] });
+            expect(r.status).toBe(18);
+            expect(r.stderr).toContain('https://github.com/o/r/actions/runs/77');
+            expect(r.stderr).toContain('re-run (attempt 2)');
+            expect(r.merges).toEqual([]);
+          }
+        }
+      });
+      it('(a) a re-run created at the same moment as the judged run counts; one older than the judged run does not', () => {
+        const judged = mainRun(80, '2026-11-13T05:00:00Z');
+        expect(gate(['123', SHA], { main: [judged, rerun(77, '2026-11-13T05:00:00Z')] }).status).toBe(18);
+        expect(gate(['123', SHA], { main: [judged, rerun(77, '2026-11-13T04:00:00Z')] }).status).toBe(0);
+      });
+      it('(b) the fix-main comment says re-running for a re-run and red for a red run', () => {
+        const fix = { labels: [{ name: 'fix-main' }] };
+        const body = (main: unknown[]) => {
+          const r = gate(['123', SHA], { main, ...fix });
+          expect(r.status).toBe(0);
+          return r.calls.find((c) => c[0] === 'pr' && c[1] === 'comment')![4];
+        };
+        const re = body([rerun(77, '2026-11-13T05:00:00Z'), ...MAIN_GREEN]);
+        expect(re).toContain('re-running (run 77)');
+        expect(re).not.toMatch(/\bred\b/);
+        const red = body([mainRun(77, '2026-11-13T05:00:00Z', 'failure')]);
+        expect(red).toContain('red (run 77)');
+        expect(red).not.toContain('re-running');
+      });
+      it('(c) 20 newer fork pull_request runs on a branch named main do not hide main\'s own runs', () => {
+        const forks = Array.from({ length: 20 }, (_, i) => mainRun(900 + i, `2026-11-13T10:${String(i).padStart(2, '0')}:00Z`, 'failure', 'pull_request'));
+        const ok = gate(['123', SHA], { main: [...forks, ...MAIN_GREEN] });
+        expect(ok.status).toBe(0);
+        expect(ok.merges).toEqual([MERGE_ARGV]);
+        for (const event of ['push', 'schedule', 'workflow_dispatch']) {
+          const r = gate(['123', SHA], { main: [...forks, mainRun(77, '2026-11-13T05:00:00Z', 'failure', event)] });
+          expect(r.status).toBe(18);
+          expect(r.stderr).toContain('actions/runs/77 ended failure');
+        }
+        // Only pull_request runs: still nothing to judge (4).
+        expect(gate(['123', SHA], { main: forks }).status).toBe(4);
+      });
+      it('(c) a run of another event still counts, through the unfiltered list', () => {
+        expect(gate(['123', SHA], { main: [mainRun(77, '2026-11-13T05:00:00Z', 'failure', 'merge_group'), ...MAIN_GREEN] }).status).toBe(18);
+      });
     });
     it('refuses 4 when gh fails or main has no completed run to judge', () => {
       const red = [mainRun(77, '2026-11-13T05:00:00Z', 'failure')];
