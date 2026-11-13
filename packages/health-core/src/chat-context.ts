@@ -425,10 +425,11 @@ function screeningRows(raw: unknown): Array<Pick<ApiScreening, 'screeningKey' | 
   const kept = raw.flatMap((row) => {
     const { screeningKey, value } = fields(row);
     if (typeof screeningKey !== 'string' || !(SCREENING_KEYS as readonly string[]).includes(screeningKey)) return [];
-    if (typeof value !== 'string' || value.length > MAX_SCREENING_VALUE) return [];
+    if (typeof value !== 'string') return [];
     const range = screeningRange(screeningKey), n = range ? parseLocalisedNumber(value, range) : 0;
-    if (screeningKey === 'prostate_psa_value' && n !== undefined && !inPsaRange(n)) psaUnusable = true;
-    return range && (n === undefined || !Number.isFinite(n) || rangeFault(range, n)) ? [] : [{ screeningKey, value }];
+    if (screeningKey === 'prostate_psa_value' && n !== undefined && !inPsaRange(n)) psaUnusable = true; // before the length cap, as the plan reads it
+    const unfit = value.length > MAX_SCREENING_VALUE || (range && (n === undefined || !Number.isFinite(n) || rangeFault(range, n)));
+    return unfit ? [] : [{ screeningKey, value }];
   });
   return psaUnusable ? kept.filter((r) => r.screeningKey !== 'prostate_last_date') : kept;
 }

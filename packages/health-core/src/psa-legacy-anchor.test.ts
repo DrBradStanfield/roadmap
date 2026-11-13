@@ -129,6 +129,25 @@ describe('an out-of-range old answer newer than every row is not the PSA read (U
     });
   });
 
+  it.each([['"10001" and 28 spaces', `10001${' '.repeat(28)}`], ['"10001" with 29 leading zeros', `${'0'.repeat(29)}10001`]])(
+    'an answer longer than 32 characters, %s: plan, reminders and chat agree; the rows stand', (_what, value) => {
+      const file = fileWith(RAISED_THEN_VAGUE, { prostatePsaValue: value, prostateLastDate: '2026-09' });
+      expect(cards(file).map((c) => c.id)).toEqual(['screening-prostate-repeat']);
+      expect(reminders(file)).toEqual(['2026-09-01']);
+      expect(chatPlan(file).map((s) => s.id)).toEqual(['screening-prostate-repeat']);
+    });
+
+  it('the 10000 boundary: 10000 is in range and is the PSA read; 10000.1 is not', () => {
+    const atMax = fileWith(RAISED_THEN_VAGUE, { prostatePsaValue: '10000', prostateLastDate: '2026-09' });
+    expect(cards(atMax).map((c) => c.id)).toContain('screening-prostate-elevated');
+    expect(reminders(atMax)).toEqual(['2026-12-01']);
+    expect(chatPlan(atMax).map((s) => s.id)).toContain('screening-prostate-elevated');
+    const over = fileWith(RAISED_THEN_VAGUE, { prostatePsaValue: '10000.1', prostateLastDate: '2026-09' });
+    expect(cards(over).map((c) => c.id)).toEqual(['screening-prostate-repeat']);
+    expect(reminders(over)).toEqual(['2026-09-01']);
+    expect(chatPlan(over).map((s) => s.id)).toEqual(['screening-prostate-repeat']);
+  });
+
   it('no rows: an answer of 10001 is no answer, date included; plan and chat agree, no "Elevated PSA"', () => {
     const file = fileWith([], { prostatePsaValue: '10001', prostateLastDate: '2026-09' });
     const none = fileWith([], {});
