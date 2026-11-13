@@ -48,25 +48,25 @@ final class AppleHealthSync {
     var status: Status { run.status }
     /// Settings' Apple Health footer says the owed delete is stuck (US-72 AC16, `Owed.showsFooter`).
     /// A cache of `memory.owed`, so every writer of owed that can change it must refresh it: init,
-    /// `pay` and `disconnect`. A save owed meanwhile (`owe`) keeps the count, so it never changes it.
+    /// a pay (`OwedPay`) and `disconnect`. A save owed meanwhile (`owe`) keeps the count, so it never changes it.
     /// Set only by `refreshOwedFooter`.
     private(set) var owedFooter = false
 
-    let store: RecordStore // internal only for AppleHealthSync+Owed.swift
+    private let store: RecordStore
     private let engine: HealthEngine
-    let client: HealthStoreClient // internal only for AppleHealthSync+Owed.swift
-    let memory: HealthSyncMemory // internal only for AppleHealthSync+Owed.swift
+    private let client: HealthStoreClient
+    private let memory: HealthSyncMemory
+    /// What an erase owes Apple Health, paid one at a time (AppleHealthOwed.swift).
+    private let owed: OwedPay
     /// US-56's cards, read as soon as the sheet is answered (`connect`).
     private let live: LiveHealth?
     /// The connection generation of the one rule above: moves on every erase disconnect.
     private var generation = 0
     /// Who waits for the running pass to end: a refresh asked for during it, an erase's `drained`.
-    var waiting: [UUID: CheckedContinuation<Void, Never>] = [:] // internal only for AppleHealthSync+Owed.swift
+    private(set) var waiting: [UUID: CheckedContinuation<Void, Never>] = [:]
     private var started = false
     /// A lab results request is showing: a second return to the foreground does not ask again.
     private var asking = false
-    /// The owed delete in flight, the one claim every caller awaits (`deleteOwed`).
-    var paying: Task<Bool, Never>? // internal only for AppleHealthSync+Owed.swift
     /// Where the two Health Records events go (US-72 AC13); RootView sets it.
     @ObservationIgnored var analytics: Analytics?
 
@@ -80,6 +80,7 @@ final class AppleHealthSync {
         self.engine = engine
         self.client = client
         self.memory = memory
+        owed = OwedPay(client: client, memory: memory)
         self.live = live
         self.reread = reread
         run = !client.isAvailable ? .unavailable : memory.connected ? .idle(.notYet) : .disconnected
@@ -277,7 +278,7 @@ final class AppleHealthSync {
     /// Disconnected by an erase: nothing is observed or read, and every anchor resets, so
     /// the next Connect reads everything from the start. Every value written is owed a delete.
     /// What Health showed is kept (`labResultsAsked`), so that Connect asks nothing again.
-    func disconnect() { // internal only for AppleHealthSync+Owed.swift
+    private func disconnect() {
         generation += 1
         memory.oweWritten()
         refreshOwedFooter()
@@ -287,6 +288,44 @@ final class AppleHealthSync {
         for kind in HealthKind.allCases { memory.setAnchor(nil, for: kind) }
         memory.labResultsAnchor = nil
         client.stopObserving()
+    }
+
+    /// "Delete all my data" (US-25 AC16, US-72 AC10), once the record's erase has landed:
+    /// disconnects Apple Health, then pays what it owes (`OwedPay.deleteAll`). `wasConnected`:
+    /// Health was connected as the erase began (a pass that saw the erase first may have
+    /// disconnected it already); a delete still owed (`HealthSyncMemory.owed`) is made either way.
+    /// False when Health refused the delete or left an id. Neither: nothing to delete.
+    func erased(wasConnected: Bool) async -> Bool {
+        if let source = store.recordSource { memory.eraseSeen = EraseSeen(epoch: store.myData?.eraseEpoch ?? 0, source: source) }
+        disconnect()
+        guard client.isAvailable, wasConnected || !memory.owed.ids.isEmpty || memory.owedUnreadable else { return true }
+        return await owed.deleteAll(deadline: .now + Self.drainBound, drain: drained, settled: refreshOwedFooter)
+    }
+
+    /// The one owed pay at a time (`OwedPay.pay`), drained by this run.
+    @discardableResult
+    private func deleteOwed(erasing deadline: ContinuousClock.Instant? = nil) async -> Bool {
+        await owed.pay(erasing: deadline, drain: drained, settled: refreshOwedFooter)
+    }
+
+    /// How long an erase's Health delete waits for a running pass. The record's erase has
+    /// already landed: only the Health delete waits, and never on a hung HealthKit call.
+    static let drainBound: Duration = .seconds(2)
+
+    /// Waits for a running pass to end (`waiting`), or `deadline`, whichever comes first.
+    /// The erase moved the generation, so the pass stops at its next check, once its HealthKit
+    /// call returns. A call that hangs past the bound is left running: a sample it saves later
+    /// is owed (`writeTyped`), and the next foreground or unlock deletes it (`deleteOwed`).
+    /// The deadline is its own task, so a cancelled caller still waits for it, never spins.
+    private func drained(by deadline: ContinuousClock.Instant) async {
+        guard run.passing, deadline > .now else { return }
+        let id = UUID()
+        let timer = Task { [weak self] in
+            try? await Task.sleep(until: deadline, clock: .continuous)
+            self?.waiting.removeValue(forKey: id)?.resume()
+        }
+        await withCheckedContinuation { waiting[id] = $0 }
+        timer.cancel()
     }
 
     /// What a pass began under: the record's mark and the connection generation.
