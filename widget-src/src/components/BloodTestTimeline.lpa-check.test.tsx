@@ -599,7 +599,7 @@ describe('US-05 AC3 — the answer buttons around a slow save', () => {
     expect(allFree(m)).toBe(true);
   });
 
-  it('P2: a save held past 600 ms, then refused: the buttons free at once', async () => {
+  it('P2: a save held past 600 ms, then refused: the buttons rest 600 ms more (D1)', async () => {
     const m = matrix();
     const land = hold(m);
     await m.answer(/mg\/dL/);
@@ -607,10 +607,14 @@ describe('US-05 AC3 — the answer buttons around a slow save', () => {
     expect(allDisabled(m)).toBe(true);
     await land('invalid');
     expect(within(m.notices()[0]).getByText(SAVE_ERRORS.invalid)).toBeTruthy();
+    expect(allDisabled(m)).toBe(true);
+    await wait(REST - 50);
+    expect(allDisabled(m)).toBe(true);
+    await wait(50);
     expect(allFree(m)).toBe(true);
   });
 
-  it('P3: a refusal, then a held retry: the old reason stays on screen during the save', async () => {
+  it('P3: a refusal, then a held retry: the old reason clears when the retry starts (D2)', async () => {
     const m = matrix();
     m.onCorrectValue.mockResolvedValueOnce('invalid');
     await m.answer(/mg\/dL/);
@@ -620,12 +624,12 @@ describe('US-05 AC3 — the answer buttons around a slow save', () => {
     const land = hold(m);
     await m.answer('My report says 156 nmol/L');
     expect(allDisabled(m)).toBe(true);
-    expect(reason.textContent).toBe(SAVE_ERRORS.invalid);
+    expect(reason.textContent).toBe(NBSP);
     await land('ok');
     expect(m.notices()).toHaveLength(0);
   });
 
-  it('P4: changed after a 400 ms save: the buttons free 600 ms after the click', async () => {
+  it('P4: changed after a 400 ms save: the buttons rest 600 ms from the outcome, not the click (D1)', async () => {
     const m = matrix();
     const land = hold(m);
     await m.answer(/mg\/dL/);
@@ -634,6 +638,8 @@ describe('US-05 AC3 — the answer buttons around a slow save', () => {
     await wait(0); // the region says it a task later
     expect(m.status().textContent).toBe('This result changed on another device. Nothing was saved.');
     await wait(REST - 400 + 50);
+    expect(allDisabled(m)).toBe(true);
+    await wait(400 - 50);
     expect(allFree(m)).toBe(true);
   });
 

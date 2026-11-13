@@ -1,14 +1,15 @@
 // The Lp(a) unit check under the blood-test matrix (US-05 AC3).
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState } from 'react';
 import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import { type UnitSystem, reportedToCanonical, UNIT_DEFS } from '@roadmap/health-core/units';
 import { healthInputSchema } from '@roadmap/health-core/validation';
 import { formatShortDate } from '../lib/constants';
 import type { CorrectFn } from '../lib/matrix-save';
+import { LPA_CHECK_COOL_MS, LPA_CHECK_START, transition } from '../lib/lpa-check-machine';
 import { keepLpaAsIs, lpaRowsToCheck, type LpaCheck } from '../lib/lpa-unit';
 import { trackProductEvent } from '../lib/server-api';
-import { saveErrorText, useLiveRegion } from './MatrixSavedCells';
+import { useLiveRegion } from './MatrixSavedCells';
 
 // US-05 AC3: one question per Lp(a) row typed while the US field was labelled
 // mg/L (lpaRowsToCheck), under the matrix's last row, Lp(a). The user answers
@@ -26,41 +27,28 @@ function LpaChecks({ rows, unitSystem, onCorrect, waiting }: {
   rows: ApiMeasurement[]; unitSystem: UnitSystem; onCorrect: CorrectFn; waiting: boolean;
 }) {
   const [answered, setAnswered] = useState<string[]>([]);
-  const [saving, setSaving] = useState(false);
-  // After an answer every answer button rests a moment, so the second click
-  // of a double click never answers the notice that moved into its place
-  // (adversary R1).
-  const [resting, setResting] = useState(false);
-  const restTimer = useRef<number>();
-  useEffect(() => () => window.clearTimeout(restTimer.current), []);
-  const rest = () => {
-    setResting(true);
-    window.clearTimeout(restTimer.current);
-    restTimer.current = window.setTimeout(() => setResting(false), 600);
-  };
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  // Saving, then a rest after every outcome (lib/lpa-check-machine.ts).
+  const [{ answering, refusals }, dispatch] = useReducer(transition, LPA_CHECK_START);
+  useEffect(() => {
+    if (answering.phase !== 'cooling') return;
+    const timer = window.setTimeout(() => dispatch({ type: 'cooled' }), LPA_CHECK_COOL_MS);
+    return () => window.clearTimeout(timer);
+  }, [answering]);
   // What the last answer did, said in a region that outlives its notice: on
   // the page from the first question, so an answer is heard, and kept once
   // the last notice goes.
   const [say, status] = useLiveRegion('lpa-check-status');
   const [asked, setAsked] = useState(false);
-  // Where an answer was given, so the focus can move on once its notice goes.
-  const focusFrom = useRef<{ root: Element; index: number } | null>(null);
+  // Where the focus goes once the answer's render lands (its notice may have gone).
+  const focusFrom = useRef<(() => HTMLElement | null | undefined) | null>(null);
   const checks = useMemo(
     () => lpaRowsToCheck(rows, unitSystem).filter(check => !answered.includes(check.row.id)),
     [rows, unitSystem, answered]);
 
-  // After an answer the focus goes to the next notice, else to the Lp(a)
-  // row's latest value, else the matrix heading; after a refusal it can retry, back to its
-  // own notice (a button disabled while saving drops the focus). Never to the page.
   useLayoutEffect(() => {
-    const from = focusFrom.current;
-    if (!from) return;
+    const target = focusFrom.current;
     focusFrom.current = null;
-    const cells = from.root.querySelectorAll<HTMLElement>('[data-metric="lpa"] .bt-cell-clickable');
-    (from.root.querySelectorAll<HTMLElement>('.lpa-check')[from.index]
-      ?? cells[cells.length - 1]
-      ?? from.root.querySelector<HTMLElement>('.bt-timeline-title'))?.focus();
+    target?.()?.focus();
   });
 
   // A report in nmol/L, clean of float noise (12 significant digits).
@@ -70,35 +58,38 @@ function LpaChecks({ rows, unitSystem, onCorrect, waiting }: {
 
   const answer = async (event: React.MouseEvent, { row, typed }: LpaCheck, index: number, unit: ReportUnit | 'keep') => {
     if (event.detail > 1) return; // the second click of a double click
-    rest();
     const root = event.currentTarget.closest('.bt-timeline')!;
+    const notice = (i: number) => root.querySelectorAll<HTMLElement>('.lpa-check')[i];
+    // After an answer the focus goes to the next notice, else to the Lp(a)
+    // row's latest value, else the matrix heading; after a refusal it can retry, back to its
+    // own notice (a button disabled while saving drops the focus). Never to the page.
+    const focusOn = () => {
+      const cells = root.querySelectorAll<HTMLElement>('[data-metric="lpa"] .bt-cell-clickable');
+      return notice(index) ?? cells[cells.length - 1] ?? root.querySelector<HTMLElement>('.bt-timeline-title');
+    };
     // An answer that would save what is stored writes nothing: kept.
     const kept = unit === 'keep' || saves(typed, unit) === Number(row.value.toPrecision(12));
-    if (kept) keepLpaAsIs(row.id);
-    else {
-      setSaving(true);
+    if (kept) {
+      keepLpaAsIs(row.id);
+      dispatch({ type: 'kept' });
+    } else {
+      dispatch({ type: 'correcting', rowId: row.id });
       const status = await onCorrect(row.id, saves(typed, unit));
-      setSaving(false);
       if (status === 'changed') {
         // Replaced on another device: the page re-reads the record and the
         // notice goes, so the reason is said where it outlives it (adversary
         // R8), and the focus goes to the next notice or there (adversary R5).
         say(CHECK_CHANGED);
-        (root.querySelectorAll<HTMLElement>('.lpa-check')[index + 1] ?? root.querySelector<HTMLElement>('.lpa-check-status'))?.focus();
-        return;
-      }
-      if (status !== 'ok') {
-        focusFrom.current = { root, index };
-        setErrors(e => ({ ...e, [row.id]: saveErrorText(status) }));
-        return;
-      }
+        focusFrom.current = () => notice(index + 1) ?? root.querySelector<HTMLElement>('.lpa-check-status');
+      } else focusFrom.current = focusOn;
+      dispatch({ type: 'settled', status });
+      if (status !== 'ok') return;
     }
     // Names the result's day, so a second answer in a row reads differently.
     const day = formatShortDate(row.recordedAt);
     say(kept ? `Kept the result from ${day} as saved.` : `Saved the result from ${day}.`);
     trackProductEvent('lpa_check_answered', { answer: kept ? 'keep' : unit }); // after the outcome; the label, never a value
-    focusFrom.current = { root, index };
-    rest();
+    focusFrom.current = focusOn;
     setAnswered(ids => [...ids, row.id]);
   };
 
@@ -118,10 +109,10 @@ function LpaChecks({ rows, unitSystem, onCorrect, waiting }: {
       </p>
       <div className="alr-add-actions">
         {offered.map(unit => (
-          <button key={unit} type="button" className="alr-add-cancel" disabled={saving || resting || waiting}
+          <button key={unit} type="button" className="alr-add-cancel" disabled={answering.phase !== 'idle' || waiting}
             onClick={e => void answer(e, check, index, unit)}>{label(unit)}</button>
         ))}
-        <button type="button" className="alr-add-cancel" disabled={saving || resting || waiting}
+        <button type="button" className="alr-add-cancel" disabled={answering.phase !== 'idle' || waiting}
           onClick={e => void answer(e, check, index, 'keep')}>Neither of these (keep as saved)</button>
         {waiting && <span className="lpa-check-wait">Finish editing the Lp(a) value first.</span>}
       </div>
@@ -129,7 +120,7 @@ function LpaChecks({ rows, unitSystem, onCorrect, waiting }: {
         If your report shows a higher number, that result is very high: please discuss it with your doctor.</p>}
       <p className="lpa-check-note">You can also correct any value by clicking it in the table.</p>
       {/* A p, never a div: the storefront theme hides an empty div (div:empty). */}
-      <p className="alr-add-notice lpa-check-note" aria-live="polite">{errors[check.row.id] || '\u00a0'}</p>
+      <p className="alr-add-notice lpa-check-note" aria-live="polite">{refusals[check.row.id] || '\u00a0'}</p>
     </div>
     );
   });
