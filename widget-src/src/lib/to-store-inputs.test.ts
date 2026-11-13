@@ -38,6 +38,18 @@ describe('toStoreInputs (US-12)', () => {
       labValues: [{ metricName: 'Ferritin', value: 85, unit: 'mmol/L', referenceLow: null, referenceHigh: null, recordedAt: AT, source: 'lab_import', correctsId: undefined }],
     },
     {
+      name: 'a lab row with no reference range keeps both range keys, undefined, in order',
+      input: { values: [], labValues: [{ name: 'Ferritin', value: 85, unit: 'ug/L', recordedAt: AT }] },
+      measurements: [],
+      labValues: [{ metricName: 'Ferritin', value: 85, unit: 'ug/L', referenceLow: undefined, referenceHigh: undefined, recordedAt: AT, source: 'lab_import', correctsId: undefined }],
+    },
+    {
+      name: 'an explicit lab_import source passes through',
+      input: { values: [value({ source: 'lab_import' })], labValues: [] },
+      measurements: [{ metricType: 'ldl', value: 3.1, recordedAt: AT, source: 'lab_import', correctsId: undefined }],
+      labValues: [],
+    },
+    {
       name: 'a printed limit keeps its comparator',
       input: { values: [value({ comparator: '>' })], labValues: [lab({ comparator: '<=' })] },
       measurements: [{ metricType: 'ldl', value: 3.1, recordedAt: AT, source: 'lab_import', correctsId: undefined, comparator: '>' }],
