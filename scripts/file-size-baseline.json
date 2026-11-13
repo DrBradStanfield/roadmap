@@ -21,7 +21,6 @@
     "app/routes/api.chat.ts": 698,
     "widget-src/src/components/InputPanel.tsx": 673,
     "packages/health-core/src/types.ts": 656,
-    "widget-src/src/components/BloodTestTimeline.tsx": 648,
     "app/lib/chat.server.ts": 647,
     "widget-src/src/storage/drive.ts": 631,
     "widget-src/src/storage/roadmap-store.ts": 607,
@@ -36,6 +35,7 @@
     "packages/health-core/src/product-events.ts": 532,
     "packages/health-core/src/plan.ts": 518,
     "packages/health-core/src/mcp-tool-contract.ts": 515,
+    "widget-src/src/components/BloodTestTimeline.tsx": 515,
     "packages/health-core/src/run-roadmap.ts": 505
   }
 }
