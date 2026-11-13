@@ -193,17 +193,25 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   // newest active row per metric (US-07 AC4) — so the first match here IS
   // the latest. A grid's draft is not read: a value drives the plan once it
   // is saved (US-03 AC6, Brad 2026-11-13).
+  // A chat waist or pressure sent before the whole form opens waits in
+  // `inputs` for the grid (ChatEdits' hand-over), unconfirmed: it drives
+  // neither the plan nor the chat, which is built from the plan's inputs
+  // (US-16 AC1, H72).
+  const confirmed = useMemo((): Partial<HealthInputs> => {
+    const { waistCm: _waist, systolicBp: _sys, diastolicBp: _dia, ...rest } = inputs;
+    return rest;
+  }, [inputs]);
   const effectiveInputs = useMemo(
-    () => mergeLongitudinalInputs(inputs, previousMeasurements),
-    [inputs, previousMeasurements],
+    () => mergeLongitudinalInputs(confirmed, previousMeasurements),
+    [confirmed, previousMeasurements],
   );
 
   // The day of the value the plan reads for a field: one typed with no day
   // counts as today's (null); else the saved row's.
   const inputDay = useCallback((field: keyof HealthInputs, metric: string) => {
     const saved = previousMeasurements.find((m) => m.metricType === metric);
-    return inputs[field] !== undefined || !saved ? null : dayOf(saved.recordedAt);
-  }, [inputs, previousMeasurements]);
+    return confirmed[field] !== undefined || !saved ? null : dayOf(saved.recordedAt);
+  }, [confirmed, previousMeasurements]);
 
   // What the plan and the chat read: the inputs with the lab's printed eGFR
   // when it is newer than the creatinine or from its day (US-07 AC7).
