@@ -89,13 +89,9 @@ async function release(work) {
     }
   }
 
-  const bundlePath = join(work, 'health-engine.js');
-  await bundleEngine(bundlePath, version);
-  checkParity(bundlePath, join(work, 'goldens'));
-  const facts = bundleFacts(bundlePath);
-  if (facts.engineVersion !== version) throw new Error('The bundle does not carry its version.');
-
-  const bytes = readFileSync(bundlePath);
+  // The option checks come before the slow build, so a bad option fails fast (test audit C01),
+  // and after --if-changed, so the scheduled run (engine-release.yml, no --min-app-build) still
+  // says "nothing to release" for an unchanged engine when the floor file has risen.
   const minVersion = Number(opts['min-version'] ?? last?.minVersion ?? 0);
   if (!Number.isSafeInteger(minVersion) || minVersion > version) throw new Error(`--min-version must be a version at or below ${version}.`);
   if (last && minVersion < last.minVersion) throw new Error(`The floor only rises: the last release set minVersion ${last.minVersion}.`);
@@ -106,6 +102,13 @@ async function release(work) {
   if (!Number.isSafeInteger(floor) || floor < 1) throw new Error(`${opts.floor} must hold minAppBuild as a whole number of at least 1.`);
   if (minAppBuild < floor) throw new Error(`--min-app-build ${minAppBuild} is below the floor ${floor} in ${opts.floor}: pass --min-app-build ${floor} or higher.`);
 
+  const bundlePath = join(work, 'health-engine.js');
+  await bundleEngine(bundlePath, version);
+  checkParity(bundlePath, join(work, 'goldens'));
+  const facts = bundleFacts(bundlePath);
+  if (facts.engineVersion !== version) throw new Error('The bundle does not carry its version.');
+
+  const bytes = readFileSync(bundlePath);
   const issuedAt = new Date(Math.floor(now.getTime() / 60000) * 60000);
   const manifest = canonicalManifest({
     appId: appId(),
