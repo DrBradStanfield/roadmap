@@ -175,6 +175,9 @@ const writers: Record<string, Writer> = {
       fireEvent.click(screen.getByRole('button', { name: /Continue without keeping my files/ }));
       fireEvent.change(document.querySelector('input[type=file]')!, { target: { files: [new File(['synthetic'], 'synthetic.pdf', { type: 'application/pdf' })] } });
       await screen.findByDisplayValue('3.9');
+      // findBy waits with act() off, so React may leave a render in the Scheduler. Run it out
+      // here, inside act: left over, it commits the new tree inside the gap (H51).
+      await act(async () => { await drain(); });
     },
     onOld: () => screen.queryByDisplayValue('3.9') !== null,
     fire: () => { fireEvent.click(screen.getByRole('button', { name: /^Save 1 Value/ })); },
