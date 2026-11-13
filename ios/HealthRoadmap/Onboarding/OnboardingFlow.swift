@@ -76,12 +76,16 @@ enum OnboardingFlow {
         case wordsStale
         /// Back, or a summary line's Edit.
         case moved(Page)
+        /// After a restart: the first page for the record now shown; nil when it cannot be read.
+        case replanned(Page?)
         /// The summary's Continue.
         case reviewAccepted
     }
 
     enum Effect: Equatable {
         case pin, repin, unpin, connect, finish
+        /// The record moved under the page: take it, then plan the flow again from it (US-54 AC5d).
+        case restart
         case save(OnboardingStep)
         case replace(Replace)
     }
@@ -93,14 +97,14 @@ enum OnboardingFlow {
             case .began(let page?): return (.page(page, .editing(message: nil)), [.pin])
             // Never pinned, so nothing to give back.
             case .began(nil): return (.finished(nil), [.finish])
-            case .allowTapped, .connected, .tapped, .landed, .confirmed, .declined, .wordsStale, .moved, .reviewAccepted:
+            case .allowTapped, .connected, .tapped, .landed, .confirmed, .declined, .wordsStale, .moved, .replanned, .reviewAccepted:
                 return (mode, [])
             }
         case .connecting:
             switch event {
             case .connected(let next): return advance(from: Page(step: .health), next: next)
             // A second tap on Allow starts no second connect (bug D).
-            case .began, .allowTapped, .tapped, .landed, .confirmed, .declined, .wordsStale, .moved, .reviewAccepted:
+            case .began, .allowTapped, .tapped, .landed, .confirmed, .declined, .wordsStale, .moved, .replanned, .reviewAccepted:
                 return (mode, [])
             }
         case .page(let page, let save):
@@ -125,11 +129,18 @@ enum OnboardingFlow {
                 // The record may have moved on (an erase, a unit change elsewhere): the next
                 // try is checked against the record now shown.
                 case .words(let words): return (.page(page, .editing(message: words)), [.repin])
-                // Nothing was written against the record this page showed: the pin stays, so the
-                // next try is checked against it again (US-25 AC11g; S6 review F2, recordChanged).
+                // Nothing reached the engine: the pin stays (US-25 AC11g, S6 review F2).
                 case .unwritten(let words): return (.page(page, .editing(message: words)), [])
                 case .askReplace(let replace): return (.page(page, .asking(replace)), [])
+                // The record moved under the page: it waits, words kept, while the flow is planned
+                // again from the record now shown, so no tap saves into a record it never showed and
+                // a page with no Back is never refused for good.
+                case .restart(let words): return (.page(page, .findingRows(words: words)), [.restart])
                 }
+            case .replanned(let to):
+                guard case .findingRows(let words) = save else { return (mode, []) }
+                guard let to else { return (.finished(page), [.unpin, .finish]) }
+                return (.page(to, .editing(message: words)), [])
             case .moved(let to):
                 return save.busy ? (mode, []) : (.page(to, .editing(message: nil)), [.repin])
             case .reviewAccepted:
@@ -138,7 +149,7 @@ enum OnboardingFlow {
         case .finished:
             switch event {
             // A late connect or a second Continue never finishes again (bugs D, E).
-            case .began, .allowTapped, .connected, .tapped, .landed, .confirmed, .declined, .wordsStale, .moved, .reviewAccepted:
+            case .began, .allowTapped, .connected, .tapped, .landed, .confirmed, .declined, .wordsStale, .moved, .replanned, .reviewAccepted:
                 return (mode, [])
             }
         }
@@ -169,28 +180,28 @@ enum OnboardingFlow {
     }
 
     /// What the page shows after a save: the next step, the engine's words (the record now
-    /// shown is taken), words for a save that met no record this page showed (`unwritten`: the
-    /// pin stays), or the replace question.
-    enum Landing: Equatable { case advance, words(String), unwritten(String), askReplace(Replace) }
+    /// shown is taken), words for an answer that never reached the engine (`unwritten`: the pin
+    /// stays), the replace question, or a refusal on a record that moved under the page (`restart`).
+    enum Landing: Equatable { case advance, words(String), unwritten(String), askReplace(Replace), restart(String) }
 
     /// The words for an answer the page cannot write (bug C); the engine's own fallback words.
     static let couldNotSave = "That could not be saved."
 
-    static func landing(_ outcome: SaveOutcome, step: OnboardingStep) -> Landing {
+    /// `moved`: the record the page pinned is no longer the one shown (`RecordStore.pinStillShown`,
+    /// the store's own guard). The one place a refusal becomes a restart.
+    static func landing(_ outcome: SaveOutcome, step: OnboardingStep, moved: Bool = false) -> Landing {
         switch outcome {
         case .stay:
             return .unwritten(couldNotSave)
-        // The record changed since this page showed it (an erase, a sync turned on or off): the
-        // next tap is refused again, never saved into a record the page never showed (RecordStore's rule).
-        case .applied(.refused(let words, _), _) where words == RecordStore.recordChanged,
-             .replaced(.refused(let words, _)) where words == RecordStore.recordChanged:
-            return .unwritten(words)
         case .unchanged:
             return .advance
         // Today already holds a weight: ask before replacing it with the one typed (AC5, US-25 AC5).
         // Apple Health's year-old weight, confirmed, was never typed: its import never names a row.
         case .applied(.refused(_, let id?), let typed?) where step == .weight:
             return .askReplace(Replace(id: id, value: typed))
+        // Refused, and the record moved under the page (an erase, a sync turned on or off): plan again.
+        case .applied(.refused(let words, _), _) where moved, .replaced(.refused(let words, _)) where moved:
+            return .restart(words)
         case .applied(let result, _), .replaced(let result):
             switch result {
             case .saved: return .advance

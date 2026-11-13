@@ -23,7 +23,9 @@ final class OnboardingFlowTests: XCTestCase {
             ("landed advance, last", .landed(.advance, next: nil)),
             ("landed words", .landed(.words("No"), next: .height)),
             ("landed unwritten", .landed(.unwritten("That could not be saved."), next: .height)),
-            ("landed record changed", .landed(.unwritten(RecordStore.recordChanged), next: .height)),
+            ("landed restart", .landed(.restart("Moved"), next: .height)),
+            ("replanned sex", .replanned(Page(step: .sex))),
+            ("replanned nil", .replanned(nil)),
             ("landed ask", .landed(.askReplace(row1), next: .height)),
             ("confirmed row-1", .confirmed(row1)),
             ("confirmed row-2", .confirmed(row2)),
@@ -62,9 +64,9 @@ final class OnboardingFlowTests: XCTestCase {
                 "landed words": (page(.weight, .editing(message: "No")), [.repin]),
                 // Bug C, and AC11g: the words show and the pin stays (review F2).
                 "landed unwritten": (page(.weight, .editing(message: "That could not be saved.")), []),
-                // The record changed since the page showed it: the words show and the pin stays,
-                // so the next tap is refused again (owner's ruling on PR 1570).
-                "landed record changed": (page(.weight, .editing(message: RecordStore.recordChanged)), []),
+                // Refused on a record that moved under the page: it waits, words kept, and plans again
+                // from the record now shown (US-54 AC5d, owner's ruling (c) on PR 1570).
+                "landed restart": (page(.weight, .findingRows(words: "Moved")), [.restart]),
                 "landed ask": (page(.weight, .asking(row1)), []),
             ]),
             (page(.weight, .asking(row1)), [
@@ -85,8 +87,14 @@ final class OnboardingFlowTests: XCTestCase {
                 "landed advance, last": (page(.review), [.repin]),
                 "landed words": (page(.height, .editing(message: "No"), fromSummary: true), [.repin]),
                 "landed unwritten": (page(.height, .editing(message: "That could not be saved."), fromSummary: true), []),
-                "landed record changed": (page(.height, .editing(message: RecordStore.recordChanged), fromSummary: true), []),
+                "landed restart": (page(.height, .findingRows(words: "Moved"), fromSummary: true), [.restart]),
                 "landed ask": (page(.height, .asking(row1), fromSummary: true), []),
+            ]),
+            // Planning again: every tap, Back and late landing waits; the plan lands once, with the
+            // words, on the page the record now asks for, or finishes when it cannot be read.
+            (page(.weight, .findingRows(words: "Moved")), [
+                "replanned sex": (page(.sex, .editing(message: "Moved")), []),
+                "replanned nil": (.finished(Page(step: .weight)), [.unpin, .finish]),
             ]),
             (page(.review), ["reviewAccepted": (.finished(Page(step: .review)), [.unpin, .finish]), "moved birth": birth]),
             // Bugs D, E: a late connect or a second Continue never finishes again.
@@ -170,5 +178,15 @@ final class OnboardingFlowTests: XCTestCase {
         XCTAssertFalse(done.pinned)
         XCTAssertEqual(run(page(.review), [.reviewAccepted]).0.step, .review)
         XCTAssertNil(run(.starting, [.began(nil)]).0.step)
+    }
+
+    /// US-54 AC5d: a restart runs once per refused tap and never loops: a second landing, a
+    /// tap or Back while it plans changes nothing, and only the first plan lands.
+    func testARestartRunsOnceAndLandsOnce_US54_AC5d() {
+        let moved = Flow.Event.landed(.restart("Moved"), next: nil)
+        let (mode, effects) = run(page(.height, .saving), [moved, moved, .tapped, .moved(Page(step: .sex)),
+                                                           .replanned(Page(step: .birth)), .replanned(Page(step: .sex))])
+        XCTAssertEqual(effects, [.restart])
+        XCTAssertEqual(mode, page(.birth, .editing(message: "Moved")))
     }
 }

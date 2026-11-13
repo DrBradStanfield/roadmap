@@ -1899,15 +1899,19 @@ A new user answers sex, birth month and year, height and weight, one per screen,
 - **One named state (2026-11-13, iPhone survey S6, US-54 AC5d).** `OnboardingFlow.Mode` is
   starting, connecting, `page(Page, SheetSave.State<Replace>)` or `finished(Page?)`, changed
   only by the pure `OnboardingFlow.transition`, which returns the effects the view runs (pin,
-  repin, unpin, connect, finish, save, replace); `OnboardingFlowTests` holds the table. It
+  repin, unpin, connect, finish, save, replace, restart); `OnboardingFlowTests` holds the table. It
   replaced seven `@State` flags (step, editing, message, connecting, birthAnswered, replacing,
   saving). Why: they drifted apart, and each drift was a bug (a double tap saved or connected
   twice, finish ran twice, a silent unlock). A page's save is the sheets' `SheetSave`, so the
   tap claims it in its own turn and "Replace it" carries the row and the weight typed.
-  `finished` holds the last page so the cover slides down with it drawn. A save that met no
-  record the page showed (`Landing.unwritten`: an unwritable answer, or `recordChanged`) keeps
-  the pin, as a sheet keeps refusing until it closes; a refusal from the engine takes the
-  record now shown (`repin`). Pin and unpin are effects: begin pins as the first page shows,
+  `finished` holds the last page so the cover slides down with it drawn. An answer it cannot
+  write (`Landing.unwritten`) keeps the pin. A refusal while the pinned record is no longer the
+  one shown (`RecordStore.pinStillShown`, the same `shows` predicate `applyInTurn`'s guard uses)
+  is a `restart`: the words show, the page waits, the store repins and the flow is planned again
+  from the record now shown by begin's own `OnboardingSteps.first`. Onboarding cannot close as a
+  sheet does, so it plans again instead of refusing for good. The trigger is state, not the
+  refusal's text or reason (owner's ruling (c) over carrying `reason` on `ApplyResult`, PR 1570):
+  one place, `OnboardingFlow.landing(moved:)`. Any other refusal shows its words and repins. Pin and unpin are effects: begin pins as the first page shows,
   finishing gives the pin back. Lead F3: a save landing after `onDisappear` could unpin twice
   (no live path: the cover closes only through finish).
 

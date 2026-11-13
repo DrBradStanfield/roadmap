@@ -51,6 +51,15 @@ enum OnboardingSteps {
         return !skip.isEmpty && fresh(weightDay, now: now, calendar: calendar) ? .review : .weight
     }
 
+    /// The first page for the record as it is: at the start, and again when the record moved
+    /// under a page (US-54 AC5d). After a cloud connect (AC2) only what is missing, else weight.
+    static func first(_ profile: MyData.Profile, onlyMissing: Bool, healthAsked: Bool, skip: Set<OnboardingStep>,
+                      weightDay: String?, hasWeight: Bool) -> OnboardingStep {
+        onlyMissing
+            ? next(after: .health, profile: profile, hasWeight: hasWeight, onlyMissing: true) ?? .weight
+            : start(profile, healthAsked: healthAsked, skip: skip, weightDay: weightDay)
+    }
+
     /// A weight day within the last year (AC3b, guard a).
     static func fresh(_ day: String?, now: Date, calendar: Calendar) -> Bool {
         let yearAgo = calendar.date(byAdding: .year, value: -1, to: now).map { DayText.iso($0, calendar: calendar) } ?? ""

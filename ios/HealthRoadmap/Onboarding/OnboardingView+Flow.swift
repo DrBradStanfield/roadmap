@@ -26,12 +26,24 @@ extension OnboardingView {
         await prefill(from: HealthCharacteristics.none)
         // Gone while the engine filled the boxes: nothing to pin.
         guard !Task.isCancelled, mode == .starting else { return }
-        noteSupplied()
-        let first = onlyMissing
-            ? OnboardingSteps.next(after: .health, profile: data.profile, hasWeight: recordWeight != nil, onlyMissing: true) ?? .weight
-            : OnboardingSteps.start(data.profile, healthAsked: healthAsked, skip: supplied, weightDay: weightRow?.latest?.day)
         // Pinned as it shows: each answer is checked against the record its screen showed (US-25 AC11g).
-        send(.began(OnboardingFlow.Page(step: first)))
+        send(.began(firstPage()))
+    }
+
+    /// The first page for the record now shown (nil when it cannot be read): begin's, and a restart's.
+    private func firstPage() -> OnboardingFlow.Page? {
+        noteSupplied()
+        guard let profile else { return nil }
+        return .init(step: OnboardingSteps.first(profile, onlyMissing: onlyMissing, healthAsked: healthAsked, skip: supplied,
+                                                 weightDay: weightRow?.latest?.day, hasWeight: recordWeight != nil))
+    }
+
+    /// The record moved under the page (US-54 AC5d): take the record now shown, fill the boxes
+    /// left alone from it, and plan the flow again, as begin does.
+    private func restart() async {
+        store.repinScreen()
+        await prefill(from: HealthCharacteristics.none)
+        send(.replanned(firstPage()))
     }
 
     /// Moves the flow by `event` and runs the effects it names. A page change slides; the
@@ -53,6 +65,7 @@ extension OnboardingView {
         case .unpin: store.unpinScreen()
         case .finish: finish()
         case .connect: Task { await connect() }
+        case .restart: Task { await restart() }
         case .save(let step): Task { land(await save(step), step) }
         // "Replace it": a FHIR correction of today's weight with the weight its question held, never a removal.
         case .replace(let replace): Task { land(.replaced(await store.apply(.correct(id: replace.id, value: replace.value))), .weight) }
@@ -131,7 +144,7 @@ extension OnboardingView {
 
     /// What a save came to, with the step after this one worked out from the record now.
     private func land(_ outcome: OnboardingFlow.SaveOutcome, _ step: OnboardingStep) {
-        send(.landed(OnboardingFlow.landing(outcome, step: step), next: next(after: step)))
+        send(.landed(OnboardingFlow.landing(outcome, step: step, moved: !store.pinStillShown), next: next(after: step)))
     }
 
     /// The step after `step`, from the record as it is now; nil when there is none.

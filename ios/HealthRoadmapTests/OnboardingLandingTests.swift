@@ -61,33 +61,27 @@ final class OnboardingLandingTests: XCTestCase {
         XCTAssertEqual(OnboardingFlow.landing(.applied(refused("Taken.", "row-1")), step: .weight), .words("Taken."))
     }
 
-    /// The owner's ruling on PR 1570: after a sync moves the record under an open page, the
-    /// refusal ("Your record changed...") keeps the page's pin, so the next tap is refused
-    /// again instead of saving into a record the page never showed (US-25 AC11g, US-54 AC5d).
-    func testAfterASyncTheNextTapIsRefusedAgain_US54_AC5d() async throws {
+    private func store() throws -> RecordStore {
         let folder = FileManager.default.temporaryDirectory.appending(path: "Onboarding \(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: folder) }
-        let engine = try HealthEngine()
-        let store = try RecordStore(folder: folder, engine: engine, deviceId: "test")
-        store.pinScreen()  // the height page shows the phone's record
-        defer { store.unpinScreen() }
-        let cloudRecord = try engine.blocking { try $0.newRecord(now: .now, deviceId: "web") }
-        await store.showCloud(HealthEngine.CloudView(record: cloudRecord, erase: "e1", session: 1)).value
+        addTeardownBlock { try? FileManager.default.removeItem(at: folder) }
+        return try RecordStore(folder: folder, engine: try HealthEngine(), deviceId: "test")
+    }
 
-        var mode = OnboardingFlow.Mode.page(.init(step: .height), .editing(message: nil))
-        for attempt in 1...2 {
-            let (claimed, claim) = OnboardingFlow.transition(mode, .tapped)
-            XCTAssertEqual(claim, [.save(.height)], "try \(attempt) saves")
-            let result = await store.apply(.profile(height: 180))
-            XCTAssertEqual(result, refused(RecordStore.recordChanged), "try \(attempt) is refused")
-            let landing = OnboardingFlow.landing(.applied(result), step: .height)
-            XCTAssertEqual(landing, .unwritten(RecordStore.recordChanged))
-            let (next, effects) = OnboardingFlow.transition(claimed, .landed(landing, next: .weight))
-            XCTAssertEqual(effects, [], "no repin, so the pin is still the record the page showed")
-            XCTAssertEqual(next.save?.message, RecordStore.recordChanged)
-            mode = next
-        }
-        XCTAssertNil(store.myData?.profile.height, "nothing written into the record the page never showed")
+    /// The owner's condition on (c): only a moved record restarts. A validation refusal, a day
+    /// already holding a weight, or a write failure, on the record the page shows, never does.
+    func testOnlyAMovedRecordRestarts_US54_AC5d() async throws {
+        let store = try store()
+        store.pinScreen()
+        defer { store.unpinScreen() }
+        let tooShort = await store.apply(.profile(height: 5))
+        guard case .refused(let words, _) = tooShort else { return XCTFail("5 cm is refused") }
+        XCTAssertTrue(store.pinStillShown)
+        XCTAssertEqual(OnboardingFlow.landing(.applied(tooShort), step: .height, moved: !store.pinStillShown), .words(words))
+        // Pure: a duplicate asks, a write failure shows its words; neither restarts while the record holds.
+        XCTAssertEqual(OnboardingFlow.landing(.applied(refused("Taken.", "row-1"), typed: 80), step: .weight, moved: false),
+                       .askReplace(OnboardingFlow.Replace(id: "row-1", value: 80)))
+        XCTAssertEqual(OnboardingFlow.landing(.applied(refused("The disk is full.")), step: .height, moved: false), .words("The disk is full."))
+        XCTAssertEqual(OnboardingFlow.landing(.applied(saved), step: .height, moved: true), .advance, "a save never restarts")
     }
 }

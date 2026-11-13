@@ -33,6 +33,14 @@ extension RecordStore {
         }.value
     }
 
+    /// Whether `seen` is still the record shown: no erase taken in or made here, and sync not
+    /// turned on or off, since it was taken. `applyInTurn`'s guard (US-25 AC11g).
+    func shows(_ seen: Screen) -> Bool { seen.erase == cloudErase && seen.mark.holds(at: mark) }
+
+    /// The pinned screen is still the record shown (true with no pin): an onboarding page asks
+    /// after a refusal whether the record moved under it (US-54 AC5d). Read-only.
+    var pinStillShown: Bool { pinned.map(shows) ?? true }
+
     /// Which record is shown, for Apple Health's erase gate (US-72 AC10): `Source.recordSource`.
     var recordSource: String? { source.recordSource }
 }
