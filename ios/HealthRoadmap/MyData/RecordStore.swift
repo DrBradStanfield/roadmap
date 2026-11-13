@@ -258,11 +258,12 @@ final class RecordStore {
     /// screening due dates, and minor status, which turns at midday UTC, not local midnight,
     /// so no calendar-day check can stand in). Called each time the app becomes active and at
     /// midnight while it is; a draw takes about a millisecond. In line with every change
-    /// (`chain`); nothing when no record is drawn.
+    /// (`chain`); nothing when no record is drawn or held. An erase held with no drawing is drawn
+    /// here once the engine can (lead S45): it then reads and takes edits; one predating an erase is not.
     @discardableResult
     func redraw(now: Date = .now) -> Task<Void, Never> {
         chain {
-            guard self.drawn != nil,
+            guard self.drawn != nil || (self.problem == nil && !self.recordJSON.isEmpty && !self.predatesErase),
                   let shown = try? await self.engine.screen(recordJSON: self.recordJSON, now: now, deviceId: self.deviceId, units: self.unitChoices.json)
             else { return }
             self.display(shown)
