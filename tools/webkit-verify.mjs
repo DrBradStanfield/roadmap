@@ -389,6 +389,7 @@ async function inspect(browser, deviceName, viewport) {
     const back = page.locator('.md-page .md-back').first();
     await (deviceName ? back.tap() : back.click());
     await page.locator('.md-page:not(.mh-settings)').waitFor({ state: 'detached' });
+    // TODO(H110): advisory; make it enforcing after one green production deploy.
     await probeLabFocusRing(page, deviceName ?? `desktop ${viewport.width}`, console.log, (l) => (deviceName ? l.tap() : l.click()));
     const tableButton = page.getByRole('button', { name: 'All results as a table' });
     await (deviceName ? tableButton.tap() : tableButton.click());
@@ -398,6 +399,7 @@ async function inspect(browser, deviceName, viewport) {
     const data = await matrix.evaluate(collectMatrixLayout);
     assertMatrixLayout(data);
     console.log(`${deviceName ?? 'desktop'}: matrix verified`, JSON.stringify(data));
+    // TODO(H110): advisory; make it enforcing after one green production deploy.
     await probeDateCellRing(matrix, deviceName ?? `desktop ${viewport.width}`);
     await page.screenshot({ path: `/tmp/webkit-${deviceName ?? `desktop-${viewport.width}`}.png` });
     if (deviceName) {
