@@ -245,14 +245,6 @@ describe('US-06 AC13: a cloud page keeps a change its stalled save had not lande
     expect(isSyncPending()).toBe(false);
   });
 
-  it('after another tab logs off, leaving writes nothing to the device (US-09 AC2c)', async () => {
-    const cloud = new MemoryCloud();
-    const view = await cloudPage(cloud);
-    window.dispatchEvent(new StorageEvent('storage', { key: 'health_roadmap_log_off_signal', newValue: '1' }));
-    localStorage.clear(); // the other tab's device wipe
-    fireEvent.change(view.container.querySelector('#glp1-dose')!, { target: { value: '1.7' } });
-    act(() => leave['visibilitychange: hidden']());
-    expect(localStorage.getItem('health_roadmap_file_v2')).toBeNull();
-    expect(isSyncPending()).toBe(false);
-  });
+  // After another tab logs off (US-09 AC2c): HealthTool.list-departure-log-off.test.tsx.
+  // The heard log-off stops writes for the page's life, so it has its own file (T7).
 });

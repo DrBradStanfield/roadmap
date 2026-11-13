@@ -6,7 +6,9 @@
  * silently drops or repeats test files.
  */
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import yaml from 'js-yaml';
@@ -111,10 +113,10 @@ describe('ci.yml jobs (US-64 AC12)', () => {
 });
 
 /**
- * US-46 AC18 (Claude Review volume, Brad 2026-11-12): no review while a PR carries `hold`.
- * Adding `hold` cancels a running review through the shared lane; a label
- * event never runs one; any other label gets its own lane, so it cancels
- * nothing. Removing `hold` does nothing, as before (no `unlabeled` trigger).
+ * US-46 AC18 (Claude Review volume, Brad 2026-11-12): no review on a push to a PR that carries `hold`.
+ * Label events start nothing and cancel nothing: adding `hold` one second after
+ * `opened` (gh pr create --label hold) used to cancel that review, leaving a
+ * CANCELLED `review` that merge-gated refuses (exit 9) until a re-run.
  */
 describe('claude-review.yml triggers and lane (US-46 AC18)', () => {
   const review = yaml.load(readFileSync(join(ROOT, '.github/workflows/claude-review.yml'), 'utf8')) as Workflow;
@@ -132,8 +134,8 @@ describe('claude-review.yml triggers and lane (US-46 AC18)', () => {
   const runs = (c: ReturnType<typeof ctx>) => Boolean(evalExpr(review.jobs.review.if!, c));
   const lane = (c: ReturnType<typeof ctx>) => interpolate(review.concurrency!.group, c);
 
-  it('fires on opened, synchronize and labeled only', () => {
-    expect((review.on.pull_request as { types: string[] }).types).toEqual(['opened', 'synchronize', 'labeled']);
+  it('fires on opened and synchronize only, never a label event', () => {
+    expect((review.on.pull_request as { types: string[] }).types).toEqual(['opened', 'synchronize']);
   });
 
   it('reviews opened and synchronize, never a held PR, never a label event', () => {
@@ -152,13 +154,73 @@ describe('claude-review.yml triggers and lane (US-46 AC18)', () => {
     expect(runs(human)).toBe(false);
   });
 
-  it('pushes and adding hold share the PR lane (and cancel); any other label gets the run id', () => {
+  it('first re-reads the live labels, and a held PR runs no review step', () => {
+    const steps = (review.jobs.review as unknown as { steps: { id?: string; if?: string; uses?: string; run?: string }[] }).steps;
+    expect(steps[0].id).toBe('hold');
+    expect(steps[0].uses).toBeUndefined();
+    expect(steps[0].run).toContain('sleep 5');
+    expect(steps[0].run).toContain('issues/$PR/labels');
+    expect(steps[0].run).toContain('held=true');
+    // Every later step, the checkout and the paid review included, is gated on it.
+    expect(steps.length).toBeGreaterThan(1);
+    for (const s of steps.slice(1)) {
+      const run = (held: string) => Boolean(evalExpr(s.if!, { steps: { hold: { outputs: { held } } } }));
+      expect(run('true')).toBe(false);
+      expect(run('')).toBe(true);
+    }
+    expect(steps.some((s) => s.uses?.startsWith('anthropics/claude-code-action@'))).toBe(true);
+  });
+
+  // Runs the hold step's own script (read from the YAML) under a fake `gh` and `sleep`, as
+  // deploy-pages-smoke-wait.test.ts does. The fake answers one label name per line, as --jq does.
+  const runHoldStep = (labels: string[] | 'gh-fails') => {
+    const dir = mkdtempSync(join(tmpdir(), 'review-hold-'));
+    const bin = join(dir, 'bin');
+    mkdirSync(bin);
+    writeFileSync(join(bin, 'gh'), '#!/bin/sh\necho "$*" >> "$LOG"\n[ "$FAIL" = 1 ] && { echo "HTTP 502" >&2; exit 1; }\nprintf "%s" "$LABELS"\n');
+    writeFileSync(join(bin, 'sleep'), '#!/bin/sh\nexit 0\n');
+    for (const f of ['gh', 'sleep']) chmodSync(join(bin, f), 0o755);
+    const out = join(dir, 'output');
+    const log = join(dir, 'calls.log');
+    writeFileSync(out, '');
+    writeFileSync(log, '');
+    const steps = (review.jobs.review as unknown as { steps: { run?: string }[] }).steps;
+    writeFileSync(join(dir, 'step.sh'), steps[0].run!);
+    const r = spawnSync('bash', ['-e', join(dir, 'step.sh')], {
+      env: { PATH: `${bin}:${process.env.PATH}`, GITHUB_OUTPUT: out, LOG: log, REPO: 'o/r', PR: '42',
+        FAIL: labels === 'gh-fails' ? '1' : '0', LABELS: labels === 'gh-fails' ? '' : labels.map((l) => `${l}\n`).join('') },
+      encoding: 'utf8',
+    });
+    return { code: r.status, stdout: r.stdout, output: readFileSync(out, 'utf8'), calls: readFileSync(log, 'utf8') };
+  };
+
+  it('the hold step marks a PR labelled exactly `hold` as held, and says so', () => {
+    const r = runHoldStep(['docs', 'hold']);
+    expect(r.code).toBe(0);
+    expect(r.output).toBe('held=true\n');
+    expect(r.stdout).toContain("Review skipped: PR 42 carries the 'hold' label.");
+    expect(r.calls).toBe('api --paginate repos/o/r/issues/42/labels --jq .[].name\n');
+  });
+
+  it('labels that only contain the word, or no labels, are not held, so the review runs', () => {
+    for (const labels of [['on-hold', 'hold-me'], []]) {
+      const r = runHoldStep(labels);
+      expect(r.code).toBe(0);
+      expect(r.output).toBe('');
+      expect(r.stdout).not.toContain('Review skipped');
+    }
+  });
+
+  it('a failed labels read is not held, so the review runs (fails open by design)', () => {
+    const r = runHoldStep('gh-fails');
+    expect(r.code).toBe(0);
+    expect(r.output).toBe('');
+  });
+
+  it('a newer push cancels the older review in the PR lane', () => {
     expect(review.concurrency!['cancel-in-progress']).toBe(true);
     const pr = lane(ctx('opened'));
     expect(lane(ctx('synchronize'))).toBe(pr);
-    expect(lane(ctx('labeled', ['hold'], 'hold'))).toBe(pr);
-    expect(lane(ctx('labeled', ['docs'], 'docs'))).not.toBe(pr);
-    expect(lane(ctx('labeled', ['docs'], 'docs'))).toContain('777');
-    expect(pr).toContain('42');
+    expect(pr).toBe('claude-review-42');
   });
 });
