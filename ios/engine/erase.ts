@@ -7,6 +7,7 @@
 import { buildErasedFile } from '../../packages/health-core/src/erase';
 import { eraseChatText, settle } from './app-doors';
 import { readRecord } from './my-data';
+import { checkArgs } from './contract';
 
 export interface PhoneErase {
   /** The erased record, as text, for Swift to write over the phone's file. */
@@ -36,5 +37,6 @@ export async function eraseOnPhone(recordText: string, historyText: string | nul
 
 /** The door Swift calls: settles to the PhoneErase (read it with `settledJson`). */
 export function erasePhoneJson(recordText: string, historyText: string | null, nowIso: string, deviceId: string): string {
+  checkArgs('erasePhoneJson', arguments);
   return settle(eraseOnPhone(recordText, historyText, nowIso, deviceId));
 }

@@ -5,7 +5,8 @@
 
 import * as Sentry from '@sentry/react-router';
 import { authenticate } from '../shopify.server';
-import { getOrCreateSupabaseUser, createUserClient } from './supabase.server';
+import { getOrCreateSupabaseUser } from './supabase-identity.server';
+import { createUserClient } from './supabase-client.server';
 import { verifyAppProxySignature } from './local-first-route.server';
 import { safeErrorFields } from './safe-error-fields.server';
 

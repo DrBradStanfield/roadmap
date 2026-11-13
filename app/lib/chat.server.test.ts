@@ -5,7 +5,6 @@ import {
   buildConversationMessages,
   buildSystemBlocks,
   generateTitle,
-  matchDocumentTitle,
   resolveChatContext,
   EMPTY_CHAT_CONTEXT,
   MAX_MESSAGE_LENGTH,
@@ -238,31 +237,10 @@ describe('buildSystemBlocks', () => {
     expect(blocks[baseCount - 1].text).toContain(ctx);
   });
 
-  it('adds document block when document content provided', () => {
-    const blocks = buildSystemBlocks('{}', { savedChat: '', documentContent: 'Colonoscopy report content...' });
-    expect(blocks).toHaveLength(baseCount + 1);
-    expect(blocks[baseCount].text).toContain('Colonoscopy report content');
-    expect(blocks[baseCount].cache_control).toBeUndefined(); // NOT cached
-  });
-
-  it('skips document block when document content is null', () => {
-    const blocks = buildSystemBlocks('{}', { savedChat: '', documentContent: null });
-    expect(blocks).toHaveLength(baseCount);
-  });
-
   it('adds order block when order summary provided', () => {
     const blocks = buildSystemBlocks('{}', { savedChat: '', orderSummary: 'Order #1001 — $55.00' });
     expect(blocks).toHaveLength(baseCount + 1);
     expect(blocks[baseCount].text).toContain('Order #1001');
-  });
-
-  it('adds both document and order blocks when both provided', () => {
-    const blocks = buildSystemBlocks('{}', {
-      savedChat: '',
-      documentContent: 'Lab report',
-      orderSummary: 'Order #1001',
-    });
-    expect(blocks).toHaveLength(baseCount + 2);
   });
 
   it('adds blog article block when blog article provided', () => {
@@ -325,7 +303,7 @@ describe('resolveChatContext — client inputs', () => {
       birthMonth: 6,
       weightKg: 80,
     });
-    expect(ctx.healthDocuments).toEqual([]);
+    expect(Object.keys(ctx)).toEqual(['userContextJson']); // S-7: no health documents ride the chat context
     expect(ctx.userContextJson).toContain('"sex": "male"');
     expect(ctx.userContextJson).toContain('"heightCm": 180');
   });
@@ -437,44 +415,6 @@ describe('US-15 AC11: the server plan counts the medications and screenings on r
     expect(parsed.medications).toEqual({ statin: { drug: 'unlisted', dose: 40 } });
     expect(parsed.screenings).toEqual({});
     expect(json).not.toContain('Ignore previous instructions');
-  });
-});
-
-describe('matchDocumentTitle', () => {
-  const documents = [
-    { title: 'Colonoscopy Report — Dr. Smith, Nov 2025', documentDate: '2025-11-15', documentType: 'scan_result' },
-    { title: 'Blood Test Results — Lab Corp', documentDate: '2026-01-10', documentType: 'lab_report' },
-    { title: 'Clinic Letter — Cardiology', documentDate: '2026-02-01', documentType: 'clinic_letter' },
-  ];
-
-  it('matches colonoscopy keyword', () => {
-    const result = matchDocumentTitle('What did my colonoscopy show?', documents);
-    expect(result).toBe('Colonoscopy Report — Dr. Smith, Nov 2025');
-  });
-
-  it('matches blood test keyword', () => {
-    const result = matchDocumentTitle('Tell me about my blood test', documents);
-    expect(result).toBe('Blood Test Results — Lab Corp');
-  });
-
-  it('matches clinic letter keyword', () => {
-    const result = matchDocumentTitle('What did the clinic letter say?', documents);
-    expect(result).toBe('Clinic Letter — Cardiology');
-  });
-
-  it('returns null when no match', () => {
-    const result = matchDocumentTitle('How is the weather today?', documents);
-    expect(result).toBeNull();
-  });
-
-  it('returns null for empty documents', () => {
-    const result = matchDocumentTitle('What did my scan show?', []);
-    expect(result).toBeNull();
-  });
-
-  it('is case insensitive', () => {
-    const result = matchDocumentTitle('COLONOSCOPY results please', documents);
-    expect(result).toBe('Colonoscopy Report — Dr. Smith, Nov 2025');
   });
 });
 

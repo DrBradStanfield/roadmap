@@ -12,9 +12,11 @@ import { currentValueRows } from '../../packages/health-core/src/blood-tests';
 import type { RecordHost } from '../../packages/health-core/src/record-host';
 import { labReview, labRows, labSaveSummary, type Extraction } from './lab-review';
 import { readRecord, readView, Refusal } from './my-data';
+import { checkArgs } from './contract';
 
 /** What the chat sends with a question (US-52 AC5): the widget's payload, built from the record. */
 export function chatContextJson(recordJson: string, nowIso: string, deviceId: string): string {
+  checkArgs('chatContextJson', arguments);
   const file = readView(recordJson, nowIso, deviceId);
   const { inputs, unitSystem } = derivePlanInputs(file);
   // The vitals and the core blood-test rows, as the plan reads them (US-66 AC7).
@@ -74,23 +76,27 @@ export function settle(work: Promise<unknown>): string {
  * is ready by the time Swift asks; `pending` means it was not.
  */
 export function settledJson(): string {
+  checkArgs('settledJson', arguments);
   return settled ?? JSON.stringify({ ok: false, message: 'pending' });
 }
 
 /** The live conversations, newest first. Settles to the summaries. */
 export function chatListJson(historyText: string | null, nowIso: string, deviceId: string): string {
+  checkArgs('chatListJson', arguments);
   const { host } = memoryHost(historyText, nowIso, deviceId);
   return settle(ChatSession.open(host).then((s) => s.listConversations()));
 }
 
 /** One conversation's messages, question before answer (health-core's merge order). Settles to the messages. */
 export function chatMessagesJson(historyText: string | null, conversationId: string, nowIso: string, deviceId: string): string {
+  checkArgs('chatMessagesJson', arguments);
   const { host } = memoryHost(historyText, nowIso, deviceId);
   return settle(ChatSession.open(host).then((s) => s.getMessages(conversationId)));
 }
 
 /** Records one question and answer (the web's rule: title, cap, tombstones). Settles to the new file's text. */
 export function chatRecordExchangeJson(historyText: string | null, exchangeJson: string, nowIso: string, deviceId: string): string {
+  checkArgs('chatRecordExchangeJson', arguments);
   const { host, written } = memoryHost(historyText, nowIso, deviceId);
   const exchange = JSON.parse(exchangeJson) as Parameters<ChatSession['recordExchange']>[0];
   return settle(ChatSession.open(host).then((s) => s.recordExchange(exchange)).then(() => JSON.stringify(written())));
@@ -98,6 +104,7 @@ export function chatRecordExchangeJson(historyText: string | null, exchangeJson:
 
 /** Deletes a conversation (a tombstone, as on the web). Settles to the new file's text. */
 export function chatDeleteJson(historyText: string | null, conversationId: string, nowIso: string, deviceId: string): string {
+  checkArgs('chatDeleteJson', arguments);
   const { host, written } = memoryHost(historyText, nowIso, deviceId);
   return settle(ChatSession.open(host).then((s) => s.deleteConversation(conversationId)).then(() => JSON.stringify(written())));
 }
@@ -121,6 +128,7 @@ export async function eraseChatText(historyText: string | null, nowIso: string, 
  *  a held metadata-only row for the original's `contentHash` (AC13d, US-14 AC4).
  *  `recordJson` '' checks no record. */
 export function labReviewJson(extractionJson: string, nowIso: string, recordJson: string, sourceFileName: string, contentHash: string, deviceId: string): string {
+  checkArgs('labReviewJson', arguments);
   const extraction = JSON.parse(extractionJson) as Extraction;
   // The record is read only for a document's dedup: a lab report's card never needs it.
   // Raw, as the save dedups on it (US-65): a hidden document still holds its file name.
@@ -131,6 +139,7 @@ export function labReviewJson(extractionJson: string, nowIso: string, recordJson
 /** What saving the ticked values would do: `{ ok, summary }` or the refusal. The record is not changed.
  *  Read raw, as the save writes it (US-65), so the receipt counts what really lands. */
 export function labSaveSummaryJson(recordJson: string, extractionJson: string, refsJson: string, reportDay: string, nowIso: string, deviceId: string): string {
+  checkArgs('labSaveSummaryJson', arguments);
   const rows = labRows(JSON.parse(extractionJson) as Extraction, JSON.parse(refsJson) as string[], reportDay, nowIso);
   if (!rows.ok) return JSON.stringify(rows);
   return JSON.stringify({ ok: true, summary: labSaveSummary(readRecord(recordJson, nowIso, deviceId), rows.rows, nowIso) });

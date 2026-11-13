@@ -19,7 +19,7 @@ vi.mock('./chat-classifier.server', () => ({
   shouldFireRouter: () => false,
   isUnreadableAnswer: () => false,
 }));
-vi.mock('./supabase.server', () => ({
+vi.mock('./supabase-client.server', () => ({
   supabaseAdmin: {
     from: (table: string) => {
       const ok = { data: table === 'chat_conversations' ? { id: 'conv-1' } : null, error: null };
@@ -38,7 +38,8 @@ vi.mock('./supabase.server', () => ({
 
 process.env.ANTHROPIC_API_KEY ??= 'sk-test-dummy';
 
-import { runPipeline, persistYouTubeTurn, shouldUnclaim } from './youtube-bot.server';
+import { runPipeline, shouldUnclaim } from './youtube-bot.server';
+import { persistYouTubeTurn } from './youtube-bot-store.server';
 import { FALLBACK_RESPONSE, CHAT_MODEL } from './chat.server';
 
 afterEach(() => { vi.unstubAllGlobals(); });

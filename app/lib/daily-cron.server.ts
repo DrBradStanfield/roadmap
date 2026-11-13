@@ -10,7 +10,7 @@
  * and endCronLock records how the run ended (US-28 AC9).
  */
 import * as Sentry from '@sentry/react-router';
-import { endCronLock, tryAcquireCronLock, type CronLockName } from './supabase.server';
+import { endCronLock, tryAcquireCronLock, type CronLockName } from './supabase-cron-lock.server';
 import { safeErrorFields } from './safe-error-fields.server';
 import { lockClock, stuckLimitMs, transition, type CronDay } from './cron-day';
 
