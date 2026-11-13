@@ -190,7 +190,7 @@ export function ValuePage({ subject, history, labValues, ctx, tiles, onSave, onC
           ))}
         </ul>
       )}
-      {metric && <p className="md-page-hint">{pointer} a value to correct it.</p>}
+      {metric && readings.length > 0 && <p className="md-page-hint">{pointer} a value to correct it.</p>}
       {subject.kind !== 'lab' && <p className="md-page-hint">To change units, use {unitsHome} or All results as a table.</p>}
       {messages}
     </section>
