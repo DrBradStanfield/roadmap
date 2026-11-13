@@ -74,8 +74,8 @@ describe('rowTarget: the plan’s vitals targets (US-06 AC5)', () => {
   });
 
   it('waist from the height, by the plan’s own rule', () => {
-    expect(rowTarget('waist', 'si', adult, plan)).toEqual({ full: 'Target: <89 cm', bare: 'Target <89' });
-    expect(rowTarget('waist', 'conventional', adult, plan)?.bare).toBe('Target <34.7');
+    expect(rowTarget('waist', 'si', adult, plan)).toEqual({ full: 'Target: <89 cm', bare: 'Target <89 cm' });
+    expect(rowTarget('waist', 'conventional', adult, plan)?.bare).toBe('Target <34.7 in');
   });
 
   it('before there is a plan, the grid asks for the height (asked first, US-62 AC13) and the row prints no target', () => {
@@ -89,7 +89,7 @@ describe('rowTarget: the plan’s vitals targets (US-06 AC5)', () => {
     const noSex = { age: 50, heightCm: 178 };
     expect(TARGET_NEEDS_SEX).toBe('Set sex to see target');
     expect(rowTarget('weight', 'si', adult, noSex)).toEqual({ full: TARGET_NEEDS_SEX, bare: null });
-    expect(rowTarget('waist', 'si', adult, noSex)?.bare).toBe('Target <89');
+    expect(rowTarget('waist', 'si', adult, noSex)?.bare).toBe('Target <89 cm');
     expect(rowTarget('blood_pressure', 'si', adult, noSex)?.bare).toBe('Target <120/80');
   });
 });
@@ -118,7 +118,7 @@ describe('rowTarget: a known minor (US-07 AC6)', () => {
   });
 
   it('keeps the waist target, which applies to children too, and a lab’s printed range', () => {
-    expect(rowTarget('waist', 'si', null, plan)).toEqual({ full: 'Target: <89 cm', bare: 'Target <89' });
+    expect(rowTarget('waist', 'si', null, plan)).toEqual({ full: 'Target: <89 cm', bare: 'Target <89 cm' });
     expect(rowTarget('waist', 'si', null, null)?.full).toBe(TARGET_NEEDS_HEIGHT);
     expect(rowTarget({ referenceLow: 3, referenceHigh: 5 }, 'si', null, null)?.bare).toBe('Ref 3–5');
   });

@@ -32,8 +32,9 @@ export type RowTargetPlan = { age?: number; idealBodyWeight?: number; heightCm?:
 export type RowSubject = MetricType | 'blood_pressure' | { referenceLow?: number | null; referenceHigh?: number | null };
 
 /** `full`: the grid's line, unit and all. `bare`: the row's target, with no
- *  unit (the row prints the unit under the value); null when there is
- *  nothing to print yet, so the row shows its date alone. */
+ *  unit (the row prints the unit under the value), but for the waist's, which
+ *  keeps its unit (H83); null when there is nothing to print yet, so the row
+ *  shows its date alone. */
 export type RowTarget = { full: string; bare: string | null };
 
 /** What the vitals grid says in place of a plan target, in the form's order
@@ -63,8 +64,9 @@ export function rowTarget(metric: RowSubject, unit: CellUnit, grading: Grading, 
   if (typeof metric === 'object') return printedRange(metric.referenceLow ?? null, metric.referenceHigh ?? null);
   if (metric === 'waist') {
     if (plan?.heightCm == null) return needsHeight;
-    const line = `<${healthyWaistBelow(plan.heightCm, unit as UnitSystem)}`;
-    return { full: `Target: ${line} ${getDisplayLabel('waist', unit as UnitSystem)}`, bare: `Target ${line}` };
+    // The row says the unit too: a Waist row's target stands alone, with no value under it (H83).
+    const line = `<${healthyWaistBelow(plan.heightCm, unit as UnitSystem)} ${getDisplayLabel('waist', unit as UnitSystem)}`;
+    return { full: `Target: ${line}`, bare: `Target ${line}` };
   }
   if (!grading) return null;
   if (metric === 'blood_pressure') {
