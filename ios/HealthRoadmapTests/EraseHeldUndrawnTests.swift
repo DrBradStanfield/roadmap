@@ -61,9 +61,11 @@ final class EraseHeldUndrawnTests: XCTestCase {
         XCTAssertNotEqual(erased, filled)
         _ = try engine.blocking { try $0.evaluate("__screenFails = true") }
         let erasures = store.erasures
+        XCTAssertFalse(store.heldUndrawn, "a drawn record is not held (S67)")
         await store.showErased(HealthEngine.CloudView(record: erased, erase: "e1", session: 1, order: 1)).value
         _ = try engine.blocking { try $0.evaluate("__screenFails = false") }
         XCTAssertEqual(store.erasures, erasures + 1, "the store took the erase in")
+        XCTAssertTrue(store.heldUndrawn, "the erase is held with no drawing (S67)")
         return Erased(store: store, engine: engine, record: erased)
     }
 
