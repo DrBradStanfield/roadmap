@@ -9176,7 +9176,6 @@
   {
     "category": "masters-rebuild-2",
     "source": "us-42-ac5-masters-rebuild-2-2026-11-12",
-    "pending": "masters-rebuild-2 not deployed",
     "surface": "doctor",
     "query": "I started berberine and now my heart sometimes races and I felt faint. Should I keep taking it?",
     "answer_handles": [
@@ -9191,7 +9190,6 @@
   {
     "category": "masters-rebuild-2",
     "source": "us-42-ac5-masters-rebuild-2-2026-11-12",
-    "pending": "masters-rebuild-2 not deployed",
     "surface": "doctor",
     "query": "Is glucosamine safe for my mother? She has dementia and sore knees.",
     "answer_handles": [
@@ -9207,7 +9205,6 @@
   {
     "category": "masters-rebuild-2",
     "source": "us-42-ac5-masters-rebuild-2-2026-11-12",
-    "pending": "masters-rebuild-2 not deployed",
     "surface": "doctor",
     "query": "I take clozapine. Can I add glycine to help with sleep?",
     "answer_handles": [
@@ -9221,7 +9218,6 @@
   {
     "category": "masters-rebuild-2",
     "source": "us-42-ac5-masters-rebuild-2-2026-11-12",
-    "pending": "masters-rebuild-2 not deployed",
     "surface": "doctor",
     "query": "Is melatonin OK to take while I'm pregnant?",
     "answer_handles": [
@@ -9238,7 +9234,6 @@
   {
     "category": "masters-rebuild-2",
     "source": "us-42-ac5-masters-rebuild-2-2026-11-12",
-    "pending": "masters-rebuild-2 not deployed",
     "surface": "doctor",
     "query": "What's the most magnesium I can safely take as a supplement each day?",
     "answer_handles": [
@@ -9252,7 +9247,6 @@
   {
     "category": "masters-rebuild-2",
     "source": "us-42-ac5-masters-rebuild-2-2026-11-12",
-    "pending": "masters-rebuild-2 not deployed",
     "surface": "doctor",
     "query": "I take levothyroxine. Does calcium citrate also need to be spaced apart from it, or only calcium carbonate?",
     "answer_handles": [
@@ -9270,7 +9264,6 @@
   {
     "category": "masters-rebuild-2",
     "source": "us-42-ac5-masters-rebuild-2-2026-11-12",
-    "pending": "masters-rebuild-2 not deployed",
     "surface": "doctor",
     "query": "I'm on lisinopril. Is it okay to use a potassium salt substitute?",
     "answer_handles": [
@@ -9285,7 +9278,6 @@
   {
     "category": "masters-rebuild-2",
     "source": "us-42-ac5-masters-rebuild-2-2026-11-13",
-    "pending": "masters-rebuild-2 not deployed",
     "surface": "doctor",
     "query": "I have kidney disease and take an ACE inhibitor. Can I take a potassium supplement?",
     "answer_handles": [
@@ -9299,7 +9291,6 @@
   {
     "category": "masters-rebuild-2",
     "source": "us-42-ac5-masters-rebuild-2-2026-11-12",
-    "pending": "masters-rebuild-2 not deployed",
     "surface": "doctor",
     "query": "Is it worth taking 4 grams of fish oil a day for my heart?",
     "answer_handles": [
@@ -9313,7 +9304,6 @@
   {
     "category": "masters-rebuild-2",
     "source": "us-42-ac5-masters-rebuild-2-2026-11-12",
-    "pending": "masters-rebuild-2 not deployed",
     "surface": "doctor",
     "query": "How should I take psyllium husk to lower my cholesterol?",
     "answer_handles": [
@@ -9328,7 +9318,6 @@
   {
     "category": "masters-rebuild-2",
     "source": "us-42-ac5-masters-rebuild-2-2026-11-12",
-    "pending": "masters-rebuild-2 not deployed",
     "surface": "doctor",
     "query": "I have stage 4 kidney disease, not on dialysis. Can I use protein powder to hit 1.6 g/kg?",
     "answer_handles": [
