@@ -106,7 +106,8 @@ enum Cover: Equatable {
 
     /// Only over the bare tabs, with no hold from this phone's own erase. An erase from elsewhere
     /// closes the backup offer's sheet first, so the cover never presents under it (My health's
-    /// own sheets: S65), and is acted on at once, so a later Disconnect or switch cannot hide it.
+    /// own sheets: S65). The sheet's onDismiss works the erase out again, so a Disconnect confirmed
+    /// just before the pull that reaches showPhone during the close can still hide it (S71).
     /// `uncounted`: the record shown is one the phone has not counted yet.
     static func onRecordChange(cover: Cover, offer: Offer, holding: Bool, erasedElsewhere: Bool, uncounted: Bool) -> RecordChange? {
         guard cover == .none, !holding else { return nil }
