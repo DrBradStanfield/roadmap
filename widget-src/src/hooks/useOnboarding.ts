@@ -39,10 +39,10 @@ const planReadySeen = (): boolean => safeGetItem(PLAN_READY_SEEN_KEY) === '1';
 /**
  * The landing (US-62 AC25b): it follows the landing field the onboarding
  * ended in, while the person is still in it. The fields report two facts, in
- * any order: an answer (`lands`: typed in a landing field, the weight on the
- * Shopify build or the birth year) and the field at rest (`settled`: complete,
+ * any order: an answer (`lands`: the landing field typed in, the weight on the
+ * Shopify build or the birth year, or null) and the field at rest (`settled`: complete,
  * valid, and not about to grow). `open`: the onboarding has not ended here.
- * `awaiting`: it ended on a landing answer not yet at rest; `settled` keeps a
+ * `awaiting`: it ended on a landing answer (`field`) not yet at rest; `settled` keeps a
  * rest heard while the four answers had dipped, for when they hold again.
  * `spent`: it landed, or ended on another answer (sex, the chat, an upload),
  * or the person left the field. A change this tab did not make (`foreign`)
@@ -50,12 +50,13 @@ const planReadySeen = (): boolean => safeGetItem(PLAN_READY_SEEN_KEY) === '1';
  * complete when first shown, or completed by another writer (D6), never ends
  * here, so it never lands.
  */
+export type LandingField = 'weightKg' | 'birthYear';
 export type Landing =
-  | { kind: 'open'; lands: boolean; settled: boolean }
-  | { kind: 'awaiting'; settled: boolean }
+  | { kind: 'open'; lands: LandingField | null; settled: boolean }
+  | { kind: 'awaiting'; field: LandingField; settled: boolean }
   | { kind: 'spent' };
 export type LandingEvent =
-  | { type: 'answered'; lands: boolean }
+  | { type: 'answered'; lands: LandingField | null }
   | { type: 'settled'; complete: boolean } // complete: the four answers hold as it fires
   | { type: 'ended' }
   | { type: 'completed' } // the four answers hold again after a dip
@@ -68,18 +69,22 @@ export function transition(s: Landing, e: LandingEvent): { next: Landing; land: 
   const to = (next: Landing, land = false) => ({ next, land });
   if (s.kind === 'open') {
     if (e.type === 'answered') return to({ kind: 'open', lands: e.lands, settled: false });
-    if (e.type === 'settled') return to({ ...s, settled: s.lands || s.settled });
-    if (e.type === 'ended') return s.lands && s.settled ? to(SPENT, true) : to(s.lands ? { kind: 'awaiting', settled: false } : SPENT);
-    return to(e.type === 'completed' ? s : { kind: 'open', lands: false, settled: false });
+    if (e.type === 'settled') return to({ ...s, settled: s.lands !== null || s.settled });
+    if (e.type === 'ended') return s.lands && s.settled ? to(SPENT, true) : to(s.lands ? { kind: 'awaiting', field: s.lands, settled: false } : SPENT);
+    return to(e.type === 'completed' ? s : { kind: 'open', lands: null, settled: false });
   }
   if (s.kind === 'awaiting') {
-    if (e.type === 'answered') return to(e.lands ? { kind: 'awaiting', settled: false } : SPENT);
-    if (e.type === 'settled') return e.complete ? to(SPENT, true) : to({ kind: 'awaiting', settled: true });
+    if (e.type === 'answered') return to(e.lands ? { kind: 'awaiting', field: e.lands, settled: false } : SPENT);
+    if (e.type === 'settled') return e.complete ? to(SPENT, true) : to({ ...s, settled: true });
     if (e.type === 'completed' && s.settled) return to(SPENT, true);
     return to(e.type === 'left' ? SPENT : s);
   }
   return to(s);
 }
+
+/** The landing still hangs on `field`'s answer: typed and not yet at rest, or ended on it and awaiting its rest (US-62 AC31a, H53). */
+export const waitsOn = (s: Landing, field: LandingField): boolean =>
+  (s.kind === 'open' && s.lands === field && !s.settled) || (s.kind === 'awaiting' && s.field === field);
 
 interface RecordOnboarding {
   erase: string;
@@ -101,8 +106,10 @@ export interface Onboarding {
   fullForm: boolean;
   aboutYouLow: boolean;
   planReady: boolean;
-  /** An answer given in this tab; `lands`: typed in a landing field (AC13, AC25b). */
-  answered: (lands: boolean) => void;
+  /** An answer given in this tab; `lands`: the landing field typed in, or null (AC13, AC25b). */
+  answered: (lands: LandingField | null) => void;
+  /** The chat set a weight (AC31a): an answer only while the weight step is open (`stepOpen`) or the landing waits on a typed weight. */
+  chatWeight: (stepOpen: boolean) => void;
   /** The landing field's value is complete and at rest (AC25b). */
   rested: () => void;
   /** The focus left the landing field, or it unmounted holding the focus (AC25b). */
@@ -121,7 +128,7 @@ export interface PanelOnboarding extends Pick<Onboarding, 'reached' | 'fullForm'
   stage: FormStage;
   profileLeft?: Onboarding['profileLeft'];
   /** A field typed in: a landing field (the weight, the birth year), or null for a weight that never lands (a past day's) (AC13, AC25b). */
-  answered?: (field: 'weightKg' | 'birthYear' | null) => void;
+  answered?: (field: LandingField | null) => void;
   rested?: Onboarding['rested'];
   left?: Onboarding['left'];
 }
@@ -150,7 +157,7 @@ export function useOnboarding(stage: FormStage, holdings: RecordHoldings, loaded
   const ref = useRef<RecordOnboarding | null>(null);
   const was = ref.current;
   if (!was || was.erase !== erase) {
-    ref.current = { erase, epoch: (was?.epoch ?? 0) + 1, reached: stage, opened: stage, fullForm: false, answered: false, counted: stage, complete: stage === 4, landing: { kind: 'open', lands: false, settled: false } };
+    ref.current = { erase, epoch: (was?.epoch ?? 0) + 1, reached: stage, opened: stage, fullForm: false, answered: false, counted: stage, complete: stage === 4, landing: { kind: 'open', lands: null, settled: false } };
   } else if (stage > was.reached) was.reached = stage;
   const now = ref.current!;
   now.fullForm ||= opensFullForm(now.reached, holdings);
@@ -191,11 +198,14 @@ export function useOnboarding(stage: FormStage, holdings: RecordHoldings, loaded
     }
   });
 
-  const answered = useCallback((lands: boolean) => {
+  const answered = useCallback((lands: LandingField | null) => {
     const rec = ref.current!;
     rec.answered = true;
     send(rec, { type: 'answered', lands });
   }, [send]);
+  const chatWeight = useCallback((stepOpen: boolean) => {
+    if (stepOpen || waitsOn(ref.current!.landing, 'weightKg')) answered(null); // never lands (AC25b)
+  }, [answered]);
   const rested = useCallback(() => send(ref.current!, { type: 'settled', complete: stageRef.current === 4 }), [send]);
   const left = useCallback(() => send(ref.current!, { type: 'left' }), [send]);
   const clearAnswered = useCallback((spend = false) => {
@@ -219,6 +229,6 @@ export function useOnboarding(stage: FormStage, holdings: RecordHoldings, loaded
     reached, epoch, fullForm,
     aboutYouLow: low.current,
     planReady: planReadyFor === epoch,
-    answered, rested, left, clearAnswered, profileLeft, dismissPlanReady,
+    answered, chatWeight, rested, left, clearAnswered, profileLeft, dismissPlanReady,
   };
 }
