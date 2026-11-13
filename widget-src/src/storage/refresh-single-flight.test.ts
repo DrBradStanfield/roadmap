@@ -170,7 +170,8 @@ describe('US-09 AC47: a refused flight answers every caller who joined it', () =
     await flush();
     net.release();
     await expect(one).rejects.toThrow('Dropbox token refresh failed (400)');
-    await expect(two).rejects.toThrow('Dropbox token refresh failed (400)');
+    // The first forgot the revoked sign-in (US-09 AC48, B-2): the second finds it gone, as Drive's does.
+    await expect(two).rejects.toThrow('Dropbox was disconnected');
     expect(net.tokenPosts()).toBe(1);
   });
 });

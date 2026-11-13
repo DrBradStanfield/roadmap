@@ -95,7 +95,7 @@ describe('resolveRemembered with working storage', () => {
       const backing = drive(false, false);
       const resolved = await resolveRemembered();
       expect(resolved.backend).toBe('local');
-      expect(resolved.reconnect).toBe('google-drive');
+      expect(resolved.reconnect).toEqual({ kind: 'signedOut', provider: 'google-drive' });
       expect(backing.get(BACKEND_KEY)).toBe('google-drive');
     });
   });

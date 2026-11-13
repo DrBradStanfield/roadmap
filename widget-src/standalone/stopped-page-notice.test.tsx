@@ -27,12 +27,14 @@ type Storage = typeof import('../src/lib/storage');
 type Sync = typeof import('./sync-control');
 let storage: Storage;
 let sync: Sync;
+let signIn: typeof import('../src/storage/sign-in-state');
 
 beforeEach(async () => {
   localStorage.clear();
   vi.resetModules();
   storage = await import('../src/lib/storage');
   sync = await import('./sync-control');
+  signIn = await import('../src/storage/sign-in-state');
 });
 afterEach(() => {
   cleanup();
@@ -45,7 +47,8 @@ describe('US-09 AC2i: a page whose device writes stopped says it has stopped sav
   it('a device page that hears another tab\'s log-off: a fallback page shows the notice in the bar and atop the tabs', () => {
     localStorage.setItem('health_roadmap_backend', 'dropbox');
     storage.noteDevicePage(); // a fallback page for Dropbox
-    render(<><sync.StorageBar backend="local" reconnect="dropbox" /><sync.LocalSaveAlert backend="local" /></>);
+    signIn.bootSignIn({ kind: 'unreachable', provider: 'dropbox' }); // the load's answer (US-09 AC48)
+    render(<><sync.StorageBar backend="local" /><sync.LocalSaveAlert backend="local" /></>);
     expect(notice()).toBeNull();
     act(() => storage.noteLogOffHeard());
     expect(document.querySelectorAll('[role="alert"]')).toHaveLength(2);
@@ -84,7 +87,8 @@ describe('US-09 AC2i: a page whose device writes stopped says it has stopped sav
     const { stopRoadmapLocalWrites } = await import('../src/storage/local-storage-adapter');
     localStorage.setItem('health_roadmap_backend', 'dropbox');
     storage.noteDevicePage(); // a fallback page for Dropbox
-    render(<><sync.StorageBar backend="local" reconnect="dropbox" /><sync.LocalSaveAlert backend="local" /></>);
+    signIn.bootSignIn({ kind: 'unreachable', provider: 'dropbox' }); // the load's answer (US-09 AC48)
+    render(<><sync.StorageBar backend="local" /><sync.LocalSaveAlert backend="local" /></>);
     act(() => stopRoadmapLocalWrites()); // the log-off's first, synchronous step
     expect(storage.healthWritesAllowed()).toBe(false);
     expect(notice()).toBeNull();

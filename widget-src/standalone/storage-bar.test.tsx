@@ -29,8 +29,8 @@ vi.mock('../src/lib/server-api', () => ({ trackProductEvent: vi.fn() }));
 vi.mock('./reminders', () => ({ remindersSupported: () => false }));
 vi.mock('./reminders-control', () => ({ RemindersControl: () => null }));
 vi.mock('./connect', () => ({
-  storageState: (backend: string, reconnect?: string) =>
-    (reconnect ? 'reconnect' : backend === 'local' ? 'guest' : 'cloud'),
+  storageState: (backend: string, signIn?: { kind: string }) =>
+    (signIn?.kind === 'signedOut' || signIn?.kind === 'unreachable' ? 'reconnect' : backend === 'local' ? 'guest' : 'cloud'),
   prepareSwitch: vi.fn(),
   liftLocalInto: vi.fn(),
   adapterFor: () => null,
@@ -46,6 +46,7 @@ import { PICKER_GUEST_LEAD } from './backend-picker';
 import { openBackendPicker } from '../src/lib/storage-notice';
 import { resetSwitchFlow } from './switch-flow';
 import type { Backend } from './connect';
+import { bootSignIn, resetSignIn } from '../src/storage/sign-in-state';
 
 beforeAll(() => {
   HTMLDialogElement.prototype.showModal = vi.fn();
@@ -55,12 +56,20 @@ afterEach(() => { cleanup(); resetSwitchFlow(); sync.pending = false; sync.statu
 
 type Cloud = Exclude<Backend, 'local'>;
 /** The bar as app.tsx mounts it, beside the plan's SyncControl, which hosts the picker. */
-const mount = (backend: Backend, reconnect?: Cloud) => render(
-  <>
-    <StorageBar backend={backend} reconnect={reconnect} />
-    <SyncControl backend={backend} reconnect={reconnect} hasData />
-  </>,
-);
+/** The load's answer, as boot seeds it (US-09 AC48): Drive's sign-in ended; any other cloud did not answer. */
+const lostAtLoad = (provider: 'google-drive' | 'dropbox' | 'github' | 'self-host') => {
+  resetSignIn();
+  bootSignIn(provider === 'google-drive' ? { kind: 'signedOut', provider } : { kind: 'unreachable', provider });
+};
+const mount = (backend: Backend, reconnect?: Cloud) => {
+  if (reconnect) lostAtLoad(reconnect); else resetSignIn();
+  return render(
+    <>
+      <StorageBar backend={backend} />
+      <SyncControl backend={backend} hasData />
+    </>,
+  );
+};
 /** The bar itself (the plan's status line names the provider too). */
 const bar = () => document.querySelector('button.action-btn-small') as HTMLButtonElement;
 /** A connected record's status text, where its button was. */
@@ -216,7 +225,10 @@ describe('US-62 AC34 — the bar on a phone', () => {
 
   it('problemsOnly (atop My health) draws nothing while all is well or a save runs over no marker, the not-synced words, and the reconnect', () => {
     asPhone();
-    const only = (backend: Backend, reconnect?: Cloud) => render(<StorageBar backend={backend} reconnect={reconnect} problemsOnly />);
+    const only = (backend: Backend, reconnect?: Cloud) => {
+      if (reconnect) lostAtLoad(reconnect); else resetSignIn();
+      return render(<StorageBar backend={backend} problemsOnly />);
+    };
     expect(only('dropbox').container.innerHTML).toBe('');
     cleanup();
     expect(only('local').container.innerHTML).toBe('');

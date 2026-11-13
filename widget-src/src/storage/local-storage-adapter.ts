@@ -228,7 +228,7 @@ export class LocalStorageAdapter implements StorageAdapter {
   }
 }
 
-const FULL = 'Could not save on this device (local storage may be full).';
+export const FULL = 'Could not save on this device (local storage may be full).';
 
 /** US-01 AC5: the last write of the record on this device was refused and
  *  left none of its change stored. Set and cleared here, at the write, the
