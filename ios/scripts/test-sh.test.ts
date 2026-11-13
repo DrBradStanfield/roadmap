@@ -1,6 +1,7 @@
 // US-71 AC7 + AC8 (lead M17): test.sh tells a sim-run refusal or give-up (75) and a stop (76) from a test failure.
 // test.sh runs from a copy of ios/ in a temp folder, with fake build-engine, sim-run and clone cleanup
-// beside it, so nothing builds or boots. The fake sim-run logs each zone and exits $FAKE_EXIT.
+// beside it, so nothing builds or boots. The fake sim-run logs each zone and exits $FAKE_EXIT
+// ($FAKE_EXIT_UTC, when set, for the UTC zone only).
 //   npx vitest run ios/scripts/test-sh.test.ts
 import { spawnSync } from 'node:child_process';
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -12,6 +13,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 const SCRIPT = process.env.TEST_SH_SCRIPT ?? join(__dirname, 'test.sh');
 const SIM_RUN = `#!/bin/sh
 echo "$TEST_RUNNER_TZ" >> "$FAKE_LOG"
+[ "$TEST_RUNNER_TZ" = UTC ] && FAKE_EXIT="\${FAKE_EXIT_UTC:-$FAKE_EXIT}"
 case "$FAKE_EXIT" in
   0) echo "** TEST SUCCEEDED **";;
   75) echo "sim-run: gave up after 30m (load guard, not the lock): load 20.00 is over 12" >&2;;
@@ -33,11 +35,11 @@ beforeEach(() => {
 });
 afterEach(() => rmSync(dir, { recursive: true, force: true }));
 
-function run(exitCode: number) {
+function run(exitCode: number, utcExitCode = exitCode) {
   const log = join(dir, 'zones.log');
   const r = spawnSync('sh', [join(dir, 'ios', 'scripts', 'test.sh')], {
     encoding: 'utf8',
-    env: { ...process.env, FAKE_EXIT: String(exitCode), FAKE_LOG: log, HR_DERIVED_DATA: join(dir, 'dd') },
+    env: { ...process.env, FAKE_EXIT: String(exitCode), FAKE_EXIT_UTC: String(utcExitCode), FAKE_LOG: log, HR_DERIVED_DATA: join(dir, 'dd') },
   });
   const zones = existsSync(log) ? readFileSync(log, 'utf8').trim().split('\n') : [];
   return { status: r.status, out: r.stdout + r.stderr, zones };
@@ -66,9 +68,22 @@ describe('US-71 AC8 test.sh passes a sim-run give-up through', () => {
   it('a test failure (exit 65) still prints FAILED and exits 1', () => {
     const r = run(65);
     expect(r.out).toContain('FAILED in UTC');
+    expect(r.out).toContain('FAILED in Pacific/Auckland');
+    expect(r.out).toContain('iOS tests FAILED in: UTC Pacific/Auckland');
     expect(r.out).not.toContain('NOT RUN');
     expect(r.status).toBe(1);
-    expect(r.zones).toEqual(['UTC']);
+    expect(r.zones).toEqual(['UTC', 'Pacific/Auckland']);
+  });
+
+  // US-25 AC1: a failed first zone must not hide the second zone's result.
+  it('a failed first zone still runs the second, prints both results and exits 1', () => {
+    const r = run(0, 65);
+    expect(r.zones).toEqual(['UTC', 'Pacific/Auckland']);
+    expect(r.out).toContain('FAILED in UTC');
+    expect(r.out).toContain('passed in Pacific/Auckland');
+    expect(r.out).toContain('iOS tests FAILED in: UTC');
+    expect(r.out).not.toContain('All iOS tests passed');
+    expect(r.status).toBe(1);
   });
 
   it('a pass runs both zones and exits 0', () => {
