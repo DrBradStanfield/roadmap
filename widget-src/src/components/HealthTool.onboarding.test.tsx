@@ -122,6 +122,12 @@ function type(input: Element | null, value: string) {
   fireEvent.change(input, { target: { value } });
 }
 const leave = (input: Element | null) => act(() => { (input as HTMLElement).blur(); });
+/** Enter in a grid cell: the grid saves, the commit that confirms a value (US-03 AC5, AC6). */
+function commit(input: Element | null) {
+  if (!input) throw new Error('no input');
+  act(() => { (input as HTMLElement).focus(); });
+  fireEvent.keyDown(input, { key: 'Enter' });
+}
 /** Height and weight typed, the weight field left: its save runs 500 ms later. */
 async function measurements(view: RenderResult, height = '178', weight = '80') {
   type(q(view, '#heightCm'), height);
@@ -595,6 +601,9 @@ describe('US-62 AC13 review fixes, round 2 (PR 421)', () => {
       return input as HTMLInputElement;
     });
     type(cell, '70');
+    await act(async () => { await new Promise((r) => setTimeout(r, 300)); });
+    expect(named('onboarding_done')).toHaveLength(0); // typed, not saved: no answer yet (US-03 AC6)
+    commit(cell);
     await waitFor(() => expect(named('onboarding_done')).toHaveLength(1));
     expect(named('onboarding_step').map((e) => e.metadata)).toEqual([{ step: 'measurements' }]);
   });
@@ -651,6 +660,9 @@ describe('US-62 AC13 review fixes, round 2 (PR 421)', () => {
       return input as HTMLInputElement;
     });
     type(cell, '170');
+    await act(async () => { await new Promise((r) => setTimeout(r, 1000)); });
+    expect(document.activeElement).toBe(cell); // typed, not saved: no landing yet (US-03 AC6)
+    commit(cell);
     // The last answer lands on "Your plan is ready." (US-62 AC31), not the email box.
     await waitFor(() => expect(document.activeElement?.classList.contains('mh-ready-title')).toBe(true));
   });
