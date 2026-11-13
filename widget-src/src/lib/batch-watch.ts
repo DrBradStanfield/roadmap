@@ -1,4 +1,4 @@
-// The batch watch as one named state (ledger H43; US-12 AC5a, AC9, AC24). processBatch
+// The batch watch as one named state (ledger H43; US-12 AC5a, AC5b, AC9, AC24). processBatch
 // (upload-pipeline.ts) runs the effects: the sleep, the poll, progress, then a throw or a return.
 // Its loop checks a cancel first, then the deadline, then polls, and hands each fact here.
 import type { BatchPollResponse, UploadErrorCode } from './api-types';

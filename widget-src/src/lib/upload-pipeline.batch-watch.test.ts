@@ -69,6 +69,16 @@ describe('H43, US-12 AC5a: a cancel at each step of the watch', () => {
     expect(shown).toHaveLength(shownAtAbort);
   });
 
+  it('during the sleep: the sleep ends at the abort, not 5 s later (owner D2 b)', async () => {
+    script(accepted, allRead);
+    const abort = new AbortController();
+    run(abort);
+    await vi.advanceTimersByTimeAsync(2000);
+    abort.abort();
+    await vi.advanceTimersByTimeAsync(10);
+    expect(settled).toEqual([]);
+  });
+
   it.each([
     ['ended with results: the results come back', allRead, (r: unknown) => expect(r).toHaveLength(N)],
     ['ended with an error: it rejects', () => ended([], { error: 'Batch failed', errorCode: 'server_error' }),

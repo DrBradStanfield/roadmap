@@ -1,4 +1,4 @@
-// The batch watch's table (ledger H43; US-12 AC5a, AC9, AC24): every state x every event,
+// The batch watch's table (ledger H43; US-12 AC5a, AC5b, AC9, AC24): every state x every event,
 // with `polled` split into its four kinds of answer and the end that carries neither.
 import { describe, expect, it } from 'vitest';
 import { transition, watchStart, type BatchWatch, type WatchEvent } from './batch-watch';
