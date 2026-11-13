@@ -275,6 +275,44 @@ describe('US-64 AC32 merge-gated.sh', () => {
       expect(gate(['123', SHA], { rollup: oldRedNewGreen }).status).toBe(9);
     });
 
+    describe('advisory check ios-compile (Brad 2026-11-13: warns, never blocks)', () => {
+      const ios = (c: string | null, s = 'COMPLETED') => cr('ios-compile', c, s, 'iOS compile');
+      it('merges and warns when ios-compile failed', () => {
+        const r = gate(['123', SHA], { rollup: [...GREEN, ios('FAILURE')] });
+        expect(r.status).toBe(0);
+        expect(r.merges).toEqual([MERGE_ARGV]);
+        expect(r.stderr).toContain('merge-gated: note: advisory check ios-compile is FAILURE; not blocking');
+      });
+      it('merges and warns while ios-compile is pending', () => {
+        const r = gate(['123', SHA], { rollup: [...GREEN, ios(null, 'IN_PROGRESS')] });
+        expect(r.status).toBe(0);
+        expect(r.merges).toEqual([MERGE_ARGV]);
+        expect(r.stderr).toContain('advisory check ios-compile is IN_PROGRESS; not blocking');
+      });
+      it('says nothing when ios-compile is green', () => {
+        const r = gate(['123', SHA], { rollup: [...GREEN, ios('SUCCESS')] });
+        expect(r.status).toBe(0);
+        expect(r.stderr).not.toMatch(/advisory/);
+      });
+      it('a non-advisory failure still refuses beside a green ios-compile', () => {
+        const r = gate(['123', SHA], { rollup: [...GREEN, ios('SUCCESS'), cr('checks', 'FAILURE')] });
+        expect(r.status).toBe(9);
+        expect(r.stderr).toContain('checks=FAILURE');
+        expect(r.merges).toEqual([]);
+      });
+      it('only the exact name is advisory: a name that merely contains it still counts', () => {
+        for (const name of ['ios-compile-extra', 'x ios-compile', 'iOS-compile', 'ios-compile ']) {
+          const red = gate(['123', SHA], { rollup: [...GREEN, cr(name, 'FAILURE')] });
+          expect(red.status).toBe(9);
+          expect(red.merges).toEqual([]);
+          expect(gate(['123', SHA], { rollup: [...GREEN, cr(name, null, 'IN_PROGRESS')] }).status).toBe(8);
+        }
+      });
+      it('an ios-compile alone is not a check: an otherwise empty rollup still refuses', () => {
+        expect(gate(['123', SHA], { rollup: [ios('SUCCESS')] }).status).toBe(7);
+      });
+    });
+
     it('refuses when no check is named exactly test', () => {
       const r = gate(['123', SHA], { rollup: GREEN.filter((c) => c.name !== 'test').concat(cr('tests')) });
       expect(r.status).toBe(10);
