@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { calculateHealthResults, knownMinorOf } from '@roadmap/health-core/calculations';
 import { unreadableNote } from '@roadmap/health-core/readable-rows';
 import { medicinesShown, weightMedicationTrigger, lipidMarkerFor } from '@roadmap/health-core/suggestions';
-import { validateHealthInputs, getValidationErrors, convertValidationErrorsToUnits } from '@roadmap/health-core/validation';
+import { validateHealthInputs, getValidationErrors, convertValidationErrorsToUnits, inputRangeFault } from '@roadmap/health-core/validation';
 import { planInputsFrom, withLabEgfr, labEgfrOf } from '@roadmap/health-core/plan';
 import { type SuggestionInputs, type AlcoholAnswer, type HealthInputs, isSex } from '@roadmap/health-core/types';
 import type { UnitSystem } from '@roadmap/health-core/units';
@@ -246,7 +246,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   // Stable callbacks: the record's re-reads above (useRecordApply's `later`) call them after the first commit.
   const {
     reached, epoch, fullForm, aboutYouLow, planReady,
-    answered, rested, left, clearAnswered, profileLeft, dismissPlanReady: leavePlanReady,
+    answered, chatWeight, rested, left, clearAnswered, profileLeft, dismissPlanReady: leavePlanReady,
   } = onboarding;
   const dismissPlanReady = useCallback(() => {
     leavePlanReady();
@@ -491,7 +491,9 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   // field, so several made at once all land (US-16 AC1). The weight and year
   // fields report their own answers (US-62 AC25b), and the chat's weight its own (chatWeight, AC31a).
   const handleInputChange = useCallback(<K extends keyof HealthInputs>(field: K, value: HealthInputs[K] | undefined, unit?: UnitSystem, fromChat = false) => {
-    if (ONBOARDING_FIELDS.includes(field) && (fromChat ? field !== 'weightKg' : !LANDING_FIELDS.includes(field))) answered(false); // US-62 AC13: an answer given in this tab
+    // A chat weight answers nothing here: chatWeight (ChatEdits.tsx) is its only reporter, for the box and the grid
+    // alike (H54). Any new fromChat weight caller must call it.
+    if (ONBOARDING_FIELDS.includes(field) && (fromChat ? field !== 'weightKg' : !LANDING_FIELDS.includes(field))) answered(null); // US-62 AC13: an answer given in this tab
     if (unit) typedIn.current[field] = { value, unit };
     // The user's own sex or height outranks a chat proposal for it (US-16 AC2).
     if (field === 'sex' || field === 'heightCm') dropProfileProposal();
@@ -517,7 +519,9 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   }, [selectTab]);
   const { chatEditTarget, clearChatEdits, dropProfileProposal, banners: chatEditBanners } = useChatEdits({
     medications, inputs, inputsRef, unitSystem, eraseUnshown, erasing: isDeleting, handleInputChange, handleMedicationChange,
-    medicationWaiting, vitalsPrefillRef, bloodTestPrefillRef, showForm, reveal: setRevealCell, fullForm, chatWeight: () => { if (weightStepOpen(previousMeasurements)) answered(false); }, // never lands (AC25b)
+    medicationWaiting, vitalsPrefillRef, bloodTestPrefillRef, showForm, reveal: setRevealCell, fullForm,
+    // The weight step is open on the saved record and the box holds no plausible weight (H53): a typed weight's save may be pending.
+    chatWeight: () => chatWeight(weightStepOpen(previousMeasurements) && (inputsRef.current.weightKg === undefined || inputRangeFault('weightKg', inputsRef.current.weightKg) !== null)),
   });
 
   const emailCaptureActive = SHOPIFY_SURFACE; // email capture and US-23 reminders need the Shopify server
@@ -527,7 +531,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   // Leaving the field also lets About you go to Settings (AC12). A weight lands only on the Shopify build,
   // where it used to jump to the email box (US-22), so Pages never takes the focus from a value being
   // typed; the birth year (Brad 2026-11-02) lands on both.
-  const answeredIn = useCallback((field: 'weightKg' | 'birthYear' | null) => answered(field === 'birthYear' || (field === 'weightKg' && emailCaptureActive)), [answered, emailCaptureActive]);
+  const answeredIn = useCallback((field: 'weightKg' | 'birthYear' | null) => answered(field === 'weightKg' && !emailCaptureActive ? null : field), [answered, emailCaptureActive]);
   const landOnMyHealth = useCallback(() => {
     selectTab('health');
     requestAnimationFrame(() => {
@@ -728,7 +732,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
         metricUnitOverrides={metricUnitOverrides}
         onToggleFieldUnit={handleToggleFieldUnit}
         history={uploadHistory}
-        onComplete={() => { const read = rereadRecord('upload'); answered(false); return read; }} // an upload is an answer, after a held change is taken in
+        onComplete={() => { const read = rereadRecord('upload'); answered(null); return read; }} // an upload is an answer, after a held change is taken in
         onStart={handleUploadStart}
         onClose={() => setShowUploadModal(false)}
         onScreeningUpdate={handleScreeningChange}

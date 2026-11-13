@@ -884,6 +884,21 @@ describe('US-62 AC13, AC25b: the matrix weight and its frames', () => {
       await waitFor(() => { frames.run(); expect(landed()).toBe(true); });
     });
 
+    it('H53: the weight in the box, typed and its save still pending: the chat\'s weight during the typed birth year\'s wait is no answer, so the year still lands', async () => {
+      const view = await open();
+      type(q(view, '#heightCm'), '178');
+      leave(q(view, '#heightCm'));
+      type(q(view, '#weightKg'), '80');
+      leave(q(view, '#weightKg')); // its save runs 500 ms later; the 2 s wait is not taken
+      fireEvent.click(view.getByRole('radio', { name: 'Male' }));
+      await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
+      const frames = heldFrames();
+      birth(view, '5', '1975'); // the last answer; its rest's frame held, so the landing awaits it
+      expect(await activeWeights()).toEqual([]); // the typed weight is not yet saved
+      chatWeight();
+      await waitFor(() => { frames.run(); expect(landed()).toBe(true); });
+    });
+
     it('a record whose only saved weight is out of range: the chat\'s grid weight is still the last answer', async () => {
       await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, {});
       await addMeasurement('waist', 90, '2026-09-01');
