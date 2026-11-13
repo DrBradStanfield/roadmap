@@ -225,7 +225,7 @@ describe('RoadmapStore.deleteUserData (US-11)', () => {
     expect(deviceB.loadAllHistory()).toEqual([]);
   });
 
-  it('US-09 AC20: stamps meta.erasedAt 1 ms past the moment of the erase', async () => {
+  it('US-09 AC23 legacy rule: stamps meta.erasedAt 1 ms past the moment of the erase', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     try {
       vi.setSystemTime(new Date('2026-06-01T09:00:00.000Z'));
@@ -243,7 +243,7 @@ describe('RoadmapStore.deleteUserData (US-11)', () => {
   // Review fix (adversary R4): the eraser's clock runs behind the device that
   // wrote the row it erased. erasedAt is floored past the last write it read,
   // so that row cannot come back when the stale device saves again.
-  it('US-09 AC20: a slow eraser clock still drops a row the eraser had already seen', async () => {
+  it('US-09 AC23 legacy rule: a slow eraser clock still drops a row the eraser had already seen', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     try {
       vi.setSystemTime(new Date('2026-06-01T10:00:00.000Z')); // device B, clock ahead
@@ -269,7 +269,7 @@ describe('RoadmapStore.deleteUserData (US-11)', () => {
 
   // Review fix (N2): a broken clock, not a slow one. A stored updatedAt years
   // ahead must not push erasedAt out past every row written after the erase.
-  it('US-09 AC20: a stored updatedAt more than a day past now does not move erasedAt', async () => {
+  it('US-09 AC23 legacy rule: a stored updatedAt more than a day past now does not move erasedAt', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     try {
       vi.setSystemTime(new Date('2099-01-01T00:00:00.000Z')); // device B, clock broken
@@ -288,7 +288,7 @@ describe('RoadmapStore.deleteUserData (US-11)', () => {
     }
   });
 
-  it('US-09 AC20: a stale device that writes AFTER another device erased keeps that write, and only that', async () => {
+  it('US-09 AC23: a stale device that writes AFTER another device erased keeps that write, and only that', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     try {
       vi.setSystemTime(new Date('2026-06-01T09:00:00.000Z'));
@@ -1155,7 +1155,7 @@ describe('RoadmapStore.deleteUserData clears off-file health data (US-11 AC1)', 
     const heard = vi.fn();
     vi.stubGlobal('window', new EventTarget());
     window.addEventListener(DRAFTS_CLEARED_EVENT, heard);
-    // Each step a minute apart: US-09 AC20 keeps a row by its time against the erase.
+    // Each step a minute apart. US-09 AC23 keeps a row by its id, never by clocks: one no erase listed stays.
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-09-01T10:00:00.000Z'));
     const cloud = new MemoryCloud();
@@ -1177,7 +1177,7 @@ describe('RoadmapStore.deleteUserData clears off-file health data (US-11 AC1)', 
     vi.setSystemTime(new Date('2026-09-01T10:02:00.000Z'));
     otherPage.addMeasurement('weight', 81, '2024-02-01T00:00:00.000Z'); // made before it heard of the erase
     await otherPage.flush();
-    // Typed after the erase, so it survives it (US-09 AC20); the pre-erase row does not.
+    // Typed after the erase, so it survives it (US-09 AC23); the pre-erase row does not.
     expect(otherPage.loadAllHistory().map((m) => m.value)).toEqual([81]);
     expect(localStorage.getItem(DRAFT_KEY)).toBeNull();
     expect(localStorage.getItem(VITALS_DRAFT_KEY)).toBeNull();
@@ -1209,7 +1209,7 @@ describe('RoadmapStore.deleteUserData clears off-file health data (US-11 AC1)', 
     vi.setSystemTime(new Date('2026-09-18T10:02:00.000Z'));
     otherPage.addMeasurement('weight', 81, '2024-02-01T00:00:00.000Z'); // made before it heard of the erase
     await otherPage.flush();
-    // Typed after the erase, so it survives it (US-09 AC20); the Lp(a) row does not.
+    // Typed after the erase, so it survives it (US-09 AC23); the Lp(a) row does not.
     expect(otherPage.loadAllHistory().map((m) => m.value)).toEqual([81]);
     expect(localStorage.getItem(KEPT_KEY)).toBeNull();
     for (const [k, v] of Object.entries(KEEP)) expect(localStorage.getItem(k)).toBe(v);

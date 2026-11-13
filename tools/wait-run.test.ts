@@ -161,6 +161,36 @@ describe('wait-run.sh (US-64 AC26)', () => {
   it('a failing checks read after the wait still gives up at the time limit (Codex re-check R1)', () => {
     expect(run(['pr', '42'], { CHECKS_FAIL: '1', WAIT_RUN_MAX_MIN: '0' }).status).toBe(3);
   });
+  describe('US-64 AC26: pr: ios-compile is advisory (exact name, Brad 2026-11-13)', () => {
+    const green = [{ name: 'checks', bucket: 'pass' }, { name: 'test', bucket: 'pass' }];
+    const cr = (name: string, status: string, conclusion = '') => ({ __typename: 'CheckRun', name, workflowName: 'W', status, conclusion });
+    it('a pending ios-compile is not waited on: success, with a note', () => {
+      const ROLLUP = JSON.stringify([cr('test', 'COMPLETED', 'SUCCESS'), cr('ios-compile', 'IN_PROGRESS')]);
+      const r = run(['pr', '42'], { ROLLUP, CHECKS: JSON.stringify([...green, { name: 'ios-compile', bucket: 'pending' }]) });
+      expect(r.sleeps).toEqual([]);
+      expect(r.status).toBe(0);
+      expect(status(r.stdout).wait_run).toBe('success');
+      expect(r.stdout).toContain('note: advisory check ios-compile is pending; not counted');
+    });
+    it('a pending check with a name that only contains it is still waited on', () => {
+      const ROLLUP = JSON.stringify([cr('test', 'COMPLETED', 'SUCCESS'), cr('ios-compile-extra', 'IN_PROGRESS')]);
+      expect(run(['pr', '42'], { ROLLUP }).sleeps.length).toBe(1);
+    });
+    it('a failed ios-compile is not a failure: success, with a note', () => {
+      const r = run(['pr', '42'], { CHECKS: JSON.stringify([...green, { name: 'ios-compile', bucket: 'fail' }]) });
+      expect(r.status).toBe(0);
+      expect(status(r.stdout).wait_run).toBe('success');
+      expect(r.stdout).toContain('note: advisory check ios-compile is fail; not counted');
+    });
+    it('a real failure beside a green ios-compile is still checks_failed; a near-name failure counts', () => {
+      for (const extra of [{ name: 'unit (1, UTC)', bucket: 'fail' }, { name: 'ios-compile-extra', bucket: 'fail' }]) {
+        const r = run(['pr', '42'], { CHECKS: JSON.stringify([...green, { name: 'ios-compile', bucket: 'pass' }, extra]) });
+        expect(r.status).toBe(1);
+        expect(status(r.stdout).wait_run).toBe('checks_failed');
+        expect(r.stdout).not.toMatch(/advisory/);
+      }
+    });
+  });
   it('a failed check named like a verdict cannot turn it into success (Codex re-check R2)', () => {
     expect(run(['pr', '42'], { FAILS: '1', FAILNAME: 'x fail=0 skipped=0 pending=0' }).status).toBe(1);
   });

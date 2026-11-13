@@ -132,6 +132,8 @@ describe('phoneReminders (US-25 AC12)', () => {
 // sees it. The schedule the web pushes keeps the plain label; the follow-up
 // words and the first-seen days are made and kept on the phone only.
 describe('follow-up reminders on the phone (US-17 AC15)', () => {
+  /** The first-seen key of the organize follow-up: its item and its due date (2026-09-01). */
+  const ORGANIZE = 'screening_colorectal:organize:2026-09-01';
   function abnormal(status?: 'not_organized' | 'scheduled' | 'completed', method = 'colonoscopy_10yr'): RoadmapFile {
     const file = record();
     file.screenings = {
@@ -166,11 +168,11 @@ describe('follow-up reminders on the phone (US-17 AC15)', () => {
 
   it('fires a follow-up to organize on the morning it is first seen, then every 90 days from it', () => {
     const first = phoneReminders(abnormal(), new Date('2026-11-05T08:00:00.000'), undefined, {});
-    expect(first.firstSeen).toEqual({ 'screening_colorectal:organize': '2026-11-05' });
+    expect(first.firstSeen).toEqual({ [ORGANIZE]: '2026-11-05' });
     expect(fireDays(first).slice(0, 2)).toEqual(['2026-11-05', '2027-02-03']);
     // Seen after 09:00: the next morning.
     expect(phoneReminders(abnormal(), new Date('2026-11-05T15:00:00.000'), undefined, {}).firstSeen)
-      .toEqual({ 'screening_colorectal:organize': '2026-11-06' });
+      .toEqual({ [ORGANIZE]: '2026-11-06' });
     // Kept and passed back, the days never move.
     for (const day of ['2026-11-06T08:00:00.000', '2026-11-07T20:00:00.000', '2027-01-10T08:00:00.000']) {
       const later = phoneReminders(abnormal(), new Date(day), undefined, first.firstSeen);
@@ -187,11 +189,21 @@ describe('follow-up reminders on the phone (US-17 AC15)', () => {
     expect(fireDays(next).slice(0, 1)).toEqual(['2027-03-01']);
   });
 
+  it('a kept day under the old key (no due date, before M19) counts as unseen: fires once, then holds (US-17 AC15)', () => {
+    const legacy = { 'screening_colorectal:organize': '2026-11-01' };
+    const upgrade = phoneReminders(abnormal(), new Date('2026-11-05T08:00:00.000'), undefined, legacy);
+    expect(upgrade.firstSeen).toEqual({ [ORGANIZE]: '2026-11-05' });
+    expect(fireDays(upgrade).slice(0, 2)).toEqual(['2026-11-05', '2027-02-03']);
+    const next = phoneReminders(abnormal(), new Date('2026-11-06T08:00:00.000'), undefined, upgrade.firstSeen);
+    expect(next.firstSeen).toEqual(upgrade.firstSeen);
+    expect(fireDays(next)[0]).toBe('2027-02-03');
+  });
+
   it('drops the entry once the item is no longer a follow-up', () => {
-    const seen = { 'screening_colorectal:organize': '2026-11-05' };
+    const seen = { [ORGANIZE]: '2026-11-05' };
     expect(phoneReminders(abnormal('completed'), new Date(NOW), undefined, seen).firstSeen).toEqual({});
     expect(phoneReminders(abnormal('scheduled'), new Date(NOW), undefined, seen).firstSeen)
-      .toEqual({ 'screening_colorectal:checkin': '2026-10-21' });
+      .toEqual({ 'screening_colorectal:checkin:2026-12-01': '2026-10-21' });
   });
 
   it('keeps the check-in day across its morning: 23:00 the day before and 07:00 on the day', () => {
@@ -204,20 +216,20 @@ describe('follow-up reminders on the phone (US-17 AC15)', () => {
 
   it('reads what the app keeps defensively: an unreadable entry counts as none kept', () => {
     const seen = (kept: string) => JSON.parse(remindersJson(JSON.stringify(abnormal()), '2026-11-05T08:00:00.000', 'phone', kept)).firstSeen;
-    const fresh = { 'screening_colorectal:organize': '2026-11-05' };
+    const fresh = { [ORGANIZE]: '2026-11-05' };
     expect(seen('not json')).toEqual(fresh);
     expect(seen('[]')).toEqual(fresh);
-    expect(seen('{"screening_colorectal:organize":"2026-99-99"}')).toEqual(fresh);
-    expect(seen('{"screening_colorectal:organize":"2026-11-01"}')).toEqual({ 'screening_colorectal:organize': '2026-11-01' });
+    expect(seen(`{"${ORGANIZE}":"2026-99-99"}`)).toEqual(fresh);
+    expect(seen(`{"${ORGANIZE}":"2026-11-01"}`)).toEqual({ [ORGANIZE]: '2026-11-01' });
   });
 
   it('heals a kept first-seen day in the future (a clock that was set ahead) to this start day', () => {
-    const ahead = { 'screening_colorectal:organize': '2027-01-01' };
+    const ahead = { [ORGANIZE]: '2027-01-01' };
     const out = phoneReminders(abnormal(), new Date('2026-11-05T08:00:00.000'), undefined, ahead);
-    expect(out.firstSeen).toEqual({ 'screening_colorectal:organize': '2026-11-05' });
+    expect(out.firstSeen).toEqual({ [ORGANIZE]: '2026-11-05' });
     expect(fireDays(out)[0]).toBe('2026-11-05');
     expect(phoneReminders(abnormal(), new Date('2026-11-05T15:00:00.000'), undefined, ahead).firstSeen)
-      .toEqual({ 'screening_colorectal:organize': '2026-11-06' });
+      .toEqual({ [ORGANIZE]: '2026-11-06' });
   });
 
   it('notifies at the same hour Swift schedules (ReminderScheduler.hour)', () => {
@@ -266,23 +278,55 @@ describe('a raised PSA\'s repeat on the phone (US-06 AC21, screening Change 4)',
     const vague = psa(4.5, 'elected_not_to');
     vague.measurements = [...vague.measurements, { ...vague.measurements.at(-1)!, id: 'psa2', value: 5, comparator: '<',
       recordedAt: '2026-06-01T00:00:00.000Z', createdAt: '2026-06-01T00:00:00.000Z' } as RoadmapFile['measurements'][number]];
-    const cases: Array<[string, RoadmapFile, string, string, string]> = [
-      ['raised', psa(4.5, 'elected_not_to'), '2026-07-02', '2026-07-03', '2026-09-30'],
-      ['vague', vague, '2026-09-02', '2026-09-03', '2026-12-01'],
+    const cases: Array<[string, RoadmapFile, string, string, string, string]> = [
+      ['raised', psa(4.5, 'elected_not_to'), '2026-07-01', '2026-07-02', '2026-07-03', '2026-09-30'],
+      ['vague', vague, '2026-09-01', '2026-09-02', '2026-09-03', '2026-12-01'],
     ];
-    for (const [name, file, day, nextDay, step] of cases) {
+    for (const [name, file, due, day, nextDay, step] of cases) {
       const days = (seen: Record<string, string>, at: string) => {
         const out = phoneReminders(file, new Date(`${at}T08:00:00.000`), undefined, seen);
         return { firstSeen: out.firstSeen, days: out.notifications.filter((n) => n.categories.includes('screening_prostate')).map((n) => n.fireDay) };
       };
       const first = days({}, day);
-      expect(first.firstSeen, name).toEqual({ 'screening_prostate:repeat': day });
+      expect(first.firstSeen, name).toEqual({ [`screening_prostate:repeat:${due}`]: day });
       expect(first.days.slice(0, 2), name).toEqual([day, step]);
       // The next launch keeps the entry and the same days.
       const next = days(first.firstSeen!, nextDay);
       expect(next.firstSeen, name).toEqual(first.firstSeen);
       expect(next.days[0], name).toBe(step);
     }
+  });
+
+  /** A PSA added after the first, dated `day`. */
+  const withPsa = (file: RoadmapFile, id: string, value: number, day: string, comparator?: '<'): RoadmapFile => ({
+    ...file,
+    measurements: [...file.measurements, { ...file.measurements.at(-1)!, id, value, ...(comparator && { comparator }),
+      recordedAt: `${day}T00:00:00.000Z`, createdAt: `${day}T00:00:00.000Z` } as RoadmapFile['measurements'][number]],
+  });
+  const prostateRun = (file: RoadmapFile, at: string, seen: Record<string, string>) => {
+    const out = phoneReminders(file, new Date(at), undefined, seen);
+    return { firstSeen: out.firstSeen, days: out.notifications.filter((n) => n.categories.includes('screening_prostate')).map((n) => n.fireDay) };
+  };
+
+  it('a due date that moves into the past starts a new reminder the next morning (US-17 AC15, US-06 AC21, lead M19)', () => {
+    // First seen on 2026-07-02 while due 2026-07-01, as the engine keeps it; on 2026-10-15 a vague "< 5"
+    // from 2026-06-01 moves the due date to 2026-09-01. Before: the kept day held and the first alert was 2026-11-30.
+    const kept = prostateRun(psa(4.5, 'elected_not_to'), '2026-07-02T08:00:00.000', {}).firstSeen!;
+    const file = withPsa(psa(4.5, 'elected_not_to'), 'psa2', 5, '2026-06-01', '<');
+    const out = prostateRun(file, '2026-10-15T08:00:00.000', kept);
+    expect(out.days.slice(0, 2)).toEqual(['2026-10-15', '2027-01-13']);
+    expect(out.firstSeen).toEqual({ 'screening_prostate:repeat:2026-09-01': '2026-10-15' });
+    expect(kept).toEqual({ 'screening_prostate:repeat:2026-07-01': '2026-07-02' });
+  });
+
+  it('a due date that moves into the future still starts on its due day (US-17 AC15, US-06 AC21, lead M19)', () => {
+    const kept = prostateRun(psa(4.5, 'elected_not_to'), '2026-07-02T08:00:00.000', {}).firstSeen!;
+    const file = withPsa(psa(4.5, 'elected_not_to'), 'psa2', 4.5, '2026-10-01');
+    expect(phoneReminders(file, new Date('2026-10-15T08:00:00.000')).upcoming.find((i) => i.category === 'screening_prostate')?.dueAt)
+      .toBe('2027-01-01');
+    const out = prostateRun(file, '2026-10-15T08:00:00.000', kept);
+    expect(out.days[0]).toBe('2027-01-01');
+    expect(out.firstSeen).toEqual({ 'screening_prostate:repeat:2027-01-01': '2026-10-15' });
   });
 
   it('below 4.0 the list keeps the plain label; one who declined has no item', () => {
@@ -309,7 +353,7 @@ describe('a raised PSA\'s repeat on the phone (US-06 AC21, screening Change 4)',
         if (kept) {
           expect(item, name).toMatchObject({ label: vague ? 'PSA test' : 'Repeat PSA (your last result)' });
           expect(notified, name).toBe(true);
-          expect(seen, name).toEqual(['screening_prostate:repeat']);
+          expect(seen, name).toEqual([`screening_prostate:repeat:${vague ? '2026-09-01' : '2026-07-01'}`]);
         } else {
           expect(item, name).toBeUndefined();
           expect(notified, name).toBe(false);

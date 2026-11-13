@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+S-19,S2 server,In-memory limiter maps: one expiry rule and a size bound,not started,"(a) The three TTL maps share sweepExpired (PR 1518), but their read paths use two expiry comparisons: <= in the limiters, < in the subscription summary cache; pick one. (b) Give the maps an explicit size bound, with a test. (c) The unref pin in app/lib/ttl-sweep.test.ts finds its timer by interval value; make it find the gateway timer directly",,,no
