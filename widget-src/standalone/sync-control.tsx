@@ -20,7 +20,7 @@ import { googleDriveConfig } from './google-config';
 import { adapterFor, connectRefusal, copySessionToDevice, flushBeforeExit, forgetBackend, holdsCopyHere, liftLocalInto, rememberSignIn, storageState, type Backend } from './connect';
 import { askBeforeExit, currentSignIn, exitAnswered, lostSignIn, subscribeSignIn, type LostSignIn, type SignIn } from '../src/storage/sign-in-state';
 import { dispatch, getSwitchFlow, isCurrentRun, runMove, useSwitchFlow, type Move, type SwitchEvent } from './switch-flow';
-import { PROVIDERS } from './providers';
+import { noCopyQuestion, PROVIDERS } from './providers';
 import { BackendPickerModal } from './backend-picker';
 import { RemindersControl } from './reminders-control';
 import { remindersSupported } from './reminders';
@@ -301,7 +301,7 @@ export function SyncControl({ backend, hasData = true, attention = false }: {
         <div className="hr-sync-more">
           {signIn.kind === 'confirmingExit' ? (
             <>
-              <span className="hr-sync-detail">This browser has no copy of your record yet. It stays safe in your {label}. Start empty in this browser?</span>
+              <span className="hr-sync-detail">{noCopyQuestion(reconnect.provider)}</span>
               <button type="button" className="hr-sync-link" disabled={!idle} onClick={() => { exitAnswered(); forgetProvider(reconnect.provider); }}>Use this browser only</button>
               <button type="button" className="hr-sync-link" onClick={exitAnswered}>Cancel</button>
             </>
