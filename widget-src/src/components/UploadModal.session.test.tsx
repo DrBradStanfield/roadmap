@@ -7,6 +7,7 @@ import { attachOriginals, synthesizeLabArchiveEntries } from '../lib/archive-pay
 import { checkLabImportQuota, labImport } from '../lib/upload-api';
 import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocumentArchiveMode } from '../lib/roadmap-data';
 import { Sentry } from '../lib/sentry';
+import { WritesStoppedError } from '../lib/error-diagnostics';
 import { trackProductEvent } from '../lib/server-api';
 import type { UploadHistory } from '../lib/api-types';
 
@@ -324,6 +325,31 @@ describe('US-12 AC4–6 upload session ownership', () => {
     expect(onComplete).toHaveBeenCalledOnce();
     expect(Sentry.captureException).toHaveBeenCalledWith(expect.any(Error), { tags: { area: 'upload-save', branch: 'reread' } });
     expect((screen.getByRole('button', { name: /^Save / }) as HTMLButtonElement).disabled).toBe(false);
+  });
+  it.each([
+    { name: 'a log-off refusal', error: () => new WritesStoppedError(), reports: 0 },
+    { name: 'any other throw', error: () => new Error('synthetic measurement failure'), reports: 1 },
+  ])('US-09 AC2c, lead A19: a save branch that throws $name reports $reports time(s) and keeps the review for a retry', async ({ error, reports }) => {
+    vi.mocked(bulkSaveMeasurements).mockRejectedValueOnce(error());
+    render(<Harness />); await ready();
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    expect(await screen.findByText('Some items could not be saved. Please try again.')).toBeTruthy();
+    expect(screen.getByDisplayValue('3.9')).toBeTruthy();
+    expect(Sentry.captureException).toHaveBeenCalledTimes(reports);
+  });
+  it.each([
+    { name: 'a log-off refusal', error: () => new WritesStoppedError(), reports: 0 },
+    { name: 'any other throw', error: () => new Error('synthetic re-read failure'), reports: 1 },
+  ])('US-09 AC2c, lead A19: a re-read after a finished save that fails with $name reports $reports time(s) and the save stays done', async ({ error, reports }) => {
+    const failedReread = Promise.reject(error());
+    failedReread.catch(() => {});
+    render(<Harness refresh={failedReread} />); await ready();
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    await screen.findByRole('button', { name: 'Done' });
+    expect(screen.getByText(/Saved 1 blood test value/)).toBeTruthy();
+    await waitFor(() => expect(onComplete).toHaveBeenCalledOnce());
+    await act(async () => { await failedReread.catch(() => {}); });
+    expect(Sentry.captureException).toHaveBeenCalledTimes(reports);
   });
   it('US-12 AC6c: Save stays busy until the page has read back a partial save', async () => {
     originalFailsOnce();

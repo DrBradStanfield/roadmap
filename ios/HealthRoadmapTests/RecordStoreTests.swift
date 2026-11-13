@@ -472,6 +472,24 @@ final class RecordStoreTests: XCTestCase {
         XCTAssertEqual(try storedWeight(store), other == "si" ? 80 : 36.287, accuracy: 0.01)
     }
 
+    /// US-25 AC11g, the phone twin of CloudSyncTests' R1 (I-1 design note, erase-epoch gap): a
+    /// sheet pinned before an erase of the phone's file. Its Screen holds no eraseEpoch and both
+    /// sides' cloud erase are nil, so only a pin that tells the erase apart refuses the old
+    /// sheet's value: Screen carries the eraseEpoch and erase count, checked by Mark.holds.
+    func testASheetOpenedBeforeAPhoneEraseCannotSaveIntoTheErasedRecord_US25_AC11g() async throws {
+        let store = try store()
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 80, day: "2026-10-01")))
+        store.pinScreen() // a sheet opens on the pre-erase record
+        guard case .erased = await store.erasePhone(historyJSON: nil, keepChat: { _, _ in true }) else { return XCTFail("not erased") }
+        let erased = try String(contentsOf: file, encoding: .utf8)
+        guard case .refused = await store.apply(.add(metric: "weight", value: 81, day: "2026-10-02")) else {
+            return XCTFail("the old sheet's value must not land in the erased record")
+        }
+        XCTAssertEqual(try String(contentsOf: file, encoding: .utf8), erased, "nothing written")
+        store.unpinScreen()
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 81, day: "2026-10-02")), "a sheet opened after the erase saves")
+    }
+
     func testTheMasterSwitchClearsEveryChoice() async throws {
         let store = try store()
         let (record, other) = otherUnits(store)

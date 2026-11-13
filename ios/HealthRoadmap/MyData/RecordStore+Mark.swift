@@ -36,3 +36,9 @@ extension RecordStore {
     /// Which record is shown, for Apple Health's erase gate (US-72 AC10): `Source.recordSource`.
     var recordSource: String? { source.recordSource }
 }
+
+extension RecordStore.Screen {
+    /// The record a sheet was opened on, as a `Mark`: `applyInTurn` checks it with `Mark.holds`,
+    /// so an erase of the phone's file, where both cloud erases are nil, refuses it (US-25 AC11g).
+    var mark: RecordStore.Mark { RecordStore.Mark(erase: erase, epoch: epoch, erasures: erasures) }
+}

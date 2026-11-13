@@ -152,3 +152,40 @@ describe('US-09 AC2c: a device page that may not write this device\'s record rea
     expect(cloudHeard).toHaveBeenCalledTimes(1);
   });
 });
+
+// Lead A19: PR 1460 dropped report()'s WritesStoppedError check; the save's
+// catch-time `deviceClosed()` now carries it. Pin both directions through the
+// real record session and web host.
+describe('US-09 AC2c, lead A19: a record save refused by a log-off mid-save is not reported', () => {
+  it.each([
+    { name: 'a log-off lands during the save', refusal: true, reports: 0 },
+    { name: 'the device write fails for another reason', refusal: false, reports: 1 },
+  ])('$name: $reports report(s), and the save fails', async ({ refusal, reports }) => {
+    localStorage.setItem(BACKEND_KEY, 'dropbox'); // a fallback page: a log-off stops it
+    const p = await page();
+    const { Sentry } = await import('../lib/sentry'); // this page's module graph
+    const { WritesStoppedError } = await import('../lib/error-diagnostics');
+    const { session } = await openRecord(p);
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const Adapter = p.local.LocalStorageAdapter;
+    const thrown: unknown[] = [];
+    const writeSync = Adapter.prototype.writeSync;
+    vi.spyOn(Adapter.prototype, 'read').mockImplementation(async function (this: InstanceType<typeof Adapter>, name: string) {
+      if (refusal) localStorage.setItem(LOG_OFF_ID_KEY, 'id-after'); // past the save's first check, before its write
+      return this.readSync(name);
+    });
+    vi.spyOn(Adapter.prototype, 'writeSync').mockImplementation(function (this: InstanceType<typeof Adapter>, ...args) {
+      try {
+        if (!refusal) throw new Error('Synthetic storage full');
+        return writeSync.apply(this, args);
+      } catch (error) { thrown.push(error); throw error; }
+    });
+    vi.mocked(Sentry.captureException).mockClear();
+    addWeight(session, 'raced-row');
+    await expect(session.flush()).rejects.toThrow();
+    expect(thrown.length).toBeGreaterThan(0);
+    expect(thrown.every((e) => e instanceof WritesStoppedError)).toBe(refusal); // the real refusal reached the write
+    expect(Sentry.captureException).toHaveBeenCalledTimes(reports);
+    expect(session.saveStatus).toBe('not-saved');
+  });
+});
