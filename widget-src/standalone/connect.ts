@@ -26,9 +26,9 @@ import { PROVIDERS, SIGN_IN_KEYS, providerOf, type CloudBackend } from './provid
 import { clearLocalStorage, clearOffFileHealthData, healthWritesAllowed, safeGetItem, safeRemoveItem, setSignIn, type LogOffId } from '../src/lib/storage';
 import { CLEARED_ERASE_KEY } from '../src/lib/cleared-erase';
 import { failureTags, recordFailure } from '../src/lib/error-diagnostics';
-import { FULL } from '../src/storage/local-storage-adapter';
+import { deviceRecordStored, FULL } from '../src/storage/local-storage-adapter';
 import { trackProductEvent } from '../src/lib/server-api';
-import { copyRecordToDevice, flushRoadmapStore, getBackendKind } from '../src/lib/roadmap-data';
+import { copyRecordToDevice, currentSaveStatus, flushRoadmapStore, getBackendKind } from '../src/lib/roadmap-data';
 import { Sentry } from '../src/lib/sentry';
 
 /** Which backend the app is currently using (a UI-level subset of StorageBackendId). */
@@ -345,6 +345,13 @@ export async function copySessionToDevice(provider: CloudBackend): Promise<void>
     Sentry.captureException(error, { tags: { area: 'cloud-sync', op: 'copy-to-device', backend: provider } });
     throw new Error(FULL);
   }
+}
+
+/** Whether "Use this browser only" keeps a copy of the record here (US-09 AC49, lead A28). A cloud session
+ *  read its cloud, so it has one to copy. A session that fell back to this browser at load holds what this
+ *  browser stores, or an edit not yet stored there; with neither, the exit starts an empty record. */
+export function holdsCopyHere(): boolean {
+  return getBackendKind() === 'cloud' || currentSaveStatus() !== 'saved' || deviceRecordStored();
 }
 
 /** The cloud this page has already copied down and signed out of. A switch
