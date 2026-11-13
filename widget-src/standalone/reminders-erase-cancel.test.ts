@@ -25,7 +25,15 @@ afterEach(() => {
 });
 
 describe('US-11 AC4b: a Turn off in flight during an erase leaves the erased record without the old opt-in', () => {
-  it('an erase that lands, and is shown, while the cancel request is out keeps no token or address', async () => {
+  // 'shown': the page has caught up with the erase before the cancel answers.
+  // Before the fix the write took the shown erase as it landed, the new one,
+  // so it was accepted; it now carries the erase shown when Turn off was asked.
+  // 'not yet shown': the erase has landed but the page still shows the old
+  // one. This passed before the fix too: the store compares the stamp (the
+  // old shown erase, passed or defaulted) with the copy's real erase, which
+  // has moved. Pinned so work on the store's default stamp (H18-H24) cannot
+  // undo it silently.
+  it.each([['shown', true], ['not yet shown', false]] as const)('an erase that lands, %s, while the cancel request is out keeps no token or address', async (_case, shown) => {
     const data = await import('../src/lib/roadmap-data');
     const { cancelReminders } = await import('./reminders');
     const cloud = new MemoryCloud();
@@ -44,9 +52,12 @@ describe('US-11 AC4b: a Turn off in flight during an erase leaves the erased rec
 
     const turningOff = cancelReminders();
     await cancelSent;
-    // "Delete all my data" runs to the end and the page shows the erased record.
+    // "Delete all my data" runs to the end, and the page may show the erased record.
+    const before = data.getEraseIdentity();
     expect((await data.deleteUserData()).success).toBe(true);
-    data.markEraseShown(data.getEraseIdentity());
+    expect(data.getEraseIdentity()).not.toBe(before);
+    if (shown) data.markEraseShown(data.getEraseIdentity());
+    expect(data.getShownErase() === before).toBe(!shown);
     release();
     await turningOff;
     await data.flushRoadmapStore();

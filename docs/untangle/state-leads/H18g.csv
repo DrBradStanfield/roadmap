@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H18g,reminders,An opt-in already cancelled still posts a cancel; the control can keep showing an erased opt-in,bug,not started,"standalone/reminders.ts:388-391 cancelReminders checks only that an opt-in exists, so a cancelled one (an erased file carries token '') still posts a cancel with an empty token. And reminders-control.tsx re-renders only on hr:reminders-changed, so after another device's erase it can keep showing Turn off and the old address until something else re-renders it. Found by the PR 1664 adversary",,no
