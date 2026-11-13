@@ -7,7 +7,7 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { chmodSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
+import { chmodSync, cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -390,8 +390,10 @@ describe('writing into a repo that already holds parts (the PR 3 rebase path)', 
     expect(look()).toEqual(before);
   };
 
-  beforeEach(() => {
-    repo = mkdtempSync(join(tmpdir(), 'split-stories-repo-'));
+  // Built once and copied per test: the setup's git spawns cost more than any test (test audit T17).
+  let template: string;
+  beforeAll(() => {
+    template = repo = mkdtempSync(join(tmpdir(), 'split-stories-tmpl-'));
     run('init', '-q', '-b', 'main');
     mkdirSync(join(repo, 'docs'));
     writeFileSync(join(repo, 'docs/user-stories.md'), text);
@@ -411,6 +413,11 @@ describe('writing into a repo that already holds parts (the PR 3 rebase path)', 
     writeFileSync(join(repo, 'docs/stories/US-03.md'), '### US-03 · Three\n- AC1 three\n');
     writeFileSync(join(repo, 'docs/user-stories.md'), `${readFileSync(join(repo, 'docs/user-stories.md'), 'utf8')}\n- [US-03 · Three](stories/US-03.md)\n`);
     commit('post');
+  });
+  afterAll(() => rmSync(template, { recursive: true, force: true }));
+  beforeEach(() => {
+    repo = mkdtempSync(join(tmpdir(), 'split-stories-repo-'));
+    cpSync(template, repo, { recursive: true });
   });
   afterEach(() => rmSync(repo, { recursive: true, force: true }));
 
