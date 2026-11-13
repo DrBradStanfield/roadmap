@@ -37,14 +37,25 @@
 #      that alters the output also changed the output there; one that leaves the output alone cannot make the
 #      merged output stale. Residual: a main input change that matters only beside the PR's input change; main's
 #      CI catches it right after the merge. The refusal says to merge main first and let CI run, naming the
-#      generator. CI's freshness tests do the real check. A failed fetch or diff, or no merge base, refuses (4).
-#   7. no Deploy run is unfinished (12). First one snapshot of the newest 100 runs, unfiltered: one call is atomic
+#      generator. CI's freshness tests do the real check. A failed fetch or diff, or no merge base, refuses (4):
+#      every PR fetches, so a failed fetch refuses every merge. Main is always refs/remotes/origin/main (a local
+#      branch named origin/main cannot shadow it) and paths come out unquoted (core.quotepath=false). A matched row
+#      whose output, script or generator is not a non-empty one-line string refuses (4).
+#      Staleness (AC35, a note, never a refusal): when main has commits past the merge base, one stderr line says
+#      how many. The merge base is the CI base: what a --commit-checks run tested, and no newer than the main a
+#      pull_request run merged in, so the count may overstate, never understate.
+#   7. stop the line (US-64 AC35): the newest completed ci.yml run on main (by createdAt, among the newest 20; any
+#      event but pull_request, which a fork's branch named main could add) must not have ended failure,
+#      timed_out or startup_failure (18, naming the run's URL and conclusion). success passes; so do cancelled (a
+#      choice, not a failing test) and skipped (tested nothing). A PR labelled exactly fix-main passes a red main
+#      with one stderr note. No such run refuses (4).
+#   8. no Deploy run is unfinished (12). First one snapshot of the newest 100 runs, unfiltered: one call is atomic
 #      for the runs it lists, so no status change hides a run among them. Then, for an unfinished run older than
 #      that, one call per status in the order requested, waiting, pending, queued, in_progress, all twice: forward
 #      progress cannot dodge that order, and the second pass catches a run that went in_progress -> waiting (an
 #      environment review) and back. Unguarded: a run older than 100 newer runs that also flips status in step
 #      with both passes. --match-head-commit and Deploy's own concurrency group are the backstop.
-#   8. then `gh pr merge <pr> --merge --match-head-commit <sha>`, nothing else; its failure exits 13.
+#   9. then `gh pr merge <pr> --merge --match-head-commit <sha>`, nothing else; its failure exits 13.
 # A gh error, timeout or an answer it cannot parse refuses with exit 4; usage errors exit 2. Every gh call,
 # the merge too, and the git fetch get MERGE_GATED_GH_TIMEOUT seconds (default 60; zero or not a number is 60). A
 # merge that times out exits 13 with its outcome unknown: check the PR.
@@ -97,9 +108,9 @@ if [ "${MERGE_GATED_FROM_MAIN:-}" != 1 ] && { [ "$3" = true ] || [ "$4" = true ]
   tmp=$(mktemp -d "${TMPDIR:-/tmp}/merge-gated.XXXXXX") || die "cannot make a temp dir" 16
   trap 'rm -rf "$tmp"' EXIT
   bounded git fetch -q origin +refs/heads/main:refs/remotes/origin/main >&2 || die "PR $pr changes a gate file and the fetch of main failed, so main's copy cannot judge it: the owner merges this PR by hand" 16
-  git show origin/main:tools/merge-gated.sh > "$tmp/merge-gated.sh" 2>/dev/null && [ -s "$tmp/merge-gated.sh" ] \
+  git show refs/remotes/origin/main:tools/merge-gated.sh > "$tmp/merge-gated.sh" 2>/dev/null && [ -s "$tmp/merge-gated.sh" ] \
     || die "PR $pr changes a gate file and main has no copy of the gate yet: the owner merges this PR by hand" 16
-  git show origin/main:tools/generated-files.json > "$tmp/generated-files.json" 2>/dev/null || rm -f "$tmp/generated-files.json"
+  git show refs/remotes/origin/main:tools/generated-files.json > "$tmp/generated-files.json" 2>/dev/null || rm -f "$tmp/generated-files.json"
   echo "merge-gated: PR $pr changes a gate file; main's copy judges it" >&2
   MERGE_GATED_FROM_MAIN=1 sh "$tmp/merge-gated.sh" $args; exit $?
 fi
@@ -147,8 +158,11 @@ fi
 
 bounded git fetch -q origin +refs/heads/main:refs/remotes/origin/main "refs/pull/$pr/head" >&2 && git cat-file -e "$sha^{commit}" \
   || die "cannot fetch main and PR $pr's head $sha" 4
-base=$(git merge-base origin/main "$sha") || die "PR $pr's head $sha has no merge base with main" 4
-paths=$(git diff --name-only --no-renames "$base" "$sha") || die "git diff on PR $pr failed" 4
+base=$(git merge-base refs/remotes/origin/main "$sha") || die "PR $pr's head $sha has no merge base with main" 4
+behind=$(git rev-list --count "$base..refs/remotes/origin/main") || die "git rev-list on main failed" 4
+case "$behind" in 0) ;; 1) w=commit ;; *) w=commits ;; esac
+[ "$behind" = 0 ] || echo "merge-gated: note: main has moved $behind $w since this PR's merge base; CI may have tested an older main" >&2
+paths=$(git -c core.quotepath=false diff --name-only --no-renames "$base" "$sha") || die "git diff on PR $pr failed" 4
 # The rows whose output or an input matches a PR path, one index a line. A glob becomes an anchored regex:
 # * any run of characters (slash too, as in a git pathspec), ? one character, everything else literal.
 manifest=${0%/*}/generated-files.json
@@ -157,14 +171,34 @@ hits=$(jq -r --arg p "$paths" 'def re: "^" + gsub("(?<c>[.+^$(){}|\\[\\]\\\\])";
   | select(any(.value.output, .value.inputs[]; re as $r | any($p[]; test($r)))) | .key' "$manifest") \
   || die "cannot read $manifest" 4
 for i in $hits; do
-  row=$(jq -r --argjson i "$i" '.rows[$i] | .output, (.script // error("row \($i) has no script")), .generator' "$manifest") \
+  row=$(jq -r --argjson i "$i" '.rows[$i] | [.output, .script, .generator]
+    | if all(if type == "string" then length > 0 and (contains("\n") | not) else false end) then .[]
+      else error("row \($i) needs a non-empty one-line output, script and generator") end' "$manifest") \
     || die "cannot read $manifest" 4
-  # One field a line, unglobbed: output and script go to git as pathspecs.
+  # One field a line (each non-empty, so none is dropped), unglobbed: output and script go to git as pathspecs.
   set -f; IFS='
 '; set -- $row; unset IFS; set +f
-  moved=$(git log -1 --format=%H "$base..origin/main" -- "$1" "$2") || die "git log on $1 failed" 4
+  moved=$(git log -1 --format=%H "$base..refs/remotes/origin/main" -- "$1" "$2") || die "git log on $1 failed" 4
   [ -z "$moved" ] || die "$1: main has changed it or its generator script ($2) since this PR's base; merge main first, then let CI run (its generator: \`$3\`)" 9
 done
+
+# Stop the line: one line, "ok", "none" or "red <run url> ended <conclusion>".
+red=$(gh run list --workflow ci.yml --branch main --status completed --limit 20 --json databaseId,conclusion,event,createdAt,url --jq '
+  [.[] | select(.event != "pull_request")] | if length == 0 then "none"
+  else sort_by(.createdAt, .databaseId) | last
+  | if IN(.conclusion; "failure", "timed_out", "startup_failure") then "red \(.url // .databaseId) ended \(.conclusion)" else "ok" end end') \
+  || die "gh run list --workflow ci.yml --branch main failed" 4
+case "$red" in
+  ok) ;;
+  "red "*) fix=$(gh pr view "$pr" --json labels --jq 'any(.labels[]; .name == "fix-main")') || die "gh pr view $pr --json labels failed" 4
+    case "$fix" in
+      true) echo "merge-gated: note: main is red (its newest CI run ${red#red }); PR $pr carries fix-main, so it may merge" >&2 ;;
+      false) die "main is red: its newest completed CI run ${red#red }; fix main first, or label the PR that fixes it fix-main" 18 ;;
+      *) die "unparsable labels answer" 4 ;;
+    esac ;;
+  none) die "no completed CI (ci.yml) run on main among the newest 20" 4 ;;
+  *) die "unparsable main CI runs answer" 4 ;;
+esac
 
 # Refuses (12) if the runs `gh run list --workflow deploy.yml "$@"` lists hold one that is not completed.
 no_deploy() {
