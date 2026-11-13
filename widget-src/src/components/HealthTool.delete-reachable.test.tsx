@@ -2,7 +2,8 @@
 /**
  * US-11 AC (H114): "Delete all my data" stays in Settings whenever a record
  * exists, drawn as a plan or not: after a first read that failed before it
- * showed anything, and for a record with values but no complete profile. A
+ * showed anything, for a record with values but no complete profile, and for
+ * a visitor whose only stored data is a chat conversation. A
  * truly empty new visitor does not see it. Log off stays reachable from the
  * same page with a cloud connected.
  *
@@ -15,6 +16,7 @@ import { recordOnDisk, seedGuest, settle, useHealthToolLifecycle } from '../test
 import { openSettings } from '../testing/settings';
 import { initRoadmapStore } from '../lib/roadmap-data';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
+import { ChatHistoryStore } from '../storage/chat-history-store';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../lib/server-api', async original => ({
@@ -75,6 +77,21 @@ it('US-11 (H114): a record with values but no complete profile offers Delete, an
   vi.spyOn(window, 'alert').mockImplementation(() => {});
   fireEvent.click(button!);
   await waitFor(async () => expect((await recordOnDisk()).measurements.filter(m => m.status === 'active')).toHaveLength(0));
+});
+
+it('US-11 (H114): a visitor whose only stored data is one conversation sees Delete, and using it leaves no conversation', async () => {
+  const chat = await ChatHistoryStore.create(new LocalStorageAdapter());
+  await chat.recordExchange({ conversationId: 'c-only', isNew: true, userText: 'Synthetic question', assistantText: 'Synthetic answer.' });
+  await initRoadmapStore(new LocalStorageAdapter());
+  const view = render(<HealthTool/>);
+  await loaded(view.container);
+  await settle(20);
+  openSettings(view.container);
+  const button = await waitFor(() => { const b = deleteButton(view.container); expect(b).not.toBeNull(); return b!; });
+  vi.spyOn(window, 'confirm').mockReturnValue(true);
+  vi.spyOn(window, 'alert').mockImplementation(() => {});
+  fireEvent.click(button);
+  await waitFor(async () => expect((await ChatHistoryStore.create(new LocalStorageAdapter())).listConversations()).toEqual([]));
 });
 
 it('US-11 (H114): a truly empty new visitor does not see Delete all my data', async () => {

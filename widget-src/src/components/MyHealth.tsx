@@ -22,6 +22,7 @@ import { PlanCardList, PlanEmptyPreview, QuickStats, RowSuggestions } from './Pl
 import type { PlanView } from './ResultsPanel';
 import { SettingsSheet } from './SettingsSheet';
 import { GuestContext } from '../lib/storage-notice';
+import { getChatHistory } from '../lib/chat-history-access';
 import { SectionNav } from './SectionNav';
 import type { DerivedSeries } from '../storage/roadmap-store';
 
@@ -86,8 +87,10 @@ export interface MyHealthProps {
    *  record lives (US-09; first, under the title, for a phone's true guest, AC34) and Delete all my data. */
   reminders?: ReactNode;
   storageCard?: ReactNode;
-  /** Delete all my data; absent for a truly empty new visitor (US-11 AC10, H114). */
-  onDelete?: () => void;
+  onDelete: () => void;
+  /** The page holds a record, or its first read failed: Delete all my data shows. Without one, a stored
+   *  conversation still shows it (read when Settings open); a truly empty visitor sees none (US-11 AC10, H114). */
+  recordHeld?: boolean;
   isDeleting?: boolean;
   /** A guest's storage card shows at the foot while Settings are shut; a connected one waits
    *  there hidden, so the picker it hosts still opens from every way in (US-09 AC13). */
@@ -120,7 +123,7 @@ const RowsCard = memo(function RowsCard({ rows, onOpen, extra }: { rows: Array<R
   );
 });
 
-export function MyHealth({ form, plan, tiles, series, egfrCurrent, storageBar, personButton, saveAlert, syncAlert, settingsOpen, onSettingsClose, settingsHost, reminders, storageCard, onDelete, isDeleting, storageAtFoot,
+export function MyHealth({ form, plan, tiles, series, egfrCurrent, storageBar, personButton, saveAlert, syncAlert, settingsOpen, onSettingsClose, settingsHost, reminders, storageCard, onDelete, recordHeld, isDeleting, storageAtFoot,
   sectionsRef, healthDocuments, onDocumentDeleted, setShowUploadModal, onPlanReadyDismiss, titleRef, readyTitleRef }: MyHealthProps) {
   // The form's row opener changes every render; the rows take a stable one, so memo'd rows stay put.
   const openRef = useRef(form.rows.open);
@@ -225,6 +228,14 @@ export function MyHealth({ form, plan, tiles, series, egfrCurrent, storageBar, p
 
   const inTab = settingsHost !== undefined;
   const guest = useContext(GuestContext);
+  // Chat history opens lazily (lib/chat-history-access.ts): read only while Settings show with no record held.
+  const [chatHeld, setChatHeld] = useState(false);
+  useEffect(() => {
+    if (!settingsOpen || recordHeld) return;
+    let live = true;
+    void getChatHistory().then(chat => { if (live) setChatHeld((chat?.listConversations().length ?? 0) > 0); });
+    return () => { live = false; };
+  }, [settingsOpen, recordHeld]);
   // Where the record lives (US-09), while Settings show (one card, one picker). A phone's true
   // guest gets it first, under the Account title (US-62 AC34); a reconnect keeps it low, its title
   // line already holds the reconnect. Keyed, a defensive guard: connecting reloads the page.
@@ -242,7 +253,7 @@ export function MyHealth({ form, plan, tiles, series, egfrCurrent, storageBar, p
     ),
     <Fragment key="reminders">{reminders}</Fragment>,
     !storageFirst && storage,
-    onDelete && (
+    (recordHeld || chatHeld) && (
       <div key="delete" className="delete-data-section">
         <button className="delete-data-link" onClick={onDelete} disabled={isDeleting}>
           {isDeleting ? 'Deleting...' : 'Delete all my data'}
