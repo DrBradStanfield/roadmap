@@ -428,6 +428,34 @@ final class DataEraserTests: XCTestCase {
         XCTAssertEqual(try String(contentsOf: chatFile, encoding: .utf8), "{ not a chat file")
     }
 
+    /// The phone refuses to write the erased chat (its folder is read-only), and the reply claims
+    /// the chat went: the words follow the phone's own answer. On main they took the reply's flag.
+    func testAChatThePhoneCouldNotWriteIsNeverClaimed_US25_AC16h() async throws {
+        let app = try await connectedApp(rewrite: "a => ({ ...a, chatErased: true })")
+        await seedChat(app.chat)
+        let path = folder.path(percentEncoded: false)
+        try FileManager.default.setAttributes([.posixPermissions: 0o555], ofItemAtPath: path)
+        defer { try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: path) }
+
+        guard case .erased(let words) = await app.eraser.eraseAll() else { return XCTFail("the erase landed, so it was not refused") }
+
+        XCTAssertFalse(words.contains("chat history and reminders are deleted"), words)
+        XCTAssertTrue(words.contains("Your chat history could not be deleted"), words)
+        XCTAssertTrue(try String(contentsOf: chatFile, encoding: .utf8).contains(question), "the chat is still on the phone")
+    }
+
+    /// An empty chat file holds nothing, so nothing is left: an unreadable flag must not say the
+    /// chat is still there. On main the decode threw and the erase was called refused.
+    func testAnEmptyChatFileWithAnUnreadableFlagSaysNothingIsLeft_US25_AC16h() async throws {
+        let app = try await connectedApp(rewrite: "a => ({ ...a, chatErased: 'yes' })")
+        try Data().write(to: chatFile)
+
+        guard case .erased(let words) = await app.eraser.eraseAll() else { return XCTFail("the erase landed, so it was not refused") }
+
+        XCTAssertTrue(words.contains("chat history and reminders are deleted"), words)
+        XCTAssertFalse(words.contains("could not be deleted"), words)
+    }
+
     // MARK: Apple Health (D6)
 
     func testTheEraseDeletesTheSamplesThisAppWroteToAppleHealthAndForgetsThem() async throws {

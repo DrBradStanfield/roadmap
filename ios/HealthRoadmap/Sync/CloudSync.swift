@@ -200,9 +200,10 @@ final class CloudSync: CloudPort {
             throw error
         }
         // The phone's chat outcome from this side, not from a reply field that may have fallen
-        // back (AC16h). An erase that landed ran the chat step: with no chat text the engine had
-        // nothing to tombstone and asked nothing; with text and no ask, its read failed.
-        if result.erased { result.chatErased = kept.withLock { $0 } ?? (chatHistory == nil) }
+        // back (AC16h). An erase that landed ran the chat step: with no chat text (or an empty
+        // file) the engine had nothing to tombstone and asked nothing; with text and no ask, its
+        // read failed.
+        if result.erased { result.chatErased = kept.withLock { $0 } ?? (chatHistory ?? "").isEmpty }
         // "Delete all my data" takes the account's email too; the connection stays.
         if result.erased { forgetEmail() }
         // Always reaches the store (AC16g). A Disconnect or reopen during the await owns the
