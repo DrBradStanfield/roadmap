@@ -96,6 +96,7 @@ interface Engine {
   cloudEdit(edit: string, erase: string, units: string, now: string, unitsJson?: string, shownLpaUnit?: string): string;
   chatEditsJson(record: string, edits: string, now: string, device: string, today: string, unitsJson?: string): string;
   cloudVisible(): string;
+  cloudHidden(): string;
   /** US-09 AC30 (lead A1 step e): Swift calls it when NWPathMonitor says the path is satisfied. */
   cloudOnline(): string;
   cloudFlush(): Promise<string>;
@@ -1431,9 +1432,13 @@ describe('a failed save is retried on return and on online (US-09 AC30, lead A1 
     await settle();
     refusing = false;
     const before = attempts;
+    // Off screen, the network's return only retries: no catch-up re-read, whose flushSync
+    // would land the save even with no retry owed (lead A25). So the upload is the retry's.
+    engine.cloudHidden();
     engine.cloudOnline();
     await settle();
-    expect(attempts).toBe(before);
+    expect(attempts).toBe(before); // nothing refused after the network came back
+    expect(dropbox.uploads).toBe(1);
     expect(days(dropbox.record)).toEqual(['2026-10-07']);
   });
 
