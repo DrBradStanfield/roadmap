@@ -70,7 +70,7 @@ function describeFailure(id: Exclude<StoreIdentity, { ok: true }>): string {
   }
 }
 
-export const STORE_IDENTITY = storeIdentity({
+const STORE_IDENTITY = storeIdentity({
   flyAppName: process.env.FLY_APP_NAME,
   shopDomain: process.env.SHOPIFY_SHOP_DOMAIN,
 });
