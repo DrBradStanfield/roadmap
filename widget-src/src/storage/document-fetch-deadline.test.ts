@@ -164,3 +164,33 @@ describe('WebDAV documents and connect (US-09 AC13e)', () => {
     await expect(webdav().connect()).resolves.toBeUndefined();
   });
 });
+
+// US-09 AC13d, AC51 (A1-6): the bytes went out, so a stalled upload may have
+// landed. GitHub and WebDAV say so in the same words Dropbox and Drive use
+// (packages/health-core/src/document-transfer-deadline.test.ts).
+describe('US-09 AC13d, AC51: a stalled document upload says it may have landed (GitHub, WebDAV)', () => {
+  const LANDED = 'The change may have landed. Read the record again before trying it a second time.';
+
+  async function stalledHint(work: () => Promise<unknown>): Promise<string | undefined> {
+    let failure: unknown = 'pending';
+    void work().then(() => { failure = 'resolved'; }, (error: unknown) => { failure = error; });
+    await vi.advanceTimersByTimeAsync(DOCUMENT_MS);
+    expect(failure).toBeInstanceOf(StorageError);
+    return (failure as StorageError).hint;
+  }
+
+  it('GitHub', async () => {
+    provider((url) => (isRepoCheck(url) ? repoIsPrivate() : 'stall'));
+    expect(await stalledHint(() => github().writeDocument(REF, new Blob(['synthetic'])))).toBe(LANDED);
+  });
+
+  it('WebDAV', async () => {
+    provider(() => 'stall');
+    expect(await stalledHint(() => webdav().writeDocument(REF, new Blob(['synthetic'])))).toBe(LANDED);
+  });
+
+  it('a stalled read still says to try once more: nothing was written', async () => {
+    provider(() => 'stall');
+    expect(await stalledHint(() => webdav().readDocument(REF))).not.toBe(LANDED);
+  });
+});

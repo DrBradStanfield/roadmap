@@ -43,18 +43,15 @@ The two exchange bounds (10 s, 15 s) stay at their call sites: one site each, ea
 github.ts, webdav.ts, dropbox.ts, drive-token-reply.ts read it; the four copies of 300 000 and two local
 `DOCUMENT_TIMEOUT_MS` go.
 
-## Questions for the owner (each changes a number or words a person could notice)
+## Owner's answers (2026-11-13), built in the follow-up PR
 
-1. **Drive document download has no deadline** and ignores the caller's signal (drive-rest.ts:217-223,
-   `DriveAdapter.readDocument` takes none, :633). The hosted import's Drive download is not aborted at its
-   40 s budget, despite US-35 AC5. Adopt `document`: none -> 300 s, and pass the signal through.
-2. **Dropbox document download is 30 s**; GitHub and WebDAV reads are 300 s. Adopt `document`: 30 -> 300 s
-   (web viewer, iPhone viewer; MCP keeps its 40 s budget).
-3. **Drive upload scales** (a 100 KB file: 40 s); the other three are a flat 300 s. Keep, or flat 300 s?
-4. **GitHub and WebDAV document uploads omit `mayHaveWritten`**, so a stalled upload says "Try once more"
-   where Dropbox and Drive say "may have landed". Same existing words, different hint shown.
-5. **Cosmetic Drive calls** (drive.ts:531, :574, :578) have no bound: adopt `call`, none -> 30 s?
-6. **iPhone's 60 s URLSession idle timeout** is a second bound beside the JS one: leave, or set it from
-   the policy in Swift?
-7. Out of scope, noted: `upload-pipeline.ts:139` races local file processing with a timer and leaves the
-   work running (not a cloud call).
+1. Yes: Drive document download none -> 300 s; `DriveAdapter.readDocument` passes the caller's signal.
+   Correction to the question: the hosted import refuses Drive before any download
+   (mcp-import.server.ts:346), so no hosted call reaches this today; the fix holds the adapter contract.
+2. Yes: Dropbox document download 30 s -> 300 s.
+3. Keep Drive's size-scaled upload bound.
+4. Yes: GitHub and WebDAV uploads pass `mayHaveWritten` (existing string). Their failed upload
+   reconciles as the other two do: `saveDocuments` is provider-agnostic.
+5. Yes: the three cosmetic Drive calls get 30 s through `fetchOrFail`, still fire-and-forget.
+6. Leave the iPhone's 60 s idle timeout; one sentence in ios/architecture.md.
+7. Filed as state lead U15.

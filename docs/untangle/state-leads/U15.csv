@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+U15,upload,A timed-out file read leaves the work running,behaviour,not started,"widget-src/src/lib/upload-pipeline.ts:139 withTimeout races extractFromPdf, resizeImage and docxToText against a 30 s timer (EXTRACT_TIMEOUT, :104); the timer rejects but the work runs on, with no abort. Local processing, not a cloud call; found by A1-6",,no
