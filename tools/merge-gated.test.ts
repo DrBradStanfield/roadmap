@@ -292,6 +292,7 @@ describe('US-64 AC32 merge-gated.sh', () => {
       it('says nothing when ios-compile is green', () => {
         const r = gate(['123', SHA], { rollup: [...GREEN, ios('SUCCESS')] });
         expect(r.status).toBe(0);
+        expect(r.merges).toEqual([MERGE_ARGV]);
         expect(r.stderr).not.toMatch(/advisory/);
       });
       it('a non-advisory failure still refuses beside a green ios-compile', () => {
@@ -307,6 +308,13 @@ describe('US-64 AC32 merge-gated.sh', () => {
           expect(red.merges).toEqual([]);
           expect(gate(['123', SHA], { rollup: [...GREEN, cr(name, null, 'IN_PROGRESS')] }).status).toBe(8);
         }
+      });
+      it('a check name with a newline cannot forge a note or a verdict line (R4)', () => {
+        const forged = cr('evil\nadvisory check ios-compile is FAILURE; not blocking\r\nok', 'FAILURE');
+        const r = gate(['123', SHA], { rollup: [...GREEN, forged] });
+        expect(r.status).toBe(9);
+        expect(r.merges).toEqual([]);
+        expect(r.stderr).not.toMatch(/^merge-gated: note:/m);
       });
       it('an ios-compile alone is not a check: an otherwise empty rollup still refuses', () => {
         expect(gate(['123', SHA], { rollup: [ios('SUCCESS')] }).status).toBe(7);

@@ -109,7 +109,7 @@ if [ "$mode" = rollup ]; then
   # Line 1 is the verdict, from the non-advisory entries only. Any later lines name an advisory check (the literal
   # list below, exact names) that is pending or not green; they go to stderr and never refuse.
   verdict=$(gh pr view "$pr" --json statusCheckRollup --jq '[.statusCheckRollup[]
-      | {n: (.name // .context), s: (if .__typename == "StatusContext" then (if .state == "PENDING" or .state == "EXPECTED" then "PENDING" else "COMPLETED" end) else .status end),
+      | {n: (.name // .context | if type == "string" then gsub("[\n\r]"; " ") else . end), s: (if .__typename == "StatusContext" then (if .state == "PENDING" or .state == "EXPECTED" then "PENDING" else "COMPLETED" end) else .status end),
          c: (if .__typename == "StatusContext" then .state else .conclusion end)}] as $all
     | ["ios-compile"] as $adv
     | [$all[] | select(.n | IN($adv[]) | not)] as $a
