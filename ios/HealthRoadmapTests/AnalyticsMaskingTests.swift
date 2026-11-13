@@ -53,8 +53,75 @@ final class AnalyticsMaskingTests: XCTestCase {
         analytics.event(.tourStarted)
         XCTAssertEqual(sdk.calls, [], "nothing before Clarity starts")
         analytics.start(in: UIWindow())
+        analytics.event(.guideSeen)
+        XCTAssertEqual(sdk.calls.last, "event Guide seen")
+    }
+
+    /// S44: a launch's own event (a first-run finish's "Tour started") fired before the window
+    /// reader starts Clarity is sent once it starts, after the screen; later ones go straight through.
+    func testAnEventBeforeStartIsSentOnceClarityStarts_S44() {
+        let sdk = FakeSDK()
+        let analytics = Analytics(sdk: sdk, projectId: "abc", testing: false)
         analytics.event(.tourStarted)
-        XCTAssertEqual(sdk.calls.last, "event Tour started")
+        analytics.event(.cloudPromptShown)
+        XCTAssertEqual(sdk.calls, [], "nothing before Clarity starts")
+        analytics.start(in: UIWindow())
+        XCTAssertEqual(sdk.calls, ["mask window", "start abc", "screen Welcome", "event Tour started", "event Cloud prompt shown"])
+        analytics.event(.guideSeen)
+        XCTAssertFalse(analytics.start(in: UIWindow()), "once per launch")
+        XCTAssertEqual(sdk.calls.suffix(1), ["event Guide seen"], "after start, straight through, nothing sent twice")
+        XCTAssertEqual(sdk.calls.filter { $0 == "event Tour started" }.count, 1)
+    }
+
+    /// S44: the wait holds at most the newest `earlyLimit` events; older ones are dropped.
+    func testTheWaitBeforeStartIsBounded_S44() {
+        let sdk = FakeSDK()
+        let analytics = Analytics(sdk: sdk, projectId: "abc", testing: false)
+        analytics.event(.tourStarted)
+        for _ in 0..<Analytics.earlyLimit { analytics.event(.guideSeen) }
+        analytics.start(in: UIWindow())
+        let events = sdk.calls.filter { $0.hasPrefix("event ") }
+        XCTAssertEqual(events, Array(repeating: "event Guide seen", count: Analytics.earlyLimit), "the oldest went")
+    }
+
+    /// S44: where Clarity never starts (under the tests, no project id, or a failed start),
+    /// waiting events never reach it.
+    func testWaitingEventsNeverReachClarityWhenItDoesNotStart_S44() {
+        let sdk = FakeSDK()
+        for analytics in [Analytics(sdk: sdk, projectId: "abc", testing: true), Analytics(sdk: sdk, projectId: nil, testing: false)] {
+            analytics.event(.tourStarted)
+            XCTAssertFalse(analytics.start(in: UIWindow()))
+            analytics.event(.guideSeen)
+        }
+        XCTAssertEqual(sdk.calls, [])
+        let refusing = RefusingSDK()
+        let analytics = Analytics(sdk: refusing, projectId: "abc", testing: false)
+        analytics.event(.tourStarted)
+        XCTAssertFalse(analytics.start(in: UIWindow()))
+        XCTAssertEqual(refusing.calls, ["mask window", "start abc"], "a refused start sends no event")
+    }
+
+    /// S44: the phase's whole table.
+    func testThePhaseTransitions_S44() {
+        typealias A = Analytics
+        let full = Array(repeating: A.Event.guideSeen, count: A.earlyLimit)
+        let table: [(A.Phase, A.Step, A.Phase)] = [
+            (.waiting(early: []), .fired(.tourStarted), .waiting(early: [.tourStarted])),
+            (.waiting(early: [.tourStarted]), .fired(.guideSeen), .waiting(early: [.tourStarted, .guideSeen])),
+            (.waiting(early: [.tourStarted] + full.dropLast()), .fired(.guideSeen), .waiting(early: full)),
+            (.waiting(early: [.tourStarted]), .started, .started),
+            (.started, .fired(.tourStarted), .started),
+            (.started, .started, .started),
+        ]
+        for (from, step, to) in table { XCTAssertEqual(A.transition(from, step), to, "\(from) + \(step)") }
+    }
+
+    private final class RefusingSDK: AnalyticsSDK {
+        var calls: [String] = []
+        func mask(_ view: UIView) { calls.append(view is UIWindow ? "mask window" : "mask view") }
+        func start(projectId: String) -> Bool { calls.append("start \(projectId)"); return false }
+        func screen(_ name: String) { calls.append("screen \(name)") }
+        func event(_ name: String) { calls.append("event \(name)") }
     }
 
     func testEachTourTipHasItsOwnClosedAndSkippedWords_US57() {
