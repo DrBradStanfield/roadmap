@@ -242,9 +242,9 @@ describe('GitHub and WebDAV: a refused sign-in carries its status (US-09 AC30)',
   const DAV = { url: 'https://synthetic.invalid/dav', username: 'synthetic', password: 'test-password' };
   const SECONDARY = { message: 'You have exceeded a secondary rate limit. Please wait a few minutes before you try again.' };
   const answerAll = (status: number, body: unknown = {}) => vi.stubGlobal('fetch', vi.fn(async () => reply(status, body)));
-  /** The repo check passes (a private repo); the record PUT answers `status`. */
-  /** The record GET answers 404 (a first save, so a save goes on to write), the record PUT
-   *  answers `put`, and anything else (GitHub's repo check) answers `other`. */
+  /** For a save through the session: the record PUT answers `put`; the record GET (GitHub's
+   *  /contents/ path, or any WebDAV request, all under its URL) answers 404, a first save, so
+   *  the save goes on to write; anything else (only GitHub's repo check) answers `other`. */
   const writeFails = (put: number, putBody: unknown, other: number, otherBody: unknown) => () =>
     vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) =>
       init?.method === 'PUT' ? reply(put, putBody)
