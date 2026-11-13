@@ -14,9 +14,9 @@ Every control named here was read in the live tree on 2026-09-11.
 
 | The report | Reproduces? | What the fix would delete |
 |---|---|---|
-| "`correct_value` refuses my six-month-old lab" | Yes | `MAX_CORRECTION_AGE_DAYS = 90` (`app/lib/mcp.server.ts:66`) — a named mandatory mitigation under US-32 AC12 |
+| "`correct_value` refuses my six-month-old lab" | Yes | `MAX_CORRECTION_AGE_DAYS = 90` (`app/lib/mcp-corrections.server.ts:16`) — a named mandatory mitigation under US-32 AC12 |
 | "`report_feedback` refused my bug report because it mentions a date / a filename" | Yes, false positives are real | `unsafeFeedback()` (`packages/health-core/src/mcp-feedback.ts`) — the ONLY mechanical guard between a stranger's assistant's text and a permanent public issue |
-| "Your endpoint 403s my client, it sends a normal Origin header" | Yes, by design | `originRejected()` (`app/lib/mcp.server.ts:486`) — US-32 AC15 |
+| "Your endpoint 403s my client, it sends a normal Origin header" | Yes, by design | `originRejected()` (`app/lib/mcp.server.ts:473`) — US-32 AC15 |
 | "Three reports a day is too strict, I lost my report" | Yes | `REPORTS_PER_DAY = 3` / `ISSUES_PER_HOUR = 20` (`app/lib/github-issues.server.ts:43,24`) — the two abuse ceilings on public issue filing |
 | "Sixty writes an hour breaks my legitimate bulk import" | Yes | `WRITES_PER_HOUR = 60` (`app/lib/mcp-grants.server.ts:32`) |
 | "Your metadata fetch times out on my server / refuses redirects" | Yes | The CIMD fetch's timeout, size cap and no-redirect policy (`app/lib/mcp-clients.server.ts`) — an SSRF boundary |
