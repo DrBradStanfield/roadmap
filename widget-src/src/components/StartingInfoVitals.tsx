@@ -67,8 +67,7 @@ interface StartingInfoVitalsProps {
    *  Same prop the blood-test matrix uses. BP cells stay display-only (a
    *  sys/dia cell is ambiguous to correct in place). */
   onCorrectValue?: CorrectFn;
-  /** Used to pulse the weight draft cell at stage 1 (US-62 AC13: no weight
-   *  in what the plan reads, the draft's own included). */
+  /** At stage 1 the weight draft cell pulses until it holds a valid weight (US-62 AC13). */
   formStage: FormStage;
   /** What the plan was computed from (US-06 AC5): its age sets the
    *  blood-pressure target, its weight target (kg) the weight line and its
@@ -264,8 +263,7 @@ export function StartingInfoVitals({
     return typed ? validateTypedValue(metric, typed, typedUnit(column, metric)).error ?? null : null;
   };
 
-  // A saved column's empty cell. Backfilling a PAST date deliberately does NOT
-  // stand in for the latest value in the plan (unlike the draft column).
+  // A saved column's empty cell.
   const setBackfill = (date: string, key: VitalsKey, typed: string) =>
     type([date, key], typed, key === 'weight' || key === 'waist' ? unitFor(key) : undefined);
 
@@ -386,6 +384,8 @@ export function StartingInfoVitals({
         return c.keys.map((key): [CellRef<VitalsKey>, string | undefined] => [[c.column, key], status && saveErrorText(status)]);
       }));
       if (refusedSlots.size === 0) setActiveCell(null);
+      // A New weight saved here is at rest: Enter lands now, a decimal too (US-62 AC25b, Codex R1).
+      if (ready.some(c => c.column === null && c.keys[0] === 'weight' && !refusedSlots.get(slotOf(c.date, 'weight')))) rested?.();
     } finally {
       setSaving(false);
     }
@@ -459,7 +459,7 @@ export function StartingInfoVitals({
                             validationResult={typedError(null, row.metric)}
                             externalError={clashes(row.metric) || taken(row.metric) ? SAME_SLOT : refusal([null, row.metric])}
                             placeholder="—"
-                            wrapperClass={`bt-cell-input bt-cell-draft${formStage === 1 && row.metric === 'weight' ? ' field-attention' : ''}`}
+                            wrapperClass={`bt-cell-input bt-cell-draft${formStage === 1 && row.metric === 'weight' && (!draft.values.weight || typedError(null, 'weight')) ? ' field-attention' : ''}`}
                             active={activeCell === cellId}
                             onChange={v => setSimpleDraft(row.metric, v)}
                             onFocus={() => setActiveCell(cellId)}

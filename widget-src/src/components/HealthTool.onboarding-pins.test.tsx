@@ -717,6 +717,29 @@ describe('US-62 AC13, AC25b: the matrix weight and its frames', () => {
     expect(calls('onboarding_done')).toHaveLength(1);
   });
 
+  // Codex R1 (PR 1579): a committed grid weight is at rest; the typing timer and its 2-3 digit test are not asked.
+  it('US-62 AC25b (Codex R1): "25" and Enter at once lands on the commit, with the 800 ms wait held', async () => {
+    const view = await matrixWeightLast();
+    const real = window.setTimeout;
+    vi.stubGlobal('setTimeout', ((cb: () => void, ms?: number) => (ms === 800 ? 0 : real(cb, ms))) as typeof setTimeout);
+    const cell = weightRow(view)!.querySelector('.bt-cell-draft input');
+    type(cell, '25'); // may become 250: its rest waits 800 ms, held here
+    commit(cell); // Enter at once: the grid saves
+    await waitFor(() => expect(landed()).toBe(true), { timeout: 2000 });
+    expect(calls('onboarding_done')).toHaveLength(1);
+  });
+
+  it('US-62 AC25b (Codex R1): a pasted decimal weight, "84.5", lands on Enter', async () => {
+    const view = await matrixWeightLast();
+    const cell = weightRow(view)!.querySelector('.bt-cell-draft input');
+    type(cell, '84.5');
+    await settle(1000);
+    expect(landed()).toBe(false); // typed, not saved (US-03 AC6)
+    commit(cell);
+    await waitFor(() => expect(landed()).toBe(true), { timeout: 2000 });
+    expect(calls('onboarding_done')).toHaveLength(1);
+  });
+
   it('US-62 AC25b (R4): "72" ends it, cleared, "72" again with its rest before its commit: lands', async () => {
     const view = await matrixWeightLast();
     const frames = heldFrames();
