@@ -23,7 +23,7 @@ final class ReminderScheduler {
     private(set) var reminders: PhoneReminders?
     /// The erase epoch of the last good read, kept through failed ones: the ask falls back to it.
     private var lastEpoch: Int?
-    /// Bumped when another record shows: a read or an ask begun before it is stale (S41). A token, not a mode.
+    /// Bumped when another record shows or its drawn erase epoch moves: a read or an ask begun before it is stale (S41). A token, not a mode.
     private var generation = 0
     /// What iOS allows; nil until first asked.
     private(set) var permission: NotificationPermission?
@@ -98,8 +98,9 @@ final class ReminderScheduler {
         await run(send(.tappedOff))
     }
 
-    /// The record on screen became another one (phone or cloud): the last good read was the old
-    /// record's, so an ask whose own read fails has nothing to fall back to until the next good read (S41).
+    /// The record on screen became another one (phone or cloud, opened or drawn) or its erase epoch
+    /// moved: the last good read was the old record's, so an ask whose own read fails has nothing
+    /// to fall back to until the next good read (S41).
     func recordSourceChanged() {
         generation += 1
         lastEpoch = nil
@@ -168,5 +169,19 @@ final class ReminderScheduler {
                                  day: parts.dropFirst(2).first, hour: hour)
         let trigger = UNCalendarNotificationTrigger(dateMatching: day, repeats: false)
         return UNNotificationRequest(identifier: notification.id, content: content, trigger: trigger)
+    }
+}
+
+/// Which record is on screen (RootView) and its drawn erase count. The phone's copy shows until a
+/// connected cloud opens and its record is drawn, so "open" and the epoch are part of it. RootView
+/// bumps the reminders' token on any change to it (S41): a read between the open and the draw is
+/// the phone's copy, and the draw moving the epoch ends it.
+struct ShownRecord: Equatable {
+    let source: String, open: Bool, epoch: Int?
+
+    /// RootView's key: the drawn record's erase epoch, nil while none is drawn. The only way to
+    /// build one, so no caller can leave the epoch out (as PR 1608's key did).
+    @MainActor init(source: String, open: Bool, store: RecordStore) {
+        (self.source, self.open, epoch) = (source, open, store.myData?.eraseEpoch)
     }
 }
