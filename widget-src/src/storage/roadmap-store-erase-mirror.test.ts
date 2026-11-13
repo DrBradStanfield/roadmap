@@ -14,7 +14,7 @@ import { ROADMAP_FILE_NAME, StorageError } from '@roadmap/health-core/adapter';
 import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { BT_TIMELINE_DRAFT_KEY } from '../lib/storage';
 import {
-  deleteUserData, flushRoadmapStore, getEraseIdentity, getReminderOptIn, initRoadmapStore, setPreEraseHook, setReminderOptIn,
+  addMeasurement, deleteUserData, flushRoadmapStore, getEraseIdentity, getReminderOptIn, initRoadmapStore, setPreEraseHook, setReminderOptIn,
 } from '../lib/roadmap-data';
 import { cancelRemindersForErase } from '../../standalone/reminders';
 import { LocalStorageAdapter } from './local-storage-adapter';
@@ -140,6 +140,72 @@ describe('S69, US-11 AC4c: on "This device", an erase the browser refused cancel
     vi.mocked(Storage.prototype.setItem).mockRestore();
 
     expect(result.success).toBe(false);
+    expect(getEraseIdentity()).not.toBe(before);
+    expect(posts).toContain('cancel');
+  });
+});
+
+describe('S69 R2, US-11 AC4c: a cloud erase whose failure mirror may hold it is kept, and the cancel is sent', () => {
+  const REV_KEY = DEVICE_KEY + '_rev';
+
+  async function cloudWithOptIn() {
+    const cloud = new FailingCloud();
+    await initRoadmapStore(cloud);
+    setPreEraseHook(cancelRemindersForErase); // as standalone/app.tsx registers it
+    expect(setReminderOptIn({ status: 'active', token: 'test-token-good', email: 'synthetic-person@example.com', provider: 'dropbox' })).toBe(true);
+    await flushRoadmapStore();
+    const posts: string[] = [];
+    vi.stubGlobal('fetch', vi.fn(async (_url: RequestInfo | URL, init?: RequestInit) => {
+      posts.push(String(JSON.parse(String(init?.body)).op));
+      return new Response('{}', { status: 200 });
+    }));
+    cloud.failWrites = true; // the cloud refuses outright (403)
+    // A failed save first, so the device copy exists: its old record is the one a put-back restores.
+    await addMeasurement('weight', 81, '2026-09-02');
+    await expect(flushRoadmapStore()).rejects.toThrow();
+    expect(deviceFile().meta.eraseEpoch ?? 0).toBe(0);
+    return posts;
+  }
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('the mirror stored the erased record, its revision did not fit and the old record could not go back: not put back, cancel sent', async () => {
+    const posts = await cloudWithOptIn();
+    const before = getEraseIdentity();
+    const setItem = Storage.prototype.setItem;
+    let recordWrites = 0;
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key: string, value: string) {
+      if (key === REV_KEY) throw new DOMException('full', 'QuotaExceededError');
+      if (key === DEVICE_KEY && ++recordWrites % 2 === 0) throw new DOMException('full', 'QuotaExceededError'); // each put-back of the old record
+      setItem.call(this, key, value);
+    });
+    const result = await deleteUserData();
+    vi.mocked(Storage.prototype.setItem).mockRestore();
+
+    expect(deviceFile().meta.eraseEpoch).toBe(1); // the erased copy is on the device, to be lifted next session
+    expect(result.success).toBe(false);
+    expect(getEraseIdentity()).not.toBe(before);
+    expect(posts).toContain('cancel');
+  });
+
+  it('residual direction: another tab wrote the device copy meanwhile and this write stored nothing: read as held, so the cancel is sent', async () => {
+    const posts = await cloudWithOptIn();
+    const before = getEraseIdentity();
+    const setItem = Storage.prototype.setItem;
+    let otherTabWrote = false;
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key: string, value: string) {
+      if (key === DEVICE_KEY) {
+        // Another tab's save lands first (a new revision); then this tab's record write does not fit.
+        if (!otherTabWrote) { otherTabWrote = true; setItem.call(this, REV_KEY, '99-othertab'); }
+        throw new DOMException('full', 'QuotaExceededError');
+      }
+      setItem.call(this, key, value);
+    });
+    const result = await deleteUserData();
+    vi.mocked(Storage.prototype.setItem).mockRestore();
+
+    expect(deviceFile().meta.eraseEpoch ?? 0).toBe(0); // nothing of this erase stored
+    expect(result.success).toBe(false);
+    // Errs toward cancelling the reminders, never toward a live row for an erased person.
     expect(getEraseIdentity()).not.toBe(before);
     expect(posts).toContain('cancel');
   });

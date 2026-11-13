@@ -34,7 +34,10 @@ class FailingStore extends MemoryAdapter {
     if (this.failReadAfterWrite && this.wrote) throw new StorageError('unreachable');
     return super.read(fileName);
   }
+  /** A failing write stores its body first, then throws (localStorage's record landed, its revision did not). */
+  landBeforeFailing = false;
   async write(fileName: string, body: object, expected: string | null) {
+    if (this.failWrites && this.landBeforeFailing) await super.write(fileName, body, expected);
     if (this.failWrites) throw this.failure();
     const written = await super.write(fileName, body, expected);
     this.wrote = true;
@@ -124,6 +127,30 @@ describe('RecordSession.erase when neither the cloud nor the device takes it (le
       expect(copy.erasedRows).toBeUndefined();
     }
     expect(pending.value).toBe(false);
+  });
+
+  it('S69 R2: keeps the erased copy when the cloud refused and the device write stored it before it failed (its revision moved)', async () => {
+    const { host, cloud, pending } = setup();
+    // A device copy with a revision to compare, as localStorage has on the web; the iPhone's has none.
+    const device = new DeviceStore(new MemoryCloud());
+    if (host.tier === 'cloud') Object.assign(host.mirror, { adapter: device, sync: device });
+    const session = await RecordSession.open(host);
+    add(session, 'a');
+    await session.flush();
+    const before = session.eraseIdentity;
+    cloud.failWrites = true; // a definite refusal (a full store)
+    device.failWrites = true;
+    device.landBeforeFailing = true;
+    device.failure = () => uncertainWrite(new StorageError('Could not save on this device (local storage may be full).', 'This change may have been stored.'));
+    const result = await session.erase();
+    // The device holds the erased copy and its marker: the next session lifts it into the cloud. Putting the copy back here
+    // would skip the caller's commit (the reminders cancel) for an erase that then lands.
+    expect(stored(device).meta.eraseEpoch).toBe(1);
+    expect(pending.value).toBe(true);
+    expect(result.success).toBe(false);
+    expect(result.error).toBeTruthy();
+    expect(session.eraseIdentity).not.toBe(before);
+    expect(session.file.measurements).toEqual([]);
   });
 
   it('keeps the erased copy when the cloud write landed and only the re-read after it failed, the device refusing too', async () => {
