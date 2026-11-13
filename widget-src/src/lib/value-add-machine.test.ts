@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { ADD_READY, UNIT_CHANGED, transition, type AddEvent, type AddForm } from './value-add-machine';
+import { ADD_READY, ADD_UNIT_CHANGED, transition, type AddEvent, type AddForm } from './value-add-machine';
 import { SAVE_ERRORS } from './value-cell-state';
 
 // US-62 AC10, US-03 AC2a, US-05 AC2: every (state, event) pair names the state that follows.
@@ -30,8 +30,8 @@ const rows: [string, AddForm, AddEvent, AddForm | typeof SAME][] = [
   ['ready, settled ok: stale', ready, ok, SAME],
   ['ready, settled changed: stale', faulted, changed, SAME],
   ['ready, threw: stale', faulted, threw, SAME],
-  ['ready, unitChanged: says so', ready, unitChanged, { kind: 'ready', message: UNIT_CHANGED }],
-  ['ready with a message, unitChanged: the unit line replaces it', faulted, unitChanged, { kind: 'ready', message: UNIT_CHANGED }],
+  ['ready, unitChanged: says so', ready, unitChanged, { kind: 'ready', message: ADD_UNIT_CHANGED }],
+  ['ready with a message, unitChanged: the unit line replaces it', faulted, unitChanged, { kind: 'ready', message: ADD_UNIT_CHANGED }],
 
   ['saving, edited: stays saving', saving, edited, SAME],
   ['saving, faulted: off-mode (the claim holds)', saving, fault, SAME],
@@ -48,11 +48,11 @@ const rows: [string, AddForm, AddEvent, AddForm | typeof SAME][] = [
   ['saving moved, faulted: off-mode', savingMoved, fault, SAME],
   ['saving moved, sent: off-mode', savingMoved, sent, SAME],
   ['saving moved, settled ok: ready, no line (D2)', savingMoved, ok, ready],
-  ['saving moved, settled changed: the unit line, the text is gone (D2)', savingMoved, changed, { kind: 'ready', message: UNIT_CHANGED }],
-  ['saving moved, settled invalid: the unit line (D2)', savingMoved, invalid, { kind: 'ready', message: UNIT_CHANGED }],
-  ['saving moved, settled error: the unit line (D2)', savingMoved, error, { kind: 'ready', message: UNIT_CHANGED }],
-  ['saving moved, settled with the engine\'s words: the unit line (D2)', savingMoved, engine, { kind: 'ready', message: UNIT_CHANGED }],
-  ['saving moved, threw: the unit line (D2)', savingMoved, threw, { kind: 'ready', message: UNIT_CHANGED }],
+  ['saving moved, settled changed: the unit line, the text is gone (D2)', savingMoved, changed, { kind: 'ready', message: ADD_UNIT_CHANGED }],
+  ['saving moved, settled invalid: the unit line (D2)', savingMoved, invalid, { kind: 'ready', message: ADD_UNIT_CHANGED }],
+  ['saving moved, settled error: the unit line (D2)', savingMoved, error, { kind: 'ready', message: ADD_UNIT_CHANGED }],
+  ['saving moved, settled with the engine\'s words: the unit line (D2)', savingMoved, engine, { kind: 'ready', message: ADD_UNIT_CHANGED }],
+  ['saving moved, threw: the unit line (D2)', savingMoved, threw, { kind: 'ready', message: ADD_UNIT_CHANGED }],
   ['saving moved, unitChanged: already noted', savingMoved, unitChanged, SAME],
 ];
 
@@ -64,6 +64,6 @@ describe('value-add-machine transition', () => {
   });
 
   it('the unit line is the value page\'s own words, not the grid editor\'s', () => {
-    expect(UNIT_CHANGED).toBe('The unit changed, so your value was not saved. Type it again in the new unit.');
+    expect(ADD_UNIT_CHANGED).toBe('The unit changed, so your value was not saved. Type it again in the new unit.');
   });
 });

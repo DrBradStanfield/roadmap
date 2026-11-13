@@ -196,6 +196,7 @@ describe('US-03 AC2a, lead H128: a save that throws (P5)', () => {
       expect(page.alert()).toBeNull();
       expect(page.said()).toBe('');
       expect(page.value().value).toBe('90');
+      expect(page.button().disabled).toBe(false);
     } finally {
       process.off('unhandledRejection', mine);
       for (const l of before) process.on('unhandledRejection', l);
@@ -203,13 +204,28 @@ describe('US-03 AC2a, lead H128: a save that throws (P5)', () => {
   });
 });
 
-describe('US-62 AC10: an old page\'s save never clears the next page\'s unsaved mark (P6)', () => {
+describe('US-62 AC10: the unsaved mark after a save (P6, and an ok Add on the same page)', () => {
   const rowNamed = (view: RenderResult, name: string) => waitFor(() => {
     const r = [...view.container.querySelectorAll<HTMLButtonElement>('.md-row')].find((b) => b.querySelector('.md-row-label')?.textContent === name);
     expect(r).toBeDefined();
     return r!;
   });
   const openPage = () => document.querySelector<HTMLElement>('.mh-page-host .md-page');
+
+  it('an ok Add, then Back on the same page: leaves without asking, as the form holds nothing', async () => {
+    await seedGuest({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 1, unitSystem: 'si' }, [['hba1c', 38]]);
+    const view = render(<HealthTool/>);
+    const confirm = vi.fn(() => false);
+    vi.stubGlobal('confirm', confirm);
+    fireEvent.click(await rowNamed(view, 'HbA1c'));
+    fireEvent.change(within(openPage()!).getByLabelText(/Value/), { target: { value: '40' } });
+    await act(async () => { fireEvent.submit(openPage()!.querySelector('form.md-add')!); });
+    await settled();
+    expect(openPage()!.querySelector('.md-page-messages')!.textContent!.trim()).toBe('Added.');
+    fireEvent.click(within(openPage()!).getByRole('button', { name: '‹ Back' }));
+    expect(confirm).not.toHaveBeenCalled();
+    await waitFor(() => expect(openPage()).toBeNull());
+  });
 
   it('type, Add (held), leave, open another page and type; the old save lands; Back still asks first', async () => {
     await seedGuest({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 1, unitSystem: 'si' }, [['hba1c', 38], ['ldl', 3]]);

@@ -17,7 +17,7 @@ import type { CorrectStatus } from '../storage/roadmap-store';
 import { saveErrorText } from './value-cell-state';
 
 /** What the Add form says when the unit changed under typed text (US-05 AC2). Not the grid editor's line. */
-export const UNIT_CHANGED = 'The unit changed, so your value was not saved. Type it again in the new unit.';
+export const ADD_UNIT_CHANGED = 'The unit changed, so your value was not saved. Type it again in the new unit.';
 
 export type AddForm =
   | { kind: 'ready'; message: string | null }
@@ -40,15 +40,15 @@ export function transition(state: AddForm, event: AddEvent): AddForm {
       case 'edited': return state.message === null ? state : ADD_READY;
       case 'faulted': return { kind: 'ready', message: event.message };
       case 'sent': return { kind: 'saving', unitChanged: false };
-      case 'unitChanged': return { kind: 'ready', message: UNIT_CHANGED };
+      case 'unitChanged': return { kind: 'ready', message: ADD_UNIT_CHANGED };
       default: return state;
     }
   }
   switch (event.type) {
     case 'settled':
       if (event.why === null) return ADD_READY;
-      return { kind: 'ready', message: state.unitChanged ? UNIT_CHANGED : saveErrorText(event.why) };
-    case 'threw': return state.unitChanged ? { kind: 'ready', message: UNIT_CHANGED } : ADD_READY;
+      return { kind: 'ready', message: state.unitChanged ? ADD_UNIT_CHANGED : saveErrorText(event.why) };
+    case 'threw': return state.unitChanged ? { kind: 'ready', message: ADD_UNIT_CHANGED } : ADD_READY;
     case 'unitChanged': return state.unitChanged ? state : { kind: 'saving', unitChanged: true };
     case 'edited': return state.unitChanged ? { kind: 'saving', unitChanged: false } : state;
     default: return state;
