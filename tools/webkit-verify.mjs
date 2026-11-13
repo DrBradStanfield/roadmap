@@ -3,6 +3,8 @@
 import assert from 'node:assert/strict';
 import { pathToFileURL } from 'node:url';
 import { webkit, devices } from 'playwright';
+import { probeDateCellRing, probeFocusRing, probeLabFocusRing } from './webkit-focus-probes.mjs';
+export { assertFocusRing, collectFocus, probeDateCellRing, probeFocusRing, probeLabFocusRing } from './webkit-focus-probes.mjs';
 
 export function assertMatrixLayout(data) {
   assert(!data.error, data.error);
@@ -16,8 +18,8 @@ export function assertMatrixLayout(data) {
   }
 }
 
-// The blood table behind "All results as a table". The vitals rows above it are a .bt-timeline too (H71).
-export const BLOOD_TABLE = '.bt-timeline:not(.bt-vitals-card)';
+// The blood table behind "All results as a table". The vitals rows (H71) and the additional labs (.alr-matrix, H89) are .bt-timelines too.
+export const BLOOD_TABLE = '.bt-timeline:not(.bt-vitals-card):not(.alr-matrix)';
 
 // Passed directly to Playwright's evaluate; keep this function self-contained.
 export function collectMatrixLayout(root) {
@@ -109,34 +111,6 @@ export function assertValuePage(data) {
   assert(data.wrappedLabels.length === 0, `tile labels wrap: ${data.wrappedLabels}`);
   assert(data.baselines.length > 0 && data.baselines.every(d => Math.abs(d) <= 2), `history value and date off one baseline (${data.baselines})`);
   assert(data.dayFont < data.valueFont, `the date is not quieter than the value (${data.dayFont} vs ${data.valueFont})`);
-}
-
-// US-62 AC10b (H78): a box reached by keyboard draws the Value box's ring, a visible outline
-// or box-shadow. WebKit never matches :focus-visible on a date input, so it drew none.
-export function assertFocusRing({ date, value }) {
-  const ring = (s) => (s.outlineStyle !== 'none' && parseFloat(s.outlineWidth) > 0) || s.boxShadow !== 'none';
-  assert(value.active && ring(value), `the Value box shows no focus ring (${JSON.stringify(value)})`);
-  assert(date.active, `Shift+Tab from Value did not reach the date box (${JSON.stringify(date)})`);
-  assert(ring(date), `the date box shows no focus ring on keyboard focus (${JSON.stringify(date)})`);
-  assert.equal(`${date.outlineStyle} ${date.outlineWidth} ${date.outlineColor} ${date.outlineOffset}`,
-    `${value.outlineStyle} ${value.outlineWidth} ${value.outlineColor} ${value.outlineOffset}`, 'the date box ring differs from the Value box ring');
-}
-
-// US-62 AC10b: the Value box by keyboard, then Shift+Tab back into the date box. A failure throws.
-export async function probeFocusRing(page, where, log = console.log) {
-  const valueBox = page.locator('.md-page:not(.mh-settings) .md-add input[inputmode]').first();
-  await valueBox.focus({ timeout: 5000 });
-  const value = await valueBox.evaluate(collectFocus);
-  await page.keyboard.press('Shift+Tab');
-  const date = await page.locator('.md-page:not(.mh-settings) .md-add input[type="date"]').first().evaluate(collectFocus, null, { timeout: 5000 });
-  assertFocusRing({ date, value });
-  log(`${where}: focus rings verified ${JSON.stringify(date)}`);
-}
-
-// Passed directly to Playwright's evaluate: the focus styles of one box.
-export function collectFocus(el) {
-  const s = getComputedStyle(el);
-  return { active: document.activeElement === el, outlineStyle: s.outlineStyle, outlineWidth: s.outlineWidth, outlineColor: s.outlineColor, outlineOffset: s.outlineOffset, boxShadow: s.boxShadow };
 }
 
 // Passed directly to Playwright's evaluate; keep this function self-contained.
@@ -359,8 +333,10 @@ async function inspect(browser, deviceName, viewport) {
           ['hba1c', 35, 'mmol/mol', '2025-01-01T00:00:00.000Z'],
           ['hba1c', 36, 'mmol/mol', '2025-07-01T00:00:00.000Z'],
           ['ldl', 2.4, 'mmol/L', '2025-01-01T00:00:00.000Z'],
-        ].map(([metricName, value, unit, recordedAt], i) => ({
-          id: `webkit-${i}`, metricName, value, unit, referenceLow: null, referenceHigh: null, core: true,
+          // H89: one test outside the core set, for a lab test's page.
+          ['ferritin', 120, 'ug/L', '2025-01-01T00:00:00.000Z', false],
+        ].map(([metricName, value, unit, recordedAt, core = true], i) => ({
+          id: `webkit-${i}`, metricName, value, unit, referenceLow: null, referenceHigh: null, core,
           recordedAt, createdAt: recordedAt, source: 'manual', status: 'active', correctsId: null, externalId: null,
         })),
         screenings: { updatedAt: now, lamport: 0 }, documents: [],
@@ -413,6 +389,8 @@ async function inspect(browser, deviceName, viewport) {
     const back = page.locator('.md-page .md-back').first();
     await (deviceName ? back.tap() : back.click());
     await page.locator('.md-page:not(.mh-settings)').waitFor({ state: 'detached' });
+    // TODO(H110): advisory; make it enforcing after one green production deploy.
+    await probeLabFocusRing(page, deviceName ?? `desktop ${viewport.width}`, console.log, (l) => (deviceName ? l.tap() : l.click()));
     const tableButton = page.getByRole('button', { name: 'All results as a table' });
     await (deviceName ? tableButton.tap() : tableButton.click());
     const matrix = page.locator(BLOOD_TABLE).first();
@@ -421,6 +399,8 @@ async function inspect(browser, deviceName, viewport) {
     const data = await matrix.evaluate(collectMatrixLayout);
     assertMatrixLayout(data);
     console.log(`${deviceName ?? 'desktop'}: matrix verified`, JSON.stringify(data));
+    // TODO(H110): advisory; make it enforcing after one green production deploy.
+    await probeDateCellRing(matrix, deviceName ?? `desktop ${viewport.width}`);
     await page.screenshot({ path: `/tmp/webkit-${deviceName ?? `desktop-${viewport.width}`}.png` });
     if (deviceName) {
       const bar = page.locator('.hr-tabbar');

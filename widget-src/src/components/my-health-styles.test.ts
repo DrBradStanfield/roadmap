@@ -136,4 +136,18 @@ describe('US-62 AC10b (H78): the value page focus ring', () => {
     expect(ring[0]).toMatch(/outline-offset:\s*-2px/);
     expect(blocks(/\.md-add input:focus-visible/)).toEqual(ring);
   });
+
+  it('H89: the lab Add form\'s date box and the matrix\'s date cells draw that same ring', () => {
+    const ring = blocks(/\.md-add input\[type="date"\]:focus-within/);
+    // AddLabTest's Value and Date boxes, as the value page's Add form.
+    expect(blocks(/\.alr-add-form input:focus-visible/)).toEqual(ring);
+    expect(blocks(/\.alr-add-form input\[type="date"\]:focus-within/)).toEqual(ring);
+    // DraftDateCell: the button by keyboard, and while its hidden date input has focus (WebKit's only Tab stop).
+    for (const cell of ['bt-cell-draft-date', 'bt-cell-movable']) {
+      expect(blocks(new RegExp(`\\.${cell}:focus-visible`))).toEqual(ring);
+      expect(blocks(new RegExp(`\\.${cell}:has\\(> \\.bt-date-hidden-icon:focus\\)`))).toEqual(ring);
+      // :focus-within would also match the clicked button itself, a ring on every Chromium click (R1).
+      expect(blocks(new RegExp(`\\.${cell}:focus-within`))).toEqual([]);
+    }
+  });
 });

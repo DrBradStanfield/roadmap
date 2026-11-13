@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { JSDOM } from 'jsdom';
 import { spawnSync } from 'node:child_process';
 import { BLOOD_TABLE, assertDesktopLayout, assertFocusRing, assertMatrixLayout, assertPhoneLayout, assertRows, assertTabBar, assertValuePage, probeFocusRing, settleTop, wheelDistance } from './webkit-verify.mjs';
+import { probeDateCellRing, probeLabFocusRing } from './webkit-verify.mjs';
 
 describe('US-20: WebKit deployment gate', () => {
   const values = ['35', '36', '2.4'].map(text => ({ text, width: 72, height: 40, numberWidth: 20, numberHeight: 18, visible: true, boxSizing: 'border-box' }));
@@ -27,6 +28,13 @@ describe('US-20: WebKit deployment gate', () => {
   it('reads the blood table, not the vitals card drawn above it', () => {
     const { document } = new JSDOM(`
       <div class="bt-timeline bt-vitals-card" id="vitals"></div>
+      <div class="bt-timeline" id="blood"></div>`).window;
+    expect(document.querySelector(BLOOD_TABLE)?.id).toBe('blood');
+  });
+  // H89: the seeded Ferritin draws the additional labs' .bt-timeline; the gate reads the blood table, whatever the order.
+  it('reads the blood table, not the additional labs table', () => {
+    const { document } = new JSDOM(`
+      <div class="bt-timeline alr-matrix" id="labs"></div>
       <div class="bt-timeline" id="blood"></div>`).window;
     expect(document.querySelector(BLOOD_TABLE)?.id).toBe('blood');
   });
@@ -280,6 +288,58 @@ describe('US-62 AC10b (H78): WebKit focus ring gate', () => {
     expect(run.stdout).not.toContain('fake pressed .md-page .md-back');
     expect(run.status).not.toBe(0);
     expect(run.stderr).toContain('the date box shows no focus ring on keyboard focus');
+  });
+});
+
+describe('H89 (US-62 AC10b): the lab focus ring probes, advisory until one production deploy', () => {
+  const teal = { active: true, within: true, outlineStyle: 'solid', outlineWidth: '2px', outlineColor: 'rgb(0, 124, 106)', outlineOffset: '-2px', boxShadow: 'none' };
+  // The live WebKit read before the fix: the date box's outline style none.
+  const noRing = { ...teal, outlineStyle: 'none', outlineWidth: '3px', outlineColor: 'rgb(43, 48, 54)', outlineOffset: '0px' };
+  const fake = (date: object, { formMissing = false } = {}) => {
+    const taps: string[] = [];
+    const loc = (sel: string): any => ({
+      sel,
+      first: () => loc(sel),
+      locator: (sub: string) => loc(`${sel} ${sub}`),
+      focus: async () => { if (formMissing && sel.includes('alr-add-value')) throw new Error('locator.focus: Timeout 5000ms exceeded.'); },
+      // collectFocus's reading; any other read (the date cell's :focus-within) is true.
+      evaluate: async (fn: { name: string }) => (fn.name !== 'collectFocus' ? true : sel.includes('date') ? date : teal),
+      count: async () => (sel.includes('md-back') ? 1 : 0),
+      waitFor: async () => {},
+    });
+    const page = { keyboard: { press: async () => {} }, locator: (sel: string) => loc(sel) };
+    return { taps, page, tap: async (l: { sel: string }) => { taps.push(l.sel); } };
+  };
+  it('prints a pass with the lab date box reading, and goes back to My health', async () => {
+    const { page, tap, taps } = fake(teal);
+    const log: string[] = [];
+    await probeLabFocusRing(page, 'iPhone 13', (line: string) => log.push(line), tap);
+    expect(log).toEqual([`iPhone 13: ADVISORY lab focus rings verified ${JSON.stringify(teal)}`]);
+    expect(taps).toEqual(['.md-row', '.md-page:not(.mh-settings) .alr-add-btn', '.md-page:not(.mh-settings) .md-back']);
+  });
+  it('a lab date box with no ring prints a failure and never throws, so the gate goes on', async () => {
+    const { page, tap, taps } = fake(noRing);
+    const log: string[] = [];
+    await expect(probeLabFocusRing(page, 'iPhone SE', (line: string) => log.push(line), tap)).resolves.toBeUndefined();
+    expect(log).toHaveLength(1);
+    expect(log[0]).toMatch(/^iPhone SE: ADVISORY lab focus ring failed: the date box shows no focus ring on keyboard focus/);
+    expect(taps.at(-1)).toBe('.md-page:not(.mh-settings) .md-back');
+  });
+  it('a page that never shows the form prints a failure and still goes back', async () => {
+    const { page, tap, taps } = fake(teal, { formMissing: true });
+    const log: string[] = [];
+    await probeLabFocusRing(page, 'desktop 1440', (line: string) => log.push(line), tap);
+    expect(log).toEqual(['desktop 1440: ADVISORY lab focus ring failed: locator.focus: Timeout 5000ms exceeded.']);
+    expect(taps.at(-1)).toBe('.md-page:not(.mh-settings) .md-back');
+  });
+  it('the New date cell: a pass prints its reading, no ring prints a failure and never throws', async () => {
+    const cell = { ...teal, active: false };
+    const pass: string[] = [];
+    await probeDateCellRing(fake(cell).page, 'desktop 1200', (line: string) => pass.push(line));
+    expect(pass).toEqual([`desktop 1200: ADVISORY date cell ring verified ${JSON.stringify(cell)}`]);
+    const fail: string[] = [];
+    await expect(probeDateCellRing(fake({ ...noRing, active: false }).page, 'desktop 1200', (line: string) => fail.push(line))).resolves.toBeUndefined();
+    expect(fail[0]).toMatch(/^desktop 1200: ADVISORY date cell ring failed: the New date cell shows no teal ring/);
   });
 });
 
