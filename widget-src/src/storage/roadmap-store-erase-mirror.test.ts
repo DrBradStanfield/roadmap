@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 /**
  * Lead S57 on the web (US-11 AC3b, AC7; US-16 AC2a): "Delete all my data" on a
- * cloud page whose cloud write fails AND whose device copy cannot be written
+ * cloud page whose cloud refuses the write AND whose device copy cannot be written
  * (private browsing, a full or blocked localStorage). The erase lived only in
  * memory, so a reload brought every value back while the page showed an empty
  * record. Now the store puts its copy back and answers `{ success: false }`
@@ -10,7 +10,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryAdapter } from '@roadmap/health-core/memory-adapter';
-import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
+import { ROADMAP_FILE_NAME, StorageError } from '@roadmap/health-core/adapter';
 import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { BT_TIMELINE_DRAFT_KEY } from '../lib/storage';
 import { RoadmapStore } from './roadmap-store';
@@ -18,11 +18,12 @@ import { BACKEND_KEY, PENDING_MIRROR_KEY } from './web-record-host';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 
-/** A cloud whose writes can be made to fail. */
+/** A cloud whose writes can be made to fail, refused. */
 class FailingCloud extends MemoryAdapter {
   failWrites = false;
   async write(...args: Parameters<MemoryAdapter['write']>) {
-    if (this.failWrites) throw new Error('the cloud did not answer');
+    // A definite refusal (a revoked grant): nothing was stored (write-refusal.ts).
+    if (this.failWrites) throw new StorageError('Dropbox write failed (403)', undefined, undefined, 403);
     return super.write(...args);
   }
 }

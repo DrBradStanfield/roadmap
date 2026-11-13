@@ -27,8 +27,9 @@
  *   this says the device holds them. False until the write lands. `cause`:
  *   'auth' when the provider refused the sign-in (`saveFailureCause`), which
  *   only a new sign-in mends, so no retry is owed; 'other' for the rest, an
- *   erase's failed write included. `landed`: the pass wrote before it failed
- *   (SyncManager `mayHaveLanded`), so the stored copy may hold its changes.
+ *   erase's failed write included. `landed`: the pass may have written before
+ *   it failed (write-refusal.ts `mayHaveLanded`: anything but a definite
+ *   refusal), so the stored copy may hold its changes.
  * - erasing: an erase, from its confirm to the end of its write, over the save
  *   state `under` it (lead A6). An edit is refused throughout;
  *   RecordSession.refuses() gives the caller that answer. `reading`: the erase
@@ -210,7 +211,10 @@ export function transition(s: SaveState, e: SaveEvent): SaveStep {
     case 'eraseEnded':
       return { state: s.under, effects: [] };
     default: {
-      const step = base(s.under, e);
+      // A pass that started before the swap never carried the erase: whether it
+      // landed says nothing of the erase (edits are refused while erasing, so
+      // `changes` is still the swap's count; lead S57 N1).
+      const step = base(s.under, e.type === 'passFailed' && e.landed && s.under.mode === 'saving' && s.under.from < s.under.changes ? { type: 'passFailed', cause: e.cause } : e);
       return { state: { ...s, under: step.state }, effects: step.effects };
     }
   }

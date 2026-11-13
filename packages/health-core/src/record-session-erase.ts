@@ -153,13 +153,13 @@ export async function eraseSession(s: RecordSession, beforeErase?: () => Promise
   } catch (e) {
     const message = (e as Error).message;
     if (erased) return { success: true, warning: message };
-    // Neither the cloud nor the device copy took the erase: the write failed
-    // before it landed, and the failure mirror did not land. It would live
-    // only in memory, and a reload would bring every value back. Put this
-    // copy back as it was, so the page says the record was not erased and
-    // keeps showing it (lead S57). A write that may have landed keeps the
-    // erased copy, as before. The pending marker stays: it lifts only the
-    // pre-erase copy, into a pre-erase cloud.
+    // Neither the cloud nor the device copy took the erase: the cloud refused
+    // the write outright (write-refusal.ts) and the failure mirror did not
+    // land. It would live only in memory, and a reload would bring every
+    // value back. Put this copy back as it was, so the page says the record
+    // was not erased and keeps showing it (lead S57). A write that may have
+    // landed keeps the erased copy, as before. The pending marker stays: it
+    // lifts only the pre-erase copy, into a pre-erase cloud.
     if (host.tier === 'cloud' && s.writtenNowhere) {
       ({ file: s.current, clearedFor: s.clearedFor, saveWarning: s.saveWarning } = before);
       return { success: false };

@@ -28,19 +28,12 @@ import {
   type StorageBackendId,
 } from './adapter';
 import { RecordShapeError, SchemaTooNewError } from './migrate';
+import { isDefiniteRefusal, uncertainWrite } from './write-refusal';
 
 const MAX_SAVE_ATTEMPTS = 5;
 
 /** The write landed and the re-read disagreed, so the caller cannot say either way. */
 const VERIFY_HINT = 'The change may or may not have landed. Read the record again before trying it a second time.';
-
-/** The failures `save` threw after a write it cannot rule out (lead S57). */
-const LANDED = new WeakSet<object>();
-/** True for a failed save that may have written: the stored file may hold it. */
-export function mayHaveLanded(error: unknown): boolean {
-  return typeof error === 'object' && error !== null && LANDED.has(error);
-}
-const landed = <E extends object>(error: E): E => (LANDED.add(error), error);
 
 /**
  * A failure after a write that landed with a warning: what landed comes first,
@@ -145,6 +138,9 @@ export class SyncManager<T extends SyncedFile> {
         } catch (error) {
           lastError = error;
           if (error instanceof LostUpdateError) mayHaveWritten = true;
+          // A write that threw may still have landed (a lost answer, a 5xx): only a definite
+          // refusal stored nothing. Marked, never rewrapped, so its words stay (lead S57).
+          else if (typeof error === 'object' && error !== null && !isDefiniteRefusal(error)) uncertainWrite(error);
           if (error instanceof ConflictError) continue; // remote moved — re-read & re-merge
           throw error;
         }
@@ -165,7 +161,7 @@ export class SyncManager<T extends SyncedFile> {
           ? 'the provider refused this connection’s access. Reconnect the provider, which grants access again, then read the record again to check what landed before retrying.'
           : 'a later step failed, so check what landed: read the record again before trying it a second time.');
         // The reason stays too, so a revoked grant met after the write is still a reconnect (US-09 AC30).
-        throw landed(new StorageError(error instanceof Error ? error.message : 'Save failed after a write.', hint, error, status, error instanceof StorageError ? error.reason : undefined));
+        throw uncertainWrite(new StorageError(error instanceof Error ? error.message : 'Save failed after a write.', hint, error, status, error instanceof StorageError ? error.reason : undefined));
       }
     }
     const storm = new StorageError(
@@ -179,7 +175,7 @@ export class SyncManager<T extends SyncedFile> {
           : 'Your data is unharmed and nothing was written. Try again.',
       lastError,
     );
-    throw mayHaveWritten ? landed(storm) : storm;
+    throw mayHaveWritten ? uncertainWrite(storm) : storm;
   }
 
   /**

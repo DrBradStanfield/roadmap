@@ -41,6 +41,8 @@ class FakeDropbox {
   delayFor?: Server['delayFor'];
   /** False: uploads fail with a 500; reads still work. */
   uploadsWork = true;
+  /** True: record uploads are refused as a full Dropbox (409 path/insufficient_space), nothing written. */
+  full = false;
   uploads = 0;
   /** Runs once, just before the next upload lands: another device writing first. */
   beforeNextUpload: (() => void) | null = null;
@@ -76,6 +78,7 @@ class FakeDropbox {
       return { status: 200, headers: { 'Dropbox-API-Result': JSON.stringify({ rev: `r${now.rev}` }) }, body: now.text };
     }
     if (!this.uploadsWork) return { status: 500, headers: {}, body: 'internal_error' };
+    if (this.full) return { status: 409, headers: {}, body: '{"error_summary":"path/insufficient_space/"}' };
     if (slot === 'file') {
       this.beforeNextUpload?.();
       this.beforeNextUpload = null;
@@ -1069,13 +1072,13 @@ describe('cloudErase (US-25 AC16, US-11)', () => {
     expect(days(dropbox.record)).toEqual([]);
   });
 
-  it('an erase neither the cloud nor the phone takes is not erased anywhere: nothing to show, and the phone file as it was (lead S57)', async () => {
+  it('an erase the cloud refused and the phone could not keep is not erased anywhere: nothing to show, and the phone file as it was (lead S57)', async () => {
     const dropbox = new FakeDropbox();
     dropbox.put(await recordWith(['2026-10-01'], 'web'));
     const { engine, state } = await phone(dropbox);
     const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false, false)) as { erase: string };
     const phoneBefore = state.phoneText;
-    dropbox.uploadsWork = false;
+    dropbox.full = true;
     state.phoneWriteError = 'The disk is full.';
 
     const result = JSON.parse(await engine.cloudErase(chat, NOW, () => '')) as Erased;
@@ -1087,12 +1090,29 @@ describe('cloudErase (US-25 AC16, US-11)', () => {
 
     // The session is back at the erase the screen shows: an edit under it is taken, and the
     // next good save sends the record as it was plus that edit, nothing erased.
-    dropbox.uploadsWork = true;
+    dropbox.full = false;
     state.phoneWriteError = '';
     expect(JSON.parse(engine.cloudEdit(add('2026-10-02'), erase, 'si', NOW))).not.toMatchObject({ reason: 'erased' });
     expect(await engine.cloudFlush()).toBe('saved');
     expect(dropbox.record.meta.eraseEpoch ?? 0).toBe(0);
     expect(days(dropbox.record)).toEqual(['2026-10-01', '2026-10-02']);
+  });
+
+  it('an erase whose upload got a 500 may have landed, so it is kept, in memory only, when the phone cannot keep it (the stated S57 residual)', async () => {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith(['2026-10-01'], 'web'));
+    const { engine, state } = await phone(dropbox);
+    await engine.cloudOpen('dropbox', 'ios-1', false, false);
+    const phoneBefore = state.phoneText;
+    dropbox.uploadsWork = false;
+    state.phoneWriteError = 'The disk is full.';
+    const result = JSON.parse(await engine.cloudErase(chat, NOW, () => '')) as Erased;
+    expect(result).toMatchObject({ success: false, erased: true });
+    expect(state.phoneText).toBe(phoneBefore); // a relaunch before the retry lands reads this
+    dropbox.uploadsWork = true;
+    state.phoneWriteError = '';
+    expect(await engine.cloudFlush()).toBe('saved');
+    expect(dropbox.record.meta.eraseEpoch).toBe(1);
   });
 });
 

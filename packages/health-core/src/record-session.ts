@@ -18,7 +18,8 @@ import { coveredCopySession, deviceCopyRevision, mirrorNowSession, releaseErased
 import { ROADMAP_DOC } from './roadmap-doc';
 import { changesOf, retryOwed, SAVE_START, saveFailureCause, saveStatus, transition, unsaved, writePending, writtenNowhere, type SaveEvent, type SaveState, type SaveStatus } from './save-state';
 import type { RoadmapFile } from './roadmap-file';
-import { mayHaveLanded, SyncManager, type SyncContext } from './sync-manager';
+import { SyncManager, type SyncContext } from './sync-manager';
+import { mayHaveLanded } from './write-refusal';
 
 export { eraseIdentityOf } from './erase-identity';
 
