@@ -4,13 +4,14 @@
  * a walk of each entry's import graph (static and dynamic) finds no file that
  * calls a device health writer, except the record host's own modules, and no
  * file that opens a record or builds a host (initRoadmapStore, webRecordHost,
- * RoadmapStore.create, ChatHistoryStore.create). If
- * either changes, this fails and its author decides which write state that
+ * RoadmapStore.create, ChatHistoryStore.create) outside a builder's own body
+ * (found by enclosing function with the TypeScript parser). If either changes, this fails and its author decides which write state that
  * page takes.
  */
 import { existsSync, readFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { dirname, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 
 const SRC = dirname(fileURLToPath(import.meta.url)) + '/..';
@@ -46,14 +47,50 @@ function reach(entry: string): Set<string> {
   return seen;
 }
 
-/** The record host's own modules: they write only inside a host, which only the calls OPENS_A_RECORD names build. */
+/** The record host's own modules: they write only inside a host, which only the BUILDERS calls build. */
 const HOST_ONLY = ['storage/web-record-host.ts', 'storage/roadmap-store.ts'].map((f) => resolve(SRC, f));
-const OPENS_A_RECORD = /(?<!function )\b(initRoadmapStore|webRecordHost|RoadmapStore\.create|ChatHistoryStore\.create)\s*\(/g;
-/** The builders' own bodies: each call here runs only inside one of the builders above. A new call in
- *  one of these files changes its count and fails the pin. */
-const BUILDER_CALLS = new Map([['lib/roadmap-data.ts', 2], ['storage/roadmap-store.ts', 1], ['storage/chat-history-store.ts', 1]]
-  .map(([f, n]) => [resolve(SRC, f as string), n as number]));
-const opensARecord = (file: string) => [...readFileSync(file, 'utf8').matchAll(OPENS_A_RECORD)].length !== (BUILDER_CALLS.get(file) ?? 0);
+/** The calls that open a record or build a host. */
+const BUILDERS = new Set(['initRoadmapStore', 'webRecordHost', 'RoadmapStore.create', 'ChatHistoryStore.create']);
+/** The files that hold the builders' own bodies, where the exempt calls live. */
+const BUILDER_FILES = ['lib/roadmap-data.ts', 'storage/roadmap-store.ts', 'storage/chat-history-store.ts'].map((f) => resolve(SRC, f));
+
+/** `X.m` for a property access, `f` for a plain name, else null. */
+function calleeName(e: ts.Expression): string | null {
+  if (ts.isIdentifier(e)) return e.text;
+  if (ts.isPropertyAccessExpression(e) && ts.isIdentifier(e.expression)) return `${e.expression.text}.${e.name.text}`;
+  return null;
+}
+
+/** The name a function is known by: `f` for a declaration or `const f = () => …`, `X.m` for a class method or
+ *  an object property `const X = { m: () => … }`. */
+function functionName(fn: ts.Node): string | null {
+  if (ts.isFunctionDeclaration(fn)) return fn.name?.text ?? null;
+  if (ts.isMethodDeclaration(fn) && ts.isIdentifier(fn.name) && ts.isClassDeclaration(fn.parent) && fn.parent.name) return `${fn.parent.name.text}.${fn.name.text}`;
+  if (!ts.isArrowFunction(fn) && !ts.isFunctionExpression(fn)) return null;
+  const at = fn.parent;
+  if (ts.isVariableDeclaration(at) && ts.isIdentifier(at.name)) return at.name.text;
+  if (ts.isPropertyAssignment(at) && ts.isIdentifier(at.name) && ts.isObjectLiteralExpression(at.parent)
+    && ts.isVariableDeclaration(at.parent.parent) && ts.isIdentifier(at.parent.parent.name)) return `${at.parent.parent.name.text}.${at.name.text}`;
+  return null;
+}
+
+/** Every builder call in the file, as `name` (inside a builder's own body, so it runs only when that builder
+ *  runs) or `line name` (anywhere else: that call opens a record). Comments and strings never match. */
+function builderCalls(file: string): { exempt: string[]; opens: string[] } {
+  const source = ts.createSourceFile(file, readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true, file.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
+  const found = { exempt: [] as string[], opens: [] as string[] };
+  const visit = (node: ts.Node, inBuilder: boolean): void => {
+    const name = ts.isCallExpression(node) ? calleeName(node.expression) : null;
+    if (name && BUILDERS.has(name)) {
+      if (inBuilder) found.exempt.push(name);
+      else found.opens.push(`${source.getLineAndCharacterOfPosition(node.getStart()).line + 1} ${name}`);
+    }
+    const own = functionName(node);
+    node.forEachChild((child) => visit(child, inBuilder || (own !== null && BUILDERS.has(own))));
+  };
+  visit(source, false);
+  return found;
+}
 
 describe('US-09 AC2c: the pages that open no record', () => {
   it.each(['chatbot-embed.tsx', 'site-chat.tsx'])('%s reaches the mirror but calls no device health writer outside the record host', (entry) => {
@@ -65,8 +102,12 @@ describe('US-09 AC2c: the pages that open no record', () => {
 
   it.each(['chatbot-embed.tsx', 'site-chat.tsx'])('%s never opens a record, so the record host\'s writers never run there', (entry) => {
     const files = reach(entry);
-    expect([...BUILDER_CALLS.keys()].every((f) => files.has(f))).toBe(true); // the walk reaches the builders' files
-    expect([...files].filter(opensARecord)).toEqual([]);
+    expect(BUILDER_FILES.every((f) => files.has(f))).toBe(true); // the walk reaches the builders' files
+    const opens = [...files].flatMap((f) => builderCalls(f).opens.map((at) => `${relative(SRC, f)}:${at}`));
+    expect(opens).toEqual([]);
+    // The parser is real: it finds the builders' own calls and exempts each by its enclosing builder.
+    expect(BUILDER_FILES.flatMap((f) => builderCalls(f).exempt).sort())
+      .toEqual(['ChatHistoryStore.create', 'RoadmapStore.create', 'webRecordHost', 'webRecordHost']);
   });
 
   it('control: the walk finds a writer where there is one (the vitals matrix)', () => {
