@@ -1114,4 +1114,24 @@ describe('US-34 AC4, US-16 AC2a (H52): a re-read inside a list save\'s 300 ms sh
     expect((await recorded()).colonoscopy).toBe('2025-06');
     expect(select(view, 'select#colorectal_last_date').value).toBe('2025-06');
   });
+
+  // H102 (Option A, no gate): a list save does not wait for the load gate. A first read that fails
+  // part-way has shown the record, and a list save is a keyed upsert that merges, so it saves.
+  it('US-34 AC4 (H102): the first read fails part-way; a medication change still saves and shows', async () => {
+    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 1 }, {});
+    await addMeasurement('weight', 80, '2026-09-01');
+    await addMeasurement('ldl', 3, '2026-09-01');
+    await saveMedication('statin', 'atorvastatin', 20, 'mg');
+    await flushRoadmapStore();
+    failMirror.next = true; // the first read throws after it has shown the record
+    const view = render(<HealthTool />);
+    await waitFor(() => expect(failMirror.threw).toBe(true));
+    await waitFor(() => expect(q(view, '#statin-dose')).toBeTruthy());
+    await settle(50);
+    fireEvent.change(select(view, '#statin-dose'), { target: { value: '40' } });
+    await settle(400); // past the list save's 300 ms
+    await act(async () => { await flushRoadmapStore(); });
+    expect((await recorded()).statin).toBe(40);
+    expect(select(view, '#statin-dose').value).toBe('40');
+  });
 });
