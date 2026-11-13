@@ -5,7 +5,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 // app's env and checks the three things that name the store: the lock row,
 // the shop handed to unauthenticated.admin, and the brand/edu handle branch.
 vi.mock('../shopify.server', () => ({ unauthenticated: { admin: vi.fn() } }));
-vi.mock('./supabase.server', () => ({ tryAcquireCronLock: vi.fn(), endCronLock: vi.fn() }));
+vi.mock('./supabase-cron-lock.server', () => ({ tryAcquireCronLock: vi.fn(), endCronLock: vi.fn() }));
 vi.mock('@sentry/react-router', () => ({ captureException: vi.fn() }));
 // One article published under a different handle on each store.
 vi.mock('./blog-index.server', () => ({
@@ -63,7 +63,7 @@ async function runOneTick(shopDomain: string | undefined) {
   const cron = await import('./trending-cron.server');
   vi.stubEnv('NODE_ENV', 'production');
   const { unauthenticated } = await import('../shopify.server');
-  const { tryAcquireCronLock } = await import('./supabase.server');
+  const { tryAcquireCronLock } = await import('./supabase-cron-lock.server');
   const admin = adminFor();
   const adminMock = vi.mocked(unauthenticated.admin).mockReset().mockResolvedValue({ admin } as any);
   const lockMock = vi.mocked(tryAcquireCronLock).mockReset().mockResolvedValue('won');

@@ -25,8 +25,8 @@ vi.mock('./google-config', () => ({ googleDriveConfig: () => ({}) }));
 vi.mock('./reminders', () => ({ remindersSupported: () => false }));
 vi.mock('./reminders-control', () => ({ RemindersControl: () => null }));
 vi.mock('./connect', () => ({
-  storageState: (backend: string, reconnect?: string) =>
-    (reconnect ? 'reconnect' : backend === 'local' ? 'guest' : 'cloud'),
+  storageState: (backend: string, signIn?: { kind: string }) =>
+    (signIn?.kind === 'signedOut' || signIn?.kind === 'unreachable' ? 'reconnect' : backend === 'local' ? 'guest' : 'cloud'),
   prepareSwitch: vi.fn(),
   liftLocalInto: vi.fn(),
   adapterFor: () => null,

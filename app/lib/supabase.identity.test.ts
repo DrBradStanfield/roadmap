@@ -27,15 +27,16 @@ let competingInsert: boolean;
 let auditInsertFails: boolean;
 let upsertFails: Record<string, unknown> | null;
 let auditError: Record<string, unknown>;
-let recordPaid: typeof import('./supabase.server').recordUnprovenPaidOrder;
+let recordPaid: typeof import('./supabase-account.server').recordUnprovenPaidOrder;
 let counter = 0;
-let mapUser: typeof import('./supabase.server').getOrCreateSupabaseUser;
-let webhookUser: typeof import('./supabase.server').getUserIdByCustomerId;
+let mapUser: typeof import('./supabase-identity.server').getOrCreateSupabaseUser;
+let webhookUser: typeof import('./supabase-identity.server').getUserIdByCustomerId;
 const addAuth = (id: string, customer: string | null, extra: Partial<AuthUser> = {}) =>
   authUsers.set(id, { id, email, app_metadata: customer ? { provider: 'email', shopify_customer_id: customer } : { provider: 'email' }, ...extra });
 beforeEach(async () => {
   vi.resetModules(); profiles = []; writes = []; audits = []; authUsers = new Map(); lookupError = false; competingInsert = false; auditInsertFails = false; upsertFails = null; auditError = { message: 'down' };
-  ({ getOrCreateSupabaseUser: mapUser, getUserIdByCustomerId: webhookUser, recordUnprovenPaidOrder: recordPaid } = await import('./supabase.server'));
+  ({ getOrCreateSupabaseUser: mapUser, getUserIdByCustomerId: webhookUser } = await import('./supabase-identity.server'));
+  ({ recordUnprovenPaidOrder: recordPaid } = await import('./supabase-account.server'));
   state.warn.mockReset();
   state.create.mockReset().mockResolvedValue({ data: null, error: { message: 'already registered' } });
   state.getById.mockReset().mockImplementation(async (id: string) => {

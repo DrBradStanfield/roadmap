@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H85,tests,"HealthTool.tsx's phone cell lookup falls back to getElementById, which can hide a broken activeCellIn in the phone hand-off tests",lead,not started,"widget-src/src/components/HealthTool.tsx:466: activeCellIn(...) ?? document.getElementById(revealCell.field). If activeCellIn broke and returned null, the fallback would still find the cell, so HealthTool.phone-handoffs tests :142 and :234 would still pass. Predates PR 1517. (H85)",,no

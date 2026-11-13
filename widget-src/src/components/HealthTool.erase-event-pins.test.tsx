@@ -34,7 +34,7 @@ import { migrateFile } from '@roadmap/health-core/migrate';
 import { ROADMAP_FILE_NAME, type StorageAdapter } from '@roadmap/health-core/adapter';
 import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
 import { parseProposedEdit, type ProposedEdit } from '@roadmap/health-core/chat-edits';
-import { REMOTE_CHANGED_EVENT, RoadmapStore } from '../storage/roadmap-store';
+import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import {
   addMeasurement, flushRoadmapStore, getEraseIdentity, getShownErase, initRoadmapStore, saveChangedMeasurements, saveMedication,
@@ -44,7 +44,7 @@ import { ERASE_STALE_TAB } from '@roadmap/health-core/record-session';
 import { BACKEND_KEY } from '../storage/web-record-host';
 import { trackProductEvent } from '../lib/server-api';
 import { ERASE_FAILED, WRITE_REFUSED } from '../lib/erase-copy';
-import { openAboutYou, seedGuest, showTables, useHealthToolLifecycle } from '../testing/health-tool-harness';
+import { openAboutYou, seedGuest, showTables, useHealthToolLifecycle, trackLiveRefresh, stopLiveRefresh, drain, settle } from '../testing/health-tool-harness';
 import { deleteButton } from '../testing/settings';
 
 const chat = vi.hoisted(() => ({
@@ -121,9 +121,6 @@ async function anotherTabErases(restart = false) {
   window.dispatchEvent(new StorageEvent('storage', { key: FILE_KEY }));
 }
 
-/** Settle microtasks and short timers without leaving the act scope. */
-const drain = async () => { for (let i = 0; i < 20; i++) await new Promise(r => setTimeout(r, 0)); };
-const settle = async (ms = 0) => { await act(async () => { await new Promise(r => setTimeout(r, ms)); await drain(); }); };
 
 const banners = () => document.body.querySelectorAll('.chat-banners [role="status"]');
 const mdRow = (view: RenderResult, name: string) =>
@@ -151,7 +148,6 @@ const draftGone = (view: RenderResult) => {
 };
 
 let alerts: string[];
-const stops: Array<() => void> = [];
 useHealthToolLifecycle();
 beforeEach(() => {
   alerts = [];
@@ -162,12 +158,9 @@ beforeEach(() => {
   vi.stubGlobal('alert', (m: string) => { alerts.push(m); });
   vi.stubGlobal('confirm', () => true);
   // The real live refresh: another tab's storage event re-reads the record.
-  const start = RoadmapStore.prototype.startLiveRefresh;
-  vi.spyOn(RoadmapStore.prototype, 'startLiveRefresh').mockImplementation(function (this: RoadmapStore) {
-    const stop = start.call(this); stops.push(stop); return stop;
-  });
+  trackLiveRefresh();
 });
-afterEach(() => { for (const stop of stops.splice(0)) stop(); });
+afterEach(() => { stopLiveRefresh(); });
 
 async function openPage(): Promise<RenderResult> {
   const view = render(<HealthTool />);

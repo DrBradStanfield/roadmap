@@ -9,7 +9,6 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, waitFor, within } from '@testing-library/react';
 import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
-import { RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
@@ -26,8 +25,8 @@ vi.mock('../lib/chat-api', async original => ({
 }));
 import { HealthTool } from './HealthTool';
 import { openSettings } from '../testing/settings';
+import { trackLiveRefresh, stopLiveRefresh } from '../testing/health-tool-harness';
 
-const stops: Array<() => void> = [];
 const saved = () => new LocalStorageAdapter().readSync(ROADMAP_FILE_NAME).body as RoadmapFile;
 const tick = () => act(async () => { await vi.advanceTimersByTimeAsync(1800); });
 const persist = async () => { await tick(); await act(async () => { await flushRoadmapStore(); }); };
@@ -42,10 +41,7 @@ beforeEach(async () => {
   vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('Synthetic test: no network'); }));
   vi.mocked(trackProductEvent).mockClear();
   Element.prototype.scrollIntoView ??= () => {};
-  const start = RoadmapStore.prototype.startLiveRefresh;
-  vi.spyOn(RoadmapStore.prototype, 'startLiveRefresh').mockImplementation(function(this: RoadmapStore) {
-    const stop = start.call(this); stops.push(stop); return stop;
-  });
+  trackLiveRefresh();
   await initRoadmapStore(new LocalStorageAdapter());
   // BMI 31.6: the plan shows "Reduce alcohol intake".
   await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 5, unitSystem: 'si', weightKg: 100 }, {});
@@ -53,7 +49,7 @@ beforeEach(async () => {
 });
 afterEach(async () => {
   cleanup();
-  for (const stop of stops.splice(0)) stop();
+  stopLiveRefresh();
   await flushRoadmapStore();
   vi.clearAllTimers(); vi.useRealTimers(); vi.restoreAllMocks(); vi.unstubAllGlobals();
 });

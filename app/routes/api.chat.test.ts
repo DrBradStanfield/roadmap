@@ -37,12 +37,15 @@ function fakeClient(client: 'user' | 'admin') {
     },
   };
 }
+vi.mock('../lib/supabase-client.server', async (importOriginal) => {
+  const real = await importOriginal<typeof import('../lib/supabase-client.server')>();
+  const admin = fakeClient('admin');
+  return { ...real, get supabaseAdmin() { return db.active ? admin : real.supabaseAdmin; } };
+});
 vi.mock('../lib/supabase.server', async (importOriginal) => {
   const real = await importOriginal<typeof import('../lib/supabase.server')>();
-  const admin = fakeClient('admin');
   return {
     ...real,
-    get supabaseAdmin() { return db.active ? admin : real.supabaseAdmin; },
     createUserClient: (id: string) => (db.active ? fakeClient('user') : real.createUserClient(id)),
     getOrCreateGuestSession: async (...a: Parameters<typeof real.getOrCreateGuestSession>) =>
       (db.active ? { sessionId: 'guest-1', sessionToken: 'tok' } : real.getOrCreateGuestSession(...a)),

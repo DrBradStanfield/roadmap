@@ -6,24 +6,21 @@
  * user clients), supabase-identity.server.ts (customer mapping, audit),
  * supabase-guest.server.ts (guest sessions), supabase-account.server.ts
  * (profile, credits, plan), supabase-cron-lock.server.ts,
- * supabase-dashboard.server.ts and supabase-ab.server.ts. This file
- * re-exports every name it exported before the split; import from here.
+ * supabase-dashboard.server.ts and supabase-ab.server.ts. Import client,
+ * identity, guest, account and cron-lock names from their own module (S-14).
+ * The first four re-exports serve only api.chat.ts: repointing it would grow
+ * a file over the 500-line ratchet. The dashboard and A/B names stay here.
  */
-export { supabaseAdmin, createUserClient } from './supabase-client.server';
-export { logAudit, getOrCreateSupabaseUser, getUserIdByCustomerId } from './supabase-identity.server';
-export { hashClientIp, getOrCreateGuestSession, GuestRateLimitError } from './supabase-guest.server';
-export type { GuestSessionResult } from './supabase-guest.server';
-export { getProfile, addMessageCredits, updateSubscriptionPlan, recordUnprovenPaidOrder } from './supabase-account.server';
-export type { DbProfile } from './supabase-account.server';
-export { tryAcquireCronLock, endCronLock, stillHoldsLock } from './supabase-cron-lock.server';
-export type { CronLockName } from './supabase-cron-lock.server';
+export { createUserClient } from './supabase-client.server';
+export { logAudit } from './supabase-identity.server';
+export { getOrCreateGuestSession, GuestRateLimitError } from './supabase-guest.server';
+export { getProfile, updateSubscriptionPlan, type DbProfile } from './supabase-account.server';
 export {
   DASHBOARD_WINDOW_DAYS,
   chatTurnStats,
   aggregateReminderOptins,
   getDashboardStats,
 } from './supabase-dashboard.server';
-export type { ChatStats, ReminderStats, DashboardStats, ReminderOptinRow } from './supabase-dashboard.server';
 export {
   getABTests,
   getActiveABTests,

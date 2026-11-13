@@ -448,12 +448,22 @@ describe('US-40 AC6 — only the designated scratch record is ever served, verif
     const argv: string[] = JSON.parse(f.read('argv.json'));
     const joined = argv.join(' ');
     expect(joined).toContain('mcp_servers.health.command="' + resolve(__dirname, '..', 'node_modules', '.bin', 'tsx') + '"');
-    expect(joined).not.toContain('npx');
+    // Match the command exactly, never as a substring: the argv holds random mkdtemp names, and one once spelled "npx" (main red, run 43364353270).
+    const isNpx = (a: string) => a === 'npx' || a.endsWith('/npx');
+    expect(argv.filter(isNpx)).toEqual([]);
+    // npx inside any quoted -c value (another server's command, env, cwd) still fails. A mkdtemp suffix is exactly 6 random [A-Za-z0-9]
+    // characters with '-' before and '/', ':' or the end after, so any 'npx' inside it touches a letter or digit and cannot match.
+    // The checkout path is stripped first: worktree folders are named after branches, so it may itself spell npx.
+    expect(joined.split(resolve(__dirname, '..')).join('')).not.toMatch(/(^|[^A-Za-z0-9])npx([^A-Za-z0-9]|$)/);
+    const commands = argv.filter((a) => a.startsWith('mcp_servers.health.command='));
+    expect(commands).toHaveLength(1);
+    expect(JSON.parse(commands[0].slice('mcp_servers.health.command='.length))).toBe(resolve(__dirname, '..', 'node_modules', '.bin', 'tsx'));
     expect(joined).toContain('tools/mcp-server.ts');
     expect(joined).toContain('enabled_tools=["read_record","get_plan"]');
     expect(joined).not.toContain('mcp.drstanfield.com');
     expect(joined).not.toContain(scratchFile);
     const args = JSON.parse(argv[argv.findIndex((a) => a.startsWith('mcp_servers.health.args=')) ].slice('mcp_servers.health.args='.length));
+    expect(args.filter(isNpx)).toEqual([]);
     expect(args[args.indexOf('--file') + 1]).toMatch(/codex-review-.*\/record\.json$/);
     expect(f.read('stdin.txt')).not.toContain(SCRATCH_CREATED_AT);
   });

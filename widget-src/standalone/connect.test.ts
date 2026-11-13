@@ -169,7 +169,9 @@ describe('storageState', () => {
   it('is guest exactly in the local, non-reconnect state', () => {
     for (const backend of backends) {
       expect(storageState(backend) === 'guest').toBe(backend === 'local');
-      expect(storageState(backend, 'google-drive')).toBe('reconnect');
+      expect(storageState(backend, { kind: 'signedOut', provider: 'google-drive' })).toBe('reconnect');
+      expect(storageState(backend, { kind: 'unreachable', provider: 'github' })).toBe('reconnect');
+      expect(storageState(backend, { kind: 'signedIn', provider: 'dropbox' })).toBe(backend === 'local' ? 'guest' : 'cloud');
     }
   });
 

@@ -14,7 +14,7 @@ const LOG_OFF_ID_KEY = 'health_roadmap_log_off_id';
 const ERASE_FENCE_KEY = 'health_roadmap_local_erase_generation';
 const ENTRIES = {
   'google-drive': ['health_roadmap_gdrive', 'health_roadmap_gdrive_tokens'],
-  dropbox: ['health_roadmap_dropbox_tokens'],
+  dropbox: ['health_roadmap_dropbox', 'health_roadmap_dropbox_tokens'], // the config: US-09 AC48 (R6)
   github: ['health_roadmap_github'],
   'self-host': ['health_roadmap_selfhost'],
 } as const;

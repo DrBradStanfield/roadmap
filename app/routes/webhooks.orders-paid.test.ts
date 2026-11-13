@@ -12,7 +12,8 @@ vi.mock('../shopify.server', () => ({
 const lib = vi.hoisted(() => ({
   getUserIdByCustomerId: vi.fn(), addMessageCredits: vi.fn(), logAudit: vi.fn(), recordUnprovenPaidOrder: vi.fn(), warn: vi.fn(),
 }));
-vi.mock('../lib/supabase.server', () => lib);
+vi.mock('../lib/supabase-identity.server', () => lib);
+vi.mock('../lib/supabase-account.server', () => lib);
 vi.mock('@sentry/react-router', () => ({ captureMessage: lib.warn, captureException: vi.fn() }));
 
 import { action } from './webhooks.orders-paid';

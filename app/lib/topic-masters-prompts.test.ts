@@ -8,7 +8,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { readFileSync } from 'fs';
 
 vi.mock('@sentry/react-router', () => ({ captureException: vi.fn(), captureMessage: vi.fn() }));
-vi.mock('./supabase.server', () => ({ supabaseAdmin: null }));
+vi.mock('./supabase-client.server', () => ({ supabaseAdmin: null }));
 
 import { MASTER_VIEWS_HEADING } from './youtube-context';
 import { loadBlogIndex } from './blog-index.server';

@@ -17,10 +17,10 @@ import { type RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { parseProposedEdit, type ProposedEdit } from '@roadmap/health-core/chat-edits';
 import { localDay } from '@roadmap/health-core/merge';
 import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
-import { REMOTE_CHANGED_EVENT, RoadmapStore } from '../storage/roadmap-store';
+import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { addMeasurement, bulkSaveMeasurements, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
-import { openAboutYou } from '../testing/health-tool-harness';
+import { openAboutYou, trackLiveRefresh, stopLiveRefresh, recordOnDisk } from '../testing/health-tool-harness';
 import { WRITE_REFUSED } from '../lib/erase-copy';
 
 vi.mock('../lib/build-flags', () => ({ LOCAL_FIRST: true, SHOPIFY_SURFACE: true }));
@@ -84,7 +84,6 @@ let sent: Array<{ eventName: string; metadata?: Record<string, unknown> }> = [];
 const named = (name: string) => sent.filter((e) => e.eventName === name);
 /** The calls HealthTool made, by name, before the per-tab throttle. */
 const calls = (name: string) => tracked.calls.filter(([n]) => n === name).map(([, m]) => m);
-const stops: Array<() => void> = [];
 
 beforeEach(async () => {
   sent = [];
@@ -106,23 +105,16 @@ beforeEach(async () => {
     throw new Error('Synthetic test: no network');
   }));
   Element.prototype.scrollIntoView ??= () => {};
-  const start = RoadmapStore.prototype.startLiveRefresh;
-  vi.spyOn(RoadmapStore.prototype, 'startLiveRefresh').mockImplementation(function (this: RoadmapStore) {
-    const stop = start.call(this); stops.push(stop); return stop;
-  });
+  trackLiveRefresh();
   await initRoadmapStore(new LocalStorageAdapter());
 });
 afterEach(async () => {
   cleanup();
-  for (const stop of stops.splice(0)) stop();
+  stopLiveRefresh();
   await flushRoadmapStore();
   vi.restoreAllMocks(); vi.unstubAllGlobals();
 });
 
-async function recordOnDisk(): Promise<RoadmapFile> {
-  await act(async () => { await flushRoadmapStore(); });
-  return (await new LocalStorageAdapter().read(ROADMAP_FILE_NAME)).body as RoadmapFile;
-}
 const activeWeights = async () => (await recordOnDisk()).measurements
   .filter((m) => m.metricType === 'weight' && m.status === 'active').map((m) => [m.value, m.recordedAt.slice(0, 10)]);
 

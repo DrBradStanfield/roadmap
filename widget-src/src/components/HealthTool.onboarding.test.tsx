@@ -15,15 +15,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ChatEditTarget } from '../hooks/useChatState';
 import type { ProposedEdit } from '@roadmap/health-core/chat-edits';
 import { act, cleanup, fireEvent, render, waitFor, within, type RenderResult } from '@testing-library/react';
-import { CURRENT_SCHEMA_VERSION, type RoadmapFile } from '@roadmap/health-core/roadmap-file';
+import { CURRENT_SCHEMA_VERSION } from '@roadmap/health-core/roadmap-file';
 import { localDay, rowRootIds } from '@roadmap/health-core/merge';
 import { migrateFile } from '@roadmap/health-core/migrate';
 import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
-import { REMOTE_CHANGED_EVENT, RoadmapStore } from '../storage/roadmap-store';
+import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { addMeasurement, bulkSaveDocuments, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements, saveMedication, saveSupplement } from '../lib/roadmap-data';
 import { MIRROR_KEY } from '../lib/storage';
-import { openAboutYou, showTables } from '../testing/health-tool-harness';
+import { openAboutYou, showTables, trackLiveRefresh, stopLiveRefresh, recordOnDisk } from '../testing/health-tool-harness';
 import { formatShortDate } from '../lib/constants';
 
 vi.mock('../lib/build-flags', () => ({ LOCAL_FIRST: true, SHOPIFY_SURFACE: true }));
@@ -56,7 +56,6 @@ const WHY_BIRTH = 'Used to calculate age-based screening suggestions (cancer, bo
 
 let sent: Array<{ eventName: string; metadata?: Record<string, unknown> }> = [];
 const named = (name: string) => sent.filter((e) => e.eventName === name);
-const stops: Array<() => void> = [];
 let phone = false;
 /** 1200px and up: the inline chat column shows (`useIsWideDesktop`). */
 let wide = true;
@@ -81,23 +80,16 @@ beforeEach(async () => {
     throw new Error('Synthetic test: no network');
   }));
   Element.prototype.scrollIntoView ??= () => {};
-  const start = RoadmapStore.prototype.startLiveRefresh;
-  vi.spyOn(RoadmapStore.prototype, 'startLiveRefresh').mockImplementation(function (this: RoadmapStore) {
-    const stop = start.call(this); stops.push(stop); return stop;
-  });
+  trackLiveRefresh();
   await initRoadmapStore(new LocalStorageAdapter());
 });
 afterEach(async () => {
   cleanup();
-  for (const stop of stops.splice(0)) stop();
+  stopLiveRefresh();
   await flushRoadmapStore();
   vi.restoreAllMocks(); vi.unstubAllGlobals();
 });
 
-async function recordOnDisk(): Promise<RoadmapFile> {
-  await act(async () => { await flushRoadmapStore(); });
-  return (await new LocalStorageAdapter().read(ROADMAP_FILE_NAME)).body as RoadmapFile;
-}
 const activeWeights = async () => (await recordOnDisk()).measurements
   .filter((m) => m.metricType === 'weight' && m.status === 'active').map((m) => [m.value, m.recordedAt.slice(0, 10)]);
 
@@ -158,6 +150,7 @@ describe('US-62 AC13: each step reveals the next', () => {
     expect(view.queryByText(/Skip/)).toBeNull();
   });
 
+  // Real-timer pin (test audit W01): keep this test off fake timers; it is the one place the 500 ms field save must fire on its own.
   it('height and weight show the BMI tile with no sex, then ask sex with its why-text', async () => {
     const view = await open();
     await measurements(view);
@@ -1297,13 +1290,17 @@ describe('US-62 AC8 (H71): waist and blood pressure are rows from the start; no 
   const openRow = (view: RenderResult, topic: string, label: string) => fireEvent.click(Array.from(view.container.querySelectorAll(`[data-topic="${topic}"] .md-row`))
     .find((r) => r.querySelector('.md-row-label')?.textContent === label)!);
   const page = (view: RenderResult) => q(view, '.mh-page-host .md-page') as HTMLElement;
+  /** A loaded CI shard runs these real saves and re-renders past waitFor's 1 s default. */
+  const slow = { timeout: 10_000 };
+  /** The page's save has settled: it says "Added." and its form is clean, so Back leaves at once. */
+  const added = (view: RenderResult) => waitFor(() => expect(page(view).querySelector('.md-page-messages')?.textContent).toBe('Added.'), slow);
 
   it('no landing (the birth month picked last): About you stays up, Waist and Blood Pressure are "Add" rows, and each page saves to the record and the plan', async () => {
     const view = await open();
     await measurements(view);
     fireEvent.click(view.getByRole('radio', { name: 'Male' }));
     birthWithoutJump(view);
-    await waitFor(() => expect(fullForm(view)).toBe(true));
+    await waitFor(() => expect(fullForm(view)).toBe(true), slow);
     expect(q(view, '.mh-page .about-card')).toBeTruthy(); // no landing: About you is still up
     expect(q(view, '#waistCm, #systolicBp, #diastolicBp')).toBeNull();
     expect(rowsOf(view, 'weight')).toEqual([['Waist', 'Add'], ['HbA1c', 'Add']]); // the weight is beside the height, not a row
@@ -1311,23 +1308,25 @@ describe('US-62 AC8 (H71): waist and blood pressure are rows from the start; no 
     expect(tiles(view)).not.toContain('Waist-to-Height');
 
     openRow(view, 'weight', 'Waist');
-    await waitFor(() => expect(within(page(view)).getByRole('heading', { name: 'Waist' })).toBeTruthy());
+    await waitFor(() => expect(within(page(view)).getByRole('heading', { name: 'Waist' })).toBeTruthy(), slow);
     fireEvent.change(within(page(view)).getByLabelText(/^Value/), { target: { value: '90' } });
     fireEvent.click(within(page(view)).getByRole('button', { name: 'Add' }));
-    await waitFor(async () => expect(await activeOn('waist')).toEqual([[90, localToday()]]));
-    await waitFor(() => expect(tiles(view)).toContain('Waist-to-Height'));
+    await waitFor(async () => expect(await activeOn('waist')).toEqual([[90, localToday()]]), slow);
+    await waitFor(() => expect(tiles(view)).toContain('Waist-to-Height'), slow);
+    await added(view);
     fireEvent.click(within(page(view)).getByRole('button', { name: '‹ Back' }));
-    await waitFor(() => expect(page(view)).toBeNull()); // Back goes through history: wait for it
+    await waitFor(() => expect(page(view)).toBeNull(), slow); // Back goes through history: wait for it
 
     openRow(view, 'bloodPressure', 'Blood Pressure');
-    await waitFor(() => expect(within(page(view)).getByLabelText('Systolic (top number)')).toBeTruthy());
+    await waitFor(() => expect(within(page(view)).getByLabelText('Systolic (top number)')).toBeTruthy(), slow);
     fireEvent.change(within(page(view)).getByLabelText('Systolic (top number)'), { target: { value: '120' } });
     fireEvent.change(within(page(view)).getByLabelText('Diastolic (bottom number)'), { target: { value: '80' } });
     fireEvent.click(within(page(view)).getByRole('button', { name: 'Add' }));
     // One reading: both halves together, on one day.
-    await waitFor(async () => expect([await activeOn('systolic_bp'), await activeOn('diastolic_bp')]).toEqual([[[120, localToday()]], [[80, localToday()]]]));
+    await waitFor(async () => expect([await activeOn('systolic_bp'), await activeOn('diastolic_bp')]).toEqual([[[120, localToday()]], [[80, localToday()]]]), slow);
+    await added(view);
     fireEvent.click(within(page(view)).getByRole('button', { name: '‹ Back' }));
-    await waitFor(() => expect(rowsOf(view, 'bloodPressure')[0]).toEqual(['Blood Pressure', '120/80']));
+    await waitFor(() => expect(rowsOf(view, 'bloodPressure')[0]).toEqual(['Blood Pressure', '120/80']), slow);
     expect(rowsOf(view, 'weight')[0][0]).toBe('Waist-to-height');
   });
 
@@ -1335,7 +1334,7 @@ describe('US-62 AC8 (H71): waist and blood pressure are rows from the start; no 
     await addMeasurement('ldl', 3.0, '2026-09-01');
     await flushRoadmapStore();
     const view = await open();
-    await waitFor(() => expect(fullForm(view)).toBe(true));
+    await waitFor(() => expect(fullForm(view)).toBe(true), slow);
     expect(q(view, '.mh-page .about-card')).toBeTruthy(); // About you at the top
     expect(q(view, '#weightKg')).toBeNull();
     expect(rowsOf(view, 'weight')).toContainEqual(['Weight', 'Add']);
@@ -1347,10 +1346,11 @@ describe('US-62 AC8 (H71): waist and blood pressure are rows from the start; no 
     expect(Array.from(view.container.querySelectorAll('.error-message'))).toEqual([]);
 
     openRow(view, 'weight', 'Weight');
-    await waitFor(() => expect(within(page(view)).getByRole('heading', { name: 'Weight' })).toBeTruthy());
+    await waitFor(() => expect(within(page(view)).getByRole('heading', { name: 'Weight' })).toBeTruthy(), slow);
     fireEvent.change(within(page(view)).getByLabelText(/^Value/), { target: { value: '80' } });
     fireEvent.click(within(page(view)).getByRole('button', { name: 'Add' }));
-    await waitFor(async () => expect(await activeWeights()).toEqual([[80, localToday()]]));
+    await waitFor(async () => expect(await activeWeights()).toEqual([[80, localToday()]]), slow);
+    await added(view);
     fireEvent.click(within(page(view)).getByRole('button', { name: '‹ Back' }));
     expect(q(view, '#heightCm')).toBeTruthy();
     expect(Array.from(view.container.querySelectorAll('.bt-vitals-card .bt-name-label')).map((l) => l.textContent)).toContain('Weight');
@@ -1364,7 +1364,7 @@ describe('US-62 AC8 (H71): waist and blood pressure are rows from the start; no 
     const decoy = document.body.appendChild(Object.assign(document.createElement('input'), { id: 'weightKg' }));
     try {
       const view = await open();
-      await waitFor(() => expect(fullForm(view)).toBe(true));
+      await waitFor(() => expect(fullForm(view)).toBe(true), slow);
       const height = q(view, '#heightCm') as HTMLInputElement;
       type(height, '178');
       await act(async () => { await new Promise((r) => setTimeout(r, 50)); });

@@ -15,7 +15,7 @@ import { ERASE_UNREACHABLE, RoadmapStore } from '../storage/roadmap-store';
 import { BACKEND_KEY } from '../storage/web-record-host';
 import { DRAFTS_CLEARED_EVENT } from '../lib/storage';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
-import { seedGuest, useHealthToolLifecycle } from '../testing/health-tool-harness';
+import { seedGuest, useHealthToolLifecycle, wait } from '../testing/health-tool-harness';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../lib/server-api', async importOriginal => ({
@@ -30,7 +30,9 @@ vi.mock('./UploadModal', () => ({ UploadModal: () => null }));
 import { HealthTool } from './HealthTool';
 import { deleteButton } from '../testing/settings';
 
-useHealthToolLifecycle();
+// Each describe registers the lifecycle itself: the supplement and erase tests
+// run on fake timers that move with the clock (wait(400) jumps the save
+// debounce at once, with the same 400 ms); the real-timer pin below does not.
 
 async function page(initial: number | null = null) {
   await seedGuest({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 1 }, [['weight', 80]]);
@@ -46,10 +48,8 @@ function dose(container: HTMLElement): HTMLInputElement {
 }
 
 async function settle(): Promise<void> {
-  await act(async () => {
-    await new Promise(resolve => setTimeout(resolve, 400));
-    await flushRoadmapStore();
-  });
+  await wait(400);
+  await act(async () => { await flushRoadmapStore(); });
 }
 
 async function persisted(): Promise<RoadmapFile> {
@@ -59,6 +59,8 @@ async function persisted(): Promise<RoadmapFile> {
 }
 
 describe('US-06 AC1b: supplement dose autosave', () => {
+  useHealthToolLifecycle({ fakeTimers: true });
+
   it.each([
     { initial: null, invalid: '0' },
     { initial: 25, invalid: '0' },
@@ -250,72 +252,81 @@ describe('US-11: supplement dose draft erase lifecycle', () => {
     expect((await adapter.read(ROADMAP_FILE_NAME)).body).toEqual(erased);
   }
 
-  for (const origin of ['this page', 'another device']) {
-    it(`drops the rejected draft after ${origin} erases, before a remote same-key row arrives`, async () => {
-      const { adapter, store, view, panel } = await cloudPage();
-      if (origin === 'this page') {
-        vi.stubGlobal('confirm', () => true);
-        const alert = vi.fn();
-        vi.stubGlobal('alert', alert);
-        fireEvent.click(deleteButton());
-        await waitFor(() => expect(alert).toHaveBeenCalled());
-      } else {
-        await remoteErase(adapter);
-        await act(async () => { expect(await store.refreshFromRemote()).toBe(true); });
-      }
-      await waitFor(() => expect(view.container.querySelector('.supplement-dose')).toBeNull());
-      expect(((await adapter.read(ROADMAP_FILE_NAME)).body as RoadmapFile).supplements).toEqual([]);
-      expect(view.container.querySelector('.health-input-panel')).toBe(panel);
-      // Past the real store's re-read throttle; no remount or local add masks
-      // a draft retained under this key.
-      await act(async () => { await new Promise(resolve => setTimeout(resolve, 5100)); });
-      await remoteDose(adapter, 40);
-      await act(async () => { expect(await store.refreshFromRemote()).toBe(true); });
-      await waitFor(() => expect(dose(view.container)).toBeTruthy());
-      expect(store.loadLatestMeasurements().supplements).toEqual([
-        expect.objectContaining({ supplementKey: 'custom_test_supplement', doseValue: 40, doseUnit: 'mg' }),
-      ]);
-      expect(view.container.querySelector('.health-input-panel')).toBe(panel);
-      expect(dose(view.container).value).toBe('40');
-      expect(dose(view.container).getAttribute('aria-invalid')).not.toBe('true');
-      expect(view.queryByRole('alert')).toBeNull();
-    }, 20000);
-  }
+  describe('real timers', () => {
+    useHealthToolLifecycle();
 
-  it('keeps the rejected draft through an ordinary remote re-read, including a changed accepted dose', async () => {
-    const { adapter, store, view, panel } = await cloudPage();
-    await remoteDose(adapter, 40);
-    await act(async () => { expect(await store.refreshFromRemote()).toBe(true); });
-    expect(store.loadLatestMeasurements().supplements?.[0].doseValue).toBe(40);
-    expect(view.container.querySelector('.health-input-panel')).toBe(panel);
-    expect(dose(view.container).value).toBe('-5');
-    expect(dose(view.container).getAttribute('aria-invalid')).toBe('true');
-    expect(view.getByRole('alert').textContent).toContain('This dose was not saved.');
+    for (const origin of ['this page', 'another device']) {
+      // Real-timer pin (test audit W01): keep this test off fake timers; it is the one place the store's 5 s re-read throttle must run out on its own (the 5100 ms sleep below).
+      it(`drops the rejected draft after ${origin} erases, before a remote same-key row arrives`, async () => {
+        const { adapter, store, view, panel } = await cloudPage();
+        if (origin === 'this page') {
+          vi.stubGlobal('confirm', () => true);
+          const alert = vi.fn();
+          vi.stubGlobal('alert', alert);
+          fireEvent.click(deleteButton());
+          await waitFor(() => expect(alert).toHaveBeenCalled());
+        } else {
+          await remoteErase(adapter);
+          await act(async () => { expect(await store.refreshFromRemote()).toBe(true); });
+        }
+        await waitFor(() => expect(view.container.querySelector('.supplement-dose')).toBeNull());
+        expect(((await adapter.read(ROADMAP_FILE_NAME)).body as RoadmapFile).supplements).toEqual([]);
+        expect(view.container.querySelector('.health-input-panel')).toBe(panel);
+        // Past the real store's re-read throttle; no remount or local add masks
+        // a draft retained under this key.
+        await act(async () => { await new Promise(resolve => setTimeout(resolve, 5100)); });
+        await remoteDose(adapter, 40);
+        await act(async () => { expect(await store.refreshFromRemote()).toBe(true); });
+        await waitFor(() => expect(dose(view.container)).toBeTruthy());
+        expect(store.loadLatestMeasurements().supplements).toEqual([
+          expect.objectContaining({ supplementKey: 'custom_test_supplement', doseValue: 40, doseUnit: 'mg' }),
+        ]);
+        expect(view.container.querySelector('.health-input-panel')).toBe(panel);
+        expect(dose(view.container).value).toBe('40');
+        expect(dose(view.container).getAttribute('aria-invalid')).not.toBe('true');
+        expect(view.queryByRole('alert')).toBeNull();
+      }, 20000);
+    }
   });
 
-  it('keeps the rejected draft when the real erase refuses an unreachable cloud read', async () => {
-    const { adapter, store, view, panel } = await cloudPage();
-    const before = await adapter.read(ROADMAP_FILE_NAME);
-    const identity = store.eraseIdentity;
-    const cleared = vi.fn();
-    window.addEventListener(DRAFTS_CLEARED_EVENT, cleared);
-    try {
-      const failure = vi.spyOn(adapter, 'read').mockRejectedValueOnce(new Error('synthetic cloud unavailable'));
-      const alert = vi.fn();
-      vi.stubGlobal('confirm', () => true);
-      vi.stubGlobal('alert', alert);
-      fireEvent.click(deleteButton());
-      await waitFor(() => expect(alert).toHaveBeenCalledWith(ERASE_UNREACHABLE));
-      failure.mockRestore();
-      expect(cleared).not.toHaveBeenCalled();
-      expect(store.eraseIdentity).toBe(identity);
-      expect(await adapter.read(ROADMAP_FILE_NAME)).toEqual(before);
+  describe('fake timers', () => {
+    useHealthToolLifecycle({ fakeTimers: true });
+
+    it('keeps the rejected draft through an ordinary remote re-read, including a changed accepted dose', async () => {
+      const { adapter, store, view, panel } = await cloudPage();
+      await remoteDose(adapter, 40);
+      await act(async () => { expect(await store.refreshFromRemote()).toBe(true); });
+      expect(store.loadLatestMeasurements().supplements?.[0].doseValue).toBe(40);
       expect(view.container.querySelector('.health-input-panel')).toBe(panel);
       expect(dose(view.container).value).toBe('-5');
       expect(dose(view.container).getAttribute('aria-invalid')).toBe('true');
       expect(view.getByRole('alert').textContent).toContain('This dose was not saved.');
-    } finally {
-      window.removeEventListener(DRAFTS_CLEARED_EVENT, cleared);
-    }
+    });
+
+    it('keeps the rejected draft when the real erase refuses an unreachable cloud read', async () => {
+      const { adapter, store, view, panel } = await cloudPage();
+      const before = await adapter.read(ROADMAP_FILE_NAME);
+      const identity = store.eraseIdentity;
+      const cleared = vi.fn();
+      window.addEventListener(DRAFTS_CLEARED_EVENT, cleared);
+      try {
+        const failure = vi.spyOn(adapter, 'read').mockRejectedValueOnce(new Error('synthetic cloud unavailable'));
+        const alert = vi.fn();
+        vi.stubGlobal('confirm', () => true);
+        vi.stubGlobal('alert', alert);
+        fireEvent.click(deleteButton());
+        await waitFor(() => expect(alert).toHaveBeenCalledWith(ERASE_UNREACHABLE));
+        failure.mockRestore();
+        expect(cleared).not.toHaveBeenCalled();
+        expect(store.eraseIdentity).toBe(identity);
+        expect(await adapter.read(ROADMAP_FILE_NAME)).toEqual(before);
+        expect(view.container.querySelector('.health-input-panel')).toBe(panel);
+        expect(dose(view.container).value).toBe('-5');
+        expect(dose(view.container).getAttribute('aria-invalid')).toBe('true');
+        expect(view.getByRole('alert').textContent).toContain('This dose was not saved.');
+      } finally {
+        window.removeEventListener(DRAFTS_CLEARED_EVENT, cleared);
+      }
+    });
   });
 });

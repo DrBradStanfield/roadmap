@@ -6,7 +6,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 
 vi.mock('@sentry/react-router', () => ({ captureException: vi.fn(), captureMessage: vi.fn() }));
-vi.mock('./supabase.server', () => ({ supabaseAdmin: null }));
+vi.mock('./supabase-client.server', () => ({ supabaseAdmin: null }));
 vi.mock('./chat-classifier.server', () => ({
   classifyMessage: async () => ({ classification: 'SKIP', routerSkipped: true, latencyMs: 0, error: null }),
   shouldFireRouter: () => false,

@@ -22,13 +22,18 @@ vi.mock('./connect', async (original) => ({
 }));
 
 import { GIS_LOADING, StorageBar } from './sync-control';
+import { bootSignIn, resetSignIn } from '../src/storage/sign-in-state';
 import { resetSwitchFlow } from './switch-flow';
 
 // The GIS loader polls for window.google every 50 ms for up to 10 s, and the
 // script never arrives here. On real timers those polls outlive the file and
 // fire after jsdom has gone ("window is not defined", flaky in CI), so they run
 // on fake timers and are dropped after each test.
-beforeEach(() => { vi.useFakeTimers(); });
+beforeEach(() => {
+  vi.useFakeTimers();
+  resetSignIn();
+  bootSignIn({ kind: 'signedOut', provider: 'google-drive' }); // the load's answer (US-09 AC48)
+});
 
 afterEach(() => {
   vi.clearAllTimers();
@@ -43,13 +48,13 @@ const bar = () => document.querySelector('button.action-btn-small') as HTMLButto
 
 describe('US-09 AC30 — the Drive popup opens inside the click', () => {
   it('starts loading GIS as soon as the bar shows the Drive reconnect', () => {
-    render(<StorageBar backend="local" reconnect="google-drive" />);
+    render(<StorageBar backend="local" />);
     expect(bar().textContent).toBe('Sign in to Google again');
     expect(document.querySelector('script[src="https://accounts.google.com/gsi/client"]')).not.toBeNull();
   });
 
   it('a click before GIS has loaded says so and opens nothing; once loaded, the next click asks Google at once', () => {
-    render(<StorageBar backend="local" reconnect="google-drive" />);
+    render(<StorageBar backend="local" />);
     fireEvent.click(bar());
     expect(document.querySelector('[role="alert"]')?.textContent).toBe(GIS_LOADING);
 
@@ -67,7 +72,7 @@ describe('US-09 AC30 — the Drive popup opens inside the click', () => {
   it('a Google script that failed to load is fetched again by the next tap, not waited on forever (US-09 AC30a)', () => {
     // The bar shows "Sign in to Google again" because Drive could not be
     // reached at page load, which is when the preload is most likely to fail.
-    render(<StorageBar backend="local" reconnect="google-drive" />);
+    render(<StorageBar backend="local" />);
     const failed = document.querySelector('script[src*="gsi/client"]')!;
     failed.dispatchEvent(new Event('error')); // the network was down
 
@@ -88,7 +93,7 @@ describe('US-09 AC30 — the Drive popup opens inside the click', () => {
   });
 
   it('a script still loading is not fetched twice', () => {
-    render(<StorageBar backend="local" reconnect="google-drive" />);
+    render(<StorageBar backend="local" />);
     const loading = document.querySelector('script[src*="gsi/client"]');
     fireEvent.click(bar());
     fireEvent.click(bar());

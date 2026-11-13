@@ -57,7 +57,7 @@ vi.mock('@supabase/supabase-js', () => ({
   })),
 }));
 
-let getOrCreateGuestSession: typeof import('./supabase.server').getOrCreateGuestSession;
+let getOrCreateGuestSession: typeof import('./supabase-guest.server').getOrCreateGuestSession;
 let PostgrestError: typeof import('@supabase/supabase-js').PostgrestError;
 let AuthApiError: typeof import('@supabase/supabase-js').AuthApiError;
 
@@ -68,7 +68,7 @@ beforeAll(async () => {
   vi.stubEnv('SUPABASE_JWT_SECRET', 'stub-jwt-secret');
   vi.stubEnv('SHOPIFY_API_SECRET', 'stub-shopify-secret');
   vi.resetModules();
-  ({ getOrCreateGuestSession } = await import('./supabase.server'));
+  ({ getOrCreateGuestSession } = await import('./supabase-guest.server'));
   ({ PostgrestError, AuthApiError } = await vi.importActual<typeof import('@supabase/supabase-js')>('@supabase/supabase-js'));
 });
 afterAll(() => vi.unstubAllEnvs());

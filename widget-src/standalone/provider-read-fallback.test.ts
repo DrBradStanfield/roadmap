@@ -145,7 +145,7 @@ describe.each(providers)('%s record-read fallback (US-09 AC13b)', (backend, make
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('synthetic network failure')));
     const result = await startOnBackend({ backend, adapter: make() }, init);
     expect(result.backend).toBe('local');
-    expect(result.reconnect).toBe(backend);
+    expect(result.reconnect?.provider).toBe(backend);
     expect(result.adapter).toBeInstanceOf(LocalStorageAdapter);
     expect(isSyncPending()).toBe(true);
     const recovered = await RoadmapStore.create(result.adapter);
