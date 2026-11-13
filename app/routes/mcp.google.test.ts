@@ -19,7 +19,7 @@ import { serveClientMetadata } from '../lib/mcp-cimd.test-helpers';
 import { MemoryAdapter, MemoryCloud } from '../../packages/health-core/src/memory-adapter';
 import { ROADMAP_FILE_NAME } from '../../packages/health-core/src/adapter';
 import { DRIVE_FOLDER_NAME } from '../../packages/health-core/src/drive-rest';
-import { ToolContractError } from '../../packages/health-core/src/mcp-tools';
+import { ToolContractError } from '../../packages/health-core/src/mcp-tool-contract';
 import { DropboxAdapter } from '../../packages/health-core/src/dropbox-rest';
 import { createEmptyFile, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { type AccessPayload, resetMcpMemory } from '../lib/mcp-grants.server';

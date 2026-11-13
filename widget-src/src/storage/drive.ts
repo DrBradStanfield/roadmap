@@ -432,7 +432,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
   // --- helpers --------------------------------------------------------------
 
   /** Drive refused the access token (an API 401, access revoked): it is not used again, a popup grant's
-   *  by no adapter here, so the next call refreshes and the refresh decides (US-09 AC48, AC50). Rethrows: the 401 still fails this call. */
+   *  by no adapter here, so the next call refreshes and the refresh decides (US-09 AC48, AC51). Rethrows: the 401 still fails this call. */
   private readonly refused = (error: unknown): never => {
     if (error instanceof StorageError && error.status === 401 && this.tokens) this.tokens = spendToken(TOKENS_KEY, this.tokens, this.gen);
     throw error;

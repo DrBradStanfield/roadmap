@@ -41,7 +41,7 @@
 import { describe, expect, it } from 'vitest';
 import { createHash } from 'node:crypto';
 import { INSTRUCTIONS } from './mcp.server';
-import { MCP_PROMPTS, MCP_TOOLS } from '../../packages/health-core/src/mcp-tools';
+import { MCP_PROMPTS, MCP_TOOLS } from '../../packages/health-core/src/mcp-tool-catalogue';
 import { dispatchRpc, SERVER_INFO } from '../../packages/health-core/src/mcp-rpc';
 
 const sha256 = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');

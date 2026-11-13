@@ -28,7 +28,9 @@ import { ROADMAP_FILE_NAME } from '../../packages/health-core/src/adapter';
 import { createEmptyFile, createMeasurement, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { AUTHORIZE_PER_WINDOW, resetMcpMemory, STATE_LIFETIME_SECONDS, WRITE_COST, WRITES_PER_HOUR } from '../lib/mcp-grants.server';
 import { ISSUES_PER_HOUR, REPORTS_PER_DAY } from '../lib/github-issues.server';
-import { MAX_RECEIPT_LENGTH, MCP_PROMPTS, MCP_TOOLS, OUTPUTS, SERVER_VERSION } from '../../packages/health-core/src/mcp-tools';
+import { OUTPUTS } from '../../packages/health-core/src/mcp-tools';
+import { MAX_RECEIPT_LENGTH, SERVER_VERSION } from '../../packages/health-core/src/mcp-tool-contract';
+import { MCP_PROMPTS, MCP_TOOLS } from '../../packages/health-core/src/mcp-tool-catalogue';
 import { mcpEndpoint, setAdapterFactory } from '../lib/mcp.server';
 import { MAX_CORRECTION_AGE_DAYS } from '../lib/mcp-corrections.server';
 import { MAX_STATE_LENGTH } from '../lib/mcp-authorize.server';
@@ -1776,7 +1778,7 @@ describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, A
 // US-37 — the folder nudge on a read
 // ---------------------------------------------------------------------------
 import { FOLDER_LIST_TIMEOUT_MS } from '../lib/mcp.server';
-import { FOLDER_NUDGE_HINT } from '../../packages/health-core/src/mcp-tools';
+import { FOLDER_NUDGE_HINT } from '../../packages/health-core/src/mcp-import';
 
 function importEvents(): unknown[] {
   return serverEvents((name) => name === 'mcp_import').map(([, meta]) => meta);
@@ -2024,7 +2026,7 @@ describe('US-36 — file_results: propose parks a receipt and charges one, commi
 // US-32 AC28/AC29 — the open-source note, and why a refusal was refused
 // ---------------------------------------------------------------------------
 import { INSTRUCTIONS } from '../lib/mcp.server';
-import { OPEN_SOURCE_NOTE, SI_NOTE } from '../../packages/health-core/src/mcp-tools';
+import { OPEN_SOURCE_NOTE, SI_NOTE } from '../../packages/health-core/src/mcp-tool-contract';
 import { REPO_PUBLIC, REPO_URL } from '../../packages/health-core/src/plan';
 import { MCP_REFUSAL_REASONS } from '../../packages/health-core/src/product-events';
 

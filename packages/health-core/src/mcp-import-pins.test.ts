@@ -18,15 +18,9 @@ import { createCoreRow } from './blood-tests';
 import { createEmptyFile, createMeasurement, type RoadmapFile } from './roadmap-file';
 import { LAB_ARCHIVE_TITLE } from './document-path';
 import { zipMemberName, type UnifiedExtractionResult } from './lab-extraction';
-import {
-  MAX_IMPORT_CANDIDATES,
-  runToolOverSync,
-  type ExtractedFile,
-  type ImportBundle,
-  type ImportPayload,
-  type ImportSurface,
-  type ToolAnswer,
-} from './mcp-tools';
+import { runToolOverSync, type ToolAnswer } from './mcp-tools';
+import { MAX_IMPORT_CANDIDATES } from './mcp-tool-contract';
+import { type ExtractedFile, type ImportBundle, type ImportPayload, type ImportSurface } from './mcp-import';
 
 const NOW = '2026-09-01T09:00:00Z';
 const TODAY = NOW.slice(0, 10);

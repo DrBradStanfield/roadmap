@@ -449,5 +449,5 @@ final class NetworkReturn {
 extension HealthEngine {
     /// The network came back: retry a failed save (US-09 AC30). An optional door: nil from an
     /// engine without it, and nothing is retried on this trigger.
-    func cloudOnline() throws -> String? { try optionalCall("cloudOnline", []) }
+    func cloudOnline() throws -> String? { try doorCloudOnline() }
 }

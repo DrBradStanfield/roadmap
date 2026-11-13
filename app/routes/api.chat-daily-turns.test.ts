@@ -19,8 +19,9 @@ vi.mock('../lib/route-helpers.server', async (original) => ({
 }));
 vi.mock('../shopify.server', () => ({ authenticate: { public: { appProxy: vi.fn() } } }));
 // The turn claim's store (US-15 AC63): absent here, so its client never warns about missing env.
-vi.mock('../lib/supabase-client.server', () => ({ supabaseAdmin: null }));
-vi.mock('../lib/supabase.server', () => {
+vi.mock('../lib/supabase-client.server', () => ({ supabaseAdmin: null, createUserClient: supa.createUserClient }));
+// api.chat.ts imports these from their defining modules (S-14).
+const supa = vi.hoisted(() => {
   const query: any = {};
   for (const method of ['select', 'eq', 'order', 'limit', 'single', 'maybeSingle', 'update', 'delete', 'insert']) query[method] = () => query;
   query.then = (resolve: any, reject: any) => Promise.resolve({ data: [], error: null }).then(resolve, reject);
@@ -31,6 +32,9 @@ vi.mock('../lib/supabase.server', () => {
     GuestRateLimitError: class extends Error {},
   };
 });
+vi.mock('../lib/supabase-identity.server', async (o) => ({ ...await o<object>(), logAudit: supa.logAudit }));
+vi.mock('../lib/supabase-guest.server', async (o) => ({ ...await o<object>(), getOrCreateGuestSession: supa.getOrCreateGuestSession, GuestRateLimitError: supa.GuestRateLimitError }));
+vi.mock('../lib/supabase-account.server', async (o) => ({ ...await o<object>(), getProfile: supa.getProfile, updateSubscriptionPlan: supa.updateSubscriptionPlan }));
 vi.mock('../lib/chat.server', async (original) => ({
   resolveChatContext: () => ({ userContextJson: '{}' }),
   buildSystemBlocks: () => [], buildConversationMessages: () => [],

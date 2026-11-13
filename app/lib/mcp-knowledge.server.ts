@@ -20,7 +20,8 @@ import { isMaster, loadBlogIndex, type BlogIndexEntry } from './blog-index.serve
 import { loadBlogArticle } from './matched-content';
 import { parseFrontmatter, stripFrontmatter } from './frontmatter';
 import { routerView } from './router-view';
-import type { McpToolDefinition, ToolAnswer } from '../../packages/health-core/src/mcp-tools';
+import type { ToolAnswer } from '../../packages/health-core/src/mcp-tools';
+import type { McpToolDefinition } from '../../packages/health-core/src/mcp-tool-catalogue';
 
 /** The switch. Only the exact word `on` turns the tools on; unset, empty or anything else is off. */
 export function knowledgeToolsEnabled(): boolean {

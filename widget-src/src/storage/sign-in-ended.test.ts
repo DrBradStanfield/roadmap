@@ -428,7 +428,7 @@ describe('US-09 AC48 (lead A3, Codex R3): a Dropbox sign-in from before the conf
   });
 });
 
-describe('US-09 AC50 (lead A29): a Drive access token Drive turned down is used by no adapter again', () => {
+describe('US-09 AC51 (lead A29): a Drive access token Drive turned down is used by no adapter again', () => {
   const POPUP = () => ({ accessToken: 'test-token-old', expiresAt: Date.now() + 3_600_000 });
   const NEW_GRANT = () => ({ accessToken: 'test-token-new', expiresAt: Date.now() + 3_600_000 });
   const sentWith = (token: string) => calls.filter((c) => c.auth === `Bearer ${token}`).length;

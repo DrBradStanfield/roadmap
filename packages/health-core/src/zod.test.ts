@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import * as z from './zod';
-import { addMeasurementInput } from './mcp-tools';
+import { addMeasurementInput } from './mcp-tool-contract';
 
 const repo = new URL('../../..', import.meta.url).pathname;
 

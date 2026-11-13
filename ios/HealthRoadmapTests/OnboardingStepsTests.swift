@@ -105,7 +105,7 @@ final class OnboardingStepsTests: XCTestCase {
     // US-54 AC6: the height and weight unit switches are for entry only. These run the
     // real engine's conversion (convertJson), as the screens do.
     private let engine = try! HealthEngine()
-    private func convert(_ value: Double, _ metric: String, _ from: String, _ to: String) async -> HealthEngine.Conversion? {
+    private func convert(_ value: Double, _ metric: String, _ from: String, _ to: String) async -> UnitConversion? {
         try? await engine.convert(value, metric: metric, from: from, to: to)
     }
 

@@ -457,6 +457,17 @@ describe('US-09 AC48 (lead A3, Codex R1): every exit from a clean session keeps 
     expect(await deviceWeights()).toMatchObject({ [SEEDED.day]: SEEDED.value });
   });
 
+  it.each(['google-drive', 'dropbox'] as const)('%s: US-09 AC50: the page read its cloud, so an old copy stored here asks nothing', async (cloud) => {
+    await revokeCleanSession(cloud);
+    // A copy stored here by an earlier visit, as a connect's lift leaves one (lead A30).
+    localStorage.setItem('health_roadmap_file_v2', cloud === 'dropbox' ? dropboxFile!.body : driveFiles.find((f) => f.name === ROADMAP_FILE_NAME)!.content);
+    fireEvent.click(button('Use this browser only')!);
+    expect(document.body.textContent).not.toMatch(/may be out of date|has no copy/);
+    await until(() => reload.mock.calls.length > 0, 'the reload');
+    expect(localStorage.getItem(BACKEND_KEY)).toBeNull();
+    expect(await deviceWeights()).toMatchObject({ [SEEDED.day]: SEEDED.value }); // the page's current record, copied here
+  });
+
   it('google-drive: a copy that fails for another reason (a full disk) stops "Use this browser only" and says so in the device-save words', async () => {
     await revokeCleanSession('google-drive');
     const setItem = Storage.prototype.setItem;

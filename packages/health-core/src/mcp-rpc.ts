@@ -10,7 +10,9 @@
  *
  * Nothing here reads the clock, the filesystem or the network.
  */
-import { MCP_PROMPTS, MCP_TOOLS, SERVER_VERSION, toolContent, type McpToolDefinition, type ToolAnswer } from './mcp-tools';
+import { toolContent, type ToolAnswer } from './mcp-tools';
+import { SERVER_VERSION } from './mcp-tool-contract';
+import { MCP_PROMPTS, MCP_TOOLS, type McpToolDefinition } from './mcp-tool-catalogue';
 
 /** The revision both servers speak. The hosted one also accepts older ones. */
 export const PROTOCOL_VERSION = '2025-11-25';

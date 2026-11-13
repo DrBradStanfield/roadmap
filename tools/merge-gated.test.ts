@@ -27,15 +27,17 @@ printf '%s\\t' "$@" >> "$LOG"; echo >> "$LOG"
 [ -n "\${GH_PARENT:-}" ] && ps -o args= -p "$PPID" >> "$GH_PARENT"
 case "$*" in *"\${GH_FAIL:-@@none@@}"*) echo "gh: HTTP 502" >&2; exit 1 ;; esac
 case "$*" in *"\${GH_HANG:-@@none@@}"*) trap '' ALRM TERM; sleep 30; exit 0 ;; esac
-jqf=; prev=; st=; lim=20
-for a in "$@"; do [ "$prev" = --jq ] && jqf=$a; [ "$prev" = --status ] && st=$a; [ "$prev" = --limit ] && lim=$a; prev=$a; done
+jqf=; prev=; st=; ev=; lim=20
+for a in "$@"; do [ "$prev" = --jq ] && jqf=$a; [ "$prev" = --status ] && st=$a; [ "$prev" = --event ] && ev=$a; [ "$prev" = --limit ] && lim=$a; prev=$a; done
 json() { printf '%s\\n' "$1" | jq -r "$jqf"; }
 case "$*" in
   *"pr view"*state,headRefOid*) json "$PR" ;;
   *"pr view"*changedFiles*) json "$FILES" ;;
   *"pr view"*statusCheckRollup*) json "{\\"statusCheckRollup\\":$ROLLUP}" ;;
   *"pr view"*labels*) json "{\\"labels\\":$LABELS}" ;;
-  *"run list --workflow ci.yml --branch main"*) json "$MAINRUNS" ;;
+  # Main's runs: newest first, filtered by --event, then cut to --limit, as the API does.
+  *"run list --workflow ci.yml --branch main"*) json "$(printf '%s\\n' "$MAINRUNS" | jq -c --arg e "$ev" --argjson n "$lim" \\
+      '[.[] | select($e == "" or .event == $e)] | sort_by(.createdAt, .databaseId) | reverse | .[0:$n]')" ;;
   *"run list"*ci.yml*) json "$CIRUNS" ;;
   *"run list"*deploy.yml*) runs=$RUNS
     # FLIP=<id>:<k>: in the status-filtered reads, run <id> is pending for the first k and in_progress after.
@@ -438,6 +440,56 @@ describe('US-64 AC32 merge-gated.sh', () => {
       expect(r.status).toBe(0);
       expect(r.merges).toEqual([MERGE_ARGV]);
       expect(r.stderr).toMatch(/merge-gated: note: .*comment.*failed/);
+    });
+    describe('T-14: re-runs of older runs, the fix-main comment, the run-list limit', () => {
+      const rerun = (id: number, createdAt: string, status = 'in_progress') => mainRun(id, createdAt, null, 'push', status, 2);
+      it('(a) a re-run of an older run, still going under a newer first attempt (running or cancelled), is red (18)', () => {
+        const green = mainRun(70, '2026-11-13T01:00:00Z');
+        for (const newer of [mainRun(79, '2026-11-13T06:00:00Z', null, 'push', 'in_progress'), mainRun(79, '2026-11-13T06:00:00Z', 'cancelled')]) {
+          for (const status of ['in_progress', 'queued']) {
+            const r = gate(['123', SHA], { main: [newer, rerun(77, '2026-11-13T05:00:00Z', status), green] });
+            expect(r.status).toBe(18);
+            expect(r.stderr).toContain('https://github.com/o/r/actions/runs/77');
+            expect(r.stderr).toContain('re-run (attempt 2)');
+            expect(r.merges).toEqual([]);
+          }
+        }
+      });
+      it('(a) a re-run created at the same moment as the judged run counts; one older than the judged run does not', () => {
+        const judged = mainRun(80, '2026-11-13T05:00:00Z');
+        expect(gate(['123', SHA], { main: [judged, rerun(77, '2026-11-13T05:00:00Z')] }).status).toBe(18);
+        expect(gate(['123', SHA], { main: [judged, rerun(77, '2026-11-13T04:00:00Z')] }).status).toBe(0);
+      });
+      it('(b) the fix-main comment says re-running for a re-run and red for a red run', () => {
+        const fix = { labels: [{ name: 'fix-main' }] };
+        const body = (main: unknown[]) => {
+          const r = gate(['123', SHA], { main, ...fix });
+          expect(r.status).toBe(0);
+          return r.calls.find((c) => c[0] === 'pr' && c[1] === 'comment')![4];
+        };
+        const re = body([rerun(77, '2026-11-13T05:00:00Z'), ...MAIN_GREEN]);
+        expect(re).toContain('re-running (run 77)');
+        expect(re).not.toMatch(/\bred\b/);
+        const red = body([mainRun(77, '2026-11-13T05:00:00Z', 'failure')]);
+        expect(red).toContain('red (run 77)');
+        expect(red).not.toContain('re-running');
+      });
+      it('(c) 20 newer fork pull_request runs on a branch named main do not hide main\'s own runs', () => {
+        const forks = Array.from({ length: 20 }, (_, i) => mainRun(900 + i, `2026-11-13T10:${String(i).padStart(2, '0')}:00Z`, 'failure', 'pull_request'));
+        const ok = gate(['123', SHA], { main: [...forks, ...MAIN_GREEN] });
+        expect(ok.status).toBe(0);
+        expect(ok.merges).toEqual([MERGE_ARGV]);
+        for (const event of ['push', 'schedule', 'workflow_dispatch']) {
+          const r = gate(['123', SHA], { main: [...forks, mainRun(77, '2026-11-13T05:00:00Z', 'failure', event)] });
+          expect(r.status).toBe(18);
+          expect(r.stderr).toContain('actions/runs/77 ended failure');
+        }
+        // Only pull_request runs: still nothing to judge (4).
+        expect(gate(['123', SHA], { main: forks }).status).toBe(4);
+      });
+      it('(c) a run of another event still counts, through the unfiltered list', () => {
+        expect(gate(['123', SHA], { main: [mainRun(77, '2026-11-13T05:00:00Z', 'failure', 'merge_group'), ...MAIN_GREEN] }).status).toBe(18);
+      });
     });
     it('refuses 4 when gh fails or main has no completed run to judge', () => {
       const red = [mainRun(77, '2026-11-13T05:00:00Z', 'failure')];

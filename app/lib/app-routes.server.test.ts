@@ -15,13 +15,17 @@ const mocks = vi.hoisted(() => ({
   rootPem: '',
 }));
 vi.mock('../shopify.server', () => ({ authenticate: { public: { appProxy: vi.fn() } } }));
-vi.mock('./supabase-client.server', () => ({ supabaseAdmin: null }));
-vi.mock('./supabase.server', () => ({
+vi.mock('./supabase-client.server', () => ({ supabaseAdmin: null, createUserClient: supa.createUserClient }));
+// api.chat.ts imports these from their defining modules (S-14).
+const supa = vi.hoisted(() => ({
   logAudit: mocks.audit, getProfile: vi.fn(async () => null), updateSubscriptionPlan: vi.fn(),
   createUserClient: vi.fn(() => ({ from: mocks.from })),
   getOrCreateGuestSession: mocks.guest,
   GuestRateLimitError: class extends Error {},
 }));
+vi.mock('./supabase-identity.server', async (o) => ({ ...await o<object>(), logAudit: supa.logAudit }));
+vi.mock('./supabase-guest.server', async (o) => ({ ...await o<object>(), getOrCreateGuestSession: supa.getOrCreateGuestSession, GuestRateLimitError: supa.GuestRateLimitError }));
+vi.mock('./supabase-account.server', async (o) => ({ ...await o<object>(), getProfile: supa.getProfile, updateSubscriptionPlan: supa.updateSubscriptionPlan }));
 vi.mock('./chat.server', async (original) => ({
   resolveChatContext: (inputs: unknown) => ({ userContextJson: JSON.stringify(inputs ?? null) }),
   buildSystemBlocks: () => [],

@@ -40,15 +40,24 @@ function fakeClient(client: 'user' | 'admin') {
 vi.mock('../lib/supabase-client.server', async (importOriginal) => {
   const real = await importOriginal<typeof import('../lib/supabase-client.server')>();
   const admin = fakeClient('admin');
-  return { ...real, get supabaseAdmin() { return db.active ? admin : real.supabaseAdmin; } };
-});
-vi.mock('../lib/supabase.server', async (importOriginal) => {
-  const real = await importOriginal<typeof import('../lib/supabase.server')>();
   return {
     ...real,
+    get supabaseAdmin() { return db.active ? admin : real.supabaseAdmin; },
     createUserClient: (id: string) => (db.active ? fakeClient('user') : real.createUserClient(id)),
+  };
+});
+vi.mock('../lib/supabase-guest.server', async (importOriginal) => {
+  const real = await importOriginal<typeof import('../lib/supabase-guest.server')>();
+  return {
+    ...real,
     getOrCreateGuestSession: async (...a: Parameters<typeof real.getOrCreateGuestSession>) =>
       (db.active ? { sessionId: 'guest-1', sessionToken: 'tok' } : real.getOrCreateGuestSession(...a)),
+  };
+});
+vi.mock('../lib/supabase-identity.server', async (importOriginal) => {
+  const real = await importOriginal<typeof import('../lib/supabase-identity.server')>();
+  return {
+    ...real,
     logAudit: (...a: Parameters<typeof real.logAudit>) => (db.active ? undefined : real.logAudit(...a)),
   };
 });
