@@ -134,11 +134,15 @@ describe('Dropbox (US-09 AC30)', () => {
     expect(await retryAfterFailedSave(new DropboxAdapter(CONFIG))).toBeNull();
   });
 
-  it('a token endpoint that answers 400 for another reason, or 500, is retried', async () => {
+  it('a token endpoint that answers 400 for another reason is a refused sign-in too, never retried (US-09 AC48, Q2)', async () => {
     local.set(DROPBOX_TOKENS, JSON.stringify(expired));
     vi.stubGlobal('fetch', vi.fn(async () => reply(400, { error: 'invalid_request' })));
-    expect((await readError(new DropboxAdapter(CONFIG))).reason).toBeUndefined();
-    expect(await retryAfterFailedSave(new DropboxAdapter(CONFIG))).not.toBeNull();
+    expect((await readError(new DropboxAdapter(CONFIG))).reason).toBe('reconnect');
+    expect(await retryAfterFailedSave(new DropboxAdapter(CONFIG))).toBeNull();
+  });
+
+  it('a token endpoint that answers 500 is retried', async () => {
+    local.set(DROPBOX_TOKENS, JSON.stringify(expired));
     vi.stubGlobal('fetch', vi.fn(async () => reply(500, { error: 'server_error' })));
     expect((await readError(new DropboxAdapter(CONFIG))).reason).toBeUndefined();
   });
