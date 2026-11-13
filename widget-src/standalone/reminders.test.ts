@@ -997,7 +997,7 @@ describe('US-17 — turning reminders off is counted', () => {
     await cancelReminders();
 
     expect(postedBody(f)).toEqual({ op: 'cancel', token: 'cap-token', idToken: 'signed-id-token' });
-    expect(setReminderOptIn).toHaveBeenCalledWith({ ...ACTIVE, status: 'cancelled' });
+    expect(setReminderOptIn).toHaveBeenCalledWith({ ...ACTIVE, status: 'cancelled' }, '[0,null]');
     // Tagged with the lane (US-23: typed and cloud ratios are judged apart).
     expect(trackProductEvent).toHaveBeenCalledWith('reminder_optout', { provider: 'google-drive' });
   });
@@ -1042,7 +1042,7 @@ describe('US-07 AC6 — a known minor is never enrolled and their schedule is ne
     expect(f).toHaveBeenCalledTimes(1);
     expect(postedBody(f).op).toBe('cancel');
     expect(postedBody(f).token).toBe('cap-token');
-    expect(setReminderOptIn).toHaveBeenCalledWith(expect.objectContaining({ status: 'cancelled' }));
+    expect(setReminderOptIn).toHaveBeenCalledWith(expect.objectContaining({ status: 'cancelled' }), '[0,null]');
   });
 
   // Amended 2026-10-14: the cancel is the age gate's, not the user's opt-out,
@@ -1052,7 +1052,7 @@ describe('US-07 AC6 — a known minor is never enrolled and their schedule is ne
     mockFetchOk({ success: true });
     const { pushReminderSchedule } = await loadReminders();
     await pushReminderSchedule('google-drive');
-    expect(setReminderOptIn).toHaveBeenCalledWith(expect.objectContaining({ status: 'cancelled' }));
+    expect(setReminderOptIn).toHaveBeenCalledWith(expect.objectContaining({ status: 'cancelled' }), '[0,null]');
     expect(trackProductEvent).not.toHaveBeenCalled();
   });
 

@@ -387,10 +387,14 @@ export async function cancelRemindersForErase(): Promise<void> {
 export async function cancelReminders({ count = true, keepalive = false } = {}): Promise<void> {
   const optIn = getReminderOptIn();
   if (!optIn) return;
+  // The record this Turn off was asked for: an erase that lands during the
+  // cancel leaves reminders off already, and the old opt-in (its address and
+  // token) is refused, not written into the erased record (US-11 AC4b).
+  const erase = getShownErase();
   const idToken = keepalive ? null : await cancelProofFor(optIn.provider);
   const res = await postCancel(optIn.token, idToken, keepalive);
   if (!res.ok) throw new Error(`Could not turn reminders off (${res.status}). Please retry.`);
-  setReminderOptIn({ ...optIn, status: 'cancelled' });
+  setReminderOptIn({ ...optIn, status: 'cancelled' }, erase);
   await flushRoadmapStore();
   // The optout:optin ratio is US-17's kill criterion — it only works if BOTH
   // sides are counted (the opt-in side has fired since 2026-08-06), and per

@@ -21,6 +21,7 @@ const getReminderIdToken = vi.fn<() => Promise<string | null>>(async () => null)
 vi.mock('../../widget-src/src/lib/roadmap-data', () => ({
   getReminderOptIn: () => getReminderOptIn(),
   setReminderOptIn: vi.fn(),
+  getShownErase: () => '[0,null]',
   flushRoadmapStore: vi.fn(async () => {}),
   computeCurrentReminderSchedule: () => [],
   isKnownMinorNow: () => isKnownMinorNow(),
