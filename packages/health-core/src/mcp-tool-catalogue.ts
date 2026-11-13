@@ -2,26 +2,28 @@
  * The tool surface an MCP client sees: `MCP_TOOLS` and `MCP_PROMPTS`, the
  * published text. Split out of `mcp-tools.ts`, which re-exports it (issue #429).
  */
-import { ISO_DATE } from './measurement-history';
-import { DOCUMENT_CLASSIFICATIONS, MAX_FILE_NAME_LENGTH, MAX_NAME_LENGTH, VALID_METRICS } from './lab-extraction';
+import { MAX_FILE_NAME_LENGTH, VALID_METRICS } from './lab-extraction';
 import { REPO_PUBLIC } from './plan';
 import { COMPARATORS } from './lab-limits';
 import { DROPBOX_APP_FOLDER, IMPORT_ACCEPTED_TYPES, IMPORT_FILE_REASONS } from './import-hints';
-import { DOCUMENT_TYPES, METRIC_TYPES } from './validation';
+import { METRIC_TYPES } from './validation';
+import * as z from './zod';
+import { PROFILE_FIELDS } from './profile-fields';
 import {
+  addLabValuesInput,
+  addMeasurementInput,
+  correctValueInput,
+  fileResultsInput,
+  getPlanInput,
   IMPORT_FILE_STATUSES,
   IMPORT_ROUTES,
-  MAX_APPROVAL_LENGTH,
-  MAX_CANDIDATE_ID_LENGTH,
-  MAX_DOCUMENT_TEXT,
-  MAX_ID_LENGTH,
-  MAX_IMPORT_CANDIDATES,
-  MAX_IMPORT_FILES_PER_CALL,
+  importDocumentsInput,
   MAX_LAB_ROWS_PER_CALL,
-  MAX_RECEIPT_LENGTH,
   OFF_CATALOGUE_NOTE,
-  PROFILE_FIELDS,
+  readRecordInput,
+  reportFeedbackInput,
   SLOT_STATES,
+  updateProfileInput,
 } from './mcp-tool-contract';
 import { canonicalFeedback, HIDDEN_ISSUE } from './mcp-feedback';
 import { fileResultsTool, FOLDER_NUDGE_MAX, importDocumentsTool, type ImportTool } from './mcp-import';
@@ -99,6 +101,55 @@ export interface McpToolDefinition {
   };
 }
 
+/**
+ * The order every published schema node's keys take. Clients read tools/list byte for byte
+ * (mcp-tools-list.golden.json, US-32 AC51a), and zod emits its own order; keys not named here follow, as emitted.
+ */
+const KEY_ORDER = ['type', 'enum', 'minItems', 'maxItems', 'items', 'pattern', 'maxLength', 'description', 'properties', 'required', 'additionalProperties'];
+
+/**
+ * Nodes published in an order of their own, by path. The hand-written schemas disagreed: this array put
+ * `description` before `items`, the other two after. Kept so tools/list stays byte-identical while its pins
+ * are a tripwire (mcp-freeze.test.ts); lead A3-4c drops it the next time those pins are re-taken.
+ */
+export const KEY_ORDER_EXCEPTIONS: Readonly<Record<string, readonly string[]>> = {
+  'file_results.properties.values': ['type', 'maxItems', 'description', 'items'],
+};
+
+/** One zod-emitted JSON Schema node at `path`, in the shape tools/list has always published. */
+function publishedNode(node: Record<string, unknown>, path: string): Record<string, unknown> {
+  let out: Record<string, unknown> = { ...node };
+  delete out.$schema;
+  // `x.nullable()` comes out as `anyOf: [x, {type: 'null'}]`; tools/list says `type: [x, 'null']`.
+  const anyOf = out.anyOf as Array<Record<string, unknown>> | undefined;
+  if (anyOf?.length === 2 && anyOf[1].type === 'null' && Object.keys(anyOf[1]).length === 1) {
+    const { anyOf: _, ...rest } = out;
+    const inner = anyOf[0];
+    out = { ...inner, ...rest, type: [inner.type, 'null'], ...(inner.enum ? { enum: [...(inner.enum as unknown[]), null] } : {}) };
+  }
+  // Two bounds zod enforces that tools/list has never published, left out to keep the list inside ChatGPT's
+  // budget (US-36 AC11): `.int()`'s safe-integer range, and `.min(1)` on a string. Zod still refuses both.
+  if (out.type === 'integer' || (Array.isArray(out.type) && out.type[0] === 'integer')) {
+    if (out.minimum === Number.MIN_SAFE_INTEGER) delete out.minimum;
+    if (out.maximum === Number.MAX_SAFE_INTEGER) delete out.maximum;
+  }
+  if (out.minLength === 1) delete out.minLength;
+  if (out.items) out.items = publishedNode(out.items as Record<string, unknown>, `${path}.items`);
+  if (out.properties) {
+    out.properties = Object.fromEntries(Object.entries(out.properties as Record<string, Record<string, unknown>>)
+      .map(([key, child]) => [key, publishedNode(child, `${path}.properties.${key}`)]));
+  }
+  const order = KEY_ORDER_EXCEPTIONS[path] ?? KEY_ORDER;
+  const keys = Object.keys(out);
+  const ordered = [...order.filter((key) => key in out), ...keys.filter((key) => !order.includes(key))];
+  return Object.fromEntries(ordered.map((key) => [key, out[key]]));
+}
+
+/** Tool `name`'s `inputSchema`, generated from the zod schema that validates its arguments: one source (US-32 AC51b). */
+function inputSchemaOf(name: string, schema: z.ZodObject): ToolInputSchema {
+  return publishedNode(z.toJSONSchema(schema, { io: 'input' }) as Record<string, unknown>, name) as unknown as ToolInputSchema;
+}
+
 /** The two ChatGPT strings, in one line per tool instead of four. */
 function invocation(invoking: string, invoked: string): McpToolDefinition['_meta'] {
   return { 'openai/toolInvocation/invoking': invoking, 'openai/toolInvocation/invoked': invoked };
@@ -126,17 +177,12 @@ const PROPOSAL_SCHEMA = {
   confirmFrom: { type: 'string', description: 'When the receipt becomes usable. Do not call before it.' },
 } as const;
 const TWO_PHASE_NOTE = ' On the hosted server this takes two calls: the first answers with what it would do and a `confirm` receipt; show it to the user and call again with `confirm` and `approval` (the user’s own words, quoted verbatim) only after their own yes, in their own words.';
-const CONFIRM_SCHEMA = { type: 'string', maxLength: MAX_RECEIPT_LENGTH, description: 'Hosted server, second call only: the receipt the first call returned, after the user’s own yes.' } as const;
-/** `approval`, published bare to fit tools/list (US-36 AC11): its name and the descriptions say what it carries; the hosted server refuses a blank one. */
-const APPROVAL_SCHEMA = { type: 'string', maxLength: MAX_APPROVAL_LENGTH } as const;
-
-/** A permanent tool, published as two-phase (US-36 AC9): the flag, the sentence, `confirm` in, the proposal fields out — from one call. */
+/** A permanent tool, published as two-phase (US-36 AC9): the flag, the sentence and the proposal fields out — from one call. `confirm` and `approval` in come from its zod schema. */
 function twoPhase(def: McpToolDefinition): McpToolDefinition {
   return {
     ...def,
     twoPhase: true,
     description: def.description + TWO_PHASE_NOTE,
-    inputSchema: { ...def.inputSchema, properties: { ...def.inputSchema.properties, confirm: CONFIRM_SCHEMA, approval: APPROVAL_SCHEMA } },
     outputSchema: { ...def.outputSchema, properties: { ...def.outputSchema.properties, ...PROPOSAL_SCHEMA } },
   };
 }
@@ -341,14 +387,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
       'Sync bookkeeping is left out. Blood tests are in labValues, the plan\'s flagged `core`. Values ' +
       'are SI (`units`). A catalogued lab is converted to SI; an unknown test keeps the unit it was reported in. ' +
       'A `comparator` marks a limit, not the number.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        metric: { type: 'string', maxLength: MAX_NAME_LENGTH, description: 'One metric or test name, e.g. "ldl" or "ferritin". Omit for everything.' },
-        since: { ...DAY_SCHEMA, description: 'Only rows recorded on or after this day.' },
-      },
-      additionalProperties: false,
-    },
+    inputSchema: inputSchemaOf('read_record', readRecordInput),
     outputSchema: {
       type: 'object',
       properties: RECORD_SECTIONS,
@@ -369,7 +408,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
       'raw values, history and row ids. Fill `missingInputs` from the user via add_measurement ' +
       'or update_profile. "> 60" is a limit, not the number. ' +
       'This is the app’s own protocol, computed offline from the file; it is educational, not medical advice.',
-    inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+    inputSchema: inputSchemaOf('get_plan', getPlanInput),
     outputSchema: {
       type: 'object',
       properties: PLAN_SECTIONS,
@@ -388,17 +427,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
       '`unit` with the unit it was reported in and it is converted. One value per metric per day: if that day ' +
       'already holds a value the call is refused and you should use correct_value instead. Only when the user ' +
       'asked to add a value; a failed correction is never turned into an add.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        metricType: { type: 'string', enum: [...METRIC_TYPES], maxLength: MAX_NAME_LENGTH, description: 'The core metric.' },
-        value: { type: 'number', description: 'The number, in SI units unless `unit` says otherwise.' },
-        unit: { type: 'string', maxLength: MAX_NAME_LENGTH, description: 'The unit `value` is in, e.g. "mg/dL". Omit if it is already SI.' },
-        recordedAt: { ...DAY_SCHEMA, description: 'The user’s local calendar date, YYYY-MM-DD. Ask if you do not know it.' },
-      },
-      required: ['metricType', 'value', 'recordedAt'],
-      additionalProperties: false,
-    },
+    inputSchema: inputSchemaOf('add_measurement', addMeasurementInput),
     outputSchema: {
       type: 'object',
       properties: {
@@ -421,31 +450,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
       'Give the number and unit exactly as printed; never convert. A catalogued test is stored in SI (bounds too); an ' +
       'unknown spelling is refused, naming those it takes, as is a cells/µL count not whole or off its range\'s scale. ' +
       'Writes all rows or none. Only when the user asked to add a value; a failed correction is never turned into an add.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        values: {
-          type: 'array',
-          minItems: 1,
-          maxItems: MAX_LAB_ROWS_PER_CALL,
-          items: {
-            type: 'object',
-            properties: {
-              metricName: { type: 'string', maxLength: MAX_NAME_LENGTH, description: 'The test name, e.g. "ferritin".' },
-              value: { type: 'number', description: 'The lab’s number, as printed.' },
-              unit: { type: 'string', maxLength: MAX_NAME_LENGTH, description: 'The unit as the lab printed it.' },
-              referenceLow: { type: ['number', 'null'], description: 'Lower reference bound, if the report gives one.' },
-              referenceHigh: { type: ['number', 'null'], description: 'Upper reference bound, if the report gives one.' },
-              recordedAt: { ...DAY_SCHEMA, description: 'The user’s local calendar date, YYYY-MM-DD. Ask if you do not know it.' },
-            },
-            required: ['metricName', 'value', 'unit', 'recordedAt'],
-            additionalProperties: false,
-          },
-        },
-      },
-      required: ['values'],
-      additionalProperties: false,
-    },
+    inputSchema: inputSchemaOf('add_lab_values', addLabValuesInput),
     outputSchema: {
       type: 'object',
       properties: {
@@ -481,17 +486,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
       'row’s stored unit. Read the record first: you need the row id, and `expectedValue` — the value you believe ' +
       'the row holds right now. On the hosted server it is required and the call is refused without it; ' +
       'everywhere, a mismatch refuses the call and writes nothing.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        id: { type: 'string', maxLength: MAX_ID_LENGTH, description: 'The id of the active row to correct.' },
-        newValue: { type: 'number', description: 'The corrected number.' },
-        unit: { type: 'string', maxLength: MAX_NAME_LENGTH, description: 'The unit `newValue` is in. Omit when it already is the row’s stored unit.' },
-        expectedValue: { type: 'number' },
-      },
-      required: ['id', 'newValue'],
-      additionalProperties: false,
-    },
+    inputSchema: inputSchemaOf('correct_value', correctValueInput),
     outputSchema: {
       type: 'object',
       properties: {
@@ -517,27 +512,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
       'is there now, read from the record first — a mismatch refuses the call and writes nothing. This ' +
       'overwrites: the profile is one last-write-wins object with no earlier version to read back. ' +
       'Display preferences (units) are not yours to change.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        sex: { type: 'string', enum: ['male', 'female'], description: 'The sex the plan is computed for.' },
-        birthYear: { type: 'integer', description: 'Year of birth, e.g. 1971.' },
-        birthMonth: { type: 'integer', description: 'Month of birth, 1–12.' },
-        heightCm: { type: 'number', description: 'Height in centimetres.' },
-        expected: {
-          type: 'object',
-          description: 'What you believe the record holds now, per field you are changing. `null` claims the field is unset.',
-          properties: {
-            sex: { type: ['string', 'null'], enum: ['male', 'female', null] },
-            birthYear: { type: ['integer', 'null'] },
-            birthMonth: { type: ['integer', 'null'] },
-            heightCm: { type: ['number', 'null'] },
-          },
-          additionalProperties: false,
-        },
-      },
-      additionalProperties: false,
-    },
+    inputSchema: inputSchemaOf('update_profile', updateProfileInput),
     outputSchema: {
       type: 'object',
       properties: {
@@ -576,16 +551,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
       'they want to track, or a result looks wrong.' +
       // US-32 AC39: while hidden the tokenless link would 404, so that path refuses and says so itself.
       (REPO_PUBLIC ? ' Without a GitHub token it returns a link for them to submit; the answer says which.' : ''),
-    inputSchema: {
-      type: 'object',
-      properties: {
-        kind: { type: 'string', enum: ['bug', 'feature'], description: 'Something broken, or something missing.' },
-        title: { type: 'string', maxLength: MAX_NAME_LENGTH, description: 'One line naming the problem.' },
-        detail: { type: 'string', maxLength: 2000, description: 'What happened, what you expected, and the steps — no names, contact details or values.' },
-      },
-      required: ['kind', 'title', 'detail'],
-      additionalProperties: false,
-    },
+    inputSchema: inputSchemaOf('report_feedback', reportFeedbackInput),
     outputSchema: {
       type: 'object',
       properties: {
@@ -637,45 +603,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
       'the receipt, `accept` (ids to file), `replace` (held_different ids the user wants overwritten; ' +
       'permanent, so name only what they asked for) and `approval` (the user’s own words, quoted). ' +
       'A file with no values (a clinic letter) is listed under `documents`; empty `accept` and `replace` file the documents alone.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        fileNames: {
-          type: 'array',
-          maxItems: MAX_IMPORT_FILES_PER_CALL,
-          items: { type: 'string', maxLength: MAX_FILE_NAME_LENGTH },
-          description: 'Folder route: the file names to read, as listed. Omit to read every importable file in the folder root.',
-        },
-        fileDates: {
-          type: 'array',
-          maxItems: MAX_IMPORT_FILES_PER_CALL,
-          items: {
-            type: 'object',
-            properties: {
-              file: { type: 'string', maxLength: MAX_FILE_NAME_LENGTH, description: 'The file name as listed in files.' },
-              date: { type: 'string', pattern: ISO_DATE.source, description: 'The date the test was taken, YYYY-MM-DD.' },
-            },
-            required: ['file', 'date'],
-            additionalProperties: false,
-          },
-          description: 'For a lab file that printed no date: the date the test was taken, from the user, e.g. [{ "file": "results.pdf", "date": "2026-08-12" }]. Wins over the file’s own date.',
-        },
-        fromNudge: { type: 'boolean', description: 'True when this import answers the folder list a read returned. Counted, nothing else.' },
-        commit: {
-          type: 'object',
-          description: 'Second step, on its own: the receipt from the extract and the user’s selection.',
-          properties: {
-            receipt: { type: 'string', maxLength: MAX_RECEIPT_LENGTH },
-            accept: { type: 'array', maxItems: MAX_IMPORT_CANDIDATES, items: { type: 'string', maxLength: MAX_CANDIDATE_ID_LENGTH } },
-            replace: { type: 'array', maxItems: MAX_IMPORT_CANDIDATES, items: { type: 'string', maxLength: MAX_CANDIDATE_ID_LENGTH } },
-            approval: APPROVAL_SCHEMA,
-          },
-          required: ['receipt', 'accept', 'replace'],
-          additionalProperties: false,
-        },
-      },
-      additionalProperties: false,
-    },
+    inputSchema: inputSchemaOf('import_documents', importDocumentsInput),
     outputSchema: IMPORT_OUTPUT_SCHEMA,
     // Not read-only (the commit writes), destructive (a replace flips a row for
     // good), not idempotent (a second commit of a spent receipt is refused),
@@ -706,60 +634,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
       'Step 2: show all of it and WAIT for the user’s own yes, then call again with commit: accept ids, replace only the ids ' +
       'the user asked to overwrite (permanent), and approval: the user’s own words, quoted. ' +
       'A letter with no values is filed from document by an empty commit.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        sourceFileName: { type: 'string', maxLength: MAX_FILE_NAME_LENGTH, description: 'The file’s own name, as the user gave it.' },
-        classification: { type: 'string', enum: [...DOCUMENT_CLASSIFICATIONS], description: 'lab_report for results; otherwise what the document is.' },
-        collectedOn: { ...DAY_SCHEMA, description: 'The sample/collection date, YYYY-MM-DD. Required for a lab report; ask the user if it is not printed.' },
-        values: {
-          type: 'array',
-          maxItems: MAX_LAB_ROWS_PER_CALL,
-          description: 'Every measured result line, as printed.',
-          items: {
-            type: 'object',
-            properties: {
-              metric: { type: 'string', maxLength: MAX_NAME_LENGTH, description: 'The core key, the catalogue test name, or the printed name.' },
-              printedName: { type: 'string', maxLength: MAX_NAME_LENGTH, description: 'The test name exactly as the report prints it.' },
-              value: { type: 'number', description: 'The number as printed.' },
-              unit: { type: 'string', maxLength: MAX_NAME_LENGTH, description: 'The unit exactly as printed beside the number.' },
-              referenceLow: { type: ['number', 'null'] },
-              referenceHigh: { type: ['number', 'null'] },
-              recordedAt: { ...DAY_SCHEMA, description: 'Only when this line’s date differs from collectedOn.' },
-              comparator: { type: 'string', enum: [...COMPARATORS] },
-            },
-            required: ['metric', 'printedName', 'value', 'unit'],
-            additionalProperties: false,
-          },
-        },
-        document: {
-          type: 'object',
-          description: 'For a letter, scan or other document: what to file. Optional beside lab values.',
-          properties: {
-            title: { type: 'string', maxLength: MAX_DOCUMENT_TEXT },
-            type: { type: 'string', enum: [...DOCUMENT_TYPES] },
-            date: { type: ['string', 'null'], pattern: ISO_DATE.source, description: 'The document’s own date, or null.' },
-            summary: { type: 'string', maxLength: MAX_DOCUMENT_TEXT, description: 'One line on what it is about.' },
-            sha256: { type: 'string', pattern: '^[0-9a-f]{64}$', description: 'Hex SHA-256 of the file bytes, when you can compute it.' },
-          },
-          required: ['title', 'type', 'date'],
-          additionalProperties: false,
-        },
-        commit: {
-          type: 'object',
-          description: 'Second step, on its own: the receipt from the first call and the user’s selection.',
-          properties: {
-            receipt: { type: 'string', maxLength: MAX_RECEIPT_LENGTH },
-            accept: { type: 'array', maxItems: MAX_IMPORT_CANDIDATES, items: { type: 'string', maxLength: MAX_CANDIDATE_ID_LENGTH } },
-            replace: { type: 'array', maxItems: MAX_IMPORT_CANDIDATES, items: { type: 'string', maxLength: MAX_CANDIDATE_ID_LENGTH } },
-            approval: APPROVAL_SCHEMA,
-          },
-          required: ['receipt', 'accept', 'replace'],
-          additionalProperties: false,
-        },
-      },
-      additionalProperties: false,
-    },
+    inputSchema: inputSchemaOf('file_results', fileResultsInput),
     outputSchema: IMPORT_OUTPUT_SCHEMA,
     // Not read-only (the commit writes), destructive (a replace flips a row for
     // good), not idempotent (a spent receipt is refused), CLOSED-world: nothing

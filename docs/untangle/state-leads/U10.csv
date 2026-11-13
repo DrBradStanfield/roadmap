@@ -1,2 +1,2 @@
 id,area,title,kind,status,evidence,pr,needs_brad
-U10,upload,"A value with an extractor question saves on the web but starts unticked on the phone",lead,not started,"web review-matrix.ts:290-296 prefills it; phone LabReviewView.swift:182 unticks it (US-52 AC8). Found during save-all (US-52 AC8b), Fable 2026-11-11: out of scope",,no
+U10,upload,A value with an extractor question saves on the web but starts unticked on the phone,lead,not started,"web review-matrix.ts:292-296 prefills it; phone LabReportSave.swift:30 unticks it (ticked = items with no question) (US-52 AC8). Found during save-all (US-52 AC8b), Fable 2026-11-11: out of scope",,no

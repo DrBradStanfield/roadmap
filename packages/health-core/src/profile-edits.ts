@@ -11,7 +11,8 @@
  *
  * Nothing here reads the clock, the filesystem or the network.
  */
-import { PROFILE_FIELDS, type ToolOutcome, type updateProfileInput } from './mcp-tool-contract';
+import type { ToolOutcome, updateProfileInput } from './mcp-tool-contract';
+import { PROFILE_FIELDS } from './profile-fields';
 import { oneLine } from './plan';
 import { readableView } from './readable-rows';
 import type { RoadmapFile, RoadmapProfile } from './roadmap-file';

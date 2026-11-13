@@ -1,2 +1,2 @@
 id,area,title,kind,status,evidence,pr,needs_brad
-S12,iPhone state,"Engine versions can sit in both bad and proven, and cancelled ids are never removed",lead,not started,"ios/HealthRoadmap/EngineUpdates/EngineFolder.swift:11-21, EngineBoot.swift:80-81; Engine/EngineNatives.swift:38-40,61. Small leak, no harm found. Not verified. iPhone survey 2026-11-11 (main fcc4ed9b) S12",,no
+S12,iPhone state,"Engine versions can sit in both bad and proven, and cancelled ids are never removed",lead,not started,"ios/HealthRoadmap/EngineUpdates/EngineFolder.swift:15-17,30-31, EngineBoot.swift:56,63,81,138; Engine/EngineNatives.swift:39-40,56,105. Small leak, no harm found. Not verified. iPhone survey 2026-11-11 (main fcc4ed9b) S12",,no
