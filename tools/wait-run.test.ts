@@ -4,7 +4,7 @@
  * `sleep` and `date` share a fake clock, so the 60 s floor, the backoff and the rate-limit sleep run instantly.
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
@@ -32,7 +32,7 @@ poll_n() { n=$((n+1)); echo $n > "$STATE"; [ "$n" = "\${FAIL_AT:-}" ] && exit 1;
 case "$*" in
   *rate_limit*) [ -n "\${RL_FAIL:-}" ] && exit 1; json "{\\"resources\\":{\\"core\\":{\\"remaining\\":\${RL_CORE:-4000},\\"reset\\":\${RL_RESET:-0}},\\"graphql\\":{\\"remaining\\":\${RL_GQL:-4000},\\"reset\\":\${RL_RESET:-0}}}}" ;;
   *actions/runs/*) if poll_n; then json '{"status":"completed"}'; else json "{\\"status\\":\\"\${RUN_STATUS:-in_progress}\\"}"; fi ;;
-  *"conclusion,headSha,jobs"*) [ -n "\${JOBS_FAIL:-}" ] && exit 1; [ -n "\${JOBS:-}" ] && { json "$JOBS"; exit; }; echo "conclusion=$CONCLUSION"; echo "head=abc123"; echo "job deploy=$CONCLUSION" ;;
+  *"conclusion,headSha,jobs"*) [ -n "\${JOBS_FAIL:-}" ] && exit 1; [ -n "\${JOBS:-}" ] && { json "$JOBS"; exit; }; printf 'conclusion=%b\\n' "$CONCLUSION"; echo "head=abc123"; echo "job deploy=$CONCLUSION" ;;
   *statusCheckRollup*) pend='[{"__typename":"CheckRun","name":"t","workflowName":"CI","status":"IN_PROGRESS","conclusion":""}]'
     [ -n "\${ROLLUP:-}" ] && pend=$ROLLUP
     # MERGE_SEQ: one mergeability per poll, '|'-separated; the last repeats.
@@ -55,6 +55,7 @@ cat "$STATE.clock" 2>/dev/null || echo 1000000
 `);
   writeFileSync(join(S, 'sleep'), `#!/bin/sh
 echo "$1" >> "$STATE.sleeps"
+[ -n "\${SLEEP_REAL:-}" ] && exec /bin/sleep "$SLEEP_REAL" >/dev/null 2>&1 # off the pipes, so close waits only for the script
 t=$(cat "$STATE.clock" 2>/dev/null || echo 1000000); echo $((t + $1)) > "$STATE.clock"
 `);
   chmodSync(join(S, 'date'), 0o755);
@@ -65,15 +66,17 @@ t=$(cat "$STATE.clock" 2>/dev/null || echo 1000000); echo $((t + $1)) > "$STATE.
 });
 afterAll(() => rmSync(S, { recursive: true, force: true }));
 
-function run(args: string[], env: Record<string, string> = {}) {
-  const state = join(S, `state-${Math.random()}`);
+function envFor(state: string, env: Record<string, string>) {
   const base = { ...process.env };
   delete base.WAIT_RUN_INTERVAL;
-  const r = spawnSync('sh', [SCRIPT, ...args], {
-    encoding: 'utf8',
-    env: { ...base, PATH: `${S}:${process.env.PATH}`, STATE: state,
-      CONCLUSION: 'success', HEALTH: '200', FAILS: '0', ...env },
-  });
+  delete base.WAIT_RUN_MAX_MIN;
+  return { ...base, PATH: `${S}:${process.env.PATH}`, STATE: state,
+    CONCLUSION: 'success', HEALTH: '200', FAILS: '0', ...env };
+}
+
+function run(args: string[], env: Record<string, string> = {}) {
+  const state = join(S, `state-${Math.random()}`);
+  const r = spawnSync('sh', [SCRIPT, ...args], { encoding: 'utf8', env: envFor(state, env) });
   const lines = (f: string) => (existsSync(f) ? readFileSync(f, 'utf8').trim().split('\n').filter(Boolean) : []);
   return { ...r, sleeps: lines(`${state}.sleeps`).map(Number), calls: lines(`${state}.calls`) };
 }
@@ -360,4 +363,55 @@ describe('wait-run.sh (US-64 AC26)', () => {
     expect(statusLines(r.stdout)).toHaveLength(1);
     expect(status(r.stdout).wait_run).toBe('run_failed');
   });
+  it('US-64 AC26: a bad WAIT_RUN_MAX_MIN (not a whole number) is a usage error: exit 2 and the usage line, before any gh call', () => {
+    for (const v of ['1.5', 'x', '-1', '9 0']) {
+      const r = run(['deploy', '123'], { WAIT_RUN_MAX_MIN: v });
+      expect({ v, code: r.status }).toEqual({ v, code: 2 });
+      expect(r.calls).toEqual([]);
+      expect(statusLines(r.stdout)).toHaveLength(1);
+      expect(status(r.stdout).wait_run).toBe('usage');
+    }
+    // A leading zero is still decimal: 010 is ten minutes, not eight.
+    const r = run(['deploy', '123'], { RL_CORE: '50', RL_RESET: '2000000', WAIT_RUN_MAX_MIN: '010' });
+    expect(r.sleeps).toEqual([600]);
+  });
+  it('US-64 AC26: an id with leading zeros prints as a JSON number', () => {
+    expect(status(run(['pr', '0042']).stdout).pr).toBe(42);
+    expect(status(run(['deploy', '0123']).stdout).run).toBe(123);
+    expect(status(run(['deploy', '000']).stdout).run).toBe(0);
+  });
+  it('US-64 AC26: invalid UTF-8 in detail still prints a status line that parses', () => {
+    const r = run(['deploy', '123'], { CONCLUSION: 'fail\\0377ed' });
+    expect(r.status).toBe(1);
+    expect(r.stderr).not.toContain('Malformed');
+    expect(statusLines(r.stdout)).toHaveLength(1);
+    const s = status(r.stdout);
+    expect(s.wait_run).toBe('run_failed');
+    expect(s.detail).toBe('conclusion=fail�ed healthz=200');
+  });
+  // CI's sh is dash, which skips the EXIT trap on a signal it does not trap; macOS sh is bash.
+  const shells = ['sh', ...(existsSync('/bin/dash') ? ['dash'] : [])];
+  for (const shell of shells) {
+    it(`US-64 AC26: TERM during the wait prints the interrupted line last and exits 143 (${shell})`, async () => {
+      const state = join(S, `state-${Math.random()}`);
+      const child = spawn(shell, [SCRIPT, 'deploy', '123'], { env: envFor(state, { SLEEP_REAL: '30' }) });
+      let out = '';
+      child.stdout.on('data', (d) => { out += d; });
+      const done = new Promise<number | null>((res) => child.on('close', (code) => res(code)));
+      const t = Date.now();
+      while (!existsSync(`${state}.sleeps`)) {
+        expect(Date.now() - t).toBeLessThan(10_000);
+        await new Promise((r) => setTimeout(r, 20));
+      }
+      await new Promise((r) => setTimeout(r, 100));
+      const sent = Date.now();
+      child.kill('SIGTERM');
+      expect(await done).toBe(143);
+      expect(Date.now() - sent).toBeLessThan(5_000); // not after the 30 s sleep
+      expect(statusLines(out)).toHaveLength(1);
+      const s = status(out);
+      expect(s.wait_run).toBe('interrupted');
+      expect(s.run).toBe(123);
+    }, 20_000);
+  }
 });
