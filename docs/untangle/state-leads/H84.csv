@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H84,code hygiene,"ScreeningQuestions.tsx: the PSA_ROW and inPsaRow lines sit between a doc comment and the function it documents",lead,not started,"widget-src/src/components/ScreeningQuestions.tsx:33-37: the comment ""Cancer screening, for an age with a screening due..."" (:33-34) is followed by PSA_ROW (:35) and inPsaRow (:37), added by PR 1517, so the comment no longer sits on the function it documents. (H84)",,no
