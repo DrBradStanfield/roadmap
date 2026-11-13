@@ -267,11 +267,12 @@ export function SyncControl({ backend, hasData = true, attention = false }: {
     });
   // A page that never read its cloud asks first (US-09 AC49, AC50). Decided again on a yes, so the words a
   // person agrees to are still true: an edit or another tab may have changed what this browser holds.
+  // Asked only while no move runs; the move's claim answers it (AC51).
   const chooseThisBrowserOnly = (provider: LostSignIn['provider'], asked?: ExitQuestion): void => {
+    if (getSwitchFlow().kind !== 'idle') return;
     const choice = exitChoice();
     const question = choice === 'askEmpty' ? 'empty' : choice === 'askStale' ? 'stale' : undefined;
     if (question && question !== asked) return askBeforeExit(question);
-    if (asked) exitAnswered();
     forgetProvider(provider);
   };
 

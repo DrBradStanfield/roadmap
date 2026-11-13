@@ -4,7 +4,8 @@
  * Boot seeds it once from the load: signed in to the cloud it opened, signed
  * out of a Drive or Dropbox whose sign-in it could not use, or unreachable
  * when the remembered cloud did not answer (a reload tries again); a lost one
- * may ask before its exit and go back (US-09 AC49, AC50). A Drive or
+ * may ask before its exit and go back (US-09 AC49, AC50), and is none once a
+ * page that stayed after a hand-off finds its cloud forgotten (AC52). A Drive or
  * Dropbox adapter raises `ended` where it names the grant dead; only a page
  * signed in to that provider moves to signed out. Nothing moves a page back:
  * the way back is a saved sign-in and the reload or redirect after it, which
@@ -41,10 +42,17 @@ export type SignInEvent =
   | { type: 'booted'; state: SignIn }
   | { type: 'ended'; provider: TokenProvider }
   | { type: 'exitAsked'; question: ExitQuestion }
-  | { type: 'exitAnswered' };
+  | { type: 'exitAnswered' }
+  /** The home this browser stores, read again by a page that stayed after a hand-off (US-09 AC52). */
+  | { type: 'reread'; stored: string | null };
 
 export function transition(state: SignIn, event: SignInEvent): SignIn {
   if (event.type === 'booted') return state.kind === 'none' ? event.state : state;
+  if (event.type === 'reread') {
+    // A lost cloud this browser no longer names was forgotten: the page is this browser's only, as a reload would show.
+    const lost = lostSignIn(state);
+    return lost && lost.provider !== event.stored ? { kind: 'none' } : state;
+  }
   if (event.type === 'exitAsked') {
     // Asked again while asking: what this browser holds changed, so the words change with it (AC50).
     const lost = lostSignIn(state);
@@ -91,6 +99,10 @@ export function askBeforeExit(question: ExitQuestion): void {
 }
 export function exitAnswered(): void {
   dispatch({ type: 'exitAnswered' });
+}
+/** A page still here after a move's hand-off follows the home this browser now stores (US-09 AC52). */
+export function rereadStoredHome(): void {
+  dispatch({ type: 'reread', stored: safeGetItem(BACKEND_KEY) });
 }
 
 /** This page knows `provider`'s sign-in is dead: its adapters post no refresh and its watch stops. */

@@ -25,6 +25,8 @@
  */
 import { useEffect, useSyncExternalStore } from 'react';
 import { logOffId, type LogOffId } from '../src/lib/storage';
+import { getBackendKind } from '../src/lib/roadmap-data';
+import { exitAnswered, rereadStoredHome } from '../src/storage/sign-in-state';
 import type { Backend } from './connect';
 
 /** The picker step a move started from, where a reopened picker shows it. */
@@ -107,7 +109,11 @@ export function subscribeSwitchFlow(listener: () => void): () => void {
 export function dispatch(event: SwitchEvent): boolean {
   const { next, run } = transition(flow, event);
   if (next !== flow) {
+    const stayed = flow.kind === 'navigating' && next.kind === 'idle';
     flow = next;
+    // However a hand-off ends with the page still here, a page on this browser's copy shows the home this
+    // browser now stores (US-09 AC52); a page on a cloud still runs on it until a reload.
+    if (stayed && getBackendKind() === 'local') rereadStoredHome();
     listeners.forEach((listener) => listener());
   }
   return run;
@@ -124,6 +130,7 @@ export interface Move {
 /** Claim the flow with `event`; when it is claimed, run the move and report how it ended. */
 export async function runMove(event: SwitchEvent, move: (m: Move) => Promise<void>): Promise<void> {
   if (!dispatch(event)) return;
+  exitAnswered(); // any move answers the reconnect panel's exit question (US-09 AC51)
   const { run } = flow;
   const gen = logOffId();
   try {
