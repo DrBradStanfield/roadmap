@@ -924,27 +924,33 @@ describe('US-11 AC4 — an erase during a switch leaves no marker, whatever the 
 });
 
 describe('US-11 AC4 — an erase clears the switch marker', () => {
-  it('cancelRemindersForErase removes hr_reminders_switch_cancelled, even with no active opt-in', async () => {
+  it('the commit removes hr_reminders_switch_cancelled, even with no active opt-in; the prepare leaves it', async () => {
     getReminderOptIn.mockReturnValue(undefined);
     mockFetchOk({ ok: true });
     const { cancelRemindersForErase } = await loadReminders();
     localStorage.setItem('hr_reminders_switch_cancelled', 'old-cap-token');
 
-    await cancelRemindersForErase();
+    const commit = await cancelRemindersForErase();
+    expect(localStorage.getItem('hr_reminders_switch_cancelled')).toBe('old-cap-token');
+    await commit();
 
     expect(localStorage.getItem('hr_reminders_switch_cancelled')).toBeNull();
   });
 });
 
-describe('US-17 AC1b — erasing your data reaches the server row too', () => {
-  it('cancels the live reminder row using the token that is about to be wiped, with the Drive proof that makes it a delete', async () => {
+describe('US-17 AC1b, US-11 AC4c — erasing your data reaches the server row too, once the erase stands', () => {
+  it('the prepare sends nothing; its commit cancels with the token read before the erase and the Drive proof, keepalive', async () => {
     getReminderOptIn.mockReturnValue(ACTIVE);
     const f = mockFetchOk({ ok: true });
     const { cancelRemindersForErase } = await loadReminders();
 
-    await cancelRemindersForErase();
+    const commit = await cancelRemindersForErase();
+    expect(f).not.toHaveBeenCalled();
+    getReminderOptIn.mockReturnValue(undefined); // the erased file holds no token
+    await commit();
 
     expect(postedBody(f)).toEqual({ op: 'cancel', token: 'cap-token', idToken: 'signed-id-token' });
+    expect((f.mock.calls[0][1] as RequestInit).keepalive).toBe(true);
   });
 
   it('is not counted as an opt-out — they erased everything, they did not judge reminders', async () => {
@@ -952,17 +958,21 @@ describe('US-17 AC1b — erasing your data reaches the server row too', () => {
     mockFetchOk({ ok: true });
     const { cancelRemindersForErase } = await loadReminders();
 
-    await cancelRemindersForErase();
+    await (await cancelRemindersForErase())();
 
     expect(trackProductEvent).not.toHaveBeenCalled();
   });
 
-  it('reports a failed delete rather than swallowing it (an orphaned row still emails)', async () => {
+  it('reports a refused delete by its status alone, rather than swallowing it (an orphaned row still emails)', async () => {
     getReminderOptIn.mockReturnValue(ACTIVE);
     vi.stubGlobal('fetch', vi.fn(async () => new Response('nope', { status: 500 })));
     const { cancelRemindersForErase } = await loadReminders();
 
-    await expect(cancelRemindersForErase()).rejects.toThrow();
+    await (await cancelRemindersForErase())();
+
+    expect(captureException).toHaveBeenCalledTimes(1);
+    const [err] = captureException.mock.calls[0];
+    expect((err as Error).message).toBe('Reminder row delete failed (500).');
   });
 
   it('no-ops when there is nothing enrolled', async () => {
@@ -970,7 +980,7 @@ describe('US-17 AC1b — erasing your data reaches the server row too', () => {
     const f = mockFetchOk();
     const { cancelRemindersForErase } = await loadReminders();
 
-    await cancelRemindersForErase();
+    await (await cancelRemindersForErase())();
 
     expect(f).not.toHaveBeenCalled();
   });

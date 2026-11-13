@@ -33,8 +33,9 @@ async function main() {
   const { backend, refused, fromEmail } = await boot(resolveBackend, initRoadmapStore);
   const state = storageState(backend);
   const emailLanding = await emailLandingApplies(fromEmail, state);
-  // "Delete all my data" must also delete the reminder row on Brad's server,
-  // and the token that authorises it dies with the file — so it runs first.
+  // "Delete all my data" must also delete the reminder row on Brad's server.
+  // The token dies with the file, so it is read inside the erase; the cancel
+  // follows only an erase that stands (US-11 AC4c).
   setPreEraseHook(cancelRemindersForErase);
 
   const container = document.getElementById('health-tool-root');

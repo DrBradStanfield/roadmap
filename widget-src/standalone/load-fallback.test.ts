@@ -235,7 +235,7 @@ describe('a fallback session\'s edits reach the cloud (US-09 AC13)', () => {
     await data.addMeasurement('weight', 80, '2026-06-01');
     await data.flushRoadmapStore();
     const before = localStorage.getItem('health_roadmap_file_v2');
-    const hook = vi.fn(async () => {});
+    const hook = vi.fn(async () => null);
     data.setPreEraseHook(hook);
 
     expect(await data.deleteUserData()).toEqual({ success: false, error: ERASE_UNREACHABLE, chatErased: false });

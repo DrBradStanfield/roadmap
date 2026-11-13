@@ -163,6 +163,7 @@ it("the page's erase keeps the original another tab saved while it ran, and remo
     }]);
     await otherTab.flush();
     savedRef = result.saved[0].fileRef!;
+    return null;
   });
   vi.setSystemTime(new Date('2026-10-21T10:00:30.000Z'));
   expect((await deleteUserData()).success).toBe(true);
@@ -173,5 +174,5 @@ it("the page's erase keeps the original another tab saved while it ran, and remo
   const reread = await RoadmapStore.create(new LocalStorageAdapter());
   expect(reread.loadLatestMeasurements().documents.map((d) => d.fileRef)).toEqual([savedRef]);
   expect((await reread.readDocumentFile(savedRef)).size).toBeGreaterThan(0);
-  setPreEraseHook(async () => {});
+  setPreEraseHook(async () => null);
 });

@@ -123,7 +123,7 @@ describe('US-17 AC1b/AC4: every cancel the client sends is one the route accepts
 
   it('"Delete all my data" on Dropbox: 200 and the row is cancelled', async () => {
     getReminderOptIn.mockReturnValue(optIn('dropbox'));
-    await expect(cancelRemindersForErase()).resolves.toBeUndefined();
+    await (await cancelRemindersForErase())(); // prepare inside the erase, commit once it stands
     expect(statuses).toEqual([200]);
     expect(cancelByToken).toHaveBeenCalledWith('cap-token', null);
   });

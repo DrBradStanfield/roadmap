@@ -130,16 +130,17 @@ describe('explicit local-first data path', () => {
     expect(JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json).meta.eraseEpoch).toBe(1);
   });
 
-  // US-17 AC1b: the reminder row's cancel runs before the erase, because its
-  // token dies with the file. When the server refuses it, the erase still goes
-  // ahead; the failure goes to Sentry only (Brad, 2026-10-15).
-  it('erases the record even when the reminder cancel fails', async () => {
+  // US-17 AC1b: the reminder teardown's prepare runs inside the erase, because
+  // its token dies with the file (its commit follows the write, US-11 AC4c).
+  // When the hook throws, the erase still goes ahead; the failure goes to
+  // Sentry only (Brad, 2026-10-15).
+  it('erases the record even when the reminder teardown fails', async () => {
     data.setPreEraseHook(async () => { throw new Error('Reminder row delete failed (500).'); });
     try {
       expect(await data.deleteUserData()).toEqual({ success: true, chatErased: true });
       expect(JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json).meta.eraseEpoch).toBe(1);
     } finally {
-      data.setPreEraseHook(async () => {});
+      data.setPreEraseHook(async () => null);
     }
   });
 
@@ -149,7 +150,7 @@ describe('explicit local-first data path', () => {
     const chat = await getChatHistory();
     await chat!.recordExchange({ conversationId: 'c1', isNew: true, userText: 'hello', assistantText: 'ok' });
     const eraseAll = vi.spyOn(chat!, 'eraseAll');
-    const hook = vi.fn(async () => {});
+    const hook = vi.fn(async () => null);
     data.setPreEraseHook(hook);
     vi.spyOn(MemoryAdapter.prototype, 'read').mockRejectedValueOnce(new Error('cloud unreachable'));
     try {
@@ -158,7 +159,7 @@ describe('explicit local-first data path', () => {
       expect(eraseAll).not.toHaveBeenCalled();
       expect(chat!.listConversations()).toHaveLength(1);
     } finally {
-      data.setPreEraseHook(async () => {});
+      data.setPreEraseHook(async () => null);
     }
   });
 
