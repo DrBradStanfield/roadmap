@@ -12,8 +12,9 @@
  *
  * Counting: every change to the working copy counts one (`changes`); `saved`
  * is the count the last landed write carried. A pass starts from `changes`
- * (`from`) and, when it lands, moves `saved` to `from`, never further: an
- * edit made during the pass makes another pass.
+ * (`from`) and, when it lands, keeps the later of `saved` and `from`, since a
+ * synchronous page-hide write may already have landed more. An edit made
+ * during the pass and not yet landed makes another pass.
  *
  * Modes:
  * - clean: nothing unsaved, no debounce, no pass.
@@ -158,10 +159,12 @@ function base(s: SaveBase, e: BaseEvent): { state: SaveBase; effects: SaveEffect
       if (s.mode === 'saving') return { state: { ...s, armed: false }, effects: cancel }; // joined, never doubled
       if (s.changes === saved) return { state: { mode: 'clean', changes: s.changes }, effects: cancel };
       return { state: { mode: 'saving', changes: s.changes, saved, from: s.changes, armed: false }, effects: [...cancel, { type: 'pass', from: s.changes }] };
-    case 'passLanded':
+    case 'passLanded': {
       if (s.mode !== 'saving' || e.from !== s.from) return same; // a stale report
-      if (s.changes > e.from) return { state: { ...s, saved: e.from, from: s.changes }, effects: [{ type: 'pass', from: s.changes }] };
-      return { state: settle(s.changes, e.from, s.armed, 'other'), effects: [] }; // changes === from: never failed
+      const landed = Math.max(s.saved, e.from); // a sync write during the pass may have landed more (lead A10)
+      if (s.changes > landed) return { state: { ...s, saved: landed, from: s.changes }, effects: [{ type: 'pass', from: s.changes }] };
+      return { state: settle(s.changes, landed, s.armed, 'other'), effects: [] }; // changes === landed: never failed
+    }
     case 'passFailed':
       return s.mode === 'saving' ? { state: settle(s.changes, s.saved, s.armed, e.cause), effects: [] } : same;
     case 'synced':
