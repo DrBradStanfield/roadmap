@@ -30,6 +30,7 @@ type FetchMock = ReturnType<typeof vi.fn<(input: RequestInfo | URL, init?: Reque
 const getReminderOptIn = vi.fn<() => FileReminderOptIn | undefined>(() => undefined);
 const setReminderOptIn = vi.fn<(fields: Omit<FileReminderOptIn, 'updatedAt' | 'lamport'>, erase?: string) => boolean>(() => true);
 const getShownErase = vi.fn(() => '[0,null]');
+const getEraseIdentity = vi.fn(() => '[0,null]');
 const flushRoadmapStore = vi.fn(async () => {});
 const computeCurrentReminderSchedule = vi.fn(() => [
   { category: 'blood_test_lipids', group: 'blood_test', label: 'Lipid panel blood test', dueAt: '2027-05-12' },
@@ -44,6 +45,7 @@ vi.mock('../src/lib/roadmap-data', () => ({
   getReminderOptIn: () => getReminderOptIn(),
   setReminderOptIn: (...args: Parameters<typeof setReminderOptIn>) => setReminderOptIn(...args),
   getShownErase: () => getShownErase(),
+  getEraseIdentity: () => getEraseIdentity(),
   flushRoadmapStore: () => flushRoadmapStore(),
   computeCurrentReminderSchedule: () => computeCurrentReminderSchedule(),
   isKnownMinorNow: () => isKnownMinorNow(),
@@ -114,6 +116,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   getReminderOptIn.mockReturnValue(undefined);
   getShownErase.mockReturnValue('[0,null]');
+  getEraseIdentity.mockReturnValue('[0,null]');
   setReminderOptIn.mockImplementation(() => true);
   isKnownMinorNow.mockReturnValue(false);
   getReminderIdToken.mockResolvedValue('signed-id-token');
@@ -1029,7 +1032,7 @@ describe('US-17 AC17 — a Turn off acts only on the opt-in it read', () => {
   const T1: FileReminderOptIn = { ...ACTIVE, provider: 'dropbox' };
   const ERASED: FileReminderOptIn = { ...T1, status: 'cancelled', token: '', email: '', lamport: 9 };
   type Row = {
-    asked: FileReminderOptIn | undefined; now?: FileReminderOptIn | undefined; status?: number; refused?: boolean;
+    asked: FileReminderOptIn | undefined; now?: FileReminderOptIn | undefined; status?: number; refused?: boolean; erasedTo?: string;
     posts: boolean; writes: boolean; counts: boolean; throws?: string;
   };
   const rows: [string, Row][] = [
@@ -1039,6 +1042,7 @@ describe('US-17 AC17 — a Turn off acts only on the opt-in it read', () => {
     ['4 an erase landed meanwhile (cancelled, no token): no write', { asked: T1, now: ERASED, posts: true, writes: false, counts: false }],
     ['5 the opt-in is gone meanwhile: no write', { asked: T1, now: undefined, posts: true, writes: false, counts: false }],
     ['6 the write is refused (an erase runs): ERASE_IN_PROGRESS, no count [H18f]', { asked: T1, now: T1, refused: true, posts: true, writes: true, counts: false, throws: 'Your data is being deleted. Try again in a moment.' }],
+    ['6b the write is refused at another erase, none running: RECORD_CHANGED_SINCE_ASKED, no count', { asked: T1, now: T1, refused: true, erasedTo: '[1,"2026-11-14T00:00:00.000Z"]', posts: true, writes: true, counts: false, throws: 'Not saved: your record changed since you asked.' }],
     ['7 already cancelled: no post, no write, no count [H18g]', { asked: { ...T1, status: 'cancelled' }, posts: false, writes: false, counts: false }],
     ['8 an erased file (cancelled, token \'\'): no post, so no 400 [H18g]', { asked: ERASED, posts: false, writes: false, counts: false }],
     ['9 nothing enrolled: no post', { asked: undefined, posts: false, writes: false, counts: false }],
@@ -1047,6 +1051,7 @@ describe('US-17 AC17 — a Turn off acts only on the opt-in it read', () => {
   it.each(rows)('%s', async (_name, row) => {
     getReminderOptIn.mockReturnValueOnce(row.asked).mockReturnValue('now' in row ? row.now : row.asked);
     if (row.refused) setReminderOptIn.mockReturnValueOnce(false);
+    if (row.erasedTo) getEraseIdentity.mockReturnValue(row.erasedTo);
     const f = vi.fn(async () => new Response('{}', { status: row.status ?? 200 }));
     vi.stubGlobal('fetch', f);
     const { cancelReminders } = await loadReminders();
