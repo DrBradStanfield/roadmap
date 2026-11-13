@@ -150,9 +150,10 @@ run_state() { gh api "repos/{owner}/{repo}/actions/runs/$id" --jq 'if .status ==
 # completed run's conclusion, else the run's status), and count it pending unless gh gives that state a bucket.
 # The same query reads mergeability. Finished checks are judged first, so they print their counts even if main
 # moved since; unfinished checks on a PR in conflict with main get no new CI run, so waiting on them never ends.
+# The advisory check ios-compile (exact name) is left out, so it is never waited on.
 pr_state() {
   gh pr view "$id" --json statusCheckRollup,mergeable,mergeStateStatus --jq '(.mergeable == "CONFLICTING" or .mergeStateStatus == "DIRTY") as $c
-    | [.statusCheckRollup // [] | group_by(.context // "\(.name)/\(.workflowName)")
+    | [.statusCheckRollup // [] | .[] | select((.name // .context) != "ios-compile")] | [group_by(.context // "\(.name)/\(.workflowName)")
     | .[] | max_by(.startedAt) | if (.state // "") != "" then .state elif .status == "COMPLETED" then .conclusion else .status end]
     | if length > 0 and all(IN("SUCCESS", "SKIPPED", "NEUTRAL", "ERROR", "FAILURE", "TIMED_OUT", "ACTION_REQUIRED", "CANCELLED"))
       then "done" elif $c then "conflict" else "pending" end'
@@ -177,9 +178,13 @@ fi
 # poll and this read) sends the wait back to polling, within the same time limit.
 while :; do
   poll pr_state
+  # ios-compile is advisory (exact name, Brad 2026-11-13; tools/merge-gated.sh lists it too): never waited on,
+  # never a failure; pending or red, it gets one note line after the others.
   checks=$(gh pr checks "$id" --json name,bucket --jq '
+    [.[] | select(.name == "ios-compile" and .bucket != "pass" and .bucket != "skipping")
+      | "note: advisory check ios-compile is \(.bucket); not counted"] as $notes | [.[] | select(.name != "ios-compile")] |
     "pass=\([.[] | select(.bucket == "pass")] | length) fail=\([.[] | select(.bucket == "fail" or .bucket == "cancel")] | length) skipped=\([.[] | select(.bucket == "skipping")] | length) tested=\(if any(.[]; .name == "test" and .bucket == "pass") then "yes" else "no" end) pending=\([.[] | select(.bucket == "pending")] | length)",
-    (.[] | select(.bucket == "fail" or .bucket == "cancel") | "failed: \(.name | gsub("[[:cntrl:]]"; " "))")' 2>/dev/null)
+    (.[] | select(.bucket == "fail" or .bucket == "cancel") | "failed: \(.name | gsub("[[:cntrl:]]"; " "))"), $notes[]' 2>/dev/null)
   # Verdicts come only from line 1, the fixed-format summary. A check name (outside text) cannot forge it: the
   # names go only into the `failed:` lines, and the one name that counts, tested=, is an exact match on `test`.
   summary=$(printf '%s\n' "$checks" | sed -n '1p')
