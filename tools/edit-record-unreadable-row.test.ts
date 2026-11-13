@@ -16,13 +16,17 @@ const HIDDEN_WEIGHT = 'heavy-93';
 const HIDDEN_FERRITIN = `high${String.fromCharCode(27)}[2J${String.fromCharCode(7)}text`;
 const HIDDEN_LDL = '3.4 mmol';
 
-/** One unreadable row of each shape: a vital, a non-core lab test and a core blood test. */
+/** One unreadable row of each shape: a vital, a non-core lab test and a core blood test; then
+ *  lab rows hidden by a name or unit that is not text, or by a field a correction copies. */
 function fixture(): RoadmapFile {
   const file = createEmptyFile({ deviceId: 'us65_cli', now: '2026-09-01T09:00:00Z' });
   const at = { recordedAt: '2026-07-14', createdAt: '2026-07-14T08:00:00Z', source: 'manual', status: 'active' };
   file.measurements.push({ id: 'w1', metricType: 'weight', value: HIDDEN_WEIGHT as never, ...at } as never);
   file.labValues.push({ id: 'f1', metricName: 'ferritin', value: HIDDEN_FERRITIN as never, unit: 'µg/L', ...at } as never);
   file.labValues.push({ id: 'l1', metricName: 'ldl', value: HIDDEN_LDL as never, unit: 'mmol/L', core: true, ...at } as never);
+  file.labValues.push({ id: 'n1', metricName: 42, value: 5, unit: 'x', ...at } as never);
+  file.labValues.push({ id: 'u1', metricName: 'zzunlisted', value: 5, unit: 42, ...at } as never);
+  file.labValues.push({ id: 'r1', metricName: 'ferritin', value: 100, unit: 'µg/L', referenceLow: 'low', ...at, recordedAt: '2026-07-15' } as never);
   return file;
 }
 
@@ -91,5 +95,25 @@ describe('US-65 AC3a: edit-record and a row this build cannot read', () => {
     expect(r.stdout).toMatch(/^Corrected ferritin a value this app cannot read → 120 /);
     // eslint-disable-next-line no-control-regex
     expect(r.stdout).not.toMatch(/[\u0000-\u0009\u000b-\u001f\u007f]/);
+  });
+
+  it.each([
+    ['name', 'n1', /^Corrected 42 a value this app cannot read → a value this app cannot read x on 2026-07-14 /],
+    ['unit, on an uncatalogued test,', 'u1', /^Corrected zzunlisted a value this app cannot read → a value this app cannot read 42 on /],
+  ])('AC3a: correcting a lab row whose %s is not text lands and exits 0', async (_, id, echo) => {
+    const r = await onFixture((path) => ['correct', path, '--id', id, '--value', '6']);
+
+    expect(r.code).toBe(0);
+    expect(r.stderr).not.toMatch(/This is a bug/);
+    expect(r.stdout).toMatch(echo);
+    expect(r.after.labValues.find((l) => l.id === id)?.status).toBe('entered-in-error');
+  });
+
+  it('AC3a: a correction that copies the unreadable field echoes the new row in the same words', async () => {
+    const r = await onFixture((path) => ['correct', path, '--id', 'r1', '--value', '120']);
+
+    expect(r.code).toBe(0);
+    expect(r.stdout).toMatch(/^Corrected ferritin a value this app cannot read → a value this app cannot read µg\/L /);
+    expect(r.after.labValues.find((l) => l.correctsId === 'r1')).toMatchObject({ value: 120, referenceLow: 'low' });
   });
 });

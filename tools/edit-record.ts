@@ -251,8 +251,9 @@ export async function run(argv: string[]): Promise<number> {
     const { row, unit, previous } = change;
     const verb = args.command === 'add' ? 'Added' : 'Corrected';
     const was = previous ? `${shownValue(previous)} → ` : '';
+    // A hidden lab row's name or unit may not be text (US-65 AC1, AC5), and the new row copies it.
     process.stdout.write(
-      `${verb} ${oneLine(rowName(row))} ${was}${shownValue(row)}${unit ? ` ${oneLine(unit)}` : ''}` +
+      `${verb} ${oneLine(String(rowName(row)))} ${was}${shownValue(row)}${unit ? ` ${oneLine(String(unit))}` : ''}` +
       ` on ${oneLine(String(row.recordedAt).slice(0, 10))} — new row ${oneLine(row.id)}\n` +
       (adapter.lastBackup
         ? `Wrote ${oneLine(adapter.path)} (backup: ${oneLine(adapter.lastBackup)})\n`
