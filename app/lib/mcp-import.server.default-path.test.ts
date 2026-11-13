@@ -12,6 +12,7 @@ vi.mock('./product-events.server', async (importOriginal) => {
   return { ...original, recordServerEvent: vi.fn(async () => {}) };
 });
 vi.mock('@sentry/react-router', () => ({ captureException: vi.fn(), captureMessage: vi.fn() }));
+import * as importModule from './mcp-import.server';
 import { hostedImporter } from './mcp-import.server';
 import { connectionKey, IMPORT_FILES_PER_DAY, importFiles, resetMcpMemory, spendWrites, WRITES_PER_HOUR } from './mcp-grants.server';
 import { machineFiles } from './rate-limiter';
@@ -164,5 +165,24 @@ describe('T30 · the hosted importer with no extractor passed calls the real mod
     `);
     expect(sent).toEqual([]);
     expect(importFiles.remaining(connectionKey(TOKEN))).toBe(IMPORT_FILES_PER_DAY);
+  });
+});
+
+describe('T30 · the module holds no setter a test or a stray call could leave set', () => {
+  it('exports exactly these names; the model call comes in only through HostedImporterOptions', () => {
+    expect(Object.keys(importModule).sort()).toMatchInlineSnapshot(`
+      [
+        "IMPORT_FILES_PER_CALL",
+        "MAX_IMPORT_FILE_BYTES",
+        "MAX_IMPORT_ZIP_BYTES",
+        "MAX_ZIP_ENTRIES",
+        "MCP_IMPORT_BUDGET_MS",
+        "PENDING_FOLDER",
+        "hostedImporter",
+        "sniff",
+        "unzip",
+        "zipRefusal",
+      ]
+    `);
   });
 });

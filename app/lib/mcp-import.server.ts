@@ -89,17 +89,8 @@ const EXTRACT_CONCURRENCY = 3;
 /** One model call, HTTP. Inside the budget by construction; a hung call fails, never waits. */
 const EXTRACT_TIMEOUT_MS = 20_000;
 
-// ---------------------------------------------------------------------------
-// Test seam — the model call
-// ---------------------------------------------------------------------------
-
-type Extractor = (pages: PageContent[], opts: { timeoutMs: number; httpAttempts: number; documentMode: DocumentPromptMode }) => Promise<UnifiedExtractionResult>;
-
-let extract: Extractor = extractOrClassify;
-
-export function setImportSeams(next: { extract?: Extractor } | null): void {
-  extract = next?.extract ?? extractOrClassify;
-}
+/** The model call. Tests pass their own through `HostedImporterOptions`; production passes none. */
+export type Extractor = (pages: PageContent[], opts: { timeoutMs: number; httpAttempts: number; documentMode: DocumentPromptMode }) => Promise<UnifiedExtractionResult>;
 
 // ---------------------------------------------------------------------------
 // Bytes: what kind, and what is inside
@@ -302,11 +293,15 @@ export interface HostedImporterOptions {
   adapter: StorageAdapter;
   client: McpClientLabel;
   maxCorrectionAgeDays: number;
+  /** Server-side wiring only, never from a request; absent means the real model call. */
+  extract?: Extractor;
 }
+/** What the endpoint passes down to the importer: test wiring only; the routes pass none. */
+export type HostedWiring = Pick<HostedImporterOptions, 'extract'>;
 
 /** The `ImportSurface` for one hosted call. Built per call, like the adapter; holds nothing after. */
 export function hostedImporter(options: HostedImporterOptions): ImportSurface {
-  const { token, adapter, client } = options;
+  const { token, adapter, client, extract = extractOrClassify } = options;
   const connection = connectionKey(token);
   const audience = audienceFor(token.clientId);
   const conn = hash(connection);
