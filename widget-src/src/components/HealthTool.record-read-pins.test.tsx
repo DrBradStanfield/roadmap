@@ -12,7 +12,7 @@
  * profile save made to refuse once when asked.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, cleanup, fireEvent, render, waitFor, within, type RenderResult } from '@testing-library/react';
+import { act, fireEvent, render, waitFor, within, type RenderResult } from '@testing-library/react';
 import { createRoot } from 'react-dom/client';
 import { CURRENT_SCHEMA_VERSION, type RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { localDay, rowRootIds } from '@roadmap/health-core/merge';
@@ -25,7 +25,7 @@ import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
 import { BT_TIMELINE_DRAFT_KEY, VITALS_DRAFT_KEY, loadFromLocalStorage } from '../lib/storage';
 import { trackABConversion } from '../lib/server-api';
-import { openAboutYou, showTables, trackLiveRefresh, stopLiveRefresh, recordOnDisk } from '../testing/health-tool-harness';
+import { openAboutYou, showTables, trackLiveRefresh, stopLiveRefresh, recordOnDisk, useHealthToolLifecycle, wait } from '../testing/health-tool-harness';
 import { WRITE_REFUSED } from '../lib/erase-copy';
 import { press, pressMouse, pressWithoutFocus, releaseMouse, typeInto } from '../testing/matrix-gestures';
 import { cellText } from '../lib/blood-test-cell';
@@ -119,6 +119,10 @@ const viewport = { mobile: false, listeners: new Set<(e: { matches: boolean }) =
 /** The window resized or turned across 768 px: the page moves its form between the phone's tab and the desktop's column. */
 const turn = (mobile: boolean) => act(() => { viewport.mobile = mobile; for (const l of [...viewport.listeners]) l({ matches: mobile }); });
 
+// Fake timers that move with the clock: wait(ms) jumps a debounce at once, with
+// the same duration. queueMicrotask, promises and React's scheduler stay real,
+// so the mount-gap tests below still see their gap (`inGap` checks it).
+useHealthToolLifecycle({ fakeTimers: true });
 beforeEach(async () => {
   tracked.calls = [];
   refuse.next = false;
@@ -127,7 +131,6 @@ beforeEach(async () => {
   upload.complete = null;
   vi.mocked(trackABConversion).mockClear();
   vi.mocked(Sentry.captureException).mockClear();
-  localStorage.clear(); sessionStorage.clear();
   viewport.mobile = false;
   viewport.listeners.clear();
   vi.stubGlobal('matchMedia', (q: string) => ({
@@ -136,16 +139,12 @@ beforeEach(async () => {
     removeEventListener(_: string, l: (e: { matches: boolean }) => void) { viewport.listeners.delete(l); },
   }));
   vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('Synthetic test: no network'); }));
-  Element.prototype.scrollIntoView ??= () => {};
   trackLiveRefresh();
   await initRoadmapStore(new LocalStorageAdapter());
 });
-afterEach(async () => {
-  cleanup();
+afterEach(() => {
   for (const unmount of unmounts.splice(0)) unmount();
   stopLiveRefresh();
-  await flushRoadmapStore();
-  vi.restoreAllMocks(); vi.unstubAllGlobals();
 });
 
 const activeWeights = async () => (await recordOnDisk()).measurements
@@ -155,7 +154,7 @@ const activeWeights = async () => (await recordOnDisk()).measurements
 async function open(): Promise<RenderResult> {
   const view = render(<HealthTool />);
   await waitFor(() => expect(view.container.querySelector('#heightCm, #heightFeet') ?? (openAboutYou(view.container), view.container.querySelector('.about-row'))).toBeTruthy());
-  await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+  await wait(0);
   openAboutYou(view.container);
   return view;
 }
@@ -166,11 +165,12 @@ function type(input: Element | null, value: string) {
   fireEvent.change(input, { target: { value } });
 }
 const leave = (input: Element | null) => act(() => { (input as HTMLElement).blur(); });
-const settle = (ms: number) => act(async () => { await new Promise((r) => setTimeout(r, ms)); });
+const settle = (ms: number) => wait(ms);
 /** A weight typed in its field and left: its save runs 500 ms later. */
 async function saveWeight(view: RenderResult, weight: string) {
   type(q(view, '#weightKg'), weight);
   leave(q(view, '#weightKg'));
+  await wait(500); // the save's debounce
   await waitFor(async () => expect(await activeWeights()).toContainEqual([Number(weight), localToday()]), { timeout: 2000 });
   await settle(50);
 }
@@ -242,7 +242,7 @@ describe('US-34 AC4: a change announced before the page has shown its first read
   async function endsOn82(host: HTMLElement) {
     await waitFor(() => expect(calls('remote_change_applied')).toHaveLength(1), { timeout: 3000 });
     await waitFor(() => expect(mirrorWeight()).toBe(82));
-    await new Promise((r) => setTimeout(r, 800)); // past the first profile check
+    await vi.advanceTimersByTimeAsync(800); // past the first profile check (outside act, as the page runs here)
     expect(mirrorWeight()).toBe(82);
     expect(calls('remote_change_applied')).toHaveLength(1);
     // The page: a first-time weight field holds the saved weight as its value; the vitals matrix shows it as text.
