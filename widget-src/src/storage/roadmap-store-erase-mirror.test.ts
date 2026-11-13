@@ -276,6 +276,59 @@ describe('S69 R2, US-11 AC4c: a cloud erase is kept, and the cancel sent, only w
     expect(posts).toContain('cancel');
   });
 
+  it('the revision cannot be read back over a copy that does not carry the erase: unknown, so held, cancel sent', async () => {
+    const posts = await cloudWithOptIn();
+    const before = getEraseIdentity();
+    const setItem = Storage.prototype.setItem;
+    const getItem = Storage.prototype.getItem;
+    let recordWrites = 0;
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key: string, value: string) {
+      if (key === DEVICE_KEY) { recordWrites++; throw new DOMException('full', 'QuotaExceededError'); }
+      setItem.call(this, key, value);
+    });
+    // After both attempts stored nothing, the next read of the revision fails once (a SecurityError).
+    let failedRead = false;
+    const getSpy = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(function (this: Storage, key: string) {
+      if (key === REV_KEY && recordWrites >= 2 && !failedRead) { failedRead = true; throw new DOMException('denied', 'SecurityError'); }
+      return getItem.call(this, key);
+    });
+    const result = await deleteUserData();
+    vi.mocked(Storage.prototype.setItem).mockRestore();
+    getSpy.mockRestore();
+
+    expect(failedRead).toBe(true);
+    expect(deviceFile().meta.eraseEpoch ?? 0).toBe(0);
+    expect(result.success).toBe(false);
+    expect(getEraseIdentity()).not.toBe(before);
+    expect(posts).toContain('cancel');
+  });
+
+  it('an unparsable device copy, which no write replaces, is put back: no cancel, and no "on this device" status', async () => {
+    const posts = await cloudWithOptIn();
+    localStorage.setItem(DEVICE_KEY, '{not json');
+    const before = getEraseIdentity();
+    const result = await deleteUserData();
+
+    expect(localStorage.getItem(DEVICE_KEY)).toBe('{not json');
+    expect(result.success).toBe(false);
+    expect(getEraseIdentity()).toBe(before);
+    expect(posts).not.toContain('cancel');
+    expect(currentSaveStatus()).not.toBe('not-saved-on-device');
+  });
+
+  it('a device copy that cannot be migrated (a newer schema), which no write replaces, is put back: no cancel', async () => {
+    const posts = await cloudWithOptIn();
+    const newer = JSON.stringify({ ...deviceFile(), schemaVersion: 999 });
+    localStorage.setItem(DEVICE_KEY, newer);
+    const before = getEraseIdentity();
+    const result = await deleteUserData();
+
+    expect(localStorage.getItem(DEVICE_KEY)).toBe(newer);
+    expect(result.success).toBe(false);
+    expect(getEraseIdentity()).toBe(before);
+    expect(posts).not.toContain('cancel');
+  });
+
   it('US-09 AC30: outside an erase, another tab moving the revision while this save stored nothing never says the changes are on this device', async () => {
     await cloudWithOptIn();
     await addMeasurement('weight', 80, '2026-09-03');

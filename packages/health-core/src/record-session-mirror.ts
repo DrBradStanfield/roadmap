@@ -5,7 +5,7 @@
  * function on the session, which keeps a one-line method for each.
  * No DOM and no Node: engine-portability.test.ts checks.
  */
-import { ROADMAP_FILE_NAME } from './adapter';
+import { ROADMAP_FILE_NAME, StorageError } from './adapter';
 import { eraseIdentityOf } from './erase-identity';
 import { mergeFiles } from './merge';
 import type { DeviceMirror, RecordHost, SyncStorage } from './record-host';
@@ -22,19 +22,25 @@ export function deviceCopyRevision(host: RecordHost): string | null | undefined 
 /** After a failed device write past an erase's swap: whether the device copy
  *  may carry this erase or a later one, read from the copy itself so a retry
  *  that stored before it failed counts (S69 R2). No synchronous path (the
- *  iPhone's: its erase is put back, lead S57) or no copy: false. A copy that
- *  cannot be read, parsed or migrated may be the erased one: true, so the
- *  rule errs toward the cancel. Otherwise its epoch, migrated as a load reads
- *  it, at or past the erased record's. */
+ *  iPhone's: its erase is put back, lead S57) or no copy: false. A store that
+ *  cannot be read: true, unknown errs toward the cancel. A copy that cannot
+ *  be parsed or migrated: false, since the mirror write reads and migrates it
+ *  before writing, so it was never replaced. Otherwise its migrated epoch at
+ *  or past the erased record's. */
 export function deviceCopyHoldsErase(s: RecordSession): boolean {
   const sync = s.host.tier === 'cloud' ? s.host.mirror.sync : undefined;
   if (!sync) return false;
+  let body: unknown;
   try {
-    const { body } = (sync.readSyncStrict ?? sync.readSync).call(sync, ROADMAP_FILE_NAME);
-    if (body == null) return false;
+    ({ body } = (sync.readSyncStrict ?? sync.readSync).call(sync, ROADMAP_FILE_NAME));
+  } catch (error) {
+    return !(error instanceof StorageError && error.cause instanceof SyntaxError); // unparsable: put back
+  }
+  if (body == null) return false;
+  try {
     return (ROADMAP_DOC.migrate(body, s.ctx()).meta.eraseEpoch ?? 0) >= (s.current.meta.eraseEpoch ?? 0);
   } catch {
-    return true;
+    return false;
   }
 }
 
