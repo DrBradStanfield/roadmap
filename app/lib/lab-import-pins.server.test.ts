@@ -226,7 +226,8 @@ describe('each failure: a 500 and one exception report', () => {
         const calls = vi.mocked(Sentry.captureException).mock.calls;
         expect(calls).toHaveLength(1);
         expect(calls[0][0]).toBe(error);
-        expect(calls[0][1]).toStrictEqual({ tags: { feature: 'lab_import_v2', errorName }, extra: { pageCount: 1, pageTypes: ['image'] } });
+        // No page count or types: nothing read them (US-52 AC7d, lead C7).
+        expect(calls[0][1]).toStrictEqual({ tags: { feature: 'lab_import_v2', errorName } });
         expect(Sentry.captureMessage).not.toHaveBeenCalled();
       });
     }
@@ -254,7 +255,7 @@ describe('retries exhausted: the real extraction gives up after its two HTTP att
         expect(calls[0][0]).toBe(calls[1][0]);
         expect(calls.map(([, ctx]) => ctx)).toStrictEqual([
           { tags: { anthropic_error_type: 'unknown' }, extra: { status: 502, attempt: 2, errorType: 'unknown' } },
-          { tags: { feature: 'lab_import_v2', errorName: 'Error' }, extra: { pageCount: 1, pageTypes: ['image'] } },
+          { tags: { feature: 'lab_import_v2', errorName: 'Error' } },
         ]);
       } finally {
         extractOrClassify.mockReset();
