@@ -11,11 +11,11 @@ const plan = { age: 50, idealBodyWeight: 70, heightCm: 178 };
 
 describe('rowTarget: blood-test reference hints (US-62 AC9)', () => {
   it('prints the grid hint in full and the same target without its unit', () => {
-    expect(rowTarget('hba1c', 'conventional', adult, null)).toEqual({ full: 'Normal: <5.7%', bare: 'Normal <5.7' });
-    expect(rowTarget('hba1c', 'si', adult, null)).toEqual({ full: 'Normal: <39 mmol/mol', bare: 'Normal <39' });
-    expect(rowTarget('ldl', 'si', adult, null)).toEqual({ full: 'Optimal: <1.4 mmol/L', bare: 'Optimal <1.4' });
-    expect(rowTarget('apob', 'conventional', adult, null)).toEqual({ full: 'Optimal: <50 mg/dL', bare: 'Optimal <50' });
-    expect(rowTarget('triglycerides', 'conventional', adult, null)).toEqual({ full: 'Normal: <150 mg/dL', bare: 'Normal <150' });
+    expect(rowTarget('hba1c', 'conventional', adult, null)).toEqual({ full: 'Normal: <5.7%', bare: 'Normal <5.7', alone: 'Normal <5.7%' });
+    expect(rowTarget('hba1c', 'si', adult, null)).toEqual({ full: 'Normal: <39 mmol/mol', bare: 'Normal <39', alone: 'Normal <39 mmol/mol' });
+    expect(rowTarget('ldl', 'si', adult, null)).toEqual({ full: 'Optimal: <1.4 mmol/L', bare: 'Optimal <1.4', alone: 'Optimal <1.4 mmol/L' });
+    expect(rowTarget('apob', 'conventional', adult, null)).toEqual({ full: 'Optimal: <50 mg/dL', bare: 'Optimal <50', alone: 'Optimal <50 mg/dL' });
+    expect(rowTarget('triglycerides', 'conventional', adult, null)).toEqual({ full: 'Normal: <150 mg/dL', bare: 'Normal <150', alone: 'Normal <150 mg/dL' });
   });
 
   it('every hint, both units, every variant: bare is full without its colon or unit', () => {
@@ -35,7 +35,7 @@ describe('rowTarget: blood-test reference hints (US-62 AC9)', () => {
 
   it('US-62 AC13: with no sex, the creatinine hint shows both lines, labelled in the grid', () => {
     // A word joiner (U+2060) after each dash keeps a range whole when the grid wraps.
-    expect(rowTarget('creatinine', 'si', {}, null)).toEqual({ full: 'Normal: 60–\u2060110 (men) / 45–\u206090 (women) µmol/L', bare: 'Normal 60–110/45–90' });
+    expect(rowTarget('creatinine', 'si', {}, null)).toEqual({ full: 'Normal: 60–\u2060110 (men) / 45–\u206090 (women) µmol/L', bare: 'Normal 60–110/45–90', alone: 'Normal 60–110/45–90 µmol/L' });
     expect(rowTarget('creatinine', 'conventional', {}, null)?.full).toBe('Normal: 0.7–\u20601.2 (men) / 0.5–\u20601.0 (women) mg/dL');
     expect(rowTarget('creatinine', 'si', { sex: 'female' }, null)?.bare).toBe('Normal 45–90');
   });
@@ -43,7 +43,7 @@ describe('rowTarget: blood-test reference hints (US-62 AC9)', () => {
   it('picks the sex-specific variant when the sex is known, and the combined one before', () => {
     expect(rowTarget('hdl', 'si', { sex: 'male' }, null)?.bare).toBe('Optimal >1.0');
     expect(rowTarget('hdl', 'conventional', { sex: 'female' }, null)?.bare).toBe('Optimal >50');
-    expect(rowTarget('hdl', 'si', adult, null)).toEqual({ full: 'Optimal: >1.0/>1.3 mmol/L', bare: 'Optimal >1.0/>1.3' });
+    expect(rowTarget('hdl', 'si', adult, null)).toEqual({ full: 'Optimal: >1.0/>1.3 mmol/L', bare: 'Optimal >1.0/>1.3', alone: 'Optimal >1.0/>1.3 mmol/L' });
     expect(rowTarget('creatinine', 'si', { sex: 'female' }, null)?.full).toBe('Normal: 45–90 µmol/L');
   });
 
@@ -58,37 +58,37 @@ describe('rowTarget: Lp(a) in its chosen unit (US-05 AC2)', () => {
     ['mg/dL', 'Normal: <30 mg/dL', 'Normal <30'],
     ['mg/L', 'Normal: <300 mg/L', 'Normal <300'],
   ] as const)('%s', (unit, full, bare) => {
-    expect(rowTarget('lpa', unit, adult, null)).toEqual({ full, bare });
+    expect(rowTarget('lpa', unit, adult, null)).toEqual({ full, bare, alone: `${bare} ${unit}` });
   });
 });
 
 describe('rowTarget: the plan’s vitals targets (US-06 AC5)', () => {
   it('blood pressure from the plan’s age', () => {
-    expect(rowTarget('blood_pressure', 'si', adult, plan)).toEqual({ full: 'Target: <120/80 mmHg', bare: 'Target <120/80' });
+    expect(rowTarget('blood_pressure', 'si', adult, plan)).toEqual({ full: 'Target: <120/80 mmHg', bare: 'Target <120/80', alone: 'Target <120/80 mmHg' });
     expect(rowTarget('blood_pressure', 'si', adult, { ...plan, age: 70 })?.bare).toBe('Target <130/80');
   });
 
   it('weight from the ideal body weight, in the field’s unit', () => {
-    expect(rowTarget('weight', 'si', adult, plan)).toEqual({ full: 'Target: 70.0 kg', bare: 'Target 70.0' });
+    expect(rowTarget('weight', 'si', adult, plan)).toEqual({ full: 'Target: 70.0 kg', bare: 'Target 70.0', alone: 'Target 70.0 kg' });
     expect(rowTarget('weight', 'conventional', adult, plan)?.full).toMatch(/^Target: [0-9.]+ lbs?$/);
   });
 
   it('waist from the height, by the plan’s own rule', () => {
-    expect(rowTarget('waist', 'si', adult, plan)).toEqual({ full: 'Target: <89 cm', bare: 'Target <89' });
+    expect(rowTarget('waist', 'si', adult, plan)).toEqual({ full: 'Target: <89 cm', bare: 'Target <89', alone: 'Target <89 cm' });
     expect(rowTarget('waist', 'conventional', adult, plan)?.bare).toBe('Target <34.7');
   });
 
   it('before there is a plan, the grid asks for the height (asked first, US-62 AC13) and the row prints no target', () => {
     expect(TARGET_NEEDS_HEIGHT).toBe('Set height to see target');
     for (const metric of ['blood_pressure', 'weight', 'waist'] as const) {
-      expect(rowTarget(metric, 'si', adult, null)).toEqual({ full: TARGET_NEEDS_HEIGHT, bare: null });
+      expect(rowTarget(metric, 'si', adult, null)).toEqual({ full: TARGET_NEEDS_HEIGHT, bare: null, alone: null });
     }
   });
 
   it('a plan without sex has no healthy weight: the weight line asks for sex, the others print their targets (US-62 AC13)', () => {
     const noSex = { age: 50, heightCm: 178 };
     expect(TARGET_NEEDS_SEX).toBe('Set sex to see target');
-    expect(rowTarget('weight', 'si', adult, noSex)).toEqual({ full: TARGET_NEEDS_SEX, bare: null });
+    expect(rowTarget('weight', 'si', adult, noSex)).toEqual({ full: TARGET_NEEDS_SEX, bare: null, alone: null });
     expect(rowTarget('waist', 'si', adult, noSex)?.bare).toBe('Target <89');
     expect(rowTarget('blood_pressure', 'si', adult, noSex)?.bare).toBe('Target <120/80');
   });
@@ -96,9 +96,9 @@ describe('rowTarget: the plan’s vitals targets (US-06 AC5)', () => {
 
 describe('rowTarget: a catalogue test’s printed range', () => {
   it('both sides, one side, none', () => {
-    expect(rowTarget({ referenceLow: 135, referenceHigh: 145 }, 'si', adult, null)).toEqual({ full: 'Ref: 135–145', bare: 'Ref 135–145' });
-    expect(rowTarget({ referenceLow: null, referenceHigh: 5 }, 'si', adult, null)).toEqual({ full: 'Ref: ––5', bare: 'Ref <5' });
-    expect(rowTarget({ referenceLow: 40, referenceHigh: null }, 'si', adult, null)).toEqual({ full: 'Ref: 40––', bare: 'Ref >40' });
+    expect(rowTarget({ referenceLow: 135, referenceHigh: 145 }, 'si', adult, null)).toEqual({ full: 'Ref: 135–145', bare: 'Ref 135–145', alone: 'Ref 135–145' });
+    expect(rowTarget({ referenceLow: null, referenceHigh: 5 }, 'si', adult, null)).toEqual({ full: 'Ref: ––5', bare: 'Ref <5', alone: 'Ref <5' });
+    expect(rowTarget({ referenceLow: 40, referenceHigh: null }, 'si', adult, null)).toEqual({ full: 'Ref: 40––', bare: 'Ref >40', alone: 'Ref >40' });
     expect(rowTarget({ referenceLow: null, referenceHigh: null }, 'si', adult, null)).toBeNull();
     expect(rowTarget({}, 'si', adult, null)).toBeNull();
   });
@@ -118,9 +118,44 @@ describe('rowTarget: a known minor (US-07 AC6)', () => {
   });
 
   it('keeps the waist target, which applies to children too, and a lab’s printed range', () => {
-    expect(rowTarget('waist', 'si', null, plan)).toEqual({ full: 'Target: <89 cm', bare: 'Target <89' });
+    expect(rowTarget('waist', 'si', null, plan)).toEqual({ full: 'Target: <89 cm', bare: 'Target <89', alone: 'Target <89 cm' });
     expect(rowTarget('waist', 'si', null, null)?.full).toBe(TARGET_NEEDS_HEIGHT);
     expect(rowTarget({ referenceLow: 3, referenceHigh: 5 }, 'si', null, null)?.bare).toBe('Ref 3–5');
+  });
+});
+
+// H83: a row with no value prints `alone`, its target with the unit the value
+// would carry, so an empty row says what "<1.4" is in. `bare` stays unitless.
+describe('rowTarget: alone, the target with its unit for a row with no value (H83)', () => {
+  it.each([
+    ['weight', 'Target 70.0 kg', 'Target 154 lbs'],
+    ['waist', 'Target <89 cm', 'Target <34.7 in'],
+    ['blood_pressure', 'Target <120/80 mmHg', 'Target <120/80 mmHg'],
+    ['hba1c', 'Normal <39 mmol/mol', 'Normal <5.7%'],
+    ['ldl', 'Optimal <1.4 mmol/L', 'Optimal <55 mg/dL'],
+    ['hdl', 'Optimal >1.0/>1.3 mmol/L', 'Optimal >40/>50 mg/dL'],
+    ['total_cholesterol', 'Optimal <3.5 mmol/L', 'Optimal <135 mg/dL'],
+    ['triglycerides', 'Normal <1.7 mmol/L', 'Normal <150 mg/dL'],
+    ['apob', 'Optimal <0.50 g/L', 'Optimal <50 mg/dL'],
+    ['creatinine', 'Normal 60–110/45–90 µmol/L', 'Normal 0.7–1.2/0.5–1.0 mg/dL'],
+  ] as const)('%s: SI and US', (metric, si, us) => {
+    expect(rowTarget(metric, 'si', adult, plan)?.alone).toBe(si);
+    expect(rowTarget(metric, 'conventional', adult, plan)?.alone).toBe(us);
+  });
+
+  it('Lp(a) in each of its units, and a known sex\'s variant', () => {
+    expect(rowTarget('lpa', 'nmol/L', adult, null)?.alone).toBe('Normal <75 nmol/L');
+    expect(rowTarget('lpa', 'mg/dL', adult, null)?.alone).toBe('Normal <30 mg/dL');
+    expect(rowTarget('lpa', 'mg/L', adult, null)?.alone).toBe('Normal <300 mg/L');
+    expect(rowTarget('hdl', 'conventional', { sex: 'female' }, null)?.alone).toBe('Optimal >50 mg/dL');
+    expect(rowTarget('creatinine', 'si', { sex: 'male' }, null)?.alone).toBe('Normal 60–110 µmol/L');
+  });
+
+  it('a printed range knows no unit, so alone is bare; no target, no alone', () => {
+    expect(rowTarget({ referenceLow: 3, referenceHigh: 5 }, 'si', adult, null)?.alone).toBe('Ref 3–5');
+    expect(rowTarget('weight', 'si', adult, null)?.alone).toBeNull();
+    expect(rowTarget('weight', 'si', adult, { age: 50, heightCm: 178 })?.alone).toBeNull();
+    expect(rowTarget('psa', 'si', adult, plan)).toBeNull();
   });
 });
 

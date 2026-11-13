@@ -129,7 +129,7 @@ describe('US-62 AC8: one row per value on a phone', () => {
     expect(row(view, 'Vitamin D (25-OH)').querySelector('.md-row-meta')!.textContent).toBe('Oct 2026');
     const apob = row(view, 'ApoB');
     expect(apob.querySelector('.md-row-add')!.textContent).toBe('Add');
-    expect(apob.querySelector('.md-row-meta')!.textContent).toBe('Optimal <0.50');
+    expect(apob.querySelector('.md-row-meta')!.textContent).toBe('Optimal <0.50 g/L');
   });
 
   it('a returning record\'s rows show its saved values from the first render, never Add (CI WebKit, PR 421)', async () => {

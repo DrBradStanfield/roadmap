@@ -86,7 +86,7 @@ export function coreRow(metric: MetricType, history: ApiMeasurement[], ctx: RowC
   return {
     subject: { kind: 'core', metric },
     label: METRIC_LABELS[metric] ?? metric,
-    target: rowTarget(metric, unit, ctx.grading, ctx.plan)?.bare ?? null,
+    target: rowTarget(metric, unit, ctx.grading, ctx.plan)?.[latest ? 'bare' : 'alone'] ?? null,
     day: latest?.day ?? null,
     latest: latest ? savedCellText(metric, latest.value, unit, latest.comparator) : null,
     previous: previous ? savedCellText(metric, previous.value, unit, previous.comparator) : null,
@@ -106,7 +106,7 @@ export function pressureRow(history: ApiMeasurement[], ctx: RowContext): RowMode
   return {
     subject: { kind: 'bp' },
     label: 'Blood Pressure',
-    target: rowTarget('blood_pressure', 'si', ctx.grading, ctx.plan)?.bare ?? null,
+    target: rowTarget('blood_pressure', 'si', ctx.grading, ctx.plan)?.[latest ? 'bare' : 'alone'] ?? null,
     day: latest?.day ?? null,
     latest: latest ? pressureText(latest) : null,
     previous: previous ? pressureText(previous) : null,

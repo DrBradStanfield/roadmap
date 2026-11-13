@@ -24,7 +24,7 @@ import { BLOOD_TEST_METRICS, METRIC_LABELS, VITAL_METRICS } from '../../packages
 import { METRIC_GUIDES, type MetricGuide } from '../../packages/health-core/src/metric-guides';
 import { APPLE_LOW_FROM_60, FRIEND_2022_TREADMILL, type Vo2MaxCutPoints } from '../../packages/health-core/src/vo2max-bands';
 import { calculateAge } from '../../packages/health-core/src/calculations';
-import { rowTarget } from '../../packages/health-core/src/row-target';
+import { type RowTarget, rowTarget } from '../../packages/health-core/src/row-target';
 import { gradeWords, limitUngraded, pressureStatus, valueStatus, type GradeContext, type GradeStatus, type PressureReading } from '../../packages/health-core/src/row-grade';
 import { labSeriesRows } from '../../packages/health-core/src/lab-series';
 import { displayLabUnit, labSlotKey, resolveLabCatalogEntry } from '../../packages/health-core/src/lab-catalog';
@@ -56,7 +56,7 @@ export interface MyDataRow {
   /** Whether this test has its own Metric/US choice, as the web's unit chip (not Lp(a), height or blood pressure). */
   switchable: boolean;
   /** The target the value is read against, as the web's row prints it under the name (US-62 AC9):
-   *  health-core's `rowTarget(...).bare`, such as "Optimal <2.6" or "Target <130/80"; null when none. */
+   *  health-core's `rowTarget(...).bare`, such as "Optimal <2.6", or `.alone` with no value, "Optimal <2.6 mmol/L"; null when none. */
   target: string | null;
   /** The value before the latest, in the same units: the newest earlier day's active value, the
    *  web's "(74)" (US-62 AC8); null with fewer than two days. */
@@ -264,7 +264,7 @@ export function myData(file: RoadmapFile, now = new Date().toISOString(), choice
         : null,
       trend: trend.get(metric) ?? [],
       switchable: SWITCHABLE.has(metric),
-      target: rowTarget(metric as MetricType, shown, grading, basis)?.bare ?? null,
+      target: rowTarget(metric as MetricType, shown, grading, basis)?.[latest ? 'bare' : 'alone'] ?? null,
       previous: before ? rowText(metric as MetricType, days.get(metric)!.get(before)!, shown) : null,
       ...gradeOf(latest ? valueStatus(metric as MetricType, latest.value, graded, comparatorOf(latest).comparator) : null, metric),
       note: latest && ungradedLimit(metric as MetricType, latest, graded) ? LIMIT_NOT_GRADED : null,
@@ -287,7 +287,7 @@ export function myData(file: RoadmapFile, now = new Date().toISOString(), choice
       alcohol: isAlcoholAnswer(file.profile.alcohol) ? file.profile.alcohol : null,
     },
     // Blood pressure is one row, as the web's matrix shows it: the newest day's pair.
-    vitals: [...VITAL_METRICS.filter((metric) => metric !== 'systolic_bp' && metric !== 'diastolic_bp').map(row), pressureRow(file, trend, rowTarget('blood_pressure', 'si', grading, basis)?.bare ?? null, graded)],
+    vitals: [...VITAL_METRICS.filter((metric) => metric !== 'systolic_bp' && metric !== 'diastolic_bp').map(row), pressureRow(file, trend, rowTarget('blood_pressure', 'si', grading, basis), graded)],
     // PSA is asked for under prostate screening on the web, not with the blood tests.
     bloodTests: BLOOD_TEST_METRICS.filter((metric) => metric !== 'psa').map(row),
     // The web asks for PSA under screening and never colours it.
@@ -486,7 +486,7 @@ function typedRangeMessage(metric: string, typed: number, unit: CellUnit, refusa
 }
 
 /** The Vitals row for blood pressure: the newest day's pair, from the history's own pairing. */
-function pressureRow(file: RoadmapFile, trend: Map<string, number[]>, target: string | null, graded: GradeContext): MyDataRow {
+function pressureRow(file: RoadmapFile, trend: Map<string, number[]>, target: RowTarget | null, graded: GradeContext): MyDataRow {
   const shown = new Map<string, PressureReading>();
   const { label, unit, rows } = pressureHistory(file, [], shown);
   const active = rows.filter((row) => row.status === 'active');
@@ -504,7 +504,7 @@ function pressureRow(file: RoadmapFile, trend: Map<string, number[]>, target: st
     latest: newest ? { id: newest.id, value: newest.value, day: newest.day } : null,
     trend: trend.get('systolic_bp') ?? [],
     switchable: false,
-    target,
+    target: target?.[newest ? 'bare' : 'alone'] ?? null,
     previous: previous?.value ?? null,
     ...gradeOf(status, BLOOD_PRESSURE),
     note: reading && limitUngraded(BLOOD_PRESSURE, status, graded, reading) ? LIMIT_NOT_GRADED : null,
