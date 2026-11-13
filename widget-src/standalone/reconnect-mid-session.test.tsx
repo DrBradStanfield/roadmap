@@ -454,7 +454,7 @@ describe('US-09 AC48 (lead A3, Codex R1): every exit from a clean session keeps 
     expect(await deviceWeights()).toMatchObject({ [SEEDED.day]: SEEDED.value });
   });
 
-  it('google-drive: a copy this browser refuses stops "Use this browser only"; the panel stays as it was', async () => {
+  it('google-drive: a copy that fails for another reason (a full disk) stops "Use this browser only"; the panel stays as it was', async () => {
     await revokeCleanSession('google-drive');
     const setItem = Storage.prototype.setItem;
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key: string, value: string) {
@@ -469,6 +469,25 @@ describe('US-09 AC48 (lead A3, Codex R1): every exit from a clean session keeps 
     expect(localStorage.getItem(DRIVE_CONFIG)).not.toBeNull(); // not disconnected
     expect(status()).toBe(panelText('google-drive'));
     expect(document.querySelector('.hr-sync-error')).toBeNull(); // no new words
+  });
+
+  it('google-drive: after another tab logs off, "Use this browser only" finishes: nothing to copy, no record on the device, no report (re-check F1)', async () => {
+    await revokeCleanSession('google-drive');
+    const cloudBefore = JSON.stringify(driveFiles);
+    // Another tab logs this browser off: its new log-off id, then its signal.
+    localStorage.setItem('health_roadmap_log_off_id', 'id-after');
+    window.dispatchEvent(new StorageEvent('storage', { key: 'health_roadmap_log_off_signal' }));
+    const { healthWritesAllowed } = await import('../src/lib/storage');
+    expect(healthWritesAllowed()).toBe(false);
+    const { Sentry } = await import('../src/lib/sentry');
+    vi.mocked(Sentry.captureException).mockClear();
+    fireEvent.click(button('Use this browser only')!);
+    await until(() => reload.mock.calls.length > 0, 'the reload');
+    expect(localStorage.getItem(BACKEND_KEY)).toBeNull();
+    expect(localStorage.getItem('health_roadmap_file_v2')).toBeNull(); // no record written after the log-off
+    expect(await deviceWeights()).toEqual({});
+    expect(JSON.stringify(driveFiles)).toBe(cloudBefore); // the cloud file is untouched
+    expect(Sentry.captureException).not.toHaveBeenCalled();
   });
 
   it.each(['google-drive', 'dropbox'] as const)('%s: a picker move is refused, and the record stays in the cloud', async (cloud) => {
