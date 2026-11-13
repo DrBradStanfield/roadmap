@@ -21,9 +21,10 @@ import {
 
 /**
  * What the fake-timer mode fakes: the timers and the clock the app's debounces,
- * glow and re-read throttle run on. queueMicrotask, promises and
- * requestAnimationFrame stay real, so a test that relies on a microtask gap
- * still sees it.
+ * glow and re-read throttle run on. queueMicrotask and promises stay real, so a
+ * test that relies on a microtask gap still sees it. jsdom's requestAnimationFrame
+ * is not faked itself but runs on the faked setInterval, so frames move with the
+ * fake clock (still with the wall clock too, through shouldAdvanceTime).
  */
 const FAKED = ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date'] as const;
 
@@ -58,7 +59,14 @@ export function useHealthToolLifecycle({ fakeTimers = false }: { fakeTimers?: bo
     // each vi.fn's calls and unused mock*Once values, as restoreAllMocks did in 1.x.
     vi.resetAllMocks();
     vi.unstubAllGlobals();
-    if (fakeTimers) vi.useRealTimers();
+    if (fakeTimers) {
+      // jsdom runs its animation frames on the global setInterval, faked here. A frame
+      // still pending when real timers come back leaves jsdom waiting on a fake interval
+      // that never fires, and every later frame in the file hangs: cancel them first.
+      const last = requestAnimationFrame(() => {});
+      for (let handle = 1; handle <= last; handle++) cancelAnimationFrame(handle);
+      vi.useRealTimers();
+    }
   });
 }
 

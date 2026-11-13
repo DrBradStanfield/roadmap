@@ -14,7 +14,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ChatEditTarget } from '../hooks/useChatState';
 import type { ProposedEdit } from '@roadmap/health-core/chat-edits';
-import { act, cleanup, fireEvent, render, waitFor, within, type RenderResult } from '@testing-library/react';
+import { act, fireEvent, render, waitFor, within, type RenderResult } from '@testing-library/react';
 import { CURRENT_SCHEMA_VERSION } from '@roadmap/health-core/roadmap-file';
 import { localDay, rowRootIds } from '@roadmap/health-core/merge';
 import { migrateFile } from '@roadmap/health-core/migrate';
@@ -23,7 +23,7 @@ import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { addMeasurement, bulkSaveDocuments, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements, saveMedication, saveSupplement } from '../lib/roadmap-data';
 import { MIRROR_KEY } from '../lib/storage';
-import { openAboutYou, showTables, trackLiveRefresh, stopLiveRefresh, recordOnDisk } from '../testing/health-tool-harness';
+import { openAboutYou, showTables, trackLiveRefresh, stopLiveRefresh, recordOnDisk, useHealthToolLifecycle, wait } from '../testing/health-tool-harness';
 import { formatShortDate } from '../lib/constants';
 
 vi.mock('../lib/build-flags', () => ({ LOCAL_FIRST: true, SHOPIFY_SURFACE: true }));
@@ -60,13 +60,16 @@ let phone = false;
 /** 1200px and up: the inline chat column shows (`useIsWideDesktop`). */
 let wide = true;
 
+// Fake timers that move with the clock (test audit W03): wait(ms) jumps the 500 ms
+// field save with the same durations, so the timing rules stay pinned. The one
+// real-timer pin lives in HealthTool.onboarding-real-timer.test.tsx.
+useHealthToolLifecycle({ fakeTimers: true });
 beforeEach(async () => {
   phone = false;
   wide = true;
   sent = [];
   chat.muted = [];
   floating.muted = [];
-  localStorage.clear(); sessionStorage.clear();
   // Wide desktop: the chat column shows. A phone matches the max-width query;
   // a narrow desktop (`wide` false) matches neither.
   vi.stubGlobal('matchMedia', (q: string) => ({
@@ -79,16 +82,10 @@ beforeEach(async () => {
     }
     throw new Error('Synthetic test: no network');
   }));
-  Element.prototype.scrollIntoView ??= () => {};
   trackLiveRefresh();
   await initRoadmapStore(new LocalStorageAdapter());
 });
-afterEach(async () => {
-  cleanup();
-  stopLiveRefresh();
-  await flushRoadmapStore();
-  vi.restoreAllMocks(); vi.unstubAllGlobals();
-});
+afterEach(() => { stopLiveRefresh(); });
 
 const activeWeights = async () => (await recordOnDisk()).measurements
   .filter((m) => m.metricType === 'weight' && m.status === 'active').map((m) => [m.value, m.recordedAt.slice(0, 10)]);
@@ -99,7 +96,7 @@ async function open(): Promise<RenderResult> {
   const view = render(<HealthTool />);
   // A complete record's About you sits in Settings (US-62 AC24): openAboutYou opens them.
   await waitFor(() => expect(view.container.querySelector('#heightCm') ?? (openAboutYou(view.container), view.container.querySelector('.about-row'))).toBeTruthy());
-  await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+  await wait(0);
   openAboutYou(view.container);
   return view;
 }
@@ -120,7 +117,8 @@ async function measurements(view: RenderResult, height = '178', weight = '80') {
   leave(q(view, '#heightCm'));
   type(q(view, '#weightKg'), weight);
   leave(q(view, '#weightKg'));
-  await waitFor(async () => expect(await activeWeights()).toEqual([[Number(weight), localToday()]]), { timeout: 2000 });
+  await wait(2000);
+  expect(await activeWeights()).toEqual([[Number(weight), localToday()]]);
 }
 /** One animation frame: what a click scheduled with requestAnimationFrame
  *  (a stage's reveal focusing the next question) has run. */
@@ -150,21 +148,8 @@ describe('US-62 AC13: each step reveals the next', () => {
     expect(view.queryByText(/Skip/)).toBeNull();
   });
 
-  // Real-timer pin (test audit W01): keep this test off fake timers; it is the one place the 500 ms field save must fire on its own.
-  it('height and weight show the BMI tile with no sex, then ask sex with its why-text', async () => {
-    const view = await open();
-    await measurements(view);
-    await waitFor(() => expect(tiles(view)).toContain('BMI'));
-    expect(tiles(view)).not.toContain('Ideal Body Weight');
-    expect(tiles(view)).not.toContain('Protein Target');
-    expect(sexQuestion(view)).toBeTruthy();
-    expect(view.getByText(WHY_SEX)).toBeTruthy();
-    expect(q(view, '#birthMonth')).toBeNull();
-    expect(fullForm(view)).toBe(false);
-    // Brad 2026-11-02: once a sex is chosen its why-line goes (About you's Sex row keeps it).
-    fireEvent.click(view.getByRole('radio', { name: 'Female' }));
-    expect(view.queryByText(WHY_SEX)).toBeNull();
-  });
+  // The real-timer pin (test audit W01), height and weight showing the BMI tile, lives in
+  // HealthTool.onboarding-real-timer.test.tsx: it must stay off fake timers.
 
   it('sex adds the healthy weight and protein target, then asks the birth date with its why-text', async () => {
     const view = await open();
@@ -255,7 +240,8 @@ describe('US-62 AC13: the weight saves when its field is left (B10)', () => {
     // The box beside the height holds the saved weight: type today's again.
     type(q(view, '#weightKg'), '79');
     leave(q(view, '#weightKg'));
-    await waitFor(async () => expect(await activeWeights()).toEqual([[79, localToday()]]), { timeout: 2000 });
+    await wait(2000); // the weight's 500 ms save
+    expect(await activeWeights()).toEqual([[79, localToday()]]);
     const rows = (await recordOnDisk()).measurements.filter((m) => m.metricType === 'weight');
     expect(rows.map((r) => r.status).sort()).toEqual(['active', 'entered-in-error']);
   });
@@ -285,7 +271,8 @@ describe('US-62 AC12, AC13 (Brad 2026-11-02): boxes while typing, rows after', (
     expect(sectionOrder(view)[0]).toBe('Starting info');
     expect(q(view, '#weightKg')).toBeTruthy(); // typed here, it stays beside the height for the visit
     expect(q(view, '.about-row')).toBeNull();
-    await waitFor(async () => expect((await recordOnDisk()).profile.birthYear).toBe(1985), { timeout: 2000 });
+    await wait(2000); // the profile's 500 ms save
+    expect((await recordOnDisk()).profile.birthYear).toBe(1985);
     view.unmount();
 
     const again = render(<HealthTool />);
@@ -323,7 +310,7 @@ describe('US-62 AC13: a reload resumes at the first missing answer', () => {
     const view = await open();
     await measurements(view);
     fireEvent.click(view.getByRole('radio', { name: 'Male' }));
-    await act(async () => { await new Promise((r) => setTimeout(r, 700)); }); // the profile's 500 ms save
+    await wait(700); // the profile's 500 ms save
     view.unmount();
     const again = await open();
     await waitFor(() => expect(q(again, '#birthMonth')).toBeTruthy());
@@ -501,7 +488,7 @@ describe('US-62 AC13 review fixes (PR 421)', () => {
     await flushRoadmapStore();
     await act(async () => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
     await waitFor(() => expect(fullForm(view)).toBe(true), { timeout: 3000 });
-    await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+    await wait(50);
     expect(named('onboarding_step')).toEqual([]);
     expect(named('onboarding_done')).toEqual([]);
   });
@@ -532,7 +519,7 @@ describe('US-62 AC13 review fixes, round 2 (PR 421)', () => {
     type(height, '');
     type(height, '172');
     leave(height);
-    await act(async () => { await new Promise((r) => setTimeout(r, 700)); });
+    await wait(700);
     expect(named('onboarding_step')).toEqual([]);
     expect(named('onboarding_done')).toEqual([]);
   });
@@ -626,7 +613,7 @@ describe('US-62 AC13 review fixes, round 2 (PR 421)', () => {
     };
     await waitFor(() => expect(cell()).toBeTruthy());
     type(cell(), '170');
-    await act(async () => { await new Promise((r) => setTimeout(r, 100)); });
+    await wait(100);
     expect(q(view, '#guestEmail')).toBeTruthy();
     expect(document.activeElement?.id).not.toBe('guestEmail');
   });
@@ -780,11 +767,11 @@ describe('US-02 AC9: a range error waits while the number is still being typed',
     type(height, '19');
     expect(shown(view)).toEqual([]);
     expect(height?.className).not.toContain('error');
-    await act(async () => { await new Promise((r) => setTimeout(r, 700)); }); // the profile's 500 ms save, the field still focused
+    await wait(700); // the profile's 500 ms save, the field still focused
     expect((await recordOnDisk())?.profile?.heightCm ?? null).toBeNull();
     leave(height);
     expect(shown(view)).toEqual(['Height must be at least 50 cm']);
-    await act(async () => { await new Promise((r) => setTimeout(r, 700)); });
+    await wait(700);
     expect((await recordOnDisk())?.profile?.heightCm ?? null).toBeNull();
     expect((height as HTMLInputElement).value).toBe('19'); // kept, with its error
   });
@@ -849,7 +836,7 @@ describe('US-62 AC31: "Your plan is ready." after the onboarding', () => {
     const mine = () => watched.filter((w) => w.el === card);
     await waitFor(() => expect(mine().length).toBeGreaterThan(0));
     act(() => { for (const w of mine()) w.cb([{ isIntersecting: false, target: card } as IntersectionObserverEntry], {} as IntersectionObserver); });
-    await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+    await wait(50);
     expect(named('plan_ready_shown')).toEqual([]); // hidden or off screen: not counted
     act(() => { for (const w of mine()) w.cb([{ isIntersecting: true, target: card } as IntersectionObserverEntry], {} as IntersectionObserver); });
     await waitFor(() => expect(named('plan_ready_shown')).toHaveLength(1));
@@ -887,9 +874,9 @@ describe('US-62 AC12: About you goes low once the onboarding is done and its car
     fireEvent.click(view.getByRole('radio', { name: 'Male' }));
     fireEvent.change(q(view, '#birthMonth')!, { target: { value: '5' } });
     const year = q(view, '#birthYear') as HTMLInputElement;
-    await act(async () => { await new Promise((r) => setTimeout(r, 50)); }); // the sex answer's reveal focuses the month
+    await wait(50); // the sex answer's reveal focuses the month
     type(year, '199');
-    await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+    await wait(50);
     expect(document.activeElement).toBe(year); // a partial year never jumps
     expect(aboutLow(view)).toBeNull();
     expect(cards(view)[0].querySelector('#birthYear')).toBe(year);
@@ -921,7 +908,7 @@ describe('US-62 AC12: About you goes low once the onboarding is done and its car
     fireEvent.click(male);
     act(() => { male.focus(); });
     act(() => { male.blur(); });
-    await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+    await wait(50);
     expect(aboutLow(view)).toBeNull();
   });
 });
@@ -968,7 +955,7 @@ describe('US-02 AC11: feet and inches keep what is typed', () => {
     key(inchesBox(view), '0');
     await waitFor(() => expect(document.activeElement?.id).toBe('weightKg'));
     expect([feet.value, inchesBox(view).value]).toEqual(['5', '10']);
-    await act(async () => { await new Promise((r) => setTimeout(r, 700)); }); // the profile's 500 ms save
+    await wait(700); // the profile's 500 ms save
     expect((await recordOnDisk()).profile.heightCm).toBeCloseTo(177.8, 1);
   });
 
@@ -1015,7 +1002,7 @@ describe('US-02 AC11: feet and inches keep what is typed', () => {
     type(feet, '5');
     key(inchesBox(view), '1');
     key(inchesBox(view), '0');
-    await act(async () => { await new Promise((r) => setTimeout(r, 900)); }); // the profile's 500 ms save
+    await wait(900); // the profile's 500 ms save
     const typed = (await recordOnDisk()).profile.heightCm;
     await saveChangedMeasurements({ heightCm: 160 }, { heightCm: typed }); // another device
     await flushRoadmapStore();
@@ -1035,7 +1022,7 @@ describe('US-02 AC5: an out-of-range value stays in its field, its error shown, 
     const year = q(view, '#birthYear') as HTMLInputElement;
     type(year, '1850');
     leave(year);
-    await act(async () => { await new Promise((r) => setTimeout(r, 700)); }); // the profile's 500 ms save
+    await wait(700); // the profile's 500 ms save
     expect(year.value).toBe('1850');
     expect(shown(view)).toContain('Birth year must be after 1900');
     expect((await recordOnDisk())?.profile?.birthYear ?? null).toBeNull();
@@ -1070,9 +1057,9 @@ describe('PR 518 review: refused and erased records', () => {
     await saveChangedMeasurements({ heightCm: 171, sex: 'female' }, { heightCm: 170, sex: 'female' });
     await flushRoadmapStore();
     await act(async () => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
-    await act(async () => { await new Promise((r) => setTimeout(r, 900)); }); // the autosave refuses the year
+    await wait(900); // the autosave refuses the year
     leave(year);
-    await act(async () => { await new Promise((r) => setTimeout(r, 300)); });
+    await wait(300);
     expect((q(view, '#birthYear') as HTMLInputElement).value).toBe('1850');
     expect(Array.from(view.container.querySelectorAll('.error-message')).map((e) => e.textContent)).toContain('Birth year must be after 1900');
     expect((await recordOnDisk())?.profile?.birthYear ?? null).toBeNull();
@@ -1085,11 +1072,11 @@ describe('PR 518 review: refused and erased records', () => {
     const waist = gridDraft(view, 'Waist Circumference');
     type(waist, '3');
     leave(waist);
-    await act(async () => { await new Promise((r) => setTimeout(r, 700)); }); // the grid's commit on leaving skips it
+    await wait(700); // the grid's commit on leaving skips it
     await saveChangedMeasurements({ alcohol: 'none' }, {}); // another writer
     await flushRoadmapStore();
     await act(async () => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
-    await act(async () => { await new Promise((r) => setTimeout(r, 300)); });
+    await wait(300);
     expect(gridDraft(view, 'Waist Circumference').value).toBe('3');
     expect(gridErrors(view)).toContain('Min 40 cm');
     expect((await recordOnDisk()).measurements.filter((m) => m.metricType === 'waist')).toEqual([]);
@@ -1106,7 +1093,7 @@ describe('PR 518 review: refused and erased records', () => {
     act(() => { year.focus(); });
     fireEvent.pointerDown(view.getByRole('radio', { name: 'Male' })); // Safari: the toggle takes no focus
     leave(year); // focusout, relatedTarget null
-    await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+    await wait(50);
     expect(q(view, '.about-card')).not.toBeNull();
     expect(q(view, '#birthYear')).toBe(year);
   });
@@ -1120,10 +1107,10 @@ describe('PR 518 Codex re-check', () => {
     const view = render(<HealthTool />);
     fireEvent.click(await waitFor(() => { const b = q(view, '#about-birth') ?? (openSettings(view.container), q(view, '#about-birth')); expect(b).toBeTruthy(); return b as HTMLElement; }));
     const year = await waitFor(() => { const y = q(view, '[data-about="birth"] #birthYear'); expect(y).toBeTruthy(); return y as HTMLInputElement; });
-    await act(async () => { await new Promise((r) => setTimeout(r, 50)); }); // opening the row focuses its month
+    await wait(50); // opening the row focuses its month
     act(() => { year.focus(); });
     fireEvent.change(year, { target: { value: '1979' } }); // as ArrowDown would
-    await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+    await wait(50);
     expect(document.activeElement).toBe(year);
   });
 
@@ -1155,7 +1142,7 @@ describe('PR 518 Codex re-check', () => {
     const waist = gridDraft(view, 'Waist Circumference');
     type(waist, '3');
     leave(waist);
-    await act(async () => { await new Promise((r) => setTimeout(r, 700)); });
+    await wait(700);
     // Another device erases the record, as its deleteUserData writes it.
     const adapter = new LocalStorageAdapter();
     const { body, version } = await adapter.read(ROADMAP_FILE_NAME);
@@ -1188,7 +1175,7 @@ describe('PR 518 adversary re-check', () => {
     fireEvent.change(q(view, '#birthMonth')!, { target: { value: '' } });
     const year = q(view, '#birthYear') as HTMLInputElement;
     type(year, '1850');
-    await act(async () => { await new Promise((r) => setTimeout(r, 700)); }); // refused
+    await wait(700); // refused
     await saveChangedMeasurements({ heightCm: 171, sex: 'female' }, { heightCm: 170, sex: 'female' }); // another writer
     await flushRoadmapStore();
     await act(async () => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); }); // held: the form holds 1850
@@ -1208,7 +1195,7 @@ describe('PR 518 adversary re-check', () => {
     act(() => { year.focus(); });
     fireEvent.pointerDown(view.getByRole('radio', { name: 'Male' }));
     leave(year); // Safari: nothing takes the focus
-    await act(async () => { await new Promise((r) => setTimeout(r, 30)); });
+    await wait(30);
     expect(q(view, '.about-card')).not.toBeNull();
     fireEvent.pointerDown(document.body); // a press outside the card
     await waitFor(() => expect(q(view, '.about-card')).toBeNull());
@@ -1259,7 +1246,7 @@ describe('US-11 AC6: a remote erase always applies', () => {
     const height = q(view, '#heightCm') as HTMLInputElement;
     type(height, '19');
     leave(height);
-    await act(async () => { await new Promise((r) => setTimeout(r, 700)); }); // the autosave refuses 19
+    await wait(700); // the autosave refuses 19
     expect((await recordOnDisk())?.profile?.heightCm).toBe(170);
     // Another device erases the record, as its deleteUserData writes it.
     const adapter = new LocalStorageAdapter();
@@ -1341,7 +1328,7 @@ describe('US-62 AC8 (H71): waist and blood pressure are rows from the start; no 
     // Path (c): a complete height moves nowhere, since no weight box shows; no error.
     const height = q(view, '#heightCm') as HTMLInputElement;
     type(height, '178');
-    await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+    await wait(50);
     expect(document.activeElement).toBe(height);
     expect(Array.from(view.container.querySelectorAll('.error-message'))).toEqual([]);
 
@@ -1367,7 +1354,7 @@ describe('US-62 AC8 (H71): waist and blood pressure are rows from the start; no 
       await waitFor(() => expect(fullForm(view)).toBe(true), slow);
       const height = q(view, '#heightCm') as HTMLInputElement;
       type(height, '178');
-      await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+      await wait(50);
       expect(document.activeElement).toBe(height);
     } finally {
       decoy.remove();
