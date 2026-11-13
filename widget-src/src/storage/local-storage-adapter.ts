@@ -88,6 +88,18 @@ function versionKey(fileName: string): string {
   return `${fileKey(fileName)}_rev`;
 }
 
+function readFrom(fileName: string, getItem: (key: string) => string | null): ReadResult {
+  const raw = getItem(fileKey(fileName));
+  if (raw == null) return { body: null, version: null };
+  let body: unknown;
+  try {
+    body = JSON.parse(raw);
+  } catch (error) {
+    throw new StorageError('Local data is corrupt and could not be read.', undefined, error);
+  }
+  return { body, version: getItem(versionKey(fileName)) ?? '0' };
+}
+
 export class LocalStorageAdapter implements StorageAdapter {
   readonly id = 'local' as const;
   readonly label = 'This device only';
@@ -120,15 +132,13 @@ export class LocalStorageAdapter implements StorageAdapter {
   }
 
   readSync(fileName: string): ReadResult {
-    const raw = safeGetItem(fileKey(fileName));
-    if (raw == null) return { body: null, version: null };
-    let body: unknown;
-    try {
-      body = JSON.parse(raw);
-    } catch (error) {
-      throw new StorageError('Local data is corrupt and could not be read.', undefined, error);
-    }
-    return { body, version: safeGetItem(versionKey(fileName)) ?? '0' };
+    return readFrom(fileName, safeGetItem);
+  }
+
+  /** readSync, but a localStorage that throws (a SecurityError) throws here
+   *  instead of reading as no record (S69 R2). */
+  readSyncStrict(fileName: string): ReadResult {
+    return readFrom(fileName, (key) => localStorage.getItem(key));
   }
 
   writeSync(fileName: string, body: object, expectedVersion: string | null): WriteResult {
