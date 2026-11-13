@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H83,units,"The Waist row target ""Target <89"" has no unit while the page shows ""<89 cm"", and the grid's Weight trend shows an amber dash with no data",lead,not started,"Seen in the PR 1508 shots: the My health Waist row reads ""Target <89"" with no unit, while its value page reads ""<89 cm"". The vitals grid's Weight trend cell shows an amber dash when there is no data; amber reads as a warning. (H83)",,no

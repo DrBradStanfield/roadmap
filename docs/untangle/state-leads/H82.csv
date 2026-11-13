@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H82,value pages,"Value pages leave about 50pt of empty band under the last line, and show ""Tap a value to correct it."" right under ""No values yet.""",lead,not started,"Seen in the PR 1508 shots: about 50pt of empty space sits under the last line of a value page. With no values the page shows ""No values yet."" and then ""Tap a value to correct it."", a hint with nothing to tap. (H82)",,no

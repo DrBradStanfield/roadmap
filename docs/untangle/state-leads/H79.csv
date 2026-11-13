@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H79,vitals fields,"The vitals grid at 390 px starts scrolled so a clipped narrow column shows on the left, and today's saved weight is missing from the NEW column",bug,not started,"Seen in the PR 1508 shots at 390 px: the grid opens scrolled so a clipped column shows on the left (a ""lia"" fragment of a sys/dia placeholder), and the NEW column shows ""—"" for weight though today's weight is saved. Older behaviour, not from PR 1508. (H79)",,no
