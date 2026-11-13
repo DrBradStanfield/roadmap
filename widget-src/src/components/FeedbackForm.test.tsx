@@ -32,17 +32,27 @@ const THANKS = 'Thank you for your feedback!';
 
 describe('US-19 AC3: a send that ends after the form closed changes nothing', () => {
   it('the transition table: each state x event names the state that follows', () => {
-    const states: FeedbackMode[] = ['closed', 'open', 'sending', 'failed', 'sent'];
-    const events: FeedbackEvent[] = ['expand', 'close', 'send', 'sendFailed', 'sendOk', 'thanked'];
-    // Rows are states, columns are events, in the orders above.
-    const next: Record<FeedbackMode, FeedbackMode[]> = {
-      closed: ['open', 'closed', 'closed', 'closed', 'closed', 'closed'],
-      open: ['open', 'closed', 'sending', 'open', 'open', 'open'],
-      sending: ['sending', 'closed', 'sending', 'failed', 'sent', 'sending'],
-      failed: ['failed', 'closed', 'sending', 'failed', 'failed', 'failed'],
-      sent: ['sent', 'sent', 'sent', 'sent', 'sent', 'closed'],
+    const id = Symbol('this'), other = Symbol('other');
+    const states: Record<string, FeedbackMode> = {
+      closed: { kind: 'closed' }, open: { kind: 'open' }, sending: { kind: 'sending', sendId: id },
+      failed: { kind: 'failed' }, sent: { kind: 'sent' },
     };
-    for (const s of states) events.forEach((e, i) => expect([s, e, feedbackTransition(s, e)]).toEqual([s, e, next[s][i]]));
+    const events: Record<string, FeedbackEvent> = {
+      expand: { type: 'expand' }, close: { type: 'close' }, send: { type: 'send', sendId: id },
+      sendFailed: { type: 'sendFailed', sendId: id }, sendOk: { type: 'sendOk', sendId: id },
+      otherFailed: { type: 'sendFailed', sendId: other }, otherOk: { type: 'sendOk', sendId: other }, thanked: { type: 'thanked' },
+    };
+    // Rows are states, columns are events, in the orders above ('other*': another send's answer).
+    const next: Record<string, string[]> = {
+      closed: ['open', 'closed', 'closed', 'closed', 'closed', 'closed', 'closed', 'closed'],
+      open: ['open', 'closed', 'sending', 'open', 'open', 'open', 'open', 'open'],
+      sending: ['sending', 'closed', 'sending', 'failed', 'sent', 'sending', 'sending', 'sending'],
+      failed: ['failed', 'closed', 'sending', 'failed', 'failed', 'failed', 'failed', 'failed'],
+      sent: ['sent', 'sent', 'sent', 'sent', 'sent', 'sent', 'sent', 'closed'],
+    };
+    for (const [s, state] of Object.entries(states)) {
+      Object.entries(events).forEach(([e, event], i) => expect([s, e, feedbackTransition(state, event)]).toEqual([s, e, states[next[s][i]]]));
+    }
   });
 
   it('a send that succeeds after Cancel shows no thank-you and keeps the form closed', async () => {
@@ -60,6 +70,27 @@ describe('US-19 AC3: a send that ends after the form closed changes nothing', ()
     expect(utils.queryByText(THANKS)).toBeNull();
     expect(utils.getByRole('button', { name: 'Send feedback' })).toBeTruthy();
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('a cancelled send that ends later leaves a reopened draft, and its newer send, alone', async () => {
+    const first = deferred();
+    const second = deferred();
+    sendFeedback.mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise);
+    const utils = render(<FeedbackForm />);
+    fireEvent.click(utils.getByRole('button', { name: 'Send feedback' }));
+    fill(utils);
+    fireEvent.click(utils.getByRole('button', { name: 'Send' }));
+    fireEvent.click(utils.getByRole('button', { name: 'Cancel' }));
+    fireEvent.click(utils.getByRole('button', { name: 'Send feedback' }));
+    fireEvent.change(utils.getByPlaceholderText('Your feedback...'), { target: { value: 'Second thought' } });
+    fireEvent.click(utils.getByRole('button', { name: 'Send' }));
+    await act(async () => { first.resolve(true); await first.promise; });
+    expect(utils.queryByText(THANKS)).toBeNull();
+    expect((utils.getByPlaceholderText('Your feedback...') as HTMLTextAreaElement).value).toBe('Second thought');
+    expect(utils.getByRole('button', { name: 'Sending...' })).toBeTruthy();
+    await act(async () => { second.resolve(false); await second.promise; });
+    expect(utils.getByText('Failed to send. Please try again.')).toBeTruthy();
+    expect((utils.getByPlaceholderText('Your feedback...') as HTMLTextAreaElement).value).toBe('Second thought');
   });
 
   it('the thank-you closes the form after 3 s and calls onClose once', async () => {

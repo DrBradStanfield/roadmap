@@ -3,21 +3,26 @@ import { sendFeedback } from '../lib/server-api';
 
 /**
  * The form's mode (US-19 AC3): closed (the "Send feedback" link), open, sending, failed (open,
- * saying so) or sent (the thank-you, which closes itself after 3 s). A send's answer counts only
- * while it is sending, so one that ends after Cancel changes nothing.
+ * saying so) or sent (the thank-you, which closes itself after 3 s). Sending names its send, and
+ * an answer counts only for the send it names, so one that ends after Cancel, or while a newer
+ * send runs, changes nothing.
  */
-export type FeedbackMode = 'closed' | 'open' | 'sending' | 'failed' | 'sent';
-export type FeedbackEvent = 'expand' | 'close' | 'send' | 'sendFailed' | 'sendOk' | 'thanked';
+export type FeedbackMode =
+  | { kind: 'closed' } | { kind: 'open' } | { kind: 'sending'; sendId: symbol } | { kind: 'failed' } | { kind: 'sent' };
+export type FeedbackEvent =
+  | { type: 'expand' } | { type: 'close' } | { type: 'thanked' }
+  | { type: 'send' | 'sendFailed' | 'sendOk'; sendId: symbol };
 
 export function feedbackTransition(state: FeedbackMode, event: FeedbackEvent): FeedbackMode {
-  switch (event) {
-    case 'expand': return state === 'closed' ? 'open' : state;
-    case 'close': return state === 'open' || state === 'sending' || state === 'failed' ? 'closed' : state;
-    case 'send': return state === 'open' || state === 'failed' ? 'sending' : state;
-    case 'sendFailed': return state === 'sending' ? 'failed' : state;
-    case 'sendOk': return state === 'sending' ? 'sent' : state;
-    case 'thanked': return state === 'sent' ? 'closed' : state;
+  const { kind } = state;
+  switch (event.type) {
+    case 'expand': return kind === 'closed' ? { kind: 'open' } : state;
+    case 'close': return kind === 'open' || kind === 'sending' || kind === 'failed' ? { kind: 'closed' } : state;
+    case 'send': return kind === 'open' || kind === 'failed' ? { kind: 'sending', sendId: event.sendId } : state;
+    case 'thanked': return kind === 'sent' ? { kind: 'closed' } : state;
   }
+  if (kind !== 'sending' || state.sendId !== event.sendId) return state;
+  return { kind: event.type === 'sendOk' ? 'sent' : 'failed' };
 }
 
 interface FeedbackFormProps {
@@ -30,13 +35,13 @@ interface FeedbackFormProps {
 }
 
 export function FeedbackForm({ initialExpanded = false, onClose, showSourceLink = true }: FeedbackFormProps) {
-  const [mode, send] = useReducer(feedbackTransition, initialExpanded ? 'open' : 'closed');
+  const [mode, send] = useReducer(feedbackTransition, { kind: initialExpanded ? 'open' : 'closed' });
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
 
   const formRef = useRef<HTMLFormElement>(null);
-  const formShown = mode === 'open' || mode === 'sending' || mode === 'failed';
-  const canSubmit = email.trim() !== '' && message.trim() !== '' && mode !== 'sending';
+  const formShown = mode.kind === 'open' || mode.kind === 'sending' || mode.kind === 'failed';
+  const canSubmit = email.trim() !== '' && message.trim() !== '' && mode.kind !== 'sending';
   // The latest onClose, so a parent's new callback each render does not restart the thank-you.
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
@@ -49,15 +54,17 @@ export function FeedbackForm({ initialExpanded = false, onClose, showSourceLink 
     }
   }, [formShown]);
 
-  // The thank-you closes the form after 3 s; gone with the form, it never fires.
+  // A sent message empties the form; the thank-you closes it after 3 s and, gone with the form, never fires.
   useEffect(() => {
-    if (mode !== 'sent') return;
-    const timer = setTimeout(() => { send('thanked'); onCloseRef.current?.(); }, 3000);
+    if (mode.kind !== 'sent') return;
+    setEmail('');
+    setMessage('');
+    const timer = setTimeout(() => { send({ type: 'thanked' }); onCloseRef.current?.(); }, 3000);
     return () => clearTimeout(timer);
-  }, [mode]);
+  }, [mode.kind]);
 
   function handleClose() {
-    send('close');
+    send({ type: 'close' });
     onClose?.();
   }
 
@@ -65,28 +72,22 @@ export function FeedbackForm({ initialExpanded = false, onClose, showSourceLink 
     e.preventDefault();
     if (!canSubmit) return;
 
-    send('send');
+    const sendId = Symbol('feedback-send');
+    send({ type: 'send', sendId });
     const success = await sendFeedback(email.trim(), message.trim());
-
-    if (success) {
-      send('sendOk');
-      setEmail('');
-      setMessage('');
-    } else {
-      send('sendFailed');
-    }
+    send({ type: success ? 'sendOk' : 'sendFailed', sendId });
   }
 
   return (
     <div className="feedback-section" id={initialExpanded ? undefined : 'health-feedback'}>
-      {mode === 'sent' ? (
+      {mode.kind === 'sent' ? (
         <p className="feedback-success">Thank you for your feedback!</p>
       ) : !formShown ? (
         <div className="feedback-links">
           <button
             type="button"
             className="feedback-btn"
-            onClick={() => send('expand')}
+            onClick={() => send({ type: 'expand' })}
           >
             Send feedback
           </button>
@@ -131,7 +132,7 @@ export function FeedbackForm({ initialExpanded = false, onClose, showSourceLink 
           <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', opacity: 0 }}>
             <input type="text" name="website" tabIndex={-1} autoComplete="off" />
           </div>
-          {mode === 'failed' && (
+          {mode.kind === 'failed' && (
             <p className="feedback-error">Failed to send. Please try again.</p>
           )}
           <div className="feedback-actions">
@@ -140,7 +141,7 @@ export function FeedbackForm({ initialExpanded = false, onClose, showSourceLink 
               className="btn-primary feedback-submit"
               disabled={!canSubmit}
             >
-              {mode === 'sending' ? 'Sending...' : 'Send'}
+              {mode.kind === 'sending' ? 'Sending...' : 'Send'}
             </button>
             <button
               type="button"
