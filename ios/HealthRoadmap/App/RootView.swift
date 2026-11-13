@@ -182,7 +182,7 @@ struct RootView: View {
     }
 
     /// Which record is on screen and its erase count. The phone's copy shows until a
-    /// connected cloud opens, so "open" is part of it.
+    /// connected cloud opens and its record is drawn, so "open" and the epoch are part of it.
     private struct ShownRecord: Equatable { var source: String; var open: Bool; var epoch: Int? }
 
     private var shownRecord: ShownRecord {

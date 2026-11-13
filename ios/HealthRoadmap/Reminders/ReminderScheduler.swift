@@ -23,7 +23,7 @@ final class ReminderScheduler {
     private(set) var reminders: PhoneReminders?
     /// The erase epoch of the last good read, kept through failed ones: the ask falls back to it.
     private var lastEpoch: Int?
-    /// Bumped when another record shows: a read or an ask begun before it is stale (S41). A token, not a mode.
+    /// Bumped when another record shows or its drawn erase epoch moves: a read or an ask begun before it is stale (S41). A token, not a mode.
     private var generation = 0
     /// What iOS allows; nil until first asked.
     private(set) var permission: NotificationPermission?

@@ -550,7 +550,8 @@ final class ReminderSchedulerTests: XCTestCase {
     /// drawn (CloudSync.open sets the session, then RecordStore.draw awaits the engine). A refresh in
     /// that gap reads the phone's copy under the open's token. The draw moves ShownRecord's epoch,
     /// and RootView treats that as a switch too, so the phone's epoch never vouches for the cloud
-    /// record's erase during the ask. On main RootView's key left the epoch out: no call at the draw.
+    /// record's erase during the ask. A contract test: on main RootView's key left the epoch out, so
+    /// it made no call at the draw; this test drives the scheduler as RootView now does.
     func testARefreshBetweenTheOpenAndTheDrawNeverVouchesForTheCloudRecord_US25_AC12b() async {
         engineOutput = reminders(epoch: 5, days: ["2027-01-15"])
         let scheduler = scheduler()
