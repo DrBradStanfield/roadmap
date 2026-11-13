@@ -7,7 +7,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { DocumentLightbox } from './DocumentLightbox';
+import { DocumentLightbox, deleteTransition, originalTransition, type DeleteStep, type OriginalView } from './DocumentLightbox';
 import { deleteDocument, readDocumentFile } from '../lib/roadmap-data';
 import type { ApiDocument } from '../lib/api-types';
 
@@ -74,6 +74,20 @@ describe('US-14 AC3: View original never opens an active type', () => {
 // that throws gives the button back instead of leaving it on "Deleting..." or "Opening…".
 describe('US-14 AC9: delete and view original never stick', () => {
   const button = (name: string) => screen.getByRole('button', { name }) as HTMLButtonElement;
+
+  it('the transition tables: each state x event names the state that follows', () => {
+    const deleteRows: Array<[DeleteStep, 'press' | 'settled', DeleteStep]> = [
+      ['idle', 'press', 'confirming'], ['confirming', 'press', 'deleting'], ['deleting', 'press', 'deleting'],
+      ['idle', 'settled', 'idle'], ['confirming', 'settled', 'confirming'], ['deleting', 'settled', 'idle'],
+    ];
+    for (const [s, e, n] of deleteRows) expect([s, e, deleteTransition(s, e)]).toEqual([s, e, n]);
+    const originalRows: Array<[OriginalView, 'open' | 'opened' | 'missing', OriginalView]> = [
+      ['idle', 'open', 'opening'], ['opening', 'open', 'opening'], ['failed', 'open', 'opening'],
+      ['idle', 'opened', 'idle'], ['opening', 'opened', 'idle'], ['failed', 'opened', 'failed'],
+      ['idle', 'missing', 'idle'], ['opening', 'missing', 'failed'], ['failed', 'missing', 'failed'],
+    ];
+    for (const [s, e, n] of originalRows) expect([s, e, originalTransition(s, e)]).toEqual([s, e, n]);
+  });
 
   it('delete asks once, then deletes and closes', async () => {
     vi.mocked(deleteDocument).mockResolvedValue(true);

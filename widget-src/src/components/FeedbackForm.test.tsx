@@ -10,7 +10,7 @@ import { act, cleanup, fireEvent, render } from '@testing-library/react';
 const sendFeedback = vi.fn();
 vi.mock('../lib/server-api', () => ({ sendFeedback: (...args: unknown[]) => sendFeedback(...args) }));
 
-import { FeedbackForm } from './FeedbackForm';
+import { FeedbackForm, feedbackTransition, type FeedbackEvent, type FeedbackMode } from './FeedbackForm';
 
 beforeEach(() => {
   sendFeedback.mockReset();
@@ -31,6 +31,20 @@ const fill = (utils: ReturnType<typeof render>) => {
 const THANKS = 'Thank you for your feedback!';
 
 describe('US-19 AC3: a send that ends after the form closed changes nothing', () => {
+  it('the transition table: each state x event names the state that follows', () => {
+    const states: FeedbackMode[] = ['closed', 'open', 'sending', 'failed', 'sent'];
+    const events: FeedbackEvent[] = ['expand', 'close', 'send', 'sendFailed', 'sendOk', 'thanked'];
+    // Rows are states, columns are events, in the orders above.
+    const next: Record<FeedbackMode, FeedbackMode[]> = {
+      closed: ['open', 'closed', 'closed', 'closed', 'closed', 'closed'],
+      open: ['open', 'closed', 'sending', 'open', 'open', 'open'],
+      sending: ['sending', 'closed', 'sending', 'failed', 'sent', 'sending'],
+      failed: ['failed', 'closed', 'sending', 'failed', 'failed', 'failed'],
+      sent: ['sent', 'sent', 'sent', 'sent', 'sent', 'closed'],
+    };
+    for (const s of states) events.forEach((e, i) => expect([s, e, feedbackTransition(s, e)]).toEqual([s, e, next[s][i]]));
+  });
+
   it('a send that succeeds after Cancel shows no thank-you and keeps the form closed', async () => {
     const answer = deferred();
     sendFeedback.mockReturnValue(answer.promise);

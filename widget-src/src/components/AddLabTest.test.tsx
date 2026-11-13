@@ -30,7 +30,7 @@ vi.mock('../lib/server-api', () => ({
   trackProductEvent: (...args: unknown[]) => trackProductEvent(...args),
 }));
 
-import { AddLabTest } from './AddLabTest';
+import { AddLabTest, addTransition, RECORD_CHANGED, type AddEvent, type AddMode } from './AddLabTest';
 import { AdditionalLabRows } from './AdditionalLabRows';
 import { reportedToCanonical } from '@roadmap/health-core/units';
 import type { ApiMeasurement } from '@roadmap/health-core/mappings';
@@ -487,6 +487,41 @@ describe('US-21 AC27: a save never leaves the form stuck, and a late answer chan
     fireEvent.change(utils.getByLabelText('Value'), { target: { value } });
   };
   const settle = () => new Promise((r) => setTimeout(r, 0));
+
+  it('the transition table: each state x event names the state that follows', () => {
+    const form = Symbol('this'), other = Symbol('other');
+    const held = { id: 'h', slot: 's', value: 45, unit: 'µg/L', stored: 45 };
+    const closed = (notice: string | null = null): AddMode => ({ kind: 'closed', notice });
+    const open = (notice: string | null = null, h: typeof held | null = null): AddMode => ({ kind: 'open', form, openAt: 'e1', notice, held: h });
+    const saving = (notice: string | null = null, h: typeof held | null = null): AddMode => ({ kind: 'saving', form, openAt: 'e1', notice, held: h });
+    const rows: Array<[AddMode, AddEvent, AddMode]> = [
+      [closed('old'), { type: 'open', form, openAt: 'e1' }, open()],
+      [open('n'), { type: 'open', form: other, openAt: 'e2' }, open('n')],
+      [open('n', held), { type: 'edit' }, open()],
+      [saving('n', held), { type: 'edit' }, saving()],
+      [closed('n'), { type: 'edit' }, closed('n')],
+      [open(), { type: 'refuse', notice: 'r' }, open('r')],
+      [saving(), { type: 'refuse', notice: 'r' }, saving()],
+      [open('n', held), { type: 'save' }, saving()],
+      [open('n', held), { type: 'replace' }, saving('n', held)],
+      [saving(), { type: 'save' }, saving()],
+      [closed(), { type: 'save' }, closed()],
+      [saving(), { type: 'saved', form }, closed()],
+      [saving(), { type: 'recordChanged', form }, closed(RECORD_CHANGED)],
+      [saving(), { type: 'failed', form, notice: 'f', held }, open('f', held)],
+      [saving('n', held), { type: 'failed', form, notice: 'f' }, open('f', held)], // a refused Replace keeps its offer
+      [saving(), { type: 'failed', form: other, notice: 'f' }, saving()], // another opening's answer
+      [saving(), { type: 'saved', form: other }, saving()],
+      [open(), { type: 'saved', form }, open()],
+      [closed(), { type: 'saved', form }, closed()], // after Cancel
+      [closed(), { type: 'failed', form, notice: 'f' }, closed()],
+      [closed(), { type: 'recordChanged', form }, closed()],
+      [open('n'), { type: 'cancel' }, closed()],
+      [saving('n'), { type: 'cancel' }, closed()],
+      [closed('n'), { type: 'cancel' }, closed('n')],
+    ];
+    for (const [state, event, next] of rows) expect(addTransition(state, event)).toEqual(next);
+  });
 
   it('a Replace whose correction throws says to try again and gives the button back', async () => {
     const there = {

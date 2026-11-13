@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useReducer } from 'react';
 import { createPortal } from 'react-dom';
 import { deleteDocument, readDocumentFile } from '../lib/roadmap-data';
 import { DOCUMENT_TYPE_LABELS } from '@roadmap/health-core/document-path';
@@ -14,11 +14,24 @@ interface DocumentLightboxProps {
   onDeleted?: (docId: string) => void;
 }
 
+/** Delete asks once, then writes; any answer, a throw included, ends the write (US-14 AC9). */
+export type DeleteStep = 'idle' | 'confirming' | 'deleting';
+export function deleteTransition(state: DeleteStep, event: 'press' | 'settled'): DeleteStep {
+  if (event === 'press') return state === 'idle' ? 'confirming' : state === 'confirming' ? 'deleting' : state;
+  return state === 'deleting' ? 'idle' : state;
+}
+
+/** "View original file": reading, then opened, or failed with its notice (US-14 AC9). */
+export type OriginalView = 'idle' | 'opening' | 'failed';
+export function originalTransition(state: OriginalView, event: 'open' | 'opened' | 'missing'): OriginalView {
+  if (event === 'open') return state === 'opening' ? state : 'opening';
+  return state === 'opening' ? (event === 'opened' ? 'idle' : 'failed') : state;
+}
+
 export function DocumentLightbox({ doc, onClose, onDeleted }: DocumentLightboxProps) {
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const [isOpening, setIsOpening] = useState(false);
-  const [openError, setOpenError] = useState<string | null>(null);
+  // Two flows that run apart: a person may view the original while a delete waits for its confirm.
+  const [deleteStep, sendDelete] = useReducer(deleteTransition, 'idle');
+  const [original, sendOriginal] = useReducer(originalTransition, 'idle');
   const isMobile = useIsMobile(768);
 
   // Close on Escape
@@ -38,15 +51,14 @@ export function DocumentLightbox({ doc, onClose, onDeleted }: DocumentLightboxPr
 
   // View the archived original (v2 local-first only — fileRef is absent on v1).
   const handleViewOriginal = async () => {
-    if (!doc.fileRef || isOpening) return;
-    setIsOpening(true);
-    setOpenError(null);
-    const blob = await readDocumentFile(doc.fileRef);
-    setIsOpening(false);
+    if (!doc.fileRef || original === 'opening') return;
+    sendOriginal('open');
+    const blob = await readDocumentFile(doc.fileRef).catch(() => null);
     if (!blob) {
-      setOpenError('Could not load the original file from your cloud storage.');
+      sendOriginal('missing');
       return;
     }
+    sendOriginal('opened');
     // Only a vetted passive type opens in a tab; anything else (an SVG, HTML)
     // would run script with this page's origin, so it downloads (US-14 AC3).
     const type = viewableType(doc.fileRef, blob.type);
@@ -66,18 +78,14 @@ export function DocumentLightbox({ doc, onClose, onDeleted }: DocumentLightboxPr
   };
 
   const handleDelete = async () => {
-    if (!confirmDelete) {
-      setConfirmDelete(true);
-      return;
-    }
-    setIsDeleting(true);
-    const success = await deleteDocument(doc.id);
+    sendDelete('press');
+    if (deleteStep !== 'confirming') return;
+    const success = await deleteDocument(doc.id).catch(() => false);
     if (success) {
       onDeleted?.(doc.id);
       onClose();
     }
-    setIsDeleting(false);
-    setConfirmDelete(false);
+    sendDelete('settled');
   };
 
   // On <body>: `.health-tool` is transformed, so a fixed backdrop inside it would cover
@@ -109,17 +117,17 @@ export function DocumentLightbox({ doc, onClose, onDeleted }: DocumentLightboxPr
 
         <div className="doc-lightbox-footer">
           {doc.fileRef && (
-            <button className="doc-view-original-btn" onClick={handleViewOriginal} disabled={isOpening}>
-              {isOpening ? 'Opening…' : 'View original file'}
+            <button className="doc-view-original-btn" onClick={handleViewOriginal} disabled={original === 'opening'}>
+              {original === 'opening' ? 'Opening…' : 'View original file'}
             </button>
           )}
-          {openError && <span className="doc-view-original-error">{openError}</span>}
+          {original === 'failed' && <span className="doc-view-original-error">Could not load the original file from your cloud storage.</span>}
           <button
-            className={`doc-delete-btn${confirmDelete ? ' doc-delete-btn--confirm' : ''}`}
+            className={`doc-delete-btn${deleteStep !== 'idle' ? ' doc-delete-btn--confirm' : ''}`}
             onClick={handleDelete}
-            disabled={isDeleting}
+            disabled={deleteStep === 'deleting'}
           >
-            {isDeleting ? 'Deleting...' : confirmDelete ? 'Confirm Delete' : 'Delete Document'}
+            {deleteStep === 'deleting' ? 'Deleting...' : deleteStep === 'confirming' ? 'Confirm Delete' : 'Delete Document'}
           </button>
         </div>
       </div>
