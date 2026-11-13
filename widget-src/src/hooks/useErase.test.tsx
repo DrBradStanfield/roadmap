@@ -94,6 +94,18 @@ describe('US-16 AC2a: the erase the screen shows', () => {
     expect(failed.result.current.loaded).toBe(false); // the first read moves once
   });
 
+  it('US-11 AC10 (H114): `firstReadFailed` holds only after the first read failed, never while pending or once shown', () => {
+    const shown = setup();
+    expect(shown.result.current.firstReadFailed).toBe(false); // pending
+    act(() => { shown.result.current.store.dispatch({ type: 'loaded', shown: true }); });
+    expect(shown.result.current.firstReadFailed).toBe(false);
+    const failed = setup();
+    act(() => { failed.result.current.store.dispatch({ type: 'loaded', shown: false }); });
+    expect(failed.result.current.firstReadFailed).toBe(true);
+    act(() => { failed.result.current.store.dispatch({ type: 'loaded', shown: true }); });
+    expect(failed.result.current.firstReadFailed).toBe(true); // the first read moves once
+  });
+
   it('a refused save is said once per erase it was asked under, and re-reads the record once', () => {
     const { doors, result } = setup();
     store.identity = 'e2'; // the store moved; the screen still shows e1

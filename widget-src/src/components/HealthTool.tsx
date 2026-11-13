@@ -142,7 +142,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   // The chat's banners (a profile proposal, a medication Undo) go when the
   // screen moves to another erase, this tab's or another device's, even with
   // post-erase rows. A re-read that brings no erase keeps them. A refused save re-reads the record the store holds (US-34 AC4).
-  const { store: eraseStore, shownErase, loaded, erasing: isDeleting, eraseUnshown, writeRefused, eraseAll } = useErase({
+  const { store: eraseStore, shownErase, loaded, firstReadFailed: readFailed, erasing: isDeleting, eraseUnshown, writeRefused, eraseAll } = useErase({
     clearDrafts: () => clearChatEdits(), forget: () => forgetRecord(), reread: reason => { void rereadRecord(reason); }, // declared below
     shows: id => showErase(id), spend: () => clearAnswered(true),
   });
@@ -610,8 +610,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     // US-07 AC6: no reminders for a known minor, who is never enrolled and must see no mailing-list box.
     reminders: plan.planned && !results?.knownMinor ? remindersSection : null,
     storageCard,
-    onDelete: async () => { if (await eraseAll()) closeSettings(); },
-    isDeleting,
+    // A record exists, drawn as a plan or not, or the first read failed: Delete shows (MyHealth adds a stored chat; US-11 AC10, H114).
+    recordHeld: readFailed || unreadable > 0 || Object.keys(inputs).length > 0 || [previousMeasurements, medications, screenings, supplements, documentHistory, labValueHistory].some(list => list.length > 0), onDelete: async () => { if (await eraseAll()) closeSettings(); }, isDeleting,
     storageAtFoot: getBackendKind() === 'local',
     onPlanReadyDismiss: planReady ? dismissPlanReady : undefined,
     healthDocuments: documentHistory,
