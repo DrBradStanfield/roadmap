@@ -42,7 +42,7 @@ describe('US-06 AC22: the form note under 50 names the ACS 2026 groups', () => {
   });
   it('the start card keeps its text, and the rule keeps its ages (no logic change)', () => {
     const rule = SCREENING_RULES.find((r) => r.id === 'prostate')!;
-    expect(rule.cards.start.description).toBe('PSA testing is an option after an informed discussion with your doctor. Benefits and risks vary by individual.');
+    expect(rule.cards.start).toHaveProperty('description','PSA testing is an option after an informed discussion with your doctor. Benefits and risks vary by individual.');
     expect(rule.cardAges).toEqual([45]);
   });
 });
