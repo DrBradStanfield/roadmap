@@ -5,7 +5,8 @@
  * reports that name an older move.
  */
 import { describe, it, expect, beforeEach } from 'vitest';
-import { dispatch, getSwitchFlow, isCurrentRun, resetSwitchFlow, transition, type SwitchEvent, type SwitchFlow } from './switch-flow';
+import { dispatch, getSwitchFlow, isCurrentRun, resetSwitchFlow, runMove, transition, type SwitchEvent, type SwitchFlow } from './switch-flow';
+import { askBeforeExit, bootSignIn, currentSignIn, resetSignIn, type SignIn } from '../src/storage/sign-in-state';
 
 const IDLE: SwitchFlow = { kind: 'idle', run: 1, error: null };
 const FAILED: SwitchFlow = { kind: 'idle', run: 1, error: 'Dropbox could not be reached.' };
@@ -222,5 +223,29 @@ describe('US-09 AC45: a popup answer is kept only while its reconnect still runs
     for (const event of [EVENTS.start, EVENTS.forget, EVENTS.logOff, EVENTS.reconnect]) expect(dispatch(event)).toBe(false);
     dispatch({ type: 'navigating', run: 1 });
     expect(getSwitchFlow()).toEqual({ kind: 'navigating', run: 1, step: 'list' });
+  });
+});
+
+describe('US-09 AC51: the claim answers any exit question the reconnect panel asked', () => {
+  const LOST = { kind: 'signedOut', provider: 'google-drive' } as const;
+  const ASKING: SignIn = { kind: 'confirmingExit', lost: LOST, question: 'stale' };
+  beforeEach(() => { resetSwitchFlow(); resetSignIn(); bootSignIn(LOST); askBeforeExit('stale'); });
+
+  it.each([
+    ['a reconnect', EVENTS.reconnect],
+    ['a picker move', EVENTS.start],
+    ['a log-off', EVENTS.logOff],
+    ['"Use this browser only"', EVENTS.forget],
+  ] as const)('%s: once it claims the flow, the question is gone', (_name, event) => {
+    expect(currentSignIn()).toEqual(ASKING);
+    void runMove(event as SwitchEvent, () => new Promise<void>(() => undefined));
+    expect(getSwitchFlow().kind).not.toBe('idle');
+    expect(currentSignIn()).toEqual(LOST);
+  });
+
+  it('a claim refused because a move runs leaves the panel as it was', () => {
+    dispatch(EVENTS.start); // a move already runs
+    void runMove(EVENTS.reconnect, () => new Promise<void>(() => undefined));
+    expect(currentSignIn()).toEqual(ASKING);
   });
 });

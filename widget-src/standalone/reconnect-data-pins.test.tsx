@@ -378,16 +378,17 @@ describe('US-09 AC48 (Codex re-check R1, owner): exit (a) from a load-time fallb
 
 // ---------------------------------------------------------------- (b)
 
-describe('US-09 AC48 (Q6 pins), lead A3: exit (b) the picker\'s move to another home keeps every edit', () => {
-  async function chooseGitHub(): Promise<void> {
-    act(() => page!.notice.openBackendPicker());
-    fireEvent.click(option('GitHub'));
-    fireEvent.change(document.querySelector('input[placeholder^="Fine-grained token"]')!, { target: { value: GOOD_TOKEN } });
-    fireEvent.change(document.querySelector('input[placeholder^="Owner"]')!, { target: { value: 'someone' } });
-    fireEvent.change(document.querySelector('input[placeholder^="Repository name"]')!, { target: { value: 'health' } });
-    fireEvent.click(button('Connect GitHub')!);
-  }
+/** The picker's move to GitHub, by its form. */
+async function chooseGitHub(): Promise<void> {
+  act(() => page!.notice.openBackendPicker());
+  fireEvent.click(option('GitHub'));
+  fireEvent.change(document.querySelector('input[placeholder^="Fine-grained token"]')!, { target: { value: GOOD_TOKEN } });
+  fireEvent.change(document.querySelector('input[placeholder^="Owner"]')!, { target: { value: 'someone' } });
+  fireEvent.change(document.querySelector('input[placeholder^="Repository name"]')!, { target: { value: 'health' } });
+  fireEvent.click(button('Connect GitHub')!);
+}
 
+describe('US-09 AC48 (Q6 pins), lead A3: exit (b) the picker\'s move to another home keeps every edit', () => {
   /** Dropbox answers again by the time the user moves: the copy-down runs, then
    *  GitHub's connect lifts this browser's copy up and reloads. The record this
    *  exit ends in is GitHub's file once the next load has opened on it and saved. */
@@ -707,5 +708,75 @@ describe('US-09 AC49 (lead A28, owner ruling): exit (a) at load time when this b
       expect(await deviceWeights()).toEqual({});
       expect(cloudBody(cloud)).toBe(cloudBefore);
     });
+  });
+});
+
+// ---------------------------------------------------------------- the exit question, and a page that stayed
+
+describe('US-09 AC51: a move answers the exit question, which is asked only while no move runs', () => {
+  it('google-drive: Reconnect while the question shows takes it away; after a reload that stalls, nothing offers to delete the grant just saved', async () => {
+    const p = await openReconnectPanel('google-drive');
+    await panelEdit();
+    fireEvent.click(button('Use this browser only')!);
+    expect(shown(staleQuestion('google-drive'))).toBe(true);
+    fireEvent.click(document.querySelector<HTMLButtonElement>('button.hr-sync-btn')!);
+    expect(gisAnswer).not.toBeNull();
+    // The move answered the question: "Reconnecting…" never shows beside it.
+    expect(shown(staleQuestion('google-drive'))).toBe(false);
+    expect(button('Cancel')).toBeUndefined();
+    await act(async () => { gisAnswer!({ access_token: GOOD_TOKEN, expires_in: 3600, scope: DRIVE_SCOPE }); });
+    await reloaded(); // the page asked for its reload, and the person pressed Esc
+    const grant = [BACKEND_KEY, DRIVE_CONFIG, DRIVE_TOKENS].map((key) => localStorage.getItem(key));
+    expect(grant[0]).toBe('google-drive');
+    expect(grant[2]).not.toBeNull();
+    await advance(p.switchFlow.HAND_OFF_MS);
+    expect(p.switchFlow.getSwitchFlow().kind).toBe('idle');
+    expect(shown(staleQuestion('google-drive'))).toBe(false);
+    expect(button('Cancel')).toBeUndefined();
+    expect([BACKEND_KEY, DRIVE_CONFIG, DRIVE_TOKENS].map((key) => localStorage.getItem(key))).toEqual(grant);
+  });
+
+  it('google-drive: the picker\'s move takes the question away too', async () => {
+    await openReconnectPanel('google-drive');
+    await panelEdit();
+    fireEvent.click(button('Use this browser only')!);
+    expect(shown(staleQuestion('google-drive'))).toBe(true);
+    await chooseGitHub();
+    expect(shown(staleQuestion('google-drive'))).toBe(false);
+    await until(() => page!.switchFlow.getSwitchFlow().kind === 'idle', 'the refused move'); // Drive cannot be copied down
+    expect(shown(staleQuestion('google-drive'))).toBe(false);
+    expect(localStorage.getItem(BACKEND_KEY)).toBe('google-drive');
+  });
+});
+
+describe('US-09 AC52: a confirmed "Use this browser only" whose reload stalls shows this browser only', () => {
+  it.each(['google-drive', 'dropbox'] as const)('%s: 15 s on, the panel names no lost cloud and offers no reconnect or second exit', async (cloud) => {
+    const p = await openReconnectPanel(cloud);
+    await panelEdit();
+    useThisBrowserOnlyConfirmed(cloud);
+    await reloaded(); // asked for, but the page stays
+    expect(localStorage.getItem(BACKEND_KEY)).toBeNull();
+    await advance(p.switchFlow.HAND_OFF_MS);
+    expect(p.switchFlow.getSwitchFlow().kind).toBe('idle');
+    expect(shown(`${LABEL[cloud]} is signed out`) || shown(`${LABEL[cloud]} could not be reached`)).toBe(false);
+    expect(shown('Your record is safe')).toBe(false);
+    expect(button(`Reconnect ${LABEL[cloud]}`)).toBeUndefined();
+    expect(button('Retry')).toBeUndefined();
+    expect(button('Use this browser only')).toBeUndefined();
+    expect(button(p.notice.PLAN_STORAGE_CTA)).toBeDefined(); // what the reload would have shown: a guest on this browser
+    expect(reload).toHaveBeenCalledTimes(1);
+  });
+
+  it('google-drive: a picker opened before the 15 s ends the hand-off the same way (Codex R1)', async () => {
+    const p = await openReconnectPanel('google-drive');
+    await panelEdit();
+    useThisBrowserOnlyConfirmed('google-drive');
+    await reloaded();
+    act(() => p.notice.openBackendPicker()); // the picker reopened: the page did not leave
+    expect(p.switchFlow.getSwitchFlow().kind).toBe('idle');
+    expect(shown('Google Drive is signed out')).toBe(false);
+    expect(button('Reconnect Google Drive')).toBeUndefined();
+    expect(button('Use this browser only')).toBeUndefined();
+    expect(button(p.notice.PLAN_STORAGE_CTA)).toBeDefined();
   });
 });
