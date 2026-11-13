@@ -44,14 +44,17 @@
 #      Staleness (AC35, a note, never a refusal): when main has commits past the merge base, one stderr line says
 #      how many; a failed rev-list gives no note. The merge base is the CI base: what a --commit-checks run
 #      tested, and no newer than the main a pull_request run merged in, so the count may overstate, never understate.
-#   7. stop the line (US-64 AC35): among the newest 20 ci.yml runs on main (any status; any event but pull_request,
-#      which a fork's branch named main could add), by createdAt: when the newest is a re-run (attempt 2 or later)
-#      not yet completed, main is red (18). Otherwise the newest completed run that was not cancelled (a cancel
-#      cannot hide an older red run) must not have ended failure, timed_out or startup_failure (18, naming the
-#      run's URL and conclusion: main must be fixed first). success and skipped (tested nothing) pass. A PR
-#      labelled exactly fix-main (only the PR that fixes main) passes a red main with one stderr note, and just
-#      before the merge one PR comment of fixed text holding only the red run's numeric id; a failed post is a
-#      stderr note, not a refusal. No completed, not cancelled run refuses (4).
+#   7. stop the line (US-64 AC35): ci.yml runs on main (any status; any event but pull_request, which a fork's
+#      branch named main could add), read as the newest 20 of all plus the newest 20 of each of push, schedule and
+#      workflow_dispatch, so 20 newer fork runs cannot crowd main's own out (T-14). The judged run is the newest
+#      completed one that was not cancelled (a cancel cannot hide an older red run). A re-run (attempt 2 or later)
+#      not yet completed and created at or after the judged run is red (18): GitHub keeps a re-run's createdAt, so
+#      a re-run of an older run can sit under a newer first attempt (T-14). Otherwise the judged run must not have
+#      ended failure, timed_out or startup_failure (18, naming the run's URL and conclusion: main must be fixed
+#      first). success and skipped (tested nothing) pass. A PR labelled exactly fix-main (only the PR that fixes
+#      main) passes a red main with one stderr note, and just before the merge one PR comment of fixed text holding
+#      only the run's numeric id and whether it was red or re-running; a failed post is a stderr note, not a
+#      refusal. No completed, not cancelled run refuses (4), even beside a re-run still going.
 #   8. no Deploy run is unfinished (12). First one snapshot of the newest 100 runs, unfiltered: one call is atomic
 #      for the runs it lists, so no status change hides a run among them. Then, for an unfinished run older than
 #      that, one call per status in the order requested, waiting, pending, queued, in_progress, all twice: forward
@@ -165,10 +168,11 @@ base=$(git merge-base refs/remotes/origin/main "$sha") || die "PR $pr's head $sh
 behind=$(git rev-list --count "$base..refs/remotes/origin/main") || behind=0
 case "$behind" in 0) ;; 1) w=commit ;; *) w=commits ;; esac
 [ "$behind" = 0 ] || echo "merge-gated: note: main has moved $behind $w since this PR's merge base; CI may have tested an older main" >&2
-paths=$(git -c core.quotepath=false diff --name-only --no-renames "$base" "$sha") || die "git diff on PR $pr failed" 4
+paths=$(git -c core.quotepath=false diff --name-only --no-renames --no-relative "$base" "$sha") || die "git diff on PR $pr failed" 4
 # The rows whose output or an input matches a PR path, one index a line. A glob becomes an anchored regex:
 # * any run of characters (slash too, as in a git pathspec), ? one character, everything else literal.
-manifest=${0%/*}/generated-files.json
+# The manifest sits beside this script. $0 has no slash when run as `sh merge-gated.sh` inside tools/ (T-12).
+case "$0" in */*) manifest=${0%/*}/generated-files.json ;; *) manifest=./generated-files.json ;; esac
 hits=$(jq -r --arg p "$paths" 'def re: "^" + gsub("(?<c>[.+^$(){}|\\[\\]\\\\])"; "\\\(.c)") + "$" | gsub("\\*"; ".*") | gsub("\\?"; ".");
   ($p | split("\n")) as $p | .rows | to_entries[]
   | select(any(.value.output, .value.inputs[]; re as $r | any($p[]; test($r)))) | .key' "$manifest") \
@@ -181,30 +185,40 @@ for i in $hits; do
   # One field a line (each non-empty, so none is dropped), unglobbed: output and script go to git as pathspecs.
   set -f; IFS='
 '; set -- $row; unset IFS; set +f
-  moved=$(git log -1 --format=%H "$base..refs/remotes/origin/main" -- "$1" "$2") || die "git log on $1 failed" 4
+  # :(top): the manifest's paths are from the repo root, whatever folder the script runs in (T-12).
+  moved=$(git log -1 --format=%H "$base..refs/remotes/origin/main" -- ":(top)$1" ":(top)$2") || die "git log on $1 failed" 4
   [ -z "$moved" ] || die "$1: main has changed it or its generator script ($2) since this PR's base; merge main first, then let CI run (its generator: \`$3\`)" 9
 done
 
-# Stop the line: one line, "ok", "none" or "red <run id> <run url> <what happened>".
-red=$(gh run list --workflow ci.yml --branch main --limit 20 --json databaseId,status,conclusion,event,createdAt,attempt,url --jq '
-  [.[] | select(.event != "pull_request")] | sort_by(.createdAt, .databaseId)
-  | if length > 0 and (last | .status != "completed" and (.attempt // 1) >= 2)
-    then last | "red \(.databaseId) \(.url // .databaseId) is a re-run (attempt \(.attempt)), still \(.status)"
-  else [.[] | select(.status == "completed" and .conclusion != "cancelled")] | if length == 0 then "none"
-  else last | if IN(.conclusion; "failure", "timed_out", "startup_failure") then "red \(.databaseId) \(.url // .databaseId) ended \(.conclusion)" else "ok" end end end') \
-  || die "gh run list --workflow ci.yml --branch main failed" 4
+# Stop the line: one line, "ok", "none", or "red|re-running <run id> <run url> <what happened>". The four lists are
+# read one after another and judged together, duplicates kept: a run that moved on between reads is judged in
+# both states, so a re-run seen still going stays red.
+mainruns=
+for ev in '' push schedule workflow_dispatch; do
+  page=$(gh run list --workflow ci.yml --branch main ${ev:+--event "$ev"} --limit 20 --json databaseId,status,conclusion,event,createdAt,attempt,url --jq tojson) \
+    || die "gh run list --workflow ci.yml --branch main failed" 4
+  mainruns="$mainruns$page
+"
+done
+red=$(printf '%s' "$mainruns" | jq -rs 'add | [.[] | select(.event != "pull_request")] | sort_by(.createdAt, .databaseId)
+  | ([.[] | select(.status == "completed" and .conclusion != "cancelled")] | last) as $j
+  | if $j == null then "none"
+  else ([.[] | select(.status != "completed" and (.attempt // 1) >= 2 and (.createdAt == null or .createdAt >= $j.createdAt))] | last) as $re
+  | if $re != null then "re-running \($re.databaseId) \($re.url // $re.databaseId) is a re-run (attempt \($re.attempt)), still \($re.status)"
+    elif IN($j.conclusion; "failure", "timed_out", "startup_failure") then "red \($j.databaseId) \($j.url // $j.databaseId) ended \($j.conclusion)"
+    else "ok" end end') || die "unparsable main CI runs answer" 4
 fixrun=
 case "$red" in
   ok) ;;
-  "red "*) red=${red#red }; run=${red%% *}; red=${red#* }
+  "red "*|"re-running "*) state=${red%% *}; red=${red#* }; run=${red%% *}; red=${red#* }
     case "$run" in ''|*[!0-9]*) die "unparsable main CI runs answer" 4 ;; esac
     fix=$(gh pr view "$pr" --json labels --jq 'any(.labels[]; .name == "fix-main")') || die "gh pr view $pr --json labels failed" 4
     case "$fix" in
-      true) fixrun=$run; echo "merge-gated: note: main is red (its CI run $red); PR $pr carries fix-main, so it may merge" >&2 ;;
+      true) fixrun="$state (run $run)"; echo "merge-gated: note: main is red (its CI run $red); PR $pr carries fix-main, so it may merge" >&2 ;;
       false) die "main is red: its CI run $red; main must be fixed first" 18 ;;
       *) die "unparsable labels answer" 4 ;;
     esac ;;
-  none) die "no completed, not cancelled CI (ci.yml) run on main among the newest 20" 4 ;;
+  none) die "no completed, not cancelled CI (ci.yml) run on main among the runs read" 4 ;;
   *) die "unparsable main CI runs answer" 4 ;;
 esac
 
@@ -224,7 +238,7 @@ for s in requested waiting pending queued in_progress requested waiting pending 
   no_deploy --status "$s" --limit 5
 done
 
-[ -z "$fixrun" ] || gh pr comment "$pr" --body "merge-gated: main's CI was red (run $fixrun) when this PR passed the gate; it carries fix-main, so it was let through." >/dev/null \
+[ -z "$fixrun" ] || gh pr comment "$pr" --body "merge-gated: main's CI was $fixrun when this PR passed the gate; it carries fix-main, so it was let through." >/dev/null \
   || echo "merge-gated: note: the fix-main comment on PR $pr failed to post; merging anyway" >&2
 gh pr merge "$pr" --merge --match-head-commit "$sha"; rc=$?
 [ "$rc" = 0 ] && exit 0
