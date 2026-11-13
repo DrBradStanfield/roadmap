@@ -5156,7 +5156,6 @@ input[type="number"] {
   flex-direction: column;
   gap: 2px;
   min-width: 0;
-  margin-right: -6px; /* half the gap: "Target <120/80 · Aug 2026" is 152px wide (H104) */
 }
 .md-row-label {
   font-size: 15px;
@@ -5167,12 +5166,13 @@ input[type="number"] {
   line-height: 1.3;
   color: var(--color-text-secondary);
 }
+.md-row-date { white-space: nowrap; }
 .md-row-trend {
   display: block;
   width: 56px;
 }
-/* Below 390px the trend keeps its old 44px; with the name's 6px into the gap, a target and its
-   date stay on one line at 375px and 390px (US-62 AC8a). The row reads the width from here. */
+/* Below 390px the trend keeps its old 44px, for the name's room; a date that does not fit
+   moves whole to the next line (.md-row-date, US-62 AC8a). The row reads the width from here. */
 @media (max-width: 389px) {
   .md-row {
     grid-template-columns: minmax(0, 1fr) 44px 104px;
