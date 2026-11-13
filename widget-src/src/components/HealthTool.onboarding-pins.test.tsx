@@ -879,4 +879,29 @@ describe('US-16 AC1 (R1): a chat waist or pressure sent before the whole form mo
     for (const metric of metrics) expect(await rowsOn(metric)).toEqual([]);
     expect(cells().map((c) => c.value)).toEqual(shownValues); // still waiting for the person's Save
   });
+
+  // D3 (owner's ruling, H71): the hand-over moves the value but never the focus. On a phone the guest's last
+  // answer lands on "Your plan is ready."; the grid's flash and the "Unsaved values: review" cue carry the value.
+  it('D3: on a phone, the last answer opens the form with a chat waist waiting: the focus stays on the landing', async () => {
+    vi.stubGlobal('matchMedia', (q: string) => ({
+      matches: q.includes('max-width'), media: q, addEventListener() {}, removeEventListener() {},
+    }));
+    const view = await open();
+    await measurements(view);
+    await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
+    act(() => chat.proposeEdit!([{ kind: 'field', field: 'waistCm', displayValue: 91, unitSystem: 'si', date: null }]));
+    fireEvent.click(view.getByRole('radio', { name: 'Male' }));
+    await settle(50); // the sex answer's reveal focuses the month, as a person's next tap would follow it
+    birth(view, '5', '1975'); // the last answer
+    await waitFor(() => expect(fullForm(view)).toBe(true));
+    const cell = () => vitalsRow(view, 'Waist Circumference')!.querySelector<HTMLInputElement>('.bt-cell-draft input')!;
+    await waitFor(() => expect(cell().value).toBe('91'));
+    const focus = () => (document.activeElement === cell() ? 'the grid cell'
+      : document.activeElement?.matches('.mh-ready-title') ? 'the landing' : document.activeElement?.tagName);
+    await waitFor(() => expect(focus()).toBe('the landing'));
+    await settle(300);
+    expect(focus()).toBe('the landing');
+    expect(view.getByRole('button', { name: 'Unsaved values: review' })).toBeTruthy(); // the table stays shut; the cue says so
+    expect(await rowsOn('waist')).toEqual([]); // unsaved
+  });
 });

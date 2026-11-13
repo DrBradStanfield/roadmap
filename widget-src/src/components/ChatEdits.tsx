@@ -125,7 +125,8 @@ export function useChatEdits({
   // effect registers the prefill before this one runs), or the mount of a page whose form is already open.
   // Each waiting value moves into the grid's draft, flashed and unsaved, and leaves `inputs`. So once the
   // form is open no waist or pressure lives in `inputs`, and no field save, PSA commit, PDF or upload can
-  // save one under today.
+  // save one under today. It moves no focus (D3): the landing keeps it, and the flash and the "Unsaved
+  // values: review" cue show the value.
   useEffect(() => {
     const prefill = vitalsPrefillRef.current;
     if (!fullForm || !prefill) return;
@@ -134,8 +135,7 @@ export function useChatEdits({
       prefill(FIELD_TO_METRIC[field] as MetricType, inputsRef.current[field] as number, 'si', null); // canonical: cm, mmHg
       handleInputChange(field, undefined);
     }
-    if (waiting.length > 0) reveal({ field: waiting[0], grid: true });
-  }, [fullForm, inputsRef, vitalsPrefillRef, handleInputChange, reveal]);
+  }, [fullForm, inputsRef, vitalsPrefillRef, handleInputChange]);
 
   /** Apply one chat medication edit; returns the rows it wrote, as they were
    *  before, for Undo, or null when it replaces a row this build cannot read
