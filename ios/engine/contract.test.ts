@@ -34,7 +34,7 @@ describe('bridge contract source (I-2, US-25 AC18, AC18c)', () => {
   // Review R1: kind reaches neither JSON file, so only this holds it. A settle door hands its
   // work to settle(); a promise door answers a Promise; a sync door does neither.
   it('each door\'s kind matches its body', () => {
-    const source = ['entry.ts', 'cloud.ts', 'app-doors.ts', 'erase.ts'].map(file).join('\n');
+    const source = ['entry.ts', 'cloud.ts', 'cloud-documents.ts', 'app-doors.ts', 'erase.ts'].map(file).join('\n');
     for (const [name, door] of Object.entries(DOORS) as [string, Door][]) {
       const start = source.search(new RegExp(`export (?:async )?function ${name}\\(`));
       expect(start, name).toBeGreaterThan(-1);
@@ -62,7 +62,7 @@ describe('bridge contract source (I-2, US-25 AC18, AC18c)', () => {
 // I-2 step 2: every door reads its arguments with the contract's types where they enter.
 describe('US-25 AC18c: doors parse their arguments (I-2 step 2)', () => {
   it('every door\'s first line checks its arguments against the contract', () => {
-    const source = ['entry.ts', 'cloud.ts', 'app-doors.ts', 'erase.ts'].map(file).join('\n');
+    const source = ['entry.ts', 'cloud.ts', 'cloud-documents.ts', 'app-doors.ts', 'erase.ts'].map(file).join('\n');
     for (const name of Object.keys(DOORS)) {
       const start = source.search(new RegExp(`export (?:async )?function ${name}\\(`));
       expect(start, name).toBeGreaterThan(-1);
