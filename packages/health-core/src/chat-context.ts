@@ -54,7 +54,7 @@
  *     unlisted name nor an out-of-range dose appears in this JSON.
  *   - screenings: screeningsToInputs over rows whose key is a SCREENING_KEY;
  *     a number parses whole into its range as the widget reads it
- *     (parseLocalisedNumber), and screeningsToInputs keeps a
+ *     (screeningNumber), and screeningsToInputs keeps a
  *     date only if it is a real calendar date (a "last done" date no later
  *     than this month) and an option only if it is listed, as it does for
  *     the widget's plan.
@@ -70,7 +70,7 @@
  */
 import type { CreatinineDay, HealthInputs, SuggestionInputs } from './types';
 import { MEDICATION_ANSWERS } from './chat-edits';
-import { rangeFault, type UnitSystem } from './units';
+import type { UnitSystem } from './units';
 import {
   healthInputSchema, inRange, inputsPressureInverted, sanitizeInputs, excludedInputFields, MEDICATION_KEYS, SCREENING_KEYS,
 } from './validation';
@@ -83,7 +83,7 @@ import {
   type DatedMeasurement, type MeasurementHistoryMap,
 } from './measurement-history';
 import { calculateAge, calculateHealthResults, knownMinorOf, missingPlanInputs } from './calculations';
-import { parseLocalisedNumber } from './parseNumber';
+import { screeningNumber } from './screening-inputs';
 import { comparatorOf, egfrAsPrinted, isComparator, isLimitField, limitOf, limitSIText, withoutLimit, withRowValue, type Comparator, type LimitField } from './lab-limits';
 import { localDay } from './merge';
 
@@ -424,13 +424,13 @@ function screeningRows(raw: unknown): Array<Pick<ApiScreening, 'screeningKey' | 
   return raw.flatMap((row) => {
     const { screeningKey, value } = fields(row);
     if (typeof screeningKey !== 'string' || !(SCREENING_KEYS as readonly string[]).includes(screeningKey)) return [];
-    if (typeof value !== 'string' || value.length > MAX_SCREENING_VALUE) return [];
-    const range = screeningRange(screeningKey);
-    if (range) {
-      const n = parseLocalisedNumber(value, range) ?? NaN;
-      if (!Number.isFinite(n) || rangeFault(range, n)) return [];
+    if (typeof value !== 'string') return [];
+    // A number is read as the plan reads it, whatever its length (US-06 AC14), and passed on as that number.
+    if (screeningRange(screeningKey)) {
+      const n = screeningNumber(screeningKey, value);
+      return n === undefined ? [] : [{ screeningKey, value: String(n) }];
     }
-    return [{ screeningKey, value }];
+    return value.length > MAX_SCREENING_VALUE ? [] : [{ screeningKey, value }];
   });
 }
 

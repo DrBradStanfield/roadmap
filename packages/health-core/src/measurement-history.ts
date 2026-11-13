@@ -15,11 +15,11 @@
  * where the newest dated lab was 1.2), so callers override their snapshot
  * values with latestFromHistory().
  */
-import { inPsaRange, METRIC_TO_FIELD } from './mappings';
+import { METRIC_TO_FIELD } from './mappings';
 import type { HealthInputs, ScreeningInputs } from './types';
 import { comparatorOf, limitRepresentative, type Comparator } from './lab-limits';
 import { cmpStr, stampInstant } from './merge';
-import { PSA_THRESHOLDS } from './units';
+import { PSA_THRESHOLDS, UNIT_DEFS } from './units';
 
 export interface DatedMeasurement {
   /** YYYY-MM-DD */
@@ -105,6 +105,12 @@ const latestDayOnEarth = (now: Date) => new Date(now.getTime() + 14 * 3600_000).
 /** A PSA point the plan can use: in the PSA range, on a real day not after `latestDay`. */
 const usablePsa = (r: { value: number; recordedAt?: string | null }, latestDay: string) =>
   inPsaRange(r.value) && isClinicalDay(r.recordedAt) && r.recordedAt.slice(0, 10) <= latestDay;
+
+/** In the PSA range (0 to 10,000 ng/mL), the one a row and an old answer must both meet. */
+const inPsaRange = (value: number | undefined): value is number => {
+  const { min, max } = UNIT_DEFS.psa.validationRange.si;
+  return value !== undefined && value >= min && value <= max;
+};
 
 /**
  * US-06 AC14: the saved PSA the plan, the reminders, the web form and the

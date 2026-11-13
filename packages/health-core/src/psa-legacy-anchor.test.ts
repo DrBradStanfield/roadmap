@@ -120,10 +120,23 @@ describe('an out-of-range old answer keeps its date and loses its value: a date-
     expect(reminders(file)).toEqual(reminders(dateOnly));
     expect(chatPlan(file)).toEqual(chatPlan(dateOnly));
   };
+  /** Raised then vague, then an answer dated 2026-07 read as its date alone: the rule holds from it (AC21). */
+  const holdsFromJuly = (value: string) => {
+    const answers = { prostatePsaValue: value, prostateLastDate: '2026-07' };
+    readsAsDateOnly(RAISED_THEN_VAGUE, answers);
+    const file = fileWith(RAISED_THEN_VAGUE, answers);
+    expect(cards(file)).toEqual([
+      expect.objectContaining({ id: 'screening-prostate-repeat', description: expect.stringContaining(CARRIED) }),
+    ]);
+    expect(reminders(file)).toEqual(['2026-10-01']);
+    expect(chatPlan(file)).toEqual([
+      expect.objectContaining({ id: 'screening-prostate-repeat', description: expect.stringContaining(CARRIED) }),
+    ]);
+    expect(JSON.stringify(chatPlan(file))).not.toContain(value.trim());
+  };
 
-  it.each([['-1 (below 0)', '-1'], ['10001 (above 10000)', '10001']])('answer %s dated 2026-09, newer than the rows: read as the date alone', (_what, value) => {
-    readsAsDateOnly(RAISED_THEN_VAGUE, { prostatePsaValue: value, prostateLastDate: '2026-09' });
-    expect(JSON.stringify(chatPlan(fileWith(RAISED_THEN_VAGUE, { prostatePsaValue: value, prostateLastDate: '2026-09' })))).not.toContain(value);
+  it.each([['-1 (below 0)', '-1'], ['10001 (above 10000)', '10001']])('answer %s dated 2026-07, newer than the rows: read as the date alone', (_what, value) => {
+    holdsFromJuly(value);
   });
 
   it('no rows, a man who will screen, answer 10001 dated 2026-09: the date stands, so the next PSA is 12 months on', () => {
@@ -136,15 +149,30 @@ describe('an out-of-range old answer keeps its date and loses its value: a date-
 
   it.each([['"10001" and 28 spaces', `10001${' '.repeat(28)}`], ['"10001" with 29 leading zeros', `${'0'.repeat(29)}10001`]])(
     'an answer longer than 32 characters, %s: plan, reminders and chat read the date alone', (_what, value) => {
-      readsAsDateOnly(RAISED_THEN_VAGUE, { prostatePsaValue: value, prostateLastDate: '2026-09' });
+      holdsFromJuly(value);
     });
 
-  it('the 10000 boundary: 10000 is in range and is the PSA read; 10000.1 is read as the date alone', () => {
+  it.each([['"3.0" and 30 spaces', `3.0${' '.repeat(30)}`], ['"3.0" with 30 leading zeros', `${'0'.repeat(30)}3.0`]])(
+    'an in-range answer longer than 32 characters, %s: plan and chat both read 3.0, which ends the rule', (_what, value) => {
+      const file = fileWith(RAISED_THEN_VAGUE, { prostatePsaValue: value, prostateLastDate: '2026-07' });
+      expect(cards(file)).toEqual([]);
+      expect(reminders(file)).toEqual([]);
+      expect(chatPlan(file)).toEqual([]);
+    });
+
+  it('an in-range answer of 6.5 padded past 32 characters: plan and chat both show "Elevated PSA" with 6.5', () => {
+    const file = fileWith(RAISED_THEN_VAGUE, { prostatePsaValue: `6.5${' '.repeat(30)}`, prostateLastDate: '2026-09' });
+    expect(cards(file).map((c) => c.id)).toEqual(['screening-prostate-elevated']);
+    expect(reminders(file)).toEqual(['2026-12-01']);
+    expect(chatPlan(file)).toEqual([expect.objectContaining({ id: 'screening-prostate-elevated', description: expect.stringContaining('6.5') })]);
+  });
+
+  it('the 10000 boundary: 10000 is in range and is the PSA read; 10000.1 dated 2026-07 is read as the date alone', () => {
     const atMax = fileWith(RAISED_THEN_VAGUE, { prostatePsaValue: '10000', prostateLastDate: '2026-09' });
     expect(cards(atMax).map((c) => c.id)).toContain('screening-prostate-elevated');
     expect(reminders(atMax)).toEqual(['2026-12-01']);
     expect(chatPlan(atMax).map((s) => s.id)).toContain('screening-prostate-elevated');
-    readsAsDateOnly(RAISED_THEN_VAGUE, { prostatePsaValue: '10000.1', prostateLastDate: '2026-09' });
+    holdsFromJuly('10000.1');
   });
 
   it('an answer of 0 dated 2026-09 is in range: it is the PSA read and ends the rule', () => {

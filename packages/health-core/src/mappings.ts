@@ -255,12 +255,6 @@ export function medicationsToInputs(
 // The screening read path lives in screening-inputs.ts (split for Change 2b); its importers keep this path.
 export { SCREENING_RANGES, screeningRange, screeningsToInputs, type ApiScreening } from './screening-inputs';
 
-/** In the PSA range (0 to 10,000 ng/mL), the one a row and an old answer must both meet. */
-export const inPsaRange = (value: number | undefined): value is number => {
-  const { min, max } = UNIT_DEFS.psa.validationRange.si;
-  return value !== undefined && value >= min && value <= max;
-};
-
 /**
  * US-06 AC14: the PSA the plan's prostate cards and PSA reminder read. PSA is
  * a measurement now (no client writes `prostate_psa_value` or
@@ -271,18 +265,15 @@ export const inPsaRange = (value: number | undefined): value is number => {
  * only when the limit decides against 4.0 (US-12 AC20): otherwise it has no
  * value, and its day still counts; `planPsa`'s `raisedBefore` becomes
  * `prostatePsaRaisedBefore` (US-06 AC21 item 6). An old answer whose value
- * fails `inPsaRange` keeps its date and loses its value: it reads as a
- * date-only answer, as the chat's row sanitiser reads it (Brad 2026-11-13).
- * A newer date-only answer does not show the PSA is below 4.0, so when the
+ * is outside the PSA range keeps its date and loses its value
+ * (`screeningNumber`, Brad 2026-11-13). A newer date-only answer does not show the PSA is below 4.0, so when the
  * row holds the 3-month rule, the rule holds from the answer's date (US-06
  * AC21, Brad 2026-11-13); only a value in range and below 4.0 ends it.
  */
 export function withPsaMeasurement(
-  answers: import('./types').ScreeningInputs,
+  screenings: import('./types').ScreeningInputs,
   psa: { value: number; recordedAt: string; comparator?: unknown; raisedBefore?: true } | undefined,
 ): import('./types').ScreeningInputs {
-  const unusable = answers.prostatePsaValue !== undefined && !inPsaRange(answers.prostatePsaValue);
-  const screenings = unusable ? { ...answers, prostatePsaValue: undefined } : answers;
   const day = psa?.recordedAt.slice(0, 10);
   if (!psa || !day) return screenings;
   const { comparator } = comparatorOf(psa);
