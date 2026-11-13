@@ -1355,4 +1355,22 @@ describe('US-62 AC8 (H71): waist and blood pressure are rows from the start; no 
     expect(q(view, '#heightCm')).toBeTruthy();
     expect(Array.from(view.container.querySelectorAll('.bt-vitals-card .bt-name-label')).map((l) => l.textContent)).toContain('Weight');
   });
+
+  // R3 (H71): the test above passes without the guard, since focusing a missing id does nothing. Here another
+  // element on the host page carries the id, so a hop the guard did not stop would be seen.
+  it('path (c): with no weight box, a complete height never hops, even to another element with the weight\'s id', async () => {
+    await addMeasurement('ldl', 3.0, '2026-09-01');
+    await flushRoadmapStore();
+    const decoy = document.body.appendChild(Object.assign(document.createElement('input'), { id: 'weightKg' }));
+    try {
+      const view = await open();
+      await waitFor(() => expect(fullForm(view)).toBe(true));
+      const height = q(view, '#heightCm') as HTMLInputElement;
+      type(height, '178');
+      await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+      expect(document.activeElement).toBe(height);
+    } finally {
+      decoy.remove();
+    }
+  });
 });
