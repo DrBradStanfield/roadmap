@@ -528,7 +528,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
     if (this.stored?.folderName === FOLDER_NAME) return;
     try {
       if (knownName !== FOLDER_NAME) {
-        const res = await fetch(`${DRIVE_API}/files/${folderId}`, {
+        const res = await fetchOrFail('Google Drive', `${DRIVE_API}/files/${folderId}`, {
           method: 'PATCH',
           headers: { ...(await this.authHeaders()), 'Content-Type': 'application/json' },
           body: JSON.stringify({ name: FOLDER_NAME }),
@@ -571,11 +571,11 @@ export class GoogleDriveAdapter implements StorageAdapter {
     this.folderCheckDone = true;
     try {
       const folderId = await this.ensureFolderId();
-      const meta = await fetch(`${DRIVE_API}/files/${fileId}?fields=parents`, { headers: await this.authHeaders() });
+      const meta = await fetchOrFail('Google Drive', `${DRIVE_API}/files/${fileId}?fields=parents`, { headers: await this.authHeaders() });
       if (!meta.ok) return;
       const parents = ((await meta.json()) as { parents?: string[] }).parents ?? [];
       if (parents.includes(folderId)) return;
-      await fetch(`${DRIVE_API}/files/${fileId}?addParents=${folderId}&removeParents=${parents.join(',')}`, {
+      await fetchOrFail('Google Drive', `${DRIVE_API}/files/${fileId}?addParents=${folderId}&removeParents=${parents.join(',')}`, {
         method: 'PATCH',
         headers: await this.authHeaders(),
       });

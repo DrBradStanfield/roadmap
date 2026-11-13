@@ -34,6 +34,7 @@ import {
   ROADMAP_FILE_NAME,
   jsonBody,
   StorageError,
+  untilAborted,
   type DocumentAccess,
   type ReadResult,
   type StorageAdapter,
@@ -41,7 +42,7 @@ import {
   type WriteResult,
 } from './adapter';
 import { splitDocumentRef } from './document-path';
-import { documentUploadMs } from './transfer-deadline';
+import { documentUploadMs, TRANSFER_DEADLINE_MS } from './transfer-deadline';
 import { counterOf, MAX_COUNTER, RecordShapeError, SchemaTooNewError } from './migrate';
 import { ROADMAP_DOC } from './roadmap-doc';
 import { CURRENT_SCHEMA_VERSION, type RoadmapFile } from './roadmap-file';
@@ -211,13 +212,12 @@ export async function driveUploadDocument(accessToken: string, name: string, byt
   if (!res.ok) throw new StorageError(`${PROVIDER} document create failed (${res.status}).`, undefined, undefined, res.status);
 }
 
-/** The bytes of the document named `name` inside `parentId`. Bare `fetch` for
- *  the download, as the browser always has: a large original must not be cut
- *  at `fetchOrFail`'s 30-second bound. */
-export async function driveDownloadDocument(accessToken: string, name: string, parentId: string): Promise<Blob> {
-  const id = await driveFindFileId(accessToken, name, parentId);
+/** The bytes of the document named `name` inside `parentId`, under the
+ *  document deadline and the caller's own signal (US-09 AC53). */
+export async function driveDownloadDocument(accessToken: string, name: string, parentId: string, signal?: AbortSignal): Promise<Blob> {
+  const id = await driveFindFileId(accessToken, name, parentId, signal);
   if (!id) throw new StorageError(`${PROVIDER} document not found.`, undefined, undefined, undefined, 'not-found');
-  const res = await fetch(`${DRIVE_API}/files/${id}?alt=media`, { headers: auth(accessToken) });
+  const res = await request(`${DRIVE_API}/files/${id}?alt=media`, { headers: auth(accessToken), signal, timeoutMs: TRANSFER_DEADLINE_MS.document });
   if (!res.ok) throw new StorageError(`${PROVIDER} document read failed (${res.status}).`, undefined, undefined, res.status);
   return res.blob();
 }
@@ -630,9 +630,9 @@ export class DriveAdapter implements StorageAdapter {
     return { version: await driveUpdateIfVersion(this.accessToken, fileId, json, expectedVersion, signal) };
   }
 
-  async readDocument(ref: string): Promise<Blob> {
-    const { name, parentId } = await this.docTarget(ref, 'read');
-    return driveDownloadDocument(this.accessToken, name, parentId);
+  async readDocument(ref: string, signal?: AbortSignal): Promise<Blob> {
+    const { name, parentId } = await this.docTarget(ref, 'read', signal);
+    return driveDownloadDocument(this.accessToken, name, parentId, signal);
   }
 
   async writeDocument(ref: string, bytes: Blob): Promise<void> {
@@ -670,10 +670,10 @@ export class DriveAdapter implements StorageAdapter {
 
   /** Where a document ref lives, once the opt-in allows it. Without the
    *  opt-in this is the hosted server's refusal, word for word. */
-  private async docTarget(ref: string, verb: 'read' | 'write'): Promise<{ name: string; parentId: string }> {
+  private async docTarget(ref: string, verb: 'read' | 'write', signal?: AbortSignal): Promise<{ name: string; parentId: string }> {
     if (this.options.documents !== 'write') throw new StorageError(`The hosted server does not ${verb} uploaded documents.`);
     const { folder, name } = splitDocumentRef(ref);
-    return { name, parentId: await this.documentFolder(folder) };
+    return { name, parentId: await untilAborted(PROVIDER, this.documentFolder(folder), signal) }; // ends the wait, not the shared lookup: lead A1-6b
   }
 
   /** Find-or-create a document's folder ('Lab results') inside the app

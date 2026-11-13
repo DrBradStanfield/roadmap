@@ -100,9 +100,11 @@ function pathArg(ref: string): string {
   return ref.startsWith('id:') ? ref : `/${ref}`;
 }
 
-/** One `files/download`. The two readers below parse its body their own way. */
-function download(accessToken: string, ref: string, signal?: AbortSignal): Promise<Response> {
+/** One `files/download`. The two readers below parse its body their own way;
+ *  a document gets the document deadline, the record the call bound. */
+function download(accessToken: string, ref: string, signal?: AbortSignal, timeoutMs?: number): Promise<Response> {
   return request(DOWNLOAD_URL, {
+    timeoutMs,
     method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -142,7 +144,7 @@ export async function dropboxRead(accessToken: string, fileName: string, signal?
  * supplied only ever SELECTS from the listing and never forms a path.
  */
 export async function dropboxDownload(accessToken: string, ref: string, signal?: AbortSignal): Promise<Uint8Array<ArrayBuffer>> {
-  const res = await download(accessToken, ref, signal);
+  const res = await download(accessToken, ref, signal, TRANSFER_DEADLINE_MS.document);
   if (!res.ok) throw new StorageError(`${PROVIDER} download failed (${res.status})`, undefined, undefined, res.status);
   return new Uint8Array(await res.arrayBuffer());
 }

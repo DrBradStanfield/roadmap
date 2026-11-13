@@ -191,6 +191,10 @@ it shared, so a fix to `dropbox-rest.ts`, `drive-rest.ts`, `SyncManager` or
   uses them: `URL`, `URLSearchParams`, `atob`/`btoa`, `crypto.getRandomValues` (the token
   exchange is Swift's). Tested in Node (`shim.test.ts`, an empty vm context) and in
   JavaScriptCore (`ShimTests.swift`).
+- URLSession's default 60-second idle timeout (`EngineHTTP.configuration()` leaves it) sits
+  beside the JavaScript deadline from health-core's `transfer-deadline.ts`, which aborts
+  through `cancelHttp`; it is left because it ends only a request that has moved no bytes
+  for a minute, never a transfer still moving (A1-6, owner's call 2026-11-13).
 - Every JavaScript call, timer and answer runs on the engine's queue, never on main; URLSession
   answers hop there before they touch a JSValue. The invariant, from stages 2 to 4: the
   engine's queue never waits on the main thread (above: "The engine off the main thread",

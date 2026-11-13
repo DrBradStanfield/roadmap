@@ -136,7 +136,7 @@ export class WebDavAdapter implements StorageAdapter {
 
   async writeDocument(ref: string, bytes: Blob): Promise<void> {
     const put = (): Promise<Response> =>
-      fetchOrFail('Self-host', this.urlFor(ref), { method: 'PUT', headers: this.authHeaders(), body: bytes, timeoutMs: TRANSFER_DEADLINE_MS.document });
+      fetchOrFail('Self-host', this.urlFor(ref), { method: 'PUT', headers: this.authHeaders(), body: bytes, timeoutMs: TRANSFER_DEADLINE_MS.document, mayHaveWritten: true });
     let res = await put();
     if (res.status === 409) {
       // Parent collection missing — create it, then retry once.
