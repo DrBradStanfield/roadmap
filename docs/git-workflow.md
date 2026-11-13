@@ -59,7 +59,8 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
    left open, or a draft private security advisory for a security or privacy one (docs/review-format.md).
    **Merge by hand with `sh tools/merge-gated.sh <pr> <full sha>`**, never a scratch script of your own (US-64
    AC32): in one run it checks the sha is 40 hex, the PR is open at exactly that head, the newest `ci.yml` run on
-   that sha ended success, every rollup check finished green with a `test` check SUCCESS, and no Deploy run is
+   that sha ended success, every rollup check finished green with a `test` check SUCCESS (except the advisory
+   `ios-compile`, which only prints a note, Brad 2026-11-13), and no Deploy run is
    unfinished, then runs the one allowed merge form above. Add `--commit-checks` only when CI was started by
    workflow_dispatch (its runs never reach the PR's rollup): it skips the rollup and keeps the `ci.yml` run check.
    A PR that changes a gate file (`tools/merge-gated.sh` or `.github/workflows/ci.yml`) needs nothing different

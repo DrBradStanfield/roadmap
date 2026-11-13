@@ -17,6 +17,9 @@ export const MAX_BLOG_CHARS = 160_000;
 const SEPARATOR = '\n\n---\n\n';
 
 const articleCache = new Map<string, string | null>();
+// contentForms() per handle, beside articleCache with the same lifetime. Kept
+// only for the raw text it was built from, so changed text rebuilds.
+const formsCache = new Map<string, { raw: string; forms: string[] }>();
 
 function contentDir(handle: string): string {
   const type = loadBlogIndex().find(a => a.handle === handle)?.type;
@@ -74,12 +77,15 @@ export function contentBlock(handle: string, content: string): string {
  * without, each after the header and an internal note.
  */
 export function contentForms(handle: string, raw: string): string[] {
+  const hit = formsCache.get(handle);
+  if (hit?.raw === raw) return hit.forms;
   const entry = loadBlogIndex().find(a => a.handle === handle);
   const forms = [contentBlock(handle, raw)];
   if (entry && isMaster(entry)) {
     const note = `${contentHeader(entry, parseFrontmatter(raw) ?? {})}\n\n[Internal note, do not quote: this page is shortened to fit. For anything not below, say the full page covers it and give its link from the lines above.]\n\n`;
     for (const reduced of [reducedMaster(raw, true), reducedMaster(raw)]) if (reduced) forms.push(note + reduced);
   }
+  formsCache.set(handle, { raw, forms });
   return forms;
 }
 
