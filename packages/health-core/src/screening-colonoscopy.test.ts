@@ -3,7 +3,7 @@
 // the colonoscopy report gave (whole years, 1 to 10, once), counted from the colonoscopy date, else
 // 3 years (Dr Brad's recommendation). Completed with no usable date: a card asks for it, and no reminder.
 //
-// The expected words are read from the approved spec, docs/drafts/screening-change-2b-words-2026-11-12.md.
+// The expected words are read from the approved spec, docs/specs/screening-change-2b-words.md.
 // A mismatch goes back to Brad; the words are never reworded here.
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
@@ -22,7 +22,7 @@ import type { HealthResults, ScreeningInputs } from './types';
 
 const ROOT = join(__dirname, '../../..');
 const read = (p: string) => readFileSync(join(ROOT, p), 'utf8');
-const SPEC = read('docs/drafts/screening-change-2b-words-2026-11-12.md').split('\n').map((l) => l.trim());
+const SPEC = read('docs/specs/screening-change-2b-words.md').split('\n').map((l) => l.trim());
 const HTML = read('roadmap_text.html');
 const ALGO = read('health_roadmap_algorithm.md');
 
