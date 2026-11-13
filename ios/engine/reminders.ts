@@ -16,6 +16,7 @@ export const PHONE_REMINDER_LIMIT = 64;
 const FOLLOWUP_LABEL: Record<FollowupKind, (name: string) => string> = {
   organize: (name) => `Follow-up to organize: ${name}`,
   checkin: (name) => `Follow-up check-in: ${name}`,
+  repeat: (name) => name, // "Repeat PSA (your last result)" (US-06 AC21, Brad 2026-11-12)
 };
 
 /** The hour a notification shows on its day: ReminderScheduler.hour in Swift (a test pins the two). */
@@ -44,7 +45,7 @@ export interface PhoneReminders {
   /** The soonest notifications, at most `limit` (iOS's 64 by default). */
   notifications: PhoneNotification[];
   /** Only when the app sent first-seen days: the day each current follow-up item
-   *  (`<category>:<organize|checkin>`) was first seen, for the app to keep and send
+   *  (`<category>:<organize|checkin|repeat>`) was first seen, for the app to keep and send
    *  back. An item that is no longer a follow-up is left out, so its entry clears. */
   firstSeen?: Record<string, string>;
 }
