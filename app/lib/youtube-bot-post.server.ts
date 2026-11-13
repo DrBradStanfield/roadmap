@@ -36,7 +36,7 @@ export async function postClaimed(
   if (mark.state === 'failed') {
     // Our mark may have landed; take it back, then the plain claim, so a later tick retries.
     await releasePostingMark(claimId, claim.rowId, mark.token, 'delete');
-    await unclaimComment(claimId);
+    await unclaimComment(claimId, claim.rowId);
     return 'skipped';
   }
 
