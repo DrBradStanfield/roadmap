@@ -27,10 +27,10 @@ vi.mock('../lib/supabase.server', () => ({
   GuestRateLimitError: class extends Error {},
 }));
 vi.mock('../lib/chat.server', async (original) => ({
-  resolveChatContext: () => ({ healthDocuments: [], userContextJson: '{}' }),
+  resolveChatContext: () => ({ userContextJson: '{}' }),
   buildSystemBlocks: (_ctx: string, opts: unknown) => { mocks.blocksOpts.push(opts); return []; },
   buildConversationMessages: () => [],
-  matchDocumentTitle: () => null, loadMatchedArticlesFromHandles: () => null,
+  loadMatchedArticlesFromHandles: () => null,
   DOCTOR_POSTURE: '', BRAND_POSTURE: '',
   getChatCompletion: async (...args: unknown[]) => { mocks.completionArgs.push(args); return { ...mocks.completion }; },
   reportChatFallback: vi.fn(), generateTitle: () => 'Synthetic title', CHAT_MODEL: 'test',

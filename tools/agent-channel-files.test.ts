@@ -31,7 +31,8 @@ const msg = (id: string, extra: Record<string, unknown> = {}) => ({ id, content:
 const att = (extra: Record<string, unknown> = {}) => ({ id: ATT_ID, filename: 'report.md', size: 11, content_type: 'text/markdown; charset=utf-8', url: cdn(), proxy_url: `https://media.discordapp.net/x?ex=${QUERY_MARK}`, ...extra });
 // AC17's channel check (GET /channels/<id>) is answered here as a text channel, so fetchMock sees only the other requests.
 const routed = (url: string, init: RequestInit) => (/\/channels\/\d+$/.test(url) ? json({ id: CHANNEL, guild_id: '100000000000000001', type: 0 }) : fetchMock(url, init));
-const go = (argv: string[]) => run(argv, { env: {}, fetch: routed, home, root, now: () => Date.UTC(2026, 10, 1), stdin: async () => '' });
+const go = (argv: string[], extra: Record<string, unknown> = {}) =>
+  run(argv, { env: {}, fetch: routed, home, root, now: () => Date.UTC(2026, 10, 1), stdin: async () => '', ...extra });
 const statePath = () => join(home, '.health-roadmap', 'agent-channel-state.json');
 const state = () => JSON.parse(readFileSync(statePath(), 'utf8'));
 const urls = () => fetchMock.mock.calls.map((c) => String(c[0]));
@@ -264,14 +265,18 @@ describe('US-63 AC7/AC9: history and fetch check the state under the lock before
       mkdirSync(join(home, '.health-roadmap'), { recursive: true });
       plant();
       serve();
+      const sleep = vi.fn(async (_ms: number) => {});
       for (const argv of [['history'], ['fetch', MSG_ID, ATT_ID]]) {
-        const r = await go(argv);
+        const r = await go(argv, { sleep });
         expect(r.code).toBe(1);
         expect(r.stderr).toContain(reason);
       }
+      // Only a held lock waits: 100 retries per command, 50 ms apart (injected instant here).
+      expect(sleep).toHaveBeenCalledTimes(reason.startsWith('delete') ? 200 : 0);
+      expect(sleep.mock.calls.every(([ms]) => ms === 50)).toBe(true);
       expect(fetchMock).not.toHaveBeenCalled();
       expect(existsSync(downloads())).toBe(false);
-    }, 15_000);
+    });
   }
 });
 

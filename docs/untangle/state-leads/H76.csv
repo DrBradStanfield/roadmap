@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H76,my health,"The My health Waist row (and any core row) says ""Add"" while a draft value waits in the grid",lead,not started,"Seen in the H71 design review (PR 1508): a chat waist waited in the grid as a draft while the Waist row on My health said Add. The row reads saved values only, so it gives no sign of the waiting value. The words for the row in that state are Brad's call. Related: H75 (drafts drive the plan). (H76)",,yes

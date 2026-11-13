@@ -55,9 +55,13 @@ case "$p" in
     jq -c --argjson n "$n" '{workflow_runs: [.main | map(select(.appearsOn <= $n)) | sort_by(-.id) | .[0] // empty | {id}]}' \\
       "$SCEN" | jq -r "$jqe";;
   */actions/runs/*) id=\${p##*/}
-    jq -c --argjson id "$id" '[.runs[] | select(.id == $id)][0]
+    # A run's answer never changes: jq evaluates the step's own --jq once per (run, expression), and later polls
+    # read that answer back with shell builtins only, so a 150-poll wait is not 600 jq starts.
+    memo="$LOG.run.$id.\${jqe//[^a-z]/_}"
+    [ -f "$memo" ] || jq -c --argjson id "$id" '[.runs[] | select(.id == $id)][0]
       | if .conclusion == "running" then {status: "in_progress", conclusion: null} else {status: "completed", conclusion} end' \\
-      "$SCEN" | jq -r "$jqe";;
+      "$SCEN" | jq -r "$jqe" > "$memo"
+    IFS= read -r line < "$memo"; printf '%s\\n' "$line";;
   *) echo "unexpected: $p" >&2; exit 9;;
 esac
 `;

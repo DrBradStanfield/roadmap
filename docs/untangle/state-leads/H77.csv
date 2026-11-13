@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H77,my health,"The ""Unsaved values: review"" cue does not name the waiting value or where it is",lead,not started,"widget-src/src/components/InputPanel.tsx:219 draws a fixed button, ""Unsaved values: review"", that opens the table. It does not say which value waits (for example Waist) or which cell holds it, so the person must hunt for it. Seen in the H71 design review (PR 1508). The words are Brad's call. (H77)",,yes

@@ -202,7 +202,7 @@ function lockSeen(path) {
  * load and a save (the cap holds across processes). The lock holds a random owner token; release deletes it only
  * if it still holds ours.
  */
-async function withState(home, change) {
+async function withState({ home, sleep }, change) {
   const lock = `${statePath(home)}.lock`;
   const token = randomBytes(16).toString('hex');
   mkdirSync(dirname(lock), { recursive: true, mode: 0o700 });
@@ -212,7 +212,7 @@ async function withState(home, change) {
       // Never taken over automatically: any takeover of a crashed run's lock can race a second takeover (Codex R3).
       // A lock that outlives its run (SIGKILL, power loss) stops the tool until someone deletes it by hand.
       if (tries >= 100) throw new Refused(`${lock} is held by another run, or left by one that stopped; if no run is going, delete it and try again`);
-      await new Promise((r) => setTimeout(r, 50));
+      await sleep(50);
     }
   }
   try {
@@ -335,11 +335,11 @@ const cursorOf = (state, name) => (name === 'agent' ? state.cursor : state.curso
 
 async function read(cfg, deps, { limit, channel }) {
   const q = new URLSearchParams({ limit: String(limit) });
-  const cursor = await withState(deps.home, (state) => cursorOf(state, channel));
+  const cursor = await withState(deps, (state) => cursorOf(state, channel));
   const id = await checkedChannel(cfg, deps, channel);
   if (cursor) q.set('after', cursor);
   const messages = await messagesPage(cfg, deps, id, q);
-  await withState(deps.home, (state) => {
+  await withState(deps, (state) => {
     const last = messages.at(-1)?.id;
     const seen = cursorOf(state, channel);
     if (last && (!seen || BigInt(last) > BigInt(seen))) {
@@ -356,16 +356,16 @@ async function history(cfg, deps, { limit, before, channel }) {
   const q = new URLSearchParams({ limit: String(limit) });
   if (before) q.set('before', before);
   // State is checked under the lock before any request, so a damaged file or a held lock sends nothing (AC7, AC9).
-  await withState(deps.home, () => {});
+  await withState(deps, () => {});
   const id = await checkedChannel(cfg, deps, channel);
   const messages = await messagesPage(cfg, deps, id, q);
-  await withState(deps.home, (state) => { state.history_reads += 1; });
+  await withState(deps, (state) => { state.history_reads += 1; });
   return { ...marks(channel), messages, oldest_id: messages[0]?.id ?? null };
 }
 
 /** Downloads one attachment, its URL taken only from the named channel's own copy of the message. */
 async function fetchAttachment(cfg, deps, channel, [messageId, attachmentId]) {
-  await withState(deps.home, () => {});
+  await withState(deps, () => {});
   const id = await checkedChannel(cfg, deps, channel);
   let message;
   try { message = await call(cfg, deps, { method: 'GET' }, `/channels/${id}/messages/${messageId}`); } catch (e) {
@@ -374,13 +374,13 @@ async function fetchAttachment(cfg, deps, channel, [messageId, attachmentId]) {
   }
   if (message?.channel_id != null && String(message.channel_id) !== id) throw new Refused(`message ${messageId} is in another channel; not downloaded`);
   const out = await download(message, messageId, attachmentId, deps, deps.repos);
-  await withState(deps.home, (state) => { state.downloads += 1; });
+  await withState(deps, (state) => { state.downloads += 1; });
   return { ...marks(channel, true), ...out };
 }
 
 async function post(cfg, deps, args) {
   const text = args.length ? args.join(' ') : await deps.stdin();
-  const problem = await withState(deps.home, (state) => {
+  const problem = await withState(deps, (state) => {
     const refuse = (why) => { state.refused += 1; return why; };
     const why = postProblem(text, cfg.secrets);
     if (why) return refuse(why);
@@ -398,14 +398,14 @@ async function post(cfg, deps, args) {
   });
   if (problem) throw new Refused(`refused, nothing sent: ${problem}`);
   const sent = await call(cfg, deps, { method: 'POST', body: JSON.stringify({ content: text, allowed_mentions: { parse: [] } }) }, `/channels/${cfg.channel}/messages`);
-  await withState(deps.home, (state) => { state.posts += 1; });
+  await withState(deps, (state) => { state.posts += 1; });
   return { posted: true, id: String(sent?.id ?? '') };
 }
 
 /** One command; returns what the caller sees. deps are injectable for tests. */
 export async function run(argv, deps = {}) {
   const d = {
-    env: process.env, fetch: globalThis.fetch, home: homedir(), now: Date.now,
+    env: process.env, fetch: globalThis.fetch, home: homedir(), now: Date.now, sleep: (ms) => new Promise((r) => setTimeout(r, ms)),
     stdin: async () => { let s = ''; for await (const c of process.stdin) s += c; return s; },
     ...deps,
   };

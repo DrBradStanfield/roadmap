@@ -3,9 +3,9 @@
  * in a scratch clone whose bare "origin" holds refs/pull/<n>/head, and checks what the caller
  * sees: exit code, stderr, the files and the history left behind.
  */
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { execFileSync, spawn, spawnSync } from 'node:child_process';
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -23,7 +23,7 @@ const STORIES = ['# Stories', '', '### US-1', '- AC1 one', '- AC2 two', '- Tests
 let root: string;
 let origin: string;
 let batch: string;
-let n: number;
+let work: string;
 
 const git = (cwd: string, ...args: string[]) =>
   execFileSync('git', args, { cwd, env: ENV, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
@@ -32,26 +32,27 @@ const write = (cwd: string, file: string, text: string) => {
   writeFileSync(join(cwd, file), text);
 };
 
-/** A PR: a branch off `base` that edits files, published as origin's refs/pull/<pr>/head. */
+/**
+ * A PR: a branch off `base` that edits files, published as origin's refs/pull/<pr>/head. Every PR and main
+ * commit is made in the one `work` clone, so it already holds each base; no clone per PR (test audit T10).
+ */
 function pr(pr: number, base: string, edit: (dir: string) => void): string {
-  const dir = join(root, `pr-${pr}-${n++}`);
-  git(root, 'clone', '-q', origin, dir);
-  git(dir, 'checkout', '-q', '-b', `pr${pr}`, base);
-  edit(dir);
-  git(dir, 'add', '-A');
-  git(dir, 'commit', '-q', '-m', `pr ${pr}`);
-  git(dir, 'push', '-q', '-f', 'origin', `HEAD:refs/pull/${pr}/head`);
-  return git(dir, 'rev-parse', 'HEAD');
+  git(work, 'checkout', '-q', '-f', '-B', `pr${pr}`, base);
+  edit(work);
+  git(work, 'add', '-A');
+  git(work, 'commit', '-q', '-m', `pr ${pr}`);
+  git(work, 'push', '-q', '-f', 'origin', `HEAD:refs/pull/${pr}/head`);
+  return git(work, 'rev-parse', 'HEAD');
 }
 
 /** Moves origin/main on and refreshes the batch clone. */
 function advanceMain(edit: (dir: string) => void): void {
-  const dir = join(root, `main-${n++}`);
-  git(root, 'clone', '-q', origin, dir);
-  edit(dir);
-  git(dir, 'add', '-A');
-  git(dir, 'commit', '-q', '-m', 'main moves');
-  git(dir, 'push', '-q', 'origin', 'HEAD:main');
+  git(work, 'fetch', '-q', 'origin', 'main');
+  git(work, 'checkout', '-q', '-f', '-B', 'main', 'FETCH_HEAD');
+  edit(work);
+  git(work, 'add', '-A');
+  git(work, 'commit', '-q', '-m', 'main moves');
+  git(work, 'push', '-q', 'origin', 'HEAD:main');
 }
 
 function runBatch(lines: string[], keep = false, extra: string[] = []) {
@@ -67,14 +68,17 @@ function runBatch(lines: string[], keep = false, extra: string[] = []) {
 }
 
 let baseSha: string;
+let template: string;
 
-beforeEach(() => {
-  n = 0;
-  root = mkdtempSync(join(tmpdir(), 'merge-batch-'));
-  origin = join(root, 'origin.git');
-  git(root, 'init', '-q', '--bare', '-b', 'main', origin);
-  const seed = join(root, 'seed');
-  git(root, 'clone', '-q', origin, seed);
+// origin, the work clone and the batch clone are built once and copied per test (test audit T10). Both clones
+// name origin by a relative URL, so each copy talks to its own origin, never the template's.
+beforeAll(() => {
+  template = mkdtempSync(join(tmpdir(), 'merge-batch-tmpl-'));
+  const origin = join(template, 'origin.git');
+  git(template, 'init', '-q', '--bare', '-b', 'main', origin);
+  const seed = join(template, 'work');
+  git(template, 'clone', '-q', origin, seed);
+  git(seed, 'config', 'remote.origin.url', '../origin.git');
   git(seed, 'checkout', '-q', '-b', 'main');
   write(seed, 'docs/user-stories.md', STORIES);
   write(seed, 'src/a.txt', 'a1\na2\na3\n');
@@ -83,8 +87,18 @@ beforeEach(() => {
   git(seed, 'commit', '-q', '-m', 'seed');
   git(seed, 'push', '-q', 'origin', 'main');
   baseSha = git(seed, 'rev-parse', 'HEAD');
+  const batch = join(template, 'batch');
+  git(template, 'clone', '-q', origin, batch);
+  git(batch, 'config', 'remote.origin.url', '../origin.git');
+});
+afterAll(() => rmSync(template, { recursive: true, force: true }));
+
+beforeEach(() => {
+  root = mkdtempSync(join(tmpdir(), 'merge-batch-'));
+  cpSync(template, root, { recursive: true });
+  origin = join(root, 'origin.git');
+  work = join(root, 'work');
   batch = join(root, 'batch');
-  git(root, 'clone', '-q', origin, batch);
 });
 
 afterEach(() => rmSync(root, { recursive: true, force: true }));
