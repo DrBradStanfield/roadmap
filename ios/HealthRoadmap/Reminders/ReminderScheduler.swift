@@ -187,15 +187,21 @@ final class ReminderScheduler {
 }
 
 /// Which record is on screen (RootView) and its drawn erase count. The phone's copy shows until a
-/// connected cloud opens and its record is drawn, so "open" and the epoch are part of it. RootView
-/// bumps the reminders' token on any change to it (S41): a read between the open and the draw is
-/// the phone's copy, and the draw moving the epoch ends it.
+/// connected cloud opens and its record is drawn, so "open" and the epoch are part of it. "Open"
+/// turns true when the shown session's record is drawn, not when the session opens (S72), so the
+/// draw changes the key even at an equal epoch. RootView bumps the reminders' token on any
+/// change to it (S41).
 struct ShownRecord: Equatable {
     let source: String, open: Bool, epoch: Int?
 
     /// RootView's key: the drawn record's erase epoch, nil while none is drawn. The only way to
-    /// build one, so no caller can leave the epoch out (as PR 1608's key did).
-    @MainActor init(source: String, open: Bool, store: RecordStore) {
-        (self.source, self.open, epoch) = (source, open, store.myData?.eraseEpoch)
+    /// build one, so no caller can leave the epoch out (as PR 1608's key did). `shownSession`:
+    /// CloudConnection's, nil while no cloud session is open.
+    @MainActor init(source: String, shownSession: Int?, store: RecordStore) {
+        (self.source, open, epoch) = (source, Self.open(shown: shownSession, drawn: store.source.session), store.myData?.eraseEpoch)
     }
+
+    /// The shown session's record is drawn. Nil on both sides is a connected cloud with no
+    /// session open and the phone's copy drawn: not open.
+    static func open(shown: Int?, drawn: Int?) -> Bool { shown != nil && shown == drawn }
 }
