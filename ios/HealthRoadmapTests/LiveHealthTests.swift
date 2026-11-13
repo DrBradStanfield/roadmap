@@ -452,8 +452,11 @@ final class LiveHealthTests: XCTestCase {
         store.fill(now: now)
         let live = LiveHealth(store: store, now: { [now] in now }, calendar: utc, kept: kept)
         store.delay = .milliseconds(300)
+        var begun = store.readsBegun.makeAsyncIterator()
         let refresh = Task { await live.refresh() }
-        try await Task.sleep(for: .milliseconds(50))
+        // Lead S32: wait for the fake's signal that the card read is under way (access checked),
+        // never a sleep, which lost the race under load and left access unknown.
+        _ = await begun.next()
         await live.refresh(force: true) // queued as `again`
         await live.forget()
         await refresh.value
@@ -1268,7 +1271,14 @@ final class FakeLiveStore: LiveHealthStore, @unchecked Sendable {
         init(due: Bool = true) { self.due = due }
     }
 
-    init(due: Bool) { state = State(due: due) }
+    /// Yields each time a read starts its `delay`, so a test acts mid-read on a signal, not a sleep (lead S32).
+    let readsBegun: AsyncStream<Void>
+    private let readBegun: AsyncStream<Void>.Continuation
+
+    init(due: Bool) {
+        state = State(due: due)
+        (readsBegun, readBegun) = AsyncStream.makeStream(of: Void.self)
+    }
 
     private func with<T>(_ body: (inout State) throws -> T) rethrows -> T { lock.lock(); defer { lock.unlock() }; return try body(&state) }
 
@@ -1292,7 +1302,10 @@ final class FakeLiveStore: LiveHealthStore, @unchecked Sendable {
     }
 
     private func wait() async throws {
-        if let delay { try await Task.sleep(for: delay) }
+        if let delay {
+            readBegun.yield()
+            try await Task.sleep(for: delay)
+        }
     }
     var queries: [(start: Date, end: Date, component: Calendar.Component)] { with { $0.queries } }
     /// `earliest` throws, as HealthKit's other errors do.

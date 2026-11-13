@@ -208,11 +208,18 @@ final class RecordStoreTests: XCTestCase {
         XCTAssertEqual(MetricDetailView.screenHasReading(waist, in: store), false)
         // An erased cloud view handed over before the screen shown: its draw fails, the erase counts.
         await store.showErased(HealthEngine.CloudView(record: store.recordJSON, erase: "e1", session: 1, order: 0)).value
-        XCTAssertNotNil(store.myData, "the old screen still draws")
+        // S52: a record from before the erase reads as no record, so My data says "Your record did not load".
+        XCTAssertTrue(store.predatesErase)
+        XCTAssertNil(store.readable, "nothing from before the erase is readable")
+        XCTAssertNil(store.myData, "My data shows its record-did-not-load state")
+        XCTAssertNil(store.problem, "the fallback heading, Your record did not load")
+        XCTAssertNil(store.plan)
         XCTAssertNil(MetricDetailView.screenHasReading(weight, in: store), "it predates the erase")
         // The app comes back to the front, or midnight passes: the same pre-erase record drawn again
         // is still from before the erase (checkpoint 1 review, lead 1).
         await store.redraw().value
+        XCTAssertNil(store.readable, "a redraw of the erased record is still unreadable")
+        XCTAssertNil(store.myData)
         XCTAssertNil(MetricDetailView.screenHasReading(weight, in: store), "a redraw of the erased record never catches up")
         XCTAssertNil(MetricDetailView.screenHasReading(waist, in: store))
     }
@@ -264,10 +271,16 @@ final class RecordStoreTests: XCTestCase {
         await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 80, day: "2026-10-20")))
         _ = await store.chart(for: "weight")
         XCTAssertNotNil(store.shownChart(for: "weight"), "kept before the erase")
+        let weight = try XCTUnwrap(store.myData?.vitals.first { $0.metric == "weight" }, "the page's row, taken before the erase")
         await store.showErased(HealthEngine.CloudView(record: store.recordJSON, erase: "e1", session: 1, order: 0)).value
-        XCTAssertNotNil(store.myData, "the old screen still draws")
+        // S52: a record from before the erase reads as no record, so My data says "Your record did not load".
+        XCTAssertNil(store.readable, "nothing from before the erase is readable")
+        XCTAssertNil(store.myData, "My data shows its record-did-not-load state")
+        XCTAssertNil(store.problem, "the fallback heading, Your record did not load")
         XCTAssertNil(store.shownChart(for: "weight"), "the erase dropped it")
         await store.redraw().value
+        XCTAssertNil(store.readable, "a redraw of the erased record is still unreadable")
+        XCTAssertNil(store.myData)
         let read = await store.chart(for: "weight")
         XCTAssertNil(read, "a page opened now reads nothing from the erased record")
         XCTAssertNil(store.shownChart(for: "weight"), "and nothing is kept for the next page")
@@ -276,11 +289,13 @@ final class RecordStoreTests: XCTestCase {
         store.histories["weight"] = RecordStore.KeptHistory(stamp: RecordStore.Stamp(revision: store.revision, draws: nil), chart: stale)
         XCTAssertNil(store.shownChart(for: "weight"), "never drawn from the erased record")
         XCTAssertNil(store.shownHistory(for: "weight"), "never opens a correction on it")
-        let weight = try XCTUnwrap(store.myData?.vitals.first { $0.metric == "weight" })
+        XCTAssertNil(MetricDetailView.screenHasReading(weight, in: store), "no screen to claim from")
         let page = MetricRead.page(MetricRead.transition(.reading(revision: store.revision), .landed(revision: store.revision, read)),
                                    revision: store.revision, problem: store.problem, kept: store.shownChart(for: "weight"),
                                    hasReadings: true, screenHasReading: MetricDetailView.screenHasReading(weight, in: store))
         XCTAssertEqual(MetricReadTests.named(page), "failed: unknown", "no claim either way, and Try again")
+        // The page's words for failed(.unknown): the first sentence alone, never "still in your record".
+        XCTAssertEqual(MetricRead.couldNotRead(weight.label, stillInRecord: false), "Your \(weight.label) values could not be read.")
     }
 
     /// Adversary R2, Codex (US-25 AC9, AC20): a history read for an older record or unit is
