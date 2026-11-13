@@ -20,7 +20,9 @@ import { getDeviceId } from './device-id';
 import { BACKEND_KEY, clearOffFileHealthData, dropDraftsOnScreen, healthWritesAllowed, logOffId, noteCloudPage, noteDevicePage, ownsOffFileData, safeGetItem, safeRemoveItem, safeSetItem, type LogOffId } from '../lib/storage';
 import { clearedEraseFor, noteClearedFor } from '../lib/cleared-erase';
 import { Sentry } from '../lib/sentry';
-import { failureTags, recordFailure, storageCauseClass, storageFailureClass, WritesStoppedError } from '../lib/error-diagnostics';
+import { trackProductEvent } from '../lib/server-api';
+import type { SaveRetry } from '@roadmap/health-core/save-retry-words';
+import { failureTags, recordFailure, storageCauseClass, storageFailureClass } from '../lib/error-diagnostics';
 
 /**
  * Set while the on-device copy may hold changes a cloud backend hasn't seen
@@ -143,9 +145,9 @@ export function webRecordHost(store: StorageAdapter): RecordHost {
     },
     remoteChanged: (change: RemoteChange) => notify(REMOTE_CHANGED_EVENT, change),
     saveStatusChanged: (status: SaveStatus) => notify(SAVE_STATUS_EVENT, status),
+    saveRetried: (retry: SaveRetry) => trackProductEvent('save_retry', { trigger: retry.trigger, outcome: retry.outcome }), // US-09 AC30
     failureCause: storageFailureClass,
     report(error: unknown, at: { op: RecordFailureOp; cause?: string; repeat: boolean }) {
-      if (error instanceof WritesStoppedError) return; // a log-off refusal, not a failure (A15)
       // The erase's best-effort steps: an orphaned server row or chat history
       // left behind is reported, never silently swallowed, and only as a fixed
       // message (an error can quote the chat file, e.g. a medication's name).

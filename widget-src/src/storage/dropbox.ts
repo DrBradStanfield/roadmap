@@ -322,7 +322,9 @@ export class DropboxAdapter implements StorageAdapter {
     });
     if (!res.ok) {
       this.dropIfGrantMoved(startedFrom);
-      throw new StorageError(`Dropbox token refresh failed (${res.status}) — please reconnect.`, undefined, undefined, res.status);
+      // invalid_grant: the refresh token was revoked, and only a new sign-in mends it (US-09 AC30).
+      const revoked = res.status === 400 && ((await res.json().catch(() => null)) as { error?: unknown } | null)?.error === 'invalid_grant';
+      throw new StorageError(`Dropbox token refresh failed (${res.status}) — please reconnect.`, undefined, undefined, res.status, revoked ? 'reconnect' : undefined);
     }
     const reply: unknown = await res.json().catch(() => null);
     this.dropIfGrantMoved(startedFrom);

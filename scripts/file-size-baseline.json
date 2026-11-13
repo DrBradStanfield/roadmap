@@ -5,11 +5,11 @@
     "packages/health-core/src/mcp-tool-catalogue.ts": "data table: the published MCP tool and prompt text (mostly literals)"
   },
   "files": {
-    "tools/codex-review.mjs": 1699,
+    "tools/codex-review.mjs": 1683,
     "packages/health-core/src/lab-extraction.ts": 1166,
     "packages/health-core/src/suggestions.ts": 1151,
     "packages/health-core/src/record-edits.ts": 1029,
-    "widget-src/src/components/InputPanel.tsx": 1026,
+    "widget-src/src/components/InputPanel.tsx": 1025,
     "packages/health-core/src/mcp-import.ts": 959,
     "packages/health-core/src/merge.ts": 893,
     "ios/scripts/app-store-video-compose.swift": 882,
@@ -17,7 +17,7 @@
     "packages/health-core/src/units.ts": 813,
     "packages/health-core/src/lab-catalog.ts": 811,
     "widget-src/src/components/HealthTool.tsx": 786,
-    "packages/health-core/src/record-session.ts": 770,
+    "packages/health-core/src/record-session.ts": 763,
     "packages/health-core/src/mcp-tools.ts": 747,
     "widget-src/src/components/StartingInfoVitals.tsx": 735,
     "packages/health-core/src/drive-rest.ts": 730,
