@@ -27,6 +27,16 @@ const DISTINCT = ['revisionSeen', 'saveWarning', 'clearedFor', 'cloudUnreachable
  *  `host`, a reducer's `dispatch`): only a session-named receiver fails. */
 const GENERIC = ['current', 'host', 'sync', 'ctx', 'dispatch'];
 const INTERNAL = [...DISTINCT, ...GENERIC];
+const q = `['"\`]`;
+const names = (list: string[]) => `(?:${list.join('|')})`;
+/** A read of an @internal name, as `.x`, `['x']` or a destructuring (`const { x } = ...`, across lines too): off any
+ *  receiver for a DISTINCT name, off a session-named one (`session`, `this.session`) for a GENERIC name. */
+const READ = new RegExp([
+  `\\b\\w+\\??\\.${names(DISTINCT)}\\b`, `\\[${q}${names(DISTINCT)}${q}\\]`,
+  `\\b\\w*[sS]ession(?:\\??\\.${names(GENERIC)}\\b|(?:\\?\\.)?\\[${q}${names(GENERIC)}${q}\\])`,
+  `\\{[^{}]*\\b${names(DISTINCT)}\\b[^{}]*\\}\\s*=(?![=>])`,
+  `\\{[^{}]*\\b${names(GENERIC)}\\b[^{}]*\\}\\s*=\\s*(?:await\\s+)?[\\w.?]*?[sS]ession\\b`,
+].join('|'), 'g');
 
 function* sources(dir: string): Generator<string> {
   let entries;
@@ -41,10 +51,6 @@ function* sources(dir: string): Generator<string> {
 
 describe('record-session erase split', () => {
   it('no file outside record-session*.ts reads an @internal field off a session', () => {
-    const q = `['"\`]`;
-    const any = `\\b\\w+\\??\\.(?:${DISTINCT.join('|')})\\b|\\[${q}(?:${DISTINCT.join('|')})${q}\\]`;
-    const onSession = `\\b\\w*[sS]ession\\??(?:\\.(?:${GENERIC.join('|')})\\b|\\[${q}(?:${GENERIC.join('|')})${q}\\])`;
-    const read = new RegExp(`${any}|${onSession}`);
     const found: string[] = [];
     let scanned = 0;
     for (const dir of DIRS) {
@@ -53,11 +59,20 @@ describe('record-session erase split', () => {
         if (OWN.test(rel)) continue;
         scanned++;
         const text = readFileSync(path, 'utf8');
-        text.split('\n').forEach((line, i) => { if (read.test(line)) found.push(`${rel}:${i + 1}`); });
+        for (const m of text.matchAll(READ)) found.push(`${rel}:${text.slice(0, m.index).split('\n').length}`);
       }
     }
     expect(found).toEqual([]);
     expect(scanned).toBeGreaterThan(1000); // the walk reached the clients (about 1200 files), not an empty tree
+  });
+
+  it('the read check catches each form an @internal read takes, and leaves a short receiver\'s generic names alone', () => {
+    const caught = (code: string) => [...code.matchAll(READ)].length > 0;
+    for (const code of ['store.saveMode', "x['tryClear']", 'this.session.current', "mySession?.['host']",
+      'const { saveMode } = store;', 'const {\n  revisionSeen,\n} = s;', 'const { clearedFor: c } = await open();',
+      'const { current } = this.session;', 'const { sync, ctx } = session;']) expect(caught(code), code).toBe(true);
+    for (const code of ['ref.current', 's.dispatch(action)', 'const { current } = ref;', 'const { dispatch } = useStore();',
+      'const { host } = sessionStore;']) expect(caught(code), code).toBe(false);
   });
 
   // No build emits declarations: package.json exports "./*" as "./src/*.ts", so
