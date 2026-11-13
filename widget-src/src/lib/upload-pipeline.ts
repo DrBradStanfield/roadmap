@@ -58,6 +58,16 @@ export interface ReviewedLabValue {
   recordedAt: string; correctsId?: string;
   comparator?: Comparator;
 }
+/** The person's review decisions: what ReviewTable's Save hands up and the
+ *  upload flow saves (US-12). `reviewed` is every result as reviewed: its
+ *  report date (the column day, or null) and its document's title and date.
+ *  The archive files originals from these, an unselected document included (US-13 AC6). */
+export interface ReviewDecisions {
+  values: ReviewedValue[];
+  documents: DocumentToSave[];
+  labValues: ReviewedLabValue[];
+  reviewed: FileResult[];
+}
 
 /**
  * Brad D5 (US-66 AC6): an extra value named like a core test, creatinine
@@ -323,7 +333,12 @@ export async function processBatch(
 
   updateProgress({ current: 33, total: 100, fileName: `Analyzing ${allFiles.length} files...` });
 
-  const { batchId, error: batchError, errorCode: batchErrorCode } = await labImportBatch(allFiles, abort.signal);
+  // The batch's own stop: a Cancel or the deadline. Not the caller's signal, which
+  // would swallow the timeout's message. On the Pages build it stops the queue on
+  // the person's own key, so no file still waiting is sent (US-12 AC5a, AC5b).
+  const stop = new AbortController();
+  abort.signal.addEventListener('abort', () => stop.abort(), { once: true });
+  const { batchId, error: batchError, errorCode: batchErrorCode } = await labImportBatch(allFiles, stop.signal);
   if (abort.signal.aborted) return [];
   if (!batchId) throw new UploadError(batchError || 'Failed to start processing', batchErrorCode || 'server_error');
 
@@ -351,7 +366,10 @@ export async function processBatch(
     while (!abort.signal.aborted) {
       await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL));
       if (abort.signal.aborted) break;
-      if (Date.now() > maxPollTime) throw new UploadError('Processing timed out.', 'timeout');
+      if (Date.now() > maxPollTime) {
+        stop.abort();
+        throw new UploadError('Processing timed out.', 'timeout');
+      }
 
       const poll = await pollBatchStatus(batchId);
       realCompleted = Math.max(realCompleted, poll.completed); // never less than the last answer (US-12 AC24)
