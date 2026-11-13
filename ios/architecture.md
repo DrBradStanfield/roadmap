@@ -1209,6 +1209,21 @@ due") is visible to anyone holding the phone: the wording is a decision for the 
   phone writing it would put a fake enrolment in a synced record. Notification permission
   is per device anyway. If Brad wants one switch for both, it needs its own field in the
   schema (a merge and schema call, so the orchestrator's).
+- **The switch is one mode (2026-11-13, US-25 AC12b, iPhone survey S7).** `ReminderMode` is
+  off, `asking(attempt:)` or `on(epoch:)`, changed only by the pure `ReminderMode.transition`
+  (3 modes by 4 events, no default arm, `ReminderModeTests`), which also names the effect:
+  ask iOS, or refresh. Each tap mints an attempt (a counter, a token, not a mode). A tap while
+  asking is swallowed, and an answer that lands off, or for another attempt, is dropped:
+  before, a double tap asked iOS twice, and the second grant could turn reminders back on
+  after the user turned them off. The ask reads the erase epoch as it begins and again after a grant; if
+  an erase moved it in between, the grant is refused and reminders stay off (US-11). Known lead:
+  a refresh that read the record before an erase can land `read(old)` after a grant set
+  `on(new)` and end the opt-in; ignoring older reads is unsafe, since a record switch can lower
+  the epoch. iOS's permission stays a value read from iOS, never a case:
+  the user changes it in Settings with no event to us. Only `on` is written to the opt-in
+  file, same format as before. The switch still reads off until the grant lands. Known gap,
+  left for words: when permission is already decided the ask shows no alert, and the switch
+  stays off and tappable for that moment.
 - **No per-category switches.** The web has none since its v1 settings went; the schedule
   still honours any `reminderPreferences` already in the record.
 - **Erase (US-11).** When the record's erase epoch moves (an erase here or one synced in),
