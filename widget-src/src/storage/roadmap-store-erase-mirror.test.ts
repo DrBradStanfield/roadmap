@@ -14,7 +14,7 @@ import { ROADMAP_FILE_NAME, StorageError } from '@roadmap/health-core/adapter';
 import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { BT_TIMELINE_DRAFT_KEY } from '../lib/storage';
 import {
-  addMeasurement, deleteUserData, flushRoadmapStore, getEraseIdentity, getReminderOptIn, initRoadmapStore, setPreEraseHook, setReminderOptIn,
+  addMeasurement, currentSaveStatus, deleteUserData, flushRoadmapStore, getEraseIdentity, getReminderOptIn, initRoadmapStore, setPreEraseHook, setReminderOptIn,
 } from '../lib/roadmap-data';
 import { cancelRemindersForErase } from '../../standalone/reminders';
 import { LocalStorageAdapter } from './local-storage-adapter';
@@ -185,6 +185,46 @@ describe('S69 R2, US-11 AC4c: a cloud erase whose failure mirror may hold it is 
     expect(result.success).toBe(false);
     expect(getEraseIdentity()).not.toBe(before);
     expect(posts).toContain('cancel');
+  });
+
+  it('the same, when an earlier failed write had already left the device copy with no revision: still not put back, cancel sent', async () => {
+    const posts = await cloudWithOptIn();
+    localStorage.removeItem(REV_KEY); // what an earlier write that could not put its old record back leaves (US-34 AC6a)
+    const before = getEraseIdentity();
+    const setItem = Storage.prototype.setItem;
+    let recordWrites = 0;
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key: string, value: string) {
+      if (key === REV_KEY) throw new DOMException('full', 'QuotaExceededError');
+      if (key === DEVICE_KEY && ++recordWrites % 2 === 0) throw new DOMException('full', 'QuotaExceededError');
+      setItem.call(this, key, value);
+    });
+    const result = await deleteUserData();
+    vi.mocked(Storage.prototype.setItem).mockRestore();
+
+    expect(deviceFile().meta.eraseEpoch).toBe(1);
+    expect(localStorage.getItem(REV_KEY)).toBeNull(); // the revision reads as before, '0'
+    expect(result.success).toBe(false);
+    expect(getEraseIdentity()).not.toBe(before);
+    expect(posts).toContain('cancel');
+  });
+
+  it('US-09 AC30: outside an erase, another tab moving the revision while this save stored nothing never says the changes are on this device', async () => {
+    await cloudWithOptIn();
+    await addMeasurement('weight', 80, '2026-09-03');
+    const setItem = Storage.prototype.setItem;
+    let otherTabWrote = false;
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key: string, value: string) {
+      if (key === DEVICE_KEY) {
+        if (!otherTabWrote) { otherTabWrote = true; setItem.call(this, REV_KEY, '98-othertab'); }
+        throw new DOMException('full', 'QuotaExceededError');
+      }
+      setItem.call(this, key, value);
+    });
+    await expect(flushRoadmapStore()).rejects.toThrow();
+    vi.mocked(Storage.prototype.setItem).mockRestore();
+
+    expect(days(deviceFile())).not.toContain('2026-09-03');
+    expect(currentSaveStatus()).toBe('not-saved');
   });
 
   it('residual direction: another tab wrote the device copy meanwhile and this write stored nothing: read as held, so the cancel is sent', async () => {

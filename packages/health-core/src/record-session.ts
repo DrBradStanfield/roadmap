@@ -488,8 +488,9 @@ export class RecordSession {
           this.dispatch({ type: 'mirrored', changes: held });
           this.deviceCopySeen = deviceCopyRevision(this.host);
         } catch {
-          // Device storage unavailable: memory-only, unless the copy's revision moved, so it may hold this write (S69 R2).
-          if (deviceCopyRevision(this.host) !== seen) this.dispatch({ type: 'mirrored', changes: held });
+          // Memory-only; under an erase, held when the copy's revision moved or reads '0' (a key a failed put-back removed) (S69 R2).
+          const after = deviceCopyRevision(this.host);
+          if (this.saveMode === 'erasing' && (after !== seen || after === '0')) this.dispatch({ type: 'mirrored', changes: held });
         }
       }
       reportSaveFailure(this.host, error, this.refusalsReported);
