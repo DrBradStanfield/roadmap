@@ -133,12 +133,12 @@ const statinChange: ProposedEdit = { kind: 'medication', medicationKey: 'statin'
 function chatMakesBanners() {
   act(() => chat.proposeEdit!([statinChange, parseProposedEdit('propose_profile_edit', { height: { value: 185, unit: 'cm' } })!]));
 }
-/** The blood-test matrix holds an unsaved LDL of 3.2 the chat filled in (US-16 AC2): on the device and lent to the plan. */
+/** The blood-test matrix holds an unsaved LDL of 3.2 the chat filled in (US-16 AC2), kept on the device. */
 async function matrixHoldsDraft(view: RenderResult) {
   act(() => chat.proposeEdit!([ldlDraft()]));
   await settle(50);
   expect(localStorage.getItem(BT_TIMELINE_DRAFT_KEY) ?? '').toContain('3.2');
-  expect(numberPaths(chat.context!(), 3.2)).not.toEqual([]);
+  expect(numberPaths(chat.context!(), 3.2)).toEqual([]); // unsaved: the chat never reads it (US-03 AC6)
   expect([...view.container.querySelectorAll<HTMLInputElement>('.bt-timeline input')].some(i => i.value === '3.2')).toBe(true);
 }
 const draftGone = (view: RenderResult) => {

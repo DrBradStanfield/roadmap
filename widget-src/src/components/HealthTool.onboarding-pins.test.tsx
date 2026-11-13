@@ -131,6 +131,12 @@ function type(input: Element | null, value: string) {
   fireEvent.change(input, { target: { value } });
 }
 const leave = (input: Element | null) => act(() => { (input as HTMLElement).blur(); });
+/** Enter in a grid cell: the grid saves, the commit that confirms a value (US-03 AC5, AC6). */
+function commit(input: Element | null) {
+  if (!input) throw new Error('no input');
+  act(() => { (input as HTMLElement).focus(); });
+  fireEvent.keyDown(input, { key: 'Enter' });
+}
 /** Height and weight typed, the weight field left: its save runs 500 ms later. */
 async function measurements(view: RenderResult, height = '178', weight = '80') {
   type(q(view, '#heightCm'), height);
@@ -474,7 +480,11 @@ describe('US-62 AC25 (D4): one landing per record, kept with the record\'s onboa
     const runFrames = () => { for (const cb of frames.splice(0)) cb(0); };
     chat.unmuted = runFrames;
     type(matrixWeight(view), '106'); // the weight, the last answer, typed in the matrix (Shopify build)
-    await wait(50);
+    await wait(1000);
+    runFrames();
+    expect(landed()).toBe(false); // typed, not saved: the onboarding has not ended (US-03 AC6)
+    expect(calls('onboarding_done')).toHaveLength(0);
+    commit(matrixWeight(view)); // the grid saves
     await waitFor(() => { runFrames(); expect(landed()).toBe(true); }); // the landing's frame, then its focus frame
     expect(calls('onboarding_done')).toHaveLength(1);
   });
@@ -559,7 +569,11 @@ describe('US-62 AC25b: the weight or year that ends the onboarding lands once it
     await wait(100);
     expect(landed()).toBe(false); // "25" may become "250": still waiting
     type(cell, '250');
-    await waitFor(() => expect(landed()).toBe(true), { timeout: 500 });
+    await wait(1000);
+    expect(landed()).toBe(false); // typed, not saved: the onboarding has not ended (US-03 AC6)
+    expect(calls('onboarding_done')).toHaveLength(0);
+    commit(cell); // the grid saves
+    await waitFor(() => expect(landed()).toBe(true), { timeout: 2000 });
     expect(calls('onboarding_done')).toHaveLength(1);
   });
 
@@ -685,17 +699,50 @@ describe('US-62 AC13, AC25b: the matrix weight and its frames', () => {
     const frames = heldFrames();
     frames.syncNext(); // the rest's frame fires inside the keystroke, before the stage reaches 4
     type(weightRow(view)!.querySelector('.bt-cell-draft input'), '106');
+    await wait(1000);
+    frames.run();
+    expect(landed()).toBe(false); // typed, not saved: the stage stays below 4 (US-03 AC6)
+    commit(weightRow(view)!.querySelector('.bt-cell-draft input')); // the grid saves: the stage reaches 4
     await waitFor(() => { frames.run(); expect(landed()).toBe(true); }); // the landing's frame, then its focus frame
+    expect(calls('onboarding_done')).toHaveLength(1);
+  });
+
+  // Codex R1 (PR 1579): a committed grid weight is at rest; the typing timer and its 2-3 digit test are not asked.
+  it('US-62 AC25b (Codex R1): "25" and Enter at once lands on the commit, with the 800 ms wait held', async () => {
+    const view = await matrixWeightLast();
+    const real = window.setTimeout;
+    vi.stubGlobal('setTimeout', ((cb: () => void, ms?: number) => (ms === 800 ? 0 : real(cb, ms))) as typeof setTimeout);
+    const cell = weightRow(view)!.querySelector('.bt-cell-draft input');
+    type(cell, '25'); // may become 250: its rest waits 800 ms, held here
+    commit(cell); // Enter at once: the grid saves
+    await waitFor(() => expect(landed()).toBe(true), { timeout: 2000 });
+    expect(calls('onboarding_done')).toHaveLength(1);
+  });
+
+  it('US-62 AC25b (Codex R1): a pasted decimal weight, "84.5", lands on Enter', async () => {
+    const view = await matrixWeightLast();
+    const cell = weightRow(view)!.querySelector('.bt-cell-draft input');
+    type(cell, '84.5');
+    await wait(1000);
+    expect(landed()).toBe(false); // typed, not saved (US-03 AC6)
+    commit(cell);
+    await waitFor(() => expect(landed()).toBe(true), { timeout: 2000 });
+    expect(calls('onboarding_done')).toHaveLength(1);
   });
 
   it('US-62 AC25b (R4): "72" ends it, cleared, "72" again with its rest before its commit: lands', async () => {
     const view = await matrixWeightLast();
     const frames = heldFrames();
     const cell = () => weightRow(view)!.querySelector('.bt-cell-draft input');
-    type(cell(), '72'); // ends the onboarding; its rest's frame held
-    type(cell(), ''); // cancels that rest; the stage falls
+    type(cell(), '72'); // its rest's frame held
+    type(cell(), ''); // cancels that rest
     frames.syncNext();
-    type(cell(), '72'); // its rest fires before the stage is 4 again
+    type(cell(), '72'); // its rest fires before the stage is 4
+    await wait(1000);
+    frames.run();
+    expect(landed()).toBe(false); // typed, not saved: the onboarding has not ended (US-03 AC6)
+    expect(calls('onboarding_done')).toHaveLength(0);
+    commit(cell()); // the grid saves: it ends here
     await waitFor(() => { frames.run(); expect(landed()).toBe(true); });
     expect(calls('onboarding_done')).toHaveLength(1);
   });
@@ -723,8 +770,15 @@ describe('US-62 AC13, AC25b: the matrix weight and its frames', () => {
     it.each([['the box beside the height (parity pin)', false], ['the grid\'s New cell', true]])('%s: the last answer sends onboarding_step and onboarding_done once, shows the card, and lands nothing', async (_where, waist) => {
       const view = await chatReady({ waist });
       chatWeight();
-      if (waist) expect((weightRow(view)!.querySelector('.bt-cell-draft input') as HTMLInputElement).value).toBe('105');
-      await waitFor(() => expect(ready(view)).toBe('Your plan is ready.'));
+      if (waist) {
+        const cell = weightRow(view)!.querySelector('.bt-cell-draft input') as HTMLInputElement;
+        expect(cell.value).toBe('105');
+        await wait(300);
+        expect(ready(view)).toBeNull(); // in the grid, unconfirmed: no answer yet (US-03 AC6)
+        expect(calls('onboarding_done')).toHaveLength(0);
+        commit(cell); // the person confirms it
+      }
+      await waitFor(() => expect(ready(view)).toBe('Your plan is ready.'), { timeout: 3000 });
       await wait(300);
       expect(calls('onboarding_step')).toEqual([{ step: 'measurements' }]);
       expect(calls('onboarding_done')).toHaveLength(1);
@@ -747,7 +801,8 @@ describe('US-62 AC13, AC25b: the matrix weight and its frames', () => {
     it('a weight typed into the New cell after the chat\'s ended it neither lands nor counts again', async () => {
       const view = await chatReady();
       chatWeight();
-      await waitFor(() => expect(ready(view)).toBe('Your plan is ready.'));
+      commit(weightRow(view)!.querySelector('.bt-cell-draft input')); // the person confirms it
+      await waitFor(() => expect(ready(view)).toBe('Your plan is ready.'), { timeout: 3000 });
       type(weightRow(view)!.querySelector('.bt-cell-draft input'), '106');
       await wait(1000);
       expect(landed()).toBe(false);
@@ -758,7 +813,10 @@ describe('US-62 AC13, AC25b: the matrix weight and its frames', () => {
     it.each(['sex', 'birth'] as const)('%s still missing: the chat\'s grid weight counts the measurements step only, with no card', async (missing) => {
       const view = await chatReady({ missing });
       chatWeight();
-      await waitFor(() => expect(calls('onboarding_step')).toEqual([{ step: 'measurements' }]));
+      await wait(300);
+      expect(calls('onboarding_step')).toEqual([]); // in the grid, unconfirmed: no answer yet (US-03 AC6)
+      commit(weightRow(view)!.querySelector('.bt-cell-draft input')); // the person confirms it
+      await waitFor(() => expect(calls('onboarding_step')).toEqual([{ step: 'measurements' }]), { timeout: 3000 });
       await wait(300);
       expect(calls('onboarding_done')).toHaveLength(0);
       expect(q(view, '.mh-ready')).toBeNull();
@@ -771,6 +829,11 @@ describe('US-62 AC13, AC25b: the matrix weight and its frames', () => {
       const view = await chatReady({ waist: grid });
       typedWeight(view, grid);
       act(() => chat.proposeEdit!([{ kind: 'field', field: 'waistCm', displayValue: 91, unitSystem: 'si', date: null }]));
+      if (grid) {
+        await wait(1000);
+        expect(landed()).toBe(false); // typed, not saved: the onboarding has not ended (US-03 AC6)
+        commit(weightRow(view)!.querySelector('.bt-cell-draft input')); // the grid saves
+      }
       await waitFor(() => expect(landed()).toBe(true), { timeout: 2000 });
     });
 
@@ -778,7 +841,12 @@ describe('US-62 AC13, AC25b: the matrix weight and its frames', () => {
       const view = await chatReady({ waist: grid });
       typedWeight(view, grid);
       chatWeight();
-      await waitFor(() => expect(ready(view)).toBe('Your plan is ready.'));
+      if (grid) {
+        await wait(300);
+        expect(ready(view)).toBeNull(); // in the grid, unconfirmed: no answer yet (US-03 AC6)
+        commit(weightRow(view)!.querySelector('.bt-cell-draft input')); // the person confirms it
+      }
+      await waitFor(() => expect(ready(view)).toBe('Your plan is ready.'), { timeout: 3000 });
       await wait(1500);
       expect(landed()).toBe(false);
       expect(calls('onboarding_step')).toEqual([{ step: 'measurements' }]);
@@ -833,7 +901,10 @@ describe('US-62 AC13, AC25b: the matrix weight and its frames', () => {
       await wait(200);
       await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
       chatWeight();
-      await waitFor(() => expect(ready(view)).toBe('Your plan is ready.'));
+      await wait(300);
+      expect(ready(view)).toBeNull(); // in the grid, unconfirmed: no answer yet (US-03 AC6)
+      commit(weightRow(view)!.querySelector('.bt-cell-draft input')); // the person confirms it
+      await waitFor(() => expect(ready(view)).toBe('Your plan is ready.'), { timeout: 3000 });
       expect(calls('onboarding_step')).toEqual([{ step: 'measurements' }]);
       expect(calls('onboarding_done')).toHaveLength(1);
     });

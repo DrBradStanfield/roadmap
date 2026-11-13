@@ -45,7 +45,7 @@ function renderPanel(state: State): HTMLElement {
     ...MY_HEALTH_PROPS,
     inputs, effectiveInputs: inputs, onChange: vi.fn(), errors: {}, unitSystem: 'si',
     unitOverrides: {}, onToggleFieldUnit: vi.fn(), previousMeasurements: [], bloodTestHistory: [], vitalsHistory: [],
-    labValues: [], onSaveBloodTestBatch: vi.fn(async () => new Map()), onDraftValue: vi.fn(),
+    labValues: [], onSaveBloodTestBatch: vi.fn(async () => new Map()),
     medications: medicationRows(state.medications), onMedicationChange: vi.fn(),
     screenings: screeningRows(state.screenings), onScreeningChange: vi.fn(),
     supplements: [], onSupplementChange: vi.fn(), onSupplementDelete: vi.fn(),

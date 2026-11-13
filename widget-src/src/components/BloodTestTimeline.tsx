@@ -12,7 +12,7 @@ import { rowTarget } from '@roadmap/health-core/row-target';
 import { savedStatus } from '@roadmap/health-core/row-grade';
 import { formatShortDate } from '../lib/constants';
 import { BT_TIMELINE_DRAFT_KEY } from '../lib/storage';
-import { useDraftMirror, useMatrixDraft } from '../lib/useMatrixDraft';
+import { useMatrixDraft } from '../lib/useMatrixDraft';
 import { useBloodDraftUnits, type FieldUnitToggle, type UnitSwitchSource } from '../lib/useBloodDraftUnits';
 import { useSaveOnLeave } from '../lib/useSaveOnLeave';
 import { useScrollToRightOnMount } from '../lib/useScrollToRightOnMount';
@@ -130,9 +130,6 @@ export interface BloodTestTimelineProps {
   onCorrectValue?: CorrectFn;
   /** The page's move of a saved column's test to another day (US-04 AC5); without it the headers stay plain. */
   move?: MoveHeaders;
-  // The draft values the plan and the chat may read, in SI; undefined leaves
-  // the field to the record.
-  onDraftValue: (field: keyof HealthInputs, siValue: number | undefined, day?: string) => void;
   isSaving: boolean;
   /** Whom the hints and status colours grade for; null for a known minor,
    *  whose values show with neither (US-07 AC6). */
@@ -169,7 +166,7 @@ export const SAME_SLOT = 'This test already has a value on that day in another c
 
 export function BloodTestTimeline({
   bloodTestHistory, unitSystem, unitOverrides, onToggleFieldUnit, startUnitOf, onUnitSwitch,
-  onSaveBatch, onCorrectValue, move, onDraftValue, isSaving, grading, onUploadClick, uploadDisabled, loginUrl,
+  onSaveBatch, onCorrectValue, move, isSaving, grading, onUploadClick, uploadDisabled, loginUrl,
   hasApiResponse, flushRef, prefillRef, onHoldsText,
 }: BloodTestTimelineProps) {
   const batches = useMemo(() => groupByBatch(bloodTestHistory), [bloodTestHistory]);
@@ -180,10 +177,9 @@ export function BloodTestTimeline({
     return !!batch && batch.values[metric] == null;
   };
   const rowsUnder = (day: string, metric: MetricType) => ({ [metric]: batches.find(b => b.date === day)?.ids[metric] ?? null });
-  const latestDay = (metric: MetricType) => [...batches].reverse().find(b => b.values[metric] != null)?.date;
   const {
-    holdsText, draft, backfills, type, setDate: setDraftDate, unitOf, lpaUnitOf, restamp, expected, clashes, taken, lends, settle, refusal,
-  } = useMatrixDraft<MetricType>(BT_TIMELINE_DRAFT_KEY, { onScreen, rowsUnder, latestDay, legacyUnit: m => (m === 'lpa' ? undefined : startUnitOf?.(METRIC_TO_FIELD[m])) });
+    holdsText, draft, backfills, type, setDate: setDraftDate, unitOf, lpaUnitOf, restamp, expected, clashes, taken, settle, refusal,
+  } = useMatrixDraft<MetricType>(BT_TIMELINE_DRAFT_KEY, { onScreen, rowsUnder, legacyUnit: m => (m === 'lpa' ? undefined : startUnitOf?.(METRIC_TO_FIELD[m])) });
   // On a phone the grid sits hidden under rows: tell the page it holds typed text (US-62 AC11).
   useEffect(() => { onHoldsText?.(holdsText); }, [holdsText]);
   const [activeCell, setActiveCell] = useState<string | null>(null);
@@ -281,14 +277,6 @@ export function BloodTestTimeline({
   // on first mount).
   const scrollRef = useScrollToRightOnMount<HTMLDivElement>([columns.length]);
 
-  // What the plan and the chat read of the draft (US-03 AC6, `lends`): a
-  // value the test can take, clear of clashes (`si`), and the day it is dated
-  // (US-07 AC7: a creatinine's day decides which eGFR the plan reads).
-  useDraftMirror(ROWS.map(({ metric, field }) => {
-    const si = lends(metric) ? cells.find(c => c.column === null && c.metric === metric)?.si ?? undefined : undefined;
-    return [field, si, si === undefined ? undefined : draft.date];
-  }), onDraftValue);
-
   // Each cell is stamped with the unit it is typed in (US-04 AC1, US-05 AC2).
   const unitStamp = (metric: MetricType) => fieldUnit(METRIC_TO_FIELD[metric]);
   const setDraftValue = (metric: MetricType, typed: string) => type([null, metric], typed, unitStamp(metric));
@@ -321,7 +309,7 @@ export function BloodTestTimeline({
       return cellId;
     }
     if (date) setDraftDate(date);
-    type([null, metric], typed, stated, false); // the plan and the chat read it while it may stand in
+    type([null, metric], typed, stated, false);
     const cellId = `draft.${metric}`;
     setActiveCell(cellId);
     return cellId;

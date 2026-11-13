@@ -91,12 +91,6 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   const [inputs, setInputs] = useState<Partial<HealthInputs>>(getInitialInputsSync);
   const inputsRef = useRef(inputs);
   inputsRef.current = inputs;
-  // What the matrices' drafts lend the plan and the chat, by field (US-03
-  // AC6). It is kept apart from the form, which a re-read replaces, and only
-  // handleDraftValue writes it, so each matrix knows what it lent.
-  const [lent, setLent] = useState<Partial<HealthInputs>>({});
-  // The day each lent value is dated, when its draft has one (US-07 AC7).
-  const [lentDays, setLentDays] = useState<Partial<Record<keyof HealthInputs, string>>>({});
   // The record, read once at mount, so a returning user resumes at their step
   // with no flash of step 1 (US-62 AC13); the first load reuses it.
   const mountRead = useRef<{ erase: string; result: LatestMeasurementsResult | null } | null | undefined>(undefined);
@@ -194,22 +188,30 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   // Fire A/B impression once on mount
   useEffect(() => { trackABImpression(); }, []);
 
-  // Effective inputs for results calculation: form inputs, the drafts' lent
-  // values over them, then a fallback to previousMeasurements, which the data
-  // layer has already reduced to the newest active row per metric (US-07 AC4)
-  // — so the first match here IS the latest.
+  // Effective inputs for results calculation: form inputs, then a fallback
+  // to previousMeasurements, which the data layer has already reduced to the
+  // newest active row per metric (US-07 AC4) — so the first match here IS
+  // the latest. A grid's draft is not read: a value drives the plan once it
+  // is saved (US-03 AC6, Brad 2026-11-13).
+  // A chat waist or pressure sent before the whole form opens waits in
+  // `inputs` for the grid (ChatEdits' hand-over), unconfirmed: it drives
+  // neither the plan nor the chat, which is built from the plan's inputs
+  // (US-16 AC1, H72).
+  const confirmed = useMemo((): Partial<HealthInputs> => {
+    const { waistCm: _waist, systolicBp: _sys, diastolicBp: _dia, ...rest } = inputs;
+    return rest;
+  }, [inputs]);
   const effectiveInputs = useMemo(
-    () => mergeLongitudinalInputs({ ...inputs, ...lent }, previousMeasurements),
-    [inputs, lent, previousMeasurements],
+    () => mergeLongitudinalInputs(confirmed, previousMeasurements),
+    [confirmed, previousMeasurements],
   );
 
-  // The day of the value the plan reads for a field: a draft's own; one
-  // typed with no day counts as today's (null); else the saved row's.
+  // The day of the value the plan reads for a field: one typed with no day
+  // counts as today's (null); else the saved row's.
   const inputDay = useCallback((field: keyof HealthInputs, metric: string) => {
     const saved = previousMeasurements.find((m) => m.metricType === metric);
-    return lent[field] !== undefined ? lentDays[field] ?? null
-      : inputs[field] !== undefined || !saved ? null : dayOf(saved.recordedAt);
-  }, [inputs, lent, lentDays, previousMeasurements]);
+    return confirmed[field] !== undefined || !saved ? null : dayOf(saved.recordedAt);
+  }, [confirmed, previousMeasurements]);
 
   // What the plan and the chat read: the inputs with the lab's printed eGFR
   // when it is newer than the creatinine or from its day (US-07 AC7).
@@ -503,21 +505,6 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     trackProductEvent('alcohol_question_answered');
     handleInputChange('alcohol', answer);
   }, [handleInputChange]);
-  // A matrix's draft value, as the plan and the chat read it (US-03 AC6);
-  // undefined leaves the field to the record. One update per field, so
-  // several sent at once all land.
-  const handleDraftValue = useCallback((field: keyof HealthInputs, value: number | undefined, day?: string) => {
-    setLent(prev => {
-      const next = { ...prev, [field]: value };
-      if (value === undefined) delete next[field];
-      return next;
-    });
-    setLentDays(prev => {
-      const next = { ...prev, [field]: day };
-      if (value === undefined || day === undefined) delete next[field];
-      return next;
-    });
-  }, []);
 
   // Settings (US-62 AC24): the person button opens them in My health's place.
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -654,7 +641,6 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     onSaveBloodTestBatch: handleSaveLongitudinal,
     onCorrectValue: handleCorrectValue,
     moveTest,
-    onDraftValue: handleDraftValue,
     medications,
     onMedicationChange: handleMedicationChange,
     screenings,

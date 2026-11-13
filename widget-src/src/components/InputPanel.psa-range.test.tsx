@@ -27,7 +27,7 @@ describe('US-35 AC17 — the PSA input takes the unit table range', () => {
       inputs, effectiveInputs: inputs, onChange, errors: {}, unitSystem,
       // The page's blood-test history holds every saved row, the newest among them.
       unitOverrides: {}, onToggleFieldUnit: vi.fn(), previousMeasurements, bloodTestHistory: previousMeasurements, vitalsHistory: [],
-      labValues: [], onSaveBloodTestBatch: vi.fn(async () => new Map()), onDraftValue: vi.fn(), medications: [],
+      labValues: [], onSaveBloodTestBatch: vi.fn(async () => new Map()), medications: [],
       onMedicationChange: vi.fn(), screenings: [{ id: 's1', screeningKey: 'prostate_discussion', value: 'will_screen', updatedAt: '' }],
       onScreeningChange: vi.fn(), supplements: [], onSupplementChange: vi.fn(), onSupplementDelete: vi.fn(),
       scheduleLongitudinalSave: vi.fn(), flushLongitudinalSave: vi.fn(), isSavingLongitudinal: false,
@@ -76,7 +76,7 @@ it('on a phone too, the PSA input keeps the unit table range', () => {
     ...MY_HEALTH_PROPS,
     inputs, effectiveInputs: inputs, onChange: vi.fn(), errors: {}, unitSystem: 'si',
     unitOverrides: {}, onToggleFieldUnit: vi.fn(), previousMeasurements: [], bloodTestHistory: [], vitalsHistory: [],
-    labValues: [], onSaveBloodTestBatch: vi.fn(async () => new Map()), onDraftValue: vi.fn(), medications: [],
+    labValues: [], onSaveBloodTestBatch: vi.fn(async () => new Map()), medications: [],
     onMedicationChange: vi.fn(), screenings: [{ id: 's1', screeningKey: 'prostate_discussion', value: 'will_screen', updatedAt: '' }],
     onScreeningChange: vi.fn(), supplements: [], onSupplementChange: vi.fn(), onSupplementDelete: vi.fn(),
     scheduleLongitudinalSave: vi.fn(), flushLongitudinalSave: vi.fn(), isSavingLongitudinal: false,

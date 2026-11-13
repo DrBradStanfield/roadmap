@@ -58,7 +58,7 @@ export function useLongitudinalSave({
 
   // Save typed values by the one routing rule (matrix-save.ts), against the
   // store's own rows, then re-read the record. The matrices pass their cells;
-  // with none, it saves the form's vitals under today. Saves run
+  // with none, it saves the form's weight (and a committed PSA). Saves run
   // one after another, so two asked for at once (a press on Save as PDF
   // leaves a matrix, and saves the fields) both land. Resolves with what was
   // refused, slot by slot, so the caller keeps only that.
@@ -67,14 +67,14 @@ export function useLongitudinalSave({
   // returns, ahead of the caller's synchronous flush; the re-read follows if
   // the page stays (US-06 AC15).
   const handleSaveLongitudinal = useCallback((tasks?: SaveTask[], erase = getShownErase(), now = false): Promise<Refused> => {
-    // The form's vitals: a weight, a waist, a blood pressure, each
-    // naming the row the page shows for today ("Replaces 82 kg"), in the unit
-    // it was typed in (mmHg either way). What a matrix's draft lends the plan
-    // is kept apart (`lent`), and only that matrix saves it, on the day the
-    // draft is dated (review of 2026-09-24). So what `inputs` holds here was
-    // typed into these fields, by the user or the chat. The prostate section's
-    // PSA takes the day picked beside it, or today until one is picked; a day
-    // after today (or none) saves no PSA, and the field says so (US-06 AC15).
+    // The form's weight, naming the row the page shows for today ("Replaces
+    // 82 kg"), in the unit it was typed in. A matrix saves its own draft, on
+    // the day the draft is dated (review of 2026-09-24). A chat waist or
+    // pressure sent before the whole form opens waits in `inputs` for the
+    // grid, unconfirmed, so no form save takes it (US-16 AC1, H72). The
+    // prostate section's PSA takes the day picked beside it, or today until
+    // one is picked; a day after today (or none) saves no PSA, and the field
+    // says so (US-06 AC15).
     const fromForm = (): SaveTask[] => {
       const today = localDay(new Date());
       const shown = activeRowIndex(history);
@@ -83,7 +83,7 @@ export function useLongitudinalSave({
       // yet chosen (US-06 AC15).
       const psaCommitted = psaCommittedRef.current;
       psaCommittedRef.current = false;
-      return [['weight'], ['waist'], ['systolic_bp', 'diastolic_bp'], ['psa']].flatMap((metrics): SaveTask[] => {
+      return [['weight'], ['psa']].flatMap((metrics): SaveTask[] => {
         if (metrics[0] === 'psa' && !psaCommitted) return [];
         const date = metrics[0] === 'psa' ? psaDate ?? today : today;
         if (!date || date > today) return [];

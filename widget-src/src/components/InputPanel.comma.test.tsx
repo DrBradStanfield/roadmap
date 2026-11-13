@@ -33,7 +33,7 @@ const renderPanel = (onboarding: typeof DONE | typeof WEIGHT_BOX = DONE) => {
     ...myHealth({ settingsOpen: true }), // About you, low, sits in Settings (US-62 AC24)
     inputs, effectiveInputs: inputs, onChange, errors: {}, unitSystem: 'si' as const,
     unitOverrides: {}, onToggleFieldUnit: vi.fn(), previousMeasurements: [], bloodTestHistory: [], vitalsHistory: [],
-    labValues: [], onSaveBloodTestBatch: vi.fn(async () => new Map()), onDraftValue: vi.fn(), medications: [],
+    labValues: [], onSaveBloodTestBatch: vi.fn(async () => new Map()), medications: [],
     onMedicationChange: vi.fn(), onScreeningChange, supplements: [], onSupplementChange: vi.fn(),
     screenings: [
       { id: 's1', screeningKey: 'prostate_discussion', value: 'will_screen', updatedAt: '' },

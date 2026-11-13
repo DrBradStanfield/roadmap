@@ -21,7 +21,7 @@ const row = (id: string, metricType: string, value: number, comparator?: Compara
 function cell(history: ApiMeasurement[], label: string, plan: { age?: number; idealBodyWeight?: number; heightCm: number } | null = { age: 50, idealBodyWeight: 73, heightCm: 178 }) {
   const view = render(
     <StartingInfoVitals vitalsHistory={history} unitSystem="si"
-      onSave={vi.fn()} onCorrectValue={vi.fn()} onDraftValue={() => {}} formStage={4}
+      onSave={vi.fn()} onCorrectValue={vi.fn()} formStage={4}
       plan={plan} unitOverrides={{}} onToggleFieldUnit={() => {}}/>,
   );
   const found = Array.from(view.container.querySelectorAll('.bt-row'))
@@ -59,7 +59,7 @@ describe('US-12 AC21: the vitals table grades a limit only when certain', () => 
         { ...row('w1', 'weight', 80), recordedAt: '2026-07-01T00:00:00.000Z' },
         { ...row('w2', 'weight', 85, '>'), recordedAt: '2026-08-01T00:00:00.000Z' },
         { ...row('w3', 'weight', 82), recordedAt: '2026-09-01T00:00:00.000Z' },
-      ]} unitSystem="si" onSave={vi.fn()} onCorrectValue={vi.fn()} onDraftValue={() => {}} formStage={4}
+      ]} unitSystem="si" onSave={vi.fn()} onCorrectValue={vi.fn()} formStage={4}
         plan={{ age: 50, idealBodyWeight: 73, heightCm: 178 }} unitOverrides={{}} onToggleFieldUnit={() => {}}/>,
     );
     const weight = Array.from(view.container.querySelectorAll('.bt-row')).find((r) => r.querySelector('.bt-name-label')?.textContent === 'Weight')!;

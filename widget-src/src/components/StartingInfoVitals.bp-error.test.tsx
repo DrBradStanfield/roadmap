@@ -20,7 +20,7 @@ afterEach(() => { cleanup(); localStorage.clear(); });
 function renderVitals(vitalsHistory: ApiMeasurement[] = []) {
   return render(
     <StartingInfoVitals vitalsHistory={vitalsHistory} unitSystem="si"
-      onSave={vi.fn()} onCorrectValue={vi.fn()} onDraftValue={() => {}} formStage={4}
+      onSave={vi.fn()} onCorrectValue={vi.fn()} formStage={4}
       plan={{ age: 50, idealBodyWeight: 73, heightCm: 178 }} unitOverrides={{}} onToggleFieldUnit={() => {}}/>,
   );
 }
@@ -94,17 +94,19 @@ describe('US-02 AC8: a blood pressure the wrong way up is the pair\'s error', ()
     expect(view.getByRole('textbox', { name: 'Diastolic blood pressure', description: rule })).toBeTruthy();
   });
 
-  it('80/120 lends neither half to the plan or the chat (review R1)', () => {
-    const lent = new Map<string, number | undefined>();
+  it('80/120 does not save (review R1)', () => {
+    const onSave = vi.fn(async () => new Map());
     const view = render(
       <StartingInfoVitals vitalsHistory={[]} unitSystem="si"
-        onSave={vi.fn()} onCorrectValue={vi.fn()} onDraftValue={(field: string, value: number | undefined) => { lent.set(field, value); }} formStage={4}
+        onSave={onSave} onCorrectValue={vi.fn()} formStage={4}
         plan={{ age: 50, idealBodyWeight: 73, heightCm: 178 }} unitOverrides={{}} onToggleFieldUnit={() => {}}/>,
     );
     fireEvent.change(view.getByRole('textbox', { name: 'Systolic blood pressure' }), { target: { value: '80' } });
-    expect(lent.get('systolicBp')).toBe(80);
-    fireEvent.change(view.getByRole('textbox', { name: 'Diastolic blood pressure' }), { target: { value: '120' } });
-    expect([lent.get('systolicBp'), lent.get('diastolicBp')]).toEqual([undefined, undefined]);
+    const dia = view.getByRole('textbox', { name: 'Diastolic blood pressure' });
+    fireEvent.change(dia, { target: { value: '120' } });
+    fireEvent.keyDown(dia, { key: 'Enter' }); // the commit
+    expect(onSave).not.toHaveBeenCalled();
+    expect((dia as HTMLInputElement).value).toBe('120'); // kept, with the pair's error
   });
 });
 
