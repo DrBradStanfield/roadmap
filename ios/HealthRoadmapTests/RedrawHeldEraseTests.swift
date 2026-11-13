@@ -64,9 +64,16 @@ final class RedrawHeldEraseTests: XCTestCase {
         return try XCTUnwrap(JSONSerialization.jsonObject(with: Data(json.utf8)) as? [String: Any])
     }
 
+    /// The record file keeps its eraseEpoch in `meta` (roadmap-file.ts).
     private func eraseEpoch(_ json: String) throws -> Int? {
         let record = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(json.utf8)) as? [String: Any])
-        return record["eraseEpoch"] as? Int
+        return (record["meta"] as? [String: Any])?["eraseEpoch"] as? Int
+    }
+
+    /// The record file's active weight rows.
+    private func weights(_ json: String) throws -> [[String: Any]] {
+        let record = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(json.utf8)) as? [String: Any])
+        return (record["measurements"] as? [[String: Any]] ?? []).filter { $0["metricType"] as? String == "weight" && $0["status"] as? String == "active" }
     }
 
     private struct Held {
@@ -89,6 +96,8 @@ final class RedrawHeldEraseTests: XCTestCase {
         await sync.start()
         XCTAssertNotNil(store.cloudErase, "the cloud record is open")
         XCTAssertNotNil(store.myData?.vitals.first { $0.metric == "weight" }?.latest, "the weight before the erase")
+        XCTAssertEqual(try weights(store.recordJSON).count, 1, "the file holds the weight before the erase")
+        XCTAssertEqual(try eraseEpoch(store.recordJSON) ?? 0, 0, "no erase yet")
         try screenFails(true, engine)
         if case .refused(let words) = await eraser.eraseAll() { XCTFail("the erase was refused: \(words)") }
         XCTAssertEqual(store.erasures, 1, "the store took the erase in")
@@ -104,6 +113,8 @@ final class RedrawHeldEraseTests: XCTestCase {
         await store.redraw().value
 
         XCTAssertEqual(store.recordJSON, held.record, "the same erased record, now drawn")
+        XCTAssertEqual(try eraseEpoch(held.record), 1, "the erase moved eraseEpoch")
+        XCTAssertEqual(try weights(held.record).count, 0, "the erased record keeps no weight")
         let data = try XCTUnwrap(store.myData, "My data shows the erased record")
         XCTAssertEqual(data.eraseEpoch, try eraseEpoch(held.record), "its rows are the erased record's")
         XCTAssertNil(data.vitals.first { $0.metric == "weight" }?.latest, "no row from before the erase")
