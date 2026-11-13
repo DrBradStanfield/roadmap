@@ -83,17 +83,32 @@ export function useValuePage(revealCell: RevealCell, panelRef: RefObject<HTMLDiv
   };
   const showTable = (open: boolean) => { setSeenReveal(revealCell); setTableOpen(open); };
   // A grid mounted hidden never scrolled to its newest column: do it on showing.
-  // The vitals grid scrolls whole date columns, so no clipped sliver shows beside its names (H79).
-  // Only where Trend scrolls with the data (a phone): a sticky Trend (desktop) would cover New.
+  // The vitals grid's range ends on a whole column (styles.css, H105); where it ends past New
+  // (a 320 phone), it opens with New whole beside the names, and a swipe brings Trend.
   useEffect(() => {
     if (!tableShown) return;
     panelRef.current?.querySelectorAll<HTMLElement>('.md-table .bt-timeline-scroll').forEach(el => {
-      const trend = el.querySelector('.bt-header-row .bt-cell-trend');
-      const snap = el.closest('.bt-vitals-card') && trend && getComputedStyle(trend).position !== 'sticky';
-      const colW = snap ? el.querySelector<HTMLElement>('.bt-header-row .bt-cell-value')?.offsetWidth : 0;
-      el.scrollLeft = colW ? Math.floor((el.scrollWidth - el.clientWidth) / colW) * colW : el.scrollWidth;
+      el.scrollLeft = el.scrollWidth;
+      const newCol = el.closest('.bt-vitals-card') && el.querySelector('.bt-header-row .bt-cell-draft-date');
+      const names = el.querySelector('.bt-header-row .bt-cell-name');
+      if (newCol && names) el.scrollLeft += Math.min(0, newCol.getBoundingClientRect().left - names.getBoundingClientRect().right);
     });
   }, [tableShown]);
+  // A focused vitals cell shows whole: WebKit centres a focused input, and the snap then rounds
+  // to the nearer column, which can cut its cell. So a cut cell moves beside the names (H105).
+  useEffect(() => {
+    const onFocus = (e: FocusEvent) => requestAnimationFrame(() => {
+      const at = e.target as Element;
+      const cell = panelRef.current?.contains(at) ? at.closest('.md-table .bt-vitals-card .bt-cell-value') : null;
+      const el = cell?.closest('.bt-timeline-scroll');
+      const [names, trend] = ['name', 'trend'].map(c => el?.querySelector(`.bt-header-row .bt-cell-${c}`)?.getBoundingClientRect());
+      if (!cell || !el || !names || !trend) return;
+      const box = cell.getBoundingClientRect(), right = Math.min(el.getBoundingClientRect().right, trend.left);
+      if (box.left < names.right - 1 || box.right > right + 1) el.scrollLeft += box.left - names.right;
+    });
+    document.addEventListener('focusin', onFocus);
+    return () => document.removeEventListener('focusin', onFocus);
+  }, []);
 
   // A reload on a page's entry opens on the rows: drop the stale marker, so the next page pushes its own.
   useEffect(() => {

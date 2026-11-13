@@ -4937,14 +4937,13 @@ input[type="number"] {
     margin-left: 0;
     margin-right: 0;
   }
-  /* Match the blood-test matrix's mobile vars (the unified grid uses the
-     same `.bt-timeline` machinery now, so the same widths keep the two
-     tables aligned at narrow viewports). */
-  .bt-timeline.bt-vitals-card {
-    --bt-name-w: 152px;
-    --bt-value-w: 91px;
-    --bt-trend-w: 63px;
-  }
+}
+/* H105: the vitals grid stops only on whole date columns, so no clipped sliver shows beside
+   the names. Its scroll range rounds up to whole columns (the filler before Trend takes the
+   rest), so its right edge, where it opens, is one too, and New stays clear of a sticky Trend. */
+.bt-vitals-card .bt-timeline-scroll { scroll-snap-type: x mandatory; scroll-padding-left: var(--bt-name-w); }
+.bt-vitals-card .bt-header-row :is(.bt-cell-value, .bt-row-filler) { scroll-snap-align: start; }.bt-vitals-card .bt-timeline-scroll-inner {
+  width: calc(100% + round(up, var(--bt-name-w) + var(--bt-col-count) * var(--bt-value-w) + var(--bt-trend-w) - 100%, var(--bt-value-w)));
 }
 /* Side-by-side sys / dia inputs in the BP draft cell. */
 .bt-vitals-bp-inputs {

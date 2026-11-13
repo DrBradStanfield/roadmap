@@ -34,6 +34,7 @@ import { HealthTool } from './HealthTool';
 import { trackProductEvent } from '../lib/server-api';
 import { openSettings } from '../testing/settings';
 import { trackLiveRefresh, stopLiveRefresh } from '../testing/health-tool-harness';
+import { cascaded } from '../testing/css-cascade';
 
 // Adversary R7 (2026-11-02): each Add waits on the store's real async save. Under a
 // loaded full run that took longer than waitFor's default 1 s, so two AC10 tests
@@ -356,13 +357,15 @@ describe('US-62 AC11: All results as a table', () => {
     expect(row(view, 'LDL Cholesterol')).toBeTruthy();
   });
 
-  // H79: at 390 px each grid is 397 inner against 334 visible, its date columns 91.
-  // Scrolled to the right edge (63), the vitals grid hid most of its first date
-  // column under the name column and showed a clipped sliver of it. Where Trend
-  // scrolls with the data (a phone), it snaps to whole columns; where Trend is
-  // sticky (desktop), it keeps the right edge, so New never slides under Trend.
-  // The blood grid always opens at its right edge.
-  async function openedAt(view: ReturnType<typeof render>, scrollWidth: number, clientWidth: number) {
+  // H79 snapped the vitals grid to whole columns in code as the table opened, and only where
+  // Trend scrolls. At 1440, with Trend sticky, it opened at its right edge, so the left-most
+  // date column showed as a clipped sliver beside the names; on a phone a swipe to the end did
+  // the same (H105). Now styles.css rounds the vitals grid's scroll range up to whole columns
+  // and snaps a swipe to one, and the table opens it with New whole beside the names, or at
+  // its right edge if that comes first. The blood grid opens at its right edge.
+  // jsdom lays nothing out: the scroll range is given, and New's place as its scroll position.
+  const NAMES = 152;
+  async function openedAt(view: ReturnType<typeof render>, scrollWidth: number, clientWidth: number, newAt = Infinity) {
     await new Promise(r => setTimeout(r, 600)); // the hidden grids' mount scroll has given up
     const scrollers = new Map<string, HTMLElement>();
     for (const sel of ['.bt-vitals-card .bt-timeline-scroll', '.bt-timeline:not(.bt-vitals-card) .bt-timeline-scroll']) {
@@ -373,25 +376,27 @@ describe('US-62 AC11: All results as a table', () => {
       Object.defineProperty(el, 'clientWidth', { configurable: true, get: () => clientWidth });
       Object.defineProperty(el, 'scrollLeft', { configurable: true, get: () => left,
         set: (v: number) => { left = Math.min(Math.max(v, 0), scrollWidth - clientWidth); } });
-      el.querySelectorAll<HTMLElement>('.bt-header-row .bt-cell-value').forEach(cell =>
-        Object.defineProperty(cell, 'offsetWidth', { configurable: true, get: () => 91 }));
+      const at = (x: number) => ({ left: x, right: x, top: 0, bottom: 0, width: 0, height: 0, x, y: 0, toJSON: () => ({}) }) as DOMRect;
+      el.querySelector('.bt-header-row .bt-cell-name')!.getBoundingClientRect = () => at(NAMES);
+      const newCol = el.querySelector('.bt-header-row .bt-cell-draft-date');
+      if (newCol) newCol.getBoundingClientRect = () => at(NAMES + Math.min(newAt, 1e6) - left);
       scrollers.set(sel.startsWith('.bt-vitals') ? 'vitals' : 'blood', el);
     }
     fireEvent.click(view.getByRole('button', { name: 'All results as a table' }));
     return { vitals: scrollers.get('vitals')!.scrollLeft, blood: scrollers.get('blood')?.scrollLeft };
   }
 
-  it('H79: at 390 the vitals grid opens on whole columns (0) and the blood grid at its right edge (63)', async () => {
+  it('H105: at 390, New is the last whole column: both grids open at their right edge (91)', async () => {
     await seed();
-    expect(await openedAt(await renderTool(), 397, 334)).toEqual({ vitals: 0, blood: 63 });
+    expect(await openedAt(await renderTool(), 425, 334, 91)).toEqual({ vitals: 91, blood: 91 });
   });
 
-  it('H79: with more than a column of overflow (154), the vitals grid scrolls whole columns (91)', async () => {
+  it('H105: at 320 the vitals range ends past New, on Trend: it opens with New whole beside the names (1183 of 1274)', async () => {
     await seed();
-    expect(await openedAt(await renderTool(), 488, 334)).toEqual({ vitals: 91, blood: 154 });
+    expect(await openedAt(await renderTool(), 1538, 264, 1183)).toEqual({ vitals: 1183, blood: 1274 });
   });
 
-  it('H79: where Trend is sticky (desktop CSS), the vitals grid keeps its right edge, so New stays clear of Trend', async () => {
+  it('H105: where Trend is sticky (desktop CSS), the vitals grid opens at its right edge, so New stays clear of Trend', async () => {
     await seed();
     const view = await renderTool();
     const real = window.getComputedStyle;
@@ -400,18 +405,62 @@ describe('US-62 AC11: All results as a table', () => {
       return el.classList.contains('bt-cell-trend') ? { ...style, position: 'sticky' } as CSSStyleDeclaration : style;
     });
     try {
-      expect(await openedAt(view, 488, 334)).toEqual({ vitals: 154, blood: 154 });
+      expect(await openedAt(view, 1418, 680, 1066)).toEqual({ vitals: 738, blood: 738 });
     } finally { spy.mockRestore(); }
   });
 
-  it('H79: with no saved vitals, the lone New column is a whole column too (320 px: 42 overflow -> 0)', async () => {
+  // In real WebKit at 375 a focused systolic input is centred and the snap rounds that to the
+  // nearer column, 1092, which cut the New cell's right 15 px (Next on the iPhone keyboard).
+  it('H105: a focused vitals cell that the snap cut moves beside the names, whole (375: 1092 -> 1183)', async () => {
+    await seed();
+    const view = await renderTool();
+    await openedAt(view, 1502, 319, 1183);
+    const el = view.container.querySelector<HTMLElement>('.md-table .bt-vitals-card .bt-timeline-scroll')!;
+    const cell = el.querySelector('.bt-cell-draft .bt-vitals-bp-inputs')!.closest<HTMLElement>('.bt-cell-value')!;
+    const box = (left: number, width: number) => ({ left, right: left + width, top: 0, bottom: 0, width, height: 0, x: left, y: 0, toJSON: () => ({}) }) as DOMRect;
+    el.getBoundingClientRect = () => box(0, 319);
+    cell.getBoundingClientRect = () => box(NAMES + 1183 - el.scrollLeft, 91);
+    el.querySelector('.bt-header-row .bt-cell-trend')!.getBoundingClientRect = () => box(NAMES + 1183 + 91 + 28 - el.scrollLeft, 63);
+    el.scrollLeft = 1092;
+    act(() => { cell.querySelector('input')!.focus(); });
+    await act(() => new Promise(r => requestAnimationFrame(r)));
+    expect(el.scrollLeft).toBe(1183);
+    // Whole already: left where it is.
+    el.scrollLeft = 1183 - 76;
+    act(() => { cell.querySelectorAll('input')[1].focus(); });
+    await act(() => new Promise(r => requestAnimationFrame(r)));
+    expect(el.scrollLeft).toBe(1107);
+  });
+
+  it('H105: with no saved vitals at 320, the lone New column opens whole (0 of 91)', async () => {
     await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {});
     await addMeasurement('ldl', 3.4, '2026-10-12T00:00:00.000Z');
     await flushRoadmapStore();
     const view = await renderTool();
     expect(view.container.querySelector('.bt-vitals-card .bt-header-row .bt-cell-draft-date')).not.toBeNull();
     expect(view.container.querySelectorAll('.bt-vitals-card .bt-header-row .bt-cell-date').length).toBe(0);
-    expect((await openedAt(view, 306, 264)).vitals).toBe(0);
+    expect((await openedAt(view, 355, 264, 0)).vitals).toBe(0);
+  });
+
+  it('H105: the vitals grid scrolls whole columns: its range rounds up to them and a swipe snaps to one; the blood grid does neither', async () => {
+    await seed();
+    const view = await renderTool();
+    const vitals = view.container.querySelector('.md-table .bt-vitals-card')!;
+    const blood = view.container.querySelector('.md-table .bt-timeline:not(.bt-vitals-card)')!;
+    const css = (root: Element, sel: string, prop: string, width: number) => cascaded(root.querySelector(sel)!, prop, width);
+    for (const width of [320, 390, 1440]) {
+      expect(css(vitals, '.bt-timeline-scroll', 'scroll-snap-type', width)).toBe('x mandatory');
+      expect(css(vitals, '.bt-timeline-scroll', 'scroll-padding-left', width)).toBe('var(--bt-name-w)');
+      // Each date column and New is a snap point; so is the filler, where the rounded range ends.
+      for (const cell of ['.bt-cell-date', '.bt-cell-draft-date', '.bt-row-filler'])
+        expect(css(vitals, `.bt-header-row ${cell}`, 'scroll-snap-align', width)).toBe('start');
+      expect(css(vitals, '.bt-timeline-scroll-inner', 'width', width)).toBe('calc(100% + round(up, var(--bt-name-w)'
+        + ' + var(--bt-col-count) * var(--bt-value-w) + var(--bt-trend-w) - 100%, var(--bt-value-w)))');
+      expect(css(blood, '.bt-timeline-scroll', 'scroll-snap-type', width)).toBeUndefined();
+      expect(css(blood, '.bt-header-row .bt-cell-value', 'scroll-snap-align', width)).toBeUndefined();
+      expect(css(blood, '.bt-timeline-scroll-inner', 'width', width))
+        .toBe('calc(var(--bt-name-w) + var(--bt-col-count) * var(--bt-value-w) + var(--bt-trend-w))');
+    }
   });
 });
 
