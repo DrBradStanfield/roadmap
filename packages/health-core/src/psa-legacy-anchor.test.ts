@@ -129,6 +129,15 @@ describe('an out-of-range old answer newer than every row is not the PSA read (U
     });
   });
 
+  it('no rows: an answer of 10001 is no answer, date included; plan and chat agree, no "Elevated PSA"', () => {
+    const file = fileWith([], { prostatePsaValue: '10001', prostateLastDate: '2026-09' });
+    const none = fileWith([], {});
+    expect(cards(file)).toEqual(cards(none));
+    expect(reminders(file)).toEqual(reminders(none));
+    expect(chatPlan(file)).toEqual(chatPlan(none));
+    expect(cards(file).map((c) => c.id)).not.toContain('screening-prostate-elevated');
+  });
+
   it('an answer of 0 dated 2026-09 is in range: it is the PSA read and ends the rule', () => {
     const file = fileWith(RAISED_THEN_VAGUE, { prostatePsaValue: '0', prostateLastDate: '2026-09' });
     expect(cards(file)).toEqual([]);

@@ -75,7 +75,7 @@ import {
   healthInputSchema, inRange, inputsPressureInverted, sanitizeInputs, excludedInputFields, MEDICATION_KEYS, SCREENING_KEYS,
 } from './validation';
 import {
-  FIELD_UNITS, LONGITUDINAL_FIELDS, METRIC_TO_FIELD, medicationsToInputs, screeningRange, screeningsToInputs, withPsaMeasurement,
+  FIELD_UNITS, inPsaRange, LONGITUDINAL_FIELDS, METRIC_TO_FIELD, medicationsToInputs, screeningRange, screeningsToInputs, withPsaMeasurement,
   type ApiMedication, type ApiScreening,
 } from './mappings';
 import {
@@ -421,17 +421,16 @@ const MAX_SCREENING_VALUE = 32;
 
 function screeningRows(raw: unknown): Array<Pick<ApiScreening, 'screeningKey' | 'value'>> {
   if (!Array.isArray(raw)) return [];
-  return raw.flatMap((row) => {
+  let psaUnusable = false; // US-06 AC14: an unusable old PSA answer is no answer, its date included (withPsaMeasurement's rule).
+  const kept = raw.flatMap((row) => {
     const { screeningKey, value } = fields(row);
     if (typeof screeningKey !== 'string' || !(SCREENING_KEYS as readonly string[]).includes(screeningKey)) return [];
     if (typeof value !== 'string' || value.length > MAX_SCREENING_VALUE) return [];
-    const range = screeningRange(screeningKey);
-    if (range) {
-      const n = parseLocalisedNumber(value, range) ?? NaN;
-      if (!Number.isFinite(n) || rangeFault(range, n)) return [];
-    }
-    return [{ screeningKey, value }];
+    const range = screeningRange(screeningKey), n = range ? parseLocalisedNumber(value, range) : 0;
+    if (screeningKey === 'prostate_psa_value' && n !== undefined && !inPsaRange(n)) psaUnusable = true;
+    return range && (n === undefined || !Number.isFinite(n) || rangeFault(range, n)) ? [] : [{ screeningKey, value }];
   });
+  return psaUnusable ? kept.filter((r) => r.screeningKey !== 'prostate_last_date') : kept;
 }
 
 /** Most dated points the chat takes across every metric. */
