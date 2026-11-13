@@ -12,7 +12,7 @@ import { chatContextOf, type ChatContextPayload } from '@roadmap/health-core/cha
 import { statTiles } from '@roadmap/health-core/stat-tiles';
 import { medicationForm, screeningForm } from '@roadmap/health-core/input-form';
 import { localDay, dayOf } from '@roadmap/health-core/merge';
-import { newestUsablePsa } from '@roadmap/health-core/measurement-history';
+import { planPsa } from '@roadmap/health-core/measurement-history';
 import type { BloodTestPrefillFn } from './BloodTestTimeline';
 import type { MoveTestApi } from './MoveTestPanel';
 import type { VitalsPrefillFn } from './StartingInfoVitals';
@@ -377,7 +377,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
       unitSystem,
       medicationsToInputs(medications),
       // US-06 AC14: the prostate cards read the newest usable saved PSA, as computePlan does.
-      withPsaMeasurement(screeningsToInputs(screenings), newestUsablePsa(history, new Date())),
+      withPsaMeasurement(screeningsToInputs(screenings), planPsa(history, new Date())),
       metricUnitOverrides,
     );
     // The form follows the plan: its recommendations, targets and cascade
