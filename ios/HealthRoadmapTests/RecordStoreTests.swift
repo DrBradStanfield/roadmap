@@ -475,7 +475,7 @@ final class RecordStoreTests: XCTestCase {
     /// US-25 AC11g, the phone twin of CloudSyncTests' R1 (I-1 design note, erase-epoch gap): a
     /// sheet pinned before an erase of the phone's file. Its Screen holds no eraseEpoch and both
     /// sides' cloud erase are nil, so only a pin that tells the erase apart refuses the old
-    /// sheet's value. Expected on main at the time of writing: FAILS, the value lands.
+    /// sheet's value: Screen carries the eraseEpoch and erase count, checked by Mark.holds.
     func testASheetOpenedBeforeAPhoneEraseCannotSaveIntoTheErasedRecord_US25_AC11g() async throws {
         let store = try store()
         await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 80, day: "2026-10-01")))
