@@ -13,8 +13,9 @@
  * (matrix-save routeTasksToSaves: the slot no longer holds the row the cell
  * expected, so `changed`), and the store's own slot rule (placeMeasurement:
  * `slot-occupied`). These tests pin that.
- * Not pinned: the second save answers `changed`, so the cell or form shows
- * "changed on another device" over a value that did save (seen 2026-11-14).
+ * And the second commit never reaches the save: each commit claims it
+ * synchronously (a ref), so no "changed on another device" shows over a value
+ * that did save, and the value page says "Added." once (US-03 AC2a, seen 2026-11-14).
  *
  * Whole widget over a REAL RoadmapStore on jsdom's localStorage. Synthetic data only.
  */
@@ -76,10 +77,13 @@ const bpHalf = (view: RenderResult, half: 'Systolic' | 'Diastolic') =>
 const tapOutside = () => { fireEvent.pointerDown(document.body); fireEvent.pointerUp(document.body); };
 /** Let the queued saves and the re-read finish. */
 const settled = () => act(async () => { for (let i = 0; i < 20; i++) await new Promise((r) => setTimeout(r, 0)); });
+/** What a refused save shows, a cell's reason or the matrix's line under the grid: none. */
+const noRefusal = (scope: HTMLElement) =>
+  expect(scope.textContent!.match(/[^.]*(changed on another device|did not save|not saved)[^.]*\./g)).toBeNull();
 /** The store's inserts of one metric, as the save made them. */
 const insertsOf = (inserts: Inserts, metric: string) => inserts.mock.calls.filter((c) => c[0] === metric).length;
 
-describe('US-03 AC2 (double commit): a vitals New cell committed twice in one render saves once', () => {
+describe('US-03 AC2, AC2a (double commit): a vitals New cell committed twice in one render saves once', () => {
   it('Enter and a tap outside in one render: one weight insert, one row today', async () => {
     const { view, inserts } = await withGrid();
     typeInto(draftWeight(view), '84');
@@ -90,6 +94,7 @@ describe('US-03 AC2 (double commit): a vitals New cell committed twice in one re
     await settled();
     expect(insertsOf(inserts, 'weight')).toBe(1);
     expect(await rowsOf('weight')).toEqual([[82, SAVED_DAY, 'active'], [84, today(), 'active']]);
+    noRefusal(view.container);
   });
 
   it('a tap outside and an upload starting in one render: one weight insert, one row today', async () => {
@@ -102,6 +107,7 @@ describe('US-03 AC2 (double commit): a vitals New cell committed twice in one re
     await settled();
     expect(insertsOf(inserts, 'weight')).toBe(1);
     expect(await rowsOf('weight')).toEqual([[82, SAVED_DAY, 'active'], [84, today(), 'active']]);
+    noRefusal(view.container);
   });
 
   it('a blood pressure: Enter on the diastolic and an upload starting in one render: one insert of each half', async () => {
@@ -116,10 +122,11 @@ describe('US-03 AC2 (double commit): a vitals New cell committed twice in one re
     expect([insertsOf(inserts, 'systolic_bp'), insertsOf(inserts, 'diastolic_bp')]).toEqual([1, 1]);
     expect(await rowsOf('systolic_bp')).toEqual([[128, today(), 'active']]);
     expect(await rowsOf('diastolic_bp')).toEqual([[82, today(), 'active']]);
+    noRefusal(view.container);
   });
 });
 
-describe('US-03 AC2 (double commit): the value page\'s Add pressed twice in one render saves once', () => {
+describe('US-03 AC2, AC2a (double commit): the value page\'s Add pressed twice in one render saves once', () => {
   /** The weight's value page, opened from its My health row; the store's writes counted from here. */
   async function weightPage(savedDay: string) {
     await seedGuest(PROFILE, [['weight', 82]], [], savedDay);
@@ -136,25 +143,34 @@ describe('US-03 AC2 (double commit): the value page\'s Add pressed twice in one 
     const page = view.container.querySelector<HTMLElement>('.md-page:not(.mh-settings)')!;
     const value = within(page).getByLabelText(/Value/) as HTMLInputElement;
     const form = page.querySelector('form.md-add') as HTMLFormElement;
-    return { inserts, corrections, value, form };
+    // Every message the page's live region says, in order.
+    const said: string[] = [];
+    const region = page.querySelector('.md-page-messages')!;
+    new MutationObserver(() => { if (region.textContent?.trim()) said.push(region.textContent); })
+      .observe(region, { childList: true, characterData: true, subtree: true });
+    return { inserts, corrections, value, form, page, said };
   }
 
   it('an empty day: two submits in one render, one insert, one row today', async () => {
-    const { inserts, value, form } = await weightPage(SAVED_DAY);
+    const { inserts, value, form, page, said } = await weightPage(SAVED_DAY);
     fireEvent.change(value, { target: { value: '84' } });
     act(() => { fireEvent.submit(form); fireEvent.submit(form); });
     await settled();
     expect(insertsOf(inserts, 'weight')).toBe(1);
     expect(await rowsOf('weight')).toEqual([[82, SAVED_DAY, 'active'], [84, today(), 'active']]);
+    expect(said).toEqual(['Added.']);
+    noRefusal(page);
   });
 
   it('a day already holding a weight: two submits in one render, one correction, one active row that day', async () => {
-    const { inserts, corrections, value, form } = await weightPage(today());
+    const { inserts, corrections, value, form, page, said } = await weightPage(today());
     fireEvent.change(value, { target: { value: '84' } });
     act(() => { fireEvent.submit(form); fireEvent.submit(form); });
     await settled();
     expect(insertsOf(inserts, 'weight')).toBe(0);
     expect(corrections).toHaveBeenCalledTimes(1);
     expect(await rowsOf('weight')).toEqual([[84, today(), 'active'], [82, today(), 'entered-in-error']]);
+    expect(said).toEqual(['Corrected.']);
+    noRefusal(page);
   });
 });

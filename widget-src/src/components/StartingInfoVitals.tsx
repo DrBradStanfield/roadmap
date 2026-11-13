@@ -364,10 +364,10 @@ export function StartingInfoVitals({
   const bpTaken = taken('sys') || taken('dia');
 
   const [saving, setSaving] = useState(false);
-
+  const claim = useRef(false); // the save's claim, taken synchronously: two commits in one render see it (US-03 AC2a)
   const commit = async () => {
-    if (saving || ready.length === 0) return;
-    setSaving(true);
+    if (claim.current || ready.length === 0) return;
+    claim.current = true; setSaving(true);
     try {
       // The cells that can be saved, each on its day with the rows it
       // expects there, in the unit it was typed in (mmHg is mmHg in both);
@@ -387,7 +387,7 @@ export function StartingInfoVitals({
       // A New weight saved here is at rest: Enter lands now, a decimal too (US-62 AC25b, Codex R1).
       if (ready.some(c => c.column === null && c.keys[0] === 'weight' && !refusedSlots.get(slotOf(c.date, 'weight')))) rested?.();
     } finally {
-      setSaving(false);
+      claim.current = false; setSaving(false);
     }
   };
 
