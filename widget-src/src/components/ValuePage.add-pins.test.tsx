@@ -129,6 +129,56 @@ describe('US-03 AC8, US-62 AC10: a refusal, then a retry (P2, P3)', () => {
   });
 });
 
+describe('US-05 AC2, D2: the unit changes while a save is out (P4)', () => {
+  /** Lp(a) typed in nmol/L, the save held, then the unit switched to mg/dL elsewhere. */
+  async function movedUnderSave(save: Save) {
+    const page = valuePage(vi.fn<Save>(save), { metric: 'lpa', unit: 'nmol/L' });
+    fireEvent.change(page.value(), { target: { value: '50' } });
+    await act(async () => { fireEvent.submit(page.form()); });
+    page.rerender([], 'mg/dL');
+    expect(page.value().value).toBe('');
+    return page;
+  }
+
+  it('ok: says only "Added.", with no unit line beside it', async () => {
+    const save = held<Refused>();
+    const page = await movedUnderSave(() => save.promise);
+    await act(async () => { save.open(new Map()); });
+    await settled();
+    expect(page.said()).toBe('Added.');
+    expect(page.alert()).toBeNull();
+  });
+
+  it('refused: the unit line, since the text is gone', async () => {
+    const save = held<Refused>();
+    const page = await movedUnderSave(() => save.promise);
+    await act(async () => { save.open(new Map([[`${today()}|lpa`, 'error']])); });
+    await settled();
+    expect(page.alert()).toBe(UNIT_CHANGED);
+    expect(page.said()).toBe('');
+  });
+
+  it('threw: the unit line, and the throw still escapes', async () => {
+    const caught: unknown[] = [];
+    const before = process.listeners('unhandledRejection');
+    process.removeAllListeners('unhandledRejection');
+    const mine = (e: unknown) => { caught.push(e); };
+    process.on('unhandledRejection', mine);
+    try {
+      const save = held<void>();
+      const page = await movedUnderSave(async () => { await save.promise; throw new Error('test write failed'); });
+      await act(async () => { save.open(); });
+      await settled();
+      expect(caught).toHaveLength(1);
+      expect(page.alert()).toBe(UNIT_CHANGED);
+      expect(page.button().disabled).toBe(false);
+    } finally {
+      process.off('unhandledRejection', mine);
+      for (const l of before) process.on('unhandledRejection', l);
+    }
+  });
+});
+
 describe('US-03 AC2a, lead H128: a save that throws (P5)', () => {
   it('shows no alert line: nothing is said, as today', async () => {
     const caught: unknown[] = [];
@@ -166,10 +216,13 @@ describe('US-62 AC10: an old page\'s save never clears the next page\'s unsaved 
     const view = render(<HealthTool/>);
     const write = held<void>();
     const original = RoadmapStore.prototype.addMeasurement;
-    const inserts = vi.spyOn(RoadmapStore.prototype, 'addMeasurement').mockImplementationOnce(async function (this: RoadmapStore, ...args) {
+    // The store writes at once; this one waits for the test, and roadmap-data awaits its answer.
+    const late = async function (this: RoadmapStore, ...args: Parameters<RoadmapStore['addMeasurement']>) {
       await write.promise;
       return original.apply(this, args);
-    });
+    };
+    const inserts = vi.spyOn(RoadmapStore.prototype, 'addMeasurement')
+      .mockImplementationOnce(late as unknown as RoadmapStore['addMeasurement']);
     const confirm = vi.fn(() => true);
     vi.stubGlobal('confirm', confirm);
 
