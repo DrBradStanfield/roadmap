@@ -218,14 +218,13 @@ final class RecordStore {
     @discardableResult
     func draw(_ record: String, order: Int?, as event: Source.Event, in choices: UnitChoices? = nil, holdUndrawn: Bool = false) async -> Bool {
         // One the engine handed over before the record now shown is stale: the screen
-        // keeps the newer one (a re-read that crossed an edit).
-        if let order {
-            guard order > shownOrder else { return false }
-            shownOrder = order
-        }
+        // keeps the newer one (a re-read that crossed an edit). The stamp moves only with a
+        // record that lands, so a newer one that failed to draw never makes an erase stale.
+        if let order, order <= shownOrder { return false }
         let choices = choices ?? unitChoices
         let shown = try? await engine.screen(recordJSON: record, now: .now, deviceId: deviceId, units: choices.json)
         guard shown != nil || holdUndrawn, land(event, record: record, drawn: shown) == .show else { return false }
+        if let order { shownOrder = order }
         publish(choices)
         return true
     }

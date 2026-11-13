@@ -4,7 +4,7 @@ import XCTest
 /// US-25 AC16f: once the store takes in an erase, the record it holds is the erased one, even
 /// when the engine cannot draw it. Every reader of the store's record or rows then reads the
 /// erased record, with no guard of its own. One test per reader, each through the store and
-/// the reader's own entry point.
+/// the reader's own entry point, or the engine call it makes on the store's record (the chat's).
 @MainActor
 final class EraseHeldUndrawnTests: XCTestCase {
     private var folder: URL!
@@ -87,6 +87,8 @@ final class EraseHeldUndrawnTests: XCTestCase {
         let sync = AppleHealthSync(store: erased.store, engine: erased.engine, client: health, memory: HealthSyncMemory(defaults: defaults))
         await sync.connect()
         await sync.refresh()
+        // The pass ran to its end: writes were read, from the erased record, and none was due.
+        guard case .upToDate = sync.status else { return XCTFail("status \(sync.status)") }
         XCTAssertTrue(health.saved.isEmpty, "no value from the record the erase replaced")
     }
 
@@ -106,6 +108,24 @@ final class EraseHeldUndrawnTests: XCTestCase {
         XCTAssertFalse(categories.contains("blood_test_lipids"), "no reminder from the record the erase replaced")
         let expected = try await erased.engine.reminders(recordJSON: erased.record, now: .now, deviceId: erased.store.deviceId)
         XCTAssertEqual(categories, expected.upcoming.map(\.category))
+    }
+
+    /// A newer cloud record whose draw failed is never shown, so it never makes the older erase
+    /// stale (Codex R1): the erase is held, and the store's record and rows are the erased ones.
+    func testANewerRecordThatFailedToDrawNeverMakesTheEraseStale_US25_AC16f() async throws {
+        let engine = try engine()
+        let store = try RecordStore(folder: folder, engine: engine, deviceId: "test")
+        await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 87.3, day: "2026-10-20")))
+        let (filled, deviceId) = (store.recordJSON, store.deviceId)
+        let erased = try await engine.eraseOnPhone(recordJSON: filled, historyJSON: nil, now: .now, deviceId: deviceId).record
+        _ = try engine.blocking { try $0.evaluate("__screenFails = true") }
+        await store.showCloud(HealthEngine.CloudView(record: filled, erase: "e0", session: 1, order: 2)).value
+        _ = try engine.blocking { try $0.evaluate("__screenFails = false") }
+        XCTAssertEqual(store.recordJSON, filled, "not drawn: nothing moved")
+        await store.showErased(HealthEngine.CloudView(record: erased, erase: "e1", session: 1, order: 1)).value
+        XCTAssertEqual(store.recordJSON, erased, "the erase is held, not dropped as stale")
+        XCTAssertNil(store.myData?.vitals.first { $0.metric == "weight" }?.latest)
+        XCTAssertEqual(store.screenErasures, store.erasures)
     }
 
     func testMyDataDrawsNoRowFromBeforeTheErase_US25_AC16f() async throws {
