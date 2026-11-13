@@ -15,7 +15,7 @@ import { render, fireEvent, cleanup, act } from '@testing-library/react';
 const lift = vi.hoisted(() => vi.fn(async () => {}));
 vi.mock('../src/lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../src/lib/server-api', () => ({ trackProductEvent: vi.fn() }));
-vi.mock('../src/lib/roadmap-data', () => ({ currentSaveStatus: () => 'saved', flushRoadmapStore: async () => undefined, copyRecordToDevice: async () => undefined }));
+vi.mock('../src/lib/roadmap-data', () => ({ currentSaveStatus: () => 'saved', flushRoadmapStore: async () => undefined, copyRecordToDevice: async () => undefined, getBackendKind: () => 'cloud' }));
 vi.mock('./reminders', () => ({ remindersSupported: () => false }));
 vi.mock('./reminders-control', () => ({ RemindersControl: () => null }));
 vi.mock('./connect', async (importOriginal) => ({ ...(await importOriginal<typeof import('./connect')>()), liftLocalInto: lift }));
