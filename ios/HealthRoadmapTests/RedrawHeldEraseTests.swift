@@ -81,6 +81,8 @@ final class RedrawHeldEraseTests: XCTestCase {
         let engine: HealthEngine
         /// The erased record the store holds.
         let record: String
+        /// Kept alive: the session saves to the cloud only while its CloudSync lives.
+        let sync: CloudSync
     }
 
     /// The cloud record open with a weight, then "Delete all my data" while the engine cannot draw:
@@ -103,7 +105,7 @@ final class RedrawHeldEraseTests: XCTestCase {
         XCTAssertEqual(store.erasures, 1, "the store took the erase in")
         XCTAssertNil(store.myData, "held with no drawing: My data says the record did not load")
         XCTAssertFalse(store.predatesErase, "the held record is the erased one")
-        return Held(store: store, engine: engine, record: store.recordJSON)
+        return Held(store: store, engine: engine, record: store.recordJSON, sync: sync)
     }
 
     func testAHeldEraseIsDrawnOnReturnAndTakesEditsAgain_S45() async throws {
@@ -152,6 +154,66 @@ final class RedrawHeldEraseTests: XCTestCase {
             return XCTFail("an edit landed in the held erase")
         }
         XCTAssertEqual(try cloudEdits(held.engine), edits, "nothing reached the session")
+    }
+
+    private let dated = #"""
+    {"classification":"lab_report","reportDate":"2026-10-01",
+     "values":[{"metric":"ldl","valueSI":3.1,"displayValue":3.1,"displayUnit":"mmol/L","displaySystem":"si","confidence":"high"}],
+     "additionalValues":[], "refusedValues":[]}
+    """#
+    private let letter = ##"{"classification":"clinic_letter","reportDate":null,"values":[],"additionalValues":[],"document":{"classification":"clinic_letter","title":"Cardiology follow-up","documentDate":"2026-09-14","contentMarkdown":"# Letter","metadata":{}}}"##
+
+    /// Leads S52 and S56 (US-25 AC16f): an erase held with no drawing is not the window
+    /// (predatesErase is false), so a lab report and a document are still taken there. Both land:
+    /// they reach the cloud session's file and the store's record, on top of the erased record,
+    /// and nothing from before the erase comes back. Moved from PredatesEraseReadersTests, where
+    /// no cloud session was open and only "not refused" could be shown.
+    func testAnEraseHeldUndrawnStillTakesALabReportAndADocument_US25_AC16f() async throws {
+        let held = try await heldErase()
+        let store = held.store
+        try screenFails(false, held.engine)
+        XCTAssertFalse(store.predatesErase)
+        XCTAssertNil(store.myData)
+        let cloudBefore = try XCTUnwrap(dropbox.file?.text, "the erase reached the session's file")
+        XCTAssertEqual(try eraseEpoch(cloudBefore), 1)
+        XCTAssertEqual(try weights(cloudBefore).count, 0)
+
+        let labs = await store.importLabs(extractionJSON: dated, refs: ["v0"], reportDay: "2026-10-01")
+        if case .failure(let refusal) = labs {
+            XCTAssertNotEqual(refusal.message, RecordStore.recordChanged, "the store's guard did not refuse it")
+        }
+        guard case .success = labs else { return XCTFail("the lab import did not land: \(labs)") }
+        let choice = DocumentChoice(kind: .document, sourceFileName: "Letter.pdf", title: "Cardiology follow-up", documentDate: nil, mimeType: "")
+        let filed = await store.saveDocument(extractionJSON: letter, choice: choice, original: nil)
+        XCTAssertNotEqual(filed, .refused(RecordStore.recordChanged), "the store's guard did not refuse it")
+        guard case .saved(let count, _, _, _) = filed else { return XCTFail("the document did not land: \(filed)") }
+        XCTAssertEqual(count, 1)
+
+        // The session throttles its uploads: write now, then read the session's file.
+        let flushed = try await held.engine.cloudFlush()
+        XCTAssertTrue(flushed, "the session saved to the cloud")
+        let cloud = try XCTUnwrap(dropbox.file?.text)
+        for (name, json) in [("the session's file", cloud), ("the store's record", store.recordJSON)] {
+            XCTAssertEqual(try eraseEpoch(json), 1, "\(name): still the erased record")
+            XCTAssertEqual(try weights(json).count, 0, "\(name): no weight from before the erase")
+            let ldl = try labValues(json).filter { $0["metricName"] as? String == "ldl" && $0["status"] as? String == "active" }
+            XCTAssertEqual(ldl.count, 1, "\(name): the lab report's LDL landed")
+            XCTAssertEqual(ldl.first?["value"] as? Double, 3.1, "\(name)")
+            XCTAssertEqual(try labValues(json).count, 1, "\(name): no lab row from before the erase")
+            let documents = try documents(json)
+            XCTAssertEqual(documents.count, 1, "\(name): the document landed")
+            XCTAssertEqual(documents.first?["title"] as? String, "Cardiology follow-up", "\(name)")
+        }
+    }
+
+    private func labValues(_ json: String) throws -> [[String: Any]] {
+        let record = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(json.utf8)) as? [String: Any])
+        return record["labValues"] as? [[String: Any]] ?? []
+    }
+
+    private func documents(_ json: String) throws -> [[String: Any]] {
+        let record = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(json.utf8)) as? [String: Any])
+        return record["documents"] as? [[String: Any]] ?? []
     }
 
     /// A record drawn as usual is drawn again as before: same record, one more draw.
