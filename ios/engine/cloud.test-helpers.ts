@@ -193,9 +193,12 @@ export async function phone(dropbox: Server, phoneText: string | null = null) {
   // crypto.randomUUID is HealthEngine.swift's, as in the app.
   const ctx = vm.createContext({ __native: native, crypto: { randomUUID: () => crypto.randomUUID() } });
   vm.runInContext(await engineSource(), ctx);
+  // The engine's clock, moved on by `advance` (S50b's 24-hour bound); real time otherwise.
+  vm.runInContext('Date.now = ((real) => () => real() + (globalThis.__clockOffset || 0))(Date.now);', ctx);
+  const advance = (ms: number) => { (ctx as { __clockOffset?: number }).__clockOffset = ((ctx as { __clockOffset?: number }).__clockOffset ?? 0) + ms; };
   const engine = (ctx as unknown as { HealthEngine: Engine }).HealthEngine;
   opened.push(engine);
-  return { engine, state };
+  return { engine, state, advance };
 }
 
 /** A record with one weight row per day given, written by `device`. */

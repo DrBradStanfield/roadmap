@@ -95,9 +95,10 @@ export interface Open {
    *  session's own save runs on its debounce, and its pending marker keeps
    *  anything unsaved for the next session. */
   unflushed: number;
-  /** Set while an erase made here waits for a verified save (S50b, US-25 AC16i), with how the
-   *  last save of it failed, read by cloudEraseHeld. Null once any save lands (pending.clear). */
-  held: null | { failure?: 'transient' | 'definite' | 'unknown' };
+  /** Set while an erase made here waits for a verified save (S50b, US-25 AC16i): how the last
+   *  save of it failed, and `since`, the engine clock's time of its first failed send, which a
+   *  later failure never moves. Read by cloudEraseHeld. Null once any save lands (pending.clear). */
+  held: null | { failure?: 'transient' | 'definite' | 'unknown'; since: number };
 }
 
 export let open: Open | null = null; // read by entry.ts documentOriginal (US-73 AC12); written only here
@@ -306,7 +307,7 @@ export async function cloudErase(historyText: string | null, nowIso: string, kee
     at.unflushed = 0;
   } else if (erased) {
     at.unflushed += 1; // the background flush retries it
-    at.held = {};
+    at.held = { since: at.held?.since ?? at.host.clock.now() };
   }
   return JSON.stringify({ ...result, cloudChatErased, cloudChatProblem, chatHistory, erased, view: erased ? JSON.parse(view(at)) : null });
 }
@@ -384,9 +385,10 @@ export async function cloudFlush(): Promise<string> {
  * save of it failed (eraseFailure), or 'unknown' when no report said why. The failure is
  * cleared before the flush, so a stale one is never read. Unlike `flush`, it always waits on the
  * session, so a save already in flight (a background flush, Sync now, a first Disconnect tap) is
- * joined and its failure is the answer (review R1).
+ * joined and its failure is the answer (review R1). A transient failure 24 hours or more after the
+ * first failed send answers 'expired' (holdsStill), and the Disconnect goes ahead as today.
  */
-export async function eraseHeld(): Promise<'none' | 'transient' | 'definite' | 'unknown'> {
+export async function eraseHeld(): Promise<'none' | 'transient' | 'definite' | 'unknown' | 'expired'> {
   const at = open;
   if (!at?.held) return 'none';
   delete at.held.failure;
@@ -397,7 +399,19 @@ export async function eraseHeld(): Promise<'none' | 'transient' | 'definite' | '
   } catch {
     at.unflushed += edits; // still unflushed, as flush keeps it
   }
-  return at.held ? at.held.failure ?? 'unknown' : 'none';
+  const held: Open['held'] = at.held; // as the flush's report left it
+  if (!held) return 'none';
+  const failure = held.failure ?? 'unknown';
+  return failure === 'transient' && !holdsStill(held.since, at.host.clock.now()) ? 'expired' : failure;
+}
+
+/** How long an unsent erase holds Disconnect, from its first failed send (owner, 2026-11-14). */
+export const HOLD_MS = 24 * 60 * 60 * 1000;
+
+/** The bound, by time only: true while `now` is under 24 hours after `since`. Exactly 24 hours no
+ *  longer holds. A clock set backwards (a negative age) counts as within the bound. */
+export function holdsStill(since: number, now: number): boolean {
+  return now - since < HOLD_MS;
 }
 
 async function flush(at: Open): Promise<'saved' | 'failed'> {

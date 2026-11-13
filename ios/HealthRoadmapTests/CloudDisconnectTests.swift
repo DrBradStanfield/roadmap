@@ -448,6 +448,20 @@ final class CloudDisconnectTests: XCTestCase, CloudFixtures {
         XCTAssertNotEqual(cloudEpoch(), 1, "today's residual: the erase is still unsent")
     }
 
+    /// The bound (owner, 2026-11-14): 24 hours after the erase's first failed send, the hold ends
+    /// and Disconnect runs as today. The engine's clock jumps a day as the door is asked.
+    func testADisconnectGoesAheadAsTodayOnceTheUnsentErase24HoursOld_US25_AC16i() async throws {
+        let url = try XCTUnwrap(Bundle.main.url(forResource: "health-engine", withExtension: "js"))
+        let later = "HealthEngine = (function (e) { var o = Object.assign({}, e), real = Date.now; o.cloudEraseHeld = function () { Date.now = function () { return real() + 86400000; }; return e.cloudEraseHeld(); }; return o; })(HealthEngine);"
+        let engine = try HealthEngine(source: try String(contentsOf: url, encoding: .utf8) + "\n" + later, sourceURL: nil, session: StubHTTP.session())
+        let sync = try await eraseNotSent(engine: engine)
+        let outcome = await sync.disconnectOutcome()
+        XCTAssertEqual(outcome, .done(copied: true), "past the bound the unsent erase no longer holds")
+        XCTAssertNil(sync.provider)
+        XCTAssertNil(text("sync-provider"))
+        XCTAssertNotEqual(cloudEpoch(), 1, "as today: the erase is still unsent")
+    }
+
     /// notSent's words stay byte for byte (S50b moved its first sentence out).
     func testTheNotSentWordsAreUnchanged_US25_AC16i() {
         XCTAssertEqual(EraseText.notSent(provider: .dropbox, chatErased: true, cloudChat: .erased),

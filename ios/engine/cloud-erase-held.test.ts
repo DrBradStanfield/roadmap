@@ -11,6 +11,7 @@ import { join } from 'node:path';
 import { ConflictError, StorageError, UNREACHABLE_HINT } from '../../packages/health-core/src/adapter';
 import { SchemaTooNewError } from '../../packages/health-core/src/migrate';
 import { eraseFailure } from './cloud-adapters';
+import { HOLD_MS, holdsStill } from './cloud';
 import { add, FakeDrive, FakeDropbox, NOW, phone, recordWith } from './cloud.test-helpers';
 
 interface Erased { success: boolean; erased: boolean; view: { erase: string } | null }
@@ -19,9 +20,9 @@ interface Erased { success: boolean; erased: boolean; view: { erase: string } | 
 async function dropboxOpen() {
   const dropbox = new FakeDropbox();
   dropbox.put(await recordWith(['2026-10-01'], 'web'));
-  const { engine, state } = await phone(dropbox);
+  const { engine, state, advance } = await phone(dropbox);
   const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false, false)) as { erase: string };
-  return { dropbox, engine, state, erase };
+  return { dropbox, engine, state, erase, advance };
 }
 
 /** Dropbox open, then an erase whose upload `refuse` makes fail: made here, not sent. */
@@ -196,11 +197,53 @@ describe('cloudEraseHeld (S50b, US-25 AC16i)', () => {
     expect(await engine.cloudEraseHeld()).toBe('unknown');
   });
 
+  // Owner 2026-11-14: the hold lasts 24 hours from the erase's FIRST failed send, by time only.
+  it('24 hours after the first failed send, the ask answers expired and Disconnect goes ahead as today', async () => {
+    const { engine, advance } = await eraseNotSent((d) => { d.uploadsWork = false; });
+    advance(HOLD_MS - 60_000);
+    expect(await engine.cloudEraseHeld()).toBe('transient'); // a later failure never moves the start
+    advance(60_000);
+    expect(await engine.cloudEraseHeld()).toBe('expired');
+    expect(await engine.cloudEraseHeld()).toBe('expired'); // more taps change nothing
+    expect(await engine.cloudClose(true)).toBe('copied');
+  });
+
+  it('a second erase that fails while the first is held keeps the first one’s start', async () => {
+    const { engine, advance } = await eraseNotSent((d) => { d.uploadsWork = false; });
+    advance(HOLD_MS - 60_000);
+    expect((JSON.parse(await engine.cloudErase(null, NOW, () => '')) as Erased).success).toBe(false);
+    advance(60_000);
+    expect(await engine.cloudEraseHeld()).toBe('expired');
+  });
+
+  it('an expired hold still flushes: a cloud that answers then takes the erase, and the answer is none', async () => {
+    const { dropbox, engine, advance } = await eraseNotSent((d) => { d.uploadsWork = false; });
+    advance(HOLD_MS + 1);
+    dropbox.uploadsWork = true;
+    expect(await engine.cloudEraseHeld()).toBe('none');
+    expect(dropbox.record.meta.eraseEpoch).toBe(1);
+  });
+
   it('cloudClose still answers its four words, which builds 11 and 12 match', async () => {
     const { engine } = await eraseNotSent((dropbox) => { dropbox.uploadsWork = false; });
     expect(await engine.cloudClose(true)).toBe('copied');
     expect(await engine.cloudClose(true)).toBe('none');
   });
+});
+
+// The bound's pure rule: `now` is passed in, it reads no clock. 24 hours falls on the allow side.
+describe('the 24-hour bound (S50b, owner 2026-11-14)', () => {
+  const since = Date.parse('2026-11-14T08:00:00.000Z');
+  it.each([
+    ['just under 24 hours: still holds', since + HOLD_MS - 1, true],
+    ['exactly 24 hours: no longer holds', since + HOLD_MS, false],
+    ['just over 24 hours: no longer holds', since + HOLD_MS + 1, false],
+    ['the clock set backwards (a negative age): within the bound, so it holds', since - 3_600_000, true],
+    ['at the first failed send itself: holds', since, true],
+  ])('%s', (_name, now, holds) => {
+    expect(holdsStill(since, now)).toBe(holds);
+  });
+  it('the bound is 24 hours', () => expect(HOLD_MS).toBe(24 * 60 * 60 * 1000));
 });
 
 describe('the bridge keeps its id with the new door (S50b)', () => {

@@ -78,7 +78,7 @@ describe('bridge contract (US-25 AC18)', () => {
     labSearchJson: { args: ['text'], call: ['ferr'], shape: [{ name: 'string', key: 'string', kind: 'string', units: ['string'] }] },
     documentOriginal: { args: ['id'], call: ['doc-1'], bytes: true },
     cloudOnline: { args: [], call: [], shape: {} }, // US-09 AC30: '{}', nothing to read
-    cloudEraseHeld: { args: [], call: [], words: ['none', 'transient', 'definite', 'unknown'] }, // S50b: 'none' with no cloud open
+    cloudEraseHeld: { args: [], call: [], words: ['none', 'transient', 'definite', 'unknown', 'expired'] }, // S50b: 'none' with no cloud open
     uploadVerdictsJson: {
       args: ['request'],
       call: [JSON.stringify({ files: [{ name: 'a.pdf', bytes: 1 }], zipMembers: ['a.pdf'] })],
