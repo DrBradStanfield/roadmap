@@ -18,7 +18,7 @@ the old titles. `list-wanted` (:309-310) acts only on `unread`, so no later open
 rejection reaches the callers uncaught (ChatSection.tsx:85,97; ChatEmbed.tsx:55).
 Only an erase shown (chat-turn.ts:237-238) or a reload reads again.
 
-Fix:
+Fix (built, US-15 AC64a):
 - List gains `{ phase: 'failed' }`. `list-landed` with null goes there and keeps the old titles.
 - `list-wanted` reads from `unread` or `failed`, with today's guard (an erase moving waits) and today's
   auto-open rule (a guest, untouched chat: Q7). An erase shown still reads from `failed`, as from `read`.

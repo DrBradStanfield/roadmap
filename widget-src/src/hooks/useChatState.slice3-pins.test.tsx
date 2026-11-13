@@ -209,14 +209,35 @@ describe('US-15: no landing reads the list again', () => {
   });
 });
 
-describe('US-15 (C26): a failed list read is not retried until an erase is shown', () => {
-  it('a list read that lands null keeps the old list (here none), a second open reads nothing, and an erase-shown reads again', async () => {
+describe('US-15 AC64a (C26): a failed list read is read again on the next open', () => {
+  it('a list read that lands null keeps the old list (here none); the next open reads again and shows the titles', async () => {
     vi.mocked(listConversations).mockResolvedValueOnce(null as never);
     const hook = renderHook(() => useChatState({ isLoggedIn: true }));
     await act(async () => { await hook.result.current.actions.loadConversationsIfNeeded(); });
     expect(hook.result.current.state.conversations).toEqual([]);
     await act(async () => { await hook.result.current.actions.loadConversationsIfNeeded(); });
-    expect(listReads()).toBe(1);
+    expect(listReads()).toBe(2);
+    expect(hook.result.current.state.conversations.map((c) => c.id)).toEqual(['A', 'B']);
+    await act(async () => { await hook.result.current.actions.loadConversationsIfNeeded(); });
+    expect(listReads()).toBe(2); // read once it lands: never again on an open
+  });
+
+  it('an open while the failed read\'s retry is still out reads nothing more', async () => {
+    const retry = later<{ conversations: ChatConversation[] }>();
+    vi.mocked(listConversations).mockResolvedValueOnce(null as never).mockReturnValueOnce(retry.promise as never);
+    const hook = renderHook(() => useChatState({ isLoggedIn: true }));
+    await act(async () => { await hook.result.current.actions.loadConversationsIfNeeded(); });
+    act(() => { void hook.result.current.actions.loadConversationsIfNeeded(); });
+    act(() => { void hook.result.current.actions.loadConversationsIfNeeded(); });
+    expect(listReads()).toBe(2);
+    await act(async () => { retry.resolve({ conversations }); });
+    expect(hook.result.current.state.conversations.map((c) => c.id)).toEqual(['A', 'B']);
+  });
+
+  it('an erase shown after a failed read still reads again', async () => {
+    vi.mocked(listConversations).mockResolvedValueOnce(null as never);
+    const hook = renderHook(() => useChatState({ isLoggedIn: true }));
+    await act(async () => { await hook.result.current.actions.loadConversationsIfNeeded(); });
     await act(async () => { tellChats({ type: 'erase-shown', erase: 'erase-2', by: 'own' }); });
     expect(listReads()).toBe(2);
     expect(hook.result.current.state.conversations.map((c) => c.id)).toEqual(['A', 'B']);
