@@ -303,7 +303,12 @@ function AddValue({ metric, history, unit, start, onSave, say, onDone, dirtyRef,
     // Before the save, as the weight box answers as it is typed: the step is counted when the save's
     // re-read raises the stage, and a refused save's re-read clears the answer (Codex R1, H71).
     if (metric === 'weight') onWeightAnswered?.();
-    const refused = await onSave([{ date, values, expected, unit }], seen?.erase ?? getShownErase()).finally(() => setSaving(false));
+    let refused: Refused;
+    try {
+      refused = await onSave([{ date, values, expected, unit }], seen?.erase ?? getShownErase());
+    } finally {
+      setSaving(false);
+    }
     const [why] = refused.values();
     if (why) {
       setError(saveErrorText(why));
