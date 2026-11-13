@@ -348,10 +348,11 @@ describe('US-07 AC3: useHighlights on the real clock', () => {
   // Real-timer pin (test audit W01): keep this test off fake timers; it is the one place the glow's settle, glow and fade timers must fire on their own.
   it('settles after 3 s; a new id then glows for 3 s and is still by 3.5 s', async () => {
     const h = mount(undefined);
-    await act(() => new Promise((r) => setTimeout(r, 2000)));
-    h.show([s('a')]); // 2 s in, still settling: the baseline, no glow
+    // 1 s in, 2 s short of the settle, so a stalled runner cannot fire both timers together.
+    await act(() => new Promise((r) => setTimeout(r, 1000)));
+    h.show([s('a')]); // still settling (a settle under 1 s fails here): the baseline, no glow
     expect(h.glowing()).toEqual([]);
-    await act(() => new Promise((r) => setTimeout(r, 1100)));
+    await act(() => new Promise((r) => setTimeout(r, 2100)));
     h.show([s('a'), s('b')]); // past 3 s: settled, so the new id glows
     const shown = Date.now();
     expect(h.glowing()).toEqual(['b']);
