@@ -9,7 +9,7 @@ import { formatLabValue, savedLabText } from '@roadmap/health-core/lab-series';
 import { type GradeStatus, limitUngraded } from '@roadmap/health-core/row-grade';
 import { MONTHS_SHORT } from '../lib/constants';
 import type { CorrectFn } from '../lib/matrix-save';
-import type { CorrectStatus } from '../storage/roadmap-store';
+import { CLOSED, WAIT_MS, type ValueCellEvent, type ValueCellState, type Verdict, isOpen, messageOf, transition } from '../lib/value-cell-state';
 import {
   type CellUnit,
   type Grading,
@@ -107,80 +107,82 @@ export function useLiveRegion(className: string): [(message: string) => void, Re
 /** What a matrix says when a save did not all land (US-03 AC4). */
 export const SAVE_FAILED = 'Some values did not save. Try again.';
 
-/** What an editor closed by a unit switch says (US-05 AC2). */
-const UNIT_CHANGED = 'The unit changed, so your edit was not saved. Type it again in the new unit.';
-/** What an editor left for its own unit control says (US-05 AC2). */
-const UNIT_FIRST = 'Not saved: choose the unit first, then type the value.';
-
-/** What a refused correction says, wherever one is made. */
-export const SAVE_ERRORS: Record<Exclude<Extract<CorrectStatus, string>, 'ok'>, string> = {
-  changed: 'This value changed on another device, so your edit was not saved.',
-  invalid: 'That value is outside the range this record takes.',
-  error: 'Could not save. Check your connection and try again.',
-};
-/** A refusal's words: the engine's own when it gave them (US-21 AC26). */
-export const saveErrorText = (status: Exclude<CorrectStatus, 'ok'>) => typeof status === 'string' ? SAVE_ERRORS[status] : status.refused;
+export { SAVE_ERRORS, saveErrorText } from '../lib/value-cell-state';
 
 // The saved-value editor, one for every matrix: the blood tests, the vitals
 // (StartingInfoVitals) and the additional lab rows. Click a value to correct
-// it in place: a FHIR correction, never an edit of the saved row.
+// it in place: a FHIR correction, never an edit of the saved row. Its modes
+// are one named state (lib/value-cell-state.ts): this cell sends the events,
+// measuring each one's facts as it sends it, and runs the effects.
 export function ValueCell({
   metric, display, grading, value, comparator, unit, rowId, status, ungraded: callerUngraded, pinned, onActivate, onDeactivate, onCorrect, say,
 }: ValueCellProps) {
-  // `typed === null` ⇒ read-only; otherwise the in-place edit form is open.
-  // One field replaces the old (editing, typed) pair — impossible state gone.
-  const [typed, setTyped] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
-  // The row the editor opened on, which its correction names: the store
-  // refuses it once another writer has replaced that row (US-04 AC1).
-  const openedOn = useRef<string>();
-  const blurTimerRef = useRef<number | null>(null);
-  // A typed correction is saved only in the unit shown when the editor
-  // opened, never across a unit change (US-05 AC2, US-04 AC1). The unit
-  // shown then, and now: a save that runs late reads both.
-  const openedIn = useRef<CellUnit>();
+  const [state, setState] = useState<ValueCellState>(CLOSED);
+  // The machine's own copy, read by listeners and timers between renders.
+  const machine = useRef(state);
+  // The unit shown now: a save that runs late compares it with the unit the
+  // editor opened in (US-05 AC2, US-04 AC1).
   const shownIn = useRef(display);
   shownIn.current = display;
-  // The focus comes back to this cell when another device's switch closes
-  // the editor that had it.
-  const refocusRef = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  // Pointers down while the editor is open (as useSaveOnLeave tracks them),
-  // and a click-away save that came due during a press: its click has not
-  // run yet, so the save waits for the release, at most a second (a release
-  // can be lost), and never past the page going away (adversary R5). Its own
-  // submit then checks the unit. A press on a unit control that governs this
-  // editor never gets that far: the press closes it (`leaveForUnit`).
+  // Pointers down while the editor is open (as useSaveOnLeave tracks them):
+  // a click-away save due during a press waits for the release. A press on a
+  // unit control that governs this editor never gets that far: the press
+  // closes it (`leaveForUnit`).
   const pointersDown = useRef(new Set<number>());
-  const leaveForUnitRef = useRef<() => void>();
-  const afterRelease = useRef<(() => void) | null>(null);
-  const editing = typed !== null;
+  // This render's handlers, for the listeners and timers set up before it.
+  const latest = useRef<{ leaveForUnit: () => void; verdict: (how: 'enter' | 'leave') => Verdict; onCorrect?: CorrectFn }>();
+
+  // The click-away save's one timer, armed for each blurPending state as the
+  // machine enters it and cleared as it leaves it: 150 ms, so a click on the
+  // cell's neighbours runs first; a second at most for a held press's
+  // release (a release can be lost); a task after the release, so its click,
+  // and any switch it made, runs first.
+  const timer = useRef<number>();
+  useEffect(() => () => window.clearTimeout(timer.current), []);
+
+  const send = useCallback((event: ValueCellEvent) => {
+    const { state: next, effects } = transition(machine.current, event);
+    if (next !== machine.current) {
+      machine.current = next;
+      setState(next);
+      window.clearTimeout(timer.current);
+      if (next.kind === 'blurPending') timer.current = window.setTimeout(() => sendLeave(next.wait), WAIT_MS[next.wait]);
+    }
+    for (const { row, value: corrected } of effects) {
+      void latest.current?.onCorrect?.(row, corrected).then(result => send({ type: 'result', status: result }));
+    }
+  }, []);
+  /** A click-away wait ran out, or the page is going away: sent with what the text would save now. */
+  const sendLeave = (due: 'delay' | 'press' | 'release' | 'hidden') => {
+    const verdict = latest.current!.verdict('leave');
+    send(due === 'delay' ? { type: 'delayDue', pressed: pointersDown.current.size > 0, verdict }
+      : due === 'press' ? { type: 'pressCapDue', verdict }
+      : due === 'release' ? { type: 'releaseDue', verdict }
+      : { type: 'pageHidden', verdict });
+  };
+
+  const open = isOpen(state);
   // The editor opens and closes, unmounted or not, through the matrix's
   // callbacks, each called once (US-05 AC3 counts the open Lp(a) editors).
   useEffect(() => {
-    if (!editing) return;
+    if (!open) return;
     onActivate?.();
     const down = pointersDown.current;
     down.clear();
-    // The save waiting for a release: a task on, or now.
-    const runWaiting = (later: boolean) => {
-      const save = afterRelease.current;
-      if (!save) return;
-      clearBlurTimer();
-      if (later) blurTimerRef.current = window.setTimeout(save, 0);
-      else save();
-    };
     const onDown = (e: PointerEvent) => {
-      if (governs(e.target)) leaveForUnitRef.current?.();
+      if (governs(e.target)) latest.current?.leaveForUnit();
       else down.add(e.pointerId);
     };
     const onUp = (e: PointerEvent) => {
       down.delete(e.pointerId);
-      if (down.size === 0) runWaiting(true); // the click, and any switch it made, run first
+      if (down.size === 0) send({ type: 'released' });
     };
-    const onHide = () => { if (document.visibilityState === 'hidden') runWaiting(false); };
-    const onPageHide = () => runWaiting(false);
+    // A click-away save already asked for runs as the page goes away (it
+    // never comes due in a hidden tab); text left in an open editor is not
+    // saved (US-04 AC1).
+    const onHide = () => { if (document.visibilityState === 'hidden') sendLeave('hidden'); };
+    const onPageHide = () => sendLeave('hidden');
     const listeners = [['pointerdown', onDown], ['pointerup', onUp], ['pointercancel', onUp]] as const;
     for (const [type, listener] of listeners) document.addEventListener(type, listener, true);
     document.addEventListener('visibilitychange', onHide);
@@ -191,7 +193,7 @@ export function ValueCell({
       window.removeEventListener('pagehide', onPageHide);
       onDeactivate?.();
     };
-  }, [editing]);
+  }, [open]);
   // Whether `target` is in this row's own unit control.
   const ownUnitControl = (target: EventTarget | null) => {
     const control = target instanceof Element ? target.closest('[data-unit-control]') : null;
@@ -203,15 +205,6 @@ export function ValueCell({
   const governs = (target: EventTarget | null) => ownUnitControl(target)
     || (!!metric && target instanceof Element && !!target.closest('[data-unit-control="all"]'));
 
-  const clearBlurTimer = () => {
-    afterRelease.current = null;
-    if (blurTimerRef.current != null) {
-      window.clearTimeout(blurTimerRef.current);
-      blurTimerRef.current = null;
-    }
-  };
-  useEffect(() => clearBlurTimer, []); // also fires on unmount
-
   const core = metric && display ? { metric, display } : null;
   const initialDisplay = core ? cellText(core.metric, value, core.display) : formatLabValue(value);
   // What the cell shows: a limit with its symbol; a core limit its bound
@@ -220,22 +213,6 @@ export function ValueCell({
   const ungraded = callerUngraded ?? (!!core && limitUngraded(core.metric, status, { grading: grading ?? null, plan: null }, { value, comparator }));
   const canCorrect = !!(rowId && onCorrect);
 
-  const beginEdit = () => {
-    if (!canCorrect || saving) return;
-    // Cancel any pending blur-cancel from a previous cell — otherwise it
-    // would fire after this cell mounts and clobber our active state.
-    clearBlurTimer();
-    setSaveError(null);
-    openedOn.current = rowId;
-    openedIn.current = display;
-    setTyped(initialDisplay);
-  };
-
-  const cancel = () => {
-    clearBlurTimer();
-    setTyped(null);
-    setSaveError(null);
-  };
   // Leaving for a unit control that governs this editor (US-05 AC2, US-04
   // AC1): the number typed is in a unit the user is about to change, so the
   // editor closes unsaved and says so, at the press, before any click can
@@ -243,13 +220,9 @@ export function ValueCell({
   // press (adversary R1, 2026-10-13). An editor nobody typed in loses
   // nothing: it closes silently.
   const leaveForUnit = () => {
-    if (saving) return;
-    cancel();
-    openedOn.current = undefined; // a late blur's save, from a handler of the render before, has no row
-
-    if (typed !== initialDisplay) setSaveError(UNIT_FIRST);
+    const now = machine.current;
+    send({ type: 'leftForUnit', edited: isOpen(now) && now.typed !== initialDisplay });
   };
-  leaveForUnitRef.current = leaveForUnit;
   // A unit switch while the editor is open never saves the typed text
   // (US-05 AC2, US-04 AC1): a user who types 40 and then clicks mg/dL
   // means "this number is in mg/dL", and saving 40 in the old unit is the
@@ -262,91 +235,63 @@ export function ValueCell({
   // "49.8" mg/dL came back "125" nmol/L and saved 125. A layout effect, so no
   // keystroke or timer reads the text in the new unit first.
   useLayoutEffect(() => {
-    if (typed === null) return;
-    const hadFocus = document.activeElement === inputRef.current;
-    cancel();
-    if (saving) return;
-    setSaveError(UNIT_CHANGED);
-    refocusRef.current = hadFocus;
+    if (isOpen(machine.current)) send({ type: 'unitSwitched', hadFocus: document.activeElement === inputRef.current });
   }, [display]);
   // Each message is said in the matrix's live region too.
-  useEffect(() => { if (saveError) say?.(saveError); }, [saveError]);
+  const message = messageOf(state);
+  useEffect(() => { if (message) say?.(message); }, [message]);
 
   // Text the editor cannot save: outside the metric's range, or no number.
   const unusable = (text: string) => text === initialDisplay ? false : core
     ? !!validateTypedValue(core.metric, text, core.display).error
     : readNumericCell(text) === undefined;
 
-  const submit = async () => { clearBlurTimer(); // an armed click-away save would ask a second time
-    const opened = openedOn.current;
-    if (!opened || !onCorrect || typed === null) return;
+  // What the open editor's text would save now. A leave closes on a text it
+  // cannot save, never leaving a half-open form; Enter checks the unit first.
+  const verdict = (how: 'enter' | 'leave'): Verdict => {
+    const now = machine.current;
+    if (!isOpen(now)) return 'unchanged';
+    const { typed } = now;
+    if (how === 'leave' && unusable(typed)) return 'unusable';
     // The unit changed since the editor opened: the text is in the old one.
-    if (shownIn.current !== openedIn.current) { cancel(); setSaveError(UNIT_CHANGED); return; }
+    if (shownIn.current !== now.unit) return 'unitChanged';
     // An emptied editor is a change of mind: it closes and writes nothing.
-    if (typed.trim() === '' || typed === initialDisplay) { cancel(); return; }
-    if (unusable(typed)) return;
+    if (typed.trim() === '' || typed === initialDisplay) return 'unchanged';
+    if (unusable(typed)) return 'unusable';
     const parsed = (core ? readTypedValue(core.metric, typed, core.display) : readNumericCell(typed))!;
     const newValue = core ? cellToSI(core.metric, parsed, core.display) : parsed;
-    if (sameAsSaved(parsed, initialDisplay, newValue, value)) { cancel(); return; }
-    setSaving(true);
-    setSaveError(null);
-    const status = await onCorrect(opened, newValue);
-    setSaving(false);
-    // A value replaced meanwhile closes the editor, and the cell says the
-    // edit went; any other failure keeps it open for a retry.
-    if (status === 'ok' || status === 'changed') cancel();
-    if (status !== 'ok') setSaveError(saveErrorText(status));
+    return sameAsSaved(parsed, initialDisplay, newValue, value) ? 'unchanged' : { save: newValue };
   };
+  latest.current = { leaveForUnit, verdict, onCorrect };
 
-  if (typed !== null) {
+  if (open) {
     return (
       <NumericInputCell
         metric={core?.metric}
         display={core?.display}
         grading={grading}
-        value={typed}
-        validationResult={typed === initialDisplay ? null : undefined}
-        onChange={v => { setSaveError(null); setTyped(v); }}
-        externalError={saveError}
+        value={state.typed}
+        validationResult={state.typed === initialDisplay ? null : undefined}
+        onChange={text => send({ type: 'typed', text })}
+        externalError={message ?? null}
         wrapperClass={`bt-cell-input bt-cell-correcting${pinned ? ' bt-cell-pinned' : ''}`}
         active
         autoFocus
-        disabled={saving}
+        disabled={state.kind === 'saving'}
         inputRef={inputRef}
         onKeyDown={e => {
           blockBadNumericKeys(e);
-          if (e.key === 'Enter') { e.preventDefault(); void submit(); }
-          if (e.key === 'Escape') { e.preventDefault(); cancel(); }
+          if (e.key === 'Enter') { e.preventDefault(); send({ type: 'submitted', how: 'enter', verdict: verdict('enter') }); }
+          if (e.key === 'Escape') { e.preventDefault(); send({ type: 'escape' }); }
         }}
         // Back within the click-away window: the pending save, timed or
         // waiting on a release, is cancelled; Enter or the next leave saves
         // the text as it is then (US-04 AC1, H40).
-        onFocus={clearBlurTimer}
-        onBlur={e => {
-          // The focus going to this row's own unit control (Tab): never arm
-          // the save. A press closed the editor already.
-          if (ownUnitControl(e.relatedTarget)) return leaveForUnit();
-          // Save on click-away when the typed value passes validation —
-          // matches the Enter key. If the value is invalid we revert
-          // rather than leaving a half-open form with no focus.
-          // 150ms defer lets clicks on adjacent affordances intercept.
-          const leave = () => {
-            if (saving || typed === null) return;
-            if (unusable(typed)) cancel();
-            else void submit();
-          };
-          // Due while a pointer is down, the save waits for its release, a
-          // second at most.
-          blurTimerRef.current = window.setTimeout(() => {
-            blurTimerRef.current = null;
-            if (pointersDown.current.size === 0) return leave();
-            afterRelease.current = leave;
-            blurTimerRef.current = window.setTimeout(() => {
-              afterRelease.current = null;
-              leave();
-            }, 1000);
-          }, 150);
-        }}
+        onFocus={() => send({ type: 'focused' })}
+        // The focus going to this row's own unit control (Tab) never arms the
+        // save; a press closed the editor already. Any other leave arms the
+        // click-away save, which matches Enter.
+        onBlur={e => ownUnitControl(e.relatedTarget) ? leaveForUnit() : send({ type: 'blurred' })}
       />
     );
   }
@@ -358,8 +303,8 @@ export function ValueCell({
         {unit && <span className="alr-cell-unit">{unit}</span>}
       </span>
       {ungraded && <span className="hr-sr-only">{LIMIT_NOT_GRADED}</span>}
-      {saveError
-        ? <span className="bt-input-error-text">{saveError}</span>
+      {message
+        ? <span className="bt-input-error-text">{message}</span>
         : <span className={`bt-status-tick bt-status-${status ?? 'none'}`}/>}
     </>
   );
@@ -372,10 +317,10 @@ export function ValueCell({
     <button
       type="button"
       ref={el => {
-        if (el && refocusRef.current) { refocusRef.current = false; el.focus(); }
+        if (el && state.kind === 'closed' && state.refocus) { el.focus(); send({ type: 'refocused' }); }
       }}
       className={`bt-cell-value bt-cell-clickable${pinned ? ' bt-cell-pinned' : ''}`}
-      onClick={beginEdit}
+      onClick={() => send({ type: 'opened', row: rowId!, unit: display, text: initialDisplay })}
       title={ungraded ? `${LIMIT_NOT_GRADED} Click to correct this value` : 'Click to correct this value'}
     >
       {shown}
