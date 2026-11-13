@@ -399,6 +399,10 @@ export class GoogleDriveAdapter implements StorageAdapter {
     throw error;
   };
 
+  /** A background folder request's 401 spends the token the same way; its caller's catch keeps it non-blocking (US-09 AC51). */
+  private readonly refusedBy = (res: Response): Response =>
+    (res.status === 401 ? this.refused(new StorageError('Google Drive refused the access token (401).', undefined, undefined, 401)) : res);
+
   private saveTokens(tokens: DriveTokens): boolean {
     this.tokens = tokens;
     return setSignIn(TOKENS_KEY, tokens, this.gen);
@@ -489,11 +493,11 @@ export class GoogleDriveAdapter implements StorageAdapter {
     if (this.stored?.folderName === FOLDER_NAME) return;
     try {
       if (knownName !== FOLDER_NAME) {
-        const res = await fetch(`${DRIVE_API}/files/${folderId}`, {
+        const res = this.refusedBy(await fetch(`${DRIVE_API}/files/${folderId}`, {
           method: 'PATCH',
           headers: { ...(await this.authHeaders()), 'Content-Type': 'application/json' },
           body: JSON.stringify({ name: FOLDER_NAME }),
-        });
+        }));
         if (this.stored?.folderId !== folderId || (!res.ok && res.status !== 404)) return; // replaced, or refused: retried; a gone folder is done (US-09 AC40)
       }
       this.stored = { ...(this.stored ?? {}), folderName: FOLDER_NAME };
@@ -532,14 +536,14 @@ export class GoogleDriveAdapter implements StorageAdapter {
     this.folderCheckDone = true;
     try {
       const folderId = await this.ensureFolderId();
-      const meta = await fetch(`${DRIVE_API}/files/${fileId}?fields=parents`, { headers: await this.authHeaders() });
+      const meta = this.refusedBy(await fetch(`${DRIVE_API}/files/${fileId}?fields=parents`, { headers: await this.authHeaders() }));
       if (!meta.ok) return;
       const parents = ((await meta.json()) as { parents?: string[] }).parents ?? [];
       if (parents.includes(folderId)) return;
-      await fetch(`${DRIVE_API}/files/${fileId}?addParents=${folderId}&removeParents=${parents.join(',')}`, {
+      this.refusedBy(await fetch(`${DRIVE_API}/files/${fileId}?addParents=${folderId}&removeParents=${parents.join(',')}`, {
         method: 'PATCH',
         headers: await this.authHeaders(),
-      });
+      }));
     } catch {
       /* cosmetic — never block sync on the move */
     }
