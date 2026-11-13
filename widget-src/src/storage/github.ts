@@ -70,7 +70,7 @@ export class GitHubAdapter implements StorageAdapter {
     try {
       const res = await fetch(`${API}/user/emails`, { headers: this.headers(), signal: deadline.signal });
       if (res.status === 403 || res.status === 404) return null;
-      if (!res.ok) throw new StorageError(`GitHub email read failed (${res.status}).`);
+      if (!res.ok) throw new StorageError(`GitHub email read failed (${res.status}).`, undefined, undefined, res.status);
       const emails = (await res.json()) as Array<{ email: string; primary: boolean; verified: boolean }>;
       const primary = emails.find((e) => e.primary && e.verified) ?? emails.find((e) => e.verified);
       return primary ? primary.email.toLowerCase() : null;
@@ -107,7 +107,7 @@ export class GitHubAdapter implements StorageAdapter {
   async read(fileName: string): Promise<ReadResult> {
     const res = await fetchOrFail('GitHub', this.contentsUrl(fileName), { headers: this.headers() });
     if (res.status === 404) return { body: null, version: null };
-    if (!res.ok) throw new StorageError(`GitHub read failed (${res.status}): ${await res.text()}`);
+    if (!res.ok) throw new StorageError(`GitHub read failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status);
     const json = (await res.json()) as { content?: string; sha: string; size?: number; encoding?: string };
     // Over 1 MB the API answers 200 with empty content and the real sha (header
     // LIMIT). Reading that as "no record" lets the next save overwrite it (US-09 AC13c).
@@ -142,7 +142,7 @@ export class GitHubAdapter implements StorageAdapter {
     if (res.status === 409 || res.status === 422) {
       throw new ConflictError(`GitHub write conflict: ${await res.text()}`);
     }
-    if (!res.ok) throw new StorageError(`GitHub write failed (${res.status}): ${await res.text()}`);
+    if (!res.ok) throw new StorageError(`GitHub write failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status);
     const json = (await res.json()) as { content?: { sha?: string } };
     const sha = json.content?.sha;
     if (!sha) throw new StorageError('GitHub write returned no sha.');
@@ -154,7 +154,7 @@ export class GitHubAdapter implements StorageAdapter {
     let res = await fetchOrFail('GitHub', url, { headers: this.headers(), timeoutMs: DOCUMENT_TIMEOUT_MS });
     const legacy = res.status === 404 ? legacyDocumentUrl(url, this.contentsUrl(''), ref) : null;
     if (legacy) res = await fetchOrFail('GitHub', legacy, { headers: this.headers(), timeoutMs: DOCUMENT_TIMEOUT_MS });
-    if (!res.ok) throw new StorageError(`GitHub document read failed (${res.status}).`);
+    if (!res.ok) throw new StorageError(`GitHub document read failed (${res.status}).`, undefined, undefined, res.status);
     const json = (await res.json()) as { content?: string };
     if (!json.content) throw new StorageError(`GitHub document empty or too large (>1 MB).`);
     return new Blob([base64ToBytes(json.content)]);
@@ -178,7 +178,7 @@ export class GitHubAdapter implements StorageAdapter {
       const sha = head.ok ? ((await head.json()) as { sha?: string }).sha : undefined;
       res = await put(sha);
     }
-    if (!res.ok) throw new StorageError(`GitHub document write failed (${res.status}).`);
+    if (!res.ok) throw new StorageError(`GitHub document write failed (${res.status}).`, undefined, undefined, res.status);
   }
 
   // --- helpers --------------------------------------------------------------
@@ -195,13 +195,13 @@ export class GitHubAdapter implements StorageAdapter {
       headers: this.headers(),
     });
     if (res.status === 401 || res.status === 403) {
-      throw new StorageError('GitHub rejected the token — check it has Contents read+write on this repo.');
+      throw new StorageError('GitHub rejected the token — check it has Contents read+write on this repo.', undefined, undefined, res.status);
     }
     if (res.status === 404) {
-      throw new StorageError('GitHub repo not found — check owner/repo and that the token can see it.');
+      throw new StorageError('GitHub repo not found — check owner/repo and that the token can see it.', undefined, undefined, res.status);
     }
     if (!res.ok) {
-      throw new StorageError(`GitHub connect failed (${res.status}): ${await res.text()}`);
+      throw new StorageError(`GitHub connect failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status);
     }
     const repo = (await res.json()) as { private?: boolean };
     if (repo.private !== true) {
