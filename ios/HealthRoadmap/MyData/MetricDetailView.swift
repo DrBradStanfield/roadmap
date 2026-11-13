@@ -5,7 +5,8 @@ import SwiftUI
 /// the top, the range picker, the latest value large with its day, a chart that
 /// opens on the newest value and scrolls back, then Show All Data and Unit, then
 /// "About" the metric and its sources (US-58). A metric with no readings says "No data yet",
-/// offers "Add your first value", then shows its guide (AC4b).
+/// offers "Add your first value", then shows its guide (AC4b); a failed read says so and offers
+/// Try again (AC4c).
 /// Tapping an active value in Show All Data corrects it: a new row, the old one
 /// kept and struck through as entered in error. There is no delete: the record
 /// is append-only (Brad 2026-09-24). The web twin is
@@ -23,8 +24,8 @@ struct MetricDetailView: View {
     /// The first day a scrolling range shows; set to end on the newest value as a range opens.
     @State private var scrolledTo = Date.distantPast
     @State private var editing: Editing?
-    /// The page's own read for this revision has come back (empty or failed included).
-    @State private var readRevision: Int?
+    /// The page's read of its chart (US-58 AC4c): changed only by `MetricRead.transition`.
+    @State private var chartRead: MetricRead.Read
     /// Why the Lp(a) unit menu's choice was not saved.
     @State private var lpaRefusal: String?
 
@@ -44,6 +45,11 @@ struct MetricDetailView: View {
         }
     }
 
+    init(store: RecordStore, row: MyData.Row, saved: @escaping (RecordStore.ApplyResult) -> RecordStore.ApplyResult) {
+        (self.store, self.row, self.saved) = (store, row, saved)
+        _chartRead = State(initialValue: .reading(revision: store.revision))
+    }
+
     /// What Add Data and the "+" open: the entry sheet for the metric as My data shows it now.
     static func adding(_ row: MyData.Row, in store: RecordStore) -> Editing {
         .add(live(row, in: store) ?? row, store.screen)
@@ -51,7 +57,9 @@ struct MetricDetailView: View {
 
     var body: some View {
         List {
-            if let chart = store.shownChart(for: row.metric, series: row.series), !chart.history.rows.isEmpty {
+            switch MetricRead.page(chartRead, revision: store.revision, problem: store.problem, kept: store.shownChart(for: row.metric, series: row.series),
+                                   hasReadings: (Self.live(row, in: store) ?? row).latest != nil) {
+            case .chart(let chart):
                 chartSection(chart)
                 Section {
                     NavigationLink("Show All Data") {
@@ -59,8 +67,8 @@ struct MetricDetailView: View {
                     }
                     unitRow(chart.history)
                 }
-            } else if Self.saysEmpty(hasReadings: (Self.live(row, in: store) ?? row).latest != nil, read: readRevision == store.revision) {
-                // No readings, or a read that came back empty or failed (adversary R2; US-58 AC4b):
+            case .noDataYet:
+                // No readings, or a read that came back empty (adversary R2; US-58 AC4b):
                 // adding one comes first, then the guide, so the page is never blank.
                 Section {
                     Text("No data yet").foregroundStyle(.secondary)
@@ -69,6 +77,18 @@ struct MetricDetailView: View {
                     }
                     .disabled(store.unitSwitches > 0)
                 }
+            case .failed:
+                // The values are still in the record: no "Add your first value" (US-58 AC4c).
+                Section {
+                    Text(MetricRead.couldNotRead(row.label)).foregroundStyle(.secondary)
+                    Button("Try again", systemImage: "arrow.clockwise") { Task { await readChart() } }
+                }
+            case .problem(let problem):
+                Section {
+                    ContentUnavailableView(problem.heading, systemImage: "exclamationmark.triangle", description: Text(problem.words))
+                }
+            case .guideOnly:
+                EmptyView()
             }
             // eGFR's two histories, each a link from the other's page, so a lab eGFR is always
             // reachable for correction (US-73 AC7, US-25 AC9).
@@ -102,11 +122,7 @@ struct MetricDetailView: View {
         }
         // A chart kept for this revision draws at once; the engine reads the rest off the
         // main thread, again whenever the record or its units move.
-        .task(id: store.revision) {
-            let revision = store.revision
-            _ = await store.chart(for: row.metric, series: row.series)
-            if !Task.isCancelled { readRevision = revision }
-        }
+        .task(id: store.revision) { await readChart() }
         .metricPageList(title: row.label)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
@@ -121,11 +137,13 @@ struct MetricDetailView: View {
         .refusalAlert($lpaRefusal)
     }
 
-    /// "No data yet" shows when My data has no reading for the metric, or once the page's read
-    /// came back with none; a metric with readings shows only its guide while the read runs,
-    /// so "No data yet" never flashes before its chart.
-    nonisolated static func saysEmpty(hasReadings: Bool, read: Bool) -> Bool {
-        !hasReadings || read
+    /// Asks for this revision's chart and lands the answer for that revision: a late answer
+    /// for an older one changes nothing (`MetricRead.transition`).
+    private func readChart() async {
+        let revision = store.revision
+        chartRead = MetricRead.transition(chartRead, .asked(revision: revision))
+        let chart = await store.chart(for: row.metric, series: row.series)
+        chartRead = MetricRead.transition(chartRead, .landed(revision: revision, chart)) // the state as it is now, after the await
     }
 
     /// This metric's row in My data now, so a units switch shows at once; a lab test's too (US-25 AC25).

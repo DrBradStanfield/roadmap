@@ -96,7 +96,7 @@ final class RecordStore {
 
     struct KeptHistory {
         let stamp: Stamp
-        let chart: ChartData?
+        let chart: ChartData
     }
     var histories: [String: KeptHistory] = [:]
     /// A history the engine is reading, for the stamp it was asked at.
