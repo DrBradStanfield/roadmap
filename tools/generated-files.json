@@ -18,6 +18,7 @@
         "packages/health-core/src/merge.ts",
         "packages/health-core/src/parseNumber.ts",
         "packages/health-core/src/roadmap-file.ts",
+        "packages/health-core/src/screening-followup-info.ts",
         "packages/health-core/src/screening-inputs.ts",
         "packages/health-core/src/screening-rules.ts",
         "packages/health-core/src/types.ts",

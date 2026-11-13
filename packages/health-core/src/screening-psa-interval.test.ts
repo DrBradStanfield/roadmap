@@ -158,6 +158,14 @@ describe('US-06 AC21: 4.0 or above, a man who declined or recorded no answer (sp
     expect(prostateItems(file)).toEqual([{ category: 'screening_prostate', group: 'screening', label: EMAIL_LABEL, dueAt: '2026-07-01' }]);
   });
 
+  it('"not yet" (Brad 2026-11-13), PSA 4.5 on 2026-04-10: Elevated alone in June; "Repeat PSA test" from July, no first sentence; reminder July', () => {
+    const file = fileWith([{ value: 4.5, day: '2026-04-10' }], 'not_yet');
+    expect(fileIds(file, new Date('2026-06-20T12:00:00Z'))).toEqual(['screening-prostate-elevated']);
+    expect(fileIds(file, new Date('2026-07-15T12:00:00Z'))).toEqual(['screening-prostate-repeat', 'screening-prostate-elevated']);
+    expect(card(raised('not_yet', '2026-08'), 'screening-prostate-repeat')).toMatchObject({ title: REPEAT_TITLE, description: REPEAT_NO_ANSWER });
+    expect(prostateItems(file)).toEqual([{ category: 'screening_prostate', group: 'screening', label: EMAIL_LABEL, dueAt: '2026-07-01' }]);
+  });
+
   it('a will-screen man never sees the repeat card: his overdue card takes its place', () => {
     expect(ids(raised('will_screen', '2026-08'))).toEqual(['screening-prostate-overdue', 'screening-prostate-elevated']);
   });
