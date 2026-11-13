@@ -96,7 +96,7 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
    once per PR (auto-ship still deploys each merge it makes). Start it with `gh workflow run deploy.yml` (main's CI must be green
    first: it is the only UTC run of a merged tree), find
    the run id with `gh run list --workflow deploy.yml --limit 1`, then wait with `sh tools/wait-run.sh deploy
-   <run-id>` in the background: it prints the conclusion, head sha, each job's result and the live healthz code, then the JSON status line (outcomes `success` 0; `run_failed`, `unhealthy` (healthz not 200), `result_unreadable` 1; `timeout`, `gh_errors` 3; `interrupted` the signal's 128+n). Healthz answers only `{"status":"ok"}`, no sha, so a 200 does not prove the new build is the one answering (lead T35). A manual release follows
+   <run-id>` in the background: it prints the conclusion, head sha, each job's result and the live healthz code, then the JSON status line (outcomes `success` 0; `run_failed`, `unhealthy` (healthz not 200), `result_unreadable` 1; `timeout`, `gh_errors` 3; `interrupted` the signal's 128+n). Healthz answers only `{"status":"ok"}`, no sha, so a 200 does not prove the new build is the one answering (lead T36). A manual release follows
    docs/deploy-runbook.md step 0: `bash tools/release-checkout.sh` from the main checkout makes a detached
    checkout of exactly `origin/main` outside the repo (it refuses a folder that exists, or a dirty result).
 6. **Finish**: ExitWorktree (`keep`), then from the main checkout `git pull --ff-only` and

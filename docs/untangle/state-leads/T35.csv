@@ -1,2 +1,0 @@
-id,area,title,kind,status,evidence,pr,needs_brad
-T35,ci wait,healthz reports the deployed commit and wait-run compares it,gap,not started,"Split from T3 on 2026-11-13 (owner's ruling): app/routes/healthz.ts answers only {""status"":""ok""}, so a 200 from an old machine counts as healthy in tools/wait-run.sh deploy. Needs a design for the owner first: where the sha comes from at build time, both Fly apps, and the public route adds only the commit id; then wait-run compares it with the run's head sha. US-64 AC26",,no
