@@ -252,9 +252,11 @@ function failureKind(error: unknown): 'sign-in' | 'too-new' | 'storage-full' | '
   // A 403 is a refusal of access, except Drive's limits, read from the body's
   // reason: a rate or daily limit passes (retry later), a full Drive needs space.
   // Neither is fixed by signing in again.
+  // The reason may sit on a cause: Drive wraps a PATCH's refusal ("record update failed.").
   if (error instanceof StorageError && error.status === 403) {
-    if (/ratelimitexceeded|dailylimitexceeded/i.test(error.message)) return 'unreachable';
-    if (/storagequotaexceeded/i.test(error.message)) return 'storage-full';
+    const said = messages(error);
+    if (/ratelimitexceeded|dailylimitexceeded/i.test(said)) return 'unreachable';
+    if (/storagequotaexceeded/i.test(said)) return 'storage-full';
     return 'sign-in';
   }
   if (dropboxFull(error)) return 'storage-full';
@@ -286,6 +288,13 @@ function noAnswer(error: unknown): boolean {
     if (e.hint === UNREACHABLE_HINT || cause instanceof TypeError || (cause instanceof Error && (cause.name === 'AbortError' || cause.name === 'TimeoutError'))) return true;
   }
   return false;
+}
+
+/** The messages of `error` and the errors it wraps, joined. */
+function messages(error: unknown): string {
+  const said: string[] = [];
+  for (let e = error, depth = 0; e instanceof Error && depth < 8; e = e.cause, depth++) said.push(e.message);
+  return said.join('\n');
 }
 
 /** health-core's full Dropbox (dropbox-rest.ts, US-09 AC35/AC38), by its typed reason (#979). The save

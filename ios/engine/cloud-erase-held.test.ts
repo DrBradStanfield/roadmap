@@ -128,6 +128,39 @@ describe('cloudEraseHeld (S50b, US-25 AC16i)', () => {
     expect(drive.record.meta.eraseEpoch).toBe(1);
   });
 
+  // Review R1 (adversary and Codex): a save already in flight (a background flush, Sync now, or
+  // the first of two Disconnect taps) is joined, never skipped, so its failure is the answer.
+  it('a save in flight when the ask comes is joined: transient, not unknown', async () => {
+    const { engine } = await eraseNotSent((dropbox) => { dropbox.uploadsWork = false; });
+    const flushing = engine.cloudFlush();
+    expect(await engine.cloudEraseHeld()).toBe('transient');
+    expect(await flushing).toBe('failed');
+  });
+
+  it('two asks at once both wait for the save: transient twice', async () => {
+    const { engine } = await eraseNotSent((dropbox) => { dropbox.uploadsWork = false; });
+    expect(await Promise.all([engine.cloudEraseHeld(), engine.cloudEraseHeld()])).toEqual(['transient', 'transient']);
+  });
+
+  // Review R2: Drive wraps a PATCH's refusal ("record update failed.") and keeps the answer's
+  // body only on its cause, so the rate limit is read through the chain.
+  it('Drive: an erase whose record PATCH meets a rate limit is transient, through the real adapter', async () => {
+    const drive = new FakeDrive();
+    drive.put(await recordWith(['2026-10-01'], 'web'));
+    const { engine } = await phone(drive);
+    await engine.cloudOpen('google-drive', 'ios-1', false, false);
+    let limited = true;
+    const answer = drive.answer.bind(drive);
+    drive.answer = (url, headers, body, method) => (limited && method === 'PATCH' && body?.includes('"eraseEpoch":1')
+      ? { status: 403, headers: {}, body: '{"error":{"errors":[{"reason":"userRateLimitExceeded"}]}}' }
+      : answer(url, headers, body, method));
+    expect(JSON.parse(await engine.cloudErase(null, NOW, () => '')) as Erased).toMatchObject({ success: false, erased: true });
+    expect(await engine.cloudEraseHeld()).toBe('transient');
+    limited = false;
+    expect(await engine.cloudEraseHeld()).toBe('none');
+    expect(drive.record.meta.eraseEpoch).toBe(1);
+  });
+
   it('cloudClose still answers its four words, which builds 11 and 12 match', async () => {
     const { engine } = await eraseNotSent((dropbox) => { dropbox.uploadsWork = false; });
     expect(await engine.cloudClose(true)).toBe('copied');

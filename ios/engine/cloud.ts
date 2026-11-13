@@ -383,13 +383,21 @@ export async function cloudFlush(): Promise<string> {
  * flushes first, as a close does, so a retry that lands answers 'none'. 'transient': the last
  * save of it failed with no answer, 408, 429, a 5xx or a rate limit (transientFailure);
  * 'definite': any other failure; 'unknown': it failed and no report said why. The failure is
- * cleared before the flush, so a stale one is never read.
+ * cleared before the flush, so a stale one is never read. Unlike `flush`, it always waits on the
+ * session, so a save already in flight (a background flush, Sync now, a first Disconnect tap) is
+ * joined and its failure is the answer (review R1).
  */
 export async function eraseHeld(): Promise<'none' | 'transient' | 'definite' | 'unknown'> {
   const at = open;
   if (!at?.held) return 'none';
   delete at.held.failure;
-  await flush(at);
+  const edits = at.unflushed;
+  at.unflushed = 0;
+  try {
+    await at.session.flush();
+  } catch {
+    at.unflushed += edits; // still unflushed, as flush keeps it
+  }
   return at.held ? at.held.failure ?? 'unknown' : 'none';
 }
 
