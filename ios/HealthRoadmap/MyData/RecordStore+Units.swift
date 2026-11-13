@@ -87,7 +87,7 @@ extension RecordStore {
 
     /// A typed value in the other units ("si" or "conventional"), by the engine; nil if it
     /// cannot. Onboarding's entry-only unit switches (US-54 AC6).
-    func convert(_ value: Double, metric: String, from: String, to: String) async -> HealthEngine.Conversion? {
+    func convert(_ value: Double, metric: String, from: String, to: String) async -> UnitConversion? {
         try? await engine.convert(value, metric: metric, from: from, to: to)
     }
 }

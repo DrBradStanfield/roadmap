@@ -1108,7 +1108,7 @@ final class CloudSyncTests: XCTestCase, CloudFixtures {
         XCTAssertEqual(sync.status, .problem(SyncProblem(kind: .busy)))
         XCTAssertNil(store.cloudErase)
         let probe = try engine.blocking { try $0.cloudEdit(.add(metric: "weight", value: 80, day: "2026-10-09"), erase: "x", units: "si", now: .now, lpaUnit: "nmol/L") }
-        XCTAssertEqual(probe.reason, "not-open", "the engine holds no session that would poll and say Synced")
+        XCTAssertEqual(probe.outcome.reason, "not-open", "the engine holds no session that would poll and say Synced")
         XCTAssertNotNil(SyncProblem(kind: .busy).words(.dropbox).range(of: "on this iPhone"))
     }
 
