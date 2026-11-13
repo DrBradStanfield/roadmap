@@ -1,6 +1,7 @@
 import Foundation
 import Network
 import Observation
+import os
 
 /// Keeps the record in the user's Dropbox or Google Drive (US-25 AC11). It signs
 /// in, opens the engine's cloud session, tells it when the app shows and hides,
@@ -185,13 +186,23 @@ final class CloudSync: CloudPort {
     func erase(chatHistory: String?, keepChat: @escaping @Sendable (String) -> Bool) async throws -> HealthEngine.CloudErase? {
         guard let session = connection.shownSession else { return nil }
         send(.syncStarted)
-        let result: HealthEngine.CloudErase
+        // keepChat's own answer, nil when the engine never asked (AC16h).
+        let kept = OSAllocatedUnfairLock<Bool?>(initialState: nil)
+        var result: HealthEngine.CloudErase
         do {
-            result = try await engine.cloudErase(historyJSON: chatHistory, now: .now, keepChat: keepChat)
+            result = try await engine.cloudErase(historyJSON: chatHistory, now: .now) { json in
+                let ok = keepChat(json)
+                kept.withLock { $0 = ok }
+                return ok
+            }
         } catch {
             send(.eraseEnded(session: session, .failed(SyncProblem(error)), at: .now))
             throw error
         }
+        // The phone's chat outcome from this side, not from a reply field that may have fallen
+        // back (AC16h). An erase that landed ran the chat step: with no chat text the engine had
+        // nothing to tombstone and asked nothing; with text and no ask, its read failed.
+        if result.erased { result.chatErased = kept.withLock { $0 } ?? (chatHistory == nil) }
         // "Delete all my data" takes the account's email too; the connection stays.
         if result.erased { forgetEmail() }
         // Always reaches the store (AC16g). A Disconnect or reopen during the await owns the

@@ -16,6 +16,8 @@ final class DataEraserTests: XCTestCase {
     private var health: FakeHealthStore!
     private var healthDefaults: UserDefaults!
     private let question = "Is my LDL of 4.2 high?"
+    /// How many times the reminders read the record (the erase's reminders step).
+    private var reminderReads = 0
 
     override func setUp() async throws {
         folder = FileManager.default.temporaryDirectory.appending(path: "Data Eraser \(UUID().uuidString)")
@@ -46,14 +48,15 @@ final class DataEraserTests: XCTestCase {
     }
 
     /// The app's parts, as AppParts makes them, on the test folder and the stub.
-    private func app(connected: Bool) throws -> App {
+    private func app(connected: Bool, engine given: HealthEngine? = nil) throws -> App {
         if connected { try Data("dropbox".utf8).write(to: folder.appending(path: "sync-provider")) }
-        let engine = try HealthEngine(session: StubHTTP.session())
+        let engine = try given ?? HealthEngine(session: StubHTTP.session())
         let store = try RecordStore(folder: folder, engine: engine, deviceId: "ios-test")
         let sync = CloudSync(engine: engine, store: store, oauth: OAuthClient(tokens: tokens, session: StubHTTP.session()))
         let chat = ChatHistoryStore(engine: engine, folder: folder, deviceId: "ios-test")
-        let reminders = ReminderScheduler(center: center, folder: folder) { firstSeen in
-            try await engine.reminders(recordJSON: store.recordJSON, now: .now, deviceId: store.deviceId, firstSeen: firstSeen)
+        let reminders = ReminderScheduler(center: center, folder: folder) { [weak self] firstSeen in
+            self?.reminderReads += 1
+            return try await engine.reminders(recordJSON: store.recordJSON, now: .now, deviceId: store.deviceId, firstSeen: firstSeen)
         }
         let appleHealth = AppleHealthSync(store: store, engine: engine, client: health, memory: HealthSyncMemory(defaults: healthDefaults))
         let eraser = DataEraser(store: store, sync: sync, chat: chat, reminders: reminders, health: appleHealth, live: nil)
@@ -341,6 +344,88 @@ final class DataEraserTests: XCTestCase {
         // A question asked after the erase saves as usual.
         await screen.record(ChatExchange(conversationId: "c-after", isNew: true, userText: "Later", assistantText: "Answer.", isFallback: false), askedAt: ChatHistoryStore.erasures)
         XCTAssertEqual(screen.conversations.count, 1)
+    }
+
+    // MARK: A reply that does not all read (US-25 AC16h, lead S49)
+
+    /// The bundled engine on the stub. The cloud erase runs as it is; `__eraseReply`, when set,
+    /// rewrites the reply it answers, as a reply Swift cannot fully read.
+    private func replyRewritingEngine(_ rewrite: String) throws -> HealthEngine {
+        let url = try XCTUnwrap(Bundle.main.url(forResource: "health-engine", withExtension: "js"))
+        let source = try String(contentsOf: url, encoding: .utf8) + """
+
+        globalThis.__eraseReply = \(rewrite);
+        HealthEngine = Object.assign({}, HealthEngine, { cloudErase: (door => async function () {
+          return JSON.stringify(__eraseReply(JSON.parse(await door.apply(this, arguments))));
+        })(HealthEngine.cloudErase) });
+
+        """
+        return try HealthEngine(source: source, sourceURL: url, session: StubHTTP.session())
+    }
+
+    /// A connected app with a weight in Dropbox, after `start`.
+    private func connectedApp(rewrite: String) async throws -> App {
+        dropbox.put(try record(days: ["2026-10-01"]))
+        let app = try app(connected: true, engine: try replyRewritingEngine(rewrite))
+        await app.sync.start()
+        return app
+    }
+
+    /// On main the reply's decode threw after the engine had erased: the person heard the
+    /// erase was refused, the store kept the pre-erase record, and Health and the reminders
+    /// were skipped. Now the erase is held with no record, and the steps after it run.
+    func testAnEraseWhoseRecordDoesNotReadIsHeldAndTheStepsAfterItRun_US25_AC16h() async throws {
+        let app = try await connectedApp(rewrite: "a => ({ ...a, view: 'not a view' })")
+        await seedChat(app.chat)
+        await app.health.connect()
+        let (erasures, reads) = (app.store.erasures, reminderReads)
+
+        guard case .erased(let words) = await app.eraser.eraseAll() else { return XCTFail("the erase landed, so it was not refused") }
+
+        XCTAssertEqual(epoch(dropbox.record), 1, "the engine erased the cloud file")
+        XCTAssertEqual(app.store.erasures, erasures + 1, "the store took the erase in")
+        XCTAssertTrue(app.store.predatesErase, "held: the record shown predates the erase")
+        XCTAssertEqual(health.ownDeletes, 1, "the Apple Health step ran")
+        XCTAssertTrue(words.contains("Apple Health is disconnected"), words)
+        XCTAssertGreaterThan(reminderReads, reads, "the reminders step ran")
+        XCTAssertTrue(words.contains("chat history and reminders are deleted"), words)
+    }
+
+    /// The chat flag does not read, but the phone's chat was deleted: the words say so. On main
+    /// the decode threw and the erase was called refused.
+    func testAnUnreadableChatFlagStillSaysTheDeletedChatIsDeleted_US25_AC16h() async throws {
+        let app = try await connectedApp(rewrite: "a => ({ ...a, chatErased: 'yes' })")
+        await seedChat(app.chat)
+
+        guard case .erased(let words) = await app.eraser.eraseAll() else { return XCTFail("the erase landed, so it was not refused") }
+
+        XCTAssertTrue(words.contains("chat history and reminders are deleted"), words)
+        XCTAssertFalse(try String(contentsOf: chatFile, encoding: .utf8).contains(question), "the chat was deleted")
+    }
+
+    /// With no chat on the phone there is nothing left on it: an unreadable flag must not say
+    /// the chat is still there. On main the decode threw and the erase was called refused.
+    func testAnUnreadableChatFlagWithNoChatSaysNothingIsLeft_US25_AC16h() async throws {
+        let app = try await connectedApp(rewrite: "a => ({ ...a, chatErased: 'yes' })")
+
+        guard case .erased(let words) = await app.eraser.eraseAll() else { return XCTFail("the erase landed, so it was not refused") }
+
+        XCTAssertTrue(words.contains("chat history and reminders are deleted"), words)
+        XCTAssertFalse(words.contains("could not be deleted"), words)
+    }
+
+    /// The phone's chat file cannot be read, so the erase leaves it; a reply that claims the chat
+    /// went is not believed. On main the words took the reply's flag and said it was deleted.
+    func testAChatNotDeletedIsNeverClaimed_US25_AC16h() async throws {
+        let app = try await connectedApp(rewrite: "a => ({ ...a, chatErased: true })")
+        await seedChat(app.chat)
+        try Data("{ not a chat file".utf8).write(to: chatFile)
+
+        guard case .erased(let words) = await app.eraser.eraseAll() else { return XCTFail("the erase landed, so it was not refused") }
+
+        XCTAssertFalse(words.contains("chat history and reminders are deleted"), words)
+        XCTAssertTrue(words.contains("Your chat history could not be deleted"), words)
+        XCTAssertEqual(try String(contentsOf: chatFile, encoding: .utf8), "{ not a chat file")
     }
 
     // MARK: Apple Health (D6)
