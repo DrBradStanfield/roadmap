@@ -20,7 +20,7 @@ import {
   withPsaMeasurement,
   type ApiMeasurement,
 } from './mappings';
-import { compareReadings, latestActivePerMetric, newestUsablePsa } from './measurement-history';
+import { compareReadings, latestActivePerMetric, planPsa } from './measurement-history';
 import { cmpStr, dayOf, localDay } from './merge';
 import { refLineFor } from './reference-hints';
 import { computeReminderSchedule, type ReminderScheduleItem } from './reminder-schedule';
@@ -372,7 +372,7 @@ export function computePlan(file: RoadmapFile, now = new Date(), unitOverrides?:
     today: localDay(now),
     // US-06 AC14: the prostate cards read the newest usable saved PSA; `screenings` above stays the record's answers.
     results: calculateHealthResults(planInputs, derived.unitSystem, derived.medications,
-      withPsaMeasurement(derived.screenings, newestUsablePsa(currentValueRows(file) as ApiMeasurement[], now)),
+      withPsaMeasurement(derived.screenings, planPsa(currentValueRows(file) as ApiMeasurement[], now)),
       unitOverrides, now),
     due: computeReminderSchedule(file, now),
     labs: derivePlanLabs(file),
