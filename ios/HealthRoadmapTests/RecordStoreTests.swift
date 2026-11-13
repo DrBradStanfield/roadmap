@@ -217,6 +217,40 @@ final class RecordStoreTests: XCTestCase {
         XCTAssertNil(MetricDetailView.screenHasReading(waist, in: store))
     }
 
+    /// Owner's ruling (b) on PR 1595: an erase view refused only because a newer record from the
+    /// engine, stamped after the erase, is already drawn leaves nothing predating the erase. A draw
+    /// refused for any other reason (the engine threw, or the newer record's own draw failed) does.
+    func testOnlyAStaleEraseViewUnderANewerDrawnRecordCatchesTheScreenUp_US58() async throws {
+        let engine = try HealthEngine()
+        let cloud = try engine.blocking { try $0.newRecord(now: .now, deviceId: "web") }
+
+        // The session's next record, already erased, landed before the erase view.
+        let stale = try RecordStore(folder: folder, engine: engine, deviceId: "test")
+        await stale.showCloud(HealthEngine.CloudView(record: cloud, erase: "e2", session: 1, order: 2)).value
+        await stale.showErased(HealthEngine.CloudView(record: cloud, erase: "e2", session: 1, order: 1)).value
+        XCTAssertFalse(stale.predatesErase, "the record shown was stamped after the erase")
+
+        // The engine cannot draw the erase view.
+        let threw = try RecordStore(folder: folder, engine: engine, deviceId: "test")
+        await threw.showErased(HealthEngine.CloudView(record: "not a record", erase: "e2", session: 1, order: 3)).value
+        XCTAssertTrue(threw.predatesErase, "nothing drew the erase")
+
+        // An older cloud record is drawn; a newer one was handed over but never drawn: the screen still
+        // shows the older one, which predates the erase view between them.
+        let undrawn = try RecordStore(folder: folder, engine: engine, deviceId: "test")
+        await undrawn.showCloud(HealthEngine.CloudView(record: cloud, erase: "e1", session: 1, order: 3)).value
+        await undrawn.showCloud(HealthEngine.CloudView(record: "not a record", erase: "e2", session: 1, order: 5)).value
+        await undrawn.showErased(HealthEngine.CloudView(record: cloud, erase: "e2", session: 1, order: 4)).value
+        XCTAssertTrue(undrawn.predatesErase, "stale only against the record drawn, never one only handed over")
+
+        // A cloud record was drawn, then the phone's file: no cloud stamp stands for the screen.
+        let phone = try RecordStore(folder: folder, engine: engine, deviceId: "test")
+        await phone.showCloud(HealthEngine.CloudView(record: cloud, erase: "e1", session: 1, order: 7)).value
+        await phone.showPhone().value
+        await phone.showErased(HealthEngine.CloudView(record: cloud, erase: "e2", session: 1, order: 6)).value
+        XCTAssertTrue(phone.predatesErase, "the phone's file drawn since resets the stamp")
+    }
+
     /// US-25 AC21 (checkpoint 1 review, lead 2): after an erase whose draw failed, a value page opened
     /// afterwards reads nothing from the erased record: no chart is returned or kept, so its values are
     /// never drawn again. The page then says only that they could not be read.
