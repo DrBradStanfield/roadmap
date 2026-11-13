@@ -3,7 +3,7 @@
  * saved PSA measurement, its value and its day. PSA has been a measurement
  * since February 2026 (lab uploads, the assistant and the iPhone save a dated
  * `psa` row), but the "Elevated PSA" card (PSA >= 4.0 ng/mL since Change 3), the PSA-due card
- * and the `screening_prostate` reminder (12 months, `will_screen`) read only
+ * and the `screening_prostate` reminder (by level since US-06 AC21) read only
  * the old screening answers `prostate_psa_value` / `prostate_last_date`, which
  * nothing writes any more. Those answers stay the fallback; the newer by date
  * wins, and a row in the same month as the answer wins (the answer has no day).
@@ -44,32 +44,36 @@ function prostate(file: RoadmapFile) {
   };
 }
 
+// Since US-06 AC21 (Change 4, Brad 2026-11-12) the next PSA follows the level: 3 months at 4.0 or
+// above, 24 below 2.5, 12 between (screening-psa-interval.test.ts). A 6.5 from 3 Sep 2025 is due Dec 2025.
+const OVERDUE_DEC_2025 = 'PSA test overdue: Your next PSA test was due Dec 2025. Please schedule your test.';
 const ELEVATED = (v: string) =>
-  `Elevated PSA: Your PSA of ${v} ng/mL is 4.0 or higher, the level many doctors use to decide on further tests. A raised PSA can have several causes, including an enlarged prostate, infection or prostate cancer. Discuss with your doctor.`;
+  `Elevated PSA: Your PSA of ${v} ng/mL is 4.0 or higher, the level many doctors use to decide on further tests. A raised PSA can have several causes, including an enlarged prostate, infection or prostate cancer. Dr Brad suggests repeating the test every 3 months while it stays at 4.0 or higher. Discuss with your doctor.`;
 
 describe('the plan reads the saved PSA measurement (US-06 AC14)', () => {
   // Since US-06 AC17 (Brad 2026-11-03) no "PSA test up to date" shows beside "Elevated PSA"; the due list and the reminder still carry the day.
-  it('a saved PSA of 6.5 from September 2025 shows "Elevated PSA" and a reminder 12 months on', () => {
+  it('a saved PSA of 6.5 from September 2025 shows "Elevated PSA" and a reminder 3 months on (US-06 AC21)', () => {
     const p = prostate(record([[6.5, '2025-09-03']]));
-    expect(p.cards).toEqual([ELEVATED('6.5')]);
-    expect(p.due).toEqual(['2026-09-01']);
-    expect(p.pushed).toEqual(['2026-09-01']);
+    expect(p.cards).toEqual([OVERDUE_DEC_2025, ELEVATED('6.5')]);
+    expect(p.due).toEqual(['2025-12-01']);
+    expect(p.pushed).toEqual(['2025-12-01']);
   });
 
   it('the newest active row is the one read: a later 2.1 clears the card, an entered-in-error row counts for nothing', () => {
     const p = prostate(record([[6.5, '2024-03-01'], [2.1, '2025-01-20'], [9.9, '2025-05-01', 'entered-in-error']]));
-    expect(p.cards).toEqual(['PSA test overdue: Your next PSA test was due Jan 2026. Please schedule your test.']);
-    expect(p.due).toEqual(['2026-01-01']);
-    expect(p.pushed).toEqual(['2026-01-01']);
+    // 2.1 is below 2.5: 24 months (US-06 AC21).
+    expect(p.cards).toEqual(['PSA test up to date: Next PSA test due Jan 2027.']);
+    expect(p.due).toEqual(['2027-01-01']);
+    expect(p.pushed).toEqual(['2027-01-01']);
   });
 
   it('control: with no PSA row the old answers still drive the cards and the reminder', () => {
     const p = prostate(record([], { prostatePsaValue: '6.5', prostateLastDate: '2025-01' }));
     expect(p.cards).toEqual([
-      'PSA test overdue: Your next PSA test was due Jan 2026. Please schedule your test.',
+      'PSA test overdue: Your next PSA test was due Apr 2025. Please schedule your test.',
       ELEVATED('6.5'),
     ]);
-    expect(p.pushed).toEqual(['2026-01-01']);
+    expect(p.pushed).toEqual(['2025-04-01']);
   });
 
   it('control: no PSA row and no answers, no PSA card and no reminder (the plan does not invent a test)', () => {
@@ -83,13 +87,14 @@ describe('a saved PSA and the old answers: the newer by date wins (US-06 AC14)',
   it('a row newer than the answer wins, value and day together', () => {
     const p = prostate(record([[6.5, '2025-09-03']], { prostatePsaValue: '2.0', prostateLastDate: '2025-02' }));
     expect(p.cards).toContain(ELEVATED('6.5'));
-    expect(p.pushed).toEqual(['2026-09-01']);
+    expect(p.pushed).toEqual(['2025-12-01']);
   });
 
   it('an answer from a later month than the row wins, value and day together', () => {
     const p = prostate(record([[6.5, '2025-03-10']], { prostatePsaValue: '2.0', prostateLastDate: '2025-11' }));
-    expect(p.cards).toEqual(['PSA test up to date: Next PSA test due Nov 2026.']);
-    expect(p.pushed).toEqual(['2026-11-01']);
+    // The answer's 2.0 is below 2.5: 24 months (US-06 AC21).
+    expect(p.cards).toEqual(['PSA test up to date: Next PSA test due Nov 2027.']);
+    expect(p.pushed).toEqual(['2027-11-01']);
   });
 
   it('an answer with a full day later than the row, in the same month, wins', () => {
@@ -105,7 +110,7 @@ describe('a saved PSA and the old answers: the newer by date wins (US-06 AC14)',
   it('the same month: the row wins, since the answer gives no day', () => {
     const p = prostate(record([[6.5, '2025-03-10']], { prostatePsaValue: '2.0', prostateLastDate: '2025-03' }));
     expect(p.cards).toContain(ELEVATED('6.5'));
-    expect(p.pushed).toEqual(['2026-03-01']);
+    expect(p.pushed).toEqual(['2025-06-01']);
   });
 
   it('an old value with no date gives way to a dated row', () => {
@@ -117,7 +122,7 @@ describe('a saved PSA and the old answers: the newer by date wins (US-06 AC14)',
 
 describe('a PSA row the plan cannot use leaves the old answers standing (US-06 AC14)', () => {
   const answers = { prostatePsaValue: '6.5', prostateLastDate: '2025-01' };
-  const fallback = ['PSA test overdue: Your next PSA test was due Jan 2026. Please schedule your test.', ELEVATED('6.5')];
+  const fallback = ['PSA test overdue: Your next PSA test was due Apr 2025. Please schedule your test.', ELEVATED('6.5')];
 
   it.each([
     ['above the PSA range (10000 ng/mL)', 10000.5, '2025-09-03'],
@@ -127,11 +132,11 @@ describe('a PSA row the plan cannot use leaves the old answers standing (US-06 A
   ])('a row %s', (_what, value, day) => {
     const p = prostate(record([[value, day]], answers));
     expect(p.cards).toEqual(fallback);
-    expect(p.pushed).toEqual(['2026-01-01']);
+    expect(p.pushed).toEqual(['2025-04-01']);
   });
 
   it('the range ends are usable: 0 and 10000 ng/mL', () => {
-    expect(prostate(record([[0, '2025-09-03']], answers)).cards).toEqual(['PSA test up to date: Next PSA test due Sep 2026.']);
+    expect(prostate(record([[0, '2025-09-03']], answers)).cards).toEqual(['PSA test up to date: Next PSA test due Sep 2027.']);
     expect(prostate(record([[10000, '2025-09-03']], answers)).cards).toContain(ELEVATED('10000.0'));
   });
 });
@@ -142,19 +147,20 @@ describe('a saved PSA as main stores it: a core lab row (US-06 AC14, US-66 AC7)'
     const moved = { ...old, ...moveBloodMeasurements(old.measurements, old.labValues) };
     expect(moved.measurements).toEqual([]);
     expect(prostate(moved)).toEqual({
-      cards: [ELEVATED('6.5')],
-      due: ['2026-09-01'],
-      pushed: ['2026-09-01'],
+      cards: [OVERDUE_DEC_2025, ELEVATED('6.5')],
+      due: ['2025-12-01'],
+      pushed: ['2025-12-01'],
     });
   });
 });
 
 describe('Brad 2026-11-03: a high PSA shows whatever the screening answer (US-06 AC14)', () => {
-  it('chose not to screen: a saved 6.5 shows "Elevated PSA", and no PSA-due card or reminder', () => {
+  // Since US-06 AC21 (Brad 2026-11-12): 3 months on, "Repeat PSA test" and the reminder (screening-psa-interval.test.ts).
+  it('chose not to screen: a saved 6.5 shows "Elevated PSA", and from 3 months on "Repeat PSA test" and a reminder', () => {
     const p = prostate(record([[6.5, '2025-09-03']], { prostateDiscussion: 'elected_not_to' }));
-    expect(p.cards).toEqual([ELEVATED('6.5')]);
-    expect(p.due).toEqual([]);
-    expect(p.pushed).toEqual([]);
+    expect(p.cards).toEqual([expect.stringMatching(/^Repeat PSA test: You chose not to have routine prostate screening/), ELEVATED('6.5')]);
+    expect(p.due).toEqual(['2025-12-01']);
+    expect(p.pushed).toEqual(['2025-12-01']);
   });
 
   it('control: chose not to screen and a PSA of 3.0, no prostate card at all', () => {
@@ -168,30 +174,33 @@ describe('a PSA printed as a limit is graded only when the limit decides against
   const DUE = 'PSA test up to date: Next PSA test due Sep 2026.';
   it('"> 100" shows "Elevated PSA" with the limit as printed, never a number the lab did not print', () => {
     const p = prostate(record([[100, '2025-09-03', 'active', '>']]));
-    expect(p.cards).toEqual([
-      'Elevated PSA: Your PSA of > 100.0 ng/mL is 4.0 or higher, the level many doctors use to decide on further tests. A raised PSA can have several causes, including an enlarged prostate, infection or prostate cancer. Discuss with your doctor.']);
-    expect(p.pushed).toEqual(['2026-09-01']);
+    expect(p.cards).toEqual([OVERDUE_DEC_2025,
+      'Elevated PSA: Your PSA of > 100.0 ng/mL is 4.0 or higher, the level many doctors use to decide on further tests. A raised PSA can have several causes, including an enlarged prostate, infection or prostate cancer. Dr Brad suggests repeating the test every 3 months while it stays at 4.0 or higher. Discuss with your doctor.']);
+    expect(p.pushed).toEqual(['2025-12-01']);
   });
 
   it('">= 4.0" shows "Elevated PSA" as printed: 4.0 is raised (Change 3, Brad 2026-11-12)', () => {
     const p = prostate(record([[4.0, '2025-09-03', 'active', '>=']]));
-    expect(p.cards).toEqual([ELEVATED('\u2265 4.0')]);
-    expect(p.pushed).toEqual(['2026-09-01']);
+    expect(p.cards).toEqual([OVERDUE_DEC_2025, ELEVATED('\u2265 4.0')]);
+    expect(p.pushed).toEqual(['2025-12-01']);
   });
 
+  // "< 0.1" is below 2.5 too: 24 months (US-06 AC21).
   it.each([
-    ['"< 0.1": below the line', 0.1, '<'],
-    ['"< 5": could be either side of 4.0', 5, '<'],
-    ['"<= 4.0": could be exactly 4.0, or below it', 4.0, '<='],
-  ] as const)('%s: no "Elevated PSA", and the test still dates the next one', (_what, value, comparator) => {
+    ['"< 0.1": below the line', 0.1, '<', 'PSA test up to date: Next PSA test due Sep 2027.', '2027-09-01'],
+    ['"< 5": could be either side of 4.0', 5, '<', DUE, '2026-09-01'],
+    ['"<= 4.0": could be exactly 4.0, or below it', 4.0, '<=', DUE, '2026-09-01'],
+  ] as const)('%s: no "Elevated PSA", and the test still dates the next one', (_what, value, comparator, card, due) => {
     const p = prostate(record([[value, '2025-09-03', 'active', comparator]]));
-    expect(p.cards).toEqual([DUE]);
-    expect(p.pushed).toEqual(['2026-09-01']);
+    expect(p.cards).toEqual([card]);
+    expect(p.pushed).toEqual([due]);
   });
 
-  it('a newer "< 5" stands in for an older 6.5: the newest test is uncertain, so no "Elevated PSA"', () => {
+  // US-06 AC21 item 6 (Brad 2026-11-13): it keeps the 3-month rule, due 3 months after the "< 5" (was 12 months).
+  it('a newer "< 5" stands in for an older 6.5: the newest test is uncertain, so no "Elevated PSA", but 3 months', () => {
     const p = prostate(record([[6.5, '2025-03-01'], [5, '2025-09-03', 'active', '<']]));
-    expect(p.cards).toEqual([DUE]);
+    expect(p.cards).toEqual([OVERDUE_DEC_2025]);
+    expect(p.due).toEqual(['2025-12-01']);
   });
 });
 
@@ -204,14 +213,14 @@ describe('the newest USABLE PSA row is read: an unusable newer row never hides a
     ['on a day that does not exist', 3.0, '2026-02-30'],
   ])('a newer row %s: the older 6.5 still shows "Elevated PSA" and dates the reminder', (_what, value, day) => {
     const p = prostate(record([[6.5, '2025-09-03'], [value, day]]));
-    expect(p.cards).toEqual([ELEVATED('6.5')]);
-    expect(p.due).toEqual(['2026-09-01']);
-    expect(p.pushed).toEqual(['2026-09-01']);
+    expect(p.cards).toEqual([OVERDUE_DEC_2025, ELEVATED('6.5')]);
+    expect(p.due).toEqual(['2025-12-01']);
+    expect(p.pushed).toEqual(['2025-12-01']);
   });
 
   it('a row dated today counts (the plan\'s own clock)', () => {
     const p = prostate(record([[6.5, '2026-06-15']]));
     expect(p.cards).toEqual([ELEVATED('6.5')]);
-    expect(p.due).toEqual(['2027-06-01']);
+    expect(p.due).toEqual(['2026-09-01']);
   });
 });
