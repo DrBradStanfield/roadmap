@@ -10,6 +10,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ROADMAP_FILE_NAME, StorageError } from '@roadmap/health-core/adapter';
+import { DRIVE_FOLDER_NAME, DRIVE_LEGACY_FOLDER_NAME } from '@roadmap/health-core/drive-rest';
 import { GoogleDriveAdapter } from './drive';
 import { DropboxAdapter } from './dropbox';
 import { bootSignIn, currentSignIn, resetSignIn, subscribeSignIn } from './sign-in-state';
@@ -463,6 +464,49 @@ describe('US-09 AC51 (lead A29): a Drive access token Drive turned down is used 
     answer = (url) => (url === EXCHANGE ? reply(503) : reply(401, { error: { code: 401 } }));
     await failure(new GoogleDriveAdapter(DRIVE).read(ROADMAP_FILE_NAME));
     expect(JSON.parse(localStorage.getItem(DRIVE_TOKENS)!).expiresAt).toBeGreaterThan(Date.now());
+  });
+
+  describe('a 401 on a background folder request spends the token too, and the request stays non-blocking', () => {
+    type Internals = { ensureFolderName(id: string): Promise<void>; ensureInFolderOnce(id: string): Promise<void> };
+    const internals = (adapter: GoogleDriveAdapter) => adapter as unknown as Internals;
+    const refuse = (status: (url: string, method: string) => number | undefined) => {
+      answer = (url, init) => {
+        const method = init?.method ?? 'GET';
+        if (bearer(init) === 'Bearer test-token-old' && status(url, method) === 401) return reply(401, { error: { code: 401 } });
+        if (url.includes('/files?q=')) return reply(200, { files: [{ id: 'folder-1', name: DRIVE_FOLDER_NAME }] });
+        if (url.includes('fields=parents')) return reply(200, { parents: ['root'] });
+        return reply(200, { files: [] });
+      };
+    };
+    /** After the background request, a later adapter's read sends nothing more with the old token. */
+    async function laterAdapterSendsNone(): Promise<void> {
+      const before = sentWith('test-token-old');
+      expect(before).toBeGreaterThan(0);
+      await failure(new GoogleDriveAdapter(DRIVE).read(ROADMAP_FILE_NAME));
+      expect(sentWith('test-token-old')).toBe(before);
+    }
+
+    it('the folder rename (ensureFolderName)', async () => {
+      chosen('google-drive', POPUP());
+      localStorage.setItem(DRIVE_CONFIG, JSON.stringify({ folderId: 'folder-1', folderName: DRIVE_LEGACY_FOLDER_NAME }));
+      refuse((url, method) => (method === 'PATCH' && url.endsWith('/files/folder-1') ? 401 : undefined));
+      await expect(internals(new GoogleDriveAdapter(DRIVE)).ensureFolderName('folder-1')).resolves.toBeUndefined();
+      await laterAdapterSendsNone();
+    });
+
+    it('the folder move\'s parent lookup (ensureInFolderOnce)', async () => {
+      chosen('google-drive', POPUP());
+      refuse((url) => (url.includes('/files/file-1?fields=parents') ? 401 : undefined));
+      await expect(internals(new GoogleDriveAdapter(DRIVE)).ensureInFolderOnce('file-1')).resolves.toBeUndefined();
+      await laterAdapterSendsNone();
+    });
+
+    it('the folder move itself (ensureInFolderOnce)', async () => {
+      chosen('google-drive', POPUP());
+      refuse((url, method) => (method === 'PATCH' && url.includes('/files/file-1?addParents=') ? 401 : undefined));
+      await expect(internals(new GoogleDriveAdapter(DRIVE)).ensureInFolderOnce('file-1')).resolves.toBeUndefined();
+      await laterAdapterSendsNone();
+    });
   });
 
   it('once the page is signed out, an adapter built then sends no request with the old token', async () => {
