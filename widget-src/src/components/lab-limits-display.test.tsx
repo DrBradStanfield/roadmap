@@ -111,7 +111,7 @@ describe('US-12 AC20: the phone rows', () => {
     const lpa = rowNamed(view.container, 'Lp(a)');
     expect(lpa.querySelector('.md-row-latest')!.textContent).toBe('< 10');
     expect(lpa.querySelector('.md-row-latest')!.className).toContain('md-status-ok');
-    expect(lpa.querySelector('.md-row-prev')!.textContent).toBe(' (40)');
+    expect(lpa.querySelector('.md-row-prev')!.textContent).toBe('(40)'); // the space sits outside it (H108)
     const dot = lpa.querySelector('circle.md-trend-limit')!;
     expect(dot.getAttribute('fill')).toBe('none');
     // One exact day: no line is drawn through the limit, and the exact day is a filled dot.
