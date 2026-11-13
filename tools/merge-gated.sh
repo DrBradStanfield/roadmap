@@ -13,8 +13,11 @@
 #      marker skips this step. The marker guards against accidents, not against someone who sets it on purpose:
 #      review of the diff is the real control. A PR that changes ci.yml also gets one stderr note: its own CI
 #      result came from the PR's workflow, so the reviewer must have read that diff (a note, not a refusal:
-#      workflow PRs are legitimate and Brad-reviewed). gh lists at most 100 files; a PR with more refuses (17)
-#      rather than judging part of the list.
+#      workflow PRs are legitimate and Brad-reviewed). Gate files are looked for twice: first in gh's file list,
+#      then in git's path list, which step 6 reuses (T-13: fetch main and the PR head, merge base, `git diff
+#      --name-only --no-renames`; a failure refuses 4). Git's list splits a rename, so a gate file renamed away
+#      shows under its old path, and it has no page limit. Each path matches only as a whole line. gh lists at
+#      most 100 files; a PR with more and no gate file in git's list still refuses (17).
 #   4. CI's own workflow: the newest ci.yml run on the sha (by createdAt) exists (11), is completed (14) and ended
 #      success (15). So a job named `test` from another workflow cannot stand in for CI, and a draft PR's run
 #      (every job skipped, the run's conclusion `skipped`) never passes.
@@ -27,8 +30,8 @@
 #      list is a literal in the jq filter below, so nothing at call time can widen it.
 #   6. generated files (US-64 AC34; PR 954 went green against an older main, then main went red). Pure git: it runs
 #      nothing but gh, git, jq and perl, never a command from the manifest or the PR (a row's `script` is only a
-#      pathspec). It fetches main (explicit refspec, so origin/main is fresh in a narrow-refspec clone) and the PR
-#      head, takes their merge base, and lists the PR's paths with `git diff --name-only --no-renames`, so a rename
+#      pathspec). Step 3 fetched main (explicit refspec, so origin/main is fresh in a narrow-refspec clone) and the PR
+#      head, took their merge base, and listed the PR's paths with `git diff --name-only --no-renames`, so a rename
 #      shows its old path too (gh lists only the new one): every PR fetches, as moving an input away hides from gh.
 #      For each row of tools/generated-files.json (the copy beside this script; main's when the PR changes it,
 #      step 3) whose output or an input matches a PR path (globs: * matches any run of characters, slash included,
@@ -110,7 +113,10 @@ case "$files" in
   [0-9]*" "[0-9]*" "true" "*|[0-9]*" "[0-9]*" "false" "*) set -- $files ;;
   *) die "unparsable files answer" 4 ;;
 esac
-if [ "${MERGE_GATED_FROM_MAIN:-}" != 1 ] && { [ "$3" = true ] || [ "$4" = true ]; }; then
+changed=$1 listed=$2 gatefile=$3 ciyml=$4
+# Runs main's copy and exits with its code when a gate file changed; returns otherwise, or in main's copy itself.
+to_main() {
+  [ "${MERGE_GATED_FROM_MAIN:-}" != 1 ] && { [ "$gatefile" = true ] || [ "$ciyml" = true ]; } || return 0
   tmp=$(mktemp -d "${TMPDIR:-/tmp}/merge-gated.XXXXXX") || die "cannot make a temp dir" 16
   trap 'rm -rf "$tmp"' EXIT
   bounded git fetch -q origin +refs/heads/main:refs/remotes/origin/main >&2 || die "PR $pr changes a gate file and the fetch of main failed, so main's copy cannot judge it: the owner merges this PR by hand" 16
@@ -119,9 +125,30 @@ if [ "${MERGE_GATED_FROM_MAIN:-}" != 1 ] && { [ "$3" = true ] || [ "$4" = true ]
   git show refs/remotes/origin/main:tools/generated-files.json > "$tmp/generated-files.json" 2>/dev/null || rm -f "$tmp/generated-files.json"
   echo "merge-gated: PR $pr changes a gate file; main's copy judges it" >&2
   MERGE_GATED_FROM_MAIN=1 sh "$tmp/merge-gated.sh" $args; exit $?
-fi
-[ "$4" = true ] && echo "merge-gated: note: PR $pr changes .github/workflows/ci.yml, so its own CI result came from the PR's workflow; the reviewer must have read that diff" >&2
-[ "$1" = "$2" ] || die "PR $pr changes $1 files and gh lists $2; cannot check them for gate files" 17
+}
+to_main
+# Git's path list, which step 6 reuses (T-13): renames split, and no page limit.
+bounded git fetch -q origin +refs/heads/main:refs/remotes/origin/main "refs/pull/$pr/head" >&2 && git cat-file -e "$sha^{commit}" \
+  || die "cannot fetch main and PR $pr's head $sha" 4
+base=$(git merge-base refs/remotes/origin/main "$sha") || die "PR $pr's head $sha has no merge base with main" 4
+behind=$(git rev-list --count "$base..refs/remotes/origin/main") || behind=0
+paths=$(git -c core.quotepath=false diff --name-only --no-renames --no-relative "$base" "$sha") || die "git diff on PR $pr failed" 4
+# Whole lines only: a near name (a trailing space, another folder, a suffix) never matches.
+case "
+$paths
+" in *"
+tools/merge-gated.sh
+"*|*"
+tools/generated-files.json
+"*) gatefile=true ;; esac
+case "
+$paths
+" in *"
+.github/workflows/ci.yml
+"*) ciyml=true ;; esac
+to_main
+[ "$ciyml" = true ] && echo "merge-gated: note: PR $pr changes .github/workflows/ci.yml, so its own CI result came from the PR's workflow; the reviewer must have read that diff" >&2
+[ "$changed" = "$listed" ] || die "PR $pr changes $changed files and gh lists $listed; cannot check them for gate files" 17
 
 # Each filter prints one line: "ok", or "<code> <reason>". Check names are outside text: they go only into the
 # reason, never into the decision.
@@ -162,13 +189,8 @@ if [ "$mode" = rollup ]; then
   esac
 fi
 
-bounded git fetch -q origin +refs/heads/main:refs/remotes/origin/main "refs/pull/$pr/head" >&2 && git cat-file -e "$sha^{commit}" \
-  || die "cannot fetch main and PR $pr's head $sha" 4
-base=$(git merge-base refs/remotes/origin/main "$sha") || die "PR $pr's head $sha has no merge base with main" 4
-behind=$(git rev-list --count "$base..refs/remotes/origin/main") || behind=0
 case "$behind" in 0) ;; 1) w=commit ;; *) w=commits ;; esac
 [ "$behind" = 0 ] || echo "merge-gated: note: main has moved $behind $w since this PR's merge base; CI may have tested an older main" >&2
-paths=$(git -c core.quotepath=false diff --name-only --no-renames --no-relative "$base" "$sha") || die "git diff on PR $pr failed" 4
 # The rows whose output or an input matches a PR path, one index a line. A glob becomes an anchored regex:
 # * any run of characters (slash too, as in a git pathspec), ? one character, everything else literal.
 # The manifest sits beside this script. $0 has no slash when run as `sh merge-gated.sh` inside tools/ (T-12).
