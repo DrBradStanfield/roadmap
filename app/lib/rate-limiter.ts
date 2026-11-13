@@ -3,28 +3,63 @@
 export const DAY_MS = 24 * 60 * 60_000;
 
 /**
- * The one sweep for the server's in-memory TTL maps (S-5): every `everyMs`,
- * delete each entry whose expiry has passed (`now > expiresAt`). It only bounds
- * memory; each reader still checks expiry itself, so nothing is served past it
- * between sweeps. Unref'd: never holds the process open just to sweep.
+ * The one expiry rule for the server's in-memory TTL maps (S-19): an entry is
+ * live until its expiry instant, not at it, so a window of W ms is W ms long.
  */
-export function sweepExpired<V>(map: Map<string, V>, expiresAt: (entry: V) => number, everyMs: number): void {
-  setInterval(() => {
+export const isLive = (expiresAt: number, now: number): boolean => now < expiresAt;
+
+/**
+ * Keys per limiter map (S-19). An entry measured about 180 bytes (an IPv6 /64
+ * key and its count), so a full map is about 9 MB, and the 37 limiter maps all
+ * full at once stay near a third of a machine's 1 GB (fly.toml). Five times the
+ * largest daily per-machine budget here (WEB_CHAT_DAILY_CAP, 10,000).
+ */
+export const MAX_TRACKED_KEYS = 50_000;
+
+/**
+ * The one sweep for the server's in-memory TTL maps (S-5): every `everyMs`,
+ * delete each entry that is no longer live. It only bounds memory; each reader
+ * still checks expiry itself, so nothing is served past it between sweeps.
+ * Unref'd: never holds the process open just to sweep. Returns its timer.
+ */
+export function sweepExpired<V>(map: Map<string, V>, expiresAt: (entry: V) => number, everyMs: number): ReturnType<typeof setInterval> {
+  const timer = setInterval(() => {
     const now = Date.now();
-    for (const [key, entry] of map) if (now > expiresAt(entry)) map.delete(key);
-  }, everyMs).unref?.();
+    for (const [key, entry] of map) if (!isLive(expiresAt(entry), now)) map.delete(key);
+  }, everyMs);
+  timer.unref?.();
+  return timer;
 }
 
-export function createRateLimiter(max: number, windowMs: number, cleanupMs: number) {
+/**
+ * Room for one more key in a map held to `maxKeys` (S-19). Each map has one TTL
+ * and every write deletes its key before setting it, so insertion order is
+ * expiry order: expired entries are dropped from the front until there is room.
+ * False when every entry left is live. A limiter then refuses the new key, since
+ * forgetting a live count would let its caller start a fresh window early.
+ */
+export function makeRoom<V>(map: Map<string, V>, expiresAt: (entry: V) => number, maxKeys: number, now: number): boolean {
+  for (const [key, entry] of map) {
+    if (map.size < maxKeys || isLive(expiresAt(entry), now)) break;
+    map.delete(key);
+  }
+  return map.size < maxKeys;
+}
+
+const resetAtOf = (entry: { resetAt: number }) => entry.resetAt;
+
+export function createRateLimiter(max: number, windowMs: number, cleanupMs: number, maxKeys = MAX_TRACKED_KEYS) {
   const map = new Map<string, { count: number; resetAt: number }>();
-  sweepExpired(map, (entry) => entry.resetAt, cleanupMs);
+  sweepExpired(map, resetAtOf, cleanupMs);
   // `reset` is a test seam: the map is process-global and would otherwise leak
   // between cases in a suite that drives a limited route many times.
   return Object.assign(
     (key: string): boolean => {
       const now = Date.now();
       const entry = map.get(key);
-      if (!entry || now > entry.resetAt) {
+      if (!entry || !isLive(entry.resetAt, now)) {
+        map.delete(key);
+        if (!makeRoom(map, resetAtOf, maxKeys, now)) return false;
         map.set(key, { count: 1, resetAt: now + windowMs });
         return true;
       }
@@ -40,16 +75,22 @@ export function createRateLimiter(max: number, windowMs: number, cleanupMs: numb
  * day"). Same Map+sweep machinery as createRateLimiter, but consumption has a
  * weight and callers can read the remainder without consuming.
  */
-export function createQuotaCounter(limit: number, windowMs: number, cleanupMs: number) {
+export function createQuotaCounter(limit: number, windowMs: number, cleanupMs: number, maxKeys = MAX_TRACKED_KEYS) {
   const map = new Map<string, { count: number; resetAt: number }>();
-  sweepExpired(map, (entry) => entry.resetAt, cleanupMs);
+  sweepExpired(map, resetAtOf, cleanupMs);
   const live = (key: string) => {
     const entry = map.get(key);
-    return entry && Date.now() <= entry.resetAt ? entry : null;
+    return entry && isLive(entry.resetAt, Date.now()) ? entry : null;
+  };
+  /** Whether `key` could start a window now: false when the map is full of live keys. */
+  const roomFor = (key: string) => {
+    map.delete(key);
+    return makeRoom(map, resetAtOf, maxKeys, Date.now());
   };
   const charge = (key: string, n: number) => {
     let entry = live(key);
     if (!entry) {
+      if (!roomFor(key)) return null;
       entry = { count: 0, resetAt: Date.now() + windowMs };
       map.set(key, entry);
     }
@@ -76,8 +117,10 @@ export function createQuotaCounter(limit: number, windowMs: number, cleanupMs: n
       const entry = live(key);
       if (entry) entry.count = Math.max(0, entry.count - n);
     },
+    /** What a take could spend now: 0 for a new key the full map would refuse. */
     remaining(key: string): number {
       const entry = live(key);
+      if (!entry && !roomFor(key)) return 0;
       return Math.max(0, limit - (entry?.count ?? 0));
     },
   };
@@ -98,18 +141,21 @@ export const machineFiles = createQuotaCounter(dailyFileCap(process.env.AI_DAILY
  * AI_DAILY_FILE_CAP as a number. A value that is not a finite number of 0 or
  * more ("2,000", one that kept an inline comment) falls back to the default
  * 2000 and says so in the log: a bare Number() made it NaN, `count + n > NaN`
- * is never true, and the machine's $-ceiling was gone (SE-4). The same rule
- * as `num()` in app-gate.server.ts, which reads this variable for the app's
- * lab cap, so the two readers agree.
+ * is never true, and the machine's $-ceiling was gone (SE-4). app-gate.server.ts
+ * reads this variable for the app's lab cap through this same function, so the
+ * two readers agree (US-52 AC4e).
  */
 export function dailyFileCap(raw: string | undefined, warn: (message: string) => void = console.warn): number {
   return envCap('AI_DAILY_FILE_CAP', raw, DEFAULT_DAILY_FILE_CAP, warn);
 }
 
-/** `dailyFileCap`'s rule for any cap read from the env: unset is `fallback`, 0 is 0, a non-number warns and is `fallback`. */
+/**
+ * `dailyFileCap`'s rule for any cap read from the env: unset or empty is `fallback`, 0 is 0, a non-number warns and
+ * is `fallback`. Only whitespace is a non-number: Number('  ') is 0, which would switch the cap off (S-18).
+ */
 export function envCap(name: string, raw: string | undefined, fallback: number, warn: (message: string) => void = console.warn): number {
   if (!raw) return fallback;
-  const value = Number(raw);
+  const value = raw.trim() ? Number(raw) : NaN;
   if (Number.isFinite(value) && value >= 0) return value;
   warn(`${name} is not a number of 0 or more, so the default ${fallback} applies.`);
   return fallback;
