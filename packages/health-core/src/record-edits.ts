@@ -35,6 +35,7 @@ import {
   labSlotKey, looseFold, labUnitRefusal, normalizeLabUnit, resolveLabCatalogEntry, type StoredLabRow,
 } from './lab-catalog';
 import { bloodTestKeyOf, coreStored, createCoreRow, isActive, isBloodTestKey, isCoreRow, labRowSlot } from './blood-tests';
+import { bulkRowTarget, outcomeLog, type BulkRowOutcome } from './bulk-row-target';
 import { METRIC_TO_FIELD } from './mappings';
 import { resolveCoreMetricName } from './lab-extraction';
 import { dayOf, latestStamp, localDay, rootIdOf } from './merge';
@@ -904,6 +905,7 @@ export interface BulkAppendResult {
   refused: LabUnitRefusal[];
   /** Invalid core rows, distinct from occupied slots and lab-unit refusals. */
   measurementRefusals: MeasurementRefusal[];
+  outcomes: BulkRowOutcome[]; // each submitted row's outcome, by its index (US-13 AC13)
 }
 
 /**
@@ -931,17 +933,14 @@ export function bulkAppendValues(file: RoadmapFile, rows: BulkRow[], now: string
   const refused: BulkAppendResult['refused'] = [];
   const measurementRefusals: MeasurementRefusal[] = [];
   const inverted = invertedPressureDays(file, rows);
+  const { outcomes, settle } = outcomeLog(() => ({ saved: saved.length, skipped: skippedDuplicates }));
 
   for (const [index, input] of rows.entries()) {
     // A lab row is CONVERTED before its slot is touched: a refused row must
     // not flip the active row it was going to replace.
     let makeRow: (recordedAt: string, correctsId: string | null) => FileMeasurement | FileLabValue;
-    // Brad D5 (US-66 AC6): an extra value named like a core test is that core
-    // value, converted. An imported creatinine never, since it may be urine
-    // (US-12 AC11); one the person typed is their blood value.
-    const named = input.kind === 'lab' ? bloodTestKeyOf(input.metricName) : null;
-    const asLab = input.kind === 'lab' && (!named || (named === 'creatinine' && input.source !== 'manual'));
-    const metric = input.kind === 'measurement' ? input.metricType : asLab ? input.metricName : named!;
+    if (index > 0) settle();
+    const { named, asLab, metric, slot: slotKind } = bulkRowTarget(input); // Brad D5 (US-66 AC6)
     if (input.kind === 'lab' && asLab) {
       const entry = resolveLabCatalogEntry(input.metricName);
       const stored = toStoredLab(entry, input.value, input.unit, input.referenceLow, input.referenceHigh);
@@ -979,7 +978,7 @@ export function bulkAppendValues(file: RoadmapFile, rows: BulkRow[], now: string
         ? createCoreRow({ id: newId(), metric, value, ...(core ? { referenceLow: core.referenceLow, referenceHigh: core.referenceHigh } : null), recordedAt, createdAt: now, source: input.source, correctsId, ...comparatorOf(input) })
         : createMeasurement({ id: newId(), metricType: metric, value, recordedAt, createdAt: now, source: input.source, correctsId, ...comparatorOf(input) }));
     }
-    const slot = slotKey(asLab ? 'lab' : 'measurement', metric, input.recordedAt);
+    const slot = slotKey(slotKind, metric, input.recordedAt);
     const inLabs = asLab || isBloodTestKey(metric);
     const list: Array<FileMeasurement | FileLabValue> = inLabs ? labValues : measurements;
     if (input.correctsId) {
@@ -998,8 +997,9 @@ export function bulkAppendValues(file: RoadmapFile, rows: BulkRow[], now: string
     list.push(row);
     saved.push(row);
   }
+  if (rows.length) settle();
   const next = saved.length ? stampUpdatedAt({ ...file, measurements, labValues }, now) : file;
-  return { file: next, saved, skippedDuplicates, refused, measurementRefusals };
+  return { file: next, saved, skippedDuplicates, refused, measurementRefusals, outcomes };
 }
 
 /**

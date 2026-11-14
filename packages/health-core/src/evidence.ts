@@ -43,6 +43,12 @@ const REFS_SODIUM: SuggestionReference[] = [
   { label: 'Huang 2020 – Dietary sodium reduction & BP (BMJ)', url: 'https://doi.org/10.1136/bmj.m315' },
 ];
 
+/** The FDA and NICE on statins in pregnancy: med-statin, and every card that carries the on-a-statin
+ *  pregnancy sentence (suggestions.ts `onStatinPregnancy`, US-07 AC14). */
+const REFS_STATIN_PREGNANCY: SuggestionReference[] = [
+  { label: 'FDA 2021 – Statins in pregnancy: strongest warning removed, most patients should still stop', url: 'https://www.fda.gov/drugs/drug-safety-and-availability/fda-requests-removal-strongest-warning-against-using-cholesterol-lowering-statins-during-pregnancy' },
+  { label: 'NICE NG238 – Cardiovascular disease: risk assessment and reduction, including lipid modification', url: 'https://www.nice.org.uk/guidance/ng238/chapter/Recommendations' },
+];
 const REF_BP_2017: SuggestionReference = { label: 'Whelton 2017 – ACC/AHA Blood Pressure Guideline (Hypertension)', url: 'https://doi.org/10.1161/HYP.0000000000000065' };
 
 const REFS_BP_LIFESTYLE: SuggestionReference[] = [
@@ -463,8 +469,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
     guidelines: [...GUIDELINES_LIPIDS],
     references: [
       ...REFS_LIPID_GUIDELINES, ...REFS_PESA, ...REFS_LDL_SAFETY,
-      { label: 'FDA 2021 – Statins in pregnancy: strongest warning removed, most patients should still stop', url: 'https://www.fda.gov/drugs/drug-safety-and-availability/fda-requests-removal-strongest-warning-against-using-cholesterol-lowering-statins-during-pregnancy' },
-      { label: 'NICE NG238 – Cardiovascular disease: risk assessment and reduction, including lipid modification', url: 'https://www.nice.org.uk/guidance/ng238/chapter/Recommendations' },
+      ...REFS_STATIN_PREGNANCY,
     ],
   },
 
@@ -475,6 +480,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
       ...REFS_LIPID_GUIDELINES,
       { label: 'Leosdottir 2025 – Early vs late ezetimibe initiation (JACC)', url: 'https://doi.org/10.1016/j.jacc.2025.02.007' },
       { label: 'FDA label – Zetia (ezetimibe), 8.1 Pregnancy: insufficient data to evaluate risk (DailyMed)', url: 'https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=174e45e0-45bb-48b7-9e60-8f6cfc1d22bb' },
+      ...REFS_STATIN_PREGNANCY,
     ],
   },
 
@@ -490,28 +496,29 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   'med-statin-dose': {
     reason: 'Statin strength depends on both the drug and the dose. Doubling a statin dose typically lowers LDL by a further 6–7% (the "rule of 6"), and rosuvastatin 40mg gives the largest reduction (~63%). Which step comes next depends on the dose you take now.',
     guidelines: [...GUIDELINES_STATIN_STEPS],
-    references: [REF_ESC_EAS_2019],
+    references: [REF_ESC_EAS_2019, ...REFS_STATIN_PREGNANCY],
   },
 
   'med-statin-increase': {
     reason: 'Doubling the statin dose typically provides an additional 6–7% LDL reduction (the "rule of 6"). While each dose increase has diminishing returns, the cumulative benefit of reaching lower lipid targets is supported by guidelines and the PESA study evidence.',
     guidelines: [...GUIDELINES_STATIN_STEPS],
-    references: [REF_ESC_EAS_2019],
+    references: [REF_ESC_EAS_2019, ...REFS_STATIN_PREGNANCY],
   },
 
   'med-statin-switch': {
     reason: 'Different statins vary in potency. Rosuvastatin 40mg provides the highest LDL reduction (~63%), while some other statins max out at lower potencies. Switching to a more potent statin is recommended by ESC/EAS guidelines before adding additional medications.',
     guidelines: [...GUIDELINES_STATIN_STEPS],
-    references: [REF_ESC_EAS_2019],
+    references: [REF_ESC_EAS_2019, ...REFS_STATIN_PREGNANCY],
   },
 
   'med-pcsk9i': {
-    reason: 'PCSK9 inhibitors (evolocumab, alirocumab) are injectable medications that can lower LDL by an additional 50–60% beyond statins. They are recommended by AHA/ACC and ESC/EAS guidelines when lipid targets are not met with maximally tolerated statin plus ezetimibe. They also lower Lp(a) by approximately 25–30%.\n\nStatin muscle damage is rare, but if it happens, stop the statin and move to a PCSK9 inhibitor. If a statin is not tolerated for any reason, this plan suggests a PCSK9 inhibitor next. If your level is still above target after that step (taken, declined or not tolerated), ezetimibe comes next; bempedoic acid last.\n\nTheir US labels say there are not enough data on PCSK9 inhibitors in pregnancy to judge the risk.',
+    reason: 'PCSK9 inhibitors (evolocumab, alirocumab) are injectable medications that can lower LDL by an additional 50–60% beyond statins. They are recommended by AHA/ACC and ESC/EAS guidelines when lipid targets are not met with maximally tolerated statin plus ezetimibe. They also lower Lp(a) by approximately 25–30%.\n\nStatin muscle damage is rare. If it happens, the statin is usually stopped, and a PCSK9 inhibitor is one option to discuss with your doctor. If a statin is not tolerated for any reason, this plan suggests a PCSK9 inhibitor next. If your level is still above target after that step (taken, declined or not tolerated), ezetimibe comes next; bempedoic acid last.\n\nTheir US labels say there are not enough data on PCSK9 inhibitors in pregnancy to judge the risk.',
     guidelines: [...GUIDELINES_LIPIDS],
     references: [
       ...REFS_LIPID_GUIDELINES,
       { label: 'FDA label – Repatha (evolocumab), 8.1 Pregnancy: data insufficient to evaluate risk (DailyMed)', url: 'https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=cd61e902-166d-4aa6-9f3c-a18c1008d07e' },
       { label: 'FDA label – Praluent (alirocumab), 8.1 Pregnancy: data insufficient to evaluate risk (DailyMed)', url: 'https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=7bcfbac2-e8ac-4569-8edc-bcde3b1fd172' },
+      ...REFS_STATIN_PREGNANCY,
     ],
   },
 

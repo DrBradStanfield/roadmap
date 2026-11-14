@@ -132,6 +132,14 @@ describe('US-62 AC17: the sections, in the iPhone\'s order', () => {
     expect(view.container.querySelector('h2.mh-title')?.textContent).toBe('My health');
   });
 
+  it('US-73 AC13 (App Review 1.4.1): the doctor line sits right under the title, before the pills', async () => {
+    const view = await show(RECORDS['urgent results, both cascades, a supplement']);
+    const line = view.container.querySelector('.mh-header + p.mh-education');
+    expect(line?.textContent).toBe('For education, not medical advice. Always talk to your doctor.');
+    const pills = view.container.querySelector('.mh-pills')!;
+    expect(line!.compareDocumentPosition(pills) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it('a 25-year-old, too young for any screening, has no Cancer screening section', async () => {
     const view = await show(() => seedGuest({ sex: 'male', heightCm: 180, birthYear: new Date().getFullYear() - 25, birthMonth: 1, unitSystem: 'si' }, [['weight', 80]], [], DAY));
     expect(topics(view).length).toBeGreaterThan(0); // the plan is drawn

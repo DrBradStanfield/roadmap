@@ -274,6 +274,23 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     expect(imported).toBe(answer.summary.saved);
   });
 
+  it('US-13 AC13: a cloud lab import\'s summary is the write\'s own: an inverted pair the ranked write refuses is not counted saved', async () => {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith([], 'web'));
+    const { engine } = await phone(dropbox);
+    const opened = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false, false)) as { erase: string };
+    const bp = (metric: string, v: number, own?: string) => ({ metric, valueSI: v, displayValue: v, displayUnit: 'mmHg', displaySystem: 'si', confidence: 'high', ...(own ? { recordedAt: own } : null) });
+    const extraction = JSON.stringify({ classification: 'lab_report', reportDate: '2026-10-01', additionalValues: [], refusedValues: [],
+      values: [bp('systolic_bp', 140, '2026-09-01'), bp('systolic_bp', 100), bp('diastolic_bp', 110),
+        { metric: 'ldl', valueSI: 3.1, displayValue: 3.1, displayUnit: 'mmol/L', displaySystem: 'si', confidence: 'high' }] });
+    const answer = JSON.parse(engine.cloudLabImport(extraction, JSON.stringify(['v0', 'v1', 'v2', 'v3']), '2026-09-01', opened.erase, 'si', NOW, '{}')) as { ok: boolean; record: string; summary: { saved: number } };
+    expect(answer.ok).toBe(true);
+    const record = JSON.parse(answer.record) as RoadmapFile;
+    const imported = [...record.measurements, ...record.labValues].filter((row) => row.source === 'lab_import').length;
+    expect(imported).toBe(1);
+    expect(answer.summary.saved).toBe(imported);
+  });
+
   it('AC11e: Disconnect copies the cloud record down onto the phone, and never writes the cloud', async () => {
     const dropbox = new FakeDropbox();
     dropbox.put(await recordWith(['2026-10-01', '2026-10-02'], 'web'));
