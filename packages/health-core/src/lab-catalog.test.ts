@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { acceptedLabUnits, canonicalLabRow, displayLabUnit, canonicalLabValue, LAB_CATALOG, labCountFault, LAB_CONVERSIONS, LAB_GROUPS, labUnitRefusal, labUnitRefusalNote, labUnitTaken, resolveLabCatalogEntry, normalizeLabUnit, labSlotKey } from './lab-catalog';
+import { acceptedLabUnits, canonicalLabRow, displayLabUnit, canonicalLabValue, LAB_CATALOG, labCountFault, LAB_CONVERSIONS, LAB_GROUPS, LAB_PLAUSIBLE_RANGES, labNameForUnit, labPlausibleBound, labUnitRefusal, labUnitRefusalNote, labUnitTaken, resolveLabCatalogEntry, normalizeLabUnit, labSlotKey } from './lab-catalog';
 import { resolveCoreMetricName } from './lab-extraction';
 
 // US-21 · Additional blood tests — catalogue integrity (phase-1 scaffold).
@@ -545,17 +545,13 @@ describe('US-21 AC15 — cells/µL, cumm, and a differential in %', () => {
     }
   });
 
-  it('US-21 AC15 — a differential in % stays refused, and its refusal points at the absolute count', () => {
+  it('US-21 AC28 — a count entry itself still takes no %: the % row is filed under its share, and no refusal carries a note', () => {
     for (const key of DIFFERENTIALS) {
       expect(canonicalLabValue(entryOf(key), 60, '%'), key).toBeNull();
-      const message = labUnitRefusal(entryOf(key), '%');
-      expect(message, key).toContain('absolute count');
-      expect(message, key).toContain('×10⁹/L or cells/µL');
-      expect(message, key).toContain('not "%"');
-      expect(message, key).toContain('Do not work the count out from the percentage');
-      expect(labUnitRefusalNote(entryOf(key), '%'), key).not.toContain('Do not work');
+      expect(labNameForUnit(key, '%'), key).toBe(`${key}_pct`);
+      expect(labUnitRefusalNote(entryOf(key), '%'), key).toBeUndefined();
+      expect(labUnitRefusal(entryOf(key), '%'), key).not.toContain('Do not work');
     }
-    // Only the differentials carry it: a % WBC or platelet count is not a thing a report prints.
     expect(labUnitRefusalNote(entryOf('wbc'), '%')).toBeUndefined();
     expect(labUnitRefusalNote(entryOf('platelets'), '%')).toBeUndefined();
     // Haematocrit in % is a real conversion and still converts.
@@ -1144,16 +1140,16 @@ describe('US-21 AC19/AC20 — review round: osmolality and reverse T3 spellings,
     expect(canonicalLabValue(entryOf('Reverse T3'), 0.23, 'nmol/L')).toMatchObject({ value: 230, unit: 'pmol/L', factor: 1000 });
   });
 
-  it('US-21 AC19 — immature granulocytes, reticulocytes and NRBC in % or per 100 WBC are refused with a note pointing at the count', () => {
-    for (const [name, unit, phrase] of [
-      ['Immature Granulocytes', '%', 'share of the white count'],
-      ['Reticulocytes', '%', 'share of the red cells'],
-      ['NRBC', '%', 'per 100 white cells'],
-      ['NRBC', '/100 WBC', 'per 100 white cells'],
+  it('US-21 AC28 — immature granulocytes, reticulocytes and NRBC in % or per 100 WBC are filed under their share, not refused', () => {
+    for (const [name, unit, key] of [
+      ['Immature Granulocytes', '%', 'immature_granulocytes_pct'],
+      ['Reticulocytes', '%', 'reticulocytes_pct'],
+      ['NRBC', '%', 'nrbc_per_100_wbc'],
+      ['NRBC', '/100 WBC', 'nrbc_per_100_wbc'],
     ] as const) {
       expect(canonicalLabValue(entryOf(name), 1, unit), `${name} ${unit}`).toBeNull();
-      expect(labUnitRefusalNote(entryOf(name), unit), `${name} ${unit}`).toContain(phrase);
-      expect(labUnitRefusal(entryOf(name), unit), `${name} ${unit}`).toContain('Do not work the count out');
+      expect(labNameForUnit(name, unit), `${name} ${unit}`).toBe(key);
+      expect(canonicalLabValue(entryOf(key), 1, unit), `${name} ${unit}`).not.toBeNull();
     }
   });
 
@@ -1288,5 +1284,74 @@ describe('US-21 AC14 — normalizeLabUnit folds the case of dL, mL and µL', () 
     // Greek capital Mu (U+039C) is not a micro sign: case-insensitive matching must not fold it.
     expect(normalizeLabUnit('\u039CL')).toBe('\u039CL');
     expect(normalizeLabUnit('mg/\u039Cl')).toBe('mg/\u039Cl');
+  });
+});
+
+// US-21 AC28 (Brad 2026-11-15): a white-cell differential printed in % is a test of its own.
+describe('US-21 AC28 — a share of a count is stored as its own test', () => {
+  // [printed name, printed unit] → the key the row is filed under.
+  const ROUTES: Array<[string, string, string]> = [
+    ['Neutrophils', '%', 'neutrophils_pct'],
+    ['Lymphocytes', '%', 'lymphocytes_pct'],
+    ['Monocytes', '%', 'monocytes_pct'],
+    ['Eosinophils', '%', 'eosinophils_pct'],
+    ['Basophils', '%', 'basophils_pct'],
+    ['Immature granulocytes', '%', 'immature_granulocytes_pct'],
+    ['Reticulocytes', '%', 'reticulocytes_pct'],
+    ['NRBC', '%', 'nrbc_per_100_wbc'],
+    ['NRBC', '/100 WBC', 'nrbc_per_100_wbc'],
+    ['nrbc', '/100 WBCs', 'nrbc_per_100_wbc'],
+    ['Nucleated red cells', 'per 100 WBC', 'nrbc_per_100_wbc'],
+    ['Neutrophils (Absolute)', '%', 'neutrophils_pct'],
+    ['neut', ' % ', 'neutrophils_pct'],
+    ['lymphs (absolute)', '%', 'lymphocytes_pct'],
+  ];
+
+  it.each(ROUTES)('US-21 AC28 — %s in "%s" is filed as %s', (name, unit, key) => {
+    expect(labNameForUnit(name, unit)).toBe(key);
+    const entry = resolveLabCatalogEntry(labNameForUnit(name, unit))!;
+    expect(entry.key).toBe(key);
+    expect(canonicalLabRow(entry, { value: 12, unit })?.stored).toEqual({ value: 12, unit: entry.unit, referenceLow: null, referenceHigh: null });
+  });
+
+  // A count unit still goes to the count; a name no share belongs to is never moved.
+  it.each([
+    ['Neutrophils', '×10⁹/L'], ['Neutrophils', 'x10^9/L'], ['Lymphocytes', 'cells/µL'], ['Reticulocytes', '×10¹²/L'],
+    ['NRBC', '×10⁹/L'], ['WBC', '%'], ['Haematocrit', '%'], ['RDW', '%'], ['Transferrin saturation', '%'],
+    ['Neutrophils', ''], ['Neutrophils', 'ratio'], ['Large unstained cells', '%'],
+  ])('US-21 AC28 — %s in "%s" keeps its own name', (name, unit) => {
+    expect(labNameForUnit(name, unit)).toBe(name);
+  });
+
+  it('US-21 AC28 — each share is labelled, grouped and bounded as decided, with no conversion', () => {
+    for (const [key, label, unit, count] of [
+      ['neutrophils_pct', 'Neutrophils (%)', '%', 'neutrophils'],
+      ['lymphocytes_pct', 'Lymphocytes (%)', '%', 'lymphocytes'],
+      ['monocytes_pct', 'Monocytes (%)', '%', 'monocytes'],
+      ['eosinophils_pct', 'Eosinophils (%)', '%', 'eosinophils'],
+      ['basophils_pct', 'Basophils (%)', '%', 'basophils'],
+      ['immature_granulocytes_pct', 'Immature granulocytes (%)', '%', 'immature_granulocytes'],
+      ['reticulocytes_pct', 'Reticulocytes (%)', '%', 'reticulocytes'],
+      ['nrbc_per_100_wbc', 'NRBC (per 100 WBC)', '/100 WBC', 'nrbc'],
+    ]) {
+      const entry = LAB_CATALOG.find((e) => e.key === key)!;
+      expect(entry, key).toMatchObject({ label, unit, group: 'haematology', shareOf: count });
+      expect(entry.conversions, key).toBeUndefined();
+      expect(LAB_PLAUSIBLE_RANGES[key], key).toEqual({ min: 0, max: 100 });
+      expect(labPlausibleBound(entry, 100, entry.unit), key).toBeNull();
+      expect(labPlausibleBound(entry, 100.5, entry.unit), key).toBe('above');
+      expect(labPlausibleBound(entry, -1, entry.unit), key).toBe('below');
+      // Its label and key resolve to it, never to the count.
+      expect(resolveLabCatalogEntry(label)?.key, label).toBe(key);
+      expect(resolveLabCatalogEntry(key)?.key, key).toBe(key);
+      expect(labSlotKey(label), label).not.toBe(count);
+    }
+  });
+
+  it('US-21 AC28 — a share refuses a count unit, in the plain words', () => {
+    const entryOf = (name: string) => resolveLabCatalogEntry(name)!;
+    expect(canonicalLabValue(entryOf('neutrophils_pct'), 3.1, '×10⁹/L')).toBeNull();
+    expect(labUnitRefusal(entryOf('neutrophils_pct'), '×10⁹/L')).toBe('Neutrophils (%) is stored in %; this record takes %, not "×10⁹/L"');
+    expect(labUnitRefusal(entryOf('nrbc_per_100_wbc'), 'mg/L')).toBe('NRBC (per 100 WBC) is stored in /100 WBC; this record takes /100 WBC, %, /100 wbcs, per 100 wbc, not "mg/L"');
   });
 });

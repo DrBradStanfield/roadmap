@@ -235,14 +235,26 @@ describe('US-21 phase 2 — AddLabTest', () => {
       return utils;
     }
 
-    it('US-21 AC15 — Lymphocytes in % shows the % note, never the assistant’s instruction', async () => {
-      const { findByText } = await saveOther('Lymphocytes', '%', '30', {
-        key: 'lymphocytes', unit: '%',
-        message: 'Lymphocytes is stored in ×10⁹/L; this record takes ×10⁹/L, not "%". A percentage is a share of the white count, not a count: this record keeps the absolute count (×10⁹/L or cells/µL), so look for that line on the same report. Do not work the count out from the percentage',
-      });
-      const notice = await findByText(/^Lymphocytes: unit not recognised \(%\)\. It was not saved\. This test takes ×10⁹\/L\. A percentage is a share/);
-      expect(notice.textContent).toContain('A percentage is a share of the white count, not a count: this record keeps the absolute count (×10⁹/L or cells/µL), so look for that line on the same report.');
-      expect(notice.textContent).not.toContain('Do not work the count out');
+    // US-21 AC28 (Brad 2026-11-15): Lymphocytes in % is its own test, saved through the real rule.
+    it('US-21 AC28 — Lymphocytes in % under "Other" saves as Lymphocytes (%), not refused', async () => {
+      const utils = openForm();
+      fireEvent.change(utils.getByLabelText('Test'), { target: { value: 'custom' } });
+      fireEvent.change(utils.getByLabelText('Test name'), { target: { value: 'Lymphocytes' } });
+      fireEvent.change(utils.getByLabelText('Unit'), { target: { value: '%' } });
+      fireEvent.change(utils.getByLabelText('Value'), { target: { value: '30' } });
+      fireEvent.click(utils.getByRole('button', { name: /^save$/i }));
+      await waitFor(() => expect(utils.onAdded).toHaveBeenCalled());
+      const saved = await addLabValue.mock.results[0].value;
+      expect(saved).toMatchObject({ ok: true, row: { metricName: 'lymphocytes_pct', value: 30, unit: '%' } });
+      expect(utils.queryByText(/unit not recognised/)).toBeNull();
+    });
+
+    it('US-21 AC28 — the test picker lists the eight shares from the catalogue', () => {
+      const utils = openForm();
+      const labels = [...(utils.getByLabelText('Test') as HTMLSelectElement).options].map((o) => o.textContent);
+      for (const label of ['Neutrophils (%)', 'Lymphocytes (%)', 'Monocytes (%)', 'Eosinophils (%)', 'Basophils (%)', 'Immature granulocytes (%)', 'Reticulocytes (%)', 'NRBC (per 100 WBC)']) {
+        expect(labels, label).toContain(label);
+      }
     });
 
     it('US-21 AC15 — a unit the test does not take names the units it does, with no em dash', async () => {

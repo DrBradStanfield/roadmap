@@ -448,20 +448,8 @@ describe('US-12 AC4–6 upload session ownership', () => {
     expect(await screen.findByText('Ferritin: unit not recognised (mg/dL). It was not saved. This test takes µg/L.')).toBeTruthy();
   });
 
-  // US-21 AC15 · a differential in % stays refused, but the summary says the
-  // record keeps the absolute count, so the person looks for that line.
-  it('US-21 AC15 — a differential refused in % points at the absolute count', async () => {
-    vi.mocked(labImport).mockResolvedValue({
-      result: { ...extraction.result, additionalValues: [{ name: 'Lymphocytes', value: 30, unit: '%', referenceLow: null, referenceHigh: null }] },
-    } as Awaited<ReturnType<typeof labImport>>);
-    vi.mocked(bulkSaveLabValues).mockResolvedValue({
-      saved: [], skippedDuplicates: 0, errorCount: 0,
-      refused: [{ key: 'lymphocytes', unit: '%', message: 'Lymphocytes is stored in ×10⁹/L' }],
-    } as Awaited<ReturnType<typeof bulkSaveLabValues>>);
-    render(<Harness />); await ready();
-    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-    expect(await screen.findByText(/Lymphocytes: unit not recognised \(%\)\. It was not saved\. This test takes ×10⁹\/L\. A percentage is a share of the white count, not a count: this record keeps the absolute count \(×10⁹\/L or cells\/µL\), so look for that line on the same report\./)).toBeTruthy();
-  });
+  // US-21 AC15's % refusal is gone: since AC28 a differential in % is stored
+  // as its own test (wbc-percent.test.ts covers the upload's save).
 
   // US-21 AC15 · a count per µL refused for its NUMBER (a decimal, or a
   // hundredfold off its own range) is not an unknown unit, so the summary

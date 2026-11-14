@@ -5,7 +5,7 @@
  */
 import { bloodTestKeyOf, isCoreRow } from './blood-tests';
 import { dayOf, daysBetween, localDay } from './merge';
-import { displayLabUnit, labSlotKey } from './lab-catalog';
+import { displayLabUnit, labNameForUnit, labSlotKey } from './lab-catalog';
 import {
   type AdditionalLabValue,
   type ExtractedValue,
@@ -558,7 +558,7 @@ export function prepareImport(
           unrecognized.push(`${oneLine(value.name).slice(0, MAX_NAME_LENGTH)}: ${oneLine(check.message)}${check.bound ? `. ${ASK_NOT_RESEND}` : ''}`);
           continue;
         }
-        const metric = labSlotKey(value.name);
+        const metric = labSlotKey(labNameForUnit(value.name, value.unit)); // a count's name in % is its share's (US-21 AC28)
         const unit = oneLine(value.unit).slice(0, MAX_NAME_LENGTH);
         const display = withComparator(String(value.value), value.comparator);
         // The name the dry run above just accepted rides on the candidate, and
