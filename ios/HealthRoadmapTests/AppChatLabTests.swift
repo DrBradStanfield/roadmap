@@ -172,7 +172,7 @@ final class AppChatLabTests: XCTestCase {
         XCTAssertNotNil(groups.conflict("v0"))
         XCTAssertEqual(groups.saveRefs, ["a0", "v1"], "in the order Save must send them")
         let summary = try engine.blocking { [now, extraction] in try $0.labSaveSummary(recordJSON: held, extractionJSON: extraction, refs: ["v0", "v1", "a0"], reportDay: "2026-10-01", now: now, deviceId: "test") }.get()
-        XCTAssertEqual(summary, LabSaveSummary(saved: 2, skipped: 1, refused: []))
+        XCTAssertEqual(summary, LabSaveSummary(saved: 2, skipped: 1, refused: [], sameDay: []))
 
         let outcome = try engine.blocking { [now, extraction] in try $0.apply(.labImport(extractionJSON: extraction, refs: ["v0", "v1", "a0"], reportDay: "2026-10-01"), to: held, now: now, deviceId: "test") }
         XCTAssertTrue(outcome.ok, outcome.message ?? "")
@@ -291,6 +291,22 @@ final class AppChatLabTests: XCTestCase {
         XCTAssertEqual(summary.saved, 1)
         XCTAssertEqual(summary.refused.map(LabReportSave.line), [refusal], "the row and the receipt say the same words")
         XCTAssertEqual(groups.saveRefs, ["a0"])
+    }
+
+    /// A reading displaced by another of the same test that day reaches save all's notes in the
+    /// review's words; an older engine's summary without it still decodes (US-52 AC8b).
+    func testADisplacedReadingIsInTheSummary_US52_AC8b() throws {
+        let engine = try HealthEngine()
+        let two = #"""
+        {"classification":"lab_report","reportDate":"2026-10-01","additionalValues":[],
+         "values":[{"metric":"ldl","valueSI":3.1,"displayValue":3.1,"displayUnit":"mmol/L","displaySystem":"si","confidence":"high"},
+                   {"metric":"ldl","valueSI":2.8,"displayValue":2.8,"displayUnit":"mmol/L","displaySystem":"si","confidence":"high","recordedAt":"2026-09-01"}]}
+        """#
+        let start = try record(engine)
+        let summary = try engine.blocking { [now] in try $0.labSaveSummary(recordJSON: start, extractionJSON: two, refs: ["v0", "v1"], reportDay: "2026-09-01", now: now, deviceId: "test") }.get()
+        XCTAssertEqual(summary, LabSaveSummary(saved: 1, skipped: 0, refused: [], sameDay: ["LDL Cholesterol: another reading of this test is on the same day"]))
+        let older = try JSONDecoder().decode(LabSaveSummary.self, from: Data(#"{"saved":1,"skipped":0,"refused":[]}"#.utf8))
+        XCTAssertNil(older.sameDay)
     }
 
     /// Save all's note on values kept because the record holds a different one (US-52 AC8b).

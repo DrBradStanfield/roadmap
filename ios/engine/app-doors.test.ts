@@ -324,9 +324,31 @@ describe('US-13 AC13 / US-52 AC8: the review leads with a summary and rows only 
         const wrote = [...out.file.measurements, ...out.file.labValues].filter((r) => r.source === 'lab_import').length;
         expect(wrote).toBe(written);
         expect(summary.saved).toBe(wrote);
-        expect(summary.saved + summary.skipped + summary.refused.length).toBe(refs.length);
+        expect(summary.saved + summary.skipped + summary.refused.length + summary.sameDay.length).toBe(refs.length); // one sameDay line per test here
       });
     }
+  });
+
+  // Codex after PR 1824: an equal copy of a refused reading was counted "left as they were"
+  // though the record held nothing.
+  it('an upload\'s equal copy of a refused reading is not counted as left as it was', () => {
+    const bp = (metric: string, v: number, own?: string) => ({ metric, valueSI: v, displayValue: v, displayUnit: 'mmHg', displaySystem: 'si', confidence: 'high', ...(own ? { recordedAt: own } : null) });
+    const x = lab([bp('systolic_bp', 100), bp('systolic_bp', 100, '2026-09-01'), bp('diastolic_bp', 110)]);
+    const summary = JSON.parse(labSaveSummaryJson(JSON.stringify(record()), JSON.stringify(x), JSON.stringify(['v0', 'v1', 'v2']), '2026-09-01', NOW, DEVICE)).summary;
+    expect(summary.saved).toBe(0);
+    expect(summary.skipped).toBe(0);
+    expect(summary.refused.length).toBeGreaterThan(0);
+  });
+
+  // Codex after PR 1824: save all gave the displaced reading no note and no row to reopen (US-52 AC8b).
+  it('a ticked reading displaced by another of the same test that day is named in the summary, in the review\'s words', () => {
+    const x = lab([ldlHigh, { ...ldlHigh, valueSI: 2.8, displayValue: 2.8, recordedAt: '2026-09-01' }]);
+    const summary = JSON.parse(labSaveSummaryJson(JSON.stringify(record()), JSON.stringify(x), JSON.stringify(['v0', 'v1']), '2026-09-01', NOW, DEVICE)).summary;
+    expect(summary).toEqual({ saved: 1, skipped: 0, refused: [], sameDay: ['LDL Cholesterol: another reading of this test is on the same day'] });
+    // An equal reading of a written value is left as it was, not named again.
+    const equal = lab([ldlHigh, { ...ldlHigh, recordedAt: '2026-09-01' }]);
+    expect(JSON.parse(labSaveSummaryJson(JSON.stringify(record()), JSON.stringify(equal), JSON.stringify(['v0', 'v1']), '2026-09-01', NOW, DEVICE)).summary)
+      .toMatchObject({ saved: 1, sameDay: [] });
   });
 
   it('a letter\'s review leads with the shared summary line (Codex R2)', () => {
@@ -338,7 +360,7 @@ describe('US-13 AC13 / US-52 AC8: the review leads with a summary and rows only 
     const g = groupsOf(extraction, ['v0', 'v1', 'a0', 'a1'], file);
     expect(g.saveRefs).toEqual(['a0', 'v1']); // send order: the report's own day before a value's printed one (readingRank)
     const dry = JSON.parse(labSaveSummaryJson(JSON.stringify(file), JSON.stringify(extraction), JSON.stringify(g.saveRefs), '2026-10-01', NOW, DEVICE));
-    expect(dry.summary).toEqual({ saved: 2, skipped: 0, refused: [] });
+    expect(dry.summary).toEqual({ saved: 2, skipped: 0, refused: [], sameDay: [] });
     // AppChatLabTests' plan: the report's own day first, then the value's printed day.
     expect(groupsOf(extraction, ['v0', 'v1', 'a0', 'a1']).saveRefs).toEqual(['v0', 'a0', 'v1']);
   });

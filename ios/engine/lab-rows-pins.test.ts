@@ -3,7 +3,8 @@
 // them through `labImport` (my-data.ts) and `labSaveSummaryJson` (app-doors.ts).
 // A later de-dup must leave every pin byte-identical. Synthetic values. Re-pinned
 // 2026-11-15 (US-13 AC13): rows come in the import review's send order (report day first),
-// and labRows also answers the receipt taken from that same classification.
+// and labRows also answers the receipt taken from that same classification (with sameDay
+// since the receipt-notes follow-up).
 import { describe, expect, it } from 'vitest';
 import { labSaveSummaryJson } from './app-doors';
 import { applyEdit, newRecord } from './my-data';

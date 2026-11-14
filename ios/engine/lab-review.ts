@@ -12,7 +12,7 @@ import { labPlausibleNote, labUnitRefusalLine, labValueLabel } from '../../packa
 import { isReadableRow } from '../../packages/health-core/src/readable-rows';
 import { withComparator } from '../../packages/health-core/src/lab-limits';
 import { classifyReport } from './lab-review-groups';
-import type { ClassifiedValue, ImportRefusal } from '../../packages/health-core/src/import-review';
+import { notSavedGroups, type ClassifiedValue, type ImportRefusal } from '../../packages/health-core/src/import-review';
 
 /** The server's answer (`data` of POST /api/app/v1/lab-import). */
 export interface Extraction {
@@ -171,6 +171,9 @@ export interface LabSaveSummary {
   /** Refused by the record's rules: a lab unit the catalogue does not take, or a value out of range.
    *  `line`: the whole sentence to show as it is, the web's, for every refused lab value (US-52 AC8). */
   refused: Array<{ label: string; message: string; line?: string }>;
+  /** Ticked values another reading of the same test that day displaced, one line per reason
+   *  with their labels (health-core `notSavedGroups`): save all's notes name them (US-52 AC8b). */
+  sameDay: string[];
 }
 
 /** One refused row in the engine's own words: for a lab value the web's upload line, shown
@@ -185,13 +188,17 @@ export function refusalWords(refusal: ImportRefusal): LabSaveSummary['refused'][
 }
 
 /** What the save does to each ticked value, from the classification its rows came from (US-13
- *  AC13): written; left as it was (already held, a different value held, or another reading
- *  of that test that day took the slot); or refused, in the write's own words. */
+ *  AC13): written; left as it was (`skipped`: its slot held, in the record or by an equal value
+ *  of this upload that is written); refused, in the write's own words; or not saved because
+ *  another reading of that test that day took the slot (`sameDay`, the review's own line). An
+ *  equal copy of a refused value is neither: its winner's refusal already names it. */
 export function labSaveSummary(values: readonly ClassifiedValue[]): LabSaveSummary {
-  const sent = values.filter((v) => v.sent);
+  const sent = values.filter((v) => v.sent && !v.writes);
+  const lost = sent.filter((v) => v.group === 'notSaved' && v.reason === 'sameDay');
   return {
-    saved: sent.filter((v) => v.writes).length,
-    skipped: sent.filter((v) => !v.writes && !v.refusal).length,
-    refused: sent.flatMap((v) => (!v.writes && v.refusal ? [refusalWords(v.refusal)] : [])),
+    saved: values.filter((v) => v.sent && v.writes).length,
+    skipped: sent.filter((v) => !v.refusal && (v.group === 'saved' || (v.group === 'unsure' && v.reasons.includes('conflict')))).length,
+    refused: sent.flatMap((v) => (v.refusal ? [refusalWords(v.refusal)] : [])),
+    sameDay: notSavedGroups(lost).lines.map((l) => l.text),
   };
 }

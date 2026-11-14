@@ -129,7 +129,7 @@ struct LabReportSave: Equatable {
             case .success(let summary):
                 done.outcome = describe(summary)
                 done.values = summary.saved
-                done.notes = summary.refused.map(line) + [kept(summary, refs: refs, groups: groups)].compactMap { $0 }
+                done.notes = summary.refused.map(line) + (summary.sameDay ?? []) + [kept(summary, refs: refs, groups: groups)].compactMap { $0 }
                 // The lab report's original, kept in the cloud as the web's hidden row (the
                 // engine keeps it only there); the values are already saved.
                 guard let original = result.original else { break }
