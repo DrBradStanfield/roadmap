@@ -1,11 +1,12 @@
 // My health's PDF box (US-62 AC26, US-18, US-44): Save as PDF and the email capture
 // beside it, the print state (usePlanPrint), and the two rules that read the capture:
 // which box shows (pdfBox) and when the storage button pulses (storagePulse).
-import React, { useState, useRef, useReducer } from 'react';
+import React, { useId, useState, useRef, useReducer } from 'react';
 import { flushSync } from 'react-dom';
 import { getReportHtml, sendGuestReport, getReportEmailCaptured, markReportEmailCaptured, getShownErase } from '../lib/roadmap-data';
 import { trackABConversion, trackProductEvent } from '../lib/server-api';
 import { EMAIL_REGEX } from '../lib/email';
+import { describedBy } from '../lib/aria';
 import { getSkipEmailGate } from '../lib/assistant-config';
 import { transition, PRINT_START, type PdfButton, type PrintState } from '../lib/plan-print-machine';
 
@@ -294,6 +295,11 @@ function ReminderSignup({ hook }: { hook: GuestEmailHook }) {
   );
 }
 
+/** US-18 AC6a: the email box's helper line, then its error while one shows. */
+function emailDescription(ids: string, error: string): string | undefined {
+  return describedBy(`${ids}-helper`, error && `${ids}-error`);
+}
+
 export function GuestEmailCapture({ hook, formStage, pdfBlocked }: {
   hook: GuestEmailHook;
   formStage?: number;
@@ -302,6 +308,7 @@ export function GuestEmailCapture({ hook, formStage, pdfBlocked }: {
 }) {
   const { email, setEmail, emailError, setEmailError, state, helperText, handleSubmit } = hook;
   const box = emailBox(state, !!hook.gateSkipped);
+  const ids = useId();
 
   // Already captured (this submit, or a prior visit via the persisted flag):
   // the email box is gone and nothing renders here. The ungated "Save as PDF"
@@ -312,11 +319,14 @@ export function GuestEmailCapture({ hook, formStage, pdfBlocked }: {
 
   return (
     <div className={`email-capture no-print${emailPulses(box, formStage) ? ' field-attention' : ''}`}>
-      <p className="email-guest-helper">{helperText}</p>
+      <p className="email-guest-helper" id={`${ids}-helper`}>{helperText}</p>
       <div className="email-capture-row">
         <input
           type="email"
           id={formStage !== undefined ? 'guestEmail' : undefined}
+          aria-label="Email for your PDF"
+          aria-describedby={emailDescription(ids, emailError)}
+          aria-invalid={!!emailError}
           placeholder="Email"
           value={email}
           onChange={(e) => { setEmail(e.target.value); setEmailError(''); }}
@@ -332,7 +342,7 @@ export function GuestEmailCapture({ hook, formStage, pdfBlocked }: {
           {state === 'sending' ? 'Sending...' : GUEST_CAPTURE_BUTTON_LABEL}
         </button>
       </div>
-      {emailError && <span className="email-capture-error">{emailError}</span>}
+      {emailError && <span className="email-capture-error" id={`${ids}-error`} role="alert">{emailError}</span>}
       <PdfNote show={!!pdfBlocked && (!!emailError || state === 'sending')} />
     </div>
   );
