@@ -86,11 +86,14 @@ export type NotSavedReason = 'unit' | 'noUnit' | 'misread' | 'scale' | 'unreadab
  * - unsure: shown as a row, with every reason.
  * - notSaved: Save would not write it, with one reason.
  * - waiting: no day yet; it stays behind the file's date question.
+ * `refusal`: the dry run's own refusal of this value's row, for a receipt in the write's words.
  */
 export type ClassifiedValue =
-  | { file: number; ref: string; label: string; sent: boolean; writes: boolean; group: 'sure' | 'saved' | 'waiting' }
-  | { file: number; ref: string; label: string; sent: boolean; writes: boolean; group: 'unsure'; reasons: UnsureReason[] }
-  | { file: number; ref: string; label: string; sent: boolean; writes: boolean; group: 'notSaved'; reason: NotSavedReason };
+  | { file: number; ref: string; label: string; sent: boolean; writes: boolean; group: 'sure' | 'saved' | 'waiting'; refusal?: ImportRefusal }
+  | { file: number; ref: string; label: string; sent: boolean; writes: boolean; group: 'unsure'; reasons: UnsureReason[]; refusal?: ImportRefusal }
+  | { file: number; ref: string; label: string; sent: boolean; writes: boolean; group: 'notSaved'; reason: NotSavedReason; refusal?: ImportRefusal };
+/** A row the write refused: a lab unit or number, or a core value (its range, a pressure pair). */
+export type ImportRefusal = { lab: BulkAppendResult['refused'][number] } | { measurement: BulkAppendResult['measurementRefusals'][number] };
 
 /** The review: every value's group, and the rows Save submits (the ones it
  *  writes, in order). Submitting `rows` writes each one and refuses none. */
@@ -158,7 +161,6 @@ type Group = ClassifiedValue extends infer V ? V extends ClassifiedValue ? Omit<
 function groupsOf(rows: Array<{ row: BulkRow; reasons: UnsureReason[] }>, record: RoadmapFile, now: string): Group[] {
   const run = bulkAppendValues(record, rows.map((r) => r.row), now);
   const held = heldReadings(record);
-  const rangeRefused = new Set(run.measurementRefusals.map((r) => r.index));
   let lab = 0;
   return rows.map(({ row, reasons }, k): Group => {
     const { slot, quantity } = slotOf(row);
@@ -171,8 +173,10 @@ function groupsOf(rows: Array<{ row: BulkRow; reasons: UnsureReason[] }>, record
     const outcome = run.outcomes[k];
     if (outcome === 'written') return { ...all([]), writes: true };
     if (outcome === 'skipped') return holder && !differs && !row.correctsId ? { group: 'saved', writes: false } : all(['conflict']);
-    if (rangeRefused.has(k)) return all(['outOfRange']);
-    return { group: 'notSaved', reason: labReason(run.refused[lab++]), writes: false };
+    const range = run.measurementRefusals.find((r) => r.index === k);
+    if (range) return { ...all(['outOfRange']), refusal: { measurement: range } };
+    const refused = run.refused[lab++];
+    return { group: 'notSaved', reason: labReason(refused), writes: false, refusal: { lab: refused } };
   });
 }
 
@@ -226,7 +230,7 @@ export function classifyImportValues(files: readonly ImportFile[], record: Roadm
     const { place, winner } = places.get(i)!;
     const won = groups.get(winner!)!;
     const inherited: Group = place === 'hidden' ? { group: 'notSaved', reason: 'sameDay', writes: false }
-      : won.writes || won.group === 'saved' ? { group: 'saved', writes: false } : { ...won, writes: false };
+      : won.writes || won.group === 'saved' ? { group: 'saved', writes: false } : { ...won, writes: false, refusal: undefined }; // the winner's refusal is its own
     values.push({ ...label(s, true), ...inherited } as ClassifiedValue);
   });
 
@@ -328,7 +332,8 @@ export function notSavedGroups(values: readonly ClassifiedValue[]): { total: num
 
 /** The review's other words (strings 4 to 14), one copy for both screens. */
 export const IMPORT_REVIEW_TEXT = {
-  checkTitle: (k: number) => `Check these ${plural(k, 'value')}`,
+  // One value is "Check this value" (owner's ruling, 2026-11-15).
+  checkTitle: (k: number) => (k === 1 ? 'Check this value' : `Check these ${plural(k, 'value')}`),
   checkFooter: 'We were not sure about these. Check each against the report.',
   conflictKept: 'Your record already has a different value for this day. It stays as it is.',
   willSave: (n: number) => `${plural(n, 'value')} will be saved`,

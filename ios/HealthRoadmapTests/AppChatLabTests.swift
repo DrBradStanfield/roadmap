@@ -164,9 +164,13 @@ final class AppChatLabTests: XCTestCase {
         XCTAssertEqual(review.reportDay, "2026-10-01")
         XCTAssertEqual(review.items.map(\.ref), ["v0", "v1", "a0"])
         XCTAssertEqual(review.items[1].day, "2025-04-02")
-        XCTAssertEqual(review.notSaved.first?.label, "Creatinine")
-
         let held = try record(engine, .add(metric: "ldl", value: 2.5, day: "2026-10-01"))
+        let groups = try XCTUnwrap(engine.blocking { [now, extraction] in
+            try $0.labReviewGroups(recordJSON: held, extractionJSON: extraction, ticked: ["v0", "v1", "a0"], reportDay: "2026-10-01", now: now, deviceId: "test") })
+        XCTAssertEqual(groups.notSaved?.lines, ["Creatinine: no unit was printed"])
+        // The held LDL is a row that is never written (Q2a); Save sends the rest.
+        XCTAssertNotNil(groups.conflict("v0"))
+        XCTAssertEqual(groups.saveRefs, ["a0", "v1"], "in the order Save must send them")
         let summary = try engine.blocking { [now, extraction] in try $0.labSaveSummary(recordJSON: held, extractionJSON: extraction, refs: ["v0", "v1", "a0"], reportDay: "2026-10-01", now: now, deviceId: "test") }.get()
         XCTAssertEqual(summary, LabSaveSummary(saved: 2, skipped: 1, refused: []))
 
@@ -196,11 +200,121 @@ final class AppChatLabTests: XCTestCase {
          "unreadValues":[{"name":"hdl","reason":"unreadable"},{"name":"lpa","reason":"unreadable"},{"name":"hdl","reason":"unreadable"}]}
         """#
         let review = try engine.blocking { [now] in try $0.labReview(extractionJSON: unread, now: now) }
-        // Each label once (review R1); tests with the same reason share a line. A limit is saved
-        // since US-12 AC20, so it is never here.
-        XCTAssertEqual(review.notSaved, [LabReview.NotSaved(label: "HDL Cholesterol, Lp(a)", reason: "could not be read")])
-        XCTAssertEqual(review.unreadCount, 1)
+        let groups = try XCTUnwrap(engine.blocking { [now] in
+            try $0.labReviewGroups(recordJSON: "", extractionJSON: unread, ticked: ["v0"], reportDay: "2026-10-01", now: now, deviceId: "test") })
+        // Each label once (review R1); tests with the same reason share a line (US-13 AC13's
+        // words). A limit is saved since US-12 AC20, so it is never here.
+        XCTAssertEqual(groups.notSaved?.title, "4 values not saved")
+        XCTAssertEqual(groups.notSaved?.lines, ["HDL Cholesterol, Lp(a): could not be read", "1 other value could not be read"])
         XCTAssertEqual(review.items.map(\.label), ["LDL Cholesterol"])
+    }
+
+    // MARK: US-13 AC13: the review's groups
+
+    /// A sure value is hidden behind Show all and still saves: its tick stays, and the plan
+    /// Save runs sends it. Fails if a hidden value stopped saving.
+    func testAHiddenSureValueKeepsItsTickAndSaves_US13_AC13() throws {
+        let engine = try HealthEngine()
+        let review = try engine.blocking { [now, extraction] in try $0.labReview(extractionJSON: extraction, now: now) }
+        let choices = LabChoices(review: review)
+        let groups = try XCTUnwrap(engine.blocking { [now, extraction] in
+            try $0.labReviewGroups(recordJSON: "", extractionJSON: extraction, ticked: choices.ticked, reportDay: "2026-10-01", now: now, deviceId: "test") })
+        XCTAssertEqual(groups.summary, "Found 3 blood test values")
+        XCTAssertEqual(groups.rows("sure", of: review).map(\.ref), ["v0", "a0"], "no row unless Show all")
+        XCTAssertEqual(groups.rows("unsure", of: review).map(\.ref), ["v1"])
+        XCTAssertEqual(groups.check?.title, "Check this value")
+        XCTAssertEqual(groups.sure, LabReviewGroups.Sure(willSave: "2 values will be saved", showAll: "Show all 2", hide: "Hide"))
+        XCTAssertEqual(groups.save, "Save 3 values")
+        let result = LabResult(name: "Bloods.pdf", truncated: false, extractionJSON: extraction, failure: nil)
+        XCTAssertEqual(groups.saveRefs, ["v0", "a0", "v1"], "the engine writes every ticked sure value, hidden ones included, in send order")
+        XCTAssertEqual(LabSavePlan(result: result, review: review, choices: choices, archiveOnly: false),
+                       .values(refs: ["v0", "v1", "a0"], day: "2026-10-01"), "Save sends every ticked value; the engine decides what it writes")
+    }
+
+    /// The not-saved lines are the engine's, in the person's words: no raw key and no text
+    /// written for assistants (US-52 AC8, H400). Fails if a key reached the screen.
+    func testNotSavedNamesNoKey_US13_AC13() throws {
+        let engine = try HealthEngine()
+        let percent = #"""
+        {"classification":"lab_report","reportDate":"2026-10-01","values":[],
+         "additionalValues":[{"name":"neutrophils","value":60,"unit":"%"},{"name":"immature_granulocytes","value":0.4,"unit":"%"}]}
+        """#
+        let groups = try XCTUnwrap(engine.blocking { [now] in
+            try $0.labReviewGroups(recordJSON: "", extractionJSON: percent, ticked: ["a0", "a1"], reportDay: "2026-10-01", now: now, deviceId: "test") })
+        let lines = try XCTUnwrap(groups.notSaved?.lines)
+        XCTAssertFalse(lines.isEmpty)
+        for line in lines + [groups.notSaved?.title ?? "", groups.summary] {
+            XCTAssertFalse(line.contains("_"), line)
+            XCTAssertFalse(line.contains("Do not"), line)
+        }
+        XCTAssertEqual(groups.saveRefs, [])
+        XCTAssertNil(groups.save, "nothing to save: no Save (D3)")
+        // Ticked values are named by the save's own refusals; nothing of the extraction's own is omitted (AC8b).
+        XCTAssertEqual(groups.omitted, [])
+        XCTAssertEqual(LabReportSave().reportOutcome(groups, review: nil), ReportOutcome(notes: ["Already in your record"]))
+    }
+
+    /// The groups decode from the engine's JSON, with null sections absent.
+    func testTheGroupsDecode_US13_AC13() throws {
+        let json = #"""
+        {"summary":"Found 1 blood test value","items":[{"ref":"v0","group":"unsure","reasons":["conflict"],"conflict":"Kept."}],
+         "check":{"title":"Check this value","footer":"F"},"sure":null,"alreadySaved":null,"notSaved":null,"omitted":[],"saveRefs":[],"save":"Save 0 values"}
+        """#
+        let groups = try JSONDecoder().decode(LabReviewGroups.self, from: Data(json.utf8))
+        XCTAssertEqual(groups.items, [LabReviewGroups.Item(ref: "v0", group: "unsure", conflict: "Kept.", refusal: nil)])
+        XCTAssertEqual(groups.check?.title, "Check this value")
+        XCTAssertNil(groups.sure)
+        XCTAssertEqual(groups.conflict("v0"), "Kept.")
+    }
+
+    /// An engine without the groups door still names what it did not read, as before.
+    func testAnOlderEnginesNotSavedListStillShows_US52_AC8() throws {
+        let json = #"{"isLabReport":true,"reportDay":"2026-10-01","items":[],"document":null,"notSaved":[{"label":"Creatinine","reason":"unit unknown"}],"unreadCount":2}"#
+        let review = try JSONDecoder().decode(LabReview.self, from: Data(json.utf8))
+        XCTAssertEqual(review.legacyNotSaved, ["Creatinine: unit unknown", "2 values could not be read."])
+        XCTAssertEqual(LabReportSave().reportOutcome(nil, review: review), ReportOutcome(notes: ["Already in your record", "Creatinine: unit unknown", "2 values could not be read."]))
+    }
+
+    /// A value outside its range shows the save's own refusal on its row (US-52 AC8).
+    func testAnOutOfRangeValueSaysWhyOnItsRow_US52_AC8() throws {
+        let engine = try HealthEngine()
+        let ldl = #"""
+        {"classification":"lab_report","reportDate":"2026-10-01",
+         "values":[{"metric":"ldl","valueSI":500,"displayValue":500,"displayUnit":"mmol/L","displaySystem":"si","confidence":"high"}],
+         "additionalValues":[{"name":"Ferritin","value":85,"unit":"µg/L"}]}
+        """#
+        let groups = try XCTUnwrap(engine.blocking { [now] in
+            try $0.labReviewGroups(recordJSON: "", extractionJSON: ldl, ticked: ["v0", "a0"], reportDay: "2026-10-01", now: now, deviceId: "test") })
+        let refusal = try XCTUnwrap(groups.refusal("v0"))
+        let start = try record(engine)
+        let summary = try engine.blocking { [now] in try $0.labSaveSummary(recordJSON: start, extractionJSON: ldl, refs: ["v0", "a0"], reportDay: "2026-10-01", now: now, deviceId: "test") }.get()
+        XCTAssertEqual(summary.saved, 1)
+        XCTAssertEqual(summary.refused.map(LabReportSave.line), [refusal], "the row and the receipt say the same words")
+        XCTAssertEqual(groups.saveRefs, ["a0"])
+    }
+
+    /// Save all's note on values kept because the record holds a different one (US-52 AC8b).
+    func testHeldDifferentValuesAreNamedInSaveAllsNotes_US52_AC8b() throws {
+        let json = #"""
+        {"summary":"S","items":[{"ref":"v0","group":"unsure","conflict":"Your record already has a different value for this day. It stays as it is."},{"ref":"a0","group":"sure"}],
+         "check":null,"sure":null,"alreadySaved":null,"notSaved":null,"omitted":[],"saveRefs":["a0"],"save":"Save 1 value"}
+        """#
+        let groups = try JSONDecoder().decode(LabReviewGroups.self, from: Data(json.utf8))
+        XCTAssertEqual(LabReportSave.kept(LabSaveSummary(saved: 0, skipped: 1, refused: []), refs: ["v0"], groups: groups),
+                       "Your record already has a different value for this day. It stays as it is.")
+        XCTAssertEqual(LabReportSave.kept(LabSaveSummary(saved: 1, skipped: 1, refused: []), refs: ["v0", "a0"], groups: groups),
+                       "1 left as they were: that day already had a value.")
+        XCTAssertNil(LabReportSave.kept(LabSaveSummary(saved: 1, skipped: 1, refused: []), refs: ["a0"], groups: groups), "a value held as it is needs no note")
+    }
+
+    /// A report whose values are all in the record still runs its save: its original may still wait to be kept (AC13d, AC8b).
+    func testAReportWithEveryValueHeldStillSaves_US52_AC13d() throws {
+        let engine = try HealthEngine()
+        let review = try engine.blocking { [now, extraction] in try $0.labReview(extractionJSON: extraction, now: now) }
+        let result = LabResult(name: "Bloods.pdf", truncated: false, extractionJSON: extraction, failure: nil)
+        if case .nothing = LabSavePlan(result: result, review: review, choices: LabChoices(review: review), archiveOnly: false) {
+            XCTFail("a lab report with ticked values always runs its save, then keeps its original")
+        }
     }
 
     // MARK: AC13d: documents

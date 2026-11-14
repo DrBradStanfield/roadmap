@@ -420,9 +420,9 @@ export function applyEdit(file: RoadmapFile, edit: Edit, now: string, choices: U
     case 'screening':
       return applyFormEdit(file, edit, now, (next, save) => applyEdit(next, save, now));
     case 'labImport': {
-      const rows = labRows(JSON.parse(edit.extractionJson) as Extraction, edit.refs, edit.reportDay, now);
+      const rows = labRows(JSON.parse(edit.extractionJson) as Extraction, edit.refs, edit.reportDay, now, file);
       if (!rows.ok) return rows;
-      // A held day is skipped and a refused unit left out: labSaveSummary says which, beforehand.
+      // Only the rows the import review writes (classifyReport): none held, none refused.
       return { ok: true, file: bulkAppendValues(file, rows.rows, now).file };
     }
     case 'labAdd':
