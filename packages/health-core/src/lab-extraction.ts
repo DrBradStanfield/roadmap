@@ -373,7 +373,7 @@ const URINE_MARKER = /(?:^|[^a-z])(?:urin(?:e|a|ary)?|orina|harn|moczu)(?![a-z])
  *  Speichel (also as a compound's start, "Speichelcortisol"), Polish ślina
  *  (and its forms). */
 const SALIVA_MARKER = /(?:^|[^a-zà-ž])(?:(?:saliva(?:ry|l|re)?|salive|salivaire|ślin(?:a|y|ie|owy|owa|owe|owego))(?![a-zà-ž])|speichel)/i;
-const isUrineOrRatioUnit = (unit: string) => URINE_MARKER.test(unit.trim()) || PER_CREATININE.test(unit) || URINE_OR_RATIO_UNITS.has(cleanedCreatinineUnit(unit).toLowerCase().replace(/\s+/g, ''));
+export const isUrineOrRatioUnit = (unit: string) => URINE_MARKER.test(unit.trim()) || PER_CREATININE.test(unit) || URINE_OR_RATIO_UNITS.has(cleanedCreatinineUnit(unit).toLowerCase().replace(/\s+/g, ''));
 
 /** Why a creatinine was refused, in the user's words (US-12 AC15). */
 function creatinineRefusal(unit: string): string {
