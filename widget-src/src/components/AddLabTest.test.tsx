@@ -7,7 +7,7 @@
  */
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, fireEvent, cleanup, waitFor } from '@testing-library/react';
-import { addLabValue as addRecordLabValue } from '@roadmap/health-core/record-edits';
+import { addLabValue as addRecordLabValue, correctValue } from '@roadmap/health-core/record-edits';
 import { createEmptyFile, type FileLabValue } from '@roadmap/health-core/roadmap-file';
 import { labUnitRefusalLine } from '@roadmap/health-core/lab-series';
 
@@ -579,5 +579,47 @@ describe('US-21 AC27: a save never leaves the form stuck, and a late answer chan
     await settle();
     expect((utils.getByLabelText('Value') as HTMLInputElement).value).toBe('31');
     expect((utils.getByRole('button', { name: /^save$/i }) as HTMLButtonElement).disabled).toBe(false);
+  });
+});
+
+// US-21 AC28 (review round 3): the web form is a door too. It keys a % by the share's test,
+// as the record files it, both on a value page and under "Other test".
+describe('US-21 AC28: the add form routes a % to its share', () => {
+  const day = () => `${todayIso()}T00:00:00.000Z`;
+  const row = (r: Record<string, unknown>) => ({ referenceLow: null, referenceHigh: null, source: 'lab_import', createdAt: '2026-01-01T00:00:00.000Z', ...r });
+
+  it('"+ Add a value" on a legacy count series in % (lowercase canonical name) writes the share, never a count', async () => {
+    holding(row({ id: 'n1', metricName: 'neutrophils', value: 54, unit: '%', recordedAt: '2026-01-01T00:00:00.000Z' }));
+    const onAdded = vi.fn();
+    const { getByText, getByLabelText } = render(<AddLabTest onAdded={onAdded} labValues={[]} coreValues={[]} preset={{ metricName: 'neutrophils', unit: '%' }} />);
+    fireEvent.click(getByText('+ Add a value'));
+    fireEvent.change(getByLabelText(/value/i), { target: { value: '56' } });
+    fireEvent.click(getByText(/^save$/i));
+    await waitFor(() => expect(onAdded).toHaveBeenCalled());
+    expect(addLabValue).toHaveBeenCalledWith({ metricName: 'neutrophils', unit: '%', value: 56, day: todayIso(), existingSeries: true }, 'erase-1');
+    expect(await addLabValue.mock.results[0].value).toMatchObject({ ok: true, row: { metricName: 'neutrophils_pct', value: 56, unit: '%' } });
+  });
+
+  it('Replace under "Other test" (NRBC in % over a held 0.4 /100 WBC) writes the correction', async () => {
+    const there = row({ id: 'r1', metricName: 'nrbc_per_100_wbc', value: 0.4, unit: '/100 WBC', recordedAt: day() });
+    holding(there);
+    // The record the correction lands in: the real correctValue, as the cell editor's would.
+    let corrected: ReturnType<typeof correctValue> | undefined;
+    const onCorrect = vi.fn(async (id: string, value: number) => {
+      corrected = correctValue({ ...createEmptyFile({ deviceId: 'test', now: new Date().toISOString() }), labValues: held }, { id, newValue: value, now: new Date().toISOString() });
+      return corrected.ok ? 'ok' as const : 'error' as const;
+    });
+    const utils = render(<AddLabTest onAdded={vi.fn()} labValues={held} onCorrect={onCorrect} />);
+    fireEvent.click(utils.getByRole('button', { name: /add a blood test/i }));
+    fireEvent.change(utils.getByLabelText('Test'), { target: { value: 'custom' } });
+    fireEvent.change(utils.getByLabelText('Test name'), { target: { value: 'NRBC' } });
+    fireEvent.change(utils.getByLabelText('Unit'), { target: { value: '%' } });
+    fireEvent.change(utils.getByLabelText('Value'), { target: { value: '0.5' } });
+    fireEvent.click(utils.getByRole('button', { name: /^save$/i }));
+    fireEvent.click(await utils.findByRole('button', { name: /^Replace 0\.4/ }));
+    await waitFor(() => expect(onCorrect).toHaveBeenCalledWith('r1', 0.5, 'erase-1'));
+    expect(corrected).toMatchObject({ ok: true, row: { metricName: 'nrbc_per_100_wbc', value: 0.5, correctsId: 'r1' } });
+    const file = (corrected as { file: { labValues: Array<{ id: string; status: string }> } }).file;
+    expect(file.labValues.find((l) => l.id === 'r1')?.status).toBe('entered-in-error');
   });
 });
