@@ -2,163 +2,210 @@
  * The import review's one rule (US-13 AC13), shared by the website and the
  * iPhone: which extracted values the person must look at, which save with no
  * row, which are not saved and why, and the words both screens show.
- * Pure: it reads only the extraction and the record's held slots, so no new
- * server or AI call. The assistant's refusal text (`labUnitRefusal`,
- * `RefusedLabValue.reason`) is never read or changed here: every reason comes
- * from structure (unit, fault, code). Design: docs/drafts/import-review-redesign.md.
+ * Pure, and in agreement with Save by construction: every refusal and every
+ * slot is the write path's own (`bulkAppendValues`, run dry), and slot
+ * precedence and sameness are `review-slots.ts`, which the website's matrix
+ * shares. The assistant's refusal text is never read or changed here. No new
+ * server or AI call. Design: docs/drafts/import-review-redesign.md.
  */
 import { UNDATED_PREVIOUS, isUrineOrRatioUnit, type UnifiedExtractionResult } from './lab-extraction';
-import { labTestLabel, resolveLabCatalogEntry } from './lab-catalog';
-import { bloodTestKeyOf, coreStored, isCoreRow } from './blood-tests';
-import { measurementValueFault, sameLabQuantity, slotIndex, slotKey, toStoredLab, type LabQuantity } from './record-edits';
+import { labTestLabel } from './lab-catalog';
+import { bulkAppendValues, slotIndex, slotOfRow, type BulkAppendResult, type BulkRow } from './record-edits';
+import { createCoreRow, isBloodTestKey } from './blood-tests';
+import { isClinicalDay } from './measurement-history';
+import { placeReadings, readingRank, type Quantity, type SlotPlace } from './review-slots';
 import { METRIC_LABELS } from './mappings';
 import { DOCUMENT_TYPES, type DocumentType } from './validation';
-import type { RoadmapFile } from './roadmap-file';
+import { createEmptyFile, createLabValue, createMeasurement, type RoadmapFile } from './roadmap-file';
+import type { Comparator } from './lab-limits';
 
-/** One file as the review holds it: its extraction, and the day its values
- *  without a day of their own are filed on (the report's, or the one picked);
- *  null while none is set, which leaves those values unslotted. */
+/** One file as the review holds it, as Save would send it. */
 export interface ImportFile {
+  /** The extraction, with any number the person edited put in place. */
   result: Pick<UnifiedExtractionResult, 'classification'> & Partial<Pick<UnifiedExtractionResult, 'values' | 'additionalValues' | 'refusedValues' | 'unreadValues' | 'droppedValueCount' | 'document'>>;
-  day: string | null;
+  /** Each value's effective day by ref (`v<i>`, `a<i>`): after the person's
+   *  choice for an undated column and any edited report date; null, or a day
+   *  that is not a real calendar day, while it has none (`valueDays`). */
+  days: Readonly<Record<string, string | null>>;
+  /** The refs Save sends: ticked, not cleared. Each client keeps its own defaults. */
+  sent: ReadonlySet<string>;
+  /** Refs the person edited: never "already saved". */
+  edited?: ReadonlySet<string>;
 }
 
-/** What the record holds in a slot: a core or vital value in its stored (SI)
- *  number, or a lab row as stored. */
-export type HeldValue = { valueSI: number } | { lab: LabQuantity };
+/** Each value's day: its own printed day, else `fileDay` (the report's, or
+ *  the one picked); an undated previous column's is `undatedDay` (null until picked). */
+export function valueDays(result: ImportFile['result'], fileDay: string | null, undatedDay: string | null = null): Record<string, string | null> {
+  const day = (own?: string) => (own === undefined ? fileDay : own === UNDATED_PREVIOUS ? undatedDay : own);
+  return Object.fromEntries([
+    ...(result.values ?? []).map((v, i) => [`v${i}`, day(v.recordedAt)]),
+    ...(result.additionalValues ?? []).map((v, i) => [`a${i}`, day(v.recordedAt)]),
+  ]);
+}
 
-/** Why a value gets a row (D1). */
+/** Why a value gets a row (D1). `outOfRange`: the write refuses its number
+ *  (outside its input range, or half of an inverted blood pressure). */
 export type UnsureReason = 'confidence' | 'question' | 'unitGuessed' | 'outOfRange' | 'conflict';
 /** Why a value is not saved (D5). */
 export type NotSavedReason = 'unit' | 'noUnit' | 'misread' | 'scale' | 'unreadable' | 'urine' | 'sameDay';
 
 /**
- * One value's place in the review. `ref` is the value's place in its file:
- * `v<i>` a core value, `a<i>` an additional one (as the iPhone's save names
- * them), `r<i>` a refused row, `u<i>` an unread one. `label` is the test's
- * label, never a key; "" for an unread row that names no test.
- * - sure: saves on Save with no row.
- * - saved: the record already holds this value for that test and day.
+ * One value's place in the review. `ref`: `v<i>` a core value, `a<i>` an
+ * additional one, `r<i>` a refused row, `u<i>` an unread one. `label` is the
+ * test's label, never a key; "" for an unread row that names no test. `sent`:
+ * Save sends it.
+ * - sure: Save writes it, no row needed.
+ * - saved: the record already holds it, or an equal reading of this upload does.
  * - unsure: shown as a row, with every reason.
- * - notSaved: Save will not write it, with one reason.
+ * - notSaved: Save would not write it, with one reason.
+ * - waiting: no day yet; it stays behind the file's date question.
  */
 export type ClassifiedValue =
-  | { file: number; ref: string; label: string; group: 'sure' | 'saved' }
-  | { file: number; ref: string; label: string; group: 'unsure'; reasons: UnsureReason[] }
-  | { file: number; ref: string; label: string; group: 'notSaved'; reason: NotSavedReason };
+  | { file: number; ref: string; label: string; sent: boolean; group: 'sure' | 'saved' | 'waiting' }
+  | { file: number; ref: string; label: string; sent: boolean; group: 'unsure'; reasons: UnsureReason[] }
+  | { file: number; ref: string; label: string; sent: boolean; group: 'notSaved'; reason: NotSavedReason };
 
-/** Two stored numbers are the same value (float noise from a conversion is not a conflict). */
-const sameNumber = (a: number, b: number) => Math.abs(a - b) <= 1e-9 * Math.max(Math.abs(a), Math.abs(b));
-
-/** The record's active rows by slot (`slotKey`), as a review compares against them. */
-export function heldSlotsFromFile(file: RoadmapFile): ReadonlyMap<string, HeldValue> {
-  const held = new Map<string, HeldValue>();
-  for (const [slot, row] of slotIndex(file)) {
-    held.set(slot, 'metricType' in row || isCoreRow(row) ? { valueSI: row.value }
-      : { lab: { name: row.metricName, value: row.value, unit: row.unit, ...(row.comparator ? { comparator: row.comparator } : null) } });
-  }
-  return held;
+/** The website's history (active rows) as a record, for `classifyImportValues`:
+ *  a blood test as a core row, a vital as a measurement, a lab as a lab row,
+ *  comparators kept, as the store holds them. */
+export function recordFromHistory(
+  measurements: ReadonlyArray<{ id: string; metricType: string; value: number; recordedAt: string; createdAt?: string; comparator?: Comparator }>,
+  labValues: ReadonlyArray<{ id: string; metricName: string; value: number; unit: string; recordedAt: string; createdAt?: string; referenceLow?: number | null; referenceHigh?: number | null; comparator?: Comparator }>,
+): RoadmapFile {
+  const file = createEmptyFile({ deviceId: 'review', now: '1970-01-01T00:00:00.000Z' });
+  const createdAt = (r: { createdAt?: string; recordedAt: string }) => r.createdAt ?? r.recordedAt;
+  const limit = (c?: Comparator) => (c ? { comparator: c } : null);
+  return {
+    ...file,
+    measurements: measurements.filter((m) => !isBloodTestKey(m.metricType)).map((m) => createMeasurement({ id: m.id, metricType: m.metricType, value: m.value, recordedAt: m.recordedAt, createdAt: createdAt(m), ...limit(m.comparator) })),
+    labValues: [
+      ...measurements.filter((m) => isBloodTestKey(m.metricType)).map((m) => createCoreRow({ id: m.id, metric: m.metricType, value: m.value, recordedAt: m.recordedAt, createdAt: createdAt(m), ...limit(m.comparator) })),
+      ...labValues.map((l) => createLabValue({ id: l.id, metricName: l.metricName, value: l.value, unit: l.unit, referenceLow: l.referenceLow ?? null, referenceHigh: l.referenceHigh ?? null, recordedAt: l.recordedAt, createdAt: createdAt(l), ...limit(l.comparator) })),
+    ],
+  };
 }
 
-/** The website's history (active rows) by slot: vitals and core values by
- *  metric, labs by name, as `heldSlotsFromFile`. */
-export function heldSlots(
-  measurements: ReadonlyArray<{ metricType: string; value: number; recordedAt: string }>,
-  labValues: ReadonlyArray<{ metricName: string; value: number; unit: string; recordedAt: string }>,
-): ReadonlyMap<string, HeldValue> {
-  const held = new Map<string, HeldValue>();
-  for (const m of measurements) held.set(slotKey('measurement', m.metricType, m.recordedAt), { valueSI: m.value });
-  for (const l of labValues) held.set(slotKey('lab', l.metricName, l.recordedAt), { lab: { name: l.metricName, value: l.value, unit: l.unit } });
-  return held;
+/** The record's reading in each slot, as `placeReadings` compares it. */
+function heldReadings(record: RoadmapFile): (slot: string) => Quantity | undefined {
+  const index = slotIndex(record);
+  return (slot) => {
+    const row = index.get(slot);
+    if (!row) return undefined;
+    const limit = row.comparator ? { comparator: row.comparator } : null;
+    return 'metricType' in row || row.core ? { valueSI: row.value, ...limit } : { lab: { name: row.metricName, value: row.value, unit: row.unit, ...limit } };
+  };
 }
 
-/** A refused unit, by what was printed. */
-const unitReason = (unit: string): NotSavedReason => (unit.trim() ? 'unit' : 'noUnit');
+/** A lab refusal in the person's words, from the write's own fault (never its text). */
+const labReason = (r: BulkAppendResult['refused'][number]): NotSavedReason =>
+  r.fault === 'implausible' || r.fault === 'ceiling' ? 'misread' : r.fault === 'scale' || r.fault === 'decimal' ? 'scale' : r.unit.trim() ? 'unit' : 'noUnit';
+
+/** A day no value lands on: a probe for a value with no day reads only its refusals. */
+const PROBE_DAY = '2000-01-01';
 
 /**
- * Every value of every file, in file order, each in one group (D1). A value
- * is not saved first (a refused unit or number, or a second reading of a test
- * on a day this upload already filled: the first one wins, as the save's own
- * slot rule does), then saved (the record holds the same value), then unsure
- * (any reason), else sure. A value with no known day is never slotted.
+ * Every value in each group (D1), in the order Save must send them (sent
+ * values by rank, then file and value order; then the unsent; then refused
+ * and unread rows). Each value is first written alone to an empty record,
+ * dry, so its refusal and its slot are the write's own; then slots are placed
+ * (`placeReadings`); then the sent values are written together to `record`,
+ * dry, so a blood pressure the pair refuses is caught. Recompute it whenever
+ * a day, a tick or an edit changes.
  */
-export function classifyImportValues(files: readonly ImportFile[], held: ReadonlyMap<string, HeldValue>): ClassifiedValue[] {
-  const out: ClassifiedValue[] = [];
-  const filled = new Set<string>();
-  /** The slot's verdict, once the value is otherwise saveable. */
-  const placed = (slot: string | null, same: (h: HeldValue) => boolean): 'sameDay' | 'saved' | 'conflict' | null => {
-    if (!slot) return null;
-    if (filled.has(slot)) return 'sameDay';
-    filled.add(slot);
-    const h = held.get(slot);
-    return !h ? null : same(h) ? 'saved' : 'conflict';
-  };
-  const dayOf = (own: string | undefined, fileDay: string | null) => (own === undefined ? fileDay : own === UNDATED_PREVIOUS ? null : own);
-  const finish = (file: number, ref: string, label: string, reasons: UnsureReason[], slot: ReturnType<typeof placed>): ClassifiedValue => {
-    if (slot === 'sameDay') return { file, ref, label, group: 'notSaved', reason: 'sameDay' };
-    if (slot === 'saved') return { file, ref, label, group: 'saved' };
-    const all = slot === 'conflict' ? [...reasons, 'conflict' as const] : reasons;
-    return all.length ? { file, ref, label, group: 'unsure', reasons: all } : { file, ref, label, group: 'sure' };
-  };
-
-  files.forEach(({ result, day }, file) => {
+export function classifyImportValues(files: readonly ImportFile[], record: RoadmapFile, now: string): ClassifiedValue[] {
+  const empty = createEmptyFile({ deviceId: 'review', now });
+  type Candidate = { file: number; ref: string; label: string; sent: boolean; edited: boolean; rank: 0 | 1 | 2; day: string | null; row: BulkRow; quantity: Quantity; reasons: UnsureReason[]; core: boolean };
+  const candidates: Candidate[] = [];
+  const limit = (c?: Comparator) => (c ? { comparator: c } : null);
+  files.forEach(({ result, days, sent, edited }, file) => {
     if (result.classification !== 'lab_report') return;
+    const at = (ref: string) => (isClinicalDay(days[ref]) ? days[ref]!.slice(0, 10) : null);
     (result.values ?? []).forEach((v, i) => {
       const ref = `v${i}`;
-      const label = METRIC_LABELS[v.metric] ?? labTestLabel(v.metric);
       const reasons: UnsureReason[] = [];
       if (v.confidence !== 'high') reasons.push('confidence');
       if (v.question) reasons.push('question');
       if (v.unitGuessed) reasons.push('unitGuessed');
-      // A hidden value outside the input range would block Save unseen (US-13 AC5).
-      if (measurementValueFault(v.metric, v.valueSI)) reasons.push('outOfRange');
-      const d = dayOf(v.recordedAt, day);
-      const slot = placed(d ? slotKey('measurement', v.metric, d) : null, (h) => 'valueSI' in h && sameNumber(h.valueSI, v.valueSI));
-      out.push(finish(file, ref, label, reasons, slot));
+      const day = at(ref);
+      candidates.push({
+        file, ref, label: METRIC_LABELS[v.metric] ?? labTestLabel(v.metric), sent: sent.has(ref), edited: !!edited?.has(ref),
+        rank: readingRank(v.recordedAt, UNDATED_PREVIOUS), day, reasons, core: true,
+        row: { kind: 'measurement', metricType: v.metric, value: v.valueSI, recordedAt: day ?? PROBE_DAY, source: 'lab_import', ...limit(v.comparator) },
+        quantity: { valueSI: v.valueSI, ...limit(v.comparator) },
+      });
     });
     (result.additionalValues ?? []).forEach((v, i) => {
       const ref = `a${i}`;
-      const label = labTestLabel(v.name);
-      // The save's own split (bulkAppendValues): a core name is that core value, an imported creatinine never.
-      const named = bloodTestKeyOf(v.name);
-      const asLab = !named || named === 'creatinine';
-      let slotKeyed: string | null = null;
-      let same: (h: HeldValue) => boolean;
-      const d = dayOf(v.recordedAt, day);
-      if (asLab) {
-        const stored = toStoredLab(resolveLabCatalogEntry(v.name), v.value, v.unit, v.referenceLow, v.referenceHigh);
-        if ('ok' in stored) {
-          const fault = stored.fault;
-          const reason: NotSavedReason = fault === 'implausible' || fault === 'ceiling' ? 'misread'
-            : fault === 'scale' || fault === 'decimal' ? 'scale' : unitReason(v.unit);
-          out.push({ file, ref, label, group: 'notSaved', reason });
-          return;
-        }
-        const offered: LabQuantity = { name: v.name, value: v.value, unit: v.unit };
-        same = (h) => 'lab' in h && sameLabQuantity(h.lab, offered);
-        if (d) slotKeyed = slotKey('lab', v.name, d);
-      } else {
-        const core = coreStored(named, v.value, v.unit, v.referenceLow, v.referenceHigh);
-        if (!core) { out.push({ file, ref, label, group: 'notSaved', reason: unitReason(v.unit) }); return; }
-        // Not a review cell's input, so a value out of range is refused at the save, not blocking it.
-        if (measurementValueFault(named, core.value)) { out.push({ file, ref, label, group: 'notSaved', reason: 'misread' }); return; }
-        same = (h) => 'valueSI' in h && sameNumber(h.valueSI, core.value);
-        if (d) slotKeyed = slotKey('measurement', named, d);
-      }
       const reasons: UnsureReason[] = [];
       if (v.confidence && v.confidence !== 'high') reasons.push('confidence');
       if (v.question) reasons.push('question');
-      out.push(finish(file, ref, label, reasons, placed(slotKeyed, same)));
+      const day = at(ref);
+      candidates.push({
+        file, ref, label: labTestLabel(v.name), sent: sent.has(ref), edited: !!edited?.has(ref),
+        rank: readingRank(v.recordedAt, UNDATED_PREVIOUS), day, reasons, core: false,
+        row: { kind: 'lab', metricName: v.name, value: v.value, unit: v.unit, referenceLow: v.referenceLow ?? null, referenceHigh: v.referenceHigh ?? null, recordedAt: day ?? PROBE_DAY, source: 'lab_import', ...limit(v.comparator) },
+        quantity: { lab: { name: v.name, value: v.value, unit: v.unit, ...limit(v.comparator) } },
+      });
     });
+  });
+
+  // 1) Each value alone, dry, on an empty record: the write's own refusal and slot.
+  //    A lab the write files as a core value (an HbA1c printed as a lab row) compares as one.
+  const probes = candidates.map((c) => {
+    const probe = bulkAppendValues(empty, [c.row], now);
+    const written = probe.saved[0];
+    const asCore = written && !('metricType' in written) && written.core;
+    const quantity: Quantity = asCore ? { valueSI: written.value, ...limit(written.comparator) } : c.quantity;
+    return { refused: probe.refused[0], rangeRefused: probe.measurementRefusals.length > 0, slot: written ? slotOfRow(written) : null, quantity };
+  });
+  const outcome = new Map<Candidate, ClassifiedValue>();
+  const base = (c: Candidate) => ({ file: c.file, ref: c.ref, label: c.label, sent: c.sent });
+  const placeable: number[] = [];
+  candidates.forEach((c, i) => {
+    const p = probes[i];
+    if (p.refused) outcome.set(c, { ...base(c), group: 'notSaved', reason: labReason(p.refused) });
+    else if (p.rangeRefused && !c.core) outcome.set(c, { ...base(c), group: 'notSaved', reason: 'misread' });
+    else if (!c.day) outcome.set(c, { ...base(c), group: 'waiting' });
+    else placeable.push(i);
+  });
+
+  // 2) Slots, by the review's precedence (US-12 AC12, AC14; US-13 AC3).
+  const places = placeReadings(placeable.map((i) => ({
+    slot: probes[i].slot!, rank: candidates[i].rank, quantity: probes[i].quantity, edited: candidates[i].edited, sent: candidates[i].sent,
+  })), heldReadings(record));
+  const placeOf = new Map<Candidate, SlotPlace>(placeable.map((i, k) => [candidates[i], places[k]]));
+
+  // 3) What Save writes, together and dry, on the record: a range or pair refusal.
+  const writes = placeable.map((i) => candidates[i]).filter((c) => c.sent && (placeOf.get(c) === 'free' || placeOf.get(c) === 'conflict'))
+    .sort((a, b) => a.rank - b.rank);
+  const batch = bulkAppendValues(record, writes.map((c) => c.row), now);
+  const refusedInBatch = new Set(batch.measurementRefusals.map((r) => writes[r.index]));
+
+  for (const i of placeable) {
+    const c = candidates[i];
+    const place = placeOf.get(c)!;
+    const reasons: UnsureReason[] = [...c.reasons];
+    if (probes[i].rangeRefused || refusedInBatch.has(c)) reasons.push('outOfRange');
+    if (place === 'conflict') reasons.push('conflict');
+    outcome.set(c, place === 'saved' || place === 'duplicate' ? { ...base(c), group: 'saved' }
+      : place === 'hidden' ? { ...base(c), group: 'notSaved', reason: 'sameDay' }
+        : reasons.length ? { ...base(c), group: 'unsure', reasons } : { ...base(c), group: 'sure' });
+  }
+
+  const sendOrder = candidates.map((c, i) => i).sort((i, j) =>
+    Number(!candidates[i].sent) - Number(!candidates[j].sent) || (candidates[i].sent ? candidates[i].rank - candidates[j].rank : 0) || i - j);
+  const out: ClassifiedValue[] = sendOrder.map((i) => outcome.get(candidates[i])!);
+  files.forEach(({ result }, file) => {
+    if (result.classification !== 'lab_report') return;
     (result.refusedValues ?? []).forEach((v, i) => {
       const reason: NotSavedReason = !v.unit.trim() ? 'noUnit' : v.metric === 'creatinine' && isUrineOrRatioUnit(v.unit) ? 'urine' : 'unit';
-      out.push({ file, ref: `r${i}`, label: METRIC_LABELS[v.metric] ?? labTestLabel(v.metric), group: 'notSaved', reason });
+      out.push({ file, ref: `r${i}`, label: METRIC_LABELS[v.metric] ?? labTestLabel(v.metric), sent: false, group: 'notSaved', reason });
     });
     const unread = result.unreadValues ?? [];
-    unread.forEach((v, i) => out.push({ file, ref: `u${i}`, label: v.name ? labTestLabel(v.name) : '', group: 'notSaved', reason: 'unreadable' }));
+    unread.forEach((v, i) => out.push({ file, ref: `u${i}`, label: v.name ? labTestLabel(v.name) : '', sent: false, group: 'notSaved', reason: 'unreadable' }));
     // Dropped rows the server named no test for (US-12 AC19), counted after the named ones.
     const unnamed = Math.max(0, (result.droppedValueCount ?? 0) - unread.length);
-    for (let i = 0; i < unnamed; i++) out.push({ file, ref: `u${unread.length + i}`, label: '', group: 'notSaved', reason: 'unreadable' });
+    for (let i = 0; i < unnamed; i++) out.push({ file, ref: `u${unread.length + i}`, label: '', sent: false, group: 'notSaved', reason: 'unreadable' });
   });
   return out;
 }
@@ -172,7 +219,7 @@ export interface ImportSummary {
 
 /** The values read as numbers from lab reports, and the documents by kind. A
  *  refused or unread row is not "found": it is counted under "Not saved". */
-export function importSummary(files: readonly ImportFile[]): ImportSummary {
+export function importSummary(files: ReadonlyArray<Pick<ImportFile, 'result'>>): ImportSummary {
   let values = 0;
   const kinds = new Map<DocumentType, number>();
   for (const { result } of files) {

@@ -189,12 +189,11 @@ Until that PR merges, a % row reads string 17.
 
 Q2. iPhone conflicts: (a) show the row; the saved value stays.
 
-Q3. Tests not in the catalogue: (a) sure.
-
-Q4. Unsure defaults: (a) today's defaults.
+Q3. Tests not in the catalogue: (a) sure. Q4. Unsure defaults: (a) today's defaults.
 
 ## Built (series PRs 0, 2, 3 as one PR)
 
-`packages/health-core/src/import-review.ts`: `classifyImportValues`, `heldSlots`,
-`heldSlotsFromFile`, `importSummary`, `importSummaryText`, `notSavedGroups`, `NOT_SAVED_TEXT`,
-`IMPORT_REVIEW_TEXT`. `upload_review` in `upload-events.ts` (split out of product-events.ts).
+`packages/health-core/src/import-review.ts`: `classifyImportValues` (on the write path, run dry),
+`valueDays`, `recordFromHistory`, `importSummary`, `importSummaryText`, `notSavedGroups`,
+`NOT_SAVED_TEXT`, `IMPORT_REVIEW_TEXT`. `review-slots.ts`: the slot precedence the matrix shares.
+`upload_review` in `upload-events.ts` (split out of product-events.ts).
