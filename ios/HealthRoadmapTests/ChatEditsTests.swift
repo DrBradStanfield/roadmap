@@ -284,8 +284,8 @@ final class ChatEditsTests: XCTestCase {
         XCTAssertEqual(edits.problem, "Not saved: your record changed since you asked.", "the reply's words are not left claiming a save (AC3)")
     }
 
-    /// An erase from another device arrives as a record with a higher eraseEpoch, with no
-    /// erase on this phone: the mark moves all the same, and a banner made before it writes nothing.
+    /// An erase from another device arrives as a record with a higher eraseEpoch: it is counted
+    /// here as it lands, the mark moves, and a banner made before it writes nothing.
     func testAnEraseArrivingBySyncMovesTheMark_US67_AC5() async throws {
         let (store, edits, engine) = try setUpEdits()
         await edits.take(try json(values), asked: store.mark, today: today)
@@ -294,7 +294,7 @@ final class ChatEditsTests: XCTestCase {
         let erased = try engine.blocking { try $0.eraseOnPhone(recordJSON: record, historyJSON: nil, now: .now, deviceId: deviceId).record }
         try RecordStore.write(erased, to: RecordStore.file(in: folder))
         await store.showPhone().value
-        XCTAssertEqual(store.erasures, mark.erasures, "no erase on this phone")
+        XCTAssertEqual(store.erasures, mark.erasures + 1, "an erase taken in is counted once (US-25 AC16j)")
         XCTAssertNotEqual(store.mark, mark)
         await edits.save()
         XCTAssertEqual(store.recordJSON, erased)
