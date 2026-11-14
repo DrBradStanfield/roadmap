@@ -125,8 +125,10 @@ jobs:
             pipeline (docs/loops/deploy-pipeline-proposal.md). Review PR
             #${{ github.event.pull_request.number }} adversarially, from the
             diff and repo files alone. You have READ-ONLY tools by design; do
-            not attempt to run code, approve, merge, or push — your verdict is
-            an advisory comment that informs the human approver.
+            not attempt to run code, approve, merge, or push. Your verdict is
+            not advisory: auto-ship.yml can merge this PR on your APPROVE for
+            its head sha, after its own checks and a 30-minute veto window;
+            no human approves it first.
 
             Mandate — flag ONLY defects that affect correctness, security, or
             the stated requirements. Do not block on style, naming, or
