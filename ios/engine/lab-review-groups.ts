@@ -12,7 +12,7 @@ import {
   IMPORT_REVIEW_TEXT, type ImportClassification, type ImportFile, type UnsureReason,
 } from '../../packages/health-core/src/import-review';
 import { createEmptyFile } from '../../packages/health-core/src/roadmap-file';
-import type { Extraction } from './lab-review';
+import { labReview, labRows, labSaveSummary, type Extraction } from './lab-review';
 
 /** One offered value (`v<i>` or `a<i>`, the review's item refs) and its group. */
 export interface GroupedItem {
@@ -22,6 +22,8 @@ export interface GroupedItem {
   reasons?: UnsureReason[];
   /** The record already holds a different value for its day: shown, never written (Q2a). */
   conflict?: string;
+  /** Outside its range: the write's own refusal line, shown on the row (US-52 AC8). */
+  refusal?: string;
 }
 
 export interface LabReviewGroups {
@@ -36,6 +38,9 @@ export interface LabReviewGroups {
   alreadySaved: string | null;
   /** "{n} values not saved", one line per reason with the tests' labels, and the footer; null with none. */
   notSaved: { title: string; lines: string[]; footer: string } | null;
+  /** The extraction's own refused and unread rows (never a value the person ticks), as
+   *  save all's notes name them after the save's own refusals (US-52 AC8b). */
+  omitted: string[];
   /** The ticked values the save writes, in its order: never one held or refused (`classifyReport`'s rows). */
   saveRefs: string[];
   /** "Save {n} values", n = saveRefs' count; null when no value could be written, ticked or
@@ -61,6 +66,21 @@ export function classifyReport(extraction: Extraction, file: RoadmapFile | null,
   return classifyImportValues([{ result, rows, days }], file ?? createEmptyFile({ deviceId: 'review', now }), now);
 }
 
+/** The save's own words for a value outside its range (or a blood pressure pair the write
+ *  refuses), as its receipt says it (`LabReportSave.line`): the value written alone, dry, then
+ *  with the other ticked values for a pair. Never new words. */
+function rangeRefusal(extraction: Extraction, file: RoadmapFile | null, ticks: ReadonlySet<string>, day: string | null, ref: string, now: string): string | undefined {
+  const record = file ?? createEmptyFile({ deviceId: 'review', now });
+  const rowsOf = (refs: Iterable<string>) => {
+    const result = labRows(extraction, [...refs], day ?? '', now, record);
+    return result.ok ? result.ticked : [];
+  };
+  const alone = labSaveSummary(record, rowsOf([ref]), now).refused;
+  const label = labReview(extraction, now).items.find((i) => i.ref === ref)?.label;
+  const refused = alone[0] ?? labSaveSummary(record, rowsOf(new Set([...ticks, ref])), now).refused.find((r) => r.label === label);
+  return refused && (refused.line ?? `Not saved, ${refused.label}: ${refused.message}`);
+}
+
 /** The review's groups for the ticks and test day it holds now. */
 export function labReviewGroups(extraction: Extraction, file: RoadmapFile | null, ticked: readonly string[], reportDay: string, now: string): LabReviewGroups {
   const ticks = new Set(ticked);
@@ -69,7 +89,8 @@ export function labReviewGroups(extraction: Extraction, file: RoadmapFile | null
   const offered = all.filter((v) => /^[va]\d+$/.test(v.ref));
   const items: GroupedItem[] = offered.map((v) => {
     if (v.group !== 'unsure') return { ref: v.ref, group: v.group };
-    return { ref: v.ref, group: 'unsure', reasons: v.reasons, ...(v.reasons.includes('conflict') ? { conflict: IMPORT_REVIEW_TEXT.conflictKept } : null) };
+    const refusal = v.reasons.includes('outOfRange') ? rangeRefusal(extraction, file, ticks, day, v.ref, now) : undefined;
+    return { ref: v.ref, group: 'unsure', reasons: v.reasons, ...(v.reasons.includes('conflict') ? { conflict: IMPORT_REVIEW_TEXT.conflictKept } : null), ...(refusal ? { refusal } : null) };
   });
   const count = (group: GroupedItem['group']) => items.filter((i) => i.group === group).length;
   const writes = (i: GroupedItem) => i.group === 'sure' || (i.group === 'unsure' && !i.conflict);
@@ -79,6 +100,7 @@ export function labReviewGroups(extraction: Extraction, file: RoadmapFile | null
   const sure = count('sure');
   const saved = count('saved');
   const groups = notSavedGroups(all);
+  const extracted = notSavedGroups(all.filter((v) => !/^[va]\d+$/.test(v.ref)));
   return {
     summary: importSummaryText(importSummary([{ result: extraction as ImportFile['result'] }])),
     items,
@@ -94,6 +116,7 @@ export function labReviewGroups(extraction: Extraction, file: RoadmapFile | null
       lines: [...groups.lines.map((l) => l.text), ...(groups.other ? [groups.other] : [])],
       footer: IMPORT_REVIEW_TEXT.notSavedFooter,
     } : null,
+    omitted: [...extracted.lines.map((l) => l.text), ...(extracted.other ? [extracted.other] : [])],
     saveRefs,
     save: items.some((i) => writes(i) || i.group === 'waiting') ? IMPORT_REVIEW_TEXT.save(saveRefs.length) : null,
   };

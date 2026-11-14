@@ -285,6 +285,25 @@ describe('US-13 AC13 / US-52 AC8: the review leads with a summary and rows only 
     expect(groupsOf({ ...lab([ldlHigh]), reportDate: null }, ['v0'], record(), '2026-10-01')).toMatchObject({ saveRefs: ['v0'] });
   });
 
+  it('a core value outside its range shows the save\'s own refusal on its row, and the receipt still names it (US-52 AC8)', () => {
+    const x = lab([{ ...ldlHigh, valueSI: 500, displayValue: 500 }], [{ name: 'Ferritin', value: 85, unit: 'µg/L' }]);
+    const g = groupsOf(x, ['v0', 'a0']);
+    const dry = JSON.parse(labSaveSummaryJson(JSON.stringify(record()), JSON.stringify(x), JSON.stringify(['v0', 'a0']), '2026-10-01', NOW, DEVICE));
+    expect(dry.summary.saved).toBe(1);
+    expect(dry.summary.refused).toHaveLength(1);
+    const [r] = dry.summary.refused;
+    expect(g.items[0]).toMatchObject({ ref: 'v0', group: 'unsure', refusal: r.line ?? `Not saved, ${r.label}: ${r.message}` });
+    expect(g.items[0].refusal).toContain('LDL');
+    expect(g.saveRefs).toEqual(['a0']);
+    // Alone, the row still says why; no extraction rows are omitted.
+    expect(groupsOf(lab([{ ...ldlHigh, valueSI: 500, displayValue: 500 }]), ['v0'])).toMatchObject({ saveRefs: [], omitted: [], items: [{ refusal: g.items[0].refusal }] });
+  });
+
+  it('omitted names only the extraction\'s own refused and unread rows, for save all\'s notes', () => {
+    const x = lab([], [{ name: 'Ferritin', value: 85, unit: 'furlongs' }], { refusedValues: [{ metric: 'creatinine', value: 80, unit: '', reason: 'unit unknown' }], droppedValueCount: 1 });
+    expect(groupsOf(x, ['a0']).omitted).toEqual(['Creatinine: no unit was printed', '1 other value could not be read']);
+  });
+
   it('what Save sends is what the save writes: the dry run saves every sent ref and refuses or skips none', () => {
     const file = record({ kind: 'add', metric: 'ldl', value: 2.5, day: '2026-10-01' });
     const g = groupsOf(extraction, ['v0', 'v1', 'a0', 'a1'], file);

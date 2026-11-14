@@ -65,11 +65,12 @@ struct LabReviewView: View {
             if let problem = problem ?? saved?.problem { Section { Text(problem).foregroundStyle(.red) } }
             if let outcome { Section("Saved") { Text(outcome) } }
             Section {
-                // Nothing to save (every value held or not saved): no Save, only the leave button (D3).
-                if outcome == nil, let review, review.isLabReport, result.failure == nil, groups == nil || groups?.save != nil {
-                    Button(groups?.save ?? "Save") { Task { await save() } }
+                // Nothing to save (every value held or not saved): no Save, only the leave button (D3),
+                // unless the report's original still waits to be kept in the cloud (AC13d).
+                if outcome == nil, let review, review.isLabReport, result.failure == nil, groups == nil || groups?.save != nil || result.original != nil {
+                    Button(groups.map { $0.save ?? "Save the original" } ?? "Save") { Task { await save() } }
                         .fontWeight(.semibold)
-                        .disabled(saving || choices.wrappedValue.valuesWait(review) != nil || groups?.saveRefs.isEmpty == true)
+                        .disabled(saving || choices.wrappedValue.valuesWait(review) != nil || (groups?.saveRefs.isEmpty == true && result.original == nil))
                 }
                 if outcome == nil, review?.document != nil, result.failure == nil {
                     Button(choices.wrappedValue.keepDocument || !archiveOnly ? "Save the document" : "Save the original") { Task { await save() } }
@@ -78,7 +79,7 @@ struct LabReviewView: View {
                 }
                 // Held while a save runs: leaving would drop its outcome, and a second save
                 // of the same file could start before this one has committed.
-                Button(leaveTitle ?? (outcome == nil ? "Skip" : (position.0 < position.1 ? "Next report" : "Done"))) { onDone(saved?.reportOutcome(groups)) }
+                Button(leaveTitle ?? (outcome == nil ? "Skip" : (position.0 < position.1 ? "Next report" : "Done"))) { onDone(saved?.reportOutcome(groups, review: review)) }
                     .disabled(saving)
             }
             // Its own group under this report's Save: it acts on every waiting report, not this one.
@@ -95,8 +96,9 @@ struct LabReviewView: View {
         // erase that arrives meanwhile refuses the save (the sheets' rule, US-25 AC11).
         .onAppear { store.pinScreen() }
         .task { await load() }
-        // Asked again whenever a tick or the test day changes: the groups depend on both.
-        .task(id: held) { await regroup() }
+        // Asked again whenever a tick or the test day changes, and once the review has loaded
+        // (a report reopened from save all holds its ticks before its review is read).
+        .task(id: review == nil ? nil : held) { await regroup() }
         .onDisappear { store.unpinScreen() }
     }
 
@@ -128,8 +130,12 @@ struct LabReviewView: View {
             if let groups {
                 groupedSections(review, groups)
             } else {
-                // An engine without the groups: every value is a row, as before.
+                // An engine without the groups: every value is a row, and its "Not saved" list, as before.
                 Section { ForEach(review.items) { valueRow($0) } }
+                let legacy = review.legacyNotSaved
+                if !legacy.isEmpty {
+                    Section("Not saved") { ForEach(Array(legacy.enumerated()), id: \.offset) { Text($0.element) } }
+                }
             }
         }
     }
@@ -145,7 +151,8 @@ struct LabReviewView: View {
                         // The saved value stays (Q2a): no toggle, it is never written.
                         valueText(item, note: conflict)
                     } else {
-                        valueRow(item)
+                        // A value outside its range says why the save will refuse it.
+                        valueRow(item, note: groups.refusal(item.ref))
                     }
                 }
             } header: {
@@ -180,8 +187,9 @@ struct LabReviewView: View {
     }
 
     /// One value with its tick (today's row): unticking it keeps it out of the save.
-    private func valueRow(_ item: LabReview.Item) -> some View {
-        Toggle(isOn: binding(item.ref)) { valueText(item, note: nil) }
+    private func valueRow(_ item: LabReview.Item, note: String? = nil) -> some View {
+        Toggle(isOn: binding(item.ref)) { valueText(item, note: note) }
+            .disabled(saving)
     }
 
     @ViewBuilder
@@ -259,9 +267,12 @@ struct LabReviewView: View {
     /// Asks the engine for the groups of the ticks and day held now (lab reports only).
     private func regroup() async {
         guard let review, review.isLabReport, result.failure == nil, let held else { return }
-        let asked = await LabReportSave.groups(result, review: review, choices: held, engine: engine, store: store)
-        // A newer tick may have asked again meanwhile: keep only the answer for what is held now.
-        if !Task.isCancelled, held == self.held { groups = asked }
+        // A failed answer keeps the groups shown; a newer tick may have asked again meanwhile,
+        // so only the answer for what is held now is kept.
+        do {
+            let asked = try await LabReportSave.groups(result, review: review, choices: held, engine: engine, store: store)
+            if !Task.isCancelled, held == self.held { groups = asked }
+        } catch {}
     }
 
     private func load() async {
@@ -280,16 +291,23 @@ struct LabReviewView: View {
     /// The report's own Save: its values (then its original) or its document.
     private func save() async {
         guard !saving else { return }
+        problem = nil
         saving = true
         defer { saving = false }
         // Asked for the ticks held at the tap, so a tick a moment before Save is never lost.
         let picked = choices.wrappedValue
         var fresh: LabReviewGroups?
-        if let review, review.isLabReport { fresh = await LabReportSave.groups(result, review: review, choices: picked, engine: engine, store: store) }
-        let plan = LabSavePlan(result: result, review: review, choices: picked, archiveOnly: archiveOnly, groups: fresh ?? groups)
+        if let review, review.isLabReport {
+            // An engine that cannot answer for these ticks saves nothing on an older answer.
+            do { fresh = try await LabReportSave.groups(result, review: review, choices: picked, engine: engine, store: store) } catch {
+                problem = "These values could not be saved."
+                return
+            }
+        }
+        let plan = LabSavePlan(result: result, review: review, choices: picked, archiveOnly: archiveOnly)
         if case .nothing = plan { return }
         // AC8b's usage signal: once per Save on an upload save all could take, nothing with it.
         if let event = Analytics.Event.saveOne(inUploadOf: position.1) { analytics?.event(event) }
-        saved = await LabReportSave.run(plan, result: result, store: store)
+        saved = await LabReportSave.run(plan, result: result, store: store, groups: fresh)
     }
 }
