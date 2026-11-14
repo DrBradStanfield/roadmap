@@ -9439,14 +9439,14 @@
     ],
     "category": "lifestyle",
     "source": "chat-health-2026-W46",
-    "notes": "2026-W46 chat-health: widget first turn, paraphrased. A priority ask about the user's own data; rule 7 names 'what should I improve first?' as ROUTE to the guidelines. Production empty (router v5). KNOWN-FAIL own-data shape since W41, eighth week. Replay empty 3/3 (2026-11-15)."
+    "notes": "2026-W46 chat-health: widget first turn, paraphrased. A priority ask about the user's own data; rule 7 names 'what should I improve first?' as ROUTE to the guidelines. Production empty (router v5). KNOWN-FAIL own-data shape since W41, eighth week. Replays 2026-11-15: ∅ 3/3, then the guidelines 2/3 on a second arm (2/6 overall): KNOWN-FLAKY."
   },
   {
-    "query": "Is it safe to take pomegranate extract with my Procrit shots for MDS blood cancer?",
+    "query": "Can I take a pomegranate supplement while I'm on epoetin injections for my blood cancer?",
     "expected": [],
     "category": "supplement",
     "source": "chat-health-2026-W46",
-    "notes": "2026-W46 chat-health: storefront first turn, paraphrased. A should-I-take-this-supplement question during active treatment for a blood cancer: rule 6's last carve-out returns empty, though a pomegranate reference exists. Production empty (router v5), and the answer sent the user to the pharmacist. Replay empty 3/3 (2026-11-15). Wording matters: 'for myelodysplastic syndrome' without 'cancer' got the pomegranate reference 3/3."
+    "notes": "2026-W46 chat-health: storefront first turn, paraphrased (drug named generically, condition as the user framed it, 'blood cancer'). A should-I-take-this-supplement question during treatment for a blood cancer: rule 6's last carve-out returns empty, though a pomegranate reference exists. Whether epoetin for MDS anaemia counts as 'active cancer treatment' is a clinical reading for Brad (W46 report). Production empty (router v5); the reply sent the user to the pharmacist. Wording matters: an earlier paraphrase naming the condition without the word 'cancer' got the pomegranate reference 3/3. KNOWN-FLAKY: this wording ∅ 2/3, pomegranate reference 1/3 (2026-11-15)."
   },
   {
     "query": "Kalimoru",

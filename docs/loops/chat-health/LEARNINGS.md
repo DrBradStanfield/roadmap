@@ -13,8 +13,8 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   ~150 chars optimal; blanket rewrites regress, targeted fixes
   win; uniform style). Detail the charter omits: stripping the boilerplate from
   ALL 709 pathways scored the same 96.3%, and truncating a 269-char body-derived
-  summary at 150 beats purpose-writing 150 chars (pruned 2026-10-03). W46, Sonnet 5.5
-  router: a 36-summary rewrite into Brad's-view voice (US-50 masters) tied the originals, 298/322 each on a paired arm.
+  summary at 150 beats purpose-writing 150 chars (pruned 2026-10-03). W46, Sonnet 5.5 router: 36
+  mixed summary changes (21 masters, 8 re-sourced, 7 guides) tied the old ones, 298/322 each on a paired arm.
 - **2026-08-07 [retrieval]** The router systematically emits `guideline-diet`
   for the handle `diet` — concatenating the bracketed TYPE label onto handles
   that are single generic words. The allowlist silently dropped these, so
