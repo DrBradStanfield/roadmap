@@ -15,7 +15,7 @@
  */
 import * as z from './zod';
 import { getDisplayLabel, getDisplayRange, LPA_UNITS, rangeFault, reportedToCanonical, toCanonicalValue, type MetricType, type UnitSystem } from './units';
-import { acceptedLabUnits, foldName, isLooseCatalogueName, LAB_CATALOG, LAB_GROUPS, labTestLabel, looseFold, normalizeLabUnit, resolveLabCatalogEntry, type LabCatalogEntry } from './lab-catalog';
+import { acceptedLabUnits, foldName, isLooseCatalogueName, LAB_CATALOG, LAB_GROUPS, labNameForUnit, labTestLabel, looseFold, normalizeLabUnit, resolveLabCatalogEntry, type LabCatalogEntry } from './lab-catalog';
 import { cutText } from './chat-history';
 import { parseLocalisedNumber } from './parseNumber';
 import { DOCUMENT_TYPES, METRIC_TYPES } from './validation';
@@ -939,7 +939,7 @@ export function toUnifiedResult(parsed: ReturnType<typeof parseUnifiedResult>, m
     } else if (free && PROMOTABLE.has(metric!) && reportedToCanonical(metric!, v.value, v.unit)) {
       promote();
     } else if (metric !== 'creatinine' || foldName(v.name) === 'cr' || !refusesCreatinine(v)) {
-      additionalValues.push(v);
+      additionalValues.push({ ...v, name: labNameForUnit(v.name, v.unit) }); // a count's name in % is its share's (US-21 AC28)
     }
   }
   return {

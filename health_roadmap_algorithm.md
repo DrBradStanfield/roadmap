@@ -209,9 +209,11 @@ A spelling this table does not carry for that test is **refused** — never resc
   | `folate` | nmol/L | 0 | 1,000 |
   | `ferritin` | µg/L | 0 | 500,000 |
   | `iron` | µmol/L | 0 | 1,000 |
+  | `neutrophils_pct`, `lymphocytes_pct`, `monocytes_pct`, `eosinophils_pct`, `basophils_pct`, `immature_granulocytes_pct`, `reticulocytes_pct` | % | 0 | 100 |
+  | `nrbc_per_100_wbc` | /100 WBC | 0 | 1,000 (a ratio, not a share: NRBC are not counted among the white cells, and reported values pass 100, up to 327) |
 
   Checked where a person or agent types one value: `addLabValue` (the web's "+ Add a blood test" and "+ Add a value", the iPhone's add by name and a test's own "+") and `correctValue`'s lab branch (the web's value page and matrix correction, the iPhone's correct edit, MCP `correct_value`, the CLI's `correct`). Every one of these doors shows the refusal in the engine's words. The refusal names the number as typed and what it converted to when the typed unit is not the canonical one, then the end passed, each as the matrix prints it with thousands separators: "5.5 mg/dL is 0.31 mmol/L. Glucose below 0.5 mmol/L is almost certainly a typing or unit mistake: check the number and its unit." A row already stored past a bound is never touched and still shows.
-- **A differential in % is refused.** It is a share of the white count, not a count, and is never multiplied out from the WBC. Its refusal says the record keeps the absolute count (×10⁹/L or cells/µL), so the person looks for that line on the same report.
+- **A differential in % is its own test** (US-21 AC28, Brad 2026-11-15; refused from AC15 until then). It is a share of the white count, not a count, so it is never multiplied out from the WBC and never stored as the count. Neutrophils, lymphocytes, monocytes, eosinophils, basophils and immature granulocytes in %, reticulocytes in % (a share of the red cells) and NRBC in % or per 100 WBC are each stored under a key of their own (`neutrophils_pct` and the rest; `nrbc_per_100_wbc`), in the unit printed, with no conversion. A row printed under the count's name in one of those units is filed under its share's key, so a report that prints both lines stores both. No suggestion reads them.
 - **Prolactin in ng/mL is refused on purpose.** The mIU/L factor is assay-dependent (about 21.2 for the WHO 3rd IS), so converting would invent precision the report does not have.
 - **A test the catalogue does not know is stored exactly as reported**, with its printed unit. There is no SI definition to convert it to, and refusing it would throw the value away. Its units are compared after the folds above, so `mg/dL` and `mg/dl` are one unit and chart as one line (US-21 AC14, Brad 2026-11-04).
 - **Rows written before phase 3 are corrected at load**, not edited: `migrate.ts` appends a converted row with the id `<id>#si` and `correctsId` set, and flips the printed row to `entered-in-error`. Same id on every device, so cross-device copies merge into one row. A legacy `gm/dL` row (haemoglobin, albumin, total protein, globulin, MCHC) now converts at ×10 on load through the same path. So does a legacy whole count in cells/µL, at ×0.001; a decimal one is left as it is.
@@ -319,12 +321,13 @@ A spelling this table does not carry for that test is **refused** — never resc
 | `reticulocytes` | ×10⁹/L | thou/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `reticulocytes` | ×10⁹/L | thousand/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `reticulocytes` | ×10⁹/L | g/l | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
-| `reticulocytes` | ×10⁹/L | ×10¹²/l | 1000 | 10¹² is a thousand 10⁹. A reticulocyte % is refused |
+| `reticulocytes` | ×10⁹/L | ×10¹²/l | 1000 | 10¹² is a thousand 10⁹. A reticulocyte % is `reticulocytes_pct` (US-21 AC28) |
 | `nrbc` | ×10⁹/L | ×10³/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `nrbc` | ×10⁹/L | k/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `nrbc` | ×10⁹/L | thou/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `nrbc` | ×10⁹/L | thousand/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `nrbc` | ×10⁹/L | g/l | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
+| `nrbc_per_100_wbc` | /100 WBC | % | 1 | NRBC per 100 white cells is the same number as NRBC in % of the white count (US-21 AC28) |
 | `d_dimer` | mg/L FEU | mg/l (feu) | 1 | spelling only. Every D-dimer spelling must say FEU: a bare ng/mL is often DDU, about half the FEU number, so it is refused |
 | `d_dimer` | mg/L FEU | µg/ml feu | 1 | µg/mL is mg/L |
 | `d_dimer` | mg/L FEU | µg/ml (feu) | 1 | µg/mL is mg/L |
@@ -462,7 +465,7 @@ A spelling this table does not carry for that test is **refused** — never resc
 
 A plain "calcium" is total calcium (`calcium_total`), never corrected calcium (US-21 AC12, fixed 2026-10-18; it used to land on `calcium_corrected`). Rows already stored under the key `calcium_corrected` stay there: no migration. A row stored as a plain calcium (the website upload's snake_case `calcium`, or the assistant's printed "Calcium") now reads as total calcium.
 
-Nineteen catalogued tests take only their canonical unit, so they have no row above: `cystatin_c` (mg/L), `mcv` (fL), `mch` (pg), `rdw` (%), `rdw_sd` (fL), `mpv` (fL), `t3_uptake` (%), `trab` (IU/L), `shbg` (nmol/L), `psa_free_percent` (%), `b12_active` (pmol/L), `transferrin_sat` (%), `stfr` (mg/L), `omega3_index` (%), `vitamin_b1` (nmol/L), `anti_ccp` (U/mL), `ttg_iga` (U/mL), `homocysteine` (µmol/L) and `fructosamine` (µmol/L). Any other spelling is refused. (Until 2026-10-20 this sentence named three; five more already took only their canonical unit.)
+Nineteen catalogued tests take only their canonical unit, so they have no row above: `cystatin_c` (mg/L), `mcv` (fL), `mch` (pg), `rdw` (%), `rdw_sd` (fL), `mpv` (fL), `t3_uptake` (%), `trab` (IU/L), `shbg` (nmol/L), `psa_free_percent` (%), `b12_active` (pmol/L), `transferrin_sat` (%), `stfr` (mg/L), `omega3_index` (%), `vitamin_b1` (nmol/L), `anti_ccp` (U/mL), `ttg_iga` (U/mL), `homocysteine` (µmol/L) and `fructosamine` (µmol/L). Since US-21 AC28 (2026-11-15) seven more take only %: `neutrophils_pct`, `lymphocytes_pct`, `monocytes_pct`, `eosinophils_pct`, `basophils_pct`, `immature_granulocytes_pct` and `reticulocytes_pct`. Any other spelling is refused. (Until 2026-10-20 this sentence named three; five more already took only their canonical unit.)
 
 Non-HDL cholesterol is deliberately not catalogued. The app derives it from total cholesterol and HDL, so a stored lab row would duplicate it; a printed one is kept as an uncatalogued row with its printed unit.
 
@@ -471,7 +474,7 @@ Non-HDL cholesterol is deliberately not catalogued. The app derives it from tota
 - **D-dimer** converts only from a spelling that says FEU. A bare ng/mL is often D-dimer units (DDU), about half the FEU number.
 - **NT-proBNP and BNP in pmol/L, and TRAb in U/L**, are refused. Older non-WHO TRAb assays print U/L that are not IU/L.
 - **Osmolality** resolves only under a serum or plasma name: a bare "osmolality" is as often the urine test. It takes mOsm/kg, mOsmol/kg and mmol/kg, the same number.
-- **Immature granulocytes in %, reticulocytes in %, and NRBC in % or per 100 WBC** are refused with a note pointing at the absolute count, as a differential in % is.
+- **Immature granulocytes in %, reticulocytes in %, and NRBC in % or per 100 WBC** were refused with a note pointing at the absolute count until 2026-11-15; since US-21 AC28 each is a test of its own, as a differential in % is.
 - **AMH** converts at the 140 kDa dimer convention (7.14 pmol/L per ng/mL), as insulin's 6.00 is one. Growth hormone in mIU/L and soluble transferrin receptor in nmol/L are assay-dependent and refused.
 - **Left out:** the free thyroxine index (two scales share the name), every unitless ratio and index (TC/HDL, INR, free androgen index, HOMA-IR, A/G, BUN/creatinine), PT and APTT in seconds, base excess, and a bare "T4", "T3" or "troponin", which can mean either test. A printed one stays an uncatalogued row with its printed unit.
 

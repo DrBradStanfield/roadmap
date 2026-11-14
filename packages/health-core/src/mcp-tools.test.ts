@@ -722,7 +722,7 @@ describe('US-32 — add_lab_values is a batch, and all or nothing', () => {
     expect((outcome as { file?: RoadmapFile }).file).toBeUndefined();
   });
 
-  it('US-21 AC15 — a whole count per µL is stored in ×10⁹/L; a decimal one and a differential in % are refused in words', () => {
+  it('US-21 AC15 — a whole count per µL is stored in ×10⁹/L; a decimal one is refused in words (a differential in % is stored, AC28)', () => {
     const stored = ok(addLabValues(base(), {
       values: [{ metricName: 'Neutrophils', value: 2400, unit: 'cells/uL', recordedAt: TODAY }],
     }, CTX));
@@ -730,9 +730,9 @@ describe('US-32 — add_lab_values is a batch, and all or nothing', () => {
     const decimal = addLabValues(base(), { values: [{ metricName: 'Neutrophils', value: 2.4, unit: 'cells/uL', recordedAt: TODAY }] }, CTX);
     expect(decimal.status).toBe('rejected');
     expect(decimal.text).toContain('whole number');
-    const percent = addLabValues(base(), { values: [{ metricName: 'Lymphocytes', value: 30, unit: '%', recordedAt: TODAY }] }, CTX);
-    expect(percent.status).toBe('rejected');
-    expect(percent.text).toContain('absolute count');
+    // US-21 AC28: a differential in % is its own test, filed under its share.
+    const percent = ok(addLabValues(base(), { values: [{ metricName: 'Lymphocytes', value: 30, unit: '%', recordedAt: TODAY }] }, CTX));
+    expect(percent.file!.labValues.find((l) => l.metricName === 'lymphocytes_pct')).toMatchObject({ value: 30, unit: '%' });
   });
 
   it('files a spaced test name under its catalogue key', () => {
@@ -3940,11 +3940,10 @@ describe('US-21 AC15 — the import preview checks the row the commit will check
     expect(((refused as { file?: RoadmapFile }).file ?? file).labValues.filter((l) => l.metricName === 'neutrophils').map((l) => [l.value, l.status])).toEqual([[2, 'active']]);
   });
 
-  it('US-21 AC15 — the assistant’s copy of a % refusal says not to work the count out from the percentage', () => {
-    const outcome = addLabValues(base(), { values: [{ metricName: 'Neutrophils', value: 60, unit: '%', recordedAt: TODAY }] }, CTX);
-    expect(outcome.status).toBe('rejected');
-    expect(outcome.text).toContain('absolute count');
-    expect(outcome.text).toContain('Do not work the count out from the percentage');
+  it('US-21 AC28 — a differential in % is stored under its share, so the assistant never needs the count worked out', () => {
+    const outcome = ok(addLabValues(base(), { values: [{ metricName: 'Neutrophils', value: 60, unit: '%', recordedAt: TODAY }] }, CTX));
+    expect(outcome.file!.labValues.find((l) => l.metricName === 'neutrophils_pct')).toMatchObject({ value: 60, unit: '%' });
+    expect(outcome.file!.labValues.some((l) => l.metricName === 'neutrophils')).toBe(false);
   });
 });
 

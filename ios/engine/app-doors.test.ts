@@ -176,16 +176,17 @@ describe('US-52 AC8: the lab review and the write', () => {
   });
 
   // US-52 AC8 (H400): a refused unit printed the raw key and the assistant's refusal
-  // ("immature_granulocytes: ... Do not work the count out from the percentage").
+  // ("immature_granulocytes: ..."). Since US-21 AC28 a % is stored, so this uses mg/L.
   it('US-52 AC8: a refused unit reads as the web\'s line, never the raw key or the assistant\'s words', () => {
     const percent = { ...extraction, additionalValues: [
-      { name: 'neutrophils', value: 60, unit: '%' }, { name: 'immature_granulocytes', value: 0.4, unit: '%' },
+      // A unit neither test takes (a differential in % is stored since US-21 AC28).
+      { name: 'rdw_sd', value: 42, unit: 'mg/L' }, { name: 'immature_granulocytes', value: 0.4, unit: 'mg/L' },
     ] };
     const summary = JSON.parse(labSaveSummaryJson(JSON.stringify(record()), JSON.stringify(percent), JSON.stringify(['a0', 'a1']), '2026-10-01', NOW, DEVICE));
     const refused = summary.summary.refused as Array<{ label: string; message: string; line?: string }>;
-    expect(refused.map((r) => r.label)).toEqual(['Neutrophils', 'Immature granulocytes']);
+    expect(refused.map((r) => r.label)).toEqual(['RDW-SD', 'Immature granulocytes']);
     expect(refused.map((r) => r.line)).toEqual([
-      labUnitRefusalLine('neutrophils', '%'), labUnitRefusalLine('immature_granulocytes', '%'),
+      labUnitRefusalLine('rdw_sd', 'mg/L'), labUnitRefusalLine('immature_granulocytes', 'mg/L'),
     ]);
     for (const r of refused) {
       const shown = r.line ?? `Not saved, ${r.label}: ${r.message}`; // LabReportSave.line
@@ -238,8 +239,22 @@ describe('US-13 AC13 / US-52 AC8: the review leads with a summary and rows only 
     expect(g).toMatchObject({ saveRefs: ['v0'], save: 'Save 1 value' });
   });
 
+  // US-21 AC28: the iPhone review's own door saves a white-cell % as its share, beside the count.
+  it('US-21 AC28: neutrophils and immature granulocytes in % are saved, none refused', () => {
+    const x = lab([], [{ name: 'neutrophils', value: 60, unit: '%' }, { name: 'immature_granulocytes', value: 0.4, unit: '%' }, { name: 'neutrophils', value: 3.1, unit: '×10⁹/L' }]);
+    const g = groupsOf(x, ['a0', 'a1', 'a2']);
+    expect(g.saveRefs).toEqual(['a0', 'a1', 'a2']);
+    expect(g.notSaved).toBeNull();
+    const out = applyEdit(record(), { kind: 'labImport', extractionJson: JSON.stringify(x), refs: ['a0', 'a1', 'a2'], reportDay: '2026-10-01' }, NOW);
+    if (!out.ok) throw new Error(out.message);
+    expect(out.file.labValues.filter((l) => !l.core).map((l) => [l.metricName, l.unit]).sort()).toEqual([
+      ['immature_granulocytes_pct', '%'], ['neutrophils', '×10⁹/L'], ['neutrophils_pct', '%'],
+    ]);
+  });
+
   it('nothing to save: the summary and the not-saved line in the person\'s words, no key and no assistant text', () => {
-    const x = lab([], [{ name: 'Ferritin', value: 85, unit: 'furlongs' }, { name: 'immature_granulocytes', value: 0.4, unit: '%' }],
+    // A unit the test does not take (a % is stored since US-21 AC28, so mg/L stands in).
+    const x = lab([], [{ name: 'Ferritin', value: 85, unit: 'furlongs' }, { name: 'immature_granulocytes', value: 0.4, unit: 'mg/L' }],
       { refusedValues: [{ metric: 'creatinine', value: 80, unit: '', reason: 'unit unknown' }], droppedValueCount: 1 });
     const g = groupsOf(x, ['a0', 'a1']);
     expect(g.summary).toBe('Found 2 blood test values');

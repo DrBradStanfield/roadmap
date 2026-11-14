@@ -486,15 +486,15 @@ describe('US-12 AC4–6 upload session ownership', () => {
     expect(vi.mocked(trackProductEvent).mock.calls.filter(([n]) => n === 'lab_unit_refused')).toEqual([['lab_unit_refused', { key: 'ferritin', unit: 'mg/dL' }]]);
   });
 
-  // US-21 AC15 · a differential in % stays refused, but the summary says the
-  // record keeps the absolute count, so the person looks for that line.
-  it('US-21 AC15 — a differential refused in % points at the absolute count', async () => {
+  // US-21 AC15 · a unit the test does not take is named, never sent. A differential in % was
+  // this example until US-21 AC28 stored it as its own test, so mg/L stands in.
+  it('US-21 AC15 — a differential in a unit it does not take is named and never sent', async () => {
     vi.mocked(labImport).mockResolvedValue({
-      result: { ...extraction.result, additionalValues: [{ name: 'Lymphocytes', value: 30, unit: '%', referenceLow: null, referenceHigh: null }] },
+      result: { ...extraction.result, additionalValues: [{ name: 'Lymphocytes', value: 30, unit: 'mg/L', referenceLow: null, referenceHigh: null }] },
     } as Awaited<ReturnType<typeof labImport>>);
     vi.mocked(bulkSaveLabValues).mockResolvedValue({
       saved: [], skippedDuplicates: 0, errorCount: 0,
-      refused: [{ key: 'lymphocytes', unit: '%', message: 'Lymphocytes is stored in ×10⁹/L' }],
+      refused: [{ key: 'lymphocytes', unit: 'mg/L', message: 'Lymphocytes is stored in ×10⁹/L' }],
     } as Awaited<ReturnType<typeof bulkSaveLabValues>>);
     render(<Harness />); await ready();
     // US-13 AC13: named before Save under "Not saved", in the review's words, and never sent.

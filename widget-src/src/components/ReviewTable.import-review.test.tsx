@@ -136,7 +136,7 @@ describe('US-13 AC13, US-12 AC15/AC19: "Not saved" is one line that opens to the
   it('names each test by its label with the reason, counts the unnamed, and shows the footer', () => {
     review([labs([v('ldl', 3.9)], {
       refusedValues: [{ metric: 'creatinine', value: 2, unit: 'mg/mmol', reason: 'Do not work this out. Synthetic assistant text.' }],
-      additionalValues: [{ name: 'neutrophils', value: 60, unit: '%' }],
+      additionalValues: [{ name: 'neutrophils', value: 60, unit: 'mg/L' }], // a unit it does not take (a % is stored, US-21 AC28)
       droppedValueCount: 3, unreadValues: [{ name: 'vitamin_d', reason: 'unreadable' }],
     })]);
     const line = screen.getByRole('button', { name: '5 values not saved' });

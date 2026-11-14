@@ -1,7 +1,7 @@
 // The review matrix model: upload and saved values as a metric × date grid (US-12, US-13).
 import { type UnitSystem, type MetricType, UNIT_DEFS } from '@roadmap/health-core/units';
 import { type ApiMeasurement, METRIC_LABELS, BLOOD_TEST_METRICS, VITAL_METRICS } from '@roadmap/health-core/mappings';
-import { displayLabUnit, labSlotKey, resolveLabCatalogEntry } from '@roadmap/health-core/lab-catalog';
+import { displayLabUnit, labNameForUnit, labSlotKey, resolveLabCatalogEntry } from '@roadmap/health-core/lab-catalog';
 import type { LabQuantity } from '@roadmap/health-core/record-edits';
 import { placeReadings, readingRank, type Quantity } from '@roadmap/health-core/review-slots';
 import { UNDATED_PREVIOUS } from '@roadmap/health-core/lab-extraction';
@@ -20,7 +20,7 @@ export function sameValue(a: number, b: number): boolean {
 
 /** A lab reading's unit as the matrix shows it (display spelling only). */
 function labUnitText(lab: { name: string; unit: string }): string {
-  return displayLabUnit(lab.unit, resolveLabCatalogEntry(lab.name));
+  return displayLabUnit(lab.unit, resolveLabCatalogEntry(labNameForUnit(lab.name, lab.unit)));
 }
 
 /** Lab-value name → row key: health-core's slot key, so a report's "Vitamin D"
