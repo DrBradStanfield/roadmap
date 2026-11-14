@@ -5447,6 +5447,15 @@ input[type="number"] {
   line-height: 1.15;
   color: var(--color-text);
 }
+/* App Review 1.4.1 (US-73 AC13): one quiet line under the title, the iPhone's footnote. The
+   line is about 29em wide, so on a phone it shrinks to fit the width, at most to 11px (the
+   iPhone's 0.85), and wraps rather than clips below that. */
+.mh-education {
+  margin: 2px 0 8px;
+  font-size: clamp(11px, calc((100vw - 48px) / 29), 13px);
+  line-height: 1.35;
+  color: var(--color-text-secondary);
+}
 .mh-header-actions {
   display: flex;
   align-items: center;

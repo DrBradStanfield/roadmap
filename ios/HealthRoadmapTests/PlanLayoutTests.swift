@@ -90,6 +90,13 @@ final class PlanLayoutTests: XCTestCase {
         XCTAssertEqual(EducationNote.text, "For education only, not medical advice. Talk to your doctor before you change anything about your health or medicines.")
     }
 
+    /// US-73 AC13 and US-52 AC6h (App Review 1.4.1): My health's line under its title and the chat
+    /// consent's first paragraph, each in one place. Shown on screen: ReviewPlacementUITests.
+    func testTheDoctorLinesAreTheDecidedSentences_US73_AC13_US52_AC6h() {
+        XCTAssertEqual(EducationNote.myHealth, "For education, not medical advice. Always talk to your doctor.")
+        XCTAssertEqual(EducationNote.chatConsent, "This app is educational and is not medical advice. Always discuss your health with your doctor.")
+    }
+
     /// US-25 AC22: the summary tiles reach the screen as the engine wrote them, the web's
     /// Quick Stats, each with its why. Their wording is pinned in ios/engine/stat-tiles.test.ts.
     func testSampleSummaryTilesAreTheEngines() throws {
