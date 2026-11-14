@@ -1,8 +1,9 @@
 /**
  * US-72: what a Health Records lab record says, read from the provider's FHIR JSON
  * (DSTU2 or R4) before health-records-import decides what lands. A record is a
- * top-level Observation, or a DiagnosticReport whose results are contained
- * Observations (AC15); each comes out as an identity and the Observation fields
+ * top-level Observation (one HealthKit took out of a panel included, AC17), or a
+ * DiagnosticReport whose results are contained Observations (AC15); each comes out
+ * as an identity and the Observation fields
  * the import reads, or null when it is not one this reads.
  */
 import * as z from './zod';
@@ -12,6 +13,12 @@ import type { ClinicalRecordInput } from './health-records-import';
 const FHIR_VERSIONS = /^(1\.0|4\.0)\.\d+$/;
 /** FHIR's id type: no `#`, so the first `#` in an `externalId` ends the identity. */
 const FHIR_ID = /^[A-Za-z0-9\-.]{1,64}$/;
+/**
+ * The id HealthKit gives a result it took out of a lab's panel (AC17): Apple hands each
+ * contained Observation over as its own record, its id `DiagnosticReport/<report id>#<result id>`,
+ * both parts FHIR ids. Seen on a US Labcorp account, 2026-11-13.
+ */
+const FROM_PANEL = /^DiagnosticReport\/([A-Za-z0-9\-.]{1,64})#([A-Za-z0-9\-.]{1,64})$/;
 /** A provider's JSON is external text: bounded before it is parsed. */
 const MAX_JSON = 1_000_000;
 
@@ -146,6 +153,16 @@ export function recordResults(raw: ClinicalRecordInput): Array<{ identity: strin
   try { json = JSON.parse(record.data.json); } catch { return [unread]; }
   const { sourceId, resourceType } = record.data;
   if (resourceType === 'DiagnosticReport') return reportResults(sourceId, json);
-  const obs = observation.safeParse(json);
-  return obs.success ? [{ identity: `${sourceId}|Observation|${obs.data.id}`, obs: obs.data }] : [unread];
+  return [observationResult(sourceId, json)];
+}
+
+/** A top-level Observation. One Apple took out of a panel (`FROM_PANEL`) is read under its
+ *  result id and keeps AC15's identity for that result, so it is one result however it arrives. */
+function observationResult(sourceId: string, json: unknown): { identity: string; obs: Observation } | { identity: null; obs: null } {
+  const id = (json as { id?: unknown } | null)?.id;
+  const split = typeof id === 'string' ? FROM_PANEL.exec(id) : null;
+  const obs = observation.safeParse(split ? { ...(json as object), id: split[2] } : json);
+  if (!obs.success) return { identity: null, obs: null };
+  const identity = split ? `${sourceId}|DiagnosticReport|${split[1]}|${split[2]}` : `${sourceId}|Observation|${obs.data.id}`;
+  return { identity, obs: obs.data };
 }

@@ -918,8 +918,9 @@ Apple offers Health Records in the US, UK and Canada; records are FHIR, read-onl
   says one is needed, then refreshes. A deliberate connect can still show it too, but once
   connected the live cards' Turn On shows only while the live types are due. No screen of
   ours comes before the sheet (guideline 5.1.1).
-- **Rules version:** `HealthSyncMemory.labResultsRulesVersion` (3 since 2026-11-10: results
-  contained in a DiagnosticReport, US-72 AC15; 2 since 2026-11-02: results
+- **Rules version:** `HealthSyncMemory.labResultsRulesVersion` (4 since 2026-11-13: a result
+  HealthKit took out of a panel, id `DiagnosticReport/<report>#<result>`, US-72 AC17; 3 since
+  2026-11-10: results contained in a DiagnosticReport, US-72 AC15; 2 since 2026-11-02: results
   dated by `issued`, the MDRD eGFR and the import winning a conflict), stored beside the anchor.
   Bump it when the engine starts reading results it used to refuse (a new code or unit): a
   phone whose anchor was kept under another version drops it once and reads every result
