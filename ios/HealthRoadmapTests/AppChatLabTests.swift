@@ -170,7 +170,7 @@ final class AppChatLabTests: XCTestCase {
         XCTAssertEqual(groups.notSaved?.lines, ["Creatinine: no unit was printed"])
         // The held LDL is a row that is never written (Q2a); Save sends the rest.
         XCTAssertNotNil(groups.conflict("v0"))
-        XCTAssertEqual(groups.saveRefs, ["v1", "a0"])
+        XCTAssertEqual(groups.saveRefs, ["a0", "v1"], "in the order Save must send them")
         let summary = try engine.blocking { [now, extraction] in try $0.labSaveSummary(recordJSON: held, extractionJSON: extraction, refs: ["v0", "v1", "a0"], reportDay: "2026-10-01", now: now, deviceId: "test") }.get()
         XCTAssertEqual(summary, LabSaveSummary(saved: 2, skipped: 1, refused: []))
 
@@ -227,7 +227,7 @@ final class AppChatLabTests: XCTestCase {
         XCTAssertEqual(groups.save, "Save 3 values")
         let result = LabResult(name: "Bloods.pdf", truncated: false, extractionJSON: extraction, failure: nil)
         XCTAssertEqual(LabSavePlan(result: result, review: review, choices: choices, archiveOnly: false, groups: groups),
-                       .values(refs: ["v0", "v1", "a0"], day: "2026-10-01"))
+                       .values(refs: ["v0", "a0", "v1"], day: "2026-10-01"), "every ticked value, hidden ones included, in send order")
     }
 
     /// The not-saved lines are the engine's, in the person's words: no raw key and no text

@@ -279,12 +279,20 @@ describe('US-13 AC13 / US-52 AC8: the review leads with a summary and rows only 
     expect(groupsOf(slip, ['a0', 'a1'])).toMatchObject({ saveRefs: ['a1'], notSaved: { lines: ['Glucose: the number looks misread. Check the report'] } });
   });
 
+  it('a value with no day yet waits behind the date question: never "will be saved", never sent, Save still offered', () => {
+    const g = groupsOf({ ...lab([ldlHigh]), reportDate: null }, ['v0'], record(), '');
+    expect(g).toMatchObject({ items: [{ ref: 'v0', group: 'waiting' }], sure: null, check: null, saveRefs: [], save: 'Save 0 values' });
+    expect(groupsOf({ ...lab([ldlHigh]), reportDate: null }, ['v0'], record(), '2026-10-01')).toMatchObject({ saveRefs: ['v0'] });
+  });
+
   it('what Save sends is what the save writes: the dry run saves every sent ref and refuses or skips none', () => {
     const file = record({ kind: 'add', metric: 'ldl', value: 2.5, day: '2026-10-01' });
     const g = groupsOf(extraction, ['v0', 'v1', 'a0', 'a1'], file);
-    expect(g.saveRefs).toEqual(['v1', 'a0']);
+    expect(g.saveRefs).toEqual(['a0', 'v1']); // send order: the report's own day before a value's printed one (readingRank)
     const dry = JSON.parse(labSaveSummaryJson(JSON.stringify(file), JSON.stringify(extraction), JSON.stringify(g.saveRefs), '2026-10-01', NOW, DEVICE));
     expect(dry.summary).toEqual({ saved: 2, skipped: 0, refused: [] });
+    // AppChatLabTests' plan: the report's own day first, then the value's printed day.
+    expect(groupsOf(extraction, ['v0', 'v1', 'a0', 'a1']).saveRefs).toEqual(['v0', 'a0', 'v1']);
   });
 });
 

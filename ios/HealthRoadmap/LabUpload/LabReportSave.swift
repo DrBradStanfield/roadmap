@@ -109,10 +109,12 @@ struct LabReportSave: Equatable {
     /// The engine's groups for one report's review, with its ticks and test day now (US-13
     /// AC13): the review screen and save all ask the same way. nil when the engine cannot say.
     @MainActor
-    static func groups(_ result: LabResult, choices: LabChoices, engine: HealthEngine, store: RecordStore) async -> LabReviewGroups? {
+    static func groups(_ result: LabResult, review: LabReview, choices: LabChoices, engine: HealthEngine, store: RecordStore) async -> LabReviewGroups? {
         guard let json = result.extractionJSON else { return nil }
+        // No day until the report printed one or the person confirmed theirs: undated values wait.
+        let day = review.reportDay != nil || choices.dayConfirmed ? DayText.iso(choices.testDay) : ""
         return try? await engine.labReviewGroups(recordJSON: store.readable?.json ?? "", extractionJSON: json, ticked: choices.ticked,
-                                                 reportDay: DayText.iso(choices.testDay), now: .now, deviceId: store.deviceId)
+                                                 reportDay: day, now: .now, deviceId: store.deviceId)
     }
 
     @MainActor
@@ -199,7 +201,7 @@ struct LabReportSave: Equatable {
         }
         let choices = held ?? LabChoices(review: review)
         var grouped: LabReviewGroups?
-        if review.isLabReport { grouped = await groups(result, choices: choices, engine: engine, store: store) }
+        if review.isLabReport { grouped = await groups(result, review: review, choices: choices, engine: engine, store: store) }
         let plan = LabSavePlan(result: result, review: review, choices: choices,
                                archiveOnly: LabSavePlan.archiveOnly(review, result: result, cloudConnected: store.cloudErase != nil), groups: grouped)
         if case .nothing(let reason) = plan { return .success(ReportOutcome(notes: [reason] + (grouped?.notSaved?.lines ?? []))) }

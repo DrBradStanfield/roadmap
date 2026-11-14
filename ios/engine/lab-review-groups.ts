@@ -8,15 +8,16 @@
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { validDay } from '../../packages/health-core/src/record-edits';
 import {
-  classifyImportValues, heldSlotsFromFile, importSummary, importSummaryText, notSavedGroups,
+  classifyImportValues, importSummary, importSummaryText, notSavedGroups, valueDays,
   IMPORT_REVIEW_TEXT, type ClassifiedValue, type ImportFile, type UnsureReason,
 } from '../../packages/health-core/src/import-review';
+import { createEmptyFile } from '../../packages/health-core/src/roadmap-file';
 import type { Extraction } from './lab-review';
 
 /** One offered value (`v<i>` or `a<i>`, the review's item refs) and its group. */
 export interface GroupedItem {
   ref: string;
-  group: 'sure' | 'unsure' | 'saved' | 'notSaved';
+  group: 'sure' | 'unsure' | 'saved' | 'notSaved' | 'waiting';
   /** Unsure only: why it gets a row. */
   reasons?: UnsureReason[];
   /** The record already holds a different value for its day: shown, never written (Q2a). */
@@ -43,17 +44,19 @@ export interface LabReviewGroups {
 }
 
 /** The one call into health-core's classifier for one report: its values against the record,
- *  filed on `day` when they have none of their own. `ticked`: the refs the person has ticked. */
-function classify(extraction: Extraction, file: RoadmapFile | null, day: string | null, _ticked: ReadonlySet<string>): ClassifiedValue[] {
-  const one: ImportFile = { result: extraction as ImportFile['result'], day };
-  return classifyImportValues([one], file ? heldSlotsFromFile(file) : new Map());
+ *  each on its own day or `day` (null: no day yet, so they wait), Save sending `ticked`.
+ *  Answers in the order Save must send them. */
+function classify(extraction: Extraction, file: RoadmapFile | null, day: string | null, ticked: ReadonlySet<string>, now: string): ClassifiedValue[] {
+  const result = extraction as ImportFile['result'];
+  const one: ImportFile = { result, days: valueDays(result, day), sent: ticked };
+  return classifyImportValues([one], file ?? createEmptyFile({ deviceId: 'review', now }), now);
 }
 
 /** The review's groups for the ticks and test day it holds now. */
 export function labReviewGroups(extraction: Extraction, file: RoadmapFile | null, ticked: readonly string[], reportDay: string, now: string): LabReviewGroups {
   const ticks = new Set(ticked);
   const day = validDay(reportDay, { now }) ?? null;
-  const all = classify(extraction, file, day, ticks);
+  const all = classify(extraction, file, day, ticks, now);
   const offered = all.filter((v) => /^[va]\d+$/.test(v.ref));
   const items: GroupedItem[] = offered.map((v) => {
     if (v.group !== 'unsure') return { ref: v.ref, group: v.group };
@@ -61,13 +64,14 @@ export function labReviewGroups(extraction: Extraction, file: RoadmapFile | null
   });
   const count = (group: GroupedItem['group']) => items.filter((i) => i.group === group).length;
   const writes = (i: GroupedItem) => i.group === 'sure' || (i.group === 'unsure' && !i.conflict);
+  // In the classifier's order: the order Save must send them.
   const saveRefs = items.filter((i) => ticks.has(i.ref) && writes(i)).map((i) => i.ref);
   const unsure = count('unsure');
   const sure = count('sure');
   const saved = count('saved');
   const groups = notSavedGroups(all);
   return {
-    summary: importSummaryText(importSummary([{ result: extraction as ImportFile['result'], day }])),
+    summary: importSummaryText(importSummary([{ result: extraction as ImportFile['result'] }])),
     items,
     check: unsure ? { title: IMPORT_REVIEW_TEXT.checkTitle(unsure), footer: IMPORT_REVIEW_TEXT.checkFooter } : null,
     sure: sure ? {
@@ -82,6 +86,6 @@ export function labReviewGroups(extraction: Extraction, file: RoadmapFile | null
       footer: IMPORT_REVIEW_TEXT.notSavedFooter,
     } : null,
     saveRefs,
-    save: items.some(writes) ? IMPORT_REVIEW_TEXT.save(saveRefs.length) : null,
+    save: items.some((i) => writes(i) || i.group === 'waiting') ? IMPORT_REVIEW_TEXT.save(saveRefs.length) : null,
   };
 }

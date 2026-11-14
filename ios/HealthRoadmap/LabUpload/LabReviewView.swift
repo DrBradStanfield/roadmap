@@ -122,6 +122,8 @@ struct LabReviewView: View {
                     Text("The report does not print a full date. Set the day of the test.").font(.footnote).foregroundStyle(Color.status("attention"))
                     Toggle("This is the right day", isOn: choices.dayConfirmed)
                 }
+                // Values with no day yet wait here, behind the date question; never "will be saved".
+                if let groups { ForEach(groups.rows("waiting", of: review)) { valueRow($0) } }
             }
             if let groups {
                 groupedSections(review, groups)
@@ -257,7 +259,7 @@ struct LabReviewView: View {
     /// Asks the engine for the groups of the ticks and day held now (lab reports only).
     private func regroup() async {
         guard let review, review.isLabReport, result.failure == nil, let held else { return }
-        let asked = await LabReportSave.groups(result, choices: held, engine: engine, store: store)
+        let asked = await LabReportSave.groups(result, review: review, choices: held, engine: engine, store: store)
         // A newer tick may have asked again meanwhile: keep only the answer for what is held now.
         if !Task.isCancelled, held == self.held { groups = asked }
     }
@@ -283,7 +285,7 @@ struct LabReviewView: View {
         // Asked for the ticks held at the tap, so a tick a moment before Save is never lost.
         let picked = choices.wrappedValue
         var fresh: LabReviewGroups?
-        if review?.isLabReport == true { fresh = await LabReportSave.groups(result, choices: picked, engine: engine, store: store) }
+        if let review, review.isLabReport { fresh = await LabReportSave.groups(result, review: review, choices: picked, engine: engine, store: store) }
         let plan = LabSavePlan(result: result, review: review, choices: picked, archiveOnly: archiveOnly, groups: fresh ?? groups)
         if case .nothing = plan { return }
         // AC8b's usage signal: once per Save on an upload save all could take, nothing with it.
