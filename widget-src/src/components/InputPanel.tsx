@@ -207,6 +207,8 @@ export function InputPanel({
   // My data's view state: the open value page, its history entry and the table (lib/useValuePage).
   const panelRef = useRef<HTMLDivElement>(null);
   const { pageShown, tableShown, openPage, switchPage, closePage, showTable, pageDirty, panelMessages } = useValuePage(revealCell, panelRef);
+  // The value page's history, one array until the vitals or blood test lists change, so its chart is not drawn again (US-62 AC10c).
+  const pageHistory = useMemo(() => [...vitalsHistory, ...bloodTestHistory], [vitalsHistory, bloodTestHistory]);
   // A grid's typed text not yet saved, valid or not (the plan and the chat
   // read none of it, and an upload saves it first): where the grids sit
   // hidden under the rows, each card says so and opens the table
@@ -642,10 +644,8 @@ export function InputPanel({
   return children({
     panelRef, messages: panelMessages, aboutCard, aboutYouLow, unitPill, fullForm, planReady: !!planBasis,
     pageOpen: !!pageShown,
-    renderPage: tiles => pageShown && (
-      <ValuePage key={JSON.stringify(pageShown)} subject={pageShown} history={[...vitalsHistory, ...bloodTestHistory]} labValues={labValues}
-                 ctx={rowCtx} tiles={tiles} onSave={onSaveBloodTestBatch} onCorrect={onCorrectValue} onLabAdded={onLabValueAdded} onClose={closePage} onOpen={switchPage} dirtyRef={pageDirty} onWeightAnswered={answered && (() => answered(null))}/>
-    ),
+    renderPage: tiles => pageShown && <ValuePage key={JSON.stringify(pageShown)} subject={pageShown} history={pageHistory} labValues={labValues}
+                 ctx={rowCtx} tiles={tiles} onSave={onSaveBloodTestBatch} onCorrect={onCorrectValue} onLabAdded={onLabValueAdded} onClose={closePage} onOpen={switchPage} dirtyRef={pageDirty} onWeightAnswered={answered && (() => answered(null))}/>,
     rows: { ctx: rowCtx, open: openPage, vitals: vitalsHistory, blood: bloodTestHistory, labs: labValues, withoutWeight: weightInProfile },
     vitalsCue: unsavedCue(draftedVitals),
     bloodCue: unsavedCue(draftedBlood),
