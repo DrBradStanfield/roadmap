@@ -310,6 +310,87 @@ describe('RecordSession: a cloud page goes away before its save lands (US-06 AC1
   });
 });
 
+describe('RecordSession: a departure write the device refuses is reported (US-06 AC13a)', () => {
+  it('reports a refused device copy write once, with the op and no other field, and still starts the cloud save', async () => {
+    const store = new StalledStore();
+    const fake = fakeHost(store);
+    const { host, device } = withDeviceSync(fake);
+    const seen: Array<{ error: unknown; at: object }> = [];
+    const session = await RecordSession.open({ ...host, report: (error, at) => void seen.push({ error, at }) });
+    add(session, 'late');
+    device.failWrites = true; // the browser's storage is full
+    const saves = store.writes;
+    session.flushSync();
+    expect(seen).toHaveLength(1);
+    expect(seen[0].at).toEqual({ op: 'mirror-write', repeat: false });
+    expect(seen[0].error).toBeInstanceOf(StorageError);
+    expect(fake.mirrorCloud.files.has(ROADMAP_FILE_NAME)).toBe(false);
+    await vi.waitFor(() => expect(store.writes).toBe(saves + 1)); // the async save is all that is left
+  });
+
+  it('a second departure meeting the same refusal is a repeat; a new session reports afresh', async () => {
+    const fake = fakeHost(new StalledStore());
+    const { host, device } = withDeviceSync(fake);
+    device.failWrites = true;
+    const session = await RecordSession.open(host);
+    add(session, 'a');
+    session.flushSync(); // hidden
+    add(session, 'b');
+    session.flushSync(); // hidden again, or closed
+    const next = await RecordSession.open(host);
+    add(next, 'c');
+    next.flushSync();
+    expect(fake.reports).toEqual([
+      { op: 'mirror-write', repeat: false },
+      { op: 'mirror-write', repeat: true },
+      { op: 'mirror-write', repeat: false },
+    ]);
+  });
+
+  it('an unreadable device copy is reported as well', async () => {
+    const fake = fakeHost(new StalledStore());
+    const { host } = withDeviceSync(fake);
+    const session = await RecordSession.open(host);
+    fake.mirrorCloud.files.set(ROADMAP_FILE_NAME, { json: '{not json', version: 1 });
+    add(session, 'late');
+    session.flushSync();
+    expect(fake.reports).toEqual([{ op: 'mirror-write', repeat: false }]);
+  });
+
+  it('a departure write that lands, one after log-off, or one with nothing unsaved, reports nothing', async () => {
+    const landed = fakeHost(new StalledStore());
+    const session = await RecordSession.open(withDeviceSync(landed).host);
+    add(session, 'late');
+    session.flushSync();
+    expect(ids(stored(landed.mirrorCloud))).toEqual(['late']);
+    const loggedOff = fakeHost(new StalledStore());
+    const { host, device } = withDeviceSync(loggedOff, true);
+    device.failWrites = true;
+    const after = await RecordSession.open(host);
+    add(after, 'late');
+    after.flushSync();
+    const idle = fakeHost(new TestStore());
+    const quiet = withDeviceSync(idle);
+    const saved = await RecordSession.open(quiet.host);
+    add(saved, 'a');
+    await saved.flush();
+    quiet.device.failWrites = true;
+    saved.flushSync();
+    expect([...landed.reports, ...loggedOff.reports, ...idle.reports]).toEqual([]);
+  });
+
+  it('a report that throws never stops the cloud save', async () => {
+    const store = new StalledStore();
+    const { host, device } = withDeviceSync(fakeHost(store));
+    const session = await RecordSession.open({ ...host, report: () => { throw new Error('reporter down'); } });
+    add(session, 'late');
+    device.failWrites = true;
+    const saves = store.writes;
+    expect(() => session.flushSync()).not.toThrow();
+    await vi.waitFor(() => expect(store.writes).toBe(saves + 1));
+  });
+});
+
 /** A cloud whose save waits until the test lets it land. */
 class HeldStore extends TestStore {
   private held: Array<() => void> = [];
