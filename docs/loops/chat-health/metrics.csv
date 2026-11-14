@@ -230,3 +230,25 @@ week,metric,count_7d,count_prior_7d,delta_pct,source,note
 2026-W45,yt_reply_gt90w_count_7d,7,0,,chat_messages,"7/126 (max 138; five over 110), spread 11-03 to 11-07; >5 sentences 16; any sentence >25 words 25 (max 34); recounted by the orchestrator with URL-safe splitting, same counts; proposal 1"
 2026-W45,harness_full_pass,289,250,16,tools/test-chatbot-matching.ts,"first v5 arm: 289/308 (93.8%), 'variance' (fail rate) 6.2% (gate 5%), --runs 3, claude-sonnet-5-5 thinking off, 0 API errors, $5.43, HEAD 59b8fa0, router view 302 entries; not comparable with W44 250/271 (36 condition-guide fixtures joined, all pass). 19 fails: 8 symptom fixtures expecting [] get a treatment entry, 4 stale since the guides (eGFR-40 → kidney-health, LDL-cause ×2 and ApoB estimate → high-cholesterol), 3 own-data asks ∅, 4 others"
 2026-W45,harness_classifier_pass,30,23,30,tools/test-classifier.ts,"--runs 1, claude-haiku-5-5, 32 fixtures, $0.0007; fails 'female' (known), book-spam (known). After this run's fixture (33), final wording --runs 3: 30/33 ($0.0021; + calcium-score KNOWN-FLAKY; new capsule-shell PRODUCT 3/3)"
+2026-W46,lint_unresolved_marker,87,87,0,tools/knowledge-lint.ts,weekly lint
+2026-W46,lint_uncited_reference,19,20,-5,tools/knowledge-lint.ts,weekly lint
+2026-W46,lint_uncited_list,39,39,0,tools/knowledge-lint.ts,weekly lint
+2026-W46,lint_doi_shape,2,1,100,tools/knowledge-lint.ts,weekly lint
+2026-W46,lint_pmid_shape,1,1,0,tools/knowledge-lint.ts,weekly lint
+2026-W46,lint_id_mismatch,2,1,100,tools/knowledge-lint.ts,weekly lint
+2026-W46,lint_link_dead,14,14,0,tools/knowledge-lint.ts,weekly lint
+2026-W46,lint_grokipedia,0,4,-100,tools/knowledge-lint.ts,weekly lint
+2026-W46,lint_dose_mismatch,11,10,10,tools/knowledge-lint.ts,weekly lint
+2026-W46,lint_product_rise,4,4,0,tools/knowledge-lint.ts,weekly lint
+2026-W46,lint_guide_shape,0,0,,tools/knowledge-lint.ts,weekly lint
+2026-W46,lint_topic_no_master,0,0,,tools/knowledge-lint.ts,weekly lint
+2026-W46,lint_master_front,0,0,,tools/knowledge-lint.ts,weekly lint
+2026-W46,lint_master_gate,0,0,,tools/knowledge-lint.ts,weekly lint
+2026-W46,lint_master_doi,0,0,,tools/knowledge-lint.ts,weekly lint
+2026-W46,lint_master_key_points,0,0,,tools/knowledge-lint.ts,weekly lint
+2026-W46,lint_master_stale,0,0,,tools/knowledge-lint.ts,weekly lint
+2026-W46,lint_source_stale,30,42,-29,tools/knowledge-lint.ts,weekly lint
+2026-W46,lint_master_places,0,0,,tools/knowledge-lint.ts,weekly lint
+2026-W46,lint_master_overlap,44,69,-36,tools/knowledge-lint.ts,weekly lint
+2026-W46,lint_grokipedia_only_sentences,0,55,-100,tools/knowledge-lint.ts,weekly lint
+2026-W46,lint_due_entries,225,214,5,tools/knowledge-lint.ts,weekly lint
