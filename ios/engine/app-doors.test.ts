@@ -178,13 +178,14 @@ describe('US-52 AC8: the lab review and the write', () => {
   // ("immature_granulocytes: ... Do not work the count out from the percentage").
   it('US-52 AC8: a refused unit reads as the web\'s line, never the raw key or the assistant\'s words', () => {
     const percent = { ...extraction, additionalValues: [
-      { name: 'neutrophils', value: 60, unit: '%' }, { name: 'immature_granulocytes', value: 0.4, unit: '%' },
+      // A unit neither test takes (a differential in % is stored since US-21 AC28).
+      { name: 'rdw_sd', value: 42, unit: 'mg/L' }, { name: 'immature_granulocytes', value: 0.4, unit: 'mg/L' },
     ] };
     const summary = JSON.parse(labSaveSummaryJson(JSON.stringify(record()), JSON.stringify(percent), JSON.stringify(['a0', 'a1']), '2026-10-01', NOW, DEVICE));
     const refused = summary.summary.refused as Array<{ label: string; message: string; line?: string }>;
-    expect(refused.map((r) => r.label)).toEqual(['Neutrophils', 'Immature granulocytes']);
+    expect(refused.map((r) => r.label)).toEqual(['RDW-SD', 'Immature granulocytes']);
     expect(refused.map((r) => r.line)).toEqual([
-      labUnitRefusalLine('neutrophils', '%'), labUnitRefusalLine('immature_granulocytes', '%'),
+      labUnitRefusalLine('rdw_sd', 'mg/L'), labUnitRefusalLine('immature_granulocytes', 'mg/L'),
     ]);
     for (const r of refused) {
       const shown = r.line ?? `Not saved, ${r.label}: ${r.message}`; // LabReportSave.line
