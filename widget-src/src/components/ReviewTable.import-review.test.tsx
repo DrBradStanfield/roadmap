@@ -230,3 +230,53 @@ describe('US-13 AC13: what Save writes always has a cell, and a refused value bl
     expect(screen.getByText('1 already in your record')).toBeTruthy();
   });
 });
+
+// Owner, 2026-11-15: the table is placed and classified as it stands. For any cell the
+// person can see and has not cleared: Save writes it, or its error blocks Save, or it
+// is named under "Not saved". Never none of the three.
+describe('US-13 AC13: every visible, kept cell saves, blocks Save, or is named', () => {
+  const undated = (metric: string, valueSI: number, fileName: string, reportDate: string) =>
+    labs([{ ...v(metric, valueSI), recordedAt: 'undated' }], { fileName, reportDate });
+  const pick = (day: string) => {
+    for (const p of screen.queryAllByLabelText('Choose the date of the previous results')) fireEvent.change(p, { target: { value: day } });
+  };
+  /** Each visible, uncleared cell's fate. */
+  const fates = (t: ReturnType<typeof review>) => {
+    const savedValues = (): string[] => {
+      const save = t.save();
+      if (!save || save.disabled) return [];
+      fireEvent.click(save);
+      const { values, labValues } = t.onSave.mock.calls.at(-1)![0];
+      return [...values.map((x: { valueSI: number }) => String(x.valueSI)), ...labValues.map((x: { value: number }) => String(x.value))];
+    };
+    const blocked = !!t.save()?.disabled && !!screen.queryByText('Correct or clear the values with errors before saving.');
+    const written = savedValues();
+    return t.inputs().filter(text => text !== '').map(text => (written.includes(text) ? 'saves' : blocked ? 'blocks' : 'neither'));
+  };
+
+  it('a core value out of range, edited into range, saves', () => {
+    const t = review([labs([v('ldl', 999), v('hdl', 1.2)])]);
+    expect(t.save()!.disabled).toBe(true);
+    fireEvent.change(screen.getByDisplayValue('999.0'), { target: { value: '3.2' } });
+    expect(fates(t)).toEqual(['saves']); // the LDL row; the sure HDL waits behind Show all
+    expect(t.saved()).toEqual([['ldl', 3.2, 'lab_import_edited'], ['hdl', 1.2, undefined]]);
+  });
+
+  it('an in-range winner edited out of range blocks Save', () => {
+    const t = review([labs([v('ldl', 3.1), v('hdl', 1.2)])]);
+    fireEvent.click(t.showAll()!);
+    fireEvent.change(screen.getByDisplayValue('3.1'), { target: { value: '999' } });
+    expect(t.save()!.disabled).toBe(true);
+    expect(fates(t).sort()).toEqual(['blocks', 'blocks']);
+  });
+
+  it('clearing the winner of a day makes the hidden same-day reading the winner: it shows, and saves', () => {
+    const t = review([undated('hdl', 1.2, 'a.docx', '2026-03-10'), undated('hdl', 1.4, 'b.docx', '2026-04-10')]);
+    pick('2025-09-02');
+    fireEvent.click(t.showAll() ?? document.body);
+    expect(t.inputs()).toEqual(['1.2']);
+    fireEvent.change(screen.getByDisplayValue('1.2'), { target: { value: '' } });
+    expect(t.inputs().sort()).toEqual(['', '1.4']);
+    expect(fates(t)).toEqual(['saves']);
+  });
+});

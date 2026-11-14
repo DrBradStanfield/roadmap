@@ -134,10 +134,10 @@ export function classifyReview(results: FileResult[], fileDates: Record<string, 
     notSaved: notSavedGroups(classified),
     decisions: toDecisions(rows, source, results),
     blocked: new Set(refused.map(id)),
-    /** The write's own refusal of a kept core value, for its cell's line. */
-    refusals: new Map(refused.flatMap(v => (v.group === 'unsure' && v.refusal ? [[id(v), v.refusal] as [string, MeasurementRefusal]] : []))),
+    /** The write's own refusal of a kept core value (`ImportRefusal`), for its cell's line. */
+    refusals: new Map(refused.flatMap(v => (v.refusal && 'measurement' in v.refusal ? [[id(v), v.refusal.measurement] as [string, MeasurementRefusal]] : []))),
     /** Labs not saved for their unit or number, for the refused-spelling count when Save finishes (US-21 AC15). */
-    labRefusals: classified.flatMap((v): LabUnitRefusal[] => (v.group === 'notSaved' && v.refusal ? [v.refusal] : [])),
+    labRefusals: classified.flatMap((v): LabUnitRefusal[] => (v.group === 'notSaved' && v.refusal && 'lab' in v.refusal ? [v.refusal.lab] : [])),
   };
 }
 export type ReviewGroups = ReturnType<typeof classifyReview>;

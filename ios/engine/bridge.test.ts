@@ -78,6 +78,13 @@ describe('bridge contract (US-25 AC18)', () => {
     labSearchJson: { args: ['text'], call: ['ferr'], shape: [{ name: 'string', key: 'string', kind: 'string', units: ['string'] }] },
     documentOriginal: { args: ['id'], call: ['doc-1'], bytes: true },
     cloudOnline: { args: [], call: [], shape: {} }, // US-09 AC30: '{}', nothing to read
+    // US-13 AC13: one sure LDL on an empty record (no record text), ticked.
+    labReviewGroupsJson: {
+      args: ['recordJson', 'extractionJson', 'refsJson', 'reportDay', 'nowIso', 'deviceId'],
+      call: ['', JSON.stringify({ classification: 'lab_report', reportDate: '2026-10-01', values: [{ metric: 'ldl', valueSI: 3.1, displayValue: 3.1, displayUnit: 'mmol/L', displaySystem: 'si', confidence: 'high' }] }),
+        '["v0"]', '2026-10-01', NOW, 'phone'],
+      shape: { summary: 'string', items: [{ ref: 'string', group: 'string' }], sure: { willSave: 'string', showAll: 'string', hide: 'string' }, saveRefs: ['string'], save: 'string' },
+    },
     cloudEraseHeld: { args: [], call: [], words: ['none', 'transient', 'definite', 'unknown', 'expired'] }, // S50b: 'none' with no cloud open
     uploadVerdictsJson: {
       args: ['request'],
