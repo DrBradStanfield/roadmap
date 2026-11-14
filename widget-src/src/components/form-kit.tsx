@@ -2,6 +2,7 @@
 // sections (screening first; more to follow as InputPanel splits).
 import type { Dispatch, SetStateAction } from 'react';
 import { openHistoryLightbox } from '../lib/roadmap-data';
+import { describedBy } from '../lib/aria';
 import type { useRangeWait } from '../lib/useRangeWait';
 import type { HealthInputs } from '@roadmap/health-core/types';
 import type { UnitSystem } from '@roadmap/health-core/units';
@@ -14,6 +15,13 @@ export const interceptHistory = (metric: string) => (e: React.MouseEvent<HTMLAnc
 
 /** Focuses an element by id on the next frame, once React has drawn it. */
 export const focusById = (id: string) => requestAnimationFrame(() => document.getElementById(id)?.focus());
+
+/** A box's aria-invalid and aria-describedby while any of `errors` is shown as the text with id `errorId`,
+ *  as the matrices' cells do (US-02 AC5a); `also` describes it either way. */
+export function errorAria(errorId: string, errors: unknown[], also?: string) {
+  const shown = errors.some(Boolean);
+  return { 'aria-invalid': shown || undefined, 'aria-describedby': describedBy(also, shown && errorId) };
+}
 
 /** Option data (health-core's input-form) as <option> elements. */
 export const optionElements = (options: FormOption[]) =>

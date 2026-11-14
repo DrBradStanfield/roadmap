@@ -36,7 +36,7 @@ import { previousReference, WEIGHT_STILL_COUNTS_ID, WeightStillCounts } from './
 import { AddLabTest } from './AddLabTest';
 import { SupplementsSection } from './SupplementsSection';
 import type { FormSlots, Placement } from './MyHealth';
-import { type FormKit } from './form-kit';
+import { errorAria, type FormKit } from './form-kit';
 import { ScreeningQuestions } from './ScreeningQuestions';
 import { LipidMedications } from './LipidMedications';
 import { WeightMedications } from './WeightMedications';
@@ -399,7 +399,7 @@ export function InputPanel({
           <input
             type="number"
             id={field} ref={field === 'weightKg' ? weightRef : undefined}
-            onWheel={blurOnWheel} aria-describedby={previous && rawInputs[field] === '' ? WEIGHT_STILL_COUNTS_ID : undefined}
+            onWheel={blurOnWheel} {...errorAria(`${field}-error`, [unreadable[field], errors[field]], previous && rawInputs[field] === '' ? WEIGHT_STILL_COUNTS_ID : undefined)}
             value={rawInputs[field] !== undefined ? rawInputs[field] : toDisplay(field, (inputs[field] as number | undefined) ?? previous?.value)}
             onChange={(e) => {
               const raw = e.target.value;
@@ -442,7 +442,7 @@ export function InputPanel({
           <span className="previous-reference">Saved {formatShortDate(previous.recordedAt)}</span>
         )}
         {(unreadable[field] || errors[field]) && (
-          <span className="error-message">{unreadable[field] ? 'Enter a number' : errors[field]}</span>
+          <span className="error-message" id={`${field}-error`}>{unreadable[field] ? 'Enter a number' : errors[field]}</span>
         )}
       </div>
     );
