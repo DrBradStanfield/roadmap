@@ -45,8 +45,8 @@ import { openSettings } from '../testing/settings';
 
 const NEUTRAL = 'Are you currently taking any weight or diabetes medications? Recording these helps track your health over time.';
 const recommends = (bmi: string, reasons?: string) => (reasons
-  ? `Your BMI of ${bmi} and ${reasons} suggest you may benefit from medications that support weight management and metabolic health.`
-  : `Your BMI of ${bmi} suggests you may benefit from medications that support weight management and metabolic health.`);
+  ? `At a BMI of ${bmi} and ${reasons}, medications that support weight management and metabolic health are an option to discuss with your doctor.`
+  : `At a BMI of ${bmi}, medications that support weight management and metabolic health are an option to discuss with your doctor.`);
 /** The plan's GLP-1 card text (US-06 AC6). */
 const glp1Card = (bmi: string, reasons: string) =>
   `With a BMI of ${bmi} and ${reasons}, you may benefit from discussing Tirzepatide (preferred) or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.`;
@@ -117,8 +117,8 @@ function planGlp1(container: HTMLElement): string | undefined {
 
 /** Whether the plan holds a suggestion whose title is, or (for `weight-med`) is any weight-medication step. */
 function planCard(container: HTMLElement, title: string): string | undefined {
-  const steps = ['Consider discussing a GLP-1 medication with your doctor', 'Add your GLP-1 dose', 'Consider increasing GLP-1 dose', 'Consider switching to Tirzepatide',
-    'Consider adding an SGLT2 inhibitor', 'Consider adding Metformin'];
+  const steps = ['Consider discussing a GLP-1 medication with your doctor', 'Add your GLP-1 dose', 'Consider increasing GLP-1 dose', 'Discuss switching to Tirzepatide',
+    'Discuss adding an SGLT2 inhibitor', 'Discuss adding Metformin'];
   const titles = title === 'weight-med' ? steps : [title];
   return planTitles(container).find((t) => titles.includes(t));
 }
@@ -215,7 +215,7 @@ describe('US-06 AC5: the form recommends a weight medication only when the plan 
   it('a later step\'s card counts too: GLP-1 not tolerated, the plan suggests an SGLT2 inhibitor, and the form recommends', async () => {
     const view = await guestWith({ sex: 'male', weight: 101.4, hba1c: 40, meds: [['glp1', 'not_tolerated']] });
     await waitFor(() => expect(bmiTile(view.container)).toBe('32'));
-    expect(planCard(view.container, 'Consider adding an SGLT2 inhibitor')).toBeDefined();
+    expect(planCard(view.container, 'Discuss adding an SGLT2 inhibitor')).toBeDefined();
     expect(await weightMedsIntro(view.container)).toBe(recommends('32', 'prediabetic HbA1c'));
   });
 
@@ -262,7 +262,7 @@ describe('US-06 AC5: the weight cascade steps through what the plan does', () =>
     const view = await guestWith({
       sex: 'male', weight: 101.4, meds: [['glp1', 'semaglutide_injection', 1], ['glp1_escalation', 'yes']],
     });
-    await waitFor(() => expect(planCard(view.container, 'Consider adding an SGLT2 inhibitor')).toBeDefined());
+    await waitFor(() => expect(planCard(view.container, 'Discuss adding an SGLT2 inhibitor')).toBeDefined());
     await weightMedsIntro(view.container);
     expect(view.container.querySelector('#sglt2i-name')).not.toBeNull();
   });
@@ -282,7 +282,7 @@ describe('US-06 AC8: with no dose recorded, the plan and the form ask for it', (
   it('a GLP-1 with no dose: the dose card, the form\'s hint, no SGLT2 inhibitor field; a dose opens the escalation step', async () => {
     const view = await guestWith({ sex: 'male', weight: 101.4, meds: [['glp1', 'semaglutide_injection']] }); // BMI 32
     await waitFor(() => expect(planCard(view.container, 'Add your GLP-1 dose')).toBeDefined());
-    expect(planCard(view.container, 'Consider adding an SGLT2 inhibitor')).toBeUndefined();
+    expect(planCard(view.container, 'Discuss adding an SGLT2 inhibitor')).toBeUndefined();
     expect(await weightMedsIntro(view.container)).toBe(recommends('32'));
     expect(fieldHint(view.container, 'glp1-name')).toBe(DOSE_HINT);
     expect(view.container.querySelector('#sglt2i-name')).toBeNull();
@@ -301,7 +301,7 @@ describe('US-06 AC8: with no dose recorded, the plan and the form ask for it', (
       sex: 'male', weight: 80, lipids: { ldl: 3 }, meds: [['statin', 'rosuvastatin'], ['ezetimibe', 'ezetimibe', 10]],
     });
     await waitFor(() => expect(planCard(view.container, 'Add your statin dose')).toBeDefined());
-    expect(planCard(view.container, 'Consider a PCSK9 inhibitor')).toBeUndefined();
+    expect(planCard(view.container, 'Discuss a PCSK9 inhibitor with your doctor')).toBeUndefined();
     await cholesterolIntro(view.container);
     expect(fieldHint(view.container, 'statin-name')).toBe(DOSE_HINT);
     expect(view.container.querySelector('#pcsk9i')).toBeNull();
@@ -309,14 +309,14 @@ describe('US-06 AC8: with no dose recorded, the plan and the form ask for it', (
 
     fireEvent.change(view.container.querySelector('#statin-dose')!, { target: { value: '40' } });
     await waitFor(() => expect(view.container.querySelector('#pcsk9i')).not.toBeNull());
-    await waitFor(() => expect(planCard(view.container, 'Consider a PCSK9 inhibitor')).toBeDefined());
+    await waitFor(() => expect(planCard(view.container, 'Discuss a PCSK9 inhibitor with your doctor')).toBeDefined());
     expect(planCard(view.container, 'Add your statin dose')).toBeUndefined();
     expect(fieldHint(view.container, 'statin-name')).toBe(STATIN_HINT);
   });
 
   it('before ezetimibe is answered, a statin with no dose shows no hint: the plan asks for ezetimibe', async () => {
     const view = await guestWith({ sex: 'male', weight: 80, lipids: { ldl: 3 }, meds: [['statin', 'rosuvastatin']] });
-    await waitFor(() => expect(planCard(view.container, 'Consider adding Ezetimibe')).toBeDefined());
+    await waitFor(() => expect(planCard(view.container, 'Discuss adding Ezetimibe with your doctor')).toBeDefined());
     await cholesterolIntro(view.container);
     expect(planCard(view.container, 'Add your statin dose')).toBeUndefined();
     expect(fieldHint(view.container, 'statin-name')).toBe(STATIN_HINT);
@@ -396,7 +396,7 @@ describe('US-06 AC20: statin not tolerated, the plan and the form step PCSK9 inh
 
   it('statin not tolerated: the PCSK9 inhibitor card, and its question straight after the statin', async () => {
     const view = await guestWith({ sex: 'male', weight: 80, lipids: { ldl: 3 }, meds: [['statin', 'not_tolerated']] });
-    await waitFor(() => expect(lipidCards(view.container)).toEqual(['Consider a PCSK9 inhibitor']));
+    await waitFor(() => expect(lipidCards(view.container)).toEqual(['Discuss a PCSK9 inhibitor with your doctor']));
     expect(await lipidQuestions(view.container)).toEqual(['Statin', 'On a PCSK9 inhibitor?']);
   });
 
@@ -405,7 +405,7 @@ describe('US-06 AC20: statin not tolerated, the plan and the form step PCSK9 inh
       sex: 'male', weight: 80, lipids: { ldl: 3 },
       meds: [['statin', 'not_tolerated'], ['pcsk9i', 'pcsk9i', 140], ['ezetimibe', 'ezetimibe', 10]],
     });
-    await waitFor(() => expect(lipidCards(view.container)).toEqual(['Consider adding bempedoic acid']));
+    await waitFor(() => expect(lipidCards(view.container)).toEqual(['Discuss adding bempedoic acid with your doctor']));
     expect(await lipidQuestions(view.container)).toEqual(['Statin', 'On a PCSK9 inhibitor?', 'On Ezetimibe 10mg?', 'Bempedoic acid']);
   });
 });
