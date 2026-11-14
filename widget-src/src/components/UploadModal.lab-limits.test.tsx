@@ -11,6 +11,7 @@ import { UploadModal } from './UploadModal';
 import { initRoadmapStore, flushRoadmapStore, bulkSaveMeasurements, loadAllHistory } from '../lib/roadmap-data';
 import { checkLabImportQuota, labImport } from '../lib/upload-api';
 import { trackLiveRefresh, stopLiveRefresh } from '../testing/health-tool-harness';
+import { showAllValues } from '../testing/import-review';
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn(), labImportBatch: vi.fn(), pollBatchStatus: vi.fn() }));
 vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
 vi.mock('../lib/archive-payloads', async original => ({ ...await original<typeof import('../lib/archive-payloads')>(), attachOriginals: vi.fn(async r => r), synthesizeLabArchiveEntries: () => [] }));
@@ -39,7 +40,9 @@ it.each([
   } });
   render(<UploadModal open onOpen={() => {}} onClose={() => {}} unitSystem="si" grading={{}} history={{ measurements: [], labValues: [], documents: [] }} onComplete={() => {}} />);
   fireEvent.change(document.querySelector('input[type=file]')!, { target: { files: [new File(['synthetic'], 'labs.pdf', { type: 'application/pdf' })] } });
-  const input = await screen.findByLabelText(/^Lp\(a\) value from/) as HTMLInputElement;
+  await screen.findByText(/^Found /, { selector: '.review-summary' });
+  showAllValues(); // a sure value sits behind "Show all" (US-13 AC13)
+  const input = screen.getByLabelText(/^Lp\(a\) value from/) as HTMLInputElement;
   const cell = input.closest('.bt-cell-value')!;
   // The number stays the input's text; the symbol shows before it, and is heard.
   expect(input.value).toBe('10');

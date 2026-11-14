@@ -1,5 +1,6 @@
 // Review-time dates: the report and column dates the review table edits, as day/month/year state.
 import { validDay } from '@roadmap/health-core/record-edits';
+import { UNDATED_PREVIOUS } from '@roadmap/health-core/lab-extraction';
 import { isCalendarDay } from '@roadmap/health-core/measurement-history';
 import { getCurrentDateValue } from '../components/DatePicker';
 import { MONTHS_SHORT } from './constants';
@@ -89,6 +90,14 @@ export function parseIsoToFullDate(iso: string): FullDate | null {
  *  so editing one column's date never moves the other. */
 export function dateSource(fi: number, recordedAt?: string): string {
   return recordedAt ? `${fi}@${recordedAt}` : String(fi);
+}
+
+/** A value's date: its own printed day when it has one (US-12 AC12), else its
+ *  file's. The date state holds only what the user picked; a printed day
+ *  nobody edited is read from the value itself. Shared by the matrix and the
+ *  import review's days, so the two never place a value apart. */
+export function valueDate(fileDates: Record<string, FullDate>, fi: number, recordedAt?: string): FullDate | undefined {
+  return recordedAt ? fileDates[dateSource(fi, recordedAt)] ?? (recordedAt === UNDATED_PREVIOUS ? UNDATED_DATE : parseReportDate(recordedAt)) : fileDates[fi];
 }
 
 /** Build the most precise date prefix for duplicate matching. */

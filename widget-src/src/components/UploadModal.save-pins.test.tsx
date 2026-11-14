@@ -15,6 +15,7 @@ import { UploadModal } from './UploadModal';
 import { checkLabImportQuota, labImport } from '../lib/upload-api';
 import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues } from '../lib/roadmap-data';
 import type { UploadHistory } from '../lib/api-types';
+import { findReviewValue } from '../testing/import-review';
 
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn(), labImportBatch: vi.fn(), pollBatchStatus: vi.fn() }));
 vi.mock('../lib/roadmap-data', () => ({ getDocumentArchiveMode: vi.fn(() => 'cloud'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
@@ -76,7 +77,7 @@ describe('US-12 / US-13 pins (W2-6) — one upload saves the same store inputs',
     fireEvent.change(document.querySelector('input[type=file]')!, { target: { files: [
       new File(['x'], 'labs.pdf', { type: 'application/pdf' }), new File(['y'], 'letter.pdf', { type: 'application/pdf' }),
     ] } });
-    await screen.findByDisplayValue('139');
+    await findReviewValue('139');
     const cell = (value: string) => Array.from(document.querySelectorAll<HTMLInputElement>('.bt-cell-input input')).find(i => i.value === value)!;
     // LDL shows in mg/dL; a new number typed there saves in SI.
     const ldl = Array.from(document.querySelectorAll<HTMLInputElement>('.bt-cell-input input'))[0];

@@ -6,7 +6,8 @@ import type { UnitSystem } from '@roadmap/health-core/units';
 import type { DocumentPayload } from '@roadmap/health-core/document-save';
 import { UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, type UploadOutcomeKey } from '@roadmap/health-core/product-events';
 import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocumentArchiveMode, getEraseIdentity, getShownErase } from '../lib/roadmap-data';
-import { trackProductEvent } from '../lib/server-api';
+import { countRefusedSpellings } from '../lib/refused-spellings';
+import { trackProductEvent, type ProductEventMetadata } from '../lib/server-api';
 import type { UploadErrorCode, UploadHistory } from '../lib/api-types';
 import { UploadError, KEY_ERROR_MESSAGES, BUSY_NOTICE_TEXT, BATCH_THRESHOLD, shortName, hasValues, processBatch, processPipeline, type FileNotice, type ReadInput, type ReviewDecisions, type FileResult } from '../lib/upload-pipeline';
 import { attachOriginals, synthesizeLabArchiveEntries, connectorDocumentEntries } from '../lib/archive-payloads';
@@ -106,6 +107,14 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
   const lastRun = useRef(0); // names each read: `run` in the state
   // The save's claim, taken synchronously: a double Save, or Discard in the same render, sees it.
   const savingRef = useRef(false);
+  // The review whose `upload_review` was sent (US-13 AC13): one per review, a synchronous claim.
+  const reviewEnded = useRef<FileResult[] | null>(null);
+  /** Sends the review's counts once: on a finished Save, or on Cancel or close. */
+  const endReview = useCallback((counts: ProductEventMetadata | undefined) => {
+    if (!counts || results.length === 0 || reviewEnded.current === results) return;
+    reviewEnded.current = results;
+    trackProductEvent('upload_review', counts);
+  }, [results]);
   useEffect(() => () => { abortRef.current?.abort(); }, []);
   const [loadUploadBundle] = useState(createUploadBundleLoader);
 
@@ -291,7 +300,7 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
     else if (notices.length > 0) trackUploadOutcome(counts.picked, 0, counts.docx, notices);
   };
 
-  const save = useCallback(({ values: selectedValues, documents, labValues, reviewed }: ReviewDecisions) => withClaim(savingRef, async () => {
+  const save = useCallback(({ values: selectedValues, documents, labValues, reviewed, review, labRefusals = [] }: ReviewDecisions) => withClaim(savingRef, async () => {
     dispatch({ type: 'saveStarted' });
     const erase = getShownErase(); // the record this save was asked for
     // This attempt's own counts; the transition adds them to what earlier attempts saved.
@@ -361,6 +370,10 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
       const reportReread = (err: unknown) => { if (!(err instanceof WritesStoppedError)) Sentry.captureException(recordFailure(err, 'Upload save failed'), { tags: { area: 'upload-save', branch: 'reread' } }); };
       const reread = () => { try { return Promise.resolve(onComplete()).catch(reportReread); } catch (err) { reportReread(err); return Promise.resolve(); } };
       if (!saveFailed) {
+        // One per review: a finished Save, never a failed one (US-13 AC13); the
+        // labs it did not send counted as refused spellings, as the store would (US-21 AC15).
+        endReview(review);
+        countRefusedSpellings(labRefusals);
         dispatch({ type: 'saved', attempt });
         void reread();
       } else {
@@ -373,7 +386,7 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
     } catch {
       failSave('Failed to save. Please try again.');
     }
-  }), [onComplete, onScreeningUpdate, history.documents]);
+  }), [onComplete, onScreeningUpdate, history.documents, endReview]);
 
   // A read Cancel stopped, counted once (US-12 AC10): each cancel holds a new object.
   const cancelledRead = state.phase === 'picking' ? state.cancelledRead : undefined;
@@ -391,6 +404,6 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
   return {
     phase, files, notices, progress, results, outcome, readError, saveError,
     skipArchive, skipConnect: () => dispatch({ type: 'skipConnect' }),
-    pick, cancel, close, discard, save,
+    pick, cancel, close, discard, save, endReview,
   };
 }

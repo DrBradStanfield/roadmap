@@ -10,6 +10,7 @@ import { Sentry } from '../lib/sentry';
 import { WritesStoppedError } from '../lib/error-diagnostics';
 import { trackProductEvent } from '../lib/server-api';
 import type { UploadHistory } from '../lib/api-types';
+import { findReviewValue } from '../testing/import-review';
 
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn(), labImportBatch: vi.fn(), pollBatchStatus: vi.fn() }));
 vi.mock('../lib/roadmap-data', () => ({ getDocumentArchiveMode: vi.fn(() => 'cloud'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
@@ -52,7 +53,7 @@ function selectFile() {
 }
 async function ready() {
   selectFile();
-  return screen.findByDisplayValue('3.9');
+  return findReviewValue('3.9');
 }
 beforeEach(() => {
   vi.clearAllMocks();
@@ -99,7 +100,7 @@ describe('US-12 AC4–6 upload session ownership', () => {
     act(() => { fireEvent.change(picker, event); fireEvent.change(picker, event); });
     expect(checkLabImportQuota).toHaveBeenCalledOnce();
     await act(async () => quota.resolve({ allowed: true, remaining: 60 }));
-    await screen.findByDisplayValue('3.9');
+    await findReviewValue('3.9');
     expect(labImport).toHaveBeenCalledOnce();
   });
   it.each(['quota', 'draft flush'])('cancels while awaiting %s without later launching', async phase => {
@@ -195,6 +196,36 @@ describe('US-12 AC4–6 upload session ownership', () => {
     await screen.findByRole('button', { name: 'Done' });
     expect(bulkSaveMeasurements).toHaveBeenCalledTimes(2);
   });
+  it('US-13 AC13: one upload_review per review: none for the failed Save, one, saved 1, when the retry finishes', async () => {
+    vi.mocked(bulkSaveMeasurements).mockRejectedValueOnce(new Error('synthetic failure'));
+    const reviews = () => vi.mocked(trackProductEvent).mock.calls.filter(([name]) => name === 'upload_review').map(([, meta]) => meta);
+    render(<Harness />); await ready();
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    await screen.findByText('Some items could not be saved. Please try again.');
+    expect(reviews()).toEqual([]);
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    await screen.findByRole('button', { name: 'Done' });
+    expect(reviews()).toEqual([expect.objectContaining({ saved: 1 })]);
+    expect(Object.keys(reviews()[0]!).every(k => ['sure', 'unsure', 'notSaved', 'showAll', 'notSavedOpened', 'changedSure', 'changedUnsure', 'saved'].includes(k))).toBe(true);
+  });
+  it('US-13 AC13, US-12 AC4: Escape and × only hide the review; reopened and saved, it sends one upload_review, saved 1', async () => {
+    const reviews = () => vi.mocked(trackProductEvent).mock.calls.filter(([name]) => name === 'upload_review').map(([, meta]) => meta);
+    render(<Harness />); await ready();
+    fireEvent.keyDown(document, { key: 'Escape' });
+    fireEvent.click(screen.getByRole('button', { name: /Ready for review|Click to open/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    expect(reviews()).toEqual([]);
+    fireEvent.click(screen.getByRole('button', { name: /Ready for review|Click to open/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    await screen.findByRole('button', { name: 'Done' });
+    expect(reviews()).toEqual([expect.objectContaining({ saved: 1 })]);
+  });
+  it('US-13 AC13: Cancel ends the review and sends one upload_review, saved 0', async () => {
+    const reviews = () => vi.mocked(trackProductEvent).mock.calls.filter(([name]) => name === 'upload_review').map(([, meta]) => meta);
+    render(<Harness />); await ready();
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(reviews()).toEqual([expect.objectContaining({ saved: 0 })]);
+  });
   it('keeps a thrown save in review so a second Save retries, and blocks discard until every branch settles', async () => {
     const archive = deferred<Awaited<ReturnType<typeof bulkSaveDocuments>>>();
     vi.mocked(synthesizeLabArchiveEntries).mockReturnValueOnce([{
@@ -234,7 +265,7 @@ describe('US-12 AC4–6 upload session ownership', () => {
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
     await screen.findByText('Some items could not be saved. Please try again.');
     expect(screen.queryByDisplayValue('3.9')).toBeNull();
-    const retry = screen.getByRole('button', { name: 'Save 1 Original' }) as HTMLButtonElement;
+    const retry = screen.getByRole('button', { name: 'Save 1 original' }) as HTMLButtonElement;
     expect(retry.disabled).toBe(false);
     fireEvent.click(retry);
     await screen.findByRole('button', { name: 'Done' });
@@ -258,7 +289,7 @@ describe('US-12 AC4–6 upload session ownership', () => {
     render(<Harness completedHistory={savedLdl} />);
     await ready();
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-    fireEvent.click(await screen.findByRole('button', { name: 'Save 1 Original' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Save 1 original' }));
     await screen.findByRole('button', { name: 'Done' });
     expect(screen.getByText(/Saved 1 blood test value, 1 document/)).toBeTruthy();
     expect(screen.queryByText(/not added/)).toBeNull();
@@ -362,7 +393,7 @@ describe('US-12 AC4–6 upload session ownership', () => {
     expect((screen.getByRole('button', { name: /^Sav/ }) as HTMLButtonElement).disabled).toBe(true);
     await act(async () => reread.resolve());
     expect(await screen.findByText('Failed to save. Please try again.')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Save 1 Original' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save 1 original' }));
     await screen.findByRole('button', { name: 'Done' });
     expect(bulkSaveMeasurements).toHaveBeenCalledOnce();
   });
@@ -444,8 +475,15 @@ describe('US-12 AC4–6 upload session ownership', () => {
       refused: [{ key: 'ferritin', unit: 'mg/dL', message: 'Ferritin is stored in µg/L' }],
     } as Awaited<ReturnType<typeof bulkSaveLabValues>>);
     render(<Harness />); await ready();
+    // US-13 AC13 (owner, 2026-11-15): Save submits only the rows the dry save
+    // writes, so the refused unit is named under "Not saved" before Save, and never sent.
+    fireEvent.click(screen.getByRole('button', { name: '1 value not saved' }));
+    expect(screen.getByRole('list', { name: 'Values not saved' }).textContent).toBe('Ferritin: this unit is not one we know for this test');
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-    expect(await screen.findByText('Ferritin: unit not recognised (mg/dL). It was not saved. This test takes µg/L.')).toBeTruthy();
+    await screen.findByRole('button', { name: 'Done' });
+    expect(vi.mocked(bulkSaveLabValues).mock.calls.flatMap(([rows]) => rows)).toEqual([]);
+    // The spelling the test does not take is still counted, key and unit only (US-21 AC15).
+    expect(vi.mocked(trackProductEvent).mock.calls.filter(([n]) => n === 'lab_unit_refused')).toEqual([['lab_unit_refused', { key: 'ferritin', unit: 'mg/dL' }]]);
   });
 
   // US-21 AC15 · a differential in % stays refused, but the summary says the
@@ -459,57 +497,33 @@ describe('US-12 AC4–6 upload session ownership', () => {
       refused: [{ key: 'lymphocytes', unit: '%', message: 'Lymphocytes is stored in ×10⁹/L' }],
     } as Awaited<ReturnType<typeof bulkSaveLabValues>>);
     render(<Harness />); await ready();
+    // US-13 AC13: named before Save under "Not saved", in the review's words, and never sent.
+    fireEvent.click(screen.getByRole('button', { name: '1 value not saved' }));
+    expect(screen.getByRole('list', { name: 'Values not saved' }).textContent).toBe('Lymphocytes: this unit is not one we know for this test');
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-    expect(await screen.findByText(/Lymphocytes: unit not recognised \(%\)\. It was not saved\. This test takes ×10⁹\/L\. A percentage is a share of the white count, not a count: this record keeps the absolute count \(×10⁹\/L or cells\/µL\), so look for that line on the same report\./)).toBeTruthy();
+    await screen.findByRole('button', { name: 'Done' });
+    expect(vi.mocked(bulkSaveLabValues).mock.calls.flatMap(([rows]) => rows)).toEqual([]);
   });
 
   // US-21 AC15 · a count per µL refused for its NUMBER (a decimal, or a
   // hundredfold off its own range) is not an unknown unit, so the summary
   // does not say so: it says the number was not saved, and why.
-  it('US-21 AC15 — a count per µL refused for its number leads with the number, not the unit', async () => {
-    vi.mocked(labImport).mockResolvedValue({
-      result: { ...extraction.result, additionalValues: [{ name: 'Neutrophils', value: 2.4, unit: 'cells/uL', referenceLow: null, referenceHigh: null }] },
-    } as Awaited<ReturnType<typeof labImport>>);
-    vi.mocked(bulkSaveLabValues).mockResolvedValue({
-      saved: [], skippedDuplicates: 0, errorCount: 0,
-      refused: [{ key: 'neutrophils', unit: 'cells/uL', message: 'Neutrophils in "cells/uL" was not stored', fault: 'decimal' }],
-    } as Awaited<ReturnType<typeof bulkSaveLabValues>>);
+  // US-13 AC13 (owner, 2026-11-15): a lab the write refuses for its number is
+  // named before Save under "Not saved", in the review's words, and never sent.
+  // Before, the done screen named it with the US-21 AC15/AC26 line after Save refused it.
+  it.each([
+    ['US-21 AC15 — a count per µL that is not whole', { name: 'Neutrophils', value: 2.4, unit: 'cells/uL', referenceLow: null, referenceHigh: null }, 'Neutrophils: the number and its range are on different scales'],
+    ['US-21 AC15 — a count per µL on a different scale from its printed range', { name: 'Platelets', value: 250000, unit: 'cells/µL', referenceLow: 150, referenceHigh: 400 }, 'Platelets: the number and its range are on different scales'],
+    ['US-21 AC26 — a value past its plausible range', { name: 'Glucose', value: 3000, unit: 'mg/dL', referenceLow: null, referenceHigh: null }, 'Glucose: the number looks misread. Check the report'],
+  ])('%s is named before Save, never sent, and its number never shown', async (_name, value, line) => {
+    vi.mocked(labImport).mockResolvedValue({ result: { ...extraction.result, additionalValues: [value] } } as Awaited<ReturnType<typeof labImport>>);
     render(<Harness />); await ready();
+    fireEvent.click(screen.getByRole('button', { name: '1 value not saved' }));
+    expect(screen.getByRole('list', { name: 'Values not saved' }).textContent).toBe(line);
+    expect(document.body.textContent).not.toContain(String(value.value));
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-    const line = await screen.findByText(/^Neutrophils: the number was not saved\. Counts of cells per µL are whole numbers/);
-    expect(line.textContent).toContain('thousands per µL (×10³/µL).');
-    expect(line.textContent).not.toContain('unit not recognised');
-    expect(line.textContent).not.toContain('—');
-  });
-
-  it('US-21 AC15 — a count per µL on a different scale from its printed range says so', async () => {
-    vi.mocked(labImport).mockResolvedValue({
-      result: { ...extraction.result, additionalValues: [{ name: 'Platelets', value: 250000, unit: 'cells/µL', referenceLow: 150, referenceHigh: 400 }] },
-    } as Awaited<ReturnType<typeof labImport>>);
-    vi.mocked(bulkSaveLabValues).mockResolvedValue({
-      saved: [], skippedDuplicates: 0, errorCount: 0,
-      refused: [{ key: 'platelets', unit: 'cells/µL', message: 'Platelets in "cells/µL": the value and its printed range are on different scales', fault: 'scale' }],
-    } as Awaited<ReturnType<typeof bulkSaveLabValues>>);
-    render(<Harness />); await ready();
-    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-    const line = await screen.findByText('Platelets: the value and its printed range are on different scales, so the row was not stored.');
-    expect(line.textContent).not.toContain('whole number');
-  });
-
-  // US-21 AC26 (Brad 2026-11-09) · an uploaded value past its plausible range is refused like a
-  // typed one, and the summary names the end it passed, never the number.
-  it('US-21 AC26 — a value past its plausible range is named as not saved, with its bound', async () => {
-    vi.mocked(labImport).mockResolvedValue({
-      result: { ...extraction.result, additionalValues: [{ name: 'Glucose', value: 3000, unit: 'mg/dL', referenceLow: null, referenceHigh: null }] },
-    } as Awaited<ReturnType<typeof labImport>>);
-    vi.mocked(bulkSaveLabValues).mockResolvedValue({
-      saved: [], skippedDuplicates: 0, errorCount: 0,
-      refused: [{ key: 'glucose', unit: 'mg/dL', message: 'Glucose above 150 mmol/L', fault: 'implausible', bound: 'above' }],
-    } as Awaited<ReturnType<typeof bulkSaveLabValues>>);
-    render(<Harness />); await ready();
-    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-    const line = await screen.findByText('Glucose: a value above 150 mmol/L is almost certainly a misread number or unit, so it was not saved. Check the report.');
-    expect(line.textContent).not.toContain('3000');
+    await screen.findByRole('button', { name: 'Done' });
+    expect(vi.mocked(bulkSaveLabValues).mock.calls.flatMap(([rows]) => rows)).toEqual([]);
   });
 });
 
@@ -532,9 +546,9 @@ describe('US-13 AC6: the archive-only path files what the review shows', () => {
       metadata: { importedVia: 'connector' }, sourceFileName: 'test.pdf', contentHash: 'sha256-synthetic', fileRef: null, createdAt: '2024-06-02T00:00:00Z' };
     render(<Harness initialHistory={{ ...emptyHistory, documents: [connectorRow] }} />); selectFile();
     // The card starts from the row it replaces (US-14 AC4).
-    fireEvent.change(await screen.findByDisplayValue('Connector title'), { target: { value: 'Reviewed letter' } });
+    fireEvent.change(await findReviewValue('Connector title'), { target: { value: 'Reviewed letter' } });
     fireEvent.change(screen.getByLabelText('Document date'), { target: { value: '2024-07-12' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Save 1 Original' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save 1 original' }));
     await waitFor(() => expect(bulkSaveDocuments).toHaveBeenCalledOnce());
     expect(vi.mocked(bulkSaveDocuments).mock.calls[0][0]).toEqual([expect.objectContaining({
       title: 'Reviewed letter', documentDate: '2024-07-12', sourceFileName: 'test.pdf' })]);

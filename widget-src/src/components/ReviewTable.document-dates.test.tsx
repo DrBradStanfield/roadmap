@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render } from '@testing-library/react';
 import { ReviewTable } from './ReviewTable';
 import type { FileResult } from '../lib/upload-pipeline';
+import { showingAll } from '../testing/import-review';
 
 afterEach(() => { cleanup(); vi.useRealTimers(); });
 
@@ -20,9 +21,9 @@ function review(documentDate: string | null, reportDate: string | null = null, w
       contentMarkdown: 'Synthetic report', metadata: { screeningType: 'colorectal' } },
   };
   const onSave = vi.fn();
-  const view = render(<ReviewTable results={[result]} history={{ measurements: [], labValues: [], documents: [] }}
+  const view = showingAll(render(<ReviewTable results={[result]} history={{ measurements: [], labValues: [], documents: [] }}
     unitSystem="si" age={60} sex="male" grading={{}} onSave={onSave} onCancel={() => {}}
-    isSaving={false} error={null} />);
+    isSaving={false} error={null} />));
   const pick = (value: string) => fireEvent.change(view.getByLabelText('Document date'), { target: { value } });
   const box = () => view.container.querySelector<HTMLInputElement>('.review-screening-update input')!;
   const promise = () => view.container.querySelector('.review-screening-update')?.textContent ?? '';
@@ -137,8 +138,8 @@ describe('US-13 AC6: reviewed document dates', () => {
     const row = (over: object) => ({ id: 'r1', documentType: 'clinic_letter', title: 'Earlier title', documentDate: '2024-05-20', contentMd: 'Synthetic',
       metadata: {}, sourceFileName: 'synthetic-letter.pdf', contentHash: 'sha256-synthetic', fileRef: null, createdAt: '2024-06-02T00:00:00Z', ...over });
     const onSave = vi.fn();
-    const view = render(<ReviewTable results={[letter]} history={{ measurements: [], labValues: [], documents: [row({})] }}
-      unitSystem="si" grading={{}} onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />);
+    const view = showingAll(render(<ReviewTable results={[letter]} history={{ measurements: [], labValues: [], documents: [row({})] }}
+      unitSystem="si" grading={{}} onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />));
     expect(view.getByDisplayValue('Earlier title')).toBeTruthy();
     expect((view.getByLabelText('Document date') as HTMLInputElement).value).toBe('2024-05-20');
     fireEvent.click(view.getByRole('button', { name: /^Save / }));
@@ -146,8 +147,8 @@ describe('US-13 AC6: reviewed document dates', () => {
     cleanup();
     // An archived row, or a lab-archive row, is not one it replaces: the extraction stands.
     for (const other of [row({ fileRef: 'Letters/a.pdf' }), row({ documentType: 'pathology_report', title: 'Blood test results', contentMd: '' })]) {
-      const again = render(<ReviewTable results={[letter]} history={{ measurements: [], labValues: [], documents: [other] }}
-        unitSystem="si" grading={{}} onSave={() => {}} onCancel={() => {}} isSaving={false} error={null} />);
+      const again = showingAll(render(<ReviewTable results={[letter]} history={{ measurements: [], labValues: [], documents: [other] }}
+        unitSystem="si" grading={{}} onSave={() => {}} onCancel={() => {}} isSaving={false} error={null} />));
       expect(again.getByDisplayValue('Extracted title')).toBeTruthy();
       cleanup();
     }
@@ -160,8 +161,8 @@ describe('US-13 AC6: reviewed document dates', () => {
     const row = (id: string, title: string, createdAt: string, documentDate: string | null) => ({ id, documentType: 'clinic_letter', title, documentDate,
       contentMd: 'Synthetic', metadata: {}, sourceFileName: 'synthetic-letter.pdf', contentHash: 'sha256-synthetic', fileRef: null, createdAt });
     const onSave = vi.fn();
-    const view = render(<ReviewTable results={[letter]} grading={{}} unitSystem="si" onSave={onSave} onCancel={() => {}} isSaving={false} error={null}
-      history={{ measurements: [], labValues: [], documents: [row('old', 'Older title', '2024-06-02T00:00:00Z', '2024-05-01'), row('new', 'Newer title', '2024-07-02T00:00:00Z', null)] }} />);
+    const view = showingAll(render(<ReviewTable results={[letter]} grading={{}} unitSystem="si" onSave={onSave} onCancel={() => {}} isSaving={false} error={null}
+      history={{ measurements: [], labValues: [], documents: [row('old', 'Older title', '2024-06-02T00:00:00Z', '2024-05-01'), row('new', 'Newer title', '2024-07-02T00:00:00Z', null)] }} />));
     expect(view.getByDisplayValue('Newer title')).toBeTruthy();
     expect(view.getByText('Date unknown')).toBeTruthy();
     fireEvent.click(view.getByRole('button', { name: /^Save / }));

@@ -1,12 +1,11 @@
 /** Local-first health records and client-side reports, on every widget surface. */
-import type { AddLabValueRequest, AddLabValueResult, LabUnitRefusal, MoveKeep, MoveRejection, MovePlan } from '@roadmap/health-core/record-edits';
+import type { AddLabValueRequest, AddLabValueResult, MoveKeep, MoveRejection, MovePlan } from '@roadmap/health-core/record-edits';
 import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import { dayOf } from '@roadmap/health-core/merge';
 import type { FileReminderOptIn } from '@roadmap/health-core/roadmap-file';
 import type { HealthInputs } from '@roadmap/health-core/types';
 import type { LpaUnit, MetricType } from '@roadmap/health-core/units';
-import { labUnitForEvent, MEASUREMENT_REFUSALS_WITH_METRIC, type MEASURES } from '@roadmap/health-core/product-events';
-import { labUnitTaken, resolveLabCatalogEntry } from '@roadmap/health-core/lab-catalog';
+import { MEASUREMENT_REFUSALS_WITH_METRIC, type MEASURES } from '@roadmap/health-core/product-events';
 import type { ReminderScheduleItem } from '@roadmap/health-core/reminder-schedule';
 import type { SaveStatus } from '@roadmap/health-core/save-state';
 import { knownMinorOf } from '@roadmap/health-core/calculations';
@@ -15,6 +14,7 @@ import { ChatHistoryStore } from '../storage/chat-history-store';
 import { getChatHistory, openChatHistory, setChatHistoryFactory } from './chat-history-access';
 import { eraseBegan, setChatEraseReader } from './chat-erase';
 import { PROXY_PATH, parseJsonResponse, trackProductEvent } from './server-api';
+import { countRefusedSpellings } from './refused-spellings';
 import { SHOPIFY_SURFACE } from './build-flags';
 import type { StorageAdapter } from '@roadmap/health-core/adapter';
 import type {
@@ -295,17 +295,6 @@ export async function addLabValue(input: AddLabValueRequest, erase?: string): Pr
   const result = store ? store.addLabValue(input, erase) : null;
   if (result && !result.ok && result.refused) countRefusedSpellings([result.refused]);
   return result;
-}
-/** Every lab writer passes here, so each refused row is counted once: only a spelling the test
- *  does not take, the signal for the next one to teach it (US-21 AC15). A unit that is not a unit
- *  word is counted without it (US-21 AC11); a blank one as `(blank)` (AC22). */
-function countRefusedSpellings(refused: LabUnitRefusal[]): void {
-  for (const row of refused) {
-    if (!labUnitTaken(resolveLabCatalogEntry(row.key), row.unit)) {
-      const unit = labUnitForEvent(row.unit);
-      trackProductEvent('lab_unit_refused', unit ? { key: row.key, unit } : { key: row.key });
-    }
-  }
 }
 export async function bulkSaveDocuments(
   documents: Array<{ documentType: string; title: string; documentDate: string | null; contentMd: string; metadata: Record<string, unknown>; sourceFileName: string | null; file?: Blob }>,

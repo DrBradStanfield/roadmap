@@ -82,14 +82,15 @@ export type NotSavedReason = 'unit' | 'noUnit' | 'misread' | 'scale' | 'unreadab
  * test's label, never a key; "" for an unread row that names no test.
  * `sent`: the client gave a row for it. `writes`: Save writes it.
  * - sure: Save writes it, no row needed.
- * - saved: the record already holds it, or an equal reading of this upload is written.
+ * - saved: the record already holds it, or (`duplicate`) an equal reading of
+ *   this upload holds its slot: one copy saves, so the client counts it nowhere.
  * - unsure: shown as a row, with every reason.
  * - notSaved: Save would not write it, with one reason.
  * - waiting: no day yet; it stays behind the file's date question.
  * `refusal`: the dry run's own refusal of this value's row, for a receipt in the write's words.
  */
 export type ClassifiedValue =
-  | { file: number; ref: string; label: string; sent: boolean; writes: boolean; group: 'sure' | 'saved' | 'waiting'; refusal?: ImportRefusal }
+  | { file: number; ref: string; label: string; sent: boolean; writes: boolean; group: 'sure' | 'saved' | 'waiting'; refusal?: ImportRefusal; duplicate?: true }
   | { file: number; ref: string; label: string; sent: boolean; writes: boolean; group: 'unsure'; reasons: UnsureReason[]; refusal?: ImportRefusal }
   | { file: number; ref: string; label: string; sent: boolean; writes: boolean; group: 'notSaved'; reason: NotSavedReason; refusal?: ImportRefusal };
 /** A row the write refused: a lab unit or number, or a core value (its range, a pressure pair). */
@@ -144,6 +145,13 @@ function slotOf(row: BulkRow): { slot: string; quantity: Quantity } {
 /** A lab refusal in the person's words, from the write's own fault (never its text). */
 const labReason = (r: BulkAppendResult['refused'][number]): NotSavedReason =>
   r.fault === 'implausible' || r.fault === 'ceiling' ? 'misread' : r.fault === 'scale' || r.fault === 'decimal' ? 'scale' : r.unit.trim() ? 'unit' : 'noUnit';
+
+/** The write refuses this row even on an empty record (its unit, its count,
+ *  its range): it takes no (test, day) slot. The review's groups and the
+ *  website's matrix place readings by this one rule. */
+export function refusedAlone(row: BulkRow, now: string): boolean {
+  return bulkAppendValues(createEmptyFile({ deviceId: 'review', now }), [row], now).outcomes[0] === 'refused';
+}
 
 /** A day no value lands on: a value with no day is written there alone, on an
  *  empty record, only to read its refusal. */
@@ -214,8 +222,7 @@ export function classifyImportValues(files: readonly ImportFile[], record: Roadm
   // 1) One reading per (test, day), by the review's precedence (US-12 AC12, AC14; US-13 AC3).
   //    A row the write refuses on its own (its unit, its range) takes no slot:
   //    it goes to the run as it is, and a valid reading of that day still lands.
-  const refusedAlone = sent.map((s) => bulkAppendValues(empty, [s.row], now).outcomes[0] === 'refused');
-  const placed = sent.map((_, i) => i).filter((i) => !refusedAlone[i]);
+  const placed = sent.map((_, i) => i).filter((i) => !refusedAlone(sent[i].row, now));
   const placements = placeReadings(placed.map((i) => ({ ...slotOf(sent[i].row), rank: sent[i].rank, edited: sent[i].row.source === 'lab_import_edited', sent: true })), heldReadings(record));
   const places = new Map(placed.map((i, k) => [i, { place: placements[k].place, winner: placements[k].winner === undefined ? undefined : placed[placements[k].winner!] }]));
   const loses = (i: number) => places.get(i)?.place === 'duplicate' || places.get(i)?.place === 'hidden';
@@ -230,7 +237,7 @@ export function classifyImportValues(files: readonly ImportFile[], record: Roadm
     const { place, winner } = places.get(i)!;
     const won = groups.get(winner!)!;
     const inherited: Group = place === 'hidden' ? { group: 'notSaved', reason: 'sameDay', writes: false }
-      : won.writes || won.group === 'saved' ? { group: 'saved', writes: false } : { ...won, writes: false, refusal: undefined }; // the winner's refusal is its own
+      : won.writes || won.group === 'saved' ? { group: 'saved', writes: false, duplicate: true } : { ...won, writes: false, refusal: undefined }; // the winner's refusal is its own
     values.push({ ...label(s, true), ...inherited } as ClassifiedValue);
   });
 
@@ -270,9 +277,9 @@ export function importSummary(files: ReadonlyArray<Pick<ImportFile, 'result'>>):
   let values = 0;
   const kinds = new Map<DocumentType, number>();
   for (const { result } of files) {
-    if (result.classification === 'lab_report') {
-      values += (result.values?.length ?? 0) + (result.additionalValues?.length ?? 0);
-    } else if (result.document) {
+    if (result.classification === 'lab_report') values += (result.values?.length ?? 0) + (result.additionalValues?.length ?? 0);
+    // A document counts by its kind, values or not: a clinic letter that prints an LDL is still a letter.
+    if (result.document && result.document.classification !== 'lab_report') {
       const kind = (DOCUMENT_TYPES as readonly string[]).includes(result.document.classification) ? result.document.classification as DocumentType : 'other';
       kinds.set(kind, (kinds.get(kind) ?? 0) + 1);
     }

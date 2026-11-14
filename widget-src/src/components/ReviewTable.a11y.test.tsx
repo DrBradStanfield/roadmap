@@ -15,6 +15,7 @@ import type { ApiLabValue } from '../lib/api-types';
 import { a11yTextWithDigits } from '../testing/a11y-text';
 import { ReviewTable } from './ReviewTable';
 import type { FileResult } from '../lib/upload-pipeline';
+import { showingAll } from '../testing/import-review';
 
 afterEach(cleanup);
 
@@ -44,8 +45,8 @@ const history = {
 };
 
 function renderReview(files: FileResult[] = results) {
-  return render(<ReviewTable grading={{}} results={files} history={history}
-    unitSystem="si" onSave={vi.fn()} onCancel={() => {}} isSaving={false} error={null} />);
+  return showingAll(render(<ReviewTable grading={{}} results={files} history={history}
+    unitSystem="si" onSave={vi.fn()} onCancel={() => {}} isSaving={false} error={null} />));
 }
 
 const ON = 'from 10 Mar 2026';
