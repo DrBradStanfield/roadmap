@@ -11,7 +11,7 @@ interface ChatThreadListProps {
 }
 
 /** Enter or Space on the row itself opens it; a key on its Delete button is left to the button. */
-function opensRow(e: React.KeyboardEvent): boolean {
+export function opensRow(e: React.KeyboardEvent): boolean {
   return e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ');
 }
 
