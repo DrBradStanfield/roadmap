@@ -58,6 +58,31 @@ describe('US-72 AC17: a result HealthKit took out of a panel', () => {
     expect(after.file.labValues.filter((l) => l.status === 'active')).toHaveLength(1);
   });
 
+  // The two copies carry different version stamps: the contained one takes its report's
+  // `meta` (dom-4), the split copy keeps its own profile-only meta.
+  describe('arriving both ways with different version stamps', () => {
+    const split = rec(result('DiagnosticReport/panel-1#r1'));
+    const { meta: _m, ...inner } = result('r1');
+    const panel = rec({
+      resourceType: 'DiagnosticReport', id: 'panel-1', status: 'final', meta: { lastUpdated: '2026-10-22T13:00:00Z' },
+      contained: [inner], result: [{ reference: '#r1' }],
+    }, { resourceType: 'DiagnosticReport' });
+    const rows = (f: RoadmapFile) => f.labValues.map((l) => [l.metricName, l.value, l.status, l.recordedAt, String(l.externalId).endsWith('|m')]);
+
+    for (const [order, first, second] of [['panel first', panel, split], ['split copy first', split, panel]] as const) {
+      it(`${order}: no second reading; the second copy counts as already in the record and lands one entered-in-error version marker`, () => {
+        const a = run(empty(), [first]);
+        expect(a.counts).toEqual({ ...NONE, added: 1 });
+        const b = run(a.file, [second], LATER);
+        expect(b.counts).toEqual({ ...NONE, alreadyInRecord: 1 });
+        expect(rows(b.file)).toEqual([
+          ['ldl', 2.6, 'active', '2026-10-21T08:00:00.000-04:00', false],
+          ['ldl', 2.6, 'entered-in-error', '2026-10-21T08:00:00.000-04:00', true],
+        ]);
+      });
+    }
+  });
+
   it('two panels with the same result id are two results', () => {
     const { counts } = run(empty(), [rec(result('DiagnosticReport/panel-1#r1')), rec(result('DiagnosticReport/panel-2#r1', {
       code: { coding: [{ system: 'http://loinc.org', code: '2085-9' }] }, valueQuantity: { value: 1.3, unit: 'mmol/L' },
