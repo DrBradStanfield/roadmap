@@ -925,6 +925,9 @@ Apple offers Health Records in the US, UK and Canada; records are FHIR, read-onl
   Bump it when the engine starts reading results it used to refuse (a new code or unit): a
   phone whose anchor was kept under another version drops it once and reads every result
   again. AC5's dedup by `externalId`, and its stale-version rule, make the re-read safe.
+  The version lives in the app, not the engine. An over-the-air engine release alone does
+  not re-read results an older app build skipped; only an app build with the higher rules
+  version does.
 - **One blood-test table (US-66, merged 2026-11-03):** every result lands in `labValues`, a
   core test as a core row (`createCoreRow`: `core: true`, its key, its SI unit), so the
   record's own write stamp makes it `schemaVersion` 3; `measurements` gets nothing from the
@@ -1443,6 +1446,10 @@ user agrees. The agreement is kept on the phone with a version, so changed wordi
 again, and the chat and upload screens have a "Stop sharing" control that withdraws it.
 Before submission Brad updates the privacy policy and the App Store privacy label
 (forwarding to a third party that keeps data may count as "collected").
+Since 2026-11-15 (App Review 1.4.1, US-52 AC6h) the chat screen's first paragraph says the app
+is education, not medical advice (`EducationNote.chatConsent`). It is not sharing wording, so
+the consent's version stays v1 and no one who agreed is asked again. My health has a matching
+line under its title (`EducationNote.myHealth`, US-73 AC13).
 
 **The plan screen's sentence** (D9, adversary R1): "No health data left your device" is
 false once a user has used chat or upload. It now reads "Worked out on this iPhone", which

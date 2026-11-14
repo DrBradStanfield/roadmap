@@ -1,7 +1,7 @@
 /**
- * Where one bulk row lands: as a lab row or as a core or vital value, and
- * under which metric. The write (`bulkAppendValues`) and the import review
- * (`import-review.ts`) both read it here, so a review's slot is the write's.
+ * Where one bulk row lands, and what became of it: the write
+ * (`bulkAppendValues`) and the import review (`import-review.ts`) both read
+ * them here, so a review's slot and outcome are the write's.
  */
 import { bloodTestKeyOf } from './blood-tests';
 import type { MetricType } from './units';
@@ -22,4 +22,21 @@ export function bulkRowTarget(row: TargetedRow): { named: MetricType | null; asL
   const asLab = row.kind === 'lab' && (!named || (named === 'creatinine' && row.source !== 'manual'));
   const metric = row.kind === 'measurement' ? row.metricType : asLab ? row.metricName : named!;
   return { named, asLab, metric, slot: asLab ? 'lab' : 'measurement' };
+}
+
+export type BulkRowOutcome = 'written' | 'skipped' | 'refused';
+
+/** Each row's outcome in a bulk write (US-13 AC13), read off the write's
+ *  counts: `settle` as the next row starts, and once after the last. */
+export function outcomeLog(counts: () => { saved: number; skipped: number }): { outcomes: BulkRowOutcome[]; settle: () => void } {
+  const outcomes: BulkRowOutcome[] = [];
+  let before = { saved: 0, skipped: 0 };
+  return {
+    outcomes,
+    settle: () => {
+      const now = counts();
+      outcomes.push(now.saved > before.saved ? 'written' : now.skipped > before.skipped ? 'skipped' : 'refused');
+      before = now;
+    },
+  };
 }
