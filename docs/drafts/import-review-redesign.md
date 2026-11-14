@@ -198,3 +198,13 @@ Q4. Unsure defaults: (a) today's defaults.
 `packages/health-core/src/import-review.ts`: `classifyImportValues`, `heldSlots`,
 `heldSlotsFromFile`, `importSummary`, `importSummaryText`, `notSavedGroups`, `NOT_SAVED_TEXT`,
 `IMPORT_REVIEW_TEXT`. `upload_review` in `upload-events.ts` (split out of product-events.ts).
+
+## Built (series PRs 5 and 6 as one PR, iPhone)
+
+Engine: the optional door `labReviewGroupsJson` (`ios/engine/lab-review-groups.ts`), asked with the
+ticks and test day held now, so the groups follow each tick (bridge id unchanged). It answers the
+summary, each value's group, the section words, the not-saved lines and `saveRefs`, the ticked values
+the save will write (a hidden sure one included; never one already held or refused). Swift
+(`LabReviewView`) draws them; `LabReportSave.omissions` and the "Not saved" list are gone. One value is
+"Check this value" (owner's ruling). Usage: "Lab review show all", "Lab review not saved opened", "Lab
+review untick".

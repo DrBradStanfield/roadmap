@@ -164,9 +164,13 @@ final class AppChatLabTests: XCTestCase {
         XCTAssertEqual(review.reportDay, "2026-10-01")
         XCTAssertEqual(review.items.map(\.ref), ["v0", "v1", "a0"])
         XCTAssertEqual(review.items[1].day, "2025-04-02")
-        XCTAssertEqual(review.notSaved.first?.label, "Creatinine")
-
         let held = try record(engine, .add(metric: "ldl", value: 2.5, day: "2026-10-01"))
+        let groups = try XCTUnwrap(engine.blocking { [now, extraction] in
+            try $0.labReviewGroups(recordJSON: held, extractionJSON: extraction, ticked: ["v0", "v1", "a0"], reportDay: "2026-10-01", now: now, deviceId: "test") })
+        XCTAssertEqual(groups.notSaved?.lines, ["Creatinine: no unit was printed"])
+        // The held LDL is a row that is never written (Q2a); Save sends the rest.
+        XCTAssertNotNil(groups.conflict("v0"))
+        XCTAssertEqual(groups.saveRefs, ["v1", "a0"])
         let summary = try engine.blocking { [now, extraction] in try $0.labSaveSummary(recordJSON: held, extractionJSON: extraction, refs: ["v0", "v1", "a0"], reportDay: "2026-10-01", now: now, deviceId: "test") }.get()
         XCTAssertEqual(summary, LabSaveSummary(saved: 2, skipped: 1, refused: []))
 
@@ -196,11 +200,69 @@ final class AppChatLabTests: XCTestCase {
          "unreadValues":[{"name":"hdl","reason":"unreadable"},{"name":"lpa","reason":"unreadable"},{"name":"hdl","reason":"unreadable"}]}
         """#
         let review = try engine.blocking { [now] in try $0.labReview(extractionJSON: unread, now: now) }
-        // Each label once (review R1); tests with the same reason share a line. A limit is saved
-        // since US-12 AC20, so it is never here.
-        XCTAssertEqual(review.notSaved, [LabReview.NotSaved(label: "HDL Cholesterol, Lp(a)", reason: "could not be read")])
-        XCTAssertEqual(review.unreadCount, 1)
+        let groups = try XCTUnwrap(engine.blocking { [now] in
+            try $0.labReviewGroups(recordJSON: "", extractionJSON: unread, ticked: ["v0"], reportDay: "2026-10-01", now: now, deviceId: "test") })
+        // Each label once (review R1); tests with the same reason share a line (US-13 AC13's
+        // words). A limit is saved since US-12 AC20, so it is never here.
+        XCTAssertEqual(groups.notSaved?.title, "4 values not saved")
+        XCTAssertEqual(groups.notSaved?.lines, ["HDL Cholesterol, Lp(a): could not be read", "1 other value could not be read"])
         XCTAssertEqual(review.items.map(\.label), ["LDL Cholesterol"])
+    }
+
+    // MARK: US-13 AC13: the review's groups
+
+    /// A sure value is hidden behind Show all and still saves: its tick stays, and the plan
+    /// Save runs sends it. Fails if a hidden value stopped saving.
+    func testAHiddenSureValueKeepsItsTickAndSaves_US13_AC13() throws {
+        let engine = try HealthEngine()
+        let review = try engine.blocking { [now, extraction] in try $0.labReview(extractionJSON: extraction, now: now) }
+        let choices = LabChoices(review: review)
+        let groups = try XCTUnwrap(engine.blocking { [now, extraction] in
+            try $0.labReviewGroups(recordJSON: "", extractionJSON: extraction, ticked: choices.ticked, reportDay: "2026-10-01", now: now, deviceId: "test") })
+        XCTAssertEqual(groups.summary, "Found 3 blood test values")
+        XCTAssertEqual(groups.rows("sure", of: review).map(\.ref), ["v0", "a0"], "no row unless Show all")
+        XCTAssertEqual(groups.rows("unsure", of: review).map(\.ref), ["v1"])
+        XCTAssertEqual(groups.check?.title, "Check this value")
+        XCTAssertEqual(groups.sure, LabReviewGroups.Sure(willSave: "2 values will be saved", showAll: "Show all 2", hide: "Hide"))
+        XCTAssertEqual(groups.save, "Save 3 values")
+        let result = LabResult(name: "Bloods.pdf", truncated: false, extractionJSON: extraction, failure: nil)
+        XCTAssertEqual(LabSavePlan(result: result, review: review, choices: choices, archiveOnly: false, groups: groups),
+                       .values(refs: ["v0", "v1", "a0"], day: "2026-10-01"))
+    }
+
+    /// The not-saved lines are the engine's, in the person's words: no raw key and no text
+    /// written for assistants (US-52 AC8, H400). Fails if a key reached the screen.
+    func testNotSavedNamesNoKey_US13_AC13() throws {
+        let engine = try HealthEngine()
+        let percent = #"""
+        {"classification":"lab_report","reportDate":"2026-10-01","values":[],
+         "additionalValues":[{"name":"neutrophils","value":60,"unit":"%"},{"name":"immature_granulocytes","value":0.4,"unit":"%"}]}
+        """#
+        let groups = try XCTUnwrap(engine.blocking { [now] in
+            try $0.labReviewGroups(recordJSON: "", extractionJSON: percent, ticked: ["a0", "a1"], reportDay: "2026-10-01", now: now, deviceId: "test") })
+        let lines = try XCTUnwrap(groups.notSaved?.lines)
+        XCTAssertFalse(lines.isEmpty)
+        for line in lines + [groups.notSaved?.title ?? "", groups.summary] {
+            XCTAssertFalse(line.contains("_"), line)
+            XCTAssertFalse(line.contains("Do not"), line)
+        }
+        XCTAssertEqual(groups.saveRefs, [])
+        XCTAssertNil(groups.save, "nothing to save: no Save (D3)")
+        // Save all's notes on that report are the same lines (AC8b).
+        XCTAssertEqual(LabReportSave().reportOutcome(groups), ReportOutcome(notes: ["Already in your record"] + lines))
+    }
+
+    /// The groups decode from the engine's JSON, with null sections absent.
+    func testTheGroupsDecode_US13_AC13() throws {
+        let json = #"""
+        {"summary":"Found 1 blood test value","items":[{"ref":"v0","group":"unsure","reasons":["conflict"],"conflict":"Kept."}],
+         "check":{"title":"Check this value","footer":"F"},"sure":null,"alreadySaved":null,"notSaved":null,"saveRefs":[],"save":"Save 0 values"}
+        """#
+        let groups = try JSONDecoder().decode(LabReviewGroups.self, from: Data(json.utf8))
+        XCTAssertEqual(groups.items, [LabReviewGroups.Item(ref: "v0", group: "unsure", conflict: "Kept.")])
+        XCTAssertEqual(groups.check?.title, "Check this value")
+        XCTAssertNil(groups.sure)
+        XCTAssertEqual(groups.conflict("v0"), "Kept.")
     }
 
     // MARK: AC13d: documents

@@ -17,11 +17,6 @@ struct LabReview: Decodable, Equatable, Sendable {
         var id: String { ref }
     }
 
-    struct NotSaved: Decodable, Equatable, Sendable {
-        let label: String
-        let reason: String
-    }
-
     /// A letter, discharge summary or other document, as the web's review card shows it (AC13d).
     struct Document: Decodable, Equatable, Sendable {
         /// The model's classification, shown read-only ("clinic_letter").
@@ -42,9 +37,43 @@ struct LabReview: Decodable, Equatable, Sendable {
     let isLabReport: Bool
     let reportDay: String?
     let items: [Item]
-    let notSaved: [NotSaved]
-    let unreadCount: Int
     let document: Document?
+}
+
+/// The review's groups for the ticks and test day it holds now (US-13 AC13, US-52 AC8;
+/// ios/engine/lab-review-groups.ts): which values get a row, which save unseen, which are
+/// already held or not saved, and every word the screen shows. Swift holds no rule and no
+/// copy of these words; it asks again when a tick or the day changes.
+struct LabReviewGroups: Decodable, Equatable, Sendable {
+    struct Item: Decodable, Equatable, Sendable {
+        let ref: String
+        /// "sure", "unsure", "saved" or "notSaved".
+        let group: String
+        /// A different value is already held that day: these words, and the row is never written.
+        let conflict: String?
+    }
+    struct Check: Decodable, Equatable, Sendable { let title: String; let footer: String }
+    struct Sure: Decodable, Equatable, Sendable { let willSave: String; let showAll: String; let hide: String }
+    struct NotSaved: Decodable, Equatable, Sendable { let title: String; let lines: [String]; let footer: String }
+
+    let summary: String
+    let items: [Item]
+    let check: Check?
+    let sure: Sure?
+    let alreadySaved: String?
+    let notSaved: NotSaved?
+    /// The ticked values Save sends: never one the record holds or one it refuses.
+    let saveRefs: [String]
+    /// The Save button's words; nil when no value could be written: no Save (D3).
+    let save: String?
+
+    /// The review's items in `group`, in the report's order.
+    func rows(_ group: String, of review: LabReview) -> [LabReview.Item] {
+        let refs = Set(items.filter { $0.group == group }.map(\.ref))
+        return review.items.filter { refs.contains($0.ref) }
+    }
+
+    func conflict(_ ref: String) -> String? { items.first { $0.ref == ref }?.conflict }
 }
 
 /// What the review chose to file for one file (US-52 AC13d): its document, with the

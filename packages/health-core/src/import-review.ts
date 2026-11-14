@@ -238,7 +238,8 @@ export function notSavedGroups(values: readonly ClassifiedValue[]): { total: num
 
 /** The review's other words (strings 4 to 14), one copy for both screens. */
 export const IMPORT_REVIEW_TEXT = {
-  checkTitle: (k: number) => `Check these ${plural(k, 'value')}`,
+  // One value is "Check this value" (owner's ruling, 2026-11-15).
+  checkTitle: (k: number) => (k === 1 ? 'Check this value' : `Check these ${plural(k, 'value')}`),
   checkFooter: 'We were not sure about these. Check each against the report.',
   conflictKept: 'Your record already has a different value for this day. It stays as it is.',
   willSave: (n: number) => `${plural(n, 'value')} will be saved`,

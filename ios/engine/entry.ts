@@ -24,6 +24,8 @@ import { StorageError } from '../../packages/health-core/src/adapter';
 import { documentShelf } from './documents';
 import { fileVerdict, UPLOAD_LIMITS, zipMemberVerdict } from '../../packages/health-core/src/upload-rules';
 import { checkArgs } from './contract';
+import { labReviewGroups } from './lab-review-groups';
+import type { Extraction } from './lab-review';
 
 // The web APIs the cloud adapters need, over Swift's natives (shim.ts). Absent
 // in Node, where the parity goldens run the bundle with nothing but ECMAScript.
@@ -271,6 +273,15 @@ function originalGone(error: unknown): boolean {
 }
 // Chat and lab upload (US-52): app-doors.ts.
 export { chatContextJson, chatListJson, chatMessagesJson, chatRecordExchangeJson, chatDeleteJson, settledJson, labReviewJson, labSaveSummaryJson } from './app-doors';
+
+/** The import review's groups and words for the ticks and test day the screen holds now (US-13
+ *  AC13, US-52 AC8; lab-review-groups.ts), against the record read raw, as the save writes it.
+ *  Optional, like labSearchJson: an app reaches it only through HealthEngine.optionalCall. */
+export function labReviewGroupsJson(recordJson: string, extractionJson: string, refsJson: string, reportDay: string, nowIso: string, deviceId: string): string {
+  checkArgs('labReviewGroupsJson', arguments);
+  const file = recordJson ? readRecord(recordJson, nowIso, deviceId) : null;
+  return JSON.stringify(labReviewGroups(JSON.parse(extractionJson) as Extraction, file, JSON.parse(refsJson) as string[], reportDay, nowIso));
+}
 /** The phone's reminders (reminders.ts): health-core's schedule plus the notification days, as JSON.
  *  `firstSeenJson` (US-17 AC15): the follow-up first-seen days the app keeps; anything that is not
  *  an object of calendar days counts as none kept. An app before it sends none, and is answered as before. */

@@ -1,6 +1,6 @@
 // Generated from ios/engine/contract.ts by `npx tsx ios/scripts/gen-contract.ts`. Never edit it:
 // ios/engine/contract-drift.test.ts fails when it differs from what the contract generates.
-// contractHash: fa0b8b7ca709c585
+// contractHash: 33d72212aaeaf3b3
 
 import Foundation
 import JavaScriptCore
@@ -221,6 +221,11 @@ extension HealthEngine {
     /// `uploadVerdictsJson`: answers at once; nil from an engine without it.
     func doorUploadVerdictsJson(request: String) throws -> String? {
         try optionalCall("uploadVerdictsJson", [request])
+    }
+
+    /// `labReviewGroupsJson`: answers at once; nil from an engine without it.
+    func doorLabReviewGroupsJson(recordJson: String, extractionJson: String, refsJson: String, reportDay: String, nowIso: String, deviceId: String) throws -> String? {
+        try optionalCall("labReviewGroupsJson", [recordJson, extractionJson, refsJson, reportDay, nowIso, deviceId])
     }
 
     /// `cloudOnline`: answers at once; nil from an engine without it.

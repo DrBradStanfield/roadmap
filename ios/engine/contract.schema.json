@@ -692,6 +692,36 @@
         }
       ]
     },
+    "labReviewGroupsJson": {
+      "kind": "sync",
+      "optionalDoor": true,
+      "args": [
+        {
+          "name": "recordJson",
+          "type": "string"
+        },
+        {
+          "name": "extractionJson",
+          "type": "string"
+        },
+        {
+          "name": "refsJson",
+          "type": "string"
+        },
+        {
+          "name": "reportDay",
+          "type": "string"
+        },
+        {
+          "name": "nowIso",
+          "type": "string"
+        },
+        {
+          "name": "deviceId",
+          "type": "string"
+        }
+      ]
+    },
     "cloudOnline": {
       "kind": "sync",
       "optionalDoor": true,

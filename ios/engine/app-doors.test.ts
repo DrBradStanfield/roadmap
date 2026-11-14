@@ -5,6 +5,7 @@ import {
   chatContextJson, chatDeleteJson, chatListJson, chatMessagesJson, chatRecordExchangeJson,
   labReviewJson, labSaveSummaryJson, settledJson,
 } from './app-doors';
+import { labReviewGroupsJson } from './entry';
 import { applyEdit, newRecord } from './my-data';
 import { erasePhoneJson } from './erase';
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
@@ -201,6 +202,89 @@ describe('US-52 AC8: the lab review and the write', () => {
     expect(refuse(['v9'], '2026-10-01')).toMatchObject({ ok: false, reason: 'not-found' });
     // A value with its own day does not need the report's.
     expect(refuse(['v1'], '')).toMatchObject({ ok: true });
+  });
+});
+
+/** The groups door as Swift calls it: the record, the ticks and the test day it holds now. */
+const groupsOf = (x: object, refs: string[], file: RoadmapFile = record(), day = '2026-10-01') =>
+  JSON.parse(labReviewGroupsJson(JSON.stringify(file), JSON.stringify(x), JSON.stringify(refs), day, NOW, DEVICE));
+const ldlHigh = { metric: 'ldl', valueSI: 3.1, displayValue: 3.1, displayUnit: 'mmol/L', displaySystem: 'si', confidence: 'high' };
+const lab = (values: object[], additionalValues: object[] = [], more: object = {}) => ({ classification: 'lab_report', reportDate: '2026-10-01', values, additionalValues, ...more });
+
+describe('US-13 AC13 / US-52 AC8: the review leads with a summary and rows only for unsure values (D3)', () => {
+  it('zero unsure: a summary, "N values will be saved" behind Show all, and Save sends every ticked value', () => {
+    const g = groupsOf(lab([ldlHigh], [{ name: 'Ferritin', value: 85, unit: 'µg/L' }]), ['v0', 'a0']);
+    expect(g.summary).toBe('Found 2 blood test values');
+    expect(g.items).toEqual([{ ref: 'v0', group: 'sure' }, { ref: 'a0', group: 'sure' }]);
+    expect(g.check).toBeNull();
+    expect(g.sure).toEqual({ willSave: '2 values will be saved', showAll: 'Show all 2', hide: 'Hide' });
+    expect(g.alreadySaved).toBeNull();
+    expect(g.notSaved).toBeNull();
+    expect(g).toMatchObject({ saveRefs: ['v0', 'a0'], save: 'Save 2 values' });
+  });
+
+  it('a hidden sure value keeps its tick and is saved; unticked after Show all, it is not', () => {
+    const x = lab([ldlHigh], [{ name: 'Ferritin', value: 85, unit: 'µg/L' }]);
+    expect(groupsOf(x, ['v0', 'a0']).saveRefs).toContain('a0');
+    const unticked = groupsOf(x, ['v0']);
+    expect(unticked).toMatchObject({ saveRefs: ['v0'], save: 'Save 1 value', sure: { willSave: '1 value will be saved', showAll: 'Show all 2' } });
+  });
+
+  it('only unsure: the rows, no Show all, singular words', () => {
+    const g = groupsOf(lab([{ ...ldlHigh, confidence: 'medium' }]), ['v0']);
+    expect(g.items).toEqual([{ ref: 'v0', group: 'unsure', reasons: ['confidence'] }]);
+    expect(g.check).toEqual({ title: 'Check this value', footer: 'We were not sure about these. Check each against the report.' });
+    expect(g.sure).toBeNull();
+    expect(g).toMatchObject({ saveRefs: ['v0'], save: 'Save 1 value' });
+  });
+
+  it('nothing to save: the summary and the not-saved line in the person\'s words, no key and no assistant text', () => {
+    const x = lab([], [{ name: 'Ferritin', value: 85, unit: 'furlongs' }, { name: 'immature_granulocytes', value: 0.4, unit: '%' }],
+      { refusedValues: [{ metric: 'creatinine', value: 80, unit: '', reason: 'unit unknown' }], droppedValueCount: 1 });
+    const g = groupsOf(x, ['a0', 'a1']);
+    expect(g.summary).toBe('Found 2 blood test values');
+    expect(g.saveRefs).toEqual([]);
+    expect(g.save).toBeNull(); // no Save offered
+    // Every value unticked where one could save: Save stays, with no value to send.
+    expect(groupsOf(lab([ldlHigh]), [])).toMatchObject({ saveRefs: [], save: 'Save 0 values' });
+    expect(g.notSaved).toEqual({
+      title: '4 values not saved',
+      lines: ['Ferritin, Immature granulocytes: this unit is not one we know for this test', 'Creatinine: no unit was printed', '1 other value could not be read'],
+      footer: 'To add one, use + Add a blood test after saving.',
+    });
+    for (const line of g.notSaved.lines) {
+      expect(line).not.toContain('_');
+      expect(line).not.toContain('Do not');
+    }
+    // The save's own dry run refuses the same values: nothing Save sends is refused.
+    const dry = JSON.parse(labSaveSummaryJson(JSON.stringify(record()), JSON.stringify(x), JSON.stringify(['a0', 'a1']), '2026-10-01', NOW, DEVICE));
+    expect(dry.summary.refused).toHaveLength(2);
+  });
+
+  it('already saved: one count line, not a row and not sent; a different value is a row that is never written (Q2a)', () => {
+    const same = groupsOf(lab([ldlHigh]), ['v0'], record({ kind: 'add', metric: 'ldl', value: 3.1, day: '2026-10-01' }));
+    expect(same).toMatchObject({ items: [{ ref: 'v0', group: 'saved' }], alreadySaved: '1 already in your record', check: null, sure: null, saveRefs: [], save: null });
+    const other = groupsOf(lab([ldlHigh]), ['v0'], record({ kind: 'add', metric: 'ldl', value: 2.5, day: '2026-10-01' }));
+    expect(other.items).toEqual([{ ref: 'v0', group: 'unsure', reasons: ['conflict'], conflict: 'Your record already has a different value for this day. It stays as it is.' }]);
+    expect(other.saveRefs).toEqual([]);
+    // Another day frees the slot: the groups follow the test day the screen holds.
+    expect(groupsOf(lab([ldlHigh]), ['v0'], record({ kind: 'add', metric: 'ldl', value: 2.5, day: '2026-10-01' }), '2026-09-30').saveRefs).toEqual(['v0']);
+  });
+
+  it('a refused test, an unread one and unnamed drops read as the person\'s lines, labels never keys (LabSaveAllTests\' notes)', () => {
+    const x = lab([ldlHigh], [], { refusedValues: [{ metric: 'widget_marker', value: 9, unit: '', reason: 'Unit not recognised.' }],
+      unreadValues: [{ name: 'gadget_marker', reason: 'unreadable' }], droppedValueCount: 3 });
+    expect(groupsOf(x, ['v0']).notSaved.lines).toEqual(['Widget Marker: no unit was printed', 'Gadget Marker: could not be read', '2 other values could not be read']);
+    const slip = lab([], [{ name: 'Glucose', value: 3000, unit: 'mg/dL' }, { name: 'Ferritin', value: 85, unit: 'µg/L' }]);
+    expect(groupsOf(slip, ['a0', 'a1'])).toMatchObject({ saveRefs: ['a1'], notSaved: { lines: ['Glucose: the number looks misread. Check the report'] } });
+  });
+
+  it('what Save sends is what the save writes: the dry run saves every sent ref and refuses or skips none', () => {
+    const file = record({ kind: 'add', metric: 'ldl', value: 2.5, day: '2026-10-01' });
+    const g = groupsOf(extraction, ['v0', 'v1', 'a0', 'a1'], file);
+    expect(g.saveRefs).toEqual(['v1', 'a0']);
+    const dry = JSON.parse(labSaveSummaryJson(JSON.stringify(file), JSON.stringify(extraction), JSON.stringify(g.saveRefs), '2026-10-01', NOW, DEVICE));
+    expect(dry.summary).toEqual({ saved: 2, skipped: 0, refused: [] });
   });
 });
 

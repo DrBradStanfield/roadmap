@@ -160,6 +160,9 @@ describe('notSavedGroups (D5, strings 13 and 17 to 24)', () => {
 describe('IMPORT_REVIEW_TEXT (strings 4 to 14)', () => {
   it('counts in words', () => {
     expect(IMPORT_REVIEW_TEXT.checkTitle(3)).toBe('Check these 3 values');
+    expect(IMPORT_REVIEW_TEXT.checkTitle(1)).toBe('Check this value');
+    expect(IMPORT_REVIEW_TEXT.save(1)).toBe('Save 1 value');
+    expect(IMPORT_REVIEW_TEXT.notSavedTitle(1)).toBe('1 value not saved');
     expect(IMPORT_REVIEW_TEXT.willSave(1)).toBe('1 value will be saved');
     expect(IMPORT_REVIEW_TEXT.showAll(12)).toBe('Show all 12');
     expect(IMPORT_REVIEW_TEXT.alreadySaved(2)).toBe('2 already in your record');

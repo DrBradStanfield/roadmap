@@ -110,7 +110,8 @@ final class LabSaveAllTests: XCTestCase {
         let outcome = try await LabReportSave.saveWaiting(result, held: nil, engine: engine, store: store).get()
         XCTAssertEqual(outcome.values, 1, "ferritin saved")
         XCTAssertEqual(outcome.notes.count, 1)
-        XCTAssertTrue(outcome.notes.first?.hasPrefix("Glucose: ") == true, "the refused value is named with the engine's reason: \(outcome.notes)")
+        // Named before Save now (US-13 AC13), so it is not sent and not refused a second time.
+        XCTAssertEqual(outcome.notes, ["Glucose: the number looks misread. Check the report"])
     }
 
     /// What the extraction itself left out (a test the server refused, one it named but could
@@ -126,7 +127,8 @@ final class LabSaveAllTests: XCTestCase {
          "values":[{"metric":"ldl","valueSI":3.1,"displayValue":3.1,"displayUnit":"mmol/L","displaySystem":"si","confidence":"high"}],
          "additionalValues":[], \(omissions)}
         """
-        let notes = ["Widget Marker: Unit not recognised.", "Gadget Marker: could not be read", "2 values could not be read."]
+        // The review's own not-saved lines (US-13 AC13), never the server's reason text.
+        let notes = ["Widget Marker: no unit was printed", "Gadget Marker: could not be read", "2 other values could not be read"]
         let saved = try await LabReportSave.saveWaiting(LabResult(name: "Partly.pdf", truncated: false, extractionJSON: partly, failure: nil),
                                                         held: nil, engine: engine, store: store).get()
         XCTAssertEqual(saved, .saved(values: 1, documents: 0, notes: notes))
