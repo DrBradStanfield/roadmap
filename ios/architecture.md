@@ -925,6 +925,9 @@ Apple offers Health Records in the US, UK and Canada; records are FHIR, read-onl
   Bump it when the engine starts reading results it used to refuse (a new code or unit): a
   phone whose anchor was kept under another version drops it once and reads every result
   again. AC5's dedup by `externalId`, and its stale-version rule, make the re-read safe.
+  The version lives in the app, not the engine. An over-the-air engine release alone does
+  not re-read results an older app build skipped; only an app build with the higher rules
+  version does.
 - **One blood-test table (US-66, merged 2026-11-03):** every result lands in `labValues`, a
   core test as a core row (`createCoreRow`: `core: true`, its key, its SI unit), so the
   record's own write stamp makes it `schemaVersion` 3; `measurements` gets nothing from the
