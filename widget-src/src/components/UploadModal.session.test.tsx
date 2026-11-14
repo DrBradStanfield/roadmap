@@ -196,6 +196,18 @@ describe('US-12 AC4–6 upload session ownership', () => {
     await screen.findByRole('button', { name: 'Done' });
     expect(bulkSaveMeasurements).toHaveBeenCalledTimes(2);
   });
+  it('US-13 AC13: one upload_review per review: none for the failed Save, one, saved 1, when the retry finishes', async () => {
+    vi.mocked(bulkSaveMeasurements).mockRejectedValueOnce(new Error('synthetic failure'));
+    const reviews = () => vi.mocked(trackProductEvent).mock.calls.filter(([name]) => name === 'upload_review').map(([, meta]) => meta);
+    render(<Harness />); await ready();
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    await screen.findByText('Some items could not be saved. Please try again.');
+    expect(reviews()).toEqual([]);
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    await screen.findByRole('button', { name: 'Done' });
+    expect(reviews()).toEqual([expect.objectContaining({ saved: 1 })]);
+    expect(Object.keys(reviews()[0]!).every(k => ['sure', 'unsure', 'notSaved', 'showAll', 'notSavedOpened', 'changedSure', 'changedUnsure', 'saved'].includes(k))).toBe(true);
+  });
   it('keeps a thrown save in review so a second Save retries, and blocks discard until every branch settles', async () => {
     const archive = deferred<Awaited<ReturnType<typeof bulkSaveDocuments>>>();
     vi.mocked(synthesizeLabArchiveEntries).mockReturnValueOnce([{
@@ -445,8 +457,13 @@ describe('US-12 AC4–6 upload session ownership', () => {
       refused: [{ key: 'ferritin', unit: 'mg/dL', message: 'Ferritin is stored in µg/L' }],
     } as Awaited<ReturnType<typeof bulkSaveLabValues>>);
     render(<Harness />); await ready();
+    // US-13 AC13 (owner, 2026-11-15): Save submits only the rows the dry save
+    // writes, so the refused unit is named under "Not saved" before Save, and never sent.
+    fireEvent.click(screen.getByRole('button', { name: '1 value not saved' }));
+    expect(screen.getByRole('list', { name: 'Values not saved' }).textContent).toBe('Ferritin: this unit is not one we know for this test');
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-    expect(await screen.findByText('Ferritin: unit not recognised (mg/dL). It was not saved. This test takes µg/L.')).toBeTruthy();
+    await screen.findByRole('button', { name: 'Done' });
+    expect(vi.mocked(bulkSaveLabValues).mock.calls.flatMap(([rows]) => rows)).toEqual([]);
   });
 
   // US-21 AC15 · a differential in % stays refused, but the summary says the
@@ -460,8 +477,12 @@ describe('US-12 AC4–6 upload session ownership', () => {
       refused: [{ key: 'lymphocytes', unit: '%', message: 'Lymphocytes is stored in ×10⁹/L' }],
     } as Awaited<ReturnType<typeof bulkSaveLabValues>>);
     render(<Harness />); await ready();
+    // US-13 AC13: named before Save under "Not saved", in the review's words, and never sent.
+    fireEvent.click(screen.getByRole('button', { name: '1 value not saved' }));
+    expect(screen.getByRole('list', { name: 'Values not saved' }).textContent).toBe('Lymphocytes: this unit is not one we know for this test');
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-    expect(await screen.findByText(/Lymphocytes: unit not recognised \(%\)\. It was not saved\. This test takes ×10⁹\/L\. A percentage is a share of the white count, not a count: this record keeps the absolute count \(×10⁹\/L or cells\/µL\), so look for that line on the same report\./)).toBeTruthy();
+    await screen.findByRole('button', { name: 'Done' });
+    expect(vi.mocked(bulkSaveLabValues).mock.calls.flatMap(([rows]) => rows)).toEqual([]);
   });
 
   // US-21 AC15 · a count per µL refused for its NUMBER (a decimal, or a

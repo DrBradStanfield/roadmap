@@ -8,7 +8,7 @@
  * file orders.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render } from '@testing-library/react';
+import { cleanup, fireEvent, render, within } from '@testing-library/react';
 import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import { ReviewTable } from './ReviewTable';
 import { buildMatrixModel } from '../lib/review-matrix';
@@ -33,7 +33,14 @@ function review(results: FileResult[], measurements: ApiMeasurement[] = []) {
   const save = () => view.getByRole('button', { name: /^Save/ }) as HTMLButtonElement;
   const pick = (day: string) => { for (const p of view.queryAllByLabelText('Choose the date of the previous results')) fireEvent.change(p, { target: { value: day } }); };
   const input = (value: string) => Array.from(view.container.querySelectorAll<HTMLInputElement>('.bt-cell-input input')).find(i => i.value === value)!;
-  const notice = () => view.queryByText(/not saved: .* another reading\./)?.textContent ?? null;
+  /** The same-day line under "Not saved" (US-13 AC13: a loser is named once, there, by label). */
+  const notice = () => {
+    const line = view.queryByRole('button', { name: /^\d+ values? not saved$/ });
+    if (!line) return null;
+    if (line.getAttribute('aria-expanded') === 'false') fireEvent.click(line);
+    return within(view.getByRole('list', { name: 'Values not saved' })).queryAllByRole('listitem')
+      .map(li => li.textContent).find(text => text?.endsWith(': another reading of this test is on the same day')) ?? null;
+  };
   const boxes = () => view.queryAllByRole('checkbox', { name: /Replace the saved/ }) as HTMLInputElement[];
   const inputs = () => Array.from(view.container.querySelectorAll<HTMLInputElement>('.bt-cell-input input')).map(i => i.value);
   const context = () => Array.from(view.container.querySelectorAll('.bt-cell-context .bt-value-num')).map(e => e.textContent);
@@ -54,7 +61,7 @@ describe('US-12 AC14: one reading per (test, day), the loser counted, never sile
       const b = file('b.docx', '2026-04-10', [v('hdl', 1.4, U)]);
       const t = review(ordered(a, b));
       t.pick('2025-09-02');
-      expect(t.notice()).toBe('1 reading not saved: HDL Cholesterol on 2 Sep 2025 already has another reading.');
+      expect(t.notice()).toBe('HDL Cholesterol: another reading of this test is on the same day');
       const label = promised(t.save());
       fireEvent.click(t.save());
       expect(t.rows()).toEqual([`hdl=${order === 'a first' ? 1.2 : 1.4}@2025-09-02`]);
@@ -66,7 +73,7 @@ describe('US-12 AC14: one reading per (test, day), the loser counted, never sile
       const b = file('b.pdf', '2026-04-10', [v('ldl', 2.0), v('hdl', 1.4, '2025-09-02')]);
       const t = review(ordered(a, b));
       t.pick('2025-09-02');
-      expect(t.notice()).toBe('1 reading not saved: HDL Cholesterol on 2 Sep 2025 already has another reading.');
+      expect(t.notice()).toBe('HDL Cholesterol: another reading of this test is on the same day');
       const label = promised(t.save());
       fireEvent.click(t.save());
       expect(t.rows()).toEqual(['hdl=1.4@2025-09-02', 'ldl=2@2026-04-10']);
@@ -78,7 +85,7 @@ describe('US-12 AC14: one reading per (test, day), the loser counted, never sile
       const b = file('b.docx', '2026-04-10', [], [{ name: 'Sodium', value: 141, unit: 'mmol/L', recordedAt: U }]);
       const t = review(ordered(a, b));
       t.pick('2025-09-02');
-      expect(t.notice()).toBe('1 reading not saved: Sodium on 2 Sep 2025 already has another reading.');
+      expect(t.notice()).toBe('Sodium: another reading of this test is on the same day');
       const label = promised(t.save());
       fireEvent.click(t.save());
       expect(t.rows()).toEqual([order === 'a first' ? 'sodium=139@2025-09-02' : 'Sodium=141@2025-09-02']);
@@ -110,7 +117,7 @@ describe('US-12 AC14: one reading per (test, day), the loser counted, never sile
       const t = review(ordered(file('b.pdf', '2025-09-02', [v('hdl', 1.2)]), file('a.docx', '2026-03-10', [v('hdl', 1.4, U)])), [held('H', 'hdl', 1.2, '2025-09-02')]);
       t.pick('2025-09-02');
       expect(t.boxes()).toEqual([]);
-      expect(t.notice()).toBe('1 reading not saved: HDL Cholesterol on 2 Sep 2025 already has another reading.');
+      expect(t.notice()).toBe('HDL Cholesterol: another reading of this test is on the same day');
     });
 
     it(`an undated reading equal to the saved row shows as context in its own column though a report reading holds the slot (${order})`, () => {
@@ -126,7 +133,7 @@ describe('US-12 AC14: one reading per (test, day), the loser counted, never sile
     t.pick('2025-09-02');
     expect(t.notice()).toBeNull();
     fireEvent.change(t.input('1.2'), { target: { value: '1.5' } });
-    expect(t.notice()).toBe('1 reading not saved: HDL Cholesterol on 2 Sep 2025 already has another reading.');
+    expect(t.notice()).toBe('HDL Cholesterol: another reading of this test is on the same day');
   });
 
   it('the notice names each test and day, no values', () => {
@@ -135,23 +142,29 @@ describe('US-12 AC14: one reading per (test, day), the loser counted, never sile
       file('b.docx', '2026-04-10', [v('hdl', 1.4, U)], [{ name: 'sodium', value: 141, unit: 'mmol/L', recordedAt: U }]),
     ]);
     t.pick('2025-09-02');
-    expect(t.notice()).toBe('2 readings not saved: HDL Cholesterol, Sodium on 2 Sep 2025 already have another reading.');
+    expect(t.notice()).toBe('HDL Cholesterol, Sodium: another reading of this test is on the same day');
   });
 
-  it('a test twice in one undated column, not yet picked: the notice names the column in words, core and lab', () => {
+  // US-13 AC13 (owner, 2026-11-15): a reading with no day yet waits behind the
+  // column's date question; the same-day loser is named once the day is picked.
+  it('a test twice in one undated column: named under "Not saved" once the column has its day, core and lab', () => {
     const core = review([file('a.docx', '2026-03-10', [v('hdl', 1.2, U), v('hdl', 1.4, U)])]);
-    expect(core.notice()).toBe('1 reading not saved: HDL Cholesterol in the undated previous column already has another reading.');
+    expect(core.notice()).toBeNull();
+    core.pick('2025-09-02');
+    expect(core.notice()).toBe('HDL Cholesterol: another reading of this test is on the same day');
     cleanup();
     const lab = review([file('a.docx', '2026-03-10', [], [{ name: 'sodium', value: 139, unit: 'mmol/L', recordedAt: U }, { name: 'Sodium', value: 141, unit: 'mmol/L', recordedAt: U }])]);
-    expect(lab.notice()).toBe('1 reading not saved: Sodium in the undated previous column already has another reading.');
+    lab.pick('2025-09-02');
+    expect(lab.notice()).toBe('Sodium: another reading of this test is on the same day');
   });
 
-  it('several unpicked undated columns share one notice group, in the plural', () => {
+  it('several undated columns, once picked: one line naming each test once', () => {
     const t = review([
       file('a.docx', '2026-03-10', [v('hdl', 1.2, U), v('hdl', 1.4, U)]),
       file('b.docx', '2026-04-10', [], [{ name: 'sodium', value: 139, unit: 'mmol/L', recordedAt: U }, { name: 'Sodium', value: 141, unit: 'mmol/L', recordedAt: U }]),
     ]);
-    expect(t.notice()).toBe('2 readings not saved: HDL Cholesterol, Sodium in the undated previous columns already have another reading.');
+    t.pick('2025-09-02');
+    expect(t.notice()).toBe('HDL Cholesterol, Sodium: another reading of this test is on the same day');
   });
 
   for (const order of ['differing first', 'equal first'] as const) {
@@ -159,9 +172,9 @@ describe('US-12 AC14: one reading per (test, day), the loser counted, never sile
       const values = [v('hdl', 1.4, U), v('hdl', 1.2, U)];
       const results = [file('a.docx', '2026-03-10', order === 'differing first' ? values : [...values].reverse())];
       const dates = { 0: { day: '10', month: '03', year: '2026' }, '0@undated': { day: '02', month: '09', year: '2025' } };
-      const { cells, hiddenReadings } = buildMatrixModel(results, dates, [held('H', 'hdl', 1.2, '2025-09-02')], [], 'si');
+      const { cells, unshown } = buildMatrixModel(results, dates, [held('H', 'hdl', 1.2, '2025-09-02')], [], 'si');
       expect(cells.get('hdl|undated:0')).toMatchObject({ state: 'editable', valueSI: 1.4, existing: { id: 'H' } });
-      expect(hiddenReadings).toEqual([]);
+      expect(unshown.filter(u => u.winner)).toEqual([]);
     });
   }
 
@@ -176,7 +189,7 @@ describe('US-12 AC14: one reading per (test, day), the loser counted, never sile
     fireEvent.change(t.view.container.querySelectorAll<HTMLInputElement>('.bt-cell-input input')[0], { target: { value: '1.5' } });
     expect(t.input('1.5')).toBeDefined();
     t.pick('2025-09-02');
-    expect(t.notice()).toBe('1 reading not saved: HDL Cholesterol on 2 Sep 2025 already has another reading.');
+    expect(t.notice()).toBe('HDL Cholesterol: another reading of this test is on the same day');
     fireEvent.click(t.save());
     expect(t.rows()).toEqual(['hdl=1.2@2025-09-02']);
   });

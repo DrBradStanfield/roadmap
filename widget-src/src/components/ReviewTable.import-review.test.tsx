@@ -154,13 +154,16 @@ describe('US-13 AC13, US-12 AC15/AC19: "Not saved" is one line that opens to the
 });
 
 describe('US-13 AC13 usage signal: one counts-only upload_review per review end', () => {
-  it('on Save: group counts, the toggles opened, the changes, saved 1', () => {
+  // The upload flow sends it once the save finishes, never for a failed one
+  // (UploadModal.outcome.test.tsx); Save hands the counts up with its decisions.
+  it('on Save: group counts, the toggles opened, the changes, saved 1, handed up with the decisions', () => {
     const t = review([labs([v('ldl', 3.9), v('hdl', 1.2, 'medium')], { droppedValueCount: 1 })]);
     fireEvent.click(t.showAll()!);
     fireEvent.change(screen.getByDisplayValue('3.9'), { target: { value: '4.1' } });
     fireEvent.click(screen.getByRole('button', { name: '1 value not saved' }));
     fireEvent.click(t.save()!);
-    expect(t.event()).toEqual([{ sure: 1, unsure: 1, notSaved: 1, showAll: 1, notSavedOpened: 1, changedSure: 1, saved: 1 }]);
+    expect(t.onSave.mock.calls[0][0].review).toEqual({ sure: 1, unsure: 1, notSaved: 1, showAll: 1, notSavedOpened: 1, changedSure: 1, saved: 1 });
+    expect(t.event()).toEqual([]);
   });
 
   it('on Cancel: saved 0, and nothing but counts', () => {

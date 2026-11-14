@@ -291,7 +291,7 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
     else if (notices.length > 0) trackUploadOutcome(counts.picked, 0, counts.docx, notices);
   };
 
-  const save = useCallback(({ values: selectedValues, documents, labValues, reviewed }: ReviewDecisions) => withClaim(savingRef, async () => {
+  const save = useCallback(({ values: selectedValues, documents, labValues, reviewed, review }: ReviewDecisions) => withClaim(savingRef, async () => {
     dispatch({ type: 'saveStarted' });
     const erase = getShownErase(); // the record this save was asked for
     // This attempt's own counts; the transition adds them to what earlier attempts saved.
@@ -361,6 +361,8 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
       const reportReread = (err: unknown) => { if (!(err instanceof WritesStoppedError)) Sentry.captureException(recordFailure(err, 'Upload save failed'), { tags: { area: 'upload-save', branch: 'reread' } }); };
       const reread = () => { try { return Promise.resolve(onComplete()).catch(reportReread); } catch (err) { reportReread(err); return Promise.resolve(); } };
       if (!saveFailed) {
+        // One per review: a finished Save, never a failed one (US-13 AC13).
+        if (review) trackProductEvent('upload_review', review);
         dispatch({ type: 'saved', attempt });
         void reread();
       } else {

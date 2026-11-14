@@ -6,6 +6,7 @@ import { UNDATED_PREVIOUS } from './lab-extraction';
 
 const at = (quantity: Quantity, rank: 0 | 1 | 2 = 0, more: Partial<SlotReading> = {}): SlotReading => ({ slot: 's', rank, quantity, sent: true, ...more });
 const nothingHeld = () => undefined;
+const places = (...args: Parameters<typeof placeReadings>) => placeReadings(...args).map((p) => p.place);
 
 describe('sameReading: exact against limits (US-12 AC20)', () => {
   it.each<[string, Quantity, Quantity, boolean]>([
@@ -27,21 +28,22 @@ describe('sameReading: exact against limits (US-12 AC20)', () => {
 describe('placeReadings', () => {
   it('ranks a report\'s own reading, then a dated previous column, then an undated one', () => {
     expect([undefined, '2026-01-01', UNDATED_PREVIOUS].map((d) => readingRank(d, UNDATED_PREVIOUS))).toEqual([0, 1, 2]);
-    expect(placeReadings([at({ valueSI: 1 }, 2), at({ valueSI: 2 }, 1), at({ valueSI: 3 }, 0)], nothingHeld)).toEqual(['hidden', 'hidden', 'free']);
+    expect(places([at({ valueSI: 1 }, 2), at({ valueSI: 2 }, 1), at({ valueSI: 3 }, 0)], nothingHeld)).toEqual(['hidden', 'hidden', 'free']);
   });
   it('breaks a tie of rank by input order; an equal loser is a duplicate', () => {
-    expect(placeReadings([at({ valueSI: 1 }), at({ valueSI: 2 }), at({ valueSI: 1 })], nothingHeld)).toEqual(['free', 'hidden', 'duplicate']);
+    expect(places([at({ valueSI: 1 }), at({ valueSI: 2 }), at({ valueSI: 1 })], nothingHeld)).toEqual(['free', 'hidden', 'duplicate']);
+    expect(placeReadings([at({ valueSI: 2 }, 1), at({ valueSI: 2 }, 0)], nothingHeld)).toEqual([{ place: 'duplicate', winner: 1 }, { place: 'free' }]);
   });
   it('a winner equal to the record lets a differing reading of its rank through, as the conflict', () => {
     const held = () => ({ valueSI: 1 });
-    expect(placeReadings([at({ valueSI: 1 }), at({ valueSI: 2 })], held)).toEqual(['saved', 'conflict']);
-    expect(placeReadings([at({ valueSI: 1 }), at({ valueSI: 2 }, 1)], held)).toEqual(['saved', 'hidden']);
+    expect(places([at({ valueSI: 1 }), at({ valueSI: 2 })], held)).toEqual(['saved', 'conflict']);
+    expect(places([at({ valueSI: 1 }), at({ valueSI: 2 }, 1)], held)).toEqual(['saved', 'hidden']);
   });
   it('an edited reading is never saved or a duplicate', () => {
-    expect(placeReadings([at({ valueSI: 1 }, 0, { edited: true })], () => ({ valueSI: 1 }))).toEqual(['conflict']);
-    expect(placeReadings([at({ valueSI: 1 }), at({ valueSI: 1 }, 0, { edited: true })], nothingHeld)).toEqual(['free', 'hidden']);
+    expect(places([at({ valueSI: 1 }, 0, { edited: true })], () => ({ valueSI: 1 }))).toEqual(['conflict']);
+    expect(places([at({ valueSI: 1 }), at({ valueSI: 1 }, 0, { edited: true })], nothingHeld)).toEqual(['free', 'hidden']);
   });
   it('an unsent reading claims nothing and is judged against the record alone', () => {
-    expect(placeReadings([at({ valueSI: 1 }, 0, { sent: false }), at({ valueSI: 2 })], nothingHeld)).toEqual(['free', 'free']);
+    expect(places([at({ valueSI: 1 }, 0, { sent: false }), at({ valueSI: 2 })], nothingHeld)).toEqual(['free', 'free']);
   });
 });

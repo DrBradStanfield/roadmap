@@ -123,7 +123,7 @@ describe('ReviewTable — archiving the original behind a connector row (US-13 A
     expect(container.querySelector('.review-archive-only')?.textContent)
       .toBe('Save will archive the original PDF. No extracted values or documents are selected.');
     fireEvent.click(button);
-    expect(onSave).toHaveBeenCalledWith({ values: [], documents: [], labValues: [], reviewed: expect.any(Array) });
+    expect(onSave).toHaveBeenCalledWith({ values: [], documents: [], labValues: [], reviewed: expect.any(Array), review: expect.any(Object) });
   });
 
   it('US-12 AC6: describes original-only saving without claiming cleared values are stored', () => {
@@ -137,7 +137,7 @@ describe('ReviewTable — archiving the original behind a connector row (US-13 A
       .toBe('Save will archive the original PDF. No extracted values or documents are selected.');
     expect(container.querySelector('.review-summary')?.textContent).not.toContain('already in your record');
     fireEvent.click(button);
-    expect(onSave).toHaveBeenCalledWith({ values: [], documents: [], labValues: [], reviewed: expect.any(Array) });
+    expect(onSave).toHaveBeenCalledWith({ values: [], documents: [], labValues: [], reviewed: expect.any(Array), review: expect.any(Object) });
   });
 
   it('offers no Save when the same bytes are already archived (fileRef set): nothing to write, the review closes (US-13 AC13 D3)', () => {
@@ -152,7 +152,7 @@ describe('ReviewTable — archiving the original behind a connector row (US-13 A
     expect(button.disabled).toBe(false);
     expect(button.textContent).toBe('Save 1 original');
     fireEvent.click(button);
-    expect(onSave).toHaveBeenCalledWith({ values: [], documents: [], labValues: [], reviewed: expect.any(Array) });
+    expect(onSave).toHaveBeenCalledWith({ values: [], documents: [], labValues: [], reviewed: expect.any(Array), review: expect.any(Object) });
   });
 
   it('offers Save for a clinic letter the connector filed: name-deduped to an unselected row, yet still an original to archive', () => {
@@ -163,7 +163,7 @@ describe('ReviewTable — archiving the original behind a connector row (US-13 A
     expect(container.querySelector('.review-archive-only')?.textContent)
       .toBe('Save will archive the original PDF. No extracted values or documents are selected.');
     fireEvent.click(button);
-    expect(onSave).toHaveBeenCalledWith({ values: [], documents: [], labValues: [], reviewed: expect.any(Array) });
+    expect(onSave).toHaveBeenCalledWith({ values: [], documents: [], labValues: [], reviewed: expect.any(Array), review: expect.any(Object) });
   });
 
   it('does not double-count a connector letter the user re-selects: it saves as a document, not also an original', () => {

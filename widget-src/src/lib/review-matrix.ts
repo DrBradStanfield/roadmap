@@ -95,8 +95,9 @@ export function replaceKey(cell: EditableMatrixCell, existing: ExistingCell): st
   return `${editId(cell)}>${existing.id}`;
 }
 
-/** A reading a review hides because another holds its (test, day): named, never its value. */
-interface HiddenReading { label: string; day: DateKey }
+/** A reading with no cell of its own, by `editId`, and its slot's day: one the
+ *  record already holds (no `winner`), or one another reading (`winner`) holds. */
+export interface UnshownReading { id: string; day: DateKey; winner?: string; edited: boolean }
 
 /** A core cell as rendered: its text in the row's unit and the value it saves. */
 /** `comparator`: an untouched limit's, shown before its bound; an edited cell is exact (US-12 AC20). */
@@ -122,7 +123,7 @@ export function buildMatrixModel(
   /** Values the user edited (`editId`): never hidden as already saved. Their
    *  cell stays editable against the saved row, judged by the edited text. */
   touched?: { has(id: string): boolean },
-): { columns: MatrixColumn[]; coreRows: CoreRow[]; additionalRows: AdditionalRow[]; cells: Map<string, MatrixCell>; hiddenReadings: HiddenReading[] } {
+): { columns: MatrixColumn[]; coreRows: CoreRow[]; additionalRows: AdditionalRow[]; cells: Map<string, MatrixCell>; unshown: UnshownReading[] } {
   const cells = new Map<string, MatrixCell>();
   const columnsByKey = new Map<DateKey, MatrixColumn>();
   const coreMetricsSeen = new Set<MetricType>();
@@ -212,20 +213,20 @@ export function buildMatrixModel(
   //    report's own reading claims its slot first, then a dated previous
   //    column's, then an undated one's (on its picked day), then file order
   //    (US-12 AC12, AC14). A later reading of a claimed slot is hidden, as AC12
-  //    hides it, and listed in `hiddenReadings` when it differs or either side
-  //    was edited, so it is never dropped silently. On a held slot: an equal,
+  //    hides it, and listed in `unshown` with its slot's day, so the review's
+  //    groups name it under "Not saved" and it is never dropped silently. On a held slot: an equal,
   //    unedited value is already recorded (context, shown in its own column
   //    too: an undated one's, US-13 AC3), a differing one a conflict the user
   //    resolves in the table (US-32). Columns are added in the same rank order.
   /** The saved rows, by slot, before any upload cell takes one. */
   const savedRows = new Map(cells);
-  const hiddenReadings: HiddenReading[] = [];
+  const unshown: UnshownReading[] = [];
   const heldAt = (slot: string): Quantity | undefined => {
     const held = savedRows.get(slot);
     if (held?.state !== 'context') return undefined;
     return held.lab ? { lab: held.lab } : held.valueSI !== undefined ? { valueSI: held.valueSI, ...comparatorOf(held) } : undefined;
   };
-  type Overlay = { slot: string; cellKey: string; rank: 0 | 1 | 2; quantity: Quantity; edited: boolean; label: string; cell: (existing?: ExistingCell) => EditableMatrixCell };
+  type Overlay = { slot: string; cellKey: string; rank: 0 | 1 | 2; quantity: Quantity; edited: boolean; id: string; cell: (existing?: ExistingCell) => EditableMatrixCell };
   const overlays: Overlay[] = [];
   for (const rank of [0, 1, 2]) results.forEach((r, fi) => {
     /** The column a value lands in: its own date's (US-12 AC12) or its file's. */
@@ -250,7 +251,7 @@ export function buildMatrixModel(
         : String(v.displayValue);
       overlays.push({
         slot: slotFor(metric, v, dateKey), cellKey: `${metric}|${dateKey}`, rank, quantity: { valueSI: v.valueSI, ...comparatorOf(v) },
-        edited: !!touched?.has(valueId(fi, 'core', vi)), label: METRIC_LABELS[metric] || metric,
+        edited: !!touched?.has(valueId(fi, 'core', vi)), id: valueId(fi, 'core', vi),
         cell: (existing) => ({
           state: 'editable', kind: 'core', fi, vi,
           initialDisplay,
@@ -289,7 +290,7 @@ export function buildMatrixModel(
       const lab = { name: av.name, value: av.value, unit: av.unit, ...comparatorOf(av) };
       overlays.push({
         slot: slotFor(nameKey, av, dateKey), cellKey: `${nameKey}|${dateKey}`, rank, quantity: { lab },
-        edited: !!touched?.has(valueId(fi, 'additional', ai)), label: labValueLabel(av.name),
+        edited: !!touched?.has(valueId(fi, 'additional', ai)), id: valueId(fi, 'additional', ai),
         cell: (existing) => ({
           state: 'editable',
           kind: 'additional',
@@ -312,16 +313,18 @@ export function buildMatrixModel(
   overlays.forEach((o, i) => {
     const prev = savedRows.get(o.slot);
     const held = prev?.state === 'context' ? prev : undefined;
-    switch (places[i]) {
+    const { place, winner } = places[i];
+    const day = o.slot.slice(o.slot.lastIndexOf('|') + 1);
+    switch (place) {
       case 'saved':
+        unshown.push({ id: o.id, day, edited: o.edited });
         // Never over a conflict another reading of this test already put in
         // the same column (a test printed twice in one undated column).
         if (o.slot !== o.cellKey && cells.get(o.cellKey)?.state !== 'editable') cells.set(o.cellKey, held!);
         return;
       case 'hidden':
-        hiddenReadings.push({ label: o.label, day: o.slot.slice(o.slot.lastIndexOf('|') + 1) });
-        return;
       case 'duplicate':
+        unshown.push({ id: o.id, day, winner: overlays[winner!].id, edited: o.edited });
         return;
       default:
         cells.set(o.cellKey, o.cell(held && { id: held.id, display: held.displayValue, valueSI: held.valueSI, lab: held.lab, displayUnit: held.displayUnit, ...comparatorOf(held) }));
@@ -345,7 +348,7 @@ export function buildMatrixModel(
     a.displayName.localeCompare(b.displayName),
   );
 
-  return { columns, coreRows, additionalRows, cells, hiddenReadings };
+  return { columns, coreRows, additionalRows, cells, unshown };
 }
 
 /** What a screen reader names the row: the label it shows, or the lab row's own name (never its `lab:` key). */

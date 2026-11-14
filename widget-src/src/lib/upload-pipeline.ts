@@ -6,7 +6,7 @@ import { comparatorOf, type Comparator } from '@roadmap/health-core/lab-limits';
 import { bloodTestKeyOf } from '@roadmap/health-core/blood-tests';
 import type { MeasurementSource } from '@roadmap/health-core/validation';
 import { fileVerdict, UPLOAD_LIMITS } from '@roadmap/health-core/upload-rules';
-import type { UploadOutcomeKey } from '@roadmap/health-core/product-events';
+import type { UploadOutcomeKey, UploadReviewKey } from '@roadmap/health-core/product-events';
 import type { ExtractedValue, AdditionalLabValue, DocumentResult, LabImportResult, PageContent, UploadErrorCode } from './api-types';
 import { labImport, labImportBatch, pollBatchStatus } from './upload-api';
 import { BATCH_POLL_DEADLINE_MS } from './batch-deadline';
@@ -72,6 +72,8 @@ export interface ReviewDecisions {
   documents: DocumentToSave[];
   labValues: ReviewedLabValue[];
   reviewed: FileResult[];
+  /** The review's `upload_review` counts (US-13 AC13), sent once the save finishes. */
+  review?: Partial<Record<UploadReviewKey, number>>;
 }
 
 /**
