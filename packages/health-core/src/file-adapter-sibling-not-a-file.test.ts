@@ -13,9 +13,7 @@
  */
 import { describe, it, expect, vi } from 'vitest';
 import type * as fs from 'node:fs';
-import {
-  existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, renameSync, rmSync, symlinkSync, writeFileSync,
-} from 'node:fs';
+import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, renameSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
@@ -85,11 +83,8 @@ describe('US-31 AC8c: a pipe named like a backup beside an erased record', () =>
     expect({ status: child.status, signal: child.signal, lockLeft }).toEqual({ status: 0, signal: null, lockLeft: false });
     expect(child.stdout).toMatch(/^Added ferritin/);
     expect(child.stderr).toBe('');
-    expect(names).not.toContain(`${ROADMAP_FILE_NAME}.bak-2026-01-01T00-00-00.000Z`);
-    expect(names).toEqual(expect.arrayContaining([
-      `${ROADMAP_FILE_NAME}.bak-2026-01-02T00-00-00.000Z`,
-      `${ROADMAP_FILE_NAME}.bak-2026-01-03T00-00-00.000Z`,
-    ]));
+    expect(names).not.toContain(basename(before));
+    expect(names).toEqual(expect.arrayContaining([basename(pipe), basename(after)]));
   }, 30_000);
 });
 
@@ -97,14 +92,14 @@ describe('US-31 AC8c: the prune reads only a regular file, and reads the one it 
   type Fn = (...args: any[]) => any;
 
   /**
-   * One write at erase counter 2, through an adapter whose `node:fs` refuses
-   * any read of something that is not a regular file, and any open of a pipe
-   * that would wait for a writer. Either would never return, so it is noted
-   * and refused rather than run. It also counts what it left open on a
-   * backup's name. `swap.run` is called once, right after the adapter first
-   * touches the name `swap.at`, as another program might.
+   * One write at erase counter 2, through an adapter whose `node:fs` refuses any read of something
+   * that is not a regular file, and any open of a pipe that would wait for a writer. Either would
+   * never return, so it is noted and refused rather than run. With `readFails`, every read through
+   * a descriptor is refused too, as a file too large for one string makes that read throw. It also
+   * counts what it left open on a backup's name. `swap.run` is called once, right after the adapter
+   * first touches the name `swap.at`, as another program might.
    */
-  async function watchedWrite(path: string, swap?: { at: string; run: () => void }) {
+  async function watchedWrite(path: string, swap?: { at: string; run: () => void }, readFails = false) {
     const real = await vi.importActual<typeof fs>('node:fs');
     const stuck: string[] = [];
     let swapped = false;
@@ -146,7 +141,7 @@ describe('US-31 AC8c: the prune reads only a regular file, and reads the one it 
         leftOpen.delete(fd);
         real.closeSync(fd);
       },
-      readFileSync: watch('readFileSync', ([target]) => kind(target)?.isFile() === false),
+      readFileSync: watch('readFileSync', ([target]) => kind(target)?.isFile() === false || (readFails && typeof target === 'number')),
     }));
     try {
       const { FileAdapter } = await import('./file-adapter');
@@ -186,6 +181,15 @@ describe('US-31 AC8c: the prune reads only a regular file, and reads the one it 
     expect({ stuck, leftOpen }).toEqual({ stuck: [], leftOpen: 0 });
     expect(saved.marker).toBe('saved');
     expect({ kept, targetKept }).toEqual({ kept: [true, true, true, false, false], targetKept: true });
+  });
+
+  it('closes what it opened when the read of a pre-erase copy fails', async () => {
+    const path = join(mkdtempSync(join(tmpdir(), 'file-adapter-bak-read-fails-')), ROADMAP_FILE_NAME);
+    writeFileSync(path, at(1));
+    writeFileSync(`${path}.bak-2026-01-01T00-00-00.000Z`, at(1));
+    const { stuck, leftOpen } = await watchedWrite(path, undefined, true);
+    rmSync(dirname(path), { recursive: true, force: true });
+    expect({ stuck, leftOpen }).toEqual({ stuck: ['readFileSync a descriptor'], leftOpen: 0 });
   });
 
   // At the open the name holds `first`; right after, `then` takes the name.
