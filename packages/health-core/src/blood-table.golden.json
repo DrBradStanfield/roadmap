@@ -410,8 +410,8 @@
           "id": "med-ezetimibe",
           "category": "medication",
           "priority": "attention",
-          "title": "Consider adding Ezetimibe",
-          "description": "Your LDL-c is 3.6 mmol/L; the treatment target is below 1.4 mmol/L. Discuss adding Ezetimibe 10mg with your doctor. Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be. If you become pregnant, most people should stop their statin: talk to your doctor. If you are planning a pregnancy, NICE advises stopping 3 months before trying to conceive.",
+          "title": "Discuss adding Ezetimibe with your doctor",
+          "description": "Your LDL-c is 3.6 mmol/L; the treatment target is below 1.4 mmol/L. Discuss adding Ezetimibe 10mg with your doctor. Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be. The FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive. Talk to your doctor.",
           "ingredients": [],
           "reason": "Ezetimibe works differently from statins — it blocks cholesterol absorption in the intestine. Adding ezetimibe to a statin typically lowers LDL by an additional 15–20%. Recent evidence shows that starting ezetimibe early alongside a statin produces better cardiovascular outcomes than adding it later.\n\nIf a statin is not tolerated, this plan suggests a PCSK9 inhibitor first, because the outcome evidence for ezetimibe on its own is limited, and ezetimibe after it if your level is still above target.\n\nIts US label says there are not enough data on ezetimibe in pregnancy to judge the risk.",
           "guidelines": [
@@ -434,6 +434,14 @@
             {
               "label": "FDA label – Zetia (ezetimibe), 8.1 Pregnancy: insufficient data to evaluate risk (DailyMed)",
               "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=174e45e0-45bb-48b7-9e60-8f6cfc1d22bb"
+            },
+            {
+              "label": "FDA 2021 – Statins in pregnancy: strongest warning removed, most patients should still stop",
+              "url": "https://www.fda.gov/drugs/drug-safety-and-availability/fda-requests-removal-strongest-warning-against-using-cholesterol-lowering-statins-during-pregnancy"
+            },
+            {
+              "label": "NICE NG238 – Cardiovascular disease: risk assessment and reduction, including lipid modification",
+              "url": "https://www.nice.org.uk/guidance/ng238/chapter/Recommendations"
             }
           ]
         },
@@ -748,7 +756,7 @@
           "category": "skin",
           "priority": "info",
           "title": "Topical retinoid",
-          "description": "A topical retinoid (adapalene 0.3% or tretinoin 0.05%) applied at night stimulates collagen production and improves skin texture. Start with 2–3 nights per week and increase as tolerated. Always use sunscreen when using retinoids. Caution: retinoids must not be used during pregnancy. Tretinoin needs a prescription. Ask your doctor or pharmacist before you start.",
+          "description": "A topical retinoid (adapalene 0.3% or tretinoin 0.05%) applied at night stimulates collagen production and improves skin texture. It is usually started at 2–3 nights per week and increased as tolerated, with daily sunscreen. Caution: retinoids must not be used during pregnancy. Tretinoin needs a prescription. Discuss it with your doctor or pharmacist before starting.",
           "ingredients": [],
           "reason": "Retinoids (vitamin A derivatives) are the most studied topical anti-aging treatment. They stimulate collagen production, accelerate cell turnover, and improve skin texture. A randomised trial found adapalene 0.3% comparable in efficacy to tretinoin 0.05% for treating photoaging, with better tolerability. Caution: retinoids must not be used during pregnancy.",
           "guidelines": [],
@@ -768,7 +776,7 @@
           "category": "skin",
           "priority": "info",
           "title": "Advanced skin treatments",
-          "description": "For further skin rejuvenation, consider discussing these options with a dermatologist: red light therapy (LED, 630–850nm), fractional laser resurfacing, intense pulsed light (IPL) for pigmentation, and microneedling for collagen induction.",
+          "description": "Options for further skin rejuvenation include red light therapy (LED, 630–850nm), fractional laser resurfacing, intense pulsed light (IPL) for pigmentation, and microneedling for collagen induction. Discuss them with your doctor.",
           "ingredients": [],
           "reason": "For those seeking additional skin rejuvenation, several evidence-based professional treatments exist. Red light therapy (630–850nm) was shown in a controlled trial to significantly reduce wrinkles and increase collagen density. Resistance training has also been shown to improve dermal structure. Other professional options include fractional laser, IPL, and microneedling.",
           "guidelines": [],
@@ -1223,8 +1231,8 @@
           "id": "med-ezetimibe",
           "category": "medication",
           "priority": "attention",
-          "title": "Consider adding Ezetimibe",
-          "description": "Your LDL-c is 3.6 mmol/L; the treatment target is below 1.4 mmol/L. Discuss adding Ezetimibe 10mg with your doctor. Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be. If you become pregnant, most people should stop their statin: talk to your doctor. If you are planning a pregnancy, NICE advises stopping 3 months before trying to conceive.",
+          "title": "Discuss adding Ezetimibe with your doctor",
+          "description": "Your LDL-c is 3.6 mmol/L; the treatment target is below 1.4 mmol/L. Discuss adding Ezetimibe 10mg with your doctor. Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be. The FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive. Talk to your doctor.",
           "ingredients": [],
           "reason": "Ezetimibe works differently from statins — it blocks cholesterol absorption in the intestine. Adding ezetimibe to a statin typically lowers LDL by an additional 15–20%. Recent evidence shows that starting ezetimibe early alongside a statin produces better cardiovascular outcomes than adding it later.\n\nIf a statin is not tolerated, this plan suggests a PCSK9 inhibitor first, because the outcome evidence for ezetimibe on its own is limited, and ezetimibe after it if your level is still above target.\n\nIts US label says there are not enough data on ezetimibe in pregnancy to judge the risk.",
           "guidelines": [
@@ -1247,6 +1255,14 @@
             {
               "label": "FDA label – Zetia (ezetimibe), 8.1 Pregnancy: insufficient data to evaluate risk (DailyMed)",
               "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=174e45e0-45bb-48b7-9e60-8f6cfc1d22bb"
+            },
+            {
+              "label": "FDA 2021 – Statins in pregnancy: strongest warning removed, most patients should still stop",
+              "url": "https://www.fda.gov/drugs/drug-safety-and-availability/fda-requests-removal-strongest-warning-against-using-cholesterol-lowering-statins-during-pregnancy"
+            },
+            {
+              "label": "NICE NG238 – Cardiovascular disease: risk assessment and reduction, including lipid modification",
+              "url": "https://www.nice.org.uk/guidance/ng238/chapter/Recommendations"
             }
           ]
         },
@@ -1561,7 +1577,7 @@
           "category": "skin",
           "priority": "info",
           "title": "Topical retinoid",
-          "description": "A topical retinoid (adapalene 0.3% or tretinoin 0.05%) applied at night stimulates collagen production and improves skin texture. Start with 2–3 nights per week and increase as tolerated. Always use sunscreen when using retinoids. Caution: retinoids must not be used during pregnancy. Tretinoin needs a prescription. Ask your doctor or pharmacist before you start.",
+          "description": "A topical retinoid (adapalene 0.3% or tretinoin 0.05%) applied at night stimulates collagen production and improves skin texture. It is usually started at 2–3 nights per week and increased as tolerated, with daily sunscreen. Caution: retinoids must not be used during pregnancy. Tretinoin needs a prescription. Discuss it with your doctor or pharmacist before starting.",
           "ingredients": [],
           "reason": "Retinoids (vitamin A derivatives) are the most studied topical anti-aging treatment. They stimulate collagen production, accelerate cell turnover, and improve skin texture. A randomised trial found adapalene 0.3% comparable in efficacy to tretinoin 0.05% for treating photoaging, with better tolerability. Caution: retinoids must not be used during pregnancy.",
           "guidelines": [],
@@ -1581,7 +1597,7 @@
           "category": "skin",
           "priority": "info",
           "title": "Advanced skin treatments",
-          "description": "For further skin rejuvenation, consider discussing these options with a dermatologist: red light therapy (LED, 630–850nm), fractional laser resurfacing, intense pulsed light (IPL) for pigmentation, and microneedling for collagen induction.",
+          "description": "Options for further skin rejuvenation include red light therapy (LED, 630–850nm), fractional laser resurfacing, intense pulsed light (IPL) for pigmentation, and microneedling for collagen induction. Discuss them with your doctor.",
           "ingredients": [],
           "reason": "For those seeking additional skin rejuvenation, several evidence-based professional treatments exist. Red light therapy (630–850nm) was shown in a controlled trial to significantly reduce wrinkles and increase collagen density. Resistance training has also been shown to improve dermal structure. Other professional options include fractional laser, IPL, and microneedling.",
           "guidelines": [],
@@ -2036,8 +2052,8 @@
           "id": "med-ezetimibe",
           "category": "medication",
           "priority": "attention",
-          "title": "Consider adding Ezetimibe",
-          "description": "Your LDL-c is 3.6 mmol/L; the treatment target is below 1.4 mmol/L. Discuss adding Ezetimibe 10mg with your doctor. Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be. If you become pregnant, most people should stop their statin: talk to your doctor. If you are planning a pregnancy, NICE advises stopping 3 months before trying to conceive.",
+          "title": "Discuss adding Ezetimibe with your doctor",
+          "description": "Your LDL-c is 3.6 mmol/L; the treatment target is below 1.4 mmol/L. Discuss adding Ezetimibe 10mg with your doctor. Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be. The FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive. Talk to your doctor.",
           "ingredients": [],
           "reason": "Ezetimibe works differently from statins — it blocks cholesterol absorption in the intestine. Adding ezetimibe to a statin typically lowers LDL by an additional 15–20%. Recent evidence shows that starting ezetimibe early alongside a statin produces better cardiovascular outcomes than adding it later.\n\nIf a statin is not tolerated, this plan suggests a PCSK9 inhibitor first, because the outcome evidence for ezetimibe on its own is limited, and ezetimibe after it if your level is still above target.\n\nIts US label says there are not enough data on ezetimibe in pregnancy to judge the risk.",
           "guidelines": [
@@ -2060,6 +2076,14 @@
             {
               "label": "FDA label – Zetia (ezetimibe), 8.1 Pregnancy: insufficient data to evaluate risk (DailyMed)",
               "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=174e45e0-45bb-48b7-9e60-8f6cfc1d22bb"
+            },
+            {
+              "label": "FDA 2021 – Statins in pregnancy: strongest warning removed, most patients should still stop",
+              "url": "https://www.fda.gov/drugs/drug-safety-and-availability/fda-requests-removal-strongest-warning-against-using-cholesterol-lowering-statins-during-pregnancy"
+            },
+            {
+              "label": "NICE NG238 – Cardiovascular disease: risk assessment and reduction, including lipid modification",
+              "url": "https://www.nice.org.uk/guidance/ng238/chapter/Recommendations"
             }
           ]
         },
@@ -2374,7 +2398,7 @@
           "category": "skin",
           "priority": "info",
           "title": "Topical retinoid",
-          "description": "A topical retinoid (adapalene 0.3% or tretinoin 0.05%) applied at night stimulates collagen production and improves skin texture. Start with 2–3 nights per week and increase as tolerated. Always use sunscreen when using retinoids. Caution: retinoids must not be used during pregnancy. Tretinoin needs a prescription. Ask your doctor or pharmacist before you start.",
+          "description": "A topical retinoid (adapalene 0.3% or tretinoin 0.05%) applied at night stimulates collagen production and improves skin texture. It is usually started at 2–3 nights per week and increased as tolerated, with daily sunscreen. Caution: retinoids must not be used during pregnancy. Tretinoin needs a prescription. Discuss it with your doctor or pharmacist before starting.",
           "ingredients": [],
           "reason": "Retinoids (vitamin A derivatives) are the most studied topical anti-aging treatment. They stimulate collagen production, accelerate cell turnover, and improve skin texture. A randomised trial found adapalene 0.3% comparable in efficacy to tretinoin 0.05% for treating photoaging, with better tolerability. Caution: retinoids must not be used during pregnancy.",
           "guidelines": [],
@@ -2394,7 +2418,7 @@
           "category": "skin",
           "priority": "info",
           "title": "Advanced skin treatments",
-          "description": "For further skin rejuvenation, consider discussing these options with a dermatologist: red light therapy (LED, 630–850nm), fractional laser resurfacing, intense pulsed light (IPL) for pigmentation, and microneedling for collagen induction.",
+          "description": "Options for further skin rejuvenation include red light therapy (LED, 630–850nm), fractional laser resurfacing, intense pulsed light (IPL) for pigmentation, and microneedling for collagen induction. Discuss them with your doctor.",
           "ingredients": [],
           "reason": "For those seeking additional skin rejuvenation, several evidence-based professional treatments exist. Red light therapy (630–850nm) was shown in a controlled trial to significantly reduce wrinkles and increase collagen density. Resistance training has also been shown to improve dermal structure. Other professional options include fractional laser, IPL, and microneedling.",
           "guidelines": [],
@@ -2945,8 +2969,8 @@
           "id": "med-ezetimibe",
           "category": "medication",
           "priority": "attention",
-          "title": "Consider adding Ezetimibe",
-          "description": "Your LDL-c is 3.6 mmol/L; the treatment target is below 1.4 mmol/L. Discuss adding Ezetimibe 10mg with your doctor. Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be. If you become pregnant, most people should stop their statin: talk to your doctor. If you are planning a pregnancy, NICE advises stopping 3 months before trying to conceive.",
+          "title": "Discuss adding Ezetimibe with your doctor",
+          "description": "Your LDL-c is 3.6 mmol/L; the treatment target is below 1.4 mmol/L. Discuss adding Ezetimibe 10mg with your doctor. Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be. The FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive. Talk to your doctor.",
           "ingredients": [],
           "reason": "Ezetimibe works differently from statins — it blocks cholesterol absorption in the intestine. Adding ezetimibe to a statin typically lowers LDL by an additional 15–20%. Recent evidence shows that starting ezetimibe early alongside a statin produces better cardiovascular outcomes than adding it later.\n\nIf a statin is not tolerated, this plan suggests a PCSK9 inhibitor first, because the outcome evidence for ezetimibe on its own is limited, and ezetimibe after it if your level is still above target.\n\nIts US label says there are not enough data on ezetimibe in pregnancy to judge the risk.",
           "guidelines": [
@@ -2969,6 +2993,14 @@
             {
               "label": "FDA label – Zetia (ezetimibe), 8.1 Pregnancy: insufficient data to evaluate risk (DailyMed)",
               "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=174e45e0-45bb-48b7-9e60-8f6cfc1d22bb"
+            },
+            {
+              "label": "FDA 2021 – Statins in pregnancy: strongest warning removed, most patients should still stop",
+              "url": "https://www.fda.gov/drugs/drug-safety-and-availability/fda-requests-removal-strongest-warning-against-using-cholesterol-lowering-statins-during-pregnancy"
+            },
+            {
+              "label": "NICE NG238 – Cardiovascular disease: risk assessment and reduction, including lipid modification",
+              "url": "https://www.nice.org.uk/guidance/ng238/chapter/Recommendations"
             }
           ]
         },
@@ -3283,7 +3315,7 @@
           "category": "skin",
           "priority": "info",
           "title": "Topical retinoid",
-          "description": "A topical retinoid (adapalene 0.3% or tretinoin 0.05%) applied at night stimulates collagen production and improves skin texture. Start with 2–3 nights per week and increase as tolerated. Always use sunscreen when using retinoids. Caution: retinoids must not be used during pregnancy. Tretinoin needs a prescription. Ask your doctor or pharmacist before you start.",
+          "description": "A topical retinoid (adapalene 0.3% or tretinoin 0.05%) applied at night stimulates collagen production and improves skin texture. It is usually started at 2–3 nights per week and increased as tolerated, with daily sunscreen. Caution: retinoids must not be used during pregnancy. Tretinoin needs a prescription. Discuss it with your doctor or pharmacist before starting.",
           "ingredients": [],
           "reason": "Retinoids (vitamin A derivatives) are the most studied topical anti-aging treatment. They stimulate collagen production, accelerate cell turnover, and improve skin texture. A randomised trial found adapalene 0.3% comparable in efficacy to tretinoin 0.05% for treating photoaging, with better tolerability. Caution: retinoids must not be used during pregnancy.",
           "guidelines": [],
@@ -3303,7 +3335,7 @@
           "category": "skin",
           "priority": "info",
           "title": "Advanced skin treatments",
-          "description": "For further skin rejuvenation, consider discussing these options with a dermatologist: red light therapy (LED, 630–850nm), fractional laser resurfacing, intense pulsed light (IPL) for pigmentation, and microneedling for collagen induction.",
+          "description": "Options for further skin rejuvenation include red light therapy (LED, 630–850nm), fractional laser resurfacing, intense pulsed light (IPL) for pigmentation, and microneedling for collagen induction. Discuss them with your doctor.",
           "ingredients": [],
           "reason": "For those seeking additional skin rejuvenation, several evidence-based professional treatments exist. Red light therapy (630–850nm) was shown in a controlled trial to significantly reduce wrinkles and increase collagen density. Resistance training has also been shown to improve dermal structure. Other professional options include fractional laser, IPL, and microneedling.",
           "guidelines": [],
@@ -3936,8 +3968,8 @@
           "id": "med-ezetimibe",
           "category": "medication",
           "priority": "attention",
-          "title": "Consider adding Ezetimibe",
-          "description": "Your ApoB is 120 mg/dL; the treatment target is below 50 mg/dL. Discuss adding Ezetimibe 10mg with your doctor. Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be. If you become pregnant, most people should stop their statin: talk to your doctor. If you are planning a pregnancy, NICE advises stopping 3 months before trying to conceive.",
+          "title": "Discuss adding Ezetimibe with your doctor",
+          "description": "Your ApoB is 120 mg/dL; the treatment target is below 50 mg/dL. Discuss adding Ezetimibe 10mg with your doctor. Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be. The FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive. Talk to your doctor.",
           "ingredients": [],
           "reason": "Ezetimibe works differently from statins — it blocks cholesterol absorption in the intestine. Adding ezetimibe to a statin typically lowers LDL by an additional 15–20%. Recent evidence shows that starting ezetimibe early alongside a statin produces better cardiovascular outcomes than adding it later.\n\nIf a statin is not tolerated, this plan suggests a PCSK9 inhibitor first, because the outcome evidence for ezetimibe on its own is limited, and ezetimibe after it if your level is still above target.\n\nIts US label says there are not enough data on ezetimibe in pregnancy to judge the risk.",
           "guidelines": [
@@ -3960,6 +3992,14 @@
             {
               "label": "FDA label – Zetia (ezetimibe), 8.1 Pregnancy: insufficient data to evaluate risk (DailyMed)",
               "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=174e45e0-45bb-48b7-9e60-8f6cfc1d22bb"
+            },
+            {
+              "label": "FDA 2021 – Statins in pregnancy: strongest warning removed, most patients should still stop",
+              "url": "https://www.fda.gov/drugs/drug-safety-and-availability/fda-requests-removal-strongest-warning-against-using-cholesterol-lowering-statins-during-pregnancy"
+            },
+            {
+              "label": "NICE NG238 – Cardiovascular disease: risk assessment and reduction, including lipid modification",
+              "url": "https://www.nice.org.uk/guidance/ng238/chapter/Recommendations"
             }
           ]
         },
@@ -4262,7 +4302,7 @@
           "category": "skin",
           "priority": "info",
           "title": "Topical retinoid",
-          "description": "A topical retinoid (adapalene 0.3% or tretinoin 0.05%) applied at night stimulates collagen production and improves skin texture. Start with 2–3 nights per week and increase as tolerated. Always use sunscreen when using retinoids. Caution: retinoids must not be used during pregnancy. Tretinoin needs a prescription. Ask your doctor or pharmacist before you start.",
+          "description": "A topical retinoid (adapalene 0.3% or tretinoin 0.05%) applied at night stimulates collagen production and improves skin texture. It is usually started at 2–3 nights per week and increased as tolerated, with daily sunscreen. Caution: retinoids must not be used during pregnancy. Tretinoin needs a prescription. Discuss it with your doctor or pharmacist before starting.",
           "ingredients": [],
           "reason": "Retinoids (vitamin A derivatives) are the most studied topical anti-aging treatment. They stimulate collagen production, accelerate cell turnover, and improve skin texture. A randomised trial found adapalene 0.3% comparable in efficacy to tretinoin 0.05% for treating photoaging, with better tolerability. Caution: retinoids must not be used during pregnancy.",
           "guidelines": [],
@@ -4282,7 +4322,7 @@
           "category": "skin",
           "priority": "info",
           "title": "Advanced skin treatments",
-          "description": "For further skin rejuvenation, consider discussing these options with a dermatologist: red light therapy (LED, 630–850nm), fractional laser resurfacing, intense pulsed light (IPL) for pigmentation, and microneedling for collagen induction.",
+          "description": "Options for further skin rejuvenation include red light therapy (LED, 630–850nm), fractional laser resurfacing, intense pulsed light (IPL) for pigmentation, and microneedling for collagen induction. Discuss them with your doctor.",
           "ingredients": [],
           "reason": "For those seeking additional skin rejuvenation, several evidence-based professional treatments exist. Red light therapy (630–850nm) was shown in a controlled trial to significantly reduce wrinkles and increase collagen density. Resistance training has also been shown to improve dermal structure. Other professional options include fractional laser, IPL, and microneedling.",
           "guidelines": [],
