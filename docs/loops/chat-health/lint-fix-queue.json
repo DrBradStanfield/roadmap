@@ -6153,7 +6153,7 @@
    "last_seen": "2026-10-04",
    "status": "open",
    "last_checked": "2026-10-04",
-   "unverified": "2026-11-07"
+   "unverified": "2026-11-14"
   },
   {
    "id": "95aa0fe00f8a",
@@ -6173,7 +6173,7 @@
    "last_seen": "2026-10-04",
    "status": "open",
    "last_checked": "2026-10-04",
-   "unverified": "2026-10-24"
+   "unverified": "2026-11-14"
   },
   {
    "id": "e931c98dc808",
@@ -6193,7 +6193,7 @@
    "last_seen": "2026-10-04",
    "status": "open",
    "last_checked": "2026-10-04",
-   "unverified": "2026-10-24"
+   "unverified": "2026-11-14"
   },
   {
    "id": "7a3fe4356bb4",
@@ -6213,7 +6213,7 @@
    "last_seen": "2026-10-04",
    "status": "open",
    "last_checked": "2026-10-04",
-   "unverified": "2026-10-24"
+   "unverified": "2026-11-14"
   },
   {
    "id": "e007d03d0b60",
@@ -6233,7 +6233,7 @@
    "last_seen": "2026-10-04",
    "status": "open",
    "last_checked": "2026-10-04",
-   "unverified": "2026-10-24"
+   "unverified": "2026-11-14"
   },
   {
    "id": "0830c483967f",
@@ -6643,7 +6643,7 @@
    "last_seen": "2026-10-10",
    "status": "open",
    "last_checked": "2026-10-10",
-   "unverified": "2026-10-24"
+   "unverified": "2026-11-14"
   },
   {
    "id": "cd8735c1feb3",
@@ -6682,7 +6682,7 @@
    "last_seen": "2026-10-10",
    "status": "open",
    "last_checked": "2026-10-10",
-   "unverified": "2026-10-24"
+   "unverified": "2026-11-14"
   },
   {
    "id": "ce368b6811a9",
@@ -6702,7 +6702,7 @@
    "last_seen": "2026-10-10",
    "status": "open",
    "last_checked": "2026-10-10",
-   "unverified": "2026-10-24"
+   "unverified": "2026-11-14"
   },
   {
    "id": "e536e009474d",
@@ -6967,7 +6967,7 @@
    "last_seen": "2026-10-17",
    "status": "open",
    "last_checked": "2026-10-17",
-   "unverified": "2026-11-07"
+   "unverified": "2026-11-14"
   },
   {
    "id": "a1e51b0c24ec",
@@ -7006,7 +7006,7 @@
    "last_seen": "2026-10-17",
    "status": "open",
    "last_checked": "2026-10-17",
-   "unverified": "2026-10-24"
+   "unverified": "2026-11-14"
   },
   {
    "id": "e0b5178e579e",
@@ -7026,7 +7026,7 @@
    "last_seen": "2026-10-17",
    "status": "open",
    "last_checked": "2026-10-17",
-   "unverified": "2026-10-24"
+   "unverified": "2026-11-14"
   },
   {
    "id": "60c2d9f21e32",
@@ -7046,7 +7046,7 @@
    "last_seen": "2026-10-17",
    "status": "open",
    "last_checked": "2026-10-17",
-   "unverified": "2026-10-24"
+   "unverified": "2026-11-14"
   },
   {
    "id": "f8e67aa9e9a5",
@@ -7808,7 +7808,7 @@
    "last_seen": "2026-10-24",
    "status": "open",
    "last_checked": "2026-10-24",
-   "unverified": "2026-11-07"
+   "unverified": "2026-11-14"
   },
   {
    "id": "3fce1815af70",
@@ -7827,7 +7827,8 @@
    "first_seen": "2026-10-24",
    "last_seen": "2026-10-24",
    "status": "open",
-   "last_checked": "2026-10-24"
+   "last_checked": "2026-10-24",
+   "unverified": "2026-11-14"
   },
   {
    "id": "ab1b7de08774",
@@ -7846,7 +7847,8 @@
    "first_seen": "2026-10-24",
    "last_seen": "2026-10-24",
    "status": "open",
-   "last_checked": "2026-10-24"
+   "last_checked": "2026-10-24",
+   "unverified": "2026-11-14"
   },
   {
    "id": "1ccade1f1c50",
@@ -7865,7 +7867,8 @@
    "first_seen": "2026-10-24",
    "last_seen": "2026-10-24",
    "status": "open",
-   "last_checked": "2026-10-24"
+   "last_checked": "2026-10-24",
+   "unverified": "2026-11-14"
   },
   {
    "id": "dfa3c693c74b",
@@ -7884,7 +7887,8 @@
    "first_seen": "2026-10-24",
    "last_seen": "2026-10-24",
    "status": "open",
-   "last_checked": "2026-10-24"
+   "last_checked": "2026-10-24",
+   "unverified": "2026-11-14"
   },
   {
    "id": "0a7e4602b85f",
@@ -7903,7 +7907,8 @@
    "first_seen": "2026-10-24",
    "last_seen": "2026-10-24",
    "status": "open",
-   "last_checked": "2026-10-24"
+   "last_checked": "2026-10-24",
+   "unverified": "2026-11-14"
   },
   {
    "id": "a12ef129ba2e",
@@ -7922,7 +7927,8 @@
    "first_seen": "2026-10-24",
    "last_seen": "2026-10-24",
    "status": "open",
-   "last_checked": "2026-10-24"
+   "last_checked": "2026-10-24",
+   "unverified": "2026-11-14"
   },
   {
    "id": "4959f76da5f6",
@@ -7940,8 +7946,9 @@
    "suggested_fix": "Reconcile the reference numbering between the two pages so each number points to a single source.",
    "first_seen": "2026-10-24",
    "last_seen": "2026-10-24",
-   "status": "open",
-   "last_checked": "2026-10-24"
+   "status": "resolved",
+   "last_checked": "2026-11-14",
+   "resolved": "2026-11-14"
   },
   {
    "id": "3d7c582a658e",
@@ -7960,7 +7967,8 @@
    "first_seen": "2026-10-24",
    "last_seen": "2026-10-24",
    "status": "open",
-   "last_checked": "2026-10-24"
+   "last_checked": "2026-10-24",
+   "unverified": "2026-11-14"
   },
   {
    "id": "7b3fedc60db5",
@@ -7979,7 +7987,8 @@
    "first_seen": "2026-10-24",
    "last_seen": "2026-10-24",
    "status": "open",
-   "last_checked": "2026-10-24"
+   "last_checked": "2026-10-24",
+   "unverified": "2026-11-14"
   },
   {
    "id": "830466599987",
@@ -7998,7 +8007,8 @@
    "first_seen": "2026-10-24",
    "last_seen": "2026-10-24",
    "status": "open",
-   "last_checked": "2026-10-24"
+   "last_checked": "2026-10-24",
+   "unverified": "2026-11-14"
   },
   {
    "id": "602494c6940f",
@@ -8037,7 +8047,8 @@
    "last_seen": "2026-10-24",
    "status": "resolved",
    "last_checked": "2026-11-07",
-   "resolved": "2026-11-07"
+   "resolved": "2026-11-07",
+   "unverified": "2026-11-14"
   },
   {
    "id": "0a43aa0f36cd",
@@ -8056,7 +8067,7 @@
    "first_seen": "2026-10-24",
    "last_seen": "2026-10-24",
    "status": "resolved",
-   "last_checked": "2026-11-07",
+   "last_checked": "2026-11-14",
    "resolved": "2026-11-07"
   },
   {
@@ -8077,7 +8088,8 @@
    "last_seen": "2026-10-24",
    "status": "resolved",
    "last_checked": "2026-10-31",
-   "resolved": "2026-10-31"
+   "resolved": "2026-10-31",
+   "unverified": "2026-11-14"
   },
   {
    "id": "2f6b0b0c266c",
@@ -8173,7 +8185,8 @@
    "first_seen": "2026-10-24",
    "last_seen": "2026-10-24",
    "status": "open",
-   "last_checked": "2026-10-24"
+   "last_checked": "2026-10-24",
+   "unverified": "2026-11-14"
   },
   {
    "id": "7fb1ab4270bf",
@@ -8748,10 +8761,9 @@
    "summary": "The excerpts give different reasons why no chromium UL was set (insufficient long-term safety data vs. no adverse effects linked to high intakes).",
    "suggested_fix": "Align the multivitamin excerpt's rationale with the chromium excerpt, which says no UL was set because long-term safety data are limited, while keeping the FNB's caution about renal and liver disease.",
    "first_seen": "2026-10-31",
-   "last_seen": "2026-10-31",
-   "status": "resolved",
-   "last_checked": "2026-11-07",
-   "resolved": "2026-11-07"
+   "last_seen": "2026-11-14",
+   "status": "regressed",
+   "last_checked": "2026-11-14"
   },
   {
    "id": "d8fe9ec1b046",
@@ -8788,8 +8800,9 @@
    "suggested_fix": "Align the age boundary: the 800 IU RDA starts at 'over 70' in the vitamin D reference, which means age 71+, so the multivitamin text should be reworded. Both excerpts should use the same wording and cutoff age.",
    "first_seen": "2026-10-31",
    "last_seen": "2026-10-31",
-   "status": "open",
-   "last_checked": "2026-10-31"
+   "status": "resolved",
+   "last_checked": "2026-11-14",
+   "resolved": "2026-11-14"
   },
   {
    "id": "23c01c588d07",
@@ -9450,7 +9463,8 @@
    "first_seen": "2026-11-07",
    "last_seen": "2026-11-07",
    "status": "open",
-   "last_checked": "2026-11-07"
+   "last_checked": "2026-11-07",
+   "unverified": "2026-11-14"
   },
   {
    "id": "94f0ada2cb8b",
@@ -9468,8 +9482,9 @@
    "suggested_fix": "Align the wording so both say the concern is high-dose supplementation (as in B) or that Brad sees no role in a multivitamin specifically, rather than implying vitamin A and E are unsuitable at any dose.",
    "first_seen": "2026-11-07",
    "last_seen": "2026-11-07",
-   "status": "open",
-   "last_checked": "2026-11-07"
+   "status": "resolved",
+   "last_checked": "2026-11-14",
+   "resolved": "2026-11-14"
   },
   {
    "id": "fc771dca3739",
@@ -9487,8 +9502,9 @@
    "suggested_fix": "State the 2,800 mcg RAE a day limit for adolescents (14-18) alongside the 3,000 mcg RAE adult limit in the vitamin A dosing paragraph, as the vitamin A excerpt and the multivitamin safety bullets already do.",
    "first_seen": "2026-11-07",
    "last_seen": "2026-11-07",
-   "status": "open",
-   "last_checked": "2026-11-07"
+   "status": "resolved",
+   "last_checked": "2026-11-14",
+   "resolved": "2026-11-14"
   },
   {
    "id": "90a550fed025",
@@ -9505,9 +9521,9 @@
    "summary": "The two excerpts convert the 15 mg vitamin E RDA to slightly different IU figures (22.4/33.3 vs 22/33).",
    "suggested_fix": "Use one consistent IU rounding for the 15 mg RDA across both files, for example 22.4 and 33.3 IU, or state that the figures are rounded.",
    "first_seen": "2026-11-07",
-   "last_seen": "2026-11-07",
+   "last_seen": "2026-11-14",
    "status": "open",
-   "last_checked": "2026-11-07"
+   "last_checked": "2026-11-14"
   },
   {
    "id": "45a75c334e2b",
@@ -9632,6 +9648,405 @@
    "fix_handle": "electrolytes-benefits-dosing-and-side-effects",
    "item": "10.1002/14651858.cd009402.pub3 10.1007/s00125-023-06029-9 10.1007/s00421-019-04238-y 10.1016/j.ijcard.2008.05.006 10.1017/s0007114517001350 10.1111/j.1532-5415.2005.53561.x 10.1111/j.1753-4887.2011.00465.x 10.1136/bmjopen-2019-030052 10.1161/circulationaha.111.082511 10.1161/hypertensionaha.116.07664 10.1161/hypertensionaha.125.25129 10.1186/s13063-025-09370-z 10.3390/nu17050915",
    "detail": "electrolytes-benefits-dosing-and-side-effects: \"Brad has not made a video on this topic; this is a summary of the evidence, not his view. Fluid needs for recreational exercise may be low and aggressive fluid replacement may not be needed, but drinks with electrolytes and carbohydrate can help more than water alone in some circumstances, and carbohydrate may benefit longer sessions of an hour or more [5][7]. Drinking too much fluid during lon...\" | magnesium-benefits-best-forms-dosing: \"Brad's newest view is that vitamin D that is not a megadose, plus vitamin K2, boron and magnesium, may work together for bone health ([Brad, 19 Aug 2026](https://drstanfield.com/blogs/articles/multivitamins-are-no-longer-expensive-urine)). Many people do not get enough magnesium, and a normal blood test does not rule this out, because only about 1% of the body's magnesium is in the blood; most ...\"",
+   "first_seen": "2026-11-14",
+   "last_seen": "2026-11-14",
+   "status": "open",
+   "last_checked": "2026-11-14"
+  },
+  {
+   "id": "94ca0e96fcfd",
+   "kind": "entry-vs-algorithm",
+   "side": "knowledge",
+   "handles": [
+    "algorithm:lipids",
+    "red-yeast-rice-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "red-yeast-rice-benefits-forms-dosing-and-side-effects",
+   "quote_a": "**Elevated Lp(a) checklist** (modifiable risk factors):",
+   "quote_b": "A woman with familial hypercholesterolemia who could not take any statin missed her LDL cholesterol target on a PCSK9 inhibitor and ezetimibe; adding a red yeast rice product with 3 mg of monacolin K gave very good LDL control [26].",
+   "severity": "low",
+   "summary": "The algorithm treats the plan as ending with no further step after PCSK9i/ezetimibe (and bempedoic acid), while the article reports adding red yeast rice at that point.",
+   "suggested_fix": "No change needed unless the algorithm is meant to address red yeast rice; this is a case report, not a contradiction.",
+   "first_seen": "2026-11-14",
+   "last_seen": "2026-11-14",
+   "status": "open",
+   "last_checked": "2026-11-14"
+  },
+  {
+   "id": "05ba99c2e6b9",
+   "kind": "entry-vs-algorithm",
+   "side": "knowledge",
+   "handles": [
+    "algorithm:supplements",
+    "glycine-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "glycine-benefits-forms-dosing-and-side-effects",
+   "quote_a": "| `supplement-sleep` | Sleep support | Low-dose melatonin; glycine; magnesium glycinate.",
+   "quote_b": "Dr Brad Stanfield's [Sleep by Dr Brad](https://drstanfield.com/products/sleep) contains 2,400 mg of glycine alongside low-dose, sustained-release melatonin (0.8 mg) and magnesium bisglycinate (126 mg elemental)",
+   "severity": "low",
+   "summary": "The algorithm's compliance rule bars product names and commerce links from generic supplement content (the PDF carries no product name or link), but the glycine reference names the branded Sleep product and links to its page.",
+   "suggested_fix": "Remove the branded product name and shop link from the generic glycine reference, or confine it to the screen-only product overlay, so it does not conflict with the no-product-name, no-link rule for generic content.",
+   "first_seen": "2026-11-14",
+   "last_seen": "2026-11-14",
+   "status": "open",
+   "last_checked": "2026-11-14"
+  },
+  {
+   "id": "4c51187b3e46",
+   "kind": "entry-vs-algorithm",
+   "side": "knowledge",
+   "handles": [
+    "algorithm:supplements",
+    "magnesium-benefits-best-forms-dosing"
+   ],
+   "fix_handle": "magnesium-benefits-best-forms-dosing",
+   "quote_a": "WHO 2026 dementia guideline recommends against B, E, omega-3 and multivitamin-mineral supplements to reduce the risk of cognitive decline and dementia without a diagnosed deficiency (strong recommendation, moderate certainty; stated reason: 'unexpected harmful effects that outweigh any potential benefits'); it validated its 2019 advice without reassessing supplements and did not cite COSMOS.",
+   "quote_b": "Brad's newest view is that vitamin D that is not a megadose, plus vitamin K2, boron and magnesium, may work together for bone health",
+   "severity": "low",
+   "summary": "No true contradiction was found here; this entry is withdrawn.",
+   "suggested_fix": "No change needed.",
+   "first_seen": "2026-11-14",
+   "last_seen": "2026-11-14",
+   "status": "open",
+   "last_checked": "2026-11-14"
+  },
+  {
+   "id": "3ac8c265e580",
+   "kind": "entry-vs-algorithm",
+   "side": "knowledge",
+   "handles": [
+    "algorithm:cancer-screening",
+    "cancer-screening"
+   ],
+   "fix_handle": "cancer-screening",
+   "quote_a": "| `will_screen`, PSA < 2.5 | 24 |",
+   "quote_b": "and PSA, if you choose to screen, after 12 months.",
+   "severity": "medium",
+   "summary": "The algorithm sets the next PSA at 24 months when the last PSA is below 2.5 ng/mL, while the guideline says 12 months for men who choose to screen.",
+   "suggested_fix": "Change the guideline's PSA interval to match the plan: 24 months below 2.5 ng/mL and 12 months from 2.5 for men who choose to screen, and 3 months at 4.0 or above.",
+   "first_seen": "2026-11-14",
+   "last_seen": "2026-11-14",
+   "status": "open",
+   "last_checked": "2026-11-14"
+  },
+  {
+   "id": "7d516d88a162",
+   "kind": "reference-vs-reference",
+   "side": "knowledge",
+   "handles": [
+    "arginine-benefits-forms-dosing-and-side-effects",
+    "l-citrulline-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "l-citrulline-benefits-forms-dosing-and-side-effects",
+   "quote_a": "In a dose-escalation study, 12 healthy people took 3, 9, 21 and 30 g a day for a week at each dose.",
+   "quote_b": "A review notes the lack of gastrointestinal distress with citrulline compared with arginine, which can cause significant gut problems at high doses (about 13 g) [1].",
+   "severity": "low",
+   "summary": "A reports 10 of 12 volunteers had side effects only at 21 or 30 g/day, with 9 g/day causing minimal effects, while B says arginine causes significant gut problems at about 13 g.",
+   "suggested_fix": "Reconcile the dose at which arginine causes significant gut problems: A's trial found minimal side effects at 9 g/day and effects at 21 g/day or more, whereas B cites about 13 g/day from a review. Note the discrepancy or cite the same underlying evidence.",
+   "first_seen": "2026-11-14",
+   "last_seen": "2026-11-14",
+   "status": "open",
+   "last_checked": "2026-11-14"
+  },
+  {
+   "id": "974056363dd7",
+   "kind": "reference-vs-reference",
+   "side": "knowledge",
+   "handles": [
+    "bone-broth-benefits-forms-dosing-and-side-effects",
+    "collagen-benefits-best-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "bone-broth-benefits-forms-dosing-and-side-effects",
+   "quote_a": "In the one analysis we found, broth made to a standard recipe gave significantly lower levels of collagen amino acids than a 20 g supplement dose [2].",
+   "quote_b": "Bone broth contains collagen, but the amount per serving varies with the bones and how they are cooked, and bone broth has not been tested in the skin or joint trials described above.",
+   "severity": "low",
+   "summary": "A says broth gave significantly lower collagen amino acids than a supplement dose, while B says collagen content varies with bones and cooking, so the two disagree on whether broth's collagen content is consistently low.",
+   "suggested_fix": "Make the two pages consistent: either both state that broth's collagen amino acid yield is variable and was lower than a 20 g supplement dose in the one analysis, or A hedges its claim to match B's variability point.",
+   "first_seen": "2026-11-14",
+   "last_seen": "2026-11-14",
+   "status": "open",
+   "last_checked": "2026-11-14"
+  },
+  {
+   "id": "b1100d7d5b60",
+   "kind": "reference-vs-reference",
+   "side": "knowledge",
+   "handles": [
+    "calcium-benefits-best-forms-dosing-and-side-effects",
+    "vitamin-d-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "vitamin-d-benefits-forms-dosing-and-side-effects",
+   "quote_a": "The adult upper limit from all sources is 2,000 to 2,500 mg, by age [1].",
+   "quote_b": "The calcium RDA for adults ranges from 1,000 to 1,200 mg, depending on age [114].",
+   "severity": "low",
+   "summary": "The vitamin D excerpt's 1,000-1,200 mg figure for the adult calcium RDA does not fit the calcium excerpt's table, though the quoted sentence from A is about the upper limit, so this is a weak match.",
+   "suggested_fix": "Drop the calcium RDA sentence from the older-adults vitamin D section, or align it with the calcium excerpt's table (1,000 mg for most adults, 1,200 mg for women 51+ and everyone 71+).",
+   "first_seen": "2026-11-14",
+   "last_seen": "2026-11-14",
+   "status": "open",
+   "last_checked": "2026-11-14"
+  },
+  {
+   "id": "425fededd22c",
+   "kind": "reference-vs-reference",
+   "side": "knowledge",
+   "handles": [
+    "calcium-benefits-best-forms-dosing-and-side-effects",
+    "magnesium-benefits-best-forms-dosing"
+   ],
+   "fix_handle": "magnesium-benefits-best-forms-dosing",
+   "quote_a": "Calcium can block absorption of some medicines: take dolutegravir or ciprofloxacin 2 hours before or 6 hours after calcium [1][120], levothyroxine at least 4 hours apart from any calcium supplement [1][102], and tetracyclines 3 hours apart [104][121].",
+   "quote_b": "Take tetracycline and quinolone antibiotics at least 2 hours before or 4 to 6 hours after magnesium, and bisphosphonates at least 2 hours apart [1]; ask your doctor or pharmacist how far apart to take the others.",
+   "severity": "low",
+   "summary": "The tetracycline and quinolone (ciprofloxacin) spacing windows differ between the two excerpts (3 hours apart vs 2 hours before or 4 to 6 hours after; 2 before/6 after vs 2 before/4 to 6 after).",
+   "suggested_fix": "Check the source guidance and harmonise the tetracycline and quinolone spacing, or state explicitly that the windows are mineral-specific if the sources really differ.",
+   "first_seen": "2026-11-14",
+   "last_seen": "2026-11-14",
+   "status": "open",
+   "last_checked": "2026-11-14"
+  },
+  {
+   "id": "4d3b93976d90",
+   "kind": "reference-vs-reference",
+   "side": "knowledge",
+   "handles": [
+    "glutathione-benefits-forms-dosing-and-side-effects",
+    "nac-n-acetyl-cysteine-benefits-dosing-and-side-effects"
+   ],
+   "fix_handle": "nac-n-acetyl-cysteine-benefits-dosing-and-side-effects",
+   "quote_a": "When the two were given together by drip in a trial, symptomatic low blood pressure was much more common [81].",
+   "quote_b": "NAC strengthened nitroglycerin's effect on blood pressure, and in an angina trial the pair caused side effects, mainly intolerable headache, in 35% of patients [41][73].",
+   "severity": "low",
+   "summary": "The two pages describe different adverse effects (hypotension vs intolerable headache) and cite different references for the same nitroglycerin-NAC interaction.",
+   "suggested_fix": "Reconcile the description of the nitroglycerin interaction so both pages cite the same trial evidence and name both hypotension and headache if both were observed.",
+   "first_seen": "2026-11-14",
+   "last_seen": "2026-11-14",
+   "status": "open",
+   "last_checked": "2026-11-14"
+  },
+  {
+   "id": "af1e0d77c08d",
+   "kind": "reference-vs-reference",
+   "side": "knowledge",
+   "handles": [
+    "glutathione-benefits-forms-dosing-and-side-effects",
+    "nac-n-acetyl-cysteine-benefits-dosing-and-side-effects"
+   ],
+   "fix_handle": "glutathione-benefits-forms-dosing-and-side-effects",
+   "quote_a": "In laboratory tests, NAC reduced platelet clumping [82].",
+   "quote_b": "High-dose intravenous NAC had anticoagulant and platelet-inhibiting effects during surgery [66].",
+   "severity": "low",
+   "summary": "The pages cite different evidence (lab tests [82] vs a surgical trial with IV NAC [66]) for the blood-thinner caution, and their reference numbers collide with different sources across pages.",
+   "suggested_fix": "Align the evidence cited for the NAC-anticoagulant caution, noting that the clinical finding was with high-dose IV NAC.",
+   "first_seen": "2026-11-14",
+   "last_seen": "2026-11-14",
+   "status": "open",
+   "last_checked": "2026-11-14"
+  },
+  {
+   "id": "4dff4878048f",
+   "kind": "reference-vs-reference",
+   "side": "knowledge",
+   "handles": [
+    "glycine-benefits-forms-dosing-and-side-effects",
+    "magnesium-benefits-best-forms-dosing"
+   ],
+   "fix_handle": "magnesium-benefits-best-forms-dosing",
+   "quote_a": "| **Anticonvulsants** | In rats, glycine strengthened the effect of diazepam and valproate, but not ethosuximide or phenobarbital [70]. If you take an anti-seizure medicine, check with your doctor or pharmacist before starting glycine | Consult prescriber |",
+   "quote_b": "Magnesium can reduce absorption of some medicines, such as bisphosphonates, tetracycline and quinolone antibiotics, levothyroxine, rosuvastatin, sotalol, gabapentin, levodopa and some HIV medicines [1][48][49][50][55][58][60].",
+   "severity": "low",
+   "summary": "Not a real conflict: the two excerpts discuss different interactions and make no incompatible claims.",
+   "suggested_fix": "No change needed.",
+   "first_seen": "2026-11-14",
+   "last_seen": "2026-11-14",
+   "status": "open",
+   "last_checked": "2026-11-14"
+  },
+  {
+   "id": "999ee3aec768",
+   "kind": "reference-vs-reference",
+   "side": "knowledge",
+   "handles": [
+    "glycine-benefits-forms-dosing-and-side-effects",
+    "melatonin-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "glycine-benefits-forms-dosing-and-side-effects",
+   "quote_a": "Sedatives and sleep medications** | Theoretical additive effect due to glycine's sleep-promoting properties; no study has tested this | LOW: monitor for excessive sedation",
+   "quote_b": "Melatonin may add to the sedative effects of benzodiazepines [2].",
+   "severity": "low",
+   "summary": "Only a loose tension: the glycine page says nothing about the combination product's sedative stacking, while the melatonin page documents additive sedation, so the glycine page's LOW rating for sedative interaction looks weakly supported.",
+   "suggested_fix": "Consider noting on the glycine page that melatonin, often co-formulated with glycine, has documented additive effects with sedatives.",
+   "first_seen": "2026-11-14",
+   "last_seen": "2026-11-14",
+   "status": "open",
+   "last_checked": "2026-11-14"
+  },
+  {
+   "id": "79187567dec2",
+   "kind": "reference-vs-reference",
+   "side": "knowledge",
+   "handles": [
+    "iron-benefits-forms-dosing-and-side-effects",
+    "vitamin-c-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "iron-benefits-forms-dosing-and-side-effects",
+   "quote_a": "People with hereditary hemochromatosis absorb too much iron and should avoid iron and vitamin C supplements [2][20].",
+   "quote_b": "People with hemochromatosis should avoid high-dose vitamin C, because it could make iron overload worse [12][168].",
+   "severity": "low",
+   "summary": "The iron page tells people with hemochromatosis to avoid vitamin C supplements outright, while the vitamin C page restricts the advice to high-dose vitamin C.",
+   "suggested_fix": "Align the iron page with the vitamin C page by saying people with hemochromatosis should avoid high-dose vitamin C supplements, or state explicitly which wording is intended.",
+   "first_seen": "2026-11-14",
+   "last_seen": "2026-11-14",
+   "status": "open",
+   "last_checked": "2026-11-14"
+  },
+  {
+   "id": "ca5ff8464e3f",
+   "kind": "reference-vs-reference",
+   "side": "knowledge",
+   "handles": [
+    "kelp-and-iodine-benefits-forms-dosing-and-side-effects",
+    "multivitamins-benefits-evidence-dosing-and-side-effects"
+   ],
+   "fix_handle": "multivitamins-benefits-evidence-dosing-and-side-effects",
+   "quote_a": "In pregnancy, the American Thyroid Association recommends 150 mcg/day of iodine as potassium iodide [1].",
+   "quote_b": "Label cautions for both products: do not use if pregnant or nursing.",
+   "severity": "low",
+   "summary": "The iodine entries advise pregnant and breastfeeding women to take 150 mcg/day of iodine as potassium iodide, while the MicroVitamin label caution (which contains 75 mcg iodine as potassium iodide) says not to use it in pregnancy or nursing.",
+   "suggested_fix": "Clarify that the 'do not use if pregnant or nursing' label caution applies to this product, and that its 75 mcg iodine falls short of the 150 mcg/day ATA recommendation.",
+   "first_seen": "2026-11-14",
+   "last_seen": "2026-11-14",
+   "status": "open",
+   "last_checked": "2026-11-14"
+  },
+  {
+   "id": "a2a4abf8f30f",
+   "kind": "reference-vs-reference",
+   "side": "knowledge",
+   "handles": [
+    "l-citrulline-benefits-forms-dosing-and-side-effects",
+    "nitric-oxide-supplements-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "nitric-oxide-supplements-benefits-forms-dosing-and-side-effects",
+   "quote_a": "| Blood pressure | 3 to 9 g a day of L-citrulline | 1 to 17 weeks | Systolic fall of about 4 mmHg in two meta-analyses, none in a third [18][19][20] |",
+   "quote_b": "- **Blood pressure:** A 2019 meta-analysis found L-citrulline seems to slightly lower blood pressure at doses of at least 6 g per day [26]",
+   "severity": "low",
+   "summary": "A reports a blood pressure effect of L-citrulline that is inconsistent across meta-analyses (none in one) with trial doses from 3 g, while B states the 2019 meta-analysis finding as a dose-qualified effect without noting that another meta-analysis found none.",
+   "suggested_fix": "B should note that the blood pressure evidence is mixed (one of three meta-analyses found no systolic fall) and that trials used 3 to 9 g a day, so the 6 g threshold is not settled.",
+   "first_seen": "2026-11-14",
+   "last_seen": "2026-11-14",
+   "status": "open",
+   "last_checked": "2026-11-14"
+  },
+  {
+   "id": "067502063dbe",
+   "kind": "reference-vs-reference",
+   "side": "knowledge",
+   "handles": [
+    "lutein-and-zeaxanthin-benefits-forms-dosing-and-side-effects",
+    "multivitamins-benefits-evidence-dosing-and-side-effects"
+   ],
+   "fix_handle": "multivitamins-benefits-evidence-dosing-and-side-effects",
+   "quote_a": "In AREDS2, lung cancer occurred in 2.0 per cent of people taking the older beta-carotene formula and 0.9 per cent of those on the newer one, mostly in former smokers, and head to head the lutein and zeaxanthin formula came out ahead on progression of the disease ([Brad, 19 Aug 2026](https://drstanfield.com/blogs/articles/multivitamins-are-no-longer-expensive-urine)).",
+   "quote_b": "Smokers, and possibly former smokers, should avoid multivitamins with large amounts of beta-carotene or vitamin A, which two large trials linked to more lung cancer in smokers [1][54][55].",
+   "severity": "low",
+   "summary": "A attributes the AREDS2 lung cancer excess to beta-carotene and not to lutein and zeaxanthin, while B's phrasing tying the lung cancer signal to vitamin A as well sits uneasily with A's statement that vitamin A shows safety signals only for supplements.",
+   "suggested_fix": "Clarify in B whether the lung cancer signal applies to beta-carotene alone or also to preformed vitamin A, consistent with the trial evidence in A.",
+   "first_seen": "2026-11-14",
+   "last_seen": "2026-11-14",
+   "status": "open",
+   "last_checked": "2026-11-14"
+  },
+  {
+   "id": "79634784a0f5",
+   "kind": "reference-vs-reference",
+   "side": "knowledge",
+   "handles": [
+    "magnesium-benefits-best-forms-dosing",
+    "melatonin-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "magnesium-benefits-best-forms-dosing",
+   "quote_a": "The powder with the sleep supplement gives 350 mg a day, at the upper limit, so anyone also taking another magnesium supplement, antacid or laxative would go over it (Brad's current guidance, 1 Nov 2026).",
+   "quote_b": "Dr Brad Stanfield's [Sleep by Dr Brad](https://drstanfield.com/products/sleep) combines a low dose of sustained-release melatonin (0.8 mg, Melotime®, released gradually across the night rather than the 3-5 mg immediate-release spike of standard products) with fully chelated magnesium bisglycinate (126 mg of elemental magnesium) and glycine (2,400 mg).",
+   "severity": "low",
+   "summary": "The sleep supplement is described as containing 126 mg of magnesium in the sleep supplement itself, yet the magnesium article's figures (350 mg with the powder, 386 mg with Australian capsules, 252 mg with UK/EU capsules) imply a different or unstated sleep-supplement magnesium content in at least one place; the combination totals only reconcile if the sleep supplement is 126 mg, so the quantities should be checked for consistency.",
+   "suggested_fix": "Verify the stated combined totals against the 126 mg sleep-supplement figure and align the two articles.",
+   "first_seen": "2026-11-14",
+   "last_seen": "2026-11-14",
+   "status": "open",
+   "last_checked": "2026-11-14"
+  },
+  {
+   "id": "6f0acb24f5d8",
+   "kind": "reference-vs-reference",
+   "side": "knowledge",
+   "handles": [
+    "multivitamins-benefits-evidence-dosing-and-side-effects",
+    "vitamin-a-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "multivitamins-benefits-evidence-dosing-and-side-effects",
+   "quote_a": "Smokers, and possibly former smokers, should avoid multivitamins with large amounts of beta-carotene or vitamin A, which two large trials linked to more lung cancer in smokers [1][54][55].",
+   "quote_b": "In current and former smokers and asbestos workers, high-dose beta-carotene supplements raised the risk of lung cancer [109].",
+   "severity": "low",
+   "summary": "A says former smokers are only possibly at risk from beta-carotene/vitamin A, while B states high-dose beta-carotene raised lung cancer risk in former smokers (and asbestos workers) as established.",
+   "suggested_fix": "Align the wording on former smokers: B reports the trials included former smokers and asbestos-exposed men and found raised risk, so A's 'possibly' hedge should either be justified or brought into line with B.",
+   "first_seen": "2026-11-14",
+   "last_seen": "2026-11-14",
+   "status": "open",
+   "last_checked": "2026-11-14"
+  },
+  {
+   "id": "4d529822506b",
+   "kind": "reference-vs-reference",
+   "side": "knowledge",
+   "handles": [
+    "multivitamins-benefits-evidence-dosing-and-side-effects",
+    "vitamin-k-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "multivitamins-benefits-evidence-dosing-and-side-effects",
+   "quote_a": "In pregnancy, keep total preformed vitamin A (retinol) from food and supplements at or below the UL of 3,000 mcg a day (2,800 mcg a day for adolescents), because intakes above it can cause birth defects; prenatal supplements generally provide no retinol [1][74].",
+   "quote_b": "Vitamin E may interfere with vitamin K activity, especially blood clotting, and why vitamin E supplements cause bleeding in some people and not others is not understood [19].",
+   "severity": "low",
+   "summary": "Placeholder: no genuine contradiction found here; this pairing is not a real conflict.",
+   "suggested_fix": "No change needed.",
+   "first_seen": "2026-11-14",
+   "last_seen": "2026-11-14",
+   "status": "open",
+   "last_checked": "2026-11-14"
+  },
+  {
+   "id": "166b9b943c34",
+   "kind": "reference-vs-reference",
+   "side": "knowledge",
+   "handles": [
+    "magnesium-benefits-best-forms-dosing",
+    "zinc-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "magnesium-benefits-best-forms-dosing",
+   "quote_a": "Take tetracycline and quinolone antibiotics at least 2 hours before or 4 to 6 hours after magnesium, and bisphosphonates at least 2 hours apart [1]; ask your doctor or pharmacist how far apart to take the others.",
+   "quote_b": "Zinc might bind quinolone and tetracycline antibiotics in the gut, which could lower absorption of both; take the antibiotic at least 2 hours before or 4 to 6 hours after zinc (6 hours after for ciprofloxacin) [1][102].",
+   "severity": "low",
+   "summary": "Both files give a single quinolone separation window (4-6 hours after the mineral), but the zinc file says it is 6 hours after for ciprofloxacin while the magnesium file gives no ciprofloxacin exception, so the two disagree on timing for that quinolone.",
+   "suggested_fix": "Check whether the ciprofloxacin-specific 6-hour rule should also apply when taking magnesium, and align the two files; if it applies, say so in the magnesium file.",
+   "first_seen": "2026-11-14",
+   "last_seen": "2026-11-14",
+   "status": "open",
+   "last_checked": "2026-11-14"
+  },
+  {
+   "id": "c5f825cde2be",
+   "kind": "reference-vs-reference",
+   "side": "knowledge",
+   "handles": [
+    "multivitamins-benefits-evidence-dosing-and-side-effects",
+    "zinc-benefits-forms-dosing-and-side-effects"
+   ],
+   "fix_handle": "multivitamins-benefits-evidence-dosing-and-side-effects",
+   "quote_a": "The most common signs of chronically high intakes are hair loss and brittle or lost nails; a garlic odor on the breath and a metallic taste can be early signs [82].",
+   "quote_b": "Zinc lozenges commonly cause an unpleasant taste, mouth irritation and nausea [18][29]:",
+   "severity": "low",
+   "summary": "This pair does not actually conflict (selenium vs zinc), so it should not be reported.",
+   "suggested_fix": "No change needed.",
    "first_seen": "2026-11-14",
    "last_seen": "2026-11-14",
    "status": "open",
