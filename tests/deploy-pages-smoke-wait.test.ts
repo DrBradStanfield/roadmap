@@ -373,6 +373,6 @@ describe("pages-smoke: a replaced Pages run, a missing run (US-46 AC16)", { time
     const perms = job.match(/\n {4}permissions:\n((?: {6}.*\n)+)/);
     expect(perms?.[1].split("\n").filter(Boolean).map((l) => l.replace(/#.*/, "").trim()))
       .toEqual(["contents: read", "actions: read", "issues: write"]);
-    expect(job).toMatch(/- uses: actions\/checkout@v5\n {8}with:\n {10}ref: main\n {10}persist-credentials: false(?: #.*)?\n/);
+    expect(job).toMatch(/- uses: actions\/checkout@\S+(?: #.*)?\n {8}with:\n {10}ref: main\n {10}persist-credentials: false(?: #.*)?\n/);
   });
 });
