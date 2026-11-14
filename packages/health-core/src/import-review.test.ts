@@ -2,127 +2,172 @@
 // one rule for the website and the iPhone (docs/drafts/import-review-redesign.md).
 import { describe, it, expect } from 'vitest';
 import {
-  classifyImportValues, heldSlots, heldSlotsFromFile, importSummary, importSummaryText, IMPORT_REVIEW_TEXT, notSavedGroups,
-  type ClassifiedValue, type HeldValue, type ImportFile,
+  classifyImportValues, importSummary, importSummaryText, IMPORT_REVIEW_TEXT, notSavedGroups, recordFromHistory, valueDays,
+  type ClassifiedValue, type ImportFile,
 } from './import-review';
-import { UNDATED_PREVIOUS, type AdditionalLabValue, type ExtractedValue } from './lab-extraction';
-import { bulkAppendValues, slotKey } from './record-edits';
-import { createEmptyFile } from './roadmap-file';
+import { UNDATED_PREVIOUS } from './lab-extraction';
+import type { RoadmapFile } from './roadmap-file';
+import { core, DAY, EMPTY, extra, lab, NOW, recordWith } from './import-review.test-helpers';
 
-const DAY = '2026-11-01';
-const NONE: ReadonlyMap<string, HeldValue> = new Map();
-
-const core = (over: Partial<ExtractedValue> = {}): ExtractedValue => ({
-  metric: 'ldl', valueSI: 3.1, displayValue: 3.1, displayUnit: 'mmol/L', displaySystem: 'si', confidence: 'high', ...over,
-});
-const extra = (over: Partial<AdditionalLabValue> = {}): AdditionalLabValue => ({ name: 'Ferritin', value: 80, unit: 'µg/L', ...over });
-const lab = (result: Partial<ImportFile['result']>, day: string | null = DAY): ImportFile => ({ result: { classification: 'lab_report', ...result }, day });
-const one = (file: ImportFile, held = NONE): ClassifiedValue => {
-  const all = classifyImportValues([file], held);
+const classify = (files: ImportFile[], record: RoadmapFile = EMPTY) => classifyImportValues(files, record, NOW);
+const one = (file: ImportFile, record: RoadmapFile = EMPTY): ClassifiedValue => {
+  const all = classify([file], record);
   expect(all).toHaveLength(1);
   return all[0];
 };
 const shape = (v: ClassifiedValue) => (v.group === 'unsure' ? { group: v.group, reasons: v.reasons } : v.group === 'notSaved' ? { group: v.group, reason: v.reason } : { group: v.group });
 
+const LDL_HELD = recordWith([{ kind: 'measurement', metricType: 'ldl', value: 2.4 }]);
+const LDL_SAME = recordWith([{ kind: 'measurement', metricType: 'ldl', value: 3.1 }]);
+const FERRITIN_HELD = recordWith([{ kind: 'lab', metricName: 'ferritin', value: 60, unit: 'µg/L' }]);
+const FERRITIN_SAME = recordWith([{ kind: 'lab', metricName: 'ferritin', value: 80, unit: 'µg/L' }]);
+
 describe('classifyImportValues: one row per signal (US-13 AC13, D1)', () => {
-  const ldlSlot = slotKey('measurement', 'ldl', DAY);
-  const ferritinSlot = slotKey('lab', 'Ferritin', DAY);
-  it.each<[string, ImportFile, ReadonlyMap<string, HeldValue>, object]>([
-    ['a confident core value is sure', lab({ values: [core()] }), NONE, { group: 'sure' }],
-    ['medium confidence asks for a look', lab({ values: [core({ confidence: 'medium' })] }), NONE, { group: 'unsure', reasons: ['confidence'] }],
-    ['a question asks for a look', lab({ values: [core({ question: 'Was this a blood test?' })] }), NONE, { group: 'unsure', reasons: ['question'] }],
-    ['a guessed unit asks for a look', lab({ values: [core({ unitGuessed: true })] }), NONE, { group: 'unsure', reasons: ['unitGuessed'] }],
-    ['a core value outside its input range is never hidden', lab({ values: [core({ valueSI: 500 })] }), NONE, { group: 'unsure', reasons: ['outOfRange'] }],
-    ['a different value held that day is a conflict', lab({ values: [core()] }), new Map([[ldlSlot, { valueSI: 2.4 }]]), { group: 'unsure', reasons: ['conflict'] }],
-    ['the same value held that day is already saved', lab({ values: [core()] }), new Map([[ldlSlot, { valueSI: 3.1 + 1e-12 }]]), { group: 'saved' }],
-    ['a value with no known day is never slotted', lab({ values: [core({ recordedAt: UNDATED_PREVIOUS })] }), new Map([[ldlSlot, { valueSI: 2.4 }]]), { group: 'sure' }],
-    ['a file with no day set yet slots nothing', lab({ values: [core()] }, null), new Map([[ldlSlot, { valueSI: 2.4 }]]), { group: 'sure' }],
-    ['a catalogued lab in its unit is sure', lab({ additionalValues: [extra()] }), NONE, { group: 'sure' }],
-    ['a known conversion is sure', lab({ additionalValues: [extra({ unit: 'ng/mL' })] }), NONE, { group: 'sure' }],
-    ['a test not in the catalogue is sure (Q3 a)', lab({ additionalValues: [extra({ name: 'Mystery marker', unit: 'zz' })] }), NONE, { group: 'sure' }],
-    ['a lab the model doubted asks for a look', lab({ additionalValues: [extra({ confidence: 'low' })] }), NONE, { group: 'unsure', reasons: ['confidence'] }],
-    ['a different lab held that day is a conflict', lab({ additionalValues: [extra()] }), new Map([[ferritinSlot, { lab: { name: 'ferritin', value: 60, unit: 'µg/L' } }]]), { group: 'unsure', reasons: ['conflict'] }],
-    ['the same lab held, in another spelling, is already saved', lab({ additionalValues: [extra({ unit: 'ng/mL' })] }), new Map([[ferritinSlot, { lab: { name: 'ferritin', value: 80, unit: 'µg/L' } }]]), { group: 'saved' }],
-    ['a unit the test does not take', lab({ additionalValues: [extra({ unit: 'furlongs' })] }), NONE, { group: 'notSaved', reason: 'unit' }],
-    ['no unit printed', lab({ additionalValues: [extra({ unit: '' })] }), NONE, { group: 'notSaved', reason: 'noUnit' }],
-    ['past the plausible range', lab({ additionalValues: [extra({ name: 'Sodium', value: 1000, unit: 'mmol/L' })] }), NONE, { group: 'notSaved', reason: 'misread' }],
-    ['past the ceiling a prefix step reaches', lab({ additionalValues: [extra({ name: 'Reticulocytes', value: 5, unit: '×10¹²/L' })] }), NONE, { group: 'notSaved', reason: 'misread' }],
-    ['a count per µL that is not whole', lab({ additionalValues: [extra({ name: 'WBC', value: 6.5, unit: 'cells/µL' })] }), NONE, { group: 'notSaved', reason: 'scale' }],
-    ['a core test filed as a lab converts as core', lab({ additionalValues: [extra({ name: 'HbA1c', value: 40, unit: 'mmol/mol' })] }), NONE, { group: 'sure' }],
-    ['a core test filed as a lab in a unit it does not take', lab({ additionalValues: [extra({ name: 'HbA1c', value: 40, unit: 'furlongs' })] }), NONE, { group: 'notSaved', reason: 'unit' }],
-    ['a creatinine with no unit', lab({ refusedValues: [{ metric: 'creatinine', value: 80, unit: '', reason: 'No unit was printed.' }] }), NONE, { group: 'notSaved', reason: 'noUnit' }],
-    ['a creatinine in a urine unit', lab({ refusedValues: [{ metric: 'creatinine', value: 3, unit: 'mg/mmol', reason: 'x' }] }), NONE, { group: 'notSaved', reason: 'urine' }],
-    ['a creatinine in an unknown unit', lab({ refusedValues: [{ metric: 'creatinine', value: 3, unit: 'zz', reason: 'x' }] }), NONE, { group: 'notSaved', reason: 'unit' }],
-    ['an unreadable number', lab({ unreadValues: [{ name: 'tsh', reason: 'unreadable' }], droppedValueCount: 1 }), NONE, { group: 'notSaved', reason: 'unreadable' }],
-  ])('%s', (_name, file, held, expected) => {
-    expect(shape(one(file, held))).toEqual(expected);
+  it.each<[string, ImportFile, RoadmapFile, object]>([
+    ['a confident core value is sure', lab({ values: [core()] }), EMPTY, { group: 'sure' }],
+    ['medium confidence asks for a look', lab({ values: [core({ confidence: 'medium' })] }), EMPTY, { group: 'unsure', reasons: ['confidence'] }],
+    ['a question asks for a look', lab({ values: [core({ question: 'Was this a blood test?' })] }), EMPTY, { group: 'unsure', reasons: ['question'] }],
+    ['a guessed unit asks for a look', lab({ values: [core({ unitGuessed: true })] }), EMPTY, { group: 'unsure', reasons: ['unitGuessed'] }],
+    ['a core value the write refuses for its range is never hidden', lab({ values: [core({ valueSI: 500 })] }), EMPTY, { group: 'unsure', reasons: ['outOfRange'] }],
+    ['a different value held that day is a conflict', lab({ values: [core()] }), LDL_HELD, { group: 'unsure', reasons: ['conflict'] }],
+    ['the same value held that day is already saved', lab({ values: [core()] }), LDL_SAME, { group: 'saved' }],
+    ['a value with no day yet waits behind the date question', lab({ values: [core()] }, { day: null }), LDL_HELD, { group: 'waiting' }],
+    ['an undated column waits until its day is picked', lab({ values: [core({ recordedAt: UNDATED_PREVIOUS })] }), EMPTY, { group: 'waiting' }],
+    ['a day that is not a real day waits', lab({ values: [core()] }, { day: '2026-02-30' }), EMPTY, { group: 'waiting' }],
+    ['a catalogued lab in its unit is sure', lab({ additionalValues: [extra()] }), EMPTY, { group: 'sure' }],
+    ['a known conversion is sure', lab({ additionalValues: [extra({ unit: 'ng/mL' })] }), EMPTY, { group: 'sure' }],
+    ['a test not in the catalogue is sure (Q3 a)', lab({ additionalValues: [extra({ name: 'Mystery marker', unit: 'zz' })] }), EMPTY, { group: 'sure' }],
+    ['a lab the model doubted asks for a look', lab({ additionalValues: [extra({ confidence: 'low' })] }), EMPTY, { group: 'unsure', reasons: ['confidence'] }],
+    ['a different lab held that day is a conflict', lab({ additionalValues: [extra()] }), FERRITIN_HELD, { group: 'unsure', reasons: ['conflict'] }],
+    ['the same lab held, in another spelling, is already saved', lab({ additionalValues: [extra({ unit: 'ng/mL' })] }), FERRITIN_SAME, { group: 'saved' }],
+    ['a unit the test does not take', lab({ additionalValues: [extra({ unit: 'furlongs' })] }), EMPTY, { group: 'notSaved', reason: 'unit' }],
+    ['no unit printed', lab({ additionalValues: [extra({ unit: '' })] }), EMPTY, { group: 'notSaved', reason: 'noUnit' }],
+    ['a unit refusal is known before a day is set', lab({ additionalValues: [extra({ unit: 'furlongs' })] }, { day: null }), EMPTY, { group: 'notSaved', reason: 'unit' }],
+    ['past the plausible range', lab({ additionalValues: [extra({ name: 'Sodium', value: 1000, unit: 'mmol/L' })] }), EMPTY, { group: 'notSaved', reason: 'misread' }],
+    ['past the ceiling a prefix step reaches', lab({ additionalValues: [extra({ name: 'Reticulocytes', value: 5, unit: '×10¹²/L' })] }), EMPTY, { group: 'notSaved', reason: 'misread' }],
+    ['a count per µL that is not whole', lab({ additionalValues: [extra({ name: 'WBC', value: 6.5, unit: 'cells/µL' })] }), EMPTY, { group: 'notSaved', reason: 'scale' }],
+    ['a core test filed as a lab converts as core', lab({ additionalValues: [extra({ name: 'HbA1c', value: 40, unit: 'mmol/mol' })] }), EMPTY, { group: 'sure' }],
+    ['a core test filed as a lab, already held as core', lab({ additionalValues: [extra({ name: 'HbA1c', value: 40, unit: 'mmol/mol' })] }), recordWith([{ kind: 'measurement', metricType: 'hba1c', value: 40 }]), { group: 'saved' }],
+    ['a core test filed as a lab in a unit it does not take', lab({ additionalValues: [extra({ name: 'HbA1c', value: 40, unit: 'furlongs' })] }), EMPTY, { group: 'notSaved', reason: 'unit' }],
+    ['a creatinine with no unit', lab({ refusedValues: [{ metric: 'creatinine', value: 80, unit: '', reason: 'No unit was printed.' }] }), EMPTY, { group: 'notSaved', reason: 'noUnit' }],
+    ['a creatinine in a urine unit', lab({ refusedValues: [{ metric: 'creatinine', value: 3, unit: 'mg/mmol', reason: 'x' }] }), EMPTY, { group: 'notSaved', reason: 'urine' }],
+    ['a creatinine in an unknown unit', lab({ refusedValues: [{ metric: 'creatinine', value: 3, unit: 'zz', reason: 'x' }] }), EMPTY, { group: 'notSaved', reason: 'unit' }],
+    ['an unreadable number', lab({ unreadValues: [{ name: 'tsh', reason: 'unreadable' }], droppedValueCount: 1 }), EMPTY, { group: 'notSaved', reason: 'unreadable' }],
+  ])('%s', (_name, file, record, expected) => {
+    expect(shape(one(file, record))).toEqual(expected);
   });
 
   it('collects every reason a value has, and names the test by its label, never a key', () => {
-    const [v] = classifyImportValues([lab({ values: [core({ metric: 'lpa', confidence: 'low', question: 'Check the unit.', unitGuessed: true })] })], NONE);
-    expect(v).toMatchObject({ group: 'unsure', reasons: ['confidence', 'question', 'unitGuessed'], label: 'Lp(a)', ref: 'v0', file: 0 });
-    const [u] = classifyImportValues([lab({ unreadValues: [{ name: 'immature_granulocytes', reason: 'unreadable' }], droppedValueCount: 1 })], NONE);
+    const [v] = classify([lab({ values: [core({ metric: 'lpa', valueSI: 50, confidence: 'low', question: 'Check the unit.', unitGuessed: true })] })]);
+    expect(v).toMatchObject({ group: 'unsure', reasons: ['confidence', 'question', 'unitGuessed'], label: 'Lp(a)', ref: 'v0', file: 0, sent: true });
+    const [u] = classify([lab({ unreadValues: [{ name: 'immature_granulocytes', reason: 'unreadable' }], droppedValueCount: 1 })]);
     expect(u.label).toBe('Immature granulocytes');
-  });
-
-  it('a second reading of a test on a day the upload already filled is not saved; the first stands', () => {
-    const files = [lab({ values: [core()] }), lab({ values: [core({ valueSI: 2.9, confidence: 'low' })] })];
-    expect(classifyImportValues(files, NONE).map(shape)).toEqual([{ group: 'sure' }, { group: 'notSaved', reason: 'sameDay' }]);
   });
 
   it('counts dropped rows that name no test, and skips documents', () => {
     const files: ImportFile[] = [
-      { result: { classification: 'clinic_letter', document: { classification: 'clinic_letter', title: 'Letter', documentDate: null, contentMarkdown: 'x', metadata: {} } }, day: null },
+      { result: { classification: 'clinic_letter', document: { classification: 'clinic_letter', title: 'Letter', documentDate: null, contentMarkdown: 'x', metadata: {} } }, days: {}, sent: new Set() },
       lab({ unreadValues: [{ name: 'tsh', reason: 'unreadable' }, { name: '', reason: 'unreadable' }], droppedValueCount: 3 }),
     ];
-    const all = classifyImportValues(files, NONE);
-    expect(all.map((v) => [v.file, v.ref, v.label])).toEqual([[1, 'u0', 'TSH'], [1, 'u1', ''], [1, 'u2', '']]);
+    expect(classify(files).map((v) => [v.file, v.ref, v.label])).toEqual([[1, 'u0', 'TSH'], [1, 'u1', ''], [1, 'u2', '']]);
   });
 });
 
-describe('held slots: the record as the review compares against it', () => {
-  it('reads the same slots from the file (iPhone) as from the history (web)', () => {
-    let file = createEmptyFile({ deviceId: 'd', now: '2026-11-02T00:00:00Z' });
-    file = bulkAppendValues(file, [
-      { kind: 'measurement', metricType: 'ldl', value: 2.4, recordedAt: DAY, source: 'manual' },
-      { kind: 'lab', metricName: 'Ferritin', value: 60, unit: 'µg/L', recordedAt: DAY, source: 'manual' },
-    ], '2026-11-02T00:00:00Z').file;
-    const fromFile = heldSlotsFromFile(file);
-    const fromHistory = heldSlots([{ metricType: 'ldl', value: 2.4, recordedAt: DAY }], [{ metricName: 'Ferritin', value: 60, unit: 'µg/L', recordedAt: DAY }]);
-    const files = [lab({ values: [core()], additionalValues: [extra()] })];
-    expect(classifyImportValues(files, fromFile).map(shape)).toEqual([{ group: 'unsure', reasons: ['conflict'] }, { group: 'unsure', reasons: ['conflict'] }]);
-    expect(classifyImportValues(files, fromHistory).map(shape)).toEqual(classifyImportValues(files, fromFile).map(shape));
+describe('effective days (ruling B)', () => {
+  it('an undated column the person dates onto a day the record holds differently is a conflict, never sure', () => {
+    const file = lab({ values: [core({ recordedAt: UNDATED_PREVIOUS })] }, { undatedDay: DAY });
+    expect(shape(one(file, LDL_HELD))).toEqual({ group: 'unsure', reasons: ['conflict'] });
+    expect(shape(one(lab({ values: [core({ recordedAt: UNDATED_PREVIOUS })] }), LDL_HELD))).toEqual({ group: 'waiting' });
+  });
+
+  it('valueDays: own day, the file day, the picked undated day', () => {
+    const result = { classification: 'lab_report', values: [core(), core({ recordedAt: '2026-01-01' }), core({ recordedAt: UNDATED_PREVIOUS })] };
+    expect(valueDays(result, DAY)).toEqual({ v0: DAY, v1: '2026-01-01', v2: null });
+    expect(valueDays(result, null, '2025-06-01')).toEqual({ v0: null, v1: '2026-01-01', v2: '2025-06-01' });
+  });
+});
+
+describe('slot precedence (ruling A, US-12 AC12, AC14)', () => {
+  const primary = core({ valueSI: 3.1 });
+  const previous = core({ valueSI: 2.9, recordedAt: DAY });
+  const reportOf = (day: string, v: ReturnType<typeof core>) => lab({ values: [v] }, { day });
+  it.each([['primary file first', false], ['previous-column file first', true]])('a report\'s own reading wins over a dated previous column (%s)', (_name, reversed) => {
+    const files = [reportOf(DAY, primary), reportOf('2026-12-01', previous)];
+    const out = classify(reversed ? [files[1], files[0]] : files);
+    const byValue = (fileIndex: number) => out.find((v) => v.file === fileIndex)!;
+    const [p, q] = reversed ? [byValue(1), byValue(0)] : [byValue(0), byValue(1)];
+    expect(shape(p)).toEqual({ group: 'sure' });
+    expect(shape(q)).toEqual({ group: 'notSaved', reason: 'sameDay' });
+  });
+
+  it('a winner equal to the record does not block a differing reading of its rank: that one is the conflict', () => {
+    const out = classify([lab({ values: [core({ valueSI: 2.4 }), core({ valueSI: 3.1 })] })], LDL_HELD);
+    expect(out.map(shape)).toEqual([{ group: 'saved' }, { group: 'unsure', reasons: ['conflict'] }]);
+  });
+
+  it('a primary equal to the record still blocks a differing previous column', () => {
+    const out = classify([reportOf(DAY, core({ valueSI: 2.4 })), reportOf('2026-12-01', core({ valueSI: 3.0, recordedAt: DAY }))], LDL_HELD);
+    expect(out.map(shape)).toEqual([{ group: 'saved' }, { group: 'notSaved', reason: 'sameDay' }]);
+  });
+
+  it('an equal second reading is saved with the first, not "not saved"', () => {
+    expect(classify([lab({ values: [core(), core()] })]).map(shape)).toEqual([{ group: 'sure' }, { group: 'saved' }]);
+  });
+
+  it('unticking the first reading frees the slot for the second (F4)', () => {
+    const values = [core({ question: 'Was this a blood test?' }), core({ valueSI: 2.9 })];
+    expect(classify([lab({ values })]).map(shape)).toEqual([{ group: 'unsure', reasons: ['question'] }, { group: 'notSaved', reason: 'sameDay' }]);
+    const out = classify([lab({ values }, { unsent: ['v0'] })]);
+    expect(out.map((v) => [v.ref, v.sent, shape(v)])).toEqual([['v1', true, { group: 'sure' }], ['v0', false, { group: 'unsure', reasons: ['question'] }]]);
+  });
+
+  it('lists sent values in the order Save must send them: by rank, then file order', () => {
+    const out = classify([lab({ values: [core({ recordedAt: '2026-10-01' }), core({ metric: 'hdl', valueSI: 1.2 })] })]);
+    expect(out.map((v) => v.ref)).toEqual(['v1', 'v0']);
+  });
+});
+
+describe('the website\'s history as a record', () => {
+  it('classifies alike from the history and from the record it came from, limits included', () => {
+    const history = {
+      measurements: [{ id: 'm1', metricType: 'ldl', value: 2.4, recordedAt: DAY, createdAt: NOW }, { id: 'm2', metricType: 'psa', value: 0.1, recordedAt: DAY, createdAt: NOW, comparator: '<' as const }],
+      labValues: [{ id: 'l1', metricName: 'ferritin', value: 80, unit: 'µg/L', recordedAt: DAY, createdAt: NOW, comparator: '>' as const }],
+    };
+    const fromHistory = recordFromHistory(history.measurements, history.labValues);
+    const fromWrite = recordWith([
+      { kind: 'measurement', metricType: 'ldl', value: 2.4 },
+      { kind: 'measurement', metricType: 'psa', value: 0.1, comparator: '<' },
+      { kind: 'lab', metricName: 'ferritin', value: 80, unit: 'µg/L', comparator: '>' },
+    ]);
+    const files = [lab({ values: [core(), core({ metric: 'psa', valueSI: 0.1, comparator: '<' })], additionalValues: [extra({ comparator: '>' }), extra({ name: 'TSH', unit: 'mIU/L', value: 2 })] })];
+    expect(classify(files, fromHistory)).toEqual(classify(files, fromWrite));
+    expect(classify(files, fromHistory).map(shape)).toEqual([{ group: 'unsure', reasons: ['conflict'] }, { group: 'saved' }, { group: 'saved' }, { group: 'sure' }]);
   });
 });
 
 describe('the review per D3 case', () => {
-  const groups = (files: ImportFile[], held = NONE) => {
-    const all = classifyImportValues(files, held);
+  const groups = (files: ImportFile[], record: RoadmapFile = EMPTY) => {
+    const all = classify(files, record);
     const count = (g: ClassifiedValue['group']) => all.filter((v) => v.group === g).length;
     return { sure: count('sure'), unsure: count('unsure'), notSaved: count('notSaved'), saved: count('saved'), summary: importSummaryText(importSummary(files)) };
   };
-
   it('zero unsure: a summary and Save, no rows', () => {
     expect(groups([lab({ values: [core()], additionalValues: [extra()] })])).toEqual({ sure: 2, unsure: 0, notSaved: 0, saved: 0, summary: 'Found 2 blood test values' });
   });
-
   it('only unsure: the rows and Save, nothing behind Show all', () => {
     expect(groups([lab({ values: [core({ unitGuessed: true })] })])).toEqual({ sure: 0, unsure: 1, notSaved: 0, saved: 0, summary: 'Found 1 blood test value' });
   });
-
   it('nothing to save: the summary and the Not saved line', () => {
     const files = [lab({ refusedValues: [{ metric: 'creatinine', value: 3, unit: 'mg/mmol', reason: 'x' }], unreadValues: [{ name: 'tsh', reason: 'unreadable' }], droppedValueCount: 1 })];
     expect(groups(files)).toEqual({ sure: 0, unsure: 0, notSaved: 2, saved: 0, summary: 'No blood test values or documents found.' });
   });
-
   it('already saved: counted, not a row and not Not saved', () => {
-    const held = new Map([[slotKey('measurement', 'ldl', DAY), { valueSI: 3.1 }]]);
-    expect(groups([lab({ values: [core()] })], held)).toMatchObject({ sure: 0, unsure: 0, notSaved: 0, saved: 1 });
+    expect(groups([lab({ values: [core()] })], LDL_SAME)).toMatchObject({ sure: 0, unsure: 0, notSaved: 0, saved: 1 });
   });
 });
 
 describe('importSummaryText (strings 1 to 3)', () => {
-  const doc = (classification: string): ImportFile => ({ result: { classification, document: { classification, title: 't', documentDate: null, contentMarkdown: '', metadata: {} } }, day: null });
+  const doc = (classification: string): ImportFile => ({ result: { classification, document: { classification, title: 't', documentDate: null, contentMarkdown: '', metadata: {} } }, days: {}, sent: new Set() });
   it('counts values and documents by kind across files', () => {
     const files = [lab({ values: [core()], additionalValues: [extra(), extra({ name: 'TSH', unit: 'mIU/L', value: 2 })] }), doc('clinic_letter'), doc('scan_result'), doc('scan_result')];
     expect(importSummaryText(importSummary(files))).toBe('Found 3 blood test values, 2 scan results and 1 clinic letter in 4 files');
@@ -139,7 +184,7 @@ describe('notSavedGroups (D5, strings 13 and 17 to 24)', () => {
       additionalValues: [extra({ unit: 'furlongs' }), extra({ name: 'TSH', unit: 'zz' }), extra({ unit: '' })],
       unreadValues: [{ name: 'tsh', reason: 'unreadable' }], droppedValueCount: 3,
     }), lab({ additionalValues: [extra({ unit: 'furlongs', recordedAt: '2026-10-01' })] })];
-    const groups = notSavedGroups(classifyImportValues(files, NONE));
+    const groups = notSavedGroups(classify(files));
     expect(groups.total).toBe(7);
     expect(groups.lines.map((l) => l.text)).toEqual([
       'Ferritin, TSH: this unit is not one we know for this test',
@@ -150,9 +195,8 @@ describe('notSavedGroups (D5, strings 13 and 17 to 24)', () => {
     expect(IMPORT_REVIEW_TEXT.notSavedTitle(groups.total)).toBe('7 values not saved');
   });
   it('says "other" only beside named lines, and never shows agent text or a key', () => {
-    const groups = notSavedGroups(classifyImportValues([lab({ droppedValueCount: 1 })], NONE));
-    expect(groups).toEqual({ total: 1, lines: [], other: '1 value could not be read' });
-    const words = JSON.stringify(notSavedGroups(classifyImportValues([lab({ additionalValues: [extra({ name: 'immature_granulocytes', unit: 'zz' })] })], NONE)));
+    expect(notSavedGroups(classify([lab({ droppedValueCount: 1 })]))).toEqual({ total: 1, lines: [], other: '1 value could not be read' });
+    const words = JSON.stringify(notSavedGroups(classify([lab({ additionalValues: [extra({ name: 'immature_granulocytes', unit: 'zz' })] })])));
     expect(words).not.toMatch(/immature_granulocytes|Do not|Ask the person/);
   });
 });
