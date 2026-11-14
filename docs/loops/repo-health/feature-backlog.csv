@@ -1,2 +1,3 @@
 first_seen,ref,theme,ask_summary,status,note
 2026-10-31,#429,code-structure,"owner-side ask: decision on splitting the largest source files into smaller ones, one behaviour-neutral PR per piece, sequenced after open PRs land",open,"external author via agent; no maintainer reply yet; internal refactor so no usage signal; the call is Brad's"
+2026-11-14,#1254,health-records-import,"owner-side ask: read lab results that arrive as text values or report-only results in two vendor feeds, so they land instead of counting as not read",open,"external author; US-72 follow-on; new FHIR row shapes, the call is Brad's; usage signal not yet declared; no maintainer reply"
