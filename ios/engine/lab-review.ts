@@ -10,7 +10,9 @@ import { unreadLines, type AdditionalLabValue, type DocumentResult, type Extract
 import { labTestLabel } from '../../packages/health-core/src/lab-catalog';
 import { labPlausibleNote, labUnitRefusalLine, labValueLabel } from '../../packages/health-core/src/lab-series';
 import { isReadableRow } from '../../packages/health-core/src/readable-rows';
-import { comparatorOf, withComparator } from '../../packages/health-core/src/lab-limits';
+import { withComparator } from '../../packages/health-core/src/lab-limits';
+import { classifyReport } from './lab-review-groups';
+import { importRow, type ImportFile } from '../../packages/health-core/src/import-review';
 
 /** The server's answer (`data` of POST /api/app/v1/lab-import). */
 export interface Extraction {
@@ -132,17 +134,18 @@ export function labReview(extraction: Extraction, now: string, file: RoadmapFile
   };
 }
 
-/** A value printed as a limit keeps its code on the row it becomes (US-12 AC20). */
-
-export type LabRowsResult = { ok: true; rows: BulkRow[] } | { ok: false; reason: string; message: string };
+/** `rows`: what Save submits. `ticked`: every ticked value's row as `importRow` builds it,
+ *  for the receipt's dry run, which names a value the record took in since the review. */
+export type LabRowsResult = { ok: true; rows: BulkRow[]; ticked: BulkRow[] } | { ok: false; reason: string; message: string };
 
 /**
- * The ticked values as bulk rows, each on its own day or the report's.
- * `reportDay` is the user's choice: a real day that has happened.
+ * The rows Save submits for the ticked values, each on its own day or the report's:
+ * the import review's own (`classifyReport`, US-13 AC13), so a value the record holds
+ * or would refuse is never sent. `reportDay` is the user's choice: a real day that has happened.
  */
-export function labRows(extraction: Extraction, refs: string[], reportDay: string, now: string): LabRowsResult {
+export function labRows(extraction: Extraction, refs: string[], reportDay: string, now: string, file: RoadmapFile): LabRowsResult {
   const fallback = validDay(reportDay, { now });
-  const rows: BulkRow[] = [];
+  const ticked: BulkRow[] = [];
   for (const ref of refs) {
     const index = Number(ref.slice(1));
     const core = ref[0] === 'v' ? extraction.values?.[index] : undefined;
@@ -157,17 +160,9 @@ export function labRows(extraction: Extraction, refs: string[], reportDay: strin
         ? { ok: false, reason: 'invalid-date', message: 'A value in this report has no usable date.' }
         : { ok: false, reason: 'invalid-date', message: 'Pick the day of the test: a real day, today or before.' };
     }
-    if (core) {
-      rows.push({ kind: 'measurement', metricType: core.metric, value: core.valueSI, recordedAt: day, source: 'lab_import', ...comparatorOf(core) });
-    } else if (extra) {
-      rows.push({
-        kind: 'lab', metricName: extra.name, value: extra.value, unit: extra.unit,
-        referenceLow: extra.referenceLow ?? null, referenceHigh: extra.referenceHigh ?? null,
-        recordedAt: day, source: 'lab_import', ...comparatorOf(extra),
-      });
-    }
+    ticked.push(importRow(extraction as ImportFile['result'], ref, day)!);
   }
-  return { ok: true, rows };
+  return { ok: true, rows: classifyReport(extraction, file, refs, fallback, now).rows, ticked };
 }
 
 export interface LabSaveSummary {

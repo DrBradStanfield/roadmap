@@ -140,7 +140,8 @@ export function labReviewJson(extractionJson: string, nowIso: string, recordJson
  *  Read raw, as the save writes it (US-65), so the receipt counts what really lands. */
 export function labSaveSummaryJson(recordJson: string, extractionJson: string, refsJson: string, reportDay: string, nowIso: string, deviceId: string): string {
   checkArgs('labSaveSummaryJson', arguments);
-  const rows = labRows(JSON.parse(extractionJson) as Extraction, JSON.parse(refsJson) as string[], reportDay, nowIso);
+  const file = readRecord(recordJson, nowIso, deviceId);
+  const rows = labRows(JSON.parse(extractionJson) as Extraction, JSON.parse(refsJson) as string[], reportDay, nowIso, file);
   if (!rows.ok) return JSON.stringify(rows);
-  return JSON.stringify({ ok: true, summary: labSaveSummary(readRecord(recordJson, nowIso, deviceId), rows.rows, nowIso) });
+  return JSON.stringify({ ok: true, summary: labSaveSummary(file, rows.ticked, nowIso) });
 }

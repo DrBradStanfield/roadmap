@@ -246,9 +246,9 @@ export function cloudLabImport(extractionJson: string, refsJson: string, reportD
   const at = open;
   if (!at) return JSON.stringify(refuse('not-open', NOT_OPEN));
   const refs = JSON.parse(refsJson) as string[];
-  const rows = labRows(JSON.parse(extractionJson) as Extraction, refs, reportDay, nowIso);
+  const rows = labRows(JSON.parse(extractionJson) as Extraction, refs, reportDay, nowIso, at.session.file);
   if (!rows.ok) return JSON.stringify(rows);
-  const summary = labSaveSummary(at.session.file, rows.rows, nowIso);
+  const summary = labSaveSummary(at.session.file, rows.ticked, nowIso);
   const outcome = editSession({ kind: 'labImport', extractionJson, refs, reportDay }, erase, shownUnits, nowIso, unitsJson);
   return JSON.stringify(outcome.ok ? { ...outcome, summary } : outcome);
 }

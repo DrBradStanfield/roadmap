@@ -4,12 +4,12 @@
 // record and which are not saved, and every word the screen shows, from
 // health-core's one rule (import-review.ts). Swift asks again whenever a tick or
 // the test day changes, so it holds no rule and no copy of these words. The only
-// call into the shared classifier is `classify` below.
+// call into the shared classifier is `classifyReport` below, which the save uses too.
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
-import { validDay } from '../../packages/health-core/src/record-edits';
+import { validDay, type BulkRow } from '../../packages/health-core/src/record-edits';
 import {
-  classifyImportValues, importSummary, importSummaryText, notSavedGroups, valueDays,
-  IMPORT_REVIEW_TEXT, type ClassifiedValue, type ImportFile, type UnsureReason,
+  classifyImportValues, importRow, importSummary, importSummaryText, notSavedGroups, valueDays,
+  IMPORT_REVIEW_TEXT, type ImportClassification, type ImportFile, type UnsureReason,
 } from '../../packages/health-core/src/import-review';
 import { createEmptyFile } from '../../packages/health-core/src/roadmap-file';
 import type { Extraction } from './lab-review';
@@ -36,27 +36,36 @@ export interface LabReviewGroups {
   alreadySaved: string | null;
   /** "{n} values not saved", one line per reason with the tests' labels, and the footer; null with none. */
   notSaved: { title: string; lines: string[]; footer: string } | null;
-  /** The ticked values Save sends: never one the record already holds or one it refuses. */
+  /** The ticked values the save writes, in its order: never one held or refused (`classifyReport`'s rows). */
   saveRefs: string[];
   /** "Save {n} values", n = saveRefs' count; null when no value could be written, ticked or
    *  not (D3, nothing to save: the screen offers no Save). */
   save: string | null;
 }
 
-/** The one call into health-core's classifier for one report: its values against the record,
- *  each on its own day or `day` (null: no day yet, so they wait), Save sending `ticked`.
- *  Answers in the order Save must send them. */
-function classify(extraction: Extraction, file: RoadmapFile | null, day: string | null, ticked: ReadonlySet<string>, now: string): ClassifiedValue[] {
+/**
+ * The one call into health-core's classifier for one report, shared by the review and the
+ * save (`labRows`): the ticked refs' rows built by `importRow`, each on its own day or `day`
+ * (null: no day yet, so those wait and are not sent), against the record. Its `rows` are
+ * exactly what Save submits, in order; its `values` every value's group.
+ */
+export function classifyReport(extraction: Extraction, file: RoadmapFile | null, ticked: Iterable<string>, day: string | null, now: string): ImportClassification {
   const result = extraction as ImportFile['result'];
-  const one: ImportFile = { result, days: valueDays(result, day), sent: ticked };
-  return classifyImportValues([one], file ?? createEmptyFile({ deviceId: 'review', now }), now);
+  const days = valueDays(result, day);
+  const rows: Record<string, BulkRow> = {};
+  for (const ref of ticked) {
+    const on = days[ref] ? validDay(days[ref]!, { now }) : null;
+    const row = on ? importRow(result, ref, on) : null;
+    if (row) rows[ref] = row;
+  }
+  return classifyImportValues([{ result, rows, days }], file ?? createEmptyFile({ deviceId: 'review', now }), now);
 }
 
 /** The review's groups for the ticks and test day it holds now. */
 export function labReviewGroups(extraction: Extraction, file: RoadmapFile | null, ticked: readonly string[], reportDay: string, now: string): LabReviewGroups {
   const ticks = new Set(ticked);
   const day = validDay(reportDay, { now }) ?? null;
-  const all = classify(extraction, file, day, ticks, now);
+  const all = classifyReport(extraction, file, ticks, day, now).values;
   const offered = all.filter((v) => /^[va]\d+$/.test(v.ref));
   const items: GroupedItem[] = offered.map((v) => {
     if (v.group !== 'unsure') return { ref: v.ref, group: v.group };
@@ -64,8 +73,8 @@ export function labReviewGroups(extraction: Extraction, file: RoadmapFile | null
   });
   const count = (group: GroupedItem['group']) => items.filter((i) => i.group === group).length;
   const writes = (i: GroupedItem) => i.group === 'sure' || (i.group === 'unsure' && !i.conflict);
-  // In the classifier's order: the order Save must send them.
-  const saveRefs = items.filter((i) => ticks.has(i.ref) && writes(i)).map((i) => i.ref);
+  // The ticked values the save writes, in the order it submits them.
+  const saveRefs = offered.filter((v) => v.sent && v.writes).map((v) => v.ref);
   const unsure = count('unsure');
   const sure = count('sure');
   const saved = count('saved');
