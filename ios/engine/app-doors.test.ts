@@ -10,6 +10,7 @@ import { erasePhoneJson } from './erase';
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { chatContextOf } from '../../packages/health-core/src/chat-context';
 import { currentValueRows } from '../../packages/health-core/src/blood-tests';
+import { labUnitRefusalLine } from '../../packages/health-core/src/lab-series';
 
 const NOW = '2026-10-21T08:00:00.000Z';
 const DEVICE = 'ios-test';
@@ -171,6 +172,25 @@ describe('US-52 AC8: the lab review and the write', () => {
     const out = applyEdit(file, { kind: 'labImport', extractionJson: JSON.stringify(slip), refs: ['a0', 'a1'], reportDay: '2026-10-01' }, NOW);
     if (!out.ok) throw new Error(out.message);
     expect(out.file.labValues.map((l) => l.metricName)).toEqual(['Ferritin']);
+  });
+
+  // US-52 AC8 (H400): a refused unit printed the raw key and the assistant's refusal
+  // ("immature_granulocytes: ... Do not work the count out from the percentage").
+  it('US-52 AC8: a refused unit reads as the web\'s line, never the raw key or the assistant\'s words', () => {
+    const percent = { ...extraction, additionalValues: [
+      { name: 'neutrophils', value: 60, unit: '%' }, { name: 'immature_granulocytes', value: 0.4, unit: '%' },
+    ] };
+    const summary = JSON.parse(labSaveSummaryJson(JSON.stringify(record()), JSON.stringify(percent), JSON.stringify(['a0', 'a1']), '2026-10-01', NOW, DEVICE));
+    const refused = summary.summary.refused as Array<{ label: string; message: string; line?: string }>;
+    expect(refused.map((r) => r.label)).toEqual(['Neutrophils', 'Immature granulocytes']);
+    expect(refused.map((r) => r.line)).toEqual([
+      labUnitRefusalLine('neutrophils', '%'), labUnitRefusalLine('immature_granulocytes', '%'),
+    ]);
+    for (const r of refused) {
+      const shown = r.line ?? `Not saved, ${r.label}: ${r.message}`; // LabReportSave.line
+      expect(shown).not.toContain('_');
+      expect(shown).not.toContain('Do not');
+    }
   });
 
   it('refuses a future or missing report day, and a ref not in the report', () => {
