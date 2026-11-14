@@ -13,6 +13,7 @@ import { RecordSession } from '@roadmap/health-core/record-session';
 import { createMeasurement } from '@roadmap/health-core/roadmap-file';
 import { BACKEND_KEY, webRecordHost } from './web-record-host';
 import { Sentry } from '../lib/sentry';
+const { scrubEvent: realScrubEvent } = await vi.importActual<typeof import('../lib/sentry')>('../lib/sentry');
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 
@@ -50,6 +51,9 @@ describe('a cloud tab whose departure write the browser refuses (US-06 AC13a)', 
     expect(error.message).toBe('Cloud sync failed');
     expect(hint.tags).toMatchObject({ area: 'cloud-sync', op: 'mirror-write', backend: 'memory', causeClass: 'DOMException' });
     expect(JSON.stringify(calls)).not.toMatch(/synthetic|81\.5/);
+    // What leaves the browser: the real beforeSend scrubber keeps the op from its closed list.
+    const sent = realScrubEvent({ type: undefined, tags: hint.tags, exception: { values: [{ type: 'Error', value: error.message }] } });
+    expect(sent?.tags).toMatchObject({ area: 'cloud-sync', op: 'mirror-write', backend: 'memory' });
     expect(warn.mock.calls.filter(([line]) => line === 'Cloud sync failed')).toHaveLength(2);
   });
 });
