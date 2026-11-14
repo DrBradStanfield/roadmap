@@ -153,7 +153,7 @@ describe('upload decisions: what the review starts with (D1, D3)', () => {
     open(history);
     pick('letter.pdf');
     const label = (await saveButton()).textContent ?? '';
-    expect(/\d+ Document/.test(label)).toBe(row(rows, name).web.keepDocument);
+    expect(/\d+ document/.test(label)).toBe(row(rows, name).web.keepDocument);
   });
 
   it('a letter with values offers both (D3)', async () => {

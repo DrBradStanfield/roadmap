@@ -15,10 +15,11 @@ export type Disclosure = ReturnType<typeof useDisclosure>;
 /** "{n} values will be saved", and the button that shows or hides them.
  *  `hidden` values sit behind it; `saving` of them are not cleared. */
 export function SureLine({ hidden, saving, total, all, controls }: { hidden: number; saving: number; total: number; all: Disclosure; controls: string }) {
-  if (hidden === 0) return null;
+  // While open, "Hide" stays even once nothing is left to hide (an edit keeps its row in sight).
+  if (hidden === 0 && !all.open) return null;
   return (
     <p className="review-overview-line">
-      <span>{IMPORT_REVIEW_TEXT.willSave(saving)}</span>{' '}
+      {hidden > 0 && <><span>{IMPORT_REVIEW_TEXT.willSave(saving)}</span>{' '}</>}
       <button type="button" className="review-disclosure" aria-expanded={all.open} aria-controls={controls} onClick={all.toggle}>
         {all.open ? IMPORT_REVIEW_TEXT.hide : IMPORT_REVIEW_TEXT.showAll(total)}
       </button>

@@ -2,14 +2,15 @@
 import { type UnitSystem, type MetricType, UNIT_DEFS } from '@roadmap/health-core/units';
 import { type ApiMeasurement, METRIC_LABELS, BLOOD_TEST_METRICS, VITAL_METRICS } from '@roadmap/health-core/mappings';
 import { displayLabUnit, labSlotKey, resolveLabCatalogEntry } from '@roadmap/health-core/lab-catalog';
-import { sameLabQuantity, slotState, type LabQuantity } from '@roadmap/health-core/record-edits';
+import type { LabQuantity } from '@roadmap/health-core/record-edits';
+import { placeReadings, readingRank, type Quantity } from '@roadmap/health-core/review-slots';
 import { UNDATED_PREVIOUS } from '@roadmap/health-core/lab-extraction';
 import { withComparator, comparatorOf, type Comparator } from '@roadmap/health-core/lab-limits';
 import type { ApiLabValue } from './api-types';
 import { labValueLabel } from '@roadmap/health-core/lab-series';
 import { type CellUnit, cellNumber } from './blood-test-cell';
 import type { FileResult } from './upload-pipeline';
-import { type FullDate, parseReportDate, UNDATED_DATE, dateSource, buildDatePrefix } from './review-dates';
+import { type FullDate, parseReportDate, dateSource, buildDatePrefix, valueDate as valueDateOf } from './review-dates';
 
 /** Two stored values are the same value when only float noise from a unit
  *  conversion separates them. */
@@ -96,8 +97,6 @@ export function replaceKey(cell: EditableMatrixCell, existing: ExistingCell): st
 
 /** A reading a review hides because another holds its (test, day): named, never its value. */
 interface HiddenReading { label: string; day: DateKey }
-/** `comparator`: a core reading printed as a limit; a lab's rides on its `lab` (US-12 AC20). */
-type Quantity = { valueSI?: number; lab?: LabQuantity; comparator?: Comparator };
 
 /** A core cell as rendered: its text in the row's unit and the value it saves. */
 /** `comparator`: an untouched limit's, shown before its bound; an edited cell is exact (US-12 AC20). */
@@ -132,17 +131,6 @@ export function buildMatrixModel(
   /** Resolved display unit for a core metric, honouring per-metric override. */
   const displayFor = (metric: MetricType): CellUnit => metricUnitOverrides?.[metric] ?? unitSystem;
 
-  /** Two readings are the same quantity. A core metric compares stored
-   *  values: its rounded display can hide a real difference (Lp(a) 124.9 and
-   *  125 nmol/L both read "50.0" mg/dL, either side of the Elevated line,
-   *  US-13 AC3). An additional lab compares quantities: the record holds it in
-   *  SI, the report prints its own unit, so health-core's `sameLabQuantity`
-   *  converts both, as the connector does (US-35 AC6). */
-  const sameQuantity = (a: Quantity, b: Quantity, display?: string, shown?: string) =>
-    a.valueSI !== undefined && b.valueSI !== undefined ? sameValue(a.valueSI, b.valueSI) && a.comparator === b.comparator
-      : a.lab && b.lab ? sameLabQuantity(a.lab, b.lab)
-        : display !== undefined && shown !== undefined && slotState(shown, display) === 'held_equal';
-
   const addColumn = (dateKey: DateKey, date: FullDate, source: string | null) => {
     let col = columnsByKey.get(dateKey);
     if (!col) {
@@ -156,12 +144,9 @@ export function buildMatrixModel(
     return col;
   };
 
-  /** A value's date: its own printed day when it has one (US-12 AC12), else
-   *  its file's. The date state holds only what the user picked; a printed day
-   *  nobody edited is read from the value itself. */
+  /** A value's date (review-dates `valueDate`). */
   type Dated = { recordedAt?: string; printedMonth?: string };
-  const valueDate = (fi: number, { recordedAt }: Dated): FullDate | undefined =>
-    recordedAt ? fileDates[dateSource(fi, recordedAt)] ?? (recordedAt === UNDATED_PREVIOUS ? UNDATED_DATE : parseReportDate(recordedAt)) : fileDates[fi];
+  const valueDate = (fi: number, { recordedAt }: Dated): FullDate | undefined => valueDateOf(fileDates, fi, recordedAt);
   /** The column a value sits in. An undated previous column is keyed by its
    *  file, picked or not, so it never merges with another (US-12 AC14). */
   const valueDateKey = (fi: number, v: Dated): DateKey | null => {
@@ -222,48 +207,26 @@ export function buildMatrixModel(
     });
   }
 
-  // 2) Overlay upload values, one reading per (test, day), in the save's own
-  //    rank: a report's own reading claims its slot first, then a dated
-  //    previous column's, then an undated one's (on its picked day), then
-  //    file order (US-12 AC12, AC14). A later reading of a claimed slot is
-  //    hidden, as AC12 hides it, and listed in `hiddenReadings` (`place`), so
-  //    it is never dropped silently. On a held slot: an equal value is
-  //    already recorded (context), a differing one a conflict the user
-  //    resolves in the table (US-32).
-  const claims = new Map<string, { rank: number; quantity: Quantity; edited: boolean; heldEqual: boolean }>();
+  // 2) Overlay upload values, one reading per (test, day), by health-core's one
+  //    slot rule (`placeReadings`, shared with the import review's groups): a
+  //    report's own reading claims its slot first, then a dated previous
+  //    column's, then an undated one's (on its picked day), then file order
+  //    (US-12 AC12, AC14). A later reading of a claimed slot is hidden, as AC12
+  //    hides it, and listed in `hiddenReadings` when it differs or either side
+  //    was edited, so it is never dropped silently. On a held slot: an equal,
+  //    unedited value is already recorded (context, shown in its own column
+  //    too: an undated one's, US-13 AC3), a differing one a conflict the user
+  //    resolves in the table (US-32). Columns are added in the same rank order.
   /** The saved rows, by slot, before any upload cell takes one. */
   const savedRows = new Map(cells);
   const hiddenReadings: HiddenReading[] = [];
-  const rankOf = (recordedAt?: string) => (!recordedAt ? 0 : recordedAt === UNDATED_PREVIOUS ? 2 : 1);
-  /**
-   * Where one reading lands: an ExistingCell (a conflict with the saved row)
-   * or undefined (a free slot) to place an editable cell, null for none.
-   * A reading equal to the saved row, and not edited, is already recorded:
-   * context, shown in its own column too (an undated one's, US-13 AC3), and
-   * never counted. Within one rank a winner that only matched the saved row
-   * does not block a differing reading, which becomes the conflict (US-13
-   * AC3). Otherwise a claimed slot hides the later reading, counted when it
-   * differs from the winner or either side was edited (US-12 AC14).
-   */
-  const place = (slot: string, cellKey: string, rank: number, display: string, quantity: Quantity, edited: boolean, label: string): ExistingCell | undefined | null => {
+  const heldAt = (slot: string): Quantity | undefined => {
     const held = savedRows.get(slot);
-    const prev = held?.state === 'context' ? held : undefined;
-    const equalHeld = !edited && !!prev && sameQuantity(quantity, prev, display, prev.displayValue);
-    const winner = claims.get(slot);
-    const blocked = !!winner && !(winner.rank === rank && winner.heldEqual);
-    if (!blocked) claims.set(slot, { rank, quantity, edited, heldEqual: equalHeld });
-    if (equalHeld) {
-      // Never over a conflict another reading of this test already put in
-      // the same column (a test printed twice in one undated column).
-      if (slot !== cellKey && cells.get(cellKey)?.state !== 'editable') cells.set(cellKey, prev!);
-      return null;
-    }
-    if (blocked) {
-      if (edited || winner!.edited || !sameQuantity(quantity, winner!.quantity)) hiddenReadings.push({ label, day: slot.slice(slot.lastIndexOf('|') + 1) });
-      return null;
-    }
-    return prev && { id: prev.id, display: prev.displayValue, valueSI: prev.valueSI, lab: prev.lab, displayUnit: prev.displayUnit, ...comparatorOf(prev) };
+    if (held?.state !== 'context') return undefined;
+    return held.lab ? { lab: held.lab } : held.valueSI !== undefined ? { valueSI: held.valueSI, ...comparatorOf(held) } : undefined;
   };
+  type Overlay = { slot: string; cellKey: string; rank: 0 | 1 | 2; quantity: Quantity; edited: boolean; label: string; cell: (existing?: ExistingCell) => EditableMatrixCell };
+  const overlays: Overlay[] = [];
   for (const rank of [0, 1, 2]) results.forEach((r, fi) => {
     /** The column a value lands in: its own date's (US-12 AC12) or its file's. */
     const columnFor = (v: Dated): DateKey | null => {
@@ -277,36 +240,36 @@ export function buildMatrixModel(
     const slotFor = (rowKey: string, v: Dated, dateKey: DateKey) => `${rowKey}|${slotDateKey(fi, v) ?? dateKey}`;
 
     r.values.forEach((v, vi) => {
-      if (rankOf(v.recordedAt) !== rank) return;
+      if (readingRank(v.recordedAt, UNDATED_PREVIOUS) !== rank) return;
       const dateKey = columnFor(v);
       if (!dateKey) return;
       const metric = v.metric as MetricType;
       coreMetricsSeen.add(metric);
-      const cellKey = `${metric}|${dateKey}`;
-      const slot = slotFor(metric, v, dateKey);
       const initialDisplay = UNIT_DEFS[metric]
         ? cellNumber(metric, v.valueSI, displayFor(metric), v.comparator)
         : String(v.displayValue);
-      const existing = place(slot, cellKey, rank, withComparator(initialDisplay, v.comparator), { valueSI: v.valueSI, ...comparatorOf(v) }, !!touched?.has(valueId(fi, 'core', vi)), METRIC_LABELS[metric] || metric);
-      if (existing === null) return;
-      cells.set(cellKey, {
-        state: 'editable', kind: 'core', fi, vi,
-        initialDisplay,
-        confidence: v.confidence,
-        question: v.question,
-        // What the report printed, when the cell shows something else: a
-        // converted number, or a guessed unit (US-13 AC11). By number: "1.10" is "1.1".
-        printed: v.unitGuessed || Number(initialDisplay) !== v.displayValue
-          ? `Printed: ${v.displayValue} ${v.displayUnit || '(no unit)'}` : undefined,
-        valueSI: v.valueSI,
-        displayUnit: v.displayUnit,
-        existing,
-        ...comparatorOf(v),
+      overlays.push({
+        slot: slotFor(metric, v, dateKey), cellKey: `${metric}|${dateKey}`, rank, quantity: { valueSI: v.valueSI, ...comparatorOf(v) },
+        edited: !!touched?.has(valueId(fi, 'core', vi)), label: METRIC_LABELS[metric] || metric,
+        cell: (existing) => ({
+          state: 'editable', kind: 'core', fi, vi,
+          initialDisplay,
+          confidence: v.confidence,
+          question: v.question,
+          // What the report printed, when the cell shows something else: a
+          // converted number, or a guessed unit (US-13 AC11). By number: "1.10" is "1.1".
+          printed: v.unitGuessed || Number(initialDisplay) !== v.displayValue
+            ? `Printed: ${v.displayValue} ${v.displayUnit || '(no unit)'}` : undefined,
+          valueSI: v.valueSI,
+          displayUnit: v.displayUnit,
+          existing,
+          ...comparatorOf(v),
+        }),
       });
     });
 
     r.additionalValues.forEach((av, ai) => {
-      if (rankOf(av.recordedAt) !== rank) return;
+      if (readingRank(av.recordedAt, UNDATED_PREVIOUS) !== rank) return;
       const dateKey = columnFor(av);
       if (!dateKey) return;
       const nameKey = normaliseLabName(av.name);
@@ -323,25 +286,46 @@ export function buildMatrixModel(
           referenceHigh: av.referenceHigh ?? null,
         });
       }
-      const cellKey = `${nameKey}|${dateKey}`;
-      const slot = slotFor(nameKey, av, dateKey);
       const lab = { name: av.name, value: av.value, unit: av.unit, ...comparatorOf(av) };
-      const existing = place(slot, cellKey, rank, withComparator(String(av.value), av.comparator), { lab }, !!touched?.has(valueId(fi, 'additional', ai)), labValueLabel(av.name));
-      if (existing === null) return;
-      cells.set(cellKey, {
-        state: 'editable',
-        kind: 'additional',
-        fi, ai,
-        initialDisplay: String(av.value),
-        valueSI: av.value,
-        displayUnit: labUnitText(av),
-        lab,
-        referenceLow: av.referenceLow,
-        referenceHigh: av.referenceHigh,
-        existing,
-        ...comparatorOf(av),
+      overlays.push({
+        slot: slotFor(nameKey, av, dateKey), cellKey: `${nameKey}|${dateKey}`, rank, quantity: { lab },
+        edited: !!touched?.has(valueId(fi, 'additional', ai)), label: labValueLabel(av.name),
+        cell: (existing) => ({
+          state: 'editable',
+          kind: 'additional',
+          fi, ai,
+          initialDisplay: String(av.value),
+          valueSI: av.value,
+          displayUnit: labUnitText(av),
+          lab,
+          referenceLow: av.referenceLow,
+          referenceHigh: av.referenceHigh,
+          existing,
+          ...comparatorOf(av),
+        }),
       });
     });
+  });
+  // Every reading is sent here: the matrix shows a cleared or unticked value
+  // in place, and Save's own selection drops it (`collectSaveableCells`).
+  const places = placeReadings(overlays.map(o => ({ slot: o.slot, rank: o.rank, quantity: o.quantity, edited: o.edited, sent: true })), heldAt);
+  overlays.forEach((o, i) => {
+    const prev = savedRows.get(o.slot);
+    const held = prev?.state === 'context' ? prev : undefined;
+    switch (places[i]) {
+      case 'saved':
+        // Never over a conflict another reading of this test already put in
+        // the same column (a test printed twice in one undated column).
+        if (o.slot !== o.cellKey && cells.get(o.cellKey)?.state !== 'editable') cells.set(o.cellKey, held!);
+        return;
+      case 'hidden':
+        hiddenReadings.push({ label: o.label, day: o.slot.slice(o.slot.lastIndexOf('|') + 1) });
+        return;
+      case 'duplicate':
+        return;
+      default:
+        cells.set(o.cellKey, o.cell(held && { id: held.id, display: held.displayValue, valueSI: held.valueSI, lab: held.lab, displayUnit: held.displayUnit, ...comparatorOf(held) }));
+    }
   });
 
   // 3) Sort. Columns chronological asc (oldest left, newest right).

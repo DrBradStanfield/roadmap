@@ -331,8 +331,9 @@ export function ReviewTable({
   // The review's groups (US-13 AC13): one health-core call, a memo of the
   // results, their days and the record. Show all and the open "Not saved" are
   // view toggles; a hidden value keeps its cell text, so Save includes it.
-  const groups = useMemo(() => classifyReview(results, fileDates, history), [results, fileDates, history.measurements, history.labValues]);
-  const rows = useMemo(() => reviewRows(matrix, results, groups.groupOf, coreCellViews, needsDay), [matrix, results, groups, coreCellViews, needsDay]);
+  const groups = useMemo(() => classifyReview(results, fileDates, history, coreCellViews, new Set(touchedRef.current.keys())),
+    [results, fileDates, history.measurements, history.labValues, coreCellViews, touchedCount]);
+  const rows = useMemo(() => reviewRows(matrix, results, groups.groupOf, coreCellViews, needsDay, new Set(touchedRef.current.keys())), [matrix, results, groups, coreCellViews, needsDay, touchedCount]);
   const showAll = useDisclosure();
   const notSavedOpen = useDisclosure();
   const matrixId = useId();

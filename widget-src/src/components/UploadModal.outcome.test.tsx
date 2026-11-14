@@ -15,7 +15,7 @@ import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getEraseIde
 import { trackProductEvent } from '../lib/server-api';
 import type { UploadHistory } from '../lib/api-types';
 import type { FileResult } from '../lib/upload-pipeline';
-import { findReviewValue } from '../testing/import-review';
+import { findAllReviewValues, findReviewValue } from '../testing/import-review';
 
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn(), labImportBatch: vi.fn(), pollBatchStatus: vi.fn() }));
 vi.mock('../lib/roadmap-data', () => ({ getDocumentArchiveMode: vi.fn(() => 'cloud'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
@@ -555,7 +555,7 @@ describe('US-12 AC9: a ZIP member over the per-file limit is named and never rea
       await vi.waitFor(() => expect(labImportBatch).toHaveBeenCalled());
       await vi.advanceTimersByTimeAsync(5000);
     } finally { vi.useRealTimers(); }
-    await screen.findAllByDisplayValue('3.9');
+    await findAllReviewValues('3.9');
     expect(reasonFor('huge.pdf')).toBe('Too large to read. The limit is 10 MB per file.');
     expect(extractFromPdf.mock.calls.map(([f]) => (f as File).name)).not.toContain('huge.pdf');
     expect(vi.mocked(labImportBatch).mock.calls[0]![0]).toHaveLength(20);
@@ -583,7 +583,7 @@ describe('US-12 AC17: one upload sends at most 200 files, ZIP members included',
       await vi.waitFor(() => expect(labImportBatch).toHaveBeenCalled());
       await vi.advanceTimersByTimeAsync(5000);
     } finally { vi.useRealTimers(); }
-    await screen.findAllByDisplayValue('3.9');
+    await findAllReviewValues('3.9');
     expect(vi.mocked(labImportBatch).mock.calls[0]![0]).toHaveLength(200);
     expect(extractFromPdf.mock.calls.map(([f]) => (f as File).name)).not.toContain('loose.pdf');
     expect(reasonFor('loose.pdf')).toBe('Not read. It is over the 200-file limit for one upload. Upload it separately.');
@@ -956,7 +956,7 @@ describe('US-12 AC9, AC10: a quota refusal and a cancel count, and a pick past 2
       await vi.waitFor(() => expect(labImportBatch).toHaveBeenCalled());
       await vi.advanceTimersByTimeAsync(5000);
     } finally { vi.useRealTimers(); }
-    await screen.findAllByDisplayValue('3.9');
+    await findAllReviewValues('3.9');
     expect(vi.mocked(labImportBatch).mock.calls[0]![0]).toHaveLength(200);
     expect(reasonFor('2 more files')).toBe(LEFT_OUT(2));
     await waitFor(() => expect(outcomes()).toHaveLength(1));

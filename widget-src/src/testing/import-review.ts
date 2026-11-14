@@ -17,9 +17,14 @@ export function showingAll<T>(rendered: T): T {
   return rendered;
 }
 
-/** Waits for the review to open, shows every value, then finds the cell holding `value`. */
+/** Waits for the review to open, shows every value, then finds the (first) cell holding `value`. */
 export async function findReviewValue(value: string): Promise<HTMLElement> {
-  await screen.findByText(/^(Found |No blood test values or)/, { selector: '.review-summary', ignore: false });
+  return (await findAllReviewValues(value))[0];
+}
+
+/** `findReviewValue` for a value several files hold. */
+export async function findAllReviewValues(value: string): Promise<HTMLElement[]> {
+  await screen.findByText(/^(Found |No blood test values or)/, { selector: '.review-summary' });
   showAllValues();
-  return screen.getByDisplayValue(value);
+  return screen.getAllByDisplayValue(value);
 }

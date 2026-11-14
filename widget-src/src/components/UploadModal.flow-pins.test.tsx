@@ -127,7 +127,7 @@ describe('US-12 AC4/AC5: Close per mode', () => {
     await act(async () => reading.resolve({ pages: [{ type: 'text', content: 'synthetic' }], truncated: false }));
     fireEvent.click(await screen.findByRole('button', { name: 'Ready for review. Click to open' }));
     expect(isOpen()).toBe(true);
-    expect(screen.getByDisplayValue('3.9')).toBeTruthy();
+    expect(await findReviewValue('3.9')).toBeTruthy();
   });
 });
 
