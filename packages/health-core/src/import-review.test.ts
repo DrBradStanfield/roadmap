@@ -9,7 +9,7 @@ import { UNDATED_PREVIOUS } from './lab-extraction';
 import type { RoadmapFile } from './roadmap-file';
 import { core, DAY, EMPTY, extra, lab, NOW, recordWith } from './import-review.test-helpers';
 
-const classify = (files: ImportFile[], record: RoadmapFile = EMPTY) => classifyImportValues(files, record, NOW);
+const classify = (files: ImportFile[], record: RoadmapFile = EMPTY) => classifyImportValues(files, record, NOW).values;
 const one = (file: ImportFile, record: RoadmapFile = EMPTY): ClassifiedValue => {
   const all = classify([file], record);
   expect(all).toHaveLength(1);
@@ -66,7 +66,7 @@ describe('classifyImportValues: one row per signal (US-13 AC13, D1)', () => {
 
   it('counts dropped rows that name no test, and skips documents', () => {
     const files: ImportFile[] = [
-      { result: { classification: 'clinic_letter', document: { classification: 'clinic_letter', title: 'Letter', documentDate: null, contentMarkdown: 'x', metadata: {} } }, days: {}, sent: new Set() },
+      { result: { classification: 'clinic_letter', document: { classification: 'clinic_letter', title: 'Letter', documentDate: null, contentMarkdown: 'x', metadata: {} } }, rows: {}, days: {} },
       lab({ unreadValues: [{ name: 'tsh', reason: 'unreadable' }, { name: '', reason: 'unreadable' }], droppedValueCount: 3 }),
     ];
     expect(classify(files).map((v) => [v.file, v.ref, v.label])).toEqual([[1, 'u0', 'TSH'], [1, 'u1', ''], [1, 'u2', '']]);
@@ -167,7 +167,7 @@ describe('the review per D3 case', () => {
 });
 
 describe('importSummaryText (strings 1 to 3)', () => {
-  const doc = (classification: string): ImportFile => ({ result: { classification, document: { classification, title: 't', documentDate: null, contentMarkdown: '', metadata: {} } }, days: {}, sent: new Set() });
+  const doc = (classification: string): ImportFile => ({ result: { classification, document: { classification, title: 't', documentDate: null, contentMarkdown: '', metadata: {} } }, rows: {}, days: {} });
   it('counts values and documents by kind across files', () => {
     const files = [lab({ values: [core()], additionalValues: [extra(), extra({ name: 'TSH', unit: 'mIU/L', value: 2 })] }), doc('clinic_letter'), doc('scan_result'), doc('scan_result')];
     expect(importSummaryText(importSummary(files))).toBe('Found 3 blood test values, 2 scan results and 1 clinic letter in 4 files');
