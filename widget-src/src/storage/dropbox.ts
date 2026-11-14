@@ -44,6 +44,10 @@ const LONGPOLL_URL = 'https://notify.dropboxapi.com/2/files/list_folder/longpoll
 const ACCOUNT_URL = 'https://api.dropboxapi.com/2/users/get_current_account';
 /** Dropbox's own minimum, and its default. Seconds. */
 const LONGPOLL_TIMEOUT_S = 30;
+/** Dropbox holds a quiet long-poll its timeout plus up to 90 s of jitter
+ *  (spec: `list_folder/longpoll`), so it is given up only after that and one
+ *  ordinary call's 30 s more (US-34 AC1c). */
+const LONGPOLL_DEADLINE_MS = (LONGPOLL_TIMEOUT_S + 90) * 1_000 + TRANSFER_DEADLINE_MS.call;
 /** First retry after a failed poll, doubling to this ceiling. */
 const RETRY_MIN_MS = 1_000;
 const RETRY_MAX_MS = 60_000;
@@ -232,7 +236,7 @@ export class DropboxAdapter implements StorageAdapter {
           cursor = await this.folderCursor(signal);
           catchUpAfterFailure(retryMs, signal, onChange);
         }
-        const poll = await this.rpc(LONGPOLL_URL, { cursor, timeout: LONGPOLL_TIMEOUT_S }, signal);
+        const poll = await this.rpc(LONGPOLL_URL, { cursor, timeout: LONGPOLL_TIMEOUT_S }, signal, false, LONGPOLL_DEADLINE_MS);
         const result = (await poll.json()) as { changes?: boolean; backoff?: number };
         // Dropbox asking for room comes before anything else we do with it.
         if (result.backoff) await sleepUntilAborted(result.backoff * 1000, signal);
@@ -271,11 +275,11 @@ export class DropboxAdapter implements StorageAdapter {
     return json.cursor;
   }
 
-  /** One JSON-in/JSON-out Dropbox call. Not `fetchOrFail`: its 30-second cap
-   *  is exactly the long-poll's own timeout, and it would abort every poll a
-   *  moment before Dropbox answered it. */
-  private async rpc(url: string, body: object | null, signal: AbortSignal, authed = false): Promise<Response> {
-    const res = await fetch(url, {
+  /** One JSON-in/JSON-out Dropbox call, under `fetchOrFail`'s 30 s call bound
+   *  unless it passes its own: the long-poll's own timeout is 30 s, so it
+   *  passes a longer one. */
+  private async rpc(url: string, body: object | null, signal: AbortSignal, authed: boolean, timeoutMs?: number): Promise<Response> {
+    const res = await fetchOrFail('Dropbox', url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -283,6 +287,7 @@ export class DropboxAdapter implements StorageAdapter {
       },
       body: JSON.stringify(body),
       signal,
+      timeoutMs,
     });
     if (!res.ok) this.refused(new StorageError(`Dropbox call failed (${res.status}).`, undefined, undefined, res.status));
     return res;
@@ -297,10 +302,11 @@ export class DropboxAdapter implements StorageAdapter {
    * caller retries next visit) — a Dropbox account always has an email.
    */
   async accountEmail(): Promise<string> {
+    // This deadline counts the token refresh too (US-09 AC13g); the call's own bound is the same number.
     const deadline = timeoutDeadline(TRANSFER_DEADLINE_MS.accountEmail);
     let account: { email?: string; email_verified?: boolean };
     try {
-      account = (await (await this.rpc(ACCOUNT_URL, null, deadline.signal, true)).json()) as typeof account;
+      account = (await (await this.rpc(ACCOUNT_URL, null, deadline.signal, true, TRANSFER_DEADLINE_MS.accountEmail)).json()) as typeof account;
     } finally {
       deadline.clear();
     }

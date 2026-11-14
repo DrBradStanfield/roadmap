@@ -26,6 +26,10 @@ let calls: Call[] = [];
 /** Answers, per URL, for the next call to that URL. A function so a test can
  *  change its mind mid-loop. */
 let answer: (url: string) => unknown | Promise<unknown> = () => ({});
+/** An answer that never comes. */
+const STALL = Symbol('stall');
+/** The signal of each request that got STALL, in order. */
+let stalled: AbortSignal[] = [];
 
 function stubFetch(): void {
   vi.stubGlobal('fetch', (url: string, init: RequestInit) => {
@@ -37,6 +41,14 @@ function stubFetch(): void {
     init.signal?.throwIfAborted();
     const json = answer(url);
     if (json === null) return Promise.reject(new TypeError('network down'));
+    if (json === STALL || (json as { heldMs?: number }).heldMs) {
+      // A request Dropbox holds `heldMs`, or for good (STALL): an abort ends it either way.
+      if (json === STALL) stalled.push(init.signal!);
+      return new Promise<Response>((resolve, reject) => {
+        init.signal?.addEventListener('abort', () => reject(init.signal?.reason), { once: true });
+        if (json !== STALL) setTimeout(() => resolve(new Response(JSON.stringify({ changes: false }), { status: 200 })), (json as { heldMs: number }).heldMs);
+      });
+    }
     // A quiet long-poll HOLDS the connection for its timeout — that is where
     // the loop's pacing comes from, so the stub must hold it too.
     const held = url === LONGPOLL && (json as { changes?: boolean }).changes !== true;
@@ -68,6 +80,7 @@ const HELD_MS = 30_000;
 describe('US-34 AC1 — DropboxAdapter.watch', () => {
   beforeEach(() => {
     calls = [];
+    stalled = [];
     vi.useFakeTimers();
     stubFetch();
   });
@@ -232,6 +245,86 @@ describe('US-34 AC1 — DropboxAdapter.watch', () => {
     for (let i = 0; i < 60; i++) await settle(10_000); // ten minutes
     expect(onChange).toHaveBeenCalledTimes(14); // 6 while doubling, then 123 s, 183 s ... 543 s
     stop.abort();
+  });
+
+  describe('a call Dropbox never answers (US-34 AC1c)', () => {
+    // AbortSignal.timeout runs on the real clock; this one runs on the fake one.
+    beforeEach(() => {
+      vi.spyOn(AbortSignal, 'timeout').mockImplementation((ms) => {
+        const controller = new AbortController();
+        setTimeout(() => controller.abort(new DOMException('synthetic deadline', 'TimeoutError')), ms);
+        return controller.signal;
+      });
+    });
+    afterEach(() => vi.restoreAllMocks());
+    /** The long-poll's own 30 s, Dropbox's up to 90 s of jitter, and a 30 s call on top. */
+    const LONGPOLL_BOUND_MS = 150_000;
+
+    it('a long-poll is given up after 150 s, then a fresh cursor re-reads once and the next poll uses it', async () => {
+      let polls = 0;
+      answer = (url) => {
+        if (url === LIST) return { cursor: `c${at(LIST).length}` };
+        return ++polls === 1 ? STALL : { changes: false };
+      };
+      const onChange = vi.fn();
+      const stop = new AbortController();
+      adapter().watch('health-roadmap.json', onChange, stop.signal);
+      await settle();
+      expect(at(LONGPOLL)).toHaveLength(1);
+
+      await vi.advanceTimersByTimeAsync(LONGPOLL_BOUND_MS - 10); // still held, nothing else asked
+      expect(at(LIST)).toHaveLength(1);
+      expect(at(LONGPOLL)).toHaveLength(1);
+      await vi.advanceTimersByTimeAsync(10); // the deadline gives the poll up; the back-off's 1 s starts
+      await settle(1_000);
+      expect(at(LIST)).toHaveLength(2);
+      expect(onChange).toHaveBeenCalledTimes(1); // AC1b: the recovery re-reads once
+      expect(at(LONGPOLL)[1].body.cursor).toBe('c2');
+      stop.abort();
+    });
+
+    it('a long-poll held its 30 s plus the full 90 s of jitter is not cut short', async () => {
+      let polls = 0;
+      answer = (url) => (url === LIST ? { cursor: 'c0' } : ++polls === 1 ? { heldMs: 120_000 } : { changes: false });
+      const onChange = vi.fn();
+      const stop = new AbortController();
+      adapter().watch('health-roadmap.json', onChange, stop.signal);
+      await settle();
+      await settle(120_000);
+      expect(at(LONGPOLL)).toHaveLength(2); // the quiet answer came, and the next poll went out at once
+      expect(at(LIST)).toHaveLength(1);
+      expect(onChange).not.toHaveBeenCalled();
+      stop.abort();
+    });
+
+    it('a folder listing is given up at 30 s and retried', async () => {
+      answer = (url) => (url === LIST ? (at(LIST).length === 1 ? STALL : { cursor: 'c2' }) : { changes: false });
+      const onChange = vi.fn();
+      const stop = new AbortController();
+      adapter().watch('health-roadmap.json', onChange, stop.signal);
+      await settle();
+      await vi.advanceTimersByTimeAsync(30_000 - 10);
+      expect(at(LIST)).toHaveLength(1);
+      await vi.advanceTimersByTimeAsync(10);
+      await settle(1_000);
+      expect(at(LIST)).toHaveLength(2);
+      expect(at(LONGPOLL)[0].body.cursor).toBe('c2');
+      stop.abort();
+    });
+
+    it('a tab hidden while the long-poll hangs ends the watch at once, with no retry', async () => {
+      answer = (url) => (url === LIST ? { cursor: 'c0' } : STALL);
+      const onChange = vi.fn();
+      const stop = new AbortController();
+      adapter().watch('health-roadmap.json', onChange, stop.signal);
+      await settle();
+      const madeSoFar = calls.length;
+      stop.abort();
+      expect(stalled.map((s) => s.aborted)).toEqual([true]); // the hanging poll itself is cancelled, not left to its deadline
+      await settle(300_000);
+      expect(calls).toHaveLength(madeSoFar);
+      expect(onChange).not.toHaveBeenCalled();
+    });
   });
 
   it('makes no request once the signal is aborted', async () => {
