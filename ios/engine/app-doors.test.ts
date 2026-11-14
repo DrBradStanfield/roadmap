@@ -240,7 +240,8 @@ describe('US-13 AC13 / US-52 AC8: the review leads with a summary and rows only 
   });
 
   it('nothing to save: the summary and the not-saved line in the person\'s words, no key and no assistant text', () => {
-    const x = lab([], [{ name: 'Ferritin', value: 85, unit: 'furlongs' }, { name: 'immature_granulocytes', value: 0.4, unit: '%' }],
+    // A unit the test does not take (a % is stored since US-21 AC28, so mg/L stands in).
+    const x = lab([], [{ name: 'Ferritin', value: 85, unit: 'furlongs' }, { name: 'immature_granulocytes', value: 0.4, unit: 'mg/L' }],
       { refusedValues: [{ metric: 'creatinine', value: 80, unit: '', reason: 'unit unknown' }], droppedValueCount: 1 });
     const g = groupsOf(x, ['a0', 'a1']);
     expect(g.summary).toBe('Found 2 blood test values');
