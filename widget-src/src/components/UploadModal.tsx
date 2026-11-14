@@ -14,6 +14,7 @@ import { useUploadFlow, MAX_FILES } from '../hooks/useUploadFlow';
 import { getDocumentArchiveMode } from '../lib/roadmap-data';
 import { useIsMobile } from '../lib/useIsMobile';
 import { openBackendPicker, UPLOAD_STORAGE_NOTICE } from '../lib/storage-notice';
+import { opensRow } from './ChatThreadList';
 
 interface UploadModalProps {
   unitSystem: UnitSystem;
@@ -34,6 +35,13 @@ interface UploadModalProps {
   /** Visibility does not end the session or discard review drafts. */
   open: boolean;
   onOpen: () => void;
+}
+
+/** Enter or Space on the drop zone opens the file chooser, as a click does (US-12 AC1a). */
+function browseOnKey(e: React.KeyboardEvent, input: HTMLInputElement | null): void {
+  if (!opensRow(e)) return;
+  e.preventDefault();
+  input?.click();
 }
 
 export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit, history, onComplete, onStart, onClose, onScreeningUpdate, age, sex, grading, open, onOpen }: UploadModalProps) {
@@ -113,9 +121,12 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
             <div className="upload-select">
               <div
                 className="upload-dropzone"
+                role="button"
+                tabIndex={0}
                 onDrop={handleDrop}
                 onDragOver={(e) => e.preventDefault()}
                 onClick={() => fileInputRef.current?.click()}
+                onKeyDown={(e) => browseOnKey(e, fileInputRef.current)}
               >
                 <div className="upload-dropzone-icon">&#128196;</div>
                 <p className="upload-dropzone-text">Drop health records here, or click to browse</p>
