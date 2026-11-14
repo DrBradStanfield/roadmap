@@ -72,6 +72,18 @@ describe('US-15 AC17a — another tab\'s pending reply expires', () => {
     expect(hook.result.current.state.messages).toEqual([question]);
   });
 
+  // PR 1745 R1: the timer runs on the monotonic clock, the expiry on the wall clock. A wall clock that lags
+  // (an NTP slew, a step back) must not leave the wait in place with no timer left to end it.
+  it('US-15 AC17a: the wait still ends when the wall clock lags the timer', () => {
+    const hook = renderHook(() => useChatState({ isLoggedIn: true }));
+    fromOtherTab(true, true);
+    act(() => { vi.advanceTimersByTime(REMOTE_PENDING_MS - 1); });
+    vi.setSystemTime(Date.now() - 1);
+    act(() => { vi.advanceTimersByTime(1); });
+    expect(hook.result.current.state.isLoading).toBe(false);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
   it('US-15 AC17a: a later word from the sending tab starts the wait again', () => {
     const hook = renderHook(() => useChatState({ isLoggedIn: true }));
     fromOtherTab(true);
@@ -99,9 +111,13 @@ describe('US-15 AC17a — another tab\'s pending reply expires', () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 
+  // Since AC17d the other tab's post names the chat it asked in, here the new chat shown; an older bundle's draws no dots.
   it('US-15 AC17a: on the page, the dots go and the input works again', () => {
     const view = render(<ChatEmbed isLoggedIn />);
-    fromOtherTab(true);
+    act(() => sync.handler!({
+      instanceId: 'other-tab', type: 'state', ts: 0,
+      payload: { conversations: [], activeConversationId: null, messages: [question], isLoading: true, sending: true, asked: 'new:0', shown: 'new:0', error: null },
+    }));
     const input = view.container.querySelector('textarea')!;
     expect(input.disabled).toBe(true);
     expect(view.container.querySelector('.chat-thinking-dots')).toBeTruthy();

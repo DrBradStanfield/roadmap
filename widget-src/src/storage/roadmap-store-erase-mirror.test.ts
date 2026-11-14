@@ -13,10 +13,16 @@ import { MemoryAdapter } from '@roadmap/health-core/memory-adapter';
 import { ROADMAP_FILE_NAME, StorageError } from '@roadmap/health-core/adapter';
 import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { BT_TIMELINE_DRAFT_KEY } from '../lib/storage';
+import {
+  addMeasurement, currentSaveStatus, deleteUserData, flushRoadmapStore, getEraseIdentity, getReminderOptIn, initRoadmapStore, setPreEraseHook, setReminderOptIn,
+} from '../lib/roadmap-data';
+import { cancelRemindersForErase } from '../../standalone/reminders';
+import { LocalStorageAdapter } from './local-storage-adapter';
 import { RoadmapStore } from './roadmap-store';
 import { BACKEND_KEY, PENDING_MIRROR_KEY } from './web-record-host';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
+vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
 
 /** A cloud whose writes can be made to fail, refused. */
 class FailingCloud extends MemoryAdapter {
@@ -81,5 +87,329 @@ describe('Delete all my data when neither the cloud nor this browser takes it (l
       expect(days(copy)).toEqual(['2026-09-01', '2026-09-02']);
       expect(copy.meta.eraseEpoch ?? 0).toBe(0);
     }
+  });
+});
+
+describe('S69, US-11 AC4c: on "This device", an erase the browser refused cancels no reminders', () => {
+  /** The device record's revision key, beside DEVICE_KEY (local-storage-adapter.ts). */
+  const REV_KEY = DEVICE_KEY + '_rev';
+
+  async function deviceWithOptIn() {
+    localStorage.removeItem(BACKEND_KEY);
+    await initRoadmapStore(new LocalStorageAdapter());
+    setPreEraseHook(cancelRemindersForErase); // as standalone/app.tsx registers it
+    expect(setReminderOptIn({ status: 'active', token: 'test-token-good', email: 'synthetic-person@example.com', provider: 'dropbox' })).toBe(true);
+    await flushRoadmapStore();
+    const posts: string[] = [];
+    vi.stubGlobal('fetch', vi.fn(async (_url: RequestInfo | URL, init?: RequestInit) => {
+      posts.push(String(JSON.parse(String(init?.body)).op));
+      return new Response('{}', { status: 200 });
+    }));
+    return posts;
+  }
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('the record write is full: the copy is put back, reminders stay on, and no cancel is sent', async () => {
+    const posts = await deviceWithOptIn();
+    const before = getEraseIdentity();
+    const setItem = Storage.prototype.setItem;
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key: string, value: string) {
+      if (key === DEVICE_KEY) throw new DOMException('full', 'QuotaExceededError');
+      setItem.call(this, key, value);
+    });
+    const result = await deleteUserData();
+    vi.mocked(Storage.prototype.setItem).mockRestore();
+
+    expect(result.success).toBe(false);
+    expect(getEraseIdentity()).toBe(before);
+    expect(getReminderOptIn()?.status).toBe('active');
+    expect(posts).not.toContain('cancel');
+  });
+
+  it('control: the revision write is full and the old record cannot go back, so the erase may have stored: the cancel is sent', async () => {
+    const posts = await deviceWithOptIn();
+    const before = getEraseIdentity();
+    const setItem = Storage.prototype.setItem;
+    let recordWrites = 0;
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key: string, value: string) {
+      if (key === REV_KEY) throw new DOMException('full', 'QuotaExceededError');
+      if (key === DEVICE_KEY && ++recordWrites > 1) throw new DOMException('full', 'QuotaExceededError'); // the put-back of the old record
+      setItem.call(this, key, value);
+    });
+    const result = await deleteUserData();
+    vi.mocked(Storage.prototype.setItem).mockRestore();
+
+    expect(result.success).toBe(false);
+    expect(getEraseIdentity()).not.toBe(before);
+    expect(posts).toContain('cancel');
+  });
+});
+
+describe('S69 R2, US-11 AC4c: a cloud erase is kept, and the cancel sent, only when the device copy carries it', () => {
+  const REV_KEY = DEVICE_KEY + '_rev';
+
+  async function cloudWithOptIn() {
+    const cloud = new FailingCloud();
+    await initRoadmapStore(cloud);
+    setPreEraseHook(cancelRemindersForErase); // as standalone/app.tsx registers it
+    expect(setReminderOptIn({ status: 'active', token: 'test-token-good', email: 'synthetic-person@example.com', provider: 'dropbox' })).toBe(true);
+    await flushRoadmapStore();
+    const posts: string[] = [];
+    vi.stubGlobal('fetch', vi.fn(async (_url: RequestInfo | URL, init?: RequestInit) => {
+      posts.push(String(JSON.parse(String(init?.body)).op));
+      return new Response('{}', { status: 200 });
+    }));
+    cloud.failWrites = true; // the cloud refuses outright (403)
+    // A failed save first, so the device copy exists: its old record is the one a put-back restores.
+    await addMeasurement('weight', 81, '2026-09-02');
+    await expect(flushRoadmapStore()).rejects.toThrow();
+    expect(deviceFile().meta.eraseEpoch ?? 0).toBe(0);
+    return posts;
+  }
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('the mirror stored the erased record, its revision did not fit and the old record could not go back: not put back, cancel sent', async () => {
+    const posts = await cloudWithOptIn();
+    const before = getEraseIdentity();
+    const setItem = Storage.prototype.setItem;
+    let recordWrites = 0;
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key: string, value: string) {
+      if (key === REV_KEY) throw new DOMException('full', 'QuotaExceededError');
+      if (key === DEVICE_KEY && ++recordWrites % 2 === 0) throw new DOMException('full', 'QuotaExceededError'); // each put-back of the old record
+      setItem.call(this, key, value);
+    });
+    const result = await deleteUserData();
+    vi.mocked(Storage.prototype.setItem).mockRestore();
+
+    expect(deviceFile().meta.eraseEpoch).toBe(1); // the erased copy is on the device, to be lifted next session
+    expect(result.success).toBe(false);
+    expect(getEraseIdentity()).not.toBe(before);
+    expect(posts).toContain('cancel');
+  });
+
+  it('the same, when an earlier failed write had already left the device copy with no revision: still not put back, cancel sent', async () => {
+    const posts = await cloudWithOptIn();
+    localStorage.removeItem(REV_KEY); // what an earlier write that could not put its old record back leaves (US-34 AC6a)
+    const before = getEraseIdentity();
+    const setItem = Storage.prototype.setItem;
+    let recordWrites = 0;
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key: string, value: string) {
+      if (key === REV_KEY) throw new DOMException('full', 'QuotaExceededError');
+      if (key === DEVICE_KEY && ++recordWrites % 2 === 0) throw new DOMException('full', 'QuotaExceededError');
+      setItem.call(this, key, value);
+    });
+    const result = await deleteUserData();
+    vi.mocked(Storage.prototype.setItem).mockRestore();
+
+    expect(deviceFile().meta.eraseEpoch).toBe(1);
+    expect(localStorage.getItem(REV_KEY)).toBeNull(); // the revision reads as before, '0'
+    expect(result.success).toBe(false);
+    expect(getEraseIdentity()).not.toBe(before);
+    expect(posts).toContain('cancel');
+  });
+
+  it('the first mirror attempt stored the erased record and the retry stored nothing: held, cancel sent', async () => {
+    const posts = await cloudWithOptIn();
+    const before = getEraseIdentity();
+    const setItem = Storage.prototype.setItem;
+    let recordWrites = 0;
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key: string, value: string) {
+      if (key === REV_KEY) throw new DOMException('full', 'QuotaExceededError');
+      // The first attempt's record lands; its put-back of the old record, and every write of the retry, do not fit.
+      if (key === DEVICE_KEY && ++recordWrites > 1) throw new DOMException('full', 'QuotaExceededError');
+      setItem.call(this, key, value);
+    });
+    const result = await deleteUserData();
+    vi.mocked(Storage.prototype.setItem).mockRestore();
+
+    expect(recordWrites).toBeGreaterThan(2); // the retry ran
+    expect(deviceFile().meta.eraseEpoch).toBe(1);
+    expect(result.success).toBe(false);
+    expect(getEraseIdentity()).not.toBe(before);
+    expect(posts).toContain('cancel');
+  });
+
+  it('a device copy whose erase epoch is not a number reads as a load reads it, so a write that stored nothing is put back', async () => {
+    const posts = await cloudWithOptIn();
+    localStorage.setItem(DEVICE_KEY, JSON.stringify({ ...deviceFile(), meta: { ...deviceFile().meta, eraseEpoch: '5' } }));
+    const before = getEraseIdentity();
+    const setItem = Storage.prototype.setItem;
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key: string, value: string) {
+      if (key === DEVICE_KEY) throw new DOMException('full', 'QuotaExceededError');
+      setItem.call(this, key, value);
+    });
+    const result = await deleteUserData();
+    vi.mocked(Storage.prototype.setItem).mockRestore();
+
+    expect(result.success).toBe(false);
+    expect(getEraseIdentity()).toBe(before);
+    expect(posts).not.toContain('cancel');
+  });
+
+  it('the mirror stored the erased record but the device copy cannot be read back: held, cancel sent (unknown errs toward the cancel)', async () => {
+    const posts = await cloudWithOptIn();
+    const before = getEraseIdentity();
+    const setItem = Storage.prototype.setItem;
+    const getItem = Storage.prototype.getItem;
+    let recordWrites = 0;
+    let stored = false;
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key: string, value: string) {
+      if (key === REV_KEY) throw new DOMException('full', 'QuotaExceededError');
+      if (key === DEVICE_KEY && ++recordWrites > 1) throw new DOMException('full', 'QuotaExceededError');
+      setItem.call(this, key, value);
+      if (key === DEVICE_KEY) stored = true;
+    });
+    // Once the erased record has landed, the next read of the device copy fails once (a SecurityError).
+    let failedRead = false;
+    const getSpy = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(function (this: Storage, key: string) {
+      if (key === DEVICE_KEY && stored && recordWrites > 2 && !failedRead) { failedRead = true; throw new DOMException('denied', 'SecurityError'); }
+      return getItem.call(this, key);
+    });
+    const result = await deleteUserData();
+    vi.mocked(Storage.prototype.setItem).mockRestore();
+    getSpy.mockRestore();
+
+    expect(failedRead).toBe(true);
+    expect(deviceFile().meta.eraseEpoch).toBe(1); // the erased copy is on the device
+    expect(result.success).toBe(false);
+    expect(getEraseIdentity()).not.toBe(before);
+    expect(posts).toContain('cancel');
+  });
+
+  it('the revision cannot be read back over a copy that does not carry the erase: unknown, so held, cancel sent', async () => {
+    const posts = await cloudWithOptIn();
+    const before = getEraseIdentity();
+    const setItem = Storage.prototype.setItem;
+    const getItem = Storage.prototype.getItem;
+    let recordWrites = 0;
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key: string, value: string) {
+      if (key === DEVICE_KEY) { recordWrites++; throw new DOMException('full', 'QuotaExceededError'); }
+      setItem.call(this, key, value);
+    });
+    // After both attempts stored nothing, the next read of the revision fails once (a SecurityError).
+    let failedRead = false;
+    const getSpy = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(function (this: Storage, key: string) {
+      if (key === REV_KEY && recordWrites >= 2 && !failedRead) { failedRead = true; throw new DOMException('denied', 'SecurityError'); }
+      return getItem.call(this, key);
+    });
+    const result = await deleteUserData();
+    vi.mocked(Storage.prototype.setItem).mockRestore();
+    getSpy.mockRestore();
+
+    expect(failedRead).toBe(true);
+    expect(deviceFile().meta.eraseEpoch ?? 0).toBe(0);
+    expect(result.success).toBe(false);
+    expect(getEraseIdentity()).not.toBe(before);
+    expect(posts).toContain('cancel');
+  });
+
+  it('an unparsable device copy, which no write replaces, is put back: no cancel, and no "on this device" status', async () => {
+    const posts = await cloudWithOptIn();
+    localStorage.setItem(DEVICE_KEY, '{not json');
+    const before = getEraseIdentity();
+    const result = await deleteUserData();
+
+    expect(localStorage.getItem(DEVICE_KEY)).toBe('{not json');
+    expect(result.success).toBe(false);
+    expect(getEraseIdentity()).toBe(before);
+    expect(posts).not.toContain('cancel');
+    expect(currentSaveStatus()).not.toBe('not-saved-on-device');
+  });
+
+  it('a device copy that cannot be migrated (a newer schema), which no write replaces, is put back: no cancel', async () => {
+    const posts = await cloudWithOptIn();
+    const newer = JSON.stringify({ ...deviceFile(), schemaVersion: 999 });
+    localStorage.setItem(DEVICE_KEY, newer);
+    const before = getEraseIdentity();
+    const result = await deleteUserData();
+
+    expect(localStorage.getItem(DEVICE_KEY)).toBe(newer);
+    expect(result.success).toBe(false);
+    expect(getEraseIdentity()).toBe(before);
+    expect(posts).not.toContain('cancel');
+  });
+
+  it('US-09 AC30: outside an erase, another tab moving the revision while this save stored nothing never says the changes are on this device', async () => {
+    await cloudWithOptIn();
+    await addMeasurement('weight', 80, '2026-09-03');
+    const setItem = Storage.prototype.setItem;
+    let otherTabWrote = false;
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key: string, value: string) {
+      if (key === DEVICE_KEY) {
+        if (!otherTabWrote) { otherTabWrote = true; setItem.call(this, REV_KEY, '98-othertab'); }
+        throw new DOMException('full', 'QuotaExceededError');
+      }
+      setItem.call(this, key, value);
+    });
+    await expect(flushRoadmapStore()).rejects.toThrow();
+    vi.mocked(Storage.prototype.setItem).mockRestore();
+
+    expect(days(deviceFile())).not.toContain('2026-09-03');
+    expect(currentSaveStatus()).toBe('not-saved');
+  });
+
+  it('another tab wrote the device copy meanwhile (not an erase) and this write stored nothing: put back, no cancel', async () => {
+    const posts = await cloudWithOptIn();
+    const before = getEraseIdentity();
+    const setItem = Storage.prototype.setItem;
+    let otherTabWrote = false;
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key: string, value: string) {
+      if (key === DEVICE_KEY) {
+        // Another tab's save lands first (a new revision); then this tab's record write does not fit.
+        if (!otherTabWrote) { otherTabWrote = true; setItem.call(this, REV_KEY, '99-othertab'); }
+        throw new DOMException('full', 'QuotaExceededError');
+      }
+      setItem.call(this, key, value);
+    });
+    const result = await deleteUserData();
+    vi.mocked(Storage.prototype.setItem).mockRestore();
+
+    expect(deviceFile().meta.eraseEpoch ?? 0).toBe(0); // nothing of this erase stored
+    expect(result.success).toBe(false);
+    // The device copy does not carry the erase, so the erase did not happen: the record and the reminders stay.
+    expect(getEraseIdentity()).toBe(before);
+    expect(getReminderOptIn()?.status).toBe('active');
+    expect(posts).not.toContain('cancel');
+  });
+
+  it('the device copy already had no revision and the full record write stored nothing: put back, no cancel', async () => {
+    const posts = await cloudWithOptIn();
+    localStorage.removeItem(REV_KEY); // the revision reads '0' before the write as after it
+    const before = getEraseIdentity();
+    const setItem = Storage.prototype.setItem;
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key: string, value: string) {
+      if (key === DEVICE_KEY) throw new DOMException('full', 'QuotaExceededError');
+      setItem.call(this, key, value);
+    });
+    const result = await deleteUserData();
+    vi.mocked(Storage.prototype.setItem).mockRestore();
+
+    expect(deviceFile().meta.eraseEpoch ?? 0).toBe(0);
+    expect(result.success).toBe(false);
+    expect(getEraseIdentity()).toBe(before);
+    expect(getReminderOptIn()?.status).toBe('active');
+    expect(posts).not.toContain('cancel');
+  });
+
+  it('another tab wrote a later erase to the device copy and this write stored nothing: held, cancel sent', async () => {
+    const posts = await cloudWithOptIn();
+    const before = getEraseIdentity();
+    const later = { ...deviceFile(), measurements: [], meta: { ...deviceFile().meta, eraseEpoch: 2 } };
+    const setItem = Storage.prototype.setItem;
+    let otherTabWrote = false;
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key: string, value: string) {
+      if (key === DEVICE_KEY) {
+        if (!otherTabWrote) { otherTabWrote = true; setItem.call(this, DEVICE_KEY, JSON.stringify(later)); setItem.call(this, REV_KEY, '99-othertab'); }
+        throw new DOMException('full', 'QuotaExceededError');
+      }
+      setItem.call(this, key, value);
+    });
+    const result = await deleteUserData();
+    vi.mocked(Storage.prototype.setItem).mockRestore();
+
+    expect(deviceFile().meta.eraseEpoch).toBe(2); // an erase this one's covers sits on the device
+    expect(result.success).toBe(false);
+    expect(getEraseIdentity()).not.toBe(before);
+    expect(posts).toContain('cancel');
   });
 });

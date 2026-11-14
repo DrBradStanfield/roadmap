@@ -10,6 +10,8 @@ import type { UploadOutcomeKey } from '@roadmap/health-core/product-events';
 import type { ExtractedValue, AdditionalLabValue, DocumentResult, LabImportResult, PageContent, UploadErrorCode } from './api-types';
 import { labImport, labImportBatch, pollBatchStatus } from './upload-api';
 import { BATCH_POLL_DEADLINE_MS } from './batch-deadline';
+import { transition, watchStart, type WatchEvent } from './batch-watch';
+import { sleepUntilAborted } from '@roadmap/health-core/adapter';
 import { isDocx, isLegacyDoc } from './file-kinds';
 // Type only: a value import would pull the lazy upload bundle into the main one.
 import type { HealthUploadAPI } from '../upload-entry';
@@ -57,6 +59,16 @@ export interface ReviewedLabValue {
   referenceLow?: number | null; referenceHigh?: number | null;
   recordedAt: string; correctsId?: string;
   comparator?: Comparator;
+}
+/** The person's review decisions: what ReviewTable's Save hands up and the
+ *  upload flow saves (US-12). `reviewed` is every result as reviewed: its
+ *  report date (the column day, or null) and its document's title and date.
+ *  The archive files originals from these, an unselected document included (US-13 AC6). */
+export interface ReviewDecisions {
+  values: ReviewedValue[];
+  documents: DocumentToSave[];
+  labValues: ReviewedLabValue[];
+  reviewed: FileResult[];
 }
 
 /**
@@ -323,17 +335,23 @@ export async function processBatch(
 
   updateProgress({ current: 33, total: 100, fileName: `Analyzing ${allFiles.length} files...` });
 
-  const { batchId, error: batchError, errorCode: batchErrorCode } = await labImportBatch(allFiles, abort.signal);
+  // The batch's own stop: a Cancel or the deadline. Not the caller's signal, which
+  // would swallow the timeout's message. On the Pages build it stops the queue on
+  // the person's own key, so no file still waiting is sent (US-12 AC5a, AC5b).
+  const stop = new AbortController();
+  abort.signal.addEventListener('abort', () => stop.abort(), { once: true });
+  const { batchId, error: batchError, errorCode: batchErrorCode } = await labImportBatch(allFiles, stop.signal);
   if (abort.signal.aborted) return [];
   if (!batchId) throw new UploadError(batchError || 'Failed to start processing', batchErrorCode || 'server_error');
 
   const fileNames = allFiles.map(f => shortName(f.fileName));
   let fakeProgress = 35;
-  let realCompleted = 0;
   let tickCount = 0;
+  let w = watchStart(Date.now() + BATCH_POLL_DEADLINE_MS);
 
   const fakeTimer = setInterval(() => {
-    if (abort.signal.aborted) return;
+    if (abort.signal.aborted || w.phase !== 'watching') return;
+    const { realCompleted } = w;
     tickCount++;
     fakeProgress += (90 - fakeProgress) * 0.015;
     const realPct = allFiles.length > 0 ? (realCompleted / allFiles.length) * 100 : 0;
@@ -347,35 +365,36 @@ export async function processBatch(
   }, FAKE_TICK_INTERVAL);
 
   try {
-    const maxPollTime = Date.now() + BATCH_POLL_DEADLINE_MS;
-    while (!abort.signal.aborted) {
-      await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL));
-      if (abort.signal.aborted) break;
-      if (Date.now() > maxPollTime) throw new UploadError('Processing timed out.', 'timeout');
-
-      const poll = await pollBatchStatus(batchId);
-      realCompleted = Math.max(realCompleted, poll.completed); // never less than the last answer (US-12 AC24)
-      if (poll.error) throw new UploadError(poll.error, poll.errorCode || 'server_error');
-
-      if (poll.status === 'ended' && poll.results) {
-        clearInterval(fakeTimer);
-        updateProgress({ current: 100, total: 100, fileName: 'All files processed!' });
-        // Each result names its request's position, so a lost or failed one
-        // is reported against its own file, never "Unknown file" (US-12 AC9).
-        // An old server (the deploy window) sends no index, only the order,
-        // which says nothing when the counts differ: then every file is unread.
-        const indexed = poll.results.some(r => typeof r.index === 'number');
-        const byIndex = new Map(indexed || poll.results.length === allFiles.length
-          ? poll.results.map((r, i) => [indexed ? r.index : i, r]) : []);
-        return allFiles.map(({ fileName }, i) => {
-          const r = byIndex.get(i);
-          return r && !('errorCode' in r)
-            ? { ...readResult(fileName, r, notices), file: originals[i] }
-            : unreadResult(fileName, r?.errorCode, 'Extraction failed', notices);
-        });
-      }
+    // One named state (batch-watch.ts): a cancel first, then the deadline, then a poll.
+    while (w.phase === 'watching') {
+      await sleepUntilAborted(POLL_INTERVAL, abort.signal);
+      const event: WatchEvent = abort.signal.aborted ? { type: 'cancel' }
+        : Date.now() > w.deadline ? { type: 'deadline' }
+        : { type: 'polled', answer: await pollBatchStatus(batchId) };
+      w = transition(w, event);
     }
-    return [];
+    if (w.phase === 'cancelled') return [];
+    if (w.phase === 'timedOut') {
+      stop.abort();
+      throw new UploadError('Processing timed out.', 'timeout');
+    }
+    if (w.phase === 'failed') throw new UploadError(w.message, w.code);
+    const { results } = w;
+    clearInterval(fakeTimer);
+    updateProgress({ current: 100, total: 100, fileName: 'All files processed!' });
+    // Each result names its request's position, so a lost or failed one
+    // is reported against its own file, never "Unknown file" (US-12 AC9).
+    // An old server (the deploy window) sends no index, only the order,
+    // which says nothing when the counts differ: then every file is unread.
+    const indexed = results.some(r => typeof r.index === 'number');
+    const byIndex = new Map(indexed || results.length === allFiles.length
+      ? results.map((r, i) => [indexed ? r.index : i, r]) : []);
+    return allFiles.map(({ fileName }, i) => {
+      const r = byIndex.get(i);
+      return r && !('errorCode' in r)
+        ? { ...readResult(fileName, r, notices), file: originals[i] }
+        : unreadResult(fileName, r?.errorCode, 'Extraction failed', notices);
+    });
   } finally {
     clearInterval(fakeTimer);
   }

@@ -57,10 +57,24 @@ function accessToken(provider: Provider, force: boolean): Promise<string> {
     __native.accessToken(provider, force, (token, error, signIn) => {
       if (token) resolve(token);
       else if (signIn) reject(new SignInError(error ?? `${LABELS[provider]} needs you to sign in again.`));
-      else reject(new StorageError(error ?? `${LABELS[provider]} did not answer`, UNREACHABLE_HINT));
+      else {
+        const failure = new StorageError(error ?? `${LABELS[provider]} did not answer`, UNREACHABLE_HINT);
+        // Only Swift's words say the token endpoint never answered (OAuthClient.post's catch):
+        // a Keychain that will not save, or another status, is no outage (S50b; lead H134).
+        if (error !== null && / did not answer\./.test(error)) NO_ANSWER.add(failure);
+        reject(failure);
+      }
     });
   });
 }
+
+/** Token refreshes whose network call got no answer (`accessToken`): a known outage (S50b). */
+const NO_ANSWER = new WeakSet<object>();
+
+/** What EngineNatives.swift answers in place of a request it never sent: the allow-list's
+ *  refusal and a missing token. The shim rejects both as a TypeError, as it does a real network
+ *  failure, and only these words tell them apart (lead H134: give them their own error). */
+const NATIVE_REFUSALS: readonly string[] = ['This app does not send that request.', 'Not signed in.'];
 
 /** 401s refreshOn401 did not retry: no fresh token was tried, so the next call starts on one (S57b). */
 const REFRESH_SKIPPED = new WeakSet<object>();
@@ -252,14 +266,57 @@ function failureKind(error: unknown): 'sign-in' | 'too-new' | 'storage-full' | '
   // A 403 is a refusal of access, except Drive's limits, read from the body's
   // reason: a rate or daily limit passes (retry later), a full Drive needs space.
   // Neither is fixed by signing in again.
+  // The reason may sit on a cause: Drive wraps a PATCH's refusal ("record update failed.").
   if (error instanceof StorageError && error.status === 403) {
-    if (/ratelimitexceeded|dailylimitexceeded/i.test(error.message)) return 'unreachable';
-    if (/storagequotaexceeded/i.test(error.message)) return 'storage-full';
+    const said = messages(error);
+    // dailyLimitExceededUnreg is a call with no valid credentials, not a passing limit.
+    if (/ratelimitexceeded|dailylimitexceeded(?!unreg)/i.test(said)) return 'unreachable';
+    if (/storagequotaexceeded/i.test(said)) return 'storage-full';
     return 'sign-in';
   }
   if (dropboxFull(error)) return 'storage-full';
   if (error instanceof SchemaTooNewError) return 'too-new';
   return 'unreachable';
+}
+
+/**
+ * How a failed save of an erase failed, for cloudEraseHeld (S50b, US-25 AC16i). 'transient' only
+ * for a failure known to pass: a network call with no answer (fetch never answered, a timeout,
+ * an abort), 408, 429, a 5xx, or Google's rate or daily limit. 'definite': the provider refused
+ * (sign in, storage full, a newer schema, any other status). 'unknown': anything else, a 401 whose
+ * refresh was skipped included (its write may have landed). Only 'transient' holds a Disconnect,
+ * so a failure nobody recognised never traps the person. Not isDefiniteRefusal, which asks
+ * whether a write certainly did not land (write-refusal.ts).
+ */
+export function eraseFailure(error: unknown): 'transient' | 'definite' | 'unknown' {
+  if (failureKind(error) !== 'unreachable' || (error instanceof StorageError && error.reason === 'reconnect')) return 'definite';
+  if (!(error instanceof StorageError)) return 'unknown';
+  const status = error.status;
+  if (status === undefined) return noAnswer(error) ? 'transient' : 'unknown';
+  if (status === 401) return 'unknown'; // 'unreachable' only when its refresh was skipped (failureKind)
+  // A 403 reads 'unreachable' only as Google's rate or daily limit (failureKind).
+  return status === 408 || status === 429 || status >= 500 || status === 403 ? 'transient' : 'definite';
+}
+
+/** A network call that got no answer: fetchOrFail's or untilAborted's failure (a TypeError from
+ *  the shim that is not one of Swift's own refusals, or an abort or timeout), or a token refresh
+ *  Swift said got none (`NO_ANSWER`), found through any rewrap (SyncManager's). */
+function noAnswer(error: unknown): boolean {
+  for (let e = error, depth = 0; e instanceof Error && depth < 8; e = e.cause, depth++) {
+    if (NO_ANSWER.has(e)) return true;
+    if (!(e instanceof StorageError) || e.status !== undefined) continue;
+    const cause = e.cause;
+    if (cause instanceof TypeError && !NATIVE_REFUSALS.includes(cause.message)) return true;
+    if (cause instanceof Error && (cause.name === 'AbortError' || cause.name === 'TimeoutError')) return true;
+  }
+  return false;
+}
+
+/** The messages of `error` and the errors it wraps, joined. */
+function messages(error: unknown): string {
+  const said: string[] = [];
+  for (let e = error, depth = 0; e instanceof Error && depth < 8; e = e.cause, depth++) said.push(e.message);
+  return said.join('\n');
 }
 
 /** health-core's full Dropbox (dropbox-rest.ts, US-09 AC35/AC38), by its typed reason (#979). The save

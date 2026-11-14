@@ -61,9 +61,15 @@ enum EraseText {
         }
     }
 
+    /// The record erased here, not yet taken by the cloud: notSent's first words, and what a
+    /// Disconnect held over that erase says (US-25 AC16i).
+    static func unsent(_ provider: CloudProvider) -> String {
+        "Your record is erased on this iPhone, but \(provider.label) could not take the erase just now. The app sends it when \(provider.label) answers; until then the copy there is unchanged."
+    }
+
     /// Erased here, but the cloud has not taken it yet: the app sends it later.
     static func notSent(provider: CloudProvider, chatErased: Bool, cloudChat: CloudChat) -> String {
-        var text = "Your record is erased on this iPhone, but \(provider.label) could not take the erase just now. The app sends it when \(provider.label) answers; until then the copy there is unchanged."
+        var text = unsent(provider)
         text += chatErased ? " Your chat history and reminders are deleted." : " Your reminders are deleted. Your chat history could not be deleted, so it is still on this iPhone."
         text += websiteChat(provider, cloudChat)
         return text

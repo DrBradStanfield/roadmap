@@ -296,10 +296,19 @@ final class AppleHealthSync {
     /// disconnected it already); a delete still owed (`HealthSyncMemory.owed`) is made either way.
     /// False when Health refused the delete or left an id. Neither: nothing to delete.
     func erased(wasConnected: Bool) async -> Bool {
-        if let source = store.recordSource { memory.eraseSeen = EraseSeen(epoch: store.myData?.eraseEpoch ?? 0, source: source) }
+        if let source = store.recordSource { memory.eraseSeen = EraseSeen(epoch: store.myData?.eraseEpoch ?? heldUndrawnEpoch ?? 0, source: source) }
         disconnect()
         guard client.isAvailable, wasConnected || !memory.owed.ids.isEmpty || memory.owedUnreadable else { return true }
         return await owed.deleteAll(deadline: .now + Self.drainBound, drain: drained, settled: refreshOwedFooter)
+    }
+
+    /// The erase of a record held with no drawing (US-25 AC16f, lead S66): the stored record's own
+    /// `meta.eraseEpoch`, the field its drawing will show (ios/engine/my-data.ts). Nil unless held undrawn.
+    /// Temporary (S66): Swift reads one field of the stored record's meta only because no engine door gives the held erase epoch yet. H113's PR replaces this with the stored epoch and deletes this helper; do not copy this pattern.
+    private var heldUndrawnEpoch: Int? {
+        guard store.hold == .heldUndrawn, let json = store.readable?.json,
+              let file = (try? JSONSerialization.jsonObject(with: Data(json.utf8))) as? [String: Any] else { return nil }
+        return (file["meta"] as? [String: Any])?["eraseEpoch"] as? Int ?? 0
     }
 
     /// The one owed pay at a time (`OwedPay.pay`), drained by this run.

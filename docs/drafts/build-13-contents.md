@@ -13,4 +13,5 @@ Before an archive: one full two-zone suite on the final tip. 47663d15 passed: 98
 - a remote erase while the backup prompt or Sync sheet is up (S48);
 - tapping reminders while a cloud is opening;
 - a remote erase during the permission ask;
-- a cloud erase whose draw fails, checking that My data, chat, export and reminders show only the erased record.
+- a cloud erase whose draw fails, checking that My data, chat, export and reminders show only the erased record;
+- real-device behaviour of the Settings sheet over the undrawn page (H114).

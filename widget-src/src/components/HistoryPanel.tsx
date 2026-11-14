@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useReducer } from 'react';
 import { type UnitSystem, fromCanonicalValue, getDisplayLabel, UNIT_DEFS, detectUnitSystem } from '@roadmap/health-core/units';
 import { type ApiMeasurement, METRIC_TO_FIELD, FIELD_METRIC_MAP, METRIC_LABELS } from '@roadmap/health-core/mappings';
 import { medicationAnnotations, type ChartAnnotation } from '@roadmap/health-core/medication-annotations';
@@ -17,9 +17,10 @@ import annotationPlugin from 'chartjs-plugin-annotation';
 import 'chartjs-adapter-date-fns';
 import { loadAllHistory, loadLabValues, loadMedicationHistory } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
-import type { ApiLabValue, ApiMedicationHistory } from '../lib/api-types';
+import { Sentry } from '../lib/sentry';
 import { loadUnitPreference } from '../lib/storage';
 import { groupLabHistory } from '../lib/lab-rows';
+import { initialHistoryRead, transition, type HistoryRead } from '../lib/history-read';
 import { chartTimestamp, formatShortDate } from '../lib/constants';
 import { mixedUnitsNote, savedLabText } from '@roadmap/health-core/lab-series';
 
@@ -259,64 +260,32 @@ export function MixedUnitsNote({ label, units }: { label: string; units: string[
   );
 }
 
-export function HistoryPanel({ initialMetric }: HistoryPanelProps) {
-  const [measurements, setMeasurements] = useState<ApiMeasurement[]>([]);
-  const [labVals, setLabVals] = useState<ApiLabValue[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [unitSystem] = useState<UnitSystem>(() => loadUnitPreference() ?? detectUnitSystem());
+/** What the page reads before every read is in, or after the vitals read failed. */
+const NOT_READY: Omit<Extract<HistoryRead, { phase: 'ready' }>, 'phase'> = {
+  measurements: [], labVals: [], medHistory: [], selectedMetrics: new Set(), selectedLabMetrics: new Set(),
+};
 
-  // Selected metrics (initialized after first fetch)
-  const [selectedMetrics, setSelectedMetrics] = useState<Set<string>>(new Set());
-  const [selectedLabMetrics, setSelectedLabMetrics] = useState<Set<string>>(new Set());
-  const [initialized, setInitialized] = useState(false);
-  const [medHistory, setMedHistory] = useState<ApiMedicationHistory[]>([]);
+export function HistoryPanel({ initialMetric }: HistoryPanelProps) {
+  // The three reads and the ticks taken once they are all in: one state (US-21 AC3b, AC3c).
+  const [read, send] = useReducer(transition, null, () =>
+    initialHistoryRead(initialMetric ?? new URLSearchParams(window.location.search).get('metric')));
+  const { measurements, labVals, medHistory, selectedMetrics, selectedLabMetrics } = read.phase === 'ready' ? read : NOT_READY;
+  const [unitSystem] = useState<UnitSystem>(() => loadUnitPreference() ?? detectUnitSystem());
   const [showMedAnnotations, setShowMedAnnotations] = useState(true);
 
   useEffect(() => {
     // The local store returns the complete history. There is no server page
     // to append, even when the record happens to contain exactly 50 rows.
-    loadAllHistory().then(rows => {
-      setMeasurements(rows);
-      setLoading(false);
-    });
-    loadLabValues().then(rows => { if (rows) setLabVals(rows); });
-    loadMedicationHistory().then(setMedHistory);
+    // A failed read ends the wait and claims nothing (US-21 AC3b); reported as the main form's first read is.
+    // A failed lab or medication read leaves its rows empty.
+    const report = (error: unknown) => { Sentry.captureException(error, { tags: { area: 'cloud-sync', op: 'load' } }); };
+    loadAllHistory().then(rows => send({ type: 'vitalsRead', rows }), error => { send({ type: 'vitalsFailed' }); report(error); });
+    loadLabValues().then(rows => send({ type: 'labsRead', rows: rows ?? [] }), error => { send({ type: 'labsRead', rows: [] }); report(error); });
+    loadMedicationHistory().then(rows => send({ type: 'medsRead', rows }), error => { send({ type: 'medsRead', rows: [] }); report(error); });
   }, []);
 
-  // Initialize selected metrics from URL param or default to all
-  useEffect(() => {
-    if (initialized || (measurements.length === 0 && labVals.length === 0)) return;
-    const params = new URLSearchParams(window.location.search);
-    const metricParam = initialMetric ?? params.get('metric');
-    const allTypes = [...new Set(measurements.map((m) => m.metricType))];
-
-    if (metricParam && allTypes.includes(metricParam)) {
-      setSelectedMetrics(new Set([metricParam]));
-    } else {
-      setSelectedMetrics(new Set(allTypes));
-    }
-
-    // Initialize lab value metrics — all selected by default
-    setSelectedLabMetrics(new Set(groupLabHistory(labVals).keys));
-
-    setInitialized(true);
-  }, [measurements, labVals, initialized, initialMetric]);
-
-  const toggleMetric = (metric: string) => {
-    setSelectedMetrics((prev) => {
-      const next = new Set(prev);
-      if (next.has(metric)) { next.delete(metric); } else { next.add(metric); }
-      return next;
-    });
-  };
-
-  const toggleLabMetric = (metric: string) => {
-    setSelectedLabMetrics((prev) => {
-      const next = new Set(prev);
-      if (next.has(metric)) { next.delete(metric); } else { next.add(metric); }
-      return next;
-    });
-  };
+  const toggleMetric = (metric: string) => send({ type: 'toggledMetric', metric });
+  const toggleLabMetric = (key: string) => send({ type: 'toggledLab', key });
 
   const annotationsByMetric = useMemo(
     () => showMedAnnotations ? medicationAnnotations(medHistory) : {},
@@ -371,9 +340,9 @@ export function HistoryPanel({ initialMetric }: HistoryPanelProps) {
     <div className="history-panel">
       <h2>Health History</h2>
 
-      {loading && measurements.length === 0 ? (
+      {read.phase === 'loading' ? (
         <p className="history-loading">Loading history...</p>
-      ) : metricTypes.length === 0 && labMetricNames.length === 0 ? (
+      ) : read.phase === 'failed' ? null : metricTypes.length === 0 && labMetricNames.length === 0 ? (
         <p className="history-empty">No measurements recorded yet.</p>
       ) : (
         <>

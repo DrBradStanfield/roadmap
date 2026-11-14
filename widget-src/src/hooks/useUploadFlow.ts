@@ -3,19 +3,20 @@ import { checkLabImportQuota } from '../lib/upload-api';
 import { fileVerdict, UPLOAD_LIMITS } from '@roadmap/health-core/upload-rules';
 import { UNDATED_PREVIOUS, uploadLimitSignal, zipMemberName } from '@roadmap/health-core/lab-extraction';
 import type { UnitSystem } from '@roadmap/health-core/units';
-import { comparatorOf } from '@roadmap/health-core/lab-limits';
 import type { DocumentPayload } from '@roadmap/health-core/document-save';
 import { UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, type UploadOutcomeKey } from '@roadmap/health-core/product-events';
 import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocumentArchiveMode, getEraseIdentity, getShownErase } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 import type { UploadErrorCode, UploadHistory } from '../lib/api-types';
-import { UploadError, KEY_ERROR_MESSAGES, BUSY_NOTICE_TEXT, BATCH_THRESHOLD, shortName, hasValues, processBatch, processPipeline, type FileNotice, type ReadInput, type DocumentToSave, type ReviewedValue, type ReviewedLabValue, type FileResult } from '../lib/upload-pipeline';
+import { UploadError, KEY_ERROR_MESSAGES, BUSY_NOTICE_TEXT, BATCH_THRESHOLD, shortName, hasValues, processBatch, processPipeline, type FileNotice, type ReadInput, type ReviewDecisions, type FileResult } from '../lib/upload-pipeline';
 import { attachOriginals, synthesizeLabArchiveEntries, connectorDocumentEntries } from '../lib/archive-payloads';
+import { toStoreInputs } from '../lib/to-store-inputs';
 import { createUploadBundleLoader } from '../lib/upload-bundle';
 import { Sentry } from '../lib/sentry';
 import { recordFailure, WritesStoppedError } from '../lib/error-diagnostics';
 import { SHOPIFY_SURFACE } from '../lib/build-flags';
 import { isDocx } from '../lib/file-kinds';
+import { withClaim } from '../lib/sync-claim';
 import { transition, INITIAL_UPLOAD, NO_OUTCOME, type SaveOutcome, type Progress, type RunCounts } from '../lib/upload-flow-state';
 
 /**
@@ -290,14 +291,7 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
     else if (notices.length > 0) trackUploadOutcome(counts.picked, 0, counts.docx, notices);
   };
 
-  const save = useCallback(async ({ values: selectedValues, documents, labValues, reviewed }: {
-    values: ReviewedValue[];
-    documents: DocumentToSave[];
-    labValues: ReviewedLabValue[];
-    reviewed: FileResult[];
-  }) => {
-    if (savingRef.current) return;
-    savingRef.current = true;
+  const save = useCallback(({ values: selectedValues, documents, labValues, reviewed }: ReviewDecisions) => withClaim(savingRef, async () => {
     dispatch({ type: 'saveStarted' });
     const erase = getShownErase(); // the record this save was asked for
     // This attempt's own counts; the transition adds them to what earlier attempts saved.
@@ -305,19 +299,7 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
     const failSave = (message: string) => dispatch({ type: 'saveFailed', message, attempt });
     try {
       // Save core measurements, additional lab values, and documents in parallel
-      const measurements = selectedValues.map(v => ({
-        metricType: v.metric,
-        value: v.valueSI,
-        recordedAt: v.recordedAt,
-        // Per-row source: ReviewTable tags edited rows as 'lab_import_edited'
-        // so we can distinguish LLM-extracted-then-user-corrected from
-        // pure LLM extraction in audit analytics. Falls back to 'lab_import'.
-        source: v.source ?? 'lab_import',
-        // Set only when the reviewer ticked "Replace" on an occupied slot —
-        // the store then corrects that row instead of skipping the upload.
-        correctsId: v.correctsId,
-        ...comparatorOf(v),
-      }));
+      const { measurements, labValues: labValuePayloads } = toStoreInputs({ values: selectedValues, labValues });
       // Blobs travel INSIDE the payload (attached at processing time, and only
       // when the backend can archive them) — no name-keyed re-join here.
       const docPayloads: DocumentPayload<Blob>[] = documents.map(d => ({
@@ -334,17 +316,6 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
       // A letter the connector filed metadata-only: unselected here, still archived
       // (US-35 AC8), with the title and date the review shows (US-13 AC6).
       docPayloads.push(...connectorDocumentEntries(reviewed, history.documents, covered));
-      const labValuePayloads = labValues.map(lv => ({
-        metricName: lv.name,
-        value: lv.value,
-        unit: lv.unit,
-        referenceLow: lv.referenceLow,
-        referenceHigh: lv.referenceHigh,
-        recordedAt: lv.recordedAt,
-        source: 'lab_import' as const,
-        correctsId: lv.correctsId,
-        ...comparatorOf(lv),
-      }));
 
       // Each branch settles before the session becomes dismissible. One
       // rejected write must not release another archive that is still saving.
@@ -401,10 +372,8 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
       }
     } catch {
       failSave('Failed to save. Please try again.');
-    } finally {
-      savingRef.current = false;
     }
-  }, [onComplete, onScreeningUpdate, history.documents]);
+  }), [onComplete, onScreeningUpdate, history.documents]);
 
   // A read Cancel stopped, counted once (US-12 AC10): each cancel holds a new object.
   const cancelledRead = state.phase === 'picking' ? state.cancelledRead : undefined;

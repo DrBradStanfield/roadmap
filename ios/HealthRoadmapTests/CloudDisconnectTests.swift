@@ -390,6 +390,86 @@ final class CloudDisconnectTests: XCTestCase, CloudFixtures {
         try await assertARelaunchReadsTheSame(sync, opens: true)
     }
 
+    // MARK: An erase not sent (S50b, US-25 AC16i)
+
+    /// Dropbox open, then an erase made here whose upload fails with a 500: not sent.
+    private func eraseNotSent(engine: HealthEngine? = nil) async throws -> CloudSync {
+        dropbox.put(try record(days: ["2026-10-01"], device: "web"))
+        try write("dbid:A", "sync-account")
+        if engine != nil { try write("dropbox", "sync-provider") }
+        let sync = try engine.map { engine in
+            CloudSync(engine: engine, store: try RecordStore(folder: folder, engine: engine, deviceId: "ios-test"), oauth: OAuthClient(tokens: tokens, session: StubHTTP.session()))
+        } ?? app().sync
+        await sync.start()
+        XCTAssertTrue(sync.recordOpen)
+        dropbox.uploadsWork = false
+        let erased = try await sync.erase(chatHistory: nil) { _ in true }
+        XCTAssertEqual(erased?.success, false)
+        XCTAssertEqual(erased?.erased, true, "made here, not sent")
+        return sync
+    }
+
+    private func cloudEpoch() -> Int? {
+        (dropbox.record["meta"] as? [String: Any])?["eraseEpoch"] as? Int
+    }
+
+    /// A Disconnect while the erase is unsent over a passing failure waits: still open, the
+    /// provider file and tokens kept. Once uploads work, the next Disconnect sends it and lands.
+    func testADisconnectWaitsWhileAnEraseIsUnsentOverAPassingFailure_US25_AC16i() async throws {
+        let sync = try await eraseNotSent()
+        let held = await sync.disconnectOutcome()
+        XCTAssertEqual(held, .eraseUnsent)
+        // What Sync shows for it (SyncView.disconnect): the erase's own sentence, unchanged.
+        XCTAssertEqual(EraseText.unsent(.dropbox), "Your record is erased on this iPhone, but Dropbox could not take the erase just now. The app sends it when Dropbox answers; until then the copy there is unchanged.")
+        guard case .open = sync.connection else { return XCTFail("the Disconnect went ahead: \(sync.connection)") }
+        XCTAssertEqual(sync.provider, .dropbox)
+        XCTAssertEqual(text("sync-provider"), "dropbox", "the provider file stays")
+        XCTAssertNotNil(tokens.load(.dropbox), "the tokens stay")
+        XCTAssertNotEqual(cloudEpoch(), 1, "the erase is still unsent")
+
+        dropbox.uploadsWork = true
+        let outcome = await sync.disconnectOutcome()
+        XCTAssertEqual(outcome, .done(copied: true))
+        XCTAssertNil(sync.provider)
+        XCTAssertEqual(cloudEpoch(), 1, "the ask sent the erase before the Disconnect")
+        XCTAssertNil(text("sync-provider"))
+    }
+
+    /// An engine without the door (optionalCall answers nil) runs today's Disconnect unchanged.
+    func testAnEngineWithoutTheDoorDisconnectsAsBefore_US25_AC16i() async throws {
+        let url = try XCTUnwrap(Bundle.main.url(forResource: "health-engine", withExtension: "js"))
+        let without = "HealthEngine = (function (e) { var o = Object.assign({}, e); delete o.cloudEraseHeld; return o; })(HealthEngine);"
+        let engine = try HealthEngine(source: try String(contentsOf: url, encoding: .utf8) + "\n" + without, sourceURL: nil, session: StubHTTP.session())
+        let sync = try await eraseNotSent(engine: engine)
+        let outcome = await sync.disconnectOutcome()
+        XCTAssertEqual(outcome, .done(copied: true))
+        XCTAssertNil(sync.provider)
+        XCTAssertNil(text("sync-provider"))
+        XCTAssertNotEqual(cloudEpoch(), 1, "today's residual: the erase is still unsent")
+    }
+
+    /// The bound (owner, 2026-11-14): 24 hours after the erase's first failed send, the hold ends
+    /// and Disconnect runs as today. The engine's clock jumps a day as the door is asked.
+    func testADisconnectGoesAheadAsTodayOnceTheUnsentErase24HoursOld_US25_AC16i() async throws {
+        let url = try XCTUnwrap(Bundle.main.url(forResource: "health-engine", withExtension: "js"))
+        let later = "HealthEngine = (function (e) { var o = Object.assign({}, e), real = Date.now; o.cloudEraseHeld = function () { Date.now = function () { return real() + 86400000; }; return e.cloudEraseHeld(); }; return o; })(HealthEngine);"
+        let engine = try HealthEngine(source: try String(contentsOf: url, encoding: .utf8) + "\n" + later, sourceURL: nil, session: StubHTTP.session())
+        let sync = try await eraseNotSent(engine: engine)
+        let outcome = await sync.disconnectOutcome()
+        XCTAssertEqual(outcome, .done(copied: true), "past the bound the unsent erase no longer holds")
+        XCTAssertNil(sync.provider)
+        XCTAssertNil(text("sync-provider"))
+        XCTAssertNotEqual(cloudEpoch(), 1, "as today: the erase is still unsent")
+    }
+
+    /// notSent's words stay byte for byte (S50b moved its first sentence out).
+    func testTheNotSentWordsAreUnchanged_US25_AC16i() {
+        XCTAssertEqual(EraseText.notSent(provider: .dropbox, chatErased: true, cloudChat: .erased),
+                       "Your record is erased on this iPhone, but Dropbox could not take the erase just now. The app sends it when Dropbox answers; until then the copy there is unchanged. Your chat history and reminders are deleted. Any website chat history in Dropbox is deleted too.")
+        XCTAssertEqual(EraseText.notSent(provider: .googleDrive, chatErased: false, cloudChat: .unreachable),
+                       "Your record is erased on this iPhone, but Google Drive could not take the erase just now. The app sends it when Google Drive answers; until then the copy there is unchanged. Your reminders are deleted. Your chat history could not be deleted, so it is still on this iPhone. Your website conversations in Google Drive are still there. Try again to delete them.")
+    }
+
     // MARK: Wiring
 
     /// CloudSync's status is the status function of its connection and the pending marker,

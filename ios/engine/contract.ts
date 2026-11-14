@@ -388,6 +388,12 @@ export const DOORS = {
     args: [],
     returns: "US-09 AC30: '{}'. The app calls it when NWPathMonitor reports the network satisfied again: the open cloud session retries a failed save (at most once a minute; this trigger never after a refused sign-in) and catches up as a return does, and that catch-up's re-read still retries a failed save first, a refused sign-in's included (lead A25); nothing when no cloud is open. An engine before it has no such door: optionalCall answers nil and nothing is retried on that trigger, never a crash.",
   },
+  cloudEraseHeld: {
+    kind: 'promise',
+    optionalDoor: true,
+    args: [],
+    returns: "S50b (US-25 AC16i): a Promise of one word, asked before Disconnect or a switch closes anything. It flushes the open session first, as a close does, then says whether an erase made on this phone is still unsent: 'none' (no session, no such erase, or a save has carried it), 'transient' (its last save failed in a way known to pass: a network call with no answer, a timeout, an abort, 408, 429, a 5xx, or Google's rate or daily limit), 'definite' (the provider refused it: storage full, a refused sign-in, another 4xx) 'unknown' (anything else, a failure no report explained included) or 'expired' (a transient failure 24 hours or more after the erase's first failed send, owner 2026-11-14). Only 'transient' holds the Disconnect; the app runs today's path on every other word and on one it does not know. cloudClose's answers are unchanged. An engine before it has no such door: optionalCall answers nil and Disconnect runs as before, never a crash.",
+  },
 } satisfies Record<string, Door>;
 
 export type DoorName = keyof typeof DOORS;

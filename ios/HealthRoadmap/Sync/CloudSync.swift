@@ -35,6 +35,9 @@ final class CloudSync: CloudPort {
         /// A switch's copy-down could not reach the cloud with a session open, or the engine
         /// threw: still connected, nothing removed (US-25 AC11n). A plain Disconnect never stops.
         case unreachable
+        /// An erase made here is unsent over a failure that may pass: still open, nothing
+        /// closed or removed (US-25 AC16i). The next Disconnect asks again.
+        case eraseUnsent
     }
 
     /// What a switch did (US-25 AC11n).
@@ -235,6 +238,9 @@ final class CloudSync: CloudPort {
     /// with no await between them.
     func disconnectOutcome(forSwitch: Bool = false) async -> DisconnectOutcome {
         guard provider != nil else { return .done(copied: true) }
+        guard !eraseRunning() else { return .refused }
+        // Asked before anything closes; it flushes, so a cloud that answers now takes the erase.
+        if (try? await engine.eraseHeldOverAPassingFailure()) == true { return .eraseUnsent }
         guard !eraseRunning(), send(.disconnectStarted).isEmpty, case .closing(let closing) = connection else { return .refused }
         let closed = try? await engine.cloudClose(copyDown: true)
         // Each step after an await checks this Disconnect still owns the connection (Codex C1).

@@ -12,6 +12,7 @@ import {
   DOC_KEY_PREFIX, healthWritesAllowed, newLogOffId, noteLogOffHeard, removeByPrefix, safeGetItem, safeRemoveItem, safeSetItem, stopLocalHealthWrites,
 } from '../lib/storage';
 import { ConflictError, ROADMAP_FILE_NAME, StorageError, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
+import { uncertainWrite } from '@roadmap/health-core/write-refusal';
 import { WritesStoppedError } from '../lib/error-diagnostics';
 
 // The roadmap file keeps its ORIGINAL keys (existing users' device data lives
@@ -87,6 +88,18 @@ function versionKey(fileName: string): string {
   return `${fileKey(fileName)}_rev`;
 }
 
+function readFrom(fileName: string, getItem: (key: string) => string | null): ReadResult {
+  const raw = getItem(fileKey(fileName));
+  if (raw == null) return { body: null, version: null };
+  let body: unknown;
+  try {
+    body = JSON.parse(raw);
+  } catch (error) {
+    throw new StorageError('Local data is corrupt and could not be read.', undefined, error);
+  }
+  return { body, version: getItem(versionKey(fileName)) ?? '0' };
+}
+
 export class LocalStorageAdapter implements StorageAdapter {
   readonly id = 'local' as const;
   readonly label = 'This device only';
@@ -119,15 +132,13 @@ export class LocalStorageAdapter implements StorageAdapter {
   }
 
   readSync(fileName: string): ReadResult {
-    const raw = safeGetItem(fileKey(fileName));
-    if (raw == null) return { body: null, version: null };
-    let body: unknown;
-    try {
-      body = JSON.parse(raw);
-    } catch (error) {
-      throw new StorageError('Local data is corrupt and could not be read.', undefined, error);
-    }
-    return { body, version: safeGetItem(versionKey(fileName)) ?? '0' };
+    return readFrom(fileName, safeGetItem);
+  }
+
+  /** readSync, but a localStorage that throws (a SecurityError) throws here
+   *  instead of reading as no record (S69 R2). */
+  readSyncStrict(fileName: string): ReadResult {
+    return readFrom(fileName, (key) => localStorage.getItem(key));
   }
 
   writeSync(fileName: string, body: object, expectedVersion: string | null): WriteResult {
@@ -171,7 +182,9 @@ export class LocalStorageAdapter implements StorageAdapter {
       const restored = safeGetItem(fileKey(fileName)) === written && restoreItem(fileKey(fileName), previous);
       if (!restored) safeRemoveItem(versionKey(fileName));
       noteRecordSave(fileName, safeGetItem(fileKey(fileName)) === written);
-      throw new StorageError(FULL, restored ? undefined : 'This change may have been stored. Read the record again before trying it a second time.', error);
+      // Not put back, the record may have stored: never a definite refusal (S69).
+      const full = new StorageError(FULL, restored ? undefined : 'This change may have been stored. Read the record again before trying it a second time.', error);
+      throw restored ? full : uncertainWrite(full);
     }
     noteRecordSave(fileName, true);
     return { version: next };

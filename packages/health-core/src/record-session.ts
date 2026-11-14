@@ -14,7 +14,7 @@ import { SchemaTooNewError } from './migrate';
 import { announce, clearedAtOpen, clearOffFile, keepCleared, laterChange, liftMissed, reportSaveFailure, tellSaveStatus, type DeviceMirror, type RecordHost, type RemoteChange, type SaveTold, type SyncStorage } from './record-host';
 import { contentOf, visibleContentOf } from './record-session-content';
 import { deleteAllDataSession, eraseSession, replaceUnreadableSession, type EraseResult, type EraseSteps } from './record-session-erase';
-import { coveredCopySession, deviceCopyRevision, mirrorNowSession, releaseErasedCopySession, releaseMarkerSession } from './record-session-mirror';
+import { coveredCopySession, deviceCopyHoldsErase, deviceCopyRevision, mirrorNowSession, releaseErasedCopySession, releaseMarkerSession } from './record-session-mirror';
 import { ROADMAP_DOC } from './roadmap-doc';
 import { changesOf, retryOwed, SAVE_START, saveFailureCause, saveStatus, transition, unsaved, writePending, writtenNowhere, type SaveEvent, type SaveState, type SaveStatus } from './save-state';
 import type { RoadmapFile } from './roadmap-file';
@@ -479,16 +479,17 @@ export class RecordSession {
         // It migrates this copy first. Advance meta.updatedAt so mutable row
         // and field updatedAt stamps are not rewound to the last successful
         // sync. Immutable measurement/lab createdAt is kept as written.
+        const held = changesOf(this.mode); // what this write holds (US-09 AC30)
         try {
           const ctx = this.ctx();
-          const held = changesOf(this.mode); // what this write holds: the device line needs it to land (US-09 AC30)
           if (ctx.now > this.current.meta.updatedAt) this.current.meta.updatedAt = ctx.now;
           const write = () => saveRecordInto(mirror.adapter, this.current, ctx);
           await write().catch(write); // one retry: a passing refusal (lead S54)
           this.dispatch({ type: 'mirrored', changes: held });
           this.deviceCopySeen = deviceCopyRevision(this.host);
         } catch {
-          /* device storage unavailable — memory-only is the best we have */
+          // Memory-only; past an erase's swap, held when the device copy already carries this erase (S69 R2).
+          if (this.mode.mode === 'erasing' && this.mode.phase === 'writing' && deviceCopyHoldsErase(this)) this.dispatch({ type: 'mirrored', changes: held });
         }
       }
       reportSaveFailure(this.host, error, this.refusalsReported);

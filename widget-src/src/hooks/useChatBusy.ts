@@ -1,43 +1,44 @@
-// Other tabs' sends (US-15 AC17, AC17a-c): Send is disabled while any other
-// tab's send is in flight. This tab's own send is the chat-turn store's `turn`
-// (useChatState). Each other tab is tracked on its own: one entry each, from a
-// message saying `sending` until that tab says it is not, or REMOTE_PENDING_MS
-// after its latest such word (a tab closed mid-reply never says).
-// Busy is derived from these on every change, so one tab's end never frees another's send.
-// An older bundle's message has no `sending`, only what it shows, which can
-// mirror another tab's reply and is never followed by its own end: such an
-// entry ends at any tab's word that its send ended, this tab's included
-// (`ownEnded`, the store's own-ended effect), as all waits did before.
-import { useCallback, useEffect, useState } from 'react';
+// Other tabs' sends (US-15 AC17, AC17a-d): the state and its rules are chatBusy.ts. This hook holds the
+// state, sends it events, and runs the one timer its next expiry asks for: the timer only feeds the
+// `expired` event, it never holds the mode.
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
+import type { Key } from '@roadmap/health-core/chat-turn';
+import { IDLE, nextExpiry, othersReplyIn, othersSending, transition, type BusyEvent } from './chatBusy';
 
-/** How long another tab's reply in flight may lock this tab's chat with no word from it (US-15 AC17a). */
-export const REMOTE_PENDING_MS = 5 * 60_000;
+export { REMOTE_PENDING_MS } from './chatBusy';
+
+/** Another tab's post, as the hook hears it. */
+export interface RemotePost { sending: boolean | undefined; shows: boolean; asked: Key | undefined; shown: Key | undefined }
 
 export function useChatBusy() {
-  const [othersBusy, setOthersBusy] = useState(false);
-  const [remoteSends] = useState(() => new Map<string, ReturnType<typeof setTimeout>>());
-  /** Another tab's send in flight now, before the re-render (US-15 AC7a). */
-  const othersBusyNow = useCallback(() => remoteSends.size > 0, [remoteSends]);
-  const [legacy] = useState(() => new Set<string>());
-  const drop = useCallback((instanceId: string) => {
-    clearTimeout(remoteSends.get(instanceId));
-    remoteSends.delete(instanceId);
-    legacy.delete(instanceId);
-  }, [remoteSends, legacy]);
+  // One copy of the state, read now by Send before the re-render (US-15 AC7a) and by render through the store.
+  const [box] = useState(() => {
+    let current = IDLE;
+    const listeners = new Set<() => void>();
+    return {
+      get: () => current,
+      subscribe: (l: () => void) => { listeners.add(l); return () => { listeners.delete(l); }; },
+      apply: (e: BusyEvent) => { current = transition(current, e); listeners.forEach((l) => l()); },
+    };
+  });
+  const state = useSyncExternalStore(box.subscribe, box.get);
+  const { apply } = box;
+  const othersBusyNow = useCallback(() => othersSending(box.get()), [box]);
   /** This tab's send ended: an older bundle's wait ends with it (AC17c). */
-  const ownEnded = useCallback(() => {
-    legacy.forEach(drop);
-    setOthersBusy(othersBusyNow());
-  }, [legacy, drop, othersBusyNow]);
-  /** Another tab's word on its own send (AC17c); `sending` is undefined from an older bundle, which says only what it `shows`. */
-  const onRemote = useCallback((instanceId: string, sending: boolean | undefined, shows: boolean) => {
-    drop(instanceId);
-    if (sending ?? shows) {
-      remoteSends.set(instanceId, setTimeout(() => { drop(instanceId); setOthersBusy(othersBusyNow()); }, REMOTE_PENDING_MS));
-      if (sending === undefined) legacy.add(instanceId);
-    } else if (!shows) legacy.forEach(drop); // a mirror (sending false, shows true) is no end
-    setOthersBusy(othersBusyNow());
-  }, [remoteSends, legacy, drop, othersBusyNow]);
-  useEffect(() => () => { remoteSends.forEach(clearTimeout); remoteSends.clear(); legacy.clear(); }, [remoteSends, legacy]);
-  return { othersBusy, othersBusyNow, ownEnded, onRemote };
+  const ownEnded = useCallback(() => apply({ type: 'own-ended' }), [apply]);
+  /** Another tab's word on its own send (AC17c), heard as `local` is shown here after the mirror (AC17d). */
+  const onRemote = useCallback((from: string, post: RemotePost, local: Key) => apply({ type: 'post', from, ...post, local, now: Date.now() }), [apply]);
+  const until = nextExpiry(state);
+  useEffect(() => {
+    if (until === null) return;
+    // The timer runs on the monotonic clock: a wall clock that lags it must still end the wait (PR 1745 R1).
+    const timer = setTimeout(() => apply({ type: 'expired', now: Math.max(Date.now(), until) }), Math.max(0, until - Date.now()));
+    return () => clearTimeout(timer);
+  }, [until, apply]);
+  return {
+    othersBusy: othersSending(state),
+    /** Another tab's reply asked in the chat shown here (AC17d). */
+    othersReplyIn: (shown: Key) => othersReplyIn(state, shown),
+    othersBusyNow, ownEnded, onRemote,
+  };
 }

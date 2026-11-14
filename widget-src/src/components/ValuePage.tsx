@@ -5,7 +5,7 @@
 // grids' save (`SaveTask` → HealthTool → matrix-save), and a lab test's Add
 // is the grid's own AddLabTest. No save path of its own.
 
-import { lazy, Suspense, useEffect, useId, useMemo, useRef, useState, type MutableRefObject } from 'react';
+import { lazy, Suspense, useEffect, useId, useMemo, useReducer, useRef, useState, type MutableRefObject } from 'react';
 import { type ApiMeasurement, METRIC_LABELS } from '@roadmap/health-core/mappings';
 import { type CellUnit, cellFromSI, cellLabel, cellText, cellToSI } from '@roadmap/health-core/cell-unit';
 import type { MetricType } from '@roadmap/health-core/units';
@@ -21,23 +21,21 @@ import { activeRowIndex, slotOf, type CorrectFn, type Refused, type SaveTask } f
 import { pressureReadings, readingsOf, type DayReading } from '../lib/my-data-rows';
 import { chartTimestamp, formatShortDate } from '../lib/constants';
 import { getShownErase } from '../lib/roadmap-data';
+import { withClaim } from '../lib/sync-claim';
+import { ADD_READY, transition } from '../lib/value-add-machine';
 import { ErrorBoundary } from './ErrorBoundary';
 import { scrollToTop } from '../lib/reveal';
 import { useIsMobile } from '../lib/useIsMobile';
 import { useAutoAdvance } from '../lib/useAutoAdvance';
-import { ValueCell, saveErrorText, useLiveRegion } from './BloodTestTimeline';
+import { ValueCell, useLiveRegion } from './BloodTestTimeline';
 import { AddLabTest } from './AddLabTest';
 import { LAB_EGFR, isLabEgfr, pressureText, subjectKey, tintOf, type RowContext, type ValueSubject } from './MyDataRows';
 import { PlanTile } from './PlanCards';
 import type { ApiLabValue } from '../lib/api-types';
 
 // The chart library loads with the chart, never with the form (as the history lightbox loads it).
-/** What the Add form says when the unit changed under typed text (US-05 AC2). */
-const UNIT_CHANGED = 'The unit changed, so your value was not saved. Type it again in the new unit.';
-
 const TimeSeriesChart = lazy(() => import('./HistoryPanel').then(m => ({ default: m.TimeSeriesChart })));
 const MixedUnitsNote = lazy(() => import('./HistoryPanel').then(m => ({ default: m.MixedUnitsNote })));
-
 
 interface ValuePageProps {
   subject: ValueSubject;
@@ -233,8 +231,9 @@ function AddValue({ metric, history, unit, start, onSave, say, onDone, dirtyRef,
   const [date, setDate] = useState(start?.day ?? today);
   const [text, setText] = useState(start ? String(Math.round(start.value)) : '');
   const [dia, setDia] = useState(start?.dia ? String(Math.round(start.dia.value)) : '');
-  const [error, setError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
+  // Ready (with its alert line) or saving: one named state (lib/value-add-machine).
+  const [form, send] = useReducer(transition, ADD_READY);
+  const claim = useRef(false); // seen by a second Add in the same render, as `form` is not
   // Correct on a history row brings the form to that reading.
   const firstRef = useRef<HTMLInputElement>(null);
   useEffect(() => { if (start) firstRef.current?.focus(); }, []);
@@ -260,12 +259,12 @@ function AddValue({ metric, history, unit, start, onSave, say, onDone, dirtyRef,
   // the form clears and says so, as the grid's editor does (US-05 AC2).
   const [typedIn, setTypedIn] = useState<CellUnit | null>(null);
   const typed = (set: (v: string) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    freeze(date); setTypedIn(prev => prev ?? unit); set(e.target.value); setError(null);
+    freeze(date); setTypedIn(prev => prev ?? unit); set(e.target.value); send({ type: 'edited' });
   };
   useEffect(() => {
     if (!typedIn || typedIn === unit) return;
     setText(''); setDia(''); setTypedIn(null);
-    setError(UNIT_CHANGED);
+    send({ type: 'unitChanged' });
   }, [unit]);
   dirtyRef.current = (text !== '' || dia !== '') && (!start || text !== String(Math.round(start.value)) || dia !== String(Math.round(start.dia?.value ?? NaN)));
   useEffect(() => () => { dirtyRef.current = false; }, []);
@@ -286,42 +285,47 @@ function AddValue({ metric, history, unit, start, onSave, say, onDone, dirtyRef,
     return pressureInverted(values.systolic_bp, values.diastolic_bp) ? PRESSURE_ORDER : values;
   };
 
-  const add = async () => {
+  const add = () => withClaim(claim, async () => {
     const values = parse();
-    if (typeof values === 'string') { setError(values); return; }
-    setError(null);
-    setSaving(true);
-    const expected = Object.fromEntries(metrics.map((m, i) => [m, held[i]?.id ?? null]));
-    // The same number again writes nothing (matrix-save's `sameAsSaved`), so say so.
-    const unchanged = held.every((row, i) => {
-      if (!row) return false;
-      const m = metrics[i];
-      return metric ? sameAsSaved(readTypedValue(m, text, unit)!, cellText(m, row.value, unit), values[m], row.value)
-        : Math.round(row.value) === values[m];
-    });
-    // Before the save, as the weight box answers as it is typed: the step is counted when the save's
-    // re-read raises the stage, and a refused save's re-read clears the answer (Codex R1, H71).
-    if (metric === 'weight') onWeightAnswered?.();
-    const refused = await onSave([{ date, values, expected, unit }], seen?.erase ?? getShownErase());
-    setSaving(false);
+    if (typeof values === 'string') { send({ type: 'faulted', message: values }); return; }
+    send({ type: 'sent' });
+    let unchanged: boolean;
+    let refused: Refused;
+    try {
+      const expected = Object.fromEntries(metrics.map((m, i) => [m, held[i]?.id ?? null]));
+      // The same number again writes nothing (matrix-save's `sameAsSaved`), so say so.
+      unchanged = held.every((row, i) => {
+        if (!row) return false;
+        const m = metrics[i];
+        return metric ? sameAsSaved(readTypedValue(m, text, unit)!, cellText(m, row.value, unit), values[m], row.value)
+          : Math.round(row.value) === values[m];
+      });
+      // Before the save, as the weight box answers as it is typed: the step is counted when the save's
+      // re-read raises the stage, and a refused save's re-read clears the answer (Codex R1, H71).
+      if (metric === 'weight') onWeightAnswered?.();
+      refused = await onSave([{ date, values, expected, unit }], seen?.erase ?? getShownErase());
+    } catch (e) {
+      // A throw anywhere gives the Add button back, says nothing (lead H128), and still escapes.
+      send({ type: 'threw' });
+      throw e;
+    }
     const [why] = refused.values();
+    send({ type: 'settled', why: why ?? null });
     if (why) {
-      setError(saveErrorText(why));
       // The form now shows what is there, so the next press is a deliberate correction of it.
       if (why === 'changed') setSeen({ day: date, rows: rowsOn(date), erase: seen?.erase ?? getShownErase() });
       return;
     }
     say(unchanged ? 'No change.' : taken ? 'Corrected.' : 'Added.');
     setText(''); setDia(''); setDate(today); setSeen(null); setTypedIn(null);
-    dirtyRef.current = false;
     onDone();
-  };
+  });
 
   return (
     <form className="md-add" noValidate onSubmit={e => { e.preventDefault(); void add(); }}>
       <label className="md-add-field">
         <span>Date</span>
-        <input type="date" value={date} max={today} onChange={e => { setDate(e.target.value); freeze(e.target.value); setError(null); }}/>
+        <input type="date" value={date} max={today} onChange={e => { setDate(e.target.value); freeze(e.target.value); send({ type: 'edited' }); }}/>
       </label>
       {metric ? (
         <label className="md-add-field">
@@ -349,8 +353,8 @@ function AddValue({ metric, history, unit, start, onSave, say, onDone, dirtyRef,
         </div>
       )}
       {taken && <p className="md-add-note">This day has {takenText} already. Saving corrects it.</p>}
-      {error && <p className="error-message" role="alert">{error}</p>}
-      <button type="submit" className="md-add-save" disabled={saving}>{taken ? 'Save correction' : 'Add'}</button>
+      {form.kind === 'ready' && form.message && <p className="error-message" role="alert">{form.message}</p>}
+      <button type="submit" className="md-add-save" disabled={form.kind === 'saving'}>{taken ? 'Save correction' : 'Add'}</button>
     </form>
   );
 }

@@ -12,6 +12,7 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ConflictError, ROADMAP_FILE_NAME, StorageError } from '@roadmap/health-core/adapter';
+import { isDefiniteRefusal, mayHaveLanded } from '@roadmap/health-core/write-refusal';
 import { LocalStorageAdapter } from './local-storage-adapter';
 
 const BODY = 'health_roadmap_file_v2';
@@ -160,5 +161,29 @@ describe('a local save at a full storage (US-34 AC6a)', () => {
     // Both outcomes were reached, so the sweep tested each.
     expect(saved).toBeGreaterThan(0);
     expect(refused).toBeGreaterThan(0);
+  });
+});
+
+describe('S69 (US-11 AC4c): a full revision write says whether the record may have stored', () => {
+  const thrown = (run: () => void): unknown => { try { run(); } catch (e) { return e; } return undefined; };
+
+  it('the record put back: a definite refusal, so a failed erase is put back too', () => {
+    const { adapter } = setup('0', 0);
+    const refused = thrown(() => adapter.writeSync(ROADMAP_FILE_NAME, first, '0'));
+    expect(mayHaveLanded(refused)).toBe(false);
+    expect(isDefiniteRefusal(refused)).toBe(true);
+  });
+
+  it('the old record could not go back: may have stored, never a refusal, so a failed erase keeps its erased copy', () => {
+    const { storage, adapter } = setup('4-abcdefgh', 0, SHORT);
+    adapter.writeSync(ROADMAP_FILE_NAME, before, '4-abcdefgh'); // now "5-i"
+    vi.spyOn(Math, 'random').mockReturnValue(LONG);
+    storage.limit = storage.used;
+    const old = storage.getItem(BODY);
+    storage.refuse = (key, value) => key === BODY && value === old;
+    const refused = thrown(() => adapter.writeSync(ROADMAP_FILE_NAME, first, '5-i'));
+    expect(refused).toBeInstanceOf(StorageError);
+    expect(mayHaveLanded(refused)).toBe(true);
+    expect(isDefiniteRefusal(refused)).toBe(false);
   });
 });
