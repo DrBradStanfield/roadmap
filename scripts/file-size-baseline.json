@@ -13,7 +13,7 @@
     "packages/health-core/src/merge.ts": 893,
     "ios/scripts/app-store-video-compose.swift": 882,
     "packages/health-core/src/units.ts": 813,
-    "packages/health-core/src/lab-catalog.ts": 811,
+    "packages/health-core/src/lab-catalog.ts": 802,
     "widget-src/src/components/HealthTool.tsx": 770,
     "app/routes/mcp.$.tsx": 724,
     "packages/health-core/src/validation.ts": 712,
