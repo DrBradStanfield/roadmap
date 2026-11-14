@@ -1300,8 +1300,7 @@ describe('US-21 AC28 — a share of a count is stored as its own test', () => {
     ['Reticulocytes', '%', 'reticulocytes_pct'],
     ['NRBC', '%', 'nrbc_per_100_wbc'],
     ['NRBC', '/100 WBC', 'nrbc_per_100_wbc'],
-    ['nrbc', '/100 WBCs', 'nrbc_per_100_wbc'],
-    ['Nucleated red cells', 'per 100 WBC', 'nrbc_per_100_wbc'],
+    ['Nucleated red cells', '/100 wbc', 'nrbc_per_100_wbc'],
     ['Neutrophils (Absolute)', '%', 'neutrophils_pct'],
     ['neut', ' % ', 'neutrophils_pct'],
     ['lymphs (absolute)', '%', 'lymphocytes_pct'],
@@ -1352,6 +1351,6 @@ describe('US-21 AC28 — a share of a count is stored as its own test', () => {
     const entryOf = (name: string) => resolveLabCatalogEntry(name)!;
     expect(canonicalLabValue(entryOf('neutrophils_pct'), 3.1, '×10⁹/L')).toBeNull();
     expect(labUnitRefusal(entryOf('neutrophils_pct'), '×10⁹/L')).toBe('Neutrophils (%) is stored in %; this record takes %, not "×10⁹/L"');
-    expect(labUnitRefusal(entryOf('nrbc_per_100_wbc'), 'mg/L')).toBe('NRBC (per 100 WBC) is stored in /100 WBC; this record takes /100 WBC, %, /100 wbcs, per 100 wbc, not "mg/L"');
+    expect(labUnitRefusal(entryOf('nrbc_per_100_wbc'), 'mg/L')).toBe('NRBC (per 100 WBC) is stored in /100 WBC; this record takes /100 WBC, %, not "mg/L"');
   });
 });

@@ -56,8 +56,6 @@ var UNITS = [
   "thou/µl",
   "thousand/µl",
   "cells/µl",
-  "/100 wbcs",
-  "per 100 wbc",
   "mg/l (feu)",
   "µg/ml feu",
   "µg/ml (feu)",

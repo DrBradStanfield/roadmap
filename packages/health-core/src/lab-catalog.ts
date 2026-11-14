@@ -206,7 +206,7 @@ export const LAB_CATALOG: LabCatalogEntry[] = [
   { key: 'immature_granulocytes_pct', label: 'Immature granulocytes (%)', group: 'haematology', unit: '%', aliases: ['immature granulocytes %', 'immature grans %'], shareOf: 'immature_granulocytes' },
   { key: 'reticulocytes_pct', label: 'Reticulocytes (%)', group: 'haematology', unit: '%', aliases: ['reticulocytes %', 'reticulocyte %', 'retic %'], shareOf: 'reticulocytes' },
   // NRBC per 100 white cells is the same number as NRBC in % of the white count.
-  { key: 'nrbc_per_100_wbc', label: 'NRBC (per 100 WBC)', group: 'haematology', unit: '/100 WBC', aliases: ['nrbc per 100 wbc', 'nrbc %', 'nrbc/100 wbc'], unitAliases: ['%', '/100 wbcs', 'per 100 wbc'], shareOf: 'nrbc' },
+  { key: 'nrbc_per_100_wbc', label: 'NRBC (per 100 WBC)', group: 'haematology', unit: '/100 WBC', aliases: ['nrbc per 100 wbc', 'nrbc %', 'nrbc/100 wbc'], unitAliases: ['%'], shareOf: 'nrbc' },
   // D-dimer only in fibrinogen-equivalent units: a bare ng/mL is often D-dimer
   // units (DDU), about half the FEU number, so no spelling without FEU converts.
   { key: 'd_dimer', label: 'D-dimer', group: 'haematology', unit: 'mg/L FEU', aliases: [], unitAliases: ['mg/l (feu)', 'µg/ml feu', 'µg/ml (feu)'], conversions: { 'ng/ml feu': 0.001, 'ng/ml (feu)': 0.001, 'µg/l feu': 0.001, 'µg/l (feu)': 0.001 } }, // µg/mL is mg/L; ng/mL is µg/L, a thousandth of mg/L

@@ -328,8 +328,6 @@ A spelling this table does not carry for that test is **refused** — never resc
 | `nrbc` | ×10⁹/L | thousand/µl | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `nrbc` | ×10⁹/L | g/l | 1 | an analyser’s spelling of ×10⁹/L (G/L is giga-, not grams) |
 | `nrbc_per_100_wbc` | /100 WBC | % | 1 | NRBC per 100 white cells is the same number as NRBC in % of the white count (US-21 AC28) |
-| `nrbc_per_100_wbc` | /100 WBC | /100 wbcs | 1 | spelling only |
-| `nrbc_per_100_wbc` | /100 WBC | per 100 wbc | 1 | spelling only |
 | `d_dimer` | mg/L FEU | mg/l (feu) | 1 | spelling only. Every D-dimer spelling must say FEU: a bare ng/mL is often DDU, about half the FEU number, so it is refused |
 | `d_dimer` | mg/L FEU | µg/ml feu | 1 | µg/mL is mg/L |
 | `d_dimer` | mg/L FEU | µg/ml (feu) | 1 | µg/mL is mg/L |
