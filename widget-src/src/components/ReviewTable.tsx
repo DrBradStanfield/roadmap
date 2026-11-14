@@ -7,7 +7,7 @@ import { sameLabQuantity } from '@roadmap/health-core/record-edits';
 import { IMPORT_REVIEW_TEXT, importSummaryText } from '@roadmap/health-core/import-review';
 import type { UploadReviewKey } from '@roadmap/health-core/product-events';
 import { measurementRefusalLine } from '../lib/lab-value-labels';
-import { classifyReview, currentEdits, reviewEventMetadata, reviewRows, slotlessIds, type KeptValue } from '../lib/import-review-view';
+import { classifyReview, currentEdits, refusedKeptIds, reviewEventMetadata, reviewRows, slotlessIds, type KeptValue } from '../lib/import-review-view';
 import type { UploadHistory } from '../lib/api-types';
 import { type CellUnit, type Grading, cellNumber, cellText, cellToSI, hasNumericSyntax, NUMERIC_SYNTAX_GUIDANCE, readNumericCell, readTypedValue, validateTypedValue } from '../lib/blood-test-cell';
 import { useLpaUnit } from '../lib/lpa-unit';
@@ -334,19 +334,21 @@ export function ReviewTable({
     const day = new Map(matrix.columns.map(col => [col.dateKey, buildRecordedAt(col.date)]));
     const kept: KeptValue[] = saveableCells.map(c => ({ id: editId(c.cell), recordedAt: day.get(c.dateKey)!, correctsId: c.cell.existing?.id, ...(c.isEdited ? { edited: c.value } : null) }));
     const ids = new Set(kept.map(k => k.id));
+    // A winner's refusal is judged on what Save would send for it, as Save reads its text.
+    const refusedWinners = refusedKeptIds(results, kept);
     // A reading with no cell is sent, at its current number, while its winner is
     // kept and the write takes the winner: it never writes, and never stands in
     // for a pinned winner whose number the write refuses (Save is blocked then).
     const editable = new Set([...matrix.cells.values()].flatMap(c => (c.state === 'editable' ? [editId(c)] : [])));
     kept.push(...matrix.unshown.filter(u => edits.get(u.id) !== null
-      && (!u.winner || (ids.has(u.winner) && !refusedNow.has(u.winner)) || !editable.has(u.winner))).map(u => {
+      && (!u.winner || (ids.has(u.winner) && !refusedWinners.has(u.winner)) || !editable.has(u.winner))).map(u => {
       const [fi, ref] = [Number(u.id.split(':')[0]), u.id.split(':')[1]];
       const extracted = ref[0] === 'v' ? results[fi].values[Number(ref.slice(1))].valueSI : results[fi].additionalValues[Number(ref.slice(1))].value;
       const edit = edits.get(u.id);
       return { id: u.id, recordedAt: `${u.day}T00:00:00.000Z`, ...(typeof edit === 'number' ? { edited: edit } : u.edited ? { edited: extracted } : null) };
     }));
     return classifyReview(results, fileDates, history, kept);
-  }, [results, fileDates, history, matrix, saveableCells, edits, refusedNow]);
+  }, [results, fileDates, history, matrix, saveableCells, edits]);
   // What Save writes, and the kept values waiting on a column's day (Save stays blocked until it is set).
   const savedCount = groups.decisions.values.length + groups.decisions.labValues.length
     + saveableCells.filter(c => groups.groupOf.get(editId(c.cell)) === 'waiting').length;

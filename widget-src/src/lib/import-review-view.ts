@@ -94,6 +94,18 @@ export function slotlessIds(results: FileResult[], edits: ReadonlyMap<string, nu
   return ids;
 }
 
+/** The kept values the write refuses on their own, judged on the payload Save
+ *  would send (each `KeptValue`'s own number), by `editId`. */
+export function refusedKeptIds(results: FileResult[], kept: readonly KeptValue[]): Set<string> {
+  const now = new Date().toISOString();
+  return new Set(kept.filter((k) => {
+    const { fi, ref } = refAt(k.id);
+    // Any real day, as in `slotlessIds`: a refusal on its own never depends on the day.
+    const row = results[fi] && importRow(extraction(results[fi]), ref, '2000-01-01', k.edited === undefined ? {} : { edited: { value: k.edited } });
+    return !!row && refusedAlone(row, now);
+  }).map((k) => k.id));
+}
+
 /**
  * The review's groups and what Save submits. Each kept cell is a row built by
  * health-core's `importRow` (a ticked Replace carries its `correctsId`, an

@@ -304,3 +304,23 @@ describe('US-13 AC13, AC5: an edited cell is pinned', () => {
     expect(t.saved()).toEqual([['ldl', 3.9, undefined]]);
   });
 });
+
+// Codex re-check of PR 1826: a winner retyped to its own rounded display is judged
+// on what Save sends (750 nmol/L, valid), not on the extraction (750.1, refused).
+describe('US-13 AC13: a winner is judged on the number Save would send', () => {
+  it('Lp(a) 750.1 cleared and retyped as 750, the 200 moved onto its day: 750 saves, 200 is named as another reading that day', () => {
+    const lpa = (valueSI: number, reportDate: string, fileName: string) =>
+      labs([{ metric: 'lpa', valueSI, displayValue: valueSI, displayUnit: 'nmol/L', confidence: 'high' }], { reportDate, fileName });
+    const t = review([lpa(750.1, '2025-01-10', 'a.pdf'), lpa(200, '2025-02-10', 'b.pdf')]);
+    fireEvent.click(t.showAll() ?? document.body);
+    const first = screen.getByLabelText(/^Lp\(a\) value from 10 Jan 2025/) as HTMLInputElement;
+    fireEvent.change(first, { target: { value: '' } });
+    fireEvent.change(first, { target: { value: '750' } });
+    const pickers = screen.getAllByLabelText('Choose column date') as HTMLInputElement[];
+    fireEvent.change(pickers[1], { target: { value: '2025-01-10' } });
+    fireEvent.click(screen.getByRole('button', { name: '1 value not saved' }));
+    expect(screen.getByRole('list', { name: 'Values not saved' }).textContent).toBe('Lp(a): another reading of this test is on the same day');
+    fireEvent.click(t.save()!);
+    expect(t.saved()).toEqual([['lpa', 750, 'lab_import_edited']]);
+  });
+});
