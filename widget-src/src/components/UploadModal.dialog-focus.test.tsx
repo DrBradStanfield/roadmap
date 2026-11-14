@@ -12,6 +12,7 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { UploadModal } from './UploadModal';
 import { SettingsSheet } from './SettingsSheet';
 import { getDocumentArchiveMode } from '../lib/roadmap-data';
+import { checkLabImportQuota } from '../lib/upload-api';
 
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn(), labImportBatch: vi.fn(), pollBatchStatus: vi.fn() }));
 vi.mock('../lib/roadmap-data', () => ({ getDocumentArchiveMode: vi.fn(() => 'cloud'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
@@ -22,10 +23,10 @@ vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 const history = { measurements: [], labValues: [], documents: [] };
 
 /** The page: an opener button and the modal, shown and hidden as HealthTool does. */
-function Page({ startOpen = false, mounted = true }: { startOpen?: boolean; mounted?: boolean }) {
+function Page({ startOpen = false, mounted = true, withOpener = true }: { startOpen?: boolean; mounted?: boolean; withOpener?: boolean }) {
   const [open, setOpen] = useState(startOpen);
   return <>
-    <button type="button" onClick={() => setOpen(true)}>Upload lab results</button>
+    {withOpener && <button type="button" onClick={() => setOpen(true)}>Upload lab results</button>}
     <button type="button">Somewhere else</button>
     {mounted && <UploadModal open={open} onOpen={() => setOpen(true)} onClose={() => setOpen(false)} onComplete={() => {}} unitSystem="si" grading={{}} history={history} />}
   </>;
@@ -127,6 +128,37 @@ describe('US-12 AC4a: the upload window is a dialog', () => {
     elsewhere.focus();
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(document.activeElement).toBe(elsewhere);
+  });
+
+  it('a window reopened from the floating indicator gives the focus back to the indicator shown on hiding it', async () => {
+    vi.mocked(checkLabImportQuota).mockReturnValue(new Promise(() => {}) as never); // the file is still being read
+    render(<Page />);
+    const opener = openFromButton();
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    await act(async () => { fireEvent.change(input, { target: { files: [new File(['synthetic'], 'synthetic.pdf', { type: 'application/pdf' })] } }); });
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(document.activeElement).toBe(opener);
+    const indicator = document.querySelector<HTMLElement>('.floating-upload-indicator')!;
+    indicator.focus();
+    fireEvent.keyDown(indicator, { key: 'Enter' }); // the indicator leaves the page as the window shows
+    expect(document.activeElement).toBe(title());
+    fireEvent.keyDown(document, { key: 'Escape' });
+    const shown = document.querySelector('.floating-upload-indicator');
+    expect(shown).not.toBeNull();
+    expect(document.activeElement).toBe(shown);
+  });
+
+  it('an opener that left the page while the window was open: hiding gives the focus to the floating indicator', async () => {
+    vi.mocked(checkLabImportQuota).mockReturnValue(new Promise(() => {}) as never);
+    const { rerender } = render(<Page />);
+    openFromButton();
+    act(() => { rerender(<Page withOpener={false} />); });
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    await act(async () => { fireEvent.change(input, { target: { files: [new File(['synthetic'], 'synthetic.pdf', { type: 'application/pdf' })] } }); });
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    const shown = document.querySelector('.floating-upload-indicator');
+    expect(shown).not.toBeNull();
+    expect(document.activeElement).toBe(shown);
   });
 
   it('a window removed while open (an erase mounts a new one) gives the focus back', () => {
