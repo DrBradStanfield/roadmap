@@ -239,6 +239,19 @@ describe('US-13 AC13 / US-52 AC8: the review leads with a summary and rows only 
     expect(g).toMatchObject({ saveRefs: ['v0'], save: 'Save 1 value' });
   });
 
+  // US-21 AC28: the iPhone review's own door saves a white-cell % as its share, beside the count.
+  it('US-21 AC28: neutrophils and immature granulocytes in % are saved, none refused', () => {
+    const x = lab([], [{ name: 'neutrophils', value: 60, unit: '%' }, { name: 'immature_granulocytes', value: 0.4, unit: '%' }, { name: 'neutrophils', value: 3.1, unit: '×10⁹/L' }]);
+    const g = groupsOf(x, ['a0', 'a1', 'a2']);
+    expect(g.saveRefs).toEqual(['a0', 'a1', 'a2']);
+    expect(g.notSaved).toBeNull();
+    const out = applyEdit(record(), { kind: 'labImport', extractionJson: JSON.stringify(x), refs: ['a0', 'a1', 'a2'], reportDay: '2026-10-01' }, NOW);
+    if (!out.ok) throw new Error(out.message);
+    expect(out.file.labValues.filter((l) => !l.core).map((l) => [l.metricName, l.unit]).sort()).toEqual([
+      ['immature_granulocytes_pct', '%'], ['neutrophils', '×10⁹/L'], ['neutrophils_pct', '%'],
+    ]);
+  });
+
   it('nothing to save: the summary and the not-saved line in the person\'s words, no key and no assistant text', () => {
     // A unit the test does not take (a % is stored since US-21 AC28, so mg/L stands in).
     const x = lab([], [{ name: 'Ferritin', value: 85, unit: 'furlongs' }, { name: 'immature_granulocytes', value: 0.4, unit: 'mg/L' }],

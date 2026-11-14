@@ -235,12 +235,13 @@ final class AppChatLabTests: XCTestCase {
     /// written for assistants (US-52 AC8, H400). Fails if a key reached the screen.
     func testNotSavedNamesNoKey_US13_AC13() throws {
         let engine = try HealthEngine()
-        let percent = #"""
+        // Units neither test takes: a white-cell % is stored as its own test since US-21 AC28.
+        let refused = #"""
         {"classification":"lab_report","reportDate":"2026-10-01","values":[],
-         "additionalValues":[{"name":"neutrophils","value":60,"unit":"%"},{"name":"immature_granulocytes","value":0.4,"unit":"%"}]}
+         "additionalValues":[{"name":"rdw_sd","value":42,"unit":"mg/L"},{"name":"immature_granulocytes","value":0.4,"unit":"mg/L"}]}
         """#
         let groups = try XCTUnwrap(engine.blocking { [now] in
-            try $0.labReviewGroups(recordJSON: "", extractionJSON: percent, ticked: ["a0", "a1"], reportDay: "2026-10-01", now: now, deviceId: "test") })
+            try $0.labReviewGroups(recordJSON: "", extractionJSON: refused, ticked: ["a0", "a1"], reportDay: "2026-10-01", now: now, deviceId: "test") })
         let lines = try XCTUnwrap(groups.notSaved?.lines)
         XCTAssertFalse(lines.isEmpty)
         for line in lines + [groups.notSaved?.title ?? "", groups.summary] {
