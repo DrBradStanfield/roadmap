@@ -17,9 +17,18 @@ extension MyDataView {
             .font(.title3)
             // The buttons go under the title when both do not fit: beside them at the largest
             // sizes, the title broke mid-word ("heal th", TextSizeLayoutTests, US-25 AC26).
-            ViewThatFits(in: .horizontal) {
-                HStack(spacing: 14) { title.fixedSize(); Spacer(); buttons }
-                VStack(alignment: .leading, spacing: 8) { title; buttons }
+            VStack(alignment: .leading, spacing: 2) {
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 14) { title.fixedSize(); Spacer(); buttons }
+                    VStack(alignment: .leading, spacing: 8) { title; buttons }
+                }
+                // App Review 1.4.1 (US-73 AC13): one line on an SE at the default size, shrunk a
+                // little rather than cut; it wraps at larger sizes. The foot's disclaimer stays.
+                Text(EducationNote.myHealth)
+                    .font(.footnote)
+                    .foregroundStyle(Color.status(nil))
+                    .lineLimit(typeSize <= .large ? 1 : nil)
+                    .minimumScaleFactor(0.85)
             }
             .listRowBackground(Color.clear)
             .listRowInsets(EdgeInsets(top: 8, leading: 4, bottom: 0, trailing: 4))
