@@ -11,6 +11,16 @@ extension HealthEngine {
         return try JSONDecoder().decode(LabReview.self, from: Data(json.utf8))
     }
 
+    /// The review's groups for the refs ticked now and the test day (US-13 AC13), against the
+    /// record as the save reads it. The one call to the engine's grouping: nil from an engine
+    /// without the door, and the review lists every value as a row.
+    func labReviewGroups(recordJSON: String, extractionJSON: String, ticked: Set<String>, reportDay: String, now: Date, deviceId: String) throws -> LabReviewGroups? {
+        let refsJSON = String(decoding: try JSONEncoder().encode(ticked.sorted()), as: UTF8.self)
+        guard let json = try doorLabReviewGroupsJson(recordJson: recordJSON, extractionJson: extractionJSON, refsJson: refsJSON,
+                                                     reportDay: reportDay, nowIso: now.formatted(Self.iso), deviceId: deviceId) else { return nil }
+        return try JSONDecoder().decode(LabReviewGroups.self, from: Data(json.utf8))
+    }
+
     /// Each file read, named as health-core stores a `sourceFileName` (the document dedup
     /// key, AC13d): a ZIP member by the web's zipMemberName, any other file on one line and
     /// cut to its cap. One engine call per read; on a failure the names stay as read.

@@ -110,7 +110,28 @@ final class LabSaveAllTests: XCTestCase {
         let outcome = try await LabReportSave.saveWaiting(result, held: nil, engine: engine, store: store).get()
         XCTAssertEqual(outcome.values, 1, "ferritin saved")
         XCTAssertEqual(outcome.notes.count, 1)
+        XCTAssertEqual(outcome.notes.count, 1)
         XCTAssertTrue(outcome.notes.first?.hasPrefix("Glucose: ") == true, "the refused value is named with the engine's reason: \(outcome.notes)")
+    }
+
+    /// A core value outside its range is never written and is named in save all's notes, with
+    /// a sure value beside it and alone (US-52 AC8b; the import review must not hide it).
+    func testAnOutOfRangeValueIsNamedInSaveAllsNotes_US52_AC8b() async throws {
+        let engine = try HealthEngine()
+        let store = try RecordStore(folder: folder, engine: engine, deviceId: "test")
+        let ldl = #"{"metric":"ldl","valueSI":500,"displayValue":500,"displayUnit":"mmol/L","displaySystem":"si","confidence":"high"}"#
+        let both = #"{"classification":"lab_report","reportDate":"2026-10-01","values":["# + ldl + #"],"additionalValues":[{"name":"Ferritin","value":85,"unit":"µg/L"}]}"#
+        let outcome = try await LabReportSave.saveWaiting(LabResult(name: "Both.pdf", truncated: false, extractionJSON: both, failure: nil),
+                                                          held: nil, engine: engine, store: store).get()
+        XCTAssertEqual(outcome.values, 1, "ferritin saved")
+        XCTAssertEqual(outcome.notes.count, 1)
+        XCTAssertTrue(outcome.notes.first?.contains("LDL") == true, "the out-of-range LDL is named: \(outcome.notes)")
+
+        let alone = #"{"classification":"lab_report","reportDate":"2026-10-01","values":["# + ldl + #"],"additionalValues":[]}"#
+        let none = try await LabReportSave.saveWaiting(LabResult(name: "Alone.pdf", truncated: false, extractionJSON: alone, failure: nil),
+                                                       held: nil, engine: engine, store: store).get()
+        XCTAssertEqual(none.values, 0)
+        XCTAssertEqual(none.notes, outcome.notes, "alone, the same line says why nothing was saved")
     }
 
     /// What the extraction itself left out (a test the server refused, one it named but could
@@ -126,7 +147,8 @@ final class LabSaveAllTests: XCTestCase {
          "values":[{"metric":"ldl","valueSI":3.1,"displayValue":3.1,"displayUnit":"mmol/L","displaySystem":"si","confidence":"high"}],
          "additionalValues":[], \(omissions)}
         """
-        let notes = ["Widget Marker: Unit not recognised.", "Gadget Marker: could not be read", "2 values could not be read."]
+        // The review's own not-saved lines (US-13 AC13), never the server's reason text.
+        let notes = ["Widget Marker: no unit was printed", "Gadget Marker: could not be read", "2 other values could not be read"]
         let saved = try await LabReportSave.saveWaiting(LabResult(name: "Partly.pdf", truncated: false, extractionJSON: partly, failure: nil),
                                                         held: nil, engine: engine, store: store).get()
         XCTAssertEqual(saved, .saved(values: 1, documents: 0, notes: notes))

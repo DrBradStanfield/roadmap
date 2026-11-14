@@ -17,7 +17,7 @@ import { copyCloudDown, liftDeviceCopy } from '../../packages/health-core/src/re
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { eraseFailure, failed, PhoneCloudAdapter, PhoneFileAdapter, type CloudNatives, type Provider } from './cloud-adapters';
 import { eraseChatText } from './app-doors';
-import { labRows, labSaveSummary, type Extraction } from './lab-review';
+import { labRows, type Extraction } from './lab-review';
 import { movedBloodTests, parseEdit, type Edit } from './my-data';
 import { guardedEdit, refuse, type EditTarget, type Refusal } from './guarded-edit';
 import { checkArgs } from './contract';
@@ -246,9 +246,9 @@ export function cloudLabImport(extractionJson: string, refsJson: string, reportD
   const at = open;
   if (!at) return JSON.stringify(refuse('not-open', NOT_OPEN));
   const refs = JSON.parse(refsJson) as string[];
-  const rows = labRows(JSON.parse(extractionJson) as Extraction, refs, reportDay, nowIso);
+  const rows = labRows(JSON.parse(extractionJson) as Extraction, refs, reportDay, nowIso, at.session.file);
   if (!rows.ok) return JSON.stringify(rows);
-  const summary = labSaveSummary(at.session.file, rows.rows, nowIso);
+  const summary = rows.summary;
   const outcome = editSession({ kind: 'labImport', extractionJson, refs, reportDay }, erase, shownUnits, nowIso, unitsJson);
   return JSON.stringify(outcome.ok ? { ...outcome, summary } : outcome);
 }

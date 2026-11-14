@@ -33,6 +33,12 @@ struct LabReviewView: View {
     @State private var saved: LabReportSave?
     /// Why the review could not be read.
     @State private var problem: String?
+    /// The engine's groups for the ticks and day held now (US-13 AC13); nil before the first
+    /// answer, or from an engine without them (every value is then a row).
+    @State private var groups: LabReviewGroups?
+    /// Plain view toggles: the sure values shown, the not-saved detail open.
+    @State private var showAll = false
+    @State private var notSavedOpen = false
 
     /// What was saved, in the review's words; nil until a save wrote something.
     private var outcome: String? { saved?.outcome }
@@ -59,11 +65,12 @@ struct LabReviewView: View {
             if let problem = problem ?? saved?.problem { Section { Text(problem).foregroundStyle(.red) } }
             if let outcome { Section("Saved") { Text(outcome) } }
             Section {
-                if outcome == nil, let review, review.isLabReport, result.failure == nil {
-                    let count = choices.wrappedValue.ticked.count
-                    Button("Save \(count) value\(count == 1 ? "" : "s")") { Task { await save() } }
+                // Nothing to save (every value held or not saved): no Save, only the leave button (D3),
+                // unless the report's original still waits to be kept in the cloud (AC13d).
+                if outcome == nil, let review, review.isLabReport, result.failure == nil, groups == nil || groups?.save != nil || result.original != nil {
+                    Button(groups.map { $0.save ?? "Save the original" } ?? "Save") { Task { await save() } }
                         .fontWeight(.semibold)
-                        .disabled(saving || choices.wrappedValue.valuesWait(review) != nil)
+                        .disabled(saving || choices.wrappedValue.valuesWait(review) != nil || (groups?.saveRefs.isEmpty == true && result.original == nil))
                 }
                 if outcome == nil, review?.document != nil, result.failure == nil {
                     Button(choices.wrappedValue.keepDocument || !archiveOnly ? "Save the document" : "Save the original") { Task { await save() } }
@@ -72,7 +79,7 @@ struct LabReviewView: View {
                 }
                 // Held while a save runs: leaving would drop its outcome, and a second save
                 // of the same file could start before this one has committed.
-                Button(leaveTitle ?? (outcome == nil ? "Skip" : (position.0 < position.1 ? "Next report" : "Done"))) { onDone(saved?.reportOutcome(review)) }
+                Button(leaveTitle ?? (outcome == nil ? "Skip" : (position.0 < position.1 ? "Next report" : "Done"))) { onDone(saved?.reportOutcome(groups, review: review)) }
                     .disabled(saving)
             }
             // Its own group under this report's Save: it acts on every waiting report, not this one.
@@ -89,6 +96,9 @@ struct LabReviewView: View {
         // erase that arrives meanwhile refuses the save (the sheets' rule, US-25 AC11).
         .onAppear { store.pinScreen() }
         .task { await load() }
+        // Asked again whenever a tick or the test day changes, and once the review has loaded
+        // (a report reopened from save all holds its ticks before its review is read).
+        .task(id: review == nil ? nil : held) { await regroup() }
         .onDisappear { store.unpinScreen() }
     }
 
@@ -107,42 +117,111 @@ struct LabReviewView: View {
             Section { Text("No blood test values or document were found in this file.") }
         } else {
             Section {
+                // The summary leads (US-13 AC13).
+                if let summary = groups?.summary { Text(summary).font(.headline) }
                 DatePicker("Day of the test", selection: choices.testDay, in: ...Date.now, displayedComponents: .date)
                 if review.reportDay == nil {
                     Text("The report does not print a full date. Set the day of the test.").font(.footnote).foregroundStyle(Color.status("attention"))
                     Toggle("This is the right day", isOn: choices.dayConfirmed)
                 }
+                // Values with no day yet wait here, behind the date question; never "will be saved".
+                if let groups { ForEach(groups.rows("waiting", of: review)) { valueRow($0) } }
             }
-            Section("Values found") {
-                ForEach(review.items) { item in
-                    Toggle(isOn: binding(item.ref)) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(item.label)
-                            Text("\(item.value) \(item.unit)").font(.body.monospacedDigit())
-                            if let day = item.day { Text("Dated \(DayText.short(day)) on the report").font(.caption).foregroundStyle(.secondary) }
-                            if let question = item.question {
-                                // The status tone, not system orange: AA contrast as caption text, light and dark.
-                                Text("\(question) Tick it only if so.").font(.caption).foregroundStyle(Color.status("attention"))
-                            } else if item.check {
-                                Text("Check this value and its unit against the report").font(.caption).foregroundStyle(Color.status("attention"))
-                            }
-                        }
-                    }
-                }
-            }
-            let omitted = LabReportSave.omissions(review)
-            if !omitted.isEmpty {
-                Section("Not saved") {
-                    ForEach(Array(omitted.enumerated()), id: \.offset) { Text($0.element) }
+            if let groups {
+                groupedSections(review, groups)
+            } else {
+                // An engine without the groups: every value is a row, and its "Not saved" list, as before.
+                Section { ForEach(review.items) { valueRow($0) } }
+                let legacy = review.legacyNotSaved
+                if !legacy.isEmpty {
+                    Section("Not saved") { ForEach(Array(legacy.enumerated()), id: \.offset) { Text($0.element) } }
                 }
             }
         }
+    }
+
+    /// Rows only for the values the engine is unsure of; the sure ones behind Show all; the
+    /// held count; what will not be saved, behind one line (US-13 AC13, D3, D5).
+    @ViewBuilder
+    private func groupedSections(_ review: LabReview, _ groups: LabReviewGroups) -> some View {
+        if let check = groups.check {
+            Section {
+                ForEach(groups.rows("unsure", of: review)) { item in
+                    if let conflict = groups.conflict(item.ref) {
+                        // The saved value stays (Q2a): no toggle, it is never written.
+                        valueText(item, note: conflict)
+                    } else {
+                        // A value outside its range says why the save will refuse it.
+                        valueRow(item, note: groups.refusal(item.ref))
+                    }
+                }
+            } header: {
+                Text(check.title)
+            } footer: {
+                Text(check.footer)
+            }
+        }
+        if groups.sure != nil || groups.alreadySaved != nil {
+            Section {
+                if let sure = groups.sure {
+                    Text(sure.willSave)
+                    if showAll { ForEach(groups.rows("sure", of: review)) { valueRow($0) } }
+                    Button(showAll ? sure.hide : sure.showAll) {
+                        if !showAll { analytics?.event(.labReviewShowAll) }
+                        withAnimation { showAll.toggle() }
+                    }
+                }
+                if let alreadySaved = groups.alreadySaved { Text(alreadySaved).foregroundStyle(.secondary) }
+            }
+        }
+        if let notSaved = groups.notSaved {
+            Section {
+                DisclosureGroup(isExpanded: notSavedBinding) {
+                    ForEach(Array(notSaved.lines.enumerated()), id: \.offset) { Text($0.element).font(.footnote) }
+                    Text(notSaved.footer).font(.footnote).foregroundStyle(.secondary)
+                } label: {
+                    Text(notSaved.title)
+                }
+            }
+        }
+    }
+
+    /// One value with its tick (today's row): unticking it keeps it out of the save.
+    private func valueRow(_ item: LabReview.Item, note: String? = nil) -> some View {
+        Toggle(isOn: binding(item.ref)) { valueText(item, note: note) }
+            .disabled(saving)
+    }
+
+    @ViewBuilder
+    private func valueText(_ item: LabReview.Item, note: String?) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(item.label)
+            Text("\(item.value) \(item.unit)").font(.body.monospacedDigit())
+            if let day = item.day { Text("Dated \(DayText.short(day)) on the report").font(.caption).foregroundStyle(.secondary) }
+            // The status tone, not system orange: AA contrast as caption text, light and dark.
+            if let note {
+                Text(note).font(.caption).foregroundStyle(Color.status("attention"))
+            } else if let question = item.question {
+                Text("\(question) Tick it only if so.").font(.caption).foregroundStyle(Color.status("attention"))
+            } else if item.check {
+                Text("Check this value and its unit against the report").font(.caption).foregroundStyle(Color.status("attention"))
+            }
+        }
+    }
+
+    private var notSavedBinding: Binding<Bool> {
+        Binding(get: { notSavedOpen }, set: { open in
+            if open && !notSavedOpen { analytics?.event(.labReviewNotSavedOpened) }
+            notSavedOpen = open
+        })
     }
 
     /// The web's document card: the keep tick, an editable title and date, the kind as a
     /// read-only badge, and the first 300 characters of the text.
     @ViewBuilder
     private func documentCard(_ document: LabReview.Document) -> some View {
+        // The shared summary line leads, as on a lab report ("Found 1 clinic letter").
+        if let summary = groups?.summary { Section { Text(summary).font(.headline) } }
         Section {
             Toggle("Save this document", isOn: choices.keepDocument)
             if document.alreadySaved {
@@ -179,7 +258,24 @@ struct LabReviewView: View {
 
     private func binding(_ ref: String) -> Binding<Bool> {
         Binding(get: { choices.wrappedValue.ticked.contains(ref) },
-                set: { on in if on { choices.wrappedValue.ticked.insert(ref) } else { choices.wrappedValue.ticked.remove(ref) } })
+                set: { on in
+                    if on { choices.wrappedValue.ticked.insert(ref) } else {
+                        analytics?.event(.labReviewUntick)
+                        choices.wrappedValue.ticked.remove(ref)
+                    }
+                })
+    }
+
+    /// Asks the engine for the groups of the ticks and day held now: a lab report's rows, and
+    /// for a letter or other document the shared summary line above its card.
+    private func regroup() async {
+        guard let review, review.isLabReport || review.document != nil, result.failure == nil, let held else { return }
+        // A failed answer keeps the groups shown; a newer tick may have asked again meanwhile,
+        // so only the answer for what is held now is kept.
+        do {
+            let asked = try await LabReportSave.groups(result, review: review, choices: held, engine: engine, store: store)
+            if !Task.isCancelled, held == self.held { groups = asked }
+        } catch {}
     }
 
     private func load() async {
@@ -198,12 +294,23 @@ struct LabReviewView: View {
     /// The report's own Save: its values (then its original) or its document.
     private func save() async {
         guard !saving else { return }
-        let plan = LabSavePlan(result: result, review: review, choices: choices.wrappedValue, archiveOnly: archiveOnly)
-        if case .nothing = plan { return }
+        problem = nil
         saving = true
         defer { saving = false }
+        // Asked for the ticks held at the tap, so a tick a moment before Save is never lost.
+        let picked = choices.wrappedValue
+        var fresh: LabReviewGroups?
+        if let review, review.isLabReport {
+            // An engine that cannot answer for these ticks saves nothing on an older answer.
+            do { fresh = try await LabReportSave.groups(result, review: review, choices: picked, engine: engine, store: store) } catch {
+                problem = "These values could not be saved."
+                return
+            }
+        }
+        let plan = LabSavePlan(result: result, review: review, choices: picked, archiveOnly: archiveOnly)
+        if case .nothing = plan { return }
         // AC8b's usage signal: once per Save on an upload save all could take, nothing with it.
         if let event = Analytics.Event.saveOne(inUploadOf: position.1) { analytics?.event(event) }
-        saved = await LabReportSave.run(plan, result: result, store: store)
+        saved = await LabReportSave.run(plan, result: result, store: store, groups: fresh)
     }
 }

@@ -384,6 +384,12 @@ export const DOORS = {
     args: [['request', text]],
     returns: "Shared upload PR 3 (US-52 AC7): the upload's verdicts for one pick, by health-core upload-rules (fileVerdict, zipMemberVerdict, UPLOAD_LIMITS.phone), as JSON {limits: {fileBytes, zipBytes, filesPerPick, zipMembers, pdfPages, textPageChars, folderBytes, photoPx}, files: [verdict], zipMembers: [verdict]} for request {files: [{name, bytes}], zipMembers: [path]}, in order; each verdict \"keep\", \"tooLarge\", \"unsupported\" or \"hidden\". An engine before it has no such door: the app reads that as unavailable (optionalCall answers nil) and keeps LabFileReader's Swift rules, which answer the same today (lead U14: delete them once the engine floor guarantees the door).",
   },
+  labReviewGroupsJson: {
+    kind: 'sync',
+    optionalDoor: true,
+    args: [['recordJson', text], ['extractionJson', text], ['refsJson', text], ['reportDay', text], ['nowIso', text], ['deviceId', text]],
+    returns: "US-13 AC13, US-52 AC8: one lab report's import review for the refs ticked now (refsJson, a JSON array of labReviewJson item refs) and the test day (reportDay, YYYY-MM-DD, or \"\" while none is set: values with no day of their own are then \"waiting\", never sent; a value with its own day keeps it), by health-core import-review.ts against the record read raw: JSON {summary, items: [{ref, group (\"sure\", \"unsure\", \"saved\", \"notSaved\" or \"waiting\"), reasons? (unsure only), conflict? (the words for a different value already held that day), refusal? (the save's own refusal line for a value outside its range)}], omitted (the extraction's own refused and unread rows as lines), check: {title, footer} | null, sure: {willSave, showAll, hide} | null, alreadySaved: string | null, notSaved: {title, lines, footer} | null, saveRefs (the ticked refs Save sends, in the order it must send them), save (the Save button's words, or null when no value could be written: no Save)}. Every word is health-core's; the app asks again when a tick or the day changes. An engine before it has no such door: the app reads that as no groups (optionalCall answers nil) and lists every value as a row, never a crash.",
+  },
   cloudOnline: {
     kind: 'sync',
     optionalDoor: true,
