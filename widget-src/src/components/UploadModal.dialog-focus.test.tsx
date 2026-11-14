@@ -42,7 +42,7 @@ function openFromButton() {
 const title = () => screen.getByRole('heading', { name: 'Upload Health Records' });
 
 beforeEach(() => { vi.mocked(getDocumentArchiveMode).mockReturnValue('cloud'); });
-afterEach(() => { cleanup(); vi.clearAllMocks(); });
+afterEach(() => { cleanup(); vi.clearAllMocks(); delete (window as { HealthUpload?: unknown }).HealthUpload; });
 
 describe('US-12 AC4a: the upload window is a dialog', () => {
   it('is a modal dialog named by its title', () => {
@@ -159,6 +159,26 @@ describe('US-12 AC4a: the upload window is a dialog', () => {
     const shown = document.querySelector('.floating-upload-indicator');
     expect(shown).not.toBeNull();
     expect(document.activeElement).toBe(shown);
+  });
+
+  it('a failed read reopened from the floating indicator, then Close: the session ends, no indicator shows, the focus is not moved', async () => {
+    let fail!: (error: Error) => void;
+    vi.mocked(checkLabImportQuota).mockResolvedValue({ allowed: true, remaining: 60 } as never);
+    Object.assign(window, { HealthUpload: { extractFromPdf: () => new Promise((_, no) => { fail = no; }), isPdf: () => true, isZip: () => false, isImage: () => false } });
+    render(<Page />);
+    openFromButton();
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    await act(async () => { fireEvent.change(input, { target: { files: [new File(['synthetic'], 'synthetic.pdf', { type: 'application/pdf' })] } }); });
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    await act(async () => { fail(new Error('synthetic unreadable file')); });
+    const indicator = await screen.findByRole('button', { name: /Upload needs attention/ });
+    indicator.focus();
+    fireEvent.keyDown(indicator, { key: 'Enter' });
+    const shownTitle = title();
+    expect(document.activeElement).toBe(shownTitle);
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    expect(document.querySelector('.floating-upload-indicator')).toBeNull();
+    expect(document.activeElement).toBe(shownTitle); // not moved: jsdom keeps it on the hidden title, a browser drops it to the body
   });
 
   it('a window removed while open (an erase mounts a new one) gives the focus back', () => {
