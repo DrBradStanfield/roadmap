@@ -691,8 +691,8 @@ export function fileResultsBundle(request: FileResultsSource, file: RoadmapFile,
       refuse(`printedName is the name as the report prints it, not the key ${row.metric}. Re-send with the printed name.`);
       continue;
     }
-    const printed = resolveName(printedName);
-    const claimed: ResolvedName = claimedIsCore ? { kind: 'core', metric: row.metric as MetricType } : resolveName(row.metric);
+    const printed = resolveName(labNameForUnit(printedName, unit)); // both names routed by unit (US-21 AC28)
+    const claimed: ResolvedName = claimedIsCore ? { kind: 'core', metric: row.metric as MetricType } : resolveName(labNameForUnit(row.metric, unit));
     if (claimed?.kind === 'core') {
       if (!printed) {
         refuse(`printed name ${printedName} is not a name this record knows for ${claimed.metric}. If the report really calls ${claimed.metric} that, tell the user and add it with add_measurement.`);

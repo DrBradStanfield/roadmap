@@ -175,7 +175,7 @@ describe('US-52 AC8: the lab review and the write', () => {
   });
 
   // US-52 AC8 (H400): a refused unit printed the raw key and the assistant's refusal
-  // ("immature_granulocytes: ... Do not work the count out from the percentage").
+  // ("immature_granulocytes: ..."). Since US-21 AC28 a % is stored, so this uses mg/L.
   it('US-52 AC8: a refused unit reads as the web\'s line, never the raw key or the assistant\'s words', () => {
     const percent = { ...extraction, additionalValues: [
       // A unit neither test takes (a differential in % is stored since US-21 AC28).

@@ -825,8 +825,8 @@ describe('US-21 phase 3 — every catalogued lab value is stored in SI', () => {
 });
 
 // ---------------------------------------------------------------------------
-// US-21 AC15 — a count per µL converts at every write door; a decimal one and
-// a differential in % are refused in words that say what to look for.
+// US-21 AC15 — a count per µL converts at every write door; a decimal one is
+// refused in words that say what to look for (a differential in % is stored, AC28).
 // ---------------------------------------------------------------------------
 describe('US-21 AC15 — cells/µL at the write doors', () => {
   it('US-21 AC15 — an append converts a whole count per µL, range and all', () => {

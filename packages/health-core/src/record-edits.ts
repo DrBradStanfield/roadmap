@@ -389,7 +389,7 @@ export type LabQuantity = { name: string; value: number; unit: string; comparato
  */
 export function sameLabQuantity(held: LabQuantity, offered: LabQuantity): boolean {
   const canonical = (q: LabQuantity) => {
-    const entry = resolveLabCatalogEntry(q.name);
+    const entry = resolveLabCatalogEntry(labNameForUnit(q.name, q.unit)); // a count's name in % is its share (US-21 AC28)
     return entry ? canonicalLabValue(entry, q.value, q.unit) : { value: q.value, unit: normalizeLabUnit(q.unit) };
   };
   const a = canonical(held);
@@ -456,8 +456,7 @@ export function placeMeasurement(
  */
 export function appendLabValue(file: RoadmapFile, request: AppendLabValueRequest): EditResult<FileLabValue> {
   const { value, now } = request;
-  // Resolved once: the entry decides both the slot key and the conversion; a
-  // count's name in % is its share's (US-21 AC28).
+  // Resolved once: the entry decides both the slot key and the conversion (a count's name in % is its share's, US-21 AC28).
   const entry = resolveLabCatalogEntry(labNameForUnit(request.metricName, request.unit));
   const metricName = entry?.key ?? foldName(request.metricName);
   if (!metricName) return reject('invalid-value', 'A lab value needs a test name');
@@ -540,8 +539,8 @@ export function addLabValue(file: RoadmapFile, request: AddLabValueRequest, now:
   const given = request.unit.trim();
   const name = labNameForUnit(request.metricName.trim(), given);
   if (!name) return { ok: false, reason: 'invalid-value', message: 'A lab value needs a test name.' };
-  // The flag is a series' own page: it never starts a series, so never a new vital-named or unit-less one.
-  const series = labSlotKey(name);
+  // The flag is a series' own page: never a new vital-named or unit-less series, but a count page whose old rows are in % adds under the share (US-21 AC28).
+  const series = labSlotKey(request.metricName.trim());
   if (request.existingSeries && !file.labValues.some((row) => isActive(row) && !isCoreRow(row) && labSlotKey(row.metricName) === series)) {
     return { ok: false, reason: 'not-found', message: 'There is no such lab test in your record.' };
   }
@@ -942,18 +941,16 @@ export function bulkAppendValues(file: RoadmapFile, rows: BulkRow[], now: string
     // (US-12 AC11); one the person typed is their blood value.
     const named = input.kind === 'lab' ? bloodTestKeyOf(input.metricName) : null;
     const asLab = input.kind === 'lab' && (!named || (named === 'creatinine' && input.source !== 'manual'));
-    // A count's name in % is filed under its share (US-21 AC28).
-    const labName = input.kind === 'lab' ? labNameForUnit(input.metricName, input.unit) : '';
-    const metric = input.kind === 'measurement' ? input.metricType : asLab ? labName : named!;
+    const metric = input.kind === 'measurement' ? input.metricType : asLab ? labNameForUnit(input.metricName, input.unit) : named!; // US-21 AC28
     if (input.kind === 'lab' && asLab) {
-      const entry = resolveLabCatalogEntry(labName);
+      const entry = resolveLabCatalogEntry(metric);
       const stored = toStoredLab(entry, input.value, input.unit, input.referenceLow, input.referenceHigh);
       if ('ok' in stored) {
-        refused.push({ key: entry?.key ?? foldName(labName), unit: input.unit, message: stored.message, ...(stored.fault ? { fault: stored.fault } : null), ...(stored.bound ? { bound: stored.bound } : null) });
+        refused.push({ key: entry?.key ?? foldName(metric), unit: input.unit, message: stored.message, ...(stored.fault ? { fault: stored.fault } : null), ...(stored.bound ? { bound: stored.bound } : null) });
         continue;
       }
       makeRow = (recordedAt, correctsId) => createLabValue({
-        id: newId(), metricName: labName, ...stored,
+        id: newId(), metricName: metric, ...stored,
         recordedAt, createdAt: now, source: input.source, correctsId, ...comparatorOf(input),
       });
     } else {

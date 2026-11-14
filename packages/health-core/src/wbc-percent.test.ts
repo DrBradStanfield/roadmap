@@ -13,9 +13,9 @@ import { createCoreRow } from './blood-tests';
 import { labSearch, parseUnifiedResult, toUnifiedResult } from './lab-extraction';
 import { MemoryAdapter, MemoryCloud } from './memory-adapter';
 import { addLabValues, OUTPUTS, runToolOverSync } from './mcp-tools';
-import { type ImportPayload, type ImportSurface } from './mcp-import';
+import { prepareImport, type ExtractedFile, type ImportPayload, type ImportSurface } from './mcp-import';
 import { computePlan } from './plan';
-import { addLabValue, appendLabValue, bulkAppendValues } from './record-edits';
+import { addLabValue, appendLabValue, bulkAppendValues, sameLabQuantity } from './record-edits';
 import { recordSync } from './roadmap-doc';
 import { createEmptyFile, createMeasurement, type RoadmapFile } from './roadmap-file';
 
@@ -49,6 +49,27 @@ function saveUpload(file: RoadmapFile, result: ReturnType<typeof extracted>) {
   return bulkAppendValues(file, result.additionalValues.map((v) => ({
     kind: 'lab' as const, metricName: v.name, value: v.value, unit: v.unit, recordedAt: `${DAY}T00:00:00.000Z`, source: 'lab_import' as const,
   })), NOW);
+}
+
+/** file_results over a memory cloud holding `file`: the call, and the cloud to read the record back from. */
+function fileResults(file: RoadmapFile) {
+  const cloud = new MemoryCloud();
+  cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(file), version: 1 });
+  const sync = recordSync(new MemoryAdapter(cloud), 'synthetic', NOW);
+  const pending = new Map<string, ImportPayload>();
+  const surface: ImportSurface = {
+    budgetMs: 10_000, maxCorrectionAgeDays: 90,
+    async extract() { return { route: 'dropbox', remaining: [], files: [] }; },
+    async stash(payload) { pending.set(payload.id, payload); return { receipt: payload.id, expiresAt: '2026-09-01T10:00:00Z' }; },
+    async open(commit) { return pending.get(commit.receipt) ?? { refusal: 'Unknown synthetic receipt.' }; },
+    async discard(payload) { pending.delete(payload.id); },
+  };
+  const call = async (args: unknown) => {
+    const out = await runToolOverSync(sync, 'file_results', args, NOW, { importer: surface, latestDay: TODAY });
+    expect(out.isError, out.text).toBe(false);
+    return OUTPUTS.file_results.parse(out.structured);
+  };
+  return { call, cloud };
 }
 
 const BOTH: Array<[string, number, string]> = [
@@ -141,22 +162,7 @@ describe('US-21 AC28 — the agent, CLI and typed doors accept a differential in
   });
 
   it('US-21 AC28 — file_results offers and files both lines of a differential', async () => {
-    const cloud = new MemoryCloud();
-    cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(base()), version: 1 });
-    const sync = recordSync(new MemoryAdapter(cloud), 'synthetic', NOW);
-    const pending = new Map<string, ImportPayload>();
-    const surface: ImportSurface = {
-      budgetMs: 10_000, maxCorrectionAgeDays: 90,
-      async extract() { return { route: 'dropbox', remaining: [], files: [] }; },
-      async stash(payload) { pending.set(payload.id, payload); return { receipt: payload.id, expiresAt: '2026-09-01T10:00:00Z' }; },
-      async open(commit) { return pending.get(commit.receipt) ?? { refusal: 'Unknown synthetic receipt.' }; },
-      async discard(payload) { pending.delete(payload.id); },
-    };
-    const call = async (args: unknown) => {
-      const out = await runToolOverSync(sync, 'file_results', args, NOW, { importer: surface, latestDay: TODAY });
-      expect(out.isError, out.text).toBe(false);
-      return OUTPUTS.file_results.parse(out.structured);
-    };
+    const { call, cloud } = fileResults(base());
     const read = await call({ sourceFileName: 'FBC.pdf', classification: 'lab_report', collectedOn: DAY, values: [
       { metric: 'Neutrophils', printedName: 'Neutrophils', value: 3.1, unit: '×10⁹/L' },
       { metric: 'Neutrophils', printedName: 'Neutrophils', value: 55, unit: '%' },
@@ -187,5 +193,67 @@ describe('US-21 AC28 — no suggestion reads a share', () => {
     const { labs: labsWith, generatedAt: _b, ...planWith } = computePlan(withShares, at);
     expect(planWith).toEqual(planWithout);
     expect(labsWith.length - labsWithout.length).toBe(8);
+  });
+});
+
+describe('US-21 AC28 — review round: the claimed key, re-imports and a legacy series', () => {
+  it('US-21 AC28 — file_results accepts the share key with the plain printed name, keeping the printed name', async () => {
+    const { call, cloud } = fileResults(base());
+    const read = await call({ sourceFileName: 'FBC.pdf', classification: 'lab_report', collectedOn: DAY, values: [
+      { metric: 'neutrophils_pct', printedName: 'Neutrophils', value: 55, unit: '%' },
+      { metric: 'nrbc_per_100_wbc', printedName: 'NRBC', value: 0.4, unit: '/100 WBC' },
+    ] });
+    expect(read.unrecognized).toEqual([]);
+    expect(read.candidates.map((c) => [c.metric, c.printedName])).toEqual([['neutrophils_pct', 'Neutrophils'], ['nrbc_per_100_wbc', 'NRBC']]);
+    await call({ commit: { receipt: read.receipt, accept: read.candidates.map((c) => c.id), replace: [], approval: 'yes, file them' } });
+    expect(labs(JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json) as RoadmapFile)).toEqual([['neutrophils_pct', 55, '%'], ['nrbc_per_100_wbc', 0.4, '/100 WBC']]);
+  });
+
+  it('US-21 AC28 — the same % is the same quantity under the count name or the share key; BUN keeps its factor', () => {
+    expect(sameLabQuantity({ name: 'neutrophils_pct', value: 55, unit: '%' }, { name: 'Neutrophils', value: 55, unit: '%' })).toBe(true);
+    expect(sameLabQuantity({ name: 'neutrophils_pct', value: 55, unit: '%' }, { name: 'Neutrophils', value: 56, unit: '%' })).toBe(false);
+    expect(sameLabQuantity({ name: 'urea', value: 5.355, unit: 'mmol/L' }, { name: 'BUN', value: 15, unit: 'mg/dL' })).toBe(true);
+  });
+
+  it('US-21 AC28 — a website upload, then file_results of the same %, is already recorded: no correction', async () => {
+    const uploaded = saveUpload(base(), extracted([['Neutrophils', 55, '%']])).file;
+    const { call, cloud } = fileResults(uploaded);
+    const read = await call({ sourceFileName: 'Again.pdf', classification: 'lab_report', collectedOn: DAY, values: [
+      { metric: 'Neutrophils', printedName: 'Neutrophils', value: 55, unit: '%' },
+    ] });
+    expect(read.candidates.map((c) => c.slot.state)).toEqual(['held_equal']);
+    const before = cloud.files.get(ROADMAP_FILE_NAME)!.json;
+    await call({ commit: { receipt: read.receipt, accept: [], replace: [], approval: 'no' } });
+    const after = JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json) as RoadmapFile;
+    expect(after.labValues.filter((l) => l.correctsId)).toEqual([]);
+    expect(labs(after)).toEqual(labs(JSON.parse(before) as RoadmapFile));
+  });
+
+  it('US-21 AC28 — import_documents of the same % over an uploaded one offers it as already recorded', () => {
+    const uploaded = saveUpload(base(), extracted([['Neutrophils', 55, '%'], ['Neutrophils', 3.1, '×10⁹/L']])).file;
+    const file: ExtractedFile = {
+      name: 'fbc.pdf', contentHash: 'sha256-fbc', mimeType: 'application/pdf', status: 'extracted',
+      result: { classification: 'lab_report', reportDate: DAY, values: [], unrecognized: [], document: null, additionalValues: [
+        { name: 'Neutrophils', value: 55, unit: '%', referenceLow: null, referenceHigh: null },
+        { name: 'Neutrophils', value: 3.1, unit: '×10⁹/L', referenceLow: null, referenceHigh: null },
+      ] },
+    };
+    const { payload } = prepareImport(uploaded, { route: 'dropbox', files: [file], remaining: [] }, { now: NOW, maxCorrectionAgeDays: 90, payloadId: 'p1', latestDay: TODAY });
+    expect(payload.candidates.map((c) => [c.metric, c.slot.state])).toEqual([['neutrophils_pct', 'held_equal'], ['neutrophils', 'held_equal']]);
+  });
+
+  it('US-21 AC28 — "+" on a count series whose old rows are in % adds under the share, starting that series', () => {
+    const legacy = base();
+    legacy.labValues.push({ id: 'old', metricName: 'Neutrophils', value: 54, unit: '%', referenceLow: null, referenceHigh: null,
+      recordedAt: '2026-06-01', createdAt: '2026-06-01T08:00:00Z', source: 'lab_import', status: 'active', correctsId: null });
+    const added = addLabValue(legacy, { metricName: 'Neutrophils', value: 56, unit: '%', day: TODAY, existingSeries: true }, NOW);
+    expect(added.ok && added.row).toMatchObject({ metricName: 'neutrophils_pct', value: 56, unit: '%' });
+    // The old row is left as it was: no migration.
+    expect((added as { file: RoadmapFile }).file.labValues.find((l) => l.id === 'old')).toMatchObject({ metricName: 'Neutrophils', unit: '%', status: 'active' });
+    // A count unit on that page still adds the count; a page with no such series still refuses.
+    const count = addLabValue(legacy, { metricName: 'Neutrophils', value: 3.1, unit: '×10⁹/L', day: TODAY, existingSeries: true }, NOW);
+    expect(count.ok && count.row).toMatchObject({ metricName: 'neutrophils', value: 3.1 });
+    expect(addLabValue(base(), { metricName: 'Neutrophils', value: 56, unit: '%', day: TODAY, existingSeries: true }, NOW))
+      .toMatchObject({ ok: false, reason: 'not-found' });
   });
 });

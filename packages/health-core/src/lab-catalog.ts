@@ -27,6 +27,7 @@
 
 import { METRIC_LABELS } from './mappings';
 import { rangeFault, UNIT_DEFS, type ValidationRange } from './units';
+import { shareEntries, shareRanges } from './lab-catalog-shares';
 
 export type LabGroupId =
   | 'renal'
@@ -196,17 +197,7 @@ export const LAB_CATALOG: LabCatalogEntry[] = [
   { key: 'immature_granulocytes', label: 'Immature granulocytes', group: 'haematology', unit: '×10⁹/L', aliases: ['immature granulocyte count', 'immature grans (abs)'], unitAliases: COUNT_ALIASES_9, conversions: COUNT_PER_UL },
   { key: 'reticulocytes', label: 'Reticulocytes', group: 'haematology', unit: '×10⁹/L', aliases: ['reticulocyte count', 'retic count', 'absolute reticulocyte count'], unitAliases: COUNT_ALIASES_9, conversions: { '×10¹²/l': 1000 }, ceiling: 2000 }, // 10¹² is a thousand 10⁹
   { key: 'nrbc', label: 'NRBC', group: 'haematology', unit: '×10⁹/L', aliases: ['nucleated red blood cells', 'nucleated rbc', 'nucleated red cells'], unitAliases: COUNT_ALIASES_9 },
-  // US-21 AC28 (Brad 2026-11-15): a share of the white or red cells is a test of its own, never
-  // worked out from a count. A row printed under the count's name in % is filed here (`shareOf`).
-  { key: 'neutrophils_pct', label: 'Neutrophils (%)', group: 'haematology', unit: '%', aliases: ['neutrophils %', 'neutrophil %', 'neut %', 'neutrophils percent'], shareOf: 'neutrophils' },
-  { key: 'lymphocytes_pct', label: 'Lymphocytes (%)', group: 'haematology', unit: '%', aliases: ['lymphocytes %', 'lymphocyte %', 'lymphs %', 'lymphocytes percent'], shareOf: 'lymphocytes' },
-  { key: 'monocytes_pct', label: 'Monocytes (%)', group: 'haematology', unit: '%', aliases: ['monocytes %', 'monocyte %', 'monocytes percent'], shareOf: 'monocytes' },
-  { key: 'eosinophils_pct', label: 'Eosinophils (%)', group: 'haematology', unit: '%', aliases: ['eosinophils %', 'eosinophil %', 'eos %', 'eosinophils percent'], shareOf: 'eosinophils' },
-  { key: 'basophils_pct', label: 'Basophils (%)', group: 'haematology', unit: '%', aliases: ['basophils %', 'basophil %', 'baso %', 'basophils percent'], shareOf: 'basophils' },
-  { key: 'immature_granulocytes_pct', label: 'Immature granulocytes (%)', group: 'haematology', unit: '%', aliases: ['immature granulocytes %', 'immature grans %'], shareOf: 'immature_granulocytes' },
-  { key: 'reticulocytes_pct', label: 'Reticulocytes (%)', group: 'haematology', unit: '%', aliases: ['reticulocytes %', 'reticulocyte %', 'retic %'], shareOf: 'reticulocytes' },
-  // NRBC per 100 white cells is the same number as NRBC in % of the white count.
-  { key: 'nrbc_per_100_wbc', label: 'NRBC (per 100 WBC)', group: 'haematology', unit: '/100 WBC', aliases: ['nrbc per 100 wbc', 'nrbc %', 'nrbc/100 wbc'], unitAliases: ['%'], shareOf: 'nrbc' },
+  ...shareEntries(), // US-21 AC28: a % of the white or red cells, its own test (lab-catalog-shares.ts)
   // D-dimer only in fibrinogen-equivalent units: a bare ng/mL is often D-dimer
   // units (DDU), about half the FEU number, so no spelling without FEU converts.
   { key: 'd_dimer', label: 'D-dimer', group: 'haematology', unit: 'mg/L FEU', aliases: [], unitAliases: ['mg/l (feu)', 'µg/ml feu', 'µg/ml (feu)'], conversions: { 'ng/ml feu': 0.001, 'ng/ml (feu)': 0.001, 'µg/l feu': 0.001, 'µg/l (feu)': 0.001 } }, // µg/mL is mg/L; ng/mL is µg/L, a thousandth of mg/L
@@ -354,15 +345,7 @@ export const LAB_PLAUSIBLE_RANGES: Readonly<Record<string, ValidationRange>> = {
   folate: { min: 0, max: 1000 }, // supplemented serum folate rarely passes 100 nmol/L
   ferritin: { min: 0, max: 500000 }, // haemophagocytic syndromes can pass 100,000 µg/L
   iron: { min: 0, max: 1000 }, // iron poisoning can pass 180 µmol/L (1,000 µg/dL)
-  // A share of the white or red cells (US-21 AC28, Brad 2026-11-15): 0 to 100.
-  neutrophils_pct: { min: 0, max: 100 },
-  lymphocytes_pct: { min: 0, max: 100 },
-  monocytes_pct: { min: 0, max: 100 },
-  eosinophils_pct: { min: 0, max: 100 },
-  basophils_pct: { min: 0, max: 100 },
-  immature_granulocytes_pct: { min: 0, max: 100 },
-  reticulocytes_pct: { min: 0, max: 100 },
-  nrbc_per_100_wbc: { min: 0, max: 100 },
+  ...shareRanges(), // US-21 AC28
 };
 
 /** The end of its plausible range a value passes once stored in its test's canonical unit (US-21
@@ -719,22 +702,7 @@ export function resolveLabCatalogEntry(reportedName: string): LabCatalogEntry | 
   return ENTRY_BY_NAME.get(foldName(reportedName)) ?? ENTRY_BY_LOOSE_NAME.get(looseFold(reportedName)) ?? undefined;
 }
 
-/** Each count → the test that is its share (US-21 AC28): `neutrophils` → `neutrophils_pct`. */
-const SHARE_OF_COUNT: ReadonlyMap<string, LabCatalogEntry> = new Map(LAB_CATALOG.flatMap((e) => (e.shareOf ? [[e.shareOf, e] as const] : [])));
-
-/**
- * The name a lab row is filed under, given its printed unit (US-21 AC28): a
- * name that resolves to a count ("Neutrophils"), printed in a unit its share
- * takes (%), is that share's key (`neutrophils_pct`); any other name comes back
- * as it came. Every door that takes a printed name and unit reads it first (the
- * upload's extraction, the connector's import, `appendLabValue`, `addLabValue`,
- * `bulkAppendValues`), so a report that prints both lines files both, each in
- * its own slot.
- */
-export function labNameForUnit(name: string, unit: string): string {
-  const share = SHARE_OF_COUNT.get(resolveLabCatalogEntry(name)?.key ?? '');
-  return share && factorOf(share, normalizeLabUnit(unit).toLowerCase()) !== undefined ? share.key : name;
-}
+export { labNameForUnit } from './lab-catalog-shares';
 
 
 /** A test's plain label wherever a person reads it: a core metric's, else

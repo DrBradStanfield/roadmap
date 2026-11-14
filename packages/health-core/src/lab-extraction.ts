@@ -939,8 +939,7 @@ export function toUnifiedResult(parsed: ReturnType<typeof parseUnifiedResult>, m
     } else if (free && PROMOTABLE.has(metric!) && reportedToCanonical(metric!, v.value, v.unit)) {
       promote();
     } else if (metric !== 'creatinine' || foldName(v.name) === 'cr' || !refusesCreatinine(v)) {
-      // "Neutrophils" in % is the share's row, so a report's count and % lines keep a slot each (US-21 AC28).
-      additionalValues.push({ ...v, name: labNameForUnit(v.name, v.unit) });
+      additionalValues.push({ ...v, name: labNameForUnit(v.name, v.unit) }); // a count's name in % is its share's (US-21 AC28)
     }
   }
   return {

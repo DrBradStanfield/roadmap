@@ -337,7 +337,8 @@ describe('US-21 AC14 — normalizeLabUnit folds gm/dL, Unit or Units, and cmm', 
   });
 
   it('US-21 AC14 — the spellings Brad has not ruled on stay refused', () => {
-    // cells/µL was on this list until AC15 ruled on it (its own block below).
+    // cells/µL was on this list until AC15 ruled on it (its own block below). The count
+    // entry still takes no %: since US-21 AC28 a count's name in % is filed under its share.
     expect(canonicalLabValue(entryOf('lymphocytes'), 30, '%')).toBeNull();
     expect(normalizeLabUnit('mInt-unit(s)/mL')).toBe('mInt-unit(s)/mL');
     expect(canonicalLabValue(entryOf('tsh'), 1.8, 'mInt-unit(s)/mL')).toBeNull();
@@ -393,8 +394,8 @@ describe('US-21 AC14 — normalizeLabUnit folds gm/dL, Unit or Units, and cmm', 
 // A count printed per microlitre converts at ×0.001 to ×10⁹/L (a microlitre is
 // 10⁻⁶ L), but only as a whole number: cells are counted, so a decimal means
 // the lab printed thousands under the wrong label. "cumm" folds to µL like
-// cmm. A differential in % stays refused, and its refusal says the record
-// keeps the absolute count.
+// cmm. A differential in % was refused here until US-21 AC28, which stores it
+// as its own test (`neutrophils_pct` and the rest).
 describe('US-21 AC15 — cells/µL, cumm, and a differential in %', () => {
   const entryOf = (name: string) => resolveLabCatalogEntry(name)!;
   const COUNTED = ['wbc', 'neutrophils', 'lymphocytes', 'monocytes', 'eosinophils', 'basophils', 'platelets'];
@@ -1069,7 +1070,7 @@ describe('US-21 AC19 — the audit\'s missing tests are catalogued, in SI', () =
     }
   });
 
-  it('US-21 AC19 — the AMH factor is the 140 kDa convention; reticulocytes take ×10⁹/L and ×10¹²/L, never %', () => {
+  it('US-21 AC19 — the AMH factor is the 140 kDa convention; reticulocytes take ×10⁹/L and ×10¹²/L; a % is reticulocytes_pct (AC28)', () => {
     expect(canonicalLabValue(entryOf('AMH'), 1, 'ng/mL')).toMatchObject({ factor: 7.14 });
     expect(canonicalLabValue(entryOf('Reticulocytes'), 50, '×10⁹/L')).toMatchObject({ value: 50, factor: 1 });
     expect(canonicalLabValue(entryOf('Reticulocytes'), 1.2, '%')).toBeNull();
@@ -1336,9 +1337,11 @@ describe('US-21 AC28 — a share of a count is stored as its own test', () => {
       const entry = LAB_CATALOG.find((e) => e.key === key)!;
       expect(entry, key).toMatchObject({ label, unit, group: 'haematology', shareOf: count });
       expect(entry.conversions, key).toBeUndefined();
-      expect(LAB_PLAUSIBLE_RANGES[key], key).toEqual({ min: 0, max: 100 });
-      expect(labPlausibleBound(entry, 100, entry.unit), key).toBeNull();
-      expect(labPlausibleBound(entry, 100.5, entry.unit), key).toBe('above');
+      // A share is 0 to 100; NRBC per 100 WBC is a ratio that passes 100 (reported up to 327), so 1000.
+      const max = key === 'nrbc_per_100_wbc' ? 1000 : 100;
+      expect(LAB_PLAUSIBLE_RANGES[key], key).toEqual({ min: 0, max });
+      expect(labPlausibleBound(entry, max, entry.unit), key).toBeNull();
+      expect(labPlausibleBound(entry, max + 0.5, entry.unit), key).toBe('above');
       expect(labPlausibleBound(entry, -1, entry.unit), key).toBe('below');
       // Its label and key resolve to it, never to the count.
       expect(resolveLabCatalogEntry(label)?.key, label).toBe(key);
