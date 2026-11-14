@@ -142,6 +142,9 @@ struct LabSaveSummary: Decodable, Equatable, Sendable {
     let saved: Int
     let skipped: Int
     let refused: [Refused]
+    /// Ticked values another reading of the same test that day displaced, in the review's
+    /// words (US-52 AC8b); absent from an older engine.
+    var sameDay: [String]? = nil
 }
 
 /// The engine's words for a save it refused.

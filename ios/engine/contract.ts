@@ -258,6 +258,8 @@ export const DOORS = {
     kind: 'sync',
     args: [['extractionJson', text], ['refsJson', text], ['reportDay', text], ['erase', text], ['shownUnits', text], ['nowIso', text], ['unitsJson', text]],
     returns: "cloudEdit's JSON outcome with the labSaveSummary taken in the same step (US-52 AC8)",
+    optionalAt: 6,
+    optionalReturns: "summary.sameDay (US-52 AC8b), as labSaveSummaryJson's. An engine before it sends none; an app before it ignores it.",
   },
   cloudOpen: {
     kind: 'promise',
@@ -308,6 +310,8 @@ export const DOORS = {
     kind: 'sync',
     args: [['recordJson', text], ['extractionJson', text], ['refsJson', text], ['reportDay', text], ['nowIso', text], ['deviceId', text]],
     returns: "summary JSON",
+    optionalAt: 5,
+    optionalReturns: "summary.sameDay (US-52 AC8b): the ticked values another reading of the same test that day displaced, as lines \"<labels>: another reading of this test is on the same day\" (health-core notSavedGroups); save all names them in its notes. An engine before it sends none, and the app names none; an app before it ignores it.",
   },
   mergeJson: {
     kind: 'sync',

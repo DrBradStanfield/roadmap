@@ -24,6 +24,12 @@
     },
     "cloudOpen": {
       "optionalReturns": "eraseEpoch (lead H200, US-25 AC16j): the record's own meta.eraseEpoch (0 when unset), beside record, erase and session in the view. The same view is the 'changed' news's payload and cloudErase's view, so both carry it too. The app holds a new session's first record undrawn when its eraseEpoch differs from the one the record shown was drawn at, even when it cannot draw it, so the pre-erase copy is never shown over another device's erase. An engine before it sends none, and the app holds only on its other evidence, as before; an app before it ignores the key."
+    },
+    "labSaveSummaryJson": {
+      "optionalReturns": "summary.sameDay (US-52 AC8b): the ticked values another reading of the same test that day displaced, as lines \"<labels>: another reading of this test is on the same day\" (health-core notSavedGroups); save all names them in its notes. An engine before it sends none, and the app names none; an app before it ignores it."
+    },
+    "cloudLabImport": {
+      "optionalReturns": "summary.sameDay (US-52 AC8b), as labSaveSummaryJson's. An engine before it sends none; an app before it ignores it."
     }
   },
   "optionalDoors": {

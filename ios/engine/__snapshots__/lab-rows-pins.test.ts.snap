@@ -19,15 +19,15 @@ exports[`US-52 AC8 pins — labRows, labImport and labSaveSummaryJson answer as 
 ]
 `;
 
-exports[`US-52 AC8 pins — labRows, labImport and labSaveSummaryJson answer as today > labRows: each ticked value on its own day or the report day 1`] = `"{"ok":true,"rows":[{"kind":"measurement","metricType":"ldl","value":3.1,"recordedAt":"2026-10-01","source":"lab_import"},{"kind":"lab","metricName":"Ferritin","value":85,"unit":"µg/L","referenceLow":30,"referenceHigh":300,"recordedAt":"2026-10-01","source":"lab_import"},{"kind":"measurement","metricType":"hba1c","value":40,"recordedAt":"2025-04-02","source":"lab_import"},{"kind":"lab","metricName":"Sodium","value":140,"unit":"mmol/L","referenceLow":null,"referenceHigh":null,"recordedAt":"2025-04-02","source":"lab_import"}],"summary":{"saved":4,"skipped":0,"refused":[]}}"`;
+exports[`US-52 AC8 pins — labRows, labImport and labSaveSummaryJson answer as today > labRows: each ticked value on its own day or the report day 1`] = `"{"ok":true,"rows":[{"kind":"measurement","metricType":"ldl","value":3.1,"recordedAt":"2026-10-01","source":"lab_import"},{"kind":"lab","metricName":"Ferritin","value":85,"unit":"µg/L","referenceLow":30,"referenceHigh":300,"recordedAt":"2026-10-01","source":"lab_import"},{"kind":"measurement","metricType":"hba1c","value":40,"recordedAt":"2025-04-02","source":"lab_import"},{"kind":"lab","metricName":"Sodium","value":140,"unit":"mmol/L","referenceLow":null,"referenceHigh":null,"recordedAt":"2025-04-02","source":"lab_import"}],"summary":{"saved":4,"skipped":0,"refused":[],"sameDay":[]}}"`;
 
 exports[`US-52 AC8 pins — labRows, labImport and labSaveSummaryJson answer as today > labSaveSummaryJson: the summary, and each refusal, byte for byte 1`] = `
 [
-  "{"ok":true,"summary":{"saved":3,"skipped":1,"refused":[{"label":"Ferritin","message":"Ferritin: unit not recognised (furlongs). It was not saved. This test takes µg/L.","line":"Ferritin: unit not recognised (furlongs). It was not saved. This test takes µg/L."}]}}",
+  "{"ok":true,"summary":{"saved":3,"skipped":1,"refused":[{"label":"Ferritin","message":"Ferritin: unit not recognised (furlongs). It was not saved. This test takes µg/L.","line":"Ferritin: unit not recognised (furlongs). It was not saved. This test takes µg/L."}],"sameDay":[]}}",
   "{"ok":false,"reason":"not-found","message":"That value is not in this report."}",
   "{"ok":false,"reason":"invalid-date","message":"Pick the day of the test: a real day, today or before."}",
   "{"ok":false,"reason":"invalid-date","message":"Pick the day of the test: a real day, today or before."}",
   "{"ok":false,"reason":"invalid-date","message":"A value in this report has no usable date."}",
-  "{"ok":true,"summary":{"saved":1,"skipped":0,"refused":[]}}",
+  "{"ok":true,"summary":{"saved":1,"skipped":0,"refused":[],"sameDay":[]}}",
 ]
 `;
