@@ -207,7 +207,7 @@ export function InputPanel({
   // My data's view state: the open value page, its history entry and the table (lib/useValuePage).
   const panelRef = useRef<HTMLDivElement>(null);
   const { pageShown, tableShown, openPage, switchPage, closePage, showTable, pageDirty, panelMessages } = useValuePage(revealCell, panelRef);
-  // The value page's history, one array while the record is unchanged, so its chart is not drawn again (US-62 AC10c).
+  // The value page's history, one array until the vitals or blood test lists change, so its chart is not drawn again (US-62 AC10c).
   const pageHistory = useMemo(() => [...vitalsHistory, ...bloodTestHistory], [vitalsHistory, bloodTestHistory]);
   // A grid's typed text not yet saved, valid or not (the plan and the chat
   // read none of it, and an upload saves it first): where the grids sit

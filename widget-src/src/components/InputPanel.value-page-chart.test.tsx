@@ -1,10 +1,12 @@
 // @vitest-environment jsdom
 /**
- * US-62 AC10c (US-06 AC4a on the value page): the value page's chart is drawn
- * again only when what it shows changes. HealthTool hands InputPanel a fresh
- * props object on every render, and InputPanel built the page's history as a
- * new array each time, so any render (a tab switch, a save elsewhere, a remote
- * refresh) destroyed the chart and drew it again with its draw-in animation.
+ * US-62 AC10c (US-06 AC4a on the value page): a render that does not re-read
+ * the record, such as opening Settings, no longer draws the value page's chart
+ * again. HealthTool hands InputPanel a fresh props object on every render, and
+ * InputPanel built the page's history as a new array each time, so such a
+ * render destroyed the chart and drew it again with its draw-in animation.
+ * A save, a remote change or the upload window re-reads the record, sets new
+ * lists and still draws it again; these tests do not cover those.
  * The chart library is a stand-in that counts charts made. Synthetic values.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
