@@ -563,3 +563,7 @@ week,metric,count_7d,count_prior_7d,delta_pct,source,note
 2026-W46,sentry_new_issues,3,3,0,sentry,"7J (YouTube OAuth 500, wontfix), 7K (third-party AbortError, not-ours), 7M (Google-app noise, not-ours); all triaged by sentry-fix; 77 regressed 11-10; 28 unresolved, userCount 0 on all"
 2026-W46,clarity_roadmap_visits_3d,162,154,5,clarity,"drstanfield 3,130 sessions/3d, bot 17.5%, script errors 2.17%, dead clicks 6.49%; /pages/start 191 (228); microvitamin 2,600, bot 23.1%, script errors 1.00%; no scraper shape"
 2026-W46,feedback_organic,0,0,,supabase,"0 feedback_submissions (gmail + github pending)"
+2026-W46,mutation_score_calculations,92.5,92.2,0,stryker,"334 killed, 27 open (baseline 21); new vs baseline: abdc3c1 limit path (missingPlanInputs 202, calculateHealthResults 215/242/273) and 2dc4afb3 sex gate (286); baseline unchanged since W45"
+2026-W46,mutation_score_suggestions,88.9,86.5,3,stryker,"1365 killed, 170 open (baseline 311); 64 NEW survivors in all 4 files, 7 commits fresh since W45 (96d012d FIT line 853, 504e46a PSA 970, eb313e0 withEvidence 1136, ad4e3a7/1518fd0/41bac7e marker keys)"
+2026-W46,mutation_score_units,93.2,93.2,0,stryker,"411 killed, 30 open (baseline 37); new: 9cac0bf formatGradedReading 753 (psa); 441 and 714 carried from W45"
+2026-W46,mutation_score_merge,91.1,90.5,1,stryker,"625 killed, 61 open (baseline 82); new: 0598287 eraseTimeLater 752/753 (11-13); rootIdOf/rootBeforeMoveOf, mergeSlotted 285, mergeFiles 777 carried"
