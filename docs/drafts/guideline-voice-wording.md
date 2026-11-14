@@ -1,10 +1,30 @@
-# Guideline-voice wording audit (draft for Brad)
+# Guideline-voice wording audit
 
 Brad's rule (2026-11-15): a sentence about a medicine or treatment speaks in the guideline's
 voice, not to the person. The precedent, live: "Statin therapy and lifestyle changes are typically
-recommended at this level. Discuss it with your doctor." Nothing here is changed in code: each row
-waits for Brad's yes on its exact words. A change touches every file in the last column (the
-three-file rule).
+recommended at this level. Discuss it with your doctor." A change touches every file in the last
+column (the three-file rule).
+
+## Decided (Brad, 2026-11-15), applied in PR 1817
+
+The tables below hold the audit as proposed. Brad's decision, row by row, is what shipped:
+
+| id | decided text |
+|---|---|
+| W1 | Kept as it is. |
+| W2 | At a BMI of {bmi}{ and {reasons}}, medications that support weight management and metabolic health are an option to discuss with your doctor. |
+| W3 | Kept: "Consider discussing a GLP-1 medication with your doctor". |
+| W4 | Title kept ("Consider increasing GLP-1 dose"); text: Discuss with your doctor the pros and cons of a higher dose of your current GLP-1 medication. |
+| W5–W7 | Titles: Discuss switching to Tirzepatide / Discuss adding an SGLT2 inhibitor / Discuss adding Metformin. |
+| W8 | Kept, title and text. |
+| W9 | Titles: Discuss adding Ezetimibe with your doctor / Discuss adding bempedoic acid with your doctor / Discuss increasing your statin dose with your doctor / Discuss switching to a more potent statin with your doctor / Discuss a PCSK9 inhibitor with your doctor. |
+| W10 | As proposed. |
+| W11 | Statin muscle damage is rare. If it happens, the statin is usually stopped and a PCSK9 inhibitor is the usual next option. Discuss it with your doctor. (evidence.ts, roadmap_text.html, health_roadmap_algorithm.md) |
+| W12–W14 | As proposed. |
+| W15 | As proposed, ending "Discuss them with your doctor." |
+| S1–S5 | Kept. |
+
+The two doctor lines (US-73 AC13, US-52 AC6h) were approved as built; the chat consent stays v1.
 
 Scope searched: `packages/health-core/src` (suggestions, evidence, screening rules, colonoscopy and
 PSA schedules, medication cascades and annotations, input-form), `ios/engine`, `roadmap_text.html`,

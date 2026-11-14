@@ -506,7 +506,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'med-pcsk9i': {
-    reason: 'PCSK9 inhibitors (evolocumab, alirocumab) are injectable medications that can lower LDL by an additional 50–60% beyond statins. They are recommended by AHA/ACC and ESC/EAS guidelines when lipid targets are not met with maximally tolerated statin plus ezetimibe. They also lower Lp(a) by approximately 25–30%.\n\nStatin muscle damage is rare, but if it happens, stop the statin and move to a PCSK9 inhibitor. If a statin is not tolerated for any reason, this plan suggests a PCSK9 inhibitor next. If your level is still above target after that step (taken, declined or not tolerated), ezetimibe comes next; bempedoic acid last.\n\nTheir US labels say there are not enough data on PCSK9 inhibitors in pregnancy to judge the risk.',
+    reason: 'PCSK9 inhibitors (evolocumab, alirocumab) are injectable medications that can lower LDL by an additional 50–60% beyond statins. They are recommended by AHA/ACC and ESC/EAS guidelines when lipid targets are not met with maximally tolerated statin plus ezetimibe. They also lower Lp(a) by approximately 25–30%.\n\nStatin muscle damage is rare. If it happens, the statin is usually stopped and a PCSK9 inhibitor is the usual next option. Discuss it with your doctor. If a statin is not tolerated for any reason, this plan suggests a PCSK9 inhibitor next. If your level is still above target after that step (taken, declined or not tolerated), ezetimibe comes next; bempedoic acid last.\n\nTheir US labels say there are not enough data on PCSK9 inhibitors in pregnancy to judge the risk.',
     guidelines: [...GUIDELINES_LIPIDS],
     references: [
       ...REFS_LIPID_GUIDELINES,

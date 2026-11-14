@@ -211,8 +211,8 @@ function doseCardText(kind: string, switchTo: string | null): string {
 /** The form's weight-medication intro, in the plan's words: the BMI and the
  *  trigger's reasons, as the GLP-1 card names them (US-06 AC5). */
 export function weightMedIntro(bmi: number, reasons: string[]): string {
-  const and = reasons.length > 0 ? ` and ${joinWithAnd(reasons)} suggest` : ' suggests';
-  return `Your BMI of ${bmi}${and} you may benefit from medications that support weight management and metabolic health.`;
+  const and = reasons.length > 0 ? ` and ${joinWithAnd(reasons)}` : '';
+  return `At a BMI of ${bmi}${and}, medications that support weight management and metabolic health are an option to discuss with your doctor.`;
 }
 
 /**
@@ -425,10 +425,10 @@ export function generateSuggestions(
       const stepCards: Record<WeightStep, [priority: Suggestion['priority'], title: string, text: string]> = {
         glp1: ['attention', 'Consider discussing a GLP-1 medication with your doctor', glp1Text],
         'glp1-dose': ['attention', 'Add your GLP-1 dose', doseCardText('GLP-1', medications.glp1?.drug === MAX_GLP1_DRUG ? null : 'a switch to Tirzepatide')],
-        'glp1-increase': ['attention', 'Consider increasing GLP-1 dose', 'You may benefit from a higher dose of your current GLP-1 medication. Discuss increasing your dose with your doctor.'],
-        'glp1-switch': ['attention', 'Consider switching to Tirzepatide', 'Tirzepatide (Mounjaro/Zepbound) may be more effective for weight management. Discuss switching with your doctor.'],
-        sglt2i: ['attention', 'Consider adding an SGLT2 inhibitor', 'SGLT2 inhibitors like Empagliflozin or Dapagliflozin provide additional metabolic benefits and cardiovascular protection. Discuss with your doctor.'],
-        metformin: ['info', 'Consider adding Metformin', 'Metformin provides additional glycemic control and has potential long-term health benefits. Extended-release formulations may have fewer GI side effects. Discuss with your doctor.'],
+        'glp1-increase': ['attention', 'Consider increasing GLP-1 dose', 'Discuss with your doctor the pros and cons of a higher dose of your current GLP-1 medication.'],
+        'glp1-switch': ['attention', 'Discuss switching to Tirzepatide', 'Tirzepatide (Mounjaro/Zepbound) may be more effective for weight management. Discuss switching with your doctor.'],
+        sglt2i: ['attention', 'Discuss adding an SGLT2 inhibitor', 'SGLT2 inhibitors like Empagliflozin or Dapagliflozin provide additional metabolic benefits and cardiovascular protection. Discuss with your doctor.'],
+        metformin: ['info', 'Discuss adding Metformin', 'Metformin provides additional glycemic control and has potential long-term health benefits. Extended-release formulations may have fewer GI side effects. Discuss with your doctor.'],
       };
       for (const step of weightCascade(medications).suggest) {
         const [priority, title, description] = stepCards[step];
@@ -503,7 +503,7 @@ export function generateSuggestions(
         category: 'bloodwork',
         priority: 'attention',
         title: 'High ApoB',
-        description: `Your ApoB of ${shown('apoB', 'apob', inputs.apoB!)} is elevated. Consider lifestyle modifications and discuss treatment options to reduce cardiovascular risk.`,
+        description: `Your ApoB of ${shown('apoB', 'apob', inputs.apoB!)} is elevated. Lifestyle changes and treatment options to reduce cardiovascular risk are typically discussed at this level. Discuss them with your doctor.`,
       });
     } else if (inputs.apoB! >= APOB_THRESHOLDS.borderline) {
       suggestions.push({
@@ -534,7 +534,7 @@ export function generateSuggestions(
         category: 'bloodwork',
         priority: 'attention',
         title: 'High LDL cholesterol',
-        description: `Your LDL-c of ${shown('ldlC', 'ldl', inputs.ldlC)} is high. Consider lifestyle modifications and discuss medication options.`,
+        description: `Your LDL-c of ${shown('ldlC', 'ldl', inputs.ldlC)} is high. Lifestyle changes and medication options are typically discussed at this level. Discuss them with your doctor.`,
       });
     } else if (inputs.ldlC >= LDL_THRESHOLDS.borderline) {
       suggestions.push({
@@ -792,19 +792,19 @@ export function generateSuggestions(
     // Statins and pregnancy (US-07 AC14): the start card says not to start one, and every card for
     // someone already on a statin says when to stop (FDA, NICE NG238 1.5.10), the ezetimibe and
     // PCSK9 inhibitor cards after their own line.
-    const onStatinPregnancy = 'If you become pregnant, most people should stop their statin: talk to your doctor. If you are planning a pregnancy, NICE advises stopping 3 months before trying to conceive.';
+    const onStatinPregnancy = 'The FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive. Talk to your doctor.';
     // The US labels: bempedoic acid is to be stopped in pregnancy; ezetimibe and the PCSK9 inhibitors lack data
     // (on a statin, the statin line follows).
     const pregnancyUnstudied = 'Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be.'
       + (statinDoses ? ` ${onStatinPregnancy}` : '');
     const stepCards: Record<LipidStep, [title: string, text: string]> = {
       statin: ['Consider starting a statin', "Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor. Don't start a statin if you are pregnant or planning a pregnancy."],
-      ezetimibe: ['Consider adding Ezetimibe', `Discuss adding Ezetimibe 10mg with your doctor. ${pregnancyUnstudied}`],
-      'bempedoic-acid': ['Consider adding bempedoic acid', 'Bempedoic acid (Nexletol) lowers cholesterol via a different pathway than statins. Discuss with your doctor. Not recommended in pregnancy; talk to your doctor if you are pregnant or planning to be.'],
+      ezetimibe: ['Discuss adding Ezetimibe with your doctor', `Discuss adding Ezetimibe 10mg with your doctor. ${pregnancyUnstudied}`],
+      'bempedoic-acid': ['Discuss adding bempedoic acid with your doctor', 'Bempedoic acid (Nexletol) lowers cholesterol via a different pathway than statins. Discuss with your doctor. Not recommended in pregnancy; talk to your doctor if you are pregnant or planning to be.'],
       'statin-dose': ['Add your statin dose', `${doseCardText('statin', switchesAtTop ? 'a more potent statin' : null)} ${onStatinPregnancy}`],
-      'statin-increase': ['Consider increasing statin dose', `Discuss increasing your statin dose with your doctor. ${onStatinPregnancy}`],
-      'statin-switch': ['Consider switching to a more potent statin', `You're at or near the maximum dose of ${statinDrug.charAt(0).toUpperCase() + statinDrug.slice(1)}. Discuss switching to a more potent statin (e.g. Rosuvastatin) with your doctor. ${onStatinPregnancy}`],
-      pcsk9i: ['Consider a PCSK9 inhibitor', `Discuss a PCSK9 inhibitor with your doctor. ${pregnancyUnstudied}`],
+      'statin-increase': ['Discuss increasing your statin dose with your doctor', `Discuss increasing your statin dose with your doctor. ${onStatinPregnancy}`],
+      'statin-switch': ['Discuss switching to a more potent statin with your doctor', `You're at or near the maximum dose of ${statinDrug.charAt(0).toUpperCase() + statinDrug.slice(1)}. Discuss switching to a more potent statin (e.g. Rosuvastatin) with your doctor. ${onStatinPregnancy}`],
+      pcsk9i: ['Discuss a PCSK9 inhibitor with your doctor', `Discuss a PCSK9 inhibitor with your doctor. ${pregnancyUnstudied}`],
     };
     // On a statin: statin → ezetimibe → the statin's dose if not recorded, a step up or a PCSK9 inhibitor.
     // Statin not tolerated: PCSK9 inhibitor → ezetimibe → bempedoic acid (US-06 AC20).
@@ -1102,14 +1102,14 @@ export function generateSuggestions(
       category: 'skin',
       priority: 'info',
       title: 'Topical retinoid',
-      description: 'A topical retinoid (adapalene 0.3% or tretinoin 0.05%) applied at night stimulates collagen production and improves skin texture. Start with 2–3 nights per week and increase as tolerated. Always use sunscreen when using retinoids. Caution: retinoids must not be used during pregnancy. Tretinoin needs a prescription. Ask your doctor or pharmacist before you start.',
+      description: 'A topical retinoid (adapalene 0.3% or tretinoin 0.05%) applied at night stimulates collagen production and improves skin texture. It is usually started at 2–3 nights per week and increased as tolerated, with daily sunscreen. Caution: retinoids must not be used during pregnancy. Tretinoin needs a prescription. Discuss it with your doctor or pharmacist before starting.',
     },
     {
       id: 'skin-advanced',
       category: 'skin',
       priority: 'info',
       title: 'Advanced skin treatments',
-      description: 'For further skin rejuvenation, consider discussing these options with a dermatologist: red light therapy (LED, 630–850nm), fractional laser resurfacing, intense pulsed light (IPL) for pigmentation, and microneedling for collagen induction.',
+      description: 'Options for further skin rejuvenation include red light therapy (LED, 630–850nm), fractional laser resurfacing, intense pulsed light (IPL) for pigmentation, and microneedling for collagen induction. Discuss them with your doctor.',
     },
   );
 
