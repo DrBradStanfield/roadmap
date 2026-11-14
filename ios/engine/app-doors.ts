@@ -10,7 +10,7 @@ import type { ApiMedication } from '../../packages/health-core/src/mappings';
 import { derivePlanInputs } from '../../packages/health-core/src/plan';
 import { currentValueRows } from '../../packages/health-core/src/blood-tests';
 import type { RecordHost } from '../../packages/health-core/src/record-host';
-import { labReview, labRows, labSaveSummary, type Extraction } from './lab-review';
+import { labReview, labRows, type Extraction } from './lab-review';
 import { readRecord, readView, Refusal } from './my-data';
 import { checkArgs } from './contract';
 
@@ -143,5 +143,5 @@ export function labSaveSummaryJson(recordJson: string, extractionJson: string, r
   const file = readRecord(recordJson, nowIso, deviceId);
   const rows = labRows(JSON.parse(extractionJson) as Extraction, JSON.parse(refsJson) as string[], reportDay, nowIso, file);
   if (!rows.ok) return JSON.stringify(rows);
-  return JSON.stringify({ ok: true, summary: labSaveSummary(file, rows.ticked, nowIso) });
+  return JSON.stringify({ ok: true, summary: rows.summary });
 }

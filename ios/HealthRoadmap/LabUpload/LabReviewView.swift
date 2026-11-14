@@ -220,6 +220,8 @@ struct LabReviewView: View {
     /// read-only badge, and the first 300 characters of the text.
     @ViewBuilder
     private func documentCard(_ document: LabReview.Document) -> some View {
+        // The shared summary line leads, as on a lab report ("Found 1 clinic letter").
+        if let summary = groups?.summary { Section { Text(summary).font(.headline) } }
         Section {
             Toggle("Save this document", isOn: choices.keepDocument)
             if document.alreadySaved {
@@ -264,9 +266,10 @@ struct LabReviewView: View {
                 })
     }
 
-    /// Asks the engine for the groups of the ticks and day held now (lab reports only).
+    /// Asks the engine for the groups of the ticks and day held now: a lab report's rows, and
+    /// for a letter or other document the shared summary line above its card.
     private func regroup() async {
-        guard let review, review.isLabReport, result.failure == nil, let held else { return }
+        guard let review, review.isLabReport || review.document != nil, result.failure == nil, let held else { return }
         // A failed answer keeps the groups shown; a newer tick may have asked again meanwhile,
         // so only the answer for what is held now is kept.
         do {

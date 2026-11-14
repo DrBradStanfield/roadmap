@@ -304,6 +304,35 @@ describe('US-13 AC13 / US-52 AC8: the review leads with a summary and rows only 
     expect(groupsOf(x, ['a0']).omitted).toEqual(['Creatinine: no unit was printed', '1 other value could not be read']);
   });
 
+  // Codex re-check of PR 1824: the receipt dry-ran the ticked rows in their own order, where
+  // 140/110 passed, while the write ranked the current 100 first and refused 100/110.
+  describe('the receipt is the write\'s own answer: its saved count is what the writer wrote', () => {
+    const bp = (metric: string, v: number, own?: string) => ({ metric, valueSI: v, displayValue: v, displayUnit: 'mmHg', displaySystem: 'si', confidence: 'high', ...(own ? { recordedAt: own } : null) });
+    const cases: Array<[string, object, string[], RoadmapFile, number]> = [
+      ['a previous systolic, an inverted current pair and LDL, the day moved to the previous one',
+        lab([bp('systolic_bp', 140, '2026-09-01'), bp('systolic_bp', 100), bp('diastolic_bp', 110), ldlHigh]), ['v0', 'v1', 'v2', 'v3'], record(), 1],
+      ['LDL out of range beside Ferritin', lab([{ ...ldlHigh, valueSI: 500, displayValue: 500 }], [{ name: 'Ferritin', value: 85, unit: 'µg/L' }]), ['v0', 'a0'], record(), 1],
+      ['only a value the record holds differently', lab([ldlHigh]), ['v0'], record({ kind: 'add', metric: 'ldl', value: 2.5, day: '2026-09-01' }), 0],
+      ['every value already saved', lab([ldlHigh]), ['v0'], record({ kind: 'add', metric: 'ldl', value: 3.1, day: '2026-09-01' }), 0],
+    ];
+    for (const [name, x, refs, file, written] of cases) {
+      it(name, () => {
+        const json = JSON.stringify(x);
+        const summary = JSON.parse(labSaveSummaryJson(JSON.stringify(file), json, JSON.stringify(refs), '2026-09-01', NOW, DEVICE)).summary;
+        const out = applyEdit(file, { kind: 'labImport', extractionJson: json, refs, reportDay: '2026-09-01' }, NOW);
+        if (!out.ok) throw new Error(out.message);
+        const wrote = [...out.file.measurements, ...out.file.labValues].filter((r) => r.source === 'lab_import').length;
+        expect(wrote).toBe(written);
+        expect(summary.saved).toBe(wrote);
+        expect(summary.saved + summary.skipped + summary.refused.length).toBe(refs.length);
+      });
+    }
+  });
+
+  it('a letter\'s review leads with the shared summary line (Codex R2)', () => {
+    expect(groupsOf(letter, [], record(), '').summary).toBe('Found 1 clinic letter');
+  });
+
   it('what Save sends is what the save writes: the dry run saves every sent ref and refuses or skips none', () => {
     const file = record({ kind: 'add', metric: 'ldl', value: 2.5, day: '2026-10-01' });
     const g = groupsOf(extraction, ['v0', 'v1', 'a0', 'a1'], file);

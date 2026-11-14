@@ -12,7 +12,7 @@ import {
   IMPORT_REVIEW_TEXT, type ImportClassification, type ImportFile, type UnsureReason,
 } from '../../packages/health-core/src/import-review';
 import { createEmptyFile } from '../../packages/health-core/src/roadmap-file';
-import { labReview, labRows, labSaveSummary, type Extraction } from './lab-review';
+import { refusalWords, type Extraction } from './lab-review';
 
 /** One offered value (`v<i>` or `a<i>`, the review's item refs) and its group. */
 export interface GroupedItem {
@@ -66,21 +66,6 @@ export function classifyReport(extraction: Extraction, file: RoadmapFile | null,
   return classifyImportValues([{ result, rows, days }], file ?? createEmptyFile({ deviceId: 'review', now }), now);
 }
 
-/** The save's own words for a value outside its range (or a blood pressure pair the write
- *  refuses), as its receipt says it (`LabReportSave.line`): the value written alone, dry, then
- *  with the other ticked values for a pair. Never new words. */
-function rangeRefusal(extraction: Extraction, file: RoadmapFile | null, ticks: ReadonlySet<string>, day: string | null, ref: string, now: string): string | undefined {
-  const record = file ?? createEmptyFile({ deviceId: 'review', now });
-  const rowsOf = (refs: Iterable<string>) => {
-    const result = labRows(extraction, [...refs], day ?? '', now, record);
-    return result.ok ? result.ticked : [];
-  };
-  const alone = labSaveSummary(record, rowsOf([ref]), now).refused;
-  const label = labReview(extraction, now).items.find((i) => i.ref === ref)?.label;
-  const refused = alone[0] ?? labSaveSummary(record, rowsOf(new Set([...ticks, ref])), now).refused.find((r) => r.label === label);
-  return refused && (refused.line ?? `Not saved, ${refused.label}: ${refused.message}`);
-}
-
 /** The review's groups for the ticks and test day it holds now. */
 export function labReviewGroups(extraction: Extraction, file: RoadmapFile | null, ticked: readonly string[], reportDay: string, now: string): LabReviewGroups {
   const ticks = new Set(ticked);
@@ -89,7 +74,9 @@ export function labReviewGroups(extraction: Extraction, file: RoadmapFile | null
   const offered = all.filter((v) => /^[va]\d+$/.test(v.ref));
   const items: GroupedItem[] = offered.map((v) => {
     if (v.group !== 'unsure') return { ref: v.ref, group: v.group };
-    const refusal = v.reasons.includes('outOfRange') ? rangeRefusal(extraction, file, ticks, day, v.ref, now) : undefined;
+    // Outside its range: the classifier's own dry-run refusal, as the receipt words it.
+    const words = v.refusal && 'measurement' in v.refusal ? refusalWords(v.refusal) : undefined;
+    const refusal = words && (words.line ?? `Not saved, ${words.label}: ${words.message}`);
     return { ref: v.ref, group: 'unsure', reasons: v.reasons, ...(v.reasons.includes('conflict') ? { conflict: IMPORT_REVIEW_TEXT.conflictKept } : null), ...(refusal ? { refusal } : null) };
   });
   const count = (group: GroupedItem['group']) => items.filter((i) => i.group === group).length;

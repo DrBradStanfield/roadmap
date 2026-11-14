@@ -3,7 +3,7 @@
 // bulk rows. The write itself is `bulkAppendValues`, the website's and the
 // connector's one bulk rule (my-data.ts `labImport`). No clinical rule here.
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
-import { bulkAppendValues, validDay, type BulkRow } from '../../packages/health-core/src/record-edits';
+import { validDay, type BulkRow } from '../../packages/health-core/src/record-edits';
 import { METRIC_LABELS } from '../../packages/health-core/src/mappings';
 import { documentView, pendingRowsFor } from '../../packages/health-core/src/document-save';
 import { unreadLines, type AdditionalLabValue, type DocumentResult, type ExtractedValue, type RefusedLabValue, type UnreadLabValue } from '../../packages/health-core/src/lab-extraction';
@@ -12,7 +12,7 @@ import { labPlausibleNote, labUnitRefusalLine, labValueLabel } from '../../packa
 import { isReadableRow } from '../../packages/health-core/src/readable-rows';
 import { withComparator } from '../../packages/health-core/src/lab-limits';
 import { classifyReport } from './lab-review-groups';
-import { importRow, type ImportFile } from '../../packages/health-core/src/import-review';
+import type { ClassifiedValue, ImportRefusal } from '../../packages/health-core/src/import-review';
 
 /** The server's answer (`data` of POST /api/app/v1/lab-import). */
 export interface Extraction {
@@ -134,9 +134,9 @@ export function labReview(extraction: Extraction, now: string, file: RoadmapFile
   };
 }
 
-/** `rows`: what Save submits. `ticked`: every ticked value's row as `importRow` builds it,
- *  for the receipt's dry run, which names a value the record took in since the review. */
-export type LabRowsResult = { ok: true; rows: BulkRow[]; ticked: BulkRow[] } | { ok: false; reason: string; message: string };
+/** `rows`: what Save submits. `summary`: what that save does to each ticked value, from the
+ *  same classification, so the receipt and the write never disagree. */
+export type LabRowsResult = { ok: true; rows: BulkRow[]; summary: LabSaveSummary } | { ok: false; reason: string; message: string };
 
 /**
  * The rows Save submits for the ticked values, each on its own day or the report's:
@@ -145,7 +145,6 @@ export type LabRowsResult = { ok: true; rows: BulkRow[]; ticked: BulkRow[] } | {
  */
 export function labRows(extraction: Extraction, refs: string[], reportDay: string, now: string, file: RoadmapFile): LabRowsResult {
   const fallback = validDay(reportDay, { now });
-  const ticked: BulkRow[] = [];
   for (const ref of refs) {
     const index = Number(ref.slice(1));
     const core = ref[0] === 'v' ? extraction.values?.[index] : undefined;
@@ -160,9 +159,9 @@ export function labRows(extraction: Extraction, refs: string[], reportDay: strin
         ? { ok: false, reason: 'invalid-date', message: 'A value in this report has no usable date.' }
         : { ok: false, reason: 'invalid-date', message: 'Pick the day of the test: a real day, today or before.' };
     }
-    ticked.push(importRow(extraction as ImportFile['result'], ref, day)!);
   }
-  return { ok: true, rows: classifyReport(extraction, file, refs, fallback, now).rows, ticked };
+  const { rows, values } = classifyReport(extraction, file, refs, fallback, now);
+  return { ok: true, rows, summary: labSaveSummary(values) };
 }
 
 export interface LabSaveSummary {
@@ -174,21 +173,25 @@ export interface LabSaveSummary {
   refused: Array<{ label: string; message: string; line?: string }>;
 }
 
-/** What saving would do, in counts and the engine's own words. The record is not changed. */
-export function labSaveSummary(file: RoadmapFile, rows: BulkRow[], now: string): LabSaveSummary {
-  const result = bulkAppendValues(file, rows, now);
+/** One refused row in the engine's own words: for a lab value the web's upload line, shown
+ *  whole (it says "not saved" itself), never the store's message, which is the copy an
+ *  assistant reads (US-52 AC8, US-21 AC15, AC26); for a core value its range message. */
+export function refusalWords(refusal: ImportRefusal): LabSaveSummary['refused'][number] {
+  if ('measurement' in refusal) return { label: METRIC_LABELS[refusal.measurement.metricType] ?? refusal.measurement.metricType, message: refusal.measurement.message };
+  const r = refusal.lab;
+  const line = labUnitRefusalLine(r.key, r.unit, r.fault, r.bound);
+  const implausible = r.fault === 'implausible' ? labPlausibleNote(r.key, r.bound) : undefined;
+  return { label: labValueLabel(r.key), message: implausible ?? line, line };
+}
+
+/** What the save does to each ticked value, from the classification its rows came from (US-13
+ *  AC13): written; left as it was (already held, a different value held, or another reading
+ *  of that test that day took the slot); or refused, in the write's own words. */
+export function labSaveSummary(values: readonly ClassifiedValue[]): LabSaveSummary {
+  const sent = values.filter((v) => v.sent);
   return {
-    saved: result.saved.length,
-    skipped: result.skippedDuplicates,
-    refused: [
-      // The web's upload line, shown whole (it says "not saved" itself), never the store's
-      // message, which is the copy an assistant reads (US-52 AC8, US-21 AC15, AC26).
-      ...result.refused.map((r) => {
-        const line = labUnitRefusalLine(r.key, r.unit, r.fault, r.bound);
-        const implausible = r.fault === 'implausible' ? labPlausibleNote(r.key, r.bound) : undefined;
-        return { label: labValueLabel(r.key), message: implausible ?? line, line };
-      }),
-      ...result.measurementRefusals.map((r) => ({ label: METRIC_LABELS[r.metricType] ?? r.metricType, message: r.message })),
-    ],
+    saved: sent.filter((v) => v.writes).length,
+    skipped: sent.filter((v) => !v.writes && !v.refusal).length,
+    refused: sent.flatMap((v) => (!v.writes && v.refusal ? [refusalWords(v.refusal)] : [])),
   };
 }
