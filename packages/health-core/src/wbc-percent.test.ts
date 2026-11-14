@@ -15,6 +15,8 @@ import { MemoryAdapter, MemoryCloud } from './memory-adapter';
 import { addLabValues, OUTPUTS, runToolOverSync } from './mcp-tools';
 import { prepareImport, type ExtractedFile, type ImportPayload, type ImportSurface } from './mcp-import';
 import { computePlan } from './plan';
+import { classifyImportValues } from './import-review';
+import { extra, lab } from './import-review.test-helpers';
 import { addLabValue, appendLabValue, bulkAppendValues, sameLabQuantity } from './record-edits';
 import { recordSync } from './roadmap-doc';
 import { createEmptyFile, createMeasurement, type RoadmapFile } from './roadmap-file';
@@ -255,5 +257,19 @@ describe('US-21 AC28 — review round: the claimed key, re-imports and a legacy 
     expect(count.ok && count.row).toMatchObject({ metricName: 'neutrophils', value: 3.1 });
     expect(addLabValue(base(), { metricName: 'Neutrophils', value: 56, unit: '%', day: TODAY, existingSeries: true }, NOW))
       .toMatchObject({ ok: false, reason: 'not-found' });
+  });
+});
+
+describe('US-21 AC28 — the import review (US-13 AC13) keys a % row as the write does', () => {
+  it('US-21 AC28 — Neutrophils in % and in count classify as two new values and both save', () => {
+    // Names as printed, not routed by the extraction, so the review's own slot rule is what keeps them apart.
+    const file = lab({ additionalValues: [extra({ name: 'Neutrophils', value: 55, unit: '%' }), extra({ name: 'Neutrophils', value: 3.1, unit: '×10⁹/L' })] });
+    const { values, rows } = classifyImportValues([file], base(), NOW);
+    expect(values.map((v) => [v.ref, v.group, v.writes])).toEqual([['a0', 'sure', true], ['a1', 'sure', true]]);
+    const run = bulkAppendValues(base(), rows, NOW);
+    expect(run.outcomes).toEqual(['written', 'written']);
+    expect(labs(run.file)).toEqual([['Neutrophils', 3.1, '×10⁹/L'], ['neutrophils_pct', 55, '%']]);
+    // Saved, the same file reads as already held, both lines.
+    expect(classifyImportValues([file], run.file, NOW).values.map((v) => [v.ref, v.writes])).toEqual([['a0', false], ['a1', false]]);
   });
 });

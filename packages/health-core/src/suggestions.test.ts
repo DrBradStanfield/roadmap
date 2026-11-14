@@ -3952,6 +3952,16 @@ describe('US-25 AC28a: guideline-voice wording', () => {
       .toMatch(/ is elevated\. Lifestyle changes and treatment options to reduce cardiovascular risk are typically discussed at this level\. Discuss them with your doctor\.$/);
   });
 
+  it('non-hdl-high reads as what is typically discussed (W16)', () => {
+    const { inputs, results } = createTestData(
+      { totalCholesterol: totalChol(250), hdlC: hdl(50) },
+      { nonHdlCholesterol: totalChol(250) - hdl(50) },
+    );
+    const description = generateSuggestions(inputs, results).find(s => s.id === 'non-hdl-high')?.description;
+    expect(description).toMatch(/^Your non-HDL cholesterol of .+ is high\. Lifestyle changes to reduce cardiovascular risk are typically discussed at this level\. Discuss them with your doctor\.$/);
+    expect(description).not.toContain('Consider lifestyle modifications');
+  });
+
   it('the PCSK9 inhibitor reason says what usually happens after statin muscle damage', () => {
     const reason = SUGGESTION_EVIDENCE['med-pcsk9i'].reason;
     expect(reason).toContain('Statin muscle damage is rare. If it happens, the statin is usually stopped, and a PCSK9 inhibitor is one option to discuss with your doctor.');

@@ -23,7 +23,7 @@ The tables below hold the audit as proposed. Brad's decision, row by row, is wha
 | W12–W14 | As proposed. |
 | W15 | As proposed, ending "Discuss them with your doctor." |
 | S1–S5 | Kept. |
-| W16 (open) | `non-hdl-high` (suggestions.ts), found in review: "Your non-HDL cholesterol of {value} is high. Consider lifestyle modifications to reduce cardiovascular risk." Not changed: no text approved yet. |
+| W16 | `non-hdl-high` (suggestions.ts), found in review. Decided by Brad 2026-11-15, applied in its own PR: "Your non-HDL cholesterol of {value} is high. Lifestyle changes to reduce cardiovascular risk are typically discussed at this level. Discuss them with your doctor." The sentence is not quoted in health_roadmap_algorithm.md or roadmap_text.html. |
 
 The two doctor lines (US-73 AC13, US-52 AC6h) were approved as built; the chat consent stays v1.
 

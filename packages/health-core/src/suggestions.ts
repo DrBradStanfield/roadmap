@@ -566,7 +566,7 @@ export function generateSuggestions(
         category: 'bloodwork',
         priority: 'attention',
         title: 'High non-HDL cholesterol',
-        description: `Your non-HDL cholesterol of ${formatDisplayValue('ldl', results.nonHdlCholesterol!, us('ldl'))} ${getDisplayLabel('ldl', us('ldl'))} is high. Consider lifestyle modifications to reduce cardiovascular risk.`,
+        description: `Your non-HDL cholesterol of ${formatDisplayValue('ldl', results.nonHdlCholesterol!, us('ldl'))} ${getDisplayLabel('ldl', us('ldl'))} is high. Lifestyle changes to reduce cardiovascular risk are typically discussed at this level. Discuss them with your doctor.`,
       });
     } else if (results.nonHdlCholesterol! >= NON_HDL_THRESHOLDS.borderline) {
       suggestions.push({
