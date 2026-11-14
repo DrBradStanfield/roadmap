@@ -1,5 +1,5 @@
 /** Shopify services only. Health records are read and written by roadmap-data. */
-import { type GUIDE_PLACEMENTS, type LPA_CHECK_ANSWERS, type ProductEventName, type REMOTE_CHANGE_BACKENDS, PER_ACTION_EVENT_NAMES, type CHAT_PROFILE_CHOICES, type MEASURES, type ONBOARDING_STEPS, type SIGNIN_PLACEMENTS, type CHAT_PROFILE_FIELDS, type TOOL_DEVICES, type UploadOutcomeKey } from '@roadmap/health-core/product-events';
+import { type GUIDE_PLACEMENTS, type LPA_CHECK_ANSWERS, type ProductEventName, type REMOTE_CHANGE_BACKENDS, PER_ACTION_EVENT_NAMES, type CHAT_PROFILE_CHOICES, type MEASURES, type ONBOARDING_STEPS, type SIGNIN_PLACEMENTS, type CHAT_PROFILE_FIELDS, type TOOL_DEVICES, type UploadOutcomeKey, type UploadReviewKey } from '@roadmap/health-core/product-events';
 import type { LpaUnit, MetricType } from '@roadmap/health-core/units';
 import type { MeasurementRefusal } from '@roadmap/health-core/record-edits';
 import type { UsProduct } from '@roadmap/health-core/us-products';
@@ -129,7 +129,7 @@ export function trackABConversion(): void { trackABEvent('conversion'); }
 // Product funnel events (anonymous behavioral counters — usage-audit 2026-08)
 // ---------------------------------------------------------------------------
 
-export interface ProductEventMetadata extends Partial<Record<UploadOutcomeKey, number>> {
+export interface ProductEventMetadata extends Partial<Record<UploadOutcomeKey | UploadReviewKey, number>> {
   provider?: 'google-drive' | 'dropbox' | 'github' | 'webdav' | 'local' | 'typed';
   count?: number;
   placement?: (typeof GUIDE_PLACEMENTS)[number] | (typeof SIGNIN_PLACEMENTS)[number];

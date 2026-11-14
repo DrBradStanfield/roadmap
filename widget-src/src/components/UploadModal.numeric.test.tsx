@@ -10,6 +10,7 @@ import { UploadModal } from './UploadModal';
 import { checkLabImportQuota, labImport } from '../lib/upload-api';
 import { flushRoadmapStore, initRoadmapStore } from '../lib/roadmap-data';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
+import { findReviewValue } from '../testing/import-review';
 
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn(), labImportBatch: vi.fn(), pollBatchStatus: vi.fn() }));
 vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
@@ -47,7 +48,7 @@ async function review() {
     history={{ measurements: [], labValues: [], documents: [] }} onComplete={() => {}} />);
   fireEvent.click(screen.getByRole('button', { name: 'Continue without keeping my files ›' }));
   fireEvent.change(document.querySelector('input[type=file]')!, { target: { files: [new File(['synthetic'], 'synthetic.pdf', { type: 'application/pdf' })] } });
-  return await screen.findByDisplayValue('4') as HTMLInputElement;
+  return await findReviewValue('4') as HTMLInputElement;
 }
 
 describe('US-02 AC4 / AC7: ranged comma readings reach the persisted record', () => {

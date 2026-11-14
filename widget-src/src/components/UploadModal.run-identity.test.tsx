@@ -84,5 +84,6 @@ describe('US-12 AC4: read runs', () => {
     });
     expect(screen.getByText(DROPZONE)).toBeTruthy();
     expect(screen.queryByDisplayValue('3.9')).toBeNull();
+    expect(document.querySelector('.review-summary')).toBeNull(); // no review behind "Show all" either (US-13 AC13)
   });
 });

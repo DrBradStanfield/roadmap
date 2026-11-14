@@ -15,6 +15,7 @@ import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getEraseIde
 import { trackProductEvent } from '../lib/server-api';
 import type { UploadHistory } from '../lib/api-types';
 import type { FileResult } from '../lib/upload-pipeline';
+import { findAllReviewValues, findReviewValue } from '../testing/import-review';
 
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn(), labImportBatch: vi.fn(), pollBatchStatus: vi.fn() }));
 vi.mock('../lib/roadmap-data', () => ({ getDocumentArchiveMode: vi.fn(() => 'cloud'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
@@ -92,7 +93,7 @@ describe('US-12 AC9: every file not fully read is named with a reason', () => {
       return pages(f.name);
     });
     render_(); pick(pdf('good.pdf'), pdf('locked.pdf'));
-    await screen.findByDisplayValue('3.9');
+    await findReviewValue('3.9');
     expect(reasonFor('locked.pdf')).toBe('Could not open it. It may be password-protected, damaged, or not a PDF, photo or .docx file.');
     expect(reasonFor('good.pdf')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
@@ -102,13 +103,13 @@ describe('US-12 AC9: every file not fully read is named with a reason', () => {
 
   it('names a file with no readable pages (not a PDF or photo)', async () => {
     render_(); pick(pdf('good.pdf'), new File(['x'], 'notes.txt'));
-    await screen.findByDisplayValue('3.9');
+    await findReviewValue('3.9');
     expect(reasonFor('notes.txt')).toMatch(/^Could not open it/);
   });
 
   it('lists an oversize file beside the files that were read, instead of wiping it when the run starts', async () => {
     render_(); pick(pdf('good.pdf'), pdf('huge.pdf', 11 * 1024 * 1024));
-    await screen.findByDisplayValue('3.9');
+    await findReviewValue('3.9');
     expect(reasonFor('huge.pdf')).toBe('Too large to read. The limit is 10 MB per file.');
     expect(extractFromPdf).toHaveBeenCalledOnce();
   });
@@ -123,21 +124,21 @@ describe('US-12 AC9: every file not fully read is named with a reason', () => {
   it('says only the first part of a long PDF was read (US-12 AC9, AC13)', async () => {
     extractFromPdf.mockImplementation(async (f: File) => ({ ...pages(f.name), truncated: true }));
     render_(); pick(pdf('long.pdf'));
-    await screen.findByDisplayValue('3.9');
+    await findReviewValue('3.9');
     expect(reasonFor('long.pdf')).toBe('This file is long, so only its first part was read.');
   });
 
   it('says a file filed as a document gave no blood test values', async () => {
     vi.mocked(labImport).mockImplementation(async pages => (pages[0].content === 'letter.pdf' ? letterOnly : withValues));
     render_(); pick(pdf('good.pdf'), pdf('letter.pdf'));
-    await screen.findByDisplayValue('3.9');
+    await findReviewValue('3.9');
     expect(reasonFor('letter.pdf')).toBe('Filed as a document. No blood test values found.');
   });
 
   it('says when a read file gave no values and no document', async () => {
     vi.mocked(labImport).mockImplementation(async pages => (pages[0].content === 'blank.pdf' ? nothing : withValues));
     render_(); pick(pdf('good.pdf'), pdf('blank.pdf'));
-    await screen.findByDisplayValue('3.9');
+    await findReviewValue('3.9');
     expect(reasonFor('blank.pdf')).toBe('No blood test values found.');
   });
 
@@ -147,7 +148,7 @@ describe('US-12 AC9: every file not fully read is named with a reason', () => {
         : pages[0].content === 'late.pdf' ? { result: null, error: 'Daily upload limit reached. You can upload more tomorrow.', errorCode: 'rate_limit' }
           : withValues));
     render_(); pick(pdf('good.pdf'), pdf('broken.pdf'), pdf('late.pdf'));
-    await screen.findByDisplayValue('3.9');
+    await findReviewValue('3.9');
     expect(reasonFor('broken.pdf')).toBe('Our server could not read it. Please try again.');
     expect(reasonFor('late.pdf')).toBe('Not read. The daily upload limit was reached.');
   });
@@ -157,7 +158,7 @@ describe('US-12 AC9: every file not fully read is named with a reason', () => {
     vi.mocked(labImport).mockImplementation(async pages => (
       pages[0].content === 'busy.pdf' ? { result: null, error: 'Server busy. Please try again later.', errorCode: 'busy' } : withValues));
     render_(); pick(pdf('good.pdf'), pdf('busy.pdf'));
-    await screen.findByDisplayValue('3.9');
+    await findReviewValue('3.9');
     expect(reasonFor('busy.pdf')).toBe('Not read. Our server was busy. Please try again later.');
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual(expect.objectContaining({ serverError: 1, limitError: 0 }));
@@ -172,7 +173,7 @@ describe('US-12 AC9: every file not fully read is named with a reason', () => {
         : pages[0].content === 'long.pdf' ? { result: null, error: 'Not read', errorCode: 'too_long' }
           : withValues));
     render_(); pick(pdf('good.pdf'), pdf('declined.pdf'), pdf('long.pdf'));
-    await screen.findByDisplayValue('3.9');
+    await findReviewValue('3.9');
     expect(reasonFor('declined.pdf')).toBe('Not read. Claude declined to read this file, so trying again will not help.');
     expect(reasonFor('long.pdf')).toBe('Not read. The file is too long to read in one go.');
     await waitFor(() => expect(outcomes()).toHaveLength(1));
@@ -206,7 +207,7 @@ describe('US-12 AC10: one count-only upload_outcome per run', () => {
             : withValues));
     render_();
     pick(pdf('good.pdf'), pdf('letter.pdf'), pdf('blank.pdf'), pdf('broken.pdf'), pdf('locked.pdf'), pdf('huge.pdf', 11 * 1024 * 1024));
-    await screen.findByDisplayValue('3.9');
+    await findReviewValue('3.9');
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual({
       picked: 6, withValues: 1, documentOnly: 1, noValues: 1, openFailed: 1,
@@ -229,7 +230,7 @@ describe('US-12 AC10: one count-only upload_outcome per run', () => {
     ], additionalValues: [{ name: 'sodium', value: 139, unit: 'mmol/L', recordedAt: 'undated' }] } } as Import;
     vi.mocked(labImport).mockResolvedValue(undated);
     render_(); pick(pdf('baseline.pdf'));
-    await screen.findByDisplayValue('3.9');
+    await findReviewValue('3.9');
     await waitFor(() => expect(sent()).toHaveLength(1));
     expect(sent()[0]).toEqual({ picked: 1, withValues: 1, undatedPrevious: 2 });
   });
@@ -264,7 +265,7 @@ describe('US-12 AC9: a ZIP that gives no files is named too', () => {
   it('names a ZIP that will not open and still reads the other files', async () => {
     zipBundle(async () => { throw new Error('corrupt'); });
     render_(); pick(pdf('good.pdf'), zip('broken.zip'));
-    await screen.findByDisplayValue('3.9');
+    await findReviewValue('3.9');
     expect(reasonFor('broken.zip')).toMatch(/^Could not open it/);
     expect(outcomes()).toEqual([expect.objectContaining({ picked: 2, openFailed: 1, withValues: 1 })]);
   });
@@ -277,10 +278,11 @@ describe('US-12 AC9: values a file printed but the parse refused are not silent'
       return { result: { ...withValues.result!, droppedValueCount: dropped } } as Import;
     });
     render_(); pick(pdf('good.pdf'), pdf('partial.pdf'), pdf('one.pdf'));
-    await screen.findAllByDisplayValue('3.9');
-    expect(reasonFor('partial.pdf')).toBe('2 values could not be read.');
-    expect(reasonFor('one.pdf')).toBe('1 value could not be read.');
-    expect(reasonFor('good.pdf')).toBeNull();
+    await screen.findByText(/^Found /, { selector: '.review-summary' });
+    // US-13 AC13: one "Not saved" line across the files, not a notice per file.
+    for (const name of ['partial.pdf', 'one.pdf', 'good.pdf']) expect(reasonFor(name)).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: '3 values not saved' }));
+    expect(screen.getByRole('list', { name: 'Values not saved' }).textContent).toBe('3 values could not be read');
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual(expect.objectContaining({ picked: 3, withValues: 3, valuesDropped: 3 }));
   });
@@ -294,8 +296,16 @@ describe('US-12 AC19: each value not saved is named, with why', () => {
       { name: 'vitamin_d', reason: 'unreadable' }, { name: 'hdl', reason: 'unreadable' },
     ] } } as Import);
     render_(); pick(pdf('photo.pdf'));
-    await screen.findByDisplayValue('3.9');
-    expect(reasonFor('photo.pdf')).toBe('Vitamin D (25-OH), HDL Cholesterol: could not be read, not saved. 1 other value could not be read.');
+    await findReviewValue('3.9');
+    // US-13 AC13: named under the review's "Not saved" by label, never a key; no file notice.
+    expect(reasonFor('photo.pdf')).toBeNull();
+    const line = screen.getByRole('button', { name: '3 values not saved' });
+    expect(line.getAttribute('aria-expanded')).toBe('false');
+    fireEvent.click(line);
+    expect(line.getAttribute('aria-expanded')).toBe('true');
+    const items = within(screen.getByRole('list', { name: 'Values not saved' })).getAllByRole('listitem').map(li => li.textContent);
+    expect(items).toEqual(['Vitamin D (25-OH), HDL Cholesterol: could not be read', '1 other value could not be read']);
+    expect(items.join(' ')).not.toMatch(/vitamin_d|\bhdl\b/);
     await waitFor(() => expect(sent()).toHaveLength(1));
     // A count and its reason word only: never a test's name or a value.
     expect(sent()[0]).toEqual({ picked: 1, withValues: 1, valuesDropped: 3 });
@@ -320,7 +330,7 @@ describe('US-12 AC20: the upload counts limits, and names the ungraded tests by 
       ],
     } } as Import);
     render_(); pick(pdf('limits.pdf'));
-    await screen.findByDisplayValue('3.9');
+    await findReviewValue('3.9');
     await waitFor(() => expect(sent()).toHaveLength(1));
     expect(sent()[0]).toEqual({ picked: 1, withValues: 1, valuesLimit: 5, valuesLimitUngraded: 3, limitUngradedTests: ['egfr', 'ldl', 'other'] });
     expect(JSON.stringify(sent()[0])).not.toMatch(/Made-up|Folate|nmol|1\.5|"30"|[<>]/);
@@ -348,7 +358,7 @@ describe('US-12 AC9: the batch path (20+ files) names each file by its own resul
       .map(i => (i === 0 ? result(i, withValues) : i === 5 ? { ...result(i, nothing), errorCode: 'server_error' as const } : result(i, nothing)));
     vi.mocked(pollBatchStatus).mockResolvedValue({ status: 'ended', completed: 20, total: 20, results: results.reverse() } as Poll);
     await runBatch();
-    await screen.findByDisplayValue('3.9');
+    await findReviewValue('3.9');
     expect(reasonFor('r0.pdf')).toBeNull();
     expect(reasonFor('r1.pdf')).toBe('No blood test values found.');
     expect(reasonFor('r3.pdf')).toBe('Our server could not read it. Please try again.');
@@ -366,7 +376,7 @@ describe('US-12 AC9: the batch path (20+ files) names each file by its own resul
     const results = Array.from({ length: 20 }, (_, i) => ({ ...(i === 0 ? withValues : nothing).result!, fileName: `r${i}.pdf` }));
     vi.mocked(pollBatchStatus).mockResolvedValue({ status: 'ended', completed: 20, total: 20, results } as unknown as Poll);
     await runBatch();
-    await screen.findByDisplayValue('3.9');
+    await findReviewValue('3.9');
     expect(reasonFor('r0.pdf')).toBeNull();
     expect(reasonFor('r1.pdf')).toBe('No blood test values found.');
     expect(reasonFor('r19.pdf')).toBe('No blood test values found.');
@@ -524,7 +534,7 @@ describe('US-12 AC9: a ZIP member over the per-file limit is named and never rea
   it('the pipeline (under 20 files) skips it before pdf.js and reads the rest', async () => {
     withHugeMember(['huge.pdf', 'good.pdf']);
     render_(); pick(zip('labs.zip'));
-    await screen.findByDisplayValue('3.9');
+    await findReviewValue('3.9');
     expect(reasonFor('huge.pdf')).toBe('Too large to read. The limit is 10 MB per file.');
     expect(extractFromPdf.mock.calls.map(([f]) => (f as File).name)).toEqual(['good.pdf']);
     await waitFor(() => expect(outcomes()).toHaveLength(1));
@@ -545,7 +555,7 @@ describe('US-12 AC9: a ZIP member over the per-file limit is named and never rea
       await vi.waitFor(() => expect(labImportBatch).toHaveBeenCalled());
       await vi.advanceTimersByTimeAsync(5000);
     } finally { vi.useRealTimers(); }
-    await screen.findAllByDisplayValue('3.9');
+    await findAllReviewValues('3.9');
     expect(reasonFor('huge.pdf')).toBe('Too large to read. The limit is 10 MB per file.');
     expect(extractFromPdf.mock.calls.map(([f]) => (f as File).name)).not.toContain('huge.pdf');
     expect(vi.mocked(labImportBatch).mock.calls[0]![0]).toHaveLength(20);
@@ -573,7 +583,7 @@ describe('US-12 AC17: one upload sends at most 200 files, ZIP members included',
       await vi.waitFor(() => expect(labImportBatch).toHaveBeenCalled());
       await vi.advanceTimersByTimeAsync(5000);
     } finally { vi.useRealTimers(); }
-    await screen.findAllByDisplayValue('3.9');
+    await findAllReviewValues('3.9');
     expect(vi.mocked(labImportBatch).mock.calls[0]![0]).toHaveLength(200);
     expect(extractFromPdf.mock.calls.map(([f]) => (f as File).name)).not.toContain('loose.pdf');
     expect(reasonFor('loose.pdf')).toBe('Not read. It is over the 200-file limit for one upload. Upload it separately.');
@@ -594,7 +604,7 @@ describe('US-12 AC9: the Pages build names its own transport', () => {
         : pages[0].content === 'late.pdf' ? { result: null, error: 'Your Anthropic account is rate-limited right now. Wait a minute and try again.', errorCode: 'rate_limit' }
           : withValues));
     render_(); pick(pdf('good.pdf'), pdf('broken.pdf'), pdf('late.pdf'));
-    await screen.findByDisplayValue('3.9');
+    await findReviewValue('3.9');
     expect(reasonFor('broken.pdf')).toBe('Not read. Anthropic could not be reached or could not read it. Please try again.');
     expect(reasonFor('late.pdf')).toBe('Not read. Your Anthropic key hit its rate limit. Wait a minute and try again.');
     // The usage signal keeps its keys: a rate limit is still limitError.
@@ -608,7 +618,7 @@ describe('US-12 AC9: the Pages build names its own transport', () => {
         : pages[0].content === 'broke.pdf' ? { result: null, error: 'x', errorCode: 'no_credit' }
           : withValues));
     render_(); pick(pdf('good.pdf'), pdf('refused.pdf'), pdf('broke.pdf'));
-    await screen.findByDisplayValue('3.9');
+    await findReviewValue('3.9');
     expect(reasonFor('refused.pdf')).toBe('Not read. Anthropic refused your API key. Check the key in the "Ask about your plan" panel.');
     expect(reasonFor('broke.pdf')).toBe('Not read. Your Anthropic account has no credit. Check its billing, then try again.');
     await waitFor(() => expect(outcomes()).toHaveLength(1));
@@ -646,7 +656,7 @@ describe('US-12 AC13: a .docx is read in the browser and sent as text', () => {
   it('sends the document text as one text page and counts the file as docx', async () => {
     docxToText.mockResolvedValue(docxText('Ferritin | 85 | 60 | ug/L | 30-400'));
     render_(); pick(word('baseline.docx'));
-    await screen.findByDisplayValue('3.9');
+    await findReviewValue('3.9');
     expect(labImport).toHaveBeenCalledWith([{ type: 'text', content: 'Ferritin | 85 | 60 | ug/L | 30-400' }], 'si');
     expect(docxToText.mock.calls[0][0]).toBeInstanceOf(ArrayBuffer);
     expect(reasonFor('baseline.docx')).toBeNull();
@@ -657,7 +667,7 @@ describe('US-12 AC13: a .docx is read in the browser and sent as text', () => {
   it('names a .docx with no text, or one that will not open, as could not open', async () => {
     docxToText.mockImplementation(async (b: ArrayBuffer) => { if (b.byteLength === 1) return docxText(''); throw new Error('docx too large'); });
     render_(); pick(pdf('good.pdf'), word('empty.docx'), new File(['xx'], 'bomb.docx'));
-    await screen.findByDisplayValue('3.9');
+    await findReviewValue('3.9');
     expect(reasonFor('empty.docx')).toBe('Could not open it. It may be password-protected, damaged, or not a PDF, photo or .docx file.');
     expect(reasonFor('bomb.docx')).toMatch(/^Could not open it/);
     await waitFor(() => expect(outcomes()).toHaveLength(1));
@@ -666,7 +676,7 @@ describe('US-12 AC13: a .docx is read in the browser and sent as text', () => {
 
   it('refuses a legacy .doc with a notice to save it as PDF or .docx, and never reads it', async () => {
     render_(); pick(pdf('good.pdf'), word('old.doc'));
-    await screen.findByDisplayValue('3.9');
+    await findReviewValue('3.9');
     expect(reasonFor('old.doc')).toBe('Word .doc files cannot be read. Save it as a PDF or .docx, then upload that.');
     expect(docxToText).not.toHaveBeenCalled();
     await waitFor(() => expect(outcomes()).toHaveLength(1));
@@ -677,7 +687,7 @@ describe('US-12 AC13: a .docx is read in the browser and sent as text', () => {
     docxToText.mockResolvedValue(docxText('Ferritin | 85'));
     const typed = new File(['x'], 'baseline', { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
     render_(); pick(typed);
-    await screen.findByDisplayValue('3.9');
+    await findReviewValue('3.9');
     expect(docxToText).toHaveBeenCalledTimes(1);
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual(expect.objectContaining({ picked: 1, withValues: 1, docx: 1 }));
@@ -686,7 +696,7 @@ describe('US-12 AC13: a .docx is read in the browser and sent as text', () => {
   it('names a .docx of pictures and no text with its own notice, and counts it', async () => {
     docxToText.mockResolvedValue(docxText('', { picturesOnly: true }));
     render_(); pick(pdf('good.pdf'), word('scan.docx'));
-    await screen.findByDisplayValue('3.9');
+    await findReviewValue('3.9');
     expect(reasonFor('scan.docx')).toBe('This Word file holds pictures, not text. Save it as a PDF, or upload a photo of the page.');
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual(expect.objectContaining({ picked: 2, withValues: 1, picturesOnly: 1, openFailed: 0, docx: 1 }));
@@ -695,7 +705,7 @@ describe('US-12 AC13: a .docx is read in the browser and sent as text', () => {
   it('sends a long .docx cut short, with the notice a long PDF gets', async () => {
     docxToText.mockResolvedValue(docxText('Ferritin | 85', { truncated: true }));
     render_(); pick(word('long.docx'));
-    await screen.findByDisplayValue('3.9');
+    await findReviewValue('3.9');
     expect(reasonFor('long.docx')).toBe('This file is long, so only its first part was read.');
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual(expect.objectContaining({ picked: 1, withValues: 1, truncated: 1, docx: 1 }));
@@ -706,7 +716,7 @@ describe('US-12 AC13: a .docx is read in the browser and sent as text', () => {
     const getZipEntries = vi.fn(async () => []);
     Object.assign((window as unknown as { HealthUpload: object }).HealthUpload, { isZip: (f: File) => f.type === 'application/zip', getZipEntries });
     render_(); pick(new File(['x'], 'baseline.docx', { type: 'application/zip' }));
-    await screen.findByDisplayValue('3.9');
+    await findReviewValue('3.9');
     expect(getZipEntries).not.toHaveBeenCalled();
     expect(docxToText).toHaveBeenCalledTimes(1);
   });
@@ -735,15 +745,16 @@ describe('US-12 AC15, AC16: refused and guessed units are shown and counted', ()
       refusedValues: [{ metric: 'creatinine', value: 2, unit: 'mg/mmol', reason: 'This unit is usually a urine result.' }],
     } } as Import);
     render_(); pick(pdf('acr.pdf'));
-    await screen.findByDisplayValue('3.9');
+    await findReviewValue('3.9');
+    // US-13 AC13: in the person's words from the unit, never the assistant's reason text.
+    fireEvent.click(screen.getByRole('button', { name: '1 value not saved' }));
     const list = screen.getByRole('list', { name: 'Values not saved' });
-    expect(list.textContent).toBe('acr.pdf Creatinine 2 mg/mmol. This unit is usually a urine result.');
+    expect(list.textContent).toBe('Creatinine: this unit is usually a urine result');
     expect(reasonFor('acr.pdf')).toBeNull();
     await waitFor(() => expect(sent()).toHaveLength(1));
     expect(sent()[0]).toEqual({ picked: 1, withValues: 1, unitsGuessed: 1, unitsRefused: 1 });
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
     await screen.findByRole('button', { name: 'Done' });
-    expect(screen.getByRole('list', { name: 'Values not saved' })).toBeTruthy();
   });
 
   it('a file whose only values were refused is not "No blood test values found." and not counted noValues', async () => {
@@ -751,7 +762,7 @@ describe('US-12 AC15, AC16: refused and guessed units are shown and counted', ()
       refusedValues: [{ metric: 'creatinine', value: 2, unit: 'mg/mmol', reason: 'This unit is usually a urine result.' }],
     } } as Import);
     render_(); pick(pdf('acr.pdf'));
-    await screen.findByRole('list', { name: 'Values not saved' });
+    await screen.findByRole('button', { name: '1 value not saved' });
     expect(reasonFor('acr.pdf')).toBeNull();
     await waitFor(() => expect(sent()).toHaveLength(1));
     expect(sent()[0]).toEqual({ picked: 1, unitsRefused: 1 });
@@ -853,7 +864,7 @@ describe('US-12 AC9, AC10: a quota refusal and a cancel count, and a pick past 2
     vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 503 })));
     try {
       render_(); pick(pdf('a.pdf'));
-      await screen.findByDisplayValue('3.9');
+      await findReviewValue('3.9');
     } finally { vi.unstubAllGlobals(); }
     expect(screen.queryByText('Daily upload limit reached. You can upload more tomorrow.')).toBeNull();
     expect(sent()).toEqual([{ picked: 1, withValues: 1 }]);
@@ -927,7 +938,7 @@ describe('US-12 AC9, AC10: a quota refusal and a cancel count, and a pick past 2
 
   it('US-12 AC10 (U9): Cancel on the review sends nothing more: the read already counted', async () => {
     render_(); pick(pdf('a.pdf'));
-    await screen.findByDisplayValue('3.9');
+    await findReviewValue('3.9');
     await waitFor(() => expect(sent()).toHaveLength(1));
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(sent()).toEqual([{ picked: 1, withValues: 1 }]);
@@ -945,7 +956,7 @@ describe('US-12 AC9, AC10: a quota refusal and a cancel count, and a pick past 2
       await vi.waitFor(() => expect(labImportBatch).toHaveBeenCalled());
       await vi.advanceTimersByTimeAsync(5000);
     } finally { vi.useRealTimers(); }
-    await screen.findAllByDisplayValue('3.9');
+    await findAllReviewValues('3.9');
     expect(vi.mocked(labImportBatch).mock.calls[0]![0]).toHaveLength(200);
     expect(reasonFor('2 more files')).toBe(LEFT_OUT(2));
     await waitFor(() => expect(outcomes()).toHaveLength(1));
