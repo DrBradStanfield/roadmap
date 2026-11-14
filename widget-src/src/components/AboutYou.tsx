@@ -1,7 +1,7 @@
 // About you's fields, height, sex, birth date and alcohol, and its rows (moved out of InputPanel).
 import { flushSync } from 'react-dom';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { focusById, type FormKit } from './form-kit';
+import { errorAria, focusById, type FormKit } from './form-kit';
 import { ALCOHOL_OPTIONS } from './AlcoholQuestion';
 import { MONTHS_FULL } from '../lib/constants';
 import { blockBadNumericKeys, blockNonIntegerKeys } from '../lib/blood-test-cell';
@@ -146,6 +146,7 @@ export function HeightField(props: HeightFieldProps) {
           min={range('heightCm').min}
           max={range('heightCm').max}
           className={errors.heightCm ? 'error' : ''}
+          {...errorAria('heightCm-error', [unreadable.heightCm, errors.heightCm])}
         />
       ) : (
         <div className="height-fieldset">
@@ -177,6 +178,7 @@ export function HeightField(props: HeightFieldProps) {
             onBlur={leaveHeightPair}
             onKeyDown={settleOnEnter}
             className={errors.heightCm ? 'error' : ''}
+            {...errorAria('heightCm-error', [errors.heightCm])}
           />
           <span className="height-unit">ft</span>
           <input
@@ -210,12 +212,13 @@ export function HeightField(props: HeightFieldProps) {
             onBlur={leaveHeightPair}
             onKeyDown={settleOnEnter}
             className={errors.heightCm ? 'error' : ''}
+            {...errorAria('heightCm-error', [errors.heightCm])}
           />
           <span className="height-unit">in</span>
         </div>
       )}
       {((unreadable.heightCm && unitSystem === 'si') || errors.heightCm) && (
-        <span className="error-message">{unreadable.heightCm && unitSystem === 'si' ? 'Enter a number' : errors.heightCm}</span>
+        <span className="error-message" id="heightCm-error">{unreadable.heightCm && unitSystem === 'si' ? 'Enter a number' : errors.heightCm}</span>
       )}
     </div>
   );
@@ -272,6 +275,7 @@ export function BirthFields(props: BirthFieldsProps) {
           <select
             id="birthMonth"
             value={inputs.birthMonth || ''}
+            {...errorAria('birthMonth-error', [errors.birthMonth])}
             // A pick by touch or mouse moves on; a key never does. Arrowing a closed select fires
             // change on Windows browsers, and the focus must not leave under the keys (WCAG 3.2.2).
             onPointerDown={() => { monthByPointer.current = true; }}
@@ -291,9 +295,9 @@ export function BirthFields(props: BirthFieldsProps) {
             ))}
           </select>
           {/* US-54 AC5b: a birth month in the future, left out of the plan. */}
-          {errors.birthMonth && <span className="error-message">{errors.birthMonth}</span>}
+          {errors.birthMonth && <span className="error-message" id="birthMonth-error">{errors.birthMonth}</span>}
           {/* US-02 AC5: a year out of range stays, saying why; the store refuses it. */}
-          {errors.birthYear && errors.birthYear !== errors.birthMonth && <span className="error-message">{errors.birthYear}</span>}
+          {errors.birthYear && errors.birthYear !== errors.birthMonth && <span className="error-message" id="birthYear-error">{errors.birthYear}</span>}
         </div>
 
         {/* Once shown on this record it stays, so clearing a year to retype keeps the field (US-62 AC13). */}
@@ -304,6 +308,7 @@ export function BirthFields(props: BirthFieldsProps) {
               type="number"
               id="birthYear"
               ref={yearRef}
+              {...errorAria('birthYear-error', [errors.birthYear])}
               onKeyDown={e => { blockNonIntegerKeys(e); settleOnEnter(e); }}
               onWheel={blurOnWheel}
               value={inputs.birthYear || ''}
