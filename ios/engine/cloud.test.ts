@@ -1580,3 +1580,28 @@ describe('TA-2: cloudEdit, cloudFlush and cloudErase stamp nothing past meta.upd
     });
   }
 });
+
+// Lead H200 (US-25 AC16j): every view carries its record's eraseEpoch, so the app can hold a new
+// session's first record at another erase even when it cannot draw it (RecordStore draw(_ view:)).
+describe('the view carries eraseEpoch (H200)', () => {
+  it('cloudOpen, the changed news and cloudErase\'s view each carry the record\'s meta.eraseEpoch', async () => {
+    const dropbox = new FakeDropbox();
+    const before = await recordWith(['2026-10-01'], 'web');
+    dropbox.put(before);
+    const { engine, state } = await phone(dropbox);
+    const opened = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false, false)) as { record: string; eraseEpoch: number };
+    expect(opened.eraseEpoch).toBe(0);
+    expect(Object.keys(opened)).toEqual(['record', 'erase', 'session', 'eraseEpoch']);
+
+    dropbox.put(buildErasedFile({ stored: before, own: before, device: null, ctx: { deviceId: 'web', now: '2026-10-21T09:00:00.000Z' } }));
+    expect(await engine.cloudRefresh()).toBe('changed');
+    const news = JSON.parse(state.events.filter(([event]) => event === 'changed').at(-1)![1]) as { record: string; eraseEpoch: number };
+    expect(news.eraseEpoch).toBe(1);
+    expect(news.eraseEpoch).toBe((JSON.parse(news.record) as RoadmapFile).meta.eraseEpoch);
+
+    const erased = JSON.parse(await engine.cloudErase(null, NOW, () => '')) as { erased: boolean; view: { record: string; eraseEpoch: number } };
+    expect(erased.erased).toBe(true);
+    expect(erased.view.eraseEpoch).toBe(2);
+    expect(erased.view.eraseEpoch).toBe((JSON.parse(erased.view.record) as RoadmapFile).meta.eraseEpoch);
+  });
+});

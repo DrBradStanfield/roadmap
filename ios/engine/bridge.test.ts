@@ -130,6 +130,7 @@ describe('bridge contract (US-25 AC18)', () => {
   // PR 399 re-check R1: the count alone let an optional argument move ahead of a contract one.
   it('each optional argument trails the contract ones, by name and in order, in entry.ts', () => {
     for (const name of Object.keys(optional.doors)) {
+      if (optionalArgs(name).length === 0) continue; // a return-only addition: no optional argument to place
       expect(parameters(name), name).toEqual([...contract.doors[name].args, ...optionalArgs(name)]);
     }
   });
@@ -138,6 +139,7 @@ describe('bridge contract (US-25 AC18)', () => {
   // each optional argument were passed as undefined.
   it('every optional door answers an older app\'s call as it answers undefined optional arguments', () => {
     for (const name of Object.keys(optional.doors)) {
+      if (optionalArgs(name).length === 0) continue; // a return-only addition: no argument an older app could omit
       const args = SAMPLE_ARGS[name];
       expect(args, `${name}: add its contract arguments to SAMPLE_ARGS`).toBeDefined();
       expect(args.length, name).toBe(contract.doors[name].args.length);

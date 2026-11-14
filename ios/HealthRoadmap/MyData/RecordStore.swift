@@ -182,8 +182,9 @@ final class RecordStore {
 
     /// The one door to `source`: the event's transition, then what it shows, in one synchronous
     /// step. Assigns only on change, so CloudSync's link after every send moves nothing it need not.
+    /// `erased`: an erase the caller saw move (`draw(_ view:)`), counted once it shows.
     @discardableResult
-    private func land(_ event: Source.Event, record: String? = nil, drawn: HealthEngine.Drawn? = nil, problem: RecordProblem? = nil) -> Source.Effect {
+    private func land(_ event: Source.Event, record: String? = nil, drawn: HealthEngine.Drawn? = nil, problem: RecordProblem? = nil, erased: Bool = false) -> Source.Effect {
         let before = mark
         let (next, effect) = Source.transition(source, event)
         if next != source { source = next }
@@ -200,7 +201,7 @@ final class RecordStore {
             self.problem = problem
         case .none, .drop: break
         }
-        if before.erased(by: mark) {  // landed, on evidence (S70, S63)
+        if before.erased(by: mark) || (erased && effect == .show) {  // landed, on evidence (S70, S63, H200)
             (erasures, screenErasures) = (erasures + 1, erasures + 1)
             countedErases.insert(cloudErase)
         }
@@ -216,16 +217,20 @@ final class RecordStore {
     /// `choices`: the per-test units to draw it in, published with it (nil: those in force).
     /// Not drawn: nothing on screen moved, the units included.
     /// `holdUndrawn`: one the engine cannot draw is held all the same, with no drawing (showErased), as is
-    /// the shown session's own record at another erase: never the pre-erase record shown (S63, AC16f).
+    /// the shown session's own record at another erase: never the pre-erase record shown (S63, AC16f). So is
+    /// another session's (handOver's) at another eraseEpoch than the one drawn, both known (H200): counted by `land`.
     @discardableResult
     func draw(_ view: HealthEngine.CloudView, in choices: UnitChoices? = nil, holdUndrawn: Bool = false) async -> DrawResult {
-        await draw(view.record, order: view.order, as: .cloudShown(erase: view.erase, session: view.session), in: choices,
-                   holdUndrawn: holdUndrawn || (view.session == source.session && view.erase != source.erase))
+        let drawnEpoch = mark.epoch
+        let moved = view.session != source.session && view.eraseEpoch != nil && drawnEpoch != nil && view.eraseEpoch != drawnEpoch
+        return await draw(view.record, order: view.order, as: .cloudShown(erase: view.erase, session: view.session), in: choices,
+                          holdUndrawn: holdUndrawn || moved || (view.session == source.session && view.erase != source.erase), erased: moved)
     }
 
     /// A cloud record onto the screen: `event` says whether the session sent it or an edit made it.
+    /// `erased`: the caller saw the erase move, which a record held undrawn cannot show `land` (H200).
     @discardableResult
-    func draw(_ record: String, order: Int?, as event: Source.Event, in choices: UnitChoices? = nil, holdUndrawn: Bool = false) async -> DrawResult {
+    func draw(_ record: String, order: Int?, as event: Source.Event, in choices: UnitChoices? = nil, holdUndrawn: Bool = false, erased: Bool = false) async -> DrawResult {
         // One the engine handed over before the record now shown is stale: the screen
         // keeps the newer one (a re-read that crossed an edit). Stale against the record
         // drawn, not one only handed over, whose own draw may have failed. The stamp moves
@@ -233,7 +238,7 @@ final class RecordStore {
         if let order, order <= shownOrder { return drawnOrder.map { order <= $0 } == true ? .stale : .failed }
         let choices = choices ?? unitChoices
         let shown = try? await engine.screen(recordJSON: record, now: .now, deviceId: deviceId, units: choices.json)
-        guard shown != nil || holdUndrawn, land(event, record: record, drawn: shown) == .show else { return .failed }
+        guard shown != nil || holdUndrawn, land(event, record: record, drawn: shown, erased: erased) == .show else { return .failed }
         if let order { (shownOrder, drawnOrder) = (order, order) }
         publish(choices)
         return shown == nil ? .held : .drawn
@@ -268,14 +273,6 @@ final class RecordStore {
             else { return }
             self.display(shown)
         }
-    }
-
-    /// The App Store storefront's country (US-61, `AppStoreCountry`): a change draws the
-    /// record again, so the plan's supplement cards gain or lose Dr Brad's products.
-    func follow(storefrontIsUS isUS: Bool) async {
-        guard await engine.storefrontIsUS != isUS else { return }
-        await engine.useStorefront(isUS: isUS)
-        await redraw().value
     }
 
     // MARK: Erase (US-25 AC16)

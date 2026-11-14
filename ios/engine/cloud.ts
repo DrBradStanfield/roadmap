@@ -107,9 +107,11 @@ export let open: Open | null = null; // read by entry.ts documentOriginal (US-73
  *  opens racing never leave one session orphaned and the other shown. */
 let latest = 0;
 
-/** The record, the erase it is at and the session, as Swift keeps them. */
+/** The record, the erase it is at and the session, as Swift keeps them; eraseEpoch is the
+ *  record's own, so the app can tell a new session's record at another erase (lead H200). */
 function view(at: { id: number; session: RecordSession }): string {
-  return JSON.stringify({ record: JSON.stringify(at.session.file), erase: at.session.eraseIdentity, session: at.id });
+  const file = at.session.file;
+  return JSON.stringify({ record: JSON.stringify(file), erase: at.session.eraseIdentity, session: at.id, eraseEpoch: file.meta.eraseEpoch ?? 0 });
 }
 
 /** A re-read or a save brought something in: Swift shows it, and the phone's
