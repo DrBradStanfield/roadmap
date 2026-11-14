@@ -50,7 +50,8 @@ export function deviceCopyHoldsErase(s: RecordSession): boolean {
  * a failed save's are, and the next session lifts them up (US-06 AC13,
  * US-09 AC4). The merge keeps a row only the device copy holds and drops
  * one an erase listed. Only while the copy is this page's (mirrorOurs).
- * Best-effort: an unreadable or full device copy leaves only the async save.
+ * Best-effort: an unreadable or full device copy leaves only the async save,
+ * and is reported (`mirror-write`), as a repeat after the session's first (US-06 AC13a).
  */
 export function mirrorNowSession(s: RecordSession, mirror: DeviceMirror): void {
   if (!mirror.sync || !s.mirrorOurs(mirror)) return;
@@ -61,9 +62,22 @@ export function mirrorNowSession(s: RecordSession, mirror: DeviceMirror): void {
     const merged = ROADMAP_DOC.merge(s.current, ROADMAP_DOC.migrate(body, ctx), ctx);
     mirror.pending.set();
     s.deviceCopySeen = mirror.sync.writeSync(ROADMAP_FILE_NAME, merged, version).version;
-  } catch {
-    /* the async save below is all that is left */
+  } catch (error) {
+    reportDeparture(s, error); // the async save below is all that is left
   }
+}
+
+/** Sessions whose departure write already failed and was reported. */
+const departureReported = new WeakSet<RecordSession>();
+
+/** A failed departure write, told to the host (error and closed tags only); a report that throws never stops the async save. */
+function reportDeparture(s: RecordSession, error: unknown): void {
+  try {
+    s.host.report(error, { op: 'mirror-write', repeat: departureReported.has(s) });
+  } catch {
+    /* a reporter that fails: the async save still runs */
+  }
+  departureReported.add(s);
 }
 
 /**

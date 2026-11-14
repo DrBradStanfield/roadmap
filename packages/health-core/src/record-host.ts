@@ -15,7 +15,7 @@ import type { SaveRetry } from './save-retry-words';
 import type { SyncContext } from './sync-manager';
 
 /** What failed, in a host's `report`. */
-export type RecordFailureOp = 'persist' | 'pre-erase' | 'chat-erase' | 'clear-off-file' | 'after-save';
+export type RecordFailureOp = 'persist' | 'pre-erase' | 'chat-erase' | 'clear-off-file' | 'after-save' | 'mirror-write';
 
 /** What `remoteChanged` tells the page: the erase a merge brought in, if any (US-16 AC2a). */
 export interface RemoteChange { erase: string | null }
@@ -224,9 +224,10 @@ interface HostBase {
    *  (`persist`), or a best-effort erase step (`pre-erase`, the caller's
    *  server teardown; `chat-erase`, the chat history's tombstones), the
    *  off-file clear an erase taken in owes (`clear-off-file`, retried in this
-   *  session until it lands), or a throw after a save's write landed (`after-save`). `repeat`:
-   *  this kind of device refusal, or this erase's failed clear, was already
-   *  reported this session. Gets the error and closed tags only, never
+   *  session until it lands), a throw after a save's write landed (`after-save`), or a
+   *  cloud page's departure write to the device copy (`mirror-write`). `repeat`:
+   *  this kind of device refusal, this erase's failed clear, or a departure
+   *  write, was already reported this session. Gets the error and closed tags only, never
    *  record content. */
   report(error: unknown, at: { op: RecordFailureOp; cause?: string; repeat: boolean }): void;
 }
