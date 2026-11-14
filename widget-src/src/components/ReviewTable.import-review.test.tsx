@@ -235,11 +235,6 @@ describe('US-13 AC13: what Save writes always has a cell, and a refused value bl
 // person can see and has not cleared: Save writes it, or its error blocks Save, or it
 // is named under "Not saved". Never none of the three.
 describe('US-13 AC13: every visible, kept cell saves, blocks Save, or is named', () => {
-  const undated = (metric: string, valueSI: number, fileName: string, reportDate: string) =>
-    labs([{ ...v(metric, valueSI), recordedAt: 'undated' }], { fileName, reportDate });
-  const pick = (day: string) => {
-    for (const p of screen.queryAllByLabelText('Choose the date of the previous results')) fireEvent.change(p, { target: { value: day } });
-  };
   /** Each visible, uncleared cell's fate. */
   const fates = (t: ReturnType<typeof review>) => {
     const savedValues = (): string[] => {
@@ -269,14 +264,43 @@ describe('US-13 AC13: every visible, kept cell saves, blocks Save, or is named',
     expect(t.save()!.disabled).toBe(true);
     expect(fates(t).sort()).toEqual(['blocks', 'blocks']);
   });
+});
 
-  it('clearing the winner of a day makes the hidden same-day reading the winner: it shows, and saves', () => {
-    const t = review([undated('hdl', 1.2, 'a.docx', '2026-03-10'), undated('hdl', 1.4, 'b.docx', '2026-04-10')]);
-    pick('2025-09-02');
-    fireEvent.click(t.showAll() ?? document.body);
-    expect(t.inputs()).toEqual(['1.2']);
-    fireEvent.change(screen.getByDisplayValue('1.2'), { target: { value: '' } });
-    expect(t.inputs().sort()).toEqual(['', '1.4']);
-    expect(fates(t)).toEqual(['saves']);
+// Owner, 2026-11-15 (Codex R1): a cell the person edited is pinned. It keeps its cell
+// and its slot whatever its number; no other reading of that test and day is promoted
+// while it stands. Clearing it releases the slot to the next reading.
+describe('US-13 AC13, AC5: an edited cell is pinned', () => {
+  const twoReports = () => review([labs([v('ldl', 3.1)], { fileName: 'a.pdf' }), labs([v('ldl', 3.9)], { fileName: 'b.pdf' })]);
+  const edit = (from: string, to: string) => fireEvent.change(screen.getByDisplayValue(from), { target: { value: to } });
+
+  it('the winning 3.1 edited to 999: the cell stays with its error, Save is blocked, 3.9 is never written', () => {
+    const t = twoReports();
+    fireEvent.click(t.showAll()!);
+    edit('3.1', '999');
+    expect(t.inputs()).toEqual(['999']);
+    expect(t.save()!.disabled).toBe(true);
+    expect(screen.getByText('Correct or clear the values with errors before saving.')).toBeTruthy();
+    fireEvent.click(t.save()!);
+    expect(t.onSave).not.toHaveBeenCalled();
+  });
+
+  it('the winning 3.1 edited to 3.3: 3.3 saves, and 3.9 is named as another reading that day', () => {
+    const t = twoReports();
+    fireEvent.click(t.showAll()!);
+    edit('3.1', '3.3');
+    fireEvent.click(screen.getByRole('button', { name: '1 value not saved' }));
+    expect(screen.getByRole('list', { name: 'Values not saved' }).textContent).toBe('LDL Cholesterol: another reading of this test is on the same day');
+    fireEvent.click(t.save()!);
+    expect(t.saved()).toEqual([['ldl', 3.3, 'lab_import_edited']]);
+  });
+
+  it('clearing the edited cell releases the slot: 3.9 takes the cell and saves', () => {
+    const t = twoReports();
+    fireEvent.click(t.showAll()!);
+    edit('3.1', '3.3');
+    edit('3.3', '');
+    expect(t.inputs()).toEqual(['3.9']);
+    fireEvent.click(t.save()!);
+    expect(t.saved()).toEqual([['ldl', 3.9, undefined]]);
   });
 });

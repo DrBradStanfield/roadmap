@@ -39,7 +39,7 @@ interface ReviewTableProps {
   /** The values the last save refused, shown beside its error (US-12 AC6). */
   refusals?: ReactNode;
   /** Set each render to the review's `upload_review` counts, for a review
-   *  that ends by Cancel or by closing (US-13 AC13). */
+   *  that Cancel ends (US-13 AC13). */
   countsRef?: MutableRefObject<(() => Partial<Record<UploadReviewKey, number>>) | null>;
 }
 
@@ -93,10 +93,14 @@ export function ReviewTable({
   // stand: an edit's number, a cleared value's absence (US-13 AC13). Keyed by
   // content, so re-seeding untouched text never rebuilds the matrix.
   const editsNow = currentEdits(results, editedDisplayValues, touchedRef.current, units, unitSystem);
-  const editsKey = JSON.stringify([...editsNow]);
-  const edits = useMemo(() => editsNow, [results, editsKey]);
-  // Values the write refuses on their own take no slot, as in the review's groups.
-  const slotless = useMemo(() => slotlessIds(results, edits), [results, edits]);
+  // A value the person edited and has not cleared is pinned: it keeps its cell and its
+  // slot whatever its number, judged on its own (owner, 2026-11-15).
+  const pinnedNow = [...touchedRef.current.keys()].filter(id => (editedDisplayValues[id] ?? '').trim() !== '').sort();
+  const editsKey = JSON.stringify([[...editsNow], pinnedNow]);
+  const { edits, pinned } = useMemo(() => ({ edits: editsNow, pinned: new Set(pinnedNow) }), [results, editsKey]);
+  // An unedited value the write refuses on its own takes no slot, as in the review's groups.
+  const refusedNow = useMemo(() => slotlessIds(results, edits), [results, edits]);
+  const slotless = useMemo(() => new Set([...refusedNow].filter(id => !pinned.has(id))), [refusedNow, pinned]);
   const matrix = useMemo(
     () => buildMatrixModel(results, fileDates, history.measurements, history.labValues, unitSystem, units, touchedRef.current, slotless, edits),
     [results, fileDates, history.measurements, history.labValues, unitSystem, units, touchedCount, slotless, edits],
@@ -330,17 +334,19 @@ export function ReviewTable({
     const day = new Map(matrix.columns.map(col => [col.dateKey, buildRecordedAt(col.date)]));
     const kept: KeptValue[] = saveableCells.map(c => ({ id: editId(c.cell), recordedAt: day.get(c.dateKey)!, correctsId: c.cell.existing?.id, ...(c.isEdited ? { edited: c.value } : null) }));
     const ids = new Set(kept.map(k => k.id));
-    // A reading with no cell is sent, at its current number, unless its winner was
-    // left unticked: the matrix placed it by the same rule, so it never writes.
+    // A reading with no cell is sent, at its current number, while its winner is
+    // kept and the write takes the winner: it never writes, and never stands in
+    // for a pinned winner whose number the write refuses (Save is blocked then).
     const editable = new Set([...matrix.cells.values()].flatMap(c => (c.state === 'editable' ? [editId(c)] : [])));
-    kept.push(...matrix.unshown.filter(u => edits.get(u.id) !== null && (!u.winner || ids.has(u.winner) || !editable.has(u.winner))).map(u => {
+    kept.push(...matrix.unshown.filter(u => edits.get(u.id) !== null
+      && (!u.winner || (ids.has(u.winner) && !refusedNow.has(u.winner)) || !editable.has(u.winner))).map(u => {
       const [fi, ref] = [Number(u.id.split(':')[0]), u.id.split(':')[1]];
       const extracted = ref[0] === 'v' ? results[fi].values[Number(ref.slice(1))].valueSI : results[fi].additionalValues[Number(ref.slice(1))].value;
       const edit = edits.get(u.id);
       return { id: u.id, recordedAt: `${u.day}T00:00:00.000Z`, ...(typeof edit === 'number' ? { edited: edit } : u.edited ? { edited: extracted } : null) };
     }));
     return classifyReview(results, fileDates, history, kept);
-  }, [results, fileDates, history, matrix, saveableCells, edits]);
+  }, [results, fileDates, history, matrix, saveableCells, edits, refusedNow]);
   // What Save writes, and the kept values waiting on a column's day (Save stays blocked until it is set).
   const savedCount = groups.decisions.values.length + groups.decisions.labValues.length
     + saveableCells.filter(c => groups.groupOf.get(editId(c.cell)) === 'waiting').length;
@@ -364,7 +370,7 @@ export function ReviewTable({
   const shownMatrix = showAll.open ? matrix : rows.matrix;
   const hiddenSaving = [...rows.hidden].filter(id => groups.writes.has(id)).length;
   /** The `upload_review` counts (US-13 AC13). The upload flow sends them once
-   *  per review: on a finished Save, or on Cancel or close; never for a failed Save. */
+   *  per review: on a finished Save, or on Cancel; never for a failed Save or a hide. */
   const reviewCounts = (saved: boolean) => {
     const replaced = Object.keys(replaceChecked).filter(k => replaceChecked[k]).map(k => k.slice(0, k.indexOf('>')));
     return reviewEventMetadata(groups, [...touchedRef.current.keys(), ...replaced], { showAll: showAll.opened, notSaved: notSavedOpen.opened }, saved);

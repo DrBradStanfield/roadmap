@@ -42,12 +42,14 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
   const { phase, files, notices, progress, results, readError, saveError, skipArchive } = flow;
   const picking = phase === 'picking' || phase === 'readFailed';
   const reviewing = phase === 'reviewing' || phase === 'saving' || phase === 'saveFailed';
-  // A review that ends by Cancel, ×, Escape or the backdrop sends its counts, as
-  // Cancel does; the flow sends one per review, and none while a Save runs (US-13 AC13).
+  // A review that Cancel discards sends its counts; × and Escape only hide it, to
+  // resume (US-12 AC4). The flow sends one per review, none while a Save runs (US-13 AC13).
   const reviewCounts = useRef<(() => ProductEventMetadata) | null>(null);
-  const endReview = () => { if (phase === 'reviewing' || phase === 'saveFailed') flow.endReview(reviewCounts.current?.()); };
-  const handleClose = () => { endReview(); flow.close(); };
-  const handleDiscard = () => { endReview(); flow.discard(); };
+  const handleClose = flow.close;
+  const handleDiscard = () => {
+    if (phase === 'reviewing' || phase === 'saveFailed') flow.endReview(reviewCounts.current?.());
+    flow.discard();
+  };
   // Connect-first gate (decision record: encourage, don't block). 'device-only'
   // + not skipped → show the connect panel instead of the dropzone.
   const archiveMode = getDocumentArchiveMode();

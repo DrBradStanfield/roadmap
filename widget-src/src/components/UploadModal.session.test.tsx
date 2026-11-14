@@ -208,16 +208,23 @@ describe('US-12 AC4–6 upload session ownership', () => {
     expect(reviews()).toEqual([expect.objectContaining({ saved: 1 })]);
     expect(Object.keys(reviews()[0]!).every(k => ['sure', 'unsure', 'notSaved', 'showAll', 'notSavedOpened', 'changedSure', 'changedUnsure', 'saved'].includes(k))).toBe(true);
   });
-  it('US-13 AC13: closing the review with Escape or × sends its counts once, as Cancel does; a later Cancel sends nothing more', async () => {
+  it('US-13 AC13, US-12 AC4: Escape and × only hide the review; reopened and saved, it sends one upload_review, saved 1', async () => {
     const reviews = () => vi.mocked(trackProductEvent).mock.calls.filter(([name]) => name === 'upload_review').map(([, meta]) => meta);
     render(<Harness />); await ready();
     fireEvent.keyDown(document, { key: 'Escape' });
-    expect(reviews()).toEqual([expect.objectContaining({ saved: 0 })]);
     fireEvent.click(screen.getByRole('button', { name: /Ready for review|Click to open/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    expect(reviews()).toEqual([]);
     fireEvent.click(screen.getByRole('button', { name: /Ready for review|Click to open/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    await screen.findByRole('button', { name: 'Done' });
+    expect(reviews()).toEqual([expect.objectContaining({ saved: 1 })]);
+  });
+  it('US-13 AC13: Cancel ends the review and sends one upload_review, saved 0', async () => {
+    const reviews = () => vi.mocked(trackProductEvent).mock.calls.filter(([name]) => name === 'upload_review').map(([, meta]) => meta);
+    render(<Harness />); await ready();
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
-    expect(reviews()).toHaveLength(1);
+    expect(reviews()).toEqual([expect.objectContaining({ saved: 0 })]);
   });
   it('keeps a thrown save in review so a second Save retries, and blocks discard until every branch settles', async () => {
     const archive = deferred<Awaited<ReturnType<typeof bulkSaveDocuments>>>();
