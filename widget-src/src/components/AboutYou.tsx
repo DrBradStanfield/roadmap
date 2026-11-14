@@ -152,6 +152,7 @@ export function HeightField(props: HeightFieldProps) {
           <input
             type="text"
             id="heightFeet"
+            aria-label="Height, feet"
             inputMode="numeric"
             pattern="[0-9]*"
             value={heightFeet}
@@ -182,6 +183,7 @@ export function HeightField(props: HeightFieldProps) {
           <input
             type="text"
             id="heightInches"
+            aria-label="Height, inches"
             inputMode="numeric"
             pattern="[0-9]*"
             value={heightInches}
