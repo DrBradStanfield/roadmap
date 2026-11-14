@@ -31,6 +31,8 @@ const getReminderOptIn = vi.fn<() => FileReminderOptIn | undefined>(() => undefi
 const setReminderOptIn = vi.fn<(fields: Omit<FileReminderOptIn, 'updatedAt' | 'lamport'>, erase?: string) => boolean>(() => true);
 const getShownErase = vi.fn(() => '[0,null]');
 const getEraseIdentity = vi.fn(() => '[0,null]');
+const stillShown = vi.fn((_asked: string) => true);
+const eraseRunsHere = vi.fn(() => true);
 const flushRoadmapStore = vi.fn(async () => {});
 const computeCurrentReminderSchedule = vi.fn(() => [
   { category: 'blood_test_lipids', group: 'blood_test', label: 'Lipid panel blood test', dueAt: '2027-05-12' },
@@ -46,6 +48,8 @@ vi.mock('../src/lib/roadmap-data', () => ({
   setReminderOptIn: (...args: Parameters<typeof setReminderOptIn>) => setReminderOptIn(...args),
   getShownErase: () => getShownErase(),
   getEraseIdentity: () => getEraseIdentity(),
+  stillShown: (asked: string) => stillShown(asked),
+  eraseRunsHere: () => eraseRunsHere(),
   flushRoadmapStore: () => flushRoadmapStore(),
   computeCurrentReminderSchedule: () => computeCurrentReminderSchedule(),
   isKnownMinorNow: () => isKnownMinorNow(),
@@ -88,10 +92,21 @@ function makeStorage(): Storage {
   } as unknown as Storage;
 }
 
+/** Where the window's listeners live: dispatchEvent stays a spy, so remoteChanged() fires them. */
+let windowEvents = new EventTarget();
 function stubBrowser(): void {
   vi.stubGlobal('localStorage', makeStorage());
   vi.stubGlobal('sessionStorage', makeStorage());
-  vi.stubGlobal('window', { dispatchEvent: vi.fn() });
+  windowEvents = new EventTarget();
+  vi.stubGlobal('window', {
+    dispatchEvent: vi.fn(),
+    addEventListener: vi.fn(windowEvents.addEventListener.bind(windowEvents)),
+    removeEventListener: vi.fn(windowEvents.removeEventListener.bind(windowEvents)),
+  });
+}
+/** A re-read merged something new in (the store's hr:remote-changed). */
+function remoteChanged(): void {
+  windowEvents.dispatchEvent(new Event('hr:remote-changed'));
 }
 
 function mockFetchOk(body: unknown = { token: 'new-cap-token', email: 'user@example.com' }): FetchMock {
@@ -117,6 +132,9 @@ beforeEach(() => {
   getReminderOptIn.mockReturnValue(undefined);
   getShownErase.mockReturnValue('[0,null]');
   getEraseIdentity.mockReturnValue('[0,null]');
+  stillShown.mockReturnValue(true);
+  eraseRunsHere.mockReturnValue(true);
+  getReminderOptIn.mockReset().mockReturnValue(undefined);
   setReminderOptIn.mockImplementation(() => true);
   isKnownMinorNow.mockReturnValue(false);
   getReminderIdToken.mockResolvedValue('signed-id-token');
@@ -957,17 +975,18 @@ describe('US-17 AC1b, US-11 AC4c — erasing your data reaches the server row to
   });
 
   it('is not counted as an opt-out — they erased everything, they did not judge reminders', async () => {
-    getReminderOptIn.mockReturnValue(ACTIVE);
-    mockFetchOk({ ok: true });
+    getReminderOptIn.mockReturnValueOnce(ACTIVE).mockReturnValue(undefined); // the erased record holds no token
+    const f = mockFetchOk({ ok: true });
     const { cancelRemindersForErase } = await loadReminders();
 
     await (await cancelRemindersForErase())();
 
+    expect(f).toHaveBeenCalledTimes(1);
     expect(trackProductEvent).not.toHaveBeenCalled();
   });
 
   it('reports a refused delete by its status alone, rather than swallowing it (an orphaned row still emails)', async () => {
-    getReminderOptIn.mockReturnValue(ACTIVE);
+    getReminderOptIn.mockReturnValueOnce(ACTIVE).mockReturnValue(undefined); // the erased record holds no token
     vi.stubGlobal('fetch', vi.fn(async () => new Response('nope', { status: 500 })));
     const { cancelRemindersForErase } = await loadReminders();
 
@@ -986,6 +1005,117 @@ describe('US-17 AC1b, US-11 AC4c — erasing your data reaches the server row to
     await (await cancelRemindersForErase())();
 
     expect(f).not.toHaveBeenCalled();
+  });
+});
+
+// US-11 AC4c (lead S59b): the erase's reminders teardown is one state,
+// changed only by this pure transition.
+describe('US-11 AC4c — the EraseCancel transition', () => {
+  type State = import('./reminders-erase-cancel').EraseCancel;
+  type Event = import('./reminders-erase-cancel').EraseCancelEvent;
+  type Effect = import('./reminders-erase-cancel').EraseCancelEffect;
+  const on = (token: string, status: 'active' | 'cancelled' = 'active'): FileReminderOptIn => ({ ...ACTIVE, token, status });
+  const watching = (...cancels: { token: string; idToken: string | null }[]): State => ({ kind: 'watching', at: 'E0', cancels });
+  const running = (optIn: FileReminderOptIn | undefined, identity = 'E0'): Event => ({ type: 'remote', optIn, running: true, identity });
+  const ended = (identity: string): Event => ({ type: 'remote', optIn: undefined, running: false, identity });
+  const A = { token: 'test-token-a', idToken: null };
+  const B = { token: 'test-token-b', idToken: null };
+  const LISTEN: Effect[] = [{ type: 'listen' }];
+  const UNLISTEN: Effect[] = [{ type: 'unlisten' }];
+  // The listener is attached exactly while the state is `watching`: entering it listens, leaving it stops.
+  const rows: [string, State, Event, State, Effect[]][] = [
+    ['prepared starts watching at the erase, and listens', { kind: 'done' }, { type: 'prepared', at: 'E0' }, watching(), LISTEN],
+    ['prepared again starts afresh, still listening', watching(A), { type: 'prepared', at: 'E1' }, { kind: 'watching', at: 'E1', cancels: [] }, []],
+    ['prepared after a failed prepare listens again', { kind: 'unprepared' }, { type: 'prepared', at: 'E0' }, watching(), LISTEN],
+    ['the first read keeps an active token', watching(), { type: 'read', optIn: on('test-token-a') }, watching(A), []],
+    ['the first read of no opt-in keeps nothing', watching(), { type: 'read', optIn: undefined }, watching(), []],
+    ['a token merged in while the erase runs is kept', watching(A), running(on('test-token-b')), watching(A, B), []],
+    ['the same token seen again is kept once', watching(A), running(on('test-token-a')), watching(A), []],
+    ['a cancelled opt-in adds nothing', watching(A), running(on('test-token-b', 'cancelled')), watching(A), []],
+    ['no opt-in adds nothing', watching(A), running(undefined), watching(A), []],
+    ['a token merged in with another erase while this one runs is kept [S59b D3a]', watching(A), running(on('test-token-b'), 'E1'), watching(A, B), []],
+    ['the erase ended where it began (refused, put back): done, stops listening', watching(A), ended('E0'), { kind: 'done' }, UNLISTEN],
+    ['the erase ended elsewhere (it landed): kept for the commit, still listening', watching(A), ended('E2'), watching(A), []],
+    ['proved puts the proof on its token only', watching(A, B), { type: 'proved', token: 'test-token-a', idToken: 'test-proof' }, watching({ ...A, idToken: 'test-proof' }, B), []],
+    ['the prepare failed: unprepared, nothing kept, stops listening', watching(A), { type: 'failed' }, { kind: 'unprepared' }, UNLISTEN],
+    ['committed from watching: done, stops listening', watching(A), { type: 'committed' }, { kind: 'done' }, UNLISTEN],
+    ['committed from unprepared: done, nothing to stop', { kind: 'unprepared' }, { type: 'committed' }, { kind: 'done' }, []],
+    ['done ignores a merged-in token', { kind: 'done' }, running(on('test-token-a')), { kind: 'done' }, []],
+    ['unprepared ignores a merged-in token', { kind: 'unprepared' }, running(on('test-token-a')), { kind: 'unprepared' }, []],
+    ['unprepared ignores the erase ending', { kind: 'unprepared' }, ended('E0'), { kind: 'unprepared' }, []],
+  ];
+  it.each(rows)('%s', async (_name, state, event, next, effects) => {
+    await loadReminders();
+    const { eraseCancelTransition } = await import('./reminders-erase-cancel');
+    expect(eraseCancelTransition(state, event)).toEqual({ state: next, effects });
+  });
+
+  // What the commit sends: never the token the record still holds active (it survived the erase).
+  const sends: [string, State, FileReminderOptIn | undefined, { token: string; idToken: string | null }[]][] = [
+    ['every token kept, the record erased', watching(A, B), undefined, [A, B]],
+    ['every token kept, the record holding a cancelled opt-in', watching(A, B), on('test-token-b', 'cancelled'), [A, B]],
+    ['not the token the record still holds active', watching(A, B), on('test-token-b'), [A]],
+    ['an active token the teardown never kept changes nothing', watching(A), on('test-token-c'), [A]],
+    ['nothing from done', { kind: 'done' }, undefined, []],
+    ['nothing from unprepared', { kind: 'unprepared' }, undefined, []],
+  ];
+  it.each(sends)('toCancel: %s', async (_name, state, standing, out) => {
+    await loadReminders();
+    const { toCancel } = await import('./reminders-erase-cancel');
+    expect(toCancel(state, standing)).toEqual(out);
+  });
+});
+
+// US-11 AC4c (lead S59b): the prepare's listener on hr:remote-changed is
+// attached while the teardown watches, and goes as it stops.
+describe('US-11 AC4c — the erase watcher follows the state', () => {
+  const remote = (calls: unknown[][]) => calls.filter(([type]) => type === 'hr:remote-changed').length;
+  const added = () => remote(vi.mocked(window.addEventListener).mock.calls);
+  const removed = () => remote(vi.mocked(window.removeEventListener).mock.calls);
+
+  it('keeps a token merged in with another erase while this one runs, and stops at the commit', async () => {
+    getReminderOptIn.mockReturnValue(ACTIVE);
+    const f = mockFetchOk({ ok: true });
+    const { cancelRemindersForErase } = await loadReminders();
+    const commit = await cancelRemindersForErase();
+    expect([added(), removed()]).toEqual([1, 0]);
+
+    // Another device erased, then turned reminders on; this page merges both in.
+    getEraseIdentity.mockReturnValue('[1,"2026-11-14T00:00:00.000Z"]');
+    getReminderOptIn.mockReturnValue({ ...ACTIVE, provider: 'dropbox', token: 'test-token-b' });
+    remoteChanged();
+    expect(removed()).toBe(0);
+    getReminderOptIn.mockReturnValue(undefined); // the erased record holds no token
+    await commit();
+
+    expect(removed()).toBe(1);
+    expect(f.mock.calls.map((_c, n) => postedBody(f, n))).toEqual([
+      { op: 'cancel', token: 'cap-token', idToken: 'signed-id-token' },
+      { op: 'cancel', token: 'test-token-b' },
+    ]);
+  });
+
+  it('stops at the first re-read once the erase ended where it began (refused): it holds nothing', async () => {
+    getReminderOptIn.mockReturnValue(ACTIVE);
+    const f = mockFetchOk({ ok: true });
+    const { cancelRemindersForErase } = await loadReminders();
+    const commit = await cancelRemindersForErase();
+
+    eraseRunsHere.mockReturnValue(false); // the erase ended, the record still at its erase
+    remoteChanged();
+    expect(removed()).toBe(1);
+    await commit(); // never run for a refused erase; even so it sends nothing
+
+    expect(f).not.toHaveBeenCalled();
+  });
+
+  it('a prepare that throws stops listening at once', async () => {
+    getReminderOptIn.mockImplementation(() => { throw new Error('read broke'); });
+    mockFetchOk({ ok: true });
+    const { cancelRemindersForErase } = await loadReminders();
+    await cancelRemindersForErase();
+
+    expect([added(), removed()]).toEqual([1, 1]);
   });
 });
 
@@ -1027,13 +1157,15 @@ describe('US-17 — turning reminders off is counted', () => {
 
 // US-17 AC17 (H18e/f/g): a Turn off acts only on the opt-in it read. `asked`
 // is the opt-in read when Turn off is asked; `now` is the record when the
-// cancel answers. Rows 4 and 6 are US-11 AC4b's erase cases.
+// cancel answers. Rows 4 and 6 are US-11 AC4b's erase cases. Rows 6 and 6b
+// are refused only after the POST went out; 6c and 6d are refused before it,
+// so they post nothing (lead S59b, F1): `unshown` is stillShown false then.
 describe('US-17 AC17 — a Turn off acts only on the opt-in it read', () => {
   const T1: FileReminderOptIn = { ...ACTIVE, provider: 'dropbox' };
   const ERASED: FileReminderOptIn = { ...T1, status: 'cancelled', token: '', email: '', lamport: 9 };
   type Row = {
     asked: FileReminderOptIn | undefined; now?: FileReminderOptIn | undefined; status?: number; refused?: boolean; erasedTo?: string;
-    posts: boolean; writes: boolean; counts: boolean; throws?: string;
+    unshown?: boolean; posts: boolean; writes: boolean; counts: boolean; throws?: string;
   };
   const rows: [string, Row][] = [
     ['1 the same opt-in: post, write cancelled, count', { asked: T1, now: T1, posts: true, writes: true, counts: true }],
@@ -1043,6 +1175,8 @@ describe('US-17 AC17 — a Turn off acts only on the opt-in it read', () => {
     ['5 the opt-in is gone meanwhile: no write', { asked: T1, now: undefined, posts: true, writes: false, counts: false }],
     ['6 the write is refused (an erase runs): ERASE_IN_PROGRESS, no count [H18f]', { asked: T1, now: T1, refused: true, posts: true, writes: true, counts: false, throws: 'Your data is being deleted. Try again in a moment.' }],
     ['6b the write is refused at another erase, none running: RECORD_CHANGED_SINCE_ASKED, no count', { asked: T1, now: T1, refused: true, erasedTo: '[1,"2026-11-14T00:00:00.000Z"]', posts: true, writes: true, counts: false, throws: 'Not saved: your record changed since you asked.' }],
+    ['6c the record is at another erase when the POST would go, none running: RECORD_CHANGED_SINCE_ASKED, no post [S59b F1]', { asked: T1, now: T1, unshown: true, erasedTo: '[1,"2026-11-14T00:00:00.000Z"]', posts: false, writes: false, counts: false, throws: 'Not saved: your record changed since you asked.' }],
+    ["6d this tab's erase runs when the POST would go: ERASE_IN_PROGRESS, no post [S59b F1]", { asked: T1, now: T1, unshown: true, posts: false, writes: false, counts: false, throws: 'Your data is being deleted. Try again in a moment.' }],
     ['7 already cancelled: no post, no write, no count [H18g]', { asked: { ...T1, status: 'cancelled' }, posts: false, writes: false, counts: false }],
     ['8 an erased file (cancelled, token \'\'): no post, so no 400 [H18g]', { asked: ERASED, posts: false, writes: false, counts: false }],
     ['9 nothing enrolled: no post', { asked: undefined, posts: false, writes: false, counts: false }],
@@ -1052,6 +1186,7 @@ describe('US-17 AC17 — a Turn off acts only on the opt-in it read', () => {
     getReminderOptIn.mockReturnValueOnce(row.asked).mockReturnValue('now' in row ? row.now : row.asked);
     if (row.refused) setReminderOptIn.mockReturnValueOnce(false);
     if (row.erasedTo) getEraseIdentity.mockReturnValue(row.erasedTo);
+    if (row.unshown) stillShown.mockReturnValue(false);
     const f = vi.fn(async () => new Response('{}', { status: row.status ?? 200 }));
     vi.stubGlobal('fetch', f);
     const { cancelReminders } = await loadReminders();

@@ -34,8 +34,10 @@ import {
   getShownErase,
   isKnownMinorNow,
   setReminderOptIn,
+  stillShown,
 } from '../src/lib/roadmap-data';
 import { DropboxAdapter, GitHubAdapter, GoogleDriveAdapter } from '../src/storage';
+import { eraseCancelState, stepEraseCancel, toCancel } from './reminders-erase-cancel';
 import { ERASE_IN_PROGRESS, RECORD_CHANGED_SINCE_ASKED } from '@roadmap/health-core/erase';
 import { trackProductEvent } from '../src/lib/server-api';
 import { SHOPIFY_SURFACE } from '../src/lib/build-flags';
@@ -370,26 +372,44 @@ export async function autoEnrolReminders(backend: Backend): Promise<void> {
  * keepalive and the proof in hand, so it stays a delete. A refused cancel is
  * reported by its status alone; no retry, the token is gone.
  *
+ * Until the swap a re-read can still merge in another device's Turn on, so
+ * every distinct active token seen while this tab's erase runs is cancelled
+ * too, bare (a tombstone stops the emails); only the first carries the proof
+ * (US-11 AC4c, lead S59b; the state: reminders-erase-cancel.ts). Tokens and
+ * proof stay in memory only, for the erase's span.
+ *
  * Not counted as an opt-out: they erased everything, they didn't judge
  * reminders. Registered as a hook by the standalone entry, because `src/`
  * (where the store lives) must never import `standalone/`.
  */
 export async function cancelRemindersForErase(): Promise<() => Promise<void>> {
-  let cancel: { token: string; idToken: string | null } | 'unprepared' | null = null;
+  stepEraseCancel({ type: 'prepared', at: getEraseIdentity() });
   try {
     const optIn = getReminderOptIn();
-    if (optIn?.status === 'active') cancel = { token: optIn.token, idToken: await cancelProofFor(optIn.provider) };
+    stepEraseCancel({ type: 'read', optIn });
+    if (optIn?.status === 'active') stepEraseCancel({ type: 'proved', token: optIn.token, idToken: await cancelProofFor(optIn.provider) });
   } catch {
-    cancel = 'unprepared'; // what failed may quote the token or proof: nothing of it is kept
+    stepEraseCancel({ type: 'failed' }); // what failed may quote the token or proof: nothing of it is kept
   }
   return async () => {
     // An erase leaves no reminder token on the device, not even a cancelled one.
     safeRemoveItem(SWITCH_CANCELLED_KEY);
-    if (!cancel) return;
-    const status = cancel === 'unprepared' ? 'unprepared' : await postCancel(cancel.token, cancel.idToken, true)
-      .then((res) => (res.ok ? null : String(res.status)), () => 'unsent');
-    if (status) Sentry.captureException(new Error(`Reminder row delete failed (${status}).`), { tags: { area: 'reminders', op: 'erase-cancel' } });
+    const held = eraseCancelState();
+    stepEraseCancel({ type: 'committed' });
+    const failed = held.kind === 'unprepared' ? ['unprepared'] : await Promise.all(toCancel(held, getReminderOptIn()).map(
+      ({ token, idToken }) => postCancel(token, idToken, true).then((res) => (res.ok ? null : String(res.status)), () => 'unsent'),
+    ));
+    for (const status of failed) {
+      if (status) Sentry.captureException(new Error(`Reminder row delete failed (${status}).`), { tags: { area: 'reminders', op: 'erase-cancel' } });
+    }
   };
+}
+
+/** Why a Turn off asked under `erase` is refused, as ChatEdits' replyStanding
+ *  says it: at that erase, this tab's erase is running (US-11 AC4b);
+ *  otherwise the record moved to another (US-16 AC2a). */
+function refusedWhy(erase: string): string {
+  return erase === getEraseIdentity() && erase === getShownErase() ? ERASE_IN_PROGRESS : RECORD_CHANGED_SINCE_ASKED;
 }
 
 /** Turn reminders off (server row tombstoned, or deleted when Drive can prove
@@ -406,17 +426,16 @@ export async function cancelReminders({ count = true, keepalive = false } = {}):
   // token) is refused, not written into the erased record (US-11 AC4b).
   const erase = getShownErase();
   const idToken = keepalive ? null : await cancelProofFor(optIn.provider);
+  // A write that would be refused is refused before the POST, so no row is
+  // cancelled under a switch that stays on (US-11 AC4b, lead S59b).
+  if (!stillShown(erase)) throw new Error(refusedWhy(erase));
   const res = await postCancel(optIn.token, idToken, keepalive);
   if (!res.ok) throw new Error(`Could not turn reminders off (${res.status}). Please retry.`);
   // The opt-in changed while the cancel was out (another device's Turn on or
   // off, an erase): that later decision stands, and nothing is counted (US-17 AC17).
   if (!sameOptIn(getReminderOptIn(), optIn)) return;
-  // Refused: the switch stays on, and it says why, as ChatEdits' replyStanding
-  // does. At the erase it was asked under, the refusal is this tab's erase
-  // running (US-11 AC4b); otherwise the record moved to another (US-16 AC2a).
-  if (!setReminderOptIn({ ...optIn, status: 'cancelled' }, erase)) {
-    throw new Error(erase === getEraseIdentity() && erase === getShownErase() ? ERASE_IN_PROGRESS : RECORD_CHANGED_SINCE_ASKED);
-  }
+  // Refused while the POST was out: the switch stays on, and it says why.
+  if (!setReminderOptIn({ ...optIn, status: 'cancelled' }, erase)) throw new Error(refusedWhy(erase));
   await flushRoadmapStore();
   // The optout:optin ratio is US-17's kill criterion — it only works if BOTH
   // sides are counted (the opt-in side has fired since 2026-08-06), and per
