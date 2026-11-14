@@ -17,7 +17,8 @@ const HIDDEN_FERRITIN = `high${String.fromCharCode(27)}[2J${String.fromCharCode(
 const HIDDEN_LDL = '3.4 mmol';
 
 /** One unreadable row of each shape: a vital, a non-core lab test and a core blood test; then
- *  lab rows hidden by a name or unit that is not text, or by a field a correction copies. */
+ *  lab rows hidden by a name or unit that is not text (a number, or a JSON object that String()
+ *  cannot convert), or by a field a correction copies. */
 function fixture(): RoadmapFile {
   const file = createEmptyFile({ deviceId: 'us65_cli', now: '2026-09-01T09:00:00Z' });
   const at = { recordedAt: '2026-07-14', createdAt: '2026-07-14T08:00:00Z', source: 'manual', status: 'active' };
@@ -26,6 +27,11 @@ function fixture(): RoadmapFile {
   file.labValues.push({ id: 'l1', metricName: 'ldl', value: HIDDEN_LDL as never, unit: 'mmol/L', core: true, ...at } as never);
   file.labValues.push({ id: 'n1', metricName: 42, value: 5, unit: 'x', ...at } as never);
   file.labValues.push({ id: 'u1', metricName: 'zzunlisted', value: 5, unit: 42, ...at } as never);
+  // JSON objects whose own toString or valueOf key is not a function: String() throws on them.
+  file.labValues.push({ id: 'n2', metricName: { toString: 1 }, value: 5, unit: 'x', ...at } as never);
+  file.labValues.push({ id: 'n3', metricName: [{ toString: 'x' }], value: 5, unit: 'x', ...at } as never);
+  file.labValues.push({ id: 'u2', metricName: 'zzunlisted', value: 5, unit: { valueOf: 1, toString: 1 }, ...at } as never);
+  file.labValues.push({ id: 'n4', value: 5, unit: 'x', ...at } as never); // no name at all
   file.labValues.push({ id: 'r1', metricName: 'ferritin', value: 100, unit: 'µg/L', referenceLow: 'low', ...at, recordedAt: '2026-07-15' } as never);
   return file;
 }
@@ -100,6 +106,10 @@ describe('US-65 AC3a: edit-record and a row this build cannot read', () => {
   it.each([
     ['name', 'n1', /^Corrected 42 a value this app cannot read → a value this app cannot read x on 2026-07-14 /],
     ['unit, on an uncatalogued test,', 'u1', /^Corrected zzunlisted a value this app cannot read → a value this app cannot read 42 on /],
+    ['name, an object with its own toString,', 'n2', /^Corrected \{"toString":1\} a value this app cannot read → /],
+    ['name, a list holding such an object,', 'n3', /^Corrected \[\{"toString":"x"\}\] a value this app cannot read → /],
+    ['unit, an object with its own valueOf and toString,', 'u2', / → a value this app cannot read \{"valueOf":1,"toString":1\} on /],
+    ['name (missing)', 'n4', /^Corrected undefined a value this app cannot read → /],
   ])('AC3a: correcting a lab row whose %s is not text lands and exits 0', async (_, id, echo) => {
     const r = await onFixture((path) => ['correct', path, '--id', id, '--value', '6']);
 
@@ -107,6 +117,7 @@ describe('US-65 AC3a: edit-record and a row this build cannot read', () => {
     expect(r.stderr).not.toMatch(/This is a bug/);
     expect(r.stdout).toMatch(echo);
     expect(r.after.labValues.find((l) => l.id === id)?.status).toBe('entered-in-error');
+    expect(r.after.labValues.filter((l) => l.correctsId === id)).toHaveLength(1);
   });
 
   it('AC3a: a correction that copies the unreadable field echoes the new row in the same words', async () => {

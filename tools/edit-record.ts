@@ -150,6 +150,16 @@ function coreMetricOf(row: Row): MetricType | undefined {
 const UNREADABLE = 'a value this app cannot read';
 
 /**
+ * A row field as text. A hidden lab row's name or unit may be any JSON (US-65
+ * AC1, AC5), and the new row copies it. `String` throws on an object whose own
+ * `toString` is not a function; JSON.stringify does not, and the save has just
+ * written the same field with it. A removed field prints "undefined".
+ */
+function asText(value: unknown): string {
+  return typeof value === 'string' ? value : (JSON.stringify(value) ?? String(value));
+}
+
+/**
  * What to echo back. A core value is STORED unrounded — converting 81 mg/dL
  * gives 2.094647… and the app stores the same — but a confirmation line reads
  * as a value, so it is rounded the way the app displays it. A value no reader
@@ -251,9 +261,8 @@ export async function run(argv: string[]): Promise<number> {
     const { row, unit, previous } = change;
     const verb = args.command === 'add' ? 'Added' : 'Corrected';
     const was = previous ? `${shownValue(previous)} → ` : '';
-    // A hidden lab row's name or unit may not be text (US-65 AC1, AC5), and the new row copies it.
     process.stdout.write(
-      `${verb} ${oneLine(String(rowName(row)))} ${was}${shownValue(row)}${unit ? ` ${oneLine(String(unit))}` : ''}` +
+      `${verb} ${oneLine(asText(rowName(row)))} ${was}${shownValue(row)}${unit ? ` ${oneLine(asText(unit))}` : ''}` +
       ` on ${oneLine(String(row.recordedAt).slice(0, 10))} — new row ${oneLine(row.id)}\n` +
       (adapter.lastBackup
         ? `Wrote ${oneLine(adapter.path)} (backup: ${oneLine(adapter.lastBackup)})\n`
