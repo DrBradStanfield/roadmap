@@ -123,6 +123,11 @@ export function buildMatrixModel(
   /** Values the user edited (`editId`): never hidden as already saved. Their
    *  cell stays editable against the saved row, judged by the edited text. */
   touched?: { has(id: string): boolean },
+  /** Values the write refuses on their own (health-core `refusedAlone`, the
+   *  rule the review's groups place by): they take no (test, day) slot. A lab
+   *  gets no cell (it is listed under "Not saved"); a core value keeps its cell
+   *  where no placed reading has it, so its error blocks Save (US-13 AC5). */
+  slotless?: { has(id: string): boolean },
 ): { columns: MatrixColumn[]; coreRows: CoreRow[]; additionalRows: AdditionalRow[]; cells: Map<string, MatrixCell>; unshown: UnshownReading[] } {
   const cells = new Map<string, MatrixCell>();
   const columnsByKey = new Map<DateKey, MatrixColumn>();
@@ -226,7 +231,7 @@ export function buildMatrixModel(
     if (held?.state !== 'context') return undefined;
     return held.lab ? { lab: held.lab } : held.valueSI !== undefined ? { valueSI: held.valueSI, ...comparatorOf(held) } : undefined;
   };
-  type Overlay = { slot: string; cellKey: string; rank: 0 | 1 | 2; quantity: Quantity; edited: boolean; id: string; cell: (existing?: ExistingCell) => EditableMatrixCell };
+  type Overlay = { slot: string; cellKey: string; rank: 0 | 1 | 2; quantity: Quantity; edited: boolean; id: string; slotless: boolean; cell: (existing?: ExistingCell) => EditableMatrixCell };
   const overlays: Overlay[] = [];
   for (const rank of [0, 1, 2]) results.forEach((r, fi) => {
     /** The column a value lands in: its own date's (US-12 AC12) or its file's. */
@@ -242,6 +247,7 @@ export function buildMatrixModel(
 
     r.values.forEach((v, vi) => {
       if (readingRank(v.recordedAt, UNDATED_PREVIOUS) !== rank) return;
+      const id = valueId(fi, 'core', vi);
       const dateKey = columnFor(v);
       if (!dateKey) return;
       const metric = v.metric as MetricType;
@@ -251,7 +257,7 @@ export function buildMatrixModel(
         : String(v.displayValue);
       overlays.push({
         slot: slotFor(metric, v, dateKey), cellKey: `${metric}|${dateKey}`, rank, quantity: { valueSI: v.valueSI, ...comparatorOf(v) },
-        edited: !!touched?.has(valueId(fi, 'core', vi)), id: valueId(fi, 'core', vi),
+        edited: !!touched?.has(id), id, slotless: !!slotless?.has(id),
         cell: (existing) => ({
           state: 'editable', kind: 'core', fi, vi,
           initialDisplay,
@@ -271,6 +277,8 @@ export function buildMatrixModel(
 
     r.additionalValues.forEach((av, ai) => {
       if (readingRank(av.recordedAt, UNDATED_PREVIOUS) !== rank) return;
+      const id = valueId(fi, 'additional', ai);
+      if (slotless?.has(id)) return;
       const dateKey = columnFor(av);
       if (!dateKey) return;
       const nameKey = normaliseLabName(av.name);
@@ -290,7 +298,7 @@ export function buildMatrixModel(
       const lab = { name: av.name, value: av.value, unit: av.unit, ...comparatorOf(av) };
       overlays.push({
         slot: slotFor(nameKey, av, dateKey), cellKey: `${nameKey}|${dateKey}`, rank, quantity: { lab },
-        edited: !!touched?.has(valueId(fi, 'additional', ai)), id: valueId(fi, 'additional', ai),
+        edited: !!touched?.has(id), id, slotless: false,
         cell: (existing) => ({
           state: 'editable',
           kind: 'additional',
@@ -307,10 +315,11 @@ export function buildMatrixModel(
       });
     });
   });
-  // Every reading is sent here: the matrix shows a cleared or unticked value
-  // in place, and Save's own selection drops it (`collectSaveableCells`).
-  const places = placeReadings(overlays.map(o => ({ slot: o.slot, rank: o.rank, quantity: o.quantity, edited: o.edited, sent: true })), heldAt);
-  overlays.forEach((o, i) => {
+  // Every placed reading is sent here: the matrix shows a cleared or unticked
+  // value in place, and Save's own selection drops it (`collectSaveableCells`).
+  const placed = overlays.filter(o => !o.slotless);
+  const places = placeReadings(placed.map(o => ({ slot: o.slot, rank: o.rank, quantity: o.quantity, edited: o.edited, sent: true })), heldAt);
+  placed.forEach((o, i) => {
     const prev = savedRows.get(o.slot);
     const held = prev?.state === 'context' ? prev : undefined;
     const { place, winner } = places[i];
@@ -324,12 +333,14 @@ export function buildMatrixModel(
         return;
       case 'hidden':
       case 'duplicate':
-        unshown.push({ id: o.id, day, winner: overlays[winner!].id, edited: o.edited });
+        unshown.push({ id: o.id, day, winner: placed[winner!].id, edited: o.edited });
         return;
       default:
         cells.set(o.cellKey, o.cell(held && { id: held.id, display: held.displayValue, valueSI: held.valueSI, lab: held.lab, displayUnit: held.displayUnit, ...comparatorOf(held) }));
     }
   });
+  // A core value the write refuses keeps a cell where no placed reading has one.
+  for (const o of overlays) if (o.slotless && cells.get(o.cellKey)?.state !== 'editable') cells.set(o.cellKey, o.cell());
 
   // 3) Sort. Columns chronological asc (oldest left, newest right).
   //    Core rows in the canonical BLOOD_TEST_METRICS order so the matrix

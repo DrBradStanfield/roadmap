@@ -5,6 +5,7 @@ import { UNIT_DEFS, reportedToCanonical, type UnitSystem } from '@roadmap/health
 import { comparatorOf, type Comparator } from '@roadmap/health-core/lab-limits';
 import { bloodTestKeyOf } from '@roadmap/health-core/blood-tests';
 import type { MeasurementSource } from '@roadmap/health-core/validation';
+import type { LabUnitRefusal } from '@roadmap/health-core/record-edits';
 import { fileVerdict, UPLOAD_LIMITS } from '@roadmap/health-core/upload-rules';
 import type { UploadOutcomeKey, UploadReviewKey } from '@roadmap/health-core/product-events';
 import type { ExtractedValue, AdditionalLabValue, DocumentResult, LabImportResult, PageContent, UploadErrorCode } from './api-types';
@@ -74,6 +75,8 @@ export interface ReviewDecisions {
   reviewed: FileResult[];
   /** The review's `upload_review` counts (US-13 AC13), sent once the save finishes. */
   review?: Partial<Record<UploadReviewKey, number>>;
+  /** Labs the review did not send for their unit or number, counted as refused spellings once the save finishes (US-21 AC15). */
+  labRefusals?: LabUnitRefusal[];
 }
 
 /**

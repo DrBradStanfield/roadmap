@@ -6,9 +6,9 @@
  * change to its signature is one edit.
  * Design: docs/drafts/import-review-redesign.md.
  */
-import { classifyImportValues, importRow, importSummary, notSavedGroups, recordFromHistory, type ClassifiedValue, type ImportFile } from '@roadmap/health-core/import-review';
+import { classifyImportValues, importRow, importSummary, notSavedGroups, recordFromHistory, refusedAlone, type ClassifiedValue, type ImportFile } from '@roadmap/health-core/import-review';
 import { UPLOAD_OUTCOME_MAX, type UploadReviewKey } from '@roadmap/health-core/product-events';
-import type { BulkRow } from '@roadmap/health-core/record-edits';
+import type { BulkRow, LabUnitRefusal, MeasurementRefusal } from '@roadmap/health-core/record-edits';
 import type { UploadHistory } from './api-types';
 import { columnDay, parseReportDate, valueDate, type FullDate } from './review-dates';
 import type { FileResult, ReviewedLabValue, ReviewedValue } from './upload-pipeline';
@@ -34,6 +34,22 @@ const extraction = (r: FileResult): ImportFile['result'] => ({
   droppedValueCount: r.droppedValueCount,
   document: r.document as ImportFile['result']['document'],
 });
+
+/** The extracted values the write refuses on their own (`refusedAlone`), by
+ *  `editId`: the matrix gives them no slot, as the review's groups do. */
+export function slotlessIds(results: FileResult[]): Set<string> {
+  const now = new Date().toISOString();
+  const ids = new Set<string>();
+  results.forEach((r, fi) => {
+    const result = extraction(r);
+    for (const ref of [...r.values.map((_, i) => `v${i}`), ...r.additionalValues.map((_, i) => `a${i}`)]) {
+      // Any real day: a refusal on its own never depends on the day.
+      const row = importRow(result, ref, '2000-01-01');
+      if (row && refusedAlone(row, now)) ids.add(`${fi}:${ref}`);
+    }
+  });
+  return ids;
+}
 
 /**
  * The review's groups and what Save submits. Each kept cell is a row built by
@@ -61,14 +77,24 @@ export function classifyReview(results: FileResult[], fileDates: Record<string, 
     return { result, rows, days: Object.fromEntries([...r.values.map((v, i) => [`v${i}`, day(v.recordedAt)]), ...r.additionalValues.map((v, i) => [`a${i}`, day(v.recordedAt)])]) };
   });
   const { values: classified, rows } = classifyImportValues(files, recordFromHistory(history.measurements, history.labValues), new Date().toISOString());
+  const id = (v: ClassifiedValue) => `${v.file}:${v.ref}`;
+  /** A kept value the write would refuse: Save stays blocked until it is corrected or cleared (US-13 AC5). */
+  const refused = classified.filter(v => v.sent && !v.writes && (v.group === 'unsure' ? v.reasons.includes('outOfRange') : v.group === 'notSaved' && v.reason !== 'sameDay'));
   return {
     summary: importSummary(files),
-    groupOf: new Map<string, Group>(classified.map(v => [`${v.file}:${v.ref}`, v.group])),
+    groupOf: new Map<string, Group>(classified.map(v => [id(v), v.group])),
     /** The values Save writes, by `editId`. */
-    writes: new Set(classified.filter(v => v.writes).map(v => `${v.file}:${v.ref}`)),
+    writes: new Set(classified.filter(v => v.writes).map(id)),
     count: (group: Group) => classified.filter(v => v.group === group).length,
+    /** Values the record already holds; an equal reading of this upload is counted nowhere (one copy saves). */
+    held: classified.filter(v => v.group === 'saved' && !v.duplicate).length,
     notSaved: notSavedGroups(classified),
     decisions: toDecisions(rows, source, results),
+    blocked: new Set(refused.map(id)),
+    /** The write's own refusal of a kept core value, for its cell's line. */
+    refusals: new Map(refused.flatMap(v => (v.group === 'unsure' && v.refusal ? [[id(v), v.refusal] as [string, MeasurementRefusal]] : []))),
+    /** Labs not saved for their unit or number, for the refused-spelling count when Save finishes (US-21 AC15). */
+    labRefusals: classified.flatMap((v): LabUnitRefusal[] => (v.group === 'notSaved' && v.refusal ? [v.refusal] : [])),
   };
 }
 export type ReviewGroups = ReturnType<typeof classifyReview>;
@@ -130,7 +156,9 @@ export function reviewRows(matrix: Matrix, results: FileResult[], groupOf: Reado
     const cell = matrix.cells.get(matrixCellKey(matrixRowKey(row), col.dateKey));
     return cell && cell.state !== 'empty';
   }));
-  return { matrix: { ...matrix, columns, coreRows, additionalRows }, shown, hidden };
+  // Rows behind "Show all": hidden values, and rows that hold only the record's own values.
+  const hiddenRows = matrix.coreRows.length + matrix.additionalRows.length - coreRows.length - additionalRows.length;
+  return { matrix: { ...matrix, columns, coreRows, additionalRows }, shown, hidden, hiddenRows };
 }
 
 /** The `upload_review` row (US-13 AC13): counts only, never a value, test,

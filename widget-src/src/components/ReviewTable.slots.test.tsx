@@ -13,7 +13,7 @@ import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import { ReviewTable } from './ReviewTable';
 import { buildMatrixModel } from '../lib/review-matrix';
 import type { FileResult } from '../lib/upload-pipeline';
-import { showingAll } from '../testing/import-review';
+import { showAllValues, showingAll } from '../testing/import-review';
 
 beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(new Date('2026-10-15T12:00:00Z')); });
 afterEach(() => { cleanup(); vi.useRealTimers(); });
@@ -198,8 +198,12 @@ describe('US-12 AC14: one reading per (test, day), the loser counted, never sile
     const t = review([file('a.docx', '2026-03-10', [v('systolic_bp', 130, U, 'mmHg'), v('diastolic_bp', 85, U, 'mmHg')])],
       [held('hs', 'systolic_bp', 130, '2025-09-02'), held('hd', 'diastolic_bp', 80, '2025-09-02')]);
     t.pick('2025-09-02');
-    // The equal systolic is already saved: never a cell Save would write (US-13 AC13 hides context-only rows).
+    // The equal systolic is already saved: no cell Save would write, and its
+    // context-only row waits behind "Show all" (US-13 AC13), where it shows.
     expect(t.input('130')).toBeUndefined();
+    expect(t.context()).not.toContain('130');
+    showAllValues();
+    expect(t.context()).toContain('130');
     // The differing diastolic is a conflict, Replace unticked.
     expect((t.view.getByRole('checkbox', { name: /Replace the saved Diastolic BP value/ }) as HTMLInputElement).checked).toBe(false);
     fireEvent.click(t.save());

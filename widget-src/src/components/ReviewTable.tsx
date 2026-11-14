@@ -1,12 +1,13 @@
-import { useState, useMemo, useEffect, useCallback, useRef, useId, type ReactNode } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef, useId, type MutableRefObject, type ReactNode } from 'react';
 import { type UnitSystem, type MetricType, UNIT_DEFS } from '@roadmap/health-core/units';
 import { healthInputSchema } from '@roadmap/health-core/validation';
 import { METRIC_TO_FIELD } from '@roadmap/health-core/mappings';
 import { commaQuestion } from '@roadmap/health-core/parseNumber';
 import { sameLabQuantity } from '@roadmap/health-core/record-edits';
 import { IMPORT_REVIEW_TEXT, importSummaryText } from '@roadmap/health-core/import-review';
-import { trackProductEvent } from '../lib/server-api';
-import { classifyReview, reviewEventMetadata, reviewRows, type KeptValue } from '../lib/import-review-view';
+import type { UploadReviewKey } from '@roadmap/health-core/product-events';
+import { measurementRefusalLine } from '../lib/lab-value-labels';
+import { classifyReview, reviewEventMetadata, reviewRows, slotlessIds, type KeptValue } from '../lib/import-review-view';
 import type { UploadHistory } from '../lib/api-types';
 import { type CellUnit, type Grading, cellNumber, cellText, cellToSI, hasNumericSyntax, NUMERIC_SYNTAX_GUIDANCE, readNumericCell, readTypedValue, validateTypedValue } from '../lib/blood-test-cell';
 import { useLpaUnit } from '../lib/lpa-unit';
@@ -37,6 +38,9 @@ interface ReviewTableProps {
   error: string | null;
   /** The values the last save refused, shown beside its error (US-12 AC6). */
   refusals?: ReactNode;
+  /** Set each render to the review's `upload_review` counts, for a review
+   *  that ends by Cancel or by closing (US-13 AC13). */
+  countsRef?: MutableRefObject<(() => Partial<Record<UploadReviewKey, number>>) | null>;
 }
 
 export function ReviewTable({
@@ -53,6 +57,7 @@ export function ReviewTable({
   isSaving,
   error,
   refusals,
+  countsRef,
 }: ReviewTableProps) {
   const docs = useReviewDocuments(results, history, userAge, sex);
   const { selectedDocCount, archiveCount } = docs;
@@ -82,9 +87,11 @@ export function ReviewTable({
   // How many values are touched: rebuilds the matrix when a value is first
   // edited, so a slot's winner and loser are judged as edited (`place`).
   const [touchedCount, setTouchedCount] = useState(0);
+  // Values the write refuses on their own take no slot, as in the review's groups (US-13 AC13).
+  const slotless = useMemo(() => slotlessIds(results), [results]);
   const matrix = useMemo(
-    () => buildMatrixModel(results, fileDates, history.measurements, history.labValues, unitSystem, units, touchedRef.current),
-    [results, fileDates, history.measurements, history.labValues, unitSystem, units, touchedCount],
+    () => buildMatrixModel(results, fileDates, history.measurements, history.labValues, unitSystem, units, touchedRef.current, slotless),
+    [results, fileDates, history.measurements, history.labValues, unitSystem, units, touchedCount, slotless],
   );
   // Initial display values are derived from the matrix (not from raw results)
   // so the unit-system switch re-formats them and dedup-collapsed cells
@@ -332,18 +339,31 @@ export function ReviewTable({
   const savedCount = groups.decisions.values.length + groups.decisions.labValues.length
     + saveableCells.filter(c => groups.groupOf.get(editId(c.cell)) === 'waiting').length;
   const nothingSelected = savedCount === 0 && selectedDocCount === 0;
-  const rows = useMemo(() => reviewRows(matrix, results, groups.groupOf, coreCellViews, needsDay, new Set(touchedRef.current.keys())), [matrix, results, groups, coreCellViews, needsDay, touchedCount]);
+  // A kept value the write refuses (a blood pressure the wrong way up, a number
+  // out of range) shows the write's own line and blocks Save, as a range error does (US-13 AC5).
+  const cellViews = useMemo(() => {
+    const views = new Map(coreCellViews);
+    for (const [id, refusal] of groups.refusals) {
+      const view = views.get(id);
+      const metric = refusal.metricType as MetricType;
+      if (view && !view.error) views.set(id, { ...view, error: measurementRefusalLine(refusal, units[metric] ?? unitSystem) });
+    }
+    return views;
+  }, [coreCellViews, groups, units, unitSystem]);
+  const refusedKept = [...groups.blocked].some(id => coreCellViews.has(id));
+  const rows = useMemo(() => reviewRows(matrix, results, groups.groupOf, cellViews, needsDay, new Set(touchedRef.current.keys())), [matrix, results, groups, cellViews, needsDay, touchedCount]);
   const showAll = useDisclosure();
   const notSavedOpen = useDisclosure();
   const matrixId = useId();
   const shownMatrix = showAll.open ? matrix : rows.matrix;
   const hiddenSaving = [...rows.hidden].filter(id => groups.writes.has(id)).length;
-  /** The `upload_review` counts (US-13 AC13): sent on Cancel here, on a
-   *  finished Save by the upload flow, never for a failed Save. */
+  /** The `upload_review` counts (US-13 AC13). The upload flow sends them once
+   *  per review: on a finished Save, or on Cancel or close; never for a failed Save. */
   const reviewCounts = (saved: boolean) => {
     const replaced = Object.keys(replaceChecked).filter(k => replaceChecked[k]).map(k => k.slice(0, k.indexOf('>')));
     return reviewEventMetadata(groups, [...touchedRef.current.keys(), ...replaced], { showAll: showAll.opened, notSaved: notSavedOpen.opened }, saved);
   };
+  if (countsRef) countsRef.current = () => reviewCounts(false);
 
   /** Column-level date editing: propagate to every contributing date source so
    *  the matrix stays consistent. New-column dates only — existing-history
@@ -369,14 +389,17 @@ export function ReviewTable({
   };
 
   const handleSave = () => {
-    if (hasInvalid || !allDatesSet) return;
+    if (hasInvalid || refusedKept || !allDatesSet) return;
     const { reviewed, documents } = docs.documentsToSave(fileDates);
 
-    onSave({ ...groups.decisions, documents, reviewed, review: reviewCounts(true) });
+    onSave({ ...groups.decisions, documents, reviewed, review: reviewCounts(true), labRefusals: groups.labRefusals });
   };
 
-  // Nothing found that Save could write: the review closes (D3).
-  const nothingToSave = totalEditableCells === 0 && nothingSelected && archiveCount === 0 && results.every(r => !r.document);
+  // Nothing the review could save, by its groups: the review closes (D3).
+  const nothingToSave = groups.count('sure') + groups.count('unsure') + groups.count('waiting') === 0
+    && nothingSelected && archiveCount === 0 && results.every(r => !r.document);
+  // "Check these" counts only the values to look at; a sure value sharing their row shows beside them.
+  const checking = [...rows.shown].filter(id => groups.groupOf.get(id) !== 'sure').length;
 
   return (
     <div className="review-table">
@@ -385,7 +408,7 @@ export function ReviewTable({
         <p className="review-overview-line review-archive-only">Save will archive the original PDF{archiveCount !== 1 ? 's' : ''}. No extracted values or documents are selected.</p>
       )}
 
-      {!showAll.open && rows.shown.size > 0 && <h4 className="review-check-title">{IMPORT_REVIEW_TEXT.checkTitle(rows.shown.size)}</h4>}
+      {!showAll.open && checking > 0 && <h4 className="review-check-title">{IMPORT_REVIEW_TEXT.checkTitle(checking)}</h4>}
       <div id={matrixId}>
         {(shownMatrix.coreRows.length > 0 || shownMatrix.additionalRows.length > 0) && (
           <ReviewMatrix
@@ -396,7 +419,7 @@ export function ReviewTable({
             onChooseLpaUnit={chooseLpaUnit}
             grading={grading}
             editedDisplayValues={editedDisplayValues}
-            coreCellViews={coreCellViews}
+            coreCellViews={cellViews}
             onCellChange={updateEditedDisplayValue}
             onColumnDateChange={handleColumnDateChange}
             datedColumns={datedColumns}
@@ -407,9 +430,9 @@ export function ReviewTable({
           />
         )}
       </div>
-      {!showAll.open && rows.shown.size > 0 && <p className="review-overview-footer">{IMPORT_REVIEW_TEXT.checkFooter}</p>}
-      <SureLine hidden={rows.hidden.size} saving={hiddenSaving} total={totalEditableCells} all={showAll} controls={matrixId} />
-      {groups.count('saved') > 0 && <p className="review-overview-line">{IMPORT_REVIEW_TEXT.alreadySaved(groups.count('saved'))}</p>}
+      {!showAll.open && checking > 0 && <p className="review-overview-footer">{IMPORT_REVIEW_TEXT.checkFooter}</p>}
+      <SureLine hidden={rows.hidden.size} rows={rows.hiddenRows} saving={hiddenSaving} total={totalEditableCells} all={showAll} controls={matrixId} />
+      {groups.held > 0 && <p className="review-overview-line">{IMPORT_REVIEW_TEXT.alreadySaved(groups.held)}</p>}
       <NotSavedLine notSaved={groups.notSaved} disclosure={notSavedOpen} />
 
       <ReviewFileSections docs={docs} age={userAge} sex={sex} />
@@ -418,7 +441,7 @@ export function ReviewTable({
         <p className="review-date-hint">Pick a past day for every new column before saving, and for previous results a day before the report's — keeps the saved date precise.</p>
       )}
 
-      {hasInvalid && <p role="status">Correct or clear the values with errors before saving.</p>}
+      {(hasInvalid || refusedKept) && <p role="status">Correct or clear the values with errors before saving.</p>}
       {/* One live region, so a screen reader hears the save's answer (US-12 AC6). */}
       <div className="review-save-outcome" role="status">
         {error && <p className="upload-error">{error}</p>}
@@ -429,11 +452,11 @@ export function ReviewTable({
         {!nothingToSave && <button
           className="btn-primary review-save-btn"
           onClick={handleSave}
-          disabled={hasInvalid || (nothingSelected && archiveCount === 0) || !allDatesSet || isSaving}
+          disabled={hasInvalid || refusedKept || (nothingSelected && archiveCount === 0) || !allDatesSet || isSaving}
         >
           {isSaving ? 'Saving...' : saveLabel(savedCount, selectedDocCount, archiveCount)}
         </button>}
-        <button className="review-cancel-btn" onClick={() => { trackProductEvent('upload_review', reviewCounts(false)); onCancel(); }} disabled={isSaving}>
+        <button className="review-cancel-btn" onClick={onCancel} disabled={isSaving}>
           {nothingToSave ? 'Close' : 'Cancel'}
         </button>
       </div>

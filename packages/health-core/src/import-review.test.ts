@@ -210,3 +210,28 @@ describe('IMPORT_REVIEW_TEXT (strings 4 to 14)', () => {
     expect(IMPORT_REVIEW_TEXT.save(12)).toBe('Save 12 values');
   });
 });
+
+describe('PR 1826 fix round (US-13 AC13)', () => {
+  it("a blood pressure the wrong way up is unsure, never written, and carries the write's own refusal for the cell", () => {
+    const values = classify([lab({ values: [core({ metric: 'systolic_bp', valueSI: 80, displayUnit: 'mmHg' }), core({ metric: 'diastolic_bp', valueSI: 120, displayUnit: 'mmHg' })] })]);
+    expect(values).toHaveLength(2);
+    expect(values.every((v) => v.group === 'unsure' && !v.writes && v.reasons.includes('outOfRange') && !!v.refusal)).toBe(true);
+  });
+
+  it("an equal reading of this upload is saved as a duplicate (one copy saves); the record's own equal value is not", () => {
+    const twice = classify([lab({ values: [core()] }), lab({ values: [core()] })]);
+    expect(twice.map((v) => [v.group, v.writes, 'duplicate' in v && v.duplicate === true])).toEqual([['sure', true, false], ['saved', false, true]]);
+    const held = one(lab({ values: [core()] }), LDL_SAME);
+    expect([held.group, 'duplicate' in held ? held.duplicate : undefined]).toEqual(['saved', undefined]);
+  });
+
+  it('a reading the write refuses alone takes no slot: the valid reading of that day is written (refusedAlone)', () => {
+    const values = classify([lab({ additionalValues: [extra({ value: 10, unit: 'furlongs' })] }), lab({ additionalValues: [extra({ value: 85, confidence: 'low' })] })]);
+    expect(values.map((v) => [v.file, v.group, v.writes]).sort()).toEqual([[0, 'notSaved', false], [1, 'unsure', true]]);
+  });
+
+  it('importSummary counts a document by its kind even when its file also holds values', () => {
+    const letter = { classification: 'lab_report', values: [core()], document: { classification: 'clinic_letter', title: 'x', documentDate: null, contentMarkdown: '', metadata: {} } } as ImportFile['result'];
+    expect(importSummaryText(importSummary([{ result: letter }]))).toBe('Found 1 blood test value and 1 clinic letter');
+  });
+});

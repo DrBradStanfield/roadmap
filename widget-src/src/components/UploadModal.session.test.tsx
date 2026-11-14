@@ -208,6 +208,17 @@ describe('US-12 AC4–6 upload session ownership', () => {
     expect(reviews()).toEqual([expect.objectContaining({ saved: 1 })]);
     expect(Object.keys(reviews()[0]!).every(k => ['sure', 'unsure', 'notSaved', 'showAll', 'notSavedOpened', 'changedSure', 'changedUnsure', 'saved'].includes(k))).toBe(true);
   });
+  it('US-13 AC13: closing the review with Escape or × sends its counts once, as Cancel does; a later Cancel sends nothing more', async () => {
+    const reviews = () => vi.mocked(trackProductEvent).mock.calls.filter(([name]) => name === 'upload_review').map(([, meta]) => meta);
+    render(<Harness />); await ready();
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(reviews()).toEqual([expect.objectContaining({ saved: 0 })]);
+    fireEvent.click(screen.getByRole('button', { name: /Ready for review|Click to open/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    fireEvent.click(screen.getByRole('button', { name: /Ready for review|Click to open/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(reviews()).toHaveLength(1);
+  });
   it('keeps a thrown save in review so a second Save retries, and blocks discard until every branch settles', async () => {
     const archive = deferred<Awaited<ReturnType<typeof bulkSaveDocuments>>>();
     vi.mocked(synthesizeLabArchiveEntries).mockReturnValueOnce([{
@@ -464,6 +475,8 @@ describe('US-12 AC4–6 upload session ownership', () => {
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
     await screen.findByRole('button', { name: 'Done' });
     expect(vi.mocked(bulkSaveLabValues).mock.calls.flatMap(([rows]) => rows)).toEqual([]);
+    // The spelling the test does not take is still counted, key and unit only (US-21 AC15).
+    expect(vi.mocked(trackProductEvent).mock.calls.filter(([n]) => n === 'lab_unit_refused')).toEqual([['lab_unit_refused', { key: 'ferritin', unit: 'mg/dL' }]]);
   });
 
   // US-21 AC15 · a differential in % stays refused, but the summary says the
@@ -488,50 +501,22 @@ describe('US-12 AC4–6 upload session ownership', () => {
   // US-21 AC15 · a count per µL refused for its NUMBER (a decimal, or a
   // hundredfold off its own range) is not an unknown unit, so the summary
   // does not say so: it says the number was not saved, and why.
-  it('US-21 AC15 — a count per µL refused for its number leads with the number, not the unit', async () => {
-    vi.mocked(labImport).mockResolvedValue({
-      result: { ...extraction.result, additionalValues: [{ name: 'Neutrophils', value: 2.4, unit: 'cells/uL', referenceLow: null, referenceHigh: null }] },
-    } as Awaited<ReturnType<typeof labImport>>);
-    vi.mocked(bulkSaveLabValues).mockResolvedValue({
-      saved: [], skippedDuplicates: 0, errorCount: 0,
-      refused: [{ key: 'neutrophils', unit: 'cells/uL', message: 'Neutrophils in "cells/uL" was not stored', fault: 'decimal' }],
-    } as Awaited<ReturnType<typeof bulkSaveLabValues>>);
+  // US-13 AC13 (owner, 2026-11-15): a lab the write refuses for its number is
+  // named before Save under "Not saved", in the review's words, and never sent.
+  // Before, the done screen named it with the US-21 AC15/AC26 line after Save refused it.
+  it.each([
+    ['US-21 AC15 — a count per µL that is not whole', { name: 'Neutrophils', value: 2.4, unit: 'cells/uL', referenceLow: null, referenceHigh: null }, 'Neutrophils: the number and its range are on different scales'],
+    ['US-21 AC15 — a count per µL on a different scale from its printed range', { name: 'Platelets', value: 250000, unit: 'cells/µL', referenceLow: 150, referenceHigh: 400 }, 'Platelets: the number and its range are on different scales'],
+    ['US-21 AC26 — a value past its plausible range', { name: 'Glucose', value: 3000, unit: 'mg/dL', referenceLow: null, referenceHigh: null }, 'Glucose: the number looks misread. Check the report'],
+  ])('%s is named before Save, never sent, and its number never shown', async (_name, value, line) => {
+    vi.mocked(labImport).mockResolvedValue({ result: { ...extraction.result, additionalValues: [value] } } as Awaited<ReturnType<typeof labImport>>);
     render(<Harness />); await ready();
+    fireEvent.click(screen.getByRole('button', { name: '1 value not saved' }));
+    expect(screen.getByRole('list', { name: 'Values not saved' }).textContent).toBe(line);
+    expect(document.body.textContent).not.toContain(String(value.value));
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-    const line = await screen.findByText(/^Neutrophils: the number was not saved\. Counts of cells per µL are whole numbers/);
-    expect(line.textContent).toContain('thousands per µL (×10³/µL).');
-    expect(line.textContent).not.toContain('unit not recognised');
-    expect(line.textContent).not.toContain('—');
-  });
-
-  it('US-21 AC15 — a count per µL on a different scale from its printed range says so', async () => {
-    vi.mocked(labImport).mockResolvedValue({
-      result: { ...extraction.result, additionalValues: [{ name: 'Platelets', value: 250000, unit: 'cells/µL', referenceLow: 150, referenceHigh: 400 }] },
-    } as Awaited<ReturnType<typeof labImport>>);
-    vi.mocked(bulkSaveLabValues).mockResolvedValue({
-      saved: [], skippedDuplicates: 0, errorCount: 0,
-      refused: [{ key: 'platelets', unit: 'cells/µL', message: 'Platelets in "cells/µL": the value and its printed range are on different scales', fault: 'scale' }],
-    } as Awaited<ReturnType<typeof bulkSaveLabValues>>);
-    render(<Harness />); await ready();
-    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-    const line = await screen.findByText('Platelets: the value and its printed range are on different scales, so the row was not stored.');
-    expect(line.textContent).not.toContain('whole number');
-  });
-
-  // US-21 AC26 (Brad 2026-11-09) · an uploaded value past its plausible range is refused like a
-  // typed one, and the summary names the end it passed, never the number.
-  it('US-21 AC26 — a value past its plausible range is named as not saved, with its bound', async () => {
-    vi.mocked(labImport).mockResolvedValue({
-      result: { ...extraction.result, additionalValues: [{ name: 'Glucose', value: 3000, unit: 'mg/dL', referenceLow: null, referenceHigh: null }] },
-    } as Awaited<ReturnType<typeof labImport>>);
-    vi.mocked(bulkSaveLabValues).mockResolvedValue({
-      saved: [], skippedDuplicates: 0, errorCount: 0,
-      refused: [{ key: 'glucose', unit: 'mg/dL', message: 'Glucose above 150 mmol/L', fault: 'implausible', bound: 'above' }],
-    } as Awaited<ReturnType<typeof bulkSaveLabValues>>);
-    render(<Harness />); await ready();
-    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-    const line = await screen.findByText('Glucose: a value above 150 mmol/L is almost certainly a misread number or unit, so it was not saved. Check the report.');
-    expect(line.textContent).not.toContain('3000');
+    await screen.findByRole('button', { name: 'Done' });
+    expect(vi.mocked(bulkSaveLabValues).mock.calls.flatMap(([rows]) => rows)).toEqual([]);
   });
 });
 

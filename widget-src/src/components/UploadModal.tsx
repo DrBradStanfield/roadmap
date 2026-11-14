@@ -14,6 +14,7 @@ import { useUploadFlow, MAX_FILES } from '../hooks/useUploadFlow';
 import { getDocumentArchiveMode } from '../lib/roadmap-data';
 import { useIsMobile } from '../lib/useIsMobile';
 import { openBackendPicker, UPLOAD_STORAGE_NOTICE } from '../lib/storage-notice';
+import type { ProductEventMetadata } from '../lib/server-api';
 
 interface UploadModalProps {
   unitSystem: UnitSystem;
@@ -38,9 +39,15 @@ interface UploadModalProps {
 
 export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit, history, onComplete, onStart, onClose, onScreeningUpdate, age, sex, grading, open, onOpen }: UploadModalProps) {
   const flow = useUploadFlow({ unitSystem, history, onComplete, onStart, onClose, onScreeningUpdate });
-  const { phase, files, notices, progress, results, readError, saveError, skipArchive, close: handleClose, discard: handleDiscard } = flow;
+  const { phase, files, notices, progress, results, readError, saveError, skipArchive } = flow;
   const picking = phase === 'picking' || phase === 'readFailed';
   const reviewing = phase === 'reviewing' || phase === 'saving' || phase === 'saveFailed';
+  // A review that ends by Cancel, ×, Escape or the backdrop sends its counts, as
+  // Cancel does; the flow sends one per review, and none while a Save runs (US-13 AC13).
+  const reviewCounts = useRef<(() => ProductEventMetadata) | null>(null);
+  const endReview = () => { if (phase === 'reviewing' || phase === 'saveFailed') flow.endReview(reviewCounts.current?.()); };
+  const handleClose = () => { endReview(); flow.close(); };
+  const handleDiscard = () => { endReview(); flow.discard(); };
   // Connect-first gate (decision record: encourage, don't block). 'device-only'
   // + not skipped → show the connect panel instead of the dropzone.
   const archiveMode = getDocumentArchiveMode();
@@ -182,6 +189,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
               isSaving={phase === 'saving'}
               error={saveError}
               refusals={refusedLabUnits.length + refusedMeasurements.length > 0 ? refusalLines : undefined}
+              countsRef={reviewCounts}
             />
             </ErrorBoundary>
           )}

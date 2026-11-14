@@ -166,11 +166,67 @@ describe('US-13 AC13 usage signal: one counts-only upload_review per review end'
     expect(t.event()).toEqual([]);
   });
 
-  it('on Cancel: saved 0, and nothing but counts', () => {
-    const t = review([labs([v('ldl', 3.9)])]);
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
-    expect(t.event()).toEqual([{ sure: 1, saved: 0 }]);
-    expect(t.onCancel).toHaveBeenCalledOnce();
-    expect(Object.values(t.event()[0]!).every(n => Number.isInteger(n))).toBe(true);
+  it('the counts a Cancel or close sends (the upload flow sends them once): saved 0, and nothing but counts', () => {
+    const countsRef: { current: (() => object) | null } = { current: null };
+    render(<ReviewTable grading={{}} results={[labs([v('ldl', 3.9)])]} history={{ measurements: [], labValues: [], documents: [] }}
+      unitSystem="si" onSave={vi.fn()} onCancel={vi.fn()} isSaving={false} error={null} countsRef={countsRef} />);
+    expect(countsRef.current!()).toEqual({ sure: 1, saved: 0 });
+    expect(Object.values(countsRef.current!()).every(n => Number.isInteger(n))).toBe(true);
+  });
+});
+
+// PR 1826 fix round (US-13 AC13): one set of slot rules, the write's refusals in the cells,
+// "Not saved" never a row, and the record's own count.
+describe('US-13 AC13: what Save writes always has a cell, and a refused value blocks or is named', () => {
+  const ferritin = (value: number, unit: string, confidence?: 'low') =>
+    labs([], { fileName: `${unit}.pdf`, additionalValues: [{ name: 'Ferritin', value, unit, ...(confidence ? { confidence } : null) }] });
+
+  for (const order of ['refused first', 'valid first'] as const) {
+    it(`two files, one day: a Ferritin the write refuses takes no slot; the valid one has its row and saves (${order})`, () => {
+      const files = [ferritin(10, 'mg/dL'), ferritin(85, 'µg/L', 'low')];
+      const t = review(order === 'refused first' ? files : [...files].reverse());
+      expect(t.inputs()).toEqual(['85']);
+      expect(t.view.container.querySelector('.review-check-title')).not.toBeNull();
+      fireEvent.click(screen.getByRole('button', { name: '1 value not saved' }));
+      expect(screen.getByRole('list', { name: 'Values not saved' }).textContent).toBe('Ferritin: this unit is not one we know for this test');
+      fireEvent.click(t.save()!);
+      expect(t.onSave.mock.calls[0][0].labValues.map((x: { value: number; unit: string }) => `${x.value} ${x.unit}`)).toEqual(['85 µg/L']);
+    });
+  }
+
+  it('a blood pressure the wrong way up, beside a valid HDL: the write\'s line on both halves, Save blocked until corrected', () => {
+    const t = review([labs([v('systolic_bp', 80), v('diastolic_bp', 120), v('hdl', 1.2)])]);
+    const line = 'Blood pressure not saved: the top number (systolic) must be higher than the bottom number (diastolic). Check the report, then enter it again.';
+    expect(screen.getAllByText(line)).toHaveLength(2);
+    expect(t.save()!.disabled).toBe(true);
+    expect(screen.getByText('Correct or clear the values with errors before saving.')).toBeTruthy();
+    fireEvent.change(screen.getByDisplayValue('80'), { target: { value: '130' } });
+    expect(screen.queryAllByText(line)).toHaveLength(0);
+    expect(t.save()!.disabled).toBe(false);
+  });
+
+  it('the pair alone: shown, blocked, never dropped silently', () => {
+    const t = review([labs([v('systolic_bp', 80), v('diastolic_bp', 120)])]);
+    expect(t.inputs().sort()).toEqual(['120', '80']);
+    expect(t.save()!.disabled).toBe(true);
+  });
+
+  it('nothing to save (a lone Ferritin in a unit the test does not take): the summary, the "Not saved" line and Close only', () => {
+    const t = review([ferritin(10, 'mg/dL')]);
+    expect(t.view.container.querySelector('.review-summary')!.textContent).toBe('Found 1 blood test value');
+    expect(screen.queryByText(/^Check th/)).toBeNull();
+    expect(t.inputs()).toEqual([]);
+    expect(screen.getByRole('button', { name: '1 value not saved' })).toBeTruthy();
+    expect(t.save()).toBeNull();
+    expect(screen.getByRole('button', { name: 'Close' })).toBeTruthy();
+  });
+
+  it('"already in your record" counts only the record\'s own values; an equal reading of this upload is counted nowhere', () => {
+    review([labs([v('ldl', 3.9)]), labs([v('ldl', 3.9)], { fileName: 'copy.pdf' })]);
+    expect(screen.queryByText(/already in your record$/)).toBeNull();
+    expect(screen.getByText('1 value will be saved')).toBeTruthy();
+    cleanup();
+    review([labs([v('ldl', 3.9)])], [held('ldl', 3.9)]);
+    expect(screen.getByText('1 already in your record')).toBeTruthy();
   });
 });

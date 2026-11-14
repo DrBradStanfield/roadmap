@@ -13,10 +13,11 @@ export function useDisclosure() {
 export type Disclosure = ReturnType<typeof useDisclosure>;
 
 /** "{n} values will be saved", and the button that shows or hides them.
- *  `hidden` values sit behind it; `saving` of them are not cleared. */
-export function SureLine({ hidden, saving, total, all, controls }: { hidden: number; saving: number; total: number; all: Disclosure; controls: string }) {
+ *  `hidden` values sit behind it, in `rows` rows (a row of the record's own
+ *  values too); `saving` of them Save writes. */
+export function SureLine({ hidden, rows, saving, total, all, controls }: { hidden: number; rows: number; saving: number; total: number; all: Disclosure; controls: string }) {
   // While open, "Hide" stays even once nothing is left to hide (an edit keeps its row in sight).
-  if (hidden === 0 && !all.open) return null;
+  if ((rows === 0 || total === 0) && !all.open) return null;
   return (
     <p className="review-overview-line">
       {hidden > 0 && <><span>{IMPORT_REVIEW_TEXT.willSave(saving)}</span>{' '}</>}
