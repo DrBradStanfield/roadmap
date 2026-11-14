@@ -243,7 +243,8 @@ const MetricRow = memo(function MetricRow({ row, onOpen }: { row: RowModel; onOp
             <>
               <span className="md-row-value" aria-hidden="true">
                 <span className={`md-row-latest md-status-${row.status ?? 'none'}`} title={row.note}>{row.latest}</span>
-                {row.previous && <span className="md-row-prev"> ({row.previous})</span>}
+                {/* The value breaks only at this space, so it stays in its 104px track (H108, US-62 AC28). */}
+                {row.previous && <>{' '}<span className="md-row-prev">({row.previous})</span></>}
               </span>
               <span className="hr-sr-only">{[row.latest, gradeWords(row.status, row.graded) ?? row.note, row.previous && `previous ${row.previous}`].filter(Boolean).join(', ')}</span>
               <span className="md-row-unit">{row.unit}</span>
