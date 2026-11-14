@@ -13,6 +13,8 @@ import type { UploadHistory } from './api-types';
 import { columnDay, parseReportDate, valueDate, type FullDate } from './review-dates';
 import type { FileResult, ReviewedLabValue, ReviewedValue } from './upload-pipeline';
 import { editId, matrixCellKey, matrixRowKey, type CoreCellView, type DateKey, type buildMatrixModel } from './review-matrix';
+import { UNIT_DEFS, type MetricType } from '@roadmap/health-core/units';
+import { cellNumber, cellToSI, readNumericCell, readTypedValue, type CellUnit } from './blood-test-cell';
 
 type Matrix = ReturnType<typeof buildMatrixModel>;
 type Group = ClassifiedValue['group'];
@@ -21,8 +23,6 @@ type Group = ClassifiedValue['group'];
  *  written on, a ticked Replace's row, and the number typed over it, if any. */
 export interface KeptValue { id: string; recordedAt: string; correctsId?: string; edited?: number }
 
-/** `editId` → its file and its ref in the extraction. */
-const place = (id: string) => ({ fi: Number(id.slice(0, id.indexOf(':'))), ref: id.slice(id.indexOf(':') + 1) });
 
 /** The extraction as health-core reads it: a file with only a document is not a lab report. */
 const extraction = (r: FileResult): ImportFile['result'] => ({
@@ -35,16 +35,59 @@ const extraction = (r: FileResult): ImportFile['result'] => ({
   document: r.document as ImportFile['result']['document'],
 });
 
-/** The extracted values the write refuses on their own (`refusedAlone`), by
- *  `editId`: the matrix gives them no slot, as the review's groups do. */
-export function slotlessIds(results: FileResult[]): Set<string> {
+/** `editId` → its file and its ref in the extraction. */
+const refAt = (id: string) => ({ fi: Number(id.slice(0, id.indexOf(':'))), ref: id.slice(id.indexOf(':') + 1) });
+
+/**
+ * The number each edited value saves now, by `editId`, as Save reads it: a
+ * core value in SI from the unit it was typed in, a lab as typed; null for a
+ * cleared one. Text that renders the extraction, or no number yet, is left
+ * out (Save takes the extraction, or the cell's error blocks it). The matrix
+ * places by these and the review's groups classify them, so both judge the
+ * table as it stands (US-13 AC13).
+ */
+export function currentEdits(results: FileResult[], texts: Readonly<Record<string, string>>, touched: ReadonlyMap<string, { display?: CellUnit }>,
+  units: Partial<Record<MetricType, CellUnit>>, unitSystem: CellUnit): Map<string, number | null> {
+  const edits = new Map<string, number | null>();
+  for (const [id, { display }] of touched) {
+    const text = texts[id]?.trim();
+    if (text === undefined) continue;
+    if (text === '') { edits.set(id, null); continue; }
+    const { fi, ref } = refAt(id);
+    const i = Number(ref.slice(1));
+    let value: number | undefined;
+    if (ref[0] === 'v') {
+      const v = results[fi]?.values[i];
+      const metric = v?.metric as MetricType;
+      if (!v) continue;
+      if (UNIT_DEFS[metric]) {
+        const typedIn = display ?? units[metric] ?? unitSystem;
+        if (text === cellNumber(metric, v.valueSI, typedIn, v.comparator)) continue;
+        const typed = readTypedValue(metric, text, typedIn);
+        value = typed === undefined ? undefined : cellToSI(metric, typed, typedIn);
+      } else value = text === String(v.displayValue) ? undefined : readNumericCell(text);
+    } else {
+      const av = results[fi]?.additionalValues[i];
+      value = !av || text === String(av.value) ? undefined : readNumericCell(text);
+    }
+    if (value !== undefined) edits.set(id, value);
+  }
+  return edits;
+}
+
+/** The values the write refuses on their own (`refusedAlone`), by `editId`,
+ *  at their current number: the matrix gives them no slot, as the review's
+ *  groups do. A cleared value is never one. */
+export function slotlessIds(results: FileResult[], edits: ReadonlyMap<string, number | null>): Set<string> {
   const now = new Date().toISOString();
   const ids = new Set<string>();
   results.forEach((r, fi) => {
     const result = extraction(r);
     for (const ref of [...r.values.map((_, i) => `v${i}`), ...r.additionalValues.map((_, i) => `a${i}`)]) {
+      const edit = edits.get(`${fi}:${ref}`);
+      if (edit === null) continue;
       // Any real day: a refusal on its own never depends on the day.
-      const row = importRow(result, ref, '2000-01-01');
+      const row = importRow(result, ref, '2000-01-01', edit === undefined ? {} : { edited: { value: edit } });
       if (row && refusedAlone(row, now)) ids.add(`${fi}:${ref}`);
     }
   });
@@ -69,7 +112,7 @@ export function classifyReview(results: FileResult[], fileDates: Record<string, 
     };
     const rows: Record<string, BulkRow> = {};
     for (const k of kept) {
-      const { fi: file, ref } = place(k.id);
+      const { fi: file, ref } = refAt(k.id);
       if (file !== fi) continue;
       const row = importRow(result, ref, k.recordedAt, { correctsId: k.correctsId, ...(k.edited !== undefined ? { edited: { value: k.edited } } : null) });
       if (row) { rows[ref] = row; source.set(row, k); }
@@ -105,7 +148,7 @@ function toDecisions(rows: readonly BulkRow[], source: ReadonlyMap<BulkRow, Kept
   const values: ReviewedValue[] = [];
   const labValues: ReviewedLabValue[] = [];
   for (const row of rows) {
-    const { fi, ref } = place(source.get(row)!.id);
+    const { fi, ref } = refAt(source.get(row)!.id);
     const limit = row.comparator ? { comparator: row.comparator } : {};
     if (row.kind === 'measurement') {
       values.push({ metric: row.metricType, valueSI: row.value, recordedAt: row.recordedAt, source: row.source === 'lab_import_edited' ? row.source : undefined, correctsId: row.correctsId, ...limit });

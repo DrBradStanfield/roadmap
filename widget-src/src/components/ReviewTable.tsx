@@ -7,7 +7,7 @@ import { sameLabQuantity } from '@roadmap/health-core/record-edits';
 import { IMPORT_REVIEW_TEXT, importSummaryText } from '@roadmap/health-core/import-review';
 import type { UploadReviewKey } from '@roadmap/health-core/product-events';
 import { measurementRefusalLine } from '../lib/lab-value-labels';
-import { classifyReview, reviewEventMetadata, reviewRows, slotlessIds, type KeptValue } from '../lib/import-review-view';
+import { classifyReview, currentEdits, reviewEventMetadata, reviewRows, slotlessIds, type KeptValue } from '../lib/import-review-view';
 import type { UploadHistory } from '../lib/api-types';
 import { type CellUnit, type Grading, cellNumber, cellText, cellToSI, hasNumericSyntax, NUMERIC_SYNTAX_GUIDANCE, readNumericCell, readTypedValue, validateTypedValue } from '../lib/blood-test-cell';
 import { useLpaUnit } from '../lib/lpa-unit';
@@ -87,11 +87,19 @@ export function ReviewTable({
   // How many values are touched: rebuilds the matrix when a value is first
   // edited, so a slot's winner and loser are judged as edited (`place`).
   const [touchedCount, setTouchedCount] = useState(0);
-  // Values the write refuses on their own take no slot, as in the review's groups (US-13 AC13).
-  const slotless = useMemo(() => slotlessIds(results), [results]);
+  // Each cell's text; an untouched cell reads its extraction until the effect below seeds it.
+  const [editedDisplayValues, setEditedDisplayValues] = useState<Record<string, string>>({});
+  // The matrix places, and the review's groups classify, the values as they now
+  // stand: an edit's number, a cleared value's absence (US-13 AC13). Keyed by
+  // content, so re-seeding untouched text never rebuilds the matrix.
+  const editsNow = currentEdits(results, editedDisplayValues, touchedRef.current, units, unitSystem);
+  const editsKey = JSON.stringify([...editsNow]);
+  const edits = useMemo(() => editsNow, [results, editsKey]);
+  // Values the write refuses on their own take no slot, as in the review's groups.
+  const slotless = useMemo(() => slotlessIds(results, edits), [results, edits]);
   const matrix = useMemo(
-    () => buildMatrixModel(results, fileDates, history.measurements, history.labValues, unitSystem, units, touchedRef.current, slotless),
-    [results, fileDates, history.measurements, history.labValues, unitSystem, units, touchedCount, slotless],
+    () => buildMatrixModel(results, fileDates, history.measurements, history.labValues, unitSystem, units, touchedRef.current, slotless, edits),
+    [results, fileDates, history.measurements, history.labValues, unitSystem, units, touchedCount, slotless, edits],
   );
   // Initial display values are derived from the matrix (not from raw results)
   // so the unit-system switch re-formats them and dedup-collapsed cells
@@ -104,9 +112,6 @@ export function ReviewTable({
     return map;
   }, [matrix]);
 
-  const [editedDisplayValues, setEditedDisplayValues] = useState<Record<string, string>>(
-    () => ({ ...initialDisplayValues }),
-  );
   // Conflict cells only: "Replace the saved value with this one". Default
   // off — the record already holds a value, so replacing is the user's call.
   const [replaceChecked, setReplaceChecked] = useState<Record<string, boolean>>({});
@@ -325,16 +330,17 @@ export function ReviewTable({
     const day = new Map(matrix.columns.map(col => [col.dateKey, buildRecordedAt(col.date)]));
     const kept: KeptValue[] = saveableCells.map(c => ({ id: editId(c.cell), recordedAt: day.get(c.dateKey)!, correctsId: c.cell.existing?.id, ...(c.isEdited ? { edited: c.value } : null) }));
     const ids = new Set(kept.map(k => k.id));
-    // A reading with no cell is sent unless its winner was cleared or left unticked;
-    // it never writes, so an edited one carries its flag, not its typed number.
+    // A reading with no cell is sent, at its current number, unless its winner was
+    // left unticked: the matrix placed it by the same rule, so it never writes.
     const editable = new Set([...matrix.cells.values()].flatMap(c => (c.state === 'editable' ? [editId(c)] : [])));
-    kept.push(...matrix.unshown.filter(u => !u.winner || ids.has(u.winner) || !editable.has(u.winner)).map(u => {
+    kept.push(...matrix.unshown.filter(u => edits.get(u.id) !== null && (!u.winner || ids.has(u.winner) || !editable.has(u.winner))).map(u => {
       const [fi, ref] = [Number(u.id.split(':')[0]), u.id.split(':')[1]];
       const extracted = ref[0] === 'v' ? results[fi].values[Number(ref.slice(1))].valueSI : results[fi].additionalValues[Number(ref.slice(1))].value;
-      return { id: u.id, recordedAt: `${u.day}T00:00:00.000Z`, ...(u.edited ? { edited: extracted } : null) };
+      const edit = edits.get(u.id);
+      return { id: u.id, recordedAt: `${u.day}T00:00:00.000Z`, ...(typeof edit === 'number' ? { edited: edit } : u.edited ? { edited: extracted } : null) };
     }));
     return classifyReview(results, fileDates, history, kept);
-  }, [results, fileDates, history, matrix, saveableCells]);
+  }, [results, fileDates, history, matrix, saveableCells, edits]);
   // What Save writes, and the kept values waiting on a column's day (Save stays blocked until it is set).
   const savedCount = groups.decisions.values.length + groups.decisions.labValues.length
     + saveableCells.filter(c => groups.groupOf.get(editId(c.cell)) === 'waiting').length;

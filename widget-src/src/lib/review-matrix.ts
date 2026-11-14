@@ -124,10 +124,15 @@ export function buildMatrixModel(
    *  cell stays editable against the saved row, judged by the edited text. */
   touched?: { has(id: string): boolean },
   /** Values the write refuses on their own (health-core `refusedAlone`, the
-   *  rule the review's groups place by): they take no (test, day) slot. A lab
-   *  gets no cell (it is listed under "Not saved"); a core value keeps its cell
-   *  where no placed reading has it, so its error blocks Save (US-13 AC5). */
+   *  rule the review's groups place by), at their current number: they take no
+   *  (test, day) slot. An untouched lab gets no cell (it is listed under "Not
+   *  saved"); a core value, or an edited lab, keeps its cell where no placed
+   *  reading has it, so its error blocks Save (US-13 AC5). */
   slotless?: { has(id: string): boolean },
+  /** Each edited value's current number (`currentEdits`), null when cleared:
+   *  readings are placed as the table now stands, and a cleared one claims no
+   *  slot, so the reading it hid takes it and shows (US-13 AC13). */
+  edits?: ReadonlyMap<string, number | null>,
 ): { columns: MatrixColumn[]; coreRows: CoreRow[]; additionalRows: AdditionalRow[]; cells: Map<string, MatrixCell>; unshown: UnshownReading[] } {
   const cells = new Map<string, MatrixCell>();
   const columnsByKey = new Map<DateKey, MatrixColumn>();
@@ -232,6 +237,12 @@ export function buildMatrixModel(
     return held.lab ? { lab: held.lab } : held.valueSI !== undefined ? { valueSI: held.valueSI, ...comparatorOf(held) } : undefined;
   };
   type Overlay = { slot: string; cellKey: string; rank: 0 | 1 | 2; quantity: Quantity; edited: boolean; id: string; slotless: boolean; cell: (existing?: ExistingCell) => EditableMatrixCell };
+  /** A reading's quantity as it stands: an edit is an exact number. */
+  const current = (id: string, extracted: Quantity): Quantity => {
+    const edit = edits?.get(id);
+    if (edit === undefined || edit === null) return extracted;
+    return 'lab' in extracted ? { lab: { name: extracted.lab.name, value: edit, unit: extracted.lab.unit } } : { valueSI: edit };
+  };
   const overlays: Overlay[] = [];
   for (const rank of [0, 1, 2]) results.forEach((r, fi) => {
     /** The column a value lands in: its own date's (US-12 AC12) or its file's. */
@@ -256,7 +267,7 @@ export function buildMatrixModel(
         ? cellNumber(metric, v.valueSI, displayFor(metric), v.comparator)
         : String(v.displayValue);
       overlays.push({
-        slot: slotFor(metric, v, dateKey), cellKey: `${metric}|${dateKey}`, rank, quantity: { valueSI: v.valueSI, ...comparatorOf(v) },
+        slot: slotFor(metric, v, dateKey), cellKey: `${metric}|${dateKey}`, rank, quantity: current(id, { valueSI: v.valueSI, ...comparatorOf(v) }),
         edited: !!touched?.has(id), id, slotless: !!slotless?.has(id),
         cell: (existing) => ({
           state: 'editable', kind: 'core', fi, vi,
@@ -278,7 +289,7 @@ export function buildMatrixModel(
     r.additionalValues.forEach((av, ai) => {
       if (readingRank(av.recordedAt, UNDATED_PREVIOUS) !== rank) return;
       const id = valueId(fi, 'additional', ai);
-      if (slotless?.has(id)) return;
+      if (slotless?.has(id) && !touched?.has(id)) return;
       const dateKey = columnFor(av);
       if (!dateKey) return;
       const nameKey = normaliseLabName(av.name);
@@ -297,8 +308,8 @@ export function buildMatrixModel(
       }
       const lab = { name: av.name, value: av.value, unit: av.unit, ...comparatorOf(av) };
       overlays.push({
-        slot: slotFor(nameKey, av, dateKey), cellKey: `${nameKey}|${dateKey}`, rank, quantity: { lab },
-        edited: !!touched?.has(id), id, slotless: false,
+        slot: slotFor(nameKey, av, dateKey), cellKey: `${nameKey}|${dateKey}`, rank, quantity: current(id, { lab }),
+        edited: !!touched?.has(id), id, slotless: !!slotless?.has(id),
         cell: (existing) => ({
           state: 'editable',
           kind: 'additional',
@@ -315,10 +326,14 @@ export function buildMatrixModel(
       });
     });
   });
-  // Every placed reading is sent here: the matrix shows a cleared or unticked
-  // value in place, and Save's own selection drops it (`collectSaveableCells`).
+  // A cleared reading is not sent: it keeps its cell (to be typed again) and claims no slot.
   const placed = overlays.filter(o => !o.slotless);
-  const places = placeReadings(placed.map(o => ({ slot: o.slot, rank: o.rank, quantity: o.quantity, edited: o.edited, sent: true })), heldAt);
+  const places = placeReadings(placed.map(o => ({ slot: o.slot, rank: o.rank, quantity: o.quantity, edited: o.edited, sent: edits?.get(o.id) !== null })), heldAt);
+  /** The saved row a reading meets in its slot, as its cell names it. */
+  const existingAt = (slot: string): ExistingCell | undefined => {
+    const held = savedRows.get(slot);
+    return held?.state === 'context' ? { id: held.id, display: held.displayValue, valueSI: held.valueSI, lab: held.lab, displayUnit: held.displayUnit, ...comparatorOf(held) } : undefined;
+  };
   placed.forEach((o, i) => {
     const prev = savedRows.get(o.slot);
     const held = prev?.state === 'context' ? prev : undefined;
@@ -336,11 +351,11 @@ export function buildMatrixModel(
         unshown.push({ id: o.id, day, winner: placed[winner!].id, edited: o.edited });
         return;
       default:
-        cells.set(o.cellKey, o.cell(held && { id: held.id, display: held.displayValue, valueSI: held.valueSI, lab: held.lab, displayUnit: held.displayUnit, ...comparatorOf(held) }));
+        cells.set(o.cellKey, o.cell(existingAt(o.slot)));
     }
   });
-  // A core value the write refuses keeps a cell where no placed reading has one.
-  for (const o of overlays) if (o.slotless && cells.get(o.cellKey)?.state !== 'editable') cells.set(o.cellKey, o.cell());
+  // A core value the write refuses, or an edited lab, keeps a cell where no placed reading has one.
+  for (const o of overlays) if (o.slotless && cells.get(o.cellKey)?.state !== 'editable') cells.set(o.cellKey, o.cell(existingAt(o.slot)));
 
   // 3) Sort. Columns chronological asc (oldest left, newest right).
   //    Core rows in the canonical BLOOD_TEST_METRICS order so the matrix
