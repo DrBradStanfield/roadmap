@@ -114,7 +114,7 @@ interface TopicParts { rows?: ReactNode; after?: ReactNode; action?: ReactNode; 
 const PILLS: readonly TopicId[] = ['bloodTests', 'cholesterol', 'supplements'];
 const titleOf = (id: TopicId) => TOPICS.find(t => t.topic === id)!.title;
 
-/** Under the title (App Review 1.4.1, US-73 AC13), the iPhone's `EducationNote.myHealth`. Provisional: Brad approves the words. */
+/** Under the title (App Review 1.4.1, US-73 AC13), the iPhone's `EducationNote.myHealth`. Words: Brad, 2026-11-15. */
 const EDUCATION_LINE = 'For education, not medical advice. Always talk to your doctor.';
 
 const RowsCard = memo(function RowsCard({ rows, onOpen, extra }: { rows: Array<RowModel | null>; onOpen: (s: ValueSubject, from?: Element) => void; extra?: ReactNode }) {

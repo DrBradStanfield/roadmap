@@ -18,11 +18,12 @@ The tables below hold the audit as proposed. Brad's decision, row by row, is wha
 | W5–W7 | Titles: Discuss switching to Tirzepatide / Discuss adding an SGLT2 inhibitor / Discuss adding Metformin. |
 | W8 | Kept, title and text. |
 | W9 | Titles: Discuss adding Ezetimibe with your doctor / Discuss adding bempedoic acid with your doctor / Discuss increasing your statin dose with your doctor / Discuss switching to a more potent statin with your doctor / Discuss a PCSK9 inhibitor with your doctor. |
-| W10 | As proposed. |
-| W11 | Statin muscle damage is rare. If it happens, the statin is usually stopped and a PCSK9 inhibitor is the usual next option. Discuss it with your doctor. (evidence.ts, roadmap_text.html, health_roadmap_algorithm.md) |
+| W10 | As proposed. The five cards that carry it (`med-statin-dose`, `-increase`, `-switch`, `med-ezetimibe`, `med-pcsk9i`) now cite FDA 2021 and NICE NG238, as `med-statin` does. |
+| W11 | Statin muscle damage is rare. If it happens, the statin is usually stopped, and a PCSK9 inhibitor is one option to discuss with your doctor. (evidence.ts, roadmap_text.html, health_roadmap_algorithm.md; Brad revised it the same day after review: "the usual next option" was not in the cited guidelines) |
 | W12–W14 | As proposed. |
 | W15 | As proposed, ending "Discuss them with your doctor." |
 | S1–S5 | Kept. |
+| W16 (open) | `non-hdl-high` (suggestions.ts), found in review: "Your non-HDL cholesterol of {value} is high. Consider lifestyle modifications to reduce cardiovascular risk." Not changed: no text approved yet. |
 
 The two doctor lines (US-73 AC13, US-52 AC6h) were approved as built; the chat consent stays v1.
 

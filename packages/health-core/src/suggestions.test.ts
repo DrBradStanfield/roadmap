@@ -3912,3 +3912,62 @@ describe('US-07 AC6: who the plan is for', () => {
     });
   });
 });
+
+// US-25 AC28a (App Review 1.4.1, Brad 2026-11-15, exact words): medicine sentences in the guideline's
+// voice or as a discussion with the doctor. Words only: the same cards show for the same inputs.
+describe('US-25 AC28a: guideline-voice wording', () => {
+  const FDA = 'https://www.fda.gov/drugs/drug-safety-and-availability/fda-requests-removal-strongest-warning-against-using-cholesterol-lowering-statins-during-pregnancy';
+  const NICE = 'https://www.nice.org.uk/guidance/ng238/chapter/Recommendations';
+  const weightCard = (meds: MedicationInputs, id: string) => {
+    const { inputs, results } = createTestData({ hba1c: hba1c(5.8) }, { bmi: 28 });
+    return generateSuggestions(inputs, results, 'si', meds).find(s => s.id === id);
+  };
+  const lipidCard = (meds: MedicationInputs, id: string) => {
+    const { inputs, results } = createTestData({ ldlC: 3.0 });
+    return generateSuggestions(inputs, results, 'si', meds).find(s => s.id === id);
+  };
+
+  it('the GLP-1 dose step keeps its title and asks for the pros and cons with the doctor', () => {
+    expect(weightCard({ glp1: { drug: 'tirzepatide', dose: 5 } }, 'weight-med-glp1-increase')).toMatchObject({
+      title: 'Consider increasing GLP-1 dose',
+      description: 'Discuss with your doctor the pros and cons of a higher dose of your current GLP-1 medication.',
+    });
+  });
+
+  it('the Metformin step is titled as a discussion', () => {
+    const meds: MedicationInputs = { glp1: { drug: 'tirzepatide', dose: 15 }, sglt2i: { drug: 'empagliflozin', dose: 10 } };
+    expect(weightCard(meds, 'weight-med-metformin')?.title).toBe('Discuss adding Metformin');
+  });
+
+  it('the statin step-up titles name the doctor', () => {
+    expect(lipidCard({ statin: { drug: 'pravastatin', dose: 20 }, ezetimibe: 'yes' }, 'med-statin-increase')?.title)
+      .toBe('Discuss increasing your statin dose with your doctor');
+    expect(lipidCard({ statin: { drug: 'atorvastatin', dose: 80 }, ezetimibe: 'yes' }, 'med-statin-switch')?.title)
+      .toBe('Discuss switching to a more potent statin with your doctor');
+  });
+
+  it('apob-high reads as what is typically discussed', () => {
+    const { inputs, results } = createTestData({ apoB: apoB(80) });
+    expect(generateSuggestions(inputs, results).find(s => s.id === 'apob-high')?.description)
+      .toMatch(/ is elevated\. Lifestyle changes and treatment options to reduce cardiovascular risk are typically discussed at this level\. Discuss them with your doctor\.$/);
+  });
+
+  it('the PCSK9 inhibitor reason says what usually happens after statin muscle damage', () => {
+    const reason = SUGGESTION_EVIDENCE['med-pcsk9i'].reason;
+    expect(reason).toContain('Statin muscle damage is rare. If it happens, the statin is usually stopped, and a PCSK9 inhibitor is one option to discuss with your doctor.');
+    expect(reason).not.toContain('stop the statin and move');
+  });
+
+  // The on-a-statin sentence names the FDA and NICE, so every card that carries it cites both.
+  it.each([
+    ['med-statin-dose', { statin: { drug: 'pravastatin', dose: null }, ezetimibe: 'yes' }],
+    ['med-statin-increase', { statin: { drug: 'pravastatin', dose: 20 }, ezetimibe: 'yes' }],
+    ['med-statin-switch', { statin: { drug: 'atorvastatin', dose: 80 }, ezetimibe: 'yes' }],
+    ['med-ezetimibe', { statin: { drug: 'atorvastatin', dose: 20 } }],
+    ['med-pcsk9i', { statin: { drug: 'atorvastatin', dose: 80 }, ezetimibe: 'yes', statinEscalation: 'not_tolerated' }],
+  ] as const)('%s names the FDA and NICE and cites both', (id, meds) => {
+    const card = lipidCard(meds as MedicationInputs, id);
+    expect(card?.description).toContain('The FDA advises most people to stop a statin');
+    expect(card?.references?.map(r => r.url)).toEqual(expect.arrayContaining([FDA, NICE]));
+  });
+});

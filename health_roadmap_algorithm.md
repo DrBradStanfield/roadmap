@@ -908,7 +908,7 @@ Both conditions must hold:
 
 **Pregnancy, other lipid drugs (Brad 2026-11-09, from each drug's US label, section 8.1, DailyMed):** the `med-pcsk9i` and `med-ezetimibe` cards end "Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be.": the Repatha (evolocumab), Praluent (alirocumab) and Zetia (ezetimibe) labels say only that the data are insufficient to evaluate a drug-associated risk. The `med-bempedoic-acid` card ends "Not recommended in pregnancy; talk to your doctor if you are pregnant or planning to be.": the Nexletol label says to discontinue it when pregnancy is recognized unless the benefits outweigh the potential risks to the fetus. Each reason says the same and cites its label; the bempedoic acid reason keeps the label's hedge: "unless the benefits outweigh the possible risks to the baby".
 
-**Muscle damage (Brad 2026-11-02):** "statin muscle damage is rare but it does happen. if it does happen, switch to PCSK9i". The person records the statin as not tolerated, and the plan moves to the PCSK9 inhibitor (the statin-intolerant path below). The `med-pcsk9i` reason says: "Statin muscle damage is rare. If it happens, the statin is usually stopped and a PCSK9 inhibitor is the usual next option. Discuss it with your doctor."
+**Muscle damage (Brad 2026-11-02):** "statin muscle damage is rare but it does happen. if it does happen, switch to PCSK9i". The person records the statin as not tolerated, and the plan moves to the PCSK9 inhibitor (the statin-intolerant path below). The `med-pcsk9i` reason says: "Statin muscle damage is rare. If it happens, the statin is usually stopped, and a PCSK9 inhibitor is one option to discuss with your doctor."
 
 ### Step 2: Add Ezetimibe (`med-ezetimibe`)
 
