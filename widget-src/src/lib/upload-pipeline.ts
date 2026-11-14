@@ -26,6 +26,9 @@ export interface FileResult {
   document?: DocumentResult;
   /** Values the extractor refused rather than guessed, listed under "Not saved" (US-12 AC15). */
   refusedValues?: RefusedLabValue[];
+  /** Value rows the parse dropped, and the ones that name their test, listed under "Not saved" (US-12 AC19). */
+  droppedValueCount?: number;
+  unreadValues?: UnreadLabValue[];
   /** The original uploaded bytes — saved into the user's cloud archive (v2). */
   file?: Blob;
   /** 'sha256-<hex>' of `file` — matched against the record's document rows. */
@@ -139,9 +142,9 @@ export const MAX_FILE_SIZE = UPLOAD_LIMITS.web.fileBytes;
 /** Why a file was not fully read (US-12 AC9). Each is also its `upload_outcome` count. */
 export type FileNoticeReason = Exclude<UploadOutcomeKey, 'picked' | 'withValues' | 'docx' | 'undatedPrevious' | 'unitsGuessed' | 'unitsRefused' | 'valuesLimit' | 'valuesLimitUngraded' | 'cancelled'>;
 /** `name` is the file's whole path, its identity; the list shows it short (`noticeName`).
- *  `count` is how many the notice stands for (values dropped), `unread` the ones that
- *  name their test (US-12 AC19); `text` overrides the reason's. */
-export interface FileNotice { name: string; reason: FileNoticeReason; count?: number; unread?: UnreadLabValue[]; text?: string }
+ *  `count` is how many the notice stands for (values dropped, which the review
+ *  names under "Not saved", US-13 AC13); `text` overrides the reason's. */
+export interface FileNotice { name: string; reason: FileNoticeReason; count?: number; text?: string }
 
 const LEGACY_DOC_TEXT = 'Word .doc files cannot be read. Save it as a PDF or .docx, then upload that.';
 
@@ -198,8 +201,12 @@ async function readPages(upload: HealthUploadAPI, { fileName: name, getFile }: R
 
 /** A file the server read, as a review row; values its parse refused are named (US-12 AC9). */
 function readResult(fileName: string, result: LabImportResult, notices: FileNotice[]): FileResult {
-  if (result.droppedValueCount) notices.push({ name: fileName, reason: 'valuesDropped', count: result.droppedValueCount, unread: result.unreadValues });
-  return { fileName, reportDate: result.reportDate, ...offerCoreExtras(result), document: result.document ?? undefined };
+  if (result.droppedValueCount) notices.push({ name: fileName, reason: 'valuesDropped', count: result.droppedValueCount });
+  return {
+    fileName, reportDate: result.reportDate, ...offerCoreExtras(result), document: result.document ?? undefined,
+    // Listed under the review's "Not saved" (US-13 AC13).
+    ...(result.droppedValueCount ? { droppedValueCount: result.droppedValueCount, unreadValues: result.unreadValues } : null),
+  };
 }
 
 /** A file the server refused as busy (US-12 AC9): a server error, never the daily limit. */

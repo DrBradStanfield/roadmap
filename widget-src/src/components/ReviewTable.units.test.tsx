@@ -8,16 +8,17 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, fireEvent, cleanup } from '@testing-library/react';
 import { ReviewTable } from './ReviewTable';
 import type { FileResult } from '../lib/upload-pipeline';
+import { showingAll } from '../testing/import-review';
 
 afterEach(cleanup);
 
 const DAY = '2026-03-10';
 
 function renderReview(results: FileResult[]) {
-  return render(
+  return showingAll(render(
     <ReviewTable grading={{}} results={results} history={{ measurements: [], labValues: [], documents: [] }}
       unitSystem="si" onSave={vi.fn()} onCancel={() => {}} isSaving={false} error={null} />,
-  );
+  ));
 }
 
 const lab = (name: string, value: number, unit: string): FileResult[] => [{
@@ -77,10 +78,10 @@ describe('US-21 AC21: a row past its test\'s ceiling says so in the review, befo
       recordedAt: DAY, source: 'lab_import', createdAt: '2026-03-11T00:00:00.000Z' };
     const upload: FileResult[] = [{ fileName: 'labs.pdf', reportDate: DAY, values: [],
       additionalValues: [{ name: 'Free Testosterone', value: 300, unit: 'nmol/L', referenceLow: 163, referenceHigh: 473 }] }];
-    const { container } = render(
+    const { container } = showingAll(render(
       <ReviewTable grading={{}} results={upload} history={{ measurements: [], labValues: [held], documents: [] }}
         unitSystem="si" onSave={vi.fn()} onCancel={() => {}} isSaving={false} error={null} />,
-    );
+    ));
     expect(container.querySelector('.bt-cell-conflict .bt-cell-refused')).not.toBeNull();
     fireEvent.change(container.querySelector<HTMLInputElement>('.bt-cell-conflict input[type="text"], .bt-cell-conflict input:not([type="checkbox"])')!, { target: { value: '312.6' } });
     expect(container.querySelector('.bt-cell-conflict-replace')).toBeNull();
@@ -178,8 +179,8 @@ describe('US-13 AC11: a core value shows what the report printed when the cell s
   });
 
   it('compares by number: "1.1 mg/dL" shown as "1.10" gets no note', () => {
-    const { container } = render(<ReviewTable grading={{}} results={printed({ valueSI: 97.24, displayValue: 1.1 })}
-      history={{ measurements: [], labValues: [], documents: [] }} unitSystem="conventional" onSave={vi.fn()} onCancel={() => {}} isSaving={false} error={null} />);
+    const { container } = showingAll(render(<ReviewTable grading={{}} results={printed({ valueSI: 97.24, displayValue: 1.1 })}
+      history={{ measurements: [], labValues: [], documents: [] }} unitSystem="conventional" onSave={vi.fn()} onCancel={() => {}} isSaving={false} error={null} />));
     expect(container.querySelector<HTMLInputElement>('.bt-cell-review input')!.value).toBe('1.10');
     expect(container.querySelector('.bt-cell-printed')).toBeNull();
   });

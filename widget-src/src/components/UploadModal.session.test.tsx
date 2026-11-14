@@ -10,6 +10,7 @@ import { Sentry } from '../lib/sentry';
 import { WritesStoppedError } from '../lib/error-diagnostics';
 import { trackProductEvent } from '../lib/server-api';
 import type { UploadHistory } from '../lib/api-types';
+import { findReviewValue } from '../testing/import-review';
 
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn(), labImportBatch: vi.fn(), pollBatchStatus: vi.fn() }));
 vi.mock('../lib/roadmap-data', () => ({ getDocumentArchiveMode: vi.fn(() => 'cloud'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
@@ -52,7 +53,7 @@ function selectFile() {
 }
 async function ready() {
   selectFile();
-  return screen.findByDisplayValue('3.9');
+  return findReviewValue('3.9');
 }
 beforeEach(() => {
   vi.clearAllMocks();
@@ -99,7 +100,7 @@ describe('US-12 AC4–6 upload session ownership', () => {
     act(() => { fireEvent.change(picker, event); fireEvent.change(picker, event); });
     expect(checkLabImportQuota).toHaveBeenCalledOnce();
     await act(async () => quota.resolve({ allowed: true, remaining: 60 }));
-    await screen.findByDisplayValue('3.9');
+    await findReviewValue('3.9');
     expect(labImport).toHaveBeenCalledOnce();
   });
   it.each(['quota', 'draft flush'])('cancels while awaiting %s without later launching', async phase => {
@@ -234,7 +235,7 @@ describe('US-12 AC4–6 upload session ownership', () => {
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
     await screen.findByText('Some items could not be saved. Please try again.');
     expect(screen.queryByDisplayValue('3.9')).toBeNull();
-    const retry = screen.getByRole('button', { name: 'Save 1 Original' }) as HTMLButtonElement;
+    const retry = screen.getByRole('button', { name: 'Save 1 original' }) as HTMLButtonElement;
     expect(retry.disabled).toBe(false);
     fireEvent.click(retry);
     await screen.findByRole('button', { name: 'Done' });
@@ -258,7 +259,7 @@ describe('US-12 AC4–6 upload session ownership', () => {
     render(<Harness completedHistory={savedLdl} />);
     await ready();
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-    fireEvent.click(await screen.findByRole('button', { name: 'Save 1 Original' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Save 1 original' }));
     await screen.findByRole('button', { name: 'Done' });
     expect(screen.getByText(/Saved 1 blood test value, 1 document/)).toBeTruthy();
     expect(screen.queryByText(/not added/)).toBeNull();
@@ -362,7 +363,7 @@ describe('US-12 AC4–6 upload session ownership', () => {
     expect((screen.getByRole('button', { name: /^Sav/ }) as HTMLButtonElement).disabled).toBe(true);
     await act(async () => reread.resolve());
     expect(await screen.findByText('Failed to save. Please try again.')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Save 1 Original' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save 1 original' }));
     await screen.findByRole('button', { name: 'Done' });
     expect(bulkSaveMeasurements).toHaveBeenCalledOnce();
   });
@@ -532,9 +533,9 @@ describe('US-13 AC6: the archive-only path files what the review shows', () => {
       metadata: { importedVia: 'connector' }, sourceFileName: 'test.pdf', contentHash: 'sha256-synthetic', fileRef: null, createdAt: '2024-06-02T00:00:00Z' };
     render(<Harness initialHistory={{ ...emptyHistory, documents: [connectorRow] }} />); selectFile();
     // The card starts from the row it replaces (US-14 AC4).
-    fireEvent.change(await screen.findByDisplayValue('Connector title'), { target: { value: 'Reviewed letter' } });
+    fireEvent.change(await findReviewValue('Connector title'), { target: { value: 'Reviewed letter' } });
     fireEvent.change(screen.getByLabelText('Document date'), { target: { value: '2024-07-12' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Save 1 Original' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save 1 original' }));
     await waitFor(() => expect(bulkSaveDocuments).toHaveBeenCalledOnce());
     expect(vi.mocked(bulkSaveDocuments).mock.calls[0][0]).toEqual([expect.objectContaining({
       title: 'Reviewed letter', documentDate: '2024-07-12', sourceFileName: 'test.pdf' })]);

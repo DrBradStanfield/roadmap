@@ -7,7 +7,7 @@ import { labUnitRefusalLine } from '@roadmap/health-core/lab-series';
 import { useLpaUnit } from '../lib/lpa-unit';
 import type { Grading } from '../lib/blood-test-cell';
 import { ReviewTable } from './ReviewTable';
-import { FileNotices, NotSaved } from './UploadNotices';
+import { FileNotices } from './UploadNotices';
 import { ErrorBoundary } from './ErrorBoundary';
 import { FloatingUploadIndicator } from './FloatingUploadIndicator';
 import { useUploadFlow, MAX_FILES } from '../hooks/useUploadFlow';
@@ -159,7 +159,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
             </div>
           )}
 
-          {reviewing && <><FileNotices notices={notices} /><NotSaved results={results} /></>}
+          {reviewing && <FileNotices notices={notices} />}
           {reviewing && (
             // A review that throws while rendering is never a dead widget (US-13 AC9).
             <ErrorBoundary feature="upload_review" fallback={
@@ -212,7 +212,6 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
               {refusalLines}
               {unstoredCount > 0 && <p className="upload-done-skipped">The original file couldn't be stored; its details are saved.</p>}
               <FileNotices notices={notices} />
-              <NotSaved results={results} />
               <button className="btn-primary upload-done-btn" onClick={handleClose}>
                 Done
               </button>

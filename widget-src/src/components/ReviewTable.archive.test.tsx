@@ -12,6 +12,7 @@ import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import { ReviewTable } from './ReviewTable';
 import type { FileResult } from '../lib/upload-pipeline';
 import type { ApiDocument } from '../lib/api-types';
+import { showingAll } from '../testing/import-review';
 
 // The record's profile.lpaUnit (US-05 AC2), in memory.
 const record = vi.hoisted(() => ({ lpaUnit: undefined as string | undefined }));
@@ -99,7 +100,7 @@ const connectorLetter: ApiDocument = {
 
 function renderReview(documents: ApiDocument[], files: FileResult[] = results, savedBloodTests: ApiMeasurement[] = measurements) {
   const onSave = vi.fn();
-  const utils = render(
+  const utils = showingAll(render(
     <ReviewTable
       grading={{}}
       results={files}
@@ -110,7 +111,7 @@ function renderReview(documents: ApiDocument[], files: FileResult[] = results, s
       isSaving={false}
       error={null}
     />,
-  );
+  ));
   return { ...utils, onSave, button: utils.container.querySelector<HTMLButtonElement>('.review-save-btn')! };
 }
 
@@ -118,8 +119,8 @@ describe('ReviewTable — archiving the original behind a connector row (US-13 A
   it('offers Save with nothing selected when the bytes match a metadata-only row, and says so', () => {
     const { button, onSave, container } = renderReview([connectorRow]);
     expect(button.disabled).toBe(false);
-    expect(button.textContent).toBe('Save 1 Original');
-    expect(container.querySelector('.review-summary')?.textContent)
+    expect(button.textContent).toBe('Save 1 original');
+    expect(container.querySelector('.review-archive-only')?.textContent)
       .toBe('Save will archive the original PDF. No extracted values or documents are selected.');
     fireEvent.click(button);
     expect(onSave).toHaveBeenCalledWith({ values: [], documents: [], labValues: [], reviewed: expect.any(Array) });
@@ -131,24 +132,25 @@ describe('ReviewTable — archiving the original behind a connector row (US-13 A
     expect(inputs.length).toBeGreaterThan(0);
     for (const input of inputs) fireEvent.change(input, { target: { value: '' } });
     expect(button.disabled).toBe(false);
-    expect(button.textContent).toBe('Save 1 Original');
-    expect(container.querySelector('.review-summary')?.textContent)
+    expect(button.textContent).toBe('Save 1 original');
+    expect(container.querySelector('.review-archive-only')?.textContent)
       .toBe('Save will archive the original PDF. No extracted values or documents are selected.');
     expect(container.querySelector('.review-summary')?.textContent).not.toContain('already in your record');
     fireEvent.click(button);
     expect(onSave).toHaveBeenCalledWith({ values: [], documents: [], labValues: [], reviewed: expect.any(Array) });
   });
 
-  it('keeps Save disabled when the same bytes are already archived (fileRef set)', () => {
-    const { button, container } = renderReview([{ ...connectorRow, fileRef: 'Lab results/x.pdf' }]);
-    expect(button.disabled).toBe(true);
-    expect(container.querySelector('.review-summary')?.textContent).toContain('No items selected');
+  it('offers no Save when the same bytes are already archived (fileRef set): nothing to write, the review closes (US-13 AC13 D3)', () => {
+    const { button, getByRole, container } = renderReview([{ ...connectorRow, fileRef: 'Lab results/x.pdf' }]);
+    expect(button).toBeNull();
+    expect(getByRole('button', { name: 'Close' })).toBeTruthy();
+    expect(container.querySelector('.review-archive-only')).toBeNull();
   });
 
   it('US-12 AC6: offers an original-only retry after saved values become history context', () => {
     const { button, onSave } = renderReview([]);
     expect(button.disabled).toBe(false);
-    expect(button.textContent).toBe('Save 1 Original');
+    expect(button.textContent).toBe('Save 1 original');
     fireEvent.click(button);
     expect(onSave).toHaveBeenCalledWith({ values: [], documents: [], labValues: [], reviewed: expect.any(Array) });
   });
@@ -157,8 +159,8 @@ describe('ReviewTable — archiving the original behind a connector row (US-13 A
     const { button, onSave, container } = renderReview([connectorLetter], letterResults);
     expect(container.querySelector<HTMLInputElement>('.review-row-check input')!.checked).toBe(false);
     expect(button.disabled).toBe(false);
-    expect(button.textContent).toBe('Save 1 Original');
-    expect(container.querySelector('.review-summary')?.textContent)
+    expect(button.textContent).toBe('Save 1 original');
+    expect(container.querySelector('.review-archive-only')?.textContent)
       .toBe('Save will archive the original PDF. No extracted values or documents are selected.');
     fireEvent.click(button);
     expect(onSave).toHaveBeenCalledWith({ values: [], documents: [], labValues: [], reviewed: expect.any(Array) });
@@ -167,7 +169,7 @@ describe('ReviewTable — archiving the original behind a connector row (US-13 A
   it('does not double-count a connector letter the user re-selects: it saves as a document, not also an original', () => {
     const { button, container } = renderReview([connectorLetter], letterResults);
     fireEvent.click(container.querySelector<HTMLInputElement>('.review-row-check input')!);
-    expect(button.textContent).toBe('Save 1 Document');
+    expect(button.textContent).toBe('Save 1 document');
   });
 
   it('keeps Save disabled for a name-deduped letter whose bytes the record does not hold', () => {
@@ -186,7 +188,7 @@ describe('ReviewTable — screening eligibility reads the plan\'s age (US-06 AC5
     additionalValues: [],
     document: { classification: 'clinic_letter', title: 'Urology', documentDate: '2026-09-01', contentMarkdown: '# PSA', metadata: { screeningType: 'prostate' } },
   }];
-  const renderAt = (age: number | undefined) => render(
+  const renderAt = (age: number | undefined) => showingAll(render(
     <ReviewTable
       grading={{}}
       results={psaLetter}
@@ -199,7 +201,7 @@ describe('ReviewTable — screening eligibility reads the plan\'s age (US-06 AC5
       isSaving={false}
       error={null}
     />,
-  ).container.querySelector('.review-screening-update input');
+  )).container.querySelector('.review-screening-update input');
 
   it('at 44 there is no prostate screening update to tick', () => {
     expect(renderAt(44)).toBeNull();
@@ -226,10 +228,10 @@ describe('ReviewTable — untouched core cells keep the extracted SI value (US-0
   const files = [lpaFile('2025-01-10', 124.9), lpaFile('2025-02-10', 74.9)];
   const history = { measurements: [], labValues: [], documents: [] };
   const renderAt = (unitSystem: 'si' | 'conventional', onSave = vi.fn()) => {
-    const utils = render(
+    const utils = showingAll(render(
       <ReviewTable grading={{}} results={files} history={history} unitSystem={unitSystem}
         onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />,
-    );
+    ));
     const rerenderAt = (u: 'si' | 'conventional') => utils.rerender(
       <ReviewTable grading={{}} results={files} history={history} unitSystem={u}
         onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />,
@@ -317,7 +319,7 @@ describe('ReviewTable — an edited cell after a unit toggle shows what Save wri
       <ReviewTable grading={{}} results={files} history={history} unitSystem={unitSystem} metricUnitOverrides={overrides}
         onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />
     );
-    const utils = render(el(first));
+    const utils = showingAll(render(el(first)));
     const input = () => utils.container.querySelector<HTMLInputElement>('.bt-cell-review input')!;
     return {
       input,
@@ -364,10 +366,10 @@ describe('ReviewTable — an edited cell after a unit toggle shows what Save wri
     record.lpaUnit = 'mg/L';
     const one: FileResult[] = [{ ...files[0], values: [{ ...files[0].values[0], valueSI: 23.25 }] }];
     const onSave = vi.fn();
-    const { container } = render(
+    const { container } = showingAll(render(
       <ReviewTable grading={{}} results={one} history={history} unitSystem="conventional"
         onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />,
-    );
+    ));
     expect(container.querySelector<HTMLInputElement>('.bt-cell-review input')!.value).toBe('93');
     expect(lpaRow(container).querySelector('.bt-ref-label')?.textContent).toBe('Normal: <300 mg/L');
     fireEvent.click(container.querySelector<HTMLButtonElement>('.review-save-btn')!);
@@ -423,10 +425,10 @@ describe('ReviewTable — same-day conflicts compare stored values, not rounded 
   }];
   const renderConflict = (record: number, uploaded: number) => {
     const onSave = vi.fn();
-    const utils = render(
+    const utils = showingAll(render(
       <ReviewTable grading={{}} results={upload(uploaded)} history={{ measurements: held(record), labValues: [], documents: [] }}
         unitSystem="conventional" onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />,
-    );
+    ));
     return { ...utils, onSave, replace: () => utils.container.querySelector<HTMLInputElement>('.bt-cell-conflict-replace input') };
   };
 
@@ -442,11 +444,11 @@ describe('ReviewTable — same-day conflicts compare stored values, not rounded 
     ]);
   });
 
-  it('an equal value is already recorded: context, no conflict, nothing to save', () => {
-    const { container, replace } = renderConflict(124, 124);
+  it('an equal value is already recorded: no row, no conflict, nothing to save, one count line (US-13 AC13)', () => {
+    const { container, replace, getByText } = renderConflict(124, 124);
     expect(replace()).toBeNull();
     expect(container.querySelector('.bt-cell-review')).toBeNull();
-    expect(container.querySelector('.bt-cell-context .bt-value-num')).not.toBeNull();
+    expect(getByText('1 already in your record')).toBeTruthy();
   });
 
   it('float noise from a unit conversion is still the same value (US-35 AC6)', () => {
@@ -468,10 +470,10 @@ describe('ReviewTable — a lab printed in another unit conflicts, shows its uni
 
   it('a reading in another unit on a new date stays in its own column, its unit inside the cell (Codex R1)', () => {
     const later: FileResult[] = [{ ...upload[0], reportDate: '2025-03-01' }];
-    const { container, getByRole } = render(
+    const { container, getByRole } = showingAll(render(
       <ReviewTable grading={{}} results={later} history={{ measurements: [], labValues: [heldLab], documents: [] }}
         unitSystem="si" onSave={vi.fn()} onCancel={() => {}} isSaving={false} error={null} />,
-    );
+    ));
     const strips = [...container.querySelectorAll('.bt-strip-inner')];
     // Every row's strip holds one element per date column, plus the spacer.
     const widths = strips.map((strip) => strip.children.length);
@@ -486,10 +488,10 @@ describe('ReviewTable — a lab printed in another unit conflicts, shows its uni
 
   it('50 ng/mL against a saved 50 nmol/L: one row, a conflict naming both units, and Replace saves 50 ng/mL', () => {
     const onSave = vi.fn();
-    const { container, getByRole } = render(
+    const { container, getByRole } = showingAll(render(
       <ReviewTable grading={{}} results={upload} history={{ measurements: [], labValues: [heldLab], documents: [] }}
         unitSystem="si" onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />,
-    );
+    ));
     expect(container.querySelectorAll('.bt-cell-conflict')).toHaveLength(1);
     expect(container.querySelector('.bt-cell-conflict .bt-cell-unit')?.textContent).toBe('ng/mL');
     const replace = container.querySelector<HTMLInputElement>('.bt-cell-conflict-replace input')!;

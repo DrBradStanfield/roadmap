@@ -1,15 +1,19 @@
-import { useState, useMemo, useEffect, useCallback, useRef, type ReactNode } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef, useId, type ReactNode } from 'react';
 import { type UnitSystem, type MetricType, UNIT_DEFS } from '@roadmap/health-core/units';
 import { healthInputSchema } from '@roadmap/health-core/validation';
 import { METRIC_TO_FIELD } from '@roadmap/health-core/mappings';
 import { commaQuestion } from '@roadmap/health-core/parseNumber';
 import { sameLabQuantity } from '@roadmap/health-core/record-edits';
 import { UNDATED_PREVIOUS } from '@roadmap/health-core/lab-extraction';
+import { IMPORT_REVIEW_TEXT, importSummaryText } from '@roadmap/health-core/import-review';
+import { trackProductEvent } from '../lib/server-api';
+import { classifyReview, reviewEventMetadata, reviewRows } from '../lib/import-review-view';
 import type { UploadHistory } from '../lib/api-types';
 import { type CellUnit, type Grading, cellNumber, cellText, cellToSI, hasNumericSyntax, NUMERIC_SYNTAX_GUIDANCE, readNumericCell, readTypedValue, validateTypedValue } from '../lib/blood-test-cell';
 import { useLpaUnit } from '../lib/lpa-unit';
 import { ReviewMatrix } from './ReviewMatrix';
 import { ReviewFileSections } from './ReviewFileSections';
+import { NotSavedLine, SureLine, saveLabel, useDisclosure } from './ReviewOverview';
 import { useReviewDocuments } from '../hooks/useReviewDocuments';
 import { type FullDate, parseReportDate, longDate, columnDay, getDaysInMonth, buildRecordedAt, fullDateToIso } from '../lib/review-dates';
 import type { FileResult, ReviewDecisions, ReviewedValue, ReviewedLabValue } from '../lib/upload-pipeline';
@@ -284,14 +288,12 @@ export function ReviewTable({
     }
     return views;
   }, [matrix, editedDisplayValues]);
-  const selectedCount = useMemo(() => saveableCells.filter(c => c.cell.kind === 'core').length, [saveableCells]);
-  const selectedAdditionalCount = useMemo(() => saveableCells.filter(c => c.cell.kind === 'additional').length, [saveableCells]);
   const totalEditableCells = useMemo(() => {
     let n = 0;
     for (const cell of matrix.cells.values()) if (cell.state === 'editable') n++;
     return n;
   }, [matrix]);
-  const nothingSelected = selectedCount === 0 && selectedAdditionalCount === 0 && selectedDocCount === 0;
+  const nothingSelected = saveableCells.length === 0 && selectedDocCount === 0;
 
   /** The new columns Save may write on: a calendar day that has happened
    *  (US-13 AC8), and for an undated previous column one before its report's
@@ -320,10 +322,27 @@ export function ReviewTable({
    *  upload would silently synthesise day=01) and no misread or future date
    *  is ever written: rows are append-only (US-13 AC8). A column whose cells
    *  are all cleared writes nothing and needs no date. */
-  const allDatesSet = useMemo(() => {
+  const needsDay = useMemo(() => {
     const writing = new Set(saveableCells.map(c => c.dateKey));
-    return matrix.columns.every(col => !col.isNew || !writing.has(col.dateKey) || datedColumns.has(col.dateKey));
+    return new Set(matrix.columns.filter(col => col.isNew && writing.has(col.dateKey) && !datedColumns.has(col.dateKey)).map(col => col.dateKey));
   }, [matrix.columns, saveableCells, datedColumns]);
+  const allDatesSet = needsDay.size === 0;
+
+  // The review's groups (US-13 AC13): one health-core call, a memo of the
+  // results, their days and the record. Show all and the open "Not saved" are
+  // view toggles; a hidden value keeps its cell text, so Save includes it.
+  const groups = useMemo(() => classifyReview(results, fileDates, history), [results, fileDates, history.measurements, history.labValues]);
+  const rows = useMemo(() => reviewRows(matrix, results, groups.groupOf, coreCellViews, needsDay), [matrix, results, groups, coreCellViews, needsDay]);
+  const showAll = useDisclosure();
+  const notSavedOpen = useDisclosure();
+  const matrixId = useId();
+  const shownMatrix = showAll.open ? matrix : rows.matrix;
+  const hiddenSaving = saveableCells.filter(c => rows.hidden.has(editId(c.cell))).length;
+  /** One `upload_review` per review end, Save or Cancel: counts only (US-13 AC13). */
+  const trackReview = (saved: boolean) => {
+    const replaced = Object.keys(replaceChecked).filter(k => replaceChecked[k]).map(k => k.slice(0, k.indexOf('>')));
+    trackProductEvent('upload_review', reviewEventMetadata(groups, [...touchedRef.current.keys(), ...replaced], { showAll: showAll.opened, notSaved: notSavedOpen.opened }, saved));
+  };
 
   /** Column-level date editing: propagate to every contributing date source so
    *  the matrix stays consistent. New-column dates only — existing-history
@@ -402,46 +421,46 @@ export function ReviewTable({
 
     const { reviewed, documents } = docs.documentsToSave(fileDates);
 
+    trackReview(true);
     onSave({ values: selected, documents, labValues: selectedLabValues, reviewed });
   };
 
+  // Nothing found that Save could write: the review closes (D3).
+  const nothingToSave = totalEditableCells === 0 && nothingSelected && archiveCount === 0 && results.every(r => !r.document);
+
   return (
     <div className="review-table">
-      <div className="review-summary">
-        {nothingSelected && archiveCount > 0 ? (
-          `Save will archive the original PDF${archiveCount !== 1 ? 's' : ''}. No extracted values or documents are selected.`
-        ) : (
-          <>
-            {selectedCount > 0 && `${selectedCount} value${selectedCount !== 1 ? 's' : ''}`}
-            {selectedCount > 0 && selectedAdditionalCount > 0 && ' + '}
-            {selectedAdditionalCount > 0 && `${selectedAdditionalCount} additional`}
-            {(selectedCount > 0 || selectedAdditionalCount > 0) && selectedDocCount > 0 && ' + '}
-            {selectedDocCount > 0 && `${selectedDocCount} document${selectedDocCount !== 1 ? 's' : ''}`}
-            {nothingSelected && 'No items selected'}
-            {' '}from {results.length} file{results.length !== 1 ? 's' : ''} · {totalEditableCells} extracted
-          </>
+      <p className="review-summary">{importSummaryText(groups.summary)}</p>
+      {nothingSelected && archiveCount > 0 && (
+        <p className="review-overview-line review-archive-only">Save will archive the original PDF{archiveCount !== 1 ? 's' : ''}. No extracted values or documents are selected.</p>
+      )}
+
+      {!showAll.open && rows.shown.size > 0 && <h4 className="review-check-title">{IMPORT_REVIEW_TEXT.checkTitle(rows.shown.size)}</h4>}
+      <div id={matrixId}>
+        {(shownMatrix.coreRows.length > 0 || shownMatrix.additionalRows.length > 0) && (
+          <ReviewMatrix
+            matrix={shownMatrix}
+            unitSystem={unitSystem}
+            metricUnitOverrides={units}
+            onToggleFieldUnit={onToggleFieldUnit}
+            onChooseLpaUnit={chooseLpaUnit}
+            grading={grading}
+            editedDisplayValues={editedDisplayValues}
+            coreCellViews={coreCellViews}
+            onCellChange={updateEditedDisplayValue}
+            onColumnDateChange={handleColumnDateChange}
+            datedColumns={datedColumns}
+            pickHints={pickHints}
+            replaceChecked={replaceChecked}
+            heldEqual={heldEqual}
+            onReplaceToggle={toggleReplace}
+          />
         )}
       </div>
-
-      {(matrix.coreRows.length > 0 || matrix.additionalRows.length > 0) && (
-        <ReviewMatrix
-          matrix={matrix}
-          unitSystem={unitSystem}
-          metricUnitOverrides={units}
-          onToggleFieldUnit={onToggleFieldUnit}
-          onChooseLpaUnit={chooseLpaUnit}
-          grading={grading}
-          editedDisplayValues={editedDisplayValues}
-          coreCellViews={coreCellViews}
-          onCellChange={updateEditedDisplayValue}
-          onColumnDateChange={handleColumnDateChange}
-          datedColumns={datedColumns}
-          pickHints={pickHints}
-          replaceChecked={replaceChecked}
-          heldEqual={heldEqual}
-          onReplaceToggle={toggleReplace}
-        />
-      )}
+      {!showAll.open && rows.shown.size > 0 && <p className="review-overview-footer">{IMPORT_REVIEW_TEXT.checkFooter}</p>}
+      <SureLine hidden={rows.hidden.size} saving={hiddenSaving} total={totalEditableCells} all={showAll} controls={matrixId} />
+      {groups.count('saved') > 0 && <p className="review-overview-line">{IMPORT_REVIEW_TEXT.alreadySaved(groups.count('saved'))}</p>}
+      <NotSavedLine notSaved={groups.notSaved} disclosure={notSavedOpen} />
 
       <ReviewFileSections docs={docs} age={userAge} sex={sex} />
 
@@ -459,20 +478,15 @@ export function ReviewTable({
       </div>
 
       <div className="review-actions">
-        <button
+        {!nothingToSave && <button
           className="btn-primary review-save-btn"
           onClick={handleSave}
           disabled={hasInvalid || (nothingSelected && archiveCount === 0) || !allDatesSet || isSaving}
         >
-          {isSaving ? 'Saving...' : `Save ${[
-            selectedCount > 0 && `${selectedCount} Value${selectedCount !== 1 ? 's' : ''}`,
-            selectedAdditionalCount > 0 && `${selectedAdditionalCount} Additional`,
-            selectedDocCount > 0 && `${selectedDocCount} Document${selectedDocCount !== 1 ? 's' : ''}`,
-            archiveCount > 0 && `${archiveCount} Original${archiveCount !== 1 ? 's' : ''}`,
-          ].filter(Boolean).join(' + ')}`}
-        </button>
-        <button className="review-cancel-btn" onClick={onCancel} disabled={isSaving}>
-          Cancel
+          {isSaving ? 'Saving...' : saveLabel(saveableCells.length, selectedDocCount, archiveCount)}
+        </button>}
+        <button className="review-cancel-btn" onClick={() => { trackReview(false); onCancel(); }} disabled={isSaving}>
+          {nothingToSave ? 'Close' : 'Cancel'}
         </button>
       </div>
     </div>

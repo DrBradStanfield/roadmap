@@ -12,6 +12,7 @@ import { checkLabImportQuota, labImport, labImportBatch, pollBatchStatus } from 
 import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocumentArchiveMode } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 import type { UploadHistory } from '../lib/api-types';
+import { findReviewValue } from '../testing/import-review';
 
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn(), labImportBatch: vi.fn(), pollBatchStatus: vi.fn() }));
 vi.mock('../lib/roadmap-data', () => ({ getDocumentArchiveMode: vi.fn(() => 'cloud'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
@@ -48,7 +49,7 @@ const pdf = (name = 'test.pdf', size?: number) => {
 };
 async function ready() {
   pick(pdf());
-  return screen.findByDisplayValue('3.9');
+  return findReviewValue('3.9');
 }
 const backdrop = () => document.querySelector<HTMLElement>('.upload-modal-backdrop')!;
 const isOpen = () => backdrop().style.display !== 'none';

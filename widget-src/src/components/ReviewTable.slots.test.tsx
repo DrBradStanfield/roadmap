@@ -13,6 +13,7 @@ import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import { ReviewTable } from './ReviewTable';
 import { buildMatrixModel } from '../lib/review-matrix';
 import type { FileResult } from '../lib/upload-pipeline';
+import { showingAll } from '../testing/import-review';
 
 beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(new Date('2026-10-15T12:00:00Z')); });
 afterEach(() => { cleanup(); vi.useRealTimers(); });
@@ -27,8 +28,8 @@ const held = (id: string, metricType: string, value: number, day: string): ApiMe
 
 function review(results: FileResult[], measurements: ApiMeasurement[] = []) {
   const onSave = vi.fn();
-  const view = render(<ReviewTable grading={{}} results={results} history={{ measurements, labValues: [], documents: [] }}
-    unitSystem="si" onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />);
+  const view = showingAll(render(<ReviewTable grading={{}} results={results} history={{ measurements, labValues: [], documents: [] }}
+    unitSystem="si" onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />));
   const save = () => view.getByRole('button', { name: /^Save/ }) as HTMLButtonElement;
   const pick = (day: string) => { for (const p of view.queryAllByLabelText('Choose the date of the previous results')) fireEvent.change(p, { target: { value: day } }); };
   const input = (value: string) => Array.from(view.container.querySelectorAll<HTMLInputElement>('.bt-cell-input input')).find(i => i.value === value)!;
@@ -41,8 +42,8 @@ function review(results: FileResult[], measurements: ApiMeasurement[] = []) {
   return { view, onSave, save, pick, input, notice, rows, boxes, inputs, context };
 }
 
-/** The value count Save's own label promises ("Save 2 Values + 1 Additional"). */
-const promised = (save: HTMLButtonElement) => [...(save.textContent ?? '').matchAll(/(\d+) (?:Values?|Additional)/g)].reduce((n, m) => n + Number(m[1]), 0);
+/** The value count Save's own label promises ("Save 3 values"). */
+const promised = (save: HTMLButtonElement) => [...(save.textContent ?? '').matchAll(/(\d+) values?\b/g)].reduce((n, m) => n + Number(m[1]), 0);
 
 describe('US-12 AC14: one reading per (test, day), the loser counted, never silent', () => {
   for (const order of ['a first', 'b first'] as const) {
@@ -184,8 +185,8 @@ describe('US-12 AC14: one reading per (test, day), the loser counted, never sile
     const t = review([file('a.docx', '2026-03-10', [v('systolic_bp', 130, U, 'mmHg'), v('diastolic_bp', 85, U, 'mmHg')])],
       [held('hs', 'systolic_bp', 130, '2025-09-02'), held('hd', 'diastolic_bp', 80, '2025-09-02')]);
     t.pick('2025-09-02');
-    const context = Array.from(t.view.container.querySelectorAll('.bt-cell-context .bt-value-num')).map(e => e.textContent);
-    expect(context).toContain('130');
+    // The equal systolic is already saved: never a cell Save would write (US-13 AC13 hides context-only rows).
+    expect(t.input('130')).toBeUndefined();
     // The differing diastolic is a conflict, Replace unticked.
     expect((t.view.getByRole('checkbox', { name: /Replace the saved Diastolic BP value/ }) as HTMLInputElement).checked).toBe(false);
     fireEvent.click(t.save());

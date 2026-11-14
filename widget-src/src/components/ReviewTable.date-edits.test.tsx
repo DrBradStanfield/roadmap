@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render } from '@testing-library/react';
 import { ReviewTable } from './ReviewTable';
 import type { FileResult } from '../lib/upload-pipeline';
+import { showingAll } from '../testing/import-review';
 
 afterEach(cleanup);
 const file: FileResult = {
@@ -20,7 +21,7 @@ function setup(files = [file], history: React.ComponentProps<typeof ReviewTable>
   const onSave = vi.fn();
   const el = (unitSystem: 'si' | 'conventional') => <ReviewTable grading={{}} results={files} history={history}
     unitSystem={unitSystem} onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />;
-  const view = render(el('si'));
+  const view = showingAll(render(el('si')));
   return {
     ...view,
     input: () => view.container.querySelector<HTMLInputElement>('.bt-cell-review input')!,
