@@ -1,81 +1,125 @@
-// US-13 AC13 (ruling D): the review's groups agree with what Save does. For
-// each fixture every sent value is written, in the review's order, by the real
-// write path; what it did must be what the review said.
+// US-13 AC13 (rulings D and the owner's plan of 2026-11-15): the review agrees
+// with Save. For every generated combination, submitting exactly the rows the
+// review says Save writes, through the real writer, writes each of them and
+// refuses none; nothing the review calls saved or not saved is among them.
 import { describe, it, expect } from 'vitest';
 import { classifyImportValues, type ClassifiedValue, type ImportFile } from './import-review';
-import { bulkAppendValues, type BulkRow } from './record-edits';
-import { UNDATED_PREVIOUS } from './lab-extraction';
+import { bulkAppendValues } from './record-edits';
+import type { ExtractedValue } from './lab-extraction';
 import type { RoadmapFile } from './roadmap-file';
-import { core, DAY, EMPTY, extra, lab, NOW, recordWith } from './import-review.test-helpers';
-
-/** The row Save sends for one value: the iPhone's `labRows` shape. */
-function rowOf(file: ImportFile, ref: string): BulkRow {
-  const day = file.days[ref]!;
-  const limit = (c?: string) => (c ? { comparator: c } : null);
-  if (ref[0] === 'v') {
-    const v = file.result.values![Number(ref.slice(1))];
-    return { kind: 'measurement', metricType: v.metric, value: v.valueSI, recordedAt: day, source: 'lab_import', ...limit(v.comparator) } as BulkRow;
-  }
-  const a = file.result.additionalValues![Number(ref.slice(1))];
-  return { kind: 'lab', metricName: a.name, value: a.value, unit: a.unit, referenceLow: a.referenceLow ?? null, referenceHigh: a.referenceHigh ?? null, recordedAt: day, source: 'lab_import', ...limit(a.comparator) } as BulkRow;
-}
-
-/** What Save did with each sent value, sent in the review's order: refused (the
- *  whole batch's own refusals, or a lab's, which is the row's own), else
- *  written or skipped, read from the write itself: the row wrote when the
- *  batch up to it saved one more row than the batch before it. */
-function whatSaveDid(files: ImportFile[], record: RoadmapFile, values: ClassifiedValue[]) {
-  const sent = values.filter((v) => v.sent && (v.ref[0] === 'v' || v.ref[0] === 'a'));
-  const rows = sent.map((v) => rowOf(files[v.file], v.ref));
-  const refusedIndex = new Set(bulkAppendValues(record, rows, NOW).measurementRefusals.map((r) => r.index));
-  const savedUpTo = (n: number) => bulkAppendValues(record, rows.slice(0, n), NOW).saved.length;
-  return sent.map((v, i) => {
-    const row = rows[i];
-    if (refusedIndex.has(i) || (row.kind === 'lab' && bulkAppendValues(EMPTY, [row], NOW).refused.length > 0)) return { v, did: 'refused' as const };
-    return { v, did: savedUpTo(i + 1) > savedUpTo(i) ? 'written' as const : 'skipped' as const };
-  });
-}
+import { core, EMPTY, extra, lab, NOW, recordWith } from './import-review.test-helpers';
 
 const HELD = recordWith([
+  { kind: 'measurement', metricType: 'systolic_bp', value: 120 },
   { kind: 'measurement', metricType: 'ldl', value: 2.4 },
-  { kind: 'measurement', metricType: 'hdl', value: 1.2 },
-  { kind: 'lab', metricName: 'ferritin', value: 60, unit: 'µg/L' },
-  { kind: 'measurement', metricType: 'systolic_bp', value: 120, recordedAt: '2026-10-01' },
+  { kind: 'lab', metricName: 'ferritin', value: 80, unit: 'µg/L' },
 ]);
+const heldId = (metric: string) => [...HELD.measurements, ...HELD.labValues].find((r) => ('metricType' in r ? r.metricType : r.metricName) === metric)!.id;
 
-const FIXTURES: Array<[string, ImportFile[], RoadmapFile]> = [
-  ['plain values', [lab({ values: [core(), core({ metric: 'hdl', valueSI: 1.3 })], additionalValues: [extra(), extra({ name: 'TSH', value: 2, unit: 'mIU/L' })] })], EMPTY],
-  ['against held rows: equal, different, free', [lab({ values: [core({ valueSI: 2.4 }), core({ metric: 'hdl', valueSI: 1.5 }), core({ metric: 'hba1c', valueSI: 40, displayUnit: 'mmol/mol' })], additionalValues: [extra({ value: 60 }), extra({ name: 'TSH', value: 2, unit: 'mIU/L' })] })], HELD],
-  ['refusals: unit, no unit, plausible, scale, core range', [lab({ values: [core({ valueSI: 500 })], additionalValues: [extra({ unit: 'furlongs' }), extra({ unit: '' }), extra({ name: 'Sodium', value: 1000, unit: 'mmol/L' }), extra({ name: 'WBC', value: 6.5, unit: 'cells/µL' }), extra({ name: 'HbA1c', value: 40, unit: 'furlongs' })] })], EMPTY],
-  ['inverted blood pressure, systolic 80 and diastolic 120', [lab({ values: [core({ metric: 'systolic_bp', valueSI: 80, displayUnit: 'mmHg' }), core({ metric: 'diastolic_bp', valueSI: 120, displayUnit: 'mmHg' })] })], EMPTY],
-  ['a diastolic above the systolic already held', [lab({ values: [core({ metric: 'diastolic_bp', valueSI: 130, displayUnit: 'mmHg' })] }, { day: '2026-10-01' })], HELD],
-  ['primary against a previous column, previous file first', [lab({ values: [core({ valueSI: 2.9, recordedAt: DAY })] }, { day: '2026-12-01' }), lab({ values: [core()] })], EMPTY],
-  ['a winner equal to the record and a differing reading', [lab({ values: [core({ valueSI: 2.4 }), core({ valueSI: 3.0 })] })], HELD],
-  ['an undated column dated onto a held day', [lab({ values: [core({ recordedAt: UNDATED_PREVIOUS })] }, { undatedDay: DAY })], HELD],
-  ['a question row unticked frees the slot (F4)', [lab({ values: [core({ question: 'Was this a blood test?' }), core({ valueSI: 2.9 })] }, { unsent: ['v0'] })], EMPTY],
-  ['two equal readings', [lab({ values: [core(), core()] })], EMPTY],
-  ['limits against exact values', [lab({ values: [core({ metric: 'psa', valueSI: 0.1, comparator: '<' })], additionalValues: [extra({ comparator: '>' })] })], recordWith([{ kind: 'measurement', metricType: 'psa', value: 0.1 }, { kind: 'lab', metricName: 'ferritin', value: 80, unit: 'µg/L' }])],
+/** One extracted value: a core value or the one lab. */
+type Spec = { name: string; core?: Partial<ExtractedValue>; lab?: { value: number; unit: string } };
+const SPECS: Spec[] = [
+  { name: 'systolic 80', core: { metric: 'systolic_bp', valueSI: 80, displayUnit: 'mmHg' } },
+  { name: 'systolic 120 (held)', core: { metric: 'systolic_bp', valueSI: 120, displayUnit: 'mmHg' } },
+  { name: 'diastolic 120', core: { metric: 'diastolic_bp', valueSI: 120, displayUnit: 'mmHg' } },
+  { name: 'diastolic 90', core: { metric: 'diastolic_bp', valueSI: 90, displayUnit: 'mmHg' } },
+  { name: 'LDL 500 (out of range)', core: { metric: 'ldl', valueSI: 500 } },
+  { name: 'HDL 600 (out of range)', core: { metric: 'hdl', valueSI: 600 } },
+  { name: 'LDL 3.1 (held 2.4)', core: { metric: 'ldl', valueSI: 3.1 } },
+  { name: 'ferritin 80 (held)', lab: { value: 80, unit: 'µg/L' } },
 ];
+const HELD_METRIC: Record<string, string> = { systolic_bp: 'systolic_bp', ldl: 'ldl' };
 
-describe('the review agrees with Save (ruling D)', () => {
-  it.each(FIXTURES)('%s', (_name, files, record) => {
-    const values = classifyImportValues(files, record, NOW);
-    const did = whatSaveDid(files, record, values);
-    for (const { v, did: outcome } of did) {
-      const expected = v.group === 'sure' ? ['written']
-        : v.group === 'saved' ? ['skipped']
-          : v.group === 'notSaved' ? ['refused', 'skipped']
-            : v.group === 'unsure' && v.reasons.includes('conflict') ? ['skipped', 'refused']
-              : v.group === 'unsure' && v.reasons.includes('outOfRange') ? ['refused']
-                : ['written'];
-      expect({ ref: `${v.file}:${v.ref}`, group: v.group, did: outcome }).toEqual({ ref: `${v.file}:${v.ref}`, group: v.group, did: expect.toBeOneOf(expected) });
+/** The file for one combination: core values as `v<i>`, the lab as `a<i>`. */
+function fileFor(specs: Spec[], opts: { untickFirst: boolean; replace: boolean }): ImportFile {
+  const values = specs.filter((s) => s.core).map((s) => core(s.core));
+  const additionalValues = specs.filter((s) => s.lab).map((s) => extra(s.lab));
+  const refs = [...values.map((_, i) => `v${i}`), ...additionalValues.map((_, i) => `a${i}`)];
+  const replaces = opts.replace ? Object.fromEntries([
+    ...values.flatMap((v, i) => (HELD_METRIC[v.metric] ? [[`v${i}`, heldId(HELD_METRIC[v.metric])]] : [])),
+    ...additionalValues.map((_, i) => [`a${i}`, heldId('ferritin')]),
+  ]) : undefined;
+  return lab({ values, additionalValues }, { unsent: opts.untickFirst ? refs.slice(0, 1) : [], replaces });
+}
+
+/** The property: Save's rows all write, none is refused, and only `writes` values are among them. */
+function agrees(file: ImportFile, record: RoadmapFile): void {
+  const { values, rows } = classifyImportValues([file], record, NOW);
+  const run = bulkAppendValues(record, rows, NOW);
+  expect(run.outcomes).toEqual(rows.map(() => 'written'));
+  expect(run.refused).toEqual([]);
+  expect(run.measurementRefusals).toEqual([]);
+  const writing = values.filter((v) => v.writes);
+  expect(writing.map((v) => file.rows[v.ref])).toEqual(rows);
+  for (const v of values) {
+    if (v.group === 'saved' || v.group === 'notSaved' || v.group === 'waiting') expect(v.writes).toBe(false);
+    if (v.group === 'sure' && v.sent) expect(v.writes).toBe(true);
+    if (!v.sent) expect(v.writes).toBe(false);
+  }
+}
+
+const combos: Array<{ specs: Spec[]; record: RoadmapFile; untickFirst: boolean; replace: boolean }> = [];
+for (const size of [2, 3]) {
+  const pick = (prefix: Spec[]): void => {
+    if (prefix.length === size) {
+      for (const [record, replaces] of [[EMPTY, [false]], [HELD, [false, true]]] as const) {
+        for (const untickFirst of [false, true]) for (const replace of replaces) combos.push({ specs: prefix, record, untickFirst, replace });
+      }
+      return;
     }
-    // Nothing classed sure is ever refused, and every refused value was flagged before Save.
-    expect(did.filter((d) => d.did === 'refused' && d.v.group === 'sure')).toEqual([]);
+    for (const s of SPECS) pick([...prefix, s]);
+  };
+  pick([]);
+}
+
+describe('the review agrees with Save, generated', () => {
+  it(`holds for all ${combos.length} combinations`, () => {
+    expect(combos.length).toBe(3456);
+    for (const c of combos) {
+      try {
+        agrees(fileFor(c.specs, c), c.record);
+      } catch (e) {
+        throw new Error(`${c.specs.map((s) => s.name).join(' + ')} on ${c.record === HELD ? 'a held record' : 'an empty record'}${c.untickFirst ? ', first unticked' : ''}${c.replace ? ', Replace selected' : ''}: ${(e as Error).message}`);
+      }
+    }
+  });
+});
+
+describe('the three cases that blocked (owner\'s diagnosis, 2026-11-15)', () => {
+  const groups = (values: ClassifiedValue[]) => values.map((v) => ({ ref: v.ref, group: v.group, ...(v.group === 'unsure' ? { reasons: v.reasons } : v.group === 'notSaved' ? { reason: v.reason } : null), writes: v.writes }));
+
+  it('R1: two refused core values on one day each stay unsure, out of range; none competes for a slot', () => {
+    const file = lab({ values: [core({ valueSI: 500 }), core({ metric: 'hdl', valueSI: 600 })] });
+    const { values, rows } = classifyImportValues([file], EMPTY, NOW);
+    expect(groups(values)).toEqual([
+      { ref: 'v0', group: 'unsure', reasons: ['outOfRange'], writes: false },
+      { ref: 'v1', group: 'unsure', reasons: ['outOfRange'], writes: false },
+    ]);
+    expect(rows).toEqual([]);
+    const equal = classifyImportValues([lab({ values: [core({ valueSI: 500 }), core({ valueSI: 500 })] })], EMPTY, NOW);
+    expect(groups(equal.values).map((v) => v.group)).toEqual(['unsure', 'unsure']);
   });
 
-  it('an inverted blood pressure is never sure', () => {
-    const values = classifyImportValues(FIXTURES[3][1], EMPTY, NOW);
-    expect(values.map((v) => (v.group === 'unsure' ? v.reasons : v.group))).toEqual([['outOfRange'], ['outOfRange']]);
+  it('R2: systolic 80, diastolic 120, systolic 80 again: the duplicate is refused with its winner, never "saved"', () => {
+    const file = lab({ values: [core({ metric: 'systolic_bp', valueSI: 80 }), core({ metric: 'diastolic_bp', valueSI: 120 }), core({ metric: 'systolic_bp', valueSI: 80 })] });
+    const { values, rows } = classifyImportValues([file], EMPTY, NOW);
+    expect(groups(values)).toEqual([
+      { ref: 'v0', group: 'unsure', reasons: ['outOfRange'], writes: false },
+      { ref: 'v1', group: 'unsure', reasons: ['outOfRange'], writes: false },
+      { ref: 'v2', group: 'unsure', reasons: ['outOfRange'], writes: false },
+    ]);
+    expect(rows).toEqual([]);
+  });
+
+  it('R3: Replace a held systolic 120 with 80 beside a diastolic 90: Save refuses both, so the review does', () => {
+    const file = lab({ values: [core({ metric: 'systolic_bp', valueSI: 80 }), core({ metric: 'diastolic_bp', valueSI: 90 })] }, { replaces: { v0: heldId('systolic_bp') } });
+    const { values, rows } = classifyImportValues([file], HELD, NOW);
+    expect(groups(values)).toEqual([
+      { ref: 'v0', group: 'unsure', reasons: ['outOfRange', 'conflict'], writes: false },
+      { ref: 'v1', group: 'unsure', reasons: ['outOfRange'], writes: false },
+    ]);
+    expect(rows).toEqual([]);
+    const real = bulkAppendValues(HELD, Object.values(file.rows), NOW);
+    expect(real.outcomes).toEqual(['refused', 'refused']);
   });
 });

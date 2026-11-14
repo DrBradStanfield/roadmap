@@ -55,20 +55,25 @@ export type SlotPlace = 'saved' | 'free' | 'conflict' | 'duplicate' | 'hidden';
  * what ticking it would do to the record. `held` is the record's reading in a
  * slot, if any.
  */
-export function placeReadings(readings: readonly SlotReading[], held: (slot: string) => Quantity | undefined): SlotPlace[] {
-  const claims = new Map<string, { rank: number; reading: SlotReading; heldEqual: boolean }>();
-  const places: SlotPlace[] = new Array(readings.length);
-  const order = readings.map((r, i) => i).sort((i, j) => readings[i].rank - readings[j].rank || i - j);
+export function placeReadings(readings: readonly SlotReading[], held: (slot: string) => Quantity | undefined): SlotPlacement[] {
+  const claims = new Map<string, { rank: number; index: number; heldEqual: boolean }>();
+  const places: SlotPlacement[] = new Array(readings.length);
+  const order = readings.map((_, i) => i).sort((i, j) => readings[i].rank - readings[j].rank || i - j);
   for (const i of order) {
     const r = readings[i];
     const prev = held(r.slot);
     const equalHeld = !r.edited && !!prev && sameReading(r.quantity, prev);
     const winner = claims.get(r.slot);
     const blocked = r.sent && !!winner && !(winner.rank === r.rank && winner.heldEqual);
-    if (!blocked && r.sent) claims.set(r.slot, { rank: r.rank, reading: r, heldEqual: equalHeld });
-    places[i] = equalHeld ? 'saved'
-      : blocked ? (!r.edited && !winner!.reading.edited && sameReading(r.quantity, winner!.reading.quantity) ? 'duplicate' : 'hidden')
-        : prev ? 'conflict' : 'free';
+    if (!blocked && r.sent) claims.set(r.slot, { rank: r.rank, index: i, heldEqual: equalHeld });
+    const w = winner && readings[winner.index];
+    places[i] = equalHeld ? { place: 'saved' }
+      : blocked && w ? { place: !r.edited && !w.edited && sameReading(r.quantity, w.quantity) ? 'duplicate' : 'hidden', winner: winner!.index }
+        : { place: prev ? 'conflict' : 'free' };
   }
   return places;
 }
+
+/** Where one reading lands; `winner`: the input index of the reading that took
+ *  the slot from a duplicate or hidden one. */
+export interface SlotPlacement { place: SlotPlace; winner?: number }
