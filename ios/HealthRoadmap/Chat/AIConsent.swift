@@ -26,6 +26,7 @@ struct AIConsentView: View {
                     .foregroundStyle(.tint)
                 Text(consent == .chat ? "Before you chat" : "Before you upload")
                     .font(.title2.bold())
+                if consent == .chat { Text(EducationNote.chatConsent) } // App Review 1.4.1 (US-52 AC6h)
                 Text(whatIsSent)
                 Text("They go through Dr Brad's server to **Anthropic**, the company that makes the Claude AI, which writes the answer. Dr Brad's server keeps none of it.")
                 Text("Anthropic handles it under its terms for business customers: it does not train its AI on it, and it may keep it for a limited time for safety checks.")

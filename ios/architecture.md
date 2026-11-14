@@ -1443,6 +1443,10 @@ user agrees. The agreement is kept on the phone with a version, so changed wordi
 again, and the chat and upload screens have a "Stop sharing" control that withdraws it.
 Before submission Brad updates the privacy policy and the App Store privacy label
 (forwarding to a third party that keeps data may count as "collected").
+Since 2026-11-15 (App Review 1.4.1, US-52 AC6h) the chat screen's first paragraph says the app
+is education, not medical advice (`EducationNote.chatConsent`). It is not sharing wording, so
+the consent's version stays v1 and no one who agreed is asked again. My health has a matching
+line under its title (`EducationNote.myHealth`, US-73 AC13).
 
 **The plan screen's sentence** (D9, adversary R1): "No health data left your device" is
 false once a user has used chat or upload. It now reads "Worked out on this iPhone", which

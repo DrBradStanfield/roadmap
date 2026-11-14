@@ -114,6 +114,9 @@ interface TopicParts { rows?: ReactNode; after?: ReactNode; action?: ReactNode; 
 const PILLS: readonly TopicId[] = ['bloodTests', 'cholesterol', 'supplements'];
 const titleOf = (id: TopicId) => TOPICS.find(t => t.topic === id)!.title;
 
+/** Under the title (App Review 1.4.1, US-73 AC13), the iPhone's `EducationNote.myHealth`. Provisional: Brad approves the words. */
+const EDUCATION_LINE = 'For education, not medical advice. Always talk to your doctor.';
+
 const RowsCard = memo(function RowsCard({ rows, onOpen, extra }: { rows: Array<RowModel | null>; onOpen: (s: ValueSubject, from?: Element) => void; extra?: ReactNode }) {
   return (
     <div className="section-card mh-rows-card">
@@ -268,6 +271,7 @@ export function MyHealth({ form, plan, tiles, series, egfrCurrent, storageBar, p
         {!inTab && (personButton || storageBar) && <div className="mh-header-actions">{storageBar}{personButton}</div>}
         {inTab && <>{saveAlert}{syncAlert}</>}
       </div>
+      <p className="mh-education">{EDUCATION_LINE}</p>
       {inTab
         ? settingsHost && createPortal(<SettingsSheet action={storageBar}>{settingsParts}</SettingsSheet>, settingsHost)
         : settingsOpen && <SettingsSheet onClose={onSettingsClose}>{settingsParts}</SettingsSheet>}

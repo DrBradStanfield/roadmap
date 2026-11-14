@@ -23,6 +23,42 @@ final class ReviewPlacementUITests: XCTestCase {
         keepScreenshot(app.screenshot(), named: "chat empty")
     }
 
+    /// US-73 AC13 (App Review 1.4.1): My health shows its doctor line under the title, above the pills.
+    @MainActor
+    func testMyHealthShowsTheDoctorLineUnderItsTitle_US73_AC13() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "-welcomed", "YES", "-onboarded", "YES"]
+        app.launch()
+        let tab = app.tabBars.buttons["My health"]
+        XCTAssertTrue(tab.waitForExistence(timeout: 15), "the tabs, not onboarding")
+        tab.tap()
+        let line = app.staticTexts["For education, not medical advice. Always talk to your doctor."]
+        XCTAssertTrue(line.waitForExistence(timeout: 5), "the doctor line on My health")
+        XCTAssertTrue(line.isHittable, "at the top, not scrolled away")
+        let title = app.staticTexts["My health"].firstMatch
+        XCTAssertLessThanOrEqual(title.frame.maxY, line.frame.minY + 1, "under the title")
+        let pill = app.buttons["Blood tests"].firstMatch
+        if pill.exists { XCTAssertLessThanOrEqual(line.frame.maxY, pill.frame.minY + 1, "above the pills") }
+    }
+
+    /// US-52 AC6h (App Review 1.4.1): the chat consent screen's first paragraph is the doctor line.
+    @MainActor
+    func testChatConsentLeadsWithTheDoctorLine_US52_AC6h() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "-welcomed", "YES", "-onboarded", "YES", "-consent.chat.v1", "NO"]
+        app.launch()
+        let chat = app.tabBars.buttons["Chat"]
+        XCTAssertTrue(chat.waitForExistence(timeout: 15), "the tabs, not onboarding")
+        chat.tap()
+        let heading = app.staticTexts["Before you chat"]
+        XCTAssertTrue(heading.waitForExistence(timeout: 5), "the consent screen")
+        let line = app.staticTexts["This app is educational and is not medical advice. Always discuss your health with your doctor."]
+        XCTAssertTrue(line.exists, "the doctor line on the consent screen")
+        let sent = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'When you ask a question'")).firstMatch
+        XCTAssertLessThanOrEqual(heading.frame.maxY, line.frame.minY + 1, "under the heading")
+        XCTAssertLessThanOrEqual(line.frame.maxY, sent.frame.minY + 1, "before what is sent")
+    }
+
     /// The screens Brad checks by eye, on the fictional sample record (`--demo-record`, DEBUG only).
     /// Opt-in: TEST_RUNNER_REVIEW_SHOTS=1 with Application Support/Demo/health-roadmap.json seeded;
     /// any other run skips.
