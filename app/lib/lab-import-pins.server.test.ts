@@ -10,15 +10,11 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-const createBatch = vi.fn();
-const pollBatch = vi.fn();
 const extractOrClassify = vi.fn();
 
 vi.mock('@sentry/react-router', () => ({ captureException: vi.fn(), captureMessage: vi.fn() }));
 vi.mock('./anthropic.server', async (importOriginal) => ({
   ...(await importOriginal<object>()),
-  createBatch: (...a: unknown[]) => createBatch(...a),
-  pollBatch: (...a: unknown[]) => pollBatch(...a),
   extractOrClassify: (...a: unknown[]) => extractOrClassify(...a),
 }));
 vi.mock('./local-first-route.server', async (importOriginal) => ({
@@ -27,7 +23,7 @@ vi.mock('./local-first-route.server', async (importOriginal) => ({
 }));
 
 import * as Sentry from '@sentry/react-router';
-import { ExtractionStopError, BatchRefusedError } from './anthropic.server';
+import { ExtractionStopError } from './anthropic.server';
 import { extractOneFile } from './lab-extract-one.server';
 import { action } from '../routes/api.lab-import-v2';
 
@@ -136,42 +132,6 @@ describe('success: the bytes each client is sent for one file', () => {
   });
 });
 
-describe('success: the bytes each client is sent for a batch poll', () => {
-  for (const client of ['oldest', 'preAC14', 'preAC15', 'current'] as const) {
-    it(`website batch, ${client}`, async () => {
-      createBatch.mockResolvedValueOnce({ batchId: `batch_pin_${client}` });
-      const created = await (await action({ request: post({ batch: true, files: [{ pages: PAGES }], ...WEB_FLAGS[client] }) } as never)).json();
-      pollBatch.mockResolvedValueOnce({
-        status: 'ended', completed: 3, total: 3,
-        results: [{ index: 0, ...full() }, { index: 1, ...noCount() }, { index: 2, errorCode: 'server_error' }],
-      });
-      expect(await sent(await action({ request: post({ batchId: created.batchId, pollToken: created.pollToken }) } as never))).toEqual(json(200, {
-        status: 'ended',
-        results: [{ index: 0, ...FULL_FOR[client] }, { index: 1, ...NO_COUNT_FOR[client] }, { index: 2, errorCode: 'server_error' }],
-        completed: 3, total: 3,
-      }));
-    });
-  }
-
-  it('reports each stopped batch file with fixed text and tags', async () => {
-    createBatch.mockResolvedValueOnce({ batchId: 'batch_pin_stops' });
-    const created = await (await action({ request: post({ batch: true, files: [{ pages: PAGES }, { pages: PAGES }] }) } as never)).json();
-    pollBatch.mockResolvedValueOnce({
-      status: 'ended', completed: 2, total: 2,
-      results: [{ index: 0, errorCode: 'refused' }, { index: 1, errorCode: 'too_long' }],
-      stops: [new ExtractionStopError('refused', 'bio'), new ExtractionStopError('too_long')],
-    });
-    expect(await sent(await action({ request: post({ batchId: created.batchId, pollToken: created.pollToken }) } as never))).toEqual(json(200, {
-      status: 'ended', results: [{ index: 0, errorCode: 'refused' }, { index: 1, errorCode: 'too_long' }], completed: 2, total: 2,
-    }));
-    expect(vi.mocked(Sentry.captureMessage).mock.calls).toStrictEqual([
-      ['Lab import: extraction refused', { level: 'warning', tags: { feature: 'lab_import_v2', path: 'batch', stopCode: 'refused', refusalCategory: 'bio' } }],
-      ['Lab import: extraction too_long', { level: 'warning', tags: { feature: 'lab_import_v2', path: 'batch', stopCode: 'too_long' } }],
-    ]);
-    expect(Sentry.captureException).not.toHaveBeenCalled();
-  });
-});
-
 /** The website route and the iPhone app's call, for one file. */
 const CALLERS = {
   website: async (flags: object) => action({ request: post({ pages: PAGES, ...flags }) } as never),
@@ -265,22 +225,3 @@ describe('retries exhausted: the real extraction gives up after its two HTTP att
   }
 });
 
-describe('a failure outside the one-file extraction: the route\'s own report', () => {
-  for (const [what, error, logged] of [
-    ['a batch that could not be made', new Error('Batch API error (status 500)'), { name: 'Error', code: 'unknown' }],
-    ['a batch Anthropic refused', new BatchRefusedError('ANTHROPIC_API_KEY not configured'), { name: 'Error', code: 'unknown' }],
-    ['a timeout making the batch', new DOMException('signal timed out', 'TimeoutError'), { name: 'TimeoutError', code: 'unknown' }],
-  ] as const) {
-    it(what, async () => {
-      createBatch.mockRejectedValueOnce(error);
-      expect(await sent(await action({ request: post({ batch: true, files: [{ pages: PAGES }], ...WEB_FLAGS.current }) } as never)))
-        .toEqual(json(500, { success: false, error: 'Failed to process request' }));
-      expect(consoleError.mock.calls).toStrictEqual([['Lab import error (v2):', logged]]);
-      const calls = vi.mocked(Sentry.captureException).mock.calls;
-      expect(calls).toHaveLength(1);
-      expect(calls[0][0]).toBe(error);
-      // No errorName and no page counts on this path.
-      expect(calls[0][1]).toStrictEqual({ tags: { feature: 'lab_import_v2' } });
-    });
-  }
-});

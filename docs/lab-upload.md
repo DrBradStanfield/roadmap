@@ -268,7 +268,7 @@ The lipoprotein(a) PDF showed `93 mg/L`. The LLM correctly extracted `{ metric: 
 | Max files | 200 per upload session (client) | `UploadModal.tsx` |
 | Max pages | 20 per PDF (client); 100 page blocks per request (`labImportRequestSchema`) | `pdf-extract.ts`, `validation.ts` |
 | Max file size | 10 MB per file (client only); server rejects bodies over 200 MB | `lib/upload-pipeline.ts` (`MAX_FILE_SIZE`), `api.lab-import-v2.ts` |
-| Max tokens | 10000 (`'full'`, one file), 12288 (batch, BYOK), 3072 (`'metadata'`) | `anthropic.server.ts`, `lab-extraction.ts` |
+| Max tokens | 10000 (`'full'`, one file), 12288 (BYOK), 3072 (`'metadata'`) | `anthropic.server.ts`, `lab-extraction.ts` |
 | Worst-case cost | bounded by the machine cap, not the per-IP limit: about 2000 files a day per machine (`AI_DAILY_FILE_CAP`), 4x the old 500 cap and its worst-case cost, per machine and per Fly app (the figure the cap's comment in `api.lab-import-v2.ts` gives). Since the per-IP limit rose to 200, ten IPs can reach the cap in a day (three could reach the old 500). | |
 | Sentry | `feature: 'lab_import_v2'` and the error's name, never values, page count or types | `api.lab-import-v2.ts` |
 
@@ -278,11 +278,9 @@ The lipoprotein(a) PDF showed `93 mg/L`. The LLM correctly extracted `{ metric: 
 
 ### `app/routes/api.lab-import-v2.ts` — the only endpoint an upload calls
 
-- `GET ?quota` preflight (remaining per-IP files) · `GET ?batchId=` poll · `POST` single file or batch.
-- App-proxy HMAC on both methods; Zod validation (`labImportRequestSchema` `{ pages[1..100], unitSystem? }`, `batchImportRequestSchema` `{ batch: true, files: [{ pages }] }`); quota consumed before the model call. No file name reaches the server (it can hold a patient's name): a batch result comes back by request index (`custom_id` `file-N`) and the browser maps it to its file; a name an older widget sends is stripped by the schema. The widget sends `fileName: "file-N"` on each batch file, a compatibility label that names nothing, because CI ships the widget before the server and a server older than 2026-10-13 requires the field; drop it once every live server strips it.
+- `GET ?quota` preflight (remaining per-IP files) · `POST` one file. The batch path and its poll were deleted 2026-11-15 (owner ruling Q2): every upload reads file by file.
+- App-proxy HMAC on both methods; Zod validation (`labImportRequestSchema` `{ pages[1..100], unitSystem? }`); quota consumed before the model call. No file name reaches the server (it can hold a patient's name): a batch result comes back by request index (`custom_id` `file-N`) and the browser maps it to its file; a name an older widget sends is stripped by the schema. The widget sends `fileName: "file-N"` on each batch file, a compatibility label that names nothing, because CI ships the widget before the server and a server older than 2026-10-13 requires the field; drop it once every live server strips it.
 - Calls `extractOrClassify(pages)` and returns `{ success, data, remaining }`. `unitSystem` is accepted and ignored; display units are resolved from the record's profile client-side.
-- Batch state (`activeBatches`, max 200) is per machine: a poll landing on the other Fly machine 404s and the client falls back. Accepted.
-- An ended batch is deleted at Anthropic by the 10-minute sweep, never by the poll (`deleteBatch`, US-12 AC18). A poll that reads the results stamps `servedAt` and keeps answering; the first sweep at least 10 minutes later deletes it, so it normally goes 10 to 20 minutes after the first answer and a re-poll always has 10 (a served batch is judged by `servedAt` alone, the hour applies only to an unserved one). A batch nobody polled to the end goes an hour after upload: one still running is cancelled, then deleted on a later sweep, retried for up to 25 h. Sweeps never overlap (an in-flight guard) and the interval is `unref`'d. In memory: a restart, or a machine stopped while idle, forgets them, and Anthropic's 29-day retention applies.
 - The v1 `api.lab-import.ts` and the `bulkMeasurements` branch of `api.measurements.ts` were deleted in the 2026-06-12 teardown; there is no server save path.
 
 ### `app/lib/anthropic.server.ts`
@@ -307,7 +305,7 @@ Thin wrapper around the Anthropic API using direct `fetch` (no SDK). `extractOrC
 
 ### Transport + store
 
-- `widget-src/src/lib/upload-api.ts` — `labImport`, `labImportBatch`, `pollBatchStatus`, `checkLabImportQuota` against `${PROXY_PATH}/api/lab-import-v2` (swapped for `byok-upload.ts` in the Pages build)
+- `widget-src/src/lib/upload-api.ts` — `labImport` (with the upload's `AbortSignal` and request flags; failures read by health-core `uploadFailure`), `checkLabImportQuota` against `${PROXY_PATH}/api/lab-import-v2` (swapped for `byok-upload.ts` in the Pages build)
 - `widget-src/src/lib/archive-payloads.ts` — the archive policy, pure and tested (see §1 below)
 - Saving goes to `RoadmapStore` (`bulkSaveMeasurements`, `bulkSaveLabValues`, `bulkSaveDocuments`) — no network call
 
@@ -421,8 +419,7 @@ The `health-upload.js` extraction bundle (pdf.js/JSZip — transport-independent
 
 ### 3. Anthropic integration notes
 
-- Pipeline mode (< `BATCH_THRESHOLD` = 20 files): client extracts (EXTRACT_CONCURRENCY=3) feeding LLM_CONCURRENCY=5 concurrent single-file calls — extraction runs ahead so the queue stays full
-- Batch mode (≥ 20 files): Anthropic **Message Batches API** (50% cheaper; poll-based; per-machine poll state, see the route). Each result carries its request index (`custom_id` `file-N`) and the client maps it to the file it sent; an errored, expired or unparseable entry carries `errorCode`, and a missing one is a server error too (US-12 AC9)
+- Every upload reads file by file through health-core's shared upload state (`upload-flow.ts`): each file is hashed, then turned into pages 3 at a time and sent 5 at a time; a file the record already holds is never sent (US-12 AC26, AC27). The 20+ file batch path went 2026-11-15 (owner ruling Q2).
 - **Prompt caching is not used**: Haiku 4.5's 4,096-token minimum prefix ruled it out. Haiku 5.5 caches shorter prefixes (the classifier's 923 tokens, 2026-10-16), and the system prompt is ~2,500 tokens on its tokenizer, so caching is now possible; the unique document content still dominates per-call cost
 
 ### 4. Save-path performance (shipped June 2026)

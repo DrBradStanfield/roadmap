@@ -178,8 +178,8 @@ export class RoadmapStore {
     return this.session.flush().then(() => report, () => null);
   }
 
-  /** The working copy, read-only here: every change goes through `session.edit`. */
-  private get file(): RoadmapFile {
+  /** The working copy, read-only: every change goes through `session.edit`. The upload reads it for known files. */
+  get file(): RoadmapFile {
     return this.session.file;
   }
 

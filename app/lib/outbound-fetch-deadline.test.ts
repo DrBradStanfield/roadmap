@@ -83,7 +83,8 @@ describe('US-09 AC31: every server fetch passes a signal', () => {
         if (!/\bsignal\b/.test(args)) missing.push(`${path.relative(APP, file)}: fetch(${args.split('\n')[0]}`);
       }
     }
-    expect(seen).toBeGreaterThan(15);
+    // A floor that proves the scan found the calls: 15 today, after the batch path took its four (2026-11-15).
+    expect(seen).toBeGreaterThan(12);
     expect(missing).toEqual([]);
   });
 });

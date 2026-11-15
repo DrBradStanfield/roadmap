@@ -22,6 +22,7 @@ describe('UPLOAD_LIMITS', () => {
   it('takes the shared numbers from IMPORT_LIMITS', () => {
     expect(UPLOAD_LIMITS.web.fileBytes).toBe(IMPORT_LIMITS.websiteFileMb * MB);
     expect(UPLOAD_LIMITS.phone.zipBytes).toBe(IMPORT_LIMITS.zipMb * MB);
+    expect(UPLOAD_LIMITS.web.zipBytes).toBe(IMPORT_LIMITS.zipMb * MB);
     expect(UPLOAD_LIMITS.phone.zipMembers).toBe(IMPORT_LIMITS.websiteFiles);
   });
 });
@@ -64,8 +65,9 @@ describe('fileVerdict', () => {
     ['..zip', 15 * MB, undefined, 'phone', 'keep'],
     // The web's readers decide the kind (by name and MIME type): its verdict is size alone.
     ['notes.txt', 1, 'file', 'web', 'keep'],
-    ['a.zip', 10 * MB, 'zip', 'web', 'keep'],
-    ['a.zip', 10 * MB + 1, 'zip', 'web', 'tooLarge'],
+    // One ZIP cap on both clients (owner ruling Q7, US-12 AC29).
+    ['a.zip', 20 * MB, 'zip', 'web', 'keep'],
+    ['a.zip', 20 * MB + 1, 'zip', 'web', 'tooLarge'],
     ['a.pdf', 10 * MB + 1, 'file', 'web', 'tooLarge'],
   ];
   it.each(cases)('%s, %i bytes, kind %s, %s → %s', (name, bytes, kind, platform, verdict) => {

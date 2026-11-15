@@ -8,9 +8,7 @@
  */
 import * as Sentry from '@sentry/react-router';
 import {
-  UNIFIED_SYSTEM_PROMPT,
   unifiedSystemPrompt,
-  EXTRACTION_MAX_TOKENS,
   parseUnifiedResult,
   toUnifiedResult,
   parseExtractionJson,
@@ -23,7 +21,7 @@ import {
   EXTRACTION_MODEL, extractionStopCode, modelParams, type ExtractionStopCode, type RefusalCategory,
 } from '../../packages/health-core/src/models';
 import {
-  ANTHROPIC_TIMEOUT_MS, fetchAnthropicRaw, parseJsonBody, readJson, toErrorType, toResult, toUsage,
+  ANTHROPIC_TIMEOUT_MS, fetchAnthropicRaw, readJson, toErrorType, toResult, toUsage,
   type AnthropicContentBlock, type AnthropicResult, type ReadControl,
 } from './anthropic-fetch.server';
 // The HTTP layer moved to anthropic-fetch.server.ts; its public names keep this import path.
@@ -56,7 +54,7 @@ export type {
 const METADATA_MAX_TOKENS = 3072;
 
 /**
- * The website's single file, below the batch's EXTRACTION_MAX_TOKENS: the call
+ * The website's single file, below the BYOK read's EXTRACTION_MAX_TOKENS: the call
  * is not streamed and times out at 60 s. Haiku 5.5 wrote 219 tokens/s in one
  * measurement (2026-10-16), so 10000 takes ~46 s and 12288 ~56 s (US-15 AC34).
  */
@@ -75,7 +73,7 @@ export class ExtractionStopError extends Error {
 
 /** One bounded Sentry signal per stopped file: the code and refusal category, never text. */
 export function reportExtractionStop(
-  code: ExtractionStopCode, refusalCategory: RefusalCategory | undefined, path: 'single' | 'batch' | 'connector',
+  code: ExtractionStopCode, refusalCategory: RefusalCategory | undefined, path: 'single' | 'connector',
 ): void {
   Sentry.captureMessage(`Lab import: extraction ${code}`, {
     level: 'warning',
@@ -84,7 +82,7 @@ export function reportExtractionStop(
 }
 
 /**
- * The stop check, then the parse: one step for the single call and the batch.
+ * The stop check, then the parse, for one call.
  * Throws ExtractionStopError on a refusal or a max_tokens stop; `undefined`
  * means the answer will not parse.
  */
@@ -284,204 +282,3 @@ export async function streamAnthropicWithUsage(
 
 // stripCodeFences / extractJsonObject moved to health-core/lab-extraction.ts
 // (re-exported at the top of this file).
-
-// ---------------------------------------------------------------------------
-// Batch API — processes all files in a single batch request
-// ---------------------------------------------------------------------------
-
-/** A batch Anthropic certainly did not create: no key, or a non-OK answer. Any
- *  other failure (timeout, network, unreadable 200) may have left one behind. */
-export class BatchRefusedError extends Error {}
-
-/** Create a batch of LLM requests — one per file, named by its index alone
- *  (`file-N`): the browser keeps the file names. Returns the batch ID. */
-export async function createBatch(
-  files: Array<{ pages: PageContent[] }>,
-): Promise<{ batchId: string }> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new BatchRefusedError('ANTHROPIC_API_KEY not configured');
-
-  const requests = files.map((file, index) => ({
-    custom_id: `file-${index}`,
-    params: {
-      ...modelParams(EXTRACTION_MODEL, EXTRACTION_MAX_TOKENS),
-      system: UNIFIED_SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: pagesToContentBlocks(file.pages) }],
-    },
-  }));
-
-  const response = await fetch('https://api.anthropic.com/v1/messages/batches', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({ requests }),
-    signal: AbortSignal.timeout(30_000),
-  });
-
-  if (!response.ok) {
-    // Discard provider bodies: a 400 can echo the request, i.e. the user's lab pages.
-    await response.body?.cancel();
-    const err = new BatchRefusedError(`Batch API error (status ${response.status})`);
-    console.error(err.message);
-    Sentry.captureException(err, { extra: { status: response.status } });
-    throw err;
-  }
-
-  const data = await parseJsonBody(response);
-  return { batchId: data.id };
-}
-
-/** One batch result, named by its request index (`file-N`): the client maps
- *  it back to the file it sent at that position. `errorCode` marks a file the
- *  provider did not read. */
-type BatchFileResult = { index: number } & (UnifiedExtractionResult | { errorCode: 'server_error' | ExtractionStopCode });
-
-/**
- * Poll batch status. Returns completed count or full results when done.
- * `stops` names each refused or cut-off file for the caller to report: this
- * runs on every poll, so it reports nothing itself (US-15 AC34).
- */
-export async function pollBatch(
-  batchId: string,
-): Promise<{
-  status: 'processing' | 'ended';
-  completed: number;
-  total: number;
-  results?: BatchFileResult[];
-  stops?: ExtractionStopError[];
-}> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new Error('ANTHROPIC_API_KEY not configured');
-
-  const headers = {
-    'x-api-key': apiKey,
-    'anthropic-version': '2023-06-01',
-  };
-
-  // Check batch status
-  const statusResponse = await fetch(`https://api.anthropic.com/v1/messages/batches/${batchId}`, {
-    headers,
-    signal: AbortSignal.timeout(10_000),
-  });
-
-  if (!statusResponse.ok) {
-    await statusResponse.body?.cancel();
-    const err = new Error(`Batch status error (${statusResponse.status})`);
-    Sentry.captureException(err, { extra: { status: statusResponse.status } });
-    throw err;
-  }
-
-  const statusData = await parseJsonBody(statusResponse);
-  const counts = statusData.request_counts ?? {};
-  const completed = (counts.succeeded || 0) + (counts.errored || 0) + (counts.expired || 0) + (counts.canceled || 0);
-  const total = completed + (counts.processing || 0);
-
-  if (!statusData.ended_at) {
-    return { status: 'processing', completed, total };
-  }
-
-  // Batch is done — fetch results
-  const resultsResponse = await fetch(`https://api.anthropic.com/v1/messages/batches/${batchId}/results`, {
-    headers,
-    signal: AbortSignal.timeout(60_000),
-  });
-
-  if (!resultsResponse.ok) {
-    await resultsResponse.body?.cancel();
-    const err = new Error(`Batch results error (${resultsResponse.status})`);
-    Sentry.captureException(err, { extra: { status: resultsResponse.status } });
-    throw err;
-  }
-
-  // Parse complete JSONL records independently of whitespace/property order.
-  // Retain the legacy repair for records split by literal newlines: a new
-  // complete record always wins, so a damaged neighbor cannot swallow it.
-  const entries = [];
-  let pending = '';
-  for (const line of (await resultsResponse.text()).split('\n')) {
-    try {
-      const entry = JSON.parse(line);
-      if (!pending || (entry && typeof entry === 'object' && 'custom_id' in entry)) {
-        entries.push(entry);
-        pending = '';
-        continue;
-      }
-    } catch { /* try the legacy split-record repair below */ }
-    pending = /^\s*\{\s*"custom_id"\s*:/.test(line) ? line : pending + line;
-    try {
-      entries.push(JSON.parse(pending));
-      pending = '';
-    } catch { /* still incomplete or malformed; a complete record resynchronizes */ }
-  }
-
-  // Extract results, sorted by their exact request identity (US-12 AC9).
-  const resultMap = new Map<number, BatchFileResult>();
-  const stops: ExtractionStopError[] = [];
-
-  for (const entry of entries) {
-    try {
-      if (typeof entry?.custom_id !== 'string') continue;
-      const index = Number(entry.custom_id.slice(5));
-      if (!Number.isSafeInteger(index) || index < 0 || entry.custom_id !== `file-${index}`) continue;
-
-      // Read as the single call reads: a refused or cut-off request still
-      // comes back 'succeeded', maybe with partial text, and is never parsed
-      // as values but marked as such (US-15 AC34).
-      if (entry.result?.type === 'succeeded') {
-        const m = entry.result.message ?? {};
-        try {
-          const parsed = readExtraction(toResult(m.content ?? [], toUsage(m.usage), m.stop_reason ?? undefined, m.stop_details?.category), 'full');
-          if (parsed) {
-            resultMap.set(index, { ...parsed, index });
-            continue;
-          }
-        } catch (err) {
-          if (err instanceof ExtractionStopError) {
-            stops.push(err);
-            resultMap.set(index, { index, errorCode: err.code });
-            continue;
-          }
-          // toResult's "No text": a server error, below.
-        }
-      }
-
-      // Errored, expired or unparseable: marked, so the file is not reported
-      // as one with no values (US-12 AC9).
-      resultMap.set(index, { index, errorCode: 'server_error' });
-    } catch {
-      // Skip malformed JSONL lines; the index each result carries keeps the
-      // rest on their own files, and the client names the missing one.
-    }
-  }
-
-  const results = Array.from(resultMap.values()).sort((a, b) => a.index - b.index);
-
-  return { status: 'ended', completed, total, results, stops };
-}
-
-/**
- * Delete a batch at Anthropic, which otherwise keeps what we sent and what came
- * back for up to 29 days (US-12 AC18). Only an ended batch can be deleted, so
- * one that is not is cancelled, for a later call to delete. Never throws: true
- * once the batch is gone (now, or already), false otherwise. A failure logs its
- * status alone; a provider body can echo the request, i.e. the user's pages.
- */
-export async function deleteBatch(batchId: string): Promise<boolean> {
-  const url = `https://api.anthropic.com/v1/messages/batches/${batchId}`;
-  const headers = { 'x-api-key': process.env.ANTHROPIC_API_KEY ?? '', 'anthropic-version': '2023-06-01' };
-  try {
-    const response = await fetch(url, { method: 'DELETE', headers, signal: AbortSignal.timeout(10_000) });
-    await response.body?.cancel();
-    if (response.ok || response.status === 404) return true;
-    console.error(`Batch delete error (status ${response.status})`);
-    Sentry.captureMessage('Lab import: batch delete failed', { level: 'warning', tags: { feature: 'lab_import_v2', status: String(response.status) } });
-    const cancel = await fetch(`${url}/cancel`, { method: 'POST', headers, signal: AbortSignal.timeout(10_000) });
-    await cancel.body?.cancel();
-  } catch (err) {
-    console.error(`Batch delete error (${(err as Error)?.name ?? 'unknown'})`);
-  }
-  return false;
-}

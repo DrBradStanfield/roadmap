@@ -13,7 +13,7 @@ import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues } from '../l
 import type { UploadHistory } from '../lib/api-types';
 import { findAllReviewValues, findReviewValue } from '../testing/import-review';
 
-vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn(), labImportBatch: vi.fn(), pollBatchStatus: vi.fn() }));
+vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn() }));
 vi.mock('../lib/roadmap-data', () => ({ getDocumentArchiveMode: vi.fn(() => 'cloud'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => ''), knownUploadAs: vi.fn(() => null), isLegacyUpload: vi.fn(() => false) }));
 vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn(), PROXY_PATH: '/apps/synthetic', parseJsonResponse: vi.fn() }));
 vi.mock('../lib/useIsMobile', () => ({ useIsMobile: () => false }));
@@ -131,8 +131,12 @@ describe('US-12 read pins: what the modal shows and what reaches the review', ()
   });
 
   it('the daily limit mid-run: what was read reaches the review, the limited file is named', async () => {
-    answers({ 'late.pdf': failure('rate_limit') });
+    // The limit answers once the good file was sent: a file not yet sent then is never sent (US-12 AC9).
+    let limit!: (r: Import) => void;
+    answers({ 'late.pdf': new Promise<Import>(resolve => { limit = resolve; }) });
     render_(); pick(pdf('good.pdf'), pdf('late.pdf'));
+    await waitFor(() => expect(labImport).toHaveBeenCalledTimes(2));
+    limit(failure('rate_limit'));
     await findReviewValue('3.9');
     expect(reasonFor('late.pdf')).toBe('Not read. The daily upload limit was reached.');
     expect(reasonFor('good.pdf')).toBeNull();

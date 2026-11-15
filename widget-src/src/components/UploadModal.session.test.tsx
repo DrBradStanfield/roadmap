@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { UploadModal } from './UploadModal';
-import { attachOriginals, synthesizeLabArchiveEntries } from '../lib/archive-payloads';
+import { sha256Blob, synthesizeLabArchiveEntries } from '../lib/archive-payloads';
 import { checkLabImportQuota, labImport } from '../lib/upload-api';
 import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocumentArchiveMode } from '../lib/roadmap-data';
 import { Sentry } from '../lib/sentry';
@@ -12,10 +12,10 @@ import { trackProductEvent } from '../lib/server-api';
 import type { UploadHistory } from '../lib/api-types';
 import { findReviewValue } from '../testing/import-review';
 
-vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn(), labImportBatch: vi.fn(), pollBatchStatus: vi.fn() }));
-vi.mock('../lib/roadmap-data', () => ({ getDocumentArchiveMode: vi.fn(() => 'cloud'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
+vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn() }));
+vi.mock('../lib/roadmap-data', () => ({ knownUploadAs: vi.fn(() => null), isLegacyUpload: vi.fn(() => false), getDocumentArchiveMode: vi.fn(() => 'cloud'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
 vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
-vi.mock('../lib/archive-payloads', async importOriginal => ({ ...await importOriginal<typeof import('../lib/archive-payloads')>(), attachOriginals: vi.fn(async results => results), synthesizeLabArchiveEntries: vi.fn(() => []) }));
+vi.mock('../lib/archive-payloads', async importOriginal => ({ ...await importOriginal<typeof import('../lib/archive-payloads')>(), sha256Blob: vi.fn(async () => ''), synthesizeLabArchiveEntries: vi.fn(() => []) }));
 vi.mock('../lib/useIsMobile', () => ({ useIsMobile: () => false }));
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 
@@ -64,7 +64,7 @@ beforeEach(() => {
   vi.mocked(bulkSaveMeasurements).mockResolvedValue({ saved: [{}], skippedDuplicates: 0, errorCount: 0, refused: [] } as unknown as Awaited<ReturnType<typeof bulkSaveMeasurements>>);
   // Reset, not cleared: a test that fails early must not leave its queued answers to the next.
   vi.mocked(bulkSaveDocuments).mockReset().mockResolvedValue({ saved: [], errorCount: 0 });
-  vi.mocked(attachOriginals).mockReset().mockImplementation(async results => results);
+  vi.mocked(sha256Blob).mockReset().mockResolvedValue('');
   extractFromPdf.mockResolvedValue({ pages: [{ type: 'text', content: 'synthetic' }], truncated: false });
   Object.assign(window, { HealthUpload: { extractFromPdf, isPdf: () => true, isZip: () => false, isImage: () => false } });
 });
@@ -255,7 +255,7 @@ describe('US-12 AC4–6 upload session ownership', () => {
   });
   it('US-12 AC6: retries a thrown original archive after history refresh without resaving values', async () => {
     const file = new Blob(['synthetic original'], { type: 'application/pdf' });
-    vi.mocked(attachOriginals).mockImplementationOnce(async results => results.map(r => ({ ...r, file, contentHash: 'sha256-test' })));
+    vi.mocked(sha256Blob).mockResolvedValueOnce('sha256-test');
     const payload = { documentType: 'pathology_report', title: 'Blood test results', documentDate: '2024-06-01', contentMd: '', metadata: { labArchive: true }, sourceFileName: 'test.pdf', file };
     vi.mocked(synthesizeLabArchiveEntries).mockReturnValueOnce([payload]).mockReturnValueOnce([payload]);
     vi.mocked(bulkSaveDocuments).mockRejectedValueOnce(new Error('synthetic archive failure'))
@@ -278,7 +278,7 @@ describe('US-12 AC4–6 upload session ownership', () => {
   const savedLdl: UploadHistory = { ...emptyHistory, measurements: [{ id: 'saved', metricType: 'ldl', value: 3.9, recordedAt: '2024-06-01T00:00:00.000Z', createdAt: '2024-06-01T00:00:00.000Z' }] };
   function originalFailsOnce() {
     const file = new Blob(['synthetic original'], { type: 'application/pdf' });
-    vi.mocked(attachOriginals).mockImplementationOnce(async results => results.map(r => ({ ...r, file, contentHash: 'sha256-test' })));
+    vi.mocked(sha256Blob).mockResolvedValueOnce('sha256-test');
     const payload = { documentType: 'pathology_report', title: 'Blood test results', documentDate: '2024-06-01', contentMd: '', metadata: { labArchive: true }, sourceFileName: 'test.pdf', file };
     vi.mocked(synthesizeLabArchiveEntries).mockReturnValueOnce([payload]).mockReturnValueOnce([payload]);
     vi.mocked(bulkSaveDocuments).mockResolvedValueOnce({ saved: [], errorCount: 1 })
@@ -347,7 +347,7 @@ describe('US-12 AC4–6 upload session ownership', () => {
   });
   it('US-12 AC6c: a re-read that throws at once after a partial save is reported, tag only, and keeps the thrown-branch retry message', async () => {
     const file = new Blob(['synthetic original'], { type: 'application/pdf' });
-    vi.mocked(attachOriginals).mockImplementationOnce(async results => results.map(r => ({ ...r, file, contentHash: 'sha256-test' })));
+    vi.mocked(sha256Blob).mockResolvedValueOnce('sha256-test');
     vi.mocked(synthesizeLabArchiveEntries).mockReturnValueOnce([{ documentType: 'pathology_report', title: 'Blood test results', documentDate: '2024-06-01', contentMd: '', metadata: { labArchive: true }, sourceFileName: 'test.pdf', file }]);
     vi.mocked(bulkSaveDocuments).mockRejectedValueOnce(new Error('synthetic archive failure'));
     render(<Harness rereadThrows />); await ready();
@@ -540,7 +540,7 @@ it('US-14 AC4: the done screen says when an original could not be stored', async
 // Based on Austin Bell's PR #152 (robertaustinbell).
 describe('US-13 AC6: the archive-only path files what the review shows', () => {
   it('an unselected connector letter carries the reviewed title and date, not the extracted ones', async () => {
-    vi.mocked(attachOriginals).mockImplementationOnce(async results => results.map(r => ({ ...r, contentHash: 'sha256-synthetic' })));
+    vi.mocked(sha256Blob).mockResolvedValueOnce('sha256-synthetic');
     vi.mocked(labImport).mockResolvedValue({ result: { classification: 'clinic_letter', reportDate: null, values: [], additionalValues: [], document: letter } } as Awaited<ReturnType<typeof labImport>>);
     const connectorRow = { id: 'c1', documentType: 'clinic_letter', title: 'Connector title', documentDate: letter.documentDate, contentMd: '',
       metadata: { importedVia: 'connector' }, sourceFileName: 'test.pdf', contentHash: 'sha256-synthetic', fileRef: null, createdAt: '2024-06-02T00:00:00Z' };
