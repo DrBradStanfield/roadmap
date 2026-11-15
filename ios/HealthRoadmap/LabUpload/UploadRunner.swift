@@ -66,6 +66,8 @@ actor UploadRunner {
         /// The upload rules for the pick (`HealthEngine.uploadRules`).
         var ask: LabFileReader.AskRules = LabFileReader.swiftRules
         var sender = LabReadSender()
+        /// A test's stand-in for `sender.send`; nil in the app.
+        var send: (@Sendable (Data) async throws -> LabReadSender.Outcome)?
         var unitSystem = "si"
         var cloudConnected = false
         /// The `save` effect, left to the one save door (a later PR).
@@ -94,7 +96,8 @@ actor UploadRunner {
     private enum Queued { case event(String), hold([Picked]) }
     private var waiting: [Queued] = []
     private var stepping = false
-    private var sends: [String: (attempt: Int, task: Task<Void, Never>)] = [:]
+    /// Each send in flight by file id, with a token of its own: an id and attempt recur in a later run.
+    private var sends: [String: (token: UUID, task: Task<Void, Never>)] = [:]
     private var work: [UUID: Task<Void, Never>] = [:]
     private var view = ViewLoop.idle
 
@@ -243,21 +246,23 @@ actor UploadRunner {
                 guard let document = try? held.convert(id, rules: rules) else { return ["type": "convertFailed", "run": run, "id": id, "reason": "unreadable"] }
                 return ["type": "converted", "run": run, "id": id, "pages": document.pages.count, "truncated": document.truncated]
             }
-        case .send(let run, let id, let attempt, let flags):
-            let (sender, unitSystem) = (setup.sender, setup.unitSystem)
+        case .send(let run, let id, _, let flags):
+            let token = UUID()
+            let unitSystem = setup.unitSystem
+            let sender = setup.send ?? { [sender = setup.sender] body in try await sender.send(body) }
             sends[id]?.task.cancel()
-            sends[id] = (attempt, Task.detached { [weak self] in
+            sends[id] = (token, Task.detached { [weak self] in
                 let outcome: LabReadSender.Outcome
                 do {
                     // Pages forgotten or never made: nothing worth a request; the engine judges it.
                     guard let pages = held.pages(id) else { throw LabFileReader.Failure.empty }
-                    outcome = try await sender.send(LabReadSender.body(pages: pages, unitSystem: unitSystem, flags: flags))
+                    outcome = try await sender(LabReadSender.body(pages: pages, unitSystem: unitSystem, flags: flags))
                 } catch is CancellationError {
                     return // aborted: the engine already moved the file on
                 } catch {
                     outcome = LabReadSender.noAnswer
                 }
-                await self?.sent(id, attempt: attempt, event: Self.event(for: outcome, run: run, id: id))
+                await self?.sent(id, token: token, event: Self.event(for: outcome, run: run, id: id))
             })
         case .abort(let ids):
             for id in ids { sends.removeValue(forKey: id)?.task.cancel() }
@@ -286,8 +291,8 @@ actor UploadRunner {
         await submit(event)
     }
 
-    private func sent(_ id: String, attempt: Int, event: String) async {
-        guard sends[id]?.attempt == attempt else { return }
+    private func sent(_ id: String, token: UUID, event: String) async {
+        guard sends[id]?.token == token else { return }
         sends[id] = nil
         await submit(event)
     }

@@ -187,6 +187,47 @@ final class UploadRunnerTests: XCTestCase {
         try await until("second run read") { await stages(runner) == ["f3": "read", "f4": "read"] }
     }
 
+    /// Codex re-check A: run 1's send of f0 finishes only after a new pick reuses f0 (same id, same
+    /// attempt). Its late end never touches run 2's send: run 2's read is answered, and in a second
+    /// pass Stop still cancels it.
+    func testALateSendFromAnEarlierRunNeverTouchesTheNewOne() async throws {
+        for stopping in [false, true] {
+            let calls = OSAllocatedUnfairLock(initialState: 0)
+            let oldDone = StubHTTP.Gate(), newDone = StubHTTP.Gate()
+            let cancelled = OSAllocatedUnfairLock(initialState: false)
+            let send: @Sendable (Data) async throws -> LabReadSender.Outcome = { _ in
+                let n = calls.withLock { $0 += 1; return $0 }
+                if n == 1 {
+                    // Run 1's read: it ends when the test says, deaf to its abort.
+                    await withCheckedContinuation { (done: CheckedContinuation<Void, Never>) in oldDone.hold { done.resume() } }
+                } else {
+                    let open = OSAllocatedUnfairLock(initialState: false)
+                    newDone.hold { open.withLock { $0 = true } }
+                    while !open.withLock({ $0 }) {
+                        do { try await Task.sleep(for: .milliseconds(10)) } catch { cancelled.withLock { $0 = true }; throw error }
+                    }
+                }
+                return .ended(line: Kit.finalLine)
+            }
+            let setup = UploadRunner.Setup(deviceId: "test", record: { "" }, send: send, frame: .milliseconds(1))
+            let runner = UploadRunner(engine: try HealthEngine(), model: UploadModel(), setup: setup)
+            _ = await runner.pick(Kit.pictures(1), needsConsent: false)
+            try await until("run 1 sending") { calls.withLock { $0 } == 1 }
+            _ = await runner.pick(Kit.pictures(1), needsConsent: false)
+            try await until("run 2 sending") { calls.withLock { $0 } == 2 }
+            oldDone.open()
+            try await Task.sleep(for: .milliseconds(200))
+            if stopping {
+                await runner.stop()
+                try await until("run 2's send cancelled") { cancelled.withLock { $0 } }
+                newDone.open()
+            } else {
+                newDone.open()
+                try await until("run 2's read answered") { await Kit.allRead(runner, 1) }
+            }
+        }
+    }
+
     // MARK: Steps
 
     /// An answer for an earlier run is dropped by the engine: the state does not move.
