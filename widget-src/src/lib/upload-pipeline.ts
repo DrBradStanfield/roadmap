@@ -145,7 +145,7 @@ const PROGRESS_MESSAGES = [
 export const MAX_FILE_SIZE = UPLOAD_LIMITS.web.fileBytes;
 
 /** Why a file was not fully read (US-12 AC9). Each is also its `upload_outcome` count. */
-export type FileNoticeReason = Exclude<UploadOutcomeKey, 'picked' | 'withValues' | 'docx' | 'undatedPrevious' | 'unitsGuessed' | 'unitsRefused' | 'valuesLimit' | 'valuesLimitUngraded' | 'cancelled'>;
+export type FileNoticeReason = Extract<UploadOutcomeKey, 'documentOnly' | 'noValues' | 'openFailed' | 'tooLarge' | 'truncated' | 'serverError' | 'limitError' | 'refused' | 'tooLong' | 'valuesDropped' | 'picturesOnly'>;
 /** `name` is the file's whole path, its identity; the list shows it short (`noticeName`).
  *  `count` is how many the notice stands for (values dropped, which the review
  *  names under "Not saved", US-13 AC13); `text` overrides the reason's. */

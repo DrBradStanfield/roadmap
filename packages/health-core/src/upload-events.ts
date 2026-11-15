@@ -15,8 +15,11 @@
  *  US-12 AC20 they are saved, so no longer part of `valuesDropped` (AC19 counted
  *  them there). `valuesLimitUngraded` is how many of them the grading rule
  *  leaves undecided. Counts only; the tests behind that count ride in their own
- *  closed list, `limitUngradedTests` (AC20). `cancelled`: 1 for a run Cancel stopped mid-read. */
-export const UPLOAD_OUTCOME_KEYS = ['picked', 'withValues', 'documentOnly', 'noValues', 'openFailed', 'tooLarge', 'truncated', 'serverError', 'limitError', 'refused', 'tooLong', 'valuesDropped', 'docx', 'picturesOnly', 'undatedPrevious', 'unitsGuessed', 'unitsRefused', 'valuesLimit', 'valuesLimitUngraded', 'cancelled'] as const;
+ *  closed list, `limitUngradedTests` (AC20). `cancelled`: 1 for a run Cancel stopped mid-read.
+ *  From the shared upload state (upload-usage.ts, design §7 R9): `known` files
+ *  skipped as already held, `failedFinal` files still failed at Save or Close,
+ *  and `firstReadSeconds`, whole seconds from the pick to the first read file. */
+export const UPLOAD_OUTCOME_KEYS = ['picked', 'withValues', 'documentOnly', 'noValues', 'openFailed', 'tooLarge', 'truncated', 'serverError', 'limitError', 'refused', 'tooLong', 'valuesDropped', 'docx', 'picturesOnly', 'undatedPrevious', 'unitsGuessed', 'unitsRefused', 'valuesLimit', 'valuesLimitUngraded', 'cancelled', 'known', 'failedFinal', 'firstReadSeconds'] as const;
 export type UploadOutcomeKey = (typeof UPLOAD_OUTCOME_KEYS)[number];
 /** The most one count may say; the server refuses more, so the client clamps. */
 export const UPLOAD_OUTCOME_MAX = 1000;
