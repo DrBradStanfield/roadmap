@@ -9,11 +9,8 @@
  */
 import type { UnifiedExtractionResult } from './lab-extraction';
 import type { UploadFailure } from './upload-failure';
-import { fileVerdict, UPLOAD_LIMITS, zipMemberVerdict, type UploadPlatform } from './upload-rules';
-
-/** What the record already holds for a file. upload-known.ts answers it by hash (`knownAs`, design
- *  PR 4) or, after a read, by name for an older hashless row (`legacyMatch`); this is the part read here. */
-export interface Known { as: 'document' | 'labReport' | 'legacy'; archiveOnly: boolean }
+import type { Known } from './upload-known';
+import { fileVerdict, requestFlags, UPLOAD_LIMITS, zipMemberVerdict, type RequestFlags, type UploadPlatform } from './upload-rules';
 
 /** unreadable: no pages came out of it. bytesUnreadable: the device could not read its bytes to hash them.
  *  zipUnreadable: a ZIP that would not open; zipEmpty: one with no file we can read inside (both named
@@ -40,7 +37,7 @@ export type FileStatus =
   | { s: 'waiting' }                                       // listed; waiting for a hash slot
   | { s: 'hashing' }                                       // the platform hashes its bytes
   | { s: 'hashed' }                                        // hashed and new: waiting for a convert slot
-  | { s: 'known'; as: Known['as']; archiveOnly: boolean }  // never converted or sent
+  | { s: 'known'; as: Known['as'] | 'legacy'; archiveOnly: boolean } // never converted or sent; legacy: `legacyMatch` after the read
   | { s: 'refused'; verdict: 'tooLarge' | 'unsupported' }
   | { s: 'converting' }                                    // the platform turns bytes into pages
   | { s: 'ready'; attempt: number }                        // pages held, waiting for a send slot
@@ -79,7 +76,7 @@ export type UploadEvent =
   | { type: 'consented' }
   | { type: 'listed'; run: number; zip: string; members: ZipMember[] }
   | { type: 'zipFailed'; run: number; zip: string }
-  | { type: 'hashed'; run: number; id: string; hash: string; known: Known | null }
+  | { type: 'hashed'; run: number; id: string; hash: string; known: Known | null } // known: upload-known.ts `knownAs`
   | { type: 'hashFailed'; run: number; id: string }
   | { type: 'converted'; run: number; id: string; pages: number; truncated: boolean }
   | { type: 'convertFailed'; run: number; id: string; reason: 'unreadable' | 'timeout' }
@@ -99,7 +96,7 @@ export type UploadEffect =
   | { type: 'list'; run: number; id: string }
   | { type: 'hash'; run: number; id: string }
   | { type: 'convert'; run: number; id: string }
-  | { type: 'send'; run: number; id: string; attempt: number } // request flags join in design PR 8 (requestFlags)
+  | { type: 'send'; run: number; id: string; attempt: number; flags: RequestFlags }
   | { type: 'abort'; run: number; ids: string[] }
   | { type: 'forget'; run: number; ids: string[] }
   | { type: 'save'; run: number; attempt: number };
@@ -184,7 +181,7 @@ function pump(s: Open, effects: UploadEffect[]): UploadStep {
     }
     if (f.status.s === 'ready' && sending < limits.sendsInFlight) {
       sending++;
-      out.push({ type: 'send', run: s.run, id: f.id, attempt: f.status.attempt });
+      out.push({ type: 'send', run: s.run, id: f.id, attempt: f.status.attempt, flags: requestFlags(s.platform) });
       return { ...f, status: { s: 'sending', attempt: f.status.attempt } };
     }
     return f;

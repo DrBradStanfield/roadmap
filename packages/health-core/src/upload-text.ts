@@ -1,0 +1,93 @@
+/**
+ * Every upload word both clients show (US-52 AC8c, US-13 AC13, AC14; design
+ * docs/drafts/upload-shared-engine.md section 5, the owner's exact texts). Words the review
+ * already has are reused from import-review.ts, never restated. The file notices below moved
+ * here from the web (UploadNotices.tsx, upload-pipeline.ts, useUploadFlow.ts) unchanged, so a
+ * failed file reads the same on both clients.
+ */
+import { IMPORT_LIMITS } from './import-hints';
+import { IMPORT_REVIEW_TEXT, KIND_WORDS, plural } from './import-review';
+import type { FailReason } from './upload-flow';
+import type { DocumentType } from './validation';
+
+/** Section 5, rows 1 to 27, by key. */
+export const UPLOAD_TEXT = {
+  /** 1. `parts` already joined; with none, the count alone. */
+  summaryFiles: (n: number, parts: readonly string[]) => `${plural(n, 'file')}${parts.length ? `: ${parts.join(', ')}` : ''}`,
+  /** 2. Reuses the review's "already in your record". */
+  partKnown: (k: number) => IMPORT_REVIEW_TEXT.alreadySaved(k),
+  partLabReports: (r: number) => plural(r, 'lab report'),
+  /** 4. The review's kind words ("8 clinic letters"). */
+  partDocuments: (kind: DocumentType, m: number) => plural(m, ...KIND_WORDS[kind]),
+  allKnown: 'Everything here is already in your record.',
+  progressFiles: (d: number, n: number) => `Reading ${d} of ${n} files`,
+  progressZip: (zip: string, m: number, total: number) => `${zip}: ${m} of ${total} inside`,
+  stop: 'Stop',
+  undatedTitle: 'This report has no date',
+  failedTitle: (k: number) => `${plural(k, 'file')} not read`,
+  retryAll: 'Try again',
+  stoppedLine: 'Not read: you stopped the upload.',
+  documentsLine: (m: number) => (m === 1 ? '1 letter or document will be saved' : `${m} letters and documents will be saved`),
+  noDate: 'No date',
+  setDate: 'Set the date',
+  removeDate: 'Remove the date',
+  filesRow: (n: number) => `Files (${n})`,
+  statusKnown: 'Already in your record',
+  statusWaiting: 'Waiting',
+  statusReading: 'Reading',
+  statusRead: 'Read',
+  statusRefused: (verdict: 'tooLarge' | 'unsupported') => (verdict === 'tooLarge' ? 'Too large to read' : 'Not a PDF, photo or ZIP'),
+  /** 23. Each part dropped at zero; values alone are the review's own Save. */
+  saveBoth: (n: number, m: number) => (m === 0 ? IMPORT_REVIEW_TEXT.save(n) : n === 0 ? `Save ${plural(m, 'document')}` : `Save ${plural(n, 'value')} and ${plural(m, 'document')}`),
+  saveWait: (k: number) => `Wait for ${plural(k, 'file')} to finish`,
+  saveNothing: 'Nothing new to save',
+  /** 26. Each part dropped at zero, as 23. */
+  savedLine: (n: number, m: number) => `Saved ${[...(n || !m ? [plural(n, 'value')] : []), ...(m ? [plural(m, 'document')] : [])].join(' and ')}.`,
+  archivedLine: (a: number) => `${plural(a, 'original file')} kept in your cloud.`,
+} as const;
+
+/**
+ * NOT YET APPROVED: words section 5 does not have, waiting for the owner's yes (listed in PR 8).
+ * saveOriginals: the Save label when Save files only originals (the web's saveLabel says
+ * "Save 2 originals" today, ReviewOverview.tsx).
+ */
+export const UPLOAD_TEXT_PROPOSED = {
+  saveOriginals: (a: number) => `Save ${plural(a, 'original')}`,
+} as const;
+
+/** A file not fully read, as the web's notices word it (US-12 AC9); moved from UploadNotices.tsx. */
+export const FILE_NOTICE_TEXT = {
+  openFailed: 'Could not open it. It may be password-protected, damaged, or not a PDF, photo or .docx file.',
+  tooLarge: `Too large to read. The limit is ${IMPORT_LIMITS.websiteFileMb} MB per file.`,
+  truncated: 'This file is long, so only its first part was read.',
+  documentOnly: 'Filed as a document. No blood test values found.',
+  noValues: 'No blood test values found.',
+  serverError: 'Our server could not read it. Please try again.',
+  limitError: 'Not read. The daily upload limit was reached.',
+  refused: 'Not read. Claude declined to read this file, so trying again will not help.',
+  tooLong: 'Not read. The file is too long to read in one go.',
+  picturesOnly: 'This Word file holds pictures, not text. Save it as a PDF, or upload a photo of the page.',
+} as const;
+/** A busy server's notice; moved from upload-pipeline.ts. */
+export const BUSY_NOTICE_TEXT = 'Not read. Our server was busy. Please try again later.';
+/** An empty ZIP, or one of unsupported files, named itself (US-12 AC9); moved from useUploadFlow.ts. */
+export const EMPTY_ZIP_TEXT = 'No files we can read inside this ZIP.';
+
+/**
+ * Each failed file's line, from the words the web shows today for the same failure: a pdf.js
+ * throw, a timeout and a ZIP that will not open are all "could not open" (US-12 AC9), and a
+ * dropped connection is a server error, as upload-pipeline.ts files it.
+ */
+export const FAIL_TEXT: Record<FailReason, string> = {
+  unreadable: FILE_NOTICE_TEXT.openFailed,
+  bytesUnreadable: FILE_NOTICE_TEXT.openFailed,
+  zipUnreadable: FILE_NOTICE_TEXT.openFailed,
+  zipEmpty: EMPTY_ZIP_TEXT,
+  timeout: FILE_NOTICE_TEXT.openFailed,
+  busy: BUSY_NOTICE_TEXT,
+  dailyLimit: FILE_NOTICE_TEXT.limitError,
+  declined: FILE_NOTICE_TEXT.refused,
+  tooLong: FILE_NOTICE_TEXT.tooLong,
+  server: FILE_NOTICE_TEXT.serverError,
+  network: FILE_NOTICE_TEXT.serverError,
+};

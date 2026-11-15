@@ -70,6 +70,9 @@ export function importRow(result: ImportFile['result'], ref: string, day: string
   };
 }
 
+/** A value the person can tick: a core (`v<i>`) or additional (`a<i>`) one, never a refused or unread row. */
+export const isOfferedRef = (ref: string) => /^[va]\d+$/.test(ref);
+
 /** Why a value gets a row (D1). `outOfRange`: the write refuses its number
  *  (outside its input range, or half of a blood pressure the wrong way up). */
 export type UnsureReason = 'confidence' | 'question' | 'unitGuessed' | 'outOfRange' | 'conflict';
@@ -287,10 +290,11 @@ export function importSummary(files: ReadonlyArray<Pick<ImportFile, 'result'>>):
   return { values, documents: DOCUMENT_TYPES.filter((k) => kinds.has(k)).map((kind) => ({ kind, count: kinds.get(kind)! })), files: files.length };
 }
 
-const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+/** "1 value", "2 values": the review's one count form. */
+export const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
 /** Each kind's words, one and many (string 2). */
-const KIND_WORDS: Record<DocumentType, [string, string]> = {
+export const KIND_WORDS: Record<DocumentType, [string, string]> = {
   scan_result: ['scan result', 'scan results'],
   clinic_letter: ['clinic letter', 'clinic letters'],
   discharge_summary: ['discharge summary', 'discharge summaries'],

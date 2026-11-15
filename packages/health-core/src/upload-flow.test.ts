@@ -9,7 +9,9 @@ import {
   initialUpload, inFlight, saveEnabled, transition,
   type FileStatus, type UploadEvent, type UploadFile, type UploadState,
 } from './upload-flow';
-import { UPLOAD_LIMITS } from './upload-rules';
+import { requestFlags, UPLOAD_LIMITS } from './upload-rules';
+
+const WEB_FLAGS = requestFlags('web');
 
 const EXT: UnifiedExtractionResult = { classification: 'lab_report', reportDate: null, values: [], additionalValues: [], unrecognized: [], document: null };
 const CHOICES = { ticks: {}, testDay: null, document: {} };
@@ -202,13 +204,13 @@ describe('upload-flow: effects', () => {
     for (const id of ids) { const st = transition(s, { type: 'hashed', run: 1, id, hash: id, known: null }); s = st.state; started.push(...convertsOf(st.effects)); }
     expect(started).toEqual(['f0', 'f1', 'f2']);
     const sent = transition(s, { type: 'converted', run: 1, id: 'f0', pages: 2, truncated: false });
-    expect(sent.effects).toEqual([{ type: 'send', run: 1, id: 'f0', attempt: 1 }, { type: 'convert', run: 1, id: 'f3' }]);
+    expect(sent.effects).toEqual([{ type: 'send', run: 1, id: 'f0', attempt: 1, flags: WEB_FLAGS }, { type: 'convert', run: 1, id: 'f3' }]);
     const full = open([...ids.slice(0, 5).map((id) => file(id, { s: 'sending', attempt: 1 })), file('c', { s: 'converting' })]);
     const queued = transition(full, { type: 'converted', run: 1, id: 'c', pages: 1, truncated: false });
     expect(queued.effects).toEqual([]); // five sending: the ready file waits
     expect(statusOf(queued.state, 'c')).toEqual({ s: 'ready', attempt: 1 });
     const oneFreed = transition(queued.state, { type: 'answered', run: 1, id: 'f0', extraction: EXT, legacy: false, now: NOW });
-    expect(oneFreed.effects).toEqual([{ type: 'send', run: 1, id: 'c', attempt: 1 }]);
+    expect(oneFreed.effects).toEqual([{ type: 'send', run: 1, id: 'c', attempt: 1, flags: WEB_FLAGS }]);
     const fullConverts = open([...ids.slice(0, 3).map((id) => file(id, { s: 'converting' })), file('w', { s: 'hashing' }, null)]);
     expect(transition(fullConverts, { type: 'hashed', run: 1, id: 'w', hash: 'hw', known: null }).effects).toEqual([]);
     expect(UPLOAD_LIMITS.web).toMatchObject({ sendsInFlight: 5, convertsInFlight: 3 });
@@ -254,7 +256,7 @@ describe('upload-flow: effects', () => {
   it('retry: a failed send goes back with its pages and the next attempt; a failed convert starts from the bytes', () => {
     const s = open([STATUSES.failedSend, { ...STATUSES.failedConvert, id: 'y' }, { ...STATUSES.failedFinal, id: 'z' }]);
     const { state, effects } = transition(s, { type: 'retry', id: 'all' });
-    expect(effects).toEqual([{ type: 'send', run: 1, id: 'x', attempt: 3 }, { type: 'convert', run: 1, id: 'y' }]);
+    expect(effects).toEqual([{ type: 'send', run: 1, id: 'x', attempt: 3, flags: WEB_FLAGS }, { type: 'convert', run: 1, id: 'y' }]);
     expect(statusOf(state, 'z')?.s).toBe('failed'); // not retryable: stays
   });
 
