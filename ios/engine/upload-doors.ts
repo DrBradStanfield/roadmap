@@ -4,6 +4,7 @@
 // rule. Every input is checked here once, where it enters; a malformed one answers a refusal,
 // never a throw. Nothing is logged: the state holds file names, hashes and read values.
 import { initialUpload, transition, type UploadEvent, type UploadState } from '../../packages/health-core/src/upload-flow';
+import { UPLOAD_EVENTS, UPLOAD_STATE } from '../../packages/health-core/src/upload-schema';
 import { knownAs, knownIndex, readIsLegacy, type KnownIndex } from '../../packages/health-core/src/upload-known';
 import { uploadFailureOfText } from '../../packages/health-core/src/upload-failure';
 import { uploadReview } from '../../packages/health-core/src/upload-review';
@@ -27,84 +28,22 @@ class Refused extends Error {
   constructor(readonly reason: UploadRefusal['reason']) { super(reason); }
 }
 
-// --- Wire shapes. Checked, then the parsed JSON itself goes on, so nothing is stripped and the
-// door answers exactly as health-core does for the same value. --------------------------------
+// --- The wire: health-core's own schemas (upload-schema.ts), pinned to its types. Checked, then
+// the parsed JSON itself goes on, so nothing is stripped and the door answers as health-core does.
 
-const text = z.string();
-const maybeText = z.string().nullable();
-const count = z.number().int().nonnegative();
 const platform = z.enum(['web', 'phone']);
-
-// The read, as the server answered it: what the engine reads of it, typed; the rest kept as sent.
-const day = { recordedAt: text.optional(), printedMonth: text.optional() };
-const extraction = z.looseObject({
-  classification: text,
-  reportDate: maybeText.optional(),
-  values: z.array(z.looseObject({ metric: text, valueSI: z.number(), displayValue: z.number(), displayUnit: text, displaySystem: text, confidence: text, question: text.optional(), ...day })).optional(),
-  additionalValues: z.array(z.looseObject({ name: text, value: z.number(), unit: text, question: text.optional(), ...day })).optional(),
-  unrecognized: z.array(text).optional(),
-  document: z.looseObject({ classification: text, title: text, documentDate: maybeText.optional(), contentMarkdown: text.optional(), metadata: z.record(z.string(), z.unknown()).optional() }).nullable().optional(),
-  droppedValueCount: z.number().optional(),
-  unreadValues: z.array(z.looseObject({ name: text, reason: text, recordedAt: text.optional() })).optional(),
-  refusedValues: z.array(z.looseObject({ metric: text, value: z.number(), unit: text, reason: text, ...day })).optional(),
-});
-const documentFix = z.object({ title: text.optional(), kind: text.optional(), date: maybeText.optional() });
-const choices = z.object({
-  ticks: z.record(z.string(), z.boolean()), testDay: maybeText, previousDay: maybeText,
-  replace: z.record(z.string(), z.string()), edits: z.record(z.string(), z.number()), document: documentFix,
-});
-const failReason = z.enum(['unreadable', 'bytesUnreadable', 'zipUnreadable', 'zipEmpty', 'timeout', 'busy', 'dailyLimit', 'declined', 'tooLong', 'server', 'network']);
-const status = z.discriminatedUnion('s', [
-  z.object({ s: z.enum(['listing', 'waiting', 'hashing', 'hashed', 'converting', 'stopped']) }),
-  z.object({ s: z.literal('known'), as: z.enum(['document', 'labReport', 'legacy']), archiveOnly: z.boolean() }),
-  z.object({ s: z.literal('refused'), verdict: z.enum(['tooLarge', 'unsupported']) }),
-  z.object({ s: z.enum(['ready', 'sending']), attempt: count }),
-  z.object({ s: z.literal('read'), extraction, choices }),
-  z.object({ s: z.literal('failed'), reason: failReason, attempt: count }),
-]);
-const file = z.object({
-  id: text, name: text, zip: text.optional(), bytes: z.number(), hash: maybeText,
-  pages: z.object({ count, truncated: z.boolean() }).nullable(), status,
-});
-const pick = { platform, run: count, files: z.array(file), started: text, firstRead: maybeText };
-const outcome = z.object({ values: count, documents: count, archived: count });
-const STATE = z.discriminatedUnion('phase', [
-  z.object({ phase: z.literal('choosing'), platform, run: count }),
-  z.object({ phase: z.enum(['consent', 'open', 'failed']), ...pick }),
-  z.object({ phase: z.literal('saving'), ...pick, attempt: count }),
-  z.object({ phase: z.literal('saveFailed'), ...pick, attempt: count, message: text }),
-  z.object({ phase: z.literal('done'), ...pick, outcome }),
-]);
-
-const change = z.union([
-  z.object({ tick: text, on: z.boolean() }),
-  z.object({ testDay: maybeText }),
-  z.object({ previousDay: maybeText }),
-  z.object({ replace: text, correctsId: maybeText }),
-  z.object({ edit: text, value: z.number().nullable() }),
-  z.object({ document: documentFix }),
-]);
+const maybeText = z.string().nullable();
+const E = UPLOAD_EVENTS;
 /**
  * The events Swift sends: health-core's, less what only the engine knows. `hashed` carries no
  * `known`, `answered` no `legacy`; `sendFailed` carries the server's answer as it came (`status`
- * null when none came; `body` its text, null when it had none; `contentType` its header) for
- * `uploadFailure` to read, never a failure code. Anything Swift adds in their place is overwritten.
+ * null when none came; `body` its text, null when it had none; `contentType` its header) in place
+ * of a failure code. Anything Swift adds in their place is overwritten.
  */
-const EVENT = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('picked'), files: z.array(z.object({ id: text, name: text, bytes: z.number(), kind: z.enum(['file', 'zip']) })), needsConsent: z.boolean(), now: text }),
-  z.object({ type: z.enum(['consented', 'stop', 'saveStarted', 'close', 'discard']) }),
-  z.object({ type: z.literal('listed'), run: count, zip: text, members: z.array(z.object({ id: text, name: text, bytes: z.number() })) }),
-  z.object({ type: z.literal('zipFailed'), run: count, zip: text }),
-  z.object({ type: z.literal('hashed'), run: count, id: text, hash: text }),
-  z.object({ type: z.literal('hashFailed'), run: count, id: text }),
-  z.object({ type: z.literal('converted'), run: count, id: text, pages: count, truncated: z.boolean() }),
-  z.object({ type: z.literal('convertFailed'), run: count, id: text, reason: z.enum(['unreadable', 'timeout']) }),
-  z.object({ type: z.literal('answered'), run: count, id: text, extraction, now: text }),
-  z.object({ type: z.literal('sendFailed'), run: count, id: text, status: z.number().int().nullable(), body: maybeText, contentType: maybeText }),
-  z.object({ type: z.literal('retry'), id: text }),
-  z.object({ type: z.literal('chose'), id: text, change, now: text }),
-  z.object({ type: z.literal('saved'), run: count, attempt: count, outcome }),
-  z.object({ type: z.literal('saveFailed'), run: count, attempt: count, message: text }),
+const WIRE_EVENT = z.discriminatedUnion('type', [
+  E.picked, E.consented, E.listed, E.zipFailed, E.hashed.omit({ known: true }), E.hashFailed, E.converted, E.convertFailed,
+  E.answered.omit({ legacy: true }), E.sendFailed.omit({ failure: true }).extend({ status: z.number().int().nullable(), body: maybeText, contentType: maybeText }),
+  E.retry, E.stop, E.chose, E.saveStarted, E.saved, E.saveFailed, E.close, E.discard,
 ]);
 
 // --- Reading ----------------------------------------------------------------------------------
@@ -115,12 +54,13 @@ function parsed<T>(json: string, schema: z.ZodType, reason: UploadRefusal['reaso
   if (!schema.safeParse(raw).success) throw new Refused(reason);
   return raw as T;
 }
-const readState = (json: string) => parsed<UploadState>(json, STATE, 'invalid-state');
+const readState = (json: string) => parsed<UploadState>(json, UPLOAD_STATE, 'invalid-state');
 
-/** The record as the save writes it (read raw); '' is a record with nothing in it yet. Read-only here. */
-function readUploadRecord(json: string, now: string): RoadmapFile {
-  if (json === '') return createEmptyFile({ deviceId: 'upload', now });
-  try { return readRecord(json, now, 'upload'); } catch { throw new Refused('invalid-record'); }
+/** The record as the save writes it (read raw), through the app's own deviceId, so the screen doors'
+ *  cached read is shared, not emptied; '' is a record with nothing in it yet. Read-only here. */
+function readUploadRecord(json: string, now: string, deviceId: string): RoadmapFile {
+  if (json === '') return createEmptyFile({ deviceId, now });
+  try { return readRecord(json, now, deviceId); } catch { throw new Refused('invalid-record'); }
 }
 
 /** One index per record read: `readRecord` hands back the same object for the same text. */
@@ -132,18 +72,18 @@ function indexOf(record: RoadmapFile): KnownIndex {
 }
 
 /** The wire event made whole with what only the engine knows (health-core's own rules). */
-function engineEvent(state: UploadState, wire: z.infer<typeof EVENT>, record: () => RoadmapFile): UploadEvent {
+function engineEvent(state: UploadState, wire: z.infer<typeof WIRE_EVENT>, record: () => RoadmapFile): UploadEvent {
   switch (wire.type) {
     case 'hashed': return { ...wire, known: knownAs(indexOf(record()), wire.hash) };
     case 'answered': {
       const name = 'files' in state ? state.files.find((f) => f.id === wire.id)?.name : undefined;
-      return { ...wire, legacy: name !== undefined && readIsLegacy(record(), name, wire.extraction as Parameters<typeof readIsLegacy>[2]) } as UploadEvent;
+      return { ...wire, legacy: name !== undefined && readIsLegacy(record(), name, wire.extraction) };
     }
     case 'sendFailed': {
       const { status, body, contentType, ...rest } = wire;
       return { ...rest, failure: uploadFailureOfText(status, body, contentType) };
     }
-    default: return wire as UploadEvent;
+    default: return wire;
   }
 }
 
@@ -167,17 +107,18 @@ export const uploadStart = (platformName: string) => answer(() => {
 });
 
 /** The record is read only for an event that needs it (`hashed`, `answered`). */
-export const uploadStep = (stateJson: string, eventJson: string, recordJson: string) => answer(() => {
+export const uploadStep = (stateJson: string, eventJson: string, recordJson: string, deviceId: string) => answer(() => {
   const state = readState(stateJson);
-  const wire = parsed<z.infer<typeof EVENT>>(eventJson, EVENT, 'invalid-event');
-  // No answer here reads a time from the record: known and legacy go by hash, name and date.
-  return transition(state, engineEvent(state, wire, () => readUploadRecord(recordJson, new Date(0).toISOString())));
+  const wire = parsed<z.infer<typeof WIRE_EVENT>>(eventJson, WIRE_EVENT, 'invalid-event');
+  // Known and legacy go by hash, name and date, never a time; the clock only stamps a record the
+  // read migrates, which readRecord then keeps for the screen doors, so it is the real one.
+  return transition(state, engineEvent(state, wire, () => readUploadRecord(recordJson, new Date().toISOString(), deviceId)));
 });
 
 /** One review per call, as health-core's callers take it: the view and its plan count the same rows. */
-const reviewed = (make: typeof uploadView | typeof uploadSavePlan) => (stateJson: string, recordJson: string, nowIso: string, cloudConnected: boolean) => answer(() => {
+const reviewed = (make: typeof uploadView | typeof uploadSavePlan) => (stateJson: string, recordJson: string, nowIso: string, cloudConnected: boolean, deviceId: string) => answer(() => {
   const state = readState(stateJson);
-  const record = readUploadRecord(recordJson, nowIso);
+  const record = readUploadRecord(recordJson, nowIso, deviceId);
   return make(state, record, nowIso, uploadReview(state, record, nowIso), cloudConnected);
 });
 export const uploadViewOf = reviewed(uploadView);

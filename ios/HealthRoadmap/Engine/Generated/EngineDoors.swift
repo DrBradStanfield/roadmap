@@ -1,6 +1,6 @@
 // Generated from ios/engine/contract.ts by `npx tsx ios/scripts/gen-contract.ts`. Never edit it:
 // ios/engine/contract-drift.test.ts fails when it differs from what the contract generates.
-// contractHash: ace51e6a311cb127
+// contractHash: de006f99fe247e59
 
 import Foundation
 import JavaScriptCore
@@ -249,18 +249,18 @@ extension HealthEngine {
     }
 
     /// `uploadStepJson`: answers at once; nil from an engine without it.
-    func doorUploadStepJson(stateJson: String, eventJson: String, recordJson: String) throws -> String? {
-        try optionalCall("uploadStepJson", [stateJson, eventJson, recordJson])
+    func doorUploadStepJson(stateJson: String, eventJson: String, recordJson: String, deviceId: String) throws -> String? {
+        try optionalCall("uploadStepJson", [stateJson, eventJson, recordJson, deviceId])
     }
 
     /// `uploadViewJson`: answers at once; nil from an engine without it.
-    func doorUploadViewJson(stateJson: String, recordJson: String, nowIso: String, cloudConnected: Bool) throws -> String? {
-        try optionalCall("uploadViewJson", [stateJson, recordJson, nowIso, cloudConnected])
+    func doorUploadViewJson(stateJson: String, recordJson: String, nowIso: String, cloudConnected: Bool, deviceId: String) throws -> String? {
+        try optionalCall("uploadViewJson", [stateJson, recordJson, nowIso, cloudConnected, deviceId])
     }
 
     /// `uploadSavePlanJson`: answers at once; nil from an engine without it.
-    func doorUploadSavePlanJson(stateJson: String, recordJson: String, nowIso: String, cloudConnected: Bool) throws -> String? {
-        try optionalCall("uploadSavePlanJson", [stateJson, recordJson, nowIso, cloudConnected])
+    func doorUploadSavePlanJson(stateJson: String, recordJson: String, nowIso: String, cloudConnected: Bool, deviceId: String) throws -> String? {
+        try optionalCall("uploadSavePlanJson", [stateJson, recordJson, nowIso, cloudConnected, deviceId])
     }
 
     /// `uploadUsageJson`: answers at once; nil from an engine without it.

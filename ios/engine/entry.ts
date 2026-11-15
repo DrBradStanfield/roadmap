@@ -237,23 +237,45 @@ export function uploadStartJson(platform: string): string {
   return uploadStart(platform);
 }
 
-/** One event: `{state, effects}`. The engine adds `known` to `hashed`, `legacy` to `answered`, and
- *  reads a `sendFailed`'s server answer into its failure, so the app sends only what it saw. */
-export function uploadStepJson(stateJson: string, eventJson: string, recordJson: string): string {
+/**
+ * One event: `{state, effects}`. The contract the app's upload runner is written against: Swift
+ * sends only what it saw; the door fills in what only the engine knows (health-core upload-schema.ts
+ * UPLOAD_EVENTS is the full shape). Times are ISO strings; `run` is the effect's run being answered.
+ * - picked {files: [{id, name, bytes, kind: "file" | "zip"}], needsConsent, now}
+ * - consented {} · stop {} · saveStarted {} · close {} · discard {} · retry {id (a file id or "all")}
+ * - listed {run, zip (the ZIP's file id), members: [{id, name, bytes}]} · zipFailed {run, zip}
+ * - hashed {run, id, hash}: the door adds `known` (knownIndex and knownAs over the record).
+ * - hashFailed {run, id} · converted {run, id, pages, truncated} · convertFailed {run, id, reason: "unreadable" | "timeout"}
+ * - answered {run, id, extraction (the server's read, as it came), now}: the door adds `legacy`
+ *   (readIsLegacy over the record, by the file's name in the state).
+ * - sendFailed {run, id, status (HTTP status, null when no answer came), body (its text, null when
+ *   none), contentType (its header, null when none)}: the door adds `failure` (uploadFailureOfText).
+ * - chose {id, change, now}: change is one of {tick, on}, {testDay}, {previousDay}, {replace,
+ *   correctsId}, {edit, value}, {document: {title?, kind?, date?}} (health-core ChoiceChange).
+ * - saved {run, attempt, outcome: {values, documents, archived}} · saveFailed {run, attempt, message}
+ * Whatever the app sends in `known`, `legacy` or `failure` is overwritten. `recordJson` ("" for
+ * none) is read only for hashed and answered, through `deviceId`, the app's own, as the screen doors read it.
+ */
+export function uploadStepJson(stateJson: string, eventJson: string, recordJson: string, deviceId: string): string {
   checkArgs('uploadStepJson', arguments);
-  return uploadStep(stateJson, eventJson, recordJson);
+  return uploadStep(stateJson, eventJson, recordJson, deviceId);
 }
 
-/** The drawable view (health-core uploadView), from one review of the state against the record. */
-export function uploadViewJson(stateJson: string, recordJson: string, nowIso: string, cloudConnected: boolean): string {
+/**
+ * The drawable view (health-core uploadView), from one review of the state against the record.
+ * Cost: about 20 ms in Node and 50 ms jitless for 200 read ten-value reports, so likely 100 to 200
+ * ms on a phone's JavaScriptCore; a step is about a fifth of that. Call it at most once per frame,
+ * after the latest step of a burst (coalesce, never one view per event), and off the main thread.
+ */
+export function uploadViewJson(stateJson: string, recordJson: string, nowIso: string, cloudConnected: boolean, deviceId: string): string {
   checkArgs('uploadViewJson', arguments);
-  return uploadViewOf(stateJson, recordJson, nowIso, cloudConnected);
+  return uploadViewOf(stateJson, recordJson, nowIso, cloudConnected, deviceId);
 }
 
 /** What Save writes (health-core uploadSavePlan), from the same review rule as the view. */
-export function uploadSavePlanJson(stateJson: string, recordJson: string, nowIso: string, cloudConnected: boolean): string {
+export function uploadSavePlanJson(stateJson: string, recordJson: string, nowIso: string, cloudConnected: boolean, deviceId: string): string {
   checkArgs('uploadSavePlanJson', arguments);
-  return uploadPlanOf(stateJson, recordJson, nowIso, cloudConnected);
+  return uploadPlanOf(stateJson, recordJson, nowIso, cloudConnected, deviceId);
 }
 
 /** The run's usage counts for `upload_outcome` (health-core uploadUsageCounts): counts only. */

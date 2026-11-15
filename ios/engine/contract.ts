@@ -421,19 +421,19 @@ export const DOORS = {
   uploadStepJson: {
     kind: 'sync',
     optionalDoor: true,
-    args: [['stateJson', text], ['eventJson', text], ['recordJson', text]],
-    returns: "Shared upload (US-52 AC8c): one event through health-core transition, as JSON {state, effects}. The event is health-core UploadEvent less what only the engine knows: hashed {run, id, hash} (the engine adds known from the record, knownIndex and knownAs), answered {run, id, extraction, now} (it adds legacy, readIsLegacy against the record), and sendFailed {run, id, status (null when no answer came), body (the answer's text, or null), contentType (its header, or null)}, read by health-core uploadFailureOfText as the web reads it. recordJson: the record as text, \"\" for none; read only for hashed and answered. Effects are data the app runs, then answers with the event carrying the effect's run.",
+    args: [['stateJson', text], ['eventJson', text], ['recordJson', text], ['deviceId', text]],
+    returns: "Shared upload (US-52 AC8c): one event through health-core transition, as JSON {state, effects}. The event is health-core UploadEvent less what only the engine knows: hashed {run, id, hash} (the engine adds known from the record, knownIndex and knownAs), answered {run, id, extraction, now} (it adds legacy, readIsLegacy against the record), and sendFailed {run, id, status (null when no answer came), body (the answer's text, or null), contentType (its header, or null)}, read by health-core uploadFailureOfText as the web reads it. recordJson: the record as text, \"\" for none; read only for hashed and answered, through deviceId (the app's own, as the screen doors take it). The full wire per event is entry.ts uploadStepJson's comment. Effects are data the app runs, then answers with the event carrying the effect's run.",
   },
   uploadViewJson: {
     kind: 'sync',
     optionalDoor: true,
-    args: [['stateJson', text], ['recordJson', text], ['nowIso', text], ['cloudConnected', flag]],
-    returns: "Shared upload (US-52 AC8c): the drawable view, health-core UploadView as JSON {progress, summary, sections, sure, documents, files, notices, save, stop, done}, every string resolved and every count made; one uploadReview of the state against the record per call, so it counts what uploadSavePlanJson writes for the same inputs. cloudConnected: originals are stored and counted only with a cloud.",
+    args: [['stateJson', text], ['recordJson', text], ['nowIso', text], ['cloudConnected', flag], ['deviceId', text]],
+    returns: "Shared upload (US-52 AC8c): the drawable view, health-core UploadView as JSON {progress, summary, sections, sure, documents, files, notices, save, stop, done}, every string resolved and every count made; one uploadReview of the state against the record per call, so it counts what uploadSavePlanJson writes for the same inputs. cloudConnected: originals are stored and counted only with a cloud. deviceId: the app's own, as the screen doors take it. Costly for a large upload (entry.ts): at most one call per frame, coalesced, off the main thread.",
   },
   uploadSavePlanJson: {
     kind: 'sync',
     optionalDoor: true,
-    args: [['stateJson', text], ['recordJson', text], ['nowIso', text], ['cloudConnected', flag]],
+    args: [['stateJson', text], ['recordJson', text], ['nowIso', text], ['cloudConnected', flag], ['deviceId', text]],
     returns: "Shared upload (US-52 AC8c): what one Save writes, health-core UploadSavePlan as JSON {labRows: [{fileId, rows}], documents: [{fileId, fields}], labArchives: [{fileId, sourceFileName, reportDate}], archiveOnly: [{fileId, fields}], counts: {values, documents, archived, originals}}, from the same review rule as uploadViewJson. Read only: the save itself still goes through cloudLabImport, labSaveSummaryJson and documentSave.",
   },
   uploadUsageJson: {

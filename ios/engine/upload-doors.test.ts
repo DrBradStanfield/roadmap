@@ -18,6 +18,7 @@ import type { UnifiedExtractionResult } from '../../packages/health-core/src/lab
 
 const NOW = '2026-11-02T00:00:00.000Z';
 const DAY = '2026-11-01';
+const DEV = 'phone';
 
 function mulberry32(seed: number): () => number {
   let a = seed >>> 0;
@@ -143,14 +144,14 @@ describe('upload doors agree with health-core (shared upload PR 12, US-52 AC8c)'
         events.push(wire);
         const where = `seed ${seed} step ${i}: ${JSON.stringify(events.map((e) => e.type))}`;
         const direct = transition(s, whole);
-        expect(uploadStepJson(JSON.stringify(s), JSON.stringify(wire), RECORD_TEXT), where).toBe(JSON.stringify(direct));
+        expect(uploadStepJson(JSON.stringify(s), JSON.stringify(wire), RECORD_TEXT, DEV), where).toBe(JSON.stringify(direct));
         s = direct.state;
         const cloud = r() < 0.5;
         const review = uploadReview(s, RECORD, NOW);
         const view = uploadView(s, RECORD, NOW, review, cloud);
         const plan = uploadSavePlan(s, RECORD, NOW, review, cloud);
-        expect(uploadViewJson(JSON.stringify(s), RECORD_TEXT, NOW, cloud), where).toBe(JSON.stringify(view));
-        expect(uploadSavePlanJson(JSON.stringify(s), RECORD_TEXT, NOW, cloud), where).toBe(JSON.stringify(plan));
+        expect(uploadViewJson(JSON.stringify(s), RECORD_TEXT, NOW, cloud, DEV), where).toBe(JSON.stringify(view));
+        expect(uploadSavePlanJson(JSON.stringify(s), RECORD_TEXT, NOW, cloud, DEV), where).toBe(JSON.stringify(plan));
         expect(uploadUsageJson(JSON.stringify(s)), where).toBe(JSON.stringify(uploadUsageCounts(s)));
         if (whole.type === 'hashed' && whole.known) seen.known++;
         if (whole.type === 'answered' && whole.legacy) seen.legacy++;
@@ -167,7 +168,7 @@ describe('upload doors agree with health-core (shared upload PR 12, US-52 AC8c)'
 
   it("whatever Swift puts in known, legacy or failure, the engine's own answer wins", () => {
     const open = transition(initialUpload('phone'), { type: 'picked', needsConsent: false, now: NOW, files: [{ id: 'f', name: 'a.pdf', bytes: 1, kind: 'file' }] }).state;
-    const step = JSON.parse(uploadStepJson(JSON.stringify(open), JSON.stringify({ type: 'hashed', run: 1, id: 'f', hash: 'h-held', known: null }), RECORD_TEXT));
+    const step = JSON.parse(uploadStepJson(JSON.stringify(open), JSON.stringify({ type: 'hashed', run: 1, id: 'f', hash: 'h-held', known: null }), RECORD_TEXT, DEV));
     expect(step.state.files[0].status).toEqual({ s: 'known', as: 'document', archiveOnly: false });
   });
 });
@@ -186,20 +187,20 @@ describe('upload doors refuse malformed input and never throw (shared upload PR 
   it('an unknown platform, malformed JSON, a wrong-shape state, an unknown event and a broken record', () => {
     expect(refusal(uploadStartJson('android'))).toBe('invalid-platform');
     for (const bad of ['', '{', 'null', '[]', '{"phase":"open"}', '{"phase":"flying","platform":"web","run":0}', JSON.stringify({ ...OPEN, files: [{ id: 'f' }] })]) {
-      expect(refusal(uploadStepJson(bad, '{"type":"stop"}', '')), bad).toBe('invalid-state');
-      expect(refusal(uploadViewJson(bad, '', NOW, true)), bad).toBe('invalid-state');
-      expect(refusal(uploadSavePlanJson(bad, '', NOW, false)), bad).toBe('invalid-state');
+      expect(refusal(uploadStepJson(bad, '{"type":"stop"}', '', DEV)), bad).toBe('invalid-state');
+      expect(refusal(uploadViewJson(bad, '', NOW, true, DEV)), bad).toBe('invalid-state');
+      expect(refusal(uploadSavePlanJson(bad, '', NOW, false, DEV)), bad).toBe('invalid-state');
       expect(refusal(uploadUsageJson(bad)), bad).toBe('invalid-state');
     }
     for (const bad of ['', '{', '{"type":"teleport"}', '{"type":"hashed","run":1,"id":"f"}', '{"type":"sendFailed","run":1,"id":"f","failure":"busy"}', '{"type":"answered","run":1,"id":"f","now":"x","extraction":{"values":"many"}}']) {
-      expect(refusal(uploadStepJson(JSON.stringify(OPEN), bad, '')), bad).toBe('invalid-event');
+      expect(refusal(uploadStepJson(JSON.stringify(OPEN), bad, '', DEV)), bad).toBe('invalid-event');
     }
-    expect(refusal(uploadStepJson(JSON.stringify(OPEN), '{"type":"hashed","run":1,"id":"f","hash":"h"}', '{not json'))).toBe('invalid-record');
-    expect(refusal(uploadViewJson(JSON.stringify(OPEN), '[1]', NOW, true))).toBe('invalid-record');
+    expect(refusal(uploadStepJson(JSON.stringify(OPEN), '{"type":"hashed","run":1,"id":"f","hash":"h"}', '{not json', DEV))).toBe('invalid-record');
+    expect(refusal(uploadViewJson(JSON.stringify(OPEN), '[1]', NOW, true, DEV))).toBe('invalid-record');
   });
 
   it('the refusal names no part of what it was given', () => {
-    const text = uploadStepJson(JSON.stringify({ ...OPEN, files: [{ id: 'secret-name.pdf', hash: 'sha256-secret' }] }), '{}', '');
+    const text = uploadStepJson(JSON.stringify({ ...OPEN, files: [{ id: 'secret-name.pdf', hash: 'sha256-secret' }] }), '{}', '', DEV);
     expect(text).not.toMatch(/secret/);
   });
 
@@ -218,8 +219,8 @@ describe('upload doors refuse malformed input and never throw (shared upload PR 
       const [at, key] = paths[Math.floor(r() * paths.length)];
       if (r() < 0.3) delete at[key]; else at[key] = JUNK[Math.floor(r() * JUNK.length)];
       const text = JSON.stringify(state);
-      for (const answer of [uploadViewJson(text, RECORD_TEXT, NOW, true), uploadSavePlanJson(text, RECORD_TEXT, NOW, true), uploadUsageJson(text),
-        uploadStepJson(text, JSON.stringify({ type: 'chose', id: 'f', now: NOW, change: { tick: 'v0', on: false } }), RECORD_TEXT)]) {
+      for (const answer of [uploadViewJson(text, RECORD_TEXT, NOW, true, DEV), uploadSavePlanJson(text, RECORD_TEXT, NOW, true, DEV), uploadUsageJson(text),
+        uploadStepJson(text, JSON.stringify({ type: 'chose', id: 'f', now: NOW, change: { tick: 'v0', on: false } }), RECORD_TEXT, DEV)]) {
         const parsed = JSON.parse(answer);
         if (parsed.ok === false) expect(['invalid-state', 'engine-error']).toContain(parsed.reason);
       }
@@ -235,10 +236,10 @@ describe('upload view cost (shared upload PR 12)', () => {
       status: { s: 'read', extraction: { ...READS[0], reportDate: `2025-${String(1 + (i % 12)).padStart(2, '0')}-${String(1 + (i % 28)).padStart(2, '0')}`, values, additionalValues: [] }, choices: { ticks: {}, testDay: null, previousDay: null, replace: {}, edits: {}, document: {} } },
     }));
     const state = JSON.stringify({ phase: 'open', platform: 'phone', run: 1, started: NOW, firstRead: NOW, files });
-    uploadViewJson(state, RECORD_TEXT, NOW, true); // warm the record read
+    uploadViewJson(state, RECORD_TEXT, NOW, true, DEV); // warm the record read
     const runs = 5;
     const start = performance.now();
-    for (let i = 0; i < runs; i++) expect(JSON.parse(uploadViewJson(state, RECORD_TEXT, NOW, true)).summary).toMatch(/^200 files/);
+    for (let i = 0; i < runs; i++) expect(JSON.parse(uploadViewJson(state, RECORD_TEXT, NOW, true, DEV)).summary).toMatch(/^200 files/);
     const ms = (performance.now() - start) / runs;
     expect(ms).toBeLessThan(1500);
   });

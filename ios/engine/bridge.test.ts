@@ -97,18 +97,18 @@ describe('bridge contract (US-25 AC18)', () => {
     // Shared upload PR 12 (US-52 AC8c): one phone pick of one file, on an empty record.
     uploadStartJson: { args: ['platform'], call: ['phone'], shape: { phase: 'string', platform: 'string', run: 'number' } },
     uploadStepJson: {
-      args: ['stateJson', 'eventJson', 'recordJson'],
-      call: [JSON.stringify({ phase: 'choosing', platform: 'phone', run: 0 }), JSON.stringify({ type: 'picked', files: [{ id: 'f1', name: 'a.pdf', bytes: 1, kind: 'file' }], needsConsent: false, now: NOW }), ''],
+      args: ['stateJson', 'eventJson', 'recordJson', 'deviceId'],
+      call: [JSON.stringify({ phase: 'choosing', platform: 'phone', run: 0 }), JSON.stringify({ type: 'picked', files: [{ id: 'f1', name: 'a.pdf', bytes: 1, kind: 'file' }], needsConsent: false, now: NOW }), '', 'phone'],
       shape: { state: { phase: 'string', run: 'number', files: [{ id: 'string', name: 'string', status: { s: 'string' } }] }, effects: [{ type: 'string', run: 'number' }] },
     },
     uploadViewJson: {
-      args: ['stateJson', 'recordJson', 'nowIso', 'cloudConnected'],
-      call: [UPLOAD_OPEN, '', NOW, true],
+      args: ['stateJson', 'recordJson', 'nowIso', 'cloudConnected', 'deviceId'],
+      call: [UPLOAD_OPEN, '', NOW, true, 'phone'],
       shape: { summary: 'string', files: { row: 'string', rows: [{ fileId: 'string', name: 'string', status: 'string' }] }, save: { label: 'string', enabled: 'boolean' } },
     },
     uploadSavePlanJson: {
-      args: ['stateJson', 'recordJson', 'nowIso', 'cloudConnected'],
-      call: [UPLOAD_OPEN, '', NOW, true],
+      args: ['stateJson', 'recordJson', 'nowIso', 'cloudConnected', 'deviceId'],
+      call: [UPLOAD_OPEN, '', NOW, true, 'phone'],
       shape: { counts: { values: 'number', documents: 'number', archived: 'number', originals: 'number' } },
     },
     uploadUsageJson: { args: ['stateJson'], call: [UPLOAD_OPEN], shape: { known: 'number', failedFinal: 'number' } },

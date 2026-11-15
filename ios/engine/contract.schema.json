@@ -757,6 +757,10 @@
         {
           "name": "recordJson",
           "type": "string"
+        },
+        {
+          "name": "deviceId",
+          "type": "string"
         }
       ]
     },
@@ -779,6 +783,10 @@
         {
           "name": "cloudConnected",
           "type": "bool"
+        },
+        {
+          "name": "deviceId",
+          "type": "string"
         }
       ]
     },
@@ -801,6 +809,10 @@
         {
           "name": "cloudConnected",
           "type": "bool"
+        },
+        {
+          "name": "deviceId",
+          "type": "string"
         }
       ]
     },

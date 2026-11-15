@@ -11,6 +11,12 @@ import {
   type FileStage, type UploadEffect, type UploadEvent, type UploadState,
 } from './upload-flow';
 import { UPLOAD_LIMITS, type UploadPlatform } from './upload-rules';
+import { UPLOAD_EFFECT, UPLOAD_EVENT, UPLOAD_STATE } from './upload-schema';
+import { isDeepStrictEqual } from 'node:util';
+import type * as z from './zod';
+
+/** The value through its schema as text, the way a door reads it back: unchanged, or the schema misses a field. */
+const roundTrips = (schema: z.ZodType, value: unknown) => isDeepStrictEqual(schema.parse(JSON.parse(JSON.stringify(value))), value);
 
 function mulberry32(seed: number): () => number {
   let a = seed >>> 0;
@@ -161,8 +167,11 @@ describe('upload-flow property: invariants over random sequences (US-12 AC26, AC
           if (asked) pending.set(f.id, asked.type);
           else if (stageOf(s, f.id) !== f.status.s) pending.delete(f.id);
         }
-        const broken = JSON.stringify(s) !== before ? 'purity: the input state was mutated'
-          : check(s, e, state, effects, platform, barred) ?? stranded(state, pending, platform);
+        const schemaMiss = !roundTrips(UPLOAD_STATE, state) ? 'schema: the state does not round-trip through UPLOAD_STATE'
+          : !roundTrips(UPLOAD_EVENT, e) ? 'schema: the event does not round-trip through UPLOAD_EVENT'
+          : effects.find((f) => !roundTrips(UPLOAD_EFFECT, f)) ? 'schema: an effect does not round-trip through UPLOAD_EFFECT' : null;
+        const broken = schemaMiss ?? (JSON.stringify(s) !== before ? 'purity: the input state was mutated'
+          : check(s, e, state, effects, platform, barred) ?? stranded(state, pending, platform));
         if (broken) throw new Error(`${broken}\nseed ${seed}, step ${i}\nevents: ${JSON.stringify(events)}\nprev: ${before}\nnext: ${JSON.stringify(state)}\neffects: ${JSON.stringify(effects)}`);
         if ('files' in state) for (const f of state.files) {
           if (f.status.s === 'known' || f.status.s === 'refused') barred.add(f.id);
