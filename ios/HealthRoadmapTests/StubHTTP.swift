@@ -17,6 +17,8 @@ final class StubHTTP: URLProtocol {
         var delay: TimeInterval = 0
         /// Answer only once the test opens this gate: an open held in flight with no fixed delay.
         var gate: Gate?
+        /// Send the headers at once and the body only once the test opens this gate: a stream in flight.
+        var bodyGate: Gate?
     }
 
     /// Holds answers until `open()`, which delivers them; once open, answers pass at once.
@@ -93,7 +95,14 @@ final class StubHTTP: URLProtocol {
             client?.urlProtocol(self, didLoad: answer.body)
             client?.urlProtocolDidFinishLoading(self)
         }
-        if let gate = answer.gate {
+        if let gate = answer.bodyGate {
+            client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+            let later = EngineQueueOnly { [self] in
+                client?.urlProtocol(self, didLoad: answer.body)
+                client?.urlProtocolDidFinishLoading(self)
+            }
+            gate.hold { later.value() }
+        } else if let gate = answer.gate {
             let later = EngineQueueOnly(deliver)
             gate.hold { later.value() }
         } else if answer.delay > 0 {

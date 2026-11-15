@@ -61,6 +61,26 @@ actor AppAttestClient {
     /// key or a fresh assertion. Any other non-2xx status throws with the server's words, or
     /// plain ones when it gave none (a gateway's HTML page; US-52 AC6d).
     func post(_ path: String, body: Data) async throws -> (URLSession.AsyncBytes, HTTPURLResponse) {
+        switch try await open(path, body: body) {
+        case .open(let bytes, let http): return (bytes, http)
+        case .refused(let http, let text):
+            let answer = (try? JSONDecoder().decode(ErrorAnswer.self, from: text)) ?? ErrorAnswer(error: nil, reason: nil)
+            throw Failure.server(status: http.statusCode, message: answer.error ?? "The server could not answer just now. Please try again later.")
+        }
+    }
+
+    /// A request's answer once its headers arrive: open (2xx), or refused with its status and the
+    /// first 16 KB of its body, as received, for a caller that reads a refusal itself (the upload
+    /// runner hands it to the engine, US-52 AC7e).
+    enum Opened: Sendable {
+        case open(URLSession.AsyncBytes, HTTPURLResponse)
+        case refused(HTTPURLResponse, Data)
+    }
+
+    /// As `post`, a refusal answered rather than thrown. The lock is held from signing until the
+    /// headers arrive, as the server spends the counter before any slow work (lab-read answers
+    /// its headers then), so reads that stream run side by side.
+    func open(_ path: String, body: Data) async throws -> Opened {
         await acquire()
         defer { release() }
         for attempt in 0..<2 {
@@ -72,13 +92,14 @@ actor AppAttestClient {
             try await sign(&request, path: path, body: body)
             let (bytes, response) = try await session.bytes(for: request)
             guard let http = response as? HTTPURLResponse else { throw Failure.badResponse }
-            if (200..<300).contains(http.statusCode) { return (bytes, http) }
-            let answer = try await Self.errorAnswer(bytes)
-            if http.statusCode == 401, attempt == 0, ["unknown_key", "stale_counter"].contains(answer.reason) {
-                if answer.reason == "unknown_key" { keys.delete(); registered = nil }
+            if (200..<300).contains(http.statusCode) { return .open(bytes, http) }
+            let text = try await Self.errorText(bytes)
+            let answer = try? JSONDecoder().decode(ErrorAnswer.self, from: text)
+            if http.statusCode == 401, attempt == 0, let reason = answer?.reason, ["unknown_key", "stale_counter"].contains(reason) {
+                if reason == "unknown_key" { keys.delete(); registered = nil }
                 continue
             }
-            throw Failure.server(status: http.statusCode, message: answer.error ?? "The server could not answer just now. Please try again later.")
+            return .refused(http, text)
         }
         throw Failure.badResponse
     }
@@ -184,13 +205,13 @@ actor AppAttestClient {
         let reason: String?
     }
 
-    private static func errorAnswer(_ bytes: URLSession.AsyncBytes) async throws -> ErrorAnswer {
+    private static func errorText(_ bytes: URLSession.AsyncBytes) async throws -> Data {
         var data = Data()
         for try await byte in bytes {
             data.append(byte)
             if data.count > 16_384 { break }
         }
-        return (try? JSONDecoder().decode(ErrorAnswer.self, from: data)) ?? ErrorAnswer(error: nil, reason: nil)
+        return data
     }
 
     // MARK: The lock (actors are re-entrant across awaits, so this is explicit)

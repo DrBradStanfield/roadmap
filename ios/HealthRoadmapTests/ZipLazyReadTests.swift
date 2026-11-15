@@ -285,7 +285,8 @@ final class ZipLazyReadTests: XCTestCase {
         held.forget([known])                        // hashed, known and not archive-only
         XCTAssertNoThrow(try held.convert(read, rules: .swift))
         XCTAssertThrowsError(try held.convert(failed, rules: .swift))
-        XCTAssertEqual(held.heldBytes, zip.count, "read and failed still held")
+        let readPages = try XCTUnwrap(held.pages(read)).reduce(0) { $0 + $1.content.utf8.count }
+        XCTAssertEqual(held.heldBytes, zip.count + readPages, "read (with its pages) and failed still held")
         held.forget([read, known, failed])          // saved: every file in the pick
         XCTAssertEqual(held.heldBytes, 0)
         for id in ids { XCTAssertThrowsError(try held.hash(id)) }
