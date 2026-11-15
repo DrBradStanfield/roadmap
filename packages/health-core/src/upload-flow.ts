@@ -9,6 +9,7 @@
  */
 import type { UnifiedExtractionResult } from './lab-extraction';
 import type { UploadFailure } from './upload-failure';
+import { choose, NO_CHOICES, type ChoiceChange, type FileChoices } from './upload-choices';
 import type { Known } from './upload-known';
 import { fileVerdict, requestFlags, UPLOAD_LIMITS, zipMemberVerdict, type RequestFlags, type UploadPlatform } from './upload-rules';
 
@@ -25,13 +26,6 @@ export const RETRYABLE: Record<FailReason, boolean> = {
 const SEND_FAILURE: Record<UploadFailure, FailReason> = {
   rate_limit: 'dailyLimit', busy: 'busy', server_error: 'server', network: 'network', refused: 'declined', too_long: 'tooLong',
 };
-
-/** A document's corrections before Save (design Q3 (a)). */
-export interface DocumentFix { title?: string; kind?: string; date?: string | null }
-/** What the person chose for one read file: value ticks by ref (absent: the default), a test day, the
- *  day of an undated previous column (US-12 AC14; the web asks it, the phone never gets one), document fixes. */
-export interface FileChoices { ticks: Record<string, boolean>; testDay: string | null; previousDay: string | null; document: DocumentFix }
-export type ChoiceChange = { tick: string; on: boolean } | { testDay: string | null } | { previousDay: string | null } | { document: DocumentFix };
 
 export type FileStatus =
   | { s: 'listing' }                                       // a picked ZIP: its members replace it, in its place
@@ -85,7 +79,7 @@ export type UploadEvent =
   | { type: 'sendFailed'; run: number; id: string; failure: UploadFailure }
   | { type: 'retry'; id: string | 'all' }
   | { type: 'stop' }
-  | { type: 'chose'; id: string; change: ChoiceChange }
+  | { type: 'chose'; id: string; change: ChoiceChange; now: string } // now: to refuse a document date in the future
   | { type: 'saveStarted' }
   | { type: 'saved'; run: number; attempt: number; outcome: SaveOutcome }
   | { type: 'saveFailed'; run: number; attempt: number; message: string }
@@ -126,7 +120,6 @@ export function saveEnabled(s: UploadState): boolean {
 // --- transition -------------------------------------------------------------
 
 const same = (state: UploadState): UploadStep => ({ state, effects: [] });
-const NO_CHOICES: FileChoices = { ticks: {}, testDay: null, previousDay: null, document: {} };
 const idsIn = (files: UploadFile[], stages: readonly FileStage[]) => files.filter((f) => stages.includes(f.status.s)).map((f) => f.id);
 const forget = (run: number, ids: string[]): UploadEffect[] => (ids.length ? [{ type: 'forget', run, ids }] : []);
 const abort = (run: number, ids: string[]): UploadEffect[] => (ids.length ? [{ type: 'abort', run, ids }] : []);
@@ -277,13 +270,6 @@ function save(s: Pick, attempt: number): UploadStep {
   return { state: { ...pickOf(s), phase: 'saving', attempt }, effects: [{ type: 'save', run: s.run, attempt }] };
 }
 
-function choose(c: FileChoices, change: ChoiceChange): FileChoices {
-  if ('tick' in change) return { ...c, ticks: { ...c.ticks, [change.tick]: change.on } };
-  if ('testDay' in change) return { ...c, testDay: change.testDay };
-  if ('previousDay' in change) return { ...c, previousDay: change.previousDay };
-  return { ...c, document: { ...c.document, ...change.document } };
-}
-
 const retries = (f: UploadFile, id: string) => f.status.s === 'failed' && RETRYABLE[f.status.reason] && (id === 'all' || f.id === id);
 
 export function transition(s: UploadState, e: UploadEvent): UploadStep {
@@ -327,9 +313,11 @@ export function transition(s: UploadState, e: UploadEvent): UploadStep {
     }
     case 'stop': return s.phase === 'open' ? stop(s) : same(s);
     case 'chose': {
-      if (s.phase !== 'open' || !s.files.some((f) => f.id === e.id && f.status.s === 'read')) return same(s);
-      const files = s.files.map((f): UploadFile => (f.id === e.id && f.status.s === 'read' ? { ...f, status: { ...f.status, choices: choose(f.status.choices, e.change) } } : f));
-      return same({ ...s, files });
+      const file = s.phase === 'open' ? s.files.find((f) => f.id === e.id) : undefined;
+      if (s.phase !== 'open' || file?.status.s !== 'read') return same(s);
+      const choices = choose(file.status.choices, e.change, e.now);
+      if (!choices) return same(s); // refused: a document date that is no real past day
+      return same({ ...s, files: s.files.map((f) => (f === file ? { ...file, status: { ...file.status, choices } } : f)) });
     }
     case 'saveStarted':
       if (s.phase === 'saveFailed') return save(s, s.attempt + 1);

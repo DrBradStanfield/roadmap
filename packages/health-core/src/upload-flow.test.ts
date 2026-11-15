@@ -14,7 +14,7 @@ import { requestFlags, UPLOAD_LIMITS } from './upload-rules';
 const WEB_FLAGS = requestFlags('web');
 
 const EXT: UnifiedExtractionResult = { classification: 'lab_report', reportDate: null, values: [], additionalValues: [], unrecognized: [], document: null };
-const CHOICES = { ticks: {}, testDay: null, previousDay: null, document: {} };
+const CHOICES = { ticks: {}, testDay: null, previousDay: null, replace: {}, edits: {}, document: {} };
 const NOW = '2026-11-15T00:00:00Z';
 const MB = 1024 * 1024;
 
@@ -54,7 +54,7 @@ const FILE_EVENTS: Record<string, UploadEvent> = {
   listed: { type: 'listed', run: 1, zip: 'x', members: [{ id: 'm', name: 'm.pdf', bytes: 1 }] },
   zipFailed: { type: 'zipFailed', run: 1, zip: 'x' },
   retry: { type: 'retry', id: 'x' },
-  chose: { type: 'chose', id: 'x', change: { tick: 'v0', on: false } },
+  chose: { type: 'chose', now: '2026-11-15T00:00:00.000Z', id: 'x', change: { tick: 'v0', on: false } },
 };
 // The status each event leaves the file in ('=' unchanged). With one file the freed slot is taken at once,
 // so `hashed` goes on to converting and `converted` on to sending.
@@ -290,8 +290,8 @@ describe('upload-flow: effects', () => {
   });
 
   it('a choice lands on a read file only', () => {
-    const { state } = transition(open([readFile]), { type: 'chose', id: 'x', change: { document: { title: 't' } } });
-    const after = transition(state, { type: 'chose', id: 'x', change: { testDay: '2026-11-01' } }).state;
+    const { state } = transition(open([readFile]), { type: 'chose', now: '2026-11-15T00:00:00.000Z', id: 'x', change: { document: { title: 't' } } });
+    const after = transition(state, { type: 'chose', now: '2026-11-15T00:00:00.000Z', id: 'x', change: { testDay: '2026-11-01' } }).state;
     expect(statusOf(after, 'x')).toMatchObject({ choices: { ticks: {}, testDay: '2026-11-01', document: { title: 't' } } });
   });
 });

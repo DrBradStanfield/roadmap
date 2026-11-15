@@ -8,7 +8,8 @@
 import { describe, expect, it } from 'vitest';
 import { core, EMPTY, NOW } from './import-review.test-helpers';
 import { UNDATED_PREVIOUS, type UnifiedExtractionResult } from './lab-extraction';
-import type { FileChoices, UploadState } from './upload-flow';
+import type { FileChoices } from './upload-choices';
+import type { UploadState } from './upload-flow';
 import { uploadSavePlan } from './upload-plan';
 import { previousDay, uploadReview } from './upload-review';
 import { uploadView } from './upload-view';
@@ -20,9 +21,9 @@ const x = (reportDate: string | null): UnifiedExtractionResult => ({
 });
 const state = (reportDate: string | null, choices: Partial<FileChoices> = {}): UploadState => ({
   phase: 'open', platform: 'web', run: 1, started: NOW, firstRead: null,
-  files: [{ id: 'a', name: 'a.pdf', bytes: 1, hash: 'h', pages: null, status: { s: 'read', extraction: x(reportDate), choices: { ticks: {}, testDay: null, previousDay: null, document: {}, ...choices } } }],
+  files: [{ id: 'a', name: 'a.pdf', bytes: 1, hash: 'h', pages: null, status: { s: 'read', extraction: x(reportDate), choices: { ticks: {}, testDay: null, previousDay: null, replace: {}, edits: {}, document: {}, ...choices } } }],
 });
-const rowsOf = (s: UploadState) => uploadSavePlan(s, EMPTY, NOW, uploadReview(s, EMPTY, NOW)).labRows.flatMap((l) => l.rows.map((r) => [r.kind === 'measurement' ? r.metricType : r.metricName, r.recordedAt.slice(0, 10)]));
+const rowsOf = (s: UploadState) => uploadSavePlan(s, EMPTY, NOW, uploadReview(s, EMPTY, NOW), true).labRows.flatMap((l) => l.rows.map((r) => [r.kind === 'measurement' ? r.metricType : r.metricName, r.recordedAt.slice(0, 10)]));
 
 describe('previousDay: the web\'s rule for an undated previous column', () => {
   it('a past day before the report\'s is taken; on or after it, or in the future, is refused', () => {
@@ -39,7 +40,7 @@ describe('the upload honours it (US-12 AC14)', () => {
   it('with no day picked, the whole report waits and the view asks for the column\'s day', () => {
     const s = state(REPORT);
     expect(rowsOf(s)).toEqual([]);
-    expect(uploadView(s, EMPTY, NOW, uploadReview(s, EMPTY, NOW)).sections).toContainEqual({ kind: 'undatedPrevious', fileId: 'a', name: 'a.pdf', month: '2026-06', before: REPORT });
+    expect(uploadView(s, EMPTY, NOW, uploadReview(s, EMPTY, NOW), true).sections).toContainEqual({ kind: 'undatedPrevious', fileId: 'a', name: 'a.pdf', month: '2026-06', before: REPORT });
   });
 
   it('a day picked before the report\'s files the column\'s values on it, the rest on the report\'s', () => {

@@ -73,15 +73,18 @@ export function importRow(result: ImportFile['result'], ref: string, day: string
 /**
  * One report as `classifyImportValues` takes it, from the values the person ticked: each on its
  * own day, else `day` (the test's), an undated previous column's on `undatedDay`; a value with no
- * real past day is not sent. The one row rule the iPhone (ios/engine lab-review-groups.ts
+ * real past day is not sent. `options`: a ref's Replace (`correctsId`) and edited number, as `importRow` takes them. The one row rule the iPhone (ios/engine lab-review-groups.ts
  * `classifyReport`) and the shared upload (upload-review.ts) both build with.
  */
-export function reportImportFile(result: ImportFile['result'], ticked: Iterable<string>, day: string | null, now: string, undatedDay: string | null = null): ImportFile {
+export function reportImportFile(
+  result: ImportFile['result'], ticked: Iterable<string>, day: string | null, now: string, undatedDay: string | null = null,
+  options: Readonly<Record<string, { correctsId?: string; edited?: { value: number } }>> = {},
+): ImportFile {
   const days = valueDays(result, day, undatedDay);
   const rows: Record<string, BulkRow> = {};
   for (const ref of ticked) {
     const on = days[ref] ? validDay(days[ref]!, { now }) : null;
-    const row = on ? importRow(result, ref, on) : null;
+    const row = on ? importRow(result, ref, on, options[ref]) : null;
     if (row) rows[ref] = row;
   }
   return { result, rows, days };
@@ -186,9 +189,8 @@ type Group = ClassifiedValue extends infer V ? V extends ClassifiedValue ? Omit<
  * value, else a conflict; refused is a core range or pair refusal (unsure,
  * shown) or a lab refusal (not saved, with its reason).
  */
-function groupsOf(rows: Array<{ row: BulkRow; reasons: UnsureReason[] }>, record: RoadmapFile, now: string): Group[] {
+function groupsOf(rows: Array<{ row: BulkRow; reasons: UnsureReason[] }>, record: RoadmapFile, held: (slot: string) => Quantity | undefined, now: string): Group[] {
   const run = bulkAppendValues(record, rows.map((r) => r.row), now);
-  const held = heldReadings(record);
   let lab = 0;
   return rows.map(({ row, reasons }, k): Group => {
     const { slot, quantity } = slotOf(row);
@@ -243,13 +245,16 @@ export function classifyImportValues(files: readonly ImportFile[], record: Roadm
   //    A row the write refuses on its own (its unit, its range) takes no slot:
   //    it goes to the run as it is, and a valid reading of that day still lands.
   const placed = sent.map((_, i) => i).filter((i) => !refusedAlone(sent[i].row, now));
-  const placements = placeReadings(placed.map((i) => ({ ...slotOf(sent[i].row), rank: sent[i].rank, edited: sent[i].row.source === 'lab_import_edited', sent: true })), heldReadings(record));
+  // The record's slots, indexed once for every placement and dry run below.
+  const held = heldReadings(record);
+  const heldEmpty = heldReadings(empty);
+  const placements = placeReadings(placed.map((i) => ({ ...slotOf(sent[i].row), rank: sent[i].rank, edited: sent[i].row.source === 'lab_import_edited', sent: true })), held);
   const places = new Map(placed.map((i, k) => [i, { place: placements[k].place, winner: placements[k].winner === undefined ? undefined : placed[placements[k].winner!] }]));
   const loses = (i: number) => places.get(i)?.place === 'duplicate' || places.get(i)?.place === 'hidden';
   const batch = sent.map((_, i) => i).filter((i) => !loses(i)).sort((i, j) => sent[i].rank - sent[j].rank || i - j);
 
   // 2) One dry run of what Save submits; each row's group is its own outcome.
-  const groups = new Map<number, Group>(groupsOf(batch.map((i) => sent[i]), record, now).map((g, k) => [batch[k], g]));
+  const groups = new Map<number, Group>(groupsOf(batch.map((i) => sent[i]), record, held, now).map((g, k) => [batch[k], g]));
   const label = (s: Info, sentHere: boolean) => ({ file: s.file, ref: s.ref, label: s.label, sent: sentHere });
   const values: ClassifiedValue[] = batch.map((i) => ({ ...label(sent[i], true), ...groups.get(i)! }) as ClassifiedValue);
   sent.forEach((s, i) => {
@@ -265,7 +270,7 @@ export function classifyImportValues(files: readonly ImportFile[], record: Roadm
   for (const u of unsent) {
     const file = files[u.file];
     const row = importRow(file.result, u.ref, u.day ?? PROBE_DAY)!;
-    const [g] = groupsOf([{ row, reasons: [...u.reasons] }], u.day ? record : empty, now);
+    const [g] = u.day ? groupsOf([{ row, reasons: [...u.reasons] }], record, held, now) : groupsOf([{ row, reasons: [...u.reasons] }], empty, heldEmpty, now);
     const shown: Group = u.day || g.group === 'notSaved' || (g.group === 'unsure' && g.reasons.includes('outOfRange')) ? { ...g, writes: false } : { group: 'waiting', writes: false };
     values.push({ ...label(u, false), ...shown } as ClassifiedValue);
   }

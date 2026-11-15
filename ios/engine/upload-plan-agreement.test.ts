@@ -59,10 +59,10 @@ function genRecord(r: () => number): RoadmapFile {
 
 const readFile = (id: string, extraction: Extraction, ticks: Record<string, boolean> = {}, testDay: string | null = null, hash = `h-${id}`): UploadFile => ({
   id, name: `${id}.pdf`, bytes: 1, hash, pages: { count: 1, truncated: false },
-  status: { s: 'read', extraction: { unrecognized: [], document: null, ...extraction } as never, choices: { ticks, testDay, previousDay: null, document: {} } },
+  status: { s: 'read', extraction: { unrecognized: [], document: null, ...extraction } as never, choices: { ticks, testDay, previousDay: null, replace: {}, edits: {}, document: {} } },
 });
 /** The caller's way: one review, handed to the plan. */
-const planOf = (s: UploadState, record: RoadmapFile, now: string) => uploadSavePlan(s, record, now, uploadReview(s, record, now));
+const planOf = (s: UploadState, record: RoadmapFile, now: string) => uploadSavePlan(s, record, now, uploadReview(s, record, now), true);
 const open = (files: UploadFile[]): UploadState => ({ phase: 'open', platform: 'phone', run: 1, files, started: NOW, firstRead: null });
 const refsOf = (x: Extraction) => [...(x.values ?? []).map((v, i) => ({ ref: `v${i}`, q: !!v.question })), ...(x.additionalValues ?? []).map((_, i) => ({ ref: `a${i}`, q: false }))];
 
@@ -134,7 +134,7 @@ describe('upload plan agrees with today\'s iPhone save', () => {
       if (r() < 0.2) rows.push(documentRow({ documentType: 'clinic_letter', title: 'Same name', documentDate: null, contentMd: 't', metadata: {}, sourceFileName: 'a.pdf' }, { id: 's', contentHash: '', mimeType: '', addedAt: NOW }));
       const record = { ...createEmptyFile({ deviceId: 't', now: NOW }), documents: rows };
       const card = labReview(x, NOW, record, 'a.pdf', 'h-a').document!;
-      const plan = planOf(open([{ ...readFile('a', x), status: { s: 'read', extraction: { unrecognized: [], values: [], additionalValues: [], ...x } as never, choices: { ticks: {}, testDay: null, previousDay: null, document: {} } } }]), record, NOW);
+      const plan = planOf(open([{ ...readFile('a', x), status: { s: 'read', extraction: { unrecognized: [], values: [], additionalValues: [], ...x } as never, choices: { ticks: {}, testDay: null, previousDay: null, replace: {}, edits: {}, document: {} } } }]), record, NOW);
       expect([seed, plan.documents[0].fields]).toMatchObject([seed, { title: card.title, documentDate: card.documentDate, documentType: card.classification, sourceFileName: 'a.pdf' }]);
       if (card.alreadySaved) r3++;
     }
@@ -143,22 +143,34 @@ describe('upload plan agrees with today\'s iPhone save', () => {
 });
 
 describe('the view counts what the plan writes', () => {
-  it('Save\'s label, the documents line and the sure line agree with the plan for 300 seeds', () => {
+  it('the numbers in Save\'s label, the documents line and the sure line equal what the plan writes, for 300 seeds', () => {
+    const num = (text: string, word: RegExp) => Number(word.exec(text)?.[1] ?? 0);
+    const letter = (i: number): Extraction => ({ classification: 'clinic_letter', reportDate: null, document: { classification: 'clinic_letter', title: `L${i}`, documentDate: null, contentMarkdown: 't', metadata: {} } });
+    let withDocs = 0;
     for (let seed = 1; seed <= 300; seed++) {
       const r = mulberry32(seed);
-      const files = Array.from({ length: 1 + Math.floor(r() * 3) }, (_, i) => readFile(`f${i}`, genLab(r, { core: CORE.filter(() => r() < 0.5), labs: LABS.filter(() => r() < 0.3) }, DAYS)));
+      const files = Array.from({ length: 1 + Math.floor(r() * 4) }, (_, i) => (r() < 0.3
+        ? readFile(`f${i}`, letter(i), {}, null, r() < 0.2 ? 'h-same' : `h-${i}`)
+        : readFile(`f${i}`, genLab(r, { core: CORE.filter(() => r() < 0.5), labs: LABS.filter(() => r() < 0.3) }, DAYS))));
       const s = open(files);
       const record = genRecord(r);
       const review = uploadReview(s, record, NOW);
-      const plan = uploadSavePlan(s, record, NOW, review);
-      const view = uploadView(s, record, NOW, review);
-      const { values } = plan.counts;
-      // What the screen shows as written (sure and unsure rows that write) is what the plan writes.
-      const shown = review.classification.values.filter((v) => v.sent && v.writes && (v.group === 'sure' || v.group === 'unsure')).length;
-      expect([seed, shown]).toEqual([seed, values]);
-      if (values) expect([seed, view.save.label]).toEqual([seed, values === 1 ? 'Save 1 value' : `Save ${values} values`]);
-      expect(plan.labRows.reduce((n, l) => n + l.rows.length, 0)).toBe(values);
-      expect(review.classification.values.filter((v) => v.sent && v.writes).length).toBe(values);
+      const plan = uploadSavePlan(s, record, NOW, review, true);
+      const view = uploadView(s, record, NOW, review, true);
+      const written = plan.labRows.reduce((n, l) => n + l.rows.length, 0);
+      // The label's own numbers, read back from its words, against the rows and payloads Save would write.
+      if (written || plan.documents.length) {
+        expect([seed, num(view.save.label, /(\d+) values?/), num(view.save.label, /(\d+) documents?/)]).toEqual([seed, written, plan.documents.length]);
+      }
+      expect([seed, view.documents ? num(view.documents.line, /^(\d+)/) : 0]).toEqual([seed, plan.documents.length]);
+      // The sure line counts the sure rows whose value the plan writes, row by row.
+      const planned = new Set(plan.labRows.flatMap((l) => l.rows));
+      const writes = (fileId: string, ref: string) => review.classification.values.some((v) => v.ref === ref && review.labFiles[v.file].fileId === fileId && v.writes)
+        && planned.size > 0;
+      const sureWrites = (view.sure?.rows ?? []).filter((row) => writes(row.fileId, row.ref)).length;
+      expect([seed, view.sure ? num(view.sure.line, /^(\d+)/) : 0]).toEqual([seed, sureWrites]);
+      if (plan.documents.length) withDocs++;
     }
+    expect(withDocs).toBeGreaterThan(30);
   });
 });

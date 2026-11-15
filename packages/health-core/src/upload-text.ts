@@ -60,6 +60,12 @@ export const UPLOAD_TEXT_PROPOSED = {
   chooseDay: 'Choose the day of the test',
 } as const;
 
+/** Every proposed string, for the owner to show Brad: the two above and the dropped-at-zero forms of rows 23 and 26. */
+export const PROPOSED_WORDS: readonly string[] = [
+  UPLOAD_TEXT_PROPOSED.saveOriginals(1), UPLOAD_TEXT_PROPOSED.saveOriginals(2), UPLOAD_TEXT_PROPOSED.chooseDay,
+  UPLOAD_TEXT.saveBoth(0, 1), UPLOAD_TEXT.saveBoth(0, 2), UPLOAD_TEXT.savedLine(1, 0), UPLOAD_TEXT.savedLine(2, 0), UPLOAD_TEXT.savedLine(0, 1), UPLOAD_TEXT.savedLine(0, 2),
+];
+
 /** A file not fully read, as the web's notices word it (US-12 AC9); moved from UploadNotices.tsx. */
 export const FILE_NOTICE_TEXT = {
   openFailed: 'Could not open it. It may be password-protected, damaged, or not a PDF, photo or .docx file.',
