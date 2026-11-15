@@ -46,15 +46,20 @@ export type KnownIndex = ReadonlyMap<string, Known>;
 
 /**
  * The root id of every lab row that is, or is corrected into, an active row:
- * an active row marks itself and each row up its `correctsId` chain. A walk
- * stops at a row already marked, since everything above it is marked too.
+ * a readable active row marks itself and each row up its `correctsId` chain.
+ * The links come from every row, readable or not (only `id` and `correctsId`
+ * are read, and only as strings), so an unreadable row mid-chain does not
+ * break it. A walk stops at a row already marked, so a cycle ends.
  */
-function activeRoots(rows: readonly FileLabValue[]): Set<string> {
-  const byId = new Map(rows.map((r) => [r.id, r]));
+function activeRoots(all: readonly unknown[], readable: readonly FileLabValue[]): Set<string> {
+  const parent = new Map<string, string>();
+  for (const r of all as Array<{ id?: unknown; correctsId?: unknown }>) {
+    if (typeof r?.id === 'string' && typeof r.correctsId === 'string') parent.set(r.id, r.correctsId);
+  }
   const seen = new Set<string>();
-  for (const row of rows) {
+  for (const row of readable) {
     if (!isActive(row)) continue;
-    for (let id: string | null = row.id; id !== null && !seen.has(id); id = byId.get(id)?.correctsId ?? null) seen.add(id);
+    for (let id: string | undefined = row.id; id !== undefined && !seen.has(id); id = parent.get(id)) seen.add(id);
   }
   return new Set([...seen].map(rootIdOf));
 }
@@ -68,7 +73,7 @@ function producedRows(d: FileDocument): string[] | null {
 /** Index the record's live, hashed rows by content (section 2's table). */
 export function knownIndex(record: RoadmapFile): KnownIndex {
   const labRows = record.labValues.filter((r) => isReadableRow('labValues', r));
-  const active = activeRoots(labRows);
+  const active = activeRoots(record.labValues, labRows);
   const activeDays = new Set(labRows.filter(isActive).map((r) => dayOf(r.recordedAt)));
   const index = new Map<string, Known>();
   const rank = (k: Known) => (k.archiveOnly ? 0 : 2) + (k.as === 'document' ? 1 : 0);
@@ -77,7 +82,7 @@ export function knownIndex(record: RoadmapFile): KnownIndex {
     const lab = isLabArchiveDocument(documentView(d));
     if (lab) {
       const rows = producedRows(d);
-      if (rows ? !rows.some((id) => active.has(rootIdOf(id))) : !(d.date && activeDays.has(d.date))) continue;
+      if (rows ? !rows.some((id) => active.has(rootIdOf(id))) : !activeDays.has(d.date ?? '')) continue;
     }
     const next: Known = { as: lab ? 'labReport' : 'document', archiveOnly: !d.fileRef };
     const held = index.get(d.contentHash);
@@ -108,5 +113,5 @@ export function legacyMatch(record: RoadmapFile, name: string, document: Documen
     isReadableRow('documents', d) && !d.deleted && !d.contentHash && d.sourceFileName != null &&
     dedupFileName(d.sourceFileName) === base &&
     // Two undated rows match too: today's name-only review rule already counts them as saved (Q2).
-    d.date === document.documentDate && !isLabArchiveDocument(documentView(d)));
+    (d.date ?? null) === (document.documentDate ?? null) && !isLabArchiveDocument(documentView(d)));
 }

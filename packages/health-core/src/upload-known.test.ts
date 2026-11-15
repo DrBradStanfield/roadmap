@@ -83,6 +83,17 @@ describe('knownIndex / knownAs: one case per row of section 2 (US-13 AC1, US-12 
     expect(known(record([listed], twice))).not.toBeNull();
     expect(known(record([listed], [lab('lv-1', { status: 'entered-in-error' }), lab('lv-1#si')]))).not.toBeNull();
   });
+  it('(b) an unreadable row in the middle of a correction chain does not break it (Codex re-check 1)', () => {
+    const chain = [lab('A', { status: 'entered-in-error' }), { ...lab('B', { status: 'entered-in-error', correctsId: 'A' }), value: 'x' as unknown as number }, lab('C', { correctsId: 'B' })];
+    expect(known(record([listing(['A'])], chain))).toEqual({ as: 'labReport', archiveOnly: false });
+    // An unreadable active row seeds nothing.
+    expect(known(record([listing(['A'])], [{ ...lab('A'), value: 'x' as unknown as number }]))).toBeNull();
+  });
+  it('(b) a correctsId cycle in malformed data ends (Codex re-check 1)', () => {
+    const cycle = [lab('A', { status: 'entered-in-error', correctsId: 'B' }), lab('B', { correctsId: 'A' })];
+    expect(known(record([listing(['A'])], cycle))).toEqual({ as: 'labReport', archiveOnly: false });
+    expect(known(record([listing(['Z'])], cycle))).toBeNull();
+  });
   it('(b) a lab archive row whose rows are all entered-in-error, or gone, is not known', () => {
     const listed = listing(['lv-1', 'lv-2']);
     const dead = [lab('lv-1', { status: 'entered-in-error' }), lab('lv-2', { status: 'entered-in-error' })];
@@ -168,6 +179,14 @@ describe('legacyMatch: hashless older rows, after the read (US-13 AC1, Q5 a, Q1 
     };
     expect(legacyMatch(migrated({ ...old, sourceFileName: 7 }), '7', letter)).toBe(false);
     expect(legacyMatch(migrated({ ...old, extractedText: 3 }), 'a.pdf', letter)).toBe(false);
+  });
+  it('a migrated legacy row with no date property matches a re-read with no date (Codex re-check 2)', () => {
+    const { date: _date, ...undated } = old;
+    const file = migrateFile(JSON.parse(JSON.stringify({
+      ...createEmptyFile({ deviceId: 'test', now: '2026-01-01T00:00:00.000Z' }), documents: [undated],
+    })), { deviceId: 'test', now: '2026-01-01T00:00:00.000Z' });
+    expect(file.documents[0].date).toBeUndefined(); // migrate keeps the row as written
+    expect(legacyMatch(file, 'a.pdf', { ...letter, documentDate: null })).toBe(true);
   });
   it('no match on another name or date, a hashed, tombstoned or erased row', () => {
     expect(legacyMatch(record([old]), 'b.pdf', letter)).toBe(false);
