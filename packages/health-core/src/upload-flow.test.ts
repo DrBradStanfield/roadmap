@@ -6,7 +6,7 @@
 import { describe, expect, it } from 'vitest';
 import type { UnifiedExtractionResult } from './lab-extraction';
 import {
-  failReason, initialUpload, inFlight, RETRYABLE, saveEnabled, transition,
+  initialUpload, inFlight, saveEnabled, transition,
   type FileStatus, type UploadEvent, type UploadFile, type UploadState,
 } from './upload-flow';
 import { UPLOAD_LIMITS } from './upload-rules';
@@ -18,13 +18,14 @@ const MB = 1024 * 1024;
 
 const file = (id: string, status: FileStatus, hash: string | null = 'h'): UploadFile => ({ id, name: `${id}.pdf`, bytes: 1, hash, pages: null, status });
 function open(files: UploadFile[], over: Partial<Extract<UploadState, { phase: 'open' }>> = {}): Extract<UploadState, { phase: 'open' }> {
-  return { phase: 'open', platform: 'web', run: 1, files, zips: [], started: NOW, firstRead: null, ...over };
+  return { phase: 'open', platform: 'web', run: 1, files, started: NOW, firstRead: null, ...over };
 }
 const statusOf = (s: UploadState, id: string) => ('files' in s ? s.files.find((f) => f.id === id)?.status : undefined);
 
 // --- per-file status x file event ------------------------------------------------
 
 const STATUSES: Record<string, UploadFile> = {
+  listing: file('x', { s: 'listing' }, null),
   waiting: file('x', { s: 'waiting' }, null),
   hashed: file('x', { s: 'hashed' }),
   known: file('x', { s: 'known', as: 'document', archiveOnly: false }),
@@ -45,25 +46,28 @@ const FILE_EVENTS: Record<string, UploadEvent> = {
   convertFailed: { type: 'convertFailed', run: 1, id: 'x', reason: 'unreadable' },
   answered: { type: 'answered', run: 1, id: 'x', extraction: EXT, legacy: false, now: NOW },
   answeredLegacy: { type: 'answered', run: 1, id: 'x', extraction: EXT, legacy: true, now: NOW },
-  sendFailed: { type: 'sendFailed', run: 1, id: 'x', status: 503, code: null },
+  sendFailed: { type: 'sendFailed', run: 1, id: 'x', failure: 'server_error' },
+  listed: { type: 'listed', run: 1, zip: 'x', members: [{ id: 'm', name: 'm.pdf', bytes: 1 }] },
+  zipFailed: { type: 'zipFailed', run: 1, zip: 'x' },
   retry: { type: 'retry', id: 'x' },
   chose: { type: 'chose', id: 'x', change: { tick: 'v0', on: false } },
 };
 // The status each event leaves the file in ('=' unchanged). With one file the freed slot is taken at once,
 // so `hashed` goes on to converting and `converted` on to sending.
 const FILE_TABLE: Record<string, Record<string, string>> = {
-  waiting: { hashed: 'converting', hashedKnown: 'known', converted: '=', convertFailed: '=', answered: '=', answeredLegacy: '=', sendFailed: '=', retry: '=', chose: '=' },
-  hashed: { hashed: '=', hashedKnown: '=', converted: '=', convertFailed: '=', answered: '=', answeredLegacy: '=', sendFailed: '=', retry: '=', chose: '=' },
-  known: { hashed: '=', hashedKnown: '=', converted: '=', convertFailed: '=', answered: '=', answeredLegacy: '=', sendFailed: '=', retry: '=', chose: '=' },
-  refused: { hashed: '=', hashedKnown: '=', converted: '=', convertFailed: '=', answered: '=', answeredLegacy: '=', sendFailed: '=', retry: '=', chose: '=' },
-  converting: { hashed: '=', hashedKnown: '=', converted: 'sending', convertFailed: 'failed', answered: '=', answeredLegacy: '=', sendFailed: '=', retry: '=', chose: '=' },
-  ready: { hashed: '=', hashedKnown: '=', converted: '=', convertFailed: '=', answered: '=', answeredLegacy: '=', sendFailed: '=', retry: '=', chose: '=' },
-  sending: { hashed: '=', hashedKnown: '=', converted: '=', convertFailed: '=', answered: 'read', answeredLegacy: 'known', sendFailed: 'failed', retry: '=', chose: '=' },
-  read: { hashed: '=', hashedKnown: '=', converted: '=', convertFailed: '=', answered: '=', answeredLegacy: '=', sendFailed: '=', retry: '=', chose: 'read' },
-  failedSend: { hashed: '=', hashedKnown: '=', converted: '=', convertFailed: '=', answered: '=', answeredLegacy: '=', sendFailed: '=', retry: 'sending', chose: '=' },
-  failedConvert: { hashed: '=', hashedKnown: '=', converted: '=', convertFailed: '=', answered: '=', answeredLegacy: '=', sendFailed: '=', retry: 'converting', chose: '=' },
-  failedFinal: { hashed: '=', hashedKnown: '=', converted: '=', convertFailed: '=', answered: '=', answeredLegacy: '=', sendFailed: '=', retry: '=', chose: '=' },
-  stopped: { hashed: '=', hashedKnown: '=', converted: '=', convertFailed: '=', answered: '=', answeredLegacy: '=', sendFailed: '=', retry: '=', chose: '=' },
+  listing: { hashed: '=', hashedKnown: '=', converted: '=', convertFailed: '=', answered: '=', answeredLegacy: '=', sendFailed: '=', retry: '=', chose: '=', listed: 'gone', zipFailed: 'failed' },
+  waiting: { hashed: 'converting', hashedKnown: 'known', converted: '=', convertFailed: '=', answered: '=', answeredLegacy: '=', sendFailed: '=', retry: '=', chose: '=', listed: '=', zipFailed: '=' },
+  hashed: { hashed: '=', hashedKnown: '=', converted: '=', convertFailed: '=', answered: '=', answeredLegacy: '=', sendFailed: '=', retry: '=', chose: '=', listed: '=', zipFailed: '=' },
+  known: { hashed: '=', hashedKnown: '=', converted: '=', convertFailed: '=', answered: '=', answeredLegacy: '=', sendFailed: '=', retry: '=', chose: '=', listed: '=', zipFailed: '=' },
+  refused: { hashed: '=', hashedKnown: '=', converted: '=', convertFailed: '=', answered: '=', answeredLegacy: '=', sendFailed: '=', retry: '=', chose: '=', listed: '=', zipFailed: '=' },
+  converting: { hashed: '=', hashedKnown: '=', converted: 'sending', convertFailed: 'failed', answered: '=', answeredLegacy: '=', sendFailed: '=', retry: '=', chose: '=', listed: '=', zipFailed: '=' },
+  ready: { hashed: '=', hashedKnown: '=', converted: '=', convertFailed: '=', answered: '=', answeredLegacy: '=', sendFailed: '=', retry: '=', chose: '=', listed: '=', zipFailed: '=' },
+  sending: { hashed: '=', hashedKnown: '=', converted: '=', convertFailed: '=', answered: 'read', answeredLegacy: 'known', sendFailed: 'failed', retry: '=', chose: '=', listed: '=', zipFailed: '=' },
+  read: { hashed: '=', hashedKnown: '=', converted: '=', convertFailed: '=', answered: '=', answeredLegacy: '=', sendFailed: '=', retry: '=', chose: 'read', listed: '=', zipFailed: '=' },
+  failedSend: { hashed: '=', hashedKnown: '=', converted: '=', convertFailed: '=', answered: '=', answeredLegacy: '=', sendFailed: '=', retry: 'sending', chose: '=', listed: '=', zipFailed: '=' },
+  failedConvert: { hashed: '=', hashedKnown: '=', converted: '=', convertFailed: '=', answered: '=', answeredLegacy: '=', sendFailed: '=', retry: 'converting', chose: '=', listed: '=', zipFailed: '=' },
+  failedFinal: { hashed: '=', hashedKnown: '=', converted: '=', convertFailed: '=', answered: '=', answeredLegacy: '=', sendFailed: '=', retry: '=', chose: '=', listed: '=', zipFailed: '=' },
+  stopped: { hashed: '=', hashedKnown: '=', converted: '=', convertFailed: '=', answered: '=', answeredLegacy: '=', sendFailed: '=', retry: '=', chose: '=', listed: '=', zipFailed: '=' },
 };
 
 describe('upload-flow: every file status x every file event (US-12 AC26)', () => {
@@ -77,7 +81,7 @@ describe('upload-flow: every file status x every file event (US-12 AC26)', () =>
           expect(state).toEqual(s);
           expect(effects).toEqual([]);
         } else {
-          expect(statusOf(state, 'x')?.s).toBe(want);
+          expect(statusOf(state, 'x')?.s).toBe(want === 'gone' ? undefined : want); // gone: its members took its place
         }
       });
     }
@@ -100,18 +104,18 @@ describe('upload-flow: every file status x every file event (US-12 AC26)', () =>
 const readFile = STATUSES.read;
 const PHASES: Record<string, UploadState> = {
   choosing: initialUpload('web'),
-  consent: { phase: 'consent', platform: 'phone', run: 1, files: [file('a', { s: 'waiting' }, null)], zips: [], started: NOW, firstRead: null },
+  consent: { phase: 'consent', platform: 'phone', run: 1, files: [file('a', { s: 'waiting' }, null)], started: NOW, firstRead: null },
   open: open([readFile]),
   saving: { phase: 'saving', platform: 'web', run: 1, files: [readFile], started: NOW, firstRead: null, attempt: 1 },
   saveFailed: { phase: 'saveFailed', platform: 'web', run: 1, files: [readFile], started: NOW, firstRead: null, attempt: 1, message: 'm' },
   done: { phase: 'done', platform: 'web', run: 1, files: [readFile], started: NOW, firstRead: null, outcome: { values: 1, documents: 0, archived: 0 } },
-  failed: { phase: 'failed', platform: 'web', run: 1, message: 'm' },
+  failed: { phase: 'failed', platform: 'web', run: 1, files: [file('z', { s: 'failed', reason: 'zipUnreadable', attempt: 0 })], started: NOW, firstRead: null },
 };
 const FLOW_EVENTS: Record<string, UploadEvent> = {
   picked: { type: 'picked', files: [{ id: 'p', name: 'p.pdf', bytes: 1, kind: 'file' }], needsConsent: false, now: NOW },
   consented: { type: 'consented' },
   listed: { type: 'listed', run: 1, zip: 'z', members: [] },
-  pickFailed: { type: 'pickFailed', run: 1, message: 'm' },
+  zipFailed: { type: 'zipFailed', run: 1, zip: 'z' },
   stop: { type: 'stop' },
   saveStarted: { type: 'saveStarted' },
   saved: { type: 'saved', run: 1, attempt: 1, outcome: { values: 1, documents: 0, archived: 0 } },
@@ -119,15 +123,16 @@ const FLOW_EVENTS: Record<string, UploadEvent> = {
   close: { type: 'close' },
   discard: { type: 'discard' },
 };
-// The phase each event leaves ('=' unchanged). Open holds one read file and nothing in flight.
+// The phase each event leaves ('=' unchanged). Open holds one read file and nothing in flight, so no
+// ZIP to list or fail (a failing ZIP: upload-flow.zip-limit.test.ts).
 const PHASE_TABLE: Record<string, Record<string, string>> = {
-  choosing: { picked: 'open', consented: '=', listed: '=', pickFailed: '=', stop: '=', saveStarted: '=', saved: '=', saveFailed: '=', close: '=', discard: '=' },
-  consent: { picked: '=', consented: 'open', listed: '=', pickFailed: '=', stop: '=', saveStarted: '=', saved: '=', saveFailed: '=', close: 'choosing', discard: 'choosing' },
-  open: { picked: '=', consented: '=', listed: '=', pickFailed: 'failed', stop: '=', saveStarted: 'saving', saved: '=', saveFailed: '=', close: '=', discard: 'choosing' },
-  saving: { picked: '=', consented: '=', listed: '=', pickFailed: '=', stop: '=', saveStarted: '=', saved: 'done', saveFailed: 'saveFailed', close: '=', discard: '=' },
-  saveFailed: { picked: '=', consented: '=', listed: '=', pickFailed: '=', stop: '=', saveStarted: 'saving', saved: '=', saveFailed: '=', close: '=', discard: 'choosing' },
-  done: { picked: '=', consented: '=', listed: '=', pickFailed: '=', stop: '=', saveStarted: '=', saved: '=', saveFailed: '=', close: 'choosing', discard: 'choosing' },
-  failed: { picked: '=', consented: '=', listed: '=', pickFailed: '=', stop: '=', saveStarted: '=', saved: '=', saveFailed: '=', close: 'choosing', discard: 'choosing' },
+  choosing: { picked: 'open', consented: '=', listed: '=', zipFailed: '=', stop: '=', saveStarted: '=', saved: '=', saveFailed: '=', close: '=', discard: '=' },
+  consent: { picked: '=', consented: 'open', listed: '=', zipFailed: '=', stop: '=', saveStarted: '=', saved: '=', saveFailed: '=', close: 'choosing', discard: 'choosing' },
+  open: { picked: '=', consented: '=', listed: '=', zipFailed: '=', stop: '=', saveStarted: 'saving', saved: '=', saveFailed: '=', close: '=', discard: 'choosing' },
+  saving: { picked: '=', consented: '=', listed: '=', zipFailed: '=', stop: '=', saveStarted: '=', saved: 'done', saveFailed: 'saveFailed', close: '=', discard: '=' },
+  saveFailed: { picked: '=', consented: '=', listed: '=', zipFailed: '=', stop: '=', saveStarted: 'saving', saved: '=', saveFailed: '=', close: '=', discard: 'choosing' },
+  done: { picked: '=', consented: '=', listed: '=', zipFailed: '=', stop: '=', saveStarted: '=', saved: '=', saveFailed: '=', close: 'choosing', discard: 'choosing' },
+  failed: { picked: '=', consented: '=', listed: '=', zipFailed: '=', stop: '=', saveStarted: '=', saved: '=', saveFailed: '=', close: 'choosing', discard: 'choosing' },
 };
 
 describe('upload-flow: every phase x every flow event', () => {
@@ -153,10 +158,11 @@ describe('upload-flow: effects', () => {
     const { state, effects } = transition(initialUpload('web'), pick([
       { id: 'a', name: 'a.pdf' }, { id: 'big', name: 'big.pdf', bytes: 11 * MB }, { id: 'z', name: 'z.zip', kind: 'zip' },
     ]));
-    expect(state).toMatchObject({ phase: 'open', run: 1, zips: [{ id: 'z', name: 'z.zip' }] });
+    expect(state).toMatchObject({ phase: 'open', run: 1 });
+    expect(statusOf(state, 'z')).toEqual({ s: 'listing' });
     expect(statusOf(state, 'big')).toEqual({ s: 'refused', verdict: 'tooLarge' });
     expect(effects).toEqual([
-      { type: 'list', run: 1, id: 'z' }, { type: 'hash', run: 1, id: 'a' }, { type: 'forget', run: 1, ids: ['big'] },
+      { type: 'hash', run: 1, id: 'a' }, { type: 'list', run: 1, id: 'z' }, { type: 'forget', run: 1, ids: ['big'] },
     ]);
     expect(saveEnabled(state)).toBe(false); // a ZIP still to list counts as in flight
   });
@@ -173,15 +179,15 @@ describe('upload-flow: effects', () => {
     const asked = transition(initialUpload('phone'), pick([{ id: 'a', name: 'a.pdf' }, { id: 'z', name: 'z.zip', kind: 'zip' }], true));
     expect(asked.state.phase).toBe('consent');
     expect(asked.effects).toEqual([]);
-    expect(transition(asked.state, { type: 'consented' }).effects).toEqual([{ type: 'list', run: 1, id: 'z' }, { type: 'hash', run: 1, id: 'a' }]);
+    expect(transition(asked.state, { type: 'consented' }).effects).toEqual([{ type: 'hash', run: 1, id: 'a' }, { type: 'list', run: 1, id: 'z' }]);
   });
 
   it('a listed ZIP adds its members by its name, hashes the kept ones, drops hidden and refused ones', () => {
-    const s = open([], { platform: 'phone', zips: [{ id: 'z', name: 'z.zip' }] });
+    const s = open([{ ...file('z', { s: 'listing' }, null), name: 'z.zip' }], { platform: 'phone' });
     const { state, effects } = transition(s, { type: 'listed', run: 1, zip: 'z', members: [
       { id: 'm1', name: 'in/a.pdf', bytes: 1 }, { id: 'm2', name: '__MACOSX/._a.pdf', bytes: 1 }, { id: 'm3', name: 'b.heic', bytes: 1 },
     ] });
-    expect(state).toMatchObject({ zips: [], files: [{ id: 'm1', zip: 'z.zip', status: { s: 'waiting' } }, { id: 'm3', status: { s: 'refused', verdict: 'unsupported' } }] });
+    expect(state).toMatchObject({ files: [{ id: 'm1', zip: 'z.zip', status: { s: 'waiting' } }, { id: 'm3', status: { s: 'refused', verdict: 'unsupported' } }] });
     expect(effects).toEqual([{ type: 'hash', run: 1, id: 'm1' }, { type: 'forget', run: 1, ids: ['m3', 'm2'] }]);
   });
 
@@ -219,8 +225,8 @@ describe('upload-flow: effects', () => {
   it('stop aborts every send in flight, drops what was not read, and keeps the review (AC28)', () => {
     const s = open([
       file('r', { s: 'read', extraction: EXT, choices: CHOICES }), file('s1', { s: 'sending', attempt: 1 }), file('s2', { s: 'sending', attempt: 1 }),
-      file('c', { s: 'converting' }), file('w', { s: 'waiting' }), file('f', { s: 'failed', reason: 'busy', attempt: 1 }),
-    ], { zips: [{ id: 'z', name: 'z.zip' }] });
+      file('c', { s: 'converting' }), file('w', { s: 'waiting' }), file('f', { s: 'failed', reason: 'busy', attempt: 1 }), file('z', { s: 'listing' }),
+    ]);
     const { state, effects } = transition(s, { type: 'stop' });
     expect(effects).toEqual([{ type: 'abort', run: 1, ids: ['s1', 's2'] }, { type: 'forget', run: 1, ids: ['s1', 's2', 'c', 'w', 'z'] }]);
     expect(state.phase).toBe('open');
@@ -231,7 +237,7 @@ describe('upload-flow: effects', () => {
   });
 
   it('Save waits for every file in flight, never for a failed one (US-12 AC26)', () => {
-    for (const stage of ['waiting', 'hashed', 'converting', 'ready', 'sending'] as const) {
+    for (const stage of ['listing', 'waiting', 'hashed', 'converting', 'ready', 'sending'] as const) {
       const status = (stage === 'ready' || stage === 'sending' ? { s: stage, attempt: 1 } : { s: stage }) as FileStatus;
       const s = open([readFile, file('b', status)]);
       expect([stage, saveEnabled(s), inFlight(s)]).toEqual([stage, false, 1]);
@@ -269,14 +275,6 @@ describe('upload-flow: effects', () => {
     expect(transition(nothingRead, { type: 'close' }).effects).toEqual([{ type: 'forget', run: 1, ids: ['w'] }]);
   });
 
-  it('a failed pick aborts and drops everything (an unreadable ZIP)', () => {
-    const s = open([file('s', { s: 'sending', attempt: 1 })], { zips: [{ id: 'z', name: 'z.zip' }] });
-    expect(transition(s, { type: 'pickFailed', run: 1, message: 'm' })).toEqual({
-      state: { phase: 'failed', platform: 'web', run: 1, message: 'm' },
-      effects: [{ type: 'abort', run: 1, ids: ['s'] }, { type: 'forget', run: 1, ids: ['s', 'z'] }],
-    });
-  });
-
   it('the first answer stamps the first-read time once; a legacy match is known, not read', () => {
     const s = open([file('a', { s: 'sending', attempt: 1 }), file('b', { s: 'sending', attempt: 1 })]);
     const one = transition(s, { type: 'answered', run: 1, id: 'a', extraction: EXT, legacy: true, now: 'T1' });
@@ -290,14 +288,5 @@ describe('upload-flow: effects', () => {
     const { state } = transition(open([readFile]), { type: 'chose', id: 'x', change: { document: { title: 't' } } });
     const after = transition(state, { type: 'chose', id: 'x', change: { testDay: '2026-11-01' } }).state;
     expect(statusOf(after, 'x')).toMatchObject({ choices: { ticks: {}, testDay: '2026-11-01', document: { title: 't' } } });
-  });
-
-  it('failReason: busy and a dropped connection are worth a retry; the daily limit never is', () => {
-    expect([[429, 'busy'], [429, 'daily_limit'], [429, null], [0, null], [422, 'x'], [503, null], [400, null]].map(([st, c]) => {
-      const reason = failReason(st as number, c as string | null);
-      return [reason, RETRYABLE[reason]];
-    })).toEqual([
-      ['busy', true], ['dailyLimit', false], ['dailyLimit', false], ['network', true], ['declined', false], ['server', true], ['refused', false],
-    ]);
   });
 });

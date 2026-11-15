@@ -4,17 +4,29 @@
  * Design: docs/drafts/upload-shared-engine.md §1 and §3 (US-12 AC26, AC28). Effects are data the
  * platform runs, then answers with an event carrying the effect's `run`; an answer for any other
  * run changes nothing. Bytes and pages never enter the state: the platform holds them by file id.
- * No clock: events carry `now`. Run numbers are minted here, from the last one.
+ * No clock: events carry `now`. Run numbers are minted here, from the last one. Files keep the
+ * order they were picked in, a ZIP's members at the ZIP's place (US-12 AC23).
  */
 import type { UnifiedExtractionResult } from './lab-extraction';
+import type { UploadFailure } from './upload-failure';
 import { fileVerdict, UPLOAD_LIMITS, zipMemberVerdict, type UploadPlatform } from './upload-rules';
 
 /** What the record already holds for a file. upload-known.ts answers it by hash (`knownAs`, design
  *  PR 4) or, after a read, by name for an older hashless row (`legacyMatch`); this is the part read here. */
 export interface Known { as: 'document' | 'labReport' | 'legacy'; archiveOnly: boolean }
 
-/** timeout: the device ran out of time turning it into pages; worth a retry, unlike unreadable. */
-export type FailReason = 'unreadable' | 'timeout' | 'busy' | 'dailyLimit' | 'declined' | 'network' | 'server' | 'refused';
+/** unreadable: no pages came out of it. zipUnreadable: a ZIP that would not open, named itself (US-12 AC9).
+ *  timeout: the device ran out of time turning it into pages. The rest are the server's answer. */
+export type FailReason = 'unreadable' | 'zipUnreadable' | 'timeout' | 'busy' | 'dailyLimit' | 'declined' | 'tooLong' | 'server' | 'network';
+
+/** Which failures Try again can mend: a busy or unreachable server, a convert that ran out of time. */
+export const RETRYABLE: Record<FailReason, boolean> = {
+  unreadable: false, zipUnreadable: false, timeout: true, busy: true, dailyLimit: false, declined: false, tooLong: false, server: true, network: true,
+};
+/** The server's failure (upload-failure.ts) as a file's reason. */
+const SEND_FAILURE: Record<UploadFailure, FailReason> = {
+  rate_limit: 'dailyLimit', busy: 'busy', server_error: 'server', network: 'network', refused: 'declined', too_long: 'tooLong',
+};
 
 /** A document's corrections before Save (design Q3 (a)). */
 export interface DocumentFix { title?: string; kind?: string; date?: string | null }
@@ -23,6 +35,7 @@ export interface FileChoices { ticks: Record<string, boolean>; testDay: string |
 export type ChoiceChange = { tick: string; on: boolean } | { testDay: string | null } | { document: DocumentFix };
 
 export type FileStatus =
+  | { s: 'listing' }                                       // a picked ZIP: its members replace it, in its place
   | { s: 'waiting' }                                       // listed; being hashed
   | { s: 'hashed' }                                        // hashed and new: waiting for a convert slot
   | { s: 'known'; as: Known['as']; archiveOnly: boolean }  // never converted or sent
@@ -31,8 +44,8 @@ export type FileStatus =
   | { s: 'ready'; attempt: number }                        // pages held, waiting for a send slot
   | { s: 'sending'; attempt: number }
   | { s: 'read'; extraction: UnifiedExtractionResult; choices: FileChoices }
-  | { s: 'failed'; reason: FailReason; attempt: number } // attempt: sends tried (0: the convert failed)
-  | { s: 'stopped' };                                      // Stop, Cancel or a failed pick reached it first
+  | { s: 'failed'; reason: FailReason; attempt: number }   // attempt: sends tried
+  | { s: 'stopped' };                                      // Stop or Cancel reached it first
 export type FileStage = FileStatus['s'];
 
 /** `zip`: the ZIP's name for a member. `pages`: set once converted; the pages themselves stay with the platform. */
@@ -40,20 +53,18 @@ export interface UploadFile {
   id: string; name: string; zip?: string; bytes: number; hash: string | null;
   pages: { count: number; truncated: boolean } | null; status: FileStatus;
 }
-/** A picked ZIP the platform is still listing. */
-export interface PendingZip { id: string; name: string }
 export interface SaveOutcome { values: number; documents: number; archived: number }
 
 /** `started`, `firstRead`: ISO times, for the first-read count (design §7, R9). */
 interface Pick { platform: UploadPlatform; run: number; files: UploadFile[]; started: string; firstRead: string | null }
 export type UploadState =
   | { phase: 'choosing'; platform: UploadPlatform; run: number }    // run: the last one, so the next is run + 1
-  | (Pick & { phase: 'consent'; zips: PendingZip[] })               // phone only (AC13e): nothing runs yet
-  | (Pick & { phase: 'open'; zips: PendingZip[] })                  // reading and review at once (R5)
+  | (Pick & { phase: 'consent' })                                   // phone only (AC13e): nothing runs yet
+  | (Pick & { phase: 'open' })                                      // reading and review at once (R5)
   | (Pick & { phase: 'saving'; attempt: number })
   | (Pick & { phase: 'saveFailed'; attempt: number; message: string })
   | (Pick & { phase: 'done'; outcome: SaveOutcome })
-  | { phase: 'failed'; platform: UploadPlatform; run: number; message: string }; // the pick as a whole (ZIP unreadable)
+  | (Pick & { phase: 'failed' });                                   // the pick held only ZIPs that would not open
 type Open = Extract<UploadState, { phase: 'open' }>;
 
 /** One picked item; `kind` 'zip' is listed (members arrive in `listed`), never read itself. */
@@ -65,12 +76,12 @@ export type UploadEvent =
   | { type: 'picked'; files: PickedFile[]; needsConsent: boolean; now: string }
   | { type: 'consented' }
   | { type: 'listed'; run: number; zip: string; members: ZipMember[] }
-  | { type: 'pickFailed'; run: number; message: string }
+  | { type: 'zipFailed'; run: number; zip: string }
   | { type: 'hashed'; run: number; id: string; hash: string; known: Known | null }
   | { type: 'converted'; run: number; id: string; pages: number; truncated: boolean }
   | { type: 'convertFailed'; run: number; id: string; reason: 'unreadable' | 'timeout' }
   | { type: 'answered'; run: number; id: string; extraction: UnifiedExtractionResult; legacy: boolean; now: string } // legacy: legacyMatch said known
-  | { type: 'sendFailed'; run: number; id: string; status: number; code: string | null } // status 0: no answer
+  | { type: 'sendFailed'; run: number; id: string; failure: UploadFailure }
   | { type: 'retry'; id: string | 'all' }
   | { type: 'stop' }
   | { type: 'chose'; id: string; change: ChoiceChange }
@@ -85,7 +96,7 @@ export type UploadEffect =
   | { type: 'list'; run: number; id: string }
   | { type: 'hash'; run: number; id: string }
   | { type: 'convert'; run: number; id: string }
-  | { type: 'send'; run: number; id: string; attempt: number }
+  | { type: 'send'; run: number; id: string; attempt: number } // request flags join in design PR 8 (requestFlags)
   | { type: 'abort'; run: number; ids: string[] }
   | { type: 'forget'; run: number; ids: string[] }
   | { type: 'save'; run: number; attempt: number };
@@ -98,12 +109,13 @@ export function initialUpload(platform: UploadPlatform): UploadState {
 
 // --- derived ----------------------------------------------------------------
 
-const IN_FLIGHT: readonly FileStage[] = ['waiting', 'hashed', 'converting', 'ready', 'sending'];
+const IN_FLIGHT: readonly FileStage[] = ['listing', 'waiting', 'hashed', 'converting', 'ready', 'sending'];
+/** Not yet sent, so the daily limit fails them: everything in flight but a send. */
+const UNSENT: readonly FileStage[] = ['listing', 'waiting', 'hashed', 'converting', 'ready'];
 
 /** Files and ZIPs still being read: Save waits for these, and only these (a failed file never blocks it). */
 export function inFlight(s: UploadState): number {
-  if (s.phase !== 'open') return 0;
-  return idsIn(s.files, IN_FLIGHT).length + s.zips.length;
+  return s.phase === 'open' ? idsIn(s.files, IN_FLIGHT).length : 0;
 }
 /** Nothing is still being read. The view also asks the save plan that something would be written (design §1). */
 export function saveEnabled(s: UploadState): boolean {
@@ -118,42 +130,29 @@ const idsIn = (files: UploadFile[], stages: readonly FileStage[]) => files.filte
 const forget = (run: number, ids: string[]): UploadEffect[] => (ids.length ? [{ type: 'forget', run, ids }] : []);
 const abort = (run: number, ids: string[]): UploadEffect[] => (ids.length ? [{ type: 'abort', run, ids }] : []);
 const pickOf = ({ platform, run, files, started, firstRead }: Pick): Pick => ({ platform, run, files, started, firstRead });
+const failed = (f: UploadFile, reason: FailReason, attempt = 0): UploadFile => ({ ...f, status: { s: 'failed', reason, attempt } });
+const dailyLimited = (f: UploadFile) => f.status.s === 'failed' && f.status.reason === 'dailyLimit';
 
-/** Which failures Try again can mend: a busy or unreachable server, a convert that ran out of time. */
-export const RETRYABLE: Record<FailReason, boolean> = {
-  unreadable: false, timeout: true, busy: true, dailyLimit: false, declined: false, network: true, server: true, refused: false,
-};
-
-/** A 429 is busy only when its code says so; with no code it is the daily limit (upload-api.ts tooMany, US-12 AC9). */
-export function failReason(status: number, code: string | null): FailReason {
-  if (status === 429) return code === 'busy' ? 'busy' : 'dailyLimit';
-  if (status === 0) return 'network';
-  if (status === 422) return 'declined';
-  return status >= 500 ? 'server' : 'refused';
-}
-
-/** Files entering a run, by upload-rules' verdicts: a kept ZIP waits to be listed; a hidden member is dropped. */
+/** Entries for a pick, or a ZIP's members, in order, by upload-rules' verdicts; a hidden member is dropped. */
 function admit(platform: UploadPlatform, picked: PickedFile[], zip?: string) {
   const files: UploadFile[] = [];
-  const zips: PendingZip[] = [];
   const hidden: string[] = [];
   for (const p of picked) {
     const member = zip !== undefined ? zipMemberVerdict(p.name, platform) : 'keep';
     if (member === 'hidden') { hidden.push(p.id); continue; }
     const verdict = member === 'keep' ? fileVerdict({ name: p.name, bytes: p.bytes, kind: p.kind, platform }) : member;
     const base = { id: p.id, name: p.name, bytes: p.bytes, hash: null, pages: null, ...(zip !== undefined ? { zip } : {}) };
-    if (verdict === 'keep' && p.kind === 'zip') zips.push({ id: p.id, name: p.name });
-    else if (verdict === 'keep') files.push({ ...base, status: { s: 'waiting' } });
-    else files.push({ ...base, status: { s: 'refused', verdict: verdict === 'tooLarge' ? 'tooLarge' : 'unsupported' } });
+    const status: FileStatus = verdict !== 'keep' ? { s: 'refused', verdict: verdict === 'tooLarge' ? 'tooLarge' : 'unsupported' }
+      : p.kind === 'zip' ? { s: 'listing' } : { s: 'waiting' };
+    files.push({ ...base, status });
   }
-  return { files, zips, hidden };
+  return { files, hidden };
 }
 
-/** New files start: ZIPs listed, the rest hashed before anything else (R3); refused and hidden ones dropped. */
-function opening(run: number, files: UploadFile[], zips: PendingZip[], hidden: string[] = []): UploadEffect[] {
+/** New entries start: ZIPs listed, files hashed before anything else (R3); refused and hidden ones dropped. */
+function opening(run: number, files: UploadFile[], hidden: string[] = []): UploadEffect[] {
   return [
-    ...zips.map((z): UploadEffect => ({ type: 'list', run, id: z.id })),
-    ...idsIn(files, ['waiting']).map((id): UploadEffect => ({ type: 'hash', run, id })),
+    ...files.flatMap((f): UploadEffect[] => (f.status.s === 'listing' ? [{ type: 'list', run, id: f.id }] : f.status.s === 'waiting' ? [{ type: 'hash', run, id: f.id }] : [])),
     ...forget(run, [...idsIn(files, ['refused']), ...hidden]),
   ];
 }
@@ -180,9 +179,9 @@ function pump(s: Open, effects: UploadEffect[]): UploadStep {
   return { state: { ...s, files }, effects: out };
 }
 
-/** A landing for one file: only in the open phase, for its run, while the file is at `from`. */
-function fileStep(s: UploadState, e: { run: number; id: string }, from: FileStage, update: (f: UploadFile, s: Open) => [UploadFile, UploadEffect[]]): UploadStep {
-  if (s.phase !== 'open' || e.run !== s.run) return same(s);
+/** A landing for one file: only in the open phase, while the file is at `from` (the run is checked first). */
+function fileStep(s: UploadState, e: { id: string }, from: FileStage, update: (f: UploadFile, s: Open) => [UploadFile, UploadEffect[]]): UploadStep {
+  if (s.phase !== 'open') return same(s);
   const file = s.files.find((f) => f.id === e.id);
   if (!file || file.status.s !== from) return same(s);
   const [next, effects] = update(file, s);
@@ -198,22 +197,50 @@ function answered(s: UploadState, e: Extract<UploadEvent, { type: 'answered' }>)
   return { ...step, state: { ...st, firstRead: e.now } };
 }
 
+/**
+ * A send failed. The daily limit ends the run's reading (US-12 AC9): sends in flight finish, and
+ * every file not yet sent, or failed in a way a retry would send again, fails on the limit. A later
+ * failure in such a run is the limit too, so nothing is ever sent again.
+ */
+function sendFailed(s: UploadState, e: Extract<UploadEvent, { type: 'sendFailed' }>): UploadStep {
+  if (s.phase !== 'open') return same(s);
+  const file = s.files.find((f) => f.id === e.id);
+  if (!file || file.status.s !== 'sending') return same(s);
+  const reason = SEND_FAILURE[e.failure];
+  const limited = reason === 'dailyLimit' || s.files.some(dailyLimited);
+  const own = limited && RETRYABLE[reason] ? 'dailyLimit' : reason;
+  const files = s.files.map((f): UploadFile => {
+    if (f.id === e.id) return failed(f, own, file.status.s === 'sending' ? file.status.attempt : 0);
+    if (!limited) return f;
+    if (UNSENT.includes(f.status.s)) return failed(f, 'dailyLimit');
+    return f.status.s === 'failed' && RETRYABLE[f.status.reason] ? failed(f, 'dailyLimit', f.status.attempt) : f;
+  });
+  const dropped = files.filter((f, i) => dailyLimited(f) && !dailyLimited(s.files[i])).map((f) => f.id);
+  return pump({ ...s, files }, forget(s.run, dropped));
+}
+
+/** A ZIP that would not open is named as a failed entry in its place; the pick fails only when it held nothing else. */
+function zipFailed(s: UploadState, e: Extract<UploadEvent, { type: 'zipFailed' }>): UploadStep {
+  const step = fileStep(s, { id: e.zip }, 'listing', (f) => [failed(f, 'zipUnreadable'), forget(e.run, [f.id])]);
+  const st = step.state;
+  if (st === s || st.phase !== 'open') return step;
+  const onlyBadZips = st.files.every((f) => f.status.s === 'failed' && f.status.reason === 'zipUnreadable');
+  return onlyBadZips ? { ...step, state: { ...pickOf(st), phase: 'failed' } } : step;
+}
+
 /** Stop or Cancel (AC28): every send in flight aborted, nothing more started, files already read kept. */
 function stop(s: Open): UploadStep {
   const halted = idsIn(s.files, IN_FLIGHT);
-  if (!halted.length && !s.zips.length) return same(s);
-  const sending = idsIn(s.files, ['sending']);
+  if (!halted.length) return same(s);
   const files = s.files.map((f): UploadFile => (IN_FLIGHT.includes(f.status.s) ? { ...f, status: { s: 'stopped' } } : f));
-  return { state: { ...s, files, zips: [] }, effects: [...abort(s.run, sending), ...forget(s.run, [...halted, ...s.zips.map((z) => z.id)])] };
+  return { state: { ...s, files }, effects: [...abort(s.run, idsIn(s.files, ['sending'])), ...forget(s.run, halted)] };
 }
 
 /** Back to choosing: aborts what is sending and drops every held file. */
 function leave(s: Exclude<UploadState, { phase: 'choosing' }>): UploadStep {
   const choosing: UploadState = { phase: 'choosing', platform: s.platform, run: s.run };
   if (s.phase === 'failed' || s.phase === 'done') return same(choosing); // both already dropped everything
-  const sending = idsIn(s.files, ['sending']);
-  const zips = 'zips' in s ? s.zips.map((z) => z.id) : [];
-  return { state: choosing, effects: [...abort(s.run, sending), ...forget(s.run, [...s.files.map((f) => f.id), ...zips])] };
+  return { state: choosing, effects: [...abort(s.run, idsIn(s.files, ['sending'])), ...forget(s.run, s.files.map((f) => f.id))] };
 }
 
 function save(s: Pick, attempt: number): UploadStep {
@@ -226,32 +253,33 @@ function choose(c: FileChoices, change: ChoiceChange): FileChoices {
   return { ...c, document: { ...c.document, ...change.document } };
 }
 
+const retries = (f: UploadFile, id: string) => f.status.s === 'failed' && RETRYABLE[f.status.reason] && (id === 'all' || f.id === id);
+
 export function transition(s: UploadState, e: UploadEvent): UploadStep {
-  if ('run' in e && e.run !== s.run) return same(s); // an answer for an older run (US-12 AC5)
+  if ('run' in e && e.run !== s.run) return same(s); // an answer for another run (US-12 AC5)
   switch (e.type) {
     case 'picked': {
       if (s.phase !== 'choosing' || !e.files.length) return same(s);
       const run = s.run + 1;
-      const { files, zips, hidden } = admit(s.platform, e.files);
-      const pick = { platform: s.platform, run, files, zips, started: e.now, firstRead: null };
+      const { files, hidden } = admit(s.platform, e.files);
+      const pick: Pick = { platform: s.platform, run, files, started: e.now, firstRead: null };
       // Consent first: nothing runs, not even a hash, until the person agrees (AC13e).
       if (e.needsConsent) return same({ ...pick, phase: 'consent' });
-      return { state: { ...pick, phase: 'open' }, effects: opening(run, files, zips, hidden) };
+      return { state: { ...pick, phase: 'open' }, effects: opening(run, files, hidden) };
     }
     case 'consented':
-      return s.phase === 'consent' ? { state: { ...s, phase: 'open' }, effects: opening(s.run, s.files, s.zips) } : same(s);
+      return s.phase === 'consent' ? { state: { ...s, phase: 'open' }, effects: opening(s.run, s.files) } : same(s);
     case 'listed': {
       if (s.phase !== 'open') return same(s);
-      const zip = s.zips.find((z) => z.id === e.zip);
-      if (!zip) return same(s);
+      const zip = s.files.find((f) => f.id === e.zip);
+      if (zip?.status.s !== 'listing') return same(s);
       const added = admit(s.platform, e.members.map((m) => ({ ...m, kind: 'file' })), zip.name);
       return {
-        state: { ...s, files: [...s.files, ...added.files], zips: s.zips.filter((z) => z !== zip) },
-        effects: opening(s.run, added.files, [], added.hidden),
+        state: { ...s, files: s.files.flatMap((f) => (f === zip ? added.files : [f])) },
+        effects: opening(s.run, added.files, added.hidden), // the ZIP's bytes stay: its members are read from them
       };
     }
-    case 'pickFailed':
-      return s.phase === 'open' ? { ...leave(s), state: { phase: 'failed', platform: s.platform, run: s.run, message: e.message } } : same(s);
+    case 'zipFailed': return zipFailed(s, e);
     case 'hashed':
       return fileStep(s, e, 'waiting', (f) => {
         if (!e.known) return [{ ...f, hash: e.hash, status: { s: 'hashed' } }, []];
@@ -262,15 +290,13 @@ export function transition(s: UploadState, e: UploadEvent): UploadStep {
     case 'converted':
       return fileStep(s, e, 'converting', (f) => [{ ...f, pages: { count: e.pages, truncated: e.truncated }, status: { s: 'ready', attempt: 1 } }, []]);
     case 'convertFailed':
-      return fileStep(s, e, 'converting', (f) => [{ ...f, status: { s: 'failed', reason: e.reason, attempt: 0 } }, []]);
+      return fileStep(s, e, 'converting', (f) => [failed(f, e.reason), []]);
     case 'answered': return answered(s, e);
-    case 'sendFailed':
-      return fileStep(s, e, 'sending', (f) => [{ ...f, status: { s: 'failed', reason: failReason(e.status, e.code), attempt: f.status.s === 'sending' ? f.status.attempt : 0 } }, []]);
+    case 'sendFailed': return sendFailed(s, e);
     case 'retry': {
-      if (s.phase !== 'open') return same(s);
-      if (!s.files.some((f) => f.status.s === 'failed' && RETRYABLE[f.status.reason] && (e.id === 'all' || f.id === e.id))) return same(s);
+      if (s.phase !== 'open' || !s.files.some((f) => retries(f, e.id))) return same(s);
       // Pages still held after a failed send go straight back to a slot; a failed convert starts from the hashed bytes.
-      const files = s.files.map((f): UploadFile => (f.status.s !== 'failed' || !RETRYABLE[f.status.reason] || (e.id !== 'all' && f.id !== e.id) ? f
+      const files = s.files.map((f): UploadFile => (!retries(f, e.id) || f.status.s !== 'failed' ? f
         : { ...f, status: f.pages === null ? { s: 'hashed' } : { s: 'ready', attempt: f.status.attempt + 1 } }));
       return pump({ ...s, files }, []);
     }
@@ -283,10 +309,9 @@ export function transition(s: UploadState, e: UploadEvent): UploadStep {
     case 'saveStarted':
       if (s.phase === 'saveFailed') return save(s, s.attempt + 1);
       return s.phase === 'open' && saveEnabled(s) ? save(s, 1) : same(s);
-    case 'saved': {
+    case 'saved':
       if (s.phase !== 'saving' || s.attempt !== e.attempt) return same(s);
       return { state: { ...pickOf(s), phase: 'done', outcome: e.outcome }, effects: forget(s.run, s.files.map((f) => f.id)) };
-    }
     case 'saveFailed':
       return s.phase === 'saving' && s.attempt === e.attempt ? same({ ...s, phase: 'saveFailed', message: e.message }) : same(s);
     case 'close': {

@@ -49,7 +49,7 @@
       "args": [
         "request"
       ],
-      "returns": "Shared upload PR 3 (US-52 AC7): the upload's verdicts for one pick, by health-core upload-rules (fileVerdict, zipMemberVerdict, UPLOAD_LIMITS.phone), as JSON {limits: {fileBytes, zipBytes, filesPerPick, zipMembers, pdfPages, textPageChars, folderBytes, photoPx}, files: [verdict], zipMembers: [verdict]} for request {files: [{name, bytes}], zipMembers: [path]}, in order; each verdict \"keep\", \"tooLarge\", \"unsupported\" or \"hidden\". An engine before it has no such door: the app reads that as unavailable (optionalCall answers nil) and keeps LabFileReader's Swift rules, which answer the same today (lead U14: delete them once the engine floor guarantees the door)."
+      "returns": "Shared upload PR 3 (US-52 AC7): the upload's verdicts for one pick, by health-core upload-rules (fileVerdict, zipMemberVerdict, UPLOAD_LIMITS.phone), as JSON {limits: {fileBytes, zipBytes, filesPerPick, zipMembers, pdfPages, textPageChars, folderBytes, photoPx, sendsInFlight, convertsInFlight}, files: [verdict], zipMembers: [verdict]} for request {files: [{name, bytes}], zipMembers: [path]}, in order; each verdict \"keep\", \"tooLarge\", \"unsupported\" or \"hidden\". An engine before it has no such door: the app reads that as unavailable (optionalCall answers nil) and keeps LabFileReader's Swift rules, which answer the same today (lead U14: delete them once the engine floor guarantees the door)."
     },
     "labReviewGroupsJson": {
       "args": [
