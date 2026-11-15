@@ -297,7 +297,7 @@ export async function addLabValue(input: AddLabValueRequest, erase?: string): Pr
   return result;
 }
 export async function bulkSaveDocuments(
-  documents: Array<{ documentType: string; title: string; documentDate: string | null; contentMd: string; metadata: Record<string, unknown>; sourceFileName: string | null; file?: Blob }>,
+  documents: Array<{ documentType: string; title: string; documentDate: string | null; contentMd: string; metadata: Record<string, unknown>; sourceFileName: string | null; file?: Blob; contentHash?: string }>,
 ): Promise<{ saved: ApiDocument[]; errorCount: number; unstored?: number }> {
   return store ? store.bulkSaveDocuments(documents) : { saved: [], errorCount: documents.length };
 }
