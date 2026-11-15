@@ -321,10 +321,15 @@ A signature means "the key holder approved this bundle", nothing more.
   frame, coalesced, off the main thread. Save is `uploadSaveJson` (shared upload, 2026-11-15): one
   Promise door, health-core `uploadSave`, writes the values and the document and lab archive rows in one
   step, the archive row listing the rows its values wrote. Swift never touches the cloud: the engine
-  writes each original the plan stores, asking Swift for its bytes by file id through a callback, then
-  commits through the session as `documentSave` does. Build 14's runner is the first caller; builds 12
-  and 13 never call them and keep `cloudLabImport`, `labSaveSummaryJson` and `documentSave`. Bridge id
-  unchanged.
+  writes each original the plan stores, once, asking Swift for its bytes by file id through a callback
+  as it writes it (at most three in memory; anything over the per-file cap is no original), then writes
+  every row on the session's record as it stands at that moment, as the web's `session.edit(commit)`
+  does: an edit that landed during the upload is kept, a slot it took is skipped, and nothing new commits
+  nothing. Originals that did not land are counted (`unstored`); their rows keep the hash. Known, as with
+  `documentSave`: an original written before a Save that then refuses or never commits stays in the
+  cloud as an orphan blob; the retry plans the same ref and overwrites it. Build 14's runner is the first
+  caller; builds 12 and 13 never call them and keep `cloudLabImport`, `labSaveSummaryJson` and
+  `documentSave`. Bridge id unchanged.
   **Schema 3 (Brad 2026-11-02, US-66 AC15):** a record holding a core blood row is
   `schemaVersion` 3, so the engine's `schemaVersion` fact becomes 3. Build 3 bundles a
   schema-2 engine: it refuses a moved record with its "update the app" path (US-65 AC5) and

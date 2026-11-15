@@ -44,6 +44,13 @@ function cloud(): UploadSaveIO<string> & { stored: Map<string, string> } {
 }
 const offCloud = (): UploadSaveIO<string> => { let n = 0; return { holds: () => false, original: () => null, mimeType: () => '', write: async () => { throw new Error('no cloud'); }, now: () => NOW, newId: () => `id-${n++}` }; };
 
+/** One Save as a caller runs it: the originals, then the commit on the same record. */
+async function saveOn(s: UploadState, record: RoadmapFile, cloudOn: boolean, io: UploadSaveIO<string>) {
+  const out = await uploadSave(s, record, NOW, cloudOn, io);
+  if (!out.ok) throw new Error(out.reason);
+  return { ...out.commit(record), unstored: out.unstored };
+}
+
 const MIXED = saving([
   read('lab', labX()),
   read('letter', letterX),
@@ -52,14 +59,16 @@ const MIXED = saving([
 ]);
 
 describe('uploadSave: one step for values and rows (US-52 AC8c)', () => {
-  it('a mixed pick saves once, and its counts are the plan\'s the view showed', async () => {
+  it('a mixed pick saves once: its values are the plan\'s the view showed, its documents counted as the web counts them', async () => {
     const record = withDocs([heldDoc({})]);
     const plan = uploadSavePlan(MIXED, record, NOW, uploadReview(MIXED, record, NOW), true);
     const io = cloud();
-    const out = await uploadSave(MIXED, record, NOW, true, io);
-    if (!out.ok) throw new Error(out.reason);
-    expect(out.outcome).toEqual({ values: plan.counts.values, documents: plan.counts.documents, archived: plan.counts.archived });
-    expect(out.outcome).toEqual({ values: 2, documents: 1, archived: 1 });
+    const out = await saveOn(MIXED, record, true, io);
+    expect(out.unstored).toBe(0);
+    // The web's done count (useUploadFlow.ts): every distinct row saved, the letter, the lab report's
+    // archive row and the original filed behind the held row; `archived` is the last alone.
+    expect(out.outcome).toEqual({ values: plan.counts.values, documents: plan.counts.documents + plan.labArchives.length + plan.counts.archived, archived: plan.counts.archived });
+    expect(out.outcome).toEqual({ values: 2, documents: 3, archived: 1 });
     const live = out.file.documents.filter((d) => !d.deleted);
     const archive = live.find((d) => d.metadata?.[LAB_ARCHIVE_FLAG] === true)!;
     // The archive row lists exactly the lab rows its values wrote, and holds its original.
@@ -74,11 +83,10 @@ describe('uploadSave: one step for values and rows (US-52 AC8c)', () => {
 
   it('a repeat call with the same state and the saved record adds nothing', async () => {
     for (const [cloudOn, io] of [[true, cloud()], [false, offCloud()]] as const) {
-      const first = await uploadSave(MIXED, withDocs([heldDoc({})]), NOW, cloudOn, io);
-      if (!first.ok) throw new Error(first.reason);
-      const again = await uploadSave(MIXED, first.file, NOW, cloudOn, io);
-      if (!again.ok) throw new Error(again.reason);
+      const first = await saveOn(MIXED, withDocs([heldDoc({})]), cloudOn, io);
+      const again = await saveOn(MIXED, first.file, cloudOn, io);
       expect(again.outcome, String(cloudOn)).toEqual({ values: 0, documents: 0, archived: 0 });
+      expect(again.file, 'nothing new: the same record back').toBe(first.file);
       expect(again.file.labValues.length + again.file.measurements.length).toBe(first.file.labValues.length + first.file.measurements.length);
       expect(again.file.documents.filter((d) => !d.deleted)).toEqual(first.file.documents.filter((d) => !d.deleted));
     }
@@ -89,8 +97,7 @@ describe('uploadSave: one step for values and rows (US-52 AC8c)', () => {
     const old = heldDoc({ id: 'old', title: 'Lab results', type: 'pathology_report', contentHash: 'h-lab', fileRef: 'Lab results/lab.pdf', mimeType: 'application/pdf',
       metadata: { [LAB_ARCHIVE_FLAG]: true, [LAB_ARCHIVE_ROWS]: ['gone'] }, sourceFileName: 'lab.pdf' });
     const s = saving([read('lab', labX())]);
-    const out = await uploadSave(s, withDocs([old]), NOW, false, offCloud());
-    if (!out.ok) throw new Error(out.reason);
+    const out = await saveOn(s, withDocs([old]), false, offCloud());
     const archive = out.file.documents.find((d) => !d.deleted && d.contentHash === 'h-lab')!;
     expect(archive).toMatchObject({ fileRef: 'Lab results/lab.pdf', mimeType: 'application/pdf' });
     expect(listedRows(archive)).toEqual(expect.arrayContaining(['gone']));
@@ -115,6 +122,52 @@ describe('uploadSave: one step for values and rows (US-52 AC8c)', () => {
   it('refuses a state that is not saving', async () => {
     const out = await uploadSave({ ...MIXED, phase: 'open' } as UploadState, EMPTY, NOW, true, cloud());
     expect(out).toMatchObject({ ok: false, reason: 'not-saving' });
+  });
+});
+
+describe('uploadSave commits on the record as it stands at commit time (ruling on PR 1848)', () => {
+  it('an unrelated edit that landed during the upload is kept; values written once; each original put once', async () => {
+    const io = cloud();
+    let puts = 0;
+    const counting = { ...io, write: async (ref: string, b: string, id: string) => { puts += 1; await io.write(ref, b, id); } };
+    const out = await uploadSave(MIXED, withDocs([heldDoc({})]), NOW, true, counting);
+    if (!out.ok) throw new Error(out.reason);
+    const meanwhile = bulkAppendValues(withDocs([heldDoc({})]), [{ kind: 'measurement', metricType: 'weight', value: 80, recordedAt: DAY, source: 'manual' }], NOW).file;
+    const { file, outcome } = out.commit(meanwhile);
+    expect(outcome.values).toBe(2);
+    expect(file.measurements.filter((m) => m.metricType === 'weight')).toHaveLength(1);
+    expect(puts).toBe(3);
+    const archive = file.documents.find((d) => !d.deleted && d.metadata?.[LAB_ARCHIVE_FLAG] === true)!;
+    // The list names the rows this commit wrote, never the planned ones.
+    expect(listedRows(archive)!.every((id) => file.labValues.some((r) => r.id === id))).toBe(true);
+    expect(listedRows(archive)).toHaveLength(2);
+  });
+
+  it('a competing value in the same (metric, day) slot during the upload: that value is skipped and the counts say so', async () => {
+    const s = saving([read('lab', labX({ additionalValues: [] }))]);
+    const out = await uploadSave(s, EMPTY, NOW, false, offCloud());
+    if (!out.ok) throw new Error(out.reason);
+    const plan = uploadSavePlan(s, EMPTY, NOW, uploadReview(s, EMPTY, NOW), false);
+    const taken = bulkAppendValues(EMPTY, plan.labRows[0].rows.map((r) => ({ ...r, value: 9 }) as typeof r), NOW).file;
+    const { file, outcome } = out.commit(taken);
+    expect(outcome.values).toBe(0);
+    expect(file.labValues.filter((r) => r.status === 'active')).toHaveLength(1); // one active row per slot
+    expect(listedRows(file.documents.find((d) => d.metadata?.[LAB_ARCHIVE_FLAG] === true)!) ?? []).toEqual([]);
+  });
+
+  it('counts every planned original that did not land: a refused put, an unreadable one, a reader that throws', async () => {
+    for (const fault of ['refused', 'unreadable', 'throws'] as const) {
+      const io = cloud();
+      const broken: UploadSaveIO<string> = {
+        ...io,
+        original: (id) => (id !== 'letter' ? io.original(id) : fault === 'unreadable' ? null : fault === 'throws' ? (() => { throw new Error('gone'); })() : io.original(id)),
+        write: async (ref, b, id) => { if (id === 'letter' && fault === 'refused') throw new Error('refused'); await io.write(ref, b, id); },
+      };
+      const out = await saveOn(MIXED, withDocs([heldDoc({})]), true, broken);
+      expect(out.unstored, fault).toBe(1);
+      const letter = out.file.documents.find((d) => d.contentHash === 'h-letter')!;
+      expect(letter, fault).toMatchObject({ fileRef: '', contentHash: 'h-letter' }); // filed metadata-only, its hash kept
+    }
   });
 });
 
@@ -150,7 +203,7 @@ function shape(file: RoadmapFile): unknown {
   return JSON.parse(text.replace(/"(?:id|correctsId)":"([^"]+)"/g, (_, x) => `"id":"${id(x)}"`).replace(/"(?:[0-9a-f-]{36})"/g, (x) => `"${id(x)}"`));
 }
 
-describe('uploadSave agrees with the website\'s save path (US-52 AC8c)', () => {
+describe('uploadSave equals its documented composition (US-52 AC8c)', () => {
   it('on 120 seeded picks, on and off a cloud', async () => {
     let r = 7;
     const rand = () => ((r = (r * 1103515245 + 12345) % 2147483648) / 2147483648);
@@ -169,8 +222,7 @@ describe('uploadSave agrees with the website\'s save path (US-52 AC8c)', () => {
       const s = saving(files);
       const record = withDocs(rand() < 0.5 ? [heldDoc({})] : []);
       for (const cloudOn of [true, false]) {
-        const mine = await uploadSave(s, record, NOW, cloudOn, cloudOn ? cloud() : offCloud());
-        if (!mine.ok) throw new Error(`seed ${seed}: ${mine.reason}`);
+        const mine = await saveOn(s, record, cloudOn, cloudOn ? cloud() : offCloud());
         const web = await webSave(s, record, cloudOn, cloudOn ? cloud() : offCloud());
         expect(shape(mine.file), `seed ${seed} cloud ${cloudOn}`).toEqual(shape(web));
       }
