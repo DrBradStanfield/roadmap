@@ -14,7 +14,7 @@ import type { RoadmapFile } from './roadmap-file';
 import { inFlight, RETRYABLE, saveEnabled, type FileStatus, type UploadFile, type UploadState } from './upload-flow';
 import { planIsEmpty, uploadSavePlan, type UploadSavePlan } from './upload-plan';
 import type { UploadReview } from './upload-review';
-import { FAIL_TEXT, FILE_NOTICE_TEXT, FIX_ERRORS_TEXT, UPLOAD_TEXT, UPLOAD_TEXT_PROPOSED } from './upload-text';
+import { FAIL_TEXT, FILE_NOTICE_TEXT, FIX_ERRORS_TEXT, SCREENING_TEXT, UPLOAD_TEXT, UPLOAD_TEXT_PROPOSED } from './upload-text';
 
 /**
  * `ticked`: the tick shown now, the platform's default resolved. `replaces`: a conflict's held row,
@@ -32,7 +32,8 @@ export type UploadSection =
    *  `before`, when known. Its words stay in the web's ReviewTable until they move (no string yet). */
   | { kind: 'undatedPrevious'; fileId: string; name: string; month: string | null; before: string | null }
   | { kind: 'unsure'; title: string; footer: string; rows: ValueRow[] }
-  | { kind: 'failed'; title: string; rows: Array<{ fileId: string; name: string; line: string }>; retry: string | null }
+  /** `retry`: Try again for this file alone, when its failure is one a retry can mend; the section's `retry` is every such file. */
+  | { kind: 'failed'; title: string; rows: Array<{ fileId: string; name: string; line: string; retry: string | null }>; retry: string | null }
   | { kind: 'notSaved'; title: string; lines: string[]; footer: string };
 
 export interface UploadView {
@@ -42,7 +43,8 @@ export interface UploadView {
   sections: UploadSection[];
   /** Hidden behind Show all. */
   sure: { line: string; showAll: string; rows: ValueRow[] } | null;
-  documents: { line: string; rows: Array<{ fileId: string; title: string; kind: string; date: string; dateKnown: boolean }> } | null;
+  /** `screening`: a letter's screening update the person can tick (web), null when none is offered. */
+  documents: { line: string; rows: Array<{ fileId: string; title: string; kind: string; date: string; dateKnown: boolean; screening: ScreeningRow | null }> } | null;
   /** The collapsed "Files" list. */
   files: { row: string; rows: Array<{ fileId: string; name: string; status: string }> };
   /** Read files with nothing in them, and files read only in part, in the web's notice words (US-12 AC9). */
@@ -53,6 +55,9 @@ export interface UploadView {
   /** The done screen's lines. */
   done: { line: string; archived: string | null; unstored: string | null } | null;
 }
+
+/** A screening update's tick: `checked` only with a date; `words` around the screening's name, which is drawn bold. */
+export interface ScreeningRow { checked: boolean; enabled: boolean; words: readonly [string, string, string] }
 
 const READING: readonly FileStatus['s'][] = ['converting', 'sending'];
 const AT_REST: readonly FileStatus['s'][] = ['known', 'refused', 'read', 'failed', 'stopped'];
@@ -116,6 +121,12 @@ const replacingOf = (review: UploadReview, v: ClassifiedValue) => review.labFile
 const blocks = (v: ClassifiedValue) => v.ref[0] === 'v' && v.sent && !v.writes
   && (v.group === 'unsure' ? v.reasons.includes('outOfRange') : v.group === 'notSaved' && v.reason !== 'sameDay');
 
+function screeningRow(plan: UploadSavePlan, fileId: string): ScreeningRow | null {
+  const update = plan.screenings.find((x) => x.fileId === fileId);
+  if (!update?.shown) return null;
+  return { checked: update.date !== null && update.ticked, enabled: update.date !== null, words: SCREENING_TEXT.update(update.type, update.date) };
+}
+
 function saveLabel(plan: UploadSavePlan): string {
   const { values, documents, originals } = plan.counts;
   return values || documents || !originals ? UPLOAD_TEXT.saveBoth(values, documents) : UPLOAD_TEXT_PROPOSED.saveOriginals(originals);
@@ -170,7 +181,7 @@ export function uploadView(s: UploadState, record: RoadmapFile, now: string, rev
     ...(unsure.length ? [{ kind: 'unsure' as const, title: IMPORT_REVIEW_TEXT.checkTitle(unsure.length), footer: IMPORT_REVIEW_TEXT.checkFooter, rows: unsure.map(row) }] : []),
     ...(failed.length ? [{
       kind: 'failed' as const, title: UPLOAD_TEXT.failedTitle(failed.length),
-      rows: failed.map((f) => ({ fileId: f.id, name: f.name, line: FAIL_TEXT[f.status.reason] })),
+      rows: failed.map((f) => ({ fileId: f.id, name: f.name, line: FAIL_TEXT[f.status.reason], retry: s.phase === 'open' && RETRYABLE[f.status.reason] ? UPLOAD_TEXT.retryAll : null })),
       retry: s.phase === 'open' && failed.some((f) => RETRYABLE[f.status.reason]) ? UPLOAD_TEXT.retryAll : null,
     }] : []),
     ...(groups.total ? [{
@@ -190,6 +201,7 @@ export function uploadView(s: UploadState, record: RoadmapFile, now: string, rev
         fileId, title: fields.title,
         kind: KIND_WORDS[(DOCUMENT_TYPES as readonly string[]).includes(fields.documentType) ? fields.documentType as DocumentType : 'other'][0],
         date: fields.documentDate ?? UPLOAD_TEXT.noDate, dateKnown: fields.documentDate !== null,
+        screening: screeningRow(plan, fileId),
       })),
     } : null,
     files: { row: UPLOAD_TEXT.filesRow(files.length), rows: files.map((f) => ({ fileId: f.id, name: f.name, status: emptyRead(f) ?? statusWords(f.status) })) },

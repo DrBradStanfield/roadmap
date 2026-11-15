@@ -82,6 +82,10 @@ export const FILE_NOTICE_TEXT = {
   tooLong: 'Not read. The file is too long to read in one go.',
   picturesOnly: 'This Word file holds pictures, not text. Save it as a PDF, or upload a photo of the page.',
 } as const;
+/** A letter's screening update (US-06 AC5, US-13 AC6); moved from the web's ReviewFileSections.tsx byte for byte. The name is drawn bold between the first two. */
+export const SCREENING_TEXT = {
+  update: (type: string, date: string | null) => ['Update ', type, ` screening date${date ? ` to ${date}` : ' (pick the document date first)'}`] as const,
+} as const;
 /** Why Save waits while a selected value has an error (US-13 AC5); moved from ReviewTable.tsx. */
 export const FIX_ERRORS_TEXT = 'Correct or clear the values with errors before saving.';
 /** A busy server's notice; moved from upload-pipeline.ts. */

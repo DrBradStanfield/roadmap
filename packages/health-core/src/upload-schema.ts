@@ -62,6 +62,7 @@ const documentFix = strict({ title: text.optional(), kind: text.optional(), date
 const choices = strict({
   ticks: z.record(z.string(), z.boolean()), testDay: maybeText, previousDay: maybeText,
   replace: z.record(z.string(), z.string()), edits: z.record(z.string(), z.number()), document: documentFix,
+  screening: z.boolean().optional(), columnDays: z.record(z.string(), z.string()).optional(),
 });
 const failReason = z.enum(['unreadable', 'bytesUnreadable', 'zipUnreadable', 'zipEmpty', 'timeout', 'busy', 'dailyLimit', 'declined', 'tooLong', 'server', 'network', 'keyRefused', 'noCredit', 'keyRateLimit', 'noKey']);
 const runRefusal = z.enum(['dailyLimit', 'noKey', 'server']);
@@ -105,6 +106,8 @@ const change = z.union([
   strict({ replace: text, correctsId: maybeText }),
   strict({ edit: text, value: z.number().nullable() }),
   strict({ document: documentFix }),
+  strict({ screening: z.boolean() }),
+  strict({ columnDay: text, day: maybeText }),
 ]);
 const failure = z.enum(UPLOAD_FAILURES);
 

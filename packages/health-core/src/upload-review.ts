@@ -33,7 +33,12 @@ export interface UploadReview {
   rowsByFile: Map<string, BulkRow[]>;
   /** A conflict's held row, by `<file index>:<ref>`: what Replace corrects (`ChoiceChange` replace). */
   held: Map<string, string>;
+  /** Whom a letter's screening update is judged for (the web's plan, US-06 AC5); null: none is offered (the iPhone, until its words are approved). */
+  screening: ScreeningProfile | null;
 }
+
+/** The plan's age and sex, as the web's review took them for `isScreeningEligible`; either may be unknown. */
+export interface ScreeningProfile { age?: number; sex?: 'male' | 'female' }
 
 export const readFiles = (s: UploadState): ReadFile[] =>
   ('files' in s ? s.files : []).filter((f): f is ReadFile => f.status.s === 'read');
@@ -57,7 +62,8 @@ export function previousDay(pick: string | null, reportDay: string | null, now: 
  * on the row as the web's review puts them (import-review-view.ts `classifyReview`).
  */
 function importFile(f: ReadFile, platform: UploadPlatform, now: string, holderOf: (row: BulkRow) => string | undefined) {
-  const { extraction, choices } = f.status;
+  const { choices } = f.status;
+  const extraction = withColumnDays(f.status.extraction, choices.columnDays);
   const result = extraction as ImportFile['result'];
   const day = validDay(choices.testDay ?? extraction.reportDate ?? undefined, { now });
   const undatedDay = previousDay(choices.previousDay, day, now);
@@ -85,8 +91,18 @@ function importFile(f: ReadFile, platform: UploadPlatform, now: string, holderOf
   return { file, day, ticked: ticked.map((v) => v.ref), needsTestDay, needsPreviousDay, replacing: Object.keys(options).filter((ref) => options[ref].correctsId) };
 }
 
-/** Recompute after `answered`, `chose` or a record change; the same result feeds the view and the plan. */
-export function uploadReview(s: UploadState, record: RoadmapFile, now: string): UploadReview {
+/** A dated previous column's values on the day the person picked for it (US-12 AC12); the extraction itself when none. */
+function withColumnDays(x: ReadFile['status']['extraction'], days: Readonly<Record<string, string>> | undefined): ReadFile['status']['extraction'] {
+  if (!days || !Object.keys(days).length) return x;
+  const moved = <V extends { recordedAt?: string }>(v: V): V => (v.recordedAt && days[v.recordedAt] ? { ...v, recordedAt: days[v.recordedAt] } : v);
+  return { ...x, values: x.values?.map(moved), additionalValues: x.additionalValues?.map(moved) };
+}
+
+/**
+ * Recompute after `answered`, `chose` or a record change; the same result feeds the view and the plan.
+ * `screening`: the web's plan age and sex, so a letter's screening update is offered; absent, none is.
+ */
+export function uploadReview(s: UploadState, record: RoadmapFile, now: string, screening?: ScreeningProfile): UploadReview {
   const platform = 'platform' in s ? s.platform : 'web';
   const labs = readFiles(s).filter(isLabReport);
   // The record's slots, indexed once: each conflict's held row, and each Replace's check.
@@ -124,5 +140,6 @@ export function uploadReview(s: UploadState, record: RoadmapFile, now: string): 
     classification,
     rowsByFile,
     held,
+    screening: screening ?? null,
   };
 }

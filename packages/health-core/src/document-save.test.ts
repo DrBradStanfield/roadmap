@@ -152,7 +152,7 @@ describe('saveDocuments: a failed blob write without a held row', () => {
     const file = fresh();
     const { plan, errors } = await save(file, [letter()], { fail: true });
     expect(errors).toHaveLength(1);
-    expect(plan.unstored).toBe(0);
+    expect(plan.unstored).toBe(1); // every failed write is unstored, one count for both clients (design 12c)
     expect(plan.saved).toEqual([expect.objectContaining({ fileRef: '', mimeType: '', contentHash: hashOf(bytes('letter bytes')) })]);
     expect(file.documents).toHaveLength(1);
   });

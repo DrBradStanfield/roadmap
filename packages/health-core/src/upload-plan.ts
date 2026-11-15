@@ -9,7 +9,8 @@ import type { DocumentFields } from './document-rows';
 import { validDay, type BulkRow } from './record-edits';
 import { isReadableRow } from './readable-rows';
 import type { RoadmapFile } from './roadmap-file';
-import { documentDate } from './upload-choices';
+import { isScreeningEligible } from './types';
+import { documentDate, type FileChoices } from './upload-choices';
 import type { UploadState } from './upload-flow';
 import type { UploadReview } from './upload-review';
 
@@ -31,6 +32,13 @@ export interface UploadSavePlan {
   labArchives: Array<{ fileId: string; sourceFileName: string; reportDate: string | null }>;
   /** With a cloud: known files whose held row stores no original, filed behind it as the kind the record holds (US-14 AC4). */
   archiveOnly: Array<{ fileId: string; fields: DocumentFields }>;
+  /**
+   * Each letter's screening update, as the web's review offered it (US-06 AC5, US-13 AC6): shown when
+   * `isScreeningEligible`; ticked by the person, else by default when the age is known and eligible;
+   * `date`: the letter's day, else the month it printed while no day is set. Save writes the ticked
+   * ones with a date. Empty when the review offers none (the iPhone).
+   */
+  screenings: Array<{ fileId: string; type: string; key: string; date: string | null; shown: boolean; ticked: boolean }>;
   /** `originals`: the files Save stores in the cloud (lab archives and archive-only); 0 with no cloud. */
   counts: { values: number; documents: number; archived: number; originals: number };
 }
@@ -52,6 +60,7 @@ export function uploadSavePlan(s: UploadState, record: RoadmapFile, now: string,
   const documents: UploadSavePlan['documents'] = [];
   const labArchives: UploadSavePlan['labArchives'] = [];
   const archiveOnly: UploadSavePlan['archiveOnly'] = [];
+  const screenings: UploadSavePlan['screenings'] = [];
   for (const f of 'files' in s ? s.files : []) {
     if (f.hash && seen.has(f.hash)) continue;
     if (f.status.s === 'read' && f.status.extraction.classification !== 'lab_report' && f.status.extraction.document) {
@@ -68,6 +77,11 @@ export function uploadSavePlan(s: UploadState, record: RoadmapFile, now: string,
         metadata: doc.metadata ?? {},
         sourceFileName: f.name,
       } });
+      const type = doc.metadata?.screeningType;
+      if (review.screening && typeof type === 'string' && type) {
+        const date = fixedDate !== undefined ? fixedDate : validDay((held ? held.documentDate : doc.documentDate) ?? undefined, { now }) ?? monthOnly(held ? held.documentDate : doc.documentDate, now);
+        screenings.push(screeningOf(f.id, type, date, f.status.choices, review.screening));
+      }
     } else if (f.status.s === 'read') {
       // A report's original is filed with its values: not while it waits for a day, nor with every value unticked (as the iPhone).
       const lab = labs.get(f.id);
@@ -85,12 +99,22 @@ export function uploadSavePlan(s: UploadState, record: RoadmapFile, now: string,
     return rows ? [{ fileId, rows }] : [];
   });
   return {
-    labRows, documents, labArchives, archiveOnly,
+    labRows, documents, labArchives, archiveOnly, screenings,
     counts: {
       values: review.classification.rows.length, documents: documents.length, archived: archiveOnly.length,
       originals: cloudConnected ? labArchives.length + archiveOnly.length : 0,
     },
   };
+}
+
+/** A printed month alone ("2024-06") that has begun, as the web read a letter's date (review-dates `readDocumentDate`). */
+function monthOnly(raw: string | null | undefined, now: string): string | null {
+  return raw && /^\d{4}-\d{2}$/.test(raw) && validDay(`${raw}-01`, { now }) ? raw : null;
+}
+
+function screeningOf(fileId: string, type: string, date: string | null, choices: FileChoices, { age, sex }: { age?: number; sex?: 'male' | 'female' }): UploadSavePlan['screenings'][number] {
+  // `isScreeningEligible` unchanged, with the web's inputs: the card shows by it; no age (no plan) starts unticked.
+  return { fileId, type, key: `${type}_last_date`, date, shown: isScreeningEligible(type, age, sex), ticked: choices.screening ?? (age !== undefined && isScreeningEligible(type, age, sex)) };
 }
 
 /** Save would write nothing new: no value, no document, no original to store. */

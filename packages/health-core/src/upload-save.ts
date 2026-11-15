@@ -19,10 +19,11 @@
 import { LAB_ARCHIVE_ROWS, labRowsByFile, listedRows, writtenLabRows } from './document-rows';
 import { committedFile, labArchivePayload, saveDocuments, type DocumentPayload } from './document-save';
 import { bulkAppendValues } from './record-edits';
+import { setScreening } from './state-edits';
 import type { RoadmapFile } from './roadmap-file';
 import type { SaveOutcome, UploadState } from './upload-flow';
 import { uploadSavePlan } from './upload-plan';
-import { uploadReview } from './upload-review';
+import { uploadReview, type ScreeningProfile } from './upload-review';
 import { saveBlocked } from './upload-view';
 
 /**
@@ -41,6 +42,8 @@ export interface UploadSaveIO<F> {
   write(ref: string, bytes: F, fileId: string): Promise<void>;
   now?(): string;
   newId?(): string;
+  /** Whom a letter's screening update is judged for (the web's plan); absent, no screening date is written (the iPhone). */
+  screening?: ScreeningProfile;
 }
 
 /**
@@ -57,7 +60,7 @@ interface Held { fileId: string; hash: string }
 
 export async function uploadSave<F>(s: UploadState, record: RoadmapFile, now: string, cloudConnected: boolean, io: UploadSaveIO<F>): Promise<UploadSaveResult> {
   if (s.phase !== 'saving') return { ok: false, reason: 'not-saving', message: 'The upload is not saving.' };
-  const review = uploadReview(s, record, now);
+  const review = uploadReview(s, record, now, io.screening);
   const blocked = saveBlocked(review);
   if (blocked) return { ok: false, reason: 'not-ready', message: blocked };
   const plan = uploadSavePlan(s, record, now, review, cloudConnected);
@@ -79,7 +82,6 @@ export async function uploadSave<F>(s: UploadState, record: RoadmapFile, now: st
     ...plan.labArchives.map((a) => labArchivePayload(a.sourceFileName, a.reportDate, held(a.fileId), { rows: rowsOf.get(a.fileId), contentHash: hashOf.get(a.fileId) })),
     ...plan.archiveOnly.map((d) => ({ ...d.fields, file: held(d.fileId), contentHash: hashOf.get(d.fileId) })),
   ];
-  let unstored = 0;
   const docs = await saveDocuments(record, payloads, {
     hash: async (f) => f.hash,
     write: async (ref, f) => {
@@ -87,8 +89,6 @@ export async function uploadSave<F>(s: UploadState, record: RoadmapFile, now: st
       if (bytes === null) throw new Error('The original could not be read.');
       await io.write(ref, bytes, f.fileId);
     },
-    // Every write that throws, the unreadable included: saveDocuments' own count is only those behind a held row.
-    onWriteError: () => void (unstored += 1),
     mimeType: (f) => io.mimeType(f.fileId), now: io.now, newId: io.newId,
   });
   // Counted as the web's done screen counts them (useUploadFlow.ts `documents`): every distinct row
@@ -116,7 +116,11 @@ export async function uploadSave<F>(s: UploadState, record: RoadmapFile, now: st
         }
       }
       const values = written.saved.length;
-      return { file: values || docs.saved.length ? committedFile(written.file, docs) : file, outcome: { values, ...outcome, unstored } };
+      // Each ticked letter's screening date (US-06 AC5), the web's alone: on the same record, at the same erase.
+      const screenings = plan.screenings.filter((x) => x.ticked && x.date !== null);
+      const landed = values || docs.saved.length ? committedFile(written.file, docs) : file;
+      const out = screenings.reduce((f, x) => setScreening(f, x.key, x.date!, now), landed);
+      return { file: out, outcome: { values, ...outcome, unstored: docs.unstored } };
     },
   };
 }
