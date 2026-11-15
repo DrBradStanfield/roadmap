@@ -25,9 +25,7 @@
  *
  * Hashes and names stay here: never logged, never in an event.
  */
-import { documentView, isLabArchiveDocument } from './document-save';
-import { LAB_ARCHIVE_ROWS, type DocumentFields } from './document-rows';
-import { dedupFileName } from './mcp-import';
+import { dedupFileName, documentView, isLabArchiveDocument, LAB_ARCHIVE_ROWS, type DocumentFields } from './document-rows';
 import { isActive } from './blood-tests';
 import { dayOf, rootIdOf } from './merge';
 import { isReadableRow } from './readable-rows';

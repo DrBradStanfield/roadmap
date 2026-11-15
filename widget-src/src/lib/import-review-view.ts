@@ -162,11 +162,12 @@ function toDecisions(rows: readonly BulkRow[], source: ReadonlyMap<BulkRow, Kept
   for (const row of rows) {
     const { fi, ref } = refAt(source.get(row)!.id);
     const limit = row.comparator ? { comparator: row.comparator } : {};
+    const sourceFileName = results[fi].fileName;
     if (row.kind === 'measurement') {
-      values.push({ metric: row.metricType, valueSI: row.value, recordedAt: row.recordedAt, source: row.source === 'lab_import_edited' ? row.source : undefined, correctsId: row.correctsId, ...limit });
+      values.push({ metric: row.metricType, valueSI: row.value, recordedAt: row.recordedAt, source: row.source === 'lab_import_edited' ? row.source : undefined, correctsId: row.correctsId, ...limit, sourceFileName });
     } else {
       const av = results[fi].additionalValues[Number(ref.slice(1))];
-      labValues.push({ name: row.metricName, value: row.value, unit: row.unit, referenceLow: av.referenceLow, referenceHigh: av.referenceHigh, recordedAt: row.recordedAt, correctsId: row.correctsId, ...limit });
+      labValues.push({ name: row.metricName, value: row.value, unit: row.unit, referenceLow: av.referenceLow, referenceHigh: av.referenceHigh, recordedAt: row.recordedAt, correctsId: row.correctsId, ...limit, sourceFileName });
     }
   }
   return { values, labValues };

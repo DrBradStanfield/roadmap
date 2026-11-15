@@ -3,10 +3,11 @@
 // the phone. Synthetic bytes only.
 import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
-import { createEmptyFile, type FileDocument, type RoadmapFile } from './roadmap-file';
+import { createEmptyFile, createLabValue, type FileDocument, type RoadmapFile } from './roadmap-file';
+import { knownAs, knownIndex } from './upload-known';
 import { LAB_ARCHIVE_TITLE } from './document-path';
 import { documentView, isLabArchiveDocument, labArchivePayload, pendingRowsFor, saveDocuments, type DocumentPayload, type DocumentSaveIO } from './document-save';
-import { LAB_ARCHIVE_FLAG } from './document-rows';
+import { LAB_ARCHIVE_FLAG, LAB_ARCHIVE_ROWS, labRowsByFile, writtenLabRows } from './document-rows';
 
 const bytes = (text: string) => new TextEncoder().encode(text);
 const hashOf = (b: Uint8Array) => `sha256-${createHash('sha256').update(b).digest('hex')}`;
@@ -262,3 +263,83 @@ describe('isLabArchiveDocument', () => {
   });
 });
 
+
+// US-14 AC10: a save with no cloud keeps the file's hash; a lab archive row
+// lists the value rows its import wrote, and a re-read of a report whose
+// listed values are all gone files a copy listing the new ones.
+describe('saveDocuments: the hash without the bytes, and lab archive row lists (US-14 AC10)', () => {
+  const hash = hashOf(bytes('letter bytes'));
+  const offCloud = (over: Partial<DocumentPayload<Uint8Array>> = {}) => letter({ file: undefined, contentHash: hash, ...over });
+  const labRow = (id: string, status: 'active' | 'entered-in-error' = 'active') => createLabValue({
+    id, metricName: 'ferritin', value: 1, unit: 'µg/L', recordedAt: '2026-01-01T00:00:00.000Z', createdAt: '2026-01-01T00:00:00.000Z', source: 'lab_import', status,
+  });
+
+  it('no bytes, a hash: a metadata-only row carrying it, nothing written, nothing unstored; the record then knows the file', async () => {
+    const file = fresh();
+    const { plan, written } = await save(file, [offCloud()]);
+    expect(written.size).toBe(0);
+    expect(plan.unstored).toBe(0);
+    expect(file.documents).toEqual([expect.objectContaining({ contentHash: hash, fileRef: '', mimeType: '', extractedText: 'Synthetic note' })]);
+    expect(knownAs(knownIndex(file), hash)).toEqual({ as: 'document', archiveOnly: true });
+  });
+
+  it('the same file again, as held or retitled: the record knows it, nothing new', async () => {
+    const file = fresh();
+    await save(file, [offCloud()]);
+    expect((await save(file, [offCloud()])).plan.saved).toEqual([]);
+    expect((await save(file, [offCloud({ title: 'Renamed' })])).plan.saved).toEqual([]);
+    expect(file.documents).toEqual([expect.objectContaining({ title: 'Synthetic letter', contentHash: hash })]);
+  });
+
+  it('later, with a cloud: the original is filed behind the metadata-only row (US-14 AC4)', async () => {
+    const file = fresh();
+    await save(file, [offCloud()]);
+    const { written } = await save(file, [letter()]);
+    expect(written.size).toBe(1);
+    expect(file.documents.filter((d) => !d.deleted)).toEqual([expect.objectContaining({ contentHash: hash, fileRef: expect.stringMatching(/^Clinic letters\//) })]);
+  });
+
+  it('a lab archive row lists its rows; with none written, no list', () => {
+    expect(labArchivePayload('a.pdf', '2026-01-01', undefined, { rows: ['lv-1', 'lv-2'] }).metadata).toEqual({ [LAB_ARCHIVE_FLAG]: true, [LAB_ARCHIVE_ROWS]: ['lv-1', 'lv-2'] });
+    expect(labArchivePayload('a.pdf', '2026-01-01', undefined, { rows: [] }).metadata).toEqual({ [LAB_ARCHIVE_FLAG]: true });
+  });
+
+  it('a report whose listed values are all gone, read again: a copy with the same original and the new list, the old row tombstoned, no second blob', async () => {
+    const file = fresh();
+    file.labValues = [labRow('lv-1', 'entered-in-error'), labRow('lv-2')];
+    file.documents = [row({ id: 'dead', type: 'pathology_report', title: LAB_ARCHIVE_TITLE, extractedText: '', fileRef: 'Lab results/a.pdf', mimeType: 'application/pdf', metadata: { [LAB_ARCHIVE_FLAG]: true, [LAB_ARCHIVE_ROWS]: ['lv-1'] } })];
+    expect(knownAs(knownIndex(file), hash)).toBeNull();
+    const { plan, written } = await save(file, [labArchive({ metadata: { [LAB_ARCHIVE_FLAG]: true, [LAB_ARCHIVE_ROWS]: ['lv-2'] } })]);
+    expect(written.size).toBe(0);
+    expect(plan.saved).toEqual([expect.objectContaining({ fileRef: 'Lab results/a.pdf', mimeType: 'application/pdf', contentHash: hash, metadata: { [LAB_ARCHIVE_FLAG]: true, [LAB_ARCHIVE_ROWS]: ['lv-2'] } })]);
+    expect(file.documents.find((d) => d.id === 'dead')?.deleted).toBe(true);
+    expect(knownAs(knownIndex(file), hash)).toEqual({ as: 'labReport', archiveOnly: false });
+  });
+
+  it('a dead lab archive row beside a metadata-only letter of the same bytes: the letter is filed behind its row, and the record and the save agree', async () => {
+    const file = fresh();
+    file.labValues = [labRow('lv-1', 'entered-in-error')];
+    file.documents = [
+      row({ id: 'dead', type: 'pathology_report', title: LAB_ARCHIVE_TITLE, extractedText: '', fileRef: 'Lab results/a.pdf', metadata: { [LAB_ARCHIVE_FLAG]: true, [LAB_ARCHIVE_ROWS]: ['lv-1'] } }),
+      row({ id: 'held' }),
+    ];
+    expect(knownAs(knownIndex(file), hash)).toEqual({ as: 'document', archiveOnly: true });
+    const { written } = await save(file, [letter()]);
+    expect(written.size).toBe(1);
+    expect(file.documents.find((d) => d.id === 'held')?.deleted).toBe(true);
+    expect(knownAs(knownIndex(file), hash)).toEqual({ as: 'document', archiveOnly: false });
+  });
+});
+
+describe('writtenLabRows / labRowsByFile: what each file wrote (US-14 AC10)', () => {
+  it('a written lab row by its root id; a vital, a skip or a refusal is null; grouped by file', () => {
+    const write = {
+      saved: [{ id: 'm-1', metricType: 'weight' }, { id: 'l-1#si', metricName: 'ferritin' }, { id: 'l-2', metricName: 'hba1c' }],
+      outcomes: ['written', 'skipped', 'written', 'refused', 'written'] as const,
+    };
+    const rows = writtenLabRows({ saved: write.saved, outcomes: [...write.outcomes] });
+    expect(rows).toEqual([null, null, 'l-1', null, 'l-2']);
+    expect(labRowsByFile(rows, ['a.pdf', 'a.pdf', 'a.pdf', 'b.pdf', undefined])).toEqual({ 'a.pdf': ['l-1'] });
+    expect(labRowsByFile(rows, ['a.pdf', 'a.pdf', 'b.pdf', 'b.pdf', 'b.pdf'])).toEqual({ 'b.pdf': ['l-1', 'l-2'] });
+  });
+});

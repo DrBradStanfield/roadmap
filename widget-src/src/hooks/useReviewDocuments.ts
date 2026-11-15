@@ -145,7 +145,7 @@ export function useReviewDocuments(results: FileResult[], history: UploadHistory
       ...(r.document ? { document: { ...r.document, title: docTitles[fi] || r.document.title, documentDate: documentDates[fi]?.day ?? null } } : {}),
     }));
     const documents: DocumentToSave[] = [];
-    reviewed.forEach(({ document: doc, fileName, file }, fi) => {
+    reviewed.forEach(({ document: doc, fileName, file, contentHash }, fi) => {
       if (!doc || !docChecked[fi]) return;
       const screeningType = doc.metadata?.screeningType as string | undefined;
       const screeningDate = screeningDateFor(fi);
@@ -160,6 +160,7 @@ export function useReviewDocuments(results: FileResult[], history: UploadHistory
           ? { key: `${screeningType}_last_date`, date: screeningDate }
           : undefined,
         file,
+        contentHash,
       });
     });
     return { reviewed, documents };

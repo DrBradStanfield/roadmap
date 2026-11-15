@@ -134,6 +134,21 @@ describe('US-32 — read_record strips the reminder capability token', () => {
     expect(file.reminderOptIn?.token).toBe('SECRET-CAPABILITY-TOKEN');
   });
 
+  it('never prints a file fingerprint or a lab archive row list, as before (US-14 AC10, agent contract)', () => {
+    const file = base();
+    file.documents.push(
+      { id: 'doc-a', title: 'Synthetic letter', type: 'clinic_letter', date: '2026-01-01', fileRef: '', contentHash: 'hash-plain-a', mimeType: '', extractedText: 'x', addedAt: NOW, metadata: {}, sourceFileName: 'a.pdf' },
+      { id: 'doc-b', title: 'Blood test results', type: 'pathology_report', date: '2026-01-01', fileRef: 'Lab results/b.pdf', contentHash: 'hash-plain-b', mimeType: 'application/pdf', extractedText: '', addedAt: NOW, metadata: { labArchive: true, rows: ['listed-row-id'] }, sourceFileName: 'b.pdf' },
+    );
+    for (const text of [ok(readRecord(file, {})).text, ok(callTool('read_record', {}, { file, now: NOW })).text, JSON.stringify(redactRecord(file)), ok(callTool('get_plan', {}, { file, now: NOW })).text]) {
+      expect(text).not.toContain('hash-plain');
+      expect(text).not.toContain('contentHash');
+      expect(text).not.toContain('listed-row-id');
+    }
+    // The documents themselves are still read, as today.
+    expect(JSON.parse(ok(readRecord(file, {})).text).documents.map((d: { id: string }) => d.id)).toEqual(['doc-a', 'doc-b']);
+  });
+
   it('says nothing about a token when the user never opted in', () => {
     const file = base();
     delete file.reminderOptIn;
@@ -2023,11 +2038,11 @@ describe('US-32 — the counter\u2019s tool names and the tools themselves', () 
 // US-35 — import_documents: extract never writes, commit applies a selection
 // ---------------------------------------------------------------------------
 import { importDocumentsOutput, MAX_DOCUMENT_TEXT, MAX_UNRECOGNIZED_LINES } from './mcp-tool-contract';
+import { dedupFileName } from './document-rows';
 import {
   IMPORT_HOSTED_ONLY,
   importDocumentsCommit,
   isAlreadyImported,
-  dedupFileName,
   prepareImport,
   type ExtractedFile,
   type ImportPayload,

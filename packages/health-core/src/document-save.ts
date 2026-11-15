@@ -22,70 +22,38 @@
  * row lands with the blob and the old one is tombstoned, never edited
  * (documents are immutable under merge).
  */
-import { buildDocumentRef, LAB_ARCHIVE_TITLE, splitDocumentRef } from './document-path';
-import { documentRow, LAB_ARCHIVE_FLAG, labArchiveFields, type DocumentFields } from './document-rows';
+import { buildDocumentRef, splitDocumentRef } from './document-path';
+import { documentRow, documentView, isLabArchiveDocument, LAB_ARCHIVE_ROWS, labArchiveFields, type DocumentFields, type DocumentView } from './document-rows';
+import { isReadableRow } from './readable-rows';
 import { newId as freshId } from './record-edits';
-import type { FileDocument, RoadmapFile } from './roadmap-file';
+import { stableStringify, type FileDocument, type RoadmapFile } from './roadmap-file';
+import { knownIndex } from './upload-known';
 
-/** One reviewed document to save. `file` is the original's bytes, when kept. */
+// In document-rows.ts, so upload-known.ts reads them without an import cycle; callers import them from here.
+export { documentView, isLabArchiveDocument, type DocumentView } from './document-rows';
+
+/**
+ * One reviewed document to save. `file` is the original's bytes, when kept.
+ * `contentHash`: the bytes' fingerprint when they are not kept (no cloud):
+ * the row carries it with no original, so a later upload of the same file
+ * knows it (US-14 AC10). With `file`, the hash is the caller's `io.hash`.
+ */
 export interface DocumentPayload<F> extends DocumentFields {
   file?: F;
-}
-
-/** A stored document row as the surfaces read it (the web's ApiDocument). */
-export interface DocumentView {
-  id: string;
-  documentType: string;
-  title: string;
-  documentDate: string | null;
-  contentMd: string;
-  metadata: Record<string, unknown>;
-  sourceFileName: string | null;
-  createdAt: string;
-  fileRef: string | null;
-  contentHash: string | null;
-}
-
-export function documentView(d: FileDocument): DocumentView {
-  return {
-    id: d.id,
-    documentType: d.type,
-    title: d.title,
-    documentDate: d.date,
-    contentMd: d.extractedText,
-    metadata: d.metadata ?? {},
-    sourceFileName: d.sourceFileName ?? null,
-    createdAt: d.addedAt,
-    fileRef: d.fileRef || null,
-    contentHash: d.contentHash || null,
-  };
+  contentHash?: string;
 }
 
 /**
- * True when a stored document is a synthesized blood-test archive entry (the
- * raw lab PDF kept purely for the user's cloud). Hidden from the Documents
- * list. Matches the explicit flag for new uploads AND a content signature for
- * legacy entries written before the flag existed: documentType
- * 'pathology_report' + title 'Blood test results' + empty contentMd (a real
- * pathology report always has extracted markdown).
+ * The lab report's archive row (`labArchiveFields`) with the original's bytes:
+ * the website (archive-payloads.ts) and the iPhone app. `rows`: the lab rows
+ * its values wrote, when the writer knows them (`labRowsByFile`);
+ * `contentHash`: the bytes' hash when they are not kept (US-14 AC10).
  */
-export function isLabArchiveDocument(doc: {
-  documentType: string;
-  title: string;
-  contentMd: string;
-  metadata: Record<string, unknown>;
-}): boolean {
-  if (doc.metadata?.[LAB_ARCHIVE_FLAG] === true) return true;
-  return (
-    doc.documentType === 'pathology_report' &&
-    doc.title === LAB_ARCHIVE_TITLE &&
-    (doc.contentMd ?? '').trim() === '' // a readable row's text may be null (US-65)
-  );
-}
-
-/** The lab report's archive row (`labArchiveFields`) with the original's bytes: the website (archive-payloads.ts) and the iPhone app. */
-export function labArchivePayload<F>(sourceFileName: string | null, reportDate: string | null, file: F | undefined): DocumentPayload<F> {
-  return { ...labArchiveFields(sourceFileName, reportDate), file };
+export function labArchivePayload<F>(
+  sourceFileName: string | null, reportDate: string | null, file: F | undefined,
+  { rows, contentHash }: { rows?: readonly string[]; contentHash?: string } = {},
+): DocumentPayload<F> {
+  return { ...labArchiveFields(sourceFileName, reportDate, rows), file, ...(contentHash ? { contentHash } : null) };
 }
 
 /** A stored row as the archive step reads it. */
@@ -145,10 +113,13 @@ export interface DocumentSavePlan {
  *    the name does not, and the bytes are not hashed yet.
  * 2. iPhone review, `alreadySaved` (ios/engine/lab-review.ts): the same
  *    exact-name rule, so the app's card starts as the web's does.
- * 3. Here: by hash, skipping only a row that holds a stored original; a
- *    same-hash metadata-only row of the same kind (lab archive or shown
- *    document, US-14 AC4) is replaced behind and tombstoned (US-13 AC1).
- *    Only the save holds the bytes and the cloud write.
+ * 3. Here: by hash, skipping only a row that holds a stored original and
+ *    that the record still knows (`knownIndex`: a lab archive row only while
+ *    its values live); a same-hash metadata-only row of the same kind (lab
+ *    archive or shown document, US-14 AC4) is replaced behind and tombstoned
+ *    (US-13 AC1). A lab archive row no longer known that holds the original is
+ *    replaced by a copy listing the new values (US-14 AC10). Only the save
+ *    holds the bytes and the cloud write.
  * 4. Connector, `isAlreadyImported` (mcp-import.ts): the hash of whatever row
  *    holds it; else, for a hashless candidate, name and date with a " (n)"
  *    stripped; else the name alone against a hashless live row whose date is
@@ -159,7 +130,7 @@ export interface DocumentSavePlan {
  *    stripped); a folder listing has names only, and rule 4 would nag every
  *    folder-imported file forever (US-37 AC1).
  * 6. Website archive step (widget-src archive-payloads.ts):
- *    `unarchivedOriginals` / `isArchivableFile` keep a by-hash archived set
+ *    `unarchivedOriginals` / `isFileable` keep a by-hash archived set
  *    (a `contentHash` with a stored original) and the `alreadyCovered` name
  *    set, and `pendingRowsFor` files an unselected letter behind its
  *    metadata-only row; the iPhone's review-time held check uses
@@ -178,22 +149,29 @@ export async function saveDocuments<F>(
   const newId = io.newId ?? freshId;
   const out: FileDocument[] = [];
   const existingRefs = new Set(current.documents.map((d) => d.fileRef).filter(Boolean));
-  // Content-hash dedup: re-uploading a file the archive already holds (live,
-  // not tombstoned) must not create a second entry or a " (2)" blob. The
-  // review step dedups extracted VALUES but knows nothing about originals.
-  const hashed = current.documents.filter((d) => !d.deleted && d.contentHash);
-  const archived = new Set(hashed.filter((d) => d.fileRef).map((d) => d.contentHash));
+  // Content-hash dedup: re-uploading a file the record already holds with its
+  // original must not create a second entry or a " (2)" blob. The review step
+  // dedups extracted VALUES but knows nothing about originals.
+  const known = knownIndex(current);
+  const archived = new Set([...known].filter(([, k]) => !k.archiveOnly).map(([hash]) => hash));
+  const hashed = current.documents.filter((d) => !d.deleted && d.contentHash && isReadableRow('documents', d));
   // Metadata-only rows are replaced only by an upload of their own kind, a
   // lab archive or a shown document (US-14 AC4): `deleted` is OR-ed on merge,
   // so a letter tombstoned by a lab re-read would be gone for good. Kind, not
   // type: the type is the model's per-run guess.
   const metadataOnly = hashed.filter((d) => !d.fileRef).map(documentView);
+  // A lab archive row the record no longer knows (every value it listed gone)
+  // that holds the original: a lab re-read files a copy with that original and
+  // the new list, and tombstones it, with no second blob (US-14 AC10).
+  const storedLab = (hash: string) => hashed.find((d) => d.contentHash === hash && d.fileRef && isLabArchiveDocument(documentView(d)));
 
   // Phase 1 (serial, order-dependent): dedup by hash, assign collision-safe
   // refs, build the metadata rows.
   const writes: Array<{ doc: FileDocument; ref: string; file: F; lab: boolean; held?: DocumentView; /** The held row a failed write leaves standing. */ failed?: DocumentView }> = [];
+  /** Rows that land with no write: each replaces the held rows of its kind at commit (and `dead`, a stored lab row it copies). */
+  const filed: Array<{ doc: FileDocument; lab: boolean; dead?: string }> = [];
   for (const d of payloads) {
-    const hash = d.file ? await io.hash(d.file) : null;
+    const hash = d.file ? await io.hash(d.file) : d.contentHash || null;
     if (hash) {
       if (archived.has(hash)) continue; // identical original already archived
       archived.add(hash);
@@ -201,7 +179,14 @@ export async function saveDocuments<F>(
     // The hash is the bytes' identity even when the blob write fails, so a
     // later upload of the same bytes can replace this row (US-14 AC4).
     const doc = documentRow(d, { id: newId(), contentHash: hash ?? '', mimeType: '', addedAt: now() });
-    if (d.file) {
+    const lab = isLabArchiveDocument(d);
+    const held = pendingRowsFor(metadataOnly, hash, lab)[0];
+    const dead = lab && hash ? storedLab(hash) : undefined;
+    if (dead) {
+      doc.fileRef = dead.fileRef;
+      doc.mimeType = dead.mimeType;
+      filed.push({ doc, lab, dead: dead.id });
+    } else if (d.file) {
       const ref = buildDocumentRef({
         type: doc.type,
         title: doc.title,
@@ -213,8 +198,13 @@ export async function saveDocuments<F>(
       // The metadata-only rows for these bytes are tombstoned only once the
       // blob lands, or a changed row replaces them: a failed write must not
       // lose the hash key.
-      const lab = isLabArchiveDocument(d);
-      writes.push({ doc, ref, file: d.file, lab, held: pendingRowsFor(metadataOnly, hash, lab)[0] });
+      writes.push({ doc, ref, file: d.file, lab, held });
+    } else if (hash) {
+      // The bytes are not kept (no cloud): the row carries their hash alone
+      // (US-14 AC10). Bytes the record already knows bring nothing new; a held
+      // row it no longer knows (a lab report's, its values gone) is replaced.
+      if (known.has(hash)) continue;
+      filed.push({ doc, lab });
     }
     out.push(doc);
   }
@@ -261,7 +251,7 @@ export async function saveDocuments<F>(
   // metadata-only row carries them and replaces the held rows. `unstored`
   // tells the done screen to say so (US-14 AC4).
   const unstored = writes.flatMap(({ doc, failed }) => (failed ? [{ doc, held: failed }] : []));
-  const unchanged = new Set(unstored.filter(({ doc, held }) => doc.title === held.title && doc.date === held.documentDate).map((u) => u.doc));
+  const unchanged = new Set(unstored.filter(({ doc, held }) => sameRow(doc, held)).map((u) => u.doc));
   const saved = out.filter((d) => !unchanged.has(d));
   return {
     saved,
@@ -270,10 +260,18 @@ export async function saveDocuments<F>(
       // The rows to replace, read from the file as it now is, so a same-hash
       // row merged in from another device during the upload goes too.
       const pending = file.documents.filter((d) => !d.deleted && d.contentHash && !d.fileRef).map(documentView);
-      const replaced = new Set(writes.filter((w) => w.doc.fileRef || (w.failed && !unchanged.has(w.doc)))
-        .flatMap((w) => pendingRowsFor(pending, w.doc.contentHash, w.lab).map((d) => d.id)));
+      const replaced = new Set([
+        ...[...writes.filter((w) => w.doc.fileRef || (w.failed && !unchanged.has(w.doc))), ...filed].flatMap((w) => pendingRowsFor(pending, w.doc.contentHash, w.lab).map((d) => d.id)),
+        ...filed.flatMap((f) => (f.dead ? [f.dead] : [])),
+      ]);
       for (const d of file.documents) if (replaced.has(d.id)) d.deleted = true;
       file.documents.push(...saved);
     },
   };
+}
+
+/** A held row already saying what this new row would: same title, date and listed lab rows. */
+function sameRow(doc: FileDocument, held: DocumentView): boolean {
+  return doc.title === held.title && doc.date === held.documentDate
+    && stableStringify(doc.metadata?.[LAB_ARCHIVE_ROWS] ?? null) === stableStringify(held.metadata[LAB_ARCHIVE_ROWS] ?? null);
 }

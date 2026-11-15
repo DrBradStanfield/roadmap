@@ -30,9 +30,9 @@ export interface FileResult {
   /** Value rows the parse dropped, and the ones that name their test, listed under "Not saved" (US-12 AC19). */
   droppedValueCount?: number;
   unreadValues?: UnreadLabValue[];
-  /** The original uploaded bytes — saved into the user's cloud archive (v2). */
+  /** The original uploaded bytes — saved into the user's cloud archive (v2); absent off-cloud. */
   file?: Blob;
-  /** 'sha256-<hex>' of `file` — matched against the record's document rows. */
+  /** 'sha256-<hex>' of the original's bytes — matched against the record's document rows, kept off-cloud too (US-14 AC10). */
   contentHash?: string;
 }
 
@@ -48,6 +48,8 @@ export interface DocumentToSave {
   screeningUpdate?: { key: string; date: string };
   /** The original bytes, carried inside the payload (no name-keyed re-join). */
   file?: Blob;
+  /** The original's hash, kept off-cloud where the bytes are not (US-14 AC10). */
+  contentHash?: string;
 }
 
 /** A reviewed row on its way to the store. `correctsId` is set when the user
@@ -55,11 +57,13 @@ export interface DocumentToSave {
  *  turns it into a FHIR correction. */
 export interface ReviewedValue {
   metric: string; valueSI: number; recordedAt: string; source?: MeasurementSource; correctsId?: string;
+  /** The file it was read from: that file's archive row lists the row it writes (US-14 AC10). */
+  sourceFileName?: string;
   /** Printed as a limit and saved as printed (US-12 AC20); an edited cell is an exact value. */
   comparator?: Comparator;
 }
 export interface ReviewedLabValue {
-  name: string; value: number; unit: string;
+  name: string; value: number; unit: string; sourceFileName?: string;
   referenceLow?: number | null; referenceHigh?: number | null;
   recordedAt: string; correctsId?: string;
   comparator?: Comparator;

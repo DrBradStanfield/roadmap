@@ -30,11 +30,18 @@ describe('synthesizeLabArchiveEntries', () => {
     expect(out[0].file).toBeInstanceOf(Blob);
   });
 
-  it('skips files with no values, errors, no blob, or already covered', () => {
+  it('skips files with no values, errors, neither blob nor hash, or already covered', () => {
     expect(synthesizeLabArchiveEntries([result({ file: blob(), values: [], additionalValues: [] })], new Set())).toHaveLength(0);
     expect(synthesizeLabArchiveEntries([result({ file: blob(), error: 'boom' })], new Set())).toHaveLength(0);
-    expect(synthesizeLabArchiveEntries([result({})], new Set())).toHaveLength(0); // no file
+    expect(synthesizeLabArchiveEntries([result({})], new Set())).toHaveLength(0); // no file, no hash (a photo off-cloud)
     expect(synthesizeLabArchiveEntries([result({ file: blob() })], new Set(['lipids.pdf']))).toHaveLength(0);
+  });
+
+  it('US-14 AC10: off-cloud, the hash alone files a metadata-only archive row, listing the rows its values wrote', () => {
+    const [entry] = synthesizeLabArchiveEntries([result({ contentHash: 'hash-a' })], new Set(), { 'lipids.pdf': ['row-1', 'row-2'], 'other.pdf': ['row-3'] });
+    expect(entry).toMatchObject({ file: undefined, contentHash: 'hash-a', sourceFileName: 'lipids.pdf', metadata: { [LAB_ARCHIVE_FLAG]: true, rows: ['row-1', 'row-2'] } });
+    // No rows written for it: no list.
+    expect(synthesizeLabArchiveEntries([result({ contentHash: 'hash-a' })], new Set())[0].metadata).toEqual({ [LAB_ARCHIVE_FLAG]: true });
   });
 });
 

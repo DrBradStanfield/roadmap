@@ -29,6 +29,7 @@ import { LiveRefresh } from '@roadmap/health-core/live-refresh';
 import { RecordSession, saveRecordInto, type EraseResult, type EraseSteps } from '@roadmap/health-core/record-session';
 import { birthInFuture, type MeasurementSource, inputRangeFault } from '@roadmap/health-core/validation';
 import { saveDocuments, documentView, type DocumentPayload } from '@roadmap/health-core/document-save';
+import { writtenLabRows } from '@roadmap/health-core/document-rows';
 import { setReminderOptIn, setScreening, stampProfile, upsertMedication, upsertSupplement } from '@roadmap/health-core/state-edits';
 import { medicationChanges } from '@roadmap/health-core/medication-annotations';
 import { computeReminderSchedule, type ReminderScheduleItem } from '@roadmap/health-core/reminder-schedule';
@@ -385,16 +386,17 @@ export class RoadmapStore {
    *  that row still holds the slot, skip a taken slot, never two actives. */
   bulkSaveMeasurements(measurements: BulkMeasurementInput[]): BulkSaveResult {
     if (this.refuses()) return { saved: [], skippedDuplicates: 0, errorCount: measurements.length, refused: [] };
-    const { saved, skippedDuplicates, measurementRefusals } = this.bulkSave(measurements.map((m) => ({ kind: 'measurement' as const, ...m })));
+    const result = this.bulkSave(measurements.map((m) => ({ kind: 'measurement' as const, ...m })));
     // A refused number is the caller's to SHOW, like a refused lab unit: no
     // retry can change it, so it is not an error (US-12 AC6, US-35 AC17).
-    return { saved: saved.map(valueView), skippedDuplicates, errorCount: 0, refused: measurementRefusals };
+    return { saved: result.saved.map(valueView), skippedDuplicates: result.skippedDuplicates, errorCount: 0, refused: result.measurementRefusals, labRows: writtenLabRows(result) };
   }
 
   bulkSaveLabValues(values: BulkLabValueInput[]): BulkLabValuesResult {
     if (this.refuses()) return { saved: [], skippedDuplicates: 0, errorCount: values.length, refused: [] };
-    const { saved, skippedDuplicates, refused, measurementRefusals } = this.bulkSave(values.map((v) => ({ kind: 'lab' as const, ...v, source: (v.source as MeasurementSource) ?? 'lab_import' })));
-    return { saved: saved as ApiLabValue[], skippedDuplicates, errorCount: 0, refused, measurementRefusals };
+    const result = this.bulkSave(values.map((v) => ({ kind: 'lab' as const, ...v, source: (v.source as MeasurementSource) ?? 'lab_import' })));
+    const { saved, skippedDuplicates, refused, measurementRefusals } = result;
+    return { saved: saved as ApiLabValue[], skippedDuplicates, errorCount: 0, refused, measurementRefusals, labRows: writtenLabRows(result) };
   }
 
   /** One lab value a person adds, by health-core's one lab add (`addLabValue`, the iPhone's too):

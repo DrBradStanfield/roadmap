@@ -440,7 +440,7 @@ describe('ReviewTable — same-day conflicts compare stored values, not rounded 
     fireEvent.click(replace()!);
     fireEvent.click(container.querySelector<HTMLButtonElement>('.review-save-btn')!);
     expect(onSave.mock.calls.at(-1)![0].values).toEqual([
-      { metric: 'lpa', valueSI: 125, recordedAt: `${day}T00:00:00.000Z`, source: undefined, correctsId: 'held-lpa' },
+      { metric: 'lpa', valueSI: 125, recordedAt: `${day}T00:00:00.000Z`, source: undefined, correctsId: 'held-lpa', sourceFileName: 'lpa.pdf' },
     ]);
   });
 

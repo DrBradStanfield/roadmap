@@ -4,10 +4,11 @@
 // hashes only.
 import { describe, expect, it } from 'vitest';
 import { LAB_ARCHIVE_TITLE } from './document-path';
-import { labArchiveFields, LAB_ARCHIVE_FLAG, LAB_ARCHIVE_ROWS, type DocumentFields } from './document-rows';
+import { labArchiveFields, LAB_ARCHIVE_FLAG, LAB_ARCHIVE_ROWS, labRowsByFile, writtenLabRows, type DocumentFields } from './document-rows';
 import { documentView, isLabArchiveDocument, labArchivePayload, saveDocuments, type DocumentPayload, type DocumentSaveIO } from './document-save';
 import { createEmptyFile, createLabValue, type FileDocument, type FileLabValue, type RoadmapFile } from './roadmap-file';
-import { withoutListed } from './merge';
+import { mergeFiles, withoutListed } from './merge';
+import { bulkAppendValues } from './record-edits';
 import { migrateFile } from './migrate';
 import { knownAs, knownIndex, legacyMatch } from './upload-known';
 
@@ -248,7 +249,7 @@ async function saveOne(rec: RoadmapFile, payload: DocumentPayload<string>, fail:
 
 describe('agreement with saveDocuments (US-13 AC1, US-12 AC27)', () => {
   it('holds both ways for 400 seeded records and files', async () => {
-    const reached = { stored: 0, filedBehind: 0, writeFailed: 0, unknownThenKnown: 0, pr5Gap: 0 };
+    const reached = { stored: 0, filedBehind: 0, writeFailed: 0, unknownThenKnown: 0, deadOriginal: 0 };
     for (let seed = 1; seed <= 400; seed++) {
       const r = mulberry32(seed);
       const rec = randomRecord(r);
@@ -256,12 +257,15 @@ describe('agreement with saveDocuments (US-13 AC1, US-12 AC27)', () => {
       for (const hash of HASHES.filter(Boolean)) {
         const k = knownAs(index, hash);
         const context = `seed ${seed}, ${hash}, ${JSON.stringify(k)}`;
-        // A live row with an original that the index does not count (a dead lab archive row) makes
-        // the save skip every upload of these bytes: the write-side gap PR 5 closes (todo below).
-        if ((!k || k.archiveOnly) && liveWith(rec, hash).some((d) => d.fileRef)) { reached.pr5Gap++; continue; }
+        // A live row with an original that the index does not count: a dead lab archive row (US-14 AC10).
+        const deadOriginal = (!k || k.archiveOnly) && liveWith(rec, hash).some((d) => d.fileRef);
+        if (deadOriginal) reached.deadOriginal++;
         if (!k) {
-          // Not known: the save writes a row, and the record then knows the file.
-          const { file } = await saveOne(rec, letterPayload(hash), r() < 0.3);
+          // Not known: the save writes a row, and the record then knows the file. A lab
+          // report lists the fresh value row its read wrote.
+          const asLab = r() < 0.5;
+          const fresh = { ...rec, labValues: [...rec.labValues, lab('lv-new')] };
+          const { file } = await saveOne(fresh, asLab ? labArchivePayload('a.pdf', '2026-01-01', hash, { rows: ['lv-new'] }) : letterPayload(hash), r() < 0.3);
           expect(knownAs(knownIndex(file), hash), context).not.toBeNull();
           reached.unknownThenKnown++;
           continue;
@@ -278,12 +282,13 @@ describe('agreement with saveDocuments (US-13 AC1, US-12 AC27)', () => {
           expect(plan.saved, context).toEqual([]);
           expect(written, context).toEqual([]);
         } else if (!fail) {
-          // Filed behind: the original is written, every held row of its kind tombstoned, one row with the original live.
+          // Filed behind: the original is written (a lab report reuses a dead archive row's), every held
+          // row of its kind tombstoned, and one row of that kind with the original live.
           reached.filedBehind++;
           expect(held.length, context).toBeGreaterThan(0);
-          expect(written, context).toHaveLength(1);
+          expect(written, context).toHaveLength(labKind && deadOriginal ? 0 : 1);
           expect(file.documents.filter((d) => held.includes(d.id)).every((d) => d.deleted), context).toBe(true);
-          expect(liveWith(file, hash).filter((d) => d.fileRef), context).toHaveLength(1);
+          expect(liveWith(file, hash).filter((d) => d.fileRef && isLabArchiveDocument(documentView(d)) === labKind), context).toHaveLength(1);
         } else {
           reached.writeFailed++;
         }
@@ -292,15 +297,36 @@ describe('agreement with saveDocuments (US-13 AC1, US-12 AC27)', () => {
     for (const [what, n] of Object.entries(reached)) expect(n, what).toBeGreaterThan(20);
   });
 
-  // PR 5 closes this write-side gap. Record shapes, both with one hash `h`:
-  // (1) a live lab archive row with `fileRef` set, `metadata.rows` listing only
-  //     entered-in-error rows (dead), plus a live metadata-only shown document
-  //     row: knownAs says { document, archiveOnly }, but saveDocuments' rule 3
-  //     sees the archive row's original and skips, so the document is never
-  //     filed behind;
-  // (2) the dead lab archive row alone: not known, so the file is read again,
-  //     and its new values are saved, but the archive payload is skipped by
-  //     rule 3, so no row lists the new values and every later upload reads it
-  //     again.
-  it.todo('PR 5: a dead lab archive row with an original neither blocks filing a document behind nor leaves new values unlisted');
+});
+
+describe('two devices file the same lab report offline, then merge (US-14 AC10, US-13 AC1)', () => {
+  const NOW = '2026-02-01T00:00:00.000Z';
+  async function device(id: string): Promise<RoadmapFile> {
+    const start = createEmptyFile({ deviceId: id, now: '2026-01-01T00:00:00.000Z' });
+    const write = bulkAppendValues(start, [{ kind: 'lab', metricName: 'Ferritin', value: 90, unit: 'µg/L', recordedAt: '2026-01-01', source: 'lab_import' }], NOW);
+    const rows = labRowsByFile(writtenLabRows(write), ['labs.pdf'])['labs.pdf'];
+    return (await saveOne(write.file, labArchivePayload<string>('labs.pdf', '2026-01-01', undefined, { rows, contentHash: 'hash-a' }), false)).file;
+  }
+
+  it('both archive rows live, each listing its own row; one row loses the slot; the file is known and a re-upload writes nothing', async () => {
+    const [a, b] = [await device('dev-a'), await device('dev-b')];
+    const merged = mergeFiles(a, b, { deviceId: 'dev-a', now: NOW });
+    const archives = merged.documents.filter((d) => !d.deleted);
+    expect(archives).toHaveLength(2);
+    expect(archives.map((d) => (d.metadata?.[LAB_ARCHIVE_ROWS] as string[])[0]).sort()).toEqual([a.labValues[0].id, b.labValues[0].id].sort());
+    expect(merged.labValues.map((r) => r.status).sort()).toEqual(['active', 'entered-in-error']);
+    expect(knownAs(knownIndex(merged), 'hash-a')).toEqual({ as: 'labReport', archiveOnly: true });
+    const again = await saveOne(merged, labArchivePayload<string>('labs.pdf', '2026-01-01', undefined, { contentHash: 'hash-a' }), false);
+    expect(again.plan.saved).toEqual([]);
+    expect(again.file.documents).toEqual(merged.documents);
+  });
+
+  it('erase and tombstones as before: a deleted or erased archive row, or its erased value, is not known', async () => {
+    const a = await device('dev-a');
+    const archive = a.documents[0];
+    expect(knownAs(knownIndex(record([archive], a.labValues)), 'hash-a')).not.toBeNull();
+    expect(knownAs(knownIndex(record([{ ...archive, deleted: true }], a.labValues)), 'hash-a')).toBeNull();
+    expect(knownAs(knownIndex(record([archive], a.labValues, [archive.id])), 'hash-a')).toBeNull();
+    expect(knownAs(knownIndex(record([archive], a.labValues, [a.labValues[0].id])), 'hash-a')).toBeNull();
+  });
 });

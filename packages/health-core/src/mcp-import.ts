@@ -41,7 +41,7 @@ import { CANONICAL_UNITS, formatRange, getDisplayLabel, getDisplayRange, reporte
 import { comparatorOf, formatValue, withComparator, type Comparator } from './lab-limits';
 import { IMPORT_REFUSALS, importHint } from './import-hints';
 import { LAB_ARCHIVE_TITLE } from './document-path';
-import { documentRow, labArchiveFields, type DocumentFields } from './document-rows';
+import { dedupFileName, documentRow, labArchiveFields, labRowsByFile, writtenLabRows, type DocumentFields } from './document-rows';
 import { DOCUMENT_TYPES, type DocumentType, PRESSURE_ORDER, pressureInverted } from './validation';
 import * as z from './zod';
 import { isReadableRow } from './readable-rows';
@@ -209,16 +209,6 @@ export function isAlreadyImported(file: RoadmapFile, name: string, contentHash: 
   return byName ? { row: byName, by: 'name' } : null;
 }
 
-/**
- * The name a dedup check compares (US-36 AC5). ChatGPT's file library renames
- * a re-dropped file `labs(1).pdf` or `labs (2).pdf` (live 2026-09-07), so a
- * trailing ` (n)` before the extension is dropped for the comparison only —
- * the stored `sourceFileName` keeps the name as given. Digits only: `Lp(a).pdf`
- * keeps its `(a)`.
- */
-export function dedupFileName(name: string): string {
-  return name.replace(/ ?\(\d+\)(?=\.[^.]*$|$)/, '');
-}
 
 /**
  * A folder entry as both the import and the nudge read it (US-35 AC2, US-37
@@ -800,6 +790,8 @@ export function importDocumentsCommit(
   const chosen = new Set([...commit.accept, ...commit.replace]);
   const held = slotIndex(file);
   const rows: BulkRow[] = [];
+  /** Each row's file, by index: its archive row lists the rows it wrote (US-14 AC10). */
+  const rowFiles: string[] = [];
   /** Slot → the chosen id that took it: two files can offer one day, the record keeps one value (AC6). */
   const taken = new Map<string, string>();
 
@@ -832,6 +824,7 @@ export function importDocumentsCommit(
       }
     }
     const correctsId = replace.has(id) ? c.slot.existingRowId : undefined;
+    rowFiles.push(c.sourceFileName);
     rows.push(c.kind === 'measurement'
       ? { kind: 'measurement', metricType: c.metric, value: c.value, recordedAt: c.recordedAt, source: 'lab_import', ...(correctsId ? { correctsId } : null), ...comparatorOf(c) }
       : {
@@ -852,19 +845,19 @@ export function importDocumentsCommit(
   const metadata = payload.route === 'assistant'
     ? { importedVia: 'assistant', ...(client ? { client } : null) }
     : { importedVia: 'connector' };
-  const docs: FileDocument[] = payload.documents
-    .filter((d) => !isAlreadyImported(file, d.sourceFileName, d.contentHash, d.date))
-    .map((d) => {
-      // A lab report's row is the website's and the iPhone's hidden archive row
-      // (`labArchive: true`), told apart at commit by the signature the extract
-      // gave it, so a receipt parked before this rule commits the same way.
-      const fields: DocumentFields = d.type === 'pathology_report' && d.title === LAB_ARCHIVE_TITLE
-        ? labArchiveFields(d.sourceFileName, d.date)
-        : { documentType: d.type, title: d.title, documentDate: d.date, contentMd: '', metadata: {}, sourceFileName: d.sourceFileName };
-      return documentRow({ ...fields, metadata: { ...fields.metadata, ...metadata } }, { id: crypto.randomUUID(), contentHash: d.contentHash, mimeType: d.mimeType, addedAt: now });
-    });
+  const filing = payload.documents.filter((d) => !isAlreadyImported(file, d.sourceFileName, d.contentHash, d.date));
+  // A lab report's row is the website's and the iPhone's hidden archive row
+  // (`labArchive: true`), told apart at commit by the signature the extract
+  // gave it, so a receipt parked before this rule commits the same way. It
+  // lists the lab rows its values wrote (`labRows`, US-14 AC10).
+  const docRows = (labRows: Record<string, string[]>): FileDocument[] => filing.map((d) => {
+    const fields: DocumentFields = d.type === 'pathology_report' && d.title === LAB_ARCHIVE_TITLE
+      ? labArchiveFields(d.sourceFileName, d.date, labRows[d.sourceFileName])
+      : { documentType: d.type, title: d.title, documentDate: d.date, contentMd: '', metadata: {}, sourceFileName: d.sourceFileName };
+    return documentRow({ ...fields, metadata: { ...fields.metadata, ...metadata } }, { id: crypto.randomUUID(), contentHash: d.contentHash, mimeType: d.mimeType, addedAt: now });
+  });
   const base = { phase: 'committed' as const, route: payload.route, files: [], candidates: [], documents: [], unrecognized: [], remaining: [] };
-  if (chosen.size === 0 && docs.length === 0) {
+  if (chosen.size === 0 && filing.length === 0) {
     return {
       status: 'ok',
       text: 'Nothing was selected, so nothing was written and the record is unchanged.',
@@ -893,6 +886,7 @@ export function importDocumentsCommit(
   // A refusal for the number (US-21 AC15) is the person's to settle: no offer of another unit.
   const unknownSpellings = applied.refused.filter((r) => !r.fault);
   const refusedNumbers = applied.refused.filter((r) => r.fault);
+  const docs = docRows(labRowsByFile(writtenLabRows(applied), rowFiles));
   const next = docs.length ? stampUpdatedAt({ ...applied.file, documents: [...applied.file.documents, ...docs] }, now) : applied.file;
 
   const written = {
