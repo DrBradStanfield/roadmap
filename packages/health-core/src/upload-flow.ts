@@ -9,11 +9,9 @@
  */
 import type { UnifiedExtractionResult } from './lab-extraction';
 import type { UploadFailure } from './upload-failure';
-import { fileVerdict, UPLOAD_LIMITS, zipMemberVerdict, type UploadPlatform } from './upload-rules';
-
-/** What the record already holds for a file. upload-known.ts answers it by hash (`knownAs`, design
- *  PR 4) or, after a read, by name for an older hashless row (`legacyMatch`); this is the part read here. */
-export interface Known { as: 'document' | 'labReport' | 'legacy'; archiveOnly: boolean }
+import { choose, NO_CHOICES, type ChoiceChange, type FileChoices } from './upload-choices';
+import type { Known } from './upload-known';
+import { fileVerdict, requestFlags, UPLOAD_LIMITS, zipMemberVerdict, type RequestFlags, type UploadPlatform } from './upload-rules';
 
 /** unreadable: no pages came out of it. bytesUnreadable: the device could not read its bytes to hash them.
  *  zipUnreadable: a ZIP that would not open; zipEmpty: one with no file we can read inside (both named
@@ -29,18 +27,12 @@ const SEND_FAILURE: Record<UploadFailure, FailReason> = {
   rate_limit: 'dailyLimit', busy: 'busy', server_error: 'server', network: 'network', refused: 'declined', too_long: 'tooLong',
 };
 
-/** A document's corrections before Save (design Q3 (a)). */
-export interface DocumentFix { title?: string; kind?: string; date?: string | null }
-/** What the person chose for one read file: value ticks by ref (absent: the default), a test day, document fixes. */
-export interface FileChoices { ticks: Record<string, boolean>; testDay: string | null; document: DocumentFix }
-export type ChoiceChange = { tick: string; on: boolean } | { testDay: string | null } | { document: DocumentFix };
-
 export type FileStatus =
   | { s: 'listing' }                                       // a picked ZIP: its members replace it, in its place
   | { s: 'waiting' }                                       // listed; waiting for a hash slot
   | { s: 'hashing' }                                       // the platform hashes its bytes
   | { s: 'hashed' }                                        // hashed and new: waiting for a convert slot
-  | { s: 'known'; as: Known['as']; archiveOnly: boolean }  // never converted or sent
+  | { s: 'known'; as: Known['as'] | 'legacy'; archiveOnly: boolean } // never converted or sent; legacy: `legacyMatch` after the read
   | { s: 'refused'; verdict: 'tooLarge' | 'unsupported' }
   | { s: 'converting' }                                    // the platform turns bytes into pages
   | { s: 'ready'; attempt: number }                        // pages held, waiting for a send slot
@@ -79,7 +71,7 @@ export type UploadEvent =
   | { type: 'consented' }
   | { type: 'listed'; run: number; zip: string; members: ZipMember[] }
   | { type: 'zipFailed'; run: number; zip: string }
-  | { type: 'hashed'; run: number; id: string; hash: string; known: Known | null }
+  | { type: 'hashed'; run: number; id: string; hash: string; known: Known | null } // known: upload-known.ts `knownAs`
   | { type: 'hashFailed'; run: number; id: string }
   | { type: 'converted'; run: number; id: string; pages: number; truncated: boolean }
   | { type: 'convertFailed'; run: number; id: string; reason: 'unreadable' | 'timeout' }
@@ -87,7 +79,7 @@ export type UploadEvent =
   | { type: 'sendFailed'; run: number; id: string; failure: UploadFailure }
   | { type: 'retry'; id: string | 'all' }
   | { type: 'stop' }
-  | { type: 'chose'; id: string; change: ChoiceChange }
+  | { type: 'chose'; id: string; change: ChoiceChange; now: string } // now: to refuse a document date in the future
   | { type: 'saveStarted' }
   | { type: 'saved'; run: number; attempt: number; outcome: SaveOutcome }
   | { type: 'saveFailed'; run: number; attempt: number; message: string }
@@ -99,7 +91,7 @@ export type UploadEffect =
   | { type: 'list'; run: number; id: string }
   | { type: 'hash'; run: number; id: string }
   | { type: 'convert'; run: number; id: string }
-  | { type: 'send'; run: number; id: string; attempt: number } // request flags join in design PR 8 (requestFlags)
+  | { type: 'send'; run: number; id: string; attempt: number; flags: RequestFlags }
   | { type: 'abort'; run: number; ids: string[] }
   | { type: 'forget'; run: number; ids: string[] }
   | { type: 'save'; run: number; attempt: number };
@@ -128,7 +120,6 @@ export function saveEnabled(s: UploadState): boolean {
 // --- transition -------------------------------------------------------------
 
 const same = (state: UploadState): UploadStep => ({ state, effects: [] });
-const NO_CHOICES: FileChoices = { ticks: {}, testDay: null, document: {} };
 const idsIn = (files: UploadFile[], stages: readonly FileStage[]) => files.filter((f) => stages.includes(f.status.s)).map((f) => f.id);
 const forget = (run: number, ids: string[]): UploadEffect[] => (ids.length ? [{ type: 'forget', run, ids }] : []);
 const abort = (run: number, ids: string[]): UploadEffect[] => (ids.length ? [{ type: 'abort', run, ids }] : []);
@@ -184,7 +175,7 @@ function pump(s: Open, effects: UploadEffect[]): UploadStep {
     }
     if (f.status.s === 'ready' && sending < limits.sendsInFlight) {
       sending++;
-      out.push({ type: 'send', run: s.run, id: f.id, attempt: f.status.attempt });
+      out.push({ type: 'send', run: s.run, id: f.id, attempt: f.status.attempt, flags: requestFlags(s.platform) });
       return { ...f, status: { s: 'sending', attempt: f.status.attempt } };
     }
     return f;
@@ -279,12 +270,6 @@ function save(s: Pick, attempt: number): UploadStep {
   return { state: { ...pickOf(s), phase: 'saving', attempt }, effects: [{ type: 'save', run: s.run, attempt }] };
 }
 
-function choose(c: FileChoices, change: ChoiceChange): FileChoices {
-  if ('tick' in change) return { ...c, ticks: { ...c.ticks, [change.tick]: change.on } };
-  if ('testDay' in change) return { ...c, testDay: change.testDay };
-  return { ...c, document: { ...c.document, ...change.document } };
-}
-
 const retries = (f: UploadFile, id: string) => f.status.s === 'failed' && RETRYABLE[f.status.reason] && (id === 'all' || f.id === id);
 
 export function transition(s: UploadState, e: UploadEvent): UploadStep {
@@ -328,9 +313,11 @@ export function transition(s: UploadState, e: UploadEvent): UploadStep {
     }
     case 'stop': return s.phase === 'open' ? stop(s) : same(s);
     case 'chose': {
-      if (s.phase !== 'open' || !s.files.some((f) => f.id === e.id && f.status.s === 'read')) return same(s);
-      const files = s.files.map((f): UploadFile => (f.id === e.id && f.status.s === 'read' ? { ...f, status: { ...f.status, choices: choose(f.status.choices, e.change) } } : f));
-      return same({ ...s, files });
+      const file = s.phase === 'open' ? s.files.find((f) => f.id === e.id) : undefined;
+      if (s.phase !== 'open' || file?.status.s !== 'read') return same(s);
+      const choices = choose(file.status.choices, e.change, e.now, file.status.extraction);
+      if (!choices) return same(s); // refused: a document date that is no real past day
+      return same({ ...s, files: s.files.map((f) => (f === file ? { ...file, status: { ...file.status, choices } } : f)) });
     }
     case 'saveStarted':
       if (s.phase === 'saveFailed') return save(s, s.attempt + 1);
