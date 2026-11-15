@@ -136,16 +136,13 @@ export type EditOutcome =
   | { ok: true; file: RoadmapFile; healthRecords?: HealthRecordsCounts }
   | { ok: false; reason: string; message: string; existingId?: string };
 
+/** A record a newer app wrote: readRecord refuses it in these words. */
+export const TOO_NEW_RECORD = 'A newer version of Health Roadmap wrote this record. Update the app to open it.';
 /**
  * Words meant for the person. HealthEngine shows them as they are; any other
  * exception's text stays hidden (US-25 AC6b, review R8).
  */
-/** A record a newer app wrote: readRecord refuses it in these words. */
-export const TOO_NEW_RECORD = 'A newer version of Health Roadmap wrote this record. Update the app to open it.';
-
-export class Refusal extends Error {
-  override name = 'Refusal';
-}
+export class Refusal extends Error { override name = 'Refusal'; }
 
 /**
  * The record on disk, read as every other writer reads it (ROADMAP_DOC: the
