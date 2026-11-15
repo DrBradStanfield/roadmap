@@ -205,6 +205,8 @@ export interface BulkSaveResult {
   errorCount: number;
   /** Rows refused for their metric or number — never silently dropped. */
   refused: MeasurementRefusal[];
+  /** Each submitted row's written lab value row id, by index (health-core `writtenLabRows`): a file's archive row lists them (US-14 AC10). */
+  labRows?: Array<string | null>;
 }
 
 export interface BulkLabValuesResult {
@@ -217,4 +219,6 @@ export interface BulkLabValuesResult {
   refused: LabUnitRefusal[];
   /** Core values (a core test's name, US-66 AC6) refused for their number — shown, never dropped. */
   measurementRefusals?: MeasurementRefusal[];
+  /** As `BulkSaveResult.labRows`. */
+  labRows?: Array<string | null>;
 }

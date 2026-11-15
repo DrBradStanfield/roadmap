@@ -134,6 +134,21 @@ describe('US-32 — read_record strips the reminder capability token', () => {
     expect(file.reminderOptIn?.token).toBe('SECRET-CAPABILITY-TOKEN');
   });
 
+  it('never prints a file fingerprint or a lab archive row list, as before (US-14 AC10, agent contract)', () => {
+    const file = base();
+    file.documents.push(
+      { id: 'doc-a', title: 'Synthetic letter', type: 'clinic_letter', date: '2026-01-01', fileRef: '', contentHash: 'hash-plain-a', mimeType: '', extractedText: 'x', addedAt: NOW, metadata: {}, sourceFileName: 'a.pdf' },
+      { id: 'doc-b', title: 'Blood test results', type: 'pathology_report', date: '2026-01-01', fileRef: 'Lab results/b.pdf', contentHash: 'hash-plain-b', mimeType: 'application/pdf', extractedText: '', addedAt: NOW, metadata: { labArchive: true, rows: ['listed-row-id'] }, sourceFileName: 'b.pdf' },
+    );
+    for (const text of [ok(readRecord(file, {})).text, ok(callTool('read_record', {}, { file, now: NOW })).text, JSON.stringify(redactRecord(file)), ok(callTool('get_plan', {}, { file, now: NOW })).text]) {
+      expect(text).not.toContain('hash-plain');
+      expect(text).not.toContain('contentHash');
+      expect(text).not.toContain('listed-row-id');
+    }
+    // The documents themselves are still read, as today.
+    expect(JSON.parse(ok(readRecord(file, {})).text).documents.map((d: { id: string }) => d.id)).toEqual(['doc-a', 'doc-b']);
+  });
+
   it('says nothing about a token when the user never opted in', () => {
     const file = base();
     delete file.reminderOptIn;
@@ -2023,11 +2038,11 @@ describe('US-32 — the counter\u2019s tool names and the tools themselves', () 
 // US-35 — import_documents: extract never writes, commit applies a selection
 // ---------------------------------------------------------------------------
 import { importDocumentsOutput, MAX_DOCUMENT_TEXT, MAX_UNRECOGNIZED_LINES } from './mcp-tool-contract';
+import { dedupFileName } from './document-rows';
 import {
   IMPORT_HOSTED_ONLY,
   importDocumentsCommit,
   isAlreadyImported,
-  dedupFileName,
   prepareImport,
   type ExtractedFile,
   type ImportPayload,
@@ -2679,6 +2694,57 @@ describe('US-35 AC7/AC8 — importDocumentsCommit applies a selection, all or no
     const filed = declined.status === 'ok' ? declined.file! : base();
     const again = importDocumentsCommit(filed, payloadFor(filed, [extracted('new.pdf', labReport())]), { receipt: 'r', accept: [], replace: [] }, NOW);
     expect(again.status === 'ok' && again.file).toBeUndefined();
+  });
+
+  it('US-14 AC10, Codex R3: a file named like an object key ("constructor", "__proto__", "toString") commits, its archive row listing its own rows', () => {
+    for (const name of ['constructor', '__proto__', 'toString']) {
+      const file = base();
+      const payload = payloadFor(file, [extracted(name, labReport())]);
+      const outcome = importDocumentsCommit(file, payload, { receipt: 'r', accept: payload.candidates.map((c) => c.id), replace: [] }, NOW);
+      expect(outcome.status).toBe('ok');
+      const written = outcome.status === 'ok' ? outcome.file! : base();
+      const added = written.labValues.filter((l) => !file.labValues.some((o) => o.id === l.id)).map((l) => l.id);
+      expect(added.length).toBeGreaterThan(0);
+      expect(written.documents.at(-1)).toMatchObject({ sourceFileName: name, metadata: { labArchive: true, rows: added } });
+    }
+  });
+
+  it('US-14 AC10, adversary F4: a lab archive row whose listed values are all gone is not already imported; a re-import refreshes it, keeping its original and list', () => {
+    const first = base();
+    const payload = payloadFor(first, [extracted('labs.pdf', labReport())]);
+    const filed = importDocumentsCommit(first, payload, { receipt: 'r', accept: payload.candidates.map((c) => c.id), replace: [] }, NOW);
+    const file = filed.status === 'ok' ? filed.file! : base();
+    const archive = file.documents.at(-1)!;
+    const listed = (archive.metadata?.rows ?? []) as string[];
+    expect(isAlreadyImported(file, 'labs.pdf', 'sha256-labs.pdf')).toMatchObject({ by: 'hash' });
+    // The original stored meanwhile (a website upload), then every listed value deleted.
+    archive.fileRef = 'Lab results/labs.pdf';
+    file.labValues = file.labValues.map((l) => (listed.includes(l.id) ? { ...l, status: 'entered-in-error' as const } : l));
+    expect(isAlreadyImported(file, 'labs.pdf', 'sha256-labs.pdf')).toBeNull();
+    const again = payloadFor(file, [extracted('labs.pdf', labReport())]);
+    expect(again.documents).toHaveLength(1);
+    const refreshed = importDocumentsCommit(file, again, { receipt: 'r', accept: again.candidates.map((c) => c.id), replace: [] }, NOW);
+    const after = refreshed.status === 'ok' ? refreshed.file! : base();
+    const live = after.documents.filter((d) => !d.deleted && d.contentHash === 'sha256-labs.pdf');
+    expect(live).toHaveLength(1);
+    expect(live[0].fileRef).toBe('Lab results/labs.pdf');
+    expect((live[0].metadata?.rows as string[]).slice(0, listed.length)).toEqual(listed);
+    expect((live[0].metadata?.rows as string[]).length).toBeGreaterThan(listed.length);
+    expect(after.documents.find((d) => d.id === archive.id)?.deleted).toBe(true);
+    expect(isAlreadyImported(after, 'labs.pdf', 'sha256-labs.pdf')).toMatchObject({ by: 'hash' });
+  });
+
+  it('US-65 AC3, Codex re-check 3: an unreadable row with the archive signature (extractedText 3, a row list) never stops an unrelated import and is left as it was', () => {
+    const file = base();
+    const odd = { id: 'odd', title: 'Blood test results', type: 'pathology_report', date: LAB_DAY, fileRef: '', contentHash: 'sha256-odd', mimeType: '', extractedText: 3, addedAt: NOW, sourceFileName: 'odd.pdf', metadata: { rows: ['x'] } } as unknown as RoadmapFile['documents'][number];
+    file.documents.push(odd);
+    const before = structuredClone(odd);
+    const payload = payloadFor(file, [extracted('new.pdf', labReport())]);
+    const outcome = importDocumentsCommit(file, payload, { receipt: 'r', accept: payload.candidates.map((c) => c.id), replace: [] }, NOW);
+    expect(outcome.status).toBe('ok');
+    const written = outcome.status === 'ok' ? outcome.file! : base();
+    expect(written.documents.find((d) => d.id === 'odd')).toEqual(before);
+    expect(isAlreadyImported(written, 'odd.pdf', 'sha256-odd')).toBeNull();
   });
 
   it('cannot introduce a value the receipt does not carry, and held_equal accepts write nothing', () => {

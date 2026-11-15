@@ -5,10 +5,13 @@
  * DocumentResult in the pipeline, so they get a synthesized pathology entry —
  * derived HERE (pure, testable) rather than inside the upload component.
  * Blobs are only attached to results when the backend can archive them
- * (getDocumentArchiveMode() === 'cloud'), so off-cloud this returns [].
+ * (getDocumentArchiveMode() === 'cloud'). Off-cloud a result keeps only its
+ * bytes' hash, so a lab report still leaves a metadata-only archive row with
+ * it (US-14 AC10); an unselected letter is never filed without its bytes.
  */
 import { labArchivePayload, pendingRowsFor, type DocumentPayload, type ExistingDoc } from '@roadmap/health-core/document-save';
 import type { FileResult } from './upload-pipeline';
+import { fileKey } from './file-key';
 
 /** 'sha256-<hex>' content fingerprint — names the blob + detects corruption. */
 export async function sha256Blob(blob: Blob): Promise<string> {
@@ -23,11 +26,11 @@ export async function attachOriginals(results: FileResult[]): Promise<FileResult
   return Promise.all(results.map(async (r) => (r.file ? { ...r, contentHash: await sha256Blob(r.file) } : r)));
 }
 
-/** A file the archive step can file: bytes in hand, and either a reviewed
- *  document or extracted values. `alreadyCovered` names the files the save
- *  already carries as reviewed documents. */
-function isArchivableFile(r: FileResult, alreadyCovered: Set<string | null>): boolean {
-  if (r.error || alreadyCovered.has(r.fileName) || !r.file) return false;
+/** A file the archive step can file: read, not saved as a reviewed document
+ *  (`alreadyCovered`, by `fileKey`, never the name two files can share), and
+ *  either a document or extracted values. `index`: its place in the pick. */
+function isFileable(r: FileResult, index: number, alreadyCovered: ReadonlySet<string>): boolean {
+  if (r.error || alreadyCovered.has(fileKey(r, index))) return false;
   return !!r.document || r.values.length > 0 || r.additionalValues.length > 0;
 }
 
@@ -42,10 +45,10 @@ function isArchivableFile(r: FileResult, alreadyCovered: Set<string | null>): bo
 export function unarchivedOriginals(
   results: FileResult[],
   existing: ReadonlyArray<ExistingDoc>,
-  alreadyCovered: Set<string | null>,
+  alreadyCovered: ReadonlySet<string>,
 ): FileResult[] {
   const archived = new Set(existing.filter((d) => d.contentHash && d.fileRef).map((d) => d.contentHash));
-  return results.filter((r) => isArchivableFile(r, alreadyCovered)
+  return results.filter((r, index) => !!r.file && isFileable(r, index, alreadyCovered)
     && !archived.has(r.contentHash) && (!r.document || pendingRowsFor(existing, r.contentHash, false).length > 0));
 }
 
@@ -57,7 +60,7 @@ export function unarchivedOriginals(
 export function connectorDocumentEntries(
   results: FileResult[],
   existing: ReadonlyArray<ExistingDoc>,
-  alreadyCovered: Set<string | null>,
+  alreadyCovered: ReadonlySet<string>,
 ): DocumentPayload<Blob>[] {
   return unarchivedOriginals(results, existing, alreadyCovered)
     .filter((r) => r.document)
@@ -72,15 +75,21 @@ export function connectorDocumentEntries(
     }));
 }
 
-/** Synthesized entries for lab files whose originals would otherwise be lost. */
+/**
+ * Synthesized entries for lab files whose originals would otherwise be lost:
+ * with the bytes in a cloud, or off-cloud with their hash alone (US-14 AC10).
+ * `labRows`: the lab rows each file's values wrote, by the file's identity
+ * (`fileKey`; health-core `labRowsByFile`), listed on its archive row.
+ */
 export function synthesizeLabArchiveEntries(
   results: FileResult[],
-  alreadyCovered: Set<string | null>,
+  alreadyCovered: ReadonlySet<string>,
+  labRows: ReadonlyMap<string, string[]> = new Map(),
 ): DocumentPayload<Blob>[] {
   const out: DocumentPayload<Blob>[] = [];
-  for (const r of results) {
-    if (r.document || !isArchivableFile(r, alreadyCovered)) continue;
-    out.push(labArchivePayload(r.fileName, r.reportDate, r.file));
-  }
+  results.forEach((r, index) => {
+    if (r.document || !(r.file || r.contentHash) || !isFileable(r, index, alreadyCovered)) return;
+    out.push(labArchivePayload(r.fileName, r.reportDate, r.file, { rows: labRows.get(fileKey(r, index)), contentHash: r.contentHash }));
+  });
   return out;
 }

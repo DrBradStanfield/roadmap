@@ -41,7 +41,9 @@ import { CANONICAL_UNITS, formatRange, getDisplayLabel, getDisplayRange, reporte
 import { comparatorOf, formatValue, withComparator, type Comparator } from './lab-limits';
 import { IMPORT_REFUSALS, importHint } from './import-hints';
 import { LAB_ARCHIVE_TITLE } from './document-path';
-import { documentRow, labArchiveFields, type DocumentFields } from './document-rows';
+import { dedupFileName, labRowsByFile, writtenLabRows } from './document-rows';
+import { importDocumentRows, isAlreadyImported, type ImportedMatch } from './import-documents';
+export { isAlreadyImported, type ImportedMatch } from './import-documents';
 import { DOCUMENT_TYPES, type DocumentType, PRESSURE_ORDER, pressureInverted } from './validation';
 import * as z from './zod';
 import { isReadableRow } from './readable-rows';
@@ -176,49 +178,7 @@ export const IMPORT_HOSTED_ONLY =
   'import_documents needs a server that can read files and reach the extraction model, and this one cannot. ' +
   'Use the website’s upload, or connect the hosted connector. Nothing was read and nothing was written.';
 
-/** The live row a file already has in the record, and which key found it. */
-export interface ImportedMatch {
-  row: FileDocument;
-  by: 'hash' | 'name' | 'name_date';
-}
 
-/**
- * AC6 — a document the record already holds. Hash first: the bytes' own
- * `contentHash` (the archive's key, shared with the website) names the file
- * whatever it is called. The name alone counts ONLY against a row that has no
- * hash — a website row from before hashes — because a lab portal that names
- * every download `Results.pdf` must not make the second report "already
- * imported". A candidate that has NO hash — the assistant route, where the
- * server never sees the bytes (US-36 AC5) — matches a live row of the same
- * name AND the same `date`, hashed or not: the same report re-read is a
- * duplicate, the portal's next `Results.pdf` on another date is not. Only
- * live rows count: a tombstoned document was deleted on purpose, and
- * importing it again is a decision, not a duplicate.
- */
-export function isAlreadyImported(file: RoadmapFile, name: string, contentHash: string, date?: string | null): ImportedMatch | null {
-  const live = file.documents.filter((d) => !d.deleted);
-  const byHash = contentHash === '' ? undefined : live.find((d) => d.contentHash === contentHash);
-  if (byHash) return { row: byHash, by: 'hash' };
-  // The name paths read only documents this build reads (US-65): a hidden one's name may be anything.
-  const named = live.filter((d) => isReadableRow('documents', d));
-  const sameName = (d: FileDocument) => d.sourceFileName != null && dedupFileName(d.sourceFileName) === dedupFileName(name);
-  const byNameDate = contentHash === '' && date ? named.find((d) => sameName(d) && d.date === date) : undefined;
-  if (byNameDate) return { row: byNameDate, by: 'name_date' };
-  // A dated candidate against a hashless row dated differently is the portal's next `Results.pdf`, not a twin.
-  const byName = named.find((d) => d.contentHash === '' && sameName(d) && (!date || !d.date || d.date === date));
-  return byName ? { row: byName, by: 'name' } : null;
-}
-
-/**
- * The name a dedup check compares (US-36 AC5). ChatGPT's file library renames
- * a re-dropped file `labs(1).pdf` or `labs (2).pdf` (live 2026-09-07), so a
- * trailing ` (n)` before the extension is dropped for the comparison only —
- * the stored `sourceFileName` keeps the name as given. Digits only: `Lp(a).pdf`
- * keeps its `(a)`.
- */
-export function dedupFileName(name: string): string {
-  return name.replace(/ ?\(\d+\)(?=\.[^.]*$|$)/, '');
-}
 
 /**
  * A folder entry as both the import and the nudge read it (US-35 AC2, US-37
@@ -800,6 +760,8 @@ export function importDocumentsCommit(
   const chosen = new Set([...commit.accept, ...commit.replace]);
   const held = slotIndex(file);
   const rows: BulkRow[] = [];
+  /** Each row's file, by index: its archive row lists the rows it wrote (US-14 AC10). */
+  const rowFiles: string[] = [];
   /** Slot → the chosen id that took it: two files can offer one day, the record keeps one value (AC6). */
   const taken = new Map<string, string>();
 
@@ -832,6 +794,7 @@ export function importDocumentsCommit(
       }
     }
     const correctsId = replace.has(id) ? c.slot.existingRowId : undefined;
+    rowFiles.push(c.sourceFileName);
     rows.push(c.kind === 'measurement'
       ? { kind: 'measurement', metricType: c.metric, value: c.value, recordedAt: c.recordedAt, source: 'lab_import', ...(correctsId ? { correctsId } : null), ...comparatorOf(c) }
       : {
@@ -852,19 +815,9 @@ export function importDocumentsCommit(
   const metadata = payload.route === 'assistant'
     ? { importedVia: 'assistant', ...(client ? { client } : null) }
     : { importedVia: 'connector' };
-  const docs: FileDocument[] = payload.documents
-    .filter((d) => !isAlreadyImported(file, d.sourceFileName, d.contentHash, d.date))
-    .map((d) => {
-      // A lab report's row is the website's and the iPhone's hidden archive row
-      // (`labArchive: true`), told apart at commit by the signature the extract
-      // gave it, so a receipt parked before this rule commits the same way.
-      const fields: DocumentFields = d.type === 'pathology_report' && d.title === LAB_ARCHIVE_TITLE
-        ? labArchiveFields(d.sourceFileName, d.date)
-        : { documentType: d.type, title: d.title, documentDate: d.date, contentMd: '', metadata: {}, sourceFileName: d.sourceFileName };
-      return documentRow({ ...fields, metadata: { ...fields.metadata, ...metadata } }, { id: crypto.randomUUID(), contentHash: d.contentHash, mimeType: d.mimeType, addedAt: now });
-    });
+  const filing = payload.documents.filter((d) => !isAlreadyImported(file, d.sourceFileName, d.contentHash, d.date));
   const base = { phase: 'committed' as const, route: payload.route, files: [], candidates: [], documents: [], unrecognized: [], remaining: [] };
-  if (chosen.size === 0 && docs.length === 0) {
+  if (chosen.size === 0 && filing.length === 0) {
     return {
       status: 'ok',
       text: 'Nothing was selected, so nothing was written and the record is unchanged.',
@@ -893,7 +846,9 @@ export function importDocumentsCommit(
   // A refusal for the number (US-21 AC15) is the person's to settle: no offer of another unit.
   const unknownSpellings = applied.refused.filter((r) => !r.fault);
   const refusedNumbers = applied.refused.filter((r) => r.fault);
-  const next = docs.length ? stampUpdatedAt({ ...applied.file, documents: [...applied.file.documents, ...docs] }, now) : applied.file;
+  // Rows by `importDocumentRows` (import-documents.ts): the archive row lists what each file wrote (US-14 AC10).
+  const { rows: docs, documents } = importDocumentRows(applied.file, filing, labRowsByFile(writtenLabRows(applied), rowFiles), metadata, now);
+  const next = docs.length ? stampUpdatedAt({ ...applied.file, documents: [...documents, ...docs] }, now) : applied.file;
 
   const written = {
     measurements: applied.saved.filter((r) => 'metricType' in r && !r.correctsId).length,

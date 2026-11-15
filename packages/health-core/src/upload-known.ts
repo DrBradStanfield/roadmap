@@ -25,14 +25,12 @@
  *
  * Hashes and names stay here: never logged, never in an event.
  */
-import { documentView, isLabArchiveDocument } from './document-save';
-import { LAB_ARCHIVE_ROWS, type DocumentFields } from './document-rows';
-import { dedupFileName } from './mcp-import';
+import { dedupFileName, documentView, isLabArchiveDocument, listedRows, type DocumentFields } from './document-rows';
 import { isActive } from './blood-tests';
 import type { UnifiedExtractionResult } from './lab-extraction';
 import { dayOf, rootIdOf } from './merge';
 import { isReadableRow } from './readable-rows';
-import type { FileDocument, FileLabValue, RoadmapFile } from './roadmap-file';
+import type { FileLabValue, RoadmapFile } from './roadmap-file';
 
 /** How the record holds a file's bytes. */
 export interface Known {
@@ -65,11 +63,6 @@ function activeRoots(all: readonly unknown[], readable: readonly FileLabValue[])
   return new Set([...seen].map(rootIdOf));
 }
 
-/** The lab rows an archive row lists, or null for a row written before the list. */
-function producedRows(d: FileDocument): string[] | null {
-  const rows = d.metadata?.[LAB_ARCHIVE_ROWS];
-  return Array.isArray(rows) ? rows.filter((id): id is string => typeof id === 'string') : null;
-}
 
 /** Index the record's live, hashed rows by content (section 2's table). */
 export function knownIndex(record: RoadmapFile): KnownIndex {
@@ -82,7 +75,7 @@ export function knownIndex(record: RoadmapFile): KnownIndex {
     if (!isReadableRow('documents', d) || d.deleted || !d.contentHash) continue;
     const lab = isLabArchiveDocument(documentView(d));
     if (lab) {
-      const rows = producedRows(d);
+      const rows = listedRows(d);
       if (rows ? !rows.some((id) => active.has(rootIdOf(id))) : !activeDays.has(d.date ?? '')) continue;
     }
     const next: Known = { as: lab ? 'labReport' : 'document', archiveOnly: !d.fileRef };
@@ -107,14 +100,14 @@ export function knownAs(index: KnownIndex, hash: string): Known | null {
  * (metric, day) dedup. The old row is not rewritten (owner's rulings Q5 a,
  * Q1 b). As the connector's name check does, only rows this build reads (US-65).
  */
-export function legacyMatch(record: RoadmapFile, name: string, document: DocumentFields): boolean {
-  if (isLabArchiveDocument(document)) return false;
+export function legacyMatch(record: RoadmapFile, name: string, read: DocumentFields): boolean {
+  if (isLabArchiveDocument(read)) return false;
   const base = dedupFileName(name);
   return record.documents.some((d) =>
     isReadableRow('documents', d) && !d.deleted && !d.contentHash && d.sourceFileName != null &&
     dedupFileName(d.sourceFileName) === base &&
     // Two undated rows match too: today's name-only review rule already counts them as saved (Q2).
-    (d.date ?? null) === (document.documentDate ?? null) && !isLabArchiveDocument(documentView(d)));
+    (d.date ?? null) === (read.documentDate ?? null) && !isLabArchiveDocument(documentView(d)));
 }
 
 /**
