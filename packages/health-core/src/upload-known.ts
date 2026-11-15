@@ -11,18 +11,25 @@
  *   the original behind the held row (US-14 AC4) and reads nothing;
  * - a lab archive row is known only while one of the lab rows it produced
  *   (`LAB_ARCHIVE_ROWS`) is active, judged on each row's newest correction;
- *   an archive row with no list (written before the list) is known;
- * - a tombstoned row and an empty hash are never known. Erased rows are
- *   already gone from any record a reader holds (`migrateRecord`, `mergeFiles`);
- * - a hashless older document is matched after the read, by name, date and
- *   kind (`legacyMatch`), and counts as known with no row rewritten.
+ *   an archive row with no list (every row written before PR 5) is known
+ *   only while an active value exists on its date, so a report whose values
+ *   were all deleted is read again (owner's ruling Q6);
+ * - several rows with one hash: a row holding the original wins, then a shown
+ *   document over a lab archive row, whatever their order;
+ * - a tombstoned row, an unreadable row (US-65) and an empty hash are never
+ *   known. Erased rows are already gone from any record a reader holds
+ *   (`migrateFile`, `mergeFiles`);
+ * - a hashless older shown document is matched after the read, by name and
+ *   date (`legacyMatch`), and counts as known with no row rewritten. Never a
+ *   lab report: its values keep the (metric, day) dedup after the read.
  *
  * Hashes and names stay here: never logged, never in an event.
  */
 import { documentView, isLabArchiveDocument } from './document-save';
 import { LAB_ARCHIVE_ROWS, type DocumentFields } from './document-rows';
 import { dedupFileName } from './mcp-import';
-import { rootIdOf } from './merge';
+import { isActive } from './blood-tests';
+import { dayOf, rootIdOf } from './merge';
 import { isReadableRow } from './readable-rows';
 import type { FileDocument, FileLabValue, RoadmapFile } from './roadmap-file';
 
@@ -46,7 +53,7 @@ function activeRoots(rows: readonly FileLabValue[]): Set<string> {
   const byId = new Map(rows.map((r) => [r.id, r]));
   const seen = new Set<string>();
   for (const row of rows) {
-    if (row.status !== 'active') continue;
+    if (!isActive(row)) continue;
     for (let id: string | null = row.id; id !== null && !seen.has(id); id = byId.get(id)?.correctsId ?? null) seen.add(id);
   }
   return new Set([...seen].map(rootIdOf));
@@ -60,17 +67,21 @@ function producedRows(d: FileDocument): string[] | null {
 
 /** Index the record's live, hashed rows by content (section 2's table). */
 export function knownIndex(record: RoadmapFile): KnownIndex {
-  const active = activeRoots(record.labValues);
+  const labRows = record.labValues.filter((r) => isReadableRow('labValues', r));
+  const active = activeRoots(labRows);
+  const activeDays = new Set(labRows.filter(isActive).map((r) => dayOf(r.recordedAt)));
   const index = new Map<string, Known>();
+  const rank = (k: Known) => (k.archiveOnly ? 0 : 2) + (k.as === 'document' ? 1 : 0);
   for (const d of record.documents) {
-    if (d.deleted || !d.contentHash) continue;
+    if (!isReadableRow('documents', d) || d.deleted || !d.contentHash) continue;
     const lab = isLabArchiveDocument(documentView(d));
-    const rows = lab ? producedRows(d) : null;
-    if (rows && !rows.some((id) => active.has(rootIdOf(id)))) continue;
-    // A row holding the original wins: the upload is then a plain skip.
+    if (lab) {
+      const rows = producedRows(d);
+      if (rows ? !rows.some((id) => active.has(rootIdOf(id))) : !(d.date && activeDays.has(d.date))) continue;
+    }
+    const next: Known = { as: lab ? 'labReport' : 'document', archiveOnly: !d.fileRef };
     const held = index.get(d.contentHash);
-    if (held && (!held.archiveOnly || !d.fileRef)) continue;
-    index.set(d.contentHash, { as: lab ? 'labReport' : 'document', archiveOnly: !d.fileRef });
+    if (!held || rank(next) > rank(held)) index.set(d.contentHash, next);
   }
   return index;
 }
@@ -81,20 +92,21 @@ export function knownAs(index: KnownIndex, hash: string): Known | null {
 }
 
 /**
- * After the read: a hashless live row (written before hashing, or by the
- * connector without bytes) with this file's name (as `dedupFileName` reads
- * it), date and kind (lab archive or shown document) holds the same document,
+ * After the read, for a shown document only: a hashless live shown row
+ * (written before hashing, or by the connector without bytes) with this
+ * file's name (as `dedupFileName` reads it) and date holds the same document,
  * so it counts as known. Never the type: it is the model's guess per read, and
- * a re-read under another type would save a duplicate. The old row is not
- * rewritten (owner's rulings Q5 a, Q1 b). As the connector's name check does,
- * only rows this build reads (US-65).
+ * a re-read under another type would save a duplicate. Never a lab report:
+ * two different reports can share a name and a day, and their values keep the
+ * (metric, day) dedup. The old row is not rewritten (owner's rulings Q5 a,
+ * Q1 b). As the connector's name check does, only rows this build reads (US-65).
  */
 export function legacyMatch(record: RoadmapFile, name: string, document: DocumentFields): boolean {
+  if (isLabArchiveDocument(document)) return false;
   const base = dedupFileName(name);
-  const lab = isLabArchiveDocument(document);
   return record.documents.some((d) =>
-    !d.deleted && !d.contentHash && d.sourceFileName != null && dedupFileName(d.sourceFileName) === base &&
+    isReadableRow('documents', d) && !d.deleted && !d.contentHash && d.sourceFileName != null &&
+    dedupFileName(d.sourceFileName) === base &&
     // Two undated rows match too: today's name-only review rule already counts them as saved (Q2).
-    d.date === document.documentDate &&
-    isReadableRow('documents', d) && isLabArchiveDocument(documentView(d)) === lab);
+    d.date === document.documentDate && !isLabArchiveDocument(documentView(d)));
 }
