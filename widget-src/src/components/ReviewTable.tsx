@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, useRef, useId, type MutableRefObject, type ReactNode } from 'react';
+import { FIX_ERRORS_TEXT } from '@roadmap/health-core/upload-text';
 import { type UnitSystem, type MetricType, UNIT_DEFS } from '@roadmap/health-core/units';
 import { healthInputSchema } from '@roadmap/health-core/validation';
 import { METRIC_TO_FIELD } from '@roadmap/health-core/mappings';
@@ -455,7 +456,7 @@ export function ReviewTable({
         <p className="review-date-hint">Pick a past day for every new column before saving, and for previous results a day before the report's — keeps the saved date precise.</p>
       )}
 
-      {(hasInvalid || refusedKept) && <p role="status">Correct or clear the values with errors before saving.</p>}
+      {(hasInvalid || refusedKept) && <p role="status">{FIX_ERRORS_TEXT}</p>}
       {/* One live region, so a screen reader hears the save's answer (US-12 AC6). */}
       <div className="review-save-outcome" role="status">
         {error && <p className="upload-error">{error}</p>}

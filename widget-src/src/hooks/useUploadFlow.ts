@@ -1,15 +1,17 @@
 import { useState, useReducer, useRef, useCallback, useEffect } from 'react';
 import { checkLabImportQuota } from '../lib/upload-api';
 import { fileVerdict, UPLOAD_LIMITS } from '@roadmap/health-core/upload-rules';
+import { BUSY_NOTICE_TEXT, EMPTY_ZIP_TEXT } from '@roadmap/health-core/upload-text';
 import { UNDATED_PREVIOUS, uploadLimitSignal, zipMemberName } from '@roadmap/health-core/lab-extraction';
 import type { UnitSystem } from '@roadmap/health-core/units';
 import type { DocumentPayload } from '@roadmap/health-core/document-save';
+import { labRowsByFile } from '@roadmap/health-core/document-rows';
 import { UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, type UploadOutcomeKey } from '@roadmap/health-core/product-events';
 import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocumentArchiveMode, getEraseIdentity, getShownErase } from '../lib/roadmap-data';
 import { countRefusedSpellings } from '../lib/refused-spellings';
 import { trackProductEvent, type ProductEventMetadata } from '../lib/server-api';
-import type { UploadErrorCode, UploadHistory } from '../lib/api-types';
-import { UploadError, KEY_ERROR_MESSAGES, BUSY_NOTICE_TEXT, BATCH_THRESHOLD, shortName, hasValues, processBatch, processPipeline, type FileNotice, type ReadInput, type ReviewDecisions, type FileResult } from '../lib/upload-pipeline';
+import type { BulkLabValuesResult, BulkSaveResult, UploadErrorCode, UploadHistory } from '../lib/api-types';
+import { UploadError, KEY_ERROR_MESSAGES, BATCH_THRESHOLD, shortName, hasValues, processBatch, processPipeline, type FileNotice, type ReadInput, type ReviewDecisions, type FileResult } from '../lib/upload-pipeline';
 import { attachOriginals, synthesizeLabArchiveEntries, connectorDocumentEntries } from '../lib/archive-payloads';
 import { toStoreInputs } from '../lib/to-store-inputs';
 import { createUploadBundleLoader } from '../lib/upload-bundle';
@@ -18,7 +20,7 @@ import { recordFailure, WritesStoppedError } from '../lib/error-diagnostics';
 import { SHOPIFY_SURFACE } from '../lib/build-flags';
 import { isDocx } from '../lib/file-kinds';
 import { withClaim } from '../lib/sync-claim';
-import { transition, INITIAL_UPLOAD, NO_OUTCOME, type SaveOutcome, type Progress, type RunCounts } from '../lib/upload-flow-state';
+import { joinRows, transition, INITIAL_UPLOAD, NO_OUTCOME, type SaveOutcome, type Progress, type RunCounts } from '../lib/upload-flow-state';
 
 /**
  * The upload flow (US-12): one `UploadState` union, each phase carrying its
@@ -49,7 +51,6 @@ const BYOK_ERROR_MESSAGES: Partial<Record<UploadErrorCode, string>> = {
 };
 
 export const MAX_FILES = UPLOAD_LIMITS.web.filesPerPick; // also the server's per-IP daily limit (US-12 AC17)
-const EMPTY_ZIP_TEXT = 'No files we can read inside this ZIP.';
 const OVER_LIMIT_TEXT = `Not read. It is over the ${MAX_FILES}-file limit for one upload. Upload it separately.`;
 /** The files a pick held past MAX_FILES, one notice that counts them (US-12 AC9). */
 const leftOutNotice = (n: number): FileNotice => ({
@@ -246,11 +247,10 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
         ? await processBatch(upload, inputs, abort, updateProgress, runNotices)
         : await processPipeline(upload, inputs, abort, updateProgress, unitSystem, runNotices);
       if (abort.signal.aborted) return;
-      // Each result carries its own original. It is kept only when the backend
-      // can archive it: off-cloud the bytes would be stripped at save.
-      const attached = getDocumentArchiveMode() === 'cloud'
-        ? await attachOriginals(allResults)
-        : allResults.map(r => ({ ...r, file: undefined }));
+      // Each result carries its own original and its hash. The bytes are kept
+      // only when the backend can archive them; the hash always (US-14 AC10).
+      const hashed = await attachOriginals(allResults);
+      const attached = getDocumentArchiveMode() === 'cloud' ? hashed : hashed.map(r => ({ ...r, file: undefined }));
       if (abort.signal.aborted) return;
       finish(attached);
       dispatch({ type: 'read', run, results: attached, notices: runNotices });
@@ -300,6 +300,8 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
     else if (notices.length > 0) trackUploadOutcome(counts.picked, 0, counts.docx, notices);
   };
 
+  // The lab rows earlier attempts of this review wrote (`SaveOutcome.labRows`).
+  const earlierRows = outcome.labRows;
   const save = useCallback(({ values: selectedValues, documents, labValues, reviewed, review, labRefusals = [] }: ReviewDecisions) => withClaim(savingRef, async () => {
     dispatch({ type: 'saveStarted' });
     const erase = getShownErase(); // the record this save was asked for
@@ -307,24 +309,7 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
     let attempt: SaveOutcome | undefined;
     const failSave = (message: string) => dispatch({ type: 'saveFailed', message, attempt });
     try {
-      // Save core measurements, additional lab values, and documents in parallel
       const { measurements, labValues: labValuePayloads } = toStoreInputs({ values: selectedValues, labValues });
-      // Blobs travel INSIDE the payload (attached at processing time, and only
-      // when the backend can archive them) — no name-keyed re-join here.
-      const docPayloads: DocumentPayload<Blob>[] = documents.map(d => ({
-        documentType: d.documentType,
-        title: d.title,
-        documentDate: d.documentDate,
-        contentMd: d.contentMd,
-        metadata: d.metadata,
-        sourceFileName: d.sourceFileName,
-        file: d.file,
-      }));
-      const covered = new Set(documents.map(d => d.sourceFileName));
-      docPayloads.push(...synthesizeLabArchiveEntries(reviewed, covered));
-      // A letter the connector filed metadata-only: unselected here, still archived
-      // (US-35 AC8), with the title and date the review shows (US-13 AC6).
-      docPayloads.push(...connectorDocumentEntries(reviewed, history.documents, covered));
 
       // Each branch settles before the session becomes dismissible. One
       // rejected write must not release another archive that is still saving.
@@ -337,11 +322,35 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
         if (!(err instanceof WritesStoppedError)) Sentry.captureException(recordFailure(err, 'Upload save failed'), { tags: { area: 'upload-save', branch } });
         return fallback;
       };
-      const [savedValues, savedDocs, savedLabValues] = await Promise.all([
-        measurements.length > 0 ? bulkSaveMeasurements(measurements).catch(failed('measurements', { saved: [], skippedDuplicates: 0, errorCount: measurements.length, refused: [] })) : Promise.resolve({ saved: [], skippedDuplicates: 0, errorCount: 0, refused: [] }),
-        docPayloads.length > 0 ? bulkSaveDocuments(docPayloads).catch(failed('documents', { saved: [], errorCount: docPayloads.length, unstored: 0 })) : Promise.resolve({ saved: [], errorCount: 0, unstored: 0 }),
-        labValuePayloads.length > 0 ? bulkSaveLabValues(labValuePayloads).catch(failed('labValues', { saved: [], skippedDuplicates: 0, errorCount: labValuePayloads.length, refused: [] })) : Promise.resolve({ saved: [], skippedDuplicates: 0, errorCount: 0, refused: [] }),
-      ]);
+      // The values first, then the documents: a lab report's archive row lists
+      // the rows its values wrote (US-14 AC10), this attempt's and an earlier
+      // one's, whose values a retry skips as already saved. A failed branch
+      // stops neither other, as when they ran side by side.
+      const savedValues: BulkSaveResult = measurements.length > 0 ? await bulkSaveMeasurements(measurements).catch(failed('measurements', { saved: [], skippedDuplicates: 0, errorCount: measurements.length, refused: [] })) : { saved: [], skippedDuplicates: 0, errorCount: 0, refused: [] };
+      const savedLabValues: BulkLabValuesResult = labValuePayloads.length > 0 ? await bulkSaveLabValues(labValuePayloads).catch(failed('labValues', { saved: [], skippedDuplicates: 0, errorCount: labValuePayloads.length, refused: [] })) : { saved: [], skippedDuplicates: 0, errorCount: 0, refused: [] };
+      const labRows = labRowsByFile(
+        [...(savedValues.labRows ?? measurements.map(() => null)), ...(savedLabValues.labRows ?? labValuePayloads.map(() => null))],
+        [...selectedValues.map(v => v.file), ...labValues.map(v => v.file)],
+      );
+      // Blobs travel INSIDE the payload (attached at processing time, and only
+      // when the backend can archive them) — no name-keyed re-join here.
+      const docPayloads: DocumentPayload<Blob>[] = documents.map(d => ({
+        documentType: d.documentType,
+        title: d.title,
+        documentDate: d.documentDate,
+        contentMd: d.contentMd,
+        metadata: d.metadata,
+        sourceFileName: d.sourceFileName,
+        file: d.file,
+        contentHash: d.contentHash,
+      }));
+      // By each file's identity: a letter and a lab report can share a name.
+      const covered = new Set(documents.flatMap(d => (d.fileKey ? [d.fileKey] : [])));
+      docPayloads.push(...synthesizeLabArchiveEntries(reviewed, covered, joinRows(earlierRows, labRows)));
+      // A letter the connector filed metadata-only: unselected here, still archived
+      // (US-35 AC8), with the title and date the review shows (US-13 AC6).
+      docPayloads.push(...connectorDocumentEntries(reviewed, history.documents, covered));
+      const savedDocs = docPayloads.length > 0 ? await bulkSaveDocuments(docPayloads).catch(failed('documents', { saved: [], errorCount: docPayloads.length, unstored: 0 })) : { saved: [], errorCount: 0, unstored: 0 };
 
       const saveErrors = savedValues.errorCount + savedLabValues.errorCount + savedDocs.errorCount;
       attempt = {
@@ -351,6 +360,7 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
         skippedValues: savedValues.skippedDuplicates, skippedLabValues: savedLabValues.skippedDuplicates,
         unstored: savedDocs.unstored ?? 0,
         refusedLabUnits: savedLabValues.refused, refusedMeasurements: savedValues.refused,
+        labRows,
       };
       // A save error keeps the review open for retry (US-12 AC6). Skipped
       // values and refusals are settled outcomes, reported on the done screen;
@@ -386,7 +396,7 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
     } catch {
       failSave('Failed to save. Please try again.');
     }
-  }), [onComplete, onScreeningUpdate, history.documents, endReview]);
+  }), [onComplete, onScreeningUpdate, history.documents, endReview, earlierRows]);
 
   // A read Cancel stopped, counted once (US-12 AC10): each cancel holds a new object.
   const cancelledRead = state.phase === 'picking' ? state.cancelledRead : undefined;

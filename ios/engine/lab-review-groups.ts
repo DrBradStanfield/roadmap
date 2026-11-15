@@ -6,9 +6,9 @@
 // the test day changes, so it holds no rule and no copy of these words. The only
 // call into the shared classifier is `classifyReport` below, which the save uses too.
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
-import { validDay, type BulkRow } from '../../packages/health-core/src/record-edits';
+import { validDay } from '../../packages/health-core/src/record-edits';
 import {
-  classifyImportValues, importRow, importSummary, importSummaryText, notSavedGroups, valueDays,
+  classifyImportValues, importSummary, importSummaryText, notSavedGroups, reportImportFile,
   IMPORT_REVIEW_TEXT, type ImportClassification, type ImportFile, type UnsureReason,
 } from '../../packages/health-core/src/import-review';
 import { createEmptyFile } from '../../packages/health-core/src/roadmap-file';
@@ -55,15 +55,7 @@ export interface LabReviewGroups {
  * exactly what Save submits, in order; its `values` every value's group.
  */
 export function classifyReport(extraction: Extraction, file: RoadmapFile | null, ticked: Iterable<string>, day: string | null, now: string): ImportClassification {
-  const result = extraction as ImportFile['result'];
-  const days = valueDays(result, day);
-  const rows: Record<string, BulkRow> = {};
-  for (const ref of ticked) {
-    const on = days[ref] ? validDay(days[ref]!, { now }) : null;
-    const row = on ? importRow(result, ref, on) : null;
-    if (row) rows[ref] = row;
-  }
-  return classifyImportValues([{ result, rows, days }], file ?? createEmptyFile({ deviceId: 'review', now }), now);
+  return classifyImportValues([reportImportFile(extraction as ImportFile['result'], ticked, day, now)], file ?? createEmptyFile({ deviceId: 'review', now }), now);
 }
 
 /** The review's groups for the ticks and test day it holds now. */

@@ -24,7 +24,7 @@ describe('a ZIP that will not open (US-12 AC9)', () => {
       { type: 'hashed', run: 1, id: 'a', hash: 'ha', known: null },
       { type: 'converted', run: 1, id: 'a', pages: 1, truncated: false },
       { type: 'answered', run: 1, id: 'a', extraction: EXT, legacy: false, now: NOW },
-      { type: 'chose', id: 'a', change: { tick: 'v0', on: false } },
+      { type: 'chose', now: '2026-11-15T00:00:00.000Z', id: 'a', change: { tick: 'v0', on: false } },
     ]);
     const { state, effects } = transition(read, { type: 'zipFailed', run: 1, zip: 'z' });
     expect(state.phase).toBe('open');
@@ -86,7 +86,7 @@ describe('the daily limit ends the run\'s reading (US-12 AC9, AC26)', () => {
     // Eight converted: five sending, three ready behind them, three more converting.
     for (let i = 0; i < 8; i++) s = transition(s, { type: 'converted', run: 1, id: `f${i}`, pages: 1, truncated: false }).state;
     s = transition(s, { type: 'answered', run: 1, id: 'f0', extraction: EXT, legacy: false, now: NOW }).state;
-    s = transition(s, { type: 'chose', id: 'f0', change: { tick: 'v0', on: false } }).state;
+    s = transition(s, { type: 'chose', now: '2026-11-15T00:00:00.000Z', id: 'f0', change: { tick: 'v0', on: false } }).state;
     expect(stages(s).slice(0, 12)).toEqual(['f0:read', ...[1, 2, 3, 4, 5].map((i) => `f${i}:sending`), 'f6:ready', 'f7:ready', 'f8:converting', 'f9:converting', 'f10:converting', 'f11:hashed']);
 
     const limit = transition(s, { type: 'sendFailed', run: 1, id: 'f1', failure: 'rate_limit' });
