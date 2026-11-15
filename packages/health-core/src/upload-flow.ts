@@ -260,7 +260,8 @@ function listed(s: UploadState, e: Extract<UploadEvent, { type: 'listed' }>): Up
   if (added.files.every((f) => f.status.s === 'refused' && f.status.verdict === 'unsupported')) { // empty, hidden or unsupported only
     const empty = failed(zip, 'zipEmpty');
     const dropped = forget(e.run, [zip.id, ...e.members.map((m) => m.id)]);
-    return settled({ state: { ...s, files: s.files.map((f) => (f === zip ? empty : f)) }, effects: dropped });
+    // Its list slot is free: the next ZIP opens (pump; zipFailed pumps through fileStep), then a pick of only such ZIPs fails as a whole.
+    return settled(pump({ ...s, files: s.files.map((f) => (f === zip ? empty : f)) }, dropped));
   }
   // One pick reads at most filesPerPick files, its ZIPs' members included: the rest are refused, named (US-12 AC17).
   // A ZIP not yet listed counts as one until it is.

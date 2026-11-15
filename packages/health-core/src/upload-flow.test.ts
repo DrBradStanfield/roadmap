@@ -320,3 +320,20 @@ describe('upload-flow: refusals the state holds', () => {
     expect([RETRYABLE.keyRefused, RETRYABLE.noCredit, RETRYABLE.noKey, RETRYABLE.keyRateLimit]).toEqual([false, false, false, true]);
   });
 });
+
+// US-12 AC9, AC26 (Codex re-check on PR 1846): a ZIP that gives nothing, or will not open, frees its list slot.
+describe('upload-flow: a ZIP that ends without members frees its list slot', () => {
+  const zips = pick([{ id: 'z1', name: 'z1.zip', kind: 'zip' }, { id: 'z2', name: 'z2.zip', kind: 'zip' }, { id: 'z3', name: 'z3.zip', kind: 'zip' }]);
+  const third = (end: (s: UploadState, id: string) => UploadEvent) => {
+    let s = transition(initialUpload('web'), zips).state;
+    expect(statusOf(s, 'z3')).toEqual({ s: 'unlisted' });
+    const fx: ReturnType<typeof transition>['effects'] = [];
+    for (const id of ['z1', 'z2']) { const step = transition(s, end(s, id)); s = step.state; fx.push(...step.effects); }
+    expect(statusOf(s, 'z3')).toEqual({ s: 'listing' });
+    expect(fx).toContainEqual({ type: 'list', run: 1, id: 'z3' });
+    const read = transition(s, { type: 'listed', run: 1, zip: 'z3', members: [{ id: 'm', name: 'a.pdf', bytes: 1 }] });
+    expect(read.effects).toContainEqual({ type: 'hash', run: 1, id: 'm' });
+  };
+  it('[empty, empty, readable]: the third is listed and read', () => third((_s, id) => ({ type: 'listed', run: 1, zip: id, members: [] })));
+  it('[unopenable, unopenable, readable]: the third is listed and read', () => third((_s, id) => ({ type: 'zipFailed', run: 1, zip: id })));
+});
