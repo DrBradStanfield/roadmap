@@ -13,8 +13,8 @@ const MB = 1024 * 1024;
 
 export type UploadPlatform = 'web' | 'phone';
 
-/** Files read by the server at once, and turned into pages at once, on both clients (upload-flow.ts, US-12 AC26). */
-const IN_FLIGHT = { sendsInFlight: 5, convertsInFlight: 3 } as const;
+/** Files read by the server at once, turned into pages at once, and ZIPs opened at once, on both clients (upload-flow.ts, US-12 AC26). */
+const IN_FLIGHT = { sendsInFlight: 5, convertsInFlight: 3, listsInFlight: 2 } as const;
 
 export const UPLOAD_LIMITS = {
   web: {

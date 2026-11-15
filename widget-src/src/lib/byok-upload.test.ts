@@ -108,10 +108,11 @@ describe('US-12 AC8: the BYOK parse refuses a dot-thousands count written as a J
 });
 
 describe('US-12 AC9: a BYOK failure keeps its code', () => {
-  it('a 429 from the user\'s own key is a rate limit, and its message names that key', async () => {
+  // US-12 AC9: the key's own minute limit, never our daily limit, so the upload's other files go on.
+  it('a 429 from the user\'s own key is that key\'s rate limit, and its message names that key', async () => {
     stubAnthropic(() => new Response('{}', { status: 429 }));
     const out = await labImport(PAGES, 'si');
-    expect(out.errorCode).toBe('rate_limit');
+    expect(out.errorCode).toBe('key_rate_limit');
     expect(out.error).toMatch(/Anthropic/);
     expect(out.error).not.toMatch(/—/);
   });

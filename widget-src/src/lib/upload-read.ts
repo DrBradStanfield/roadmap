@@ -1,38 +1,37 @@
 /**
  * The web's upload screens, read from the shared upload state (health-core upload-flow.ts, design
- * docs/drafts/upload-shared-engine.md PR 9) and what the web holds beside it: each file's bytes,
- * pages and the server's words, by file id (the design's platform port). Pure: the hook
- * (hooks/useUploadFlow.ts) runs the effects; this says what the modal shows and what the review
- * and save are handed, in the shapes they took before (FileResult, FileNotice).
+ * docs/drafts/upload-shared-engine.md PR 9) and what the web holds beside it: each file's bytes and
+ * pages, by file id (the design's platform port), and the pick's own counts. Every fact about a file
+ * (why it failed, whether the run was refused) is the state's. Pure: the hook (hooks/useUploadFlow.ts)
+ * runs the effects; this says what the modal shows and what the review and save are handed, in the
+ * shapes they took before (FileResult, FileNotice). A transitional adapter: the review-page PR
+ * (design PR 10) draws the web from health-core's uploadView instead.
  */
 import { inFlight, type FailReason, type UploadFile, type UploadState } from '@roadmap/health-core/upload-flow';
 import { zipMemberName } from '@roadmap/health-core/lab-extraction';
 import { UPLOAD_LIMITS } from '@roadmap/health-core/upload-rules';
-import { EMPTY_ZIP_TEXT } from '@roadmap/health-core/upload-text';
-import type { LabImportResult, PageContent, UploadErrorCode } from './api-types';
-import { readResult, shortName, unreadResult, type FileNotice, type FileResult } from './upload-pipeline';
+import type { KnownIndex } from '@roadmap/health-core/upload-known';
+import { BUSY_NOTICE_TEXT, EMPTY_ZIP_TEXT, FAIL_TEXT, OVER_LIMIT_TEXT, REFUSED_TEXT } from '@roadmap/health-core/upload-text';
+import type { LabImportResult, PageContent } from './api-types';
+import { readResult, shortName, type FileNotice, type FileNoticeReason, type FileResult } from './upload-pipeline';
 
 export const MAX_FILES = UPLOAD_LIMITS.web.filesPerPick; // also the server's per-IP daily limit (US-12 AC17)
 
-/** One file as the web holds it. `entry`: a ZIP member not yet inflated. `note`: the words for a
- *  file that gave no pages, when it has its own. `failure`: the server's own code and words for a
- *  file it did not read, which name it as they did before (`sendFailed` carries only the shared code). */
+/** One file as the web holds it: its bytes (`file`, or `entry` for a ZIP member, inflated when read),
+ *  its pages while it waits to be sent, and `note`, the words for a file that gave no pages when it
+ *  has its own (a .docx of pictures, a legacy .doc, a member too large once inflated). */
 export interface HeldFile {
   file?: File;
   entry?: { async(type: 'blob'): Promise<Blob> };
   pages?: PageContent[];
   note?: FileNotice;
-  failure?: { code: UploadErrorCode; error: string };
 }
 
-/** A run the quota check or the upload bundle ended before any read: its message, and the reason
- *  each file not read is named with (null: none, as the Pages build's missing key names no file). */
-export interface RunStop { message: string; reason: 'limitError' | 'serverError' | null }
+/** One pick as the web holds it. `leftOut`: files past MAX_FILES; `docx`: .docx files picked, oversize
+ *  too (US-12 AC13); `known`: the record's files by content, read once per pick (US-12 AC27). */
+export interface Held { run: number; leftOut: number; docx: number; known: KnownIndex | null; files: Map<string, HeldFile> }
 
-/** One pick as the web holds it. `leftOut`: files past MAX_FILES; `docx`: .docx files picked, oversize too (US-12 AC13). */
-export interface Held { run: number; leftOut: number; docx: number; stopped: RunStop | null; files: Map<string, HeldFile> }
-
-export const emptyHeld = (run = 0): Held => ({ run, leftOut: 0, docx: 0, stopped: null, files: new Map() });
+export const emptyHeld = (run = 0): Held => ({ run, leftOut: 0, docx: 0, known: null, files: new Map() });
 
 /** The modal's screens, as before: the read and the review are one `open` state in core. */
 export type UploadPhase = 'picking' | 'reading' | 'readFailed' | 'reviewing' | 'saving' | 'saveFailed' | 'done';
@@ -44,32 +43,42 @@ export const NO_FILES_TEXT = 'No readable files found. Please check your files a
 /** A file's whole path: a ZIP member's is its ZIP's name, then its path (`labs.zip/results.pdf`). */
 export const fileNameOf = (f: UploadFile) => (f.zip !== undefined ? zipMemberName(f.zip, f.name) : f.name);
 
-/** The server's refusals, each with the web's code, for a file the server never answered (the daily limit stopped it). With a read, only these reach the review. */
-const CODE_OF: Partial<Record<FailReason, UploadErrorCode>> = { busy: 'busy', dailyLimit: 'rate_limit', declined: 'refused', tooLong: 'too_long', server: 'server_error', network: 'network' };
-const SENT = Object.keys(CODE_OF) as FailReason[];
-const reached = (f: UploadFile) => f.status.s === 'read' || (f.status.s === 'failed' && SENT.includes(f.status.reason));
+/** A file the server answered without a read (or the daily limit stopped), as the web names it: the
+ *  notice's reason, which is also its `upload_outcome` count (US-12 AC9, AC10), and its own words
+ *  where the reason has more than one. Only these, and read files, reach the review. */
+const UNREAD: Partial<Record<FailReason, { reason: FileNoticeReason; text?: string }>> = {
+  busy: { reason: 'serverError', text: BUSY_NOTICE_TEXT },
+  dailyLimit: { reason: 'limitError' },
+  declined: { reason: 'refused' },
+  tooLong: { reason: 'tooLong' },
+  server: { reason: 'serverError' },
+  network: { reason: 'serverError' },
+  keyRefused: { reason: 'serverError', text: FAIL_TEXT.keyRefused },
+  noCredit: { reason: 'serverError', text: FAIL_TEXT.noCredit },
+  keyRateLimit: { reason: 'limitError', text: FAIL_TEXT.keyRateLimit },
+};
+const reached = (f: UploadFile) => f.status.s === 'read' || (f.status.s === 'failed' && UNREAD[f.status.reason] !== undefined);
 const badZip = (f: UploadFile) => f.status.s === 'failed' && (f.status.reason === 'zipUnreadable' || f.status.reason === 'zipEmpty');
 const filesOf = (s: UploadState) => (s.phase === 'choosing' ? [] : s.files);
 
 /** The screen a state shows. `open` is reading while anything is in flight, then the review once a
  *  file reached the server or is already held; a pick of only files too large stays on the dropzone. */
-export function phaseOf(s: UploadState, held: Held): UploadPhase {
+export function phaseOf(s: UploadState): UploadPhase {
   switch (s.phase) {
     case 'choosing': case 'consent': return 'picking';
     case 'failed': return 'readFailed';
     case 'saving': case 'saveFailed': case 'done': return s.phase;
     case 'open':
       if (inFlight(s) > 0) return 'reading';
-      if (held.stopped) return 'readFailed';
       if (s.files.some((f) => reached(f) || f.status.s === 'known')) return 'reviewing';
       return s.files.every((f) => f.status.s === 'refused') ? 'picking' : 'readFailed';
   }
 }
 
-/** The read-failed screen's message: the run's own, else no readable file (a pick of only ZIPs that gave none says it short). */
-export function readErrorOf(s: UploadState, held: Held): string | null {
-  if (phaseOf(s, held) !== 'readFailed') return null;
-  if (held.stopped) return held.stopped.message;
+/** The read-failed screen's message: the run's refusal, else no readable file (a pick of only ZIPs that gave none says it short). */
+export function readErrorOf(s: UploadState): string | null {
+  if (phaseOf(s) !== 'readFailed') return null;
+  if (s.phase === 'failed' && s.refused) return REFUSED_TEXT[s.refused];
   return filesOf(s).every((f) => f.status.s === 'refused' || badZip(f)) ? NO_READABLE_TEXT : NO_FILES_TEXT;
 }
 
@@ -98,6 +107,9 @@ export const leftOutNotice = (n: number): FileNotice => ({
 /** A file reached the server: the review has something to show. */
 export const hasResults = (s: UploadState) => filesOf(s).some(reached);
 
+/** The Pages build's missing key refused the run: it names and counts nothing (US-12 AC10). */
+export const refusedForKey = (s: UploadState) => s.phase === 'failed' && s.refused === 'noKey';
+
 /** A cancelled run's notices, counted on the pick's basis (US-12 AC10): the picked files too large, and those left out. */
 export function pickNotices(s: UploadState, held: Held): FileNotice[] {
   const large = filesOf(s).filter((f) => f.zip === undefined && f.status.s === 'refused' && f.status.verdict === 'tooLarge');
@@ -105,13 +117,13 @@ export function pickNotices(s: UploadState, held: Held): FileNotice[] {
 }
 
 /** What one file gives the review and its notices, in the shapes the review took before. */
-function outcomeOf(f: UploadFile, h: HeldFile | undefined, stopped: RunStop | null, cloud: boolean): { result?: FileResult; notices: FileNotice[] } {
+function outcomeOf(f: UploadFile, h: HeldFile | undefined, cloud: boolean): { result?: FileResult; notices: FileNotice[] } {
   const name = fileNameOf(f);
   const truncated: FileNotice[] = f.pages?.truncated ? [{ name, reason: 'truncated' }] : [];
   const st = f.status;
   switch (st.s) {
-    case 'refused': return { notices: st.verdict === 'tooLarge' ? [{ name, reason: 'tooLarge' }] : [] };
-    case 'stopped': return { notices: stopped?.reason ? [{ name, reason: stopped.reason }] : [] };
+    case 'refused':
+      return { notices: st.verdict === 'tooLarge' ? [{ name, reason: 'tooLarge' }] : st.verdict === 'tooMany' ? [{ name, reason: 'limitError', text: OVER_LIMIT_TEXT }] : [] };
     case 'read': {
       const { result, notice } = readResult(name, st.extraction as unknown as LabImportResult);
       // The original travels with its result only where the backend can archive it; its hash always (US-14 AC10).
@@ -119,14 +131,16 @@ function outcomeOf(f: UploadFile, h: HeldFile | undefined, stopped: RunStop | nu
       return { result: { ...result, ...(file ? { file } : null), ...(f.hash ? { contentHash: f.hash } : null) }, notices: [...truncated, ...(notice ? [notice] : [])] };
     }
     case 'failed': {
-      if (SENT.includes(st.reason)) {
-        const { result, notice } = unreadResult(name, h?.failure?.code ?? CODE_OF[st.reason], h?.failure?.error ?? 'Extraction failed');
-        return { result, notices: [...truncated, notice] };
+      const unread = UNREAD[st.reason];
+      if (unread) {
+        const result: FileResult = { fileName: name, reportDate: null, values: [], additionalValues: [], error: FAIL_TEXT[st.reason] };
+        return { result, notices: [...truncated, { name, ...unread }] };
       }
+      if (st.reason === 'noKey') return { notices: [] }; // the run's own message says it
       if (st.reason === 'zipEmpty') return { notices: [{ name, reason: 'openFailed', text: EMPTY_ZIP_TEXT }] };
       return { notices: [h?.note ?? { name, reason: 'openFailed' }] };
     }
-    default: return { notices: [] }; // in flight, or already held: never shown (US-12 AC27)
+    default: return { notices: [] }; // in flight, stopped, or already held: never shown (US-12 AC27)
   }
 }
 
@@ -136,7 +150,7 @@ export function readOutcome(s: UploadState, held: Held, cloud: boolean): { resul
   const results: FileResult[] = [];
   const notices: FileNotice[] = [];
   for (const f of filesOf(s)) {
-    const out = outcomeOf(f, held.files.get(f.id), held.stopped, cloud);
+    const out = outcomeOf(f, held.files.get(f.id), cloud);
     if (out.result) results.push(out.result);
     notices.push(...out.notices);
   }

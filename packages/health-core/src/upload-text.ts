@@ -7,7 +7,7 @@
  */
 import { IMPORT_LIMITS } from './import-hints';
 import { IMPORT_REVIEW_TEXT, KIND_WORDS, plural } from './import-review';
-import type { FailReason } from './upload-flow';
+import type { FailReason, RunRefusal } from './upload-flow';
 import type { DocumentType } from './validation';
 
 /** Section 5, rows 1 to 27, by key. */
@@ -38,7 +38,7 @@ export const UPLOAD_TEXT = {
   statusWaiting: 'Waiting',
   statusReading: 'Reading',
   statusRead: 'Read',
-  statusRefused: (verdict: 'tooLarge' | 'unsupported') => (verdict === 'tooLarge' ? 'Too large to read' : 'Not a PDF, photo or ZIP'),
+  statusRefused: (verdict: 'tooLarge' | 'unsupported' | 'tooMany') => (verdict === 'tooLarge' ? 'Too large to read' : verdict === 'tooMany' ? OVER_LIMIT_TEXT : 'Not a PDF, photo or ZIP'),
   /** 23. Each part dropped at zero; values alone are the review's own Save. */
   saveBoth: (n: number, m: number) => (m === 0 ? IMPORT_REVIEW_TEXT.save(n) : n === 0 ? `Save ${plural(m, 'document')}` : `Save ${plural(n, 'value')} and ${plural(m, 'document')}`),
   saveWait: (k: number) => `Wait for ${plural(k, 'file')} to finish`,
@@ -84,6 +84,22 @@ export const FILE_NOTICE_TEXT = {
 export const FIX_ERRORS_TEXT = 'Correct or clear the values with errors before saving.';
 /** A busy server's notice; moved from upload-pipeline.ts. */
 export const BUSY_NOTICE_TEXT = 'Not read. Our server was busy. Please try again later.';
+/** A file past the pick's cap once its ZIPs are opened (US-12 AC17); moved from useUploadFlow.ts. */
+export const OVER_LIMIT_TEXT = `Not read. It is over the ${IMPORT_LIMITS.websiteFiles}-file limit for one upload. Upload it separately.`;
+/** The Pages build's own key or its account, not the file, so "try again" never helps: each says what
+ *  to check (US-12 AC9); moved from widget-src upload-pipeline.ts, UploadNotices.tsx and byok-upload.ts. */
+export const KEY_TEXT = {
+  refused: 'Anthropic refused your API key. Check the key in the "Ask about your plan" panel.',
+  noCredit: 'Your Anthropic account has no credit. Check its billing, then try again.',
+  rateLimit: 'Not read. Your Anthropic key hit its rate limit. Wait a minute and try again.',
+  missing: 'Connect your Anthropic API key (in the "Ask about your plan" panel) to process documents on this page.',
+} as const;
+/** A whole run's refusal (upload-flow.ts runRefused), as the web's read-failed screen says it; moved from useUploadFlow.ts. */
+export const REFUSED_TEXT: Record<RunRefusal, string> = {
+  dailyLimit: 'Daily upload limit reached. You can upload more tomorrow.',
+  noKey: KEY_TEXT.missing,
+  server: 'An error occurred while processing files. Please try again.',
+};
 /** An empty ZIP, or one of unsupported files, named itself (US-12 AC9); moved from useUploadFlow.ts. */
 export const EMPTY_ZIP_TEXT = 'No files we can read inside this ZIP.';
 
@@ -104,4 +120,8 @@ export const FAIL_TEXT: Record<FailReason, string> = {
   tooLong: FILE_NOTICE_TEXT.tooLong,
   server: FILE_NOTICE_TEXT.serverError,
   network: FILE_NOTICE_TEXT.serverError,
+  keyRefused: `Not read. ${KEY_TEXT.refused}`,
+  noCredit: `Not read. ${KEY_TEXT.noCredit}`,
+  keyRateLimit: KEY_TEXT.rateLimit,
+  noKey: KEY_TEXT.missing,
 };

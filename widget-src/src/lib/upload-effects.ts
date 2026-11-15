@@ -5,14 +5,14 @@
  * where the state left it, so work for a run Cancel or Stop ended is never started or answered.
  */
 import type { UploadEffect, UploadEvent, UploadState } from '@roadmap/health-core/upload-flow';
-import type { UploadFailure } from '@roadmap/health-core/upload-failure';
-import type { Known } from '@roadmap/health-core/upload-known';
+import { isUploadFailure, type UploadFailure } from '@roadmap/health-core/upload-failure';
+import { knownAs, type Known } from '@roadmap/health-core/upload-known';
 import type { UnifiedExtractionResult } from '@roadmap/health-core/lab-extraction';
 import type { UnitSystem } from '@roadmap/health-core/units';
 import type { UploadErrorCode } from './api-types';
 import { labImport } from './upload-api';
 import { sha256Blob } from './archive-payloads';
-import { getDocumentArchiveMode, isLegacyUpload, knownUploadAs } from './roadmap-data';
+import { getDocumentArchiveMode, isLegacyUpload, uploadKnownIndex } from './roadmap-data';
 import { readPages, shortName } from './upload-pipeline';
 import { fileNameOf, type Held } from './upload-read';
 // Type only: a value import would pull the lazy upload bundle into the main one.
@@ -37,17 +37,18 @@ function still(port: UploadPort, run: number, id: string, stage: string) {
   return s.phase === 'open' && s.run === run ? s.files.find((f) => f.id === id && f.status.s === stage) : undefined;
 }
 
-/** The web's codes the shared state knows; the Pages build's key failures read as a server error there. */
-const FAILURES: readonly UploadErrorCode[] = ['rate_limit', 'busy', 'server_error', 'network', 'refused', 'too_long'];
-const asFailure = (code: UploadErrorCode | undefined): UploadFailure => (code && FAILURES.includes(code) ? code as UploadFailure : 'server_error');
+/** The web's code as the shared state knows it (health-core UploadFailure); anything else is a server error. */
+const asFailure = (code: UploadErrorCode | undefined): UploadFailure => (isUploadFailure(code) ? code : 'server_error');
 
 /**
  * A file the record holds. One the record holds without its original, with a cloud open, is read as
  * before: today's save files that original only from a read (US-35 AC8, US-14 AC4); the shared save
- * plan (design PR 10) files it unread.
+ * plan (design PR 10) files it unread. The record is read once per pick, at its first hash: a delete or
+ * save before the pick is in it, so the file is read or skipped as the record now says.
  */
-function knownOnWeb(hash: string): Known | null {
-  const known = knownUploadAs(hash);
+function knownOnWeb(held: Held, hash: string): Known | null {
+  held.known ??= uploadKnownIndex();
+  const known = knownAs(held.known, hash);
   return known && !(known.archiveOnly && getDocumentArchiveMode() === 'cloud') ? known : null;
 }
 
@@ -74,22 +75,30 @@ async function hash(port: UploadPort, run: number, id: string): Promise<void> {
   if (!f || !h) return;
   let digest: string;
   try {
-    // A member is inflated here, once: its bytes are hashed, then read.
-    if (!h.file && h.entry) h.file = new File([await h.entry.async('blob')], shortName(f.name));
-    digest = await sha256Blob(h.file!);
+    // A member is inflated to hash it and again to read it: its bytes are never held while it waits
+    // for a convert slot, which nothing counts (upload-flow.ts `pump`).
+    digest = await sha256Blob(h.file ?? await h.entry!.async('blob'));
   } catch {
     if (still(port, run, id, 'hashing')) port.send({ type: 'hashFailed', run, id });
     return;
   }
-  if (still(port, run, id, 'hashing')) port.send({ type: 'hashed', run, id, hash: digest, known: knownOnWeb(digest) });
+  if (still(port, run, id, 'hashing')) port.send({ type: 'hashed', run, id, hash: digest, known: knownOnWeb(port.held(), digest) });
 }
 
 async function convert(port: UploadPort, run: number, id: string): Promise<void> {
   const upload = await port.prepare(run);
   const f = still(port, run, id, 'converting');
   const h = port.held().files.get(id);
-  if (!upload || !f || !h?.file) return;
-  const read = await readPages(upload, fileNameOf(f), h.file);
+  if (!upload || !f || !(h?.file || h?.entry)) return;
+  let file: File;
+  try {
+    // A member read for good: its File travels with its result to the archive (US-14 AC10).
+    file = h.file ??= new File([await h.entry!.async('blob')], shortName(f.name));
+  } catch {
+    if (still(port, run, id, 'converting')) port.send({ type: 'convertFailed', run, id, reason: 'unreadable' });
+    return;
+  }
+  const read = await readPages(upload, fileNameOf(f), file);
   if (!still(port, run, id, 'converting')) return;
   if (read.pages.length) {
     h.pages = read.pages;
@@ -107,14 +116,11 @@ async function send(port: UploadPort, effect: Extract<UploadEffect, { type: 'sen
   if (!f || !h?.pages) return;
   const reading = new AbortController();
   port.reads.set(id, reading);
-  const { result, error, errorCode } = await labImport(h.pages, port.unitSystem, { signal: reading.signal, flags })
-    .catch(() => ({ result: null, error: 'Processing failed', errorCode: undefined }));
+  const { result, errorCode } = await labImport(h.pages, port.unitSystem, { signal: reading.signal, flags })
+    .catch(() => ({ result: null, errorCode: undefined }));
   if (port.reads.get(id) === reading) port.reads.delete(id);
   if (!still(port, run, id, 'sending')) return; // stopped, cancelled or a newer run: the answer changes nothing
-  if (!result) {
-    h.failure = { code: errorCode ?? 'server_error', error: error || 'Extraction failed' };
-    return port.send({ type: 'sendFailed', run, id, failure: asFailure(errorCode) });
-  }
+  if (!result) return port.send({ type: 'sendFailed', run, id, failure: asFailure(errorCode) });
   delete h.pages; // read: only a failed send is sent again
   const name = fileNameOf(f);
   const extraction = result as unknown as UnifiedExtractionResult;

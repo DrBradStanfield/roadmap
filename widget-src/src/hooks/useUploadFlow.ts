@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { checkLabImportQuota } from '../lib/upload-api';
-import { initialUpload, inFlight, transition, type UploadEvent, type UploadState } from '@roadmap/health-core/upload-flow';
+import { initialUpload, inFlight, transition, type RunRefusal, type UploadEvent, type UploadState } from '@roadmap/health-core/upload-flow';
 import { uploadUsageCounts } from '@roadmap/health-core/upload-usage';
 import { UNDATED_PREVIOUS, uploadLimitSignal } from '@roadmap/health-core/lab-extraction';
 import type { UnitSystem } from '@roadmap/health-core/units';
@@ -14,7 +14,7 @@ import { Sentry } from '../lib/sentry';
 import { recordFailure } from '../lib/error-diagnostics';
 import { isDocx, isZip } from '../lib/file-kinds';
 import { runEffect, type UploadPort } from '../lib/upload-effects';
-import { emptyHeld, hasResults, MAX_FILES, NO_FILES_TEXT, phaseOf, pickedFiles, pickNotices, progressOf, readErrorOf, readOutcome, type Held, type RunStop } from '../lib/upload-read';
+import { emptyHeld, hasResults, MAX_FILES, NO_FILES_TEXT, phaseOf, pickedFiles, pickNotices, progressOf, readErrorOf, readOutcome, refusedForKey, type Held } from '../lib/upload-read';
 import { saveReview } from '../lib/upload-save';
 import { NO_OUTCOME, savedSoFar, withAttempt, type SaveOutcome } from '../lib/upload-save-outcome';
 // Type only: a value import would pull the lazy upload bundle into the main one.
@@ -31,8 +31,6 @@ import type { HealthUploadAPI } from '../upload-entry';
 export type { UploadPhase } from '../lib/upload-read';
 export { MAX_FILES };
 
-const DAILY_LIMIT_TEXT = 'Daily upload limit reached. You can upload more tomorrow.';
-const RUN_FAILED_TEXT = 'An error occurred while processing files. Please try again.';
 const NONE: FileResult[] = [];
 const NO_READ = { results: NONE, notices: [] as FileNotice[] };
 
@@ -124,20 +122,16 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
     /** Counts the run; a run no file could open is reported, as before (US-12 AC3). */
     const readEnded = (s: UploadState) => {
       const h = held.current;
-      if (h.stopped && !h.stopped.reason) return; // the Pages build's missing key names and counts nothing
+      if (refusedForKey(s)) return; // the Pages build's missing key names and counts nothing
       const { results, notices } = readOutcome(s, h, false);
       countRun(s, h, results, notices);
-      if (readErrorOf(s, h) === NO_FILES_TEXT) {
+      if (readErrorOf(s) === NO_FILES_TEXT) {
         Sentry.captureException(recordFailure(new UploadError(NO_FILES_TEXT, 'no_files'), 'Upload processing failed'), { tags: { feature: 'upload', uploadErrorCode: 'no_files' } });
         trackProductEvent('upload_extract_failed');
       }
     };
-    /** Ends a run before any read: its files stop, named by `stop` (US-12 AC9, AC10). */
-    const stopRun = (run: number, stop: RunStop) => {
-      if (live.current.run !== run || live.current.phase !== 'open') return;
-      held.current.stopped = stop;
-      send({ type: 'stop' });
-    };
+    /** Ends a run before any read; the state names its files and says why (US-12 AC9, AC10). */
+    const refuse = (run: number, reason: RunRefusal) => send({ type: 'runRefused', run, reason });
     /** Before a run reads anything: the daily quota, the page's draft flush, the upload bundle (US-12 AC5). */
     const begin = async (run: number): Promise<HealthUploadAPI | null> => {
       const current = () => live.current.run === run && live.current.phase === 'open';
@@ -146,7 +140,7 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
         if (!current()) return null;
         if (!quota.allowed) {
           // Only the daily limit names and counts the files; no key says its message alone.
-          stopRun(run, { message: quota.message ?? DAILY_LIMIT_TEXT, reason: quota.reason === 'quota' ? 'limitError' : null });
+          refuse(run, quota.reason === 'quota' ? 'dailyLimit' : 'noKey');
           return null;
         }
         await props.current.onStart?.();
@@ -160,7 +154,7 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
           console.error('Upload processing failed:', 'unknown');
           Sentry.captureException(recordFailure(err, 'Upload processing failed'), { tags: { feature: 'upload', uploadErrorCode: 'unknown' } });
           trackProductEvent('upload_extract_failed');
-          stopRun(run, { message: RUN_FAILED_TEXT, reason: 'serverError' });
+          refuse(run, 'server');
         }
         return null;
       }
@@ -188,7 +182,6 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
           // One per review: a finished Save, never a failed one (US-13 AC13).
           endReview.current(d.review);
           send({ type: 'saved', run, attempt, outcome: { values: total.values + total.labValues, documents: total.documents.length, archived: 0 } });
-          trackProductEvent('upload_saved', { count: total.values + total.labValues + total.documents.length });
         });
       },
     };
@@ -196,6 +189,12 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
   const { send } = port.current;
 
   useEffect(() => () => { send({ type: 'discard' }); }, [send]);
+
+  // A finished save, counted once, while the page still shows it (US-12 AC6, AC10): each done state is a new object.
+  const done = upload.phase === 'done' ? upload : null;
+  useEffect(() => {
+    if (done) trackProductEvent('upload_saved', { count: done.outcome.values + done.outcome.documents });
+  }, [done]);
 
   // The screens, read from the state. Results and notices keep their identity for one read: the
   // review keys its drafts and its one `upload_review` on them.
@@ -207,7 +206,7 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
   const cloud = getDocumentArchiveMode() === 'cloud';
   // eslint-disable-next-line react-hooks/exhaustive-deps -- `files`, the pick's held data and the archive mode are what change them
   const { results, notices } = useMemo(() => (reading ? NO_READ : readOutcome(upload, pickHeld, cloud)), [files, pickHeld, reading, cloud]);
-  const phase = phaseOf(upload, pickHeld);
+  const phase = phaseOf(upload);
   const reviewed = phase === 'reviewing' || phase === 'saving' || phase === 'saveFailed' || phase === 'done';
 
   // Cancel stops every read in flight and drops the run (US-12 AC28); a read it stopped is counted once (AC10).
@@ -221,7 +220,7 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
 
   // Close hides the modal. A screen with nothing to lose resets; elsewhere the work goes on, hidden.
   const close = useCallback(() => {
-    const shown = phaseOf(live.current, held.current);
+    const shown = phaseOf(live.current);
     if (shown === 'picking' || shown === 'readFailed' || shown === 'done') {
       send({ type: 'close' });
       setSkipArchive(false);
@@ -238,7 +237,7 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
 
   /** Files from the picker or a drop: a new run, on a screen that takes a pick. */
   const pick = (selectedFiles: FileList | null) => {
-    const shown = phaseOf(live.current, held.current);
+    const shown = phaseOf(live.current);
     if (!selectedFiles?.length || (shown !== 'picking' && shown !== 'readFailed')) return;
     const fileArray = Array.from(selectedFiles).slice(0, MAX_FILES);
     send({ type: 'close' }); // a read-failed or too-large screen gives way to the new run
@@ -264,7 +263,7 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
     phase, files: phase === 'readFailed' ? pickedFiles(upload) : [], notices, progress: progressOf(upload),
     results: reviewed ? results : NONE,
     outcome: saved.current.run === upload.run ? saved.current.outcome : NO_OUTCOME,
-    readError: readErrorOf(upload, pickHeld), saveError: upload.phase === 'saveFailed' ? upload.message : null,
+    readError: readErrorOf(upload), saveError: upload.phase === 'saveFailed' ? upload.message : null,
     skipArchive, skipConnect: () => setSkipArchive(true),
     pick, cancel, close, discard, save, endReview: endReview.current,
   };

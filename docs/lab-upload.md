@@ -279,7 +279,7 @@ The lipoprotein(a) PDF showed `93 mg/L`. The LLM correctly extracted `{ metric: 
 ### `app/routes/api.lab-import-v2.ts` — the only endpoint an upload calls
 
 - `GET ?quota` preflight (remaining per-IP files) · `POST` one file. The batch path and its poll were deleted 2026-11-15 (owner ruling Q2): every upload reads file by file.
-- App-proxy HMAC on both methods; Zod validation (`labImportRequestSchema` `{ pages[1..100], unitSystem? }`); quota consumed before the model call. No file name reaches the server (it can hold a patient's name): a batch result comes back by request index (`custom_id` `file-N`) and the browser maps it to its file; a name an older widget sends is stripped by the schema. The widget sends `fileName: "file-N"` on each batch file, a compatibility label that names nothing, because CI ships the widget before the server and a server older than 2026-10-13 requires the field; drop it once every live server strips it.
+- App-proxy HMAC on both methods; Zod validation (`labImportRequestSchema` `{ pages[1..100], unitSystem? }`); quota consumed before the model call. No file name reaches the server (it can hold a patient's name): the body carries pages, the unit system and the request flags only; the browser keeps each file's name beside its read.
 - Calls `extractOrClassify(pages)` and returns `{ success, data, remaining }`. `unitSystem` is accepted and ignored; display units are resolved from the record's profile client-side.
 - The v1 `api.lab-import.ts` and the `bulkMeasurements` branch of `api.measurements.ts` were deleted in the 2026-06-12 teardown; there is no server save path.
 
@@ -345,7 +345,7 @@ Triggered by a customer report of a wrong ApoB extraction (`0.5 g/L` misread as 
 |---|---|---|
 | **D1** | Inline-edit the value at review time | `ReviewTable.tsx` value cell is a numeric input (`type="text"`, `inputMode="decimal"`, locale-aware so `0,5` and `0.5` both parse). Edited rows save with `source: 'lab_import_edited'`; unedited rows `'lab_import'`. |
 | **D2** | FHIR `replaces` for post-save corrections | A correction flips the old row to `entered-in-error` and appends a new active row with `correctsId` and `source: 'manual_correction'`. Lives in `record-edits.ts` (`correctValue`) and is applied by `RoadmapStore`; the v1 Supabase RPC, trigger and unique index that first enforced this are gone. |
-| **D3** | Concurrency 5 LLM × 3 extractors | `LLM_CONCURRENCY = 5` + `EXTRACT_CONCURRENCY = 3` in `lib/upload-pipeline.ts`. Wall-clock for a 12-file ZIP: ~12s (down from ~50s). 3 parallel pdf.js workers keep the LLM queue fed without UI jank. |
+| **D3** | Concurrency 5 LLM × 3 extractors | 5 sends and 3 converts in flight (health-core `UPLOAD_LIMITS`, since 2026-11-15; before, `LLM_CONCURRENCY` and `EXTRACT_CONCURRENCY` in `lib/upload-pipeline.ts`). Wall-clock for a 12-file ZIP: ~12s (down from ~50s). 3 parallel pdf.js workers keep the LLM queue fed without UI jank. |
 | **D4** | No dual-OCR / second-engine consensus | Two correction surfaces (review-time edit + click-to-correct after save) give the user the verification step the customer actually wanted, without doubling LLM cost. Revisit if production correction frequency stays high. |
 
 ### Click-to-correct UX (`BloodTestTimeline.tsx`)
@@ -412,7 +412,7 @@ Key mechanics:
 
 **Upload transport is a build-time module swap** (same mechanism as `api.ts → roadmap-data.ts`):
 - `widget-src/src/lib/upload-api.ts` — server transport for the **Shopify production v2 build** (`vite.config.shopify-prod.ts`): Brad pays, capped.
-- `widget-src/src/lib/byok-upload.ts` — **BYOK transport** for the GitHub Pages / self-host build (`vite.config.standalone.ts` redirects upload-api → byok-upload): the browser calls api.anthropic.com directly with the user's own key (`hr_anthropic_key`, shared with the BYOK chat). No key → the modal shows a "connect your key" message via `checkLabImportQuota().message`. "Batches" are a client-side queue (concurrency 2) behind the same `labImportBatch`/`pollBatchStatus` interface — the user pays for themselves, so the Batch API's 50% discount isn't worth the async complexity.
+- `widget-src/src/lib/byok-upload.ts` — **BYOK transport** for the GitHub Pages / self-host build (`vite.config.standalone.ts` redirects upload-api → byok-upload): the browser calls api.anthropic.com directly with the user's own key (`hr_anthropic_key`, shared with the BYOK chat). No key → the shared upload state refuses the run (`runRefused`, reason `noKey`) and the modal shows the "connect your key" message (health-core `KEY_TEXT.missing`). Each file is one direct call, 5 at a time, as on the Shopify build; a 429 from the person's key fails that file only (`keyRateLimit`), never the run.
 - Prompt + response schema + unit resolution live in **`packages/health-core/src/lab-extraction.ts`**, imported by BOTH transports — single source, they can never drift. This ships the prompt in the public Pages bundle: Brad accepted that 2026-06-10 (mechanical value extraction, not clinical IP — the algorithm doc never leaves the server).
 
 The `health-upload.js` extraction bundle (pdf.js/JSZip — transport-independent) builds into the Pages site too (`PAGES_BUILD=1`, no public sourcemap).

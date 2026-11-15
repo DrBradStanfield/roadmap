@@ -2,14 +2,14 @@
 import type { AddLabValueRequest, AddLabValueResult, MoveKeep, MoveRejection, MovePlan } from '@roadmap/health-core/record-edits';
 import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import { dayOf } from '@roadmap/health-core/merge';
-import type { FileReminderOptIn, RoadmapFile } from '@roadmap/health-core/roadmap-file';
+import type { FileReminderOptIn } from '@roadmap/health-core/roadmap-file';
 import type { HealthInputs } from '@roadmap/health-core/types';
 import type { LpaUnit, MetricType } from '@roadmap/health-core/units';
 import { MEASUREMENT_REFUSALS_WITH_METRIC, type MEASURES } from '@roadmap/health-core/product-events';
 import type { ReminderScheduleItem } from '@roadmap/health-core/reminder-schedule';
 import type { SaveStatus } from '@roadmap/health-core/save-state';
 import { knownMinorOf } from '@roadmap/health-core/calculations';
-import { knownAs, knownIndex, readIsLegacy, type Known, type KnownIndex } from '@roadmap/health-core/upload-known';
+import { knownIndex, readIsLegacy, type KnownIndex } from '@roadmap/health-core/upload-known';
 import type { UnifiedExtractionResult } from '@roadmap/health-core/lab-extraction';
 import { RoadmapStore, type DerivedSeries, type BulkLabValueInput, type BulkMeasurementInput, type CorrectStatus, type MoveOutcome, type ProfileSave } from '../storage/roadmap-store';
 import { ChatHistoryStore } from '../storage/chat-history-store';
@@ -76,14 +76,10 @@ export function getDocumentArchiveMode(): 'no-prompt' | 'cloud' | 'device-only' 
   return getBackendKind() === 'cloud' ? 'cloud' : 'device-only';
 }
 
-const knownIndexes = new WeakMap<RoadmapFile, KnownIndex>();
-/** How the record holds an uploaded file's bytes, by their hash, or null (US-12 AC27). */
-export function knownUploadAs(hash: string): Known | null {
-  if (!store) return null;
-  // One index per copy of the record: a pick of 200 files reads it once, a write starts a new one.
-  let index = knownIndexes.get(store.file);
-  if (!index) knownIndexes.set(store.file, index = knownIndex(store.file));
-  return knownAs(index, hash);
+/** The record's files by content, as it is now (US-12 AC27): the upload reads it once per pick. Never
+ *  cached across picks: a delete or save edits the record in place, and the next pick must see it. */
+export function uploadKnownIndex(): KnownIndex {
+  return store ? knownIndex(store.file) : new Map();
 }
 
 /** After a read: the record holds this document from before hashing, by name and date (upload-known.ts). */

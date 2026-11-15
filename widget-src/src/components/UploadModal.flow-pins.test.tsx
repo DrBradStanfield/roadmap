@@ -15,7 +15,7 @@ import type { UploadHistory } from '../lib/api-types';
 import { findReviewValue } from '../testing/import-review';
 
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn() }));
-vi.mock('../lib/roadmap-data', () => ({ knownUploadAs: vi.fn(() => null), isLegacyUpload: vi.fn(() => false), getDocumentArchiveMode: vi.fn(() => 'cloud'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
+vi.mock('../lib/roadmap-data', () => ({ uploadKnownIndex: vi.fn(() => new Map()), isLegacyUpload: vi.fn(() => false), getDocumentArchiveMode: vi.fn(() => 'cloud'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
 vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
 vi.mock('../lib/archive-payloads', async importOriginal => ({ ...await importOriginal<typeof import('../lib/archive-payloads')>(), sha256Blob: vi.fn(async () => ''), synthesizeLabArchiveEntries: vi.fn(() => []) }));
 vi.mock('../lib/useIsMobile', () => ({ useIsMobile: () => false }));
@@ -201,8 +201,10 @@ describe('US-12 AC4: a backdrop click closes as Close does', () => {
 });
 
 describe('US-12 AC10: a refused quota', () => {
+  // The words are the shared state's refusal (runRefused), so a message the check carries is not shown:
+  // the server sends none for the daily limit (upload-api.ts checkLabImportQuota).
   it.each([
-    { message: 'Synthetic quota message.', shown: 'Synthetic quota message.' },
+    { message: 'Synthetic quota message.', shown: 'Daily upload limit reached. You can upload more tomorrow.' },
     { message: undefined, shown: 'Daily upload limit reached. You can upload more tomorrow.' },
   ])('US-12 AC10: allowed:false (message $message) shows "$shown", tracks no upload_started, one upload_outcome (U6, 2026-11-11), and releases the claim', async ({ message, shown }) => {
     vi.mocked(checkLabImportQuota).mockResolvedValueOnce({ allowed: false, remaining: 0, reason: 'quota', ...(message ? { message } : {}) });
@@ -211,7 +213,8 @@ describe('US-12 AC10: a refused quota', () => {
     expect(screen.getByText('Drop health records here, or click to browse')).toBeTruthy();
     expect(extractFromPdf).not.toHaveBeenCalled();
     expect(events('upload_started')).toEqual([]);
-    expect(events('upload_outcome')).toEqual([['upload_outcome', { picked: 1, limitError: 1 }]]);
+    // failedFinal: the state fails each file the limit refused (US-12 AC30).
+    expect(events('upload_outcome')).toEqual([['upload_outcome', { picked: 1, limitError: 1, failedFinal: 1 }]]);
     await ready();
     expect(checkLabImportQuota).toHaveBeenCalledTimes(2);
     expect(screen.queryByText(shown)).toBeNull();

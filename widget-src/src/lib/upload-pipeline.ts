@@ -7,7 +7,6 @@ import { bloodTestKeyOf } from '@roadmap/health-core/blood-tests';
 import type { MeasurementSource } from '@roadmap/health-core/validation';
 import type { LabUnitRefusal } from '@roadmap/health-core/record-edits';
 import { fileVerdict, UPLOAD_LIMITS } from '@roadmap/health-core/upload-rules';
-import { BUSY_NOTICE_TEXT } from '@roadmap/health-core/upload-text';
 import type { UploadOutcomeKey, UploadReviewKey } from '@roadmap/health-core/product-events';
 import type { ExtractedValue, AdditionalLabValue, DocumentResult, LabImportResult, PageContent, UploadErrorCode } from './api-types';
 import { isDocx, isLegacyDoc } from './file-kinds';
@@ -114,13 +113,6 @@ export class UploadError extends Error {
   }
 }
 
-/** The Pages build's own key or its account, not the file, so "try again"
- *  never helps: each says what to check (US-12 AC9). */
-export const KEY_ERROR_MESSAGES = {
-  key_refused: 'Anthropic refused your API key. Check the key in the "Ask about your plan" panel.',
-  no_credit: 'Your Anthropic account has no credit. Check its billing, then try again.',
-};
-
 const EXTRACT_TIMEOUT = 30_000;
 
 /** The size cap readPages applies through fileVerdict; kept by name for the golden pins (upload-decisions.pins.test.tsx). */
@@ -186,18 +178,5 @@ export function readResult(fileName: string, result: LabImportResult): { result:
       ...(result.droppedValueCount ? { droppedValueCount: result.droppedValueCount, unreadValues: result.unreadValues } : null),
     },
     ...(result.droppedValueCount ? { notice: { name: fileName, reason: 'valuesDropped' as const, count: result.droppedValueCount } } : null),
-  };
-}
-
-/** The notice for a file's own error code; anything else is a server error. */
-const UNREAD_REASONS: Partial<Record<UploadErrorCode, FileNoticeReason>> = { rate_limit: 'limitError', refused: 'refused', too_long: 'tooLong' };
-
-/** A file the server did not read, named with why: the daily limit, a refusal, a cut-off answer, or anything else. */
-export function unreadResult(fileName: string, errorCode: UploadErrorCode | undefined, error: string): { result: FileResult; notice: FileNotice } {
-  const text = errorCode === 'key_refused' || errorCode === 'no_credit' ? `Not read. ${KEY_ERROR_MESSAGES[errorCode]}`
-    : errorCode === 'busy' ? BUSY_NOTICE_TEXT : undefined;
-  return {
-    result: { fileName, reportDate: null, values: [], additionalValues: [], error },
-    notice: { name: fileName, reason: (errorCode && UNREAD_REASONS[errorCode]) || 'serverError', text },
   };
 }

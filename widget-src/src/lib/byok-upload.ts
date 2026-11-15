@@ -28,10 +28,10 @@ import { EXTRACTION_MODEL, extractionStopCode, modelParams } from '@roadmap/heal
 import { getAnthropicKey } from './byok-chat';
 import { ByokAnthropicError, callAnthropicDirectRaw, type ByokErrorCode } from './byok-anthropic';
 import type { RequestFlags } from '@roadmap/health-core/upload-rules';
+import { KEY_TEXT } from '@roadmap/health-core/upload-text';
 import type { LabImportResult, PageContent, QuotaCheck, UploadErrorCode } from './api-types';
 
-const NO_KEY_MESSAGE =
-  'Connect your Anthropic API key (in the "Ask about your plan" panel) to process documents on this page.';
+const NO_KEY_MESSAGE = KEY_TEXT.missing;
 
 export async function checkLabImportQuota(): Promise<QuotaCheck> {
   if (!getAnthropicKey()) return { allowed: false, remaining: 0, reason: 'no-key', message: NO_KEY_MESSAGE };
@@ -42,7 +42,7 @@ export async function checkLabImportQuota(): Promise<QuotaCheck> {
 /** Map the shared transport's error code → the upload modal's UploadErrorCode. */
 const UPLOAD_ERROR_CODE: Record<ByokErrorCode, UploadErrorCode> = {
   network: 'network',
-  rate_limit: 'rate_limit',
+  rate_limit: 'key_rate_limit', // the person's own key's minute limit, never our daily limit (US-12 AC9)
   unauthorized: 'key_refused',
   bad_request: 'server_error',
   empty: 'server_error',

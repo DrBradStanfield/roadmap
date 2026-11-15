@@ -7,6 +7,8 @@ import type { HealthUploadAPI } from '../upload-entry';
 import type { PageContent } from './api-types';
 import { drive } from '../testing/upload-driver';
 import { progressOf } from './upload-read';
+import { FAIL_TEXT, OVER_LIMIT_TEXT } from '@roadmap/health-core/upload-text';
+import { UPLOAD_LIMITS } from '@roadmap/health-core/upload-rules';
 
 const pending = new Map<string, (ok: boolean) => void>();
 const lab = { classification: 'lab_report', reportDate: null, values: [], additionalValues: [], document: null };
@@ -19,7 +21,7 @@ vi.mock('./upload-api', () => ({
 const known = vi.hoisted(() => ({ hashes: new Set<string>(), legacy: false }));
 vi.mock('./roadmap-data', () => ({
   getDocumentArchiveMode: () => 'cloud',
-  knownUploadAs: (hash: string) => (known.hashes.has(hash) ? { as: 'document', archiveOnly: false } : null),
+  uploadKnownIndex: () => new Map([...known.hashes].map((h) => [h, { as: 'document', archiveOnly: false }])),
   isLegacyUpload: () => known.legacy,
 }));
 // A fake hash that names the bytes it was given.
@@ -53,7 +55,7 @@ describe('US-12 AC23: the review lists files in picked order (D12)', () => {
     await vi.waitFor(() => expect(inFlight(run.state())).toBe(0));
     const { results, notices } = run.outcome();
     expect(results.map((r) => r.fileName)).toEqual(names);
-    expect(results.map((r) => r.error)).toEqual([undefined, 'Extraction failed', undefined, 'Extraction failed']);
+    expect(results.map((r) => r.error)).toEqual([undefined, FAIL_TEXT.server, undefined, FAIL_TEXT.server]);
     expect(notices.filter((n) => n.reason === 'serverError').map((n) => n.name)).toEqual(['b.pdf', 'd.pdf']);
   });
 });
@@ -157,4 +159,36 @@ describe('US-12 AC7b (U15): a read that passes the time limit', () => {
       expect(labImport).not.toHaveBeenCalled();
     });
   }
+});
+
+// US-12 AC17, AC26 (adversary R3): a ZIP is read whole to list it, so few open at once; and one pick
+// reads at most 200 files, its ZIPs' members included, as before the shared state.
+describe('US-12 AC17: ZIPs open a few at a time, and a pick stops at 200 files', () => {
+  it('10 ZIPs of 30 members: never more than the limit listed at once; members past 200 are named, never read', async () => {
+    let open = 0;
+    let most = 0;
+    const listings: Array<() => void> = [];
+    vi.mocked(upload.getZipEntries).mockImplementation(((zip: File) => {
+      open++; most = Math.max(most, open);
+      return new Promise((resolve) => listings.push(() => {
+        open--;
+        resolve(Array.from({ length: 30 }, (_, i) => ({ name: `${zip.name}-${i}.pdf`, entry: { async: async () => new Blob(['x']) }, bytes: 1 })));
+      }));
+    }) as never);
+    const run = drive(upload, Array.from({ length: 10 }, (_, i) => new File(['zip'], `z${i}.zip`, { type: 'application/zip' })));
+    for (let i = 0; i < 100; i++) {
+      await new Promise((r) => setTimeout(r, 0));
+      listings.shift()?.();
+    }
+    expect(most).toBe(UPLOAD_LIMITS.web.listsInFlight);
+    const s = run.state();
+    const files = s.phase === 'open' ? s.files : [];
+    expect(files).toHaveLength(300);
+    expect(files.filter((f) => f.status.s !== 'refused')).toHaveLength(200);
+    run.send({ type: 'stop' });
+    const over = run.outcome().notices.filter((n) => n.text === OVER_LIMIT_TEXT);
+    expect(over).toHaveLength(100);
+    // A ZIP not yet listed counts as one until it is: z6 leaves room for z7 to z9.
+    expect(over[0]).toEqual({ name: 'z6.zip/z6.zip-17.pdf', reason: 'limitError', text: OVER_LIMIT_TEXT });
+  });
 });

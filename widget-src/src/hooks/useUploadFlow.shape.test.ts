@@ -7,6 +7,14 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const source = readFileSync(join(__dirname, 'useUploadFlow.ts'), 'utf8');
+const read = readFileSync(join(__dirname, '../lib/upload-read.ts'), 'utf8');
+/** The field names of one interface in upload-read.ts. */
+const fieldsOf = (name: string) => {
+  const line = read.match(new RegExp(`export interface ${name} \\{ (.*) \\}\\n`));
+  if (line) return [...line[1].matchAll(/(?:^|; )(\w+)\??:/g)].map((m) => m[1]);
+  const body = read.match(new RegExp(`export interface ${name} \\{\\n([\\s\\S]*?)\\n\\}`))![1];
+  return [...body.matchAll(/^  (\w+)\??:/gm)].map((m) => m[1]);
+};
 const all = (re: RegExp) => [...source.matchAll(re)].map((m) => m[1]);
 
 describe('US-12 AC26: the upload adapter holds no mode beside the shared state', () => {
@@ -22,5 +30,14 @@ describe('US-12 AC26: the upload adapter holds no mode beside the shared state',
   it('it moves the state only through the shared transition, and keeps no timer', () => {
     expect(source).not.toMatch(/useReducer|setTimeout|setInterval/);
     expect(all(/setUpload\(([^)]*)\)/g)).toEqual(['step.state']);
+  });
+
+  // Adversary R2: a mode hidden in a field of a ref object is still a mode beside the state.
+  it('the data the refs hold has only bytes, pages, per-file words and the pick\'s counts: no run outcome, no failure, no flag', () => {
+    expect(fieldsOf('Held')).toEqual(['run', 'leftOut', 'docx', 'known', 'files']);
+    expect(fieldsOf('HeldFile')).toEqual(['file', 'entry', 'pages', 'note']);
+    expect(source).toMatch(/useRef<\{ run: number; ready: Promise<HealthUploadAPI \| null> \} \| null>\(null\)/);
+    expect(source).toMatch(/useRef<\{ run: number; outcome: SaveOutcome \}>/);
+    expect(read).not.toMatch(/\b(stopped|failure|refused|status|phase|mode)\??:/);
   });
 });

@@ -6,6 +6,7 @@
  */
 import { zipMemberName } from '@roadmap/health-core/lab-extraction';
 import { UPLOAD_OUTCOME_KEYS } from '@roadmap/health-core/product-events';
+import { KEY_TEXT } from '@roadmap/health-core/upload-text';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { UploadModal } from './UploadModal';
@@ -17,7 +18,7 @@ import type { UploadHistory } from '../lib/api-types';
 import { findAllReviewValues, findReviewValue } from '../testing/import-review';
 
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn() }));
-vi.mock('../lib/roadmap-data', () => ({ knownUploadAs: vi.fn(() => null), isLegacyUpload: vi.fn(() => false), getDocumentArchiveMode: vi.fn(() => 'cloud'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
+vi.mock('../lib/roadmap-data', () => ({ uploadKnownIndex: vi.fn(() => new Map()), isLegacyUpload: vi.fn(() => false), getDocumentArchiveMode: vi.fn(() => 'cloud'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
 vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn(), PROXY_PATH: '/apps/synthetic', parseJsonResponse: vi.fn() }));
 vi.mock('../lib/archive-payloads', async importOriginal => ({ ...await importOriginal<typeof import('../lib/archive-payloads')>(), sha256Blob: vi.fn(async () => ''), synthesizeLabArchiveEntries: vi.fn(() => []) }));
 vi.mock('../lib/useIsMobile', () => ({ useIsMobile: () => false }));
@@ -143,13 +144,31 @@ describe('US-12 AC9: every file not fully read is named with a reason', () => {
 
   it('tells a server error from the daily limit', async () => {
     vi.mocked(labImport).mockImplementation(async pages => (
-      pages[0].content === 'broken.pdf' ? { result: null, error: 'Extraction failed', errorCode: 'server_error' }
-        : pages[0].content === 'late.pdf' ? { result: null, error: 'Daily upload limit reached. You can upload more tomorrow.', errorCode: 'rate_limit' }
-          : withValues));
-    render_(); pick(pdf('good.pdf'), pdf('broken.pdf'), pdf('late.pdf'));
+      pages[0].content === 'broken.pdf' ? { result: null, error: 'Extraction failed', errorCode: 'server_error' } : withValues));
+    render_(); pick(pdf('good.pdf'), pdf('broken.pdf'));
     await findReviewValue('3.9');
     expect(reasonFor('broken.pdf')).toBe('Our server could not read it. Please try again.');
+    await waitFor(() => expect(outcomes()).toHaveLength(1));
+    expect(outcomes()[0]).toEqual(expect.objectContaining({ serverError: 1, limitError: 0 }));
+  });
+
+  // US-12 AC26: the state is the one source of a file's reason. A file that failed in a way a retry
+  // would send again, in a run the daily limit then stops, fails on the limit: its words and its count say so.
+  it('a file that failed before the daily limit stopped the run is named and counted by the limit, as the state holds it', async () => {
+    let limit!: (r: Import) => void;
+    vi.mocked(labImport).mockImplementation(pages => (
+      pages[0].content === 'broken.pdf' ? Promise.resolve({ result: null, error: 'Network error', errorCode: 'network' } as Import)
+        : pages[0].content === 'late.pdf' ? new Promise<Import>(resolve => { limit = resolve; })
+          : Promise.resolve(withValues)));
+    render_(); pick(pdf('good.pdf'), pdf('broken.pdf'), pdf('late.pdf'));
+    await waitFor(() => expect(labImport).toHaveBeenCalledTimes(3));
+    await new Promise(r => setTimeout(r, 0));
+    limit({ result: null, error: 'Daily upload limit reached. You can upload more tomorrow.', errorCode: 'rate_limit' });
+    await findReviewValue('3.9');
+    expect(reasonFor('broken.pdf')).toBe('Not read. The daily upload limit was reached.');
     expect(reasonFor('late.pdf')).toBe('Not read. The daily upload limit was reached.');
+    await waitFor(() => expect(outcomes()).toHaveLength(1));
+    expect(outcomes()[0]).toEqual(expect.objectContaining({ serverError: 0, limitError: 2 }));
   });
 
   // US-12 AC9 H65: a single file the server calls busy says the busy words.
@@ -411,7 +430,7 @@ describe('US-12 AC9: the Pages build names its own transport', () => {
   it('says a file was not read because the user\'s key hit its rate limit, or Anthropic could not read it', async () => {
     vi.mocked(labImport).mockImplementation(async pages => (
       pages[0].content === 'broken.pdf' ? { result: null, error: 'Network error reaching Anthropic. Check your connection.', errorCode: 'network' }
-        : pages[0].content === 'late.pdf' ? { result: null, error: 'Your Anthropic account is rate-limited right now. Wait a minute and try again.', errorCode: 'rate_limit' }
+        : pages[0].content === 'late.pdf' ? { result: null, error: 'Your Anthropic account is rate-limited right now. Wait a minute and try again.', errorCode: 'key_rate_limit' }
           : withValues));
     render_(); pick(pdf('good.pdf'), pdf('broken.pdf'), pdf('late.pdf'));
     await findReviewValue('3.9');
@@ -420,6 +439,19 @@ describe('US-12 AC9: the Pages build names its own transport', () => {
     // The usage signal keeps its keys: a rate limit is still limitError.
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual(expect.objectContaining({ serverError: 1, limitError: 1 }));
+  });
+
+  // US-12 AC9 (adversary R1): the person's own key's minute limit is not our daily limit. It fails that file
+  // only, in that key's words; every other file of the pick is still read, as before the shared state.
+  it('a key rate limit on one file of 30 fails that file only; the other 29 are read', async () => {
+    vi.mocked(labImport).mockImplementation(async pages => (pages[0].content === 'r7.pdf'
+      ? { result: null, error: 'Your Anthropic account is rate-limited right now. Wait a minute and try again.', errorCode: 'key_rate_limit' } : withValues));
+    render_(); pick(...Array.from({ length: 30 }, (_, i) => pdf(`r${i}.pdf`)));
+    await findAllReviewValues('3.9');
+    expect(labImport).toHaveBeenCalledTimes(30);
+    expect(reasonFor('r7.pdf')).toBe(KEY_TEXT.rateLimit);
+    await waitFor(() => expect(outcomes()).toHaveLength(1));
+    expect(outcomes()[0]).toEqual(expect.objectContaining({ picked: 30, withValues: 29, limitError: 1, serverError: 0 }));
   });
 
   it('says the key was refused, or its account has no credit, rather than "try again", and counts both as serverError', async () => {
@@ -626,7 +658,7 @@ describe('US-12 AC9, AC10: a quota refusal and a cancel count, and a pick past 2
     vi.mocked(checkLabImportQuota).mockResolvedValueOnce({ allowed: false, remaining: 0, reason: 'quota' });
     render_(); pick(pdf('a.pdf'), pdf('b.pdf'), pdf('huge.pdf', 11 * 1024 * 1024));
     await screen.findByText('Daily upload limit reached. You can upload more tomorrow.');
-    expect(sent()).toEqual([{ picked: 3, tooLarge: 1, limitError: 2 }]);
+    expect(sent()).toEqual([{ picked: 3, tooLarge: 1, limitError: 2, failedFinal: 2 }]);
     expect(reasonFor('a.pdf')).toBe('Not read. The daily upload limit was reached.');
     expect(extractFromPdf).not.toHaveBeenCalled();
   });
@@ -634,9 +666,9 @@ describe('US-12 AC9, AC10: a quota refusal and a cancel count, and a pick past 2
   // Review R1 (adversary F1): only the server's daily limit is a quota refusal.
   it('US-12 AC10: a no-key refusal (Pages build) names no file and sends no upload_outcome', async () => {
     build.shopify = false;
-    vi.mocked(checkLabImportQuota).mockResolvedValueOnce({ allowed: false, remaining: 0, reason: 'no-key', message: 'Synthetic connect-your-key message.' });
+    vi.mocked(checkLabImportQuota).mockResolvedValueOnce({ allowed: false, remaining: 0, reason: 'no-key', message: KEY_TEXT.missing });
     render_(); pick(pdf('a.pdf'), pdf('b.pdf'));
-    await screen.findByText('Synthetic connect-your-key message.');
+    await screen.findByText(KEY_TEXT.missing);
     expect(screen.queryByRole('list', { name: 'Files to check' })).toBeNull();
     expect(sent()).toEqual([]);
   });
@@ -660,7 +692,7 @@ describe('US-12 AC9, AC10: a quota refusal and a cancel count, and a pick past 2
     render_(); pick(pdf('report.pdf', 11 * 1024 * 1024), pdf('report.pdf'));
     await screen.findByText('Daily upload limit reached. You can upload more tomorrow.');
     expect(reasonFor('report.pdf')).toMatch(/^Too large.* \| Not read\. The daily upload limit was reached\.$/);
-    expect(sent()).toEqual([{ picked: 2, tooLarge: 1, limitError: 1 }]);
+    expect(sent()).toEqual([{ picked: 2, tooLarge: 1, limitError: 1, failedFinal: 1 }]);
   });
 
   it('US-12 AC10 (U9): Cancel during a read fires one upload_outcome with cancelled: 1, and the read finishing later adds none', async () => {
@@ -737,7 +769,7 @@ describe('US-12 AC9, AC10: a quota refusal and a cancel count, and a pick past 2
     render_(); pick(...Array.from({ length: 201 }, (_, i) => pdf(`r${i}.pdf`)));
     await screen.findByText('Daily upload limit reached. You can upload more tomorrow.');
     expect(reasonFor('1 more file')).toBe(LEFT_OUT(1));
-    expect(sent()).toEqual([{ picked: 201, limitError: 201 }]);
+    expect(sent()).toEqual([{ picked: 201, limitError: 201, failedFinal: 200 }]);
   });
 
   it('US-12 AC9 (U8): a pick of 201 oversize files names the extra one too, and starts no run', () => {

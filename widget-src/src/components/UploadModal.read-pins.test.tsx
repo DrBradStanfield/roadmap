@@ -10,14 +10,18 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { UploadModal } from './UploadModal';
 import { checkLabImportQuota, labImport } from '../lib/upload-api';
 import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues } from '../lib/roadmap-data';
+import { trackProductEvent } from '../lib/server-api';
 import type { UploadHistory } from '../lib/api-types';
 import { findAllReviewValues, findReviewValue } from '../testing/import-review';
 
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn() }));
-vi.mock('../lib/roadmap-data', () => ({ getDocumentArchiveMode: vi.fn(() => 'cloud'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => ''), knownUploadAs: vi.fn(() => null), isLegacyUpload: vi.fn(() => false) }));
+vi.mock('../lib/roadmap-data', () => ({ getDocumentArchiveMode: vi.fn(() => 'cloud'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => ''), uploadKnownIndex: vi.fn(() => new Map()), isLegacyUpload: vi.fn(() => false) }));
 vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn(), PROXY_PATH: '/apps/synthetic', parseJsonResponse: vi.fn() }));
 vi.mock('../lib/useIsMobile', () => ({ useIsMobile: () => false }));
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
+// A hash that names the bytes, settled in the order asked: the platform's real digest runs off the main
+// thread, so two files can finish hashing in either order, and a pick's order would then be luck.
+vi.mock('../lib/archive-payloads', async importOriginal => ({ ...await importOriginal<typeof import('../lib/archive-payloads')>(), sha256Blob: async (b: Blob) => `sha256-${await b.text()}` }));
 vi.mock('../lib/build-flags', () => ({ SHOPIFY_SURFACE: true, LOCAL_FIRST: true }));
 
 type Import = Awaited<ReturnType<typeof labImport>>;
@@ -131,12 +135,8 @@ describe('US-12 read pins: what the modal shows and what reaches the review', ()
   });
 
   it('the daily limit mid-run: what was read reaches the review, the limited file is named', async () => {
-    // The limit answers once the good file was sent: a file not yet sent then is never sent (US-12 AC9).
-    let limit!: (r: Import) => void;
-    answers({ 'late.pdf': new Promise<Import>(resolve => { limit = resolve; }) });
+    answers({ 'late.pdf': failure('rate_limit') });
     render_(); pick(pdf('good.pdf'), pdf('late.pdf'));
-    await waitFor(() => expect(labImport).toHaveBeenCalledTimes(2));
-    limit(failure('rate_limit'));
     await findReviewValue('3.9');
     expect(reasonFor('late.pdf')).toBe('Not read. The daily upload limit was reached.');
     expect(reasonFor('good.pdf')).toBeNull();
@@ -188,5 +188,27 @@ describe('US-12 read pins: what the modal shows and what reaches the review', ()
     await new Promise(r => setTimeout(r, 0));
     expect(screen.queryByDisplayValue('3.9')).toBeNull();
     expect(await findAllReviewValues('4.2')).toHaveLength(1);
+  });
+
+  // US-12 AC6: an erase remounts the page while a Save runs; the save that ends after it is not counted.
+  it('a Save that ends after the modal is gone sends no upload_saved', async () => {
+    let finish!: (r: Awaited<ReturnType<typeof bulkSaveMeasurements>>) => void;
+    vi.mocked(bulkSaveMeasurements).mockReturnValueOnce(new Promise(resolve => { finish = resolve; }));
+    const { unmount } = render_(); pick(pdf('a.pdf'));
+    await findReviewValue('3.9');
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    await waitFor(() => expect(bulkSaveMeasurements).toHaveBeenCalled());
+    unmount();
+    finish({ saved: [{}], skippedDuplicates: 0, errorCount: 0, refused: [] } as unknown as Awaited<ReturnType<typeof bulkSaveMeasurements>>);
+    await new Promise(r => setTimeout(r, 0));
+    expect(vi.mocked(trackProductEvent).mock.calls.filter(([n]) => n === 'upload_saved')).toEqual([]);
+  });
+
+  it('control: a Save that ends on screen sends one upload_saved', async () => {
+    render_(); pick(pdf('a.pdf'));
+    await findReviewValue('3.9');
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    await screen.findByRole('button', { name: 'Done' });
+    expect(vi.mocked(trackProductEvent).mock.calls.filter(([n]) => n === 'upload_saved')).toEqual([['upload_saved', { count: 1 }]]);
   });
 });

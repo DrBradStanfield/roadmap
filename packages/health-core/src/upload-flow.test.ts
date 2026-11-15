@@ -6,7 +6,7 @@
 import { describe, expect, it } from 'vitest';
 import type { UnifiedExtractionResult } from './lab-extraction';
 import {
-  initialUpload, inFlight, saveEnabled, transition,
+  initialUpload, inFlight, RETRYABLE, saveEnabled, transition,
   type FileStatus, type UploadEvent, type UploadFile, type UploadState,
 } from './upload-flow';
 import { requestFlags, UPLOAD_LIMITS } from './upload-rules';
@@ -167,7 +167,7 @@ describe('upload-flow: effects', () => {
     expect(statusOf(state, 'z')).toEqual({ s: 'listing' });
     expect(statusOf(state, 'big')).toEqual({ s: 'refused', verdict: 'tooLarge' });
     expect(effects).toEqual([
-      { type: 'list', run: 1, id: 'z' }, { type: 'forget', run: 1, ids: ['big'] }, { type: 'hash', run: 1, id: 'a' },
+      { type: 'forget', run: 1, ids: ['big'] }, { type: 'hash', run: 1, id: 'a' }, { type: 'list', run: 1, id: 'z' },
     ]);
     expect(saveEnabled(state)).toBe(false); // a ZIP still to list counts as in flight
   });
@@ -184,7 +184,7 @@ describe('upload-flow: effects', () => {
     const asked = transition(initialUpload('phone'), pick([{ id: 'a', name: 'a.pdf' }, { id: 'z', name: 'z.zip', kind: 'zip' }], true));
     expect(asked.state.phase).toBe('consent');
     expect(asked.effects).toEqual([]);
-    expect(transition(asked.state, { type: 'consented' }).effects).toEqual([{ type: 'list', run: 1, id: 'z' }, { type: 'hash', run: 1, id: 'a' }]);
+    expect(transition(asked.state, { type: 'consented' }).effects).toEqual([{ type: 'hash', run: 1, id: 'a' }, { type: 'list', run: 1, id: 'z' }]);
   });
 
   it('a listed ZIP adds its members by its name, hashes the kept ones, drops hidden and refused ones', () => {
@@ -293,5 +293,30 @@ describe('upload-flow: effects', () => {
     const { state } = transition(open([readFile]), { type: 'chose', now: '2026-11-15T00:00:00.000Z', id: 'x', change: { document: { title: 't' } } });
     const after = transition(state, { type: 'chose', now: '2026-11-15T00:00:00.000Z', id: 'x', change: { testDay: '2026-11-01' } }).state;
     expect(statusOf(after, 'x')).toMatchObject({ choices: { ticks: {}, testDay: '2026-11-01', document: { title: 't' } } });
+  });
+});
+
+// US-12 AC9, AC10, AC26: a run refused before any send, and the Pages build's key, held by the state itself.
+describe('upload-flow: refusals the state holds', () => {
+  it('runRefused fails every file not yet settled with its reason, aborts and forgets, and fails the pick as a whole', () => {
+    const s = open([file('a', { s: 'waiting' }, null), file('b', { s: 'sending', attempt: 1 }), file('c', { s: 'refused', verdict: 'tooLarge' }, null)]);
+    const { state, effects } = transition(s, { type: 'runRefused', run: 1, reason: 'dailyLimit' });
+    expect(state).toMatchObject({ phase: 'failed', refused: 'dailyLimit', files: [
+      { id: 'a', status: { s: 'failed', reason: 'dailyLimit' } }, { id: 'b', status: { s: 'failed', reason: 'dailyLimit' } }, { id: 'c', status: { s: 'refused' } },
+    ] });
+    expect(effects).toEqual([{ type: 'abort', run: 1, ids: ['b'] }, { type: 'forget', run: 1, ids: ['a', 'b'] }]);
+    expect(transition(s, { type: 'runRefused', run: 2, reason: 'noKey' }).state).toBe(s); // another run's answer
+  });
+
+  it('a key\'s minute limit fails that file only; the run sends on. Our daily limit stops it', () => {
+    const s = open([file('a', { s: 'sending', attempt: 1 }), file('b', { s: 'ready', attempt: 1 })], { platform: 'web' });
+    const key = transition(s, { type: 'sendFailed', run: 1, id: 'a', failure: 'key_rate_limit' }).state;
+    expect(key).toMatchObject({ files: [{ status: { s: 'failed', reason: 'keyRateLimit' } }, { status: { s: 'sending' } }] });
+    const daily = transition(s, { type: 'sendFailed', run: 1, id: 'a', failure: 'rate_limit' }).state;
+    expect(daily).toMatchObject({ files: [{ status: { s: 'failed', reason: 'dailyLimit' } }, { status: { s: 'failed', reason: 'dailyLimit' } }] });
+  });
+
+  it('a refused key and an empty account are never retried; a key\'s minute limit is', () => {
+    expect([RETRYABLE.keyRefused, RETRYABLE.noCredit, RETRYABLE.noKey, RETRYABLE.keyRateLimit]).toEqual([false, false, false, true]);
   });
 });

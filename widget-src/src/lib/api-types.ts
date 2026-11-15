@@ -180,10 +180,10 @@ export type QuotaCheck =
   | { allowed: true; remaining: number }
   | { allowed: false; remaining: number; reason: 'quota' | 'no-key'; message?: string };
 
-/** `key_refused` and `no_credit` come only from the Pages build's own key (byok-upload).
+/** `key_refused`, `no_credit` and `key_rate_limit` (that key's per-minute limit) come only from the Pages build's own key (byok-upload).
  *  `refused` and `too_long` mark one file Claude declined or stopped short on (US-15 AC34).
  *  `busy`: the server was busy, not the daily limit (US-12 AC9). `no_files`: no picked file gave pages. */
-export type UploadErrorCode = 'rate_limit' | 'busy' | 'no_files' | 'server_error' | 'network' | 'key_refused' | 'no_credit' | ExtractionStopCode;
+export type UploadErrorCode = 'rate_limit' | 'key_rate_limit' | 'busy' | 'no_files' | 'server_error' | 'network' | 'key_refused' | 'no_credit' | ExtractionStopCode;
 
 export interface BulkSaveResult {
   saved: ApiMeasurement[];
