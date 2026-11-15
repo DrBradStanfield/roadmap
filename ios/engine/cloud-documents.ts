@@ -2,9 +2,8 @@
 // files it, through health-core's saveDocuments. Split from cloud.ts (file budget); it commits
 // through the open cloud session as cloudEdit does.
 import { StorageError } from '../../packages/health-core/src/adapter';
-import { labArchivePayload, saveDocuments, type DocumentPayload, type DocumentSaveIO, type DocumentSavePlan } from '../../packages/health-core/src/document-save';
+import { committedFile, labArchivePayload, saveDocuments, type DocumentPayload, type DocumentSaveIO, type DocumentSavePlan } from '../../packages/health-core/src/document-save';
 import { validDay } from '../../packages/health-core/src/record-edits';
-import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { commit, ERASED, NOT_OPEN, open } from './cloud';
 import { refuse } from './guarded-edit';
 import { checkArgs } from './contract';
@@ -18,10 +17,15 @@ type DocumentChoice = { sourceFileName: string; mimeType: string; contentHash?: 
   | { kind: 'document'; title: string; documentDate: string | null }
   | { kind: 'labArchive'; reportDay: string | null });
 
-/** Document saves run one after another, so each plans its refs against the
- *  record as the previous one committed it: two at once would be given the
- *  same ref and one original would overwrite the other. */
+/** Document saves, and the shared upload's Save, run one after another, so each plans its refs against
+ *  the record as the previous one committed it: two at once would be given the same ref and one
+ *  original would overwrite the other. The queue keeps no answer once it has settled. */
 let documentQueue: Promise<unknown> = Promise.resolve();
+export function oneDocumentSaveAtATime(work: () => Promise<string>): Promise<string> {
+  const run = documentQueue.then(work);
+  documentQueue = run.then(() => {}, () => {});
+  return run;
+}
 
 /**
  * File one reviewed file as the web does (US-52 AC13d, US-14 AC5): health-core's
@@ -51,9 +55,7 @@ export function documentSave(
   recordJson: string, extractionJson: string, choiceJson: string, original: ArrayBuffer | null, erase: string, nowIso: string, deviceId: string,
 ): Promise<string> {
   checkArgs('documentSave', arguments);
-  const run = documentQueue.then(() => saveOneDocument(recordJson, extractionJson, choiceJson, original, erase, nowIso, deviceId)).then((answer) => JSON.stringify(answer));
-  documentQueue = run.catch(() => {});
-  return run;
+  return oneDocumentSaveAtATime(() => saveOneDocument(recordJson, extractionJson, choiceJson, original, erase, nowIso, deviceId).then((answer) => JSON.stringify(answer)));
 }
 
 async function saveOneDocument(
@@ -101,7 +103,7 @@ async function saveOneDocument(
   if (!at) {
     const current = readRecord(recordJson, nowIso, deviceId);
     plan = await saveDocuments(current, [payload], io);
-    return answer(JSON.stringify(committed(current, plan)));
+    return answer(JSON.stringify(committedFile(current, plan)));
   }
 
   plan = await saveDocuments(at.session.file, [payload], io);
@@ -109,17 +111,8 @@ async function saveOneDocument(
   if (open !== at) return refuse('not-open', 'The cloud record closed while this was saving, so it was not saved. Try again.');
   if (at.session.refuses(erase)) return refuse('erased', ERASED);
   if (plan.saved.length > 0) {
-    const refusal = commit(at, committed(at.session.file, plan), erase, nowIso);
+    const refusal = commit(at, committedFile(at.session.file, plan), erase, nowIso);
     if (refusal) return refusal;
   }
   return answer(JSON.stringify(at.session.file));
-}
-
-/** `file` with the plan's rows committed. The commit writes in place (it pushes rows
- *  and flags `deleted`, documents only), so it runs on a copy of the documents: the
- *  file given is a read record or the session's, both shared (my-data.ts readRecord). */
-function committed(file: RoadmapFile, plan: DocumentSavePlan): RoadmapFile {
-  const next = { ...file, documents: file.documents.map((d) => ({ ...d })) };
-  plan.commit(next);
-  return next;
 }

@@ -26,6 +26,7 @@ import { fileVerdict, UPLOAD_LIMITS, zipMemberVerdict } from '../../packages/hea
 import { checkArgs } from './contract';
 import { labReviewGroups } from './lab-review-groups';
 import { uploadPlanOf, uploadStart, uploadStep, uploadUsage, uploadViewOf } from './upload-doors';
+import { uploadSaveRun, type OriginalReader } from './upload-save-door';
 import type { Extraction } from './lab-review';
 
 // The web APIs the cloud adapters need, over Swift's natives (shim.ts). Absent
@@ -295,6 +296,20 @@ export function uploadSavePlanJson(stateJson: string, recordJson: string, nowIso
 export function uploadUsageJson(stateJson: string): string {
   checkArgs('uploadUsageJson', arguments);
   return uploadUsage(stateJson);
+}
+
+/**
+ * The shared upload's Save (upload-save-door.ts, health-core uploadSave): the pick's values and its
+ * document and lab archive rows in one step, for a state in its `saving` phase. With a cloud open
+ * (`erase`, as documentSave takes it) through the session, and the engine writes each original the
+ * plan stores, reading its bytes with `readOriginal(fileId)` (an ArrayBuffer, or null) for the
+ * files `originalsJson` ({fileId: mimeType}) names; with none (`erase` '') onto `recordJson`.
+ * Answers `{ok, record, erase?, outcome: {values, documents, archived, unstored}}`; Swift then
+ * sends `saved {run, attempt, outcome}`. Or `{ok: false, reason, message}`, then `saveFailed`.
+ */
+export async function uploadSaveJson(stateJson: string, recordJson: string, erase: string, nowIso: string, deviceId: string, originalsJson: string, readOriginal: OriginalReader): Promise<string> {
+  checkArgs('uploadSaveJson', arguments);
+  return uploadSaveRun(stateJson, recordJson, erase, nowIso, deviceId, originalsJson, readOriginal);
 }
 
 /** The network came back (the app's NWPathMonitor, US-09 AC30): retry a failed save, at most once a

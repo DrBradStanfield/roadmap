@@ -1,6 +1,6 @@
 // Generated from ios/engine/contract.ts by `npx tsx ios/scripts/gen-contract.ts`. Never edit it:
 // ios/engine/contract-drift.test.ts fails when it differs from what the contract generates.
-// contractHash: de006f99fe247e59
+// contractHash: eb18cc9e1981de46
 
 import Foundation
 import JavaScriptCore
@@ -266,5 +266,15 @@ extension HealthEngine {
     /// `uploadUsageJson`: answers at once; nil from an engine without it.
     func doorUploadUsageJson(stateJson: String) throws -> String? {
         try optionalCall("uploadUsageJson", [stateJson])
+    }
+
+    /// `uploadSaveJson`: answers a Promise; nil from an engine without it.
+    func doorUploadSaveJson(stateJson: String, recordJson: String, erase: String, nowIso: String, deviceId: String, originalsJson: String, readOriginal: AnyObject) async throws -> String? {
+        try await optionalCall("uploadSaveJson", [stateJson, recordJson, erase, nowIso, deviceId, originalsJson, readOriginal], read: { $0.isUndefined ? "" : $0.toString() })
+    }
+
+    /// `uploadSaveJson`, its settled value read by `read` on the engine's queue.
+    func doorUploadSaveJson<T: Sendable>(stateJson: String, recordJson: String, erase: String, nowIso: String, deviceId: String, originalsJson: String, readOriginal: AnyObject, read: @escaping (JSValue) -> T) async throws -> T? {
+        try await optionalCall("uploadSaveJson", [stateJson, recordJson, erase, nowIso, deviceId, originalsJson, readOriginal], read: read)
     }
 }

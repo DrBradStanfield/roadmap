@@ -18,7 +18,7 @@ import * as z from '../../packages/health-core/src/zod';
 import { readRecord, Refusal, TOO_NEW_RECORD } from './my-data';
 
 /** Why a door would not answer, each with its words; the words never carry what it was given. */
-const REFUSAL_WORDS = {
+export const REFUSAL_WORDS = {
   'invalid-platform': 'The upload was started for an unknown device.',
   'invalid-state': 'The upload could not be read.',
   'invalid-event': 'The upload step could not be read.',
@@ -29,7 +29,7 @@ const REFUSAL_WORDS = {
 export type UploadRefusalReason = keyof typeof REFUSAL_WORDS;
 export const UPLOAD_REFUSAL_REASONS = Object.keys(REFUSAL_WORDS) as UploadRefusalReason[];
 export type UploadRefusal = { ok: false; reason: UploadRefusalReason; message: string };
-class Refused extends Error {
+export class Refused extends Error {
   constructor(readonly reason: UploadRefusalReason) { super(reason); }
 }
 
@@ -62,11 +62,11 @@ function parsed<S extends z.ZodType>(json: string, schema: S, reason: UploadRefu
   if (!read.success) throw new Refused(reason);
   return read.data;
 }
-const readState = (json: string): UploadState => parsed(json, UPLOAD_STATE, 'invalid-state');
+export const readState = (json: string): UploadState => parsed(json, UPLOAD_STATE, 'invalid-state');
 
 /** The record as the save writes it (read raw), through the app's own deviceId, so the screen doors'
  *  cached read is shared, not emptied; '' is a record with nothing in it yet. Read-only here. */
-function readUploadRecord(json: string, now: string, deviceId: string): RoadmapFile {
+export function readUploadRecord(json: string, now: string, deviceId: string): RoadmapFile {
   if (json === '') return createEmptyFile({ deviceId, now });
   try {
     return readRecord(json, now, deviceId);

@@ -113,12 +113,20 @@ describe('upload view: section 4 screens', () => {
     expect(viewOf(letterKnown, record, NOW).save).toEqual({ label: 'Save 0 values', enabled: false, why: 'Nothing new to save', error: null });
   });
 
+  it('done: originals that were not stored say so in the web\'s own words; none says nothing (PR 1848 Codex)', () => {
+    const done = (unstored?: number): UploadState =>
+      ({ phase: 'done', platform: 'phone', run: 1, files: [], started: NOW, firstRead: null, outcome: { values: 1, documents: 1, archived: 0, ...(unstored === undefined ? {} : { unstored }) } });
+    expect(viewOf(done(2), EMPTY, NOW).done?.unstored).toBe("The original file couldn't be stored; its details are saved.");
+    expect(viewOf(done(0), EMPTY, NOW).done?.unstored).toBeNull();
+    expect(viewOf(done(), EMPTY, NOW).done?.unstored).toBeNull();
+  });
+
   it('done: one line, each part dropped at zero, and the originals kept', () => {
     const done = (values: number, documents: number, archived: number): UploadState =>
       ({ phase: 'done', platform: 'web', run: 1, files: [], started: NOW, firstRead: null, outcome: { values, documents, archived } });
-    expect(viewOf(done(42, 8, 0), EMPTY, NOW).done).toEqual({ line: 'Saved 42 values and 8 documents.', archived: null });
-    expect(viewOf(done(0, 1, 2), EMPTY, NOW).done).toEqual({ line: 'Saved 1 document.', archived: '2 original files kept in your cloud.' });
-    expect(viewOf(done(1, 0, 1), EMPTY, NOW).done).toEqual({ line: 'Saved 1 value.', archived: '1 original file kept in your cloud.' });
+    expect(viewOf(done(42, 8, 0), EMPTY, NOW).done).toEqual({ line: 'Saved 42 values and 8 documents.', archived: null, unstored: null });
+    expect(viewOf(done(0, 1, 2), EMPTY, NOW).done).toEqual({ line: 'Saved 1 document.', archived: '2 original files kept in your cloud.', unstored: null });
+    expect(viewOf(done(1, 0, 1), EMPTY, NOW).done).toEqual({ line: 'Saved 1 value.', archived: '1 original file kept in your cloud.', unstored: null });
   });
 });
 

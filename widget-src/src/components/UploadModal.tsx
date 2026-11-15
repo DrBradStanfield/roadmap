@@ -4,6 +4,7 @@ import type { UnitSystem, MetricType } from '@roadmap/health-core/units';
 import type { UploadHistory } from '../lib/api-types';
 import { measurementRefusalLine } from '../lib/lab-value-labels';
 import { labUnitRefusalLine } from '@roadmap/health-core/lab-series';
+import { UPLOAD_TEXT } from '@roadmap/health-core/upload-text';
 import { useLpaUnit } from '../lib/lpa-unit';
 import type { Grading } from '../lib/blood-test-cell';
 import { ReviewTable } from './ReviewTable';
@@ -220,7 +221,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
                 </p>
               )}
               {refusalLines}
-              {unstoredCount > 0 && <p className="upload-done-skipped">The original file couldn't be stored; its details are saved.</p>}
+              {unstoredCount > 0 && <p className="upload-done-skipped">{UPLOAD_TEXT.unstoredLine}</p>}
               <FileNotices notices={notices} />
               <button className="btn-primary upload-done-btn" onClick={handleClose}>
                 Done
