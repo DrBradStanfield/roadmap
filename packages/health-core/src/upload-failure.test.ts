@@ -46,6 +46,8 @@ describe('each code in upload-flow: a reason of its own, retried as today', () =
   const WANT: Record<UploadFailure, [string, boolean]> = {
     busy: ['busy', true], network: ['network', true], server_error: ['server', true],
     rate_limit: ['dailyLimit', false], refused: ['declined', false], too_long: ['tooLong', false],
+    // The Pages build's own key (US-12 AC9): a refused key and an empty account never mend; its minute limit may.
+    key_refused: ['keyRefused', false], no_credit: ['noCredit', false], key_rate_limit: ['keyRateLimit', true],
   };
   for (const [failure, [reason, retryable]] of Object.entries(WANT) as Array<[UploadFailure, [string, boolean]]>) {
     it(`${failure} -> ${reason}, ${retryable ? '' : 'not '}retryable`, () => {

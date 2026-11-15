@@ -114,7 +114,7 @@ const PHASES: Record<string, UploadState> = {
   saving: { phase: 'saving', platform: 'web', run: 1, files: [readFile], started: NOW, firstRead: null, attempt: 1 },
   saveFailed: { phase: 'saveFailed', platform: 'web', run: 1, files: [readFile], started: NOW, firstRead: null, attempt: 1, message: 'm' },
   done: { phase: 'done', platform: 'web', run: 1, files: [readFile], started: NOW, firstRead: null, outcome: { values: 1, documents: 0, archived: 0 } },
-  failed: { phase: 'failed', platform: 'web', run: 1, files: [file('z', { s: 'failed', reason: 'zipUnreadable', attempt: 0 })], started: NOW, firstRead: null },
+  failed: { phase: 'failed', platform: 'web', run: 1, files: [file('z', { s: 'failed', reason: 'zipUnreadable', attempt: 0 })], started: NOW, firstRead: null, refused: null },
 };
 const FLOW_EVENTS: Record<string, UploadEvent> = {
   picked: { type: 'picked', files: [{ id: 'p', name: 'p.pdf', bytes: 1, kind: 'file' }], needsConsent: false, now: NOW },
