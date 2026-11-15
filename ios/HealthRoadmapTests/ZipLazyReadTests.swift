@@ -32,6 +32,11 @@ final class ZipLazyReadTests: XCTestCase {
             ("only skipped members", Self.zip([.init("notes.txt", Data("x".utf8)), .init("__MACOSX/._a.png", png)]), .swift, "empty"),
             ("a folder entry is skipped", Self.zip([.init("dir/", Data()), .init("dir/a.png", png)]), .swift, "read 1"),
             ("a member that is no picture", Self.zip([.init("a.png", Data("no picture".utf8))]), .swift, #"unreadable("labs.zip/a.png")"#),
+            // Review round 1 (item 4): a deflated member with no bytes but a size is no ZIP, never a crash.
+            ("deflated, no bytes, a size", Self.zip([.init("a.png", png, deflate: true, compressed: 0)]), small, "notAZip"),
+            // An empty file is read as one: no picture in it, so unreadable, stored or deflated.
+            ("an empty stored member", Self.zip([.init("empty.png", Data())]), .swift, #"unreadable("labs.zip/empty.png")"#),
+            ("an empty deflated member", Self.zip([.init("empty.png", Data(), method: 8)]), .swift, #"unreadable("labs.zip/empty.png")"#),
             ("the ZIP itself too large", Self.zip([.init("a.png", png)]),
              LabFileReader.Rules(source: .swift, file: { name, bytes in name.hasSuffix(".zip") ? .tooLarge : LabFileReader.swiftVerdict(name, bytes) },
                                  member: LabFileReader.swiftMemberVerdict, maxMemberBytes: 100_000, maxMembers: 200, maxTotalBytes: 1_000_000), #"tooLarge("labs.zip")"#),
@@ -64,9 +69,9 @@ final class ZipLazyReadTests: XCTestCase {
         let (zip, start) = Self.built([.init("a.png", Self.png), .init("dir/", Data()), .init("b/c.pdf", Self.textPdf, deflate: true), .init("notes.txt", Data("x".utf8))])
         var wiped = zip
         wiped.replaceSubrange(0..<start, with: Data(count: start))
-        var held = LabFileReader.Held()
+        let held = LabFileReader.Held()
         held.hold(wiped, as: "z", name: "labs.zip")
-        let members = try held.list("z")
+        let members = try held.list("z", rules: .swift)
         // Every file member, with no rule applied: health-core's `listed` judges each (notes.txt too).
         XCTAssertEqual(members.map(\.entry.name), ["a.png", "b/c.pdf", "notes.txt"])
         XCTAssertEqual(members.map(\.entry.size), [Self.png.count, Self.textPdf.count, 1])
@@ -78,9 +83,9 @@ final class ZipLazyReadTests: XCTestCase {
     /// earlier ones readable; the whole-ZIP read still refuses that ZIP (the pin above).
     func testACorruptLaterMemberLeavesEarlierOnesReadable() throws {
         let zip = Self.zip([.init("a.png", Self.png, deflate: true), .init("b.png", Self.png, deflate: true, garble: true)])
-        var held = LabFileReader.Held()
+        let held = LabFileReader.Held()
         held.hold(zip, as: "z", name: "labs.zip")
-        let members = try held.list("z")
+        let members = try held.list("z", rules: .swift)
         XCTAssertEqual(members.map(\.entry.name), ["a.png", "b.png"])
         let first = try held.convert(members[0].id, rules: .swift)
         XCTAssertEqual(first.name, "labs.zip/a.png")
@@ -91,20 +96,51 @@ final class ZipLazyReadTests: XCTestCase {
         XCTAssertThrowsError(try held.convert(members[1].id, rules: .swift)) { XCTAssertEqual(String(describing: $0), "notAZip") }
     }
 
-    /// A member read on its own is refused as the whole-ZIP read refuses it, before any copy.
+    /// A ZIP's kept members are checked when it is listed, as the whole-ZIP read checks them; a member
+    /// the rules skip is listed unchecked, and is still refused when read on its own, before any copy.
     func testAMemberReadAloneKeepsTheRefusals() throws {
-        var held = LabFileReader.Held()
-        held.hold(Self.zip([.init("a.png", Self.png, flags: 1), .init("b.png", Self.png, compressed: 0xFFFF_FFFF),
-                            .init("c.png", Self.png, size: Self.png.count - 1), .init("d.png", Self.png, method: 12)]), as: "z", name: "labs.zip")
-        let found = try held.list("z").map { member in
+        let held = LabFileReader.Held()
+        let faulty = Self.zip([.init("a.png", Self.png, flags: 1), .init("b.png", Self.png, compressed: 0xFFFF_FFFF),
+                               .init("c.png", Self.png, size: Self.png.count - 1), .init("d.png", Self.png, method: 12)])
+        held.hold(faulty, as: "z", name: "labs.zip")
+        XCTAssertThrowsError(try held.list("z", rules: .swift)) { XCTAssertEqual(String(describing: $0), "unsupported") }
+        let found = try held.list("z", rules: Self.keepNothing).map { member in
             do { _ = try held.hash(member.id); return "read" } catch { return String(describing: error) }
         }
         XCTAssertEqual(found, ["unsupported", "unsupported", "notAZip", "unsupported"])
-        let big = Data(count: LabFileReader.maxFileBytes + 1)
-        held.hold(Self.zip([.init("big.pdf", big)]), as: "y", name: "big.zip")
-        let bigMember = try held.list("y")[0]
+        held.hold(Self.zip([.init("big.pdf", Data(count: LabFileReader.maxFileBytes + 1))]), as: "y", name: "big.zip")
+        XCTAssertThrowsError(try held.list("y", rules: .swift)) { XCTAssertEqual(String(describing: $0), "tooLarge") }
+        let bigMember = try held.list("y", rules: Self.keepNothing)[0]
         XCTAssertThrowsError(try held.hash(bigMember.id)) { XCTAssertEqual(String(describing: $0), "tooLarge") }
     }
+
+    /// Item 3: `Held` keeps the caps itself. Over the member count or the total, a ZIP is refused
+    /// at its listing; members the rules skip are listed unchecked, yet reading them stops at the
+    /// total, each member counted once however often it is read. Each member is ~9.9 MB of zeros.
+    func testHeldKeepsTheCapsAcrossLazyReads() throws {
+        let zeros = Data(count: 9_900_000)
+        let held = LabFileReader.Held()
+        held.hold(Self.zip((0..<300).map { .init(String(format: "r%03d.pdf", $0), zeros, deflate: true) }), as: "m", name: "many.zip")
+        XCTAssertThrowsError(try held.list("m", rules: .swift)) { XCTAssertEqual(String(describing: $0), "tooLarge") }
+        XCTAssertThrowsError(try held.hash("m#0")) { XCTAssertEqual(String(describing: $0), #"unreadable("m#0")"#) }
+        // That one passes the total (200 MB) first; 201 small members pass the count alone.
+        held.hold(Self.zip((0..<201).map { .init(String(format: "c%03d.pdf", $0), Data("x".utf8)) }), as: "c", name: "count.zip")
+        XCTAssertThrowsError(try held.list("c", rules: .swift)) { XCTAssertEqual(String(describing: $0), "tooLarge") }
+        XCTAssertNoThrow(try held.list("c", rules: Self.caps(member: 10, members: 201, total: 1_000)))
+        let caps = Self.caps(member: 10_000_000, members: 200, total: 30_000_000)
+        held.hold(Self.zip((0..<4).map { .init("r\($0).pdf", zeros, deflate: true) }), as: "t", name: "total.zip")
+        XCTAssertThrowsError(try held.list("t", rules: caps)) { XCTAssertEqual(String(describing: $0), "tooLarge") }
+        held.hold(Self.zip([.init("a.png", Self.png)] + (0..<6).map { .init("z\($0).bin", zeros, deflate: true) }), as: "s", name: "skipped.zip")
+        let members = try held.list("s", rules: caps)
+        let found = members.map { member in
+            do { _ = try held.hash(member.id); return "read" } catch { return String(describing: error) }
+        }
+        XCTAssertEqual(found, ["read", "read", "read", "read", "tooLarge", "tooLarge", "tooLarge"])
+        XCTAssertNoThrow(try held.hash(members[1].id), "a member read again is not counted again")
+    }
+
+    static let keepNothing = LabFileReader.Rules(source: .swift, file: LabFileReader.swiftVerdict, member: { _ in .unsupported },
+                                                 maxMemberBytes: LabFileReader.maxFileBytes, maxMembers: 200, maxTotalBytes: 100_000_000)
 
     /// The bytes' hash is the web's `sha256Blob` (widget-src/src/lib/archive-payloads.ts) for the
     /// same bytes: bytes 0 to 255, then the line below. Expected value computed once in Node by
@@ -112,20 +148,20 @@ final class ZipLazyReadTests: XCTestCase {
     func testAHashIsTheWebsSha256Blob() throws {
         let fixture = Data(0...255) + Data("Synthetic report bytes for US-52 AC7f.\n".utf8)
         let expected = "sha256-9aae0fc6e3b0b4c34b79f6b0af5cbea105ddb1771d6bcd0bdda40d72c6e527e4"
-        var held = LabFileReader.Held()
+        let held = LabFileReader.Held()
         held.hold(fixture, as: "f", name: "report.pdf")
         XCTAssertEqual(try held.hash("f"), expected)
         held.hold(Self.zip([.init("in/report.pdf", fixture, deflate: true)]), as: "z", name: "labs.zip")
-        let listed = try held.list("z")
+        let listed = try held.list("z", rules: .swift)
         let member = try XCTUnwrap(listed.first)
         XCTAssertEqual(try held.hash(member.id), expected, "a member hashes its inflated bytes")
     }
 
     /// One member converted on demand gives the pages the same bytes give picked as a file.
     func testConvertingOneMemberGivesTheSamePages() async throws {
-        var held = LabFileReader.Held()
+        let held = LabFileReader.Held()
         held.hold(Self.zip([.init("b.png", Self.png), .init("r.pdf", Self.textPdf, deflate: true)]), as: "z", name: "labs.zip")
-        let members = try held.list("z")
+        let members = try held.list("z", rules: .swift)
         let pdf = try held.convert(members[1].id, rules: .swift)
         let alone = try await LabFileReader.documents(from: Self.textPdf, name: "labs.zip/r.pdf")
         XCTAssertEqual(pdf.pages, alone.first?.pages)
@@ -136,12 +172,12 @@ final class ZipLazyReadTests: XCTestCase {
     /// A file's own bytes convert too; `forget` drops what an id holds, and a forgotten ZIP
     /// takes its members with it.
     func testForgetDropsTheBytes() throws {
-        var held = LabFileReader.Held()
+        let held = LabFileReader.Held()
         held.hold(Self.png, as: "p", name: "scan.png")
         XCTAssertEqual(try held.convert("p", rules: .swift).pages.map(\.type), ["image"])
         XCTAssertNil(try held.convert("p", rules: .swift).zipMember)
         held.hold(Self.zip([.init("a.png", Self.png)]), as: "z", name: "labs.zip")
-        let listed = try held.list("z")
+        let listed = try held.list("z", rules: .swift)
         let member = try XCTUnwrap(listed.first)
         held.forget(["p", "z"])
         XCTAssertThrowsError(try held.hash("p")) { XCTAssertEqual(String(describing: $0), #"unreadable("p")"#) }
@@ -159,6 +195,50 @@ final class ZipLazyReadTests: XCTestCase {
     }
 
     @MainActor final class Seen { var counts: [String] = [] }
+
+    // MARK: review round 1
+
+    /// Item 1 (US-52 AC7a): a cancelled read converts no later member and publishes no count, so a
+    /// late count can never move the next upload's screen. A's first count waits behind a busy main
+    /// actor; A is cancelled and B started meanwhile. Member 1 is corrupt: converting it would fail
+    /// with notAZip, not CancellationError.
+    @MainActor
+    func testACancelledZipReadStopsAndPublishesNothing() async throws {
+        let zip = Self.zip([.init("a.png", Self.png), .init("b.png", Self.png, deflate: true, garble: true)])
+        let first = Seen(), second = Seen()
+        let a = Task.detached { try await LabFileReader.documents(from: zip, name: "a.zip") { done, total in first.counts.append("\(done) of \(total)") } }
+        Self.holdMain(0.5) // main busy: A lists, then waits to publish its first count
+        a.cancel()
+        let good = Self.zip([.init("a.png", Self.png), .init("b.png", Self.png)])
+        let b = try await LabFileReader.documents(from: good, name: "b.zip") { done, total in second.counts.append("\(done) of \(total)") }
+        var failure = "read"
+        do { _ = try await a.value } catch { failure = String(describing: error) }
+        XCTAssertEqual(failure, "CancellationError()")
+        XCTAssertEqual(first.counts, [], "a cancelled read publishes no count")
+        XCTAssertEqual(second.counts, ["0 of 2", "1 of 2"])
+        XCTAssertEqual(b.count, 2)
+    }
+
+    /// Blocks the calling thread (here, main), as a busy screen would.
+    private static func holdMain(_ seconds: TimeInterval) { Thread.sleep(forTimeInterval: seconds) }
+
+    /// Item 2: a ZIP held again under the same id, or forgotten and held again, never reads its
+    /// members by the old ZIP's directory: until it is listed, a member id is unreadable.
+    func testAReheldZipNeverReadsTheOldDirectory() throws {
+        let other = UIGraphicsImageRenderer(size: CGSize(width: 30, height: 10)).pngData { _ in }
+        let a = Self.zip([.init("a.png", Self.png)])
+        let b = Self.zip([.init("long/path/b.png", other, deflate: true)])
+        let held = LabFileReader.Held()
+        held.hold(a, as: "z", name: "a.zip")
+        _ = try held.list("z", rules: .swift)
+        held.hold(b, as: "z", name: "b.zip")
+        XCTAssertThrowsError(try held.hash("z#0")) { XCTAssertEqual(String(describing: $0), #"unreadable("z#0")"#) }
+        _ = try held.list("z", rules: .swift)
+        XCTAssertEqual(try held.hash("z#0"), LabFileReader.contentHash(other))
+        held.forget(["z"])
+        held.hold(a, as: "z", name: "a.zip")
+        XCTAssertThrowsError(try held.hash("z#0")) { XCTAssertEqual(String(describing: $0), #"unreadable("z#0")"#) }
+    }
 
     // MARK: fixtures
 

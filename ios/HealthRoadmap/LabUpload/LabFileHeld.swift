@@ -1,55 +1,87 @@
 import Foundation
+import os
 
 extension LabFileReader {
     /// What one upload holds, by the upload state's file id (US-52 AC7f; health-core
     /// upload-flow.ts runs `list`, `hash`, `convert` and `forget` on it): a picked file's or ZIP's
-    /// bytes, and a ZIP member by where it sits in its ZIP, inflated only while it is hashed or
-    /// converted. A value: the runner keeps it and hands a copy to each read off its actor.
-    struct Held: Sendable {
-        private enum Item: Sendable {
-            case bytes(name: String, Data)
-            case member(zip: String, ZipReader.Entry)
+    /// bytes, and a listed ZIP's members by where each sits, inflated only while it is hashed or
+    /// converted. Shared by the runner's reads: a lock guards the records, never an inflate or a convert.
+    final class Held: Sendable {
+        /// A listed ZIP's members, the rules it was listed with, and the bytes its members have
+        /// inflated so far, each member counted once, held to the rules' total.
+        private struct Listing {
+            let entries: [ZipReader.Entry]
+            let rules: Rules
+            var counted: Set<Int> = []
+            var inflated = 0
         }
-        private var items: [String: Item] = [:]
+        /// `listing` lives in the ZIP's own record, so holding the id again or forgetting it drops it.
+        private struct Item {
+            let name: String
+            let data: Data
+            var listing: Listing?
+        }
+        private let items = OSAllocatedUnfairLock(initialState: [String: Item]())
 
-        /// Holds a picked file's or ZIP's bytes under `id`; `name` is how a read names it.
-        mutating func hold(_ data: Data, as id: String, name: String) { items[id] = .bytes(name: name, data) }
+        /// Holds a picked file's or ZIP's bytes under `id`, replacing what it held; `name` is how a read names it.
+        func hold(_ data: Data, as id: String, name: String) { items.withLock { $0[id] = Item(name: name, data: data) } }
 
-        /// Drops what `ids` hold. A forgotten ZIP takes its members' bytes with it: they then read as unreadable.
-        mutating func forget(_ ids: [String]) { for id in ids { items[id] = nil } }
+        /// Drops what `ids` hold. A forgotten ZIP takes its members with it: they then read as unreadable.
+        func forget(_ ids: [String]) { items.withLock { items in for id in ids { items[id] = nil } } }
 
-        /// Every file member of a held ZIP, from its central directory alone, no member's bytes read and
-        /// no rule applied: health-core's `listed` judges each. Member `n` is held as `<zip id>#<n>`.
-        mutating func list(_ zip: String) throws -> [(id: String, entry: ZipReader.Entry)] {
-            guard case .bytes(_, let data)? = items[zip] else { throw Failure.unreadable(zip) }
-            return try ZipReader.entries(of: data).enumerated().map { index, entry in
-                let id = "\(zip)#\(index)"
-                items[id] = .member(zip: zip, entry)
-                return (id, entry)
+        /// Every file member of a held ZIP, from its central directory alone, no member's bytes read:
+        /// health-core's `listed` judges each. The ZIP's size, and the members `rules` keep, are checked
+        /// first as a whole-ZIP read checks them (`ZipReader.check`); a refusal refuses the ZIP. Member
+        /// `n` is `<zip id>#<n>`, readable until the ZIP is held again or forgotten.
+        func list(_ zip: String, rules: Rules) throws -> [(id: String, entry: ZipReader.Entry)] {
+            let entries = try items.withLock { items in
+                guard let held = items[zip] else { throw Failure.unreadable(zip) }
+                guard rules.file(held.name, held.data.count) != .tooLarge else { throw Failure.tooLarge(held.name) }
+                let entries = try ZipReader.entries(of: held.data)
+                try ZipReader.check(entries.filter { rules.member($0.name) == .keep },
+                                    maxMemberBytes: rules.maxMemberBytes, maxMembers: rules.maxMembers, maxTotalBytes: rules.maxTotalBytes)
+                items[zip]?.listing = Listing(entries: entries, rules: rules)
+                return entries
             }
+            return entries.enumerated().map { ("\(zip)#\($0)", $1) }
         }
 
         /// One file's or member's 'sha256-<hex>', the web's sha256Blob format.
-        func hash(_ id: String) throws -> String { contentHash(try data(id).bytes) }
+        func hash(_ id: String) throws -> String { contentHash(try read(id).bytes) }
 
         /// One file or member turned into its pages, as a picked file is (PDF text or JPEG pages).
         func convert(_ id: String, rules: Rules) throws -> Document {
-            let (name, bytes, member) = try data(id)
-            var read = try document(from: bytes, name: name, rules: rules)
-            read.zipMember = member
-            return read
+            let (name, bytes, member) = try read(id)
+            var document = try document(from: bytes, name: name, rules: rules)
+            document.zipMember = member
+            return document
         }
 
-        /// The bytes `id` holds, a member's inflated now (at most a file's cap), with its name and,
-        /// for a member, its ZIP and path. A member is named `<zip name>/<path>`.
-        private func data(_ id: String) throws -> (name: String, bytes: Data, member: ZipMember?) {
-            switch items[id] {
-            case .bytes(let name, let data)?: return (name, data, nil)
-            case .member(let zip, let entry)?:
-                guard case .bytes(let zipName, let archive)? = items[zip] else { throw Failure.unreadable(id) }
-                return ("\(zipName)/\(entry.name)", try ZipReader.data(of: entry, in: archive, maxBytes: maxFileBytes),
-                        ZipMember(zip: zipName, path: entry.name))
-            case nil: throw Failure.unreadable(id)
+        /// The bytes `id` holds, a member's inflated now, with its name (`<zip name>/<path>` for a
+        /// member) and, for a member, its ZIP and path. A member is checked against its listing's
+        /// caps, and refused once its ZIP's members would inflate more than the listing's total.
+        private func read(_ id: String) throws -> (name: String, bytes: Data, member: ZipMember?) {
+            enum Found { case file(String, Data), member(zip: String, Data, ZipReader.Entry, maxBytes: Int) }
+            let found: Found = try items.withLock { items in
+                if let item = items[id] { return .file(item.name, item.data) }
+                guard let mark = id.lastIndex(of: "#"), let index = Int(id[id.index(after: mark)...]),
+                      case let zipId = String(id[..<mark]), let zip = items[zipId], let listing = zip.listing,
+                      listing.entries.indices.contains(index)
+                else { throw Failure.unreadable(id) }
+                let entry = listing.entries[index], rules = listing.rules
+                // Refused here as well as in `data(of:)`, so a member over its cap never counts against the total.
+                try ZipReader.check([entry], maxMemberBytes: rules.maxMemberBytes, maxTotalBytes: rules.maxMemberBytes)
+                if !listing.counted.contains(index) {
+                    guard listing.inflated + entry.size <= rules.maxTotalBytes else { throw ZipReader.Failure.tooLarge }
+                    items[zipId]?.listing?.counted.insert(index)
+                    items[zipId]?.listing?.inflated += entry.size
+                }
+                return .member(zip: zip.name, zip.data, entry, maxBytes: rules.maxMemberBytes)
+            }
+            switch found {
+            case .file(let name, let data): return (name, data, nil)
+            case .member(let zip, let data, let entry, let maxBytes):
+                return ("\(zip)/\(entry.name)", try ZipReader.data(of: entry, in: data, maxBytes: maxBytes), ZipMember(zip: zip, path: entry.name))
             }
         }
     }

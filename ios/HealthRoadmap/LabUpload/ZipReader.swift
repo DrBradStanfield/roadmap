@@ -92,15 +92,15 @@ enum ZipReader {
     }
 
     /// Raw DEFLATE (Apple's `COMPRESSION_ZLIB` is raw, as ZIP stores it), to exactly `size` bytes.
+    /// No bytes for a size above 0 is no ZIP; an empty member is an empty file.
     private static func inflate(_ data: Data, size: Int) throws -> Data {
         if size == 0 { return Data() }
         var output = Data(count: size)
         let written = output.withUnsafeMutableBytes { out in
-            data.withUnsafeBytes { input in
-                compression_decode_buffer(
-                    out.bindMemory(to: UInt8.self).baseAddress!, size,
-                    input.bindMemory(to: UInt8.self).baseAddress!, data.count,
-                    nil, COMPRESSION_ZLIB)
+            data.withUnsafeBytes { input -> Int in
+                guard !input.isEmpty, let target = out.bindMemory(to: UInt8.self).baseAddress,
+                      let source = input.bindMemory(to: UInt8.self).baseAddress else { return 0 }
+                return compression_decode_buffer(target, size, source, input.count, nil, COMPRESSION_ZLIB)
             }
         }
         guard written == size else { throw Failure.notAZip }

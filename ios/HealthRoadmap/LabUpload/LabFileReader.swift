@@ -119,23 +119,27 @@ enum LabFileReader {
     /// The documents in one picked file: one, or one per report inside a ZIP. A ZIP
     /// member is named `zip/path` here; `HealthEngine.named` gives it the web's name.
     /// `rules`: health-core's, asked for this file and its members (`UploadRules.swift`), else the Swift copy.
-    /// A ZIP is listed first, its kept members checked as a whole, then each is inflated and
-    /// converted in turn (`Held`, AC7f), `progress(done, total)` before each.
+    /// A ZIP is listed and checked first (`Held`, AC7f), then each kept member is inflated and
+    /// converted in turn, `progress(done, total)` before each. Close cancels it between members (AC7a).
     static func documents(from data: Data, name: String, rules: Rules = .swift, progress: Progress = { _, _ in }) async throws -> [Document] {
         guard pathExtension(name) == "zip" else { return [try document(from: data, name: name, rules: rules)] }
-        // The web's ZIP limits: 20 MB as downloaded, 200 files (the folder's file cap).
-        guard rules.file(name, data.count) != .tooLarge else { throw Failure.tooLarge(name) }
-        var held = Held()
+        let held = Held()
         held.hold(data, as: name, name: name)
-        let members = try held.list(name).filter { rules.member($0.entry.name) == .keep }
-        try ZipReader.check(members.map(\.entry), maxMemberBytes: rules.maxMemberBytes, maxMembers: rules.maxMembers, maxTotalBytes: rules.maxTotalBytes)
+        let members = try held.list(name, rules: rules).filter { rules.member($0.entry.name) == .keep }
         guard !members.isEmpty else { throw Failure.empty }
         var documents: [Document] = []
         for (done, member) in members.enumerated() {
-            await progress(done, members.count)
+            try Task.checkCancellation()
+            await report(progress, done, members.count)
             documents.append(try held.convert(member.id, rules: rules))
         }
         return documents
+    }
+
+    /// A count from a read still running, checked where it lands on the main actor: a read cancelled
+    /// meanwhile publishes nothing, so its late count never moves the next upload's screen (AC7a).
+    private static func report(_ progress: Progress, _ done: Int, _ total: Int) async {
+        await MainActor.run { if !Task.isCancelled { progress(done, total) } }
     }
 
     /// Asks no engine: the Swift copy of the rules.
@@ -200,7 +204,7 @@ enum LabFileReader {
         var bytes = 0
         for (done, file) in files.enumerated() {
             try Task.checkCancellation()
-            await progress(done, files.count)
+            await report(progress, done, files.count)
             let inside = file.url.path.dropFirst(folder.path.count).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
             let data = try coordinatedData(file.url)
             bytes += data.count
