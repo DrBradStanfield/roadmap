@@ -129,8 +129,7 @@ enum LabFileReader {
         guard !members.isEmpty else { throw Failure.empty }
         var documents: [Document] = []
         for (done, member) in members.enumerated() {
-            try Task.checkCancellation()
-            await report(progress, done, members.count)
+            try await report(progress, done, members.count)
             documents.append(try held.convert(member.id, rules: rules))
         }
         return documents
@@ -138,8 +137,12 @@ enum LabFileReader {
 
     /// A count from a read still running, checked where it lands on the main actor: a read cancelled
     /// meanwhile publishes nothing, so its late count never moves the next upload's screen (AC7a).
-    private static func report(_ progress: Progress, _ done: Int, _ total: Int) async {
+    /// Throws CancellationError before the count and again after it, so a read cancelled while the
+    /// count waited on a busy main actor reads nothing more.
+    private static func report(_ progress: Progress, _ done: Int, _ total: Int) async throws {
+        try Task.checkCancellation()
         await MainActor.run { if !Task.isCancelled { progress(done, total) } }
+        try Task.checkCancellation()
     }
 
     /// Asks no engine: the Swift copy of the rules.
@@ -203,8 +206,7 @@ enum LabFileReader {
         var documents: [Document] = []
         var bytes = 0
         for (done, file) in files.enumerated() {
-            try Task.checkCancellation()
-            await report(progress, done, files.count)
+            try await report(progress, done, files.count)
             let inside = file.url.path.dropFirst(folder.path.count).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
             let data = try coordinatedData(file.url)
             bytes += data.count

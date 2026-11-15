@@ -14,6 +14,8 @@ extension LabFileReader {
             let rules: Rules
             var counted: Set<Int> = []
             var inflated = 0
+            /// Members forgotten by their own ids; once all are, the ZIP's record goes.
+            var forgotten: Set<Int> = []
         }
         /// `listing` lives in the ZIP's own record, so holding the id again or forgetting it drops it.
         private struct Item {
@@ -26,8 +28,28 @@ extension LabFileReader {
         /// Holds a picked file's or ZIP's bytes under `id`, replacing what it held; `name` is how a read names it.
         func hold(_ data: Data, as id: String, name: String) { items.withLock { $0[id] = Item(name: name, data: data) } }
 
-        /// Drops what `ids` hold. A forgotten ZIP takes its members with it: they then read as unreadable.
-        func forget(_ ids: [String]) { items.withLock { items in for id in ids { items[id] = nil } } }
+        /// Drops what `ids` hold. A forgotten ZIP takes its members with it. A member forgotten by its
+        /// own id (upload-flow.ts forgets members, never their ZIP once listed) reads as unreadable,
+        /// its siblings stay, and the ZIP's bytes go with its last member. An id never held is ignored.
+        func forget(_ ids: [String]) {
+            items.withLock { items in
+                for id in ids where items.removeValue(forKey: id) == nil {
+                    guard case let (zip, index)? = Self.member(id), let listing = items[zip]?.listing,
+                          listing.entries.indices.contains(index) else { continue }
+                    items[zip]?.listing?.forgotten.insert(index)
+                    if listing.forgotten.union([index]).count == listing.entries.count { items[zip] = nil }
+                }
+            }
+        }
+
+        /// A member id's ZIP id and index: `<zip id>#<n>`.
+        private static func member(_ id: String) -> (zip: String, index: Int)? {
+            guard let mark = id.lastIndex(of: "#"), let index = Int(id[id.index(after: mark)...]) else { return nil }
+            return (String(id[..<mark]), index)
+        }
+
+        /// The bytes held in all, files and ZIPs: what a `forget` releases.
+        var heldBytes: Int { items.withLock { $0.values.reduce(0) { $0 + $1.data.count } } }
 
         /// Every file member of a held ZIP, from its central directory alone, no member's bytes read:
         /// health-core's `listed` judges each. The ZIP's size, and the members `rules` keep, are checked
@@ -64,9 +86,8 @@ extension LabFileReader {
             enum Found { case file(String, Data), member(zip: String, Data, ZipReader.Entry, maxBytes: Int) }
             let found: Found = try items.withLock { items in
                 if let item = items[id] { return .file(item.name, item.data) }
-                guard let mark = id.lastIndex(of: "#"), let index = Int(id[id.index(after: mark)...]),
-                      case let zipId = String(id[..<mark]), let zip = items[zipId], let listing = zip.listing,
-                      listing.entries.indices.contains(index)
+                guard case let (zipId, index)? = Self.member(id), let zip = items[zipId], let listing = zip.listing,
+                      listing.entries.indices.contains(index), !listing.forgotten.contains(index)
                 else { throw Failure.unreadable(id) }
                 let entry = listing.entries[index], rules = listing.rules
                 // Refused here as well as in `data(of:)`, so a member over its cap never counts against the total.

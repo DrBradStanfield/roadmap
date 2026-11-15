@@ -219,6 +219,78 @@ final class ZipLazyReadTests: XCTestCase {
         XCTAssertEqual(b.count, 2)
     }
 
+    /// Re-check 1 (US-52 AC7a): a read cancelled while its count waits on a busy main actor converts
+    /// nothing more. Its only member is corrupt: converting it would fail with notAZip.
+    @MainActor
+    func testAReadCancelledDuringItsCountConvertsNothing() async throws {
+        let zip = Self.zip([.init("a.png", Self.png, deflate: true, garble: true)])
+        let seen = Seen()
+        let a = Task.detached { try await LabFileReader.documents(from: zip, name: "a.zip") { done, total in seen.counts.append("\(done) of \(total)") } }
+        Self.holdMain(0.5) // A waits on main to publish its count
+        a.cancel()
+        var failure = "read"
+        do { _ = try await a.value } catch { failure = String(describing: error) }
+        XCTAssertEqual(failure, "CancellationError()")
+        XCTAssertEqual(seen.counts, [])
+    }
+
+    /// The same for a folder: its only report is no picture, so converting it would fail as unreadable.
+    @MainActor
+    func testAFolderReadCancelledDuringItsCountConvertsNothing() async throws {
+        let folder = FileManager.default.temporaryDirectory.appending(path: "Cancelled-\(UUID().uuidString)", directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        try Data("no picture".utf8).write(to: folder.appending(path: "a.png"))
+        let seen = Seen()
+        let a = Task.detached { try await LabFileReader.documents(inFolder: folder) { done, total in seen.counts.append("\(done) of \(total)") } }
+        Self.holdMain(0.5)
+        a.cancel()
+        var failure = "read"
+        do { _ = try await a.value } catch { failure = String(describing: error) }
+        XCTAssertEqual(failure, "CancellationError()")
+        XCTAssertEqual(seen.counts, [])
+    }
+
+    /// Re-check 2: the shared machine forgets members by their own ids (upload-flow.ts). A forgotten
+    /// member is unreadable, its siblings are not; once every member is forgotten, the ZIP's bytes go.
+    /// An id the reader never kept is a no-op.
+    func testForgettingMembersOneByOne() throws {
+        let held = LabFileReader.Held()
+        let zip = Self.zip([.init("a.png", Self.png), .init("b.png", Self.png, deflate: true)])
+        held.hold(zip, as: "z", name: "labs.zip")
+        let members = try held.list("z", rules: .swift).map(\.id)
+        held.forget([members[0], "z#9", "nope", "q#0"])
+        XCTAssertThrowsError(try held.hash(members[0])) { XCTAssertEqual(String(describing: $0), "unreadable(\"\(members[0])\")") }
+        XCTAssertEqual(try held.hash(members[1]), LabFileReader.contentHash(Self.png))
+        XCTAssertEqual(held.heldBytes, zip.count)
+        held.forget([members[1]])
+        XCTAssertThrowsError(try held.hash(members[1])) { XCTAssertEqual(String(describing: $0), "unreadable(\"\(members[1])\")") }
+        XCTAssertEqual(held.heldBytes, 0, "every member forgotten: the ZIP's bytes are released")
+        held.forget([members[0], "z"])
+        XCTAssertEqual(held.heldBytes, 0)
+    }
+
+    /// The forgets upload-flow.ts emits for a ZIP of three reports, one read, one known, one failed,
+    /// plus a hidden `__MACOSX` entry, in order: `listed` forgets the hidden one (`opening`), `hashed`
+    /// with a known answer forgets the known one, and `saved` forgets every file in the pick.
+    func testTheMachinesForgetsForAZipOfThree() throws {
+        let held = LabFileReader.Held()
+        let zip = Self.zip([.init("read.png", Self.png), .init("known.png", Self.png), .init("failed.png", Data("no picture".utf8)),
+                            .init("__MACOSX/._read.png", Data("x".utf8))])
+        held.hold(zip, as: "z", name: "labs.zip")
+        let ids = try held.list("z", rules: .swift).map(\.id)
+        let (read, known, failed, hidden) = (ids[0], ids[1], ids[2], ids[3])
+        held.forget([hidden])                       // listed: hidden and refused members
+        _ = try held.hash(known)
+        held.forget([known])                        // hashed, known and not archive-only
+        XCTAssertNoThrow(try held.convert(read, rules: .swift))
+        XCTAssertThrowsError(try held.convert(failed, rules: .swift))
+        XCTAssertEqual(held.heldBytes, zip.count, "read and failed still held")
+        held.forget([read, known, failed])          // saved: every file in the pick
+        XCTAssertEqual(held.heldBytes, 0)
+        for id in ids { XCTAssertThrowsError(try held.hash(id)) }
+    }
+
     /// Blocks the calling thread (here, main), as a busy screen would.
     private static func holdMain(_ seconds: TimeInterval) { Thread.sleep(forTimeInterval: seconds) }
 
