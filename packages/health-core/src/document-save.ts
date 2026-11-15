@@ -277,13 +277,27 @@ export async function saveDocuments<F>(
     commit(file) {
       // The rows to replace, read from the file as it now is, so a same-hash
       // row merged in from another device during the upload goes too.
-      const pending = file.documents.filter((d) => !d.deleted && d.contentHash && !d.fileRef).map(documentView);
-      const replaced = new Set([
-        ...[...writes.filter((w) => w.doc.fileRef || (w.failed && !unchanged.has(w.doc))), ...filed].flatMap((w) => pendingRowsFor(pending, w.doc.contentHash, w.lab).map((d) => d.id)),
-        ...filed.flatMap((f) => f.replaces),
-      ]);
+      const readable = file.documents.filter((d) => !d.deleted && d.contentHash && isReadableRow('documents', d));
+      const pending = readable.filter((d) => !d.fileRef).map(documentView);
+      const landing = new Map<FileDocument, { lab: boolean; replaces: string[] }>(
+        [...writes.filter((w) => w.doc.fileRef || (w.failed && !unchanged.has(w.doc))), ...filed].map((w) => [w.doc, { lab: w.lab, replaces: 'replaces' in w ? w.replaces : [] }]),
+      );
+      const replaced = new Set<string>();
+      const rows = saved.map((doc) => {
+        const entry = landing.get(doc);
+        if (!entry) return doc;
+        const old = [
+          ...pendingRowsFor(pending, doc.contentHash, entry.lab).map((d) => d.id), ...entry.replaces,
+          // A lab archive row it replaces, read now: one merged in during the upload passes on its list too (US-14 AC10).
+          ...(entry.lab ? readable.filter((d) => d.contentHash === doc.contentHash && isLabArchiveDocument(documentView(d))).map((d) => d.id) : []),
+        ];
+        old.forEach((id) => replaced.add(id));
+        if (!entry.lab) return doc;
+        const list = [...new Set([...file.documents.filter((d) => old.includes(d.id)).flatMap((d) => listedRows(d) ?? []), ...(listedRows(doc) ?? [])])];
+        return list.length ? { ...doc, metadata: { ...doc.metadata, [LAB_ARCHIVE_ROWS]: list } } : doc;
+      });
       for (const d of file.documents) if (replaced.has(d.id)) d.deleted = true;
-      file.documents.push(...saved);
+      file.documents.push(...rows);
     },
   };
 }

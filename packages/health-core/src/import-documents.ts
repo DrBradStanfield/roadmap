@@ -30,16 +30,16 @@ export interface ImportedMatch {
  * importing it again is a decision, not a duplicate.
  */
 export function isAlreadyImported(file: RoadmapFile, name: string, contentHash: string, date?: string | null): ImportedMatch | null {
-  const live = file.documents.filter((d) => !d.deleted && !deadLabRow(file)(d));
+  // Only rows this build reads (US-65): a hidden one's fields may be anything.
+  const dead = deadLabRow(file);
+  const live = file.documents.filter((d) => isReadableRow('documents', d) && !d.deleted && !dead(d));
   const byHash = contentHash === '' ? undefined : live.find((d) => d.contentHash === contentHash);
   if (byHash) return { row: byHash, by: 'hash' };
-  // The name paths read only documents this build reads (US-65): a hidden one's name may be anything.
-  const named = live.filter((d) => isReadableRow('documents', d));
   const sameName = (d: FileDocument) => d.sourceFileName != null && dedupFileName(d.sourceFileName) === dedupFileName(name);
-  const byNameDate = contentHash === '' && date ? named.find((d) => sameName(d) && d.date === date) : undefined;
+  const byNameDate = contentHash === '' && date ? live.find((d) => sameName(d) && d.date === date) : undefined;
   if (byNameDate) return { row: byNameDate, by: 'name_date' };
   // A dated candidate against a hashless row dated differently is the portal's next `Results.pdf`, not a twin.
-  const byName = named.find((d) => d.contentHash === '' && sameName(d) && (!date || !d.date || d.date === date));
+  const byName = live.find((d) => d.contentHash === '' && sameName(d) && (!date || !d.date || d.date === date));
   return byName ? { row: byName, by: 'name' } : null;
 }
 
@@ -51,7 +51,7 @@ export function isAlreadyImported(file: RoadmapFile, name: string, contentHash: 
  */
 function deadLabRow(file: RoadmapFile): (d: FileDocument) => boolean {
   const known = knownIndex(file);
-  return (d) => !!d.contentHash && listedRows(d) !== null && isLabArchiveDocument(documentView(d)) && !known.has(d.contentHash);
+  return (d) => isReadableRow('documents', d) && !!d.contentHash && listedRows(d) !== null && isLabArchiveDocument(documentView(d)) && !known.has(d.contentHash);
 }
 
 /**
@@ -69,7 +69,7 @@ function deadLabRow(file: RoadmapFile): (d: FileDocument) => boolean {
 export function importDocumentRows(
   file: RoadmapFile, filing: readonly ImportDocument[], labRows: ReadonlyMap<string, string[]>, metadata: Record<string, unknown>, now: string,
 ): { rows: FileDocument[]; documents: FileDocument[] } {
-  const oldLabRows = (hash: string) => (hash ? file.documents.filter((x) => !x.deleted && x.contentHash === hash && isLabArchiveDocument(documentView(x))) : []);
+  const oldLabRows = (hash: string) => (hash ? file.documents.filter((x) => isReadableRow('documents', x) && !x.deleted && x.contentHash === hash && isLabArchiveDocument(documentView(x))) : []);
   const replaced = new Set<string>();
   const rows = filing.map((d) => {
     const lab = d.type === 'pathology_report' && d.title === LAB_ARCHIVE_TITLE;

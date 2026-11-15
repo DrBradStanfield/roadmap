@@ -75,11 +75,14 @@ export function isLabArchiveDocument(doc: {
   contentMd: string;
   metadata: Record<string, unknown>;
 }): boolean {
-  if (doc.metadata?.[LAB_ARCHIVE_FLAG] === true) return true;
+  // Total over any stored shape (US-65 AC3): what it cannot read is not a lab archive row.
+  if (typeof doc !== 'object' || doc === null) return false;
+  const { metadata, contentMd } = doc as { metadata?: unknown; contentMd?: unknown };
+  if (typeof metadata === 'object' && metadata !== null && (metadata as Record<string, unknown>)[LAB_ARCHIVE_FLAG] === true) return true;
   return (
     doc.documentType === 'pathology_report' &&
     doc.title === LAB_ARCHIVE_TITLE &&
-    (doc.contentMd ?? '').trim() === '' // a readable row's text may be null (US-65)
+    (contentMd == null || (typeof contentMd === 'string' && contentMd.trim() === '')) // a readable row's text may be null (US-65)
   );
 }
 

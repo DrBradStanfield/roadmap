@@ -27,9 +27,10 @@ export async function attachOriginals(results: FileResult[]): Promise<FileResult
 }
 
 /** A file the archive step can file: read, not saved as a reviewed document
- *  (`alreadyCovered`), and either a document or extracted values. */
-function isFileable(r: FileResult, alreadyCovered: Set<string | null>): boolean {
-  if (r.error || alreadyCovered.has(r.fileName)) return false;
+ *  (`alreadyCovered`, by `fileKey`, never the name two files can share), and
+ *  either a document or extracted values. `index`: its place in the pick. */
+function isFileable(r: FileResult, index: number, alreadyCovered: ReadonlySet<string>): boolean {
+  if (r.error || alreadyCovered.has(fileKey(r, index))) return false;
   return !!r.document || r.values.length > 0 || r.additionalValues.length > 0;
 }
 
@@ -44,10 +45,10 @@ function isFileable(r: FileResult, alreadyCovered: Set<string | null>): boolean 
 export function unarchivedOriginals(
   results: FileResult[],
   existing: ReadonlyArray<ExistingDoc>,
-  alreadyCovered: Set<string | null>,
+  alreadyCovered: ReadonlySet<string>,
 ): FileResult[] {
   const archived = new Set(existing.filter((d) => d.contentHash && d.fileRef).map((d) => d.contentHash));
-  return results.filter((r) => !!r.file && isFileable(r, alreadyCovered)
+  return results.filter((r, index) => !!r.file && isFileable(r, index, alreadyCovered)
     && !archived.has(r.contentHash) && (!r.document || pendingRowsFor(existing, r.contentHash, false).length > 0));
 }
 
@@ -59,7 +60,7 @@ export function unarchivedOriginals(
 export function connectorDocumentEntries(
   results: FileResult[],
   existing: ReadonlyArray<ExistingDoc>,
-  alreadyCovered: Set<string | null>,
+  alreadyCovered: ReadonlySet<string>,
 ): DocumentPayload<Blob>[] {
   return unarchivedOriginals(results, existing, alreadyCovered)
     .filter((r) => r.document)
@@ -82,12 +83,12 @@ export function connectorDocumentEntries(
  */
 export function synthesizeLabArchiveEntries(
   results: FileResult[],
-  alreadyCovered: Set<string | null>,
+  alreadyCovered: ReadonlySet<string>,
   labRows: ReadonlyMap<string, string[]> = new Map(),
 ): DocumentPayload<Blob>[] {
   const out: DocumentPayload<Blob>[] = [];
   results.forEach((r, index) => {
-    if (r.document || !(r.file || r.contentHash) || !isFileable(r, alreadyCovered)) return;
+    if (r.document || !(r.file || r.contentHash) || !isFileable(r, index, alreadyCovered)) return;
     out.push(labArchivePayload(r.fileName, r.reportDate, r.file, { rows: labRows.get(fileKey(r, index)), contentHash: r.contentHash }));
   });
   return out;

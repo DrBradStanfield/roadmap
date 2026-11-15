@@ -430,4 +430,38 @@ describe('saveDocuments: a lab archive row\'s list is kept and extended (US-14 A
     const index = knownIndex(write.file);
     expect([knownAs(index, 'hash-first'), knownAs(index, 'hash-second')]).toEqual([null, { as: 'labReport', archiveOnly: true }]);
   });
+
+  it('Codex re-check 1: the list is built at commit, from the rows the commit tombstones: a second device\'s row that arrived during the blob write keeps its value', async () => {
+    const current = fresh();
+    current.labValues = [labRow('A'), labRow('B')];
+    current.documents = [listing(['A'])];
+    const t = io();
+    const plan = await saveDocuments(current, [labArchive()], t.io);
+    // Merged in from another device while the original uploaded: the same bytes, listing B.
+    const atCommit = structuredClone(current);
+    atCommit.documents.push(listing(['B'], { id: 'other-device' }));
+    plan.commit(atCommit);
+    expect(live(atCommit)).toEqual([expect.objectContaining({ fileRef: expect.stringMatching(/^Lab results\//), metadata: { [LAB_ARCHIVE_FLAG]: true, [LAB_ARCHIVE_ROWS]: ['A', 'B'] } })]);
+    atCommit.labValues[0] = { ...atCommit.labValues[0], status: 'entered-in-error' };
+    expect(knownAs(knownIndex(atCommit), hash)).toEqual({ as: 'labReport', archiveOnly: false });
+  });
+});
+
+// Codex re-check 3, US-65 AC3: an unreadable stored row never throws and is never touched.
+describe('isLabArchiveDocument and the save are total over stored shapes (US-65 AC3)', () => {
+  it('never throws; what it cannot read is not a lab archive row', () => {
+    const shapes: unknown[] = [null, 3, 'x', {}, { documentType: 'pathology_report', title: LAB_ARCHIVE_TITLE, contentMd: 3, metadata: {} },
+      { documentType: 3, title: { a: 1 }, contentMd: null, metadata: 'x' }, { documentType: 'pathology_report', title: LAB_ARCHIVE_TITLE, contentMd: {}, metadata: null }];
+    for (const shape of shapes) expect(isLabArchiveDocument(shape as Parameters<typeof isLabArchiveDocument>[0])).toBe(false);
+  });
+
+  it('a stored row with the archive signature, a row list and extractedText 3: knownIndex and saveDocuments do not throw and leave it as it was', async () => {
+    const file = fresh();
+    const odd = { ...row({ id: 'odd', type: 'pathology_report', title: LAB_ARCHIVE_TITLE, metadata: { [LAB_ARCHIVE_ROWS]: ['x'] } }), extractedText: 3 } as unknown as FileDocument;
+    file.documents = [odd];
+    expect(() => knownIndex(file)).not.toThrow();
+    const before = structuredClone(odd);
+    await save(file, [labArchive()]);
+    expect(file.documents[0]).toEqual(before);
+  });
 });

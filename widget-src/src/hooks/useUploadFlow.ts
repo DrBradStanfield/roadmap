@@ -344,7 +344,8 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
         file: d.file,
         contentHash: d.contentHash,
       }));
-      const covered = new Set(documents.map(d => d.sourceFileName));
+      // By each file's identity: a letter and a lab report can share a name.
+      const covered = new Set(documents.flatMap(d => (d.fileKey ? [d.fileKey] : [])));
       docPayloads.push(...synthesizeLabArchiveEntries(reviewed, covered, joinRows(earlierRows, labRows)));
       // A letter the connector filed metadata-only: unselected here, still archived
       // (US-35 AC8), with the title and date the review shows (US-13 AC6).

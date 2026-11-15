@@ -2734,6 +2734,19 @@ describe('US-35 AC7/AC8 — importDocumentsCommit applies a selection, all or no
     expect(isAlreadyImported(after, 'labs.pdf', 'sha256-labs.pdf')).toMatchObject({ by: 'hash' });
   });
 
+  it('US-65 AC3, Codex re-check 3: an unreadable row with the archive signature (extractedText 3, a row list) never stops an unrelated import and is left as it was', () => {
+    const file = base();
+    const odd = { id: 'odd', title: 'Blood test results', type: 'pathology_report', date: LAB_DAY, fileRef: '', contentHash: 'sha256-odd', mimeType: '', extractedText: 3, addedAt: NOW, sourceFileName: 'odd.pdf', metadata: { rows: ['x'] } } as unknown as RoadmapFile['documents'][number];
+    file.documents.push(odd);
+    const before = structuredClone(odd);
+    const payload = payloadFor(file, [extracted('new.pdf', labReport())]);
+    const outcome = importDocumentsCommit(file, payload, { receipt: 'r', accept: payload.candidates.map((c) => c.id), replace: [] }, NOW);
+    expect(outcome.status).toBe('ok');
+    const written = outcome.status === 'ok' ? outcome.file! : base();
+    expect(written.documents.find((d) => d.id === 'odd')).toEqual(before);
+    expect(isAlreadyImported(written, 'odd.pdf', 'sha256-odd')).toBeNull();
+  });
+
   it('cannot introduce a value the receipt does not carry, and held_equal accepts write nothing', () => {
     const file = filed(base(), 'same.pdf');
     const payload = payloadFor(file, [extracted('same.pdf', ldlOnly(3.4, '2026-07-14'))]);

@@ -50,6 +50,8 @@ export interface DocumentToSave {
   file?: Blob;
   /** The original's hash, kept off-cloud where the bytes are not (US-14 AC10). */
   contentHash?: string;
+  /** The file's identity in the pick (`fileKey`): the archive step leaves it alone. */
+  fileKey?: string;
 }
 
 /** A reviewed row on its way to the store. `correctsId` is set when the user

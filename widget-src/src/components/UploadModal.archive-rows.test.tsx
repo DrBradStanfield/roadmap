@@ -11,12 +11,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { UploadModal } from './UploadModal';
 import { checkLabImportQuota, labImport } from '../lib/upload-api';
-import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues } from '../lib/roadmap-data';
+import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocumentArchiveMode } from '../lib/roadmap-data';
 import type { UploadHistory } from '../lib/api-types';
 import { findReviewValue } from '../testing/import-review';
 
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn(), labImportBatch: vi.fn(), pollBatchStatus: vi.fn() }));
-vi.mock('../lib/roadmap-data', () => ({ getDocumentArchiveMode: vi.fn(() => 'local'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
+vi.mock('../lib/roadmap-data', () => ({ getDocumentArchiveMode: vi.fn(() => 'no-prompt'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
 vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
 // Hashing stands in for sha256Blob: each result's plain fake hash names its bytes, not its name.
 vi.mock('../lib/archive-payloads', async importOriginal => ({
@@ -37,6 +37,10 @@ const reads: Record<string, Import> = {
   first: labRead('2025-09-02', 90),
   second: labRead('2025-10-02', 70),
   core: labRead('2025-09-02', 90, [{ metric: 'ldl', valueSI: 2.8, displayValue: 2.8, displayUnit: 'mmol/L', confidence: 'high' }]),
+  letter: { result: {
+    classification: 'clinic_letter', reportDate: null, values: [], additionalValues: [],
+    document: { classification: 'clinic_letter', title: 'Synthetic letter', documentDate: '2025-08-01', contentMarkdown: 'letter text', metadata: {} },
+  } } as unknown as Import,
 };
 const history: UploadHistory = { measurements: [], labValues: [], documents: [] };
 type Docs = Awaited<ReturnType<typeof bulkSaveDocuments>>;
@@ -46,6 +50,7 @@ beforeEach(() => {
   vi.mocked(checkLabImportQuota).mockResolvedValue({ allowed: true, remaining: 60 });
   vi.mocked(labImport).mockImplementation(async (pages: unknown) => reads[(pages as Array<{ content: string }>)[0].content]);
   vi.mocked(bulkSaveMeasurements).mockResolvedValue({ saved: [], skippedDuplicates: 0, errorCount: 0, refused: [] });
+  vi.mocked(getDocumentArchiveMode).mockReturnValue('no-prompt');
   Object.assign(window, { HealthUpload: {
     extractFromPdf: vi.fn(async (f: File) => ({ pages: [{ type: 'text', content: await f.text() }], truncated: false })),
     isPdf: (f: File) => f.name.endsWith('.pdf'), isZip: () => false, isImage: () => false, resizeImage: vi.fn(async () => 'base64'), docxToText: vi.fn(),
@@ -120,4 +125,21 @@ describe('US-14 AC10 — off-cloud archive rows keep the hash and list their row
     await screen.findByRole('button', { name: 'Done' });
     expect(archiveCall(1)).toMatchObject({ contentHash: 'hash-core', metadata: { rows: ['core-1', 'add-1'] } });
   });
+
+  for (const mode of ['no-prompt', 'cloud'] as const) {
+    it(`Codex re-check 2 (${mode}): a letter and a lab report both called Results.pdf: both are saved, the lab report with its fingerprint and rows`, async () => {
+      vi.mocked(getDocumentArchiveMode).mockReturnValue(mode);
+      vi.mocked(bulkSaveLabValues).mockResolvedValue({ saved: [{}], skippedDuplicates: 0, errorCount: 0, refused: [], labRows: ['row-1'] } as unknown as Labs);
+      vi.mocked(bulkSaveDocuments).mockResolvedValue({ saved: [], errorCount: 0 } as unknown as Docs);
+      await openReview([['letter', 'Results.pdf'], ['labs', 'Results.pdf']]);
+      fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+      await screen.findByRole('button', { name: 'Done' });
+      const saved = vi.mocked(bulkSaveDocuments).mock.calls[0][0];
+      expect(saved.map(d => [d.sourceFileName, d.metadata.labArchive === true, mode === 'cloud' ? !!d.file : d.contentHash])).toEqual([
+        ['Results.pdf', false, mode === 'cloud' ? true : 'hash-letter'],
+        ['Results.pdf', true, mode === 'cloud' ? true : 'hash-labs'],
+      ]);
+      expect(archiveCall(0)).toMatchObject({ contentHash: 'hash-labs', metadata: { rows: ['row-1'] } });
+    });
+  }
 });
