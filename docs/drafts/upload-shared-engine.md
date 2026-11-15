@@ -1,8 +1,8 @@
 # One upload engine for web and iPhone
 
-Status: design for the owner's review, 2026-11-15. Rulings R1 to R9 are the codebase owner's and
-binding; where the code disagrees with an assumption behind them, the section "Open questions for the
-owner" says so. Surveyed at origin/main `0696d9cdc`. No product code in this PR.
+Status: design approved 2026-11-15, with the owner's rulings in section 8. Rulings R1 to R9 are the
+codebase owner's and binding. The strings in section 5 still wait on Brad. Surveyed at origin/main
+`0696d9cdc`. This is PR 0 of the series; no product code in it.
 
 ## Why
 
@@ -225,11 +225,11 @@ Not offered: a pool of keys. It multiplies the per-key daily cap and the attesta
 - Cancel and Stop: `stop` emits `abort` for every file `sending` and `forget` for held bytes. Web:
   `labImport` takes the effect's `AbortSignal`. iPhone: each send is a child task; cancelling it
   cancels `URLSession.bytes`. A file already answered stays read; Stop keeps the review open.
-- The web's 20+ batch path (recommended: drop it). With one streaming path both builds show real
+- The web's 20+ batch path goes (ruling Q2). With one streaming path both builds show real
   progress and results as they arrive, Cancel works the same everywhere, and `processBatch`, the
   fake ticks, `batch-watch.ts`, `lab-batches.server.ts` and the batch half of
   `api.lab-import-v2.ts` go. Cost: Anthropic's batch price is half; uploads of 20+ files were a few
-  runs a week (W42: 18 runs, 103 files). See open question Q2.
+  runs a week (W42: 18 runs, 103 files).
 
 ## 4. Screens
 
@@ -267,8 +267,8 @@ Add medical records                                   Close
 - Rows fill in as each file is read; nothing waits for the last file.
 - "8 letters and documents will be saved >" opens a list: each title, kind and date, saved by
   default, no toggle. A tap opens one letter drawn as the saved document is (`DocumentText`, so
-  headings render, never raw `##`), with its title, kind and date editable. Q3 asks whether a letter
-  can also be left out.
+  headings render, never raw `##`), with its title, kind and date editable before Save. Every letter
+  is saved (ruling Q3).
 - "Files (18)" lists each file with its status line, the known ones included.
 - Gone: "Report i of N", per-file Save, Skip and Next, "Save all (N reports)", the save-all summary
   screen, "Back to summary", the document toggle and its sentence, the 300-character preview.
@@ -323,6 +323,9 @@ document", "Already saved: your record has a document from this file. Tick it to
 "Already saved" (web badge), "Reading report {i} of {N}", "Reading the values in {name}", the
 save-all summary lines ("{k} reports not saved", "Not tried").
 
+Rule: the strings in this table reach no user until Brad approves them. PRs 2-8, 11 and 12 may merge
+and ship; PRs 1, 9, 10, 13, 14, 15 stay on hold, built and reviewed, until he does.
+
 ## 6. PR series
 
 Every PR ships alone with the web and builds 12 and 13 working. "Engine path" means it touches
@@ -340,7 +343,7 @@ B14 = iPhone build 14.
 | 6 | `upload-flow.ts` machine and effects, no caller | health-core | nothing | table test state x event; seeded random sequences (the `chat-turn.property.test.ts` pattern): never more than the in-flight counts, a stale `run` changes nothing, Save enabled iff nothing in flight (US-12 AC26 new) | none | yes | D, E |
 | 7 | New usage counts | upload-events.ts, product-events server allow-list | nothing | server refuses unknown keys; counts clamp (US-12 AC10) | none | yes | D |
 | 8 | `upload-view.ts`, `upload-text.ts`, `upload-plan.ts` | health-core | nothing yet | view per section-4 case; plan equals today's `LabSavePlan` and web save for the same choices (pin first), except R3's skips (US-52 AC8c, US-13 AC13) | merge-FHIR | yes | D, E |
-| 9 | Web reads through the machine: hash first, known skipped, results as they arrive, real per-member progress | useUploadFlow.ts, upload-pipeline.ts, zip-extract.ts, UploadModal.tsx | `upload-flow-state.ts`, `processPipeline`, and with Q2 (a) `processBatch`, `batch-watch.ts`, batch server code | pins first on today's outcomes; a known file never reaches `fetch` (US-12 AC27 new) | none | no | D |
+| 9 | Web reads through the machine: hash first, known skipped, results as they arrive, real per-member progress | useUploadFlow.ts, upload-pipeline.ts, zip-extract.ts, UploadModal.tsx | `upload-flow-state.ts`, `processPipeline`, `processBatch`, `batch-watch.ts`, batch server code | pins first on today's outcomes; a known file never reaches `fetch` (US-12 AC27 new) | none | no | D |
 | 10 | Web review page from the view model | UploadModal.tsx, ReviewTable.tsx, ReviewFileSections.tsx, useReviewDocuments.ts | `isDocDuplicate`, the badge, the untick | summary, documents list, no badge (US-13 AC13, AC14 new) | none | no | D |
 | 11 | Lab route that answers headers at the gate (option A) | app-routes.server.ts, new route file | nothing (old route stays for builds 12, 13) | counter spent before headers; failure status in the last line; old route unchanged (US-52 AC7e new) | security | no | D |
 | 12 | Optional doors `uploadStartJson`, `uploadStepJson`, `uploadViewJson`, `uploadSavePlanJson` | ios/engine/entry.ts, bridge-optional.json, bridge.test.ts | nothing | generative agreement: for seeded states the door's JSON equals health-core's direct answer; snapshots frozen | none | yes | E |
@@ -401,50 +404,19 @@ all, rules copy) and add about 450. Each PR states its own count.
   `firstReadSeconds` median under 30 s for picks of 10 or more files; `known` above zero on repeat
   uploads with no matching rise in `withValues`; fewer Cancels per run.
 
-## 8. Open questions for the owner
+## 8. Owner rulings, 15 Nov 2026
 
-**Q1. PR 1561 is not in the upload path.** The brief says the design must keep each fix of PR 1561
-(merge `d86704b7`) and fix N1 to N3. Read: PR 1561 changes Apple Health Records import
-(`health-records-fhir.ts`, `FROM_PANEL`; `HealthSyncMemory.labResultsRulesVersion` 3 to 4). File
-uploads never reach that code, and "app rules v4" is the Health Records anchor's rules version, which
-uploads do not have. So every 1561 fix stays exactly where it is, untouched by this series, and N1
-(version-stamp marker row), N2 (report draw date and status lost for split results) and N3 (an engine
-over the air does not re-read old imports without a rules bump) are all left. Options: (a) leave them
-to a Health Records lead, separate from this series; (b) add them here. Recommendation: (a). They share
-no file, story or state with uploads, and mixing them would make each PR wider and its review class
-merge-FHIR for no reason.
-
-**Q2. The web's batch path for 20+ files.** Options: (a) drop it for the streaming path; (b) keep it
-and show real per-file progress from the batch's `request_counts`. (a) gives one path, real results
-as they arrive, the same Cancel, and deletes the batch client, watcher and server half; it costs
-Anthropic's batch discount (half price) on large uploads, which were a few runs a week. (b) keeps
-the discount and two paths. Recommendation: (a); the known-file skip (R3) cuts most of the repeat
-cost, and the per-IP 200-file day cap still bounds spend.
-
-**Q3. Correcting a letter's title, kind or date, and leaving one out.** No surface edits a saved
-document today (DocumentLightbox and DocumentPage are read-only), and documents are immutable:
-a fix after save means tombstone and append, a merge-FHIR change. Options: (a) correct before Save in
-the collapsed documents list (built here), every letter saved; (b) as (a), plus a "Don't save" on a
-letter's page; (c) correct after save on the document page. Recommendation: (a) now, (b) only if
-usage shows people want it; (c) as its own story later.
-
-**Q4. App Attest option.** A, B or C in section 3. Recommendation: A. It changes no replay rule and
-no SQL, and the client already releases at headers.
-
-**Q5. Hashless older documents (row d).** Options: (a) after the read, count a same-name, same-date,
-same-kind match as known and save nothing (cheap, but the file is read again on every upload); (b)
-as (a), and replace the old row with one carrying the hash (tombstone and append, as US-14 AC4
-does), so the next upload skips the read. Recommendation: (a) first, with the `known` count; (b) only
-if repeat reads of old letters show up.
-
-**Q6. A lab report whose values were all deleted.** Known only while one of its rows is active
-(section 2). The alternative is "known while its archive row lives", simpler but then a deleted
-report can never be re-imported from the same file. Recommendation: rows, as designed.
-
-**Q7. One ZIP cap.** Web 10 MB, iPhone 20 MB (`UPLOAD_LIMITS`, survey D8). With lazy member reads
-the web could take 20 MB too. Recommendation: 20 MB on both, in `UPLOAD_LIMITS`, in PR 9.
-
-**Q8. The 30-file daily cap per App Attest key.** Unchanged here. With R3, a repeat upload costs
-nothing, so the owner's 18-file ZIP fits; a first upload over 30 files still fails on the 31st file.
-Options: keep 30, or raise it toward the web's 200 per IP. Recommendation: keep 30 until
-`known` and `limitError` counts show real people hitting it.
+- **Q1 (a).** PR 1561 (merge `d86704b7`) is Apple Health Records import (`health-records-fhir.ts`,
+  `labResultsRulesVersion` 4), not file upload. Its fixes stay untouched by this series. N1 (version
+  marker row), N2 (a split result's draw date and status) and N3 (an engine alone does not re-read
+  old imports) are a separate, later Health Records lead.
+- **Q2 (a).** Drop the web's 20+ file batch path; every upload takes the streaming path (PR 9). Cost
+  accepted: Anthropic's batch discount on large uploads.
+- **Q3 (a).** Letters are corrected before Save, in the collapsed documents list. Every letter is
+  saved; there is no "Don't save" and no edit after save in this series.
+- **Q4.** Option A: a new lab route that answers headers once the App Attest counter is spent (PR 11).
+- **Q5 (a).** After the read, a hashless older document with the same name, date and kind counts
+  as known and nothing is saved; the old row is not rewritten.
+- **Q6.** A lab report is known only while one of the rows it wrote is active, as designed.
+- **Q7.** One ZIP cap: 20 MB on both clients, in `UPLOAD_LIMITS` (PR 9).
+- **Q8.** Keep the 30-file daily cap per App Attest key.
