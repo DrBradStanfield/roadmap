@@ -8,17 +8,26 @@ final class UploadModel {
     enum State: Equatable {
         /// The engine lacks the shared upload's doors: the app keeps today's flow.
         case unavailable
-        /// Started, no view drawn yet.
+        /// A pick started, no view drawn yet.
         case starting
         /// The latest view, health-core UploadView as the engine's JSON text.
         case drawn(String)
-        /// A door refused, in its own words; nil when the engine call itself failed.
+        /// A door refused, in its own words; nil when the engine call itself failed. It stays
+        /// until the next pick: no later view draws over it.
         case refused(UploadDoors.Refusal?)
+
+        static func transition(_ state: State, _ next: State) -> State {
+            switch (state, next) {
+            case (.refused, .drawn): state
+            default: next
+            }
+        }
     }
     private(set) var state: State = .starting
 
-    func show(_ state: State) {
-        if self.state != state { self.state = state }
+    func show(_ next: State) {
+        let new = State.transition(state, next)
+        if new != state { state = new }
     }
 }
 
@@ -63,23 +72,31 @@ actor UploadRunner {
         var save: @Sendable (_ run: Int, _ attempt: Int) async -> Void = { _, _ in }
         /// At most one view a frame: the latest state wins.
         var frame: Duration = .milliseconds(16)
+        /// Told as each step starts (true) and ends (false): a test's, nil in the app.
+        var watch: (@Sendable (Bool) -> Void)?
+        var held = LabFileReader.Held()
     }
 
     nonisolated let model: UploadModel
     private let engine: HealthEngine
     private let setup: Setup
-    private let held = LabFileReader.Held()
+    private var held: LabFileReader.Held { setup.held }
     private var rules = LabFileReader.Rules.swift
-    /// The engine's state, as its text; nil until the first pick.
-    private var state: String?
-    /// Events waiting for their step, in arrival order; `stepping` claims the queue while one runs.
-    private var waiting: [String] = []
+    /// The engine's upload: not started, starting (one start shared by every pick made before it
+    /// answers), or started, its state as the engine's text.
+    private enum Upload { case idle, starting(Task<UploadDoors.Answer<String>??, Never>), started(String) }
+    private var upload = Upload.idle
+    private var state: String? { if case .started(let text) = upload { text } else { nil } }
+    /// Which pick is current: a newer pick, Close and Discard make an older one stale.
+    private var picks = 0
+    /// Events waiting for their step, and a pick's bytes to hold, in arrival order; `stepping`
+    /// claims the queue while one runs.
+    private enum Queued { case event(String), hold([Picked]) }
+    private var waiting: [Queued] = []
     private var stepping = false
     private var sends: [String: (attempt: Int, task: Task<Void, Never>)] = [:]
+    private var work: [UUID: Task<Void, Never>] = [:]
     private var view = ViewLoop.idle
-
-    /// Called as each step starts (true) and ends (false). Nil in the app; set only by a test.
-    nonisolated(unsafe) static var stepWatch: (@Sendable (Bool) -> Void)?
 
     init(engine: HealthEngine, model: UploadModel, setup: Setup) {
         self.engine = engine
@@ -87,31 +104,59 @@ actor UploadRunner {
         self.setup = setup
     }
 
-    /// Picks `files`, in picked order, starting the engine's upload on the first pick. False, and
-    /// the model `unavailable`, when the engine lacks the doors or cannot run them: the app keeps
-    /// today's flow.
+    deinit {
+        for send in sends.values { send.task.cancel() }
+        for task in work.values { task.cancel() }
+    }
+
+    /// Picks `files`, in picked order, starting the engine's upload on the first pick. A pick
+    /// replaces an earlier one through the engine's own events (`discard`, then `picked`). False
+    /// when it does not run: a newer pick, Close or Discard came first (nothing held, nothing
+    /// sent), or the engine lacks the doors (the model `unavailable`: the app keeps today's flow)
+    /// or refused.
     func pick(_ files: [Picked], needsConsent: Bool) async -> Bool {
-        if state == nil {
-            let started: UploadDoors.Answer<String>?? = try? await engine.perform { try $0.uploadStart(platform: "phone") }
-            switch started {
-            case .answered(let initial)??: state = initial
-            case .refused(let refusal)??: await model.show(.refused(refusal)); return false
-            default: await model.show(.unavailable); return false
+        picks += 1
+        let mine = picks
+        if case .idle = upload {
+            let engine = engine
+            upload = .starting(Task { try? await engine.perform { try $0.uploadStart(platform: "phone") } })
+        }
+        if case .starting(let start) = upload {
+            let started = await start.value
+            if case .starting = upload { // the first pick to resume settles the start, once
+                switch started {
+                case .answered(let initial)??: upload = .started(initial)
+                case .refused(let refusal)??: upload = .idle; await model.show(.refused(refusal))
+                default: upload = .idle; await model.show(.unavailable)
+                }
             }
         }
-        for file in files { held.hold(file.data, as: file.id, name: file.name) }
-        rules = await setup.ask(files.map { LabFileReader.UploadFile(name: $0.name, bytes: $0.data.count) }, [])
-        await submit(EngineNatives.json(["type": "picked", "needsConsent": needsConsent, "now": Self.now(), "files": files.map { file -> [String: Any] in
-            ["id": file.id, "name": file.name, "bytes": file.data.count, "kind": LabFileReader.pathExtension(file.name) == "zip" ? "zip" : "file"]
-        }]))
+        guard state != nil, mine == picks else { return false }
+        let asked = await setup.ask(files.map { LabFileReader.UploadFile(name: $0.name, bytes: $0.data.count) }, [])
+        guard mine == picks else { return false }
+        await model.show(.starting)
+        guard mine == picks else { return false }
+        rules = asked
+        // In one go, so the Discard's forgets land before the new bytes are held.
+        waiting += [.event(EngineNatives.json(["type": "discard"])), .hold(files),
+                    .event(EngineNatives.json(["type": "picked", "needsConsent": needsConsent, "now": Self.now(), "files": files.map { file -> [String: Any] in
+                        ["id": file.id, "name": file.name, "bytes": file.data.count, "kind": LabFileReader.pathExtension(file.name) == "zip" ? "zip" : "file"]
+                    }]))]
+        await drain()
         return true
     }
 
     func consented() async { await submit(EngineNatives.json(["type": "consented"])) }
     func stop() async { await submit(EngineNatives.json(["type": "stop"])) }
-    func close() async { await submit(EngineNatives.json(["type": "close"])) }
-    func discard() async { await submit(EngineNatives.json(["type": "discard"])) }
     func retry(_ id: String) async { await submit(EngineNatives.json(["type": "retry", "id": id])) }
+    func close() async {
+        picks += 1
+        await submit(EngineNatives.json(["type": "close"]))
+    }
+    func discard() async {
+        picks += 1
+        await submit(EngineNatives.json(["type": "discard"]))
+    }
 
     /// The engine's state text and the bytes held, for a test.
     var stateText: String? { state }
@@ -120,28 +165,59 @@ actor UploadRunner {
     /// Queues one event; the first caller steps every queued event in order, each on the state
     /// the last step returned, so no two steps ever start from one state (uploadStepJson's rule).
     func submit(_ event: String) async {
-        waiting.append(event)
+        waiting.append(.event(event))
+        await drain()
+    }
+
+    private func drain() async {
         guard !stepping else { return }
         stepping = true
         while !waiting.isEmpty {
-            let event = waiting.removeFirst()
-            guard let current = state else { continue }
-            let (record, deviceId) = (await setup.record(), setup.deviceId)
-            Self.stepWatch?(true)
-            let answer: UploadDoors.Answer<UploadStep>?? = try? await engine.perform {
-                try $0.uploadStep(state: current, event: event, record: record, deviceId: deviceId)
-            }
-            Self.stepWatch?(false)
-            switch answer {
-            case .answered(let step)??:
-                state = step.state
-                step.effects.forEach(carryOut)
-                askView()
-            case .refused(let refusal)??: await model.show(.refused(refusal))
-            default: await model.show(.refused(nil))
+            switch waiting.removeFirst() {
+            case .hold(let files):
+                for file in files { held.hold(file.data, as: file.id, name: file.name) }
+            case .event(let event):
+                switch await step(event) {
+                case .answered: break
+                case .refused(let refusal): await refuse(refusal)
+                case nil: await refuse(nil)
+                }
             }
         }
         stepping = false
+    }
+
+    /// One step on the current state; its effects started and a view asked for when it answers.
+    private func step(_ event: String) async -> UploadDoors.Answer<Void>? {
+        guard let current = state else { return .answered(()) }
+        let (record, deviceId) = (await setup.record(), setup.deviceId)
+        setup.watch?(true)
+        let answer: UploadDoors.Answer<UploadStep>?? = try? await engine.perform {
+            try $0.uploadStep(state: current, event: event, record: record, deviceId: deviceId)
+        }
+        setup.watch?(false)
+        switch answer {
+        case .answered(let step)??:
+            upload = .started(step.state)
+            step.effects.forEach(carryOut)
+            askView()
+            return .answered(())
+        case .refused(let refusal)??: return .refused(refusal)
+        default: return nil
+        }
+    }
+
+    /// A step refused or failed: its event is lost, so the run cannot go on. The refusal stays on
+    /// the model until the next pick; every task of the run is cancelled and the engine told `stop`,
+    /// so no file waits forever. A `stop` that fails too leaves nothing held.
+    private func refuse(_ refusal: UploadDoors.Refusal?) async {
+        await model.show(.refused(refusal))
+        for send in sends.values { send.task.cancel() }
+        for task in work.values { task.cancel() }
+        sends = [:]
+        work = [:]
+        if case .answered = await step(EngineNatives.json(["type": "stop"])) { return }
+        held.forgetAll()
     }
 
     // MARK: Effects
@@ -195,13 +271,24 @@ actor UploadRunner {
         }
     }
 
-    /// Runs `work` off the actor and steps its answer.
-    private func answer(_ work: @escaping @Sendable () -> [String: Any]) {
-        Task.detached { [weak self] in await self?.submit(EngineNatives.json(work())) }
+    /// Runs `work` off the actor and steps its answer; refusing the run cancels it.
+    private func answer(_ make: @escaping @Sendable () -> [String: Any]) {
+        let ticket = UUID()
+        work[ticket] = Task.detached { [weak self] in
+            let event = EngineNatives.json(make())
+            guard !Task.isCancelled else { return }
+            await self?.finished(ticket, event: event)
+        }
+    }
+
+    private func finished(_ ticket: UUID, event: String) async {
+        guard work.removeValue(forKey: ticket) != nil else { return }
+        await submit(event)
     }
 
     private func sent(_ id: String, attempt: Int, event: String) async {
-        if sends[id]?.attempt == attempt { sends[id] = nil }
+        guard sends[id]?.attempt == attempt else { return }
+        sends[id] = nil
         await submit(event)
     }
 

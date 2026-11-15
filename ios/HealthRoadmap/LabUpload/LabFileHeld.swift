@@ -19,20 +19,42 @@ extension LabFileReader {
             var forgotten: Set<Int> = []
         }
         /// `listing` lives in the ZIP's own record, so holding the id again or forgetting it drops it.
+        /// `generation`: which hold this is, so a convert of an earlier hold never publishes pages.
         private struct Item {
             let name: String
             let data: Data
+            let generation: Int
             var listing: Listing?
         }
         /// Files and ZIPs by id; pages by the id converted, a file's or a member's.
         private struct Records {
             var items: [String: Item] = [:]
             var pages: [String: [Page]] = [:]
+            var holds = 0
+        }
+        /// The hold a read came from: its item's id and generation, and a member's index.
+        private struct Source {
+            let key: String
+            let generation: Int
+            let member: Int?
         }
         private let records = OSAllocatedUnfairLock(initialState: Records())
+        /// Called with an id once its pages are made, before they are kept. Nil in the app; a test's.
+        private let beforeKeeping: (@Sendable (String) -> Void)?
+
+        init(beforeKeeping: (@Sendable (String) -> Void)? = nil) { self.beforeKeeping = beforeKeeping }
 
         /// Holds a picked file's or ZIP's bytes under `id`, replacing what it held; `name` is how a read names it.
-        func hold(_ data: Data, as id: String, name: String) { records.withLock { $0.items[id] = Item(name: name, data: data) } }
+        func hold(_ data: Data, as id: String, name: String) {
+            records.withLock { records in
+                records.holds += 1
+                records.items[id] = Item(name: name, data: data, generation: records.holds)
+                for page in records.pages.keys where page == id || Self.member(page)?.zip == id { records.pages[page] = nil }
+            }
+        }
+
+        /// Drops everything held.
+        func forgetAll() { records.withLock { $0.items = [:]; $0.pages = [:] } }
 
         /// Drops what `ids` hold, pages included. A forgotten ZIP takes its members with it. A member
         /// forgotten by its own id (upload-flow.ts forgets members, never their ZIP once listed) reads
@@ -92,23 +114,29 @@ extension LabFileReader {
         func hash(_ id: String) throws -> String { contentHash(try read(id).bytes) }
 
         /// One file or member turned into its pages, as a picked file is (PDF text or JPEG pages);
-        /// its pages are kept under `id` for its send until it is forgotten.
+        /// its pages are kept under `id` for its send until it is forgotten, and only while the hold
+        /// they were made from is still the one held: never after a forget or a newer hold.
         func convert(_ id: String, rules: Rules) throws -> Document {
-            let (name, bytes, member) = try read(id)
+            let (name, bytes, member, source) = try read(id)
             var document = try document(from: bytes, name: name, rules: rules)
             document.zipMember = member
             let pages = document.pages
-            records.withLock { $0.pages[id] = pages }
+            beforeKeeping?(id)
+            records.withLock { records in
+                guard let item = records.items[source.key], item.generation == source.generation,
+                      source.member.map({ !(item.listing?.forgotten.contains($0) ?? true) }) ?? true else { return }
+                records.pages[id] = pages
+            }
             return document
         }
 
         /// The bytes `id` holds, a member's inflated now, with its name (`<zip name>/<path>` for a
         /// member) and, for a member, its ZIP and path. A member is checked against its listing's
         /// caps, and refused once its ZIP's members would inflate more than the listing's total.
-        private func read(_ id: String) throws -> (name: String, bytes: Data, member: ZipMember?) {
-            enum Found { case file(String, Data), member(zip: String, Data, ZipReader.Entry, maxBytes: Int) }
+        private func read(_ id: String) throws -> (name: String, bytes: Data, member: ZipMember?, source: Source) {
+            enum Found { case file(String, Data, Source), member(zip: String, Data, ZipReader.Entry, maxBytes: Int, Source) }
             let found: Found = try records.withLock { records in
-                if let item = records.items[id] { return .file(item.name, item.data) }
+                if let item = records.items[id] { return .file(item.name, item.data, Source(key: id, generation: item.generation, member: nil)) }
                 guard case let (zipId, index)? = Self.member(id), let zip = records.items[zipId], let listing = zip.listing,
                       listing.entries.indices.contains(index), !listing.forgotten.contains(index)
                 else { throw Failure.unreadable(id) }
@@ -120,12 +148,12 @@ extension LabFileReader {
                     records.items[zipId]?.listing?.counted.insert(index)
                     records.items[zipId]?.listing?.inflated += entry.size
                 }
-                return .member(zip: zip.name, zip.data, entry, maxBytes: rules.maxMemberBytes)
+                return .member(zip: zip.name, zip.data, entry, maxBytes: rules.maxMemberBytes, Source(key: zipId, generation: zip.generation, member: index))
             }
             switch found {
-            case .file(let name, let data): return (name, data, nil)
-            case .member(let zip, let data, let entry, let maxBytes):
-                return ("\(zip)/\(entry.name)", try ZipReader.data(of: entry, in: data, maxBytes: maxBytes), ZipMember(zip: zip, path: entry.name))
+            case .file(let name, let data, let source): return (name, data, nil, source)
+            case .member(let zip, let data, let entry, let maxBytes, let source):
+                return ("\(zip)/\(entry.name)", try ZipReader.data(of: entry, in: data, maxBytes: maxBytes), ZipMember(zip: zip, path: entry.name), source)
             }
         }
     }

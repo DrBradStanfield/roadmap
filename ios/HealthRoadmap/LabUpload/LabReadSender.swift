@@ -17,16 +17,20 @@ struct LabReadSender: Sendable {
     enum Outcome: Sendable, Equatable {
         /// 200: the stream's final line exactly as received, nil when it ended with none (`streamEnded`).
         case ended(line: String?)
-        /// A real refusal before any stream, or no answer at all (nil status): `sendFailed`.
+        /// A refusal before any stream (any status but 200), or no answer at all (nil status): `sendFailed`.
         case refused(status: Int?, body: String?, contentType: String?)
     }
     /// No answer at all: the network failure, which Try again mends.
     static let noAnswer = Outcome.refused(status: nil, body: nil, contentType: nil)
 
     var attest: AppAttestClient = .shared
-    /// The whole request's limit, stream included: keep-alive lines reset URLSession's idle
-    /// timer, so only this ends a read that never finishes.
-    var deadline: Duration = .seconds(150)
+    /// From the send's start until its headers arrive: waiting behind other sends for the App
+    /// Attest lock and uploading the body. Generous, so a send queued behind four slow uploads
+    /// is never cut off for waiting.
+    var openDeadline: Duration = .seconds(600)
+    /// From the headers to the stream's end: the server's read has 90 s after them. Keep-alive
+    /// lines reset URLSession's idle timer, so only this ends a read that never finishes.
+    var readDeadline: Duration = .seconds(120)
 
     /// The request body: the pages, the unit system, and each flag only when true, as the
     /// server's schema takes them (`labImportRequestSchema`: literal true or absent).
@@ -43,53 +47,69 @@ struct LabReadSender: Sendable {
                                              undatedPrev: on(flags.undatedPrev), refusedRows: on(flags.refusedRows)))
     }
 
-    /// Sends `body` and answers how it ended. Throws only CancellationError: an abort cancels the
-    /// request itself, and nothing is answered for it.
+    /// Sends `body` and answers how it ended, once. Throws only CancellationError: an abort
+    /// cancels the request itself, and nothing is answered for it.
     func send(_ body: Data) async throws -> Outcome {
         let attest = attest
-        let outcome = try await withThrowingTaskGroup(of: Outcome.self) { group in
-            group.addTask { try await Self.request(body, attest: attest) }
-            group.addTask { try await Task.sleep(for: deadline); return Self.noAnswer }
-            defer { group.cancelAll() }
-            return try await group.next() ?? Self.noAnswer
-        }
-        try Task.checkCancellation()
-        return outcome
-    }
-
-    private static func request(_ body: Data, attest: AppAttestClient) async throws -> Outcome {
+        let opened: AppAttestClient.Opened?
         do {
-            switch try await attest.open(path, body: body) {
-            case .refused(let http, let text):
-                return .refused(status: http.statusCode, body: String(decoding: text, as: UTF8.self),
-                                contentType: http.value(forHTTPHeaderField: "Content-Type"))
-            case .open(let bytes, _):
-                return .ended(line: try await finalLine(bytes.lines))
-            }
+            opened = try await Self.within(openDeadline) { try await attest.open(Self.path, body: body) }
         } catch is CancellationError {
             throw CancellationError()
         } catch {
             try Task.checkCancellation()
-            // No answer, or one cut short: the network failure, which Try again mends.
-            return noAnswer
+            return Self.noAnswer // no answer, or a device that could not sign
+        }
+        switch opened {
+        case nil: return Self.noAnswer
+        case .refused(let http, let text)?: return Self.refused(http, text)
+        case .open(let bytes, let http)? where http.statusCode != 200:
+            // Only 200 is accepted; another 2xx is the server's failure, read by the engine.
+            return Self.refused(http, (try? await AppAttestClient.errorText(bytes)) ?? Data())
+        case .open(let bytes, _)?:
+            // Past the read deadline (nil), the network failure; else the stream's end.
+            let line: String?? = try await Self.within(readDeadline) { try await Self.finalLine(bytes) }
+            return line.map { .ended(line: $0) } ?? Self.noAnswer
+        }
+    }
+
+    private static func refused(_ http: HTTPURLResponse, _ text: Data) -> Outcome {
+        .refused(status: http.statusCode, body: String(decoding: text, as: UTF8.self), contentType: http.value(forHTTPHeaderField: "Content-Type"))
+    }
+
+    /// `work`'s answer, or nil once `limit` passes (`work` is then cancelled, its request with it).
+    private static func within<T: Sendable>(_ limit: Duration, _ work: @escaping @Sendable () async throws -> T) async throws -> T? {
+        try await withThrowingTaskGroup(of: T?.self) { group in
+            group.addTask { try await work() }
+            group.addTask { try await Task.sleep(for: limit); return nil }
+            defer { group.cancelAll() }
+            return try await group.next() ?? nil
         }
     }
 
     /// The stream's last line, skipping blank keep-alive lines and the `{"accepted":true}` line;
-    /// nil when there is none. A stream cut short answers what it had: a whole last line, or nil.
-    static func finalLine<Lines: AsyncSequence>(_ lines: Lines) async throws -> String? where Lines.Element == String {
-        var last: String?
+    /// nil when there is none. Lines end at byte 0x0A only (one trailing 0x0D dropped) and
+    /// are read as UTF-8: JSON keeps U+2028, U+2029 and U+0085 unescaped, and they are never line
+    /// ends. A stream cut short answers what it had: a whole last line, or none.
+    static func finalLine<Bytes: AsyncSequence>(_ bytes: Bytes) async throws -> String? where Bytes.Element == UInt8 {
+        let accepted = Array(#"{"accepted":true}"#.utf8)
+        var last: [UInt8]?
+        var line: [UInt8] = []
+        func end() {
+            if line.last == 0x0D { line.removeLast() }
+            if line.contains(where: { $0 != 0x20 && $0 != 0x09 }), line != accepted { last = line }
+            line = []
+        }
         do {
-            for try await line in lines {
-                let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
-                if trimmed.isEmpty || trimmed == #"{"accepted":true}"# { continue }
-                last = line
+            for try await byte in bytes {
+                if byte == 0x0A { end() } else { line.append(byte) }
             }
+            if !line.isEmpty { end() }
         } catch is CancellationError {
             throw CancellationError()
         } catch {
             try Task.checkCancellation()
         }
-        return last
+        return last.map { String(decoding: $0, as: UTF8.self) }
     }
 }

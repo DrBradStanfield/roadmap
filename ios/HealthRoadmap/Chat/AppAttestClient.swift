@@ -48,7 +48,7 @@ actor AppAttestClient {
     /// The key this launch registered, if any, used before the Keychain (US-52 AC1c).
     private var registered: String?
     private var busy = false
-    private var waiters: [CheckedContinuation<Void, Never>] = []
+    private var waiters: [(ticket: UUID, waiter: CheckedContinuation<Void, Error>)] = []
 
     init(session: URLSession = URLSession(configuration: .ephemeral), service: any AttestService = AppleAttest(), keys: KeyStore = KeyStore()) {
         self.session = session
@@ -81,8 +81,10 @@ actor AppAttestClient {
     /// headers arrive, as the server spends the counter before any slow work (lab-read answers
     /// its headers then), so reads that stream run side by side.
     func open(_ path: String, body: Data) async throws -> Opened {
-        await acquire()
+        try await acquire()
         defer { release() }
+        // Handed the lock as it was cancelled: nothing is signed.
+        try Task.checkCancellation()
         for attempt in 0..<2 {
             var request = URLRequest(url: ServerConfig.baseURL.appending(path: path))
             request.httpMethod = "POST"
@@ -205,7 +207,8 @@ actor AppAttestClient {
         let reason: String?
     }
 
-    private static func errorText(_ bytes: URLSession.AsyncBytes) async throws -> Data {
+    /// The first 16 KB of an answer's body.
+    static func errorText(_ bytes: URLSession.AsyncBytes) async throws -> Data {
         var data = Data()
         for try await byte in bytes {
             data.append(byte)
@@ -216,13 +219,28 @@ actor AppAttestClient {
 
     // MARK: The lock (actors are re-entrant across awaits, so this is explicit)
 
-    private func acquire() async {
+    /// Waits its turn. A waiter cancelled meanwhile leaves the queue and throws CancellationError:
+    /// it never takes the lock later, so it never signs or sends.
+    private func acquire() async throws {
+        try Task.checkCancellation()
         if !busy { busy = true; return }
-        await withCheckedContinuation { waiters.append($0) }
+        let ticket = UUID()
+        try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { (waiter: CheckedContinuation<Void, Error>) in
+                if Task.isCancelled { waiter.resume(throwing: CancellationError()) } else { waiters.append((ticket, waiter)) }
+            }
+        } onCancel: {
+            Task { await self.leave(ticket) }
+        }
+    }
+
+    private func leave(_ ticket: UUID) {
+        guard let at = waiters.firstIndex(where: { $0.ticket == ticket }) else { return }
+        waiters.remove(at: at).waiter.resume(throwing: CancellationError())
     }
 
     private func release() {
-        if waiters.isEmpty { busy = false } else { waiters.removeFirst().resume() }
+        if waiters.isEmpty { busy = false } else { waiters.removeFirst().waiter.resume() }
     }
 }
 
