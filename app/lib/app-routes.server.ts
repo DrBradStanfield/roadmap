@@ -3,12 +3,12 @@
  * handlers. The route files under app/routes/api.app.v1.* only call these: a
  * route module's extra exports would pull server code into the client build.
  */
-import * as Sentry from '@sentry/react-router';
 import { labImportRequestSchema } from '../../packages/health-core/src/validation';
 import { action as webChatAction } from '../routes/api.chat';
 import { attestConfig, AttestError, challengeValid, newChallenge, validKeyId, verifyAttestation } from './app-attest.server';
 import { appGate, appLimits, appRoutesOff, ipBucket, supabaseKeyStore, type KeyStore } from './app-gate.server';
 import { SMALL_BODY_CAP } from './capped-body.server';
+import { captureAllowListedWarning } from './sentry-allow-listed.server';
 import { extractOneFile, TOO_SLOW } from './lab-extract-one.server';
 import { BODY_TOO_LARGE, getClientIp, parseSimpleRequestJson } from './local-first-route.server';
 import { CHAT_PROMPT } from './chat-system-prompt.server';
@@ -112,11 +112,10 @@ export async function appLabImport(request: Request, store?: KeyStore): Promise<
 
 /**
  * A timed-out or slow (over 60 s) phone import reports one Sentry warning of four
- * fixed tags (US-52 AC7d). The event is rebuilt from an allow-list after the SDK's
- * own processors, so nothing they or the request scope add (headers naming the key
- * and the upload's size, extra, contexts, modules, server name) is sent. It runs in
- * a trace of its own, so no trace id links it to the request's transaction or its
- * `lab_import_v2` exception; their timestamps can still put them side by side, and
+ * fixed tags (US-52 AC7d), through `captureAllowListedWarning`: nothing the SDK or
+ * the request scope adds (headers naming the key and the upload's size, extra,
+ * contexts, modules, server name) is sent. It runs in a trace of its own, so no
+ * trace id links it to the request's transaction or its `lab_import_v2` exception; their timestamps can still put them side by side, and
  * together they hold only the error and a time band. A failure here never changes
  * the answer.
  */
@@ -127,29 +126,7 @@ async function reportSlowImport(res: Response, ms: number, retried: boolean): Pr
     const outcome = timedOut ? 'timeout' : res.ok ? 'slow-success' : 'slow-failure';
     const duration = ms <= 60_000 ? '0-60' : ms < 75_000 ? '60-75' : ms < 90_000 ? '75-90' : '90+';
     const tags = { feature: 'app-lab-import', outcome, duration, retry: retried ? 'yes' : 'no' };
-    Sentry.startNewTrace(() => Sentry.withScope((scope) => {
-      // A throw here must never reach the SDK's own error report: the same rule and
-      // line as failClosed in instrument.server.mjs, which cannot be imported (US-09 AC7i).
-      scope.addEventProcessor((e) => {
-        try {
-          return {
-            event_id: e.event_id, timestamp: e.timestamp, level: e.level, message: e.message, fingerprint: e.fingerprint,
-            platform: e.platform, sdk: e.sdk, environment: e.environment, contexts: { trace: e.contexts?.trace }, tags,
-          };
-        } catch (err) {
-          let name = 'unknown';
-          try {
-            const n = err instanceof Error ? err.name : typeof err;
-            if (typeof n === 'string' && /^[A-Za-z][A-Za-z0-9_]{0,40}$/.test(n)) name = n;
-          } catch { /* keep 'unknown' */ }
-          try {
-            console.error('Sentry scrub failed (' + name + '); event dropped');
-          } catch { /* the null still comes back */ }
-          return null;
-        }
-      });
-      Sentry.captureMessage('App lab import slow', { level: 'warning', fingerprint: ['app-lab-import', outcome] });
-    }));
+    captureAllowListedWarning('App lab import slow', ['app-lab-import', outcome], { tags });
   } catch {
     // Telemetry only: the phone's answer stands.
   }

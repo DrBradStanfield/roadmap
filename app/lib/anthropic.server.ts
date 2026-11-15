@@ -114,10 +114,11 @@ function readExtraction(result: AnthropicResult, mode: DocumentPromptMode): Unif
  * budget; it also passes `httpAttempts: 1` so a hung call fails fast.
  * `oneDeadline` puts the HTTP retries on that deadline too: a timed-out attempt
  * is not retried, and a capacity retry gets what is left (US-52 AC7c).
+ * `retryRateLimit` retries an Anthropic 429 once inside the deadline (lab reads only, US-12 AC1a).
  */
 export async function extractOrClassify(
   pages: PageContent[],
-  opts: { timeoutMs?: number; httpAttempts?: number; oneDeadline?: true; documentMode?: DocumentPromptMode; onRetry?: () => void } = {},
+  opts: { timeoutMs?: number; httpAttempts?: number; oneDeadline?: true; retryRateLimit?: true; documentMode?: DocumentPromptMode; onRetry?: () => void } = {},
 ): Promise<UnifiedExtractionResult> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY not configured');
@@ -137,7 +138,7 @@ export async function extractOrClassify(
   };
 
   for (let call = 1; ; call++) {
-    const parsed = readExtraction(await fetchAnthropicRaw(apiKey, body, left(), opts.httpAttempts, readJson, opts.oneDeadline && until, opts.onRetry), documentMode);
+    const parsed = readExtraction(await fetchAnthropicRaw(apiKey, body, left(), opts.httpAttempts, readJson, opts.oneDeadline && until, opts.onRetry, opts.retryRateLimit && until), documentMode);
     if (parsed) return parsed;
     // A fixed message and no `cause`: Sentry serialises it (api.lab-import-v2).
     if (call >= 2) throw new Error('extraction returned malformed JSON');

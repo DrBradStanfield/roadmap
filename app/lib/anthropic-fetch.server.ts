@@ -6,6 +6,7 @@
 import * as Sentry from '@sentry/react-router';
 import { toRefusalCategory, type RefusalCategory } from '../../packages/health-core/src/models';
 import { sleep } from './cron-helpers.server';
+import { captureAllowListedWarning } from './sentry-allow-listed.server';
 
 export interface AnthropicUsage {
   inputTokens: number;
@@ -55,10 +56,16 @@ export interface AnthropicResult {
  * both times during a brief 01:50 UTC June 4 outage). Real persistent errors
  * (auth, 4xx validation, malformed responses, 429 structural rate-limit) throw
  * immediately so the chat handler returns the fallback without compounding
- * latency.
+ * latency. The one exception is an opted-in 429, below.
  *
  * 429 is treated as structural (account tier too low, runaway caller, or a real
- * outage requiring intervention) — not retried, surfaced via Sentry.
+ * outage requiring intervention) — not retried, surfaced via Sentry. Except
+ * for a caller that opts in with `rateLimitUntil` (the lab reads, US-12 AC1a):
+ * there a 429 takes the one retry after its `retry-after` (else 2 s) plus up
+ * to 1.5 s of jitter, only if more than 6 s of that deadline would remain
+ * after that jittered wait. A 429 the retry rescues still reaches Sentry, once,
+ * as a warning with its status and wait only; one it does not rescue throws
+ * and is captured as before.
  *
  * 503 and 529 are transient capacity signals — retried, and (if both attempts
  * fail) the final throw is silenced from Sentry to avoid flooding alerts during
@@ -72,6 +79,27 @@ export const RETRY_DELAY_MS = 1000;
 export const ANTHROPIC_TIMEOUT_MS = 60_000;
 const RETRYABLE_STATUSES = new Set([502, 503, 504, 529]);
 const TRANSIENT_CAPACITY_STATUSES = new Set([503, 529]); // silenced from Sentry on final failure
+const RATE_LIMIT_DEFAULT_WAIT_MS = 2_000;
+const RATE_LIMIT_MAX_WAIT_MS = 60_000;
+/** An opted-in 429 is retried only if more than this is left of the deadline after its wait. */
+const RATE_LIMIT_MIN_LEFT_MS = 6_000;
+const RATE_LIMIT_MAX_JITTER_MS = 1_500;
+
+/**
+ * Anthropic's `retry-after`, external text, read once: plain non-negative
+ * seconds, capped at 60 s. Anything else (a date, a sign, an exponent, junk)
+ * is the 2 s default. US-12 AC1a.
+ */
+export function parseRetryAfterMs(header: string | null): number {
+  const value = header?.trim() ?? '';
+  if (!/^\d{1,9}(\.\d{1,3})?$/.test(value)) return RATE_LIMIT_DEFAULT_WAIT_MS;
+  return Math.min(Number(value) * 1000, RATE_LIMIT_MAX_WAIT_MS);
+}
+
+/** The wait before an opted-in 429's retry: `retry-after` plus 0 to 1.5 s of jitter, so parallel reads do not retry in step. */
+export function rateLimitWaitMs(header: string | null, random: () => number = Math.random): number {
+  return parseRetryAfterMs(header) + Math.round(random() * RATE_LIMIT_MAX_JITTER_MS);
+}
 
 /**
  * Network/timeout errors thrown by Node's fetch(): TypeError "fetch failed"
@@ -196,13 +224,16 @@ export interface ReadControl { began(): void; idle: AbortController }
  * `maxAttempts` below the default turns the inner retry off for a caller whose own deadline cannot absorb it (US-35 AC5).
  * `deadline` (epoch ms) bounds the retries too: each attempt gets what is left, and a retry starts only
  * with a useful window, 5 s after its 1 s wait (US-52 AC7c). `onRetry` is told each retry (US-52 AC7d).
+ * `rateLimitUntil` (epoch ms) opts a caller into the one 429 retry, inside that deadline (US-12 AC1a).
  */
 export async function fetchAnthropicRaw(
   apiKey: string, body: Record<string, unknown>, timeoutMs = ANTHROPIC_TIMEOUT_MS, maxAttempts = RETRY_MAX_ATTEMPTS,
   read: (response: Response, control: ReadControl) => Promise<AnthropicResult> = readJson, deadline?: number,
-  onRetry?: () => void,
+  onRetry?: () => void, rateLimitUntil?: number,
 ): Promise<AnthropicResult> {
-  const left = () => (deadline === undefined ? Infinity : deadline - Date.now());
+  let until = deadline;
+  let rateLimitWait: number | undefined;
+  const left = () => (until === undefined ? Infinity : until - Date.now());
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     let began = false;
     const retry = () => attempt < maxAttempts && left() > RETRY_DELAY_MS + 5_000;
@@ -220,12 +251,22 @@ export async function fetchAnthropicRaw(
       });
 
       if (!response.ok) {
-        if (RETRYABLE_STATUSES.has(response.status) && retry()) {
+        let wait: number | undefined;
+        if (RETRYABLE_STATUSES.has(response.status) && retry()) wait = RETRY_DELAY_MS;
+        else if (response.status === 429 && rateLimitUntil !== undefined && attempt < maxAttempts) {
+          const asked = rateLimitWaitMs(response.headers.get('retry-after'));
+          if (rateLimitUntil - Date.now() - asked > RATE_LIMIT_MIN_LEFT_MS) {
+            wait = rateLimitWait = asked;
+            // The retried attempt (and retry() after it) sees only what is left of that deadline.
+            until = Math.min(until ?? Infinity, rateLimitUntil);
+          }
+        }
+        if (wait !== undefined) {
           // Discard provider bodies: errors may echo uploaded or chat content.
           await response.body?.cancel();
-          console.warn(`Anthropic API ${response.status} on attempt ${attempt}/${maxAttempts}, retrying after ${RETRY_DELAY_MS}ms`);
+          console.warn(`Anthropic API ${response.status} on attempt ${attempt}/${maxAttempts}, retrying after ${wait}ms`);
           onRetry?.();
-          await sleep(RETRY_DELAY_MS);
+          await sleep(wait);
           continue;
         }
 
@@ -241,7 +282,12 @@ export async function fetchAnthropicRaw(
         throw err;
       }
 
-      return await read(response, { began: () => { began = true; }, idle });
+      const result = await read(response, { began: () => { began = true; }, idle });
+      // A rescued 429 still tells Sentry, once: its status and wait, nothing from the request.
+      if (rateLimitWait !== undefined) {
+        captureAllowListedWarning('Anthropic 429 retried', ['anthropic-429-retried'], { extra: { status: 429, waitMs: rateLimitWait } });
+      }
+      return result;
     } catch (err) {
       if (!began && isNetworkOrTimeoutError(err) && retry()) {
         const e = err as Error;
