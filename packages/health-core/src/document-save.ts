@@ -23,7 +23,7 @@
  * (documents are immutable under merge).
  */
 import { buildDocumentRef, splitDocumentRef } from './document-path';
-import { documentRow, documentView, isLabArchiveDocument, LAB_ARCHIVE_ROWS, labArchiveFields, listedRows, type DocumentFields, type DocumentView } from './document-rows';
+import { documentRow, documentView, isLabArchiveDocument, LAB_ARCHIVE_ROWS, labArchiveFields, listedRows, withStoredOriginal, type DocumentFields, type DocumentView } from './document-rows';
 import { isReadableRow } from './readable-rows';
 import { newId as freshId } from './record-edits';
 import { stableStringify, type FileDocument, type RoadmapFile } from './roadmap-file';
@@ -193,10 +193,9 @@ export async function saveDocuments<F>(
       if (list.length) doc.metadata = { ...doc.metadata, [LAB_ARCHIVE_ROWS]: list };
       if (stored) {
         // A copy with the stored original and the longer list; no second blob.
-        doc.fileRef = stored.fileRef;
-        doc.mimeType = stored.mimeType;
-        filed.push({ doc, lab, replaces: labRows.map((r) => r.id) });
-        out.push(doc);
+        const copy = withStoredOriginal(doc, stored);
+        filed.push({ doc: copy, lab, replaces: labRows.map((r) => r.id) });
+        out.push(copy);
         continue;
       }
     } else if (hash && archived.has(hash)) {
@@ -280,7 +279,8 @@ export async function saveDocuments<F>(
       const readable = file.documents.filter((d) => !d.deleted && d.contentHash && isReadableRow('documents', d));
       const pending = readable.filter((d) => !d.fileRef).map(documentView);
       const landing = new Map<FileDocument, { lab: boolean; replaces: string[] }>(
-        [...writes.filter((w) => w.doc.fileRef || (w.failed && !unchanged.has(w.doc))), ...filed].map((w) => [w.doc, { lab: w.lab, replaces: 'replaces' in w ? w.replaces : [] }]),
+        // Every row this save adds: one whose write failed with nothing held may still meet a row merged in meanwhile.
+        [...writes.filter((w) => !unchanged.has(w.doc)), ...filed].map((w) => [w.doc, { lab: w.lab, replaces: 'replaces' in w ? w.replaces : [] }]),
       );
       const replaced = new Set<string>();
       const rows = saved.map((doc) => {
@@ -293,8 +293,10 @@ export async function saveDocuments<F>(
         ];
         old.forEach((id) => replaced.add(id));
         if (!entry.lab) return doc;
-        const list = [...new Set([...file.documents.filter((d) => old.includes(d.id)).flatMap((d) => listedRows(d) ?? []), ...(listedRows(doc) ?? [])])];
-        return list.length ? { ...doc, metadata: { ...doc.metadata, [LAB_ARCHIVE_ROWS]: list } } : doc;
+        const olds = file.documents.filter((d) => old.includes(d.id));
+        const list = [...new Set([...olds.flatMap((d) => listedRows(d) ?? []), ...(listedRows(doc) ?? [])])];
+        // A replacement never loses a stored original: with none of its own, it takes the one a replaced row holds.
+        return withStoredOriginal(list.length ? { ...doc, metadata: { ...doc.metadata, [LAB_ARCHIVE_ROWS]: list } } : doc, olds.find((d) => d.fileRef));
       });
       for (const d of file.documents) if (replaced.has(d.id)) d.deleted = true;
       file.documents.push(...rows);

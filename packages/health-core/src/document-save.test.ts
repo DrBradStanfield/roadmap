@@ -431,6 +431,29 @@ describe('saveDocuments: a lab archive row\'s list is kept and extended (US-14 A
     expect([knownAs(index, 'hash-first'), knownAs(index, 'hash-second')]).toEqual([null, { as: 'labReport', archiveOnly: true }]);
   });
 
+  it('a replacement never loses a stored original: the blob write fails while another device\'s stored archive (listing B) merges in', async () => {
+    const current = fresh();
+    current.labValues = [labRow('A'), labRow('B')];
+    // Nothing held here: this save's own row lists A.
+    const plan = await saveDocuments(current, [labArchive({ metadata: { [LAB_ARCHIVE_FLAG]: true, [LAB_ARCHIVE_ROWS]: ['A'] } })], io({ fail: true }).io);
+    const atCommit = structuredClone(current);
+    atCommit.documents.push(listing(['B'], { id: 'other-device', fileRef: 'Lab results/other.pdf', mimeType: 'application/pdf' }));
+    plan.commit(atCommit);
+    // The replaced rows' list first, then this save's own.
+    expect(live(atCommit)).toEqual([expect.objectContaining({ fileRef: 'Lab results/other.pdf', mimeType: 'application/pdf', metadata: { [LAB_ARCHIVE_FLAG]: true, [LAB_ARCHIVE_ROWS]: ['B', 'A'] } })]);
+  });
+
+  it('a replacement never loses a stored original: an off-cloud save meets a stored archive merged in', async () => {
+    const current = fresh();
+    current.labValues = [labRow('A'), labRow('B')];
+    current.documents = [listing(['A'])];
+    const plan = await saveDocuments(current, [labArchivePayload<Uint8Array>('a.pdf', '2026-01-01', undefined, { rows: ['A', 'C'], contentHash: hash })], io().io);
+    const atCommit = structuredClone(current);
+    atCommit.documents.push(listing(['B'], { id: 'other-device', fileRef: 'Lab results/other.pdf', mimeType: 'application/pdf' }));
+    plan.commit(atCommit);
+    expect(live(atCommit)).toEqual([expect.objectContaining({ fileRef: 'Lab results/other.pdf', mimeType: 'application/pdf', metadata: { [LAB_ARCHIVE_FLAG]: true, [LAB_ARCHIVE_ROWS]: ['A', 'B', 'C'] } })]);
+  });
+
   it('Codex re-check 1: the list is built at commit, from the rows the commit tombstones: a second device\'s row that arrived during the blob write keeps its value', async () => {
     const current = fresh();
     current.labValues = [labRow('A'), labRow('B')];

@@ -138,6 +138,15 @@ export function labRowsByFile(rows: ReadonlyArray<string | null>, files: Readonl
   return out;
 }
 
+/**
+ * `row` with the stored original another row holds (`fileRef`, `mimeType`),
+ * when it has none of its own: a replacement never loses an original (US-14
+ * AC10). One rule for the save, its commit and the connector.
+ */
+export function withStoredOriginal<T extends Pick<FileDocument, 'fileRef' | 'mimeType'>>(row: T, from: Pick<FileDocument, 'fileRef' | 'mimeType'> | undefined): T {
+  return from?.fileRef && !row.fileRef ? { ...row, fileRef: from.fileRef, mimeType: from.mimeType } : row;
+}
+
 /** The lab rows an archive row lists (`LAB_ARCHIVE_ROWS`), or null for a row with no list. */
 export function listedRows(d: { metadata?: Record<string, unknown> | null }): string[] | null {
   const rows = d.metadata?.[LAB_ARCHIVE_ROWS];

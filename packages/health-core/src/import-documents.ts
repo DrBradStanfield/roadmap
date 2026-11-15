@@ -3,7 +3,7 @@
  * already holds, and the rows a commit files for the rest. Split from
  * mcp-import.ts (file budget); mcp-import re-exports `isAlreadyImported`.
  */
-import { dedupFileName, documentRow, documentView, isLabArchiveDocument, labArchiveFields, listedRows, type DocumentFields } from './document-rows';
+import { dedupFileName, documentRow, documentView, isLabArchiveDocument, labArchiveFields, listedRows, withStoredOriginal, type DocumentFields } from './document-rows';
 import { LAB_ARCHIVE_TITLE } from './document-path';
 import type { ImportDocument } from './mcp-import';
 import { isReadableRow } from './readable-rows';
@@ -80,8 +80,7 @@ export function importDocumentRows(
       ? labArchiveFields(d.sourceFileName, d.date, list)
       : { documentType: d.type, title: d.title, documentDate: d.date, contentMd: '', metadata: {}, sourceFileName: d.sourceFileName };
     const row = documentRow({ ...fields, metadata: { ...fields.metadata, ...metadata } }, { id: crypto.randomUUID(), contentHash: d.contentHash, mimeType: d.mimeType, addedAt: now });
-    const stored = old.find((x) => x.fileRef);
-    return stored ? { ...row, fileRef: stored.fileRef, mimeType: stored.mimeType } : row;
+    return withStoredOriginal(row, old.find((x) => x.fileRef));
   });
   return { rows, documents: file.documents.map((d) => (replaced.has(d.id) ? { ...d, deleted: true } : d)) };
 }
