@@ -50,7 +50,8 @@ final class AppServerE2ETests: XCTestCase {
             context.beginPage()
             (lines.joined(separator: "\n") as NSString).draw(in: CGRect(x: 40, y: 40, width: 530, height: 700), withAttributes: [.font: UIFont.systemFont(ofSize: 13)])
         }
-        let document = try XCTUnwrap(LabFileReader.documents(from: pdf, name: "synthetic.pdf").first)
+        let documents = try await LabFileReader.documents(from: pdf, name: "synthetic.pdf")
+        let document = try XCTUnwrap(documents.first)
         let extraction = try await LabUploadClient().extract(document, unitSystem: "si")
 
         let engine = try HealthEngine()
