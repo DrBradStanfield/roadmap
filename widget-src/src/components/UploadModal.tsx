@@ -201,6 +201,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
             <div className="upload-done">
               <div className="upload-done-icon">&#10003;</div>
               <p className="upload-done-text">{view.done.line}</p>
+              {view.done.skipped.map(line => <p key={line} className="upload-done-skipped">{line}</p>)}
               {view.done.archived && <p className="upload-done-skipped">{view.done.archived}</p>}
               {view.done.unstored && <p className="upload-done-skipped">{view.done.unstored}</p>}
               <FileNotices notices={notices} />

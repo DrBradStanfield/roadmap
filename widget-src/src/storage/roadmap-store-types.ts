@@ -5,7 +5,7 @@ import type { MeasurementSource } from '@roadmap/health-core/validation';
 import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import type { HealthInputs } from '@roadmap/health-core/types';
 import type { Comparator } from '@roadmap/health-core/lab-limits';
-import type { SaveOutcome } from '@roadmap/health-core/upload-flow';
+import type { SavedOutcome } from '@roadmap/health-core/upload-save';
 
 /** How a correction ended. `changed`: the value named is not there any
  *  more, or another row has replaced it (another device, a connector).
@@ -39,4 +39,4 @@ export interface BulkLabValueInput {
 }
 
 /** One upload Save: what it wrote, or `message` (the review's words; null when the erase refused it). */
-export type UploadStoreSave = { ok: true; outcome: Required<SaveOutcome>; added: ApiMeasurement[] } | { ok: false; message: string | null };
+export type UploadStoreSave = { ok: true; outcome: SavedOutcome; added: ApiMeasurement[] } | { ok: false; message: string | null };

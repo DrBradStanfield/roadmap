@@ -40,7 +40,7 @@ it.each([
   } });
   render(<UploadModal open onOpen={() => {}} onClose={() => {}} unitSystem="si" grading={{}} history={{ measurements: [], labValues: [], documents: [] }} onComplete={() => {}} />);
   fireEvent.change(document.querySelector('input[type=file]')!, { target: { files: [new File(['synthetic'], 'labs.pdf', { type: 'application/pdf' })] } });
-  await screen.findByText(/^Found /, { selector: '.review-summary' });
+  await screen.findByText(/^\d+ files?\b/, { selector: '.review-summary' });
   showAllValues(); // a sure value sits behind "Show all" (US-13 AC13)
   const input = screen.getByLabelText(/^Lp\(a\) value from/) as HTMLInputElement;
   const cell = input.closest('.bt-cell-value')!;

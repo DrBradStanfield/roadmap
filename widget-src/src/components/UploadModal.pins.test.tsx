@@ -10,13 +10,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { UploadModal } from './UploadModal';
+import { resetUploadStore } from '../testing/upload-store';
 import { checkLabImportQuota, labImport } from '../lib/upload-api';
 import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues } from '../lib/roadmap-data';
 import type { UploadHistory } from '../lib/api-types';
 import { findReviewValue } from '../testing/import-review';
 
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn() }));
-vi.mock('../lib/roadmap-data', () => ({ uploadKnownIndex: vi.fn(() => new Map()), isLegacyUpload: vi.fn(() => false), getDocumentArchiveMode: vi.fn(() => 'cloud'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
+vi.mock('../lib/roadmap-data', async () => ({ ...(await import('../testing/upload-store')).uploadStoreMock(), uploadKnownIndex: vi.fn(() => new Map()), isLegacyUpload: vi.fn(() => false), getDocumentArchiveMode: vi.fn(() => 'cloud'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
 vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
 vi.mock('../lib/archive-payloads', async importOriginal => ({ ...await importOriginal<typeof import('../lib/archive-payloads')>(), sha256Blob: vi.fn(async () => ''), synthesizeLabArchiveEntries: vi.fn(() => []) }));
 vi.mock('../lib/useIsMobile', () => ({ useIsMobile: () => false }));
@@ -39,6 +40,7 @@ const history: UploadHistory = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  resetUploadStore();
   vi.mocked(checkLabImportQuota).mockResolvedValue({ allowed: true, remaining: 60 });
   vi.mocked(labImport).mockResolvedValue(read);
   vi.mocked(bulkSaveMeasurements).mockResolvedValue({ saved: [{}], skippedDuplicates: 0, errorCount: 0, refused: [] } as unknown as Awaited<ReturnType<typeof bulkSaveMeasurements>>);

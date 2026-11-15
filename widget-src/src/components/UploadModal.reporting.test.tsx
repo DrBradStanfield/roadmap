@@ -10,8 +10,8 @@ import { checkLabImportQuota, labImport } from '../lib/upload-api';
 import { trackLiveRefresh, stopLiveRefresh } from '../testing/health-tool-harness';
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn() }));
 vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
-// Extraction and original-file archival are outside this value-save witness.
-vi.mock('../lib/archive-payloads', async original => ({ ...await original<typeof import('../lib/archive-payloads')>(), sha256Blob: vi.fn(async () => ''), synthesizeLabArchiveEntries: () => [] }));
+// Extraction is outside this value-save witness; the bytes' hash is a fixed synthetic one.
+vi.mock('../lib/archive-payloads', async original => ({ ...await original<typeof import('../lib/archive-payloads')>(), sha256Blob: vi.fn(async () => 'sha256-synthetic') }));
 vi.mock('../lib/useIsMobile', () => ({ useIsMobile: () => false }));
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../lib/build-flags', () => ({ SHOPIFY_SURFACE: true, LOCAL_FIRST: true }));
@@ -31,7 +31,7 @@ it.each([
   const cloud = new MemoryCloud();
   localStorage.clear();
   trackLiveRefresh();
-  const saveSpy = vi.spyOn(RoadmapStore.prototype, lab ? 'bulkSaveLabValues' : 'bulkSaveMeasurements');
+  const saveSpy = vi.spyOn(RoadmapStore.prototype, 'saveUpload');
   await initRoadmapStore(new MemoryAdapter(cloud));
   async function add(value: number) {
     if (lab) {
@@ -76,7 +76,11 @@ it.each([
   saveSpy.mockClear();
   fireEvent.click(screen.getByRole('button', { name: /^Save / }));
   await screen.findByRole('button', { name: 'Done' });
-  expect(saveSpy).toHaveBeenCalledWith(expect.arrayContaining([expect.objectContaining({ value: 3, correctsId: oldId })]));
+  // One Save through the shared upload save (design 12c): the reviewed value, with its Replace on the held row.
+  expect(saveSpy).toHaveBeenCalledOnce();
+  const asked = saveSpy.mock.calls[0][0];
+  const choices = 'files' in asked && asked.files[0].status.s === 'read' ? asked.files[0].status.choices : null;
+  expect(choices?.replace).toEqual(oldId ? { [lab ? 'a0' : 'v0']: oldId } : {});
   const text = document.body.textContent;
   if (stale || duplicate) {
     expect(text).toContain(`1 ${lab ? 'additional lab' : 'blood test'} value was not added.`);
@@ -84,8 +88,8 @@ it.each([
     expect(text).not.toContain('already saved');
     expect(text).not.toContain('try again');
   } else expect(text).not.toContain('was not added');
-  if (outcome === 'mixed') expect(text).toContain('Saved 1 blood test value');
-  else if (stale || duplicate) expect(text).not.toContain('Saved 1');
+  if (outcome === 'mixed') expect(text).toContain('Saved 1 value');
+  else if (stale || duplicate) expect(text).not.toContain('Saved 1 value');
   expect(completed).toHaveBeenCalledOnce();
   await flushRoadmapStore();
   const fresh = await RoadmapStore.create(new MemoryAdapter(cloud));

@@ -39,7 +39,7 @@ describe('the web saves through uploadSave what its own save path wrote (US-52 A
       const cloud = new MemoryCloud();
       const store = await RoadmapStore.create(new MemoryAdapter(cloud));
       store.showErase(store.eraseIdentity);
-      const answer = await store.saveUpload(state, NOW, false, { holds: () => false, original: () => null, mimeType: () => '', screening: profile, now: () => NOW });
+      const answer = await store.saveUpload(state, store.file, NOW, false, { holds: () => false, original: () => null, mimeType: () => '', screening: profile, now: () => NOW });
       expect(answer.ok, `seed ${seed}`).toBe(true);
       await store.flush();
       const mine = rowsOf(JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json) as RoadmapFile) as Rows;
@@ -61,7 +61,7 @@ describe('the web saves through uploadSave what its own save path wrote (US-52 A
       const cloud = new MemoryCloud();
       const store = await RoadmapStore.create(new MemoryAdapter(cloud));
       store.showErase(store.eraseIdentity);
-      await store.saveUpload(pick.state, NOW, false, { holds: () => false, original: () => null, mimeType: () => '', screening: { age, sex: 'male' }, now: () => NOW });
+      await store.saveUpload(pick.state, store.file, NOW, false, { holds: () => false, original: () => null, mimeType: () => '', screening: { age, sex: 'male' }, now: () => NOW });
       expect(!!store.file.screenings.colorectalLastDate, `age ${age}`).toBe(writes);
     }
   });

@@ -53,7 +53,7 @@ export interface UploadView {
   save: { label: string; enabled: boolean; why: string | null; error: string | null };
   stop: { label: string } | null;
   /** The done screen's lines. */
-  done: { line: string; archived: string | null; unstored: string | null } | null;
+  done: { line: string; archived: string | null; unstored: string | null; skipped: string[] } | null;
 }
 
 /** A screening update's tick: `checked` only with a date; `words` around the screening's name, which is drawn bold. */
@@ -214,6 +214,10 @@ export function uploadView(s: UploadState, record: RoadmapFile, now: string, rev
       line: UPLOAD_TEXT.savedLine(s.outcome.values, s.outcome.documents),
       archived: s.outcome.archived ? UPLOAD_TEXT.archivedLine(s.outcome.archived) : null,
       unstored: s.outcome.unstored ? UPLOAD_TEXT.unstoredLine : null,
+      skipped: [
+        ...(s.outcome.skippedValues ? [UPLOAD_TEXT.skippedLine(s.outcome.skippedValues, false)] : []),
+        ...(s.outcome.skippedLabValues ? [UPLOAD_TEXT.skippedLine(s.outcome.skippedLabValues, true)] : []),
+      ],
     } : null,
   };
 }

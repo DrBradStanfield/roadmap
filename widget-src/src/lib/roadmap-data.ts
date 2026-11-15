@@ -328,9 +328,9 @@ export async function bulkSaveDocuments(
  * prompted measures it added (US-07 AC11) and the labs the review did not send for their unit
  * (US-21 AC15), counts and closed words only. `message`: why the review stays open (null: the erase refused it).
  */
-export async function saveUpload(state: UploadState, now: string, cloud: boolean, io: Omit<UploadSaveIO<Blob>, 'write'>, labRefusals: LabUnitRefusal[]): Promise<UploadStoreSave> {
+export async function saveUpload(state: UploadState, reviewed: RoadmapFile, now: string, cloud: boolean, io: Omit<UploadSaveIO<Blob>, 'write'>, labRefusals: LabUnitRefusal[]): Promise<UploadStoreSave> {
   if (!store) return { ok: false, message: null };
-  const answer = await store.saveUpload(state, now, cloud, io);
+  const answer = await store.saveUpload(state, reviewed, now, cloud, io);
   if (answer.ok) {
     countMeasuresAdded(answer.added);
     countRefusedSpellings(labRefusals);

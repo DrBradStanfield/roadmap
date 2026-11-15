@@ -86,7 +86,7 @@ const file = strict({
   pages: strict({ count, truncated: z.boolean() }).nullable(), status,
 });
 const pick = { platform, run: count, files: z.array(file), started: text, firstRead: maybeText };
-const outcome = strict({ values: count, documents: count, archived: count, unstored: count.optional() });
+const outcome = strict({ values: count, documents: count, archived: count, unstored: count.optional(), skippedValues: count.optional(), skippedLabValues: count.optional() });
 
 export const UPLOAD_STATE = z.discriminatedUnion('phase', [
   strict({ phase: z.literal('choosing'), platform, run: count }),

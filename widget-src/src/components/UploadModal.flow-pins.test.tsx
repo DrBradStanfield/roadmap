@@ -7,15 +7,15 @@ import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { UploadModal } from './UploadModal';
-import { synthesizeLabArchiveEntries } from '../lib/archive-payloads';
+import { resetUploadStore, uploadStore } from '../testing/upload-store';
 import { checkLabImportQuota, labImport } from '../lib/upload-api';
-import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocumentArchiveMode } from '../lib/roadmap-data';
+import { getDocumentArchiveMode } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 import type { UploadHistory } from '../lib/api-types';
 import { findReviewValue } from '../testing/import-review';
 
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn() }));
-vi.mock('../lib/roadmap-data', () => ({ uploadKnownIndex: vi.fn(() => new Map()), isLegacyUpload: vi.fn(() => false), getDocumentArchiveMode: vi.fn(() => 'cloud'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
+vi.mock('../lib/roadmap-data', async () => ({ ...(await import('../testing/upload-store')).uploadStoreMock(), uploadKnownIndex: vi.fn(() => new Map()), isLegacyUpload: vi.fn(() => false), getDocumentArchiveMode: vi.fn(() => 'cloud'), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
 vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
 vi.mock('../lib/archive-payloads', async importOriginal => ({ ...await importOriginal<typeof import('../lib/archive-payloads')>(), sha256Blob: vi.fn(async () => ''), synthesizeLabArchiveEntries: vi.fn(() => []) }));
 vi.mock('../lib/useIsMobile', () => ({ useIsMobile: () => false }));
@@ -62,13 +62,10 @@ const TOO_LARGE = 'Too large to read. The limit is 10 MB per file.';
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(synthesizeLabArchiveEntries).mockReset().mockReturnValue([]);
+  resetUploadStore();
   vi.mocked(getDocumentArchiveMode).mockReturnValue('cloud');
   vi.mocked(checkLabImportQuota).mockResolvedValue({ allowed: true, remaining: 60 });
   vi.mocked(labImport).mockResolvedValue(extraction as Awaited<ReturnType<typeof labImport>>);
-  vi.mocked(bulkSaveMeasurements).mockReset().mockResolvedValue({ saved: [{}], skippedDuplicates: 0, errorCount: 0, refused: [] } as unknown as Awaited<ReturnType<typeof bulkSaveMeasurements>>);
-  vi.mocked(bulkSaveDocuments).mockReset().mockResolvedValue({ saved: [], errorCount: 0 });
-  vi.mocked(bulkSaveLabValues).mockReset().mockResolvedValue({ saved: [], skippedDuplicates: 0, errorCount: 0, refused: [] });
   extractFromPdf.mockReset().mockResolvedValue({ pages: [{ type: 'text', content: 'synthetic' }], truncated: false });
   Object.assign(window, { HealthUpload: { extractFromPdf, isPdf: () => true, isZip: () => false, isImage: () => false } });
 });
@@ -149,19 +146,19 @@ describe('US-12 AC4/AC5: Escape closes only while the modal is open', () => {
     expect(screen.getByDisplayValue('4.2')).toBeTruthy();
   });
   it('US-12 AC5: Escape while hidden does nothing: a save that finishes hidden stays recoverable as done', async () => {
-    const saving = deferred<Awaited<ReturnType<typeof bulkSaveMeasurements>>>();
-    vi.mocked(bulkSaveMeasurements).mockReturnValue(saving.promise);
+    const saving = deferred<void>();
+    uploadStore.hold = saving.promise;
     render(<Harness />); await ready();
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
     close();
-    await act(async () => saving.resolve({ saved: [{}], skippedDuplicates: 0, errorCount: 0, refused: [] } as unknown as Awaited<ReturnType<typeof bulkSaveMeasurements>>));
+    await act(async () => saving.resolve());
     expect(indicator()!.textContent).toBe('Health records saved. Click to open');
     onClose.mockClear();
     escape();
     expect(onClose).not.toHaveBeenCalled();
     expect(indicator()!.textContent).toBe('Health records saved. Click to open');
     fireEvent.click(indicator()!);
-    expect(screen.getByText('Saved 1 blood test value')).toBeTruthy();
+    expect(screen.getByText('Saved 1 value and 1 document.')).toBeTruthy();
   });
   it('US-12 AC5: Escape while hidden does nothing: a read failure that lands hidden stays recoverable', async () => {
     const reading = deferred<never>();
@@ -234,7 +231,7 @@ describe('US-12 AC4: Cancel from review', () => {
     reopen();
     expect(screen.getByText('Keep your original documents')).toBeTruthy();
     expect(screen.queryByDisplayValue('3.9')).toBeNull();
-    expect(bulkSaveMeasurements).not.toHaveBeenCalled();
+    expect(uploadStore.saves).toEqual([]);
   });
 });
 
@@ -245,11 +242,11 @@ describe('US-12 AC6: Save', () => {
     render(<Harness />); await ready();
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
     await screen.findByRole('button', { name: 'Done' });
-    expect(screen.getByText('Saved 1 blood test value')).toBeTruthy();
-    expect(events('upload_saved')).toEqual([['upload_saved', { count: 1 }]]);
+    expect(screen.getByText('Saved 1 value and 1 document.')).toBeTruthy();
+    expect(events('upload_saved')).toEqual([['upload_saved', { count: 2 }]]);
   });
-  it('US-12 AC6: a branch errorCount stays in review with "Failed to save. Please try again." and the hidden indicator needs attention', async () => {
-    vi.mocked(bulkSaveMeasurements).mockResolvedValueOnce({ saved: [], skippedDuplicates: 0, errorCount: 1, refused: [] });
+  it('US-12 AC6: a refused save stays in review with "Failed to save. Please try again." and the hidden indicator needs attention', async () => {
+    uploadStore.refuse = '';
     render(<Harness />); await ready();
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
     expect(await screen.findByText('Failed to save. Please try again.')).toBeTruthy();

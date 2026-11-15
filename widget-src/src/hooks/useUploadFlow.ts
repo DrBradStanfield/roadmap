@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { checkLabImportQuota } from '../lib/upload-api';
 import { initialUpload, inFlight, transition, type RunRefusal, type UploadEvent, type UploadFile, type UploadState } from '@roadmap/health-core/upload-flow';
 import type { ChoiceChange } from '@roadmap/health-core/upload-choices';
+import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { uploadReview, type ScreeningProfile } from '@roadmap/health-core/upload-review';
 import { uploadView } from '@roadmap/health-core/upload-view';
 import { uploadUsageCounts } from '@roadmap/health-core/upload-usage';
@@ -97,8 +98,10 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
   const held = useRef<Held>(emptyHeld());
   // The run's quota check, draft flush and upload bundle: one promise per run, shared by its effects.
   const prepared = useRef<{ run: number; ready: Promise<HealthUploadAPI | null> } | null>(null);
-  // The review's `upload_review` counts, handed in with Save and sent once it lands (US-13 AC13).
-  const reviewCounts = useRef<ProductEventMetadata | undefined>(undefined);
+  // What one Save is asked with: the record the person reviewed (Save plans on it and writes on the
+  // record as it is then, so a slot another writer took meanwhile is counted, US-12 AC6a) and the
+  // review's `upload_review` counts, sent once it lands (US-13 AC13). One Save's data, not a mode.
+  const asked = useRef<{ record: RoadmapFile; counts?: ProductEventMetadata } | null>(null);
   // The run whose review sent its `upload_review` (US-13 AC13), and the run whose reading was counted
   // (US-12 AC10): synchronous once-per-run claims, so a Try again never counts a run twice.
   const reviewEnded = useRef<number | null>(null);
@@ -189,10 +192,10 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
       save: (run, attempt) => {
         const s = live.current;
         if (s.phase !== 'saving' || s.run !== run) return;
-        void saveAttempt(s, held.current, getDocumentArchiveMode() === 'cloud', props.current.screening).then((answer) => {
+        void saveAttempt(s, asked.current?.record ?? uploadRecord(), held.current, getDocumentArchiveMode() === 'cloud', props.current.screening).then((answer) => {
           if ('message' in answer) return send({ type: 'saveFailed', run, attempt, message: answer.message });
           // One per review: a finished Save, never a failed one (US-13 AC13).
-          endReview.current(reviewCounts.current);
+          endReview.current(asked.current?.counts);
           send({ type: 'saved', run, attempt, outcome: answer.outcome });
           reread();
         });
@@ -219,7 +222,7 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
     const record = uploadRecord();
     const now = new Date().toISOString();
     const review = uploadReview(upload, record, now, { age, sex });
-    return { review, view: uploadView(upload, record, now, review, cloud) };
+    return { record, review, view: uploadView(upload, record, now, review, cloud) };
   // eslint-disable-next-line react-hooks/exhaustive-deps -- `history` is the record's version as the page shows it
   }, [upload, history, age, sex, cloud]);
 
@@ -288,10 +291,11 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
   /** One review choice, kept by the state on its file (US-13 AC13). */
   const chose = useCallback((id: string, change: ChoiceChange) => send({ type: 'chose', id, change, now: new Date().toISOString() }), [send]);
   /** Save; `counts`: the review's `upload_review` counts, sent once it lands. */
+  const shownRecord = shown?.record;
   const save = useCallback((counts?: ProductEventMetadata) => {
-    reviewCounts.current = counts;
+    asked.current = { record: shownRecord ?? uploadRecord(), counts };
     send({ type: 'saveStarted' });
-  }, [send]);
+  }, [send, shownRecord]);
 
   return {
     phase, state: upload, view: shown?.view ?? null, review: shown?.review ?? null, results: labs.current,

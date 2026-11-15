@@ -11,6 +11,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import table from '../../../packages/health-core/src/__fixtures__/upload-decisions.json';
 import { UploadModal } from './UploadModal';
+import { resetUploadStore } from '../testing/upload-store';
 import { checkLabImportQuota, labImport } from '../lib/upload-api';
 import { bulkSaveDocuments, bulkSaveLabValues, bulkSaveMeasurements, getDocumentArchiveMode } from '../lib/roadmap-data';
 import { isPdf } from '../lib/pdf-extract';
@@ -20,7 +21,7 @@ import type { UploadHistory } from '../lib/api-types';
 import { findReviewValue } from '../testing/import-review';
 
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn() }));
-vi.mock('../lib/roadmap-data', () => ({ uploadKnownIndex: vi.fn(() => new Map()), isLegacyUpload: vi.fn(() => false), getDocumentArchiveMode: vi.fn(() => 'cloud'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
+vi.mock('../lib/roadmap-data', async () => ({ ...(await import('../testing/upload-store')).uploadStoreMock(), uploadKnownIndex: vi.fn(() => new Map()), isLegacyUpload: vi.fn(() => false), getDocumentArchiveMode: vi.fn(() => 'cloud'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
 vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn(), PROXY_PATH: '/apps/synthetic', parseJsonResponse: vi.fn() }));
 vi.mock('../lib/archive-payloads', async importOriginal => ({ ...await importOriginal<typeof import('../lib/archive-payloads')>(), sha256Blob: vi.fn(async () => '') }));
 vi.mock('../lib/useIsMobile', () => ({ useIsMobile: () => false }));
@@ -62,6 +63,7 @@ const filesToCheck = () => screen.queryByRole('list', { name: 'Files to check' }
 
 beforeEach(() => {
   vi.clearAllMocks();
+  resetUploadStore();
   vi.mocked(getDocumentArchiveMode).mockReturnValue('cloud');
   vi.mocked(checkLabImportQuota).mockResolvedValue({ allowed: true, remaining: 60 });
   vi.mocked(labImport).mockResolvedValue(extraction({ reportDate: null }));

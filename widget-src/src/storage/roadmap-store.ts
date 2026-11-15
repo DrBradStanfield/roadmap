@@ -393,16 +393,17 @@ export class RoadmapStore {
   }
 
   /**
-   * One Save of the shared upload (health-core `uploadSave`, US-52 AC8c, design 12c): each original
-   * the plan stores is written first, then every row lands in ONE edit on the record as it stands
-   * then. The Save stands for the erase the page showed as it began: refused before any write, before
+   * One Save of the shared upload (health-core `uploadSave`, US-52 AC8c, design 12c), planned on
+   * `reviewed`, the record the person reviewed: each original the plan stores is written first, then
+   * every row lands in ONE edit on the record as it stands then; a row whose slot another writer took
+   * meanwhile is skipped and counted (US-12 AC6a). The Save stands for the erase the page showed as it began: refused before any write, before
    * each original and at the commit, so an erase that lands meanwhile writes nothing (US-11 AC1a).
    * `added`: the values it wrote that are new, never a correction (US-07 AC11's usage signal).
    */
-  async saveUpload(state: UploadState, now: string, cloud: boolean, io: Omit<UploadSaveIO<Blob>, 'write'>): Promise<UploadStoreSave> {
+  async saveUpload(state: UploadState, reviewed: RoadmapFile, now: string, cloud: boolean, io: Omit<UploadSaveIO<Blob>, 'write'>): Promise<UploadStoreSave> {
     const erase = this.shownErase;
     if (this.refuses(erase)) return { ok: false, message: null };
-    const out = await uploadSave(state, this.file, now, cloud, { ...io, write: async (ref, bytes) => {
+    const out = await uploadSave(state, reviewed, now, cloud, { ...io, write: async (ref, bytes) => {
       if (this.refuses(erase)) throw new Error('erase moved');
       await this.host.store.writeDocument(ref, bytes).catch((error) => {
         if (!(error instanceof WritesStoppedError)) Sentry.captureException(recordFailure(error, 'Document file not stored'), { tags: { area: 'cloud-sync', op: 'write-document', backend: this.host.store.id } });

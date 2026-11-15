@@ -10,13 +10,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { UploadModal } from './UploadModal';
+import { resetUploadStore } from '../testing/upload-store';
 import { checkLabImportQuota, labImport } from '../lib/upload-api';
 import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocumentArchiveMode } from '../lib/roadmap-data';
 import type { UploadHistory } from '../lib/api-types';
 import { findReviewValue } from '../testing/import-review';
 
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn() }));
-vi.mock('../lib/roadmap-data', () => ({ uploadKnownIndex: vi.fn(() => new Map()), isLegacyUpload: vi.fn(() => false), getDocumentArchiveMode: vi.fn(() => 'no-prompt'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
+vi.mock('../lib/roadmap-data', async () => ({ ...(await import('../testing/upload-store')).uploadStoreMock(), uploadKnownIndex: vi.fn(() => new Map()), isLegacyUpload: vi.fn(() => false), getDocumentArchiveMode: vi.fn(() => 'no-prompt'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
 vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
 // A plain fake hash stands in for sha256Blob: it names a file's bytes, not its name.
 vi.mock('../lib/archive-payloads', async importOriginal => ({
@@ -47,6 +48,7 @@ type Docs = Awaited<ReturnType<typeof bulkSaveDocuments>>;
 
 beforeEach(() => {
   vi.clearAllMocks();
+  resetUploadStore();
   vi.mocked(checkLabImportQuota).mockResolvedValue({ allowed: true, remaining: 60 });
   vi.mocked(labImport).mockImplementation(async (pages: unknown) => reads[(pages as Array<{ content: string }>)[0].content]);
   vi.mocked(bulkSaveMeasurements).mockResolvedValue({ saved: [], skippedDuplicates: 0, errorCount: 0, refused: [] });

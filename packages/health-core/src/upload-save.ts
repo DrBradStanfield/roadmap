@@ -52,8 +52,11 @@ export interface UploadSaveIO<F> {
  * them): their rows keep the hash alone, and a later upload of the same file can still store them.
  */
 export type UploadSaveResult =
-  | { ok: true; commit(file: RoadmapFile): { file: RoadmapFile; outcome: Required<SaveOutcome> } }
+  | { ok: true; commit(file: RoadmapFile): { file: RoadmapFile; outcome: SavedOutcome } }
   | { ok: false; reason: 'not-saving' | 'not-ready'; message: string };
+
+/** A landed Save's counts: every one but the skips, which are there only when some row was skipped. */
+export type SavedOutcome = Required<Omit<SaveOutcome, 'skippedValues' | 'skippedLabValues'>> & SaveOutcome;
 
 /** An original as saveDocuments holds it: the file it is, with the hash the state read for its bytes. */
 interface Held { fileId: string; hash: string }
@@ -120,7 +123,10 @@ export async function uploadSave<F>(s: UploadState, record: RoadmapFile, now: st
       const screenings = plan.screenings.filter((x) => x.ticked && x.date !== null);
       const landed = values || docs.saved.length ? committedFile(written.file, docs) : file;
       const out = screenings.reduce((f, x) => setScreening(f, x.key, x.date!, now), landed);
-      return { file: out, outcome: { values, ...outcome, unstored: docs.unstored } };
+      // A reviewed row whose slot another writer took meanwhile is skipped, never a second active row, and counted (US-12 AC6a).
+      const skipped = (kind: 'measurement' | 'lab') => written.outcomes.filter((o, i) => o === 'skipped' && rows[i].kind === kind).length;
+      const late = { skippedValues: skipped('measurement'), skippedLabValues: skipped('lab') };
+      return { file: out, outcome: { values, ...outcome, unstored: docs.unstored, ...Object.fromEntries(Object.entries(late).filter(([, n]) => n > 0)) } };
     },
   };
 }

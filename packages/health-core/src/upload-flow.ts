@@ -56,8 +56,10 @@ export interface UploadFile {
   id: string; name: string; zip?: string; bytes: number; hash: string | null;
   pages: { count: number; truncated: boolean } | null; status: FileStatus;
 }
-/** `unstored`: originals the save meant to keep in the cloud that did not land (upload-save.ts); absent is none. */
-export interface SaveOutcome { values: number; documents: number; archived: number; unstored?: number }
+/** `unstored`: originals the save meant to keep in the cloud that did not land (upload-save.ts); absent is none.
+ *  `skippedValues`, `skippedLabValues`: reviewed rows whose slot another writer took while the review was open
+ *  (US-12 AC6a), a core value or another lab; absent is none. */
+export interface SaveOutcome { values: number; documents: number; archived: number; unstored?: number; skippedValues?: number; skippedLabValues?: number }
 
 /** `started`, `firstRead`: ISO times, for the first-read count (design §7, R9). */
 interface Pick { platform: UploadPlatform; run: number; files: UploadFile[]; started: string; firstRead: string | null }
