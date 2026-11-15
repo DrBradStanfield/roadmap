@@ -3838,6 +3838,11 @@ input[type="number"] {
 @media (min-width: 1200px) {
   .health-tool-content {
     grid-template-columns: minmax(0, 1000px) minmax(340px, 420px);
+    row-gap: 0;
+  }
+  /* The doctor line above both columns (US-73 AC13): wrapped or not, both columns start under it. */
+  .health-tool-content > .mh-education--above {
+    grid-column: 1 / -1;
   }
 }
 
