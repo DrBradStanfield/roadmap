@@ -52,7 +52,8 @@ function genEvent(r: () => number, s: UploadState, mint: () => string, history: 
     [4, () => ({ type: 'listed', run, zip: idAt('listing'),
       members: Array.from({ length: Math.floor(r() * 6) }, () => ({ id: mint(), name: pick(NAMES), bytes: coin(0.1) ? 30 * MB : 1 })) })],
     [1, () => ({ type: 'zipFailed', run, zip: idAt('listing') })],
-    [14, () => ({ type: 'hashed', run, id: idAt('waiting'), hash: mint(), known: coin(0.25) ? { as: pick(['document', 'labReport'] as const), archiveOnly: coin(0.3) } : null })],
+    [2, () => ({ type: 'hashFailed', run, id: idAt('hashing') })],
+    [14, () => ({ type: 'hashed', run, id: idAt('hashing'), hash: mint(), known: coin(0.25) ? { as: pick(['document', 'labReport'] as const), archiveOnly: coin(0.3) } : null })],
     [16, () => ({ type: 'converted', run, id: idAt('converting'), pages: 1, truncated: coin(0.1) })],
     [2, () => ({ type: 'convertFailed', run, id: idAt('converting'), reason: pick(['unreadable', 'timeout'] as const) })],
     [2, () => ({ type: 'answered', run, id: idAt('sending'), extraction: EXT, legacy: coin(0.1), now: 'T1' })],
@@ -71,12 +72,12 @@ function genEvent(r: () => number, s: UploadState, mint: () => string, history: 
   return kinds[0][1]();
 }
 
-const FILE_EVENTS = new Set(['listed', 'zipFailed', 'hashed', 'converted', 'convertFailed', 'answered', 'sendFailed', 'saved', 'saveFailed']);
+const FILE_EVENTS = new Set(['listed', 'zipFailed', 'hashed', 'hashFailed', 'converted', 'convertFailed', 'answered', 'sendFailed', 'saved', 'saveFailed']);
 const stageOf = (s: UploadState, id: string): FileStage | undefined => ('files' in s ? s.files.find((f) => f.id === id)?.status.s : undefined);
 const count = (s: UploadState, stage: FileStage) => ('files' in s ? s.files.filter((f) => f.status.s === stage).length : 0);
 const LEAVING = new Set(['choosing', 'failed', 'done']);
 
-const ANSWER: Partial<Record<FileStage, UploadEffect['type']>> = { listing: 'list', waiting: 'hash', converting: 'convert', sending: 'send' };
+const ANSWER: Partial<Record<FileStage, UploadEffect['type']>> = { listing: 'list', hashing: 'hash', converting: 'convert', sending: 'send' };
 const fileId = (e: UploadEvent) => ('id' in e ? e.id : 'zip' in e ? e.zip : null);
 
 /**
@@ -89,6 +90,7 @@ function stranded(next: UploadState, pending: Map<string, string>, platform: Upl
   for (const f of next.files) {
     const want = ANSWER[f.status.s];
     if (want && pending.get(f.id) !== want) return `progress: ${f.status.s} file with no ${want} outstanding`;
+    if (f.status.s === 'waiting' && count(next, 'hashing') < limits.convertsInFlight) return 'progress: waiting file with a hash slot free';
     if (f.status.s === 'hashed' && count(next, 'converting') < limits.convertsInFlight) return 'progress: hashed file with a convert slot free';
     if (f.status.s === 'ready' && count(next, 'sending') < limits.sendsInFlight) return 'progress: ready file with a send slot free';
   }
@@ -102,20 +104,21 @@ function check(prev: UploadState, e: UploadEvent, next: UploadState, fx: UploadE
   const target = fileId(e);
   if (FILE_EVENTS.has(e.type) && target !== null && stageOf(prev, target) === 'stopped' && (JSON.stringify(next) !== JSON.stringify(prev) || fx.length)) return 'an answer after Stop changed something';
   if (count(next, 'converting') > limits.convertsInFlight) return 'more converting than convertsInFlight';
+  if (count(next, 'hashing') > limits.convertsInFlight) return 'more hashing than convertsInFlight';
   if (count(next, 'sending') > limits.sendsInFlight) return 'more sending than sendsInFlight';
   if (FILE_EVENTS.has(e.type) && 'run' in e && e.run !== prev.run && (JSON.stringify(next) !== JSON.stringify(prev) || fx.length)) return 'a stale run changed something';
   if (e.type === 'stop') {
     const sending = 'files' in prev ? prev.files.filter((f) => f.status.s === 'sending').map((f) => f.id) : [];
     const aborted = fx.filter((f) => f.type === 'abort').flatMap((f) => (f.type === 'abort' ? f.ids : []));
     if (JSON.stringify(aborted) !== JSON.stringify(sending)) return 'stop did not abort exactly the sending files';
-    if (prev.phase === 'open' && (count(next, 'sending') || count(next, 'converting') || count(next, 'waiting') || count(next, 'hashed') || count(next, 'ready') || count(next, 'listing'))) return 'stop left a file in flight';
+    if (prev.phase === 'open' && (count(next, 'sending') || count(next, 'converting') || count(next, 'waiting') || count(next, 'hashing') || count(next, 'hashed') || count(next, 'ready') || count(next, 'listing'))) return 'stop left a file in flight';
   }
-  const busy = 'files' in next && next.files.some((f) => ['listing', 'waiting', 'hashed', 'converting', 'ready', 'sending'].includes(f.status.s));
+  const busy = 'files' in next && next.files.some((f) => ['listing', 'waiting', 'hashing', 'hashed', 'converting', 'ready', 'sending'].includes(f.status.s));
   if (saveEnabled(next) !== (next.phase === 'open' && !busy)) return 'Save enabled is not "open with nothing in flight"';
   for (const f of fx) {
     if ('run' in f && f.run !== next.run) return `${f.type} for another run`;
     switch (f.type) {
-      case 'hash': if (stageOf(next, f.id) !== 'waiting') return 'hash for a file not waiting'; break;
+      case 'hash': if (stageOf(next, f.id) !== 'hashing') return 'hash for a file not hashing'; break;
       case 'convert': if (stageOf(next, f.id) !== 'converting' || barred.has(f.id)) return 'convert for a file not converting, or known/refused'; break;
       case 'send': {
         const st = 'files' in next ? next.files.find((x) => x.id === f.id)?.status : undefined;
@@ -125,7 +128,7 @@ function check(prev: UploadState, e: UploadEvent, next: UploadState, fx: UploadE
       case 'list': if (next.phase !== 'open' || stageOf(next, f.id) !== 'listing') return 'list for a ZIP not listing'; break;
       case 'abort': if (f.ids.some((id) => stageOf(prev, id) !== 'sending') || f.ids.some((id) => !LEAVING.has(next.phase) && stageOf(next, id) !== 'stopped')) return 'abort for a file not sending, or left running'; break;
       case 'forget':
-        if (!LEAVING.has(next.phase) && f.ids.some((id) => ['listing', 'waiting', 'hashed', 'converting', 'ready', 'sending', 'read'].includes(stageOf(next, id) ?? ''))) return 'forget for a file still needed';
+        if (!LEAVING.has(next.phase) && f.ids.some((id) => ['listing', 'waiting', 'hashing', 'hashed', 'converting', 'ready', 'sending', 'read'].includes(stageOf(next, id) ?? ''))) return 'forget for a file still needed';
         break;
       case 'save': if (next.phase !== 'saving' || next.attempt !== f.attempt) return 'save not the attempt in flight'; break;
     }
@@ -136,7 +139,7 @@ function check(prev: UploadState, e: UploadEvent, next: UploadState, fx: UploadE
 describe('upload-flow property: invariants over random sequences (US-12 AC26, AC28)', () => {
   it('holds for 600 seeded sequences of 1-120 events', () => {
     let steps = 0;
-    const seen = { staleOldRun: 0, afterStopAnswer: 0, dailyLimit: 0, zipFailedOpen: 0, quiesced: 0, fullConverts: 0, fullSends: 0, staleLanding: 0, stopAborted: 0, saveEnabledWithFailed: 0, knownArchive: 0, readyBehindFullSends: 0, retried: 0, done: 0, listedMembers: 0 };
+    const seen = { hashFailedRetried: 0, zipEmpty: 0, fullHashes: 0, staleOldRun: 0, afterStopAnswer: 0, dailyLimit: 0, zipFailedOpen: 0, quiesced: 0, fullConverts: 0, fullSends: 0, staleLanding: 0, stopAborted: 0, saveEnabledWithFailed: 0, knownArchive: 0, readyBehindFullSends: 0, retried: 0, done: 0, listedMembers: 0 };
     for (let seed = 1; seed <= 600; seed++) {
       const r = mulberry32(seed);
       const platform: UploadPlatform = seed % 2 ? 'web' : 'phone';
@@ -170,6 +173,9 @@ describe('upload-flow property: invariants over random sequences (US-12 AC26, AC
         if (FILE_EVENTS.has(e.type) && target !== null && stageOf(s, target) === 'stopped') seen.afterStopAnswer++;
         if ('files' in state && state.files.some((f) => f.status.s === 'failed' && f.status.reason === 'dailyLimit') && count(state, 'sending')) seen.dailyLimit++;
         if (e.type === 'zipFailed' && state.phase === 'open' && state !== s) seen.zipFailedOpen++;
+        if (e.type === 'retry' && effects.some((f) => f.type === 'hash')) seen.hashFailedRetried++;
+        if (e.type === 'listed' && 'files' in state && state.files.some((f) => f.id === e.zip && f.status.s === 'failed')) seen.zipEmpty++;
+        if (count(state, 'hashing') === UPLOAD_LIMITS[platform].convertsInFlight && count(state, 'waiting')) seen.fullHashes++;
         if (state.phase === 'open' && inFlight(state) === 0 && inFlight(s) > 0) seen.quiesced++; // settled: nothing stranded on the way
         if (count(state, 'converting') === UPLOAD_LIMITS[platform].convertsInFlight) seen.fullConverts++;
         if (count(state, 'sending') === UPLOAD_LIMITS[platform].sendsInFlight) seen.fullSends++;

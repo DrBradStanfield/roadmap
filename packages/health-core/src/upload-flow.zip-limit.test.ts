@@ -28,7 +28,7 @@ describe('a ZIP that will not open (US-12 AC9)', () => {
     ]);
     const { state, effects } = transition(read, { type: 'zipFailed', run: 1, zip: 'z' });
     expect(state.phase).toBe('open');
-    expect(stages(state)).toEqual(['a:read', 'z:failed', 'b:waiting']);
+    expect(stages(state)).toEqual(['a:read', 'z:failed', 'b:hashing']);
     expect(state.phase === 'open' && state.files[1]).toMatchObject({ name: 'z.zip', status: { s: 'failed', reason: 'zipUnreadable' } });
     expect(state.phase === 'open' && state.files[0].status).toMatchObject({ s: 'read', extraction: EXT, choices: { ticks: { v0: false } } });
     expect(effects).toEqual([{ type: 'forget', run: 1, ids: ['z'] }]);
@@ -119,5 +119,72 @@ describe('the daily limit ends the run\'s reading (US-12 AC9, AC26)', () => {
     s = transition(s, { type: 'sendFailed', run: 1, id: 'a', failure: 'rate_limit' }).state;
     expect(stages(s)).toEqual(['a:failed', 'z:failed']);
     expect(transition(s, { type: 'listed', run: 1, zip: 'z', members: [member('m')] })).toEqual({ state: s, effects: [] });
+  });
+});
+
+describe('a ZIP with nothing we can read inside stays, named itself (US-12 AC9, AC10)', () => {
+  const zipped = (members: Array<{ id: string; name: string; bytes: number }>, withFile = true) => {
+    const s = transition(initialUpload('phone'), pick([...(withFile ? [{ id: 'a', name: 'a.pdf' }] : []), { id: 'z', name: 'z.zip', kind: 'zip' as const }])).state;
+    return transition(s, { type: 'listed', run: 1, zip: 'z', members });
+  };
+
+  it('an empty ZIP beside a file that reads fine: one failed entry in its place, never blocking Save, not retried', () => {
+    const { state, effects } = zipped([]);
+    expect(stages(state)).toEqual(['a:hashing', 'z:failed']);
+    expect('files' in state && state.files[1]).toMatchObject({ name: 'z.zip', status: { s: 'failed', reason: 'zipEmpty' } });
+    expect(effects).toEqual([{ type: 'forget', run: 1, ids: ['z'] }]);
+    const read = run(state, [
+      { type: 'hashed', run: 1, id: 'a', hash: 'ha', known: null },
+      { type: 'converted', run: 1, id: 'a', pages: 1, truncated: false },
+      { type: 'answered', run: 1, id: 'a', extraction: EXT, legacy: false, now: NOW },
+    ]);
+    expect(saveEnabled(read)).toBe(true);
+    expect(transition(read, { type: 'retry', id: 'z' }).effects).toEqual([]);
+  });
+
+  it('a ZIP of hidden and unsupported files only is the same one entry; its members are dropped', () => {
+    const { state, effects } = zipped([{ id: 'm1', name: '__MACOSX/._a.pdf', bytes: 1 }, { id: 'm2', name: 'notes.txt', bytes: 1 }]);
+    expect(stages(state)).toEqual(['a:hashing', 'z:failed']);
+    expect('files' in state && state.files[1].status).toMatchObject({ reason: 'zipEmpty' });
+    expect(effects).toEqual([{ type: 'forget', run: 1, ids: ['z', 'm1', 'm2'] }]);
+  });
+
+  it('a pick of only an empty ZIP fails as a whole, the ZIP named', () => {
+    const { state } = zipped([], false);
+    expect(state).toMatchObject({ phase: 'failed', files: [{ id: 'z', status: { s: 'failed', reason: 'zipEmpty' } }] });
+  });
+});
+
+describe('hashing can fail; hashes share the convert count', () => {
+  it('a failed hash is shown as failed, does not stop Save for a read file, and Try again hashes it again', () => {
+    const s = transition(initialUpload('web'), pick([{ id: 'a', name: 'a.pdf' }, { id: 'b', name: 'b.pdf' }])).state;
+    const bad = transition(s, { type: 'hashFailed', run: 1, id: 'b' }).state;
+    expect('files' in bad && bad.files[1].status).toEqual({ s: 'failed', reason: 'bytesUnreadable', attempt: 0 });
+    const read = run(bad, [
+      { type: 'hashed', run: 1, id: 'a', hash: 'ha', known: null },
+      { type: 'converted', run: 1, id: 'a', pages: 1, truncated: false },
+      { type: 'answered', run: 1, id: 'a', extraction: EXT, legacy: false, now: NOW },
+    ]);
+    expect(saveEnabled(read)).toBe(true);
+    const again = transition(read, { type: 'retry', id: 'b' });
+    expect(again.effects).toEqual([{ type: 'hash', run: 1, id: 'b' }]);
+    expect(stages(again.state)).toEqual(['a:read', 'b:hashing']);
+  });
+
+  it('a late or stale hashFailed changes nothing', () => {
+    const s = transition(initialUpload('web'), pick([{ id: 'a', name: 'a.pdf' }])).state;
+    const hashed = transition(s, { type: 'hashed', run: 1, id: 'a', hash: 'ha', known: null }).state;
+    expect(transition(hashed, { type: 'hashFailed', run: 1, id: 'a' })).toEqual({ state: hashed, effects: [] });
+    expect(transition(s, { type: 'hashFailed', run: 0, id: 'a' })).toEqual({ state: s, effects: [] });
+    const stopped = transition(s, { type: 'stop' }).state;
+    expect(transition(stopped, { type: 'hashFailed', run: 1, id: 'a' })).toEqual({ state: stopped, effects: [] });
+  });
+
+  it('no more files are hashed at once than are converted at once: 200 picked, 3 hashing', () => {
+    const many = Array.from({ length: 200 }, (_, i) => ({ id: `f${i}`, name: `f${i}.pdf` }));
+    const { state, effects } = transition(initialUpload('phone'), pick(many));
+    expect(effects).toEqual(['f0', 'f1', 'f2'].map((id) => ({ type: 'hash', run: 1, id })));
+    expect(transition(state, { type: 'hashed', run: 1, id: 'f0', hash: 'h0', known: null }).effects)
+      .toEqual([{ type: 'convert', run: 1, id: 'f0' }, { type: 'hash', run: 1, id: 'f3' }]);
   });
 });

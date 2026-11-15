@@ -15,13 +15,14 @@ import { fileVerdict, UPLOAD_LIMITS, zipMemberVerdict, type UploadPlatform } fro
  *  PR 4) or, after a read, by name for an older hashless row (`legacyMatch`); this is the part read here. */
 export interface Known { as: 'document' | 'labReport' | 'legacy'; archiveOnly: boolean }
 
-/** unreadable: no pages came out of it. zipUnreadable: a ZIP that would not open, named itself (US-12 AC9).
- *  timeout: the device ran out of time turning it into pages. The rest are the server's answer. */
-export type FailReason = 'unreadable' | 'zipUnreadable' | 'timeout' | 'busy' | 'dailyLimit' | 'declined' | 'tooLong' | 'server' | 'network';
+/** unreadable: no pages came out of it. bytesUnreadable: the device could not read its bytes to hash them.
+ *  zipUnreadable: a ZIP that would not open; zipEmpty: one with no file we can read inside (both named
+ *  themselves, US-12 AC9). timeout: the device ran out of time turning it into pages. The rest are the server's answer. */
+export type FailReason = 'unreadable' | 'bytesUnreadable' | 'zipUnreadable' | 'zipEmpty' | 'timeout' | 'busy' | 'dailyLimit' | 'declined' | 'tooLong' | 'server' | 'network';
 
 /** Which failures Try again can mend: a busy or unreachable server, a convert that ran out of time. */
 export const RETRYABLE: Record<FailReason, boolean> = {
-  unreadable: false, zipUnreadable: false, timeout: true, busy: true, dailyLimit: false, declined: false, tooLong: false, server: true, network: true,
+  unreadable: false, bytesUnreadable: true, zipUnreadable: false, zipEmpty: false, timeout: true, busy: true, dailyLimit: false, declined: false, tooLong: false, server: true, network: true,
 };
 /** The server's failure (upload-failure.ts) as a file's reason. */
 const SEND_FAILURE: Record<UploadFailure, FailReason> = {
@@ -36,7 +37,8 @@ export type ChoiceChange = { tick: string; on: boolean } | { testDay: string | n
 
 export type FileStatus =
   | { s: 'listing' }                                       // a picked ZIP: its members replace it, in its place
-  | { s: 'waiting' }                                       // listed; being hashed
+  | { s: 'waiting' }                                       // listed; waiting for a hash slot
+  | { s: 'hashing' }                                       // the platform hashes its bytes
   | { s: 'hashed' }                                        // hashed and new: waiting for a convert slot
   | { s: 'known'; as: Known['as']; archiveOnly: boolean }  // never converted or sent
   | { s: 'refused'; verdict: 'tooLarge' | 'unsupported' }
@@ -78,6 +80,7 @@ export type UploadEvent =
   | { type: 'listed'; run: number; zip: string; members: ZipMember[] }
   | { type: 'zipFailed'; run: number; zip: string }
   | { type: 'hashed'; run: number; id: string; hash: string; known: Known | null }
+  | { type: 'hashFailed'; run: number; id: string }
   | { type: 'converted'; run: number; id: string; pages: number; truncated: boolean }
   | { type: 'convertFailed'; run: number; id: string; reason: 'unreadable' | 'timeout' }
   | { type: 'answered'; run: number; id: string; extraction: UnifiedExtractionResult; legacy: boolean; now: string } // legacy: legacyMatch said known
@@ -109,9 +112,9 @@ export function initialUpload(platform: UploadPlatform): UploadState {
 
 // --- derived ----------------------------------------------------------------
 
-const IN_FLIGHT: readonly FileStage[] = ['listing', 'waiting', 'hashed', 'converting', 'ready', 'sending'];
+const IN_FLIGHT: readonly FileStage[] = ['listing', 'waiting', 'hashing', 'hashed', 'converting', 'ready', 'sending'];
 /** Not yet sent, so the daily limit fails them: everything in flight but a send. */
-const UNSENT: readonly FileStage[] = ['listing', 'waiting', 'hashed', 'converting', 'ready'];
+const UNSENT: readonly FileStage[] = ['listing', 'waiting', 'hashing', 'hashed', 'converting', 'ready'];
 
 /** Files and ZIPs still being read: Save waits for these, and only these (a failed file never blocks it). */
 export function inFlight(s: UploadState): number {
@@ -149,21 +152,31 @@ function admit(platform: UploadPlatform, picked: PickedFile[], zip?: string) {
   return { files, hidden };
 }
 
-/** New entries start: ZIPs listed, files hashed before anything else (R3); refused and hidden ones dropped. */
+/** New entries start: ZIPs listed (files are hashed by `pump`); refused and hidden ones dropped. */
 function opening(run: number, files: UploadFile[], hidden: string[] = []): UploadEffect[] {
   return [
-    ...files.flatMap((f): UploadEffect[] => (f.status.s === 'listing' ? [{ type: 'list', run, id: f.id }] : f.status.s === 'waiting' ? [{ type: 'hash', run, id: f.id }] : [])),
+    ...idsIn(files, ['listing']).map((id): UploadEffect => ({ type: 'list', run, id })),
     ...forget(run, [...idsIn(files, ['refused']), ...hidden]),
   ];
 }
 
-/** Starts converts and sends while fewer than the platform's counts are under way (design §1). */
+/**
+ * Starts hashes, converts and sends while fewer than the platform's counts are under way (design §1).
+ * Hashing holds a file's bytes as converting does, so it shares the convert count: a 200-file pick
+ * never holds 200 files' bytes at once. Every file is hashed before it is converted (R3).
+ */
 function pump(s: Open, effects: UploadEffect[]): UploadStep {
   const limits = UPLOAD_LIMITS[s.platform];
-  let converting = idsIn(s.files, ['converting']).length; // a 20-file pick: rescans cost nothing
+  let hashing = idsIn(s.files, ['hashing']).length; // a 20-file pick: rescans cost nothing
+  let converting = idsIn(s.files, ['converting']).length;
   let sending = idsIn(s.files, ['sending']).length;
   const out = [...effects];
   const files = s.files.map((f): UploadFile => {
+    if (f.status.s === 'waiting' && hashing < limits.convertsInFlight) {
+      hashing++;
+      out.push({ type: 'hash', run: s.run, id: f.id });
+      return { ...f, status: { s: 'hashing' } };
+    }
     if (f.status.s === 'hashed' && converting < limits.convertsInFlight) {
       converting++;
       out.push({ type: 'convert', run: s.run, id: f.id });
@@ -219,13 +232,32 @@ function sendFailed(s: UploadState, e: Extract<UploadEvent, { type: 'sendFailed'
   return pump({ ...s, files }, forget(s.run, dropped));
 }
 
-/** A ZIP that would not open is named as a failed entry in its place; the pick fails only when it held nothing else. */
+const badZip = (f: UploadFile) => f.status.s === 'failed' && (f.status.reason === 'zipUnreadable' || f.status.reason === 'zipEmpty');
+/** A pick that held only ZIPs that would not open or held nothing we can read fails as a whole (US-12 AC9). */
+function settled(step: UploadStep): UploadStep {
+  const st = step.state;
+  return st.phase === 'open' && st.files.every(badZip) ? { ...step, state: { ...pickOf(st), phase: 'failed' } } : step;
+}
+
+/** A ZIP that would not open is named as a failed entry in its place. */
 function zipFailed(s: UploadState, e: Extract<UploadEvent, { type: 'zipFailed' }>): UploadStep {
   const step = fileStep(s, { id: e.zip }, 'listing', (f) => [failed(f, 'zipUnreadable'), forget(e.run, [f.id])]);
-  const st = step.state;
-  if (st === s || st.phase !== 'open') return step;
-  const onlyBadZips = st.files.every((f) => f.status.s === 'failed' && f.status.reason === 'zipUnreadable');
-  return onlyBadZips ? { ...step, state: { ...pickOf(st), phase: 'failed' } } : step;
+  return step.state === s ? step : settled(step);
+}
+
+/** A listed ZIP: its members take its place, in order. With nothing inside to read, it stays, named itself (US-12 AC9). */
+function listed(s: UploadState, e: Extract<UploadEvent, { type: 'listed' }>): UploadStep {
+  if (s.phase !== 'open') return same(s);
+  const zip = s.files.find((f) => f.id === e.zip);
+  if (zip?.status.s !== 'listing') return same(s);
+  const added = admit(s.platform, e.members.map((m) => ({ ...m, kind: 'file' })), zip.name);
+  if (added.files.every((f) => f.status.s === 'refused' && f.status.verdict === 'unsupported')) { // empty, hidden or unsupported only
+    const empty = failed(zip, 'zipEmpty');
+    const dropped = forget(e.run, [zip.id, ...e.members.map((m) => m.id)]);
+    return settled({ state: { ...s, files: s.files.map((f) => (f === zip ? empty : f)) }, effects: dropped });
+  }
+  // The ZIP's bytes stay: its members are read from them.
+  return pump({ ...s, files: s.files.flatMap((f) => (f === zip ? added.files : [f])) }, opening(e.run, added.files, added.hidden));
 }
 
 /** Stop or Cancel (AC28): every send in flight aborted, nothing more started, files already read kept. */
@@ -265,28 +297,21 @@ export function transition(s: UploadState, e: UploadEvent): UploadStep {
       const pick: Pick = { platform: s.platform, run, files, started: e.now, firstRead: null };
       // Consent first: nothing runs, not even a hash, until the person agrees (AC13e).
       if (e.needsConsent) return same({ ...pick, phase: 'consent' });
-      return { state: { ...pick, phase: 'open' }, effects: opening(run, files, hidden) };
+      return pump({ ...pick, phase: 'open' }, opening(run, files, hidden));
     }
     case 'consented':
-      return s.phase === 'consent' ? { state: { ...s, phase: 'open' }, effects: opening(s.run, s.files) } : same(s);
-    case 'listed': {
-      if (s.phase !== 'open') return same(s);
-      const zip = s.files.find((f) => f.id === e.zip);
-      if (zip?.status.s !== 'listing') return same(s);
-      const added = admit(s.platform, e.members.map((m) => ({ ...m, kind: 'file' })), zip.name);
-      return {
-        state: { ...s, files: s.files.flatMap((f) => (f === zip ? added.files : [f])) },
-        effects: opening(s.run, added.files, added.hidden), // the ZIP's bytes stay: its members are read from them
-      };
-    }
+      return s.phase === 'consent' ? pump({ ...s, phase: 'open' }, opening(s.run, s.files)) : same(s);
+    case 'listed': return listed(s, e);
     case 'zipFailed': return zipFailed(s, e);
     case 'hashed':
-      return fileStep(s, e, 'waiting', (f) => {
+      return fileStep(s, e, 'hashing', (f) => {
         if (!e.known) return [{ ...f, hash: e.hash, status: { s: 'hashed' } }, []];
         // An archive-only file keeps its bytes: Save files the original behind the held row (design §2 a').
         const known: UploadFile = { ...f, hash: e.hash, status: { s: 'known', ...e.known } };
         return [known, e.known.archiveOnly ? [] : forget(e.run, [f.id])];
       });
+    case 'hashFailed':
+      return fileStep(s, e, 'hashing', (f) => [failed(f, 'bytesUnreadable'), []]);
     case 'converted':
       return fileStep(s, e, 'converting', (f) => [{ ...f, pages: { count: e.pages, truncated: e.truncated }, status: { s: 'ready', attempt: 1 } }, []]);
     case 'convertFailed':
@@ -295,9 +320,10 @@ export function transition(s: UploadState, e: UploadEvent): UploadStep {
     case 'sendFailed': return sendFailed(s, e);
     case 'retry': {
       if (s.phase !== 'open' || !s.files.some((f) => retries(f, e.id))) return same(s);
-      // Pages still held after a failed send go straight back to a slot; a failed convert starts from the hashed bytes.
-      const files = s.files.map((f): UploadFile => (!retries(f, e.id) || f.status.s !== 'failed' ? f
-        : { ...f, status: f.pages === null ? { s: 'hashed' } : { s: 'ready', attempt: f.status.attempt + 1 } }));
+      // Each goes back to where it failed: a failed hash is hashed again, a failed convert converted again
+      // from the hashed bytes, and pages still held after a failed send go straight back to a send slot.
+      const back = (f: UploadFile, attempt: number): FileStatus => (f.hash === null ? { s: 'waiting' } : f.pages === null ? { s: 'hashed' } : { s: 'ready', attempt: attempt + 1 });
+      const files = s.files.map((f): UploadFile => (!retries(f, e.id) || f.status.s !== 'failed' ? f : { ...f, status: back(f, f.status.attempt) }));
       return pump({ ...s, files }, []);
     }
     case 'stop': return s.phase === 'open' ? stop(s) : same(s);

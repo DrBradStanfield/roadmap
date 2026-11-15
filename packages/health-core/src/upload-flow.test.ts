@@ -27,6 +27,7 @@ const statusOf = (s: UploadState, id: string) => ('files' in s ? s.files.find((f
 const STATUSES: Record<string, UploadFile> = {
   listing: file('x', { s: 'listing' }, null),
   waiting: file('x', { s: 'waiting' }, null),
+  hashing: file('x', { s: 'hashing' }, null),
   hashed: file('x', { s: 'hashed' }),
   known: file('x', { s: 'known', as: 'document', archiveOnly: false }),
   refused: file('x', { s: 'refused', verdict: 'tooLarge' }, null),
@@ -47,6 +48,7 @@ const FILE_EVENTS: Record<string, UploadEvent> = {
   answered: { type: 'answered', run: 1, id: 'x', extraction: EXT, legacy: false, now: NOW },
   answeredLegacy: { type: 'answered', run: 1, id: 'x', extraction: EXT, legacy: true, now: NOW },
   sendFailed: { type: 'sendFailed', run: 1, id: 'x', failure: 'server_error' },
+  hashFailed: { type: 'hashFailed', run: 1, id: 'x' },
   listed: { type: 'listed', run: 1, zip: 'x', members: [{ id: 'm', name: 'm.pdf', bytes: 1 }] },
   zipFailed: { type: 'zipFailed', run: 1, zip: 'x' },
   retry: { type: 'retry', id: 'x' },
@@ -55,19 +57,20 @@ const FILE_EVENTS: Record<string, UploadEvent> = {
 // The status each event leaves the file in ('=' unchanged). With one file the freed slot is taken at once,
 // so `hashed` goes on to converting and `converted` on to sending.
 const FILE_TABLE: Record<string, Record<string, string>> = {
-  listing: { hashed: '=', hashedKnown: '=', converted: '=', convertFailed: '=', answered: '=', answeredLegacy: '=', sendFailed: '=', retry: '=', chose: '=', listed: 'gone', zipFailed: 'failed' },
-  waiting: { hashed: 'converting', hashedKnown: 'known', converted: '=', convertFailed: '=', answered: '=', answeredLegacy: '=', sendFailed: '=', retry: '=', chose: '=', listed: '=', zipFailed: '=' },
-  hashed: { hashed: '=', hashedKnown: '=', converted: '=', convertFailed: '=', answered: '=', answeredLegacy: '=', sendFailed: '=', retry: '=', chose: '=', listed: '=', zipFailed: '=' },
-  known: { hashed: '=', hashedKnown: '=', converted: '=', convertFailed: '=', answered: '=', answeredLegacy: '=', sendFailed: '=', retry: '=', chose: '=', listed: '=', zipFailed: '=' },
-  refused: { hashed: '=', hashedKnown: '=', converted: '=', convertFailed: '=', answered: '=', answeredLegacy: '=', sendFailed: '=', retry: '=', chose: '=', listed: '=', zipFailed: '=' },
-  converting: { hashed: '=', hashedKnown: '=', converted: 'sending', convertFailed: 'failed', answered: '=', answeredLegacy: '=', sendFailed: '=', retry: '=', chose: '=', listed: '=', zipFailed: '=' },
-  ready: { hashed: '=', hashedKnown: '=', converted: '=', convertFailed: '=', answered: '=', answeredLegacy: '=', sendFailed: '=', retry: '=', chose: '=', listed: '=', zipFailed: '=' },
-  sending: { hashed: '=', hashedKnown: '=', converted: '=', convertFailed: '=', answered: 'read', answeredLegacy: 'known', sendFailed: 'failed', retry: '=', chose: '=', listed: '=', zipFailed: '=' },
-  read: { hashed: '=', hashedKnown: '=', converted: '=', convertFailed: '=', answered: '=', answeredLegacy: '=', sendFailed: '=', retry: '=', chose: 'read', listed: '=', zipFailed: '=' },
-  failedSend: { hashed: '=', hashedKnown: '=', converted: '=', convertFailed: '=', answered: '=', answeredLegacy: '=', sendFailed: '=', retry: 'sending', chose: '=', listed: '=', zipFailed: '=' },
-  failedConvert: { hashed: '=', hashedKnown: '=', converted: '=', convertFailed: '=', answered: '=', answeredLegacy: '=', sendFailed: '=', retry: 'converting', chose: '=', listed: '=', zipFailed: '=' },
-  failedFinal: { hashed: '=', hashedKnown: '=', converted: '=', convertFailed: '=', answered: '=', answeredLegacy: '=', sendFailed: '=', retry: '=', chose: '=', listed: '=', zipFailed: '=' },
-  stopped: { hashed: '=', hashedKnown: '=', converted: '=', convertFailed: '=', answered: '=', answeredLegacy: '=', sendFailed: '=', retry: '=', chose: '=', listed: '=', zipFailed: '=' },
+  listing: { hashed: '=', hashedKnown: '=', converted: '=', convertFailed: '=', answered: '=', answeredLegacy: '=', sendFailed: '=', retry: '=', chose: '=', listed: 'gone', zipFailed: 'failed' , hashFailed: '=' },
+  waiting: { hashed: '=', hashedKnown: '=', converted: '=', convertFailed: '=', answered: '=', answeredLegacy: '=', sendFailed: '=', retry: '=', chose: '=', listed: '=', zipFailed: '=' , hashFailed: '=' },
+  hashing: { hashed: 'converting', hashedKnown: 'known', converted: '=', convertFailed: '=', answered: '=', answeredLegacy: '=', sendFailed: '=', retry: '=', chose: '=', listed: '=', zipFailed: '=' , hashFailed: 'failed' },
+  hashed: { hashed: '=', hashedKnown: '=', converted: '=', convertFailed: '=', answered: '=', answeredLegacy: '=', sendFailed: '=', retry: '=', chose: '=', listed: '=', zipFailed: '=' , hashFailed: '=' },
+  known: { hashed: '=', hashedKnown: '=', converted: '=', convertFailed: '=', answered: '=', answeredLegacy: '=', sendFailed: '=', retry: '=', chose: '=', listed: '=', zipFailed: '=' , hashFailed: '=' },
+  refused: { hashed: '=', hashedKnown: '=', converted: '=', convertFailed: '=', answered: '=', answeredLegacy: '=', sendFailed: '=', retry: '=', chose: '=', listed: '=', zipFailed: '=' , hashFailed: '=' },
+  converting: { hashed: '=', hashedKnown: '=', converted: 'sending', convertFailed: 'failed', answered: '=', answeredLegacy: '=', sendFailed: '=', retry: '=', chose: '=', listed: '=', zipFailed: '=' , hashFailed: '=' },
+  ready: { hashed: '=', hashedKnown: '=', converted: '=', convertFailed: '=', answered: '=', answeredLegacy: '=', sendFailed: '=', retry: '=', chose: '=', listed: '=', zipFailed: '=' , hashFailed: '=' },
+  sending: { hashed: '=', hashedKnown: '=', converted: '=', convertFailed: '=', answered: 'read', answeredLegacy: 'known', sendFailed: 'failed', retry: '=', chose: '=', listed: '=', zipFailed: '=' , hashFailed: '=' },
+  read: { hashed: '=', hashedKnown: '=', converted: '=', convertFailed: '=', answered: '=', answeredLegacy: '=', sendFailed: '=', retry: '=', chose: 'read', listed: '=', zipFailed: '=' , hashFailed: '=' },
+  failedSend: { hashed: '=', hashedKnown: '=', converted: '=', convertFailed: '=', answered: '=', answeredLegacy: '=', sendFailed: '=', retry: 'sending', chose: '=', listed: '=', zipFailed: '=' , hashFailed: '=' },
+  failedConvert: { hashed: '=', hashedKnown: '=', converted: '=', convertFailed: '=', answered: '=', answeredLegacy: '=', sendFailed: '=', retry: 'converting', chose: '=', listed: '=', zipFailed: '=' , hashFailed: '=' },
+  failedFinal: { hashed: '=', hashedKnown: '=', converted: '=', convertFailed: '=', answered: '=', answeredLegacy: '=', sendFailed: '=', retry: '=', chose: '=', listed: '=', zipFailed: '=' , hashFailed: '=' },
+  stopped: { hashed: '=', hashedKnown: '=', converted: '=', convertFailed: '=', answered: '=', answeredLegacy: '=', sendFailed: '=', retry: '=', chose: '=', listed: '=', zipFailed: '=' , hashFailed: '=' },
 };
 
 describe('upload-flow: every file status x every file event (US-12 AC26)', () => {
@@ -162,7 +165,7 @@ describe('upload-flow: effects', () => {
     expect(statusOf(state, 'z')).toEqual({ s: 'listing' });
     expect(statusOf(state, 'big')).toEqual({ s: 'refused', verdict: 'tooLarge' });
     expect(effects).toEqual([
-      { type: 'hash', run: 1, id: 'a' }, { type: 'list', run: 1, id: 'z' }, { type: 'forget', run: 1, ids: ['big'] },
+      { type: 'list', run: 1, id: 'z' }, { type: 'forget', run: 1, ids: ['big'] }, { type: 'hash', run: 1, id: 'a' },
     ]);
     expect(saveEnabled(state)).toBe(false); // a ZIP still to list counts as in flight
   });
@@ -179,7 +182,7 @@ describe('upload-flow: effects', () => {
     const asked = transition(initialUpload('phone'), pick([{ id: 'a', name: 'a.pdf' }, { id: 'z', name: 'z.zip', kind: 'zip' }], true));
     expect(asked.state.phase).toBe('consent');
     expect(asked.effects).toEqual([]);
-    expect(transition(asked.state, { type: 'consented' }).effects).toEqual([{ type: 'hash', run: 1, id: 'a' }, { type: 'list', run: 1, id: 'z' }]);
+    expect(transition(asked.state, { type: 'consented' }).effects).toEqual([{ type: 'list', run: 1, id: 'z' }, { type: 'hash', run: 1, id: 'a' }]);
   });
 
   it('a listed ZIP adds its members by its name, hashes the kept ones, drops hidden and refused ones', () => {
@@ -187,13 +190,13 @@ describe('upload-flow: effects', () => {
     const { state, effects } = transition(s, { type: 'listed', run: 1, zip: 'z', members: [
       { id: 'm1', name: 'in/a.pdf', bytes: 1 }, { id: 'm2', name: '__MACOSX/._a.pdf', bytes: 1 }, { id: 'm3', name: 'b.heic', bytes: 1 },
     ] });
-    expect(state).toMatchObject({ files: [{ id: 'm1', zip: 'z.zip', status: { s: 'waiting' } }, { id: 'm3', status: { s: 'refused', verdict: 'unsupported' } }] });
-    expect(effects).toEqual([{ type: 'hash', run: 1, id: 'm1' }, { type: 'forget', run: 1, ids: ['m3', 'm2'] }]);
+    expect(state).toMatchObject({ files: [{ id: 'm1', zip: 'z.zip', status: { s: 'hashing' } }, { id: 'm3', status: { s: 'refused', verdict: 'unsupported' } }] });
+    expect(effects).toEqual([{ type: 'forget', run: 1, ids: ['m3', 'm2'] }, { type: 'hash', run: 1, id: 'm1' }]);
   });
 
   it('converts and sends never pass the platform counts; the first send starts as soon as one file is ready', () => {
     const ids = Array.from({ length: 8 }, (_, i) => `f${i}`);
-    let s: UploadState = open(ids.map((id) => file(id, { s: 'waiting' }, null)));
+    let s: UploadState = open(ids.map((id) => file(id, { s: 'hashing' }, null)));
     const convertsOf = (fx: ReturnType<typeof transition>['effects']) => fx.filter((f) => f.type === 'convert').map((f) => 'id' in f && f.id);
     const started: unknown[] = [];
     for (const id of ids) { const st = transition(s, { type: 'hashed', run: 1, id, hash: id, known: null }); s = st.state; started.push(...convertsOf(st.effects)); }
@@ -206,14 +209,14 @@ describe('upload-flow: effects', () => {
     expect(statusOf(queued.state, 'c')).toEqual({ s: 'ready', attempt: 1 });
     const oneFreed = transition(queued.state, { type: 'answered', run: 1, id: 'f0', extraction: EXT, legacy: false, now: NOW });
     expect(oneFreed.effects).toEqual([{ type: 'send', run: 1, id: 'c', attempt: 1 }]);
-    const fullConverts = open([...ids.slice(0, 3).map((id) => file(id, { s: 'converting' })), file('w', { s: 'waiting' }, null)]);
+    const fullConverts = open([...ids.slice(0, 3).map((id) => file(id, { s: 'converting' })), file('w', { s: 'hashing' }, null)]);
     expect(transition(fullConverts, { type: 'hashed', run: 1, id: 'w', hash: 'hw', known: null }).effects).toEqual([]);
     expect(UPLOAD_LIMITS.web).toMatchObject({ sendsInFlight: 5, convertsInFlight: 3 });
     expect(UPLOAD_LIMITS.phone).toMatchObject({ sendsInFlight: 5, convertsInFlight: 3 });
   });
 
   it('a known file is never converted or sent; an archive-only one keeps its bytes for Save (design §2)', () => {
-    const s = open([file('a', { s: 'waiting' }, null), file('b', { s: 'waiting' }, null)]);
+    const s = open([file('a', { s: 'hashing' }, null), file('b', { s: 'hashing' }, null)]);
     const a = transition(s, { type: 'hashed', run: 1, id: 'a', hash: 'ha', known: { as: 'document', archiveOnly: false } });
     expect(a.effects).toEqual([{ type: 'forget', run: 1, ids: ['a'] }]);
     const b = transition(a.state, { type: 'hashed', run: 1, id: 'b', hash: 'hb', known: { as: 'document', archiveOnly: true } });
@@ -237,7 +240,7 @@ describe('upload-flow: effects', () => {
   });
 
   it('Save waits for every file in flight, never for a failed one (US-12 AC26)', () => {
-    for (const stage of ['listing', 'waiting', 'hashed', 'converting', 'ready', 'sending'] as const) {
+    for (const stage of ['listing', 'waiting', 'hashing', 'hashed', 'converting', 'ready', 'sending'] as const) {
       const status = (stage === 'ready' || stage === 'sending' ? { s: stage, attempt: 1 } : { s: stage }) as FileStatus;
       const s = open([readFile, file('b', status)]);
       expect([stage, saveEnabled(s), inFlight(s)]).toEqual([stage, false, 1]);
