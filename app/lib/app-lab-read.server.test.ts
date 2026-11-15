@@ -4,8 +4,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 // answers its headers once the App Attest counter is spent, then streams the
 // read's answer as NDJSON. Model calls are mocked: no spend.
 
-const mocks = vi.hoisted(() => ({ extract: vi.fn(), rootPem: '', extractOne: null as null | ((...a: unknown[]) => Promise<Response>) }));
+const mocks = vi.hoisted(() => ({ gateOpts: [] as Array<{ admit?: unknown }>, extract: vi.fn(), rootPem: '', extractOne: null as null | ((...a: unknown[]) => Promise<Response>) }));
 vi.mock('@sentry/react-router', async (original) => ({ ...await original<typeof import('@sentry/react-router')>(), captureException: vi.fn() }));
+vi.mock('./app-gate.server', async (original) => {
+  const real = await original<typeof import('./app-gate.server')>();
+  // A pass-through that records each call's options: which routes ask for capacity admission.
+  return { ...real, appGate: (request: Request, opts: Parameters<typeof real.appGate>[1]) => { mocks.gateOpts.push(opts); return real.appGate(request, opts); } };
+});
 vi.mock('./lab-extract-one.server', async (original) => {
   const real = await original<typeof import('./lab-extract-one.server')>();
   // A stand-in only where a test sets one: a read that throws past extractOneFile's own catch.
@@ -26,7 +31,7 @@ import * as Sentry from '@sentry/react-router';
 import { ExtractionStopError } from './anthropic.server';
 import { appChallenge, appLabImport, appRegister } from './app-routes.server';
 import { appLabRead } from './app-lab-read.server';
-import { appLimits, type KeyStore, type UseOutcome } from './app-gate.server';
+import { appLimits, ipBucket, type KeyStore, type UseOutcome } from './app-gate.server';
 import { fakeDevice } from './app-attest.test-helpers';
 import { requestClientData } from './app-attest.server';
 import { machineFiles } from './rate-limiter';
@@ -243,57 +248,87 @@ describe('US-52 AC7e: an accepted read streams NDJSON', () => {
 
 const UNAVAILABLE = { success: false, error: 'This is not available right now. Please try again later.', reason: 'unavailable' };
 
-describe('US-52 AC7e: reads in flight are capped', () => {
-  /** A read the test ends: `finish` answers it, `fail` throws from it. */
+describe('US-52 AC7e: reads in flight are capped, inside the gate', () => {
+  /** A read the test ends: `finish` answers it. */
   function pendingRead() {
-    const ends: Array<{ finish: (v: unknown) => void; fail: (e: Error) => void }> = [];
-    mocks.extract.mockImplementation(() => new Promise((finish, fail) => { ends.push({ finish, fail }); }));
+    const ends: Array<{ finish: (v: unknown) => void }> = [];
+    mocks.extract.mockImplementation(() => new Promise((finish) => { ends.push({ finish }); }));
     return ends;
   }
+  const IP = ipBucket('203.0.113.9');
+  const allowances = () => ({
+    spent: log.filter((l) => l === 'counter spent').length,
+    count: store.rows.get(device.keyId)!.count,
+    keyUses: store.rows.get(device.keyId)!.uses.lab,
+    ip: appLimits.ip.lab.remaining(IP),
+    machine: appLimits.machine.lab.remaining('machine'),
+    files: machineFiles.remaining('machine'),
+    failures: appLimits.failures.remaining(IP),
+    keyFailures: appLimits.keyFailures.remaining(device.keyId),
+  });
 
-  it('past 10 in flight on the machine, a read is refused 503 before the gate: no counter spent, nothing read', async () => {
+  it('uploads that never finish hold no slot: an 11th, valid request is admitted and read', async () => {
     await registered();
-    slots = createReadSlots(10, 100);
+    for (let i = 0; i < 10; i++) {
+      const path = NEW;
+      const raw = Buffer.from(JSON.stringify(body));
+      const never = new ReadableStream<Uint8Array>({ start(c) { c.enqueue(new Uint8Array(raw.subarray(0, 10))); } });
+      void appLabRead(new Request(`${BASE}${path}`, {
+        method: 'POST', body: never, duplex: 'half',
+        headers: { 'x-app-attest-key': device.keyId, 'x-app-attest-assertion': device.assert(requestClientData('POST', path, raw), ++counter, APP_ID), 'fly-client-ip': '203.0.113.9' },
+      } as RequestInit), store, slots);
+    }
+    await new Promise((r) => setTimeout(r, 10));
+    expect(slots.inFlight()).toBe(0);
+    const res = await appLabRead(signed(NEW, body), store, slots);
+    expect(res.status).toBe(200);
+    expect((await lines(res)).at(-1)).toMatchObject({ status: 200 });
+    expect(mocks.extract).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    { name: 'the 6th for one key', slotsFor: () => createReadSlots(10, 5), open: 5 },
+    { name: 'the 11th on a full machine', slotsFor: () => createReadSlots(10, 100), open: 10 },
+  ])('$name gets HTTP 503 and spends nothing: no store use, no counter, no allowance', async ({ slotsFor, open }) => {
+    await registered();
+    slots = slotsFor();
     const ends = pendingRead();
-    const open = [];
-    for (let i = 0; i < 10; i++) open.push(await appLabRead(signed(NEW, body), store, slots));
-    expect(open.every((r) => r.status === 200)).toBe(true);
-    const spent = log.filter((l) => l === 'counter spent').length;
-    const count = store.rows.get(device.keyId)!.count;
+    const reads = [];
+    for (let i = 0; i < open; i++) reads.push(await appLabRead(signed(NEW, body), store, slots));
+    expect(reads.every((r) => r.status === 200)).toBe(true);
+    const before = allowances();
     const res = await appLabRead(signed(NEW, body), store, slots);
     expect(res.status).toBe(503);
     expect(await res.json()).toEqual(UNAVAILABLE);
-    expect(log.filter((l) => l === 'counter spent').length).toBe(spent);
-    expect(store.rows.get(device.keyId)!.count).toBe(count);
-    expect(mocks.extract).toHaveBeenCalledTimes(10);
+    expect(allowances()).toEqual(before);
+    expect(mocks.extract).toHaveBeenCalledTimes(open);
     for (const e of ends) e.finish(extraction);
-    await Promise.all(open.map(lines));
-    expect(slots.inFlight()).toBe(0);
-  });
-
-  it('past 5 in flight for one key, the accepted read\'s final line is the same 503 answer', async () => {
-    await registered();
-    const ends = pendingRead();
-    const open = [];
-    for (let i = 0; i < 5; i++) open.push(await appLabRead(signed(NEW, body), store, slots));
-    const sixth = await appLabRead(signed(NEW, body), store, slots);
-    expect(sixth.status).toBe(200);
-    expect(await lines(sixth)).toEqual([{ accepted: true }, { status: 503, body: UNAVAILABLE }]);
-    expect(mocks.extract).toHaveBeenCalledTimes(5);
-    for (const e of ends) e.finish(extraction);
-    await Promise.all(open.map(lines));
+    await Promise.all(reads.map(lines));
     expect(slots.inFlight()).toBe(0);
   });
 
   it.each([
-    { name: 'a success', end: async (res: Response) => { await lines(res); } },
-    { name: 'a read failure', arrange: () => { mocks.extract.mockRejectedValue(new Error('extraction returned malformed JSON')); }, end: async (res: Response) => { await lines(res); } },
-    { name: 'a throw', arrange: () => { mocks.extractOne = async () => { throw new TypeError('boom'); }; }, end: async (res: Response) => { await lines(res); } },
-  ])('slots are free after $name: the next read on a one-slot machine is accepted', async ({ arrange, end }) => {
+    { name: 'the key\'s daily cap', arrange: () => { store.rows.get(device.keyId)!.uses.lab = 30; }, status: 429, payload: body },
+    { name: 'a store outage', arrange: () => { store.use = async () => { throw new Error('down'); }; }, status: 503, payload: body },
+    { name: 'a counter already spent', arrange: () => { store.rows.get(device.keyId)!.count = 99; }, status: 401, payload: body },
+    { name: 'a body the schema refuses', arrange: () => {}, status: 400, payload: { pages: [] } },
+  ])('admitted, then refused by $name: the slot is released', async ({ arrange, status, payload }) => {
+    await registered();
+    slots = createReadSlots(1, 1);
+    arrange();
+    expect((await appLabRead(signed(NEW, payload), store, slots)).status).toBe(status);
+    expect(slots.inFlight()).toBe(0);
+  });
+
+  it.each([
+    { name: 'a success' },
+    { name: 'a read failure', arrange: () => { mocks.extract.mockRejectedValue(new Error('extraction returned malformed JSON')); } },
+    { name: 'a throw', arrange: () => { mocks.extractOne = async () => { throw new TypeError('boom'); }; } },
+  ])('slots are free after $name: the next read on a one-slot machine is accepted', async ({ arrange }) => {
     await registered();
     slots = createReadSlots(1, 1);
     arrange?.();
-    await end(await appLabRead(signed(NEW, body), store, slots));
+    await lines(await appLabRead(signed(NEW, body), store, slots));
     expect(slots.inFlight()).toBe(0);
     mocks.extractOne = null;
     mocks.extract.mockReset().mockResolvedValue(extraction);
@@ -301,7 +336,7 @@ describe('US-52 AC7e: reads in flight are capped', () => {
     expect((await lines(next)).at(-1)).toMatchObject({ status: 200 });
   });
 
-  it('a reader that goes away frees its slots once the read it started ends', async () => {
+  it('a reader that goes away frees its slot once the read it started ends', async () => {
     await registered();
     slots = createReadSlots(1, 1);
     const ends = pendingRead();
@@ -317,10 +352,14 @@ describe('US-52 AC7e: reads in flight are capped', () => {
     expect((await lines(next)).at(-1)).toMatchObject({ status: 200 });
   });
 
-  it('a gate refusal frees the machine slot', async () => {
-    slots = createReadSlots(1, 1);
-    expect((await appLabRead(signed(NEW, body), store, slots)).status).toBe(401);
-    expect(slots.inFlight()).toBe(0);
+  it('/lab-import passes no admission: it runs with every lab-read slot taken', async () => {
+    await registered();
+    slots = createReadSlots(0, 0);
+    mocks.gateOpts.length = 0;
+    expect((await appLabImport(signed(OLD, body), store)).status).toBe(200);
+    expect(mocks.gateOpts.map((o) => 'admit' in o && o.admit !== undefined)).toEqual([false]);
+    await appLabRead(signed(NEW, body), store, slots);
+    expect(mocks.gateOpts.map((o) => o.admit !== undefined)).toEqual([false, true]);
   });
 });
 

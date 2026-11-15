@@ -6,7 +6,7 @@
 import { labImportRequestSchema, type LabImportRequest } from '../../packages/health-core/src/validation';
 import { action as webChatAction } from '../routes/api.chat';
 import { attestConfig, AttestError, challengeValid, newChallenge, validKeyId, verifyAttestation } from './app-attest.server';
-import { appGate, appLimits, appRoutesOff, ipBucket, supabaseKeyStore, type KeyStore } from './app-gate.server';
+import { appGate, appLimits, appRoutesOff, ipBucket, supabaseKeyStore, type GateOptions, type KeyStore } from './app-gate.server';
 import { SMALL_BODY_CAP } from './capped-body.server';
 import { captureAllowListedWarning } from './sentry-allow-listed.server';
 import { extractOneFile, TOO_SLOW } from './lab-extract-one.server';
@@ -19,7 +19,7 @@ const APP_CHAT_BODY_CAP = 2 * 1024 * 1024;
 const APP_LAB_BODY_CAP = 25 * 1024 * 1024;
 
 const json = (status: number, body: object) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
-export const unavailable = () => json(503, { success: false, error: 'This is not available right now. Please try again later.', reason: 'unavailable' });
+const unavailable = () => json(503, { success: false, error: 'This is not available right now. Please try again later.', reason: 'unavailable' });
 export const postOnly = () => json(405, { success: false, error: 'POST only' });
 
 /** POST attest/challenge: HMAC'd, 5 minutes, so issuing one stores nothing; using one spends it (AC1a). */
@@ -96,32 +96,33 @@ export async function appLabImport(request: Request, store?: KeyStore): Promise<
 }
 
 /**
- * A lab request the gate accepted: its counter is spent, its body valid, and
- * `keyId` the key its signature verified. It holds the parsed request only: the
- * raw body and its text are dropped when `labGate` returns (AC7e).
+ * A lab request the gate accepted: its counter is spent and its body valid, and
+ * `release` frees its capacity admission, when it had one. It holds the parsed
+ * request only: the raw body and its text are dropped when `labGate` returns (AC7e).
  */
-export interface AcceptedLab { data: LabImportRequest; start: number; keyId: string }
+export interface AcceptedLab { data: LabImportRequest; start: number; release?: () => void }
 
 /**
  * The lab routes' gate and validation, in order (AC7, AC7e). A Response is the
  * refusal, to answer as it is; anything else means the counter is spent and the
- * read may start.
+ * read may start. `admit` is the lab read's capacity check (appGate); /lab-import passes none.
  */
-export async function labGate(request: Request, store?: KeyStore): Promise<Response | AcceptedLab> {
+export async function labGate(request: Request, store?: KeyStore, admit?: GateOptions['admit']): Promise<Response | AcceptedLab> {
   if (appRoutesOff()) return unavailable();
   // From the request's arrival, so a slow upload read by the gate counts too (US-52 AC7d).
   const start = Date.now();
-  const gate = await appGate(request, { kind: 'lab', bodyCap: APP_LAB_BODY_CAP, store });
+  const gate = await appGate(request, { kind: 'lab', bodyCap: APP_LAB_BODY_CAP, store, admit });
   if (gate instanceof Response) return gate;
   let parsed: unknown;
   try {
     parsed = JSON.parse(gate.body.toString('utf8'));
   } catch {
+    gate.release?.();
     return json(400, { success: false, error: 'Invalid request' });
   }
   const validation = labImportRequestSchema.safeParse(parsed);
-  if (!validation.success) return json(400, { success: false, error: 'Invalid request' });
-  return { data: validation.data, start, keyId: gate.keyId };
+  if (!validation.success) { gate.release?.(); return json(400, { success: false, error: 'Invalid request' }); }
+  return { data: validation.data, start, release: gate.release };
 }
 
 /** One accepted file's read, on one 90 s budget, and its slow-import report (AC7c, AC7d). */
