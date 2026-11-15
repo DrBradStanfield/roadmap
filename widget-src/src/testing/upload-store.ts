@@ -67,7 +67,7 @@ export function lastSaved(): { values: Array<Record<string, unknown>>; labValues
   const fresh = <T extends { id: string }>(rows: T[]) => rows.filter((r) => !known.has(r.id));
   const strip = ({ createdAt: _c, updatedAt: _u, lamport: _l, deviceId: _d, lastDeviceId: _ld, ...rest }: Record<string, unknown>) => rest;
   return {
-    values: fresh([...after.measurements, ...after.labValues.filter((l) => l.core)] as Array<{ id: string } & Record<string, unknown>>).map(strip),
+    values: fresh([...after.measurements, ...after.labValues.filter((l) => l.core)] as unknown as Array<{ id: string } & Record<string, unknown>>).map(strip),
     labValues: fresh(after.labValues.filter((l) => !l.core) as unknown as Array<{ id: string } & Record<string, unknown>>).map(strip),
     documents: fresh(after.documents),
   };

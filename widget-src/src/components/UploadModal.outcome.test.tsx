@@ -367,7 +367,7 @@ describe('US-12 AC9: members of two ZIPs on one path stay apart', () => {
     await screen.findByRole('button', { name: 'Done' });
     const { values, documents } = lastSaved();
     const valueOf = new Map(values.map(v => [v.id as string, v.value]));
-    const results = documents.filter(d => d.metadata.labArchive === true).map(d => ({ fileName: d.sourceFileName!, contentHash: d.contentHash, value: valueOf.get((d.metadata.rows as string[])[0]), bytes: uploadStore.written.get(d.fileRef) as Blob | undefined }));
+    const results = documents.filter(d => d.metadata?.labArchive === true).map(d => ({ fileName: d.sourceFileName!, contentHash: d.contentHash, value: valueOf.get((d.metadata?.rows as string[])[0]), bytes: uploadStore.written.get(d.fileRef) as Blob | undefined }));
     return { results, identities: await Promise.all(results.map(async r => [r.fileName, r.value, await r.bytes?.text()])) };
   }
   beforeEach(() => {

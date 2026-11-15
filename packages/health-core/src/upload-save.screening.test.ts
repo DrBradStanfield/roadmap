@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest';
 import { core, EMPTY, NOW } from './import-review.test-helpers';
 import type { UnifiedExtractionResult } from './lab-extraction';
 import { choose, NO_CHOICES, type FileChoices } from './upload-choices';
-import type { UploadFile, UploadState } from './upload-flow';
+import { transition, type UploadFile, type UploadState } from './upload-flow';
 import { uploadSavePlan } from './upload-plan';
 import { uploadReview, type ScreeningProfile } from './upload-review';
 import { uploadSave, type UploadSaveIO } from './upload-save';
@@ -107,6 +107,12 @@ describe('choices the web needs, through `choose` (US-12 AC12)', () => {
     const x = prev('2026-05-01');
     const c = choose(NO_CHOICES, { replace: 'v0', correctsId: 'held' }, NOW, x)!;
     expect(choose(c, { columnDay: '2026-05-01', day: '2026-05-03' }, NOW, x)?.replace).toEqual({});
+  });
+
+  it('a letter\'s kind, sent through `chose`, is the kind Save files (US-13 AC14; the web has no control for it yet)', () => {
+    const s = state('open', [read('scan', scanX('colorectal'))]);
+    const next = transition(s, { type: 'chose', id: 'scan', change: { document: { kind: 'clinic_letter' } }, now: NOW }).state;
+    expect(plan(next).documents[0].fields.documentType).toBe('clinic_letter');
   });
 
   it('a screening tick is a choice like any other', () => {

@@ -67,8 +67,8 @@ async function openReview(files: Array<[content: string, name: string]> = [['lab
 function archives() {
   const { values, labValues, documents } = lastSaved();
   const name = new Map([...values, ...labValues].map(r => [r.id as string, `${r.metricName}@${String(r.recordedAt).slice(0, 10)}`]));
-  return documents.filter(d => d.metadata.labArchive === true)
-    .map(d => ({ name: d.sourceFileName, hash: d.contentHash, stored: d.fileRef !== '', rows: ((d.metadata.rows as string[]) ?? []).map(id => name.get(id) ?? id).sort() }));
+  return documents.filter(d => d.metadata?.labArchive === true)
+    .map(d => ({ name: d.sourceFileName, hash: d.contentHash, stored: d.fileRef !== '', rows: ((d.metadata?.rows as string[]) ?? []).map(id => name.get(id) ?? id).sort() }));
 }
 
 describe('US-14 AC10 — off-cloud archive rows keep the hash and list their rows', () => {
@@ -116,7 +116,7 @@ describe('US-14 AC10 — off-cloud archive rows keep the hash and list their row
       fireEvent.click(screen.getByRole('button', { name: /^Save / }));
       await screen.findByRole('button', { name: 'Done' });
       const { documents } = lastSaved();
-      expect(documents.map(d => [d.sourceFileName, d.metadata.labArchive === true, d.contentHash, d.fileRef !== ''])).toEqual([
+      expect(documents.map(d => [d.sourceFileName, d.metadata?.labArchive === true, d.contentHash, d.fileRef !== ''])).toEqual([
         ['Results.pdf', false, 'hash-letter', mode === 'cloud'],
         ['Results.pdf', true, 'hash-labs', mode === 'cloud'],
       ]);
