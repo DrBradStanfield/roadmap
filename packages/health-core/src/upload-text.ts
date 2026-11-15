@@ -52,17 +52,18 @@ export const UPLOAD_TEXT = {
  * NOT YET APPROVED: words section 5 does not have, waiting for the owner's yes (listed in PR 8).
  * saveOriginals: the Save label when Save files only originals (the web's saveLabel says
  * "Save 2 originals" today, ReviewOverview.tsx). chooseDay: why Save waits while a report needs
- * its day. The dropped-at-zero forms of rows 23 and 26 ("Save 2 documents", "Saved 3 values.")
+ * its day. replaces: a conflict whose Replace is on (the web shows only the ticked box). The dropped-at-zero forms of rows 23 and 26 ("Save 2 documents", "Saved 3 values.")
  * live in UPLOAD_TEXT.saveBoth and savedLine and wait for the same yes.
  */
 export const UPLOAD_TEXT_PROPOSED = {
   saveOriginals: (a: number) => `Save ${plural(a, 'original')}`,
   chooseDay: 'Choose the day of the test',
+  replaces: 'Replaces the value in your record.',
 } as const;
 
 /** Every proposed string, for the owner to show Brad: the two above and the dropped-at-zero forms of rows 23 and 26. */
 export const PROPOSED_WORDS: readonly string[] = [
-  UPLOAD_TEXT_PROPOSED.saveOriginals(1), UPLOAD_TEXT_PROPOSED.saveOriginals(2), UPLOAD_TEXT_PROPOSED.chooseDay,
+  UPLOAD_TEXT_PROPOSED.saveOriginals(1), UPLOAD_TEXT_PROPOSED.saveOriginals(2), UPLOAD_TEXT_PROPOSED.chooseDay, UPLOAD_TEXT_PROPOSED.replaces,
   UPLOAD_TEXT.saveBoth(0, 1), UPLOAD_TEXT.saveBoth(0, 2), UPLOAD_TEXT.savedLine(1, 0), UPLOAD_TEXT.savedLine(2, 0), UPLOAD_TEXT.savedLine(0, 1), UPLOAD_TEXT.savedLine(0, 2),
 ];
 
@@ -79,6 +80,8 @@ export const FILE_NOTICE_TEXT = {
   tooLong: 'Not read. The file is too long to read in one go.',
   picturesOnly: 'This Word file holds pictures, not text. Save it as a PDF, or upload a photo of the page.',
 } as const;
+/** Why Save waits while a selected value has an error (US-13 AC5); moved from ReviewTable.tsx. */
+export const FIX_ERRORS_TEXT = 'Correct or clear the values with errors before saving.';
 /** A busy server's notice; moved from upload-pipeline.ts. */
 export const BUSY_NOTICE_TEXT = 'Not read. Our server was busy. Please try again later.';
 /** An empty ZIP, or one of unsupported files, named itself (US-12 AC9); moved from useUploadFlow.ts. */

@@ -6,7 +6,7 @@
  * change, and pass the same one to `uploadView` and `uploadSavePlan`.
  */
 import { UNDATED_PREVIOUS } from './lab-extraction';
-import { classifyImportValues, importRow, reportImportFile, type ImportClassification, type ImportFile } from './import-review';
+import { classifyImportValues, importRow, reportImportFile, valueDays, type ImportClassification, type ImportFile } from './import-review';
 import { bulkRowTarget } from './bulk-row-target';
 import { slotIndex, slotKey, validDay, type BulkRow } from './record-edits';
 import type { RoadmapFile } from './roadmap-file';
@@ -21,6 +21,8 @@ export interface UploadReview {
     fileId: string; name: string; day: string | null;
     /** The refs ticked now, the platform's default resolved (upload-rules `defaultTicked`). */
     ticked: string[];
+    /** The refs whose Replace stands: still aimed at the held row on the value's day. */
+    replacing: string[];
     /** The report waits for the test's day, or for its undated previous column's: none of it saves, and Save waits. */
     needsDay: boolean; needsTestDay: boolean; needsPreviousDay: boolean;
     /** The month an undated previous column printed (YYYY-MM), if any. */
@@ -54,7 +56,7 @@ export function previousDay(pick: string | null, reportDay: string | null, now: 
  * own full day); an undated previous column's on its own day. Replace and an edited number go
  * on the row as the web's review puts them (import-review-view.ts `classifyReview`).
  */
-function importFile(f: ReadFile, platform: UploadPlatform, now: string) {
+function importFile(f: ReadFile, platform: UploadPlatform, now: string, holderOf: (row: BulkRow) => string | undefined) {
   const { extraction, choices } = f.status;
   const result = extraction as ImportFile['result'];
   const day = validDay(choices.testDay ?? extraction.reportDate ?? undefined, { now });
@@ -68,19 +70,32 @@ function importFile(f: ReadFile, platform: UploadPlatform, now: string) {
   // column for that column's, and so does the whole report (iPhone `valuesWait`, web `allDatesSet`).
   const needsTestDay = day === null && ticked.some((v) => v.own === undefined);
   const needsPreviousDay = undatedDay === null && ticked.some((v) => v.own === UNDATED_PREVIOUS);
-  const options = Object.fromEntries(offered.map(({ ref }) => [ref, {
-    ...(choices.replace[ref] ? { correctsId: choices.replace[ref] } : {}),
-    ...(choices.edits[ref] !== undefined ? { edited: { value: choices.edits[ref] } } : {}),
-  }]));
+  // A Replace counts only while its target is still the held row on the value's day (US-13 AC7).
+  const days = valueDays(result, day, undatedDay);
+  const replaces = (ref: string) => {
+    const target = choices.replace[ref];
+    const row = target && days[ref] ? importRow(result, ref, validDay(days[ref]!, { now }) ?? days[ref]!) : null;
+    return row && holderOf(row) === target ? target : undefined;
+  };
+  const options = Object.fromEntries(offered.map(({ ref }) => {
+    const correctsId = replaces(ref);
+    return [ref, { ...(correctsId ? { correctsId } : {}), ...(choices.edits[ref] !== undefined ? { edited: { value: choices.edits[ref] } } : {}) }];
+  }));
   const file = reportImportFile(result, needsTestDay || needsPreviousDay ? [] : ticked.map((v) => v.ref), day, now, undatedDay, options);
-  return { file, day, ticked: ticked.map((v) => v.ref), needsTestDay, needsPreviousDay };
+  return { file, day, ticked: ticked.map((v) => v.ref), needsTestDay, needsPreviousDay, replacing: Object.keys(options).filter((ref) => options[ref].correctsId) };
 }
 
 /** Recompute after `answered`, `chose` or a record change; the same result feeds the view and the plan. */
 export function uploadReview(s: UploadState, record: RoadmapFile, now: string): UploadReview {
   const platform = 'platform' in s ? s.platform : 'web';
   const labs = readFiles(s).filter(isLabReport);
-  const built = labs.map((f) => importFile(f, platform, now));
+  // The record's slots, indexed once: each conflict's held row, and each Replace's check.
+  const slots = slotIndex(record);
+  const holderOf = (row: BulkRow) => {
+    const target = bulkRowTarget(row);
+    return slots.get(slotKey(target.slot, target.metric, row.recordedAt))?.id;
+  };
+  const built = labs.map((f) => importFile(f, platform, now, holderOf));
   const classification = classifyImportValues(built.map((b) => b.file), record, now);
   // The written values come first in `values`, in the order of `rows` (import-review.ts).
   const written = classification.values.filter((v) => v.sent && v.writes);
@@ -91,21 +106,18 @@ export function uploadReview(s: UploadState, record: RoadmapFile, now: string): 
     if (rows) rows.push(row);
     else rowsByFile.set(id, [row]);
   });
-  // Each conflict's held row, from one index of the record's slots.
-  const slots = slotIndex(record);
   const held = new Map<string, string>();
   for (const v of classification.values) {
     if (v.group !== 'unsure' || !v.reasons.includes('conflict')) continue;
     const { file } = built[v.file];
     const day = file.days[v.ref];
     const row = day ? importRow(file.result, v.ref, day) : null;
-    const target = row && bulkRowTarget(row);
-    const holder = row && target && slots.get(slotKey(target.slot, target.metric, row.recordedAt));
-    if (holder) held.set(`${v.file}:${v.ref}`, holder.id);
+    const holder = row && holderOf(row);
+    if (holder) held.set(`${v.file}:${v.ref}`, holder);
   }
   return {
     labFiles: labs.map((f, i) => ({
-      fileId: f.id, name: f.name, day: built[i].day, ticked: built[i].ticked,
+      fileId: f.id, name: f.name, day: built[i].day, ticked: built[i].ticked, replacing: built[i].replacing,
       needsDay: built[i].needsTestDay || built[i].needsPreviousDay, needsTestDay: built[i].needsTestDay, needsPreviousDay: built[i].needsPreviousDay,
       previousMonth: [...(f.status.extraction.values ?? []), ...(f.status.extraction.additionalValues ?? [])].find((v) => v.printedMonth)?.printedMonth ?? null,
     })),

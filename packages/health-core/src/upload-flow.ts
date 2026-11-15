@@ -315,7 +315,7 @@ export function transition(s: UploadState, e: UploadEvent): UploadStep {
     case 'chose': {
       const file = s.phase === 'open' ? s.files.find((f) => f.id === e.id) : undefined;
       if (s.phase !== 'open' || file?.status.s !== 'read') return same(s);
-      const choices = choose(file.status.choices, e.change, e.now);
+      const choices = choose(file.status.choices, e.change, e.now, file.status.extraction);
       if (!choices) return same(s); // refused: a document date that is no real past day
       return same({ ...s, files: s.files.map((f) => (f === file ? { ...file, status: { ...file.status, choices } } : f)) });
     }

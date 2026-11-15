@@ -4,6 +4,7 @@
  * today, and the iPhone's: ticks, the test's day, an undated previous column's day (web only),
  * Replace on a conflict, an edited value, a document's title, kind and date.
  */
+import { UNDATED_PREVIOUS, type UnifiedExtractionResult } from './lab-extraction';
 import { validDay } from './record-edits';
 
 /** A document's corrections before Save (design Q3 (a)). `date` null: the person removed it. */
@@ -40,11 +41,32 @@ export function documentDate(date: string | null, now: string): string | null | 
 
 const without = <T,>(r: Record<string, T>, key: string): Record<string, T> => Object.fromEntries(Object.entries(r).filter(([k]) => k !== key));
 
-/** The choices after one change, or null when the change is refused (an impossible document date). */
-export function choose(c: FileChoices, change: ChoiceChange, now: string): FileChoices | null {
+/** The refs a day change moves: values on the test's day (no day of their own), or in the undated previous column. */
+function movedRefs(x: Pick<UnifiedExtractionResult, 'values' | 'additionalValues'>, column: 'test' | 'previous'): string[] {
+  const on = (own?: string) => (column === 'test' ? own === undefined : own === UNDATED_PREVIOUS);
+  return [
+    ...(x.values ?? []).flatMap((v, i) => (on(v.recordedAt) ? [`v${i}`] : [])),
+    ...(x.additionalValues ?? []).flatMap((v, i) => (on(v.recordedAt) ? [`a${i}`] : [])),
+  ];
+}
+
+/** A Replace never follows its value to another day (US-13 AC7): a day that changes clears the moved values' Replace. */
+function moved(c: FileChoices, refs: string[], before: string | null, after: string | null, now: string): Record<string, string> {
+  if (validDay(before ?? undefined, { now }) === validDay(after ?? undefined, { now })) return c.replace;
+  return Object.fromEntries(Object.entries(c.replace).filter(([ref]) => !refs.includes(ref)));
+}
+
+/**
+ * The choices after one change, or null when the change is refused (an impossible document
+ * date). `extraction`: the file's, to know which values a day change moves.
+ */
+export function choose(c: FileChoices, change: ChoiceChange, now: string, extraction: Pick<UnifiedExtractionResult, 'values' | 'additionalValues' | 'reportDate'>): FileChoices | null {
   if ('tick' in change) return { ...c, ticks: { ...c.ticks, [change.tick]: change.on } };
-  if ('testDay' in change) return { ...c, testDay: change.testDay };
-  if ('previousDay' in change) return { ...c, previousDay: change.previousDay };
+  if ('testDay' in change) {
+    const report = extraction.reportDate ?? null;
+    return { ...c, testDay: change.testDay, replace: moved(c, movedRefs(extraction, 'test'), c.testDay ?? report, change.testDay ?? report, now) };
+  }
+  if ('previousDay' in change) return { ...c, previousDay: change.previousDay, replace: moved(c, movedRefs(extraction, 'previous'), c.previousDay, change.previousDay, now) };
   if ('replace' in change) return { ...c, replace: change.correctsId === null ? without(c.replace, change.replace) : { ...c.replace, [change.replace]: change.correctsId } };
   if ('edit' in change) return { ...c, edits: change.value === null || !Number.isFinite(change.value) ? without(c.edits, change.edit) : { ...c.edits, [change.edit]: change.value } };
   const { date, ...rest } = change.document;

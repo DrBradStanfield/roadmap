@@ -14,11 +14,18 @@ import type { RoadmapFile } from './roadmap-file';
 import { inFlight, RETRYABLE, saveEnabled, type FileStatus, type UploadFile, type UploadState } from './upload-flow';
 import { planIsEmpty, uploadSavePlan, type UploadSavePlan } from './upload-plan';
 import type { UploadReview } from './upload-review';
-import { FAIL_TEXT, FILE_NOTICE_TEXT, UPLOAD_TEXT, UPLOAD_TEXT_PROPOSED } from './upload-text';
+import { FAIL_TEXT, FILE_NOTICE_TEXT, FIX_ERRORS_TEXT, UPLOAD_TEXT, UPLOAD_TEXT_PROPOSED } from './upload-text';
 
-/** `ticked`: the tick shown now, the platform's default resolved. `replaces`: a conflict's held row,
- *  for `ChoiceChange` replace; null when there is nothing to replace. */
-export interface ValueRow { fileId: string; ref: string; label: string; reasons: UnsureReason[]; conflict: string | null; ticked: boolean; replaces: string | null }
+/**
+ * `ticked`: the tick shown now, the platform's default resolved. `replaces`: a conflict's held row,
+ * for `ChoiceChange` replace; null when there is nothing to replace. `replacing`: the Replace
+ * control is on and still aimed at that row; `conflict` then says what Save will do. `error`: a
+ * selected core value Save would refuse, in the write's words; it blocks Save (US-13 AC5).
+ */
+export interface ValueRow {
+  fileId: string; ref: string; label: string; reasons: UnsureReason[]; conflict: string | null;
+  ticked: boolean; replaces: string | null; replacing: boolean; error: string | null;
+}
 export type UploadSection =
   | { kind: 'undated'; fileId: string; title: string; label: string; name: string }
   /** An undated previous column's day (US-12 AC14; web only): a day in `month` (YYYY-MM) before
@@ -38,7 +45,7 @@ export interface UploadView {
   documents: { line: string; rows: Array<{ fileId: string; title: string; kind: string; date: string; dateKnown: boolean }> } | null;
   /** The collapsed "Files" list. */
   files: { row: string; rows: Array<{ fileId: string; name: string; status: string }> };
-  /** Read files with nothing in them, in the web's notice words (US-12 AC9). */
+  /** Read files with nothing in them, and files read only in part, in the web's notice words (US-12 AC9). */
   notices: Array<{ fileId: string; name: string; line: string }>;
   /** `error`: a failed save's message; Save then retries. */
   save: { label: string; enabled: boolean; why: string | null; error: string | null };
@@ -91,10 +98,23 @@ function progress(s: UploadState, files: readonly UploadFile[]): UploadView['pro
 const valueRow = (review: UploadReview) => (v: ClassifiedValue): ValueRow => ({
   fileId: review.labFiles[v.file].fileId, ref: v.ref, label: v.label,
   reasons: v.group === 'unsure' ? v.reasons : [],
-  conflict: v.group === 'unsure' && v.reasons.includes('conflict') ? IMPORT_REVIEW_TEXT.conflictKept : null,
+  conflict: v.group === 'unsure' && v.reasons.includes('conflict')
+    ? (replacingOf(review, v) ? UPLOAD_TEXT_PROPOSED.replaces : IMPORT_REVIEW_TEXT.conflictKept) : null,
   ticked: review.labFiles[v.file].ticked.includes(v.ref),
   replaces: review.held.get(`${v.file}:${v.ref}`) ?? null,
+  replacing: replacingOf(review, v),
+  error: blocks(v) && v.refusal && 'measurement' in v.refusal ? v.refusal.measurement.message : null,
 });
+
+const replacingOf = (review: UploadReview, v: ClassifiedValue) => review.labFiles[v.file].replacing.includes(v.ref);
+
+/**
+ * A selected core value the write would refuse blocks Save, as the web's review blocks it
+ * (ReviewTable `refusedKept` over import-review-view `blocked`, US-13 AC5): sent, not written, and
+ * out of its range or otherwise refused (a same-day loser is not an error).
+ */
+const blocks = (v: ClassifiedValue) => v.ref[0] === 'v' && v.sent && !v.writes
+  && (v.group === 'unsure' ? v.reasons.includes('outOfRange') : v.group === 'notSaved' && v.reason !== 'sameDay');
 
 function saveLabel(plan: UploadSavePlan): string {
   const { values, documents, originals } = plan.counts;
@@ -118,7 +138,8 @@ function save(s: UploadState, plan: UploadSavePlan, review: UploadReview): Uploa
   const waiting = inFlight(s);
   const needsDay = review.labFiles.some((f) => f.needsDay); // no report is ever skipped by Save
   const empty = planIsEmpty(plan);
-  const why = waiting ? UPLOAD_TEXT.saveWait(waiting) : needsDay ? UPLOAD_TEXT_PROPOSED.chooseDay : empty ? UPLOAD_TEXT.saveNothing : null;
+  const invalid = review.classification.values.some(blocks);
+  const why = waiting ? UPLOAD_TEXT.saveWait(waiting) : invalid ? FIX_ERRORS_TEXT : needsDay ? UPLOAD_TEXT_PROPOSED.chooseDay : empty ? UPLOAD_TEXT.saveNothing : null;
   return { label, enabled: saveEnabled(s) && why === null, why, error: null };
 }
 
@@ -165,7 +186,9 @@ export function uploadView(s: UploadState, record: RoadmapFile, now: string, rev
       })),
     } : null,
     files: { row: UPLOAD_TEXT.filesRow(files.length), rows: files.map((f) => ({ fileId: f.id, name: f.name, status: emptyRead(f) ?? statusWords(f.status) })) },
-    notices: files.flatMap((f) => { const line = emptyRead(f); return line ? [{ fileId: f.id, name: f.name, line }] : []; }),
+    // Read files with nothing in them, and files read only in part (US-12 AC9), in the web's words.
+    notices: files.flatMap((f) => [emptyRead(f), f.pages?.truncated ? FILE_NOTICE_TEXT.truncated : null]
+      .flatMap((line) => (line ? [{ fileId: f.id, name: f.name, line }] : []))),
     save: save(s, plan, review),
     stop: s.phase === 'open' && waiting ? { label: UPLOAD_TEXT.stop } : null,
     done: s.phase === 'done' ? {
