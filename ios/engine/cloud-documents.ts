@@ -55,16 +55,18 @@ export function documentSave(
   recordJson: string, extractionJson: string, choiceJson: string, original: ArrayBuffer | null, erase: string, nowIso: string, deviceId: string,
 ): Promise<string> {
   checkArgs('documentSave', arguments);
-  return oneDocumentSaveAtATime(() => saveOneDocument(recordJson, extractionJson, choiceJson, original, erase, nowIso, deviceId).then((answer) => JSON.stringify(answer)));
+  // The session it is asked of, taken now: the save keeps to it, however long it waits in the queue.
+  const asked = erase ? open : null;
+  return oneDocumentSaveAtATime(() => saveOneDocument(asked, recordJson, extractionJson, choiceJson, original, erase, nowIso, deviceId).then((answer) => JSON.stringify(answer)));
 }
 
 async function saveOneDocument(
-  recordJson: string, extractionJson: string, choiceJson: string, original: ArrayBuffer | null, erase: string, nowIso: string, deviceId: string,
+  asked: typeof open, recordJson: string, extractionJson: string, choiceJson: string, original: ArrayBuffer | null, erase: string, nowIso: string, deviceId: string,
 ): Promise<object> {
   const choice = JSON.parse(choiceJson) as DocumentChoice;
   const extraction = JSON.parse(extractionJson) as Extraction;
-  const at = erase ? open : null;
-  if (erase && !at) return refuse('not-open', NOT_OPEN);
+  const at = asked;
+  if (erase && (!at || open !== at)) return refuse('not-open', NOT_OPEN);
   if (at?.session.refuses(erase)) return refuse('erased', ERASED);
   // The one gate for originals: kept only in the person's cloud, as on the web
   // (UploadModal strips them off-cloud). The hash is kept either way (US-14 AC10).
