@@ -20,19 +20,28 @@ export const uploadStore = {
   written: new Map<string, unknown>(),
   /** A Save waits for this before it answers, so a suite can act while it runs. */
   hold: null as Promise<unknown> | null,
+  /** The Save throws this (a programming error, or a log-off refusal), once. */
+  fail: null as Error | null,
+  /** The cloud refuses every original. */
+  writeFails: false,
 };
 
 export function resetUploadStore(record: RoadmapFile = EMPTY()): void {
-  Object.assign(uploadStore, { record, saves: [], refuse: null, written: new Map(), hold: null });
+  Object.assign(uploadStore, { record, saves: [], refuse: null, written: new Map(), hold: null, fail: null, writeFails: false });
 }
 
 async function saveUpload(state: UploadState, _reviewed: RoadmapFile, now: string, cloud: boolean, io: Omit<UploadSaveIO<Blob>, 'write'>): Promise<UploadStoreSave> {
   if (uploadStore.hold) await uploadStore.hold;
+  if (uploadStore.fail) {
+    const error = uploadStore.fail;
+    uploadStore.fail = null;
+    throw error;
+  }
   if (uploadStore.refuse !== null) {
     uploadStore.saves.push({ state, cloud, before: uploadStore.record, file: null });
     return { ok: false, message: uploadStore.refuse || null };
   }
-  const out = await uploadSave(state, uploadStore.record, now, cloud, { ...io, write: async (ref, bytes) => void uploadStore.written.set(ref, bytes) });
+  const out = await uploadSave(state, uploadStore.record, now, cloud, { ...io, write: async (ref, bytes) => { if (uploadStore.writeFails) throw new Error('synthetic refusal'); uploadStore.written.set(ref, bytes); } });
   if (!out.ok) {
     uploadStore.saves.push({ state, cloud, before: uploadStore.record, file: null });
     return { ok: false, message: out.message };
