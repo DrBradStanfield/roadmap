@@ -6,7 +6,7 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render } from '@testing-library/react';
-import { ReviewTable } from './ReviewTable';
+import { ReviewTable } from '../testing/review-harness';
 import type { FileResult } from '../lib/upload-pipeline';
 import { showingAll } from '../testing/import-review';
 
@@ -14,14 +14,14 @@ afterEach(() => { cleanup(); vi.useRealTimers(); });
 
 function review(documentDate: string | null, reportDate: string | null = null, withLabs = false) {
   const result: FileResult = {
-    fileName: 'synthetic-colonoscopy.pdf', reportDate,
-    values: withLabs ? [{ metric: 'ldl', valueSI: 3, displayValue: 3, displayUnit: 'mmol/L', confidence: 'high' }] : [],
-    additionalValues: [],
+    fileName: 'synthetic-colonoscopy.pdf', reportDate: null, values: [], additionalValues: [],
     document: { classification: 'scan_result', title: 'Synthetic colonoscopy', documentDate,
       contentMarkdown: 'Synthetic report', metadata: { screeningType: 'colorectal' } },
   };
+  // A report's values come in their own lab report beside the scan: the shared plan files a letter as a document alone.
+  const labs: FileResult[] = withLabs ? [{ fileName: 'synthetic-labs.pdf', reportDate, values: [{ metric: 'ldl', valueSI: 3, displayValue: 3, displayUnit: 'mmol/L', confidence: 'high' }], additionalValues: [] }] : [];
   const onSave = vi.fn();
-  const view = showingAll(render(<ReviewTable results={[result]} history={{ measurements: [], labValues: [], documents: [] }}
+  const view = showingAll(render(<ReviewTable results={[result, ...labs]} history={{ measurements: [], labValues: [], documents: [] }}
     unitSystem="si" age={60} sex="male" grading={{}} onSave={onSave} onCancel={() => {}}
     isSaving={false} error={null} />));
   const pick = (value: string) => fireEvent.change(view.getByLabelText('Document date'), { target: { value } });
@@ -55,7 +55,7 @@ describe('US-13 AC6: reviewed document dates', () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-10-15T12:00:00Z'));
     const view = review(null, reportDate);
-    expect(view.getByText('Date unknown')).toBeTruthy();
+    expect(view.getByText('No date')).toBeTruthy();
     // The picker starts empty, so any day the user picks fires a change.
     expect((view.getByLabelText('Document date') as HTMLInputElement).value).toBe('');
     expect(view.box().disabled).toBe(true);
@@ -73,7 +73,8 @@ describe('US-13 AC6: reviewed document dates', () => {
 
   it('a month alone leaves the day blank; the screening keeps the month', () => {
     const view = review('2024-06');
-    expect(view.container.querySelector('.review-file-date .bt-date-day')?.textContent).toContain('— Jun');
+    // The card says "No date" (design section 5 row 14); the month still dates the screening update.
+    expect(view.container.querySelector('.review-file-date .bt-date-day')?.textContent).toContain('No date');
     expect((view.getByLabelText('Document date') as HTMLInputElement).value).toBe('');
     expect(view.promise()).toContain('to 2024-06');
     expect(view.save().documents[0]).toMatchObject({ documentDate: null,
@@ -111,7 +112,7 @@ describe('US-13 AC6: reviewed document dates', () => {
       vi.useFakeTimers({ toFake: ['Date'] });
       vi.setSystemTime(new Date('2026-10-15T12:00:00Z'));
       const view = review(raw);
-      expect(view.getByText('Date unknown')).toBeTruthy();
+      expect(view.getByText('No date')).toBeTruthy();
       expect(view.box().disabled).toBe(true);
       expect(view.save().documents[0]).toMatchObject({ documentDate: null, screeningUpdate: undefined });
     });
@@ -143,7 +144,7 @@ describe('US-13 AC6: reviewed document dates', () => {
     expect(view.getByDisplayValue('Earlier title')).toBeTruthy();
     expect((view.getByLabelText('Document date') as HTMLInputElement).value).toBe('2024-05-20');
     fireEvent.click(view.getByRole('button', { name: /^Save / }));
-    expect(onSave.mock.lastCall![0].reviewed[0].document).toMatchObject({ title: 'Earlier title', documentDate: '2024-05-20' });
+    expect(onSave.mock.lastCall![0].documents[0]).toMatchObject({ title: 'Earlier title', documentDate: '2024-05-20' });
     cleanup();
     // An archived row, or a lab-archive row, is not one it replaces: the extraction stands.
     for (const other of [row({ fileRef: 'Letters/a.pdf' }), row({ documentType: 'pathology_report', title: 'Blood test results', contentMd: '' })]) {
@@ -164,27 +165,28 @@ describe('US-13 AC6: reviewed document dates', () => {
     const view = showingAll(render(<ReviewTable results={[letter]} grading={{}} unitSystem="si" onSave={onSave} onCancel={() => {}} isSaving={false} error={null}
       history={{ measurements: [], labValues: [], documents: [row('old', 'Older title', '2024-06-02T00:00:00Z', '2024-05-01'), row('new', 'Newer title', '2024-07-02T00:00:00Z', null)] }} />));
     expect(view.getByDisplayValue('Newer title')).toBeTruthy();
-    expect(view.getByText('Date unknown')).toBeTruthy();
+    expect(view.getByText('No date')).toBeTruthy();
     fireEvent.click(view.getByRole('button', { name: /^Save / }));
-    expect(onSave.mock.lastCall![0].reviewed[0].document).toMatchObject({ title: 'Newer title', documentDate: null });
+    expect(onSave.mock.lastCall![0].documents[0]).toMatchObject({ title: 'Newer title', documentDate: null });
   });
 
   it('a clear makes a month-only date unknown too: no month comes back, no screening write', () => {
     const view = review('2024-06');
     view.pick('2024-06-12');
     view.pick('');
-    expect(view.getByText('Date unknown')).toBeTruthy();
+    expect(view.getByText('No date')).toBeTruthy();
     expect(view.box().disabled).toBe(true);
     expect(view.promise()).not.toContain('2024-06');
     expect(view.save().documents[0]).toMatchObject({ documentDate: null, screeningUpdate: undefined });
   });
 
-  it('hands back every result as reviewed: title, document date and report column day', () => {
+  it('saves what was reviewed: the title, the document date and the report column day', () => {
     const view = review('2024-06', '2023-02-18', true);
     fireEvent.change(view.getByDisplayValue('Synthetic colonoscopy'), { target: { value: 'Reviewed title' } });
     view.pick('2024-06-12');
     fireEvent.change(view.getByLabelText('Choose column date'), { target: { value: '2023-03-19' } });
-    expect(view.save().reviewed[0]).toMatchObject({ reportDate: '2023-03-19',
-      document: { title: 'Reviewed title', documentDate: '2024-06-12' } });
+    const saved = view.save();
+    expect(saved.values[0].recordedAt).toBe('2023-03-19T00:00:00.000Z');
+    expect(saved.documents[0]).toMatchObject({ title: 'Reviewed title', documentDate: '2024-06-12' });
   });
 });

@@ -6,7 +6,7 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render } from '@testing-library/react';
-import { ReviewTable } from './ReviewTable';
+import { ReviewTable } from '../testing/review-harness';
 import type { FileResult } from '../lib/upload-pipeline';
 import { showingAll } from '../testing/import-review';
 
@@ -32,6 +32,8 @@ function setup(files = [file], history: React.ComponentProps<typeof ReviewTable>
       expect(onSave).toHaveBeenCalledTimes(1);
       return onSave.mock.calls[0][0];
     },
+    /** Save offers nothing: disabled, saying so (US-13 AC13). */
+    nothing: () => (view.container.querySelector('.review-save-btn') as HTMLButtonElement).disabled && view.queryByText('Nothing new to save') !== null,
     onSave,
   };
 }
@@ -52,7 +54,8 @@ describe('US-13 AC7: review intent survives column date edits', () => {
     c.toggle();
     c.date('2024-06-03');
     expect(c.input().value).toBe('');
-    expect(c.save().values).toEqual([]);
+    // Every value cleared: Save writes nothing, the original included (the shared plan, design PR 8, as the iPhone).
+    expect(c.nothing()).toBe(true);
   });
 
   it('keeps the typed unit through a toggle before a date edit', () => {
@@ -68,8 +71,8 @@ describe('US-13 AC7: review intent survives column date edits', () => {
     fireEvent.change(c.input(), { target: { value: text } });
     c.date('2024-06-02');
     expect(c.input().value).toBe(text);
-    const saved = c.save().labValues;
-    expect(saved).toEqual(text ? [expect.objectContaining({ value: 7, unit: 'U/L', recordedAt: '2024-06-02T00:00:00.000Z' })] : []);
+    if (!text) return void expect(c.nothing()).toBe(true);
+    expect(c.save().labValues).toEqual([expect.objectContaining({ value: 7, unit: 'U/L', recordedAt: '2024-06-02T00:00:00.000Z' })]);
   });
 
   it('keeps untouched canonical precision on a new date after a unit toggle', () => {

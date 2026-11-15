@@ -9,7 +9,7 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, fireEvent, cleanup, within } from '@testing-library/react';
 import type { ApiMeasurement } from '@roadmap/health-core/mappings';
-import { ReviewTable } from './ReviewTable';
+import { ReviewTable } from '../testing/review-harness';
 import type { FileResult } from '../lib/upload-pipeline';
 import type { ApiDocument } from '../lib/api-types';
 import { showingAll } from '../testing/import-review';
@@ -115,36 +115,31 @@ function renderReview(documents: ApiDocument[], files: FileResult[] = results, s
   return { ...utils, onSave, button: utils.container.querySelector<HTMLButtonElement>('.review-save-btn')! };
 }
 
+// Design PR 10: Save writes what health-core's plan writes. A file whose bytes the record holds
+// metadata-only is known before it is read and filed unread (upload-flow `known`, archiveOnly); one
+// read anyway files its original with its rows. Retired: the "Save will archive the original PDF"
+// line, the keep tick, and a letter skipped for its name alone (US-12 AC6b, ruling Q3).
 describe('ReviewTable — archiving the original behind a connector row (US-13 AC1, US-35 AC8)', () => {
-  it('offers Save with nothing selected when the bytes match a metadata-only row, and says so', () => {
-    const { button, onSave, container } = renderReview([connectorRow]);
+  const written = (onSave: ReturnType<typeof vi.fn>) => {
+    const { values, labValues, documents } = onSave.mock.lastCall![0];
+    return { values, labValues, documents };
+  };
+
+  it('offers Save when every value is already recorded: the original is still filed', () => {
+    const { button, onSave } = renderReview([connectorRow]);
     expect(button.disabled).toBe(false);
     expect(button.textContent).toBe('Save 1 original');
-    expect(container.querySelector('.review-archive-only')?.textContent)
-      .toBe('Save will archive the original PDF. No extracted values or documents are selected.');
     fireEvent.click(button);
-    expect(onSave).toHaveBeenCalledWith({ values: [], documents: [], labValues: [], reviewed: expect.any(Array), review: expect.any(Object), labRefusals: [] });
+    expect(written(onSave)).toEqual({ values: [], documents: [], labValues: [] });
   });
 
-  it('US-12 AC6: describes original-only saving without claiming cleared values are stored', () => {
-    const { button, onSave, container } = renderReview([], results, []);
+  it('every value cleared: nothing is saved, the original included (the shared plan, as the iPhone)', () => {
+    const { button, container, getByText } = renderReview([], results, []);
     const inputs = container.querySelectorAll<HTMLInputElement>('.bt-cell-review input');
     expect(inputs.length).toBeGreaterThan(0);
     for (const input of inputs) fireEvent.change(input, { target: { value: '' } });
-    expect(button.disabled).toBe(false);
-    expect(button.textContent).toBe('Save 1 original');
-    expect(container.querySelector('.review-archive-only')?.textContent)
-      .toBe('Save will archive the original PDF. No extracted values or documents are selected.');
-    expect(container.querySelector('.review-summary')?.textContent).not.toContain('already in your record');
-    fireEvent.click(button);
-    expect(onSave).toHaveBeenCalledWith({ values: [], documents: [], labValues: [], reviewed: expect.any(Array), review: expect.any(Object), labRefusals: [] });
-  });
-
-  it('offers no Save when the same bytes are already archived (fileRef set): nothing to write, the review closes (US-13 AC13 D3)', () => {
-    const { button, getByRole, container } = renderReview([{ ...connectorRow, fileRef: 'Lab results/x.pdf' }]);
-    expect(button).toBeNull();
-    expect(getByRole('button', { name: 'Close' })).toBeTruthy();
-    expect(container.querySelector('.review-archive-only')).toBeNull();
+    expect(button.disabled).toBe(true);
+    expect(getByText('Nothing new to save')).toBeTruthy();
   });
 
   it('US-12 AC6: offers an original-only retry after saved values become history context', () => {
@@ -152,28 +147,18 @@ describe('ReviewTable — archiving the original behind a connector row (US-13 A
     expect(button.disabled).toBe(false);
     expect(button.textContent).toBe('Save 1 original');
     fireEvent.click(button);
-    expect(onSave).toHaveBeenCalledWith({ values: [], documents: [], labValues: [], reviewed: expect.any(Array), review: expect.any(Object), labRefusals: [] });
+    expect(written(onSave)).toEqual({ values: [], documents: [], labValues: [] });
   });
 
-  it('offers Save for a clinic letter the connector filed: name-deduped to an unselected row, yet still an original to archive', () => {
-    const { button, onSave, container } = renderReview([connectorLetter], letterResults);
-    expect(container.querySelector<HTMLInputElement>('.review-row-check input')!.checked).toBe(false);
-    expect(button.disabled).toBe(false);
-    expect(button.textContent).toBe('Save 1 original');
-    expect(container.querySelector('.review-archive-only')?.textContent)
-      .toBe('Save will archive the original PDF. No extracted values or documents are selected.');
-    fireEvent.click(button);
-    expect(onSave).toHaveBeenCalledWith({ values: [], documents: [], labValues: [], reviewed: expect.any(Array), review: expect.any(Object), labRefusals: [] });
-  });
-
-  it('does not double-count a connector letter the user re-selects: it saves as a document, not also an original', () => {
-    const { button, container } = renderReview([connectorLetter], letterResults);
-    fireEvent.click(container.querySelector<HTMLInputElement>('.review-row-check input')!);
+  it('a clinic letter the connector filed, read again, saves once as a document with the held title', () => {
+    const { button, onSave } = renderReview([connectorLetter], letterResults);
     expect(button.textContent).toBe('Save 1 document');
+    fireEvent.click(button);
+    expect(written(onSave).documents).toEqual([expect.objectContaining({ title: 'Cardiology follow-up', sourceFileName: 'clinic-letter.pdf' })]);
   });
 
-  it('keeps Save disabled for a name-deduped letter whose bytes the record does not hold', () => {
-    expect(renderReview([{ ...connectorLetter, contentHash: null }], letterResults).button.disabled).toBe(true);
+  it('a letter named like a held row whose bytes the record does not hold is saved: a name is no reason to skip it', () => {
+    expect(renderReview([{ ...connectorLetter, contentHash: null }], letterResults).button.textContent).toBe('Save 1 document');
   });
 });
 

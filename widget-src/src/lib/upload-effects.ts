@@ -12,7 +12,7 @@ import type { UnitSystem } from '@roadmap/health-core/units';
 import type { UploadErrorCode } from './api-types';
 import { labImport } from './upload-api';
 import { sha256Blob } from './archive-payloads';
-import { getDocumentArchiveMode, isLegacyUpload, uploadKnownIndex } from './roadmap-data';
+import { isLegacyUpload, uploadKnownIndex } from './roadmap-data';
 import { offerCoreExtras, readPages, shortName } from './upload-pipeline';
 import { fileNameOf, type Held } from './upload-read';
 // Type only: a value import would pull the lazy upload bundle into the main one.
@@ -41,15 +41,14 @@ function still(port: UploadPort, run: number, id: string, stage: string) {
 const asFailure = (code: UploadErrorCode | undefined): UploadFailure => (isUploadFailure(code) ? code : 'server_error');
 
 /**
- * A file the record holds. One the record holds without its original, with a cloud open, is read as
- * before: today's save files that original only from a read (US-35 AC8, US-14 AC4); the shared save
- * plan (design PR 10) files it unread. The record is read once per pick, at its first hash: a delete or
- * save before the pick is in it, so the file is read or skipped as the record now says.
+ * A file the record holds (US-12 AC27): never read. One it holds without its original is filed unread
+ * behind that row by the shared save, with a cloud open (design PR 10, US-14 AC4, US-35 AC8). The
+ * record is read once per pick, at its first hash: a delete or save before the pick is in it, so the
+ * file is read or skipped as the record now says.
  */
 function knownOnWeb(held: Held, hash: string): Known | null {
   held.known ??= uploadKnownIndex();
-  const known = knownAs(held.known, hash);
-  return known && !(known.archiveOnly && getDocumentArchiveMode() === 'cloud') ? known : null;
+  return knownAs(held.known, hash);
 }
 
 async function list(port: UploadPort, run: number, id: string): Promise<void> {
@@ -74,15 +73,21 @@ async function hash(port: UploadPort, run: number, id: string): Promise<void> {
   const h = port.held().files.get(id);
   if (!f || !h) return;
   let digest: string;
+  let bytes: Blob;
   try {
     // A member is inflated to hash it and again to read it: its bytes are never held while it waits
     // for a convert slot, which nothing counts (upload-flow.ts `pump`).
-    digest = await sha256Blob(h.file ?? await h.entry!.async('blob'));
+    bytes = h.file ?? await h.entry!.async('blob');
+    digest = await sha256Blob(bytes);
   } catch {
     if (still(port, run, id, 'hashing')) port.send({ type: 'hashFailed', run, id });
     return;
   }
-  if (still(port, run, id, 'hashing')) port.send({ type: 'hashed', run, id, hash: digest, known: knownOnWeb(port.held(), digest) });
+  if (!still(port, run, id, 'hashing')) return;
+  const known = knownOnWeb(port.held(), digest);
+  // An original the save files unread keeps its bytes, a ZIP member's too (the state does not forget it).
+  if (known?.archiveOnly) h.file ??= new File([bytes], shortName(f.name));
+  port.send({ type: 'hashed', run, id, hash: digest, known });
 }
 
 async function convert(port: UploadPort, run: number, id: string): Promise<void> {

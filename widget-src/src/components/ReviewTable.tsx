@@ -111,16 +111,18 @@ export function ReviewTable({
   // An unedited value the write refuses on its own takes no slot, as in the review's groups.
   const refusedNow = useMemo(() => slotlessIds(results, edits), [results, edits]);
   const slotless = useMemo(() => new Set([...refusedNow].filter(id => !pinned.has(id))), [refusedNow, pinned]);
-  const matrix = useMemo(
-    () => buildMatrixModel(results, fileDates, history.measurements, history.labValues, unitSystem, units, pinned, slotless, edits),
-    [results, fileDates, history.measurements, history.labValues, unitSystem, units, pinned, slotless, edits],
-  );
-
   // The cells' text as typed: an input's own buffer, plain view state. A number it reads goes to the
   // state as an edit; text with an error stays here and blocks Save until corrected (US-13 AC5).
-  // `touched`: the unit each value was typed in, so a unit toggle after typing never misconverts it.
+  // `touched`: the unit each value was typed in, so a unit toggle after typing never misconverts it;
+  // a typed cell stays a cell, never hidden as already saved, so it can be typed again.
   const touchedRef = useRef<Map<string, { display?: CellUnit }>>(new Map());
+  const [touchedCount, setTouchedCount] = useState(0);
   const [editedDisplayValues, setEditedDisplayValues] = useState<Record<string, string>>({});
+  const matrix = useMemo(
+    () => buildMatrixModel(results, fileDates, history.measurements, history.labValues, unitSystem, units, touchedRef.current, slotless, edits),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `touchedCount` stands for the typed cells
+    [results, fileDates, history.measurements, history.labValues, unitSystem, units, touchedCount, slotless, edits],
+  );
   const initialDisplayValues = useMemo<Record<string, string>>(() => {
     const map: Record<string, string> = {};
     for (const cell of matrix.cells.values()) {
@@ -196,6 +198,7 @@ export function ReviewTable({
   /** A cell's text changed: kept as typed, and what it now says sent to the state as a choice. */
   const updateEditedDisplayValue = (id: string, value: string, display?: CellUnit) => {
     const existing = touchedRef.current.get(id);
+    if (!existing) setTouchedCount(n => n + 1);
     touchedRef.current.set(id, { display: display ?? existing?.display });
     setEditedDisplayValues(prev => ({ ...prev, [id]: value }));
     const { fi, ref } = refAt(id);
@@ -324,7 +327,8 @@ export function ReviewTable({
     }
     return views;
   }, [coreCellViews, groups, units, unitSystem]);
-  const rows = useMemo(() => reviewRows(matrix, results, groups.groupOf, cellViews, needsDay, new Set(touchedRef.current.keys())), [matrix, results, groups, cellViews, needsDay, editedDisplayValues]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- `touchedCount` stands for the typed cells
+  const rows = useMemo(() => reviewRows(matrix, results, groups.groupOf, cellViews, needsDay, new Set(touchedRef.current.keys())), [matrix, results, groups, cellViews, needsDay, touchedCount]);
   const showAll = useDisclosure();
   const notSavedOpen = useDisclosure();
   const matrixId = useId();

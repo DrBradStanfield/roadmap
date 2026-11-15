@@ -9,6 +9,9 @@ export function showAllValues(): void {
   // `hidden`: a review the modal hides (Close keeps it, US-12 AC5) still holds its button.
   const button = screen.queryByRole('button', { name: /^Show all \d+$/, hidden: true });
   if (button) fireEvent.click(button);
+  // The documents Save files sit behind one row too (US-13 AC14): a suite about their cards opens it.
+  const documents = screen.queryByRole('button', { name: /(letter or document|letters and documents) will be saved$/, hidden: true });
+  if (documents?.getAttribute('aria-expanded') === 'false') fireEvent.click(documents);
 }
 
 /** `showAllValues` after a render, passing the render's result through. */
@@ -24,7 +27,7 @@ export async function findReviewValue(value: string): Promise<HTMLElement> {
 
 /** `findReviewValue` for a value several files hold. */
 export async function findAllReviewValues(value: string): Promise<HTMLElement[]> {
-  await screen.findByText(/^(Found |No blood test values or)/, { selector: '.review-summary' });
+  await screen.findByText(/^(\d+ files?\b|Everything here)/, { selector: '.review-summary' });
   showAllValues();
   return screen.getAllByDisplayValue(value);
 }
