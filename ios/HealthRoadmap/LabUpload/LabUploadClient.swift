@@ -10,13 +10,7 @@ struct LabUploadClient: Sendable {
     /// `refusedRows`: it lists refused rows under "Not saved" (US-12 AC12, AC15).
     /// No `undatedPrev`, so the server leaves out values with no full day (AC14).
     static func body(pages: [LabFileReader.Page], unitSystem: String) throws -> Data {
-        struct Body: Encodable {
-            let pages: [LabFileReader.Page]
-            let unitSystem: String
-            let ownDates = true
-            let refusedRows = true
-        }
-        return try JSONEncoder().encode(Body(pages: pages, unitSystem: unitSystem))
+        try LabReadSender.body(pages: pages, unitSystem: unitSystem, flags: .init(ownDates: true, undatedPrev: false, refusedRows: true))
     }
 
     /// The extraction (`data`), as JSON text.
