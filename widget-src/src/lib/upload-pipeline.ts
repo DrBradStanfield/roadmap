@@ -1,13 +1,10 @@
-// The upload's web pieces: reading one file's pages, what a file read becomes (FileResult) and what
-// the review hands back to save. The flow itself is health-core's upload-flow.ts (hooks/useUploadFlow.ts).
+// The upload's web pieces: reading one file's pages, and what a file read becomes (FileResult). The flow itself is health-core's upload-flow.ts (hooks/useUploadFlow.ts).
 import { resolveLabValues, type RefusedLabValue, type UnreadLabValue } from '@roadmap/health-core/lab-extraction';
 import { UNIT_DEFS, reportedToCanonical } from '@roadmap/health-core/units';
-import { comparatorOf, type Comparator } from '@roadmap/health-core/lab-limits';
+import { comparatorOf } from '@roadmap/health-core/lab-limits';
 import { bloodTestKeyOf } from '@roadmap/health-core/blood-tests';
-import type { MeasurementSource } from '@roadmap/health-core/validation';
-import type { LabUnitRefusal } from '@roadmap/health-core/record-edits';
 import { fileVerdict, UPLOAD_LIMITS } from '@roadmap/health-core/upload-rules';
-import type { UploadOutcomeKey, UploadReviewKey } from '@roadmap/health-core/product-events';
+import type { UploadOutcomeKey } from '@roadmap/health-core/product-events';
 import type { ExtractedValue, AdditionalLabValue, DocumentResult, LabImportResult, PageContent, UploadErrorCode } from './api-types';
 import { isDocx, isLegacyDoc } from './file-kinds';
 // Type only: a value import would pull the lazy upload bundle into the main one.
@@ -26,59 +23,6 @@ export interface FileResult {
   /** Value rows the parse dropped, and the ones that name their test, listed under "Not saved" (US-12 AC19). */
   droppedValueCount?: number;
   unreadValues?: UnreadLabValue[];
-  /** The original uploaded bytes — saved into the user's cloud archive (v2); absent off-cloud. */
-  file?: Blob;
-  /** 'sha256-<hex>' of the original's bytes — matched against the record's document rows, kept off-cloud too (US-14 AC10). */
-  contentHash?: string;
-}
-
-/** Document to be saved, assembled from review state */
-export interface DocumentToSave {
-  documentType: string;
-  title: string;
-  documentDate: string | null;
-  contentMd: string;
-  metadata: Record<string, unknown>;
-  sourceFileName: string | null;
-  /** If this maps to a screening type, the key to update (e.g. "colorectal_last_date") */
-  screeningUpdate?: { key: string; date: string };
-  /** The original bytes, carried inside the payload (no name-keyed re-join). */
-  file?: Blob;
-  /** The original's hash, kept off-cloud where the bytes are not (US-14 AC10). */
-  contentHash?: string;
-  /** The file's identity in the pick (`fileKey`): the archive step leaves it alone. */
-  fileKey?: string;
-}
-
-/** A reviewed row on its way to the store. `correctsId` is set when the user
- *  ticked "Replace" on a slot an earlier writer already holds — the store
- *  turns it into a FHIR correction. */
-export interface ReviewedValue {
-  metric: string; valueSI: number; recordedAt: string; source?: MeasurementSource; correctsId?: string;
-  /** The file it was read from (`fileKey`): that file's archive row lists the row it writes (US-14 AC10). */
-  file?: string;
-  /** Printed as a limit and saved as printed (US-12 AC20); an edited cell is an exact value. */
-  comparator?: Comparator;
-}
-export interface ReviewedLabValue {
-  name: string; value: number; unit: string; file?: string;
-  referenceLow?: number | null; referenceHigh?: number | null;
-  recordedAt: string; correctsId?: string;
-  comparator?: Comparator;
-}
-/** The person's review decisions: what ReviewTable's Save hands up and the
- *  upload flow saves (US-12). `reviewed` is every result as reviewed: its
- *  report date (the column day, or null) and its document's title and date.
- *  The archive files originals from these, an unselected document included (US-13 AC6). */
-export interface ReviewDecisions {
-  values: ReviewedValue[];
-  documents: DocumentToSave[];
-  labValues: ReviewedLabValue[];
-  reviewed: FileResult[];
-  /** The review's `upload_review` counts (US-13 AC13), sent once the save finishes. */
-  review?: Partial<Record<UploadReviewKey, number>>;
-  /** Labs the review did not send for their unit or number, counted as refused spellings once the save finishes (US-21 AC15). */
-  labRefusals?: LabUnitRefusal[];
 }
 
 /**

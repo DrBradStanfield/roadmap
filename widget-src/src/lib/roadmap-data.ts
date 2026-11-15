@@ -2,16 +2,19 @@
 import type { AddLabValueRequest, AddLabValueResult, MoveKeep, MoveRejection, MovePlan } from '@roadmap/health-core/record-edits';
 import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import { dayOf } from '@roadmap/health-core/merge';
-import type { FileReminderOptIn } from '@roadmap/health-core/roadmap-file';
+import { createEmptyFile, type FileReminderOptIn, type RoadmapFile } from '@roadmap/health-core/roadmap-file';
+import type { LabUnitRefusal } from '@roadmap/health-core/record-edits';
+import type { UploadState } from '@roadmap/health-core/upload-flow';
+import type { UploadSaveIO } from '@roadmap/health-core/upload-save';
 import type { HealthInputs } from '@roadmap/health-core/types';
 import type { LpaUnit, MetricType } from '@roadmap/health-core/units';
-import { MEASUREMENT_REFUSALS_WITH_METRIC, type MEASURES } from '@roadmap/health-core/product-events';
+import type { MEASURES } from '@roadmap/health-core/product-events';
 import type { ReminderScheduleItem } from '@roadmap/health-core/reminder-schedule';
 import type { SaveStatus } from '@roadmap/health-core/save-state';
 import { knownMinorOf } from '@roadmap/health-core/calculations';
 import { knownIndex, readIsLegacy, type KnownIndex } from '@roadmap/health-core/upload-known';
 import type { UnifiedExtractionResult } from '@roadmap/health-core/lab-extraction';
-import { RoadmapStore, type DerivedSeries, type BulkLabValueInput, type BulkMeasurementInput, type CorrectStatus, type MoveOutcome, type ProfileSave } from '../storage/roadmap-store';
+import { RoadmapStore, type DerivedSeries, type CorrectStatus, type MoveOutcome, type ProfileSave, type UploadStoreSave } from '../storage/roadmap-store';
 import { ChatHistoryStore } from '../storage/chat-history-store';
 import { getChatHistory, openChatHistory, setChatHistoryFactory } from './chat-history-access';
 import { eraseBegan, setChatEraseReader } from './chat-erase';
@@ -21,11 +24,8 @@ import { SHOPIFY_SURFACE } from './build-flags';
 import type { StorageAdapter } from '@roadmap/health-core/adapter';
 import type {
   AddMeasurementResult,
-  ApiDocument,
   ApiLabValue,
   ApiMedicationHistory,
-  BulkLabValuesResult,
-  BulkSaveResult,
   LatestMeasurementsResult,
 } from './api-types';
 
@@ -86,6 +86,12 @@ export function uploadKnownIndex(): KnownIndex {
 export function isLegacyUpload(name: string, read: UnifiedExtractionResult): boolean {
   return !!store && readIsLegacy(store.file, name, read);
 }
+
+/** The record as the upload's review reads it now (health-core uploadReview); an empty one before the store opens. */
+export function uploadRecord(): RoadmapFile {
+  return store ? store.file : NO_RECORD;
+}
+const NO_RECORD = createEmptyFile({ deviceId: 'none', now: new Date(0).toISOString() });
 
 /** Which erase the record is at; it moves with every erase, this tab's or
  *  another device's once re-read (US-16 AC2a). */
@@ -281,38 +287,25 @@ export async function deleteSupplementApi(supplementKey: string): Promise<boolea
 export async function saveScreening(screeningKey: string, value: string, erase?: string): Promise<boolean> {
   return store ? store.saveScreening(screeningKey, value, erase) : false;
 }
-export async function bulkSaveMeasurements(measurements: BulkMeasurementInput[]): Promise<BulkSaveResult> {
-  if (!store) return { saved: [], skippedDuplicates: 0, errorCount: measurements.length, refused: [] };
-  const result = store.bulkSaveMeasurements(measurements);
-  // Counted like a refused lab unit, in closed words only (US-35 AC17). The
-  // metric rides only on an invalid value: an out-of-range one would say this
-  // visitor's value is past a bound, and an unknown metric is free text. An
-  // out-of-range metric still keys the tab's throttle, locally, so two tests
-  // past their bounds count twice.
-  for (const row of result.refused) {
-    if (MEASUREMENT_REFUSALS_WITH_METRIC.includes(row.reason)) trackProductEvent('measurement_refused', { metric: row.metricType as MetricType, refusal: row.reason });
-    else if (row.reason === 'out-of-range') trackProductEvent('measurement_refused', { refusal: row.reason }, row.metricType);
-    else trackProductEvent('measurement_refused', { refusal: row.reason });
-  }
-  countMeasuresAdded(result.saved.filter((row) => !row.correctsId));
-  return result;
-}
-export async function bulkSaveLabValues(values: BulkLabValueInput[]): Promise<BulkLabValuesResult> {
-  if (!store) return { saved: [], skippedDuplicates: 0, errorCount: values.length, refused: [] };
-  const result = store.bulkSaveLabValues(values);
-  countRefusedSpellings(result.refused);
-  return result;
-}
 /** A lab value a person adds (US-21 AC2, US-25 AC25), by health-core's one lab add; null when nothing could be written. */
 export async function addLabValue(input: AddLabValueRequest, erase?: string): Promise<AddLabValueResult | null> {
   const result = store ? store.addLabValue(input, erase) : null;
   if (result && !result.ok && result.refused) countRefusedSpellings([result.refused]);
   return result;
 }
-export async function bulkSaveDocuments(
-  documents: Array<{ documentType: string; title: string; documentDate: string | null; contentMd: string; metadata: Record<string, unknown>; sourceFileName: string | null; file?: Blob; contentHash?: string }>,
-): Promise<{ saved: ApiDocument[]; errorCount: number; unstored?: number }> {
-  return store ? store.bulkSaveDocuments(documents) : { saved: [], errorCount: documents.length };
+/**
+ * One upload Save (health-core `uploadSave` in one edit, design 12c), with its usage signals: the
+ * prompted measures it added (US-07 AC11) and the labs the review did not send for their unit
+ * (US-21 AC15), counts and closed words only. `message`: why the review stays open (null: the erase refused it).
+ */
+export async function saveUpload(state: UploadState, now: string, cloud: boolean, io: Omit<UploadSaveIO<Blob>, 'write'>, labRefusals: LabUnitRefusal[]): Promise<UploadStoreSave> {
+  if (!store) return { ok: false, message: null };
+  const answer = await store.saveUpload(state, now, cloud, io);
+  if (answer.ok) {
+    countMeasuresAdded(answer.added);
+    countRefusedSpellings(labRefusals);
+  }
+  return answer;
 }
 export async function deleteDocument(documentId: string): Promise<boolean> {
   return store ? store.deleteDocument(documentId) : false;

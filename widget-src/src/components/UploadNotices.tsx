@@ -8,7 +8,8 @@ const BYOK_NOTICE_TEXT: Partial<Record<FileNoticeReason, string>> = {
   serverError: 'Not read. Anthropic could not be reached or could not read it. Please try again.',
 };
 
-function noticeText({ reason, text }: FileNotice & { reason: Exclude<FileNoticeReason, 'valuesDropped'> }): string {
+/** A notice in its words: its own, else the reason's (the Pages build says a server error its own way). */
+export function noticeText({ reason, text }: FileNotice & { reason: Exclude<FileNoticeReason, 'valuesDropped'> }): string {
   return text || (!SHOPIFY_SURFACE && BYOK_NOTICE_TEXT[reason]) || FILE_NOTICE_TEXT[reason];
 }
 

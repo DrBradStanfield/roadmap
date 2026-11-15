@@ -106,6 +106,30 @@ export const REFUSED_TEXT: Record<RunRefusal, string> = {
   noKey: KEY_TEXT.missing,
   server: 'An error occurred while processing files. Please try again.',
 };
+/**
+ * The web's upload window words, moved from UploadModal.tsx, ReviewTable.tsx and ReviewFileSections.tsx
+ * byte for byte (design PR 10), so every word the window shows comes from here.
+ */
+export const UPLOAD_WINDOW_TEXT = {
+  title: 'Upload Health Records',
+  keepTitle: 'Keep your original documents',
+  keepChoose: 'Choose where to keep it',
+  keepSkip: 'Continue without keeping my files ›',
+  drop: 'Drop health records here, or click to browse',
+  dropHint: (files: number) => `PDF, JPG, PNG, DOCX, or ZIP — up to ${files} files`,
+  close: 'Close',
+  cancel: 'Cancel',
+  done: 'Done',
+  saving: 'Saving...',
+  reviewError: 'Something went wrong showing these results. Your file was read; please try again.',
+  documentTitle: 'Document title',
+  documentDate: 'Document date',
+  date: 'Date:',
+  /** An undated column's header while it has no day (US-12 AC14): the month and the report day in words, when known. */
+  pickDay: (month: string | null, before: string | null) => `Pick a day${month ? ` in ${month}` : ''}${before ? ` before ${before}` : ''}`,
+} as const;
+/** A Save that threw or was refused, as the web said it (lib/upload-save.ts); moved byte for byte. */
+export const SAVE_FAILED_TEXT = 'Failed to save. Please try again.';
 /** An empty ZIP, or one of unsupported files, named itself (US-12 AC9); moved from useUploadFlow.ts. */
 export const EMPTY_ZIP_TEXT = 'No files we can read inside this ZIP.';
 

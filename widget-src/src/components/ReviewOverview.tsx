@@ -47,13 +47,3 @@ export function NotSavedLine({ notSaved, disclosure }: { notSaved: ReviewGroups[
     </div>
   );
 }
-
-/** The Save button's words: "Save 3 values", then any documents and originals (string 12). */
-export function saveLabel(values: number, documents: number, originals: number): string {
-  const extras = [
-    documents > 0 && `${documents} document${documents !== 1 ? 's' : ''}`,
-    originals > 0 && `${originals} original${originals !== 1 ? 's' : ''}`,
-  ].filter(Boolean);
-  if (values > 0) return [IMPORT_REVIEW_TEXT.save(values), ...extras].join(' + ');
-  return extras.length ? `Save ${extras.join(' + ')}` : 'Save';
-}

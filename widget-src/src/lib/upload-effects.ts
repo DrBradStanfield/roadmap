@@ -13,7 +13,7 @@ import type { UploadErrorCode } from './api-types';
 import { labImport } from './upload-api';
 import { sha256Blob } from './archive-payloads';
 import { getDocumentArchiveMode, isLegacyUpload, uploadKnownIndex } from './roadmap-data';
-import { readPages, shortName } from './upload-pipeline';
+import { offerCoreExtras, readPages, shortName } from './upload-pipeline';
 import { fileNameOf, type Held } from './upload-read';
 // Type only: a value import would pull the lazy upload bundle into the main one.
 import type { HealthUploadAPI } from '../upload-entry';
@@ -123,7 +123,8 @@ async function send(port: UploadPort, effect: Extract<UploadEffect, { type: 'sen
   if (!result) return port.send({ type: 'sendFailed', run, id, failure: asFailure(errorCode) });
   delete h.pages; // read: only a failed send is sent again
   const name = fileNameOf(f);
-  const extraction = result as unknown as UnifiedExtractionResult;
+  // The review's extraction: an extra value named like a core test offered as that value (US-66 AC6), so its refs are the ones the review shows.
+  const extraction = { ...result, ...offerCoreExtras(result) } as unknown as UnifiedExtractionResult;
   port.send({ type: 'answered', run, id, extraction, legacy: isLegacyUpload(name, extraction), now: new Date().toISOString() });
 }
 
