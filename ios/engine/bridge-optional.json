@@ -110,6 +110,18 @@
         "stateJson"
       ],
       "returns": "Shared upload (US-12 AC10): the run's usage counts for upload_outcome, health-core uploadUsageCounts as JSON {known?, failedFinal?, firstReadSeconds?}, each a whole number capped at 1000; {} before a pick. Counts only, never a name, hash or value."
+    },
+    "uploadSaveJson": {
+      "args": [
+        "stateJson",
+        "recordJson",
+        "erase",
+        "nowIso",
+        "deviceId",
+        "originalsJson",
+        "readOriginal"
+      ],
+      "returns": "Shared upload (US-52 AC8c, US-14 AC10): a Promise of one Save, health-core uploadSave: the pick's values (bulkAppendValues) and its document and lab archive rows (saveDocuments, labArchivePayload listing the rows the values wrote) in one step, for a state in its saving phase. erase as documentSave takes it: with a cloud open, through the session (the phone's copy and its pending marker first), and the engine writes each original the save plan stores, reading its bytes by calling readOriginal(fileId), which answers an ArrayBuffer or null, only for the files originalsJson ({fileId: mimeType}) names; '' for none, onto recordJson. One Save at a time; a change merged in while the originals are written makes it run again once on the new record, then refuse as changed. Answers JSON {ok: true, record (the record as text), erase? (with a cloud), outcome: {values, documents, archived}, unstored} for the app's saved event, or {ok: false, reason, message}: reason invalid-state, invalid-record, record-too-new, invalid-originals, not-saving, not-ready (a selected value Save would refuse, or a report waiting for its day, in the view's words; nothing written), not-open, erased, phone-write, changed or engine-error. A repeat on the record it saved writes nothing and answers zero counts."
     }
   }
 }

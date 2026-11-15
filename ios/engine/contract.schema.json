@@ -825,6 +825,40 @@
           "type": "string"
         }
       ]
+    },
+    "uploadSaveJson": {
+      "kind": "promise",
+      "optionalDoor": true,
+      "args": [
+        {
+          "name": "stateJson",
+          "type": "string"
+        },
+        {
+          "name": "recordJson",
+          "type": "string"
+        },
+        {
+          "name": "erase",
+          "type": "string"
+        },
+        {
+          "name": "nowIso",
+          "type": "string"
+        },
+        {
+          "name": "deviceId",
+          "type": "string"
+        },
+        {
+          "name": "originalsJson",
+          "type": "string"
+        },
+        {
+          "name": "readOriginal",
+          "type": "callback"
+        }
+      ]
     }
   },
   "types": {

@@ -136,11 +136,18 @@ function save(s: UploadState, plan: UploadSavePlan, review: UploadReview): Uploa
   if (s.phase === 'saveFailed') return { label, enabled: true, why: null, error: s.message };
   if (s.phase !== 'open') return { label, enabled: false, why: null, error: null };
   const waiting = inFlight(s);
-  const needsDay = review.labFiles.some((f) => f.needsDay); // no report is ever skipped by Save
-  const empty = planIsEmpty(plan);
-  const invalid = review.classification.values.some(blocks);
-  const why = waiting ? UPLOAD_TEXT.saveWait(waiting) : invalid ? FIX_ERRORS_TEXT : needsDay ? UPLOAD_TEXT_PROPOSED.chooseDay : empty ? UPLOAD_TEXT.saveNothing : null;
+  const why = waiting ? UPLOAD_TEXT.saveWait(waiting) : saveBlocked(review) ?? (planIsEmpty(plan) ? UPLOAD_TEXT.saveNothing : null);
   return { label, enabled: saveEnabled(s) && why === null, why, error: null };
+}
+
+/**
+ * Why Save may not write this review, in the view's words, or null: a selected value the write
+ * would refuse, or a report still waiting for its day (no report is ever skipped by Save). The
+ * save itself refuses on the same rule (upload-save.ts), so nothing is written past it.
+ */
+export function saveBlocked(review: UploadReview): string | null {
+  if (review.classification.values.some(blocks)) return FIX_ERRORS_TEXT;
+  return review.labFiles.some((f) => f.needsDay) ? UPLOAD_TEXT_PROPOSED.chooseDay : null;
 }
 
 /**

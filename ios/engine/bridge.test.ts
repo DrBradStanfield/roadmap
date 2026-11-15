@@ -33,6 +33,10 @@ function parameters(name: string): string[] {
 
 /** Contract arguments to call each optional door with (one entry per door in bridge-optional.json). */
 const NOW = '2026-10-21T08:00:00.000Z';
+/** A saving phone upload holding one read lab report with one value (the save door's freeze). */
+const UPLOAD_SAVING = JSON.stringify({ phase: 'saving', platform: 'phone', run: 1, started: NOW, firstRead: NOW, attempt: 1,
+  files: [{ id: 'f1', name: 'a.pdf', bytes: 1, hash: 'h-a', pages: { count: 1, truncated: false }, status: { s: 'read', choices: { ticks: {}, testDay: null, previousDay: null, replace: {}, edits: {}, document: {} },
+    extraction: { classification: 'lab_report', reportDate: '2026-10-01', values: [{ metric: 'ldl', valueSI: 3.1, displayValue: 3.1, displayUnit: 'mmol/L', displaySystem: 'si', confidence: 'high' }], additionalValues: [], unrecognized: [], document: null } } }] });
 /** An open phone upload holding one file being hashed (shared upload PR 12). */
 const UPLOAD_OPEN = JSON.stringify({ phase: 'open', platform: 'phone', run: 1, started: NOW, firstRead: null,
   files: [{ id: 'f1', name: 'a.pdf', bytes: 1, hash: null, pages: null, status: { s: 'hashing' } }] });
@@ -113,6 +117,12 @@ describe('bridge contract (US-25 AC18)', () => {
       shape: { counts: { values: 'number', documents: 'number', archived: 'number', originals: 'number' } },
     },
     uploadUsageJson: { args: ['stateJson'], call: [UPLOAD_OPEN], shape: { known: 'number', failedFinal: 'number' } },
+    // The one Save (US-52 AC8c): a saving pick of one read lab report, off-cloud, onto an empty record.
+    uploadSaveJson: {
+      args: ['stateJson', 'recordJson', 'erase', 'nowIso', 'deviceId', 'originalsJson', 'readOriginal'],
+      call: [UPLOAD_SAVING, '', '', NOW, 'phone', '{}', () => null],
+      shape: { ok: 'boolean', record: 'string', outcome: { values: 'number', documents: 'number', archived: 'number' }, unstored: 'number' },
+    },
   };
   /** Where `answer` drops or retypes what `frozen` holds: [] when it holds at least the frozen shape. */
   function shapeFaults(frozen: unknown, answer: unknown, at = '$'): string[] {
@@ -135,7 +145,7 @@ describe('bridge contract (US-25 AC18)', () => {
       const door = (entry as unknown as Record<string, (...a: unknown[]) => unknown>)[name];
       if (frozen.bytes) await expect(door(...frozen.call), name).rejects.toThrow('not open');
       else if (frozen.words) expect(frozen.words, name).toContain(await door(...frozen.call));
-      else expect(shapeFaults(frozen.shape, JSON.parse(door(...frozen.call) as string)), name).toEqual([]);
+      else expect(shapeFaults(frozen.shape, JSON.parse(await door(...frozen.call) as string)), name).toEqual([]);
     }
   });
 
