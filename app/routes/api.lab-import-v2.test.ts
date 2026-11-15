@@ -250,7 +250,7 @@ describe('a single file that stopped short', () => {
   it('gives the file one 60 s deadline', async () => {
     extractOrClassify.mockResolvedValueOnce({ classification: 'other' });
     await action({ request: single() } as never);
-    expect(extractOrClassify).toHaveBeenCalledWith(FILES[0].pages, { timeoutMs: 60_000 });
+    expect(extractOrClassify).toHaveBeenCalledWith(FILES[0].pages, { timeoutMs: 60_000, retryRateLimit: true });
   });
 
   it('answers a max_tokens stop 422 "too_long"', async () => {

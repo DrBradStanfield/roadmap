@@ -58,7 +58,10 @@ export interface AnthropicResult {
  * latency.
  *
  * 429 is treated as structural (account tier too low, runaway caller, or a real
- * outage requiring intervention) — not retried, surfaced via Sentry.
+ * outage requiring intervention) — not retried, surfaced via Sentry. Except
+ * for a caller that opts in with `rateLimitUntil` (US-12 AC1a): there a 429
+ * takes the one retry after its `retry-after` (else 2 s), only if more than
+ * 6 s of that deadline would remain after the wait.
  *
  * 503 and 529 are transient capacity signals — retried, and (if both attempts
  * fail) the final throw is silenced from Sentry to avoid flooding alerts during
@@ -72,6 +75,21 @@ export const RETRY_DELAY_MS = 1000;
 export const ANTHROPIC_TIMEOUT_MS = 60_000;
 const RETRYABLE_STATUSES = new Set([502, 503, 504, 529]);
 const TRANSIENT_CAPACITY_STATUSES = new Set([503, 529]); // silenced from Sentry on final failure
+const RATE_LIMIT_DEFAULT_WAIT_MS = 2_000;
+const RATE_LIMIT_MAX_WAIT_MS = 60_000;
+/** An opted-in 429 is retried only if more than this is left of the deadline after its wait. */
+const RATE_LIMIT_MIN_LEFT_MS = 6_000;
+
+/**
+ * Anthropic's `retry-after`, external text, read once: plain non-negative
+ * seconds, capped at 60 s. Anything else (a date, a sign, an exponent, junk)
+ * is the 2 s default. US-12 AC1a.
+ */
+export function parseRetryAfterMs(header: string | null): number {
+  const value = header?.trim() ?? '';
+  if (!/^\d{1,9}(\.\d{1,3})?$/.test(value)) return RATE_LIMIT_DEFAULT_WAIT_MS;
+  return Math.min(Number(value) * 1000, RATE_LIMIT_MAX_WAIT_MS);
+}
 
 /**
  * Network/timeout errors thrown by Node's fetch(): TypeError "fetch failed"
@@ -196,13 +214,15 @@ export interface ReadControl { began(): void; idle: AbortController }
  * `maxAttempts` below the default turns the inner retry off for a caller whose own deadline cannot absorb it (US-35 AC5).
  * `deadline` (epoch ms) bounds the retries too: each attempt gets what is left, and a retry starts only
  * with a useful window, 5 s after its 1 s wait (US-52 AC7c). `onRetry` is told each retry (US-52 AC7d).
+ * `rateLimitUntil` (epoch ms) opts a caller into the one 429 retry, inside that deadline (US-12 AC1a).
  */
 export async function fetchAnthropicRaw(
   apiKey: string, body: Record<string, unknown>, timeoutMs = ANTHROPIC_TIMEOUT_MS, maxAttempts = RETRY_MAX_ATTEMPTS,
   read: (response: Response, control: ReadControl) => Promise<AnthropicResult> = readJson, deadline?: number,
-  onRetry?: () => void,
+  onRetry?: () => void, rateLimitUntil?: number,
 ): Promise<AnthropicResult> {
-  const left = () => (deadline === undefined ? Infinity : deadline - Date.now());
+  let until = deadline;
+  const left = () => (until === undefined ? Infinity : until - Date.now());
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     let began = false;
     const retry = () => attempt < maxAttempts && left() > RETRY_DELAY_MS + 5_000;
@@ -220,12 +240,22 @@ export async function fetchAnthropicRaw(
       });
 
       if (!response.ok) {
-        if (RETRYABLE_STATUSES.has(response.status) && retry()) {
+        let wait: number | undefined;
+        if (RETRYABLE_STATUSES.has(response.status) && retry()) wait = RETRY_DELAY_MS;
+        else if (response.status === 429 && rateLimitUntil !== undefined && attempt < maxAttempts) {
+          const asked = parseRetryAfterMs(response.headers.get('retry-after'));
+          if (rateLimitUntil - Date.now() - asked > RATE_LIMIT_MIN_LEFT_MS) {
+            wait = asked;
+            // The retried attempt (and retry() after it) sees only what is left of that deadline.
+            until = Math.min(until ?? Infinity, rateLimitUntil);
+          }
+        }
+        if (wait !== undefined) {
           // Discard provider bodies: errors may echo uploaded or chat content.
           await response.body?.cancel();
-          console.warn(`Anthropic API ${response.status} on attempt ${attempt}/${maxAttempts}, retrying after ${RETRY_DELAY_MS}ms`);
+          console.warn(`Anthropic API ${response.status} on attempt ${attempt}/${maxAttempts}, retrying after ${wait}ms`);
           onRetry?.();
-          await sleep(RETRY_DELAY_MS);
+          await sleep(wait);
           continue;
         }
 
