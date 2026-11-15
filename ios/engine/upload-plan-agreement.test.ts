@@ -59,8 +59,10 @@ function genRecord(r: () => number): RoadmapFile {
 
 const readFile = (id: string, extraction: Extraction, ticks: Record<string, boolean> = {}, testDay: string | null = null, hash = `h-${id}`): UploadFile => ({
   id, name: `${id}.pdf`, bytes: 1, hash, pages: { count: 1, truncated: false },
-  status: { s: 'read', extraction: { unrecognized: [], document: null, ...extraction } as never, choices: { ticks, testDay, document: {} } },
+  status: { s: 'read', extraction: { unrecognized: [], document: null, ...extraction } as never, choices: { ticks, testDay, previousDay: null, document: {} } },
 });
+/** The caller's way: one review, handed to the plan. */
+const planOf = (s: UploadState, record: RoadmapFile, now: string) => uploadSavePlan(s, record, now, uploadReview(s, record, now));
 const open = (files: UploadFile[]): UploadState => ({ phase: 'open', platform: 'phone', run: 1, files, started: NOW, firstRead: null });
 const refsOf = (x: Extraction) => [...(x.values ?? []).map((v, i) => ({ ref: `v${i}`, q: !!v.question })), ...(x.additionalValues ?? []).map((_, i) => ({ ref: `a${i}`, q: false }))];
 
@@ -75,7 +77,7 @@ describe('upload plan agrees with today\'s iPhone save', () => {
       const ticks: Record<string, boolean> = {};
       for (const { ref } of refsOf(x)) if (r() < 0.2) ticks[ref] = r() < 0.5;
       const testDay = r() < 0.3 ? DAYS[0] : null;
-      const plan = uploadSavePlan(open([readFile('a', x, ticks, testDay)]), record, NOW);
+      const plan = planOf(open([readFile('a', x, ticks, testDay)]), record, NOW);
       const ticked = refsOf(x).filter(({ ref, q }) => ticks[ref] ?? !q).map((t) => t.ref);
       const planned = plan.labRows.find((l) => l.fileId === 'a')?.rows ?? [];
       const ownDay = (ref: string) => (ref[0] === 'v' ? x.values![Number(ref.slice(1))].recordedAt : x.additionalValues![Number(ref.slice(1))].recordedAt);
@@ -101,7 +103,7 @@ describe('upload plan agrees with today\'s iPhone save', () => {
       const a = genLab(r, { core: [CORE[0], CORE[1]], labs: [LABS[0]] }, [DAYS[0]]);
       const b = genLab(r, { core: [CORE[2], CORE[3]], labs: [LABS[1]] }, [DAYS[1]]);
       const empty = createEmptyFile({ deviceId: 't', now: NOW });
-      const plan = uploadSavePlan(open([readFile('a', a), readFile('b', b)]), empty, NOW);
+      const plan = planOf(open([readFile('a', a), readFile('b', b)]), empty, NOW);
       const alone = (x: Extraction) => {
         const ticked = refsOf(x).filter((t) => !t.q).map((t) => t.ref);
         const needs = ticked.some((ref) => (ref[0] === 'v' ? x.values![Number(ref.slice(1))].recordedAt : x.additionalValues![Number(ref.slice(1))].recordedAt) === undefined);
@@ -116,7 +118,7 @@ describe('upload plan agrees with today\'s iPhone save', () => {
 
   it('two reports with the same test on the same day: one copy saves, as the web classifies them together', () => {
     const x: Extraction = { classification: 'lab_report', reportDate: DAYS[0], values: [{ metric: 'ldl', valueSI: 3.1, displayValue: 3.1, displayUnit: 'mmol/L', displaySystem: 'si', confidence: 'high' }] };
-    const plan = uploadSavePlan(open([readFile('a', x), readFile('b', x)]), createEmptyFile({ deviceId: 't', now: NOW }), NOW);
+    const plan = planOf(open([readFile('a', x), readFile('b', x)]), createEmptyFile({ deviceId: 't', now: NOW }), NOW);
     expect(plan.counts.values).toBe(1);
     expect(plan.labRows.map((l) => l.fileId)).toEqual(['a']);
   });
@@ -132,7 +134,7 @@ describe('upload plan agrees with today\'s iPhone save', () => {
       if (r() < 0.2) rows.push(documentRow({ documentType: 'clinic_letter', title: 'Same name', documentDate: null, contentMd: 't', metadata: {}, sourceFileName: 'a.pdf' }, { id: 's', contentHash: '', mimeType: '', addedAt: NOW }));
       const record = { ...createEmptyFile({ deviceId: 't', now: NOW }), documents: rows };
       const card = labReview(x, NOW, record, 'a.pdf', 'h-a').document!;
-      const plan = uploadSavePlan(open([{ ...readFile('a', x), status: { s: 'read', extraction: { unrecognized: [], values: [], additionalValues: [], ...x } as never, choices: { ticks: {}, testDay: null, document: {} } } }]), record, NOW);
+      const plan = planOf(open([{ ...readFile('a', x), status: { s: 'read', extraction: { unrecognized: [], values: [], additionalValues: [], ...x } as never, choices: { ticks: {}, testDay: null, previousDay: null, document: {} } } }]), record, NOW);
       expect([seed, plan.documents[0].fields]).toMatchObject([seed, { title: card.title, documentDate: card.documentDate, documentType: card.classification, sourceFileName: 'a.pdf' }]);
       if (card.alreadySaved) r3++;
     }
@@ -149,7 +151,7 @@ describe('the view counts what the plan writes', () => {
       const record = genRecord(r);
       const review = uploadReview(s, record, NOW);
       const plan = uploadSavePlan(s, record, NOW, review);
-      const view = uploadView(s, record, NOW, review, plan);
+      const view = uploadView(s, record, NOW, review);
       const { values } = plan.counts;
       // What the screen shows as written (sure and unsure rows that write) is what the plan writes.
       const shown = review.classification.values.filter((v) => v.sent && v.writes && (v.group === 'sure' || v.group === 'unsure')).length;

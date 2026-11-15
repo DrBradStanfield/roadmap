@@ -11,7 +11,7 @@
  */
 import { UNDATED_PREVIOUS, isUrineOrRatioUnit, type UnifiedExtractionResult } from './lab-extraction';
 import { labTestLabel } from './lab-catalog';
-import { bulkAppendValues, slotIndex, slotKey, type BulkAppendResult, type BulkRow } from './record-edits';
+import { bulkAppendValues, slotIndex, slotKey, validDay, type BulkAppendResult, type BulkRow } from './record-edits';
 import { bulkRowTarget } from './bulk-row-target';
 import { coreStored, createCoreRow, isBloodTestKey } from './blood-tests';
 import { isClinicalDay } from './measurement-history';
@@ -68,6 +68,23 @@ export function importRow(result: ImportFile['result'], ref: string, day: string
     kind: 'lab', metricName: a.name, value: edited ? edited.value : a.value, unit: edited?.unit ?? a.unit,
     referenceLow: a.referenceLow ?? null, referenceHigh: a.referenceHigh ?? null, ...common, ...(!edited && a.comparator ? { comparator: a.comparator } : null),
   };
+}
+
+/**
+ * One report as `classifyImportValues` takes it, from the values the person ticked: each on its
+ * own day, else `day` (the test's), an undated previous column's on `undatedDay`; a value with no
+ * real past day is not sent. The one row rule the iPhone (ios/engine lab-review-groups.ts
+ * `classifyReport`) and the shared upload (upload-review.ts) both build with.
+ */
+export function reportImportFile(result: ImportFile['result'], ticked: Iterable<string>, day: string | null, now: string, undatedDay: string | null = null): ImportFile {
+  const days = valueDays(result, day, undatedDay);
+  const rows: Record<string, BulkRow> = {};
+  for (const ref of ticked) {
+    const on = days[ref] ? validDay(days[ref]!, { now }) : null;
+    const row = on ? importRow(result, ref, on) : null;
+    if (row) rows[ref] = row;
+  }
+  return { result, rows, days };
 }
 
 /** A value the person can tick: a core (`v<i>`) or additional (`a<i>`) one, never a refused or unread row. */

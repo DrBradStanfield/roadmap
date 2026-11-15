@@ -28,9 +28,10 @@ const SEND_FAILURE: Record<UploadFailure, FailReason> = {
 
 /** A document's corrections before Save (design Q3 (a)). */
 export interface DocumentFix { title?: string; kind?: string; date?: string | null }
-/** What the person chose for one read file: value ticks by ref (absent: the default), a test day, document fixes. */
-export interface FileChoices { ticks: Record<string, boolean>; testDay: string | null; document: DocumentFix }
-export type ChoiceChange = { tick: string; on: boolean } | { testDay: string | null } | { document: DocumentFix };
+/** What the person chose for one read file: value ticks by ref (absent: the default), a test day, the
+ *  day of an undated previous column (US-12 AC14; the web asks it, the phone never gets one), document fixes. */
+export interface FileChoices { ticks: Record<string, boolean>; testDay: string | null; previousDay: string | null; document: DocumentFix }
+export type ChoiceChange = { tick: string; on: boolean } | { testDay: string | null } | { previousDay: string | null } | { document: DocumentFix };
 
 export type FileStatus =
   | { s: 'listing' }                                       // a picked ZIP: its members replace it, in its place
@@ -125,7 +126,7 @@ export function saveEnabled(s: UploadState): boolean {
 // --- transition -------------------------------------------------------------
 
 const same = (state: UploadState): UploadStep => ({ state, effects: [] });
-const NO_CHOICES: FileChoices = { ticks: {}, testDay: null, document: {} };
+const NO_CHOICES: FileChoices = { ticks: {}, testDay: null, previousDay: null, document: {} };
 const idsIn = (files: UploadFile[], stages: readonly FileStage[]) => files.filter((f) => stages.includes(f.status.s)).map((f) => f.id);
 const forget = (run: number, ids: string[]): UploadEffect[] => (ids.length ? [{ type: 'forget', run, ids }] : []);
 const abort = (run: number, ids: string[]): UploadEffect[] => (ids.length ? [{ type: 'abort', run, ids }] : []);
@@ -279,6 +280,7 @@ function save(s: Pick, attempt: number): UploadStep {
 function choose(c: FileChoices, change: ChoiceChange): FileChoices {
   if ('tick' in change) return { ...c, ticks: { ...c.ticks, [change.tick]: change.on } };
   if ('testDay' in change) return { ...c, testDay: change.testDay };
+  if ('previousDay' in change) return { ...c, previousDay: change.previousDay };
   return { ...c, document: { ...c.document, ...change.document } };
 }
 

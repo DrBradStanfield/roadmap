@@ -14,7 +14,7 @@ import { requestFlags, UPLOAD_LIMITS } from './upload-rules';
 const WEB_FLAGS = requestFlags('web');
 
 const EXT: UnifiedExtractionResult = { classification: 'lab_report', reportDate: null, values: [], additionalValues: [], unrecognized: [], document: null };
-const CHOICES = { ticks: {}, testDay: null, document: {} };
+const CHOICES = { ticks: {}, testDay: null, previousDay: null, document: {} };
 const NOW = '2026-11-15T00:00:00Z';
 const MB = 1024 * 1024;
 

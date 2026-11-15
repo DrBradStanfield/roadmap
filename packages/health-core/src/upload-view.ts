@@ -4,21 +4,23 @@
  * draw it and send events, and neither counts. Known files are only counted. The Save label
  * counts what the plan writes, from the same classification (upload-review.ts).
  *
- * Cost: one `classifyImportValues` over every read lab report (a dry run of the write plus one
- * single-row probe per value), then linear passes over the files. Pass a `review` computed once
- * to share it with `uploadSavePlan`.
+ * Cost: the classification is the caller's (`uploadReview`, about 40 ms for 200 ten-value reports
+ * in Node); the view and its plan are linear passes over the files (about 2 ms).
  */
 import { DOCUMENT_TYPES, type DocumentType } from './validation';
 import { IMPORT_REVIEW_TEXT, isOfferedRef, KIND_WORDS, notSavedGroups, type ClassifiedValue, type UnsureReason } from './import-review';
 import type { RoadmapFile } from './roadmap-file';
 import { inFlight, RETRYABLE, saveEnabled, type FileStatus, type UploadFile, type UploadState } from './upload-flow';
 import { planIsEmpty, uploadSavePlan, type UploadSavePlan } from './upload-plan';
-import { uploadReview, type UploadReview } from './upload-review';
+import type { UploadReview } from './upload-review';
 import { FAIL_TEXT, UPLOAD_TEXT, UPLOAD_TEXT_PROPOSED } from './upload-text';
 
 export interface ValueRow { fileId: string; ref: string; label: string; reasons: UnsureReason[]; conflict: string | null }
 export type UploadSection =
-  | { kind: 'undated'; fileId: string; title: string; name: string }
+  | { kind: 'undated'; fileId: string; title: string; label: string; name: string }
+  /** An undated previous column's day (US-12 AC14; web only): a day in `month` (YYYY-MM) before
+   *  `before`, when known. Its words stay in the web's ReviewTable until they move (no string yet). */
+  | { kind: 'undatedPrevious'; fileId: string; name: string; month: string | null; before: string | null }
   | { kind: 'unsure'; title: string; footer: string; rows: ValueRow[] }
   | { kind: 'failed'; title: string; rows: Array<{ fileId: string; name: string; line: string }>; retry: string | null }
   | { kind: 'notSaved'; title: string; lines: string[]; footer: string };
@@ -92,7 +94,9 @@ function saveLabel(plan: UploadSavePlan): string {
   return values || documents || !originals ? UPLOAD_TEXT.saveBoth(values, documents) : UPLOAD_TEXT_PROPOSED.saveOriginals(originals);
 }
 
-export function uploadView(s: UploadState, record: RoadmapFile, now: string, review: UploadReview = uploadReview(s, record, now), plan: UploadSavePlan = uploadSavePlan(s, record, now, review)): UploadView {
+/** `review`: the caller's `uploadReview`, the same one it hands `uploadSavePlan`, so the screen counts what Save writes. */
+export function uploadView(s: UploadState, record: RoadmapFile, now: string, review: UploadReview): UploadView {
+  const plan = uploadSavePlan(s, record, now, review);
   const files = 'files' in s ? s.files : [];
   const values = review.classification.values;
   const row = valueRow(review);
@@ -102,7 +106,8 @@ export function uploadView(s: UploadState, record: RoadmapFile, now: string, rev
   const failed = files.filter((f): f is UploadFile & { status: Extract<FileStatus, { s: 'failed' }> } => f.status.s === 'failed');
   const groups = notSavedGroups(values);
   const sections: UploadSection[] = [
-    ...review.labFiles.filter((f) => f.needsDay).map((f): UploadSection => ({ kind: 'undated', fileId: f.fileId, title: UPLOAD_TEXT.undatedTitle, name: f.name })),
+    ...review.labFiles.filter((f) => f.needsTestDay).map((f): UploadSection => ({ kind: 'undated', fileId: f.fileId, title: UPLOAD_TEXT.undatedTitle, label: UPLOAD_TEXT.dayOfTest, name: f.name })),
+    ...review.labFiles.filter((f) => f.needsPreviousDay).map((f): UploadSection => ({ kind: 'undatedPrevious', fileId: f.fileId, name: f.name, month: f.previousMonth, before: f.day?.slice(0, 10) ?? null })),
     ...(unsure.length ? [{ kind: 'unsure' as const, title: IMPORT_REVIEW_TEXT.checkTitle(unsure.length), footer: IMPORT_REVIEW_TEXT.checkFooter, rows: unsure.map(row) }] : []),
     ...(failed.length ? [{
       kind: 'failed' as const, title: UPLOAD_TEXT.failedTitle(failed.length),
@@ -133,7 +138,7 @@ export function uploadView(s: UploadState, record: RoadmapFile, now: string, rev
     save: {
       label: saveLabel(plan),
       enabled: saveEnabled(s) && !empty,
-      why: waiting ? UPLOAD_TEXT.saveWait(waiting) : empty ? UPLOAD_TEXT.saveNothing : null,
+      why: waiting ? UPLOAD_TEXT.saveWait(waiting) : !empty ? null : review.labFiles.some((f) => f.needsDay) ? UPLOAD_TEXT_PROPOSED.chooseDay : UPLOAD_TEXT.saveNothing,
     },
     stop: s.phase === 'open' && waiting ? { label: UPLOAD_TEXT.stop } : null,
     done: s.phase === 'done' ? {

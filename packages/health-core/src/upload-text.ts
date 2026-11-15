@@ -24,6 +24,8 @@ export const UPLOAD_TEXT = {
   progressZip: (zip: string, m: number, total: number) => `${zip}: ${m} of ${total} inside`,
   stop: 'Stop',
   undatedTitle: 'This report has no date',
+  /** Reused from the iPhone (LabReviewView.swift's date picker); Swift keeps its copy until its review page moves here, then it goes. */
+  dayOfTest: 'Day of the test',
   failedTitle: (k: number) => `${plural(k, 'file')} not read`,
   retryAll: 'Try again',
   stoppedLine: 'Not read: you stopped the upload.',
@@ -49,10 +51,13 @@ export const UPLOAD_TEXT = {
 /**
  * NOT YET APPROVED: words section 5 does not have, waiting for the owner's yes (listed in PR 8).
  * saveOriginals: the Save label when Save files only originals (the web's saveLabel says
- * "Save 2 originals" today, ReviewOverview.tsx).
+ * "Save 2 originals" today, ReviewOverview.tsx). chooseDay: why Save waits while a report needs
+ * its day. The dropped-at-zero forms of rows 23 and 26 ("Save 2 documents", "Saved 3 values.")
+ * live in UPLOAD_TEXT.saveBoth and savedLine and wait for the same yes.
  */
 export const UPLOAD_TEXT_PROPOSED = {
   saveOriginals: (a: number) => `Save ${plural(a, 'original')}`,
+  chooseDay: 'Choose the day of the test',
 } as const;
 
 /** A file not fully read, as the web's notices word it (US-12 AC9); moved from UploadNotices.tsx. */

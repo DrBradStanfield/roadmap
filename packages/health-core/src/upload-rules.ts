@@ -52,7 +52,7 @@ export const UPLOAD_LIMITS = {
  * `ownDates`: file a value on its own printed day. `undatedPrev`: send a previous column with no
  * full day and ask its day (the web's matrix asks it; widget-src upload-api.ts). `refusedRows`:
  * list refused rows under "Not saved". The phone sends no `undatedPrev`, so the server leaves
- * those values out (ios LabUploadClient.swift).
+ * those values out (ios LabUploadClient.swift): a known platform difference, to unify later.
  */
 export interface RequestFlags { ownDates: boolean; undatedPrev: boolean; refusedRows: boolean }
 export function requestFlags(platform: UploadPlatform): RequestFlags {

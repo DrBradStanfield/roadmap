@@ -10,7 +10,7 @@ import { validDay, type BulkRow } from './record-edits';
 import { isReadableRow } from './readable-rows';
 import type { RoadmapFile } from './roadmap-file';
 import type { UploadState } from './upload-flow';
-import { isLabReport, readFiles, uploadReview, type UploadReview } from './upload-review';
+import { isLabReport, readFiles, type UploadReview } from './upload-review';
 
 /**
  * The shared lab-archive builder once design PR 5 gives it the rows its import wrote
@@ -36,7 +36,8 @@ const fieldsOf = (d: ReturnType<typeof documentView>, sourceFileName: string): D
   documentType: d.documentType, title: d.title, documentDate: d.documentDate, contentMd: d.contentMd, metadata: d.metadata, sourceFileName,
 });
 
-export function uploadSavePlan(s: UploadState, record: RoadmapFile, now: string, review: UploadReview = uploadReview(s, record, now)): UploadSavePlan {
+/** `review`: the caller's `uploadReview`, the same one it hands `uploadView` (upload-review.ts says when to recompute it). */
+export function uploadSavePlan(s: UploadState, record: RoadmapFile, now: string, review: UploadReview): UploadSavePlan {
   const live = record.documents.filter((d) => !d.deleted);
   const views = live.map(documentView);
   const readable = (id: string) => isReadableRow('documents', live.find((d) => d.id === id));
