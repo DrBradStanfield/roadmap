@@ -10,18 +10,17 @@ import { KEY_TEXT } from '@roadmap/health-core/upload-text';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { UploadModal } from './UploadModal';
-import { resetUploadStore } from '../testing/upload-store';
+import { lastSaved, resetUploadStore, uploadStore } from '../testing/upload-store';
 import { checkLabImportQuota, labImport } from '../lib/upload-api';
-import { sha256Blob, synthesizeLabArchiveEntries } from '../lib/archive-payloads';
-import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getEraseIdentity } from '../lib/roadmap-data';
+import { sha256Blob } from '../lib/archive-payloads';
 import { trackProductEvent } from '../lib/server-api';
 import type { UploadHistory } from '../lib/api-types';
 import { findAllReviewValues, findReviewValue } from '../testing/import-review';
 
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn() }));
-vi.mock('../lib/roadmap-data', async () => ({ ...(await import('../testing/upload-store')).uploadStoreMock(), uploadKnownIndex: vi.fn(() => new Map()), isLegacyUpload: vi.fn(() => false), getDocumentArchiveMode: vi.fn(() => 'cloud'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
+vi.mock('../lib/roadmap-data', async () => ({ ...(await import('../testing/upload-store')).uploadStoreMock(), uploadKnownIndex: vi.fn(() => new Map()), isLegacyUpload: vi.fn(() => false), getDocumentArchiveMode: vi.fn(() => 'cloud'), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
 vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn(), PROXY_PATH: '/apps/synthetic', parseJsonResponse: vi.fn() }));
-vi.mock('../lib/archive-payloads', async importOriginal => ({ ...await importOriginal<typeof import('../lib/archive-payloads')>(), sha256Blob: vi.fn(async () => ''), synthesizeLabArchiveEntries: vi.fn(() => []) }));
+vi.mock('../lib/archive-payloads', async importOriginal => ({ ...await importOriginal<typeof import('../lib/archive-payloads')>(), sha256Blob: vi.fn(async () => '') }));
 vi.mock('../lib/useIsMobile', () => ({ useIsMobile: () => false }));
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 // The build decides the wording (US-12 AC9): the Shopify page reads through
@@ -47,8 +46,10 @@ const pdf = (name: string, bytes = 1) => {
   Object.defineProperty(f, 'size', { value: bytes });
   return f;
 };
-/** The reason the list gives for one file, or null when the file is not listed. */
+/** The reason the list gives for one file, or, for a file not read, the review's failed section (US-12 AC26); null when it is not named. */
 function reasonFor(name: string): string | null {
+  const failed = [...document.querySelectorAll('.review-failed-files li')].filter(li => li.querySelector('.review-file-name')?.textContent === name);
+  if (failed.length) return failed.map(li => li.querySelector('.review-file-error')!.textContent).join(' | ');
   const list = screen.queryByRole('list', { name: 'Files to check' });
   if (!list) return null;
   const items = within(list).queryAllByText(name);
@@ -69,9 +70,6 @@ beforeEach(() => {
   build.shopify = true;
   vi.mocked(checkLabImportQuota).mockResolvedValue({ allowed: true, remaining: 60 });
   vi.mocked(labImport).mockResolvedValue(withValues);
-  vi.mocked(bulkSaveMeasurements).mockResolvedValue({ saved: [{}], skippedDuplicates: 0, errorCount: 0, refused: [] } as unknown as Awaited<ReturnType<typeof bulkSaveMeasurements>>);
-  vi.mocked(bulkSaveDocuments).mockResolvedValue({ saved: [{}], errorCount: 0 } as Awaited<ReturnType<typeof bulkSaveDocuments>>);
-  vi.mocked(bulkSaveLabValues).mockResolvedValue({ saved: [], skippedDuplicates: 0, errorCount: 0, refused: [] });
   extractFromPdf.mockImplementation(async (f: File) => pages(f.name));
   Object.assign(window, { HealthUpload: {
     extractFromPdf,
@@ -299,7 +297,7 @@ describe('US-12 AC9: values a file printed but the parse refused are not silent'
       return { result: { ...withValues.result!, droppedValueCount: dropped } } as Import;
     });
     render_(); pick(pdf('good.pdf'), pdf('partial.pdf'), pdf('one.pdf'));
-    await screen.findByText(/^Found /, { selector: '.review-summary' });
+    await screen.findByText(/^\d+ files?\b/, { selector: '.review-summary' });
     // US-13 AC13: one "Not saved" line across the files, not a notice per file.
     for (const name of ['partial.pdf', 'one.pdf', 'good.pdf']) expect(reasonFor(name)).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: '3 values not saved' }));
@@ -363,19 +361,22 @@ describe('US-12 AC9: members of two ZIPs on one path stay apart', () => {
   const twoZips = (paths: string[]) => zipBundle(async (z: File) => paths.map(name => ({
     name, entry: { async: async () => new Blob([`${z.name}/${name}`]) },
   })));
-  /** The reviewed results the Save hands the archive step, each with its name, the value its own pages gave, and its original's bytes. */
+  /** The archive rows Save wrote, each with its name, the value its own rows hold, and its original's bytes (design 12c). */
   async function savedResults() {
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-    await waitFor(() => expect(synthesizeLabArchiveEntries).toHaveBeenCalled());
-    const results = vi.mocked(synthesizeLabArchiveEntries).mock.calls[0]![0];
-    return { results, identities: await Promise.all(results.map(async r => [r.fileName, r.values[0]?.valueSI, await r.file?.text()])) };
+    await screen.findByRole('button', { name: 'Done' });
+    const { values, documents } = lastSaved();
+    const valueOf = new Map(values.map(v => [v.id as string, v.value]));
+    const results = documents.filter(d => d.metadata.labArchive === true).map(d => ({ fileName: d.sourceFileName!, contentHash: d.contentHash, value: valueOf.get((d.metadata.rows as string[])[0]), bytes: uploadStore.written.get(d.fileRef) as Blob | undefined }));
+    return { results, identities: await Promise.all(results.map(async r => [r.fileName, r.value, await r.bytes?.text()])) };
   }
   beforeEach(() => {
     // A fake hash that names the bytes it was given.
     vi.mocked(sha256Blob).mockImplementation(async (b: Blob) => `sha256-${await b.text()}`);
     extractFromPdf.mockImplementation(async (f: File) => pages(await f.text()));
     // Each file's pages name it; its one value says which ZIP it came from.
-    vi.mocked(labImport).mockImplementation(async p => ({ result: { ...withValues.result!, values: [{ ...withValues.result!.values[0], valueSI: p[0].content.startsWith('labs-a') ? 3.9 : 4.2, displayValue: p[0].content.startsWith('labs-a') ? 3.9 : 4.2 }] } }) as Import);
+    // On days of their own, so each report's value is written and listed on its own archive row.
+    vi.mocked(labImport).mockImplementation(async p => ({ result: { ...withValues.result!, reportDate: p[0].content.startsWith('labs-a') ? '2024-06-01' : '2024-07-01', values: [{ ...withValues.result!.values[0], valueSI: p[0].content.startsWith('labs-a') ? 3.9 : 4.2, displayValue: p[0].content.startsWith('labs-a') ? 3.9 : 4.2 }] } }) as Import);
   });
 
   // The website half of "one name on both surfaces": a member path past the
@@ -590,50 +591,45 @@ describe('US-12 AC15, AC16: refused and guessed units are shown and counted', ()
   });
 });
 
-// US-16 AC2a (Codex R2): a screening date rides with the upload that read it.
-// The record was erased, and the page showed it, while that upload saved: the
-// date belongs to the erased record, so it is not written.
+// US-16 AC2a (Codex R2): a screening date rides with the upload that read it. Design 12c: it is
+// written in the same edit as the upload's rows (health-core uploadSave), so an erase that refuses
+// that edit writes no date either.
 describe('US-16 AC2a: a screening date from an upload the erase overtook', () => {
   const screeningLetter: Import = { result: { ...letterOnly.result!, document: { ...letterOnly.result!.document!, classification: 'scan_result', metadata: { screeningType: 'colorectal' } } } } as unknown as Import;
-  const renderWithScreenings = (onScreeningUpdate: (key: string, value: string, erase: string) => void) =>
-    render(<UploadModal open onOpen={() => {}} onClose={() => {}} unitSystem="si" grading={{}} history={history} onComplete={() => {}} age={60} sex="male" onScreeningUpdate={onScreeningUpdate} />);
+  const renderWithScreenings = () =>
+    render(<UploadModal open onOpen={() => {}} onClose={() => {}} unitSystem="si" grading={{}} history={history} onComplete={() => {}} age={60} sex="male" />);
 
-  it('writes the date, stamped with the save\'s start, when nothing moved', async () => {
+  it('writes the date with the upload when nothing moved', async () => {
     vi.mocked(labImport).mockResolvedValue(screeningLetter);
-    const onScreeningUpdate = vi.fn();
-    renderWithScreenings(onScreeningUpdate);
+    renderWithScreenings();
     pick(pdf('scope.pdf'));
     fireEvent.click(await screen.findByRole('button', { name: /^Save / }));
     await screen.findByRole('button', { name: 'Done' });
-    expect(onScreeningUpdate).toHaveBeenCalledWith('colorectal_last_date', expect.any(String), '');
+    expect(uploadStore.record.screenings.colorectalLastDate).toEqual(expect.stringMatching(/^\d{4}-\d{2}/));
   });
 
   // US-07 AC1j (Brad 2026-11-12): an uploaded report does not say the result, so it keeps the schedule. The upload
-  // writes the last date alone, straight to handleScreeningChange (HealthTool's onScreeningUpdate), never through
-  // screeningWrites: a newer abnormal last date typed in the form starts the follow-up again, an upload never does.
+  // writes the last date alone (state-edits setScreening), never the follow-up answers.
   it('US-07 AC1j: an upload writes the last date alone and never clears the follow-up answers', async () => {
     vi.mocked(labImport).mockResolvedValue(screeningLetter);
-    const onScreeningUpdate = vi.fn();
-    renderWithScreenings(onScreeningUpdate);
+    const { fieldStamps: _f, updatedAt: _u, lamport: _l, ...before } = uploadStore.record.screenings as unknown as Record<string, unknown>;
+    renderWithScreenings();
     pick(pdf('scope.pdf'));
     fireEvent.click(await screen.findByRole('button', { name: /^Save / }));
     await screen.findByRole('button', { name: 'Done' });
-    expect(onScreeningUpdate.mock.calls).toEqual([['colorectal_last_date', expect.any(String), '']]);
+    const { fieldStamps: _f2, updatedAt: _u2, lamport: _l2, colorectalLastDate, ...after } = uploadStore.record.screenings as unknown as Record<string, unknown>;
+    expect(colorectalLastDate).toBeTruthy();
+    expect(after).toEqual(before);
   });
 
-  it('writes no date when the document save finished after an erase the page has shown', async () => {
+  it('writes no date when the erase refused the save', async () => {
     vi.mocked(labImport).mockResolvedValue(screeningLetter);
-    vi.mocked(bulkSaveDocuments).mockImplementation(async () => {
-      vi.mocked(getEraseIdentity).mockReturnValue('[1,"erased meanwhile"]'); // the erase lands while the blob uploads
-      return { saved: [], errorCount: 1 };
-    });
-    const onScreeningUpdate = vi.fn();
-    renderWithScreenings(onScreeningUpdate);
+    uploadStore.refuse = '';
+    renderWithScreenings();
     pick(pdf('scope.pdf'));
     fireEvent.click(await screen.findByRole('button', { name: /^Save / }));
     await screen.findByText(/Failed to save/);
-    expect(onScreeningUpdate).not.toHaveBeenCalled();
-    vi.mocked(getEraseIdentity).mockReturnValue('');
+    expect(uploadStore.record.screenings.colorectalLastDate).toBeUndefined();
   });
 });
 

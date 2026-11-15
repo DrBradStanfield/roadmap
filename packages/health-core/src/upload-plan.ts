@@ -5,6 +5,7 @@
  * files filed behind the row the record holds. Pure; the bytes stay with the platform, by file id.
  */
 import { documentView, pendingRowsFor } from './document-save';
+import { zipMemberName } from './lab-extraction';
 import type { DocumentFields } from './document-rows';
 import { validDay, type BulkRow } from './record-edits';
 import { isReadableRow } from './readable-rows';
@@ -65,6 +66,8 @@ export function uploadSavePlan(s: UploadState, record: RoadmapFile, now: string,
   const screenings: UploadSavePlan['screenings'] = [];
   for (const f of 'files' in s ? s.files : []) {
     if (f.hash && seen.has(f.hash)) continue;
+    // A ZIP member is named by its ZIP and its path, as the web and the connector name it (US-35 AC5): a document's stable key.
+    const sourceFileName = f.zip !== undefined ? zipMemberName(f.zip, f.name) : f.name;
     if (f.status.s === 'read' && f.status.extraction.classification !== 'lab_report' && f.status.extraction.document) {
       const doc = f.status.extraction.document;
       // A metadata-only row holding these bytes: the card starts from its title and date (US-14 AC4).
@@ -77,7 +80,7 @@ export function uploadSavePlan(s: UploadState, record: RoadmapFile, now: string,
         documentDate: fixedDate !== undefined ? fixedDate : validDay((held ? held.documentDate : doc.documentDate) ?? undefined, { now }),
         contentMd: doc.contentMarkdown ?? '',
         metadata: doc.metadata ?? {},
-        sourceFileName: f.name,
+        sourceFileName,
       } });
       const type = doc.metadata?.screeningType;
       if (review.screening && typeof type === 'string' && type) {
@@ -89,11 +92,11 @@ export function uploadSavePlan(s: UploadState, record: RoadmapFile, now: string,
       // with every value unticked (D6: the web files it alone, upload-rules.ts).
       const lab = labs.get(f.id);
       if (!lab || lab.needsDay || (!lab.ticked.length && !originalWithoutValues(platform))) continue;
-      labArchives.push({ fileId: f.id, sourceFileName: f.name, reportDate: lab.day });
+      labArchives.push({ fileId: f.id, sourceFileName, reportDate: lab.day });
     } else if (cloudConnected && f.status.s === 'known' && f.status.archiveOnly && f.status.as !== 'legacy' && f.hash) {
       const held = pendingRowsFor(views, f.hash, f.status.as === 'labReport')[0];
       if (!held) continue;
-      archiveOnly.push({ fileId: f.id, fields: fieldsOf(held, f.name) });
+      archiveOnly.push({ fileId: f.id, fields: fieldsOf(held, sourceFileName) });
     } else continue;
     if (f.hash) seen.add(f.hash);
   }
