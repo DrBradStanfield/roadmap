@@ -9,7 +9,7 @@ import type { UploadFailure } from '@roadmap/health-core/upload-failure';
 import type { Known } from '@roadmap/health-core/upload-known';
 import type { UnifiedExtractionResult } from '@roadmap/health-core/lab-extraction';
 import type { UnitSystem } from '@roadmap/health-core/units';
-import type { DocumentResult, UploadErrorCode } from './api-types';
+import type { UploadErrorCode } from './api-types';
 import { labImport } from './upload-api';
 import { sha256Blob } from './archive-payloads';
 import { getDocumentArchiveMode, isLegacyUpload, knownUploadAs } from './roadmap-data';
@@ -50,10 +50,6 @@ function knownOnWeb(hash: string): Known | null {
   const known = knownUploadAs(hash);
   return known && !(known.archiveOnly && getDocumentArchiveMode() === 'cloud') ? known : null;
 }
-
-const documentFields = (name: string, d: DocumentResult) => ({
-  documentType: d.classification, title: d.title, documentDate: d.documentDate, contentMd: d.contentMarkdown, metadata: d.metadata, sourceFileName: name,
-});
 
 async function list(port: UploadPort, run: number, id: string): Promise<void> {
   const upload = await port.prepare(run);
@@ -121,8 +117,8 @@ async function send(port: UploadPort, effect: Extract<UploadEffect, { type: 'sen
   }
   delete h.pages; // read: only a failed send is sent again
   const name = fileNameOf(f);
-  const legacy = !!result.document && isLegacyUpload(name, documentFields(name, result.document));
-  port.send({ type: 'answered', run, id, extraction: result as unknown as UnifiedExtractionResult, legacy, now: new Date().toISOString() });
+  const extraction = result as unknown as UnifiedExtractionResult;
+  port.send({ type: 'answered', run, id, extraction, legacy: isLegacyUpload(name, extraction), now: new Date().toISOString() });
 }
 
 /** Runs one effect; the async ones answer with their event when they finish. */

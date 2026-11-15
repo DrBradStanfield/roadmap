@@ -9,8 +9,8 @@ import { MEASUREMENT_REFUSALS_WITH_METRIC, type MEASURES } from '@roadmap/health
 import type { ReminderScheduleItem } from '@roadmap/health-core/reminder-schedule';
 import type { SaveStatus } from '@roadmap/health-core/save-state';
 import { knownMinorOf } from '@roadmap/health-core/calculations';
-import { knownAs, knownIndex, legacyMatch, type Known, type KnownIndex } from '@roadmap/health-core/upload-known';
-import type { DocumentFields } from '@roadmap/health-core/document-rows';
+import { knownAs, knownIndex, readIsLegacy, type Known, type KnownIndex } from '@roadmap/health-core/upload-known';
+import type { UnifiedExtractionResult } from '@roadmap/health-core/lab-extraction';
 import { RoadmapStore, type DerivedSeries, type BulkLabValueInput, type BulkMeasurementInput, type CorrectStatus, type MoveOutcome, type ProfileSave } from '../storage/roadmap-store';
 import { ChatHistoryStore } from '../storage/chat-history-store';
 import { getChatHistory, openChatHistory, setChatHistoryFactory } from './chat-history-access';
@@ -87,8 +87,8 @@ export function knownUploadAs(hash: string): Known | null {
 }
 
 /** After a read: the record holds this document from before hashing, by name and date (upload-known.ts). */
-export function isLegacyUpload(name: string, read: DocumentFields): boolean {
-  return !!store && legacyMatch(store.file, name, read);
+export function isLegacyUpload(name: string, read: UnifiedExtractionResult): boolean {
+  return !!store && readIsLegacy(store.file, name, read);
 }
 
 /** Which erase the record is at; it moves with every erase, this tab's or
