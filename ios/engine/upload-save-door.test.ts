@@ -2,7 +2,7 @@
 // its document and lab archive rows in one step, on the phone's record or through the open cloud
 // session, and answers what the app's `saved` event carries. Synthetic values, names and bytes only.
 import { describe, expect, it } from 'vitest';
-import { uploadSaveJson } from './entry';
+import { uploadSaveJson, uploadStepJson, uploadViewJson } from './entry';
 import { FakeDropbox, NOW, phone, recordWith, type Engine } from './cloud.test-helpers';
 import { LAB_ARCHIVE_FLAG, listedRows } from '../../packages/health-core/src/document-rows';
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
@@ -39,6 +39,19 @@ describe('uploadSaveJson on the phone\'s record (US-52 AC8c)', () => {
     expect(await refused(MIXED.replace('"saving"', '"open"').replace(',"attempt":1,"files"', ',"files"'))).toMatchObject({ ok: false, reason: 'not-saving' });
     expect(await refused('{', ORIGINALS)).toMatchObject({ ok: false, reason: 'invalid-state' });
     expect(await refused(MIXED, '[1]')).toMatchObject({ ok: false, reason: 'invalid-originals' });
+  });
+});
+
+describe('a refused Save is a retryable saveFailed in the machine (ruling Q1 on PR 1848)', () => {
+  it('any refusal (changed, not-open, erased) goes back as saveFailed; Save is offered again and runs as the next attempt', () => {
+    const message = 'Your record changed while this was saving, so it was not saved. Try again.';
+    const failed = JSON.parse(uploadStepJson(MIXED, JSON.stringify({ type: 'saveFailed', run: 1, attempt: 1, message }), '', 'phone'));
+    expect(failed.state.phase).toBe('saveFailed');
+    const view = JSON.parse(uploadViewJson(JSON.stringify(failed.state), '', NOW, true, 'phone'));
+    expect(view.save).toMatchObject({ enabled: true, error: message });
+    const again = JSON.parse(uploadStepJson(JSON.stringify(failed.state), '{"type":"saveStarted"}', '', 'phone'));
+    expect(again.effects).toEqual([{ type: 'save', run: 1, attempt: 2 }]);
+    expect(again.state).toMatchObject({ phase: 'saving', attempt: 2 });
   });
 });
 
