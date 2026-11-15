@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 // answers its headers once the App Attest counter is spent, then streams the
 // read's answer as NDJSON. Model calls are mocked: no spend.
 
-const mocks = vi.hoisted(() => ({ gateOpts: [] as Array<{ admit?: unknown }>, extract: vi.fn(), rootPem: '', extractOne: null as null | ((...a: unknown[]) => Promise<Response>) }));
+const mocks = vi.hoisted(() => ({ verified: 0, gateOpts: [] as Array<{ admit?: unknown }>, extract: vi.fn(), rootPem: '', extractOne: null as null | ((...a: unknown[]) => Promise<Response>) }));
 vi.mock('@sentry/react-router', async (original) => ({ ...await original<typeof import('@sentry/react-router')>(), captureException: vi.fn() }));
 vi.mock('./app-gate.server', async (original) => {
   const real = await original<typeof import('./app-gate.server')>();
@@ -24,7 +24,12 @@ vi.mock('./anthropic.server', async (original) => ({
 vi.mock('./app-attest.server', async (original) => {
   const real = await original<typeof import('./app-attest.server')>();
   // The test CA stands in for Apple's root; everything else is real.
-  return { ...real, attestConfig: (env?: NodeJS.ProcessEnv) => { const c = real.attestConfig(env); return c && { ...c, rootPem: mocks.rootPem }; } };
+  return {
+    ...real,
+    attestConfig: (env?: NodeJS.ProcessEnv) => { const c = real.attestConfig(env); return c && { ...c, rootPem: mocks.rootPem }; },
+    // Counted, so a test can see whether the gate got as far as the signature.
+    assertionSignatureValid: (...a: Parameters<typeof real.assertionSignatureValid>) => { mocks.verified++; return real.assertionSignatureValid(...a); },
+  };
 });
 
 import * as Sentry from '@sentry/react-router';
@@ -350,6 +355,61 @@ describe('US-52 AC7e: reads in flight are capped, inside the gate', () => {
     mocks.extract.mockReset().mockResolvedValue(extraction);
     const next = await appLabRead(signed(NEW, body), store, slots);
     expect((await lines(next)).at(-1)).toMatchObject({ status: 200 });
+  });
+
+  it.each([
+    { name: 'a key at its cap', slotsFor: () => createReadSlots(10, 5), open: 5 },
+    { name: 'a full machine', slotsFor: () => createReadSlots(10, 100), open: 10 },
+  ])('the peek: on $name, a further request is refused 503 before its body is read or its signature checked', async ({ slotsFor, open }) => {
+    await registered();
+    slots = slotsFor();
+    const ends = pendingRead();
+    const reads = [];
+    for (let i = 0; i < open; i++) reads.push(await appLabRead(signed(NEW, body), store, slots));
+    const before = allowances();
+    mocks.verified = 0;
+    const request = signed(NEW, body);
+    const res = await appLabRead(request, store, slots);
+    expect(res.status).toBe(503);
+    expect(await res.json()).toEqual(UNAVAILABLE);
+    expect(request.bodyUsed).toBe(false);
+    expect(mocks.verified).toBe(0);
+    expect(allowances()).toEqual(before);
+    for (const e of ends) e.finish(extraction);
+    await Promise.all(reads.map(lines));
+  });
+
+  it('the peek refuses no one for a key with room: a stranger naming it still fails its signature, as on main', async () => {
+    await registered();
+    const ends = pendingRead();
+    const reads = [];
+    for (let i = 0; i < 4; i++) reads.push(await appLabRead(signed(NEW, body), store, slots));
+    const stranger = fakeDevice(APP_ID);
+    const raw = Buffer.from(JSON.stringify(body));
+    const request = new Request(`${BASE}${NEW}`, {
+      method: 'POST', body: raw,
+      headers: { 'x-app-attest-key': device.keyId, 'x-app-attest-assertion': stranger.assert(requestClientData('POST', NEW, raw), 99, APP_ID), 'fly-client-ip': '198.51.100.7' },
+    });
+    mocks.verified = 0;
+    const res = await appLabRead(request, store, slots);
+    expect(res.status).toBe(401);
+    expect((await res.json()).reason).toBe('bad_signature');
+    expect(request.bodyUsed).toBe(true);
+    expect(mocks.verified).toBe(1);
+    expect(slots.inFlight()).toBe(4);
+    for (const e of ends) e.finish(extraction);
+    await Promise.all(reads.map(lines));
+  });
+
+  it('a peek that passes and a take that then fails end in a clean 503 that holds nothing', async () => {
+    await registered();
+    const raced = { full: () => false, take: () => null, inFlight: () => 0 };
+    const before = allowances();
+    const res = await appLabRead(signed(NEW, body), store, raced as unknown as typeof slots);
+    expect(res.status).toBe(503);
+    expect(await res.json()).toEqual(UNAVAILABLE);
+    expect(allowances()).toEqual(before);
+    expect(mocks.extract).not.toHaveBeenCalled();
   });
 
   it('/lab-import passes no admission: it runs with every lab-read slot taken', async () => {

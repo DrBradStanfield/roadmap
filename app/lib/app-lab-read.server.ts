@@ -18,7 +18,7 @@ import { labReadSlots, type ReadSlots } from './lab-read-slots.server';
 const KEEP_ALIVE_MS = 15_000;
 
 export async function appLabRead(request: Request, store?: KeyStore, slots: ReadSlots = labReadSlots): Promise<Response> {
-  const gate = await labGate(request, store, slots.admit);
+  const gate = await labGate(request, store, slots);
   return gate instanceof Response ? gate : stream(gate);
 }
 

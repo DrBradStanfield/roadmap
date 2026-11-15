@@ -133,12 +133,15 @@ function logRefusal(kind: AppUseKind, reason: string): void {
 export interface GateOptions {
   kind: AppUseKind; bodyCap: number; store?: KeyStore; env?: NodeJS.ProcessEnv;
   /**
-   * Capacity admission (US-52 AC7e, the lab read only): called once, after the
-   * signature verifies and before anything is charged or the counter spent. Null
-   * refuses with a 503 that spends nothing; a release is handed to the caller on
-   * success, and the gate calls it itself on any later refusal.
+   * Capacity admission (US-52 AC7e, the lab read only). `full` is a read-only
+   * peek on the claimed key id, before the body is read: it holds nothing, so it
+   * can only refuse when that key or the machine truly has reads in flight.
+   * `take` is called once, after the signature verifies and before anything is
+   * charged or the counter spent. Either refusal is a 503 that spends nothing;
+   * take's release is handed to the caller on success, and the gate calls it
+   * itself on any later refusal.
    */
-  admit?: (keyId: string) => (() => void) | null;
+  admit?: { full(keyId: string): boolean; take(keyId: string): (() => void) | null };
 }
 
 /**
@@ -158,9 +161,10 @@ export async function appGate(request: Request, opts: GateOptions): Promise<{ bo
   if (dev !== null) {
     // AC3: the simulator's header, only where the bypass is allowed. Anywhere else it is a 401.
     if (!devBypassAllowed(env) || !/^[A-Za-z0-9-]{1,64}$/.test(dev)) { logRefusal(kind, 'dev_bypass_refused'); return unauthorized('dev_bypass_refused'); }
+    if (opts.admit?.full(`dev:${dev}`)) { logRefusal(kind, 'capacity'); return unavailable(); }
     const body = await readBody(request, opts.bodyCap);
     if (!body || body === 'too_large') return refuse(413, 'too_large', 'Request too large');
-    const release = opts.admit?.(`dev:${dev}`);
+    const release = opts.admit?.take(`dev:${dev}`);
     if (release === null) { logRefusal(kind, 'capacity'); return unavailable(); }
     if (appLimits.dev[kind].take(dev, 1) && reserveShared(kind, ip)) return release ? { body, release } : { body };
     release?.();
@@ -206,6 +210,7 @@ export async function appGate(request: Request, opts: GateOptions): Promise<{ bo
     if (!key) return failed('unknown_key');
     // A development key stops working the day the flag goes off (R10).
     if (!config.environments.includes(key.environment)) { charged = true; logRefusal(kind, 'environment_refused'); return unauthorized('unknown_key'); }
+    if (opts.admit?.full(keyId)) { logRefusal(kind, 'capacity'); return unavailable(); }
 
     const body = await readBody(request, opts.bodyCap);
     if (body === 'too_large') {
@@ -218,7 +223,7 @@ export async function appGate(request: Request, opts: GateOptions): Promise<{ bo
     if (!body) { logRefusal(kind, 'body_read_failed'); return refuse(400, 'body_read_failed', 'The request did not arrive whole. Please try again.'); }
     if (!assertionSignatureValid(assertion, requestClientData(request.method, path, body), key.publicKey)) return failed('bad_signature');
     if (opts.admit) {
-      const admitted = opts.admit(keyId);
+      const admitted = opts.admit.take(keyId);
       if (!admitted) { logRefusal(kind, 'capacity'); return unavailable(); }
       release = admitted;
     }
