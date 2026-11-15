@@ -11,7 +11,7 @@ import { bulkRowTarget } from './bulk-row-target';
 import { slotIndex, slotKey, validDay, type BulkRow } from './record-edits';
 import type { RoadmapFile } from './roadmap-file';
 import type { UploadFile, UploadState } from './upload-flow';
-import { defaultTicked, type UploadPlatform } from './upload-rules';
+import { defaultTicked, letterValuesOffered, type UploadPlatform } from './upload-rules';
 
 type ReadFile = UploadFile & { status: Extract<UploadFile['status'], { s: 'read' }> };
 
@@ -64,7 +64,8 @@ export function previousDay(pick: string | null, reportDay: string | null, now: 
 function importFile(f: ReadFile, platform: UploadPlatform, now: string, holderOf: (row: BulkRow) => string | undefined) {
   const { choices } = f.status;
   const extraction = withColumnDays(f.status.extraction, choices.columnDays);
-  const result = extraction as ImportFile['result'];
+  // A letter whose values the platform offers (D3) is classified as the report its values are.
+  const result = { ...extraction, classification: 'lab_report' } as ImportFile['result'];
   const day = validDay(choices.testDay ?? extraction.reportDate ?? undefined, { now });
   const undatedDay = previousDay(choices.previousDay, day, now);
   const offered = [
@@ -104,7 +105,9 @@ function withColumnDays(x: ReadFile['status']['extraction'], days: Readonly<Reco
  */
 export function uploadReview(s: UploadState, record: RoadmapFile, now: string, screening?: ScreeningProfile): UploadReview {
   const platform = 'platform' in s ? s.platform : 'web';
-  const labs = readFiles(s).filter(isLabReport);
+  // The read lab reports, and on a platform that offers them, a letter's values (D3, upload-rules.ts).
+  const printsValues = (f: ReadFile) => (f.status.extraction.values?.length ?? 0) + (f.status.extraction.additionalValues?.length ?? 0) > 0;
+  const labs = readFiles(s).filter((f) => isLabReport(f) || (letterValuesOffered(platform) && printsValues(f)));
   // The record's slots, indexed once: each conflict's held row, and each Replace's check.
   const slots = slotIndex(record);
   const holderOf = (row: BulkRow) => {

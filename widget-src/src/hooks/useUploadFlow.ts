@@ -233,7 +233,7 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
   const next = (shown?.review.labFiles ?? []).map(l => resultOf(files.find(f => f.id === l.fileId)!)!);
   if (next.length !== labs.current.length || next.some((r, i) => r !== labs.current[i])) labs.current = next;
 
-  // The files a run did not fully read (US-12 AC9); a failed file is said once, in the review's failed section.
+  // The files a run did not fully read (US-12 AC9).
   const pickHeld = held.current;
   // eslint-disable-next-line react-hooks/exhaustive-deps -- `files` and the pick's held data are what change them
   const notices = useMemo(() => readOutcome(upload, pickHeld).notices, [files, pickHeld]);
@@ -299,7 +299,9 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
 
   return {
     phase, state: upload, view: shown?.view ?? null, review: shown?.review ?? null, results: labs.current,
-    files: phase === 'readFailed' ? pickedFiles(upload) : [], notices: notices.filter(n => !failedNames.has(n.name)), failedNotice: (id: string) => failed.get(id), progress: progressOf(upload),
+    files: phase === 'readFailed' ? pickedFiles(upload) : [], notices,
+    // In the review a failed file is said once, in its own section, with Try again (US-12 AC26).
+    reviewNotices: notices.filter(n => !failedNames.has(n.name)), failedNotice: (id: string) => failed.get(id), progress: progressOf(upload),
     readError: readErrorOf(upload),
     skipArchive, skipConnect: () => setSkipArchive(true),
     pick, cancel, close, discard, stop, retry, chose, save, endReview: endReview.current,

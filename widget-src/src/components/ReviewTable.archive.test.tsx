@@ -133,13 +133,15 @@ describe('ReviewTable — archiving the original behind a connector row (US-13 A
     expect(written(onSave)).toEqual({ values: [], documents: [], labValues: [] });
   });
 
-  it('every value cleared: nothing is saved, the original included (the shared plan, as the iPhone)', () => {
-    const { button, container, getByText } = renderReview([], results, []);
+  it('US-12 AC6, D6: every value cleared, the web still files the original alone, saying so on Save', () => {
+    const { button, onSave, container } = renderReview([], results, []);
     const inputs = container.querySelectorAll<HTMLInputElement>('.bt-cell-review input');
     expect(inputs.length).toBeGreaterThan(0);
     for (const input of inputs) fireEvent.change(input, { target: { value: '' } });
-    expect(button.disabled).toBe(true);
-    expect(getByText('Nothing new to save')).toBeTruthy();
+    expect(button.disabled).toBe(false);
+    expect(button.textContent).toBe('Save 1 original');
+    fireEvent.click(button);
+    expect(written(onSave)).toEqual({ values: [], documents: [], labValues: [] });
   });
 
   it('US-12 AC6: offers an original-only retry after saved values become history context', () => {

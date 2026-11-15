@@ -11,9 +11,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import table from '../../../packages/health-core/src/__fixtures__/upload-decisions.json';
 import { UploadModal } from './UploadModal';
-import { resetUploadStore } from '../testing/upload-store';
+import { lastSaved, resetUploadStore } from '../testing/upload-store';
 import { checkLabImportQuota, labImport } from '../lib/upload-api';
-import { bulkSaveDocuments, bulkSaveLabValues, bulkSaveMeasurements, getDocumentArchiveMode } from '../lib/roadmap-data';
+import { getDocumentArchiveMode } from '../lib/roadmap-data';
 import { isPdf } from '../lib/pdf-extract';
 import { isImage } from '../lib/image-resize';
 import { isZip } from '../lib/file-kinds';
@@ -21,7 +21,7 @@ import type { UploadHistory } from '../lib/api-types';
 import { findReviewValue } from '../testing/import-review';
 
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn() }));
-vi.mock('../lib/roadmap-data', async () => ({ ...(await import('../testing/upload-store')).uploadStoreMock(), uploadKnownIndex: vi.fn(() => new Map()), isLegacyUpload: vi.fn(() => false), getDocumentArchiveMode: vi.fn(() => 'cloud'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
+vi.mock('../lib/roadmap-data', async () => ({ ...(await import('../testing/upload-store')).uploadStoreMock(), uploadKnownIndex: vi.fn(() => new Map()), isLegacyUpload: vi.fn(() => false), getDocumentArchiveMode: vi.fn(() => 'cloud'), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
 vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn(), PROXY_PATH: '/apps/synthetic', parseJsonResponse: vi.fn() }));
 vi.mock('../lib/archive-payloads', async importOriginal => ({ ...await importOriginal<typeof import('../lib/archive-payloads')>(), sha256Blob: vi.fn(async () => '') }));
 vi.mock('../lib/useIsMobile', () => ({ useIsMobile: () => false }));
@@ -67,9 +67,6 @@ beforeEach(() => {
   vi.mocked(getDocumentArchiveMode).mockReturnValue('cloud');
   vi.mocked(checkLabImportQuota).mockResolvedValue({ allowed: true, remaining: 60 });
   vi.mocked(labImport).mockResolvedValue(extraction({ reportDate: null }));
-  vi.mocked(bulkSaveMeasurements).mockResolvedValue({ saved: [], skippedDuplicates: 0, errorCount: 0, refused: [] });
-  vi.mocked(bulkSaveDocuments).mockResolvedValue({ saved: [], errorCount: 0 } as unknown as Awaited<ReturnType<typeof bulkSaveDocuments>>);
-  vi.mocked(bulkSaveLabValues).mockResolvedValue({ saved: [], skippedDuplicates: 0, errorCount: 0, refused: [] });
   // The upload bundle's real type checks, with readers that only say they ran.
   Object.assign(window, { HealthUpload: { isPdf, isImage, isZip, ...readers } });
 });
@@ -123,8 +120,8 @@ describe('upload decisions: a plain file\'s sourceFileName (D13)', () => {
     open();
     pick(text(name!), 1, 'application/pdf');
     fireEvent.click(await saveButton());
-    await waitFor(() => expect(bulkSaveDocuments).toHaveBeenCalled());
-    expect(vi.mocked(bulkSaveDocuments).mock.calls[0][0].map(d => d.sourceFileName)).toEqual([text(web)]);
+    await screen.findByRole('button', { name: 'Done' });
+    expect(lastSaved().documents.map(d => d.sourceFileName)).toEqual([text(web)]);
   });
 });
 

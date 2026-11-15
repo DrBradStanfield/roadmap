@@ -167,7 +167,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
               {view.stop && <button className="btn-primary upload-cancel-btn" onClick={flow.stop}>{view.stop.label}</button>}
             </div>
           )}
-          {reviewing && <FileNotices notices={notices} />}
+          {reviewing && <FileNotices notices={flow.reviewNotices} />}
           {reviewing && (
             // A review that throws while rendering is never a dead widget (US-13 AC9).
             <ErrorBoundary feature="upload_review" fallback={

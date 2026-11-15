@@ -85,11 +85,12 @@ describe('4. originals need a cloud', () => {
     expect(off.plan.archiveOnly).toEqual([]);
     expect(off.view.save).toMatchObject({ enabled: false, why: 'Nothing new to save' });
   });
-  it('a report whose values the record holds files its original only with a cloud; every value unticked plans no archive', () => {
+  it('a report whose values the record holds files its original only with a cloud; every value unticked plans no archive on the iPhone, the original alone on the web (D6)', () => {
     const record = recordWith([{ kind: 'measurement', metricType: 'ldl', value: 3.1 }]);
     expect(both(open([read('a', labX())]), record, true).view.save).toMatchObject({ label: 'Save 1 original', enabled: true });
     expect(both(open([read('a', labX())]), record, false).view.save).toMatchObject({ enabled: false });
-    expect(both(open([read('a', labX(), { ticks: { v0: false } })])).plan.labArchives).toEqual([]);
+    expect(both(open([read('a', labX(), { ticks: { v0: false } })], 'phone')).plan.labArchives).toEqual([]);
+    expect(both(open([read('a', labX(), { ticks: { v0: false } })])).plan.labArchives).toEqual([expect.objectContaining({ fileId: 'a' })]);
   });
 });
 

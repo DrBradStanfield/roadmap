@@ -33,7 +33,8 @@ describe('US-13 AC5: a selected core value out of its range blocks Save', () => 
     expect(view.save).toMatchObject({ enabled: false, why: FIX_ERRORS_TEXT });
     expect(rows(wild, EMPTY).find((r) => r.ref === 'v0')?.error).toEqual(expect.any(String));
     expect(both(chose(wild, { edit: 'v0', value: 3.5 })).view.save).toMatchObject({ enabled: true, why: null });
-    expect(both(chose(wild, { tick: 'v0', on: false })).view.save).toMatchObject({ why: 'Nothing new to save' });
+    // Unticked, the web still files the report's original with a cloud (D6), so Save stays open for it.
+    expect(both(chose(wild, { tick: 'v0', on: false })).view.save).toMatchObject({ label: 'Save 1 original', enabled: true, why: null });
     expect(both(chose(wild, { tick: 'v0', on: false })).view.save.why).not.toBe(FIX_ERRORS_TEXT);
   });
 });

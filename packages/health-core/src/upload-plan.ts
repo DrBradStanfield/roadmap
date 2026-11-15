@@ -13,6 +13,7 @@ import { isScreeningEligible } from './types';
 import { documentDate, type FileChoices } from './upload-choices';
 import type { UploadState } from './upload-flow';
 import type { UploadReview } from './upload-review';
+import { originalWithoutValues } from './upload-rules';
 
 /**
  * The shared lab-archive builder once design PR 5 gives it the rows its import wrote
@@ -56,6 +57,7 @@ export function uploadSavePlan(s: UploadState, record: RoadmapFile, now: string,
   // Only rows this build reads (US-65) give a held title, date or kind, newest first, as upload-known.ts indexes them.
   const views = record.documents.filter((d) => !d.deleted && isReadableRow('documents', d)).map(documentView);
   const labs = new Map(review.labFiles.map((f) => [f.fileId, f]));
+  const platform = 'platform' in s ? s.platform : 'web';
   const seen = new Set<string>();
   const documents: UploadSavePlan['documents'] = [];
   const labArchives: UploadSavePlan['labArchives'] = [];
@@ -83,9 +85,10 @@ export function uploadSavePlan(s: UploadState, record: RoadmapFile, now: string,
         screenings.push(screeningOf(f.id, type, date, f.status.choices, review.screening));
       }
     } else if (f.status.s === 'read') {
-      // A report's original is filed with its values: not while it waits for a day, nor with every value unticked (as the iPhone).
+      // A report's original is filed with its values: not while it waits for a day, nor, on the iPhone,
+      // with every value unticked (D6: the web files it alone, upload-rules.ts).
       const lab = labs.get(f.id);
-      if (!lab || lab.needsDay || !lab.ticked.length) continue;
+      if (!lab || lab.needsDay || (!lab.ticked.length && !originalWithoutValues(platform))) continue;
       labArchives.push({ fileId: f.id, sourceFileName: f.name, reportDate: lab.day });
     } else if (cloudConnected && f.status.s === 'known' && f.status.archiveOnly && f.status.as !== 'legacy' && f.hash) {
       const held = pendingRowsFor(views, f.hash, f.status.as === 'labReport')[0];
