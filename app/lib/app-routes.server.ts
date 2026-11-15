@@ -1,9 +1,9 @@
 /**
- * The iPhone app's four routes (US-52, ios/architecture.md D8), as plain
+ * The iPhone app's routes (US-52, ios/architecture.md D8), as plain
  * handlers. The route files under app/routes/api.app.v1.* only call these: a
  * route module's extra exports would pull server code into the client build.
  */
-import { labImportRequestSchema } from '../../packages/health-core/src/validation';
+import { labImportRequestSchema, type LabImportRequest } from '../../packages/health-core/src/validation';
 import { action as webChatAction } from '../routes/api.chat';
 import { attestConfig, AttestError, challengeValid, newChallenge, validKeyId, verifyAttestation } from './app-attest.server';
 import { appGate, appLimits, appRoutesOff, ipBucket, supabaseKeyStore, type KeyStore } from './app-gate.server';
@@ -91,6 +91,19 @@ export async function appChat(request: Request, store?: KeyStore): Promise<Respo
 
 /** POST lab-import: the gate (which also spends the web's file cap, AC4d), then the web's single-file extraction; proposed values back, nothing stored (AC7). */
 export async function appLabImport(request: Request, store?: KeyStore): Promise<Response> {
+  const gate = await labGate(request, store);
+  return gate instanceof Response ? gate : labRead(gate);
+}
+
+/** A lab request the gate accepted: its counter is spent and its body valid. */
+export interface AcceptedLab { data: LabImportRequest; start: number }
+
+/**
+ * The lab routes' gate and validation, in order (AC7, AC7e). A Response is the
+ * refusal, to answer as it is; anything else means the counter is spent and the
+ * read may start.
+ */
+export async function labGate(request: Request, store?: KeyStore): Promise<Response | AcceptedLab> {
   if (appRoutesOff()) return unavailable();
   // From the request's arrival, so a slow upload read by the gate counts too (US-52 AC7d).
   const start = Date.now();
@@ -104,8 +117,13 @@ export async function appLabImport(request: Request, store?: KeyStore): Promise<
   }
   const validation = labImportRequestSchema.safeParse(parsed);
   if (!validation.success) return json(400, { success: false, error: 'Invalid request' });
+  return { data: validation.data, start };
+}
+
+/** One accepted file's read, on one 90 s budget, and its slow-import report (AC7c, AC7d). */
+export async function labRead({ data, start }: AcceptedLab): Promise<Response> {
   let retried = false;
-  const res = await extractOneFile(validation.data, undefined, { timeoutMs: 90_000, oneDeadline: true, onRetry: () => { retried = true; } });
+  const res = await extractOneFile(data, undefined, { timeoutMs: 90_000, oneDeadline: true, onRetry: () => { retried = true; } });
   await reportSlowImport(res, Date.now() - start, retried);
   return res;
 }
