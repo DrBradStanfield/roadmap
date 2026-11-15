@@ -6,13 +6,14 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach, type MockInstance } from 'vitest';
 
-vi.mock('@sentry/react-router', () => ({ captureException: vi.fn() }));
+vi.mock('@sentry/react-router', () => ({ captureException: vi.fn(), captureMessage: vi.fn() }));
 vi.mock('./cron-helpers.server', () => ({ sleep: vi.fn() }));
 
 process.env.ANTHROPIC_API_KEY = 'test-key-placeholder';
 
+import * as Sentry from '@sentry/react-router';
 import { callAnthropicWithUsage, extractOrClassify } from './anthropic.server';
-import { parseRetryAfterMs } from './anthropic-fetch.server';
+import { parseRetryAfterMs, rateLimitWaitMs } from './anthropic-fetch.server';
 import { extractOneFile } from './lab-extract-one.server';
 import { sleep } from './cron-helpers.server';
 
@@ -29,11 +30,15 @@ const pages = [{ type: 'text' as const, content: 'x' }];
 describe('US-12 AC1a: a lab read retries an Anthropic 429 once inside its deadline', () => {
   let timeouts: MockInstance<typeof AbortSignal.timeout>;
   let warn: MockInstance;
+  let error: MockInstance;
+  let random: MockInstance;
   beforeEach(() => {
+    vi.clearAllMocks();
     vi.useFakeTimers();
+    random = vi.spyOn(Math, 'random').mockReturnValue(0); // no jitter unless a test sets it
     timeouts = vi.spyOn(AbortSignal, 'timeout');
     warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    vi.spyOn(console, 'error').mockImplementation(() => {});
+    error = vi.spyOn(console, 'error').mockImplementation(() => {});
     vi.mocked(sleep).mockImplementation(async (ms: number) => { vi.advanceTimersByTime(ms); });
   });
   afterEach(() => {
@@ -61,6 +66,10 @@ describe('US-12 AC1a: a lab read retries an Anthropic 429 once inside its deadli
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(vi.mocked(sleep)).toHaveBeenCalledWith(wait);
     expect(onRetry).toHaveBeenCalledTimes(1);
+    // The rescued 429 reaches Sentry once, as a warning with its status and wait only.
+    expect(Sentry.captureException).not.toHaveBeenCalled();
+    expect(Sentry.captureMessage).toHaveBeenCalledTimes(1);
+    expect(Sentry.captureMessage).toHaveBeenCalledWith('Anthropic 429 retried', { level: 'warning', extra: { status: 429, waitMs: wait } });
     // The retried attempt gets only what is left of the read's deadline.
     expect(timeouts.mock.calls.at(-1)![0]).toBe(opts.timeoutMs - 5_000 - wait);
   });
@@ -85,6 +94,9 @@ describe('US-12 AC1a: a lab read retries an Anthropic 429 once inside its deadli
     const { fetchMock, result } = run([() => rateLimited('1'), () => rateLimited('1')], { timeoutMs: 60_000, retryRateLimit: true });
     await expect(result).rejects.toThrow('Anthropic API error (status 429) (rate_limit_error)');
     expect(fetchMock).toHaveBeenCalledTimes(2);
+    // Captured once, as the exception it was before; no rescue warning.
+    expect(Sentry.captureException).toHaveBeenCalledTimes(1);
+    expect(Sentry.captureMessage).not.toHaveBeenCalled();
   });
 
   it('a 429 is not retried without the opt-in (the connector import, any other caller)', async () => {
@@ -118,12 +130,45 @@ describe('US-12 AC1a: a lab read retries an Anthropic 429 once inside its deadli
     { header: '', waits: 2_000 },
     { header: ' 4 ', waits: 4_000 },
     { header: '0.5', waits: 500 },
-  ])('a hostile retry-after "$header" is clamped to $waits ms, and never logged raw', async ({ header, waits }) => {
+  ])('a hostile retry-after "$header" is clamped to $waits ms', async ({ header, waits }) => {
     expect(parseRetryAfterMs(header)).toBe(waits);
     const { result } = run([() => rateLimited(header), ok], { timeoutMs: 90_000, oneDeadline: true, retryRateLimit: true });
     await expect(result).resolves.toMatchObject({ classification: 'lab_report' });
     expect(vi.mocked(sleep)).toHaveBeenCalledWith(waits);
-    if (header) expect(JSON.stringify(warn.mock.calls)).not.toContain(header);
+  });
+
+  it('a retry-after carrying text reaches no console line and no Sentry call, while the retry still runs', async () => {
+    const MARKER = 'MARKER_q7_lab_name';
+    const { fetchMock, result } = run([() => rateLimited(`${MARKER} 30`), ok], { timeoutMs: 60_000, retryRateLimit: true });
+    await expect(result).resolves.toMatchObject({ classification: 'lab_report' });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(warn).toHaveBeenCalled();
+    expect(Sentry.captureMessage).toHaveBeenCalledTimes(1);
+    const seen = JSON.stringify([warn.mock.calls, error.mock.calls, vi.mocked(Sentry.captureMessage).mock.calls, vi.mocked(Sentry.captureException).mock.calls]);
+    expect(seen).not.toContain(MARKER);
+  });
+
+  it('jitter: up to 1.5 s is added to the wait, so two reads retry at different times', async () => {
+    expect(rateLimitWaitMs('3', () => 0)).toBe(3_000);
+    expect(rateLimitWaitMs('3', () => 0.999_9)).toBe(4_500);
+    expect(rateLimitWaitMs(null, () => 0.5)).toBe(2_750);
+    for (const draw of [0.2, 0.8]) {
+      random.mockReturnValue(draw);
+      const { result } = run([() => rateLimited('1'), ok], { timeoutMs: 60_000, retryRateLimit: true });
+      await expect(result).resolves.toMatchObject({ classification: 'lab_report' });
+    }
+    expect(vi.mocked(sleep).mock.calls.map(([ms]) => ms)).toEqual([1_300, 2_200]);
+  });
+
+  it.each([
+    { name: '9.5 s left: 2 s + 1.5 s jitter leaves exactly 6 s, no retry', at: 50_500, calls: 1 },
+    { name: '9.6 s left: just over 6 s remains, retried', at: 50_400, calls: 2 },
+  ])('the deadline rule uses the jittered wait at max jitter: $name', async ({ at, calls }) => {
+    random.mockReturnValue(0.999_9);
+    const { fetchMock, result } = run([after(at, () => rateLimited()), ok], { timeoutMs: 60_000, retryRateLimit: true });
+    if (calls === 2) await expect(result).resolves.toMatchObject({ classification: 'lab_report' });
+    else await expect(result).rejects.toThrow(/status 429/);
+    expect(fetchMock).toHaveBeenCalledTimes(calls);
   });
 
   it('parses a missing header as the 2 s default', () => {

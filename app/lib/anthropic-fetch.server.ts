@@ -55,13 +55,16 @@ export interface AnthropicResult {
  * both times during a brief 01:50 UTC June 4 outage). Real persistent errors
  * (auth, 4xx validation, malformed responses, 429 structural rate-limit) throw
  * immediately so the chat handler returns the fallback without compounding
- * latency.
+ * latency. The one exception is an opted-in 429, below.
  *
  * 429 is treated as structural (account tier too low, runaway caller, or a real
  * outage requiring intervention) — not retried, surfaced via Sentry. Except
- * for a caller that opts in with `rateLimitUntil` (US-12 AC1a): there a 429
- * takes the one retry after its `retry-after` (else 2 s), only if more than
- * 6 s of that deadline would remain after the wait.
+ * for a caller that opts in with `rateLimitUntil` (the lab reads, US-12 AC1a):
+ * there a 429 takes the one retry after its `retry-after` (else 2 s) plus up
+ * to 1.5 s of jitter, only if more than 6 s of that deadline would remain
+ * after that jittered wait. A 429 the retry rescues still reaches Sentry, once,
+ * as a warning with its status and wait only; one it does not rescue throws
+ * and is captured as before.
  *
  * 503 and 529 are transient capacity signals — retried, and (if both attempts
  * fail) the final throw is silenced from Sentry to avoid flooding alerts during
@@ -79,6 +82,7 @@ const RATE_LIMIT_DEFAULT_WAIT_MS = 2_000;
 const RATE_LIMIT_MAX_WAIT_MS = 60_000;
 /** An opted-in 429 is retried only if more than this is left of the deadline after its wait. */
 const RATE_LIMIT_MIN_LEFT_MS = 6_000;
+const RATE_LIMIT_MAX_JITTER_MS = 1_500;
 
 /**
  * Anthropic's `retry-after`, external text, read once: plain non-negative
@@ -89,6 +93,11 @@ export function parseRetryAfterMs(header: string | null): number {
   const value = header?.trim() ?? '';
   if (!/^\d{1,9}(\.\d{1,3})?$/.test(value)) return RATE_LIMIT_DEFAULT_WAIT_MS;
   return Math.min(Number(value) * 1000, RATE_LIMIT_MAX_WAIT_MS);
+}
+
+/** The wait before an opted-in 429's retry: `retry-after` plus 0 to 1.5 s of jitter, so parallel reads do not retry in step. */
+export function rateLimitWaitMs(header: string | null, random: () => number = Math.random): number {
+  return parseRetryAfterMs(header) + Math.round(random() * RATE_LIMIT_MAX_JITTER_MS);
 }
 
 /**
@@ -222,6 +231,7 @@ export async function fetchAnthropicRaw(
   onRetry?: () => void, rateLimitUntil?: number,
 ): Promise<AnthropicResult> {
   let until = deadline;
+  let rateLimitWait: number | undefined;
   const left = () => (until === undefined ? Infinity : until - Date.now());
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     let began = false;
@@ -243,9 +253,9 @@ export async function fetchAnthropicRaw(
         let wait: number | undefined;
         if (RETRYABLE_STATUSES.has(response.status) && retry()) wait = RETRY_DELAY_MS;
         else if (response.status === 429 && rateLimitUntil !== undefined && attempt < maxAttempts) {
-          const asked = parseRetryAfterMs(response.headers.get('retry-after'));
+          const asked = rateLimitWaitMs(response.headers.get('retry-after'));
           if (rateLimitUntil - Date.now() - asked > RATE_LIMIT_MIN_LEFT_MS) {
-            wait = asked;
+            wait = rateLimitWait = asked;
             // The retried attempt (and retry() after it) sees only what is left of that deadline.
             until = Math.min(until ?? Infinity, rateLimitUntil);
           }
@@ -271,7 +281,12 @@ export async function fetchAnthropicRaw(
         throw err;
       }
 
-      return await read(response, { began: () => { began = true; }, idle });
+      const result = await read(response, { began: () => { began = true; }, idle });
+      // A rescued 429 still tells Sentry, once: its status and wait, nothing else.
+      if (rateLimitWait !== undefined) {
+        Sentry.captureMessage('Anthropic 429 retried', { level: 'warning', extra: { status: 429, waitMs: rateLimitWait } });
+      }
+      return result;
     } catch (err) {
       if (!began && isNetworkOrTimeoutError(err) && retry()) {
         const e = err as Error;
