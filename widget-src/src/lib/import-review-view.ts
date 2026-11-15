@@ -12,6 +12,7 @@ import type { BulkRow, LabUnitRefusal, MeasurementRefusal } from '@roadmap/healt
 import type { UploadHistory } from './api-types';
 import { columnDay, parseReportDate, valueDate, type FullDate } from './review-dates';
 import type { FileResult, ReviewedLabValue, ReviewedValue } from './upload-pipeline';
+import { fileKey } from './file-key';
 import { editId, matrixCellKey, matrixRowKey, type CoreCellView, type DateKey, type buildMatrixModel } from './review-matrix';
 import { UNIT_DEFS, type MetricType } from '@roadmap/health-core/units';
 import { cellNumber, cellToSI, readNumericCell, readTypedValue, type CellUnit } from './blood-test-cell';
@@ -162,12 +163,12 @@ function toDecisions(rows: readonly BulkRow[], source: ReadonlyMap<BulkRow, Kept
   for (const row of rows) {
     const { fi, ref } = refAt(source.get(row)!.id);
     const limit = row.comparator ? { comparator: row.comparator } : {};
-    const sourceFileName = results[fi].fileName;
+    const file = fileKey(results[fi], fi);
     if (row.kind === 'measurement') {
-      values.push({ metric: row.metricType, valueSI: row.value, recordedAt: row.recordedAt, source: row.source === 'lab_import_edited' ? row.source : undefined, correctsId: row.correctsId, ...limit, sourceFileName });
+      values.push({ metric: row.metricType, valueSI: row.value, recordedAt: row.recordedAt, source: row.source === 'lab_import_edited' ? row.source : undefined, correctsId: row.correctsId, ...limit, file });
     } else {
       const av = results[fi].additionalValues[Number(ref.slice(1))];
-      labValues.push({ name: row.metricName, value: row.value, unit: row.unit, referenceLow: av.referenceLow, referenceHigh: av.referenceHigh, recordedAt: row.recordedAt, correctsId: row.correctsId, ...limit, sourceFileName });
+      labValues.push({ name: row.metricName, value: row.value, unit: row.unit, referenceLow: av.referenceLow, referenceHigh: av.referenceHigh, recordedAt: row.recordedAt, correctsId: row.correctsId, ...limit, file });
     }
   }
   return { values, labValues };

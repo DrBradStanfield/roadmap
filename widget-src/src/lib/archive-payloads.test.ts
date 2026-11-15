@@ -38,8 +38,11 @@ describe('synthesizeLabArchiveEntries', () => {
   });
 
   it('US-14 AC10: off-cloud, the hash alone files a metadata-only archive row, listing the rows its values wrote', () => {
-    const [entry] = synthesizeLabArchiveEntries([result({ contentHash: 'hash-a' })], new Set(), { 'lipids.pdf': ['row-1', 'row-2'], 'other.pdf': ['row-3'] });
+    const [entry] = synthesizeLabArchiveEntries([result({ contentHash: 'hash-a' })], new Set(), new Map([['hash-a', ['row-1', 'row-2']], ['hash-b', ['row-3']]]));
     expect(entry).toMatchObject({ file: undefined, contentHash: 'hash-a', sourceFileName: 'lipids.pdf', metadata: { [LAB_ARCHIVE_FLAG]: true, rows: ['row-1', 'row-2'] } });
+    // Keyed by the file's identity, never its name: two files called lipids.pdf keep their own lists.
+    const two = synthesizeLabArchiveEntries([result({ contentHash: 'hash-a' }), result({ contentHash: 'hash-b' })], new Set(), new Map([['hash-a', ['row-1']], ['hash-b', ['row-3']]]));
+    expect(two.map((e) => e.metadata.rows)).toEqual([['row-1'], ['row-3']]);
     // No rows written for it: no list.
     expect(synthesizeLabArchiveEntries([result({ contentHash: 'hash-a' })], new Set())[0].metadata).toEqual({ [LAB_ARCHIVE_FLAG]: true });
   });

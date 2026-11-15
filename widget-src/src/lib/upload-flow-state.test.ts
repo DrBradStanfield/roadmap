@@ -14,7 +14,7 @@ const refusedLab = { key: 'k', unit: 'u' } as SaveOutcome['refusedLabUnits'][num
 const refusedCore = { metricType: 'ldl' } as SaveOutcome['refusedMeasurements'][number];
 const outcome: SaveOutcome = {
   values: 2, labValues: 3, documents: ['sha256-a'], skippedValues: 1, skippedLabValues: 1, unstored: 1,
-  refusedLabUnits: [refusedLab], refusedMeasurements: [refusedCore], labRows: { 'a.pdf': ['row-1'] },
+  refusedLabUnits: [refusedLab], refusedMeasurements: [refusedCore], labRows: new Map([['a.pdf', ['row-1']]]),
 };
 const progress = { current: 40, total: 100, fileName: 'a.pdf' };
 const RUN = 1;
@@ -31,9 +31,9 @@ const STATES: Record<UploadPhase, UploadState> = {
 
 const newProgress = { current: 70, total: 100, fileName: 'b.pdf' };
 /** An attempt: one value, a new and a repeat document, its own skips, the lab rows its values wrote. */
-const attempt: SaveOutcome = { ...NO_OUTCOME, values: 1, documents: ['sha256-a', 'sha256-b'], skippedValues: 4, labRows: { 'a.pdf': ['row-1', 'row-2'], 'b.pdf': ['row-3'] } };
+const attempt: SaveOutcome = { ...NO_OUTCOME, values: 1, documents: ['sha256-a', 'sha256-b'], skippedValues: 4, labRows: new Map([['a.pdf', ['row-1', 'row-2']], ['b.pdf', ['row-3']]]) };
 /** `outcome` plus `attempt`: counts add, documents and lab rows once, the rest the attempt's (US-14 AC10). */
-const merged: SaveOutcome = { ...NO_OUTCOME, values: 3, labValues: 3, documents: ['sha256-a', 'sha256-b'], skippedValues: 4, labRows: { 'a.pdf': ['row-1', 'row-2'], 'b.pdf': ['row-3'] } };
+const merged: SaveOutcome = { ...NO_OUTCOME, values: 3, labValues: 3, documents: ['sha256-a', 'sha256-b'], skippedValues: 4, labRows: new Map([['a.pdf', ['row-1', 'row-2']], ['b.pdf', ['row-3']]]) };
 const EVENTS: Record<UploadEvent['type'], UploadEvent> = {
   picked: { type: 'picked', run: 2, files: [file], notices: [], counts: { picked: 1, docx: 0 } },
   listed: { type: 'listed', run: RUN, picked: 5 },
@@ -88,7 +88,7 @@ const TABLE: Record<UploadPhase, Record<UploadEvent['type'], Next>> = {
   },
   saveFailed: {
     picked: s, listed: s, progress: s, readFailed: s, read: s, cancel: s, close: s, discard: reset, skipConnect: skipped('saveFailed'),
-    saveStarted: { phase: 'saving', results: [result], notices: [notice], outcome: { ...NO_OUTCOME, values: 2, labValues: 3, documents: ['sha256-a'], labRows: { 'a.pdf': ['row-1'] } }, skipArchive: false },
+    saveStarted: { phase: 'saving', results: [result], notices: [notice], outcome: { ...NO_OUTCOME, values: 2, labValues: 3, documents: ['sha256-a'], labRows: new Map([['a.pdf', ['row-1']]]) }, skipArchive: false },
     saved: s, saveFailed: s,
   },
   done: {

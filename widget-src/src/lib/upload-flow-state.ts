@@ -11,19 +11,19 @@ export interface SaveOutcome {
   values: number; labValues: number; documents: string[];
   skippedValues: number; skippedLabValues: number; unstored: number;
   refusedLabUnits: LabUnitRefusal[]; refusedMeasurements: MeasurementRefusal[];
-  /** The lab rows each file's values wrote, by file name, every attempt's: a retry whose values are
-   *  already saved still lists them on the file's archive row (US-14 AC10). */
-  labRows: Record<string, string[]>;
+  /** The lab rows each file's values wrote, by the file's identity (`fileKey`), every attempt's: a
+   *  retry whose values are already saved still lists them on the file's archive row (US-14 AC10). */
+  labRows: ReadonlyMap<string, string[]>;
 }
-export const NO_OUTCOME: SaveOutcome = { values: 0, labValues: 0, documents: [], skippedValues: 0, skippedLabValues: 0, unstored: 0, refusedLabUnits: [], refusedMeasurements: [], labRows: {} };
+export const NO_OUTCOME: SaveOutcome = { values: 0, labValues: 0, documents: [], skippedValues: 0, skippedLabValues: 0, unstored: 0, refusedLabUnits: [], refusedMeasurements: [], labRows: new Map() };
 
 /** What earlier attempts saved. The last attempt's skips, errors and refusals
  *  belong to it: never beside a new error. */
 const savedSoFar = (o: SaveOutcome): SaveOutcome => ({ ...NO_OUTCOME, values: o.values, labValues: o.labValues, documents: o.documents, labRows: o.labRows });
 
 /** Two attempts' lab rows, by file. */
-export const joinRows = (a: Record<string, string[]>, b: Record<string, string[]>) =>
-  Object.fromEntries([...new Set([...Object.keys(a), ...Object.keys(b)])].map((f) => [f, [...new Set([...(a[f] ?? []), ...(b[f] ?? [])])]]));
+export const joinRows = (a: ReadonlyMap<string, string[]>, b: ReadonlyMap<string, string[]>): ReadonlyMap<string, string[]> =>
+  new Map([...new Set([...a.keys(), ...b.keys()])].map((f) => [f, [...new Set([...(a.get(f) ?? []), ...(b.get(f) ?? [])])]]));
 
 /** One attempt added to the session: saved counts add up, documents by key
  *  once; skips, unstored and refusals are the attempt's own. */

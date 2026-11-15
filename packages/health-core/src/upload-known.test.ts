@@ -304,7 +304,7 @@ describe('two devices file the same lab report offline, then merge (US-14 AC10, 
   async function device(id: string): Promise<RoadmapFile> {
     const start = createEmptyFile({ deviceId: id, now: '2026-01-01T00:00:00.000Z' });
     const write = bulkAppendValues(start, [{ kind: 'lab', metricName: 'Ferritin', value: 90, unit: 'µg/L', recordedAt: '2026-01-01', source: 'lab_import' }], NOW);
-    const rows = labRowsByFile(writtenLabRows(write), ['labs.pdf'])['labs.pdf'];
+    const rows = labRowsByFile(writtenLabRows(write), ['labs.pdf']).get('labs.pdf');
     return (await saveOne(write.file, labArchivePayload<string>('labs.pdf', '2026-01-01', undefined, { rows, contentHash: 'hash-a' }), false)).file;
   }
 

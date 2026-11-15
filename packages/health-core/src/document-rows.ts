@@ -119,14 +119,26 @@ export function writtenLabRows(write: { saved: ReadonlyArray<{ id: string }>; ou
   });
 }
 
-/** `writtenLabRows` grouped by the file each submitted row came from: what each file's archive row lists. */
-export function labRowsByFile(rows: ReadonlyArray<string | null>, files: ReadonlyArray<string | null | undefined>): Record<string, string[]> {
-  const out: Record<string, string[]> = {};
+/**
+ * `writtenLabRows` grouped by the file each submitted row came from: what each
+ * file's archive row lists. `files` names each row's file by an identity unique
+ * in the pick (the web: its bytes' hash, else its place in the pick; the
+ * connector: its folder entry), never a display name two files can share. A
+ * Map, so a name like `__proto__` is only a key.
+ */
+export function labRowsByFile(rows: ReadonlyArray<string | null>, files: ReadonlyArray<string | null | undefined>): Map<string, string[]> {
+  const out = new Map<string, string[]>();
   rows.forEach((id, i) => {
     const file = files[i];
-    if (id && file) (out[file] ??= []).push(id);
+    if (id && file) out.set(file, [...(out.get(file) ?? []), id]);
   });
   return out;
+}
+
+/** The lab rows an archive row lists (`LAB_ARCHIVE_ROWS`), or null for a row with no list. */
+export function listedRows(d: { metadata?: Record<string, unknown> | null }): string[] | null {
+  const rows = d.metadata?.[LAB_ARCHIVE_ROWS];
+  return Array.isArray(rows) ? rows.filter((id): id is string => typeof id === 'string') : null;
 }
 
 /**

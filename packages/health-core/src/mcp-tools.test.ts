@@ -2696,6 +2696,44 @@ describe('US-35 AC7/AC8 — importDocumentsCommit applies a selection, all or no
     expect(again.status === 'ok' && again.file).toBeUndefined();
   });
 
+  it('US-14 AC10, Codex R3: a file named like an object key ("constructor", "__proto__", "toString") commits, its archive row listing its own rows', () => {
+    for (const name of ['constructor', '__proto__', 'toString']) {
+      const file = base();
+      const payload = payloadFor(file, [extracted(name, labReport())]);
+      const outcome = importDocumentsCommit(file, payload, { receipt: 'r', accept: payload.candidates.map((c) => c.id), replace: [] }, NOW);
+      expect(outcome.status).toBe('ok');
+      const written = outcome.status === 'ok' ? outcome.file! : base();
+      const added = written.labValues.filter((l) => !file.labValues.some((o) => o.id === l.id)).map((l) => l.id);
+      expect(added.length).toBeGreaterThan(0);
+      expect(written.documents.at(-1)).toMatchObject({ sourceFileName: name, metadata: { labArchive: true, rows: added } });
+    }
+  });
+
+  it('US-14 AC10, adversary F4: a lab archive row whose listed values are all gone is not already imported; a re-import refreshes it, keeping its original and list', () => {
+    const first = base();
+    const payload = payloadFor(first, [extracted('labs.pdf', labReport())]);
+    const filed = importDocumentsCommit(first, payload, { receipt: 'r', accept: payload.candidates.map((c) => c.id), replace: [] }, NOW);
+    const file = filed.status === 'ok' ? filed.file! : base();
+    const archive = file.documents.at(-1)!;
+    const listed = (archive.metadata?.rows ?? []) as string[];
+    expect(isAlreadyImported(file, 'labs.pdf', 'sha256-labs.pdf')).toMatchObject({ by: 'hash' });
+    // The original stored meanwhile (a website upload), then every listed value deleted.
+    archive.fileRef = 'Lab results/labs.pdf';
+    file.labValues = file.labValues.map((l) => (listed.includes(l.id) ? { ...l, status: 'entered-in-error' as const } : l));
+    expect(isAlreadyImported(file, 'labs.pdf', 'sha256-labs.pdf')).toBeNull();
+    const again = payloadFor(file, [extracted('labs.pdf', labReport())]);
+    expect(again.documents).toHaveLength(1);
+    const refreshed = importDocumentsCommit(file, again, { receipt: 'r', accept: again.candidates.map((c) => c.id), replace: [] }, NOW);
+    const after = refreshed.status === 'ok' ? refreshed.file! : base();
+    const live = after.documents.filter((d) => !d.deleted && d.contentHash === 'sha256-labs.pdf');
+    expect(live).toHaveLength(1);
+    expect(live[0].fileRef).toBe('Lab results/labs.pdf');
+    expect((live[0].metadata?.rows as string[]).slice(0, listed.length)).toEqual(listed);
+    expect((live[0].metadata?.rows as string[]).length).toBeGreaterThan(listed.length);
+    expect(after.documents.find((d) => d.id === archive.id)?.deleted).toBe(true);
+    expect(isAlreadyImported(after, 'labs.pdf', 'sha256-labs.pdf')).toMatchObject({ by: 'hash' });
+  });
+
   it('cannot introduce a value the receipt does not carry, and held_equal accepts write nothing', () => {
     const file = filed(base(), 'same.pdf');
     const payload = payloadFor(file, [extracted('same.pdf', ldlOnly(3.4, '2026-07-14'))]);

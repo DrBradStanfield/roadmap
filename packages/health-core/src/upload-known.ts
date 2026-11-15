@@ -25,11 +25,11 @@
  *
  * Hashes and names stay here: never logged, never in an event.
  */
-import { dedupFileName, documentView, isLabArchiveDocument, LAB_ARCHIVE_ROWS, type DocumentFields } from './document-rows';
+import { dedupFileName, documentView, isLabArchiveDocument, listedRows, type DocumentFields } from './document-rows';
 import { isActive } from './blood-tests';
 import { dayOf, rootIdOf } from './merge';
 import { isReadableRow } from './readable-rows';
-import type { FileDocument, FileLabValue, RoadmapFile } from './roadmap-file';
+import type { FileLabValue, RoadmapFile } from './roadmap-file';
 
 /** How the record holds a file's bytes. */
 export interface Known {
@@ -62,11 +62,6 @@ function activeRoots(all: readonly unknown[], readable: readonly FileLabValue[])
   return new Set([...seen].map(rootIdOf));
 }
 
-/** The lab rows an archive row lists, or null for a row written before the list. */
-function producedRows(d: FileDocument): string[] | null {
-  const rows = d.metadata?.[LAB_ARCHIVE_ROWS];
-  return Array.isArray(rows) ? rows.filter((id): id is string => typeof id === 'string') : null;
-}
 
 /** Index the record's live, hashed rows by content (section 2's table). */
 export function knownIndex(record: RoadmapFile): KnownIndex {
@@ -79,7 +74,7 @@ export function knownIndex(record: RoadmapFile): KnownIndex {
     if (!isReadableRow('documents', d) || d.deleted || !d.contentHash) continue;
     const lab = isLabArchiveDocument(documentView(d));
     if (lab) {
-      const rows = producedRows(d);
+      const rows = listedRows(d);
       if (rows ? !rows.some((id) => active.has(rootIdOf(id))) : !activeDays.has(d.date ?? '')) continue;
     }
     const next: Known = { as: lab ? 'labReport' : 'document', archiveOnly: !d.fileRef };

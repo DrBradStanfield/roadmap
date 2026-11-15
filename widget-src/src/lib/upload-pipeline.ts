@@ -57,13 +57,13 @@ export interface DocumentToSave {
  *  turns it into a FHIR correction. */
 export interface ReviewedValue {
   metric: string; valueSI: number; recordedAt: string; source?: MeasurementSource; correctsId?: string;
-  /** The file it was read from: that file's archive row lists the row it writes (US-14 AC10). */
-  sourceFileName?: string;
+  /** The file it was read from (`fileKey`): that file's archive row lists the row it writes (US-14 AC10). */
+  file?: string;
   /** Printed as a limit and saved as printed (US-12 AC20); an edited cell is an exact value. */
   comparator?: Comparator;
 }
 export interface ReviewedLabValue {
-  name: string; value: number; unit: string; sourceFileName?: string;
+  name: string; value: number; unit: string; file?: string;
   referenceLow?: number | null; referenceHigh?: number | null;
   recordedAt: string; correctsId?: string;
   comparator?: Comparator;

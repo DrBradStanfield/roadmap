@@ -11,6 +11,7 @@
  */
 import { labArchivePayload, pendingRowsFor, type DocumentPayload, type ExistingDoc } from '@roadmap/health-core/document-save';
 import type { FileResult } from './upload-pipeline';
+import { fileKey } from './file-key';
 
 /** 'sha256-<hex>' content fingerprint — names the blob + detects corruption. */
 export async function sha256Blob(blob: Blob): Promise<string> {
@@ -76,18 +77,18 @@ export function connectorDocumentEntries(
 /**
  * Synthesized entries for lab files whose originals would otherwise be lost:
  * with the bytes in a cloud, or off-cloud with their hash alone (US-14 AC10).
- * `labRows`: the lab rows each file's values wrote (health-core
- * `labRowsByFile`), listed on its archive row.
+ * `labRows`: the lab rows each file's values wrote, by the file's identity
+ * (`fileKey`; health-core `labRowsByFile`), listed on its archive row.
  */
 export function synthesizeLabArchiveEntries(
   results: FileResult[],
   alreadyCovered: Set<string | null>,
-  labRows: Readonly<Record<string, string[]>> = {},
+  labRows: ReadonlyMap<string, string[]> = new Map(),
 ): DocumentPayload<Blob>[] {
   const out: DocumentPayload<Blob>[] = [];
-  for (const r of results) {
-    if (r.document || !(r.file || r.contentHash) || !isFileable(r, alreadyCovered)) continue;
-    out.push(labArchivePayload(r.fileName, r.reportDate, r.file, { rows: labRows[r.fileName], contentHash: r.contentHash }));
-  }
+  results.forEach((r, index) => {
+    if (r.document || !(r.file || r.contentHash) || !isFileable(r, alreadyCovered)) return;
+    out.push(labArchivePayload(r.fileName, r.reportDate, r.file, { rows: labRows.get(fileKey(r, index)), contentHash: r.contentHash }));
+  });
   return out;
 }

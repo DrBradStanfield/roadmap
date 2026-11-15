@@ -330,7 +330,7 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
       const savedLabValues: BulkLabValuesResult = labValuePayloads.length > 0 ? await bulkSaveLabValues(labValuePayloads).catch(failed('labValues', { saved: [], skippedDuplicates: 0, errorCount: labValuePayloads.length, refused: [] })) : { saved: [], skippedDuplicates: 0, errorCount: 0, refused: [] };
       const labRows = labRowsByFile(
         [...(savedValues.labRows ?? measurements.map(() => null)), ...(savedLabValues.labRows ?? labValuePayloads.map(() => null))],
-        [...selectedValues.map(v => v.sourceFileName), ...labValues.map(v => v.sourceFileName)],
+        [...selectedValues.map(v => v.file), ...labValues.map(v => v.file)],
       );
       // Blobs travel INSIDE the payload (attached at processing time, and only
       // when the backend can archive them) — no name-keyed re-join here.

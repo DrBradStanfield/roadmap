@@ -224,8 +224,8 @@ describe('ReviewTable range errors before save', () => {
     expect(save.disabled).toBe(false);
     fireEvent.click(save);
     expect(onSave.mock.calls[0][0].values).toEqual([
-      { metric: 'ldl', valueSI: 4.1, source: 'lab_import_edited', recordedAt: '2025-01-10T00:00:00.000Z', correctsId: undefined, sourceFileName: 'synthetic-labs.pdf' },
-      { metric: 'hdl', valueSI: 1.23456789, source: undefined, recordedAt: '2025-01-10T00:00:00.000Z', correctsId: undefined, sourceFileName: 'synthetic-labs.pdf' },
+      { metric: 'ldl', valueSI: 4.1, source: 'lab_import_edited', recordedAt: '2025-01-10T00:00:00.000Z', correctsId: undefined, file: '#0' },
+      { metric: 'hdl', valueSI: 1.23456789, source: undefined, recordedAt: '2025-01-10T00:00:00.000Z', correctsId: undefined, file: '#0' },
     ]);
   });
 });
