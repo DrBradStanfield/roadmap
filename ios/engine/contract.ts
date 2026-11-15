@@ -406,6 +406,42 @@ export const DOORS = {
     args: [],
     returns: "S50b (US-25 AC16i): a Promise of one word, asked before Disconnect or a switch closes anything. It flushes the open session first, as a close does, then says whether an erase made on this phone is still unsent: 'none' (no session, no such erase, or a save has carried it), 'transient' (its last save failed in a way known to pass: a network call with no answer, a timeout, an abort, 408, 429, a 5xx, or Google's rate or daily limit), 'definite' (the provider refused it: storage full, a refused sign-in, another 4xx) 'unknown' (anything else, a failure no report explained included) or 'expired' (a transient failure 24 hours or more after the erase's first failed send, owner 2026-11-14). Only 'transient' holds the Disconnect; the app runs today's path on every other word and on one it does not know. cloudClose's answers are unchanged. An engine before it has no such door: optionalCall answers nil and Disconnect runs as before, never a crash.",
   },
+  // The shared upload (design PR 12, US-52 AC8c, upload-doors.ts). Each answers its JSON, or on
+  // malformed input the refusal {ok: false, reason, message}: reason "invalid-platform",
+  // "invalid-state", "invalid-event", "invalid-record", "record-too-new" or "engine-error"; never a throw. The
+  // state is health-core UploadState, opaque to the app: it stores what a door answered and
+  // sends it back. An engine before them has no such doors: optionalCall answers nil, and the
+  // app keeps today's per-report flow, never a crash.
+  uploadStartJson: {
+    kind: 'sync',
+    optionalDoor: true,
+    args: [['platform', text]],
+    returns: "Shared upload (US-52 AC8c): a new upload's state JSON (health-core initialUpload) for platform \"web\" or \"phone\"; any other platform is refused (\"invalid-platform\").",
+  },
+  uploadStepJson: {
+    kind: 'sync',
+    optionalDoor: true,
+    args: [['stateJson', text], ['eventJson', text], ['recordJson', text], ['deviceId', text]],
+    returns: "Shared upload (US-52 AC8c): one event through health-core transition, as JSON {state, effects}. The event is health-core UploadEvent less what only the engine knows, strict (an unnamed key is refused, invalid-event); the parsed event runs: hashed {run, id, hash} (the engine adds known from the record, knownIndex and knownAs); streamEnded {run, id, line, now}, the streaming lab route's end, line its last NDJSON line as received or null when there was none: the engine reads it (health-core labStreamAnswer), status 200 with a checked read becomes answered, anything else sendFailed with the shared code, no line or an unreadable one the network failure; sendFailed {run, id, status (null when no answer came), body (the answer's text, or null), contentType (its header, or null)} for a real HTTP refusal before any stream, read by health-core uploadFailureOfText as the web reads it; answered {run, id, extraction, now} for a whole read, checked (UPLOAD_EXTRACTION), the engine adds legacy (readIsLegacy). recordJson: the record as text, \"\" for none; read only for hashed, answered and streamEnded, through deviceId (the app's own, as the screen doors take it). Steps are strictly serial: one call at a time, each given the state the previous one returned; otherwise an event is lost and its effects' answers are dropped as stale. A record a newer app wrote is refused as record-too-new, in readRecord's words. The full wire per event is entry.ts uploadStepJson's comment.",
+  },
+  uploadViewJson: {
+    kind: 'sync',
+    optionalDoor: true,
+    args: [['stateJson', text], ['recordJson', text], ['nowIso', text], ['cloudConnected', flag], ['deviceId', text]],
+    returns: "Shared upload (US-52 AC8c): the drawable view, health-core UploadView as JSON {progress, summary, sections, sure, documents, files, notices, save, stop, done}, every string resolved and every count made; one uploadReview of the state against the record per call, so it counts what uploadSavePlanJson writes for the same inputs. cloudConnected: originals are stored and counted only with a cloud. deviceId: the app's own, as the screen doors take it. Costly for a large upload (entry.ts): at most one call per frame, coalesced, off the main thread.",
+  },
+  uploadSavePlanJson: {
+    kind: 'sync',
+    optionalDoor: true,
+    args: [['stateJson', text], ['recordJson', text], ['nowIso', text], ['cloudConnected', flag], ['deviceId', text]],
+    returns: "Shared upload (US-52 AC8c): what one Save writes, health-core UploadSavePlan as JSON {labRows: [{fileId, rows}], documents: [{fileId, fields}], labArchives: [{fileId, sourceFileName, reportDate}], archiveOnly: [{fileId, fields}], counts: {values, documents, archived, originals}}, from the same review rule as uploadViewJson. Read only: the save itself still goes through cloudLabImport, labSaveSummaryJson and documentSave.",
+  },
+  uploadUsageJson: {
+    kind: 'sync',
+    optionalDoor: true,
+    args: [['stateJson', text]],
+    returns: "Shared upload (US-12 AC10): the run's usage counts for upload_outcome, health-core uploadUsageCounts as JSON {known?, failedFinal?, firstReadSeconds?}, each a whole number capped at 1000; {} before a pick. Counts only, never a name, hash or value.",
+  },
 } satisfies Record<string, Door>;
 
 export type DoorName = keyof typeof DOORS;

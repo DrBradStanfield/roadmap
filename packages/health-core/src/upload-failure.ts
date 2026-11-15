@@ -30,3 +30,16 @@ export function uploadFailure(status: number | null, body: unknown): UploadFailu
   if (status === 422) return stopAnswer.safeParse(body).data?.errorCode ?? 'server_error';
   return 'server_error';
 }
+
+/**
+ * `uploadFailure` for an answer as a device saw it, unparsed: `text` the body (null when none came),
+ * `contentType` its header. Read as the web's reader reads it (widget-src server-api.ts
+ * `parseJsonResponse`): a body its header does not call JSON is null; JSON that will not parse, undefined.
+ */
+export function uploadFailureOfText(status: number | null, text: string | null, contentType: string | null): UploadFailure {
+  let body: unknown = null;
+  if (text !== null && (contentType ?? '').includes('application/json')) {
+    try { body = JSON.parse(text); } catch { body = undefined; }
+  }
+  return uploadFailure(status, body);
+}

@@ -10,7 +10,7 @@ import { createEmptyFile, createLabValue, type FileDocument, type FileLabValue, 
 import { mergeFiles, withoutListed } from './merge';
 import { bulkAppendValues } from './record-edits';
 import { migrateFile } from './migrate';
-import { knownAs, knownIndex, legacyMatch } from './upload-known';
+import { knownAs, knownIndex, legacyMatch, readIsLegacy } from './upload-known';
 
 // A record as every reader holds it: rows an erase listed are dropped on read (migrateRecord, mergeFiles).
 const record = (documents: FileDocument[], labValues: FileLabValue[] = [], erased: string[] = []): RoadmapFile => withoutListed({
@@ -166,6 +166,13 @@ describe('legacyMatch: hashless older rows, after the read (US-13 AC1, Q5 a, Q1 
     const fields = labArchiveFields('a.pdf', '2026-01-01');
     expect(legacyMatch(record([archive({ contentHash: '', fileRef: '' })], [lab('lv-1')]), 'a.pdf', fields)).toBe(false);
     expect(legacyMatch(record([doc({ contentHash: '', type: 'pathology_report' })]), 'a.pdf', fields)).toBe(false);
+  });
+  it('readIsLegacy: a read letter matches by its own name and date; a lab report or a read with no document never (US-52 AC8c)', () => {
+    const read = (over: object = {}) => ({ classification: 'clinic_letter', document: { classification: 'clinic_letter', title: 'T', documentDate: '2026-01-01', contentMarkdown: 'x', metadata: {} }, ...over });
+    expect(readIsLegacy(record([old]), 'a.pdf', read())).toBe(true);
+    expect(readIsLegacy(record([old]), 'b.pdf', read())).toBe(false);
+    expect(readIsLegacy(record([old]), 'a.pdf', read({ classification: 'lab_report' }))).toBe(false);
+    expect(readIsLegacy(record([old]), 'a.pdf', read({ document: null }))).toBe(false);
   });
   it('a shown document never matches a hashless lab archive row', () => {
     expect(legacyMatch(record([archive({ contentHash: '', fileRef: '' })]), 'a.pdf', letter)).toBe(false);

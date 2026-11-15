@@ -27,6 +27,7 @@
  */
 import { dedupFileName, documentView, isLabArchiveDocument, listedRows, type DocumentFields } from './document-rows';
 import { isActive } from './blood-tests';
+import type { UnifiedExtractionResult } from './lab-extraction';
 import { dayOf, rootIdOf } from './merge';
 import { isReadableRow } from './readable-rows';
 import type { FileLabValue, RoadmapFile } from './roadmap-file';
@@ -107,4 +108,16 @@ export function legacyMatch(record: RoadmapFile, name: string, read: DocumentFie
     dedupFileName(d.sourceFileName) === base &&
     // Two undated rows match too: today's name-only review rule already counts them as saved (Q2).
     (d.date ?? null) === (read.documentDate ?? null) && !isLabArchiveDocument(documentView(d)));
+}
+
+/**
+ * `legacyMatch` for one read, as the read gives it (`answered`'s `legacy`): a shown document's
+ * own fields, before the person's fixes; a lab report, or a read with no document, never.
+ */
+export function readIsLegacy(record: RoadmapFile, name: string, extraction: Pick<UnifiedExtractionResult, 'classification' | 'document'>): boolean {
+  const doc = extraction.classification === 'lab_report' ? null : extraction.document;
+  return !!doc && legacyMatch(record, name, {
+    documentType: doc.classification, title: doc.title, documentDate: doc.documentDate ?? null,
+    contentMd: doc.contentMarkdown ?? '', metadata: doc.metadata ?? {}, sourceFileName: name,
+  });
 }

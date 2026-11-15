@@ -5,7 +5,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { RETRYABLE, transition, type UploadState } from './upload-flow';
-import { uploadFailure, type UploadFailure } from './upload-failure';
+import { uploadFailure, uploadFailureOfText, type UploadFailure } from './upload-failure';
 
 // [upload-api.ts case, status (null: fetch threw), body (null: not JSON; undefined: JSON that would not parse), code]
 const CASES: Array<[string, number | null, unknown, UploadFailure]> = [
@@ -55,5 +55,22 @@ describe('each code in upload-flow: a reason of its own, retried as today', () =
       expect(status?.s === 'failed' && RETRYABLE[status.reason]).toBe(retryable);
       expect(transition(state, { type: 'retry', id: 'x' }).effects.some((f) => f.type === 'send')).toBe(retryable);
     });
+  }
+});
+
+describe('uploadFailureOfText: an unparsed answer, read as the web reads it (US-52 AC8c)', () => {
+  const cases: Array<[number | null, string | null, string | null, UploadFailure]> = [
+    [null, null, null, 'network'],
+    [429, '{"code":"busy"}', 'application/json', 'busy'],
+    [429, '{"code":"busy"}', 'text/plain', 'rate_limit'],
+    [422, '{"errorCode":"too_long"}', 'application/json; charset=utf-8', 'too_long'],
+    [422, '{nope', 'application/json', 'network'],
+    [422, '<html>', 'text/html', 'server_error'],
+    [200, '{nope', 'application/json', 'network'],
+    [200, '{"success":false}', 'application/json', 'server_error'],
+    [502, '<html>', 'text/html', 'server_error'],
+  ];
+  for (const [status, text, type, want] of cases) {
+    it(`${status} ${type}: ${want}`, () => expect(uploadFailureOfText(status, text, type)).toBe(want));
   }
 });
