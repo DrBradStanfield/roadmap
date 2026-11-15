@@ -124,18 +124,19 @@ something or archives something. A `failed` file never blocks Save; `retry{id}` 
 
 ```ts
 interface UploadView {
-  progress: { done: number; total: number; line: string } | null;   // null once nothing is in flight
+  progress: { done: number; total: number; line: string; zip: string | null } | null; // null once nothing is in flight
   summary: string;                    // "18 files: 7 already in your record, 8 clinic letters, 3 lab reports"
   sections: Array<
-    | { kind: 'undated'; fileId: string; title: string; footer: string }      // a report with no full day
+    | { kind: 'undated'; fileId: string; title: string; name: string }        // a report with no full day
     | { kind: 'unsure'; title: string; footer: string; rows: ValueRow[] }     // classifyImportValues 'unsure'
     | { kind: 'failed'; title: string; rows: Array<{ fileId: string; name: string; line: string }>; retry: string | null }
     | { kind: 'notSaved'; title: string; lines: string[]; footer: string }>;
   sure: { line: string; showAll: string; rows: ValueRow[] } | null;          // hidden behind Show all
   documents: { line: string; rows: Array<{ fileId: string; title: string; kind: string; date: string; dateKnown: boolean }> } | null;
-  files: Array<{ fileId: string; name: string; status: string }>;             // the collapsed "Files" list
+  files: { row: string; rows: Array<{ fileId: string; name: string; status: string }> }; // the collapsed "Files" list
   save: { label: string; enabled: boolean; why: string | null };
   stop: { label: string } | null;
+  done: { line: string; archived: string | null } | null;           // the done screen (built in PR 8)
 }
 ```
 

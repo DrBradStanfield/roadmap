@@ -8,7 +8,7 @@ import { UPLOAD_OUTCOME_KEYS } from './upload-events';
 const SECRET_NAME = 'NAME_SENTINEL_hiv_result.pdf';
 const SECRET_HASH = 'HASH_SENTINEL_9f8e7d';
 const file = (id: string, status: FileStatus): UploadFile => ({ id, name: SECRET_NAME, bytes: 10, hash: SECRET_HASH, pages: null, status });
-const read: FileStatus = { s: 'read', extraction: { classification: 'lab_report', values: [{ metric: 'ldl', valueSI: 4.2 }] } as never, choices: { ticks: {}, testDay: null, document: {} } };
+const read: FileStatus = { s: 'read', extraction: { classification: 'lab_report', values: [{ metric: 'ldl', valueSI: 4.2 }] } as never, choices: { ticks: {}, testDay: null, previousDay: null, replace: {}, edits: {}, document: {} } };
 const state = (files: UploadFile[], o: { started?: string; firstRead?: string | null; phase?: 'open' | 'done' } = {}): UploadState => ({
   phase: 'open', platform: 'web', run: 1, files, started: o.started ?? '2026-11-15T10:00:00.000Z', firstRead: o.firstRead ?? null,
   ...(o.phase === 'done' ? { phase: 'done', outcome: { values: 1, documents: 0, archived: 0 } } : {}),

@@ -47,6 +47,27 @@ export const UPLOAD_LIMITS = {
   },
 } as const;
 
+/**
+ * What a lab read asks the server for (US-12 AC12, AC14, AC15), as each client sends it today.
+ * `ownDates`: file a value on its own printed day. `undatedPrev`: send a previous column with no
+ * full day and ask its day (the web's matrix asks it; widget-src upload-api.ts). `refusedRows`:
+ * list refused rows under "Not saved". The phone sends no `undatedPrev`, so the server leaves
+ * those values out (ios LabUploadClient.swift): a known platform difference, to unify later.
+ */
+export interface RequestFlags { ownDates: boolean; undatedPrev: boolean; refusedRows: boolean }
+export function requestFlags(platform: UploadPlatform): RequestFlags {
+  return { ownDates: true, undatedPrev: platform === 'web', refusedRows: true };
+}
+
+/**
+ * A value's tick before the person touches it. Awaiting Brad: unify. Today the clients differ:
+ * the web saves every value unless its cell is cleared (ReviewTable), a question included; the
+ * iPhone leaves a value the extractor asked about unticked (LabChoices: never saved unnoticed).
+ */
+export function defaultTicked(platform: UploadPlatform, value: { question?: string }): boolean {
+  return platform === 'web' || !value.question;
+}
+
 /** keep: read it. tooLarge: over its cap. unsupported: no reader for its kind. hidden: archive junk or a dotfile. */
 export type FileVerdict = 'keep' | 'tooLarge' | 'unsupported' | 'hidden';
 

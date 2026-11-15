@@ -7,6 +7,7 @@ import { bloodTestKeyOf } from '@roadmap/health-core/blood-tests';
 import type { MeasurementSource } from '@roadmap/health-core/validation';
 import type { LabUnitRefusal } from '@roadmap/health-core/record-edits';
 import { fileVerdict, UPLOAD_LIMITS } from '@roadmap/health-core/upload-rules';
+import { BUSY_NOTICE_TEXT } from '@roadmap/health-core/upload-text';
 import type { UploadOutcomeKey, UploadReviewKey } from '@roadmap/health-core/product-events';
 import type { ExtractedValue, AdditionalLabValue, DocumentResult, LabImportResult, PageContent, UploadErrorCode } from './api-types';
 import { labImport, labImportBatch, pollBatchStatus } from './upload-api';
@@ -219,9 +220,6 @@ function readResult(fileName: string, result: LabImportResult, notices: FileNoti
     ...(result.droppedValueCount ? { droppedValueCount: result.droppedValueCount, unreadValues: result.unreadValues } : null),
   };
 }
-
-/** A file the server refused as busy (US-12 AC9): a server error, never the daily limit. */
-export const BUSY_NOTICE_TEXT = 'Not read. Our server was busy. Please try again later.';
 
 /** The notice for a file's own error code; anything else is a server error. */
 const UNREAD_REASONS: Partial<Record<UploadErrorCode, FileNoticeReason>> = { rate_limit: 'limitError', refused: 'refused', too_long: 'tooLong' };

@@ -1,21 +1,9 @@
 // The upload modal's notices: why a file was not fully read (US-12 AC9), with
 // their wording. Refused and dropped values are the review's "Not saved" (US-13 AC13).
-import { IMPORT_LIMITS } from '@roadmap/health-core/import-hints';
+import { FILE_NOTICE_TEXT } from '@roadmap/health-core/upload-text';
 import { SHOPIFY_SURFACE } from '../lib/build-flags';
 import { shortName, type FileNotice, type FileNoticeReason } from '../lib/upload-pipeline';
 
-const FILE_NOTICE_TEXT: Record<Exclude<FileNoticeReason, 'valuesDropped'>, string> = {
-  openFailed: 'Could not open it. It may be password-protected, damaged, or not a PDF, photo or .docx file.',
-  tooLarge: `Too large to read. The limit is ${IMPORT_LIMITS.websiteFileMb} MB per file.`,
-  truncated: 'This file is long, so only its first part was read.',
-  documentOnly: 'Filed as a document. No blood test values found.',
-  noValues: 'No blood test values found.',
-  serverError: 'Our server could not read it. Please try again.',
-  limitError: 'Not read. The daily upload limit was reached.',
-  refused: 'Not read. Claude declined to read this file, so trying again will not help.',
-  tooLong: 'Not read. The file is too long to read in one go.',
-  picturesOnly: 'This Word file holds pictures, not text. Save it as a PDF, or upload a photo of the page.',
-};
 const BYOK_NOTICE_TEXT: Partial<Record<FileNoticeReason, string>> = {
   serverError: 'Not read. Anthropic could not be reached or could not read it. Please try again.',
   limitError: 'Not read. Your Anthropic key hit its rate limit. Wait a minute and try again.',

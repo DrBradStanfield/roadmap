@@ -1,6 +1,7 @@
 import { useState, useReducer, useRef, useCallback, useEffect } from 'react';
 import { checkLabImportQuota } from '../lib/upload-api';
 import { fileVerdict, UPLOAD_LIMITS } from '@roadmap/health-core/upload-rules';
+import { BUSY_NOTICE_TEXT, EMPTY_ZIP_TEXT } from '@roadmap/health-core/upload-text';
 import { UNDATED_PREVIOUS, uploadLimitSignal, zipMemberName } from '@roadmap/health-core/lab-extraction';
 import type { UnitSystem } from '@roadmap/health-core/units';
 import type { DocumentPayload } from '@roadmap/health-core/document-save';
@@ -10,7 +11,7 @@ import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocument
 import { countRefusedSpellings } from '../lib/refused-spellings';
 import { trackProductEvent, type ProductEventMetadata } from '../lib/server-api';
 import type { BulkLabValuesResult, BulkSaveResult, UploadErrorCode, UploadHistory } from '../lib/api-types';
-import { UploadError, KEY_ERROR_MESSAGES, BUSY_NOTICE_TEXT, BATCH_THRESHOLD, shortName, hasValues, processBatch, processPipeline, type FileNotice, type ReadInput, type ReviewDecisions, type FileResult } from '../lib/upload-pipeline';
+import { UploadError, KEY_ERROR_MESSAGES, BATCH_THRESHOLD, shortName, hasValues, processBatch, processPipeline, type FileNotice, type ReadInput, type ReviewDecisions, type FileResult } from '../lib/upload-pipeline';
 import { attachOriginals, synthesizeLabArchiveEntries, connectorDocumentEntries } from '../lib/archive-payloads';
 import { toStoreInputs } from '../lib/to-store-inputs';
 import { createUploadBundleLoader } from '../lib/upload-bundle';
@@ -50,7 +51,6 @@ const BYOK_ERROR_MESSAGES: Partial<Record<UploadErrorCode, string>> = {
 };
 
 export const MAX_FILES = UPLOAD_LIMITS.web.filesPerPick; // also the server's per-IP daily limit (US-12 AC17)
-const EMPTY_ZIP_TEXT = 'No files we can read inside this ZIP.';
 const OVER_LIMIT_TEXT = `Not read. It is over the ${MAX_FILES}-file limit for one upload. Upload it separately.`;
 /** The files a pick held past MAX_FILES, one notice that counts them (US-12 AC9). */
 const leftOutNotice = (n: number): FileNotice => ({

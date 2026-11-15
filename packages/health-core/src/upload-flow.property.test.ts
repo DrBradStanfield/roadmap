@@ -60,7 +60,7 @@ function genEvent(r: () => number, s: UploadState, mint: () => string, history: 
     [2, () => ({ type: 'sendFailed', run, id: idAt('sending'), failure: coin(0.15) ? 'rate_limit' : pick(['busy', 'server_error', 'network', 'refused', 'too_long'] as const) })],
     [3, () => ({ type: 'retry', id: coin(0.5) ? 'all' : id })],
     [2, () => ({ type: 'stop' })],
-    [2, () => ({ type: 'chose', id: idAt('read'), change: { tick: 'v', on: coin(0.5) } })],
+    [2, () => ({ type: 'chose', now: '2026-11-15T00:00:00.000Z', id: idAt('read'), change: { tick: 'v', on: coin(0.5) } })],
     [3, () => ({ type: 'saveStarted' })],
     [3, () => ({ type: 'saved', run, attempt: 'attempt' in s && coin(0.8) ? s.attempt : 9, outcome: { values: 0, documents: 0, archived: 0 } })],
     [1, () => ({ type: 'saveFailed', run, attempt: 'attempt' in s && coin(0.8) ? s.attempt : 9, message: 'm' })],
