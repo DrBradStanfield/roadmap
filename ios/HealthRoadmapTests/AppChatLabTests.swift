@@ -348,7 +348,8 @@ final class AppChatLabTests: XCTestCase {
 
     func testAReadFileKeepsItsOriginalBytes() async throws {
         let pdf = UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: 200, height: 200)).pdfData { $0.beginPage() }
-        let document = try XCTUnwrap(LabFileReader.documents(from: pdf, name: "a.pdf").first)
+        let read = try await LabFileReader.documents(from: pdf, name: "a.pdf")
+        let document = try XCTUnwrap(read.first)
         XCTAssertEqual(document.original?.verifiedData(), pdf)
         XCTAssertEqual(document.original?.mimeType, "application/pdf")
         let photo = try await LabFileReader.pictures([UIGraphicsImageRenderer(size: CGSize(width: 4, height: 4)).image { _ in }], name: "Photo")
@@ -363,7 +364,7 @@ final class AppChatLabTests: XCTestCase {
         let image = UIGraphicsImageRenderer(size: CGSize(width: 4, height: 4)).pngData { _ in }
         let long = String(repeating: "d", count: 260) + "/letter.png"
         let zip = Self.zip([("a/b.png", image, false), (long, image, false)])
-        let names = await engine.named(try LabFileReader.documents(from: zip, name: "Records.zip")).map(\.name)
+        let names = await engine.named(try await LabFileReader.documents(from: zip, name: "Records.zip")).map(\.name)
         // What health-core's zipMemberName gives in Node for these (computed 2026-10-22):
         // the long one cut to 255 with the FNV-1a hash of the whole name, its end kept.
         XCTAssertEqual(names, ["Records.zip/a/b.png", "~635451cb/" + String(repeating: "d", count: 234) + "/letter.png"])
@@ -402,14 +403,14 @@ final class AppChatLabTests: XCTestCase {
 
     // MARK: AC7: reading files
 
-    func testAPdfPageWithTextGoesAsText() throws {
+    func testAPdfPageWithTextGoesAsText() async throws {
         let pdf = UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: 612, height: 792)).pdfData { context in
             context.beginPage()
             ("Synthetic Lab Report. LDL Cholesterol 3.1 mmol/L. HbA1c 40 mmol/mol. Collected 2026-10-01." as NSString)
                 .draw(in: CGRect(x: 40, y: 40, width: 530, height: 700), withAttributes: [.font: UIFont.systemFont(ofSize: 14)])
             context.beginPage() // a blank page: a "scan", sent as a picture
         }
-        let documents = try LabFileReader.documents(from: pdf, name: "labs.pdf")
+        let documents = try await LabFileReader.documents(from: pdf, name: "labs.pdf")
         XCTAssertEqual(documents.count, 1)
         XCTAssertEqual(documents[0].pages.map(\.type), ["text", "image"])
         XCTAssertTrue(documents[0].pages[0].content.hasPrefix("[Page 1/2]\n"))
@@ -417,17 +418,17 @@ final class AppChatLabTests: XCTestCase {
         XCTAssertEqual(documents[0].pages[1].mimeType, "image/jpeg")
     }
 
-    func testAZipGivesItsReportsOneByOne() throws {
+    func testAZipGivesItsReportsOneByOne() async throws {
         let image = UIGraphicsImageRenderer(size: CGSize(width: 20, height: 20)).pngData { context in
             UIColor.gray.setFill(); context.fill(CGRect(x: 0, y: 0, width: 20, height: 20))
         }
         let zip = Self.zip([("bundle/a.png", image, false), ("bundle/b.png", image, true), ("notes.txt", Data("skip".utf8), false), ("__MACOSX/._a.png", Data("x".utf8), false)])
-        let documents = try LabFileReader.documents(from: zip, name: "labs.zip")
+        let documents = try await LabFileReader.documents(from: zip, name: "labs.zip")
         XCTAssertEqual(documents.map(\.name), ["labs.zip/bundle/a.png", "labs.zip/bundle/b.png"])
         XCTAssertEqual(documents.map { $0.pages.first?.type }, ["image", "image"])
-        XCTAssertThrowsError(try LabFileReader.documents(from: Data("not a zip".utf8), name: "x.zip"))
+        do { _ = try await LabFileReader.documents(from: Data("not a zip".utf8), name: "x.zip"); XCTFail("read") } catch {}
         // More members than the cap is refused before they pile up in memory.
-        XCTAssertThrowsError(try ZipReader.members(of: zip, maxMemberBytes: 1_000_000, maxMembers: 1) { _ in true })
+        XCTAssertThrowsError(try ZipReader.check(ZipReader.entries(of: zip), maxMemberBytes: 1_000_000, maxMembers: 1))
     }
 
     /// US-52 AC7, Codex re-check R1: a stored member that declares fewer bytes than it
@@ -437,15 +438,15 @@ final class AppChatLabTests: XCTestCase {
         let payload = Data(repeating: 0x41, count: 1000)
         // One stored member that says it is 1 byte but holds 1,000.
         let understated = Self.rawZip(payload: payload, method: 0, entries: [(name: "a.pdf", compressed: 1000, size: 1)])
-        XCTAssertThrowsError(try ZipReader.members(of: understated, maxMemberBytes: 10_000) { _ in true })
+        XCTAssertThrowsError(try ZipReader.check(ZipReader.entries(of: understated), maxMemberBytes: 10_000))
         // Honest stored entries, all pointing at the same payload: the kept bytes reach the cap.
         let reused = Self.rawZip(payload: payload, method: 0, entries: (0..<5).map { (name: "r\($0).pdf", compressed: 1000, size: 1000) })
-        XCTAssertEqual(try ZipReader.members(of: reused, maxMemberBytes: 10_000, maxTotalBytes: 5000) { _ in true }.count, 5)
-        XCTAssertThrowsError(try ZipReader.members(of: reused, maxMemberBytes: 10_000, maxTotalBytes: 4999) { _ in true })
+        XCTAssertNoThrow(try ZipReader.check(ZipReader.entries(of: reused), maxMemberBytes: 10_000, maxTotalBytes: 5000))
+        XCTAssertThrowsError(try ZipReader.check(ZipReader.entries(of: reused), maxMemberBytes: 10_000, maxTotalBytes: 4999))
         // The same through deflate: every entry inflates the one blob, and the cap still holds.
         let deflated = Self.deflate(payload)
         let overlapping = Self.rawZip(payload: deflated, method: 8, entries: (0..<5).map { (name: "d\($0).pdf", compressed: deflated.count, size: 1000) })
-        XCTAssertThrowsError(try ZipReader.members(of: overlapping, maxMemberBytes: 10_000, maxTotalBytes: 4999) { _ in true })
+        XCTAssertThrowsError(try ZipReader.check(ZipReader.entries(of: overlapping), maxMemberBytes: 10_000, maxTotalBytes: 4999))
     }
 
     /// One local payload, then central entries that each point at it, declaring what they like.
