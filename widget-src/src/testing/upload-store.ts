@@ -13,7 +13,7 @@ const EMPTY = () => createEmptyFile({ deviceId: 'test', now: '2026-01-01T00:00:0
 /** The record as the upload sees it, and each Save: the state it was asked with and the record it wrote. */
 export const uploadStore = {
   record: EMPTY(),
-  saves: [] as Array<{ state: UploadState; cloud: boolean; file: RoadmapFile | null }>,
+  saves: [] as Array<{ state: UploadState; cloud: boolean; before: RoadmapFile; file: RoadmapFile | null }>,
   /** Stand in for a store that refuses (an erase moved, a log-off): the Save's answer. */
   refuse: null as string | null,
   /** Originals written, by ref. */
@@ -29,16 +29,16 @@ export function resetUploadStore(record: RoadmapFile = EMPTY()): void {
 async function saveUpload(state: UploadState, _reviewed: RoadmapFile, now: string, cloud: boolean, io: Omit<UploadSaveIO<Blob>, 'write'>): Promise<UploadStoreSave> {
   if (uploadStore.hold) await uploadStore.hold;
   if (uploadStore.refuse !== null) {
-    uploadStore.saves.push({ state, cloud, file: null });
+    uploadStore.saves.push({ state, cloud, before: uploadStore.record, file: null });
     return { ok: false, message: uploadStore.refuse || null };
   }
   const out = await uploadSave(state, uploadStore.record, now, cloud, { ...io, write: async (ref, bytes) => void uploadStore.written.set(ref, bytes) });
   if (!out.ok) {
-    uploadStore.saves.push({ state, cloud, file: null });
+    uploadStore.saves.push({ state, cloud, before: uploadStore.record, file: null });
     return { ok: false, message: out.message };
   }
   const { file, outcome } = out.commit(uploadStore.record);
-  uploadStore.saves.push({ state, cloud, file });
+  uploadStore.saves.push({ state, cloud, before: uploadStore.record, file });
   uploadStore.record = file;
   return { ok: true, outcome, added: [] };
 }
@@ -50,13 +50,13 @@ export function uploadStoreMock() {
 
 /** The rows the last Save wrote that the record did not hold before it, in the shapes the suites compare. */
 export function lastSaved(): { values: Array<Record<string, unknown>>; labValues: Array<Record<string, unknown>>; documents: FileDocument[] } {
-  const i = uploadStore.saves.length - 1;
-  const after = uploadStore.saves[i]?.file;
-  const before = i > 0 ? uploadStore.saves.slice(0, i).reverse().find((s) => s.file)?.file ?? null : null;
-  if (!after) return { values: [], labValues: [], documents: [] };
-  const known = new Set([...(before?.measurements ?? []), ...(before?.labValues ?? []), ...(before?.documents ?? [])].map((r) => r.id));
+  const last = uploadStore.saves.at(-1);
+  const after = last?.file;
+  if (!last || !after) return { values: [], labValues: [], documents: [] };
+  const { before } = last;
+  const known = new Set([...before.measurements, ...before.labValues, ...before.documents].map((r) => r.id));
   const fresh = <T extends { id: string }>(rows: T[]) => rows.filter((r) => !known.has(r.id));
-  const strip = ({ id: _i, createdAt: _c, updatedAt: _u, lamport: _l, deviceId: _d, lastDeviceId: _ld, ...rest }: Record<string, unknown>) => rest;
+  const strip = ({ createdAt: _c, updatedAt: _u, lamport: _l, deviceId: _d, lastDeviceId: _ld, ...rest }: Record<string, unknown>) => rest;
   return {
     values: fresh([...after.measurements, ...after.labValues.filter((l) => l.core)] as Array<{ id: string } & Record<string, unknown>>).map(strip),
     labValues: fresh(after.labValues.filter((l) => !l.core) as unknown as Array<{ id: string } & Record<string, unknown>>).map(strip),

@@ -12,14 +12,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { UploadModal } from './UploadModal';
-import { resetUploadStore } from '../testing/upload-store';
+import { lastSaved, resetUploadStore } from '../testing/upload-store';
+import { recordOf } from '../testing/review-harness';
 import { checkLabImportQuota, labImport } from '../lib/upload-api';
-import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues } from '../lib/roadmap-data';
 import type { UploadHistory } from '../lib/api-types';
 import { findReviewValue } from '../testing/import-review';
 
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn() }));
-vi.mock('../lib/roadmap-data', async () => ({ ...(await import('../testing/upload-store')).uploadStoreMock(), uploadKnownIndex: vi.fn(() => new Map()), isLegacyUpload: vi.fn(() => false), getDocumentArchiveMode: vi.fn(() => 'cloud'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
+vi.mock('../lib/roadmap-data', async () => ({ ...(await import('../testing/upload-store')).uploadStoreMock(), uploadKnownIndex: vi.fn(() => new Map()), isLegacyUpload: vi.fn(() => false), getDocumentArchiveMode: vi.fn(() => 'cloud'), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
 vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
 vi.mock('../lib/archive-payloads', async importOriginal => ({ ...await importOriginal<typeof import('../lib/archive-payloads')>(), sha256Blob: vi.fn(async () => '') }));
 vi.mock('../lib/useIsMobile', () => ({ useIsMobile: () => false }));
@@ -54,12 +54,9 @@ const history: UploadHistory = {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  resetUploadStore();
+  resetUploadStore(recordOf(history));
   vi.mocked(checkLabImportQuota).mockResolvedValue({ allowed: true, remaining: 60 });
   vi.mocked(labImport).mockImplementation(async (pages: unknown) => reads[(pages as Array<{ content: string }>)[0].content]);
-  vi.mocked(bulkSaveMeasurements).mockResolvedValue({ saved: [{}], skippedDuplicates: 0, errorCount: 0, refused: [] } as unknown as Awaited<ReturnType<typeof bulkSaveMeasurements>>);
-  vi.mocked(bulkSaveDocuments).mockResolvedValue({ saved: [], errorCount: 0 } as unknown as Awaited<ReturnType<typeof bulkSaveDocuments>>);
-  vi.mocked(bulkSaveLabValues).mockResolvedValue({ saved: [], skippedDuplicates: 0, errorCount: 0, refused: [] });
   Object.assign(window, { HealthUpload: {
     extractFromPdf: vi.fn(async (f: File) => ({ pages: [{ type: 'text', content: f.name }], truncated: false })),
     isPdf: (f: File) => f.name.endsWith('.pdf'),
@@ -73,9 +70,8 @@ afterEach(cleanup);
 
 describe('US-12 / US-13 pins (W2-6) — one upload saves the same store inputs', () => {
   it('two files, an unticked conflict, a skipped row, a unit change and a ticked Replace', async () => {
-    const onScreeningUpdate = vi.fn();
     render(<UploadModal open onOpen={() => {}} onClose={() => {}} unitSystem="si" metricUnitOverrides={{ ldl: 'conventional' }}
-      grading={{}} history={history} onComplete={() => {}} onScreeningUpdate={onScreeningUpdate} />);
+      grading={{}} history={history} onComplete={() => {}} />);
     fireEvent.change(document.querySelector('input[type=file]')!, { target: { files: [
       new File(['x'], 'labs.pdf', { type: 'application/pdf' }), new File(['y'], 'letter.pdf', { type: 'application/pdf' }),
     ] } });
@@ -93,22 +89,20 @@ describe('US-12 / US-13 pins (W2-6) — one upload saves the same store inputs',
     tick(/Ferritin/i);
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
     await screen.findByRole('button', { name: 'Done' });
-    // Explicit, as JSON drops an undefined: a lost correctsId or comparator fails here.
-    const measured = vi.mocked(bulkSaveMeasurements).mock.calls[0][0];
-    const labs = vi.mocked(bulkSaveLabValues).mock.calls[0][0];
-    expect(measured.find(m => m.metricType === 'triglycerides')).toHaveProperty('correctsId', 'T');
-    expect(measured.find(m => m.metricType === 'hdl')).toBeUndefined();
-    expect(measured.find(m => m.metricType === 'lpa')).toHaveProperty('comparator', '<');
-    expect(labs.find(l => l.metricName === 'Ferritin')).toHaveProperty('correctsId', 'F');
-    expect(labs.find(l => l.metricName === 'CRP')).toHaveProperty('comparator', '<');
-    expect(labs.find(l => l.metricName === 'Sodium')).toBeUndefined();
-    expect(JSON.stringify({
-      ldlShown: ldl.value,
-      replaceBoxes: replaces.map(b => b.getAttribute('aria-label')),
-      measurements: vi.mocked(bulkSaveMeasurements).mock.calls,
-      labValues: vi.mocked(bulkSaveLabValues).mock.calls,
-      documents: vi.mocked(bulkSaveDocuments).mock.calls,
-      screening: onScreeningUpdate.mock.calls,
-    }, null, 1)).toMatchSnapshot();
+    // What Save wrote (health-core uploadSave, design 12c): explicit, so a lost correctsId or comparator fails here.
+    const { values, labValues, documents } = lastSaved();
+    const row = (rows: Array<Record<string, unknown>>, name: string) => rows.find(r => r.metricName === name);
+    expect(row(values, 'triglycerides')).toMatchObject({ value: 1.1, correctsId: 'T' });
+    expect(String(row(values, 'triglycerides')!.recordedAt).slice(0, 10)).toBe('2025-09-02');
+    expect(row(values, 'hdl')).toBeUndefined();
+    expect(row(values, 'lpa')).toMatchObject({ value: 5, comparator: '<' });
+    expect(row(values, 'ldl')).toMatchObject({ source: 'lab_import_edited' });
+    expect(Number(row(values, 'ldl')!.value)).toBeCloseTo(120 / 38.67, 2);
+    expect(ldl.value).toBe('120');
+    expect(row(labValues, 'Ferritin')).toMatchObject({ value: 90, correctsId: 'F', referenceLow: 30, referenceHigh: 300 });
+    expect(row(labValues, 'CRP')).toMatchObject({ value: 5, comparator: '<' });
+    expect(row(labValues, 'Sodium')).toBeUndefined();
+    expect(replaces.map(b => b.getAttribute('aria-label'))).toHaveLength(3);
+    expect(documents.map(d => [d.type, d.title, d.date, d.sourceFileName])).toEqual(expect.arrayContaining([['clinic_letter', 'Synthetic letter', '2025-08-01', 'letter.pdf']]));
   });
 });
