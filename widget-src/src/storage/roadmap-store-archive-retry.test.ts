@@ -6,8 +6,8 @@ import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { RoadmapStore } from './roadmap-store';
 import { MemoryAdapter, MemoryCloud } from './index';
-import { sha256Blob, unarchivedOriginals } from '../lib/archive-payloads';
-import type { FileResult } from '../lib/upload-pipeline';
+import { knownAs, knownIndex } from '@roadmap/health-core/upload-known';
+import { sha256Blob } from '../lib/archive-payloads';
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 afterEach(() => vi.restoreAllMocks());
 const payload = () => ({
@@ -180,29 +180,25 @@ describe('US-14 AC4: a re-upload replaces a failed row only of its own kind', ()
 });
 
 describe('US-14 AC4: a failed website row is a pending original', () => {
-  it('the review offers its bytes again, as it does a connector row', async () => {
+  // Design PR 10: the upload knows these bytes before reading them, and its Save files the original unread behind the row.
+  it('a new upload of its bytes is known as a document still waiting for its original', async () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     const adapter = new MemoryAdapter(new MemoryCloud());
     adapter.writeDocument = async () => { throw new Error('synthetic quota refusal'); };
     const store = await RoadmapStore.create(adapter);
     const doc = payload();
-    const row = (await store.bulkSaveDocuments([doc])).saved[0];
-    const letter: FileResult = { fileName: doc.sourceFileName, reportDate: null, values: [], additionalValues: [], file: doc.file,
-      contentHash: await sha256Blob(doc.file),
-      document: { classification: 'clinic_letter', title: doc.title, documentDate: doc.documentDate, contentMarkdown: doc.contentMd, metadata: {} } };
-    expect(unarchivedOriginals([letter], [row], new Set())).toEqual([letter]);
+    await store.bulkSaveDocuments([doc]);
+    expect(knownAs(knownIndex(store.file), await sha256Blob(doc.file))).toEqual({ as: 'document', archiveOnly: true });
   });
 
-  it('bytes held only by a failed lab-archive row never file a deselected letter', async () => {
+  // Ruling Q6: a lab report is known only while one of the rows it wrote is active; this one wrote none, so its bytes are read again.
+  it('bytes held only by a failed lab-archive row that lists no live value are not known: the upload reads them again', async () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     const adapter = new MemoryAdapter(new MemoryCloud());
     adapter.writeDocument = async () => { throw new Error('synthetic quota refusal'); };
     const store = await RoadmapStore.create(adapter);
     const lab = labPayload();
-    const row = (await store.bulkSaveDocuments([lab])).saved[0];
-    const letter: FileResult = { fileName: lab.sourceFileName, reportDate: null, values: [], additionalValues: [], file: lab.file,
-      contentHash: await sha256Blob(lab.file),
-      document: { classification: 'clinic_letter', title: 'Synthetic letter', documentDate: null, contentMarkdown: 'Synthetic note', metadata: {} } };
-    expect(unarchivedOriginals([letter], [row], new Set())).toEqual([]);
+    await store.bulkSaveDocuments([lab]);
+    expect(knownAs(knownIndex(store.file), await sha256Blob(lab.file))).toBeNull();
   });
 });

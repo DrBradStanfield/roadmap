@@ -29,8 +29,11 @@ export interface ReviewDecisions {
   review: Partial<Record<UploadReviewKey, number>>;
 }
 
+/** A read file as the suites give it: with its bytes when a cloud keeps originals, and their hash. */
+export type ReviewResult = FileResult & { file?: Blob; contentHash?: string };
+
 interface LegacyProps {
-  results: FileResult[];
+  results: ReviewResult[];
   history: UploadHistory;
   unitSystem: UnitSystem;
   metricUnitOverrides?: Partial<Record<MetricType, UnitSystem>>;
@@ -76,13 +79,13 @@ export function recordOf(history: UploadHistory): RoadmapFile {
 
 export function ReviewTable({ results, history, age, sex, onSave, countsRef, hashes = [], ...rest }: LegacyProps) {
   const [state, setState] = useState<UploadState>(() => ({
-    phase: 'open', platform: 'web', run: 1, started: NOW(), firstRead: NOW(), files: results.map((r, i) => readFileOf(r, i, hashes[i] ?? (r as { contentHash?: string }).contentHash)),
+    phase: 'open', platform: 'web', run: 1, started: NOW(), firstRead: NOW(), files: results.map((r, i) => readFileOf(r, i, hashes[i] ?? r.contentHash)),
   }));
   const record = useMemo(() => recordOf(history), [history]);
   const now = NOW();
   const review = useMemo(() => uploadReview(state, record, now, { age, sex }), [state, record, age, sex]); // eslint-disable-line react-hooks/exhaustive-deps
   // A cloud stores originals only where the suite gave a file its bytes, as the old review archived them.
-  const cloud = results.some((r) => !!(r as { file?: Blob }).file);
+  const cloud = results.some((r) => !!r.file);
   const view = uploadView(state, record, now, review, cloud);
   const files = 'files' in state ? state.files : [];
   const index = (id: string) => Number(id.slice(1));

@@ -10,7 +10,7 @@ import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, fireEvent, cleanup, within } from '@testing-library/react';
 import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import { ReviewTable } from '../testing/review-harness';
-import type { FileResult } from '../lib/upload-pipeline';
+import type { ReviewResult as FileResult } from '../testing/review-harness';
 import type { ApiDocument } from '../lib/api-types';
 import { showingAll } from '../testing/import-review';
 

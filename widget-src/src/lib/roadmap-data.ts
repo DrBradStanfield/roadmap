@@ -8,13 +8,13 @@ import type { UploadState } from '@roadmap/health-core/upload-flow';
 import type { UploadSaveIO } from '@roadmap/health-core/upload-save';
 import type { HealthInputs } from '@roadmap/health-core/types';
 import type { LpaUnit, MetricType } from '@roadmap/health-core/units';
-import type { MEASURES } from '@roadmap/health-core/product-events';
+import { MEASUREMENT_REFUSALS_WITH_METRIC, type MEASURES } from '@roadmap/health-core/product-events';
 import type { ReminderScheduleItem } from '@roadmap/health-core/reminder-schedule';
 import type { SaveStatus } from '@roadmap/health-core/save-state';
 import { knownMinorOf } from '@roadmap/health-core/calculations';
 import { knownIndex, readIsLegacy, type KnownIndex } from '@roadmap/health-core/upload-known';
 import type { UnifiedExtractionResult } from '@roadmap/health-core/lab-extraction';
-import { RoadmapStore, type DerivedSeries, type CorrectStatus, type MoveOutcome, type ProfileSave, type UploadStoreSave } from '../storage/roadmap-store';
+import { RoadmapStore, type DerivedSeries, type BulkLabValueInput, type BulkMeasurementInput, type CorrectStatus, type MoveOutcome, type ProfileSave, type UploadStoreSave } from '../storage/roadmap-store';
 import { ChatHistoryStore } from '../storage/chat-history-store';
 import { getChatHistory, openChatHistory, setChatHistoryFactory } from './chat-history-access';
 import { eraseBegan, setChatEraseReader } from './chat-erase';
@@ -24,8 +24,11 @@ import { SHOPIFY_SURFACE } from './build-flags';
 import type { StorageAdapter } from '@roadmap/health-core/adapter';
 import type {
   AddMeasurementResult,
+  ApiDocument,
   ApiLabValue,
   ApiMedicationHistory,
+  BulkLabValuesResult,
+  BulkSaveResult,
   LatestMeasurementsResult,
 } from './api-types';
 
@@ -287,11 +290,38 @@ export async function deleteSupplementApi(supplementKey: string): Promise<boolea
 export async function saveScreening(screeningKey: string, value: string, erase?: string): Promise<boolean> {
   return store ? store.saveScreening(screeningKey, value, erase) : false;
 }
+export async function bulkSaveMeasurements(measurements: BulkMeasurementInput[]): Promise<BulkSaveResult> {
+  if (!store) return { saved: [], skippedDuplicates: 0, errorCount: measurements.length, refused: [] };
+  const result = store.bulkSaveMeasurements(measurements);
+  // Counted like a refused lab unit, in closed words only (US-35 AC17). The
+  // metric rides only on an invalid value: an out-of-range one would say this
+  // visitor's value is past a bound, and an unknown metric is free text. An
+  // out-of-range metric still keys the tab's throttle, locally, so two tests
+  // past their bounds count twice.
+  for (const row of result.refused) {
+    if (MEASUREMENT_REFUSALS_WITH_METRIC.includes(row.reason)) trackProductEvent('measurement_refused', { metric: row.metricType as MetricType, refusal: row.reason });
+    else if (row.reason === 'out-of-range') trackProductEvent('measurement_refused', { refusal: row.reason }, row.metricType);
+    else trackProductEvent('measurement_refused', { refusal: row.reason });
+  }
+  countMeasuresAdded(result.saved.filter((row) => !row.correctsId));
+  return result;
+}
+export async function bulkSaveLabValues(values: BulkLabValueInput[]): Promise<BulkLabValuesResult> {
+  if (!store) return { saved: [], skippedDuplicates: 0, errorCount: values.length, refused: [] };
+  const result = store.bulkSaveLabValues(values);
+  countRefusedSpellings(result.refused);
+  return result;
+}
 /** A lab value a person adds (US-21 AC2, US-25 AC25), by health-core's one lab add; null when nothing could be written. */
 export async function addLabValue(input: AddLabValueRequest, erase?: string): Promise<AddLabValueResult | null> {
   const result = store ? store.addLabValue(input, erase) : null;
   if (result && !result.ok && result.refused) countRefusedSpellings([result.refused]);
   return result;
+}
+export async function bulkSaveDocuments(
+  documents: Array<{ documentType: string; title: string; documentDate: string | null; contentMd: string; metadata: Record<string, unknown>; sourceFileName: string | null; file?: Blob; contentHash?: string }>,
+): Promise<{ saved: ApiDocument[]; errorCount: number; unstored?: number }> {
+  return store ? store.bulkSaveDocuments(documents) : { saved: [], errorCount: documents.length };
 }
 /**
  * One upload Save (health-core `uploadSave` in one edit, design 12c), with its usage signals: the
