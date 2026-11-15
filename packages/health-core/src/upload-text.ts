@@ -46,6 +46,8 @@ export const UPLOAD_TEXT = {
   /** 26. Each part dropped at zero, as 23. */
   savedLine: (n: number, m: number) => `Saved ${[...(n || !m ? [plural(n, 'value')] : []), ...(m ? [plural(m, 'document')] : [])].join(' and ')}.`,
   archivedLine: (a: number) => `${plural(a, 'original file')} kept in your cloud.`,
+  /** The web's done line for originals it could not store (UploadModal.tsx), byte for byte: no count. */
+  unstoredLine: "The original file couldn't be stored; its details are saved.",
 } as const;
 
 /**

@@ -304,6 +304,14 @@ export async function saveDocuments<F>(
   };
 }
 
+/** `file` with `plan`'s rows committed, on a copy of its documents: `commit` writes in place (it pushes rows
+ *  and flags `deleted`), and `file` may be shared (a read record, a session's working copy). */
+export function committedFile(file: RoadmapFile, plan: DocumentSavePlan): RoadmapFile {
+  const next = { ...file, documents: file.documents.map((d) => ({ ...d })) };
+  plan.commit(next);
+  return next;
+}
+
 /** A held row already saying what this new row would: same title, type, date and listed lab rows. */
 function sameRow(doc: FileDocument, held: DocumentView): boolean {
   return doc.title === held.title && doc.type === held.documentType && doc.date === held.documentDate

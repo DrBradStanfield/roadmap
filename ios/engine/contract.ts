@@ -37,11 +37,14 @@ const number = z.number();
 const flag = z.boolean();
 const provider = z.enum(['dropbox', 'google-drive']);
 // An ArrayBuffer from any context: JavaScriptCore's own, or Node's vm in the tests.
-const nullableBytes = z.custom<ArrayBuffer>((v) => Object.prototype.toString.call(v) === '[object ArrayBuffer]').meta({ wire: 'bytes' }).nullable();
+/** An ArrayBuffer from any context (JavaScriptCore's, or Node's vm in the tests). */
+export const isArrayBuffer = (v: unknown): v is ArrayBuffer => Object.prototype.toString.call(v) === '[object ArrayBuffer]';
+const nullableBytes = z.custom<ArrayBuffer>(isArrayBuffer).meta({ wire: 'bytes' }).nullable();
 // An argument entry.ts declares optional (`unitsJson?`): the app sends it, the engine's own
 // callers and tests may leave it out, and the door answers as before without it.
 const maybeText = text.optional();
 const maybeFlag = flag.optional();
+const callback = z.custom<(text: string) => unknown>((v) => typeof v === 'function').meta({ wire: 'callback' });
 const maybeCallback = z.custom<(text: string) => string>((v) => typeof v === 'function').meta({ wire: 'callback' }).optional();
 
 // --- Edit: every change the My data tab, the chat and Apple Health ask for -----------------
@@ -441,6 +444,12 @@ export const DOORS = {
     optionalDoor: true,
     args: [['stateJson', text]],
     returns: "Shared upload (US-12 AC10): the run's usage counts for upload_outcome, health-core uploadUsageCounts as JSON {known?, failedFinal?, firstReadSeconds?}, each a whole number capped at 1000; {} before a pick. Counts only, never a name, hash or value.",
+  },
+  uploadSaveJson: {
+    kind: 'promise',
+    optionalDoor: true,
+    args: [['stateJson', text], ['recordJson', text], ['erase', text], ['nowIso', text], ['deviceId', text], ['originalsJson', text], ['readOriginal', callback]],
+    returns: "Shared upload (US-52 AC8c, US-14 AC10): a Promise of one Save, health-core uploadSave: the pick's values (bulkAppendValues) and its document and lab archive rows (saveDocuments, labArchivePayload listing the rows the values wrote) in one step, for a state in its saving phase. erase as documentSave takes it: with a cloud open, the engine first writes each original the save plan stores, once, reading its bytes by calling readOriginal(fileId) only for the files originalsJson ({fileId: mimeType}) names as its own, as it writes it; anything but a non-empty ArrayBuffer within the per-file cap (UPLOAD_LIMITS fileBytes) is no original. Then every row is written on the session's record as it stands at that moment (the phone's copy and its pending marker first), so an edit that landed meanwhile is kept and a value whose (metric, day) it took is skipped; nothing new commits nothing. The Save is held to the session open when it is asked: none open then, or another one open by the time it runs (even at the same erase), refuses as not-open. '' for no cloud: onto recordJson, keeping no original. One Save at a time, in documentSave's queue. Answers JSON {ok: true, record (the record as text), erase? (with a cloud), outcome: {values (rows written), documents (every distinct document row saved, as the web counts them: letters, lab archive rows and originals filed behind a held row), archived (the last alone), unstored (originals the plan stores that did not land: unreadable, over the cap, or refused by the cloud; their rows keep the hash alone)}}, the app's saved event's outcome as it is (the done view then warns when unstored is above 0), or {ok: false, reason, message}: reason invalid-state, invalid-record, record-too-new, invalid-originals, not-saving, not-ready (a selected value Save would refuse, or a report waiting for its day, in the view's words; nothing written), not-open, erased, phone-write or engine-error; the app sends each as a saveFailed, which Save can try again. A repeat on the record it saved writes nothing and answers zero counts.",
   },
 } satisfies Record<string, Door>;
 

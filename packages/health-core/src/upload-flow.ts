@@ -56,7 +56,8 @@ export interface UploadFile {
   id: string; name: string; zip?: string; bytes: number; hash: string | null;
   pages: { count: number; truncated: boolean } | null; status: FileStatus;
 }
-export interface SaveOutcome { values: number; documents: number; archived: number }
+/** `unstored`: originals the save meant to keep in the cloud that did not land (upload-save.ts); absent is none. */
+export interface SaveOutcome { values: number; documents: number; archived: number; unstored?: number }
 
 /** `started`, `firstRead`: ISO times, for the first-read count (design §7, R9). */
 interface Pick { platform: UploadPlatform; run: number; files: UploadFile[]; started: string; firstRead: string | null }
