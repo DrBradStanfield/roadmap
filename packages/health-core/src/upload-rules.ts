@@ -13,6 +13,9 @@ const MB = 1024 * 1024;
 
 export type UploadPlatform = 'web' | 'phone';
 
+/** Files read by the server at once, and turned into pages at once, on both clients (upload-flow.ts, US-12 AC26). */
+const IN_FLIGHT = { sendsInFlight: 5, convertsInFlight: 3 } as const;
+
 export const UPLOAD_LIMITS = {
   web: {
     fileBytes: IMPORT_LIMITS.websiteFileMb * MB,
@@ -26,6 +29,7 @@ export const UPLOAD_LIMITS = {
     batchFrom: 20,
     /** D10: a picked photo's long side as sent. */
     photoPx: 1200,
+    ...IN_FLIGHT,
   },
   phone: {
     fileBytes: IMPORT_LIMITS.websiteFileMb * MB,
@@ -39,6 +43,7 @@ export const UPLOAD_LIMITS = {
     folderBytes: 200 * MB,
     /** D10: a picture or a scanned page's long side as sent. */
     photoPx: 2000,
+    ...IN_FLIGHT,
   },
 } as const;
 
