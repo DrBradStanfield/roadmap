@@ -408,7 +408,7 @@ export const DOORS = {
   },
   // The shared upload (design PR 12, US-52 AC8c, upload-doors.ts). Each answers its JSON, or on
   // malformed input the refusal {ok: false, reason, message}: reason "invalid-platform",
-  // "invalid-state", "invalid-event", "invalid-record" or "engine-error"; never a throw. The
+  // "invalid-state", "invalid-event", "invalid-record", "record-too-new" or "engine-error"; never a throw. The
   // state is health-core UploadState, opaque to the app: it stores what a door answered and
   // sends it back. An engine before them has no such doors: optionalCall answers nil, and the
   // app keeps today's per-report flow, never a crash.
@@ -422,7 +422,7 @@ export const DOORS = {
     kind: 'sync',
     optionalDoor: true,
     args: [['stateJson', text], ['eventJson', text], ['recordJson', text], ['deviceId', text]],
-    returns: "Shared upload (US-52 AC8c): one event through health-core transition, as JSON {state, effects}. The event is health-core UploadEvent less what only the engine knows: hashed {run, id, hash} (the engine adds known from the record, knownIndex and knownAs), answered {run, id, extraction, now} (it adds legacy, readIsLegacy against the record), and sendFailed {run, id, status (null when no answer came), body (the answer's text, or null), contentType (its header, or null)}, read by health-core uploadFailureOfText as the web reads it. recordJson: the record as text, \"\" for none; read only for hashed and answered, through deviceId (the app's own, as the screen doors take it). The full wire per event is entry.ts uploadStepJson's comment. Effects are data the app runs, then answers with the event carrying the effect's run.",
+    returns: "Shared upload (US-52 AC8c): one event through health-core transition, as JSON {state, effects}. The event is health-core UploadEvent less what only the engine knows, strict (an unnamed key is refused, invalid-event); the parsed event runs: hashed {run, id, hash} (the engine adds known from the record, knownIndex and knownAs); streamEnded {run, id, line, now}, the streaming lab route's end, line its last NDJSON line as received or null when there was none: the engine reads it (health-core labStreamAnswer), status 200 with a checked read becomes answered, anything else sendFailed with the shared code, no line or an unreadable one the network failure; sendFailed {run, id, status (null when no answer came), body (the answer's text, or null), contentType (its header, or null)} for a real HTTP refusal before any stream, read by health-core uploadFailureOfText as the web reads it; answered {run, id, extraction, now} for a whole read, checked (UPLOAD_EXTRACTION), the engine adds legacy (readIsLegacy). recordJson: the record as text, \"\" for none; read only for hashed, answered and streamEnded, through deviceId (the app's own, as the screen doors take it). Steps are strictly serial: one call at a time, each given the state the previous one returned; otherwise an event is lost and its effects' answers are dropped as stale. A record a newer app wrote is refused as record-too-new, in readRecord's words. The full wire per event is entry.ts uploadStepJson's comment.",
   },
   uploadViewJson: {
     kind: 'sync',

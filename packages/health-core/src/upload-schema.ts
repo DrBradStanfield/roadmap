@@ -5,12 +5,16 @@
  * (`pin` below): a phase, status, event or effect added to one and not the other fails `tsc`.
  * upload-flow.property.test.ts round-trips every state, event and effect it generates through them.
  *
- * A read's extraction is the server's answer, kept as it came: checked for what the engine reads of
- * it, never stripped, and typed as the engine's own `UnifiedExtractionResult`.
+ * Strict: an object with a key its schema does not name is refused, so a caller runs exactly the
+ * branch the check chose (a choice that is both a tick and a day is no choice). Run the PARSED
+ * value, never the input. The one exception is a read's extraction, the server's answer: every
+ * field the review, the plan or the save reads is checked; a field no code reads is kept as sent.
  */
 import * as z from './zod';
-import type { UnifiedExtractionResult } from './lab-extraction';
+import { COMPARATORS } from './lab-limits';
+import type { AdditionalLabValue, DocumentResult, ExtractedValue, RefusedLabValue, UnifiedExtractionResult } from './lab-extraction';
 import { EXTRACTION_STOP_CODES } from './models';
+import { UNIT_SYSTEMS } from './units';
 import type { ChoiceChange, FileChoices } from './upload-choices';
 import type { UploadFailure } from './upload-failure';
 import type { UploadEffect, UploadEvent, UploadState } from './upload-flow';
@@ -19,89 +23,110 @@ const text = z.string();
 const maybeText = z.string().nullable();
 const count = z.number().int().nonnegative();
 const platform = z.enum(['web', 'phone']);
-
+const comparator = z.enum(COMPARATORS).optional();
 const day = { recordedAt: text.optional(), printedMonth: text.optional() };
-const EXTRACTION_CHECK = z.looseObject({
-  classification: text,
-  reportDate: maybeText.optional(),
-  values: z.array(z.looseObject({ metric: text, valueSI: z.number(), displayValue: z.number(), displayUnit: text, displaySystem: text, confidence: text, question: text.optional(), ...day })).optional(),
-  additionalValues: z.array(z.looseObject({ name: text, value: z.number(), unit: text, question: text.optional(), ...day })).optional(),
-  unrecognized: z.array(text).optional(),
-  document: z.looseObject({ classification: text, title: text, documentDate: maybeText.optional(), contentMarkdown: text.optional(), metadata: z.record(z.string(), z.unknown()).optional() }).nullable().optional(),
-  droppedValueCount: z.number().optional(),
-  unreadValues: z.array(z.looseObject({ name: text, reason: text, recordedAt: text.optional() })).optional(),
-  refusedValues: z.array(z.looseObject({ metric: text, value: z.number(), unit: text, reason: text, ...day })).optional(),
-});
-/** The server's read: what the engine reads of it is checked; the rest passes as sent. */
-export const UPLOAD_EXTRACTION = z.custom<UnifiedExtractionResult>((v) => EXTRACTION_CHECK.safeParse(v).success);
+const confidence = z.enum(['high', 'medium', 'low']);
 
-const documentFix = z.object({ title: text.optional(), kind: text.optional(), date: maybeText.optional() });
-const choices = z.object({
+// --- The server's read (lab-extraction.ts UnifiedExtractionResult, as forWidget answers it) ---------
+// Each row's shape is pinned strict to its type, then read loose, so a field a newer server adds passes.
+const VALUE = z.object({
+  metric: text, valueSI: z.number(), displayValue: z.number(), displayUnit: text, displaySystem: z.enum(UNIT_SYSTEMS),
+  confidence, question: text.optional(), printedName: text.optional(), ...day, unitGuessed: z.literal(true).optional(), comparator,
+});
+const ADDITIONAL = z.object({
+  name: text, value: z.number(), unit: text, referenceLow: z.number().nullable().optional(), referenceHigh: z.number().nullable().optional(),
+  printedName: text.optional(), ...day, comparator, confidence: confidence.optional(), question: text.optional(),
+});
+const REFUSED = z.object({ metric: text, value: z.number(), unit: text, reason: text, ...day });
+const DOCUMENT = z.object({
+  classification: text, title: text, documentDate: maybeText, contentMarkdown: text, summary: text.optional(), metadata: z.record(z.string(), z.unknown()),
+});
+const loose = <S extends z.ZodRawShape>(o: z.ZodObject<S>) => z.looseObject(o.shape);
+/** The server's read, checked where it enters (an `answered` event, a stream's last line, a stored state). */
+export const UPLOAD_EXTRACTION = z.looseObject({
+  classification: text,
+  reportDate: maybeText,
+  values: z.array(loose(VALUE)),
+  additionalValues: z.array(loose(ADDITIONAL)),
+  // A read with nothing unrecognised may leave it out (lab-extraction.ts unifiedResultSchema).
+  unrecognized: z.array(text).optional(),
+  document: loose(DOCUMENT).nullable(),
+  droppedValueCount: count.optional(),
+  // `reason` stays text: an older server may send a word this build does not know (unreadLines).
+  unreadValues: z.array(z.looseObject({ name: text, reason: text, recordedAt: text.optional() })).optional(),
+  refusedValues: z.array(loose(REFUSED)).optional(),
+}).transform((x) => x as unknown as UnifiedExtractionResult);
+
+// --- The machine (upload-flow.ts) --------------------------------------------------------------
+const strict = z.strictObject;
+const documentFix = strict({ title: text.optional(), kind: text.optional(), date: maybeText.optional() });
+const choices = strict({
   ticks: z.record(z.string(), z.boolean()), testDay: maybeText, previousDay: maybeText,
   replace: z.record(z.string(), z.string()), edits: z.record(z.string(), z.number()), document: documentFix,
 });
 const failReason = z.enum(['unreadable', 'bytesUnreadable', 'zipUnreadable', 'zipEmpty', 'timeout', 'busy', 'dailyLimit', 'declined', 'tooLong', 'server', 'network']);
 const status = z.discriminatedUnion('s', [
-  z.object({ s: z.literal('listing') }),
-  z.object({ s: z.literal('waiting') }),
-  z.object({ s: z.literal('hashing') }),
-  z.object({ s: z.literal('hashed') }),
-  z.object({ s: z.literal('known'), as: z.enum(['document', 'labReport', 'legacy']), archiveOnly: z.boolean() }),
-  z.object({ s: z.literal('refused'), verdict: z.enum(['tooLarge', 'unsupported']) }),
-  z.object({ s: z.literal('converting') }),
-  z.object({ s: z.literal('ready'), attempt: count }),
-  z.object({ s: z.literal('sending'), attempt: count }),
-  z.object({ s: z.literal('read'), extraction: UPLOAD_EXTRACTION, choices }),
-  z.object({ s: z.literal('failed'), reason: failReason, attempt: count }),
-  z.object({ s: z.literal('stopped') }),
+  strict({ s: z.literal('listing') }),
+  strict({ s: z.literal('waiting') }),
+  strict({ s: z.literal('hashing') }),
+  strict({ s: z.literal('hashed') }),
+  strict({ s: z.literal('known'), as: z.enum(['document', 'labReport', 'legacy']), archiveOnly: z.boolean() }),
+  strict({ s: z.literal('refused'), verdict: z.enum(['tooLarge', 'unsupported']) }),
+  strict({ s: z.literal('converting') }),
+  strict({ s: z.literal('ready'), attempt: count }),
+  strict({ s: z.literal('sending'), attempt: count }),
+  strict({ s: z.literal('read'), extraction: UPLOAD_EXTRACTION, choices }),
+  strict({ s: z.literal('failed'), reason: failReason, attempt: count }),
+  strict({ s: z.literal('stopped') }),
 ]);
-const file = z.object({
+const file = strict({
   id: text, name: text, zip: text.optional(), bytes: z.number(), hash: maybeText,
-  pages: z.object({ count, truncated: z.boolean() }).nullable(), status,
+  pages: strict({ count, truncated: z.boolean() }).nullable(), status,
 });
 const pick = { platform, run: count, files: z.array(file), started: text, firstRead: maybeText };
-const outcome = z.object({ values: count, documents: count, archived: count });
+const outcome = strict({ values: count, documents: count, archived: count });
 
 export const UPLOAD_STATE = z.discriminatedUnion('phase', [
-  z.object({ phase: z.literal('choosing'), platform, run: count }),
-  z.object({ phase: z.literal('consent'), ...pick }),
-  z.object({ phase: z.literal('open'), ...pick }),
-  z.object({ phase: z.literal('saving'), ...pick, attempt: count }),
-  z.object({ phase: z.literal('saveFailed'), ...pick, attempt: count, message: text }),
-  z.object({ phase: z.literal('done'), ...pick, outcome }),
-  z.object({ phase: z.literal('failed'), ...pick }),
+  strict({ phase: z.literal('choosing'), platform, run: count }),
+  strict({ phase: z.literal('consent'), ...pick }),
+  strict({ phase: z.literal('open'), ...pick }),
+  strict({ phase: z.literal('saving'), ...pick, attempt: count }),
+  strict({ phase: z.literal('saveFailed'), ...pick, attempt: count, message: text }),
+  strict({ phase: z.literal('done'), ...pick, outcome }),
+  strict({ phase: z.literal('failed'), ...pick }),
 ]);
 
+/** Strict branches: a change naming two kinds (a tick and a day) matches none and is refused. */
 const change = z.union([
-  z.object({ tick: text, on: z.boolean() }),
-  z.object({ testDay: maybeText }),
-  z.object({ previousDay: maybeText }),
-  z.object({ replace: text, correctsId: maybeText }),
-  z.object({ edit: text, value: z.number().nullable() }),
-  z.object({ document: documentFix }),
+  strict({ tick: text, on: z.boolean() }),
+  strict({ testDay: maybeText }),
+  strict({ previousDay: maybeText }),
+  strict({ replace: text, correctsId: maybeText }),
+  strict({ edit: text, value: z.number().nullable() }),
+  strict({ document: documentFix }),
 ]);
 const failure = z.enum(['rate_limit', 'busy', 'server_error', 'network', ...EXTRACTION_STOP_CODES]);
 
 /** Each event by its type, for a caller that sends some of them in a shape of its own (the doors' wire). */
 export const UPLOAD_EVENTS = {
-  picked: z.object({ type: z.literal('picked'), files: z.array(z.object({ id: text, name: text, bytes: z.number(), kind: z.enum(['file', 'zip']) })), needsConsent: z.boolean(), now: text }),
-  consented: z.object({ type: z.literal('consented') }),
-  listed: z.object({ type: z.literal('listed'), run: count, zip: text, members: z.array(z.object({ id: text, name: text, bytes: z.number() })) }),
-  zipFailed: z.object({ type: z.literal('zipFailed'), run: count, zip: text }),
-  hashed: z.object({ type: z.literal('hashed'), run: count, id: text, hash: text, known: z.object({ as: z.enum(['document', 'labReport']), archiveOnly: z.boolean() }).nullable() }),
-  hashFailed: z.object({ type: z.literal('hashFailed'), run: count, id: text }),
-  converted: z.object({ type: z.literal('converted'), run: count, id: text, pages: count, truncated: z.boolean() }),
-  convertFailed: z.object({ type: z.literal('convertFailed'), run: count, id: text, reason: z.enum(['unreadable', 'timeout']) }),
-  answered: z.object({ type: z.literal('answered'), run: count, id: text, extraction: UPLOAD_EXTRACTION, legacy: z.boolean(), now: text }),
-  sendFailed: z.object({ type: z.literal('sendFailed'), run: count, id: text, failure }),
-  retry: z.object({ type: z.literal('retry'), id: text }),
-  stop: z.object({ type: z.literal('stop') }),
-  chose: z.object({ type: z.literal('chose'), id: text, change, now: text }),
-  saveStarted: z.object({ type: z.literal('saveStarted') }),
-  saved: z.object({ type: z.literal('saved'), run: count, attempt: count, outcome }),
-  saveFailed: z.object({ type: z.literal('saveFailed'), run: count, attempt: count, message: text }),
-  close: z.object({ type: z.literal('close') }),
-  discard: z.object({ type: z.literal('discard') }),
+  picked: strict({ type: z.literal('picked'), files: z.array(strict({ id: text, name: text, bytes: z.number(), kind: z.enum(['file', 'zip']) })), needsConsent: z.boolean(), now: text }),
+  consented: strict({ type: z.literal('consented') }),
+  listed: strict({ type: z.literal('listed'), run: count, zip: text, members: z.array(strict({ id: text, name: text, bytes: z.number() })) }),
+  zipFailed: strict({ type: z.literal('zipFailed'), run: count, zip: text }),
+  hashed: strict({ type: z.literal('hashed'), run: count, id: text, hash: text, known: strict({ as: z.enum(['document', 'labReport']), archiveOnly: z.boolean() }).nullable() }),
+  hashFailed: strict({ type: z.literal('hashFailed'), run: count, id: text }),
+  converted: strict({ type: z.literal('converted'), run: count, id: text, pages: count, truncated: z.boolean() }),
+  convertFailed: strict({ type: z.literal('convertFailed'), run: count, id: text, reason: z.enum(['unreadable', 'timeout']) }),
+  answered: strict({ type: z.literal('answered'), run: count, id: text, extraction: UPLOAD_EXTRACTION, legacy: z.boolean(), now: text }),
+  sendFailed: strict({ type: z.literal('sendFailed'), run: count, id: text, failure }),
+  retry: strict({ type: z.literal('retry'), id: text }),
+  stop: strict({ type: z.literal('stop') }),
+  chose: strict({ type: z.literal('chose'), id: text, change, now: text }),
+  saveStarted: strict({ type: z.literal('saveStarted') }),
+  saved: strict({ type: z.literal('saved'), run: count, attempt: count, outcome }),
+  saveFailed: strict({ type: z.literal('saveFailed'), run: count, attempt: count, message: text }),
+  close: strict({ type: z.literal('close') }),
+  discard: strict({ type: z.literal('discard') }),
 };
 const E = UPLOAD_EVENTS;
 export const UPLOAD_EVENT = z.discriminatedUnion('type', [
@@ -111,13 +136,13 @@ export const UPLOAD_EVENT = z.discriminatedUnion('type', [
 
 const ids = z.array(text);
 export const UPLOAD_EFFECT = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('list'), run: count, id: text }),
-  z.object({ type: z.literal('hash'), run: count, id: text }),
-  z.object({ type: z.literal('convert'), run: count, id: text }),
-  z.object({ type: z.literal('send'), run: count, id: text, attempt: count, flags: z.object({ ownDates: z.boolean(), undatedPrev: z.boolean(), refusedRows: z.boolean() }) }),
-  z.object({ type: z.literal('abort'), run: count, ids }),
-  z.object({ type: z.literal('forget'), run: count, ids }),
-  z.object({ type: z.literal('save'), run: count, attempt: count }),
+  strict({ type: z.literal('list'), run: count, id: text }),
+  strict({ type: z.literal('hash'), run: count, id: text }),
+  strict({ type: z.literal('convert'), run: count, id: text }),
+  strict({ type: z.literal('send'), run: count, id: text, attempt: count, flags: strict({ ownDates: z.boolean(), undatedPrev: z.boolean(), refusedRows: z.boolean() }) }),
+  strict({ type: z.literal('abort'), run: count, ids }),
+  strict({ type: z.literal('forget'), run: count, ids }),
+  strict({ type: z.literal('save'), run: count, attempt: count }),
 ]);
 
 // The pin: each schema's type and the hand-written one are assignable both ways, or `tsc` fails here.
@@ -129,3 +154,7 @@ pin<Same<z.infer<typeof UPLOAD_EFFECT>, UploadEffect>>();
 pin<Same<z.infer<typeof change>, ChoiceChange>>();
 pin<Same<z.infer<typeof choices>, FileChoices>>();
 pin<Same<z.infer<typeof failure>, UploadFailure>>();
+pin<Same<z.infer<typeof VALUE>, ExtractedValue>>();
+pin<Same<z.infer<typeof ADDITIONAL>, AdditionalLabValue>>();
+pin<Same<z.infer<typeof REFUSED>, RefusedLabValue>>();
+pin<Same<z.infer<typeof DOCUMENT>, DocumentResult>>();

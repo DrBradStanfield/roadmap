@@ -308,6 +308,18 @@ A signature means "the key holder approved this bundle", nothing more.
   (`ios/engine/lab-review-groups.ts` holds the one call into it). Swift asks it again whenever a tick or
   the test day changes, and once more at Save (`LabReportSave.groups`), so it holds no rule and no copy
   of the words. Without the door the review lists every value as a row, as before. Bridge id unchanged.
+  Fifth (2026-11-15, shared upload PR 12, US-52 AC8c): five doors that let Swift drive health-core's
+  one upload machine (`upload-flow.ts`) with the state as opaque JSON (`ios/engine/upload-doors.ts`):
+  `uploadStartJson`, `uploadStepJson`, `uploadViewJson`, `uploadSavePlanJson`, `uploadUsageJson`. Every
+  input is checked by health-core's strict schemas (`upload-schema.ts`, pinned to the types), the parsed
+  value runs, and malformed input answers `{ok: false, reason, message}`, never a throw. Swift sends only
+  what it saw: the step door adds `known` to a hash, `legacy` to a read and the failure code to a
+  refusal, and reads the streaming lab route's last line itself (`streamEnded {run, id, line, now}`), so
+  the app never decides read or failed. Steps are strictly serial: one at a time, each given the state
+  the last returned. The view costs about 100-200 ms for 200 reports on a phone: at most one call per
+  frame, coalesced, off the main thread. No save door yet: Save still runs through `cloudLabImport`,
+  `labSaveSummaryJson` and `documentSave`. Build 14's runner is the first caller; builds 12 and 13 never
+  call them. Bridge id unchanged.
   **Schema 3 (Brad 2026-11-02, US-66 AC15):** a record holding a core blood row is
   `schemaVersion` 3, so the engine's `schemaVersion` fact becomes 3. Build 3 bundles a
   schema-2 engine: it refuses a moved record with its "update the app" path (US-65 AC5) and

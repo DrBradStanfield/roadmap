@@ -15,6 +15,10 @@ import { uploadView } from '../../packages/health-core/src/upload-view';
 import { uploadSavePlan } from '../../packages/health-core/src/upload-plan';
 import { uploadUsageCounts } from '../../packages/health-core/src/upload-usage';
 import type { UnifiedExtractionResult } from '../../packages/health-core/src/lab-extraction';
+import { labStreamAnswer } from '../../packages/health-core/src/upload-answer';
+import { UPLOAD_STATE } from '../../packages/health-core/src/upload-schema';
+import { UPLOAD_REFUSAL_REASONS } from './upload-doors';
+import { TOO_NEW_RECORD } from './my-data';
 
 const NOW = '2026-11-02T00:00:00.000Z';
 const DAY = '2026-11-01';
@@ -102,6 +106,16 @@ function genEvent(r: () => number, s: UploadState, mint: () => string): { wire: 
       return { wire: { type: 'answered', run, id, extraction, now: NOW },
         whole: { type: 'answered', run, id, extraction, now: NOW, legacy: name !== undefined && readIsLegacy(RECORD, name, extraction) } };
     }],
+    [4, () => {
+      const id = idAt('sending');
+      const line = pick([JSON.stringify({ status: 200, body: { success: true, data: pick(READS) } }), JSON.stringify({ status: 429, body: { success: false } }),
+        JSON.stringify({ status: 422, body: { errorCode: 'refused' } }), null, '{cut']);
+      const a = labStreamAnswer(line);
+      const name = files.find((f) => f.id === id)?.name;
+      return { wire: { type: 'streamEnded', run, id, line, now: NOW }, whole: 'extraction' in a
+        ? { type: 'answered', run, id, extraction: a.extraction, legacy: name !== undefined && readIsLegacy(RECORD, name, a.extraction), now: NOW }
+        : { type: 'sendFailed', run, id, failure: a.failure } };
+    }],
     [2, () => {
       const id = idAt('sending');
       const { read, ...answer } = pick(SEND_ANSWERS);
@@ -144,15 +158,17 @@ describe('upload doors agree with health-core (shared upload PR 12, US-52 AC8c)'
         events.push(wire);
         const where = `seed ${seed} step ${i}: ${JSON.stringify(events.map((e) => e.type))}`;
         const direct = transition(s, whole);
-        expect(uploadStepJson(JSON.stringify(s), JSON.stringify(wire), RECORD_TEXT, DEV), where).toBe(JSON.stringify(direct));
+        const step = JSON.parse(uploadStepJson(JSON.stringify(s), JSON.stringify(wire), RECORD_TEXT, DEV));
+        expect(step, where).toEqual(direct);
+        expect(UPLOAD_STATE.safeParse(step.state).success, where).toBe(true);
         s = direct.state;
         const cloud = r() < 0.5;
         const review = uploadReview(s, RECORD, NOW);
         const view = uploadView(s, RECORD, NOW, review, cloud);
         const plan = uploadSavePlan(s, RECORD, NOW, review, cloud);
-        expect(uploadViewJson(JSON.stringify(s), RECORD_TEXT, NOW, cloud, DEV), where).toBe(JSON.stringify(view));
-        expect(uploadSavePlanJson(JSON.stringify(s), RECORD_TEXT, NOW, cloud, DEV), where).toBe(JSON.stringify(plan));
-        expect(uploadUsageJson(JSON.stringify(s)), where).toBe(JSON.stringify(uploadUsageCounts(s)));
+        expect(JSON.parse(uploadViewJson(JSON.stringify(s), RECORD_TEXT, NOW, cloud, DEV)), where).toEqual(JSON.parse(JSON.stringify(view)));
+        expect(JSON.parse(uploadSavePlanJson(JSON.stringify(s), RECORD_TEXT, NOW, cloud, DEV)), where).toEqual(JSON.parse(JSON.stringify(plan)));
+        expect(JSON.parse(uploadUsageJson(JSON.stringify(s))), where).toEqual(uploadUsageCounts(s));
         if (whole.type === 'hashed' && whole.known) seen.known++;
         if (whole.type === 'answered' && whole.legacy) seen.legacy++;
         if (whole.type === 'sendFailed') seen.sendFailed++;
@@ -166,10 +182,11 @@ describe('upload doors agree with health-core (shared upload PR 12, US-52 AC8c)'
     for (const [name, k] of Object.entries(seen)) expect([name, k > 0]).toEqual([name, true]);
   });
 
-  it("whatever Swift puts in known, legacy or failure, the engine's own answer wins", () => {
+  it('the engine fills known itself; known, legacy or failure from the app is refused, never run (review R2)', () => {
     const open = transition(initialUpload('phone'), { type: 'picked', needsConsent: false, now: NOW, files: [{ id: 'f', name: 'a.pdf', bytes: 1, kind: 'file' }] }).state;
-    const step = JSON.parse(uploadStepJson(JSON.stringify(open), JSON.stringify({ type: 'hashed', run: 1, id: 'f', hash: 'h-held', known: null }), RECORD_TEXT, DEV));
+    const step = JSON.parse(uploadStepJson(JSON.stringify(open), JSON.stringify({ type: 'hashed', run: 1, id: 'f', hash: 'h-held' }), RECORD_TEXT, DEV));
     expect(step.state.files[0].status).toEqual({ s: 'known', as: 'document', archiveOnly: false });
+    expect(JSON.parse(uploadStepJson(JSON.stringify(open), JSON.stringify({ type: 'hashed', run: 1, id: 'f', hash: 'h-held', known: null }), RECORD_TEXT, DEV)).reason).toBe('invalid-event');
   });
 });
 
@@ -197,6 +214,55 @@ describe('upload doors refuse malformed input and never throw (shared upload PR 
     }
     expect(refusal(uploadStepJson(JSON.stringify(OPEN), '{"type":"hashed","run":1,"id":"f","hash":"h"}', '{not json', DEV))).toBe('invalid-record');
     expect(refusal(uploadViewJson(JSON.stringify(OPEN), '[1]', NOW, true, DEV))).toBe('invalid-record');
+  });
+
+  // Review R2 (Codex): what runs is what was checked. A change naming two kinds, or one with a wrong
+  // type, matches no strict branch and is refused; every step that answers gives a state the schema takes.
+  it('adversarial events: conflicting keys and wrong types are refused; every answered step is a valid state', () => {
+    const read = { ...OPEN, files: [{ id: 'f', name: 'a.pdf', bytes: 1, hash: 'h', pages: { count: 1, truncated: false },
+      status: { s: 'read', extraction: READS[0], choices: { ticks: {}, testDay: null, previousDay: null, replace: {}, edits: {}, document: {} } } }] };
+    const chose = (change: unknown) => uploadStepJson(JSON.stringify(read), JSON.stringify({ type: 'chose', id: 'f', now: NOW, change }), RECORD_TEXT, DEV);
+    for (const change of [{ tick: 'v0', on: 'no', testDay: null }, { tick: 'v0', on: true, testDay: null }, { testDay: null, previousDay: null },
+      { edit: 'v0', value: '3' }, { replace: 'v0', correctsId: 1 }, { document: { title: 'T', colour: 'red' } }, { tick: 'v0' }, {}]) {
+      expect(refusal(chose(change)), JSON.stringify(change)).toBe('invalid-event');
+    }
+    const events: unknown[] = [
+      { type: 'stop', extra: 1 }, { type: 'retry', id: 7 }, { type: 'converted', run: 1, id: 'f', pages: -1, truncated: false },
+      { type: 'picked', files: [{ id: 'x', name: 'x', bytes: 1, kind: 'folder' }], needsConsent: false, now: NOW },
+      { type: 'streamEnded', run: 1, id: 'f', line: 5, now: NOW }, { type: 'sendFailed', run: 1, id: 'f', status: '429', body: null, contentType: null },
+      { type: 'answered', run: 1, id: 'f', now: NOW, extraction: { ...READS[0], additionalValues: [{ name: 'Ferritin', value: 80, unit: 'u', referenceLow: 'x' }] } },
+    ];
+    for (const e of events) expect(refusal(uploadStepJson(JSON.stringify(read), JSON.stringify(e), RECORD_TEXT, DEV)), JSON.stringify(e)).toBe('invalid-event');
+    for (const change of [{ tick: 'v0', on: false }, { testDay: '2026-10-01' }, { document: { title: 'T' } }]) {
+      const answer = JSON.parse(chose(change));
+      expect(UPLOAD_STATE.safeParse(answer.state).success, JSON.stringify(change)).toBe(true);
+    }
+  });
+
+  it('a bad reference bound in a streamed read never reaches the state or a save plan (review R1)', () => {
+    const sending = { ...OPEN, files: [{ id: 'f', name: 'a.pdf', bytes: 1, hash: 'h', pages: { count: 1, truncated: false }, status: { s: 'sending', attempt: 1 } }] };
+    const bad = { ...READS[0], additionalValues: [{ name: 'Ferritin', value: 80, unit: 'u', referenceLow: 'x' }] };
+    const line = JSON.stringify({ status: 200, body: { success: true, data: bad } });
+    const step = JSON.parse(uploadStepJson(JSON.stringify(sending), JSON.stringify({ type: 'streamEnded', run: 1, id: 'f', line, now: NOW }), RECORD_TEXT, DEV));
+    expect(step.state.files[0].status).toEqual({ s: 'failed', reason: 'server', attempt: 1 });
+    expect(JSON.parse(uploadSavePlanJson(JSON.stringify(step.state), RECORD_TEXT, NOW, true, DEV)).counts.values).toBe(0);
+  });
+
+  it('streamEnded: a daily-limit 429 stops the run; no last line is a retryable network failure (review R1)', () => {
+    const two = { ...OPEN, files: [
+      { id: 'f', name: 'a.pdf', bytes: 1, hash: 'h', pages: { count: 1, truncated: false }, status: { s: 'sending', attempt: 1 } },
+      { id: 'g', name: 'b.pdf', bytes: 1, hash: 'g', pages: null, status: { s: 'hashed' } }] };
+    const end = (line: string | null) => JSON.parse(uploadStepJson(JSON.stringify(two), JSON.stringify({ type: 'streamEnded', run: 1, id: 'f', line, now: NOW }), RECORD_TEXT, DEV)).state.files;
+    expect(end(JSON.stringify({ status: 429, body: { success: false } })).map((f: { status: { reason?: string } }) => f.status.reason)).toEqual(['dailyLimit', 'dailyLimit']);
+    expect(end(null)[0].status).toEqual({ s: 'failed', reason: 'network', attempt: 1 });
+    expect(end(JSON.stringify({ status: 422, body: { errorCode: 'refused' } }))[0].status).toEqual({ s: 'failed', reason: 'declined', attempt: 1 });
+  });
+
+  it('a record a newer app wrote is refused in readRecord\'s words, apart from an unreadable one (review R4)', () => {
+    const tooNew = JSON.stringify({ ...RECORD, schemaVersion: 999 });
+    const answer = JSON.parse(uploadViewJson(JSON.stringify(OPEN), tooNew, NOW, true, DEV));
+    expect(answer).toEqual({ ok: false, reason: 'record-too-new', message: TOO_NEW_RECORD });
+    expect(UPLOAD_REFUSAL_REASONS).toContain('record-too-new');
   });
 
   it('the refusal names no part of what it was given', () => {

@@ -140,6 +140,9 @@ export type EditOutcome =
  * Words meant for the person. HealthEngine shows them as they are; any other
  * exception's text stays hidden (US-25 AC6b, review R8).
  */
+/** A record a newer app wrote: readRecord refuses it in these words. */
+export const TOO_NEW_RECORD = 'A newer version of Health Roadmap wrote this record. Update the app to open it.';
+
 export class Refusal extends Error {
   override name = 'Refusal';
 }
@@ -166,7 +169,7 @@ export function readRecord(text: string, now: string, deviceId: string): Roadmap
   try {
     file = ROADMAP_DOC.migrate(raw, { deviceId, now });
   } catch (error) {
-    if (error instanceof SchemaTooNewError) throw new Refusal('A newer version of Health Roadmap wrote this record. Update the app to open it.');
+    if (error instanceof SchemaTooNewError) throw new Refusal(TOO_NEW_RECORD);
     throw error;
   }
   kept = { text, deviceId, file: FREEZE_KEPT ? deepFreeze(file) : file, moved: movedBloodTests(raw, file) };

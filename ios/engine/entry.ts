@@ -246,15 +246,28 @@ export function uploadStartJson(platform: string): string {
  * - listed {run, zip (the ZIP's file id), members: [{id, name, bytes}]} · zipFailed {run, zip}
  * - hashed {run, id, hash}: the door adds `known` (knownIndex and knownAs over the record).
  * - hashFailed {run, id} · converted {run, id, pages, truncated} · convertFailed {run, id, reason: "unreadable" | "timeout"}
- * - answered {run, id, extraction (the server's read, as it came), now}: the door adds `legacy`
- *   (readIsLegacy over the record, by the file's name in the state).
+ * - streamEnded {run, id, line, now}: the streaming lab route (lab-read) ended. `line`: its last
+ *   NDJSON line exactly as received, text; null when the stream ended without one. The door reads
+ *   it (health-core labStreamAnswer): `{status: 200, body: {success: true, data}}` with data a
+ *   checked read becomes `answered` (legacy added); any other status or body becomes `sendFailed`
+ *   with the shared code (a 429 daily limit stops the run); no line or an unreadable one is the
+ *   network failure, which Try again mends. The app never decides read or failed itself.
  * - sendFailed {run, id, status (HTTP status, null when no answer came), body (its text, null when
- *   none), contentType (its header, null when none)}: the door adds `failure` (uploadFailureOfText).
+ *   none), contentType (its header, null when none)}: a real HTTP refusal before any stream (the
+ *   gate's 401, 413, 429, 503) or a thrown request; the door adds `failure` (uploadFailureOfText).
+ * - answered {run, id, extraction (a read, as received), now}: for a route that answers the read
+ *   whole; the door checks it (health-core UPLOAD_EXTRACTION) and adds `legacy` (readIsLegacy).
  * - chose {id, change, now}: change is one of {tick, on}, {testDay}, {previousDay}, {replace,
  *   correctsId}, {edit, value}, {document: {title?, kind?, date?}} (health-core ChoiceChange).
  * - saved {run, attempt, outcome: {values, documents, archived}} · saveFailed {run, attempt, message}
- * Whatever the app sends in `known`, `legacy` or `failure` is overwritten. `recordJson` ("" for
- * none) is read only for hashed and answered, through `deviceId`, the app's own, as the screen doors read it.
+ * Every event is strict: a key it does not name (`known`, `legacy` or `failure` from the app, a
+ * change naming two kinds) is refused ("invalid-event"), and the parsed event is what runs.
+ * `recordJson` ("" for none) is read only for hashed, answered and streamEnded, through `deviceId`,
+ * the app's own, as the screen doors read it.
+ * Steps are strictly serial: one call at a time, each given the state the previous one returned.
+ * Two steps from one state, or a step given an older state, lose an event (a landing, a run
+ * number, a choice): its effects may already be running, and their answers then match no file or
+ * a stale run and are dropped, so a file can wait forever or a send can run twice.
  */
 export function uploadStepJson(stateJson: string, eventJson: string, recordJson: string, deviceId: string): string {
   checkArgs('uploadStepJson', arguments);
