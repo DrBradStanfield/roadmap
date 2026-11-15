@@ -25,6 +25,7 @@ import { documentShelf } from './documents';
 import { fileVerdict, UPLOAD_LIMITS, zipMemberVerdict } from '../../packages/health-core/src/upload-rules';
 import { checkArgs } from './contract';
 import { labReviewGroups } from './lab-review-groups';
+import { uploadPlanOf, uploadStart, uploadStep, uploadUsage, uploadViewOf } from './upload-doors';
 import type { Extraction } from './lab-review';
 
 // The web APIs the cloud adapters need, over Swift's natives (shim.ts). Absent
@@ -225,6 +226,40 @@ export function uploadVerdictsJson(request: string): string {
     files: files.map(({ name, bytes }) => fileVerdict({ name, bytes, platform: 'phone' })),
     zipMembers: zipMembers.map((path) => zipMemberVerdict(path, 'phone')),
   });
+}
+
+// The shared upload (upload-doors.ts, design PR 12, US-52 AC8c): optional doors, each answering
+// its JSON or {ok: false, reason, message}, never a throw on malformed JSON. The state is opaque.
+
+/** A new upload's state for `platform` ("web" or "phone"). */
+export function uploadStartJson(platform: string): string {
+  checkArgs('uploadStartJson', arguments);
+  return uploadStart(platform);
+}
+
+/** One event: `{state, effects}`. The engine adds `known` to `hashed`, `legacy` to `answered`, and
+ *  reads a `sendFailed`'s server answer into its failure, so the app sends only what it saw. */
+export function uploadStepJson(stateJson: string, eventJson: string, recordJson: string): string {
+  checkArgs('uploadStepJson', arguments);
+  return uploadStep(stateJson, eventJson, recordJson);
+}
+
+/** The drawable view (health-core uploadView), from one review of the state against the record. */
+export function uploadViewJson(stateJson: string, recordJson: string, nowIso: string, cloudConnected: boolean): string {
+  checkArgs('uploadViewJson', arguments);
+  return uploadViewOf(stateJson, recordJson, nowIso, cloudConnected);
+}
+
+/** What Save writes (health-core uploadSavePlan), from the same review rule as the view. */
+export function uploadSavePlanJson(stateJson: string, recordJson: string, nowIso: string, cloudConnected: boolean): string {
+  checkArgs('uploadSavePlanJson', arguments);
+  return uploadPlanOf(stateJson, recordJson, nowIso, cloudConnected);
+}
+
+/** The run's usage counts for `upload_outcome` (health-core uploadUsageCounts): counts only. */
+export function uploadUsageJson(stateJson: string): string {
+  checkArgs('uploadUsageJson', arguments);
+  return uploadUsage(stateJson);
 }
 
 /** The network came back (the app's NWPathMonitor, US-09 AC30): retry a failed save, at most once a

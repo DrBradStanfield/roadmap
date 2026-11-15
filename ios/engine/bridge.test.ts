@@ -32,6 +32,9 @@ function parameters(name: string): string[] {
 
 /** Contract arguments to call each optional door with (one entry per door in bridge-optional.json). */
 const NOW = '2026-10-21T08:00:00.000Z';
+/** An open phone upload holding one file being hashed (shared upload PR 12). */
+const UPLOAD_OPEN = JSON.stringify({ phase: 'open', platform: 'phone', run: 1, started: NOW, firstRead: null,
+  files: [{ id: 'f1', name: 'a.pdf', bytes: 1, hash: null, pages: null, status: { s: 'hashing' } }] });
 const SAMPLE_ARGS: Record<string, unknown[]> = {
   screenJson: [readFileSync(join(__dirname, '../../docs/examples/health-roadmap.sample.json'), 'utf8'), NOW, 'phone', '{}'],
   chatEditsJson: [readFileSync(join(__dirname, '../../docs/examples/health-roadmap.sample.json'), 'utf8'),
@@ -91,6 +94,24 @@ describe('bridge contract (US-25 AC18)', () => {
       call: [JSON.stringify({ files: [{ name: 'a.pdf', bytes: 1 }], zipMembers: ['a.pdf'] })],
       shape: { limits: { fileBytes: 'number', zipBytes: 'number', zipMembers: 'number', folderBytes: 'number' }, files: ['string'], zipMembers: ['string'] },
     },
+    // Shared upload PR 12 (US-52 AC8c): one phone pick of one file, on an empty record.
+    uploadStartJson: { args: ['platform'], call: ['phone'], shape: { phase: 'string', platform: 'string', run: 'number' } },
+    uploadStepJson: {
+      args: ['stateJson', 'eventJson', 'recordJson'],
+      call: [JSON.stringify({ phase: 'choosing', platform: 'phone', run: 0 }), JSON.stringify({ type: 'picked', files: [{ id: 'f1', name: 'a.pdf', bytes: 1, kind: 'file' }], needsConsent: false, now: NOW }), ''],
+      shape: { state: { phase: 'string', run: 'number', files: [{ id: 'string', name: 'string', status: { s: 'string' } }] }, effects: [{ type: 'string', run: 'number' }] },
+    },
+    uploadViewJson: {
+      args: ['stateJson', 'recordJson', 'nowIso', 'cloudConnected'],
+      call: [UPLOAD_OPEN, '', NOW, true],
+      shape: { summary: 'string', files: { row: 'string', rows: [{ fileId: 'string', name: 'string', status: 'string' }] }, save: { label: 'string', enabled: 'boolean' } },
+    },
+    uploadSavePlanJson: {
+      args: ['stateJson', 'recordJson', 'nowIso', 'cloudConnected'],
+      call: [UPLOAD_OPEN, '', NOW, true],
+      shape: { counts: { values: 'number', documents: 'number', archived: 'number', originals: 'number' } },
+    },
+    uploadUsageJson: { args: ['stateJson'], call: [UPLOAD_OPEN], shape: { known: 'number', failedFinal: 'number' } },
   };
   /** Where `answer` drops or retypes what `frozen` holds: [] when it holds at least the frozen shape. */
   function shapeFaults(frozen: unknown, answer: unknown, at = '$'): string[] {

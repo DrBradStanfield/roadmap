@@ -731,6 +731,88 @@
       "kind": "promise",
       "optionalDoor": true,
       "args": []
+    },
+    "uploadStartJson": {
+      "kind": "sync",
+      "optionalDoor": true,
+      "args": [
+        {
+          "name": "platform",
+          "type": "string"
+        }
+      ]
+    },
+    "uploadStepJson": {
+      "kind": "sync",
+      "optionalDoor": true,
+      "args": [
+        {
+          "name": "stateJson",
+          "type": "string"
+        },
+        {
+          "name": "eventJson",
+          "type": "string"
+        },
+        {
+          "name": "recordJson",
+          "type": "string"
+        }
+      ]
+    },
+    "uploadViewJson": {
+      "kind": "sync",
+      "optionalDoor": true,
+      "args": [
+        {
+          "name": "stateJson",
+          "type": "string"
+        },
+        {
+          "name": "recordJson",
+          "type": "string"
+        },
+        {
+          "name": "nowIso",
+          "type": "string"
+        },
+        {
+          "name": "cloudConnected",
+          "type": "bool"
+        }
+      ]
+    },
+    "uploadSavePlanJson": {
+      "kind": "sync",
+      "optionalDoor": true,
+      "args": [
+        {
+          "name": "stateJson",
+          "type": "string"
+        },
+        {
+          "name": "recordJson",
+          "type": "string"
+        },
+        {
+          "name": "nowIso",
+          "type": "string"
+        },
+        {
+          "name": "cloudConnected",
+          "type": "bool"
+        }
+      ]
+    },
+    "uploadUsageJson": {
+      "kind": "sync",
+      "optionalDoor": true,
+      "args": [
+        {
+          "name": "stateJson",
+          "type": "string"
+        }
+      ]
     }
   },
   "types": {
