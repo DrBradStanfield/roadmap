@@ -211,7 +211,7 @@ describe('US-12 AC10: one count-only upload_outcome per run', () => {
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual({
       picked: 6, withValues: 1, documentOnly: 1, noValues: 1, openFailed: 1,
-      tooLarge: 1, truncated: 1, serverError: 1, limitError: 0, refused: 0, tooLong: 0, valuesDropped: 0, docx: 0, picturesOnly: 0, undatedPrevious: 0, unitsGuessed: 0, unitsRefused: 0, valuesLimit: 0, valuesLimitUngraded: 0, cancelled: 0,
+      tooLarge: 1, truncated: 1, serverError: 1, limitError: 0, refused: 0, tooLong: 0, valuesDropped: 0, docx: 0, picturesOnly: 0, undatedPrevious: 0, unitsGuessed: 0, unitsRefused: 0, valuesLimit: 0, valuesLimitUngraded: 0, cancelled: 0, known: 0, failedFinal: 0, firstReadSeconds: 0,
     });
     expect(Object.values(outcomes()[0]!).every(Number.isInteger)).toBe(true);
     // A zero is never sent, so a server a deploy behind never meets a new key it would refuse.
