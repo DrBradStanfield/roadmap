@@ -17,6 +17,9 @@ import type { DocumentType } from './validation';
  */
 export const LAB_ARCHIVE_FLAG = 'labArchive';
 
+/** Metadata key on a lab archive row: the ids of the lab rows its import wrote (upload-known.ts reads it). */
+export const LAB_ARCHIVE_ROWS = 'rows';
+
 /** What a reviewed document says about itself, before it is a row. */
 export interface DocumentFields {
   documentType: string;
