@@ -133,10 +133,11 @@ function logRefusal(kind: AppUseKind, reason: string): void {
 export interface GateOptions { kind: AppUseKind; bodyCap: number; store?: KeyStore; env?: NodeJS.ProcessEnv }
 
 /**
- * Checks the request and returns its raw body, or the refusal to send.
+ * Checks the request and returns its raw body and the key id its signature
+ * verified (the simulator's `dev:` id under the bypass), or the refusal to send.
  * The caller parses the body it is given; the request's own body is spent.
  */
-export async function appGate(request: Request, opts: GateOptions): Promise<{ body: Buffer } | Response> {
+export async function appGate(request: Request, opts: GateOptions): Promise<{ body: Buffer; keyId: string } | Response> {
   const { kind } = opts;
   const env = opts.env ?? process.env;
   const store = opts.store ?? supabaseKeyStore;
@@ -151,7 +152,7 @@ export async function appGate(request: Request, opts: GateOptions): Promise<{ bo
     const body = await readBody(request, opts.bodyCap);
     if (!body || body === 'too_large') return refuse(413, 'too_large', 'Request too large');
     if (!appLimits.dev[kind].take(dev, 1)) return overLimit();
-    return reserveShared(kind, ip) ? { body } : overLimit();
+    return reserveShared(kind, ip) ? { body, keyId: `dev:${dev}` } : overLimit();
   }
 
   const config = attestConfig(env);
@@ -218,7 +219,7 @@ export async function appGate(request: Request, opts: GateOptions): Promise<{ bo
     keyRefund();
     if (!outcome) { logRefusal(kind, 'store_unavailable'); return unavailable(); }
     if (outcome === 'limit') { if (shared) logRefusal(kind, 'key_limit'); return overLimit(); }
-    return { body };
+    return { body, keyId };
   } finally {
     if (!charged) refund();
   }

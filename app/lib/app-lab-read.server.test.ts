@@ -4,7 +4,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 // answers its headers once the App Attest counter is spent, then streams the
 // read's answer as NDJSON. Model calls are mocked: no spend.
 
-const mocks = vi.hoisted(() => ({ extract: vi.fn(), rootPem: '' }));
+const mocks = vi.hoisted(() => ({ extract: vi.fn(), rootPem: '', extractOne: null as null | ((...a: unknown[]) => Promise<Response>) }));
+vi.mock('@sentry/react-router', async (original) => ({ ...await original<typeof import('@sentry/react-router')>(), captureException: vi.fn() }));
+vi.mock('./lab-extract-one.server', async (original) => {
+  const real = await original<typeof import('./lab-extract-one.server')>();
+  // A stand-in only where a test sets one: a read that throws past extractOneFile's own catch.
+  return { ...real, extractOneFile: (...a: Parameters<typeof real.extractOneFile>) => (mocks.extractOne ? mocks.extractOne(...a) : real.extractOneFile(...a)) };
+});
 vi.mock('../shopify.server', () => ({ authenticate: { public: { appProxy: vi.fn() } } }));
 vi.mock('./anthropic.server', async (original) => ({
   ...await original<typeof import('./anthropic.server')>(),
@@ -16,6 +22,7 @@ vi.mock('./app-attest.server', async (original) => {
   return { ...real, attestConfig: (env?: NodeJS.ProcessEnv) => { const c = real.attestConfig(env); return c && { ...c, rootPem: mocks.rootPem }; } };
 });
 
+import * as Sentry from '@sentry/react-router';
 import { ExtractionStopError } from './anthropic.server';
 import { appChallenge, appLabImport, appRegister } from './app-routes.server';
 import { appLabRead } from './app-lab-read.server';
@@ -23,6 +30,7 @@ import { appLimits, type KeyStore, type UseOutcome } from './app-gate.server';
 import { fakeDevice } from './app-attest.test-helpers';
 import { requestClientData } from './app-attest.server';
 import { machineFiles } from './rate-limiter';
+import { createReadSlots } from './lab-read-slots.server';
 
 const APP_ID = 'TEAM123456.com.drstanfield.healthroadmap';
 const device = fakeDevice(APP_ID);
@@ -64,6 +72,7 @@ function memoryStore(log: string[]): KeyStore & { rows: Map<string, Row> } {
 let store: ReturnType<typeof memoryStore>;
 let log: string[];
 let counter: number;
+let slots: ReturnType<typeof createReadSlots>;
 
 function reset() {
   for (const c of [appLimits.failures, appLimits.keyFailures, appLimits.register, appLimits.registered, appLimits.challenges, appLimits.ip.chat, appLimits.ip.lab, appLimits.machine.chat, appLimits.machine.lab, appLimits.dev.chat, appLimits.dev.lab, machineFiles]) c.reset();
@@ -108,6 +117,8 @@ beforeEach(() => {
   delete process.env.APP_ATTEST_DEV_BYPASS;
   delete process.env.CHAT_SURFACE;
   reset();
+  slots = createReadSlots();
+  mocks.extractOne = null;
   mocks.extract.mockReset().mockImplementation(async () => { log.push('read'); return extraction; });
   vi.spyOn(console, 'log').mockImplementation(() => {});
   vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -156,7 +167,7 @@ describe('US-52 AC7e: an accepted read streams NDJSON', () => {
     await registered();
     let finish!: (v: unknown) => void;
     mocks.extract.mockImplementation(() => { log.push('read started'); return new Promise((r) => { finish = r; }); });
-    const res = await appLabRead(signed(NEW, body), store);
+    const res = await appLabRead(signed(NEW, body), store, slots);
     log.push('headers');
     expect(res.status).toBe(200);
     expect(res.headers.get('content-type')).toBe('application/x-ndjson');
@@ -170,7 +181,7 @@ describe('US-52 AC7e: an accepted read streams NDJSON', () => {
     await registered();
     const old = await appLabImport(signed(OLD, body), store);
     const oldBody = await old.json();
-    const res = await appLabRead(signed(NEW, body), store);
+    const res = await appLabRead(signed(NEW, body), store, slots);
     const got = await lines(res);
     expect(got[0]).toEqual({ accepted: true });
     expect(got.at(-1)).toEqual({ status: old.status, body: oldBody });
@@ -187,7 +198,7 @@ describe('US-52 AC7e: an accepted read streams NDJSON', () => {
     mocks.extract.mockImplementation(async () => { throw fail(); });
     const old = await appLabImport(signed(OLD, body), store);
     const oldBody = await old.json();
-    const res = await appLabRead(signed(NEW, body), store);
+    const res = await appLabRead(signed(NEW, body), store, slots);
     expect(res.status).toBe(200);
     const got = await lines(res);
     expect(got[0]).toEqual({ accepted: true });
@@ -201,7 +212,7 @@ describe('US-52 AC7e: an accepted read streams NDJSON', () => {
     vi.useFakeTimers();
     let finish!: (v: unknown) => void;
     mocks.extract.mockImplementation(() => new Promise((r) => { finish = r; }));
-    const res = await appLabRead(request, store);
+    const res = await appLabRead(request, store, slots);
     await vi.advanceTimersByTimeAsync(46_000);
     finish(extraction);
     await vi.advanceTimersByTimeAsync(0);
@@ -217,7 +228,7 @@ describe('US-52 AC7e: an accepted read streams NDJSON', () => {
     const request = signed(NEW, body);
     vi.useFakeTimers();
     mocks.extract.mockImplementation(() => new Promise(() => {}));
-    const res = await appLabRead(request, store);
+    const res = await appLabRead(request, store, slots);
     expect(vi.getTimerCount()).toBe(1);
     await res.body!.cancel();
     expect(vi.getTimerCount()).toBe(0);
@@ -225,7 +236,102 @@ describe('US-52 AC7e: an accepted read streams NDJSON', () => {
 
   it('the read is the old route\'s call: one 90 s budget with the 429 retry', async () => {
     await registered();
-    await lines(await appLabRead(signed(NEW, body), store));
+    await lines(await appLabRead(signed(NEW, body), store, slots));
     expect(mocks.extract).toHaveBeenCalledWith(body.pages, { timeoutMs: 90_000, retryRateLimit: true, oneDeadline: true, onRetry: expect.any(Function) });
+  });
+});
+
+const UNAVAILABLE = { success: false, error: 'This is not available right now. Please try again later.', reason: 'unavailable' };
+
+describe('US-52 AC7e: reads in flight are capped', () => {
+  /** A read the test ends: `finish` answers it, `fail` throws from it. */
+  function pendingRead() {
+    const ends: Array<{ finish: (v: unknown) => void; fail: (e: Error) => void }> = [];
+    mocks.extract.mockImplementation(() => new Promise((finish, fail) => { ends.push({ finish, fail }); }));
+    return ends;
+  }
+
+  it('past 10 in flight on the machine, a read is refused 503 before the gate: no counter spent, nothing read', async () => {
+    await registered();
+    slots = createReadSlots(10, 100);
+    const ends = pendingRead();
+    const open = [];
+    for (let i = 0; i < 10; i++) open.push(await appLabRead(signed(NEW, body), store, slots));
+    expect(open.every((r) => r.status === 200)).toBe(true);
+    const spent = log.filter((l) => l === 'counter spent').length;
+    const count = store.rows.get(device.keyId)!.count;
+    const res = await appLabRead(signed(NEW, body), store, slots);
+    expect(res.status).toBe(503);
+    expect(await res.json()).toEqual(UNAVAILABLE);
+    expect(log.filter((l) => l === 'counter spent').length).toBe(spent);
+    expect(store.rows.get(device.keyId)!.count).toBe(count);
+    expect(mocks.extract).toHaveBeenCalledTimes(10);
+    for (const e of ends) e.finish(extraction);
+    await Promise.all(open.map(lines));
+    expect(slots.inFlight()).toBe(0);
+  });
+
+  it('past 5 in flight for one key, the accepted read\'s final line is the same 503 answer', async () => {
+    await registered();
+    const ends = pendingRead();
+    const open = [];
+    for (let i = 0; i < 5; i++) open.push(await appLabRead(signed(NEW, body), store, slots));
+    const sixth = await appLabRead(signed(NEW, body), store, slots);
+    expect(sixth.status).toBe(200);
+    expect(await lines(sixth)).toEqual([{ accepted: true }, { status: 503, body: UNAVAILABLE }]);
+    expect(mocks.extract).toHaveBeenCalledTimes(5);
+    for (const e of ends) e.finish(extraction);
+    await Promise.all(open.map(lines));
+    expect(slots.inFlight()).toBe(0);
+  });
+
+  it.each([
+    { name: 'a success', end: async (res: Response) => { await lines(res); } },
+    { name: 'a read failure', arrange: () => { mocks.extract.mockRejectedValue(new Error('extraction returned malformed JSON')); }, end: async (res: Response) => { await lines(res); } },
+    { name: 'a throw', arrange: () => { mocks.extractOne = async () => { throw new TypeError('boom'); }; }, end: async (res: Response) => { await lines(res); } },
+  ])('slots are free after $name: the next read on a one-slot machine is accepted', async ({ arrange, end }) => {
+    await registered();
+    slots = createReadSlots(1, 1);
+    arrange?.();
+    await end(await appLabRead(signed(NEW, body), store, slots));
+    expect(slots.inFlight()).toBe(0);
+    mocks.extractOne = null;
+    mocks.extract.mockReset().mockResolvedValue(extraction);
+    const next = await appLabRead(signed(NEW, body), store, slots);
+    expect((await lines(next)).at(-1)).toMatchObject({ status: 200 });
+  });
+
+  it('a reader that goes away frees its slots once the read it started ends', async () => {
+    await registered();
+    slots = createReadSlots(1, 1);
+    const ends = pendingRead();
+    const res = await appLabRead(signed(NEW, body), store, slots);
+    await res.body!.cancel();
+    // The read still holds its pages until its budget ends it, so the slot is still taken.
+    expect(slots.inFlight()).toBe(1);
+    expect((await appLabRead(signed(NEW, body), store, slots)).status).toBe(503);
+    ends[0].finish(extraction);
+    await vi.waitFor(() => expect(slots.inFlight()).toBe(0));
+    mocks.extract.mockReset().mockResolvedValue(extraction);
+    const next = await appLabRead(signed(NEW, body), store, slots);
+    expect((await lines(next)).at(-1)).toMatchObject({ status: 200 });
+  });
+
+  it('a gate refusal frees the machine slot', async () => {
+    slots = createReadSlots(1, 1);
+    expect((await appLabRead(signed(NEW, body), store, slots)).status).toBe(401);
+    expect(slots.inFlight()).toBe(0);
+  });
+});
+
+describe('US-52 AC7e: an unexpected throw reaches Sentry', () => {
+  it('the error alone is captured, and the final line is a 500', async () => {
+    await registered();
+    const boom = new TypeError('boom');
+    mocks.extractOne = async () => { throw boom; };
+    const got = await lines(await appLabRead(signed(NEW, body), store, slots));
+    expect(got.at(-1)).toEqual({ status: 500, body: { success: false, error: 'Failed to process request' } });
+    expect(Sentry.captureException).toHaveBeenCalledWith(boom);
+    expect(vi.mocked(Sentry.captureException).mock.calls.find((c) => c[0] === boom)).toHaveLength(1);
   });
 });

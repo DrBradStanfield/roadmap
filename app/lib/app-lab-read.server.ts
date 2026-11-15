@@ -5,16 +5,33 @@
  * held from signing until headers arrive, frees the next send while this read
  * runs. Lines: `{"accepted":true}`, a blank line every 15 s while the read runs,
  * then `{"status", "body"}` with the status and body /lab-import would answer.
+ * Reads in flight are capped per machine (before the gate) and per key (after
+ * it), with the 503 the app already treats as "try again" (lab-read-slots).
  */
+import * as Sentry from '@sentry/react-router';
 import type { KeyStore } from './app-gate.server';
-import { labGate, labRead } from './app-routes.server';
+import { labGate, labRead, unavailable, type AcceptedLab } from './app-routes.server';
 import { NDJSON_HEADERS } from './chat-turn-io.server';
+import { labReadSlots, type ReadSlots } from './lab-read-slots.server';
 
 const KEEP_ALIVE_MS = 15_000;
 
-export async function appLabRead(request: Request, store?: KeyStore): Promise<Response> {
-  const gate = await labGate(request, store);
-  if (gate instanceof Response) return gate;
+export async function appLabRead(request: Request, store?: KeyStore, slots: ReadSlots = labReadSlots): Promise<Response> {
+  const release = slots.take();
+  if (!release) return unavailable();
+  let streaming = false;
+  try {
+    const gate = await labGate(request, store);
+    if (gate instanceof Response) return gate;
+    streaming = true;
+    return stream(gate, slots.takeKey(gate.keyId), release);
+  } finally {
+    if (!streaming) release();
+  }
+}
+
+/** The accepted read's stream. Both slots are released when the read ends, on every path; a reader that goes away stops only the blank lines. */
+function stream(gate: AcceptedLab, releaseKey: (() => void) | null, release: () => void): Response {
   let keepAlive: ReturnType<typeof setInterval> | undefined;
   const body = new ReadableStream<Uint8Array>({
     start(controller) {
@@ -24,15 +41,20 @@ export async function appLabRead(request: Request, store?: KeyStore): Promise<Re
       };
       write(JSON.stringify({ accepted: true }));
       keepAlive = setInterval(() => write(''), KEEP_ALIVE_MS);
-      // The read runs on when the reader goes away: its budget ends it (AC7c).
+      // The read runs on when the reader goes away: its budget ends it (AC7c), and
+      // it holds its pages until then, so its slots stay taken until it ends.
       void (async () => {
         let last;
         try {
-          const res = await labRead(gate);
+          const res = releaseKey ? await labRead(gate) : unavailable();
           last = { status: res.status, body: await res.json() };
-        } catch {
-          // A guard only: labRead answers its own failures. It keeps the stream from staying open.
+        } catch (err) {
+          // labRead answers its own failures; anything else is unexpected.
+          Sentry.captureException(err);
           last = { status: 500, body: { success: false, error: 'Failed to process request' } };
+        } finally {
+          releaseKey?.();
+          release();
         }
         clearInterval(keepAlive);
         write(JSON.stringify(last));
