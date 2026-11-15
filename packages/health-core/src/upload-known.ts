@@ -104,12 +104,12 @@ export function knownAs(index: KnownIndex, hash: string): Known | null {
  * (metric, day) dedup. The old row is not rewritten (owner's rulings Q5 a,
  * Q1 b). As the connector's name check does, only rows this build reads (US-65).
  */
-export function legacyMatch(record: RoadmapFile, name: string, document: DocumentFields): boolean {
-  if (isLabArchiveDocument(document)) return false;
+export function legacyMatch(record: RoadmapFile, name: string, read: DocumentFields): boolean {
+  if (isLabArchiveDocument(read)) return false;
   const base = dedupFileName(name);
   return record.documents.some((d) =>
     isReadableRow('documents', d) && !d.deleted && !d.contentHash && d.sourceFileName != null &&
     dedupFileName(d.sourceFileName) === base &&
     // Two undated rows match too: today's name-only review rule already counts them as saved (Q2).
-    (d.date ?? null) === (document.documentDate ?? null) && !isLabArchiveDocument(documentView(d)));
+    (d.date ?? null) === (read.documentDate ?? null) && !isLabArchiveDocument(documentView(d)));
 }

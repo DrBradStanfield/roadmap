@@ -28,8 +28,7 @@ import { type AddLabValueRequest, type AddLabValueResult, type BulkRow, addLabVa
 import { LiveRefresh } from '@roadmap/health-core/live-refresh';
 import { RecordSession, saveRecordInto, type EraseResult, type EraseSteps } from '@roadmap/health-core/record-session';
 import { birthInFuture, type MeasurementSource, inputRangeFault } from '@roadmap/health-core/validation';
-import { saveDocuments, documentView, type DocumentPayload } from '@roadmap/health-core/document-save';
-import { writtenLabRows } from '@roadmap/health-core/document-rows';
+import { saveDocuments, documentView, writtenLabRows, type DocumentPayload } from '@roadmap/health-core/document-save';
 import { setReminderOptIn, setScreening, stampProfile, upsertMedication, upsertSupplement } from '@roadmap/health-core/state-edits';
 import { medicationChanges } from '@roadmap/health-core/medication-annotations';
 import { computeReminderSchedule, type ReminderScheduleItem } from '@roadmap/health-core/reminder-schedule';
@@ -395,8 +394,7 @@ export class RoadmapStore {
   bulkSaveLabValues(values: BulkLabValueInput[]): BulkLabValuesResult {
     if (this.refuses()) return { saved: [], skippedDuplicates: 0, errorCount: values.length, refused: [] };
     const result = this.bulkSave(values.map((v) => ({ kind: 'lab' as const, ...v, source: (v.source as MeasurementSource) ?? 'lab_import' })));
-    const { saved, skippedDuplicates, refused, measurementRefusals } = result;
-    return { saved: saved as ApiLabValue[], skippedDuplicates, errorCount: 0, refused, measurementRefusals, labRows: writtenLabRows(result) };
+    return { saved: result.saved as ApiLabValue[], skippedDuplicates: result.skippedDuplicates, errorCount: 0, refused: result.refused, measurementRefusals: result.measurementRefusals, labRows: writtenLabRows(result) };
   }
 
   /** One lab value a person adds, by health-core's one lab add (`addLabValue`, the iPhone's too):

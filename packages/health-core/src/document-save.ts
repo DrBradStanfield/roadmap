@@ -30,7 +30,7 @@ import { stableStringify, type FileDocument, type RoadmapFile } from './roadmap-
 import { knownIndex } from './upload-known';
 
 // In document-rows.ts, so upload-known.ts reads them without an import cycle; callers import them from here.
-export { documentView, isLabArchiveDocument, type DocumentView } from './document-rows';
+export { documentView, isLabArchiveDocument, writtenLabRows, type DocumentView } from './document-rows';
 
 /**
  * One reviewed document to save. `file` is the original's bytes, when kept.
