@@ -79,7 +79,7 @@ export function isLabArchiveDocument(doc: {
   return (
     doc.documentType === 'pathology_report' &&
     doc.title === LAB_ARCHIVE_TITLE &&
-    doc.contentMd.trim() === ''
+    (doc.contentMd ?? '').trim() === '' // a readable row's text may be null (US-65)
   );
 }
 
