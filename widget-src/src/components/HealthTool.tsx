@@ -614,9 +614,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     recordHeld: readFailed || unreadable > 0 || Object.keys(inputs).length > 0 || [previousMeasurements, medications, screenings, supplements, documentHistory, labValueHistory].some(list => list.length > 0), onDelete: async () => { if (await eraseAll()) closeSettings(); }, isDeleting,
     storageAtFoot: getBackendKind() === 'local',
     onPlanReadyDismiss: planReady ? dismissPlanReady : undefined,
-    healthDocuments: documentHistory,
-    onDocumentDeleted: dropDocument,
-    educationAbove: !isMobile && isWideDesktop,
+    healthDocuments: documentHistory, onDocumentDeleted: dropDocument, educationAbove: !isMobile && isWideDesktop,
   };
   // The reasons open on screen are the PDF's too (US-62 AC28).
   const myHealth = (form: FormSlots) => (
@@ -712,8 +710,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
         </>
       ) : (
         <div className="health-tool-content">
-          {/* US-62 AC16: one My health column, centred; the chat column beside it from 1200px.
-              Beside it the doctor line spans both columns, so the two cards' tops stay level (US-73 AC13). */}
+          {/* US-62 AC16: one My health column, centred; from 1200px the chat beside it, the doctor line over both (US-73 AC13). */}
           {isWideDesktop && <p className="mh-education mh-education--above">{EDUCATION_LINE}</p>}
           <div className="health-tool-main">{healthForm}</div>
           {isWideDesktop && chat}
