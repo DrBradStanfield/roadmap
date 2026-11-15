@@ -13,27 +13,25 @@ const MB = 1024 * 1024;
 
 export type UploadPlatform = 'web' | 'phone';
 
-/** Files read by the server at once, and turned into pages at once, on both clients (upload-flow.ts, US-12 AC26). */
-const IN_FLIGHT = { sendsInFlight: 5, convertsInFlight: 3 } as const;
+/** Files read by the server at once, turned into pages at once, and ZIPs opened at once, on both clients (upload-flow.ts, US-12 AC26). */
+const IN_FLIGHT = { sendsInFlight: 5, convertsInFlight: 3, listsInFlight: 2 } as const;
 
 export const UPLOAD_LIMITS = {
   web: {
     fileBytes: IMPORT_LIMITS.websiteFileMb * MB,
-    /** D8: the web reads a ZIP under the file cap. */
-    zipBytes: IMPORT_LIMITS.websiteFileMb * MB,
+    /** One ZIP cap on both clients (owner ruling Q7, US-12 AC29). */
+    zipBytes: IMPORT_LIMITS.zipMb * MB,
     filesPerPick: IMPORT_LIMITS.websiteFiles,
     zipMembers: IMPORT_LIMITS.websiteFiles,
     pdfPages: IMPORT_LIMITS.websitePdfPages,
     textPageChars: IMPORT_LIMITS.websiteTextPageChars,
-    /** From this many files, one server batch instead of a file at a time. */
-    batchFrom: 20,
     /** D10: a picked photo's long side as sent. */
     photoPx: 1200,
     ...IN_FLIGHT,
   },
   phone: {
     fileBytes: IMPORT_LIMITS.websiteFileMb * MB,
-    /** D8: the phone reads a ZIP up to the connector's ZIP cap. */
+    /** One ZIP cap on both clients (owner ruling Q7, US-12 AC29). */
     zipBytes: IMPORT_LIMITS.zipMb * MB,
     filesPerPick: IMPORT_LIMITS.websiteFiles,
     zipMembers: IMPORT_LIMITS.websiteFiles,

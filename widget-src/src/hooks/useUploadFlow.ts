@@ -1,64 +1,38 @@
-import { useState, useReducer, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { checkLabImportQuota } from '../lib/upload-api';
-import { fileVerdict, UPLOAD_LIMITS } from '@roadmap/health-core/upload-rules';
-import { BUSY_NOTICE_TEXT, EMPTY_ZIP_TEXT } from '@roadmap/health-core/upload-text';
-import { UNDATED_PREVIOUS, uploadLimitSignal, zipMemberName } from '@roadmap/health-core/lab-extraction';
+import { initialUpload, inFlight, transition, type RunRefusal, type UploadEvent, type UploadState } from '@roadmap/health-core/upload-flow';
+import { uploadUsageCounts } from '@roadmap/health-core/upload-usage';
+import { UNDATED_PREVIOUS, uploadLimitSignal } from '@roadmap/health-core/lab-extraction';
 import type { UnitSystem } from '@roadmap/health-core/units';
-import type { DocumentPayload } from '@roadmap/health-core/document-save';
-import { labRowsByFile } from '@roadmap/health-core/document-rows';
 import { UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, type UploadOutcomeKey } from '@roadmap/health-core/product-events';
-import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocumentArchiveMode, getEraseIdentity, getShownErase } from '../lib/roadmap-data';
-import { countRefusedSpellings } from '../lib/refused-spellings';
+import { getDocumentArchiveMode } from '../lib/roadmap-data';
 import { trackProductEvent, type ProductEventMetadata } from '../lib/server-api';
-import type { BulkLabValuesResult, BulkSaveResult, UploadErrorCode, UploadHistory } from '../lib/api-types';
-import { UploadError, KEY_ERROR_MESSAGES, BATCH_THRESHOLD, shortName, hasValues, processBatch, processPipeline, type FileNotice, type ReadInput, type ReviewDecisions, type FileResult } from '../lib/upload-pipeline';
-import { attachOriginals, synthesizeLabArchiveEntries, connectorDocumentEntries } from '../lib/archive-payloads';
-import { toStoreInputs } from '../lib/to-store-inputs';
+import type { UploadHistory } from '../lib/api-types';
+import { UploadError, hasValues, type FileNotice, type ReviewDecisions, type FileResult } from '../lib/upload-pipeline';
 import { createUploadBundleLoader } from '../lib/upload-bundle';
 import { Sentry } from '../lib/sentry';
-import { recordFailure, WritesStoppedError } from '../lib/error-diagnostics';
-import { SHOPIFY_SURFACE } from '../lib/build-flags';
-import { isDocx } from '../lib/file-kinds';
-import { withClaim } from '../lib/sync-claim';
-import { joinRows, transition, INITIAL_UPLOAD, NO_OUTCOME, type SaveOutcome, type Progress, type RunCounts } from '../lib/upload-flow-state';
+import { recordFailure } from '../lib/error-diagnostics';
+import { isDocx, isZip } from '../lib/file-kinds';
+import { runEffect, type UploadPort } from '../lib/upload-effects';
+import { emptyHeld, hasResults, MAX_FILES, NO_FILES_TEXT, phaseOf, pickedFiles, pickNotices, progressOf, readErrorOf, readOutcome, refusedForKey, type Held } from '../lib/upload-read';
+import { saveReview } from '../lib/upload-save';
+import { NO_OUTCOME, savedSoFar, withAttempt, type SaveOutcome } from '../lib/upload-save-outcome';
+// Type only: a value import would pull the lazy upload bundle into the main one.
+import type { HealthUploadAPI } from '../upload-entry';
 
 /**
- * The upload flow (US-12): one `UploadState` union, each phase carrying its
- * own data, changed only by dispatching an event through the pure
- * `transition` (lib/upload-flow-state.ts, its phases and rules). This hook
- * owns the side effects: the read and the save, abort, product events,
- * Sentry, the writes and the re-read.
+ * The upload flow (US-12): the shared upload state (health-core upload-flow.ts, one named state for
+ * the web and the iPhone, US-12 AC26), changed only through its pure `transition`. This hook is the
+ * web's adapter: it sends events, runs the effects the state asks for (lib/upload-effects.ts) and
+ * the save (lib/upload-save.ts), and reads the screens from the state (lib/upload-read.ts). No mode
+ * lives here: the refs hold the state read synchronously, the web's bytes by file id, reads in
+ * flight to abort, one run's preparation, and the review's decisions and save counts.
  */
-export type { UploadPhase } from '../lib/upload-flow-state';
+export type { UploadPhase } from '../lib/upload-read';
+export { MAX_FILES };
 
-/** Upload-level failures only: `refused` and `too_long` are one file's notice (UploadNotices.tsx). */
-const UPLOAD_ERROR_MESSAGES: Partial<Record<UploadErrorCode, string>> = {
-  ...KEY_ERROR_MESSAGES,
-  rate_limit: 'Daily upload limit reached. You can upload more tomorrow.',
-  busy: 'Server busy. Please try again later.',
-  timeout: 'Processing took too long. Try uploading fewer files at once.',
-  server_restart: 'The server restarted during processing. Please try again.',
-  no_files: 'No readable files found. Please check your files and try again.',
-  server_error: 'Something went wrong on the server. Please try again.',
-  network: 'Network error. Please check your connection and try again.',
-};
-/** The Pages build reads each file with the user's own Anthropic key, browser
- *  direct: no server of ours, no daily limit, only that key's rate limit (US-12 AC9). */
-const BYOK_ERROR_MESSAGES: Partial<Record<UploadErrorCode, string>> = {
-  rate_limit: 'Your Anthropic key hit its rate limit. Wait a minute and try again.',
-  server_error: 'Anthropic could not read these files. Please try again.',
-  network: 'Could not reach Anthropic. Check your connection and try again.',
-};
-
-export const MAX_FILES = UPLOAD_LIMITS.web.filesPerPick; // also the server's per-IP daily limit (US-12 AC17)
-const OVER_LIMIT_TEXT = `Not read. It is over the ${MAX_FILES}-file limit for one upload. Upload it separately.`;
-/** The files a pick held past MAX_FILES, one notice that counts them (US-12 AC9). */
-const leftOutNotice = (n: number): FileNotice => ({
-  name: `${n} more file${n === 1 ? '' : 's'}`, reason: 'limitError', count: n,
-  text: `Not read. One upload takes at most ${MAX_FILES} files. Upload ${n === 1 ? 'it' : 'them'} separately.`,
-});
-/** How many picked files a pick's own notices stand for: an oversize file is one, a left-out notice its count. */
-const noticedFiles = (notices: FileNotice[]) => notices.reduce((n, x) => n + (x.count ?? 1), 0);
+const NONE: FileResult[] = [];
+const NO_READ = { results: NONE, notices: [] as FileNotice[] };
 
 /** US-12 AC10: one run's counts, integers only. Never a name, unit or value.
  *  `docx` is how many of the picked files were .docx (AC13); `values` holds
@@ -66,19 +40,32 @@ const noticedFiles = (notices: FileNotice[]) => notices.reduce((n, x) => n + (x.
  *  `unitsGuessed` (AC16), `unitsRefused` (AC15), and the read files' limits
  *  (`uploadLimitSignal`, AC20): `valuesLimit`, `valuesLimitUngraded`, and the
  *  closed-list keys of the ungraded tests, the one non-count; `cancelled` a
- *  read Cancel stopped. A zero, or an
- *  empty list, is never sent: every key is optional, so a server a deploy
- *  behind meets a new key only once it counts something. */
-function trackUploadOutcome(picked: number, withValues: number, docx: number, notices: FileNotice[], values: Partial<Record<'undatedPrevious' | 'unitsGuessed' | 'unitsRefused' | 'valuesLimit' | 'valuesLimitUngraded' | 'cancelled', number>> = {}, limitUngradedTests: string[] = []): void {
+ *  read Cancel stopped; `known`, `failedFinal` and `firstReadSeconds` from the
+ *  shared state (upload-usage.ts, AC30). A zero is never sent, except a first
+ *  read under a second (`firstReadSeconds: 0`, a real time): every key is
+ *  optional, so a server a deploy behind meets a new key only once it counts something. */
+function trackUploadOutcome(picked: number, withValues: number, docx: number, notices: FileNotice[], values: Partial<Record<UploadOutcomeKey, number>> = {}, limitUngradedTests: string[] = []): void {
   const counts: Partial<Record<UploadOutcomeKey, number>> = { picked, withValues, docx, ...values };
   for (const n of notices) counts[n.reason] = (counts[n.reason] ?? 0) + (n.count ?? 1);
+  const sent = (k: UploadOutcomeKey) => counts[k] !== undefined && (counts[k]! > 0 || k === 'firstReadSeconds');
   trackProductEvent('upload_outcome', {
-    ...Object.fromEntries(UPLOAD_OUTCOME_KEYS.filter(k => counts[k]).map(k => [k, Math.min(counts[k]!, UPLOAD_OUTCOME_MAX)])),
+    ...Object.fromEntries(UPLOAD_OUTCOME_KEYS.filter(sent).map(k => [k, Math.min(counts[k]!, UPLOAD_OUTCOME_MAX)])),
     ...(limitUngradedTests.length ? { limitUngradedTests } : null),
   });
 }
 
-const NO_PROGRESS: Progress = { current: 0, total: 0, fileName: '' };
+/** A run's counts once its reading ends (US-12 AC10). */
+function countRun(s: UploadState, held: Held, results: FileResult[], notices: FileNotice[]): void {
+  const read = results.filter(r => !r.error);
+  const values = {
+    undatedPrevious: read.reduce((n, r) => n + [...r.values, ...r.additionalValues].filter(v => v.recordedAt === UNDATED_PREVIOUS).length, 0),
+    unitsGuessed: read.reduce((n, r) => n + r.values.filter(v => v.unitGuessed).length, 0),
+    unitsRefused: read.reduce((n, r) => n + (r.refusedValues?.length ?? 0), 0),
+  };
+  const { limitUngradedTests, ...limits } = uploadLimitSignal(read);
+  const picked = (s.phase === 'choosing' ? 0 : s.files.length) + held.leftOut;
+  trackUploadOutcome(picked, read.filter(hasValues).length, held.docx, notices, { ...values, ...limits, ...uploadUsageCounts(s) }, limitUngradedTests);
+}
 
 export interface UploadFlowOptions {
   unitSystem: UnitSystem;
@@ -92,328 +79,192 @@ export interface UploadFlowOptions {
 }
 
 export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClose, onScreeningUpdate }: UploadFlowOptions) {
-  const [state, dispatch] = useReducer(transition, INITIAL_UPLOAD);
-  const { phase, notices, skipArchive } = state;
-  // The view's fields, empty where the phase carries none.
-  const files = state.phase === 'reading' || state.phase === 'readFailed' ? state.files : [];
-  const progress = state.phase === 'reading' ? state.progress : NO_PROGRESS;
-  const results = 'results' in state ? state.results : [];
-  const outcome = 'outcome' in state ? state.outcome : NO_OUTCOME;
-  const readError = state.phase === 'readFailed' ? state.message : null;
-  const saveError = state.phase === 'saveFailed' ? state.message : null;
-  // The run a Cancel on this screen belongs to.
-  const shownRun = 'run' in state ? state.run : null;
-  // The read's claim, taken synchronously: two picks in one render see it.
-  const abortRef = useRef<AbortController | null>(null);
-  const lastRun = useRef(0); // names each read: `run` in the state
-  // The save's claim, taken synchronously: a double Save, or Discard in the same render, sees it.
-  const savingRef = useRef(false);
-  // The review whose `upload_review` was sent (US-13 AC13): one per review, a synchronous claim.
-  const reviewEnded = useRef<FileResult[] | null>(null);
+  const [upload, setUpload] = useState<UploadState>(() => initialUpload('web'));
+  // The state read synchronously: a second pick or Save in the same render sees the first.
+  const live = useRef(upload);
+  // What the web holds beside the state: bytes, pages and the server's words, by file id; one per pick.
+  const held = useRef<Held>(emptyHeld());
+  // The run's quota check, draft flush and upload bundle: one promise per run, shared by its effects.
+  const prepared = useRef<{ run: number; ready: Promise<HealthUploadAPI | null> } | null>(null);
+  // The decisions the pending Save writes, for the `save` effect.
+  const decisions = useRef<ReviewDecisions | null>(null);
+  // What the review's Saves wrote beyond the shared state's counts, by run (US-12 AC6c).
+  const saved = useRef<{ run: number; outcome: SaveOutcome }>({ run: 0, outcome: NO_OUTCOME });
+  // The run whose review sent its `upload_review` (US-13 AC13): one per review, a synchronous claim.
+  const reviewEnded = useRef<number | null>(null);
   /** Sends the review's counts once: on a finished Save, or on Cancel or close. */
-  const endReview = useCallback((counts: ProductEventMetadata | undefined) => {
-    if (!counts || results.length === 0 || reviewEnded.current === results) return;
-    reviewEnded.current = results;
+  const endReview = useRef((counts: ProductEventMetadata | undefined) => {
+    const s = live.current;
+    if (!counts || reviewEnded.current === s.run || !hasResults(s)) return;
+    reviewEnded.current = s.run;
     trackProductEvent('upload_review', counts);
-  }, [results]);
-  useEffect(() => () => { abortRef.current?.abort(); }, []);
+  });
+  // The connect-first gate was skipped (US-12 AC4): view state, kept by a cancel.
+  const [skipArchive, setSkipArchive] = useState(false);
   const [loadUploadBundle] = useState(createUploadBundleLoader);
+  const props = useRef({ unitSystem, history, onComplete, onStart, onScreeningUpdate });
+  props.current = { unitSystem, history, onComplete, onStart, onScreeningUpdate };
 
-  const abortRead = () => {
-    abortRef.current?.abort();
-    abortRef.current = null;
-  };
+  // The adapter: built once, it reads only refs, so a late effect never sees an old render.
+  const port = useRef<UploadPort | null>(null);
+  if (!port.current) {
+    const send = (event: UploadEvent) => {
+      const before = live.current;
+      const step = transition(before, event);
+      if (step.state === before) return;
+      live.current = step.state;
+      setUpload(step.state);
+      const after = step.state;
+      // A run's reading ended, or a pick of only files too large started none: counted once (US-12 AC10).
+      if ((after.phase === 'open' || after.phase === 'failed') && inFlight(after) === 0 && (before.phase === 'choosing' || inFlight(before) > 0)) readEnded(after);
+      for (const effect of step.effects) runEffect(port.current!, effect);
+    };
+    /** Counts the run; a run no file could open is reported, as before (US-12 AC3). */
+    const readEnded = (s: UploadState) => {
+      const h = held.current;
+      if (refusedForKey(s)) return; // the Pages build's missing key names and counts nothing
+      const { results, notices } = readOutcome(s, h, false);
+      countRun(s, h, results, notices);
+      if (readErrorOf(s) === NO_FILES_TEXT) {
+        Sentry.captureException(recordFailure(new UploadError(NO_FILES_TEXT, 'no_files'), 'Upload processing failed'), { tags: { feature: 'upload', uploadErrorCode: 'no_files' } });
+        trackProductEvent('upload_extract_failed');
+      }
+    };
+    /** Ends a run before any read; the state names its files and says why (US-12 AC9, AC10). */
+    const refuse = (run: number, reason: RunRefusal) => send({ type: 'runRefused', run, reason });
+    /** Before a run reads anything: the daily quota, the page's draft flush, the upload bundle (US-12 AC5). */
+    const begin = async (run: number): Promise<HealthUploadAPI | null> => {
+      const current = () => live.current.run === run && live.current.phase === 'open';
+      try {
+        const quota = await checkLabImportQuota();
+        if (!current()) return null;
+        if (!quota.allowed) {
+          // Only the daily limit names and counts the files; no key says its message alone.
+          refuse(run, quota.reason === 'quota' ? 'dailyLimit' : 'noKey');
+          return null;
+        }
+        await props.current.onStart?.();
+        if (!current()) return null;
+        const s = live.current;
+        trackProductEvent('upload_started', { count: s.phase === 'open' ? s.files.filter(f => f.status.s !== 'refused').length : 0 });
+        const bundle = await loadUploadBundle();
+        return current() ? bundle : null;
+      } catch (err) {
+        if (current()) {
+          console.error('Upload processing failed:', 'unknown');
+          Sentry.captureException(recordFailure(err, 'Upload processing failed'), { tags: { feature: 'upload', uploadErrorCode: 'unknown' } });
+          trackProductEvent('upload_extract_failed');
+          refuse(run, 'server');
+        }
+        return null;
+      }
+    };
+    port.current = {
+      live: () => live.current,
+      held: () => held.current,
+      send,
+      prepare: (run) => {
+        if (prepared.current?.run !== run) prepared.current = { run, ready: begin(run) };
+        return prepared.current.ready;
+      },
+      reads: new Map(),
+      get unitSystem() { return props.current.unitSystem; },
+      save: (run, attempt) => {
+        const d = decisions.current;
+        if (!d) return;
+        const { onComplete: complete, onScreeningUpdate: screening, history: shown } = props.current;
+        const before = saved.current.run === run ? saved.current.outcome : NO_OUTCOME;
+        void saveReview(d, { earlierRows: before.labRows, complete, screening, existing: shown.documents }).then(({ attempt: written, message }) => {
+          // This attempt's own counts add to what earlier attempts saved.
+          const total = written ? withAttempt(before, written) : before;
+          saved.current = { run, outcome: total };
+          if (message) return send({ type: 'saveFailed', run, attempt, message });
+          // One per review: a finished Save, never a failed one (US-13 AC13).
+          endReview.current(d.review);
+          send({ type: 'saved', run, attempt, outcome: { values: total.values + total.labValues, documents: total.documents.length, archived: 0 } });
+        });
+      },
+    };
+  }
+  const { send } = port.current;
 
-  // Cancel wins over a read that finished in the same render: it names the run it was shown beside.
+  useEffect(() => () => { send({ type: 'discard' }); }, [send]);
+
+  // A finished save, counted once, while the page still shows it (US-12 AC6, AC10): each done state is a new object.
+  const done = upload.phase === 'done' ? upload : null;
+  useEffect(() => {
+    if (done) trackProductEvent('upload_saved', { count: done.outcome.values + done.outcome.documents });
+  }, [done]);
+
+  // The screens, read from the state. Results and notices keep their identity for one read: the
+  // review keys its drafts and its one `upload_review` on them.
+  const files = upload.phase === 'choosing' ? null : upload.files;
+  const pickHeld = held.current;
+  // Nothing shows them while files are read, so they are built once reading ends. The pick's held
+  // data changes only together with `files` (each effect sends its event after writing it).
+  const reading = inFlight(upload) > 0;
+  const cloud = getDocumentArchiveMode() === 'cloud';
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- `files`, the pick's held data and the archive mode are what change them
+  const { results, notices } = useMemo(() => (reading ? NO_READ : readOutcome(upload, pickHeld, cloud)), [files, pickHeld, reading, cloud]);
+  const phase = phaseOf(upload);
+  const reviewed = phase === 'reviewing' || phase === 'saving' || phase === 'saveFailed' || phase === 'done';
+
+  // Cancel stops every read in flight and drops the run (US-12 AC28); a read it stopped is counted once (AC10).
   const cancel = useCallback(() => {
-    abortRead();
-    if (shownRun !== null) dispatch({ type: 'cancel', run: shownRun });
-  }, [shownRun]);
+    const s = live.current;
+    if (s.phase === 'open' && inFlight(s) > 0) {
+      trackUploadOutcome(s.files.length + held.current.leftOut, 0, held.current.docx, pickNotices(s, held.current), { cancelled: 1, ...uploadUsageCounts(s) });
+    }
+    send({ type: 'discard' });
+  }, [send]);
 
-  // Closing active work only hides it; the transition decides. It never
-  // aborts: a read claimed in this same render keeps running, hidden.
+  // Close hides the modal. A screen with nothing to lose resets; elsewhere the work goes on, hidden.
   const close = useCallback(() => {
-    dispatch({ type: 'close' });
+    const shown = phaseOf(live.current);
+    if (shown === 'picking' || shown === 'readFailed' || shown === 'done') {
+      send({ type: 'close' });
+      setSkipArchive(false);
+    }
     onClose();
-  }, [onClose]);
+  }, [onClose, send]);
 
   const discard = useCallback(() => {
-    if (savingRef.current) return;
-    abortRead();
-    dispatch({ type: 'discard' });
+    if (live.current.phase === 'saving') return;
+    send({ type: 'discard' });
+    setSkipArchive(false);
     onClose();
-  }, [onClose]);
+  }, [onClose, send]);
 
-  const read = async (filesToProcess: File[], pickNotices: FileNotice[], { docx }: RunCounts, run: number) => {
-    const abort = new AbortController();
-    abortRef.current = abort;
-    const updateProgress = (progress: Progress) => {
-      if (!abort.signal.aborted) dispatch({ type: 'progress', run, progress });
-    };
-
-    const fileCount = filesToProcess.length;
-    // Every file the run did not fully read, the pick's own first (US-12 AC9).
-    // `names` is every other file seen, by whole path: a ZIP's members once it is listed.
-    const runNotices = [...pickNotices];
-    let names = filesToProcess.map(f => f.name);
-    /** Every file the run has seen, a ZIP by its members once listed (US-12 AC10). */
-    const seen = () => noticedFiles(pickNotices) + names.length;
-    /** The run failed as a whole: each file without a verdict yet gets this one.
-     *  Verdicts are matched one for one, so two files on one path count twice.
-     *  The pick's own notices name files never read, so they settle none. */
-    const failUnread = (reason: 'serverError' | 'limitError', text?: string) => {
-      const settled = runNotices.slice(pickNotices.length).filter(n => n.reason !== 'truncated' && n.reason !== 'valuesDropped').map(n => n.name);
-      for (const name of names) {
-        const i = settled.indexOf(name);
-        if (i >= 0) settled.splice(i, 1);
-        else runNotices.push({ name, reason, text });
-      }
-    };
-    // Counts the run, then hands its notices to the transition.
-    const finish = (finished: FileResult[]) => {
-      let withValues = 0;
-      const values = { undatedPrevious: 0, unitsGuessed: 0, unitsRefused: 0 };
-      for (const r of finished) {
-        if (r.error) continue;
-        if (hasValues(r)) withValues++;
-        // A file whose only values were refused is said under "Not saved", not "no values" (US-12 AC15).
-        else if (!r.refusedValues?.length) runNotices.push({ name: r.fileName, reason: r.document ? 'documentOnly' : 'noValues' });
-        values.undatedPrevious += [...r.values, ...r.additionalValues].filter(v => v.recordedAt === UNDATED_PREVIOUS).length;
-        values.unitsGuessed += r.values.filter(v => v.unitGuessed).length;
-        values.unitsRefused += r.refusedValues?.length ?? 0;
-      }
-      const { limitUngradedTests, ...limits } = uploadLimitSignal(finished.filter(r => !r.error));
-      trackUploadOutcome(seen(), withValues, docx, runNotices, { ...values, ...limits }, limitUngradedTests);
-    };
-
-    try {
-      const quota = await checkLabImportQuota();
-      if (abort.signal.aborted) return;
-      if (!quota.allowed) {
-        // Only the daily limit names and counts the files; no key says its message alone.
-        if (quota.reason === 'quota') {
-          failUnread('limitError');
-          finish([]);
-        }
-        dispatch({ type: 'readFailed', run, message: quota.message ?? 'Daily upload limit reached. You can upload more tomorrow.', notices: runNotices });
-        return;
-      }
-      await onStart?.();
-      if (abort.signal.aborted) return;
-      trackProductEvent('upload_started', { count: fileCount });
-      const upload = await loadUploadBundle();
-      if (abort.signal.aborted) return;
-      // A .docx is itself a ZIP, and some browsers say so: it is read as a .docx.
-      const isZip = (f: File) => !isDocx(f) && upload.isZip(f);
-      const zipFiles = filesToProcess.filter(isZip);
-      const otherFiles = filesToProcess.filter(f => !isZip(f));
-
-      // Every file to read, ZIP members first (named with their ZIP: `ReadInput`).
-      // A ZIP that will not open, or holds nothing readable, is itself the file named.
-      const inputs: ReadInput[] = [];
-      names = [];
-      for (const [i, zip] of zipFiles.entries()) {
-        if (abort.signal.aborted) break;
-        updateProgress({ current: 0, total: 100, fileName: `Opening ${zip.name}...` });
-        const entries = await upload.getZipEntries(zip).catch(() => null);
-        if (!entries?.length) {
-          names.push(zip.name);
-          runNotices.push({ name: zip.name, reason: 'openFailed', text: entries ? EMPTY_ZIP_TEXT : undefined });
-          continue;
-        }
-        for (const { name, entry } of entries) {
-          inputs.push({ fileName: zipMemberName(zip.name, name), getFile: async () => new File([await entry.async('blob')], shortName(name)) });
-        }
-        // A Cancel counts each listed ZIP by its members, each ZIP not yet opened and each other file as one.
-        dispatch({ type: 'listed', run, picked: seen() + inputs.length + (zipFiles.length - i - 1) + otherFiles.length });
-      }
-      inputs.push(...otherFiles.map(file => ({ fileName: file.name, getFile: async () => file })));
-      names.push(...inputs.map(i => i.fileName));
-      // A ZIP opens into more than the window counted: past MAX_FILES the server
-      // refuses the whole batch, so the rest are named and sent nowhere (US-12 AC17).
-      for (const { fileName } of inputs.splice(MAX_FILES)) runNotices.push({ name: fileName, reason: 'limitError', text: OVER_LIMIT_TEXT });
-
-      if (inputs.length === 0 || abort.signal.aborted) {
-        if (!abort.signal.aborted) {
-          finish([]);
-          dispatch({ type: 'readFailed', run, message: 'No readable files found.', notices: runNotices });
-        }
-        return;
-      }
-
-      // Batch path (>=20 files): extract all, then batch. Pipeline path (<20):
-      // a producer extracts, a consumer sends each file to the LLM.
-      const allResults = inputs.length >= BATCH_THRESHOLD
-        ? await processBatch(upload, inputs, abort, updateProgress, runNotices)
-        : await processPipeline(upload, inputs, abort, updateProgress, unitSystem, runNotices);
-      if (abort.signal.aborted) return;
-      // Each result carries its own original and its hash. The bytes are kept
-      // only when the backend can archive them; the hash always (US-14 AC10).
-      const hashed = await attachOriginals(allResults);
-      const attached = getDocumentArchiveMode() === 'cloud' ? hashed : hashed.map(r => ({ ...r, file: undefined }));
-      if (abort.signal.aborted) return;
-      finish(attached);
-      dispatch({ type: 'read', run, results: attached, notices: runNotices });
-    } catch (err) {
-      if (!abort.signal.aborted) {
-        const code = err instanceof UploadError ? err.code : 'unknown';
-        console.error('Upload processing failed:', code);
-        Sentry.captureException(recordFailure(err, 'Upload processing failed'), {
-          tags: { feature: 'upload', uploadErrorCode: code },
-        });
-        trackProductEvent('upload_extract_failed');
-        // Busy is a server error, never the daily limit (US-12 AC9/AC10).
-        if (code === 'busy') failUnread('serverError', BUSY_NOTICE_TEXT);
-        else failUnread(code === 'rate_limit' ? 'limitError' : 'serverError');
-        finish([]);
-        dispatch({
-          type: 'readFailed', run, notices: runNotices,
-          message: (err instanceof UploadError && ((!SHOPIFY_SURFACE && BYOK_ERROR_MESSAGES[err.code]) || UPLOAD_ERROR_MESSAGES[err.code]))
-            || 'An error occurred while processing files. Please try again.',
-        });
-      }
-    } finally {
-      // The one place the read's claim is released; a newer read keeps its own.
-      if (abortRef.current === abort) abortRef.current = null;
-    }
-  };
-
-  /** Files from the picker or a drop. Only a file under the size limit starts a read. */
+  /** Files from the picker or a drop: a new run, on a screen that takes a pick. */
   const pick = (selectedFiles: FileList | null) => {
-    // Only a screen that takes a pick, and only with no claim held: React state
-    // alone cannot guard two selections in the same render, especially while
-    // quota/draft flushing is still pending. Never start a read the state would ignore.
-    if (!selectedFiles || (phase !== 'picking' && phase !== 'readFailed') || abortRef.current || savingRef.current) return;
+    const shown = phaseOf(live.current);
+    if (!selectedFiles?.length || (shown !== 'picking' && shown !== 'readFailed')) return;
     const fileArray = Array.from(selectedFiles).slice(0, MAX_FILES);
-    // The kind by name: the upload bundle that knows a ZIP by its type is not loaded yet.
-    const tooLarge = (f: File) => fileVerdict({ name: f.name, bytes: f.size, platform: 'web' }) === 'tooLarge';
-    const valid = fileArray.filter(f => !tooLarge(f));
-    const leftOut = selectedFiles.length - fileArray.length;
-    const notices: FileNotice[] = [
-      ...fileArray.filter(tooLarge).map(f => ({ name: f.name, reason: 'tooLarge' as const })),
-      ...(leftOut > 0 ? [leftOutNotice(leftOut)] : []),
-    ];
-    const counts: RunCounts = { picked: noticedFiles(notices) + valid.length, docx: fileArray.filter(isDocx).length };
-    const run = ++lastRun.current;
-    dispatch({ type: 'picked', run, files: valid, notices, counts });
-    if (valid.length > 0) void read(valid, notices, counts, run);
-    else if (notices.length > 0) trackUploadOutcome(counts.picked, 0, counts.docx, notices);
+    send({ type: 'close' }); // a read-failed or too-large screen gives way to the new run
+    held.current = { ...emptyHeld(live.current.run + 1), leftOut: selectedFiles.length - fileArray.length, docx: fileArray.filter(isDocx).length };
+    fileArray.forEach((file, i) => held.current.files.set(`f${i}`, { file }));
+    send({
+      type: 'picked', needsConsent: false, now: new Date().toISOString(),
+      // A .docx is itself a ZIP, and some browsers say so: it is read as a .docx.
+      files: fileArray.map((f, i) => ({ id: `f${i}`, name: f.name, bytes: f.size, kind: !isDocx(f) && isZip(f) ? 'zip' : 'file' })),
+    });
   };
 
-  // The lab rows earlier attempts of this review wrote (`SaveOutcome.labRows`).
-  const earlierRows = outcome.labRows;
-  const save = useCallback(({ values: selectedValues, documents, labValues, reviewed, review, labRefusals = [] }: ReviewDecisions) => withClaim(savingRef, async () => {
-    dispatch({ type: 'saveStarted' });
-    const erase = getShownErase(); // the record this save was asked for
-    // This attempt's own counts; the transition adds them to what earlier attempts saved.
-    let attempt: SaveOutcome | undefined;
-    const failSave = (message: string) => dispatch({ type: 'saveFailed', message, attempt });
-    try {
-      const { measurements, labValues: labValuePayloads } = toStoreInputs({ values: selectedValues, labValues });
-
-      // Each branch settles before the session becomes dismissible. One
-      // rejected write must not release another archive that is still saving.
-      // A throw is a programming error, not a store result: report it (tag
-      // only — no payload, names or values) and keep the review for a retry.
-      // A log-off refusal keeps the review too, unreported (US-09 AC2c, A19).
-      let threw = false;
-      const failed = <T,>(branch: string, fallback: T) => (err: unknown) => {
-        threw = true;
-        if (!(err instanceof WritesStoppedError)) Sentry.captureException(recordFailure(err, 'Upload save failed'), { tags: { area: 'upload-save', branch } });
-        return fallback;
-      };
-      // The values first, then the documents: a lab report's archive row lists
-      // the rows its values wrote (US-14 AC10), this attempt's and an earlier
-      // one's, whose values a retry skips as already saved. A failed branch
-      // stops neither other, as when they ran side by side.
-      const savedValues: BulkSaveResult = measurements.length > 0 ? await bulkSaveMeasurements(measurements).catch(failed('measurements', { saved: [], skippedDuplicates: 0, errorCount: measurements.length, refused: [] })) : { saved: [], skippedDuplicates: 0, errorCount: 0, refused: [] };
-      const savedLabValues: BulkLabValuesResult = labValuePayloads.length > 0 ? await bulkSaveLabValues(labValuePayloads).catch(failed('labValues', { saved: [], skippedDuplicates: 0, errorCount: labValuePayloads.length, refused: [] })) : { saved: [], skippedDuplicates: 0, errorCount: 0, refused: [] };
-      const labRows = labRowsByFile(
-        [...(savedValues.labRows ?? measurements.map(() => null)), ...(savedLabValues.labRows ?? labValuePayloads.map(() => null))],
-        [...selectedValues.map(v => v.file), ...labValues.map(v => v.file)],
-      );
-      // Blobs travel INSIDE the payload (attached at processing time, and only
-      // when the backend can archive them) — no name-keyed re-join here.
-      const docPayloads: DocumentPayload<Blob>[] = documents.map(d => ({
-        documentType: d.documentType,
-        title: d.title,
-        documentDate: d.documentDate,
-        contentMd: d.contentMd,
-        metadata: d.metadata,
-        sourceFileName: d.sourceFileName,
-        file: d.file,
-        contentHash: d.contentHash,
-      }));
-      // By each file's identity: a letter and a lab report can share a name.
-      const covered = new Set(documents.flatMap(d => (d.fileKey ? [d.fileKey] : [])));
-      docPayloads.push(...synthesizeLabArchiveEntries(reviewed, covered, joinRows(earlierRows, labRows)));
-      // A letter the connector filed metadata-only: unselected here, still archived
-      // (US-35 AC8), with the title and date the review shows (US-13 AC6).
-      docPayloads.push(...connectorDocumentEntries(reviewed, history.documents, covered));
-      const savedDocs = docPayloads.length > 0 ? await bulkSaveDocuments(docPayloads).catch(failed('documents', { saved: [], errorCount: docPayloads.length, unstored: 0 })) : { saved: [], errorCount: 0, unstored: 0 };
-
-      const saveErrors = savedValues.errorCount + savedLabValues.errorCount + savedDocs.errorCount;
-      attempt = {
-        values: savedValues.saved.length,
-        labValues: savedLabValues.saved.length,
-        documents: [...new Set(savedDocs.saved.map(d => d.contentHash ?? d.sourceFileName ?? d.id))],
-        skippedValues: savedValues.skippedDuplicates, skippedLabValues: savedLabValues.skippedDuplicates,
-        unstored: savedDocs.unstored ?? 0,
-        refusedLabUnits: savedLabValues.refused, refusedMeasurements: savedValues.refused,
-        labRows,
-      };
-      // A save error keeps the review open for retry (US-12 AC6). Skipped
-      // values and refusals are settled outcomes, reported on the done screen;
-      // a skip does not establish that the reviewed value is already saved.
-      const totalSaved = savedValues.saved.length + savedDocs.saved.length + savedLabValues.saved.length;
-      const saveFailed = threw || saveErrors > 0;
-
-      // Update screening dates for documents with screening mappings, unless
-      // the record was erased while the save ran: the date belongs to it.
-      for (const doc of getEraseIdentity() === erase ? documents : []) {
-        if (doc.screeningUpdate && onScreeningUpdate) {
-          onScreeningUpdate(doc.screeningUpdate.key, doc.screeningUpdate.date, erase);
-        }
-      }
-
-      // A re-read that fails, at once or later, is only reported: what saved stays saved.
-      const reportReread = (err: unknown) => { if (!(err instanceof WritesStoppedError)) Sentry.captureException(recordFailure(err, 'Upload save failed'), { tags: { area: 'upload-save', branch: 'reread' } }); };
-      const reread = () => { try { return Promise.resolve(onComplete()).catch(reportReread); } catch (err) { reportReread(err); return Promise.resolve(); } };
-      if (!saveFailed) {
-        // One per review: a finished Save, never a failed one (US-13 AC13); the
-        // labs it did not send counted as refused spellings, as the store would (US-21 AC15).
-        endReview(review);
-        countRefusedSpellings(labRefusals);
-        dispatch({ type: 'saved', attempt });
-        void reread();
-      } else {
-        // Stay in review: a second Save retries idempotently (values dedup on
-        // skippedDuplicates, documents on contentHash). Save stays busy until the
-        // page has read back what saved, so the retry does not send it again; a failed re-read is only reported.
-        if (totalSaved > 0) await reread();
-        failSave(threw ? 'Some items could not be saved. Please try again.' : 'Failed to save. Please try again.');
-      }
-    } catch {
-      failSave('Failed to save. Please try again.');
-    }
-  }), [onComplete, onScreeningUpdate, history.documents, endReview, earlierRows]);
-
-  // A read Cancel stopped, counted once (US-12 AC10): each cancel holds a new object.
-  const cancelledRead = state.phase === 'picking' ? state.cancelledRead : undefined;
-  useEffect(() => {
-    if (cancelledRead) trackUploadOutcome(cancelledRead.counts.picked, 0, cancelledRead.counts.docx, cancelledRead.notices, { cancelled: 1 });
-  }, [cancelledRead]);
-
-  // A finished save, counted once with the session's totals (US-12 AC10):
-  // each done state holds a new outcome object.
-  const doneOutcome = state.phase === 'done' ? state.outcome : null;
-  useEffect(() => {
-    if (doneOutcome) trackProductEvent('upload_saved', { count: doneOutcome.values + doneOutcome.labValues + doneOutcome.documents.length });
-  }, [doneOutcome]);
+  const save = useCallback((d: ReviewDecisions) => {
+    const s = live.current;
+    if (s.phase !== 'open' && s.phase !== 'saveFailed') return;
+    decisions.current = d;
+    // A new Save clears the last attempt's skips and refusals (US-12 AC6c).
+    saved.current = { run: s.run, outcome: saved.current.run === s.run ? savedSoFar(saved.current.outcome) : NO_OUTCOME };
+    send({ type: 'saveStarted' });
+  }, [send]);
 
   return {
-    phase, files, notices, progress, results, outcome, readError, saveError,
-    skipArchive, skipConnect: () => dispatch({ type: 'skipConnect' }),
-    pick, cancel, close, discard, save, endReview,
+    phase, files: phase === 'readFailed' ? pickedFiles(upload) : [], notices, progress: progressOf(upload),
+    results: reviewed ? results : NONE,
+    outcome: saved.current.run === upload.run ? saved.current.outcome : NO_OUTCOME,
+    readError: readErrorOf(upload), saveError: upload.phase === 'saveFailed' ? upload.message : null,
+    skipArchive, skipConnect: () => setSkipArchive(true),
+    pick, cancel, close, discard, save, endReview: endReview.current,
   };
 }

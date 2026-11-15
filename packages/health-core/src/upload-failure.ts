@@ -3,11 +3,14 @@
  * reader for every client. It answers case for case as widget-src/src/lib/upload-api.ts `labImport`
  * does today, which adopts it in design PR 9; upload-flow.ts takes its code on `sendFailed`.
  */
-import { EXTRACTION_STOP_CODES, type ExtractionStopCode } from './models';
+import { EXTRACTION_STOP_CODES } from './models';
 import * as z from './zod';
 
-/** The web's UploadErrorCode names, so the web adopts them unchanged. */
-export type UploadFailure = 'rate_limit' | 'busy' | 'server_error' | 'network' | ExtractionStopCode;
+/** The web's UploadErrorCode names, so the web adopts them unchanged. The key codes come only from the
+ *  Pages build's own Anthropic key (widget-src byok-upload.ts); a server answer is never one of them. */
+export const UPLOAD_FAILURES = ['rate_limit', 'busy', 'server_error', 'network', ...EXTRACTION_STOP_CODES, 'key_refused', 'no_credit', 'key_rate_limit'] as const;
+export type UploadFailure = (typeof UPLOAD_FAILURES)[number];
+export const isUploadFailure = (code: string | undefined): code is UploadFailure => (UPLOAD_FAILURES as readonly string[]).includes(code ?? '');
 
 const tooManyAnswer = z.object({ code: z.enum(['daily_limit', 'busy']) });
 const stopAnswer = z.object({ errorCode: z.enum(EXTRACTION_STOP_CODES) });

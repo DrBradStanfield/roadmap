@@ -123,7 +123,7 @@ export function isNetworkOrTimeoutError(err: unknown): boolean {
  * closed-list error type (US-15 AC40). SyntaxError is deliberate: classifyChatError still tags it 'parse'.
  * No `cause`, so nothing of the body survives serialisation either.
  */
-export async function parseJsonBody(response: Response): Promise<any> {
+async function parseJsonBody(response: Response): Promise<any> {
   try {
     return await response.json();
   } catch (err) {

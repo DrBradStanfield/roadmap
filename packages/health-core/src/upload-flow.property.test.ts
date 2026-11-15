@@ -119,7 +119,9 @@ function check(prev: UploadState, e: UploadEvent, next: UploadState, fx: UploadE
     if (JSON.stringify(aborted) !== JSON.stringify(sending)) return 'stop did not abort exactly the sending files';
     if (prev.phase === 'open' && (count(next, 'sending') || count(next, 'converting') || count(next, 'waiting') || count(next, 'hashing') || count(next, 'hashed') || count(next, 'ready') || count(next, 'listing'))) return 'stop left a file in flight';
   }
-  const busy = 'files' in next && next.files.some((f) => ['listing', 'waiting', 'hashing', 'hashed', 'converting', 'ready', 'sending'].includes(f.status.s));
+  if (next.phase === 'open' && count(next, 'unlisted') && count(next, 'listing') < limits.listsInFlight) return 'a ZIP waits unlisted while a list slot is free';
+  if (next.phase === 'open' && count(next, 'waiting') && count(next, 'hashing') < limits.convertsInFlight) return 'a file waits while a hash slot is free';
+  const busy = 'files' in next && next.files.some((f) => ['unlisted', 'listing', 'waiting', 'hashing', 'hashed', 'converting', 'ready', 'sending'].includes(f.status.s));
   if (saveEnabled(next) !== (next.phase === 'open' && !busy)) return 'Save enabled is not "open with nothing in flight"';
   for (const f of fx) {
     if ('run' in f && f.run !== next.run) return `${f.type} for another run`;

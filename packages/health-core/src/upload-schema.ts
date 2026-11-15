@@ -13,10 +13,9 @@
 import * as z from './zod';
 import { COMPARATORS } from './lab-limits';
 import type { AdditionalLabValue, DocumentResult, ExtractedValue, RefusedLabValue, UnifiedExtractionResult } from './lab-extraction';
-import { EXTRACTION_STOP_CODES } from './models';
 import { UNIT_SYSTEMS } from './units';
 import type { ChoiceChange, FileChoices } from './upload-choices';
-import type { UploadFailure } from './upload-failure';
+import { UPLOAD_FAILURES, type UploadFailure } from './upload-failure';
 import type { UploadEffect, UploadEvent, UploadState } from './upload-flow';
 
 const text = z.string();
@@ -64,14 +63,16 @@ const choices = strict({
   ticks: z.record(z.string(), z.boolean()), testDay: maybeText, previousDay: maybeText,
   replace: z.record(z.string(), z.string()), edits: z.record(z.string(), z.number()), document: documentFix,
 });
-const failReason = z.enum(['unreadable', 'bytesUnreadable', 'zipUnreadable', 'zipEmpty', 'timeout', 'busy', 'dailyLimit', 'declined', 'tooLong', 'server', 'network']);
+const failReason = z.enum(['unreadable', 'bytesUnreadable', 'zipUnreadable', 'zipEmpty', 'timeout', 'busy', 'dailyLimit', 'declined', 'tooLong', 'server', 'network', 'keyRefused', 'noCredit', 'keyRateLimit', 'noKey']);
+const runRefusal = z.enum(['dailyLimit', 'noKey', 'server']);
 const status = z.discriminatedUnion('s', [
+  strict({ s: z.literal('unlisted') }),
   strict({ s: z.literal('listing') }),
   strict({ s: z.literal('waiting') }),
   strict({ s: z.literal('hashing') }),
   strict({ s: z.literal('hashed') }),
   strict({ s: z.literal('known'), as: z.enum(['document', 'labReport', 'legacy']), archiveOnly: z.boolean() }),
-  strict({ s: z.literal('refused'), verdict: z.enum(['tooLarge', 'unsupported']) }),
+  strict({ s: z.literal('refused'), verdict: z.enum(['tooLarge', 'unsupported', 'tooMany']) }),
   strict({ s: z.literal('converting') }),
   strict({ s: z.literal('ready'), attempt: count }),
   strict({ s: z.literal('sending'), attempt: count }),
@@ -93,7 +94,7 @@ export const UPLOAD_STATE = z.discriminatedUnion('phase', [
   strict({ phase: z.literal('saving'), ...pick, attempt: count }),
   strict({ phase: z.literal('saveFailed'), ...pick, attempt: count, message: text }),
   strict({ phase: z.literal('done'), ...pick, outcome }),
-  strict({ phase: z.literal('failed'), ...pick }),
+  strict({ phase: z.literal('failed'), ...pick, refused: runRefusal.nullable() }),
 ]);
 
 /** Strict branches: a change naming two kinds (a tick and a day) matches none and is refused. */
@@ -105,7 +106,7 @@ const change = z.union([
   strict({ edit: text, value: z.number().nullable() }),
   strict({ document: documentFix }),
 ]);
-const failure = z.enum(['rate_limit', 'busy', 'server_error', 'network', ...EXTRACTION_STOP_CODES]);
+const failure = z.enum(UPLOAD_FAILURES);
 
 /** Each event by its type, for a caller that sends some of them in a shape of its own (the doors' wire). */
 export const UPLOAD_EVENTS = {
@@ -119,6 +120,7 @@ export const UPLOAD_EVENTS = {
   convertFailed: strict({ type: z.literal('convertFailed'), run: count, id: text, reason: z.enum(['unreadable', 'timeout']) }),
   answered: strict({ type: z.literal('answered'), run: count, id: text, extraction: UPLOAD_EXTRACTION, legacy: z.boolean(), now: text }),
   sendFailed: strict({ type: z.literal('sendFailed'), run: count, id: text, failure }),
+  runRefused: strict({ type: z.literal('runRefused'), run: count, reason: runRefusal }),
   retry: strict({ type: z.literal('retry'), id: text }),
   stop: strict({ type: z.literal('stop') }),
   chose: strict({ type: z.literal('chose'), id: text, change, now: text }),
@@ -131,7 +133,7 @@ export const UPLOAD_EVENTS = {
 const E = UPLOAD_EVENTS;
 export const UPLOAD_EVENT = z.discriminatedUnion('type', [
   E.picked, E.consented, E.listed, E.zipFailed, E.hashed, E.hashFailed, E.converted, E.convertFailed, E.answered,
-  E.sendFailed, E.retry, E.stop, E.chose, E.saveStarted, E.saved, E.saveFailed, E.close, E.discard,
+  E.sendFailed, E.runRefused, E.retry, E.stop, E.chose, E.saveStarted, E.saved, E.saveFailed, E.close, E.discard,
 ]);
 
 const ids = z.array(text);

@@ -9,8 +9,8 @@
   ],
 
   "limits": {
-    "_note": "Bytes and counts each client reads with today. D8: the phone takes a 20 MB ZIP, the web 10 MB (changedBy: PR 3 keeps it; the size is a product call).",
-    "web": { "fileBytes": 10485760, "zipBytes": 10485760, "filesPerPick": 200, "zipMembers": 200, "pdfPages": 20, "textPageChars": 100000, "batchFrom": 20 },
+    "_note": "Bytes and counts each client reads with today. D8: one ZIP cap, 20 MB on both clients (owner ruling Q7, design PR 9).",
+    "web": { "fileBytes": 10485760, "zipBytes": 20971520, "filesPerPick": 200, "zipMembers": 200, "pdfPages": 20, "textPageChars": 100000 },
     "phone": { "fileBytes": 10485760, "zipBytes": 20971520, "filesPerPick": 200, "zipMembers": 200, "pdfPages": 20, "textPageChars": 100000, "folderBytes": 209715200 }
   },
 
@@ -58,8 +58,8 @@
       { "name": "a.pdf", "bytes": 10485760, "web": "read", "phone": "fits" },
       { "name": "a.pdf", "bytes": 10485761, "web": "tooLarge", "phone": "tooLarge" },
       { "name": "a.zip", "bytes": 10485760, "web": "read", "phone": "fits" },
-      { "name": "a.zip", "bytes": 10485761, "web": "tooLarge", "phone": "fits", "decision": "D8", "changedBy": "PR 3 keeps it; the size is a product call" },
-      { "name": "a.zip", "bytes": 20971520, "web": "tooLarge", "phone": "fits", "decision": "D8", "changedBy": "PR 3 keeps it; the size is a product call" },
+      { "name": "a.zip", "bytes": 10485761, "web": "read", "phone": "fits" },
+      { "name": "a.zip", "bytes": 20971520, "web": "read", "phone": "fits" },
       { "name": "a.zip", "bytes": 20971521, "web": "tooLarge", "phone": "tooLarge" }
     ],
     "zipMemberOverCap": {

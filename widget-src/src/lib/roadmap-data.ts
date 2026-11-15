@@ -9,6 +9,8 @@ import { MEASUREMENT_REFUSALS_WITH_METRIC, type MEASURES } from '@roadmap/health
 import type { ReminderScheduleItem } from '@roadmap/health-core/reminder-schedule';
 import type { SaveStatus } from '@roadmap/health-core/save-state';
 import { knownMinorOf } from '@roadmap/health-core/calculations';
+import { knownIndex, readIsLegacy, type KnownIndex } from '@roadmap/health-core/upload-known';
+import type { UnifiedExtractionResult } from '@roadmap/health-core/lab-extraction';
 import { RoadmapStore, type DerivedSeries, type BulkLabValueInput, type BulkMeasurementInput, type CorrectStatus, type MoveOutcome, type ProfileSave } from '../storage/roadmap-store';
 import { ChatHistoryStore } from '../storage/chat-history-store';
 import { getChatHistory, openChatHistory, setChatHistoryFactory } from './chat-history-access';
@@ -72,6 +74,17 @@ export function getDocumentArchiveMode(): 'no-prompt' | 'cloud' | 'device-only' 
   // JSON), so the upload UI prompts to connect first and the save path strips
   // the bytes if the user chooses to continue anyway.
   return getBackendKind() === 'cloud' ? 'cloud' : 'device-only';
+}
+
+/** The record's files by content, as it is now (US-12 AC27): the upload reads it once per pick. Never
+ *  cached across picks: a delete or save edits the record in place, and the next pick must see it. */
+export function uploadKnownIndex(): KnownIndex {
+  return store ? knownIndex(store.file) : new Map();
+}
+
+/** After a read: the record holds this document from before hashing, by name and date (upload-known.ts). */
+export function isLegacyUpload(name: string, read: UnifiedExtractionResult): boolean {
+  return !!store && readIsLegacy(store.file, name, read);
 }
 
 /** Which erase the record is at; it moves with every erase, this tab's or

@@ -6,7 +6,6 @@ import { shortName, type FileNotice, type FileNoticeReason } from '../lib/upload
 
 const BYOK_NOTICE_TEXT: Partial<Record<FileNoticeReason, string>> = {
   serverError: 'Not read. Anthropic could not be reached or could not read it. Please try again.',
-  limitError: 'Not read. Your Anthropic key hit its rate limit. Wait a minute and try again.',
 };
 
 function noticeText({ reason, text }: FileNotice & { reason: Exclude<FileNoticeReason, 'valuesDropped'> }): string {

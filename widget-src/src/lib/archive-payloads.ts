@@ -13,17 +13,12 @@ import { labArchivePayload, pendingRowsFor, type DocumentPayload, type ExistingD
 import type { FileResult } from './upload-pipeline';
 import { fileKey } from './file-key';
 
-/** 'sha256-<hex>' content fingerprint — names the blob + detects corruption. */
+/** 'sha256-<hex>' content fingerprint — names the blob + detects corruption. The upload hashes
+ *  each file before it is read (US-12 AC27); the hash travels with its result. */
 export async function sha256Blob(blob: Blob): Promise<string> {
   const digest = await crypto.subtle.digest('SHA-256', await blob.arrayBuffer());
   const hex = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
   return `sha256-${hex}`;
-}
-
-/** Hash each result's original bytes, which travel with the result itself:
- *  a name-keyed map handed two ZIPs' `results.pdf` one original. */
-export async function attachOriginals(results: FileResult[]): Promise<FileResult[]> {
-  return Promise.all(results.map(async (r) => (r.file ? { ...r, contentHash: await sha256Blob(r.file) } : r)));
 }
 
 /** A file the archive step can file: read, not saved as a reviewed document

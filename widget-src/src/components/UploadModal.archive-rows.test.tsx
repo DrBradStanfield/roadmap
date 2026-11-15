@@ -15,13 +15,13 @@ import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocument
 import type { UploadHistory } from '../lib/api-types';
 import { findReviewValue } from '../testing/import-review';
 
-vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn(), labImportBatch: vi.fn(), pollBatchStatus: vi.fn() }));
-vi.mock('../lib/roadmap-data', () => ({ getDocumentArchiveMode: vi.fn(() => 'no-prompt'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
+vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn() }));
+vi.mock('../lib/roadmap-data', () => ({ uploadKnownIndex: vi.fn(() => new Map()), isLegacyUpload: vi.fn(() => false), getDocumentArchiveMode: vi.fn(() => 'no-prompt'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
 vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
-// Hashing stands in for sha256Blob: each result's plain fake hash names its bytes, not its name.
+// A plain fake hash stands in for sha256Blob: it names a file's bytes, not its name.
 vi.mock('../lib/archive-payloads', async importOriginal => ({
   ...await importOriginal<typeof import('../lib/archive-payloads')>(),
-  attachOriginals: vi.fn(async (results: Array<{ file?: Blob }>) => Promise.all(results.map(async r => ({ ...r, contentHash: `hash-${await r.file!.text()}` })))),
+  sha256Blob: vi.fn(async (blob: Blob) => `hash-${await blob.text()}`),
 }));
 vi.mock('../lib/useIsMobile', () => ({ useIsMobile: () => false }));
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
