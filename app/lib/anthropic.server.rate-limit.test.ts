@@ -6,8 +6,9 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach, type MockInstance } from 'vitest';
 
-vi.mock('@sentry/react-router', () => ({ captureException: vi.fn(), captureMessage: vi.fn() }));
+vi.mock('@sentry/react-router', () => ({ captureException: vi.fn() }));
 vi.mock('./cron-helpers.server', () => ({ sleep: vi.fn() }));
+vi.mock('./sentry-allow-listed.server', () => ({ captureAllowListedWarning: vi.fn() }));
 
 process.env.ANTHROPIC_API_KEY = 'test-key-placeholder';
 
@@ -16,6 +17,7 @@ import { callAnthropicWithUsage, extractOrClassify } from './anthropic.server';
 import { parseRetryAfterMs, rateLimitWaitMs } from './anthropic-fetch.server';
 import { extractOneFile } from './lab-extract-one.server';
 import { sleep } from './cron-helpers.server';
+import { captureAllowListedWarning } from './sentry-allow-listed.server';
 
 const REAL_FETCH = global.fetch;
 const validUnifiedJson = JSON.stringify({ classification: 'lab_report', reportDate: null, values: [], additionalValues: [], document: null });
@@ -68,8 +70,8 @@ describe('US-12 AC1a: a lab read retries an Anthropic 429 once inside its deadli
     expect(onRetry).toHaveBeenCalledTimes(1);
     // The rescued 429 reaches Sentry once, as a warning with its status and wait only.
     expect(Sentry.captureException).not.toHaveBeenCalled();
-    expect(Sentry.captureMessage).toHaveBeenCalledTimes(1);
-    expect(Sentry.captureMessage).toHaveBeenCalledWith('Anthropic 429 retried', { level: 'warning', extra: { status: 429, waitMs: wait } });
+    expect(captureAllowListedWarning).toHaveBeenCalledTimes(1);
+    expect(captureAllowListedWarning).toHaveBeenCalledWith('Anthropic 429 retried', ['anthropic-429-retried'], { extra: { status: 429, waitMs: wait } });
     // The retried attempt gets only what is left of the read's deadline.
     expect(timeouts.mock.calls.at(-1)![0]).toBe(opts.timeoutMs - 5_000 - wait);
   });
@@ -96,7 +98,7 @@ describe('US-12 AC1a: a lab read retries an Anthropic 429 once inside its deadli
     expect(fetchMock).toHaveBeenCalledTimes(2);
     // Captured once, as the exception it was before; no rescue warning.
     expect(Sentry.captureException).toHaveBeenCalledTimes(1);
-    expect(Sentry.captureMessage).not.toHaveBeenCalled();
+    expect(captureAllowListedWarning).not.toHaveBeenCalled();
   });
 
   it('a 429 is not retried without the opt-in (the connector import, any other caller)', async () => {
@@ -143,8 +145,8 @@ describe('US-12 AC1a: a lab read retries an Anthropic 429 once inside its deadli
     await expect(result).resolves.toMatchObject({ classification: 'lab_report' });
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(warn).toHaveBeenCalled();
-    expect(Sentry.captureMessage).toHaveBeenCalledTimes(1);
-    const seen = JSON.stringify([warn.mock.calls, error.mock.calls, vi.mocked(Sentry.captureMessage).mock.calls, vi.mocked(Sentry.captureException).mock.calls]);
+    expect(captureAllowListedWarning).toHaveBeenCalledTimes(1);
+    const seen = JSON.stringify([warn.mock.calls, error.mock.calls, vi.mocked(captureAllowListedWarning).mock.calls, vi.mocked(Sentry.captureException).mock.calls]);
     expect(seen).not.toContain(MARKER);
   });
 

@@ -6,6 +6,7 @@
 import * as Sentry from '@sentry/react-router';
 import { toRefusalCategory, type RefusalCategory } from '../../packages/health-core/src/models';
 import { sleep } from './cron-helpers.server';
+import { captureAllowListedWarning } from './sentry-allow-listed.server';
 
 export interface AnthropicUsage {
   inputTokens: number;
@@ -282,9 +283,9 @@ export async function fetchAnthropicRaw(
       }
 
       const result = await read(response, { began: () => { began = true; }, idle });
-      // A rescued 429 still tells Sentry, once: its status and wait, nothing else.
+      // A rescued 429 still tells Sentry, once: its status and wait, nothing from the request.
       if (rateLimitWait !== undefined) {
-        Sentry.captureMessage('Anthropic 429 retried', { level: 'warning', extra: { status: 429, waitMs: rateLimitWait } });
+        captureAllowListedWarning('Anthropic 429 retried', ['anthropic-429-retried'], { extra: { status: 429, waitMs: rateLimitWait } });
       }
       return result;
     } catch (err) {
