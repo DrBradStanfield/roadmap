@@ -51,7 +51,7 @@ export interface UploadView {
   save: { label: string; enabled: boolean; why: string | null; error: string | null };
   stop: { label: string } | null;
   /** The done screen's lines. */
-  done: { line: string; archived: string | null } | null;
+  done: { line: string; archived: string | null; unstored: string | null } | null;
 }
 
 const READING: readonly FileStatus['s'][] = ['converting', 'sending'];
@@ -201,6 +201,7 @@ export function uploadView(s: UploadState, record: RoadmapFile, now: string, rev
     done: s.phase === 'done' ? {
       line: UPLOAD_TEXT.savedLine(s.outcome.values, s.outcome.documents),
       archived: s.outcome.archived ? UPLOAD_TEXT.archivedLine(s.outcome.archived) : null,
+      unstored: s.outcome.unstored ? UPLOAD_TEXT.unstoredLine : null,
     } : null,
   };
 }

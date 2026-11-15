@@ -18,12 +18,12 @@ const saving = (files: unknown[]) => JSON.stringify({ phase: 'saving', platform:
 const MIXED = saving([read('lab', lab('2026-10-01')), read('letter', letter), { id: 'bad', name: 'bad.pdf', bytes: 1, hash: null, pages: null, status: { s: 'failed', reason: 'busy', attempt: 1 } }]);
 const ORIGINALS = JSON.stringify({ lab: 'application/pdf', letter: 'application/pdf' });
 const bytesOf = (id: string) => new Uint8Array(Buffer.from(`%PDF ${id}`, 'utf8')).buffer;
-type Answer = { ok: boolean; record: string; erase?: string; outcome: { values: number; documents: number; archived: number }; unstored: number; reason?: string; message?: string };
+type Answer = { ok: boolean; record: string; erase?: string; outcome: { values: number; documents: number; archived: number; unstored: number }; reason?: string; message?: string };
 
 describe('uploadSaveJson on the phone\'s record (US-52 AC8c)', () => {
   it('writes the values, the letter and the lab report\'s archive row listing its rows, in one step; a repeat adds nothing', async () => {
     const first = JSON.parse(await uploadSaveJson(MIXED, '', '', NOW, 'phone', ORIGINALS, bytesOf)) as Answer;
-    expect(first).toMatchObject({ ok: true, outcome: { values: 2, documents: 2, archived: 0 }, unstored: 0 });
+    expect(first).toMatchObject({ ok: true, outcome: { values: 2, documents: 2, archived: 0, unstored: 0 } });
     const record = JSON.parse(first.record) as RoadmapFile;
     const archive = record.documents.find((d) => d.metadata?.[LAB_ARCHIVE_FLAG] === true)!;
     expect(listedRows(archive)).toHaveLength(2);
@@ -80,7 +80,7 @@ describe('uploadSaveJson through the cloud session (US-52 AC8c, US-14 AC5)', () 
     const asked: string[] = [];
     const reader = (id: string) => (asked.push(id), bytesOf(id));
     const answer = JSON.parse(await engine.uploadSaveJson(MIXED, '', erase, NOW, 'ios-1', ORIGINALS, reader)) as Answer;
-    expect(answer).toMatchObject({ ok: true, outcome: { values: 2, documents: 2, archived: 0 }, unstored: 0 });
+    expect(answer).toMatchObject({ ok: true, outcome: { values: 2, documents: 2, archived: 0, unstored: 0 } });
     expect(asked.sort()).toEqual(['lab', 'letter']); // only the files the plan stores; never the failed one
     expect([...dropbox.documents.values()].sort()).toEqual(['%PDF lab', '%PDF letter']);
     expect(state.pending).toBe(true); // on the phone first, marked for the cloud (US-09 AC4)
@@ -140,7 +140,7 @@ describe('uploadSaveJson through the cloud session (US-52 AC8c, US-14 AC5)', () 
     expect(JSON.parse(engine.cloudEdit(JSON.stringify({ kind: 'add', metric: 'weight', value: 81, day: '2026-10-02' }), erase, 'si', NOW))).toMatchObject({ ok: true });
     await engine.cloudFlush(); // a save pass lands: the session takes a new working copy
     const answer = JSON.parse(await saving) as Answer;
-    expect(answer).toMatchObject({ ok: true, outcome: { values: 2, documents: 2 }, unstored: 0 });
+    expect(answer).toMatchObject({ ok: true, outcome: { values: 2, documents: 2, unstored: 0 } });
     const record = JSON.parse(answer.record) as RoadmapFile;
     expect(record.measurements.filter((m) => m.metricType === 'weight')).toHaveLength(1);
     expect(record.labValues.filter((r) => r.status === 'active')).toHaveLength(2);
@@ -169,8 +169,21 @@ describe('uploadSaveJson through the cloud session (US-52 AC8c, US-14 AC5)', () 
       dropbox.documentsWork = works;
       const { engine, erase } = await opened(dropbox);
       const answer = JSON.parse(await engine.uploadSaveJson(MIXED, '', erase, NOW, 'ios-1', ORIGINALS, reader)) as Answer;
-      expect(answer, name).toMatchObject({ ok: true, unstored: 2, outcome: { values: 2, documents: 2 } });
+      expect(answer, name).toMatchObject({ ok: true, outcome: { values: 2, documents: 2, unstored: 2 } });
       expect(dropbox.documents.size, name).toBe(0);
+    }
+  });
+
+  it('originals that did not land reach the done screen: saved carries the count, the done view warns; none, no warning (PR 1848 Codex)', async () => {
+    for (const works of [false, true]) {
+      const dropbox = new FakeDropbox();
+      dropbox.documentsWork = works;
+      const { engine, erase } = await opened(dropbox);
+      const answer = JSON.parse(await engine.uploadSaveJson(MIXED, '', erase, NOW, 'ios-1', ORIGINALS, bytesOf)) as Answer;
+      const done = JSON.parse(uploadStepJson(MIXED, JSON.stringify({ type: 'saved', run: 1, attempt: 1, outcome: answer.outcome }), '', 'phone'));
+      expect(done.state.outcome.unstored, String(works)).toBe(works ? 0 : 2);
+      const view = JSON.parse(uploadViewJson(JSON.stringify(done.state), '', NOW, true, 'phone'));
+      expect(view.done.unstored, String(works)).toBe(works ? null : "The original file couldn't be stored; its details are saved.");
     }
   });
 

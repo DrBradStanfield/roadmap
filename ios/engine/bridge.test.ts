@@ -121,7 +121,7 @@ describe('bridge contract (US-25 AC18)', () => {
     uploadSaveJson: {
       args: ['stateJson', 'recordJson', 'erase', 'nowIso', 'deviceId', 'originalsJson', 'readOriginal'],
       call: [UPLOAD_SAVING, '', '', NOW, 'phone', '{}', () => null],
-      shape: { ok: 'boolean', record: 'string', outcome: { values: 'number', documents: 'number', archived: 'number' }, unstored: 'number' },
+      shape: { ok: 'boolean', record: 'string', outcome: { values: 'number', documents: 'number', archived: 'number', unstored: 'number' } },
     },
   };
   /** Where `answer` drops or retypes what `frozen` holds: [] when it holds at least the frozen shape. */
@@ -193,8 +193,8 @@ describe('bridge contract (US-25 AC18)', () => {
     for (const section of view.sections) expect(shapeFaults(SECTIONS[section.kind], section), section.kind).toEqual([]);
     const failed = call('uploadViewJson', JSON.stringify({ ...open, phase: 'saveFailed', attempt: 1, message: 'Could not save.' }), record, NOW, true, 'phone');
     expect(shapeFaults({ save: { label: 'string', enabled: 'boolean', error: 'string' } }, failed)).toEqual([]);
-    const done = call('uploadViewJson', JSON.stringify({ ...open, phase: 'done', outcome: { values: 1, documents: 1, archived: 1 } }), record, NOW, true, 'phone');
-    expect(shapeFaults({ done: { line: 'string', archived: 'string' } }, done)).toEqual([]);
+    const done = call('uploadViewJson', JSON.stringify({ ...open, phase: 'done', outcome: { values: 1, documents: 1, archived: 1, unstored: 1 } }), record, NOW, true, 'phone');
+    expect(shapeFaults({ done: { line: 'string', archived: 'string', unstored: 'string' } }, done)).toEqual([]);
 
     const fields = { documentType: 'string', title: 'string', documentDate: 'string?', contentMd: 'string', metadata: 'object', sourceFileName: 'string' };
     const plan = call('uploadSavePlanJson', JSON.stringify({ ...open, files: files.filter((x) => x.id !== 'go') }), record, NOW, true, 'phone');

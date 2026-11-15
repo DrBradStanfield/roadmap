@@ -44,12 +44,12 @@ export interface UploadSaveIO<F> {
 }
 
 /**
- * `unstored`: originals the plan stores that did not land (unreadable, or the cloud refused them):
- * their rows keep the hash alone, and a later upload of the same file can still store them.
- * `commit(file)`: every row on `file` as it stands now; the same `file` when nothing is new.
+ * `commit(file)`: every row on `file` as it stands now; the same `file` when nothing is new. Its
+ * outcome's `unstored`: originals the plan stores that did not land (unreadable, or the cloud refused
+ * them): their rows keep the hash alone, and a later upload of the same file can still store them.
  */
 export type UploadSaveResult =
-  | { ok: true; unstored: number; commit(file: RoadmapFile): { file: RoadmapFile; outcome: SaveOutcome } }
+  | { ok: true; commit(file: RoadmapFile): { file: RoadmapFile; outcome: Required<SaveOutcome> } }
   | { ok: false; reason: 'not-saving' | 'not-ready'; message: string };
 
 /** An original as saveDocuments holds it: the file it is, with the hash the state read for its bytes. */
@@ -101,7 +101,7 @@ export async function uploadSave<F>(s: UploadState, record: RoadmapFile, now: st
   };
 
   return {
-    ok: true, unstored,
+    ok: true,
     // Once per Save: it writes the archive rows' lists in place.
     commit(file) {
       // On the record it planned on, the planned write stands; on any other, the values are written
@@ -116,7 +116,7 @@ export async function uploadSave<F>(s: UploadState, record: RoadmapFile, now: st
         }
       }
       const values = written.saved.length;
-      return { file: values || docs.saved.length ? committedFile(written.file, docs) : file, outcome: { values, ...outcome } };
+      return { file: values || docs.saved.length ? committedFile(written.file, docs) : file, outcome: { values, ...outcome, unstored } };
     },
   };
 }

@@ -304,7 +304,7 @@ export function uploadUsageJson(stateJson: string): string {
  * (`erase`, as documentSave takes it) through the session, and the engine writes each original the
  * plan stores, reading its bytes with `readOriginal(fileId)` (an ArrayBuffer, or null) for the
  * files `originalsJson` ({fileId: mimeType}) names; with none (`erase` '') onto `recordJson`.
- * Answers `{ok, record, erase?, outcome: {values, documents, archived}, unstored}`; Swift then
+ * Answers `{ok, record, erase?, outcome: {values, documents, archived, unstored}}`; Swift then
  * sends `saved {run, attempt, outcome}`. Or `{ok: false, reason, message}`, then `saveFailed`.
  */
 export async function uploadSaveJson(stateJson: string, recordJson: string, erase: string, nowIso: string, deviceId: string, originalsJson: string, readOriginal: OriginalReader): Promise<string> {

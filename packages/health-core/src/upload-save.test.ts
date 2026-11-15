@@ -48,7 +48,8 @@ const offCloud = (): UploadSaveIO<string> => { let n = 0; return { holds: () => 
 async function saveOn(s: UploadState, record: RoadmapFile, cloudOn: boolean, io: UploadSaveIO<string>) {
   const out = await uploadSave(s, record, NOW, cloudOn, io);
   if (!out.ok) throw new Error(out.reason);
-  return { ...out.commit(record), unstored: out.unstored };
+  const { file, outcome } = out.commit(record);
+  return { file, outcome, unstored: outcome.unstored };
 }
 
 const MIXED = saving([
@@ -67,8 +68,8 @@ describe('uploadSave: one step for values and rows (US-52 AC8c)', () => {
     expect(out.unstored).toBe(0);
     // The web's done count (useUploadFlow.ts): every distinct row saved, the letter, the lab report's
     // archive row and the original filed behind the held row; `archived` is the last alone.
-    expect(out.outcome).toEqual({ values: plan.counts.values, documents: plan.counts.documents + plan.labArchives.length + plan.counts.archived, archived: plan.counts.archived });
-    expect(out.outcome).toEqual({ values: 2, documents: 3, archived: 1 });
+    expect(out.outcome).toEqual({ values: plan.counts.values, documents: plan.counts.documents + plan.labArchives.length + plan.counts.archived, archived: plan.counts.archived, unstored: 0 });
+    expect(out.outcome).toEqual({ values: 2, documents: 3, archived: 1, unstored: 0 });
     const live = out.file.documents.filter((d) => !d.deleted);
     const archive = live.find((d) => d.metadata?.[LAB_ARCHIVE_FLAG] === true)!;
     // The archive row lists exactly the lab rows its values wrote, and holds its original.
@@ -85,7 +86,7 @@ describe('uploadSave: one step for values and rows (US-52 AC8c)', () => {
     for (const [cloudOn, io] of [[true, cloud()], [false, offCloud()]] as const) {
       const first = await saveOn(MIXED, withDocs([heldDoc({})]), cloudOn, io);
       const again = await saveOn(MIXED, first.file, cloudOn, io);
-      expect(again.outcome, String(cloudOn)).toEqual({ values: 0, documents: 0, archived: 0 });
+      expect(again.outcome, String(cloudOn)).toEqual({ values: 0, documents: 0, archived: 0, unstored: 0 });
       expect(again.file, 'nothing new: the same record back').toBe(first.file);
       expect(again.file.labValues.length + again.file.measurements.length).toBe(first.file.labValues.length + first.file.measurements.length);
       expect(again.file.documents.filter((d) => !d.deleted)).toEqual(first.file.documents.filter((d) => !d.deleted));

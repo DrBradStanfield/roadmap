@@ -26,21 +26,23 @@ export function uploadSaveRun(
   stateJson: string, recordJson: string, erase: string, nowIso: string, deviceId: string,
   originalsJson: string, readOriginal: OriginalReader,
 ): Promise<string> {
-  return oneDocumentSaveAtATime(() => save(stateJson, recordJson, erase, nowIso, deviceId, originalsJson, readOriginal)
+  // The session this Save is asked of, taken now: one that closes while the Save waits, and another
+  // that opens in its place (even at the same erase), is never the one it writes to.
+  const asked = erase ? open : null;
+  return oneDocumentSaveAtATime(() => save(asked, stateJson, recordJson, erase, nowIso, deviceId, originalsJson, readOriginal)
     .catch((error) => refusal(error instanceof Refused ? error.reason : 'engine-error'))
     .then((answer) => JSON.stringify(answer)));
 }
 
 async function save(
-  stateJson: string, recordJson: string, erase: string, nowIso: string, deviceId: string,
+  asked: typeof open, stateJson: string, recordJson: string, erase: string, nowIso: string, deviceId: string,
   originalsJson: string, readOriginal: OriginalReader,
 ): Promise<object> {
   const state = readState(stateJson);
   let mimeTypes: Record<string, string>;
   try { mimeTypes = ORIGINALS.parse(JSON.parse(originalsJson)); } catch { return refusal('invalid-originals'); }
-  // Read when the queue reaches this Save: a session closed while it waited is no session.
-  const at = erase ? open : null;
-  if (erase && !at) return refusal('not-open');
+  const at = asked;
+  if (erase && (!at || open !== at)) return refusal('not-open');
   const cap = UPLOAD_LIMITS[state.platform].fileBytes;
   const io: UploadSaveIO<ArrayBuffer> = {
     holds: (fileId) => Object.hasOwn(mimeTypes, fileId),
@@ -57,7 +59,7 @@ async function save(
     const out = await uploadSave(state, phone, nowIso, false, io);
     if (!out.ok) return out;
     const { file, outcome } = out.commit(phone);
-    return { ok: true, record: JSON.stringify(file), outcome, unstored: out.unstored };
+    return { ok: true, record: JSON.stringify(file), outcome };
   }
   /** The session this Save began on is still open, at the erase the screen showed. */
   const gone = () => (open !== at ? refusal('not-open') : at.session.refuses(erase) ? refusal('erased') : null);
@@ -74,5 +76,5 @@ async function save(
     const refused = commit(at, file, erase, nowIso);
     if (refused) return refused;
   }
-  return { ok: true, record: JSON.stringify(at.session.file), erase: at.session.eraseIdentity, outcome, unstored: out.unstored };
+  return { ok: true, record: JSON.stringify(at.session.file), erase: at.session.eraseIdentity, outcome };
 }
