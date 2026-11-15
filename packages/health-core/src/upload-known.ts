@@ -83,15 +83,18 @@ export function knownAs(index: KnownIndex, hash: string): Known | null {
 /**
  * After the read: a hashless live row (written before hashing, or by the
  * connector without bytes) with this file's name (as `dedupFileName` reads
- * it), date, type and kind holds the same document, so it counts as known.
- * The old row is not rewritten (owner's ruling Q5 a). As the connector's name
- * check does, only rows this build reads (US-65).
+ * it), date and kind (lab archive or shown document) holds the same document,
+ * so it counts as known. Never the type: it is the model's guess per read, and
+ * a re-read under another type would save a duplicate. The old row is not
+ * rewritten (owner's rulings Q5 a, Q1 b). As the connector's name check does,
+ * only rows this build reads (US-65).
  */
 export function legacyMatch(record: RoadmapFile, name: string, document: DocumentFields): boolean {
   const base = dedupFileName(name);
   const lab = isLabArchiveDocument(document);
   return record.documents.some((d) =>
     !d.deleted && !d.contentHash && d.sourceFileName != null && dedupFileName(d.sourceFileName) === base &&
-    d.date === document.documentDate && d.type === document.documentType &&
+    // Two undated rows match too: today's name-only review rule already counts them as saved (Q2).
+    d.date === document.documentDate &&
     isReadableRow('documents', d) && isLabArchiveDocument(documentView(d)) === lab);
 }
