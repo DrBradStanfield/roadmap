@@ -8,15 +8,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { UploadModal } from './UploadModal';
-import { resetUploadStore } from '../testing/upload-store';
+import { lastSaved, resetUploadStore, uploadStore } from '../testing/upload-store';
 import { checkLabImportQuota, labImport } from '../lib/upload-api';
-import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 import type { UploadHistory } from '../lib/api-types';
 import { findAllReviewValues, findReviewValue } from '../testing/import-review';
 
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn() }));
-vi.mock('../lib/roadmap-data', async () => ({ ...(await import('../testing/upload-store')).uploadStoreMock(), getDocumentArchiveMode: vi.fn(() => 'cloud'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => ''), uploadKnownIndex: vi.fn(() => new Map()), isLegacyUpload: vi.fn(() => false) }));
+vi.mock('../lib/roadmap-data', async () => ({ ...(await import('../testing/upload-store')).uploadStoreMock(), getDocumentArchiveMode: vi.fn(() => 'cloud'), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => ''), uploadKnownIndex: vi.fn(() => new Map()), isLegacyUpload: vi.fn(() => false) }));
 vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn(), PROXY_PATH: '/apps/synthetic', parseJsonResponse: vi.fn() }));
 vi.mock('../lib/useIsMobile', () => ({ useIsMobile: () => false }));
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
@@ -51,7 +50,10 @@ function zipOf(paths: string[] | Error) {
 function pick(...files: File[]) {
   fireEvent.change(document.querySelector('input[type=file]')!, { target: { files } });
 }
+/** A file's words: in "Files to check", or, for a file not read, in the review's failed section (US-12 AC26). */
 function reasonFor(name: string): string | null {
+  const failed = [...document.querySelectorAll('.review-failed-files li')].filter(li => li.querySelector('.review-file-name')?.textContent === name);
+  if (failed.length) return failed.map(li => li.querySelector('.review-file-error')!.textContent).join(' | ');
   const list = screen.queryByRole('list', { name: 'Files to check' });
   if (!list) return null;
   const items = within(list).queryAllByText(name);
@@ -68,9 +70,6 @@ beforeEach(() => {
   resetUploadStore();
   vi.mocked(checkLabImportQuota).mockResolvedValue({ allowed: true, remaining: 60 });
   answers({});
-  vi.mocked(bulkSaveMeasurements).mockResolvedValue({ saved: [{}], skippedDuplicates: 0, errorCount: 0, refused: [] } as unknown as Awaited<ReturnType<typeof bulkSaveMeasurements>>);
-  vi.mocked(bulkSaveDocuments).mockResolvedValue({ saved: [], errorCount: 0 });
-  vi.mocked(bulkSaveLabValues).mockResolvedValue({ saved: [], skippedDuplicates: 0, errorCount: 0, refused: [] });
   extractFromPdf.mockImplementation(async (f: File) => ({ pages: [{ type: 'text', content: await f.text() }], truncated: false }));
   Object.assign(window, { HealthUpload: { extractFromPdf, isPdf: (f: File) => f.name.endsWith('.pdf'), isZip: () => false, isImage: () => false, resizeImage: vi.fn(), docxToText: vi.fn() } });
 });
@@ -85,8 +84,9 @@ describe('US-12 read pins: what the modal shows and what reaches the review', ()
     expect(screen.queryByRole('list', { name: 'Files to check' })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
     await screen.findByRole('button', { name: 'Done' });
-    expect(vi.mocked(bulkSaveMeasurements).mock.calls[0][0]).toEqual([expect.objectContaining({ metricType: 'ldl', value: 3.9 })]);
-    expect(screen.getByText(/Saved 1 blood test value/)).toBeTruthy();
+    expect(lastSaved().values).toEqual([expect.objectContaining({ metricName: 'ldl', value: 3.9 })]);
+    // The done line is the view's (design section 5 row 26): the report's archive row is a document.
+    expect(screen.getByText('Saved 1 value and 1 document.')).toBeTruthy();
   });
 
   it('a mixed pick: the values reach the review; a letter, a locked file and a large one are each named', async () => {
@@ -194,14 +194,14 @@ describe('US-12 read pins: what the modal shows and what reaches the review', ()
 
   // US-12 AC6: an erase remounts the page while a Save runs; the save that ends after it is not counted.
   it('a Save that ends after the modal is gone sends no upload_saved', async () => {
-    let finish!: (r: Awaited<ReturnType<typeof bulkSaveMeasurements>>) => void;
-    vi.mocked(bulkSaveMeasurements).mockReturnValueOnce(new Promise(resolve => { finish = resolve; }));
+    let finish!: () => void;
+    uploadStore.hold = new Promise<void>(resolve => { finish = resolve; });
     const { unmount } = render_(); pick(pdf('a.pdf'));
     await findReviewValue('3.9');
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-    await waitFor(() => expect(bulkSaveMeasurements).toHaveBeenCalled());
     unmount();
-    finish({ saved: [{}], skippedDuplicates: 0, errorCount: 0, refused: [] } as unknown as Awaited<ReturnType<typeof bulkSaveMeasurements>>);
+    finish();
+    await waitFor(() => expect(uploadStore.saves).toHaveLength(1));
     await new Promise(r => setTimeout(r, 0));
     expect(vi.mocked(trackProductEvent).mock.calls.filter(([n]) => n === 'upload_saved')).toEqual([]);
   });
@@ -211,6 +211,6 @@ describe('US-12 read pins: what the modal shows and what reaches the review', ()
     await findReviewValue('3.9');
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
     await screen.findByRole('button', { name: 'Done' });
-    expect(vi.mocked(trackProductEvent).mock.calls.filter(([n]) => n === 'upload_saved')).toEqual([['upload_saved', { count: 1 }]]);
+    expect(vi.mocked(trackProductEvent).mock.calls.filter(([n]) => n === 'upload_saved')).toEqual([['upload_saved', { count: 2 }]]);
   });
 });
