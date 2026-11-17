@@ -21,7 +21,7 @@ import { InputPanel, type PlanBasis } from './InputPanel';
 import { usePlanView } from './ResultsPanel';
 import { OpenEvidenceContext } from './PlanCards';
 import { PersonButton } from './SettingsSheet';
-import { MyHealth, type FormSlots } from './MyHealth';
+import { EDUCATION_LINE, MyHealth, type FormSlots } from './MyHealth';
 import { revealAndFocus } from '../lib/reveal';
 import { CHAT_BUBBLES } from './icons';
 import { ChatSection, type ChatPrefetchData } from './ChatSection';
@@ -614,8 +614,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     recordHeld: readFailed || unreadable > 0 || Object.keys(inputs).length > 0 || [previousMeasurements, medications, screenings, supplements, documentHistory, labValueHistory].some(list => list.length > 0), onDelete: async () => { if (await eraseAll()) closeSettings(); }, isDeleting,
     storageAtFoot: getBackendKind() === 'local',
     onPlanReadyDismiss: planReady ? dismissPlanReady : undefined,
-    healthDocuments: documentHistory,
-    onDocumentDeleted: dropDocument,
+    healthDocuments: documentHistory, onDocumentDeleted: dropDocument, educationAbove: !isMobile && isWideDesktop,
   };
   // The reasons open on screen are the PDF's too (US-62 AC28).
   const myHealth = (form: FormSlots) => (
@@ -711,7 +710,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
         </>
       ) : (
         <div className="health-tool-content">
-          {/* US-62 AC16: one My health column, centred; the chat column beside it from 1200px. */}
+          {/* US-62 AC16: one My health column, centred; from 1200px the chat beside it, the doctor line over both (US-73 AC13). */}
+          {isWideDesktop && <p className="mh-education mh-education--above">{EDUCATION_LINE}</p>}
           <div className="health-tool-main">{healthForm}</div>
           {isWideDesktop && chat}
         </div>

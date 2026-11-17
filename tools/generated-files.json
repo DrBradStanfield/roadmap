@@ -10,6 +10,7 @@
         "packages/health-core/src/sentry-scrub.ts",
         "packages/health-core/src/scrub-vocabulary.ts",
         "packages/health-core/src/lab-catalog.ts",
+        "packages/health-core/src/lab-catalog-shares.ts",
         "packages/health-core/src/colonoscopy-schedule.ts",
         "packages/health-core/src/core-rows.ts",
         "packages/health-core/src/import-hints.ts",

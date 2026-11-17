@@ -136,13 +136,13 @@ export type EditOutcome =
   | { ok: true; file: RoadmapFile; healthRecords?: HealthRecordsCounts }
   | { ok: false; reason: string; message: string; existingId?: string };
 
+/** A record a newer app wrote: readRecord refuses it in these words. */
+export const TOO_NEW_RECORD = 'A newer version of Health Roadmap wrote this record. Update the app to open it.';
 /**
  * Words meant for the person. HealthEngine shows them as they are; any other
  * exception's text stays hidden (US-25 AC6b, review R8).
  */
-export class Refusal extends Error {
-  override name = 'Refusal';
-}
+export class Refusal extends Error { override name = 'Refusal'; }
 
 /**
  * The record on disk, read as every other writer reads it (ROADMAP_DOC: the
@@ -166,7 +166,7 @@ export function readRecord(text: string, now: string, deviceId: string): Roadmap
   try {
     file = ROADMAP_DOC.migrate(raw, { deviceId, now });
   } catch (error) {
-    if (error instanceof SchemaTooNewError) throw new Refusal('A newer version of Health Roadmap wrote this record. Update the app to open it.');
+    if (error instanceof SchemaTooNewError) throw new Refusal(TOO_NEW_RECORD);
     throw error;
   }
   kept = { text, deviceId, file: FREEZE_KEPT ? deepFreeze(file) : file, moved: movedBloodTests(raw, file) };
@@ -420,9 +420,9 @@ export function applyEdit(file: RoadmapFile, edit: Edit, now: string, choices: U
     case 'screening':
       return applyFormEdit(file, edit, now, (next, save) => applyEdit(next, save, now));
     case 'labImport': {
-      const rows = labRows(JSON.parse(edit.extractionJson) as Extraction, edit.refs, edit.reportDay, now);
+      const rows = labRows(JSON.parse(edit.extractionJson) as Extraction, edit.refs, edit.reportDay, now, file);
       if (!rows.ok) return rows;
-      // A held day is skipped and a refused unit left out: labSaveSummary says which, beforehand.
+      // Only the rows the import review writes (classifyReport): none held, none refused.
       return { ok: true, file: bulkAppendValues(file, rows.rows, now).file };
     }
     case 'labAdd':

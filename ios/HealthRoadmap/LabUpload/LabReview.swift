@@ -17,11 +17,6 @@ struct LabReview: Decodable, Equatable, Sendable {
         var id: String { ref }
     }
 
-    struct NotSaved: Decodable, Equatable, Sendable {
-        let label: String
-        let reason: String
-    }
-
     /// A letter, discharge summary or other document, as the web's review card shows it (AC13d).
     struct Document: Decodable, Equatable, Sendable {
         /// The model's classification, shown read-only ("clinic_letter").
@@ -42,9 +37,62 @@ struct LabReview: Decodable, Equatable, Sendable {
     let isLabReport: Bool
     let reportDay: String?
     let items: [Item]
-    let notSaved: [NotSaved]
-    let unreadCount: Int
     let document: Document?
+    /// An engine without the groups door: the extraction's refused and unread rows (US-12 AC19).
+    let notSaved: [NotSaved]?
+    let unreadCount: Int?
+
+    struct NotSaved: Decodable, Equatable, Sendable {
+        let label: String
+        let reason: String
+    }
+
+    /// Only with an engine without `labReviewGroupsJson`: its "Not saved" lines, as before US-13 AC13.
+    var legacyNotSaved: [String] {
+        (notSaved ?? []).map { "\($0.label): \($0.reason)" }
+            + ((unreadCount ?? 0) > 0 ? ["\(unreadCount!) value\(unreadCount == 1 ? "" : "s") could not be read."] : [])
+    }
+}
+
+/// The review's groups for the ticks and test day it holds now (US-13 AC13, US-52 AC8;
+/// ios/engine/lab-review-groups.ts): which values get a row, which save unseen, which are
+/// already held or not saved, and every word the screen shows. Swift holds no rule and no
+/// copy of these words; it asks again when a tick or the day changes.
+struct LabReviewGroups: Decodable, Equatable, Sendable {
+    struct Item: Decodable, Equatable, Sendable {
+        let ref: String
+        /// "sure", "unsure", "saved" or "notSaved".
+        let group: String
+        /// A different value is already held that day: these words, and the row is never written.
+        let conflict: String?
+        /// Outside its range: the save's own refusal line, shown on the row.
+        let refusal: String?
+    }
+    struct Check: Decodable, Equatable, Sendable { let title: String; let footer: String }
+    struct Sure: Decodable, Equatable, Sendable { let willSave: String; let showAll: String; let hide: String }
+    struct NotSaved: Decodable, Equatable, Sendable { let title: String; let lines: [String]; let footer: String }
+
+    let summary: String
+    let items: [Item]
+    let check: Check?
+    let sure: Sure?
+    let alreadySaved: String?
+    let notSaved: NotSaved?
+    /// The extraction's own refused and unread rows, for save all's notes.
+    let omitted: [String]
+    /// The ticked values Save sends: never one the record holds or one it refuses.
+    let saveRefs: [String]
+    /// The Save button's words; nil when no value could be written: no Save (D3).
+    let save: String?
+
+    /// The review's items in `group`, in the report's order.
+    func rows(_ group: String, of review: LabReview) -> [LabReview.Item] {
+        let refs = Set(items.filter { $0.group == group }.map(\.ref))
+        return review.items.filter { refs.contains($0.ref) }
+    }
+
+    func conflict(_ ref: String) -> String? { items.first { $0.ref == ref }?.conflict }
+    func refusal(_ ref: String) -> String? { items.first { $0.ref == ref }?.refusal }
 }
 
 /// What the review chose to file for one file (US-52 AC13d): its document, with the
@@ -94,6 +142,9 @@ struct LabSaveSummary: Decodable, Equatable, Sendable {
     let saved: Int
     let skipped: Int
     let refused: [Refused]
+    /// Ticked values another reading of the same test that day displaced, in the review's
+    /// words (US-52 AC8b); absent from an older engine.
+    var sameDay: [String]? = nil
 }
 
 /// The engine's words for a save it refused.

@@ -7,6 +7,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import * as entry from './entry';
+import { UPLOAD_REFUSAL_REASONS } from './upload-doors';
 
 const contract = JSON.parse(readFileSync(join(__dirname, 'bridge-contract.json'), 'utf8')) as {
   natives: Record<string, string>;
@@ -32,6 +33,13 @@ function parameters(name: string): string[] {
 
 /** Contract arguments to call each optional door with (one entry per door in bridge-optional.json). */
 const NOW = '2026-10-21T08:00:00.000Z';
+/** A saving phone upload holding one read lab report with one value (the save door's freeze). */
+const UPLOAD_SAVING = JSON.stringify({ phase: 'saving', platform: 'phone', run: 1, started: NOW, firstRead: NOW, attempt: 1,
+  files: [{ id: 'f1', name: 'a.pdf', bytes: 1, hash: 'h-a', pages: { count: 1, truncated: false }, status: { s: 'read', choices: { ticks: {}, testDay: null, previousDay: null, replace: {}, edits: {}, document: {} },
+    extraction: { classification: 'lab_report', reportDate: '2026-10-01', values: [{ metric: 'ldl', valueSI: 3.1, displayValue: 3.1, displayUnit: 'mmol/L', displaySystem: 'si', confidence: 'high' }], additionalValues: [], unrecognized: [], document: null } } }] });
+/** An open phone upload holding one file being hashed (shared upload PR 12). */
+const UPLOAD_OPEN = JSON.stringify({ phase: 'open', platform: 'phone', run: 1, started: NOW, firstRead: null,
+  files: [{ id: 'f1', name: 'a.pdf', bytes: 1, hash: null, pages: null, status: { s: 'hashing' } }] });
 const SAMPLE_ARGS: Record<string, unknown[]> = {
   screenJson: [readFileSync(join(__dirname, '../../docs/examples/health-roadmap.sample.json'), 'utf8'), NOW, 'phone', '{}'],
   chatEditsJson: [readFileSync(join(__dirname, '../../docs/examples/health-roadmap.sample.json'), 'utf8'),
@@ -78,15 +86,48 @@ describe('bridge contract (US-25 AC18)', () => {
     labSearchJson: { args: ['text'], call: ['ferr'], shape: [{ name: 'string', key: 'string', kind: 'string', units: ['string'] }] },
     documentOriginal: { args: ['id'], call: ['doc-1'], bytes: true },
     cloudOnline: { args: [], call: [], shape: {} }, // US-09 AC30: '{}', nothing to read
+    // US-13 AC13: one sure LDL on an empty record (no record text), ticked.
+    labReviewGroupsJson: {
+      args: ['recordJson', 'extractionJson', 'refsJson', 'reportDay', 'nowIso', 'deviceId'],
+      call: ['', JSON.stringify({ classification: 'lab_report', reportDate: '2026-10-01', values: [{ metric: 'ldl', valueSI: 3.1, displayValue: 3.1, displayUnit: 'mmol/L', displaySystem: 'si', confidence: 'high' }] }),
+        '["v0"]', '2026-10-01', NOW, 'phone'],
+      shape: { summary: 'string', items: [{ ref: 'string', group: 'string' }], sure: { willSave: 'string', showAll: 'string', hide: 'string' }, saveRefs: ['string'], save: 'string' },
+    },
     cloudEraseHeld: { args: [], call: [], words: ['none', 'transient', 'definite', 'unknown', 'expired'] }, // S50b: 'none' with no cloud open
     uploadVerdictsJson: {
       args: ['request'],
       call: [JSON.stringify({ files: [{ name: 'a.pdf', bytes: 1 }], zipMembers: ['a.pdf'] })],
       shape: { limits: { fileBytes: 'number', zipBytes: 'number', zipMembers: 'number', folderBytes: 'number' }, files: ['string'], zipMembers: ['string'] },
     },
+    // Shared upload PR 12 (US-52 AC8c): one phone pick of one file, on an empty record.
+    uploadStartJson: { args: ['platform'], call: ['phone'], shape: { phase: 'string', platform: 'string', run: 'number' } },
+    uploadStepJson: {
+      args: ['stateJson', 'eventJson', 'recordJson', 'deviceId'],
+      call: [JSON.stringify({ phase: 'choosing', platform: 'phone', run: 0 }), JSON.stringify({ type: 'picked', files: [{ id: 'f1', name: 'a.pdf', bytes: 1, kind: 'file' }], needsConsent: false, now: NOW }), '', 'phone'],
+      shape: { state: { phase: 'string', run: 'number', files: [{ id: 'string', name: 'string', status: { s: 'string' } }] }, effects: [{ type: 'string', run: 'number' }] },
+    },
+    uploadViewJson: {
+      args: ['stateJson', 'recordJson', 'nowIso', 'cloudConnected', 'deviceId'],
+      call: [UPLOAD_OPEN, '', NOW, true, 'phone'],
+      shape: { summary: 'string', files: { row: 'string', rows: [{ fileId: 'string', name: 'string', status: 'string' }] }, save: { label: 'string', enabled: 'boolean' } },
+    },
+    uploadSavePlanJson: {
+      args: ['stateJson', 'recordJson', 'nowIso', 'cloudConnected', 'deviceId'],
+      call: [UPLOAD_OPEN, '', NOW, true, 'phone'],
+      shape: { counts: { values: 'number', documents: 'number', archived: 'number', originals: 'number' } },
+    },
+    uploadUsageJson: { args: ['stateJson'], call: [UPLOAD_OPEN], shape: { known: 'number', failedFinal: 'number' } },
+    // The one Save (US-52 AC8c): a saving pick of one read lab report, off-cloud, onto an empty record.
+    uploadSaveJson: {
+      args: ['stateJson', 'recordJson', 'erase', 'nowIso', 'deviceId', 'originalsJson', 'readOriginal'],
+      call: [UPLOAD_SAVING, '', '', NOW, 'phone', '{}', () => null],
+      shape: { ok: 'boolean', record: 'string', outcome: { values: 'number', documents: 'number', archived: 'number', unstored: 'number' } },
+    },
   };
   /** Where `answer` drops or retypes what `frozen` holds: [] when it holds at least the frozen shape. */
   function shapeFaults(frozen: unknown, answer: unknown, at = '$'): string[] {
+    // 'string?': a field that is the type or null (an UploadView line that may be absent).
+    if (typeof frozen === 'string' && frozen.endsWith('?')) return answer === null ? [] : shapeFaults(frozen.slice(0, -1), answer, at);
     if (typeof frozen === 'string') return typeof answer === frozen ? [] : [`${at}: ${typeof answer}, not ${frozen}`];
     if (Array.isArray(frozen)) {
       if (!Array.isArray(answer) || !answer.length) return [`${at}: no array to check`];
@@ -104,8 +145,86 @@ describe('bridge contract (US-25 AC18)', () => {
       const door = (entry as unknown as Record<string, (...a: unknown[]) => unknown>)[name];
       if (frozen.bytes) await expect(door(...frozen.call), name).rejects.toThrow('not open');
       else if (frozen.words) expect(frozen.words, name).toContain(await door(...frozen.call));
-      else expect(shapeFaults(frozen.shape, JSON.parse(door(...frozen.call) as string)), name).toEqual([]);
+      else expect(shapeFaults(frozen.shape, JSON.parse(await door(...frozen.call) as string)), name).toEqual([]);
     }
+  });
+
+  // Review R3 of PR 1844: the shared upload doors' COMPLETE answers, every field Swift decodes, frozen
+  // (append-only like the rest): the view in each of its states, the save plan, every effect, the
+  // usage counts, and the refusal with its reasons.
+  it('shared upload doors: every field of the view, plan, effects, usage and refusal is frozen', () => {
+    const door = entry as unknown as Record<string, (...a: unknown[]) => string>;
+    const v = (metric: string, x: number, confidence = 'high', more = {}) => ({ metric, valueSI: x, displayValue: x, displayUnit: 'mmol/L', displaySystem: 'si', confidence, ...more });
+    const lab = (reportDate: string | null, values: unknown[], more = {}) => ({ classification: 'lab_report', reportDate, values, additionalValues: [], unrecognized: [], document: null, ...more });
+    const letter = { classification: 'clinic_letter', reportDate: null, values: [], additionalValues: [], unrecognized: [], document: { classification: 'clinic_letter', title: 'Letter', documentDate: '2026-01-01', contentMarkdown: 'x', metadata: {} } };
+    const NO = { ticks: {}, testDay: null, previousDay: null, replace: {}, edits: {}, document: {} };
+    const f = (id: string, status: unknown, more = {}) => ({ id, name: `${id}.pdf`, bytes: 1, hash: `h-${id}`, pages: { count: 1, truncated: false }, status, ...more });
+    const files = [
+      f('lab', { s: 'read', extraction: lab('2026-10-01', [v('ldl', 3.1), v('hdl', 1.2, 'low')], { additionalValues: [{ name: 'Ferritin', value: 80, unit: 'µg/L' }], refusedValues: [{ metric: 'creatinine', value: 90, unit: '', reason: 'No unit printed.' }] }), choices: NO }),
+      f('undated', { s: 'read', extraction: lab(null, [v('ldl', 3.2)]), choices: NO }),
+      f('prev', { s: 'read', extraction: lab('2026-10-02', [v('ldl', 3.3, 'high', { recordedAt: 'undated', printedMonth: '2025-05' })]), choices: NO }),
+      f('letter', { s: 'read', extraction: letter, choices: NO }, { pages: { count: 1, truncated: true } }),
+      f('bad', { s: 'failed', reason: 'network', attempt: 1 }),
+      f('go', { s: 'sending', attempt: 1 }, { zip: 'z.zip' }),
+      f('kn', { s: 'known', as: 'document', archiveOnly: true }, { hash: 'h-meta' }),
+    ];
+    const open = { phase: 'open', platform: 'phone', run: 1, started: NOW, firstRead: NOW, files };
+    const record = JSON.stringify({ ...JSON.parse(readFileSync(join(__dirname, '../../docs/examples/health-roadmap.sample.json'), 'utf8')),
+      documents: [{ id: 'd2', title: 'Held', type: 'clinic_letter', date: '2026-01-01', fileRef: '', contentHash: 'h-meta', mimeType: '', extractedText: '', addedAt: NOW, metadata: {}, sourceFileName: 'kn.pdf' }] });
+    const call = (name: string, ...args: unknown[]) => JSON.parse(door[name](...args));
+    const row = { fileId: 'string', ref: 'string', label: 'string', reasons: 'object', conflict: 'string?', ticked: 'boolean', replaces: 'string?', replacing: 'boolean', error: 'string?' };
+    const SECTIONS: Record<string, unknown> = {
+      undated: { kind: 'string', fileId: 'string', title: 'string', label: 'string', name: 'string' },
+      undatedPrevious: { kind: 'string', fileId: 'string', name: 'string', month: 'string?', before: 'string?' },
+      unsure: { kind: 'string', title: 'string', footer: 'string', rows: [row] },
+      failed: { kind: 'string', title: 'string', rows: [{ fileId: 'string', name: 'string', line: 'string' }], retry: 'string?' },
+      notSaved: { kind: 'string', title: 'string', lines: ['string'], footer: 'string' },
+    };
+    const view = call('uploadViewJson', JSON.stringify(open), record, NOW, true, 'phone');
+    expect(shapeFaults({
+      progress: { done: 'number', total: 'number', line: 'string', zip: 'string' }, summary: 'string',
+      sure: { line: 'string', showAll: 'string', rows: [row] },
+      documents: { line: 'string', rows: [{ fileId: 'string', title: 'string', kind: 'string', date: 'string', dateKnown: 'boolean' }] },
+      files: { row: 'string', rows: [{ fileId: 'string', name: 'string', status: 'string' }] },
+      notices: [{ fileId: 'string', name: 'string', line: 'string' }],
+      save: { label: 'string', enabled: 'boolean', why: 'string?', error: 'string?' }, stop: { label: 'string' },
+    }, view)).toEqual([]);
+    expect(view.sections.map((x: { kind: string }) => x.kind).sort()).toEqual(Object.keys(SECTIONS).sort());
+    for (const section of view.sections) expect(shapeFaults(SECTIONS[section.kind], section), section.kind).toEqual([]);
+    const failed = call('uploadViewJson', JSON.stringify({ ...open, phase: 'saveFailed', attempt: 1, message: 'Could not save.' }), record, NOW, true, 'phone');
+    expect(shapeFaults({ save: { label: 'string', enabled: 'boolean', error: 'string' } }, failed)).toEqual([]);
+    const done = call('uploadViewJson', JSON.stringify({ ...open, phase: 'done', outcome: { values: 1, documents: 1, archived: 1, unstored: 1 } }), record, NOW, true, 'phone');
+    expect(shapeFaults({ done: { line: 'string', archived: 'string', unstored: 'string' } }, done)).toEqual([]);
+
+    const fields = { documentType: 'string', title: 'string', documentDate: 'string?', contentMd: 'string', metadata: 'object', sourceFileName: 'string' };
+    const plan = call('uploadSavePlanJson', JSON.stringify({ ...open, files: files.filter((x) => x.id !== 'go') }), record, NOW, true, 'phone');
+    expect(shapeFaults({
+      labRows: [{ fileId: 'string', rows: [{ kind: 'string', value: 'number', recordedAt: 'string', source: 'string' }] }],
+      documents: [{ fileId: 'string', fields }], labArchives: [{ fileId: 'string', sourceFileName: 'string', reportDate: 'string?' }],
+      archiveOnly: [{ fileId: 'string', fields }], counts: { values: 'number', documents: 'number', archived: 'number', originals: 'number' },
+    }, plan)).toEqual([]);
+
+    // Every effect, from the steps that make them.
+    const step = (state: unknown, event: unknown) => call('uploadStepJson', JSON.stringify(state), JSON.stringify(event), '', 'phone');
+    const picked = step({ phase: 'choosing', platform: 'phone', run: 0 }, { type: 'picked', needsConsent: false, now: NOW,
+      files: [{ id: 'z', name: 'z.zip', bytes: 1, kind: 'zip' }, { id: 'a', name: 'a.pdf', bytes: 1, kind: 'file' }, { id: 'x', name: 'x.exe', bytes: 1, kind: 'file' }] });
+    const hashed = step(picked.state, { type: 'hashed', run: 1, id: 'a', hash: 'h-a' });
+    const converted = step(hashed.state, { type: 'converted', run: 1, id: 'a', pages: 1, truncated: false });
+    const stopped = step(converted.state, { type: 'stop' });
+    const saving = step({ ...open, files: files.filter((x) => x.id !== 'go') }, { type: 'saveStarted' });
+    const effects = [picked, hashed, converted, stopped, saving].flatMap((x) => x.effects);
+    const EFFECTS: Record<string, unknown> = {
+      list: { type: 'string', run: 'number', id: 'string' }, hash: { type: 'string', run: 'number', id: 'string' }, convert: { type: 'string', run: 'number', id: 'string' },
+      send: { type: 'string', run: 'number', id: 'string', attempt: 'number', flags: { ownDates: 'boolean', undatedPrev: 'boolean', refusedRows: 'boolean' } },
+      abort: { type: 'string', run: 'number', ids: ['string'] }, forget: { type: 'string', run: 'number', ids: ['string'] }, save: { type: 'string', run: 'number', attempt: 'number' },
+    };
+    expect([...new Set(effects.map((x: { type: string }) => x.type))].sort()).toEqual(Object.keys(EFFECTS).sort());
+    for (const effect of effects) expect(shapeFaults(EFFECTS[effect.type], effect), effect.type).toEqual([]);
+
+    expect(shapeFaults({ known: 'number', failedFinal: 'number', firstReadSeconds: 'number' }, call('uploadUsageJson', JSON.stringify(open)))).toEqual([]);
+    const refusal = call('uploadStepJson', '{', '{}', '', 'phone');
+    expect(shapeFaults({ ok: 'boolean', reason: 'string', message: 'string' }, refusal)).toEqual([]);
+    expect(UPLOAD_REFUSAL_REASONS).toEqual(['invalid-platform', 'invalid-state', 'invalid-event', 'invalid-record', 'record-too-new', 'engine-error']);
   });
 
   it('the frozen-shape check catches a dropped or retyped field', () => {

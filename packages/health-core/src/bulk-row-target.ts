@@ -4,23 +4,25 @@
  * them here, so a review's slot and outcome are the write's.
  */
 import { bloodTestKeyOf } from './blood-tests';
+import { labNameForUnit } from './lab-catalog-shares';
 import type { MetricType } from './units';
 
 /** The parts of a `BulkRow` this reads (a type, so no import cycle with record-edits). */
 type TargetedRow =
   | { kind: 'measurement'; metricType: string; source: string }
-  | { kind: 'lab'; metricName: string; source: string };
+  | { kind: 'lab'; metricName: string; unit: string; source: string };
 
 /**
  * Brad D5 (US-66 AC6): an extra value named like a core test is that core
  * value, converted. An imported creatinine never, since it may be urine
- * (US-12 AC11); one the person typed is their blood value. `slot` is the
+ * (US-12 AC11); one the person typed is their blood value. A count's name in
+ * a unit its share takes is the share's key (US-21 AC28). `slot` is the
  * `slotKey` kind the row is placed under.
  */
 export function bulkRowTarget(row: TargetedRow): { named: MetricType | null; asLab: boolean; metric: string; slot: 'measurement' | 'lab' } {
   const named = row.kind === 'lab' ? bloodTestKeyOf(row.metricName) : null;
   const asLab = row.kind === 'lab' && (!named || (named === 'creatinine' && row.source !== 'manual'));
-  const metric = row.kind === 'measurement' ? row.metricType : asLab ? row.metricName : named!;
+  const metric = row.kind === 'measurement' ? row.metricType : asLab ? labNameForUnit(row.metricName, row.unit) : named!;
   return { named, asLab, metric, slot: asLab ? 'lab' : 'measurement' };
 }
 

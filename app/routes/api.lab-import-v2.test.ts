@@ -1,26 +1,15 @@
 /**
- * The batch poll is a capability, not a lookup. A batch id comes from
- * Anthropic and is not a secret; the poll it names returns EXTRACTED LAB TEXT.
- * So the POST that creates a batch hands back a random `pollToken`, and a poll
- * that cannot present it gets the same answer as a batch that never existed.
- *
- * And the poll itself is a POST: the server logs request URLs to stdout, so a
- * token in the query string is a logged capability. The GET side polls nothing.
+ * The website's lab read: one file per POST through the app proxy (US-12). The batch path and its
+ * poll are gone (owner ruling Q2, US-12 AC26): a body that asks for one is an invalid request.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const createBatch = vi.fn(async () => ({ batchId: 'batch_abc' }));
-const pollBatch = vi.fn(async () => ({ status: 'ended' as const, completed: 1, total: 1, results: [{ fileName: 'a.pdf' }] }));
 const extractOrClassify = vi.fn();
-const deleteBatch = vi.fn(async () => true);
 
 vi.mock('@sentry/react-router', () => ({ captureException: vi.fn(), captureMessage: vi.fn() }));
 vi.mock('../lib/anthropic.server', async (importOriginal) => ({
   ...(await importOriginal<object>()),
-  createBatch: (...a: unknown[]) => createBatch(...(a as [])),
-  pollBatch: (...a: unknown[]) => pollBatch(...(a as [])),
   extractOrClassify: (...a: unknown[]) => extractOrClassify(...(a as [])),
-  deleteBatch: (...a: unknown[]) => deleteBatch(...(a as [])),
 }));
 vi.mock('../lib/local-first-route.server', async (importOriginal) => ({
   ...(await importOriginal<object>()),
@@ -28,190 +17,70 @@ vi.mock('../lib/local-first-route.server', async (importOriginal) => ({
 }));
 
 import * as Sentry from '@sentry/react-router';
-import { BatchRefusedError, ExtractionStopError } from '../lib/anthropic.server';
+import { ExtractionStopError } from '../lib/anthropic.server';
 import { IMPORT_LIMITS } from '../../packages/health-core/src/import-hints';
 import { machineFiles } from '../lib/rate-limiter';
 import { action, loader } from './api.lab-import-v2';
 import { streamingPost } from '../lib/capped-body.test-helpers';
 
-const FILES = [{ fileName: 'a.pdf', pages: [{ type: 'image', content: 'AAAA', mimeType: 'image/png' }] }];
+const PAGES = [{ type: 'image', content: 'AAAA', mimeType: 'image/png' }];
+const URL = 'https://health-tool-app.fly.dev/api/lab-import-v2';
 
 let ipCounter = 0;
-/** A fresh IP per batch — the per-IP daily quota is module-global. */
-function post(ip = `10.1.0.${++ipCounter}`): Request {
-  return new Request('https://health-tool-app.fly.dev/api/lab-import-v2', {
-    method: 'POST',
-    headers: { 'fly-client-ip': ip },
-    body: JSON.stringify({ batch: true, files: FILES }),
-  });
-}
-
-/** A poll: POST, token in the body, nothing identifying in the URL. */
-function poll(body: Record<string, unknown>): Request {
-  return new Request('https://health-tool-app.fly.dev/api/lab-import-v2', {
-    method: 'POST',
-    headers: { 'fly-client-ip': '10.1.9.9' },
-    body: JSON.stringify(body),
-  });
-}
-
-async function newBatch(): Promise<{ batchId: string; pollToken: string }> {
-  const created = await (await action({ request: post() } as never)).json();
-  expect(created.success).toBe(true);
-  return created;
+/** One file's read; a fresh IP unless given: the per-IP daily quota is module-global. */
+const single = (extra: Record<string, unknown> = {}, ip = `10.1.0.${++ipCounter}`) => new Request(URL, {
+  method: 'POST', headers: { 'fly-client-ip': ip }, body: JSON.stringify({ pages: PAGES, ...extra }),
+});
+const remaining = async (ip: string) => (await (await loader({ request: new Request(URL, { headers: { 'fly-client-ip': ip } }) } as never)).json()).remaining;
+/** Spends `n` of the IP's files, one read each. */
+async function spend(ip: string, n: number) {
+  for (let i = 0; i < n; i++) {
+    extractOrClassify.mockResolvedValueOnce({ classification: 'other' });
+    expect((await action({ request: single({}, ip) } as never)).status).toBe(200);
+  }
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
-  createBatch.mockResolvedValue({ batchId: 'batch_abc' });
-  deleteBatch.mockResolvedValue(true);
-  pollBatch.mockResolvedValue({ status: 'ended', completed: 1, total: 1, results: [{ fileName: 'a.pdf' }] });
 });
 
-describe('the batch poll needs the token the upload was given', () => {
-  it('hands back a token that is random per batch and not the id', async () => {
-    const first = await newBatch();
-    createBatch.mockResolvedValue({ batchId: 'batch_two' });
-    const second = await newBatch();
-    expect(first.pollToken).toMatch(/^[A-Za-z0-9_-]{20,}$/);
-    expect(first.pollToken).not.toBe(first.batchId);
-    expect(second.pollToken).not.toBe(first.pollToken);
+// US-12 AC26 (owner ruling Q2): every upload reads file by file; the batch and its poll are gone.
+describe('US-12 AC26: no batch, no poll', () => {
+  it('a batch body is an invalid request, read by nothing and charged nothing', async () => {
+    const ip = '10.3.0.1';
+    const res = await action({ request: new Request(URL, { method: 'POST', headers: { 'fly-client-ip': ip }, body: JSON.stringify({ batch: true, files: [{ pages: PAGES }] }) }) } as never);
+    expect(res.status).toBe(400);
+    expect(await remaining(ip)).toBe(200);
+    expect(extractOrClassify).not.toHaveBeenCalled();
   });
 
-  it('404s a poll with no token, even though the batch exists', async () => {
-    const { batchId } = await newBatch();
-    const answer = await action({ request: poll({ batchId }) } as never);
-    expect(answer.status).toBe(404);
-    expect(pollBatch).not.toHaveBeenCalled();
-  });
-
-  it('404s a wrong token — a right-length guess and a short one answer alike', async () => {
-    const { batchId, pollToken } = await newBatch();
-    const wrongSameLength = 'a'.repeat(pollToken.length);
-    for (const token of [wrongSameLength, 'x', `${pollToken}x`, '']) {
-      const answer = await action({ request: poll({ batchId, pollToken: token }) } as never);
-      expect(answer.status, token).toBe(404);
-      expect(await answer.json()).toEqual({ error: 'Batch not found' });
-    }
-    expect(pollBatch).not.toHaveBeenCalled();
-  });
-
-  it('polls with the token', async () => {
-    const { batchId, pollToken } = await newBatch();
-    const answer = await action({ request: poll({ batchId, pollToken }) } as never);
-    expect(answer.status).toBe(200);
-    expect(await answer.json()).toMatchObject({ status: 'ended', completed: 1, total: 1 });
-    expect(pollBatch).toHaveBeenCalledWith(batchId);
-  });
-
-  it('404s an id nobody created, token or not — the same answer as a bad token', async () => {
-    const answer = await action({ request: poll({ batchId: 'batch_nope', pollToken: 'whatever' }) } as never);
-    expect(answer.status).toBe(404);
-    expect(await answer.json()).toEqual({ error: 'Batch not found' });
-  });
-
-  it('never polls from the GET side — a token in the query buys nothing', async () => {
-    const { batchId, pollToken } = await newBatch();
-    const query = `batchId=${batchId}&pollToken=${encodeURIComponent(pollToken)}`;
-    const answer = await loader({
-      request: new Request(`https://health-tool-app.fly.dev/api/lab-import-v2?${query}`, {
-        headers: { 'fly-client-ip': '10.1.9.9' },
-      }),
-    } as never);
-    expect(pollBatch).not.toHaveBeenCalled();
-    expect(await answer.json()).toEqual({ allowed: true, remaining: expect.any(Number) });
-  });
-
-  // US-15 AC34: one Sentry message per stopped file, sent when the batch ends,
-  // never again when the same ended batch is polled once more.
-  it('reports each stopped file once, with its category, however often the ended batch is polled', async () => {
-    const ended = {
-      status: 'ended', completed: 2, total: 2,
-      results: [{ index: 0, errorCode: 'refused' }, { index: 1, errorCode: 'too_long' }],
-      stops: [new ExtractionStopError('refused', 'bio'), new ExtractionStopError('too_long')],
-    } as never;
-    pollBatch.mockResolvedValueOnce(ended).mockResolvedValueOnce(ended);
-    const { batchId, pollToken } = await newBatch();
-    const answer = await (await action({ request: poll({ batchId, pollToken }) } as never)).json();
-    await action({ request: poll({ batchId, pollToken }) } as never);
-    expect(answer).not.toHaveProperty('stops');
-    expect(vi.mocked(Sentry.captureMessage).mock.calls).toEqual([
-      ['Lab import: extraction refused', expect.objectContaining({ tags: expect.objectContaining({ path: 'batch', refusalCategory: 'bio' }) })],
-      ['Lab import: extraction too_long', expect.objectContaining({ tags: expect.objectContaining({ path: 'batch', stopCode: 'too_long' }) })],
-    ]);
-  });
-
-  it('a poll costs no quota — only the upload does', async () => {
-    pollBatch.mockResolvedValue({ status: 'processing', completed: 0, total: 1 } as never);
-    const { batchId, pollToken } = await newBatch();
-    for (let i = 0; i < 5; i++) await action({ request: poll({ batchId, pollToken }) } as never);
-    expect(pollBatch).toHaveBeenCalledTimes(1);
-    expect(createBatch).toHaveBeenCalledTimes(1);
+  it('a poll body is an invalid request', async () => {
+    const res = await action({ request: new Request(URL, { method: 'POST', headers: { 'fly-client-ip': '10.3.0.2' }, body: JSON.stringify({ batchId: 'batch_x', pollToken: 't' }) }) } as never);
+    expect(res.status).toBe(400);
   });
 });
 
-// US-12 AC18: the poll never deletes. A lost answer must not lose the batch:
-// a re-poll gets the same results until the sweep deletes it
-// (api.lab-import-v2.sweep.test.ts).
-describe('US-12 AC18: the poll answers an ended batch again and deletes nothing', () => {
-  it('serves the results to a second poll, with no delete', async () => {
-    const { batchId, pollToken } = await newBatch();
-    const first = await (await action({ request: poll({ batchId, pollToken }) } as never)).json();
-    const again = await action({ request: poll({ batchId, pollToken }) } as never);
-    expect(again.status).toBe(200);
-    expect(await again.json()).toEqual(first);
-    expect(deleteBatch).not.toHaveBeenCalled();
-  });
-});
-
-// US-12 AC17: the per-IP daily limit is the upload window's own file cap, so
-// any batch the window takes fits a fresh day.
+// US-12 AC17: the per-IP daily limit is the upload window's own file cap, so one upload's files fit a fresh day.
 describe('US-12 AC17: one IP may send as many files a day as one upload takes', () => {
-  const many = (n: number, ip: string) => new Request('https://health-tool-app.fly.dev/api/lab-import-v2', {
-    method: 'POST', headers: { 'fly-client-ip': ip },
-    body: JSON.stringify({ batch: true, files: Array.from({ length: n }, () => FILES[0]) }),
-  });
-
   it('is 200 files, the website upload cap', async () => {
     expect(IMPORT_LIMITS.websiteFiles).toBe(200);
-    const preflight = await loader({ request: new Request('https://health-tool-app.fly.dev/api/lab-import-v2', { headers: { 'fly-client-ip': '10.2.0.1' } }) } as never);
-    expect(await preflight.json()).toEqual({ allowed: true, remaining: 200 });
+    expect(await remaining('10.2.0.1')).toBe(200);
   });
 
-  it('takes a 200-file batch from a fresh IP, then refuses the next file with the daily-limit answer', async () => {
-    const full = await action({ request: many(200, '10.2.0.2') } as never);
-    expect(full.status).toBe(200);
-    const over = await action({ request: many(1, '10.2.0.2') } as never);
+  it('takes 200 files from a fresh IP, then refuses the next file with the daily-limit answer', async () => {
+    await spend('10.2.0.2', 200);
+    const over = await action({ request: single({}, '10.2.0.2') } as never);
     expect(over.status).toBe(429);
     expect(await over.json()).toEqual({ success: false, error: 'Daily upload limit reached. You can upload more tomorrow.', code: 'daily_limit' });
   });
-});
 
-// Privacy: a file name can hold a patient's name. The server reads results by
-// request index, so it takes no name, and drops one an older widget still sends
-// (and the `file-N` label the current widget sends for older servers).
-describe('privacy: the batch takes no file name', () => {
-  const PAGES = FILES[0].pages;
-  const batch = (files: unknown[]) => new Request('https://health-tool-app.fly.dev/api/lab-import-v2', {
-    method: 'POST',
-    headers: { 'fly-client-ip': `10.1.0.${++ipCounter}` },
-    body: JSON.stringify({ batch: true, files }),
-  });
-
-  it('accepts a batch of pages alone', async () => {
-    const created = await (await action({ request: batch([{ pages: PAGES }]) } as never)).json();
-    expect(created.success).toBe(true);
-    expect(createBatch).toHaveBeenCalledWith([{ pages: PAGES }]);
-  });
-
-  it('drops the name an older widget sends before the batch is built', async () => {
-    await action({ request: batch([{ fileName: 'Jane Citizen bloods.pdf', pages: PAGES }]) } as never);
-    expect(createBatch).toHaveBeenCalledWith([{ pages: PAGES }]);
-  });
-
-  it('drops the compatibility label the current widget sends (US-12 AC9)', async () => {
-    await action({ request: batch([{ fileName: 'file-1', pages: PAGES }]) } as never);
-    expect(createBatch).toHaveBeenCalledWith([{ pages: PAGES }]);
+  it('the machine cap refuses: the IP is not charged', async () => {
+    machineFiles.take('machine', machineFiles.remaining('machine'));
+    try {
+      const res = await action({ request: single({}, '10.4.0.1') } as never);
+      expect(res.status).toBe(429);
+      expect(await remaining('10.4.0.1')).toBe(200);
+    } finally { machineFiles.reset(); }
   });
 });
 
@@ -219,12 +88,6 @@ describe('privacy: the batch takes no file name', () => {
 // same request stops the same way again. The answer says which, so the widget
 // does not say "try again", and carries no document text.
 describe('a single file that stopped short', () => {
-  const single = () => new Request('https://health-tool-app.fly.dev/api/lab-import-v2', {
-    method: 'POST',
-    headers: { 'fly-client-ip': `10.1.0.${++ipCounter}` },
-    body: JSON.stringify({ pages: FILES[0].pages }),
-  });
-
   it('answers a refusal 422 "refused" and reports its category, not an exception', async () => {
     extractOrClassify.mockRejectedValueOnce(new ExtractionStopError('refused', 'general_harms'));
     const answer = await action({ request: single() } as never);
@@ -241,8 +104,7 @@ describe('a single file that stopped short', () => {
     const request = single();
     const ip = request.headers.get('fly-client-ip')!;
     await action({ request } as never);
-    const preflight = await loader({ request: new Request('https://health-tool-app.fly.dev/api/lab-import-v2', { headers: { 'fly-client-ip': ip } }) } as never);
-    expect((await preflight.json()).remaining).toBe(199);
+    expect(await remaining(ip)).toBe(199);
   });
 
   // One deadline for the file: a malformed answer's re-send gets what is left,
@@ -250,7 +112,7 @@ describe('a single file that stopped short', () => {
   it('gives the file one 60 s deadline', async () => {
     extractOrClassify.mockResolvedValueOnce({ classification: 'other' });
     await action({ request: single() } as never);
-    expect(extractOrClassify).toHaveBeenCalledWith(FILES[0].pages, { timeoutMs: 60_000 });
+    expect(extractOrClassify).toHaveBeenCalledWith(PAGES, { timeoutMs: 60_000, retryRateLimit: true });
   });
 
   it('answers a max_tokens stop 422 "too_long"', async () => {
@@ -281,16 +143,6 @@ describe('US-12 AC12: a value with its own day reaches only a widget that reads 
       { name: 'ferritin', value: 95, unit: 'ug/L', recordedAt: '2025-09-02' },
     ],
   });
-  const single = (extra: Record<string, unknown>) => new Request('https://health-tool-app.fly.dev/api/lab-import-v2', {
-    method: 'POST',
-    headers: { 'fly-client-ip': `10.1.0.${++ipCounter}` },
-    body: JSON.stringify({ pages: FILES[0].pages, ...extra }),
-  });
-  const batch = (extra: Record<string, unknown>) => new Request('https://health-tool-app.fly.dev/api/lab-import-v2', {
-    method: 'POST',
-    headers: { 'fly-client-ip': `10.1.0.${++ipCounter}` },
-    body: JSON.stringify({ batch: true, files: FILES, ...extra }),
-  });
 
   it('single file, old widget (no flag): the previous column is cut, the primary kept', async () => {
     extractOrClassify.mockResolvedValueOnce(dated());
@@ -306,15 +158,6 @@ describe('US-12 AC12: a value with its own day reaches only a widget that reads 
     expect(data.additionalValues).toHaveLength(2);
   });
 
-  it('batch, old widget: each ended file loses its dated values; an error entry passes through', async () => {
-    const { batchId, pollToken } = await (await action({ request: batch({}) } as never)).json();
-    pollBatch.mockResolvedValueOnce({ status: 'ended', completed: 2, total: 2, results: [{ index: 0, ...dated() }, { index: 1, errorCode: 'server_error' }] } as never);
-    const { results } = await (await action({ request: poll({ batchId, pollToken }) } as never)).json();
-    expect(results[0].values.map((v: { valueSI: number }) => v.valueSI)).toEqual([2.1]);
-    expect(results[0].additionalValues.map((v: { value: number }) => v.value)).toEqual([80]);
-    expect(results[1]).toEqual({ index: 1, errorCode: 'server_error' });
-  });
-
   // US-12 AC14: an undated previous column carries the `recordedAt` marker,
   // so an old tab, which would file it on the report date, never gets it.
   const undated = () => {
@@ -324,16 +167,11 @@ describe('US-12 AC12: a value with its own day reaches only a widget that reads 
     return result;
   };
 
-  it('US-12 AC14 — no flag: an undated previous value is cut too, single file and batch', async () => {
+  it('US-12 AC14 — no flag: an undated previous value is cut too', async () => {
     extractOrClassify.mockResolvedValueOnce(undated());
     const { data } = await (await action({ request: single({}) } as never)).json();
     expect(data.values.map((v: { valueSI: number }) => v.valueSI)).toEqual([2.1]);
     expect(data.additionalValues.map((v: { value: number }) => v.value)).toEqual([80]);
-    const { batchId, pollToken } = await (await action({ request: batch({}) } as never)).json();
-    pollBatch.mockResolvedValueOnce({ status: 'ended', completed: 1, total: 1, results: [{ index: 0, ...undated() }] } as never);
-    const { results } = await (await action({ request: poll({ batchId, pollToken }) } as never)).json();
-    expect(results[0].values.map((v: { valueSI: number }) => v.valueSI)).toEqual([2.1]);
-    expect(results[0].additionalValues.map((v: { value: number }) => v.value)).toEqual([80]);
   });
 
   // A tab from before AC14 sends `ownDates` but reads "undated" as a date: it
@@ -344,16 +182,11 @@ describe('US-12 AC12: a value with its own day reaches only a widget that reads 
     return result;
   };
 
-  it('US-12 AC14 — ownDates alone (a tab from before AC14): the undated value is cut, a dated one kept, single file and batch', async () => {
+  it('US-12 AC14 — ownDates alone (a tab from before AC14): the undated value is cut, a dated one kept', async () => {
     extractOrClassify.mockResolvedValueOnce(undatedAndDated());
     const { data } = await (await action({ request: single({ ownDates: true }) } as never)).json();
     expect(data.values.map((v: { recordedAt?: string }) => v.recordedAt)).toEqual([undefined, '2025-09-02']);
     expect(data.additionalValues.map((v: { recordedAt?: string }) => v.recordedAt)).toEqual([undefined]);
-    const { batchId, pollToken } = await (await action({ request: batch({ ownDates: true }) } as never)).json();
-    pollBatch.mockResolvedValueOnce({ status: 'ended', completed: 1, total: 1, results: [{ index: 0, ...undatedAndDated() }] } as never);
-    const { results } = await (await action({ request: poll({ batchId, pollToken }) } as never)).json();
-    expect(results[0].values.map((v: { recordedAt?: string }) => v.recordedAt)).toEqual([undefined, '2025-09-02']);
-    expect(results[0].additionalValues.map((v: { recordedAt?: string }) => v.recordedAt)).toEqual([undefined]);
   });
 
   it('US-12 AC14 — undatedPrev without ownDates: every own-dated value is still cut', async () => {
@@ -362,31 +195,18 @@ describe('US-12 AC12: a value with its own day reaches only a widget that reads 
     expect(data.values.map((v: { recordedAt?: string }) => v.recordedAt)).toEqual([undefined]);
   });
 
-  it('US-12 AC14 — ownDates is `true` or absent: any other value (2 included) is an invalid request, single file and batch', async () => {
+  it('US-12 AC14 — ownDates is `true` or absent: any other value (2 included) is an invalid request', async () => {
     for (const ownDates of [2, 3, '2', false]) {
       expect((await action({ request: single({ ownDates }) } as never)).status, String(ownDates)).toBe(400);
-      expect((await action({ request: batch({ ownDates }) } as never)).status, String(ownDates)).toBe(400);
     }
     expect(extractOrClassify).not.toHaveBeenCalled();
   });
 
-  it('US-12 AC14 — both flags (this widget): the undated value answers, marked, single file and batch', async () => {
+  it('US-12 AC14 — both flags (this widget): the undated value answers, marked', async () => {
     extractOrClassify.mockResolvedValueOnce(undatedAndDated());
     const { data } = await (await action({ request: single({ ownDates: true, undatedPrev: true }) } as never)).json();
     expect(data.values.map((v: { recordedAt?: string }) => v.recordedAt)).toEqual([undefined, 'undated', '2025-09-02']);
     expect(data.additionalValues.map((v: { recordedAt?: string }) => v.recordedAt)).toEqual([undefined, 'undated']);
-    const { batchId, pollToken } = await (await action({ request: batch({ ownDates: true, undatedPrev: true }) } as never)).json();
-    pollBatch.mockResolvedValueOnce({ status: 'ended', completed: 1, total: 1, results: [{ index: 0, ...undatedAndDated() }] } as never);
-    const { results } = await (await action({ request: poll({ batchId, pollToken }) } as never)).json();
-    expect(results[0].values.map((v: { recordedAt?: string }) => v.recordedAt)).toEqual([undefined, 'undated', '2025-09-02']);
-  });
-
-  it('batch, new widget: the poll answers both columns', async () => {
-    const { batchId, pollToken } = await (await action({ request: batch({ ownDates: true }) } as never)).json();
-    pollBatch.mockResolvedValueOnce({ status: 'ended', completed: 1, total: 1, results: [{ index: 0, ...dated() }] } as never);
-    const { results } = await (await action({ request: poll({ batchId, pollToken }) } as never)).json();
-    expect(results[0].values).toHaveLength(2);
-    expect(results[0].additionalValues).toHaveLength(2);
   });
 });
 
@@ -403,14 +223,6 @@ describe('US-12 AC15: a refused value reaches an old widget as a value that coul
     ],
   });
   const FLAGS = { ownDates: true, undatedPrev: true };
-  const single = (extra: Record<string, unknown>) => new Request('https://health-tool-app.fly.dev/api/lab-import-v2', {
-    method: 'POST', headers: { 'fly-client-ip': `10.1.0.${++ipCounter}` },
-    body: JSON.stringify({ pages: FILES[0].pages, ...extra }),
-  });
-  const batch = (extra: Record<string, unknown>) => new Request('https://health-tool-app.fly.dev/api/lab-import-v2', {
-    method: 'POST', headers: { 'fly-client-ip': `10.1.0.${++ipCounter}` },
-    body: JSON.stringify({ batch: true, files: FILES, ...extra }),
-  });
 
   it('single file: an old widget gets each refused value it reads added to droppedValueCount; this one gets them listed, uncounted', async () => {
     extractOrClassify.mockResolvedValueOnce(refusing());
@@ -425,23 +237,13 @@ describe('US-12 AC15: a refused value reaches an old widget as a value that coul
     expect(now.refusedValues).toHaveLength(2);
   });
 
-  it('batch: the same rule on the poll', async () => {
-    for (const [extra, dropped] of [[FLAGS, 3], [{ ...FLAGS, refusedRows: true }, 1]] as const) {
-      const { batchId, pollToken } = await (await action({ request: batch(extra) } as never)).json();
-      pollBatch.mockResolvedValueOnce({ status: 'ended', completed: 1, total: 1, results: [{ index: 0, ...refusing() }] } as never);
-      const { results } = await (await action({ request: poll({ batchId, pollToken }) } as never)).json();
-      expect(results[0].droppedValueCount).toBe(dropped);
-    }
-  });
-
   it('refusedRows is `true` or absent', async () => {
     expect((await action({ request: single({ refusedRows: 1 }) } as never)).status).toBe(400);
-    expect((await action({ request: batch({ refusedRows: 'yes' }) } as never)).status).toBe(400);
   });
 });
 
 // The widget and the iPhone name each value the parse dropped (US-12 AC19):
-// the route hands the names and reasons on, on the single and the batch path.
+// the route hands the names and reasons on.
 describe('US-12 AC19: the dropped values\' names reach the widget', () => {
   const unread = [{ name: 'hdl', reason: 'unreadable' }, { name: 'lpa', reason: 'unreadable' }];
   const partial = () => ({
@@ -449,19 +251,12 @@ describe('US-12 AC19: the dropped values\' names reach the widget', () => {
     values: [{ metric: 'ldl', valueSI: 2.1, displayValue: 2.1, displayUnit: 'mmol/L', displaySystem: 'si', confidence: 'high' }],
     additionalValues: [],
   });
-  const body = (extra: Record<string, unknown>) => new Request('https://health-tool-app.fly.dev/api/lab-import-v2', {
-    method: 'POST', headers: { 'fly-client-ip': `10.1.0.${++ipCounter}` },
-    body: JSON.stringify({ ownDates: true, undatedPrev: true, refusedRows: true, ...extra }),
-  });
+  const body = (extra: Record<string, unknown>) => single({ ownDates: true, undatedPrev: true, refusedRows: true, ...extra });
 
-  it('single file and batch poll alike', async () => {
+  it('a single file', async () => {
     extractOrClassify.mockResolvedValueOnce(partial());
-    const one = (await (await action({ request: body({ pages: FILES[0].pages }) } as never)).json()).data;
+    const one = (await (await action({ request: body({}) } as never)).json()).data;
     expect(one).toMatchObject({ droppedValueCount: 2, unreadValues: unread });
-    const { batchId, pollToken } = await (await action({ request: body({ batch: true, files: FILES }) } as never)).json();
-    pollBatch.mockResolvedValueOnce({ status: 'ended', completed: 1, total: 1, results: [{ index: 0, ...partial() }] } as never);
-    const { results } = await (await action({ request: poll({ batchId, pollToken }) } as never)).json();
-    expect(results[0]).toMatchObject({ droppedValueCount: 2, unreadValues: unread });
   });
 
   it('names only rows from a column this caller is offered, and the count drops the rest with their column', async () => {
@@ -470,7 +265,7 @@ describe('US-12 AC19: the dropped values\' names reach the widget', () => {
     ] });
     const ask = async (flags: Record<string, unknown>) => {
       extractOrClassify.mockResolvedValueOnce(columns());
-      return (await (await action({ request: body({ pages: FILES[0].pages, ownDates: undefined, undatedPrev: undefined, ...flags }) } as never)).json()).data;
+      return (await (await action({ request: body({ ownDates: undefined, undatedPrev: undefined, ...flags }) } as never)).json()).data;
     };
     // The iPhone: its own days, no undated column.
     expect(await ask({ ownDates: true })).toMatchObject({ droppedValueCount: 2, unreadValues: [{ name: 'hdl', reason: 'unreadable' }, { name: 'hdl', reason: 'unreadable', recordedAt: '2025-06-01' }] });
@@ -484,74 +279,26 @@ describe('US-12 AC19: the dropped values\' names reach the widget', () => {
     extractOrClassify.mockResolvedValueOnce({ ...partial(), droppedValueCount: 2, unreadValues: [
       { name: '', reason: 'unreadable' }, { name: '', reason: 'unreadable', recordedAt: 'undated' },
     ] });
-    const data = (await (await action({ request: body({ pages: FILES[0].pages, undatedPrev: undefined }) } as never)).json()).data;
+    const data = (await (await action({ request: body({ undatedPrev: undefined }) } as never)).json()).data;
     expect(data).toMatchObject({ droppedValueCount: 1, unreadValues: [{ name: '', reason: 'unreadable' }] });
-  });
-});
-
-// PR #201 review R2: a file is charged only if it reaches Anthropic. Busy is
-// covered in api.lab-import-v2.sweep.test.ts (it fills the batch table).
-describe('US-12 AC17: a batch that never reaches Anthropic costs no quota', () => {
-  const remaining = async (ip: string) =>
-    (await (await loader({ request: new Request('https://health-tool-app.fly.dev/api/lab-import-v2', { headers: { 'fly-client-ip': ip } }) } as never)).json()).remaining;
-  const one = (ip: string) => new Request('https://health-tool-app.fly.dev/api/lab-import-v2', {
-    method: 'POST', headers: { 'fly-client-ip': ip }, body: JSON.stringify({ batch: true, files: FILES }),
-  });
-
-  it('the machine cap refuses: the IP is not charged', async () => {
-    machineFiles.take('machine', machineFiles.remaining('machine'));
-    try {
-      const res = await action({ request: one('10.4.0.1') } as never);
-      expect(res.status).toBe(429);
-      expect(await remaining('10.4.0.1')).toBe(200);
-    } finally { machineFiles.reset(); }
-  });
-
-  it('Anthropic certainly refused the batch (a non-OK answer, or no key): the IP and the machine are both refunded', async () => {
-    for (const [i, message] of ['Batch API error (status 500)', 'ANTHROPIC_API_KEY not configured'].entries()) {
-      createBatch.mockRejectedValueOnce(new BatchRefusedError(message));
-      const machineBefore = machineFiles.remaining('machine');
-      const res = await action({ request: one(`10.4.0.${2 + i}`) } as never);
-      expect(res.status).toBe(500);
-      expect(await remaining(`10.4.0.${2 + i}`)).toBe(200);
-      expect(machineFiles.remaining('machine')).toBe(machineBefore);
-    }
-  });
-
-  // The batch may exist (Codex R2, adversary F1): a timeout, a network failure
-  // or an unreadable 200 keeps the charge.
-  it('a timeout, a network failure or an unreadable 200 keeps the charge', async () => {
-    const maybeMade = [
-      new DOMException('The operation was aborted due to timeout', 'TimeoutError'),
-      new TypeError('fetch failed'),
-      new SyntaxError('Unexpected end of JSON input'),
-    ];
-    for (const [i, err] of maybeMade.entries()) {
-      createBatch.mockRejectedValueOnce(err);
-      const machineBefore = machineFiles.remaining('machine');
-      const res = await action({ request: one(`10.4.1.${i}`) } as never);
-      expect(res.status).toBe(500);
-      expect(await remaining(`10.4.1.${i}`)).toBe(199);
-      expect(machineFiles.remaining('machine')).toBe(machineBefore - 1);
-    }
   });
 });
 
 describe('lab-import body cap (US-09 AC25)', () => {
   const MB = 1024 * 1024;
   it('answers 413 to a body over 200 MB whose Content-Length lies low, and stops reading', async () => {
-    const { request, pulled } = streamingPost('https://health-tool-app.fly.dev/api/lab-import-v2', 260 * MB, {
+    const { request, pulled } = streamingPost(URL, 260 * MB, {
       headers: { 'fly-client-ip': '10.1.8.1', 'content-length': '1000' }, chunkBytes: MB,
     });
     const res = await action({ request } as never);
     expect(res.status).toBe(413);
     expect(await res.json()).toEqual({ success: false, error: 'Request too large' });
     expect(pulled.bytes).toBeLessThanOrEqual(202 * MB);
-    expect(createBatch).not.toHaveBeenCalled();
+    expect(extractOrClassify).not.toHaveBeenCalled();
   });
 
   it('answers 413 to a declared length over 200 MB without reading it', async () => {
-    const { request, pulled } = streamingPost('https://health-tool-app.fly.dev/api/lab-import-v2', 10, {
+    const { request, pulled } = streamingPost(URL, 10, {
       headers: { 'fly-client-ip': '10.1.8.2', 'content-length': String(200 * MB + 1) },
     });
     expect((await action({ request } as never)).status).toBe(413);
@@ -559,91 +306,61 @@ describe('lab-import body cap (US-09 AC25)', () => {
   });
 });
 
-// US-12 AC17b: an IP or a machine with no file left today can only poll, so
-// its upload is refused after at most a poll's worth of it is read (64 KB,
-// plus the two chunks a stream reads ahead, as the AC25 case below allows);
-// a larger body is not parsed and nothing is charged.
+// US-12 AC17b: an IP or a machine with no file left today can read nothing, so
+// its upload is refused after at most 64 KB of it is read (plus the two chunks
+// a stream reads ahead); a larger body is not parsed and nothing is charged.
 describe('US-12 AC17b: a spent day is refused after at most 64 KB of the upload is read', () => {
   const MB = 1024 * 1024;
   const KB = 1024;
-  const many = (n: number, ip: string) => new Request('https://health-tool-app.fly.dev/api/lab-import-v2', {
-    method: 'POST', headers: { 'fly-client-ip': ip },
-    body: JSON.stringify({ batch: true, files: Array.from({ length: n }, () => FILES[0]) }),
-  });
   const limit = { success: false, error: 'Daily upload limit reached. You can upload more tomorrow.', code: 'daily_limit' };
 
   it('reads at most 64 KB of an upload from an IP that has used its 200 files', async () => {
-    expect((await action({ request: many(200, '10.5.0.1') } as never)).status).toBe(200);
-    createBatch.mockClear();
-    const { request, pulled } = streamingPost('https://health-tool-app.fly.dev/api/lab-import-v2', 50 * MB, {
-      headers: { 'fly-client-ip': '10.5.0.1' }, chunkBytes: 16 * KB,
-    });
+    await spend('10.5.0.1', 200);
+    extractOrClassify.mockClear();
+    const { request, pulled } = streamingPost(URL, 50 * MB, { headers: { 'fly-client-ip': '10.5.0.1' }, chunkBytes: 16 * KB });
     const res = await action({ request } as never);
     expect(pulled.bytes).toBeLessThanOrEqual(64 * KB + 2 * 16 * KB);
     expect(res.status).toBe(429);
     expect(await res.json()).toEqual(limit);
-    expect(createBatch).not.toHaveBeenCalled();
+    expect(extractOrClassify).not.toHaveBeenCalled();
   });
 
   it('refuses a declared length over 64 KB from that IP unread', async () => {
-    await action({ request: many(200, '10.5.0.2') } as never);
-    const { request, pulled } = streamingPost('https://health-tool-app.fly.dev/api/lab-import-v2', 10, {
-      headers: { 'fly-client-ip': '10.5.0.2', 'content-length': String(65 * KB) },
-    });
+    await spend('10.5.0.2', 200);
+    const { request, pulled } = streamingPost(URL, 10, { headers: { 'fly-client-ip': '10.5.0.2', 'content-length': String(65 * KB) } });
     const res = await action({ request } as never);
     expect(pulled.bytes).toBeLessThanOrEqual(10);
     expect(res.status).toBe(429);
-  });
-
-  it('still answers that IP\'s poll of the batch it already paid for', async () => {
-    createBatch.mockResolvedValueOnce({ batchId: 'batch_spent' });
-    const created = await (await action({ request: many(200, '10.5.0.3') } as never)).json();
-    const answer = await action({ request: new Request('https://health-tool-app.fly.dev/api/lab-import-v2', {
-      method: 'POST', headers: { 'fly-client-ip': '10.5.0.3' },
-      body: JSON.stringify({ batchId: created.batchId, pollToken: created.pollToken }),
-    }) } as never);
-    expect(answer.status).toBe(200);
-    expect(pollBatch).toHaveBeenCalled();
+    expect(await res.json()).toEqual(limit);
   });
 
   it('reads at most 64 KB of an upload from a fresh IP once the machine cap is spent', async () => {
     machineFiles.take('machine', machineFiles.remaining('machine'));
     try {
-      const { request, pulled } = streamingPost('https://health-tool-app.fly.dev/api/lab-import-v2', 50 * MB, {
-        headers: { 'fly-client-ip': '10.5.0.4' }, chunkBytes: 16 * KB,
-      });
+      const { request, pulled } = streamingPost(URL, 50 * MB, { headers: { 'fly-client-ip': '10.5.0.4' }, chunkBytes: 16 * KB });
       const res = await action({ request } as never);
       expect(pulled.bytes).toBeLessThanOrEqual(64 * KB + 2 * 16 * KB);
       expect(res.status).toBe(429);
     } finally { machineFiles.reset(); }
   });
 
-  it('a fresh IP on a machine with files left is read as before', async () => {
-    const res = await action({ request: many(1, '10.5.0.5') } as never);
-    expect(res.status).toBe(200);
-  });
-
   // The 64 KB cap is for a day with no file left, not for a day partly used:
-  // a one-file batch padded past 64 KB must still be read whole and taken.
-  const padded = (ip: string) => new Request('https://health-tool-app.fly.dev/api/lab-import-v2', {
-    method: 'POST', headers: { 'fly-client-ip': ip },
-    body: JSON.stringify({ batch: true, files: FILES }) + ' '.repeat(MB),
+  // a file padded past 64 KB must still be read whole and taken.
+  const padded = (ip: string) => new Request(URL, {
+    method: 'POST', headers: { 'fly-client-ip': ip }, body: JSON.stringify({ pages: PAGES }) + ' '.repeat(MB),
   });
 
   it('still reads an upload over 64 KB from an IP with 1 of its 200 files left', async () => {
-    expect((await action({ request: many(199, '10.5.0.6') } as never)).status).toBe(200);
-    createBatch.mockClear();
-    const res = await action({ request: padded('10.5.0.6') } as never);
-    expect(res.status).toBe(200);
-    expect(createBatch).toHaveBeenCalledTimes(1);
+    await spend('10.5.0.6', 199);
+    extractOrClassify.mockResolvedValueOnce({ classification: 'other' });
+    expect((await action({ request: padded('10.5.0.6') } as never)).status).toBe(200);
   });
 
   it('still reads an upload over 64 KB on a machine with 1 file left', async () => {
     machineFiles.take('machine', machineFiles.remaining('machine') - 1);
     try {
-      const res = await action({ request: padded('10.5.0.7') } as never);
-      expect(res.status).toBe(200);
-      expect(createBatch).toHaveBeenCalledTimes(1);
+      extractOrClassify.mockResolvedValueOnce({ classification: 'other' });
+      expect((await action({ request: padded('10.5.0.7') } as never)).status).toBe(200);
     } finally { machineFiles.reset(); }
   });
 });
@@ -651,37 +368,14 @@ describe('US-12 AC17b: a spent day is refused after at most 64 KB of the upload 
 // US-12 AC9 (H65): every daily-limit 429 says so with a code, so the browser
 // never mistakes a busy server for the limit. The words stay byte-identical.
 describe('US-12 AC9 H65: the daily limit carries code daily_limit', () => {
-  const KB = 1024;
   const DAILY = { success: false, error: 'Daily upload limit reached. You can upload more tomorrow.', code: 'daily_limit' };
-  const spend = (ip: string) => action({ request: new Request('https://health-tool-app.fly.dev/api/lab-import-v2', {
-    method: 'POST', headers: { 'fly-client-ip': ip },
-    body: JSON.stringify({ batch: true, files: Array.from({ length: 200 }, () => FILES[0]) }),
-  }) } as never);
-
-  it('an over-quota batch', async () => {
-    expect((await spend('10.6.0.1')).status).toBe(200);
-    const res = await action({ request: post('10.6.0.1') } as never);
-    expect(res.status).toBe(429);
-    expect(await res.json()).toEqual(DAILY);
-  });
 
   it('an over-quota single file', async () => {
-    expect((await spend('10.6.0.2')).status).toBe(200);
-    const res = await action({ request: new Request('https://health-tool-app.fly.dev/api/lab-import-v2', {
-      method: 'POST', headers: { 'fly-client-ip': '10.6.0.2' }, body: JSON.stringify({ pages: FILES[0].pages, unitSystem: 'si' }),
-    }) } as never);
+    await spend('10.6.0.2', 200);
+    extractOrClassify.mockClear();
+    const res = await action({ request: single({ unitSystem: 'si' }, '10.6.0.2') } as never);
     expect(res.status).toBe(429);
     expect(await res.json()).toEqual(DAILY);
     expect(extractOrClassify).not.toHaveBeenCalled();
-  });
-
-  it('an AC17b body over 64 KB on a spent day', async () => {
-    expect((await spend('10.6.0.3')).status).toBe(200);
-    const { request } = streamingPost('https://health-tool-app.fly.dev/api/lab-import-v2', 10, {
-      headers: { 'fly-client-ip': '10.6.0.3', 'content-length': String(65 * KB) },
-    });
-    const res = await action({ request } as never);
-    expect(res.status).toBe(429);
-    expect(await res.json()).toEqual(DAILY);
   });
 });

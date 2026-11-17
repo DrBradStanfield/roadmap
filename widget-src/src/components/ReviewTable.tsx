@@ -1,19 +1,24 @@
-import { useState, useMemo, useEffect, useCallback, useRef, type ReactNode } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef, useId, type MutableRefObject, type ReactNode } from 'react';
+import { FIX_ERRORS_TEXT } from '@roadmap/health-core/upload-text';
 import { type UnitSystem, type MetricType, UNIT_DEFS } from '@roadmap/health-core/units';
 import { healthInputSchema } from '@roadmap/health-core/validation';
 import { METRIC_TO_FIELD } from '@roadmap/health-core/mappings';
 import { commaQuestion } from '@roadmap/health-core/parseNumber';
 import { sameLabQuantity } from '@roadmap/health-core/record-edits';
-import { UNDATED_PREVIOUS } from '@roadmap/health-core/lab-extraction';
+import { IMPORT_REVIEW_TEXT, importSummaryText } from '@roadmap/health-core/import-review';
+import type { UploadReviewKey } from '@roadmap/health-core/product-events';
+import { measurementRefusalLine } from '../lib/lab-value-labels';
+import { classifyReview, currentEdits, refusedKeptIds, reviewEventMetadata, reviewRows, slotlessIds, type KeptValue } from '../lib/import-review-view';
 import type { UploadHistory } from '../lib/api-types';
 import { type CellUnit, type Grading, cellNumber, cellText, cellToSI, hasNumericSyntax, NUMERIC_SYNTAX_GUIDANCE, readNumericCell, readTypedValue, validateTypedValue } from '../lib/blood-test-cell';
 import { useLpaUnit } from '../lib/lpa-unit';
 import { ReviewMatrix } from './ReviewMatrix';
 import { ReviewFileSections } from './ReviewFileSections';
+import { NotSavedLine, SureLine, saveLabel, useDisclosure } from './ReviewOverview';
 import { useReviewDocuments } from '../hooks/useReviewDocuments';
 import { type FullDate, parseReportDate, longDate, columnDay, getDaysInMonth, buildRecordedAt, fullDateToIso } from '../lib/review-dates';
-import type { FileResult, ReviewDecisions, ReviewedValue, ReviewedLabValue } from '../lib/upload-pipeline';
-import { type DateKey, type MatrixColumn, type ExistingCell, type EditableMatrixCell, type CoreCellView, sameValue, normaliseLabName, editId, replaceKey, buildMatrixModel } from '../lib/review-matrix';
+import type { FileResult, ReviewDecisions } from '../lib/upload-pipeline';
+import { type DateKey, type MatrixColumn, type ExistingCell, type EditableMatrixCell, type CoreCellView, sameValue, editId, replaceKey, buildMatrixModel } from '../lib/review-matrix';
 
 interface ReviewTableProps {
   results: FileResult[];
@@ -34,6 +39,9 @@ interface ReviewTableProps {
   error: string | null;
   /** The values the last save refused, shown beside its error (US-12 AC6). */
   refusals?: ReactNode;
+  /** Set each render to the review's `upload_review` counts, for a review
+   *  that Cancel ends (US-13 AC13). */
+  countsRef?: MutableRefObject<(() => Partial<Record<UploadReviewKey, number>>) | null>;
 }
 
 export function ReviewTable({
@@ -50,6 +58,7 @@ export function ReviewTable({
   isSaving,
   error,
   refusals,
+  countsRef,
 }: ReviewTableProps) {
   const docs = useReviewDocuments(results, history, userAge, sex);
   const { selectedDocCount, archiveCount } = docs;
@@ -79,27 +88,24 @@ export function ReviewTable({
   // How many values are touched: rebuilds the matrix when a value is first
   // edited, so a slot's winner and loser are judged as edited (`place`).
   const [touchedCount, setTouchedCount] = useState(0);
+  // Each cell's text; an untouched cell reads its extraction until the effect below seeds it.
+  const [editedDisplayValues, setEditedDisplayValues] = useState<Record<string, string>>({});
+  // The matrix places, and the review's groups classify, the values as they now
+  // stand: an edit's number, a cleared value's absence (US-13 AC13). Keyed by
+  // content, so re-seeding untouched text never rebuilds the matrix.
+  const editsNow = currentEdits(results, editedDisplayValues, touchedRef.current, units, unitSystem);
+  // A value the person edited and has not cleared is pinned: it keeps its cell and its
+  // slot whatever its number, judged on its own (owner, 2026-11-15).
+  const pinnedNow = [...touchedRef.current.keys()].filter(id => (editedDisplayValues[id] ?? '').trim() !== '').sort();
+  const editsKey = JSON.stringify([[...editsNow], pinnedNow]);
+  const { edits, pinned } = useMemo(() => ({ edits: editsNow, pinned: new Set(pinnedNow) }), [results, editsKey]);
+  // An unedited value the write refuses on its own takes no slot, as in the review's groups.
+  const refusedNow = useMemo(() => slotlessIds(results, edits), [results, edits]);
+  const slotless = useMemo(() => new Set([...refusedNow].filter(id => !pinned.has(id))), [refusedNow, pinned]);
   const matrix = useMemo(
-    () => buildMatrixModel(results, fileDates, history.measurements, history.labValues, unitSystem, units, touchedRef.current),
-    [results, fileDates, history.measurements, history.labValues, unitSystem, units, touchedCount],
+    () => buildMatrixModel(results, fileDates, history.measurements, history.labValues, unitSystem, units, touchedRef.current, slotless, edits),
+    [results, fileDates, history.measurements, history.labValues, unitSystem, units, touchedCount, slotless, edits],
   );
-  /** One line naming the hidden readings by test and day, never a value (US-12 AC14). */
-  const hiddenNotice = useMemo(() => {
-    const n = matrix.hiddenReadings.length;
-    if (n === 0) return null;
-    // Grouped by where: a day, or every unpicked undated column as one group.
-    const undated = new Set(matrix.hiddenReadings.map(r => r.day).filter(day => !longDate(day)));
-    const byPlace = new Map<string, Set<string>>();
-    for (const { label, day } of matrix.hiddenReadings) {
-      const date = longDate(day);
-      const place = date ? `on ${date}` : `in the undated previous column${undated.size > 1 ? 's' : ''}`;
-      byPlace.set(place, (byPlace.get(place) ?? new Set()).add(label));
-    }
-    const names = [...byPlace.values()].reduce((count, labels) => count + labels.size, 0);
-    const groups = [...byPlace].map(([place, labels]) => `${[...labels].join(', ')} ${place}`).join('; ');
-    return `${n} reading${n === 1 ? '' : 's'} not saved: ${groups} already ${names === 1 ? 'has' : 'have'} another reading.`;
-  }, [matrix]);
-
   // Initial display values are derived from the matrix (not from raw results)
   // so the unit-system switch re-formats them and dedup-collapsed cells
   // (LLM value silently dropped where history wins) don't appear here.
@@ -111,9 +117,6 @@ export function ReviewTable({
     return map;
   }, [matrix]);
 
-  const [editedDisplayValues, setEditedDisplayValues] = useState<Record<string, string>>(
-    () => ({ ...initialDisplayValues }),
-  );
   // Conflict cells only: "Replace the saved value with this one". Default
   // off — the record already holds a value, so replacing is the user's call.
   const [replaceChecked, setReplaceChecked] = useState<Record<string, boolean>>({});
@@ -284,14 +287,11 @@ export function ReviewTable({
     }
     return views;
   }, [matrix, editedDisplayValues]);
-  const selectedCount = useMemo(() => saveableCells.filter(c => c.cell.kind === 'core').length, [saveableCells]);
-  const selectedAdditionalCount = useMemo(() => saveableCells.filter(c => c.cell.kind === 'additional').length, [saveableCells]);
   const totalEditableCells = useMemo(() => {
     let n = 0;
     for (const cell of matrix.cells.values()) if (cell.state === 'editable') n++;
     return n;
   }, [matrix]);
-  const nothingSelected = selectedCount === 0 && selectedAdditionalCount === 0 && selectedDocCount === 0;
 
   /** The new columns Save may write on: a calendar day that has happened
    *  (US-13 AC8), and for an undated previous column one before its report's
@@ -320,10 +320,65 @@ export function ReviewTable({
    *  upload would silently synthesise day=01) and no misread or future date
    *  is ever written: rows are append-only (US-13 AC8). A column whose cells
    *  are all cleared writes nothing and needs no date. */
-  const allDatesSet = useMemo(() => {
+  const needsDay = useMemo(() => {
     const writing = new Set(saveableCells.map(c => c.dateKey));
-    return matrix.columns.every(col => !col.isNew || !writing.has(col.dateKey) || datedColumns.has(col.dateKey));
+    return new Set(matrix.columns.filter(col => col.isNew && writing.has(col.dateKey) && !datedColumns.has(col.dateKey)).map(col => col.dateKey));
   }, [matrix.columns, saveableCells, datedColumns]);
+  const allDatesSet = needsDay.size === 0;
+
+  // The review's groups (US-13 AC13): one health-core call, a memo of the
+  // results, their days and the record. Show all and the open "Not saved" are
+  // view toggles; a hidden value keeps its cell text, so Save includes it.
+  // Save submits what it returns (`decisions`): each kept cell, and each reading
+  // the matrix hides behind a kept one, so a same-day loser is named under "Not saved".
+  const groups = useMemo(() => {
+    const day = new Map(matrix.columns.map(col => [col.dateKey, buildRecordedAt(col.date)]));
+    const kept: KeptValue[] = saveableCells.map(c => ({ id: editId(c.cell), recordedAt: day.get(c.dateKey)!, correctsId: c.cell.existing?.id, ...(c.isEdited ? { edited: c.value } : null) }));
+    const ids = new Set(kept.map(k => k.id));
+    // A winner's refusal is judged on what Save would send for it, as Save reads its text.
+    const refusedWinners = refusedKeptIds(results, kept);
+    // A reading with no cell is sent, at its current number, while its winner is
+    // kept and the write takes the winner: it never writes, and never stands in
+    // for a pinned winner whose number the write refuses (Save is blocked then).
+    const editable = new Set([...matrix.cells.values()].flatMap(c => (c.state === 'editable' ? [editId(c)] : [])));
+    kept.push(...matrix.unshown.filter(u => edits.get(u.id) !== null
+      && (!u.winner || (ids.has(u.winner) && !refusedWinners.has(u.winner)) || !editable.has(u.winner))).map(u => {
+      const [fi, ref] = [Number(u.id.split(':')[0]), u.id.split(':')[1]];
+      const extracted = ref[0] === 'v' ? results[fi].values[Number(ref.slice(1))].valueSI : results[fi].additionalValues[Number(ref.slice(1))].value;
+      const edit = edits.get(u.id);
+      return { id: u.id, recordedAt: `${u.day}T00:00:00.000Z`, ...(typeof edit === 'number' ? { edited: edit } : u.edited ? { edited: extracted } : null) };
+    }));
+    return classifyReview(results, fileDates, history, kept);
+  }, [results, fileDates, history, matrix, saveableCells, edits]);
+  // What Save writes, and the kept values waiting on a column's day (Save stays blocked until it is set).
+  const savedCount = groups.decisions.values.length + groups.decisions.labValues.length
+    + saveableCells.filter(c => groups.groupOf.get(editId(c.cell)) === 'waiting').length;
+  const nothingSelected = savedCount === 0 && selectedDocCount === 0;
+  // A kept value the write refuses (a blood pressure the wrong way up, a number
+  // out of range) shows the write's own line and blocks Save, as a range error does (US-13 AC5).
+  const cellViews = useMemo(() => {
+    const views = new Map(coreCellViews);
+    for (const [id, refusal] of groups.refusals) {
+      const view = views.get(id);
+      const metric = refusal.metricType as MetricType;
+      if (view && !view.error) views.set(id, { ...view, error: measurementRefusalLine(refusal, units[metric] ?? unitSystem) });
+    }
+    return views;
+  }, [coreCellViews, groups, units, unitSystem]);
+  const refusedKept = [...groups.blocked].some(id => coreCellViews.has(id));
+  const rows = useMemo(() => reviewRows(matrix, results, groups.groupOf, cellViews, needsDay, new Set(touchedRef.current.keys())), [matrix, results, groups, cellViews, needsDay, touchedCount]);
+  const showAll = useDisclosure();
+  const notSavedOpen = useDisclosure();
+  const matrixId = useId();
+  const shownMatrix = showAll.open ? matrix : rows.matrix;
+  const hiddenSaving = [...rows.hidden].filter(id => groups.writes.has(id)).length;
+  /** The `upload_review` counts (US-13 AC13). The upload flow sends them once
+   *  per review: on a finished Save, or on Cancel; never for a failed Save or a hide. */
+  const reviewCounts = (saved: boolean) => {
+    const replaced = Object.keys(replaceChecked).filter(k => replaceChecked[k]).map(k => k.slice(0, k.indexOf('>')));
+    return reviewEventMetadata(groups, [...touchedRef.current.keys(), ...replaced], { showAll: showAll.opened, notSaved: notSavedOpen.opened }, saved);
+  };
+  if (countsRef) countsRef.current = () => reviewCounts(false);
 
   /** Column-level date editing: propagate to every contributing date source so
    *  the matrix stays consistent. New-column dates only — existing-history
@@ -349,99 +404,51 @@ export function ReviewTable({
   };
 
   const handleSave = () => {
-    if (hasInvalid || !allDatesSet) return;
-    // Collect core lab values
-    const selected: ReviewedValue[] = [];
-    const selectedLabValues: ReviewedLabValue[] = [];
-
-    // O(1) column lookup so save doesn't go quadratic on big uploads.
-    const columnsByKey = new Map(matrix.columns.map(col => [col.dateKey, col]));
-    // One row per (test, day). buildMatrixModel already shows one reading per
-    // slot, in this same rank (US-12 AC12, AC14); this is the backstop.
-    const rank = (cell: EditableMatrixCell) => {
-      const day = (cell.kind === 'core' ? results[cell.fi]?.values[cell.vi] : results[cell.fi]?.additionalValues[cell.ai])?.recordedAt;
-      return !day ? 0 : day === UNDATED_PREVIOUS ? 2 : 1;
-    };
-    const slots = new Set<string>();
-
-    for (const c of [...saveableCells].sort((a, b) => rank(a.cell) - rank(b.cell))) {
-      const col = columnsByKey.get(c.dateKey);
-      if (!col) continue;
-      const recordedAt = buildRecordedAt(col.date);
-      const cell = c.cell;
-      const slot = `${cell.kind === 'core' ? metricOf(cell) : normaliseLabName(results[cell.fi]?.additionalValues[cell.ai]?.name ?? '')}|${recordedAt}`;
-      if (slots.has(slot)) continue;
-      slots.add(slot);
-      if (cell.kind === 'core') {
-        const metric = metricOf(cell);
-        if (!metric) continue;
-        selected.push({
-          metric,
-          valueSI: c.value,
-          recordedAt,
-          source: c.isEdited ? 'lab_import_edited' : undefined,
-          correctsId: cell.existing?.id,
-          // A limit saves as printed; a number typed over it is exact (US-12 AC20).
-          ...(cell.comparator && !c.isEdited ? { comparator: cell.comparator } : {}),
-        });
-      } else {
-        const av = results[cell.fi]?.additionalValues[cell.ai];
-        if (!av) continue;
-        selectedLabValues.push({
-          name: av.name,
-          value: c.value,
-          unit: av.unit,
-          referenceLow: av.referenceLow,
-          referenceHigh: av.referenceHigh,
-          recordedAt,
-          correctsId: cell.existing?.id,
-          ...(cell.comparator && !c.isEdited ? { comparator: cell.comparator } : {}),
-        });
-      }
-    }
-
+    if (hasInvalid || refusedKept || !allDatesSet) return;
     const { reviewed, documents } = docs.documentsToSave(fileDates);
 
-    onSave({ values: selected, documents, labValues: selectedLabValues, reviewed });
+    onSave({ ...groups.decisions, documents, reviewed, review: reviewCounts(true), labRefusals: groups.labRefusals });
   };
+
+  // Nothing the review could save, by its groups: the review closes (D3).
+  const nothingToSave = groups.count('sure') + groups.count('unsure') + groups.count('waiting') === 0
+    && nothingSelected && archiveCount === 0 && results.every(r => !r.document);
+  // "Check these" counts only the values to look at; a sure value sharing their row shows beside them.
+  const checking = [...rows.shown].filter(id => groups.groupOf.get(id) !== 'sure').length;
 
   return (
     <div className="review-table">
-      <div className="review-summary">
-        {nothingSelected && archiveCount > 0 ? (
-          `Save will archive the original PDF${archiveCount !== 1 ? 's' : ''}. No extracted values or documents are selected.`
-        ) : (
-          <>
-            {selectedCount > 0 && `${selectedCount} value${selectedCount !== 1 ? 's' : ''}`}
-            {selectedCount > 0 && selectedAdditionalCount > 0 && ' + '}
-            {selectedAdditionalCount > 0 && `${selectedAdditionalCount} additional`}
-            {(selectedCount > 0 || selectedAdditionalCount > 0) && selectedDocCount > 0 && ' + '}
-            {selectedDocCount > 0 && `${selectedDocCount} document${selectedDocCount !== 1 ? 's' : ''}`}
-            {nothingSelected && 'No items selected'}
-            {' '}from {results.length} file{results.length !== 1 ? 's' : ''} · {totalEditableCells} extracted
-          </>
+      <p className="review-summary">{importSummaryText(groups.summary)}</p>
+      {nothingSelected && archiveCount > 0 && (
+        <p className="review-overview-line review-archive-only">Save will archive the original PDF{archiveCount !== 1 ? 's' : ''}. No extracted values or documents are selected.</p>
+      )}
+
+      {!showAll.open && checking > 0 && <h4 className="review-check-title">{IMPORT_REVIEW_TEXT.checkTitle(checking)}</h4>}
+      <div id={matrixId}>
+        {(shownMatrix.coreRows.length > 0 || shownMatrix.additionalRows.length > 0) && (
+          <ReviewMatrix
+            matrix={shownMatrix}
+            unitSystem={unitSystem}
+            metricUnitOverrides={units}
+            onToggleFieldUnit={onToggleFieldUnit}
+            onChooseLpaUnit={chooseLpaUnit}
+            grading={grading}
+            editedDisplayValues={editedDisplayValues}
+            coreCellViews={cellViews}
+            onCellChange={updateEditedDisplayValue}
+            onColumnDateChange={handleColumnDateChange}
+            datedColumns={datedColumns}
+            pickHints={pickHints}
+            replaceChecked={replaceChecked}
+            heldEqual={heldEqual}
+            onReplaceToggle={toggleReplace}
+          />
         )}
       </div>
-
-      {(matrix.coreRows.length > 0 || matrix.additionalRows.length > 0) && (
-        <ReviewMatrix
-          matrix={matrix}
-          unitSystem={unitSystem}
-          metricUnitOverrides={units}
-          onToggleFieldUnit={onToggleFieldUnit}
-          onChooseLpaUnit={chooseLpaUnit}
-          grading={grading}
-          editedDisplayValues={editedDisplayValues}
-          coreCellViews={coreCellViews}
-          onCellChange={updateEditedDisplayValue}
-          onColumnDateChange={handleColumnDateChange}
-          datedColumns={datedColumns}
-          pickHints={pickHints}
-          replaceChecked={replaceChecked}
-          heldEqual={heldEqual}
-          onReplaceToggle={toggleReplace}
-        />
-      )}
+      {!showAll.open && checking > 0 && <p className="review-overview-footer">{IMPORT_REVIEW_TEXT.checkFooter}</p>}
+      <SureLine hidden={rows.hidden.size} rows={rows.hiddenRows} saving={hiddenSaving} total={totalEditableCells} all={showAll} controls={matrixId} />
+      {groups.held > 0 && <p className="review-overview-line">{IMPORT_REVIEW_TEXT.alreadySaved(groups.held)}</p>}
+      <NotSavedLine notSaved={groups.notSaved} disclosure={notSavedOpen} />
 
       <ReviewFileSections docs={docs} age={userAge} sex={sex} />
 
@@ -449,9 +456,7 @@ export function ReviewTable({
         <p className="review-date-hint">Pick a past day for every new column before saving, and for previous results a day before the report's — keeps the saved date precise.</p>
       )}
 
-      {hiddenNotice && <p className="review-date-hint" role="status">{hiddenNotice}</p>}
-
-      {hasInvalid && <p role="status">Correct or clear the values with errors before saving.</p>}
+      {(hasInvalid || refusedKept) && <p role="status">{FIX_ERRORS_TEXT}</p>}
       {/* One live region, so a screen reader hears the save's answer (US-12 AC6). */}
       <div className="review-save-outcome" role="status">
         {error && <p className="upload-error">{error}</p>}
@@ -459,20 +464,15 @@ export function ReviewTable({
       </div>
 
       <div className="review-actions">
-        <button
+        {!nothingToSave && <button
           className="btn-primary review-save-btn"
           onClick={handleSave}
-          disabled={hasInvalid || (nothingSelected && archiveCount === 0) || !allDatesSet || isSaving}
+          disabled={hasInvalid || refusedKept || (nothingSelected && archiveCount === 0) || !allDatesSet || isSaving}
         >
-          {isSaving ? 'Saving...' : `Save ${[
-            selectedCount > 0 && `${selectedCount} Value${selectedCount !== 1 ? 's' : ''}`,
-            selectedAdditionalCount > 0 && `${selectedAdditionalCount} Additional`,
-            selectedDocCount > 0 && `${selectedDocCount} Document${selectedDocCount !== 1 ? 's' : ''}`,
-            archiveCount > 0 && `${archiveCount} Original${archiveCount !== 1 ? 's' : ''}`,
-          ].filter(Boolean).join(' + ')}`}
-        </button>
+          {isSaving ? 'Saving...' : saveLabel(savedCount, selectedDocCount, archiveCount)}
+        </button>}
         <button className="review-cancel-btn" onClick={onCancel} disabled={isSaving}>
-          Cancel
+          {nothingToSave ? 'Close' : 'Cancel'}
         </button>
       </div>
     </div>

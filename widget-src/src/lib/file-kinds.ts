@@ -6,6 +6,13 @@ import { extensionOf } from '@roadmap/health-core/document-path';
 
 const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
+/** A ZIP by its type or name. A .docx is a ZIP too, and some browsers say so: the upload checks isDocx first. */
+export function isZip(file: File): boolean {
+  return file.type === 'application/zip' ||
+    file.type === 'application/x-zip-compressed' ||
+    file.name.toLowerCase().endsWith('.zip');
+}
+
 /** Returns true if the file looks like a .docx */
 export function isDocx(file: File): boolean {
   return file.type === DOCX_MIME || file.name.toLowerCase().endsWith('.docx');

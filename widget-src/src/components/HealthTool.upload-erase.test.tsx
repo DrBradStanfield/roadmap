@@ -28,9 +28,10 @@ vi.mock('../lib/server-api', async (importOriginal) => ({
 vi.mock('../lib/chat-api', () => ({ listConversations: () => Promise.resolve(null), getChatGate: () => null }));
 vi.mock('./ChatEmbed', () => ({ ChatEmbed: () => null }));
 vi.mock('./ChatSection', () => ({ ChatSection: () => null }));
-vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn(), labImportBatch: vi.fn(), pollBatchStatus: vi.fn() }));
+vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn() }));
 
 import { HealthTool } from './HealthTool';
+import { findReviewValue } from '../testing/import-review';
 
 /** A synthetic report: one LDL, a value the record does not hold. */
 const extraction = { result: { classification: 'lab_report', document: null, reportDate: '2024-06-01', values: [{ metric: 'ldl', valueSI: 3.9, displayValue: 3.9, displayUnit: 'mmol/L', confidence: 'high' }], additionalValues: [] } };
@@ -49,7 +50,7 @@ async function reviewReadThenHidden() {
   // A guest on this device is first offered a place to keep originals.
   fireEvent.click(screen.getByRole('button', { name: /Continue without keeping my files/ }));
   fireEvent.change(document.querySelector('input[type=file]')!, { target: { files: [new File(['synthetic'], 'synthetic.pdf', { type: 'application/pdf' })] } });
-  await screen.findByDisplayValue('3.9');
+  await findReviewValue('3.9');
   fireEvent.click(screen.getByRole('button', { name: 'Close' }));
   expect(resumeButton()).not.toBeNull();
 }

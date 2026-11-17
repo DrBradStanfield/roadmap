@@ -11,7 +11,7 @@
  */
 import { UNDATED_PREVIOUS, isUrineOrRatioUnit, type UnifiedExtractionResult } from './lab-extraction';
 import { labTestLabel } from './lab-catalog';
-import { bulkAppendValues, slotIndex, slotKey, type BulkAppendResult, type BulkRow } from './record-edits';
+import { bulkAppendValues, slotIndex, slotKey, validDay, type BulkAppendResult, type BulkRow } from './record-edits';
 import { bulkRowTarget } from './bulk-row-target';
 import { coreStored, createCoreRow, isBloodTestKey } from './blood-tests';
 import { isClinicalDay } from './measurement-history';
@@ -70,6 +70,29 @@ export function importRow(result: ImportFile['result'], ref: string, day: string
   };
 }
 
+/**
+ * One report as `classifyImportValues` takes it, from the values the person ticked: each on its
+ * own day, else `day` (the test's), an undated previous column's on `undatedDay`; a value with no
+ * real past day is not sent. `options`: a ref's Replace (`correctsId`) and edited number, as `importRow` takes them. The one row rule the iPhone (ios/engine lab-review-groups.ts
+ * `classifyReport`) and the shared upload (upload-review.ts) both build with.
+ */
+export function reportImportFile(
+  result: ImportFile['result'], ticked: Iterable<string>, day: string | null, now: string, undatedDay: string | null = null,
+  options: Readonly<Record<string, { correctsId?: string; edited?: { value: number } }>> = {},
+): ImportFile {
+  const days = valueDays(result, day, undatedDay);
+  const rows: Record<string, BulkRow> = {};
+  for (const ref of ticked) {
+    const on = days[ref] ? validDay(days[ref]!, { now }) : null;
+    const row = on ? importRow(result, ref, on, options[ref]) : null;
+    if (row) rows[ref] = row;
+  }
+  return { result, rows, days };
+}
+
+/** A value the person can tick: a core (`v<i>`) or additional (`a<i>`) one, never a refused or unread row. */
+export const isOfferedRef = (ref: string) => /^[va]\d+$/.test(ref);
+
 /** Why a value gets a row (D1). `outOfRange`: the write refuses its number
  *  (outside its input range, or half of a blood pressure the wrong way up). */
 export type UnsureReason = 'confidence' | 'question' | 'unitGuessed' | 'outOfRange' | 'conflict';
@@ -82,15 +105,19 @@ export type NotSavedReason = 'unit' | 'noUnit' | 'misread' | 'scale' | 'unreadab
  * test's label, never a key; "" for an unread row that names no test.
  * `sent`: the client gave a row for it. `writes`: Save writes it.
  * - sure: Save writes it, no row needed.
- * - saved: the record already holds it, or an equal reading of this upload is written.
+ * - saved: the record already holds it, or (`duplicate`) an equal reading of
+ *   this upload holds its slot: one copy saves, so the client counts it nowhere.
  * - unsure: shown as a row, with every reason.
  * - notSaved: Save would not write it, with one reason.
  * - waiting: no day yet; it stays behind the file's date question.
+ * `refusal`: the dry run's own refusal of this value's row, for a receipt in the write's words.
  */
 export type ClassifiedValue =
-  | { file: number; ref: string; label: string; sent: boolean; writes: boolean; group: 'sure' | 'saved' | 'waiting' }
-  | { file: number; ref: string; label: string; sent: boolean; writes: boolean; group: 'unsure'; reasons: UnsureReason[] }
-  | { file: number; ref: string; label: string; sent: boolean; writes: boolean; group: 'notSaved'; reason: NotSavedReason };
+  | { file: number; ref: string; label: string; sent: boolean; writes: boolean; group: 'sure' | 'saved' | 'waiting'; refusal?: ImportRefusal; duplicate?: true }
+  | { file: number; ref: string; label: string; sent: boolean; writes: boolean; group: 'unsure'; reasons: UnsureReason[]; refusal?: ImportRefusal }
+  | { file: number; ref: string; label: string; sent: boolean; writes: boolean; group: 'notSaved'; reason: NotSavedReason; refusal?: ImportRefusal };
+/** A row the write refused: a lab unit or number, or a core value (its range, a pressure pair). */
+export type ImportRefusal = { lab: BulkAppendResult['refused'][number] } | { measurement: BulkAppendResult['measurementRefusals'][number] };
 
 /** The review: every value's group, and the rows Save submits (the ones it
  *  writes, in order). Submitting `rows` writes each one and refuses none. */
@@ -142,6 +169,13 @@ function slotOf(row: BulkRow): { slot: string; quantity: Quantity } {
 const labReason = (r: BulkAppendResult['refused'][number]): NotSavedReason =>
   r.fault === 'implausible' || r.fault === 'ceiling' ? 'misread' : r.fault === 'scale' || r.fault === 'decimal' ? 'scale' : r.unit.trim() ? 'unit' : 'noUnit';
 
+/** The write refuses this row even on an empty record (its unit, its count,
+ *  its range): it takes no (test, day) slot. The review's groups and the
+ *  website's matrix place readings by this one rule. */
+export function refusedAlone(row: BulkRow, now: string): boolean {
+  return bulkAppendValues(createEmptyFile({ deviceId: 'review', now }), [row], now).outcomes[0] === 'refused';
+}
+
 /** A day no value lands on: a value with no day is written there alone, on an
  *  empty record, only to read its refusal. */
 const PROBE_DAY = '2000-01-01';
@@ -155,10 +189,8 @@ type Group = ClassifiedValue extends infer V ? V extends ClassifiedValue ? Omit<
  * value, else a conflict; refused is a core range or pair refusal (unsure,
  * shown) or a lab refusal (not saved, with its reason).
  */
-function groupsOf(rows: Array<{ row: BulkRow; reasons: UnsureReason[] }>, record: RoadmapFile, now: string): Group[] {
+function groupsOf(rows: Array<{ row: BulkRow; reasons: UnsureReason[] }>, record: RoadmapFile, held: (slot: string) => Quantity | undefined, now: string): Group[] {
   const run = bulkAppendValues(record, rows.map((r) => r.row), now);
-  const held = heldReadings(record);
-  const rangeRefused = new Set(run.measurementRefusals.map((r) => r.index));
   let lab = 0;
   return rows.map(({ row, reasons }, k): Group => {
     const { slot, quantity } = slotOf(row);
@@ -171,8 +203,10 @@ function groupsOf(rows: Array<{ row: BulkRow; reasons: UnsureReason[] }>, record
     const outcome = run.outcomes[k];
     if (outcome === 'written') return { ...all([]), writes: true };
     if (outcome === 'skipped') return holder && !differs && !row.correctsId ? { group: 'saved', writes: false } : all(['conflict']);
-    if (rangeRefused.has(k)) return all(['outOfRange']);
-    return { group: 'notSaved', reason: labReason(run.refused[lab++]), writes: false };
+    const range = run.measurementRefusals.find((r) => r.index === k);
+    if (range) return { ...all(['outOfRange']), refusal: { measurement: range } };
+    const refused = run.refused[lab++];
+    return { group: 'notSaved', reason: labReason(refused), writes: false, refusal: { lab: refused } };
   });
 }
 
@@ -210,15 +244,17 @@ export function classifyImportValues(files: readonly ImportFile[], record: Roadm
   // 1) One reading per (test, day), by the review's precedence (US-12 AC12, AC14; US-13 AC3).
   //    A row the write refuses on its own (its unit, its range) takes no slot:
   //    it goes to the run as it is, and a valid reading of that day still lands.
-  const refusedAlone = sent.map((s) => bulkAppendValues(empty, [s.row], now).outcomes[0] === 'refused');
-  const placed = sent.map((_, i) => i).filter((i) => !refusedAlone[i]);
-  const placements = placeReadings(placed.map((i) => ({ ...slotOf(sent[i].row), rank: sent[i].rank, edited: sent[i].row.source === 'lab_import_edited', sent: true })), heldReadings(record));
+  const placed = sent.map((_, i) => i).filter((i) => !refusedAlone(sent[i].row, now));
+  // The record's slots, indexed once for every placement and dry run below.
+  const held = heldReadings(record);
+  const heldEmpty = heldReadings(empty);
+  const placements = placeReadings(placed.map((i) => ({ ...slotOf(sent[i].row), rank: sent[i].rank, edited: sent[i].row.source === 'lab_import_edited', sent: true })), held);
   const places = new Map(placed.map((i, k) => [i, { place: placements[k].place, winner: placements[k].winner === undefined ? undefined : placed[placements[k].winner!] }]));
   const loses = (i: number) => places.get(i)?.place === 'duplicate' || places.get(i)?.place === 'hidden';
   const batch = sent.map((_, i) => i).filter((i) => !loses(i)).sort((i, j) => sent[i].rank - sent[j].rank || i - j);
 
   // 2) One dry run of what Save submits; each row's group is its own outcome.
-  const groups = new Map<number, Group>(groupsOf(batch.map((i) => sent[i]), record, now).map((g, k) => [batch[k], g]));
+  const groups = new Map<number, Group>(groupsOf(batch.map((i) => sent[i]), record, held, now).map((g, k) => [batch[k], g]));
   const label = (s: Info, sentHere: boolean) => ({ file: s.file, ref: s.ref, label: s.label, sent: sentHere });
   const values: ClassifiedValue[] = batch.map((i) => ({ ...label(sent[i], true), ...groups.get(i)! }) as ClassifiedValue);
   sent.forEach((s, i) => {
@@ -226,7 +262,7 @@ export function classifyImportValues(files: readonly ImportFile[], record: Roadm
     const { place, winner } = places.get(i)!;
     const won = groups.get(winner!)!;
     const inherited: Group = place === 'hidden' ? { group: 'notSaved', reason: 'sameDay', writes: false }
-      : won.writes || won.group === 'saved' ? { group: 'saved', writes: false } : { ...won, writes: false };
+      : won.writes || won.group === 'saved' ? { group: 'saved', writes: false, duplicate: true } : { ...won, writes: false, refusal: undefined }; // the winner's refusal is its own
     values.push({ ...label(s, true), ...inherited } as ClassifiedValue);
   });
 
@@ -234,7 +270,7 @@ export function classifyImportValues(files: readonly ImportFile[], record: Roadm
   for (const u of unsent) {
     const file = files[u.file];
     const row = importRow(file.result, u.ref, u.day ?? PROBE_DAY)!;
-    const [g] = groupsOf([{ row, reasons: [...u.reasons] }], u.day ? record : empty, now);
+    const [g] = u.day ? groupsOf([{ row, reasons: [...u.reasons] }], record, held, now) : groupsOf([{ row, reasons: [...u.reasons] }], empty, heldEmpty, now);
     const shown: Group = u.day || g.group === 'notSaved' || (g.group === 'unsure' && g.reasons.includes('outOfRange')) ? { ...g, writes: false } : { group: 'waiting', writes: false };
     values.push({ ...label(u, false), ...shown } as ClassifiedValue);
   }
@@ -266,9 +302,9 @@ export function importSummary(files: ReadonlyArray<Pick<ImportFile, 'result'>>):
   let values = 0;
   const kinds = new Map<DocumentType, number>();
   for (const { result } of files) {
-    if (result.classification === 'lab_report') {
-      values += (result.values?.length ?? 0) + (result.additionalValues?.length ?? 0);
-    } else if (result.document) {
+    if (result.classification === 'lab_report') values += (result.values?.length ?? 0) + (result.additionalValues?.length ?? 0);
+    // A document counts by its kind, values or not: a clinic letter that prints an LDL is still a letter.
+    if (result.document && result.document.classification !== 'lab_report') {
       const kind = (DOCUMENT_TYPES as readonly string[]).includes(result.document.classification) ? result.document.classification as DocumentType : 'other';
       kinds.set(kind, (kinds.get(kind) ?? 0) + 1);
     }
@@ -276,10 +312,11 @@ export function importSummary(files: ReadonlyArray<Pick<ImportFile, 'result'>>):
   return { values, documents: DOCUMENT_TYPES.filter((k) => kinds.has(k)).map((kind) => ({ kind, count: kinds.get(kind)! })), files: files.length };
 }
 
-const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+/** "1 value", "2 values": the review's one count form. */
+export const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
 /** Each kind's words, one and many (string 2). */
-const KIND_WORDS: Record<DocumentType, [string, string]> = {
+export const KIND_WORDS: Record<DocumentType, [string, string]> = {
   scan_result: ['scan result', 'scan results'],
   clinic_letter: ['clinic letter', 'clinic letters'],
   discharge_summary: ['discharge summary', 'discharge summaries'],
@@ -328,7 +365,8 @@ export function notSavedGroups(values: readonly ClassifiedValue[]): { total: num
 
 /** The review's other words (strings 4 to 14), one copy for both screens. */
 export const IMPORT_REVIEW_TEXT = {
-  checkTitle: (k: number) => `Check these ${plural(k, 'value')}`,
+  // One value is "Check this value" (owner's ruling, 2026-11-15).
+  checkTitle: (k: number) => (k === 1 ? 'Check this value' : `Check these ${plural(k, 'value')}`),
   checkFooter: 'We were not sure about these. Check each against the report.',
   conflictKept: 'Your record already has a different value for this day. It stays as it is.',
   willSave: (n: number) => `${plural(n, 'value')} will be saved`,

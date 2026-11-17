@@ -1,7 +1,10 @@
 // US-52 AC8 characterisation pins (plan docs/reviews/2026-10-23-mcp-dedup-plan.md,
 // step 1): the rows `labRows` builds and its refusal words, as the app reads
 // them through `labImport` (my-data.ts) and `labSaveSummaryJson` (app-doors.ts).
-// A later de-dup must leave every pin byte-identical. Synthetic values.
+// A later de-dup must leave every pin byte-identical. Synthetic values. Re-pinned
+// 2026-11-15 (US-13 AC13): rows come in the import review's send order (report day first),
+// and labRows also answers the receipt taken from that same classification (with sameDay
+// since the receipt-notes follow-up).
 import { describe, expect, it } from 'vitest';
 import { labSaveSummaryJson } from './app-doors';
 import { applyEdit, newRecord } from './my-data';
@@ -46,16 +49,16 @@ function appended(before: RoadmapFile, after: RoadmapFile): string {
 
 describe('US-52 AC8 pins — labRows, labImport and labSaveSummaryJson answer as today', () => {
   it('labRows: each ticked value on its own day or the report day', () => {
-    expect(JSON.stringify(labRows(extraction as never, ['v0', 'v1', 'a0', 'a2'], '2026-10-01', NOW))).toMatchSnapshot();
+    expect(JSON.stringify(labRows(extraction as never, ['v0', 'v1', 'a0', 'a2'], '2026-10-01', NOW, record()))).toMatchSnapshot();
   });
 
   it('labRows refusals, word for word', () => {
     expect([
-      labRows(extraction as never, ['v9'], '2026-10-01', NOW),
-      labRows(extraction as never, ['x0'], '2026-10-01', NOW),
-      labRows(extraction as never, ['v0'], '2027-01-01', NOW),
-      labRows(extraction as never, ['v0'], '', NOW),
-      labRows(extraction as never, ['v2'], '2026-10-01', NOW),
+      labRows(extraction as never, ['v9'], '2026-10-01', NOW, record()),
+      labRows(extraction as never, ['x0'], '2026-10-01', NOW, record()),
+      labRows(extraction as never, ['v0'], '2027-01-01', NOW, record()),
+      labRows(extraction as never, ['v0'], '', NOW, record()),
+      labRows(extraction as never, ['v2'], '2026-10-01', NOW, record()),
     ].map((r) => JSON.stringify(r))).toMatchSnapshot();
   });
 

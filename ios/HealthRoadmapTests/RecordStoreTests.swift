@@ -1,3 +1,4 @@
+import CryptoKit
 import SwiftUI
 import XCTest
 @testable import HealthRoadmap
@@ -833,7 +834,8 @@ final class RecordStoreTests: XCTestCase {
     }
 
     /// US-52 AC13d: with no cloud, a letter is a text-only row, as the web saves one
-    /// off-cloud: no original, no hash, its text kept. On disk before the screen.
+    /// off-cloud: no original, its text kept, and since US-14 AC10 the file's hash kept, so a later
+    /// upload of the same file knows it. On disk before the screen.
     func testALetterOnThePhoneAloneIsATextOnlyRow() async throws {
         let store = try store()
         let letter = ##"{"classification":"clinic_letter","reportDate":null,"values":[],"additionalValues":[],"document":{"classification":"clinic_letter","title":"Cardiology follow-up","documentDate":null,"contentMarkdown":"# Letter","metadata":{}}}"##
@@ -844,7 +846,8 @@ final class RecordStoreTests: XCTestCase {
         let onDisk = try JSONSerialization.jsonObject(with: Data(contentsOf: file)) as? [String: Any]
         let row = try XCTUnwrap((onDisk?["documents"] as? [[String: Any]])?.first)
         XCTAssertEqual(row["fileRef"] as? String, "")
-        XCTAssertEqual(row["contentHash"] as? String, "")
+        XCTAssertEqual(row["contentHash"] as? String, original.contentHash)
+        XCTAssertEqual(original.contentHash, "sha256-" + SHA256.hash(data: Data("%PDF".utf8)).map { String(format: "%02x", $0) }.joined())
         XCTAssertEqual(row["mimeType"] as? String, "")
         XCTAssertEqual(row["extractedText"] as? String, "# Letter")
         XCTAssertTrue(row["date"] is NSNull)

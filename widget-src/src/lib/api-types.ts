@@ -180,22 +180,10 @@ export type QuotaCheck =
   | { allowed: true; remaining: number }
   | { allowed: false; remaining: number; reason: 'quota' | 'no-key'; message?: string };
 
-/** `key_refused` and `no_credit` come only from the Pages build's own key (byok-upload).
+/** `key_refused`, `no_credit` and `key_rate_limit` (that key's per-minute limit) come only from the Pages build's own key (byok-upload).
  *  `refused` and `too_long` mark one file Claude declined or stopped short on (US-15 AC34).
- *  `busy`: the server refused a batch as busy, not the daily limit (US-12 AC9). */
-export type UploadErrorCode = 'rate_limit' | 'busy' | 'timeout' | 'server_restart' | 'no_files' | 'server_error' | 'network' | 'key_refused' | 'no_credit' | ExtractionStopCode;
-
-export interface BatchPollResponse {
-  /** `error`: this poll failed but a later one may not; the caller polls on (US-12 AC24). */
-  status: 'processing' | 'ended' | 'error';
-  completed: number;
-  total: number;
-  /** Each result carries the position of the file it answers in the batch
-   *  request; `errorCode` marks a file that was not read. */
-  results?: Array<{ index: number } & (LabImportResult | { errorCode: UploadErrorCode })>;
-  error?: string;
-  errorCode?: UploadErrorCode;
-}
+ *  `busy`: the server was busy, not the daily limit (US-12 AC9). `no_files`: no picked file gave pages. */
+export type UploadErrorCode = 'rate_limit' | 'key_rate_limit' | 'busy' | 'no_files' | 'server_error' | 'network' | 'key_refused' | 'no_credit' | ExtractionStopCode;
 
 export interface BulkSaveResult {
   saved: ApiMeasurement[];
@@ -205,6 +193,8 @@ export interface BulkSaveResult {
   errorCount: number;
   /** Rows refused for their metric or number — never silently dropped. */
   refused: MeasurementRefusal[];
+  /** Each submitted row's written lab value row id, by index (health-core `writtenLabRows`): a file's archive row lists them (US-14 AC10). */
+  labRows?: Array<string | null>;
 }
 
 export interface BulkLabValuesResult {
@@ -217,4 +207,6 @@ export interface BulkLabValuesResult {
   refused: LabUnitRefusal[];
   /** Core values (a core test's name, US-66 AC6) refused for their number — shown, never dropped. */
   measurementRefusals?: MeasurementRefusal[];
+  /** As `BulkSaveResult.labRows`. */
+  labRows?: Array<string | null>;
 }

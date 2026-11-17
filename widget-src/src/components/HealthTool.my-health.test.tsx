@@ -132,12 +132,31 @@ describe('US-62 AC17: the sections, in the iPhone\'s order', () => {
     expect(view.container.querySelector('h2.mh-title')?.textContent).toBe('My health');
   });
 
-  it('US-73 AC13 (App Review 1.4.1): the doctor line sits right under the title, before the pills', async () => {
+  const DOCTOR_LINE = 'For education, not medical advice. Always talk to your doctor.';
+  const lines = (view: RenderResult) => [...view.container.querySelectorAll('p.mh-education')];
+  it.each([
+    ['a phone', (q: string) => q.includes('max-width')],
+    ['a desktop under 1200px, with no chat column', (q: string) => q.includes('min-width') && !q.includes('1200px')],
+  ])('US-73 AC13 (App Review 1.4.1): on %s the doctor line sits right under the title, before the pills', async (_name, matches) => {
+    vi.stubGlobal('matchMedia', (q: string) => ({ matches: matches(q), media: q, addEventListener() {}, removeEventListener() {} }));
     const view = await show(RECORDS['urgent results, both cascades, a supplement']);
+    expect(lines(view)).toHaveLength(1);
     const line = view.container.querySelector('.mh-header + p.mh-education');
-    expect(line?.textContent).toBe('For education, not medical advice. Always talk to your doctor.');
+    expect(line?.textContent).toBe(DOCTOR_LINE);
     const pills = view.container.querySelector('.mh-pills')!;
     expect(line!.compareDocumentPosition(pills) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  // Beside the chat column the line spans both columns, so it pushes neither down alone and the chat
+  // card's top stays on the line of My health's first card (design review 2026-11-06, webkit-verify).
+  it('US-73 AC13: beside the chat column the doctor line spans both columns, once, before them', async () => {
+    const view = await show(RECORDS['urgent results, both cascades, a supplement']);
+    expect(lines(view)).toHaveLength(1);
+    const content = view.container.querySelector('.health-tool-content')!;
+    expect(content.querySelector('.health-tool-chat')).not.toBeNull();
+    expect(content.firstElementChild?.matches('p.mh-education.mh-education--above')).toBe(true);
+    expect(content.firstElementChild?.textContent).toBe(DOCTOR_LINE);
+    expect(view.container.querySelector('.mh-page .mh-education')).toBeNull();
   });
 
   it('a 25-year-old, too young for any screening, has no Cancer screening section', async () => {
