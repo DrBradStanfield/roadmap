@@ -15,6 +15,7 @@ import { formatShortDate } from '../lib/constants';
 import { trackProductEvent } from '../lib/server-api';
 import { useDebouncedSave } from '../lib/useDebouncedSave';
 import { useSaveOnLeave } from '../lib/useSaveOnLeave';
+import { blockBadNumericKeys, blockNonIntegerKeys } from '../lib/blood-test-cell';
 import { recordDays, recordMeasured, resultsFor, safeHref, startingUnits } from './body-measures';
 import { FIELDS, INPUT_OF, boxesFor, readBox, readBoxes, switchBoxes, typed, type Boxes, type Field, type Part } from './boxes';
 import { useWidgetSave } from './useWidgetSave';
@@ -53,10 +54,10 @@ function PartlyKeptNotice({ partial }: { partial: PartlyKept }) {
   );
 }
 
-/** The day a box's value comes from, while it still shows the record's (review X2). */
+/** The day a box's value comes from, while it still shows an older day's (review X2). Today's needs no note (Brad 2026-11-18). */
 function fromDay(day: string | undefined): string | null {
-  if (!day) return null;
-  return day === localDay(new Date()) ? 'today' : `from ${formatShortDate(day)}`;
+  if (!day || day === localDay(new Date())) return null;
+  return `from ${formatShortDate(day)}`;
 }
 
 export function WaistToHeightWidget({ nextUrl, nextLabel, navigate = (href) => window.location.assign(href) }: WidgetProps) {
@@ -151,7 +152,8 @@ export function WaistToHeightWidget({ nextUrl, nextLabel, navigate = (href) => w
   const input = (field: Field, part: Part, extra: Record<string, unknown> = {}) => (
     <input id={part === 'inches' ? ids.inches : field === 'height' && system === 'conventional' ? ids.feet : ids[field]}
       type="text" inputMode={field === 'height' && system === 'conventional' ? 'numeric' : 'decimal'} autoComplete="off"
-      value={part === 'inches' ? boxes[field].inches : boxes[field].text} onChange={edit(field, part)} onBlur={leave(field)} onKeyDown={enter}
+      value={part === 'inches' ? boxes[field].inches : boxes[field].text} onChange={edit(field, part)} onBlur={leave(field)}
+      onKeyDown={(e) => { (field === 'height' && system === 'conventional' ? blockNonIntegerKeys : blockBadNumericKeys)(e); enter(e); }}
       aria-invalid={!!errorOf(field)} {...extra} />
   );
   const box = (field: Field, optional: boolean) => {

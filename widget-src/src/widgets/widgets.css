@@ -18,7 +18,7 @@
   padding: 16px 16px 0;
 }
 .hr-widget-block *, .hr-widget-block *::before, .hr-widget-block *::after { box-sizing: border-box; }
-.hr-widget-heading { margin: 0 auto 20px; max-width: 560px; text-align: center; color: var(--hrw-ink); line-height: 1.15; }
+.hr-widget-heading { margin: 0 auto 20px; max-width: none; text-align: center; color: var(--hrw-ink); line-height: 1.15; }
 .hr-widget-layout { display: flex; flex-direction: column; gap: 28px; align-items: stretch; }
 .hr-widget-aside { max-width: 560px; margin: 0 auto; width: 100%; color: var(--hrw-ink); overflow-wrap: anywhere; }
 .hr-widget-aside > :first-child { margin-top: 0; }
@@ -68,6 +68,9 @@
   border: 1.5px solid var(--hrw-field); border-radius: 10px; padding: 0 12px; background: #fff;
 }
 .hr-widget-in:focus-within { border-color: var(--hrw-green); }
+/* The store theme rings every focused element (Dawn base.css *:focus-visible); the box's border shows focus here, as the full app's inputs do. */
+.hr-widget-block .hr-widget-in input:focus, .hr-widget-block .hr-widget-in input:focus-visible { outline: none; box-shadow: none; }
+.hr-widget-block .hr-widget-unit:focus-visible, .hr-widget-block .hr-widget-next:focus-visible { box-shadow: none; }
 .hr-widget-in input {
   border: 0; outline: 0; background: transparent; width: 100%; min-width: 0;
   font: inherit; font-size: 18px; padding: 11px 0; color: var(--hrw-ink); /* 16px or more: iOS does not zoom */
