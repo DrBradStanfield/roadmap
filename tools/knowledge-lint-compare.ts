@@ -201,6 +201,9 @@ const SEVERITIES = ['high', 'medium', 'low'];
 /** A quote that reads like an instruction is planted text, not a claim: never a finding. */
 const INSTRUCTION_LIKE = /\b(ignore|disregard|forget|override)\b.{0,40}\b(instructions?|prompts?|rules)\b|\bsystem prompt\b|\bnew instructions\b|\byou are (now )?(an?|the) (ai|assistant|model)\b|\brespond (only )?with\b/i;
 
+/** A suggested fix that opens "No change needed" withdraws its own finding. */
+const WITHDRAWN = /^no change (is )?needed\b/i;
+
 /** Keep a finding only if its quotes are verbatim in their excerpts and it names one of the two handles. */
 export function parseFindings(job: Job, text: string, date: string) {
   const none = (rejected: number) => ({ findings: [] as LintFinding[], rejected, instructionTextSeen: false, usable: false, warnings: [] as string[] });
@@ -227,6 +230,8 @@ export function parseFindings(job: Job, text: string, date: string) {
       rejected++;
       continue;
     }
+    // The model withdrew it: not a finding, so never queued, and the answer still counts.
+    if (WITHDRAWN.test(str('suggested_fix'))) continue;
     const algorithmSide = job.kind === 'entry-vs-algorithm' && (fix === job.a.handle || str('side') === 'algorithm');
     findings.push({
       id: sha12(`${job.kind}|${job.a.handle}|${job.b.handle}|${qa}|${qb}`), kind: job.kind,
