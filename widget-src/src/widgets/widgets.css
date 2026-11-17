@@ -1,0 +1,53 @@
+/* The single-topic widgets (US-74). Scoped under .hr-widget, phone first: no
+   width wider than the block, so no sideways scroll at 390 px (AC7). Colours
+   are the full app's (styles.css :root), repeated here because this bundle
+   ships without that stylesheet. */
+.hr-widget {
+  --hrw-brand: #00a38b;
+  --hrw-brand-text: #007c6a;
+  --hrw-text: #1a1a1a;
+  --hrw-muted: #666;
+  --hrw-border: #ddd;
+  --hrw-error: #b91c1c;
+  box-sizing: border-box;
+  max-width: 480px;
+  margin: 0 auto;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  color: var(--hrw-text);
+}
+.hr-widget *, .hr-widget *::before, .hr-widget *::after { box-sizing: border-box; }
+.hr-widget-form { display: flex; flex-direction: column; gap: 14px; }
+.hr-widget-units { display: inline-flex; align-self: flex-start; border: 1px solid var(--hrw-border); border-radius: 8px; overflow: hidden; }
+.hr-widget-unit { min-height: 40px; padding: 0 16px; border: 0; background: #fff; color: var(--hrw-text); font: inherit; font-size: 15px; cursor: pointer; }
+.hr-widget-unit--active { background: var(--hrw-brand); color: #fff; }
+.hr-widget-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.hr-widget-field label { font-size: 15px; font-weight: 600; }
+.hr-widget-optional { font-weight: 400; color: var(--hrw-muted); }
+.hr-widget-field input {
+  width: 100%; min-width: 0; height: 44px; padding: 0 12px;
+  border: 1px solid var(--hrw-border); border-radius: 8px; font: inherit; font-size: 16px; /* 16px: iOS does not zoom */
+}
+.hr-widget-field input[aria-invalid='true'] { border-color: var(--hrw-error); }
+.hr-widget-pair { display: flex; align-items: center; gap: 8px; }
+.hr-widget-pair input { flex: 1 1 0; }
+.hr-widget-error { color: var(--hrw-error); font-size: 14px; margin: 0; }
+.hr-widget-submit {
+  min-height: 48px; border: 0; border-radius: 8px; background: var(--hrw-brand); color: #fff;
+  font: inherit; font-size: 17px; font-weight: 600; cursor: pointer;
+}
+.hr-widget-submit:disabled { opacity: 0.7; cursor: default; }
+.hr-widget-results { display: flex; flex-direction: column; gap: 12px; }
+.hr-widget-tile { border: 1px solid var(--hrw-border); border-radius: 10px; padding: 14px 16px; }
+.hr-widget-tile-label { font-size: 14px; color: var(--hrw-muted); }
+.hr-widget-tile-value { font-size: 30px; font-weight: 700; line-height: 1.2; }
+.hr-widget-status { display: inline-block; margin-top: 4px; font-size: 14px; font-weight: 600; color: var(--hrw-muted); }
+.hr-widget-status--normal { color: #16a34a; } /* the plan's .stat-status tones */
+.hr-widget-status--info { color: #d97706; }
+.hr-widget-status--attention { color: #ea580c; }
+.hr-widget-status--urgent { color: #dc2626; }
+.hr-widget-about { margin: 8px 0 0; font-size: 14px; color: var(--hrw-muted); overflow-wrap: anywhere; }
+.hr-widget-target { margin: 0; font-size: 15px; font-weight: 600; }
+.hr-widget-next {
+  display: block; text-align: center; padding: 12px 16px; border: 1px solid var(--hrw-brand); border-radius: 8px;
+  color: var(--hrw-brand-text); font-weight: 600; text-decoration: none; overflow-wrap: anywhere;
+}

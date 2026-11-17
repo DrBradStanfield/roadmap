@@ -15,6 +15,8 @@ import { bootSignIn } from '../src/storage/sign-in-state';
 export async function boot(
   resolveBackend: () => Promise<{ resolved: ResolvedBackend; refused?: string }>,
   initStore: Parameters<typeof startOnBackend>[1],
+  /** Where a load failure is said: the full app's mount unless given (the widgets' block, US-74). */
+  failureRoot?: HTMLElement,
 ) {
   // First, before any await (US-09 AC2h): another tab's log-off signal is set
   // and removed at once, so note one heard during the OAuth code exchange or
@@ -25,7 +27,7 @@ export async function boot(
   // Before the first await (US-22 AC13): an OAuth return rewrites the URL.
   const fromEmail = takeEmailFlag();
   const { resolved, refused } = await resolveBackend();
-  const started = await startOnBackend(resolved, initStore).catch((error) => showLoadFailure(error, refused));
+  const started = await startOnBackend(resolved, initStore).catch((error) => showLoadFailure(error, refused, failureRoot));
   // The page's one sign-in state, for every provider (US-09 AC48): the UI reads only it.
   bootSignIn(signInAtBoot(started));
   return { backend: started.backend, refused, fromEmail };

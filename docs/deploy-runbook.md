@@ -43,12 +43,12 @@ inrel() { [ -f .git ] && [ -n "${D:-}" ] && [ "$(pwd -P)" = "$D" ] || { echo "ST
 
 # 1. Build the live v2 widget bundle (from project root). build:shopify-prod
 #    emits health-plan-v2.js + the upload bundle into the extension assets.
-#    (build:widget only builds the side bundles: upload, site-chat, chatbot.)
+#    (build:widget only builds the side bundles: upload, site-chat, chatbot, widgets.)
 inrel && npm run build:shopify-prod
 
 # 2. Upload WIDGET sourcemaps to Sentry (requires SENTRY_AUTH_TOKEN in .env — local only).
 #    sentry:sourcemaps uploads from extensions/health-tool-widget/assets, which holds the
-#    main v2 bundle (step 1) PLUS the side bundles (site-chat, chatbot). build:shopify-prod
+#    main v2 bundle (step 1) PLUS the side bundles (site-chat, chatbot, widgets). build:shopify-prod
 #    only emits the main v2 + upload bundles, so run build:widget first to refresh the
 #    side bundles' maps too, or their Sentry maps go stale.
 inrel && npm run build:widget

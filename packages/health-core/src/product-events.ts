@@ -141,8 +141,7 @@ export const PRODUCT_EVENT_NAMES = [
   'signin_opened',
   // US-62 AC31: the "Your plan is ready." card showed after the onboarding, and
   // its Got it was pressed. The names alone, never what the plan holds.
-  'plan_ready_shown',
-  'plan_ready_dismissed',
+  'plan_ready_shown', 'plan_ready_dismissed',
   // US-65 AC6: the record opened with entries this build could not read, so
   // the page showed the kept-unchanged line. Metadata `{ count }` only, capped
   // at 1000: never a row, a field name or a value. Once per tab session.
@@ -154,6 +153,7 @@ export const PRODUCT_EVENT_NAMES = [
   // US-07 AC11: a waist or blood pressure was saved, the plan's two prompts.
   // Metadata `{ measure }` (MEASURES) only: never the value or another metric.
   'measurement_added',
+  'waist_widget_viewed', 'waist_widget_saved', // US-74: the widget block mounted / saved; the names alone, never a value, grade or unit
   'save_retry', // US-09 AC30: a retry of a failed cloud save; metadata { trigger, outcome } (save-retry-words.ts) only
 ] as const;
 

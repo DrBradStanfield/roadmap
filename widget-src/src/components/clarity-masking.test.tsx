@@ -60,6 +60,16 @@ describe('Clarity masking — health values never reach a session recording', ()
     expect(rootTag![0]).toContain('data-clarity-mask="true"');
   });
 
+  it('US-74 AC5: masks the waist-to-height block\'s root, which the widget renders into', () => {
+    const liquid = src('../../../extensions/health-tool-widget/blocks/waist-to-height.liquid');
+    const rootTag = /<div\b[^>]*data-widget="waist-to-height"[^>]*>/s.exec(liquid);
+    expect(rootTag).not.toBeNull();
+    expect(rootTag![0]).toContain('data-clarity-mask="true"');
+    expect(rootTag![0]).toContain('class="hr-widget"');
+    // AC1: no hero, no doctor photo or name.
+    expect(liquid).not.toMatch(/hr-hero|<img|Dr Brad|Stanfield/);
+  });
+
   it('masks the React widget root', () => {
     expect(src('./HealthTool.tsx')).toContain(
       '<div className="health-tool" ref={rootRef} data-clarity-mask="true">',

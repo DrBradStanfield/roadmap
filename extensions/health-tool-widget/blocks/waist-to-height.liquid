@@ -1,0 +1,35 @@
+<!-- US-74: one measurement on its own page. Height, weight and waist, saved to
+     the same record the full Health Roadmap reads, and the plan's own results.
+     No hero, no doctor photo or name (AC1). The bundle health-widgets.js serves
+     every single-topic block and routes by data-widget (AC8). -->
+{{ 'health-widgets.css' | asset_url | stylesheet_tag }}
+{% comment %} Clarity: mask this node and every descendant. Health values
+     render as page text and Clarity records text by default (AC5).
+     The NBSP dodges the storefront's `div:empty { display:none }` rule. {% endcomment %}
+<div
+  class="hr-widget"
+  data-widget="waist-to-height"
+  data-clarity-mask="true"
+  data-next-url="{{ block.settings.next_url | escape }}"
+  data-next-label="{{ block.settings.next_label | escape }}"
+>&nbsp;</div>
+<script src="{{ 'health-widgets.js' | asset_url }}" defer></script>
+
+{% schema %}
+{
+  "name": "Waist-to-height ratio",
+  "target": "section",
+  "settings": [
+    {
+      "type": "url",
+      "id": "next_url",
+      "label": "Next-step link (shown after a result)"
+    },
+    {
+      "type": "text",
+      "id": "next_label",
+      "label": "Next-step link label"
+    }
+  ]
+}
+{% endschema %}

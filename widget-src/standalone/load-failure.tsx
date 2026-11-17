@@ -26,8 +26,7 @@ const NEWER_SCHEMA_LINE = 'A newer version of Health by Dr Brad wrote this recor
  * reload, as the iPhone names an app update (US-25 AC6b; #929). A connect that
  * failed on the way (US-09 AC1a) is said here too, or this panel hides it (#925).
  */
-export function showLoadFailure(error: unknown, connectFailed?: string): never {
-  const container = document.getElementById('health-tool-root');
+export function showLoadFailure(error: unknown, connectFailed?: string, container = document.getElementById('health-tool-root')): never {
   if (container && isStorageFailure(error)) {
     const refused = isRefusal(error);
     createRoot(container).render(
