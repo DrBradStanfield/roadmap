@@ -5,8 +5,8 @@
  * widget by its topic (src/widgets/router.tsx). A page with no known topic
  * opens nothing.
  *
- * Each block loads the script, so it starts once per page and mounts each
- * block once (review U1). Every block shows a loading line while the record
+ * The block schema declares the script, so Shopify loads it once per page
+ * (review C9); it still starts once and mounts each block once (review U1). Every block shows a loading line while the record
  * opens, and the failure panel if it does not (review U4), with no doctor's
  * name or address, as the commerce store carries none (review U5).
  */
@@ -37,7 +37,8 @@ export async function startWidgets(doc: Document = document): Promise<void> {
   const mounts = blocks.map(({ el, Widget }) => ({ el, Widget, root: createRoot(el) }));
   for (const { root } of mounts) root.render(<p className="hr-widget-loading" role="status">Loading…</p>);
   try {
-    await boot(resolveBackend, initRoadmapStore);
+    // The failure is said in these blocks below, never in the full app's root (review C10).
+    await boot(resolveBackend, initRoadmapStore, (error) => { throw error; });
   } catch (error) {
     for (const { root } of mounts) root.render(failure(error));
     return;
@@ -55,5 +56,12 @@ export async function startWidgets(doc: Document = document): Promise<void> {
   }
 }
 
+/** Start once the page's markup is parsed: the block schema loads this script
+ *  once per page (review C9), which may run before the blocks are in the DOM. */
+export function whenReady(start: () => void, doc: Document = document): void {
+  if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', start, { once: true });
+  else start();
+}
+
 // Never an unhandled rejection: every failure above is already on the page (review U4).
-void startWidgets().catch(() => undefined);
+whenReady(() => { void startWidgets().catch(() => undefined); });

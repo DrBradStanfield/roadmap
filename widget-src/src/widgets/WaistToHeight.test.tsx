@@ -1,17 +1,21 @@
 // @vitest-environment jsdom
 /**
- * US-74, the widget as a visitor sees it: the boxes, the one button, the
- * results, the events and the next-step link, over a real RoadmapStore.
+ * US-74, the widget as a visitor sees it, over a real RoadmapStore: the
+ * boxes, live results, the automatic save on the full app's timings, the
+ * events, the notices and the next-step link. Each "review" test names the
+ * finding it pins.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
 import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
+import { toCanonicalValue } from '@roadmap/health-core/units';
 import { RoadmapStore } from '../storage/roadmap-store';
 import * as data from '../lib/roadmap-data';
+import { formatShortDate } from '../lib/constants';
 import { trackProductEvent } from '../lib/server-api';
-import { WaistToHeightWidget } from './WaistToHeight';
+import { NEXT_STEP_DEFAULT, NOT_SAVED, WaistToHeightWidget } from './WaistToHeight';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../lib/server-api', async (importOriginal) => ({
@@ -19,11 +23,19 @@ vi.mock('../lib/server-api', async (importOriginal) => ({
   trackProductEvent: vi.fn(),
 }));
 
+const OLD = '2026-01-10T00:00:00.000Z';
 let cloud: MemoryCloud;
 const persisted = (): RoadmapFile => JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json);
+const active = (metric: string) => persisted().measurements.filter((m) => m.metricType === metric && m.status === 'active').map((m) => m.value);
 const box = (label: RegExp) => screen.getByLabelText(label) as HTMLInputElement;
-const type = (label: RegExp, value: string) => fireEvent.change(box(label), { target: { value } });
-const press = () => fireEvent.click(screen.getByRole('button', { name: 'See my results' }));
+const type = (label: RegExp, value: string) => fireEvent.input(box(label), { target: { value } });
+/** Enter in a box: every entry saves now (US-74 AC4). */
+const enter = (label: RegExp = /^Height|^Feet/) => fireEvent.keyDown(box(label), { key: 'Enter' });
+/** Leave the waist and weight boxes, as a tap elsewhere does: they commit, as the vitals grid's cells do. */
+const leaveDays = () => fireEvent.focusIn(document.body);
+const saved = () => screen.findByText('Saved');
+const calls = (name: string) => vi.mocked(trackProductEvent).mock.calls.filter(([n]) => n === name);
+const pause = (ms: number) => act(() => new Promise((r) => setTimeout(r, ms)));
 
 beforeEach(async () => {
   vi.spyOn(RoadmapStore.prototype, 'startLiveRefresh').mockReturnValue(() => {});
@@ -37,18 +49,69 @@ beforeEach(async () => {
 });
 afterEach(async () => {
   cleanup();
-  await data.flushRoadmapStore();
   vi.restoreAllMocks();
+  await data.flushRoadmapStore();
   vi.unstubAllGlobals();
 });
 
 describe('US-74 waist-to-height and BMI widget', () => {
-  it('AC2: prefills height, weight and waist from the record', async () => {
+  it('AC2: prefills height, weight and waist from the record, each with the day it comes from (review X2)', async () => {
     await data.saveChangedMeasurements({ heightCm: 178 }, {});
-    await data.addMeasurement('weight', 82, '2026-01-10T00:00:00.000Z');
-    await data.addMeasurement('waist', 90, '2026-01-10T00:00:00.000Z');
+    await data.addMeasurement('weight', 82, OLD);
+    await data.addMeasurement('waist', 90);
     render(<WaistToHeightWidget />);
     expect([box(/^Height/).value, box(/^Weight/).value, box(/^Waist/).value]).toEqual(['178', '82', '90']);
+    expect(screen.getByText(`from ${formatShortDate('2026-01-10')}`)).toBeTruthy();
+    expect(screen.getByText('today')).toBeTruthy();
+    type(/^Weight/, '80'); // an entry is the person's: no longer the record's day
+    expect(screen.queryByText(`from ${formatShortDate('2026-01-10')}`)).toBeNull();
+  });
+
+  it('AC3: results show as soon as a height and a waist or weight are in, before any save, with the widget\'s own labels', () => {
+    render(<WaistToHeightWidget />);
+    type(/^Height/, '170');
+    expect(screen.queryByText('Waist-to-height ratio')).toBeNull();
+    type(/^Weight/, '78.03');
+    type(/^Waist/, '81.6');
+    expect(screen.getByText('Waist-to-height ratio')).toBeTruthy();
+    expect(screen.getByText('0.48')).toBeTruthy();
+    expect(screen.getByText('Healthy')).toBeTruthy();
+    expect(screen.getByText('Body mass index (BMI)')).toBeTruthy();
+    expect(screen.getByText('27')).toBeTruthy();
+    expect(screen.getByText('Normal')).toBeTruthy(); // BMI 27 with a healthy ratio, as the plan reads it
+    expect(screen.getByText('Target waist circumference')).toBeTruthy();
+    expect(screen.getByText('<85 cm')).toBeTruthy();
+    expect(screen.getByLabelText(/^Waist circumference/)).toBeTruthy();
+    expect(screen.queryByText(/Ideal Body Weight|Protein/)).toBeNull();
+    expect(screen.queryByRole('button', { name: /See my results/ })).toBeNull(); // no button (Brad 2026-11-18)
+  });
+
+  it('AC4: the height saves itself 500 ms after it is typed, as About you saves it; a half-typed height never does', async () => {
+    render(<WaistToHeightWidget />);
+    type(/^Height/, '17');
+    await pause(700);
+    expect(cloud.files.has(ROADMAP_FILE_NAME)).toBe(false);
+    type(/^Height/, '178');
+    await saved();
+    expect(persisted().profile.heightCm).toBe(178);
+  });
+
+  it('AC4: weight and waist save when their boxes are left, as the vitals grid commits, not while typed', async () => {
+    await data.saveChangedMeasurements({ heightCm: 178 }, {});
+    render(<WaistToHeightWidget />);
+    type(/^Waist/, '9');
+    type(/^Waist/, '90');
+    await pause(700);
+    expect(cloud.files.has(ROADMAP_FILE_NAME) ? active('waist') : []).toEqual([]);
+    leaveDays();
+    await saved();
+    expect(active('waist')).toEqual([90]);
+    // A later change the same day corrects today's row: one active row, no chain of rows.
+    type(/^Waist/, '89');
+    leaveDays();
+    await saved();
+    expect(active('waist')).toEqual([89]);
+    expect(persisted().measurements.filter((m) => m.metricType === 'waist')).toHaveLength(2);
   });
 
   it('AC5 (review P2): a save sends exactly these analytics calls, no value, and nothing else leaves the page', async () => {
@@ -56,8 +119,8 @@ describe('US-74 waist-to-height and BMI widget', () => {
     type(/^Height/, '178');
     type(/^Weight/, '80');
     type(/^Waist/, '90');
-    press();
-    await screen.findByText('Waist-to-Height');
+    enter();
+    await saved();
     expect(vi.mocked(trackProductEvent).mock.calls).toEqual([
       ['waist_widget_viewed'],
       ['measurement_added', { measure: 'waist' }], // the full app's own counter: the measure's name, never a value
@@ -66,50 +129,29 @@ describe('US-74 waist-to-height and BMI widget', () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
-  it('review P3: a save with no waist is not counted as a ratio saved', async () => {
+  it('review P3: a save with no waist is not counted as a ratio saved; waist_widget_saved goes once per page view', async () => {
     render(<WaistToHeightWidget />);
     type(/^Height/, '178');
     type(/^Weight/, '80');
-    press();
-    await screen.findByText('BMI');
-    expect(vi.mocked(trackProductEvent)).not.toHaveBeenCalledWith('waist_widget_saved');
-  });
-
-  it('AC5: counts a view and a save by name alone, never a value', async () => {
-    render(<WaistToHeightWidget />);
-    expect(vi.mocked(trackProductEvent).mock.calls).toEqual([['waist_widget_viewed']]);
-    type(/^Height/, '178');
+    enter();
+    await saved();
+    expect(calls('waist_widget_saved')).toEqual([]);
     type(/^Waist/, '90');
-    press();
-    await screen.findByText('Waist-to-Height');
-    const calls = vi.mocked(trackProductEvent).mock.calls.filter(([name]) => name.startsWith('waist_widget_'));
-    expect(calls).toEqual([['waist_widget_viewed'], ['waist_widget_saved']]);
+    enter();
+    await saved();
+    type(/^Waist/, '91');
+    enter();
+    await saved();
+    expect(calls('waist_widget_saved')).toEqual([['waist_widget_saved']]);
   });
 
-  it('AC3: shows the ratio, its grade, BMI with the composite reading, and the target waist', async () => {
-    render(<WaistToHeightWidget />);
-    type(/^Height/, '170');
-    type(/^Weight/, '78.03');
-    type(/^Waist/, '81.6');
-    press();
-    await screen.findByText('Waist-to-Height');
-    expect(screen.getByText('0.48')).toBeTruthy();
-    expect(screen.getByText('Healthy')).toBeTruthy();
-    expect(screen.getByText('27')).toBeTruthy();
-    expect(screen.getByText('Normal')).toBeTruthy(); // BMI 27 with a healthy ratio, as the plan reads it
-    expect(screen.getByText('Target: <85 cm')).toBeTruthy();
-    expect(screen.queryByText(/Ideal Body Weight|Protein/)).toBeNull();
-  });
-
-  it('AC2: an out-of-range value is refused with the full app\'s words and nothing is written', async () => {
+  it('AC2: an out-of-range value shows the full app\'s words once the box is left, and is never written', async () => {
     render(<WaistToHeightWidget />);
     type(/^Height/, '300');
-    press();
+    enter();
     expect(await screen.findByText('Height must be at most 250 cm')).toBeTruthy();
-    expect(screen.queryByText('Waist-to-Height')).toBeNull();
-    await data.flushRoadmapStore();
-    expect(cloud.files.has(ROADMAP_FILE_NAME) ? persisted().profile.heightCm ?? null : null).toBeNull();
-    expect(vi.mocked(trackProductEvent)).not.toHaveBeenCalledWith('waist_widget_saved');
+    await pause(700);
+    expect(cloud.files.has(ROADMAP_FILE_NAME)).toBe(false);
   });
 
   it('AC2: the units switch converts the boxes; a typed height keeps its exact value (review A1), a US weight saves in kg', async () => {
@@ -119,108 +161,85 @@ describe('US-74 waist-to-height and BMI widget', () => {
     fireEvent.click(screen.getByRole('radio', { name: 'US' }));
     expect([box(/^Feet/).value, box(/^Inches/).value, box(/^Weight/).value]).toEqual(['5', '10', '176']);
     type(/^Weight/, '180');
-    press();
-    await screen.findByText('BMI');
-    await data.flushRoadmapStore();
-    const file = persisted();
-    expect(file.profile.heightCm).toBe(178);
-    expect(file.measurements.find((m) => m.metricType === 'weight')!.value).toBeCloseTo(81.65, 2);
+    enter(/^Weight/);
+    await saved();
+    expect(persisted().profile.heightCm).toBe(178);
+    expect(active('weight')[0]).toBeCloseTo(81.65, 2);
   });
 
-  it('a save that throws says it was not saved and gives the button back', async () => {
+  it('a save that throws says Not saved and keeps the drafts', async () => {
     vi.spyOn(RoadmapStore.prototype, 'saveChangedMeasurements').mockRejectedValue(new Error('storage down'));
     render(<WaistToHeightWidget />);
     type(/^Height/, '178');
-    press();
-    expect((await screen.findByRole('alert')).textContent).toBe('Not saved. Reload the page and try again.');
-    const button = screen.getByRole('button', { name: 'See my results' });
-    expect(button.getAttribute('aria-disabled')).toBe('false');
-    expect(screen.queryByText('Waist-to-Height')).toBeNull();
-    expect(vi.mocked(trackProductEvent)).not.toHaveBeenCalledWith('waist_widget_saved');
+    enter();
+    expect((await screen.findByRole('alert')).textContent).toBe(NOT_SAVED);
+    expect(box(/^Height/).value).toBe('178');
   });
 
-  it('the results arrive in a live region already on the page, and the button keeps focus while saving', async () => {
+  it('the results arrive in a live region already on the page', () => {
     const { container } = render(<WaistToHeightWidget />);
     const region = container.querySelector('output[aria-live="polite"]')!;
     expect(region.textContent).toBe('');
     type(/^Height/, '178');
     type(/^Waist/, '90');
-    const button = screen.getByRole('button', { name: 'See my results' });
-    button.focus();
-    press();
-    expect(button.getAttribute('aria-disabled')).toBe('true');
-    expect(button.hasAttribute('disabled')).toBe(false);
-    await screen.findByText('Waist-to-Height');
     expect(container.querySelector('output[aria-live="polite"]')).toBe(region);
-    expect(region.textContent).toContain('Target: <89 cm');
+    expect(region.textContent).toContain('<89 cm');
   });
 
   it('AC2: a US height out of range marks both its boxes, in a group named for the height', async () => {
     render(<WaistToHeightWidget />);
     fireEvent.click(screen.getByRole('radio', { name: 'US' }));
     type(/^Feet/, '9');
-    press();
+    enter(/^Feet/);
     const error = await screen.findByText(/^Height must be at most/);
-    expect(screen.getByRole('group', { name: 'Height (ft/in)' })).toBeTruthy();
+    expect(screen.getByRole('group', { name: 'Height' })).toBeTruthy();
     for (const label of [/^Feet/, /^Inches/]) {
       expect(box(label).getAttribute('aria-invalid')).toBe('true');
       expect(box(label).getAttribute('aria-describedby')).toBe(error.id);
     }
   });
 
-  it('AC6: the next-step link shows after a result, and only when it is set', async () => {
+  it('AC6: the next-step link shows with a result, and only when set', () => {
     const { unmount } = render(<WaistToHeightWidget nextUrl="/pages/roadmap" nextLabel="See your full plan" />);
-    expect(screen.queryByRole('link')).toBeNull();
     type(/^Height/, '178');
-    press();
-    expect((await screen.findByRole('link', { name: 'See your full plan' })).getAttribute('href')).toBe('/pages/roadmap');
-    type(/^Waist/, '90'); // an edit hides the results and the link with them
     expect(screen.queryByRole('link')).toBeNull();
+    type(/^Waist/, '90');
+    expect(screen.getByRole('link', { name: 'See your full plan' }).getAttribute('href')).toBe('/pages/roadmap');
     unmount();
     render(<WaistToHeightWidget />);
     type(/^Height/, '178');
-    press();
-    await screen.findByText('Target: <89 cm');
-    expect(screen.queryByRole('link')).toBeNull();
-  });
-
-  it('AC6: an unsafe link is never shown', async () => {
-    render(<WaistToHeightWidget nextUrl="javascript:alert(1)" nextLabel="Go" />);
-    type(/^Height/, '178');
-    press();
-    await screen.findByText('Target: <89 cm');
+    type(/^Waist/, '90');
     expect(screen.queryByRole('link')).toBeNull();
   });
 });
 
 describe('US-74 review fixes', () => {
-  const OLD = '2026-01-10T00:00:00.000Z';
   const today = () => new Date().toISOString().slice(0, 10);
 
-  it('A1: pressing over values only filled from the record writes nothing and dates nothing today', async () => {
+  it('A1: Enter over values only filled from the record writes nothing and dates nothing today', async () => {
     await data.saveChangedMeasurements({ heightCm: 178 }, {});
     await data.addMeasurement('weight', 82, OLD);
     await data.addMeasurement('waist', 90, OLD);
     await data.flushRoadmapStore();
     const before = persisted();
     render(<WaistToHeightWidget />);
-    press();
-    await screen.findByText('Waist-to-Height');
+    enter();
+    leaveDays();
+    await pause(700);
     await data.flushRoadmapStore();
     expect(persisted().measurements).toEqual(before.measurements);
     expect(persisted().measurements.some((m) => m.recordedAt.startsWith(today()))).toBe(false);
     expect(persisted().profile).toEqual(before.profile);
-    expect(vi.mocked(trackProductEvent)).not.toHaveBeenCalledWith('waist_widget_saved');
+    expect(calls('waist_widget_saved')).toEqual([]);
   });
 
-  it('A1: a record height of 178 cm pressed in the US view stays exactly 178', async () => {
+  it('A1: a record height of 178 cm, with a waist saved in the US view, stays exactly 178', async () => {
     await data.saveChangedMeasurements({ heightCm: 178 }, {});
     render(<WaistToHeightWidget />);
     fireEvent.click(screen.getByRole('radio', { name: 'US' }));
     type(/^Waist/, '35');
-    press();
-    await screen.findByText('Waist-to-Height');
-    await data.flushRoadmapStore();
+    enter(/^Waist/);
+    await saved();
     expect(persisted().profile.heightCm).toBe(178);
   });
 
@@ -232,12 +251,10 @@ describe('US-74 review fixes', () => {
     await data.addMeasurement('waist', waist);
     render(<WaistToHeightWidget />);
     expect(box(/^Waist/).value).toBe('88');
-    press();
-    await screen.findByText('Waist-to-Height');
     expect(screen.getByText(grade)).toBeTruthy();
   });
 
-  it('A3: a store that cannot keep the record says Not saved, keeps the drafts and counts nothing', async () => {
+  it('A3, C8: a store that cannot keep the record says Not saved, keeps the drafts, counts nothing; the next save goes through', async () => {
     const failing = new MemoryAdapter(cloud);
     await data.initRoadmapStore(failing);
     const write = vi.spyOn(failing, 'write').mockRejectedValue(new Error('disk full'));
@@ -245,20 +262,20 @@ describe('US-74 review fixes', () => {
     render(<WaistToHeightWidget />);
     type(/^Height/, '178');
     type(/^Waist/, '90');
-    press();
-    expect((await screen.findByRole('alert')).textContent).toBe('Not saved. Reload the page and try again.');
+    enter();
+    expect((await screen.findByRole('alert')).textContent).toBe(NOT_SAVED);
     expect([box(/^Height/).value, box(/^Waist/).value]).toEqual(['178', '90']);
-    expect(screen.queryByText('Waist-to-Height')).toBeNull();
-    expect(vi.mocked(trackProductEvent)).not.toHaveBeenCalledWith('waist_widget_saved');
-    // The store recovers: a press again saves the person's own entries, with no conflict against itself.
+    expect(calls('waist_widget_saved')).toEqual([]);
+    expect(calls('measurement_added')).toEqual([]);
     write.mockRestore();
     setItem.mockRestore();
-    press();
-    await screen.findByText('Waist-to-Height');
-    expect(screen.queryByRole('alert')).toBeNull();
+    enter();
+    await saved();
+    expect(calls('measurement_added')).toEqual([['measurement_added', { measure: 'waist' }]]);
+    expect(calls('waist_widget_saved')).toHaveLength(1);
   });
 
-  it('A4 and A5: a waist changed elsewhere is not overwritten; the box shows it and the notice says what was kept', async () => {
+  it('A4, A5, X1: a waist changed elsewhere is kept; the box shows it, the notice says to type a new value, and only that replaces it', async () => {
     await data.saveChangedMeasurements({ heightCm: 178 }, {});
     const first = await data.addMeasurement('waist', 90);
     render(<WaistToHeightWidget />);
@@ -266,25 +283,22 @@ describe('US-74 review fixes', () => {
     await data.correctValue(first.row.id, 92); // another tab, unseen by this page
     type(/^Height/, '175');
     type(/^Waist/, '88');
-    press();
+    enter();
     const notice = await screen.findByRole('alert');
     expect(notice.textContent).toContain('Saved: height.');
-    expect(notice.textContent).toContain('Not saved: waist. It changed on another device or tab');
+    expect(notice.textContent).toContain('Not saved: waist circumference. It changed on another device or tab, so the box now shows the saved value. Type a new value to replace it.');
     expect(box(/^Waist/).value).toBe('92');
     await data.flushRoadmapStore();
-    const active = () => persisted().measurements.filter((m) => m.metricType === 'waist' && m.status === 'active').map((m) => m.value);
-    expect(active()).toEqual([92]);
+    expect(active('waist')).toEqual([92]);
     expect(persisted().profile.heightCm).toBe(175);
-    // Seen now: an unedited press keeps 92; a new entry replaces the row the person saw.
-    press();
-    await screen.findByText('Waist-to-Height');
+    enter(); // nothing new typed: nothing replaced
+    await pause(50);
     await data.flushRoadmapStore();
-    expect(active()).toEqual([92]);
+    expect(active('waist')).toEqual([92]);
     type(/^Waist/, '88');
-    press();
-    await screen.findByText('Waist-to-Height');
-    await data.flushRoadmapStore();
-    expect(active()).toEqual([88]);
+    enter();
+    await saved();
+    expect(active('waist')).toEqual([88]);
   });
 
   it('A4: a height changed elsewhere is not overwritten; its box shows the record\'s', async () => {
@@ -292,45 +306,103 @@ describe('US-74 review fixes', () => {
     render(<WaistToHeightWidget />);
     await data.saveChangedMeasurements({ heightCm: 180 }, { heightCm: 178 });
     type(/^Height/, '175');
-    press();
+    enter();
     expect((await screen.findByRole('alert')).textContent).toContain('Not saved: height.');
     expect(box(/^Height/).value).toBe('180');
     await data.flushRoadmapStore();
     expect(persisted().profile.heightCm).toBe(180);
   });
 
-  it('A6: unreadable text is an error on its box, never a blank; nothing is saved', async () => {
+  it('A6: unreadable text is an error on its box, never a blank; nothing is saved; the draft survives a unit switch', async () => {
     render(<WaistToHeightWidget />);
     type(/^Height/, '178');
     type(/^Waist/, '88 cm');
-    press();
+    enter(/^Waist/);
     await screen.findByText('Type one decimal number, without signs, < > or spaces');
     expect(box(/^Waist/).getAttribute('aria-invalid')).toBe('true');
-    expect(cloud.files.has(ROADMAP_FILE_NAME)).toBe(false);
-    // The draft survives a unit switch, as typed.
     fireEvent.click(screen.getByRole('radio', { name: 'US' }));
     expect(box(/^Waist/).value).toBe('88 cm');
+    await data.flushRoadmapStore();
+    expect(cloud.files.has(ROADMAP_FILE_NAME) ? active('waist') : []).toEqual([]);
   });
 
-  it('A6: a fractional US inches entry is refused, never truncated', async () => {
+  it('A6, C11: a fractional US inches entry is refused, never truncated, and the Inches box takes the focus', async () => {
     render(<WaistToHeightWidget />);
     fireEvent.click(screen.getByRole('radio', { name: 'US' }));
     type(/^Feet/, '5');
     type(/^Inches/, '10.5');
-    press();
+    enter(/^Inches/);
     expect(await screen.findByText('Enter a number')).toBeTruthy();
+    expect(document.activeElement).toBe(box(/^Inches/));
+    await pause(700);
     expect(cloud.files.has(ROADMAP_FILE_NAME)).toBe(false);
   });
 
-  it('P1: no class names the grade, so a Clarity replay cannot read it', async () => {
-    const { container } = render(<WaistToHeightWidget />);
-    type(/^Height/, '178');
-    type(/^Waist/, '95');
-    press();
-    await screen.findByText('Elevated');
-    const classes = [...container.querySelectorAll('[class]')].map((el) => el.getAttribute('class')).join(' ');
-    expect(classes).not.toMatch(/normal|info|attention|urgent|elevated|healthy|status--/i);
-    expect(screen.getByText('Elevated').className).toBe('hr-widget-status');
+  it('C4: "88.0" typed over a waist filled with 88 is no entry: no row, no saved event', async () => {
+    await data.saveChangedMeasurements({ heightCm: 178 }, {});
+    await data.addMeasurement('waist', 88, OLD);
+    render(<WaistToHeightWidget />);
+    type(/^Waist/, '88.0');
+    enter();
+    await pause(50);
+    await data.flushRoadmapStore();
+    expect(persisted().measurements.filter((m) => m.metricType === 'waist')).toHaveLength(1);
+    expect(calls('waist_widget_saved')).toEqual([]);
+  });
+
+  it('C5: 50 in typed over today\'s 127.4 cm (shown as 50.2 in) is written, and counted', async () => {
+    await data.saveChangedMeasurements({ heightCm: 178 }, {});
+    await data.addMeasurement('waist', 127.4);
+    render(<WaistToHeightWidget />);
+    fireEvent.click(screen.getByRole('radio', { name: 'US' }));
+    expect(box(/^Waist/).value).toBe('50.2');
+    type(/^Waist/, '50');
+    enter(/^Waist/);
+    await saved();
+    expect(active('waist')).toEqual([toCanonicalValue('waist', 50, 'conventional')]);
+    expect(calls('waist_widget_saved')).toHaveLength(1);
+  });
+
+  it('C6: a box typed in while its save is on its way keeps the new text; the save does not say Saved over it', async () => {
+    await data.saveChangedMeasurements({ heightCm: 178 }, {});
+    await data.flushRoadmapStore();
+    const slow = new MemoryAdapter(cloud);
+    await data.initRoadmapStore(slow);
+    let release!: () => void;
+    const gate = new Promise<void>((r) => { release = r; });
+    const realWrite = slow.write.bind(slow);
+    vi.spyOn(slow, 'write').mockImplementation(async (...args: Parameters<typeof slow.write>) => { await gate; return realWrite(...args); });
+    render(<WaistToHeightWidget />);
+    type(/^Waist/, '90');
+    leaveDays();
+    await screen.findByText('Saving…');
+    type(/^Waist/, '91');
+    await act(async () => { release(); await new Promise((r) => setTimeout(r, 20)); });
+    await waitFor(() => expect(screen.queryByText('Saving…')).toBeNull());
+    expect(box(/^Waist/).value).toBe('91');
+    expect(screen.queryByText('Saved')).toBeNull();
+    leaveDays();
+    await saved();
+    expect(active('waist')).toEqual([91]);
+  });
+
+  it('P1 and B: a Healthy and an Elevated result give the block the same classes, styles and attributes', () => {
+    const snapshot = (waist: string) => {
+      const { container, unmount } = render(<WaistToHeightWidget />);
+      type(/^Height/, '178');
+      type(/^Waist/, waist);
+      expect(screen.getByText(waist === '80' ? 'Healthy' : 'Elevated')).toBeTruthy();
+      const attrs = [...container.querySelectorAll('*')].map((el) => [el.tagName, ...[...el.attributes]
+        // Input values are the person's typing, which Clarity masks; the ids differ only by React's per-render prefix.
+        .filter((a) => !(el.tagName === 'INPUT' && a.name === 'value'))
+        .map((a) => `${a.name}=${a.value.replace(/:r[0-9a-z]+:/g, ':id:')}`).sort()].join(' '));
+      unmount();
+      return attrs;
+    };
+    const healthy = snapshot('80');
+    const elevated = snapshot('95');
+    expect(healthy.filter((a) => a.startsWith('CANVAS'))).toHaveLength(2);
+    expect(elevated).toEqual(healthy);
   });
 
   it('U1: two blocks on one page never share an id', () => {
@@ -340,25 +412,25 @@ describe('US-74 review fixes', () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it('U2: a link set with a blank label reads "Next step"', async () => {
+  it('U2: a link set with a blank label reads "Next step"', () => {
     render(<WaistToHeightWidget nextUrl="/pages/health-plan" nextLabel="  " />);
     type(/^Height/, '178');
-    press();
-    expect((await screen.findByRole('link', { name: 'Next step' })).getAttribute('href')).toBe('/pages/health-plan');
+    type(/^Waist/, '90');
+    expect(screen.getByRole('link', { name: NEXT_STEP_DEFAULT }).getAttribute('href')).toBe('/pages/health-plan');
   });
 
-  it('U3: a link to another site is never shown', async () => {
-    render(<WaistToHeightWidget nextUrl="https://drstanfield.com/pages/roadmap" nextLabel="Go" />);
+  it.each(['https://drstanfield.com/pages/roadmap', 'javascript:alert(1)', '/\t/evil.com'])('U3, X6: a link to %j is never shown', (url) => {
+    render(<WaistToHeightWidget nextUrl={url} nextLabel="Go" />);
     type(/^Height/, '178');
-    press();
-    await screen.findByText('Target: <89 cm');
+    type(/^Waist/, '90');
+    expect(screen.getByText('<89 cm')).toBeTruthy();
     expect(screen.queryByRole('link')).toBeNull();
   });
 
-  it('U6: a press with errors moves the focus to the first box at fault; arrow keys switch the units', async () => {
+  it('U6: Enter with errors moves the focus to the first box at fault; arrow keys switch the units', async () => {
     render(<WaistToHeightWidget />);
     type(/^Waist/, 'abc');
-    press();
+    enter(/^Waist/);
     await screen.findByText('Required');
     expect(document.activeElement).toBe(box(/^Height/));
     const metric = screen.getByRole('radio', { name: 'Metric' });

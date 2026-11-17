@@ -1,37 +1,34 @@
-// US-74: the widget's one named state, as a table (CLAUDE.md "A mode is one named state").
+// US-74: the widget's save, one named state, as a table (CLAUDE.md "A mode is one named state").
 import { describe, expect, it } from 'vitest';
-import { START, transition, type WidgetEvent, type WidgetState } from './widget-machine';
-import type { Results } from './body-measures';
+import { START, transition, type PartlyKept, type WidgetEvent, type WidgetState } from './widget-machine';
 
-const results: Results = { target: 'Target: <89 cm' };
-const errors = { heightCm: 'Required' };
-const editingWithErrors: WidgetState = { mode: 'editing', errors };
-const saving: WidgetState = { mode: 'saving' };
-const shown: WidgetState = { mode: 'shown', results, partial: null };
-const partial = { saved: ['height' as const], changed: ['waist' as const], refused: [] };
-const shownPartial: WidgetState = { mode: 'shown', results, partial };
+const partial: PartlyKept = { saved: ['height'], changed: ['waist'], refused: [] };
+const saving: WidgetState = { mode: 'saving', edited: false };
+const savingEdited: WidgetState = { mode: 'saving', edited: true };
+const saved: WidgetState = { mode: 'saved', partial: null };
+const savedPartial: WidgetState = { mode: 'saved', partial };
 const failed: WidgetState = { mode: 'failed' };
 
 const ROWS: Array<[string, WidgetState, WidgetEvent, WidgetState]> = [
-  ['a valid press saves', START, { type: 'submitted', errors: {} }, saving],
-  ['an invalid press shows the errors', START, { type: 'submitted', errors }, editingWithErrors],
-  ['an edit clears the errors', editingWithErrors, { type: 'edited' }, START],
-  ['an edit while typing changes nothing', START, { type: 'edited' }, START],
-  ['a save that lands shows the results', saving, { type: 'saved', results, partial: null }, shown],
-  ['a part-kept save says what was kept (review A5)', saving, { type: 'saved', results, partial }, shownPartial],
-  ['an edit after a part-kept save clears its notice', shownPartial, { type: 'edited' }, START],
-  ['a save refused says so', saving, { type: 'failed' }, failed],
-  ['a press while saving waits', saving, { type: 'submitted', errors: {} }, saving],
-  ['an edit while saving waits', saving, { type: 'edited' }, saving],
-  ['an edit hides results that no longer match', shown, { type: 'edited' }, START],
-  ['a press after a result saves again', shown, { type: 'submitted', errors: {} }, saving],
-  ['a press after a refusal tries again', failed, { type: 'submitted', errors: {} }, saving],
-  ['an edit after a refusal clears it', failed, { type: 'edited' }, START],
-  ['an answer with no save on its way is ignored', shown, { type: 'saved', results, partial: null }, shown],
-  ['a refusal with no save on its way is ignored', START, { type: 'failed' }, START],
+  ['a save starts', START, { type: 'started' }, saving],
+  ['a queued save starts after the last', saved, { type: 'started' }, saving],
+  ['a retry after a failure starts', failed, { type: 'started' }, saving],
+  ['typing with nothing to say changes nothing', START, { type: 'edited' }, START],
+  ['typing during a save is remembered', saving, { type: 'edited' }, savingEdited],
+  ['typing again during a save stays remembered', savingEdited, { type: 'edited' }, savingEdited],
+  ['a kept save says Saved', saving, { type: 'kept', partial: null }, saved],
+  ['a part-kept save says what was kept (review A5)', saving, { type: 'kept', partial }, savedPartial],
+  ['a save kept while the person typed does not say Saved', savingEdited, { type: 'kept', partial: null }, START],
+  ['but still says what it did not keep', savingEdited, { type: 'kept', partial }, savedPartial],
+  ['a save the store could not keep says so', saving, { type: 'failed' }, failed],
+  ['typing after Saved clears it', saved, { type: 'edited' }, START],
+  ['typing after a notice clears it', savedPartial, { type: 'edited' }, START],
+  ['typing after a failure clears it; the drafts are kept', failed, { type: 'edited' }, START],
+  ['an answer with no save on its way is ignored', saved, { type: 'kept', partial }, saved],
+  ['a failure with no save on its way is ignored', START, { type: 'failed' }, START],
 ];
 
-describe('widget state (US-74)', () => {
+describe('widget save state (US-74)', () => {
   it.each(ROWS)('%s', (_name, state, event, next) => {
     expect(transition(state, event)).toEqual(next);
   });

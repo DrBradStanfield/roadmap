@@ -1,25 +1,49 @@
 <!-- US-74: one measurement on its own page. Height, weight and waist, saved to
      the same record the full Health Roadmap reads, and the plan's own results.
      No hero, no doctor photo or name (AC1). The bundle health-widgets.js serves
-     every single-topic block and routes by data-widget (AC8). -->
-{{ 'health-widgets.css' | asset_url | stylesheet_tag }}
-{% comment %} Clarity: mask this node and every descendant. Health values
-     render as page text and Clarity records text by default (AC5).
-     The NBSP dodges the storefront's `div:empty { display:none }` rule. {% endcomment %}
-<div
-  class="hr-widget"
-  data-widget="waist-to-height"
-  data-clarity-mask="true"
-  data-next-url="{{ block.settings.next_url | escape }}"
-  data-next-label="{{ block.settings.next_label | escape }}"
->&nbsp;</div>
-<script src="{{ 'health-widgets.js' | asset_url }}" defer></script>
+     every single-topic block and routes by data-widget (AC8); the schema's
+     javascript and stylesheet keys load it once per page, however many blocks. -->
+<div class="hr-widget-block">
+  {%- if block.settings.heading != blank -%}
+    <h1 class="hr-widget-heading">{{ block.settings.heading | escape }}</h1>
+  {%- endif -%}
+  <div class="hr-widget-layout{% if block.settings.aside != blank %} hr-widget-layout--aside{% endif %}">
+    {% comment %} Clarity: mask this node and every descendant. Health values
+         render as page text and Clarity records text by default (AC5).
+         The NBSP dodges the storefront's `div:empty { display:none }` rule. {% endcomment %}
+    <div
+      class="hr-widget"
+      data-widget="waist-to-height"
+      data-clarity-mask="true"
+      data-next-url="{{ block.settings.next_url | escape }}"
+      data-next-label="{{ block.settings.next_label | escape }}"
+    >&nbsp;</div>
+    {%- if block.settings.aside != blank -%}
+      {% comment %} Shopify's own richtext output: the merchant's words, no health values. {% endcomment %}
+      <div class="hr-widget-aside">{{ block.settings.aside }}</div>
+    {%- endif -%}
+  </div>
+</div>
 
 {% schema %}
 {
   "name": "Waist-to-height ratio",
   "target": "section",
+  "javascript": "health-widgets.js",
+  "stylesheet": "health-widgets.css",
   "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading (optional)",
+      "info": "Shown above the calculator as the page's main heading."
+    },
+    {
+      "type": "richtext",
+      "id": "aside",
+      "label": "Text beside the calculator (optional)",
+      "info": "Right of the calculator on wide screens, below it on phones."
+    },
     {
       "type": "url",
       "id": "next_url",

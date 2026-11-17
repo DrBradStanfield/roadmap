@@ -28,13 +28,14 @@ export const countedCorrection = async (id: string, newValue: number, erase?: st
 /** Save `tasks` by the one routing rule against the store's own rows, read as it
  *  writes (never the page's copy): an empty slot is added, the expected row
  *  corrected by `onCorrect`. The store is synchronous, so every write is staged
- *  before this returns; only the answers wait. The single-topic widgets save here too (US-74 AC4). */
-export function saveTasksToStore(tasks: SaveTask[], erase: string | undefined, onCorrect: CorrectFn): Promise<Refused> {
+ *  before this returns; only the answers wait. The single-topic widgets save here too (US-74 AC4),
+ *  `counted` false: they count an added measure once the store has kept it (review C8). */
+export function saveTasksToStore(tasks: SaveTask[], erase: string | undefined, onCorrect: CorrectFn, counted = true): Promise<Refused> {
   return routeTasksToSaves(
     tasks,
     loadAllHistorySync(),
     async (date, metric, value) => {
-      const { status } = await addMeasurement(metric, value, ensureIsoDatetime(date), erase);
+      const { status } = await addMeasurement(metric, value, ensureIsoDatetime(date), erase, counted);
       return status === 'inserted' ? 'ok' : status === 'duplicate' ? 'changed' : status;
     },
     (id, newValue) => onCorrect(id, newValue, erase),
