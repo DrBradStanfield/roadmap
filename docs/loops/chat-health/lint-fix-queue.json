@@ -6251,7 +6251,7 @@
    "suggested_fix": "No change needed; the claims are about different supplements.",
    "first_seen": "2026-10-04",
    "last_seen": "2026-10-04",
-   "status": "open",
+   "status": "rejected no change needed",
    "last_checked": "2026-10-04",
    "unverified": "2026-10-24"
   },
@@ -9669,7 +9669,7 @@
    "suggested_fix": "No change needed unless the algorithm is meant to address red yeast rice; this is a case report, not a contradiction.",
    "first_seen": "2026-11-14",
    "last_seen": "2026-11-14",
-   "status": "open",
+   "status": "rejected no change needed",
    "last_checked": "2026-11-14"
   },
   {
@@ -9707,7 +9707,7 @@
    "suggested_fix": "No change needed.",
    "first_seen": "2026-11-14",
    "last_seen": "2026-11-14",
-   "status": "open",
+   "status": "rejected no change needed",
    "last_checked": "2026-11-14"
   },
   {
@@ -9859,7 +9859,7 @@
    "suggested_fix": "No change needed.",
    "first_seen": "2026-11-14",
    "last_seen": "2026-11-14",
-   "status": "open",
+   "status": "rejected no change needed",
    "last_checked": "2026-11-14"
   },
   {
@@ -10011,7 +10011,7 @@
    "suggested_fix": "No change needed.",
    "first_seen": "2026-11-14",
    "last_seen": "2026-11-14",
-   "status": "open",
+   "status": "rejected no change needed",
    "last_checked": "2026-11-14"
   },
   {
@@ -10049,7 +10049,7 @@
    "suggested_fix": "No change needed.",
    "first_seen": "2026-11-14",
    "last_seen": "2026-11-14",
-   "status": "open",
+   "status": "rejected no change needed",
    "last_checked": "2026-11-14"
   }
  ]
