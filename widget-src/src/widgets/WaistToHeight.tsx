@@ -175,30 +175,32 @@ export function WaistToHeightWidget({ nextUrl, nextLabel, navigate = (href) => w
 
   return (
     <form className="hr-widget-form" onSubmit={(e) => e.preventDefault()} noValidate>
-      <div className="hr-widget-units" role="radiogroup" aria-label="Units">
-        {UNIT_CHOICES.map(([unit, label]) => (
-          <button key={unit} type="button" role="radio" aria-checked={system === unit} tabIndex={system === unit ? 0 : -1} data-unit={unit}
-            className={`hr-widget-unit${system === unit ? ' hr-widget-unit--active' : ''}`} onClick={() => switchUnits(unit)} onKeyDown={unitKeys}>
-            {label}
-          </button>
-        ))}
-      </div>
-      {system === 'si' ? box('height', false) : (
-        <div className="hr-widget-field">
-          <label id={`${id}-height-label`} htmlFor={ids.feet}>Height</label>
-          <div className="hr-widget-pair" role="group" aria-labelledby={`${id}-height-label`}>
-            <span className="hr-widget-in">
-              {input('height', 'text', { 'aria-label': 'Feet', 'aria-describedby': described('height') })}
-              <em aria-hidden="true">ft</em>
-            </span>
-            <span className="hr-widget-in">
-              {input('height', 'inches', { 'aria-label': 'Inches', 'aria-describedby': described('height') })}
-              <em aria-hidden="true">in</em>
-            </span>
+      <div className="hr-widget-top">
+        {system === 'si' ? box('height', false) : (
+          <div className="hr-widget-field">
+            <label id={`${id}-height-label`} htmlFor={ids.feet}>Height</label>
+            <div className="hr-widget-pair" role="group" aria-labelledby={`${id}-height-label`}>
+              <span className="hr-widget-in">
+                {input('height', 'text', { 'aria-label': 'Feet', 'aria-describedby': described('height') })}
+                <em aria-hidden="true">ft</em>
+              </span>
+              <span className="hr-widget-in">
+                {input('height', 'inches', { 'aria-label': 'Inches', 'aria-describedby': described('height') })}
+                <em aria-hidden="true">in</em>
+              </span>
+            </div>
+            {errorLine('height')}
           </div>
-          {errorLine('height')}
+        )}
+        <div className="hr-widget-units" role="radiogroup" aria-label="Units">
+          {UNIT_CHOICES.map(([unit, label]) => (
+            <button key={unit} type="button" role="radio" aria-checked={system === unit} tabIndex={system === unit ? 0 : -1} data-unit={unit}
+              className={`hr-widget-unit${system === unit ? ' hr-widget-unit--active' : ''}`} onClick={() => switchUnits(unit)} onKeyDown={unitKeys}>
+              {label}
+            </button>
+          ))}
         </div>
-      )}
+      </div>
       <div className="hr-widget-row" ref={dayRow}>
         {box('waist', true)}
         {box('weight', true)}

@@ -7,7 +7,7 @@
   {%- if block.settings.heading != blank -%}
     <h1 class="hr-widget-heading">{{ block.settings.heading | escape }}</h1>
   {%- endif -%}
-  <div class="hr-widget-layout{% if block.settings.aside != blank %} hr-widget-layout--aside{% endif %}">
+  <div class="hr-widget-layout">
     {% comment %} Clarity: mask this node and every descendant. Health values
          render as page text and Clarity records text by default (AC5).
          The NBSP dodges the storefront's `div:empty { display:none }` rule. {% endcomment %}
