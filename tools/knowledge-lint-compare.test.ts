@@ -121,7 +121,14 @@ describe('parseFindings', () => {
     expect(r.findings.map(f => f.suggested_fix)).toEqual(['Lower the target; no change needed elsewhere.']);
     const answer = { ok: true, status: 200, json: async () => ({ content: [{ type: 'text', text: JSON.stringify({ findings: withdrawn }) }], usage: {} }) } as unknown as Response;
     const run = await runJobs([job], { apiKey: 'k', fetchImpl: async () => answer, maxCalls: 1, maxUsd: 5, date: 'd' });
-    expect(run).toMatchObject({ outcomes: [{ id: job.id, status: 'done' }], findings: [] });
+    expect(run).toMatchObject({ outcomes: [{ id: job.id, status: 'done' }], findings: [], withdrawn: 2 });
+  });
+  it('checks a withdrawn finding\'s quotes first: one not verbatim in its excerpt still rejects the answer whole (US-43 AC5)', async () => {
+    const text = JSON.stringify({ findings: [{ ...good, quote_b: 'not in the excerpt', suggested_fix: 'No change needed.' }] });
+    expect(parseFindings(job, text, 'd')).toMatchObject({ rejected: 1, withdrawn: 0, findings: [] });
+    const answer = { ok: true, status: 200, json: async () => ({ content: [{ type: 'text', text }], usage: {} }) } as unknown as Response;
+    const run = await runJobs([job], { apiKey: 'k', fetchImpl: async () => answer, maxCalls: 1, maxUsd: 5, date: 'd' });
+    expect(run).toMatchObject({ outcomes: [{ id: job.id, status: 'retry' }], findings: [], withdrawn: 0 });
   });
   it('passes the instruction_text_seen flag through', () => {
     expect(parseFindings(job, '{"findings": [], "instruction_text_seen": true}', 'd').instructionTextSeen).toBe(true);
