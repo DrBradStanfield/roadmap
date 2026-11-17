@@ -14,8 +14,9 @@ type PathElement = { tagName?: unknown; id?: unknown; className?: unknown; paren
 /** Classes that say what an element shows: a result's status (the grids'
  *  and the phone rows' and value pages', US-62 AC8), a suggestion's
  *  priority, a document's type, a lab group, My health's status words, urgent
- *  banner and urgent nav dot (US-09 AC7d). */
-const VALUE_CLASS = /^(bt-status-|md-status-|mh-status-|mh-banner|mh-nav-dot|status-|suggestion-(info|attention|urgent)|review-doc-type--|health-record-type--|alr-group-icon--)/;
+ *  banner and urgent nav dot (US-09 AC7d), and a single-topic widget's
+ *  result status (US-74, review P1). */
+const VALUE_CLASS = /^(hr-widget-status|bt-status-|md-status-|mh-status-|mh-banner|mh-nav-dot|status-|suggestion-(info|attention|urgent)|review-doc-type--|health-record-type--|alr-group-icon--)/;
 
 /** The SDK's element path (up to five levels, outermost first) with tag, #id and .classes only. */
 function elementPath(target: unknown): string | undefined {
@@ -257,7 +258,7 @@ export function initSentry() {
     allowUrls: [
       // Current extension entry points and lazy chunks. Match the CDN origin
       // and complete filename so unrelated scripts and lookalike URLs stay out.
-      /^https:\/\/cdn\.shopify\.com\/extensions\/[^?#]+\/assets\/(?:health-plan-v2(?:-[\w-]+)?|health-site-chat|health-chatbot-embed|health-upload)\.js(?:[?#].*)?$/,
+      /^https:\/\/cdn\.shopify\.com\/extensions\/[^?#]+\/assets\/(?:health-plan-v2(?:-[\w-]+)?|health-site-chat|health-chatbot-embed|health-upload|health-widgets)\.js(?:[?#].*)?$/,
       // Pages emits hashed chunks under assets/, but its lazy upload IIFE
       // lives beside index.html. Rehosted copies do not report to our project.
       /^https:\/\/drbradstanfield\.github\.io\/roadmap\/(?:assets\/[^/?#]+\.js|health-upload\.js)(?:[?#].*)?$/,
