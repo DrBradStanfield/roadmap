@@ -515,6 +515,23 @@ describe('US-74 third review round', () => {
     expect(heightAtNavigate).toBe(178);
   });
 
+  it('live check 2026-11-18: "Saved" after leaving the waist box means the height typed with it is kept too', async () => {
+    render(<WaistToHeightWidget />);
+    type(/^Height/, '178');
+    type(/^Waist/, '84');
+    leaveDays();
+    await saved();
+    expect(persisted().profile.heightCm).toBe(178);
+    expect(active('waist')).toEqual([84]);
+  });
+
+  it('live check 2026-11-18: the status line is on the page before any save, so "Saving…" never moves the next-step link', () => {
+    const { container } = render(<WaistToHeightWidget nextUrl="/pages/health-plan" />);
+    const line = container.querySelector('.hr-widget-saving');
+    expect(line).not.toBeNull();
+    expect(line!.textContent).toBe('');
+  });
+
   it('R6: a link whose save fails does not leave; the failure shows', async () => {
     await data.addMeasurement('waist', 90);
     vi.spyOn(RoadmapStore.prototype, 'saveChangedMeasurements').mockRejectedValue(new Error('storage down'));
