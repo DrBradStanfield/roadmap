@@ -37,7 +37,6 @@ export const NOT_SAVED = 'Not saved. Your entries are kept and will save when yo
 /** This widget's own words for each box (Brad 2026-11-18); the full app's tile labels are unchanged. */
 const LABEL: Record<Field, string> = { height: 'Height', weight: 'Weight', waist: 'Waist circumference' };
 const NAME: Record<Field, string> = { height: 'height', weight: 'weight', waist: 'waist circumference' };
-const DAY_FIELDS: readonly Field[] = ['waist', 'weight'];
 
 const list = (fields: Field[]) => fields.map((f) => NAME[f]).join(', ');
 
@@ -94,8 +93,9 @@ export function WaistToHeightWidget({ nextUrl, nextLabel, navigate = (href) => w
     focusTo.current = null;
   }, [left]);
 
-  // The weight and waist commit as the vitals grid's cells do: on leaving their boxes.
-  useSaveOnLeave(dayRow, () => { void save(DAY_FIELDS); });
+  // The weight and waist commit as the vitals grid's cells do: on leaving their boxes. A height
+  // still waiting on its timer goes with them, so "Saved" never shows before the height is kept (live check 2026-11-18).
+  useSaveOnLeave(dayRow, () => { heightTimer.cancel(); void save(FIELDS); });
   // The next step waits for every valid entry to be kept: a height typed a moment ago is saved first (review R6).
   const follow = async (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
@@ -170,8 +170,9 @@ export function WaistToHeightWidget({ nextUrl, nextLabel, navigate = (href) => w
     );
   };
 
-  const status = state.phase === 'saving' ? <p className="hr-widget-saving">Saving…</p>
-    : state.phase === 'saved' && !state.partial ? <p className="hr-widget-saving">Saved</p> : null;
+  // The line is always there, blank when there is nothing to say: a line appearing would push the
+  // next-step link down under a tap already on its way (live check 2026-11-18, iPhone).
+  const status = <p className="hr-widget-saving">{state.phase === 'saving' ? 'Saving…' : state.phase === 'saved' && !state.partial ? 'Saved' : ''}</p>;
 
   return (
     <form className="hr-widget-form" onSubmit={(e) => e.preventDefault()} noValidate>

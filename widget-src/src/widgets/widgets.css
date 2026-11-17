@@ -89,7 +89,8 @@
 .hr-widget-pill { display: block; flex: none; width: 92px; height: 30px; }
 .hr-widget-scale { display: block; width: 100%; height: 22px; }
 .hr-widget-sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
-.hr-widget-saving { margin: 8px 0 0; font-size: 13px; color: var(--hrw-mid); text-align: right; }
+.hr-widget-saving { margin: 8px 0 0; min-height: 1.4em; line-height: 1.4; font-size: 13px; color: var(--hrw-mid); text-align: right; }
+.hr-widget-block .hr-widget-saving:empty { display: block; } /* the theme hides empty elements; this line keeps its space */
 .hr-widget-k { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--hrw-mid); }
 .hr-widget-v { font-family: var(--font-heading-family, inherit); font-size: 40px; font-weight: 700; line-height: 1.1; color: var(--hrw-ink); }
 .hr-widget-s { font-size: 20px; font-weight: 700; }
