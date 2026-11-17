@@ -172,7 +172,7 @@ const writers: Record<string, Writer> = {
   'the upload review\'s Save': {
     seed: seedProfile,
     open: async () => {
-      fireEvent.click(await screen.findByRole('button', { name: 'Upload lab results' }));
+      fireEvent.click((await screen.findAllByRole('button', { name: 'Upload lab results' }))[0]); // on Cholesterol and Blood tests (US-62 AC22)
       fireEvent.click(screen.getByRole('button', { name: /Continue without keeping my files/ }));
       fireEvent.change(document.querySelector('input[type=file]')!, { target: { files: [new File(['synthetic'], 'synthetic.pdf', { type: 'application/pdf' })] } });
       await findReviewValue('3.9'); // opens "Show all": the sure value sits behind it (US-13 AC13)
