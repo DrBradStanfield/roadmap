@@ -170,8 +170,8 @@ export function WaistToHeightWidget({ nextUrl, nextLabel, navigate = (href) => w
     );
   };
 
-  const status = state.mode === 'saving' ? <p className="hr-widget-saving">Saving…</p>
-    : state.mode === 'saved' && !state.partial ? <p className="hr-widget-saving">Saved</p> : null;
+  const status = state.phase === 'saving' ? <p className="hr-widget-saving">Saving…</p>
+    : state.phase === 'saved' && !state.partial ? <p className="hr-widget-saving">Saved</p> : null;
 
   return (
     <form className="hr-widget-form" onSubmit={(e) => e.preventDefault()} noValidate>
@@ -203,8 +203,8 @@ export function WaistToHeightWidget({ nextUrl, nextLabel, navigate = (href) => w
         {box('waist', true)}
         {box('weight', true)}
       </div>
-      {state.mode === 'failed' && <p className="hr-widget-error" role="alert">{NOT_SAVED}</p>}
-      {state.mode === 'saved' && state.partial && <PartlyKeptNotice partial={state.partial} />}
+      {state.phase === 'failed' && <p className="hr-widget-error" role="alert">{NOT_SAVED}</p>}
+      {state.phase === 'saved' && state.partial && <PartlyKeptNotice partial={state.partial} />}
       <ResultsView results={results} status={status} />
       {results && href && <a className="hr-widget-next" href={href} onClick={follow}>{nextLabel?.trim() || NEXT_STEP_DEFAULT}</a>}
     </form>

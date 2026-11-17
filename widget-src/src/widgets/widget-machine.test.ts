@@ -3,11 +3,11 @@ import { describe, expect, it } from 'vitest';
 import { START, transition, type PartlyKept, type WidgetEvent, type WidgetState } from './widget-machine';
 
 const partial: PartlyKept = { saved: ['height'], changed: ['waist'], refused: [] };
-const saving: WidgetState = { mode: 'saving', edited: false };
-const savingEdited: WidgetState = { mode: 'saving', edited: true };
-const saved: WidgetState = { mode: 'saved', partial: null };
-const savedPartial: WidgetState = { mode: 'saved', partial };
-const failed: WidgetState = { mode: 'failed' };
+const saving: WidgetState = { phase: 'saving', edited: false };
+const savingEdited: WidgetState = { phase: 'saving', edited: true };
+const saved: WidgetState = { phase: 'saved', partial: null };
+const savedPartial: WidgetState = { phase: 'saved', partial };
+const failed: WidgetState = { phase: 'failed' };
 
 const ROWS: Array<[string, WidgetState, WidgetEvent, WidgetState]> = [
   ['a save starts', START, { type: 'started' }, saving],

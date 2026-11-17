@@ -10,10 +10,10 @@ import type { Field } from './boxes';
 export interface PartlyKept { saved: Field[]; changed: Field[]; refused: Field[] }
 
 export type WidgetState =
-  | { mode: 'idle' }
-  | { mode: 'saving'; edited: boolean }
-  | { mode: 'saved'; partial: PartlyKept | null }
-  | { mode: 'failed' };
+  | { phase: 'idle' }
+  | { phase: 'saving'; edited: boolean }
+  | { phase: 'saved'; partial: PartlyKept | null }
+  | { phase: 'failed' };
 
 export type WidgetEvent =
   | { type: 'edited' }
@@ -21,19 +21,19 @@ export type WidgetEvent =
   | { type: 'kept'; partial: PartlyKept | null }
   | { type: 'failed' };
 
-export const START: WidgetState = { mode: 'idle' };
+export const START: WidgetState = { phase: 'idle' };
 
 export function transition(state: WidgetState, event: WidgetEvent): WidgetState {
   switch (event.type) {
-    case 'started': return { mode: 'saving', edited: false };
+    case 'started': return { phase: 'saving', edited: false };
     case 'edited':
-      if (state.mode === 'saving') return state.edited ? state : { mode: 'saving', edited: true };
-      return state.mode === 'idle' ? state : START; // an edit makes "Saved" or a notice out of date
+      if (state.phase === 'saving') return state.edited ? state : { phase: 'saving', edited: true };
+      return state.phase === 'idle' ? state : START; // an edit makes "Saved" or a notice out of date
     case 'kept':
-      if (state.mode !== 'saving') return state;
+      if (state.phase !== 'saving') return state;
       // An entry typed while it saved is not saved yet: say only what the save did not keep.
-      if (state.edited) return event.partial ? { mode: 'saved', partial: event.partial } : START;
-      return { mode: 'saved', partial: event.partial };
-    case 'failed': return state.mode === 'saving' ? { mode: 'failed' } : state;
+      if (state.edited) return event.partial ? { phase: 'saved', partial: event.partial } : START;
+      return { phase: 'saved', partial: event.partial };
+    case 'failed': return state.phase === 'saving' ? { phase: 'failed' } : state;
   }
 }
