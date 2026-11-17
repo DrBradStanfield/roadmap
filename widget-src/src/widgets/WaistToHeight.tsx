@@ -15,10 +15,9 @@ import { formatShortDate } from '../lib/constants';
 import { trackProductEvent } from '../lib/server-api';
 import { useDebouncedSave } from '../lib/useDebouncedSave';
 import { useSaveOnLeave } from '../lib/useSaveOnLeave';
-import {
-  recordDays, recordMeasured, resultsFor, safeHref, saveMeasured, seenAfterFailure, seenNow, startingUnits,
-} from './body-measures';
-import { FIELDS, INPUT_OF, boxesFor, readBox, readBoxes, settle, switchBoxes, typed, type Boxes, type Field, type Measured, type Part } from './boxes';
+import { recordDays, recordMeasured, resultsFor, safeHref, startingUnits } from './body-measures';
+import { FIELDS, INPUT_OF, boxesFor, readBox, readBoxes, switchBoxes, typed, type Boxes, type Field, type Part } from './boxes';
+import { useWidgetSave } from './useWidgetSave';
 import { START, transition, type PartlyKept } from './widget-machine';
 import { ResultsView } from './WidgetResults';
 
@@ -26,6 +25,8 @@ export interface WidgetProps {
   /** The block's next-step link and its label (US-74 AC6); shown with a result when the link is set. */
   nextUrl?: string;
   nextLabel?: string;
+  /** How the link leaves the page; tests pass their own. */
+  navigate?: (href: string) => void;
 }
 
 const UNIT_CHOICES: ReadonlyArray<[UnitSystem, string]> = [['si', 'Metric'], ['conventional', 'US']];
@@ -59,7 +60,7 @@ function fromDay(day: string | undefined): string | null {
   return day === localDay(new Date()) ? 'today' : `from ${formatShortDate(day)}`;
 }
 
-export function WaistToHeightWidget({ nextUrl, nextLabel }: WidgetProps) {
+export function WaistToHeightWidget({ nextUrl, nextLabel, navigate = (href) => window.location.assign(href) }: WidgetProps) {
   const id = useId(); // per block, so two blocks on a page never share an id (review U1)
   const [system, setSystem] = useState<UnitSystem>(startingUnits);
   const [boxes, setBoxes] = useState<Boxes>(() => boxesFor(recordMeasured(), system));
@@ -67,19 +68,15 @@ export function WaistToHeightWidget({ nextUrl, nextLabel }: WidgetProps) {
   const [state, dispatch] = useReducer(transition, START);
   // Boxes whose error shows: left, or Enter pressed (the full app shows a range error once a box is left).
   const [left, setLeft] = useState<ReadonlySet<Field>>(new Set());
-  // What the person has seen of the record: all a save may replace (US-74 AC4, review A4).
-  const seen = useRef(seenNow());
   // The boxes and units as they are now, for a save that ends after more typing.
   const now = useRef({ boxes, system });
   now.current = { boxes, system };
-  // Saves run one after another (handle of the queue, as useLongitudinalSave's savesRef).
-  const queue = useRef<Promise<unknown>>(Promise.resolve());
   // Which input takes the focus after Enter with errors (review U6, C11): view state, not a mode.
   const focusTo = useRef<string | null>(null);
   const heightTimer = useDebouncedSave(500);
-  // waist_widget_saved goes once per page view, the first time a waist is kept (Brad 2026-11-18).
-  const savedCounted = useRef(false);
   const dayRow = useRef<HTMLDivElement>(null);
+  /** Save the entries among `fields` that read and are in range, and any that did not save before (US-74 AC4). */
+  const save = useWidgetSave({ now, setBoxes, setDays, dispatch });
 
   useEffect(() => { trackProductEvent('waist_widget_viewed'); }, []);
 
@@ -97,61 +94,22 @@ export function WaistToHeightWidget({ nextUrl, nextLabel }: WidgetProps) {
     focusTo.current = null;
   }, [left]);
 
-  /** Save the entries among `fields` that read and are in range; nothing else (US-74 AC4). */
-  const save = (fields: readonly Field[]) => {
-    const { boxes: snapshot, system: unit } = now.current;
-    const { values, entered } = readBoxes(snapshot, unit);
-    const chosen = new Set(fields.filter((f) => entered.has(f) && values[INPUT_OF[f]] !== undefined));
-    if (chosen.size === 0) return;
-    const run = async () => {
-      dispatch({ type: 'started' });
-      // A save that throws ends as one the store could not keep, never as "Saving…" for good.
-      const outcome = await saveMeasured(values, chosen, seen.current, unit).catch(() => ({ kind: 'failed' as const, staged: { saved: [], inserted: [] } }));
-      if (outcome.kind === 'failed') {
-        // The drafts stay for the next save; only the person's own entries count as seen (A3, A4).
-        seen.current = seenAfterFailure(seen.current, values, chosen, outcome.staged);
-        dispatch({ type: 'failed' });
-        return;
-      }
-      // Each saved box now holds the record's value, unless it was typed in
-      // since this save began: that box is newer than the save, and stays (review C6).
-      const record: Measured = recordMeasured(), fresh = seenNow(), refused = new Set(outcome.refused);
-      const settled = new Set([...chosen].filter((f) => !refused.has(f)));
-      setBoxes((prev) => {
-        const out = { ...prev };
-        for (const f of settled) if (prev[f] === snapshot[f]) out[f] = settle(f, prev[f], record[INPUT_OF[f]], now.current.system);
-        return out;
-      });
-      setDays(recordDays());
-      seen.current = {
-        day: fresh.day,
-        heightCm: settled.has('height') ? fresh.heightCm : seen.current.heightCm,
-        today: {
-          weight: settled.has('weight') ? fresh.today.weight : seen.current.today.weight,
-          waist: settled.has('waist') ? fresh.today.waist : seen.current.today.waist,
-        },
-      };
-      // Once a waist is written, so a ratio exists (review P3, C5); the name alone.
-      if (outcome.saved.includes('waist') && !savedCounted.current) {
-        savedCounted.current = true;
-        trackProductEvent('waist_widget_saved');
-      }
-      const partial = outcome.changed.length > 0 || outcome.refused.length > 0 ? { saved: outcome.saved, changed: outcome.changed, refused: outcome.refused } : null;
-      dispatch({ type: 'kept', partial });
-    };
-    const next = queue.current.then(run);
-    queue.current = next.catch(() => undefined);
-  };
-
   // The weight and waist commit as the vitals grid's cells do: on leaving their boxes.
-  useSaveOnLeave(dayRow, () => save(DAY_FIELDS));
+  useSaveOnLeave(dayRow, () => { void save(DAY_FIELDS); });
+  // The next step waits for every valid entry to be kept: a height typed a moment ago is saved first (review R6).
+  const follow = async (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    const href = e.currentTarget.getAttribute('href')!;
+    heightTimer.cancel();
+    if (await save(FIELDS)) navigate(href);
+  };
 
   const edit = (field: Field, part: Part = 'text') => (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    setBoxes((prev) => ({ ...prev, [field]: typed(prev[field], part, value) }));
+    setBoxes((prev) => ({ ...prev, [field]: typed(prev[field], part, value, system) }));
     setLeft((prev) => (prev.has(field) ? new Set([...prev].filter((f) => f !== field)) : prev));
     dispatch({ type: 'edited' });
-    if (field === 'height') heightTimer.schedule(() => save(['height']));
+    if (field === 'height') heightTimer.schedule(() => { void save(['height']); });
   };
   const leave = (field: Field) => () => setLeft((prev) => (prev.has(field) ? prev : new Set([...prev, field])));
   // Enter saves every box now, and shows every box's error, the first at fault focused (review U6, C11).
@@ -162,7 +120,7 @@ export function WaistToHeightWidget({ nextUrl, nextLabel }: WidgetProps) {
     const first = FIELDS.find((f) => read.parts[f]);
     focusTo.current = !first ? null : first === 'height' && system === 'conventional' ? (read.parts.height === 'inches' ? ids.inches : ids.feet) : ids[first];
     setLeft(new Set(FIELDS));
-    save(FIELDS);
+    void save(FIELDS);
   };
 
   const switchUnits = (to: UnitSystem) => {
@@ -248,7 +206,7 @@ export function WaistToHeightWidget({ nextUrl, nextLabel }: WidgetProps) {
       {state.mode === 'failed' && <p className="hr-widget-error" role="alert">{NOT_SAVED}</p>}
       {state.mode === 'saved' && state.partial && <PartlyKeptNotice partial={state.partial} />}
       <ResultsView results={results} status={status} />
-      {results && href && <a className="hr-widget-next" href={href}>{nextLabel?.trim() || NEXT_STEP_DEFAULT}</a>}
+      {results && href && <a className="hr-widget-next" href={href} onClick={follow}>{nextLabel?.trim() || NEXT_STEP_DEFAULT}</a>}
     </form>
   );
 }

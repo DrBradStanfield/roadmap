@@ -13,6 +13,15 @@ import { statTileText, type StatTile } from '@roadmap/health-core/stat-tiles';
 import type { Results } from './body-measures';
 
 const SCALE = { min: 0.35, max: 0.65, line: 0.5 } as const;
+
+/** Every text the result fills is one length whatever the grade or value:
+ *  Clarity masks text but keeps its length, so "Healthy" (7) and "Elevated"
+ *  (8) would differ (review R1). Padded with no-break spaces, which a screen
+ *  reader does not read. Lengths: the longest grade word of each kind
+ *  ("Elevated"; "Underweight"), a ratio ("0.47"), a BMI ("124.1") and a
+ *  target ("<49.2 in"). */
+const WIDTH = { grade: 8, category: 11, ratio: 4, bmi: 5, target: 8 } as const;
+export const fixed = (text: string | undefined, width: number) => (text ?? '') + '\u00a0'.repeat(Math.max(0, width - (text ?? '').length));
 const GREEN = '#0B6B54';
 const MINT = '#2EA894';
 const AMBER = '#e0a540';
@@ -114,11 +123,11 @@ export function ResultsView({ results, status }: { results: Results | null; stat
               <div className="hr-widget-ratio-top">
                 <div>
                   <div className="hr-widget-k">Waist-to-height ratio</div>
-                  <div className="hr-widget-v">{statTileText(whtr)}</div>
+                  <div className="hr-widget-v">{fixed(statTileText(whtr), WIDTH.ratio)}</div>
                 </div>
                 <canvas ref={pill} className="hr-widget-pill" aria-hidden="true" />
               </div>
-              {whtr.status && <span className={drawn ? 'hr-widget-sr' : 'hr-widget-status'}>{whtr.status.label}</span>}
+              <span className={drawn ? 'hr-widget-sr' : 'hr-widget-status'}>{fixed(whtr.status?.label, WIDTH.grade)}</span>
               <canvas ref={scale} className="hr-widget-scale" aria-hidden="true" />
             </div>
           )}
@@ -126,13 +135,14 @@ export function ResultsView({ results, status }: { results: Results | null; stat
             {results.bmi && (
               <div>
                 <div className="hr-widget-k">Body mass index (BMI)</div>
-                <div className="hr-widget-s">{statTileText(results.bmi)}</div>
-                {results.bmi.status && <span className="hr-widget-status">{results.bmi.status.label}</span>}
+                <div className="hr-widget-s">{fixed(statTileText(results.bmi), WIDTH.bmi)}</div>
+                {/* Always there, a blank one too (no grade for a known minor, or BMI 25-29.9 with no waist): presence would tell the grade. */}
+                <span className="hr-widget-status">{fixed(results.bmi.status?.label, WIDTH.category)}</span>
               </div>
             )}
             <div>
               <div className="hr-widget-k">Target waist circumference</div>
-              <div className="hr-widget-s">{results.target}</div>
+              <div className="hr-widget-s">{fixed(results.target, WIDTH.target)}</div>
             </div>
           </div>
         </div>

@@ -24,12 +24,17 @@ import { INPUT_OF, type Field, type Measured } from './boxes';
 const DAY_FIELDS = ['weight', 'waist'] as const;
 type DayField = (typeof DAY_FIELDS)[number];
 
+/** A day value as the person has seen it: the row the box showed for its
+ *  `day` (null for none), kept together with that day (review R5). */
+export interface SeenRow { id: string | null; day: string }
+
 /** What the person has seen of the record: the height the box showed, and
- *  the row per day value the boxes showed for `day`. A save may replace only
- *  these; it never adopts a row or height the person has not seen (review A4).
- *  A page left open past midnight has seen none of the new day's rows (X3). */
+ *  per day value the row it showed and its day. A save may replace only these;
+ *  it never adopts a row or height the person has not seen (review A4). A row
+ *  seen on another day says nothing of today's: past midnight a field expects
+ *  none (X3, R5). */
 export interface Seen {
-  day: string; heightCm?: number; today: Record<DayField, string | null>;
+  heightCm?: number; rows: Record<DayField, SeenRow>;
   /** Entries a failed save staged in the store: kept, and counted, by the next save that lands (review A3, C8). */
   pending?: Staged;
 }
@@ -79,8 +84,16 @@ function todaysRowsNow(): Map<DayField, { id: string; value: number }> {
 
 /** The record as the boxes now show it: everything in it is seen. */
 export function seenNow(): Seen {
-  const rows = todaysRowsNow();
-  return { day: localDay(new Date()), heightCm: getInitialInputsSync().heightCm, today: { weight: rows.get('weight')?.id ?? null, waist: rows.get('waist')?.id ?? null } };
+  return seenWith({ rows: { weight: { id: null, day: '' }, waist: { id: null, day: '' } } }, new Set<Field>(['height', 'weight', 'waist']));
+}
+
+/** `seen` with `fields` seen anew from the record as it is now; the others as they were (review R5). */
+export function seenWith(seen: Seen, fields: ReadonlySet<Field>): Seen {
+  const rows = todaysRowsNow(), day = localDay(new Date());
+  const next: Seen = { ...seen, rows: { ...seen.rows } };
+  if (fields.has('height')) next.heightCm = getInitialInputsSync().heightCm;
+  for (const field of DAY_FIELDS) if (fields.has(field)) next.rows[field] = { id: rows.get(field)?.id ?? null, day };
+  return next;
 }
 
 /** What the plan reads from the record (US-74 AC3): its tiles for the
@@ -145,7 +158,7 @@ export async function saveMeasured(values: Measured, entered: Set<Field>, seen: 
   }
   const today = localDay(new Date());
   // The rows seen were another day's: of today's, the person has seen none (review X3).
-  const expected = (field: DayField) => (seen.day === today ? seen.today[field] : null);
+  const expected = (field: DayField) => (seen.rows[field].day === today ? seen.rows[field].id : null);
   const tasks: SaveTask[] = DAY_FIELDS.flatMap((field): SaveTask[] => {
     const value = values[INPUT_OF[field]];
     if (!entered.has(field) || value === undefined) return [];
@@ -185,12 +198,12 @@ export async function saveMeasured(values: Measured, entered: Set<Field>, seen: 
  *  that are exactly the person's own entries. They have seen those, so a press
  *  again finds no conflict with itself. Nothing else is adopted (review A4). */
 export function seenAfterFailure(seen: Seen, values: Measured, entered: Set<Field>, staged: Staged): Seen {
-  const rows = todaysRowsNow();
-  const next: Seen = { day: localDay(new Date()), heightCm: seen.heightCm, today: { ...(seen.day === localDay(new Date()) ? seen.today : { weight: null, waist: null }) } };
+  const rows = todaysRowsNow(), day = localDay(new Date());
+  const next: Seen = { ...seen, rows: { ...seen.rows } };
   if (entered.has('height') && getInitialInputsSync().heightCm === values.heightCm) next.heightCm = values.heightCm;
   for (const field of DAY_FIELDS) {
     const row = rows.get(field);
-    if (entered.has(field) && row && row.value === values[INPUT_OF[field]]) next.today[field] = row.id;
+    if (entered.has(field) && row && row.value === values[INPUT_OF[field]]) next.rows[field] = { id: row.id, day };
   }
   next.pending = {
     saved: [...new Set([...(seen.pending?.saved ?? []), ...staged.saved])],
@@ -203,14 +216,18 @@ export function seenAfterFailure(seen: Seen, values: Measured, entered: Set<Fiel
  *  U3, X6). No whitespace or control character anywhere (a browser drops tabs
  *  and newlines before it resolves, so "/\t/evil.com" would leave the store);
  *  resolved against this page's origin, which it must keep; the resolved path
- *  is what renders. */
+ *  is what renders, and it is checked again as rendered ("/.//evil.com"
+ *  normalises to "//evil.com", review R3). */
 export function safeHref(raw: string | undefined, origin = window.location.origin): string | null {
-  const href = raw?.trim();
+  // The raw setting, untrimmed: whitespace anywhere, even at the ends, refuses it (review R3).
   // eslint-disable-next-line no-control-regex
-  if (!href || /[\s\u0000-\u001f\u007f]/.test(href) || !href.startsWith('/') || href.startsWith('//') || href.startsWith('/\\')) return null;
+  const local = (path: string) => path.startsWith('/') && !path.startsWith('//') && !path.startsWith('/\\') && !/[\s\u0000-\u001f\u007f]/.test(path);
+  if (!raw || !local(raw)) return null;
   try {
-    const url = new URL(href, origin);
-    return url.origin === origin ? url.pathname + url.search + url.hash : null;
+    const url = new URL(raw, origin);
+    const path = url.pathname + url.search + url.hash;
+    // The exact string the anchor gets is checked again: a path that normalises to "//host" would leave the store.
+    return url.origin === origin && local(path) && new URL(path, origin).origin === origin ? path : null;
   } catch {
     return null;
   }

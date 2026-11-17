@@ -439,3 +439,111 @@ describe('US-74 review fixes', () => {
     expect(document.activeElement).toBe(screen.getByRole('radio', { name: 'US' }));
   });
 });
+
+describe('US-74 third review round', () => {
+  /** Every text node's length in the block: what a Clarity replay keeps of masked text. */
+  const textLengths = (root: Element) => [...root.querySelectorAll('*')]
+    .flatMap((el) => [...el.childNodes].filter((n) => n.nodeType === Node.TEXT_NODE).map((n) => n.textContent!.length));
+
+  it('R1: every grade and BMI category leaves the block\'s text the same lengths', () => {
+    const cases = [
+      ['80', '49.1', 'Healthy', 'Underweight'],
+      ['80', '60', 'Healthy', 'Normal'],
+      ['80', '78', 'Healthy', 'Normal'], // BMI 27 with a healthy ratio
+      ['90', '78', 'Elevated', 'Overweight'],
+      ['95', '95', 'Elevated', 'Obese'],
+    ];
+    const lengths = cases.map(([waist, weight, grade, category]) => {
+      const { container, unmount } = render(<WaistToHeightWidget />);
+      type(/^Height/, '170');
+      type(/^Waist/, waist);
+      type(/^Weight/, weight);
+      expect(screen.getByText(grade)).toBeTruthy();
+      expect(screen.getByText(category)).toBeTruthy();
+      const out = textLengths(container);
+      unmount();
+      return out;
+    });
+    for (const each of lengths.slice(1)) expect(each).toEqual(lengths[0]);
+  });
+
+  it('R2: a save asked for before a conflict was found does not write over the row that conflict showed', async () => {
+    await data.saveChangedMeasurements({ heightCm: 178 }, {});
+    const first = await data.addMeasurement('waist', 90);
+    render(<WaistToHeightWidget />);
+    if (first.status !== 'inserted') throw new Error('seed');
+    await data.correctValue(first.row.id, 92); // another tab, unseen
+    type(/^Waist/, '88');
+    enter(/^Waist/); // save 1
+    leaveDays(); // save 2, asked before save 1 found the conflict
+    await screen.findByRole('alert');
+    await pause(50);
+    await data.flushRoadmapStore();
+    expect(active('waist')).toEqual([92]);
+    expect(box(/^Waist/).value).toBe('92');
+  });
+
+  it('R5: past midnight, a height save does not make the old day\'s weight row the new day\'s expected one', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      vi.setSystemTime(new Date(2026, 10, 17, 22, 0));
+      await data.addMeasurement('weight', 80);
+      render(<WaistToHeightWidget />);
+      vi.setSystemTime(new Date(2026, 10, 18, 7, 0));
+      type(/^Height/, '178');
+      enter();
+      await saved();
+      type(/^Weight/, '81');
+      leaveDays();
+      await saved();
+      expect(screen.queryByRole('alert')).toBeNull();
+      expect(persisted().measurements.filter((m) => m.metricType === 'weight' && m.status === 'active').map((m) => [m.recordedAt.slice(0, 10), m.value]).sort())
+        .toEqual([['2026-11-17', 80], ['2026-11-18', 81]]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('R6: the next-step link saves a height typed a moment ago before it leaves', async () => {
+    await data.addMeasurement('waist', 90);
+    const navigate = vi.fn(() => { heightAtNavigate = cloud.files.has(ROADMAP_FILE_NAME) ? persisted().profile.heightCm : undefined; });
+    let heightAtNavigate: number | undefined;
+    render(<WaistToHeightWidget nextUrl="/pages/health-plan" nextLabel="Next" navigate={navigate} />);
+    type(/^Height/, '178');
+    fireEvent.click(screen.getByRole('link', { name: 'Next' }));
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/pages/health-plan'));
+    expect(heightAtNavigate).toBe(178);
+  });
+
+  it('R6: a link whose save fails does not leave; the failure shows', async () => {
+    await data.addMeasurement('waist', 90);
+    vi.spyOn(RoadmapStore.prototype, 'saveChangedMeasurements').mockRejectedValue(new Error('storage down'));
+    const navigate = vi.fn();
+    render(<WaistToHeightWidget nextUrl="/pages/health-plan" nextLabel="Next" navigate={navigate} />);
+    type(/^Height/, '178');
+    fireEvent.click(screen.getByRole('link', { name: 'Next' }));
+    expect((await screen.findByRole('alert')).textContent).toBe(NOT_SAVED);
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('R7: a height paused on its decimal point ("178.") is not saved by the timer', async () => {
+    render(<WaistToHeightWidget />);
+    type(/^Height/, '178.');
+    await pause(700);
+    expect(cloud.files.has(ROADMAP_FILE_NAME)).toBe(false);
+  });
+
+  it('R8: a height that failed to save goes with the next save, and Saved waits for it', async () => {
+    vi.spyOn(RoadmapStore.prototype, 'saveChangedMeasurements').mockRejectedValueOnce(new Error('storage down'));
+    render(<WaistToHeightWidget />);
+    type(/^Height/, '178');
+    enter();
+    expect((await screen.findByRole('alert')).textContent).toBe(NOT_SAVED);
+    type(/^Waist/, '90');
+    leaveDays();
+    await saved();
+    expect(persisted().profile.heightCm).toBe(178);
+    expect(active('waist')).toEqual([90]);
+  });
+});
+

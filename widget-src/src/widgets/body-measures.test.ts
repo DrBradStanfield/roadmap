@@ -69,8 +69,9 @@ afterEach(async () => {
 /** The boxes after the person types `texts` (the cm box, or feet with `inches`). */
 function typeInto(boxes: Boxes, texts: Partial<Record<Field, string>>, inches?: string): Boxes {
   const out = { ...boxes };
-  for (const [field, text] of Object.entries(texts) as Array<[Field, string]>) out[field] = typed(out[field], 'text', text);
-  if (inches !== undefined) out.height = typed(out.height, 'inches', inches);
+  const system = out.height.unit ?? 'si';
+  for (const [field, text] of Object.entries(texts) as Array<[Field, string]>) out[field] = typed(out[field], 'text', text, system);
+  if (inches !== undefined) out.height = typed(out.height, 'inches', inches, system);
   return out;
 }
 const empty = () => boxesFor({}, 'si');
@@ -344,7 +345,7 @@ describe('US-74 second review round', () => {
       vi.setSystemTime(new Date(2026, 10, 17, 22, 0));
       await data.addMeasurement('waist', 90);
       const seen = seenNow();
-      expect(seen.today.waist).not.toBeNull();
+      expect(seen.rows.waist.id).not.toBeNull();
       vi.setSystemTime(new Date(2026, 10, 18, 7, 0));
       const outcome = await saveMeasured({ heightCm: 178, waistCm: 88 }, entries('waist'), seen, 'si');
       expect(outcome).toMatchObject({ kind: 'stored', saved: ['waist'], changed: [] });
@@ -356,14 +357,38 @@ describe('US-74 second review round', () => {
   });
 });
 
+describe('US-74 third review round', () => {
+  it('R4: an unreadable US height stays in US units through Metric and back, never read as centimetres', () => {
+    const us = typeInto(boxesFor({}, 'conventional'), { height: '5' }, '10.5');
+    expect(readBoxes(us, 'conventional').errors.heightCm).toBe('Enter a number');
+    const metric = switchBoxes(us, 'conventional', 'si');
+    expect(readBoxes(metric, 'si').values.heightCm).toBeUndefined(); // not 5 cm
+    expect(readBoxes(metric, 'si').errors.heightCm).toBe('Enter a number');
+    const back = switchBoxes(metric, 'si', 'conventional');
+    expect([back.height.text, back.height.inches]).toEqual(['5', '10.5']);
+    // Typing a new metric height replaces the draft.
+    const replaced = { ...metric, height: typed(metric.height, 'text', '178', 'si') };
+    expect(readBoxes(replaced, 'si').values.heightCm).toBe(178);
+    expect(replaced.height.inches).toBe('');
+  });
+
+  it.each([['height', '178.'], ['height', '178,'], ['waist', '88.'], ['weight', '80,']] as Array<[Field, string]>)(
+    'R7: %s "%s" is unfinished: not a value, so no save takes it', (field, text) => {
+      const read = readBoxes(typeInto(empty(), { height: '178', [field]: text }), 'si');
+      expect(read.values).not.toHaveProperty({ height: 'heightCm', weight: 'weightKg', waist: 'waistCm' }[field]);
+      expect(read.entered.has(field)).toBe(false);
+    });
+});
+
 describe('US-74 AC6: the next-step link (review U3, X6)', () => {
   const ORIGIN = 'https://shop.example';
   it('takes a path on this store only, and renders the resolved path', () => {
     expect(safeHref('/pages/roadmap', ORIGIN)).toBe('/pages/roadmap');
-    expect(safeHref(' /pages/health-plan ', ORIGIN)).toBe('/pages/health-plan');
     expect(safeHref('/pages/a/../health-plan?x=1#top', ORIGIN)).toBe('/pages/health-plan?x=1#top');
     for (const bad of ['https://drstanfield.com/pages/roadmap', 'javascript:alert(1)', '//evil.example', '/\\evil.example',
-      '/\t/evil.com', '/\n/evil.com', '/pages/a b', '/\u0000x', 'pages/x', '', undefined]) {
+      '/\t/evil.com', '/\n/evil.com', '/pages/a b', '/\u0000x', 'pages/x', '', undefined,
+      // Review R3: the raw setting, untrimmed; and a path that normalises to "//host".
+      ' /pages/health-plan', '/pages/health-plan ', '/.//evil.com', '/a/..//evil.com', '/%2e//evil.com']) {
       expect(safeHref(bad, ORIGIN), JSON.stringify(bad)).toBeNull();
     }
   });

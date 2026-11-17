@@ -22,8 +22,9 @@ export interface Measured { heightCm?: number; weightKg?: number; waistCm?: numb
 /** One box. `text` is the cm box, or the feet box in US units, with `inches`
  *  beside it. `base`: the canonical value the box was filled with (the record,
  *  or a unit switch of the person's entry). `entered`: that value is the
- *  person's, not the record's. */
-export interface Box { text: string; inches: string; base?: number; entered: boolean }
+ *  person's, not the record's. `unit`: the units its text was typed in; text
+ *  that is no number keeps them through a switch, and is read only in them (review R4). */
+export interface Box { text: string; inches: string; base?: number; entered: boolean; unit?: UnitSystem }
 export type Boxes = Record<Field, Box>;
 
 /** A canonical value's text as the full app's form shows it: converted, rounded, no trailing zeros. */
@@ -38,13 +39,15 @@ function render(field: Field, value: number | undefined, system: UnitSystem): Pi
 
 /** Boxes filled from the record's values: none of them the person's entry. */
 export function boxesFor(values: Measured, system: UnitSystem): Boxes {
-  const box = (field: Field): Box => ({ ...render(field, values[INPUT_OF[field]], system), base: values[INPUT_OF[field]], entered: false });
+  const box = (field: Field): Box => ({ ...render(field, values[INPUT_OF[field]], system), base: values[INPUT_OF[field]], entered: false, unit: system });
   return { height: box('height'), weight: box('weight'), waist: box('waist') };
 }
 
-/** A box typed into: the text changes, and what it was filled with stays, so typing it back is no entry. */
-export function typed(box: Box, part: 'text' | 'inches', value: string): Box {
-  return { ...box, [part]: value };
+/** A box typed into, in `system`: the text changes, and what it was filled
+ *  with stays, so typing it back is no entry. Typing a metric height replaces
+ *  any US inches left from a draft (review R4). */
+export function typed(box: Box, part: 'text' | 'inches', value: string, system: UnitSystem): Box {
+  return { ...box, ...(system === 'si' ? { inches: '' } : {}), [part]: value, unit: system };
 }
 
 export type Reading =
@@ -56,9 +59,13 @@ export type Part = 'text' | 'inches';
 
 const WHOLE = /^\d+$/;
 
-/** A box's text as a number by its field's rule, or undefined when it is not one. */
+/** A number still being typed: a decimal separator with nothing after it ("88.", "1,") (review R7). */
+const UNFINISHED = /[.,]$/;
+
+/** A box's text as a number by its field's rule, or undefined when it is not one (or not one yet). */
 function numberIn(field: Field, text: string, system: UnitSystem): number | undefined {
   const t = text.trim();
+  if (UNFINISHED.test(t)) return undefined;
   if (field === 'height' && system === 'conventional') return WHOLE.test(t) ? Number(t) : undefined;
   if (!hasNumericSyntax(t)) return undefined;
   return field === 'height' ? parseLocalisedNumber(t) : readTypedValue(field, t, system);
@@ -66,7 +73,7 @@ function numberIn(field: Field, text: string, system: UnitSystem): number | unde
 
 /** The same number as the box was filled with, in any spelling ("88", "88.0", "88,0"): no entry (review C4). */
 function sameAsFilled(field: Field, box: Box, system: UnitSystem): boolean {
-  if (box.base === undefined) return false;
+  if (box.base === undefined || (box.unit !== undefined && box.unit !== system)) return false;
   const shown = render(field, box.base, system);
   const same = (typed: string, filled: string) => typed === filled || (numberIn(field, typed, system) ?? NaN) === numberIn(field, filled, system);
   return same(box.text, shown.text) && same(box.inches, shown.inches);
@@ -78,6 +85,8 @@ export function readBox(field: Field, box: Box, system: UnitSystem): Reading {
   if (sameAsFilled(field, box, system)) return { kind: 'value', value: box.base!, entered: box.entered };
   const text = box.text.trim(), inches = box.inches.trim();
   if (text === '' && inches === '') return { kind: 'blank' };
+  // Text typed in the other units is read only in them, never as these (review R4).
+  if (box.unit !== undefined && box.unit !== system) return { kind: 'error', message: 'Enter a number', part: 'text' };
   if (field === 'height' && system === 'conventional') {
     // Whole feet and inches, as About you takes them; a fraction or a suffix is never cut off (A6).
     if (!WHOLE.test(text || '0')) return { kind: 'error', message: 'Enter a number', part: 'text' };
@@ -134,7 +143,7 @@ export function switchBoxes(boxes: Boxes, from: UnitSystem, to: UnitSystem): Box
   const out = { ...boxes };
   for (const field of FIELDS) {
     const reading = readBox(field, boxes[field], from);
-    if (reading.kind === 'value') out[field] = { ...render(field, reading.value, to), base: reading.value, entered: reading.entered };
+    if (reading.kind === 'value') out[field] = { ...render(field, reading.value, to), base: reading.value, entered: reading.entered, unit: to };
   }
   return out;
 }
@@ -146,5 +155,5 @@ export function settle(field: Field, box: Box, value: number | undefined, system
   if (value === undefined) return box;
   const reading = readBox(field, box, system);
   if (reading.kind === 'value' && reading.value === value) return { ...box, base: value, entered: false };
-  return { ...render(field, value, system), base: value, entered: false };
+  return { ...render(field, value, system), base: value, entered: false, unit: system };
 }

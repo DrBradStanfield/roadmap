@@ -211,7 +211,7 @@ export const SERVER_ONLY_EVENT_NAMES = [
  * a distinct user action whose count is the signal (US-12 AC10, one per upload
  * run). The events route's per-visitor and per-IP limits still bound them.
  */
-export const PER_ACTION_EVENT_NAMES = ['upload_outcome', 'upload_review', 'save_retry'] as const satisfies readonly ProductEventName[];
+export const PER_ACTION_EVENT_NAMES = ['upload_outcome', 'upload_review', 'save_retry', 'waist_widget_viewed', 'waist_widget_saved'] as const satisfies readonly ProductEventName[]; // US-74: once per page view, which the widget itself ensures
 
 /**
  * The hosted connector's tool names, as a counter may name them. They live in
