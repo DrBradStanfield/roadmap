@@ -242,12 +242,11 @@ to both — deploy twice, see "Shopify app configs".**)
   2. `shopify app config use shopify.app.edu.toml` → `shopify app deploy --allow-updates` (no rebuild — same
      assets) → verify banner **`health-roadmap-edu-<N>`** (edu / drstanfield).
   3. `shopify app config use shopify.app.toml` → **RESTORE prod active** (config drifts!).
-  (Reality check 2026-08-07, live verification: `microvitamin.com/pages/roadmap` **404s** — the
-  commerce store no longer has a roadmap tool page. Its `/pages/health-plan` page embeds ONLY the
-  site-chat bundle (`health-chat-root`), no `health-tool-root` app-block. So the education-only
-  split is effectively complete for the tool itself; the commerce app deploys still matter for the
-  chat bundles. Open decision for Brad: leave `/pages/roadmap` 404ing on commerce, or redirect it
-  to drstanfield.com/pages/roadmap.)
+  (Both stores run the tool (Brad, 2026-11-18): `microvitamin.com/pages/health-plan` mounts the full
+  roadmap (`health-tool-root`, `health-plan-v2.js`) in brand posture, the hero photo hidden by CSS;
+  `microvitamin.com/pages/roadmap` still 404s. The 2026-08-07 note that the commerce store had no
+  tool page is out of date. The single-topic widget blocks (US-74) on the same store share its
+  record, as browser storage is per site.)
 - **Chatbot runs identically on both domains, name differs per store.** Storefront → Shopify app
   proxy `/apps/health-tool-1/api/chat` → the store's Fly app (`drstanfield.com`→`health-tool-edu`,
   `microvitamin.com`→`health-tool-app`) → Anthropic (shared key). Both Fly apps share the same

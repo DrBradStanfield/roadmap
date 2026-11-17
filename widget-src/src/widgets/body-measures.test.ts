@@ -14,9 +14,9 @@ import { feetInchesToCm, toCanonicalValue } from '@roadmap/health-core/units';
 import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { RoadmapStore } from '../storage/roadmap-store';
 import * as data from '../lib/roadmap-data';
-import {
-  boxesFor, measuredErrors, measuredFrom, recordMeasured, resultsFor, safeHref, saveMeasured, startingUnits, todaysRows,
-} from './body-measures';
+import { recordMeasured, resultsFor, safeHref, saveMeasured, seenNow, startingUnits } from './body-measures';
+import { boxesFor, readBoxes, switchBoxes, typed, type Boxes, type Field } from './boxes';
+import { validateTypedValue } from '../lib/blood-test-cell';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../lib/server-api', async (importOriginal) => ({
@@ -60,48 +60,88 @@ beforeEach(async () => {
   await data.initRoadmapStore(new MemoryAdapter(cloud));
 });
 afterEach(async () => {
+  vi.restoreAllMocks(); // first: a test's failing store writes again
   await data.flushRoadmapStore();
-  vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
+
+/** The boxes after the person types `texts` (the cm box, or feet with `inches`). */
+function typeInto(boxes: Boxes, texts: Partial<Record<Field, string>>, inches?: string): Boxes {
+  const out = { ...boxes };
+  for (const [field, text] of Object.entries(texts) as Array<[Field, string]>) out[field] = typed(out[field], 'text', text);
+  if (inches !== undefined) out.height = typed(out.height, 'inches', inches);
+  return out;
+}
+const empty = () => boxesFor({}, 'si');
+const entries = (...fields: Field[]) => new Set<Field>(fields);
 
 describe('US-74 AC2: the boxes start from the record', () => {
   it('prefills the height and the latest active weight and waist, in cm and in US units', async () => {
     await seedFullRecord();
     await data.addMeasurement('waist', 88, '2026-02-01T00:00:00.000Z');
     expect(recordMeasured()).toEqual({ heightCm: 178, weightKg: 82, waistCm: 88 });
-    expect(boxesFor(recordMeasured(), 'si')).toEqual({ height: '178', feet: '', inches: '', weight: '82', waist: '88' });
+    const text = (b: Boxes) => [b.height.text, b.height.inches, b.weight.text, b.waist.text];
+    expect(text(boxesFor(recordMeasured(), 'si'))).toEqual(['178', '', '82', '88']);
     // The full app's US height is feet and inches (AboutYou.tsx), its weight whole lbs, its waist 0.1 in.
-    expect(boxesFor(recordMeasured(), 'conventional')).toEqual({ height: '', feet: '5', inches: '10', weight: '181', waist: '34.6' });
+    expect(text(boxesFor(recordMeasured(), 'conventional'))).toEqual(['5', '10', '181', '34.6']);
   });
 
   it('an empty record prefills nothing; the units are the record\'s, else the full app\'s default', async () => {
-    expect(boxesFor(recordMeasured(), 'si')).toEqual({ height: '', feet: '', inches: '', weight: '', waist: '' });
+    expect(readBoxes(empty(), 'si')).toEqual({ values: {}, entered: new Set(), errors: { heightCm: 'Required' } });
     localStorage.setItem('health_roadmap_unit_system', 'conventional');
     expect(startingUnits()).toBe('conventional');
     await data.saveChangedMeasurements({ unitSystem: 'si' }, {});
     expect(startingUnits()).toBe('si');
   });
-});
 
-describe('US-74 AC2: each box takes the full app\'s range', () => {
-  it('refuses out-of-range values with the full app\'s words, in the units shown; height is required', () => {
-    expect(measuredErrors({ heightCm: 300, weightKg: 10, waistCm: 250 }, 'si')).toEqual({
-      heightCm: 'Height must be at most 250 cm',
-      weightKg: 'Weight must be at least 20 kg',
-      waistCm: 'Waist must be at most 200 cm',
-    });
-    expect(measuredErrors({ waistCm: 90 }, 'si')).toEqual({ heightCm: 'Required' });
-    expect(measuredErrors({ heightCm: 178, waistCm: 30 }, 'conventional')).toEqual({ waistCm: 'Waist must be at least 15.8 in' });
-    expect(measuredErrors({ heightCm: 178 }, 'si')).toEqual({});
+  it('review A1: a box left as filled is the record\'s exact value and no entry; typing it back is no entry either', () => {
+    const boxes = boxesFor({ heightCm: 178, weightKg: 81.65, waistCm: 88.4 }, 'si'); // shown as 178, 81.7, 88
+    expect(readBoxes(boxes, 'si')).toEqual({ values: { heightCm: 178, weightKg: 81.65, waistCm: 88.4 }, entered: new Set(), errors: {} });
+    const retyped = typeInto(boxes, { waist: '88' });
+    expect(readBoxes(retyped, 'si').entered).toEqual(new Set());
+    expect(readBoxes(typeInto(boxes, { waist: '89' }), 'si')).toMatchObject({ values: { waistCm: 89 }, entered: entries('waist') });
   });
 
-  it('a refused value never reaches the record: the store refuses the same range (inputRangeFault)', async () => {
-    const outcome = await saveMeasured({ heightCm: 300 }, 'si', todaysRows());
-    expect(outcome.saved).toBe(false);
-    await data.flushRoadmapStore();
-    const file = cloud.files.get(ROADMAP_FILE_NAME);
-    expect(file ? persisted().profile.heightCm ?? null : null).toBeNull();
+  it('review A1: 178 cm through the US view and back is still exactly 178, and no entry', () => {
+    const us = switchBoxes(boxesFor({ heightCm: 178 }, 'si'), 'si', 'conventional');
+    expect([us.height.text, us.height.inches]).toEqual(['5', '10']);
+    expect(readBoxes(us, 'conventional').values.heightCm).toBe(178);
+    const back = switchBoxes(us, 'conventional', 'si');
+    expect(readBoxes(back, 'si')).toEqual({ values: { heightCm: 178 }, entered: new Set(), errors: {} });
+  });
+});
+
+describe('US-74 AC2: each box reads and checks as the full app\'s does (review A6)', () => {
+  it('refuses out-of-range entries with the full app\'s words, in the units shown; height is required', () => {
+    expect(readBoxes(typeInto(empty(), { height: '300', weight: '10', waist: '250' }), 'si').errors).toEqual({
+      heightCm: 'Height must be at most 250 cm',
+      weightKg: validateTypedValue('weight', '10', 'si').error,
+      waistCm: validateTypedValue('waist', '250', 'si').error,
+    });
+    expect(readBoxes(typeInto(empty(), { waist: '90' }), 'si').errors).toEqual({ heightCm: 'Required' });
+    expect(readBoxes(typeInto(empty(), { height: '178' }), 'si').errors).toEqual({});
+  });
+
+  it.each([
+    ['waist', '88 cm'], ['weight', '82kg'], ['weight', '1,234'], ['waist', 'abc'], ['height', '178cm'],
+  ] as Array<[Field, string]>)('the %s box refuses "%s" as unreadable: an error, never a blank or a cut number', (field, text) => {
+    const read = readBoxes(typeInto(empty(), { height: '178', [field]: text }), 'si');
+    const key = { height: 'heightCm', weight: 'weightKg', waist: 'waistCm' }[field];
+    expect(read.errors[key]).toBeTruthy();
+    expect(read.values).not.toHaveProperty(key);
+    if (field !== 'height') expect(read.errors[key]).toBe(validateTypedValue(field, text, 'si').error);
+  });
+
+  it.each([['5', '10.5'], ['5', '10in'], ['5.5', ''], ['5ft', '10']])('US height %s ft %s in is refused, never truncated', (feet, inches) => {
+    const read = readBoxes(typeInto(boxesFor({}, 'conventional'), { height: feet }, inches), 'conventional');
+    expect(read.errors.heightCm).toBe('Enter a number');
+    expect(read.values.heightCm).toBeUndefined();
+  });
+
+  it('unreadable text survives a unit switch, as typed', () => {
+    const switched = switchBoxes(typeInto(empty(), { height: '178', waist: '88 cm' }), 'si', 'conventional');
+    expect(switched.waist.text).toBe('88 cm');
+    expect(readBoxes(switched, 'conventional').values.heightCm).toBe(178); // typed 178 keeps its exact value
   });
 });
 
@@ -109,14 +149,12 @@ describe('US-74 AC4: the save merges into the record through RoadmapStore', () =
   it('writes height to the profile and today\'s weight and waist, leaving everything else as it was', async () => {
     await seedFullRecord();
     const before = persisted();
-    const outcome = await saveMeasured({ heightCm: 180, weightKg: 80, waistCm: 87 }, 'si', todaysRows());
-    expect(outcome.saved).toBe(true);
-    await data.flushRoadmapStore();
-    const after = persisted();
+    const outcome = await saveMeasured({ heightCm: 180, weightKg: 80, waistCm: 87 }, entries('height', 'weight', 'waist'), seenNow());
+    expect(outcome).toEqual({ kind: 'stored', saved: ['height', 'weight', 'waist'], changed: [], refused: [] });
+    const after = persisted(); // saveMeasured waits for the store's write (review A3)
     expect(after.profile).toMatchObject({ sex: 'male', birthYear: 1980, birthMonth: 6, heightCm: 180 });
     expect(after.labValues).toEqual(before.labValues);
     expect(after.supplements).toEqual(before.supplements);
-    // Every earlier row is kept unchanged; two rows are added, today's.
     for (const row of before.measurements) expect(after.measurements).toContainEqual(row);
     const today = localDay(new Date());
     const added = after.measurements.filter((m) => !before.measurements.some((b) => b.id === m.id));
@@ -125,18 +163,19 @@ describe('US-74 AC4: the save merges into the record through RoadmapStore', () =
     ]);
   });
 
-  it('saves only what was entered: a blank weight writes no weight', async () => {
-    await saveMeasured({ heightCm: 170, waistCm: 80 }, 'si', todaysRows());
-    await data.flushRoadmapStore();
-    expect(persisted().measurements.map((m) => m.metricType)).toEqual(['waist']);
-    expect(persisted().profile.heightCm).toBe(170);
+  it('review A1: values only filled from the record are never written, nor re-dated to today', async () => {
+    await seedFullRecord();
+    const before = persisted();
+    const { values, entered } = readBoxes(boxesFor(recordMeasured(), 'si'), 'si');
+    expect(await saveMeasured(values, entered, seenNow())).toEqual({ kind: 'stored', saved: [], changed: [], refused: [] });
+    expect(persisted().measurements).toEqual(before.measurements);
+    expect(persisted().profile).toEqual(before.profile);
   });
 
   it('a second save the same day corrects today\'s row: one active row, the first entered-in-error', async () => {
-    const first = await saveMeasured({ heightCm: 178, waistCm: 90 }, 'si', todaysRows());
-    const second = await saveMeasured({ heightCm: 178, waistCm: 88 }, 'si', first.today);
-    expect(second.saved).toBe(true);
-    await data.flushRoadmapStore();
+    await saveMeasured({ heightCm: 178, waistCm: 90 }, entries('height', 'waist'), seenNow());
+    const second = await saveMeasured({ heightCm: 178, waistCm: 88 }, entries('waist'), seenNow());
+    expect(second).toMatchObject({ kind: 'stored', saved: ['waist'] });
     const waists = persisted().measurements.filter((m) => m.metricType === 'waist');
     const active = waists.filter((m) => m.status === 'active');
     expect(active.map((m) => m.value)).toEqual([88]);
@@ -145,25 +184,34 @@ describe('US-74 AC4: the save merges into the record through RoadmapStore', () =
     expect(active[0].correctsId).toBe(old.id);
   });
 
-  it('a row for today the page did not see writes nothing (the full app\'s `changed` rule)', async () => {
-    const seen = todaysRows();
+  it('review A4: a row or height the person did not see writes nothing, and is reported as changed', async () => {
+    await data.saveChangedMeasurements({ heightCm: 178 }, {});
+    const seen = seenNow();
     await data.addMeasurement('waist', 95); // another device, after the page read the record
-    const outcome = await saveMeasured({ heightCm: 178, waistCm: 88 }, 'si', seen);
-    expect(outcome.saved).toBe(false);
-    expect(outcome.today.waist).not.toBeNull(); // the next press expects the row now there
-    await data.flushRoadmapStore();
+    await data.saveChangedMeasurements({ heightCm: 180 }, { heightCm: 178 });
+    const outcome = await saveMeasured({ heightCm: 175, waistCm: 88 }, entries('height', 'waist'), seen);
+    expect(outcome).toEqual({ kind: 'stored', saved: [], changed: ['height', 'waist'], refused: [] });
     expect(persisted().measurements.filter((m) => m.status === 'active').map((m) => m.value)).toEqual([95]);
+    expect(persisted().profile.heightCm).toBe(180);
+  });
+
+  it('review A3: a store that cannot keep the record answers failed, after staging went through', async () => {
+    const failing = new MemoryAdapter(cloud);
+    await data.initRoadmapStore(failing);
+    vi.spyOn(failing, 'write').mockRejectedValue(new Error('disk full'));
+    vi.spyOn(localStorage, 'setItem').mockImplementation(() => { throw new DOMException('full', 'QuotaExceededError'); });
+    const outcome = await saveMeasured({ heightCm: 178, waistCm: 90 }, entries('height', 'waist'), seenNow());
+    expect(outcome).toEqual({ kind: 'failed' });
   });
 
   it('US units: feet and inches, lbs and inches are saved in cm and kg', async () => {
-    const values = measuredFrom({ height: '', feet: '5', inches: '10', weight: '180', waist: '35' }, 'conventional');
-    expect(values).toEqual({
+    const read = readBoxes(typeInto(boxesFor({}, 'conventional'), { height: '5', weight: '180', waist: '35' }, '10'), 'conventional');
+    expect(read.values).toEqual({
       heightCm: feetInchesToCm(5, 10),
       weightKg: toCanonicalValue('weight', 180, 'conventional'),
       waistCm: toCanonicalValue('waist', 35, 'conventional'),
     });
-    await saveMeasured(values, 'conventional', todaysRows());
-    await data.flushRoadmapStore();
+    await saveMeasured(read.values, read.entered, seenNow());
     const file = persisted();
     expect(file.profile.heightCm).toBeCloseTo(177.8, 6);
     expect(file.measurements.find((m) => m.metricType === 'weight')!.value).toBeCloseTo(81.65, 2);
@@ -223,13 +271,12 @@ describe('US-74 AC3: the results are the plan\'s own', () => {
   });
 });
 
-describe('US-74 AC6: the next-step link', () => {
-  it('takes a same-site path or an http(s) address, nothing else', () => {
+describe('US-74 AC6: the next-step link (review U3)', () => {
+  it('takes a path on this store only', () => {
     expect(safeHref('/pages/roadmap')).toBe('/pages/roadmap');
-    expect(safeHref('https://drstanfield.com/pages/roadmap')).toBe('https://drstanfield.com/pages/roadmap');
-    expect(safeHref('javascript:alert(1)')).toBeNull();
-    expect(safeHref('//evil.example')).toBeNull();
-    expect(safeHref('')).toBeNull();
-    expect(safeHref(undefined)).toBeNull();
+    expect(safeHref(' /pages/health-plan ')).toBe('/pages/health-plan');
+    for (const bad of ['https://drstanfield.com/pages/roadmap', 'javascript:alert(1)', '//evil.example', '/\\evil.example', 'pages/x', '', undefined]) {
+      expect(safeHref(bad)).toBeNull();
+    }
   });
 });

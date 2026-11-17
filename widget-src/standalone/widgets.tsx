@@ -4,6 +4,11 @@
  * record the full app opens (boot, as app.tsx), then mounts each block's
  * widget by its topic (src/widgets/router.tsx). A page with no known topic
  * opens nothing.
+ *
+ * Each block loads the script, so it starts once per page and mounts each
+ * block once (review U1). Every block shows a loading line while the record
+ * opens, and the failure panel if it does not (review U4), with no doctor's
+ * name or address, as the commerce store carries none (review U5).
  */
 import '../src/widgets/widgets.css';
 import React from 'react';
@@ -12,26 +17,43 @@ import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { initRoadmapStore } from '../src/lib/roadmap-data';
 import { widgetFor } from '../src/widgets/router';
 import { boot } from './boot';
+import { LoadFailurePanel } from './load-failure';
 import { registerPageDeparture } from './page-departure';
 import { resolveBackend } from './resolve-backend';
 
-async function main() {
+/** Set on the window by the first run: every copy of this script on the page shares it. */
+const STARTED = Symbol.for('health-widgets.started');
+
+const failure = (error: unknown) => <LoadFailurePanel error={error} neutral className="hr-widget-failure" />;
+
+export async function startWidgets(doc: Document = document): Promise<void> {
+  const page = window as unknown as Record<symbol, boolean | undefined>;
+  if (page[STARTED]) return;
   // The blocks this build knows, in page order, each with its widget.
-  const blocks = [...document.querySelectorAll<HTMLElement>('.hr-widget[data-widget]')]
-    .flatMap((root) => { const Widget = widgetFor(root.dataset.widget); return Widget ? [{ root, Widget }] : []; });
+  const blocks = [...doc.querySelectorAll<HTMLElement>('.hr-widget[data-widget]')]
+    .flatMap((el) => { const Widget = widgetFor(el.dataset.widget); return Widget ? [{ el, Widget }] : []; });
   if (blocks.length === 0) return;
-  await boot(resolveBackend, initRoadmapStore, blocks[0].root);
+  page[STARTED] = true;
+  const mounts = blocks.map(({ el, Widget }) => ({ el, Widget, root: createRoot(el) }));
+  for (const { root } of mounts) root.render(<p className="hr-widget-loading" role="status">Loading…</p>);
+  try {
+    await boot(resolveBackend, initRoadmapStore);
+  } catch (error) {
+    for (const { root } of mounts) root.render(failure(error));
+    return;
+  }
   // Persist before the tab goes away, as the full app does.
   registerPageDeparture(() => {});
-  for (const { root, Widget } of blocks) {
-    createRoot(root).render(
+  for (const { el, root, Widget } of mounts) {
+    root.render(
       <React.StrictMode>
-        <ErrorBoundary>
-          <Widget nextUrl={root.dataset.nextUrl} nextLabel={root.dataset.nextLabel} />
+        <ErrorBoundary feature="single-topic-widget" fallback={failure(new Error('render'))}>
+          <Widget nextUrl={el.dataset.nextUrl} nextLabel={el.dataset.nextLabel} />
         </ErrorBoundary>
       </React.StrictMode>,
     );
   }
 }
 
-void main();
+// Never an unhandled rejection: every failure above is already on the page (review U4).
+void startWidgets().catch(() => undefined);

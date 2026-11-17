@@ -7,7 +7,9 @@ const results: Results = { target: 'Target: <89 cm' };
 const errors = { heightCm: 'Required' };
 const editingWithErrors: WidgetState = { mode: 'editing', errors };
 const saving: WidgetState = { mode: 'saving' };
-const shown: WidgetState = { mode: 'shown', results };
+const shown: WidgetState = { mode: 'shown', results, partial: null };
+const partial = { saved: ['height' as const], changed: ['waist' as const], refused: [] };
+const shownPartial: WidgetState = { mode: 'shown', results, partial };
 const failed: WidgetState = { mode: 'failed' };
 
 const ROWS: Array<[string, WidgetState, WidgetEvent, WidgetState]> = [
@@ -15,7 +17,9 @@ const ROWS: Array<[string, WidgetState, WidgetEvent, WidgetState]> = [
   ['an invalid press shows the errors', START, { type: 'submitted', errors }, editingWithErrors],
   ['an edit clears the errors', editingWithErrors, { type: 'edited' }, START],
   ['an edit while typing changes nothing', START, { type: 'edited' }, START],
-  ['a save that lands shows the results', saving, { type: 'saved', results }, shown],
+  ['a save that lands shows the results', saving, { type: 'saved', results, partial: null }, shown],
+  ['a part-kept save says what was kept (review A5)', saving, { type: 'saved', results, partial }, shownPartial],
+  ['an edit after a part-kept save clears its notice', shownPartial, { type: 'edited' }, START],
   ['a save refused says so', saving, { type: 'failed' }, failed],
   ['a press while saving waits', saving, { type: 'submitted', errors: {} }, saving],
   ['an edit while saving waits', saving, { type: 'edited' }, saving],
@@ -23,7 +27,7 @@ const ROWS: Array<[string, WidgetState, WidgetEvent, WidgetState]> = [
   ['a press after a result saves again', shown, { type: 'submitted', errors: {} }, saving],
   ['a press after a refusal tries again', failed, { type: 'submitted', errors: {} }, saving],
   ['an edit after a refusal clears it', failed, { type: 'edited' }, START],
-  ['an answer with no save on its way is ignored', shown, { type: 'saved', results }, shown],
+  ['an answer with no save on its way is ignored', shown, { type: 'saved', results, partial: null }, shown],
   ['a refusal with no save on its way is ignored', START, { type: 'failed' }, START],
 ];
 

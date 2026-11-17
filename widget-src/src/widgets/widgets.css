@@ -42,11 +42,14 @@
 .hr-widget-tile { border: 1px solid var(--hrw-border); border-radius: 10px; padding: 14px 16px; }
 .hr-widget-tile-label { font-size: 14px; color: var(--hrw-muted); }
 .hr-widget-tile-value { font-size: 30px; font-weight: 700; line-height: 1.2; }
-.hr-widget-status { display: inline-block; margin-top: 4px; font-size: 14px; font-weight: 600; color: var(--hrw-muted); }
-.hr-widget-status--normal { color: #16a34a; } /* the plan's .stat-status tones */
-.hr-widget-status--info { color: #d97706; }
-.hr-widget-status--attention { color: #ea580c; }
-.hr-widget-status--urgent { color: #dc2626; }
+.hr-widget-status { display: inline-block; margin-top: 4px; font-size: 15px; font-weight: 700; color: var(--hrw-text); }
+/* One status style, no tone class: a Clarity replay records class attributes (review P1). */
+.hr-widget-notice { border: 1px solid var(--hrw-border); border-radius: 8px; padding: 10px 12px; font-size: 14px; }
+.hr-widget-notice p { margin: 0; }
+.hr-widget-notice p + p { margin-top: 6px; }
+.hr-widget-loading, .hr-widget-failure { font-size: 15px; color: var(--hrw-muted); }
+.hr-widget-failure h3 { margin: 0 0 6px; font-size: 17px; color: var(--hrw-text); }
+.hr-widget-failure p { margin: 0 0 4px; }
 .hr-widget-about { margin: 8px 0 0; font-size: 14px; color: var(--hrw-muted); overflow-wrap: anywhere; }
 .hr-widget-target { margin: 0; font-size: 15px; font-weight: 600; }
 .hr-widget-next {
