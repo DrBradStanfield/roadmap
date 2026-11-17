@@ -10,7 +10,9 @@
  *
  * The cleanup is a plain DELETE of old posted=false rows (US-15 AC66); the fake stamps each claim's
  * processed_at as Postgres's default does. Tests that set claimsBornOld stand for "the claim is past
- * the cleanup window", so cleanup would remove it unless it is marked posted.
+ * the cleanup window", so cleanup would remove it unless it is marked posted. The fake also keeps the
+ * old youtube_bot_cleanup_skipped RPC as its SQL reads (keep the newest 200 posted=false rows), so the
+ * AC66 regression test fails on code that still calls it.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -99,6 +101,11 @@ vi.mock('./supabase-client.server', async () => {
     const injected = db.fail?.(req);
     if (injected) return injected;
 
+    if (url.pathname === '/rest/v1/rpc/youtube_bot_cleanup_skipped') {
+      const keep = new Set(db.table.filter((r) => !r.posted).sort((a, b) => b.id - a.id).slice(0, 200).map((r) => r.id));
+      db.table = db.table.filter((r) => r.posted || keep.has(r.id));
+      return new Response(null, { status: 204 });
+    }
     if (url.pathname !== '/rest/v1/youtube_bot_log') return json({ message: `not modelled: ${url.pathname}` }, 404);
 
     const preds = [...url.searchParams].filter(([k]) => !NOT_FILTERS.has(k)).map(([k, v]) => predicate(k, v));
