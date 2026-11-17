@@ -14,6 +14,36 @@ function isRefusal(error: unknown): boolean {
 }
 
 const NEWER_SCHEMA_LINE = 'A newer version of Health by Dr Brad wrote this record. Reload the page to get that version; if this stays, the newer version is not on the web yet. Nothing was written.';
+/** The single-topic widgets' line: their stores are de-doctored, so no name (US-74, review U5). */
+const NEWER_SCHEMA_NEUTRAL = 'A newer version of this tool wrote this record. Reload the page to get that version; if this stays, the newer version is not on the web yet. Nothing was written.';
+
+/**
+ * The load failure's panel. `neutral`: for the single-topic widgets, whose
+ * pages carry no doctor's name or address (US-74, review U5): no report link,
+ * and the newer-schema line without the name. Any error that is not a storage
+ * failure reads as one that did not load, with a reload line: a widget never
+ * leaves its block blank (review U4). The full app renders it only for a
+ * storage failure (showLoadFailure).
+ */
+export function LoadFailurePanel({ error, connectFailed, neutral = false, className = 'health-tool-error' }: {
+  error: unknown; connectFailed?: string; neutral?: boolean; className?: string;
+}) {
+  const refused = isRefusal(error);
+  const storage = isStorageFailure(error);
+  return (
+    <div className={className} role="alert">
+      <h3>{refused ? 'Your saved record could not be opened' : 'Your saved record did not load'}</h3>
+      {storage && <p>{error instanceof SchemaTooNewError ? (neutral ? NEWER_SCHEMA_NEUTRAL : NEWER_SCHEMA_LINE) : (error as Error).message}</p>}
+      {!refused && <p>Reload the page to try again.</p>}
+      {connectFailed && <p>{connectFailed}</p>}
+      {!neutral && (
+        <p style={{ marginTop: '8px', fontSize: '14px' }}>
+          <a href="mailto:brad@drstanfield.com?subject=Health%20Roadmap%20Bug%20Report">Report this issue</a>
+        </p>
+      )}
+    </div>
+  );
+}
 
 /**
  * US-65 AC7: a record the app refuses at load (US-65 AC5), or any other
@@ -29,18 +59,7 @@ const NEWER_SCHEMA_LINE = 'A newer version of Health by Dr Brad wrote this recor
 export function showLoadFailure(error: unknown, connectFailed?: string): never {
   const container = document.getElementById('health-tool-root');
   if (container && isStorageFailure(error)) {
-    const refused = isRefusal(error);
-    createRoot(container).render(
-      <div className="health-tool-error" role="alert">
-        <h3>{refused ? 'Your saved record could not be opened' : 'Your saved record did not load'}</h3>
-        <p>{error instanceof SchemaTooNewError ? NEWER_SCHEMA_LINE : (error as Error).message}</p>
-        {!refused && <p>Reload the page to try again.</p>}
-        {connectFailed && <p>{connectFailed}</p>}
-        <p style={{ marginTop: '8px', fontSize: '14px' }}>
-          <a href="mailto:brad@drstanfield.com?subject=Health%20Roadmap%20Bug%20Report">Report this issue</a>
-        </p>
-      </div>,
-    );
+    createRoot(container).render(<LoadFailurePanel error={error} connectFailed={connectFailed} />);
   }
   throw error;
 }

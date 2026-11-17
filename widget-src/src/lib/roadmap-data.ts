@@ -237,7 +237,7 @@ export function loadDerivedSeries(shown: Parameters<RoadmapStore['loadDerivedSer
  *  alone. A blood pressure counts only once both halves of its day are on record. */
 const MEASURE_OF: Partial<Record<MetricType, (typeof MEASURES)[number]>> = { waist: 'waist', systolic_bp: 'blood_pressure', diastolic_bp: 'blood_pressure' };
 const OTHER_HALF: Partial<Record<MetricType, MetricType>> = { systolic_bp: 'diastolic_bp', diastolic_bp: 'systolic_bp' };
-function countMeasuresAdded(added: ApiMeasurement[]): void {
+export function countMeasuresAdded(added: ApiMeasurement[]): void {
   if (!store || added.length === 0) return;
   const active = store.loadAllHistory();
   const complete = (row: ApiMeasurement) => {
@@ -247,9 +247,10 @@ function countMeasuresAdded(added: ApiMeasurement[]): void {
   const measures = new Set(added.filter(complete).map((row) => MEASURE_OF[row.metricType as MetricType]).filter((m) => m !== undefined));
   for (const measure of measures) trackProductEvent('measurement_added', { measure });
 }
-export async function addMeasurement(metricType: string, value: number, recordedAt?: string, erase?: string): Promise<AddMeasurementResult> {
+/** `counted` false: the caller counts the row itself once the store has kept it (US-74 review C8). */
+export async function addMeasurement(metricType: string, value: number, recordedAt?: string, erase?: string, counted = true): Promise<AddMeasurementResult> {
   const result: AddMeasurementResult = store ? await store.addMeasurement(metricType, value, recordedAt, erase) : { status: 'error' };
-  if (result.status === 'inserted') countMeasuresAdded([result.row]);
+  if (counted && result.status === 'inserted') countMeasuresAdded([result.row]);
   return result;
 }
 /** Correct a saved core or lab value; `newValue` is in the unit it is stored in. */
