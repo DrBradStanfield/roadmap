@@ -35,8 +35,10 @@
   min-height: 48px; border: 0; border-radius: 8px; background: var(--hrw-brand); color: #fff;
   font: inherit; font-size: 17px; font-weight: 600; cursor: pointer;
 }
-.hr-widget-submit:disabled { opacity: 0.7; cursor: default; }
+.hr-widget-submit[aria-disabled='true'] { opacity: 0.7; cursor: default; }
 .hr-widget-results { display: flex; flex-direction: column; gap: 12px; }
+/* The live region stays on the page while empty (WaistToHeight.tsx): take back the form's gap. */
+.hr-widget-results:empty { margin-top: -14px; }
 .hr-widget-tile { border: 1px solid var(--hrw-border); border-radius: 10px; padding: 14px 16px; }
 .hr-widget-tile-label { font-size: 14px; color: var(--hrw-muted); }
 .hr-widget-tile-value { font-size: 30px; font-weight: 700; line-height: 1.2; }

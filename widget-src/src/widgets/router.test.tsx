@@ -2,7 +2,7 @@
 // US-74 AC8: one bundle routes every single-topic block by its `data-widget`.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from '@testing-library/react';
-import { WidgetRoot, widgetFor } from './router';
+import { widgetFor } from './router';
 import { WaistToHeightWidget } from './WaistToHeight';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
@@ -19,12 +19,8 @@ describe('widget router (US-74 AC8)', () => {
   });
 
   it('renders the waist widget for data-widget="waist-to-height"', () => {
-    const { getByRole } = render(<WidgetRoot name="waist-to-height" />);
+    const Widget = widgetFor('waist-to-height')!;
+    const { getByRole } = render(<Widget />);
     expect(getByRole('button', { name: 'See my results' })).toBeTruthy();
-  });
-
-  it('renders nothing, and does not throw, for an unknown topic', () => {
-    const { container } = render(<WidgetRoot name="no-such-topic" />);
-    expect(container.innerHTML).toBe('');
   });
 });

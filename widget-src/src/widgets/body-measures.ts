@@ -11,10 +11,10 @@ import { statTiles, type StatTile } from '@roadmap/health-core/stat-tiles';
 import type { HealthInputs } from '@roadmap/health-core/types';
 import { cmToFeetInches, detectUnitSystem, feetInchesToCm, formatDisplayValue, toCanonicalValue, type UnitSystem } from '@roadmap/health-core/units';
 import { convertValidationErrorsToUnits, getValidationErrors, validateHealthInputs } from '@roadmap/health-core/validation';
-import { activeRowIndex, routeTasksToSaves, slotOf, type SaveTask } from '../lib/matrix-save';
-import { ensureIsoDatetime } from '../lib/recordedAt';
+import { saveTasksToStore } from '../hooks/useLongitudinalSave';
+import { activeRowIndex, slotOf, type SaveTask } from '../lib/matrix-save';
 import {
-  addMeasurement, correctValue, getBackendKind, getInitialInputsSync, getShownErase,
+  correctValue, getBackendKind, getInitialInputsSync, getShownErase,
   loadAllHistorySync, loadLatestMeasurementsSync, saveChangedMeasurements,
 } from '../lib/roadmap-data';
 import { healthWritesAllowed, loadUnitPreference } from '../lib/storage';
@@ -124,9 +124,9 @@ export type SaveOutcome = { saved: boolean; today: TodaysRows };
 
 /**
  * Save what was entered (US-74 AC4): the height to the profile by the store's
- * profile save, a weight and a waist as today's values by the full app's
- * routing rule (an empty slot is added; the row `expected` is corrected; a row
- * the widget did not see writes nothing). Never replaces the record: each write
+ * profile save, a weight and a waist as today's values through the full app's
+ * own save, `saveTasksToStore` (an empty slot is added; the row `expected` is
+ * corrected; a row the widget did not see writes nothing). Never replaces the record: each write
  * goes through the store, which merges. `values` are valid (measuredErrors).
  */
 export async function saveMeasured(values: Measured, system: UnitSystem, expected: TodaysRows): Promise<SaveOutcome> {
@@ -142,15 +142,7 @@ export async function saveMeasured(values: Measured, system: UnitSystem, expecte
     const value = values[field];
     return value === undefined ? [] : [{ date: today, values: { [metric]: value }, expected: { [metric]: expected[metric] }, unit: system }];
   });
-  const refused = await routeTasksToSaves(
-    tasks,
-    loadAllHistorySync(),
-    async (date, metric, value) => {
-      const { status } = await addMeasurement(metric, value, ensureIsoDatetime(date), erase);
-      return status === 'inserted' ? 'ok' : status === 'duplicate' ? 'changed' : status;
-    },
-    (id, newValue) => correctValue(id, newValue, erase),
-  );
+  const refused = await saveTasksToStore(tasks, erase, correctValue);
   return { saved: refused.size === 0, today: todaysRows() };
 }
 

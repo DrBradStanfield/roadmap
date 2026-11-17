@@ -1,7 +1,7 @@
 // The waist-to-height and BMI widget (US-74): height, weight and waist, saved
 // to the record the full app reads, and the plan's own results for them.
 import { useEffect, useReducer, useRef, useState } from 'react';
-import type { StatTile } from '@roadmap/health-core/stat-tiles';
+import { statTileText, type StatTile } from '@roadmap/health-core/stat-tiles';
 import { getDisplayLabel, type UnitSystem } from '@roadmap/health-core/units';
 import { trackProductEvent } from '../lib/server-api';
 import {
@@ -22,20 +22,25 @@ function Tile({ tile }: { tile: StatTile }) {
   return (
     <div className="hr-widget-tile">
       <div className="hr-widget-tile-label">{tile.label}</div>
-      <div className="hr-widget-tile-value">{tile.value}</div>
+      <div className="hr-widget-tile-value">{statTileText(tile)}</div>
       {tile.status && <div className={`hr-widget-status hr-widget-status--${tile.status.tone ?? 'none'}`}>{tile.status.label}</div>}
       <p className="hr-widget-about">{tile.about}</p>
     </div>
   );
 }
 
-function ResultsView({ results }: { results: Results }) {
+/** The results, in a live region that is on the page before they arrive, so a
+ *  screen reader reads them out (one inserted with its content often is not).
+ *  An <output>, not a div: the storefront hides an empty div. */
+function ResultsView({ results }: { results: Results | null }) {
   return (
-    <div className="hr-widget-results" role="status">
-      {results.whtr && <Tile tile={results.whtr} />}
-      {results.bmi && <Tile tile={results.bmi} />}
-      <p className="hr-widget-target">{results.target}</p>
-    </div>
+    <output className="hr-widget-results" aria-live="polite">
+      {results && <>
+        {results.whtr && <Tile tile={results.whtr} />}
+        {results.bmi && <Tile tile={results.bmi} />}
+        <p className="hr-widget-target">{results.target}</p>
+      </>}
+    </output>
   );
 }
 
@@ -68,15 +73,17 @@ export function WaistToHeightWidget({ nextUrl, nextLabel }: WidgetProps) {
     const errors = measuredErrors(values, system);
     dispatch({ type: 'submitted', errors });
     if (Object.keys(errors).length > 0 || values.heightCm === undefined) return;
-    const { saved, today } = await saveMeasured(values, system, expected.current);
-    expected.current = today;
-    if (!saved) { dispatch({ type: 'failed' }); return; }
+    // A save that throws ends as one refused, never as "Saving…" for good.
+    const outcome = await saveMeasured(values, system, expected.current).catch(() => null);
+    if (outcome) expected.current = outcome.today;
+    if (!outcome?.saved) { dispatch({ type: 'failed' }); return; }
     trackProductEvent('waist_widget_saved');
     dispatch({ type: 'saved', results: resultsFor({ ...values, heightCm: values.heightCm }, system) });
   };
 
   const errors = state.mode === 'editing' ? state.errors : {};
   const href = safeHref(nextUrl);
+  const heightError = errors.heightCm ? 'hr-widget-height-error' : undefined;
   const box = (field: 'height' | 'weight' | 'waist', id: string, label: string, error: string | undefined, optional: boolean) => (
     <div className="hr-widget-field">
       <label htmlFor={id}>{label} ({getDisplayLabel(field, system)}){optional && <span className="hr-widget-optional"> optional</span>}</label>
@@ -98,24 +105,26 @@ export function WaistToHeightWidget({ nextUrl, nextLabel }: WidgetProps) {
       </div>
       {system === 'si' ? box('height', 'hr-widget-height', 'Height', errors.heightCm, false) : (
         <div className="hr-widget-field">
-          <label htmlFor="hr-widget-feet">Height (ft/in)</label>
-          <div className="hr-widget-pair">
+          <label id="hr-widget-height-label" htmlFor="hr-widget-feet">Height (ft/in)</label>
+          <div className="hr-widget-pair" role="group" aria-labelledby="hr-widget-height-label">
             <input id="hr-widget-feet" type="text" inputMode="numeric" autoComplete="off" aria-label="Feet" value={boxes.feet} onChange={edit('feet')}
-              aria-invalid={!!errors.heightCm} aria-describedby={errors.heightCm ? 'hr-widget-height-error' : undefined} />
-            <span>ft</span>
-            <input id="hr-widget-inches" type="text" inputMode="numeric" autoComplete="off" aria-label="Inches" value={boxes.inches} onChange={edit('inches')} />
-            <span>in</span>
+              aria-invalid={!!errors.heightCm} aria-describedby={heightError} />
+            <span aria-hidden="true">ft</span>
+            <input id="hr-widget-inches" type="text" inputMode="numeric" autoComplete="off" aria-label="Inches" value={boxes.inches} onChange={edit('inches')}
+              aria-invalid={!!errors.heightCm} aria-describedby={heightError} />
+            <span aria-hidden="true">in</span>
           </div>
           {errors.heightCm && <span id="hr-widget-height-error" className="hr-widget-error">{errors.heightCm}</span>}
         </div>
       )}
       {box('weight', 'hr-widget-weight', 'Weight', errors.weightKg, true)}
       {box('waist', 'hr-widget-waist', 'Waist', errors.waistCm, true)}
-      <button type="submit" className="hr-widget-submit" disabled={state.mode === 'saving'}>
+      {/* aria-disabled, not disabled: a disabled button drops the keyboard's focus mid-save. submit() ignores a press while saving. */}
+      <button type="submit" className="hr-widget-submit" aria-disabled={state.mode === 'saving'}>
         {state.mode === 'saving' ? 'Saving…' : 'See my results'}
       </button>
       {state.mode === 'failed' && <p className="hr-widget-error" role="alert">Not saved. Reload the page and try again.</p>}
-      {state.mode === 'shown' && <ResultsView results={state.results} />}
+      <ResultsView results={state.mode === 'shown' ? state.results : null} />
       {state.mode === 'shown' && href && nextLabel?.trim() && <a className="hr-widget-next" href={href}>{nextLabel.trim()}</a>}
     </form>
   );

@@ -11,7 +11,7 @@ import { METRIC_TO_FIELD, type ApiMeasurement } from '@roadmap/health-core/mappi
 import { inputRangeFault } from '@roadmap/health-core/validation';
 import { localDay } from '@roadmap/health-core/merge';
 import type { UnitSystem } from '@roadmap/health-core/units';
-import { activeRowIndex, routeTasksToSaves, slotOf, type Refused, type SaveTask } from '../lib/matrix-save';
+import { activeRowIndex, routeTasksToSaves, slotOf, type CorrectFn, type Refused, type SaveTask } from '../lib/matrix-save';
 import { addMeasurement, correctValue, getBackendKind, getShownErase, loadAllHistorySync } from '../lib/roadmap-data';
 import { healthWritesAllowed } from '../lib/storage';
 import { trackABConversion, trackProductEvent } from '../lib/server-api';
@@ -24,6 +24,22 @@ export const countedCorrection = async (id: string, newValue: number, erase?: st
   if (status === 'ok') trackProductEvent('correction_made');
   return status;
 };
+
+/** Save `tasks` by the one routing rule against the store's own rows, read as it
+ *  writes (never the page's copy): an empty slot is added, the expected row
+ *  corrected by `onCorrect`. The store is synchronous, so every write is staged
+ *  before this returns; only the answers wait. The single-topic widgets save here too (US-74 AC4). */
+export function saveTasksToStore(tasks: SaveTask[], erase: string | undefined, onCorrect: CorrectFn): Promise<Refused> {
+  return routeTasksToSaves(
+    tasks,
+    loadAllHistorySync(),
+    async (date, metric, value) => {
+      const { status } = await addMeasurement(metric, value, ensureIsoDatetime(date), erase);
+      return status === 'inserted' ? 'ok' : status === 'duplicate' ? 'changed' : status;
+    },
+    (id, newValue) => onCorrect(id, newValue, erase),
+  );
+}
 
 interface LongitudinalSaveDeps {
   inputs: Partial<HealthInputs>;
@@ -103,17 +119,7 @@ export function useLongitudinalSave({
       });
     };
 
-    // The store is synchronous, so every write is staged before this returns;
-    // only the answers wait.
-    const write = (toSave: SaveTask[]) => routeTasksToSaves(
-      toSave,
-      loadAllHistorySync(), // the store's rows, as it writes: never the page's copy
-      async (date, metric, value) => {
-        const { status } = await addMeasurement(metric, value, ensureIsoDatetime(date), erase);
-        return status === 'inserted' ? 'ok' : status === 'duplicate' ? 'changed' : status;
-      },
-      (id, newValue) => countedCorrection(id, newValue, erase),
-    );
+    const write = (toSave: SaveTask[]) => saveTasksToStore(toSave, erase, countedCorrection);
 
     const finish = async (toSave: SaveTask[], staged: Promise<Refused>): Promise<Refused> => {
       setSavesRunning(n => n + 1);

@@ -103,6 +103,47 @@ describe('US-74 waist-to-height and BMI widget', () => {
     expect(file.measurements.find((m) => m.metricType === 'weight')!.value).toBeCloseTo(81.65, 2);
   });
 
+  it('a save that throws says it was not saved and gives the button back', async () => {
+    vi.spyOn(RoadmapStore.prototype, 'saveChangedMeasurements').mockRejectedValue(new Error('storage down'));
+    render(<WaistToHeightWidget />);
+    type(/^Height/, '178');
+    press();
+    expect((await screen.findByRole('alert')).textContent).toBe('Not saved. Reload the page and try again.');
+    const button = screen.getByRole('button', { name: 'See my results' });
+    expect(button.getAttribute('aria-disabled')).toBe('false');
+    expect(screen.queryByText('Waist-to-Height')).toBeNull();
+    expect(vi.mocked(trackProductEvent)).not.toHaveBeenCalledWith('waist_widget_saved');
+  });
+
+  it('the results arrive in a live region already on the page, and the button keeps focus while saving', async () => {
+    const { container } = render(<WaistToHeightWidget />);
+    const region = container.querySelector('output[aria-live="polite"]')!;
+    expect(region.textContent).toBe('');
+    type(/^Height/, '178');
+    type(/^Waist/, '90');
+    const button = screen.getByRole('button', { name: 'See my results' });
+    button.focus();
+    press();
+    expect(button.getAttribute('aria-disabled')).toBe('true');
+    expect(button.hasAttribute('disabled')).toBe(false);
+    await screen.findByText('Waist-to-Height');
+    expect(container.querySelector('output[aria-live="polite"]')).toBe(region);
+    expect(region.textContent).toContain('Target: <89 cm');
+  });
+
+  it('AC2: a US height out of range marks both its boxes, in a group named for the height', async () => {
+    render(<WaistToHeightWidget />);
+    fireEvent.click(screen.getByRole('radio', { name: 'US' }));
+    type(/^Feet/, '9');
+    press();
+    const error = await screen.findByText(/^Height must be at most/);
+    expect(screen.getByRole('group', { name: 'Height (ft/in)' })).toBeTruthy();
+    for (const label of [/^Feet/, /^Inches/]) {
+      expect(box(label).getAttribute('aria-invalid')).toBe('true');
+      expect(box(label).getAttribute('aria-describedby')).toBe(error.id);
+    }
+  });
+
   it('AC6: the next-step link shows after a result, and only when it is set', async () => {
     const { unmount } = render(<WaistToHeightWidget nextUrl="/pages/roadmap" nextLabel="See your full plan" />);
     expect(screen.queryByRole('link')).toBeNull();

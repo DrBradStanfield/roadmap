@@ -11,9 +11,3 @@ const WIDGETS: Record<string, ComponentType<WidgetProps>> = {
 export function widgetFor(name: string | undefined): ComponentType<WidgetProps> | null {
   return name !== undefined && Object.prototype.hasOwnProperty.call(WIDGETS, name) ? WIDGETS[name] : null;
 }
-
-/** A block's widget, or nothing for an unknown topic. */
-export function WidgetRoot({ name, ...props }: WidgetProps & { name: string | undefined }) {
-  const Widget = widgetFor(name);
-  return Widget ? <Widget {...props} /> : null;
-}
