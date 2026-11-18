@@ -2,7 +2,7 @@
 import type { AddLabValueRequest, AddLabValueResult, MoveKeep, MoveRejection, MovePlan } from '@roadmap/health-core/record-edits';
 import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import { dayOf } from '@roadmap/health-core/merge';
-import type { FileReminderOptIn } from '@roadmap/health-core/roadmap-file';
+import type { FileReminderOptIn, RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import type { HealthInputs } from '@roadmap/health-core/types';
 import type { LpaUnit, MetricType } from '@roadmap/health-core/units';
 import { MEASUREMENT_REFUSALS_WITH_METRIC, type MEASURES } from '@roadmap/health-core/product-events';
@@ -150,6 +150,11 @@ export function currentRetryDue(): boolean {
 // returning-user check captured false and the section never collapsed.
 export function getInitialInputsSync(): Partial<HealthInputs> {
   return store ? store.getPrefillInputs() : {};
+}
+
+/** The record as the store holds it now, for a plan the page works out itself (US-75 AC4); null while none is open. */
+export function recordFileSync(): RoadmapFile | null {
+  return store?.file ?? null;
 }
 
 /** US-65: how many record entries this build could not read (kept unchanged, not shown). */

@@ -122,3 +122,30 @@
 .hr-widget-loading, .hr-widget-failure { font-size: 15px; color: var(--hrw-mid); margin: 0; }
 .hr-widget-failure h3 { margin: 0 0 6px; font-size: 17px; color: var(--hrw-ink); }
 .hr-widget-failure p { margin: 0 0 4px; }
+
+/* US-75 blood pressure: two readings, each a fieldset of two boxes, then the average, its stage and the plan's card. */
+.hr-widget-reading { border: 0; margin: 0; padding: 0; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.hr-widget-reading legend { display: block; padding: 0; margin: 0 0 8px; font-weight: 700; font-size: 15px; color: var(--hrw-ink); }
+.hr-widget-reading legend small { font-weight: 400; color: var(--hrw-mid); font-size: 13px; }
+/* The card's paragraphs are line breaks in one element (no paragraph count in the page); its padding spaces collapse. */
+.hr-widget-advice { white-space: pre-line; font-size: 15px; line-height: 1.5; overflow-wrap: anywhere; }
+.hr-widget-mmhg { font-size: 20px; font-weight: 700; }
+/* Label, box and error on shared rows (subgrid): an error under one box never moves the other box, and a
+   label wrapped to two lines still leaves both boxes level. */
+.hr-widget-reading .hr-widget-row { grid-template-rows: auto auto auto; row-gap: 0; }
+.hr-widget-reading .hr-widget-field { display: grid; grid-row: span 3; grid-template-rows: subgrid; row-gap: 6px; }
+.hr-widget-reading .hr-widget-field label { align-self: end; }
+/* Room before the script mounts (AC6), as the waist card's: the empty checker, or, with a saved blood
+   pressure on this device (hr-widget--saved, the block's inline script), the prefilled checker with its
+   result, its "from" line and no card. WebKit, this bundle, 2026-11-18; re-measure if the card changes.
+   Natural heights, empty / prefilled: 277.6 / 440.5 px at 1280, 310.1 / 473.0 at 390, 308.8 / 471.7 at 320. */
+.hr-widget-block .hr-widget[data-widget='blood-pressure'] { min-height: 278px; }
+.hr-widget-block .hr-widget[data-widget='blood-pressure'].hr-widget--saved { min-height: 441px; }
+@media (max-width: 420px) {
+  .hr-widget-block .hr-widget[data-widget='blood-pressure'] { min-height: 311px; }
+  .hr-widget-block .hr-widget[data-widget='blood-pressure'].hr-widget--saved { min-height: 474px; }
+}
+@media (max-width: 340px) {
+  .hr-widget-block .hr-widget[data-widget='blood-pressure'] { min-height: 309px; }
+  .hr-widget-block .hr-widget[data-widget='blood-pressure'].hr-widget--saved { min-height: 472px; }
+}

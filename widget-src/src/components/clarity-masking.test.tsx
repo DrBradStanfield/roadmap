@@ -78,6 +78,25 @@ describe('Clarity masking — health values never reach a session recording', ()
     expect(liquid.indexOf('hr-widget-aside')).toBeGreaterThan(liquid.indexOf('data-widget="waist-to-height"'));
   });
 
+  it('US-75 AC1, AC6, AC7: masks the blood pressure block\'s root; its one inline script reads the device record and adds a class only', () => {
+    const liquid = src('../../../extensions/health-tool-widget/blocks/blood-pressure.liquid');
+    const rootTag = /<div\b[^>]*data-widget="blood-pressure"[^>]*>/s.exec(liquid);
+    expect(rootTag).not.toBeNull();
+    expect(rootTag![0]).toContain('data-clarity-mask="true"');
+    expect(rootTag![0]).toContain('class="hr-widget"');
+    expect(liquid).not.toMatch(/hr-hero|<img|Dr Brad|Stanfield/);
+    const schema = JSON.parse(liquid.split('{% schema %}')[1].split('{% endschema %}')[0]);
+    expect([schema.name, schema.javascript, schema.stylesheet]).toEqual(['Blood pressure', 'health-widgets.js', 'health-widgets.css']);
+    expect(schema.settings.map((s: { id: string; type: string }) => `${s.id}:${s.type}`)).toEqual(['heading:text', 'aside:richtext', 'next_url:url', 'next_label:text']);
+    expect(liquid).toContain('{{ block.settings.heading | escape }}');
+    // The inline script: one, after the card; it reads localStorage and adds one fixed class, nothing else.
+    const scripts = liquid.match(/<script>[\s\S]*?<\/script>/g) ?? [];
+    expect(scripts).toHaveLength(1);
+    expect(scripts[0]).not.toMatch(/fetch|XMLHttpRequest|setItem|removeItem|innerHTML|cookie/);
+    expect(scripts[0]).toContain("card.classList.add('hr-widget--saved')");
+    expect(liquid.indexOf('<script>')).toBeGreaterThan(liquid.indexOf('data-widget="blood-pressure"'));
+  });
+
   it('masks the React widget root', () => {
     expect(src('./HealthTool.tsx')).toContain(
       '<div className="health-tool" ref={rootRef} data-clarity-mask="true">',

@@ -1,5 +1,6 @@
 import type { HealthInputs, HealthResults, SuggestionInputs, Suggestion, MedicationInputs, ScreeningInputs, UsProductCardId } from './types';
 import { SUGGESTION_EVIDENCE } from './evidence';
+import { BP_TIER_LABEL, bpTier, isBpRaised } from './bp-tier';
 import { getPostFollowupDueDate, getScreeningNextDueDate, MAX_GLP1_DRUG, STATIN_DRUGS, shouldSuggestSwitch } from './types';
 import { SCREENING_REFS, inAges, opensFollowup, ruleOf, ruleTakes, screeningFollowupInfo, type CardText, type ScreeningRule } from './screening-rules';
 import { colonoscopyCard, monthLabel } from './colonoscopy-schedule';
@@ -140,13 +141,6 @@ export const LIPID_MEDS_IN_STEPS = 'In addition to a great diet, cholesterol-low
 /** Join a list the way the plan writes it: "a, b and c". */
 export function joinWithAnd(items: string[]): string {
   return items.length < 2 ? items.join('') : `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
-}
-
-/** Raised blood pressure: systolic ≥130 or diastolic ≥80. Either half counts
- *  on its own; the BP card checks separately that it has both to display. */
-function isBpRaised(systolic: number | undefined, diastolic: number | undefined): boolean {
-  return (systolic !== undefined && systolic >= BP_THRESHOLDS.stage1Sys)
-    || (diastolic !== undefined && diastolic >= BP_THRESHOLDS.stage1Dia);
 }
 
 /** A lipid marker at its 2018 AHA/ACC risk-enhancing line (Table 6): ApoB
@@ -754,28 +748,29 @@ export function generateSuggestions(
     }
     const bpExtra = bpExtraParagraphs.length > 0 ? '\n\n' + bpExtraParagraphs.join('\n\n') : '';
 
-    if (sys >= BP_THRESHOLDS.crisisSys || dia >= BP_THRESHOLDS.crisisDia) {
+    const tier = bpTier(sys, dia);
+    if (tier === 'crisis') {
       suggestions.push({
         id: 'bp-crisis',
         category: 'blood_pressure',
         priority: 'urgent',
-        title: 'Hypertensive crisis',
+        title: BP_TIER_LABEL.crisis,
         description: `Your BP of ${bare('systolicBp', sys)}/${bare('diastolicBp', dia)} mmHg is dangerously high. If you have no symptoms, rest and recheck it after 5 minutes; if it is still ${BP_THRESHOLDS.crisisSys}/${BP_THRESHOLDS.crisisDia} or higher (either number), call your doctor. If you have chest, back or belly pain, shortness of breath, numbness or weakness, a change in vision, difficulty speaking or a sudden severe headache, call your local emergency number (111 in NZ, 000 in Australia, 911 in the US, 999 in the UK).`,
       });
-    } else if (sys >= BP_THRESHOLDS.stage2Sys || dia >= BP_THRESHOLDS.stage2Dia) {
+    } else if (tier === 'stage2') {
       suggestions.push({
         id: 'bp-stage2',
         category: 'blood_pressure',
         priority: 'urgent',
-        title: 'Stage 2 hypertension',
+        title: BP_TIER_LABEL.stage2,
         description: `Your BP of ${bare('systolicBp', sys)}/${bare('diastolicBp', dia)} mmHg indicates stage 2 hypertension. ${medicinesShown(results) ? 'Guidelines typically recommend medication at this level. Discuss it with your doctor.' : 'Discuss treatment with your doctor.'}\n\nLifestyle measures that also help: reduce sodium intake (<1,500mg/day), exercise regularly, and prioritize quality sleep.${bpExtra}`,
       });
-    } else if (isBpRaised(sys, dia)) {
+    } else if (tier === 'stage1') {
       suggestions.push({
         id: 'bp-stage1',
         category: 'blood_pressure',
         priority: 'attention',
-        title: 'Stage 1 hypertension',
+        title: BP_TIER_LABEL.stage1,
         description: `Your BP of ${bare('systolicBp', sys)}/${bare('diastolicBp', dia)} mmHg indicates stage 1 hypertension. Target is <${bpTargetFor(results.age)}/80.\n\nKey lifestyle measures: reduce sodium intake (<1,500mg/day), exercise regularly (150+ min/week), and prioritize quality sleep (7-9 hours).${bpExtra}`,
       });
     }

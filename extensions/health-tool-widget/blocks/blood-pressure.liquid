@@ -1,0 +1,72 @@
+<!-- US-75: a blood pressure checker on its own page. One or two readings, their
+     average and its stage, the full roadmap's own card for it, and the average
+     saved to the same record the full Health Roadmap reads. No hero, no doctor
+     photo or name. The bundle health-widgets.js serves every single-topic block
+     and routes by data-widget (US-74 AC8). -->
+<div class="hr-widget-block">
+  {%- if block.settings.heading != blank -%}
+    <h1 class="hr-widget-heading">{{ block.settings.heading | escape }}</h1>
+  {%- endif -%}
+  <div class="hr-widget-layout">
+    {% comment %} Clarity: mask this node and every descendant (US-75 AC7). The NBSP dodges the
+         storefront's `div:empty { display:none }` rule. {% endcomment %}
+    <div
+      class="hr-widget"
+      data-widget="blood-pressure"
+      data-clarity-mask="true"
+      data-next-url="{{ block.settings.next_url | escape }}"
+      data-next-label="{{ block.settings.next_label | escape }}"
+    >&nbsp;</div>
+    {% comment %} No jump on load for a returning visitor (US-75 AC6): a saved blood pressure on this
+         device opens the checker prefilled, with its result, so the card reserves that height before the
+         script mounts. Reads this device's record only; writes and sends nothing. The class says only
+         that such a record exists, never a value or a stage. {% endcomment %}
+    <script>
+      (function (card) {
+        try {
+          var file = JSON.parse(localStorage.getItem('health_roadmap_file_v2') || 'null');
+          var bp = function (m) { return m && m.status === 'active' && m.metricType === 'systolic_bp'; };
+          if (file && (file.measurements || []).some(bp)) card.classList.add('hr-widget--saved');
+        } catch (e) {}
+      })(document.currentScript.previousElementSibling);
+    </script>
+    {%- if block.settings.aside != blank -%}
+      {% comment %} Shopify's own richtext output: the merchant's words, no health values. {% endcomment %}
+      <div class="hr-widget-aside">{{ block.settings.aside }}</div>
+    {%- endif -%}
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Blood pressure",
+  "target": "section",
+  "javascript": "health-widgets.js",
+  "stylesheet": "health-widgets.css",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading (optional)",
+      "info": "Shown above the checker as the page's main heading."
+    },
+    {
+      "type": "richtext",
+      "id": "aside",
+      "label": "Text below the checker (optional)"
+    },
+    {
+      "type": "url",
+      "id": "next_url",
+      "label": "Next-step link (shown after a result)",
+      "info": "A page on this store only: the link must start with /. Any other address is not shown. Left blank, no link shows."
+    },
+    {
+      "type": "text",
+      "id": "next_label",
+      "label": "Next-step link label",
+      "info": "Left blank, the link reads Next step."
+    }
+  ]
+}
+{% endschema %}
