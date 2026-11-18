@@ -38,14 +38,10 @@ beforeEach(() => {
 afterEach(() => { document.body.replaceChildren(); });
 
 describe('US-15 AC12a: the store-wide chat bubble', () => {
-  it('Open chat moves the focus to the title inside the dialog', async () => {
+  it('Open chat moves the focus to the title inside the dialog; Escape closes it and gives the focus to the Open chat button; opened again, Close does too', async () => {
     await openBubble();
     expect(document.activeElement?.tagName).toBe('H3');
     expect(dialog()!.contains(document.activeElement)).toBe(true);
-  });
-
-  it('Escape closes the dialog and gives the focus to the Open chat button; opened again, Close does too', async () => {
-    await openBubble();
     await act(async () => { fireEvent.keyDown(document.activeElement!, { key: 'Escape' }); });
     expect(dialog()).toBeNull();
     await waitFor(() => expect(document.activeElement).toBe(fab()));

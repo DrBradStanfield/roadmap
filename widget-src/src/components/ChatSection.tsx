@@ -60,10 +60,10 @@ interface ChatSectionProps {
 }
 
 /**
- * US-15 AC12a: the pop-up chat as a dialog. Its title takes the focus on opening, not the
- * message box, so that opening does not call up a phone's keyboard. Escape inside it closes
- * it. Close and Escape give the focus to the "Open chat" button the close brings back: both
- * surfaces class it `chat-fab`, and it is found on the next frame, once it is on the page.
+ * US-15 AC12a: the pop-up chat as a dialog. Its title takes the focus on opening, not the message
+ * box, so that opening does not call up a phone's keyboard. Escape inside it closes it, but not the
+ * key press that ends an IME composition (both forms of AC26a). Close and Escape give the focus to the
+ * "Open chat" button the close brings back: both surfaces class it `chat-fab`, found on the next frame.
  */
 function useChatDialog(isExpanded: boolean, inline: boolean | undefined, hide: () => void) {
   const titleRef = useRef<HTMLHeadingElement>(null);
@@ -74,7 +74,7 @@ function useChatDialog(isExpanded: boolean, inline: boolean | undefined, hide: (
     requestAnimationFrame(() => document.querySelector<HTMLElement>('.chat-fab')?.focus());
   };
   const onKeyDown = (e: React.KeyboardEvent) => {
-    if (popup && e.key === 'Escape' && !e.nativeEvent.isComposing) close();
+    if (popup && e.key === 'Escape' && !e.nativeEvent.isComposing && e.keyCode !== 229) close();
   };
   return { titleRef, close, onKeyDown };
 }

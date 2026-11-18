@@ -63,12 +63,12 @@ describe('US-15 AC12a: the pop-up chat takes the focus, closes on Escape and giv
     await waitFor(() => expect(document.activeElement).toBe(fab()));
   });
 
-  it('another key, or an Escape that ends an IME composition, in the message box does not close it; a plain Escape there does', async () => {
+  it('another key, or an Escape flagged isComposing or with key code 229 (AC26a), in the message box does not close it; a plain Escape there does', async () => {
     await openFromButton();
-    await act(async () => { fireEvent.keyDown(messageBox(), { key: 'a' }); });
-    expect(screen.queryByRole('dialog')).not.toBeNull();
-    await act(async () => { fireEvent.keyDown(messageBox(), { key: 'Escape', isComposing: true }); });
-    expect(screen.queryByRole('dialog')).not.toBeNull();
+    for (const key of [{ key: 'a' }, { key: 'Escape', isComposing: true }, { key: 'Escape', keyCode: 229 }]) {
+      await act(async () => { fireEvent.keyDown(messageBox(), key); });
+      expect(screen.queryByRole('dialog'), JSON.stringify(key)).not.toBeNull();
+    }
     await act(async () => { fireEvent.keyDown(messageBox(), { key: 'Escape' }); });
     expect(screen.queryByRole('dialog')).toBeNull();
   });
