@@ -366,6 +366,54 @@ describe('US-75 blood pressure widget', () => {
     expect(active('systolic_bp')).toEqual([135]);
   });
 
+  it('AC4 (Codex 1876b R1): the card is always the typed pair\'s, whatever pair the record holds on a later day', async () => {
+    await data.saveChangedMeasurements({ heightCm: 178, birthYear: 1970, birthMonth: 1, sex: 'male' }, {});
+    const tomorrow = new Date(Date.now() + 36 * 3600_000).toISOString().slice(0, 10) + 'T00:00:00.000Z';
+    await data.addMeasurement('systolic_bp', 118, tomorrow);
+    await data.addMeasurement('diastolic_bp', 76, tomorrow);
+    render(<BloodPressureWidget />);
+    enterPair(1, '190', '125');
+    expect(advice()).toMatch(/^Your BP of 190\/125 mmHg is dangerously high\./);
+    cleanup();
+    const later = data.loadAllHistorySync().filter((m) => m.recordedAt === tomorrow);
+    for (const m of later) await data.correctValue(m.id, m.metricType === 'systolic_bp' ? 200 : 130);
+    render(<BloodPressureWidget />);
+    enterPair(1, '135', '85');
+    expect(advice()).toMatch(/^Your BP of 135\/85 mmHg indicates stage 1/);
+    enterPair(1, '190', '125');
+    expect(advice()).toMatch(/^Your BP of 190\/125 mmHg/);
+  });
+
+  it('AC5 (Codex 1876b R5): a reading typed before midnight is not averaged into the new day\'s save', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 10, 16, 23, 0));
+    render(<BloodPressureWidget />);
+    enterPair(1, '135', '85');
+    await leave();
+    vi.setSystemTime(new Date(2026, 10, 17, 8, 0));
+    enterPair(2, '145', '95');
+    expect(shown('.hr-widget-v')).toBe('145/95 mmHg');
+    fireEvent.keyDown(box(2, 'bottom'), { key: 'Enter' });
+    await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
+    expect(rows('systolic_bp').map((m) => [m.value, m.recordedAt.slice(0, 10)]).sort()).toEqual([[135, '2026-11-16'], [145, '2026-11-17']]);
+    vi.useRealTimers();
+  });
+
+  it('AC6 (Codex 1876b R7): a complete reading held back by another reading\'s error keeps the next-step link on the page', async () => {
+    const navigate = vi.fn();
+    render(<BloodPressureWidget nextUrl="/pages/health-plan" navigate={navigate} />);
+    enterPair(1, '135', '85');
+    type(2, 'top', '300');
+    fireEvent.click(screen.getByRole('link'));
+    await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
+    expect(navigate).not.toHaveBeenCalled();
+    expect(active('systolic_bp')).toEqual([]);
+    type(2, 'top', '');
+    fireEvent.click(screen.getByRole('link'));
+    await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
+    expect(navigate).toHaveBeenCalledWith('/pages/health-plan');
+  });
+
   it('AC1 (Codex R14): two blocks on one page send each event once per page view', async () => {
     render(<><BloodPressureWidget /><BloodPressureWidget /></>);
     expect(calls('bp_widget_viewed')).toHaveLength(1);

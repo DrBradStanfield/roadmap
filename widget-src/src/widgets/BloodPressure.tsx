@@ -99,6 +99,8 @@ export function BloodPressureWidget({ nextUrl, nextLabel, navigate = (href) => w
   // The record's latest pair, shown until the person types (AC3): never averaged in, never saved.
   const [start] = useState(recordPair);
   const [prefilled, setPrefilled] = useState(!!start);
+  // The day each reading was last typed on (null: not typed).
+  const [typedOn, setTypedOn] = useState<[string | null, string | null]>([null, null]);
   const [readings, setReadings] = useState<[Typed, Typed]>(() => [start ? { sys: String(start.pair.sys), dia: String(start.pair.dia) } : EMPTY, EMPTY]);
   const sysRefs = [useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null)] as const;
   const form = useRef<HTMLFormElement>(null);
@@ -119,7 +121,10 @@ export function BloodPressureWidget({ nextUrl, nextLabel, navigate = (href) => w
     return () => { bpPageView.mounted--; };
   }, []);
 
-  const read = useMemo(() => readings.map(readReading), [readings]);
+  // Only readings typed today count, and the record's while it shows: one typed before midnight is never
+  // averaged into a new day's result or save (Codex 1876b R5); a save already asked keeps its own day.
+  const today = localDay(new Date());
+  const read = useMemo(() => readings.map((typed, i) => (prefilled || typedOn[i] === today ? readReading(typed) : { kind: 'blank' as const })), [readings, typedOn, prefilled, today]);
   const pairs = read.flatMap((r) => (r.kind === 'pair' ? [r.pair] : []));
   // Worked out once per set of readings, not per keystroke: the plan engine reads the whole record.
   const key = pairs.map((p) => `${p.sys}/${p.dia}`).join(' ');
@@ -128,7 +133,9 @@ export function BloodPressureWidget({ nextUrl, nextLabel, navigate = (href) => w
   /** Save the readings as typed now. Resolves true when nothing valid is waiting or the store kept it (AC5, AC6). */
   const save = (): Promise<boolean> => {
     const pending = edits.current > kept.current;
-    if (!pending || pairs.length === 0 || read.some((r) => r.kind === 'error')) return queue.current.then(() => true, () => true);
+    if (!pending || pairs.length === 0) return queue.current.then(() => true, () => true);
+    // A complete reading held back by another reading's error: blocked, so the next step stays (Codex 1876b R7).
+    if (read.some((r) => r.kind === 'error')) return Promise.resolve(false);
     const seq = edits.current, pair = averageOf(pairs), day = localDay(new Date());
     const run = async (): Promise<boolean> => {
       if (seq <= conflict.current) return false;
@@ -157,6 +164,8 @@ export function BloodPressureWidget({ nextUrl, nextLabel, navigate = (href) => w
   // The first edit clears the record's reading: a half from another day is never kept beside a typed one (AC3).
   const change = (i: 0 | 1) => (typed: Typed) => {
     edits.current++;
+    const day = localDay(new Date());
+    setTypedOn((prev) => (prefilled ? (i === 0 ? [day, null] : [null, day]) : i === 0 ? [day, prev[1]] : [prev[0], day]));
     setReadings((prev) => {
       if (!prefilled) return i === 0 ? [typed, prev[1]] : [prev[0], typed];
       if (i === 1) return [EMPTY, typed];

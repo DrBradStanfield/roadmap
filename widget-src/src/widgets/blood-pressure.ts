@@ -99,13 +99,15 @@ export function resultFor(pairs: readonly Pair[], now = new Date()): Result {
   return { pair, tier, card };
 }
 
-/** The plan's cards once `pair` is today's: today's rows set aside, as the save sets them aside. Null with no plan. */
+/** The plan's cards with `pair` as the blood pressure: every saved pair set aside, whatever its day (a later-dated
+ *  one from another timezone included), so the typed pair is the plan's only one (Codex 1876b R1); the record's
+ *  other inputs stay. Null with no plan. */
 function planSuggestions(pair: Pair, now: Date): Suggestion[] | null {
   const file = readableRecordSync();
   if (!file) return null;
   const today = localDay(now), stamp = now.toISOString();
   const measurements: FileMeasurement[] = file.measurements.map((m) =>
-    isActive(m) && (m.metricType === METRIC.sys || m.metricType === METRIC.dia) && dayOf(m.recordedAt) === today ? { ...m, status: 'entered-in-error' } : m);
+    isActive(m) && (m.metricType === METRIC.sys || m.metricType === METRIC.dia) ? { ...m, status: 'entered-in-error' } : m);
   for (const h of HALVES) {
     measurements.push({ id: `typed-${h}`, metricType: METRIC[h], value: pair[h], recordedAt: ensureIsoDatetime(today), createdAt: stamp, source: 'manual', status: 'active', correctsId: null, externalId: null });
   }
