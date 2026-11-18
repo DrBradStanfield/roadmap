@@ -148,13 +148,13 @@ export function WaistToHeightWidget({ nextUrl, nextLabel, navigate = (href) => w
     return reading.kind === 'value' && !reading.entered ? fromDay(days[field as 'weight' | 'waist']) : null;
   };
   // Weight and waist: the full app's field box, read by the vitals grid's rules (boxes.ts) behind its key filter.
-  const box = (field: 'weight' | 'waist') => {
+  const box = (field: 'weight' | 'waist', optional: boolean) => {
     const note = dayNote(field);
     const noteId = `${id}-${field}-day`;
     const error = errorOf(field);
     return (
       <div className="health-field">
-        <label htmlFor={ids[field]}>{LABEL[field]} <span>({getDisplayLabel(field, system)})</span> <small>(optional)</small></label>
+        <label htmlFor={ids[field]}>{LABEL[field]} <span>({getDisplayLabel(field, system)})</span>{optional && <> <small>(optional)</small></>}</label>
         <input id={ids[field]} type="text" inputMode="decimal" pattern="[0-9.,]*" autoComplete="off"
           value={boxes[field].text} onChange={(e) => edit(field)(e.target.value)} onBlur={leave(field)}
           onKeyDown={(e) => { blockBadNumericKeys(e); enter(e); }}
@@ -190,8 +190,8 @@ export function WaistToHeightWidget({ nextUrl, nextLabel, navigate = (href) => w
         onUnits={switchUnits}
       />
       <div className="hr-widget-row" ref={dayRow}>
-        {box('waist')}
-        {box('weight')}
+        {box('waist', false)}
+        {box('weight', true)}
       </div>
       {state.phase === 'failed' && <p className="hr-widget-error" role="alert">{NOT_SAVED}</p>}
       {state.phase === 'saved' && state.partial && <PartlyKeptNotice partial={state.partial} />}
