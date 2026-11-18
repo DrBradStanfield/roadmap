@@ -11,13 +11,14 @@ import { useState } from 'react';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { UploadModal } from './UploadModal';
 import { SettingsSheet } from './SettingsSheet';
-import { getDocumentArchiveMode } from '../lib/roadmap-data';
-import { checkLabImportQuota } from '../lib/upload-api';
+import { bulkSaveDocuments, bulkSaveMeasurements, getDocumentArchiveMode } from '../lib/roadmap-data';
+import { checkLabImportQuota, labImport } from '../lib/upload-api';
+import { findReviewValue } from '../testing/import-review';
 
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn() }));
 vi.mock('../lib/roadmap-data', () => ({ uploadKnownIndex: vi.fn(() => new Map()), isLegacyUpload: vi.fn(() => false), getDocumentArchiveMode: vi.fn(() => 'cloud'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
 vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
-vi.mock('../lib/archive-payloads', async importOriginal => ({ ...await importOriginal<typeof import('../lib/archive-payloads')>(), sha256Blob: vi.fn(async () => '') }));
+vi.mock('../lib/archive-payloads', async importOriginal => ({ ...await importOriginal<typeof import('../lib/archive-payloads')>(), sha256Blob: vi.fn(async () => ''), synthesizeLabArchiveEntries: vi.fn(() => []) }));
 vi.mock('../lib/useIsMobile', () => ({ useIsMobile: () => false }));
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 
@@ -162,29 +163,6 @@ describe('US-12 AC4a: the upload window is a dialog', () => {
     expect(document.activeElement).toBe(shown);
   });
 
-  it('a failed read reopened from the floating indicator, then Close: the session ends, no indicator shows, the focus is not moved', async () => {
-    let fail!: (error: Error) => void;
-    vi.mocked(checkLabImportQuota).mockResolvedValue({ allowed: true, remaining: 60 } as never);
-    Object.assign(window, { HealthUpload: { extractFromPdf: () => new Promise((_, no) => { fail = no; }), isPdf: () => true, isZip: () => false, isImage: () => false } });
-    render(<Page />);
-    openFromButton();
-    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
-    await act(async () => { fireEvent.change(input, { target: { files: [new File(['synthetic'], 'synthetic.pdf', { type: 'application/pdf' })] } }); });
-    await waitFor(() => expect(fail).toBeTypeOf('function')); // the read has started
-    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
-    await act(async () => { fail(new Error('synthetic unreadable file')); });
-    const indicator = await screen.findByRole('button', { name: /Upload needs attention/ });
-    indicator.focus();
-    fireEvent.keyDown(indicator, { key: 'Enter' });
-    const shownTitle = title();
-    expect(document.activeElement).toBe(shownTitle);
-    screen.getByText('No readable files found. Please check your files and try again.'); // the failed-read screen
-    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
-    expect(screen.queryByRole('dialog')).toBeNull();
-    expect(document.querySelector('.floating-upload-indicator')).toBeNull();
-    expect(document.activeElement).toBe(shownTitle); // not moved: jsdom keeps it on the hidden title, a browser drops it to the body
-  });
-
   it('a window removed while open (an erase mounts a new one) gives the focus back', () => {
     const { rerender } = render(<Page />);
     const opener = openFromButton();
@@ -199,5 +177,42 @@ describe('US-12 AC4a: the upload window is a dialog', () => {
     elsewhere.focus();
     act(() => { rerender(<Page mounted={false} />); });
     expect(document.activeElement).toBe(elsewhere);
+  });
+});
+
+describe('US-12 AC4a: a window reopened from the floating indicator that then ends its session', () => {
+  const extraction = { result: { classification: 'lab_report', document: null, reportDate: '2024-06-01', values: [{ metric: 'ldl', valueSI: 3.9, displayValue: 3.9, displayUnit: 'mmol/L', confidence: 'high' }], additionalValues: [] } };
+  /** Opened from the button and a file picked, then hidden: a review once shown, a read while it runs (it then fails). Then reopened from the indicator. */
+  async function reopened(shown: 'review' | 'failed read') {
+    let fail: ((error: Error) => void) | undefined;
+    vi.mocked(checkLabImportQuota).mockResolvedValue({ allowed: true, remaining: 60 } as never); vi.mocked(labImport).mockResolvedValue(extraction as never);
+    vi.mocked(bulkSaveMeasurements).mockResolvedValue({ saved: [{}], skippedDuplicates: 0, errorCount: 0, refused: [] } as never);
+    vi.mocked(bulkSaveDocuments).mockResolvedValue({ saved: [], errorCount: 0 } as never);
+    const extractFromPdf = shown === 'review' ? async () => ({ pages: [{ type: 'text', content: 'synthetic' }], truncated: false }) : () => new Promise((_, no) => { fail = no; });
+    Object.assign(window, { HealthUpload: { extractFromPdf, isPdf: () => true, isZip: () => false, isImage: () => false } });
+    render(<Page />);
+    openFromButton();
+    await act(async () => { fireEvent.change(document.querySelector('input[type="file"]')!, { target: { files: [new File(['synthetic'], 'synthetic.pdf', { type: 'application/pdf' })] } }); });
+    if (shown === 'review') await findReviewValue('3.9');
+    else await waitFor(() => expect(fail).toBeTypeOf('function')); // main's flow hashes the file first; the read has started
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    if (fail) await act(async () => { fail!(new Error('synthetic unreadable file')); });
+    const indicator = await screen.findByRole('button', { name: shown === 'review' ? /Ready for review/ : /Upload needs attention/ });
+    indicator.focus(); fireEvent.keyDown(indicator, { key: 'Enter' });
+    expect(document.activeElement).toBe(title());
+    if (fail) screen.getByText('No readable files found. Please check your files and try again.'); // the failed-read screen
+  }
+  const toDone = async () => { await reopened('review'); fireEvent.click(screen.getByRole('button', { name: /^Save / })); await screen.findByRole('button', { name: 'Done' }); };
+  it.each([
+    ['Close on the failed-read screen', async () => { await reopened('failed read'); fireEvent.click(screen.getByRole('button', { name: 'Close' })); }],
+    ['Escape on the failed-read screen', async () => { await reopened('failed read'); fireEvent.keyDown(document, { key: 'Escape' }); }],
+    ['Done on the done screen', async () => { await toDone(); fireEvent.click(screen.getByRole('button', { name: 'Done' })); }],
+    ['Escape on the done screen', async () => { await toDone(); fireEvent.keyDown(document, { key: 'Escape' }); }],
+    ["the review's Cancel", async () => { await reopened('review'); fireEvent.click(screen.getByRole('button', { name: 'Cancel' })); }],
+  ])('%s: the session ends, no indicator shows, the focus is not moved', async (_, end) => {
+    await end();
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(document.querySelector('.floating-upload-indicator')).toBeNull();
+    expect(document.activeElement).toBe(document.querySelector('.upload-modal h3')); // not moved: jsdom keeps it on the hidden title, a browser drops it to the body
   });
 });
