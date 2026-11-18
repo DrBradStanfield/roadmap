@@ -41,6 +41,13 @@
   color: var(--hrw-ink);
 }
 @media (max-width: 420px) { .hr-widget { padding: 20px 16px; } }
+/* Room for the calculator before its script mounts (Brad 2026-11-18: the page jumped on load). The
+   stylesheet loads in the head, the script later: the block's placeholder card took 64-72 px, then grew
+   to the empty calculator's 221-239 px. These are that empty calculator's heights (WebKit, live page);
+   results added later grow it further, which is the person's own doing. Re-measure if the boxes change. */
+.hr-widget-block .hr-widget { min-height: 228px; }
+@media (max-width: 420px) { .hr-widget-block .hr-widget { min-height: 221px; } }
+@media (max-width: 340px) { .hr-widget-block .hr-widget { min-height: 239px; } }
 .hr-widget-form { display: flex; flex-direction: column; gap: 14px; }
 
 /* Height and the units switch share the first line (Brad 2026-11-18); the switch
@@ -92,8 +99,11 @@
 .hr-widget-pill { display: block; flex: none; width: 92px; height: 30px; }
 .hr-widget-scale { display: block; width: 100%; height: 22px; }
 .hr-widget-sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
-.hr-widget-saving { margin: 8px 0 0; min-height: 1.4em; line-height: 1.4; font-size: 13px; color: var(--hrw-mid); text-align: right; }
-.hr-widget-block .hr-widget-saving:empty { display: block; } /* the theme hides empty elements; this line keeps its space */
+/* Saving / Saved sits in the card's bottom padding, out of the flow (Brad 2026-11-18: less space under
+   the results): it takes no room, so it can appear without moving anything. */
+.hr-widget { position: relative; }
+.hr-widget-saving { position: absolute; right: 24px; bottom: 4px; margin: 0; line-height: 1.4; font-size: 13px; color: var(--hrw-mid); text-align: right; }
+@media (max-width: 420px) { .hr-widget-saving { right: 16px; } }
 .hr-widget-k { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--hrw-mid); }
 .hr-widget-v { font-family: var(--font-heading-family, inherit); font-size: 40px; font-weight: 700; line-height: 1.1; color: var(--hrw-ink); }
 .hr-widget-s { font-size: 20px; font-weight: 700; }
