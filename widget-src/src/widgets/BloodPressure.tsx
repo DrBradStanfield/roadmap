@@ -12,10 +12,10 @@ import { formatShortDate } from '../lib/constants';
 import { trackProductEvent } from '../lib/server-api';
 import { useBpPair } from '../lib/useBpPair';
 import { useSaveOnLeave } from '../lib/useSaveOnLeave';
-import { averageOf, readReading, recordPair, resultFor, savePair, seenToday, type Pair, type Result, type Typed } from './blood-pressure';
+import { averageOf, bpPageView, readReading, recordPair, resultFor, rowsOn, savePair, type Ids, type Result, type SaveOutcome, type Typed } from './blood-pressure';
 import { safeHref } from './body-measures';
 import { NEXT_STEP_DEFAULT, type WidgetProps } from './WaistToHeight';
-import { PILL, drawPill, fixed } from './WidgetResults';
+import { PILL, canvasDraws, drawPill, fixed } from './WidgetResults';
 
 /** Result text lengths, each padded with WidgetResults' word joiner (fixed), which Clarity counts and
  *  no one sees: "250/150", the longest tier name, and the plan's longest card (the stage 2 card with
@@ -25,6 +25,7 @@ export const WIDTH = { value: 7, tier: 20, advice: 1000 } as const;
 const TONE: Record<BpTier, keyof typeof PILL> = { normal: 'green', elevated: 'amber', stage1: 'amber', stage2: 'red', crisis: 'red' };
 
 const EMPTY: Typed = { sys: '', dia: '' };
+const NONE: Ids = { sys: null, dia: null };
 const LABEL = { sys: 'Top number (systolic)', dia: 'Bottom number (diastolic)' } as const;
 
 /** One reading's two boxes: the full app's blood pressure pair (useBpPair, US-75 AC2). */
@@ -70,9 +71,10 @@ function ReadingBoxes({ index, typed, note, onChange, onEnter, next, sysRef }: {
 function BpResults({ result }: { result: Result | null }) {
   const pill = useRef<HTMLCanvasElement>(null);
   const [drawn, setDrawn] = useState(false);
-  const tier = result?.tier;
+  const tier = result ? result.tier ?? 'none' : null;
   useLayoutEffect(() => {
-    if (tier) setDrawn(drawPill(pill.current, BP_TIER_LABEL[tier], PILL[TONE[tier]], true));
+    // A known minor's result has no stage: the canvas is left blank, and `drawn` still says only whether it draws.
+    if (tier) setDrawn(tier === 'none' ? canvasDraws(pill.current) : drawPill(pill.current, BP_TIER_LABEL[tier], PILL[TONE[tier]], true));
   }, [tier]);
   return (
     <output className="hr-widget-results" aria-live="polite">
@@ -82,7 +84,7 @@ function BpResults({ result }: { result: Result | null }) {
             <div className="hr-widget-k">Average blood pressure</div>
             <div className="hr-widget-v">{fixed(`${result.pair.sys}/${result.pair.dia}`, WIDTH.value)}<small className="hr-widget-mmhg"> mmHg</small></div>
             <canvas ref={pill} className="hr-widget-pill hr-widget-bp-pill" aria-hidden="true" />
-            <span className={drawn ? 'hr-widget-sr' : 'hr-widget-status'}>{fixed(BP_TIER_LABEL[result.tier], WIDTH.tier)}</span>
+            <span className={drawn ? 'hr-widget-sr' : 'hr-widget-status'}>{fixed(result.tier ? BP_TIER_LABEL[result.tier] : '', WIDTH.tier)}</span>
           </div>
           {/* One element whatever the card: its paragraphs are line breaks (pre-line), so their count is not
               in the page's structure; Normal and Elevated leave it blank. */}
@@ -94,62 +96,81 @@ function BpResults({ result }: { result: Result | null }) {
 }
 
 export function BloodPressureWidget({ nextUrl, nextLabel, navigate = (href) => window.location.assign(href) }: WidgetProps) {
+  // The record's latest pair, shown until the person types (AC3): never averaged in, never saved.
   const [start] = useState(recordPair);
+  const [prefilled, setPrefilled] = useState(!!start);
   const [readings, setReadings] = useState<[Typed, Typed]>(() => [start ? { sys: String(start.pair.sys), dia: String(start.pair.dia) } : EMPTY, EMPTY]);
-  // Which readings the person has typed in: a reading only filled from the record is not an entry (AC3).
-  const [edited, setEdited] = useState<[boolean, boolean]>([false, false]);
   const sysRefs = [useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null)] as const;
   const form = useRef<HTMLFormElement>(null);
-  // Today's rows the page has seen: all a save may replace (AC5).
-  const seen = useRef(seenToday());
+  // Saves (AC5), bound to what was asked: each edit is numbered; a save carries its number, day and pair.
+  // `kept`: the newest edit the store has kept; `conflict`: the newest edit whose save met a row changed
+  // elsewhere, so it and every save asked before it are dropped. `shown`: the day's rows this page may
+  // replace, the rows it showed or wrote itself, as of an edit; after a conflict, a newer edit takes the
+  // record's rows as they are then (the person typed again after the change, as US-74 AC4).
+  const edits = useRef(0);
+  const kept = useRef(0);
+  const conflict = useRef(-1);
+  const shown = useRef({ day: localDay(new Date()), ids: start?.day === localDay(new Date()) ? start.ids : NONE, asOf: 0 });
   const queue = useRef<Promise<unknown>>(Promise.resolve());
-  const counted = useRef(false);
 
-  useEffect(() => { trackProductEvent('bp_widget_viewed'); }, []);
+  // One view event per page view, however many blood pressure blocks the page holds (AC1, as US-74).
+  useEffect(() => {
+    if (bpPageView.mounted++ === 0) { bpPageView.savedCounted = false; trackProductEvent('bp_widget_viewed'); }
+    return () => { bpPageView.mounted--; };
+  }, []);
 
-  // An older day's reading left untouched is not today's: once the person types, it is left out (AC3).
-  const oldPrefill = !!start && start.day !== localDay(new Date()) && !edited[0];
-  const read = useMemo(() => readings.map((typed, i) => (i === 0 && oldPrefill && edited[1] ? { kind: 'blank' as const } : readReading(typed))), [readings, oldPrefill, edited]);
+  const read = useMemo(() => readings.map(readReading), [readings]);
   const pairs = read.flatMap((r) => (r.kind === 'pair' ? [r.pair] : []));
-  const average: Pair | null = pairs.length > 0 ? averageOf(pairs) : null;
-  // Worked out once per average, not per keystroke: the plan engine reads the whole record.
-  const [sys, dia] = [average?.sys, average?.dia];
-  const result = useMemo(() => (sys !== undefined && dia !== undefined ? resultFor({ sys, dia }) : null), [sys, dia]);
+  // Worked out once per set of readings, not per keystroke: the plan engine reads the whole record.
+  const key = pairs.map((p) => `${p.sys}/${p.dia}`).join(' ');
+  const result = useMemo(() => (pairs.length > 0 ? resultFor(pairs) : null), [key]); // `pairs` is new each render; `key` is its value
 
-  /** Saves run one after another; the returned promise ends when this one has. */
-  const save = (): Promise<unknown> => {
-    // Only the person's own entries, and only when no reading is wrong.
-    if (!edited.some(Boolean) || !average || read.some((r) => r.kind === 'error')) return queue.current;
-    const pair = average;
-    return queue.current = queue.current.then(async () => {
-      const kept = await savePair(pair, seen.current).catch(() => false);
-      seen.current = seenToday();
-      if (kept && !counted.current) {
-        counted.current = true;
-        trackProductEvent('bp_widget_saved');
-      }
-    });
+  /** Save the readings as typed now. Resolves true when nothing valid is waiting or the store kept it (AC5, AC6). */
+  const save = (): Promise<boolean> => {
+    const pending = edits.current > kept.current;
+    if (!pending || pairs.length === 0 || read.some((r) => r.kind === 'error')) return queue.current.then(() => true, () => true);
+    const seq = edits.current, pair = averageOf(pairs), day = localDay(new Date());
+    const run = async (): Promise<boolean> => {
+      if (seq <= conflict.current) return false;
+      if (conflict.current > shown.current.asOf) shown.current = { day, ids: rowsOn(day), asOf: seq };
+      const expected = shown.current.day === day ? shown.current.ids : NONE;
+      const out = await savePair(pair, day, expected).catch((): SaveOutcome => ({ kind: 'failed' }));
+      if (out.kind === 'changed') { conflict.current = seq; return false; }
+      if (out.kind === 'failed') { if (out.ids) shown.current = { day, ids: out.ids, asOf: seq }; return false; }
+      shown.current = { day, ids: out.ids, asOf: seq };
+      kept.current = Math.max(kept.current, seq);
+      if (!bpPageView.savedCounted) { bpPageView.savedCounted = true; trackProductEvent('bp_widget_saved'); }
+      return true;
+    };
+    const next = queue.current.then(run);
+    queue.current = next.catch(() => false);
+    return next.catch(() => false);
   };
-  useSaveOnLeave(form, save);
-  // The next step waits for a typed reading to be saved first (as US-74 review R6).
+  useSaveOnLeave(form, () => { void save(); });
+  // The next step leaves only once a valid typed reading is kept (as US-74 review R6); otherwise it stays, silently.
   const follow = async (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
     const to = e.currentTarget.getAttribute('href')!;
-    await save();
-    navigate(to);
+    if (await save()) navigate(to);
   };
 
+  // The first edit clears the record's reading: a half from another day is never kept beside a typed one (AC3).
   const change = (i: 0 | 1) => (typed: Typed) => {
-    setReadings((prev) => (i === 0 ? [typed, prev[1]] : [prev[0], typed]));
-    setEdited((prev) => (i === 0 ? [true, prev[1]] : [prev[0], true]));
+    edits.current++;
+    setReadings((prev) => {
+      if (!prefilled) return i === 0 ? [typed, prev[1]] : [prev[0], typed];
+      if (i === 1) return [EMPTY, typed];
+      return [{ sys: typed.sys !== prev[0].sys ? typed.sys : '', dia: typed.dia !== prev[0].dia ? typed.dia : '' }, prev[1]];
+    });
+    setPrefilled(false);
   };
-  const note = oldPrefill && start ? `from ${formatShortDate(start.day)}` : null;
+  const note = prefilled && start && start.day !== localDay(new Date()) ? `from ${formatShortDate(start.day)}` : null;
   const href = safeHref(nextUrl);
 
   return (
     <form ref={form} className="hr-widget-form" onSubmit={(e) => e.preventDefault()} noValidate>
-      <ReadingBoxes index={0} typed={readings[0]} note={note} onChange={change(0)} onEnter={save} sysRef={sysRefs[0]} next={() => sysRefs[1].current} />
-      <ReadingBoxes index={1} typed={readings[1]} note={null} onChange={change(1)} onEnter={save} sysRef={sysRefs[1]} />
+      <ReadingBoxes index={0} typed={readings[0]} note={note} onChange={change(0)} onEnter={() => { void save(); }} sysRef={sysRefs[0]} next={() => sysRefs[1].current} />
+      <ReadingBoxes index={1} typed={readings[1]} note={null} onChange={change(1)} onEnter={() => { void save(); }} sysRef={sysRefs[1]} />
       <BpResults result={result} />
       {result && href && <a className="hr-widget-next" href={href} onClick={follow}>{nextLabel?.trim() || NEXT_STEP_DEFAULT}</a>}
     </form>

@@ -1,5 +1,7 @@
-// The blood pressure tiers (health_roadmap_algorithm.md § Blood Pressure; ACC/AHA 2017): one rule
-// for the plan's tier cards (suggestions.ts) and the single-topic blood pressure widget (US-75).
+// The blood pressure tiers (health_roadmap_algorithm.md § Blood Pressure): one rule for the plan's tier
+// cards (suggestions.ts) and the single-topic blood pressure widget (US-75). Normal, Elevated, Stage 1 and
+// Stage 2 are the 2017 ACC/AHA categories; the crisis line, at or above 180 or 120, is the roadmap's own
+// rule (the guideline's crisis algorithm is strictly above), with NHLBI's advice for it.
 import { BP_THRESHOLDS } from './units';
 
 export type BpTier = 'crisis' | 'stage2' | 'stage1' | 'elevated' | 'normal';

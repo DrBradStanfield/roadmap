@@ -1,22 +1,23 @@
 // The blood pressure widget (US-75): what a typed reading is, the average, the
-// plan's own card for it and the save. Every rule is the full app's: the
-// vitals grid's reading of a typed half (blood-test-cell.ts), the pair rule
-// (US-02 AC8), the tiers (health-core bp-tier.ts), the plan engine
-// (computePlan) and the day-value save (saveTasksToStore). This file only
-// joins them for two readings.
+// result shown for it and the save. Every rule is the full app's: the vitals
+// grid's reading of a typed half (blood-test-cell.ts), the pair rule (US-02
+// AC8), the tiers (health-core bp-tier.ts), the plan engine (computePlan over
+// the readable record, else the engine's own cards for the pair alone), the
+// known-minor rule (US-07 AC6) and the record's batch write (bulkAppendValues).
+// This file only joins them for two readings.
 import { bpTier, type BpTier } from '@roadmap/health-core/bp-tier';
+import { isActive } from '@roadmap/health-core/blood-tests';
+import { calculateHealthResults } from '@roadmap/health-core/calculations';
 import { dayOf, localDay } from '@roadmap/health-core/merge';
 import { PlanError, computePlan } from '@roadmap/health-core/plan';
+import { bulkAppendValues, slotIndex, slotKey } from '@roadmap/health-core/record-edits';
 import type { FileMeasurement } from '@roadmap/health-core/roadmap-file';
-import type { Suggestion } from '@roadmap/health-core/types';
+import type { Suggestion, SuggestionInputs } from '@roadmap/health-core/types';
 import { pressureInverted } from '@roadmap/health-core/validation';
-import { saveTasksToStore } from '../hooks/useLongitudinalSave';
 import { readTypedValue, validateTypedValue } from '../lib/blood-test-cell';
-import { activeRowIndex, slotOf } from '../lib/matrix-save';
 import { ensureIsoDatetime } from '../lib/recordedAt';
 import {
-  correctValue, countMeasuresAdded, currentSaveStatus, flushRoadmapStore, getBackendKind, getShownErase,
-  loadAllHistorySync, loadLatestMeasurementsSync, recordFileSync,
+  bulkSaveMeasurements, currentSaveStatus, flushRoadmapStore, getBackendKind, isKnownMinorNow, readableRecordSync, recordFileSync,
 } from '../lib/roadmap-data';
 import { healthWritesAllowed } from '../lib/storage';
 
@@ -25,10 +26,16 @@ export interface Pair { sys: number; dia: number }
 export interface Typed { sys: string; dia: string }
 /** A reading: blank, one half only, wrong (a half unreadable or out of range, or the pair the wrong way up), or a pair. */
 export type Reading = { kind: 'blank' } | { kind: 'half' } | { kind: 'error' } | { kind: 'pair'; pair: Pair };
+/** Each half's row: its id, or null for an empty slot. */
+export interface Ids { sys: string | null; dia: string | null }
 
 const METRIC = { sys: 'systolic_bp', dia: 'diastolic_bp' } as const;
+const HALVES = ['sys', 'dia'] as const;
 /** The plan's three tier cards (algorithm § Blood Pressure Tiers). */
-const TIER_CARDS = new Set(['bp-crisis', 'bp-stage2', 'bp-stage1']);
+const TIER_CARD: Partial<Record<BpTier, string>> = { crisis: 'bp-crisis', stage2: 'bp-stage2', stage1: 'bp-stage1' };
+
+/** One page view, however many blood pressure blocks it holds (as US-74's pageView): each event once per view. */
+export const bpPageView = { mounted: 0, savedCounted: false };
 
 /** A typed reading, each half read as the vitals grid reads a typed cell (US-75 AC2). */
 export function readReading(typed: Typed): Reading {
@@ -44,76 +51,120 @@ export function readReading(typed: Typed): Reading {
   return pressureInverted(sys, dia) ? { kind: 'error' } : { kind: 'pair', pair: { sys, dia } };
 }
 
-/** The average of the pairs, each half rounded to a whole mmHg (US-75 AC4). */
+/** The average of the pairs, each half rounded to a whole mmHg, halves up (US-75 AC4). */
 export function averageOf(pairs: readonly Pair[]): Pair {
   const mean = (h: keyof Pair) => Math.round(pairs.reduce((sum, p) => sum + p[h], 0) / pairs.length);
   return { sys: mean('sys'), dia: mean('dia') };
 }
 
-/** The record's latest pair, a systolic and a diastolic from the same day, with that day (US-75 AC3). */
-export function recordPair(): { pair: Pair; day: string } | null {
-  const latest = loadLatestMeasurementsSync()?.previousMeasurements ?? [];
-  const sys = latest.find((m) => m.metricType === METRIC.sys), dia = latest.find((m) => m.metricType === METRIC.dia);
-  if (!sys || !dia || dayOf(sys.recordedAt) !== dayOf(dia.recordedAt)) return null;
-  return { pair: { sys: sys.value, dia: dia.value }, day: dayOf(sys.recordedAt) };
+/** The record's latest pair (US-75 AC3): the newest day holding both an active systolic and an active
+ *  diastolic in the readable record, with that day and the two rows shown. */
+export function recordPair(): { pair: Pair; day: string; ids: Ids } | null {
+  const file = readableRecordSync();
+  if (!file) return null;
+  const byDay = new Map<string, Partial<Record<'sys' | 'dia', FileMeasurement>>>();
+  for (const m of file.measurements) {
+    const h = HALVES.find((x) => METRIC[x] === m.metricType);
+    if (!h || !isActive(m)) continue;
+    const day = byDay.get(dayOf(m.recordedAt)) ?? {};
+    // One active row per slot; should a record hold two, the later-created one.
+    if (!day[h] || m.createdAt > day[h]!.createdAt) day[h] = m;
+    byDay.set(dayOf(m.recordedAt), day);
+  }
+  const days = [...byDay].filter(([, d]) => d.sys && d.dia).sort(([a], [b]) => (a < b ? 1 : -1));
+  if (days.length === 0) return null;
+  const [day, { sys, dia }] = days[0];
+  return { pair: { sys: sys!.value, dia: dia!.value }, day, ids: { sys: sys!.id, dia: dia!.id } };
 }
 
-export interface Result { pair: Pair; tier: BpTier; card: Suggestion | null }
+/** What the checker shows: the average, the stage (null for a known minor), and the card for it. */
+export interface Result { pair: Pair; tier: BpTier | null; card: Suggestion | null }
 
-/** The average's tier, and the card the full roadmap would show once it is today's pair: the plan
- *  engine over the record with today's blood pressure replaced by it, text unchanged (US-75 AC4).
- *  No card when the record has no usable height: the plan engine makes no plan without one. */
-export function resultFor(pair: Pair, now = new Date()): Result {
-  return { pair, tier: bpTier(pair.sys, pair.dia), card: planCard(pair, now) };
+/**
+ * The result for the readings (US-75 AC4). A known minor gets no adult stage or card (US-07 AC6). Any one
+ * reading at crisis level makes the result crisis, whatever the average, with the crisis card for that
+ * reading (clinical ruling C1, 2026-11-18). The card is the full roadmap's: the plan engine over the
+ * readable record with today's blood pressure replaced; with no plan (no record or no usable height), the
+ * engine's own card for the pair alone, with no age, so its wording names no medicine (ruling C2).
+ */
+export function resultFor(pairs: readonly Pair[], now = new Date()): Result {
+  const pair = averageOf(pairs);
+  if (isKnownMinorNow()) return { pair, tier: null, card: null };
+  const crisis = pairs.find((p) => bpTier(p.sys, p.dia) === 'crisis');
+  const tier = crisis ? 'crisis' : bpTier(pair.sys, pair.dia);
+  const id = TIER_CARD[tier];
+  if (!id) return { pair, tier, card: null };
+  const cardPair = crisis ?? pair;
+  const card = (planSuggestions(cardPair, now) ?? pairSuggestions(cardPair)).find((s) => s.id === id) ?? null;
+  return { pair, tier, card };
 }
 
-function planCard(pair: Pair, now: Date): Suggestion | null {
-  const file = recordFileSync();
+/** The plan's cards once `pair` is today's: today's rows set aside, as the save sets them aside. Null with no plan. */
+function planSuggestions(pair: Pair, now: Date): Suggestion[] | null {
+  const file = readableRecordSync();
   if (!file) return null;
   const today = localDay(now), stamp = now.toISOString();
-  // The record as it will be once this pair is saved: today's rows corrected, as the save corrects them.
   const measurements: FileMeasurement[] = file.measurements.map((m) =>
-    m.status === 'active' && (m.metricType === METRIC.sys || m.metricType === METRIC.dia) && dayOf(m.recordedAt) === today ? { ...m, status: 'entered-in-error' } : m);
-  for (const h of ['sys', 'dia'] as const) {
+    isActive(m) && (m.metricType === METRIC.sys || m.metricType === METRIC.dia) && dayOf(m.recordedAt) === today ? { ...m, status: 'entered-in-error' } : m);
+  for (const h of HALVES) {
     measurements.push({ id: `typed-${h}`, metricType: METRIC[h], value: pair[h], recordedAt: ensureIsoDatetime(today), createdAt: stamp, source: 'manual', status: 'active', correctsId: null, externalId: null });
   }
   try {
-    return computePlan({ ...file, measurements }, now).results.suggestions.find((s) => TIER_CARDS.has(s.id)) ?? null;
+    return computePlan({ ...file, measurements }, now).results.suggestions;
   } catch (error) {
     if (error instanceof PlanError) return null;
     throw error;
   }
 }
 
-/** Today's active blood pressure rows: what a save may replace (US-75 AC5). */
-export interface SeenRows { day: string; sys: string | null; dia: string | null }
-export function seenToday(now = new Date()): SeenRows {
-  const index = activeRowIndex(loadAllHistorySync()), day = localDay(now);
-  return { day, sys: index.get(slotOf(day, METRIC.sys))?.id ?? null, dia: index.get(slotOf(day, METRIC.dia))?.id ?? null };
+/** The engine's cards for the pair alone (ruling C2): no height, age or other input, so none of the sentences that need one. */
+function pairSuggestions(pair: Pair): Suggestion[] {
+  return calculateHealthResults({ systolicBp: pair.sys, diastolicBp: pair.dia } as SuggestionInputs).suggestions;
 }
 
+/** A day's rows in the record as written, unreadable ones included: what a write on that day meets. */
+export function rowsOn(day: string): Ids {
+  const file = recordFileSync();
+  if (!file) return { sys: null, dia: null };
+  const index = slotIndex(file);
+  const at = (h: 'sys' | 'dia') => index.get(slotKey('measurement', METRIC[h], day))?.id ?? null;
+  return { sys: at('sys'), dia: at('dia') };
+}
+
+/** How a save ended: kept (with the rows now holding the pair), a slot changed since the page showed it, or
+ *  not kept. A write the store took but could not yet keep names its rows: they are this page's own, and the
+ *  next save, which retries the flush, expects them. */
+export type SaveOutcome = { kind: 'kept'; ids: Ids } | { kind: 'changed' } | { kind: 'failed'; ids?: Ids };
+
 /**
- * Save the average as today's pair through the full app's day-value save (US-75 AC5): one task with
- * both halves, so the pair is never the wrong way up mid-write; a later save the same day corrects
- * today's rows. It replaces only the rows in `seen` (rows seen on another day: none of today's).
- * True once the store has kept it (or its device copy, the store's documented fallback).
+ * Save `pair` as `day`'s blood pressure (US-75 AC5), replacing only the rows `expected` names (null: an
+ * empty slot). Both halves or neither: the batch is first run on the record as written, unreadable rows
+ * included, and written only if every half would land, in the same turn, so nothing changes between.
+ * A half the record already holds exactly is not written again: compared exactly, never by display.
  */
-export async function savePair(pair: Pair, seen: SeenRows): Promise<boolean> {
-  if (getBackendKind() === 'local' && !healthWritesAllowed()) return false;
-  const today = localDay(new Date());
-  const same = seen.day === today;
-  const before = new Set(loadAllHistorySync().map((r) => r.id));
-  // Not counted as added here: only once the store has kept the rows (US-74 review C8).
-  const refused = await saveTasksToStore([{
-    date: today, values: { [METRIC.sys]: pair.sys, [METRIC.dia]: pair.dia },
-    expected: { [METRIC.sys]: same ? seen.sys : null, [METRIC.dia]: same ? seen.dia : null }, unit: 'si',
-  }], getShownErase(), correctValue, false);
+export async function savePair(pair: Pair, day: string, expected: Ids): Promise<SaveOutcome> {
+  if (getBackendKind() === 'local' && !healthWritesAllowed()) return { kind: 'failed' };
+  const file = recordFileSync();
+  if (!file) return { kind: 'failed' };
+  const held = rowsOn(day);
+  if (HALVES.some((h) => held[h] !== expected[h])) return { kind: 'changed' };
+  const index = slotIndex(file);
+  const value = (h: 'sys' | 'dia') => index.get(slotKey('measurement', METRIC[h], day))?.value;
+  const at = ensureIsoDatetime(day);
+  const rows = HALVES.filter((h) => value(h) !== pair[h]).map((h) => ({
+    metricType: METRIC[h], value: pair[h], recordedAt: at, source: 'manual' as const, ...(expected[h] ? { correctsId: expected[h]! } : {}),
+  }));
+  if (rows.length > 0) {
+    // The record's own batch rule, tried first on the same file the store writes next, with no await between.
+    if (bulkAppendValues(file, rows.map((r) => ({ kind: 'measurement' as const, ...r })), new Date().toISOString()).saved.length !== rows.length) return { kind: 'changed' };
+    const written = bulkSaveMeasurements(rows);
+    if ((await written).saved.length !== rows.length) return { kind: 'changed' };
+  }
   try {
     await flushRoadmapStore();
   } catch {
-    if (currentSaveStatus() !== 'not-saved-on-device') return false;
+    // A cloud save that failed but reached this device's copy is the store's documented fallback.
+    if (currentSaveStatus() !== 'not-saved-on-device') return { kind: 'failed', ids: rowsOn(day) };
   }
-  // The full app's counter for a prompted measure added: rows inserted, not corrections.
-  countMeasuresAdded(loadAllHistorySync().filter((r) => !before.has(r.id) && !r.correctsId && (r.metricType === METRIC.sys || r.metricType === METRIC.dia)));
-  return refused.size === 0;
+  return { kind: 'kept', ids: rowsOn(day) };
 }

@@ -44,6 +44,9 @@ function context(canvas: HTMLCanvasElement | null): { ctx: CanvasRenderingContex
   return { ctx, w, h };
 }
 
+/** Whether canvases draw here (not in jsdom or an old browser); clears this one. */
+export const canvasDraws = (canvas: HTMLCanvasElement | null) => context(canvas) !== null;
+
 function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
   ctx.beginPath();
   ctx.moveTo(x + r, y);

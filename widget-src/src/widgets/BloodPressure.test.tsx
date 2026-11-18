@@ -9,6 +9,7 @@ import { act, cleanup, fireEvent, render, screen, within } from '@testing-librar
 import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
 import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import { calculateHealthResults } from '@roadmap/health-core/calculations';
+import type { SuggestionInputs } from '@roadmap/health-core/types';
 import { computePlan } from '@roadmap/health-core/plan';
 import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { PRESSURE_ORDER } from '@roadmap/health-core/validation';
@@ -125,17 +126,69 @@ describe('US-75 blood pressure widget', () => {
     // Never reworded: the DOM text is the description, line breaks and all.
   });
 
-  it('AC4: Normal and Elevated show no card; with no height on the record the stage shows and no card', () => {
+  it('AC4 (ruling C2): with no plan (a fresh record, no height) the engine\'s own card for the pair alone shows, in its medicine-free words', () => {
     render(<BloodPressureWidget />);
     enterPair(1, '150', '95');
     expect(shown('.hr-widget-sr, .hr-widget-status')).toBe('Stage 2 hypertension');
+    const alone = (sys: number, dia: number, id: string) => calculateHealthResults({ systolicBp: sys, diastolicBp: dia } as SuggestionInputs).suggestions.find((c) => c.id === id)!.description;
+    expect(advice()).toBe(alone(150, 95, 'bp-stage2'));
+    expect(advice()).toContain('Discuss treatment with your doctor.');
+    expect(advice()).not.toContain('medication');
+    enterPair(1, '190', '125');
+    expect(advice()).toBe(alone(190, 125, 'bp-crisis'));
+    expect(advice()).toMatch(/^Your BP of 190\/125 mmHg is dangerously high\./);
+  });
+
+  it('AC4 (ruling C1): any one reading at crisis level makes the result crisis, whatever the average; the average is what is saved', async () => {
+    render(<BloodPressureWidget />);
+    enterPair(1, '190', '125');
+    enterPair(2, '140', '85');
+    expect(shown('.hr-widget-v')).toBe('165/105 mmHg');
+    expect(shown('.hr-widget-sr, .hr-widget-status')).toBe('Hypertensive crisis');
+    expect(advice()).toMatch(/^Your BP of 190\/125 mmHg is dangerously high\./);
+    await leave();
+    expect([active('systolic_bp'), active('diastolic_bp')]).toEqual([[165], [105]]);
+    cleanup();
+    render(<BloodPressureWidget />);
+    type(1, 'top', '160'); type(1, 'bottom', '95');
+    enterPair(2, '190', '122');
+    expect(shown('.hr-widget-sr, .hr-widget-status')).toBe('Hypertensive crisis');
+    expect(advice()).toMatch(/^Your BP of 190\/122 mmHg/);
+  });
+
+  it('AC4 (ruling C3): a known minor gets the average only: no adult stage, pill or card', async () => {
+    await data.saveChangedMeasurements({ birthYear: new Date().getFullYear() - 10, birthMonth: 1 }, {});
+    render(<BloodPressureWidget />);
+    enterPair(1, '119', '79');
+    expect(shown('.hr-widget-v')).toBe('119/79 mmHg');
+    expect(shown('.hr-widget-sr, .hr-widget-status')).toBe('');
+    enterPair(1, '190', '125');
+    expect(shown('.hr-widget-sr, .hr-widget-status')).toBe('');
     expect(advice()).toBe('');
   });
 
-  it('AC4: Normal shows no card with a plan; crisis shows the plan\'s crisis card', async () => {
+  it('AC4 (Codex R4): the card is worked out from the readable record, so a row the full app cannot read never shapes it', async () => {
+    await data.saveChangedMeasurements({ heightCm: 178, birthYear: 1970, birthMonth: 1, sex: 'male' }, {});
+    await data.flushRoadmapStore();
+    render(<BloodPressureWidget />);
+    enterPair(1, '135', '85');
+    const plain = advice();
+    cleanup();
+    // A lab eGFR of 95 with a comparator this build cannot read: hidden from every reader.
+    const file = data.recordFileSync()!;
+    file.labValues.push({ id: 'hidden-egfr', metricName: 'egfr', value: 95, unit: 'mL/min/1.73m²', recordedAt: '2026-11-01T00:00:00.000Z', createdAt: '2026-11-01T00:00:00.000Z', source: 'lab_import', status: 'active', correctsId: null, comparator: '~' } as never);
+    render(<BloodPressureWidget />);
+    enterPair(1, '135', '85');
+    expect(advice()).toBe(plain);
+    expect(advice()).not.toMatch(/potassium/i);
+  });
+
+  it('AC4: Normal and Elevated show no card with a plan; crisis shows the plan\'s crisis card', async () => {
     await data.saveChangedMeasurements({ heightCm: 170 }, {});
     render(<BloodPressureWidget />);
     enterPair(1, '118', '76');
+    expect(advice()).toBe('');
+    enterPair(1, '125', '78');
     expect(advice()).toBe('');
     enterPair(1, '185', '100');
     expect(advice()).toMatch(/^Your BP of 185\/100 mmHg is dangerously high\./);
@@ -192,22 +245,140 @@ describe('US-75 blood pressure widget', () => {
     expect(shown('.hr-widget-v')).toBe('128/82 mmHg');
     await leave();
     expect(rows('systolic_bp').map((m) => m.value)).toEqual([128]);
-    // Once a reading is typed, the older day's is left out of the average and the save.
+    // Typing in Reading 2 clears the record's reading: it is never averaged in or saved.
     enterPair(2, '120', '70');
+    expect([box(1, 'top').value, box(1, 'bottom').value]).toEqual(['', '']);
+    expect(screen.queryByText(/^from /)).toBeNull();
     expect(shown('.hr-widget-v')).toBe('120/70 mmHg');
     await leave();
     expect(active('systolic_bp').sort()).toEqual([120, 128]);
   });
 
-  it('AC3: today\'s reading prefills with no note, and counts in the average', async () => {
+  it('AC3 (Codex R7): editing one half of the record\'s reading clears its other half, so no day\'s half is saved with today\'s', async () => {
+    await data.addMeasurement('systolic_bp', 165, OLD);
+    await data.addMeasurement('diastolic_bp', 98, OLD);
+    await data.flushRoadmapStore();
+    render(<BloodPressureWidget />);
+    type(1, 'top', '125');
+    expect([box(1, 'top').value, box(1, 'bottom').value]).toEqual(['125', '']);
+    expect(document.querySelector('.hr-widget-res')).toBeNull();
+    await leave();
+    expect(active('systolic_bp')).toEqual([165]);
+  });
+
+  it('AC3 (adversary R7): today\'s saved reading prefills with no note and is not averaged in again', async () => {
     await data.addMeasurement('systolic_bp', 130);
     await data.addMeasurement('diastolic_bp', 80);
     render(<BloodPressureWidget />);
     expect(screen.queryByText(/^from /)).toBeNull();
     enterPair(2, '140', '90');
-    expect(shown('.hr-widget-v')).toBe('135/85 mmHg');
+    expect(shown('.hr-widget-v')).toBe('140/90 mmHg');
     await leave();
+    // The page showed today's rows, so its save corrects them.
+    expect([active('systolic_bp'), active('diastolic_bp')]).toEqual([[140], [90]]);
+  });
+
+  it('AC3 (Codex R6): a newer lone half does not hide the newest complete pair', async () => {
+    await data.addMeasurement('systolic_bp', 128, OLD);
+    await data.addMeasurement('diastolic_bp', 82, OLD);
+    await data.addMeasurement('systolic_bp', 150, '2026-02-01T00:00:00.000Z');
+    render(<BloodPressureWidget />);
+    expect([box(1, 'top').value, box(1, 'bottom').value]).toEqual(['128', '82']);
+  });
+
+  it('AC5 (Codex R3): a slot holding a row the page did not show refuses both halves; nothing is half saved', async () => {
+    render(<BloodPressureWidget />);
+    // Another tab writes today's diastolic after the page opened: the page has not seen it.
+    await data.addMeasurement('diastolic_bp', 70);
+    await data.flushRoadmapStore();
+    enterPair(1, '150', '95');
+    await leave();
+    expect([active('systolic_bp'), active('diastolic_bp')]).toEqual([[], [70]]);
+    // A newer edit, typed after the change, may replace it (as US-74 AC4).
+    enterPair(1, '150', '96');
+    await leave();
+    expect([active('systolic_bp'), active('diastolic_bp')]).toEqual([[150], [96]]);
+  });
+
+  it('AC5 (Codex R3): an unreadable row in a slot refuses both halves', async () => {
+    render(<BloodPressureWidget />);
+    const file = data.recordFileSync()!;
+    const day = new Date().toLocaleDateString('en-CA');
+    file.measurements.push({ id: 'odd', metricType: 'diastolic_bp', value: 70, recordedAt: `${day}T00:00:00.000Z`, createdAt: `${day}T00:00:00.000Z`, source: 42, status: 'active', correctsId: null, externalId: null } as never);
+    enterPair(1, '150', '95');
+    await leave();
+    expect(data.recordFileSync()!.measurements.filter((m) => m.metricType === 'systolic_bp')).toEqual([]);
+  });
+
+  it('AC5 (Codex R11): an exact stored value is compared exactly, never by its display', async () => {
+    await data.addMeasurement('systolic_bp', 179.6);
+    await data.addMeasurement('diastolic_bp', 85);
+    render(<BloodPressureWidget />);
+    enterPair(1, '180', '90');
+    expect(shown('.hr-widget-sr, .hr-widget-status')).toBe('Hypertensive crisis');
+    await leave();
+    expect([active('systolic_bp'), active('diastolic_bp')]).toEqual([[180], [90]]);
+  });
+
+  it('AC5 (Codex R9): a kept reading is not saved again on a later day without a new entry; a save is bound to the day it was asked', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 10, 16, 23, 0));
+    render(<BloodPressureWidget />);
+    enterPair(1, '135', '85');
+    await leave();
+    vi.setSystemTime(new Date(2026, 10, 17, 8, 0));
+    await leave(); // a tap in and out, no typing
+    expect(rows('systolic_bp').map((m) => [m.value, m.recordedAt.slice(0, 10)])).toEqual([[135, '2026-11-16']]);
+    enterPair(1, '140', '90');
+    await leave();
+    expect(rows('systolic_bp').map((m) => [m.value, m.status, m.recordedAt.slice(0, 10)]).sort()).toEqual([[135, 'active', '2026-11-16'], [140, 'active', '2026-11-17']]);
+    vi.useRealTimers();
+  });
+
+  it('AC5 (Codex R8): a save asked before a conflict was found never writes over the row that conflict showed', async () => {
+    render(<BloodPressureWidget />);
+    enterPair(1, '135', '85');
+    await leave();
+    // Another device corrects today's systolic.
+    const sysRow = data.loadAllHistorySync().find((m) => m.metricType === 'systolic_bp')!;
+    await data.correctValue(sysRow.id, 120);
+    await data.flushRoadmapStore();
+    enterPair(1, '150', '95');
+    fireEvent.keyDown(box(1, 'bottom'), { key: 'Enter' }); // asked, queued
+    await leave(); // asked again for the same entry
+    expect(active('systolic_bp')).toEqual([120]);
+  });
+
+  it('AC6 (Codex R12): the next-step link leaves only once a typed reading is kept', async () => {
+    const navigate = vi.fn();
+    render(<BloodPressureWidget nextUrl="/pages/health-plan" navigate={navigate} />);
+    enterPair(1, '135', '85');
+    const flush = vi.spyOn(data, 'flushRoadmapStore').mockRejectedValueOnce(new Error('no cloud'));
+    vi.spyOn(data, 'currentSaveStatus').mockReturnValue('error' as never);
+    fireEvent.click(screen.getByRole('link'));
+    await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
+    expect(navigate).not.toHaveBeenCalled();
+    flush.mockRestore();
+    vi.mocked(data.currentSaveStatus).mockRestore();
+    fireEvent.click(screen.getByRole('link'));
+    await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
+    expect(navigate).toHaveBeenCalledWith('/pages/health-plan');
     expect(active('systolic_bp')).toEqual([135]);
+  });
+
+  it('AC1 (Codex R14): two blocks on one page send each event once per page view', async () => {
+    render(<><BloodPressureWidget /><BloodPressureWidget /></>);
+    expect(calls('bp_widget_viewed')).toHaveLength(1);
+    const [first, second] = screen.getAllByRole('group', { name: /^Reading 1/ });
+    fireEvent.change(within(first).getByLabelText(/^Top number/), { target: { value: '135' } });
+    fireEvent.change(within(first).getByLabelText(/^Bottom number/), { target: { value: '85' } });
+    fireEvent.keyDown(within(first).getByLabelText(/^Bottom number/), { key: 'Enter' });
+    await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
+    fireEvent.change(within(second).getByLabelText(/^Top number/), { target: { value: '140' } });
+    fireEvent.change(within(second).getByLabelText(/^Bottom number/), { target: { value: '90' } });
+    fireEvent.keyDown(within(second).getByLabelText(/^Bottom number/), { key: 'Enter' });
+    await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
+    expect(calls('bp_widget_saved')).toHaveLength(1);
   });
 
   it('AC2: systolic moves on to diastolic (US-02 AC6), and a complete diastolic to the next reading\'s systolic while it is empty', () => {
