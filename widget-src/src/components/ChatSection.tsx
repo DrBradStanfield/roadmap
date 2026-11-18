@@ -64,11 +64,14 @@ interface ChatSectionProps {
  * box, so that opening does not call up a phone's keyboard. Escape inside it closes it, but not the
  * key press that ends an IME composition (both forms of AC26a). Close and Escape give the focus to the
  * "Open chat" button the close brings back: both surfaces class it `chat-fab`, found on the next frame.
+ * A panel drawn with no such button on the page was brought back by the page, not opened by a press
+ * (the tool page, after a width change): it takes no focus, so a draft typed in a grid is not saved (US-03 AC5).
  */
 function useChatDialog(isExpanded: boolean, inline: boolean | undefined, hide: () => void) {
   const titleRef = useRef<HTMLHeadingElement>(null);
+  const [replacesButton] = useState(() => !!document.querySelector('.chat-fab'));
   const popup = isExpanded && !inline;
-  useEffect(() => { if (popup) titleRef.current?.focus(); }, [popup]);
+  useEffect(() => { if (popup && replacesButton) titleRef.current?.focus(); }, [popup, replacesButton]);
   const close = () => {
     hide();
     requestAnimationFrame(() => document.querySelector<HTMLElement>('.chat-fab')?.focus());
