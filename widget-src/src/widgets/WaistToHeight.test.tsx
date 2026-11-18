@@ -16,6 +16,7 @@ import * as data from '../lib/roadmap-data';
 import { formatShortDate } from '../lib/constants';
 import { trackProductEvent } from '../lib/server-api';
 import { NEXT_STEP_DEFAULT, WaistToHeightWidget } from './WaistToHeight';
+import { INCHES_OVER } from './boxes';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../lib/server-api', async (importOriginal) => ({
@@ -38,6 +39,8 @@ const leaveDays = () => fireEvent.focusIn(document.body);
 const saved = async () => { await pause(600); await act(() => data.flushRoadmapStore()); };
 /** Nothing in the block talks about saving: no status, alert or notice, shown or for screen readers. */
 const quiet = (root: Element) => { expect(root.textContent).not.toMatch(/sav/i); expect(root.querySelector('[role="alert"], [role="status"]')).toBeNull(); };
+/** A result's text as a person reads it: its zero-width pad (WidgetResults' PAD) left out. */
+const shown = (text: string) => screen.getByText(text, { normalizer: (t) => t.replace(/\u2060/g, '').replace(/\s+/g, ' ').trim() });
 const calls = (name: string) => vi.mocked(trackProductEvent).mock.calls.filter(([n]) => n === name);
 const pause = (ms: number) => act(() => new Promise((r) => setTimeout(r, ms)));
 
@@ -91,13 +94,13 @@ describe('US-74 waist-to-height and BMI widget', () => {
     type(/^Weight/, '78.03');
     type(/^Waist/, '81.6');
     expect(screen.getByText('Waist-to-height ratio')).toBeTruthy();
-    expect(screen.getByText('0.48')).toBeTruthy();
-    expect(screen.getByText('Healthy')).toBeTruthy();
+    expect(shown('0.48')).toBeTruthy();
+    expect(shown('Healthy')).toBeTruthy();
     expect(screen.getByText('Body mass index (BMI)')).toBeTruthy();
-    expect(screen.getByText('27')).toBeTruthy();
-    expect(screen.getByText('Normal')).toBeTruthy(); // BMI 27 with a healthy ratio, as the plan reads it
+    expect(shown('27')).toBeTruthy();
+    expect(shown('Normal')).toBeTruthy(); // BMI 27 with a healthy ratio, as the plan reads it
     expect(screen.getByText('Target waist circumference')).toBeTruthy();
-    expect(screen.getByText('<85 cm')).toBeTruthy();
+    expect(shown('<85 cm')).toBeTruthy();
     expect(screen.getByLabelText(/^Waist circumference/)).toBeTruthy();
     expect(screen.queryByText(/Ideal Body Weight|Protein/)).toBeNull();
     expect(screen.queryByRole('button', { name: /See my results/ })).toBeNull(); // no button (Brad 2026-11-18)
@@ -269,7 +272,7 @@ describe('US-74 review fixes', () => {
     await data.addMeasurement('waist', waist);
     render(<WaistToHeightWidget />);
     expect(box(/^Waist/).value).toBe('88');
-    expect(screen.getByText(grade)).toBeTruthy();
+    expect(shown(grade)).toBeTruthy();
   });
 
   it('A3, C8: a store that cannot keep the record keeps the drafts, says nothing, counts nothing; the next save goes through', async () => {
@@ -395,7 +398,7 @@ describe('US-74 review fixes', () => {
       const { container, unmount } = render(<WaistToHeightWidget />);
       type(/^Height/, '178');
       type(/^Waist/, waist);
-      expect(screen.getByText(waist === '80' ? 'Healthy' : 'Elevated')).toBeTruthy();
+      expect(shown(waist === '80' ? 'Healthy' : 'Elevated')).toBeTruthy();
       const attrs = [...container.querySelectorAll('*')].map((el) => [el.tagName, ...[...el.attributes]
         // Input values are the person's typing, which Clarity masks; the ids differ only by React's per-render prefix.
         .filter((a) => !(el.tagName === 'INPUT' && a.name === 'value'))
@@ -427,7 +430,7 @@ describe('US-74 review fixes', () => {
     render(<WaistToHeightWidget nextUrl={url} nextLabel="Go" />);
     type(/^Height/, '178');
     type(/^Waist/, '90');
-    expect(screen.getByText('<89 cm')).toBeTruthy();
+    expect(shown('<89 cm')).toBeTruthy();
     expect(screen.queryByRole('link')).toBeNull();
   });
 
@@ -549,6 +552,62 @@ describe('US-74 fourth review round', () => {
     expect(persisted().profile.heightCm).toBeCloseTo(177.8, 1);
   });
 
+  it('Codex 1871b R7: two waist blocks on one page are one page view: one viewed event, one saved event', async () => {
+    const { container } = render(<><WaistToHeightWidget /><WaistToHeightWidget /></>);
+    expect(calls('waist_widget_viewed')).toHaveLength(1);
+    const forms = [...container.querySelectorAll('form')];
+    for (const form of forms) {
+      const [height] = [...form.querySelectorAll<HTMLInputElement>('input[id$="-height"]')];
+      const waist = form.querySelector<HTMLInputElement>('input[id$="-waist"]')!;
+      fireEvent.input(height, { target: { value: '178' } });
+      fireEvent.input(waist, { target: { value: '90' } });
+      fireEvent.keyDown(height, { key: 'Enter' });
+      await saved();
+    }
+    expect(calls('waist_widget_saved')).toHaveLength(1);
+  });
+
+  it('Codex 1871b R2: a refused paste stays unreadable even where its digits equal the box\'s number ("010" over 5 ft 10 in from 178 cm); nothing is saved', async () => {
+    render(<WaistToHeightWidget />);
+    type(/^Height/, '178');
+    toUS(); // before the height's 500 ms save
+    expect([box(/^Feet/).value, box(/^Inches/).value]).toEqual(['5', '10']);
+    box(/^Inches/).setSelectionRange(0, 2); // the whole box selected, as a paste over it does
+    expect(paste(/^Inches/, '010')).toBe(false);
+    expect(box(/^Inches/).value).toBe('010');
+    expect(screen.getByText('Enter a number')).toBeTruthy();
+    await saved();
+    expect(cloud.files.has(ROADMAP_FILE_NAME)).toBe(false);
+  });
+
+  it('Codex 1871b R2: whitespace in a paste, and a paste that would overfill an occupied box, are refused whole', () => {
+    render(<WaistToHeightWidget />);
+    toUS();
+    expect(paste(/^Inches/, '8 ')).toBe(false);
+    expect(box(/^Inches/).value).toBe('8 ');
+    type(/^Inches/, '1');
+    box(/^Inches/).setSelectionRange(1, 1); // the caret after the 1
+    expect(paste(/^Inches/, '23')).toBe(false);
+    expect(box(/^Inches/).value).toBe('123');
+    type(/^Inches/, '1');
+    box(/^Inches/).setSelectionRange(1, 1);
+    expect(paste(/^Inches/, '1')).toBe(true); // "11" fits
+  });
+
+  it('Codex 1871b R3: 5 ft 12 in is an error on Inches before any conversion: no results, no write', async () => {
+    render(<WaistToHeightWidget />);
+    toUS();
+    type(/^Feet/, '5');
+    type(/^Inches/, '12');
+    type(/^Waist/, '33');
+    enter(/^Inches/);
+    expect(await screen.findByText(INCHES_OVER)).toBeTruthy();
+    expect(document.activeElement).toBe(box(/^Inches/));
+    expect(screen.queryByText('Waist-to-height ratio')).toBeNull();
+    await saved();
+    expect(cloud.files.has(ROADMAP_FILE_NAME) ? persisted().profile.heightCm : undefined).toBeUndefined();
+  });
+
   it('F3, AC5: a box at fault differs from a good one only by aria-invalid and the error it names; its class never changes', () => {
     const attrs = (input: HTMLInputElement) => Object.fromEntries([...input.attributes].filter((a) => a.name !== 'value').map((a) => [a.name, a.value]));
     render(<WaistToHeightWidget />);
@@ -591,11 +650,22 @@ describe('US-74 fourth review round', () => {
 });
 
 describe('US-74 third review round', () => {
-  /** Every text node's length in the block: what a Clarity replay keeps of masked text. */
-  const textLengths = (root: Element) => [...root.querySelectorAll('*')]
-    .flatMap((el) => [...el.childNodes].filter((n) => n.nodeType === Node.TEXT_NODE).map((n) => n.textContent!.length));
+  /** Clarity's encoding of a masked text node (clarity-js src/core/scrub.ts mangleText, read 2026-11-18):
+   *  its trimmed length in base 36, the whitespace around it kept as it is. */
+  const clarity = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) return value;
+    const at = value.indexOf(trimmed[0]);
+    return value.slice(0, at) + trimmed.length.toString(36) + value.slice(at + trimmed.length);
+  };
+  /** Every text node in the block, as Clarity's replay holds it. */
+  const encoded = (root: Element) => [...root.querySelectorAll('*')]
+    .flatMap((el) => [...el.childNodes].filter((n) => n.nodeType === Node.TEXT_NODE).map((n) => clarity(n.textContent!)));
 
-  it('R1: every grade and BMI category leaves the block\'s text the same lengths', () => {
+  it('R1 (Codex 1871b R1): every grade, BMI category and value leaves the block\'s text identical as Clarity encodes it', () => {
+    // What went wrong before: a no-break space pad is trimmed away, so the grade's length showed through.
+    expect(clarity('Healthy\u00a0')).not.toBe(clarity('Elevated'));
+    expect(clarity('Healthy\u2060')).toBe(clarity('Elevated'));
     const cases = [
       ['80', '49.1', 'Healthy', 'Underweight'],
       ['80', '60', 'Healthy', 'Normal'],
@@ -608,13 +678,25 @@ describe('US-74 third review round', () => {
       type(/^Height/, '170');
       type(/^Waist/, waist);
       type(/^Weight/, weight);
-      expect(screen.getByText(grade)).toBeTruthy();
-      expect(screen.getByText(category)).toBeTruthy();
-      const out = textLengths(container);
+      expect(shown(grade)).toBeTruthy();
+      expect(shown(category)).toBeTruthy();
+      const out = encoded(container);
       unmount();
       return out;
     });
     for (const each of lengths.slice(1)) expect(each).toEqual(lengths[0]);
+  });
+
+  it('R1: with no waist, a BMI with no category (25 to 29.9) and one with a category encode the same in Clarity', () => {
+    const tile = (weight: string) => {
+      const { container, unmount } = render(<WaistToHeightWidget />);
+      type(/^Height/, '170');
+      type(/^Weight/, weight);
+      const out = encoded(container.querySelector('.hr-widget-grid')!);
+      unmount();
+      return out;
+    };
+    expect(tile('78')).toEqual(tile('60')); // BMI 27, no category without a waist; BMI 20.8, Normal
   });
 
   it('R2: a save asked for before a conflict was found does not write over the row that conflict showed', async () => {

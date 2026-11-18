@@ -58,6 +58,8 @@ export type Reading =
 export type Part = 'text' | 'inches';
 
 const WHOLE = /^\d+$/;
+/** The inches box's words for 12 or more (Codex review 1871b R3). */
+export const INCHES_OVER = 'Inches must be 0 to 11';
 
 /** A number still being typed: a decimal separator with nothing after it ("88.", "1,") (review R7). */
 const UNFINISHED = /[.,]$/;
@@ -82,16 +84,20 @@ function sameAsFilled(field: Field, box: Box, system: UnitSystem): boolean {
 /** What a box says, by the full app's rules, before any range check. A box
  *  that still says what it was filled with is that exact value (review A1, C4). */
 export function readBox(field: Field, box: Box, system: UnitSystem): Reading {
+  // A US height is checked as written first, before anything reads it as a number, so a refused paste
+  // ("010", "8 ") is never taken for the number it looks like (Codex review 1871b R2): one digit of feet
+  // and up to two of inches, as About you's boxes hold them, and the inches 0 to 11 (R3).
+  if (field === 'height' && system === 'conventional' && (box.unit === undefined || box.unit === system)) {
+    if (!/^\d?$/.test(box.text)) return { kind: 'error', message: 'Enter a number', part: 'text' };
+    if (!/^\d{0,2}$/.test(box.inches)) return { kind: 'error', message: 'Enter a number', part: 'inches' };
+    if (Number(box.inches || 0) > 11) return { kind: 'error', message: INCHES_OVER, part: 'inches' };
+  }
   if (sameAsFilled(field, box, system)) return { kind: 'value', value: box.base!, entered: box.entered };
   const text = box.text.trim(), inches = box.inches.trim();
   if (text === '' && inches === '') return { kind: 'blank' };
   // Text typed in the other units is read only in them, never as these (review R4).
   if (box.unit !== undefined && box.unit !== system) return { kind: 'error', message: 'Enter a number', part: 'text' };
   if (field === 'height' && system === 'conventional') {
-    // One digit of feet and two of inches, as About you's boxes hold them; a fraction, a suffix or a refused
-    // paste is an error on its box, never cut down to another number (A6, review F2).
-    if (!/^\d?$/.test(text)) return { kind: 'error', message: 'Enter a number', part: 'text' };
-    if (!/^\d{0,2}$/.test(inches)) return { kind: 'error', message: 'Enter a number', part: 'inches' };
     return { kind: 'value', value: feetInchesToCm(Number(text || 0), Number(inches || 0)), entered: true };
   }
   const n = numberIn(field, text, system);

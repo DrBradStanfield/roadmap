@@ -14,6 +14,10 @@ import { INPUT_OF, readBoxes, settle, type Boxes, type Field } from './boxes';
 
 type Days = ReturnType<typeof recordDays>;
 
+/** One page view, however many waist blocks it holds (Codex review 1871b R7): the blocks mounted now,
+ *  and whether this view has counted its waist_widget_saved. The first block to mount starts a view. */
+export const pageView = { mounted: 0, savedCounted: false };
+
 export function useWidgetSave(args: {
   now: MutableRefObject<{ boxes: Boxes; system: UnitSystem }>;
   setBoxes: Dispatch<SetStateAction<Boxes>>;
@@ -34,7 +38,6 @@ export function useWidgetSave(args: {
   const unsaved = useRef(new Set<Field>());
   // waist_widget_saved goes once per page view, once a waist is kept and a ratio exists (Brad 2026-11-18, review R9).
   const waistKept = useRef(false);
-  const counted = useRef(false);
 
   return (fields) => {
     const { boxes: snapshot, system: unit } = now.current;
@@ -79,8 +82,8 @@ export function useWidgetSave(args: {
       });
       seen.current = { ...seenWith(seen.current!, settled), pending: undefined };
       if (outcome.saved.includes('waist')) waistKept.current = true;
-      if (waistKept.current && !counted.current && resultsFor(record, unit)?.whtr) {
-        counted.current = true;
+      if (waistKept.current && !pageView.savedCounted && resultsFor(record, unit)?.whtr) {
+        pageView.savedCounted = true;
         trackProductEvent('waist_widget_saved');
       }
       return unsaved.current.size === 0;

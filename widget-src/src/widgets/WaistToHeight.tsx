@@ -21,7 +21,7 @@ import { HeightBoxes } from '../components/HeightField';
 import { useAutoAdvance } from '../lib/useAutoAdvance';
 import { recordDays, recordMeasured, resultsFor, safeHref, startingUnits } from './body-measures';
 import { FIELDS, INPUT_OF, boxesFor, readBox, readBoxes, switchBoxes, typed, type Boxes, type Field, type Part } from './boxes';
-import { useWidgetSave } from './useWidgetSave';
+import { pageView, useWidgetSave } from './useWidgetSave';
 import { ResultsView } from './WidgetResults';
 
 export interface WidgetProps {
@@ -67,7 +67,11 @@ export function WaistToHeightWidget({ nextUrl, nextLabel, navigate = (href) => w
   /** Save the entries among `fields` that read and are in range, and any that did not save before (US-74 AC4). */
   const save = useWidgetSave({ now, setBoxes, setDays });
 
-  useEffect(() => { trackProductEvent('waist_widget_viewed'); }, []);
+  // One view event per page view, however many waist blocks the page holds (Codex review 1871b R7).
+  useEffect(() => {
+    if (pageView.mounted++ === 0) { pageView.savedCounted = false; trackProductEvent('waist_widget_viewed'); }
+    return () => { pageView.mounted--; };
+  }, []);
 
   const ids = { height: `${id}-height`, feet: `${id}-feet`, inches: `${id}-inches`, weight: `${id}-weight`, waist: `${id}-waist` };
   const read = useMemo(() => readBoxes(boxes, system), [boxes, system]);

@@ -86,8 +86,8 @@ export interface HeightBoxesProps {
   /** The unit pill in the label; false where the host has its own units control (the widget's Metric/US
    *  switch): the label then names the unit in words and points at the box in use. */
   pill?: boolean;
-  /** Where given, a paste or drop into feet or inches that is not whole digits that fit is refused whole,
-   *  never cut down to another number, and handed here (US-74 review F2). Without it, About you's boxes
+  /** Where given, a paste or drop into feet or inches that would not leave whole digits that fit is refused
+   *  whole, never cut down to another number, and handed here with the text it would leave (US-74 review F2). Without it, About you's boxes
    *  keep digits only, as typed. */
   onRefused?: (part: 'feet' | 'inches', text: string) => void;
 }
@@ -99,12 +99,14 @@ export function HeightBoxes(props: HeightBoxesProps) {
   const labelId = `${ids.cm}-label`;
   const className = invalid ? 'error' : '';
   const described = error ? errorId : undefined;
-  // A paste or drop must be whole digits that fit the box (1 for feet, 2 for inches), or it is refused.
+  // A paste or drop is judged by the box it would leave, as given, untrimmed (Codex review 1871b R2): one digit
+  // of feet, up to two of inches, or it is refused whole and handed on with that text.
   const whole = (part: 'feet' | 'inches') => onRefused && ((e: React.ClipboardEvent<HTMLInputElement> | React.DragEvent<HTMLInputElement>) => {
-    const text = ('clipboardData' in e ? e.clipboardData : e.dataTransfer).getData('text').trim();
-    if ((part === 'feet' ? /^\d$/ : /^\d{1,2}$/).test(text)) return;
+    const input = e.currentTarget, given = ('clipboardData' in e ? e.clipboardData : e.dataTransfer).getData('text');
+    const next = input.value.slice(0, input.selectionStart ?? input.value.length) + given + input.value.slice(input.selectionEnd ?? input.value.length);
+    if ((part === 'feet' ? /^\d$/ : /^\d{1,2}$/).test(next)) return;
     e.preventDefault();
-    onRefused(part, text);
+    onRefused(part, next);
   });
   const leavePair = (e: React.FocusEvent<HTMLInputElement>) => {
     if (![ids.feet, ids.inches].includes((e.relatedTarget as HTMLElement | null)?.id ?? '')) onPairLeave();
