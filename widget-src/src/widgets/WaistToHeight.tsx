@@ -10,11 +10,13 @@
 // same day corrects today's row (saveMeasured).
 import { useEffect, useId, useMemo, useReducer, useRef, useState } from 'react';
 import { localDay } from '@roadmap/health-core/merge';
-import { getDisplayLabel, type UnitSystem } from '@roadmap/health-core/units';
+import { getDisplayLabel, getDisplayRange, type UnitSystem } from '@roadmap/health-core/units';
 import { formatShortDate } from '../lib/constants';
 import { trackProductEvent } from '../lib/server-api';
 import { useDebouncedSave } from '../lib/useDebouncedSave';
 import { useSaveOnLeave } from '../lib/useSaveOnLeave';
+import { blockBadNumericKeys } from '../lib/blood-test-cell';
+import { HeightBoxes } from '../components/HeightField';
 import { recordDays, recordMeasured, resultsFor, safeHref, startingUnits } from './body-measures';
 import { FIELDS, INPUT_OF, boxesFor, readBox, readBoxes, switchBoxes, typed, type Boxes, type Field, type Part } from './boxes';
 import { useWidgetSave } from './useWidgetSave';
@@ -29,7 +31,6 @@ export interface WidgetProps {
   navigate?: (href: string) => void;
 }
 
-const UNIT_CHOICES: ReadonlyArray<[UnitSystem, string]> = [['si', 'Metric'], ['conventional', 'US']];
 /** The link's words when the block sets a link and no label (review U2). */
 export const NEXT_STEP_DEFAULT = 'Next step';
 /** The drafts stay, and the next save tries again (review X7). */
@@ -37,6 +38,9 @@ export const NOT_SAVED = 'Not saved. Your entries are kept and will save when yo
 /** This widget's own words for each box (Brad 2026-11-18); the full app's tile labels are unchanged. */
 const LABEL: Record<Field, string> = { height: 'Height', weight: 'Weight', waist: 'Waist circumference' };
 const NAME: Record<Field, string> = { height: 'height', weight: 'weight', waist: 'waist circumference' };
+
+/** The cm box's min and max, as About you sets them. */
+const heightRange = getDisplayRange('height', 'si');
 
 const list = (fields: Field[]) => fields.map((f) => NAME[f]).join(', ');
 
@@ -67,6 +71,8 @@ export function WaistToHeightWidget({ nextUrl, nextLabel, navigate = (href) => w
   const [state, dispatch] = useReducer(transition, START);
   // Boxes whose error shows: left, or Enter pressed (the full app shows a range error once a box is left).
   const [left, setLeft] = useState<ReadonlySet<Field>>(new Set());
+  // The cm box holds text the browser could not read ("175,5" gives "" with validity.badInput), as About you's (US-02 AC7).
+  const [heightUnreadable, setHeightUnreadable] = useState(false);
   // The boxes and units as they are now, for a save that ends after more typing.
   const now = useRef({ boxes, system });
   now.current = { boxes, system };
@@ -104,8 +110,7 @@ export function WaistToHeightWidget({ nextUrl, nextLabel, navigate = (href) => w
     if (await save(FIELDS)) navigate(href);
   };
 
-  const edit = (field: Field, part: Part = 'text') => (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
+  const edit = (field: Field, part: Part = 'text') => (value: string) => {
     setBoxes((prev) => ({ ...prev, [field]: typed(prev[field], part, value, system) }));
     setLeft((prev) => (prev.has(field) ? new Set([...prev].filter((f) => f !== field)) : prev));
     dispatch({ type: 'edited' });
@@ -123,49 +128,39 @@ export function WaistToHeightWidget({ nextUrl, nextLabel, navigate = (href) => w
     void save(FIELDS);
   };
 
-  const switchUnits = (to: UnitSystem) => {
-    if (to === system) return;
+  // The height's unit pill switches every box, as the full app's does.
+  const switchUnits = () => {
+    const to: UnitSystem = system === 'si' ? 'conventional' : 'si';
     setBoxes(switchBoxes(boxes, system, to));
     setSystem(to);
-  };
-  // Arrow keys move the choice, as a radio group's do (review U6).
-  const unitKeys = (e: React.KeyboardEvent<HTMLButtonElement>) => {
-    if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) return;
-    e.preventDefault();
-    const to = system === 'si' ? 'conventional' : 'si';
-    switchUnits(to);
-    e.currentTarget.parentElement?.querySelector<HTMLButtonElement>(`[data-unit="${to}"]`)?.focus();
+    setHeightUnreadable(false);
   };
 
   const href = safeHref(nextUrl);
   const errorId = (field: Field) => `${id}-${field}-error`;
-  const errorOf = (field: Field) => (left.has(field) ? read.errors[INPUT_OF[field]] : undefined);
+  const errorOf = (field: Field) => (!left.has(field) ? undefined
+    : field === 'height' && heightUnreadable ? 'Enter a number' : read.errors[INPUT_OF[field]]);
   const described = (field: Field, extra?: string) => [errorOf(field) ? errorId(field) : '', extra ?? ''].filter(Boolean).join(' ') || undefined;
-  const errorLine = (field: Field) => errorOf(field) && <span id={errorId(field)} className="hr-widget-error">{errorOf(field)}</span>;
   // The day a weight or waist box's value comes from, while it still shows the record's.
   const dayNote = (field: Field) => {
     if (field === 'height') return null;
     const reading = readBox(field, boxes[field], system);
     return reading.kind === 'value' && !reading.entered ? fromDay(days[field as 'weight' | 'waist']) : null;
   };
-  const input = (field: Field, part: Part, extra: Record<string, unknown> = {}) => (
-    <input id={part === 'inches' ? ids.inches : field === 'height' && system === 'conventional' ? ids.feet : ids[field]}
-      type="text" inputMode={field === 'height' && system === 'conventional' ? 'numeric' : 'decimal'} autoComplete="off"
-      value={part === 'inches' ? boxes[field].inches : boxes[field].text} onChange={edit(field, part)} onBlur={leave(field)} onKeyDown={enter}
-      aria-invalid={!!errorOf(field)} {...extra} />
-  );
-  const box = (field: Field, optional: boolean) => {
+  // Weight and waist: the full app's field box, read by the vitals grid's rules (boxes.ts) behind its key filter.
+  const box = (field: 'weight' | 'waist') => {
     const note = dayNote(field);
     const noteId = `${id}-${field}-day`;
+    const error = errorOf(field);
     return (
-      <div className="hr-widget-field">
-        <label htmlFor={ids[field]}>{LABEL[field]}{optional && <small> (optional)</small>}</label>
-        <span className="hr-widget-in">
-          {input(field, 'text', { 'aria-describedby': described(field, note ? noteId : undefined) })}
-          <em aria-hidden="true">{getDisplayLabel(field, system)}</em>
-        </span>
+      <div className="health-field">
+        <label htmlFor={ids[field]}>{LABEL[field]} <span>({getDisplayLabel(field, system)})</span> <small>(optional)</small></label>
+        <input id={ids[field]} type="text" inputMode="decimal" pattern="[0-9.,]*" autoComplete="off"
+          value={boxes[field].text} onChange={(e) => edit(field)(e.target.value)} onBlur={leave(field)}
+          onKeyDown={(e) => { blockBadNumericKeys(e); enter(e); }}
+          aria-invalid={!!error} aria-describedby={described(field, note ? noteId : undefined)} className={error ? 'error' : ''} />
         {note && <span id={noteId} className="hr-widget-day">{note}</span>}
-        {errorLine(field)}
+        {error && <span id={errorId(field)} className="error-message">{error}</span>}
       </div>
     );
   };
@@ -176,35 +171,27 @@ export function WaistToHeightWidget({ nextUrl, nextLabel, navigate = (href) => w
 
   return (
     <form className="hr-widget-form" onSubmit={(e) => e.preventDefault()} noValidate>
-      <div className="hr-widget-top">
-        {system === 'si' ? box('height', false) : (
-          <div className="hr-widget-field">
-            <label id={`${id}-height-label`} htmlFor={ids.feet}>Height</label>
-            <div className="hr-widget-pair" role="group" aria-labelledby={`${id}-height-label`}>
-              <span className="hr-widget-in">
-                {input('height', 'text', { 'aria-label': 'Feet', 'aria-describedby': described('height') })}
-                <em aria-hidden="true">ft</em>
-              </span>
-              <span className="hr-widget-in">
-                {input('height', 'inches', { 'aria-label': 'Inches', 'aria-describedby': described('height') })}
-                <em aria-hidden="true">in</em>
-              </span>
-            </div>
-            {errorLine('height')}
-          </div>
-        )}
-        <div className="hr-widget-units" role="radiogroup" aria-label="Units">
-          {UNIT_CHOICES.map(([unit, label]) => (
-            <button key={unit} type="button" role="radio" aria-checked={system === unit} tabIndex={system === unit ? 0 : -1} data-unit={unit}
-              className={`hr-widget-unit${system === unit ? ' hr-widget-unit--active' : ''}`} onClick={() => switchUnits(unit)} onKeyDown={unitKeys}>
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
+      <HeightBoxes
+        unitSystem={system}
+        ids={{ cm: ids.height, feet: ids.feet, inches: ids.inches }}
+        attention={false}
+        error={errorOf('height')}
+        invalid={!!errorOf('height')}
+        cm={boxes.height.text}
+        range={heightRange}
+        onCm={(e) => { setHeightUnreadable(e.target.validity.badInput); edit('height')(e.target.value); }}
+        onCmBlur={leave('height')}
+        feet={boxes.height.text}
+        inches={boxes.height.inches}
+        onFeet={edit('height', 'text')}
+        onInches={edit('height', 'inches')}
+        onPairLeave={leave('height')}
+        onKeyDown={enter}
+        onUnits={switchUnits}
+      />
       <div className="hr-widget-row" ref={dayRow}>
-        {box('waist', true)}
-        {box('weight', true)}
+        {box('waist')}
+        {box('weight')}
       </div>
       {state.phase === 'failed' && <p className="hr-widget-error" role="alert">{NOT_SAVED}</p>}
       {state.phase === 'saved' && state.partial && <PartlyKeptNotice partial={state.partial} />}

@@ -23,8 +23,8 @@ const posted = () => fetchMock.mock.calls
   .filter((body): body is string => typeof body === 'string')
   .map((body) => JSON.parse(body) as { eventName: string; metadata?: unknown });
 const named = (name: string) => posted().filter((e) => e.eventName === name);
-const type = (label: RegExp, value: string) => fireEvent.input(screen.getByLabelText(label), { target: { value } });
-const enter = () => fireEvent.keyDown(screen.getByLabelText(/^Height/), { key: 'Enter' });
+const type = (label: RegExp, value: string) => fireEvent.input(screen.getByLabelText(label, { selector: 'input' }), { target: { value } }); // the label holds the unit pill too
+const enter = () => fireEvent.keyDown(screen.getByLabelText(/^Height/, { selector: 'input' }), { key: 'Enter' });
 
 beforeEach(async () => {
   vi.spyOn(RoadmapStore.prototype, 'startLiveRefresh').mockReturnValue(() => {});

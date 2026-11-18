@@ -27,7 +27,10 @@ const OLD = '2026-01-10T00:00:00.000Z';
 let cloud: MemoryCloud;
 const persisted = (): RoadmapFile => JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json);
 const active = (metric: string) => persisted().measurements.filter((m) => m.metricType === metric && m.status === 'active').map((m) => m.value);
-const box = (label: RegExp) => screen.getByLabelText(label) as HTMLInputElement;
+/** A box by its label; the height's label holds its unit pill too (components/HeightField.tsx). */
+const box = (label: RegExp) => screen.getByLabelText(label, { selector: 'input' }) as HTMLInputElement;
+/** The height's unit pill, the full app's: it switches every box. */
+const toUS = () => fireEvent.click(screen.getByRole('button', { name: 'cm' }));
 const type = (label: RegExp, value: string) => fireEvent.input(box(label), { target: { value } });
 /** Enter in a box: every entry saves now (US-74 AC4). */
 const enter = (label: RegExp = /^Height|^Feet/) => fireEvent.keyDown(box(label), { key: 'Enter' });
@@ -158,7 +161,7 @@ describe('US-74 waist-to-height and BMI widget', () => {
     render(<WaistToHeightWidget />);
     type(/^Height/, '178');
     type(/^Weight/, '80');
-    fireEvent.click(screen.getByRole('radio', { name: 'US' }));
+    toUS();
     expect([box(/^Feet/).value, box(/^Inches/).value, box(/^Weight/).value]).toEqual(['5', '10', '176']);
     type(/^Weight/, '180');
     enter(/^Weight/);
@@ -188,11 +191,11 @@ describe('US-74 waist-to-height and BMI widget', () => {
 
   it('AC2: a US height out of range marks both its boxes, in a group named for the height', async () => {
     render(<WaistToHeightWidget />);
-    fireEvent.click(screen.getByRole('radio', { name: 'US' }));
+    toUS();
     type(/^Feet/, '9');
     enter(/^Feet/);
     const error = await screen.findByText(/^Height must be at most/);
-    expect(screen.getByRole('group', { name: 'Height' })).toBeTruthy();
+    expect(screen.getByRole('group', { name: /^Height/ })).toBeTruthy(); // the label holds the unit pill
     for (const label of [/^Feet/, /^Inches/]) {
       expect(box(label).getAttribute('aria-invalid')).toBe('true');
       expect(box(label).getAttribute('aria-describedby')).toBe(error.id);
@@ -236,7 +239,7 @@ describe('US-74 review fixes', () => {
   it('A1: a record height of 178 cm, with a waist saved in the US view, stays exactly 178', async () => {
     await data.saveChangedMeasurements({ heightCm: 178 }, {});
     render(<WaistToHeightWidget />);
-    fireEvent.click(screen.getByRole('radio', { name: 'US' }));
+    toUS();
     type(/^Waist/, '35');
     enter(/^Waist/);
     await saved();
@@ -320,20 +323,20 @@ describe('US-74 review fixes', () => {
     enter(/^Waist/);
     await screen.findByText('Type one decimal number, without signs, < > or spaces');
     expect(box(/^Waist/).getAttribute('aria-invalid')).toBe('true');
-    fireEvent.click(screen.getByRole('radio', { name: 'US' }));
+    toUS();
     expect(box(/^Waist/).value).toBe('88 cm');
     await data.flushRoadmapStore();
     expect(cloud.files.has(ROADMAP_FILE_NAME) ? active('waist') : []).toEqual([]);
   });
 
-  it('A6, C11: a fractional US inches entry is refused, never truncated, and the Inches box takes the focus', async () => {
+  it('A6: the feet and inches boxes are the full app\'s, digits only: "10.5" inches is never read as 10, and nothing is saved', async () => {
     render(<WaistToHeightWidget />);
-    fireEvent.click(screen.getByRole('radio', { name: 'US' }));
+    toUS();
     type(/^Feet/, '5');
     type(/^Inches/, '10.5');
+    expect(box(/^Inches/).value).toBe('105'); // a browser stops at "10" (maxLength), and the box shows it
     enter(/^Inches/);
-    expect(await screen.findByText('Enter a number')).toBeTruthy();
-    expect(document.activeElement).toBe(box(/^Inches/));
+    expect(await screen.findByText(/^Height must be at most/)).toBeTruthy();
     await pause(700);
     expect(cloud.files.has(ROADMAP_FILE_NAME)).toBe(false);
   });
@@ -354,7 +357,7 @@ describe('US-74 review fixes', () => {
     await data.saveChangedMeasurements({ heightCm: 178 }, {});
     await data.addMeasurement('waist', 127.4);
     render(<WaistToHeightWidget />);
-    fireEvent.click(screen.getByRole('radio', { name: 'US' }));
+    toUS();
     expect(box(/^Waist/).value).toBe('50.2');
     type(/^Waist/, '50');
     enter(/^Waist/);
@@ -427,16 +430,16 @@ describe('US-74 review fixes', () => {
     expect(screen.queryByRole('link')).toBeNull();
   });
 
-  it('U6: Enter with errors moves the focus to the first box at fault; arrow keys switch the units', async () => {
+  it('U6: Enter with errors moves the focus to the first box at fault; the height\'s unit pill switches the units both ways', async () => {
     render(<WaistToHeightWidget />);
     type(/^Waist/, 'abc');
     enter(/^Waist/);
     await screen.findByText('Required');
     expect(document.activeElement).toBe(box(/^Height/));
-    const metric = screen.getByRole('radio', { name: 'Metric' });
-    fireEvent.keyDown(metric, { key: 'ArrowRight' });
-    expect(screen.getByRole('radio', { name: 'US' }).getAttribute('aria-checked')).toBe('true');
-    expect(document.activeElement).toBe(screen.getByRole('radio', { name: 'US' }));
+    toUS();
+    expect(box(/^Feet/)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'ft/in' }));
+    expect(box(/^Height/).id).toMatch(/-height$/);
   });
 });
 

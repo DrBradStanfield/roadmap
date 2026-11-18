@@ -41,7 +41,7 @@ import { ScreeningQuestions } from './ScreeningQuestions';
 import { LipidMedications } from './LipidMedications';
 import { WeightMedications } from './WeightMedications';
 import { BoneDensity } from './BoneDensity';
-import { AboutRows, AlcoholField, BirthFields, HeightField, SexField, useHeightPair } from './AboutYou';
+import { AboutRows, AlcoholField, BirthFields, SexField } from './AboutYou'; import { HeightField, useHeightPair } from './HeightField';
 
 interface FieldConfig {
   field: keyof HealthInputs;
