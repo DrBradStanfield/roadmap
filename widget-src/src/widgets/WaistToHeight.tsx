@@ -41,6 +41,7 @@ export const NOT_SAVED = 'Not saved. Your entries are kept and will save when yo
 const LABEL: Record<Field, string> = { height: 'Height', weight: 'Weight', waist: 'Waist circumference' };
 const NAME: Record<Field, string> = { height: 'height', weight: 'weight', waist: 'waist circumference' };
 
+const UNIT_CHOICES: ReadonlyArray<[UnitSystem, string]> = [['si', 'Metric'], ['conventional', 'US']];
 /** The cm box's min and max, as About you sets them. */
 const heightRange = getDisplayRange('height', 'si');
 
@@ -142,12 +143,20 @@ export function WaistToHeightWidget({ nextUrl, nextLabel, navigate = (href) => w
     void save(FIELDS);
   };
 
-  // The height's unit pill switches every box, as the full app's does.
-  const switchUnits = () => {
-    const to: UnitSystem = system === 'si' ? 'conventional' : 'si';
+  // The Metric / US switch converts every box (Brad 2026-11-18: the widget keeps its own switch).
+  const switchUnits = (to: UnitSystem) => {
+    if (to === system) return;
     setBoxes(switchBoxes(boxes, system, to));
     setSystem(to);
     setHeightUnreadable(false);
+  };
+  // Arrow keys move the choice, as a radio group's do (review U6).
+  const unitKeys = (e: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) return;
+    e.preventDefault();
+    const to = system === 'si' ? 'conventional' : 'si';
+    switchUnits(to);
+    e.currentTarget.parentElement?.querySelector<HTMLButtonElement>(`[data-unit="${to}"]`)?.focus();
   };
 
   const href = safeHref(nextUrl);
@@ -185,24 +194,34 @@ export function WaistToHeightWidget({ nextUrl, nextLabel, navigate = (href) => w
 
   return (
     <form className="hr-widget-form" onSubmit={(e) => e.preventDefault()} noValidate>
-      <HeightBoxes
-        unitSystem={system}
-        ids={{ cm: ids.height, feet: ids.feet, inches: ids.inches }}
-        attention={false}
-        error={errorOf('height')}
-        invalid={!!errorOf('height')}
-        cm={boxes.height.text}
-        range={heightRange}
-        onCm={(e) => { setHeightUnreadable(e.target.validity.badInput); edit('height')(e.target.value); heightTyped('text', e.target.value); }}
-        onCmBlur={leave('height')}
-        feet={boxes.height.text}
-        inches={boxes.height.inches}
-        onFeet={(v) => { edit('height', 'text')(v); heightTyped('text', v); }}
-        onInches={(v) => { edit('height', 'inches')(v); heightTyped('inches', v); }}
-        onPairLeave={leave('height')}
-        onKeyDown={enter}
-        onUnits={switchUnits}
-      />
+      <div className="hr-widget-top">
+        <HeightBoxes
+          unitSystem={system}
+          pill={false}
+          ids={{ cm: ids.height, feet: ids.feet, inches: ids.inches }}
+          attention={false}
+          error={errorOf('height')}
+          invalid={!!errorOf('height')}
+          cm={boxes.height.text}
+          range={heightRange}
+          onCm={(e) => { setHeightUnreadable(e.target.validity.badInput); edit('height')(e.target.value); heightTyped('text', e.target.value); }}
+          onCmBlur={leave('height')}
+          feet={boxes.height.text}
+          inches={boxes.height.inches}
+          onFeet={(v) => { edit('height', 'text')(v); heightTyped('text', v); }}
+          onInches={(v) => { edit('height', 'inches')(v); heightTyped('inches', v); }}
+          onPairLeave={leave('height')}
+          onKeyDown={enter}
+        />
+        <div className="hr-widget-units" role="radiogroup" aria-label="Units">
+          {UNIT_CHOICES.map(([unit, label]) => (
+            <button key={unit} type="button" role="radio" aria-checked={system === unit} tabIndex={system === unit ? 0 : -1} data-unit={unit}
+              className={`hr-widget-unit${system === unit ? ' hr-widget-unit--active' : ''}`} onClick={() => switchUnits(unit)} onKeyDown={unitKeys}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
       <div className="hr-widget-row" ref={dayRow}>
         {box('waist', false)}
         {box('weight', true)}

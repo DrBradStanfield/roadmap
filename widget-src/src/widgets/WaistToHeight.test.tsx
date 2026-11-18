@@ -27,10 +27,8 @@ const OLD = '2026-01-10T00:00:00.000Z';
 let cloud: MemoryCloud;
 const persisted = (): RoadmapFile => JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json);
 const active = (metric: string) => persisted().measurements.filter((m) => m.metricType === metric && m.status === 'active').map((m) => m.value);
-/** A box by its label; the height's label holds its unit pill too (components/HeightField.tsx). */
 const box = (label: RegExp) => screen.getByLabelText(label, { selector: 'input' }) as HTMLInputElement;
-/** The height's unit pill, the full app's: it switches every box. */
-const toUS = () => fireEvent.click(screen.getByRole('button', { name: 'cm' }));
+const toUS = () => fireEvent.click(screen.getByRole('radio', { name: 'US' }));
 const type = (label: RegExp, value: string) => fireEvent.input(box(label), { target: { value } });
 /** Enter in a box: every entry saves now (US-74 AC4). */
 const enter = (label: RegExp = /^Height|^Feet/) => fireEvent.keyDown(box(label), { key: 'Enter' });
@@ -208,7 +206,7 @@ describe('US-74 waist-to-height and BMI widget', () => {
     type(/^Feet/, '9');
     enter(/^Feet/);
     const error = await screen.findByText(/^Height must be at most/);
-    expect(screen.getByRole('group', { name: /^Height/ })).toBeTruthy(); // the label holds the unit pill
+    expect(screen.getByRole('group', { name: 'Height' })).toBeTruthy();
     for (const label of [/^Feet/, /^Inches/]) {
       expect(box(label).getAttribute('aria-invalid')).toBe('true');
       expect(box(label).getAttribute('aria-describedby')).toBe(error.id);
@@ -443,16 +441,17 @@ describe('US-74 review fixes', () => {
     expect(screen.queryByRole('link')).toBeNull();
   });
 
-  it('U6: Enter with errors moves the focus to the first box at fault; the height\'s unit pill switches the units both ways', async () => {
+  it('U6: Enter with errors moves the focus to the first box at fault; arrow keys switch the units', async () => {
     render(<WaistToHeightWidget />);
     type(/^Waist/, 'abc');
     enter(/^Waist/);
     await screen.findByText('Required');
     expect(document.activeElement).toBe(box(/^Height/));
-    toUS();
-    expect(box(/^Feet/)).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'ft/in' }));
-    expect(box(/^Height/).id).toMatch(/-height$/);
+    const metric = screen.getByRole('radio', { name: 'Metric' });
+    fireEvent.keyDown(metric, { key: 'ArrowRight' });
+    expect(screen.getByRole('radio', { name: 'US' }).getAttribute('aria-checked')).toBe('true');
+    expect(document.activeElement).toBe(screen.getByRole('radio', { name: 'US' }));
+    expect(screen.queryByRole('button', { name: /^(cm|ft\/in)$/ })).toBeNull(); // the full app's pill is not drawn here
   });
 });
 

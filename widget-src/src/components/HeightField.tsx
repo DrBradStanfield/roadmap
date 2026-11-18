@@ -82,13 +82,13 @@ export interface HeightBoxesProps {
   /** The focus left the pair, not one box for the other (Codex R2). */
   onPairLeave: () => void;
   onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
-  /** The pill's press. The full app's switch is hooks/useUnits', on the pill's `data-unit-control`. */
-  onUnits?: () => void;
+  /** The unit pill in the label; false where the host has its own units control (the widget's Metric/US switch). */
+  pill?: boolean;
 }
 
 /** The height field's markup and keys, on whoever's state. */
 export function HeightBoxes(props: HeightBoxesProps) {
-  const { unitSystem, ids = APP_IDS, attention, error, invalid, cm, range, onCm, onCmBlur, feet, inches, onFeet, onInches, onPairLeave, onKeyDown, onUnits } = props;
+  const { unitSystem, ids = APP_IDS, attention, error, invalid, cm, range, onCm, onCmBlur, feet, inches, onFeet, onInches, onPairLeave, onKeyDown, pill = true } = props;
   const errorId = `${ids.cm}-error`;
   const labelId = `${ids.cm}-label`;
   const className = invalid ? 'error' : '';
@@ -99,16 +99,16 @@ export function HeightBoxes(props: HeightBoxesProps) {
   return (
     <div className={`health-field${attention ? ' field-attention' : ''}`}>
       <label id={labelId} htmlFor={ids.cm}>
-        Height{' '}
-        <button
+        Height{pill && ' '}
+        {pill && <button
           type="button"
           className="unit-toggle-pill"
           data-unit-control="all"
-          onClick={(e) => { e.preventDefault(); onUnits?.(); }} // the label's own click would focus the box
+          onClick={(e) => e.preventDefault()} // the label's own click would focus the box; the switch is hooks/useUnits'
           title={`Switch to ${unitSystem === 'si' ? 'US (in, lbs, mg/dL)' : 'Metric (cm, kg, mmol/L)'}`}
         >
           {unitSystem === 'si' ? 'cm' : 'ft/in'}
-        </button>
+        </button>}
       </label>
       {unitSystem === 'si' ? (
         <input
