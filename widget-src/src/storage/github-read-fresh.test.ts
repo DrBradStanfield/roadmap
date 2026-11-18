@@ -1,13 +1,18 @@
 /**
- * US-09 AC13i: the GitHub adapter's file read tells `fetch` not to use the
- * browser's HTTP cache (`cache: 'no-store'`). GitHub's Contents API marks an
- * answer `Cache-Control: private, max-age=60`, so inside that minute a second
- * read could be the first answer again, with the old sha. A save that read
- * the old sha was refused (409), read again, and got the same stored answer.
+ * US-09 AC13i: the GitHub adapter's file read asks GitHub before it uses an
+ * answer the browser stored (`cache: 'no-cache'`). GitHub's Contents API marks
+ * an answer `Cache-Control: private, max-age=60, s-maxage=60`, so inside that
+ * minute a second read could be the first answer again, with the old sha. A
+ * save that read the old sha was refused (409), read again, and got the same
+ * stored answer.
  *
- * The fetch here is a model, not a browser. It keeps a GET answer by URL and
- * hands it back to a later GET unless that GET says `cache: 'no-store'`; a PUT
- * GitHub accepts drops the kept answer. Synthetic values; no network.
+ * The fetch here is a model, not a browser. Its rules are written from local
+ * browser runs that are not repo tests. It keeps a GET answer by URL. A later
+ * GET with no cache mode gets the kept answer and GitHub is not asked. A GET
+ * with `no-cache` asks GitHub: an unchanged sha counts as a 304 and the kept
+ * answer is handed back, a changed sha is a full answer. `no-store` and
+ * `reload` are a full answer each time. A PUT GitHub accepts drops the kept
+ * answer. Synthetic values; no network.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
@@ -24,7 +29,7 @@ const reply = (status: number, body: unknown, headers: Record<string, string> = 
 
 /** GitHub holding one record, behind the cache model described above. */
 function gitHub() {
-  const remote = { sha: 'sha-1', content: base64(createEmptyFile({ deviceId: 'device-b', now: NOW })), served: 0, puts: [] as number[] };
+  const remote = { sha: 'sha-1', content: base64(createEmptyFile({ deviceId: 'device-b', now: NOW })), full: 0, notModified: 0, puts: [] as number[] };
   const kept = new Map<string, string>();
   const fetchModel = vi.fn(async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     const url = String(input);
@@ -38,11 +43,16 @@ function gitHub() {
       kept.delete(url);
       return reply(200, { content: { sha: remote.sha } });
     }
+    const mode = init?.cache ?? 'default';
     const stored = kept.get(url);
-    if (stored && init?.cache !== 'no-store') return reply(200, JSON.parse(stored));
-    remote.served += 1;
+    if (stored && (mode === 'default' || mode === 'force-cache')) return reply(200, JSON.parse(stored));
+    if (stored && mode === 'no-cache' && (JSON.parse(stored) as { sha: string }).sha === remote.sha) {
+      remote.notModified += 1;
+      return reply(200, JSON.parse(stored));
+    }
+    remote.full += 1;
     const answer = JSON.stringify({ sha: remote.sha, content: remote.content, encoding: 'base64', size: remote.content.length });
-    if (init?.cache !== 'no-store') kept.set(url, answer);
+    if (mode !== 'no-store') kept.set(url, answer);
     return reply(200, JSON.parse(answer), { 'Cache-Control': 'private, max-age=60, s-maxage=60' });
   });
   /** Another device saves: the file on GitHub gets a new sha. */
@@ -56,7 +66,7 @@ beforeEach(() => {
 });
 afterEach(() => { vi.unstubAllGlobals(); });
 
-describe('US-09 AC13i: a GitHub read is not answered from the browser cache', () => {
+describe('US-09 AC13i: a GitHub read asks GitHub before it uses a stored answer', () => {
   it('a second read inside the minute sees the sha another device saved in between', async () => {
     const { remote, fetchModel, otherDeviceSaves } = gitHub();
     vi.stubGlobal('fetch', fetchModel);
@@ -66,7 +76,18 @@ describe('US-09 AC13i: a GitHub read is not answered from the browser cache', ()
     const second = await adapter.read(ROADMAP_FILE_NAME);
     expect(second.version).toBe('sha-2');
     expect((second.body as { meta: { lastDeviceId: string } }).meta.lastDeviceId).toBe('device-c');
-    expect(remote.served).toBe(2);
+    expect(remote.full).toBe(2);
+  });
+
+  it('a second read with nothing changed is answered 304 in the model and gives the stored record', async () => {
+    const { remote, fetchModel } = gitHub();
+    vi.stubGlobal('fetch', fetchModel);
+    const adapter = new GitHubAdapter(CONFIG);
+    const first = await adapter.read(ROADMAP_FILE_NAME);
+    const second = await adapter.read(ROADMAP_FILE_NAME);
+    expect(second).toEqual(first);
+    expect(second.version).toBe('sha-1');
+    expect({ full: remote.full, notModified: remote.notModified }).toEqual({ full: 1, notModified: 1 });
   });
 
   it('a save after another device saved reads the new sha and lands first time', async () => {
@@ -88,7 +109,7 @@ describe('US-09 AC13i: a GitHub read is not answered from the browser cache', ()
     const { version } = await adapter.read(ROADMAP_FILE_NAME);
     await adapter.write(ROADMAP_FILE_NAME, { synthetic: true }, version);
     const inits = fetchModel.mock.calls.map(([, init]) => ({ method: init?.method ?? 'GET', cache: init?.cache }));
-    expect(inits).toEqual([{ method: 'GET', cache: 'no-store' }, { method: 'GET', cache: undefined }, { method: 'PUT', cache: undefined }]);
+    expect(inits).toEqual([{ method: 'GET', cache: 'no-cache' }, { method: 'GET', cache: undefined }, { method: 'PUT', cache: undefined }]);
     const readHeaders = new Headers(fetchModel.mock.calls[0][1]?.headers);
     expect(readHeaders.get('Authorization')).toContain('test-token-good');
     expect(readHeaders.get('Accept')).toBe('application/vnd.github+json');
