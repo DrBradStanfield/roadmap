@@ -103,7 +103,8 @@ export class GitHubAdapter implements StorageAdapter {
   // --- file ops -------------------------------------------------------------
 
   async read(fileName: string): Promise<ReadResult> {
-    const res = await fetchOrFail('GitHub', this.contentsUrl(fileName), { headers: this.headers() });
+    // GitHub lets a browser reuse this answer for 60 s. A reused one carries an old sha (US-09 AC13i).
+    const res = await fetchOrFail('GitHub', this.contentsUrl(fileName), { headers: this.headers(), cache: 'no-store' });
     if (res.status === 404) return { body: null, version: null };
     if (!res.ok) throw new StorageError(`GitHub read failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status);
     const json = (await res.json()) as { content?: string; sha: string; size?: number; encoding?: string };
