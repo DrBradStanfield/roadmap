@@ -22,6 +22,8 @@ const SCALE = { min: 0.35, max: 0.65, line: 0.5 } as const;
  *  target ("<49.2 in"). */
 const WIDTH = { grade: 8, category: 11, ratio: 4, bmi: 5, target: 8 } as const;
 export const fixed = (text: string | undefined, width: number) => (text ?? '') + '\u00a0'.repeat(Math.max(0, width - (text ?? '').length));
+/** As fixed, padded with ordinary spaces: the same length, but the page collapses them, so text after it follows closely. */
+const soft = (text: string | undefined, width: number) => (text ?? '') + ' '.repeat(Math.max(0, width - (text ?? '').length));
 const GREEN = '#0B6B54';
 const MINT = '#2EA894';
 const AMBER = '#e0a540';
@@ -135,9 +137,18 @@ export function ResultsView({ results, status }: { results: Results | null; stat
             {results.bmi && (
               <div>
                 <div className="hr-widget-k">Body mass index (BMI)</div>
-                <div className="hr-widget-s">{fixed(statTileText(results.bmi), WIDTH.bmi)}</div>
-                {/* Always there, a blank one too (no grade for a known minor, or BMI 25-29.9 with no waist): presence would tell the grade. */}
-                <span className="hr-widget-status">{fixed(results.bmi.status?.label, WIDTH.category)}</span>
+                {/* One line, "27.2 – Normal" (Brad 2026-11-18). The category is always there, a blank one too (no grade
+                    for a known minor, or BMI 25-29.9 with no waist), and the dash is three characters either way:
+                    presence or length would tell the grade. */}
+                <div className="hr-widget-s">
+                  {/* "27.2 – Normal" on one line (Brad 2026-11-18). Each piece keeps its fixed length, padded with
+                      ordinary spaces, which the page collapses, so no gap shows. */}
+                  {soft(statTileText(results.bmi), WIDTH.bmi)}
+                  <span className="hr-widget-bmi-cat">
+                    <span aria-hidden="true">{results.bmi.status?.label ? '– ' : '  '}</span>
+                    <span className="hr-widget-status">{soft(results.bmi.status?.label, WIDTH.category)}</span>
+                  </span>
+                </div>
               </div>
             )}
             <div>

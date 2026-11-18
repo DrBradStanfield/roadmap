@@ -107,6 +107,8 @@
 .hr-widget-k { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--hrw-mid); }
 .hr-widget-v { font-family: var(--font-heading-family, inherit); font-size: 40px; font-weight: 700; line-height: 1.1; color: var(--hrw-ink); }
 .hr-widget-s { font-size: 20px; font-weight: 700; }
+.hr-widget-s .hr-widget-status { font-size: 20px; }
+.hr-widget-bmi-cat { white-space: nowrap; } /* "– Overweight" moves down whole on a narrow phone */
 .hr-widget-status { display: inline-block; font-size: 15px; font-weight: 700; color: var(--hrw-ink); }
 .hr-widget-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .hr-widget-grid > div { min-width: 0; overflow-wrap: anywhere; }
