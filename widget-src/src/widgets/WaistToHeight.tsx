@@ -205,7 +205,7 @@ export function WaistToHeightWidget({ nextUrl, nextLabel, navigate = (href) => w
         </div>
       </div>
       <div className="hr-widget-row" ref={dayRow}>
-        {box('waist', true)}
+        {box('waist', false)}
         {box('weight', true)}
       </div>
       {state.phase === 'failed' && <p className="hr-widget-error" role="alert">{NOT_SAVED}</p>}
