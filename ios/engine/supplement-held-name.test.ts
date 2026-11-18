@@ -1,5 +1,4 @@
-// US-06 AC1d: the iPhone changes the dose of, stops and restarts a supplement
-// the web form saved, whatever characters its stored name holds.
+// US-06 AC1d: the iPhone engine changes the dose of, stops and restarts a supplement the web form saved, whatever characters its stored name holds.
 import { describe, expect, it } from 'vitest';
 import { applyEdit, newRecord } from './my-data';
 import { applyEditJson } from './entry';
@@ -98,6 +97,12 @@ describe('what the phone still refuses (US-06 AC1d)', () => {
     const restarted = applied(stopped, rowEdit(stopped, { status: 'active' }), '2026-10-21T10:00:00.000Z');
     expect(restarted.supplements).toHaveLength(1);
     expect(restarted.supplements[0]).toMatchObject({ id: row.id, supplementName: row.supplementName, status: 'active' });
+  });
+
+  it('a stored name of 101 characters typed in full to start it again; the row\'s own restart saves', () => {
+    const stopped = upsertSupplement(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { supplementKey: 'custom_long', supplementName: 'D3 & K2 '.padEnd(101, 'x'), doseValue: null, doseUnit: null, status: 'stopped' }, NOW).file;
+    expect(applyEdit(stopped, { kind: 'customSupplement', name: stopped.supplements[0].supplementName }, LATER)).toEqual(REFUSED);
+    expect(applied(stopped, rowEdit(stopped, { status: 'active' })).supplements).toMatchObject([{ supplementKey: 'custom_long', supplementName: 'D3 & K2 '.padEnd(101, 'x'), status: 'active' }]);
   });
 
   it('the stored name of one row sent under another row\'s key', () => {
