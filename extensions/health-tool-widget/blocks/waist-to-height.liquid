@@ -18,6 +18,19 @@
       data-next-url="{{ block.settings.next_url | escape }}"
       data-next-label="{{ block.settings.next_label | escape }}"
     >&nbsp;</div>
+    {% comment %} No jump on load for a returning visitor (Brad 2026-11-18): a saved height with a saved
+         waist or weight on this device opens the calculator with its results, so the card reserves that
+         height before the script mounts. Reads this device's record only; writes and sends nothing. The
+         class says only that such a record exists, never a value or a grade (AC5). {% endcomment %}
+    <script>
+      (function (card) {
+        try {
+          var file = JSON.parse(localStorage.getItem('health_roadmap_file_v2') || 'null');
+          var day = function (m) { return m && m.status === 'active' && (m.metricType === 'waist' || m.metricType === 'weight'); };
+          if (file && file.profile && file.profile.heightCm > 0 && (file.measurements || []).some(day)) card.classList.add('hr-widget--saved');
+        } catch (e) {}
+      })(document.currentScript.previousElementSibling);
+    </script>
     {%- if block.settings.aside != blank -%}
       {% comment %} Shopify's own richtext output: the merchant's words, no health values. {% endcomment %}
       <div class="hr-widget-aside">{{ block.settings.aside }}</div>

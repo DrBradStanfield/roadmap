@@ -18,14 +18,23 @@ const release = `health-tool-widget@${gitHash}`;
  *  `:where(.hr-widget)` that adds none, and `:root` (the controls' geometry)
  *  becomes `.hr-widget`. */
 /** The part of a PostCSS root this plugin reads (PostCSS comes with Vite; no import, so no new dependency). */
-interface FieldsRoot { source?: { input: { file?: string } }; walkRules(each: (rule: { selectors: string[] }) => void): void }
+interface FieldsRule { selectors: string[]; parent?: { type: string; name?: string } }
+interface FieldsRoot { source?: { input: { file?: string } }; walkRules(each: (rule: FieldsRule) => void): void }
+/** One selector of fields.css, scoped to the widget's root with the specificity it had. */
+export function scopeSelector(s: string): string {
+  if (s === ':root') return '.hr-widget';
+  if (s.startsWith('.health-tool ')) return `.hr-widget${s.slice('.health-tool'.length)}`;
+  // Only the app's root as a whole first compound can be swapped; anything else would scope wrongly.
+  if (s.includes('.health-tool')) throw new Error(`fields.css: cannot scope "${s}"; start it with ".health-tool " or not at all`);
+  return `:where(.hr-widget) ${s}`;
+}
 export const scopeSharedFields = {
   postcssPlugin: 'scope-shared-fields',
   Once(root: FieldsRoot) {
     if (!root.source?.input.file?.endsWith('/src/components/fields.css')) return;
     root.walkRules((rule) => {
-      rule.selectors = rule.selectors.map((s) => (s === ':root' ? '.hr-widget'
-        : s.startsWith('.health-tool ') ? `.hr-widget${s.slice('.health-tool'.length)}` : `:where(.hr-widget) ${s}`));
+      if (rule.parent?.type === 'atrule' && /keyframes$/i.test(rule.parent.name ?? '')) return; // "from", "50%": not selectors
+      rule.selectors = rule.selectors.map(scopeSelector);
     });
   },
 };

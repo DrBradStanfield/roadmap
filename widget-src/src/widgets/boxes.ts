@@ -88,9 +88,10 @@ export function readBox(field: Field, box: Box, system: UnitSystem): Reading {
   // Text typed in the other units is read only in them, never as these (review R4).
   if (box.unit !== undefined && box.unit !== system) return { kind: 'error', message: 'Enter a number', part: 'text' };
   if (field === 'height' && system === 'conventional') {
-    // Whole feet and inches, as About you takes them; a fraction or a suffix is never cut off (A6).
-    if (!WHOLE.test(text || '0')) return { kind: 'error', message: 'Enter a number', part: 'text' };
-    if (!WHOLE.test(inches || '0')) return { kind: 'error', message: 'Enter a number', part: 'inches' };
+    // One digit of feet and two of inches, as About you's boxes hold them; a fraction, a suffix or a refused
+    // paste is an error on its box, never cut down to another number (A6, review F2).
+    if (!/^\d?$/.test(text)) return { kind: 'error', message: 'Enter a number', part: 'text' };
+    if (!/^\d{0,2}$/.test(inches)) return { kind: 'error', message: 'Enter a number', part: 'inches' };
     return { kind: 'value', value: feetInchesToCm(Number(text || 0), Number(inches || 0)), entered: true };
   }
   const n = numberIn(field, text, system);

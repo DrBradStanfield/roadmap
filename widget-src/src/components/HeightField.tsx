@@ -67,7 +67,8 @@ export interface HeightBoxesProps {
   attention: boolean;
   /** The line under the boxes, if any. */
   error?: string;
-  /** Marks the boxes as at fault (their `error` class). */
+  /** Marks the boxes as at fault (their `error` class). The widget passes false and styles
+   *  [aria-invalid] instead: no class there varies with an entry (US-74 AC5). */
   invalid: boolean;
   /** The cm box's text and range, metric only. */
   cm: string;
@@ -82,24 +83,36 @@ export interface HeightBoxesProps {
   /** The focus left the pair, not one box for the other (Codex R2). */
   onPairLeave: () => void;
   onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
-  /** The unit pill in the label; false where the host has its own units control (the widget's Metric/US switch). */
+  /** The unit pill in the label; false where the host has its own units control (the widget's Metric/US
+   *  switch): the label then names the unit in words and points at the box in use. */
   pill?: boolean;
+  /** Where given, a paste or drop into feet or inches that is not whole digits that fit is refused whole,
+   *  never cut down to another number, and handed here (US-74 review F2). Without it, About you's boxes
+   *  keep digits only, as typed. */
+  onRefused?: (part: 'feet' | 'inches', text: string) => void;
 }
 
 /** The height field's markup and keys, on whoever's state. */
 export function HeightBoxes(props: HeightBoxesProps) {
-  const { unitSystem, ids = APP_IDS, attention, error, invalid, cm, range, onCm, onCmBlur, feet, inches, onFeet, onInches, onPairLeave, onKeyDown, pill = true } = props;
+  const { unitSystem, ids = APP_IDS, attention, error, invalid, cm, range, onCm, onCmBlur, feet, inches, onFeet, onInches, onPairLeave, onKeyDown, pill = true, onRefused } = props;
   const errorId = `${ids.cm}-error`;
   const labelId = `${ids.cm}-label`;
   const className = invalid ? 'error' : '';
   const described = error ? errorId : undefined;
+  // A paste or drop must be whole digits that fit the box (1 for feet, 2 for inches), or it is refused.
+  const whole = (part: 'feet' | 'inches') => onRefused && ((e: React.ClipboardEvent<HTMLInputElement> | React.DragEvent<HTMLInputElement>) => {
+    const text = ('clipboardData' in e ? e.clipboardData : e.dataTransfer).getData('text').trim();
+    if ((part === 'feet' ? /^\d$/ : /^\d{1,2}$/).test(text)) return;
+    e.preventDefault();
+    onRefused(part, text);
+  });
   const leavePair = (e: React.FocusEvent<HTMLInputElement>) => {
     if (![ids.feet, ids.inches].includes((e.relatedTarget as HTMLElement | null)?.id ?? '')) onPairLeave();
   };
   return (
     <div className={`health-field${attention ? ' field-attention' : ''}`}>
-      <label id={labelId} htmlFor={ids.cm}>
-        Height{pill && ' '}
+      <label id={labelId} htmlFor={pill || unitSystem === 'si' ? ids.cm : ids.feet}>
+        {pill ? 'Height ' : `Height (${unitSystem === 'si' ? 'cm' : 'ft, in'})`}
         {pill && <button
           type="button"
           className="unit-toggle-pill"
@@ -142,6 +155,8 @@ export function HeightBoxes(props: HeightBoxesProps) {
             }}
             placeholder=""
             maxLength={1}
+            onPaste={whole('feet')}
+            onDrop={whole('feet')}
             onBlur={leavePair}
             onKeyDown={onKeyDown}
             aria-invalid={!!error || undefined}
@@ -159,6 +174,8 @@ export function HeightBoxes(props: HeightBoxesProps) {
             onChange={(e) => onInches(digits(e.target.value))}
             placeholder=""
             maxLength={2}
+            onPaste={whole('inches')}
+            onDrop={whole('inches')}
             onBlur={leavePair}
             onKeyDown={onKeyDown}
             aria-invalid={!!error || undefined}

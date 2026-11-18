@@ -4,13 +4,13 @@
 // (review R2): a later save of the person's own does not make it a conflict,
 // and a conflict found by an earlier one drops the field from any save asked
 // before it, until the person types again. A valid entry that did not save
-// goes with the next save, and "Saved" waits for it (review R8).
+// goes with the next save (review R8). Nothing is said on the page about any of it (Brad 2026-11-18);
+// a save resolves true only once every pending entry is kept, which the next-step link waits for.
 import { useRef, type Dispatch, type MutableRefObject, type SetStateAction } from 'react';
 import type { UnitSystem } from '@roadmap/health-core/units';
 import { trackProductEvent } from '../lib/server-api';
 import { recordDays, recordMeasured, resultsFor, saveMeasured, seenAfterFailure, seenNow, seenWith, type Seen } from './body-measures';
 import { INPUT_OF, readBoxes, settle, type Boxes, type Field } from './boxes';
-import type { WidgetEvent } from './widget-machine';
 
 type Days = ReturnType<typeof recordDays>;
 
@@ -18,9 +18,8 @@ export function useWidgetSave(args: {
   now: MutableRefObject<{ boxes: Boxes; system: UnitSystem }>;
   setBoxes: Dispatch<SetStateAction<Boxes>>;
   setDays: Dispatch<SetStateAction<Days>>;
-  dispatch: Dispatch<WidgetEvent>;
 }): (fields: readonly Field[]) => Promise<boolean> {
-  const { now, setBoxes, setDays, dispatch } = args;
+  const { now, setBoxes, setDays } = args;
   // What the person has seen of the record: all a save may replace (review A4, R5).
   const seen = useRef<Seen | null>(null);
   seen.current ??= seenNow();
@@ -51,14 +50,12 @@ export function useWidgetSave(args: {
       // A field this page wrote after this was asked: its own row is what it expects.
       const own = new Set([...chosen].filter((f) => (ownAfter.current[f] ?? 0) > number));
       const base: Seen = { ...seenWith(baseline, own), pending: seen.current!.pending };
-      dispatch({ type: 'started' });
-      // A save that throws ends as one the store could not keep, never as "Saving…" for good.
+      // A save that throws ends as one the store could not keep.
       const outcome = await saveMeasured(values, chosen, base, unit).catch(() => ({ kind: 'failed' as const, staged: { saved: [], inserted: [] } }));
       if (outcome.kind === 'failed') {
         // The drafts stay for the next save; only the person's own entries count as seen (A3, A4).
         seen.current = seenAfterFailure(seen.current!, values, chosen, outcome.staged);
         for (const f of chosen) unsaved.current.add(f);
-        dispatch({ type: 'failed' });
         return false;
       }
       const after = asked.current + 0.5;
@@ -86,8 +83,6 @@ export function useWidgetSave(args: {
         counted.current = true;
         trackProductEvent('waist_widget_saved');
       }
-      const partial = outcome.changed.length > 0 || outcome.refused.length > 0 ? { saved: outcome.saved, changed: outcome.changed, refused: outcome.refused } : null;
-      dispatch(unsaved.current.size === 0 ? { type: 'kept', partial } : { type: 'failed' });
       return unsaved.current.size === 0;
     };
     const next = queue.current.then(run);

@@ -8,7 +8,7 @@
 // canvases, whose pixels Clarity does not record, and the numbers and words
 // are text, which it masks. WaistToHeight.test.tsx checks a Healthy and an
 // Elevated result give the same attributes.
-import { useEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { statTileText, type StatTile } from '@roadmap/health-core/stat-tiles';
 import type { Results } from './body-measures';
 
@@ -103,14 +103,16 @@ function drawScale(canvas: HTMLCanvasElement | null, ratio: number): boolean {
 /** The results, in a live region that is on the page before they arrive, so a
  *  screen reader reads them out (one inserted with its content often is not).
  *  An <output>, not a div: the storefront hides an empty div. */
-export function ResultsView({ results, status }: { results: Results | null; status: React.ReactNode }) {
+export function ResultsView({ results }: { results: Results | null }) {
   const pill = useRef<HTMLCanvasElement>(null);
   const scale = useRef<HTMLCanvasElement>(null);
   // Whether the pill drew: where it did, the grade's word is read out but not shown twice.
   // It depends on the browser, never on the result.
   const [drawn, setDrawn] = useState(false);
   const whtr = results?.whtr;
-  useEffect(() => {
+  // Drawn before the browser paints: the grade's text line goes as the pill takes its place, never a
+  // frame later, which moved everything under it by a line on load (Chrome layout shift, 2026-11-18).
+  useLayoutEffect(() => {
     if (!whtr) return;
     const ok = drawPill(pill.current, whtr) && drawScale(scale.current, Number(whtr.value));
     setDrawn(ok);
@@ -158,7 +160,6 @@ export function ResultsView({ results, status }: { results: Results | null; stat
           </div>
         </div>
       )}
-      {status}
     </output>
   );
 }

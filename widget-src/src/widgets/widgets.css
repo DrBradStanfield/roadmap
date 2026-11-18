@@ -42,13 +42,21 @@
 }
 @media (max-width: 420px) { .hr-widget { padding: 20px 16px; } }
 /* Room for the calculator before its script mounts (Brad 2026-11-18: the page jumped on load). The
-   stylesheet loads in the head, the script later: the block's placeholder card took 64-72 px, then grew
-   to the empty calculator's height. These are that empty calculator's heights (WebKit harness, 2026-11-18,
-   on the shared boxes with the Metric / US switch: 213.2, 224.8, 244.4 px at 1280, 390 and 320);
-   results added later grow it further, which is the person's own doing. Re-measure if the boxes change. */
-.hr-widget-block .hr-widget { min-height: 214px; }
-@media (max-width: 420px) { .hr-widget-block .hr-widget { min-height: 225px; } }
-@media (max-width: 340px) { .hr-widget-block .hr-widget { min-height: 245px; } }
+   stylesheet loads in the head, the script later, so the card reserves the calculator's height: empty,
+   or, with a saved height and a saved waist or weight on this device (hr-widget--saved, set by the
+   block's inline script), with its results. Measured in WebKit on the live theme with this bundle
+   swapped in, 2026-11-18: empty 199.2, 210.8, 230.4 px and with results 400.8, 429.2, 499.2 px at
+   1280, 390 and 320 (no next-step link; a link adds its own height). Re-measure if the card changes. */
+.hr-widget-block .hr-widget { min-height: 200px; }
+.hr-widget-block .hr-widget.hr-widget--saved { min-height: 401px; }
+@media (max-width: 420px) {
+  .hr-widget-block .hr-widget { min-height: 211px; }
+  .hr-widget-block .hr-widget.hr-widget--saved { min-height: 430px; }
+}
+@media (max-width: 340px) {
+  .hr-widget-block .hr-widget { min-height: 231px; }
+  .hr-widget-block .hr-widget.hr-widget--saved { min-height: 500px; }
+}
 .hr-widget-form { display: flex; flex-direction: column; gap: 14px; }
 
 /* The boxes are the full app's (components/fields.css, scoped to this block
@@ -79,7 +87,8 @@
 .hr-widget-row .health-field label { flex: 1 0 auto; display: flex; flex-wrap: wrap; align-items: flex-end; column-gap: 4px; }
 .hr-widget-row .health-field input { flex: none; }
 .hr-widget-day { font-size: 13px; color: var(--hrw-mid); margin-top: 4px; }
-.hr-widget-error { color: var(--hrw-error); font-size: 14px; margin: 0; }
+/* A box at fault: by its aria-invalid, never a class, so no class in the block varies with an entry (AC5). */
+.hr-widget .health-field input[aria-invalid='true'] { border-color: var(--color-error); }
 /* The store theme rings every focused element (Dawn base.css *:focus-visible); the switch and the link keep their own outline. The boxes' reset is fields.css's focus rule. */
 .hr-widget-block .hr-widget-unit:focus-visible, .hr-widget-block .hr-widget-next:focus-visible { box-shadow: none; }
 
@@ -94,11 +103,6 @@
 .hr-widget-pill { display: block; flex: none; width: 92px; height: 30px; }
 .hr-widget-scale { display: block; width: 100%; height: 22px; }
 .hr-widget-sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
-/* Saving / Saved sits in the card's bottom padding, out of the flow (Brad 2026-11-18: less space under
-   the results): it takes no room, so it can appear without moving anything. */
-.hr-widget { position: relative; }
-.hr-widget-saving { position: absolute; right: 24px; bottom: 4px; margin: 0; line-height: 1.4; font-size: 13px; color: var(--hrw-mid); text-align: right; }
-@media (max-width: 420px) { .hr-widget-saving { right: 16px; } }
 .hr-widget-k { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--hrw-mid); }
 .hr-widget-v { font-family: var(--font-heading-family, inherit); font-size: 40px; font-weight: 700; line-height: 1.1; color: var(--hrw-ink); }
 .hr-widget-s { font-size: 20px; font-weight: 700; }
@@ -107,9 +111,6 @@
 .hr-widget-status { display: inline-block; font-size: 15px; font-weight: 700; color: var(--hrw-ink); }
 .hr-widget-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .hr-widget-grid > div { min-width: 0; overflow-wrap: anywhere; }
-.hr-widget-notice { border: 1px solid var(--hrw-line); border-radius: 10px; padding: 10px 12px; font-size: 14px; }
-.hr-widget-notice p { margin: 0; }
-.hr-widget-notice p + p { margin-top: 6px; }
 .hr-widget-next {
   display: block; text-align: center; padding: 13px 16px; border: 1.5px solid var(--hrw-green); border-radius: 10px;
   color: var(--hrw-green); font-weight: 700; text-decoration: none; overflow-wrap: anywhere;
