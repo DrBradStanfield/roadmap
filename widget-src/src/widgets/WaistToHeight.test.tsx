@@ -58,16 +58,29 @@ afterEach(async () => {
 });
 
 describe('US-74 waist-to-height and BMI widget', () => {
-  it('AC2: prefills height, weight and waist from the record, each with the day it comes from (review X2)', async () => {
+  it('AC2: prefills height, weight and waist from the record, an older day\'s with the day it comes from (review X2)', async () => {
     await data.saveChangedMeasurements({ heightCm: 178 }, {});
     await data.addMeasurement('weight', 82, OLD);
     await data.addMeasurement('waist', 90);
     render(<WaistToHeightWidget />);
     expect([box(/^Height/).value, box(/^Weight/).value, box(/^Waist/).value]).toEqual(['178', '82', '90']);
     expect(screen.getByText(`from ${formatShortDate('2026-01-10')}`)).toBeTruthy();
-    expect(screen.getByText('today')).toBeTruthy();
+    expect(screen.queryByText('today')).toBeNull(); // today's value carries no note (Brad 2026-11-18)
     type(/^Weight/, '80'); // an entry is the person's: no longer the record's day
     expect(screen.queryByText(`from ${formatShortDate('2026-01-10')}`)).toBeNull();
+  });
+
+  it('the boxes take numbers only, with the full app\'s own key filter (Brad 2026-11-18)', () => {
+    render(<WaistToHeightWidget />);
+    for (const label of [/^Height/, /^Waist/, /^Weight/]) {
+      expect(fireEvent.keyDown(box(label), { key: 'a' })).toBe(false); // prevented
+      expect(fireEvent.keyDown(box(label), { key: '7' })).toBe(true);
+      expect(fireEvent.keyDown(box(label), { key: '.' })).toBe(true);
+    }
+    toUS(); // feet and inches are About you's pair: anything but digits is dropped as typed
+    type(/^Feet/, '5.');
+    type(/^Inches/, 'a1x');
+    expect([box(/^Feet/).value, box(/^Inches/).value]).toEqual(['5', '1']);
   });
 
   it('AC3: results show as soon as a height and a waist or weight are in, before any save, with the widget\'s own labels', () => {

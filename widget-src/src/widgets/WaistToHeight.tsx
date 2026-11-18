@@ -57,10 +57,10 @@ function PartlyKeptNotice({ partial }: { partial: PartlyKept }) {
   );
 }
 
-/** The day a box's value comes from, while it still shows the record's (review X2). */
+/** The day a box's value comes from, while it still shows an older day's (review X2). Today's needs no note (Brad 2026-11-18). */
 function fromDay(day: string | undefined): string | null {
-  if (!day) return null;
-  return day === localDay(new Date()) ? 'today' : `from ${formatShortDate(day)}`;
+  if (!day || day === localDay(new Date())) return null;
+  return `from ${formatShortDate(day)}`;
 }
 
 export function WaistToHeightWidget({ nextUrl, nextLabel, navigate = (href) => window.location.assign(href) }: WidgetProps) {
