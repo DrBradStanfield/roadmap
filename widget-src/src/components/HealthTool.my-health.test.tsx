@@ -32,7 +32,7 @@ vi.mock('../lib/server-api', async (importOriginal) => ({
 vi.mock('../lib/chat-api', () => ({ listConversations: () => Promise.resolve(null), getChatGate: () => null }));
 vi.mock('./ChatEmbed', () => ({ ChatEmbed: () => null }));
 vi.mock('./ChatSection', () => ({ ChatSection: () => null }));
-vi.mock('./UploadModal', () => ({ UploadModal: () => null }));
+vi.mock('./UploadModal', () => ({ UploadModal: ({ open }: { open: boolean }) => (open ? <h3>Upload Health Records</h3> : null) })); // the real modal's heading, shown when open
 // The plan's suggestions, as usePlanView is handed them: what the page must draw.
 const planSeen = vi.hoisted(() => ({ suggestions: [] as Suggestion[] }));
 vi.mock('./ResultsPanel', async (importOriginal) => {
@@ -329,6 +329,14 @@ describe('US-62 AC22, AC23: Blood tests and Supplements', () => {
     expect(add.compareDocumentPosition(table) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     fireEvent.click(add);
     expect(within(section).getByLabelText('Test')).toBeTruthy(); // the existing add (US-21)
+  });
+
+  it('the same "+" uploads on the Cholesterol heading and opens the upload (Brad 2026-11-17)', async () => {
+    const view = await show(RECORDS['urgent results, both cascades, a supplement']);
+    const head = view.container.querySelector<HTMLElement>('[data-topic="cholesterol"] .mh-topic-head')!;
+    expect(within(document.body).queryByRole('heading', { name: 'Upload Health Records' })).toBeNull();
+    fireEvent.click(within(head).getByRole('button', { name: 'Upload lab results' }));
+    expect(within(document.body).getByRole('heading', { name: 'Upload Health Records' })).toBeTruthy();
   });
 
   it('Supplements: the cards, then my list ending in "Add another supplement"; no quick-add chips', async () => {

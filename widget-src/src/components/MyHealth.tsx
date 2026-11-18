@@ -179,18 +179,19 @@ export function MyHealth({ form, plan, tiles, series, egfrCurrent, storageBar, p
   const parts: Partial<Record<TopicId, TopicParts>> = !form.fullForm ? {} : (() => {
     const screening = form.screening(place);
     const bone = form.boneDensity(place);
+    const upload = setShowUploadModal && (
+      <button type="button" className="mh-head-icon-btn" aria-label="Upload lab results" title="Upload lab results" onClick={() => setShowUploadModal(true)}>
+        <span aria-hidden="true">+</span>
+      </button>
+    );
     return {
       weight: { rows: <RowsCard rows={rows.weight} onOpen={onOpen} extra={form.vitalsCue}/>, after: form.weightMedications(place) },
       bloodPressure: { rows: <RowsCard rows={rows.pressure} onOpen={onOpen}/> },
-      cholesterol: { rows: <RowsCard rows={rows.lipids} onOpen={onOpen}/>, after: form.lipidMedications(place) },
+      cholesterol: { action: upload, rows: <RowsCard rows={rows.lipids} onOpen={onOpen}/>, after: form.lipidMedications(place) },
       screening: { rows: (screening || bone) ? <>{screening}{bone}</> : undefined },
       bloodTests: {
         always: true,
-        action: setShowUploadModal && (
-          <button type="button" className="mh-head-icon-btn" aria-label="Upload lab results" title="Upload lab results" onClick={() => setShowUploadModal(true)}>
-            <span aria-hidden="true">+</span>
-          </button>
-        ),
+        action: upload,
         rows: (
           <div className="section-card section-card--bt mh-rows-card">
             {!form.tableShown && (
