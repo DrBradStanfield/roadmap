@@ -78,7 +78,8 @@ describe('US-35 AC10a: refused rows past the unrecognized cap are counted in nex
     expect(none.next).not.toContain('could not be filed');
   });
 
-  it('the file_results wording carries the same count', () => {
+  // Not through the tool: file_results takes at most 50 rows a call, so this drives the two functions directly.
+  it('prepareImport and extractNext, called directly on the file_results route with 60 lines, carry the same count', () => {
     const bundle: ImportBundle = { route: 'assistant', files: [file('a.pdf', report('a', 60))], remaining: [] };
     const prepared = prepareImport(base(), bundle, { now: NOW, latestDay: TODAY, payloadId: 'p1' });
     const next = extractNext(prepared, [], 'assistant');
