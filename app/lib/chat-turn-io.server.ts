@@ -58,7 +58,8 @@ export function streamTurn(run: (write: (line: object) => void) => Promise<void>
         .finally(() => { try { controller.close(); } catch { /* reader gone */ } });
     },
   });
-  return new Response(body, {
-    headers: { 'Content-Type': 'application/x-ndjson', 'Cache-Control': 'no-store, no-transform', 'X-Accel-Buffering': 'no' },
-  });
+  return new Response(body, { headers: NDJSON_HEADERS });
 }
+
+/** An NDJSON stream's headers, shared with the app's lab read (US-52 AC7e). */
+export const NDJSON_HEADERS = { 'Content-Type': 'application/x-ndjson', 'Cache-Control': 'no-store, no-transform', 'X-Accel-Buffering': 'no' };

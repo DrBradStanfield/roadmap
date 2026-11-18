@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render } from '@testing-library/react';
 import { ReviewTable } from './ReviewTable';
 import type { FileResult } from '../lib/upload-pipeline';
+import { showingAll } from '../testing/import-review';
 
 beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(new Date('2026-10-15T12:00:00Z')); });
 afterEach(() => { cleanup(); vi.useRealTimers(); });
@@ -14,8 +15,8 @@ function review(reportDate: string | null) {
   const result: FileResult = { fileName: 'synthetic-labs.pdf', reportDate, additionalValues: [],
     values: [{ metric: 'ldl', valueSI: 3, displayValue: 3, displayUnit: 'mmol/L', confidence: 'high' }] };
   const onSave = vi.fn();
-  const view = render(<ReviewTable results={[result]} history={{ measurements: [], labValues: [], documents: [] }}
-    unitSystem="si" age={60} sex="male" grading={{}} onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />);
+  const view = showingAll(render(<ReviewTable results={[result]} history={{ measurements: [], labValues: [], documents: [] }}
+    unitSystem="si" age={60} sex="male" grading={{}} onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />));
   const save = view.getByRole('button', { name: /^Save / }) as HTMLButtonElement;
   const picker = () => view.getByLabelText('Choose column date') as HTMLInputElement;
   return { view, onSave, save, picker };

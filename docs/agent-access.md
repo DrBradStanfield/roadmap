@@ -218,6 +218,9 @@ someone's medical history, or lose their data at the next device sync.
     HbA1c, creatinine and the rest) goes here too, with `core: true`, its key as `metricName`
     and its SI unit (rule 8); the file is then `schemaVersion` 3 (How to read, step 2).
     Weight, waist and blood pressure stay in `measurements`.
+    A white-cell differential printed in % (and reticulocytes in %, NRBC per 100 WBC) is
+    its own test: write it under the `_pct` key (`neutrophils_pct`, …, `nrbc_per_100_wbc`),
+    never under the count's key, which holds the ×10⁹/L count (US-21 AC28).
 11. **Deleting a document** means setting `deleted: true` on its row. A removed row comes
     straight back from any other device.
 12. **`reminderOptIn.token` is a capability secret.** Leave it where it is; never copy it

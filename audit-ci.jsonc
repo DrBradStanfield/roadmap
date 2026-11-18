@@ -2,7 +2,7 @@
   // CI dependency-audit gate (replaces `npm audit --production --audit-level=high`).
   // Fails on NEW high/critical advisories in production deps. An advisory with no
   // non-breaking fix may be allowlisted below, but only WITH a documented reason and
-  // a removal trigger. The list is empty today.
+  // a removal trigger.
   //
   // Emptied 2026-10-14: audit-ci reported all six entries stale ("Consider not
   // allowlisting"). The five react-router advisories (GHSA-wrjc-x8rr-h8h6,
@@ -16,5 +16,13 @@
   "$schema": "https://github.com/IBM/audit-ci/raw/main/docs/schema.json",
   "high": true,
   "skip-dev": true,
-  "allowlist": []
+  // GHSA-fc5q-39xc-vjpf (picomatch, high, no patched version yet), allowed until
+  // 2026-12-16 (Brad 2026-11-18). Reason: picomatch arrives only through build
+  // tooling (vite > fdir, tinyglobby, vite-tsconfig-paths, @react-router/dev); it
+  // matches file paths this repo writes while building, never visitor input, and
+  // ships in no browser bundle. Removal trigger: a patched picomatch release, or the
+  // expiry date, whichever comes first; audit-ci fails again on expiry by design.
+  "allowlist": [
+    { "GHSA-fc5q-39xc-vjpf": { "active": true, "expiry": "2026-12-16", "notes": "picomatch via build tooling only; remove when a patched release ships (Brad 2026-11-18)" } }
+  ]
 }

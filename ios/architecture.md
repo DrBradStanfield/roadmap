@@ -157,6 +157,8 @@ launch time: there, pre-main alone is 1.4 to 3 s (docs/reference.md gotcha).
   - **Chat history** (`ChatHistoryStore`) awaits the engine for its list, messages, saves and deletes; each save or delete reads, changes and writes in one engine step. The app has one store, made at launch (`AppParts`) and shared by Chat and the eraser: `DataEraser` reads its list again after an erase, and opening History reads it again, so Chat shows what is on disk without a refresh of its own. Both erases now write the chat tombstones on the engine's queue (the phone erase's `keepChat` runs through `perform`), so neither lands between a save's read and write.
   - **Cloud news** is decoded on the engine's queue (`CloudNews`) before it goes to main.
   - **Photos and scans** are resized `@concurrent` (`LabFileReader.photo` takes the photo's bytes; `pictures` takes the scan's images, which are Sendable in the iOS 27 SDK).
+  - **The upload runner (2026-11-15, US-52 AC7e, shared upload PR 14; not yet the live path).** `UploadRunner` (an actor) holds the engine's upload state as text and steps it with `uploadStepJson`, one event at a time: events queue in arrival order and the first caller steps them all, so no two steps start from one state. The state is split from its effects inside JavaScript (`UploadDoors.splitScript`), so Swift never re-writes a number in it. Each effect runs in its own task (`list`, `hash`, `convert` on `LabFileReader.Held`; `send` through `LabReadSender`; `abort` cancels the send's task; `forget`; `save` is a hook for the save door); the engine limits them, the runner adds no limit or retry. The view (`uploadViewJson`) is computed on the engine's queue, at most one a frame, latest state wins, and published to `UploadModel`, one `@MainActor` state: unavailable (an engine without the doors: the app keeps today's flow), starting, drawn, or refused. `AppAttestClient.open` answers a refusal instead of throwing it; the lock still spans signing to headers, which lab-read sends once the counter is spent, so five reads stream at once. A waiter cancelled before its turn leaves the queue and never signs (chat too: a chat cancelled while waiting now throws at once, where it used to sign, then fail). A send has two clocks: 600 s to its headers, 120 s from them. A refused step stops the run and stays on the screen until the next pick.
+  - **A ZIP is listed, then read one member at a time (2026-11-15, US-52 AC7f, shared upload PR 13).** `ZipReader.entries` reads only the central directory; `ZipReader.check` holds the refusals and caps; `ZipReader.data(of:in:maxBytes:)` checks and inflates one member when asked. `Held.list` applies no rule: health-core's `listed` judges each member, as on the web. `LabFileReader.Held` is the reading side of health-core's upload effects (`list`, `hash`, `convert`, `forget`), keyed by the upload state's file id: one object the runner's (PR 14) reads share, its records under an `OSAllocatedUnfairLock` (never an inflate or a convert). It keeps the caps itself: the kept members checked at `list`, each member against its cap, and a per-ZIP total of bytes inflated, each member counted once. A member is inflated again for its hash and its convert rather than kept between them. Until the runner lands, `documents(from:)` calls them in turn.
 - **The watchdog (DEBUG only, opt-in, US-25 AC21c).** `MainThreadWatchdog` runs only when the launch argument `-mainWatchdogLog <path>` names a log. It pings main every 50 ms from its own thread and appends "<timestamp> main stalled N ms" to that file when main took 100 ms or more to answer. It takes no stacks: a tool for timing by hand, not a test. `LaunchClock` logs the launch's milestones in ms since the process started.
 - **Apple Health observers at launch (adversary R1).** `Launch.init`, which runs as the process starts, registers HealthKit's observer queries and background delivery at once (`AppleHealthSync.observeAtLaunch`), as Apple requires, while the parts are still being built. A delivery awaits the parts, then refreshes; HealthKit's completion is called after that refresh, or at once if the parts never come. `HealthKitClient.observe` registers once per process, so the sync's own `start` keeps the launch's queries. Coming on screen refreshes Health from `follow` (`AppleHealthSync.foreground`, which first asks for lab results where HealthKit says a request is needed, US-72), beside sync and the updater; the sync itself listens only for the phone unlocking.
 
@@ -302,6 +304,33 @@ A signature means "the key holder approved this bundle", nothing more.
   `HealthEngine.uploadRules` and keeps its Swift rules when the door is absent (`UploadRules.swift`;
   lead U14 deletes them once the engine floor guarantees the door). No floor bump: an older app never
   calls it and keeps its Swift rules, which answer the same today.
+  Fourth (2026-11-15, import review series PRs 5-6, US-13 AC13): `labReviewGroupsJson(recordJson,
+  extractionJson, refsJson, reportDay, nowIso, deviceId)`, one report's groups (sure, unsure, saved,
+  not saved), every word the review shows and the refs Save sends, from health-core `import-review.ts`
+  (`ios/engine/lab-review-groups.ts` holds the one call into it). Swift asks it again whenever a tick or
+  the test day changes, and once more at Save (`LabReportSave.groups`), so it holds no rule and no copy
+  of the words. Without the door the review lists every value as a row, as before. Bridge id unchanged.
+  Fifth (2026-11-15, shared upload PR 12, US-52 AC8c): five doors that let Swift drive health-core's
+  one upload machine (`upload-flow.ts`) with the state as opaque JSON (`ios/engine/upload-doors.ts`):
+  `uploadStartJson`, `uploadStepJson`, `uploadViewJson`, `uploadSavePlanJson`, `uploadUsageJson`. Every
+  input is checked by health-core's strict schemas (`upload-schema.ts`, pinned to the types), the parsed
+  value runs, and malformed input answers `{ok: false, reason, message}`, never a throw. Swift sends only
+  what it saw: the step door adds `known` to a hash, `legacy` to a read and the failure code to a
+  refusal, and reads the streaming lab route's last line itself (`streamEnded {run, id, line, now}`), so
+  the app never decides read or failed. Steps are strictly serial: one at a time, each given the state
+  the last returned. The view costs about 100-200 ms for 200 reports on a phone: at most one call per
+  frame, coalesced, off the main thread. Save is `uploadSaveJson` (shared upload, 2026-11-15): one
+  Promise door, health-core `uploadSave`, writes the values and the document and lab archive rows in one
+  step, the archive row listing the rows its values wrote. Swift never touches the cloud: the engine
+  writes each original the plan stores, once, asking Swift for its bytes by file id through a callback
+  as it writes it (at most three in memory; anything over the per-file cap is no original), then writes
+  every row on the session's record as it stands at that moment, as the web's `session.edit(commit)`
+  does: an edit that landed during the upload is kept, a slot it took is skipped, and nothing new commits
+  nothing. Originals that did not land are counted (`unstored`); their rows keep the hash. Known, as with
+  `documentSave`: an original written before a Save that then refuses or never commits stays in the
+  cloud as an orphan blob; the retry plans the same ref and overwrites it. Build 14's runner is the first
+  caller; builds 12 and 13 never call them and keep `cloudLabImport`, `labSaveSummaryJson` and
+  `documentSave`. Bridge id unchanged.
   **Schema 3 (Brad 2026-11-02, US-66 AC15):** a record holding a core blood row is
   `schemaVersion` 3, so the engine's `schemaVersion` fact becomes 3. Build 3 bundles a
   schema-2 engine: it refuses a moved record with its "update the app" path (US-65 AC5) and
@@ -918,12 +947,16 @@ Apple offers Health Records in the US, UK and Canada; records are FHIR, read-onl
   says one is needed, then refreshes. A deliberate connect can still show it too, but once
   connected the live cards' Turn On shows only while the live types are due. No screen of
   ours comes before the sheet (guideline 5.1.1).
-- **Rules version:** `HealthSyncMemory.labResultsRulesVersion` (3 since 2026-11-10: results
-  contained in a DiagnosticReport, US-72 AC15; 2 since 2026-11-02: results
+- **Rules version:** `HealthSyncMemory.labResultsRulesVersion` (4 since 2026-11-13: a result
+  HealthKit took out of a panel, id `DiagnosticReport/<report>#<result>`, US-72 AC17; 3 since
+  2026-11-10: results contained in a DiagnosticReport, US-72 AC15; 2 since 2026-11-02: results
   dated by `issued`, the MDRD eGFR and the import winning a conflict), stored beside the anchor.
   Bump it when the engine starts reading results it used to refuse (a new code or unit): a
   phone whose anchor was kept under another version drops it once and reads every result
   again. AC5's dedup by `externalId`, and its stale-version rule, make the re-read safe.
+  The version lives in the app, not the engine. An over-the-air engine release alone does
+  not re-read results an older app build skipped; only an app build with the higher rules
+  version does.
 - **One blood-test table (US-66, merged 2026-11-03):** every result lands in `labValues`, a
   core test as a core row (`createCoreRow`: `core: true`, its key, its SI unit), so the
   record's own write stamp makes it `schemaVersion` 3; `measurements` gets nothing from the
@@ -1442,6 +1475,10 @@ user agrees. The agreement is kept on the phone with a version, so changed wordi
 again, and the chat and upload screens have a "Stop sharing" control that withdraws it.
 Before submission Brad updates the privacy policy and the App Store privacy label
 (forwarding to a third party that keeps data may count as "collected").
+Since 2026-11-15 (App Review 1.4.1, US-52 AC6h) the chat screen's first paragraph says the app
+is education, not medical advice (`EducationNote.chatConsent`). It is not sharing wording, so
+the consent's version stays v1 and no one who agreed is asked again. My health has a matching
+line under its title (`EducationNote.myHealth`, US-73 AC13).
 
 **The plan screen's sentence** (D9, adversary R1): "No health data left your device" is
 false once a user has used chat or upload. It now reads "Worked out on this iPhone", which

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * US-12 AC1a: the drop zone opens the file chooser from the keyboard. The real
+ * US-12 AC1b: the drop zone opens the file chooser from the keyboard. The real
  * file input is hidden, so before this the drop zone (a plain div) was the only
  * way to choose a file, and a keyboard user could not reach it. Synthetic: jsdom
  * opens no chooser, so the tests spy on the hidden input's click.
@@ -29,7 +29,7 @@ function renderModal() {
 beforeEach(() => { vi.mocked(getDocumentArchiveMode).mockReturnValue('cloud'); });
 afterEach(() => { cleanup(); vi.clearAllMocks(); });
 
-describe('US-12 AC1a: choosing a file from the keyboard', () => {
+describe('US-12 AC1b: choosing a file from the keyboard', () => {
   it('names the drop zone as a button in the tab order, keeping its drop zone class', () => {
     const zone = renderModal();
     expect(zone.tabIndex).toBe(0);

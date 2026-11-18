@@ -11,6 +11,7 @@ import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import { ReviewTable } from './ReviewTable';
 import { buildMatrixModel } from '../lib/review-matrix';
 import type { FileResult } from '../lib/upload-pipeline';
+import { showingAll } from '../testing/import-review';
 
 beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(new Date('2026-10-15T12:00:00Z')); });
 afterEach(() => { cleanup(); vi.useRealTimers(); });
@@ -32,8 +33,8 @@ const sheet = (reportDate: string | null): FileResult[] => [{
 
 function renderReview(results: FileResult[], measurements: ApiMeasurement[] = []) {
   const onSave = vi.fn();
-  const view = render(<ReviewTable grading={{}} results={results} history={{ measurements, labValues: [], documents: [] }}
-    unitSystem="si" onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />);
+  const view = showingAll(render(<ReviewTable grading={{}} results={results} history={{ measurements, labValues: [], documents: [] }}
+    unitSystem="si" onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />));
   const save = view.getByRole('button', { name: /^Save / }) as HTMLButtonElement;
   const previousPicker = () => view.getByLabelText('Choose the date of the previous results') as HTMLInputElement;
   return { view, onSave, save, previousPicker };

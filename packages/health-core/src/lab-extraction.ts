@@ -15,7 +15,7 @@
  */
 import * as z from './zod';
 import { getDisplayLabel, getDisplayRange, LPA_UNITS, rangeFault, reportedToCanonical, toCanonicalValue, type MetricType, type UnitSystem } from './units';
-import { acceptedLabUnits, foldName, isLooseCatalogueName, LAB_CATALOG, LAB_GROUPS, labTestLabel, looseFold, normalizeLabUnit, resolveLabCatalogEntry, type LabCatalogEntry } from './lab-catalog';
+import { acceptedLabUnits, foldName, isLooseCatalogueName, LAB_CATALOG, LAB_GROUPS, labNameForUnit, labTestLabel, looseFold, normalizeLabUnit, resolveLabCatalogEntry, type LabCatalogEntry } from './lab-catalog';
 import { cutText } from './chat-history';
 import { parseLocalisedNumber } from './parseNumber';
 import { DOCUMENT_TYPES, METRIC_TYPES } from './validation';
@@ -373,7 +373,7 @@ const URINE_MARKER = /(?:^|[^a-z])(?:urin(?:e|a|ary)?|orina|harn|moczu)(?![a-z])
  *  Speichel (also as a compound's start, "Speichelcortisol"), Polish ślina
  *  (and its forms). */
 const SALIVA_MARKER = /(?:^|[^a-zà-ž])(?:(?:saliva(?:ry|l|re)?|salive|salivaire|ślin(?:a|y|ie|owy|owa|owe|owego))(?![a-zà-ž])|speichel)/i;
-const isUrineOrRatioUnit = (unit: string) => URINE_MARKER.test(unit.trim()) || PER_CREATININE.test(unit) || URINE_OR_RATIO_UNITS.has(cleanedCreatinineUnit(unit).toLowerCase().replace(/\s+/g, ''));
+export const isUrineOrRatioUnit = (unit: string) => URINE_MARKER.test(unit.trim()) || PER_CREATININE.test(unit) || URINE_OR_RATIO_UNITS.has(cleanedCreatinineUnit(unit).toLowerCase().replace(/\s+/g, ''));
 
 /** Why a creatinine was refused, in the user's words (US-12 AC15). */
 function creatinineRefusal(unit: string): string {
@@ -939,7 +939,7 @@ export function toUnifiedResult(parsed: ReturnType<typeof parseUnifiedResult>, m
     } else if (free && PROMOTABLE.has(metric!) && reportedToCanonical(metric!, v.value, v.unit)) {
       promote();
     } else if (metric !== 'creatinine' || foldName(v.name) === 'cr' || !refusesCreatinine(v)) {
-      additionalValues.push(v);
+      additionalValues.push({ ...v, name: labNameForUnit(v.name, v.unit) }); // a count's name in % is its share's (US-21 AC28)
     }
   }
   return {

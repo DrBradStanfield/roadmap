@@ -15,13 +15,14 @@ import { checkLabImportQuota, labImport } from '../lib/upload-api';
 import { bulkSaveDocuments, bulkSaveLabValues, bulkSaveMeasurements, getDocumentArchiveMode } from '../lib/roadmap-data';
 import { isPdf } from '../lib/pdf-extract';
 import { isImage } from '../lib/image-resize';
-import { isZip } from '../lib/zip-extract';
+import { isZip } from '../lib/file-kinds';
 import type { UploadHistory } from '../lib/api-types';
+import { findReviewValue } from '../testing/import-review';
 
-vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn(), labImportBatch: vi.fn(), pollBatchStatus: vi.fn() }));
-vi.mock('../lib/roadmap-data', () => ({ getDocumentArchiveMode: vi.fn(() => 'cloud'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
+vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn() }));
+vi.mock('../lib/roadmap-data', () => ({ uploadKnownIndex: vi.fn(() => new Map()), isLegacyUpload: vi.fn(() => false), getDocumentArchiveMode: vi.fn(() => 'cloud'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
 vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn(), PROXY_PATH: '/apps/synthetic', parseJsonResponse: vi.fn() }));
-vi.mock('../lib/archive-payloads', async importOriginal => ({ ...await importOriginal<typeof import('../lib/archive-payloads')>(), attachOriginals: vi.fn(async results => results) }));
+vi.mock('../lib/archive-payloads', async importOriginal => ({ ...await importOriginal<typeof import('../lib/archive-payloads')>(), sha256Blob: vi.fn(async () => '') }));
 vi.mock('../lib/useIsMobile', () => ({ useIsMobile: () => false }));
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../lib/build-flags', () => ({ SHOPIFY_SURFACE: true, LOCAL_FIRST: true }));
@@ -132,7 +133,7 @@ describe('upload decisions: what the review starts with (D1, D3)', () => {
     vi.mocked(labImport).mockResolvedValue(extraction({ values: [value('ldl', 2.8)] }));
     open();
     pick('labs.pdf');
-    expect((await saveButton()).textContent).toMatch(/1 Value\b/);
+    expect((await saveButton()).textContent).toMatch(/1 value\b/);
     expect(row(rows, 'plain value').web.ticked).toBe(true);
   });
 
@@ -140,7 +141,7 @@ describe('upload decisions: what the review starts with (D1, D3)', () => {
     vi.mocked(labImport).mockResolvedValue(extraction({ values: [value('hdl', 1.4, { confidence: 'medium', question: 'Was this a blood test?' })] }));
     open();
     pick('labs.pdf');
-    expect((await saveButton()).textContent).toMatch(/1 Value\b/);
+    expect((await saveButton()).textContent).toMatch(/1 value\b/);
     expect(row(rows, 'value with an extractor question').web.ticked).toBe(true);
   });
 
@@ -152,7 +153,7 @@ describe('upload decisions: what the review starts with (D1, D3)', () => {
     open(history);
     pick('letter.pdf');
     const label = (await saveButton()).textContent ?? '';
-    expect(/\d+ Document/.test(label)).toBe(row(rows, name).web.keepDocument);
+    expect(/\d+ document/.test(label)).toBe(row(rows, name).web.keepDocument);
   });
 
   it('a letter with values offers both (D3)', async () => {
@@ -161,7 +162,7 @@ describe('upload decisions: what the review starts with (D1, D3)', () => {
     pick('letter.pdf');
     const label = (await saveButton()).textContent ?? '';
     const web = row(rows, 'letter with values').web;
-    expect([/1 Value\b/.test(label), /1 Document/.test(label)]).toEqual([web.values, web.document]);
+    expect([/1 value\b/.test(label), /1 document/.test(label)]).toEqual([web.values, web.document]);
   });
 });
 
@@ -175,7 +176,7 @@ describe('upload decisions: what blocks Save (D2, D6)', () => {
     open();
     fireEvent.click(screen.getByRole('button', { name: 'Continue without keeping my files ›' }));
     pick('labs.pdf');
-    fireEvent.change(await screen.findByDisplayValue('2.8'), { target: { value: '' } });
+    fireEvent.change(await findReviewValue('2.8'), { target: { value: '' } });
     expect(blocked(await saveButton())).toBe(row(rows, 'nothing ticked').web);
   });
 
@@ -183,17 +184,17 @@ describe('upload decisions: what blocks Save (D2, D6)', () => {
     vi.mocked(labImport).mockResolvedValue(extraction({ values: [value('ldl', 2.8)] }));
     open();
     pick('labs.pdf');
-    fireEvent.change(await screen.findByDisplayValue('2.8'), { target: { value: '' } });
+    fireEvent.change(await findReviewValue('2.8'), { target: { value: '' } });
     const label = blocked(await saveButton());
     expect(row(rows, 'nothing ticked, cloud connected').web).toBe('original only');
-    expect(label).toBe('Save 1 Original');
+    expect(label).toBe('Save 1 original');
   });
 
   it('an undated report with no day given: Save is blocked', async () => {
     vi.mocked(labImport).mockResolvedValue(extraction({ reportDate: null, values: [value('ldl', 2.8)] }));
     open();
     pick('labs.pdf');
-    await screen.findByDisplayValue('2.8');
+    await findReviewValue('2.8');
     expect(blocked(await saveButton())).toBe(row(rows, 'undated report, no day given').web);
   });
 
@@ -201,7 +202,7 @@ describe('upload decisions: what blocks Save (D2, D6)', () => {
     vi.mocked(labImport).mockResolvedValue(extraction({ values: [value('ldl', 2.8), value('hdl', 1.4)] }));
     open();
     pick('labs.pdf');
-    fireEvent.change(await screen.findByDisplayValue('2.8'), { target: { value: '1.2.3' } });
+    fireEvent.change(await findReviewValue('2.8'), { target: { value: '1.2.3' } });
     expect(blocked(await saveButton())).toBe(row(rows, 'one value typed invalid').web);
   });
 });

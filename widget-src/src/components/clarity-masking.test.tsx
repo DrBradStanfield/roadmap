@@ -11,6 +11,7 @@
  */
 import { describe, it, expect, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
+import { runInNewContext } from 'node:vm';
 import { fileURLToPath } from 'node:url';
 import { render } from '@testing-library/react';
 
@@ -58,6 +59,52 @@ describe('Clarity masking — health values never reach a session recording', ()
     const rootTag = /<div\b[^>]*id="health-tool-root"[^>]*>/s.exec(liquid);
     expect(rootTag).not.toBeNull();
     expect(rootTag![0]).toContain('data-clarity-mask="true"');
+  });
+
+  it('US-74 AC5: masks the waist-to-height block\'s root, which the widget renders into', () => {
+    const liquid = src('../../../extensions/health-tool-widget/blocks/waist-to-height.liquid');
+    const rootTag = /<div\b[^>]*data-widget="waist-to-height"[^>]*>/s.exec(liquid);
+    expect(rootTag).not.toBeNull();
+    expect(rootTag![0]).toContain('data-clarity-mask="true"');
+    expect(rootTag![0]).toContain('class="hr-widget"');
+    // AC1: no hero, no doctor photo or name.
+    expect(liquid).not.toMatch(/hr-hero|<img|Dr Brad|Stanfield/);
+    // Review C9: the schema loads the bundle once per page; no script tag per block.
+    const schema = JSON.parse(liquid.split('{% schema %}')[1].split('{% endschema %}')[0]);
+    expect([schema.javascript, schema.stylesheet]).toEqual(['health-widgets.js', 'health-widgets.css']);
+    expect(liquid).not.toMatch(/<script\s+src|asset_url|stylesheet_tag/);
+    // B3 (Brad 2026-11-18): one inline script, read-only, sending nothing, which sets one constant class.
+    const inline = [...liquid.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
+    expect(inline).toHaveLength(1);
+    expect(inline[0]).not.toMatch(/fetch|XMLHttpRequest|sendBeacon|setItem|removeItem|innerHTML|cookie|\.src\b|import\(/);
+    expect([...inline[0].matchAll(/classList\.add\('([^']+)'\)/g)].map((m) => m[1])).toEqual(['hr-widget--saved']);
+    // Brad 2026-11-18: an optional heading (escaped) and text beside the calculator (Shopify's richtext), outside the masked root.
+    expect(schema.settings.map((s: { id: string; type: string }) => `${s.id}:${s.type}`)).toEqual(['heading:text', 'aside:richtext', 'next_url:url', 'next_label:text']);
+    expect(liquid).toContain('{{ block.settings.heading | escape }}');
+    expect(liquid.indexOf('hr-widget-aside')).toBeGreaterThan(liquid.indexOf('data-widget="waist-to-height"'));
+  });
+
+  it('US-74 B3, AC5: the block\'s inline script marks the card only when this device holds a saved height and an active waist or weight', () => {
+    const liquid = src('../../../extensions/health-tool-widget/blocks/waist-to-height.liquid');
+    const code = /<script>([\s\S]*?)<\/script>/.exec(liquid)![1];
+    // Run in a bare VM context: the page's localStorage (one key) and the card before the script, nothing else.
+    const run = (file: unknown) => {
+      const added: string[] = [];
+      const raw = file === undefined ? null : typeof file === 'string' ? file : JSON.stringify(file);
+      runInNewContext(code, {
+        JSON,
+        localStorage: { getItem: (key: string) => (key === 'health_roadmap_file_v2' ? raw : null) },
+        document: { currentScript: { previousElementSibling: { classList: { add: (c: string) => added.push(c) } } } },
+      });
+      return added;
+    };
+    const m = (metricType: string, status = 'active') => ({ metricType, status, value: 1 });
+    expect(run({ profile: { heightCm: 178 }, measurements: [m('waist')] })).toEqual(['hr-widget--saved']);
+    expect(run({ profile: { heightCm: 178 }, measurements: [m('weight')] })).toEqual(['hr-widget--saved']);
+    expect(run({ profile: { heightCm: 178 }, measurements: [m('waist', 'entered-in-error'), m('ldl')] })).toEqual([]);
+    expect(run({ profile: {}, measurements: [m('waist')] })).toEqual([]);
+    expect(run(undefined)).toEqual([]);
+    expect(run('{not json')).toEqual([]);
   });
 
   it('masks the React widget root', () => {

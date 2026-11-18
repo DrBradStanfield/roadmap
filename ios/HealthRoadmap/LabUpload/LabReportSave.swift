@@ -53,7 +53,8 @@ enum LabSavePlan: Equatable {
 
     /// `archiveOnly`: the web's archive-only path (US-14 AC4, US-35 AC8): a document whose
     /// bytes a held metadata-only row stands for has its original filed behind that row,
-    /// even with the keep tick off.
+    /// even with the keep tick off. Values: every ticked one, a hidden sure one included; the
+    /// engine writes only those the import review writes (US-13 AC13) and names the rest.
     init(result: LabResult, review: LabReview?, choices: LabChoices, archiveOnly: Bool) {
         guard result.failure == nil, result.extractionJSON != nil, let review else { self = .nothing("Could not be read"); return }
         if review.document != nil {
@@ -90,25 +91,32 @@ struct LabReportSave: Equatable {
     /// the original's own problem (AC8, AC13d).
     var notes: [String] = []
 
-    /// How save all and its summary count it, with what the extraction left out of `review`.
-    /// A save that ran and wrote nothing, with no reason, found it all there already (every
-    /// value's day held, the file already filed).
-    func reportOutcome(_ review: LabReview?) -> ReportOutcome {
+    /// How save all and its summary count it, with the extraction's own refused and unread
+    /// rows (AC8b): the engine's lines, or an older engine's list. A save that ran and wrote
+    /// nothing, with no reason, found it all there already (every value's day held, the file
+    /// already filed).
+    func reportOutcome(_ groups: LabReviewGroups?, review: LabReview?) -> ReportOutcome {
         let all = notes + [problem].compactMap { $0 }
-        let omitted = review.map(Self.omissions) ?? []
+        let omitted = groups?.omitted ?? review?.legacyNotSaved ?? []
         if values + documents == 0 && all.isEmpty { return ReportOutcome(notes: ["Already in your record"] + omitted) }
         return .saved(values: values, documents: documents, notes: all + omitted)
     }
 
-    /// What the extraction itself left out, by name and why: the lines the review lists
-    /// under "Not saved" (AC8), and save all's notes on that report (AC8b).
-    static func omissions(_ review: LabReview) -> [String] {
-        review.notSaved.map { "\($0.label): \($0.reason)" }
-            + (review.unreadCount > 0 ? ["\(review.unreadCount) value\(review.unreadCount == 1 ? "" : "s") could not be read."] : [])
+    /// The engine's groups for one report's review, with its ticks and test day now (US-13
+    /// AC13): the review screen and save all ask the same way. nil from an engine without
+    /// the door; throws when the engine could not answer.
+    @MainActor
+    static func groups(_ result: LabResult, review: LabReview, choices: LabChoices, engine: HealthEngine, store: RecordStore) async throws -> LabReviewGroups? {
+        guard let json = result.extractionJSON else { return nil }
+        // No day until the report printed one or the person confirmed theirs: undated values wait.
+        let day = review.reportDay != nil || choices.dayConfirmed ? DayText.iso(choices.testDay) : ""
+        return try await engine.labReviewGroups(recordJSON: store.readable?.json ?? "", extractionJSON: json, ticked: choices.ticked,
+                                                 reportDay: day, now: .now, deviceId: store.deviceId)
     }
 
+    /// `groups`: the review's groups for the ticks saved, naming a held different value.
     @MainActor
-    static func run(_ plan: LabSavePlan, result: LabResult, store: RecordStore) async -> LabReportSave {
+    static func run(_ plan: LabSavePlan, result: LabResult, store: RecordStore, groups: LabReviewGroups? = nil) async -> LabReportSave {
         guard let json = result.extractionJSON else { return LabReportSave(problem: "Could not be read") }
         var done = LabReportSave()
         switch plan {
@@ -121,7 +129,7 @@ struct LabReportSave: Equatable {
             case .success(let summary):
                 done.outcome = describe(summary)
                 done.values = summary.saved
-                done.notes = summary.refused.map(line)
+                done.notes = summary.refused.map(line) + (summary.sameDay ?? []) + [kept(summary, refs: refs, groups: groups)].compactMap { $0 }
                 // The lab report's original, kept in the cloud as the web's hidden row (the
                 // engine keeps it only there); the values are already saved.
                 guard let original = result.original else { break }
@@ -163,6 +171,16 @@ struct LabReportSave: Equatable {
         }
     }
 
+    /// Save all's note on ticked values left as they were because the record holds a
+    /// different value that day (US-52 AC8b): the review's own sentence when nothing else
+    /// was saved, else the receipt's count line. A value already held as it is needs none.
+    static func kept(_ summary: LabSaveSummary, refs: [String], groups: LabReviewGroups?) -> String? {
+        let conflicts = groups?.items.filter { refs.contains($0.ref) }.compactMap(\.conflict) ?? []
+        guard summary.skipped > 0, let sentence = conflicts.first else { return nil }
+        if summary.saved == 0 && conflicts.count == summary.skipped { return sentence }
+        return "\(summary.skipped) left as they were: that day already had a value."
+    }
+
     static func describe(_ summary: LabSaveSummary) -> String {
         var parts = ["\(summary.saved) value\(summary.saved == 1 ? "" : "s") saved to your record."]
         if summary.skipped > 0 { parts.append("\(summary.skipped) left as they were: that day already had a value.") }
@@ -189,12 +207,15 @@ struct LabReportSave: Equatable {
         } catch {
             return .success(.notSaved("Could not be read"))
         }
-        let plan = LabSavePlan(result: result, review: review, choices: held ?? LabChoices(review: review),
+        let choices = held ?? LabChoices(review: review)
+        var grouped: LabReviewGroups?
+        if review.isLabReport { grouped = try? await groups(result, review: review, choices: choices, engine: engine, store: store) }
+        let plan = LabSavePlan(result: result, review: review, choices: choices,
                                archiveOnly: LabSavePlan.archiveOnly(review, result: result, cloudConnected: store.cloudErase != nil))
-        if case .nothing(let reason) = plan { return .success(ReportOutcome(notes: [reason] + omissions(review))) }
-        let done = await run(plan, result: result, store: store)
+        if case .nothing(let reason) = plan { return .success(ReportOutcome(notes: [reason] + (grouped?.omitted ?? review.legacyNotSaved))) }
+        let done = await run(plan, result: result, store: store, groups: grouped)
         if done.problem != nil, done.values + done.documents == 0, let stop = stop(store) { return .failure(stop) }
-        return .success(done.reportOutcome(review))
+        return .success(done.reportOutcome(grouped, review: review))
     }
 
     /// Why every save now would be refused, or nil: checked as the store checks each save,

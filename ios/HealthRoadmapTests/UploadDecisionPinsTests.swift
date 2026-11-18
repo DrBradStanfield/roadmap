@@ -53,11 +53,11 @@ final class UploadDecisionPinsTests: XCTestCase {
     // MARK: kept or refused (D15, D9)
 
     /// A picked file by its name alone: the reader it reaches, or its refusal.
-    func testAPickedFileIsKeptOrRefusedByItsName() throws {
+    func testAPickedFileIsKeptOrRefusedByItsName() async throws {
         for row in try rows("fileKinds") {
             let name = try XCTUnwrap(row["name"] as? String)
             var found = "read"
-            do { _ = try LabFileReader.documents(from: Data("x".utf8), name: name) }
+            do { _ = try await LabFileReader.documents(from: Data("x".utf8), name: name) }
             catch LabFileReader.Failure.unsupported { found = "unsupported" }
             catch LabFileReader.Failure.unreadable { found = "kept" }
             catch is ZipReader.Failure { found = "zip" }
@@ -65,13 +65,13 @@ final class UploadDecisionPinsTests: XCTestCase {
         }
     }
 
-    func testAZipMemberIsReadOrSkippedByItsPath() throws {
+    func testAZipMemberIsReadOrSkippedByItsPath() async throws {
         for row in try rows("zipMembers") {
             let path = try XCTUnwrap(row["path"] as? String)
             let ext = (path as NSString).pathExtension.lowercased()
             let zip = Self.zip([(path, ext == "pdf" ? pdf : ["png", "jpg", "jpeg"].contains(ext) ? png : Data("x".utf8))])
             var read: Bool
-            do { read = try LabFileReader.documents(from: zip, name: "labs.zip").count == 1 }
+            do { read = try await LabFileReader.documents(from: zip, name: "labs.zip").count == 1 }
             catch LabFileReader.Failure.empty { read = false }
             XCTAssertEqual(read, row["phone"] as? Bool, path)
         }
@@ -87,26 +87,28 @@ final class UploadDecisionPinsTests: XCTestCase {
     }
 
     /// One member over the cap fails the whole ZIP, before anything inflates.
-    func testAZipMemberOverTheCapFailsTheZip() throws {
+    func testAZipMemberOverTheCapFailsTheZip() async throws {
         let row = try XCTUnwrap((try table()["fileSizes"] as? Row)?["zipMemberOverCap"] as? Row)
         XCTAssertEqual(row["phone"] as? String, "zipFails")
         let zip = Self.declaredZip(name: "big.pdf", size: try XCTUnwrap(row["bytes"] as? Int))
         // Control: the same builder's small member reads.
-        XCTAssertEqual(try LabFileReader.documents(from: Self.zip([("small.png", png)]), name: "ok.zip").count, 1)
-        XCTAssertThrowsError(try LabFileReader.documents(from: zip, name: "labs.zip")) { error in
+        let small = try await LabFileReader.documents(from: Self.zip([("small.png", png)]), name: "ok.zip")
+        XCTAssertEqual(small.count, 1)
+        do { _ = try await LabFileReader.documents(from: zip, name: "labs.zip"); XCTFail("read") } catch {
             guard case ZipReader.Failure.tooLarge = error else { return XCTFail("\(error)") }
         }
     }
 
-    func testAZipsMemberCount() throws {
+    func testAZipsMemberCount() async throws {
         for row in try rows("zipCounts") {
             let count = try XCTUnwrap(row["members"] as? Int)
             let zip = Self.zip((0..<count).map { (String(format: "r%03d.png", $0), png) })
             let phone = try XCTUnwrap(row["phone"] as? Row)
             if let read = phone["read"] as? Int {
-                XCTAssertEqual(try LabFileReader.documents(from: zip, name: "labs.zip").count, read, "\(count)")
+                let documents = try await LabFileReader.documents(from: zip, name: "labs.zip")
+                XCTAssertEqual(documents.count, read, "\(count)")
             } else {
-                XCTAssertThrowsError(try LabFileReader.documents(from: zip, name: "labs.zip")) { error in
+                do { _ = try await LabFileReader.documents(from: zip, name: "labs.zip"); XCTFail("read \(count)") } catch {
                     XCTAssertEqual(error.localizedDescription, phone["failure"] as? String, "\(count)")
                 }
             }

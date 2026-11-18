@@ -10,6 +10,7 @@ import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import { ReviewTable } from './ReviewTable';
 import { buildMatrixModel } from '../lib/review-matrix';
 import type { FileResult } from '../lib/upload-pipeline';
+import { showingAll } from '../testing/import-review';
 
 afterEach(cleanup);
 
@@ -35,10 +36,10 @@ const held = (value: number): ApiMeasurement[] => [
 
 function renderReview(measurements: ApiMeasurement[] = []) {
   const onSave = vi.fn();
-  const utils = render(
+  const utils = showingAll(render(
     <ReviewTable grading={{}} results={twoDates} history={{ measurements, labValues: [], documents: [] }}
       unitSystem="si" onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />,
-  );
+  ));
   const save = () => fireEvent.click(utils.container.querySelector<HTMLButtonElement>('.review-save-btn')!);
   return { ...utils, onSave, save };
 }

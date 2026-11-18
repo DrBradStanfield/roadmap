@@ -105,6 +105,9 @@ export interface MyHealthProps {
   /** The page's title and "Your plan is ready."'s heading: HealthTool moves the focus to them (US-62 AC24, AC25, AC31). */
   titleRef?: RefObject<HTMLHeadingElement>;
   readyTitleRef?: RefObject<HTMLHeadingElement>;
+  /** The doctor line is drawn above both columns (HealthTool, beside the chat column), so the
+   *  chat card's top stays on the line of the first card's (US-73 AC13, US-62 AC27). */
+  educationAbove?: boolean;
 }
 
 /** A topic's parts beyond its cards: rows, what follows (its medicines), its heading's action. */
@@ -113,6 +116,10 @@ interface TopicParts { rows?: ReactNode; after?: ReactNode; action?: ReactNode; 
 /** The phone's jump pills (US-62 AC17): ids only, their words TOPICS'. */
 const PILLS: readonly TopicId[] = ['bloodTests', 'cholesterol', 'supplements'];
 const titleOf = (id: TopicId) => TOPICS.find(t => t.topic === id)!.title;
+
+/** Under the title (App Review 1.4.1, US-73 AC13), the iPhone's `EducationNote.myHealth`. Words: Brad, 2026-11-15.
+ *  Beside the chat column HealthTool draws it above both columns instead (`educationAbove`). */
+export const EDUCATION_LINE = 'For education, not medical advice. Always talk to your doctor.';
 
 const RowsCard = memo(function RowsCard({ rows, onOpen, extra }: { rows: Array<RowModel | null>; onOpen: (s: ValueSubject, from?: Element) => void; extra?: ReactNode }) {
   return (
@@ -124,7 +131,7 @@ const RowsCard = memo(function RowsCard({ rows, onOpen, extra }: { rows: Array<R
 });
 
 export function MyHealth({ form, plan, tiles, series, egfrCurrent, storageBar, personButton, saveAlert, syncAlert, settingsOpen, onSettingsClose, settingsHost, reminders, storageCard, onDelete, recordHeld, isDeleting, storageAtFoot,
-  sectionsRef, healthDocuments, onDocumentDeleted, setShowUploadModal, onPlanReadyDismiss, titleRef, readyTitleRef }: MyHealthProps) {
+  sectionsRef, healthDocuments, onDocumentDeleted, setShowUploadModal, onPlanReadyDismiss, titleRef, readyTitleRef, educationAbove }: MyHealthProps) {
   // The form's row opener changes every render; the rows take a stable one, so memo'd rows stay put.
   const openRef = useRef(form.rows.open);
   openRef.current = form.rows.open;
@@ -268,6 +275,7 @@ export function MyHealth({ form, plan, tiles, series, egfrCurrent, storageBar, p
         {!inTab && (personButton || storageBar) && <div className="mh-header-actions">{storageBar}{personButton}</div>}
         {inTab && <>{saveAlert}{syncAlert}</>}
       </div>
+      {!educationAbove && <p className="mh-education">{EDUCATION_LINE}</p>}
       {inTab
         ? settingsHost && createPortal(<SettingsSheet action={storageBar}>{settingsParts}</SettingsSheet>, settingsHost)
         : settingsOpen && <SettingsSheet onClose={onSettingsClose}>{settingsParts}</SettingsSheet>}

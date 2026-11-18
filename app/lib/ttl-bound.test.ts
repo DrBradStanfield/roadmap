@@ -141,9 +141,9 @@ describe('US-52 AC4f: one policy, and a named list of unbounded maps', () => {
   const prod = appFiles(app).filter((file) => !/\.test(-helpers)?\.tsx?$/.test(file));
 
   /** In-memory maps with an expiry that are not size-bounded, on purpose (lead S-24). */
-  const UNBOUNDED_TTL = ['activeBatches', 'guestIpRateMap', 'orderCache', 'spentCodes', 'spentProposals', 'spentWrites', 'undeletedBatches'];
+  const UNBOUNDED_TTL = ['guestIpRateMap', 'orderCache', 'spentCodes', 'spentProposals', 'spentWrites'];
   /** Module maps with no expiry: lookups, in-flight work and content caches. */
-  const NOT_TTL = ['DECODERS', 'KNOWN_CLIENTS', 'NUDGED', 'TWO_PHASE', 'WRITE_COSTS', 'articleCache', 'creatingBatches', 'formsCache', 'handleCache', 'inFlight'];
+  const NOT_TTL = ['DECODERS', 'KNOWN_CLIENTS', 'NUDGED', 'TWO_PHASE', 'WRITE_COSTS', 'articleCache', 'formsCache', 'handleCache', 'inFlight'];
 
   it('names no other policy anywhere in app/', () => {
     const banned = new RegExp(['when' + 'Full', "'re" + "fuse'"].join('|'));
