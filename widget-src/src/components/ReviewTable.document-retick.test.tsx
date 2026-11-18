@@ -12,6 +12,7 @@ import { cleanup, fireEvent, render } from '@testing-library/react';
 import { ReviewTable } from './ReviewTable';
 import type { FileResult } from '../lib/upload-pipeline';
 import type { ApiDocument, UploadHistory } from '../lib/api-types';
+import { showingAll } from '../testing/import-review';
 
 afterEach(cleanup);
 
@@ -31,7 +32,7 @@ function review(history: UploadHistory) {
     <ReviewTable results={[result]} history={h} unitSystem="si" grading={{}} onSave={onSave}
       onCancel={() => {}} isSaving={false} error={null} />
   );
-  const view = render(element(history));
+  const view = showingAll(render(element(history)));
   const box = () => view.container.querySelector<HTMLInputElement>('.review-document-header input[type=checkbox]')!;
   const save = () => {
     fireEvent.click(view.getByRole('button', { name: /^Save / }));

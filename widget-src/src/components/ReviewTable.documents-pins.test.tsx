@@ -12,6 +12,7 @@ import { cleanup, fireEvent, render } from '@testing-library/react';
 import { ReviewTable } from './ReviewTable';
 import type { FileResult } from '../lib/upload-pipeline';
 import type { ApiDocument } from '../lib/api-types';
+import { showingAll } from '../testing/import-review';
 
 beforeEach(() => { vi.useFakeTimers({ toFake: ['Date'] }); vi.setSystemTime(new Date('2026-10-15T12:00:00Z')); });
 afterEach(() => { cleanup(); vi.useRealTimers(); });
@@ -37,8 +38,8 @@ const saved: ApiDocument = { id: 'held', documentType: 'clinic_letter', title: '
 
 function review(age: number | undefined = 60, files = results) {
   const onSave = vi.fn();
-  const view = render(<ReviewTable results={files} history={{ measurements: [], labValues: [], documents: [saved] }}
-    unitSystem="si" age={age} sex="male" grading={{}} onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />);
+  const view = showingAll(render(<ReviewTable results={files} history={{ measurements: [], labValues: [], documents: [saved] }}
+    unitSystem="si" age={age} sex="male" grading={{}} onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />));
   const sections = () => [...view.container.querySelectorAll('.review-file-section')];
   const sectionOf = (name: string) => sections().find(s => s.querySelector('.review-file-name')?.textContent === name)!;
   const save = () => {
@@ -63,8 +64,8 @@ describe('per-document review pins', () => {
 
   it('US-12 AC9: names the documents in the summary and on Save', () => {
     const view = review();
-    expect(view.container.querySelector('.review-summary')!.textContent).toBe('1 value + 3 documents from 7 files · 1 extracted');
-    expect(view.container.querySelector('.review-save-btn')!.textContent).toBe('Save 1 Value + 3 Documents');
+    expect(view.container.querySelector('.review-summary')!.textContent).toBe('Found 1 blood test value, 1 scan result, 2 clinic letters and 1 other document in 7 files');
+    expect(view.container.querySelector('.review-save-btn')!.textContent).toBe('Save 1 value + 3 documents');
   });
 
   it('US-13 AC6: hands up the same documents and reviewed results', () => {

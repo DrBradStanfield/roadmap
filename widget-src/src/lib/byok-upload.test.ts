@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 const key = vi.hoisted(() => ({ value: 'sk-ant-synthetic' as string | null }));
 vi.mock('./byok-chat', () => ({ getAnthropicKey: () => key.value }));
 
-import { checkLabImportQuota, labImport, labImportBatch, pollBatchStatus } from './byok-upload';
+import { checkLabImportQuota, labImport } from './byok-upload';
 import { ByokAnthropicError, callAnthropicDirectRaw } from './byok-anthropic';
 
 const PAGES = [{ type: 'text' as const, content: 'doc' }];
@@ -87,16 +87,10 @@ describe('US-15 AC34: a BYOK refusal is a failure, never content', () => {
   });
 
   // A cut-off answer is cut off again on the same request, on the user's own money.
-  it('an answer stopped at max_tokens fails the file once, as "too_long", on one file and in a batch', async () => {
+  it('an answer stopped at max_tokens fails the file once, as "too_long"', async () => {
     const fetchMock = stubAnthropic(() => Response.json({ stop_reason: 'max_tokens', content: [{ type: 'text', text: '{"classification":"lab_rep' }] }));
     expect((await labImport(PAGES, 'si')).errorCode).toBe('too_long');
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const { batchId } = await labImportBatch([{ pages: PAGES }]);
-    await vi.waitFor(async () => {
-      expect((await pollBatchStatus(batchId!)).results).toEqual([{ index: 0, errorCode: 'too_long' }]);
-    });
-    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });
 
@@ -114,10 +108,11 @@ describe('US-12 AC8: the BYOK parse refuses a dot-thousands count written as a J
 });
 
 describe('US-12 AC9: a BYOK failure keeps its code', () => {
-  it('a 429 from the user\'s own key is a rate limit, and its message names that key', async () => {
+  // US-12 AC9: the key's own minute limit, never our daily limit, so the upload's other files go on.
+  it('a 429 from the user\'s own key is that key\'s rate limit, and its message names that key', async () => {
     stubAnthropic(() => new Response('{}', { status: 429 }));
     const out = await labImport(PAGES, 'si');
-    expect(out.errorCode).toBe('rate_limit');
+    expect(out.errorCode).toBe('key_rate_limit');
     expect(out.error).toMatch(/Anthropic/);
     expect(out.error).not.toMatch(/—/);
   });
@@ -129,31 +124,9 @@ describe('US-12 AC9: a BYOK failure keeps its code', () => {
     ['a 403', 'key_refused', () => new Response('{}', { status: 403 })],
     ['a 400 for no credit', 'no_credit', () => Response.json({ error: { type: 'invalid_request_error', message: 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.' } }, { status: 400 })],
     ['any other 400', 'server_error', () => Response.json({ error: { type: 'invalid_request_error', message: 'messages: too many images' } }, { status: 400 })],
-  ] as const)('%s from the user\'s own key is %s, on one file and in a batch', async (_label, code, reply) => {
+  ] as const)('%s from the user\'s own key is %s', async (_label, code, reply) => {
     stubAnthropic(reply);
     expect((await labImport(PAGES, 'si')).errorCode).toBe(code);
-    vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const { batchId } = await labImportBatch([{ pages: PAGES }]);
-    await vi.waitFor(async () => {
-      expect((await pollBatchStatus(batchId!)).results).toEqual([{ index: 0, errorCode: code }]);
-    });
-  });
-});
-
-// Privacy: a file name can hold a patient's name. The BYOK batch logs a failed
-// file to the console; the name never goes with it.
-describe('privacy: a failed BYOK batch file is logged without its name', () => {
-  it('warns with the index only, and marks the file by its index', async () => {
-    stubAnthropic(() => { throw new TypeError('offline'); });
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const files = [{ fileName: 'Jane Citizen bloods.pdf', pages: PAGES }];
-    const { batchId } = await labImportBatch(files);
-    await vi.waitFor(async () => {
-      const poll = await pollBatchStatus(batchId!);
-      expect(poll.results).toEqual([{ index: 0, errorCode: 'network' }]);
-    });
-    expect(warn).toHaveBeenCalled();
-    expect(JSON.stringify(warn.mock.calls.map(c => c.map(String)))).not.toContain('Jane');
   });
 });
 
@@ -166,15 +139,11 @@ describe('privacy: a BYOK parse failure logs no report text', () => {
   it.each([
     ['broken JSON', 'SYNTHETIC 141 mmol/L}'],
     ['a refused field', '{"classification":"SYNTHETIC 141","reportDate":null,"values":[],"additionalValues":[],"document":null}'],
-  ])('logs no report text for %s, on one file and in a batch', async (_label, retry) => {
+  ])('logs no report text for %s', async (_label, retry) => {
     let call = 0;
     stubAnthropic(() => message(call++ % 2 === 0 ? 'not json' : retry)());
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     expect((await labImport(PAGES, 'si')).errorCode).toBe('server_error');
-    const { batchId } = await labImportBatch([{ pages: PAGES }]);
-    await vi.waitFor(async () => {
-      expect((await pollBatchStatus(batchId!)).results).toEqual([{ index: 0, errorCode: 'server_error' }]);
-    });
     expect(warn).toHaveBeenCalled();
     const logged = JSON.stringify(warn.mock.calls.map(c => c.map(a => (a instanceof Error ? `${a.name}: ${a.message} ${JSON.stringify(a)}` : String(a)))));
     expect(logged).not.toContain('SYNTHETIC');
@@ -206,35 +175,19 @@ describe('US-12 AC15: the BYOK path refuses a creatinine it cannot read', () => 
   });
 });
 
-// US-12 AC5a: on the Pages build the batch is a queue of direct calls on the
-// user's own key, so Cancel has to stop it: a file not yet sent is never sent.
-describe('US-12 AC5a: a cancelled BYOK batch sends no more files', () => {
-  const VALID = '{"classification":"other","reportDate":null,"values":[],"additionalValues":[],"document":null}';
-  const sixFiles = () => Array.from({ length: 6 }, () => ({ pages: PAGES }));
-
-  it('sends only the files already being read, then drops the batch', async () => {
-    const held: Array<() => void> = [];
-    const fetchMock = vi.fn(() => new Promise<Response>((resolve) => { held.push(() => resolve(message(VALID)())); }));
+// US-12 AC28: Cancel aborts a file's call on the person's own key while it is in flight.
+describe('US-12 AC28: Cancel aborts a BYOK read', () => {
+  it('hands the call the upload\'s signal: aborting it fails the file as a network error', async () => {
+    const fetchMock = vi.fn((_url: string, init?: RequestInit) => new Promise<Response>((_resolve, reject) => {
+      init?.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')));
+    }));
     vi.stubGlobal('fetch', fetchMock);
     const cancel = new AbortController();
-    const { batchId } = await labImportBatch(sixFiles(), cancel.signal);
-    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    const read = labImport(PAGES, 'si', { signal: cancel.signal });
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     cancel.abort();
-    held.splice(0).forEach((release) => release());
-    // Time for a worker to take the next file, if it still would.
-    await new Promise((resolve) => setTimeout(resolve, 50));
-    expect(fetchMock).toHaveBeenCalledTimes(2);
-    // Nothing polls a cancelled batch, so its results are not kept.
-    expect(await pollBatchStatus(batchId!)).toMatchObject({ status: 'ended', error: 'Batch not found.' });
-  });
-
-  it('control: a batch nobody cancels sends every file and keeps its results for the poll', async () => {
-    const fetchMock = stubAnthropic(message(VALID));
-    const { batchId } = await labImportBatch(sixFiles(), new AbortController().signal);
-    await vi.waitFor(async () => {
-      expect((await pollBatchStatus(batchId!)).results).toHaveLength(6);
-    });
-    expect(fetchMock).toHaveBeenCalledTimes(6);
+    expect((await read).errorCode).toBe('network');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });
 

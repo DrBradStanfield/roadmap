@@ -30,11 +30,22 @@ describe('synthesizeLabArchiveEntries', () => {
     expect(out[0].file).toBeInstanceOf(Blob);
   });
 
-  it('skips files with no values, errors, no blob, or already covered', () => {
+  it('skips files with no values, errors, neither blob nor hash, or already covered', () => {
     expect(synthesizeLabArchiveEntries([result({ file: blob(), values: [], additionalValues: [] })], new Set())).toHaveLength(0);
     expect(synthesizeLabArchiveEntries([result({ file: blob(), error: 'boom' })], new Set())).toHaveLength(0);
-    expect(synthesizeLabArchiveEntries([result({})], new Set())).toHaveLength(0); // no file
-    expect(synthesizeLabArchiveEntries([result({ file: blob() })], new Set(['lipids.pdf']))).toHaveLength(0);
+    expect(synthesizeLabArchiveEntries([result({})], new Set())).toHaveLength(0); // no file, no hash (a photo off-cloud)
+    expect(synthesizeLabArchiveEntries([result({ file: blob() })], new Set(['#0']))).toHaveLength(0); // covered, by its place in the pick (no hash)
+    expect(synthesizeLabArchiveEntries([result({ file: blob() })], new Set(['lipids.pdf']))).toHaveLength(1); // a name covers nothing
+  });
+
+  it('US-14 AC10: off-cloud, the hash alone files a metadata-only archive row, listing the rows its values wrote', () => {
+    const [entry] = synthesizeLabArchiveEntries([result({ contentHash: 'hash-a' })], new Set(), new Map([['hash-a', ['row-1', 'row-2']], ['hash-b', ['row-3']]]));
+    expect(entry).toMatchObject({ file: undefined, contentHash: 'hash-a', sourceFileName: 'lipids.pdf', metadata: { [LAB_ARCHIVE_FLAG]: true, rows: ['row-1', 'row-2'] } });
+    // Keyed by the file's identity, never its name: two files called lipids.pdf keep their own lists.
+    const two = synthesizeLabArchiveEntries([result({ contentHash: 'hash-a' }), result({ contentHash: 'hash-b' })], new Set(), new Map([['hash-a', ['row-1']], ['hash-b', ['row-3']]]));
+    expect(two.map((e) => e.metadata.rows)).toEqual([['row-1'], ['row-3']]);
+    // No rows written for it: no list.
+    expect(synthesizeLabArchiveEntries([result({ contentHash: 'hash-a' })], new Set())[0].metadata).toEqual({ [LAB_ARCHIVE_FLAG]: true });
   });
 });
 
@@ -58,7 +69,7 @@ describe('unarchivedOriginals', () => {
   it('counts an unselected document (any type) whose hash matches a row without a fileRef, not one already selected', () => {
     const letter = result({ fileName: 'letter.pdf', values: [], file: blob(), contentHash: 'sha256-a', document: LETTER });
     expect(unarchivedOriginals([letter], [doc({})], new Set()).length).toBe(1);
-    expect(unarchivedOriginals([letter], [doc({})], new Set(['letter.pdf'])).length).toBe(0);
+    expect(unarchivedOriginals([letter], [doc({})], new Set(['sha256-a'])).length).toBe(0);
     expect(unarchivedOriginals([letter], [doc({ fileRef: 'Letters/a.pdf' })], new Set()).length).toBe(0);
   });
 });
@@ -77,7 +88,7 @@ describe('connectorDocumentEntries', () => {
   });
 
   it('skips a selected letter (saved as a document already), a lab file, and a letter the record holds no hash for', () => {
-    expect(connectorDocumentEntries([letter], pending, new Set(['letter.pdf']))).toHaveLength(0);
+    expect(connectorDocumentEntries([letter], pending, new Set(['sha256-a']))).toHaveLength(0);
     expect(connectorDocumentEntries([result({ file: blob(), contentHash: 'sha256-a' })], pending, new Set())).toHaveLength(0);
     expect(connectorDocumentEntries([letter], [], new Set())).toHaveLength(0);
   });

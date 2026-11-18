@@ -1640,7 +1640,7 @@ describe('US-40 AC13 — --include copies a pinned, read-only source folder from
   });
   it('the shipped policy pins the dated refresh folders, the supplements raw and the diff reports (the April pathway raw left 2026-10-22, US-15 AC39); only its committed copy in the wrapper\'s own checkout counts', () => {
     const shipped = JSON.parse(readFileSync(resolve(__dirname, 'codex-review-includes.json'), 'utf8'));
-    const kb = '~/Documents/claude_business.nosync/knowledge-map-raw';
+    const kb = '~/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/knowledge-map-raw';
     expect(shipped.roots).toEqual([`${kb}/refresh-*/`, `${kb}/supplements/`, '~/.codex-review/diff-reports/']);
     // A copy of the wrapper in its own git checkout, with that policy committed; another repo is under review.
     const home = realpathSync(mkdtempSync(join(tmpdir(), 'cr-include-home-'))); // node reports the wrapper's own path resolved
@@ -2057,7 +2057,7 @@ describe('US-40 AC15 — --subject reviews exact files, never whatever else the 
     expect(run(dir, ['--subject', 'codex-drafts/plan.md'], { policy: policyFor(dir, { subjectRoots: [`${dir}/codex-drafts`] }) }).r.status).toBe(0); // a plain folder root pins everything under it
     mkdirSync(join(dir, 'codex-draftsX')); writeFileSync(join(dir, 'codex-draftsX', 'plan.md'), 'draft\n');
     refused(dir, ['--subject', 'codex-draftsX/plan.md'], 'is not tracked at HEAD', policyFor(dir, { subjectRoots: [`${dir}/codex-drafts`] })); // a sibling sharing the prefix is not under it
-    const CB = '/Users/bradstanfield/Documents/claude_business.nosync';
+    const CB = '/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business';
     expect(SHIPPED_POLICY.subjectRoots).toEqual(['./codex-drafts', `${CB}/output/[0-9] *`, `${CB}/output/[0-9][0-9] *`, `${CB}/output/[0-9][0-9][0-9] *`]);
   });
   it('AC15 (2026-10-30): a ./ root is the main checkout of the wrapper\'s own repo, so a folder rename keeps the pin; never cwd, never a worktree; a bare relative root is refused', () => {
@@ -2339,7 +2339,7 @@ describe('US-40 AC15 — --subject reviews exact files, never whatever else the 
     const specs = SHIPPED_POLICY.privateDeny.flatMap((g: string) => [`:(glob,icase)${g}`, `:(glob,icase)${g}/**`]);
     expect(execFileSync('git', ['ls-files', '-z', '--', ...specs], { cwd: resolve(__dirname, '..'), encoding: 'utf8' })).toBe('');
     // and none in claude_business, where the list is aimed, when that checkout is on this machine (a wider '*-comments.*' once swallowed its tools/youtube-fix-comments.js)
-    const cb = '/Users/bradstanfield/Documents/claude_business.nosync';
+    const cb = '/Users/bradstanfield/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business';
     if (existsSync(join(cb, '.git'))) expect(execFileSync('git', ['ls-files', '-z', '--', ...specs], { cwd: cb, encoding: 'utf8' })).toBe('');
   });
   it('the pin matches numbered video FOLDERS only (digits, a space, a real folder): output/0-private, a loose dated file and a loose "7 notes.md" are refused', () => {

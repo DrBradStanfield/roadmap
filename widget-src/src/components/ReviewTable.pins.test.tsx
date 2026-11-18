@@ -13,6 +13,7 @@ import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import type { ApiLabValue } from '../lib/api-types';
 import { ReviewTable } from './ReviewTable';
 import type { FileResult } from '../lib/upload-pipeline';
+import { showingAll } from '../testing/import-review';
 
 beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(new Date('2026-10-15T12:00:00Z')); });
 afterEach(() => { cleanup(); vi.useRealTimers(); });
@@ -22,8 +23,8 @@ const v = (metric: string, valueSI: number, recordedAt?: string, displayUnit = '
 
 function review(results: FileResult[], measurements: ApiMeasurement[] = [], labValues: ApiLabValue[] = [], overrides?: Record<string, 'si' | 'conventional'>) {
   const onSave = vi.fn();
-  const view = render(<ReviewTable grading={{}} results={results} history={{ measurements, labValues, documents: [] }}
-    unitSystem="si" metricUnitOverrides={overrides} onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />);
+  const view = showingAll(render(<ReviewTable grading={{}} results={results} history={{ measurements, labValues, documents: [] }}
+    unitSystem="si" metricUnitOverrides={overrides} onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />));
   const input = (value: string) => Array.from(view.container.querySelectorAll<HTMLInputElement>('.bt-cell-input input')).find(i => i.value === value)!;
   const save = () => fireEvent.click(view.getByRole('button', { name: /^Save/ }));
   /** The rows Save handed up, as JSON: the pin. */

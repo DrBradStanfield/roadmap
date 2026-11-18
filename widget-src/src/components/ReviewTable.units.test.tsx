@@ -8,16 +8,17 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, fireEvent, cleanup } from '@testing-library/react';
 import { ReviewTable } from './ReviewTable';
 import type { FileResult } from '../lib/upload-pipeline';
+import { showingAll } from '../testing/import-review';
 
 afterEach(cleanup);
 
 const DAY = '2026-03-10';
 
 function renderReview(results: FileResult[]) {
-  return render(
+  return showingAll(render(
     <ReviewTable grading={{}} results={results} history={{ measurements: [], labValues: [], documents: [] }}
       unitSystem="si" onSave={vi.fn()} onCancel={() => {}} isSaving={false} error={null} />,
-  );
+  ));
 }
 
 const lab = (name: string, value: number, unit: string): FileResult[] => [{
@@ -57,69 +58,51 @@ describe('US-21 AC18: a catalogued test printed in another unit shows the SI val
   });
 });
 
-describe('US-21 AC21: a row past its test\'s ceiling says so in the review, before Save', () => {
+// US-13 AC13 (owner, 2026-11-15): a lab the write refuses on its own gets no
+// cell; the review names it before Save, once, under "Not saved", in its words.
+// Before, the cell showed the refusal line (US-21 AC21, AC26); Save then refused it.
+const notSaved = (container: HTMLElement) => {
+  fireEvent.click(container.querySelector<HTMLButtonElement>('.review-not-saved button')!);
+  return Array.from(container.querySelectorAll('.review-not-saved li')).map(li => li.textContent);
+};
+
+describe('US-21 AC21: a row past its test\'s ceiling is named before Save, never previewed', () => {
   const freeT = (unit: string): FileResult[] => [{
     fileName: 'labs.pdf', reportDate: DAY, values: [],
     additionalValues: [{ name: 'Free Testosterone', value: 312.6, unit, referenceLow: 163, referenceHigh: 473 }],
   }];
 
-  it('free T 312.6 "nmol/L" with range 163–473 shows the refusal line and never the converted 312,600', () => {
-    const { container, getByRole } = renderReview(freeT('nmol/L'));
-    const line = 'Free testosterone above 10,000 pmol/L is not a measured value, so the printed unit is probably wrong (nmol/L vs pmol/L). Check the report, then add it in pmol/L with + Add a blood test.';
-    expect(container.querySelector('.bt-cell-refused')?.textContent).toBe(line);
-    expect(getByRole('textbox', { name: 'Free testosterone value from 10 Mar 2026', description: line })).toBeTruthy();
-    expect(container.querySelector('.bt-cell-si')).toBeNull();
+  it('free T 312.6 "nmol/L" with range 163–473 has no cell and is listed as misread; never the converted 312,600', () => {
+    const { container } = renderReview(freeT('nmol/L'));
+    expect(container.querySelector('.bt-cell-review')).toBeNull();
+    expect(notSaved(container)).toEqual(['Free testosterone: the number looks misread. Check the report']);
     expect(container.textContent).not.toMatch(/312[,.\s]?600/);
   });
 
-  it('a conflict cell edited to the value an older build already recorded (312,600 pmol/L) drops the line (adversary R2)', () => {
-    const held = { id: 'held-ft', metricName: 'free_testosterone', value: 312600, unit: 'pmol/L', referenceLow: 163000, referenceHigh: 473000,
-      recordedAt: DAY, source: 'lab_import', createdAt: '2026-03-11T00:00:00.000Z' };
-    const upload: FileResult[] = [{ fileName: 'labs.pdf', reportDate: DAY, values: [],
-      additionalValues: [{ name: 'Free Testosterone', value: 300, unit: 'nmol/L', referenceLow: 163, referenceHigh: 473 }] }];
-    const { container } = render(
-      <ReviewTable grading={{}} results={upload} history={{ measurements: [], labValues: [held], documents: [] }}
-        unitSystem="si" onSave={vi.fn()} onCancel={() => {}} isSaving={false} error={null} />,
-    );
-    expect(container.querySelector('.bt-cell-conflict .bt-cell-refused')).not.toBeNull();
-    fireEvent.change(container.querySelector<HTMLInputElement>('.bt-cell-conflict input[type="text"], .bt-cell-conflict input:not([type="checkbox"])')!, { target: { value: '312.6' } });
-    expect(container.querySelector('.bt-cell-conflict-replace')).toBeNull();
-    expect(container.querySelector('.bt-cell-refused')).toBeNull();
-  });
-
-  it('the same row printed in pmol/L shows no note', () => {
+  it('the same row printed in pmol/L is a cell with no note', () => {
     const { container } = renderReview(freeT('pmol/L'));
+    expect(container.querySelector('.bt-cell-review')).not.toBeNull();
     expect(container.querySelector('.bt-cell-refused')).toBeNull();
   });
 });
 
-// US-21 AC26 (Codex R1, 2026-11-09): the review never previews a stored value Save would refuse.
-describe('US-21 AC26: a value past its plausible range is flagged in the review, before Save', () => {
-  const line = 'Glucose: a value above 150 mmol/L is almost certainly a misread number or unit, so it was not saved. Check the report.';
-
-  it('glucose 3,000 mg/dL shows the upload line and no converted value; an edit back inside the bound clears it', () => {
-    const { container, getByRole } = renderReview(lab('Glucose', 3000, 'mg/dL'));
-    expect(container.querySelector('.bt-cell-refused')?.textContent).toBe(line);
-    expect(getByRole('textbox', { name: 'Glucose value from 10 Mar 2026', description: line })).toBeTruthy();
-    expect(container.querySelector('.bt-cell-si')).toBeNull();
-    fireEvent.change(container.querySelector<HTMLInputElement>('.bt-cell-review input')!, { target: { value: '99' } });
-    expect(container.querySelector('.bt-cell-refused')).toBeNull();
-    expect(container.querySelector('.bt-cell-si')?.textContent).toMatch(/^→ 5\.\d+ mmol\/L$/);
+describe('US-21 AC26: a value past its plausible range is named before Save, never previewed', () => {
+  it('glucose 3,000 mg/dL and ferritin -1 µg/L: no cell, listed as misread', () => {
+    for (const [name, value, unit] of [['Glucose', 3000, 'mg/dL'], ['Ferritin', -1, 'µg/L']] as const) {
+      const { container, unmount } = renderReview(lab(name, value, unit));
+      expect(container.querySelector('.bt-cell-review')).toBeNull();
+      expect(notSaved(container)).toEqual([`${name}: the number looks misread. Check the report`]);
+      unmount();
+    }
   });
 
-  it('an untouched negative extraction (ferritin -1 µg/L) is flagged, judged on the number Save takes (Codex, 2026-11-09)', () => {
-    const { container } = renderReview(lab('Ferritin', -1, 'µg/L'));
-    expect(container.querySelector('.bt-cell-refused')?.textContent)
-      .toBe('Ferritin: a value below 0 µg/L is almost certainly a misread number or unit, so it was not saved. Check the report.');
-  });
-
-  it('a count off its range\'s scale shows the scale note, as Save does, before any plausible-range line (adversary N1)', () => {
+  it('a count off its range\'s scale is listed by its scale reason (adversary N1)', () => {
     const { container } = renderReview([{
       fileName: 'labs.pdf', reportDate: DAY, values: [],
       additionalValues: [{ name: 'Platelets', value: 15000000, unit: 'cells/µL', referenceLow: 150, referenceHigh: 400 }],
     }]);
-    expect(container.querySelector('.bt-cell-refused')?.textContent).toBe('Platelets: the value and its printed range are on different scales, so the row was not stored.');
-    expect(container.querySelector('.bt-cell-si')).toBeNull();
+    expect(container.querySelector('.bt-cell-review')).toBeNull();
+    expect(notSaved(container)).toEqual(['Platelets: the number and its range are on different scales']);
   });
 });
 
@@ -178,8 +161,8 @@ describe('US-13 AC11: a core value shows what the report printed when the cell s
   });
 
   it('compares by number: "1.1 mg/dL" shown as "1.10" gets no note', () => {
-    const { container } = render(<ReviewTable grading={{}} results={printed({ valueSI: 97.24, displayValue: 1.1 })}
-      history={{ measurements: [], labValues: [], documents: [] }} unitSystem="conventional" onSave={vi.fn()} onCancel={() => {}} isSaving={false} error={null} />);
+    const { container } = showingAll(render(<ReviewTable grading={{}} results={printed({ valueSI: 97.24, displayValue: 1.1 })}
+      history={{ measurements: [], labValues: [], documents: [] }} unitSystem="conventional" onSave={vi.fn()} onCancel={() => {}} isSaving={false} error={null} />));
     expect(container.querySelector<HTMLInputElement>('.bt-cell-review input')!.value).toBe('1.10');
     expect(container.querySelector('.bt-cell-printed')).toBeNull();
   });

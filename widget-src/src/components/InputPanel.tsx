@@ -41,7 +41,8 @@ import { ScreeningQuestions } from './ScreeningQuestions';
 import { LipidMedications } from './LipidMedications';
 import { WeightMedications } from './WeightMedications';
 import { BoneDensity } from './BoneDensity';
-import { AboutRows, AlcoholField, BirthFields, HeightField, SexField, useHeightPair } from './AboutYou';
+import { AboutRows, AlcoholField, BirthFields, SexField } from './AboutYou';
+import { HeightField, useHeightPair } from './HeightField';
 
 interface FieldConfig {
   field: keyof HealthInputs;
@@ -177,12 +178,11 @@ export function InputPanel({
   // Shared blur/Enter auto-save handlers for every longitudinal input. Each
   // site does its own pre-work (raw-input cleanup) inline, then calls
   // autoSaveOnBlur(); onKeyDown is uniform. Enter also shows a held range error.
-  const autoSaveGate = hasApiResponse;
-  const autoSaveOnBlur = () => { if (autoSaveGate) scheduleLongitudinalSave(); };
+  const autoSaveOnBlur = () => { if (hasApiResponse) scheduleLongitudinalSave(); };
   const autoSaveOnEnterKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key !== 'Enter') return;
     e.preventDefault();
-    if (autoSaveGate) flushLongitudinalSave();
+    if (hasApiResponse) flushLongitudinalSave();
   };
 
   /** Get effective unit system for a field (override or global default). */
@@ -331,7 +331,7 @@ export function InputPanel({
   const writeMedication = (meds: MedicationInputs, cascadeMode: boolean, field: string, value: string) => {
     for (const w of medicationWrites(meds, cascadeMode, field, value)) onMedicationChange(w.medicationKey, w.drugName, w.doseValue, w.doseUnit);
   };
-  const form: FormKit = { inputs, rawInputs, setRawInputs, errors, updateField, readable, unreadable, range, typeIn, blurOnWheel, settleOnEnter, autoSaveGate, rangeWait };
+  const form: FormKit = { inputs, rawInputs, setRawInputs, errors, updateField, readable, unreadable, range, typeIn, blurOnWheel, settleOnEnter, autoSaveGate: hasApiResponse, rangeWait };
 
   /** A saved value as shown, a printed limit with its symbol (US-12 AC20). */
   const savedText = (field: string, m: ApiMeasurement): string => {
@@ -430,7 +430,7 @@ export function InputPanel({
             max={r.max}
             className={errors[field] ? 'error' : ''}
           />
-          {autoSaveGate && inputs[field] !== undefined && (
+          {hasApiResponse && inputs[field] !== undefined && (
             <CommitTickButton ariaLabel={`Save ${field}`} onClick={flushLongitudinalSave}/>
           )}
         </div>

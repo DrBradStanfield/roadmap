@@ -8,6 +8,7 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { render, fireEvent, cleanup } from '@testing-library/react';
 import { ReviewTable } from './ReviewTable';
 import type { FileResult } from '../lib/upload-pipeline';
+import { showingAll } from '../testing/import-review';
 
 afterEach(cleanup);
 
@@ -25,7 +26,7 @@ const colonoscopy: FileResult[] = [{
 }];
 
 function screeningBox(age: number | undefined) {
-  const { container } = render(
+  const { container } = showingAll(render(
     <ReviewTable
       grading={{}}
       results={colonoscopy}
@@ -38,7 +39,7 @@ function screeningBox(age: number | undefined) {
       isSaving={false}
       error={null}
     />,
-  );
+  ));
   return container.querySelector<HTMLInputElement>('.review-screening-update input')!;
 }
 
@@ -65,10 +66,10 @@ describe('ReviewTable — a known minor sees values with no adult hint or colour
     values: [{ metric: 'ldl', valueSI: 4, displayValue: 4, displayUnit: 'mmol/L', confidence: 'high' }],
   } as unknown as FileResult];
   function ldlRow(knownMinor: boolean) {
-    const { container } = render(
+    const { container } = showingAll(render(
       <ReviewTable results={ldlFile} history={{ measurements: [], labValues: [], documents: [] }} unitSystem="si"
         sex="male" grading={knownMinor ? null : { sex: 'male' }} onSave={() => {}} onCancel={() => {}} isSaving={false} error={null} />,
-    );
+    ));
     const row = container.querySelector('.review-matrix .bt-row:not(.bt-header-row)')!;
     const colours = [...row.querySelectorAll('.bt-status-tick')].map(t => t.className.replace('bt-status-tick ', ''))
       .filter(c => c !== 'bt-status-none');
@@ -98,7 +99,7 @@ const vitalsSheet: FileResult[] = [{
 
 describe('ReviewTable — vitals and lab-row names (US-12 AC11)', () => {
   it('draws the BP row with a static mmHg chip and labels the lab cell by its name', () => {
-    const { container } = render(
+    const { container } = showingAll(render(
       <ReviewTable
         grading={{}}
         results={vitalsSheet}
@@ -110,7 +111,7 @@ describe('ReviewTable — vitals and lab-row names (US-12 AC11)', () => {
         isSaving={false}
         error={null}
       />,
-    );
+    ));
     const chips = [...container.querySelectorAll('.bt-unit-chip')].filter(c => c.textContent === 'mmHg');
     expect(chips).toHaveLength(1);
     expect(chips[0].tagName).toBe('SPAN');

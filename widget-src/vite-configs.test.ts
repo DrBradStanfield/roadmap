@@ -18,6 +18,7 @@ import shopifyDev from './vite.config.shopify-dev';
 import chatbot from './vite.config.chatbot';
 import upload from './vite.config.upload';
 import standaloneFactory from './vite.config.standalone';
+import widgets from './vite.config.widgets';
 
 const SURFACE_KEY = 'import.meta.env.VITE_SHOPIFY_SURFACE';
 
@@ -26,6 +27,8 @@ const SHOPIFY_SURFACE_BUNDLES = {
   'vite.config.site-chat.ts': siteChat,
   // The Shopify-like localhost: the storefront widget against a stubbed proxy.
   'vite.config.shopify-dev.ts': shopifyDev,
+  // US-74 AC5/AC8: the single-topic widgets, whose usage events need the flag.
+  'vite.config.widgets.ts': widgets,
 };
 
 // Bundles that must NEVER declare the flag. Every vite.config.*.ts must
@@ -86,7 +89,7 @@ describe('every vite bundle defines __SENTRY_RELEASE__ (US-49 AC4)', () => {
   const DEV_ONLY = new Set(['vite.config.shopify-dev.ts']);
   const ALL = Object.entries({ ...SHOPIFY_SURFACE_BUNDLES, ...NON_SURFACE_BUNDLES })
     .filter(([name]) => !DEV_ONLY.has(name));
-  it('checks the five built configs', () => expect(ALL).toHaveLength(5));
+  it('checks the six built configs', () => expect(ALL).toHaveLength(6));
   for (const [name, config] of ALL) {
     it(`${name} sets the release health-tool-widget@<git hash>`, () => {
       expect(config.define?.__SENTRY_RELEASE__).toBe(JSON.stringify(`health-tool-widget@${gitHash}`));
