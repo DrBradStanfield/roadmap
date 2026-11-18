@@ -5,8 +5,8 @@
 // Clarity records class, style and attribute values as they are, and the
 // length of masked text (US-74 AC5): nothing here varies with the stage or the
 // value, and every result text is padded to one length (US-75 AC7).
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { BP_TIER_LABEL } from '@roadmap/health-core/bp-tier';
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { BP_TIER_LABEL, type BpTier } from '@roadmap/health-core/bp-tier';
 import { localDay } from '@roadmap/health-core/merge';
 import { formatShortDate } from '../lib/constants';
 import { trackProductEvent } from '../lib/server-api';
@@ -15,13 +15,14 @@ import { useSaveOnLeave } from '../lib/useSaveOnLeave';
 import { averageOf, readReading, recordPair, resultFor, savePair, seenToday, type Pair, type Result, type Typed } from './blood-pressure';
 import { safeHref } from './body-measures';
 import { NEXT_STEP_DEFAULT, type WidgetProps } from './WaistToHeight';
-import { fixed } from './WidgetResults';
+import { PILL, drawPill, fixed } from './WidgetResults';
 
-/** Result text lengths: "250/150", the longest tier name, and the plan's longest card (the stage 2
- *  card with its medicine and both lifestyle sentences) and its leading line break, with room. Tested against every card. */
+/** Result text lengths, each padded with WidgetResults' word joiner (fixed), which Clarity counts and
+ *  no one sees: "250/150", the longest tier name, and the plan's longest card (the stage 2 card with
+ *  its medicine and both lifestyle sentences), with room. Tested against every card. */
 export const WIDTH = { value: 7, tier: 20, advice: 1000 } as const;
-/** As fixed, padded with ordinary spaces, which the page collapses: the advice keeps one length without a blank run. */
-export const soft = (text: string, width: number) => text + ' '.repeat(Math.max(0, width - text.length));
+/** The pill's colour by tier (Brad 2026-11-18): green Normal, amber Elevated and Stage 1, red Stage 2 and crisis. */
+const TONE: Record<BpTier, keyof typeof PILL> = { normal: 'green', elevated: 'amber', stage1: 'amber', stage2: 'red', crisis: 'red' };
 
 const EMPTY: Typed = { sys: '', dia: '' };
 const LABEL = { sys: 'Top number (systolic)', dia: 'Bottom number (diastolic)' } as const;
@@ -45,42 +46,47 @@ function ReadingBoxes({ index, typed, note, onChange, onEnter, next, sysRef }: {
     // A pair's error shows once, under the top number, and describes both boxes.
     const described = [invalid ? (h === 'dia' && !diaOwn ? errorId('sys') : errorId(h)) : '', note ? `${id}-day` : ''].filter(Boolean).join(' ') || undefined;
     return (
-      <div className="hr-widget-field">
+      <div className="health-field">
         <label htmlFor={`${id}-${h}`}>{LABEL[h]}</label>
-        <span className="hr-widget-in">
-          <input id={`${id}-${h}`} ref={h === 'sys' ? sysRef : pair.diaRef} type="text" inputMode="numeric" pattern="[0-9]*" autoComplete="off"
-            value={typed[h]} onChange={(e) => (h === 'sys' ? pair.handleSysChange : pair.handleDiaChange)(e.target.value)}
-            onKeyDown={pair.onKey} onBlur={pair.settle} aria-invalid={invalid} aria-describedby={described} />
-          <em aria-hidden="true">mmHg</em>
-        </span>
-        {error && <span id={errorId(h)} className="hr-widget-error">{error}</span>}
+        <input id={`${id}-${h}`} ref={h === 'sys' ? sysRef : pair.diaRef} type="text" inputMode="numeric" pattern="[0-9]*" autoComplete="off"
+          value={typed[h]} onChange={(e) => (h === 'sys' ? pair.handleSysChange : pair.handleDiaChange)(e.target.value)}
+          onKeyDown={pair.onKey} onBlur={pair.settle} aria-invalid={invalid} aria-describedby={described} />
+        {error && <span id={errorId(h)} className="error-message">{error}</span>}
       </div>
     );
   };
   return (
     <fieldset className="hr-widget-reading">
-      <legend>Reading {index + 1}{index > 0 && <small> (optional)</small>}</legend>
+      <legend>Reading {index + 1} <small>({index > 0 ? 'mmHg, optional' : 'mmHg'})</small></legend>
       <div className="hr-widget-row">{box('sys')}{box('dia')}</div>
       {note && <span id={`${id}-day`} className="hr-widget-day">{note}</span>}
     </fieldset>
   );
 }
 
-/** The average, its stage and the plan's card, in a live region on the page before they arrive. */
+/** The average, its stage and the plan's card, in a live region on the page before they arrive. The
+ *  stage's colour is a pill drawn on a canvas, as the waist widget's grade (review P1); where it draws,
+ *  the stage's words are read out, not shown twice. That depends on the browser, never on the result. */
 function BpResults({ result }: { result: Result | null }) {
+  const pill = useRef<HTMLCanvasElement>(null);
+  const [drawn, setDrawn] = useState(false);
+  const tier = result?.tier;
+  useLayoutEffect(() => {
+    if (tier) setDrawn(drawPill(pill.current, BP_TIER_LABEL[tier], PILL[TONE[tier]], true));
+  }, [tier]);
   return (
     <output className="hr-widget-results" aria-live="polite">
       {result && (
         <div className="hr-widget-res">
-          <div>
+          <div className="hr-widget-bp">
             <div className="hr-widget-k">Average blood pressure</div>
-            <div className="hr-widget-v">{soft(`${result.pair.sys}/${result.pair.dia}`, WIDTH.value)}<small className="hr-widget-mmhg"> mmHg</small></div>
-            <div className="hr-widget-s"><span className="hr-widget-status">{fixed(BP_TIER_LABEL[result.tier], WIDTH.tier)}</span></div>
-            {/* One element whatever the card: its paragraphs are line breaks (pre-line), so their count is not
-                in the page's structure; a card starts on a line break, which spaces it from the stage, and
-                Normal and Elevated leave it blank (no height). */}
-            <div className="hr-widget-advice">{soft(result.card ? `\n${result.card.description}` : '', WIDTH.advice)}</div>
+            <div className="hr-widget-v">{fixed(`${result.pair.sys}/${result.pair.dia}`, WIDTH.value)}<small className="hr-widget-mmhg"> mmHg</small></div>
+            <canvas ref={pill} className="hr-widget-pill hr-widget-bp-pill" aria-hidden="true" />
+            <span className={drawn ? 'hr-widget-sr' : 'hr-widget-status'}>{fixed(BP_TIER_LABEL[result.tier], WIDTH.tier)}</span>
           </div>
+          {/* One element whatever the card: its paragraphs are line breaks (pre-line), so their count is not
+              in the page's structure; Normal and Elevated leave it blank. */}
+          <div className="hr-widget-advice">{fixed(result.card?.description, WIDTH.advice)}</div>
         </div>
       )}
     </output>

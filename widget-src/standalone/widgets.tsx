@@ -10,6 +10,7 @@
  * opens, and the failure panel if it does not (review U4), with no doctor's
  * name or address, as the commerce store carries none (review U5).
  */
+import '../src/components/fields.css'; // the full app's field styles, first, so the widget's layout follows them
 import '../src/widgets/widgets.css';
 import React from 'react';
 import { createRoot } from 'react-dom/client';

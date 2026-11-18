@@ -46,9 +46,9 @@ const leave = async () => {
   await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
 };
 /** A result text as read: padding and the no-break space before the unit read as one space. */
-const shown = (selector: string) => document.querySelector(selector)?.textContent?.replace(/\s+/g, ' ').trim() ?? null;
+const shown = (selector: string) => document.querySelector(selector)?.textContent?.replace(/\u2060/g, '').replace(/\s+/g, ' ').trim() ?? null;
 /** The card's text exactly, its line breaks kept, without the padding. */
-const advice = () => document.querySelector('.hr-widget-advice')?.textContent?.trim() ?? null;
+const advice = () => document.querySelector('.hr-widget-advice')?.textContent?.replace(/\u2060/g, '') ?? null;
 const calls = (name: string) => vi.mocked(trackProductEvent).mock.calls.filter(([n]) => n === name);
 const tierCard = (file: RoadmapFile) => computePlan(file).results.suggestions.find((s) => s.id.startsWith('bp-') && s.id !== 'bp-measure' && s.category === 'blood_pressure' && s.id !== 'measure-bp');
 
@@ -78,7 +78,7 @@ describe('US-75 blood pressure widget', () => {
     for (const [sys, dia, stage] of cases) {
       const { unmount } = render(<BloodPressureWidget />);
       enterPair(1, sys, dia);
-      expect([sys, dia, shown('.hr-widget-status'), shown('.hr-widget-v')]).toEqual([sys, dia, stage, `${sys}/${dia} mmHg`]);
+      expect([sys, dia, shown('.hr-widget-sr, .hr-widget-status'), shown('.hr-widget-v')]).toEqual([sys, dia, stage, `${sys}/${dia} mmHg`]);
       expect(screen.queryByRole('button')).toBeNull();
       unmount();
     }
@@ -120,16 +120,15 @@ describe('US-75 blood pressure widget', () => {
     expect([active('systolic_bp'), active('diastolic_bp')]).toEqual([[133], [83]]);
     const card = tierCard(persisted());
     expect(card?.id).toBe('bp-stage1');
-    expect(text).toBe(card!.description.trim());
+    expect(text).toBe(card!.description); // exactly, line breaks and all
     expect(text).toContain('Target is <130/80'); // 65 or older
     // Never reworded: the DOM text is the description, line breaks and all.
-    expect(document.querySelector('.hr-widget-advice')!.textContent!.startsWith(`\n${card!.description}`)).toBe(true);
   });
 
   it('AC4: Normal and Elevated show no card; with no height on the record the stage shows and no card', () => {
     render(<BloodPressureWidget />);
     enterPair(1, '150', '95');
-    expect(shown('.hr-widget-status')).toBe('Stage 2 hypertension');
+    expect(shown('.hr-widget-sr, .hr-widget-status')).toBe('Stage 2 hypertension');
     expect(advice()).toBe('');
   });
 
@@ -241,22 +240,36 @@ describe('US-75 blood pressure widget', () => {
 
 describe('US-75 AC7 privacy', () => {
   const STAGES: Array<[string, string]> = [['118', '76'], ['125', '78'], ['134', '82'], ['150', '95'], ['185', '100'], ['99', '60'], ['250', '150']];
-  const textLengths = (root: Element) => [...root.querySelectorAll('*')]
-    .flatMap((el) => [...el.childNodes].filter((n) => n.nodeType === Node.TEXT_NODE).map((n) => n.textContent!.length));
+  /** Clarity's encoding of a masked text node (clarity-js src/core/scrub.ts mangleText; as US-74's test):
+   *  its trimmed length in base 36, the whitespace around it kept. */
+  const clarity = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) return value;
+    const at = value.indexOf(trimmed[0]);
+    return value.slice(0, at) + trimmed.length.toString(36) + value.slice(at + trimmed.length);
+  };
+  const encoded = (root: Element) => [...root.querySelectorAll('*')]
+    .flatMap((el) => [...el.childNodes].filter((n) => n.nodeType === Node.TEXT_NODE).map((n) => clarity(n.textContent!)));
   const attributes = (root: Element) => [...root.querySelectorAll('*')].map((el) => [el.tagName, ...[...el.attributes]
     .filter((a) => !(el.tagName === 'INPUT' && a.name === 'value'))
     .map((a) => `${a.name}=${a.value.replace(/:r[0-9a-z]+:|«r[0-9a-z]+»/g, ':id:')}`).sort()].join(' '));
 
-  it('every stage and value leaves the result text the same lengths and the block the same attributes', async () => {
+  it('a no-break space pad would leak through Clarity; the word joiner does not', () => {
+    expect(clarity('Normal\u00a0\u00a0')).not.toBe(clarity('Elevated'));
+    expect(clarity('Normal\u2060\u2060')).toBe(clarity('Elevated'));
+  });
+
+  it('every stage and value leaves the block\'s text identical as Clarity encodes it, and the same attributes (one canvas)', async () => {
     await data.saveChangedMeasurements({ heightCm: 178, birthYear: 1980, birthMonth: 1, sex: 'male' }, {});
     const seen = STAGES.map(([sys, dia]) => {
       const { container, unmount } = render(<BloodPressureWidget />);
       enterPair(1, sys, dia);
-      const out = { lengths: textLengths(container.querySelector('.hr-widget-res')!), attrs: attributes(container), stage: shown('.hr-widget-status') };
+      const out = { lengths: encoded(container), attrs: attributes(container), stage: shown('.hr-widget-sr, .hr-widget-status') };
       unmount();
       return out;
     });
     expect(new Set(seen.map((s) => s.stage)).size).toBe(5);
+    expect(seen[0].attrs.filter((a) => a.startsWith('CANVAS'))).toHaveLength(1);
     for (const each of seen.slice(1)) {
       expect(each.lengths).toEqual(seen[0].lengths);
       expect(each.attrs).toEqual(seen[0].attrs);
@@ -270,7 +283,7 @@ describe('US-75 AC7 privacy', () => {
     ).suggestions.filter((s) => s.category === 'blood_pressure');
     const cards = [...longest(250, 150), ...longest(179, 119), ...longest(139, 89)];
     expect(cards.map((c) => c.id).sort()).toEqual(['bp-crisis', 'bp-stage1', 'bp-stage2']);
-    for (const card of cards) expect(card.description.length + 1).toBeLessThanOrEqual(WIDTH.advice);
+    for (const card of cards) expect(card.description.length).toBeLessThanOrEqual(WIDTH.advice);
     expect('250/150'.length).toBe(WIDTH.value);
     expect('Stage 2 hypertension'.length).toBe(WIDTH.tier);
   });
