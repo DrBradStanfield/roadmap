@@ -17,6 +17,8 @@ import { useDebouncedSave } from '../lib/useDebouncedSave';
 import { useSaveOnLeave } from '../lib/useSaveOnLeave';
 import { blockBadNumericKeys } from '../lib/blood-test-cell';
 import { HeightBoxes } from '../components/HeightField';
+import { focusById } from '../components/form-kit';
+import { useAutoAdvance } from '../lib/useAutoAdvance';
 import { recordDays, recordMeasured, resultsFor, safeHref, startingUnits } from './body-measures';
 import { FIELDS, INPUT_OF, boxesFor, readBox, readBoxes, switchBoxes, typed, type Boxes, type Field, type Part } from './boxes';
 import { useWidgetSave } from './useWidgetSave';
@@ -79,6 +81,7 @@ export function WaistToHeightWidget({ nextUrl, nextLabel, navigate = (href) => w
   // Which input takes the focus after Enter with errors (review U6, C11): view state, not a mode.
   const focusTo = useRef<string | null>(null);
   const heightTimer = useDebouncedSave(500);
+  const advanceToWaist = useAutoAdvance();
   const dayRow = useRef<HTMLDivElement>(null);
   /** Save the entries among `fields` that read and are in range, and any that did not save before (US-74 AC4). */
   const save = useWidgetSave({ now, setBoxes, setDays, dispatch });
@@ -116,12 +119,23 @@ export function WaistToHeightWidget({ nextUrl, nextLabel, navigate = (href) => w
     dispatch({ type: 'edited' });
     if (field === 'height') heightTimer.schedule(() => { void save(['height']); });
   };
+  /** A complete height moves on to the waist (Brad 2026-11-18), with the full app's auto-advance, as
+   *  About you's height moves on to the weight. Metric: a whole 3-digit cm in range, after the helper's
+   *  short wait, so "178.5" can still be typed. US: inches that can take no further digit (two, or one
+   *  of 2 to 9), the feet and inches in range, at once. Never a height with an error. */
+  const heightTyped = (part: Part, value: string) => {
+    const height = readBoxes({ ...boxes, height: typed(boxes.height, part, value, system) }, system);
+    const complete = system === 'si' ? /^\d{3}$/.test(value) : part === 'inches' && /^(\d{2}|[2-9])$/.test(value);
+    const valid = height.values.heightCm !== undefined && !height.errors.heightCm;
+    advanceToWaist(complete && valid ? { ambiguous: system === 'si', advance: () => focusById(ids.waist) } : null);
+  };
   const leave = (field: Field) => () => setLeft((prev) => (prev.has(field) ? prev : new Set([...prev, field])));
   // Enter saves every box now, and shows every box's error, the first at fault focused (review U6, C11).
   const enter = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key !== 'Enter') return;
     e.preventDefault();
     heightTimer.cancel();
+    advanceToWaist(null);
     const first = FIELDS.find((f) => read.parts[f]);
     focusTo.current = !first ? null : first === 'height' && system === 'conventional' ? (read.parts.height === 'inches' ? ids.inches : ids.feet) : ids[first];
     setLeft(new Set(FIELDS));
@@ -179,12 +193,12 @@ export function WaistToHeightWidget({ nextUrl, nextLabel, navigate = (href) => w
         invalid={!!errorOf('height')}
         cm={boxes.height.text}
         range={heightRange}
-        onCm={(e) => { setHeightUnreadable(e.target.validity.badInput); edit('height')(e.target.value); }}
+        onCm={(e) => { setHeightUnreadable(e.target.validity.badInput); edit('height')(e.target.value); heightTyped('text', e.target.value); }}
         onCmBlur={leave('height')}
         feet={boxes.height.text}
         inches={boxes.height.inches}
-        onFeet={edit('height', 'text')}
-        onInches={edit('height', 'inches')}
+        onFeet={(v) => { edit('height', 'text')(v); heightTyped('text', v); }}
+        onInches={(v) => { edit('height', 'inches')(v); heightTyped('inches', v); }}
         onPairLeave={leave('height')}
         onKeyDown={enter}
         onUnits={switchUnits}

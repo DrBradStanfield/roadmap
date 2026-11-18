@@ -456,6 +456,56 @@ describe('US-74 review fixes', () => {
   });
 });
 
+describe('US-74 a complete height moves on to the waist (Brad 2026-11-18)', () => {
+  /** Type into a box with the focus in it, as a person does. */
+  const typeIn = (label: RegExp, value: string) => { box(label).focus(); type(label, value); };
+  const waistFocused = () => document.activeElement === box(/^Waist/);
+
+  it('metric: a whole 3-digit height in range moves on after the full app\'s short wait; "17" never does', async () => {
+    render(<WaistToHeightWidget />);
+    typeIn(/^Height/, '17');
+    await pause(900);
+    expect(waistFocused()).toBe(false);
+    typeIn(/^Height/, '178');
+    expect(waistFocused()).toBe(false); // the wait: "178.5" can still be typed
+    await waitFor(() => expect(waistFocused()).toBe(true));
+  });
+
+  it('metric: a decimal typed during the wait keeps the focus in the height box', async () => {
+    render(<WaistToHeightWidget />);
+    typeIn(/^Height/, '178');
+    typeIn(/^Height/, '178.');
+    await pause(900);
+    expect(document.activeElement).toBe(box(/^Height/));
+  });
+
+  it('US: inches that take no further digit move on at once; a lone "1" does not', async () => {
+    render(<WaistToHeightWidget />);
+    toUS();
+    typeIn(/^Feet/, '5');
+    typeIn(/^Inches/, '1');
+    await pause(900);
+    expect(waistFocused()).toBe(false);
+    typeIn(/^Inches/, '10');
+    await waitFor(() => expect(waistFocused()).toBe(true));
+  });
+
+  it.each([
+    ['metric, out of range', 'si', '300'],
+    ['US, out of range', 'us', '9/10'],
+  ])('no move on a height with an error (%s)', async (_name, units, value) => {
+    render(<WaistToHeightWidget />);
+    if (units === 'us') {
+      toUS();
+      const [feet, inches] = value.split('/');
+      typeIn(/^Feet/, feet);
+      typeIn(/^Inches/, inches);
+    } else typeIn(/^Height/, value);
+    await pause(900);
+    expect(waistFocused()).toBe(false);
+  });
+});
+
 describe('US-74 third review round', () => {
   /** Every text node's length in the block: what a Clarity replay keeps of masked text. */
   const textLengths = (root: Element) => [...root.querySelectorAll('*')]

@@ -43,11 +43,12 @@
 @media (max-width: 420px) { .hr-widget { padding: 20px 16px; } }
 /* Room for the calculator before its script mounts (Brad 2026-11-18: the page jumped on load). The
    stylesheet loads in the head, the script later: the block's placeholder card took 64-72 px, then grew
-   to the empty calculator's 221-239 px. These are that empty calculator's heights (WebKit, live page);
+   to the empty calculator's height. These are that empty calculator's heights (WebKit harness, 2026-11-18,
+   on the shared boxes: 213.7, 225.3, 244.9 px at 1280, 390 and 320);
    results added later grow it further, which is the person's own doing. Re-measure if the boxes change. */
-.hr-widget-block .hr-widget { min-height: 228px; }
-@media (max-width: 420px) { .hr-widget-block .hr-widget { min-height: 221px; } }
-@media (max-width: 340px) { .hr-widget-block .hr-widget { min-height: 239px; } }
+.hr-widget-block .hr-widget { min-height: 214px; }
+@media (max-width: 420px) { .hr-widget-block .hr-widget { min-height: 226px; } }
+@media (max-width: 340px) { .hr-widget-block .hr-widget { min-height: 245px; } }
 .hr-widget-form { display: flex; flex-direction: column; gap: 14px; }
 
 /* The boxes are the full app's (components/fields.css, scoped to this block
