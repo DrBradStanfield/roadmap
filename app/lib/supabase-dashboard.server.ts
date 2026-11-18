@@ -124,6 +124,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   const [
     convTotalRes,
     convDiscordRes,
+    convShopifyRes,
     chatTurnsRes,
     chatFallbacksRes,
     optinRes,
@@ -131,12 +132,17 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     activeTests,
     klaviyoSettled,
   ] = await Promise.all([
-    // Chat conversations — total + Discord split (Shopify = total − Discord).
+    // Chat conversations: the total, then Discord and the website (`shopify`)
+    // each by its own platform value. YouTube bot threads are in the total only.
     supabaseAdmin.from('chat_conversations').select('*', { count: 'exact', head: true }),
     supabaseAdmin
       .from('chat_conversations')
       .select('*', { count: 'exact', head: true })
       .eq('platform', 'discord'),
+    supabaseAdmin
+      .from('chat_conversations')
+      .select('*', { count: 'exact', head: true })
+      .eq('platform', 'shopify'),
     // Chat turns in the window: one chat_match_events row per answered turn on
     // every surface (the widget stores no chat_messages, US-15 AC7). user_id
     // only, for distinct chatters; the count rides on the same query.
@@ -216,7 +222,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     abImpressions,
     chat: {
       totalConversations,
-      shopifyConversations: Math.max(0, totalConversations - discordConversations),
+      shopifyConversations: convShopifyRes.count ?? 0,
       discordConversations,
       userMessages30d: chat30d.turns,
       fallbacks30d: chat30d.fallbacks,
