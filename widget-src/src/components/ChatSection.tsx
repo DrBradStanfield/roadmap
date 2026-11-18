@@ -7,7 +7,7 @@
  *
  * All API calls are lazy — nothing fires until the user clicks the bubble.
  */
-import React, { useState, useEffect, useCallback, useReducer } from 'react';
+import React, { useState, useEffect, useCallback, useReducer, useRef } from 'react';
 import { FeedbackForm } from './FeedbackForm';
 import { trackProductEvent } from '../lib/server-api';
 import { getChatGate } from '../lib/chat-api';
@@ -59,6 +59,26 @@ interface ChatSectionProps {
   muted?: boolean;
 }
 
+/**
+ * US-15 AC12a: the pop-up chat as a dialog. Its title takes the focus on opening, not the
+ * message box, so that opening does not call up a phone's keyboard. Escape inside it closes
+ * it. Close and Escape give the focus to the "Open chat" button the close brings back: both
+ * surfaces class it `chat-fab`, and it is found on the next frame, once it is on the page.
+ */
+function useChatDialog(isExpanded: boolean, inline: boolean | undefined, hide: () => void) {
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const popup = isExpanded && !inline;
+  useEffect(() => { if (popup) titleRef.current?.focus(); }, [popup]);
+  const close = () => {
+    hide();
+    requestAnimationFrame(() => document.querySelector<HTMLElement>('.chat-fab')?.focus());
+  };
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (popup && e.key === 'Escape' && !e.nativeEvent.isComposing) close();
+  };
+  return { titleRef, close, onKeyDown };
+}
+
 export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpand, guestInputs, prefetchedData, onProposeEdit, muted }: ChatSectionProps) {
   const [isExpanded, setIsExpanded] = useState(startExpanded ?? false);
   const [showFeedback, setShowFeedback] = useState(false);
@@ -75,6 +95,7 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
     onProposeEdit,
   });
   const { inputRef, messagesContainerRef } = refs;
+  const dialog = useChatDialog(isExpanded, inline, () => { setIsExpanded(false); onClose?.(); });
 
   // Load on mount when startExpanded (mirrors original lazy-load behavior).
   // chat_opened must fire on EVERY entry path — both live FABs mount
@@ -144,14 +165,14 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
 
   // ----- EXPANDED STATE -----
   return (
-    <div className={`chat-section chat-expanded${inline ? ' chat-expanded--inline' : ''} no-print`} role="dialog" aria-label={copy.label} data-clarity-mask="true">
+    <div className={`chat-section chat-expanded${inline ? ' chat-expanded--inline' : ''} no-print`} role="dialog" aria-label={copy.label} data-clarity-mask="true" onKeyDown={dialog.onKeyDown}>
       <div className="chat-header">
         <button className="chat-threads-btn" onClick={() => setShowThreads(!showThreads)}>
           {showThreads ? 'Back' : 'History'}
         </button>
-        <ChatHeaderTitle title={copy.title} subtitle={muted ? MUTED_CHAT.subtitle : copy.subtitle} />
+        <ChatHeaderTitle title={copy.title} subtitle={muted ? MUTED_CHAT.subtitle : copy.subtitle} titleRef={dialog.titleRef} />
         {!inline && (
-          <button className="chat-close-btn" aria-label="Close chat" onClick={() => { setIsExpanded(false); onClose?.(); }}>✕</button>
+          <button className="chat-close-btn" aria-label="Close chat" onClick={dialog.close}>✕</button>
         )}
       </div>
 
