@@ -8,15 +8,16 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useState } from 'react';
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { UploadModal } from './UploadModal';
 import { SettingsSheet } from './SettingsSheet';
 import { getDocumentArchiveMode } from '../lib/roadmap-data';
 import { checkLabImportQuota } from '../lib/upload-api';
 
-vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn(), labImportBatch: vi.fn(), pollBatchStatus: vi.fn() }));
-vi.mock('../lib/roadmap-data', () => ({ getDocumentArchiveMode: vi.fn(() => 'cloud'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
+vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn() }));
+vi.mock('../lib/roadmap-data', () => ({ uploadKnownIndex: vi.fn(() => new Map()), isLegacyUpload: vi.fn(() => false), getDocumentArchiveMode: vi.fn(() => 'cloud'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
 vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
+vi.mock('../lib/archive-payloads', async importOriginal => ({ ...await importOriginal<typeof import('../lib/archive-payloads')>(), sha256Blob: vi.fn(async () => '') }));
 vi.mock('../lib/useIsMobile', () => ({ useIsMobile: () => false }));
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 
@@ -169,6 +170,7 @@ describe('US-12 AC4a: the upload window is a dialog', () => {
     openFromButton();
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;
     await act(async () => { fireEvent.change(input, { target: { files: [new File(['synthetic'], 'synthetic.pdf', { type: 'application/pdf' })] } }); });
+    await waitFor(() => expect(fail).toBeTypeOf('function')); // the read has started
     fireEvent.click(screen.getByRole('button', { name: 'Close' }));
     await act(async () => { fail(new Error('synthetic unreadable file')); });
     const indicator = await screen.findByRole('button', { name: /Upload needs attention/ });
@@ -176,7 +178,9 @@ describe('US-12 AC4a: the upload window is a dialog', () => {
     fireEvent.keyDown(indicator, { key: 'Enter' });
     const shownTitle = title();
     expect(document.activeElement).toBe(shownTitle);
+    screen.getByText('No readable files found. Please check your files and try again.'); // the failed-read screen
     fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
     expect(document.querySelector('.floating-upload-indicator')).toBeNull();
     expect(document.activeElement).toBe(shownTitle); // not moved: jsdom keeps it on the hidden title, a browser drops it to the body
   });
