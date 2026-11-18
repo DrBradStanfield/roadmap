@@ -13,8 +13,8 @@
  *  A. every age edge × sex × a probe per screening state that gates a card;
  *  B. every answer fixture at one or two ages where its screening applies;
  *  C. a last date at, one month before and one month after every interval;
- *  D. birthday-month and clock-edge cases (the plan's age is local, the
- *     schedule's UTC).
+ *  D. birthday-month and clock-edge cases (the plan's shown age is local; its
+ *     screening cards and the schedule read the UTC month, US-23 AC6c).
  */
 import { migrateFile } from './migrate';
 import { computePlan } from './plan';
@@ -387,7 +387,7 @@ export function screeningGolden(setNow: (d: Date) => void) {
   }
   // C. Interval boundaries.
   for (const [name, code, f] of boundaryCases()) add(name, profileOf(code), f);
-  // D. The birthday month, at both clocks: the plan counts age in local time, the schedule in UTC.
+  // D. The birthday month, at both clocks: the plan shows age in local time; its cards and the schedule read UTC (US-23 AC6c).
   for (const [c] of SEXES.slice(0, 2)) {
     for (const age of [25, 35, 40, 45, 50, 66, 70, 76, 81]) {
       for (const birthMonth of [9, 10, 11]) {

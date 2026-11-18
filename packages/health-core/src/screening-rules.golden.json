@@ -35415,9 +35415,7 @@
   },
   "D edge-clock m35 born 1991-10 all-answered": {
    "age": 35,
-   "cards": [
-    "C008"
-   ],
+   "cards": [],
    "due": [
     "annual_checkin (annual) Annual health check-in 2027-09-30"
    ],
@@ -35580,9 +35578,7 @@
   "D edge-clock m45 born 1981-10 all-answered": {
    "age": 45,
    "cards": [
-    "C008",
-    "C016",
-    "C015"
+    "C008"
    ],
    "due": [
     "screening_colorectal (screening) Colorectal screening 2026-09-01"
@@ -35679,7 +35675,6 @@
    "age": 50,
    "cards": [
     "C008",
-    "C023",
     "C016",
     "C015"
    ],
@@ -35910,8 +35905,7 @@
     "C030",
     "C023",
     "C016",
-    "C015",
-    "C027"
+    "C015"
    ],
    "due": [
     "screening_colorectal (screening) Colorectal screening 2026-09-01",
@@ -36022,6 +36016,7 @@
   "D edge-clock m76 born 1950-10 all-answered": {
    "age": 76,
    "cards": [
+    "C030",
     "C023",
     "C016",
     "C015",
@@ -36135,6 +36130,7 @@
   "D edge-clock m81 born 1945-10 all-answered": {
    "age": 81,
    "cards": [
+    "C023",
     "C016",
     "C015",
     "C027"
@@ -36232,9 +36228,7 @@
   },
   "D edge-clock f25 born 2001-10 all-answered": {
    "age": 25,
-   "cards": [
-    "C004"
-   ],
+   "cards": [],
    "due": [
     "annual_checkin (annual) Annual health check-in 2027-09-30"
    ],
@@ -36313,7 +36307,6 @@
   "D edge-clock f35 born 1991-10 all-answered": {
    "age": 35,
    "cards": [
-    "C008",
     "C004"
    ],
    "due": [
@@ -36408,7 +36401,6 @@
    "age": 40,
    "cards": [
     "C008",
-    "C011",
     "C004"
    ],
    "due": [
@@ -36512,9 +36504,7 @@
    "cards": [
     "C008",
     "C011",
-    "C004",
-    "C019",
-    "C018"
+    "C004"
    ],
    "due": [
     "screening_colorectal (screening) Colorectal screening 2026-09-01",
@@ -36635,10 +36625,8 @@
     "C008",
     "C011",
     "C004",
-    "C023",
     "C019",
-    "C018",
-    "C027"
+    "C018"
    ],
    "due": [
     "screening_colorectal (screening) Colorectal screening 2026-09-01",
@@ -36756,6 +36744,7 @@
    "cards": [
     "C030",
     "C011",
+    "C004",
     "C023",
     "C019",
     "C018",
@@ -37005,6 +36994,7 @@
   "D edge-clock f76 born 1950-10 all-answered": {
    "age": 76,
    "cards": [
+    "C030",
     "C011",
     "C023",
     "C019",
@@ -37119,6 +37109,7 @@
    "age": 81,
    "cards": [
     "C011",
+    "C023",
     "C019",
     "C018",
     "C027"

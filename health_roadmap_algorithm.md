@@ -79,6 +79,8 @@ Per AACE 2025 and NICE guidelines, BMI classification in the 25–29.9 range is 
 
 `currentYear - birthYear`, minus 1 if `currentMonth < birthMonth`. Minimum 0. Defaults to birthMonth = 1 if not provided.
 
+The screening cards (section 8) and the reminders (section 11) read this age at the UTC year and month (`screeningAge`), so one record at one instant gets the same screening gate on both, in every time zone (US-23 AC6b, AC6c). The age shown, and its other uses, read the local date.
+
 ### eGFR (CKD-EPI 2021, Race-Free)
 
 Input: creatinine in umol/L. Internal conversion: `Cr_mg_dL = Cr_umol_L / 88.4`.
