@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 /**
  * US-15 AC17e: the chat's error line is an alert (role="alert"). It carries a refused turn, a failed send and the paste-cut
- * notice, and it was a plain line, so a screen reader that had heard "Thinking…" was told nothing when the
- * turn ended in an error. The real hook and the real chat-api run. fetch is stubbed. Mocked: chat-sync,
+ * notice, and it was a plain line, so nothing marked the line for a screen reader when the turn ended in an
+ * error after "Thinking…". The real hook and the real chat-api run. fetch is stubbed. Mocked: chat-sync,
  * chat-history-access, observe-visibility, trackProductEvent, Sentry, FeedbackForm, ChatKeyGate and ChatThreadList.
  * ChatSection and ChatEmbed each draw the line, so both are checked. Synthetic questions.
  */
@@ -75,7 +75,7 @@ describe.each(surfaces)('US-15 AC17e: the chat error line is an alert (%s)', (_n
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
-  it('the alert leaves while the next send is open and a second refusal is a new alert', async () => {
+  it('with the tab channel mocked, the next send takes the alert away and a second refusal draws it again', async () => {
     let answer!: (r: Response) => void;
     const fetchStub = vi.fn<() => Promise<Response>>(async () => refused());
     vi.stubGlobal('fetch', fetchStub);
@@ -86,6 +86,7 @@ describe.each(surfaces)('US-15 AC17e: the chat error line is an alert (%s)', (_n
     ask('a second synthetic question');
     await waitFor(() => expect(screen.queryByRole('alert')).toBeNull());
     await waitFor(() => expect(answer).toBeTypeOf('function'));
+    expect(screen.queryByRole('alert')).toBeNull();
     answer(refused());
     expect(await errorAlert()).toBe(CHAT_LIMIT_MESSAGE);
   });
