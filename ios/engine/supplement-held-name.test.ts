@@ -86,6 +86,20 @@ describe('what the phone still refuses (US-06 AC1d)', () => {
     expect(applyEdit(plain, { ...rowEdit(plain, {}), supplementName: '' }, LATER)).toMatchObject({ ok: false, reason: 'invalid-value' });
   });
 
+  it('the stored name in another Unicode form: an accent sent as a letter and a combining mark', () => {
+    const file = webAdded('Cr\u00e9atine');
+    const row = file.supplements[0];
+    const split = 'Cre\u0301atine';
+    expect(split.normalize('NFC')).toBe(row.supplementName);
+    expect(applyEdit(file, { ...rowEdit(file, { doseValue: 2, doseUnit: 'mg' }), supplementName: split }, LATER)).toEqual(REFUSED);
+    // So typing it that way does not start a stopped row again. The row's own edit, with the stored name, does.
+    const stopped = applied(file, rowEdit(file, { status: 'stopped' }));
+    expect(applyEdit(stopped, { kind: 'customSupplement', name: split }, LATER)).toEqual(REFUSED);
+    const restarted = applied(stopped, rowEdit(stopped, { status: 'active' }), '2026-10-21T10:00:00.000Z');
+    expect(restarted.supplements).toHaveLength(1);
+    expect(restarted.supplements[0]).toMatchObject({ id: row.id, supplementName: row.supplementName, status: 'active' });
+  });
+
   it('the stored name of one row sent under another row\'s key', () => {
     let file = webAdded('D3 & K2');
     file = upsertSupplement(file, { ...customSupplementAdd('Taurine', file.supplements), doseValue: null, doseUnit: null, status: 'active' }, NOW).file;
