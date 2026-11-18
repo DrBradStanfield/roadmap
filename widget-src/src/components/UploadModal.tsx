@@ -4,16 +4,18 @@ import type { UnitSystem, MetricType } from '@roadmap/health-core/units';
 import type { UploadHistory } from '../lib/api-types';
 import { measurementRefusalLine } from '../lib/lab-value-labels';
 import { labUnitRefusalLine } from '@roadmap/health-core/lab-series';
+import { UPLOAD_TEXT } from '@roadmap/health-core/upload-text';
 import { useLpaUnit } from '../lib/lpa-unit';
 import type { Grading } from '../lib/blood-test-cell';
 import { ReviewTable } from './ReviewTable';
-import { FileNotices, NotSaved } from './UploadNotices';
+import { FileNotices } from './UploadNotices';
 import { ErrorBoundary } from './ErrorBoundary';
 import { FloatingUploadIndicator } from './FloatingUploadIndicator';
 import { useUploadFlow, MAX_FILES } from '../hooks/useUploadFlow';
 import { getDocumentArchiveMode } from '../lib/roadmap-data';
 import { useIsMobile } from '../lib/useIsMobile';
 import { openBackendPicker, UPLOAD_STORAGE_NOTICE } from '../lib/storage-notice';
+import type { ProductEventMetadata } from '../lib/server-api';
 
 interface UploadModalProps {
   unitSystem: UnitSystem;
@@ -38,9 +40,17 @@ interface UploadModalProps {
 
 export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit, history, onComplete, onStart, onClose, onScreeningUpdate, age, sex, grading, open, onOpen }: UploadModalProps) {
   const flow = useUploadFlow({ unitSystem, history, onComplete, onStart, onClose, onScreeningUpdate });
-  const { phase, files, notices, progress, results, readError, saveError, skipArchive, close: handleClose, discard: handleDiscard } = flow;
+  const { phase, files, notices, progress, results, readError, saveError, skipArchive } = flow;
   const picking = phase === 'picking' || phase === 'readFailed';
   const reviewing = phase === 'reviewing' || phase === 'saving' || phase === 'saveFailed';
+  // A review that Cancel discards sends its counts; × and Escape only hide it, to
+  // resume (US-12 AC4). The flow sends one per review, none while a Save runs (US-13 AC13).
+  const reviewCounts = useRef<(() => ProductEventMetadata) | null>(null);
+  const handleClose = flow.close;
+  const handleDiscard = () => {
+    if (phase === 'reviewing' || phase === 'saveFailed') flow.endReview(reviewCounts.current?.());
+    flow.discard();
+  };
   // Connect-first gate (decision record: encourage, don't block). 'device-only'
   // + not skipped → show the connect panel instead of the dropzone.
   const archiveMode = getDocumentArchiveMode();
@@ -164,7 +174,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
             </div>
           )}
 
-          {reviewing && <><FileNotices notices={notices} /><NotSaved results={results} /></>}
+          {reviewing && <FileNotices notices={notices} />}
           {reviewing && (
             // A review that throws while rendering is never a dead widget (US-13 AC9).
             <ErrorBoundary feature="upload_review" fallback={
@@ -187,6 +197,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
               isSaving={phase === 'saving'}
               error={saveError}
               refusals={refusedLabUnits.length + refusedMeasurements.length > 0 ? refusalLines : undefined}
+              countsRef={reviewCounts}
             />
             </ErrorBoundary>
           )}
@@ -215,9 +226,8 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
                 </p>
               )}
               {refusalLines}
-              {unstoredCount > 0 && <p className="upload-done-skipped">The original file couldn't be stored; its details are saved.</p>}
+              {unstoredCount > 0 && <p className="upload-done-skipped">{UPLOAD_TEXT.unstoredLine}</p>}
               <FileNotices notices={notices} />
-              <NotSaved results={results} />
               <button className="btn-primary upload-done-btn" onClick={handleClose}>
                 Done
               </button>

@@ -17,6 +17,24 @@ final class StubHTTP: URLProtocol {
         var delay: TimeInterval = 0
         /// Answer only once the test opens this gate: an open held in flight with no fixed delay.
         var gate: Gate?
+        /// Send the headers at once and the body only once the test opens this gate: a stream in flight.
+        var bodyGate: Gate?
+        /// Deliver the body in pieces of this many bytes, as a network may split it.
+        var chunk: Int?
+    }
+
+    /// The body as the session receives it: whole, or in `chunk`-byte pieces.
+    private func load(_ answer: Answer) {
+        guard let chunk = answer.chunk, chunk > 0 else {
+            client?.urlProtocol(self, didLoad: answer.body)
+            return
+        }
+        var at = answer.body.startIndex
+        while at < answer.body.endIndex {
+            let end = min(at + chunk, answer.body.endIndex)
+            client?.urlProtocol(self, didLoad: answer.body.subdata(in: at..<end))
+            at = end
+        }
     }
 
     /// Holds answers until `open()`, which delivers them; once open, answers pass at once.
@@ -90,10 +108,17 @@ final class StubHTTP: URLProtocol {
         }
         let deliver = { [self] in
             client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
-            client?.urlProtocol(self, didLoad: answer.body)
+            load(answer)
             client?.urlProtocolDidFinishLoading(self)
         }
-        if let gate = answer.gate {
+        if let gate = answer.bodyGate {
+            client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+            let later = EngineQueueOnly { [self] in
+                load(answer)
+                client?.urlProtocolDidFinishLoading(self)
+            }
+            gate.hold { later.value() }
+        } else if let gate = answer.gate {
             let later = EngineQueueOnly(deliver)
             gate.hold { later.value() }
         } else if answer.delay > 0 {

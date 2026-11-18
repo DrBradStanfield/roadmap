@@ -47,6 +47,7 @@ final class AnalyticsMaskingTests: XCTestCase {
             "Health Records asked", "Health Records imported", // US-72 AC13: never a value, a test's name or a count
             "Jump pill tapped", "Blood test added", // US-73's usage signal: never which pill, test or value
             "Lab save all", "Lab save one", // US-52 AC8b: once per save action, never a count or a name
+            "Lab review show all", "Lab review not saved opened", "Lab review untick", // US-13 AC13: never a value, name or count
         ])
         let sdk = FakeSDK()
         let analytics = Analytics(sdk: sdk, projectId: "abc", testing: false)

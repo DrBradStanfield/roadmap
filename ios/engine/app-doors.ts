@@ -10,7 +10,7 @@ import type { ApiMedication } from '../../packages/health-core/src/mappings';
 import { derivePlanInputs } from '../../packages/health-core/src/plan';
 import { currentValueRows } from '../../packages/health-core/src/blood-tests';
 import type { RecordHost } from '../../packages/health-core/src/record-host';
-import { labReview, labRows, labSaveSummary, type Extraction } from './lab-review';
+import { labReview, labRows, type Extraction } from './lab-review';
 import { readRecord, readView, Refusal } from './my-data';
 import { checkArgs } from './contract';
 
@@ -140,7 +140,8 @@ export function labReviewJson(extractionJson: string, nowIso: string, recordJson
  *  Read raw, as the save writes it (US-65), so the receipt counts what really lands. */
 export function labSaveSummaryJson(recordJson: string, extractionJson: string, refsJson: string, reportDay: string, nowIso: string, deviceId: string): string {
   checkArgs('labSaveSummaryJson', arguments);
-  const rows = labRows(JSON.parse(extractionJson) as Extraction, JSON.parse(refsJson) as string[], reportDay, nowIso);
+  const file = readRecord(recordJson, nowIso, deviceId);
+  const rows = labRows(JSON.parse(extractionJson) as Extraction, JSON.parse(refsJson) as string[], reportDay, nowIso, file);
   if (!rows.ok) return JSON.stringify(rows);
-  return JSON.stringify({ ok: true, summary: labSaveSummary(readRecord(recordJson, nowIso, deviceId), rows.rows, nowIso) });
+  return JSON.stringify({ ok: true, summary: rows.summary });
 }

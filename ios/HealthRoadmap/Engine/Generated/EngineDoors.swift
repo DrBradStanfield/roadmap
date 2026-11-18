@@ -1,6 +1,6 @@
 // Generated from ios/engine/contract.ts by `npx tsx ios/scripts/gen-contract.ts`. Never edit it:
 // ios/engine/contract-drift.test.ts fails when it differs from what the contract generates.
-// contractHash: fa0b8b7ca709c585
+// contractHash: eb18cc9e1981de46
 
 import Foundation
 import JavaScriptCore
@@ -223,6 +223,11 @@ extension HealthEngine {
         try optionalCall("uploadVerdictsJson", [request])
     }
 
+    /// `labReviewGroupsJson`: answers at once; nil from an engine without it.
+    func doorLabReviewGroupsJson(recordJson: String, extractionJson: String, refsJson: String, reportDay: String, nowIso: String, deviceId: String) throws -> String? {
+        try optionalCall("labReviewGroupsJson", [recordJson, extractionJson, refsJson, reportDay, nowIso, deviceId])
+    }
+
     /// `cloudOnline`: answers at once; nil from an engine without it.
     func doorCloudOnline() throws -> String? {
         try optionalCall("cloudOnline", [])
@@ -236,5 +241,40 @@ extension HealthEngine {
     /// `cloudEraseHeld`, its settled value read by `read` on the engine's queue.
     func doorCloudEraseHeld<T: Sendable>(read: @escaping (JSValue) -> T) async throws -> T? {
         try await optionalCall("cloudEraseHeld", [], read: read)
+    }
+
+    /// `uploadStartJson`: answers at once; nil from an engine without it.
+    func doorUploadStartJson(platform: String) throws -> String? {
+        try optionalCall("uploadStartJson", [platform])
+    }
+
+    /// `uploadStepJson`: answers at once; nil from an engine without it.
+    func doorUploadStepJson(stateJson: String, eventJson: String, recordJson: String, deviceId: String) throws -> String? {
+        try optionalCall("uploadStepJson", [stateJson, eventJson, recordJson, deviceId])
+    }
+
+    /// `uploadViewJson`: answers at once; nil from an engine without it.
+    func doorUploadViewJson(stateJson: String, recordJson: String, nowIso: String, cloudConnected: Bool, deviceId: String) throws -> String? {
+        try optionalCall("uploadViewJson", [stateJson, recordJson, nowIso, cloudConnected, deviceId])
+    }
+
+    /// `uploadSavePlanJson`: answers at once; nil from an engine without it.
+    func doorUploadSavePlanJson(stateJson: String, recordJson: String, nowIso: String, cloudConnected: Bool, deviceId: String) throws -> String? {
+        try optionalCall("uploadSavePlanJson", [stateJson, recordJson, nowIso, cloudConnected, deviceId])
+    }
+
+    /// `uploadUsageJson`: answers at once; nil from an engine without it.
+    func doorUploadUsageJson(stateJson: String) throws -> String? {
+        try optionalCall("uploadUsageJson", [stateJson])
+    }
+
+    /// `uploadSaveJson`: answers a Promise; nil from an engine without it.
+    func doorUploadSaveJson(stateJson: String, recordJson: String, erase: String, nowIso: String, deviceId: String, originalsJson: String, readOriginal: AnyObject) async throws -> String? {
+        try await optionalCall("uploadSaveJson", [stateJson, recordJson, erase, nowIso, deviceId, originalsJson, readOriginal], read: { $0.isUndefined ? "" : $0.toString() })
+    }
+
+    /// `uploadSaveJson`, its settled value read by `read` on the engine's queue.
+    func doorUploadSaveJson<T: Sendable>(stateJson: String, recordJson: String, erase: String, nowIso: String, deviceId: String, originalsJson: String, readOriginal: AnyObject, read: @escaping (JSValue) -> T) async throws -> T? {
+        try await optionalCall("uploadSaveJson", [stateJson, recordJson, erase, nowIso, deviceId, originalsJson, readOriginal], read: read)
     }
 }

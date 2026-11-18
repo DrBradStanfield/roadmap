@@ -164,11 +164,15 @@ final class AppChatLabTests: XCTestCase {
         XCTAssertEqual(review.reportDay, "2026-10-01")
         XCTAssertEqual(review.items.map(\.ref), ["v0", "v1", "a0"])
         XCTAssertEqual(review.items[1].day, "2025-04-02")
-        XCTAssertEqual(review.notSaved.first?.label, "Creatinine")
-
         let held = try record(engine, .add(metric: "ldl", value: 2.5, day: "2026-10-01"))
+        let groups = try XCTUnwrap(engine.blocking { [now, extraction] in
+            try $0.labReviewGroups(recordJSON: held, extractionJSON: extraction, ticked: ["v0", "v1", "a0"], reportDay: "2026-10-01", now: now, deviceId: "test") })
+        XCTAssertEqual(groups.notSaved?.lines, ["Creatinine: no unit was printed"])
+        // The held LDL is a row that is never written (Q2a); Save sends the rest.
+        XCTAssertNotNil(groups.conflict("v0"))
+        XCTAssertEqual(groups.saveRefs, ["a0", "v1"], "in the order Save must send them")
         let summary = try engine.blocking { [now, extraction] in try $0.labSaveSummary(recordJSON: held, extractionJSON: extraction, refs: ["v0", "v1", "a0"], reportDay: "2026-10-01", now: now, deviceId: "test") }.get()
-        XCTAssertEqual(summary, LabSaveSummary(saved: 2, skipped: 1, refused: []))
+        XCTAssertEqual(summary, LabSaveSummary(saved: 2, skipped: 1, refused: [], sameDay: []))
 
         let outcome = try engine.blocking { [now, extraction] in try $0.apply(.labImport(extractionJSON: extraction, refs: ["v0", "v1", "a0"], reportDay: "2026-10-01"), to: held, now: now, deviceId: "test") }
         XCTAssertTrue(outcome.ok, outcome.message ?? "")
@@ -196,11 +200,138 @@ final class AppChatLabTests: XCTestCase {
          "unreadValues":[{"name":"hdl","reason":"unreadable"},{"name":"lpa","reason":"unreadable"},{"name":"hdl","reason":"unreadable"}]}
         """#
         let review = try engine.blocking { [now] in try $0.labReview(extractionJSON: unread, now: now) }
-        // Each label once (review R1); tests with the same reason share a line. A limit is saved
-        // since US-12 AC20, so it is never here.
-        XCTAssertEqual(review.notSaved, [LabReview.NotSaved(label: "HDL Cholesterol, Lp(a)", reason: "could not be read")])
-        XCTAssertEqual(review.unreadCount, 1)
+        let groups = try XCTUnwrap(engine.blocking { [now] in
+            try $0.labReviewGroups(recordJSON: "", extractionJSON: unread, ticked: ["v0"], reportDay: "2026-10-01", now: now, deviceId: "test") })
+        // Each label once (review R1); tests with the same reason share a line (US-13 AC13's
+        // words). A limit is saved since US-12 AC20, so it is never here.
+        XCTAssertEqual(groups.notSaved?.title, "4 values not saved")
+        XCTAssertEqual(groups.notSaved?.lines, ["HDL Cholesterol, Lp(a): could not be read", "1 other value could not be read"])
         XCTAssertEqual(review.items.map(\.label), ["LDL Cholesterol"])
+    }
+
+    // MARK: US-13 AC13: the review's groups
+
+    /// A sure value is hidden behind Show all and still saves: its tick stays, and the plan
+    /// Save runs sends it. Fails if a hidden value stopped saving.
+    func testAHiddenSureValueKeepsItsTickAndSaves_US13_AC13() throws {
+        let engine = try HealthEngine()
+        let review = try engine.blocking { [now, extraction] in try $0.labReview(extractionJSON: extraction, now: now) }
+        let choices = LabChoices(review: review)
+        let groups = try XCTUnwrap(engine.blocking { [now, extraction] in
+            try $0.labReviewGroups(recordJSON: "", extractionJSON: extraction, ticked: choices.ticked, reportDay: "2026-10-01", now: now, deviceId: "test") })
+        XCTAssertEqual(groups.summary, "Found 3 blood test values")
+        XCTAssertEqual(groups.rows("sure", of: review).map(\.ref), ["v0", "a0"], "no row unless Show all")
+        XCTAssertEqual(groups.rows("unsure", of: review).map(\.ref), ["v1"])
+        XCTAssertEqual(groups.check?.title, "Check this value")
+        XCTAssertEqual(groups.sure, LabReviewGroups.Sure(willSave: "2 values will be saved", showAll: "Show all 2", hide: "Hide"))
+        XCTAssertEqual(groups.save, "Save 3 values")
+        let result = LabResult(name: "Bloods.pdf", truncated: false, extractionJSON: extraction, failure: nil)
+        XCTAssertEqual(groups.saveRefs, ["v0", "a0", "v1"], "the engine writes every ticked sure value, hidden ones included, in send order")
+        XCTAssertEqual(LabSavePlan(result: result, review: review, choices: choices, archiveOnly: false),
+                       .values(refs: ["v0", "v1", "a0"], day: "2026-10-01"), "Save sends every ticked value; the engine decides what it writes")
+    }
+
+    /// The not-saved lines are the engine's, in the person's words: no raw key and no text
+    /// written for assistants (US-52 AC8, H400). Fails if a key reached the screen.
+    func testNotSavedNamesNoKey_US13_AC13() throws {
+        let engine = try HealthEngine()
+        // Units neither test takes: a white-cell % is stored as its own test since US-21 AC28.
+        let refused = #"""
+        {"classification":"lab_report","reportDate":"2026-10-01","values":[],
+         "additionalValues":[{"name":"rdw_sd","value":42,"unit":"mg/L"},{"name":"immature_granulocytes","value":0.4,"unit":"mg/L"}]}
+        """#
+        let groups = try XCTUnwrap(engine.blocking { [now] in
+            try $0.labReviewGroups(recordJSON: "", extractionJSON: refused, ticked: ["a0", "a1"], reportDay: "2026-10-01", now: now, deviceId: "test") })
+        let lines = try XCTUnwrap(groups.notSaved?.lines)
+        XCTAssertFalse(lines.isEmpty)
+        for line in lines + [groups.notSaved?.title ?? "", groups.summary] {
+            XCTAssertFalse(line.contains("_"), line)
+            XCTAssertFalse(line.contains("Do not"), line)
+        }
+        XCTAssertEqual(groups.saveRefs, [])
+        XCTAssertNil(groups.save, "nothing to save: no Save (D3)")
+        // Ticked values are named by the save's own refusals; nothing of the extraction's own is omitted (AC8b).
+        XCTAssertEqual(groups.omitted, [])
+        XCTAssertEqual(LabReportSave().reportOutcome(groups, review: nil), ReportOutcome(notes: ["Already in your record"]))
+    }
+
+    /// The groups decode from the engine's JSON, with null sections absent.
+    func testTheGroupsDecode_US13_AC13() throws {
+        let json = #"""
+        {"summary":"Found 1 blood test value","items":[{"ref":"v0","group":"unsure","reasons":["conflict"],"conflict":"Kept."}],
+         "check":{"title":"Check this value","footer":"F"},"sure":null,"alreadySaved":null,"notSaved":null,"omitted":[],"saveRefs":[],"save":"Save 0 values"}
+        """#
+        let groups = try JSONDecoder().decode(LabReviewGroups.self, from: Data(json.utf8))
+        XCTAssertEqual(groups.items, [LabReviewGroups.Item(ref: "v0", group: "unsure", conflict: "Kept.", refusal: nil)])
+        XCTAssertEqual(groups.check?.title, "Check this value")
+        XCTAssertNil(groups.sure)
+        XCTAssertEqual(groups.conflict("v0"), "Kept.")
+    }
+
+    /// An engine without the groups door still names what it did not read, as before.
+    func testAnOlderEnginesNotSavedListStillShows_US52_AC8() throws {
+        let json = #"{"isLabReport":true,"reportDay":"2026-10-01","items":[],"document":null,"notSaved":[{"label":"Creatinine","reason":"unit unknown"}],"unreadCount":2}"#
+        let review = try JSONDecoder().decode(LabReview.self, from: Data(json.utf8))
+        XCTAssertEqual(review.legacyNotSaved, ["Creatinine: unit unknown", "2 values could not be read."])
+        XCTAssertEqual(LabReportSave().reportOutcome(nil, review: review), ReportOutcome(notes: ["Already in your record", "Creatinine: unit unknown", "2 values could not be read."]))
+    }
+
+    /// A value outside its range shows the save's own refusal on its row (US-52 AC8).
+    func testAnOutOfRangeValueSaysWhyOnItsRow_US52_AC8() throws {
+        let engine = try HealthEngine()
+        let ldl = #"""
+        {"classification":"lab_report","reportDate":"2026-10-01",
+         "values":[{"metric":"ldl","valueSI":500,"displayValue":500,"displayUnit":"mmol/L","displaySystem":"si","confidence":"high"}],
+         "additionalValues":[{"name":"Ferritin","value":85,"unit":"µg/L"}]}
+        """#
+        let groups = try XCTUnwrap(engine.blocking { [now] in
+            try $0.labReviewGroups(recordJSON: "", extractionJSON: ldl, ticked: ["v0", "a0"], reportDay: "2026-10-01", now: now, deviceId: "test") })
+        let refusal = try XCTUnwrap(groups.refusal("v0"))
+        let start = try record(engine)
+        let summary = try engine.blocking { [now] in try $0.labSaveSummary(recordJSON: start, extractionJSON: ldl, refs: ["v0", "a0"], reportDay: "2026-10-01", now: now, deviceId: "test") }.get()
+        XCTAssertEqual(summary.saved, 1)
+        XCTAssertEqual(summary.refused.map(LabReportSave.line), [refusal], "the row and the receipt say the same words")
+        XCTAssertEqual(groups.saveRefs, ["a0"])
+    }
+
+    /// A reading displaced by another of the same test that day reaches save all's notes in the
+    /// review's words; an older engine's summary without it still decodes (US-52 AC8b).
+    func testADisplacedReadingIsInTheSummary_US52_AC8b() throws {
+        let engine = try HealthEngine()
+        let two = #"""
+        {"classification":"lab_report","reportDate":"2026-10-01","additionalValues":[],
+         "values":[{"metric":"ldl","valueSI":3.1,"displayValue":3.1,"displayUnit":"mmol/L","displaySystem":"si","confidence":"high"},
+                   {"metric":"ldl","valueSI":2.8,"displayValue":2.8,"displayUnit":"mmol/L","displaySystem":"si","confidence":"high","recordedAt":"2026-09-01"}]}
+        """#
+        let start = try record(engine)
+        let summary = try engine.blocking { [now] in try $0.labSaveSummary(recordJSON: start, extractionJSON: two, refs: ["v0", "v1"], reportDay: "2026-09-01", now: now, deviceId: "test") }.get()
+        XCTAssertEqual(summary, LabSaveSummary(saved: 1, skipped: 0, refused: [], sameDay: ["LDL Cholesterol: another reading of this test is on the same day"]))
+        let older = try JSONDecoder().decode(LabSaveSummary.self, from: Data(#"{"saved":1,"skipped":0,"refused":[]}"#.utf8))
+        XCTAssertNil(older.sameDay)
+    }
+
+    /// Save all's note on values kept because the record holds a different one (US-52 AC8b).
+    func testHeldDifferentValuesAreNamedInSaveAllsNotes_US52_AC8b() throws {
+        let json = #"""
+        {"summary":"S","items":[{"ref":"v0","group":"unsure","conflict":"Your record already has a different value for this day. It stays as it is."},{"ref":"a0","group":"sure"}],
+         "check":null,"sure":null,"alreadySaved":null,"notSaved":null,"omitted":[],"saveRefs":["a0"],"save":"Save 1 value"}
+        """#
+        let groups = try JSONDecoder().decode(LabReviewGroups.self, from: Data(json.utf8))
+        XCTAssertEqual(LabReportSave.kept(LabSaveSummary(saved: 0, skipped: 1, refused: []), refs: ["v0"], groups: groups),
+                       "Your record already has a different value for this day. It stays as it is.")
+        XCTAssertEqual(LabReportSave.kept(LabSaveSummary(saved: 1, skipped: 1, refused: []), refs: ["v0", "a0"], groups: groups),
+                       "1 left as they were: that day already had a value.")
+        XCTAssertNil(LabReportSave.kept(LabSaveSummary(saved: 1, skipped: 1, refused: []), refs: ["a0"], groups: groups), "a value held as it is needs no note")
+    }
+
+    /// A report whose values are all in the record still runs its save: its original may still wait to be kept (AC13d, AC8b).
+    func testAReportWithEveryValueHeldStillSaves_US52_AC13d() throws {
+        let engine = try HealthEngine()
+        let review = try engine.blocking { [now, extraction] in try $0.labReview(extractionJSON: extraction, now: now) }
+        let result = LabResult(name: "Bloods.pdf", truncated: false, extractionJSON: extraction, failure: nil)
+        if case .nothing = LabSavePlan(result: result, review: review, choices: LabChoices(review: review), archiveOnly: false) {
+            XCTFail("a lab report with ticked values always runs its save, then keeps its original")
+        }
     }
 
     // MARK: AC13d: documents
@@ -217,7 +348,8 @@ final class AppChatLabTests: XCTestCase {
 
     func testAReadFileKeepsItsOriginalBytes() async throws {
         let pdf = UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: 200, height: 200)).pdfData { $0.beginPage() }
-        let document = try XCTUnwrap(LabFileReader.documents(from: pdf, name: "a.pdf").first)
+        let read = try await LabFileReader.documents(from: pdf, name: "a.pdf")
+        let document = try XCTUnwrap(read.first)
         XCTAssertEqual(document.original?.verifiedData(), pdf)
         XCTAssertEqual(document.original?.mimeType, "application/pdf")
         let photo = try await LabFileReader.pictures([UIGraphicsImageRenderer(size: CGSize(width: 4, height: 4)).image { _ in }], name: "Photo")
@@ -232,7 +364,7 @@ final class AppChatLabTests: XCTestCase {
         let image = UIGraphicsImageRenderer(size: CGSize(width: 4, height: 4)).pngData { _ in }
         let long = String(repeating: "d", count: 260) + "/letter.png"
         let zip = Self.zip([("a/b.png", image, false), (long, image, false)])
-        let names = await engine.named(try LabFileReader.documents(from: zip, name: "Records.zip")).map(\.name)
+        let names = await engine.named(try await LabFileReader.documents(from: zip, name: "Records.zip")).map(\.name)
         // What health-core's zipMemberName gives in Node for these (computed 2026-10-22):
         // the long one cut to 255 with the FNV-1a hash of the whole name, its end kept.
         XCTAssertEqual(names, ["Records.zip/a/b.png", "~635451cb/" + String(repeating: "d", count: 234) + "/letter.png"])
@@ -271,14 +403,14 @@ final class AppChatLabTests: XCTestCase {
 
     // MARK: AC7: reading files
 
-    func testAPdfPageWithTextGoesAsText() throws {
+    func testAPdfPageWithTextGoesAsText() async throws {
         let pdf = UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: 612, height: 792)).pdfData { context in
             context.beginPage()
             ("Synthetic Lab Report. LDL Cholesterol 3.1 mmol/L. HbA1c 40 mmol/mol. Collected 2026-10-01." as NSString)
                 .draw(in: CGRect(x: 40, y: 40, width: 530, height: 700), withAttributes: [.font: UIFont.systemFont(ofSize: 14)])
             context.beginPage() // a blank page: a "scan", sent as a picture
         }
-        let documents = try LabFileReader.documents(from: pdf, name: "labs.pdf")
+        let documents = try await LabFileReader.documents(from: pdf, name: "labs.pdf")
         XCTAssertEqual(documents.count, 1)
         XCTAssertEqual(documents[0].pages.map(\.type), ["text", "image"])
         XCTAssertTrue(documents[0].pages[0].content.hasPrefix("[Page 1/2]\n"))
@@ -286,17 +418,17 @@ final class AppChatLabTests: XCTestCase {
         XCTAssertEqual(documents[0].pages[1].mimeType, "image/jpeg")
     }
 
-    func testAZipGivesItsReportsOneByOne() throws {
+    func testAZipGivesItsReportsOneByOne() async throws {
         let image = UIGraphicsImageRenderer(size: CGSize(width: 20, height: 20)).pngData { context in
             UIColor.gray.setFill(); context.fill(CGRect(x: 0, y: 0, width: 20, height: 20))
         }
         let zip = Self.zip([("bundle/a.png", image, false), ("bundle/b.png", image, true), ("notes.txt", Data("skip".utf8), false), ("__MACOSX/._a.png", Data("x".utf8), false)])
-        let documents = try LabFileReader.documents(from: zip, name: "labs.zip")
+        let documents = try await LabFileReader.documents(from: zip, name: "labs.zip")
         XCTAssertEqual(documents.map(\.name), ["labs.zip/bundle/a.png", "labs.zip/bundle/b.png"])
         XCTAssertEqual(documents.map { $0.pages.first?.type }, ["image", "image"])
-        XCTAssertThrowsError(try LabFileReader.documents(from: Data("not a zip".utf8), name: "x.zip"))
+        do { _ = try await LabFileReader.documents(from: Data("not a zip".utf8), name: "x.zip"); XCTFail("read") } catch {}
         // More members than the cap is refused before they pile up in memory.
-        XCTAssertThrowsError(try ZipReader.members(of: zip, maxMemberBytes: 1_000_000, maxMembers: 1) { _ in true })
+        XCTAssertThrowsError(try ZipReader.check(ZipReader.entries(of: zip), maxMemberBytes: 1_000_000, maxMembers: 1))
     }
 
     /// US-52 AC7, Codex re-check R1: a stored member that declares fewer bytes than it
@@ -306,15 +438,15 @@ final class AppChatLabTests: XCTestCase {
         let payload = Data(repeating: 0x41, count: 1000)
         // One stored member that says it is 1 byte but holds 1,000.
         let understated = Self.rawZip(payload: payload, method: 0, entries: [(name: "a.pdf", compressed: 1000, size: 1)])
-        XCTAssertThrowsError(try ZipReader.members(of: understated, maxMemberBytes: 10_000) { _ in true })
+        XCTAssertThrowsError(try ZipReader.check(ZipReader.entries(of: understated), maxMemberBytes: 10_000))
         // Honest stored entries, all pointing at the same payload: the kept bytes reach the cap.
         let reused = Self.rawZip(payload: payload, method: 0, entries: (0..<5).map { (name: "r\($0).pdf", compressed: 1000, size: 1000) })
-        XCTAssertEqual(try ZipReader.members(of: reused, maxMemberBytes: 10_000, maxTotalBytes: 5000) { _ in true }.count, 5)
-        XCTAssertThrowsError(try ZipReader.members(of: reused, maxMemberBytes: 10_000, maxTotalBytes: 4999) { _ in true })
+        XCTAssertNoThrow(try ZipReader.check(ZipReader.entries(of: reused), maxMemberBytes: 10_000, maxTotalBytes: 5000))
+        XCTAssertThrowsError(try ZipReader.check(ZipReader.entries(of: reused), maxMemberBytes: 10_000, maxTotalBytes: 4999))
         // The same through deflate: every entry inflates the one blob, and the cap still holds.
         let deflated = Self.deflate(payload)
         let overlapping = Self.rawZip(payload: deflated, method: 8, entries: (0..<5).map { (name: "d\($0).pdf", compressed: deflated.count, size: 1000) })
-        XCTAssertThrowsError(try ZipReader.members(of: overlapping, maxMemberBytes: 10_000, maxTotalBytes: 4999) { _ in true })
+        XCTAssertThrowsError(try ZipReader.check(ZipReader.entries(of: overlapping), maxMemberBytes: 10_000, maxTotalBytes: 4999))
     }
 
     /// One local payload, then central entries that each point at it, declaring what they like.

@@ -39,7 +39,7 @@ A/B + product events, reminders, Klaviyo, hosted MCP (mcp.drstanfield.com).
   docs/reference.md). No health record or parsed values, ever; chat and
   feedback text can hold health details (what is kept, how long: US-15).
 - Two builds, same source: Shopify storefront (`build:shopify-prod`, both
-  stores; tool page on drstanfield.com only, microvitamin.com runs the chat)
+  stores; tool page on both: drstanfield.com /pages/roadmap, microvitamin.com /pages/health-plan in brand posture)
   and GitHub Pages self-host (`build:pages`, no Brad server, BYOK). Flags: `VITE_LOCAL_FIRST` (all v2), `VITE_SHOPIFY_SURFACE` (Shopify only — gates Brad-server features). Detail: docs/deploy-runbook.md.
 - **iOS app (native SwiftUI, spike under way):** lives in `ios/`; its rules: [ios/CLAUDE.md](ios/CLAUDE.md); every
   decision and its why: [ios/architecture.md](ios/architecture.md) — keep it current.

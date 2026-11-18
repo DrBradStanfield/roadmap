@@ -37,11 +37,14 @@ const number = z.number();
 const flag = z.boolean();
 const provider = z.enum(['dropbox', 'google-drive']);
 // An ArrayBuffer from any context: JavaScriptCore's own, or Node's vm in the tests.
-const nullableBytes = z.custom<ArrayBuffer>((v) => Object.prototype.toString.call(v) === '[object ArrayBuffer]').meta({ wire: 'bytes' }).nullable();
+/** An ArrayBuffer from any context (JavaScriptCore's, or Node's vm in the tests). */
+export const isArrayBuffer = (v: unknown): v is ArrayBuffer => Object.prototype.toString.call(v) === '[object ArrayBuffer]';
+const nullableBytes = z.custom<ArrayBuffer>(isArrayBuffer).meta({ wire: 'bytes' }).nullable();
 // An argument entry.ts declares optional (`unitsJson?`): the app sends it, the engine's own
 // callers and tests may leave it out, and the door answers as before without it.
 const maybeText = text.optional();
 const maybeFlag = flag.optional();
+const callback = z.custom<(text: string) => unknown>((v) => typeof v === 'function').meta({ wire: 'callback' });
 const maybeCallback = z.custom<(text: string) => string>((v) => typeof v === 'function').meta({ wire: 'callback' }).optional();
 
 // --- Edit: every change the My data tab, the chat and Apple Health ask for -----------------
@@ -258,6 +261,8 @@ export const DOORS = {
     kind: 'sync',
     args: [['extractionJson', text], ['refsJson', text], ['reportDay', text], ['erase', text], ['shownUnits', text], ['nowIso', text], ['unitsJson', text]],
     returns: "cloudEdit's JSON outcome with the labSaveSummary taken in the same step (US-52 AC8)",
+    optionalAt: 6,
+    optionalReturns: "summary.sameDay (US-52 AC8b), as labSaveSummaryJson's. An engine before it sends none; an app before it ignores it.",
   },
   cloudOpen: {
     kind: 'promise',
@@ -308,6 +313,8 @@ export const DOORS = {
     kind: 'sync',
     args: [['recordJson', text], ['extractionJson', text], ['refsJson', text], ['reportDay', text], ['nowIso', text], ['deviceId', text]],
     returns: "summary JSON",
+    optionalAt: 5,
+    optionalReturns: "summary.sameDay (US-52 AC8b): the ticked values another reading of the same test that day displaced, as lines \"<labels>: another reading of this test is on the same day\" (health-core notSavedGroups); save all names them in its notes. An engine before it sends none, and the app names none; an app before it ignores it.",
   },
   mergeJson: {
     kind: 'sync',
@@ -382,7 +389,13 @@ export const DOORS = {
     kind: 'sync',
     optionalDoor: true,
     args: [['request', text]],
-    returns: "Shared upload PR 3 (US-52 AC7): the upload's verdicts for one pick, by health-core upload-rules (fileVerdict, zipMemberVerdict, UPLOAD_LIMITS.phone), as JSON {limits: {fileBytes, zipBytes, filesPerPick, zipMembers, pdfPages, textPageChars, folderBytes, photoPx}, files: [verdict], zipMembers: [verdict]} for request {files: [{name, bytes}], zipMembers: [path]}, in order; each verdict \"keep\", \"tooLarge\", \"unsupported\" or \"hidden\". An engine before it has no such door: the app reads that as unavailable (optionalCall answers nil) and keeps LabFileReader's Swift rules, which answer the same today (lead U14: delete them once the engine floor guarantees the door).",
+    returns: "Shared upload PR 3 (US-52 AC7): the upload's verdicts for one pick, by health-core upload-rules (fileVerdict, zipMemberVerdict, UPLOAD_LIMITS.phone), as JSON {limits: {fileBytes, zipBytes, filesPerPick, zipMembers, pdfPages, textPageChars, folderBytes, photoPx, sendsInFlight, convertsInFlight}, files: [verdict], zipMembers: [verdict]} for request {files: [{name, bytes}], zipMembers: [path]}, in order; each verdict \"keep\", \"tooLarge\", \"unsupported\" or \"hidden\". An engine before it has no such door: the app reads that as unavailable (optionalCall answers nil) and keeps LabFileReader's Swift rules, which answer the same today (lead U14: delete them once the engine floor guarantees the door).",
+  },
+  labReviewGroupsJson: {
+    kind: 'sync',
+    optionalDoor: true,
+    args: [['recordJson', text], ['extractionJson', text], ['refsJson', text], ['reportDay', text], ['nowIso', text], ['deviceId', text]],
+    returns: "US-13 AC13, US-52 AC8: one lab report's import review for the refs ticked now (refsJson, a JSON array of labReviewJson item refs) and the test day (reportDay, YYYY-MM-DD, or \"\" while none is set: values with no day of their own are then \"waiting\", never sent; a value with its own day keeps it), by health-core import-review.ts against the record read raw: JSON {summary, items: [{ref, group (\"sure\", \"unsure\", \"saved\", \"notSaved\" or \"waiting\"), reasons? (unsure only), conflict? (the words for a different value already held that day), refusal? (the save's own refusal line for a value outside its range)}], omitted (the extraction's own refused and unread rows as lines), check: {title, footer} | null, sure: {willSave, showAll, hide} | null, alreadySaved: string | null, notSaved: {title, lines, footer} | null, saveRefs (the ticked refs Save sends, in the order it must send them), save (the Save button's words, or null when no value could be written: no Save)}. Every word is health-core's; the app asks again when a tick or the day changes. An engine before it has no such door: the app reads that as no groups (optionalCall answers nil) and lists every value as a row, never a crash.",
   },
   cloudOnline: {
     kind: 'sync',
@@ -395,6 +408,48 @@ export const DOORS = {
     optionalDoor: true,
     args: [],
     returns: "S50b (US-25 AC16i): a Promise of one word, asked before Disconnect or a switch closes anything. It flushes the open session first, as a close does, then says whether an erase made on this phone is still unsent: 'none' (no session, no such erase, or a save has carried it), 'transient' (its last save failed in a way known to pass: a network call with no answer, a timeout, an abort, 408, 429, a 5xx, or Google's rate or daily limit), 'definite' (the provider refused it: storage full, a refused sign-in, another 4xx) 'unknown' (anything else, a failure no report explained included) or 'expired' (a transient failure 24 hours or more after the erase's first failed send, owner 2026-11-14). Only 'transient' holds the Disconnect; the app runs today's path on every other word and on one it does not know. cloudClose's answers are unchanged. An engine before it has no such door: optionalCall answers nil and Disconnect runs as before, never a crash.",
+  },
+  // The shared upload (design PR 12, US-52 AC8c, upload-doors.ts). Each answers its JSON, or on
+  // malformed input the refusal {ok: false, reason, message}: reason "invalid-platform",
+  // "invalid-state", "invalid-event", "invalid-record", "record-too-new" or "engine-error"; never a throw. The
+  // state is health-core UploadState, opaque to the app: it stores what a door answered and
+  // sends it back. An engine before them has no such doors: optionalCall answers nil, and the
+  // app keeps today's per-report flow, never a crash.
+  uploadStartJson: {
+    kind: 'sync',
+    optionalDoor: true,
+    args: [['platform', text]],
+    returns: "Shared upload (US-52 AC8c): a new upload's state JSON (health-core initialUpload) for platform \"web\" or \"phone\"; any other platform is refused (\"invalid-platform\").",
+  },
+  uploadStepJson: {
+    kind: 'sync',
+    optionalDoor: true,
+    args: [['stateJson', text], ['eventJson', text], ['recordJson', text], ['deviceId', text]],
+    returns: "Shared upload (US-52 AC8c): one event through health-core transition, as JSON {state, effects}. The event is health-core UploadEvent less what only the engine knows, strict (an unnamed key is refused, invalid-event); the parsed event runs: hashed {run, id, hash} (the engine adds known from the record, knownIndex and knownAs); streamEnded {run, id, line, now}, the streaming lab route's end, line its last NDJSON line as received or null when there was none: the engine reads it (health-core labStreamAnswer), status 200 with a checked read becomes answered, anything else sendFailed with the shared code, no line or an unreadable one the network failure; sendFailed {run, id, status (null when no answer came), body (the answer's text, or null), contentType (its header, or null)} for a real HTTP refusal before any stream, read by health-core uploadFailureOfText as the web reads it; answered {run, id, extraction, now} for a whole read, checked (UPLOAD_EXTRACTION), the engine adds legacy (readIsLegacy). recordJson: the record as text, \"\" for none; read only for hashed, answered and streamEnded, through deviceId (the app's own, as the screen doors take it). Steps are strictly serial: one call at a time, each given the state the previous one returned; otherwise an event is lost and its effects' answers are dropped as stale. A record a newer app wrote is refused as record-too-new, in readRecord's words. The full wire per event is entry.ts uploadStepJson's comment.",
+  },
+  uploadViewJson: {
+    kind: 'sync',
+    optionalDoor: true,
+    args: [['stateJson', text], ['recordJson', text], ['nowIso', text], ['cloudConnected', flag], ['deviceId', text]],
+    returns: "Shared upload (US-52 AC8c): the drawable view, health-core UploadView as JSON {progress, summary, sections, sure, documents, files, notices, save, stop, done}, every string resolved and every count made; one uploadReview of the state against the record per call, so it counts what uploadSavePlanJson writes for the same inputs. cloudConnected: originals are stored and counted only with a cloud. deviceId: the app's own, as the screen doors take it. Costly for a large upload (entry.ts): at most one call per frame, coalesced, off the main thread.",
+  },
+  uploadSavePlanJson: {
+    kind: 'sync',
+    optionalDoor: true,
+    args: [['stateJson', text], ['recordJson', text], ['nowIso', text], ['cloudConnected', flag], ['deviceId', text]],
+    returns: "Shared upload (US-52 AC8c): what one Save writes, health-core UploadSavePlan as JSON {labRows: [{fileId, rows}], documents: [{fileId, fields}], labArchives: [{fileId, sourceFileName, reportDate}], archiveOnly: [{fileId, fields}], counts: {values, documents, archived, originals}}, from the same review rule as uploadViewJson. Read only: the save itself still goes through cloudLabImport, labSaveSummaryJson and documentSave.",
+  },
+  uploadUsageJson: {
+    kind: 'sync',
+    optionalDoor: true,
+    args: [['stateJson', text]],
+    returns: "Shared upload (US-12 AC10): the run's usage counts for upload_outcome, health-core uploadUsageCounts as JSON {known?, failedFinal?, firstReadSeconds?}, each a whole number capped at 1000; {} before a pick. Counts only, never a name, hash or value.",
+  },
+  uploadSaveJson: {
+    kind: 'promise',
+    optionalDoor: true,
+    args: [['stateJson', text], ['recordJson', text], ['erase', text], ['nowIso', text], ['deviceId', text], ['originalsJson', text], ['readOriginal', callback]],
+    returns: "Shared upload (US-52 AC8c, US-14 AC10): a Promise of one Save, health-core uploadSave: the pick's values (bulkAppendValues) and its document and lab archive rows (saveDocuments, labArchivePayload listing the rows the values wrote) in one step, for a state in its saving phase. erase as documentSave takes it: with a cloud open, the engine first writes each original the save plan stores, once, reading its bytes by calling readOriginal(fileId) only for the files originalsJson ({fileId: mimeType}) names as its own, as it writes it; anything but a non-empty ArrayBuffer within the per-file cap (UPLOAD_LIMITS fileBytes) is no original. Then every row is written on the session's record as it stands at that moment (the phone's copy and its pending marker first), so an edit that landed meanwhile is kept and a value whose (metric, day) it took is skipped; nothing new commits nothing. The Save is held to the session open when it is asked: none open then, or another one open by the time it runs (even at the same erase), refuses as not-open. '' for no cloud: onto recordJson, keeping no original. One Save at a time, in documentSave's queue. Answers JSON {ok: true, record (the record as text), erase? (with a cloud), outcome: {values (rows written), documents (every distinct document row saved, as the web counts them: letters, lab archive rows and originals filed behind a held row), archived (the last alone), unstored (originals the plan stores that did not land: unreadable, over the cap, or refused by the cloud; their rows keep the hash alone)}}, the app's saved event's outcome as it is (the done view then warns when unstored is above 0), or {ok: false, reason, message}: reason invalid-state, invalid-record, record-too-new, invalid-originals, not-saving, not-ready (a selected value Save would refuse, or a report waiting for its day, in the view's words; nothing written), not-open, erased, phone-write or engine-error; the app sends each as a saveFailed, which Save can try again. A repeat on the record it saved writes nothing and answers zero counts.",
   },
 } satisfies Record<string, Door>;
 

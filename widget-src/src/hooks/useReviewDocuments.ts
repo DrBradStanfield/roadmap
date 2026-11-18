@@ -4,6 +4,7 @@ import { isScreeningEligible } from '@roadmap/health-core/types';
 import { pendingRowsFor } from '@roadmap/health-core/document-save';
 import type { ApiDocument, UploadHistory } from '../lib/api-types';
 import { unarchivedOriginals } from '../lib/archive-payloads';
+import { fileKey } from '../lib/file-key';
 import { type FullDate, columnDay, readDocumentDate } from '../lib/review-dates';
 import type { FileResult, DocumentToSave } from '../lib/upload-pipeline';
 
@@ -131,7 +132,7 @@ export function useReviewDocuments(results: FileResult[], history: UploadHistory
   // Original lab PDFs remain retryable after saved values become context.
   // Connector metadata-only letters also carry archive-only work (US-35 AC8).
   const archiveCount = useMemo(() => {
-    const selectedDocs = new Set(results.filter((r, fi) => r.document && docChecked[fi]).map((r) => r.fileName));
+    const selectedDocs = new Set(results.flatMap((r, fi) => (r.document && docChecked[fi] ? [fileKey(r, fi)] : [])));
     return unarchivedOriginals(results, history.documents, selectedDocs).length;
   }, [results, history.documents, docChecked]);
 
@@ -145,7 +146,7 @@ export function useReviewDocuments(results: FileResult[], history: UploadHistory
       ...(r.document ? { document: { ...r.document, title: docTitles[fi] || r.document.title, documentDate: documentDates[fi]?.day ?? null } } : {}),
     }));
     const documents: DocumentToSave[] = [];
-    reviewed.forEach(({ document: doc, fileName, file }, fi) => {
+    reviewed.forEach(({ document: doc, fileName, file, contentHash }, fi) => {
       if (!doc || !docChecked[fi]) return;
       const screeningType = doc.metadata?.screeningType as string | undefined;
       const screeningDate = screeningDateFor(fi);
@@ -160,6 +161,8 @@ export function useReviewDocuments(results: FileResult[], history: UploadHistory
           ? { key: `${screeningType}_last_date`, date: screeningDate }
           : undefined,
         file,
+        contentHash,
+        fileKey: fileKey({ contentHash }, fi),
       });
     });
     return { reviewed, documents };

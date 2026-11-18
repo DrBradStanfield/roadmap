@@ -48,9 +48,10 @@ vi.mock('../lib/roadmap-data', async (importOriginal) => ({
 vi.mock('../lib/chat-api', () => ({ listConversations: () => Promise.resolve(null), getChatGate: () => null }));
 vi.mock('./ChatEmbed', () => ({ ChatEmbed: () => null }));
 vi.mock('./ChatSection', () => ({ ChatSection: () => null }));
-vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn(), labImportBatch: vi.fn(), pollBatchStatus: vi.fn() }));
+vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn() }));
 
 import { HealthTool } from './HealthTool';
+import { findReviewValue } from '../testing/import-review';
 
 /** A synthetic report: one LDL, a value the record does not hold. */
 const extraction = { result: { classification: 'lab_report', document: null, reportDate: '2024-06-01', values: [{ metric: 'ldl', valueSI: 3.9, displayValue: 3.9, displayUnit: 'mmol/L', confidence: 'high' }], additionalValues: [] } };
@@ -174,13 +175,13 @@ const writers: Record<string, Writer> = {
       fireEvent.click(await screen.findByRole('button', { name: 'Upload lab results' }));
       fireEvent.click(screen.getByRole('button', { name: /Continue without keeping my files/ }));
       fireEvent.change(document.querySelector('input[type=file]')!, { target: { files: [new File(['synthetic'], 'synthetic.pdf', { type: 'application/pdf' })] } });
-      await screen.findByDisplayValue('3.9');
+      await findReviewValue('3.9'); // opens "Show all": the sure value sits behind it (US-13 AC13)
       // findBy waits with act() off, so React may leave a render in the Scheduler. Run it out
       // here, inside act: left over, it commits the new tree inside the gap (H51).
       await act(async () => { await drain(); });
     },
     onOld: () => screen.queryByDisplayValue('3.9') !== null,
-    fire: () => { fireEvent.click(screen.getByRole('button', { name: /^Save 1 Value/ })); },
+    fire: () => { fireEvent.click(screen.getByRole('button', { name: /^Save 1 value/ })); },
     written: rowsNaming('ldl'),
   },
   // Passes on main too: a keystroke in a controlled field makes React flush its pending work to

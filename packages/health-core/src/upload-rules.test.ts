@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
 import table from './__fixtures__/upload-decisions.json';
 import { IMPORT_LIMITS } from './import-hints';
 import { isImportableEntryName } from './lab-extraction';
-import { fileVerdict, UPLOAD_LIMITS, zipMemberVerdict, type FileVerdict } from './upload-rules';
+import { fileVerdict, requestFlags, UPLOAD_LIMITS, zipMemberVerdict, type FileVerdict } from './upload-rules';
 
 const MB = 1024 * 1024;
 
@@ -22,6 +22,7 @@ describe('UPLOAD_LIMITS', () => {
   it('takes the shared numbers from IMPORT_LIMITS', () => {
     expect(UPLOAD_LIMITS.web.fileBytes).toBe(IMPORT_LIMITS.websiteFileMb * MB);
     expect(UPLOAD_LIMITS.phone.zipBytes).toBe(IMPORT_LIMITS.zipMb * MB);
+    expect(UPLOAD_LIMITS.web.zipBytes).toBe(IMPORT_LIMITS.zipMb * MB);
     expect(UPLOAD_LIMITS.phone.zipMembers).toBe(IMPORT_LIMITS.websiteFiles);
   });
 });
@@ -64,8 +65,9 @@ describe('fileVerdict', () => {
     ['..zip', 15 * MB, undefined, 'phone', 'keep'],
     // The web's readers decide the kind (by name and MIME type): its verdict is size alone.
     ['notes.txt', 1, 'file', 'web', 'keep'],
-    ['a.zip', 10 * MB, 'zip', 'web', 'keep'],
-    ['a.zip', 10 * MB + 1, 'zip', 'web', 'tooLarge'],
+    // One ZIP cap on both clients (owner ruling Q7, US-12 AC29).
+    ['a.zip', 20 * MB, 'zip', 'web', 'keep'],
+    ['a.zip', 20 * MB + 1, 'zip', 'web', 'tooLarge'],
     ['a.pdf', 10 * MB + 1, 'file', 'web', 'tooLarge'],
   ];
   it.each(cases)('%s, %i bytes, kind %s, %s → %s', (name, bytes, kind, platform, verdict) => {
@@ -103,5 +105,14 @@ describe('zipMemberVerdict', () => {
   it('on the web, keeps exactly what isImportableEntryName keeps', () => {
     const paths = ['a.pdf', 'a.PNG', 'b/c.jpeg', 'x.heic', '.x.pdf', 'd/.e/f.pdf', '__MACOSX/a.pdf', 'thumbs.db.png', 'a.ds_store.pdf', 'z', 'z.'];
     for (const path of paths) expect(zipMemberVerdict(path, 'web') === 'keep', path).toBe(isImportableEntryName(path));
+  });
+});
+
+describe('requestFlags: what each client asks of a lab read today (US-12 AC12, AC14, AC15)', () => {
+  it('the web sends all three, as upload-api.ts labImport does', () => {
+    expect(requestFlags('web')).toEqual({ ownDates: true, undatedPrev: true, refusedRows: true });
+  });
+  it('the phone never asks undatedPrev, as LabUploadClient.swift sends it', () => {
+    expect(requestFlags('phone')).toEqual({ ownDates: true, undatedPrev: false, refusedRows: true });
   });
 });

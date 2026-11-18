@@ -196,12 +196,13 @@ describe('explicit local-first data path', () => {
     const result = await data.bulkSaveLabValues([
       { metricName: 'Neutrophils', value: 2.4, unit: 'cells/uL', recordedAt: '2024-06-01T09:00:00.000Z' },
       { metricName: 'Platelets', value: 250000, unit: 'cells/µL', referenceLow: 150, referenceHigh: 400, recordedAt: '2024-06-01T09:00:00.000Z' },
-      { metricName: 'Lymphocytes', value: 30, unit: '%', recordedAt: '2024-06-01T09:00:00.000Z' },
+      // A spelling the test does not take is counted (Lymphocytes in % was this example until US-21 AC28 stored it).
+      { metricName: 'Ferritin', value: 180, unit: 'pmol/L', recordedAt: '2024-06-01T09:00:00.000Z' },
     ]);
 
-    expect(result.refused.map((r) => r.key)).toEqual(['neutrophils', 'platelets', 'lymphocytes']);
+    expect(result.refused.map((r) => r.key)).toEqual(['neutrophils', 'platelets', 'ferritin']);
     expect(trackProductEvent).toHaveBeenCalledTimes(1);
-    expect(trackProductEvent).toHaveBeenCalledWith('lab_unit_refused', { key: 'lymphocytes', unit: '%' });
+    expect(trackProductEvent).toHaveBeenCalledWith('lab_unit_refused', { key: 'ferritin', unit: 'pmol/L' });
   });
 
   // US-21 AC11, AC22 · product-health W43: a blank unit and an untrusted
