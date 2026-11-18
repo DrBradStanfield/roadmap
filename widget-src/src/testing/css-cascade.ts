@@ -1,6 +1,6 @@
 /**
  * A small CSS cascade for tests. jsdom ignores media queries and computes no cascade, so
- * this resolves a property from styles.css itself: the rules whose media apply on the given
+ * this resolves a property from styles.css itself (its @import inlined, as the build does): the rules whose media apply on the given
  * screen and whose selector matches the element, ranked by !important, specificity, then
  * source order (the last declaration in a rule wins inside it). Lifted from
  * StartingInfoVitals.phone-font-size.test.tsx (US-20 AC8).
@@ -18,7 +18,7 @@
  * Pseudo-classes jsdom cannot hold are given to named elements through `states`.
  */
 import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
 
 export interface Rule { selectors: string[]; media: string | null; body: string; order: number }
 
@@ -192,7 +192,13 @@ function replacePseudo(selector: string, pseudo: string, replacement: string): s
   return selector.replace(new RegExp(`${escaped}(?![\\w-])`, 'g'), replacement);
 }
 
-export const STYLES = parseRules(readFileSync(resolve(__dirname, '../styles.css'), 'utf8'));
+/** A sheet with each `@import './x.css';` replaced by that file, in its place, as the build inlines it
+ *  (styles.css imports components/fields.css first). */
+export function withImports(path: string): string {
+  return readFileSync(path, 'utf8').replace(/@import\s+['"]([^'"]+)['"]\s*;/g, (_, file: string) => withImports(resolve(dirname(path), file)));
+}
+
+export const STYLES = parseRules(withImports(resolve(__dirname, '../styles.css')));
 
 /**
  * The cascaded value of `property` on `el`, as declared (whitespace collapsed), or undefined if no rule sets it.
