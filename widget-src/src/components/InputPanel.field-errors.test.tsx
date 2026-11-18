@@ -1,8 +1,10 @@
 // @vitest-environment jsdom
 /**
- * US-02 AC5a: an error shown under a box in About you, the onboarding's weight or the prostate and lung questions is
- * tied to that box, as the matrices' cells do: the box is aria-invalid and its description is the error's text, so a
- * screen reader says why when the box is reached again. With no error, neither is set. Synthetic values.
+ * US-02 AC5a: an error shown under a box in About you's birth fields, the onboarding's weight or the prostate and lung
+ * questions is tied to that box, as the matrices' cells do: the box is aria-invalid and its description is the error's
+ * text, so a screen reader says why when the box is reached again. With no error, neither is set. Synthetic values.
+ * The height boxes have the same tie from US-74 (HeightField.tsx); this PR does not change them, and the two height
+ * cases below only check that About you's height still has it.
  */
 import { afterEach, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render } from '@testing-library/react';
@@ -61,12 +63,15 @@ const typeEmpty = (input: HTMLInputElement) => {
 
 it('US-02 AC5a: with no error shown, no box is invalid or described', () => {
   const box = renderPanel();
-  for (const id of ['heightCm', 'birthMonth', 'birthYear', 'psa-input', 'lung-pack-years']) {
+  for (const id of ['birthMonth', 'birthYear', 'psa-input', 'lung-pack-years']) {
     expect([id, invalid(box(id)), description(box(id))]).toEqual([id, null, '']);
   }
 });
 
-it('US-02 AC5a: a height out of range is the cm box\'s description, and "Enter a number" when it cannot be read', () => {
+it('US-74, not changed here: a height out of range is the cm box\'s description, and "Enter a number" when it cannot be read', () => {
+  const none = renderPanel();
+  expect([invalid(none('heightCm')), description(none('heightCm'))]).toEqual([null, '']);
+  cleanup();
   const box = renderPanel({ errors: { heightCm: 'Height must be at least 50 cm' } });
   expect([invalid(box('heightCm')), description(box('heightCm'))]).toEqual(['true', 'Height must be at least 50 cm']);
   cleanup();
@@ -75,7 +80,7 @@ it('US-02 AC5a: a height out of range is the cm box\'s description, and "Enter a
   expect([invalid(unread('heightCm')), description(unread('heightCm'))]).toEqual(['true', 'Enter a number']);
 });
 
-it('US-02 AC5a: in feet and inches the height error describes both boxes', () => {
+it('US-74, not changed here: in feet and inches the height error describes both boxes', () => {
   const box = renderPanel({ errors: { heightCm: 'Height must be at most 250 cm' }, unitSystem: 'conventional' });
   for (const id of ['heightFeet', 'heightInches']) {
     expect([id, invalid(box(id)), description(box(id))]).toEqual([id, 'true', 'Height must be at most 250 cm']);
