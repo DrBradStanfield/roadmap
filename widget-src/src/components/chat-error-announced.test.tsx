@@ -2,8 +2,9 @@
 /**
  * US-15 AC17e: the chat's error line is an alert (role="alert"). It carries a refused turn, a failed send and the paste-cut
  * notice, and it was a plain line, so a screen reader that had heard "Thinking…" was told nothing when the
- * turn ended in an error. The real hook and the real chat-api run; only fetch is stubbed. ChatSection and
- * ChatEmbed each draw the line, so both are checked. Synthetic questions.
+ * turn ended in an error. The real hook and the real chat-api run. fetch is stubbed. Mocked: chat-sync,
+ * chat-history-access, observe-visibility, trackProductEvent, Sentry, FeedbackForm, ChatKeyGate and ChatThreadList.
+ * ChatSection and ChatEmbed each draw the line, so both are checked. Synthetic questions.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { cleanup, render, fireEvent, screen, waitFor } from '@testing-library/react';
