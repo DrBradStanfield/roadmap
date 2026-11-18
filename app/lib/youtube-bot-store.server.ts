@@ -374,9 +374,14 @@ export async function persistYouTubeTurn(p: {
   }
 }
 
+/** Forgets a claim that ended without a post once no scan can bring its comment back (US-15 AC66): neither
+ *  scan runs a comment older than COMMENT_MAX_AGE_DAYS, and a claim is never older than its comment; the extra
+ *  day absorbs clock skew. The youtube_bot_cleanup_skipped RPC kept only the newest 200 such rows, so on a busy
+ *  day a skipped follow-up's claim fell out while its thread was still scanned, and it ran again (chat-health W46). */
 export async function cleanupSkippedRows(): Promise<void> {
   if (!supabaseAdmin) return;
-  const { error } = await supabaseAdmin.rpc('youtube_bot_cleanup_skipped');
+  const cutoff = new Date(Date.now() - (COMMENT_MAX_AGE_DAYS + 1) * 24 * 60 * 60_000).toISOString();
+  const { error } = await supabaseAdmin.from('youtube_bot_log').delete().eq('posted', false).lt('processed_at', cutoff);
   if (error) {
     Sentry.captureException(error, { tags: { feature: 'youtube-bot', subsystem: 'cleanup' } });
   }
