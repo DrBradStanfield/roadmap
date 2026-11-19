@@ -819,6 +819,10 @@ Each marker has three tiers (borderline/high/very high) using the thresholds in 
 
 `trig-very-high` is the same for everyone, the alcohol answer included: its evidence reason keeps "strict alcohol and sugar avoidance" on purpose for a non-drinker too (US-60 C3, Brad 2026-10-31). It is an urgent safety card, and the advice does no harm to someone who does not drink.
 
+### Single-topic checker (US-75)
+
+The blood pressure page (`blocks/blood-pressure.liquid`) takes one or two readings and shows their average, each half rounded to a whole mmHg (halves up), with its tier by `bpTier` (`bp-tier.ts`, the same rule as the cards below): Normal, Elevated (systolic 120 to 129 and diastolic under 80), Stage 1, Stage 2, Hypertensive crisis. If any one reading is at crisis level (systolic >= 180 or diastolic >= 120), the result is crisis whatever the average, with the crisis card for that reading (clinical ruling C1, 2026-11-18, for Brad's confirmation). Under it shows the card below for that tier, text unchanged: the plan's own, worked out with the average as today's pair; with no plan (no record, or no usable height), the engine's card for the pair alone, with no age, so in the wording this table gives for an unknown age (ruling C2). A known minor sees the average only, no tier or card (US-07 AC6, ruling C3). The average is what is saved, as today's pair. The labels Normal and Elevated name no card. `evidence.ts` and `roadmap_text.html` do not change: no threshold, card text or citation is new.
+
 ### Blood Pressure Tiers
 
 | ID | Condition | Priority |

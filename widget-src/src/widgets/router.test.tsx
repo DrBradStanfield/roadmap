@@ -3,6 +3,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from '@testing-library/react';
 import { widgetFor } from './router';
+import { BloodPressureWidget } from './BloodPressure';
 import { WaistToHeightWidget } from './WaistToHeight';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
@@ -13,14 +14,15 @@ vi.mock('../lib/server-api', async (importOriginal) => ({
 afterEach(cleanup);
 
 describe('widget router (US-74 AC8)', () => {
-  it('maps waist-to-height to the waist widget, and nothing else to anything', () => {
+  it('maps waist-to-height and blood-pressure (US-75 AC1) to their widgets, and nothing else to anything', () => {
     expect(widgetFor('waist-to-height')).toBe(WaistToHeightWidget);
-    for (const name of ['blood-pressure', '', undefined, 'toString', '__proto__', 'constructor']) expect(widgetFor(name)).toBeNull();
+    expect(widgetFor('blood-pressure')).toBe(BloodPressureWidget);
+    for (const name of ['blood-pressures', '', undefined, 'toString', '__proto__', 'constructor']) expect(widgetFor(name)).toBeNull();
   });
 
   it('renders the waist widget for data-widget="waist-to-height"', () => {
     const Widget = widgetFor('waist-to-height')!;
     const { getByLabelText } = render(<Widget />);
-    expect(getByLabelText(/^Waist circumference/)).toBeTruthy();
+    expect(getByLabelText(/^Waist \(/)).toBeTruthy();
   });
 });

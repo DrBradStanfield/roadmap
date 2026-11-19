@@ -35,7 +35,7 @@ export interface WidgetProps {
 /** The link's words when the block sets a link and no label (review U2). */
 export const NEXT_STEP_DEFAULT = 'Next step';
 /** This widget's own words for each box (Brad 2026-11-18); the full app's tile labels are unchanged. */
-const LABEL: Record<Field, string> = { height: 'Height', weight: 'Weight', waist: 'Waist circumference' };
+const LABEL: Record<Field, string> = { height: 'Height', weight: 'Weight', waist: 'Waist' };
 
 const UNIT_CHOICES: ReadonlyArray<[UnitSystem, string]> = [['si', 'Metric'], ['conventional', 'US']];
 /** The cm box's min and max, as About you sets them. */

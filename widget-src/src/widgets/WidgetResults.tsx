@@ -9,7 +9,7 @@
 // are text, which it masks. WaistToHeight.test.tsx checks a Healthy and an
 // Elevated result give the same attributes.
 import { useLayoutEffect, useRef, useState } from 'react';
-import { statTileText, type StatTile } from '@roadmap/health-core/stat-tiles';
+import { statTileText } from '@roadmap/health-core/stat-tiles';
 import type { Results } from './body-measures';
 
 const SCALE = { min: 0.35, max: 0.65, line: 0.5 } as const;
@@ -44,6 +44,9 @@ function context(canvas: HTMLCanvasElement | null): { ctx: CanvasRenderingContex
   return { ctx, w, h };
 }
 
+/** Whether canvases draw here (not in jsdom or an old browser); clears this one. */
+export const canvasDraws = (canvas: HTMLCanvasElement | null) => context(canvas) !== null;
+
 function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
   ctx.beginPath();
   ctx.moveTo(x + r, y);
@@ -54,23 +57,26 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.closePath();
 }
 
-/** The grade pill: green for a normal tone, amber otherwise, the grade's word inside. */
-function drawPill(canvas: HTMLCanvasElement | null, tile: StatTile): boolean {
+/** A pill's colours: its fill and its word's ink. Green for a healthy grade, amber for a raised one, red for a high one (US-75). */
+export const PILL = { green: [GREEN, '#fff'], amber: [AMBER, INK], red: ['#b91c1c', '#fff'] } as const;
+
+/** A grade pill on a canvas, the grade's word inside: Clarity records no canvas pixels (review P1). Drawn at
+ *  the canvas's right edge, or its left with `left`. False where canvas does not draw. */
+export function drawPill(canvas: HTMLCanvasElement | null, text: string, [fill, ink]: readonly [string, string], left = false): boolean {
   const c = context(canvas);
-  if (!c || !tile.status) return false;
+  if (!c) return false;
   const { ctx, w, h } = c;
   const font = getComputedStyle(canvas!).fontFamily || 'sans-serif';
   ctx.font = `700 14px ${font}`;
-  const text = tile.status.label;
   const pw = Math.min(w, ctx.measureText(text).width + 24);
-  const normal = tile.status.tone === 'normal';
-  ctx.fillStyle = normal ? GREEN : AMBER;
-  roundRect(ctx, w - pw, 0, pw, h, h / 2);
+  const x = left ? 0 : w - pw;
+  ctx.fillStyle = fill;
+  roundRect(ctx, x, 0, pw, h, h / 2);
   ctx.fill();
-  ctx.fillStyle = normal ? '#fff' : INK;
+  ctx.fillStyle = ink;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(text, w - pw / 2, h / 2 + 1);
+  ctx.fillText(text, x + pw / 2, h / 2 + 1);
   return true;
 }
 
@@ -114,7 +120,7 @@ export function ResultsView({ results }: { results: Results | null }) {
   // frame later, which moved everything under it by a line on load (Chrome layout shift, 2026-11-18).
   useLayoutEffect(() => {
     if (!whtr) return;
-    const ok = drawPill(pill.current, whtr) && drawScale(scale.current, Number(whtr.value));
+    const ok = !!whtr.status && drawPill(pill.current, whtr.status.label, whtr.status.tone === 'normal' ? PILL.green : PILL.amber) && drawScale(scale.current, Number(whtr.value));
     setDrawn(ok);
   }, [whtr]);
 
