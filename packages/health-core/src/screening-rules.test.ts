@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import {
-  SCREENING_REFS, SCREENING_RULES, inAges, screeningAge, postFollowupIntervals, screeningFollowupInfo, screeningIntervals,
+  SCREENING_REFS, SCREENING_RULES, inAges, postFollowupIntervals, screeningFollowupInfo, screeningIntervals,
   screeningKeys, screeningReminderCategories, BREAST_ANNUAL_OR_BIENNIAL_FROM, BREAST_RECOMMENDED_FROM,
   type Ages, type CardText, type ScreeningId, type ScreeningRule,
 } from './screening-rules';
@@ -304,20 +304,4 @@ describe('US-06: A2-1 step 2, SCREENING_REFS match the code they name', () => {
   // breastByAge, prostateByAge (the form, step 3) and breastStart (the plan card, step 4) have no
   // second copy left to compare with: SCREENING_TEXT and suggestions.ts read them from here. The
   // golden pin (screening-rules.golden.json: forms, groups, cards) is their guard.
-});
-
-// US-23 AC6c: the age the plan's cards and the reminders read (screening-age-clock.test.ts runs it through both).
-describe('US-23 AC6c: screeningAge', () => {
-  it('whole years at the UTC month, January for a missing month, the given age with no birth year', () => {
-    const zone = process.env.TZ;
-    process.env.TZ = 'Pacific/Auckland'; // a forks child re-reads it on the next Date call
-    try {
-      const now = new Date('2026-09-30T12:00:00Z'); // 1 Oct in Auckland, still Sep in UTC
-      expect([10, 9, undefined].map((birthMonth) => screeningAge({ birthYear: 1976, birthMonth }, now))).toEqual([49, 50, 50]);
-      expect([screeningAge({}, now), screeningAge({}, now, 61)]).toEqual([undefined, 61]);
-    } finally {
-      if (zone === undefined) delete process.env.TZ;
-      else process.env.TZ = zone;
-    }
-  });
 });

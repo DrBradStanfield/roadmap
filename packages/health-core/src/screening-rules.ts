@@ -362,7 +362,8 @@ export function inAges(ages: Ages, age: number, sex: string | undefined, ignoreU
 
 type BirthYearMonth = { birthYear?: number; birthMonth?: number };
 
-/** The age cardAges is read at, by the plan's cards and the reminders alike (US-23 AC6b, AC6c): whole
+/** The age every screening gate reads (US-23 AC6b, AC6c): the plan's cards and the reminders (cardAges),
+ *  the questions (askAges, groupAges, through their callers) and the upload gate (uploadMinAge). Whole
  *  years at the UTC month, so one record at one instant gets one answer in every zone. A missing
  *  birth month is January. The age the plan shows (calculateAge) keeps the local month. With no
  *  birth year, `given`: a caller that passes the age itself (generateSuggestions with results only). */

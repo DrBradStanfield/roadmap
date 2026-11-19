@@ -22,7 +22,7 @@ interface ScreeningQuestionsProps {
   onPsaDateChange: (day: string) => void;
   onPsaCommit: (now: boolean) => void;
   bloodTestHistory: ApiMeasurement[];
-  /** The plan's age, from the validated birth year (January when no month). */
+  /** The age the screening cards read (screeningAge, at the UTC month; January when no month; US-23 AC6c). */
   age: number;
   /** Sends one screening answer and the clears it implies. */
   writeScreening: (scr: ScreeningInputs, key: string, value: string) => void;
