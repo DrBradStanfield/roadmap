@@ -26,7 +26,7 @@ const TONE: Record<BpTier, keyof typeof PILL> = { normal: 'green', elevated: 'am
 
 const EMPTY: Typed = { sys: '', dia: '' };
 const NONE: Ids = { sys: null, dia: null };
-const LABEL = { sys: 'Top number (systolic)', dia: 'Bottom number (diastolic)' } as const;
+const LABEL = { sys: 'Systolic', dia: 'Diastolic' } as const; // Brad 2026-11-19
 
 /** One reading's two boxes: the full app's blood pressure pair (useBpPair, US-75 AC2). */
 function ReadingBoxes({ index, typed, note, onChange, onEnter, next, sysRef }: {

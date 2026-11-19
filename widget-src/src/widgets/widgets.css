@@ -132,24 +132,20 @@
 .hr-widget-mmhg { font-size: 20px; font-weight: 700; }
 @media (max-width: 340px) { .hr-widget-bp .hr-widget-v { font-size: 28px; } .hr-widget-bp .hr-widget-mmhg { font-size: 16px; } }
 .hr-widget-bp-pill { width: 200px; max-width: 100%; }
-/* The card's paragraphs are line breaks in one element (no paragraph count in the page). Its height is fixed
-   at the longest card's (the stage 2 card with all four paragraphs, measured in WebKit on the live theme,
-   2026-11-18: 270, 427.5 and 540 px at 1280, 390 and 320), so the result's geometry, which Clarity records
-   with a click, is the same whatever the stage (Codex 1876 R1), and a returning card never grows on mount. */
-.hr-widget-advice { white-space: pre-line; font-size: 15px; line-height: 1.5; overflow-wrap: anywhere; min-height: 270px; }
-@media (max-width: 420px) { .hr-widget-advice { min-height: 428px; } }
-@media (max-width: 340px) { .hr-widget-advice { min-height: 540px; } }
+/* The card's paragraphs are line breaks in one element (no paragraph count in the page). It fits its
+   text (Brad 2026-11-19): the result's height varies by stage, an accepted gap (US-75). */
+.hr-widget-advice { white-space: pre-line; font-size: 15px; line-height: 1.5; overflow-wrap: anywhere; }
 /* Room before the script mounts (AC6), as the waist card's: the empty checker, or, with a saved blood
-   pressure on this device (hr-widget--saved, the block's inline script), the prefilled checker with its
-   result, its "from" line and the advice area at its fixed height. Measured in WebKit on the live theme
-   (microvitamin.com, this bundle swapped in), 2026-11-18: empty 257.2, 288.4, 288.4 px and prefilled
-   722.2, 911.4, 1010.2 px at 1280, 390 and 320. Re-measure if the card changes. */
+   pressure on this device (hr-widget--saved, the block's inline script), the prefilled checker up to its
+   result row, without an advice card (Brad 2026-11-19: a card grows the page below it, accepted). Measured
+   in WebKit on the live theme (microvitamin.com, this bundle swapped in), 2026-11-19: empty 257.2, 249.2,
+   249.2 px and prefilled with a Normal reading 474.7, 466.7, 453.5 px at 1280, 390 and 320. */
 .hr-widget-block .hr-widget[data-widget='blood-pressure'] { min-height: 258px; }
-.hr-widget-block .hr-widget[data-widget='blood-pressure'].hr-widget--saved { min-height: 723px; }
+.hr-widget-block .hr-widget[data-widget='blood-pressure'].hr-widget--saved { min-height: 475px; }
 @media (max-width: 420px) {
-  .hr-widget-block .hr-widget[data-widget='blood-pressure'] { min-height: 289px; }
-  .hr-widget-block .hr-widget[data-widget='blood-pressure'].hr-widget--saved { min-height: 912px; }
+  .hr-widget-block .hr-widget[data-widget='blood-pressure'] { min-height: 250px; }
+  .hr-widget-block .hr-widget[data-widget='blood-pressure'].hr-widget--saved { min-height: 467px; }
 }
 @media (max-width: 340px) {
-  .hr-widget-block .hr-widget[data-widget='blood-pressure'].hr-widget--saved { min-height: 1011px; }
+  .hr-widget-block .hr-widget[data-widget='blood-pressure'].hr-widget--saved { min-height: 454px; }
 }

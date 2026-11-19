@@ -23,6 +23,6 @@ describe('widget router (US-74 AC8)', () => {
   it('renders the waist widget for data-widget="waist-to-height"', () => {
     const Widget = widgetFor('waist-to-height')!;
     const { getByLabelText } = render(<Widget />);
-    expect(getByLabelText(/^Waist circumference/)).toBeTruthy();
+    expect(getByLabelText(/^Waist \(/)).toBeTruthy();
   });
 });

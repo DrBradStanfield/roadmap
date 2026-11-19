@@ -101,7 +101,7 @@ describe('US-74 waist-to-height and BMI widget', () => {
     expect(shown('Normal')).toBeTruthy(); // BMI 27 with a healthy ratio, as the plan reads it
     expect(screen.getByText('Target waist circumference')).toBeTruthy();
     expect(shown('<85 cm')).toBeTruthy();
-    expect(screen.getByLabelText(/^Waist circumference/)).toBeTruthy();
+    expect(screen.getByLabelText(/^Waist \(/)).toBeTruthy();
     expect(screen.queryByText(/Ideal Body Weight|Protein/)).toBeNull();
     expect(screen.queryByRole('button', { name: /See my results/ })).toBeNull(); // no button (Brad 2026-11-18)
   });

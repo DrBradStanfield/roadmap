@@ -35,7 +35,7 @@ const persisted = (): RoadmapFile => {
 const rows = (metric: string) => persisted().measurements.filter((m) => m.metricType === metric);
 const active = (metric: string) => rows(metric).filter((m) => m.status === 'active').map((m) => m.value);
 const reading = (n: 1 | 2) => within(screen.getByRole('group', { name: new RegExp(`^Reading ${n}`) }));
-const box = (n: 1 | 2, half: 'top' | 'bottom') => reading(n).getByLabelText(half === 'top' ? /^Top number/ : /^Bottom number/) as HTMLInputElement;
+const box = (n: 1 | 2, half: 'top' | 'bottom') => reading(n).getByLabelText(half === 'top' ? /^Systolic/ : /^Diastolic/) as HTMLInputElement;
 const type = (n: 1 | 2, half: 'top' | 'bottom', value: string) => fireEvent.change(box(n, half), { target: { value } });
 const enterPair = (n: 1 | 2, sys: string, dia: string) => { type(n, 'top', sys); type(n, 'bottom', dia); };
 /** Leave the readings, as a tap elsewhere does (useSaveOnLeave), and let the save land. */
@@ -418,13 +418,13 @@ describe('US-75 blood pressure widget', () => {
     render(<><BloodPressureWidget /><BloodPressureWidget /></>);
     expect(calls('bp_widget_viewed')).toHaveLength(1);
     const [first, second] = screen.getAllByRole('group', { name: /^Reading 1/ });
-    fireEvent.change(within(first).getByLabelText(/^Top number/), { target: { value: '135' } });
-    fireEvent.change(within(first).getByLabelText(/^Bottom number/), { target: { value: '85' } });
-    fireEvent.keyDown(within(first).getByLabelText(/^Bottom number/), { key: 'Enter' });
+    fireEvent.change(within(first).getByLabelText(/^Systolic/), { target: { value: '135' } });
+    fireEvent.change(within(first).getByLabelText(/^Diastolic/), { target: { value: '85' } });
+    fireEvent.keyDown(within(first).getByLabelText(/^Diastolic/), { key: 'Enter' });
     await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
-    fireEvent.change(within(second).getByLabelText(/^Top number/), { target: { value: '140' } });
-    fireEvent.change(within(second).getByLabelText(/^Bottom number/), { target: { value: '90' } });
-    fireEvent.keyDown(within(second).getByLabelText(/^Bottom number/), { key: 'Enter' });
+    fireEvent.change(within(second).getByLabelText(/^Systolic/), { target: { value: '140' } });
+    fireEvent.change(within(second).getByLabelText(/^Diastolic/), { target: { value: '90' } });
+    fireEvent.keyDown(within(second).getByLabelText(/^Diastolic/), { key: 'Enter' });
     await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
     expect(calls('bp_widget_saved')).toHaveLength(1);
   });
