@@ -68,7 +68,7 @@ export function ageOnDay(birthYear: number, birthMonth: number | undefined, day:
  * they turn 18 (birthYear + 19), and the date is judged at UTC-12, the zone
  * furthest behind, whatever zone this runs in (Fly runs in UTC). So no one
  * anywhere counts as 18 early. Every other age keeps the January default and
- * the local date.
+ * the local date, except the screening gates (`screeningAge`, UTC month).
  */
 export function isKnownMinor(birthYear: number | undefined, birthMonth: number | undefined, now = new Date()): boolean {
   if (!birthYear) return false;
