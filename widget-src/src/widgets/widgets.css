@@ -139,13 +139,14 @@
    pressure on this device (hr-widget--saved, the block's inline script), the prefilled checker up to its
    result row, without an advice card (Brad 2026-11-19: a card grows the page below it, accepted). Measured
    in WebKit on the live theme (microvitamin.com, this bundle swapped in), 2026-11-19: empty 257.2, 249.2,
-   249.2 px and prefilled with a Normal reading 474.7, 466.7, 453.5 px at 1280, 390 and 320. */
+   249.2 px and prefilled with a Normal reading 438.2, 430.2, 417.0 px at 1280, 390 and 320. The first edit
+   removes the class (BloodPressure.tsx), so the typed card fits what it holds. */
 .hr-widget-block .hr-widget[data-widget='blood-pressure'] { min-height: 258px; }
-.hr-widget-block .hr-widget[data-widget='blood-pressure'].hr-widget--saved { min-height: 475px; }
+.hr-widget-block .hr-widget[data-widget='blood-pressure'].hr-widget--saved { min-height: 439px; }
 @media (max-width: 420px) {
   .hr-widget-block .hr-widget[data-widget='blood-pressure'] { min-height: 250px; }
-  .hr-widget-block .hr-widget[data-widget='blood-pressure'].hr-widget--saved { min-height: 467px; }
+  .hr-widget-block .hr-widget[data-widget='blood-pressure'].hr-widget--saved { min-height: 431px; }
 }
 @media (max-width: 340px) {
-  .hr-widget-block .hr-widget[data-widget='blood-pressure'].hr-widget--saved { min-height: 454px; }
+  .hr-widget-block .hr-widget[data-widget='blood-pressure'].hr-widget--saved { min-height: 417px; }
 }

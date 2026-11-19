@@ -21,6 +21,9 @@ import { PILL, canvasDraws, drawPill, fixed } from './WidgetResults';
  *  no one sees: "250/150", the longest tier name, and the plan's longest card (the stage 2 card with
  *  its medicine and both lifestyle sentences), with room. Tested against every card. */
 export const WIDTH = { value: 7, tier: 20, advice: 1000 } as const;
+/** The plan's card opens "Your BP of"; on this page the abbreviation is spelled out on first use (Brad
+ *  2026-11-19). Only the page's copy changes; the card itself, everywhere else, is the engine's. */
+export const spelledOut = (text: string | undefined) => text?.replace(/^Your BP of /, 'Your blood pressure of ');
 /** The pill's colour by tier (Brad 2026-11-18): green Normal, amber Elevated and Stage 1, red Stage 2 and crisis. */
 const TONE: Record<BpTier, keyof typeof PILL> = { normal: 'green', elevated: 'amber', stage1: 'amber', stage2: 'red', crisis: 'red' };
 
@@ -87,8 +90,10 @@ function BpResults({ result }: { result: Result | null }) {
             <span className={drawn ? 'hr-widget-sr' : 'hr-widget-status'}>{fixed(result.tier ? BP_TIER_LABEL[result.tier] : '', WIDTH.tier)}</span>
           </div>
           {/* One element whatever the card: its paragraphs are line breaks (pre-line), so their count is not
-              in the page's structure; Normal and Elevated leave it blank. */}
-          <div className="hr-widget-advice">{fixed(result.card?.description, WIDTH.advice)}</div>
+              in the page's structure. With no card (Normal, Elevated, a known minor) it is hidden, so the box
+              ends under the pill (Brad 2026-11-19): its padded text still has a line's height. That a card shows
+              is already in the page's height, an accepted gap (US-75); its words and length stay masked. */}
+          <div className="hr-widget-advice" hidden={!result.card}>{fixed(spelledOut(result.card?.description), WIDTH.advice)}</div>
         </div>
       )}
     </output>
@@ -164,6 +169,9 @@ export function BloodPressureWidget({ nextUrl, nextLabel, navigate = (href) => w
   // The first edit clears the record's reading: a half from another day is never kept beside a typed one (AC3).
   const change = (i: 0 | 1) => (typed: Typed) => {
     edits.current++;
+    // The load reserve for a returning visitor (the block's inline script) has done its job once they type:
+    // from then on the card fits what it holds (Brad 2026-11-19).
+    form.current?.closest('.hr-widget')?.classList.remove('hr-widget--saved');
     const day = localDay(new Date());
     setTypedOn((prev) => (prefilled ? (i === 0 ? [day, null] : [null, day]) : i === 0 ? [day, prev[1]] : [prev[0], day]));
     setReadings((prev) => {

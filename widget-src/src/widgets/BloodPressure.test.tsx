@@ -17,7 +17,10 @@ import { RoadmapStore } from '../storage/roadmap-store';
 import * as data from '../lib/roadmap-data';
 import { formatShortDate } from '../lib/constants';
 import { trackProductEvent } from '../lib/server-api';
-import { BloodPressureWidget, WIDTH } from './BloodPressure';
+import { BloodPressureWidget, WIDTH, spelledOut } from './BloodPressure';
+import { bpTier } from '@roadmap/health-core/bp-tier';
+/** Whether a pair's tier has a plan card (Stage 1 and above). */
+const bpTierOf = (sys: number, dia: number) => !['normal', 'elevated'].includes(bpTier(sys, dia));
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../lib/server-api', async (importOriginal) => ({
@@ -121,7 +124,7 @@ describe('US-75 blood pressure widget', () => {
     expect([active('systolic_bp'), active('diastolic_bp')]).toEqual([[133], [83]]);
     const card = tierCard(persisted());
     expect(card?.id).toBe('bp-stage1');
-    expect(text).toBe(card!.description); // exactly, line breaks and all
+    expect(text).toBe(spelledOut(card!.description)); // the plan's words, line breaks and all, its abbreviation spelled out
     expect(text).toContain('Target is <130/80'); // 65 or older
     // Never reworded: the DOM text is the description, line breaks and all.
   });
@@ -131,12 +134,12 @@ describe('US-75 blood pressure widget', () => {
     enterPair(1, '150', '95');
     expect(shown('.hr-widget-sr, .hr-widget-status')).toBe('Stage 2 hypertension');
     const alone = (sys: number, dia: number, id: string) => calculateHealthResults({ systolicBp: sys, diastolicBp: dia } as SuggestionInputs).suggestions.find((c) => c.id === id)!.description;
-    expect(advice()).toBe(alone(150, 95, 'bp-stage2'));
+    expect(advice()).toBe(spelledOut(alone(150, 95, 'bp-stage2')));
     expect(advice()).toContain('Discuss treatment with your doctor.');
     expect(advice()).not.toContain('medication');
     enterPair(1, '190', '125');
-    expect(advice()).toBe(alone(190, 125, 'bp-crisis'));
-    expect(advice()).toMatch(/^Your BP of 190\/125 mmHg is dangerously high\./);
+    expect(advice()).toBe(spelledOut(alone(190, 125, 'bp-crisis')));
+    expect(advice()).toMatch(/^Your blood pressure of 190\/125 mmHg is dangerously high\./);
   });
 
   it('AC4 (ruling C1): any one reading at crisis level makes the result crisis, whatever the average; the average is what is saved', async () => {
@@ -145,7 +148,7 @@ describe('US-75 blood pressure widget', () => {
     enterPair(2, '140', '85');
     expect(shown('.hr-widget-v')).toBe('165/105 mmHg');
     expect(shown('.hr-widget-sr, .hr-widget-status')).toBe('Hypertensive crisis');
-    expect(advice()).toMatch(/^Your BP of 190\/125 mmHg is dangerously high\./);
+    expect(advice()).toMatch(/^Your blood pressure of 190\/125 mmHg is dangerously high\./);
     await leave();
     expect([active('systolic_bp'), active('diastolic_bp')]).toEqual([[165], [105]]);
     cleanup();
@@ -153,7 +156,7 @@ describe('US-75 blood pressure widget', () => {
     type(1, 'top', '160'); type(1, 'bottom', '95');
     enterPair(2, '190', '122');
     expect(shown('.hr-widget-sr, .hr-widget-status')).toBe('Hypertensive crisis');
-    expect(advice()).toMatch(/^Your BP of 190\/122 mmHg/);
+    expect(advice()).toMatch(/^Your blood pressure of 190\/122 mmHg/);
   });
 
   it('AC4 (ruling C3): a known minor gets the average only: no adult stage, pill or card', async () => {
@@ -191,7 +194,7 @@ describe('US-75 blood pressure widget', () => {
     enterPair(1, '125', '78');
     expect(advice()).toBe('');
     enterPair(1, '185', '100');
-    expect(advice()).toMatch(/^Your BP of 185\/100 mmHg is dangerously high\./);
+    expect(advice()).toMatch(/^Your blood pressure of 185\/100 mmHg is dangerously high\./);
   });
 
   it('AC5: saves the average as today\'s pair; a later change the same day corrects today\'s rows', async () => {
@@ -373,15 +376,15 @@ describe('US-75 blood pressure widget', () => {
     await data.addMeasurement('diastolic_bp', 76, tomorrow);
     render(<BloodPressureWidget />);
     enterPair(1, '190', '125');
-    expect(advice()).toMatch(/^Your BP of 190\/125 mmHg is dangerously high\./);
+    expect(advice()).toMatch(/^Your blood pressure of 190\/125 mmHg is dangerously high\./);
     cleanup();
     const later = data.loadAllHistorySync().filter((m) => m.recordedAt === tomorrow);
     for (const m of later) await data.correctValue(m.id, m.metricType === 'systolic_bp' ? 200 : 130);
     render(<BloodPressureWidget />);
     enterPair(1, '135', '85');
-    expect(advice()).toMatch(/^Your BP of 135\/85 mmHg indicates stage 1/);
+    expect(advice()).toMatch(/^Your blood pressure of 135\/85 mmHg indicates stage 1/);
     enterPair(1, '190', '125');
-    expect(advice()).toMatch(/^Your BP of 190\/125 mmHg/);
+    expect(advice()).toMatch(/^Your blood pressure of 190\/125 mmHg/);
   });
 
   it('AC5 (Codex 1876b R5): a reading typed before midnight is not averaged into the new day\'s save', async () => {
@@ -412,6 +415,19 @@ describe('US-75 blood pressure widget', () => {
     fireEvent.click(screen.getByRole('link'));
     await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
     expect(navigate).toHaveBeenCalledWith('/pages/health-plan');
+  });
+
+  it('AC6 (Brad 2026-11-19): with no card the advice is hidden, and the first edit drops the returning reserve', async () => {
+    const block = document.createElement('div');
+    block.className = 'hr-widget hr-widget--saved';
+    document.body.append(block);
+    render(<BloodPressureWidget />, { container: block });
+    enterPair(1, '118', '76');
+    expect((document.querySelector('.hr-widget-advice') as HTMLElement).hidden).toBe(true);
+    expect(block.className).toBe('hr-widget');
+    enterPair(1, '150', '95');
+    expect((document.querySelector('.hr-widget-advice') as HTMLElement).hidden).toBe(false);
+    block.remove();
   });
 
   it('AC1 (Codex R14): two blocks on one page send each event once per page view', async () => {
@@ -478,7 +494,7 @@ describe('US-75 AC7 privacy', () => {
     expect(clarity('Normal\u2060\u2060')).toBe(clarity('Elevated'));
   });
 
-  it('every stage and value leaves the block\'s text identical as Clarity encodes it, and the same attributes (one canvas)', async () => {
+  it('every stage and value leaves the block\'s text identical as Clarity encodes it, and the same attributes (one canvas) but the advice\'s `hidden` with no card', async () => {
     await data.saveChangedMeasurements({ heightCm: 178, birthYear: 1980, birthMonth: 1, sex: 'male' }, {});
     const seen = STAGES.map(([sys, dia]) => {
       const { container, unmount } = render(<BloodPressureWidget />);
@@ -489,9 +505,13 @@ describe('US-75 AC7 privacy', () => {
     });
     expect(new Set(seen.map((s) => s.stage)).size).toBe(5);
     expect(seen[0].attrs.filter((a) => a.startsWith('CANVAS'))).toHaveLength(1);
-    for (const each of seen.slice(1)) {
+    // The one attribute that differs: the advice is hidden with no card (Brad 2026-11-19; the page's height says as much).
+    const hasCard = STAGES.map(([sys, dia]) => bpTierOf(Number(sys), Number(dia)));
+    const withoutHidden = (attrs: string[]) => attrs.map((a) => a.replace(/ hidden=/, ''));
+    for (const [i, each] of seen.entries()) {
       expect(each.lengths).toEqual(seen[0].lengths);
-      expect(each.attrs).toEqual(seen[0].attrs);
+      expect(withoutHidden(each.attrs)).toEqual(withoutHidden(seen[0].attrs));
+      expect(each.attrs.some((a) => a.startsWith('DIV') && a.includes('hidden='))).toBe(!hasCard[i]);
     }
   });
 
