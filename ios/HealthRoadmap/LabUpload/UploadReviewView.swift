@@ -48,6 +48,8 @@ struct UploadReviewView: View {
                     if let archived = done.archived { Text(verbatim: archived) }
                     if let unstored = done.unstored { Text(verbatim: unstored).foregroundStyle(.secondary) }
                 }
+                // What was not saved stays named on the done screen, in the review's own words.
+                ForEach(page.sections) { if case .notSaved = $0 { section($0) } }
                 Section { filesRow }
             } else {
                 Section {

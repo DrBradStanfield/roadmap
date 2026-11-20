@@ -232,6 +232,44 @@ final class UploadPageTests: XCTestCase {
         XCTAssertEqual(try saving.page().closeEnabled, false, "Close waits while the save runs")
     }
 
+    /// Codex pass on d31f5855a, item 2: a conflicting out-of-range value whose Replace is off is never
+    /// written, so it does not block Save; with Replace on it blocks, in the existing words.
+    func testAKeptConflictOutOfRangeDoesNotBlockSave() async throws {
+        let folder = FileManager.default.temporaryDirectory.appending(path: "Kept conflict \(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        var drive = try Drive()
+        let store = try RecordStore(folder: folder, engine: drive.engine, deviceId: "test")
+        _ = await store.apply(.add(metric: "ldl", value: 2.0, day: "2026-10-01"))
+        drive.record = store.recordJSON
+        drive.pick(["lab", "letter"])
+        let huge = #"{"metric":"ldl","valueSI":500,"displayValue":500,"displayUnit":"mmol/L","displaySystem":"si","confidence":"high"}"#
+        let hdl = #"{"metric":"hdl","valueSI":1.2,"displayValue":1.2,"displayUnit":"mmol/L","displaySystem":"si","confidence":"high"}"#
+        drive.read("lab", Self.lab(values: "\(huge),\(hdl)"))
+        drive.read("letter", Self.letter())
+        var page = try drive.page()
+        XCTAssertTrue(page.save.enabled, "a kept conflict is never written, so it blocks nothing")
+        let ldl = try XCTUnwrap(Self.unsure(page).first { $0.ref == "v0" })
+        drive.step(UploadAction.replace(fileId: "lab", ref: "v0", correctsId: ldl.replaces).event(now: Self.now))
+        page = try drive.page()
+        XCTAssertFalse(page.save.enabled)
+        XCTAssertEqual(page.save.why, "Correct or clear the values with errors before saving.")
+    }
+
+    /// Codex pass on d31f5855a, item 4: the done screen keeps naming what was not saved.
+    func testTheDoneScreenNamesWhatWasNotSaved() throws {
+        var drive = try Drive()
+        drive.pick(["lab"])
+        let report = #"{"classification":"lab_report","reportDate":"2026-10-01","values":[\#(Self.ldl)],"additionalValues":[],"unreadValues":[{"name":"Ferritin","reason":"unreadable"}],"document":null}"#
+        drive.read("lab", report)
+        drive.step(UploadAction.save.event(now: Self.now))
+        drive.step(UploadSession.event(.success(.init(values: 1, documents: 1, archived: 0, unstored: nil)), run: drive.run, attempt: 1))
+        let page = try drive.page()
+        XCTAssertEqual(page.done?.line, "Saved 1 value and 1 document.")
+        guard case .notSaved(_, let lines, _) = page.sections.first(where: { if case .notSaved = $0 { true } else { false } }) else { return XCTFail("nothing named") }
+        XCTAssertTrue(lines.contains { $0.contains("Ferritin") && $0.contains("could not be read") }, "\(lines)")
+    }
+
     // MARK: Actions
 
     /// Each tap is the engine's event, by its own schema (upload-schema.ts).
