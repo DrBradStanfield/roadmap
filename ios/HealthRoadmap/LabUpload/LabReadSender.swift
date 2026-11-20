@@ -40,12 +40,23 @@ struct LabReadSender: Sendable {
             switch self {
             case .cannotAttest: ["kind": "cannotAttest"]
             case .attestFailed(let stage, let code): ["kind": "attestFailed", "stage": stage, "code": code]
-            case .refused(let status, let message): ["kind": "refused", "status": status, "message": String(message.prefix(2000))]
+            case .refused(let status, let message): ["kind": "refused", "status": status, "message": Self.bounded(message)]
             case .badAnswer: ["kind": "badAnswer"]
             case .timeout: ["kind": "timeout"]
             case .dropped: ["kind": "dropped"]
             case .unreachable: ["kind": "unreachable"]
             }
+        }
+
+        /// Words cut to the engine's bound (health-core GATE_WORDS_MAX, 200 UTF-16 units), between
+        /// characters, so an emoji of several scalars is never split; the engine cuts again regardless.
+        static func bounded(_ words: String, utf16 limit: Int = 200) -> String {
+            var kept = ""
+            for character in words {
+                if kept.utf16.count + character.utf16.count > limit { break }
+                kept.append(character)
+            }
+            return kept
         }
 
         /// A request that failed on the way, by its URLError, as AppAttestClient.words tells them apart.

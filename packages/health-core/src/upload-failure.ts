@@ -41,16 +41,8 @@ export function uploadFailure(status: number | null, body: unknown): WebUploadFa
   return 'server_error';
 }
 
-/**
- * `uploadFailure` for an answer as a device saw it, unparsed: `text` the body (null when none came),
- * `contentType` its header. Read as the web's reader reads it (widget-src server-api.ts
- * `parseJsonResponse`): a body its header does not call JSON is null; JSON that will not parse, undefined.
- */
-export function uploadFailureOfText(status: number | null, text: string | null, contentType: string | null): WebUploadFailure {
-  return uploadFailure(status, bodyOf(text, contentType));
-}
-
-/** The body as the web's reader reads it: null when its header does not call it JSON; undefined when it will not parse. */
+/** An answer's body as the web's reader reads it (widget-src server-api.ts `parseJsonResponse`): null when its
+ *  header does not call it JSON; undefined when it will not parse. */
 function bodyOf(text: string | null, contentType: string | null): unknown {
   if (text === null || !(contentType ?? '').includes('application/json')) return null;
   try { return JSON.parse(text); } catch { return undefined; }
@@ -79,8 +71,9 @@ export function boundedWords(text: unknown): string | null {
 }
 
 /**
- * The app gate's refusal before a stream, as the iPhone saw it (app-gate.server.ts, lab-read): read
- * as `uploadFailureOfText` reads it, except that a 401 (final: the app already retried the one it
+ * The app gate's refusal before a stream, as the iPhone saw it unparsed (app-gate.server.ts, lab-read):
+ * `text` the body (null when none came), `contentType` its header. Read as `uploadFailure` reads the
+ * body the web's reader makes of it, except that a 401 (final: the app already retried the one it
  * mends) is `app_refused`, a 413 `too_large`, and any other 4xx but 422 and 429 `app_refused` too,
  * none of which Try again mends, as today's iPhone never offers it under 500. One 400 is mended: the
  * gate's `body_read_failed`, an upload that did not arrive whole, the network's fault and uncharged

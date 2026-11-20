@@ -335,6 +335,11 @@ describe('a send that failed, through the step door: each answer\'s reason and w
     [502, '<html>', 'text/html', { s: 'failed', reason: 'server', attempt: 1 }],
     [null, null, null, { s: 'failed', reason: 'network', attempt: 1 }],
   ];
+  it('a refused registration\'s over-long words are cut by the engine, never a reason to refuse the event (Codex re-check)', () => {
+    const message = '👨‍👩‍👧'.repeat(1001); // 5 code points, 8 UTF-16 units each
+    const step = JSON.parse(uploadStepJson(sending, JSON.stringify({ type: 'sendFailed', run: 1, id: 'f', status: null, body: null, contentType: null, local: { kind: 'refused', status: 503, message } }), RECORD_TEXT, DEV));
+    expect(step.state.files[0].status).toEqual({ s: 'failed', reason: 'server', attempt: 1, detail: { message: '👨‍👩‍👧'.repeat(25) } });
+  });
   for (const [status, body, contentType, want] of cases) {
     it(`${status} ${body?.slice(0, 40)}`, () => {
       const step = JSON.parse(uploadStepJson(sending, JSON.stringify({ type: 'sendFailed', run: 1, id: 'f', status, body, contentType }), RECORD_TEXT, DEV));

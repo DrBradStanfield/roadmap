@@ -160,6 +160,15 @@ final class UploadRefusalTests: XCTestCase {
         XCTAssertTrue(challenge.retry)
     }
 
+    /// Codex re-check: a refusal's words of 1,001 family emoji are cut to the engine's bound by the phone
+    /// and again by the engine; the run goes on, the file shows the cut words, and Try again.
+    func testARefusalsLongWordsAreCutNeverRefused() async throws {
+        let long = String(repeating: "👨‍👩‍👧", count: 1001) // one Character, 5 scalars, 8 UTF-16 units
+        let got = try await failedLine(stored: nil, register: Self.gate(503, long, "unavailable")) { _ in Kit.read() }
+        XCTAssertEqual(got.line, String(repeating: "👨‍👩‍👧", count: 25))
+        XCTAssertTrue(got.retry)
+    }
+
     /// The step and code are short words: a domain's dots and spaces never reach the engine, and a
     /// code from outside DeviceCheck is kept whole beside a shortened domain.
     func testAnAttestWordIsShortAndPlain() {

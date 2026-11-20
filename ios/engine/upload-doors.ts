@@ -45,7 +45,8 @@ const platform = z.enum(['web', 'phone']);
 const LOCAL = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('cannotAttest') }),
   z.strictObject({ kind: z.literal('attestFailed'), stage: ATTEST_PART, code: ATTEST_PART }),
-  z.strictObject({ kind: z.literal('refused'), status: z.number().int().min(100).max(599), message: z.string().max(2000) }),
+  // The words are cut by the engine (boundedWords), never a reason to refuse the event.
+  z.strictObject({ kind: z.literal('refused'), status: z.number().int().min(100).max(599), message: z.string() }),
   z.strictObject({ kind: z.literal('badAnswer') }),
   z.strictObject({ kind: NETWORK_FAILURE }),
 ]);

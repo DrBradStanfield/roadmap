@@ -5,7 +5,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { RETRYABLE, transition, type UploadState } from './upload-flow';
-import { uploadFailure, uploadFailureOfText, type UploadFailure } from './upload-failure';
+import { appGateFailure, uploadFailure, type UploadFailure } from './upload-failure';
 
 // [upload-api.ts case, status (null: fetch threw), body (null: not JSON; undefined: JSON that would not parse), code]
 const CASES: Array<[string, number | null, unknown, UploadFailure]> = [
@@ -63,7 +63,7 @@ describe('each code in upload-flow: a reason of its own, retried as today', () =
   }
 });
 
-describe('uploadFailureOfText: an unparsed answer, read as the web reads it (US-52 AC8c)', () => {
+describe('appGateFailure: an unparsed answer with no gate words, read as the web reads it (US-52 AC8c)', () => {
   const cases: Array<[number | null, string | null, string | null, UploadFailure]> = [
     [null, null, null, 'network'],
     [429, '{"code":"busy"}', 'application/json', 'busy'],
@@ -76,6 +76,6 @@ describe('uploadFailureOfText: an unparsed answer, read as the web reads it (US-
     [502, '<html>', 'text/html', 'server_error'],
   ];
   for (const [status, text, type, want] of cases) {
-    it(`${status} ${type}: ${want}`, () => expect(uploadFailureOfText(status, text, type)).toBe(want));
+    it(`${status} ${type}: ${want}`, () => expect(appGateFailure(status, text, type)).toEqual({ failure: want }));
   }
 });
