@@ -8,12 +8,16 @@ import * as z from './zod';
 
 /** The web's UploadErrorCode names, so the web adopts them unchanged. The key codes come only from the
  *  Pages build's own Anthropic key (widget-src byok-upload.ts); a server answer is never one of them. */
-export const UPLOAD_FAILURES = ['rate_limit', 'busy', 'server_error', 'network', ...EXTRACTION_STOP_CODES, 'key_refused', 'no_credit', 'key_rate_limit',
+const WEB_FAILURES = ['rate_limit', 'busy', 'server_error', 'network', ...EXTRACTION_STOP_CODES, 'key_refused', 'no_credit', 'key_rate_limit'] as const;
+/** What the web's reader answers: never one of the iPhone's codes below. */
+export type WebUploadFailure = (typeof WEB_FAILURES)[number];
+export const UPLOAD_FAILURES = [...WEB_FAILURES,
   // The iPhone's alone: the app gate's final refusal and a body too large (appGateFailure), and the
   // phone's own App Attest: a device that cannot prove the app, or one whose proof failed.
   'app_refused', 'too_large', 'cannot_attest', 'attest_failed'] as const;
 export type UploadFailure = (typeof UPLOAD_FAILURES)[number];
-export const isUploadFailure = (code: string | undefined): code is UploadFailure => (UPLOAD_FAILURES as readonly string[]).includes(code ?? '');
+/** A web code, as the web's pipeline hands it on: the iPhone's codes never come from a web answer. */
+export const isUploadFailure = (code: string | undefined): code is WebUploadFailure => (WEB_FAILURES as readonly string[]).includes(code ?? '');
 
 const tooManyAnswer = z.object({ code: z.enum(['daily_limit', 'busy']) });
 const stopAnswer = z.object({ errorCode: z.enum(EXTRACTION_STOP_CODES) });
@@ -29,7 +33,7 @@ const stopAnswer = z.object({ errorCode: z.enum(EXTRACTION_STOP_CODES) });
  * - A 422 or a 200 whose JSON would not parse: a network error, as upload-api.ts's catch makes it.
  * - Any other status: a server error (its body is never read).
  */
-export function uploadFailure(status: number | null, body: unknown): UploadFailure {
+export function uploadFailure(status: number | null, body: unknown): WebUploadFailure {
   if (status === null) return 'network';
   if (status === 429) return tooManyAnswer.safeParse(body).data?.code === 'busy' ? 'busy' : 'rate_limit';
   if ((status === 422 || (status >= 200 && status < 300)) && body === undefined) return 'network';
@@ -42,7 +46,7 @@ export function uploadFailure(status: number | null, body: unknown): UploadFailu
  * `contentType` its header. Read as the web's reader reads it (widget-src server-api.ts
  * `parseJsonResponse`): a body its header does not call JSON is null; JSON that will not parse, undefined.
  */
-export function uploadFailureOfText(status: number | null, text: string | null, contentType: string | null): UploadFailure {
+export function uploadFailureOfText(status: number | null, text: string | null, contentType: string | null): WebUploadFailure {
   let body: unknown = null;
   if (text !== null && (contentType ?? '').includes('application/json')) {
     try { body = JSON.parse(text); } catch { body = undefined; }
