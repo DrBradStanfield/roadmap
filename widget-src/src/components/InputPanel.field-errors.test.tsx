@@ -7,7 +7,7 @@
  * cases below only check that About you's height still has it.
  */
 import { afterEach, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render } from '@testing-library/react';
+import { cleanup, fireEvent, isInaccessible, render, screen } from '@testing-library/react';
 import { InputPanel } from './InputPanel';
 import { myHealth } from '../testing/my-health-props';
 import { openAboutYou } from '../testing/health-tool-harness';
@@ -87,14 +87,34 @@ it('US-74, not changed here: in feet and inches the height error describes both 
   }
 });
 
-it('US-02 AC5a: the birth month and the birth year each carry their own error', () => {
-  const box = renderPanel({ errors: { birthMonth: 'January 2090 is in the future, so it was not saved.', birthYear: 'Birth year must be after 1900' } });
-  expect([invalid(box('birthMonth')), description(box('birthMonth'))]).toEqual(['true', 'January 2090 is in the future, so it was not saved.']);
-  expect([invalid(box('birthYear')), description(box('birthYear'))]).toEqual(['true', 'Birth year must be after 1900']);
-  cleanup();
-  const yearOnly = renderPanel({ errors: { birthYear: 'Birth year must be after 1900' } });
-  expect([invalid(yearOnly('birthMonth')), description(yearOnly('birthMonth'))]).toEqual([null, '']);
-  expect(description(yearOnly('birthYear'))).toBe('Birth year must be after 1900');
+function visibleErrorId(text: string) {
+  const error = screen.getByText(text); // Must render exactly once.
+  expect(isInaccessible(error)).toBe(false);
+  expect(error.id).not.toBe('');
+  expect(document.getElementById(error.id)).toBe(error);
+  return error.id;
+}
+
+it('US-02 AC5a: matching birth errors describe both fields with one visible message', () => {
+  const error = 'Check your birth date.';
+  const box = renderPanel({ errors: { birthMonth: error, birthYear: error } });
+  const errorId = visibleErrorId(error);
+  expect(invalid(box('birthMonth'))).toBe('true');
+  expect(invalid(box('birthYear'))).toBe('true');
+  expect(box('birthMonth').getAttribute('aria-describedby')).toBe(errorId);
+  expect(box('birthYear').getAttribute('aria-describedby')).toBe(errorId);
+});
+
+it.each<{ label: string; errors: Record<string, string> }>([
+  { label: 'distinct errors', errors: { birthMonth: 'January 2090 is in the future, so it was not saved.', birthYear: 'Birth year must be after 1900' } },
+  { label: 'month only', errors: { birthMonth: 'January 2090 is in the future, so it was not saved.' } },
+  { label: 'year only', errors: { birthYear: 'Birth year must be after 1900' } },
+])('US-02 AC5a: each birth field keeps its own error state ($label)', ({ errors }) => {
+  const box = renderPanel({ errors });
+  for (const id of ['birthMonth', 'birthYear']) {
+    expect(invalid(box(id)), id).toBe(errors[id] ? 'true' : null);
+    expect(box(id).getAttribute('aria-describedby'), id).toBe(errors[id] ? visibleErrorId(errors[id]) : null);
+  }
 });
 
 it('US-02 AC5a: the onboarding\'s weight box carries its error; a cleared saved weight keeps only its note', () => {

@@ -84,6 +84,7 @@ export function BirthFields(props: BirthFieldsProps) {
   /** The birth month was last pressed by a pointer, not a key (US-01 AC6). Set fresh by every gesture. */
   const monthByPointer = useRef(false);
   const { inputs, errors, updateField, typeIn, blurOnWheel, settleOnEnter, rangeWait } = form;
+  const sharedBirthError = !!errors.birthMonth && errors.birthMonth === errors.birthYear;
   return (
     <>
       <div className="health-field-group">
@@ -114,7 +115,7 @@ export function BirthFields(props: BirthFieldsProps) {
           {/* US-54 AC5b: a birth month in the future, left out of the plan. */}
           {errors.birthMonth && <span className="error-message" id="birthMonth-error">{errors.birthMonth}</span>}
           {/* US-02 AC5: a year out of range stays, saying why; the store refuses it. */}
-          {errors.birthYear && errors.birthYear !== errors.birthMonth && <span className="error-message" id="birthYear-error">{errors.birthYear}</span>}
+          {errors.birthYear && !sharedBirthError && <span className="error-message" id="birthYear-error">{errors.birthYear}</span>}
         </div>
 
         {/* Once shown on this record it stays, so clearing a year to retype keeps the field (US-62 AC13). */}
@@ -125,7 +126,7 @@ export function BirthFields(props: BirthFieldsProps) {
               type="number"
               id="birthYear"
               ref={yearRef}
-              {...errorAria('birthYear-error', [errors.birthYear])}
+              {...errorAria(sharedBirthError ? 'birthMonth-error' : 'birthYear-error', [errors.birthYear])}
               onKeyDown={e => { blockNonIntegerKeys(e); settleOnEnter(e); }}
               onWheel={blurOnWheel}
               value={inputs.birthYear || ''}
