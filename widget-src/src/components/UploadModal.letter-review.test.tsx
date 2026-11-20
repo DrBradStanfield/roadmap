@@ -58,11 +58,26 @@ describe('the letter in the review (Codex pass item 3)', () => {
     expect(screen.getByText(tail)).toBeTruthy();
     expect(screen.getByText(/the guideline/).closest('a')).toBeNull();
     expect(document.querySelector('.upload-modal a')).toBeNull();
-    const kind = screen.getByRole('combobox', { name: 'Synthetic letter, clinic letter' }) as HTMLSelectElement;
+    const kind = screen.getByRole('combobox', { name: 'Synthetic letter clinic letter' }) as HTMLSelectElement;
     fireEvent.change(kind, { target: { value: 'discharge_summary' } });
-    expect(screen.getByRole('combobox', { name: 'Synthetic letter, discharge summary' })).toBeTruthy();
+    expect(screen.getByRole('combobox', { name: 'Synthetic letter discharge summary' })).toBeTruthy();
     fireEvent.click(saveButton());
     await screen.findByRole('button', { name: 'Done' });
     expect(lastSaved().documents.map(d => d.type)).toEqual(['discharge_summary']);
+  });
+});
+
+// Codex pass (US-13 AC10): no health text in any attribute; replay and error tools record attributes.
+describe('a letter whose title holds a result', () => {
+  it('names the kind control from the title on screen, and no attribute in the window holds the title', async () => {
+    const titled = { result: { ...letter.result!, document: { ...letter.result!.document!, title: 'HbA1c 6.5% letter' } } } as unknown as Import;
+    answers({ 'letter.pdf': titled });
+    render(<UploadModal open onOpen={() => {}} onClose={() => {}} unitSystem="si" grading={{}} history={history} onComplete={() => {}} sex="male" />);
+    pick(pdf('letter.pdf'));
+    fireEvent.click(await screen.findByRole('button', { name: '1 letter or document will be saved' }));
+    expect(screen.getByRole('combobox', { name: 'HbA1c 6.5% letter clinic letter' })).toBeTruthy();
+    const attributes = [...document.querySelectorAll('.upload-modal-backdrop, .upload-modal-backdrop *')].flatMap(el =>
+      [...el.attributes].filter(a => !(a.name === 'value' && el instanceof HTMLInputElement)).map(a => `${el.tagName}[${a.name}]=${a.value}`));
+    expect(attributes.filter(a => a.includes('HbA1c') || a.includes('6.5%'))).toEqual([]);
   });
 });

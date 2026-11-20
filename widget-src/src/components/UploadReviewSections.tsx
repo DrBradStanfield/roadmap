@@ -74,11 +74,13 @@ export function UploadReviewSections({ view, documentOf, failedLine, onChose, on
               <div key={row.fileId} className="review-file-section">
                 <div className="review-document-card">
                   <div className="review-document-header">
-                    {/* The kind it saves as, correctable (US-13 AC14): no label word exists, so the control is named by the letter and its kind. */}
+                    {/* The kind it saves as, correctable (US-13 AC14): no label word exists, so the control is named by the
+                        title on screen and its own kind, by id alone: no health text in an attribute (US-13 AC10). */}
                     <select
+                      id={`review-kind-${row.fileId}`}
                       className={`review-doc-type-badge review-doc-kind review-doc-type--${row.type}`}
                       value={row.type}
-                      aria-label={`${row.title}, ${row.kind}`}
+                      aria-labelledby={`review-title-${row.fileId} review-kind-${row.fileId}`}
                       onChange={(e) => onChose(row.fileId, { document: { kind: e.target.value } })}
                     >
                       {DOCUMENT_TYPES.map((type) => <option key={type} value={type}>{KIND_WORDS[type][0]}</option>)}
@@ -86,6 +88,7 @@ export function UploadReviewSections({ view, documentOf, failedLine, onChose, on
                   </div>
                   <div className="review-document-title">
                     <input
+                      id={`review-title-${row.fileId}`}
                       type="text"
                       value={titles[row.fileId] ?? row.title}
                       onChange={(e) => {

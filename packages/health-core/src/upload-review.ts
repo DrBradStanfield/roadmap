@@ -106,7 +106,9 @@ function importFile(f: ReadFile, now: string, holderOf: (row: BulkRow) => string
   const needsPreviousDay = undatedDay === null && ticked.some((v) => v.own === UNDATED_PREVIOUS);
   // A dated previous column whose pick is no real past day yet: its ticked values wait for one (PR 1906 item 10).
   const waiting = columnDays.filter(([, day]) => day === null).map(([printed]) => printed);
-  const needsColumnDay = ticked.some((v) => v.own !== undefined && waiting.includes(v.own));
+  // And a ticked value printed on a day that is no real past day (a date still to come): it waits for its
+  // column's day too, never dropped at Save (PR 1906 Codex pass).
+  const needsColumnDay = ticked.some((v) => v.own !== undefined && v.own !== UNDATED_PREVIOUS && (waiting.includes(v.own) || validDay(v.own, { now }) === null));
   // A Replace counts only while its target is still the held row on the value's day (US-13 AC7).
   const days = valueDays(result, day, undatedDay);
   const replaces = (ref: string) => {
