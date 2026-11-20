@@ -28,11 +28,11 @@ final class UploadSession {
     /// `saveFailed` has stepped and drawn, whatever its text. A Save that ends unsent lets it go (nil).
     private enum Claim { case tapped, queued(Int) }
     private var claim: Claim?
-    /// The latest choice sent: its generation, which only grows, and its event's number once queued (nil until
-    /// then). An older choice's number never lands over a newer one's, so Save waits for the last choice's view
-    /// (PR 1912 review R2).
-    private struct Chosen { var generation = 0; var number: Int? = 0 }
-    @ObservationIgnored private var chosen = Chosen()
+    /// The latest event a tap sent (a choice, Try again, Stop): its generation, which only grows, and its number once
+    /// queued (nil until then). An older event's number never lands over a newer one's, so Save waits for the last
+    /// event's view (PR 1912 review R2 and ruling).
+    private struct Sent { var generation = 0; var number: Int? = 0 }
+    @ObservationIgnored private var sent = Sent()
 
     /// How a pick went: the engine has it, the reader refused it (its words), or the loaded engine
     /// cannot run the shared upload (an older one over the air: today's flow reads it).
@@ -119,22 +119,22 @@ final class UploadSession {
     /// save all" for a Save of two or more files, "Lab save one" for one (US-52 AC8b), then the
     /// shared upload's own counts as fixed names (US-12 AC30).
     ///
-    /// A Save tap is never dropped: it waits until every choice sent before it is stepped and drawn, then sends
-    /// back that page's own list (`reviewed`), so Save writes exactly what the page displayed (US-13 AC23). If that
-    /// page says Save is off, nothing is sent and the claim is let go: the page shows its own reason. A choice or a
-    /// second Save while the claim holds is not taken.
+    /// A Save tap is never dropped: it waits until every event a tap sent before it (a choice, Try again, Stop) is
+    /// stepped and drawn, then sends back that page's own list (`reviewed`), so Save writes exactly what the page
+    /// displayed (US-13 AC23). If that page says Save is off, nothing is sent and the claim is let go: the page shows
+    /// its own reason. Any of those taps, or a second Save, while the claim holds is not taken.
     func send(_ action: UploadAction) {
         switch action {
         case .save:
             guard !saveClaimed else { return }
             claim = .tapped
             tellUsage { [analytics, files = drawn?.page?.files.rows.count ?? 0] in analytics?.event(files >= 2 ? .labSaveAll : .labSaveOne) }
-            // The page the tap saw, when no choice waits to draw; else the one drawn after the last choice.
+            // The page the tap saw, when no tap's event waits to draw; else the one drawn after the last.
             let shown = choicePending ? nil : currentPage
             then { [weak self] runner in
                 guard let self else { return }
                 var page = shown
-                if page == nil, let text = await self.model.drawn(through: self.chosen.number ?? 0) { page = self.page(text) }
+                if page == nil, let text = await self.model.drawn(through: self.sent.number ?? 0) { page = self.page(text) }
                 guard let page, page.save.enabled else {
                     self.claim = nil
                     return
@@ -143,13 +143,13 @@ final class UploadSession {
                 self.claim = .queued(number)
                 await runner.drain()
             }
-        case .tick, .replace, .testDay, .title, .kind, .documentDate:
+        case .tick, .replace, .testDay, .title, .kind, .documentDate, .retryAll, .stop:
             guard !saveClaimed else { return }
-            chosen = Chosen(generation: chosen.generation + 1, number: nil)
-            let generation = chosen.generation
+            sent = Sent(generation: sent.generation + 1, number: nil)
+            let generation = sent.generation
             then { [weak self] runner in
                 let number = await runner.queue(action.event(now: Date.now.formatted(HealthEngine.iso)))
-                if self?.chosen.generation == generation { self?.chosen.number = number }
+                if self?.sent.generation == generation { self?.sent.number = number }
                 await runner.drain()
             }
         case .close:
@@ -158,8 +158,6 @@ final class UploadSession {
         case .discard:
             tellUsage {}
             then { await $0.discard() }
-        default:
-            then { await $0.submit(action.event(now: Date.now.formatted(HealthEngine.iso))) }
         }
     }
 
@@ -198,8 +196,8 @@ final class UploadSession {
         return model.drawnThrough < save || page(text)?.phase == "saving"
     }
 
-    /// The latest choice is not yet queued, or its view not yet drawn: a Save now waits for that view.
-    var choicePending: Bool { chosen.number.map { model.drawnThrough < $0 } ?? true }
+    /// The latest event a tap sent is not yet queued, or its view not yet drawn: a Save now waits for that view.
+    var choicePending: Bool { sent.number.map { model.drawnThrough < $0 } ?? true }
 
     /// The doors' words for a call that answered nothing, from the last view drawn.
     var engineError: String? { drawn?.page?.engineError ?? drawn.flatMap { UploadPage.words($0.text) } }

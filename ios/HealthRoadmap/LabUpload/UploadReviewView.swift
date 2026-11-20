@@ -114,6 +114,7 @@ struct UploadReviewView: View {
             .accessibilityElement(children: .combine)
             if let stop = page.stop {
                 Button { send(.stop) } label: { Text(verbatim: stop.label) }
+                    .disabled(saveClaimed)
                     .accessibilityIdentifier("upload.stop")
             }
         }

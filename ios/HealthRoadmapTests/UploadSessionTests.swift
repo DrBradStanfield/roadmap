@@ -311,6 +311,63 @@ final class UploadSessionTests: XCTestCase, CloudFixtures {
         XCTAssertEqual(ldl.map { String(($0["recordedAt"] as? String ?? "").prefix(10)) }, ["2026-09-03"])
     }
 
+    /// Two files: read 1 is a letter, read 2 is `second`, every later read never answers (a file kept in flight).
+    private func twoFiles(second: StubHTTP.Answer) {
+        let reads = OSAllocatedUnfairLock(initialState: 0)
+        StubHTTP.handler = { request in
+            guard request.url.path == LabReadSender.path else { return .init(body: Data(#"{"challenge":"c"}"#.utf8)) }
+            switch reads.withLock({ $0 += 1; return $0 }) {
+            case 1: return Kit.read("{\"accepted\":true}\n{\"status\":200,\"body\":{\"success\":true,\"data\":\(UploadPageTests.letter("Letter 1"))}}\n")
+            case 2: return second
+            default: return .init(hang: true)
+            }
+        }
+    }
+
+    /// PR 1912 ruling (US-13 AC23): Try again on a failed file, then Save at once, behind a held engine. Save waits for
+    /// the retry's view, which has a file in flight: Save is off there, so nothing is written and the claim is let go.
+    func testSaveAfterTryAgainWaitsForTheRetrysView_US13_AC23() async throws {
+        let store = try phone()
+        twoFiles(second: .init(status: 503, headers: Kit.json, body: Data(#"{"error":"Busy","reason":"unavailable"}"#.utf8)))
+        let upload = session(store)
+        _ = await upload.runner.pick(Kit.pictures(2), needsConsent: false)
+        try await until("one read, one failed") {
+            page(upload)?.save.enabled == true && page(upload)?.sections.contains { if case .failed(_, _, let retry) = $0 { retry != nil } else { false } } == true
+        }
+        let before = store.recordJSON
+        let hold = DispatchSemaphore(value: 0)
+        store.engine.enqueue { _ in hold.wait() }
+        upload.send(.retryAll)
+        upload.send(.save)
+        XCTAssertTrue(upload.saveClaimed, "Close waits from the tap")
+        hold.signal()
+        try await until("the claim let go") { !upload.saveClaimed && page(upload)?.save.enabled == false }
+        try await Task.sleep(for: .milliseconds(200))
+        XCTAssertEqual(page(upload)?.save.why, "Wait for 1 file to finish")
+        XCTAssertNil(page(upload)?.done)
+        XCTAssertEqual(store.recordJSON, before, "nothing written")
+        upload.end()
+    }
+
+    /// PR 1912 ruling (US-13 AC23): Stop while a file is read, then Save at once, behind a held engine. Save waits for
+    /// the stopped page and saves what it shows: the letter already read.
+    func testSaveAfterStopSavesTheStoppedPage_US13_AC23() async throws {
+        let store = try phone()
+        twoFiles(second: .init(hang: true))
+        let upload = session(store)
+        _ = await upload.runner.pick(Kit.pictures(2), needsConsent: false)
+        try await until("one read, one in flight") { page(upload)?.stop != nil && page(upload)?.documents?.rows.count == 1 }
+        let hold = DispatchSemaphore(value: 0)
+        store.engine.enqueue { _ in hold.wait() }
+        upload.send(.stop)
+        upload.send(.save)
+        XCTAssertTrue(upload.saveClaimed, "Close waits from the tap")
+        hold.signal()
+        try await until("done") { page(upload)?.done != nil }
+        XCTAssertEqual(page(upload)?.done?.line, "Saved 1 document.")
+        XCTAssertTrue(store.recordJSON.contains("Letter 1"))
+    }
+
     /// US-13 AC23: Save tapped as a choice unticks the only value. The awaited view says Save is off: nothing is
     /// written, the claim is let go (Close works), and the page shows the view's own reason.
     func testSaveEndsWithoutWritingWhenTheAwaitedViewTurnsSaveOff_US13_AC23() async throws {
