@@ -122,11 +122,12 @@ export function ReviewTable({
   const touched = useMemo(() => new Map([...typed.values()].flatMap((t) => { const id = idOf(t); return id ? [[id, { display: t.display }] as const] : []; })),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `typedUnits` stands for the typed cells and their units
     [typedUnits, idOf]);
-  // A value the state holds unticked shows as a cleared cell even when nothing was typed (a Replace the
+  // A value the state holds unticked shows as a cleared cell, whatever was typed in it (a Replace the
   // state dropped, owner ruling 2026-11-20): the screen never shows a number Save will not write.
+  // Typing in a cleared cell ticks it in the same keystroke, so this never hides what is being typed.
   const editedDisplayValues = useMemo(() => {
     const shown: Record<string, string> = Object.fromEntries([...typed.values()].flatMap((t) => { const id = idOf(t); return id ? [[id, t.text]] : []; }));
-    for (const [id, v] of edits) if (v === null && !(id in shown)) shown[id] = '';
+    for (const [id, v] of edits) if (v === null) shown[id] = '';
     return shown;
   }, [typed, idOf, edits]);
   const matrix = useMemo(

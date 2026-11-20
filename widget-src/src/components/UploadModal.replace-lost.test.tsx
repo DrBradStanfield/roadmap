@@ -105,3 +105,73 @@ describe('the review numbers add up (item 6)', () => {
     expect(sure + check).toBe(n(/^Save (\d+)/, save.textContent));
   });
 });
+
+describe('a typed value whose Replace target moves away (Codex pass item 1)', () => {
+  it('the typed number goes from the cell, Save writes HDL alone; typed again LDL saves as a new row', async () => {
+    const before = { ...history, measurements: [H] };
+    resetUploadStore(recordOf(before));
+    answers(both);
+    const view = renderWith(before);
+    pick(pdf('labs.pdf'));
+    await screen.findByText(/^1 file/);
+    showAllValues();
+    fireEvent.change(screen.getByDisplayValue('3.9'), { target: { value: '4.4' } });
+    fireEvent.click(screen.getByRole('checkbox', { name: /Replace the saved LDL Cholesterol value/ }));
+    const after = { ...history, measurements: [{ ...H, id: 'H2', recordedAt: '2024-06-02T00:00:00.000Z' }] };
+    resetUploadStore(recordOf(after));
+    view.rerender(modal(after));
+    showAllValues();
+    await waitFor(() => expect(screen.queryByRole('checkbox', { name: /Replace the saved LDL Cholesterol value/ })).toBeNull());
+    const ldl = screen.getByLabelText(/LDL Cholesterol value from 1 Jun 2024/) as HTMLInputElement;
+    expect(ldl.value).toBe('');
+    expect(saveButton().textContent).toBe('Save 1 value');
+    fireEvent.click(saveButton());
+    await screen.findByRole('button', { name: 'Done' });
+    expect(lastSaved().values.map(v => [v.metricName, v.value])).toEqual([['hdl', 1.4]]);
+  });
+
+  it('typed again after the Replace went, LDL saves as a new row', async () => {
+    const before = { ...history, measurements: [H] };
+    resetUploadStore(recordOf(before));
+    answers(both);
+    const view = renderWith(before);
+    pick(pdf('labs.pdf'));
+    await screen.findByText(/^1 file/);
+    showAllValues();
+    fireEvent.change(screen.getByDisplayValue('3.9'), { target: { value: '4.4' } });
+    fireEvent.click(screen.getByRole('checkbox', { name: /Replace the saved LDL Cholesterol value/ }));
+    const after = { ...history, measurements: [{ ...H, id: 'H2', recordedAt: '2024-06-02T00:00:00.000Z' }] };
+    resetUploadStore(recordOf(after));
+    view.rerender(modal(after));
+    showAllValues();
+    await waitFor(() => expect((screen.getByLabelText(/LDL Cholesterol value from 1 Jun 2024/) as HTMLInputElement).value).toBe(''));
+    fireEvent.change(screen.getByLabelText(/LDL Cholesterol value from 1 Jun 2024/), { target: { value: '4.4' } });
+    fireEvent.click(saveButton());
+    await screen.findByRole('button', { name: 'Done' });
+    expect(lastSaved().values.map(v => [v.metricName, v.value, v.correctsId ?? null]).sort()).toEqual([['hdl', 1.4, null], ['ldl', 4.4, null]]);
+  });
+});
+
+describe('an out-of-range value in conflict, its Replace off (Codex pass item 2)', () => {
+  it('Save is enabled and writes HDL alone; Replace on blocks it with the existing reason', async () => {
+    const before = { ...history, measurements: [{ ...H, value: 2.5 }] };
+    resetUploadStore(recordOf(before));
+    answers({ 'labs.pdf': lab('ldl', 999, '2024-06-01', { values: [
+      { metric: 'ldl', valueSI: 999, displayValue: 999, displayUnit: 'mmol/L', confidence: 'high' },
+      { metric: 'hdl', valueSI: 1.4, displayValue: 1.4, displayUnit: 'mmol/L', confidence: 'high' },
+    ] }) });
+    renderWith(before);
+    pick(pdf('labs.pdf'));
+    await screen.findByText(/^1 file/);
+    showAllValues();
+    await waitFor(() => expect(saveButton().disabled).toBe(false));
+    const replace = screen.getByRole('checkbox', { name: /Replace the saved LDL Cholesterol value/ });
+    fireEvent.click(replace);
+    expect(saveButton().disabled).toBe(true);
+    expect(document.querySelector('.review-save-why')?.textContent).toBe('Correct or clear the values with errors before saving.');
+    fireEvent.click(replace);
+    fireEvent.click(saveButton());
+    await screen.findByRole('button', { name: 'Done' });
+    expect(lastSaved().values.map(v => [v.metricName, v.value])).toEqual([['hdl', 1.4]]);
+  });
+});

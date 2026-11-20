@@ -45,7 +45,8 @@ export interface UploadView {
   /** Hidden behind Show all. */
   sure: { line: string; showAll: string; rows: ValueRow[] } | null;
   /** `screening`: a letter's screening update the person can tick (web), null when none is offered. */
-  documents: { line: string; rows: Array<{ fileId: string; title: string; kind: string; date: string; dateKnown: boolean; screening: ScreeningRow | null }> } | null;
+  /** `type`: the kind the letter saves as, for the control that corrects it (US-13 AC14); `kind`: its word. */
+  documents: { line: string; rows: Array<{ fileId: string; title: string; type: DocumentType; kind: string; date: string; dateKnown: boolean; screening: ScreeningRow | null }> } | null;
   /** The collapsed "Files" list. */
   files: { row: string; rows: Array<{ fileId: string; name: string; status: string }> };
   /** Read files with nothing in them, and files read only in part, in the web's notice words (US-12 AC9). */
@@ -110,7 +111,7 @@ const valueRow = (review: UploadReview) => (v: ClassifiedValue): ValueRow => ({
   ticked: review.labFiles[v.file].ticked.includes(v.ref),
   replaces: review.held.get(`${v.file}:${v.ref}`) ?? null,
   replacing: replacingOf(review, v),
-  error: blocks(v) && v.refusal && 'measurement' in v.refusal ? v.refusal.measurement.message : null,
+  error: blocks(review)(v) && v.refusal && 'measurement' in v.refusal ? v.refusal.measurement.message : null,
 });
 
 const replacingOf = (review: UploadReview, v: ClassifiedValue) => review.labFiles[v.file].replacing.includes(v.ref);
@@ -118,10 +119,11 @@ const replacingOf = (review: UploadReview, v: ClassifiedValue) => review.labFile
 /**
  * A selected core value the write would refuse blocks Save, as the web's review blocks it
  * (ReviewTable `refusedKept` over import-review-view `blocked`, US-13 AC5): sent, not written, and
- * out of its range or otherwise refused (a same-day loser is not an error).
+ * out of its range or otherwise refused (a same-day loser is not an error). Only a value Save would
+ * write blocks: one in conflict whose Replace is off keeps the saved value, so it never does (PR 1906).
  */
-const blocks = (v: ClassifiedValue) => v.ref[0] === 'v' && v.sent && !v.writes
-  && (v.group === 'unsure' ? v.reasons.includes('outOfRange') : v.group === 'notSaved' && v.reason !== 'sameDay');
+const blocks = (review: UploadReview) => (v: ClassifiedValue) => v.ref[0] === 'v' && v.sent && !v.writes
+  && (v.group === 'unsure' ? v.reasons.includes('outOfRange') && (!v.reasons.includes('conflict') || replacingOf(review, v)) : v.group === 'notSaved' && v.reason !== 'sameDay');
 
 /** Each reason once, naming its tests, as "Not saved" names them in the review (NOT_SAVED_TEXT); then each own line once. */
 function refusedLines(refused: NonNullable<SaveOutcome['refused']>): string[] {
@@ -172,7 +174,7 @@ function save(s: UploadState, plan: UploadSavePlan, review: UploadReview): Uploa
  * save itself refuses on the same rule (upload-save.ts), so nothing is written past it.
  */
 export function saveBlocked(review: UploadReview): string | null {
-  if (review.classification.values.some(blocks)) return FIX_ERRORS_TEXT;
+  if (review.classification.values.some(blocks(review))) return FIX_ERRORS_TEXT;
   return review.labFiles.some((f) => f.needsDay) ? UPLOAD_TEXT.chooseDay : null;
 }
 
@@ -212,12 +214,14 @@ export function uploadView(s: UploadState, record: RoadmapFile, now: string, rev
     sure: sure.length ? { line: IMPORT_REVIEW_TEXT.willSave(sure.filter((v) => v.writes).length), showAll: IMPORT_REVIEW_TEXT.showAll(sure.length), rows: sure.map(row) } : null,
     documents: plan.documents.length ? {
       line: UPLOAD_TEXT.documentsLine(plan.documents.length),
-      rows: plan.documents.map(({ fileId, fields }) => ({
-        fileId, title: fields.title,
-        kind: KIND_WORDS[(DOCUMENT_TYPES as readonly string[]).includes(fields.documentType) ? fields.documentType as DocumentType : 'other'][0],
-        date: fields.documentDate ?? UPLOAD_TEXT.noDate, dateKnown: fields.documentDate !== null,
-        screening: screeningRow(plan, fileId),
-      })),
+      rows: plan.documents.map(({ fileId, fields }) => {
+        const type = (DOCUMENT_TYPES as readonly string[]).includes(fields.documentType) ? fields.documentType as DocumentType : 'other';
+        return {
+          fileId, title: fields.title, type, kind: KIND_WORDS[type][0],
+          date: fields.documentDate ?? UPLOAD_TEXT.noDate, dateKnown: fields.documentDate !== null,
+          screening: screeningRow(plan, fileId),
+        };
+      }),
     } : null,
     files: { row: UPLOAD_TEXT.filesRow(files.length), rows: files.map((f) => ({ fileId: f.id, name: f.name, status: emptyRead(f) ?? statusWords(f.status, s.platform) })) },
     // Read files with nothing in them, and files read only in part (US-12 AC9), in the web's words.

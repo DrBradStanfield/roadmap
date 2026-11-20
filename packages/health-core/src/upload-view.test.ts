@@ -55,7 +55,7 @@ describe('upload view: section 4 screens', () => {
     expect(v.sections.map((x) => x.kind)).toEqual(['unsure']);
     expect(v.sections[0]).toMatchObject({ title: 'Check this value', rows: [{ fileId: 'lab', ref: 'v1', reasons: ['confidence'] }] });
     expect(v.sure).toMatchObject({ line: '2 values will be saved', showAll: 'Show all 2' });
-    expect(v.documents).toEqual({ line: '1 letter or document will be saved', rows: [{ fileId: 'letter', title: 'Cardiology letter', kind: 'clinic letter', date: '2026-10-20', dateKnown: true, screening: null }] });
+    expect(v.documents).toEqual({ line: '1 letter or document will be saved', rows: [{ fileId: 'letter', title: 'Cardiology letter', type: 'clinic_letter', kind: 'clinic letter', date: '2026-10-20', dateKnown: true, screening: null }] });
     expect(plan.counts).toEqual({ values: 3, documents: 1, archived: 0, originals: 1 });
     expect(v.save).toEqual({ label: 'Save 3 values and 1 document', enabled: true, why: null, error: null });
     expect(v.files.rows[0].status).toBe('Already in your record');

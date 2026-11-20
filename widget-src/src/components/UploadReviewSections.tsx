@@ -8,6 +8,9 @@ import type { DocumentResult } from '@roadmap/health-core/lab-extraction';
 import { UPLOAD_TEXT, UPLOAD_WINDOW_TEXT } from '@roadmap/health-core/upload-text';
 import type { UploadView } from '@roadmap/health-core/upload-view';
 import { DraftDateCell } from './DraftDateCell';
+import { DocumentContent } from './DocumentLightbox';
+import { KIND_WORDS } from '@roadmap/health-core/import-review';
+import { DOCUMENT_TYPES } from '@roadmap/health-core/validation';
 import { useDisclosure } from './ReviewOverview';
 import { pastDay } from '../lib/review-dates';
 
@@ -71,7 +74,15 @@ export function UploadReviewSections({ view, documentOf, failedLine, onChose, on
               <div key={row.fileId} className="review-file-section">
                 <div className="review-document-card">
                   <div className="review-document-header">
-                    <span className={`review-doc-type-badge review-doc-type--${doc?.classification ?? 'other'}`}>{row.kind}</span>
+                    {/* The kind it saves as, correctable (US-13 AC14): no label word exists, so the control is named by the letter and its kind. */}
+                    <select
+                      className={`review-doc-type-badge review-doc-kind review-doc-type--${row.type}`}
+                      value={row.type}
+                      aria-label={`${row.title}, ${row.kind}`}
+                      onChange={(e) => onChose(row.fileId, { document: { kind: e.target.value } })}
+                    >
+                      {DOCUMENT_TYPES.map((type) => <option key={type} value={type}>{KIND_WORDS[type][0]}</option>)}
+                    </select>
                   </div>
                   <div className="review-document-title">
                     <input
@@ -101,12 +112,8 @@ export function UploadReviewSections({ view, documentOf, failedLine, onChose, on
                       }}
                     />
                   </div>
-                  {doc && (
-                    <div className="review-document-preview">
-                      {doc.contentMarkdown.slice(0, 300)}
-                      {doc.contentMarkdown.length > 300 && '...'}
-                    </div>
-                  )}
+                  {/* The whole rebuilt letter, as the document page draws it, its links inert (US-13 AC14). */}
+                  {doc && <DocumentContent markdown={doc.contentMarkdown} links={false} className="doc-lightbox-content review-document-letter" />}
                 </div>
               </div>
             );

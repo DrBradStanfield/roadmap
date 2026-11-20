@@ -2441,14 +2441,23 @@
   font-weight: 500;
 }
 
-.review-document-preview {
+/* The whole rebuilt letter in the review: the document page's look (.doc-lightbox-content), inside the card. */
+.review-document-letter.doc-lightbox-content {
+  padding: 4px 0 0;
+  max-height: none;
+  overflow: visible;
+  overflow-wrap: anywhere;
+}
+
+/* The kind control wears the kind badge (.review-doc-type-badge) and keeps the browser's own arrow. */
+.review-doc-kind.review-doc-type-badge {
+  font: inherit;
   font-size: 12px;
-  color: var(--color-gray-light);
-  line-height: 1.5;
-  max-height: 80px;
-  overflow: hidden;
-  margin-bottom: 8px;
-  white-space: pre-wrap;
+  font-weight: 600;
+  padding: 3px 6px;
+  border: none;
+  cursor: pointer;
+  max-width: 100%;
 }
 
 .review-screening-update {

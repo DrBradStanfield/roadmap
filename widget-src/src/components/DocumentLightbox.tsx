@@ -28,6 +28,22 @@ export function originalTransition(state: OriginalView, event: 'open' | 'opened'
   return state === 'opening' ? (event === 'opened' ? 'idle' : 'failed') : state;
 }
 
+/**
+ * A rebuilt letter as the document page draws it: `renderMarkdown` escapes every character before it
+ * adds its own tags, so the HTML holds nothing the letter wrote. Also the upload review's letter
+ * (US-13 AC14), with `links` off so nothing in it opens or loads.
+ */
+export function DocumentContent({ markdown, className, links = true }: { markdown: string; className: string; links?: boolean }) {
+  const renderedHtml = useMemo(() => {
+    try {
+      return renderMarkdown(markdown, { links });
+    } catch {
+      return `<pre style="white-space:pre-wrap">${markdown.replace(/</g, '&lt;')}</pre>`;
+    }
+  }, [markdown, links]);
+  return <div className={className} dangerouslySetInnerHTML={{ __html: renderedHtml }} />;
+}
+
 export function DocumentLightbox({ doc, onClose, onDeleted }: DocumentLightboxProps) {
   // Two flows that run apart: a person may view the original while a delete waits for its confirm.
   const [deleteStep, sendDelete] = useReducer(deleteTransition, 'idle');
@@ -40,14 +56,6 @@ export function DocumentLightbox({ doc, onClose, onDeleted }: DocumentLightboxPr
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [onClose]);
-
-  const renderedHtml = useMemo(() => {
-    try {
-      return renderMarkdown(doc.contentMd);
-    } catch {
-      return `<pre style="white-space:pre-wrap">${doc.contentMd.replace(/</g, '&lt;')}</pre>`;
-    }
-  }, [doc.contentMd]);
 
   // View the archived original (v2 local-first only — fileRef is absent on v1).
   const handleViewOriginal = async () => {
@@ -110,10 +118,7 @@ export function DocumentLightbox({ doc, onClose, onDeleted }: DocumentLightboxPr
           )}
         </div>
 
-        <div
-          className="doc-lightbox-content"
-          dangerouslySetInnerHTML={{ __html: renderedHtml }}
-        />
+        <DocumentContent markdown={doc.contentMd} className="doc-lightbox-content" />
 
         <div className="doc-lightbox-footer">
           {doc.fileRef && (

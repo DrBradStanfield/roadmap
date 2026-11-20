@@ -12,7 +12,9 @@ function escapeHtml(text: string): string {
     .replace(/"/g, '&quot;');
 }
 
-export function renderMarkdown(md: string): string {
+/** `links: false`: a link's text alone, never an anchor (the upload review: nothing in it opens or loads). */
+export function renderMarkdown(md: string, { links = true }: { links?: boolean } = {}): string {
+  const inlineFormat = (text: string) => inline(text, links);
   const lines = md.split('\n');
   const html: string[] = [];
   let inList = false;
@@ -79,13 +81,13 @@ export function renderMarkdown(md: string): string {
 }
 
 /** Apply inline formatting: **bold**, *italic*, `code`, [links](url) */
-function inlineFormat(text: string): string {
+function inline(text: string, links: boolean): string {
   return text
     .replace(/`([^`]+)`/g, '<code>$1</code>')
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
     .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_match, text, url) => {
-      if (!/^https:\/\//i.test(url)) return text;
+      if (!links || !/^https:\/\//i.test(url)) return text;
       return `<a href="${url}" target="_blank" rel="noopener">${text}</a>`;
     });
 }

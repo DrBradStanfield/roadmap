@@ -51,7 +51,7 @@ describe('the review\'s documents (US-13 AC14)', () => {
   it('lists every letter in picked order behind one row, each with its kind; a held name is no reason to skip one', () => {
     const view = review();
     expect(view.getByRole('button', { name: '4 letters and documents will be saved' }).getAttribute('aria-expanded')).toBe('true');
-    expect(view.cards().map(c => [c.querySelector('.review-doc-type-badge')!.textContent, c.querySelector<HTMLInputElement>('.review-title-input')!.value]))
+    expect(view.cards().map(c => [c.querySelector<HTMLSelectElement>('select.review-doc-kind')!.selectedOptions[0].textContent, c.querySelector<HTMLInputElement>('.review-title-input')!.value]))
       .toEqual([['clinic letter', 'Old letter'], ['scan result', 'Colonoscopy'], ['clinic letter', 'New letter'], ['other document', 'Misc']]);
     expect(view.container.querySelector('.review-row-dup')).toBeNull();
     expect(view.container.querySelector('.review-row-check')).toBeNull();
