@@ -26,7 +26,7 @@ final class UploadSession {
         cloudConnected = store.cloudErase != nil
         let setup = UploadRunner.Setup(
             deviceId: store.deviceId,
-            record: { await store.recordJSON },
+            record: { await store.readable?.json ?? "" },
             ask: { [engine] in await engine.uploadRules(files: $0, members: $1) },
             sender: sender,
             unitSystem: store.myData?.unitSystem ?? "si",
@@ -66,7 +66,7 @@ final class UploadSession {
     func letter(_ fileId: String) async -> String? {
         guard let state = await runner.stateText else { return nil }
         if let letters, letters.state == state { return letters.byFile[fileId] }
-        let (record, deviceId, cloud) = (store.recordJSON, store.deviceId, cloudConnected)
+        let (record, deviceId, cloud) = (store.readable?.json ?? "", store.deviceId, cloudConnected)
         guard let planned = try? await engine.perform({ try $0.uploadLetters(state: state, record: record, cloudConnected: cloud, deviceId: deviceId) }) else { return nil }
         letters = (state, planned)
         return planned[fileId]
