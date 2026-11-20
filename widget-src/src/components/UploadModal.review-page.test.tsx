@@ -121,6 +121,65 @@ describe('US-12 AC26: results show as each file is read', () => {
   });
 });
 
+// PR 1906 fix round, item 1: a typed cell belongs to its file and value, not to its place in the review.
+describe('US-12 AC26: an earlier file that is read late never moves a typed value onto another file', () => {
+  /** What the cells show, by test, and what Save wrote, by test. */
+  const shown = () => Object.fromEntries([...document.querySelectorAll<HTMLInputElement>('.bt-cell-input input')].map(i => [i.getAttribute('aria-label')?.split(' value')[0], i.value]));
+
+  it('a slow earlier file finishing after an edit to a later one', async () => {
+    const slow = deferred<Import>();
+    answers({ 'a.pdf': slow.promise, 'b.pdf': lab('hdl', 1.4, '2024-07-01') });
+    render_(); pick(pdf('a.pdf'), pdf('b.pdf'));
+    await waitFor(() => { showAllValues(); expect(inputs()).toEqual(['1.4']); });
+    fireEvent.change(screen.getByDisplayValue('1.4'), { target: { value: '1.6' } });
+    await act(async () => slow.resolve(lab('ldl', 3.9)));
+    await waitFor(() => { showAllValues(); expect(inputs()).toEqual(['1.6', '3.9']); });
+    expect(shown()).toMatchObject({ 'HDL Cholesterol': '1.6', 'LDL Cholesterol': '3.9' });
+    fireEvent.click(saveButton());
+    await screen.findByRole('button', { name: 'Done' });
+    expect(Object.fromEntries(lastSaved().values.map(v => [v.metricName, v.value]))).toEqual({ hdl: 1.6, ldl: 3.9 });
+  });
+
+  it('Try again on an earlier failed file after an edit to a later one', async () => {
+    let first = true;
+    vi.mocked(labImport).mockImplementation(async p => {
+      if (p[0].content === 'a.pdf' && first) { first = false; return busy; }
+      return p[0].content === 'a.pdf' ? lab('ldl', 3.9) : lab('hdl', 1.4, '2024-07-01');
+    });
+    render_(); pick(pdf('a.pdf'), pdf('b.pdf'));
+    await screen.findByText('1 file not read');
+    showAllValues();
+    fireEvent.change(screen.getByDisplayValue('1.4'), { target: { value: '1.6' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    await waitFor(() => { showAllValues(); expect(inputs()).toEqual(['1.6', '3.9']); });
+    expect(shown()).toMatchObject({ 'HDL Cholesterol': '1.6', 'LDL Cholesterol': '3.9' });
+    fireEvent.click(saveButton());
+    await screen.findByRole('button', { name: 'Done' });
+    expect(Object.fromEntries(lastSaved().values.map(v => [v.metricName, v.value]))).toEqual({ hdl: 1.6, ldl: 3.9 });
+  });
+});
+
+// PR 1906 fix round, item 2: a choice made after a failed Save is what the retry writes.
+describe('US-12 AC6: edits after a failed Save are what the retry writes', () => {
+  it('an edit and a clear after the failed Save, then the retry: the rows are what the screen shows', async () => {
+    answers({ 'a.pdf': lab('ldl', 3.9, '2024-06-01', { values: [
+      { metric: 'ldl', valueSI: 3.9, displayValue: 3.9, displayUnit: 'mmol/L', confidence: 'high' },
+      { metric: 'hdl', valueSI: 1.4, displayValue: 1.4, displayUnit: 'mmol/L', confidence: 'high' },
+    ] }) });
+    uploadStore.refuse = '';
+    render_(); pick(pdf('a.pdf'));
+    await waitFor(() => { showAllValues(); expect(inputs()).toEqual(['1.4', '3.9']); });
+    fireEvent.click(saveButton());
+    await screen.findByText('Failed to save. Please try again.');
+    fireEvent.change(screen.getByDisplayValue('3.9'), { target: { value: '4.4' } });
+    fireEvent.change(screen.getByDisplayValue('1.4'), { target: { value: '' } });
+    uploadStore.refuse = null;
+    fireEvent.click(saveButton());
+    await screen.findByRole('button', { name: 'Done' });
+    expect(lastSaved().values.map(v => [v.metricName, v.value])).toEqual([['ldl', 4.4]]);
+  });
+});
+
 describe('US-12 AC27: a file the record holds is counted, never offered again', () => {
   it('the summary and the files list count it; Save writes nothing for it', async () => {
     vi.mocked(uploadKnownIndex).mockReturnValue(new Map([['sha256-old.pdf', { as: 'document', archiveOnly: false }]]));

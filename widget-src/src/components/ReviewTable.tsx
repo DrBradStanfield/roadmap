@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback, useRef, useId, type MutableRefObject, type ReactNode } from 'react';
+import { useState, useMemo, useEffect, useCallback, useId, type MutableRefObject, type ReactNode } from 'react';
 import { FIX_ERRORS_TEXT, UPLOAD_TEXT, UPLOAD_WINDOW_TEXT } from '@roadmap/health-core/upload-text';
 import { type UnitSystem, type MetricType, UNIT_DEFS } from '@roadmap/health-core/units';
 import { healthInputSchema } from '@roadmap/health-core/validation';
@@ -105,41 +105,34 @@ export function ReviewTable({
   // An unedited value the write refuses on its own takes no slot, as in the review's groups.
   const refusedNow = useMemo(() => slotlessIds(results, edits), [results, edits]);
   const slotless = useMemo(() => new Set([...refusedNow].filter(id => !pinned.has(id))), [refusedNow, pinned]);
-  // The cells' text as typed: an input's own buffer, plain view state. A number it reads goes to the
-  // state as an edit; text with an error stays here and blocks Save until corrected (US-13 AC5).
-  // `touched`: the unit each value was typed in, so a unit toggle after typing never misconverts it;
-  // a typed cell stays a cell, never hidden as already saved, so it can be typed again.
-  const touchedRef = useRef<Map<string, { display?: CellUnit }>>(new Map());
-  const [touchedCount, setTouchedCount] = useState(0);
-  const [editedDisplayValues, setEditedDisplayValues] = useState<Record<string, string>>({});
-  const matrix = useMemo(
-    () => buildMatrixModel(results, fileDates, history.measurements, history.labValues, unitSystem, units, touchedRef.current, slotless, edits),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- `touchedCount` stands for the typed cells
-    [results, fileDates, history.measurements, history.labValues, unitSystem, units, touchedCount, slotless, edits],
-  );
-  const initialDisplayValues = useMemo<Record<string, string>>(() => {
-    const map: Record<string, string> = {};
-    for (const cell of matrix.cells.values()) {
-      if (cell.state === 'editable') map[editId(cell)] = cell.initialDisplay;
+  // The cells' text as typed: an input's own buffer, plain view state, with the unit it was typed in
+  // (so a unit toggle after typing never misconverts it). Kept by file id and value ref, never by the
+  // file's place in the review, which moves when an earlier file is read late (PR 1906 item 1). A number
+  // it reads goes to the state as an edit; text with an error stays here and blocks Save (US-13 AC5).
+  const [typed, setTyped] = useState<ReadonlyMap<string, { text: string; display?: CellUnit }>>(new Map());
+  const stableKey = (id: string) => { const { fi, ref } = refAt(id); return `${fileIdOf(fi)}|${ref}`; };
+  // The same, by this render's `editId`: a typed cell stays a cell, never hidden as already saved.
+  const { touched, editedDisplayValues } = useMemo(() => {
+    const fiOf = new Map(review.labFiles.map((l, fi) => [l.fileId, fi]));
+    const byId = new Map<string, { display?: CellUnit }>();
+    const texts: Record<string, string> = {};
+    for (const [key, { text, display }] of typed) {
+      const cut = key.lastIndexOf('|');
+      const fi = fiOf.get(key.slice(0, cut));
+      if (fi === undefined) continue;
+      const id = `${fi}:${key.slice(cut + 1)}`;
+      byId.set(id, { display });
+      texts[id] = text;
     }
-    return map;
-  }, [matrix]);
-  // Reformat on unit-system switch + pick up newly-editable cells when a
-  // date change reshapes the matrix. User-touched cells keep their text;
-  // untouched cells get re-seeded from the (re-formatted) initial.
-  useEffect(() => {
-    setEditedDisplayValues(prev => {
-      const next: Record<string, string> = {};
-      const touched = touchedRef.current;
-      for (const id of Object.keys(initialDisplayValues)) {
-        next[id] = touched.has(id) && prev[id] !== undefined ? prev[id] : initialDisplayValues[id];
-      }
-      // A touched value that is not editable just now keeps its text for when the day moves on.
-      for (const id of touched.keys()) if (!(id in next) && prev[id] !== undefined) next[id] = prev[id];
-      return next;
-    });
-  }, [initialDisplayValues]);
+    return { touched: byId, editedDisplayValues: texts };
+  }, [typed, review.labFiles]);
+  const matrix = useMemo(
+    () => buildMatrixModel(results, fileDates, history.measurements, history.labValues, unitSystem, units, touched, slotless, edits),
+    [results, fileDates, history.measurements, history.labValues, unitSystem, units, touched, slotless, edits],
+  );
 
+  // What the cell helpers read as typed: this render's, or a keystroke's own before it renders.
+  let touchedNow: ReadonlyMap<string, { display?: CellUnit }> = touched;
   const metricOf = (cell: EditableMatrixCell) =>
     cell.kind === 'core' ? results[cell.fi]?.values[cell.vi]?.metric as MetricType | undefined : undefined;
   const extractedError = (cell: EditableMatrixCell): string | null => {
@@ -151,9 +144,9 @@ export function ReviewTable({
   // Equal rendered text preserves valid extraction precision. An explicit
   // correction of an invalid extraction must instead use the typed quantity.
   const isEditedText = (cell: EditableMatrixCell, editedStr: string) => {
-    const typedIn = touchedRef.current.get(editId(cell))?.display;
+    const typedIn = touchedNow.get(editId(cell))?.display;
     const metric = metricOf(cell);
-    return (touchedRef.current.has(editId(cell)) && extractedError(cell) !== null)
+    return (touchedNow.has(editId(cell)) && extractedError(cell) !== null)
       || editedStr !== (typedIn && metric && UNIT_DEFS[metric] ? cellNumber(metric, cell.valueSI, typedIn, cell.comparator) : cell.initialDisplay);
   };
   /** The value a cell saves (SI for a core metric): the extracted one while
@@ -163,7 +156,7 @@ export function ReviewTable({
   const savedValue = (cell: EditableMatrixCell, editedStr: string): number | undefined => {
     if (!isEditedText(cell, editedStr)) return cell.valueSI;
     const metric = metricOf(cell);
-    const typedIn = metric && UNIT_DEFS[metric] ? touchedRef.current.get(editId(cell))?.display ?? units[metric] ?? unitSystem : undefined;
+    const typedIn = metric && UNIT_DEFS[metric] ? touchedNow.get(editId(cell))?.display ?? units[metric] ?? unitSystem : undefined;
     const parsed = metric && typedIn ? readTypedValue(metric, editedStr, typedIn) : readNumericCell(editedStr);
     if (parsed === undefined) return undefined;
     return metric && typedIn ? cellToSI(metric, parsed, typedIn) : parsed;
@@ -176,7 +169,7 @@ export function ReviewTable({
     if (!metric || !UNIT_DEFS[metric]) return !isEditedText(cell, text) ? null
       : commaQuestion(text) ?? (readNumericCell(text) === undefined ? 'Enter a number' : null);
     if (isEditedText(cell, text)) {
-      return validateTypedValue(metric, text, touchedRef.current.get(editId(cell))?.display ?? units[metric] ?? unitSystem).error;
+      return validateTypedValue(metric, text, touchedNow.get(editId(cell))?.display ?? units[metric] ?? unitSystem).error;
     }
     return extractedError(cell);
   };
@@ -191,10 +184,11 @@ export function ReviewTable({
 
   /** A cell's text changed: kept as typed, and what it now says sent to the state as a choice. */
   const updateEditedDisplayValue = (id: string, value: string, display?: CellUnit) => {
-    const existing = touchedRef.current.get(id);
-    if (!existing) setTouchedCount(n => n + 1);
-    touchedRef.current.set(id, { display: display ?? existing?.display });
-    setEditedDisplayValues(prev => ({ ...prev, [id]: value }));
+    const key = stableKey(id);
+    const unit = display ?? typed.get(key)?.display;
+    setTyped(prev => new Map(prev).set(key, { text: value, display: unit }));
+    // This keystroke's unit, read below before the next render does.
+    touchedNow = new Map(touched).set(id, { display: unit });
     const { fi, ref } = refAt(id);
     const c = choices[fi];
     if (!c) return;
@@ -261,7 +255,7 @@ export function ReviewTable({
       }
       const valueSI = savedValue(cell, text);
       const shownIn = units[metric] ?? unitSystem;
-      const typedIn = touchedRef.current.get(editId(cell))?.display ?? shownIn;
+      const typedIn = touchedNow.get(editId(cell))?.display ?? shownIn;
       views.set(editId(cell), {
         ...limit,
         valueSI,
@@ -321,8 +315,7 @@ export function ReviewTable({
     }
     return views;
   }, [coreCellViews, groups, units, unitSystem]);
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- `touchedCount` stands for the typed cells
-  const rows = useMemo(() => reviewRows(matrix, results, groups.groupOf, cellViews, needsDay, new Set(touchedRef.current.keys())), [matrix, results, groups, cellViews, needsDay, touchedCount]);
+  const rows = useMemo(() => reviewRows(matrix, results, groups.groupOf, cellViews, needsDay, new Set(touched.keys())), [matrix, results, groups, cellViews, needsDay, touched]);
   const showAll = useDisclosure();
   const notSavedOpen = useDisclosure();
   const matrixId = useId();
@@ -332,7 +325,7 @@ export function ReviewTable({
    *  per review: on a finished Save, or on Cancel; never for a failed Save or a hide. */
   const reviewCounts = (saved: boolean) => {
     const replaced = Object.keys(replaceChecked).map(k => k.slice(0, k.indexOf('>')));
-    return reviewEventMetadata(groups, [...touchedRef.current.keys(), ...replaced], { showAll: showAll.opened, notSaved: notSavedOpen.opened }, saved);
+    return reviewEventMetadata(groups, [...touched.keys(), ...replaced], { showAll: showAll.opened, notSaved: notSavedOpen.opened }, saved);
   };
   if (countsRef) countsRef.current = () => reviewCounts(false);
 
