@@ -13,8 +13,8 @@ struct UploadReviewView: View {
     let letter: (String) async -> String?
     /// The done screen's Done: the sheet closes.
     let finish: () -> Void
-    /// A choice is sent and the view carrying it is not drawn yet: Save waits (UploadSession `choicePending`).
-    var choicePending = false
+    /// Save was tapped and its outcome has not drawn yet: every control waits (UploadSession `saveClaimed`).
+    var saveClaimed = false
 
     @Environment(\.analytics) private var analytics
     @State private var showAll = false
@@ -31,9 +31,9 @@ struct UploadReviewView: View {
 
     /// `open`: Show all, the documents list and these letters start open (the design review's shots).
     init(page: UploadPage, send: @escaping (UploadAction) -> Void, letter: @escaping (String) async -> String?,
-         open letters: Set<String> = [], choicePending: Bool = false, finish: @escaping () -> Void) {
+         open letters: Set<String> = [], saveClaimed: Bool = false, finish: @escaping () -> Void) {
         self.page = page
-        self.choicePending = choicePending
+        self.saveClaimed = saveClaimed
         self.send = send
         self.letter = letter
         self.finish = finish
@@ -89,7 +89,7 @@ struct UploadReviewView: View {
                         filesRow
                     }
                 }
-                .disabled(!editable)
+                .disabled(!editable || saveClaimed)
             }
         }
         // Save (or Done) stays in reach at the bottom however long the page is.
@@ -314,7 +314,7 @@ struct UploadReviewView: View {
                     send(.save)
                 } label: { Text(verbatim: page.save.label) }
                     .buttonStyle(.accent)
-                    .disabled(!page.save.enabled || choicePending)
+                    .disabled(!page.save.enabled || saveClaimed)
                     .accessibilityIdentifier("upload.save")
                 if let why = page.save.why { Text(verbatim: why).font(.footnote).foregroundStyle(.secondary) }
                 if let error = page.save.error { Text(verbatim: error).font(.footnote).foregroundStyle(Color.status("attention")) }

@@ -33,6 +33,20 @@ final class UploadModel {
         if new != state { state = new }
         if let through, through != drawnThrough { drawnThrough = through }
     }
+
+    /// The first view drawn through event `number`; nil once the run is refused or unavailable instead.
+    func drawn(through number: Int) async -> String? {
+        while true {
+            switch state {
+            case .drawn(let text) where drawnThrough >= number: return text
+            case .refused, .unavailable: return nil
+            default:
+                await withCheckedContinuation { (moved: CheckedContinuation<Void, Never>) in
+                    withObservationTracking { _ = (state, drawnThrough) } onChange: { moved.resume() }
+                }
+            }
+        }
+    }
 }
 
 /// Drawing the view: idle, drawing, or drawing with a newer state waiting to be drawn after.

@@ -130,7 +130,7 @@ struct LabUploadSheet: View {
                     // Nothing has run yet, not even a hash (AC13e): the engine waits for this agree.
                     AIConsentView(consent: .labUpload) { Task { await shared.runner.consented() } }
                 } else {
-                    UploadReviewView(page: page, send: shared.send, letter: shared.letter, choicePending: shared.choicePending) {
+                    UploadReviewView(page: page, send: shared.send, letter: shared.letter, saveClaimed: shared.saveClaimed) {
                         shared.send(.close)
                         dismiss()
                     }
