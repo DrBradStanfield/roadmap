@@ -60,15 +60,12 @@ struct LabUploadSheet: View {
         .onChange(of: photo) {
             guard let item = photo else { return }
             photo = nil
-            pick {
-                guard let data = try await item.loadTransferable(type: Data.self) else { throw LabFileReader.Failure.unreadable("The photo") }
-                return [try await LabFileReader.picked(photo: data)]
-            }
+            pick { [try await LabFileReader.picked(photoLoad: { try await item.loadTransferable(type: Data.self) })] }
         }
         .fullScreenCover(isPresented: $scanning) {
             DocumentScanner { pages in
                 scanning = false
-                if !pages.isEmpty { pick { [try await LabFileReader.picked(scan: pages)] } }
+                if !pages.isEmpty { pick { [engine] in [try await LabFileReader.picked(scan: pages, ask: { await engine.uploadRules(files: $0, members: $1) })] } }
             }
             .ignoresSafeArea()
         }

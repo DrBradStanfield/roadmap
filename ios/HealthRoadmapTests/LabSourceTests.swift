@@ -54,6 +54,98 @@ final class LabSourceTests: XCTestCase {
         XCTAssertNil(nothing, "no page, no report")
     }
 
+    // MARK: A long scan steps down to fit (build 13 read a 20-page scan; the file cap must not refuse it)
+
+    /// A page of text-like marks, `seed` making each page its own, as a camera scan of a report.
+    private static func reportPage(_ seed: Int) -> UIImage {
+        var state = UInt64(seed &* 2_654_435_761 &+ 1)
+        func next() -> CGFloat { state = state &* 6_364_136_223_846_793_005 &+ 1_442_695_040_888_963_407; return CGFloat(state >> 33) / CGFloat(1 << 31) }
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        return UIGraphicsImageRenderer(size: CGSize(width: 2000, height: 2600), format: format).image { context in
+            UIColor(white: 0.93, alpha: 1).setFill(); context.fill(CGRect(x: 0, y: 0, width: 2000, height: 2600))
+            for line in 0..<90 {
+                var x: CGFloat = 120
+                while x < 1880 {
+                    let w = 10 + next() * 60
+                    UIColor(white: next() * 0.4, alpha: 1).setFill()
+                    context.fill(CGRect(x: x, y: 120 + CGFloat(line) * 26, width: w, height: 14 + next() * 6))
+                    x += w + 6 + next() * 14
+                }
+            }
+            // Paper grain, as a camera sees it.
+            for _ in 0..<8_000 {
+                UIColor(white: 0.8 + next() * 0.2, alpha: 1).setFill()
+                context.fill(CGRect(x: next() * 2000, y: next() * 2600, width: 2, height: 2))
+            }
+        }
+    }
+
+    /// The long side of each page of a PDF, in points.
+    private static func longSides(_ data: Data) throws -> [CGFloat] {
+        let pdf = try XCTUnwrap(PDFDocument(data: data))
+        return (0..<pdf.pageCount).compactMap { pdf.page(at: $0).map { max($0.bounds(for: .mediaBox).width, $0.bounds(for: .mediaBox).height) } }
+    }
+
+    /// A 20-page scan over the engine's file cap at today's pages fits once its pages step down:
+    /// one file, one review entry, every page still 2,000 or 1,600 points on its long side.
+    func testALongScanOverTheCapStepsDownToFit_US52_AC10() async throws {
+        let pages = (0..<20).map(Self.reportPage)
+        let today = try await LabFileReader.picked(scan: pages)
+        let rules = Self.rules
+        let cap = await rules([LabFileReader.UploadFile(name: "Scanned report.pdf", bytes: today.data.count)], []).maxMemberBytes
+        XCTAssertGreaterThan(today.data.count, cap, "the synthetic scan is over the cap at today's pages (\(today.data.count) bytes)")
+        let scan = try await LabFileReader.picked(scan: pages, ask: rules)
+        XCTAssertLessThanOrEqual(scan.data.count, cap, "\(scan.data.count) bytes")
+        XCTAssertEqual(scan.name, "Scanned report.pdf")
+        let sides = try Self.longSides(scan.data)
+        XCTAssertEqual(sides.count, 20, "one file of every page")
+        XCTAssertTrue(sides.allSatisfy { $0 == 2000 || $0 == 1600 }, "\(Set(sides))")
+        let read = try Self.converted(scan)
+        XCTAssertEqual(read.pages.count, 20)
+        XCTAssertFalse(read.truncated)
+    }
+
+    /// Each step in turn, against a cap the test sets: the first step that fits is used, and when
+    /// none does the smallest goes (the engine then refuses it in its words). A scan under the cap
+    /// is today's PDF, untouched.
+    func testAScanTakesTheFirstStepThatFitsAndAScanUnderTheCapIsUntouched_US52_AC10() async throws {
+        let pages = (0..<3).map(Self.reportPage)
+        let today = try await LabFileReader.picked(scan: pages)
+        func capped(_ cap: Int) -> LabFileReader.AskRules {
+            { _, _ in LabFileReader.Rules(file: { _, bytes in bytes > cap ? .tooLarge : .keep }, member: { _ in .keep }, maxMemberBytes: cap, maxMembers: 1, maxTotalBytes: cap) }
+        }
+        let under = try await LabFileReader.picked(scan: pages, ask: capped(today.data.count))
+        XCTAssertEqual(under.data.count, today.data.count, "under the cap: today's PDF (only its creation time differs)")
+        XCTAssertEqual(try Self.longSides(under.data), [2000, 2000, 2000])
+
+        let stepped = try await LabFileReader.picked(scan: pages, ask: capped(today.data.count - 1))
+        XCTAssertLessThan(stepped.data.count, today.data.count)
+        XCTAssertEqual(try Self.longSides(stepped.data), [2000, 2000, 2000], "quality first, size kept")
+
+        let none = try await LabFileReader.picked(scan: pages, ask: capped(1))
+        XCTAssertEqual(try Self.longSides(none.data), [1600, 1600, 1600], "the smallest step goes")
+
+        // The page limit and the cut still hold on a stepped scan.
+        let long = try await LabFileReader.picked(scan: Array(repeating: Self.picture(width: 40, height: 60), count: LabFileReader.maxPages + 5), ask: capped(1))
+        XCTAssertEqual(PDFDocument(data: long.data)?.pageCount, LabFileReader.maxPages + 1)
+        XCTAssertTrue(try Self.converted(long).truncated)
+    }
+
+    /// A photo the library cannot hand over (a failing transferable) says the app's words.
+    func testAPhotoThatWillNotLoadSaysTheAppsWords_US52_AC10() async throws {
+        func refused(_ load: @escaping @Sendable () async throws -> Data?, line: UInt = #line) async {
+            do {
+                _ = try await LabFileReader.picked(photoLoad: load)
+                XCTFail("a load that fails is refused", line: line)
+            } catch {
+                XCTAssertEqual(error.localizedDescription, "The photo could not be opened.", line: line)
+            }
+        }
+        await refused { throw NSError(domain: NSCocoaErrorDomain, code: 4097, userInfo: [NSLocalizedDescriptionKey: "Couldn't communicate with a helper application."]) }
+        await refused { nil }
+    }
+
     /// US-25 AC21: a photo is resized and a scan's PDF is built on the shared pool, never the main
     /// thread, though the sheet (and this test) call them from the main actor.
     func testAPhotoAndAScanAreMadeOffTheMainThread_US25_AC21() async throws {

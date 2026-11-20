@@ -106,13 +106,16 @@ final class UploadSession {
         guard await engine.runsSharedUpload() else { return .fallback }
         told = false
         let picked: [UploadRunner.Picked]
-        do { picked = try await files() } catch { return Task.isCancelled ? .running : .refused(error.localizedDescription) }
+        do { picked = try await files() } catch {
+            // The reader's own refusals keep their words; no system error text reaches the screen.
+            return Task.isCancelled ? .running : .refused((error as? LabFileReader.Failure)?.localizedDescription ?? LabUploadSheet.notRead)
+        }
         guard !Task.isCancelled else { return .running }
         if await runner.pick(picked, needsConsent: needsConsent) { return .running }
         return model.state == .unavailable ? .fallback : .running
     }
 
-    /// One tap, as the engine's event, after the taps before it. Save, Close and Discard first tell
+    /// One tap, as the engine's event, after the taps before it. A Save once sent, Close and Discard first tell
     /// the pick's usage, once a pick (Clarity names only, never a count, a name or a value): "Lab
     /// save all" for a Save of two or more files, "Lab save one" for one (US-52 AC8b), then the
     /// shared upload's own counts as fixed names (US-12 AC30).
@@ -126,7 +129,6 @@ final class UploadSession {
         case .save:
             guard !saveClaimed else { return }
             claim = .tapped
-            tellUsage { [analytics, files = drawn?.page?.files.rows.count ?? 0] in analytics?.event(files >= 2 ? .labSaveAll : .labSaveOne) }
             // The page the tap saw, when no tap's event waits to draw; else the one drawn after the last.
             let shown = choicePending ? nil : currentPage
             then { [weak self] runner in
@@ -137,6 +139,8 @@ final class UploadSession {
                     self.claim = nil
                     return
                 }
+                // Counted only for a Save that is sent (US-52 AC8b), once a pick.
+                self.tellUsage { [analytics = self.analytics] in analytics?.event(page.files.rows.count >= 2 ? .labSaveAll : .labSaveOne) }
                 let number = await runner.queue(UploadAction.saveEvent(promised: page.reviewed))
                 self.claim = .queued(number)
                 await runner.drain()
