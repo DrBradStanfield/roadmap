@@ -270,6 +270,65 @@ final class UploadPageTests: XCTestCase {
         XCTAssertTrue(lines.contains { $0.contains("Ferritin") && $0.contains("could not be read") }, "\(lines)")
     }
 
+    // MARK: The list says what Save writes (owner rulings 2026-11-20, upload-view.gaps.test.ts)
+
+    /// A copy of another reading of the same test and day carries no Replace and says so; Replace
+    /// lives on the first. A value the record already holds, equal, is counted.
+    func testACopyHasNoReplaceAndHeldValuesAreCounted() async throws {
+        let folder = FileManager.default.temporaryDirectory.appending(path: "Copy page \(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        var drive = try Drive()
+        let store = try RecordStore(folder: folder, engine: drive.engine, deviceId: "test")
+        _ = await store.apply(.add(metric: "ldl", value: 2.0, day: "2026-10-01"))
+        _ = await store.apply(.add(metric: "hdl", value: 1.2, day: "2026-10-01"))
+        drive.record = store.recordJSON
+        drive.pick(["first", "second"])
+        let hdl = #"{"metric":"hdl","valueSI":1.2,"displayValue":1.2,"displayUnit":"mmol/L","displaySystem":"si","confidence":"high"}"#
+        drive.read("first", Self.lab(values: "\(Self.ldl),\(hdl)"))
+        drive.read("second", Self.lab(values: Self.ldl))
+        let page = try drive.page()
+        let rows = Self.unsure(page)
+        let first = try XCTUnwrap(rows.first { $0.fileId == "first" && $0.ref == "v0" })
+        let copy = try XCTUnwrap(rows.first { $0.fileId == "second" })
+        XCTAssertEqual(first.replace, "Replace")
+        XCTAssertNil(first.copy)
+        XCTAssertNil(copy.replace)
+        XCTAssertNil(copy.replaces)
+        XCTAssertEqual(copy.copy, "another reading of this test is on the same day")
+        XCTAssertEqual(page.alreadySaved, "1 already in your record", "the held HDL, equal")
+    }
+
+    /// Save carries what the page would write (the engine adds it), and the done screen names a
+    /// reviewed value another writer beat to its slot, in the web's words.
+    func testTheDoneScreenNamesSkippedValues() throws {
+        var drive = try Drive()
+        drive.pick(["lab"])
+        drive.read("lab", Self.lab(values: Self.ldl))
+        let shown = try drive.page()
+        XCTAssertEqual(shown.reviewed, [.init(file: "lab", ref: "v0", lab: false)])
+        drive.step(UploadAction.saveEvent(promised: shown.reviewed))
+        let state = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(drive.state.utf8)) as? [String: Any])
+        XCTAssertEqual((state["reviewed"] as? [[String: Any]])?.map { $0["ref"] as? String }, ["v0"])
+        drive.step(UploadSession.event(.success(.init(values: 0, documents: 0, archived: 0, unstored: nil, skippedValues: 1)), run: drive.run, attempt: 1))
+        let page = try drive.page()
+        XCTAssertEqual(page.done?.line, "Saved 0 values.")
+        XCTAssertEqual(page.done?.skipped, ["1 blood test value was not added. Check your blood test table: a value was already recorded for that date, or changed during review."])
+    }
+
+    /// A value the commit refused (the record changed meanwhile) reaches the done screen through the
+    /// saved event, named in the web's words.
+    func testTheDoneScreenNamesValuesRefusedAtTheCommit() throws {
+        var drive = try Drive()
+        drive.pick(["lab"])
+        drive.read("lab", Self.lab(values: Self.ldl))
+        drive.step(UploadAction.save.event(now: Self.now))
+        let line = "Blood pressure not saved: the top number (systolic) must be higher than the bottom number (diastolic). Check the report, then enter it again."
+        drive.step(UploadSession.event(.success(.init(values: 0, documents: 0, archived: 0, unstored: nil, refused: [["line": line], ["label": "Ferritin", "reason": "unit"]])), run: drive.run, attempt: 1))
+        let page = try drive.page()
+        XCTAssertEqual(page.done?.notSaved, ["Ferritin: this unit is not one we know for this test", line])
+    }
+
     // MARK: Actions
 
     /// Each tap is the engine's event, by its own schema (upload-schema.ts).

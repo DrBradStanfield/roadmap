@@ -33,6 +33,8 @@ struct UploadPage: Decodable, Equatable, Sendable {
         let replaceLabel: String?
         let replaces: String?
         let replacing: Bool?
+        /// An equal reading of this upload is on the same test and day: this one is not written and has no Replace.
+        let copy: String?
         var id: String { "\(fileId):\(ref)" }
     }
 
@@ -146,6 +148,10 @@ struct UploadPage: Decodable, Equatable, Sendable {
         let line: String
         let archived: String?
         let unstored: String?
+        /// Reviewed values another writer beat to their slot, in the web's words (US-12 AC6a).
+        let skipped: [String]?
+        /// Values the final commit refused (the record changed meanwhile), in the review's not-saved words.
+        let notSaved: [String]?
     }
 
     let progress: Progress?
@@ -158,6 +164,8 @@ struct UploadPage: Decodable, Equatable, Sendable {
     let save: Save
     let stop: Stop?
     let done: Done?
+    /// Values the record already holds, equal, counted ("2 already in your record").
+    let alreadySaved: String?
     /// The machine's phase ("consent", "open", "saving", "saveFailed", "done", "failed"), a whole
     /// run's refusal, whether Close may leave, the word for Done, and the doors' words for a later
     /// call that answers nothing.
@@ -168,6 +176,14 @@ struct UploadPage: Decodable, Equatable, Sendable {
     let engineError: String?
     /// The review's choices can be changed (not while saving).
     let editable: Bool?
+    /// One value the page shows as to be written, opaque to the app: sent back on Save as drawn.
+    struct Reviewed: Codable, Equatable, Sendable {
+        let file: String
+        let ref: String
+        let lab: Bool
+    }
+    /// What this page would write (health-core `reviewedWrites`); nil from an older engine.
+    let reviewed: [Reviewed]?
 
     /// The view's text decoded; nil when it does not read.
     static func decoded(_ text: String) -> UploadPage? {
@@ -200,6 +216,13 @@ enum UploadAction: Equatable, Sendable {
     case save
     case close
     case discard
+
+    /// Save, carrying what the page showed as to be written (the view's `reviewed`, untouched), so Save writes
+    /// nothing else; nil from an older engine's view, when Save writes its own plan.
+    static func saveEvent(promised: [UploadPage.Reviewed]?) -> String {
+        guard let promised else { return EngineNatives.json(["type": "saveStarted"]) }
+        return EngineNatives.json(["type": "saveStarted", "reviewed": promised.map { ["file": $0.file, "ref": $0.ref, "lab": $0.lab] as [String: Any] }])
+    }
 
     /// The event's JSON; `now` stamps a choice (the engine refuses a document date in the future).
     func event(now: String) -> String {

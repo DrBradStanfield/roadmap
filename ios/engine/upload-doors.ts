@@ -10,7 +10,7 @@ import { knownAs, knownIndex, readIsLegacy, type KnownIndex } from '../../packag
 import { appGateFailure, boundedWords, type FailDetail, type UploadFailure } from '../../packages/health-core/src/upload-failure';
 import { PHONE_FAIL_TEXT } from '../../packages/health-core/src/upload-text';
 import { labStreamAnswer } from '../../packages/health-core/src/upload-answer';
-import { uploadReview } from '../../packages/health-core/src/upload-review';
+import { lostReplaces, uploadReview } from '../../packages/health-core/src/upload-review';
 import { uploadView } from '../../packages/health-core/src/upload-view';
 import { uploadSavePlan } from '../../packages/health-core/src/upload-plan';
 import { uploadUsageCounts } from '../../packages/health-core/src/upload-usage';
@@ -160,20 +160,38 @@ export const uploadStart = (platformName: string) => answer(() => {
   return initialUpload(read.data);
 });
 
-/** The record is read only for an event that needs it (`hashed`, `answered`, `streamEnded`). */
+/** The record is read only for an event that needs it (`hashed`, `answered`, `streamEnded`), and while a Replace is chosen. */
 export const uploadStep = (stateJson: string, eventJson: string, recordJson: string, deviceId: string) => answer(() => {
   const state = readState(stateJson);
   const wire = parsed(eventJson, WIRE_EVENT, 'invalid-event');
   // Known and legacy go by hash, name and date, never a time; the clock only stamps a record the
   // read migrates, which readRecord then keeps for the screen doors, so it is the real one.
-  return transition(state, engineEvent(state, wire, () => readUploadRecord(recordJson, new Date().toISOString(), deviceId)));
+  const now = new Date().toISOString();
+  const record = () => readUploadRecord(recordJson, now, deviceId);
+  const current = withoutLostReplaces(state, recordJson, record, now);
+  return transition(current, engineEvent(current, wire, record));
 });
+
+/**
+ * A chosen Replace whose target another writer moved, corrected or deleted on this record is dropped and its
+ * value unticked (health-core `replacesLost`, owner ruling 2026-11-20, US-13 AC21), before the next event and
+ * in every view, so the page shows an ordinary value to tick again. The record is read only when a Replace is chosen.
+ */
+function withoutLostReplaces(state: UploadState, recordJson: string, record: () => RoadmapFile, now: string): UploadState {
+  // No record to judge by ('' while the app has none it can read) or one that will not read drops nothing (adversary R1):
+  // every Replace stands, and the next record that reads is judged.
+  if (recordJson === '' || !('files' in state) || !state.files.some((f) => f.status.s === 'read' && Object.keys(f.status.choices.replace).length)) return state;
+  let read: RoadmapFile;
+  try { read = record(); } catch { return state; }
+  const lost = lostReplaces(uploadReview(state, read, now), state);
+  return lost.length ? transition(state, { type: 'replacesLost', lost }).state : state;
+}
 
 /** One review per call, as health-core's callers take it: the view and its plan count the same rows. */
 const reviewed = <T,>(make: (state: UploadState, record: RoadmapFile, nowIso: string, review: ReturnType<typeof uploadReview>, cloudConnected: boolean) => T) =>
   (stateJson: string, recordJson: string, nowIso: string, cloudConnected: boolean, deviceId: string) => answer(() => {
-    const state = readState(stateJson);
     const record = readUploadRecord(recordJson, nowIso, deviceId);
+    const state = withoutLostReplaces(readState(stateJson), recordJson, () => record, nowIso);
     return make(state, record, nowIso, uploadReview(state, record, nowIso), cloudConnected);
   });
 /** The view, with the words the app shows when a later engine call gives no answer at all

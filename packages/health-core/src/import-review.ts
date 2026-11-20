@@ -11,6 +11,7 @@
  */
 import { UNDATED_PREVIOUS, isUrineOrRatioUnit, type UnifiedExtractionResult } from './lab-extraction';
 import { labTestLabel } from './lab-catalog';
+import { DAY_NOT_HAPPENED, LAB_DAY_REFUSAL } from './lab-series';
 import { bulkAppendValues, slotIndex, slotKey, validDay, type BulkAppendResult, type BulkRow } from './record-edits';
 import { bulkRowTarget } from './bulk-row-target';
 import { coreStored, createCoreRow, isBloodTestKey } from './blood-tests';
@@ -96,8 +97,10 @@ export const isOfferedRef = (ref: string) => /^[va]\d+$/.test(ref);
 /** Why a value gets a row (D1). `outOfRange`: the write refuses its number
  *  (outside its input range, or half of a blood pressure the wrong way up). */
 export type UnsureReason = 'confidence' | 'question' | 'unitGuessed' | 'outOfRange' | 'conflict';
-/** Why a value is not saved (D5). */
-export type NotSavedReason = 'unit' | 'noUnit' | 'misread' | 'scale' | 'unreadable' | 'urine' | 'sameDay';
+/** Why a value is not saved (D5). `futureDay`, `futureCoreDay`: its own printed day is no real past day, a lab or a core
+ *  value (the shared upload's alone, upload-review.ts). */
+export const NOT_SAVED_REASONS = ['unit', 'noUnit', 'misread', 'scale', 'unreadable', 'urine', 'sameDay', 'futureDay', 'futureCoreDay'] as const;
+export type NotSavedReason = (typeof NOT_SAVED_REASONS)[number];
 
 /**
  * One value's place in the review. `ref`: `v<i>` a core value, `a<i>` an
@@ -110,12 +113,13 @@ export type NotSavedReason = 'unit' | 'noUnit' | 'misread' | 'scale' | 'unreadab
  * - unsure: shown as a row, with every reason.
  * - notSaved: Save would not write it, with one reason.
  * - waiting: no day yet; it stays behind the file's date question.
+ * `copy`: an equal reading of this upload holds its slot and is not written: this one takes its group, never its own Replace.
  * `refusal`: the dry run's own refusal of this value's row, for a receipt in the write's words.
  */
 export type ClassifiedValue =
-  | { file: number; ref: string; label: string; sent: boolean; writes: boolean; group: 'sure' | 'saved' | 'waiting'; refusal?: ImportRefusal; duplicate?: true }
-  | { file: number; ref: string; label: string; sent: boolean; writes: boolean; group: 'unsure'; reasons: UnsureReason[]; refusal?: ImportRefusal }
-  | { file: number; ref: string; label: string; sent: boolean; writes: boolean; group: 'notSaved'; reason: NotSavedReason; refusal?: ImportRefusal };
+  | { file: number; ref: string; label: string; sent: boolean; writes: boolean; group: 'sure' | 'saved' | 'waiting'; refusal?: ImportRefusal; duplicate?: true; copy?: true }
+  | { file: number; ref: string; label: string; sent: boolean; writes: boolean; group: 'unsure'; reasons: UnsureReason[]; refusal?: ImportRefusal; copy?: true }
+  | { file: number; ref: string; label: string; sent: boolean; writes: boolean; group: 'notSaved'; reason: NotSavedReason; refusal?: ImportRefusal; copy?: true };
 /** A row the write refused: a lab unit or number, or a core value (its range, a pressure pair). */
 export type ImportRefusal = { lab: BulkAppendResult['refused'][number] } | { measurement: BulkAppendResult['measurementRefusals'][number] };
 
@@ -166,7 +170,7 @@ function slotOf(row: BulkRow): { slot: string; quantity: Quantity } {
 }
 
 /** A lab refusal in the person's words, from the write's own fault (never its text). */
-const labReason = (r: BulkAppendResult['refused'][number]): NotSavedReason =>
+export const labReason = (r: BulkAppendResult['refused'][number]): NotSavedReason =>
   r.fault === 'implausible' || r.fault === 'ceiling' ? 'misread' : r.fault === 'scale' || r.fault === 'decimal' ? 'scale' : r.unit.trim() ? 'unit' : 'noUnit';
 
 /** The write refuses this row even on an empty record (its unit, its count,
@@ -178,7 +182,7 @@ export function refusedAlone(row: BulkRow, now: string): boolean {
 
 /** A day no value lands on: a value with no day is written there alone, on an
  *  empty record, only to read its refusal. */
-const PROBE_DAY = '2000-01-01';
+export const PROBE_DAY = '2000-01-01';
 
 type Info = { file: number; ref: string; label: string; reasons: UnsureReason[]; rank: 0 | 1 | 2 };
 type Group = ClassifiedValue extends infer V ? V extends ClassifiedValue ? Omit<V, 'file' | 'ref' | 'label' | 'sent'> : never : never;
@@ -262,7 +266,7 @@ export function classifyImportValues(files: readonly ImportFile[], record: Roadm
     const { place, winner } = places.get(i)!;
     const won = groups.get(winner!)!;
     const inherited: Group = place === 'hidden' ? { group: 'notSaved', reason: 'sameDay', writes: false }
-      : won.writes || won.group === 'saved' ? { group: 'saved', writes: false, duplicate: true } : { ...won, writes: false, refusal: undefined }; // the winner's refusal is its own
+      : won.writes || won.group === 'saved' ? { group: 'saved', writes: false, duplicate: true } : { ...won, writes: false, refusal: undefined, copy: true }; // the winner's refusal is its own
     values.push({ ...label(s, true), ...inherited } as ClassifiedValue);
   });
 
@@ -345,6 +349,10 @@ export const NOT_SAVED_TEXT: Record<NotSavedReason, string> = {
   unreadable: 'could not be read',
   urine: 'this unit is usually a urine result',
   sameDay: 'another reading of this test is on the same day',
+  // Existing words, byte for byte (no not-saved words name a date yet): the add-a-value write's for a lab, and the web's
+  // for a blood test moved to a day still to come for a core value.
+  futureDay: LAB_DAY_REFUSAL,
+  futureCoreDay: DAY_NOT_HAPPENED,
 };
 
 /** "Not saved" as the review shows it (D5): the count for its line, one line

@@ -217,12 +217,12 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
               </p>
               {skippedMeasurements > 0 && (
                 <p className="upload-done-skipped">
-                  {skippedMeasurements} blood test value{skippedMeasurements !== 1 ? 's were' : ' was'} not added. Check your blood test table: a value was already recorded for that date, or changed during review.
+                  {UPLOAD_TEXT.skippedLine(skippedMeasurements, false)}
                 </p>
               )}
               {skippedLabValues > 0 && (
                 <p className="upload-done-skipped">
-                  {skippedLabValues} additional lab value{skippedLabValues !== 1 ? 's were' : ' was'} not added. Check your blood test table: a value was already recorded for that date, or changed during review.
+                  {UPLOAD_TEXT.skippedLine(skippedLabValues, true)}
                 </p>
               )}
               {refusalLines}
