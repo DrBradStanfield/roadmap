@@ -121,7 +121,7 @@ final class UploadPageTests: XCTestCase {
         XCTAssertEqual(page.sure?.showAll, "Show all 1")
         XCTAssertEqual(page.sure?.hide, "Hide")
         XCTAssertEqual(page.documents?.line, "1 letter or document will be saved")
-        XCTAssertEqual(page.documents?.rows.first, .init(fileId: "letter", title: "Cardiology follow-up", kind: "clinic letter", date: "2026-09-14", dateKnown: true,
+        XCTAssertEqual(page.documents?.rows.first, .init(fileId: "letter", title: "Cardiology follow-up", kind: "clinic letter", date: "14 Sep 2026", dateKnown: true,
                                                          kindKey: "clinic_letter", day: "2026-09-14"))
         XCTAssertEqual(page.documents?.kinds?.count, 6)
         XCTAssertEqual([page.documents?.setDate, page.documents?.removeDate], ["Set the date", "Remove the date"])
@@ -136,11 +136,12 @@ final class UploadPageTests: XCTestCase {
         drive.pick(["u"])
         drive.read("u", Self.lab(reportDate: nil, values: Self.ldl))
         var page = try drive.page()
-        XCTAssertEqual(page.sections.first, .undated(.init(fileId: "u", title: "This report has no date", label: "Day of the test", name: "u.png", choose: "Choose the day of the test")))
+        XCTAssertEqual(page.sections.first, .undated(.init(fileId: "u", title: "This report has no date", label: "Day of the test", name: "u.png", choose: "Choose the day of the test", chosen: nil)))
         XCTAssertFalse(page.save.enabled)
         drive.step(UploadAction.testDay(fileId: "u", day: "2026-10-02").event(now: Self.now))
         page = try drive.page()
-        XCTAssertFalse(page.sections.contains { if case .undated = $0 { true } else { false } })
+        // The picked day stays on the page, to be seen and changed.
+        XCTAssertEqual(page.sections.first, .undated(.init(fileId: "u", title: "This report has no date", label: "Day of the test", name: "u.png", choose: "Choose the day of the test", chosen: "2026-10-02")))
         XCTAssertTrue(page.save.enabled)
     }
 
@@ -208,6 +209,8 @@ final class UploadPageTests: XCTestCase {
         let rows = Self.unsure(page)
         let ldl = try XCTUnwrap(rows.first { $0.ref == "v0" })
         XCTAssertEqual(ldl.replace, "Replace")
+        XCTAssertEqual([ldl.value, ldl.held], ["3.1", "2 mmol/L"], "both numbers, the held one as stored")
+        XCTAssertEqual(ldl.dayLine, "1 Oct 2026")
         let held = try XCTUnwrap(ldl.replaces)
         XCTAssertEqual(rows.first { $0.ref == "v1" }?.question, "Was this fasting?")
         drive.step(UploadAction.replace(fileId: "lab", ref: "v0", correctsId: held).event(now: Self.now))
@@ -265,7 +268,7 @@ final class UploadPageTests: XCTestCase {
         var page = try drive.page()
         XCTAssertEqual(page.save.label, "Save 2 values and 1 document", "the ticked unsure value now saves")
         XCTAssertEqual(page.documents?.rows.first?.title, "Heart clinic")
-        XCTAssertEqual(page.documents?.rows.first?.date, "2026-09-01")
+        XCTAssertEqual(page.documents?.rows.first?.date, "1 Sep 2026")
         drive.step(UploadAction.retryAll.event(now: Self.now))
         page = try drive.page()
         XCTAssertFalse(page.sections.contains { if case .failed = $0 { true } else { false } }, "Try again sends the failed file again")

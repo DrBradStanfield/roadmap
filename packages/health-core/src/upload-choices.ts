@@ -11,7 +11,7 @@ import { validDay } from './record-edits';
 export interface DocumentFix { title?: string; kind?: string; date?: string | null }
 
 /**
- * `ticks`: by value ref; absent, the platform's default (upload-rules `defaultTicked`).
+ * `ticks`: by value ref; absent, ticked: saved unless cleared, on both clients (Brad 2026-11-20).
  * `replace`: a conflict's held row id by ref: the value saves as its correction (`correctsId`).
  * `edits`: the number the person typed by ref (a core value in SI, a lab in its own unit),
  * saved as edited (`lab_import_edited`), as the web's cells save it.
@@ -61,13 +61,17 @@ function moved(c: FileChoices, refs: string[], before: string | null, after: str
  * date). `extraction`: the file's, to know which values a day change moves.
  */
 export function choose(c: FileChoices, change: ChoiceChange, now: string, extraction: Pick<UnifiedExtractionResult, 'values' | 'additionalValues' | 'reportDate'>): FileChoices | null {
-  if ('tick' in change) return { ...c, ticks: { ...c.ticks, [change.tick]: change.on } };
+  // Replace saves the value as a correction, so it selects the value; clearing a value drops its Replace.
+  if ('tick' in change) return { ...c, ticks: { ...c.ticks, [change.tick]: change.on }, replace: change.on ? c.replace : without(c.replace, change.tick) };
   if ('testDay' in change) {
     const report = extraction.reportDate ?? null;
     return { ...c, testDay: change.testDay, replace: moved(c, movedRefs(extraction, 'test'), c.testDay ?? report, change.testDay ?? report, now) };
   }
   if ('previousDay' in change) return { ...c, previousDay: change.previousDay, replace: moved(c, movedRefs(extraction, 'previous'), c.previousDay, change.previousDay, now) };
-  if ('replace' in change) return { ...c, replace: change.correctsId === null ? without(c.replace, change.replace) : { ...c.replace, [change.replace]: change.correctsId } };
+  if ('replace' in change) {
+    if (change.correctsId === null) return { ...c, replace: without(c.replace, change.replace) };
+    return { ...c, replace: { ...c.replace, [change.replace]: change.correctsId }, ticks: { ...c.ticks, [change.replace]: true } };
+  }
   if ('edit' in change) return { ...c, edits: change.value === null || !Number.isFinite(change.value) ? without(c.edits, change.edit) : { ...c.edits, [change.edit]: change.value } };
   const { date, ...rest } = change.document;
   if (date === undefined) return { ...c, document: { ...c.document, ...rest } };

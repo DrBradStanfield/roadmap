@@ -39,7 +39,7 @@ final class ZipLazyReadTests: XCTestCase {
             ("an empty stored member", Self.zip([.init("empty.png", Data())]), .swift, #"unreadable("labs.zip/empty.png")"#),
             ("an empty deflated member", Self.zip([.init("empty.png", Data(), method: 8)]), .swift, #"unreadable("labs.zip/empty.png")"#),
             ("the ZIP itself too large", Self.zip([.init("a.png", png)]),
-             LabFileReader.Rules(source: .swift, file: { name, bytes in name.hasSuffix(".zip") ? .tooLarge : LabFileReader.swiftVerdict(name, bytes) },
+             LabFileReader.Rules(file: { name, bytes in name.hasSuffix(".zip") ? .tooLarge : LabFileReader.swiftVerdict(name, bytes) },
                                  member: LabFileReader.swiftMemberVerdict, maxMemberBytes: 100_000, maxMembers: 200, maxTotalBytes: 1_000_000), #"tooLarge("labs.zip")"#),
         ]
         for (label, zip, rules, expected) in rows {
@@ -140,7 +140,7 @@ final class ZipLazyReadTests: XCTestCase {
         XCTAssertNoThrow(try held.hash(members[1].id), "a member read again is not counted again")
     }
 
-    static let keepNothing = LabFileReader.Rules(source: .swift, file: LabFileReader.swiftVerdict, member: { _ in .unsupported },
+    static let keepNothing = LabFileReader.Rules(file: LabFileReader.swiftVerdict, member: { _ in .unsupported },
                                                  maxMemberBytes: LabFileReader.maxFileBytes, maxMembers: 200, maxTotalBytes: 100_000_000)
 
     /// The bytes' hash is the web's `sha256Blob` (widget-src/src/lib/archive-payloads.ts) for the
@@ -183,73 +183,6 @@ final class ZipLazyReadTests: XCTestCase {
         held.forget(["p", "z"])
         XCTAssertThrowsError(try held.hash("p")) { XCTAssertEqual(String(describing: $0), #"unreadable("p")"#) }
         XCTAssertThrowsError(try held.convert(member.id, rules: .swift)) { XCTAssertEqual(String(describing: $0), #"unreadable("z#0")"#) }
-    }
-
-    /// The old entry point counts a ZIP's members as it converts them: before each, done and total.
-    func testAZipsReadCountsItsMembers() async throws {
-        let zip = Self.zip([.init("a.png", Self.png), .init("b.png", Self.png), .init("notes.txt", Data("x".utf8))])
-        let seen = Seen()
-        let read = try await LabFileReader.documents(from: zip, name: "labs.zip") { done, total in seen.counts.append("\(done) of \(total)") }
-        XCTAssertEqual(read.count, 2)
-        let counts = await MainActor.run { seen.counts }
-        XCTAssertEqual(counts, ["0 of 2", "1 of 2"])
-    }
-
-    @MainActor final class Seen { var counts: [String] = [] }
-
-    // MARK: review round 1
-
-    /// Item 1 (US-52 AC7a): a cancelled read converts no later member and publishes no count, so a
-    /// late count can never move the next upload's screen. A's first count waits behind a busy main
-    /// actor; A is cancelled and B started meanwhile. Member 1 is corrupt: converting it would fail
-    /// with notAZip, not CancellationError.
-    @MainActor
-    func testACancelledZipReadStopsAndPublishesNothing() async throws {
-        let zip = Self.zip([.init("a.png", Self.png), .init("b.png", Self.png, deflate: true, garble: true)])
-        let first = Seen(), second = Seen()
-        let a = Task.detached { try await LabFileReader.documents(from: zip, name: "a.zip") { done, total in first.counts.append("\(done) of \(total)") } }
-        Self.holdMain(0.5) // main busy: A lists, then waits to publish its first count
-        a.cancel()
-        let good = Self.zip([.init("a.png", Self.png), .init("b.png", Self.png)])
-        let b = try await LabFileReader.documents(from: good, name: "b.zip") { done, total in second.counts.append("\(done) of \(total)") }
-        var failure = "read"
-        do { _ = try await a.value } catch { failure = String(describing: error) }
-        XCTAssertEqual(failure, "CancellationError()")
-        XCTAssertEqual(first.counts, [], "a cancelled read publishes no count")
-        XCTAssertEqual(second.counts, ["0 of 2", "1 of 2"])
-        XCTAssertEqual(b.count, 2)
-    }
-
-    /// Re-check 1 (US-52 AC7a): a read cancelled while its count waits on a busy main actor converts
-    /// nothing more. Its only member is corrupt: converting it would fail with notAZip.
-    @MainActor
-    func testAReadCancelledDuringItsCountConvertsNothing() async throws {
-        let zip = Self.zip([.init("a.png", Self.png, deflate: true, garble: true)])
-        let seen = Seen()
-        let a = Task.detached { try await LabFileReader.documents(from: zip, name: "a.zip") { done, total in seen.counts.append("\(done) of \(total)") } }
-        Self.holdMain(0.5) // A waits on main to publish its count
-        a.cancel()
-        var failure = "read"
-        do { _ = try await a.value } catch { failure = String(describing: error) }
-        XCTAssertEqual(failure, "CancellationError()")
-        XCTAssertEqual(seen.counts, [])
-    }
-
-    /// The same for a folder: its only report is no picture, so converting it would fail as unreadable.
-    @MainActor
-    func testAFolderReadCancelledDuringItsCountConvertsNothing() async throws {
-        let folder = FileManager.default.temporaryDirectory.appending(path: "Cancelled-\(UUID().uuidString)", directoryHint: .isDirectory)
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: folder) }
-        try Data("no picture".utf8).write(to: folder.appending(path: "a.png"))
-        let seen = Seen()
-        let a = Task.detached { try await LabFileReader.documents(inFolder: folder) { done, total in seen.counts.append("\(done) of \(total)") } }
-        Self.holdMain(0.5)
-        a.cancel()
-        var failure = "read"
-        do { _ = try await a.value } catch { failure = String(describing: error) }
-        XCTAssertEqual(failure, "CancellationError()")
-        XCTAssertEqual(seen.counts, [])
     }
 
     /// Re-check 2: the shared machine forgets members by their own ids (upload-flow.ts). A forgotten
@@ -329,9 +262,6 @@ final class ZipLazyReadTests: XCTestCase {
         XCTAssertEqual(held.pages("f"), newer)
     }
 
-    /// Blocks the calling thread (here, main), as a busy screen would.
-    private static func holdMain(_ seconds: TimeInterval) { Thread.sleep(forTimeInterval: seconds) }
-
     /// Item 2: a ZIP held again under the same id, or forgotten and held again, never reads its
     /// members by the old ZIP's directory: until it is listed, a member id is unreadable.
     func testAReheldZipNeverReadsTheOldDirectory() throws {
@@ -363,7 +293,7 @@ final class ZipLazyReadTests: XCTestCase {
     }
 
     static func caps(member: Int, members: Int, total: Int) -> LabFileReader.Rules {
-        LabFileReader.Rules(source: .swift, file: LabFileReader.swiftVerdict, member: LabFileReader.swiftMemberVerdict,
+        LabFileReader.Rules(file: LabFileReader.swiftVerdict, member: LabFileReader.swiftMemberVerdict,
                             maxMemberBytes: member, maxMembers: members, maxTotalBytes: total)
     }
 

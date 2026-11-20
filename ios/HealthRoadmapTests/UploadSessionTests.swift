@@ -65,9 +65,14 @@ final class UploadSessionTests: XCTestCase, CloudFixtures {
         _ = await upload.runner.pick(files, needsConsent: false)
         try await until("both read") { page(upload)?.save.enabled == true }
         XCTAssertEqual(page(upload)?.save.label, "Save 2 documents")
+        // The order itself: as the record lands on disk (the store's edit hook), the engine has not
+        // yet taken `saved`: the page has no done screen, and the file already holds both letters.
+        var seenAtWrite: (done: Bool, onDisk: Bool)?
+        store.onEdit = { [unowned self] in seenAtWrite = (page(upload)?.done != nil, recordOnDisk.contains("Letter 1") && recordOnDisk.contains("Letter 2")) }
         upload.send(.save)
         try await until("done") { page(upload)?.done != nil }
-        XCTAssertTrue(recordOnDisk.contains("Letter 1") && recordOnDisk.contains("Letter 2"), "written before the page said saved")
+        XCTAssertEqual(seenAtWrite?.done, false, "the record was on disk before the page said saved")
+        XCTAssertEqual(seenAtWrite?.onDisk, true)
         XCTAssertEqual(page(upload)?.done?.line, "Saved 2 documents.")
         upload.send(.close)
 
@@ -104,7 +109,7 @@ final class UploadSessionTests: XCTestCase, CloudFixtures {
         // The first Save is refused; the second is the store's own (a picture's original is not kept off-cloud).
         let upload = session(store, save: { state, run, attempt in
             guard refusals.withLock({ let left = $0; $0 = max(0, $0 - 1); return left > 0 }) else {
-                return UploadSession.event(await store.saveUpload(state: state, originals: [:], read: { _ in nil }), run: run, attempt: attempt)
+                return UploadSession.event(await store.saveUpload(state: state, originals: [:], read: { _ in nil }, as: await store.screen), run: run, attempt: attempt)
             }
             return UploadSession.event(.failure(LabRefusal(message: "Not saved.")), run: run, attempt: attempt)
         })
@@ -124,7 +129,7 @@ final class UploadSessionTests: XCTestCase, CloudFixtures {
         let store = try phone()
         let before = store.recordJSON
         let state = #"{"phase":"choosing","platform":"phone","run":0}"#
-        guard case .failure(let refusal) = await store.saveUpload(state: state, originals: [:], read: { _ in nil }) else { return XCTFail("saved") }
+        guard case .failure(let refusal) = await store.saveUpload(state: state, originals: [:], read: { _ in nil }, as: await store.screen) else { return XCTFail("saved") }
         XCTAssertEqual(refusal.message, "The upload is not saving.")
         XCTAssertEqual(store.recordJSON, before)
     }

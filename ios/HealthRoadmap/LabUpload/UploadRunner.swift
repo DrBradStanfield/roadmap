@@ -64,12 +64,13 @@ actor UploadRunner {
         /// The record as text, "" for none, read for the steps and views that need it.
         var record: @Sendable () async -> String
         /// The upload rules for the pick (`HealthEngine.uploadRules`).
-        var ask: LabFileReader.AskRules = LabFileReader.swiftRules
+        var ask: LabFileReader.AskRules = { _, _ in .none }
         var sender = LabReadSender()
         /// A test's stand-in for `sender.send`; nil in the app.
         var send: (@Sendable (Data) async throws -> LabReadSender.Outcome)?
         var unitSystem = "si"
-        var cloudConnected = false
+        /// Read as each view is drawn: a cloud connected or disconnected meanwhile counts at once.
+        var cloudConnected: @Sendable () async -> Bool = { false }
         /// The `save` effect (UploadSave.swift): the one save door, given the state that asked for
         /// it, answering the event to step (`saved` or `saveFailed`); nil saves nothing.
         var save: (@Sendable (_ state: String, _ run: Int, _ attempt: Int) async -> String)?
@@ -84,7 +85,7 @@ actor UploadRunner {
     private let engine: HealthEngine
     private let setup: Setup
     private var held: LabFileReader.Held { setup.held }
-    private var rules = LabFileReader.Rules.swift
+    private var rules = LabFileReader.Rules.none
     /// The engine's upload: not started, starting (one start shared by every pick made before it
     /// answers), or started, its state as the engine's text.
     private enum Upload { case idle, starting(Task<UploadDoors.Answer<String>??, Never>), started(String) }
@@ -261,7 +262,7 @@ actor UploadRunner {
                 } catch is CancellationError {
                     return // aborted: the engine already moved the file on
                 } catch {
-                    outcome = LabReadSender.noAnswer
+                    outcome = .local(.dropped) // nothing to send: no pages held for it
                 }
                 await self?.sent(id, token: token, event: Self.event(for: outcome, run: run, id: id))
             })
@@ -307,7 +308,9 @@ actor UploadRunner {
         case .ended(let line):
             EngineNatives.json(["type": "streamEnded", "run": run, "id": id, "line": line ?? NSNull(), "now": now()])
         case .refused(let status, let body, let contentType):
-            EngineNatives.json(["type": "sendFailed", "run": run, "id": id, "status": status ?? NSNull(), "body": body ?? NSNull(), "contentType": contentType ?? NSNull()])
+            EngineNatives.json(["type": "sendFailed", "run": run, "id": id, "status": status, "body": body, "contentType": contentType ?? NSNull()])
+        case .local(let local):
+            EngineNatives.json(["type": "sendFailed", "run": run, "id": id, "status": NSNull(), "body": NSNull(), "contentType": NSNull(), "local": local.wire])
         }
     }
 
@@ -323,7 +326,7 @@ actor UploadRunner {
 
     private func drawViews() async {
         while view != .idle, let current = state {
-            let (record, deviceId, cloud) = (await setup.record(), setup.deviceId, setup.cloudConnected)
+            let (record, deviceId, cloud) = (await setup.record(), setup.deviceId, await setup.cloudConnected())
             let answer: UploadDoors.Answer<String>?? = try? await engine.perform {
                 try $0.uploadView(state: current, record: record, now: .now, cloudConnected: cloud, deviceId: deviceId)
             }

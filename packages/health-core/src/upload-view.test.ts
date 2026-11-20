@@ -55,7 +55,7 @@ describe('upload view: section 4 screens', () => {
     expect(v.sections.map((x) => x.kind)).toEqual(['unsure']);
     expect(v.sections[0]).toMatchObject({ title: 'Check this value', rows: [{ fileId: 'lab', ref: 'v1', reasons: ['confidence'] }] });
     expect(v.sure).toMatchObject({ line: '2 values will be saved', showAll: 'Show all 2' });
-    expect(v.documents).toMatchObject({ line: '1 letter or document will be saved', rows: [{ fileId: 'letter', title: 'Cardiology letter', kind: 'clinic letter', date: '2026-10-20', dateKnown: true, kindKey: 'clinic_letter', day: '2026-10-20' }] });
+    expect(v.documents).toMatchObject({ line: '1 letter or document will be saved', rows: [{ fileId: 'letter', title: 'Cardiology letter', kind: 'clinic letter', date: '20 Oct 2026', dateKnown: true, kindKey: 'clinic_letter', day: '2026-10-20' }] });
     expect(plan.counts).toEqual({ values: 3, documents: 1, archived: 0, originals: 1 });
     expect(v.save).toEqual({ label: 'Save 3 values and 1 document', enabled: true, why: null, error: null });
     expect(v.files.rows[0].status).toBe('Already in your record');
@@ -93,11 +93,12 @@ describe('upload view: section 4 screens', () => {
   it('undated report: one section per report with no full day; its values wait until a day is picked', () => {
     const undated = labX({ reportDate: null });
     const v = viewOf(open([read('u', undated)]), EMPTY, NOW);
-    expect(v.sections[0]).toEqual({ kind: 'undated', fileId: 'u', title: 'This report has no date', label: 'Day of the test', name: 'u.pdf', choose: 'Choose the day of the test' });
+    expect(v.sections[0]).toEqual({ kind: 'undated', fileId: 'u', title: 'This report has no date', label: 'Day of the test', name: 'u.pdf', choose: 'Choose the day of the test', chosen: null });
     expect(v.save).toMatchObject({ enabled: false, why: 'Choose the day of the test' }); // proposed words
     expect(planOf(open([read('u', undated)]), EMPTY, NOW).labArchives).toEqual([]); // the original waits with its values
     const picked = viewOf(open([read('u', undated, { ...CHOICES, testDay: DAY })]), EMPTY, NOW);
-    expect(picked.sections.map((x) => x.kind)).toEqual([]);
+    // The picked day stays on the page, to be seen and changed (owner ruling 2026-11-20).
+    expect(picked.sections).toEqual([{ kind: 'undated', fileId: 'u', title: 'This report has no date', label: 'Day of the test', name: 'u.pdf', choose: 'Choose the day of the test', chosen: DAY }]);
     expect(picked.save).toEqual({ label: 'Save 1 value', enabled: true, why: null, error: null });
   });
 
@@ -107,7 +108,7 @@ describe('upload view: section 4 screens', () => {
     const plan = planOf(s, record, NOW);
     expect(plan.counts.values).toBe(0);
     expect(plan.labArchives).toEqual([{ fileId: 'a', sourceFileName: 'a.pdf', reportDate: DAY }]);
-    // The original alone: a label section 5 does not have yet (UPLOAD_TEXT_PROPOSED).
+    // The original alone: its own label (UPLOAD_TEXT.saveOriginals, approved 2026-11-20).
     expect(viewOf(s, record, NOW).save).toEqual({ label: 'Save 1 original', enabled: true, why: null, error: null });
     const letterKnown = open([at('k', { s: 'known', as: 'document', archiveOnly: false })]);
     expect(viewOf(letterKnown, record, NOW).save).toEqual({ label: 'Save 0 values', enabled: false, why: 'Nothing new to save', error: null });

@@ -10,17 +10,20 @@
  */
 import { DOCUMENT_TYPES, type DocumentType } from './validation';
 import { IMPORT_REVIEW_TEXT, isOfferedRef, KIND_WORDS, notSavedGroups, type ClassifiedValue, type UnsureReason } from './import-review';
-import type { RoadmapFile } from './roadmap-file';
+import type { FileLabValue, FileMeasurement, RoadmapFile } from './roadmap-file';
+import { isReadableRow } from './readable-rows';
+import { getDisplayLabel, type MetricType } from './units';
 import { inFlight, RETRYABLE, saveEnabled, type FileStatus, type UploadFile, type UploadState } from './upload-flow';
 import { planIsEmpty, uploadSavePlan, type UploadSavePlan } from './upload-plan';
+import type { UploadPlatform } from './upload-rules';
 import { readFiles, type UploadReview } from './upload-review';
-import { FAIL_TEXT, FILE_NOTICE_TEXT, FIX_ERRORS_TEXT, REFUSED_TEXT, REVIEW_CELL_TEXT, UPLOAD_TEXT, UPLOAD_TEXT_PROPOSED } from './upload-text';
+import { failLine, FILE_NOTICE_TEXT, FIX_ERRORS_TEXT, longDate, REFUSED_TEXT, REVIEW_CELL_TEXT, UNREADABLE_VALUE_TEXT, UPLOAD_TEXT } from './upload-text';
 import { UNDATED_PREVIOUS, type UnifiedExtractionResult } from './lab-extraction';
 import { withComparator } from './lab-limits';
 import { validDay } from './record-edits';
 
 /**
- * `ticked`: the tick shown now, the platform's default resolved. `replaces`: a conflict's held row,
+ * `ticked`: the tick shown now, ticked unless cleared. `replaces`: a conflict's held row,
  * for `ChoiceChange` replace; null when there is nothing to replace. `replacing`: the Replace
  * control is on and still aimed at that row; `conflict` then says what Save will do. `error`: a
  * selected core value Save would refuse, in the write's words; it blocks Save (US-13 AC5).
@@ -30,13 +33,17 @@ export interface ValueRow {
   ticked: boolean; replaces: string | null; replacing: boolean; error: string | null;
   /** Added for the iPhone's page (design PR 15), additive: the value as the report printed it, its
    *  limit sign kept ("< 0.6"), and its unit; the extractor's own question (data from the read);
-   *  the web's printed line when the unit was guessed; the value's own day (YYYY-MM-DD) when it is
-   *  not the report's; the Replace control's word when there is a held row to replace. */
-  value?: string; unit?: string; question?: string | null; printed?: string | null; day?: string | null; replace?: string | null;
+   *  `unitNote` when the read guessed the unit; the day it will be saved on (its own, else its
+   *  report's; YYYY-MM-DD, null while the report waits for one) and that day as the web writes it;
+   *  the Replace control's word and spoken name, and `held`, the value the record holds that day
+   *  (number and unit as stored, or the words for a value no reader can read), when there is one. */
+  value?: string; unit?: string; question?: string | null; unitNote?: string | null; day?: string | null; dayLine?: string | null;
+  replace?: string | null; replaceLabel?: string | null; held?: string | null;
 }
 export type UploadSection =
-  /** `choose`: the button that opens the day picker; no day is assumed (design PR 15). */
-  | { kind: 'undated'; fileId: string; title: string; label: string; name: string; choose?: string }
+  /** `choose`: the button that opens the day picker; no day is assumed (design PR 15). `chosen`: the
+   *  day the person picked (YYYY-MM-DD), so the section stays, showing it, to be changed. */
+  | { kind: 'undated'; fileId: string; title: string; label: string; name: string; choose?: string; chosen?: string | null }
   /** An undated previous column's day (US-12 AC14; web only): a day in `month` (YYYY-MM) before
    *  `before`, when known. Its words stay in the web's ReviewTable until they move (no string yet). */
   | { kind: 'undatedPrevious'; fileId: string; name: string; month: string | null; before: string | null }
@@ -73,17 +80,19 @@ export interface UploadView {
   refused?: string | null;
   closeEnabled?: boolean;
   doneLabel?: string;
+  /** The review's choices can be changed: open, or after a failed Save; never while saving. */
+  editable?: boolean;
 }
 
 const READING: readonly FileStatus['s'][] = ['converting', 'sending'];
 const AT_REST: readonly FileStatus['s'][] = ['known', 'refused', 'read', 'failed', 'stopped'];
 
-function statusWords(status: FileStatus): string {
+function statusWords(status: FileStatus, platform: UploadPlatform): string {
   switch (status.s) {
     case 'known': return UPLOAD_TEXT.statusKnown;
     case 'refused': return UPLOAD_TEXT.statusRefused(status.verdict);
     case 'read': return UPLOAD_TEXT.statusRead;
-    case 'failed': return FAIL_TEXT[status.reason];
+    case 'failed': return failLine(status, platform);
     case 'stopped': return UPLOAD_TEXT.stoppedLine;
     default: return READING.includes(status.s) ? UPLOAD_TEXT.statusReading : UPLOAD_TEXT.statusWaiting;
   }
@@ -118,8 +127,9 @@ function progress(s: UploadState, files: readonly UploadFile[]): UploadView['pro
 
 /**
  * A read value as the report printed it (the phone's lab review rule, ios/engine/lab-review.ts): the
- * number with its limit sign, its unit, the extractor's question, the web's printed line for a
- * guessed unit, and its own day when that is not the report's (`reportDay`).
+ * number with its limit sign, its unit, the extractor's question, a note when the read guessed the
+ * unit, and the day it saves on: its own, else its report's (`reportDay`). The number shown is the printed
+ * one, so the web's "Printed:" line (shown only when the two differ) never applies.
  */
 function printedFacts(x: UnifiedExtractionResult | undefined, ref: string, reportDay: string | null, now: string) {
   const i = Number(ref.slice(1));
@@ -132,18 +142,36 @@ function printedFacts(x: UnifiedExtractionResult | undefined, ref: string, repor
     value: withComparator(String(number), own.comparator),
     unit: coreValue ? coreValue.displayUnit : x!.additionalValues![i].unit,
     question: own.question ?? null,
-    printed: coreValue?.unitGuessed ? REVIEW_CELL_TEXT.printed(coreValue.displayValue, coreValue.displayUnit) : null,
-    day: day && day !== reportDay?.slice(0, 10) ? day : null,
+    unitNote: coreValue?.unitGuessed ? REVIEW_CELL_TEXT.checkUnit : null,
+    day: day ?? reportDay?.slice(0, 10) ?? null,
   };
 }
 
-const valueRow = (review: UploadReview, extractions: Map<string, UnifiedExtractionResult>, now: string) => (v: ClassifiedValue): ValueRow => ({
-  ...printedFacts(extractions.get(review.labFiles[v.file].fileId), v.ref, review.labFiles[v.file].day, now),
-  replace: review.held.has(`${v.file}:${v.ref}`) ? REVIEW_CELL_TEXT.replace : null,
+/** A held row as the record stores it: its number with its limit sign and its unit; never a row no reader can read (US-65 AC3). */
+function heldText(row: FileMeasurement | FileLabValue | undefined): string | null {
+  if (!row) return null;
+  if (!isReadableRow('metricType' in row ? 'measurements' : 'labValues', row)) return UNREADABLE_VALUE_TEXT;
+  const unit = 'metricType' in row ? getDisplayLabel(row.metricType as MetricType, 'si') : row.unit;
+  return [withComparator(String(row.value), row.comparator), unit].filter(Boolean).join(' ');
+}
+
+const valueRow = (review: UploadReview, extractions: Map<string, UnifiedExtractionResult>, rows: Map<string, FileMeasurement | FileLabValue>, now: string) =>
+  (v: ClassifiedValue): ValueRow => {
+    const facts = printedFacts(extractions.get(review.labFiles[v.file].fileId), v.ref, review.labFiles[v.file].day, now);
+    const heldId = review.held.get(`${v.file}:${v.ref}`);
+    const dayLine = facts.day ? longDate(facts.day) ?? facts.day : null;
+    return { ...facts, dayLine, ...rowOf(review, v),
+      replace: heldId ? REVIEW_CELL_TEXT.replace : null,
+      replaceLabel: heldId && dayLine ? REVIEW_CELL_TEXT.replaceLabel(v.label, dayLine) : null,
+      held: heldText(heldId ? rows.get(heldId) : undefined),
+    };
+  };
+
+const rowOf = (review: UploadReview, v: ClassifiedValue) => ({
   fileId: review.labFiles[v.file].fileId, ref: v.ref, label: v.label,
   reasons: v.group === 'unsure' ? v.reasons : [],
   conflict: v.group === 'unsure' && v.reasons.includes('conflict')
-    ? (replacingOf(review, v) ? UPLOAD_TEXT_PROPOSED.replaces : IMPORT_REVIEW_TEXT.conflictKept) : null,
+    ? (replacingOf(review, v) ? UPLOAD_TEXT.replaces : IMPORT_REVIEW_TEXT.conflictKept) : null,
   ticked: review.labFiles[v.file].ticked.includes(v.ref),
   replaces: review.held.get(`${v.file}:${v.ref}`) ?? null,
   replacing: replacingOf(review, v),
@@ -162,7 +190,7 @@ const blocks = (v: ClassifiedValue) => v.ref[0] === 'v' && v.sent && !v.writes
 
 function saveLabel(plan: UploadSavePlan): string {
   const { values, documents, originals } = plan.counts;
-  return values || documents || !originals ? UPLOAD_TEXT.saveBoth(values, documents) : UPLOAD_TEXT_PROPOSED.saveOriginals(originals);
+  return values || documents || !originals ? UPLOAD_TEXT.saveBoth(values, documents) : UPLOAD_TEXT.saveOriginals(originals);
 }
 
 /** A read file with nothing in it, as the web says it (useUploadFlow `finish`): a document alone, or nothing found. */
@@ -191,7 +219,7 @@ function save(s: UploadState, plan: UploadSavePlan, review: UploadReview): Uploa
  */
 export function saveBlocked(review: UploadReview): string | null {
   if (review.classification.values.some(blocks)) return FIX_ERRORS_TEXT;
-  return review.labFiles.some((f) => f.needsDay) ? UPLOAD_TEXT_PROPOSED.chooseDay : null;
+  return review.labFiles.some((f) => f.needsDay) ? UPLOAD_TEXT.chooseDay : null;
 }
 
 /**
@@ -202,20 +230,27 @@ export function uploadView(s: UploadState, record: RoadmapFile, now: string, rev
   const plan = uploadSavePlan(s, record, now, review, cloudConnected);
   const files = 'files' in s ? s.files : [];
   const values = review.classification.values;
-  const extractions = new Map(readFiles(s).map((f) => [f.id, f.status.extraction]));
-  const row = valueRow(review, extractions, now);
+  const readById = new Map(readFiles(s).map((f) => [f.id, f]));
+  const extractions = new Map([...readById].map(([id, f]) => [id, f.status.extraction]));
+  const rowsById = new Map<string, FileMeasurement | FileLabValue>([...record.measurements, ...record.labValues].map((r) => [r.id, r]));
+  const row = valueRow(review, extractions, rowsById, now);
   const offered = values.filter((v) => isOfferedRef(v.ref));
   const unsure = offered.filter((v) => v.group === 'unsure');
   const sure = offered.filter((v) => v.group === 'sure');
   const failed = files.filter((f): f is UploadFile & { status: Extract<FileStatus, { s: 'failed' }> } => f.status.s === 'failed');
   const groups = notSavedGroups(values);
   const sections: UploadSection[] = [
-    ...review.labFiles.filter((f) => f.needsTestDay).map((f): UploadSection => ({ kind: 'undated', fileId: f.fileId, title: UPLOAD_TEXT.undatedTitle, label: UPLOAD_TEXT.dayOfTest, name: f.name, choose: UPLOAD_TEXT_PROPOSED.chooseDay })),
+    ...review.labFiles.flatMap((f): UploadSection[] => {
+      // A report that prints no full day asks for one; once picked, it shows the pick to be changed.
+      const read = readById.get(f.fileId);
+      const chosen = read && !validDay(read.status.extraction.reportDate ?? undefined, { now }) ? validDay(read.status.choices.testDay ?? undefined, { now })?.slice(0, 10) ?? null : null;
+      return f.needsTestDay || chosen ? [{ kind: 'undated', fileId: f.fileId, title: UPLOAD_TEXT.undatedTitle, label: UPLOAD_TEXT.dayOfTest, name: f.name, choose: UPLOAD_TEXT.chooseDay, chosen }] : [];
+    }),
     ...review.labFiles.filter((f) => f.needsPreviousDay).map((f): UploadSection => ({ kind: 'undatedPrevious', fileId: f.fileId, name: f.name, month: f.previousMonth, before: f.day?.slice(0, 10) ?? null })),
     ...(unsure.length ? [{ kind: 'unsure' as const, title: IMPORT_REVIEW_TEXT.checkTitle(unsure.length), footer: IMPORT_REVIEW_TEXT.checkFooter, rows: unsure.map(row) }] : []),
     ...(failed.length ? [{
       kind: 'failed' as const, title: UPLOAD_TEXT.failedTitle(failed.length),
-      rows: failed.map((f) => ({ fileId: f.id, name: f.name, line: FAIL_TEXT[f.status.reason] })),
+      rows: failed.map((f) => ({ fileId: f.id, name: f.name, line: failLine(f.status, s.platform) })),
       retry: s.phase === 'open' && failed.some((f) => RETRYABLE[f.status.reason]) ? UPLOAD_TEXT.retryAll : null,
     }] : []),
     ...(groups.total ? [{
@@ -235,14 +270,14 @@ export function uploadView(s: UploadState, record: RoadmapFile, now: string, rev
         const kindKey: DocumentType = (DOCUMENT_TYPES as readonly string[]).includes(fields.documentType) ? fields.documentType as DocumentType : 'other';
         return {
           fileId, title: fields.title, kind: KIND_WORDS[kindKey][0],
-          date: fields.documentDate ?? UPLOAD_TEXT.noDate, dateKnown: fields.documentDate !== null,
+          date: (fields.documentDate && longDate(fields.documentDate.slice(0, 10))) ?? UPLOAD_TEXT.noDate, dateKnown: fields.documentDate !== null,
           kindKey, day: fields.documentDate?.slice(0, 10) ?? null,
         };
       }),
       kinds: DOCUMENT_TYPES.map((key) => ({ key, word: KIND_WORDS[key][0] })),
       setDate: UPLOAD_TEXT.setDate, removeDate: UPLOAD_TEXT.removeDate,
     } : null,
-    files: { row: UPLOAD_TEXT.filesRow(files.length), rows: files.map((f) => ({ fileId: f.id, name: f.name, status: emptyRead(f) ?? statusWords(f.status) })) },
+    files: { row: UPLOAD_TEXT.filesRow(files.length), rows: files.map((f) => ({ fileId: f.id, name: f.name, status: emptyRead(f) ?? statusWords(f.status, s.platform) })) },
     // Read files with nothing in them, and files read only in part (US-12 AC9), in the web's words.
     notices: files.flatMap((f) => [emptyRead(f), f.pages?.truncated ? FILE_NOTICE_TEXT.truncated : null]
       .flatMap((line) => (line ? [{ fileId: f.id, name: f.name, line }] : []))),
@@ -256,6 +291,7 @@ export function uploadView(s: UploadState, record: RoadmapFile, now: string, rev
     phase: s.phase,
     refused: s.phase === 'failed' && s.refused ? REFUSED_TEXT[s.refused] : null,
     closeEnabled: s.phase !== 'saving',
+    editable: s.phase === 'open' || s.phase === 'saveFailed',
     doneLabel: UPLOAD_TEXT.done,
   };
 }

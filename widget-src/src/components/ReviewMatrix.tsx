@@ -350,7 +350,7 @@ const MatrixCellView = memo(function MatrixCellView({
           type="checkbox"
           checked={replace}
           onChange={(e) => onReplaceToggle(replaceKey(cell, cell.existing!), e.target.checked)}
-          aria-label={`Replace the saved ${rowName(row)} value from ${columnWords}`}
+          aria-label={REVIEW_CELL_TEXT.replaceLabel(rowName(row), columnWords)}
           aria-describedby={describedBy(oldId, newId, newUnitShown && unitId)}
         />
         <span aria-hidden="true">{REVIEW_CELL_TEXT.replace}</span>

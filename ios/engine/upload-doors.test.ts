@@ -9,7 +9,7 @@ import { createEmptyFile, type FileDocument, type RoadmapFile } from '../../pack
 import { bulkAppendValues, type BulkRow } from '../../packages/health-core/src/record-edits';
 import { initialUpload, transition, type UploadEvent, type UploadState } from '../../packages/health-core/src/upload-flow';
 import { knownAs, knownIndex, readIsLegacy } from '../../packages/health-core/src/upload-known';
-import { uploadFailure } from '../../packages/health-core/src/upload-failure';
+import { appGateFailure } from '../../packages/health-core/src/upload-failure';
 import { uploadReview } from '../../packages/health-core/src/upload-review';
 import { uploadView } from '../../packages/health-core/src/upload-view';
 import { uploadSavePlan } from '../../packages/health-core/src/upload-plan';
@@ -59,16 +59,32 @@ const READS: UnifiedExtractionResult[] = [
   { classification: 'clinic_letter', reportDate: null, values: [], additionalValues: [], unrecognized: [], document: { classification: 'clinic_letter', title: 'Synthetic letter', documentDate: '2026-01-01', contentMarkdown: '## Plan', metadata: {} } },
   { classification: 'other', reportDate: null, values: [], additionalValues: [], unrecognized: [], document: null },
 ];
-/** A failed send as the app saw it, and the body the web's reader would hand uploadFailure. */
-const SEND_ANSWERS: Array<{ status: number | null; body: string | null; contentType: string | null; read: unknown }> = [
-  { status: null, body: null, contentType: null, read: null },
-  { status: 429, body: '{"code":"busy"}', contentType: 'application/json', read: { code: 'busy' } },
-  { status: 429, body: '{}', contentType: 'application/json', read: {} },
-  { status: 422, body: '{"errorCode":"too_long"}', contentType: 'application/json; charset=utf-8', read: { errorCode: 'too_long' } },
-  { status: 422, body: '{nope', contentType: 'application/json', read: undefined },
-  { status: 502, body: '<html>', contentType: 'text/html', read: null },
-  { status: 200, body: '{"success":false}', contentType: 'application/json', read: { success: false } },
+/** A failed send as the app saw it: the app gate's refusals among them (US-52 AC7e). */
+const SEND_ANSWERS: Array<{ status: number | null; body: string | null; contentType: string | null }> = [
+  { status: null, body: null, contentType: null },
+  { status: 429, body: '{"code":"busy"}', contentType: 'application/json' },
+  { status: 429, body: '{}', contentType: 'application/json' },
+  { status: 429, body: '{"success":false,"error":"Daily limit reached. Please try again tomorrow.","reason":"limit"}', contentType: 'application/json' },
+  { status: 422, body: '{"errorCode":"too_long"}', contentType: 'application/json; charset=utf-8' },
+  { status: 422, body: '{nope', contentType: 'application/json' },
+  { status: 502, body: '<html>', contentType: 'text/html' },
+  { status: 200, body: '{"success":false}', contentType: 'application/json' },
+  { status: 401, body: '{"success":false,"error":"This request was not signed by the app.","reason":"bad_signature"}', contentType: 'application/json' },
+  { status: 413, body: '{"success":false,"error":"Request too large","reason":"too_large"}', contentType: 'application/json' },
+  { status: 400, body: '{"success":false,"error":"Invalid request"}', contentType: 'application/json' },
+  { status: 503, body: '{"success":false,"error":"This is not available right now. Please try again later.","reason":"unavailable"}', contentType: 'application/json' },
 ];
+/** A send with no lab-read answer, as the phone saw it, and what the engine makes of it (an oracle written out, not computed). */
+const LOCALS = [
+  [{ kind: 'cannotAttest' }, { failure: 'cannot_attest' }],
+  [{ kind: 'attestFailed', stage: 'assert', code: '3' }, { failure: 'attest_failed', detail: { stage: 'assert', code: '3' } }],
+  [{ kind: 'refused', status: 429, message: ' The app could not be registered. ' }, { failure: 'app_refused', detail: { message: 'The app could not be registered.' } }],
+  [{ kind: 'refused', status: 503, message: 'Busy' }, { failure: 'server_error', detail: { message: 'Busy' } }],
+  [{ kind: 'badAnswer' }, { failure: 'app_refused', detail: { message: "The server's answer could not be read." } }],
+  [{ kind: 'timeout' }, { failure: 'network', detail: { network: 'timeout' } }],
+  [{ kind: 'dropped' }, { failure: 'network', detail: { network: 'dropped' } }],
+  [{ kind: 'unreachable' }, { failure: 'network', detail: { network: 'unreachable' } }],
+] as const;
 const NAMES = ['old.pdf', 'a.pdf', 'b.jpg', 'c.docx', '__MACOSX/e.pdf'];
 
 type Wire = Record<string, unknown> & { type: string };
@@ -109,17 +125,22 @@ function genEvent(r: () => number, s: UploadState, mint: () => string): { wire: 
     [4, () => {
       const id = idAt('sending');
       const line = pick([JSON.stringify({ status: 200, body: { success: true, data: pick(READS) } }), JSON.stringify({ status: 429, body: { success: false } }),
-        JSON.stringify({ status: 422, body: { errorCode: 'refused' } }), null, '{cut']);
+        JSON.stringify({ status: 422, body: { errorCode: 'refused' } }), JSON.stringify({ status: 500, body: { success: false, error: 'Failed to process request' } }), null, '{cut']);
       const a = labStreamAnswer(line);
       const name = files.find((f) => f.id === id)?.name;
       return { wire: { type: 'streamEnded', run, id, line, now: NOW }, whole: 'extraction' in a
         ? { type: 'answered', run, id, extraction: a.extraction, legacy: name !== undefined && readIsLegacy(RECORD, name, a.extraction), now: NOW }
-        : { type: 'sendFailed', run, id, failure: a.failure } };
+        : { type: 'sendFailed', run, id, failure: a.failure, ...(a.detail ? { detail: a.detail } : {}) } };
     }],
     [2, () => {
       const id = idAt('sending');
-      const { read, ...answer } = pick(SEND_ANSWERS);
-      return { wire: { type: 'sendFailed', run, id, ...answer }, whole: { type: 'sendFailed', run, id, failure: uploadFailure(answer.status, read) } };
+      const answer = pick(SEND_ANSWERS);
+      return { wire: { type: 'sendFailed', run, id, ...answer }, whole: { type: 'sendFailed', run, id, ...appGateFailure(answer.status, answer.body, answer.contentType) } };
+    }],
+    [1, () => {
+      const id = idAt('sending');
+      const [local, made] = pick(LOCALS);
+      return { wire: { type: 'sendFailed', run, id, status: null, body: null, contentType: null, local }, whole: { type: 'sendFailed', run, id, ...made } as UploadEvent };
     }],
     [2, () => same({ type: 'retry', id: coin(0.5) ? 'all' : idAt('failed') })],
     [1, () => same({ type: 'stop' })],
@@ -230,6 +251,10 @@ describe('upload doors refuse malformed input and never throw (shared upload PR 
       { type: 'stop', extra: 1 }, { type: 'retry', id: 7 }, { type: 'converted', run: 1, id: 'f', pages: -1, truncated: false },
       { type: 'picked', files: [{ id: 'x', name: 'x', bytes: 1, kind: 'folder' }], needsConsent: false, now: NOW },
       { type: 'streamEnded', run: 1, id: 'f', line: 5, now: NOW }, { type: 'sendFailed', run: 1, id: 'f', status: '429', body: null, contentType: null },
+      // US-52 AC7e: the phone's App Attest outcome is a short step and code, nothing more; never `detail` from the app.
+      { type: 'sendFailed', run: 1, id: 'f', status: null, body: null, contentType: null, local: { kind: 'attestFailed', stage: 'assert', code: 'com.apple 3' } },
+      { type: 'sendFailed', run: 1, id: 'f', status: null, body: null, contentType: null, local: { kind: 'cannotAttest', stage: 'x' } },
+      { type: 'sendFailed', run: 1, id: 'f', status: null, body: null, contentType: null, detail: { message: 'x' } },
       { type: 'answered', run: 1, id: 'f', now: NOW, extraction: { ...READS[0], additionalValues: [{ name: 'Ferritin', value: 80, unit: 'u', referenceLow: 'x' }] } },
     ];
     for (const e of events) expect(refusal(uploadStepJson(JSON.stringify(read), JSON.stringify(e), RECORD_TEXT, DEV)), JSON.stringify(e)).toBe('invalid-event');
@@ -292,6 +317,35 @@ describe('upload doors refuse malformed input and never throw (shared upload PR 
       }
     }
   });
+});
+
+describe('a send that failed, through the step door: each answer\'s reason and words, written out (US-52 AC7e)', () => {
+  const sending = JSON.stringify({
+    phase: 'open', platform: 'phone', run: 1, started: NOW, firstRead: null,
+    files: [{ id: 'f', name: 'f.pdf', bytes: 1, hash: 'h', pages: { count: 1, truncated: false }, status: { s: 'sending', attempt: 1 } }],
+  });
+  const json = 'application/json';
+  const cases: Array<[number | null, string | null, string | null, unknown]> = [
+    [401, '{"success":false,"error":"This request was not signed by the app.","reason":"bad_signature"}', json, { s: 'failed', reason: 'appRefused', attempt: 1, detail: { message: 'This request was not signed by the app.' } }],
+    [413, '{"success":false,"error":"Request too large","reason":"too_large"}', json, { s: 'failed', reason: 'tooLarge', attempt: 1, detail: { message: 'Request too large' } }],
+    [400, '{"success":false,"error":"The request did not arrive whole. Please try again.","reason":"body_read_failed"}', json, { s: 'failed', reason: 'network', attempt: 1, detail: { message: 'The request did not arrive whole. Please try again.' } }],
+    [400, '{"success":false,"error":"Invalid request"}', json, { s: 'failed', reason: 'appRefused', attempt: 1, detail: { message: 'Invalid request' } }],
+    [429, '{"success":false,"error":"Daily limit reached. Please try again tomorrow.","reason":"limit"}', json, { s: 'failed', reason: 'dailyLimit', attempt: 1, detail: { message: 'Daily limit reached. Please try again tomorrow.' } }],
+    [503, '{"success":false,"error":"This is not available right now. Please try again later.","reason":"unavailable"}', json, { s: 'failed', reason: 'server', attempt: 1, detail: { message: 'This is not available right now. Please try again later.' } }],
+    [502, '<html>', 'text/html', { s: 'failed', reason: 'server', attempt: 1 }],
+    [null, null, null, { s: 'failed', reason: 'network', attempt: 1 }],
+  ];
+  it('a refused registration\'s over-long words are cut by the engine, never a reason to refuse the event (Codex re-check)', () => {
+    const message = '👨‍👩‍👧'.repeat(1001); // 5 code points, 8 UTF-16 units each
+    const step = JSON.parse(uploadStepJson(sending, JSON.stringify({ type: 'sendFailed', run: 1, id: 'f', status: null, body: null, contentType: null, local: { kind: 'refused', status: 503, message } }), RECORD_TEXT, DEV));
+    expect(step.state.files[0].status).toEqual({ s: 'failed', reason: 'server', attempt: 1, detail: { message: '👨‍👩‍👧'.repeat(25) } });
+  });
+  for (const [status, body, contentType, want] of cases) {
+    it(`${status} ${body?.slice(0, 40)}`, () => {
+      const step = JSON.parse(uploadStepJson(sending, JSON.stringify({ type: 'sendFailed', run: 1, id: 'f', status, body, contentType }), RECORD_TEXT, DEV));
+      expect(step.state.files[0].status).toEqual(want);
+    });
+  }
 });
 
 describe('upload view cost (shared upload PR 12)', () => {

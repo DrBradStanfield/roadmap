@@ -21,7 +21,9 @@ struct UploadReviewView: View {
     @State private var openLetters: Set<String> = []
     @State private var notSavedOpen = false
     /// Pickers open by key ("day:<file>" or "date:<file>"), with the date each shows until Done sends it.
-    @State private var picking: [String: Date] = [:]
+    @State private var picking: [String: Picking] = [:]
+    /// An open picker: the day tapped (YYYY-MM-DD), nil until one is.
+    private struct Picking { var day: String? }
     @State private var titles: [String: String] = [:]
     @State private var letters: [String: String] = [:]
 
@@ -47,7 +49,6 @@ struct UploadReviewView: View {
                     if let unstored = done.unstored { Text(verbatim: unstored).foregroundStyle(.secondary) }
                 }
                 Section { filesRow }
-                if let label = page.doneLabel { bottomButton(label, enabled: true, identifier: "upload.done", action: finish) }
             } else {
                 Section {
                     Text(verbatim: page.summary)
@@ -62,19 +63,24 @@ struct UploadReviewView: View {
                     }
                 }
                 if let progress = page.progress { progressSection(progress) }
-                ForEach(page.sections) { section($0) }
-                if !page.notices.isEmpty {
-                    Section { ForEach(page.notices) { fileLine($0.name, $0.line) } }
+                // Every choice waits while a Save runs: a control shows only what the view says.
+                Group {
+                    ForEach(page.sections) { section($0) }
+                    if !page.notices.isEmpty {
+                        Section { ForEach(page.notices) { fileLine($0.name, $0.line) } }
+                    }
+                    // What Save writes, collapsed, in one card.
+                    Section {
+                        if let sure = page.sure { sureRow(sure) }
+                        if let documents = page.documents { documentsRow(documents) }
+                        filesRow
+                    }
                 }
-                // What Save writes, collapsed, in one card.
-                Section {
-                    if let sure = page.sure { sureRow(sure) }
-                    if let documents = page.documents { documentsRow(documents) }
-                    filesRow
-                }
-                saveSection
+                .disabled(!editable)
             }
         }
+        // Save (or Done) stays in reach at the bottom however long the page is.
+        .safeAreaInset(edge: .bottom) { bottomBar }
         // Wide screens (iPad): a readable column, not rows stretched across the page.
         .frame(maxWidth: 700)
         .frame(maxWidth: .infinity)
@@ -108,8 +114,14 @@ struct UploadReviewView: View {
         case .undated(let undated):
             Section {
                 Text(verbatim: undated.name)
-                datePicker(key: "day:\(undated.fileId)", label: undated.label, opens: undated.choose ?? undated.label) {
-                    send(.testDay(fileId: undated.fileId, day: $0))
+                if let chosen = undated.chosen, let date = DayText.noon(chosen) {
+                    // The picked day, shown and changeable; a change goes to the engine at once.
+                    DatePicker(selection: Binding(get: { date }, set: { send(.testDay(fileId: undated.fileId, day: DayText.iso($0))) }),
+                               in: ...Date.now, displayedComponents: .date) { Text(verbatim: undated.label) }
+                } else {
+                    datePicker(key: "day:\(undated.fileId)", label: undated.label, opens: undated.choose ?? undated.label) {
+                        send(.testDay(fileId: undated.fileId, day: $0))
+                    }
                 }
             } header: { Text(verbatim: undated.title) }
         case .unsure(let title, let footer, let rows):
@@ -141,9 +153,12 @@ struct UploadReviewView: View {
         if let replace = row.replace, let held = row.replaces {
             VStack(alignment: .leading, spacing: 8) {
                 valueText(row)
+                // What the record holds that day, beside the switch, as the web's conflict cell shows it.
+                if let held = row.held { Text(verbatim: held).font(.body.monospacedDigit()).foregroundStyle(.secondary) }
                 Toggle(isOn: Binding(get: { row.replacing ?? false }, set: { on in
                     send(.replace(fileId: row.fileId, ref: row.ref, correctsId: on ? held : nil))
                 })) { Text(verbatim: replace) }
+                    .accessibilityLabel(Text(verbatim: row.replaceLabel ?? replace))
             }
         } else if row.conflict != nil {
             valueText(row)
@@ -159,9 +174,9 @@ struct UploadReviewView: View {
         VStack(alignment: .leading, spacing: 2) {
             Text(verbatim: row.label)
             if let value = row.value { Text(verbatim: [value, row.unit ?? ""].filter { !$0.isEmpty }.joined(separator: " ")).font(.body.monospacedDigit()) }
-            // The app's existing words for a value's own day.
-            if let day = row.day { Text("Dated \(DayText.short(day)) on the report").font(.caption).foregroundStyle(.secondary) }
-            ForEach([row.question, row.printed].compactMap { $0 }, id: \.self) { Text(verbatim: $0).font(.caption).foregroundStyle(.secondary) }
+            // The day it saves on, so the same test from two reports is told apart.
+            if let dayLine = row.dayLine { Text(verbatim: dayLine).font(.caption).foregroundStyle(.secondary) }
+            ForEach([row.question, row.unitNote].compactMap { $0 }, id: \.self) { Text(verbatim: $0).font(.caption).foregroundStyle(.secondary) }
             // The status tone, not system orange: AA contrast as caption text, light and dark.
             ForEach([row.conflict, row.error].compactMap { $0 }, id: \.self) {
                 Text(verbatim: $0).font(.caption).foregroundStyle(Color.status("attention"))
@@ -217,7 +232,7 @@ struct UploadReviewView: View {
     private func letterBody(_ document: UploadPage.Document, _ documents: UploadPage.Documents) -> some View {
         TextField(document.title, text: title(document))
             .onSubmit { commitTitles() }
-            .onDisappear { commitTitles() }
+            .onDisappear { if editable { commitTitles() } }
             .submitLabel(.done)
             .analyticsMasked()
             .accessibilityLabel(Text(verbatim: document.title))
@@ -247,20 +262,21 @@ struct UploadReviewView: View {
     }
 
     /// A day the person picks: closed, a button in the view's words; open, a calendar and Done,
-    /// which sends the day shown. Nothing is sent, and no day assumed, until Done.
+    /// which sends the day picked. Done waits until a day is tapped: no day is assumed.
     @ViewBuilder
     private func datePicker(key: String, label: String, opens: String, choose: @escaping (String) -> Void) -> some View {
-        if let shown = picking[key] {
-            DatePicker(selection: Binding(get: { shown }, set: { picking[key] = $0 }), in: ...Date.now, displayedComponents: .date) { Text(verbatim: label) }
-                .datePickerStyle(.graphical)
+        if let open = picking[key] {
+            // Opens with no day selected: one tap on any day, today included, enables Done.
+            DayCalendar(picked: { picking[key] = .init(day: $0) }, label: label)
             if let done = page.doneLabel {
                 Button {
                     picking[key] = nil
-                    choose(DayText.iso(shown))
+                    if let day = open.day { choose(day) }
                 } label: { Text(verbatim: done) }
+                .disabled(open.day == nil)
             }
         } else {
-            Button { picking[key] = .now } label: { Text(verbatim: opens) }
+            Button { picking[key] = .init(day: nil) } label: { Text(verbatim: opens) }
         }
     }
 
@@ -270,37 +286,36 @@ struct UploadReviewView: View {
         } label: { Text(verbatim: page.files.row) }
     }
 
-    private var saveSection: some View {
-        bottomButton(page.save.label, enabled: page.save.enabled, identifier: "upload.save") {
-            analytics?.event(.labSaveAll)  // the one Save of the whole upload; never a count
-            commitTitles() // a title still being typed goes first: the events step in the order sent
-            send(.save)
-        } notes: {
-            if let why = page.save.why { Text(verbatim: why).font(.footnote).foregroundStyle(.secondary) }
-            if let error = page.save.error { Text(verbatim: error).font(.footnote).foregroundStyle(Color.status("attention")) }
+    /// Save with why it waits or why it failed, or Done once saved: the page's one filled button
+    /// (the app's accent style, OnAccent text, AA in dark mode too), a fixed width on a wide screen.
+    @ViewBuilder private var bottomBar: some View {
+        VStack(spacing: 6) {
+            if page.done != nil, let label = page.doneLabel {
+                Button(action: finish) { Text(verbatim: label) }
+                    .buttonStyle(.accent)
+                    .accessibilityIdentifier("upload.done")
+            } else {
+                Button {
+                    // A title still being typed goes first: the events step in the order sent.
+                    if editable { commitTitles() }
+                    send(.save)
+                } label: { Text(verbatim: page.save.label) }
+                    .buttonStyle(.accent)
+                    .disabled(!page.save.enabled)
+                    .accessibilityIdentifier("upload.save")
+                if let why = page.save.why { Text(verbatim: why).font(.footnote).foregroundStyle(.secondary) }
+                if let error = page.save.error { Text(verbatim: error).font(.footnote).foregroundStyle(Color.status("attention")) }
+            }
         }
+        .frame(maxWidth: 400)
+        .padding(.horizontal, 20)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity)
+        .background(.bar)
     }
 
-    /// The page's one filled button, aligned with the cards (a fixed width on a wide screen), its
-    /// notes under it with no divider.
-    private func bottomButton(_ label: String, enabled: Bool, identifier: String, action: @escaping () -> Void,
-                              @ViewBuilder notes: () -> some View = { EmptyView() }) -> some View {
-        Section {
-            Group {
-                // The app's filled accent button (OnAccent text, AA in dark mode too).
-                Button(action: action) { Text(verbatim: label) }
-                    .buttonStyle(.accent)
-                    .disabled(!enabled)
-                    .accessibilityIdentifier(identifier)
-                    .frame(maxWidth: 400)
-                    .frame(maxWidth: .infinity)
-                notes().padding(.horizontal, 20).padding(.top, 4)
-            }
-            .listRowBackground(Color.clear)
-            .listRowSeparator(.hidden)
-            .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
-        }
-    }
+    /// The view says the choices can change; an older view that does not say lets them.
+    private var editable: Bool { page.editable ?? true }
 
     // MARK: Plain view state
 

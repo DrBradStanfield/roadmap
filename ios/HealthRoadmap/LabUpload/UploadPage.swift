@@ -11,9 +11,9 @@ struct UploadPage: Decodable, Equatable, Sendable {
         let zip: String?
     }
 
-    /// One read value: its test, the number and unit as printed, the extractor's question, the
-    /// web's printed line for a guessed unit, its own day (YYYY-MM-DD) when not the report's, the
-    /// tick, and Replace (its word, the held row it corrects, and whether it is on).
+    /// One read value: its test, the number and unit as printed, the extractor's question, a note
+    /// when the unit was guessed, its own day (YYYY-MM-DD) when not the report's, the tick, and
+    /// Replace (its word, its spoken name, the held row it corrects, and whether it is on).
     struct ValueRow: Decodable, Equatable, Sendable, Identifiable {
         let fileId: String
         let ref: String
@@ -21,12 +21,16 @@ struct UploadPage: Decodable, Equatable, Sendable {
         let value: String?
         let unit: String?
         let question: String?
-        let printed: String?
+        let unitNote: String?
         let day: String?
+        /// The day it saves on, as the web writes dates; the held value it would replace.
+        let dayLine: String?
+        let held: String?
         let conflict: String?
         let ticked: Bool
         let error: String?
         let replace: String?
+        let replaceLabel: String?
         let replaces: String?
         let replacing: Bool?
         var id: String { "\(fileId):\(ref)" }
@@ -46,6 +50,8 @@ struct UploadPage: Decodable, Equatable, Sendable {
         let label: String
         let name: String
         let choose: String?
+        /// The day the person picked (YYYY-MM-DD): shown, to be changed.
+        let chosen: String?
     }
 
     /// One section, in the order the view lists them. One this build does not know is `other`.
@@ -160,10 +166,19 @@ struct UploadPage: Decodable, Equatable, Sendable {
     let closeEnabled: Bool?
     let doneLabel: String?
     let engineError: String?
+    /// The review's choices can be changed (not while saving).
+    let editable: Bool?
 
     /// The view's text decoded; nil when it does not read.
     static func decoded(_ text: String) -> UploadPage? {
         try? JSONDecoder().decode(UploadPage.self, from: Data(text.utf8))
+    }
+
+    /// The doors' engine-error words from a view that does not read as a whole, so the page never
+    /// draws blank; nil when even those are not there.
+    static func words(_ text: String) -> String? {
+        struct Words: Decodable { let engineError: String }
+        return try? JSONDecoder().decode(Words.self, from: Data(text.utf8)).engineError
     }
 }
 

@@ -6,9 +6,16 @@ import { BP_THRESHOLDS } from './units';
 
 export type BpTier = 'crisis' | 'stage2' | 'stage1' | 'elevated' | 'normal';
 
-/** Each tier's name: the plan's card titles, and the algorithm table's Elevated row (a label only, no card). */
+/** Each tier's name: the plan's card titles, and the algorithm table's Elevated row (a label only, no card).
+ *  A range describes the number, never a condition (Brad 2026-11-20). */
 export const BP_TIER_LABEL: Readonly<Record<BpTier, string>> = {
-  crisis: 'Hypertensive crisis', stage2: 'Stage 2 hypertension', stage1: 'Stage 1 hypertension', elevated: 'Elevated', normal: 'Normal',
+  crisis: 'Blood pressure in the crisis range', stage2: 'Blood pressure in the stage 2 range', stage1: 'Blood pressure in the stage 1 range',
+  elevated: 'Elevated', normal: 'Normal',
+};
+
+/** The same names, short enough for the blood pressure widget's status pill (US-75). */
+export const BP_TIER_SHORT: Readonly<Record<BpTier, string>> = {
+  crisis: 'Crisis range', stage2: 'Stage 2 range', stage1: 'Stage 1 range', elevated: 'Elevated', normal: 'Normal',
 };
 
 /** Raised blood pressure: systolic ≥130 or diastolic ≥80. Either half counts

@@ -11,6 +11,7 @@ struct LabUploadSheet: View {
     let store: RecordStore
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.analytics) private var analytics
     /// The sheet's one named state, moved only by `send(_:)` (LabUploadFlow).
     @State private var step = LabUploadFlow.Step.choose
     @State private var importing = false
@@ -19,12 +20,11 @@ struct LabUploadSheet: View {
     @State private var photo: PhotosPickerItem?
     /// The pick being read into bytes, cancelled when the sheet closes.
     @State private var work: Task<Void, Never>?
-    /// The shared upload: made at the first pick.
-    @State private var shared: UploadSession?
-
-    /// Close and swipe-down wait while the page's view says so (a save under way).
+    /// Close and swipe-down wait from a Save's tap until its outcome draws, and while the view says so.
     private var closeHeld: Bool {
-        guard case .shared = step, let shared, case .drawn(let text) = shared.model.state else { return false }
+        guard case .shared(let shared) = step else { return false }
+        if shared.saveClaimed { return true }
+        guard case .drawn(let text) = shared.model.state else { return false }
         return shared.page(text)?.closeEnabled == false
     }
 
@@ -48,7 +48,7 @@ struct LabUploadSheet: View {
                 }
         }
         .interactiveDismissDisabled(closeHeld)
-        .onDisappear { work?.cancel() }
+        .onDisappear { leave() }
         .fileImporter(isPresented: $importing, allowedContentTypes: [.folder, .pdf, .jpeg, .png, .zip], allowsMultipleSelection: false) { result in
             if case .success(let urls) = result, let url = urls.first {
                 pick { [engine] in try await LabFileReader.picked(url, ask: { await engine.uploadRules(files: $0, members: $1) }) }
@@ -78,8 +78,8 @@ struct LabUploadSheet: View {
         switch step {
         case .choose:
             chooser
-        case .shared:
-            if let shared { sharedPage(shared) }
+        case .shared(let shared):
+            sharedPage(shared)
         case .failed(let message):
             VStack(spacing: 16) {
                 Text(message).multilineTextAlignment(.center)
@@ -106,6 +106,9 @@ struct LabUploadSheet: View {
                         dismiss()
                     }
                 }
+            } else if let words = shared.engineError {
+                // A view that does not read draws the doors' own words, never a blank page.
+                Text(verbatim: words).multilineTextAlignment(.center).padding()
             }
         case .refused(let refusal):
             VStack(spacing: 16) {
@@ -119,17 +122,32 @@ struct LabUploadSheet: View {
         }
     }
 
-    /// The one way the step moves; Done closes the sheet.
+    /// The one way the step moves; Done closes the sheet. Leaving the shared page unpins its record.
     private func send(_ event: LabUploadFlow.Event) {
+        let before = step
         step = LabUploadFlow.transition(step, event)
+        if case .shared(let session) = before, !isShared(step, session) { session.end() }
         if case .finished = step { dismiss() }
+    }
+
+    private func isShared(_ step: LabUploadFlow.Step, _ session: UploadSession) -> Bool {
+        if case .shared(let now) = step { now === session } else { false }
     }
 
     /// Close: the shared upload is left, dropping what it read.
     private func close() {
-        work?.cancel()
-        if case .shared = step { shared?.send(.discard) }
+        leave()
         dismiss()
+    }
+
+    /// The sheet is going: the pick being read is cancelled (never held or sent), and the shared
+    /// upload is left and its record unpinned.
+    private func leave() {
+        work?.cancel()
+        if case .shared(let shared) = step {
+            shared.send(.discard)
+            shared.end()
+        }
     }
 
     // MARK: Where the records are (AC10)
@@ -170,18 +188,16 @@ struct LabUploadSheet: View {
     /// shared upload's doors cannot read it.
     private func pick(_ files: @escaping @Sendable () async throws -> [UploadRunner.Picked]) {
         guard case .choose = step else { return }
-        let session = shared ?? UploadSession(engine: engine, store: store)
-        shared = session
-        send(.sharedPicked)
+        let session = UploadSession(engine: engine, store: store, analytics: analytics)
+        send(.sharedPicked(session))
         work?.cancel()
         work = Task {
-            do {
-                let picked = try await files()
-                try Task.checkCancellation()
-                if await session.runner.pick(picked, needsConsent: !AIConsent.labUpload.given) { return }
-                if session.model.state == .unavailable { send(.failed(Self.notRead)) }
-            } catch {
-                if !Task.isCancelled { send(.failed(error.localizedDescription)) }
+            let started = await session.start({ try await files() }, needsConsent: !AIConsent.labUpload.given)
+            guard !Task.isCancelled else { return }
+            switch started {
+            case .running: break
+            case .refused(let message): send(.failed(message))
+            case .fallback: send(.failed(Self.notRead))
             }
         }
     }

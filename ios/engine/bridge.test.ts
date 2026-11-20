@@ -173,9 +173,9 @@ describe('bridge contract (US-25 AC18)', () => {
       documents: [{ id: 'd2', title: 'Held', type: 'clinic_letter', date: '2026-01-01', fileRef: '', contentHash: 'h-meta', mimeType: '', extractedText: '', addedAt: NOW, metadata: {}, sourceFileName: 'kn.pdf' }] });
     const call = (name: string, ...args: unknown[]) => JSON.parse(door[name](...args));
     const row = { fileId: 'string', ref: 'string', label: 'string', reasons: 'object', conflict: 'string?', ticked: 'boolean', replaces: 'string?', replacing: 'boolean', error: 'string?',
-      value: 'string', unit: 'string', question: 'string?', printed: 'string?', day: 'string?', replace: 'string?' };
+      value: 'string', unit: 'string', question: 'string?', unitNote: 'string?', day: 'string?', dayLine: 'string?', replace: 'string?', replaceLabel: 'string?', held: 'string?' };
     const SECTIONS: Record<string, unknown> = {
-      undated: { kind: 'string', fileId: 'string', title: 'string', label: 'string', name: 'string', choose: 'string' },
+      undated: { kind: 'string', fileId: 'string', title: 'string', label: 'string', name: 'string', choose: 'string', chosen: 'string?' },
       undatedPrevious: { kind: 'string', fileId: 'string', name: 'string', month: 'string?', before: 'string?' },
       unsure: { kind: 'string', title: 'string', footer: 'string', rows: [row] },
       failed: { kind: 'string', title: 'string', rows: [{ fileId: 'string', name: 'string', line: 'string' }], retry: 'string?' },
@@ -192,7 +192,7 @@ describe('bridge contract (US-25 AC18)', () => {
       files: { row: 'string', rows: [{ fileId: 'string', name: 'string', status: 'string' }] },
       notices: [{ fileId: 'string', name: 'string', line: 'string' }],
       save: { label: 'string', enabled: 'boolean', why: 'string?', error: 'string?' }, stop: { label: 'string' },
-      phase: 'string', refused: 'string?', closeEnabled: 'boolean', doneLabel: 'string', engineError: 'string',
+      phase: 'string', refused: 'string?', closeEnabled: 'boolean', doneLabel: 'string', engineError: 'string', editable: 'boolean',
     }, view)).toEqual([]);
     expect(view.sections.map((x: { kind: string }) => x.kind).sort()).toEqual(Object.keys(SECTIONS).sort());
     for (const section of view.sections) expect(shapeFaults(SECTIONS[section.kind], section), section.kind).toEqual([]);

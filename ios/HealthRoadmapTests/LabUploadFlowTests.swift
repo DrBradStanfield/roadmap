@@ -3,6 +3,7 @@ import XCTest
 
 /// US-52 AC8b: the upload sheet's one named state, moved only by `transition`. Every
 /// event, from the step it belongs to, and the steps it leaves alone.
+@MainActor
 final class LabUploadFlowTests: XCTestCase {
     typealias Step = LabUploadFlow.Step
 
@@ -36,7 +37,12 @@ final class LabUploadFlowTests: XCTestCase {
         .savingAll(results, SaveAllProgress(reports: reports, inFlight: inFlight, outcomes: outcomes))
     }
 
-    func testEveryEventMovesTheStepAsTheTableSays_US52_AC8b() {
+    func testEveryEventMovesTheStepAsTheTableSays_US52_AC8b() throws {
+        let folder = FileManager.default.temporaryDirectory.appending(path: "Flow \(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let session = UploadSession(engine: try HealthEngine(), store: try RecordStore(folder: folder, engine: try HealthEngine(), deviceId: "test"))
+        defer { session.end() }
         let review0 = Step.review(Self.results, index: 0)
         let review1 = Step.review(Self.results, index: 1)
         let review2 = Step.review(Self.results, index: 2)
@@ -87,11 +93,11 @@ final class LabUploadFlowTests: XCTestCase {
             ("a late result outside save all changes nothing", review0, .reportFinished(0, .saved(values: 1, documents: 0)), "review 0/3"),
             ("Stop sharing goes to the sources", .choose, .restart, "choose"),
             // Design PR 15: a file from Files goes to the shared upload's one page.
-            ("a Files pick goes to the shared page (its consent is the engine's phase)", .choose, .sharedPicked, "shared"),
-            ("a shared pick while reading is ignored", .working("x", nil, back: .choose), .sharedPicked, "working x - back:choose"),
-            ("an engine without the doors reads in today's flow", .shared, .picked, "working Reading the file on your iPhone - back:choose"),
-            ("Choose another file from a refused page", .shared, .restart, "choose"),
-            ("Done on the page closes", .shared, .done, "finished"),
+            ("a Files pick goes to the shared page (its consent is the engine's phase)", .choose, .sharedPicked(session), "shared"),
+            ("a shared pick while reading is ignored", .working("x", nil, back: .choose), .sharedPicked(session), "working x - back:choose"),
+            ("an engine without the doors reads in today's flow", .shared(session), .picked, "working Reading the file on your iPhone - back:choose"),
+            ("Choose another file from a refused page", .shared(session), .restart, "choose"),
+            ("Done on the page closes", .shared(session), .done, "finished"),
         ]
         for (name, from, event, expected) in table {
             XCTAssertEqual(Self.words(LabUploadFlow.transition(from, event)), expected, name)

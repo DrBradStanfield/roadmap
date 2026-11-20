@@ -8,7 +8,7 @@
  * order they were picked in, a ZIP's members at the ZIP's place (US-12 AC23).
  */
 import type { UnifiedExtractionResult } from './lab-extraction';
-import type { UploadFailure } from './upload-failure';
+import type { FailDetail, UploadFailure } from './upload-failure';
 import { choose, NO_CHOICES, type ChoiceChange, type FileChoices } from './upload-choices';
 import type { Known } from './upload-known';
 import { fileVerdict, requestFlags, UPLOAD_LIMITS, zipMemberVerdict, type RequestFlags, type UploadPlatform } from './upload-rules';
@@ -20,17 +20,22 @@ import { fileVerdict, requestFlags, UPLOAD_LIMITS, zipMemberVerdict, type Reques
  *  key's per-minute limit, which never stops the run) and noKey (no key at all, a whole run's refusal). The phone
  *  never produces the key reasons. */
 export type FailReason = 'unreadable' | 'bytesUnreadable' | 'zipUnreadable' | 'zipEmpty' | 'timeout' | 'busy' | 'dailyLimit' | 'declined' | 'tooLong' | 'server' | 'network'
-  | 'keyRefused' | 'noCredit' | 'keyRateLimit' | 'noKey';
+  | 'keyRefused' | 'noCredit' | 'keyRateLimit' | 'noKey'
+  // The iPhone's alone (US-52 AC7e): the app gate refused for good (appRefused) or the body was too large;
+  // the phone cannot prove the app at all (cannotAttest), or its proof failed this time (attestFailed).
+  | 'appRefused' | 'tooLarge' | 'cannotAttest' | 'attestFailed';
 
 /** Which failures Try again can mend: a busy or unreachable server, a convert that ran out of time, a key's minute limit. */
 export const RETRYABLE: Record<FailReason, boolean> = {
   unreadable: false, bytesUnreadable: true, zipUnreadable: false, zipEmpty: false, timeout: true, busy: true, dailyLimit: false, declined: false, tooLong: false, server: true, network: true,
   keyRefused: false, noCredit: false, keyRateLimit: true, noKey: false,
+  appRefused: false, tooLarge: false, cannotAttest: false, attestFailed: true,
 };
 /** The server's failure (upload-failure.ts) as a file's reason. */
 const SEND_FAILURE: Record<UploadFailure, FailReason> = {
   rate_limit: 'dailyLimit', busy: 'busy', server_error: 'server', network: 'network', refused: 'declined', too_long: 'tooLong',
   key_refused: 'keyRefused', no_credit: 'noCredit', key_rate_limit: 'keyRateLimit',
+  app_refused: 'appRefused', too_large: 'tooLarge', cannot_attest: 'cannotAttest', attest_failed: 'attestFailed',
 };
 /** A whole run refused before any send: the daily limit, no key (Pages), or the reader could not start. */
 export type RunRefusal = Extract<FailReason, 'dailyLimit' | 'noKey' | 'server'>;
@@ -47,7 +52,7 @@ export type FileStatus =
   | { s: 'ready'; attempt: number }                        // pages held, waiting for a send slot
   | { s: 'sending'; attempt: number }
   | { s: 'read'; extraction: UnifiedExtractionResult; choices: FileChoices }
-  | { s: 'failed'; reason: FailReason; attempt: number }   // attempt: sends tried
+  | { s: 'failed'; reason: FailReason; attempt: number; detail?: FailDetail } // attempt: sends tried; detail: the send's own words
   | { s: 'stopped' };                                      // Stop or Cancel reached it first
 export type FileStage = FileStatus['s'];
 
@@ -86,7 +91,7 @@ export type UploadEvent =
   | { type: 'converted'; run: number; id: string; pages: number; truncated: boolean }
   | { type: 'convertFailed'; run: number; id: string; reason: 'unreadable' | 'timeout' }
   | { type: 'answered'; run: number; id: string; extraction: UnifiedExtractionResult; legacy: boolean; now: string } // legacy: legacyMatch said known
-  | { type: 'sendFailed'; run: number; id: string; failure: UploadFailure }
+  | { type: 'sendFailed'; run: number; id: string; failure: UploadFailure; detail?: FailDetail }
   | { type: 'runRefused'; run: number; reason: RunRefusal } // before any send: every file not yet read fails with the reason
   | { type: 'retry'; id: string | 'all' }
   | { type: 'stop' }
@@ -135,7 +140,8 @@ const idsIn = (files: UploadFile[], stages: readonly FileStage[]) => files.filte
 const forget = (run: number, ids: string[]): UploadEffect[] => (ids.length ? [{ type: 'forget', run, ids }] : []);
 const abort = (run: number, ids: string[]): UploadEffect[] => (ids.length ? [{ type: 'abort', run, ids }] : []);
 const pickOf = ({ platform, run, files, started, firstRead }: Pick): Pick => ({ platform, run, files, started, firstRead });
-const failed = (f: UploadFile, reason: FailReason, attempt = 0): UploadFile => ({ ...f, status: { s: 'failed', reason, attempt } });
+const failed = (f: UploadFile, reason: FailReason, attempt = 0, detail?: FailDetail): UploadFile =>
+  ({ ...f, status: { s: 'failed', reason, attempt, ...(detail ? { detail } : {}) } });
 const dailyLimited = (f: UploadFile) => f.status.s === 'failed' && f.status.reason === 'dailyLimit';
 
 /** Entries for a pick, or a ZIP's members, in order, by upload-rules' verdicts; a hidden member is dropped. */
@@ -230,7 +236,8 @@ function sendFailed(s: UploadState, e: Extract<UploadEvent, { type: 'sendFailed'
   const limited = reason === 'dailyLimit' || s.files.some(dailyLimited);
   const own = limited && RETRYABLE[reason] ? 'dailyLimit' : reason;
   const files = s.files.map((f): UploadFile => {
-    if (f.id === e.id) return failed(f, own, file.status.s === 'sending' ? file.status.attempt : 0);
+    // The send's own words only for its own reason, never under the daily limit that replaced it.
+    if (f.id === e.id) return failed(f, own, file.status.s === 'sending' ? file.status.attempt : 0, own === reason ? e.detail : undefined);
     if (!limited) return f;
     if (UNSENT.includes(f.status.s)) return failed(f, 'dailyLimit');
     return f.status.s === 'failed' && RETRYABLE[f.status.reason] ? failed(f, 'dailyLimit', f.status.attempt) : f;
@@ -342,11 +349,12 @@ export function transition(s: UploadState, e: UploadEvent): UploadStep {
     }
     case 'stop': return s.phase === 'open' ? stop(s) : same(s);
     case 'chose': {
-      const file = s.phase === 'open' ? s.files.find((f) => f.id === e.id) : undefined;
-      if (s.phase !== 'open' || file?.status.s !== 'read') return same(s);
+      // A choice after a failed Save returns the upload to an ordinary review: the retry writes what it shows (US-12 AC6).
+      const file = s.phase === 'open' || s.phase === 'saveFailed' ? s.files.find((f) => f.id === e.id) : undefined;
+      if ((s.phase !== 'open' && s.phase !== 'saveFailed') || file?.status.s !== 'read') return same(s);
       const choices = choose(file.status.choices, e.change, e.now, file.status.extraction);
       if (!choices) return same(s); // refused: a document date that is no real past day
-      return same({ ...s, files: s.files.map((f) => (f === file ? { ...file, status: { ...file.status, choices } } : f)) });
+      return same({ ...pickOf(s), phase: 'open', files: s.files.map((f) => (f === file ? { ...file, status: { ...file.status, choices } } : f)) });
     }
     case 'saveStarted':
       if (s.phase === 'saveFailed') return save(s, s.attempt + 1);
@@ -355,7 +363,7 @@ export function transition(s: UploadState, e: UploadEvent): UploadStep {
       if (s.phase !== 'saving' || s.attempt !== e.attempt) return same(s);
       return { state: { ...pickOf(s), phase: 'done', outcome: e.outcome }, effects: forget(s.run, s.files.map((f) => f.id)) };
     case 'saveFailed':
-      return s.phase === 'saving' && s.attempt === e.attempt ? same({ ...s, phase: 'saveFailed', message: e.message }) : same(s);
+      return s.phase === 'saving' && s.attempt === e.attempt ? same({ ...pickOf(s), phase: 'saveFailed', attempt: s.attempt, message: e.message }) : same(s);
     case 'close': {
       if (s.phase === 'choosing' || s.phase === 'saving' || s.phase === 'saveFailed') return same(s);
       if (s.phase === 'open' && s.files.some((f) => f.status.s === 'read')) return same(s); // discard, or save, first

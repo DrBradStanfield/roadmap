@@ -1,38 +1,52 @@
 import Foundation
 
 /// The app's shared upload (design PR 15, US-52 AC8c): one runner wired to the record store's
-/// record and save, the review page's taps sent to it in the order made.
+/// record and save, the review page's taps sent to it in the order made. While it lives it pins
+/// the record the page opened on (US-25 AC11, lead S52), so an erase or a Disconnect meanwhile
+/// refuses its Save rather than writing into another record; `end()` lets it go.
 @MainActor
 final class UploadSession {
     let runner: UploadRunner
     var model: UploadModel { runner.model }
     private let engine: HealthEngine
     private let store: RecordStore
-    private let cloudConnected: Bool
+    private let analytics: Analytics?
     /// The last event sent: each waits for the one before, so the engine steps them in tap order.
     private var last: Task<Void, Never>?
     /// The last view decoded, so a redraw with the same text decodes nothing.
     private var drawn: (text: String, page: UploadPage?)?
     /// Every planned letter's Markdown, for the state it was planned from.
     private var letters: (state: String, byFile: [String: String])?
+    /// The record is pinned until `end()`; the current pick's usage was told (once a pick).
+    private var pinned = true
+    private var told = false
+    /// Save was tapped and its outcome has not drawn yet: Close waits from the tap (a claim, not a mode).
+    private(set) var saveClaimed = false
+
+    /// How a pick went: the engine has it, the reader refused it (its words), or the loaded engine
+    /// cannot run the shared upload (an older one over the air).
+    enum Started: Equatable { case running, refused(String), fallback }
 
     /// `sender`, `frame` and `save` (state, run and attempt to the event to step): a test's
     /// stand-ins; a nil `save` is the record store's.
-    init(engine: HealthEngine, store: RecordStore, sender: LabReadSender = LabReadSender(), frame: Duration = .milliseconds(16),
-         save: (@Sendable (String, Int, Int) async -> String)? = nil) {
+    init(engine: HealthEngine, store: RecordStore, analytics: Analytics? = nil, sender: LabReadSender = LabReadSender(),
+         frame: Duration = .milliseconds(16), save: (@Sendable (String, Int, Int) async -> String)? = nil) {
         self.engine = engine
         self.store = store
+        self.analytics = analytics
+        store.pinScreen()
+        // Every Save is checked against this record, whatever the pin does later (a Close, a new pick).
+        let opened = store.pinned ?? store.screen
         let held = LabFileReader.Held()
-        cloudConnected = store.cloudErase != nil
         let setup = UploadRunner.Setup(
             deviceId: store.deviceId,
             record: { await store.readable?.json ?? "" },
             ask: { [engine] in await engine.uploadRules(files: $0, members: $1) },
             sender: sender,
             unitSystem: store.myData?.unitSystem ?? "si",
-            cloudConnected: cloudConnected,
+            cloudConnected: { await store.cloudErase != nil },
             save: save ?? { state, run, attempt in
-                let saved = await store.saveUpload(state: state, originals: held.originals(), read: { held.original($0) })
+                let saved = await store.saveUpload(state: state, originals: held.originals(), read: { held.original($0) }, as: opened)
                 return Self.event(saved, run: run, attempt: attempt)
             },
             frame: frame,
@@ -40,8 +54,37 @@ final class UploadSession {
         runner = UploadRunner(engine: engine, model: UploadModel(), setup: setup)
     }
 
-    /// One tap, as the engine's event, after the taps before it.
+    /// The page is gone: the record is no longer pinned. Once; the runner's own tasks end with it.
+    func end() {
+        guard pinned else { return }
+        pinned = false
+        store.unpinScreen()
+    }
+
+    /// Reads a pick into bytes and hands it to the engine. A pick cancelled while it was read (Close
+    /// during a slow File Provider read) is never held or sent.
+    func start(_ files: @Sendable () async throws -> [UploadRunner.Picked], needsConsent: Bool) async -> Started {
+        guard await engine.runsSharedUpload() else { return .fallback }
+        told = false
+        let picked: [UploadRunner.Picked]
+        do { picked = try await files() } catch { return Task.isCancelled ? .running : .refused(error.localizedDescription) }
+        guard !Task.isCancelled else { return .running }
+        if await runner.pick(picked, needsConsent: needsConsent) { return .running }
+        return model.state == .unavailable ? .fallback : .running
+    }
+
+    /// One tap, as the engine's event, after the taps before it. Save, Close and Discard first tell
+    /// the pick's usage, once a pick (Clarity names only, never a count, a name or a value): "Lab
+    /// save all" for a Save of two or more files, "Lab save one" for one (US-52 AC8b), then the
+    /// shared upload's own counts as fixed names (US-12 AC30).
     func send(_ action: UploadAction) {
+        switch action {
+        case .save:
+            saveClaimed = true
+            tellUsage { [analytics, files = drawn?.page?.files.rows.count ?? 0] in analytics?.event(files >= 2 ? .labSaveAll : .labSaveOne) }
+        case .close, .discard: tellUsage {}
+        default: break
+        }
         let (runner, before) = (runner, last)
         last = Task {
             await before?.value
@@ -53,14 +96,29 @@ final class UploadSession {
         }
     }
 
+    /// Once a run: `first`, then "Lab upload known skipped" when a file was already held and "Lab upload
+    /// first read under 30 s" when the first file was read inside 30 seconds, from uploadUsageJson.
+    private func tellUsage(_ first: () -> Void) {
+        guard !told else { return }
+        told = true
+        first()
+        let (runner, engine, analytics) = (runner, engine, analytics)
+        Task {
+            guard let state = await runner.stateText, let usage = try? await engine.perform({ try $0.uploadUsage(state: state) }) else { return }
+            if (usage.known ?? 0) > 0 { analytics?.event(.labUploadKnownSkipped) }
+            if let seconds = usage.firstReadSeconds, seconds < 30 { analytics?.event(.labUploadFirstReadUnder30s) }
+        }
+    }
+
     /// The doors' words for a call that answered nothing, from the last view drawn.
-    var engineError: String? { drawn?.page?.engineError }
+    var engineError: String? { drawn?.page?.engineError ?? drawn.flatMap { UploadPage.words($0.text) } }
 
     /// The page for the model's view text, decoded once per text.
     func page(_ text: String) -> UploadPage? {
         if let drawn, drawn.text == text { return drawn.page }
         let page = UploadPage.decoded(text)
         drawn = (text, page)
+        if page?.phase == "saveFailed" || page?.phase == "done" { saveClaimed = false }
         return page
     }
 
@@ -69,7 +127,7 @@ final class UploadSession {
     func letter(_ fileId: String) async -> String? {
         guard let state = await runner.stateText else { return nil }
         if let letters, letters.state == state { return letters.byFile[fileId] }
-        let (record, deviceId, cloud) = (store.readable?.json ?? "", store.deviceId, cloudConnected)
+        let (record, deviceId, cloud) = (store.readable?.json ?? "", store.deviceId, store.cloudErase != nil)
         guard let planned = try? await engine.perform({ try $0.uploadLetters(state: state, record: record, cloudConnected: cloud, deviceId: deviceId) }) else { return nil }
         letters = (state, planned)
         return planned[fileId]
@@ -87,7 +145,6 @@ final class UploadSession {
         }
     }
 }
-
 extension HealthEngine {
     /// Each planned letter's Markdown by file id (health-core uploadSavePlan, `contentMd`): the text
     /// Save writes. Nil from an engine without the door, or one that refused.
@@ -102,21 +159,5 @@ extension HealthEngine {
         }
         let documents = try JSONDecoder().decode(Plan.self, from: Data(plan.utf8)).documents
         return Dictionary(documents.map { ($0.fileId, $0.fields.contentMd) }, uniquingKeysWith: { first, _ in first })
-    }
-}
-
-extension LabFileReader {
-    /// One file picked in Files, as the shared upload takes it: its bytes, read off the main thread
-    /// through a file coordinator. Nil for a folder, a file the rules call too large by its listed
-    /// size, or one that will not read: today's flow reads those and says why in its own words.
-    @concurrent
-    static func picked(_ url: URL, ask: AskRules) async -> UploadRunner.Picked? {
-        guard !url.hasDirectoryPath else { return nil }
-        let scoped = url.startAccessingSecurityScopedResource()
-        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
-        let name = url.lastPathComponent, listed = size(of: url)
-        guard await ask([UploadFile(name: name, bytes: listed)], []).file(name, listed) != .tooLarge,
-              let data = try? coordinatedData(url) else { return nil }
-        return UploadRunner.Picked(id: UUID().uuidString, name: name, data: data)
     }
 }
