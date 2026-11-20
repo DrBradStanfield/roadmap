@@ -17,7 +17,7 @@ import { Sentry } from '../lib/sentry';
 import { recordFailure, WritesStoppedError } from '../lib/error-diagnostics';
 import { isDocx, isZip } from '../lib/file-kinds';
 import { runEffect, type UploadPort } from '../lib/upload-effects';
-import { emptyHeld, fileNameOf, hasResults, MAX_FILES, NO_FILES_TEXT, phaseOf, pickedFiles, pickNotices, progressOf, readErrorOf, readOutcome, refusedForKey, type Held } from '../lib/upload-read';
+import { emptyHeld, fileNameOf, hasResults, MAX_FILES, NO_FILES_TEXT, phaseOf, pickedFiles, progressOf, readErrorOf, readOutcome, refusedForKey, type Held } from '../lib/upload-read';
 import { saveAttempt } from '../lib/upload-save';
 import { useStable } from '../lib/use-stable';
 import { noticeText } from '../components/UploadNotices';
@@ -41,8 +41,8 @@ export { MAX_FILES };
  *  value counts: `undatedPrevious` from an undated previous column (AC14),
  *  `unitsGuessed` (AC16), `unitsRefused` (AC15), and the read files' limits
  *  (`uploadLimitSignal`, AC20): `valuesLimit`, `valuesLimitUngraded`, and the
- *  closed-list keys of the ungraded tests, the one non-count; `cancelled` a
- *  read Cancel stopped; `known`, `failedFinal` and `firstReadSeconds` from the
+ *  closed-list keys of the ungraded tests, the one non-count; `cancelled` 1 for
+ *  a run whose reads Stop ended (U9); `known`, `failedFinal` and `firstReadSeconds` from the
  *  shared state (upload-usage.ts, AC30). A zero is never sent, except a first
  *  read under a second (`firstReadSeconds: 0`, a real time): every key is
  *  optional, so a server a deploy behind meets a new key only once it counts something. */
@@ -57,7 +57,7 @@ function trackUploadOutcome(picked: number, withValues: number, docx: number, no
 }
 
 /** A run's counts once its reading ends (US-12 AC10). */
-function countRun(s: UploadState, held: Held, results: FileResult[], notices: FileNotice[]): void {
+function countRun(s: UploadState, held: Held, results: FileResult[], notices: FileNotice[], stopped: boolean): void {
   const read = results.filter(r => !r.error);
   const values = {
     undatedPrevious: read.reduce((n, r) => n + [...r.values, ...r.additionalValues].filter(v => v.recordedAt === UNDATED_PREVIOUS).length, 0),
@@ -66,7 +66,7 @@ function countRun(s: UploadState, held: Held, results: FileResult[], notices: Fi
   };
   const { limitUngradedTests, ...limits } = uploadLimitSignal(read);
   const picked = (s.phase === 'choosing' ? 0 : s.files.length) + held.leftOut;
-  trackUploadOutcome(picked, read.filter(hasValues).length, held.docx, notices, { ...values, ...limits, ...uploadUsageCounts(s) }, limitUngradedTests);
+  trackUploadOutcome(picked, read.filter(hasValues).length, held.docx, notices, { ...values, ...limits, ...uploadUsageCounts(s), ...(stopped ? { cancelled: 1 } : {}) }, limitUngradedTests);
 }
 
 /** A read file as the review's matrix takes it, built once per extraction, so its identity holds while other files are read. */
@@ -128,17 +128,18 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
       live.current = step.state;
       setUpload(step.state);
       const after = step.state;
-      // A run's reading ended, or a pick of only files too large started none: counted once (US-12 AC10).
-      if ((after.phase === 'open' || after.phase === 'failed') && inFlight(after) === 0 && (before.phase === 'choosing' || inFlight(before) > 0)) readEnded(after);
+      // A run's reading ended, or a pick of only files too large started none: counted once (US-12 AC10);
+      // a Stop that ended reads in flight as one cancelled run (U9, owner ruling 2026-11-20).
+      if ((after.phase === 'open' || after.phase === 'failed') && inFlight(after) === 0 && (before.phase === 'choosing' || inFlight(before) > 0)) readEnded(after, event.type === 'stop');
       for (const effect of step.effects) runEffect(port.current!, effect);
     };
     /** Counts the run; a run no file could open is reported, as before (US-12 AC3). */
-    const readEnded = (s: UploadState) => {
+    const readEnded = (s: UploadState, stopped: boolean) => {
       const h = held.current;
       if (refusedForKey(s) || runCounted.current === s.run) return; // the Pages build's missing key names and counts nothing
       runCounted.current = s.run;
       const { results, notices } = readOutcome(s, h);
-      countRun(s, h, results, notices);
+      countRun(s, h, results, notices, stopped);
       if (readErrorOf(s) === NO_FILES_TEXT) {
         Sentry.captureException(recordFailure(new UploadError(NO_FILES_TEXT, 'no_files'), 'Upload processing failed'), { tags: { feature: 'upload', uploadErrorCode: 'no_files' } });
         trackProductEvent('upload_extract_failed');
@@ -245,16 +246,6 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
   };
   const phase = phaseOf(upload);
 
-  // Cancel stops every read in flight and drops the run (US-12 AC28); a read it stopped is counted once (AC10).
-  const cancel = useCallback(() => {
-    const s = live.current;
-    if (s.phase === 'open' && inFlight(s) > 0) {
-      runCounted.current = s.run;
-      trackUploadOutcome(s.files.length + held.current.leftOut, 0, held.current.docx, pickNotices(s, held.current), { cancelled: 1, ...uploadUsageCounts(s) });
-    }
-    send({ type: 'discard' });
-  }, [send]);
-
   // Close hides the modal. A screen with nothing to lose resets; elsewhere the work goes on, hidden.
   const close = useCallback(() => {
     const shownPhase = phaseOf(live.current);
@@ -304,7 +295,7 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
     reviewNotices: notices.filter(n => !failedNames.has(n.name)), failedLine, progress: progressOf(upload),
     readError: readErrorOf(upload),
     skipArchive, skipConnect: () => setSkipArchive(true),
-    pick, cancel, close, discard, stop, retry, chose, save, endReview: endReview.current,
+    pick, close, discard, stop, retry, chose, save, endReview: endReview.current,
   };
 }
 

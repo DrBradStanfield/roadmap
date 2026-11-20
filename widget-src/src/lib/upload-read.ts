@@ -110,12 +110,6 @@ export const hasResults = (s: UploadState) => filesOf(s).some(reached);
 /** The Pages build's missing key refused the run: it names and counts nothing (US-12 AC10). */
 export const refusedForKey = (s: UploadState) => s.phase === 'failed' && s.refused === 'noKey';
 
-/** A cancelled run's notices, counted on the pick's basis (US-12 AC10): the picked files too large, and those left out. */
-export function pickNotices(s: UploadState, held: Held): FileNotice[] {
-  const large = filesOf(s).filter((f) => f.zip === undefined && f.status.s === 'refused' && f.status.verdict === 'tooLarge');
-  return [...large.map((f): FileNotice => ({ name: f.name, reason: 'tooLarge' })), ...(held.leftOut > 0 ? [leftOutNotice(held.leftOut)] : [])];
-}
-
 /** What one file gives the review and its notices, in the shapes the review took before. */
 function outcomeOf(f: UploadFile, h: HeldFile | undefined): { result?: FileResult; notices: FileNotice[] } {
   const name = fileNameOf(f);

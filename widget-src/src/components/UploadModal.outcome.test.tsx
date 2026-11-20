@@ -650,7 +650,7 @@ describe('US-12 AC28: Stop aborts the reads in flight', () => {
 // US-12 AC9, AC10 (Brad 2026-11-11, U6 U8 U9): the runs that ended without a
 // count, and the files a pick past 200 left out without a word. Known gap: a
 // page unmounted mid-read sends nothing.
-describe('US-12 AC9, AC10: a quota refusal and a cancel count, and a pick past 200 says what it left out', () => {
+describe('US-12 AC9, AC10: a quota refusal and a Stop count, and a pick past 200 says what it left out', () => {
   const LEFT_OUT = (n: number) => `Not read. One upload takes at most 200 files. Upload ${n === 1 ? 'it' : 'them'} separately.`;
 
   it('US-12 AC10 (U6): a refused quota fires one upload_outcome, each file counted under limitError', async () => {
@@ -694,13 +694,15 @@ describe('US-12 AC9, AC10: a quota refusal and a cancel count, and a pick past 2
     expect(sent()).toEqual([{ picked: 2, tooLarge: 1, limitError: 1, failedFinal: 1 }]);
   });
 
-  it('US-12 AC10 (U9): Cancel during a read fires one upload_outcome with cancelled: 1, and the read finishing later adds none', async () => {
+  // Owner ruling 2026-11-20 (after Brad's U9, 2026-11-11): while a file is read only Stop is offered, and a Stop
+  // that ends reads in flight is what sends `cancelled: 1`, once per run, beside the counts for what was read.
+  it('US-12 AC10 (U9): Stop during a read fires one upload_outcome with cancelled: 1, and the read finishing later adds none', async () => {
     const finishReads: Array<(r: Import) => void> = [];
     vi.mocked(labImport).mockImplementation(() => new Promise<Import>(resolve => { finishReads.push(resolve); }));
     docxToText.mockResolvedValue(docxText('synthetic'));
     render_(); pick(pdf('a.pdf'), new File(['x'], 'b.docx'), pdf('huge.pdf', 11 * 1024 * 1024));
     await waitFor(() => expect(labImport).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Stop' }));
     await waitFor(() => expect(sent()).toHaveLength(1));
     expect(sent()[0]).toEqual({ picked: 3, docx: 1, tooLarge: 1, cancelled: 1 });
     for (const finish of finishReads) finish(withValues);
@@ -708,39 +710,39 @@ describe('US-12 AC9, AC10: a quota refusal and a cancel count, and a pick past 2
     expect(sent()).toHaveLength(1);
   });
 
-  // Review R1 (Codex R2, adversary F2): a cancelled run counts on the pick's basis.
-  it('US-12 AC10 (U9): Cancel counts an oversize .docx as docx and too large', async () => {
+  // Review R1 (Codex R2, adversary F2): a stopped run counts on the pick's basis.
+  it('US-12 AC10 (U9): Stop counts an oversize .docx as docx and too large', async () => {
     vi.mocked(labImport).mockImplementation(() => new Promise<Import>(() => {}));
     const huge = new File(['x'], 'huge.docx');
     Object.defineProperty(huge, 'size', { value: 11 * 1024 * 1024 });
     render_(); pick(pdf('a.pdf'), huge);
     await waitFor(() => expect(labImport).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Stop' }));
     await waitFor(() => expect(sent()).toHaveLength(1));
     expect(sent()[0]).toEqual({ picked: 2, docx: 1, tooLarge: 1, cancelled: 1 });
   });
 
-  it('US-12 AC10 (U9): Cancel after a ZIP is listed counts it by its members', async () => {
+  it('US-12 AC10 (U9): Stop after a ZIP is listed counts it by its members', async () => {
     vi.mocked(labImport).mockImplementation(() => new Promise<Import>(() => {}));
     zipBundle(async () => ['m1.pdf', 'm2.pdf', 'm3.pdf'].map(name => ({ name, entry: { async: async () => new Blob([name]) } })));
     render_(); pick(zip('scans.zip'));
     await waitFor(() => expect(labImport).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Stop' }));
     await waitFor(() => expect(sent()).toHaveLength(1));
     expect(sent()[0]).toEqual({ picked: 3, cancelled: 1 });
   });
 
   // Review R2 (adversary, Codex): a ZIP counts by its members as soon as it is listed, not when every ZIP is.
-  it('US-12 AC10 (U9): Cancel while a second ZIP is still opening counts the first by its members and the second as one', async () => {
+  it('US-12 AC10 (U9): Stop while a second ZIP is still opening counts the first by its members, read and kept, and the second as one', async () => {
     const getZipEntries = vi.fn((f: File) => f.name === 'first.zip'
       ? Promise.resolve(['m1.pdf', 'm2.pdf', 'm3.pdf'].map(name => ({ name, entry: { async: async () => new Blob([name]) } })))
       : new Promise<unknown[]>(() => {}));
     zipBundle(getZipEntries);
     render_(); pick(zip('first.zip'), zip('second.zip'));
     await waitFor(() => expect(getZipEntries).toHaveBeenCalledTimes(2));
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Stop' }));
     await waitFor(() => expect(sent()).toHaveLength(1));
-    expect(sent()[0]).toEqual({ picked: 4, cancelled: 1, firstReadSeconds: 0 });
+    expect(sent()[0]).toEqual({ picked: 4, withValues: 3, cancelled: 1, firstReadSeconds: 0 });
   });
 
   it('US-12 AC10 (U9): Cancel on the review sends nothing more: the read already counted', async () => {

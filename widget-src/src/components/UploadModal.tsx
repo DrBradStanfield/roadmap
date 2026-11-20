@@ -1,7 +1,6 @@
 import { useRef, useEffect, useId, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import type { UnitSystem, MetricType } from '@roadmap/health-core/units';
-import { inFlight } from '@roadmap/health-core/upload-flow';
 import { NO_CHOICES } from '@roadmap/health-core/upload-choices';
 import type { DocumentResult } from '@roadmap/health-core/lab-extraction';
 import { UPLOAD_WINDOW_TEXT } from '@roadmap/health-core/upload-text';
@@ -46,11 +45,8 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
   const picking = phase === 'picking' || phase === 'readFailed';
   // The review shows while files are still read: results appear as each one is (US-12 AC26).
   const reviewing = !!view && !!review && (phase === 'reading' || phase === 'reviewing' || phase === 'saving' || phase === 'saveFailed');
-  const reading = inFlight(state) > 0;
   const handleClose = flow.close;
   const handleDiscard = () => {
-    // While files are read, Cancel stops them and drops the run, as before (US-12 AC28).
-    if (reading) return flow.cancel();
     if (phase === 'reviewing' || phase === 'saveFailed') flow.endReview(reviewCounts.current?.(false));
     flow.discard();
   };
