@@ -85,7 +85,9 @@ describe('upload plan agrees with today\'s iPhone save', () => {
       const ownDay = (ref: string) => (ref[0] === 'v' ? x.values![Number(ref.slice(1))].recordedAt : x.additionalValues![Number(ref.slice(1))].recordedAt);
       // The phone's test day starts at the report's, else today, and waits to be confirmed when a
       // ticked value needs it (LabChoices.valuesWait): then it saves nothing, and neither does the plan.
-      // A value the write refuses for its unit whatever the day asks no day (owner ruling 2026-11-20).
+      // Here the plan departs from today's iPhone save on purpose (owner ruling 2026-11-20, US-13 AC18): a value the
+      // write refuses for its unit whatever the day asks no day, so a report whose undated ticked values are all such
+      // refusals saves its dated values, where today's flow waits. Those seeds compare against today's rows below.
       const refusedAnyDay = (ref: string) => {
         const row = importRow(x as never, ref, '2000-01-01');
         return !!row && bulkAppendValues(createEmptyFile({ deviceId: 'probe', now: NOW }), [row], NOW).refused.length > 0;

@@ -1,5 +1,5 @@
 import { METRIC_LABELS } from '@roadmap/health-core/mappings';
-import { PRESSURE_ORDER } from '@roadmap/health-core/validation';
+import { measurementRefusalText } from '@roadmap/health-core/upload-text';
 import { UNIT_DEFS, roundBoundInward, type MetricType } from '@roadmap/health-core/units';
 import type { MeasurementRefusal } from '@roadmap/health-core/record-edits';
 import { cellDecimalPlaces, cellFromSI, cellLabel, type CellUnit } from './blood-test-cell';
@@ -11,11 +11,10 @@ import { cellDecimalPlaces, cellFromSI, cellLabel, type CellUnit } from './blood
  *  value is always past the number shown (adversary F1). Never the number or
  *  the store's message. */
 export function measurementRefusalLine({ metricType, reason, message, bound }: MeasurementRefusal, unit: CellUnit): string {
+  // The cases that name no unit are the shared line (health-core upload-text.ts), so both clients say them the same.
+  const shared = measurementRefusalText({ metricType, reason, message });
+  if (shared !== null) return shared;
   const label = Object.prototype.hasOwnProperty.call(METRIC_LABELS, metricType) ? METRIC_LABELS[metricType] : metricType;
-  if (reason === 'unknown-metric') return `${label}: not a test the record knows, so it was not saved.`;
-  if (reason === 'invalid-value') return `${label}: the value was not a number the record can store, so it was not saved.`;
-  // A blood pressure the wrong way up (US-02 AC8): no end of a range was missed.
-  if (message === PRESSURE_ORDER) return `Blood pressure not saved: ${PRESSURE_ORDER[0].toLowerCase()}${PRESSURE_ORDER.slice(1)} Check the report, then enter it again.`;
   const metric = metricType as MetricType;
   const edge = bound === 'below' ? 'min' : 'max';
   const range = UNIT_DEFS[metric].validationRange.si;

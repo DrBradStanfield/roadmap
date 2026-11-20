@@ -49,7 +49,7 @@ export function reviewedWrites(review: UploadReview): ReviewedValue[] {
 
 /**
  * The Replace choices whose target no longer holds the value's slot on the record the review was judged
- * on (another writer moved or corrected it), for `replacesLost` (owner ruling 2026-11-20, US-13 AC7).
+ * on (another writer moved or corrected it), for `replacesLost` (owner ruling 2026-11-20, US-13 AC21).
  */
 export function lostReplaces(review: UploadReview, s: UploadState): Array<{ id: string; ref: string }> {
   return readFiles(s).flatMap((f) => {
@@ -127,7 +127,7 @@ function importFile(f: ReadFile, now: string, holderOf: (row: BulkRow) => string
  * to the one the record holds that day is already saved, never a conflict.
  */
 function ownReading(v: ClassifiedValue, file: ReturnType<typeof importFile>, record: RoadmapFile): ClassifiedValue {
-  if (file.undatable.includes(v.ref)) return { file: v.file, ref: v.ref, label: v.label, sent: false, writes: false, group: 'notSaved', reason: 'futureDay' };
+  if (file.undatable.includes(v.ref)) return { file: v.file, ref: v.ref, label: v.label, sent: false, writes: false, group: 'notSaved', reason: v.ref[0] === 'v' ? 'futureCoreDay' : 'futureDay' };
   const row = file.file.rows[v.ref];
   if (v.group === 'unsure' && !v.writes && row?.source === 'lab_import_edited' && !row.correctsId && holdsSameReading(row, record)) {
     return { file: v.file, ref: v.ref, label: v.label, sent: v.sent, writes: false, group: 'saved' };

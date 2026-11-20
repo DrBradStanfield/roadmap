@@ -16,7 +16,7 @@ import { getDisplayLabel, type MetricType } from './units';
 import { inFlight, RETRYABLE, saveEnabled, uploadFileName, type FileStatus, type SaveOutcome, type UploadFile, type UploadState } from './upload-flow';
 import { planIsEmpty, uploadSavePlan, type UploadSavePlan } from './upload-plan';
 import type { UploadPlatform } from './upload-rules';
-import { readFiles, type UploadReview } from './upload-review';
+import { readFiles, reviewedWrites, type ReviewedValue, type UploadReview } from './upload-review';
 import { failLine, FILE_NOTICE_TEXT, FIX_ERRORS_TEXT, longDate, REFUSED_TEXT, REVIEW_CELL_TEXT, UNREADABLE_VALUE_TEXT, UPLOAD_TEXT } from './upload-text';
 import { UNDATED_PREVIOUS, type UnifiedExtractionResult } from './lab-extraction';
 import { withComparator } from './lab-limits';
@@ -78,6 +78,9 @@ export interface UploadView {
   done: { line: string; archived: string | null; unstored: string | null; skipped: string[]; notSaved: string[] } | null;
   /** Values the record already holds, equal, on their day: counted, as the web's review counts them (ReviewTable.tsx). */
   alreadySaved?: string | null;
+  /** What this page shows as to be written (upload-review `reviewedWrites`): the app sends it back, as drawn, on
+   *  `saveStarted`, and Save writes nothing else (owner ruling 2026-11-20, US-13 AC23). */
+  reviewed?: ReviewedValue[];
   /** Additive for the iPhone (design PR 15), so its page holds no mode: the machine's phase; a whole
    *  run's refusal in the web's words; whether Close may leave (not while saving); the word for
    *  Done and a picker's confirm. */
@@ -180,7 +183,8 @@ const valueRow = (review: UploadReview, reads: Map<string, ReturnType<typeof rea
 const rowOf = (review: UploadReview, v: ClassifiedValue) => ({
   fileId: review.labFiles[v.file].fileId, ref: v.ref, label: v.label,
   reasons: v.group === 'unsure' ? v.reasons : [],
-  conflict: v.group === 'unsure' && v.reasons.includes('conflict')
+  // A copy of another reading has nothing to resolve: it shows only its own caption (`copy`), never a conflict line.
+  conflict: !v.copy && v.group === 'unsure' && v.reasons.includes('conflict')
     ? (replacingOf(review, v) ? UPLOAD_TEXT.replaces : IMPORT_REVIEW_TEXT.conflictKept) : null,
   ticked: review.labFiles[v.file].ticked.includes(v.ref),
   replaces: review.held.get(`${v.file}:${v.ref}`) ?? null,
@@ -319,6 +323,7 @@ export function uploadView(s: UploadState, record: RoadmapFile, now: string, rev
       notSaved: refusedLines(s.outcome.refused ?? []),
     } : null,
     alreadySaved: alreadySaved ? IMPORT_REVIEW_TEXT.alreadySaved(alreadySaved) : null,
+    reviewed: reviewedWrites(review),
     phase: s.phase,
     refused: s.phase === 'failed' && s.refused ? REFUSED_TEXT[s.refused] : null,
     closeEnabled: s.phase !== 'saving',

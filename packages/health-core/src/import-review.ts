@@ -11,7 +11,7 @@
  */
 import { UNDATED_PREVIOUS, isUrineOrRatioUnit, type UnifiedExtractionResult } from './lab-extraction';
 import { labTestLabel } from './lab-catalog';
-import { LAB_DAY_REFUSAL } from './lab-series';
+import { DAY_NOT_HAPPENED, LAB_DAY_REFUSAL } from './lab-series';
 import { bulkAppendValues, slotIndex, slotKey, validDay, type BulkAppendResult, type BulkRow } from './record-edits';
 import { bulkRowTarget } from './bulk-row-target';
 import { coreStored, createCoreRow, isBloodTestKey } from './blood-tests';
@@ -97,8 +97,9 @@ export const isOfferedRef = (ref: string) => /^[va]\d+$/.test(ref);
 /** Why a value gets a row (D1). `outOfRange`: the write refuses its number
  *  (outside its input range, or half of a blood pressure the wrong way up). */
 export type UnsureReason = 'confidence' | 'question' | 'unitGuessed' | 'outOfRange' | 'conflict';
-/** Why a value is not saved (D5). `futureDay`: its own printed day is no real past day (the shared upload's alone, upload-review.ts). */
-export const NOT_SAVED_REASONS = ['unit', 'noUnit', 'misread', 'scale', 'unreadable', 'urine', 'sameDay', 'futureDay'] as const;
+/** Why a value is not saved (D5). `futureDay`, `futureCoreDay`: its own printed day is no real past day, a lab or a core
+ *  value (the shared upload's alone, upload-review.ts). */
+export const NOT_SAVED_REASONS = ['unit', 'noUnit', 'misread', 'scale', 'unreadable', 'urine', 'sameDay', 'futureDay', 'futureCoreDay'] as const;
 export type NotSavedReason = (typeof NOT_SAVED_REASONS)[number];
 
 /**
@@ -355,8 +356,10 @@ export const NOT_SAVED_TEXT: Record<NotSavedReason, string> = {
   unreadable: 'could not be read',
   urine: 'this unit is usually a urine result',
   sameDay: 'another reading of this test is on the same day',
-  // The add-a-value write's own refusal (record-edits.ts), byte for byte: no not-saved words name a date yet.
+  // Existing words, byte for byte (no not-saved words name a date yet): the add-a-value write's for a lab, and the web's
+  // for a blood test moved to a day still to come for a core value.
   futureDay: LAB_DAY_REFUSAL,
+  futureCoreDay: DAY_NOT_HAPPENED,
 };
 
 /** "Not saved" as the review shows it (D5): the count for its line, one line

@@ -10,7 +10,7 @@ import { bulkAppendValues, type BulkRow } from '../../packages/health-core/src/r
 import { initialUpload, transition, uploadFileName, type UploadEvent, type UploadState } from '../../packages/health-core/src/upload-flow';
 import { knownAs, knownIndex, readIsLegacy } from '../../packages/health-core/src/upload-known';
 import { appGateFailure } from '../../packages/health-core/src/upload-failure';
-import { lostReplaces, reviewedWrites, uploadReview } from '../../packages/health-core/src/upload-review';
+import { lostReplaces, uploadReview } from '../../packages/health-core/src/upload-review';
 import { uploadView } from '../../packages/health-core/src/upload-view';
 import { uploadSavePlan } from '../../packages/health-core/src/upload-plan';
 import { uploadUsageCounts } from '../../packages/health-core/src/upload-usage';
@@ -149,8 +149,8 @@ function genEvent(r: () => number, s: UploadState, mint: () => string): { wire: 
       { replace: 'v0', correctsId: coin(0.5) ? HELD_ID : null }, { edit: 'v1', value: coin(0.5) ? 1.4 : null },
       { document: { title: 'Fixed title', date: pick(['2026-02-01', null, '2999-01-01']) } },
     ]) })],
-    // The door fills what the page would write (US-12 AC6a), from the review on the record at that moment.
-    [3, () => ({ wire: { type: 'saveStarted' } as Wire, whole: { type: 'saveStarted', reviewed: reviewedWrites(uploadReview(s, RECORD, new Date().toISOString())) } })],
+    // The app echoes what the page it showed would write (the view's `reviewed`), opaque; the door adds nothing.
+    [3, () => (r() < 0.5 ? same({ type: 'saveStarted' }) : same({ type: 'saveStarted', reviewed: [{ file: 'f', ref: 'v0', lab: false }] }))],
     [2, () => same({ type: 'saved', run, attempt: 'attempt' in s ? s.attempt : 1, outcome: { values: 1, documents: 0, archived: 0 } })],
     [1, () => same({ type: 'saveFailed', run, attempt: 'attempt' in s ? s.attempt : 1, message: 'Could not save.' })],
     [1, () => same({ type: 'close' })],
@@ -388,6 +388,11 @@ describe('the doors drop a Replace whose target another writer took away (owner 
     expect(row).toMatchObject({ ref: 'v0', ticked: false, conflict: null, replaces: null });
     const step = JSON.parse(uploadStepJson(JSON.stringify(open), JSON.stringify({ type: 'chose', id: 'f', change: { tick: 'v0', on: true }, now: NOW }), deleted, DEV));
     expect(step.state.files[0].status.choices).toMatchObject({ replace: {}, ticks: { v0: true } });
+    // With no record the app can read (''), nothing is dropped, in a step or a view (adversary R1).
+    const kept0 = JSON.parse(uploadStepJson(JSON.stringify(open), JSON.stringify({ type: 'stop' }), '', DEV));
+    expect(kept0.state.files[0].status.choices).toMatchObject({ replace: { v0: record.labValues[0].id }, ticks: {} });
+    const blind = JSON.parse(uploadViewJson(JSON.stringify(open), '', NOW, false, DEV));
+    expect([...blind.sections.flatMap((x: { kind: string; rows?: unknown[] }) => (x.kind === 'unsure' ? x.rows : [])), ...(blind.sure?.rows ?? [])][0]).toMatchObject({ ticked: true });
     // With the target still there, nothing changes.
     const kept = JSON.parse(uploadViewJson(JSON.stringify(open), JSON.stringify(record), NOW, false, DEV));
     expect(kept.sections.find((x: { kind: string }) => x.kind === 'unsure').rows[0]).toMatchObject({ replacing: true });

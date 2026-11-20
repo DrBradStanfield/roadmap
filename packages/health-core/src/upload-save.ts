@@ -69,11 +69,16 @@ export async function uploadSave<F>(s: UploadState, record: RoadmapFile, now: st
   if (blocked) return { ok: false, reason: 'not-ready', message: blocked };
   const plan = uploadSavePlan(s, record, now, review, cloudConnected);
 
-  const rows = plan.labRows.flatMap((f) => f.rows);
-  const rowFiles = plan.labRows.flatMap((f) => f.rows.map(() => f.fileId));
-  // Each row's value as `file:ref`, in `rows` order: by file, each file's in the order `rowsByFile` took them.
+  // Each row's value as `file:ref`, in plan order: by file, each file's in the order `rowsByFile` took them.
   const writes = reviewedWrites(review);
-  const rowKeys = plan.labRows.flatMap((f) => writes.filter((v) => v.file === f.fileId).map((v) => `${v.file}:${v.ref}`));
+  const planKeys = plan.labRows.flatMap((f) => writes.filter((v) => v.file === f.fileId).map((v) => `${v.file}:${v.ref}`));
+  // Only what the page displayed as to be written (`reviewed`, echoed from the view): a value the record now lets
+  // through that the page did not promise (a kept conflict whose held row went) is never written (owner ruling 2026-11-20).
+  const promised = s.reviewed && new Set(s.reviewed.map((v) => `${v.file}:${v.ref}`));
+  const keep = planKeys.map((k) => !promised || promised.has(k));
+  const rows = plan.labRows.flatMap((f) => f.rows).filter((_, i) => keep[i]);
+  const rowFiles = plan.labRows.flatMap((f) => f.rows.map(() => f.fileId)).filter((_, i) => keep[i]);
+  const rowKeys = planKeys.filter((_, i) => keep[i]);
   // The rows a write on `record` would give each report: what its archive row plans to list. The
   // commit writes them again on the record as it is then, and the lists take those rows' ids.
   const onRecord = bulkAppendValues(record, rows, now);
@@ -135,7 +140,7 @@ export async function uploadSave<F>(s: UploadState, record: RoadmapFile, now: st
         ?? written.outcomes.flatMap((o, i) => (o === 'skipped' ? [{ lab: rows[i].kind === 'lab' }] : []));
       const [sv, sl] = [notWritten.filter((v) => !v.lab).length, notWritten.filter((v) => v.lab).length];
       // A value the commit refused, the record having changed since the plan (a blood pressure's other half,
-      // say), is named, never dropped silently (US-12 AC15): a lab in the review's not-saved words, a core value
+      // say), is named, never dropped silently (US-13 AC17): a lab in the review's not-saved words, a core value
       // in the web's own refusal line. A core value out of range has no line without the cell's unit: it reads
       // as misread, as the review names a misread number (it cannot newly arise at commit: the range is the value's own).
       const refused = [

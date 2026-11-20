@@ -245,7 +245,7 @@ export function uploadStartJson(platform: string): string {
  * UPLOAD_EVENTS is the full shape). Times are ISO strings; `run` is the effect's run being answered.
  * - picked {files: [{id, name, bytes, kind: "file" | "zip"}], needsConsent, now}
  * - consented {} · stop {} · close {} · discard {} · retry {id (a file id or "all")}
- * - saveStarted {}: the door adds `reviewed` (health-core reviewedWrites over the record), so Save counts what it could not write.
+ * - saveStarted {reviewed?}: the view's `reviewed` as drawn at the tap, sent back untouched; Save writes only those values.
  * Before every event (and in the view and plan doors), a chosen Replace whose target left its slot on the record is
  * dropped and its value unticked (health-core replacesLost): the app never sends that event itself.
  * - listed {run, zip (the ZIP's file id), members: [{id, name, bytes}]} · zipFailed {run, zip}

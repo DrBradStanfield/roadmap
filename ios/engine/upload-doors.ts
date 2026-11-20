@@ -10,7 +10,7 @@ import { knownAs, knownIndex, readIsLegacy, type KnownIndex } from '../../packag
 import { appGateFailure, boundedWords, type FailDetail, type UploadFailure } from '../../packages/health-core/src/upload-failure';
 import { PHONE_FAIL_TEXT } from '../../packages/health-core/src/upload-text';
 import { labStreamAnswer } from '../../packages/health-core/src/upload-answer';
-import { lostReplaces, reviewedWrites, uploadReview } from '../../packages/health-core/src/upload-review';
+import { lostReplaces, uploadReview } from '../../packages/health-core/src/upload-review';
 import { uploadView } from '../../packages/health-core/src/upload-view';
 import { uploadSavePlan } from '../../packages/health-core/src/upload-plan';
 import { uploadUsageCounts } from '../../packages/health-core/src/upload-usage';
@@ -81,7 +81,7 @@ const WIRE_EVENT = z.discriminatedUnion('type', [
   E.answered.omit({ legacy: true }),
   E.sendFailed.omit({ failure: true, detail: true }).extend({ status: z.number().int().nullable(), body: maybeText, contentType: maybeText, local: LOCAL.optional() }),
   z.strictObject({ type: z.literal('streamEnded'), run: z.number().int().nonnegative(), id: z.string(), line: maybeText, now: z.string() }),
-  E.retry, E.stop, E.chose, E.saveStarted.omit({ reviewed: true }), E.saved, E.saveFailed, E.close, E.discard,
+  E.retry, E.stop, E.chose, E.saveStarted, E.saved, E.saveFailed, E.close, E.discard,
 ]);
 type Wire = z.infer<typeof WIRE_EVENT>;
 
@@ -117,15 +117,13 @@ function indexOf(record: RoadmapFile): KnownIndex {
 }
 
 /** The wire event made whole with what only the engine knows (health-core's own rules). */
-function engineEvent(state: UploadState, wire: Wire, record: () => RoadmapFile, now: string): UploadEvent {
+function engineEvent(state: UploadState, wire: Wire, record: () => RoadmapFile): UploadEvent {
   const legacy = (id: string, extraction: Extract<UploadEvent, { type: 'answered' }>['extraction']) => {
     const file = 'files' in state ? state.files.find((f) => f.id === id) : undefined;
     return file !== undefined && readIsLegacy(record(), uploadFileName(file), extraction);
   };
   switch (wire.type) {
     case 'hashed': return { ...wire, known: knownAs(indexOf(record()), wire.hash) };
-    // What the page the person saw would write, so Save names each value it could not (US-12 AC6a): the app computes nothing.
-    case 'saveStarted': return { ...wire, reviewed: reviewedWrites(uploadReview(state, record(), now)) };
     case 'answered': return { ...wire, legacy: legacy(wire.id, wire.extraction) };
     case 'sendFailed': {
       const { status, body, contentType, local, ...rest } = wire;
@@ -162,7 +160,7 @@ export const uploadStart = (platformName: string) => answer(() => {
   return initialUpload(read.data);
 });
 
-/** The record is read only for an event that needs it (`hashed`, `answered`, `streamEnded`, `saveStarted`). */
+/** The record is read only for an event that needs it (`hashed`, `answered`, `streamEnded`), and while a Replace is chosen. */
 export const uploadStep = (stateJson: string, eventJson: string, recordJson: string, deviceId: string) => answer(() => {
   const state = readState(stateJson);
   const wire = parsed(eventJson, WIRE_EVENT, 'invalid-event');
@@ -170,18 +168,22 @@ export const uploadStep = (stateJson: string, eventJson: string, recordJson: str
   // read migrates, which readRecord then keeps for the screen doors, so it is the real one.
   const now = new Date().toISOString();
   const record = () => readUploadRecord(recordJson, now, deviceId);
-  const current = withoutLostReplaces(state, record, now);
-  return transition(current, engineEvent(current, wire, record, now));
+  const current = withoutLostReplaces(state, recordJson, record, now);
+  return transition(current, engineEvent(current, wire, record));
 });
 
 /**
  * A chosen Replace whose target another writer moved, corrected or deleted on this record is dropped and its
- * value unticked (health-core `replacesLost`, owner ruling 2026-11-20, US-13 AC7), before the next event and
+ * value unticked (health-core `replacesLost`, owner ruling 2026-11-20, US-13 AC21), before the next event and
  * in every view, so the page shows an ordinary value to tick again. The record is read only when a Replace is chosen.
  */
-function withoutLostReplaces(state: UploadState, record: () => RoadmapFile, now: string): UploadState {
-  if (!('files' in state) || !state.files.some((f) => f.status.s === 'read' && Object.keys(f.status.choices.replace).length)) return state;
-  const lost = lostReplaces(uploadReview(state, record(), now), state);
+function withoutLostReplaces(state: UploadState, recordJson: string, record: () => RoadmapFile, now: string): UploadState {
+  // No record to judge by ('' while the app has none it can read) or one that will not read drops nothing (adversary R1):
+  // every Replace stands, and the next record that reads is judged.
+  if (recordJson === '' || !('files' in state) || !state.files.some((f) => f.status.s === 'read' && Object.keys(f.status.choices.replace).length)) return state;
+  let read: RoadmapFile;
+  try { read = record(); } catch { return state; }
+  const lost = lostReplaces(uploadReview(state, read, now), state);
   return lost.length ? transition(state, { type: 'replacesLost', lost }).state : state;
 }
 
@@ -189,7 +191,7 @@ function withoutLostReplaces(state: UploadState, record: () => RoadmapFile, now:
 const reviewed = <T,>(make: (state: UploadState, record: RoadmapFile, nowIso: string, review: ReturnType<typeof uploadReview>, cloudConnected: boolean) => T) =>
   (stateJson: string, recordJson: string, nowIso: string, cloudConnected: boolean, deviceId: string) => answer(() => {
     const record = readUploadRecord(recordJson, nowIso, deviceId);
-    const state = withoutLostReplaces(readState(stateJson), () => record, nowIso);
+    const state = withoutLostReplaces(readState(stateJson), recordJson, () => record, nowIso);
     return make(state, record, nowIso, uploadReview(state, record, nowIso), cloudConnected);
   });
 /** The view, with the words the app shows when a later engine call gives no answer at all

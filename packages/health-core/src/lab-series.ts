@@ -21,6 +21,9 @@ export function labValueLabel(metricName: string): string {
 
 /** A lab value's day refused: the words the add-a-value write says (record-edits.ts), and the upload's not-saved line for a value with no real past day. */
 export const LAB_DAY_REFUSAL = 'A lab value is for a real day, today or before.';
+/** A blood test's day that has not happened: the web's words when a test is moved to such a day (MoveTestPanel.tsx), and
+ *  the upload's not-saved line for a core value printed on one. */
+export const DAY_NOT_HAPPENED = 'That day has not happened yet.';
 
 /**
  * What a person reads when the record refused a lab value's unit: the unit a

@@ -43,9 +43,12 @@ final class UploadSession {
         // Every Save is checked against this record, whatever the pin does later (a Close, a new pick).
         let opened = store.pinned ?? store.screen
         let held = LabFileReader.Held()
+        // The review is drawn against the record as it is now, or, while none can be read, the last one that
+        // could: the engine never judges the page against no record (adversary R1). Save keeps the pin above.
+        let lastRead = LastRecord()
         let setup = UploadRunner.Setup(
             deviceId: store.deviceId,
-            record: { await store.readable?.json ?? "" },
+            record: { await MainActor.run { lastRead.current(store.readable?.json) } },
             ask: { [engine] in await engine.uploadRules(files: $0, members: $1) },
             sender: sender,
             unitSystem: store.myData?.unitSystem ?? "si",
@@ -72,6 +75,15 @@ final class UploadSession {
                 self.watchRecord()
                 if self.store.revision != seen { await self.runner.recordChanged() }
             }
+        }
+    }
+
+    /// The last record that could be read, for a moment when none can (an erase drawing, an unreadable copy).
+    @MainActor private final class LastRecord {
+        private var text = ""
+        func current(_ readable: String?) -> String {
+            if let readable { text = readable }
+            return text
         }
     }
 
@@ -108,14 +120,15 @@ final class UploadSession {
         case .close, .discard: tellUsage {}
         default: break
         }
-        let (runner, before) = (runner, last)
+        let (runner, before, promised) = (runner, last, drawn?.page?.reviewed)
         last = Task { [weak self] in
             await before?.value
             switch action {
             case .close: await runner.close()
             case .discard: await runner.discard()
             case .save:
-                let number = await runner.queue(action.event(now: Date.now.formatted(HealthEngine.iso)))
+                // Save writes exactly what the page showed as to be written: the view's own list, sent back as drawn.
+                let number = await runner.queue(UploadAction.saveEvent(promised: promised))
                 self?.claim = .queued(number)
                 await runner.drain()
             default: await runner.submit(action.event(now: Date.now.formatted(HealthEngine.iso)))

@@ -16,7 +16,7 @@ import { describe, expect, it } from 'vitest';
 import type { AdditionalLabValue, ExtractedValue, UnifiedExtractionResult } from './lab-extraction';
 import { bulkRowTarget } from './bulk-row-target';
 import { bulkAppendValues, slotKey, slotOfRow, type BulkRow } from './record-edits';
-import { LAB_DAY_REFUSAL } from './lab-series';
+import { DAY_NOT_HAPPENED, LAB_DAY_REFUSAL } from './lab-series';
 import { mergeFiles } from './merge';
 import { knownAs, knownIndex } from './upload-known';
 import { reportedToCanonical, type MetricType } from './units';
@@ -29,7 +29,7 @@ import { lostReplaces, reviewedWrites, uploadReview, type UploadReview } from '.
 import { uploadSave, type UploadSaveIO } from './upload-save';
 import { uploadView, type UploadView, type ValueRow } from './upload-view';
 import { FIX_ERRORS_TEXT, UPLOAD_TEXT } from './upload-text';
-import { IMPORT_REVIEW_TEXT, isOfferedRef } from './import-review';
+import { IMPORT_REVIEW_TEXT, importRow, isOfferedRef } from './import-review';
 
 function mulberry32(seed: number): () => number {
   let a = seed >>> 0;
@@ -139,8 +139,11 @@ type Step =
   | { type: 'record'; rows: BulkRow[]; merge: boolean }
   /** Another writer deletes a held row (entered in error, no correction): a Replace aimed at it is lost. */
   | { type: 'delete'; id: string }
+  /** Save tapped on the page drawn before another writer acts (rows appended, or `free`: a held row deleted): the app
+   *  sends back the drawn page's `reviewed`. */
+  | { type: 'tap'; rows: BulkRow[]; merge: boolean; free: string | null }
   /** One Save as the platform runs it: `uploadSave` on the record, commit on it, or on it after `meanwhile`. */
-  | { type: 'save'; ok: boolean; meanwhile: BulkRow[] | null; merge: boolean; when: 'beforeSave' | 'beforeCommit' };
+  | { type: 'save'; ok: boolean; meanwhile: BulkRow[] | null; merge: boolean; free: string | null; when: 'beforeSave' | 'beforeCommit' };
 
 type Row = FileMeasurement | FileLabValue;
 const rowsOf = (f: RoadmapFile): Row[] => [...f.measurements, ...f.labValues];
@@ -152,7 +155,7 @@ function shownWritable(view: UploadView, review: UploadReview): Set<string> {
   const waiting = new Set(review.labFiles.filter((f) => f.needsDay).map((f) => f.fileId));
   const out = new Set<string>();
   for (const row of allRows(view)) {
-    if (!row.ticked || row.error || row.reasons.includes('outOfRange') || waiting.has(row.fileId)) continue;
+    if (!row.ticked || row.error || row.copy || row.reasons.includes('outOfRange') || waiting.has(row.fileId)) continue;
     if (row.conflict !== null && !row.replacing) continue;
     out.add(key(row.fileId, row.ref));
   }
@@ -242,6 +245,7 @@ function checkView(s: UploadState, record: RoadmapFile, cloud: boolean, note: No
   const sureWrites = (view.sure?.rows ?? []).filter((row) => writes.has(key(row.fileId, row.ref))).length;
   if (view.sure && view.sure.line !== IMPORT_REVIEW_TEXT.willSave(sureWrites)) fail('P3', `sure line ${view.sure.line} != ${sureWrites}`);
   checkNumbers(s, review, rows, writes, record);
+  checkOracles(s, review, record);
   // P4: a disabled Save with nothing in flight names a blocker the view lets the person clear.
   if ((s.phase === 'open' || s.phase === 'saveFailed') && !view.save.enabled && inFlight(s) === 0) {
     const why = view.save.why;
@@ -294,6 +298,53 @@ function checkNumbers(s: UploadState, review: UploadReview, rows: ValueRow[], wr
     if (bulk.correctsId) {
       const old = rowsOf(record).find((x) => x.id === bulk.correctsId);
       if (!old || !row.held?.includes(String(old.value))) fail('P7', `${k} replaces ${old?.value}, shows held ${row.held}`);
+    }
+  }
+}
+
+/**
+ * Independent oracles (adversary R2), from the generated case and the record, never from the classifier's own rule:
+ * a `saved` value has an equal active reading in its slot, or an equal reading of this upload there that writes or is
+ * held; a not-saved value's reason is its generated cause (an unknown unit, a creatinine with no unit, an own day still
+ * to come, or another reading of the test that day); a future-day value's own day is after today.
+ */
+function checkOracles(s: UploadState, review: UploadReview, record: RoadmapFile) {
+  const today = NOW.slice(0, 10);
+  const reads = new Map(('files' in s ? s.files : []).flatMap((f) => (f.status.s === 'read' ? [[f.id, f.status] as const] : [])));
+  const held = rowsOf(record).filter(isActive);
+  // A value not sent is judged on its printed number (import-review step 3); a sent one on the number Save sends.
+  const facts = (fi: number, ref: string, sent = true) => {
+    const lf = review.labFiles[fi];
+    const st = reads.get(lf.fileId)!;
+    const x = st.extraction;
+    const printed = ref[0] === 'v' ? x.values?.[Number(ref.slice(1))] : x.additionalValues?.[Number(ref.slice(1))];
+    const own = printed?.recordedAt;
+    const day = own !== undefined ? own : lf.day?.slice(0, 10) ?? null;
+    const edit = st.choices.edits[ref];
+    const row = day ? importRow(x, ref, day, edit !== undefined && sent ? { edited: { value: edit } } : {}) : null;
+    return { printed, own, row, slot: row ? slotKey(bulkRowTarget(row).slot, bulkRowTarget(row).metric, row.recordedAt) : null };
+  };
+  const values = review.classification.values;
+  for (const v of values) {
+    if (v.ref[0] === 'r') { if (v.group !== 'notSaved' || v.reason !== 'noUnit') fail('O', `${v.ref} refused row is ${v.group}`); continue; }
+    if (!isOfferedRef(v.ref)) continue;
+    const f = facts(v.file, v.ref, v.sent);
+    if (v.group === 'saved') {
+      if (!f.row || !f.slot) fail('O', `${v.ref} saved with no day`);
+      const equal = (value: number) => Math.abs(value - f.row!.value) < 1e-9;
+      const inRecord = held.some((h) => slotOfRow(h) === f.slot && equal(h.value) && (h.comparator ?? null) === (f.row!.comparator ?? null));
+      const sibling = 'duplicate' in v && v.duplicate && values.some((o) => o !== v && o.sent && (o.writes || o.group === 'saved') && facts(o.file, o.ref).slot === f.slot && facts(o.file, o.ref).row && equal(facts(o.file, o.ref).row!.value));
+      if (!inRecord && !sibling) fail('O', `${review.labFiles[v.file].fileId} ${v.ref} classed saved with no equal reading held or written in ${f.slot}`);
+    }
+    if (v.group === 'notSaved') {
+      const unit = v.ref[0] === 'a' && (f.printed as { unit?: string } | undefined)?.unit === 'zzz';
+      const future = f.own !== undefined && f.own > today;
+      // Each generated cause; a value with two (an unknown unit on a day still to come) may be named for either.
+      const causes = [...(unit ? ['unit'] : []), ...(future ? [v.ref[0] === 'v' ? 'futureCoreDay' : 'futureDay'] : [])];
+      if (!causes.length) causes.push('sameDay');
+      if (!causes.includes(v.reason)) fail('O', `${v.ref} not saved for ${v.reason}, its generated cause is ${causes.join(' or ')}`);
+      if (causes[0] === 'sameDay' && !values.some((o) => o !== v && o.sent && facts(o.file, o.ref).slot === f.slot)) fail('O', `${v.ref} sameDay with no other reading that day`);
+      if ((v.reason === 'futureDay' || v.reason === 'futureCoreDay') && !(f.own && f.own > today)) fail('O', `${v.ref} future-day with own day ${f.own}`);
     }
   }
 }
@@ -352,7 +403,12 @@ class Run {
     // The engine door drops a Replace whose target left its slot before each event and in each view (replacesLost).
     if (step.type === 'event') this.s = doorState(this.s, this.record);
     // The engine door fills what the page would write when Save is pressed (ios/engine/upload-doors.ts); the app computes nothing.
-    if (step.type === 'event' && step.e.type === 'saveStarted') this.s = transition(this.s, { ...step.e, reviewed: reviewedWrites(uploadReview(this.s, this.record, NOW)) }).state;
+    // Save carries the drawn page's `reviewed`, echoed by the app as it was drawn (the view the person tapped).
+    if (step.type === 'event' && step.e.type === 'saveStarted') this.s = transition(this.s, { ...step.e, reviewed: this.last?.view.reviewed }).state;
+    else if (step.type === 'tap') {
+      this.record = this.write(this.record, step.rows, step.merge, step.free);
+      this.s = transition(doorState(this.s, this.record), { type: 'saveStarted', reviewed: this.last?.view.reviewed }).state;
+    }
     else if (step.type === 'event') this.s = transition(this.s, step.e).state;
     else if (step.type === 'record') this.record = this.write(this.record, step.rows, step.merge);
     else if (step.type === 'delete') this.record = { ...this.record, labValues: this.record.labValues.map((l) => (l.id === step.id ? { ...l, status: 'entered-in-error' as const } : l)), measurements: this.record.measurements.map((m) => (m.id === step.id ? { ...m, status: 'entered-in-error' as const } : m)) };
@@ -368,7 +424,8 @@ class Run {
   }
 
   /** Another writer's rows: on this record, or on another device's copy of the record as it was at the start, merged in. */
-  private write(record: RoadmapFile, rows: BulkRow[], merge: boolean): RoadmapFile {
+  private write(record: RoadmapFile, rows: BulkRow[], merge: boolean, free: string | null = null): RoadmapFile {
+    if (free) record = { ...record, labValues: record.labValues.map((l) => (l.id === free ? { ...l, status: 'entered-in-error' as const } : l)), measurements: record.measurements.map((m) => (m.id === free ? { ...m, status: 'entered-in-error' as const } : m)) };
     if (!merge) return bulkAppendValues(record, rows, NOW).file;
     const remote = bulkAppendValues({ ...this.setup.record, meta: { ...this.setup.record.meta, lastDeviceId: 'other' } }, rows, NOW).file;
     return mergeFiles(record, remote, { deviceId: 'test', now: NOW });
@@ -377,7 +434,7 @@ class Run {
   private async save(step: Extract<Step, { type: 'save' }>) {
     if (this.s.phase !== 'saving') return;
     const seen = this.last;
-    const atSave = step.meanwhile && step.when === 'beforeSave' ? this.write(this.record, step.meanwhile, step.merge) : this.record;
+    const atSave = step.meanwhile && step.when === 'beforeSave' ? this.write(this.record, step.meanwhile, step.merge, step.free) : this.record;
     const out = await uploadSave(this.s, atSave, NOW, this.setup.cloud, io(this.setup.cloud, this.setup.failWrites));
     // Refused only when the record changed after the review so that Save would refuse (a blood pressure's other half, say):
     // nothing is written, the app sends the refusal as a failed Save, and the next view names the blocker (P4).
@@ -385,7 +442,7 @@ class Run {
     if (!out.ok) { this.note('refusedAfterChange'); this.record = atSave; this.s = transition(this.s, { type: 'saveFailed', run: this.s.run, attempt: (this.s as { attempt: number }).attempt, message: out.message }).state; return; }
     // A failed save: the cloud refused the write, so nothing is committed.
     if (!step.ok) { this.s = transition(this.s, { type: 'saveFailed', run: this.s.run, attempt: (this.s as { attempt: number }).attempt, message: 'The cloud refused the write.' }).state; return; }
-    const atCommit = step.meanwhile && step.when === 'beforeCommit' ? this.write(atSave, step.meanwhile, step.merge) : atSave;
+    const atCommit = step.meanwhile && step.when === 'beforeCommit' ? this.write(atSave, step.meanwhile, step.merge, step.free) : atSave;
     const { file, outcome } = out.commit(atCommit);
     checkFhir(atCommit, file);
     const added = rowsOf(file).filter((row) => !rowsOf(atCommit).some((b) => b.id === row.id) && isActive(row));
@@ -410,18 +467,20 @@ class Run {
       const refused = outcome.refused?.length ?? 0;
       if (refused) this.note('refusedAtCommit');
       if (changed && missing !== skipped + refused) fail('P2', `record changed: ${missing} reviewed values not written, ${skipped} counted\nwant ${JSON.stringify(want)}\ngot ${JSON.stringify(got)}`);
-      if (changed && got.some((g) => !want.includes(g))) this.note('writtenUnreviewed');
+      // Never more: nothing is written that the page did not show as to be written.
+      if (got.some((g) => !want.includes(g))) fail('P2', `written but never shown as to be written\nwant ${JSON.stringify(want)}\ngot ${JSON.stringify(got)}`);
       // P3: the done line says what the label promised, less what it counts as skipped.
       if (outcome.values !== plan.counts.values - skipped - refused) fail('P3', `label promised ${plan.counts.values} values, ${skipped} skipped, done says ${outcome.values}`);
       if (outcome.documents !== plan.counts.documents) fail('P3', `label promised ${plan.counts.documents} documents, done says ${outcome.documents}`);
       const unstoredPlanned = this.setup.cloud && [...plan.documents, ...plan.labArchives, ...plan.archiveOnly].some((d) => this.setup.failWrites.includes(d.fileId));
       if (unstoredPlanned !== outcome.unstored > 0) fail('P3', `unstored ${outcome.unstored}, a refused original planned: ${unstoredPlanned}`);
     }
-    // P5: a repeat Save on the committed record adds nothing.
-    const again = await uploadSave(this.s, file, NOW, this.setup.cloud, io(this.setup.cloud, this.setup.failWrites));
-    // A repeat on a record another writer changed may now be refused (a pair the wrong way up): it writes nothing, which P5 asks.
-    if (!again.ok && !(again.reason === 'not-ready' && atCommit !== atSave || again.reason === 'not-ready' && seen?.record !== atSave)) fail('P5', `repeat Save refused: ${again.message}`);
-    if (again.ok) {
+    // P5: a repeat Save on the committed record adds nothing. Only where no other writer acted: then a value the first
+    // Save counted as skipped (its slot taken, then freed again) is one the page did promise, and a repeat may write it.
+    const quiet = seen?.record === atSave && atSave === atCommit;
+    const again = quiet ? await uploadSave(this.s, file, NOW, this.setup.cloud, io(this.setup.cloud, this.setup.failWrites)) : null;
+    if (again && !again.ok) fail('P5', `repeat Save refused: ${again.message}`);
+    if (again?.ok) {
       const repeat = again.commit(file);
       // An original the cloud refused is tried again (US-14 AC4): its hash-only row may be filed afresh, never a new value or a new file.
       const liveHashes = (f: RoadmapFile) => JSON.stringify([...new Set(f.documents.filter((d) => !d.deleted).map((d) => d.contentHash))].sort());
@@ -457,7 +516,9 @@ function genStep(r: () => number, run: Run, phase: { saves: number; chosen: numb
   const run_ = s.run;
   if (s.phase === 'saving') {
     const meanwhile = coin(0.25) ? otherWriter(r, run) : null;
-    return { type: 'save', ok: phase.saves > 0 || coin(0.85), meanwhile, merge: coin(0.5), when: coin(0.5) ? 'beforeSave' : 'beforeCommit' };
+    // Another writer between Save and the commit: appends rows, or frees a held slot (a kept conflict's held row deleted).
+    const free = coin(0.15) ? freeable(r, run) : null;
+    return { type: 'save', ok: phase.saves > 0 || coin(0.85), meanwhile: meanwhile ?? (free ? [] : null), merge: coin(0.5), free, when: coin(0.5) ? 'beforeSave' : 'beforeCommit' };
   }
   if (s.phase === 'saveFailed') {
     phase.saves++;
@@ -465,7 +526,7 @@ function genStep(r: () => number, run: Run, phase: { saves: number; chosen: numb
     const shown = run.last ? allRows(run.last.view) : [];
     const row = shown.find((x) => x.error && x.ticked) ?? (shown.length && coin(0.3) ? pick(shown) : undefined);
     if (row) return { type: 'event', e: { type: 'chose', id: row.fileId, change: { tick: row.ref, on: !row.ticked }, now: NOW } };
-    return run.last?.view.save.enabled ? { type: 'event', e: { type: 'saveStarted' } } : null;
+    return run.last?.view.save.enabled ? tapOrSave(r, run) : null;
   }
   // open
   const busy = s.files.filter((f) => ['hashing', 'converting', 'sending'].includes(f.status.s));
@@ -514,7 +575,7 @@ function genStep(r: () => number, run: Run, phase: { saves: number; chosen: numb
     if (day && day.kind === 'undated') return { type: 'event', e: { type: 'chose', id: day.fileId, change: { testDay: coin(0.8) ? PICKED_DAY : DAY }, now: NOW } };
   }
   // Nothing in flight: Save as the person would, only when the view enables it; else give up the sequence.
-  if (run.last?.view.save.enabled) return { type: 'event', e: { type: 'saveStarted' } };
+  if (run.last?.view.save.enabled) return tapOrSave(r, run);
   return null;
 }
 
@@ -550,6 +611,19 @@ function genChange(r: () => number, run: Run, fileId: string): ChoiceChange | nu
     return row.replaces || coin(0.2) ? { replace: row.ref, correctsId } : { tick: row.ref, on: !row.ticked };
   }
   return { edit: row.ref, value: pick([2.0, 3.1, 52, 500, null, Number.NaN]) };
+}
+
+/** Save as the person taps it; sometimes another writer acts between the drawn page and the tap. */
+function tapOrSave(r: () => number, run: Run): Step {
+  if (r() >= 0.25) return { type: 'event', e: { type: 'saveStarted' } };
+  const free = r() < 0.5 ? freeable(r, run) : null;
+  return { type: 'tap', rows: free ? [] : otherWriter(r, run), merge: r() < 0.3, free };
+}
+
+/** A held row to delete, often one a value of the upload meets in its slot. */
+function freeable(r: () => number, run: Run): string | null {
+  const live = rowsOf(run.record).filter(isActive).map((x) => x.id);
+  return live.length ? live[Math.floor(r() * live.length)] : null;
 }
 
 /** Another writer's rows: fill a slot the upload aims at, or correct a held row (a Replace's target moves). */
@@ -612,7 +686,7 @@ describe('upload-view property: the list view against Save (US-52 AC8c, US-13 AC
     const gaps: Record<string, number[]> = {};
     const reach = {
       steps: 0, saved: 0, saveFailedThenSaved: 0, replacing: 0, corrections: 0, changedBeforeSave: 0, blockedFix: 0, blockedDay: 0, conflicts: 0, documents: 0,
-      merges: 0, replaceLost: 0, skipped: 0, unstored: 0, archiveOnly: 0, copies: 0, alreadySaved: 0, futureDay: 0, pressureRefused: 0, limitTicked: 0, labAsCore: 0, edited: 0,
+      merges: 0, replaceLost: 0, changedBeforeTap: 0, freedBeforeCommit: 0, skipped: 0, unstored: 0, archiveOnly: 0, copies: 0, alreadySaved: 0, futureDay: 0, pressureRefused: 0, limitTicked: 0, labAsCore: 0, edited: 0,
     };
     for (let seed = 1; seed <= SEEDS; seed++) {
       const r = mulberry32(seed);
@@ -633,6 +707,8 @@ describe('upload-view property: the list view against Save (US-52 AC8c, US-13 AC
         if (step.type === 'save' && run.s.phase === 'done') reach.corrections += run.corrections;
         if (run.s.phase === 'done') { reach.saved++; if (phase.saves) reach.saveFailedThenSaved++; }
         if (step.type === 'save' && step.meanwhile) reach.changedBeforeSave++;
+        if (step.type === 'tap') reach.changedBeforeTap++;
+        if (step.type === 'save' && step.free) reach.freedBeforeCommit++;
         if ((step.type === 'record' || (step.type === 'save' && step.meanwhile)) && step.merge) reach.merges++;
         if (step.type === 'delete' && lostBefore(run)) reach.replaceLost++;
         if (step.type === 'save' && run.s.phase === 'done') { reach.skipped += run.saved.skipped; reach.unstored += run.saved.unstored; reach.archiveOnly += run.saved.archiveOnly; }
@@ -645,7 +721,7 @@ describe('upload-view property: the list view against Save (US-52 AC8c, US-13 AC
           if (v.documents) reach.documents++;
           if (allRows(v).some((row) => row.copy)) reach.copies++;
           if (v.alreadySaved) reach.alreadySaved++;
-          if (v.sections.some((x) => x.kind === 'notSaved' && x.lines.some((l) => l.includes(LAB_DAY_REFUSAL)))) reach.futureDay++;
+          if (v.sections.some((x) => x.kind === 'notSaved' && x.lines.some((l) => l.includes(LAB_DAY_REFUSAL) || l.includes(DAY_NOT_HAPPENED)))) reach.futureDay++;
           if (allRows(v).some((row) => row.error === PRESSURE_ORDER)) reach.pressureRefused++;
           if (allRows(v).some((row) => row.ticked && row.value?.startsWith('<'))) reach.limitTicked++;
           if (allRows(v).some((row) => row.ticked && row.ref[0] === 'a' && row.label === 'LDL Cholesterol')) reach.labAsCore++;

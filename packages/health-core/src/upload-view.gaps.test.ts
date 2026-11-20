@@ -8,7 +8,7 @@ import { core, DAY, EMPTY, extra, NOW } from './import-review.test-helpers';
 import { IMPORT_REVIEW_TEXT, NOT_SAVED_TEXT } from './import-review';
 import type { UnifiedExtractionResult } from './lab-extraction';
 import { bulkAppendValues, type BulkRow } from './record-edits';
-import { LAB_DAY_REFUSAL } from './lab-series';
+import { DAY_NOT_HAPPENED, LAB_DAY_REFUSAL } from './lab-series';
 import type { RoadmapFile } from './roadmap-file';
 import { NO_CHOICES, type ChoiceChange } from './upload-choices';
 import { transition, type UploadState } from './upload-flow';
@@ -53,7 +53,7 @@ describe('gaps the list-view property found, fixed (owner rulings 2026-11-20)', 
     s = chose(s, 'f0', { testDay: PICKED_DAY });
     const { view } = see(s, EMPTY);
     expect(rows(view).map((row) => row.ref)).toEqual(['v1']);
-    expect(notSaved(view)).toEqual([`LDL Cholesterol: ${LAB_DAY_REFUSAL}`]);
+    expect(notSaved(view)).toEqual([`LDL Cholesterol: ${DAY_NOT_HAPPENED}`]); // a core value: the blood test words (adversary R5)
     expect(view.save).toMatchObject({ enabled: true, label: IMPORT_REVIEW_TEXT.save(1) });
   });
 
@@ -61,7 +61,7 @@ describe('gaps the list-view property found, fixed (owner rulings 2026-11-20)', 
     const record = held([LDL(2.0)]);
     const s = open([labRead('f0', { values: [core({})] }), labRead('f1', { values: [core({})] })]);
     const [first, copy] = rows(see(s, record).view);
-    expect(copy).toMatchObject({ fileId: 'f1', replaces: null, replace: null, replacing: false, copy: NOT_SAVED_TEXT.sameDay, conflict: IMPORT_REVIEW_TEXT.conflictKept });
+    expect(copy).toMatchObject({ fileId: 'f1', replaces: null, replace: null, replacing: false, copy: NOT_SAVED_TEXT.sameDay, conflict: null }); // only its caption: nothing to resolve (adversary R5)
     expect(first).toMatchObject({ fileId: 'f0', copy: null, replace: 'Replace' });
     const replaced = chose(s, 'f0', { replace: 'v0', correctsId: first.replaces! });
     const { file, outcome } = await saved(replaced, record);
@@ -85,6 +85,12 @@ describe('gaps the list-view property found, fixed (owner rulings 2026-11-20)', 
     expect(view.save).toMatchObject({ enabled: true, label: IMPORT_REVIEW_TEXT.save(1) });
     expect(notSaved(view)).toEqual([expect.stringContaining('Ferritin')]);
     expect(uploadSavePlan(s, EMPTY, NOW, review, true).labArchives).toContainEqual({ fileId: 'f0', sourceFileName: 'f0.pdf', reportDate: null });
+  });
+
+  it('futureOwnDay for a lab: the lab words', () => {
+    let s: UploadState = open([labRead('f0', { reportDate: REPORT_FUTURE, additionalValues: [extra({ recordedAt: FUTURE })], values: [core({ metric: 'hba1c', valueSI: 40, displayValue: 40, displayUnit: 'mmol/mol' })] })]);
+    s = chose(s, 'f0', { testDay: PICKED_DAY });
+    expect(notSaved(see(s, EMPTY).view)).toEqual([`Ferritin: ${LAB_DAY_REFUSAL}`]);
   });
 
   it('dayForNothing: an out-of-range value still asks the day (it can be corrected, and then saves)', () => {
@@ -151,6 +157,45 @@ describe('gaps the list-view property found, fixed (owner rulings 2026-11-20)', 
     expect(outcome.values).toBe(0);
     expect(done.line).toBe('Saved 0 values.');
     expect(done.notSaved).toEqual(['Blood pressure not saved: the top number (systolic) must be higher than the bottom number (diastolic). Check the report, then enter it again.']);
+  });
+
+  // Fix round on 52434ce85 (Codex R1, adversary R6): Save writes exactly what the page displayed as to be written.
+  it('writes exactly what was displayed: a sync lands a different LDL between the displayed review and the tap, and the LDL is counted as not added', async () => {
+    const s = open([labRead('f0', { values: [core({})] })]);
+    const shown = see(s, EMPTY).view;
+    expect(shown.reviewed).toEqual([{ file: 'f0', ref: 'v0', lab: false }]);
+    const synced = held([LDL(2.7)]);
+    const saving = transition(s, { type: 'saveStarted', reviewed: shown.reviewed }).state; // echoed by the app, as drawn
+    const out = await uploadSave(saving, synced, NOW, false, off);
+    if (!out.ok) throw new Error(out.message);
+    const { outcome } = out.commit(synced);
+    expect(outcome).toMatchObject({ values: 0, skippedValues: 1 });
+  });
+
+  it('writes exactly what was displayed: a kept conflict whose held row is deleted between the tap and the save is not written into the freed slot', async () => {
+    const record = held([LDL(2.0)]);
+    const s = open([labRead('f0', { values: [core({})] }), labRead('f1', { values: [core({ metric: 'hba1c', valueSI: 40, displayValue: 40, displayUnit: 'mmol/mol' })] })]);
+    const shown = see(s, record).view;
+    expect(shown.save.label).toBe(IMPORT_REVIEW_TEXT.save(1)); // the HbA1c; the LDL conflict is kept
+    const saving = transition(s, { type: 'saveStarted', reviewed: shown.reviewed }).state;
+    const deleted = { ...record, labValues: record.labValues.map((l) => ({ ...l, status: 'entered-in-error' as const })) };
+    const out = await uploadSave(saving, deleted, NOW, false, off);
+    if (!out.ok) throw new Error(out.message);
+    const { file, outcome } = out.commit(deleted);
+    expect(file.labValues.filter((l) => l.status === 'active').map((l) => l.metricName)).toEqual(['hba1c']);
+    expect(outcome.values).toBe(1);
+  });
+
+  it('an edit that differs from the held value stays a conflict, and with Replace it is written (negative pin for editEqualSaysDifferent)', async () => {
+    const record = held([LDL(3.1)]);
+    let s: UploadState = chose(open([labRead('f0', { values: [core({ valueSI: 2.4, displayValue: 2.4 })] })]), 'f0', { edit: 'v0', value: 2.6 });
+    const [row] = rows(see(s, record).view);
+    expect(row).toMatchObject({ conflict: IMPORT_REVIEW_TEXT.conflictKept, value: '2.6' });
+    expect(see(s, record).view.alreadySaved).toBeNull();
+    s = chose(s, 'f0', { replace: 'v0', correctsId: row.replaces! });
+    const { file, outcome } = await saved(s, record);
+    expect(outcome.values).toBe(1);
+    expect(file.labValues.filter((l) => l.status === 'active').map((l) => [l.value, l.correctsId])).toEqual([[2.6, record.labValues[0].id]]);
   });
 
   it('P7: an edited value shows the number Save writes, in its SI unit', () => {

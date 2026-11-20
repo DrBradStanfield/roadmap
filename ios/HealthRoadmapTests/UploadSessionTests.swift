@@ -244,4 +244,20 @@ final class UploadSessionTests: XCTestCase, CloudFixtures {
         guard case .drawn(let after) = upload.model.state else { return XCTFail("no view") }
         XCTAssertEqual(after, before, "a change the upload does not touch leaves the page as it was")
     }
+
+    /// Save writes exactly what the page showed: a sync lands a different LDL after the page was drawn and
+    /// before the tap; the LDL the page promised is counted as not added, never written over the synced one.
+    func testSaveWritesWhatThePageShowedWhenTheRecordMovesBeforeTheTap() async throws {
+        let store = try phone()
+        let report = UploadPageTests.lab(values: UploadPageTests.ldl)
+        StubHTTP.handler = { _ in Kit.read("{\"accepted\":true}\n{\"status\":200,\"body\":{\"success\":true,\"data\":\(report)}}\n") }
+        let upload = session(store)
+        _ = await upload.runner.pick(Kit.pictures(1), needsConsent: false)
+        try await until("read") { page(upload)?.save.label == "Save 1 value" }
+        _ = await store.apply(.add(metric: "ldl", value: 2.0, day: "2026-10-01"))
+        upload.send(.save) // the page drawn before the sync is the one tapped
+        try await until("done") { page(upload)?.done != nil }
+        XCTAssertEqual(page(upload)?.done?.line, "Saved 0 values.")
+        XCTAssertEqual(page(upload)?.done?.skipped, ["1 blood test value was not added. Check your blood test table: a value was already recorded for that date, or changed during review."])
+    }
 }
