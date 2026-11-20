@@ -13,7 +13,7 @@ import {
 } from '../../packages/health-core/src/input-form';
 import { lipidMarkerFor, medicinesShown, weightMedicationTrigger } from '../../packages/health-core/src/suggestions';
 import { SUPPLEMENT_OPTIONS, type HealthInputs } from '../../packages/health-core/src/types';
-import { SCREENING_KEYS, screeningSchema } from '../../packages/health-core/src/validation';
+import { SCREENING_KEYS, screeningSchema, supplementSchema } from '../../packages/health-core/src/validation';
 import { setScreening } from '../../packages/health-core/src/state-edits';
 import { localDay } from '../../packages/health-core/src/merge';
 import { METRIC_LABELS, METRIC_TO_FIELD } from '../../packages/health-core/src/mappings';
@@ -266,6 +266,17 @@ function offered(field: FormField, value: string, months: FormsView['months']): 
 
 type Outcome = { ok: true; file: RoadmapFile } | Extract<EditOutcome, { ok: false }>;
 type Save = (file: RoadmapFile, edit: { kind: 'medication'; medicationKey: string; drugName: string; doseValue: number | null; doseUnit: string | null }) => Outcome;
+
+/**
+ * The check a supplement edit passes. A key the record holds passes as it is: older browser records hold
+ * custom keys over the 100 characters a new key may have (US-06 AC1a). So does the name stored under that
+ * key, and only that name: the web form saves names the name pattern refuses (US-06 AC1d).
+ */
+export function supplementCheck(held: { supplementName: string } | undefined, name: string) {
+  if (!held) return supplementSchema;
+  const keyed = supplementSchema.omit({ supplementKey: true });
+  return held.supplementName === name ? keyed.omit({ supplementName: true }) : keyed;
+}
 
 /**
  * One form answer. Only a question the form shows now can be answered, and
