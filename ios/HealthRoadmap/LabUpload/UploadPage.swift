@@ -46,6 +46,8 @@ struct UploadPage: Decodable, Equatable, Sendable {
         let label: String
         let name: String
         let choose: String?
+        /// The day the person picked (YYYY-MM-DD): shown, to be changed.
+        let chosen: String?
     }
 
     /// One section, in the order the view lists them. One this build does not know is `other`.

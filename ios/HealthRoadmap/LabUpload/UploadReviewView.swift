@@ -108,8 +108,14 @@ struct UploadReviewView: View {
         case .undated(let undated):
             Section {
                 Text(verbatim: undated.name)
-                datePicker(key: "day:\(undated.fileId)", label: undated.label, opens: undated.choose ?? undated.label) {
-                    send(.testDay(fileId: undated.fileId, day: $0))
+                if let chosen = undated.chosen, let date = DayText.noon(chosen) {
+                    // The picked day, shown and changeable; a change goes to the engine at once.
+                    DatePicker(selection: Binding(get: { date }, set: { send(.testDay(fileId: undated.fileId, day: DayText.iso($0))) }),
+                               in: ...Date.now, displayedComponents: .date) { Text(verbatim: undated.label) }
+                } else {
+                    datePicker(key: "day:\(undated.fileId)", label: undated.label, opens: undated.choose ?? undated.label) {
+                        send(.testDay(fileId: undated.fileId, day: $0))
+                    }
                 }
             } header: { Text(verbatim: undated.title) }
         case .unsure(let title, let footer, let rows):

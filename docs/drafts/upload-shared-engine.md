@@ -1,7 +1,8 @@
 # One upload engine for web and iPhone
 
 Status: design approved 2026-11-15, with the owner's rulings in section 8. Rulings R1 to R9 are the
-codebase owner's and binding. The strings in section 5 still wait on Brad. Surveyed at origin/main
+codebase owner's and binding. The strings in section 5, and the proposed ones beside it, were approved
+by Brad 2026-11-20. Surveyed at origin/main
 `0696d9cdc`. This is PR 0 of the series; no product code in it.
 
 ## Why
@@ -251,7 +252,7 @@ Add medical records                                   Close
  Day of the test              [ 3 Nov 2026 ]
 ---------------------------------------------------------------
  CHECK THESE 2 VALUES             (IMPORT_REVIEW_TEXT, as built)
- [x] Ferritin  ...  /  [ ] HbA1c  ... question
+ [x] Ferritin  ...  /  [x] HbA1c  ... question  (saved unless cleared, Brad 2026-11-20)
 ---------------------------------------------------------------
  1 FILE NOT READ
  scan-3.jpg   Our server was busy.            [ Try again ]
@@ -282,7 +283,7 @@ appear while files are read, with the progress bar above them. `ReviewTable`'s m
 "Show all" view for values. `ReviewFileSections` becomes the documents list (same shape as the
 iPhone's). The dropzone stays the picker. The "Already saved" badge goes.
 
-## 5. Strings for Brad's yes (R7)
+## 5. Strings (R7): approved by Brad 2026-11-20
 
 Reused as they are: `IMPORT_REVIEW_TEXT` (checkTitle, checkFooter, conflictKept, willSave, showAll,
 hide, alreadySaved, notSavedTitle, notSavedFooter), `NOT_SAVED_TEXT`, `KIND_WORDS` via

@@ -136,11 +136,12 @@ final class UploadPageTests: XCTestCase {
         drive.pick(["u"])
         drive.read("u", Self.lab(reportDate: nil, values: Self.ldl))
         var page = try drive.page()
-        XCTAssertEqual(page.sections.first, .undated(.init(fileId: "u", title: "This report has no date", label: "Day of the test", name: "u.png", choose: "Choose the day of the test")))
+        XCTAssertEqual(page.sections.first, .undated(.init(fileId: "u", title: "This report has no date", label: "Day of the test", name: "u.png", choose: "Choose the day of the test", chosen: nil)))
         XCTAssertFalse(page.save.enabled)
         drive.step(UploadAction.testDay(fileId: "u", day: "2026-10-02").event(now: Self.now))
         page = try drive.page()
-        XCTAssertFalse(page.sections.contains { if case .undated = $0 { true } else { false } })
+        // The picked day stays on the page, to be seen and changed.
+        XCTAssertEqual(page.sections.first, .undated(.init(fileId: "u", title: "This report has no date", label: "Day of the test", name: "u.png", choose: "Choose the day of the test", chosen: "2026-10-02")))
         XCTAssertTrue(page.save.enabled)
     }
 

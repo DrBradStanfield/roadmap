@@ -175,7 +175,7 @@ describe('bridge contract (US-25 AC18)', () => {
     const row = { fileId: 'string', ref: 'string', label: 'string', reasons: 'object', conflict: 'string?', ticked: 'boolean', replaces: 'string?', replacing: 'boolean', error: 'string?',
       value: 'string', unit: 'string', question: 'string?', printed: 'string?', day: 'string?', replace: 'string?' };
     const SECTIONS: Record<string, unknown> = {
-      undated: { kind: 'string', fileId: 'string', title: 'string', label: 'string', name: 'string', choose: 'string' },
+      undated: { kind: 'string', fileId: 'string', title: 'string', label: 'string', name: 'string', choose: 'string', chosen: 'string?' },
       undatedPrevious: { kind: 'string', fileId: 'string', name: 'string', month: 'string?', before: 'string?' },
       unsure: { kind: 'string', title: 'string', footer: 'string', rows: [row] },
       failed: { kind: 'string', title: 'string', rows: [{ fileId: 'string', name: 'string', line: 'string' }], retry: 'string?' },

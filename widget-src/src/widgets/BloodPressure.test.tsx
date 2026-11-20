@@ -75,9 +75,9 @@ afterEach(async () => {
 describe('US-75 blood pressure widget', () => {
   it('AC4: grades the average at every tier boundary, live, with no button', () => {
     const cases: Array<[string, string, string]> = [
-      ['119', '79', 'Normal'], ['120', '79', 'Elevated'], ['129', '79', 'Elevated'], ['130', '79', 'Stage 1 hypertension'],
-      ['110', '80', 'Stage 1 hypertension'], ['139', '89', 'Stage 1 hypertension'], ['140', '70', 'Stage 2 hypertension'],
-      ['110', '90', 'Stage 2 hypertension'], ['179', '119', 'Stage 2 hypertension'], ['180', '70', 'Hypertensive crisis'], ['125', '120', 'Hypertensive crisis'],
+      ['119', '79', 'Normal'], ['120', '79', 'Elevated'], ['129', '79', 'Elevated'], ['130', '79', 'Stage 1 range'],
+      ['110', '80', 'Stage 1 range'], ['139', '89', 'Stage 1 range'], ['140', '70', 'Stage 2 range'],
+      ['110', '90', 'Stage 2 range'], ['179', '119', 'Stage 2 range'], ['180', '70', 'Crisis range'], ['125', '120', 'Crisis range'],
     ];
     for (const [sys, dia, stage] of cases) {
       const { unmount } = render(<BloodPressureWidget />);
@@ -132,7 +132,7 @@ describe('US-75 blood pressure widget', () => {
   it('AC4 (ruling C2): with no plan (a fresh record, no height) the engine\'s own card for the pair alone shows, in its medicine-free words', () => {
     render(<BloodPressureWidget />);
     enterPair(1, '150', '95');
-    expect(shown('.hr-widget-sr, .hr-widget-status')).toBe('Stage 2 hypertension');
+    expect(shown('.hr-widget-sr, .hr-widget-status')).toBe('Stage 2 range');
     const alone = (sys: number, dia: number, id: string) => calculateHealthResults({ systolicBp: sys, diastolicBp: dia } as SuggestionInputs).suggestions.find((c) => c.id === id)!.description;
     expect(advice()).toBe(spelledOut(alone(150, 95, 'bp-stage2')));
     expect(advice()).toContain('Discuss treatment with your doctor.');
@@ -147,7 +147,7 @@ describe('US-75 blood pressure widget', () => {
     enterPair(1, '190', '125');
     enterPair(2, '140', '85');
     expect(shown('.hr-widget-v')).toBe('165/105 mmHg');
-    expect(shown('.hr-widget-sr, .hr-widget-status')).toBe('Hypertensive crisis');
+    expect(shown('.hr-widget-sr, .hr-widget-status')).toBe('Crisis range');
     expect(advice()).toMatch(/^Your blood pressure of 190\/125 mmHg is dangerously high\./);
     await leave();
     expect([active('systolic_bp'), active('diastolic_bp')]).toEqual([[165], [105]]);
@@ -155,7 +155,7 @@ describe('US-75 blood pressure widget', () => {
     render(<BloodPressureWidget />);
     type(1, 'top', '160'); type(1, 'bottom', '95');
     enterPair(2, '190', '122');
-    expect(shown('.hr-widget-sr, .hr-widget-status')).toBe('Hypertensive crisis');
+    expect(shown('.hr-widget-sr, .hr-widget-status')).toBe('Crisis range');
     expect(advice()).toMatch(/^Your blood pressure of 190\/122 mmHg/);
   });
 
@@ -318,7 +318,7 @@ describe('US-75 blood pressure widget', () => {
     await data.addMeasurement('diastolic_bp', 85);
     render(<BloodPressureWidget />);
     enterPair(1, '180', '90');
-    expect(shown('.hr-widget-sr, .hr-widget-status')).toBe('Hypertensive crisis');
+    expect(shown('.hr-widget-sr, .hr-widget-status')).toBe('Crisis range');
     await leave();
     expect([active('systolic_bp'), active('diastolic_bp')]).toEqual([[180], [90]]);
   });
@@ -382,7 +382,7 @@ describe('US-75 blood pressure widget', () => {
     for (const m of later) await data.correctValue(m.id, m.metricType === 'systolic_bp' ? 200 : 130);
     render(<BloodPressureWidget />);
     enterPair(1, '135', '85');
-    expect(advice()).toMatch(/^Your blood pressure of 135\/85 mmHg indicates stage 1/);
+    expect(advice()).toMatch(/^Your blood pressure of 135\/85 mmHg is in the range the ACC\/AHA guideline calls stage 1/);
     enterPair(1, '190', '125');
     expect(advice()).toMatch(/^Your blood pressure of 190\/125 mmHg/);
   });
@@ -524,6 +524,6 @@ describe('US-75 AC7 privacy', () => {
     expect(cards.map((c) => c.id).sort()).toEqual(['bp-crisis', 'bp-stage1', 'bp-stage2']);
     for (const card of cards) expect(card.description.length).toBeLessThanOrEqual(WIDTH.advice);
     expect('250/150'.length).toBe(WIDTH.value);
-    expect('Stage 2 hypertension'.length).toBe(WIDTH.tier);
+    expect('Stage 2 range'.length).toBe(WIDTH.tier);
   });
 });
