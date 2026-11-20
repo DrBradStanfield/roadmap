@@ -14,7 +14,7 @@ import { lipidCascade, weightCascade } from './medication-cascades';
 import { stampInstant } from './merge';
 import type { MedicationSave } from './state-edits';
 import {
-  CANCER_SECTION_MIN_AGE, SCREENING_REFS, SCREENING_RULES, chainKeys, inAges, opensFollowup, ruleNotes, ruleOf, ruleTakes,
+  SCREENING_REFS, SCREENING_RULES, chainKeys, inAges, opensFollowup, ruleNotes, ruleOf, ruleTakes,
   intervalClosedBy, intervalQuestion, screeningFollowupInfo, type ScreeningId, type ScreeningRule,
 } from './screening-rules';
 import { LIPID_MEDS_IN_STEPS, lipidTargetSentence, weightMedIntro, type LipidMarker, type WeightMedicationTrigger } from './suggestions';
@@ -374,11 +374,13 @@ export function followupDateLabel(name: string | undefined, status: string): str
   return status === 'completed' ? `When was the ${name ?? 'follow-up'} completed?` : `When is the ${name ?? 'follow-up'} scheduled?`;
 }
 
-/** Whether any cancer screening applies at this age and sex (the web shows the card only then):
- *  from the section's own floor, or wherever a group shows. */
-export function anyScreeningEligible(age: number, sex: string | undefined): boolean {
-  return age >= CANCER_SECTION_MIN_AGE || CANCER.some((r) => ruleTakes(r, r.groupAges, age, sex));
+/** Whether the cancer section shows (the web shows the card only then): only when one of its groups does (US-07 AC1k). */
+export function anyScreeningEligible(age: number, sex: string | undefined, scr: ScreeningInputs): boolean {
+  return CANCER.some((r) => groupShown(r, age, sex, scr));
 }
+/** Whether a cancer group shows. Lung's stays past 80 while it holds an answer, its questions with it (US-07 AC1g). */
+const groupShown = (r: ScreeningRule, age: number, sex: string | undefined, scr: ScreeningInputs) =>
+  r.id === 'lung' ? lungGroupShown(age, scr) : ruleTakes(r, r.groupAges, age, sex);
 
 /**
  * The LDCT question opens at 20 pack-years, or once it has any answer (or LDCT data is recorded),
@@ -464,13 +466,11 @@ export function screeningForm(age: number | undefined, sex: string | undefined, 
   };
 
   const sections: FormSection[] = [];
-  if (anyScreeningEligible(age, sex)) {
+  if (anyScreeningEligible(age, sex, scr)) {
     const groups: FormGroup[] = [];
     for (const r of CANCER) {
-      // Lung's group stays past 80 while it holds an answer, its questions with it (US-07 AC1g).
-      const lung = r.id === 'lung';
-      if (!(lung ? lungGroupShown(age, scr) : ruleTakes(r, r.groupAges, age, sex))) continue;
-      const fields = lung || ruleTakes(r, r.askAges, age, sex) ? asked(r) : [];
+      if (!groupShown(r, age, sex, scr)) continue;
+      const fields = r.id === 'lung' || ruleTakes(r, r.askAges, age, sex) ? asked(r) : [];
       groups.push({ id: r.id, title: r.title, notes: ruleNotes(r, age), fields });
     }
     sections.push({ id: 'cancer-screening', title: X.title, intro: X.intro, groups });

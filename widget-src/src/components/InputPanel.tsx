@@ -13,7 +13,7 @@ import type { ApiLabValue, ApiSupplement } from '../lib/api-types';
 import type { FieldUnitToggle, UnitSwitchSource } from '../lib/useBloodDraftUnits';
 import { useLeaveField, type PanelOnboarding } from '../hooks/useOnboarding';
 
-import { FIELD_METRIC_MAP, type ApiMeasurement, type ApiMedication, type ApiScreening, METRIC_TO_FIELD } from '@roadmap/health-core/mappings';
+import { FIELD_METRIC_MAP, type ApiMeasurement, type ApiMedication, type ApiScreening, METRIC_TO_FIELD, screeningsToInputs } from '@roadmap/health-core/mappings';
 import { type WeightMedicationTrigger, type LipidMarker } from '@roadmap/health-core/suggestions';
 import { type UnitSystem, fromCanonicalValue, toCanonicalValue, getDisplayLabel, getDisplayRange, UNIT_DEFS, hasUnitChoice } from '@roadmap/health-core/units';
 import { identityFieldRange } from '@roadmap/health-core/validation';
@@ -612,7 +612,7 @@ export function InputPanel({
   // Null, not an empty element, when no screening applies: My health draws a topic for any element (US-62 AC17).
   const renderScreening = (place: Placement) => {
     const age = planBasis?.age;
-    if (age === undefined || !anyScreeningEligible(age, inputs.sex)) return null;
+    if (age === undefined || !anyScreeningEligible(age, inputs.sex, screeningsToInputs(screenings))) return null;
     return <ScreeningQuestions place={place} form={form} screenings={screenings} onScreeningChange={onScreeningChange}
                                psaDate={psaDate} onPsaDateChange={onPsaDateChange} onPsaCommit={onPsaCommit} bloodTestHistory={bloodTestHistory}
                                age={age} writeScreening={writeScreening} renderScreeningDateInput={renderScreeningDateInput}/>;
