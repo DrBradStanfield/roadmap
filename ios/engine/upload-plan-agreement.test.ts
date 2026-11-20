@@ -1,6 +1,7 @@
 // Design PR 8 (US-52 AC8c, US-13 AC13, AC14): health-core's upload plan writes what today's
 // iPhone save writes for the same choices (ios/engine lab-review.ts `labRows`, behind Swift's
-// LabSavePlan: ticks default to every value with no question, the test day to the report's),
+// LabSavePlan, its ticks every value, as Brad decided 2026-11-20 for both clients (saved unless
+// cleared; today's LabChoices still leaves a value with a question out, until design PR 15), the test day to the report's),
 // and files each letter as its review card does (`labReview(...).document`). The one
 // exception is R3: a letter whose name the record already holds is skipped by today's card
 // and saved by the plan, since the upload's own duplicate rule (upload-known.ts) runs before
@@ -64,7 +65,7 @@ const readFile = (id: string, extraction: Extraction, ticks: Record<string, bool
 /** The caller's way: one review, handed to the plan. */
 const planOf = (s: UploadState, record: RoadmapFile, now: string) => uploadSavePlan(s, record, now, uploadReview(s, record, now), true);
 const open = (files: UploadFile[]): UploadState => ({ phase: 'open', platform: 'phone', run: 1, files, started: NOW, firstRead: null });
-const refsOf = (x: Extraction) => [...(x.values ?? []).map((v, i) => ({ ref: `v${i}`, q: !!v.question })), ...(x.additionalValues ?? []).map((_, i) => ({ ref: `a${i}`, q: false }))];
+const refsOf = (x: Extraction) => [...(x.values ?? []).map((_, i) => ({ ref: `v${i}` })), ...(x.additionalValues ?? []).map((_, i) => ({ ref: `a${i}` }))];
 
 describe('upload plan agrees with today\'s iPhone save', () => {
   it('one report: the same rows as labRows for the same ticks and day, for 400 seeds', () => {
@@ -78,7 +79,7 @@ describe('upload plan agrees with today\'s iPhone save', () => {
       for (const { ref } of refsOf(x)) if (r() < 0.2) ticks[ref] = r() < 0.5;
       const testDay = r() < 0.3 ? DAYS[0] : null;
       const plan = planOf(open([readFile('a', x, ticks, testDay)]), record, NOW);
-      const ticked = refsOf(x).filter(({ ref, q }) => ticks[ref] ?? !q).map((t) => t.ref);
+      const ticked = refsOf(x).filter(({ ref }) => ticks[ref] ?? true).map((t) => t.ref);
       const planned = plan.labRows.find((l) => l.fileId === 'a')?.rows ?? [];
       const ownDay = (ref: string) => (ref[0] === 'v' ? x.values![Number(ref.slice(1))].recordedAt : x.additionalValues![Number(ref.slice(1))].recordedAt);
       // The phone's test day starts at the report's, else today, and waits to be confirmed when a
@@ -105,7 +106,7 @@ describe('upload plan agrees with today\'s iPhone save', () => {
       const empty = createEmptyFile({ deviceId: 't', now: NOW });
       const plan = planOf(open([readFile('a', a), readFile('b', b)]), empty, NOW);
       const alone = (x: Extraction) => {
-        const ticked = refsOf(x).filter((t) => !t.q).map((t) => t.ref);
+        const ticked = refsOf(x).map((t) => t.ref);
         const needs = ticked.some((ref) => (ref[0] === 'v' ? x.values![Number(ref.slice(1))].recordedAt : x.additionalValues![Number(ref.slice(1))].recordedAt) === undefined);
         if (!x.reportDate && needs) return []; // waits for the test day
         const res = labRows(x, ticked, x.reportDate ?? TODAY, NOW, empty);

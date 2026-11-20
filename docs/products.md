@@ -76,6 +76,9 @@ Yes — MicroVitamin capsules are **vegan AND vegetarian friendly**. The capsule
 **Are there any safety concerns or interactions with MicroVitamin?**
 MicroVitamin contains Vitamin K2 (90mcg), which can affect blood clotting — consult your doctor before use if you take blood thinners (warfarin/Coumadin). The product is gluten-free, soy-free, contains no artificial colors, no fillers, and no titanium dioxide. It is not intended for children under 18. Do not use if pregnant or nursing (US, UK and EU labels; the Australian label: "Not recommended for use by pregnant and lactating women"; the Canadian label: "Consult a health care practitioner prior to use if you are pregnant or breastfeeding"). These statements have not been evaluated by the FDA. This product is not intended to diagnose, treat, cure, or prevent any disease.
 
+**How long does MicroVitamin keep?**
+There's a 2 year expiry (Brad, 2026-11-17).
+
 **Why do I see dark flecks?**
 That's completely normal and a sign the formula contains the ingredients we list on the label. MicroVitamin includes three natural carotenoids: lycopene (which gives tomatoes their deep red colour), lutein, and zeaxanthin (the orange-yellow pigments concentrated in leafy greens and egg yolks).
 
@@ -212,7 +215,7 @@ Lithium orotate, astaxanthin, cocoa flavanols: same answers as the MicroVitamin 
 
 - Melatonin 0.8mg, 8-hour sustained release (Melotime®) — releases steadily through the night rather than the all-at-once spike of typical products, closer to the body's own overnight melatonin curve. Still a deliberately low dose: most competitors use 3-5mg immediate-release, far more than the body produces naturally (physiology and studies: first FAQ below).
 - Magnesium Bisglycinate 126mg elemental, fully chelated — each magnesium bound to glycine. **Mah & Pitre caveat:** a 2021 review pooled 2 small trials, both using 500 to 729 mg a day of elemental magnesium, given as magnesium oxide: people fell asleep ~17 min sooner than with placebo, and the evidence was rated low to very low quality; neither trial tested bisglycinate or a 126mg dose (Mah & Pitre, BMC Complement Med Ther, 2021).
-- Glycine 2,400mg — calming neuromodulator (core-temperature drop shown in rats, Bannai & Kawai 2012). Three small trials of 3g before bed found better rated sleep quality, faster sleep onset, and less next-day tiredness or sleepiness. (Total includes the glycine delivered by the magnesium chelate.)
+- Glycine 2,400mg — calming neuromodulator (core-temperature drop shown in rats, Bannai & Kawai 2012). Three small trials of 3g before bed found better rated sleep quality, faster sleep onset, and less next-day tiredness or sleepiness. (Total includes the glycine delivered by the magnesium chelate: about 665mg per 4-capsule serving comes from the magnesium bisglycinate and about 1,735mg is added as glycine on its own, together the 2,400mg on the label; Brad, 2026-11-17, from batch BN-C461.)
 
 Third-party tested: certified by Labdoor (cert LTSCERT-151, released 2026-07, independent analysis by Eurofins) — label accuracy (all three actives at full labelled dose), purity (heavy metals far below USP daily limits), and microbiology all passed. Public report: https://labdoor.com/review/dr-brad-stanfield-sleep
 

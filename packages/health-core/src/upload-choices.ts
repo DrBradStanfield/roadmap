@@ -11,7 +11,7 @@ import { validDay } from './record-edits';
 export interface DocumentFix { title?: string; kind?: string; date?: string | null }
 
 /**
- * `ticks`: by value ref; absent, the platform's default (upload-rules `defaultTicked`).
+ * `ticks`: by value ref; absent, ticked: saved unless cleared, on both clients (Brad 2026-11-20).
  * `replace`: a conflict's held row id by ref: the value saves as its correction (`correctsId`).
  * `edits`: the number the person typed by ref (a core value in SI, a lab in its own unit),
  * saved as edited (`lab_import_edited`), as the web's cells save it.

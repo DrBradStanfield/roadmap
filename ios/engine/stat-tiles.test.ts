@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { planJson, screenJson } from './entry';
-import { STAT_TILE_ABOUT, STAT_TILE_ABOUT_MINOR_BMI, statTiles as tilesFor, type StatTile } from '../../packages/health-core/src/stat-tiles';
+import { RANGE_NOT_DIAGNOSIS, STAT_TILE_ABOUT, STAT_TILE_ABOUT_MINOR_BMI, rangeShown, statTiles as tilesFor, type StatTile } from '../../packages/health-core/src/stat-tiles';
 import type { Plan } from '../../packages/health-core/src/plan';
 import { STAT_CARD_EVIDENCE, getIbwEvidence } from '../../packages/health-core/src/evidence';
 
@@ -83,7 +83,8 @@ describe('statTiles (US-25 AC22)', () => {
   });
 
   it('serves each tile\'s "what it is" through the screen door (US-57 AC5)', () => {
-    for (const tile of statTiles(recordOf())) expect(tile.about, tile.key).toBe(STAT_TILE_ABOUT[tile.key]);
+    // A graded BMI, HbA1c or eGFR tile adds the range line the iPhone's metric page shows (US-07 AC17).
+    for (const tile of statTiles(recordOf())) expect(tile.about, tile.key).toBe(rangeShown(tile) ? `${STAT_TILE_ABOUT[tile.key]} ${RANGE_NOT_DIAGNOSIS}` : STAT_TILE_ABOUT[tile.key]);
   });
 
   it('is health-core\'s statTiles for the plan, as JSON', () => {

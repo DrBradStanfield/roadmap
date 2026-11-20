@@ -13,6 +13,8 @@ final class StubHTTP: URLProtocol {
         var hang = false
         /// Fail as a dead network does.
         var offline = false
+        /// Fail as the network does, with this code.
+        var failure: URLError.Code?
         /// Answer after this many seconds (an open still in flight).
         var delay: TimeInterval = 0
         /// Answer only once the test opens this gate: an open held in flight with no fixed delay.
@@ -96,8 +98,8 @@ final class StubHTTP: URLProtocol {
         for (name, value) in request.allHTTPHeaderFields ?? [:] { headers[name.lowercased()] = value }
         let answer = Self.handler(Request(method: request.httpMethod ?? "GET", url: request.url!, headers: headers, body: body))
         if answer.hang { return }
-        if answer.offline {
-            client?.urlProtocol(self, didFailWithError: URLError(.notConnectedToInternet))
+        if answer.offline || answer.failure != nil {
+            client?.urlProtocol(self, didFailWithError: URLError(answer.failure ?? .notConnectedToInternet))
             return
         }
         let response = HTTPURLResponse(url: request.url!, statusCode: answer.status, httpVersion: "HTTP/1.1", headerFields: answer.headers)!

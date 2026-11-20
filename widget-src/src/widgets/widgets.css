@@ -118,3 +118,35 @@
 .hr-widget-loading, .hr-widget-failure { font-size: 15px; color: var(--hrw-mid); margin: 0; }
 .hr-widget-failure h3 { margin: 0 0 6px; font-size: 17px; color: var(--hrw-ink); }
 .hr-widget-failure p { margin: 0 0 4px; }
+
+/* US-75 blood pressure: two readings, each a fieldset of two of the app's boxes, then the average, its stage and the plan's card. */
+.hr-widget-reading { border: 0; margin: 0; padding: 0; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.hr-widget-reading legend { display: block; padding: 0; margin: 0 0 8px; font-weight: 700; font-size: 15px; color: var(--hrw-ink); }
+.hr-widget-reading legend small { font-weight: 400; color: var(--hrw-mid); font-size: 13px; }
+/* Label, box and error on shared rows (subgrid): an error under one box never moves the other box, and a
+   label wrapped to two lines still leaves both boxes level. */
+.hr-widget-reading .hr-widget-row { grid-template-rows: auto auto auto; row-gap: 0; }
+.hr-widget-reading .health-field { display: grid; grid-row: span 3; grid-template-rows: subgrid; }
+.hr-widget-reading .health-field label { align-self: end; }
+.hr-widget-bp { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.hr-widget-mmhg { font-size: 20px; font-weight: 700; }
+@media (max-width: 340px) { .hr-widget-bp .hr-widget-v { font-size: 28px; } .hr-widget-bp .hr-widget-mmhg { font-size: 16px; } }
+.hr-widget-bp-pill { width: 200px; max-width: 100%; }
+/* The card's paragraphs are line breaks in one element (no paragraph count in the page). It fits its
+   text (Brad 2026-11-19): the result's height varies by stage, an accepted gap (US-75). */
+.hr-widget-advice { white-space: pre-line; font-size: 15px; line-height: 1.5; overflow-wrap: anywhere; }
+/* Room before the script mounts (AC6), as the waist card's: the empty checker, or, with a saved blood
+   pressure on this device (hr-widget--saved, the block's inline script), the prefilled checker up to its
+   result row, without an advice card (Brad 2026-11-19: a card grows the page below it, accepted). Measured
+   in WebKit on the live theme (microvitamin.com, this bundle swapped in), 2026-11-19: empty 257.2, 249.2,
+   249.2 px and prefilled with a Normal reading 438.2, 430.2, 417.0 px at 1280, 390 and 320. The first edit
+   removes the class (BloodPressure.tsx), so the typed card fits what it holds. */
+.hr-widget-block .hr-widget[data-widget='blood-pressure'] { min-height: 258px; }
+.hr-widget-block .hr-widget[data-widget='blood-pressure'].hr-widget--saved { min-height: 439px; }
+@media (max-width: 420px) {
+  .hr-widget-block .hr-widget[data-widget='blood-pressure'] { min-height: 250px; }
+  .hr-widget-block .hr-widget[data-widget='blood-pressure'].hr-widget--saved { min-height: 431px; }
+}
+@media (max-width: 340px) {
+  .hr-widget-block .hr-widget[data-widget='blood-pressure'].hr-widget--saved { min-height: 417px; }
+}

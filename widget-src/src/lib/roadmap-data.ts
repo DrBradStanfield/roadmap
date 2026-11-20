@@ -2,13 +2,14 @@
 import type { AddLabValueRequest, AddLabValueResult, MoveKeep, MoveRejection, MovePlan } from '@roadmap/health-core/record-edits';
 import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import { dayOf } from '@roadmap/health-core/merge';
-import type { FileReminderOptIn } from '@roadmap/health-core/roadmap-file';
+import type { FileReminderOptIn, RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import type { HealthInputs } from '@roadmap/health-core/types';
 import type { LpaUnit, MetricType } from '@roadmap/health-core/units';
 import { MEASUREMENT_REFUSALS_WITH_METRIC, type MEASURES } from '@roadmap/health-core/product-events';
 import type { ReminderScheduleItem } from '@roadmap/health-core/reminder-schedule';
 import type { SaveStatus } from '@roadmap/health-core/save-state';
 import { knownMinorOf } from '@roadmap/health-core/calculations';
+import { readableView } from '@roadmap/health-core/readable-rows';
 import { knownIndex, readIsLegacy, type KnownIndex } from '@roadmap/health-core/upload-known';
 import type { UnifiedExtractionResult } from '@roadmap/health-core/lab-extraction';
 import { RoadmapStore, type DerivedSeries, type BulkLabValueInput, type BulkMeasurementInput, type CorrectStatus, type MoveOutcome, type ProfileSave } from '../storage/roadmap-store';
@@ -150,6 +151,15 @@ export function currentRetryDue(): boolean {
 // returning-user check captured false and the section never collapsed.
 export function getInitialInputsSync(): Partial<HealthInputs> {
   return store ? store.getPrefillInputs() : {};
+}
+
+/** The record as the store holds it now, unreadable rows included: what a write is checked against (US-75 AC5). Null while none is open. */
+export function recordFileSync(): RoadmapFile | null {
+  return store?.file ?? null;
+}
+/** The record as screens and the plan read it (US-65 readableView), for a plan the page works out itself (US-75 AC4). */
+export function readableRecordSync(): RoadmapFile | null {
+  return store ? readableView(store.file).file : null;
 }
 
 /** US-65: how many record entries this build could not read (kept unchanged, not shown). */

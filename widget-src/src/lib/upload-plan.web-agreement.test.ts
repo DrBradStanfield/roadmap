@@ -1,8 +1,8 @@
 // Design PR 8 (US-13 AC13, US-52 AC8c): health-core's upload plan writes the lab rows today's
 // web review hands to Save for the same choices: the web's own `classifyReview` (the review's
 // decisions) against `uploadSavePlan`, for seeded reports, cleared cells and edited values.
-// The web keeps every value unless its cell is cleared, a question included (upload-rules
-// `defaultTicked('web')`). Days are real past days, as the web's columns require.
+// The web keeps every value unless its cell is cleared, a question included (the shared
+// review, upload-review.ts, now on both clients: Brad 2026-11-20). Days are real past days, as the web's columns require.
 import { describe, expect, it } from 'vitest';
 import { recordFromHistory } from '@roadmap/health-core/import-review';
 import { NO_CHOICES } from '@roadmap/health-core/upload-choices';

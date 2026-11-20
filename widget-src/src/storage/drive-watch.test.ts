@@ -16,6 +16,10 @@ const FILE_ID = 'file-abc';
 
 let urls: string[] = [];
 let answer: (url: string) => unknown = () => ({});
+/** An answer that never comes. */
+const STALL = Symbol('stall');
+/** The signal of each request that got STALL, in order. */
+let stalled: AbortSignal[] = [];
 
 function adapter(): GoogleDriveAdapter {
   localStorage.setItem(
@@ -44,12 +48,20 @@ async function settle(ms = 0): Promise<void> {
 describe('US-34 AC1 — GoogleDriveAdapter.watch', () => {
   beforeEach(() => {
     urls = [];
+    stalled = [];
     vi.useFakeTimers();
     vi.stubGlobal('fetch', (url: string, init: RequestInit) => {
       urls.push(url);
       init.signal?.throwIfAborted();
       const json = answer(url);
       if (json === null) return Promise.reject(new TypeError('network down'));
+      if (json === STALL) {
+        // Drive took the request and never answers: only an abort ends it.
+        stalled.push(init.signal!);
+        return new Promise<Response>((_resolve, reject) => {
+          init.signal?.addEventListener('abort', () => reject(init.signal?.reason), { once: true });
+        });
+      }
       return Promise.resolve(new Response(JSON.stringify(json), { status: 200 }));
     });
   });
@@ -207,6 +219,60 @@ describe('US-34 AC1 — GoogleDriveAdapter.watch', () => {
     for (let i = 0; i < 60; i++) await settle(10_000); // ten minutes
     expect(onChange).toHaveBeenCalledTimes(13); // 5 while doubling, then 153 s, 213 s ... 573 s
     stop.abort();
+  });
+
+  describe('a feed read Drive never answers (US-34 AC1c)', () => {
+    // AbortSignal.timeout runs on the real clock; this one runs on the fake one.
+    beforeEach(() => {
+      vi.spyOn(AbortSignal, 'timeout').mockImplementation((ms) => {
+        const controller = new AbortController();
+        setTimeout(() => controller.abort(new DOMException('synthetic deadline', 'TimeoutError')), ms);
+        return controller.signal;
+      });
+    });
+    afterEach(() => vi.restoreAllMocks());
+
+    it('is given up at 30 s, then the watch starts over and a later change still reaches the store', async () => {
+      let reads = 0;
+      answer = (url) => {
+        if (url === START) return { startPageToken: 't1' };
+        reads++;
+        if (reads === 1) return STALL;
+        return reads === 3 ? { changes: [{ fileId: FILE_ID }], newStartPageToken: 't2' } : { changes: [], newStartPageToken: 't1' };
+      };
+      const onChange = vi.fn();
+      const stop = new AbortController();
+      adapter().watch('health-roadmap.json', onChange, stop.signal);
+      await settle();
+      expect(changesCalls()).toHaveLength(1);
+
+      await settle(30_000 - 1); // still waiting on Drive, and nothing else asked
+      expect(urls.filter((u) => u === START)).toHaveLength(1);
+      expect(changesCalls()).toHaveLength(1);
+      await settle(1); // the deadline gives the read up; the back-off's 3 s starts
+      await settle(3_000);
+      expect(urls.filter((u) => u === START)).toHaveLength(2);
+      expect(onChange).toHaveBeenCalledTimes(1); // AC1a: the recovery re-reads once
+
+      await settle(3_000); // the second read is quiet, the third names our file
+      await settle(3_000);
+      expect(onChange).toHaveBeenCalledTimes(2);
+      stop.abort();
+    });
+
+    it('a tab hidden while the read hangs ends the watch at once, with no retry', async () => {
+      answer = (url) => (url === START ? { startPageToken: 't1' } : STALL);
+      const onChange = vi.fn();
+      const stop = new AbortController();
+      adapter().watch('health-roadmap.json', onChange, stop.signal);
+      await settle();
+      const madeSoFar = urls.length;
+      stop.abort();
+      expect(stalled.map((s) => s.aborted)).toEqual([true]); // the hanging read itself is cancelled, not left to its deadline
+      await settle(300_000);
+      expect(urls).toHaveLength(madeSoFar);
+      expect(onChange).not.toHaveBeenCalled();
+    });
   });
 
   it('makes no request once the signal is aborted', async () => {

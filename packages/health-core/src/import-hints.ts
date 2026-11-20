@@ -92,6 +92,14 @@ export function importHint(reason: string | undefined, detail?: string): string 
   return detail ? `${detail}. ${hint}` : hint;
 }
 
+/**
+ * The refused-row sentence in an extract's `next`: `refused` rows were refused
+ * and `unrecognized` lists `listed` of them (US-35 AC10, AC10a).
+ */
+export const refusedNote = (refused: number, listed: number): string =>
+  !refused ? '' : ` ${refused} value(s) could not be filed: show unrecognized` +
+    (refused > listed ? `, which lists the first ${listed}. Tell the user the list leaves out ${refused - listed} more, and to check the reports for them.` : '.');
+
 /** The whole-call refusals that are not about one file. */
 export const IMPORT_REFUSALS = {
   /** A tool list cached before the drag route was deleted still sends `file` (US-36 AC12): the way out is a refresh. */
