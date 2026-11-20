@@ -15,6 +15,7 @@ import { documentRow } from '../../packages/health-core/src/document-rows';
 import type { UploadFile, UploadState } from '../../packages/health-core/src/upload-flow';
 import { uploadSavePlan } from '../../packages/health-core/src/upload-plan';
 import { uploadReview } from '../../packages/health-core/src/upload-review';
+import { importRow } from '../../packages/health-core/src/import-review';
 import { uploadView } from '../../packages/health-core/src/upload-view';
 
 const NOW = '2026-11-15T00:00:00.000Z';
@@ -84,7 +85,12 @@ describe('upload plan agrees with today\'s iPhone save', () => {
       const ownDay = (ref: string) => (ref[0] === 'v' ? x.values![Number(ref.slice(1))].recordedAt : x.additionalValues![Number(ref.slice(1))].recordedAt);
       // The phone's test day starts at the report's, else today, and waits to be confirmed when a
       // ticked value needs it (LabChoices.valuesWait): then it saves nothing, and neither does the plan.
-      if (!testDay && !x.reportDate && ticked.some((ref) => ownDay(ref) === undefined)) {
+      // A value the write refuses for its unit whatever the day asks no day (owner ruling 2026-11-20).
+      const refusedAnyDay = (ref: string) => {
+        const row = importRow(x as never, ref, '2000-01-01');
+        return !!row && bulkAppendValues(createEmptyFile({ deviceId: 'probe', now: NOW }), [row], NOW).refused.length > 0;
+      };
+      if (!testDay && !x.reportDate && ticked.some((ref) => ownDay(ref) === undefined && !refusedAnyDay(ref))) {
         expect([seed, planned]).toEqual([seed, []]);
         waited++;
         continue;

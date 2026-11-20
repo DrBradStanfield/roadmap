@@ -1,0 +1,146 @@
+/**
+ * The gaps upload-view.property.test.ts found between the list view and Save, each at the seed that
+ * first showed it, now fixed (owner rulings 2026-11-20; US-52 AC8c, US-13 AC13, US-12 AC6a). Each
+ * test was "today's behaviour" in PR 1911 and now states the ruled behaviour. Synthetic values only.
+ */
+import { describe, expect, it } from 'vitest';
+import { core, DAY, EMPTY, extra, NOW } from './import-review.test-helpers';
+import { IMPORT_REVIEW_TEXT, NOT_SAVED_TEXT } from './import-review';
+import type { UnifiedExtractionResult } from './lab-extraction';
+import { bulkAppendValues, LAB_DAY_REFUSAL, type BulkRow } from './record-edits';
+import type { RoadmapFile } from './roadmap-file';
+import { NO_CHOICES, type ChoiceChange } from './upload-choices';
+import { transition, type UploadState } from './upload-flow';
+import { uploadSavePlan } from './upload-plan';
+import { reviewedWrites, uploadReview } from './upload-review';
+import { uploadSave } from './upload-save';
+import { FIX_ERRORS_TEXT, UPLOAD_TEXT } from './upload-text';
+import { uploadView, type UploadView, type ValueRow } from './upload-view';
+
+const PICKED_DAY = '2026-10-20';
+const FUTURE = '2026-12-01';
+const REPORT_FUTURE = '2026-12-15';
+
+type Open = Extract<UploadState, { phase: 'open' }>;
+const labRead = (id: string, over: Partial<UnifiedExtractionResult>): Open['files'][number] => ({
+  id, name: `${id}.pdf`, bytes: 1, hash: `h-${id}`, pages: { count: 1, truncated: false },
+  status: { s: 'read', extraction: { classification: 'lab_report', reportDate: DAY, values: [], additionalValues: [], unrecognized: [], document: null, ...over }, choices: NO_CHOICES },
+});
+const open = (files: Open['files']): Open => ({ phase: 'open', platform: 'phone', run: 1, files, started: NOW, firstRead: NOW });
+const see = (s: UploadState, record: RoadmapFile) => { const review = uploadReview(s, record, NOW); return { review, view: uploadView(s, record, NOW, review, false) }; };
+const chose = (s: UploadState, id: string, change: ChoiceChange) => transition(s, { type: 'chose', id, change, now: NOW }).state;
+/** Save pressed as the engine door steps it: with what the page would write (ios/engine/upload-doors.ts). */
+const saveOn = (s: UploadState, record: RoadmapFile) => transition(s, { type: 'saveStarted', reviewed: reviewedWrites(uploadReview(s, record, NOW)) }).state;
+const held = (rows: BulkRow[]) => bulkAppendValues(EMPTY, rows, NOW).file;
+const LDL = (value: number, recordedAt = DAY): BulkRow => ({ kind: 'measurement', metricType: 'ldl', value, recordedAt, source: 'manual' });
+const rows = (view: UploadView): ValueRow[] => [...view.sections.flatMap((x) => (x.kind === 'unsure' ? x.rows : [])), ...(view.sure?.rows ?? [])];
+const notSaved = (view: UploadView) => view.sections.flatMap((x) => (x.kind === 'notSaved' ? x.lines : []));
+const off = { holds: () => false, original: () => null, mimeType: () => '', write: async () => {}, now: () => NOW };
+
+/** Save as the platform runs it, committed on `atCommit` (the record, or one another writer changed), then the done view. */
+async function saved(s: UploadState, record: RoadmapFile, atCommit = record) {
+  const out = await uploadSave(saveOn(s, record), record, NOW, false, off);
+  if (!out.ok) throw new Error(out.message);
+  const { file, outcome } = out.commit(atCommit);
+  const done: UploadState = { ...(s as Open), phase: 'done', outcome };
+  return { file, outcome, done: uploadView(done, file, NOW, uploadReview(done, file, NOW), false).done! };
+}
+
+describe('gaps the list-view property found, fixed (owner rulings 2026-11-20)', () => {
+  it('futureOwnDay (seed 227): a value whose own printed day has not happened is never a ticked row: it is named under Not saved', () => {
+    let s: UploadState = open([labRead('f0', { reportDate: REPORT_FUTURE, values: [core({ recordedAt: FUTURE }), core({ metric: 'hba1c', valueSI: 40, displayValue: 40, displayUnit: 'mmol/mol' })] })]);
+    s = chose(s, 'f0', { testDay: PICKED_DAY });
+    const { view } = see(s, EMPTY);
+    expect(rows(view).map((row) => row.ref)).toEqual(['v1']);
+    expect(notSaved(view)).toEqual([`LDL Cholesterol: ${LAB_DAY_REFUSAL}`]);
+    expect(view.save).toMatchObject({ enabled: true, label: IMPORT_REVIEW_TEXT.save(1) });
+  });
+
+  it('replaceOnCopy (seed 196): a copy of another reading has no Replace, says it is the same test and day, and Replace on the first one writes', async () => {
+    const record = held([LDL(2.0)]);
+    const s = open([labRead('f0', { values: [core({})] }), labRead('f1', { values: [core({})] })]);
+    const [first, copy] = rows(see(s, record).view);
+    expect(copy).toMatchObject({ fileId: 'f1', replaces: null, replace: null, replacing: false, copy: NOT_SAVED_TEXT.sameDay, conflict: IMPORT_REVIEW_TEXT.conflictKept });
+    expect(first).toMatchObject({ fileId: 'f0', copy: null, replace: 'Replace' });
+    const replaced = chose(s, 'f0', { replace: 'v0', correctsId: first.replaces! });
+    const { file, outcome } = await saved(replaced, record);
+    expect(outcome.values).toBe(1);
+    expect(file.labValues.filter((l) => l.metricName === 'ldl' && l.status === 'active').map((l) => l.value)).toEqual([3.1]);
+  });
+
+  it('droppedUncounted (seed 91): a reviewed value whose slot another writer took before the commit is counted, in the web\'s words', async () => {
+    const s = open([labRead('f0', { values: [core({})] })]);
+    expect(see(s, EMPTY).view.save.label).toBe(IMPORT_REVIEW_TEXT.save(1));
+    const { outcome, done } = await saved(s, EMPTY, held([LDL(2.7)]));
+    expect(outcome).toMatchObject({ values: 0, skippedValues: 1 });
+    expect(done.line).toBe('Saved 0 values.');
+    expect(done.skipped).toEqual([UPLOAD_TEXT.skippedLine(1, false)]);
+  });
+
+  it('dayForNothing (seed 37): an undated report of only refused values asks no day; they sit under Not saved and its original is filed undated', () => {
+    const s = open([labRead('f0', { reportDate: null, additionalValues: [extra({ unit: 'zzz' })] }), labRead('f1', { values: [core({})] })]);
+    const { view, review } = see(s, EMPTY);
+    expect(view.sections.filter((x) => x.kind === 'undated')).toEqual([]);
+    expect(view.save).toMatchObject({ enabled: true, label: IMPORT_REVIEW_TEXT.save(1) });
+    expect(notSaved(view)).toEqual([expect.stringContaining('Ferritin')]);
+    expect(uploadSavePlan(s, EMPTY, NOW, review, true).labArchives).toContainEqual({ fileId: 'f0', sourceFileName: 'f0.pdf', reportDate: null });
+  });
+
+  it('dayForNothing: an out-of-range value still asks the day (it can be corrected, and then saves)', () => {
+    const s = open([labRead('f0', { reportDate: null, values: [core({ valueSI: 500, displayValue: 500 })] })]);
+    expect(see(s, EMPTY).view.save.why).toBe(UPLOAD_TEXT.chooseDay);
+  });
+
+  it('savedNotShown (seed 3): a value the record already holds is counted, as the web counts it', () => {
+    const { view } = see(open([labRead('f0', { values: [core({})] })]), held([LDL(3.1)]));
+    expect(rows(view)).toEqual([]);
+    expect(view.alreadySaved).toBe(IMPORT_REVIEW_TEXT.alreadySaved(1));
+    expect(view.save.why).toBe(UPLOAD_TEXT.saveNothing);
+  });
+
+  it('editEqualSaysDifferent: an edit typed equal to the held value is already saved, never a conflict', () => {
+    const s = chose(open([labRead('f0', { values: [core({ valueSI: 2.4, displayValue: 2.4 })] })]), 'f0', { edit: 'v0', value: 3.1 });
+    const { view, review } = see(s, held([LDL(3.1)]));
+    expect(rows(view)).toEqual([]);
+    expect(view.alreadySaved).toBe(IMPORT_REVIEW_TEXT.alreadySaved(1));
+    expect(review.classification.rows).toEqual([]);
+  });
+
+  it('doneDocumentsDiffer (seed 1): a lab report alone that the label calls "Save 1 value" ends "Saved 1 value."', async () => {
+    const s = open([labRead('f0', { values: [core({})] })]);
+    expect(see(s, EMPTY).view.save.label).toBe('Save 1 value');
+    expect((await saved(s, EMPTY)).done.line).toBe('Saved 1 value.');
+  });
+
+  it('ticksAfterFailedSave: a tick after a failed Save returns to the review and is what the retry writes', () => {
+    const failed: UploadState = { ...open([labRead('f0', { values: [core({})] })]), phase: 'saveFailed', attempt: 1, message: 'The cloud refused the write.' };
+    const next = chose(failed, 'f0', { tick: 'v0', on: false });
+    expect(next.phase).toBe('open');
+    expect(rows(see(next, EMPTY).view)).toMatchObject([{ ticked: false }]);
+  });
+
+  it('refusedAfterChange (seed 869): a record change that makes Save refuse leaves Save waiting after the failure, saying why', () => {
+    // The other writer's diastolic makes the upload's systolic the wrong way up; the app sends the refusal as a failed Save.
+    const record = held([{ kind: 'measurement', metricType: 'diastolic_bp', value: 125, recordedAt: DAY, source: 'manual' }]);
+    const s: UploadState = { ...open([labRead('f0', { values: [core({ metric: 'systolic_bp', valueSI: 120, displayValue: 120, displayUnit: 'mmHg' })] })]), phase: 'saveFailed', attempt: 1, message: FIX_ERRORS_TEXT };
+    const { view } = see(s, record);
+    expect(view.save).toMatchObject({ enabled: false, why: FIX_ERRORS_TEXT });
+    expect(rows(view)).toMatchObject([{ ticked: true, error: expect.any(String) }]);
+  });
+
+  // OPEN, for the orchestrator: the web branch drops such a Replace and unticks the value (`replacesLost`, not ported here).
+  it('KNOWN staleReplaceDeleted: a Replace whose held row another device deleted says the record keeps a different value, with no control', () => {
+    const record = held([LDL(2.0)]);
+    const s = chose(open([labRead('f0', { values: [core({})] })]), 'f0', { replace: 'v0', correctsId: record.labValues[0].id });
+    const deleted = { ...record, labValues: record.labValues.map((l) => ({ ...l, status: 'entered-in-error' as const })) };
+    const { view, review } = see(s, deleted);
+    expect(rows(view)).toMatchObject([{ ticked: true, conflict: IMPORT_REVIEW_TEXT.conflictKept, replace: null, replaces: null }]);
+    expect(review.classification.rows).toEqual([]); // never turned into a new row (US-35 AC8)
+    expect(view.save.why).toBe(UPLOAD_TEXT.saveNothing);
+  });
+
+  it('P7: an edited value shows the number Save writes, in its SI unit', () => {
+    const s = chose(open([labRead('f0', { values: [core({ valueSI: 3.0, displayValue: 116, displayUnit: 'mg/dL', displaySystem: 'conventional' })] })]), 'f0', { edit: 'v0', value: 2.5 });
+    expect(rows(see(s, EMPTY).view)).toMatchObject([{ value: '2.5', unit: 'mmol/L' }]);
+  });
+});

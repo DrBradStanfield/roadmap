@@ -33,6 +33,8 @@ struct UploadPage: Decodable, Equatable, Sendable {
         let replaceLabel: String?
         let replaces: String?
         let replacing: Bool?
+        /// An equal reading of this upload is on the same test and day: this one is not written and has no Replace.
+        let copy: String?
         var id: String { "\(fileId):\(ref)" }
     }
 
@@ -146,6 +148,8 @@ struct UploadPage: Decodable, Equatable, Sendable {
         let line: String
         let archived: String?
         let unstored: String?
+        /// Reviewed values another writer beat to their slot, in the web's words (US-12 AC6a).
+        let skipped: [String]?
     }
 
     let progress: Progress?
@@ -158,6 +162,8 @@ struct UploadPage: Decodable, Equatable, Sendable {
     let save: Save
     let stop: Stop?
     let done: Done?
+    /// Values the record already holds, equal, counted ("2 already in your record").
+    let alreadySaved: String?
     /// The machine's phase ("consent", "open", "saving", "saveFailed", "done", "failed"), a whole
     /// run's refusal, whether Close may leave, the word for Done, and the doors' words for a later
     /// call that answers nothing.

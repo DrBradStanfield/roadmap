@@ -9,7 +9,7 @@
  * documents for held rows.
  */
 import { DOCUMENT_TYPES, type DocumentType } from './validation';
-import { IMPORT_REVIEW_TEXT, isOfferedRef, KIND_WORDS, notSavedGroups, type ClassifiedValue, type UnsureReason } from './import-review';
+import { IMPORT_REVIEW_TEXT, isOfferedRef, KIND_WORDS, NOT_SAVED_TEXT, notSavedGroups, type ClassifiedValue, type UnsureReason } from './import-review';
 import type { FileLabValue, FileMeasurement, RoadmapFile } from './roadmap-file';
 import { isReadableRow } from './readable-rows';
 import { getDisplayLabel, type MetricType } from './units';
@@ -39,6 +39,8 @@ export interface ValueRow {
    *  (number and unit as stored, or the words for a value no reader can read), when there is one. */
   value?: string; unit?: string; question?: string | null; unitNote?: string | null; day?: string | null; dayLine?: string | null;
   replace?: string | null; replaceLabel?: string | null; held?: string | null;
+  /** An equal reading of this upload is on the same test and day: this one is not written, and Replace lives only on that one. */
+  copy?: string | null;
 }
 export type UploadSection =
   /** `choose`: the button that opens the day picker; no day is assumed (design PR 15). `chosen`: the
@@ -71,8 +73,10 @@ export interface UploadView {
   /** `error`: a failed save's message; Save then retries. */
   save: { label: string; enabled: boolean; why: string | null; error: string | null };
   stop: { label: string } | null;
-  /** The done screen's lines. */
-  done: { line: string; archived: string | null; unstored: string | null } | null;
+  /** The done screen's lines. `skipped`: reviewed values another writer beat to their slot (US-12 AC6a). */
+  done: { line: string; archived: string | null; unstored: string | null; skipped: string[] } | null;
+  /** Values the record already holds, equal, on their day: counted, as the web's review counts them (ReviewTable.tsx). */
+  alreadySaved?: string | null;
   /** Additive for the iPhone (design PR 15), so its page holds no mode: the machine's phase; a whole
    *  run's refusal in the web's words; whether Close may leave (not while saving); the word for
    *  Done and a picker's confirm. */
@@ -131,16 +135,18 @@ function progress(s: UploadState, files: readonly UploadFile[]): UploadView['pro
  * unit, and the day it saves on: its own, else its report's (`reportDay`). The number shown is the printed
  * one, so the web's "Printed:" line (shown only when the two differ) never applies.
  */
-function printedFacts(x: UnifiedExtractionResult | undefined, ref: string, reportDay: string | null, now: string) {
+function printedFacts(x: UnifiedExtractionResult | undefined, ref: string, reportDay: string | null, now: string, edit: number | undefined) {
   const i = Number(ref.slice(1));
   const own = ref[0] === 'v' ? x?.values?.[i] : x?.additionalValues?.[i];
   if (!own) return {};
   const coreValue = ref[0] === 'v' ? x!.values![i] : null;
   const number = coreValue ? coreValue.displayValue : x!.additionalValues![i].value;
   const day = own.recordedAt && own.recordedAt !== UNDATED_PREVIOUS ? validDay(own.recordedAt, { now })?.slice(0, 10) ?? null : null;
+  // An edited number is what Save writes (`importRow`): a core value in its SI unit, a lab in its own, no limit sign.
+  const printedUnit = coreValue ? coreValue.displayUnit : x!.additionalValues![i].unit;
   return {
-    value: withComparator(String(number), own.comparator),
-    unit: coreValue ? coreValue.displayUnit : x!.additionalValues![i].unit,
+    value: edit !== undefined ? String(edit) : withComparator(String(number), own.comparator),
+    unit: edit !== undefined && coreValue ? getDisplayLabel(coreValue.metric as MetricType, 'si') : printedUnit,
     question: own.question ?? null,
     unitNote: coreValue?.unitGuessed ? REVIEW_CELL_TEXT.checkUnit : null,
     day: day ?? reportDay?.slice(0, 10) ?? null,
@@ -155,15 +161,18 @@ function heldText(row: FileMeasurement | FileLabValue | undefined): string | nul
   return [withComparator(String(row.value), row.comparator), unit].filter(Boolean).join(' ');
 }
 
-const valueRow = (review: UploadReview, extractions: Map<string, UnifiedExtractionResult>, rows: Map<string, FileMeasurement | FileLabValue>, now: string) =>
+const valueRow = (review: UploadReview, reads: Map<string, ReturnType<typeof readFiles>[number]>, rows: Map<string, FileMeasurement | FileLabValue>, now: string) =>
   (v: ClassifiedValue): ValueRow => {
-    const facts = printedFacts(extractions.get(review.labFiles[v.file].fileId), v.ref, review.labFiles[v.file].day, now);
-    const heldId = review.held.get(`${v.file}:${v.ref}`);
+    const read = reads.get(review.labFiles[v.file].fileId);
+    const facts = printedFacts(read?.status.extraction, v.ref, review.labFiles[v.file].day, now, read?.status.choices.edits[v.ref]);
+    // A copy carries no Replace: it is never written; Replace lives on the reading that holds the slot.
+    const heldId = v.copy ? undefined : review.held.get(`${v.file}:${v.ref}`);
     const dayLine = facts.day ? longDate(facts.day) ?? facts.day : null;
     return { ...facts, dayLine, ...rowOf(review, v),
       replace: heldId ? REVIEW_CELL_TEXT.replace : null,
       replaceLabel: heldId && dayLine ? REVIEW_CELL_TEXT.replaceLabel(v.label, dayLine) : null,
       held: heldText(heldId ? rows.get(heldId) : undefined),
+      copy: v.copy ? NOT_SAVED_TEXT.sameDay : null,
     };
   };
 
@@ -173,12 +182,13 @@ const rowOf = (review: UploadReview, v: ClassifiedValue) => ({
   conflict: v.group === 'unsure' && v.reasons.includes('conflict')
     ? (replacingOf(review, v) ? UPLOAD_TEXT.replaces : IMPORT_REVIEW_TEXT.conflictKept) : null,
   ticked: review.labFiles[v.file].ticked.includes(v.ref),
-  replaces: review.held.get(`${v.file}:${v.ref}`) ?? null,
+  replaces: v.copy ? null : review.held.get(`${v.file}:${v.ref}`) ?? null,
   replacing: replacingOf(review, v),
   error: blocks(review)(v) && v.refusal && 'measurement' in v.refusal ? v.refusal.measurement.message : null,
 });
 
-const replacingOf = (review: UploadReview, v: ClassifiedValue) => review.labFiles[v.file].replacing.includes(v.ref);
+/** A copy is never written, so its Replace, if one was chosen, does nothing (`copy`). */
+const replacingOf = (review: UploadReview, v: ClassifiedValue) => !v.copy && review.labFiles[v.file].replacing.includes(v.ref);
 
 /**
  * A selected core value the write would refuse blocks Save, as the web's review blocks it
@@ -205,7 +215,8 @@ function emptyRead(f: UploadFile): string | null {
 
 function save(s: UploadState, plan: UploadSavePlan, review: UploadReview): UploadView['save'] {
   const label = saveLabel(plan);
-  if (s.phase === 'saveFailed') return { label, enabled: true, why: null, error: s.message };
+  // After a failed Save, Save tries again, unless the record changed meanwhile so that it would refuse: then it waits, saying why.
+  if (s.phase === 'saveFailed') { const why = saveBlocked(review); return { label, enabled: why === null, why, error: s.message }; }
   if (s.phase !== 'open') return { label, enabled: false, why: null, error: null };
   const waiting = inFlight(s);
   const why = waiting ? UPLOAD_TEXT.saveWait(waiting) : saveBlocked(review) ?? (planIsEmpty(plan) ? UPLOAD_TEXT.saveNothing : null);
@@ -231,9 +242,8 @@ export function uploadView(s: UploadState, record: RoadmapFile, now: string, rev
   const files = 'files' in s ? s.files : [];
   const values = review.classification.values;
   const readById = new Map(readFiles(s).map((f) => [f.id, f]));
-  const extractions = new Map([...readById].map(([id, f]) => [id, f.status.extraction]));
   const rowsById = new Map<string, FileMeasurement | FileLabValue>([...record.measurements, ...record.labValues].map((r) => [r.id, r]));
-  const row = valueRow(review, extractions, rowsById, now);
+  const row = valueRow(review, readById, rowsById, now);
   const offered = values.filter((v) => isOfferedRef(v.ref));
   const unsure = offered.filter((v) => v.group === 'unsure');
   const sure = offered.filter((v) => v.group === 'sure');
@@ -259,6 +269,8 @@ export function uploadView(s: UploadState, record: RoadmapFile, now: string, rev
     }] : []),
   ];
   const waiting = inFlight(s);
+  // Held already, equal: one copy of an equal reading of this upload is counted nowhere (one saves), as the web counts.
+  const alreadySaved = offered.filter((v) => v.group === 'saved' && !('duplicate' in v && v.duplicate)).length;
   return {
     progress: progress(s, files),
     summary: summary(files, plan, review.labFiles.length),
@@ -287,7 +299,12 @@ export function uploadView(s: UploadState, record: RoadmapFile, now: string, rev
       line: UPLOAD_TEXT.savedLine(s.outcome.values, s.outcome.documents),
       archived: s.outcome.archived ? UPLOAD_TEXT.archivedLine(s.outcome.archived) : null,
       unstored: s.outcome.unstored ? UPLOAD_TEXT.unstoredLine : null,
+      skipped: [
+        ...(s.outcome.skippedValues ? [UPLOAD_TEXT.skippedLine(s.outcome.skippedValues, false)] : []),
+        ...(s.outcome.skippedLabValues ? [UPLOAD_TEXT.skippedLine(s.outcome.skippedLabValues, true)] : []),
+      ],
     } : null,
+    alreadySaved: alreadySaved ? IMPORT_REVIEW_TEXT.alreadySaved(alreadySaved) : null,
     phase: s.phase,
     refused: s.phase === 'failed' && s.refused ? REFUSED_TEXT[s.refused] : null,
     closeEnabled: s.phase !== 'saving',

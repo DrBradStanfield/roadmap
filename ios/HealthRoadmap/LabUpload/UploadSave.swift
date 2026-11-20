@@ -10,6 +10,9 @@ struct UploadSaveAnswer: Decodable, Sendable {
         let documents: Int
         let archived: Int
         let unstored: Int?
+        /// Reviewed values another writer beat to their slot (US-12 AC6a), a core value or another lab; nil is none.
+        var skippedValues: Int? = nil
+        var skippedLabValues: Int? = nil
     }
     let ok: Bool
     let record: String?

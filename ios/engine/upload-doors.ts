@@ -10,7 +10,7 @@ import { knownAs, knownIndex, readIsLegacy, type KnownIndex } from '../../packag
 import { appGateFailure, boundedWords, type FailDetail, type UploadFailure } from '../../packages/health-core/src/upload-failure';
 import { PHONE_FAIL_TEXT } from '../../packages/health-core/src/upload-text';
 import { labStreamAnswer } from '../../packages/health-core/src/upload-answer';
-import { uploadReview } from '../../packages/health-core/src/upload-review';
+import { reviewedWrites, uploadReview } from '../../packages/health-core/src/upload-review';
 import { uploadView } from '../../packages/health-core/src/upload-view';
 import { uploadSavePlan } from '../../packages/health-core/src/upload-plan';
 import { uploadUsageCounts } from '../../packages/health-core/src/upload-usage';
@@ -81,7 +81,7 @@ const WIRE_EVENT = z.discriminatedUnion('type', [
   E.answered.omit({ legacy: true }),
   E.sendFailed.omit({ failure: true, detail: true }).extend({ status: z.number().int().nullable(), body: maybeText, contentType: maybeText, local: LOCAL.optional() }),
   z.strictObject({ type: z.literal('streamEnded'), run: z.number().int().nonnegative(), id: z.string(), line: maybeText, now: z.string() }),
-  E.retry, E.stop, E.chose, E.saveStarted, E.saved, E.saveFailed, E.close, E.discard,
+  E.retry, E.stop, E.chose, E.saveStarted.omit({ reviewed: true }), E.saved, E.saveFailed, E.close, E.discard,
 ]);
 type Wire = z.infer<typeof WIRE_EVENT>;
 
@@ -117,13 +117,15 @@ function indexOf(record: RoadmapFile): KnownIndex {
 }
 
 /** The wire event made whole with what only the engine knows (health-core's own rules). */
-function engineEvent(state: UploadState, wire: Wire, record: () => RoadmapFile): UploadEvent {
+function engineEvent(state: UploadState, wire: Wire, record: () => RoadmapFile, now: string): UploadEvent {
   const legacy = (id: string, extraction: Extract<UploadEvent, { type: 'answered' }>['extraction']) => {
     const name = 'files' in state ? state.files.find((f) => f.id === id)?.name : undefined;
     return name !== undefined && readIsLegacy(record(), name, extraction);
   };
   switch (wire.type) {
     case 'hashed': return { ...wire, known: knownAs(indexOf(record()), wire.hash) };
+    // What the page the person saw would write, so Save names each value it could not (US-12 AC6a): the app computes nothing.
+    case 'saveStarted': return { ...wire, reviewed: reviewedWrites(uploadReview(state, record(), now)) };
     case 'answered': return { ...wire, legacy: legacy(wire.id, wire.extraction) };
     case 'sendFailed': {
       const { status, body, contentType, local, ...rest } = wire;
@@ -160,13 +162,14 @@ export const uploadStart = (platformName: string) => answer(() => {
   return initialUpload(read.data);
 });
 
-/** The record is read only for an event that needs it (`hashed`, `answered`, `streamEnded`). */
+/** The record is read only for an event that needs it (`hashed`, `answered`, `streamEnded`, `saveStarted`). */
 export const uploadStep = (stateJson: string, eventJson: string, recordJson: string, deviceId: string) => answer(() => {
   const state = readState(stateJson);
   const wire = parsed(eventJson, WIRE_EVENT, 'invalid-event');
   // Known and legacy go by hash, name and date, never a time; the clock only stamps a record the
   // read migrates, which readRecord then keeps for the screen doors, so it is the real one.
-  return transition(state, engineEvent(state, wire, () => readUploadRecord(recordJson, new Date().toISOString(), deviceId)));
+  const now = new Date().toISOString();
+  return transition(state, engineEvent(state, wire, () => readUploadRecord(recordJson, now, deviceId), now));
 });
 
 /** One review per call, as health-core's callers take it: the view and its plan count the same rows. */

@@ -22,7 +22,7 @@ import { bulkAppendValues } from './record-edits';
 import type { RoadmapFile } from './roadmap-file';
 import type { SaveOutcome, UploadState } from './upload-flow';
 import { uploadSavePlan } from './upload-plan';
-import { uploadReview } from './upload-review';
+import { reviewedWrites, uploadReview } from './upload-review';
 import { saveBlocked } from './upload-view';
 
 /**
@@ -49,8 +49,11 @@ export interface UploadSaveIO<F> {
  * them): their rows keep the hash alone, and a later upload of the same file can still store them.
  */
 export type UploadSaveResult =
-  | { ok: true; commit(file: RoadmapFile): { file: RoadmapFile; outcome: Required<SaveOutcome> } }
+  | { ok: true; commit(file: RoadmapFile): { file: RoadmapFile; outcome: SavedOutcome } }
   | { ok: false; reason: 'not-saving' | 'not-ready'; message: string };
+
+/** A landed Save's counts: every one but the skips, which are there only when some row was skipped. */
+export type SavedOutcome = Required<Omit<SaveOutcome, 'skippedValues' | 'skippedLabValues'>> & SaveOutcome;
 
 /** An original as saveDocuments holds it: the file it is, with the hash the state read for its bytes. */
 interface Held { fileId: string; hash: string }
@@ -64,6 +67,9 @@ export async function uploadSave<F>(s: UploadState, record: RoadmapFile, now: st
 
   const rows = plan.labRows.flatMap((f) => f.rows);
   const rowFiles = plan.labRows.flatMap((f) => f.rows.map(() => f.fileId));
+  // Each row's value as `file:ref`, in `rows` order: by file, each file's in the order `rowsByFile` took them.
+  const writes = reviewedWrites(review);
+  const rowKeys = plan.labRows.flatMap((f) => writes.filter((v) => v.file === f.fileId).map((v) => `${v.file}:${v.ref}`));
   // The rows a write on `record` would give each report: what its archive row plans to list. The
   // commit writes them again on the record as it is then, and the lists take those rows' ids.
   const onRecord = bulkAppendValues(record, rows, now);
@@ -91,12 +97,13 @@ export async function uploadSave<F>(s: UploadState, record: RoadmapFile, now: st
     onWriteError: () => void (unstored += 1),
     mimeType: (f) => io.mimeType(f.fileId), now: io.now, newId: io.newId,
   });
-  // Counted as the web's done screen counts them (useUploadFlow.ts `documents`): every distinct row
-  // saved, a lab report's archive row and an original filed behind a held row included; `archived`
-  // is the last of those alone.
+  // Counted as the Save label promised them (owner ruling 2026-11-20): `documents` the letters and
+  // documents the list showed to be saved, never a lab report's hidden archive row nor an original
+  // filed behind a held row; `archived` is the last of those alone, which has its own line.
   const archiveOnly = new Set(plan.archiveOnly.map((d) => hashOf.get(d.fileId)));
+  const shown = new Set(plan.documents.map((d) => hashOf.get(d.fileId) ?? d.fields.sourceFileName));
   const outcome = {
-    documents: new Set(docs.saved.map((d) => d.contentHash ?? d.sourceFileName ?? d.id)).size,
+    documents: new Set(docs.saved.filter((d) => shown.has(d.contentHash ?? d.sourceFileName)).map((d) => d.contentHash ?? d.sourceFileName ?? d.id)).size,
     archived: docs.saved.filter((d) => archiveOnly.has(d.contentHash)).length,
   };
 
@@ -116,7 +123,14 @@ export async function uploadSave<F>(s: UploadState, record: RoadmapFile, now: st
         }
       }
       const values = written.saved.length;
-      return { file: values || docs.saved.length ? committedFile(written.file, docs) : file, outcome: { values, ...outcome, unstored } };
+      // A reviewed row whose slot another writer took meanwhile is skipped, never a second active row, and counted
+      // (US-12 AC6a): each value the reviewed page would write that this commit did not write nor refuse, the slot
+      // having gone before Save planned or before it committed; with no reviewed page given, the commit's own skips.
+      const settled = new Set(written.outcomes.flatMap((o, i) => (o === 'skipped' ? [] : [rowKeys[i]])));
+      const notWritten = s.reviewed?.filter((v) => !settled.has(`${v.file}:${v.ref}`))
+        ?? written.outcomes.flatMap((o, i) => (o === 'skipped' ? [{ lab: rows[i].kind === 'lab' }] : []));
+      const [sv, sl] = [notWritten.filter((v) => !v.lab).length, notWritten.filter((v) => v.lab).length];
+      return { file: values || docs.saved.length ? committedFile(written.file, docs) : file, outcome: { values, ...outcome, unstored, ...(sv ? { skippedValues: sv } : {}), ...(sl ? { skippedLabValues: sl } : {}) } };
     },
   };
 }

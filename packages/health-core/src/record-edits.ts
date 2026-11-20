@@ -192,6 +192,9 @@ export function resolveRecordedAt(recordedAt: string | undefined, ctx: EditConte
 }
 
 /** Rule 9 as a day or null: absent or refused is null (the review's column date, US-13 AC8). */
+/** A lab value's day refused: the words the add-a-value write says, and the upload's not-saved line for a value with no real past day. */
+export const LAB_DAY_REFUSAL = 'A lab value is for a real day, today or before.';
+
 export function validDay(day: string | null | undefined, ctx: EditContext): string | null {
   const resolved = day ? resolveRecordedAt(day, ctx) : null;
   return typeof resolved === 'string' ? resolved : null;
@@ -553,7 +556,7 @@ export function addLabValue(file: RoadmapFile, request: AddLabValueRequest, now:
   if (vital) return { ok: false, reason: 'core-metric', message: `"${name}" is not a lab test: add it from its own row.` };
   if (!Number.isFinite(request.value) || request.value < 0) return { ok: false, reason: 'invalid-value', message: 'A lab value is a number, 0 or more.' };
   const day = resolveRecordedAt(request.day, { now });
-  if (typeof day !== 'string') return { ok: false, reason: 'invalid-date', message: 'A lab value is for a real day, today or before.' };
+  if (typeof day !== 'string') return { ok: false, reason: 'invalid-date', message: LAB_DAY_REFUSAL };
   const entry = resolveLabCatalogEntry(name);
   if (!given && !entry && !bloodTestKeyOf(name) && !request.existingSeries) return { ok: false, reason: 'invalid-value', message: NEEDS_UNIT };
   // Checked here in the unit typed, which the write below may already have converted from (US-21 AC26).

@@ -48,6 +48,8 @@ export const UPLOAD_TEXT = {
   /** 26. Each part dropped at zero, as 23. */
   savedLine: (n: number, m: number) => `Saved ${[...(n || !m ? [plural(n, 'value')] : []), ...(m ? [plural(m, 'document')] : [])].join(' and ')}.`,
   archivedLine: (a: number) => `${plural(a, 'original file')} kept in your cloud.`,
+  /** The web's done lines for reviewed values another writer beat to their slot (US-12 AC6a; UploadModal.tsx), byte for byte. */
+  skippedLine: (n: number, lab: boolean) => `${n} ${lab ? 'additional lab' : 'blood test'} value${n !== 1 ? 's were' : ' was'} not added. Check your blood test table: a value was already recorded for that date, or changed during review.`,
   /** The web's done line for originals it could not store (UploadModal.tsx), byte for byte: no count. */
   unstoredLine: "The original file couldn't be stored; its details are saved.",
   /** The iPhone's own word for the done screen's button and a picker's confirm (section 5 reuses "Done"). */

@@ -152,6 +152,8 @@ final class UploadSession {
         case .success(let o):
             var outcome: [String: Any] = ["values": o.values, "documents": o.documents, "archived": o.archived]
             if let unstored = o.unstored { outcome["unstored"] = unstored }
+            if let skipped = o.skippedValues { outcome["skippedValues"] = skipped }
+            if let skipped = o.skippedLabValues { outcome["skippedLabValues"] = skipped }
             return EngineNatives.json(["type": "saved", "run": run, "attempt": attempt, "outcome": outcome])
         case .failure(let refusal):
             return EngineNatives.json(["type": "saveFailed", "run": run, "attempt": attempt, "message": refusal.message])

@@ -10,7 +10,7 @@ import { bulkAppendValues, type BulkRow } from '../../packages/health-core/src/r
 import { initialUpload, transition, type UploadEvent, type UploadState } from '../../packages/health-core/src/upload-flow';
 import { knownAs, knownIndex, readIsLegacy } from '../../packages/health-core/src/upload-known';
 import { appGateFailure } from '../../packages/health-core/src/upload-failure';
-import { uploadReview } from '../../packages/health-core/src/upload-review';
+import { reviewedWrites, uploadReview } from '../../packages/health-core/src/upload-review';
 import { uploadView } from '../../packages/health-core/src/upload-view';
 import { uploadSavePlan } from '../../packages/health-core/src/upload-plan';
 import { uploadUsageCounts } from '../../packages/health-core/src/upload-usage';
@@ -149,7 +149,8 @@ function genEvent(r: () => number, s: UploadState, mint: () => string): { wire: 
       { replace: 'v0', correctsId: coin(0.5) ? HELD_ID : null }, { edit: 'v1', value: coin(0.5) ? 1.4 : null },
       { document: { title: 'Fixed title', date: pick(['2026-02-01', null, '2999-01-01']) } },
     ]) })],
-    [3, () => same({ type: 'saveStarted' })],
+    // The door fills what the page would write (US-12 AC6a), from the review on the record at that moment.
+    [3, () => ({ wire: { type: 'saveStarted' } as Wire, whole: { type: 'saveStarted', reviewed: reviewedWrites(uploadReview(s, RECORD, new Date().toISOString())) } })],
     [2, () => same({ type: 'saved', run, attempt: 'attempt' in s ? s.attempt : 1, outcome: { values: 1, documents: 0, archived: 0 } })],
     [1, () => same({ type: 'saveFailed', run, attempt: 'attempt' in s ? s.attempt : 1, message: 'Could not save.' })],
     [1, () => same({ type: 'close' })],

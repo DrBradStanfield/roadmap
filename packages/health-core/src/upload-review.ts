@@ -6,10 +6,10 @@
  * change, and pass the same one to `uploadView` and `uploadSavePlan`.
  */
 import { UNDATED_PREVIOUS } from './lab-extraction';
-import { classifyImportValues, importRow, reportImportFile, valueDays, type ImportClassification, type ImportFile } from './import-review';
+import { classifyImportValues, holdsSameReading, importRow, isOfferedRef, reportImportFile, valueDays, type ClassifiedValue, type ImportClassification, type ImportFile } from './import-review';
 import { bulkRowTarget } from './bulk-row-target';
-import { slotIndex, slotKey, validDay, type BulkRow } from './record-edits';
-import type { RoadmapFile } from './roadmap-file';
+import { bulkAppendValues, slotIndex, slotKey, validDay, type BulkRow } from './record-edits';
+import { createEmptyFile, type RoadmapFile } from './roadmap-file';
 import type { UploadFile, UploadState } from './upload-flow';
 
 type ReadFile = UploadFile & { status: Extract<UploadFile['status'], { s: 'read' }> };
@@ -32,6 +32,19 @@ export interface UploadReview {
   rowsByFile: Map<string, BulkRow[]>;
   /** A conflict's held row, by `<file index>:<ref>`: what Replace corrects (`ChoiceChange` replace). */
   held: Map<string, string>;
+}
+
+/** A value the reviewed page would write: its file, its ref, and whether it is another lab (not a core value). */
+export interface ReviewedValue { file: string; ref: string; lab: boolean }
+
+/**
+ * What the page the person reviewed would write, for `saveStarted` to carry (owner ruling 2026-11-20,
+ * US-12 AC6a): Save runs on the record as it is then, and names each of these it did not write.
+ */
+export function reviewedWrites(review: UploadReview): ReviewedValue[] {
+  // The written values come first in `values`, in the order of `rows` (import-review.ts).
+  return review.classification.values.filter((v) => v.sent && v.writes)
+    .map((v, k) => ({ file: review.labFiles[v.file].fileId, ref: v.ref, lab: review.classification.rows[k].kind === 'lab' }));
 }
 
 export const readFiles = (s: UploadState): ReadFile[] =>
@@ -66,9 +79,15 @@ function importFile(f: ReadFile, now: string, holderOf: (row: BulkRow) => string
     ...(extraction.additionalValues ?? []).map((v, i) => ({ ref: `a${i}`, value: v, own: v.recordedAt })),
   ];
   const ticked = offered.filter(({ ref }) => choices.ticks[ref] ?? true);
+  // A value the write refuses for its unit or number whatever its day sits under Not saved and asks no day (owner ruling 2026-11-20).
+  const edited = (ref: string) => (choices.edits[ref] !== undefined ? { edited: { value: choices.edits[ref] } } : {});
+  const refusedAnyDay = (ref: string) => {
+    const row = importRow(result, ref, PROBE_DAY, edited(ref));
+    return !!row && bulkAppendValues(createEmptyFile({ deviceId: 'review', now }), [row], now).refused.length > 0;
+  };
   // A ticked value with no day of its own waits for the test's day, one in an undated previous
   // column for that column's, and so does the whole report (iPhone `valuesWait`, web `allDatesSet`).
-  const needsTestDay = day === null && ticked.some((v) => v.own === undefined);
+  const needsTestDay = day === null && ticked.some((v) => v.own === undefined && !refusedAnyDay(v.ref));
   const needsPreviousDay = undatedDay === null && ticked.some((v) => v.own === UNDATED_PREVIOUS);
   // A Replace counts only while its target is still the held row on the value's day (US-13 AC7).
   const days = valueDays(result, day, undatedDay);
@@ -77,12 +96,34 @@ function importFile(f: ReadFile, now: string, holderOf: (row: BulkRow) => string
     const row = target && days[ref] ? importRow(result, ref, validDay(days[ref]!, { now }) ?? days[ref]!) : null;
     return row && holderOf(row) === target ? target : undefined;
   };
+  // The chosen target goes on the row even when it no longer holds the slot: the write then refuses
+  // the stale target and the value is not written, never turned into a new row (US-35 AC8; PR 1906 item 1).
   const options = Object.fromEntries(offered.map(({ ref }) => {
-    const correctsId = replaces(ref);
+    const correctsId = choices.replace[ref];
     return [ref, { ...(correctsId ? { correctsId } : {}), ...(choices.edits[ref] !== undefined ? { edited: { value: choices.edits[ref] } } : {}) }];
   }));
   const file = reportImportFile(result, needsTestDay || needsPreviousDay ? [] : ticked.map((v) => v.ref), day, now, undatedDay, options);
-  return { file, day, ticked: ticked.map((v) => v.ref), needsTestDay, needsPreviousDay, replacing: Object.keys(options).filter((ref) => options[ref].correctsId) };
+  // A value printed on its own day that is no real past day (a misread date still to come) is never saved:
+  // it is named under Not saved, never shown as a value to tick (owner ruling 2026-11-20).
+  const undatable = offered.filter((v) => v.own !== undefined && v.own !== UNDATED_PREVIOUS && validDay(v.own, { now }) === null).map((v) => v.ref);
+  return { file, day, ticked: ticked.map((v) => v.ref), needsTestDay, needsPreviousDay, replacing: offered.map(({ ref }) => ref).filter((ref) => replaces(ref)), undatable };
+}
+
+/** A day no value lands on: a value is written there alone, on an empty record, only to read its refusal (import-review.ts PROBE_DAY). */
+const PROBE_DAY = '2000-01-01';
+
+/**
+ * The upload's own readings of the shared classification (owner rulings 2026-11-20), leaving the web's
+ * unchanged: a value with no real past day of its own is not saved (`futureDay`); a value typed equal
+ * to the one the record holds that day is already saved, never a conflict.
+ */
+function ownReading(v: ClassifiedValue, file: ReturnType<typeof importFile>, record: RoadmapFile): ClassifiedValue {
+  if (file.undatable.includes(v.ref)) return { file: v.file, ref: v.ref, label: v.label, sent: false, writes: false, group: 'notSaved', reason: 'futureDay' };
+  const row = file.file.rows[v.ref];
+  if (v.group === 'unsure' && !v.writes && row?.source === 'lab_import_edited' && !row.correctsId && holdsSameReading(row, record)) {
+    return { file: v.file, ref: v.ref, label: v.label, sent: v.sent, writes: false, group: 'saved' };
+  }
+  return v;
 }
 
 /** Recompute after `answered`, `chose` or a record change; the same result feeds the view and the plan. */
@@ -95,7 +136,8 @@ export function uploadReview(s: UploadState, record: RoadmapFile, now: string): 
     return slots.get(slotKey(target.slot, target.metric, row.recordedAt))?.id;
   };
   const built = labs.map((f) => importFile(f, now, holderOf));
-  const classification = classifyImportValues(built.map((b) => b.file), record, now);
+  const classified = classifyImportValues(built.map((b) => b.file), record, now);
+  const classification = { ...classified, values: classified.values.map((v) => (isOfferedRef(v.ref) ? ownReading(v, built[v.file], record) : v)) };
   // The written values come first in `values`, in the order of `rows` (import-review.ts).
   const written = classification.values.filter((v) => v.sent && v.writes);
   const rowsByFile = new Map<string, BulkRow[]>();
