@@ -17,7 +17,7 @@ import { copyCloudDown, liftDeviceCopy } from '../../packages/health-core/src/re
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { eraseFailure, failed, PhoneCloudAdapter, PhoneFileAdapter, type CloudNatives, type Provider } from './cloud-adapters';
 import { eraseChatText } from './app-doors';
-import { labRows, labSaveSummary, type Extraction } from './lab-review';
+import { labRows, type Extraction } from './lab-review';
 import { movedBloodTests, parseEdit, type Edit } from './my-data';
 import { guardedEdit, refuse, type EditTarget, type Refusal } from './guarded-edit';
 import { checkArgs } from './contract';
@@ -107,9 +107,11 @@ export let open: Open | null = null; // read by entry.ts documentOriginal (US-73
  *  opens racing never leave one session orphaned and the other shown. */
 let latest = 0;
 
-/** The record, the erase it is at and the session, as Swift keeps them. */
+/** The record, the erase it is at and the session, as Swift keeps them; eraseEpoch is the
+ *  record's own, so the app can tell a new session's record at another erase (lead H200). */
 function view(at: { id: number; session: RecordSession }): string {
-  return JSON.stringify({ record: JSON.stringify(at.session.file), erase: at.session.eraseIdentity, session: at.id });
+  const file = at.session.file;
+  return JSON.stringify({ record: JSON.stringify(file), erase: at.session.eraseIdentity, session: at.id, eraseEpoch: file.meta.eraseEpoch ?? 0 });
 }
 
 /** A re-read or a save brought something in: Swift shows it, and the phone's
@@ -244,9 +246,9 @@ export function cloudLabImport(extractionJson: string, refsJson: string, reportD
   const at = open;
   if (!at) return JSON.stringify(refuse('not-open', NOT_OPEN));
   const refs = JSON.parse(refsJson) as string[];
-  const rows = labRows(JSON.parse(extractionJson) as Extraction, refs, reportDay, nowIso);
+  const rows = labRows(JSON.parse(extractionJson) as Extraction, refs, reportDay, nowIso, at.session.file);
   if (!rows.ok) return JSON.stringify(rows);
-  const summary = labSaveSummary(at.session.file, rows.rows, nowIso);
+  const summary = rows.summary;
   const outcome = editSession({ kind: 'labImport', extractionJson, refs, reportDay }, erase, shownUnits, nowIso, unitsJson);
   return JSON.stringify(outcome.ok ? { ...outcome, summary } : outcome);
 }

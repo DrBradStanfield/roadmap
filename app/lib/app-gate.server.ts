@@ -130,13 +130,26 @@ function logRefusal(kind: AppUseKind, reason: string): void {
   console.log(JSON.stringify({ evt: 'app_gate_refused', kind, reason }));
 }
 
-export interface GateOptions { kind: AppUseKind; bodyCap: number; store?: KeyStore; env?: NodeJS.ProcessEnv }
+export interface GateOptions {
+  kind: AppUseKind; bodyCap: number; store?: KeyStore; env?: NodeJS.ProcessEnv;
+  /**
+   * Capacity admission (US-52 AC7e, the lab read only). `full` is a read-only
+   * peek on the claimed key id, before the body is read: it holds nothing, so it
+   * can only refuse when that key or the machine truly has reads in flight.
+   * `take` is called once, after the signature verifies and before anything is
+   * charged or the counter spent. Either refusal is a 503 that spends nothing;
+   * take's release is handed to the caller on success, and the gate calls it
+   * itself on any later refusal.
+   */
+  admit?: { full(keyId: string): boolean; take(keyId: string): (() => void) | null };
+}
 
 /**
- * Checks the request and returns its raw body, or the refusal to send.
+ * Checks the request and returns its raw body (and the admission's release,
+ * when `admit` was given), or the refusal to send.
  * The caller parses the body it is given; the request's own body is spent.
  */
-export async function appGate(request: Request, opts: GateOptions): Promise<{ body: Buffer } | Response> {
+export async function appGate(request: Request, opts: GateOptions): Promise<{ body: Buffer; release?: () => void } | Response> {
   const { kind } = opts;
   const env = opts.env ?? process.env;
   const store = opts.store ?? supabaseKeyStore;
@@ -148,10 +161,14 @@ export async function appGate(request: Request, opts: GateOptions): Promise<{ bo
   if (dev !== null) {
     // AC3: the simulator's header, only where the bypass is allowed. Anywhere else it is a 401.
     if (!devBypassAllowed(env) || !/^[A-Za-z0-9-]{1,64}$/.test(dev)) { logRefusal(kind, 'dev_bypass_refused'); return unauthorized('dev_bypass_refused'); }
+    if (opts.admit?.full(`dev:${dev}`)) { logRefusal(kind, 'capacity'); return unavailable(); }
     const body = await readBody(request, opts.bodyCap);
     if (!body || body === 'too_large') return refuse(413, 'too_large', 'Request too large');
-    if (!appLimits.dev[kind].take(dev, 1)) return overLimit();
-    return reserveShared(kind, ip) ? { body } : overLimit();
+    const release = opts.admit?.take(`dev:${dev}`);
+    if (release === null) { logRefusal(kind, 'capacity'); return unavailable(); }
+    if (appLimits.dev[kind].take(dev, 1) && reserveShared(kind, ip)) return release ? { body, release } : { body };
+    release?.();
+    return overLimit();
   }
 
   const config = attestConfig(env);
@@ -167,6 +184,8 @@ export async function appGate(request: Request, opts: GateOptions): Promise<{ bo
   const refund = appLimits.failures.reserve(ip, 1);
   if (!refund) { logRefusal(kind, 'failure_limit'); return overLimit(); }
   let charged = false;
+  let release: (() => void) | undefined;
+  let accepted = false;
   const failed = (reason: string) => { charged = true; logRefusal(kind, reason); return unauthorized(reason); };
   /** A refusal after the signature verified: the key's own budget holds it, so the IP's unit goes back (AC4c). */
   const keyFailed = (reason: string) => { logRefusal(kind, reason); return unauthorized(reason); };
@@ -191,6 +210,7 @@ export async function appGate(request: Request, opts: GateOptions): Promise<{ bo
     if (!key) return failed('unknown_key');
     // A development key stops working the day the flag goes off (R10).
     if (!config.environments.includes(key.environment)) { charged = true; logRefusal(kind, 'environment_refused'); return unauthorized('unknown_key'); }
+    if (opts.admit?.full(keyId)) { logRefusal(kind, 'capacity'); return unavailable(); }
 
     const body = await readBody(request, opts.bodyCap);
     if (body === 'too_large') {
@@ -202,6 +222,11 @@ export async function appGate(request: Request, opts: GateOptions): Promise<{ bo
     // A dropped upload is the network's fault, not abuse: refused, not charged.
     if (!body) { logRefusal(kind, 'body_read_failed'); return refuse(400, 'body_read_failed', 'The request did not arrive whole. Please try again.'); }
     if (!assertionSignatureValid(assertion, requestClientData(request.method, path, body), key.publicKey)) return failed('bad_signature');
+    if (opts.admit) {
+      const admitted = opts.admit.take(keyId);
+      if (!admitted) { logRefusal(kind, 'capacity'); return unavailable(); }
+      release = admitted;
+    }
 
     // The signature is the key's own from here, so its refusals charge the key, not
     // the IP: one broken device stops only itself. Reserved before the key's step, so
@@ -218,9 +243,11 @@ export async function appGate(request: Request, opts: GateOptions): Promise<{ bo
     keyRefund();
     if (!outcome) { logRefusal(kind, 'store_unavailable'); return unavailable(); }
     if (outcome === 'limit') { if (shared) logRefusal(kind, 'key_limit'); return overLimit(); }
-    return { body };
+    accepted = true;
+    return release ? { body, release } : { body };
   } finally {
     if (!charged) refund();
+    if (!accepted) release?.();
   }
 }
 

@@ -24,6 +24,10 @@ import { StorageError } from '../../packages/health-core/src/adapter';
 import { documentShelf } from './documents';
 import { fileVerdict, UPLOAD_LIMITS, zipMemberVerdict } from '../../packages/health-core/src/upload-rules';
 import { checkArgs } from './contract';
+import { labReviewGroups } from './lab-review-groups';
+import { uploadPlanOf, uploadStart, uploadStep, uploadUsage, uploadViewOf } from './upload-doors';
+import { uploadSaveRun, type OriginalReader } from './upload-save-door';
+import type { Extraction } from './lab-review';
 
 // The web APIs the cloud adapters need, over Swift's natives (shim.ts). Absent
 // in Node, where the parity goldens run the bundle with nothing but ECMAScript.
@@ -225,6 +229,96 @@ export function uploadVerdictsJson(request: string): string {
   });
 }
 
+// The shared upload (upload-doors.ts, design PR 12, US-52 AC8c): optional doors, each answering
+// its JSON or {ok: false, reason, message}, never a throw on malformed JSON. The state is opaque.
+
+/** A new upload's state for `platform` ("web" or "phone"). */
+export function uploadStartJson(platform: string): string {
+  checkArgs('uploadStartJson', arguments);
+  return uploadStart(platform);
+}
+
+/**
+ * One event: `{state, effects}`. The contract the app's upload runner is written against: Swift
+ * sends only what it saw; the door fills in what only the engine knows (health-core upload-schema.ts
+ * UPLOAD_EVENTS is the full shape). Times are ISO strings; `run` is the effect's run being answered.
+ * - picked {files: [{id, name, bytes, kind: "file" | "zip"}], needsConsent, now}
+ * - consented {} · stop {} · saveStarted {} · close {} · discard {} · retry {id (a file id or "all")}
+ * - listed {run, zip (the ZIP's file id), members: [{id, name, bytes}]} · zipFailed {run, zip}
+ * - hashed {run, id, hash}: the door adds `known` (knownIndex and knownAs over the record).
+ * - hashFailed {run, id} · converted {run, id, pages, truncated} · convertFailed {run, id, reason: "unreadable" | "timeout"}
+ * - streamEnded {run, id, line, now}: the streaming lab route (lab-read) ended. `line`: its last
+ *   NDJSON line exactly as received, text; null when the stream ended without one. The door reads
+ *   it (health-core labStreamAnswer): `{status: 200, body: {success: true, data}}` with data a
+ *   checked read becomes `answered` (legacy added); any other status or body becomes `sendFailed`
+ *   with the shared code (a 429 daily limit stops the run); no line or an unreadable one is the
+ *   network failure, which Try again mends. The app never decides read or failed itself.
+ * - sendFailed {run, id, status (HTTP status, null when no answer came), body (its text, null when
+ *   none), contentType (its header, null when none)}: a real HTTP refusal before any stream (the
+ *   gate's 401, 413, 429, 503) or a thrown request; the door adds `failure` (appGateFailure: a final 401, and any other 4xx but 422 and 429, is
+ *   app_refused, a 413 too_large; the gate's own `error` words, trimmed and capped, travel as text).
+ *   `local` (optional), the phone's own outcome when no lab-read answer came; status and body are
+ *   then not read (US-52 AC7e): {kind: "cannotAttest"}; {kind: "attestFailed", stage, code} (each
+ *   letters, digits, dash or underscore, at most 24); {kind: "refused", status, message}, the App
+ *   Attest registration or challenge refused (under 500 app_refused, from 500 server_error, with
+ *   its words); {kind: "badAnswer"}; or {kind: "timeout" | "dropped" | "unreachable"}, how the
+ *   request failed on the way. The gate's 400 `body_read_failed` is the network's, mended.
+ * - answered {run, id, extraction (a read, as received), now}: for a route that answers the read
+ *   whole; the door checks it (health-core UPLOAD_EXTRACTION) and adds `legacy` (readIsLegacy).
+ * - chose {id, change, now}: change is one of {tick, on}, {testDay}, {previousDay}, {replace,
+ *   correctsId}, {edit, value}, {document: {title?, kind?, date?}} (health-core ChoiceChange).
+ * - saved {run, attempt, outcome: {values, documents, archived}} · saveFailed {run, attempt, message}
+ * Every event is strict: a key it does not name (`known`, `legacy` or `failure` from the app, a
+ * change naming two kinds) is refused ("invalid-event"), and the parsed event is what runs.
+ * `recordJson` ("" for none) is read only for hashed, answered and streamEnded, through `deviceId`,
+ * the app's own, as the screen doors read it.
+ * Steps are strictly serial: one call at a time, each given the state the previous one returned.
+ * Two steps from one state, or a step given an older state, lose an event (a landing, a run
+ * number, a choice): its effects may already be running, and their answers then match no file or
+ * a stale run and are dropped, so a file can wait forever or a send can run twice.
+ */
+export function uploadStepJson(stateJson: string, eventJson: string, recordJson: string, deviceId: string): string {
+  checkArgs('uploadStepJson', arguments);
+  return uploadStep(stateJson, eventJson, recordJson, deviceId);
+}
+
+/**
+ * The drawable view (health-core uploadView), from one review of the state against the record.
+ * Cost: about 20 ms in Node and 50 ms jitless for 200 read ten-value reports, so likely 100 to 200
+ * ms on a phone's JavaScriptCore; a step is about a fifth of that. Call it at most once per frame,
+ * after the latest step of a burst (coalesce, never one view per event), and off the main thread.
+ */
+export function uploadViewJson(stateJson: string, recordJson: string, nowIso: string, cloudConnected: boolean, deviceId: string): string {
+  checkArgs('uploadViewJson', arguments);
+  return uploadViewOf(stateJson, recordJson, nowIso, cloudConnected, deviceId);
+}
+
+/** What Save writes (health-core uploadSavePlan), from the same review rule as the view. */
+export function uploadSavePlanJson(stateJson: string, recordJson: string, nowIso: string, cloudConnected: boolean, deviceId: string): string {
+  checkArgs('uploadSavePlanJson', arguments);
+  return uploadPlanOf(stateJson, recordJson, nowIso, cloudConnected, deviceId);
+}
+
+/** The run's usage counts for `upload_outcome` (health-core uploadUsageCounts): counts only. */
+export function uploadUsageJson(stateJson: string): string {
+  checkArgs('uploadUsageJson', arguments);
+  return uploadUsage(stateJson);
+}
+
+/**
+ * The shared upload's Save (upload-save-door.ts, health-core uploadSave): the pick's values and its
+ * document and lab archive rows in one step, for a state in its `saving` phase. With a cloud open
+ * (`erase`, as documentSave takes it) through the session, and the engine writes each original the
+ * plan stores, reading its bytes with `readOriginal(fileId)` (an ArrayBuffer, or null) for the
+ * files `originalsJson` ({fileId: mimeType}) names; with none (`erase` '') onto `recordJson`.
+ * Answers `{ok, record, erase?, outcome: {values, documents, archived, unstored}}`; Swift then
+ * sends `saved {run, attempt, outcome}`. Or `{ok: false, reason, message}`, then `saveFailed`.
+ */
+export async function uploadSaveJson(stateJson: string, recordJson: string, erase: string, nowIso: string, deviceId: string, originalsJson: string, readOriginal: OriginalReader): Promise<string> {
+  checkArgs('uploadSaveJson', arguments);
+  return uploadSaveRun(stateJson, recordJson, erase, nowIso, deviceId, originalsJson, readOriginal);
+}
+
 /** The network came back (the app's NWPathMonitor, US-09 AC30): retry a failed save, at most once a
  *  minute and, on this trigger, never after a refused sign-in (LiveRefresh), then catch up. The
  *  catch-up's re-read still retries a failed save first, a refused sign-in's included (lead A25).
@@ -271,6 +365,15 @@ function originalGone(error: unknown): boolean {
 }
 // Chat and lab upload (US-52): app-doors.ts.
 export { chatContextJson, chatListJson, chatMessagesJson, chatRecordExchangeJson, chatDeleteJson, settledJson, labReviewJson, labSaveSummaryJson } from './app-doors';
+
+/** The import review's groups and words for the ticks and test day the screen holds now (US-13
+ *  AC13, US-52 AC8; lab-review-groups.ts), against the record read raw, as the save writes it.
+ *  Optional, like labSearchJson: an app reaches it only through HealthEngine.optionalCall. */
+export function labReviewGroupsJson(recordJson: string, extractionJson: string, refsJson: string, reportDay: string, nowIso: string, deviceId: string): string {
+  checkArgs('labReviewGroupsJson', arguments);
+  const file = recordJson ? readRecord(recordJson, nowIso, deviceId) : null;
+  return JSON.stringify(labReviewGroups(JSON.parse(extractionJson) as Extraction, file, JSON.parse(refsJson) as string[], reportDay, nowIso));
+}
 /** The phone's reminders (reminders.ts): health-core's schedule plus the notification days, as JSON.
  *  `firstSeenJson` (US-17 AC15): the follow-up first-seen days the app keeps; anything that is not
  *  an object of calendar days counts as none kept. An app before it sends none, and is answered as before. */

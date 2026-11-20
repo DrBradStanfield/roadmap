@@ -152,11 +152,13 @@ launch time: there, pre-main alone is 1.4 to 3 s (docs/reference.md gotcha).
 - **Stages 3 and 4 (2026-10-23): nothing in the app waits on the engine.** `blocking` lives in the test target, so the app cannot call it; and wherever JavaScript runs (`callValue`, `settle`, `evaluate`), a DEBUG precondition checks it is on the engine's queue and not on the main queue, the real rule: no JavaScript on main. App code awaits an engine door or `perform` (a body run on the engine's actor). What moved:
   - **Launch.** `Launch` (HealthRoadmapApp.swift) starts `AppParts.build` from the app's init, not a view, so a background launch builds too, and shows `LaunchView` until it is done: My data's plain background, no mark, read as "Loading". The system launch screen has the same colour (`UILaunchScreen` > `UIColorName` = `LaunchBackground`, an asset equal to `systemGroupedBackground` in light and dark, normal and high contrast, set in `HealthRoadmap-Info.plist`, which the generated plist merges), and so does the welcome screen and the questions (`OnboardingView`); the first-run cover is presented without animation (`RootView.decideFirstRun`). So the opening never flashes: one background from the tap to My data, or to the welcome screen (Brad 2026-10-26; the logo showed for about 100 ms). The file reads run `@concurrent`; `EngineBoot` is no longer main-actor: its checks, both engine loads and the quarantined self-test run off main, and only the trial mark (`EngineTrial`) is set on main, before the parts are handed out; `RecordStore.open` awaits the first `loadPhone`, once, before the first screen. The notification delegate is set synchronously in `Launch.init`. `CloudSync.init` queues the attach with `engine.enqueue`: the engine's queue runs in order, so the attach lands before any engine call asked for after it, and the store's link (`RecordStore.link`: the account and the pending marker) is set before any edit can be asked for. Health's observer may be set after the app became active, so the build ends with one refresh when it is. Measured (simulator, iPhone 18 Pro Max, two-year record): first frame 150 ms after init, all blocked, before; launch screen at 50 ms and the app at 165 ms after, main free between.
   - **Typed numbers** are read in Swift, `TypedNumber.read`, the engine's `readNumber` rule (Arabic-Indic digits, JavaScript's trim, either mark, plain decimals only, -0 as 0; "1,234" read as thousands only inside the input range My data's `inputRanges` gives with the decimal reading below it, never as the decimal, else nil, with the screen's message line asking `TypedNumber.question`; grouped thousands only against a range, US-02 AC7, 2026-10-27); NumberReadingTests holds it to the engine's `numberJson` on 59 texts, and on them and four more under six ranges against the rule written once in the test over the engine's readings. The engine's door stays (tests only; no bridge change). It is in the binary: a change to health-core's number rule needs an app release (D3).
-  - **A value's history** is `RecordStore.chart(for:) async`, read once per metric and record `revision` (a counter that moves with the record and the per-test units; the eGFR and waist-to-height series once per draw too, review round 3); a second ask for the same revision joins the read under way, so a page and the page above it make one engine call. The store keeps each answer with its chart inputs (`ChartData`: points, days, the first and last day and the range a page opens on, built once per history) and drops older revisions' as a newer one lands. A page draws `shownChart(for:)`, which may trail the record by one read, and asks again on `.task(id: store.revision)`; only `shownHistory(for:)`, the history read for the record and units as they are now, opens a correction, so Show All Data holds its taps while it trails (adversary R2). A correction's "Now" hint comes from that current history, and for Lp(a) only one read in the sheet's unit (`correctionHint`): never "100 mg/dL" from a 100 nmol/L row.
+  - **A value's history** is `RecordStore.chart(for:) async`, read once per metric and record `revision` (a counter that moves with the record and the per-test units; the eGFR and waist-to-height series once per draw too, review round 3); a second ask for the same revision joins the read under way, so a page and the page above it make one engine call. The store keeps each answer with its chart inputs (`ChartData`: points, days, the first and last day and the range a page opens on, built once per history) and drops older revisions' as a newer one lands. A page draws `shownChart(for:)`, which may trail the record by one read, and asks again on `.task(id: store.revision)`; only `shownHistory(for:)`, the history read for the record and units as they are now, opens a correction, so Show All Data holds its taps while it trails (adversary R2). An erase drops every kept history in the step that lands it, made here or taken in (`erasures`, lead S70), so no page draws a pre-erase chart while it reads again. A correction's "Now" hint comes from that current history, and for Lp(a) only one read in the sheet's unit (`correctionHint`): never "100 mg/dL" from a 100 nmol/L row.
   - **Onboarding's conversions** (`TypedAnswer`) await the engine; a unit switch's conversion lands only if the box did not move meanwhile, so a box never shows text in units it no longer holds. A trial's confirm needs no engine call: the store confirms as it draws.
   - **Chat history** (`ChatHistoryStore`) awaits the engine for its list, messages, saves and deletes; each save or delete reads, changes and writes in one engine step. The app has one store, made at launch (`AppParts`) and shared by Chat and the eraser: `DataEraser` reads its list again after an erase, and opening History reads it again, so Chat shows what is on disk without a refresh of its own. Both erases now write the chat tombstones on the engine's queue (the phone erase's `keepChat` runs through `perform`), so neither lands between a save's read and write.
   - **Cloud news** is decoded on the engine's queue (`CloudNews`) before it goes to main.
   - **Photos and scans** are resized `@concurrent` (`LabFileReader.photo` takes the photo's bytes; `pictures` takes the scan's images, which are Sendable in the iOS 27 SDK).
+  - **The upload runner (2026-11-15, US-52 AC7e, shared upload PR 14; not yet the live path).** `UploadRunner` (an actor) holds the engine's upload state as text and steps it with `uploadStepJson`, one event at a time: events queue in arrival order and the first caller steps them all, so no two steps start from one state. The state is split from its effects inside JavaScript (`UploadDoors.splitScript`), so Swift never re-writes a number in it. Each effect runs in its own task (`list`, `hash`, `convert` on `LabFileReader.Held`; `send` through `LabReadSender`; `abort` cancels the send's task; `forget`; `save` is a hook for the save door); the engine limits them, the runner adds no limit or retry. The view (`uploadViewJson`) is computed on the engine's queue, at most one a frame, latest state wins, and published to `UploadModel`, one `@MainActor` state: unavailable (an engine without the doors: the app keeps today's flow), starting, drawn, or refused. `AppAttestClient.open` answers a refusal instead of throwing it; the lock still spans signing to headers, which lab-read sends once the counter is spent, so five reads stream at once. A waiter cancelled before its turn leaves the queue and never signs (chat too: a chat cancelled while waiting now throws at once, where it used to sign, then fail). A send has two clocks: 600 s to its headers, 120 s from them. A refused step stops the run and stays on the screen until the next pick. A failed file's `line` in the view can carry a server's or a proxy's own words (the gate's `error`, trimmed and at most 200 characters): the review page draws it as plain text, never as markup or a link.
+  - **A ZIP is listed, then read one member at a time (2026-11-15, US-52 AC7f, shared upload PR 13).** `ZipReader.entries` reads only the central directory; `ZipReader.check` holds the refusals and caps; `ZipReader.data(of:in:maxBytes:)` checks and inflates one member when asked. `Held.list` applies no rule: health-core's `listed` judges each member, as on the web. `LabFileReader.Held` is the reading side of health-core's upload effects (`list`, `hash`, `convert`, `forget`), keyed by the upload state's file id: one object the runner's (PR 14) reads share, its records under an `OSAllocatedUnfairLock` (never an inflate or a convert). It keeps the caps itself: the kept members checked at `list`, each member against its cap, and a per-ZIP total of bytes inflated, each member counted once. A member is inflated again for its hash and its convert rather than kept between them. Until the runner lands, `documents(from:)` calls them in turn.
 - **The watchdog (DEBUG only, opt-in, US-25 AC21c).** `MainThreadWatchdog` runs only when the launch argument `-mainWatchdogLog <path>` names a log. It pings main every 50 ms from its own thread and appends "<timestamp> main stalled N ms" to that file when main took 100 ms or more to answer. It takes no stacks: a tool for timing by hand, not a test. `LaunchClock` logs the launch's milestones in ms since the process started.
 - **Apple Health observers at launch (adversary R1).** `Launch.init`, which runs as the process starts, registers HealthKit's observer queries and background delivery at once (`AppleHealthSync.observeAtLaunch`), as Apple requires, while the parts are still being built. A delivery awaits the parts, then refreshes; HealthKit's completion is called after that refresh, or at once if the parts never come. `HealthKitClient.observe` registers once per process, so the sync's own `start` keeps the launch's queries. Coming on screen refreshes Health from `follow` (`AppleHealthSync.foreground`, which first asks for lab results where HealthKit says a request is needed, US-72), beside sync and the updater; the sync itself listens only for the phone unlocking.
 
@@ -302,6 +304,33 @@ A signature means "the key holder approved this bundle", nothing more.
   `HealthEngine.uploadRules` and keeps its Swift rules when the door is absent (`UploadRules.swift`;
   lead U14 deletes them once the engine floor guarantees the door). No floor bump: an older app never
   calls it and keeps its Swift rules, which answer the same today.
+  Fourth (2026-11-15, import review series PRs 5-6, US-13 AC13): `labReviewGroupsJson(recordJson,
+  extractionJson, refsJson, reportDay, nowIso, deviceId)`, one report's groups (sure, unsure, saved,
+  not saved), every word the review shows and the refs Save sends, from health-core `import-review.ts`
+  (`ios/engine/lab-review-groups.ts` holds the one call into it). Swift asks it again whenever a tick or
+  the test day changes, and once more at Save (`LabReportSave.groups`), so it holds no rule and no copy
+  of the words. Without the door the review lists every value as a row, as before. Bridge id unchanged.
+  Fifth (2026-11-15, shared upload PR 12, US-52 AC8c): five doors that let Swift drive health-core's
+  one upload machine (`upload-flow.ts`) with the state as opaque JSON (`ios/engine/upload-doors.ts`):
+  `uploadStartJson`, `uploadStepJson`, `uploadViewJson`, `uploadSavePlanJson`, `uploadUsageJson`. Every
+  input is checked by health-core's strict schemas (`upload-schema.ts`, pinned to the types), the parsed
+  value runs, and malformed input answers `{ok: false, reason, message}`, never a throw. Swift sends only
+  what it saw: the step door adds `known` to a hash, `legacy` to a read and the failure code to a
+  refusal, and reads the streaming lab route's last line itself (`streamEnded {run, id, line, now}`), so
+  the app never decides read or failed. Steps are strictly serial: one at a time, each given the state
+  the last returned. The view costs about 100-200 ms for 200 reports on a phone: at most one call per
+  frame, coalesced, off the main thread. Save is `uploadSaveJson` (shared upload, 2026-11-15): one
+  Promise door, health-core `uploadSave`, writes the values and the document and lab archive rows in one
+  step, the archive row listing the rows its values wrote. Swift never touches the cloud: the engine
+  writes each original the plan stores, once, asking Swift for its bytes by file id through a callback
+  as it writes it (at most three in memory; anything over the per-file cap is no original), then writes
+  every row on the session's record as it stands at that moment, as the web's `session.edit(commit)`
+  does: an edit that landed during the upload is kept, a slot it took is skipped, and nothing new commits
+  nothing. Originals that did not land are counted (`unstored`); their rows keep the hash. Known, as with
+  `documentSave`: an original written before a Save that then refuses or never commits stays in the
+  cloud as an orphan blob; the retry plans the same ref and overwrites it. Build 14's runner is the first
+  caller; builds 12 and 13 never call them and keep `cloudLabImport`, `labSaveSummaryJson` and
+  `documentSave`. Bridge id unchanged.
   **Schema 3 (Brad 2026-11-02, US-66 AC15):** a record holding a core blood row is
   `schemaVersion` 3, so the engine's `schemaVersion` fact becomes 3. Build 3 bundles a
   schema-2 engine: it refuses a moved record with its "update the app" path (US-65 AC5) and
@@ -918,12 +947,16 @@ Apple offers Health Records in the US, UK and Canada; records are FHIR, read-onl
   says one is needed, then refreshes. A deliberate connect can still show it too, but once
   connected the live cards' Turn On shows only while the live types are due. No screen of
   ours comes before the sheet (guideline 5.1.1).
-- **Rules version:** `HealthSyncMemory.labResultsRulesVersion` (3 since 2026-11-10: results
-  contained in a DiagnosticReport, US-72 AC15; 2 since 2026-11-02: results
+- **Rules version:** `HealthSyncMemory.labResultsRulesVersion` (4 since 2026-11-13: a result
+  HealthKit took out of a panel, id `DiagnosticReport/<report>#<result>`, US-72 AC17; 3 since
+  2026-11-10: results contained in a DiagnosticReport, US-72 AC15; 2 since 2026-11-02: results
   dated by `issued`, the MDRD eGFR and the import winning a conflict), stored beside the anchor.
   Bump it when the engine starts reading results it used to refuse (a new code or unit): a
   phone whose anchor was kept under another version drops it once and reads every result
   again. AC5's dedup by `externalId`, and its stale-version rule, make the re-read safe.
+  The version lives in the app, not the engine. An over-the-air engine release alone does
+  not re-read results an older app build skipped; only an app build with the higher rules
+  version does.
 - **One blood-test table (US-66, merged 2026-11-03):** every result lands in `labValues`, a
   core test as a core row (`createCoreRow`: `core: true`, its key, its SI unit), so the
   record's own write stamp makes it `schemaVersion` 3; `measurements` gets nothing from the
@@ -1219,7 +1252,7 @@ due") is visible to anyone holding the phone: the wording is a decision for the 
   ask iOS, or refresh. `erased` (S52) ends the opt-in from any mode: the scheduler sends it when
   the store's erase count moved since it last looked (at a refresh or a tap made while off), so an erase held
   with no record to read still ends reminders. A kill before that refresh resets the count; the
-  next good read's moved epoch ends them then. A remote erase does not move the count (lead S63). Each tap mints an attempt (a counter, a token, not a mode). A tap while
+  next good read's moved epoch ends them then. Since lead S63 an erase taken in from another device moves the count too: `land` counts one it lands on evidence (`Mark.erased(by:)`), drawn or held undrawn. A relaunch's or connect's first record (`handOver`, from the phone's copy) at another eraseEpoch than the one drawn is held undrawn too, and `draw(_ view:)` tells `land` to count it, since a held record carries no drawn epoch for `Mark.erased(by:)` to see (lead H200; the engine's view carries `eraseEpoch`, nil from an older engine: no hold). One this phone cannot read at all does not count (H200 shapes b and c). Each tap mints an attempt (a counter, a token, not a mode). A tap while
   asking is swallowed, and an answer that lands off, or for another attempt, is dropped:
   before, a double tap asked iOS twice, and the second grant could turn reminders back on
   after the user turned them off. The ask reads the erase epoch as it begins and again after a grant; if
@@ -1442,6 +1475,10 @@ user agrees. The agreement is kept on the phone with a version, so changed wordi
 again, and the chat and upload screens have a "Stop sharing" control that withdraws it.
 Before submission Brad updates the privacy policy and the App Store privacy label
 (forwarding to a third party that keeps data may count as "collected").
+Since 2026-11-15 (App Review 1.4.1, US-52 AC6h) the chat screen's first paragraph says the app
+is education, not medical advice (`EducationNote.chatConsent`). It is not sharing wording, so
+the consent's version stays v1 and no one who agreed is asked again. My health has a matching
+line under its title (`EducationNote.myHealth`, US-73 AC13).
 
 **The plan screen's sentence** (D9, adversary R1): "No health data left your device" is
 false once a user has used chat or upload. It now reads "Worked out on this iPhone", which

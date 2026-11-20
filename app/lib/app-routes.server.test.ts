@@ -662,7 +662,7 @@ describe('US-52 AC7: lab import', () => {
     expect(json.success).toBe(true);
     expect(json.data.values.map((v: { metric: string }) => v.metric)).toEqual(['ldl', 'hba1c']);
     expect(json.data.refusedValues).toHaveLength(1);
-    expect(mocks.extract).toHaveBeenCalledWith(body.pages, { timeoutMs: 90_000, oneDeadline: true, onRetry: expect.any(Function) });
+    expect(mocks.extract).toHaveBeenCalledWith(body.pages, { timeoutMs: 90_000, retryRateLimit: true, oneDeadline: true, onRetry: expect.any(Function) });
   });
 
   // US-52 AC7c: the phone gives up after 120 s idle; the web's retry of a

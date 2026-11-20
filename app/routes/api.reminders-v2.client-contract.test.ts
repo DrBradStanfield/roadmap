@@ -22,6 +22,8 @@ vi.mock('../../widget-src/src/lib/roadmap-data', () => ({
   getReminderOptIn: () => getReminderOptIn(),
   setReminderOptIn: vi.fn(() => true),
   getShownErase: () => '[0,null]',
+  getEraseIdentity: () => '[0,null]',
+  stillShown: () => true,
   flushRoadmapStore: vi.fn(async () => {}),
   computeCurrentReminderSchedule: () => [],
   isKnownMinorNow: () => isKnownMinorNow(),
@@ -77,7 +79,7 @@ beforeEach(() => {
   statuses = [];
   isKnownMinorNow.mockReturnValue(false);
   getReminderIdToken.mockResolvedValue(null);
-  vi.stubGlobal('window', { dispatchEvent: vi.fn() });
+  vi.stubGlobal('window', { dispatchEvent: vi.fn(), addEventListener: vi.fn(), removeEventListener: vi.fn() });
   vi.stubGlobal('sessionStorage', { setItem: vi.fn(), getItem: () => null, removeItem: vi.fn() });
   vi.stubGlobal('localStorage', { setItem: vi.fn(), getItem: () => null, removeItem: vi.fn() });
   // The browser's fetch, answered by the real route with the exact body sent.
@@ -122,7 +124,8 @@ describe('US-17 AC1b/AC4: every cancel the client sends is one the route accepts
   });
 
   it('"Delete all my data" on Dropbox: 200 and the row is cancelled', async () => {
-    getReminderOptIn.mockReturnValue(optIn('dropbox'));
+    getReminderOptIn.mockReturnValue(undefined); // the erased record holds no token at the commit
+    getReminderOptIn.mockReturnValueOnce(optIn('dropbox'));
     await (await cancelRemindersForErase())(); // prepare inside the erase, commit once it stands
     expect(statuses).toEqual([200]);
     expect(cancelByToken).toHaveBeenCalledWith('cap-token', null);

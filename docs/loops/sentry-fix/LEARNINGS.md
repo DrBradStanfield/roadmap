@@ -75,7 +75,7 @@
   path; never `/.well-known/*` on mcp. Ours: proxy path + browser UA (73: a real Chrome admin
   action read as a probe), or POST / or OPTIONS from one non-scanner UA repeating over days.
 - `[gap][sentry]` 2026-09-07 — Widget no-op days before 09-08 are lower bounds (PR #73); a `release` tag = side bundle, none = health-plan-v2; adapters put document titles in thrown messages: READ before quoting.
-- `[gotcha][chat]` 2026-11-06 — A chat fallback's raw `err.message` is in `chat_messages.error_detail` (+ `is_fallback`, `failure_mode`): read it before calling a Sentry `errorKind` indeterminate. Fast path: a rule-bearing `lastSeen` that moved is never a no-op (11-02 and 11-05 both missed 72's events).
+- `[gotcha][chat]` 2026-11-06 — A chat fallback's raw `err.message` is in `chat_messages.error_detail` (+ `is_fallback`, `failure_mode`): read it before calling a Sentry `errorKind` indeterminate. Fast path: a rule-bearing `lastSeen` that moved is never a no-op (11-02 and 11-05 both missed 72's events). Sentry event lists truncate silently: follow the Link `results="true"` cursor to the end before counting (11-13 and 11-17 both under-counted 72).
 - `[base-rate][server]` 2026-10-14, met 10-16 — Router (Sonnet 5.5): 5 s a try, one
   retry on timeout; a double timeout reads `latencyMs` ~11 000, text in `router_error`
   (Supabase only; Sentry sees /api/chat alone). 104 turns 09-29..10-16: good p95 3.5 s;

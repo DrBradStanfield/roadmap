@@ -1,4 +1,3 @@
-import CryptoKit
 import Foundation
 import PDFKit
 import UIKit
@@ -37,7 +36,7 @@ enum LabFileReader {
             source = .bytes(data)
             self.mimeType = mimeType
             size = data.count
-            contentHash = Self.hash(data)
+            contentHash = LabFileReader.contentHash(data)
         }
 
         private init(source: Source, of read: Original) {
@@ -59,16 +58,18 @@ enum LabFileReader {
                 let scoped = scope.startAccessingSecurityScopedResource()
                 defer { if scoped { scope.stopAccessingSecurityScopedResource() } }
                 guard (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) == size,
-                      let data = try? LabFileReader.coordinatedData(url), Self.hash(data) == contentHash
+                      let data = try? LabFileReader.coordinatedData(url), LabFileReader.contentHash(data) == contentHash
                 else { return nil }
                 return data
             }
         }
-
-        private static func hash(_ data: Data) -> String {
-            "sha256-" + SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
-        }
     }
+
+    /// Bytes' 'sha256-<hex>', lowercase: the web's sha256Blob (archive-payloads.ts), a row's `contentHash`.
+    static func contentHash(_ data: Data) -> String { "sha256-" + ManifestCheck.sha256(data) }
+
+    /// `(done, total)` before each file or ZIP member a read converts, on the main actor.
+    typealias Progress = @MainActor @Sendable (Int, Int) -> Void
 
     /// A ZIP member's ZIP and path, which the engine names by the web's rule (`HealthEngine.named`).
     struct ZipMember: Sendable {
@@ -118,22 +119,30 @@ enum LabFileReader {
     /// The documents in one picked file: one, or one per report inside a ZIP. A ZIP
     /// member is named `zip/path` here; `HealthEngine.named` gives it the web's name.
     /// `rules`: health-core's, asked for this file and its members (`UploadRules.swift`), else the Swift copy.
-    static func documents(from data: Data, name: String, rules: Rules = .swift) throws -> [Document] {
-        let ext = pathExtension(name)
-        if ext == "zip" {
-            // The web's ZIP limits: 20 MB as downloaded, 200 files (the folder's file cap).
-            guard rules.file(name, data.count) != .tooLarge else { throw Failure.tooLarge(name) }
-            let members = try ZipReader.members(of: data, maxMemberBytes: rules.maxMemberBytes, maxMembers: rules.maxMembers,
-                                                maxTotalBytes: rules.maxTotalBytes) { rules.member($0) == .keep }
-            let documents = try members.map { member in
-                var read = try document(from: member.data, name: "\(name)/\(member.name)", rules: rules)
-                read.zipMember = ZipMember(zip: name, path: member.name)
-                return read
-            }
-            guard !documents.isEmpty else { throw Failure.empty }
-            return documents
+    /// A ZIP is listed and checked first (`Held`, AC7f), then each kept member is inflated and
+    /// converted in turn, `progress(done, total)` before each. Close cancels it between members (AC7a).
+    static func documents(from data: Data, name: String, rules: Rules = .swift, progress: Progress = { _, _ in }) async throws -> [Document] {
+        guard pathExtension(name) == "zip" else { return [try document(from: data, name: name, rules: rules)] }
+        let held = Held()
+        held.hold(data, as: name, name: name)
+        let members = try held.list(name, rules: rules).filter { rules.member($0.entry.name) == .keep }
+        guard !members.isEmpty else { throw Failure.empty }
+        var documents: [Document] = []
+        for (done, member) in members.enumerated() {
+            try await report(progress, done, members.count)
+            documents.append(try held.convert(member.id, rules: rules))
         }
-        return [try document(from: data, name: name, rules: rules)]
+        return documents
+    }
+
+    /// A count from a read still running, checked where it lands on the main actor: a read cancelled
+    /// meanwhile publishes nothing, so its late count never moves the next upload's screen (AC7a).
+    /// Throws CancellationError before the count and again after it, so a read cancelled while the
+    /// count waited on a busy main actor reads nothing more.
+    private static func report(_ progress: Progress, _ done: Int, _ total: Int) async throws {
+        try Task.checkCancellation()
+        await MainActor.run { if !Task.isCancelled { progress(done, total) } }
+        try Task.checkCancellation()
     }
 
     /// Asks no engine: the Swift copy of the rules.
@@ -144,9 +153,9 @@ enum LabFileReader {
     /// `progress(done, total)` before each of a folder's files.
     @concurrent
     /// `ask`: the upload rules for each step (`HealthEngine.uploadRules`).
-    static func decoded(picked url: URL, progress: @MainActor @Sendable (Int, Int) -> Void = { _, _ in }, ask: AskRules = swiftRules) async throws -> [Document] {
+    static func decoded(picked url: URL, progress: Progress = { _, _ in }, ask: AskRules = swiftRules) async throws -> [Document] {
         decodingWatch?()
-        return try url.hasDirectoryPath ? await documents(inFolder: url, progress: progress, ask: ask) : await documents(picked: url, ask: ask)
+        return try url.hasDirectoryPath ? await documents(inFolder: url, progress: progress, ask: ask) : await documents(picked: url, progress: progress, ask: ask)
     }
 
     /// Called where a report is decoded, so a test can see which thread does it (US-25
@@ -157,7 +166,8 @@ enum LabFileReader {
     /// file's original is the file, opened again when it is saved. Its size is checked
     /// before it is read (adversary R3). The rules come from `ask`: first for the file's listed
     /// size, then, once read, for its bytes and, in a ZIP, each member's path and size.
-    static func documents(picked url: URL, ask: AskRules) async throws -> [Document] {
+    /// `progress(done, total)` before each of a ZIP's members.
+    static func documents(picked url: URL, progress: Progress = { _, _ in }, ask: AskRules) async throws -> [Document] {
         let name = url.lastPathComponent, listed = size(of: url)
         guard await ask([UploadFile(name: name, bytes: listed)], []).file(name, listed) != .tooLarge else { throw Failure.tooLarge(name) }
         let data = try coordinatedData(url)
@@ -165,7 +175,7 @@ enum LabFileReader {
         let entries = pathExtension(name) == "zip" ? (try? ZipReader.entries(of: data)) ?? [] : []
         let files = [UploadFile(name: name, bytes: data.count)] + entries.map { UploadFile(name: "\(name)/\($0.name)", bytes: $0.size) }
         let rules = await ask(files, entries.map(\.name))
-        return try documents(from: data, name: name, rules: rules).map { keptAsFile($0, url) }
+        return try await documents(from: data, name: name, rules: rules, progress: progress).map { keptAsFile($0, url) }
     }
 
     /// A single file's original kept as the picked file, opened again when it is saved.
@@ -182,7 +192,7 @@ enum LabFileReader {
     /// one file over the web's limit, or more than `maxFolderBytes` in all, refuses the
     /// folder (adversary R3). Close cancels it between files; `progress(done, total)` before each.
     static func documents(inFolder folder: URL, maxBytes: Int = maxFolderBytes,
-                          progress: @MainActor @Sendable (Int, Int) -> Void = { _, _ in }, ask: AskRules = swiftRules) async throws -> [Document] {
+                          progress: Progress = { _, _ in }, ask: AskRules = swiftRules) async throws -> [Document] {
         let files = try listed(folder).sorted { $0.url.path.localizedStandardCompare($1.url.path) == .orderedAscending }.prefix(maxFolderFiles)
         guard !files.isEmpty else { throw Failure.folderEmpty }
         // A size the system does not give is unknown: the reads below are checked instead (re-check N2).
@@ -196,8 +206,7 @@ enum LabFileReader {
         var documents: [Document] = []
         var bytes = 0
         for (done, file) in files.enumerated() {
-            try Task.checkCancellation()
-            await progress(done, files.count)
+            try await report(progress, done, files.count)
             let inside = file.url.path.dropFirst(folder.path.count).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
             let data = try coordinatedData(file.url)
             bytes += data.count
@@ -283,7 +292,8 @@ enum LabFileReader {
         return try await pictures([image], name: "Photo")
     }
 
-    private static func document(from data: Data, name: String, rules: Rules) throws -> Document {
+    /// One file's pages, as picked or as a ZIP member (`Held.convert`).
+    static func document(from data: Data, name: String, rules: Rules) throws -> Document {
         switch rules.file(name, data.count) {
         case .tooLarge: throw Failure.tooLarge(name)
         case .keep: break

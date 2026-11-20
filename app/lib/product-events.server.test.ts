@@ -38,7 +38,8 @@ describe('parseProductEvent', () => {
       // US-61 AC8: the two US product events need their product; US-07 AC11: measurement_added its measure.
       const metadata = eventName.startsWith('us_product_') ? { metadata: { product: 'sleep' } }
         : eventName === 'measurement_added' ? { metadata: { measure: 'waist' } }
-        : eventName === 'save_retry' ? { metadata: { trigger: 'online', outcome: 'landed' } } : {}; // US-09 AC30: needs its trigger
+        : eventName === 'save_retry' ? { metadata: { trigger: 'online', outcome: 'landed' } } // US-09 AC30: needs its trigger
+        : eventName === 'upload_review' ? { metadata: { saved: 1 } } : {}; // US-13 AC13: needs how it ended
       expect(parseProductEvent({ eventName, visitorId: VISITOR, ...metadata })).toEqual({
         eventName,
         visitorId: VISITOR,
@@ -257,6 +258,16 @@ describe('the email-arrival counters', () => {
     for (const eventName of ['plan_ready_shown', 'plan_ready_dismissed']) {
       expect(parseProductEvent({ eventName, visitorId: VISITOR })).toEqual({ eventName, visitorId: VISITOR });
       for (const metadata of [{ step: 'birth' }, { device: 'phone' }, { count: 1 }, { placement: 'header' }]) {
+        expect(parseProductEvent({ eventName, visitorId: VISITOR, metadata })).toBeNull();
+      }
+    }
+  });
+
+  it('US-74 AC5, US-75: takes the widgets\' viewed and saved events from a browser by name alone', () => {
+    for (const eventName of ['waist_widget_viewed', 'waist_widget_saved', 'bp_widget_viewed', 'bp_widget_saved']) {
+      expect(PRODUCT_EVENT_NAMES).toContain(eventName);
+      expect(parseProductEvent({ eventName, visitorId: VISITOR })).toEqual({ eventName, visitorId: VISITOR });
+      for (const metadata of [{ measure: 'waist' }, { count: 1 }, { unit: 'cm' }, { value: 88 }, { stage: 'stage1' }]) {
         expect(parseProductEvent({ eventName, visitorId: VISITOR, metadata })).toBeNull();
       }
     }

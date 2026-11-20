@@ -97,7 +97,7 @@ describe('generateSuggestions', () => {
       expect(hba1cSuggestion).toBeDefined();
       expect(hba1cSuggestion?.priority).toBe('urgent');
       // US-25 AC28 (App Review 1.4.1): a guideline range plus a doctor line, not a diagnosis.
-      expect(hba1cSuggestion?.description).toMatch(/ is in the range guidelines use for diabetes\. See your doctor to confirm and plan care, including lifestyle changes\.$/);
+      expect(hba1cSuggestion?.description).toMatch(/ is in the range the ADA calls diabetes\. See your doctor to confirm and plan care, including lifestyle changes\.$/);
       expect(hba1cSuggestion?.description).not.toContain('indicates diabetes');
     });
 
@@ -405,7 +405,7 @@ describe('generateSuggestions', () => {
       const suggestions = generateSuggestions(inputs, results);
 
       expect(suggestions.filter(s => s.id.startsWith('bp-')).map(s => s.id)).toEqual(['bp-stage1']);
-      expect(suggestions.find(s => s.id === 'bp-stage1')?.description).toContain('Your BP of 115/80 mmHg indicates stage 1 hypertension.');
+      expect(suggestions.find(s => s.id === 'bp-stage1')?.description).toContain('Your BP of 115/80 mmHg is in the range the ACC/AHA guideline calls stage 1 hypertension.');
     });
 
     it('does not generate suggestion for BP 126/79 (diastolic below 80)', () => {
@@ -1307,8 +1307,8 @@ describe('generateSuggestions', () => {
 
     // US-07 AC5: the sentence reads true at exactly the target.
     it.each([
-      { name: 'LDL 1.4', values: { ldlC: 1.4 }, text: 'Your LDL-c is 1.4 mmol/L; the treatment target is below 1.4 mmol/L. Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor. Don\'t start a statin if you are pregnant or planning a pregnancy.' },
-      { name: 'ApoB 0.5', values: { apoB: 0.5 }, text: 'Your ApoB is 0.50 g/L; the treatment target is below 0.50 g/L. Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor. Don\'t start a statin if you are pregnant or planning a pregnancy.' },
+      { name: 'LDL 1.4', values: { ldlC: 1.4 }, text: 'Your LDL-c is 1.4 mmol/L; the treatment target is below 1.4 mmol/L. Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor. If you are pregnant or planning a pregnancy, talk to your doctor before starting a statin.' },
+      { name: 'ApoB 0.5', values: { apoB: 0.5 }, text: 'Your ApoB is 0.50 g/L; the treatment target is below 0.50 g/L. Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor. If you are pregnant or planning a pregnancy, talk to your doctor before starting a statin.' },
     ])('med-statin at exactly the target, $name, shows and reads true (US-07 AC5)', ({ values, text }) => {
       const { inputs, results } = createTestData(values);
       expect(generateSuggestions(inputs, results, 'si', {}).find(s => s.id === 'med-statin')?.description).toBe(text);
@@ -1322,14 +1322,14 @@ describe('generateSuggestions', () => {
     ] as const)('%s ends with the pregnancy line for people on a statin (US-07 AC14)', (id, meds) => {
       const { inputs, results } = createTestData({ ldlC: 3.0 });
       expect(generateSuggestions(inputs, results, 'si', meds as MedicationInputs).find(s => s.id === id)?.description)
-        .toMatch(/ If you become pregnant, most people should stop their statin: talk to your doctor\. If you are planning a pregnancy, NICE advises stopping 3 months before trying to conceive\.$/);
+        .toMatch(/ The FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive\. Talk to your doctor\.$/);
     });
 
   // US-07 AC14 (Brad, 2026-11-02): "no statins in pregnancy", on the card itself, sourced in its reason.
     it('the statin card says not to start one in pregnancy, and its reason cites the FDA and NICE (US-07 AC14)', () => {
       const { inputs, results } = createTestData({ ldlC: 3.0 });
       const card = generateSuggestions(inputs, results, 'si', {}).find(s => s.id === 'med-statin');
-      expect(card?.description).toMatch(/ Don't start a statin if you are pregnant or planning a pregnancy\.$/);
+      expect(card?.description).toMatch(/ If you are pregnant or planning a pregnancy, talk to your doctor before starting a statin\.$/);
       expect(card?.reason).toContain('The FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive.');
       expect(card?.reason).not.toContain('Statins are not used in pregnancy');
       expect(card?.references?.map(r => r.url)).toEqual(expect.arrayContaining([
@@ -1340,7 +1340,7 @@ describe('generateSuggestions', () => {
 
     // US-07 AC14 (Brad 2026-11-09): on a statin, the ezetimibe and PCSK9 inhibitor cards also say when to
     // stop the statin, after their own pregnancy line; statin-intolerant people do not get the statin line.
-    const ON_STATIN_LINE = ' If you become pregnant, most people should stop their statin: talk to your doctor. If you are planning a pregnancy, NICE advises stopping 3 months before trying to conceive.';
+    const ON_STATIN_LINE = ' The FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive. Talk to your doctor.';
     const UNSTUDIED = ' Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be.';
     it.each([
       ['med-ezetimibe', { statin: { drug: 'atorvastatin', dose: 20 } }, true],
@@ -1370,7 +1370,7 @@ describe('generateSuggestions', () => {
     it('med-statin at exactly the non-HDL target of 1.6 shows (US-07 AC5)', () => {
       const { inputs, results } = createTestData({}, { nonHdlCholesterol: 1.6 });
       expect(generateSuggestions(inputs, results, 'si', {}).find(s => s.id === 'med-statin')?.description)
-        .toBe('Your non-HDL cholesterol is 1.6 mmol/L; the treatment target is below 1.6 mmol/L. Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor. Don\'t start a statin if you are pregnant or planning a pregnancy.');
+        .toBe('Your non-HDL cholesterol is 1.6 mmol/L; the treatment target is below 1.6 mmol/L. Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor. If you are pregnant or planning a pregnancy, talk to your doctor before starting a statin.');
     });
 
     it.each([
@@ -2231,8 +2231,8 @@ describe('generateSuggestions', () => {
       on: boolean;
       reasons: string[];
     }
-    const HBA1C = 'prediabetic HbA1c';
-    const HBA1C_DIABETIC = 'diabetic-range HbA1c';
+    const HBA1C = 'an HbA1c in the prediabetes range';
+    const HBA1C_DIABETIC = 'an HbA1c in the diabetes range';
     const TG = 'elevated triglycerides';
     const BP = 'elevated blood pressure';
     const APOB = 'elevated ApoB';
@@ -2295,7 +2295,7 @@ describe('generateSuggestions', () => {
       expect(glp1 !== undefined).toBe(row.on);
       if (row.on) {
         const and = row.reasons.length > 0 ? ` and ${joinWithAnd(row.reasons)}` : '';
-        expect(glp1!.description).toBe(`With a BMI of ${results.bmi}${and}, you may benefit from discussing Tirzepatide (preferred) or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.`);
+        expect(glp1!.description).toBe(`With a BMI of ${results.bmi}${and}, consider discussing Tirzepatide (listed first) or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.`);
       }
     });
 
@@ -2318,21 +2318,21 @@ describe('generateSuggestions', () => {
   });
 
   describe('Weight medication card wording (US-06 AC6)', () => {
-    const TAIL = ', you may benefit from discussing Tirzepatide (preferred) or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.';
+    const TAIL = ', consider discussing Tirzepatide (listed first) or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.';
     const cases: { name: string; bmi: number; whr?: number; inputs: Partial<HealthInputs>; text: string }[] = [
       { name: 'no reason', bmi: 30.5, inputs: {}, text: `With a BMI of 30.5${TAIL}` },
       { name: 'a whole-number BMI prints as the tile shows it', bmi: 31, inputs: {}, text: `With a BMI of 31${TAIL}` },
-      { name: 'one reason', bmi: 26, whr: 0.46, inputs: { hba1c: 40 }, text: `With a BMI of 26 and prediabetic HbA1c${TAIL}` },
+      { name: 'one reason', bmi: 26, whr: 0.46, inputs: { hba1c: 40 }, text: `With a BMI of 26 and an HbA1c in the prediabetes range${TAIL}` },
       // Brad 2026-11-06: a diabetic-range HbA1c is named as such, at the urgent card's line.
-      { name: 'a diabetic-range HbA1c', bmi: 26, whr: 0.46, inputs: { hba1c: 50 }, text: `With a BMI of 26 and diabetic-range HbA1c${TAIL}` },
-      { name: 'HbA1c at the diabetic line', bmi: 26, whr: 0.46, inputs: { hba1c: HBA1C_THRESHOLDS.diabetes }, text: `With a BMI of 26 and diabetic-range HbA1c${TAIL}` },
-      { name: 'HbA1c just under the diabetic line', bmi: 26, whr: 0.46, inputs: { hba1c: 47.4 }, text: `With a BMI of 26 and prediabetic HbA1c${TAIL}` },
+      { name: 'a diabetic-range HbA1c', bmi: 26, whr: 0.46, inputs: { hba1c: 50 }, text: `With a BMI of 26 and an HbA1c in the diabetes range${TAIL}` },
+      { name: 'HbA1c at the diabetic line', bmi: 26, whr: 0.46, inputs: { hba1c: HBA1C_THRESHOLDS.diabetes }, text: `With a BMI of 26 and an HbA1c in the diabetes range${TAIL}` },
+      { name: 'HbA1c just under the diabetic line', bmi: 26, whr: 0.46, inputs: { hba1c: 47.4 }, text: `With a BMI of 26 and an HbA1c in the prediabetes range${TAIL}` },
       {
         name: 'three reasons',
         bmi: 26,
         whr: 0.46,
         inputs: { hba1c: 40, triglycerides: 2, systolicBp: 135, diastolicBp: 85 },
-        text: `With a BMI of 26 and prediabetic HbA1c, elevated triglycerides and elevated blood pressure${TAIL}`,
+        text: `With a BMI of 26 and an HbA1c in the prediabetes range, elevated triglycerides and elevated blood pressure${TAIL}`,
       },
     ];
 
@@ -2347,7 +2347,7 @@ describe('generateSuggestions', () => {
     it.each(cases)('standalone card, $name', ({ bmi, whr, inputs: values, text }) => {
       const { inputs, results } = createTestData(values, { bmi, waistToHeightRatio: whr });
       const card = generateSuggestions(inputs, results).find(s => s.id === 'weight-glp1');
-      expect(card?.title).toBe('Weight management medication');
+      expect(card?.title).toBe('Consider discussing a weight management medication with your doctor');
       expect(card?.description).toBe(text);
     });
 
@@ -2863,7 +2863,7 @@ describe('generateSuggestions', () => {
       const retinoid = suggestions.find(s => s.id === 'skin-retinoid')!;
       expect(retinoid.description).toContain('pregnancy');
       // US-25 AC28 (App Review 1.4.1): the prescription line ends the card.
-      expect(retinoid.description).toMatch(/pregnancy\. Tretinoin needs a prescription\. Ask your doctor or pharmacist before you start\.$/);
+      expect(retinoid.description).toMatch(/pregnancy\. Tretinoin needs a prescription\. Discuss it with your doctor or pharmacist before starting\.$/);
     });
   });
 
@@ -3537,8 +3537,8 @@ describe('US-06 AC8: the dose cards', () => {
       category: 'medication',
       priority: 'attention',
       title: 'Add your GLP-1 dose',
-      description: "Your GLP-1 dose isn't recorded, and your next step depends on it. A higher dose or a switch to Tirzepatide may help. Add your current dose to see which.",
-      reason: 'GLP-1 medications are started at a low dose and stepped up gradually; clinical trials used this dose escalation to improve tolerability. Which step comes next depends on the dose you take now.',
+      description: "Your GLP-1 dose isn't recorded. A higher dose or a switch to Tirzepatide may help, and which one to discuss with your doctor depends on your current dose. Add it to see which.",
+      reason: 'GLP-1 medications are started at a low dose and stepped up gradually; clinical trials used this dose escalation to improve tolerability. Which option to discuss with your doctor next depends on the dose you take now.',
       guidelines: [],
     });
     expect(glp1Dose!.references).toEqual(card({ heightCm: 178, sex: 'male', weightKg: 101.4 },
@@ -3554,8 +3554,8 @@ describe('US-06 AC8: the dose cards', () => {
       category: 'medication',
       priority: 'attention',
       title: 'Add your statin dose',
-      description: "Your LDL-c is 3.0 mmol/L; the treatment target is below 1.4 mmol/L. Your statin dose isn't recorded, and your next step depends on it. A higher dose or a more potent statin may help. Add your current dose to see which. If you become pregnant, most people should stop their statin: talk to your doctor. If you are planning a pregnancy, NICE advises stopping 3 months before trying to conceive.",
-      reason: 'Statin strength depends on both the drug and the dose. Doubling a statin dose typically lowers LDL by a further 6–7% (the "rule of 6"), and rosuvastatin 40mg gives the largest reduction (~63%). Which step comes next depends on the dose you take now.',
+      description: "Your LDL-c is 3.0 mmol/L; the treatment target is below 1.4 mmol/L. Your statin dose isn't recorded. A higher dose or a more potent statin may help, and which one to discuss with your doctor depends on your current dose. Add it to see which. The FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive. Talk to your doctor.",
+      reason: 'Statin strength depends on both the drug and the dose. Doubling a statin dose typically lowers LDL by a further 6–7% (the "rule of 6"), and rosuvastatin 40mg gives the largest reduction (~63%). Which option to discuss with your doctor next depends on the dose you take now.',
     });
     expect(statinDose!.guidelines).toEqual(increase!.guidelines);
     expect(statinDose!.references).toEqual(increase!.references);
@@ -3570,11 +3570,11 @@ describe('US-06 AC8: the dose cards', () => {
     const HIGHEST = 'A higher dose may help, or you may already take the highest.';
     for (const drug of ['tirzepatide', 'semaglutide_injection', 'semaglutide_oral', 'dulaglutide']) {
       const text = card(weight, { glp1: { drug, dose: null } }, 'weight-med-glp1-dose')!.description;
-      expect(text, drug).toContain(drug === 'tirzepatide' ? HIGHEST : 'A higher dose or a switch to Tirzepatide may help.');
+      expect(text, drug).toContain(drug === 'tirzepatide' ? HIGHEST : 'A higher dose or a switch to Tirzepatide may help,');
     }
     for (const drug of ['rosuvastatin', 'atorvastatin', 'pitavastatin', 'pravastatin', 'simvastatin']) {
       const text = card(lipid, { statin: { drug, dose: null }, ezetimibe: 'yes' }, 'med-statin-dose')!.description;
-      expect(text, drug).toContain(drug === 'rosuvastatin' ? HIGHEST : 'A higher dose or a more potent statin may help.');
+      expect(text, drug).toContain(drug === 'rosuvastatin' ? HIGHEST : 'A higher dose or a more potent statin may help,');
     }
   });
 });
@@ -3703,14 +3703,14 @@ describe('US-07 AC6: who the plan is for', () => {
     category: 'general',
     priority: 'info',
     title: 'This plan is built for adults',
-    description: 'The suggestions here, including medicines, are designed for people aged 18 and over. For anyone younger, talk with their doctor.',
+    description: 'The suggestions here, including medicines to discuss with a doctor, are designed for people aged 18 and over. For anyone younger, talk with their doctor.',
   };
   const ADD_BIRTH_YEAR = {
     id: 'add-birth-year',
     category: 'general',
     priority: 'info',
     title: 'Add your birth year',
-    description: 'Medicine suggestions need your age. Add your birth year to see them.',
+    description: 'Suggestions about medicines to discuss with your doctor need your age. Add your birth year to see them.',
   };
   /** Values that put an adult on the statin and GLP-1 steps. */
   const MEDICINE_VALUES: HealthInputs = { heightCm: 175, sex: 'male', weightKg: 115, waistCm: 115, hba1c: hba1c(7.0), ldlC: ldl(190), systolicBp: 150, diastolicBp: 95 };
@@ -3831,9 +3831,9 @@ describe('US-07 AC6: who the plan is for', () => {
     it('BP stage 2: "Discuss treatment with your doctor." for an unknown age; an adult gets the guideline sentence with a doctor line (US-25 AC28, App Review 1.4.1)', () => {
       const bp = { systolicBp: 165, diastolicBp: 102 };
       const unknown = desc({ ...base, ...bp }, undefined, 'bp-stage2');
-      expect(unknown).toContain('indicates stage 2 hypertension. Discuss treatment with your doctor.');
+      expect(unknown).toContain('is in the range the ACC/AHA guideline calls stage 2 hypertension. Discuss treatment with your doctor.');
       expect(unknown).not.toContain('recommend medication');
-      expect(desc({ ...adultBase, ...bp }, undefined, 'bp-stage2')).toContain('indicates stage 2 hypertension. Guidelines typically recommend medication at this level. Discuss it with your doctor.');
+      expect(desc({ ...adultBase, ...bp }, undefined, 'bp-stage2')).toContain('is in the range the ACC/AHA guideline calls stage 2 hypertension. Guidelines typically recommend medication at this level. Discuss it with your doctor.');
     });
 
     it('very high LDL: "Discuss treatment with your doctor."; an adult keeps the statin sentence', () => {
@@ -3849,11 +3849,14 @@ describe('US-07 AC6: who the plan is for', () => {
       expect(unknown).not.toMatch(MEDICINE_WORDS);
       expect(unknown).not.toContain('not started');
       const adult = desc({ ...adultBase, lpa: 200 }, {}, 'lpa-elevated');
-      expect(adult).toContain('\u26A0\uFE0F Statin: not started \u2014 discuss with your doctor');
-      expect(adult).toContain('\u26A0\uFE0F Ezetimibe: not started \u2014 discuss with your doctor');
+      expect(adult).toContain('\u26A0\uFE0F Statin: not started\n');
+      expect(adult).toContain('\u26A0\uFE0F Ezetimibe: not started\n');
       expect(adult).toContain('\u26A0\uFE0F PCSK9 inhibitor: not started \u2014 can lower Lp(a) ~25\u201330%');
+      // One doctor line for the card's medicines (US-07 AC17); the unknown age names none, so has none.
+      const LINE = '\n\nConsider discussing these medicines with your doctor.';
+      expect(adult.endsWith(LINE)).toBe(true);
       // Everything else in the checklist is the adult's, line for line.
-      expect(unknown).toBe(adult.split('\n').filter((line) => !line.includes('not started')).join('\n'));
+      expect(unknown).toBe(adult.slice(0, -LINE.length).split('\n').filter((line) => !line.includes('not started')).join('\n'));
     });
 
     it('high Lp(a): what the user takes or did not tolerate stays (facts, not suggestions)', () => {
@@ -3892,7 +3895,7 @@ describe('US-07 AC6: who the plan is for', () => {
     const MEDICINE_NAMES = /statin|ezetimibe|pcsk9|glp-1|semaglutide|tirzepatide|sglt2|metformin|bempedoic|nexletol|empagliflozin|dapagliflozin|mounjaro|zepbound/i;
     it('ldl-high keeps "discuss medication options" for an unknown age, and names no medicine', () => {
       const card = plan({ heightCm: 175, sex: 'male', weightKg: 70, ldlC: ldl(170) }).find((s) => s.id === 'ldl-high');
-      expect(card?.description).toMatch(/Consider lifestyle modifications and discuss medication options\.$/);
+      expect(card?.description).toMatch(/Lifestyle changes and medication options are typically discussed at this level\. Discuss them with your doctor\.$/);
       expect(card?.description).not.toMatch(MEDICINE_NAMES);
     });
     const UNKNOWN_AGE_RECORDS: [name: string, record: HealthInputs][] = [
@@ -3910,5 +3913,74 @@ describe('US-07 AC6: who the plan is for', () => {
         for (const s of plan(record, meds)) expect(`${s.id}: ${s.title}. ${s.description}`).not.toMatch(MEDICINE_NAMES);
       }
     });
+  });
+});
+
+// US-25 AC28a (App Review 1.4.1, Brad 2026-11-15, exact words): medicine sentences in the guideline's
+// voice or as a discussion with the doctor. Words only: the same cards show for the same inputs.
+describe('US-25 AC28a: guideline-voice wording', () => {
+  const FDA = 'https://www.fda.gov/drugs/drug-safety-and-availability/fda-requests-removal-strongest-warning-against-using-cholesterol-lowering-statins-during-pregnancy';
+  const NICE = 'https://www.nice.org.uk/guidance/ng238/chapter/Recommendations';
+  const weightCard = (meds: MedicationInputs, id: string) => {
+    const { inputs, results } = createTestData({ hba1c: hba1c(5.8) }, { bmi: 28 });
+    return generateSuggestions(inputs, results, 'si', meds).find(s => s.id === id);
+  };
+  const lipidCard = (meds: MedicationInputs, id: string) => {
+    const { inputs, results } = createTestData({ ldlC: 3.0 });
+    return generateSuggestions(inputs, results, 'si', meds).find(s => s.id === id);
+  };
+
+  it('the GLP-1 dose step keeps its title and asks for the pros and cons with the doctor', () => {
+    expect(weightCard({ glp1: { drug: 'tirzepatide', dose: 5 } }, 'weight-med-glp1-increase')).toMatchObject({
+      title: 'Consider discussing your GLP-1 dose with your doctor',
+      description: 'Discuss with your doctor the pros and cons of a higher dose of your current GLP-1 medication.',
+    });
+  });
+
+  it('the Metformin step is titled as a discussion', () => {
+    const meds: MedicationInputs = { glp1: { drug: 'tirzepatide', dose: 15 }, sglt2i: { drug: 'empagliflozin', dose: 10 } };
+    expect(weightCard(meds, 'weight-med-metformin')?.title).toBe('Consider discussing Metformin with your doctor');
+  });
+
+  it('the statin step-up titles name the doctor', () => {
+    expect(lipidCard({ statin: { drug: 'pravastatin', dose: 20 }, ezetimibe: 'yes' }, 'med-statin-increase')?.title)
+      .toBe('Consider discussing your statin dose with your doctor');
+    expect(lipidCard({ statin: { drug: 'atorvastatin', dose: 80 }, ezetimibe: 'yes' }, 'med-statin-switch')?.title)
+      .toBe('Consider discussing a more potent statin with your doctor');
+  });
+
+  it('apob-high reads as what is typically discussed', () => {
+    const { inputs, results } = createTestData({ apoB: apoB(80) });
+    expect(generateSuggestions(inputs, results).find(s => s.id === 'apob-high')?.description)
+      .toMatch(/ is elevated\. Lifestyle changes and treatment options to reduce cardiovascular risk are typically discussed at this level\. Discuss them with your doctor\.$/);
+  });
+
+  it('non-hdl-high reads as what is typically discussed (W16)', () => {
+    const { inputs, results } = createTestData(
+      { totalCholesterol: totalChol(250), hdlC: hdl(50) },
+      { nonHdlCholesterol: totalChol(250) - hdl(50) },
+    );
+    const description = generateSuggestions(inputs, results).find(s => s.id === 'non-hdl-high')?.description;
+    expect(description).toMatch(/^Your non-HDL cholesterol of .+ is high\. Lifestyle changes to reduce cardiovascular risk are typically discussed at this level\. Discuss them with your doctor\.$/);
+    expect(description).not.toContain('Consider lifestyle modifications');
+  });
+
+  it('the PCSK9 inhibitor reason says what usually happens after statin muscle damage', () => {
+    const reason = SUGGESTION_EVIDENCE['med-pcsk9i'].reason;
+    expect(reason).toContain('Statin muscle damage is rare. If it happens, the statin is usually stopped, and a PCSK9 inhibitor is one option to discuss with your doctor.');
+    expect(reason).not.toContain('stop the statin and move');
+  });
+
+  // The on-a-statin sentence names the FDA and NICE, so every card that carries it cites both.
+  it.each([
+    ['med-statin-dose', { statin: { drug: 'pravastatin', dose: null }, ezetimibe: 'yes' }],
+    ['med-statin-increase', { statin: { drug: 'pravastatin', dose: 20 }, ezetimibe: 'yes' }],
+    ['med-statin-switch', { statin: { drug: 'atorvastatin', dose: 80 }, ezetimibe: 'yes' }],
+    ['med-ezetimibe', { statin: { drug: 'atorvastatin', dose: 20 } }],
+    ['med-pcsk9i', { statin: { drug: 'atorvastatin', dose: 80 }, ezetimibe: 'yes', statinEscalation: 'not_tolerated' }],
+  ] as const)('%s names the FDA and NICE and cites both', (id, meds) => {
+    const card = lipidCard(meds as MedicationInputs, id);
+    expect(card?.description).toContain('The FDA advises most people to stop a statin');
+    expect(card?.references?.map(r => r.url)).toEqual(expect.arrayContaining([FDA, NICE]));
   });
 });

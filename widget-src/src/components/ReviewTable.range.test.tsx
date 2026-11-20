@@ -4,6 +4,7 @@ import { cleanup, fireEvent, render } from '@testing-library/react';
 import { ReviewTable } from './ReviewTable';
 import type { FileResult } from '../lib/upload-pipeline';
 import { cellToSI } from '../lib/blood-test-cell';
+import { showingAll } from '../testing/import-review';
 
 const record = vi.hoisted(() => ({ lpaUnit: undefined as string | undefined }));
 vi.mock('../lib/roadmap-data', () => ({
@@ -33,9 +34,9 @@ describe('ReviewTable range errors before save', () => {
     record.lpaUnit = lpaUnit;
     const onSave = vi.fn();
     const upload: FileResult[] = [{ ...files[0], values: [{ ...files[0].values[0], metric, valueSI: metric === 'ldl' ? 3.2 : 124.9 }] }];
-    const { container } = render(<ReviewTable grading={{}} results={upload}
+    const { container } = showingAll(render(<ReviewTable grading={{}} results={upload}
       history={{ measurements: [], labValues: [], documents: [] }} unitSystem={unitSystem}
-      onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />);
+      onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />));
     const input = container.querySelector<HTMLInputElement>('.bt-cell-review input')!;
     const save = container.querySelector<HTMLButtonElement>('.review-save-btn')!;
     fireEvent.change(input, { target: { value: invalid } });
@@ -53,9 +54,9 @@ describe('ReviewTable range errors before save', () => {
 
   it('an invalid replacement blocks only while selected; clearing it explicitly excludes it', () => {
     const onSave = vi.fn();
-    const { container } = render(<ReviewTable grading={{}} results={files}
+    const { container } = showingAll(render(<ReviewTable grading={{}} results={files}
       history={{ measurements: [{ id: 'held-ldl', metricType: 'ldl', value: 2.5, recordedAt: '2025-01-10T00:00:00.000Z', createdAt: '2025-01-10T00:00:00.000Z' }], labValues: [], documents: [] }} unitSystem="si"
-      onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />);
+      onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />));
     const input = container.querySelector<HTMLInputElement>('.bt-cell-review input')!;
     const replace = container.querySelector<HTMLInputElement>('.bt-cell-conflict-replace input')!;
     const save = container.querySelector<HTMLButtonElement>('.review-save-btn')!;
@@ -80,9 +81,9 @@ describe('ReviewTable range errors before save', () => {
   it('preserves exact valid extracted precision even for a tiny Lp(a) value rendered as zero', () => {
     const onSave = vi.fn();
     const lpa: FileResult[] = [{ ...files[0], values: [{ ...files[0].values[0], metric: 'lpa', valueSI: 0.0000001 }] }];
-    const { container } = render(<ReviewTable grading={{}} results={lpa}
+    const { container } = showingAll(render(<ReviewTable grading={{}} results={lpa}
       history={{ measurements: [], labValues: [], documents: [] }} unitSystem="si"
-      onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />);
+      onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />));
     const save = container.querySelector<HTMLButtonElement>('.review-save-btn')!;
     expect(save.disabled).toBe(false);
     fireEvent.click(save);
@@ -92,9 +93,9 @@ describe('ReviewTable range errors before save', () => {
   it('retains the original-unit inline error after a toggle rounds invalid Lp(a) onto the bound', () => {
     const onSave = vi.fn();
     const lpa: FileResult[] = [{ ...files[0], values: [{ ...files[0].values[0], metric: 'lpa', valueSI: 124.9 }] }];
-    const { container, getByRole } = render(<ReviewTable grading={{}} results={lpa}
+    const { container, getByRole } = showingAll(render(<ReviewTable grading={{}} results={lpa}
       history={{ measurements: [], labValues: [], documents: [] }} unitSystem="si"
-      onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />);
+      onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />));
     const input = container.querySelector<HTMLInputElement>('.bt-cell-review input')!;
     fireEvent.change(input, { target: { value: '750.1' } });
     fireEvent.click(getByRole('radio', { name: 'mg/dL' }));
@@ -112,9 +113,9 @@ describe('ReviewTable range errors before save', () => {
   it('rejects an untouched extracted value outside the SI bound even when the display rounds it onto the bound', () => {
     const onSave = vi.fn();
     const lpa: FileResult[] = [{ ...files[0], values: [{ ...files[0].values[0], metric: 'lpa', valueSI: 750.1 }] }];
-    const { container } = render(<ReviewTable grading={{}} results={lpa}
+    const { container } = showingAll(render(<ReviewTable grading={{}} results={lpa}
       history={{ measurements: [], labValues: [], documents: [] }} unitSystem="si"
-      onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />);
+      onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />));
     const input = container.querySelector<HTMLInputElement>('.bt-cell-review input')!;
     expect(input.value).toBe('750');
     expect(input.getAttribute('aria-invalid')).toBe('true');
@@ -126,9 +127,9 @@ describe('ReviewTable range errors before save', () => {
   it('saves an explicit correction of invalid extraction to its identical rounded rendering through a unit toggle', () => {
     const onSave = vi.fn();
     const lpa: FileResult[] = [{ ...files[0], values: [{ ...files[0].values[0], metric: 'lpa', valueSI: 750.1 }] }];
-    const { container, getByRole } = render(<ReviewTable grading={{}} results={lpa}
+    const { container, getByRole } = showingAll(render(<ReviewTable grading={{}} results={lpa}
       history={{ measurements: [], labValues: [], documents: [] }} unitSystem="si"
-      onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />);
+      onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />));
     const input = container.querySelector<HTMLInputElement>('.bt-cell-review input')!;
     const save = container.querySelector<HTMLButtonElement>('.review-save-btn')!;
     expect(input.value).toBe('750');
@@ -149,9 +150,9 @@ describe('ReviewTable range errors before save', () => {
   it('shows no rounded display error for untouched canonical-valid HDL and saves its exact precision', () => {
     const onSave = vi.fn();
     const hdl: FileResult[] = [{ ...files[0], values: [{ ...files[0].values[1], valueSI: 5.2 }] }];
-    const { container } = render(<ReviewTable grading={{}} results={hdl}
+    const { container } = showingAll(render(<ReviewTable grading={{}} results={hdl}
       history={{ measurements: [], labValues: [], documents: [] }} unitSystem="conventional"
-      onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />);
+      onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />));
     const input = container.querySelector<HTMLInputElement>('.bt-cell-review input')!;
     const save = container.querySelector<HTMLButtonElement>('.review-save-btn')!;
     expect(input.value).toBe('201');
@@ -170,9 +171,9 @@ describe('ReviewTable range errors before save', () => {
   ])('retyping the valid $metric rendering preserves exact extraction and source', ({ metric, valueSI, rendered }) => {
     const onSave = vi.fn();
     const upload: FileResult[] = [{ ...files[0], values: [{ ...files[0].values[0], metric, valueSI }] }];
-    const { container } = render(<ReviewTable grading={{}} results={upload}
+    const { container } = showingAll(render(<ReviewTable grading={{}} results={upload}
       history={{ measurements: [], labValues: [], documents: [] }} unitSystem="conventional"
-      onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />);
+      onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />));
     const input = container.querySelector<HTMLInputElement>('.bt-cell-review input')!;
     expect(input.value).toBe(rendered);
     fireEvent.change(input, { target: { value: '' } });
@@ -187,9 +188,9 @@ describe('ReviewTable range errors before save', () => {
   it('validates an invalid extraction after date movement and accepts its explicit rounded correction at the new date', () => {
     const onSave = vi.fn();
     const lpa: FileResult[] = [{ ...files[0], values: [{ ...files[0].values[0], metric: 'lpa', valueSI: 750.1 }] }];
-    const { container, getByLabelText } = render(<ReviewTable grading={{}} results={lpa}
+    const { container, getByLabelText } = showingAll(render(<ReviewTable grading={{}} results={lpa}
       history={{ measurements: [], labValues: [], documents: [] }} unitSystem="si"
-      onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />);
+      onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />));
     fireEvent.change(getByLabelText('Choose column date'), { target: { value: '2025-02-15' } });
     const input = container.querySelector<HTMLInputElement>('.bt-cell-review input')!;
     const save = container.querySelector<HTMLButtonElement>('.review-save-btn')!;
@@ -207,9 +208,9 @@ describe('ReviewTable range errors before save', () => {
 
   it('blocks a mixed panel with invalid SI LDL, keeps the input recoverable, and saves the correction', () => {
     const onSave = vi.fn();
-    const { container } = render(<ReviewTable grading={{}} results={files}
+    const { container } = showingAll(render(<ReviewTable grading={{}} results={files}
       history={{ measurements: [], labValues: [], documents: [] }} unitSystem="si"
-      onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />);
+      onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />));
     const input = container.querySelector<HTMLInputElement>('.bt-cell-review input')!;
     const save = container.querySelector<HTMLButtonElement>('.review-save-btn')!;
     fireEvent.change(input, { target: { value: '999' } });
@@ -223,8 +224,8 @@ describe('ReviewTable range errors before save', () => {
     expect(save.disabled).toBe(false);
     fireEvent.click(save);
     expect(onSave.mock.calls[0][0].values).toEqual([
-      { metric: 'ldl', valueSI: 4.1, source: 'lab_import_edited', recordedAt: '2025-01-10T00:00:00.000Z', correctsId: undefined },
-      { metric: 'hdl', valueSI: 1.23456789, source: undefined, recordedAt: '2025-01-10T00:00:00.000Z', correctsId: undefined },
+      { metric: 'ldl', valueSI: 4.1, source: 'lab_import_edited', recordedAt: '2025-01-10T00:00:00.000Z', correctsId: undefined, file: '#0' },
+      { metric: 'hdl', valueSI: 1.23456789, source: undefined, recordedAt: '2025-01-10T00:00:00.000Z', correctsId: undefined, file: '#0' },
     ]);
   });
 });
@@ -234,9 +235,9 @@ describe('ReviewTable range errors before save', () => {
 describe('ReviewTable: an ambiguous comma (US-13 AC12)', () => {
   const review = (upload: FileResult[], unitSystem: 'si' | 'conventional') => {
     const onSave = vi.fn();
-    const view = render(<ReviewTable grading={{}} results={upload}
+    const view = showingAll(render(<ReviewTable grading={{}} results={upload}
       history={{ measurements: [], labValues: [], documents: [] }} unitSystem={unitSystem}
-      onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />);
+      onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />));
     const input = view.container.querySelector<HTMLInputElement>('.bt-cell-review input')!;
     const save = view.container.querySelector<HTMLButtonElement>('.review-save-btn')!;
     return { ...view, onSave, input, save };

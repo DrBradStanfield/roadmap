@@ -1,19 +1,21 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useId, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import type { UnitSystem, MetricType } from '@roadmap/health-core/units';
 import type { UploadHistory } from '../lib/api-types';
 import { measurementRefusalLine } from '../lib/lab-value-labels';
 import { labUnitRefusalLine } from '@roadmap/health-core/lab-series';
+import { UPLOAD_TEXT } from '@roadmap/health-core/upload-text';
 import { useLpaUnit } from '../lib/lpa-unit';
 import type { Grading } from '../lib/blood-test-cell';
 import { ReviewTable } from './ReviewTable';
-import { FileNotices, NotSaved } from './UploadNotices';
+import { FileNotices } from './UploadNotices';
 import { ErrorBoundary } from './ErrorBoundary';
 import { FloatingUploadIndicator } from './FloatingUploadIndicator';
 import { useUploadFlow, MAX_FILES } from '../hooks/useUploadFlow';
 import { getDocumentArchiveMode } from '../lib/roadmap-data';
 import { useIsMobile } from '../lib/useIsMobile';
 import { openBackendPicker, UPLOAD_STORAGE_NOTICE } from '../lib/storage-notice';
+import type { ProductEventMetadata } from '../lib/server-api';
 
 interface UploadModalProps {
   unitSystem: UnitSystem;
@@ -38,9 +40,17 @@ interface UploadModalProps {
 
 export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit, history, onComplete, onStart, onClose, onScreeningUpdate, age, sex, grading, open, onOpen }: UploadModalProps) {
   const flow = useUploadFlow({ unitSystem, history, onComplete, onStart, onClose, onScreeningUpdate });
-  const { phase, files, notices, progress, results, readError, saveError, skipArchive, close: handleClose, discard: handleDiscard } = flow;
+  const { phase, files, notices, progress, results, readError, saveError, skipArchive } = flow;
   const picking = phase === 'picking' || phase === 'readFailed';
   const reviewing = phase === 'reviewing' || phase === 'saving' || phase === 'saveFailed';
+  // A review that Cancel discards sends its counts; × and Escape only hide it, to
+  // resume (US-12 AC4). The flow sends one per review, none while a Save runs (US-13 AC13).
+  const reviewCounts = useRef<(() => ProductEventMetadata) | null>(null);
+  const handleClose = flow.close;
+  const handleDiscard = () => {
+    if (phase === 'reviewing' || phase === 'saveFailed') flow.endReview(reviewCounts.current?.());
+    flow.discard();
+  };
   // Connect-first gate (decision record: encourage, don't block). 'device-only'
   // + not skipped → show the connect panel instead of the dropzone.
   const archiveMode = getDocumentArchiveMode();
@@ -49,6 +59,11 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
   const [lpaUnit] = useLpaUnit(unitSystem);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isMobile = useIsMobile(768);
+  const titleId = useId();
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const indicatorRef = useRef<HTMLDivElement>(null);
+  useDialogFocus(open, dialogRef, titleRef, indicatorRef);
 
   useEffect(() => {
     if (!open) return;
@@ -80,12 +95,12 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
   // .health-tool container has a transform/contain that would otherwise pin
   // the modal inside the (very tall) widget root instead of the viewport.
   return <>
-    {!open && phase !== 'picking' && <FloatingUploadIndicator progress={progress} phase={phase} onClick={onOpen} />}
+    {!open && phase !== 'picking' && <FloatingUploadIndicator progress={progress} phase={phase} onClick={onOpen} buttonRef={indicatorRef} />}
     {createPortal((
     <div className="upload-modal-backdrop" data-clarity-mask="true" style={!open ? { display: 'none' } : undefined} onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}>
-      <div className={`upload-modal${isMobile ? ' upload-modal--mobile' : ''}`}>
+      <div ref={dialogRef} className={`upload-modal${isMobile ? ' upload-modal--mobile' : ''}`} role="dialog" aria-modal={open} aria-labelledby={titleId}>
         <div className="upload-modal-header">
-          <h3>Upload Health Records</h3>
+          <h3 id={titleId} ref={titleRef} tabIndex={-1}>Upload Health Records</h3>
           <button className="upload-modal-close" onClick={handleClose} aria-label="Close">&times;</button>
         </div>
 
@@ -159,7 +174,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
             </div>
           )}
 
-          {reviewing && <><FileNotices notices={notices} /><NotSaved results={results} /></>}
+          {reviewing && <FileNotices notices={notices} />}
           {reviewing && (
             // A review that throws while rendering is never a dead widget (US-13 AC9).
             <ErrorBoundary feature="upload_review" fallback={
@@ -182,6 +197,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
               isSaving={phase === 'saving'}
               error={saveError}
               refusals={refusedLabUnits.length + refusedMeasurements.length > 0 ? refusalLines : undefined}
+              countsRef={reviewCounts}
             />
             </ErrorBoundary>
           )}
@@ -210,9 +226,8 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
                 </p>
               )}
               {refusalLines}
-              {unstoredCount > 0 && <p className="upload-done-skipped">The original file couldn't be stored; its details are saved.</p>}
+              {unstoredCount > 0 && <p className="upload-done-skipped">{UPLOAD_TEXT.unstoredLine}</p>}
               <FileNotices notices={notices} />
-              <NotSaved results={results} />
               <button className="btn-primary upload-done-btn" onClick={handleClose}>
                 Done
               </button>
@@ -223,4 +238,22 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
     </div>
   ), document.body)}
   </>;
+}
+
+/** US-12 AC4a: opening the window moves the focus to its title. Hiding or removing it gives
+ *  the focus back to what held it on opening, unless the focus has since gone somewhere
+ *  outside the window (another dialog it opened). When that holder has left the page or was
+ *  the page itself (the floating indicator leaves as the window shows), the focus goes to the
+ *  floating indicator if hiding shows it. */
+function useDialogFocus(open: boolean, dialogRef: RefObject<HTMLElement>, titleRef: RefObject<HTMLElement>, indicatorRef: RefObject<HTMLElement>) {
+  useEffect(() => {
+    if (!open) return;
+    const opener = document.activeElement as HTMLElement; // never null: the page has a body
+    titleRef.current?.focus();
+    return () => {
+      const now = document.activeElement;
+      const back = opener.isConnected && opener !== document.body ? opener : indicatorRef.current;
+      if (now === document.body || dialogRef.current?.contains(now)) back?.focus();
+    };
+  }, [open]);
 }

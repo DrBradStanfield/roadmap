@@ -9,8 +9,8 @@
   ],
 
   "limits": {
-    "_note": "Bytes and counts each client reads with today. D8: the phone takes a 20 MB ZIP, the web 10 MB (changedBy: PR 3 keeps it; the size is a product call).",
-    "web": { "fileBytes": 10485760, "zipBytes": 10485760, "filesPerPick": 200, "zipMembers": 200, "pdfPages": 20, "textPageChars": 100000, "batchFrom": 20 },
+    "_note": "Bytes and counts each client reads with today. D8: one ZIP cap, 20 MB on both clients (owner ruling Q7, design PR 9).",
+    "web": { "fileBytes": 10485760, "zipBytes": 20971520, "filesPerPick": 200, "zipMembers": 200, "pdfPages": 20, "textPageChars": 100000 },
     "phone": { "fileBytes": 10485760, "zipBytes": 20971520, "filesPerPick": 200, "zipMembers": 200, "pdfPages": 20, "textPageChars": 100000, "folderBytes": 209715200 }
   },
 
@@ -58,8 +58,8 @@
       { "name": "a.pdf", "bytes": 10485760, "web": "read", "phone": "fits" },
       { "name": "a.pdf", "bytes": 10485761, "web": "tooLarge", "phone": "tooLarge" },
       { "name": "a.zip", "bytes": 10485760, "web": "read", "phone": "fits" },
-      { "name": "a.zip", "bytes": 10485761, "web": "tooLarge", "phone": "fits", "decision": "D8", "changedBy": "PR 3 keeps it; the size is a product call" },
-      { "name": "a.zip", "bytes": 20971520, "web": "tooLarge", "phone": "fits", "decision": "D8", "changedBy": "PR 3 keeps it; the size is a product call" },
+      { "name": "a.zip", "bytes": 10485761, "web": "read", "phone": "fits" },
+      { "name": "a.zip", "bytes": 20971520, "web": "read", "phone": "fits" },
       { "name": "a.zip", "bytes": 20971521, "web": "tooLarge", "phone": "tooLarge" }
     ],
     "zipMemberOverCap": {
@@ -131,10 +131,10 @@
   },
 
   "reviewDefaults": {
-    "_note": "What the review starts with. ticked: the value saves unless the user acts. keepDocument: the document's keep tick. D1 (U10) and D3 need Brad.",
+    "_note": "What the review starts with. ticked: the value saves unless the user acts. keepDocument: the document's keep tick. D1 decided by Brad 2026-11-20: saved unless cleared, on both clients; the shared engine (upload-review.ts) has it for both. The phone column is today's live iPhone review (LabChoices), which keeps the old default until it moves to the engine (design PR 15): its two lines describe the old rule. D3 needs Brad.",
     "rows": [
       { "case": "plain value", "web": { "ticked": true }, "phone": { "ticked": true } },
-      { "case": "value with an extractor question", "web": { "ticked": true }, "phone": { "ticked": false }, "decision": "D1", "changedBy": "a Brad decision PR (U10)" },
+      { "case": "value with an extractor question", "web": { "ticked": true }, "phone": { "ticked": false }, "decision": "D1, decided 2026-11-20: ticked on both", "changedBy": "design PR 15 (the iPhone review page reads the engine)" },
       { "case": "document, sourceFileName not held", "web": { "keepDocument": true }, "phone": { "keepDocument": true } },
       { "case": "document, sourceFileName held", "web": { "keepDocument": false }, "phone": { "keepDocument": false } },
       { "case": "letter with values", "web": { "values": true, "document": true }, "phone": { "values": false, "document": true }, "decision": "D3", "changedBy": "a Brad decision PR (clinical)" }

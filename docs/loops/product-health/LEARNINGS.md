@@ -24,7 +24,9 @@ duplicates.
 - **2026-08-10 [usage]** W32's "reminder_optin 0 ever = kill-signal" was wrong
   in a durable way: the zero measured REACH, not demand — default-on + the
   typed lane (08-13/14) brought 18 enrolments in a week. A zero on an
-  opt-in-shaped event indicts the surface before the feature.
+  opt-in-shaped event indicts the surface before the feature. Confirmed W46:
+  upload runs ~5/day → 1/week after the US-62 redesign hid the button (deploys
+  10-31, 11-02, 11-06), while onboardings doubled; per-day counts against deploy times proved it.
 - **2026-08-16 [tooling]** Sentry per-issue event COUNTS are not reproducible across pulls (86/24
   in W32, then 1/1 twice in W33; summed `stats` buckets read 0 for a real event). Trend on
   firstSeen/lastSeen and status; say so whenever a count drives a conclusion.
@@ -60,12 +62,9 @@ duplicates.
   end on their own; re-check shape every pull rather than carrying the gap.
 - **2026-08-16 [usage]** The typed reminder lane outdraws cloud (~10:1 all-time, W40). A partial
   first week fakes a "doubling": compare per-day rates across a series' first two weeks.
-- **2026-08-29 [tooling]** git approxidate parses `--since=8d` as "August 8"
-  (day-of-month), NOT "8 days ago" — so the charter's workflow-integrity
-  command over-scans mid-month and, in the first days of a month, resolves to
-  a FUTURE date and silently returns empty: a falsely-clean tripwire. Use
-  `--since="8 days ago"` or an explicit ISO date. (Adversarial-review catch,
-  W35; substance re-verified with explicit dates — the window was clean.)
+- **2026-08-29 [tooling]** git approxidate reads `--since=8d` as "the 8th of the month", not
+  "8 days ago": early in a month it is a FUTURE date and the workflow tripwire returns empty,
+  falsely clean. Use `--since="8 days ago"` or an ISO date; in a shallow clone, use the API (W35).
 - **2026-08-29 [usage]** The typed lane enrols already-overdue items, so real
   reminder sends happen any week (first 08-28); check live `reminder_optin_v2`
   schedules, never memory, before saying "nothing due". `reminder_sent`

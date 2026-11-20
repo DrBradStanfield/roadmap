@@ -1,3 +1,4 @@
+import CryptoKit
 import SwiftUI
 import XCTest
 @testable import HealthRoadmap
@@ -14,6 +15,8 @@ final class RecordStoreTests: XCTestCase {
         // a percent-encoded path once made the app miss its own file and start a new one.
         folder = FileManager.default.temporaryDirectory.appending(path: "Record Store \(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        // A run killed before its tearDown can leave a per-test unit saved on the simulator.
+        UnitChoices().save()
     }
 
     override func tearDown() async throws {
@@ -245,15 +248,26 @@ final class RecordStoreTests: XCTestCase {
         XCTAssertNil(threw.myData)
         XCTAssertFalse(threw.predatesErase, "nothing from before the erase is shown")
 
-        // An older cloud record is drawn; a newer one was handed over but never drawn: it never moved the
-        // stamp, so the erase view between them is not stale and lands (Codex R1 on PR 1599).
+        // An older cloud record is drawn; a newer one at the same erase was handed over but never drawn: it
+        // never moved the stamp, so the erase view between them is not stale and lands (Codex R1 on PR 1599).
         let undrawn = try RecordStore(folder: folder, engine: engine, deviceId: "test")
         await undrawn.showCloud(HealthEngine.CloudView(record: cloud, erase: "e1", session: 1, order: 3)).value
-        await undrawn.showCloud(HealthEngine.CloudView(record: "not a record", erase: "e2", session: 1, order: 5)).value
+        await undrawn.showCloud(HealthEngine.CloudView(record: "not a record", erase: "e1", session: 1, order: 5)).value
         let erased = try engine.blocking { try $0.eraseOnPhone(recordJSON: cloud, historyJSON: nil, now: .now, deviceId: "test") }.record
         await undrawn.showErased(HealthEngine.CloudView(record: erased, erase: "e2", session: 1, order: 4)).value
         XCTAssertEqual(undrawn.recordJSON, erased, "the erase landed")
         XCTAssertFalse(undrawn.predatesErase, "a record only handed over never makes an erase stale")
+
+        // The newer one is the session's next erase and cannot be drawn: it is held undrawn and holds the
+        // erase (AC16f's rule, lead S63), so the stamp moves to it and the older erase view behind it is
+        // stale. Nothing older lands over it (PR 1599's scenario re-derived: RemoteEraseTakenInTests).
+        let heldNewer = try RecordStore(folder: folder, engine: engine, deviceId: "test")
+        await heldNewer.showCloud(HealthEngine.CloudView(record: cloud, erase: "e1", session: 1, order: 3)).value
+        await heldNewer.showCloud(HealthEngine.CloudView(record: "not a record", erase: "e2", session: 1, order: 5)).value
+        XCTAssertEqual(heldNewer.hold, .heldUndrawn, "the newer erased record is held")
+        await heldNewer.showErased(HealthEngine.CloudView(record: erased, erase: "e2", session: 1, order: 4)).value
+        XCTAssertEqual(heldNewer.recordJSON, "not a record", "the newer held record stays: it holds the erase")
+        XCTAssertFalse(heldNewer.predatesErase, "nothing from before the erase is shown")
 
         // A cloud record was drawn, then the phone's file: no cloud stamp stands for the screen.
         let phone = try RecordStore(folder: folder, engine: engine, deviceId: "test")
@@ -820,7 +834,8 @@ final class RecordStoreTests: XCTestCase {
     }
 
     /// US-52 AC13d: with no cloud, a letter is a text-only row, as the web saves one
-    /// off-cloud: no original, no hash, its text kept. On disk before the screen.
+    /// off-cloud: no original, its text kept, and since US-14 AC10 the file's hash kept, so a later
+    /// upload of the same file knows it. On disk before the screen.
     func testALetterOnThePhoneAloneIsATextOnlyRow() async throws {
         let store = try store()
         let letter = ##"{"classification":"clinic_letter","reportDate":null,"values":[],"additionalValues":[],"document":{"classification":"clinic_letter","title":"Cardiology follow-up","documentDate":null,"contentMarkdown":"# Letter","metadata":{}}}"##
@@ -831,7 +846,8 @@ final class RecordStoreTests: XCTestCase {
         let onDisk = try JSONSerialization.jsonObject(with: Data(contentsOf: file)) as? [String: Any]
         let row = try XCTUnwrap((onDisk?["documents"] as? [[String: Any]])?.first)
         XCTAssertEqual(row["fileRef"] as? String, "")
-        XCTAssertEqual(row["contentHash"] as? String, "")
+        XCTAssertEqual(row["contentHash"] as? String, original.contentHash)
+        XCTAssertEqual(original.contentHash, "sha256-" + SHA256.hash(data: Data("%PDF".utf8)).map { String(format: "%02x", $0) }.joined())
         XCTAssertEqual(row["mimeType"] as? String, "")
         XCTAssertEqual(row["extractedText"] as? String, "# Letter")
         XCTAssertTrue(row["date"] is NSNull)

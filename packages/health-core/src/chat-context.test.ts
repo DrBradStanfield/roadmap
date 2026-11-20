@@ -606,7 +606,7 @@ describe('US-15 AC31: the context carries the plan\'s own verdicts', () => {
     const context = build(INPUTS);
     const widget = calculateHealthResults(INPUTS as HealthInputs, 'si', medicationsToInputs([]), {}).suggestions;
     expect(context.currentSuggestions).toEqual(widget.map(s => ({ id: s.id, category: s.category, priority: s.priority, title: s.title, description: s.description })));
-    expect(context.currentSuggestions.find((s: { id: string }) => s.id === 'bp-stage1').description).toMatch(/136\/86 mmHg indicates stage 1 hypertension/);
+    expect(context.currentSuggestions.find((s: { id: string }) => s.id === 'bp-stage1').description).toMatch(/136\/86 mmHg is in the range the ACC\/AHA guideline calls stage 1 hypertension/);
   });
 
   it('US-15 AC31: derivedValues and missingInputs are the plan\'s own', () => {
@@ -664,7 +664,7 @@ describe('US-15 AC31: the context carries the plan\'s own verdicts', () => {
     const context = build(INPUTS, rows);
     expect(context.currentSuggestions.map((s: { id: string }) => s.id)).toEqual(results.suggestions.map(s => s.id));
     const card = context.currentSuggestions.find((s: { id: string }) => s.id === 'weight-med-glp1-switch');
-    expect(card).toEqual({ id: 'weight-med-glp1-switch', category: 'medication', priority: 'attention', title: 'Consider switching to Tirzepatide' });
+    expect(card).toEqual({ id: 'weight-med-glp1-switch', category: 'medication', priority: 'attention', title: 'Consider discussing Tirzepatide with your doctor' });
     expect(JSON.stringify(context)).not.toContain('2400');
   });
 });

@@ -1,7 +1,7 @@
 import { memo, useId } from 'react';
 import { type LpaUnit, type UnitSystem, type MetricType, UNIT_DEFS, hasUnitChoice } from '@roadmap/health-core/units';
 import { METRIC_LABELS, METRIC_TO_FIELD } from '@roadmap/health-core/mappings';
-import { resolveLabCatalogEntry, canonicalLabRow, labCountFault, labPlausibleBound } from '@roadmap/health-core/lab-catalog';
+import { labNameForUnit, resolveLabCatalogEntry, canonicalLabRow, labCountFault, labPlausibleBound } from '@roadmap/health-core/lab-catalog';
 import { withComparator, type Comparator } from '@roadmap/health-core/lab-limits';
 import { labUnitRefusalLine } from '@roadmap/health-core/lab-series';
 import { rowTarget } from '@roadmap/health-core/row-target';
@@ -293,7 +293,7 @@ const MatrixCellView = memo(function MatrixCellView({
     // write refuses says the line Save would refuse it with, never the impossible
     // number (US-21 AC21), in the write's order (`toStoredLab`): a count or ceiling
     // fault first (US-21 AC15), then the plausible range (US-21 AC26).
-    const entry = resolveLabCatalogEntry(cell.lab.name);
+    const entry = resolveLabCatalogEntry(labNameForUnit(cell.lab.name, cell.lab.unit)); // a count's name in % is its share (US-21 AC28)
     const printed = entry && valueSI !== undefined
       ? { value: valueSI, unit: cell.lab.unit, referenceLow: cell.referenceLow, referenceHigh: cell.referenceHigh } : null;
     const row = entry && printed ? canonicalLabRow(entry, printed) : null;

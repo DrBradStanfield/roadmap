@@ -3,7 +3,7 @@ import * as z from '../../packages/health-core/src/zod';
 // Deep relative import (not '@roadmap/health-core'): the Docker build runs
 // `npm ci` before COPY, so the workspace symlink never exists in the image —
 // same reason chat.server.ts / email.server.ts import health-core this way.
-import { CHAT_PROFILE_CHOICES, CHAT_PROFILE_FIELDS, EVENT_REASONS, GUIDE_PLACEMENTS, isLabKeyWord, LPA_CHECK_ANSWERS, isLabUnitWord, MEASURES, LAB_UNIT_BLANK, MCP_IMPORT_FILE_BUCKETS, MCP_OAUTH_DETAILS, MEASUREMENT_REFUSAL_REASONS, MEASUREMENT_REFUSALS_WITH_METRIC, MCP_IMPORT_PHASES, MCP_IMPORT_ROUTES, MCP_KNOWLEDGE_TOOL_NAMES, MCP_TOOL_NAMES, ONBOARDING_STEPS, PRODUCT_EVENT_NAMES, REMOTE_CHANGE_BACKENDS, SERVER_ONLY_EVENT_NAMES, SIGNIN_PLACEMENTS, TOOL_DEVICES, UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, type McpOAuthDetail, type McpOAuthReason, type McpRefusalReason, type ProductEventName, type UploadOutcomeKey } from '../../packages/health-core/src/product-events';
+import { CHAT_PROFILE_CHOICES, CHAT_PROFILE_FIELDS, EVENT_REASONS, GUIDE_PLACEMENTS, isLabKeyWord, LPA_CHECK_ANSWERS, isLabUnitWord, MEASURES, LAB_UNIT_BLANK, MCP_IMPORT_FILE_BUCKETS, MCP_OAUTH_DETAILS, MEASUREMENT_REFUSAL_REASONS, MEASUREMENT_REFUSALS_WITH_METRIC, MCP_IMPORT_PHASES, MCP_IMPORT_ROUTES, MCP_KNOWLEDGE_TOOL_NAMES, MCP_TOOL_NAMES, ONBOARDING_STEPS, PRODUCT_EVENT_NAMES, REMOTE_CHANGE_BACKENDS, SERVER_ONLY_EVENT_NAMES, SIGNIN_PLACEMENTS, TOOL_DEVICES, UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, UPLOAD_REVIEW_FLAGS, UPLOAD_REVIEW_KEYS, type McpOAuthDetail, type McpOAuthReason, type McpRefusalReason, type ProductEventName, type UploadOutcomeKey, type UploadReviewKey } from '../../packages/health-core/src/product-events';
 import { LPA_UNITS } from '../../packages/health-core/src/units';
 import { SAVE_RETRY_OUTCOMES, SAVE_RETRY_TRIGGERS } from '../../packages/health-core/src/save-retry-words';
 import { US_PRODUCTS, type UsProduct } from '../../packages/health-core/src/us-products';
@@ -17,6 +17,8 @@ const MCP_TOOL_OUTCOMES = ['ok', 'refused', 'error'] as const;
 
 /** US-12 AC10: one upload run's counts. A whole number in range, never text. */
 const uploadOutcomeCount = z.number().int().min(0).max(UPLOAD_OUTCOME_MAX).optional();
+/** US-13 AC13: one import review's counts, its flags 0 or 1. */
+const uploadReviewField = (k: UploadReviewKey) => ((UPLOAD_REVIEW_FLAGS as readonly string[]).includes(k) ? z.number().int().min(0).max(1).optional() : uploadOutcomeCount);
 
 // Metadata is a closed allow-list: no free text, no health values, everything
 // else rejected by .strict(). Enforced at recordProductEvent, the single door
@@ -75,6 +77,7 @@ const metadataSchema = z
     /** US-07 AC11: which prompted measure was saved, waist or blood pressure. Never its value. */
     measure: z.enum(MEASURES).optional(),
     ...(Object.fromEntries(UPLOAD_OUTCOME_KEYS.map(k => [k, uploadOutcomeCount])) as Record<UploadOutcomeKey, typeof uploadOutcomeCount>),
+    ...(Object.fromEntries(UPLOAD_REVIEW_KEYS.map(k => [k, uploadReviewField(k)])) as Record<UploadReviewKey, typeof uploadOutcomeCount>),
     /**
      * US-12 AC20 (Brad 2026-11-02, "yes"): the tests behind `valuesLimitUngraded`,
      * each once, sorted. A closed list of keys (LIMIT_TEST_WORDS), so never free
@@ -148,6 +151,7 @@ const EVENT_KEY_OWNERS: Record<string, readonly string[]> = {
   trigger: ['save_retry'],
   ...Object.fromEntries(UPLOAD_OUTCOME_KEYS.map(k => [k, ['upload_outcome']])),
   limitUngradedTests: ['upload_outcome'],
+  ...Object.fromEntries(UPLOAD_REVIEW_KEYS.map(k => [k, ['upload_review']])),
 };
 
 /** Keys whose words depend on the event that carries them: a sign-in
@@ -169,12 +173,14 @@ const EVENT_REQUIRED_KEY: Partial<Record<string, string | readonly string[]>> = 
   us_product_link_clicked: 'product',
   measurement_added: 'measure', // US-07 AC11
   save_retry: ['trigger', 'outcome'], // US-09 AC30: how it started and how it ended
+  upload_review: 'saved', // US-13 AC13: a review that ended neither way counts nothing
 };
 
 /** Events whose metadata is ONLY their own keys: a shared key such as
  *  `provider` or `count` would make a counts-only row carry something else. */
 const EVENT_ONLY_KEYS: Partial<Record<string, readonly string[]>> = {
   upload_outcome: [...UPLOAD_OUTCOME_KEYS, 'limitUngradedTests'],
+  upload_review: UPLOAD_REVIEW_KEYS, // US-13 AC13: counts only
   lpa_unit_selected: ['unit', 'from'],
   lpa_check_answered: ['answer'],
   measurement_refused: ['metric', 'refusal'],
@@ -197,6 +203,10 @@ const EVENT_ONLY_KEYS: Partial<Record<string, readonly string[]>> = {
   blood_tests_unified: ['moved', 'folded', 'keptApart'], // US-66 AC13: counts only
   measurement_added: ['measure'], // US-07 AC11: the measure alone, never the value
   save_retry: ['trigger', 'outcome'], // US-09 AC30: how a retry started and ended, never a value
+  waist_widget_viewed: [], // US-74: the names alone, never a value, grade or unit
+  waist_widget_saved: [],
+  bp_widget_viewed: [], // US-75: as US-74's
+  bp_widget_saved: [],
 };
 
 /**

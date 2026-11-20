@@ -3,6 +3,16 @@ import Foundation
 /// A value's history and chart, read by the engine once per record revision (US-25 AC21).
 /// Split out of RecordStore.swift; the kept histories are stored there.
 extension RecordStore {
+    struct Stamp: Equatable {
+        let revision: Int
+        let draws: Int?
+    }
+
+    struct KeptHistory {
+        let stamp: Stamp
+        let chart: ChartData
+    }
+
     /// The history and its chart's inputs, read by the engine once per `stamp` and metric,
     /// off the main thread: a second ask while that read runs (a page and the page above it)
     /// joins it. Kept in `histories`, which a page draws; older revisions' are dropped. Only a

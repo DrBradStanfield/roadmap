@@ -13,23 +13,25 @@ const MB = 1024 * 1024;
 
 export type UploadPlatform = 'web' | 'phone';
 
+/** Files read by the server at once, turned into pages at once, and ZIPs opened at once, on both clients (upload-flow.ts, US-12 AC26). */
+const IN_FLIGHT = { sendsInFlight: 5, convertsInFlight: 3, listsInFlight: 2 } as const;
+
 export const UPLOAD_LIMITS = {
   web: {
     fileBytes: IMPORT_LIMITS.websiteFileMb * MB,
-    /** D8: the web reads a ZIP under the file cap. */
-    zipBytes: IMPORT_LIMITS.websiteFileMb * MB,
+    /** One ZIP cap on both clients (owner ruling Q7, US-12 AC29). */
+    zipBytes: IMPORT_LIMITS.zipMb * MB,
     filesPerPick: IMPORT_LIMITS.websiteFiles,
     zipMembers: IMPORT_LIMITS.websiteFiles,
     pdfPages: IMPORT_LIMITS.websitePdfPages,
     textPageChars: IMPORT_LIMITS.websiteTextPageChars,
-    /** From this many files, one server batch instead of a file at a time. */
-    batchFrom: 20,
     /** D10: a picked photo's long side as sent. */
     photoPx: 1200,
+    ...IN_FLIGHT,
   },
   phone: {
     fileBytes: IMPORT_LIMITS.websiteFileMb * MB,
-    /** D8: the phone reads a ZIP up to the connector's ZIP cap. */
+    /** One ZIP cap on both clients (owner ruling Q7, US-12 AC29). */
     zipBytes: IMPORT_LIMITS.zipMb * MB,
     filesPerPick: IMPORT_LIMITS.websiteFiles,
     zipMembers: IMPORT_LIMITS.websiteFiles,
@@ -39,8 +41,21 @@ export const UPLOAD_LIMITS = {
     folderBytes: 200 * MB,
     /** D10: a picture or a scanned page's long side as sent. */
     photoPx: 2000,
+    ...IN_FLIGHT,
   },
 } as const;
+
+/**
+ * What a lab read asks the server for (US-12 AC12, AC14, AC15), as each client sends it today.
+ * `ownDates`: file a value on its own printed day. `undatedPrev`: send a previous column with no
+ * full day and ask its day (the web's matrix asks it; widget-src upload-api.ts). `refusedRows`:
+ * list refused rows under "Not saved". The phone sends no `undatedPrev`, so the server leaves
+ * those values out (ios LabUploadClient.swift): a known platform difference, to unify later.
+ */
+export interface RequestFlags { ownDates: boolean; undatedPrev: boolean; refusedRows: boolean }
+export function requestFlags(platform: UploadPlatform): RequestFlags {
+  return { ownDates: true, undatedPrev: platform === 'web', refusedRows: true };
+}
 
 /** keep: read it. tooLarge: over its cap. unsupported: no reader for its kind. hidden: archive junk or a dotfile. */
 export type FileVerdict = 'keep' | 'tooLarge' | 'unsupported' | 'hidden';

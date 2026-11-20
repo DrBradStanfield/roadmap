@@ -21,6 +21,15 @@
         "firstSeenJson"
       ],
       "optionalReturns": "firstSeen (US-17 AC15): the day each follow-up reminder was first seen on this phone, keyed <category>:<organize|checkin|repeat>:<due day>, so a moved due date starts a new reminder, returned only when the app sent firstSeenJson; the app keeps it on the phone and sends it back, so a follow-up fires the first morning it is seen and then every 90 days from that day. An app before it sends none and gets none, and its follow-ups repeat from the due day as before; an engine before it ignores the argument and sends no firstSeen, and the app leaves what it keeps unchanged."
+    },
+    "cloudOpen": {
+      "optionalReturns": "eraseEpoch (lead H200, US-25 AC16j): the record's own meta.eraseEpoch (0 when unset), beside record, erase and session in the view. The same view is the 'changed' news's payload and cloudErase's view, so both carry it too. The app holds a new session's first record undrawn when its eraseEpoch differs from the one the record shown was drawn at, even when it cannot draw it, so the pre-erase copy is never shown over another device's erase. An engine before it sends none, and the app holds only on its other evidence, as before; an app before it ignores the key."
+    },
+    "labSaveSummaryJson": {
+      "optionalReturns": "summary.sameDay (US-52 AC8b): the ticked values another reading of the same test that day displaced, as lines \"<labels>: another reading of this test is on the same day\" (health-core notSavedGroups); save all names them in its notes. An engine before it sends none, and the app names none; an app before it ignores it."
+    },
+    "cloudLabImport": {
+      "optionalReturns": "summary.sameDay (US-52 AC8b), as labSaveSummaryJson's. An engine before it sends none; an app before it ignores it."
     }
   },
   "optionalDoors": {
@@ -40,7 +49,18 @@
       "args": [
         "request"
       ],
-      "returns": "Shared upload PR 3 (US-52 AC7): the upload's verdicts for one pick, by health-core upload-rules (fileVerdict, zipMemberVerdict, UPLOAD_LIMITS.phone), as JSON {limits: {fileBytes, zipBytes, filesPerPick, zipMembers, pdfPages, textPageChars, folderBytes, photoPx}, files: [verdict], zipMembers: [verdict]} for request {files: [{name, bytes}], zipMembers: [path]}, in order; each verdict \"keep\", \"tooLarge\", \"unsupported\" or \"hidden\". An engine before it has no such door: the app reads that as unavailable (optionalCall answers nil) and keeps LabFileReader's Swift rules, which answer the same today (lead U14: delete them once the engine floor guarantees the door)."
+      "returns": "Shared upload PR 3 (US-52 AC7): the upload's verdicts for one pick, by health-core upload-rules (fileVerdict, zipMemberVerdict, UPLOAD_LIMITS.phone), as JSON {limits: {fileBytes, zipBytes, filesPerPick, zipMembers, pdfPages, textPageChars, folderBytes, photoPx, sendsInFlight, convertsInFlight}, files: [verdict], zipMembers: [verdict]} for request {files: [{name, bytes}], zipMembers: [path]}, in order; each verdict \"keep\", \"tooLarge\", \"unsupported\" or \"hidden\". An engine before it has no such door: the app reads that as unavailable (optionalCall answers nil) and keeps LabFileReader's Swift rules, which answer the same today (lead U14: delete them once the engine floor guarantees the door)."
+    },
+    "labReviewGroupsJson": {
+      "args": [
+        "recordJson",
+        "extractionJson",
+        "refsJson",
+        "reportDay",
+        "nowIso",
+        "deviceId"
+      ],
+      "returns": "US-13 AC13, US-52 AC8: one lab report's import review for the refs ticked now (refsJson, a JSON array of labReviewJson item refs) and the test day (reportDay, YYYY-MM-DD, or \"\" while none is set: values with no day of their own are then \"waiting\", never sent; a value with its own day keeps it), by health-core import-review.ts against the record read raw: JSON {summary, items: [{ref, group (\"sure\", \"unsure\", \"saved\", \"notSaved\" or \"waiting\"), reasons? (unsure only), conflict? (the words for a different value already held that day), refusal? (the save's own refusal line for a value outside its range)}], omitted (the extraction's own refused and unread rows as lines), check: {title, footer} | null, sure: {willSave, showAll, hide} | null, alreadySaved: string | null, notSaved: {title, lines, footer} | null, saveRefs (the ticked refs Save sends, in the order it must send them), save (the Save button's words, or null when no value could be written: no Save)}. Every word is health-core's; the app asks again when a tick or the day changes. An engine before it has no such door: the app reads that as no groups (optionalCall answers nil) and lists every value as a row, never a crash."
     },
     "cloudOnline": {
       "args": [],
@@ -49,6 +69,59 @@
     "cloudEraseHeld": {
       "args": [],
       "returns": "S50b (US-25 AC16i): a Promise of one word, asked before Disconnect or a switch closes anything. It flushes the open session first, as a close does, then says whether an erase made on this phone is still unsent: 'none' (no session, no such erase, or a save has carried it), 'transient' (its last save failed in a way known to pass: a network call with no answer, a timeout, an abort, 408, 429, a 5xx, or Google's rate or daily limit), 'definite' (the provider refused it: storage full, a refused sign-in, another 4xx) 'unknown' (anything else, a failure no report explained included) or 'expired' (a transient failure 24 hours or more after the erase's first failed send, owner 2026-11-14). Only 'transient' holds the Disconnect; the app runs today's path on every other word and on one it does not know. cloudClose's answers are unchanged. An engine before it has no such door: optionalCall answers nil and Disconnect runs as before, never a crash."
+    },
+    "uploadStartJson": {
+      "args": [
+        "platform"
+      ],
+      "returns": "Shared upload (US-52 AC8c): a new upload's state JSON (health-core initialUpload) for platform \"web\" or \"phone\"; any other platform is refused (\"invalid-platform\")."
+    },
+    "uploadStepJson": {
+      "args": [
+        "stateJson",
+        "eventJson",
+        "recordJson",
+        "deviceId"
+      ],
+      "returns": "Shared upload (US-52 AC8c): one event through health-core transition, as JSON {state, effects}. The event is health-core UploadEvent less what only the engine knows, strict (an unnamed key is refused, invalid-event); the parsed event runs: hashed {run, id, hash} (the engine adds known from the record, knownIndex and knownAs); streamEnded {run, id, line, now}, the streaming lab route's end, line its last NDJSON line as received or null when there was none: the engine reads it (health-core labStreamAnswer), status 200 with a checked read becomes answered, anything else sendFailed with the shared code, no line or an unreadable one the network failure; sendFailed {run, id, status (null when no answer came), body (the answer's text, or null), contentType (its header, or null), local (optional, the phone's own outcome when no lab-read answer came; status and body are then not read: {kind: cannotAttest}; {kind: attestFailed, stage, code}, short words; {kind: refused, status, message}, its App Attest registration or challenge refused, under 500 app_refused, from 500 server_error, with the words; {kind: badAnswer}; or {kind: timeout | dropped | unreachable}, how the request failed on the way, the network failure with today's iPhone words)} for a real HTTP refusal before any stream, read by health-core appGateFailure (a final 401 and other 4xx but 422 and 429 app_refused, the gate's 400 body_read_failed the network's, a 413 too_large, the gate's own error words carried as text) or for the phone's own outcome; a streamed 5xx keeps the server's words too; answered {run, id, extraction, now} for a whole read, checked (UPLOAD_EXTRACTION), the engine adds legacy (readIsLegacy). recordJson: the record as text, \"\" for none; read only for hashed, answered and streamEnded, through deviceId (the app's own, as the screen doors take it). Steps are strictly serial: one call at a time, each given the state the previous one returned; otherwise an event is lost and its effects' answers are dropped as stale. A record a newer app wrote is refused as record-too-new, in readRecord's words. The full wire per event is entry.ts uploadStepJson's comment."
+    },
+    "uploadViewJson": {
+      "args": [
+        "stateJson",
+        "recordJson",
+        "nowIso",
+        "cloudConnected",
+        "deviceId"
+      ],
+      "returns": "Shared upload (US-52 AC8c): the drawable view, health-core UploadView as JSON {progress, summary, sections, sure, documents, files, notices, save, stop, done}, every string resolved and every count made; one uploadReview of the state against the record per call, so it counts what uploadSavePlanJson writes for the same inputs. cloudConnected: originals are stored and counted only with a cloud. deviceId: the app's own, as the screen doors take it. Costly for a large upload (entry.ts): at most one call per frame, coalesced, off the main thread."
+    },
+    "uploadSavePlanJson": {
+      "args": [
+        "stateJson",
+        "recordJson",
+        "nowIso",
+        "cloudConnected",
+        "deviceId"
+      ],
+      "returns": "Shared upload (US-52 AC8c): what one Save writes, health-core UploadSavePlan as JSON {labRows: [{fileId, rows}], documents: [{fileId, fields}], labArchives: [{fileId, sourceFileName, reportDate}], archiveOnly: [{fileId, fields}], counts: {values, documents, archived, originals}}, from the same review rule as uploadViewJson. Read only: the save itself still goes through cloudLabImport, labSaveSummaryJson and documentSave."
+    },
+    "uploadUsageJson": {
+      "args": [
+        "stateJson"
+      ],
+      "returns": "Shared upload (US-12 AC10): the run's usage counts for upload_outcome, health-core uploadUsageCounts as JSON {known?, failedFinal?, firstReadSeconds?}, each a whole number capped at 1000; {} before a pick. Counts only, never a name, hash or value."
+    },
+    "uploadSaveJson": {
+      "args": [
+        "stateJson",
+        "recordJson",
+        "erase",
+        "nowIso",
+        "deviceId",
+        "originalsJson",
+        "readOriginal"
+      ],
+      "returns": "Shared upload (US-52 AC8c, US-14 AC10): a Promise of one Save, health-core uploadSave: the pick's values (bulkAppendValues) and its document and lab archive rows (saveDocuments, labArchivePayload listing the rows the values wrote) in one step, for a state in its saving phase. erase as documentSave takes it: with a cloud open, the engine first writes each original the save plan stores, once, reading its bytes by calling readOriginal(fileId) only for the files originalsJson ({fileId: mimeType}) names as its own, as it writes it; anything but a non-empty ArrayBuffer within the per-file cap (UPLOAD_LIMITS fileBytes) is no original. Then every row is written on the session's record as it stands at that moment (the phone's copy and its pending marker first), so an edit that landed meanwhile is kept and a value whose (metric, day) it took is skipped; nothing new commits nothing. The Save is held to the session open when it is asked: none open then, or another one open by the time it runs (even at the same erase), refuses as not-open. '' for no cloud: onto recordJson, keeping no original. One Save at a time, in documentSave's queue. Answers JSON {ok: true, record (the record as text), erase? (with a cloud), outcome: {values (rows written), documents (every distinct document row saved, as the web counts them: letters, lab archive rows and originals filed behind a held row), archived (the last alone), unstored (originals the plan stores that did not land: unreadable, over the cap, or refused by the cloud; their rows keep the hash alone)}}, the app's saved event's outcome as it is (the done view then warns when unstored is above 0), or {ok: false, reason, message}: reason invalid-state, invalid-record, record-too-new, invalid-originals, not-saving, not-ready (a selected value Save would refuse, or a report waiting for its day, in the view's words; nothing written), not-open, erased, phone-write or engine-error; the app sends each as a saveFailed, which Save can try again. A repeat on the record it saved writes nothing and answers zero counts."
     }
   }
 }

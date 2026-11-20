@@ -13,13 +13,13 @@ import { addLabValue, appendMeasurement, bulkAppendValues, correctValue, validDa
 import { labRows, type Extraction } from './lab-review';
 import { updateProfile } from '../../packages/health-core/src/profile-edits';
 import { stampProfile, upsertMedication, upsertSupplement } from '../../packages/health-core/src/state-edits';
-import { medicationSchema, supplementSchema, zod3Message } from '../../packages/health-core/src/validation';
+import { medicationSchema, zod3Message } from '../../packages/health-core/src/validation';
 import { customSupplementAdd, customSupplementMatch } from '../../packages/health-core/src/input-form';
 import { compareReadings, latestActivePerMetric } from '../../packages/health-core/src/measurement-history';
 import { bloodTableReport, bloodTestKeyOf, currentValueRows, isActive, isCoreRow } from '../../packages/health-core/src/blood-tests';
 import { importDeviceSamples } from '../../packages/health-core/src/device-import';
 import { importHealthRecords, type HealthRecordsCounts } from '../../packages/health-core/src/health-records-import';
-import { applyFormEdit, formsOf, gradeContextOf, planOf, rowText, ungradedLimit, type FormsView } from './my-data-forms';
+import { applyFormEdit, formsOf, gradeContextOf, planOf, rowText, supplementCheck, ungradedLimit, type FormsView } from './my-data-forms';
 import { BLOOD_TEST_METRICS, METRIC_LABELS, VITAL_METRICS } from '../../packages/health-core/src/mappings';
 import { METRIC_GUIDES, type MetricGuide } from '../../packages/health-core/src/metric-guides';
 import { APPLE_LOW_FROM_60, FRIEND_2022_TREADMILL, type Vo2MaxCutPoints } from '../../packages/health-core/src/vo2max-bands';
@@ -136,13 +136,13 @@ export type EditOutcome =
   | { ok: true; file: RoadmapFile; healthRecords?: HealthRecordsCounts }
   | { ok: false; reason: string; message: string; existingId?: string };
 
+/** A record a newer app wrote: readRecord refuses it in these words. */
+export const TOO_NEW_RECORD = 'A newer version of Health Roadmap wrote this record. Update the app to open it.';
 /**
  * Words meant for the person. HealthEngine shows them as they are; any other
  * exception's text stays hidden (US-25 AC6b, review R8).
  */
-export class Refusal extends Error {
-  override name = 'Refusal';
-}
+export class Refusal extends Error { override name = 'Refusal'; }
 
 /**
  * The record on disk, read as every other writer reads it (ROADMAP_DOC: the
@@ -166,7 +166,7 @@ export function readRecord(text: string, now: string, deviceId: string): Roadmap
   try {
     file = ROADMAP_DOC.migrate(raw, { deviceId, now });
   } catch (error) {
-    if (error instanceof SchemaTooNewError) throw new Refusal('A newer version of Health Roadmap wrote this record. Update the app to open it.');
+    if (error instanceof SchemaTooNewError) throw new Refusal(TOO_NEW_RECORD);
     throw error;
   }
   kept = { text, deviceId, file: FREEZE_KEPT ? deepFreeze(file) : file, moved: movedBloodTests(raw, file) };
@@ -384,15 +384,15 @@ export function applyEdit(file: RoadmapFile, edit: Edit, now: string, choices: U
       return { ok: true, file: upsertMedication(file, { medicationKey, drugName, doseValue, doseUnit }, now).file };
     }
     case 'supplement': {
-      // A key the record holds passes as it is: older browser records hold
-      // custom keys over the 100 characters a new key may have (US-06 AC1a).
-      const held = file.supplements.some((row) => row.supplementKey === edit.supplementKey);
-      const checked = (held ? supplementSchema.omit({ supplementKey: true }) : supplementSchema).safeParse(edit, { error: zod3Message });
+      // A key the record holds passes as it is, and so does the name stored
+      // under it (supplementCheck in my-data-forms.ts; US-06 AC1a, AC1d).
+      const held = file.supplements.find((row) => row.supplementKey === edit.supplementKey);
+      const checked = supplementCheck(held, edit.supplementName).safeParse(edit, { error: zod3Message });
       if (!checked.success || !checked.data.status) {
         return { ok: false, reason: 'invalid-value', message: checked.success ? 'A supplement is active or stopped.' : checked.error.issues[0]?.message ?? 'Not a supplement.' };
       }
-      const { supplementKey } = edit;
-      const { supplementName, doseValue = null, doseUnit = null, status, startedAt } = checked.data;
+      const { supplementKey, supplementName } = edit;
+      const { doseValue = null, doseUnit = null, status, startedAt } = checked.data;
       // A start is a real day or instant that has happened (rule 9's check).
       if (startedAt !== undefined && (Number.isNaN(Date.parse(startedAt)) || validDay(startedAt, { now }) === null)) {
         return { ok: false, reason: 'invalid-date', message: 'A supplement starts on a real day, today or before.' };
@@ -420,9 +420,9 @@ export function applyEdit(file: RoadmapFile, edit: Edit, now: string, choices: U
     case 'screening':
       return applyFormEdit(file, edit, now, (next, save) => applyEdit(next, save, now));
     case 'labImport': {
-      const rows = labRows(JSON.parse(edit.extractionJson) as Extraction, edit.refs, edit.reportDay, now);
+      const rows = labRows(JSON.parse(edit.extractionJson) as Extraction, edit.refs, edit.reportDay, now, file);
       if (!rows.ok) return rows;
-      // A held day is skipped and a refused unit left out: labSaveSummary says which, beforehand.
+      // Only the rows the import review writes (classifyReport): none held, none refused.
       return { ok: true, file: bulkAppendValues(file, rows.rows, now).file };
     }
     case 'labAdd':

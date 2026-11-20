@@ -15,6 +15,8 @@ export const PRODUCT_EVENT_NAMES = [
   // US-12 AC10: one per upload run, how many files ended each way. Metadata is
   // the UPLOAD_OUTCOME_KEYS counts below and nothing else: never a file name.
   'upload_outcome',
+  // US-13 AC13: one per import review end, UPLOAD_REVIEW_KEYS counts only.
+  'upload_review',
   'cloud_connect_started',
   'cloud_connect_success',
   'cloud_connect_refused',
@@ -139,8 +141,7 @@ export const PRODUCT_EVENT_NAMES = [
   'signin_opened',
   // US-62 AC31: the "Your plan is ready." card showed after the onboarding, and
   // its Got it was pressed. The names alone, never what the plan holds.
-  'plan_ready_shown',
-  'plan_ready_dismissed',
+  'plan_ready_shown', 'plan_ready_dismissed',
   // US-65 AC6: the record opened with entries this build could not read, so
   // the page showed the kept-unchanged line. Metadata `{ count }` only, capped
   // at 1000: never a row, a field name or a value. Once per tab session.
@@ -152,6 +153,7 @@ export const PRODUCT_EVENT_NAMES = [
   // US-07 AC11: a waist or blood pressure was saved, the plan's two prompts.
   // Metadata `{ measure }` (MEASURES) only: never the value or another metric.
   'measurement_added',
+  'waist_widget_viewed', 'waist_widget_saved', 'bp_widget_viewed', 'bp_widget_saved', // US-74, US-75: a widget block mounted / saved; the names alone, never a value, grade or unit
   'save_retry', // US-09 AC30: a retry of a failed cloud save; metadata { trigger, outcome } (save-retry-words.ts) only
 ] as const;
 
@@ -209,7 +211,7 @@ export const SERVER_ONLY_EVENT_NAMES = [
  * a distinct user action whose count is the signal (US-12 AC10, one per upload
  * run). The events route's per-visitor and per-IP limits still bound them.
  */
-export const PER_ACTION_EVENT_NAMES = ['upload_outcome', 'save_retry'] as const satisfies readonly ProductEventName[];
+export const PER_ACTION_EVENT_NAMES = ['upload_outcome', 'upload_review', 'save_retry', 'waist_widget_viewed', 'waist_widget_saved', 'bp_widget_viewed', 'bp_widget_saved'] as const satisfies readonly ProductEventName[]; // US-74: once per page view, which the widget itself ensures
 
 /**
  * The hosted connector's tool names, as a counter may name them. They live in
@@ -246,24 +248,7 @@ export const SIGNIN_PLACEMENTS = ['top_bar', 'plan_panel'] as const;
 export const TOOL_DEVICES = ['phone', 'desktop'] as const;
 /** The `onboarding_step` counter's step names (US-62 AC1): which question, never its answer. */
 export const ONBOARDING_STEPS = ['measurements', 'sex', 'birth'] as const;
-/** The `upload_outcome` counter's integer counts (US-12 AC10): files seen, then
- *  how each ended. `truncated` overlaps the rest and `valuesDropped` counts value
- *  rows the parse refused, not files; the others sum to `picked`. `refused` and
- *  `tooLong` are files Claude declined or stopped short on (US-15 AC34). `docx`
- *  counts the picked .docx files, a kind that overlaps the rest; `picturesOnly`
- *  is a .docx of pictures and no text (US-12 AC13). `undatedPrevious` counts
- *  value rows read from an undated previous column, not files (AC14).
- *  `unitsGuessed` counts values whose unit was guessed (AC16) and `unitsRefused`
- *  creatinine rows refused rather than guessed (AC15): values, not files.
- *  `valuesLimit` counts the values printed as a limit, such as "> 60": since
- *  US-12 AC20 they are saved, so no longer part of `valuesDropped` (AC19 counted
- *  them there). `valuesLimitUngraded` is how many of them the grading rule
- *  leaves undecided. Counts only; the tests behind that count ride in their own
- *  closed list, `limitUngradedTests` (AC20). `cancelled`: 1 for a run Cancel stopped mid-read. */
-export const UPLOAD_OUTCOME_KEYS = ['picked', 'withValues', 'documentOnly', 'noValues', 'openFailed', 'tooLarge', 'truncated', 'serverError', 'limitError', 'refused', 'tooLong', 'valuesDropped', 'docx', 'picturesOnly', 'undatedPrevious', 'unitsGuessed', 'unitsRefused', 'valuesLimit', 'valuesLimitUngraded', 'cancelled'] as const;
-export type UploadOutcomeKey = (typeof UPLOAD_OUTCOME_KEYS)[number];
-/** The most one count may say; the server refuses more, so the client clamps. */
-export const UPLOAD_OUTCOME_MAX = 1000;
+export { UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, UPLOAD_REVIEW_KEYS, UPLOAD_REVIEW_FLAGS, type UploadOutcomeKey, type UploadReviewKey } from './upload-events';
 /** The `remote_change_applied` counter's tiers (US-34): another tab, or a cloud. */
 export const REMOTE_CHANGE_BACKENDS = ['local', 'cloud'] as const;
 /** `nudge`: a read found folder files not in the record and said so (US-37). */

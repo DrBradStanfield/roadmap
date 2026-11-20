@@ -19,6 +19,8 @@ This file adds only what is specific to the iPhone app.
   say which side waits and why. When Brad's request names one app's layout, ask before mirroring it.
 - Shared logic lives once, in health-core, which the app runs as the bundled engine. Never re-implement
   it in Swift.
+- The upload runs through the optional `upload*Json` doors: serial steps, the view coalesced to one call
+  per frame off the main thread (architecture.md D3, fifth optional door).
 
 ## Build
 

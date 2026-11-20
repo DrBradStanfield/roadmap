@@ -11,9 +11,9 @@ import UserNotifications
 ///
 /// The opt-in is this phone's: a small file beside the record, in the folder backups
 /// leave out (D5), holding the record's erase epoch at the time. A restored phone
-/// starts a new record, so it starts with reminders off. An erase moves the epoch, or on
-/// this phone the store's erase count (`ReminderEvent.erased`, even when its record cannot
-/// be read, S52), which ends the opt-in and cancels every reminder, so an erased record never
+/// starts a new record, so it starts with reminders off. An erase moves the epoch, or the
+/// store's erase count, made here or taken in (`ReminderEvent.erased`, even when its record
+/// cannot be read, S52, S63), which ends the opt-in and cancels every reminder, so an erased record never
 /// notifies (US-11). It is not written to the
 /// record: the record's `reminderOptIn` is the web's email enrolment, with a server
 /// token and an address, and a phone's notification permission is not one (D7).
