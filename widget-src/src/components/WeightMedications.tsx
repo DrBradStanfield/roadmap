@@ -54,6 +54,7 @@ export function WeightMedications(props: WeightMedicationsProps) {
         {availableGlp1Doses.length > 0 && (
           <select
             id="glp1-dose"
+            aria-label={`${MEDICATION_TEXT.glp1Label} ${MEDICATION_TEXT.doseLabel}`}
             value={glp1Dose ?? ''}
             onChange={(e) => writeMedication(medInputs, weightCascadeMode, 'glp1_dose', e.target.value)}
           >
@@ -80,6 +81,7 @@ export function WeightMedications(props: WeightMedicationsProps) {
         {availableSglt2iDoses.length > 0 && (
           <select
             id="sglt2i-dose"
+            aria-label={`${MEDICATION_TEXT.sglt2iLabel} ${MEDICATION_TEXT.doseLabel}`}
             value={sglt2iDose ?? ''}
             onChange={(e) => writeMedication(medInputs, weightCascadeMode, 'sglt2i_dose', e.target.value)}
           >

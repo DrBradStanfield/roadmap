@@ -54,6 +54,7 @@ export function LipidMedications(props: LipidMedicationsProps) {
         {availableDoses.length > 0 && (
           <select
             id="statin-dose"
+            aria-label={`${MEDICATION_TEXT.statinLabel} ${MEDICATION_TEXT.doseLabel}`}
             value={statinDose ?? ''}
             onChange={(e) => writeMedication(medInputs, cascadeMode, 'statin_dose', e.target.value)}
           >
