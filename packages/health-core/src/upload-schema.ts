@@ -133,6 +133,7 @@ export const UPLOAD_EVENTS = {
   retry: strict({ type: z.literal('retry'), id: text }),
   stop: strict({ type: z.literal('stop') }),
   chose: strict({ type: z.literal('chose'), id: text, change, now: text }),
+  replacesLost: strict({ type: z.literal('replacesLost'), lost: z.array(strict({ id: text, ref: text })) }),
   saveStarted: strict({ type: z.literal('saveStarted'), reviewed }),
   saved: strict({ type: z.literal('saved'), run: count, attempt: count, outcome }),
   saveFailed: strict({ type: z.literal('saveFailed'), run: count, attempt: count, message: text }),
@@ -142,7 +143,7 @@ export const UPLOAD_EVENTS = {
 const E = UPLOAD_EVENTS;
 export const UPLOAD_EVENT = z.discriminatedUnion('type', [
   E.picked, E.consented, E.listed, E.zipFailed, E.hashed, E.hashFailed, E.converted, E.convertFailed, E.answered,
-  E.sendFailed, E.runRefused, E.retry, E.stop, E.chose, E.saveStarted, E.saved, E.saveFailed, E.close, E.discard,
+  E.sendFailed, E.runRefused, E.retry, E.stop, E.chose, E.replacesLost, E.saveStarted, E.saved, E.saveFailed, E.close, E.discard,
 ]);
 
 const ids = z.array(text);

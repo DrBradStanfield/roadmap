@@ -24,7 +24,7 @@ import { createEmptyFile, type FileLabValue, type FileMeasurement, type RoadmapF
 import type { ChoiceChange } from './upload-choices';
 import { initialUpload, inFlight, transition, type PickedFile, type UploadEvent, type UploadState } from './upload-flow';
 import { uploadSavePlan } from './upload-plan';
-import { reviewedWrites, uploadReview, type UploadReview } from './upload-review';
+import { lostReplaces, reviewedWrites, uploadReview, type UploadReview } from './upload-review';
 import { uploadSave, type UploadSaveIO } from './upload-save';
 import { uploadView, type UploadView, type ValueRow } from './upload-view';
 import { FIX_ERRORS_TEXT, UPLOAD_TEXT } from './upload-text';
@@ -136,6 +136,8 @@ type Step =
   /** Another writer: these rows appended to the record now; `merge`: on another device's copy of the record as the
    *  upload began, merged in (`mergeFiles`), as a cloud read brings it. */
   | { type: 'record'; rows: BulkRow[]; merge: boolean }
+  /** Another writer deletes a held row (entered in error, no correction): a Replace aimed at it is lost. */
+  | { type: 'delete'; id: string }
   /** One Save as the platform runs it: `uploadSave` on the record, commit on it, or on it after `meanwhile`. */
   | { type: 'save'; ok: boolean; meanwhile: BulkRow[] | null; merge: boolean; when: 'beforeSave' | 'beforeCommit' };
 
@@ -325,6 +327,13 @@ function io(cloud: boolean, failWrites: readonly string[] = []): UploadSaveIO<st
     : { holds: () => false, original: () => null, mimeType: () => '', write: async () => { throw new Error('no cloud'); }, now: () => NOW, newId: () => `doc-${n++}` };
 }
 
+/** The state as the engine door steps and views it: a Replace whose target left its slot dropped, its value unticked. */
+function doorState(s: UploadState, record: RoadmapFile): UploadState {
+  if (!('files' in s) || !s.files.some((f) => f.status.s === 'read' && Object.keys(f.status.choices.replace).length)) return s;
+  const lost = lostReplaces(uploadReview(s, record, NOW), s);
+  return lost.length ? transition(s, { type: 'replacesLost', lost }).state : s;
+}
+
 /** One sequence run step by step; every step checked. */
 class Run {
   s: UploadState = initialUpload('phone');
@@ -332,17 +341,27 @@ class Run {
   last: { view: UploadView; review: UploadReview; record: RoadmapFile } | null = null;
   /** Rows the last commit wrote as corrections (Replace). */
   corrections = 0;
+  /** The last step's view came after the door dropped a lost Replace. */
+  lostReplace = false;
   /** The last commit's facts, for the reach counts: values skipped, originals unstored, originals filed behind a held row. */
   saved = { skipped: 0, unstored: 0, archiveOnly: 0 };
   constructor(readonly setup: Setup, readonly note: Note) { this.record = setup.record; }
 
   async apply(step: Step): Promise<void> {
+    // The engine door drops a Replace whose target left its slot before each event and in each view (replacesLost).
+    if (step.type === 'event') this.s = doorState(this.s, this.record);
     // The engine door fills what the page would write when Save is pressed (ios/engine/upload-doors.ts); the app computes nothing.
     if (step.type === 'event' && step.e.type === 'saveStarted') this.s = transition(this.s, { ...step.e, reviewed: reviewedWrites(uploadReview(this.s, this.record, NOW)) }).state;
     else if (step.type === 'event') this.s = transition(this.s, step.e).state;
     else if (step.type === 'record') this.record = this.write(this.record, step.rows, step.merge);
+    else if (step.type === 'delete') this.record = { ...this.record, labValues: this.record.labValues.map((l) => (l.id === step.id ? { ...l, status: 'entered-in-error' as const } : l)), measurements: this.record.measurements.map((m) => (m.id === step.id ? { ...m, status: 'entered-in-error' as const } : m)) };
     else await this.save(step);
     if (this.s.phase === 'done' || this.s.phase === 'saving') return;
+    if (this.s.phase === 'open' || this.s.phase === 'saveFailed') {
+      const door = doorState(this.s, this.record);
+      this.lostReplace = door !== this.s;
+      this.s = door;
+    }
     const { view, review } = checkView(this.s, this.record, this.setup.cloud, this.note);
     this.last = { view, review, record: this.record };
   }
@@ -386,17 +405,24 @@ class Run {
       if (!changed && (JSON.stringify(want) !== JSON.stringify(got) || skipped)) fail('P2', `view planned ${JSON.stringify(want)}, commit added ${JSON.stringify(got)}, skipped ${skipped}`);
       // Nothing a person reviewed vanishes: each reviewed value not written is counted in the outcome.
       const missing = want.filter((w) => !got.includes(w)).length;
-      if (changed && missing !== skipped) fail('P2', `record changed: ${missing} reviewed values not written, ${skipped} counted\nwant ${JSON.stringify(want)}\ngot ${JSON.stringify(got)}`);
+      // OPEN gap: a reviewed value the commit refuses on the changed record (a blood pressure's other half arrived) is
+      // counted nowhere; the held web branch names it (`SaveOutcome.refused`), not ported here.
+      const dry = bulkAppendValues(atCommit, planned, NOW);
+      const refusedAtCommit = dry.refused.length + dry.measurementRefusals.length;
+      if (changed && missing > skipped && missing <= skipped + refusedAtCommit) this.note('refusedAtCommitUnnamed');
+      else if (changed && missing !== skipped) fail('P2', `record changed: ${missing} reviewed values not written, ${skipped} counted\nwant ${JSON.stringify(want)}\ngot ${JSON.stringify(got)}`);
       if (changed && got.some((g) => !want.includes(g))) this.note('writtenUnreviewed');
       // P3: the done line says what the label promised, less what it counts as skipped.
-      if (outcome.values !== plan.counts.values - skipped) fail('P3', `label promised ${plan.counts.values} values, ${skipped} skipped, done says ${outcome.values}`);
+      const unnamed = changed && missing > skipped && missing <= skipped + refusedAtCommit ? missing - skipped : 0;
+      if (outcome.values !== plan.counts.values - skipped - unnamed) fail('P3', `label promised ${plan.counts.values} values, ${skipped} skipped, done says ${outcome.values}`);
       if (outcome.documents !== plan.counts.documents) fail('P3', `label promised ${plan.counts.documents} documents, done says ${outcome.documents}`);
       const unstoredPlanned = this.setup.cloud && [...plan.documents, ...plan.labArchives, ...plan.archiveOnly].some((d) => this.setup.failWrites.includes(d.fileId));
       if (unstoredPlanned !== outcome.unstored > 0) fail('P3', `unstored ${outcome.unstored}, a refused original planned: ${unstoredPlanned}`);
     }
     // P5: a repeat Save on the committed record adds nothing.
     const again = await uploadSave(this.s, file, NOW, this.setup.cloud, io(this.setup.cloud, this.setup.failWrites));
-    if (!again.ok) fail('P5', `repeat Save refused: ${again.message}`);
+    // A repeat on a record another writer changed may now be refused (a pair the wrong way up): it writes nothing, which P5 asks.
+    if (!again.ok && !(again.reason === 'not-ready' && atCommit !== atSave || again.reason === 'not-ready' && seen?.record !== atSave)) fail('P5', `repeat Save refused: ${again.message}`);
     if (again.ok) {
       const repeat = again.commit(file);
       // An original the cloud refused is tried again (US-14 AC4): its hash-only row may be filed afresh, never a new value or a new file.
@@ -464,7 +490,14 @@ function genStep(r: () => number, run: Run, phase: { saves: number; chosen: numb
   }
   if (roll < 0.74) return { type: 'event', e: { type: 'retry', id: 'all' } };
   if (roll < 0.76 && busy.length) return { type: 'event', e: { type: 'stop' } };
-  if (roll < 0.8 && phase.chosen < 30) return { type: 'record', rows: otherWriter(r, run), merge: coin(0.4) };
+  if (roll < 0.8 && phase.chosen < 30) {
+    // Mostly a write; sometimes a deletion of a held row, often the one a Replace aims at.
+    const aimed = s.files.flatMap((f) => (f.status.s === 'read' ? Object.values(f.status.choices.replace) : []));
+    const live = rowsOf(run.record).filter(isActive).map((x) => x.id);
+    const target = aimed.find((id) => live.includes(id)) ?? (live.length ? pick(live) : null);
+    if (target && coin(0.3)) return { type: 'delete', id: target };
+    return { type: 'record', rows: otherWriter(r, run), merge: coin(0.4) };
+  }
   if (read.length && (busy.length || phase.chosen < 6 || coin(0.6)) && phase.chosen < 30) {
     phase.chosen++;
     const f = pick(read);
@@ -570,6 +603,9 @@ const brief = (setup: Setup) => JSON.stringify({
   cloud: setup.cloud,
 });
 
+/** A Replace the run had chosen was just dropped by the door (its target deleted). */
+const lostBefore = (run: Run) => run.lostReplace;
+
 const SEEDS = 3000;
 
 describe('upload-view property: the list view against Save (US-52 AC8c, US-13 AC13)', () => {
@@ -577,7 +613,7 @@ describe('upload-view property: the list view against Save (US-52 AC8c, US-13 AC
     const gaps: Record<string, number[]> = {};
     const reach = {
       steps: 0, saved: 0, saveFailedThenSaved: 0, replacing: 0, corrections: 0, changedBeforeSave: 0, blockedFix: 0, blockedDay: 0, conflicts: 0, documents: 0,
-      merges: 0, skipped: 0, unstored: 0, archiveOnly: 0, copies: 0, alreadySaved: 0, futureDay: 0, pressureRefused: 0, limitTicked: 0, labAsCore: 0, edited: 0,
+      merges: 0, replaceLost: 0, skipped: 0, unstored: 0, archiveOnly: 0, copies: 0, alreadySaved: 0, futureDay: 0, pressureRefused: 0, limitTicked: 0, labAsCore: 0, edited: 0,
     };
     for (let seed = 1; seed <= SEEDS; seed++) {
       const r = mulberry32(seed);
@@ -599,6 +635,7 @@ describe('upload-view property: the list view against Save (US-52 AC8c, US-13 AC
         if (run.s.phase === 'done') { reach.saved++; if (phase.saves) reach.saveFailedThenSaved++; }
         if (step.type === 'save' && step.meanwhile) reach.changedBeforeSave++;
         if ((step.type === 'record' || (step.type === 'save' && step.meanwhile)) && step.merge) reach.merges++;
+        if (step.type === 'delete' && lostBefore(run)) reach.replaceLost++;
         if (step.type === 'save' && run.s.phase === 'done') { reach.skipped += run.saved.skipped; reach.unstored += run.saved.unstored; reach.archiveOnly += run.saved.archiveOnly; }
         const v = run.last?.view;
         if (v && run.s.phase === 'open' && !inFlight(run.s)) {

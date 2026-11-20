@@ -245,6 +245,8 @@ export function uploadStartJson(platform: string): string {
  * - picked {files: [{id, name, bytes, kind: "file" | "zip"}], needsConsent, now}
  * - consented {} · stop {} · close {} · discard {} · retry {id (a file id or "all")}
  * - saveStarted {}: the door adds `reviewed` (health-core reviewedWrites over the record), so Save counts what it could not write.
+ * Before every event (and in the view and plan doors), a chosen Replace whose target left its slot on the record is
+ * dropped and its value unticked (health-core replacesLost): the app never sends that event itself.
  * - listed {run, zip (the ZIP's file id), members: [{id, name, bytes}]} · zipFailed {run, zip}
  * - hashed {run, id, hash}: the door adds `known` (knownIndex and knownAs over the record).
  * - hashFailed {run, id} · converted {run, id, pages, truncated} · convertFailed {run, id, reason: "unreadable" | "timeout"}

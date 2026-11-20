@@ -12,7 +12,7 @@ import type { RoadmapFile } from './roadmap-file';
 import { NO_CHOICES, type ChoiceChange } from './upload-choices';
 import { transition, type UploadState } from './upload-flow';
 import { uploadSavePlan } from './upload-plan';
-import { reviewedWrites, uploadReview } from './upload-review';
+import { lostReplaces, reviewedWrites, uploadReview } from './upload-review';
 import { uploadSave } from './upload-save';
 import { FIX_ERRORS_TEXT, UPLOAD_TEXT } from './upload-text';
 import { uploadView, type UploadView, type ValueRow } from './upload-view';
@@ -128,15 +128,29 @@ describe('gaps the list-view property found, fixed (owner rulings 2026-11-20)', 
     expect(rows(view)).toMatchObject([{ ticked: true, error: expect.any(String) }]);
   });
 
-  // OPEN, for the orchestrator: the web branch drops such a Replace and unticks the value (`replacesLost`, not ported here).
-  it('KNOWN staleReplaceDeleted: a Replace whose held row another device deleted says the record keeps a different value, with no control', () => {
+  it('staleReplaceDeleted (ruling 9b a): a Replace whose held row another device deleted is dropped and the value unticked; ticked, it saves as a new row', async () => {
     const record = held([LDL(2.0)]);
     const s = chose(open([labRead('f0', { values: [core({})] })]), 'f0', { replace: 'v0', correctsId: record.labValues[0].id });
     const deleted = { ...record, labValues: record.labValues.map((l) => ({ ...l, status: 'entered-in-error' as const })) };
-    const { view, review } = see(s, deleted);
-    expect(rows(view)).toMatchObject([{ ticked: true, conflict: IMPORT_REVIEW_TEXT.conflictKept, replace: null, replaces: null }]);
-    expect(review.classification.rows).toEqual([]); // never turned into a new row (US-35 AC8)
-    expect(view.save.why).toBe(UPLOAD_TEXT.saveNothing);
+    // What the engine door does before each event and in each view (ios/engine/upload-doors.ts).
+    const lost = lostReplaces(uploadReview(s, deleted, NOW), s);
+    expect(lost).toEqual([{ id: 'f0', ref: 'v0' }]);
+    const after = transition(s, { type: 'replacesLost', lost }).state;
+    expect(rows(see(after, deleted).view)).toMatchObject([{ ticked: false, conflict: null, replace: null, replaces: null }]);
+    const { file, outcome } = await saved(chose(after, 'f0', { tick: 'v0', on: true }), deleted);
+    expect(outcome.values).toBe(1);
+    expect(file.labValues.filter((l) => l.status === 'active').map((l) => [l.value, l.correctsId ?? null])).toEqual([[3.1, null]]);
+  });
+
+  // OPEN, for the orchestrator: the held web branch names these (`SaveOutcome.refused`, done `notSaved`), not ported here.
+  it('KNOWN refusedAtCommitUnnamed (seed 277): a pair another writer turns the wrong way up before the commit is refused and named nowhere', async () => {
+    const bp = (metric: string, v: number) => core({ metric, valueSI: v, displayValue: v, displayUnit: 'mmHg' });
+    const s = open([labRead('f0', { values: [bp('systolic_bp', 120), bp('diastolic_bp', 80)] })]);
+    expect(see(s, EMPTY).view.save.label).toBe(IMPORT_REVIEW_TEXT.save(2));
+    const { outcome, done } = await saved(s, EMPTY, held([{ kind: 'measurement', metricType: 'diastolic_bp', value: 125, recordedAt: DAY, source: 'manual' }]));
+    expect(outcome).toMatchObject({ values: 0 });
+    expect(outcome.skippedValues).toBeUndefined();
+    expect(done).toMatchObject({ line: 'Saved 0 values.', skipped: [] });
   });
 
   it('P7: an edited value shows the number Save writes, in its SI unit', () => {
