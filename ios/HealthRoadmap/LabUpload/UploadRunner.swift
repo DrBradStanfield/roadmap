@@ -70,8 +70,9 @@ actor UploadRunner {
         var send: (@Sendable (Data) async throws -> LabReadSender.Outcome)?
         var unitSystem = "si"
         var cloudConnected = false
-        /// The `save` effect, left to the one save door (a later PR).
-        var save: @Sendable (_ run: Int, _ attempt: Int) async -> Void = { _, _ in }
+        /// The `save` effect (UploadSave.swift): the one save door, given the state that asked for
+        /// it, answering the event to step (`saved` or `saveFailed`); nil saves nothing.
+        var save: (@Sendable (_ state: String, _ run: Int, _ attempt: Int) async -> String)?
         /// At most one view a frame: the latest state wins.
         var frame: Duration = .milliseconds(16)
         /// Told as each step starts (true) and ends (false): a test's, nil in the app.
@@ -269,8 +270,11 @@ actor UploadRunner {
         case .forget(let ids):
             held.forget(ids)
         case .save(let run, let attempt):
-            let save = setup.save
-            Task.detached { await save(run, attempt) }
+            guard let save = setup.save, let saving = state else { break }
+            Task.detached { [weak self] in
+                let event = await save(saving, run, attempt)
+                await self?.submit(event)
+            }
         case .other:
             break
         }

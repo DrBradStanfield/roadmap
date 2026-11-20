@@ -23,6 +23,7 @@ final class LabUploadFlowTests: XCTestCase {
         case .savingAll(_, let p): "savingAll \(p.reports) done:\(p.done) inFlight:\(p.inFlight.sorted())"
         case .saveAllDone(_, let s): "saveAllDone values:\(s.values) docs:\(s.documents) notSaved:\(rows(s.notSaved)) partly:\(rows(s.partlySaved)) stopped:\(s.stopped.map { "\($0)" } ?? "-")"
         case .failed(let m): "failed \(m)"
+        case .shared(let consent): "shared consent:\(consent)"
         case .finished: "finished"
         }
     }
@@ -85,6 +86,15 @@ final class LabUploadFlowTests: XCTestCase {
             ("Close cannot be beaten by a late cancel during save all", Self.saving([1, 2]), .cancel, "savingAll [1, 2] done:0 inFlight:[]"),
             ("a late result outside save all changes nothing", review0, .reportFinished(0, .saved(values: 1, documents: 0)), "review 0/3"),
             ("Stop sharing goes to the sources", .choose, .restart, "choose"),
+            // Design PR 15: a file from Files goes to the shared upload's one page.
+            ("a Files pick goes to the shared page, consent first", .choose, .sharedPicked(needsConsent: true), "shared consent:true"),
+            ("a Files pick with consent given opens the page", .choose, .sharedPicked(needsConsent: false), "shared consent:false"),
+            ("agreeing opens the page", .shared(consent: true), .consented, "shared consent:false"),
+            ("a second agree changes nothing", .shared(consent: false), .consented, "shared consent:false"),
+            ("a shared pick while reading is ignored", .working("x", nil, back: .choose), .sharedPicked(needsConsent: false), "working x - back:choose"),
+            ("an engine without the doors reads in today's flow", .shared(consent: false), .picked, "working Reading the file on your iPhone - back:choose"),
+            ("Choose another file from a refused page", .shared(consent: false), .restart, "choose"),
+            ("Done on the page closes", .shared(consent: false), .done, "finished"),
         ]
         for (name, from, event, expected) in table {
             XCTAssertEqual(Self.words(LabUploadFlow.transition(from, event)), expected, name)

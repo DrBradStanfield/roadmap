@@ -29,6 +29,8 @@ struct LabUploadSheet: View {
     /// Each report's choices on its review, by report (US-52 AC8b): kept when the review goes,
     /// so save all saves what the person chose; a Try again's new answer starts fresh.
     @State private var held: [UUID: LabChoices] = [:]
+    /// The shared upload (design PR 15): made at the first file picked in Files.
+    @State private var shared: UploadSession?
 
     /// Close and swipe-down wait for a save, or for save all (AC8b).
     private var closeHeld: Bool {
@@ -42,7 +44,7 @@ struct LabUploadSheet: View {
                 .navigationTitle("Add medical records")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
-                    ToolbarItem(placement: .cancellationAction) { Button("Close") { work?.cancel(); dismiss() }.disabled(closeHeld) }
+                    ToolbarItem(placement: .cancellationAction) { Button("Close") { close() }.disabled(closeHeld) }
                     if case .choose = step, AIConsent.labUpload.given {
                         ToolbarItem(placement: .primaryAction) {
                             Menu {
@@ -58,7 +60,7 @@ struct LabUploadSheet: View {
         .interactiveDismissDisabled(closeHeld)
         .onDisappear { work?.cancel() }
         .fileImporter(isPresented: $importing, allowedContentTypes: [.folder, .pdf, .jpeg, .png, .zip], allowsMultipleSelection: false) { result in
-            if case .success(let urls) = result, let url = urls.first { pick { await read(file: url) } }
+            if case .success(let urls) = result, let url = urls.first { pickShared(url) }
         }
         // Presented from the sheet's root, like Files: an inline PhotosPicker row took
         // the whole sheet down with it when a photo was picked (iOS 27, seen 2026-10-22).
@@ -110,8 +112,61 @@ struct LabUploadSheet: View {
                 Button("Choose another file") { send(.restart) }.buttonStyle(.bordered)
             }
             .padding()
+        case .shared(consent: true):
+            AIConsentView(consent: .labUpload) {
+                send(.consented)
+                if let shared { Task { await shared.runner.consented() } }
+            }
+        case .shared(consent: false):
+            if let shared { sharedPage(shared) }
         case .finished:
             EmptyView()
+        }
+    }
+
+    /// The shared upload's page, drawn from the engine's view (UploadReviewView).
+    @ViewBuilder private func sharedPage(_ shared: UploadSession) -> some View {
+        switch shared.model.state {
+        case .drawn(let text):
+            if let page = shared.page(text) {
+                UploadReviewView(page: page, send: shared.send, letter: shared.letter) {
+                    shared.send(.close)
+                    dismiss()
+                }
+            }
+        case .refused(let refusal):
+            VStack(spacing: 16) {
+                if let refusal { Text(refusal.message).multilineTextAlignment(.center) }
+                Button("Choose another file") { shared.send(.discard); send(.restart) }.buttonStyle(.bordered)
+            }
+            .padding()
+        case .starting, .unavailable:
+            ProgressView()
+        }
+    }
+
+    /// Close: the shared upload is left, dropping what it read, as Close drops a review today.
+    private func close() {
+        work?.cancel()
+        if case .shared = step { shared?.send(.discard) }
+        dismiss()
+    }
+
+    /// A file from Files goes to the shared upload: its bytes are held and the engine reads it.
+    /// A folder, a file too large by its listed size, or an engine without the shared upload's
+    /// doors (an older over-the-air engine) takes today's flow instead.
+    private func pickShared(_ url: URL) {
+        guard case .choose = step else { return }
+        let session = shared ?? UploadSession(engine: engine, store: store)
+        shared = session
+        let needsConsent = !AIConsent.labUpload.given
+        send(.sharedPicked(needsConsent: needsConsent))
+        start {
+            if let file = await LabFileReader.picked(url, ask: { [engine] in await engine.uploadRules(files: $0, members: $1) }),
+               await session.runner.pick([file], needsConsent: needsConsent) { return }
+            guard !Task.isCancelled, case .shared = step, session.model.state == .unavailable || session.model.state == .starting else { return }
+            send(.picked)
+            await read(file: url)
         }
     }
 
