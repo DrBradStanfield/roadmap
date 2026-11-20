@@ -212,8 +212,8 @@ final class UploadSessionTests: XCTestCase, CloudFixtures {
         XCTAssertEqual(Array(dropbox.documents.values), [file.data])
     }
 
-    /// US-52 AC13d (owner ruling, Codex R1): the original stored is the bytes that were read and
-    /// reviewed, held and hash-checked, never a second read of the source at Save. A source file
+    /// US-52 AC13d (owner ruling, Codex R1): the original stored is the held bytes that were read and
+    /// reviewed, never a second read of the source at Save, and nothing re-hashes them. A source file
     /// changed and then deleted after the read changes nothing saved; the row's contentHash is theirs.
     func testTheOriginalStoredIsTheBytesReviewedNotTheSourceAtSave_US52_AC13d() async throws {
         try Data("dropbox".utf8).write(to: folder.appending(path: "sync-provider"))

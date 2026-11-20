@@ -104,6 +104,39 @@ final class LabSourceTests: XCTestCase {
         let read = try Self.converted(scan)
         XCTAssertEqual(read.pages.count, 20)
         XCTAssertFalse(read.truncated)
+        // What is sent is what the size check saw: the request body of the pages as made, against
+        // the body the convert would send if it drew the stepped PDF's pages again (as it did).
+        let flags = try JSONDecoder().decode(LabReadSender.Flags.self, from: Data(#"{"ownDates":true,"undatedPrev":false,"refusedRows":true}"#.utf8))
+        let body = try LabReadSender.body(pages: read.pages, unitSystem: "si", flags: flags).count
+        let redrawn = try LabReadSender.body(pages: try LabFileReader.document(from: scan.data, name: scan.name, rules: .swift).pages, unitSystem: "si", flags: flags).count
+        print("US-52 AC10 scan sizes: pdf \(scan.data.count), today's pdf \(today.data.count), body as made \(body), body if drawn again \(redrawn)")
+        XCTAssertLessThan(body, 20 * 1024 * 1024, "well under the server's 25 MB body cap (APP_LAB_BODY_CAP)")
+        XCTAssertEqual(read.pages, scan.pages?.pages, "the pages sent are the pages made, as they are")
+        XCTAssertLessThan(body, redrawn)
+        // A PDF picked from Files converts as before: drawn from the file.
+        let file = try await LabFileReader.picked(scan: Array(pages.prefix(2))).data
+        let held = LabFileReader.Held()
+        held.hold(file, as: "file", name: "report.pdf")
+        let fromFiles = try held.convert("file", rules: .swift).pages
+        XCTAssertEqual(fromFiles, try LabFileReader.document(from: file, name: "report.pdf", rules: .swift).pages)
+    }
+
+    /// A scan past 20 pages ends with a blank placeholder page that weighs nothing: 25 pages whose
+    /// first 20 fit are not stepped down, and the convert still says the rest was cut.
+    func testAScanPastTwentyPagesIsJudgedOnItsFirstTwenty_US52_AC10() async throws {
+        let pages = (0..<25).map { Self.reportPage($0 % 5) }
+        let twenty = try await LabFileReader.picked(scan: Array(pages.prefix(20)))
+        let all = try await LabFileReader.picked(scan: pages)
+        XCTAssertLessThan(all.data.count - twenty.data.count, 4_096, "the placeholder is tiny")
+        let capped: LabFileReader.AskRules = { [cap = twenty.data.count + 4_096] _, _ in
+            LabFileReader.Rules(file: { _, bytes in bytes > cap ? .tooLarge : .keep }, member: { _ in .keep }, maxMemberBytes: cap, maxMembers: 1, maxTotalBytes: cap)
+        }
+        let scan = try await LabFileReader.picked(scan: pages, ask: capped)
+        XCTAssertEqual(try Self.longSides(scan.data).prefix(20).allSatisfy { $0 == 2000 }, true, "not stepped down")
+        XCTAssertEqual(PDFDocument(data: scan.data)?.pageCount, 21)
+        let read = try Self.converted(scan)
+        XCTAssertEqual(read.pages.count, 20)
+        XCTAssertTrue(read.truncated)
     }
 
     /// Each step in turn, against a cap the test sets: the first step that fits is used, and when
@@ -338,7 +371,7 @@ final class LabSourceTests: XCTestCase {
     /// One pick converted as the engine's `convert` effect converts it.
     private static func converted(_ picked: UploadRunner.Picked) throws -> LabFileReader.Document {
         let held = LabFileReader.Held()
-        held.hold(picked.data, as: picked.id, name: picked.name, redrawn: picked.redrawn)
+        held.hold(picked.data, as: picked.id, name: picked.name, redrawn: picked.redrawn, made: picked.pages)
         return try held.convert(picked.id, rules: .swift)
     }
 

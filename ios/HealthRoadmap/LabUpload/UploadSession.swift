@@ -139,7 +139,7 @@ final class UploadSession {
                     self.claim = nil
                     return
                 }
-                // Counted only for a Save that is sent (US-52 AC8b), once a pick.
+                // Counted only for a Save that is sent (US-52 AC8c), once a pick.
                 self.tellUsage { [analytics = self.analytics] in analytics?.event(page.files.rows.count >= 2 ? .labSaveAll : .labSaveOne) }
                 let number = await runner.queue(UploadAction.saveEvent(promised: page.reviewed))
                 self.claim = .queued(number)

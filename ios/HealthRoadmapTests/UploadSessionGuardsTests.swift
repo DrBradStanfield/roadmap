@@ -360,9 +360,9 @@ final class UploadSessionGuardsTests: XCTestCase, CloudFixtures {
         XCTAssertEqual(folderWords, .refused("This folder holds no reports the app can read: no PDF, JPEG or PNG."))
     }
 
-    /// A Save that sends nothing counts nothing (US-52 AC8b): tapped while the page holds a blocker
+    /// A Save that sends nothing counts nothing (US-52 AC8c): tapped while the page holds a blocker
     /// (an undated report waiting for its day), no "Lab save one" or "Lab save all".
-    func testASaveThatSendsNothingIsNotCounted_US52_AC8b() async throws {
+    func testASaveThatSendsNothingIsNotCounted_US52_AC8c() async throws {
         answers.set { _ in UploadPageTests.lab(reportDate: nil, values: UploadPageTests.ldl) }
         let store = try RecordStore(folder: folder, engine: HealthEngine(session: StubHTTP.session()), deviceId: "ios-test")
         let sdk = EventsSDK()
