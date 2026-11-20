@@ -199,8 +199,7 @@ function glp1Description(bmi: number, reasons: string[]): string {
  *  would move to; null when the highest dose moves on to the next medication
  *  (tirzepatide, rosuvastatin). */
 function doseCardText(kind: string, switchTo: string | null): string {
-  const rest = switchTo ? `A higher dose or ${switchTo} may help, and which one to discuss with your doctor depends on your current dose. Add it to see which.` : 'A higher dose may help, or you may already take the highest. Add your current dose to see whether a higher dose is one to discuss with your doctor.';
-  return `Your ${kind} dose isn't recorded. ${rest}`;
+  return `Your ${kind} dose isn't recorded. ${switchTo ? `A higher dose or ${switchTo} may help, and which one to discuss with your doctor depends on your current dose. Add it to see which.` : 'A higher dose may help, or you may already take the highest. Add your current dose to see whether a higher dose is one to discuss with your doctor.'}`;
 }
 
 /** The form's weight-medication intro, in the plan's words: the BMI and the
