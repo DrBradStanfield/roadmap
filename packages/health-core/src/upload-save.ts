@@ -20,6 +20,9 @@ import { LAB_ARCHIVE_ROWS, labRowsByFile, listedRows, writtenLabRows } from './d
 import { committedFile, labArchivePayload, saveDocuments, type DocumentPayload } from './document-save';
 import { bulkAppendValues, type LabUnitRefusal } from './record-edits';
 import { setScreening } from './state-edits';
+import { labReason } from './import-review';
+import { labTestLabel } from './lab-catalog';
+import { METRIC_LABELS } from './mappings';
 import type { RoadmapFile } from './roadmap-file';
 import type { SaveOutcome, UploadState } from './upload-flow';
 import { uploadSavePlan } from './upload-plan';
@@ -56,7 +59,7 @@ export type UploadSaveResult =
   | { ok: false; reason: 'not-saving' | 'not-ready'; message: string };
 
 /** A landed Save's counts: every one but the skips, which are there only when some row was skipped. */
-export type SavedOutcome = Required<Omit<SaveOutcome, 'skippedValues' | 'skippedLabValues'>> & SaveOutcome;
+export type SavedOutcome = Required<Omit<SaveOutcome, 'skippedValues' | 'skippedLabValues' | 'refused'>> & SaveOutcome;
 
 /** An original as saveDocuments holds it: the file it is, with the hash the state read for its bytes. */
 interface Held { fileId: string; hash: string }
@@ -128,7 +131,14 @@ export async function uploadSave<F>(s: UploadState, record: RoadmapFile, now: st
       // A reviewed row whose slot another writer took meanwhile is skipped, never a second active row, and counted (US-12 AC6a).
       const skipped = (kind: 'measurement' | 'lab') => written.outcomes.filter((o, i) => o === 'skipped' && rows[i].kind === kind).length;
       const [sv, sl] = [skipped('measurement'), skipped('lab')];
-      return { file: out, outcome: { values, ...outcome, unstored: docs.unstored, ...(sv ? { skippedValues: sv } : {}), ...(sl ? { skippedLabValues: sl } : {}) } };
+      // A value the commit refused, the record having changed since the plan (a blood pressure's other half,
+      // say), is named in the review's not-saved words, never dropped silently (US-12 AC15). A core value's
+      // refusal has no reason word of its own: it reads as misread, as the review names a misread number.
+      const refused = [
+        ...written.refused.map((r) => ({ label: labTestLabel(r.key), reason: labReason(r) })),
+        ...written.measurementRefusals.map((r) => ({ label: METRIC_LABELS[r.metricType] ?? labTestLabel(r.metricType), reason: 'misread' as const })),
+      ];
+      return { file: out, outcome: { values, ...outcome, unstored: docs.unstored, ...(sv ? { skippedValues: sv } : {}), ...(sl ? { skippedLabValues: sl } : {}), ...(refused.length ? { refused } : {}) } };
     },
   };
 }

@@ -9,6 +9,7 @@
  */
 import type { UnifiedExtractionResult } from './lab-extraction';
 import type { UploadFailure } from './upload-failure';
+import type { NotSavedReason } from './import-review';
 import { choose, NO_CHOICES, type ChoiceChange, type FileChoices } from './upload-choices';
 import type { Known } from './upload-known';
 import { fileVerdict, requestFlags, UPLOAD_LIMITS, zipMemberVerdict, type RequestFlags, type UploadPlatform } from './upload-rules';
@@ -58,8 +59,12 @@ export interface UploadFile {
 }
 /** `unstored`: originals the save meant to keep in the cloud that did not land (upload-save.ts); absent is none.
  *  `skippedValues`, `skippedLabValues`: reviewed rows whose slot another writer took while the review was open
- *  (US-12 AC6a), a core value or another lab; absent is none. */
-export interface SaveOutcome { values: number; documents: number; archived: number; unstored?: number; skippedValues?: number; skippedLabValues?: number }
+ *  (US-12 AC6a), a core value or another lab; absent is none. `refused`: values the final commit refused,
+ *  the record having changed while the originals uploaded, by the test's label and the review's reason (US-12 AC15). */
+export interface SaveOutcome {
+  values: number; documents: number; archived: number; unstored?: number; skippedValues?: number; skippedLabValues?: number;
+  refused?: Array<{ label: string; reason: NotSavedReason }>;
+}
 
 /** `started`, `firstRead`: ISO times, for the first-read count (design §7, R9). */
 interface Pick { platform: UploadPlatform; run: number; files: UploadFile[]; started: string; firstRead: string | null }

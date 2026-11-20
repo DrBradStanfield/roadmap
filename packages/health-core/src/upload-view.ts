@@ -9,9 +9,9 @@
  * documents for held rows.
  */
 import { DOCUMENT_TYPES, type DocumentType } from './validation';
-import { IMPORT_REVIEW_TEXT, isOfferedRef, KIND_WORDS, notSavedGroups, type ClassifiedValue, type UnsureReason } from './import-review';
+import { IMPORT_REVIEW_TEXT, isOfferedRef, KIND_WORDS, NOT_SAVED_TEXT, notSavedGroups, type ClassifiedValue, type NotSavedReason, type UnsureReason } from './import-review';
 import type { RoadmapFile } from './roadmap-file';
-import { inFlight, RETRYABLE, saveEnabled, type FileStatus, type UploadFile, type UploadState } from './upload-flow';
+import { inFlight, RETRYABLE, saveEnabled, type FileStatus, type SaveOutcome, type UploadFile, type UploadState } from './upload-flow';
 import { planIsEmpty, uploadSavePlan, type UploadSavePlan } from './upload-plan';
 import type { UploadReview } from './upload-review';
 import { FAIL_TEXT, FILE_NOTICE_TEXT, FIX_ERRORS_TEXT, SCREENING_TEXT, UPLOAD_TEXT, UPLOAD_TEXT_PROPOSED } from './upload-text';
@@ -53,7 +53,8 @@ export interface UploadView {
   save: { label: string; enabled: boolean; why: string | null; error: string | null };
   stop: { label: string } | null;
   /** The done screen's lines. */
-  done: { line: string; archived: string | null; unstored: string | null; skipped: string[] } | null;
+  /** `notSaved`: values the final commit refused, one line per reason in the review's words. */
+  done: { line: string; archived: string | null; unstored: string | null; skipped: string[]; notSaved: string[] } | null;
 }
 
 /** A screening update's tick: `checked` only with a date; `words` around the screening's name, which is drawn bold. */
@@ -120,6 +121,16 @@ const replacingOf = (review: UploadReview, v: ClassifiedValue) => review.labFile
  */
 const blocks = (v: ClassifiedValue) => v.ref[0] === 'v' && v.sent && !v.writes
   && (v.group === 'unsure' ? v.reasons.includes('outOfRange') : v.group === 'notSaved' && v.reason !== 'sameDay');
+
+/** Each reason once, naming its tests, as "Not saved" names them in the review (NOT_SAVED_TEXT). */
+function refusedLines(refused: NonNullable<SaveOutcome['refused']>): string[] {
+  const byReason = new Map<NotSavedReason, string[]>();
+  for (const { label, reason } of refused) {
+    const labels = byReason.get(reason) ?? [];
+    if (!labels.includes(label)) byReason.set(reason, [...labels, label]);
+  }
+  return [...byReason].map(([reason, labels]) => `${labels.join(', ')}: ${NOT_SAVED_TEXT[reason]}`);
+}
 
 function screeningRow(plan: UploadSavePlan, fileId: string): ScreeningRow | null {
   const update = plan.screenings.find((x) => x.fileId === fileId);
@@ -218,6 +229,7 @@ export function uploadView(s: UploadState, record: RoadmapFile, now: string, rev
         ...(s.outcome.skippedValues ? [UPLOAD_TEXT.skippedLine(s.outcome.skippedValues, false)] : []),
         ...(s.outcome.skippedLabValues ? [UPLOAD_TEXT.skippedLine(s.outcome.skippedLabValues, true)] : []),
       ],
+      notSaved: refusedLines(s.outcome.refused ?? []),
     } : null,
   };
 }
