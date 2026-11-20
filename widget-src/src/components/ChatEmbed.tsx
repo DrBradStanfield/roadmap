@@ -149,7 +149,7 @@ export function ChatEmbed({ isLoggedIn, guestInputs, muted, onProposeEdit, cardR
           {state.replying && (
             <ChatPendingReply isLocalSender={state.isLocalSender} pending={state.pending} />
           )}
-          {state.error && <div className="chat-error">{state.error}</div>}
+          {state.error && <div className="chat-error" role="alert">{state.error}</div>}
           {showScrollBtn && (
             <button
               className="chat-scroll-btn"

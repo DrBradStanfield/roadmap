@@ -198,5 +198,17 @@ export const webChatTurns = {
  */
 export function takeWebChatTurn(ipBucket: string): boolean {
   if (webChatTurns.ip.remaining(ipBucket) < 1) return false;
-  return webChatTurns.machine.take('machine', 1) && webChatTurns.ip.take(ipBucket, 1);
+  if (!webChatTurns.machine.take('machine', 1)) return false;
+  if (webChatTurns.machine.remaining('machine') === 0) reportWebChatCapReached();
+  return webChatTurns.ip.take(ipBucket, 1);
+}
+
+/**
+ * The turn that spends the machine's last one of the day: from here every web chat turn on this machine is a 429
+ * until its day resets (US-15 AC45a). Once per day by construction; a cap of 0 never gets here. Fixed words only,
+ * as the full-map warning above: never an IP, a bucket or a message.
+ */
+function reportWebChatCapReached(): void {
+  console.error('Web chat machine cap reached: this machine answers web chat with 429 until its day resets');
+  Sentry.captureMessage('Web chat machine cap reached', { level: 'warning', tags: { feature: 'rate_limit', map: 'web chat turns per machine' } });
 }

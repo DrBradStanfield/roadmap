@@ -165,4 +165,13 @@ describe('whtrSeries (US-73 AC7)', () => {
     const rows = [waist('w1', 88, '2026-06-01T07:00:00.000Z'), waist('w2', 95, '2026-06-01T09:00:00.000Z', { comparator: '>' })];
     expect(whtrSeries(file(rows, 180))).toEqual([]);
   });
+
+  it('no ratio from a height the plan refuses, under 50 cm or over 250 cm (US-62 AC21a)', () => {
+    const rows = [waist('w1', 90, '2026-01-01T00:00:00.000Z')];
+    for (const refused of [5, 17, 49.9, 250.1, 300, 0, -170, Number.NaN, '170' as never, null as never]) {
+      expect(whtrSeries(file(rows, refused)), String(refused)).toEqual([]);
+    }
+    expect(whtrSeries(file(rows, 50))).toEqual([{ id: 'w1', day: '2026-01-01', ratio: 1.8 }]);
+    expect(whtrSeries(file(rows, 250))).toEqual([{ id: 'w1', day: '2026-01-01', ratio: 0.36 }]);
+  });
 });
