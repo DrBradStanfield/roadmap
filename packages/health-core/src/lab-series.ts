@@ -19,6 +19,9 @@ export function labValueLabel(metricName: string): string {
     ?? metricName.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
 
+/** A lab value's day refused: the words the add-a-value write says (record-edits.ts), and the upload's not-saved line for a value with no real past day. */
+export const LAB_DAY_REFUSAL = 'A lab value is for a real day, today or before.';
+
 /**
  * What a person reads when the record refused a lab value's unit: the unit a
  * catalogued test is stored in, or, for a unit it does take, that the number was

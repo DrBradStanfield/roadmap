@@ -43,7 +43,7 @@ import { isCalendarDay, isClinicalDay } from './measurement-history';
 import { CORE_BLOOD_UNITS, createLabValue, createMeasurement, recordSchemaVersion, type FileLabValue, type FileMeasurement, type RoadmapFile } from './roadmap-file';
 import { canonicalToReported, reportedToCanonical, UNIT_DEFS, type MetricType } from './units';
 import { comparatorOf, type Comparator } from './lab-limits';
-import { formatLabValue, labNumberText, labUnitRefusalLine, savedLabText } from './lab-series';
+import { formatLabValue, LAB_DAY_REFUSAL, labNumberText, labUnitRefusalLine, savedLabText } from './lab-series';
 import { withEffectiveComparator } from './readable-rows';
 import { healthInputSchema, type MeasurementSource, METRIC_TYPES, PRESSURE_ORDER, pressureInverted } from './validation';
 import type { MEASUREMENT_REFUSAL_REASONS } from './product-events';
@@ -190,9 +190,6 @@ export function resolveRecordedAt(recordedAt: string | undefined, ctx: EditConte
   }
   return day;
 }
-
-/** A lab value's day refused: the words the add-a-value write says, and the upload's not-saved line for a value with no real past day. */
-export const LAB_DAY_REFUSAL = 'A lab value is for a real day, today or before.';
 
 /** Rule 9 as a day or null: absent or refused is null (the review's column date, US-13 AC8). */
 export function validDay(day: string | null | undefined, ctx: EditContext): string | null {

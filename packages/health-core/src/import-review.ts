@@ -11,7 +11,8 @@
  */
 import { UNDATED_PREVIOUS, isUrineOrRatioUnit, type UnifiedExtractionResult } from './lab-extraction';
 import { labTestLabel } from './lab-catalog';
-import { bulkAppendValues, LAB_DAY_REFUSAL, slotIndex, slotKey, validDay, type BulkAppendResult, type BulkRow } from './record-edits';
+import { LAB_DAY_REFUSAL } from './lab-series';
+import { bulkAppendValues, slotIndex, slotKey, validDay, type BulkAppendResult, type BulkRow } from './record-edits';
 import { bulkRowTarget } from './bulk-row-target';
 import { coreStored, createCoreRow, isBloodTestKey } from './blood-tests';
 import { isClinicalDay } from './measurement-history';
