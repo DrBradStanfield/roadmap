@@ -35,13 +35,12 @@ export function uploadSaveRun(
 }
 
 async function save(
-  asked: typeof open, stateJson: string, recordJson: string, erase: string, nowIso: string, deviceId: string,
+  at: typeof open, stateJson: string, recordJson: string, erase: string, nowIso: string, deviceId: string,
   originalsJson: string, readOriginal: OriginalReader,
 ): Promise<object> {
   const state = readState(stateJson);
   let mimeTypes: Record<string, string>;
   try { mimeTypes = ORIGINALS.parse(JSON.parse(originalsJson)); } catch { return refusal('invalid-originals'); }
-  const at = asked;
   if (erase && (!at || open !== at)) return refusal('not-open');
   const cap = UPLOAD_LIMITS[state.platform].fileBytes;
   const io: UploadSaveIO<ArrayBuffer> = {
@@ -70,9 +69,9 @@ async function save(
   const refusedAfter = gone();
   if (refusedAfter) return refusedAfter;
   // The rows land on the session's record as it is now; nothing new commits nothing.
-  const now = at.session.file;
-  const { file, outcome } = out.commit(now);
-  if (file !== now) {
+  const current = at.session.file;
+  const { file, outcome } = out.commit(current);
+  if (file !== current) {
     const refused = commit(at, file, erase, nowIso);
     if (refused) return refused;
   }

@@ -138,7 +138,7 @@ export function initialUpload(platform: UploadPlatform): UploadState {
 
 const IN_FLIGHT: readonly FileStage[] = ['unlisted', 'listing', 'waiting', 'hashing', 'hashed', 'converting', 'ready', 'sending'];
 /** Not yet sent, so the daily limit fails them: everything in flight but a send. */
-const UNSENT: readonly FileStage[] = ['unlisted', 'listing', 'waiting', 'hashing', 'hashed', 'converting', 'ready'];
+const UNSENT: readonly FileStage[] = IN_FLIGHT.filter((s) => s !== 'sending');
 
 /** Files and ZIPs still being read: Save waits for these, and only these (a failed file never blocks it). */
 export function inFlight(s: UploadState): number {
@@ -248,12 +248,13 @@ function sendFailed(s: UploadState, e: Extract<UploadEvent, { type: 'sendFailed'
   if (s.phase !== 'open') return same(s);
   const file = s.files.find((f) => f.id === e.id);
   if (!file || file.status.s !== 'sending') return same(s);
+  const { attempt } = file.status;
   const reason = SEND_FAILURE[e.failure];
   const limited = reason === 'dailyLimit' || s.files.some(dailyLimited);
   const own = limited && RETRYABLE[reason] ? 'dailyLimit' : reason;
   const files = s.files.map((f): UploadFile => {
     // The send's own words only for its own reason, never under the daily limit that replaced it.
-    if (f.id === e.id) return failed(f, own, file.status.s === 'sending' ? file.status.attempt : 0, own === reason ? e.detail : undefined);
+    if (f.id === e.id) return failed(f, own, attempt, own === reason ? e.detail : undefined);
     if (!limited) return f;
     if (UNSENT.includes(f.status.s)) return failed(f, 'dailyLimit');
     return f.status.s === 'failed' && RETRYABLE[f.status.reason] ? failed(f, 'dailyLimit', f.status.attempt) : f;

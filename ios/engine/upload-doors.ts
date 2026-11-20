@@ -10,7 +10,7 @@ import { knownAs, knownIndex, readIsLegacy, type KnownIndex } from '../../packag
 import { appGateFailure, boundedWords, type FailDetail, type UploadFailure } from '../../packages/health-core/src/upload-failure';
 import { PHONE_FAIL_TEXT } from '../../packages/health-core/src/upload-text';
 import { labStreamAnswer } from '../../packages/health-core/src/upload-answer';
-import { lostReplaces, uploadReview } from '../../packages/health-core/src/upload-review';
+import { lostReplaces, uploadReview, type UploadReview } from '../../packages/health-core/src/upload-review';
 import { uploadView } from '../../packages/health-core/src/upload-view';
 import { uploadSavePlan } from '../../packages/health-core/src/upload-plan';
 import { uploadUsageCounts } from '../../packages/health-core/src/upload-usage';
@@ -168,7 +168,7 @@ export const uploadStep = (stateJson: string, eventJson: string, recordJson: str
   // read migrates, which readRecord then keeps for the screen doors, so it is the real one.
   const now = new Date().toISOString();
   const record = () => readUploadRecord(recordJson, now, deviceId);
-  const current = withoutLostReplaces(state, recordJson, record, now);
+  const { state: current } = withoutLostReplaces(state, recordJson, record, now);
   return transition(current, engineEvent(current, wire, record));
 });
 
@@ -176,23 +176,25 @@ export const uploadStep = (stateJson: string, eventJson: string, recordJson: str
  * A chosen Replace whose target another writer moved, corrected or deleted on this record is dropped and its
  * value unticked (health-core `replacesLost`, owner ruling 2026-11-20, US-13 AC21), before the next event and
  * in every view, so the page shows an ordinary value to tick again. The record is read only when a Replace is chosen.
+ * `review`: the review it judged by, when nothing was dropped, so a view reviews that state once.
  */
-function withoutLostReplaces(state: UploadState, recordJson: string, record: () => RoadmapFile, now: string): UploadState {
+function withoutLostReplaces(state: UploadState, recordJson: string, record: () => RoadmapFile, now: string): { state: UploadState; review?: UploadReview } {
   // No record to judge by ('' while the app has none it can read) or one that will not read drops nothing (adversary R1):
   // every Replace stands, and the next record that reads is judged.
-  if (recordJson === '' || !('files' in state) || !state.files.some((f) => f.status.s === 'read' && Object.keys(f.status.choices.replace).length)) return state;
+  if (recordJson === '' || !('files' in state) || !state.files.some((f) => f.status.s === 'read' && Object.keys(f.status.choices.replace).length)) return { state };
   let read: RoadmapFile;
-  try { read = record(); } catch { return state; }
-  const lost = lostReplaces(uploadReview(state, read, now), state);
-  return lost.length ? transition(state, { type: 'replacesLost', lost }).state : state;
+  try { read = record(); } catch { return { state }; }
+  const review = uploadReview(state, read, now);
+  const lost = lostReplaces(review, state);
+  return lost.length ? { state: transition(state, { type: 'replacesLost', lost }).state } : { state, review };
 }
 
 /** One review per call, as health-core's callers take it: the view and its plan count the same rows. */
-const reviewed = <T,>(make: (state: UploadState, record: RoadmapFile, nowIso: string, review: ReturnType<typeof uploadReview>, cloudConnected: boolean) => T) =>
+const reviewed = <T,>(make: (state: UploadState, record: RoadmapFile, nowIso: string, review: UploadReview, cloudConnected: boolean) => T) =>
   (stateJson: string, recordJson: string, nowIso: string, cloudConnected: boolean, deviceId: string) => answer(() => {
     const record = readUploadRecord(recordJson, nowIso, deviceId);
-    const state = withoutLostReplaces(readState(stateJson), recordJson, () => record, nowIso);
-    return make(state, record, nowIso, uploadReview(state, record, nowIso), cloudConnected);
+    const { state, review } = withoutLostReplaces(readState(stateJson), recordJson, () => record, nowIso);
+    return make(state, record, nowIso, review ?? uploadReview(state, record, nowIso), cloudConnected);
   });
 /** The view, with the words the app shows when a later engine call gives no answer at all
  *  (`engineError`, the doors' own engine-error line): the page keeps them from its last view. */

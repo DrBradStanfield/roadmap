@@ -22,43 +22,48 @@ enum LabFileReader {
             /// A ZIP member: already in memory.
             case bytes(Data)
             /// A file picked in Files, opened again under `scope`'s access when it is
-            /// saved: bytes mapped from it would outlive the picker's access.
-            case file(URL, scope: URL)
+            /// saved: bytes mapped from it would outlive the picker's access. `contentHash`:
+            /// the hash of the bytes the review read, taken when it was kept as the file.
+            case file(URL, scope: URL, contentHash: String)
         }
         let source: Source
         let mimeType: String
         /// The fingerprint of the bytes the review read: their size, and their
         /// 'sha256-<hex>', the web's sha256Blob format, which is the row's `contentHash`.
         let size: Int
-        let contentHash: String
+        /// Hashed when asked, never on every convert: the shared upload hashes through `Held.hash`.
+        var contentHash: String {
+            switch source {
+            case .bytes(let data): LabFileReader.contentHash(data)
+            case .file(_, _, let hash): hash
+            }
+        }
 
         init(_ data: Data, mimeType: String) {
             source = .bytes(data)
             self.mimeType = mimeType
             size = data.count
-            contentHash = LabFileReader.contentHash(data)
         }
 
         private init(source: Source, of read: Original) {
             self.source = source
             mimeType = read.mimeType
             size = read.size
-            contentHash = read.contentHash
         }
 
         /// The same original, kept as the picked file rather than its bytes.
-        func file(_ url: URL, scope: URL) -> Original { Original(source: .file(url, scope: scope), of: self) }
+        func file(_ url: URL, scope: URL) -> Original { Original(source: .file(url, scope: scope, contentHash: contentHash), of: self) }
 
         /// The bytes the review read, or nil when the file has changed (its size, then
         /// its hash), gone, or cannot be read: the row is then saved without it.
         func verifiedData() -> Data? {
             switch source {
             case .bytes(let data): return data
-            case .file(let url, let scope):
+            case .file(let url, let scope, let hash):
                 let scoped = scope.startAccessingSecurityScopedResource()
                 defer { if scoped { scope.stopAccessingSecurityScopedResource() } }
                 guard (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) == size,
-                      let data = try? LabFileReader.coordinatedData(url), LabFileReader.contentHash(data) == contentHash
+                      let data = try? LabFileReader.coordinatedData(url), LabFileReader.contentHash(data) == hash
                 else { return nil }
                 return data
             }

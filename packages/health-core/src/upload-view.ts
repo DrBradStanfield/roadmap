@@ -9,7 +9,7 @@
  * documents for held rows.
  */
 import { DOCUMENT_TYPES, type DocumentType } from './validation';
-import { IMPORT_REVIEW_TEXT, isOfferedRef, KIND_WORDS, NOT_SAVED_TEXT, notSavedGroups, type ClassifiedValue, type NotSavedReason, type UnsureReason } from './import-review';
+import { documentKind, IMPORT_REVIEW_TEXT, isOfferedRef, KIND_WORDS, NOT_SAVED_TEXT, notSavedGroups, type ClassifiedValue, type NotSavedReason, type UnsureReason } from './import-review';
 import type { FileLabValue, FileMeasurement, RoadmapFile } from './roadmap-file';
 import { effectiveComparator, isReadableRow } from './readable-rows';
 import { getDisplayLabel, type MetricType } from './units';
@@ -112,7 +112,7 @@ function summary(files: readonly UploadFile[], plan: UploadSavePlan, labReports:
   if (files.length > 0 && known === files.length) return UPLOAD_TEXT.allKnown;
   const kinds = new Map<DocumentType, number>();
   for (const { fields } of plan.documents) {
-    const kind = (DOCUMENT_TYPES as readonly string[]).includes(fields.documentType) ? fields.documentType as DocumentType : 'other';
+    const kind = documentKind(fields.documentType);
     kinds.set(kind, (kinds.get(kind) ?? 0) + 1);
   }
   return UPLOAD_TEXT.summaryFiles(files.length, [
@@ -259,7 +259,8 @@ export function uploadView(s: UploadState, record: RoadmapFile, now: string, rev
   const files = 'files' in s ? s.files : [];
   const values = review.classification.values;
   const readById = new Map(readFiles(s).map((f) => [f.id, f]));
-  const rowsById = new Map<string, FileMeasurement | FileLabValue>([...record.measurements, ...record.labValues].map((r) => [r.id, r]));
+  // Read only for a conflict's held row: no conflict, no index.
+  const rowsById = new Map<string, FileMeasurement | FileLabValue>(review.held.size ? [...record.measurements, ...record.labValues].map((r) => [r.id, r]) : []);
   const row = valueRow(review, readById, rowsById, record, now);
   const offered = values.filter((v) => isOfferedRef(v.ref));
   const unsure = offered.filter((v) => v.group === 'unsure');
@@ -296,7 +297,7 @@ export function uploadView(s: UploadState, record: RoadmapFile, now: string, rev
     documents: plan.documents.length ? {
       line: UPLOAD_TEXT.documentsLine(plan.documents.length),
       rows: plan.documents.map(({ fileId, fields }) => {
-        const kindKey: DocumentType = (DOCUMENT_TYPES as readonly string[]).includes(fields.documentType) ? fields.documentType as DocumentType : 'other';
+        const kindKey = documentKind(fields.documentType);
         return {
           fileId, title: fields.title, kind: KIND_WORDS[kindKey][0],
           date: (fields.documentDate && longDate(fields.documentDate.slice(0, 10))) ?? UPLOAD_TEXT.noDate, dateKnown: fields.documentDate !== null,
