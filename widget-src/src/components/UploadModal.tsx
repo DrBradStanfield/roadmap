@@ -28,7 +28,7 @@ interface UploadModalProps {
   onClose: () => void;
   /** `erase`: the erase the page showed as the save began (US-16 AC2a). */
   onScreeningUpdate?: (screeningKey: string, value: string, erase: string) => void;
-  /** The plan's age, for the review's screening eligibility (US-06 AC5). */
+  /** The cards' screening age, for the review's screening eligibility (US-06 AC5, US-23 AC6c). */
   age?: number;
   sex?: 'male' | 'female';
   /** Whom the review's hints and colours grade for; null for a known minor (US-07 AC6). */

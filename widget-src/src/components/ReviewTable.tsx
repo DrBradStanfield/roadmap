@@ -26,7 +26,7 @@ interface ReviewTableProps {
   unitSystem: UnitSystem;
   metricUnitOverrides?: Partial<Record<MetricType, UnitSystem>>;
   onToggleFieldUnit?: (field: string) => void;
-  /** The plan's age, which sets screening eligibility (US-06 AC5). Unset with no plan or no valid birth year. */
+  /** The cards' screening age (US-06 AC5, US-23 AC6c), which sets screening eligibility. Unset with no plan or no valid birth year. */
   age?: number;
   /** With the age, sets screening eligibility. */
   sex?: 'male' | 'female';
