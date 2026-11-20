@@ -9,6 +9,7 @@ import { resetUploadStore } from '../testing/upload-store';
 import { checkLabImportQuota, labImport } from '../lib/upload-api';
 import { trackProductEvent } from '../lib/server-api';
 import type { UploadHistory } from '../lib/api-types';
+import { findReviewValue } from '../testing/import-review';
 
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn() }));
 vi.mock('../lib/roadmap-data', async () => ({ ...(await import('../testing/upload-store')).uploadStoreMock(), uploadKnownIndex: vi.fn(() => new Map()), isLegacyUpload: vi.fn(() => false), getDocumentArchiveMode: vi.fn(() => 'cloud'), bulkSaveMeasurements: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
@@ -33,7 +34,8 @@ function Harness() {
     unitSystem="si" grading={{}} history={emptyHistory} onComplete={() => {}} />;
 }
 const pick = (name: string) => fireEvent.change(document.querySelector('input[type=file]')!, { target: { files: [new File(['synthetic'], name, { type: 'application/pdf' })] } });
-const cancel = () => fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+// Owner ruling 2026-11-20: while a file is read the window offers only Stop.
+const stop = () => fireEvent.click(screen.getByRole('button', { name: 'Stop' }));
 const DROPZONE = 'Drop health records here, or click to browse';
 
 beforeEach(() => {
@@ -47,34 +49,34 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('US-12 AC4: read runs', () => {
-  it('US-12 AC4: a cancelled read that ends late leaves the newer read its claim: Cancel still stops it', async () => {
+  it('US-12 AC4: a stopped read that ends late leaves the newer read its claim: Stop still stops it', async () => {
     const readA = deferred<Pages>();
     const readB = deferred<Pages>();
     extractFromPdf.mockReturnValueOnce(readA.promise).mockReturnValueOnce(readB.promise);
     render(<Harness />);
     pick('a.pdf');
     await waitFor(() => expect(extractFromPdf).toHaveBeenCalledTimes(1));
-    cancel();
+    stop();
     pick('b.pdf');
     await waitFor(() => expect(extractFromPdf).toHaveBeenCalledTimes(2));
     // A ends late; its run and its claim are gone.
     await act(async () => readA.resolve(pages));
-    expect(screen.getByRole('button', { name: 'Cancel' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Stop' })).toBeTruthy();
     expect(labImport).not.toHaveBeenCalled();
-    // B still holds the claim, so this Cancel aborts B: it never reaches the reader.
-    cancel();
+    // B still holds the claim, so this Stop aborts B: it never reaches the reader.
+    stop();
     await act(async () => readB.resolve(pages));
     expect(screen.getByText(DROPZONE)).toBeTruthy();
     expect(labImport).not.toHaveBeenCalled();
   });
 
-  it('US-12 AC4: Cancel in the same render as the read finishing ends on the dropzone', async () => {
+  it('US-12 AC4: Stop in the same render as the read finishing keeps what was read', async () => {
     const readA = deferred<Pages>();
     extractFromPdf.mockReturnValueOnce(readA.promise);
     render(<Harness />);
     pick('a.pdf');
     await waitFor(() => expect(extractFromPdf).toHaveBeenCalledTimes(1));
-    const button = screen.getByRole('button', { name: 'Cancel' });
+    const button = screen.getByRole('button', { name: 'Stop' });
     await act(async () => {
       readA.resolve(pages);
       // Wait until the read has handed over its result (its outcome is counted
@@ -84,8 +86,7 @@ describe('US-12 AC4: read runs', () => {
       expect(button.isConnected).toBe(true);
       fireEvent.click(button);
     });
-    expect(screen.getByText(DROPZONE)).toBeTruthy();
-    expect(screen.queryByDisplayValue('3.9')).toBeNull();
-    expect(document.querySelector('.review-summary')).toBeNull(); // no review behind "Show all" either (US-13 AC13)
+    expect(screen.queryByText(DROPZONE)).toBeNull();
+    expect(await findReviewValue('3.9')).toBeTruthy();
   });
 });

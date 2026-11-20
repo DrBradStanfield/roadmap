@@ -634,15 +634,15 @@ describe('US-16 AC2a: a screening date from an upload the erase overtook', () =>
   });
 });
 
-// US-12 AC28: Cancel aborts every read in flight; the late answer changes nothing.
-describe('US-12 AC28: Cancel aborts the reads in flight', () => {
-  it('hands each read a signal that Cancel aborts', async () => {
+// US-12 AC28: Stop aborts every read in flight (owner ruling 2026-11-20: while a file is read, only Stop).
+describe('US-12 AC28: Stop aborts the reads in flight', () => {
+  it('hands each read a signal that Stop aborts', async () => {
     vi.mocked(labImport).mockImplementation(() => new Promise<Import>(() => {}));
     render_(); pick(pdf('a.pdf'), pdf('b.pdf'));
     await waitFor(() => expect(labImport).toHaveBeenCalledTimes(2));
     const signals = vi.mocked(labImport).mock.calls.map(c => c[2]?.signal);
     expect(signals.map(sig => sig?.aborted)).toEqual([false, false]);
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Stop' }));
     expect(signals.map(sig => sig?.aborted)).toEqual([true, true]);
   });
 });

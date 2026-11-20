@@ -164,12 +164,14 @@ describe('US-12 read pins: what the modal shows and what reaches the review', ()
     expect(screen.queryByText(/No readable files found/)).toBeNull();
   });
 
-  it('Cancel mid-read: back to the dropzone, and the late answer changes nothing', async () => {
+  // Owner ruling 2026-11-20: while a file is read the window offers only Stop.
+  it('Stop mid-read: back to the dropzone, and the late answer changes nothing', async () => {
     let finish!: (r: Import) => void;
     vi.mocked(labImport).mockImplementation(() => new Promise<Import>(resolve => { finish = resolve; }));
     render_(); pick(pdf('a.pdf'));
     await waitFor(() => expect(labImport).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByRole('button', { name: 'Cancel' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Stop' }));
     expect(dropzone()).toBeTruthy();
     finish(valueOf(3.9));
     await new Promise(r => setTimeout(r, 0));
@@ -177,13 +179,13 @@ describe('US-12 read pins: what the modal shows and what reaches the review', ()
     expect(screen.queryByDisplayValue('3.9')).toBeNull();
   });
 
-  it('a second pick after Cancel: only the new file reaches the review, whatever the first answers late', async () => {
+  it('a second pick after Stop: only the new file reaches the review, whatever the first answers late', async () => {
     const pending: Array<(r: Import) => void> = [];
     vi.mocked(labImport).mockImplementation(p => (p[0].content === 'first.pdf'
       ? new Promise<Import>(resolve => { pending.push(resolve); }) : Promise.resolve(valueOf(4.2))));
     render_(); pick(pdf('first.pdf'));
     await waitFor(() => expect(labImport).toHaveBeenCalledTimes(1));
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Stop' }));
     pick(pdf('second.pdf'));
     await findReviewValue('4.2');
     for (const finish of pending) finish(valueOf(3.9));

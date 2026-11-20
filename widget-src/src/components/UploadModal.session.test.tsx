@@ -108,12 +108,13 @@ describe('US-12 AC4–6 upload session ownership', () => {
     await act(async () => quota.resolve({ allowed: true, remaining: 60 }));
     expect(labImport).not.toHaveBeenCalled();
   });
-  it('does not let a cancelled extraction replace a newer review', async () => {
+  // Owner ruling 2026-11-20: while a file is read the window offers only Stop.
+  it('does not let a stopped extraction replace a newer review', async () => {
     const oldRead = deferred<{ pages: Array<{ type: string; content: string }>; truncated: boolean }>();
     extractFromPdf.mockReturnValueOnce(oldRead.promise);
     render(<Harness />); selectFile();
     await waitFor(() => expect(extractFromPdf).toHaveBeenCalledOnce());
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Stop' }));
     const value = await ready();
     fireEvent.change(value, { target: { value: '4.2' } });
     await act(async () => oldRead.resolve({ pages: [{ type: 'text', content: 'cancelled result' }], truncated: false }));
@@ -140,13 +141,13 @@ describe('US-12 AC4–6 upload session ownership', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(reviews()).toEqual([expect.objectContaining({ saved: 0 })]);
   });
-  it('keeps a dismissed connect-first panel dismissed when processing is cancelled (US-12 AC4)', async () => {
+  it('keeps a dismissed connect-first panel dismissed when processing is stopped (US-12 AC4)', async () => {
     vi.mocked(getDocumentArchiveMode).mockReturnValue('device-only');
     extractFromPdf.mockReturnValue(deferred<never>().promise);
     render(<Harness />);
     fireEvent.click(screen.getByRole('button', { name: /Continue without keeping my files/ }));
     selectFile();
-    fireEvent.click(await screen.findByRole('button', { name: 'Cancel' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Stop' }));
     expect(document.querySelector('input[type=file]')).toBeTruthy();
     expect(screen.queryByText('Keep your original documents')).toBeNull();
   });

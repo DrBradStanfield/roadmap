@@ -361,6 +361,8 @@ export function ReviewTable({
       <p className="review-summary">{view.summary}</p>
 
       {!showAll.open && checking > 0 && <h4 className="review-check-title">{IMPORT_REVIEW_TEXT.checkTitle(checking)}</h4>}
+      {/* While the state saves it refuses every choice, so every control waits with it (owner ruling 2026-11-20). */}
+      <fieldset className="health-form-lock" disabled={isSaving}>
       <div id={matrixId}>
         {(shownMatrix.coreRows.length > 0 || shownMatrix.additionalRows.length > 0) && (
           <ReviewMatrix
@@ -388,6 +390,7 @@ export function ReviewTable({
       <NotSavedLine notSaved={groups.notSaved} disclosure={notSavedOpen} />
 
       {children}
+      </fieldset>
 
       {/* One live region, so a screen reader hears why Save waits, and the save's answer (US-12 AC6). */}
       <div className="review-save-outcome" role="status">
@@ -403,9 +406,10 @@ export function ReviewTable({
         >
           {isSaving ? UPLOAD_WINDOW_TEXT.saving : view.save.label}
         </button>
-        <button className="review-cancel-btn" onClick={onCancel} disabled={isSaving}>
+        {/* While a file is read the window offers only Stop, which keeps what was read (owner ruling 2026-11-20). */}
+        {!view.stop && <button className="review-cancel-btn" onClick={onCancel} disabled={isSaving}>
           {nothing ? UPLOAD_WINDOW_TEXT.close : UPLOAD_WINDOW_TEXT.cancel}
-        </button>
+        </button>}
       </div>
     </div>
   );
