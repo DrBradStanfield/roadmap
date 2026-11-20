@@ -19,6 +19,10 @@ struct LabReadSender: Sendable {
         case ended(line: String?)
         /// A refusal before any stream (any status but 200), or no answer at all (nil status): `sendFailed`.
         case refused(status: Int?, body: String?, contentType: String?)
+        /// Never sent: this device cannot prove the app (`sendFailed` with `local`, US-52 AC7e).
+        case cannotAttest
+        /// Never sent: the proof failed at App Attest's `stage`, with `code`, each a short word.
+        case attestFailed(stage: String, code: String)
     }
     /// No answer at all: the network failure, which Try again mends.
     static let noAnswer = Outcome.refused(status: nil, body: nil, contentType: nil)
@@ -56,9 +60,13 @@ struct LabReadSender: Sendable {
             opened = try await Self.within(openDeadline) { try await attest.open(Self.path, body: body) }
         } catch is CancellationError {
             throw CancellationError()
+        } catch AppAttestClient.Failure.notSupported {
+            return .cannotAttest
+        } catch AppAttestClient.Failure.device(let stage, let code) {
+            return .attestFailed(stage: Self.word(stage), code: Self.word(code))
         } catch {
             try Task.checkCancellation()
-            return Self.noAnswer // no answer, or a device that could not sign
+            return Self.noAnswer // no answer
         }
         switch opened {
         case nil: return Self.noAnswer
@@ -71,6 +79,13 @@ struct LabReadSender: Sendable {
             let line: String?? = try await Self.within(readDeadline) { try await Self.finalLine(bytes) }
             return line.map { .ended(line: $0) } ?? Self.noAnswer
         }
+    }
+
+    /// An App Attest step or code as the engine takes it: letters, digits, dash and underscore, at
+    /// most 24 (health-core ATTEST_PART); anything else, a domain's dots or a space, becomes "_".
+    static func word(_ text: String) -> String {
+        let kept = text.unicodeScalars.map { $0.isASCII && (CharacterSet.alphanumerics.contains($0) || $0 == "-" || $0 == "_") ? Character($0) : "_" }
+        return kept.isEmpty ? "_" : String(kept.prefix(24))
     }
 
     private static func refused(_ http: HTTPURLResponse, _ text: Data) -> Outcome {

@@ -304,6 +304,11 @@ actor UploadRunner {
             EngineNatives.json(["type": "streamEnded", "run": run, "id": id, "line": line ?? NSNull(), "now": now()])
         case .refused(let status, let body, let contentType):
             EngineNatives.json(["type": "sendFailed", "run": run, "id": id, "status": status ?? NSNull(), "body": body ?? NSNull(), "contentType": contentType ?? NSNull()])
+        case .cannotAttest:
+            EngineNatives.json(["type": "sendFailed", "run": run, "id": id, "status": NSNull(), "body": NSNull(), "contentType": NSNull(), "local": ["kind": "cannotAttest"]])
+        case .attestFailed(let stage, let code):
+            EngineNatives.json(["type": "sendFailed", "run": run, "id": id, "status": NSNull(), "body": NSNull(), "contentType": NSNull(),
+                                "local": ["kind": "attestFailed", "stage": stage, "code": code]])
         }
     }
 

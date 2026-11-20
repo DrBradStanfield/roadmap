@@ -11,7 +11,7 @@ import { NO_CHOICES, type ChoiceChange, type FileChoices } from './upload-choice
 import { transition, type UploadFile, type UploadState } from './upload-flow';
 import { uploadSavePlan } from './upload-plan';
 import { uploadReview } from './upload-review';
-import { FILE_NOTICE_TEXT, FIX_ERRORS_TEXT, UPLOAD_TEXT_PROPOSED } from './upload-text';
+import { FILE_NOTICE_TEXT, FIX_ERRORS_TEXT, UPLOAD_TEXT } from './upload-text';
 import { uploadView, type ValueRow } from './upload-view';
 
 const labX = (over: Partial<UnifiedExtractionResult> = {}): UnifiedExtractionResult =>
@@ -84,6 +84,6 @@ describe('a chosen Replace reads as what Save will do', () => {
     const before = rows(open([read('a')]), record)[0];
     expect(before).toMatchObject({ replacing: false, conflict: 'Your record already has a different value for this day. It stays as it is.' });
     const after = rows(chose(open([read('a')]), { replace: 'v0', correctsId: before.replaces! }), record)[0];
-    expect(after).toMatchObject({ replacing: true, replaces: before.replaces, conflict: UPLOAD_TEXT_PROPOSED.replaces });
+    expect(after).toMatchObject({ replacing: true, replaces: before.replaces, conflict: UPLOAD_TEXT.replaces });
   });
 });

@@ -5,9 +5,9 @@
 // (upload-schema.ts), and the PARSED value is what runs. A malformed input answers a refusal,
 // never a throw. Nothing is logged: the state holds file names, hashes and read values.
 import { initialUpload, transition, type UploadEvent, type UploadState } from '../../packages/health-core/src/upload-flow';
-import { UPLOAD_EVENTS, UPLOAD_STATE } from '../../packages/health-core/src/upload-schema';
+import { ATTEST_PART, UPLOAD_EVENTS, UPLOAD_STATE } from '../../packages/health-core/src/upload-schema';
 import { knownAs, knownIndex, readIsLegacy, type KnownIndex } from '../../packages/health-core/src/upload-known';
-import { uploadFailureOfText } from '../../packages/health-core/src/upload-failure';
+import { appGateFailure } from '../../packages/health-core/src/upload-failure';
 import { labStreamAnswer } from '../../packages/health-core/src/upload-answer';
 import { uploadReview } from '../../packages/health-core/src/upload-review';
 import { uploadView } from '../../packages/health-core/src/upload-view';
@@ -36,6 +36,11 @@ export class Refused extends Error {
 // --- The wire -------------------------------------------------------------------------------
 
 const platform = z.enum(['web', 'phone']);
+/** A send that never reached the server because the phone could not prove the app (US-52 AC7e). */
+const LOCAL = z.discriminatedUnion('kind', [
+  z.strictObject({ kind: z.literal('cannotAttest') }),
+  z.strictObject({ kind: z.literal('attestFailed'), stage: ATTEST_PART, code: ATTEST_PART }),
+]);
 const maybeText = z.string().nullable();
 const E = UPLOAD_EVENTS;
 /**
@@ -46,7 +51,7 @@ const E = UPLOAD_EVENTS;
 const WIRE_EVENT = z.discriminatedUnion('type', [
   E.picked, E.consented, E.listed, E.zipFailed, E.hashed.omit({ known: true }), E.hashFailed, E.converted, E.convertFailed,
   E.answered.omit({ legacy: true }),
-  E.sendFailed.omit({ failure: true }).extend({ status: z.number().int().nullable(), body: maybeText, contentType: maybeText }),
+  E.sendFailed.omit({ failure: true, detail: true }).extend({ status: z.number().int().nullable(), body: maybeText, contentType: maybeText, local: LOCAL.optional() }),
   z.strictObject({ type: z.literal('streamEnded'), run: z.number().int().nonnegative(), id: z.string(), line: maybeText, now: z.string() }),
   E.retry, E.stop, E.chose, E.saveStarted, E.saved, E.saveFailed, E.close, E.discard,
 ]);
@@ -93,8 +98,11 @@ function engineEvent(state: UploadState, wire: Wire, record: () => RoadmapFile):
     case 'hashed': return { ...wire, known: knownAs(indexOf(record()), wire.hash) };
     case 'answered': return { ...wire, legacy: legacy(wire.id, wire.extraction) };
     case 'sendFailed': {
-      const { status, body, contentType, ...rest } = wire;
-      return { ...rest, failure: uploadFailureOfText(status, body, contentType) };
+      const { status, body, contentType, local, ...rest } = wire;
+      // The phone's own App Attest outcome, when there is one, is the failure: status and body are not read.
+      if (local?.kind === 'cannotAttest') return { ...rest, failure: 'cannot_attest' };
+      if (local) return { ...rest, failure: 'attest_failed', detail: { stage: local.stage, code: local.code } };
+      return { ...rest, ...appGateFailure(status, body, contentType) };
     }
     case 'streamEnded': {
       const { run, id, line, now } = wire;

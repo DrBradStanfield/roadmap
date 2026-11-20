@@ -8,7 +8,10 @@ import * as z from './zod';
 
 /** The web's UploadErrorCode names, so the web adopts them unchanged. The key codes come only from the
  *  Pages build's own Anthropic key (widget-src byok-upload.ts); a server answer is never one of them. */
-export const UPLOAD_FAILURES = ['rate_limit', 'busy', 'server_error', 'network', ...EXTRACTION_STOP_CODES, 'key_refused', 'no_credit', 'key_rate_limit'] as const;
+export const UPLOAD_FAILURES = ['rate_limit', 'busy', 'server_error', 'network', ...EXTRACTION_STOP_CODES, 'key_refused', 'no_credit', 'key_rate_limit',
+  // The iPhone's alone: the app gate's final refusal and a body too large (appGateFailure), and the
+  // phone's own App Attest: a device that cannot prove the app, or one whose proof failed.
+  'app_refused', 'too_large', 'cannot_attest', 'attest_failed'] as const;
 export type UploadFailure = (typeof UPLOAD_FAILURES)[number];
 export const isUploadFailure = (code: string | undefined): code is UploadFailure => (UPLOAD_FAILURES as readonly string[]).includes(code ?? '');
 
@@ -45,4 +48,36 @@ export function uploadFailureOfText(status: number | null, text: string | null, 
     try { body = JSON.parse(text); } catch { body = undefined; }
   }
   return uploadFailure(status, body);
+}
+
+/**
+ * What a failed send said beyond its code, for its line (US-52 AC7e): the app gate's own `error`
+ * words, as today's iPhone shows them; or the phone's App Attest step and code that failed.
+ */
+export type FailDetail = { message: string } | { stage: string; code: string };
+/** The gate's words are shown as text, never read: trimmed, at most this long. */
+export const GATE_WORDS_MAX = 200;
+
+/**
+ * The app gate's refusal before a stream, as the iPhone saw it (app-gate.server.ts, lab-read): read
+ * as `uploadFailureOfText` reads it, except that a 401 (final: the app already retried the one it
+ * mends) is `app_refused`, a 413 `too_large`, and any other 4xx but 422 and 429 `app_refused` too,
+ * none of which Try again mends, as today's iPhone never offers it under 500. A refusal from 400 up,
+ * but a 422, carries the gate's own `error` words, as today's iPhone shows them.
+ */
+export function appGateFailure(status: number | null, text: string | null, contentType: string | null): { failure: UploadFailure; detail?: FailDetail } {
+  const gate = status !== null && status >= 400 && status < 500 && ![413, 422, 429].includes(status);
+  const failure = gate ? 'app_refused' : status === 413 ? 'too_large' : uploadFailureOfText(status, text, contentType);
+  const message = status !== null && status >= 400 && status !== 422 ? gateWords(text, contentType) : null;
+  return message ? { failure, detail: { message } } : { failure };
+}
+
+function gateWords(text: string | null, contentType: string | null): string | null {
+  if (text === null || !(contentType ?? '').includes('application/json')) return null;
+  try {
+    const error: unknown = (JSON.parse(text) as { error?: unknown } | null)?.error;
+    return typeof error === 'string' ? error.trim().slice(0, GATE_WORDS_MAX) || null : null;
+  } catch {
+    return null;
+  }
 }

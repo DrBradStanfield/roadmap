@@ -48,6 +48,9 @@ describe('each code in upload-flow: a reason of its own, retried as today', () =
     rate_limit: ['dailyLimit', false], refused: ['declined', false], too_long: ['tooLong', false],
     // The Pages build's own key (US-12 AC9): a refused key and an empty account never mend; its minute limit may.
     key_refused: ['keyRefused', false], no_credit: ['noCredit', false], key_rate_limit: ['keyRateLimit', true],
+    // The iPhone's (US-52 AC7e): the app gate's final refusal and a body too large never mend, nor a phone
+    // that cannot prove the app; a proof that failed this time may.
+    app_refused: ['appRefused', false], too_large: ['tooLarge', false], cannot_attest: ['cannotAttest', false], attest_failed: ['attestFailed', true],
   };
   for (const [failure, [reason, retryable]] of Object.entries(WANT) as Array<[UploadFailure, [string, boolean]]>) {
     it(`${failure} -> ${reason}, ${retryable ? '' : 'not '}retryable`, () => {

@@ -7,10 +7,12 @@
  */
 import { IMPORT_LIMITS } from './import-hints';
 import { IMPORT_REVIEW_TEXT, KIND_WORDS, plural } from './import-review';
+import type { FailDetail } from './upload-failure';
 import type { FailReason, RunRefusal } from './upload-flow';
+import type { UploadPlatform } from './upload-rules';
 import type { DocumentType } from './validation';
 
-/** Section 5, rows 1 to 27, by key. */
+/** Section 5, rows 1 to 27, by key, with the words added since; all approved by Brad 2026-11-20. */
 export const UPLOAD_TEXT = {
   /** 1. `parts` already joined; with none, the count alone. */
   summaryFiles: (n: number, parts: readonly string[]) => `${plural(n, 'file')}${parts.length ? `: ${parts.join(', ')}` : ''}`,
@@ -48,26 +50,13 @@ export const UPLOAD_TEXT = {
   archivedLine: (a: number) => `${plural(a, 'original file')} kept in your cloud.`,
   /** The web's done line for originals it could not store (UploadModal.tsx), byte for byte: no count. */
   unstoredLine: "The original file couldn't be stored; its details are saved.",
-} as const;
-
-/**
- * NOT YET APPROVED: words section 5 does not have, waiting for the owner's yes (listed in PR 8).
- * saveOriginals: the Save label when Save files only originals (the web's saveLabel says
- * "Save 2 originals" today, ReviewOverview.tsx). chooseDay: why Save waits while a report needs
- * its day. replaces: a conflict whose Replace is on (the web shows only the ticked box). The dropped-at-zero forms of rows 23 and 26 ("Save 2 documents", "Saved 3 values.")
- * live in UPLOAD_TEXT.saveBoth and savedLine and wait for the same yes.
- */
-export const UPLOAD_TEXT_PROPOSED = {
+  /** The Save label when Save files only originals (the web's saveLabel, ReviewOverview.tsx). */
   saveOriginals: (a: number) => `Save ${plural(a, 'original')}`,
+  /** Why Save waits while a report needs its day. */
   chooseDay: 'Choose the day of the test',
+  /** A conflict whose Replace is on (the web shows only the ticked box). */
   replaces: 'Replaces the value in your record.',
 } as const;
-
-/** Every proposed string, for the owner to show Brad: the two above and the dropped-at-zero forms of rows 23 and 26. */
-export const PROPOSED_WORDS: readonly string[] = [
-  UPLOAD_TEXT_PROPOSED.saveOriginals(1), UPLOAD_TEXT_PROPOSED.saveOriginals(2), UPLOAD_TEXT_PROPOSED.chooseDay, UPLOAD_TEXT_PROPOSED.replaces,
-  UPLOAD_TEXT.saveBoth(0, 1), UPLOAD_TEXT.saveBoth(0, 2), UPLOAD_TEXT.savedLine(1, 0), UPLOAD_TEXT.savedLine(2, 0), UPLOAD_TEXT.savedLine(0, 1), UPLOAD_TEXT.savedLine(0, 2),
-];
 
 /** A file not fully read, as the web's notices word it (US-12 AC9); moved from UploadNotices.tsx. */
 export const FILE_NOTICE_TEXT = {
@@ -105,6 +94,17 @@ export const REFUSED_TEXT: Record<RunRefusal, string> = {
 /** An empty ZIP, or one of unsupported files, named itself (US-12 AC9); moved from useUploadFlow.ts. */
 export const EMPTY_ZIP_TEXT = 'No files we can read inside this ZIP.';
 
+/** The iPhone's lines, moved byte for byte from LabUploadSheet.swift and AppAttestClient.swift. */
+export const PHONE_FAIL_TEXT = {
+  /** A 422 from the reader: it declined the file or stopped short. */
+  declined: 'The AI could not read this file.',
+  /** A server refusal that gave no words of its own. */
+  noAnswer: 'The server could not answer just now. Please try again later.',
+  cannotAttest: 'Chat and lab upload need a device that can prove the app is genuine (Apple App Attest). This device cannot.',
+  /** Followed by " (App Attest <stage> <code>)" when the step and code are known. */
+  attestFailed: 'This iPhone could not prove the app is genuine, so nothing was sent. Please try again.',
+} as const;
+
 /**
  * Each failed file's line, from the words the web shows today for the same failure: a pdf.js
  * throw, a timeout and a ZIP that will not open are all "could not open" (US-12 AC9), and a
@@ -126,4 +126,25 @@ export const FAIL_TEXT: Record<FailReason, string> = {
   noCredit: `Not read. ${KEY_TEXT.noCredit}`,
   keyRateLimit: KEY_TEXT.rateLimit,
   noKey: KEY_TEXT.missing,
+  // The iPhone's alone; with no words of the gate's own, its fallback.
+  appRefused: PHONE_FAIL_TEXT.noAnswer,
+  tooLarge: PHONE_FAIL_TEXT.noAnswer,
+  cannotAttest: PHONE_FAIL_TEXT.cannotAttest,
+  attestFailed: PHONE_FAIL_TEXT.attestFailed,
 };
+
+/** Where the iPhone's line differs from the web's for the same reason: an AI that declined or stopped short, a server failure with no words. */
+const PHONE_LINE: Partial<Record<FailReason, string>> = {
+  declined: PHONE_FAIL_TEXT.declined, tooLong: PHONE_FAIL_TEXT.declined, server: PHONE_FAIL_TEXT.noAnswer,
+};
+
+/**
+ * A failed file's line (US-52 AC7e): the send's own words first, the gate's `error` text or the App
+ * Attest step and code, as today's iPhone shows them; then the iPhone's words where they differ from
+ * the web's (PHONE_LINE); then FAIL_TEXT.
+ */
+export function failLine(status: { reason: FailReason; detail?: FailDetail }, platform: UploadPlatform): string {
+  const { detail, reason } = status;
+  if (detail) return 'message' in detail ? detail.message : `${PHONE_FAIL_TEXT.attestFailed} (App Attest ${detail.stage} ${detail.code})`;
+  return (platform === 'phone' ? PHONE_LINE[reason] : undefined) ?? FAIL_TEXT[reason];
+}
