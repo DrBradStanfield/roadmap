@@ -1,4 +1,5 @@
 import Compression
+import os
 import CryptoKit
 import UIKit
 import XCTest
@@ -285,10 +286,47 @@ final class ZipLazyReadTests: XCTestCase {
         held.forget([known])                        // hashed, known and not archive-only
         XCTAssertNoThrow(try held.convert(read, rules: .swift))
         XCTAssertThrowsError(try held.convert(failed, rules: .swift))
-        XCTAssertEqual(held.heldBytes, zip.count, "read and failed still held")
+        let readPages = try XCTUnwrap(held.pages(read)).reduce(0) { $0 + $1.content.utf8.count }
+        XCTAssertEqual(held.heldBytes, zip.count + readPages, "read (with its pages) and failed still held")
         held.forget([read, known, failed])          // saved: every file in the pick
         XCTAssertEqual(held.heldBytes, 0)
         for id in ids { XCTAssertThrowsError(try held.hash(id)) }
+    }
+
+    /// PR 1849 review (Codex R1, adversary S2): pages are kept only for the hold they were made
+    /// from. Forgotten while it converts: nothing kept, nothing held.
+    func testAConvertForgottenMidwayKeepsNoPages() throws {
+        let box = OSAllocatedUnfairLock<LabFileReader.Held?>(initialState: nil)
+        let held = LabFileReader.Held(beforeKeeping: { id in box.withLock { $0 }?.forget([id]) })
+        box.withLock { $0 = held }
+        held.hold(Self.png, as: "f", name: "a.png")
+        _ = try held.convert("f", rules: .swift)
+        XCTAssertNil(held.pages("f"))
+        XCTAssertEqual(held.heldBytes, 0)
+        // A member forgotten as it converts, likewise.
+        held.hold(Self.zip([.init("a.png", Self.png), .init("b.png", Self.png)]), as: "z", name: "labs.zip")
+        let members = try held.list("z", rules: .swift)
+        _ = try held.convert(members[0].id, rules: .swift)
+        XCTAssertNil(held.pages(members[0].id))
+    }
+
+    /// The id held again by a newer pick while an old convert runs: the newer pick's pages stand.
+    func testAnOldConvertNeverOverwritesANewerHold() throws {
+        let other = UIGraphicsImageRenderer(size: CGSize(width: 40, height: 10)).pngData { _ in }
+        let box = OSAllocatedUnfairLock<(held: LabFileReader.Held?, fired: Bool)>(initialState: (nil, false))
+        let held = LabFileReader.Held(beforeKeeping: { id in
+            guard let held = box.withLock({ state -> LabFileReader.Held? in
+                defer { state.fired = true }
+                return state.fired ? nil : state.held
+            }) else { return }
+            held.hold(other, as: id, name: "b.png")
+            _ = try? held.convert(id, rules: .swift)
+        })
+        box.withLock { $0.held = held }
+        held.hold(Self.png, as: "f", name: "a.png")
+        _ = try held.convert("f", rules: .swift)
+        let newer = try LabFileReader.document(from: other, name: "b.png", rules: .swift).pages
+        XCTAssertEqual(held.pages("f"), newer)
     }
 
     /// Blocks the calling thread (here, main), as a busy screen would.

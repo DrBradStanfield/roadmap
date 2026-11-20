@@ -141,8 +141,7 @@ export const PRODUCT_EVENT_NAMES = [
   'signin_opened',
   // US-62 AC31: the "Your plan is ready." card showed after the onboarding, and
   // its Got it was pressed. The names alone, never what the plan holds.
-  'plan_ready_shown',
-  'plan_ready_dismissed',
+  'plan_ready_shown', 'plan_ready_dismissed',
   // US-65 AC6: the record opened with entries this build could not read, so
   // the page showed the kept-unchanged line. Metadata `{ count }` only, capped
   // at 1000: never a row, a field name or a value. Once per tab session.
@@ -154,6 +153,7 @@ export const PRODUCT_EVENT_NAMES = [
   // US-07 AC11: a waist or blood pressure was saved, the plan's two prompts.
   // Metadata `{ measure }` (MEASURES) only: never the value or another metric.
   'measurement_added',
+  'waist_widget_viewed', 'waist_widget_saved', 'bp_widget_viewed', 'bp_widget_saved', // US-74, US-75: a widget block mounted / saved; the names alone, never a value, grade or unit
   'save_retry', // US-09 AC30: a retry of a failed cloud save; metadata { trigger, outcome } (save-retry-words.ts) only
 ] as const;
 
@@ -211,7 +211,7 @@ export const SERVER_ONLY_EVENT_NAMES = [
  * a distinct user action whose count is the signal (US-12 AC10, one per upload
  * run). The events route's per-visitor and per-IP limits still bound them.
  */
-export const PER_ACTION_EVENT_NAMES = ['upload_outcome', 'upload_review', 'save_retry'] as const satisfies readonly ProductEventName[];
+export const PER_ACTION_EVENT_NAMES = ['upload_outcome', 'upload_review', 'save_retry', 'waist_widget_viewed', 'waist_widget_saved', 'bp_widget_viewed', 'bp_widget_saved'] as const satisfies readonly ProductEventName[]; // US-74: once per page view, which the widget itself ensures
 
 /**
  * The hosted connector's tool names, as a counter may name them. They live in

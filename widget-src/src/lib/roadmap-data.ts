@@ -12,6 +12,7 @@ import { MEASUREMENT_REFUSALS_WITH_METRIC, type MEASURES } from '@roadmap/health
 import type { ReminderScheduleItem } from '@roadmap/health-core/reminder-schedule';
 import type { SaveStatus } from '@roadmap/health-core/save-state';
 import { knownMinorOf } from '@roadmap/health-core/calculations';
+import { readableView } from '@roadmap/health-core/readable-rows';
 import { knownIndex, readIsLegacy, type KnownIndex } from '@roadmap/health-core/upload-known';
 import type { UnifiedExtractionResult } from '@roadmap/health-core/lab-extraction';
 import { RoadmapStore, type DerivedSeries, type BulkLabValueInput, type BulkMeasurementInput, type CorrectStatus, type MoveOutcome, type ProfileSave, type UploadStoreSave } from '../storage/roadmap-store';
@@ -161,6 +162,15 @@ export function getInitialInputsSync(): Partial<HealthInputs> {
   return store ? store.getPrefillInputs() : {};
 }
 
+/** The record as the store holds it now, unreadable rows included: what a write is checked against (US-75 AC5). Null while none is open. */
+export function recordFileSync(): RoadmapFile | null {
+  return store?.file ?? null;
+}
+/** The record as screens and the plan read it (US-65 readableView), for a plan the page works out itself (US-75 AC4). */
+export function readableRecordSync(): RoadmapFile | null {
+  return store ? readableView(store.file).file : null;
+}
+
 /** US-65: how many record entries this build could not read (kept unchanged, not shown). */
 export function getUnreadableCount(): number {
   return store?.unreadableCount ?? 0;
@@ -246,7 +256,7 @@ export function loadDerivedSeries(shown: Parameters<RoadmapStore['loadDerivedSer
  *  alone. A blood pressure counts only once both halves of its day are on record. */
 const MEASURE_OF: Partial<Record<MetricType, (typeof MEASURES)[number]>> = { waist: 'waist', systolic_bp: 'blood_pressure', diastolic_bp: 'blood_pressure' };
 const OTHER_HALF: Partial<Record<MetricType, MetricType>> = { systolic_bp: 'diastolic_bp', diastolic_bp: 'systolic_bp' };
-function countMeasuresAdded(added: ApiMeasurement[]): void {
+export function countMeasuresAdded(added: ApiMeasurement[]): void {
   if (!store || added.length === 0) return;
   const active = store.loadAllHistory();
   const complete = (row: ApiMeasurement) => {
@@ -256,9 +266,10 @@ function countMeasuresAdded(added: ApiMeasurement[]): void {
   const measures = new Set(added.filter(complete).map((row) => MEASURE_OF[row.metricType as MetricType]).filter((m) => m !== undefined));
   for (const measure of measures) trackProductEvent('measurement_added', { measure });
 }
-export async function addMeasurement(metricType: string, value: number, recordedAt?: string, erase?: string): Promise<AddMeasurementResult> {
+/** `counted` false: the caller counts the row itself once the store has kept it (US-74 review C8). */
+export async function addMeasurement(metricType: string, value: number, recordedAt?: string, erase?: string, counted = true): Promise<AddMeasurementResult> {
   const result: AddMeasurementResult = store ? await store.addMeasurement(metricType, value, recordedAt, erase) : { status: 'error' };
-  if (result.status === 'inserted') countMeasuresAdded([result.row]);
+  if (counted && result.status === 'inserted') countMeasuresAdded([result.row]);
   return result;
 }
 /** Correct a saved core or lab value; `newValue` is in the unit it is stored in. */

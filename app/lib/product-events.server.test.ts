@@ -263,6 +263,16 @@ describe('the email-arrival counters', () => {
     }
   });
 
+  it('US-74 AC5, US-75: takes the widgets\' viewed and saved events from a browser by name alone', () => {
+    for (const eventName of ['waist_widget_viewed', 'waist_widget_saved', 'bp_widget_viewed', 'bp_widget_saved']) {
+      expect(PRODUCT_EVENT_NAMES).toContain(eventName);
+      expect(parseProductEvent({ eventName, visitorId: VISITOR })).toEqual({ eventName, visitorId: VISITOR });
+      for (const metadata of [{ measure: 'waist' }, { count: 1 }, { unit: 'cm' }, { value: 88 }, { stage: 'stage1' }]) {
+        expect(parseProductEvent({ eventName, visitorId: VISITOR, metadata })).toBeNull();
+      }
+    }
+  });
+
   it('US-61 AC8: takes the two US product events with a product word, and nothing else', () => {
     for (const eventName of ['us_product_shown', 'us_product_link_clicked']) {
       for (const product of ['microvitamin_plus', 'sleep']) {

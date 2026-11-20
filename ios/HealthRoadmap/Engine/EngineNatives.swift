@@ -231,7 +231,7 @@ final class EngineNatives {
         ]
     }
 
-    private static func json(_ object: [String: Any]) -> String {
+    static func json(_ object: [String: Any]) -> String {
         let data = (try? JSONSerialization.data(withJSONObject: object)) ?? Data("{}".utf8)
         return String(decoding: data, as: UTF8.self)
     }

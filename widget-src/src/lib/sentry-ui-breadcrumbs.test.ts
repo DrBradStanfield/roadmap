@@ -97,6 +97,17 @@ it('sends click and input breadcrumbs without labels, names, values or status cl
   }
 });
 
+// US-74 review P1: a single-topic widget's result status class is scrubbed
+// from a click breadcrumb's element path, as the full app's status classes are.
+it('drops the widget result status class from a click breadcrumb', () => {
+  document.body.innerHTML = '<form class="hr-widget-form"><div class="hr-widget-tile"><div class="hr-widget-status">Elevated</div></div></form>';
+  const target = document.querySelector('.hr-widget-status')!;
+  const crumb = scrubBreadcrumb({ category: 'ui.click', message: 'x' }, { event: { target } } as never)!;
+  expect(crumb.message).toBe('body > form.hr-widget-form > div.hr-widget-tile > div');
+  const bare = scrubBreadcrumb({ category: 'ui.click', message: 'form.hr-widget-form > div.hr-widget-status[title="x"]' })!;
+  expect(bare.message).toBe('form.hr-widget-form > div');
+});
+
 // US-09 AC7d on My health (US-62 phase 5): the real page, an urgent plan, and
 // clicks on what a finding draws. No card id, status class or suggestion id
 // may name what the plan found.

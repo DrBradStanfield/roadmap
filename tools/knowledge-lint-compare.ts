@@ -201,15 +201,18 @@ const SEVERITIES = ['high', 'medium', 'low'];
 /** A quote that reads like an instruction is planted text, not a claim: never a finding. */
 const INSTRUCTION_LIKE = /\b(ignore|disregard|forget|override)\b.{0,40}\b(instructions?|prompts?|rules)\b|\bsystem prompt\b|\bnew instructions\b|\byou are (now )?(an?|the) (ai|assistant|model)\b|\brespond (only )?with\b/i;
 
+/** A suggested fix that opens "No change needed" withdraws its own finding. */
+const WITHDRAWN = /^no change (is )?needed\b/i;
+
 /** Keep a finding only if its quotes are verbatim in their excerpts and it names one of the two handles. */
 export function parseFindings(job: Job, text: string, date: string) {
-  const none = (rejected: number) => ({ findings: [] as LintFinding[], rejected, instructionTextSeen: false, usable: false, warnings: [] as string[] });
+  const none = (rejected: number) => ({ findings: [] as LintFinding[], rejected, withdrawn: 0, instructionTextSeen: false, usable: false, warnings: [] as string[] });
   let parsed: { findings?: unknown; instruction_text_seen?: unknown };
   try { parsed = JSON.parse(text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1)); } catch { return none(1); }
   if (!Array.isArray(parsed.findings)) return none(1);
   const [a, b] = [normalise(job.a.text), normalise(job.b.text)];
   const findings: LintFinding[] = [];
-  let rejected = 0;
+  let rejected = 0, withdrawn = 0;
   const warnings: string[] = [];
   for (const f of parsed.findings as Record<string, unknown>[]) {
     if (!f || typeof f !== 'object') { rejected++; continue; }
@@ -227,6 +230,8 @@ export function parseFindings(job: Job, text: string, date: string) {
       rejected++;
       continue;
     }
+    // The model withdrew it: not a finding, so never queued, and the answer still counts.
+    if (WITHDRAWN.test(str('suggested_fix'))) { withdrawn++; continue; }
     const algorithmSide = job.kind === 'entry-vs-algorithm' && (fix === job.a.handle || str('side') === 'algorithm');
     findings.push({
       id: sha12(`${job.kind}|${job.a.handle}|${job.b.handle}|${qa}|${qb}`), kind: job.kind,
@@ -236,7 +241,7 @@ export function parseFindings(job: Job, text: string, date: string) {
     });
   }
   // One malformed or unverifiable finding rejects the answer whole: nothing from it is kept.
-  return { findings: rejected ? [] : findings, rejected, instructionTextSeen: parsed.instruction_text_seen === true || warnings.length > 0, usable: true, warnings };
+  return { findings: rejected ? [] : findings, rejected, withdrawn, instructionTextSeen: parsed.instruction_text_seen === true || warnings.length > 0, usable: true, warnings };
 }
 
 type Fetch = (url: string, init: RequestInit) => Promise<Response>;
@@ -250,7 +255,7 @@ export const projectedUsd = (job: Job) => (promptTokens(job) * PRICES.sonnet55.i
 
 export async function runJobs(jobs: Job[], o: { apiKey: string; fetchImpl: Fetch; maxCalls: number; maxUsd: number; date: string }) {
   const p = PRICES.sonnet55;
-  const r = { calls: 0, deferred: 0, usd: 0, tokensIn: 0, tokensOut: 0, errors: 0, rejected: 0, instructionText: [] as string[], warnings: [] as string[], findings: [] as LintFinding[], outcomes: [] as Outcome[] };
+  const r = { calls: 0, deferred: 0, usd: 0, tokensIn: 0, tokensOut: 0, errors: 0, rejected: 0, withdrawn: 0, instructionText: [] as string[], warnings: [] as string[], findings: [] as LintFinding[], outcomes: [] as Outcome[] };
   for (const job of jobs) {
     // Checked before the call: the spend so far plus this call's worst case must stay within --max-usd.
     if (r.calls >= o.maxCalls || r.usd + projectedUsd(job) > o.maxUsd) break;
@@ -275,6 +280,7 @@ export async function runJobs(jobs: Job[], o: { apiKey: string; fetchImpl: Fetch
       if (parsed.instructionTextSeen) r.instructionText.push(`${job.a.handle} / ${job.b.handle}`);
       if (!parsed.usable || parsed.rejected) throw new Error('unparseable');
       r.outcomes.push({ id: job.id, status: 'done' });
+      r.withdrawn += parsed.withdrawn;
       r.findings.push(...parsed.findings);
     } catch {
       // Any failure with one answer is that pair's retry; every other pair's result stands.
@@ -387,7 +393,7 @@ export async function main(argv: string[], root: string, log: (s: string) => voi
     const queued = appendFixQueue(join(root, PATHS.queue), kept, date, modelCovered(jobs, r.outcomes));
     log(`Cost: ${usd(r.usd)} over ${r.calls} calls (${r.tokensIn.toLocaleString()} input, ${r.tokensOut.toLocaleString()} output tokens); ${r.errors} without a usable answer, marked retry.`);
     log(`Allow-list: ${allow.length} entries, ${suppressed} model findings suppressed.`);
-    log(`Findings: ${kept.length} kept, ${r.rejected} rejected (a quote not in its excerpt, an instruction-shaped quote, or a malformed field; their comparisons are retried).`);
+    log(`Findings: ${kept.length} kept, ${r.rejected} rejected, ${r.withdrawn} withdrawn (rejected: a quote not in its excerpt, an instruction-shaped quote, or a malformed field, and their comparisons are retried; withdrawn: the model's fix opened "No change needed", dropped, comparison answered).`);
     log(queueLine(queued));
     for (const f of kept.filter(x => x.side !== 'knowledge')) for (const line of evidenceLines(f)) log(line);
     for (const w of r.warnings) log(w);

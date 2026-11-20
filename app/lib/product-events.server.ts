@@ -203,6 +203,10 @@ const EVENT_ONLY_KEYS: Partial<Record<string, readonly string[]>> = {
   blood_tests_unified: ['moved', 'folded', 'keptApart'], // US-66 AC13: counts only
   measurement_added: ['measure'], // US-07 AC11: the measure alone, never the value
   save_retry: ['trigger', 'outcome'], // US-09 AC30: how a retry started and ended, never a value
+  waist_widget_viewed: [], // US-74: the names alone, never a value, grade or unit
+  waist_widget_saved: [],
+  bp_widget_viewed: [], // US-75: as US-74's
+  bp_widget_saved: [],
 };
 
 /**
