@@ -48,6 +48,7 @@ struct UploadReviewView: View {
                     if let archived = done.archived { Text(verbatim: archived) }
                     if let unstored = done.unstored { Text(verbatim: unstored).foregroundStyle(.secondary) }
                     ForEach(done.skipped ?? [], id: \.self) { Text(verbatim: $0).foregroundStyle(Color.status("attention")) }
+                    ForEach(done.notSaved ?? [], id: \.self) { Text(verbatim: $0).foregroundStyle(Color.status("attention")) }
                 }
                 // What was not saved stays named on the done screen, in the review's own words.
                 ForEach(page.sections) { if case .notSaved = $0 { section($0) } }

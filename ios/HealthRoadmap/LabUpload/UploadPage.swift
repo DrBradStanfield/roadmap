@@ -150,6 +150,8 @@ struct UploadPage: Decodable, Equatable, Sendable {
         let unstored: String?
         /// Reviewed values another writer beat to their slot, in the web's words (US-12 AC6a).
         let skipped: [String]?
+        /// Values the final commit refused (the record changed meanwhile), in the review's not-saved words.
+        let notSaved: [String]?
     }
 
     let progress: Progress?

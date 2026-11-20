@@ -13,6 +13,8 @@ struct UploadSaveAnswer: Decodable, Sendable {
         /// Reviewed values another writer beat to their slot (US-12 AC6a), a core value or another lab; nil is none.
         var skippedValues: Int? = nil
         var skippedLabValues: Int? = nil
+        /// Values the final commit refused, each {label, reason} or {line}, carried to the done view as they came.
+        var refused: [[String: String]]? = nil
     }
     let ok: Bool
     let record: String?

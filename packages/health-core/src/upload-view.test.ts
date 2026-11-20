@@ -125,9 +125,9 @@ describe('upload view: section 4 screens', () => {
   it('done: one line, each part dropped at zero, and the originals kept', () => {
     const done = (values: number, documents: number, archived: number): UploadState =>
       ({ phase: 'done', platform: 'web', run: 1, files: [], started: NOW, firstRead: null, outcome: { values, documents, archived } });
-    expect(viewOf(done(42, 8, 0), EMPTY, NOW).done).toEqual({ line: 'Saved 42 values and 8 documents.', archived: null, unstored: null, skipped: [] });
-    expect(viewOf(done(0, 1, 2), EMPTY, NOW).done).toEqual({ line: 'Saved 1 document.', archived: '2 original files kept in your cloud.', unstored: null, skipped: [] });
-    expect(viewOf(done(1, 0, 1), EMPTY, NOW).done).toEqual({ line: 'Saved 1 value.', archived: '1 original file kept in your cloud.', unstored: null, skipped: [] });
+    expect(viewOf(done(42, 8, 0), EMPTY, NOW).done).toEqual({ line: 'Saved 42 values and 8 documents.', archived: null, unstored: null, skipped: [], notSaved: [] });
+    expect(viewOf(done(0, 1, 2), EMPTY, NOW).done).toEqual({ line: 'Saved 1 document.', archived: '2 original files kept in your cloud.', unstored: null, skipped: [], notSaved: [] });
+    expect(viewOf(done(1, 0, 1), EMPTY, NOW).done).toEqual({ line: 'Saved 1 value.', archived: '1 original file kept in your cloud.', unstored: null, skipped: [], notSaved: [] });
   });
 });
 

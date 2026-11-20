@@ -142,15 +142,14 @@ describe('gaps the list-view property found, fixed (owner rulings 2026-11-20)', 
     expect(file.labValues.filter((l) => l.status === 'active').map((l) => [l.value, l.correctsId ?? null])).toEqual([[3.1, null]]);
   });
 
-  // OPEN, for the orchestrator: the held web branch names these (`SaveOutcome.refused`, done `notSaved`), not ported here.
-  it('KNOWN refusedAtCommitUnnamed (seed 277): a pair another writer turns the wrong way up before the commit is refused and named nowhere', async () => {
+  it('refusedAtCommit (seed 277): a pair another writer turns the wrong way up before the commit is named on the done screen', async () => {
     const bp = (metric: string, v: number) => core({ metric, valueSI: v, displayValue: v, displayUnit: 'mmHg' });
     const s = open([labRead('f0', { values: [bp('systolic_bp', 120), bp('diastolic_bp', 80)] })]);
     expect(see(s, EMPTY).view.save.label).toBe(IMPORT_REVIEW_TEXT.save(2));
     const { outcome, done } = await saved(s, EMPTY, held([{ kind: 'measurement', metricType: 'diastolic_bp', value: 125, recordedAt: DAY, source: 'manual' }]));
-    expect(outcome).toMatchObject({ values: 0 });
-    expect(outcome.skippedValues).toBeUndefined();
-    expect(done).toMatchObject({ line: 'Saved 0 values.', skipped: [] });
+    expect(outcome.values).toBe(0);
+    expect(done.line).toBe('Saved 0 values.');
+    expect(done.notSaved).toEqual(['Blood pressure not saved: the top number (systolic) must be higher than the bottom number (diastolic). Check the report, then enter it again.']);
   });
 
   it('P7: an edited value shows the number Save writes, in its SI unit', () => {

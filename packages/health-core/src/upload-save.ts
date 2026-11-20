@@ -19,10 +19,14 @@
 import { LAB_ARCHIVE_ROWS, labRowsByFile, listedRows, writtenLabRows } from './document-rows';
 import { committedFile, labArchivePayload, saveDocuments, type DocumentPayload } from './document-save';
 import { bulkAppendValues } from './record-edits';
+import { labReason } from './import-review';
+import { labTestLabel } from './lab-catalog';
+import { METRIC_LABELS } from './mappings';
 import type { RoadmapFile } from './roadmap-file';
 import type { SaveOutcome, UploadState } from './upload-flow';
 import { uploadSavePlan } from './upload-plan';
 import { reviewedWrites, uploadReview } from './upload-review';
+import { measurementRefusalText } from './upload-text';
 import { saveBlocked } from './upload-view';
 
 /**
@@ -53,7 +57,7 @@ export type UploadSaveResult =
   | { ok: false; reason: 'not-saving' | 'not-ready'; message: string };
 
 /** A landed Save's counts: every one but the skips, which are there only when some row was skipped. */
-export type SavedOutcome = Required<Omit<SaveOutcome, 'skippedValues' | 'skippedLabValues'>> & SaveOutcome;
+export type SavedOutcome = Required<Omit<SaveOutcome, 'skippedValues' | 'skippedLabValues' | 'refused'>> & SaveOutcome;
 
 /** An original as saveDocuments holds it: the file it is, with the hash the state read for its bytes. */
 interface Held { fileId: string; hash: string }
@@ -130,7 +134,15 @@ export async function uploadSave<F>(s: UploadState, record: RoadmapFile, now: st
       const notWritten = s.reviewed?.filter((v) => !settled.has(`${v.file}:${v.ref}`))
         ?? written.outcomes.flatMap((o, i) => (o === 'skipped' ? [{ lab: rows[i].kind === 'lab' }] : []));
       const [sv, sl] = [notWritten.filter((v) => !v.lab).length, notWritten.filter((v) => v.lab).length];
-      return { file: values || docs.saved.length ? committedFile(written.file, docs) : file, outcome: { values, ...outcome, unstored, ...(sv ? { skippedValues: sv } : {}), ...(sl ? { skippedLabValues: sl } : {}) } };
+      // A value the commit refused, the record having changed since the plan (a blood pressure's other half,
+      // say), is named, never dropped silently (US-12 AC15): a lab in the review's not-saved words, a core value
+      // in the web's own refusal line. A core value out of range has no line without the cell's unit: it reads
+      // as misread, as the review names a misread number (it cannot newly arise at commit: the range is the value's own).
+      const refused = [
+        ...written.refused.map((r) => ({ label: labTestLabel(r.key), reason: labReason(r) })),
+        ...written.measurementRefusals.map((r) => { const line = measurementRefusalText(r); return line !== null ? { line } : { label: METRIC_LABELS[r.metricType] ?? labTestLabel(r.metricType), reason: 'misread' as const }; }),
+      ];
+      return { file: values || docs.saved.length ? committedFile(written.file, docs) : file, outcome: { values, ...outcome, unstored, ...(sv ? { skippedValues: sv } : {}), ...(sl ? { skippedLabValues: sl } : {}), ...(refused.length ? { refused } : {}) } };
     },
   };
 }

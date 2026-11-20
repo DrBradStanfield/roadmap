@@ -97,7 +97,8 @@ export const isOfferedRef = (ref: string) => /^[va]\d+$/.test(ref);
  *  (outside its input range, or half of a blood pressure the wrong way up). */
 export type UnsureReason = 'confidence' | 'question' | 'unitGuessed' | 'outOfRange' | 'conflict';
 /** Why a value is not saved (D5). `futureDay`: its own printed day is no real past day (the shared upload's alone, upload-review.ts). */
-export type NotSavedReason = 'unit' | 'noUnit' | 'misread' | 'scale' | 'unreadable' | 'urine' | 'sameDay' | 'futureDay';
+export const NOT_SAVED_REASONS = ['unit', 'noUnit', 'misread', 'scale', 'unreadable', 'urine', 'sameDay', 'futureDay'] as const;
+export type NotSavedReason = (typeof NOT_SAVED_REASONS)[number];
 
 /**
  * One value's place in the review. `ref`: `v<i>` a core value, `a<i>` an
@@ -167,7 +168,7 @@ function slotOf(row: BulkRow): { slot: string; quantity: Quantity } {
 }
 
 /** A lab refusal in the person's words, from the write's own fault (never its text). */
-const labReason = (r: BulkAppendResult['refused'][number]): NotSavedReason =>
+export const labReason = (r: BulkAppendResult['refused'][number]): NotSavedReason =>
   r.fault === 'implausible' || r.fault === 'ceiling' ? 'misread' : r.fault === 'scale' || r.fault === 'decimal' ? 'scale' : r.unit.trim() ? 'unit' : 'noUnit';
 
 /** The record already holds this row's reading, equal, on its day (`sameReading`, as the review compares). */

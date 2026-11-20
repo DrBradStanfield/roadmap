@@ -405,16 +405,13 @@ class Run {
       if (!changed && (JSON.stringify(want) !== JSON.stringify(got) || skipped)) fail('P2', `view planned ${JSON.stringify(want)}, commit added ${JSON.stringify(got)}, skipped ${skipped}`);
       // Nothing a person reviewed vanishes: each reviewed value not written is counted in the outcome.
       const missing = want.filter((w) => !got.includes(w)).length;
-      // OPEN gap: a reviewed value the commit refuses on the changed record (a blood pressure's other half arrived) is
-      // counted nowhere; the held web branch names it (`SaveOutcome.refused`), not ported here.
-      const dry = bulkAppendValues(atCommit, planned, NOW);
-      const refusedAtCommit = dry.refused.length + dry.measurementRefusals.length;
-      if (changed && missing > skipped && missing <= skipped + refusedAtCommit) this.note('refusedAtCommitUnnamed');
-      else if (changed && missing !== skipped) fail('P2', `record changed: ${missing} reviewed values not written, ${skipped} counted\nwant ${JSON.stringify(want)}\ngot ${JSON.stringify(got)}`);
+      // Every reviewed value is written, counted as skipped, or named as refused at the commit (a pressure pair turned).
+      const refused = outcome.refused?.length ?? 0;
+      if (refused) this.note('refusedAtCommit');
+      if (changed && missing !== skipped + refused) fail('P2', `record changed: ${missing} reviewed values not written, ${skipped} counted\nwant ${JSON.stringify(want)}\ngot ${JSON.stringify(got)}`);
       if (changed && got.some((g) => !want.includes(g))) this.note('writtenUnreviewed');
       // P3: the done line says what the label promised, less what it counts as skipped.
-      const unnamed = changed && missing > skipped && missing <= skipped + refusedAtCommit ? missing - skipped : 0;
-      if (outcome.values !== plan.counts.values - skipped - unnamed) fail('P3', `label promised ${plan.counts.values} values, ${skipped} skipped, done says ${outcome.values}`);
+      if (outcome.values !== plan.counts.values - skipped - refused) fail('P3', `label promised ${plan.counts.values} values, ${skipped} skipped, done says ${outcome.values}`);
       if (outcome.documents !== plan.counts.documents) fail('P3', `label promised ${plan.counts.documents} documents, done says ${outcome.documents}`);
       const unstoredPlanned = this.setup.cloud && [...plan.documents, ...plan.labArchives, ...plan.archiveOnly].some((d) => this.setup.failWrites.includes(d.fileId));
       if (unstoredPlanned !== outcome.unstored > 0) fail('P3', `unstored ${outcome.unstored}, a refused original planned: ${unstoredPlanned}`);
@@ -440,6 +437,7 @@ class Run {
     const lines = [...(outcome.skippedValues ? [UPLOAD_TEXT.skippedLine(outcome.skippedValues, false)] : []), ...(outcome.skippedLabValues ? [UPLOAD_TEXT.skippedLine(outcome.skippedLabValues, true)] : [])];
     if (JSON.stringify(done.done?.skipped) !== JSON.stringify(lines)) fail('P3', `done skipped lines ${JSON.stringify(done.done?.skipped)}`);
     if (!!done.done?.unstored !== outcome.unstored > 0) fail('P3', 'unstored line');
+    if (!!done.done?.notSaved.length !== !!outcome.refused?.length) fail('P3', `done not-saved lines ${JSON.stringify(done.done?.notSaved)}`);
   }
 }
 

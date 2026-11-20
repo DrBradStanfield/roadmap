@@ -314,6 +314,19 @@ final class UploadPageTests: XCTestCase {
         XCTAssertEqual(page.done?.skipped, ["1 blood test value was not added. Check your blood test table: a value was already recorded for that date, or changed during review."])
     }
 
+    /// A value the commit refused (the record changed meanwhile) reaches the done screen through the
+    /// saved event, named in the web's words.
+    func testTheDoneScreenNamesValuesRefusedAtTheCommit() throws {
+        var drive = try Drive()
+        drive.pick(["lab"])
+        drive.read("lab", Self.lab(values: Self.ldl))
+        drive.step(UploadAction.save.event(now: Self.now))
+        let line = "Blood pressure not saved: the top number (systolic) must be higher than the bottom number (diastolic). Check the report, then enter it again."
+        drive.step(UploadSession.event(.success(.init(values: 0, documents: 0, archived: 0, unstored: nil, refused: [["line": line], ["label": "Ferritin", "reason": "unit"]])), run: drive.run, attempt: 1))
+        let page = try drive.page()
+        XCTAssertEqual(page.done?.notSaved, ["Ferritin: this unit is not one we know for this test", line])
+    }
+
     // MARK: Actions
 
     /// Each tap is the engine's event, by its own schema (upload-schema.ts).

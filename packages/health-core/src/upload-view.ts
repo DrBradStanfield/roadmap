@@ -9,11 +9,11 @@
  * documents for held rows.
  */
 import { DOCUMENT_TYPES, type DocumentType } from './validation';
-import { IMPORT_REVIEW_TEXT, isOfferedRef, KIND_WORDS, NOT_SAVED_TEXT, notSavedGroups, type ClassifiedValue, type UnsureReason } from './import-review';
+import { IMPORT_REVIEW_TEXT, isOfferedRef, KIND_WORDS, NOT_SAVED_TEXT, notSavedGroups, type ClassifiedValue, type NotSavedReason, type UnsureReason } from './import-review';
 import type { FileLabValue, FileMeasurement, RoadmapFile } from './roadmap-file';
 import { isReadableRow } from './readable-rows';
 import { getDisplayLabel, type MetricType } from './units';
-import { inFlight, RETRYABLE, saveEnabled, type FileStatus, type UploadFile, type UploadState } from './upload-flow';
+import { inFlight, RETRYABLE, saveEnabled, type FileStatus, type SaveOutcome, type UploadFile, type UploadState } from './upload-flow';
 import { planIsEmpty, uploadSavePlan, type UploadSavePlan } from './upload-plan';
 import type { UploadPlatform } from './upload-rules';
 import { readFiles, type UploadReview } from './upload-review';
@@ -73,8 +73,9 @@ export interface UploadView {
   /** `error`: a failed save's message; Save then retries. */
   save: { label: string; enabled: boolean; why: string | null; error: string | null };
   stop: { label: string } | null;
-  /** The done screen's lines. `skipped`: reviewed values another writer beat to their slot (US-12 AC6a). */
-  done: { line: string; archived: string | null; unstored: string | null; skipped: string[] } | null;
+  /** The done screen's lines. `skipped`: reviewed values another writer beat to their slot (US-12 AC6a).
+   *  `notSaved`: values the final commit refused, one line per reason in the review's words. */
+  done: { line: string; archived: string | null; unstored: string | null; skipped: string[]; notSaved: string[] } | null;
   /** Values the record already holds, equal, on their day: counted, as the web's review counts them (ReviewTable.tsx). */
   alreadySaved?: string | null;
   /** Additive for the iPhone (design PR 15), so its page holds no mode: the machine's phase; a whole
@@ -196,6 +197,18 @@ const replacingOf = (review: UploadReview, v: ClassifiedValue) => !v.copy && rev
 const blocks = (review: UploadReview) => (v: ClassifiedValue) => v.ref[0] === 'v' && v.sent && !v.writes
   && (v.group === 'unsure' ? v.reasons.includes('outOfRange') && (!v.reasons.includes('conflict') || replacingOf(review, v)) : v.group === 'notSaved' && v.reason !== 'sameDay');
 
+/** Each reason once, naming its tests, as "Not saved" names them in the review (NOT_SAVED_TEXT); then each own line once. */
+function refusedLines(refused: NonNullable<SaveOutcome['refused']>): string[] {
+  const byReason = new Map<NotSavedReason, string[]>();
+  const lines = new Set<string>();
+  for (const r of refused) {
+    if ('line' in r) { lines.add(r.line); continue; }
+    const labels = byReason.get(r.reason) ?? [];
+    if (!labels.includes(r.label)) byReason.set(r.reason, [...labels, r.label]);
+  }
+  return [...[...byReason].map(([reason, labels]) => `${labels.join(', ')}: ${NOT_SAVED_TEXT[reason]}`), ...lines];
+}
+
 function saveLabel(plan: UploadSavePlan): string {
   const { values, documents, originals } = plan.counts;
   return values || documents || !originals ? UPLOAD_TEXT.saveBoth(values, documents) : UPLOAD_TEXT.saveOriginals(originals);
@@ -301,6 +314,7 @@ export function uploadView(s: UploadState, record: RoadmapFile, now: string, rev
         ...(s.outcome.skippedValues ? [UPLOAD_TEXT.skippedLine(s.outcome.skippedValues, false)] : []),
         ...(s.outcome.skippedLabValues ? [UPLOAD_TEXT.skippedLine(s.outcome.skippedLabValues, true)] : []),
       ],
+      notSaved: refusedLines(s.outcome.refused ?? []),
     } : null,
     alreadySaved: alreadySaved ? IMPORT_REVIEW_TEXT.alreadySaved(alreadySaved) : null,
     phase: s.phase,

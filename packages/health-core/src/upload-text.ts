@@ -7,10 +7,12 @@
  */
 import { IMPORT_LIMITS } from './import-hints';
 import { IMPORT_REVIEW_TEXT, KIND_WORDS, plural } from './import-review';
+import { METRIC_LABELS } from './mappings';
+import type { MeasurementRefusal } from './record-edits';
 import type { FailDetail } from './upload-failure';
 import type { FailReason, RunRefusal } from './upload-flow';
 import type { UploadPlatform } from './upload-rules';
-import type { DocumentType } from './validation';
+import { PRESSURE_ORDER, type DocumentType } from './validation';
 
 /** Section 5, rows 1 to 27, by key, with the words added since; all approved by Brad 2026-11-20. */
 export const UPLOAD_TEXT = {
@@ -121,6 +123,19 @@ export const REFUSED_TEXT: Record<RunRefusal, string> = {
   noKey: KEY_TEXT.missing,
   server: 'An error occurred while processing files. Please try again.',
 };
+/**
+ * The web's line for a blood test value the record refused (US-12 AC6, US-35 AC17), moved from
+ * widget-src lab-value-labels.ts `measurementRefusalLine` byte for byte: the cases that name no unit.
+ * Null for a value out of range, whose line names the end it missed in the unit the cell shows.
+ */
+export function measurementRefusalText({ metricType, reason, message }: Pick<MeasurementRefusal, 'metricType' | 'reason' | 'message'>): string | null {
+  const label = Object.prototype.hasOwnProperty.call(METRIC_LABELS, metricType) ? METRIC_LABELS[metricType] : metricType;
+  if (reason === 'unknown-metric') return `${label}: not a test the record knows, so it was not saved.`;
+  if (reason === 'invalid-value') return `${label}: the value was not a number the record can store, so it was not saved.`;
+  // A blood pressure the wrong way up (US-02 AC8): no end of a range was missed.
+  if (message === PRESSURE_ORDER) return `Blood pressure not saved: ${PRESSURE_ORDER[0].toLowerCase()}${PRESSURE_ORDER.slice(1)} Check the report, then enter it again.`;
+  return null;
+}
 /** An empty ZIP, or one of unsupported files, named itself (US-12 AC9); moved from useUploadFlow.ts. */
 export const EMPTY_ZIP_TEXT = 'No files we can read inside this ZIP.';
 
