@@ -59,6 +59,14 @@ interface ChatSectionProps {
   muted?: boolean;
 }
 
+function hasChatDraft(message: string, keyField: HTMLInputElement | null) {
+  return message !== '' || !!keyField?.value;
+}
+
+function dismissesChat(e: React.KeyboardEvent, hasDraft: () => boolean) {
+  return e.key === 'Escape' && !e.nativeEvent.isComposing && e.keyCode !== 229 && !hasDraft();
+}
+
 /**
  * US-15 AC12a: the pop-up chat as a dialog. Its title takes the focus on opening, not the message
  * box, so that opening does not call up a phone's keyboard. Escape inside it closes it unless there
@@ -77,7 +85,7 @@ function useChatDialog(isExpanded: boolean, inline: boolean | undefined, hide: (
     requestAnimationFrame(() => document.querySelector<HTMLElement>('.chat-fab')?.focus());
   };
   const onKeyDown = (e: React.KeyboardEvent) => {
-    if (popup && e.key === 'Escape' && !e.nativeEvent.isComposing && e.keyCode !== 229 && !hasDraft()) close();
+    if (popup && dismissesChat(e, hasDraft)) close();
   };
   return { titleRef, close, onKeyDown };
 }
@@ -101,7 +109,7 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
   const keyInputRef = useRef<HTMLInputElement>(null);
   const dialog = useChatDialog(isExpanded, inline, () => { setIsExpanded(false); onClose?.(); },
     // The message can outlive its textbox (History); the key lives in the mounted gate.
-    () => state.inputText !== '' || !!keyInputRef.current?.value);
+    () => hasChatDraft(state.inputText, keyInputRef.current));
 
   // Load on mount when startExpanded (mirrors original lazy-load behavior).
   // chat_opened must fire on EVERY entry path — both live FABs mount
