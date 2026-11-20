@@ -2,7 +2,7 @@
 // sure about behind "Show all" (US-13 AC13). A suite about the matrix itself
 // opens it first, as a person would, to reach every cell. Imported by tests only.
 
-import { fireEvent, screen } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 
 /** Taps "Show all N" when the review hides values; a no-op when it hides none. */
 export function showAllValues(): void {
@@ -27,7 +27,10 @@ export async function findReviewValue(value: string): Promise<HTMLElement> {
 
 /** `findReviewValue` for a value several files hold. */
 export async function findAllReviewValues(value: string): Promise<HTMLElement[]> {
+  // The review shows while files are still read (US-12 AC26): wait for the value itself, not the summary.
   await screen.findByText(/^(\d+ files?\b|Everything here)/, { selector: '.review-summary' });
-  showAllValues();
-  return screen.getAllByDisplayValue(value);
+  return waitFor(() => {
+    showAllValues();
+    return screen.getAllByDisplayValue(value);
+  });
 }
