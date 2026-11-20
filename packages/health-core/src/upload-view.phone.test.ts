@@ -7,7 +7,7 @@
  * Synthetic values.
  */
 import { describe, expect, it } from 'vitest';
-import { core, DAY, EMPTY, extra, NOW, recordWith } from './import-review.test-helpers';
+import { core, DAY, EMPTY, extra, lab, NOW, recordWith } from './import-review.test-helpers';
 import type { UnifiedExtractionResult } from './lab-extraction';
 import type { FileChoices } from './upload-choices';
 import type { UploadFile, UploadState } from './upload-flow';
@@ -67,6 +67,25 @@ describe('upload view for the phone: each value as the report printed it', () =>
     expect(row).toMatchObject({ ref: 'v0', replace: 'Replace', replaceLabel: 'Replace the saved LDL Cholesterol value from 1 Nov 2026', replacing: false });
     expect(row.replaces).toBeTruthy();
     expect([row.value, row.unit, row.held]).toEqual(['3.1', 'mmol/L', '2 mmol/L']);
+  });
+
+  // PR 1908 review, US-12 AC20: an older build corrected "> 60" to 85 by copying the row, so the
+  // correction still carries '>' (the legacy-correction fixture of record-edits-limits.test.ts).
+  it('the held value beside Replace reads an older build\'s correction as exact: 85, not > 85', () => {
+    const target = lab({ additionalValues: [extra()] }).rows.a0;
+    if (target.kind !== 'lab') throw new Error('a lab row');
+    const row = (id: string, value: number, extraFields: Record<string, unknown>) => ({
+      id, metricName: target.metricName, value, unit: 'µg/L', referenceLow: null, referenceHigh: null,
+      recordedAt: `${DAY}T00:00:00.000Z`, createdAt: NOW, source: 'lab_import', status: 'active', correctsId: null, ...extraFields,
+    });
+    const record = { ...EMPTY, labValues: [
+      row('a', 60, { comparator: '>', status: 'entered-in-error' }),
+      row('b', 85, { comparator: '>', correctsId: 'a', source: 'manual_correction' }),
+    ] } as unknown as RoadmapFile;
+    const v = viewOf(open([read('lab', labX({ values: [], additionalValues: [extra()] }))]), record);
+    const held = v.sections.flatMap((x) => (x.kind === 'unsure' ? x.rows : []))[0];
+    expect([held.replaces, held.held]).toEqual(['b', '85 µg/L']);
+    expect(record.labValues[1].comparator).toBe('>'); // the file keeps what it holds
   });
 });
 

@@ -7,7 +7,7 @@
  * No clock: events carry `now`. Run numbers are minted here, from the last one. Files keep the
  * order they were picked in, a ZIP's members at the ZIP's place (US-12 AC23).
  */
-import type { UnifiedExtractionResult } from './lab-extraction';
+import { zipMemberName, type UnifiedExtractionResult } from './lab-extraction';
 import type { FailDetail, UploadFailure } from './upload-failure';
 import { choose, NO_CHOICES, type ChoiceChange, type FileChoices } from './upload-choices';
 import type { Known } from './upload-known';
@@ -61,6 +61,9 @@ export interface UploadFile {
   id: string; name: string; zip?: string; bytes: number; hash: string | null;
   pages: { count: number; truncated: boolean } | null; status: FileStatus;
 }
+/** The name a file is filed and shown under: a ZIP member by zipMemberName (`zip/member`, the old iPhone
+ *  path's and the web's rule, the dedup key of a document with no original), any other file as picked. */
+export const uploadFileName = (f: { name: string; zip?: string }): string => (f.zip !== undefined ? zipMemberName(f.zip, f.name) : f.name);
 /** `unstored`: originals the save meant to keep in the cloud that did not land (upload-save.ts); absent is none. */
 export interface SaveOutcome { values: number; documents: number; archived: number; unstored?: number }
 
