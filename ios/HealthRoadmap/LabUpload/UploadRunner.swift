@@ -82,10 +82,13 @@ actor UploadRunner {
         let bytes: Int
         let keepsOriginal: Bool
         let redrawn: Bool
+        /// A scan's pages as the app made them, sent as they are (`Held.convert`); nil for any other pick.
+        let pages: LabFileReader.Document?
 
-        init(id: String = UUID().uuidString, name: String, data: Data, bytes: Int? = nil, keepsOriginal: Bool = true, redrawn: Bool = false) {
+        init(id: String = UUID().uuidString, name: String, data: Data, bytes: Int? = nil, keepsOriginal: Bool = true, redrawn: Bool = false,
+             pages: LabFileReader.Document? = nil) {
             (self.id, self.name, self.data, self.bytes) = (id, name, data, bytes ?? data.count)
-            (self.keepsOriginal, self.redrawn) = (keepsOriginal, redrawn)
+            (self.keepsOriginal, self.redrawn, self.pages) = (keepsOriginal, redrawn, pages)
         }
     }
 
@@ -233,7 +236,7 @@ actor UploadRunner {
         while !waiting.isEmpty {
             switch waiting.removeFirst() {
             case .hold(let files):
-                for file in files { held.hold(file.data, as: file.id, name: file.name, redrawn: file.redrawn) }
+                for file in files { held.hold(file.data, as: file.id, name: file.name, redrawn: file.redrawn, made: file.pages) }
             case .event(let event):
                 let answer = await step(event)
                 stepped += 1 // before anything awaits, so a view of this step's state counts it

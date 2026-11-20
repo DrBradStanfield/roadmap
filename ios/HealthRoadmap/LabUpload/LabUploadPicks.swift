@@ -57,26 +57,59 @@ extension LabFileReader {
     @concurrent
     static func picked(photo data: Data, working: (@Sendable () -> Void)? = nil) async throws -> UploadRunner.Picked {
         working?()
-        guard let jpeg = UIImage(data: data).flatMap(jpeg) else { throw Failure.unreadable("The photo") }
-        return UploadRunner.Picked(name: "Photo.jpg", data: jpeg, keepsOriginal: false, redrawn: true)
+        guard let image = UIImage(data: data), let resized = jpeg(image) else { throw Failure.unreadable("The photo") }
+        return UploadRunner.Picked(name: "Photo.jpg", data: resized, keepsOriginal: false, redrawn: true)
+    }
+
+    /// A photo as the library hands it over (`load`). A load that fails, an iCloud Photos original
+    /// not on the phone while offline say, says the app's words for a photo that will not open,
+    /// never the system's.
+    @concurrent
+    static func picked(photoLoad load: @Sendable () async throws -> Data?) async throws -> UploadRunner.Picked {
+        guard let data = try? await load() else { throw Failure.unreadable("The photo") }
+        return try await picked(photo: data)
     }
 
     /// The document camera's pages as one PDF, a page each, named by the app's word for a scan.
-    /// Each page is the JPEG a picked picture is sent as (`jpeg`: long side 2,000, quality 0.8); the
-    /// PDF is then a file like any other, under the rules' size. Past `maxPages` it keeps one page
-    /// more, so the convert reads `maxPages` and says the rest was cut, as for a long PDF from Files.
-    /// `working`: told where the PDF is built, a test's (US-25 AC21); nil in the app.
+    /// Each page is the JPEG a picked picture is sent as (`jpeg`: long side 2,000, quality 0.8), and
+    /// those JPEGs are the pages sent (`Picked.pages`): the convert never draws them again, so what
+    /// is sent is what the size check saw. Past `maxPages` the PDF ends with one blank placeholder
+    /// page, so it says the rest was cut without weighing on the size. A scan the engine's rules
+    /// (`ask`) call too large is built again with its pages smaller, a step at a time (`scanSteps`),
+    /// and the first that fits is used; if none does, the smallest goes, and the engine refuses it
+    /// in its words. `working`: told where the PDF is built, a test's (US-25 AC21); nil in the app.
     @concurrent
-    static func picked(scan images: [UIImage], working: (@Sendable () -> Void)? = nil) async throws -> UploadRunner.Picked {
+    static func picked(scan images: [UIImage], ask: AskRules? = nil, working: (@Sendable () -> Void)? = nil) async throws -> UploadRunner.Picked {
         working?()
-        let pages = images.prefix(maxPages + 1).compactMap { jpeg($0).flatMap(UIImage.init(data:)) }
+        let name = "Scanned report.pdf", kept = Array(images.prefix(maxPages)), cut = images.count > maxPages
+        var scan = try scanPDF(kept, cut: cut, longSide: 2000, quality: 0.8)
+        if let ask {
+            for (longSide, quality) in scanSteps {
+                guard await ask([UploadFile(name: name, bytes: scan.pdf.count)], []).file(name, scan.pdf.count) == .tooLarge else { break }
+                try Task.checkCancellation()
+                scan = try scanPDF(kept, cut: cut, longSide: longSide, quality: quality)
+            }
+        }
+        let pages = scan.jpegs.map { Page(type: "image", content: $0.base64EncodedString(), mimeType: "image/jpeg") }
+        return UploadRunner.Picked(name: name, data: scan.pdf, keepsOriginal: false, pages: Document(name: name, pages: pages, truncated: cut))
+    }
+
+    /// The smaller pages a long scan steps down to, after today's (long side 2,000, quality 0.8).
+    static let scanSteps: [(longSide: CGFloat, quality: CGFloat)] = [(2000, 0.65), (2000, 0.5), (1600, 0.5)]
+
+    /// The pages as one PDF, a JPEG page each, the long side at most `longSide` points, with a blank
+    /// 1-point page after them when the scan was `cut`; and the JPEGs themselves.
+    private static func scanPDF(_ images: [UIImage], cut: Bool, longSide: CGFloat, quality: CGFloat) throws -> (pdf: Data, jpegs: [Data]) {
+        let jpegs = images.compactMap { jpeg($0, longSide: longSide, quality: quality) }
+        let pages = jpegs.compactMap(UIImage.init(data:))
         guard let first = pages.first else { throw Failure.unreadable("Scanned report") }
-        let data = UIGraphicsPDFRenderer(bounds: CGRect(origin: .zero, size: first.size)).pdfData { context in
+        let pdf = UIGraphicsPDFRenderer(bounds: CGRect(origin: .zero, size: first.size)).pdfData { context in
             for page in pages {
                 context.beginPage(withBounds: CGRect(origin: .zero, size: page.size), pageInfo: [:])
                 page.draw(in: CGRect(origin: .zero, size: page.size))
             }
+            if cut { context.beginPage(withBounds: CGRect(x: 0, y: 0, width: 1, height: 1), pageInfo: [:]) }
         }
-        return UploadRunner.Picked(name: "Scanned report.pdf", data: data, keepsOriginal: false)
+        return (pdf, jpegs)
     }
 }

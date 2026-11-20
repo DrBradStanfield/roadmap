@@ -26,6 +26,8 @@ extension LabFileReader {
             let generation: Int
             /// The app's own photo (`Picked.redrawn`): converted as its own bytes.
             let redrawn: Bool
+            /// A scan's pages as the app made them (`Picked.pages`): converted as they are.
+            let made: Document?
             var listing: Listing?
         }
         /// Files and ZIPs by id; pages by the id converted, a file's or a member's.
@@ -48,10 +50,11 @@ extension LabFileReader {
 
         /// Holds a picked file's or ZIP's bytes under `id`, replacing what it held; `name` is how a read
         /// names it; `redrawn`: the app's own photo, a JPEG it drew (`document(from:redrawn:)`).
-        func hold(_ data: Data, as id: String, name: String, redrawn: Bool = false) {
+        /// `made`: a scan's pages as the app made them, sent as they are, never drawn again.
+        func hold(_ data: Data, as id: String, name: String, redrawn: Bool = false, made: Document? = nil) {
             records.withLock { records in
                 records.holds += 1
-                records.items[id] = Item(name: name, data: data, generation: records.holds, redrawn: redrawn)
+                records.items[id] = Item(name: name, data: data, generation: records.holds, redrawn: redrawn, made: made)
                 for page in records.pages.keys where page == id || Self.member(page)?.zip == id { records.pages[page] = nil }
             }
         }
@@ -141,17 +144,24 @@ extension LabFileReader {
         /// they were made from is still the one held: never after a forget or a newer hold.
         func convert(_ id: String, rules: Rules) throws -> Document {
             let (name, bytes, member, source) = try read(id)
-            let redrawn = member == nil && records.withLock { $0.items[id]?.redrawn ?? false }
-            var document = try document(from: bytes, name: name, rules: rules, redrawn: redrawn)
-            document.zipMember = member
-            let pages = document.pages
+            let (redrawn, made) = member == nil ? records.withLock { ($0.items[id]?.redrawn ?? false, $0.items[id]?.made) } : (false, nil)
+            var doc: Document
+            if let made {
+                // A scan: the pages the size check saw, as they are (the rules still judge the file).
+                guard rules.file(name, bytes.count) == .keep else { throw Failure.tooLarge(name) }
+                doc = made
+            } else {
+                doc = try LabFileReader.document(from: bytes, name: name, rules: rules, redrawn: redrawn)
+            }
+            doc.zipMember = member
+            let pages = doc.pages
             beforeKeeping?(id)
             records.withLock { records in
                 guard let item = records.items[source.key], item.generation == source.generation,
                       source.member.map({ !(item.listing?.forgotten.contains($0) ?? true) }) ?? true else { return }
                 records.pages[id] = pages
             }
-            return document
+            return doc
         }
 
         /// The bytes `id` holds, a member's inflated now, with its name (`<zip name>/<path>` for a

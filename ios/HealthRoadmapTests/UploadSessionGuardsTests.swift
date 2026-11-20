@@ -345,6 +345,39 @@ final class UploadSessionGuardsTests: XCTestCase, CloudFixtures {
         upload.end()
     }
 
+    /// No system error text reaches the screen from a source's load: an error that is not the
+    /// reader's own (a Photos original not on the phone while offline, say) shows the app's line.
+    func testALoadThatFailsWithASystemErrorShowsTheAppsWords_US52_AC10() async throws {
+        let store = try RecordStore(folder: folder, engine: HealthEngine(session: StubHTTP.session()), deviceId: "ios-test")
+        let upload = session(store)
+        defer { upload.end() }
+        let started = await upload.start({
+            throw NSError(domain: NSCocoaErrorDomain, code: 4097, userInfo: [NSLocalizedDescriptionKey: "Couldn't communicate with a helper application."])
+        }, needsConsent: false)
+        XCTAssertEqual(started, .refused("Something went wrong, so this report was not read. Please try again."))
+        // The reader's own refusals keep their words.
+        let folderWords = await upload.start({ throw LabFileReader.Failure.folderEmpty }, needsConsent: false)
+        XCTAssertEqual(folderWords, .refused("This folder holds no reports the app can read: no PDF, JPEG or PNG."))
+    }
+
+    /// A Save that sends nothing counts nothing (US-52 AC8c): tapped while the page holds a blocker
+    /// (an undated report waiting for its day), no "Lab save one" or "Lab save all".
+    func testASaveThatSendsNothingIsNotCounted_US52_AC8c() async throws {
+        answers.set { _ in UploadPageTests.lab(reportDate: nil, values: UploadPageTests.ldl) }
+        let store = try RecordStore(folder: folder, engine: HealthEngine(session: StubHTTP.session()), deviceId: "ios-test")
+        let sdk = EventsSDK()
+        let analytics = Analytics(sdk: sdk, projectId: "abc", testing: false)
+        analytics.start(in: UIWindow())
+        let upload = session(store, analytics: analytics)
+        defer { upload.end() }
+        _ = await upload.start({ Kit.pictures(1) }, needsConsent: false)
+        try await until("read, waiting for its day") { page(upload)?.files.rows.first?.status != nil && page(upload)?.save.enabled == false && page(upload)?.save.why != nil }
+        upload.send(.save)
+        try await until("the claim let go") { !upload.saveClaimed }
+        try await Task.sleep(for: .milliseconds(200))
+        XCTAssertFalse(sdk.events.contains { $0 == "Lab save one" || $0 == "Lab save all" }, "\(sdk.events)")
+    }
+
     private final class EventsSDK: AnalyticsSDK {
         var events: [String] = []
         func mask(_ view: UIView) {}
