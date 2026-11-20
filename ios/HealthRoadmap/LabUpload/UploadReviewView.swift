@@ -22,8 +22,8 @@ struct UploadReviewView: View {
     @State private var notSavedOpen = false
     /// Pickers open by key ("day:<file>" or "date:<file>"), with the date each shows until Done sends it.
     @State private var picking: [String: Picking] = [:]
-    /// An open picker: the day tapped, nil until one is.
-    private struct Picking { var day: Date? }
+    /// An open picker: the day tapped (YYYY-MM-DD), nil until one is.
+    private struct Picking { var day: String? }
     @State private var titles: [String: String] = [:]
     @State private var letters: [String: String] = [:]
 
@@ -264,13 +264,12 @@ struct UploadReviewView: View {
     @ViewBuilder
     private func datePicker(key: String, label: String, opens: String, choose: @escaping (String) -> Void) -> some View {
         if let open = picking[key] {
-            DatePicker(selection: Binding(get: { open.day ?? .now }, set: { picking[key] = .init(day: $0) }), in: ...Date.now,
-                       displayedComponents: .date) { Text(verbatim: label) }
-                .datePickerStyle(.graphical)
+            // Opens with no day selected: one tap on any day, today included, enables Done.
+            DayCalendar(picked: { picking[key] = .init(day: $0) }, label: label)
             if let done = page.doneLabel {
                 Button {
                     picking[key] = nil
-                    if let day = open.day { choose(DayText.iso(day)) }
+                    if let day = open.day { choose(day) }
                 } label: { Text(verbatim: done) }
                 .disabled(open.day == nil)
             }
