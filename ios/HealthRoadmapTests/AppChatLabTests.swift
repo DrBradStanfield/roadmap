@@ -211,24 +211,22 @@ final class AppChatLabTests: XCTestCase {
 
     // MARK: US-13 AC13: the review's groups
 
-    /// A sure value is hidden behind Show all and still saves: its tick stays, and the plan
-    /// Save runs sends it. Fails if a hidden value stopped saving.
+    /// A sure value is hidden behind Show all and still saves: the engine writes it. Fails if a
+    /// hidden value stopped saving.
     func testAHiddenSureValueKeepsItsTickAndSaves_US13_AC13() throws {
         let engine = try HealthEngine()
         let review = try engine.blocking { [now, extraction] in try $0.labReview(extractionJSON: extraction, now: now) }
-        let choices = LabChoices(review: review)
+        // Every value ticked but one the extractor asked about, as a review opens.
+        let ticked = Set(review.items.filter { $0.question == nil }.map(\.ref))
         let groups = try XCTUnwrap(engine.blocking { [now, extraction] in
-            try $0.labReviewGroups(recordJSON: "", extractionJSON: extraction, ticked: choices.ticked, reportDay: "2026-10-01", now: now, deviceId: "test") })
+            try $0.labReviewGroups(recordJSON: "", extractionJSON: extraction, ticked: ticked, reportDay: "2026-10-01", now: now, deviceId: "test") })
         XCTAssertEqual(groups.summary, "Found 3 blood test values")
         XCTAssertEqual(groups.rows("sure", of: review).map(\.ref), ["v0", "a0"], "no row unless Show all")
         XCTAssertEqual(groups.rows("unsure", of: review).map(\.ref), ["v1"])
         XCTAssertEqual(groups.check?.title, "Check this value")
         XCTAssertEqual(groups.sure, LabReviewGroups.Sure(willSave: "2 values will be saved", showAll: "Show all 2", hide: "Hide"))
         XCTAssertEqual(groups.save, "Save 3 values")
-        let result = LabResult(name: "Bloods.pdf", truncated: false, extractionJSON: extraction, failure: nil)
         XCTAssertEqual(groups.saveRefs, ["v0", "a0", "v1"], "the engine writes every ticked sure value, hidden ones included, in send order")
-        XCTAssertEqual(LabSavePlan(result: result, review: review, choices: choices, archiveOnly: false),
-                       .values(refs: ["v0", "v1", "a0"], day: "2026-10-01"), "Save sends every ticked value; the engine decides what it writes")
     }
 
     /// The not-saved lines are the engine's, in the person's words: no raw key and no text
@@ -252,7 +250,6 @@ final class AppChatLabTests: XCTestCase {
         XCTAssertNil(groups.save, "nothing to save: no Save (D3)")
         // Ticked values are named by the save's own refusals; nothing of the extraction's own is omitted (AC8b).
         XCTAssertEqual(groups.omitted, [])
-        XCTAssertEqual(LabReportSave().reportOutcome(groups, review: nil), ReportOutcome(notes: ["Already in your record"]))
     }
 
     /// The groups decode from the engine's JSON, with null sections absent.
@@ -273,7 +270,6 @@ final class AppChatLabTests: XCTestCase {
         let json = #"{"isLabReport":true,"reportDay":"2026-10-01","items":[],"document":null,"notSaved":[{"label":"Creatinine","reason":"unit unknown"}],"unreadCount":2}"#
         let review = try JSONDecoder().decode(LabReview.self, from: Data(json.utf8))
         XCTAssertEqual(review.legacyNotSaved, ["Creatinine: unit unknown", "2 values could not be read."])
-        XCTAssertEqual(LabReportSave().reportOutcome(nil, review: review), ReportOutcome(notes: ["Already in your record", "Creatinine: unit unknown", "2 values could not be read."]))
     }
 
     /// A value outside its range shows the save's own refusal on its row (US-52 AC8).
@@ -290,7 +286,9 @@ final class AppChatLabTests: XCTestCase {
         let start = try record(engine)
         let summary = try engine.blocking { [now] in try $0.labSaveSummary(recordJSON: start, extractionJSON: ldl, refs: ["v0", "a0"], reportDay: "2026-10-01", now: now, deviceId: "test") }.get()
         XCTAssertEqual(summary.saved, 1)
-        XCTAssertEqual(summary.refused.map(LabReportSave.line), [refusal], "the row and the receipt say the same words")
+        // The row and the save's receipt say the same engine words (the receipt's whole line, else its
+        // "Not saved," form, as the old receipt drew it).
+        XCTAssertEqual(summary.refused.map { $0.line ?? "Not saved, \($0.label): \($0.message)" }, [refusal], "the row and the receipt say the same words")
         XCTAssertEqual(groups.saveRefs, ["a0"])
     }
 
@@ -310,30 +308,6 @@ final class AppChatLabTests: XCTestCase {
         XCTAssertNil(older.sameDay)
     }
 
-    /// Save all's note on values kept because the record holds a different one (US-52 AC8b).
-    func testHeldDifferentValuesAreNamedInSaveAllsNotes_US52_AC8b() throws {
-        let json = #"""
-        {"summary":"S","items":[{"ref":"v0","group":"unsure","conflict":"Your record already has a different value for this day. It stays as it is."},{"ref":"a0","group":"sure"}],
-         "check":null,"sure":null,"alreadySaved":null,"notSaved":null,"omitted":[],"saveRefs":["a0"],"save":"Save 1 value"}
-        """#
-        let groups = try JSONDecoder().decode(LabReviewGroups.self, from: Data(json.utf8))
-        XCTAssertEqual(LabReportSave.kept(LabSaveSummary(saved: 0, skipped: 1, refused: []), refs: ["v0"], groups: groups),
-                       "Your record already has a different value for this day. It stays as it is.")
-        XCTAssertEqual(LabReportSave.kept(LabSaveSummary(saved: 1, skipped: 1, refused: []), refs: ["v0", "a0"], groups: groups),
-                       "1 left as they were: that day already had a value.")
-        XCTAssertNil(LabReportSave.kept(LabSaveSummary(saved: 1, skipped: 1, refused: []), refs: ["a0"], groups: groups), "a value held as it is needs no note")
-    }
-
-    /// A report whose values are all in the record still runs its save: its original may still wait to be kept (AC13d, AC8b).
-    func testAReportWithEveryValueHeldStillSaves_US52_AC13d() throws {
-        let engine = try HealthEngine()
-        let review = try engine.blocking { [now, extraction] in try $0.labReview(extractionJSON: extraction, now: now) }
-        let result = LabResult(name: "Bloods.pdf", truncated: false, extractionJSON: extraction, failure: nil)
-        if case .nothing = LabSavePlan(result: result, review: review, choices: LabChoices(review: review), archiveOnly: false) {
-            XCTFail("a lab report with ticked values always runs its save, then keeps its original")
-        }
-    }
-
     // MARK: AC13d: documents
 
     func testALetterGetsTheWebsDocumentCard() throws {
@@ -346,14 +320,18 @@ final class AppChatLabTests: XCTestCase {
         XCTAssertNil(try engine.blocking { [now, extraction] in try $0.labReview(extractionJSON: extraction, now: now) }.document)
     }
 
+    /// A read file keeps its original bytes; a photo, though it goes as a file ("Photo.jpg"), is
+    /// never offered as an original (US-52 AC13e: the consent screen says only a report from Files is kept).
     func testAReadFileKeepsItsOriginalBytes() async throws {
         let pdf = UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: 200, height: 200)).pdfData { $0.beginPage() }
         let read = try await LabFileReader.documents(from: pdf, name: "a.pdf")
         let document = try XCTUnwrap(read.first)
         XCTAssertEqual(document.original?.verifiedData(), pdf)
         XCTAssertEqual(document.original?.mimeType, "application/pdf")
-        let photo = try await LabFileReader.pictures([UIGraphicsImageRenderer(size: CGSize(width: 4, height: 4)).image { _ in }], name: "Photo")
-        XCTAssertNil(photo.original)
+        let image = UIGraphicsImageRenderer(size: CGSize(width: 4, height: 4)).image { _ in }
+        let photo = try await LabFileReader.picked(photo: try XCTUnwrap(image.jpegData(compressionQuality: 0.9)))
+        // Picked `original: false`; the engine then stores none (UploadSessionTests' cloud test).
+        XCTAssertFalse(photo.keepsOriginal)
     }
 
     /// A ZIP member's name is the web's zipMemberName, cap and hash included, so the
@@ -374,31 +352,24 @@ final class AppChatLabTests: XCTestCase {
         XCTAssertEqual(cleaned, ["Bad name.pdf"])
     }
 
-    /// A folder's originals are the files themselves, read again when saved: no bytes
-    /// mapped from a picked folder outlive the picker's access (US-52 AC13d).
-    func testAFoldersOriginalsAreStillReadableAfterTheRead() async throws {
-        let folder = FileManager.default.temporaryDirectory.appending(path: "Picked \(UUID().uuidString)")
+    /// A folder's originals are the bytes read from it, held for Save (US-52 AC13d): a file
+    /// changed or gone after the read changes nothing, since Save stores what the review read.
+    /// The fingerprint is the web's sha256Blob format.
+    func testAFoldersOriginalsAreTheBytesTheReviewRead() async throws {
+        let folder = FileManager.default.temporaryDirectory.appending(path: "Picked \(UUID().uuidString)", directoryHint: .isDirectory)
         try FileManager.default.createDirectory(at: folder.appending(path: "sub"), withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: folder) }
         let pdf = UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: 200, height: 200)).pdfData { $0.beginPage() }
         let png = UIGraphicsImageRenderer(size: CGSize(width: 4, height: 4)).pngData { _ in }
         try pdf.write(to: folder.appending(path: "a.pdf"))
         try png.write(to: folder.appending(path: "sub/b.png"))
-        let documents = try await LabFileReader.documents(inFolder: folder)
-        XCTAssertEqual(documents.map { $0.original?.verifiedData() }, [pdf, png])
-        XCTAssertEqual(documents.map { $0.original?.mimeType }, ["application/pdf", "image/png"])
-        for document in documents {
-            guard case .file = document.original?.source else { return XCTFail("\(document.name) holds bytes, not its file") }
-        }
-        // Codex R2: changed since the review read it (same size, other bytes), or gone: no bytes.
-        var other = pdf
-        other[other.count - 1] ^= 0xFF
-        try other.write(to: folder.appending(path: "a.pdf"))
-        XCTAssertNil(documents[0].original?.verifiedData())
-        try FileManager.default.removeItem(at: folder.appending(path: "sub/b.png"))
-        XCTAssertNil(documents[1].original?.verifiedData())
-        // The fingerprint is the web's sha256Blob format.
-        XCTAssertEqual(documents[1].original?.contentHash, "sha256-" + SHA256.hash(data: png).map { String(format: "%02x", $0) }.joined())
+        let picked = try await LabFileReader.picked(folder, ask: LabSourceTests.rules)
+        let held = LabFileReader.Held()
+        for file in picked { held.hold(file.data, as: file.id, name: file.name) }
+        try FileManager.default.removeItem(at: folder)
+        XCTAssertEqual(picked.map { held.original($0.id) }, [pdf, png])
+        XCTAssertEqual(picked.map { held.originals()[$0.id] }, ["application/pdf", "image/png"])
+        XCTAssertEqual(try held.hash(picked[1].id), "sha256-" + SHA256.hash(data: png).map { String(format: "%02x", $0) }.joined())
     }
 
     // MARK: AC7: reading files

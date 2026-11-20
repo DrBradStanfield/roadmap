@@ -85,9 +85,11 @@ export async function uploadSave<F>(s: UploadState, record: RoadmapFile, now: st
   const planned = writtenLabRows(onRecord);
   const rowsOf = labRowsByFile(planned, rowFiles);
   const hashOf = new Map(s.files.map((f) => [f.id, f.hash ?? undefined]));
+  // A photo or a scan (`original: false`, US-52 AC13e) is never stored, a letter read from it included.
+  const noOriginal = new Set(s.files.filter((f) => f.original === false).map((f) => f.id));
   const held = (fileId: string): Held | undefined => {
     const hash = hashOf.get(fileId);
-    return cloudConnected && hash && io.holds(fileId) ? { fileId, hash } : undefined;
+    return cloudConnected && hash && !noOriginal.has(fileId) && io.holds(fileId) ? { fileId, hash } : undefined;
   };
   const payloads: DocumentPayload<Held>[] = [
     ...plan.documents.map((d) => ({ ...d.fields, file: held(d.fileId), contentHash: hashOf.get(d.fileId) })),

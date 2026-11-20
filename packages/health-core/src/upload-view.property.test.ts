@@ -472,7 +472,16 @@ class Run {
       // P3: the done line says what the label promised, less what it counts as skipped.
       if (outcome.values !== plan.counts.values - skipped - refused) fail('P3', `label promised ${plan.counts.values} values, ${skipped} skipped, done says ${outcome.values}`);
       if (outcome.documents !== plan.counts.documents) fail('P3', `label promised ${plan.counts.documents} documents, done says ${outcome.documents}`);
-      const unstoredPlanned = this.setup.cloud && [...plan.documents, ...plan.labArchives, ...plan.archiveOnly].some((d) => this.setup.failWrites.includes(d.fileId));
+      // A file with no original (a photo or a scan) plans no archive and no archive-only original; nothing it writes holds an original or a lab archive.
+      const noOriginal = new Set(('files' in this.s ? this.s.files : []).filter((f) => f.original === false).map((f) => f.id));
+      if ([...plan.labArchives, ...plan.archiveOnly].some((d) => noOriginal.has(d.fileId))) fail('P3', 'an original or archive planned for a file with none');
+      // By bytes held only by such files: the same bytes picked from Files too may be archived.
+      const pickedFiles = 'files' in this.s ? this.s.files : [];
+      const withOriginal = new Set(pickedFiles.filter((f) => !noOriginal.has(f.id)).map((f) => f.hash));
+      const noOriginalHashes = new Set(pickedFiles.filter((f) => noOriginal.has(f.id) && !withOriginal.has(f.hash)).map((f) => f.hash));
+      const newDocs = file.documents.filter((d) => !atCommit.documents.some((b) => b.id === d.id));
+      if (newDocs.some((d) => noOriginalHashes.has(d.contentHash ?? null) && (d.fileRef || d.metadata?.labArchive === true))) fail('P3', 'a file with no original wrote an original or a lab archive row');
+      const unstoredPlanned = this.setup.cloud && [...plan.documents, ...plan.labArchives, ...plan.archiveOnly].some((d) => this.setup.failWrites.includes(d.fileId) && !noOriginal.has(d.fileId));
       if (unstoredPlanned !== outcome.unstored > 0) fail('P3', `unstored ${outcome.unstored}, a refused original planned: ${unstoredPlanned}`);
     }
     // P5: a repeat Save on the committed record adds nothing. Only where no other writer acted: then a value the first
@@ -508,7 +517,8 @@ function genStep(r: () => number, run: Run, phase: { saves: number; chosen: numb
   const s = run.s;
   if (s.phase === 'choosing') {
     const n = 1 + Math.floor(r() * 3);
-    const files: PickedFile[] = Array.from({ length: n }, (_, i) => ({ id: `f${i}`, name: `report-${i}.pdf`, bytes: 1, kind: 'file' }));
+    // Some are a photo or a scan (`original: false`, US-52 AC13e): never an original or an archive row.
+    const files: PickedFile[] = Array.from({ length: n }, (_, i) => ({ id: `f${i}`, name: `report-${i}.pdf`, bytes: 1, kind: 'file', ...(coin(0.25) ? { original: false as const } : {}) }));
     return { type: 'event', e: { type: 'picked', files, needsConsent: coin(0.2), now: NOW } };
   }
   if (s.phase === 'consent') return { type: 'event', e: { type: 'consented' } };
@@ -686,7 +696,7 @@ describe('upload-view property: the list view against Save (US-52 AC8c, US-13 AC
     const gaps: Record<string, number[]> = {};
     const reach = {
       steps: 0, saved: 0, saveFailedThenSaved: 0, replacing: 0, corrections: 0, changedBeforeSave: 0, blockedFix: 0, blockedDay: 0, conflicts: 0, documents: 0,
-      merges: 0, replaceLost: 0, changedBeforeTap: 0, freedBeforeCommit: 0, skipped: 0, unstored: 0, archiveOnly: 0, copies: 0, alreadySaved: 0, futureDay: 0, pressureRefused: 0, limitTicked: 0, labAsCore: 0, edited: 0,
+      merges: 0, replaceLost: 0, changedBeforeTap: 0, freedBeforeCommit: 0, skipped: 0, unstored: 0, archiveOnly: 0, copies: 0, alreadySaved: 0, futureDay: 0, pressureRefused: 0, limitTicked: 0, labAsCore: 0, edited: 0, noOriginalSaved: 0,
     };
     for (let seed = 1; seed <= SEEDS; seed++) {
       const r = mulberry32(seed);
@@ -705,7 +715,7 @@ describe('upload-view property: the list view against Save (US-52 AC8c, US-13 AC
         }
         reach.steps++;
         if (step.type === 'save' && run.s.phase === 'done') reach.corrections += run.corrections;
-        if (run.s.phase === 'done') { reach.saved++; if (phase.saves) reach.saveFailedThenSaved++; }
+        if (run.s.phase === 'done') { reach.saved++; if (phase.saves) reach.saveFailedThenSaved++; if (run.s.files.some((f) => f.original === false)) reach.noOriginalSaved++; }
         if (step.type === 'save' && step.meanwhile) reach.changedBeforeSave++;
         if (step.type === 'tap') reach.changedBeforeTap++;
         if (step.type === 'save' && step.free) reach.freedBeforeCommit++;

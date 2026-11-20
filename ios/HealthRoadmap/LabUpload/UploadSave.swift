@@ -50,7 +50,7 @@ extension HealthEngine {
 
     /// This engine runs the shared upload as the page draws it: its doors answer, its view carries
     /// the machine's phase, and its save door is there. An older engine over the air answers false,
-    /// and today's flow reads the pick. Probed with a state that saves nothing.
+    /// and the sheet says the pick was not read. Probed with a state that saves nothing.
     func runsSharedUpload() async -> Bool {
         guard case .answered(let state)?? = try? uploadStart(platform: "phone"),
               case .answered(let view)?? = try? uploadView(state: state, record: "", now: .now, cloudConnected: false, deviceId: "probe"),

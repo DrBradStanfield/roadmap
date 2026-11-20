@@ -35,7 +35,7 @@ final class UploadSession {
     @ObservationIgnored private var sent = Sent()
 
     /// How a pick went: the engine has it, the reader refused it (its words), or the loaded engine
-    /// cannot run the shared upload (an older one over the air: today's flow reads it).
+    /// cannot run the shared upload (an older one over the air).
     enum Started: Equatable { case running, refused(String), fallback }
 
     /// `sender`, `frame` and `save` (state, run and attempt to the event to step): a test's
@@ -100,16 +100,14 @@ final class UploadSession {
         store.unpinScreen()
     }
 
-    /// Reads a pick into bytes and hands it to the engine; `files` answering nil means today's flow
-    /// reads it. A pick cancelled while it was read (Close during a slow File Provider read) is never
-    /// held or sent.
-    func start(_ files: @Sendable () async throws -> [UploadRunner.Picked]?, needsConsent: Bool) async -> Started {
+    /// Reads a pick into bytes and hands it to the engine. A pick cancelled while it was read (Close
+    /// during a slow File Provider read) is never held or sent.
+    func start(_ files: @Sendable () async throws -> [UploadRunner.Picked], needsConsent: Bool) async -> Started {
         guard await engine.runsSharedUpload() else { return .fallback }
         told = false
-        let read: [UploadRunner.Picked]?
-        do { read = try await files() } catch { return Task.isCancelled ? .running : .refused(error.localizedDescription) }
+        let picked: [UploadRunner.Picked]
+        do { picked = try await files() } catch { return Task.isCancelled ? .running : .refused(error.localizedDescription) }
         guard !Task.isCancelled else { return .running }
-        guard let picked = read else { return .fallback }
         if await runner.pick(picked, needsConsent: needsConsent) { return .running }
         return model.state == .unavailable ? .fallback : .running
     }
@@ -250,21 +248,5 @@ extension HealthEngine {
         }
         let documents = try JSONDecoder().decode(Plan.self, from: Data(plan.utf8)).documents
         return Dictionary(documents.map { ($0.fileId, $0.fields.contentMd) }, uniquingKeysWith: { first, _ in first })
-    }
-}
-
-extension LabFileReader {
-    /// One file picked in Files, as the shared upload takes it: its bytes, read off the main thread
-    /// through a file coordinator. Nil for a folder, a file the rules call too large by its listed
-    /// size, or one that will not read: today's flow reads those and says why in its own words.
-    @concurrent
-    static func picked(_ url: URL, ask: AskRules) async -> UploadRunner.Picked? {
-        guard !url.hasDirectoryPath else { return nil }
-        let scoped = url.startAccessingSecurityScopedResource()
-        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
-        let name = url.lastPathComponent, listed = size(of: url)
-        guard await ask([UploadFile(name: name, bytes: listed)], []).file(name, listed) != .tooLarge,
-              let data = try? coordinatedData(url) else { return nil }
-        return UploadRunner.Picked(id: UUID().uuidString, name: name, data: data)
     }
 }

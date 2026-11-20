@@ -209,7 +209,7 @@ final class UploadRunnerTests: XCTestCase {
                 }
                 return .ended(line: Kit.finalLine)
             }
-            let setup = UploadRunner.Setup(deviceId: "test", record: { "" }, send: send, frame: .milliseconds(1))
+            let setup = UploadRunner.Setup(deviceId: "test", record: { "" }, ask: LabFileReader.swiftRules, send: send, frame: .milliseconds(1))
             let runner = UploadRunner(engine: try HealthEngine(), model: UploadModel(), setup: setup)
             _ = await runner.pick(Kit.pictures(1), needsConsent: false)
             try await until("run 1 sending") { calls.withLock { $0 } == 1 }

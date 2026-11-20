@@ -88,7 +88,7 @@ const status = z.discriminatedUnion('s', [
   strict({ s: z.literal('stopped') }),
 ]);
 const file = strict({
-  id: text, name: text, zip: text.optional(), bytes: z.number(), hash: maybeText,
+  id: text, name: text, zip: text.optional(), bytes: z.number(), hash: maybeText, original: z.literal(false).optional(),
   pages: strict({ count, truncated: z.boolean() }).nullable(), status,
 });
 const pick = { platform, run: count, files: z.array(file), started: text, firstRead: maybeText };
@@ -122,7 +122,7 @@ const failure = z.enum(UPLOAD_FAILURES);
 
 /** Each event by its type, for a caller that sends some of them in a shape of its own (the doors' wire). */
 export const UPLOAD_EVENTS = {
-  picked: strict({ type: z.literal('picked'), files: z.array(strict({ id: text, name: text, bytes: z.number(), kind: z.enum(['file', 'zip']) })), needsConsent: z.boolean(), now: text }),
+  picked: strict({ type: z.literal('picked'), files: z.array(strict({ id: text, name: text, bytes: z.number(), kind: z.enum(['file', 'zip']), original: z.literal(false).optional() })), needsConsent: z.boolean(), now: text }),
   consented: strict({ type: z.literal('consented') }),
   listed: strict({ type: z.literal('listed'), run: count, zip: text, members: z.array(strict({ id: text, name: text, bytes: z.number() })) }),
   zipFailed: strict({ type: z.literal('zipFailed'), run: count, zip: text }),

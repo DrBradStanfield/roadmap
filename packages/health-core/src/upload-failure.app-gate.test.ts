@@ -108,11 +108,11 @@ describe('the failure on the file: its words travel with it, and only with its o
 
 describe('the iPhone\'s lines are today\'s Swift strings, byte for byte', () => {
   const swift = (file: string) => readFileSync(join(__dirname, '../../../ios/HealthRoadmap', file), 'utf8');
-  it('each PHONE_FAIL_TEXT line is in the Swift it replaces (the network lines with their subject, "The server")', () => {
-    const sheet = swift('LabUpload/LabUploadSheet.swift');
+  // `declined` was LabUploadSheet's own line; since the one upload flow (2026-11-20) the engine is
+  // its only home, so only chat's shared client is checked.
+  it('each PHONE_FAIL_TEXT line chat shares is in the Swift it replaces (the network lines with their subject, "The server")', () => {
     const attest = swift('Chat/AppAttestClient.swift');
     const subject = attest.replace(/\\\(subject\)/g, 'The server');
-    expect(sheet).toContain(`"${PHONE_FAIL_TEXT.declined}"`);
     expect(attest).toContain(`"${PHONE_FAIL_TEXT.noAnswer}"`);
     expect(attest).toContain(`"${PHONE_FAIL_TEXT.cannotAttest}"`);
     expect(attest).toContain(`"${PHONE_FAIL_TEXT.attestFailed} (App Attest \\(stage) \\(code))"`);

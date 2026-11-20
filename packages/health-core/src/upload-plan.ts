@@ -69,11 +69,12 @@ export function uploadSavePlan(s: UploadState, record: RoadmapFile, now: string,
         sourceFileName: uploadFileName(f),
       } });
     } else if (f.status.s === 'read') {
-      // A report's original is filed with its values: not while it waits for a day, nor with every value unticked (as the iPhone).
+      // A report's original is filed with its values: not while it waits for a day, nor with every value unticked (as the iPhone),
+      // nor for a photo or a scan, which has none (`original: false`, US-52 AC13e): no hidden archive row for it at all.
       const lab = labs.get(f.id);
-      if (!lab || lab.needsDay || !lab.ticked.length) continue;
+      if (!lab || lab.needsDay || !lab.ticked.length || f.original === false) continue;
       labArchives.push({ fileId: f.id, sourceFileName: uploadFileName(f), reportDate: lab.day });
-    } else if (cloudConnected && f.status.s === 'known' && f.status.archiveOnly && f.status.as !== 'legacy' && f.hash) {
+    } else if (cloudConnected && f.status.s === 'known' && f.status.archiveOnly && f.status.as !== 'legacy' && f.hash && f.original !== false) {
       const held = pendingRowsFor(views, f.hash, f.status.as === 'labReport')[0];
       if (!held) continue;
       archiveOnly.push({ fileId: f.id, fields: fieldsOf(held, uploadFileName(f)) });

@@ -160,6 +160,153 @@ final class UploadSessionTests: XCTestCase, CloudFixtures {
         XCTAssertNil(page(upload)?.done?.unstored)
     }
 
+    /// US-52 AC13e (owner ruling D1, 2026-11-20): the consent screen says only a report picked from
+    /// Files is kept in the cloud, so a photo and a scan store no original: their letters save, nothing
+    /// is put, and the done screen names nothing kept and nothing unstored. A file from Files still is.
+    func testInTheCloudAPhotoAndAScanStoreNoOriginal_US52_AC13e() async throws {
+        try Data("dropbox".utf8).write(to: folder.appending(path: "sync-provider"))
+        dropbox.put(try record(days: [], device: "web"))
+        let engine = try HealthEngine(session: StubHTTP.session())
+        let store = try RecordStore(folder: folder, engine: engine, deviceId: "ios-test")
+        let sync = CloudSync(engine: engine, store: store, oauth: OAuthClient(tokens: tokens, session: StubHTTP.session()))
+        await sync.start()
+        XCTAssertNotNil(store.cloudErase)
+        let shade = { (white: CGFloat) in UIGraphicsImageRenderer(size: CGSize(width: 300, height: 400)).image { context in
+            UIColor(white: white, alpha: 1).setFill(); context.fill(CGRect(x: 0, y: 0, width: 300, height: 400))
+        } }
+        let jpeg = try XCTUnwrap(shade(0.5).jpegData(compressionQuality: 0.9))
+        let pages = [shade(0.2), shade(0.4)]
+        let sources: [(String, @Sendable () async throws -> [UploadRunner.Picked])] = [
+            ("photo", { [try await LabFileReader.picked(photo: jpeg)] }),
+            ("scan", { [try await LabFileReader.picked(scan: pages)] }),
+        ]
+        for (n, (name, read)) in sources.enumerated() {
+            let upload = session(store)
+            _ = await upload.start(read, needsConsent: false)
+            try await until("\(name) read") { page(upload)?.save.enabled == true }
+            upload.send(.save)
+            try await until("\(name) saved") { page(upload)?.done != nil }
+            XCTAssertEqual(page(upload)?.done?.line, "Saved 1 document.", name)
+            XCTAssertNil(page(upload)?.done?.archived, name)
+            XCTAssertNil(page(upload)?.done?.unstored, name)
+            XCTAssertTrue(store.recordJSON.contains("Letter \(n + 1)"), "\(name): its letter saved")
+            XCTAssertEqual(dropbox.documents.count, 0, "\(name): no original put")
+            upload.send(.close)
+            upload.end()
+        }
+        // The same photo again: its letter is known (its row holds the hash), counted, nothing to save.
+        let repeated = session(store)
+        _ = await repeated.start({ [try await LabFileReader.picked(photo: jpeg)] }, needsConsent: false)
+        try await until("known") { page(repeated)?.summary == "Everything here is already in your record." }
+        XCTAssertEqual(page(repeated)?.save.enabled, false)
+        XCTAssertEqual(dropbox.documents.count, 0)
+        repeated.end()
+        // Control: a file from Files stores its original.
+        let upload = session(store)
+        defer { upload.end() }
+        let file = Kit.pictures(1, from: 9)[0]
+        _ = await upload.runner.pick([file], needsConsent: false)
+        try await until("the file read") { page(upload)?.save.enabled == true }
+        upload.send(.save)
+        try await until("the file saved") { page(upload)?.done != nil }
+        XCTAssertEqual(Array(dropbox.documents.values), [file.data])
+    }
+
+    /// US-52 AC13d (owner ruling, Codex R1): the original stored is the bytes that were read and
+    /// reviewed, held and hash-checked, never a second read of the source at Save. A source file
+    /// changed and then deleted after the read changes nothing saved; the row's contentHash is theirs.
+    func testTheOriginalStoredIsTheBytesReviewedNotTheSourceAtSave_US52_AC13d() async throws {
+        try Data("dropbox".utf8).write(to: folder.appending(path: "sync-provider"))
+        dropbox.put(try record(days: [], device: "web"))
+        let engine = try HealthEngine(session: StubHTTP.session())
+        let store = try RecordStore(folder: folder, engine: engine, deviceId: "ios-test")
+        let sync = CloudSync(engine: engine, store: store, oauth: OAuthClient(tokens: tokens, session: StubHTTP.session()))
+        await sync.start()
+        let reviewed = Kit.pictures(1, from: 4)[0].data
+        let source = folder.appending(path: "Letter.png")
+        try reviewed.write(to: source)
+        let upload = session(store)
+        defer { upload.end() }
+        _ = await upload.start({ try await LabFileReader.picked(source) { await engine.uploadRules(files: $0, members: $1) } }, needsConsent: false)
+        try await until("read") { page(upload)?.save.enabled == true }
+        try Kit.pictures(1, from: 7)[0].data.write(to: source)
+        try FileManager.default.removeItem(at: source)
+        upload.send(.save)
+        try await until("saved") { page(upload)?.done != nil }
+        XCTAssertEqual(Array(dropbox.documents.values), [reviewed], "the reviewed bytes stored")
+        await sync.background()
+        let row = try XCTUnwrap((dropbox.record["documents"] as? [[String: Any]])?.first)
+        XCTAssertEqual(row["contentHash"] as? String, LabFileReader.contentHash(reviewed))
+    }
+
+    /// Owner ruling D1, both reviewers: with a cloud, a photographed lab report writes its values and
+    /// no hidden archive row; picked again, its values held, the page says the existing "Nothing new
+    /// to save" and never offers an original. A letter photographed twice is known the second time.
+    func testInTheCloudAPhotographedLabReportLeavesNoArchiveAndARepeatHasNothingNew_US52_AC13e() async throws {
+        try Data("dropbox".utf8).write(to: folder.appending(path: "sync-provider"))
+        dropbox.put(try record(days: [], device: "web"))
+        let engine = try HealthEngine(session: StubHTTP.session())
+        let store = try RecordStore(folder: folder, engine: engine, deviceId: "ios-test")
+        let sync = CloudSync(engine: engine, store: store, oauth: OAuthClient(tokens: tokens, session: StubHTTP.session()))
+        await sync.start()
+        let (fake, server) = (dropbox!, server)
+        StubHTTP.handler = { request in
+            guard request.url.path == LabReadSender.path else { return fake.answer(request) }
+            server.seen.withLock { $0.append("") }
+            let line = #"{"status":200,"body":{"success":true,"data":\#(UploadPageTests.lab(values: UploadPageTests.ldl))}}"#
+            return Kit.read("{\"accepted\":true}\n\(line)\n")
+        }
+        let photo = try await LabFileReader.picked(photo: try XCTUnwrap(UIGraphicsImageRenderer(size: CGSize(width: 300, height: 400)).image { context in
+            UIColor.gray.setFill(); context.fill(CGRect(x: 0, y: 0, width: 300, height: 400))
+        }.jpegData(compressionQuality: 0.9)))
+        let first = session(store)
+        _ = await first.start({ [photo] }, needsConsent: false)
+        try await until("read") { page(first)?.save.enabled == true }
+        XCTAssertEqual(page(first)?.save.label, "Save 1 value")
+        first.send(.save)
+        try await until("saved") { page(first)?.done != nil }
+        first.send(.close)
+        first.end()
+        XCTAssertEqual(dropbox.documents.count, 0, "no original put")
+        XCTAssertFalse(store.recordJSON.contains("labArchive"), "no hidden archive row")
+
+        let again = session(store)
+        defer { again.end() }
+        _ = await again.start({ [UploadRunner.Picked(name: photo.name, data: photo.data, keepsOriginal: false)] }, needsConsent: false)
+        try await until("read again") { page(again)?.save.why == "Nothing new to save" }
+        XCTAssertFalse(page(again)?.save.label.contains("original") ?? true, page(again)?.save.label ?? "")
+        XCTAssertEqual(page(again)?.save.enabled, false)
+        await sync.background()
+        XCTAssertEqual((dropbox.record["documents"] as? [Any])?.count ?? 0, 0, "no document row in the cloud's record")
+    }
+
+    /// Owner ruling D3: a scan over the file limit is refused in the engine's words, never cut short
+    /// or sent. Its pages are noise, so their JPEGs stay large.
+    func testAScanOverTheFileLimitIsRefusedInTheEnginesWords_US52_AC10() async throws {
+        let store = try phone()
+        // A new noise page each time: the PDF stores an identical picture only once.
+        let noise = { () throws -> UIImage in
+            var bytes = [UInt8](repeating: 0, count: 2000 * 2000 * 4)
+            bytes.withUnsafeMutableBytes { arc4random_buf($0.baseAddress, $0.count) }
+            let provider = try XCTUnwrap(CGDataProvider(data: Data(bytes) as CFData))
+            let image = try XCTUnwrap(CGImage(width: 2000, height: 2000, bitsPerComponent: 8, bitsPerPixel: 32, bytesPerRow: 8000,
+                                              space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.noneSkipLast.rawValue),
+                                              provider: provider, decode: nil, shouldInterpolate: false, intent: .defaultIntent))
+            return UIImage(cgImage: image)
+        }
+        let scan = try await LabFileReader.picked(scan: try (0..<12).map { _ in try noise() })
+        XCTAssertGreaterThan(scan.data.count, LabFileReader.maxFileBytes, "the synthetic scan is over the limit")
+        let upload = session(store)
+        defer { upload.end() }
+        _ = await upload.start({ [scan] }, needsConsent: false)
+        try await until("refused") { page(upload)?.files.rows.first?.status == "Too large to read" }
+        XCTAssertEqual(page(upload)?.files.rows.map(\.name), ["Scanned report.pdf"])
+        try await Task.sleep(for: .milliseconds(200))
+        XCTAssertEqual(server.count, 0, "nothing sent")
+        let held = await upload.runner.heldBytes
+        XCTAssertEqual(held, 0)
+    }
+
     // MARK: The owner's 18-file ZIP
 
     /// 18 files in one ZIP, 7 already in the record: one page, the 7 counted and never sent or

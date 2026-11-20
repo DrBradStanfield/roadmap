@@ -300,8 +300,8 @@ final class UploadSessionGuardsTests: XCTestCase, CloudFixtures {
 
     // MARK: 11. An older engine
 
-    /// An engine whose view carries no phase cannot draw the page: the pick takes today's flow, and
-    /// nothing is sent from the shared upload.
+    /// An engine whose view carries no phase cannot draw the page: the pick is refused as not read
+    /// (the sheet says the app's existing words), and nothing is sent.
     func testAnEngineWhoseViewHasNoPhaseTakesTodaysFlow() async throws {
         let url = try XCTUnwrap(Bundle.main.url(forResource: "health-engine", withExtension: "js"))
         let without = "HealthEngine = (function (e) { var o = Object.assign({}, e); var v = e.uploadViewJson; o.uploadViewJson = function () { var t = v.apply(null, arguments); var x = JSON.parse(t); delete x.phase; return JSON.stringify(x); }; return o; })(HealthEngine);"
@@ -311,16 +311,6 @@ final class UploadSessionGuardsTests: XCTestCase, CloudFixtures {
         let started = await upload.start({ Kit.pictures(1) }, needsConsent: false)
         XCTAssertEqual(started, .fallback)
         XCTAssertEqual(server.count, 0)
-        upload.end()
-    }
-
-    /// A pick today's flow must read (a folder, a file too large by its listed size) takes it, from
-    /// the pick's own answer, whatever an earlier run left on the model.
-    func testAPickTodaysFlowReadsFallsBackFromItsOwnAnswer() async throws {
-        let store = try RecordStore(folder: folder, engine: HealthEngine(session: StubHTTP.session()), deviceId: "ios-test")
-        let upload = session(store)
-        let started = await upload.start({ nil }, needsConsent: false)
-        XCTAssertEqual(started, .fallback)
         upload.end()
     }
 

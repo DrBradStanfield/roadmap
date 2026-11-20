@@ -40,13 +40,15 @@ final class UploadReviewShots: XCTestCase {
         for (name, page) in pages {
             for (look, style, size) in [("light", UIUserInterfaceStyle.light, DynamicTypeSize.large), ("dark", .dark, .large), ("xxxl", .light, .accessibility3)] {
                 for (device, width) in [("iphone", 390.0), ("ipad", 820.0)] where look == "light" || device == "iphone" {
-                    try shoot(page, open: name == "open" ? ["Cardiology letter"] : [], style: style, size: size, width: width, to: "\(out)/\(name)-\(device)-\(look).png")
+                    try Self.shoot(page, open: name == "open" ? ["Cardiology letter"] : [], style: style, size: size, width: width, to: "\(out)/\(name)-\(device)-\(look).png")
                 }
             }
         }
     }
 
-    private func shoot(_ page: UploadPage, open: Set<String>, style: UIUserInterfaceStyle, size: DynamicTypeSize, width: CGFloat, to path: String) throws {
+    /// One page drawn in a window and written as a PNG (UploadSourcesTests shoots a photo and a scan with it).
+    static func shoot(_ page: UploadPage, open: Set<String> = [], style: UIUserInterfaceStyle = .light, size: DynamicTypeSize = .large,
+                      width: CGFloat = 390, to path: String) throws {
         let view = NavigationStack {
             UploadReviewView(page: page, send: { _ in }, letter: { _ in "## Plan\n\nWalk daily. Recheck the blood pressure in three months." }, open: open, finish: {})
                 .navigationTitle("Add medical records")
