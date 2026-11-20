@@ -2,7 +2,9 @@
 import type { AddLabValueRequest, AddLabValueResult, MoveKeep, MoveRejection, MovePlan } from '@roadmap/health-core/record-edits';
 import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import { dayOf } from '@roadmap/health-core/merge';
-import type { FileReminderOptIn, RoadmapFile } from '@roadmap/health-core/roadmap-file';
+import { createEmptyFile, type FileReminderOptIn, type RoadmapFile } from '@roadmap/health-core/roadmap-file';
+import type { UploadState } from '@roadmap/health-core/upload-flow';
+import type { UploadSaveIO } from '@roadmap/health-core/upload-save';
 import type { HealthInputs } from '@roadmap/health-core/types';
 import type { LpaUnit, MetricType } from '@roadmap/health-core/units';
 import { MEASUREMENT_REFUSALS_WITH_METRIC, type MEASURES } from '@roadmap/health-core/product-events';
@@ -12,20 +14,20 @@ import { knownMinorOf } from '@roadmap/health-core/calculations';
 import { readableView } from '@roadmap/health-core/readable-rows';
 import { knownIndex, readIsLegacy, type KnownIndex } from '@roadmap/health-core/upload-known';
 import type { UnifiedExtractionResult } from '@roadmap/health-core/lab-extraction';
-import { RoadmapStore, type DerivedSeries, type BulkLabValueInput, type BulkMeasurementInput, type CorrectStatus, type MoveOutcome, type ProfileSave } from '../storage/roadmap-store';
+import { RoadmapStore, type DerivedSeries, type BulkMeasurementInput, type CorrectStatus, type MoveOutcome, type ProfileSave, type UploadStoreSave } from '../storage/roadmap-store';
 import { ChatHistoryStore } from '../storage/chat-history-store';
 import { getChatHistory, openChatHistory, setChatHistoryFactory } from './chat-history-access';
 import { eraseBegan, setChatEraseReader } from './chat-erase';
 import { PROXY_PATH, parseJsonResponse, trackProductEvent } from './server-api';
 import { countRefusedSpellings } from './refused-spellings';
 import { SHOPIFY_SURFACE } from './build-flags';
+import { Sentry } from './sentry';
+import { recordFailure } from './error-diagnostics';
 import type { StorageAdapter } from '@roadmap/health-core/adapter';
 import type {
   AddMeasurementResult,
-  ApiDocument,
   ApiLabValue,
   ApiMedicationHistory,
-  BulkLabValuesResult,
   BulkSaveResult,
   LatestMeasurementsResult,
 } from './api-types';
@@ -87,6 +89,12 @@ export function uploadKnownIndex(): KnownIndex {
 export function isLegacyUpload(name: string, read: UnifiedExtractionResult): boolean {
   return !!store && readIsLegacy(store.file, name, read);
 }
+
+/** The record as the upload's review reads it now (health-core uploadReview); an empty one before the store opens. */
+export function uploadRecord(): RoadmapFile {
+  return store ? store.file : NO_RECORD;
+}
+const NO_RECORD = createEmptyFile({ deviceId: 'none', now: new Date(0).toISOString() });
 
 /** Which erase the record is at; it moves with every erase, this tab's or
  *  another device's once re-read (US-16 AC2a). */
@@ -308,22 +316,30 @@ export async function bulkSaveMeasurements(measurements: BulkMeasurementInput[])
   countMeasuresAdded(result.saved.filter((row) => !row.correctsId));
   return result;
 }
-export async function bulkSaveLabValues(values: BulkLabValueInput[]): Promise<BulkLabValuesResult> {
-  if (!store) return { saved: [], skippedDuplicates: 0, errorCount: values.length, refused: [] };
-  const result = store.bulkSaveLabValues(values);
-  countRefusedSpellings(result.refused);
-  return result;
-}
 /** A lab value a person adds (US-21 AC2, US-25 AC25), by health-core's one lab add; null when nothing could be written. */
 export async function addLabValue(input: AddLabValueRequest, erase?: string): Promise<AddLabValueResult | null> {
   const result = store ? store.addLabValue(input, erase) : null;
   if (result && !result.ok && result.refused) countRefusedSpellings([result.refused]);
   return result;
 }
-export async function bulkSaveDocuments(
-  documents: Array<{ documentType: string; title: string; documentDate: string | null; contentMd: string; metadata: Record<string, unknown>; sourceFileName: string | null; file?: Blob; contentHash?: string }>,
-): Promise<{ saved: ApiDocument[]; errorCount: number; unstored?: number }> {
-  return store ? store.bulkSaveDocuments(documents) : { saved: [], errorCount: documents.length };
+/**
+ * One upload Save (health-core `uploadSave` in one edit, design 12c), with its usage signals: the
+ * prompted measures it added (US-07 AC11) and the labs the review did not send for their unit
+ * (US-21 AC15), counts and closed words only. `message`: why the review stays open (null: the erase refused it).
+ */
+export async function saveUpload(state: UploadState, now: string, cloud: boolean, io: Omit<UploadSaveIO<Blob>, 'write'>): Promise<UploadStoreSave> {
+  if (!store) return { ok: false, message: null };
+  const answer = await store.saveUpload(state, now, cloud, io);
+  // The rows have landed: a count that throws is reported, never a failed Save (PR 1906 item 8).
+  if (answer.ok) {
+    try {
+      countMeasuresAdded(answer.added);
+      countRefusedSpellings(answer.labRefusals);
+    } catch (err) {
+      Sentry.captureException(recordFailure(err, 'Upload save failed'), { tags: { area: 'upload-save', branch: 'counts' } });
+    }
+  }
+  return answer;
 }
 export async function deleteDocument(documentId: string): Promise<boolean> {
   return store ? store.deleteDocument(documentId) : false;

@@ -9,7 +9,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import type { ApiMeasurement } from '@roadmap/health-core/mappings';
-import { ReviewTable } from './ReviewTable';
+import { ReviewTable } from '../testing/review-harness';
 import type { FileResult } from '../lib/upload-pipeline';
 import { trackProductEvent } from '../lib/server-api';
 
@@ -43,7 +43,8 @@ describe('US-13 AC13: summary first, unsure rows only, sure values behind "Show 
   it('leads with the summary and shows only the unsure values under "Check these"', () => {
     const t = review([labs([v('ldl', 3.9), v('hdl', 1.2, 'medium'), v('triglycerides', 1.5, 'medium')])]);
     const summary = t.view.container.querySelector('.review-summary')!;
-    expect(summary.textContent).toBe('Found 3 blood test values');
+    // The upload's summary line (design PR 10, section 5 row 1).
+    expect(summary.textContent).toBe('1 file: 1 lab report');
     expect(t.view.container.querySelector('.review-table')!.firstElementChild).toBe(summary);
     expect(screen.getByText('Check these 2 values')).toBeTruthy();
     expect(screen.getByText('We were not sure about these. Check each against the report.')).toBeTruthy();
@@ -114,19 +115,21 @@ describe('US-13 AC13: summary first, unsure rows only, sure values behind "Show 
     expect(t.saved()).toEqual([['ldl', 4.1, 'lab_import_edited'], ['hdl', 1.2, undefined]]);
   });
 
-  it('nothing to save: the summary, the "Not saved" line, and Close', () => {
+  it('nothing to save: the summary, the "Not saved" line, Save disabled saying why, and Close', () => {
     const t = review([labs([], { refusedValues: [{ metric: 'creatinine', value: 2, unit: 'mg/mmol', reason: 'Synthetic assistant text.' }] })]);
-    expect(t.save()).toBeNull();
+    expect(t.save()!.disabled).toBe(true);
+    expect(screen.getByText('Nothing new to save')).toBeTruthy();
     expect(screen.getByRole('button', { name: '1 value not saved' })).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Close' }));
     expect(t.onCancel).toHaveBeenCalledOnce();
   });
 
-  it('a document keeps its card', () => {
+  it('a document is listed to be saved, its card behind the documents row (US-13 AC14)', () => {
     const letter: FileResult = { fileName: 'letter.pdf', reportDate: null, values: [], additionalValues: [],
       document: { classification: 'clinic_letter', title: 'Synthetic letter', documentDate: '2024-03-01', contentMarkdown: 'Synthetic text.', metadata: {} } };
     const t = review([letter]);
-    expect(t.view.container.querySelector('.review-summary')!.textContent).toBe('Found 1 clinic letter');
+    expect(t.view.container.querySelector('.review-summary')!.textContent).toBe('1 file: 1 clinic letter');
+    fireEvent.click(screen.getByRole('button', { name: '1 letter or document will be saved' }));
     expect(t.view.container.querySelector('.review-file-section')).not.toBeNull();
     expect(t.save()!.textContent).toBe('Save 1 document');
   });
@@ -167,11 +170,11 @@ describe('US-13 AC13 usage signal: one counts-only upload_review per review end'
   });
 
   it('the counts a Cancel or close sends (the upload flow sends them once): saved 0, and nothing but counts', () => {
-    const countsRef: { current: (() => object) | null } = { current: null };
+    const countsRef: { current: ((saved: boolean) => object) | null } = { current: null };
     render(<ReviewTable grading={{}} results={[labs([v('ldl', 3.9)])]} history={{ measurements: [], labValues: [], documents: [] }}
       unitSystem="si" onSave={vi.fn()} onCancel={vi.fn()} isSaving={false} error={null} countsRef={countsRef} />);
-    expect(countsRef.current!()).toEqual({ sure: 1, saved: 0 });
-    expect(Object.values(countsRef.current!()).every(n => Number.isInteger(n))).toBe(true);
+    expect(countsRef.current!(false)).toEqual({ sure: 1, saved: 0 });
+    expect(Object.values(countsRef.current!(false)).every(n => Number.isInteger(n))).toBe(true);
   });
 });
 
@@ -213,11 +216,12 @@ describe('US-13 AC13: what Save writes always has a cell, and a refused value bl
 
   it('nothing to save (a lone Ferritin in a unit the test does not take): the summary, the "Not saved" line and Close only', () => {
     const t = review([ferritin(10, 'mg/dL')]);
-    expect(t.view.container.querySelector('.review-summary')!.textContent).toBe('Found 1 blood test value');
+    expect(t.view.container.querySelector('.review-summary')!.textContent).toBe('1 file: 1 lab report');
     expect(screen.queryByText(/^Check th/)).toBeNull();
     expect(t.inputs()).toEqual([]);
     expect(screen.getByRole('button', { name: '1 value not saved' })).toBeTruthy();
-    expect(t.save()).toBeNull();
+    expect(t.save()!.disabled).toBe(true);
+    expect(screen.getByText('Nothing new to save')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Close' })).toBeTruthy();
   });
 

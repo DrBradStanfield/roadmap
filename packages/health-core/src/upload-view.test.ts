@@ -55,7 +55,7 @@ describe('upload view: section 4 screens', () => {
     expect(v.sections.map((x) => x.kind)).toEqual(['unsure']);
     expect(v.sections[0]).toMatchObject({ title: 'Check this value', rows: [{ fileId: 'lab', ref: 'v1', reasons: ['confidence'] }] });
     expect(v.sure).toMatchObject({ line: '2 values will be saved', showAll: 'Show all 2' });
-    expect(v.documents).toEqual({ line: '1 letter or document will be saved', rows: [{ fileId: 'letter', title: 'Cardiology letter', kind: 'clinic letter', date: '2026-10-20', dateKnown: true }] });
+    expect(v.documents).toEqual({ line: '1 letter or document will be saved', rows: [{ fileId: 'letter', title: 'Cardiology letter', type: 'clinic_letter', kind: 'clinic letter', date: '2026-10-20', dateKnown: true, screening: null }] });
     expect(plan.counts).toEqual({ values: 3, documents: 1, archived: 0, originals: 1 });
     expect(v.save).toEqual({ label: 'Save 3 values and 1 document', enabled: true, why: null, error: null });
     expect(v.files.rows[0].status).toBe('Already in your record');
@@ -67,6 +67,8 @@ describe('upload view: section 4 screens', () => {
     const v = viewOf(open([at('a', { s: 'known', as: 'labReport', archiveOnly: false }), at('b', { s: 'known', as: 'document', archiveOnly: false })]), EMPTY, NOW);
     expect(v.summary).toBe('Everything here is already in your record.');
     expect(v.save).toMatchObject({ enabled: false, why: 'Nothing new to save' });
+    // Owner ruling 2026-11-20: with nothing to save the button is main's bare "Save", never "Save 0 values".
+    expect(v.save.label).toBe('Save');
   });
 
   it('failed: one section naming each file in the web\'s words, Try again only when a retry can help; Save not blocked', () => {
@@ -80,9 +82,9 @@ describe('upload view: section 4 screens', () => {
     expect(v.sections).toEqual([{
       kind: 'failed', title: '3 files not read', retry: 'Try again',
       rows: [
-        { fileId: 'busy', name: 'busy.pdf', line: 'Not read. Our server was busy. Please try again later.' },
-        { fileId: 'limit', name: 'limit.pdf', line: 'Not read. The daily upload limit was reached.' },
-        { fileId: 'z', name: 'z.pdf', line: 'No files we can read inside this ZIP.' },
+        { fileId: 'busy', name: 'busy.pdf', line: 'Not read. Our server was busy. Please try again later.', retry: 'Try again' },
+        { fileId: 'limit', name: 'limit.pdf', line: 'Not read. The daily upload limit was reached.', retry: null },
+        { fileId: 'z', name: 'z.pdf', line: 'No files we can read inside this ZIP.', retry: null },
       ],
     }]);
     expect(v.save).toEqual({ label: 'Save 1 value', enabled: true, why: null, error: null });
@@ -110,7 +112,7 @@ describe('upload view: section 4 screens', () => {
     // The original alone: its own label (UPLOAD_TEXT.saveOriginals, approved 2026-11-20).
     expect(viewOf(s, record, NOW).save).toEqual({ label: 'Save 1 original', enabled: true, why: null, error: null });
     const letterKnown = open([at('k', { s: 'known', as: 'document', archiveOnly: false })]);
-    expect(viewOf(letterKnown, record, NOW).save).toEqual({ label: 'Save 0 values', enabled: false, why: 'Nothing new to save', error: null });
+    expect(viewOf(letterKnown, record, NOW).save).toEqual({ label: 'Save', enabled: false, why: 'Nothing new to save', error: null });
   });
 
   it('done: originals that were not stored say so in the web\'s own words; none says nothing (PR 1848 Codex)', () => {
@@ -124,9 +126,9 @@ describe('upload view: section 4 screens', () => {
   it('done: one line, each part dropped at zero, and the originals kept', () => {
     const done = (values: number, documents: number, archived: number): UploadState =>
       ({ phase: 'done', platform: 'web', run: 1, files: [], started: NOW, firstRead: null, outcome: { values, documents, archived } });
-    expect(viewOf(done(42, 8, 0), EMPTY, NOW).done).toEqual({ line: 'Saved 42 values and 8 documents.', archived: null, unstored: null });
-    expect(viewOf(done(0, 1, 2), EMPTY, NOW).done).toEqual({ line: 'Saved 1 document.', archived: '2 original files kept in your cloud.', unstored: null });
-    expect(viewOf(done(1, 0, 1), EMPTY, NOW).done).toEqual({ line: 'Saved 1 value.', archived: '1 original file kept in your cloud.', unstored: null });
+    expect(viewOf(done(42, 8, 0), EMPTY, NOW).done).toEqual({ line: 'Saved 42 values and 8 documents.', archived: null, unstored: null, skipped: [], notSaved: [] });
+    expect(viewOf(done(0, 1, 2), EMPTY, NOW).done).toEqual({ line: 'Saved 1 document.', archived: '2 original files kept in your cloud.', unstored: null, skipped: [], notSaved: [] });
+    expect(viewOf(done(1, 0, 1), EMPTY, NOW).done).toEqual({ line: 'Saved 1 value.', archived: '1 original file kept in your cloud.', unstored: null, skipped: [], notSaved: [] });
   });
 });
 

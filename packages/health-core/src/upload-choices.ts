@@ -23,6 +23,10 @@ export interface FileChoices {
   replace: Record<string, string>;
   edits: Record<string, number>;
   document: DocumentFix;
+  /** A letter's screening update (web, US-06 AC5): absent, the platform's default (upload-plan.ts). */
+  screening?: boolean;
+  /** A dated previous-results column's day, by the day it printed (web, US-12 AC12): a real past day, or a pick still waiting to be one. */
+  columnDays?: Record<string, string>;
 }
 export type ChoiceChange =
   | { tick: string; on: boolean }
@@ -30,7 +34,9 @@ export type ChoiceChange =
   | { previousDay: string | null }
   | { replace: string; correctsId: string | null }
   | { edit: string; value: number | null }
-  | { document: DocumentFix };
+  | { document: DocumentFix }
+  | { screening: boolean }
+  | { columnDay: string; day: string | null };
 
 export const NO_CHOICES: FileChoices = { ticks: {}, testDay: null, previousDay: null, replace: {}, edits: {}, document: {} };
 
@@ -41,9 +47,9 @@ export function documentDate(date: string | null, now: string): string | null | 
 
 const without = <T,>(r: Record<string, T>, key: string): Record<string, T> => Object.fromEntries(Object.entries(r).filter(([k]) => k !== key));
 
-/** The refs a day change moves: values on the test's day (no day of their own), or in the undated previous column. */
-function movedRefs(x: Pick<UnifiedExtractionResult, 'values' | 'additionalValues'>, column: 'test' | 'previous'): string[] {
-  const on = (own?: string) => (column === 'test' ? own === undefined : own === UNDATED_PREVIOUS);
+/** The refs a day change moves: values on the test's day (no day of their own), in the undated previous column, or printed on one day. */
+function movedRefs(x: Pick<UnifiedExtractionResult, 'values' | 'additionalValues'>, column: 'test' | 'previous' | { printed: string }): string[] {
+  const on = (own?: string) => (column === 'test' ? own === undefined : column === 'previous' ? own === UNDATED_PREVIOUS : own === column.printed);
   return [
     ...(x.values ?? []).flatMap((v, i) => (on(v.recordedAt) ? [`v${i}`] : [])),
     ...(x.additionalValues ?? []).flatMap((v, i) => (on(v.recordedAt) ? [`a${i}`] : [])),
@@ -68,6 +74,15 @@ export function choose(c: FileChoices, change: ChoiceChange, now: string, extrac
   }
   if ('previousDay' in change) return { ...c, previousDay: change.previousDay, replace: moved(c, movedRefs(extraction, 'previous'), c.previousDay, change.previousDay, now) };
   if ('replace' in change) return { ...c, replace: change.correctsId === null ? without(c.replace, change.replace) : { ...c.replace, [change.replace]: change.correctsId } };
+  if ('screening' in change) return { ...c, screening: change.screening };
+  if ('columnDay' in change) {
+    // A real past day as `validDay` gives it; any other pick (a part missing, a day to come) as given,
+    // so the column keeps showing it and the report waits for a day (upload-review.ts).
+    const day = change.day === null ? null : validDay(change.day, { now }) ?? change.day;
+    const before = c.columnDays?.[change.columnDay] ?? change.columnDay;
+    const columnDays = day === null ? without(c.columnDays ?? {}, change.columnDay) : { ...c.columnDays, [change.columnDay]: day };
+    return { ...c, columnDays, replace: moved(c, movedRefs(extraction, { printed: change.columnDay }), before, day ?? change.columnDay, now) };
+  }
   if ('edit' in change) return { ...c, edits: change.value === null || !Number.isFinite(change.value) ? without(c.edits, change.edit) : { ...c.edits, [change.edit]: change.value } };
   const { date, ...rest } = change.document;
   if (date === undefined) return { ...c, document: { ...c.document, ...rest } };

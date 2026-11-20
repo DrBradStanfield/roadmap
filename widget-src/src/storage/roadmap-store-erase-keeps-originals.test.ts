@@ -17,6 +17,7 @@ import { BACKEND_KEY, webRecordHost } from './web-record-host';
 import { LocalStorageAdapter } from './local-storage-adapter';
 import { clearOffFileAfterErase, deleteUserData, initRoadmapStore, setPreEraseHook } from '../lib/roadmap-data';
 import { setChatHistoryFactory } from '../lib/chat-history-access';
+import { seedStoreDocuments } from '../testing/record-seed';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 
@@ -25,7 +26,7 @@ const blobKeys = () => Object.keys(localStorage).filter((k) => k.startsWith(DOC_
 const pdf = () => new Blob(['%PDF-1.4 lipids'], { type: 'application/pdf' });
 
 async function upload(store: RoadmapStore): Promise<string> {
-  const result = await store.bulkSaveDocuments([{
+  const result = await seedStoreDocuments(store, [{
     documentType: 'pathology_report', title: 'Lipids', documentDate: '2026-10-20', contentMd: 'x',
     metadata: {}, sourceFileName: 'lipids.pdf', file: pdf(),
   }]);
@@ -157,7 +158,7 @@ it("the page's erase keeps the original another tab saved while it ran, and remo
   setPreEraseHook(async () => {
     vi.setSystemTime(new Date('2026-10-21T10:01:00.000Z'));
     otherTab.addMeasurement('weight', 79, '2026-10-21T00:00:00.000Z');
-    const result = await otherTab.bulkSaveDocuments([{
+    const result = await seedStoreDocuments(otherTab, [{
       documentType: 'pathology_report', title: 'Thyroid', documentDate: '2026-10-21', contentMd: 'y',
       metadata: {}, sourceFileName: 'thyroid.pdf', file: new Blob(['%PDF-1.4 thyroid'], { type: 'application/pdf' }),
     }]);

@@ -1,7 +1,7 @@
 import { METRIC_LABELS } from '@roadmap/health-core/mappings';
-import { PRESSURE_ORDER } from '@roadmap/health-core/validation';
 import { UNIT_DEFS, roundBoundInward, type MetricType } from '@roadmap/health-core/units';
 import type { MeasurementRefusal } from '@roadmap/health-core/record-edits';
+import { measurementRefusalText } from '@roadmap/health-core/upload-text';
 import { cellDecimalPlaces, cellFromSI, cellLabel, type CellUnit } from './blood-test-cell';
 
 /** The same line for a blood test value the record refused (US-12 AC6,
@@ -10,12 +10,12 @@ import { cellDecimalPlaces, cellFromSI, cellLabel, type CellUnit } from './blood
  *  the SI bound the record enforced, converted and rounded inward, so the
  *  value is always past the number shown (adversary F1). Never the number or
  *  the store's message. */
-export function measurementRefusalLine({ metricType, reason, message, bound }: MeasurementRefusal, unit: CellUnit): string {
+export function measurementRefusalLine(refusal: MeasurementRefusal, unit: CellUnit): string {
+  // The lines that name no unit live in health-core, so the upload's done screen says them too.
+  const text = measurementRefusalText(refusal);
+  if (text !== null) return text;
+  const { metricType, bound } = refusal;
   const label = Object.prototype.hasOwnProperty.call(METRIC_LABELS, metricType) ? METRIC_LABELS[metricType] : metricType;
-  if (reason === 'unknown-metric') return `${label}: not a test the record knows, so it was not saved.`;
-  if (reason === 'invalid-value') return `${label}: the value was not a number the record can store, so it was not saved.`;
-  // A blood pressure the wrong way up (US-02 AC8): no end of a range was missed.
-  if (message === PRESSURE_ORDER) return `Blood pressure not saved: ${PRESSURE_ORDER[0].toLowerCase()}${PRESSURE_ORDER.slice(1)} Check the report, then enter it again.`;
   const metric = metricType as MetricType;
   const edge = bound === 'below' ? 'min' : 'max';
   const range = UNIT_DEFS[metric].validationRange.si;

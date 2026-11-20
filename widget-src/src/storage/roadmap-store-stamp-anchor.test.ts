@@ -18,6 +18,7 @@ import { createMeasurement } from '@roadmap/health-core/roadmap-file';
 import { stampCount, stampedRecord, stampsAheadOfMeta } from '@roadmap/health-core/stamp-anchor.test-helpers';
 import { LocalStorageAdapter } from './local-storage-adapter';
 import { RoadmapStore } from './roadmap-store';
+import { seedStoreLabValues, seedStoreDocuments } from '../testing/record-seed';
 
 const T0 = '2026-09-01T09:00:00.000Z';
 const CLOCKS = { ahead: '2026-09-01T10:00:00.000Z', behind: '2026-09-01T08:00:00.000Z' } as const;
@@ -54,10 +55,10 @@ const WRITES: Record<string, (store: RoadmapStore) => unknown> = {
   saveScreening: (s) => s.saveScreening('colorectal_last_date', '2025-03'),
   addLabValue: (s) => s.addLabValue({ metricName: 'TSH', unit: 'mIU/L', value: 2.1, day: NEW_DAY.slice(0, 10) })?.ok,
   bulkSaveMeasurements: (s) => s.bulkSaveMeasurements([{ metricType: 'waist', value: 90, recordedAt: NEW_DAY, source: 'lab_import' }]).saved.length === 1,
-  bulkSaveLabValues: (s) => s.bulkSaveLabValues([{ metricName: 'Ferritin', value: 85, unit: 'ug/L', recordedAt: NEW_DAY }]).saved.length === 1,
-  bulkSaveDocuments: async (s) => (await s.bulkSaveDocuments([{ ...pdf, file: new Blob(['synthetic bytes'], { type: 'application/pdf' }) }])).saved.length === 1,
+  bulkSaveLabValues: (s) => seedStoreLabValues(s, [{ metricName: 'Ferritin', value: 85, unit: 'ug/L', recordedAt: NEW_DAY }]).saved.length === 1,
+  bulkSaveDocuments: async (s) => (await seedStoreDocuments(s, [{ ...pdf, file: new Blob(['synthetic bytes'], { type: 'application/pdf' }) }])).saved.length === 1,
   deleteDocument: async (s) => {
-    const { saved: [doc] } = await s.bulkSaveDocuments([{ ...pdf, file: new Blob(['other bytes'], { type: 'application/pdf' }) }]);
+    const { saved: [doc] } = await seedStoreDocuments(s, [{ ...pdf, file: new Blob(['other bytes'], { type: 'application/pdf' }) }]);
     return s.deleteDocument(doc.id);
   },
   markReportEmailCaptured: (s) => s.markReportEmailCaptured(),

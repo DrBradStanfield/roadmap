@@ -54,21 +54,8 @@ export function pastDay(raw: string | null | undefined): string | null {
   return validDay(raw, { now: new Date().toISOString() });
 }
 
-/** The model's document date as review state (US-13 AC6), read as the
- *  connector reads it: a past calendar day, else unknown. A month alone keeps
- *  no day, which is the user's to pick, but it may still date a screening. */
-export function readDocumentDate(raw: string | null | undefined): { day: string | null; month: string | null } {
-  const day = pastDay(raw);
-  return { day, month: !day && raw && /^\d{4}-\d{2}$/.test(raw) && pastDay(`${raw}-01`) ? raw : null };
-}
-
 export function getDaysInMonth(month: string, year: string): number {
   return new Date(parseInt(year), parseInt(month), 0).getDate();
-}
-
-/** Build YYYY-MM-DD or YYYY-MM-01 ISO string from FullDate state. */
-export function buildRecordedAt(date: FullDate): string {
-  return `${fullDateToIso(date)}T00:00:00.000Z`;
 }
 
 /** YYYY-MM-DD, defaulting day to 01 when absent. */

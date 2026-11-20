@@ -90,14 +90,12 @@ const atMount = vi.hoisted(() => ({ run: null as null | (() => void), effectsRan
 // The modal's hand-back to the page, captured so a test can finish an upload (US-62 AC13).
 const upload = vi.hoisted(() => ({
   complete: null as null | (() => void | Promise<void>),
-  screening: null as null | ((key: string, value: string, erase: string) => void),
 }));
 vi.mock('./UploadModal', async () => {
   const { useEffect, useLayoutEffect } = await import('react');
   return {
-    UploadModal: ({ onComplete, onScreeningUpdate }: { onComplete: () => void | Promise<void>; onScreeningUpdate: (key: string, value: string, erase: string) => void }) => {
+    UploadModal: ({ onComplete }: { onComplete: () => void | Promise<void> }) => {
       upload.complete = onComplete;
-      upload.screening = onScreeningUpdate;
       if (atMount.run) for (const end = performance.now() + 20; performance.now() < end;) { /* a long first render */ }
       useLayoutEffect(() => {
         const run = atMount.run;
@@ -133,7 +131,6 @@ beforeEach(async () => {
   Object.assign(failMirror, { next: false, threw: false, always: false });
   Object.assign(atMount, { run: null, effectsRan: false, inGap: false });
   upload.complete = null;
-  upload.screening = null;
   vi.mocked(trackABConversion).mockClear();
   vi.mocked(Sentry.captureException).mockClear();
   viewport.mobile = false;
@@ -1103,10 +1100,11 @@ describe('US-34 AC4, US-16 AC2a (H52): a re-read inside a list save\'s 300 ms sh
     await flushRoadmapStore();
     const view = render(<HealthTool />);
     await waitFor(() => expect(q(view, 'select#colorectal_last_date')).toBeTruthy());
-    await waitFor(() => expect(upload.screening).toBeTruthy());
-    // As useUploadFlow does it: the document's screening date, then the upload's re-read, in one turn.
+    await waitFor(() => expect(upload.complete).toBeTruthy());
+    // As the upload's Save does it (design 12c): the document's screening date lands in the record with the
+    // upload's rows (state-edits setScreening, the store's write), then the upload's re-read, in one turn.
     await act(async () => {
-      upload.screening!('colorectal_last_date', '2025-06', getShownErase());
+      await saveScreening('colorectal_last_date', '2025-06', getShownErase());
       await upload.complete!();
     });
     await settle(400);

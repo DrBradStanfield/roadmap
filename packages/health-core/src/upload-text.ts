@@ -7,10 +7,12 @@
  */
 import { IMPORT_LIMITS } from './import-hints';
 import { IMPORT_REVIEW_TEXT, KIND_WORDS, plural } from './import-review';
+import { METRIC_LABELS } from './mappings';
+import type { MeasurementRefusal } from './record-edits';
 import type { FailDetail } from './upload-failure';
 import type { FailReason, RunRefusal } from './upload-flow';
 import type { UploadPlatform } from './upload-rules';
-import type { DocumentType } from './validation';
+import { PRESSURE_ORDER, type DocumentType } from './validation';
 
 /** Section 5, rows 1 to 27, by key, with the words added since; all approved by Brad 2026-11-20. */
 export const UPLOAD_TEXT = {
@@ -45,9 +47,13 @@ export const UPLOAD_TEXT = {
   saveBoth: (n: number, m: number) => (m === 0 ? IMPORT_REVIEW_TEXT.save(n) : n === 0 ? `Save ${plural(m, 'document')}` : `Save ${plural(n, 'value')} and ${plural(m, 'document')}`),
   saveWait: (k: number) => `Wait for ${plural(k, 'file')} to finish`,
   saveNothing: 'Nothing new to save',
+  /** Save's label with nothing to write: the old web's bare word (ReviewOverview `saveLabel`), byte for byte (owner ruling 2026-11-20). */
+  saveNone: 'Save',
   /** 26. Each part dropped at zero, as 23. */
   savedLine: (n: number, m: number) => `Saved ${[...(n || !m ? [plural(n, 'value')] : []), ...(m ? [plural(m, 'document')] : [])].join(' and ')}.`,
   archivedLine: (a: number) => `${plural(a, 'original file')} kept in your cloud.`,
+  /** The web's done lines for reviewed values another writer beat to their slot (US-12 AC6a; UploadModal.tsx), byte for byte. */
+  skippedLine: (n: number, lab: boolean) => `${n} ${lab ? 'additional lab' : 'blood test'} value${n !== 1 ? 's were' : ' was'} not added. Check your blood test table: a value was already recorded for that date, or changed during review.`,
   /** The web's done line for originals it could not store (UploadModal.tsx), byte for byte: no count. */
   unstoredLine: "The original file couldn't be stored; its details are saved.",
   /** The Save label when Save files only originals (the web's saveLabel, ReviewOverview.tsx). */
@@ -71,6 +77,10 @@ export const FILE_NOTICE_TEXT = {
   tooLong: 'Not read. The file is too long to read in one go.',
   picturesOnly: 'This Word file holds pictures, not text. Save it as a PDF, or upload a photo of the page.',
 } as const;
+/** A letter's screening update (US-06 AC5, US-13 AC6); moved from the web's ReviewFileSections.tsx byte for byte. The name is drawn bold between the first two. */
+export const SCREENING_TEXT = {
+  update: (type: string, date: string | null) => ['Update ', type, ` screening date${date ? ` to ${date}` : ' (pick the document date first)'}`] as const,
+} as const;
 /** Why Save waits while a selected value has an error (US-13 AC5); moved from ReviewTable.tsx. */
 export const FIX_ERRORS_TEXT = 'Correct or clear the values with errors before saving.';
 /** A busy server's notice; moved from upload-pipeline.ts. */
@@ -91,6 +101,43 @@ export const REFUSED_TEXT: Record<RunRefusal, string> = {
   noKey: KEY_TEXT.missing,
   server: 'An error occurred while processing files. Please try again.',
 };
+/**
+ * The web's upload window words, moved from UploadModal.tsx, ReviewTable.tsx and ReviewFileSections.tsx
+ * byte for byte (design PR 10), so every word the window shows comes from here.
+ */
+export const UPLOAD_WINDOW_TEXT = {
+  title: 'Upload Health Records',
+  keepTitle: 'Keep your original documents',
+  keepChoose: 'Choose where to keep it',
+  keepSkip: 'Continue without keeping my files ›',
+  drop: 'Drop health records here, or click to browse',
+  dropHint: (files: number) => `PDF, JPG, PNG, DOCX, or ZIP — up to ${files} files`,
+  close: 'Close',
+  cancel: 'Cancel',
+  done: 'Done',
+  saving: 'Saving...',
+  reviewError: 'Something went wrong showing these results. Your file was read; please try again.',
+  documentTitle: 'Document title',
+  documentDate: 'Document date',
+  date: 'Date:',
+  /** An undated column's header while it has no day (US-12 AC14): the month and the report day in words, when known. */
+  pickDay: (month: string | null, before: string | null) => `Pick a day${month ? ` in ${month}` : ''}${before ? ` before ${before}` : ''}`,
+} as const;
+/**
+ * The web's line for a blood test value the record refused (US-12 AC6, US-35 AC17), moved from
+ * widget-src lab-value-labels.ts `measurementRefusalLine` byte for byte: the cases that name no unit.
+ * Null for a value out of range, whose line names the end it missed in the unit the cell shows.
+ */
+export function measurementRefusalText({ metricType, reason, message }: Pick<MeasurementRefusal, 'metricType' | 'reason' | 'message'>): string | null {
+  const label = Object.prototype.hasOwnProperty.call(METRIC_LABELS, metricType) ? METRIC_LABELS[metricType] : metricType;
+  if (reason === 'unknown-metric') return `${label}: not a test the record knows, so it was not saved.`;
+  if (reason === 'invalid-value') return `${label}: the value was not a number the record can store, so it was not saved.`;
+  // A blood pressure the wrong way up (US-02 AC8): no end of a range was missed.
+  if (message === PRESSURE_ORDER) return `Blood pressure not saved: ${PRESSURE_ORDER[0].toLowerCase()}${PRESSURE_ORDER.slice(1)} Check the report, then enter it again.`;
+  return null;
+}
+/** A Save that threw or was refused, as the web said it (lib/upload-save.ts); moved byte for byte. */
+export const SAVE_FAILED_TEXT = 'Failed to save. Please try again.';
 /** An empty ZIP, or one of unsupported files, named itself (US-12 AC9); moved from useUploadFlow.ts. */
 export const EMPTY_ZIP_TEXT = 'No files we can read inside this ZIP.';
 

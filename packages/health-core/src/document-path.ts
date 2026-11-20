@@ -18,7 +18,7 @@ import { localDay, stampInstant } from './merge';
 
 /**
  * Title of the row the website's upload writes for a lab PDF it archives
- * (`synthesizeLabArchiveEntries`), which its Documents list hides: the values
+ * (upload-plan.ts `labArchives`, `labArchivePayload`), which its Documents list hides: the values
  * are the record, the row is the file. The connector writes the same row
  * without the blob, and the widget's `isLabArchiveDocument` recognises it.
  */

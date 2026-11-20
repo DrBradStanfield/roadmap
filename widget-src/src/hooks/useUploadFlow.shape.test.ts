@@ -23,7 +23,9 @@ describe('US-12 AC26: the upload adapter holds no mode beside the shared state',
   });
 
   it('its refs are the state read synchronously, held data and claims: none starts as a boolean', () => {
-    expect(all(/const (\w+) = useRef/g)).toEqual(['live', 'held', 'prepared', 'decisions', 'saved', 'reviewEnded', 'endReview', 'props', 'port']);
+    // Design PR 10: the review's decisions and the save's counts went into the state (`chose`, `saved`);
+    // left: a second once-per-run claim; Save's counts are read when it lands.
+    expect(all(/const (\w+) = useRef/g)).toEqual(['live', 'held', 'prepared', 'reviewEnded', 'runCounted', 'endReview', 'props', 'port']);
     expect(source).not.toMatch(/useRef(<boolean>)?\((true|false)\)/);
   });
 
@@ -37,7 +39,7 @@ describe('US-12 AC26: the upload adapter holds no mode beside the shared state',
     expect(fieldsOf('Held')).toEqual(['run', 'leftOut', 'docx', 'known', 'files']);
     expect(fieldsOf('HeldFile')).toEqual(['file', 'entry', 'pages', 'note']);
     expect(source).toMatch(/useRef<\{ run: number; ready: Promise<HealthUploadAPI \| null> \} \| null>\(null\)/);
-    expect(source).toMatch(/useRef<\{ run: number; outcome: SaveOutcome \}>/);
+    expect(source).not.toMatch(/SaveOutcome/);
     expect(read).not.toMatch(/\b(stopped|failure|refused|status|phase|mode)\??:/);
   });
 });

@@ -3,9 +3,10 @@ import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { UploadModal } from './UploadModal';
-import { sha256Blob, synthesizeLabArchiveEntries } from '../lib/archive-payloads';
+import { lastSaved, resetUploadStore, uploadStore } from '../testing/upload-store';
+import { sha256Blob } from '../lib/archive-payloads';
 import { checkLabImportQuota, labImport } from '../lib/upload-api';
-import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocumentArchiveMode } from '../lib/roadmap-data';
+import { getDocumentArchiveMode } from '../lib/roadmap-data';
 import { Sentry } from '../lib/sentry';
 import { WritesStoppedError } from '../lib/error-diagnostics';
 import { trackProductEvent } from '../lib/server-api';
@@ -13,9 +14,9 @@ import type { UploadHistory } from '../lib/api-types';
 import { findReviewValue } from '../testing/import-review';
 
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn() }));
-vi.mock('../lib/roadmap-data', () => ({ uploadKnownIndex: vi.fn(() => new Map()), isLegacyUpload: vi.fn(() => false), getDocumentArchiveMode: vi.fn(() => 'cloud'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
+vi.mock('../lib/roadmap-data', async () => ({ ...(await import('../testing/upload-store')).uploadStoreMock(), uploadKnownIndex: vi.fn(() => new Map()), isLegacyUpload: vi.fn(() => false), getDocumentArchiveMode: vi.fn(() => 'cloud'), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
 vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
-vi.mock('../lib/archive-payloads', async importOriginal => ({ ...await importOriginal<typeof import('../lib/archive-payloads')>(), sha256Blob: vi.fn(async () => ''), synthesizeLabArchiveEntries: vi.fn(() => []) }));
+vi.mock('../lib/archive-payloads', async importOriginal => ({ ...await importOriginal<typeof import('../lib/archive-payloads')>(), sha256Blob: vi.fn(async () => '') }));
 vi.mock('../lib/useIsMobile', () => ({ useIsMobile: () => false }));
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 
@@ -57,13 +58,10 @@ async function ready() {
 }
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(synthesizeLabArchiveEntries).mockReset().mockReturnValue([]);
+  resetUploadStore();
   vi.mocked(getDocumentArchiveMode).mockReturnValue('cloud');
   vi.mocked(checkLabImportQuota).mockResolvedValue({ allowed: true, remaining: 60 });
   vi.mocked(labImport).mockResolvedValue(extraction as Awaited<ReturnType<typeof labImport>>);
-  vi.mocked(bulkSaveMeasurements).mockResolvedValue({ saved: [{}], skippedDuplicates: 0, errorCount: 0, refused: [] } as unknown as Awaited<ReturnType<typeof bulkSaveMeasurements>>);
-  // Reset, not cleared: a test that fails early must not leave its queued answers to the next.
-  vi.mocked(bulkSaveDocuments).mockReset().mockResolvedValue({ saved: [], errorCount: 0 });
   vi.mocked(sha256Blob).mockReset().mockResolvedValue('');
   extractFromPdf.mockResolvedValue({ pages: [{ type: 'text', content: 'synthetic' }], truncated: false });
   Object.assign(window, { HealthUpload: { extractFromPdf, isPdf: () => true, isZip: () => false, isImage: () => false } });
@@ -103,19 +101,6 @@ describe('US-12 AC4–6 upload session ownership', () => {
     await findReviewValue('3.9');
     expect(labImport).toHaveBeenCalledOnce();
   });
-  it.each(['quota', 'draft flush'])('cancels while awaiting %s without later launching', async phase => {
-    const pending = deferred<Awaited<ReturnType<typeof checkLabImportQuota>>>();
-    const flushing = deferred<void>();
-    const onStart = vi.fn(() => flushing.promise);
-    if (phase === 'quota') vi.mocked(checkLabImportQuota).mockReturnValue(pending.promise);
-    render(<Harness onStart={phase === 'draft flush' ? onStart : undefined} />); selectFile();
-    if (phase === 'draft flush') await waitFor(() => expect(onStart).toHaveBeenCalledOnce());
-    fireEvent.click(await screen.findByRole('button', { name: 'Cancel' }));
-    await act(async () => { pending.resolve({ allowed: true, remaining: 60 }); flushing.resolve(); });
-    expect(labImport).not.toHaveBeenCalled();
-    await ready();
-    expect(labImport).toHaveBeenCalledOnce();
-  });
   it('does not launch after unmount during quota', async () => {
     const quota = deferred<Awaited<ReturnType<typeof checkLabImportQuota>>>();
     vi.mocked(checkLabImportQuota).mockReturnValue(quota.promise);
@@ -123,91 +108,21 @@ describe('US-12 AC4–6 upload session ownership', () => {
     await act(async () => quota.resolve({ allowed: true, remaining: 60 }));
     expect(labImport).not.toHaveBeenCalled();
   });
-  it('does not let a cancelled extraction replace a newer review', async () => {
+  // Owner ruling 2026-11-20: while a file is read the window offers only Stop.
+  it('does not let a stopped extraction replace a newer review', async () => {
     const oldRead = deferred<{ pages: Array<{ type: string; content: string }>; truncated: boolean }>();
     extractFromPdf.mockReturnValueOnce(oldRead.promise);
     render(<Harness />); selectFile();
     await waitFor(() => expect(extractFromPdf).toHaveBeenCalledOnce());
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Stop' }));
     const value = await ready();
     fireEvent.change(value, { target: { value: '4.2' } });
     await act(async () => oldRead.resolve({ pages: [{ type: 'text', content: 'cancelled result' }], truncated: false }));
     expect(screen.getByDisplayValue('4.2')).toBeTruthy();
     expect(labImport).toHaveBeenCalledOnce();
   });
-  it('US-12 AC6 / US-35 AC17 — a refused core value is settled: named once on its own line, no retry offered', async () => {
-    vi.mocked(bulkSaveMeasurements).mockResolvedValueOnce({ saved: [], skippedDuplicates: 0, errorCount: 0, refused: [0, 1].map(index => ({ index, metricType: 'psa', reason: 'out-of-range' as const, message: 'synthetic', bound: 'above' as const })) });
-    render(<Harness />); await ready();
-    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-    expect(await screen.findByText('PSA not saved: above 10,000 ng/mL, the highest value this tool accepts. Check the report, then enter it again.')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Done' })).toBeTruthy();
-    expect(screen.queryByText(/try again/)).toBeNull();
-    expect(screen.queryByText('No items saved')).toBeNull();
-    expect(trackProductEvent).toHaveBeenCalledWith('upload_saved', { count: 0 });
-    expect(onComplete).toHaveBeenCalledOnce();
-    expect(Sentry.captureException).not.toHaveBeenCalled();
-  });
 
-  it('US-12 AC6 / US-35 AC17 — a refusal shows at once beside the retry message when another branch fails', async () => {
-    vi.mocked(synthesizeLabArchiveEntries).mockReturnValueOnce([{
-      documentType: 'pathology_report', title: 'Synthetic report', documentDate: '2024-06-01',
-      contentMd: '', metadata: {}, sourceFileName: 'test.pdf',
-    }]);
-    vi.mocked(bulkSaveMeasurements).mockResolvedValueOnce({ saved: [], skippedDuplicates: 0, errorCount: 0, refused: [{ index: 0, metricType: 'psa', reason: 'out-of-range', message: 'synthetic', bound: 'above' }] });
-    vi.mocked(bulkSaveDocuments).mockResolvedValueOnce({ saved: [], errorCount: 1 });
-    render(<Harness />); await ready();
-    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-    expect(await screen.findByText('Failed to save. Please try again.')).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Done' })).toBeNull();
-    const line = screen.getByText('PSA not saved: above 10,000 ng/mL, the highest value this tool accepts. Check the report, then enter it again.');
-    // Its own spacing in review, not the done screen's negative margin.
-    expect(line.closest('.review-refusals')).not.toBeNull();
-    // One live region, so a screen reader hears the error and the refusal after Save.
-    const status = screen.getByRole('status');
-    expect(status.textContent).toContain('Failed to save. Please try again.');
-    expect(status.contains(line)).toBe(true);
-  });
 
-  it('US-12 AC6 — clears the refusal lines when a new Save starts, even when the retry throws', async () => {
-    vi.mocked(synthesizeLabArchiveEntries).mockReturnValueOnce([{
-      documentType: 'pathology_report', title: 'Synthetic report', documentDate: '2024-06-01',
-      contentMd: '', metadata: {}, sourceFileName: 'test.pdf',
-    }]).mockImplementationOnce(() => { throw new Error('synthetic outer failure'); });
-    vi.mocked(bulkSaveMeasurements).mockResolvedValueOnce({ saved: [], skippedDuplicates: 0, errorCount: 0, refused: [{ index: 0, metricType: 'psa', reason: 'out-of-range', message: 'synthetic', bound: 'above' }] });
-    vi.mocked(bulkSaveDocuments).mockResolvedValueOnce({ saved: [], errorCount: 1 });
-    render(<Harness />); await ready();
-    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-    await screen.findByText(/PSA not saved: above 10,000 ng\/mL/);
-    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-    await waitFor(() => expect(synthesizeLabArchiveEntries).toHaveBeenCalledTimes(2));
-    expect(await screen.findByText('Failed to save. Please try again.')).toBeTruthy();
-    expect(screen.queryByText(/PSA not saved: above 10,000 ng\/mL/)).toBeNull();
-  });
-  it('keeps failed save drafts for retry', async () => {
-    vi.mocked(bulkSaveMeasurements).mockRejectedValueOnce(new Error('synthetic failure'));
-    render(<Harness />); const value = await ready();
-    fireEvent.change(value, { target: { value: '4.2' } });
-    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-    await screen.findByText('Some items could not be saved. Please try again.');
-    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
-    fireEvent.click(screen.getByRole('button', { name: /Upload needs attention/ }));
-    expect(screen.getByDisplayValue('4.2')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-    await screen.findByRole('button', { name: 'Done' });
-    expect(bulkSaveMeasurements).toHaveBeenCalledTimes(2);
-  });
-  it('US-13 AC13: one upload_review per review: none for the failed Save, one, saved 1, when the retry finishes', async () => {
-    vi.mocked(bulkSaveMeasurements).mockRejectedValueOnce(new Error('synthetic failure'));
-    const reviews = () => vi.mocked(trackProductEvent).mock.calls.filter(([name]) => name === 'upload_review').map(([, meta]) => meta);
-    render(<Harness />); await ready();
-    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-    await screen.findByText('Some items could not be saved. Please try again.');
-    expect(reviews()).toEqual([]);
-    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-    await screen.findByRole('button', { name: 'Done' });
-    expect(reviews()).toEqual([expect.objectContaining({ saved: 1 })]);
-    expect(Object.keys(reviews()[0]!).every(k => ['sure', 'unsure', 'notSaved', 'showAll', 'notSavedOpened', 'changedSure', 'changedUnsure', 'saved'].includes(k))).toBe(true);
-  });
   it('US-13 AC13, US-12 AC4: Escape and × only hide the review; reopened and saved, it sends one upload_review, saved 1', async () => {
     const reviews = () => vi.mocked(trackProductEvent).mock.calls.filter(([name]) => name === 'upload_review').map(([, meta]) => meta);
     render(<Harness />); await ready();
@@ -226,265 +141,19 @@ describe('US-12 AC4–6 upload session ownership', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(reviews()).toEqual([expect.objectContaining({ saved: 0 })]);
   });
-  it('keeps a thrown save in review so a second Save retries, and blocks discard until every branch settles', async () => {
-    const archive = deferred<Awaited<ReturnType<typeof bulkSaveDocuments>>>();
-    vi.mocked(synthesizeLabArchiveEntries).mockReturnValueOnce([{
-      documentType: 'pathology_report', title: 'Synthetic report', documentDate: '2024-06-01',
-      contentMd: '', metadata: {}, sourceFileName: 'test.pdf',
-    }]);
-    vi.mocked(bulkSaveMeasurements).mockRejectedValueOnce(new Error('synthetic measurement failure'));
-    vi.mocked(bulkSaveDocuments).mockReturnValueOnce(archive.promise);
-    render(<Harness />); const value = await ready();
-    fireEvent.change(value, { target: { value: '4.2' } });
-    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-    await waitFor(() => expect(bulkSaveDocuments).toHaveBeenCalledOnce());
-    expect((screen.getByRole('button', { name: 'Cancel' }) as HTMLButtonElement).disabled).toBe(true);
-    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
-    expect(screen.getByRole('button', { name: /Saving health records/ })).toBeTruthy();
-    await act(async () => archive.resolve({ saved: [{}], errorCount: 0 } as Awaited<ReturnType<typeof bulkSaveDocuments>>));
-    fireEvent.click(screen.getByRole('button', { name: /Upload needs attention/ }));
-    expect(screen.queryByRole('button', { name: 'Done' })).toBeNull();
-    expect(screen.getByDisplayValue('4.2')).toBeTruthy();
-    expect(screen.getByText('Some items could not be saved. Please try again.')).toBeTruthy();
-    expect((screen.getByRole('button', { name: 'Cancel' }) as HTMLButtonElement).disabled).toBe(false);
-    expect(Sentry.captureException).toHaveBeenCalledWith(expect.any(Error), { tags: { area: 'upload-save', branch: 'measurements' } });
-    expect(onComplete).toHaveBeenCalledOnce();
-    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-    await screen.findByRole('button', { name: 'Done' });
-    expect(bulkSaveMeasurements).toHaveBeenCalledTimes(2);
-  });
-  it('US-12 AC6: retries a thrown original archive after history refresh without resaving values', async () => {
-    const file = new Blob(['synthetic original'], { type: 'application/pdf' });
-    vi.mocked(sha256Blob).mockResolvedValueOnce('sha256-test');
-    const payload = { documentType: 'pathology_report', title: 'Blood test results', documentDate: '2024-06-01', contentMd: '', metadata: { labArchive: true }, sourceFileName: 'test.pdf', file };
-    vi.mocked(synthesizeLabArchiveEntries).mockReturnValueOnce([payload]).mockReturnValueOnce([payload]);
-    vi.mocked(bulkSaveDocuments).mockRejectedValueOnce(new Error('synthetic archive failure'))
-      .mockResolvedValueOnce({ saved: [{ ...archivedLetter, fileRef: 'archive/test.pdf' }], errorCount: 0 });
-    render(<Harness completedHistory={{ ...emptyHistory, measurements: [{ id: 'saved', metricType: 'ldl', value: 3.9, recordedAt: '2024-06-01T00:00:00.000Z', createdAt: '2024-06-01T00:00:00.000Z' }] }} />);
-    await ready();
-    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-    await screen.findByText('Some items could not be saved. Please try again.');
-    expect(screen.queryByDisplayValue('3.9')).toBeNull();
-    const retry = screen.getByRole('button', { name: 'Save 1 original' }) as HTMLButtonElement;
-    expect(retry.disabled).toBe(false);
-    fireEvent.click(retry);
-    await screen.findByRole('button', { name: 'Done' });
-    expect(bulkSaveMeasurements).toHaveBeenCalledOnce();
-    expect(bulkSaveDocuments).toHaveBeenCalledTimes(2);
-    expect(vi.mocked(bulkSaveDocuments).mock.calls[1][0]).toEqual(vi.mocked(bulkSaveDocuments).mock.calls[0][0]);
-  });
-  // US-12 AC6c: the done screen counts every attempt, and a retry cannot start
-  // before the page has read back what the first one saved.
-  const savedLdl: UploadHistory = { ...emptyHistory, measurements: [{ id: 'saved', metricType: 'ldl', value: 3.9, recordedAt: '2024-06-01T00:00:00.000Z', createdAt: '2024-06-01T00:00:00.000Z' }] };
-  function originalFailsOnce() {
-    const file = new Blob(['synthetic original'], { type: 'application/pdf' });
-    vi.mocked(sha256Blob).mockResolvedValueOnce('sha256-test');
-    const payload = { documentType: 'pathology_report', title: 'Blood test results', documentDate: '2024-06-01', contentMd: '', metadata: { labArchive: true }, sourceFileName: 'test.pdf', file };
-    vi.mocked(synthesizeLabArchiveEntries).mockReturnValueOnce([payload]).mockReturnValueOnce([payload]);
-    vi.mocked(bulkSaveDocuments).mockResolvedValueOnce({ saved: [], errorCount: 1 })
-      .mockResolvedValueOnce({ saved: [{ ...archivedLetter, fileRef: 'archive/test.pdf' }], errorCount: 0 });
-  }
-  it('US-12 AC6c: the done screen after a retry names what the first Save saved too', async () => {
-    originalFailsOnce();
-    render(<Harness completedHistory={savedLdl} />);
-    await ready();
-    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-    fireEvent.click(await screen.findByRole('button', { name: 'Save 1 original' }));
-    await screen.findByRole('button', { name: 'Done' });
-    expect(screen.getByText(/Saved 1 blood test value, 1 document/)).toBeTruthy();
-    expect(screen.queryByText(/not added/)).toBeNull();
-    expect(trackProductEvent).toHaveBeenCalledWith('upload_saved', { count: 2 });
-  });
-  it('US-12 AC6c: an original filed again on the retry counts once', async () => {
-    // Attempt 1 files it metadata-only while the values throw; the retry refiles it.
-    const payload = { documentType: 'pathology_report', title: 'Blood test results', documentDate: '2024-06-01', contentMd: '', metadata: { labArchive: true }, sourceFileName: 'test.pdf' };
-    vi.mocked(synthesizeLabArchiveEntries).mockReturnValueOnce([payload]).mockReturnValueOnce([payload]);
-    vi.mocked(bulkSaveMeasurements).mockRejectedValueOnce(new Error('synthetic measurement failure'));
-    vi.mocked(bulkSaveDocuments).mockResolvedValueOnce({ saved: [{ ...archivedLetter, id: 'meta' }], errorCount: 0 })
-      .mockResolvedValueOnce({ saved: [{ ...archivedLetter, id: 'full' }], errorCount: 0 });
-    render(<Harness />); await ready();
-    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-    await screen.findByText('Some items could not be saved. Please try again.');
-    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-    await screen.findByRole('button', { name: 'Done' });
-    expect(screen.getByText(/Saved 1 blood test value, 1 document$/)).toBeTruthy();
-  });
-  it('US-12 AC6c: two different originals that share a name count as two', async () => {
-    vi.mocked(bulkSaveDocuments).mockResolvedValueOnce({ saved: [
-      { ...archivedLetter, id: 'a', contentHash: 'sha256-one' }, { ...archivedLetter, id: 'b', contentHash: 'sha256-two' },
-    ], errorCount: 0 });
-    vi.mocked(synthesizeLabArchiveEntries).mockReturnValueOnce([{ documentType: 'pathology_report', title: 'Blood test results', documentDate: '2024-06-01', contentMd: '', metadata: { labArchive: true }, sourceFileName: 'test.pdf' }]);
-    render(<Harness />); await ready();
-    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-    await screen.findByRole('button', { name: 'Done' });
-    expect(screen.getByText(/Saved 1 blood test value, 2 documents$/)).toBeTruthy();
-  });
-  it('US-12 AC6c: a failed re-read after a partial save is reported, tag only, and frees Save', async () => {
-    originalFailsOnce();
-    const failedReread = Promise.reject(new Error('synthetic re-read failure'));
-    failedReread.catch(() => {}); // handled from the start: the modal's catch is under test
-    render(<Harness completedHistory={savedLdl} refresh={failedReread} />);
-    await ready();
-    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-    expect(await screen.findByText('Failed to save. Please try again.')).toBeTruthy();
-    expect(Sentry.captureException).toHaveBeenCalledWith(expect.any(Error), { tags: { area: 'upload-save', branch: 'reread' } });
-    expect((screen.getByRole('button', { name: /^Save / }) as HTMLButtonElement).disabled).toBe(false);
-    fireEvent.click(screen.getByRole('button', { name: /^Save / })); await screen.findByRole('button', { name: 'Done' });
-    expect(Sentry.captureException).toHaveBeenCalledTimes(2); // the success path's re-read fails too
-  });
-  it('US-12 AC6c: a re-read that throws at once after a finished save is reported, tag only, and the save stays done', async () => {
-    const saving = deferred<Awaited<ReturnType<typeof bulkSaveMeasurements>>>();
-    vi.mocked(bulkSaveMeasurements).mockReturnValueOnce(saving.promise);
-    render(<Harness rereadThrows />); await ready();
-    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
-    await act(async () => saving.resolve({ saved: [{}], skippedDuplicates: 0, errorCount: 0, refused: [] } as unknown as Awaited<ReturnType<typeof bulkSaveMeasurements>>));
-    fireEvent.click(await screen.findByRole('button', { name: /Health records saved/ }));
-    expect(screen.getByText(/Saved 1 blood test value/)).toBeTruthy();
-    expect(screen.queryByText(/try again/)).toBeNull();
-    expect(Sentry.captureException).toHaveBeenCalledOnce();
-    expect(Sentry.captureException).toHaveBeenCalledWith(expect.any(Error), { tags: { area: 'upload-save', branch: 'reread' } });
-  });
-  it('US-12 AC6c: a re-read that throws at once after a partial save is reported, tag only, and keeps the thrown-branch retry message', async () => {
-    const file = new Blob(['synthetic original'], { type: 'application/pdf' });
-    vi.mocked(sha256Blob).mockResolvedValueOnce('sha256-test');
-    vi.mocked(synthesizeLabArchiveEntries).mockReturnValueOnce([{ documentType: 'pathology_report', title: 'Blood test results', documentDate: '2024-06-01', contentMd: '', metadata: { labArchive: true }, sourceFileName: 'test.pdf', file }]);
-    vi.mocked(bulkSaveDocuments).mockRejectedValueOnce(new Error('synthetic archive failure'));
-    render(<Harness rereadThrows />); await ready();
-    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-    expect(await screen.findByText('Some items could not be saved. Please try again.')).toBeTruthy();
-    expect(onComplete).toHaveBeenCalledOnce();
-    expect(Sentry.captureException).toHaveBeenCalledWith(expect.any(Error), { tags: { area: 'upload-save', branch: 'reread' } });
-    expect((screen.getByRole('button', { name: /^Save / }) as HTMLButtonElement).disabled).toBe(false);
-  });
-  it.each([
-    { name: 'a log-off refusal', error: () => new WritesStoppedError(), reports: 0 },
-    { name: 'any other throw', error: () => new Error('synthetic measurement failure'), reports: 1 },
-  ])('US-09 AC2c, lead A19: a save branch that throws $name reports $reports time(s) and keeps the review for a retry', async ({ error, reports }) => {
-    vi.mocked(bulkSaveMeasurements).mockRejectedValueOnce(error());
-    render(<Harness />); await ready();
-    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-    expect(await screen.findByText('Some items could not be saved. Please try again.')).toBeTruthy();
-    expect(screen.getByDisplayValue('3.9')).toBeTruthy();
-    expect(Sentry.captureException).toHaveBeenCalledTimes(reports);
-  });
-  it.each([
-    { name: 'a log-off refusal', error: () => new WritesStoppedError(), reports: 0 },
-    { name: 'any other throw', error: () => new Error('synthetic re-read failure'), reports: 1 },
-  ])('US-09 AC2c, lead A19: a re-read after a finished save that fails with $name reports $reports time(s) and the save stays done', async ({ error, reports }) => {
-    const failedReread = Promise.reject(error());
-    failedReread.catch(() => {});
-    render(<Harness refresh={failedReread} />); await ready();
-    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-    await screen.findByRole('button', { name: 'Done' });
-    expect(screen.getByText(/Saved 1 blood test value/)).toBeTruthy();
-    await waitFor(() => expect(onComplete).toHaveBeenCalledOnce());
-    await act(async () => { await failedReread.catch(() => {}); });
-    expect(Sentry.captureException).toHaveBeenCalledTimes(reports);
-  });
-  it('US-12 AC6c: Save stays busy until the page has read back a partial save', async () => {
-    originalFailsOnce();
-    const reread = deferred<void>();
-    render(<Harness completedHistory={savedLdl} refresh={reread.promise} />);
-    await ready();
-    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-    await waitFor(() => expect(onComplete).toHaveBeenCalledOnce());
-    // Before the re-read the review still offers the LDL: a retry now would send it again.
-    expect((screen.getByRole('button', { name: /^Sav/ }) as HTMLButtonElement).disabled).toBe(true);
-    await act(async () => reread.resolve());
-    expect(await screen.findByText('Failed to save. Please try again.')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Save 1 original' }));
-    await screen.findByRole('button', { name: 'Done' });
-    expect(bulkSaveMeasurements).toHaveBeenCalledOnce();
-  });
-  it('does not file a reviewed letter twice when a retry follows a partial save off-cloud (US-12 AC6)', async () => {
-    vi.mocked(getDocumentArchiveMode).mockReturnValue('device-only');
-    vi.mocked(labImport).mockResolvedValue({ result: { ...extraction.result, classification: 'clinic_letter', document: letter } } as Awaited<ReturnType<typeof labImport>>);
-    vi.mocked(bulkSaveMeasurements).mockRejectedValueOnce(new Error('synthetic measurement failure'));
-    vi.mocked(bulkSaveDocuments).mockResolvedValueOnce({ saved: [{}], errorCount: 0 } as Awaited<ReturnType<typeof bulkSaveDocuments>>);
-    render(<Harness archived={archivedLetter} />);
-    fireEvent.click(screen.getByRole('button', { name: /Continue without keeping my files/ }));
-    await ready();
-    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-    await screen.findByText('Some items could not be saved. Please try again.');
-    expect(bulkSaveDocuments).toHaveBeenCalledOnce();
-    expect(vi.mocked(bulkSaveDocuments).mock.calls[0][0].map(d => d.sourceFileName)).toEqual(['test.pdf']);
-    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-    await screen.findByRole('button', { name: 'Done' });
-    expect(bulkSaveMeasurements).toHaveBeenCalledTimes(2);
-    expect(bulkSaveDocuments).toHaveBeenCalledOnce();
-  });
-  it('US-12 AC6b: files a re-ticked letter on the retry when its first save threw and the values saved', async () => {
-    const earlier = { ...archivedLetter, id: 'd0', title: 'Synthetic earlier letter' };
-    vi.mocked(labImport).mockResolvedValue({ result: { ...extraction.result, classification: 'clinic_letter', document: letter } } as Awaited<ReturnType<typeof labImport>>);
-    vi.mocked(bulkSaveDocuments).mockRejectedValueOnce(new Error('synthetic document failure'));
-    // The reload after the partial save: the record holds what it held, in a new list.
-    render(<Harness initialHistory={{ ...emptyHistory, documents: [earlier] }} completedHistory={{ ...emptyHistory, documents: [{ ...earlier }] }} />);
-    await ready();
-    const box = () => document.querySelector<HTMLInputElement>('.review-document-header input[type=checkbox]')!;
-    expect(screen.getByText('Already saved')).toBeTruthy();
-    fireEvent.click(box());
-    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-    await screen.findByText('Some items could not be saved. Please try again.');
-    expect(onComplete).toHaveBeenCalledOnce();
-    expect(box().checked).toBe(true);
-    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-    await screen.findByRole('button', { name: 'Done' });
-    expect(bulkSaveDocuments).toHaveBeenCalledTimes(2);
-    expect(vi.mocked(bulkSaveDocuments).mock.calls[1][0]).toEqual([expect.objectContaining({ title: letter.title, sourceFileName: 'test.pdf' })]);
-  });
-  it('keeps a dismissed connect-first panel dismissed when processing is cancelled (US-12 AC4)', async () => {
+  it('keeps a dismissed connect-first panel dismissed when processing is stopped (US-12 AC4)', async () => {
     vi.mocked(getDocumentArchiveMode).mockReturnValue('device-only');
     extractFromPdf.mockReturnValue(deferred<never>().promise);
     render(<Harness />);
     fireEvent.click(screen.getByRole('button', { name: /Continue without keeping my files/ }));
     selectFile();
-    fireEvent.click(await screen.findByRole('button', { name: 'Cancel' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Stop' }));
     expect(document.querySelector('input[type=file]')).toBeTruthy();
     expect(screen.queryByText('Keep your original documents')).toBeNull();
-  });
-  it('preserves a pending save, prevents discard, and resets after completion closes', async () => {
-    const saving = deferred<Awaited<ReturnType<typeof bulkSaveMeasurements>>>();
-    vi.mocked(bulkSaveMeasurements).mockReturnValue(saving.promise);
-    render(<Harness />); await ready();
-    const save = screen.getByRole('button', { name: /^Save / });
-    act(() => { fireEvent.click(save); fireEvent.click(save); });
-    expect(bulkSaveMeasurements).toHaveBeenCalledOnce();
-    expect((screen.getByRole('button', { name: 'Cancel' }) as HTMLButtonElement).disabled).toBe(true);
-    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
-    fireEvent.click(screen.getByRole('button', { name: /Saving health records/ }));
-    expect(screen.getByDisplayValue('3.9')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
-    await act(async () => saving.resolve({ saved: [{}], skippedDuplicates: 0, errorCount: 0, refused: [] } as unknown as Awaited<ReturnType<typeof bulkSaveMeasurements>>));
-    fireEvent.click(screen.getByRole('button', { name: /Health records saved/ }));
-    fireEvent.click(screen.getByRole('button', { name: 'Done' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Upload records' }));
-    expect(screen.queryByDisplayValue('3.9')).toBeNull();
-    expect(document.querySelector('input[type=file]')).toBeTruthy();
-    expect(onComplete).toHaveBeenCalledOnce();
   });
 
   // US-21 phase 3 · a lab value the record refused for its unit is never a
   // silent drop: the summary names the test and the spelling it would not take.
-  it('names a lab value refused for its unit in the save summary', async () => {
-    vi.mocked(labImport).mockResolvedValue({
-      result: { ...extraction.result, additionalValues: [{ name: 'Ferritin', value: 80, unit: 'mg/dL', referenceLow: null, referenceHigh: null }] },
-    } as Awaited<ReturnType<typeof labImport>>);
-    vi.mocked(bulkSaveLabValues).mockResolvedValue({
-      saved: [], skippedDuplicates: 0, errorCount: 0,
-      refused: [{ key: 'ferritin', unit: 'mg/dL', message: 'Ferritin is stored in µg/L' }],
-    } as Awaited<ReturnType<typeof bulkSaveLabValues>>);
-    render(<Harness />); await ready();
-    // US-13 AC13 (owner, 2026-11-15): Save submits only the rows the dry save
-    // writes, so the refused unit is named under "Not saved" before Save, and never sent.
-    fireEvent.click(screen.getByRole('button', { name: '1 value not saved' }));
-    expect(screen.getByRole('list', { name: 'Values not saved' }).textContent).toBe('Ferritin: this unit is not one we know for this test');
-    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-    await screen.findByRole('button', { name: 'Done' });
-    expect(vi.mocked(bulkSaveLabValues).mock.calls.flatMap(([rows]) => rows)).toEqual([]);
-    // The spelling the test does not take is still counted, key and unit only (US-21 AC15).
-    expect(vi.mocked(trackProductEvent).mock.calls.filter(([n]) => n === 'lab_unit_refused')).toEqual([['lab_unit_refused', { key: 'ferritin', unit: 'mg/dL' }]]);
-  });
 
   // US-21 AC15 · a unit the test does not take is named, never sent. A differential in % was
   // this example until US-21 AC28 stored it as its own test, so mg/L stands in.
@@ -492,17 +161,13 @@ describe('US-12 AC4–6 upload session ownership', () => {
     vi.mocked(labImport).mockResolvedValue({
       result: { ...extraction.result, additionalValues: [{ name: 'Lymphocytes', value: 30, unit: 'mg/L', referenceLow: null, referenceHigh: null }] },
     } as Awaited<ReturnType<typeof labImport>>);
-    vi.mocked(bulkSaveLabValues).mockResolvedValue({
-      saved: [], skippedDuplicates: 0, errorCount: 0,
-      refused: [{ key: 'lymphocytes', unit: 'mg/L', message: 'Lymphocytes is stored in ×10⁹/L' }],
-    } as Awaited<ReturnType<typeof bulkSaveLabValues>>);
     render(<Harness />); await ready();
     // US-13 AC13: named before Save under "Not saved", in the review's words, and never sent.
     fireEvent.click(screen.getByRole('button', { name: '1 value not saved' }));
     expect(screen.getByRole('list', { name: 'Values not saved' }).textContent).toBe('Lymphocytes: this unit is not one we know for this test');
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
     await screen.findByRole('button', { name: 'Done' });
-    expect(vi.mocked(bulkSaveLabValues).mock.calls.flatMap(([rows]) => rows)).toEqual([]);
+    expect(lastSaved().labValues).toEqual([]);
   });
 
   // US-21 AC15 · a count per µL refused for its NUMBER (a decimal, or a
@@ -523,45 +188,106 @@ describe('US-12 AC4–6 upload session ownership', () => {
     expect(document.body.textContent).not.toContain(String(value.value));
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
     await screen.findByRole('button', { name: 'Done' });
-    expect(vi.mocked(bulkSaveLabValues).mock.calls.flatMap(([rows]) => rows)).toEqual([]);
+    expect(lastSaved().labValues).toEqual([]);
   });
 });
 
-// US-14 AC4: an original the cloud would not store, behind a row it already
-// holds, is settled, never a silent checkmark.
-it('US-14 AC4: the done screen says when an original could not be stored', async () => {
-  vi.mocked(bulkSaveDocuments).mockResolvedValue({ saved: [], errorCount: 0, unstored: 1 });
-  vi.mocked(synthesizeLabArchiveEntries).mockReturnValue([{ documentType: 'pathology_report', title: 'Blood test results', documentDate: null, contentMd: '', metadata: {}, sourceFileName: 'test.pdf' }]);
-  render(<Harness />); await ready();
-  fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-  expect(await screen.findByText("The original file couldn't be stored; its details are saved.")).toBeTruthy();
-});
+// Design PR 10, 12c: one Save is one edit (health-core uploadSave). A Save that fails writes nothing
+// and keeps the review, its drafts and its words, for a retry that writes it all once; the partial
+// saves and their retry counts (US-12 AC6c) are gone with the two-branch save.
+describe('US-12 AC6: one Save, all or nothing', () => {
+  const reviews = () => vi.mocked(trackProductEvent).mock.calls.filter(([name]) => name === 'upload_review').map(([, meta]) => meta);
 
-// Based on Austin Bell's PR #152 (robertaustinbell).
-describe('US-13 AC6: the archive-only path files what the review shows', () => {
-  it('an unselected connector letter carries the reviewed title and date, not the extracted ones', async () => {
-    vi.mocked(sha256Blob).mockResolvedValueOnce('sha256-synthetic');
-    vi.mocked(labImport).mockResolvedValue({ result: { classification: 'clinic_letter', reportDate: null, values: [], additionalValues: [], document: letter } } as Awaited<ReturnType<typeof labImport>>);
-    const connectorRow = { id: 'c1', documentType: 'clinic_letter', title: 'Connector title', documentDate: letter.documentDate, contentMd: '',
-      metadata: { importedVia: 'connector' }, sourceFileName: 'test.pdf', contentHash: 'sha256-synthetic', fileRef: null, createdAt: '2024-06-02T00:00:00Z' };
-    render(<Harness initialHistory={{ ...emptyHistory, documents: [connectorRow] }} />); selectFile();
-    // The card starts from the row it replaces (US-14 AC4).
-    fireEvent.change(await findReviewValue('Connector title'), { target: { value: 'Reviewed letter' } });
-    fireEvent.change(screen.getByLabelText('Document date'), { target: { value: '2024-07-12' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Save 1 original' }));
-    await waitFor(() => expect(bulkSaveDocuments).toHaveBeenCalledOnce());
-    expect(vi.mocked(bulkSaveDocuments).mock.calls[0][0]).toEqual([expect.objectContaining({
-      title: 'Reviewed letter', documentDate: '2024-07-12', sourceFileName: 'test.pdf' })]);
+  it('a failed Save keeps the drafts for a retry; one upload_review, saved 1, when the retry lands (US-13 AC13)', async () => {
+    uploadStore.fail = new Error('synthetic save failure'); // a Save that throws: "Failed to save"
+    render(<Harness />); const value = await ready();
+    fireEvent.change(value, { target: { value: '4.2' } });
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    await screen.findByText('Failed to save. Please try again.');
+    expect(reviews()).toEqual([]);
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    fireEvent.click(screen.getByRole('button', { name: /Upload needs attention/ }));
+    expect(screen.getByDisplayValue('4.2')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    await screen.findByRole('button', { name: 'Done' });
+    expect(lastSaved().values).toEqual([expect.objectContaining({ metricName: 'ldl', value: 4.2, source: 'lab_import_edited' })]);
+    expect(reviews()).toEqual([expect.objectContaining({ saved: 1 })]);
+  });
+
+  it.each([
+    { name: 'a log-off refusal', error: () => new WritesStoppedError(), reports: 0 },
+    { name: 'any other throw', error: () => new Error('synthetic save failure'), reports: 1 },
+  ])('US-09 AC2c, lead A19: a Save that throws $name reports $reports time(s), tag only, and keeps the review for a retry', async ({ error, reports }) => {
+    uploadStore.fail = error();
+    render(<Harness />); await ready();
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    expect(await screen.findByText('Failed to save. Please try again.')).toBeTruthy();
+    expect(screen.getByDisplayValue('3.9')).toBeTruthy();
+    expect(Sentry.captureException).toHaveBeenCalledTimes(reports);
+    if (reports) expect(Sentry.captureException).toHaveBeenCalledWith(expect.any(Error), { tags: { area: 'upload-save', branch: 'save' } });
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    await screen.findByRole('button', { name: 'Done' });
+  });
+
+  it.each([
+    { name: 'a log-off refusal', error: () => new WritesStoppedError(), reports: 0 },
+    { name: 'any other throw', error: () => new Error('synthetic re-read failure'), reports: 1 },
+  ])('US-09 AC2c, lead A19: a re-read after a finished save that fails with $name reports $reports time(s) and the save stays done', async ({ error, reports }) => {
+    const failedReread = Promise.reject(error());
+    failedReread.catch(() => {});
+    render(<Harness refresh={failedReread} />); await ready();
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    await screen.findByRole('button', { name: 'Done' });
+    expect(screen.getByText(/^Saved 1 value/)).toBeTruthy();
+    await waitFor(() => expect(onComplete).toHaveBeenCalledOnce());
+    await act(async () => { await failedReread.catch(() => {}); });
+    expect(Sentry.captureException).toHaveBeenCalledTimes(reports);
+  });
+
+  it('a re-read that throws at once after a finished save is reported, tag only, and the save stays done', async () => {
+    render(<Harness rereadThrows />); await ready();
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    await screen.findByRole('button', { name: 'Done' });
+    expect(screen.queryByText(/try again/)).toBeNull();
+    expect(Sentry.captureException).toHaveBeenCalledOnce();
+    expect(Sentry.captureException).toHaveBeenCalledWith(expect.any(Error), { tags: { area: 'upload-save', branch: 'reread' } });
+  });
+
+  it('preserves a pending save, prevents discard, and resets after completion closes', async () => {
+    let finish!: () => void;
+    uploadStore.hold = new Promise<void>(resolve => { finish = resolve; });
+    render(<Harness />); await ready();
+    const save = screen.getByRole('button', { name: /^Save / });
+    act(() => { fireEvent.click(save); fireEvent.click(save); });
+    expect((screen.getByRole('button', { name: 'Cancel' }) as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    fireEvent.click(screen.getByRole('button', { name: /Saving health records/ }));
+    expect(screen.getByDisplayValue('3.9')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    await act(async () => finish());
+    expect(uploadStore.saves).toHaveLength(1);
+    fireEvent.click(screen.getByRole('button', { name: /Health records saved/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Done' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Upload records' }));
+    expect(screen.queryByDisplayValue('3.9')).toBeNull();
+    expect(document.querySelector('input[type=file]')).toBeTruthy();
+    expect(onComplete).toHaveBeenCalledOnce();
+  });
+
+  // US-14 AC4, design 12c: every original the cloud would not store is counted, and the done screen says so.
+  it('US-14 AC4: the done screen says when an original could not be stored', async () => {
+    uploadStore.writeFails = true;
+    vi.mocked(sha256Blob).mockResolvedValue('sha256-test');
+    render(<Harness />); await ready();
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    expect(await screen.findByText("The original file couldn't be stored; its details are saved.")).toBeTruthy();
   });
 
   it('a corrected column date reaches the lab-archive row', async () => {
-    const actual = await vi.importActual<typeof import('../lib/archive-payloads')>('../lib/archive-payloads');
-    vi.mocked(synthesizeLabArchiveEntries).mockImplementationOnce(actual.synthesizeLabArchiveEntries);
     render(<Harness />); await ready();
     fireEvent.change(screen.getByLabelText('Choose column date'), { target: { value: '2024-06-15' } });
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-    await waitFor(() => expect(bulkSaveDocuments).toHaveBeenCalledOnce());
-    expect(vi.mocked(bulkSaveDocuments).mock.calls[0][0]).toEqual([expect.objectContaining({
-      title: 'Blood test results', documentDate: '2024-06-15', sourceFileName: 'test.pdf' })]);
+    await screen.findByRole('button', { name: 'Done' });
+    expect(lastSaved().documents).toEqual([expect.objectContaining({ title: 'Blood test results', date: '2024-06-15', sourceFileName: 'test.pdf' })]);
   });
 });

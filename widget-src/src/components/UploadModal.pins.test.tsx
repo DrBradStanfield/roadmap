@@ -10,13 +10,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { UploadModal } from './UploadModal';
+import { lastSaved, resetUploadStore } from '../testing/upload-store';
+import { recordOf } from '../testing/review-harness';
 import { checkLabImportQuota, labImport } from '../lib/upload-api';
-import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues } from '../lib/roadmap-data';
 import type { UploadHistory } from '../lib/api-types';
 import { findReviewValue } from '../testing/import-review';
 
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn() }));
-vi.mock('../lib/roadmap-data', () => ({ uploadKnownIndex: vi.fn(() => new Map()), isLegacyUpload: vi.fn(() => false), getDocumentArchiveMode: vi.fn(() => 'cloud'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
+vi.mock('../lib/roadmap-data', async () => ({ ...(await import('../testing/upload-store')).uploadStoreMock(), uploadKnownIndex: vi.fn(() => new Map()), isLegacyUpload: vi.fn(() => false), getDocumentArchiveMode: vi.fn(() => 'cloud'), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
 vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
 vi.mock('../lib/archive-payloads', async importOriginal => ({ ...await importOriginal<typeof import('../lib/archive-payloads')>(), sha256Blob: vi.fn(async () => ''), synthesizeLabArchiveEntries: vi.fn(() => []) }));
 vi.mock('../lib/useIsMobile', () => ({ useIsMobile: () => false }));
@@ -39,11 +40,9 @@ const history: UploadHistory = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  resetUploadStore(recordOf(history));
   vi.mocked(checkLabImportQuota).mockResolvedValue({ allowed: true, remaining: 60 });
   vi.mocked(labImport).mockResolvedValue(read);
-  vi.mocked(bulkSaveMeasurements).mockResolvedValue({ saved: [{}], skippedDuplicates: 0, errorCount: 0, refused: [] } as unknown as Awaited<ReturnType<typeof bulkSaveMeasurements>>);
-  vi.mocked(bulkSaveDocuments).mockResolvedValue({ saved: [], errorCount: 0 } as unknown as Awaited<ReturnType<typeof bulkSaveDocuments>>);
-  vi.mocked(bulkSaveLabValues).mockResolvedValue({ saved: [], skippedDuplicates: 0, errorCount: 0, refused: [] });
   Object.assign(window, { HealthUpload: {
     extractFromPdf: vi.fn(async (f: File) => ({ pages: [{ type: 'text', content: f.name }], truncated: false })),
     isPdf: (f: File) => f.name.endsWith('.pdf'),
@@ -55,7 +54,7 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
-describe('US-12 / US-13 pins — UploadModal hands the store the same inputs as today', () => {
+describe('US-12 / US-13 pins — UploadModal saves the same rows as before (design 12c)', () => {
   it('two store calls: an edited value, an undated column on its picked day, and ticked Replaces', async () => {
     render(<UploadModal open onOpen={() => {}} onClose={() => {}} unitSystem="si" grading={{}} history={history} onComplete={() => {}} />);
     fireEvent.change(document.querySelector('input[type=file]')!, { target: { files: [new File(['x'], 'labs.pdf', { type: 'application/pdf' })] } });
@@ -64,9 +63,17 @@ describe('US-12 / US-13 pins — UploadModal hands the store the same inputs as 
     for (const box of screen.queryAllByRole('checkbox', { name: /Replace the saved/ })) fireEvent.click(box);
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
     await screen.findByRole('button', { name: 'Done' });
-    expect(JSON.stringify({
-      measurements: vi.mocked(bulkSaveMeasurements).mock.calls,
-      labValues: vi.mocked(bulkSaveLabValues).mock.calls,
-    })).toMatchSnapshot();
+    // What Save wrote (health-core uploadSave, design 12c), as the old store calls carried it.
+    const { values, labValues } = lastSaved();
+    const tuple = (r: Record<string, unknown>) => [r.metricName, r.value, String(r.recordedAt).slice(0, 10), r.source, r.correctsId ?? null];
+    expect(values.map(tuple).sort()).toEqual([
+      ['hdl', 1.4, '2025-09-02', 'lab_import', 'H'],
+      ['ldl', 2.9, '2025-09-02', 'lab_import_edited', null],
+      ['ldl', 3.4, '2025-03-01', 'lab_import', null],
+    ]);
+    expect(labValues.map(tuple).sort()).toEqual([
+      ['Ferritin', 90, '2025-09-02', 'lab_import', 'F'],
+      ['sodium', 139, '2025-03-01', 'lab_import', null],
+    ]);
   });
 });

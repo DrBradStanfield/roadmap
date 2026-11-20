@@ -6,6 +6,7 @@ import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter'
 import { LocalStorageAdapter } from './local-storage-adapter';
 import { ROADMAP_FILE_NAME, StorageError, type WriteResult } from '@roadmap/health-core/adapter';
 import { DRAFTS_CLEARED_EVENT } from '../lib/storage';
+import { seedStoreLabValues, seedStoreDocuments } from '../testing/record-seed';
 
 /** The file as it landed in the (simulated) cloud after a flush. */
 /** Every value row, a blood test (a core lab row since US-66) read as the measurement it was. */
@@ -121,7 +122,7 @@ describe('RoadmapStore.correctValue on lab values (US-21 AC5)', () => {
   it('appends a correction on the same day, in the unit the row is stored in, and flips the old row', async () => {
     const cloud = new MemoryCloud();
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
-    const old = store.bulkSaveLabValues([
+    const old = seedStoreLabValues(store, [
       { metricName: 'Feritin', value: 45, unit: 'ug/L', recordedAt: '2024-06-01T00:00:00.000Z', source: 'manual' },
     ]).saved[0];
 
@@ -414,7 +415,7 @@ describe('RoadmapStore.bulkSaveLabValues unit refusals (US-21 phase 3)', () => {
     const cloud = new MemoryCloud();
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
 
-    const result = store.bulkSaveLabValues([
+    const result = seedStoreLabValues(store, [
       { metricName: 'ferritin', value: 80, unit: 'mg/dL', recordedAt: '2024-06-01T09:00:00.000Z' },
       { metricName: 'sodium', value: 140, unit: 'mEq/L', recordedAt: '2024-06-01T09:00:00.000Z' },
     ]);
@@ -433,7 +434,7 @@ describe('RoadmapStore.bulkSaveLabValues unit refusals (US-21 phase 3)', () => {
 describe('RoadmapStore.bulkSaveLabValues dedup (US-13)', () => {
   it('skips (metricName, day) duplicates and reports skippedDuplicates', async () => {
     const store = await RoadmapStore.create(new MemoryAdapter());
-    const result = store.bulkSaveLabValues([
+    const result = seedStoreLabValues(store, [
       { metricName: 'ferritin', value: 80, unit: 'ng/mL', recordedAt: '2024-06-01T09:00:00.000Z' },
       { metricName: 'ferritin', value: 82, unit: 'ng/mL', recordedAt: '2024-06-01T20:00:00.000Z' },
       { metricName: 'sodium', value: 140, unit: 'mmol/L', recordedAt: '2024-06-01T09:00:00.000Z' },
@@ -448,10 +449,10 @@ describe('RoadmapStore.bulkSaveLabValues dedup (US-13)', () => {
     const batch = [
       { metricName: 'ferritin', value: 80, unit: 'ng/mL', recordedAt: '2024-06-01T09:00:00.000Z' },
     ];
-    store.bulkSaveLabValues(batch);
+    seedStoreLabValues(store, batch);
     await store.flush();
 
-    const second = store.bulkSaveLabValues(batch);
+    const second = seedStoreLabValues(store, batch);
     expect(second.saved).toEqual([]);
     expect(second.skippedDuplicates).toBe(1);
     expect(second.errorCount).toBe(0);
@@ -464,17 +465,17 @@ describe('RoadmapStore.bulkSaveLabValues dedup (US-13)', () => {
   // same test on the same day.
   it('same test under a different spelling on the same day is a duplicate (catalogue-key slots)', async () => {
     const store = await RoadmapStore.create(new MemoryAdapter());
-    const first = store.bulkSaveLabValues([
+    const first = seedStoreLabValues(store, [
       { metricName: 'Gamma GT', value: 30, unit: 'U/L', recordedAt: '2024-06-01T09:00:00.000Z' },
     ]);
     expect(first.saved).toHaveLength(1);
-    const second = store.bulkSaveLabValues([
+    const second = seedStoreLabValues(store, [
       { metricName: 'ggt', value: 32, unit: 'U/L', recordedAt: '2024-06-01T12:00:00.000Z', source: 'manual' },
     ]);
     expect(second.saved).toEqual([]);
     expect(second.skippedDuplicates).toBe(1);
     // Uncatalogued names still slot on their raw spelling.
-    const third = store.bulkSaveLabValues([
+    const third = seedStoreLabValues(store, [
       { metricName: 'reticulocytes', value: 60, unit: '×10⁹/L', recordedAt: '2024-06-01T09:00:00.000Z' },
       { metricName: 'reticulocytes', value: 61, unit: '×10⁹/L', recordedAt: '2024-06-01T10:00:00.000Z' },
     ]);
@@ -491,7 +492,7 @@ describe('RoadmapStore document archive (US-14)', () => {
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
     const file = new Blob(['%PDF-1.4 fake lipid panel bytes'], { type: 'application/pdf' });
 
-    const { saved: [saved] } = await store.bulkSaveDocuments([
+    const { saved: [saved] } = await seedStoreDocuments(store, [
       {
         documentType: 'pathology_report',
         title: 'Lipid panel',
@@ -525,11 +526,11 @@ describe('RoadmapStore document archive (US-14)', () => {
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
     const payload = { documentType: 'pathology_report', title: 'Lipid panel', documentDate: '2024-05-10', contentMd: 'md', metadata: {}, sourceFileName: 'results.pdf', file: new Blob(['identical bytes'], { type: 'application/pdf' }) };
 
-    const first = await store.bulkSaveDocuments([payload]);
+    const first = await seedStoreDocuments(store, [payload]);
     expect(first.saved).toHaveLength(1);
     await store.flush();
 
-    const second = await store.bulkSaveDocuments([{ ...payload, title: 'Lipid panel (re-upload)' }]);
+    const second = await seedStoreDocuments(store, [{ ...payload, title: 'Lipid panel (re-upload)' }]);
     expect(second).toEqual({ saved: [], errorCount: 0 });
     await store.flush();
 
@@ -554,7 +555,7 @@ describe('RoadmapStore document archive (US-14)', () => {
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
     const payload = { documentType: type, title: 'Lipid panel', documentDate: '2024-05-10', contentMd: 'md', metadata: {}, sourceFileName: 'results.pdf', file: blob };
 
-    const { saved: [saved] } = await store.bulkSaveDocuments([payload]);
+    const { saved: [saved] } = await seedStoreDocuments(store, [payload]);
     expect(saved.fileRef).not.toBe('');
     await store.flush();
     const file = readCloudFile(cloud);
@@ -564,7 +565,7 @@ describe('RoadmapStore document archive (US-14)', () => {
     expect(live[0]).toMatchObject({ type, contentHash: hash, fileRef: saved.fileRef, extractedText: 'md' });
 
     // Now archived: the same bytes again are a no-op.
-    expect((await store.bulkSaveDocuments([payload])).saved).toHaveLength(0);
+    expect((await seedStoreDocuments(store, [payload])).saved).toHaveLength(0);
   });
 
   it('a failed archive behind a connector row files NO second row: the connector row stays live and the failure is settled, counted unstored (US-13 AC1, US-35 AC8, US-14 AC4)', async () => {
@@ -588,7 +589,7 @@ describe('RoadmapStore document archive (US-14)', () => {
     const store = await RoadmapStore.create(adapter);
     const payload = { documentType: 'clinic_letter', title, documentDate: '2026-08-25', contentMd: 'md', metadata: {}, sourceFileName: 'clinic-letter.pdf', file: blob };
 
-    expect(await store.bulkSaveDocuments([payload])).toEqual({ saved: [], errorCount: 0, unstored: 1 });
+    expect(await seedStoreDocuments(store, [payload])).toEqual({ saved: [], errorCount: 0, unstored: 1 });
     await store.flush();
     const file = readCloudFile(cloud);
     const live = file.documents.filter((d) => !d.deleted);
@@ -602,7 +603,7 @@ describe('RoadmapStore document archive (US-14)', () => {
     adapter.writeDocument = async () => { throw new Error('quota'); };
     const store = await RoadmapStore.create(adapter);
 
-    const result = await store.bulkSaveDocuments([{ documentType: 'pathology_report', title: 'Lipid panel', documentDate: '2024-05-10', contentMd: 'md', metadata: {}, sourceFileName: 'results.pdf', file: new Blob(['bytes'], { type: 'application/pdf' }) }]);
+    const result = await seedStoreDocuments(store, [{ documentType: 'pathology_report', title: 'Lipid panel', documentDate: '2024-05-10', contentMd: 'md', metadata: {}, sourceFileName: 'results.pdf', file: new Blob(['bytes'], { type: 'application/pdf' }) }]);
     expect(result.errorCount).toBe(0);
     expect(result.saved).toHaveLength(1);
     expect(result.saved[0].fileRef).toBeNull();
@@ -611,7 +612,7 @@ describe('RoadmapStore document archive (US-14)', () => {
   it('deleteDocument tombstones (keeps the row, flips deleted) and hides it from reads', async () => {
     const cloud = new MemoryCloud();
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
-    const { saved: [saved] } = await store.bulkSaveDocuments([
+    const { saved: [saved] } = await seedStoreDocuments(store, [
       { documentType: 'scan_result', title: 'Chest X-ray', documentDate: '2024-05-10', contentMd: 'md', metadata: {}, sourceFileName: 'xray.jpg' },
     ]);
     await store.flush();
@@ -629,7 +630,7 @@ describe('RoadmapStore document archive (US-14)', () => {
   it('deleting an unknown id, and re-deleting an already-deleted id, both return false without corrupting state', async () => {
     const cloud = new MemoryCloud();
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
-    const { saved: [saved] } = await store.bulkSaveDocuments([
+    const { saved: [saved] } = await seedStoreDocuments(store, [
       { documentType: 'scan_result', title: 'Chest X-ray', documentDate: '2024-05-10', contentMd: 'md', metadata: {}, sourceFileName: 'xray.jpg' },
     ]);
     await store.flush();

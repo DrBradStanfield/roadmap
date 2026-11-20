@@ -9,13 +9,13 @@
  * documents for held rows.
  */
 import { DOCUMENT_TYPES, type DocumentType } from './validation';
-import { IMPORT_REVIEW_TEXT, isOfferedRef, KIND_WORDS, notSavedGroups, type ClassifiedValue, type UnsureReason } from './import-review';
+import { IMPORT_REVIEW_TEXT, isOfferedRef, KIND_WORDS, NOT_SAVED_TEXT, notSavedGroups, type ClassifiedValue, type NotSavedReason, type UnsureReason } from './import-review';
 import type { RoadmapFile } from './roadmap-file';
-import { inFlight, RETRYABLE, saveEnabled, type FileStatus, type UploadFile, type UploadState } from './upload-flow';
+import { inFlight, RETRYABLE, saveEnabled, type FileStatus, type SaveOutcome, type UploadFile, type UploadState } from './upload-flow';
 import { planIsEmpty, uploadSavePlan, type UploadSavePlan } from './upload-plan';
 import type { UploadPlatform } from './upload-rules';
 import type { UploadReview } from './upload-review';
-import { failLine, FILE_NOTICE_TEXT, FIX_ERRORS_TEXT, UPLOAD_TEXT } from './upload-text';
+import { failLine, FILE_NOTICE_TEXT, FIX_ERRORS_TEXT, SCREENING_TEXT, UPLOAD_TEXT } from './upload-text';
 
 /**
  * `ticked`: the tick shown now, ticked unless cleared. `replaces`: a conflict's held row,
@@ -33,7 +33,8 @@ export type UploadSection =
    *  `before`, when known. Its words stay in the web's ReviewTable until they move (no string yet). */
   | { kind: 'undatedPrevious'; fileId: string; name: string; month: string | null; before: string | null }
   | { kind: 'unsure'; title: string; footer: string; rows: ValueRow[] }
-  | { kind: 'failed'; title: string; rows: Array<{ fileId: string; name: string; line: string }>; retry: string | null }
+  /** `retry`: Try again for this file alone, when its failure is one a retry can mend; the section's `retry` is every such file. */
+  | { kind: 'failed'; title: string; rows: Array<{ fileId: string; name: string; line: string; retry: string | null }>; retry: string | null }
   | { kind: 'notSaved'; title: string; lines: string[]; footer: string };
 
 export interface UploadView {
@@ -43,7 +44,9 @@ export interface UploadView {
   sections: UploadSection[];
   /** Hidden behind Show all. */
   sure: { line: string; showAll: string; rows: ValueRow[] } | null;
-  documents: { line: string; rows: Array<{ fileId: string; title: string; kind: string; date: string; dateKnown: boolean }> } | null;
+  /** `screening`: a letter's screening update the person can tick (web), null when none is offered. */
+  /** `type`: the kind the letter saves as, for the control that corrects it (US-13 AC14); `kind`: its word. */
+  documents: { line: string; rows: Array<{ fileId: string; title: string; type: DocumentType; kind: string; date: string; dateKnown: boolean; screening: ScreeningRow | null }> } | null;
   /** The collapsed "Files" list. */
   files: { row: string; rows: Array<{ fileId: string; name: string; status: string }> };
   /** Read files with nothing in them, and files read only in part, in the web's notice words (US-12 AC9). */
@@ -52,8 +55,12 @@ export interface UploadView {
   save: { label: string; enabled: boolean; why: string | null; error: string | null };
   stop: { label: string } | null;
   /** The done screen's lines. */
-  done: { line: string; archived: string | null; unstored: string | null } | null;
+  /** `notSaved`: values the final commit refused, one line per reason in the review's words. */
+  done: { line: string; archived: string | null; unstored: string | null; skipped: string[]; notSaved: string[] } | null;
 }
+
+/** A screening update's tick: `checked` only with a date; `words` around the screening's name, which is drawn bold. */
+export interface ScreeningRow { checked: boolean; enabled: boolean; words: readonly [string, string, string] }
 
 const READING: readonly FileStatus['s'][] = ['converting', 'sending'];
 const AT_REST: readonly FileStatus['s'][] = ['known', 'refused', 'read', 'failed', 'stopped'];
@@ -104,7 +111,7 @@ const valueRow = (review: UploadReview) => (v: ClassifiedValue): ValueRow => ({
   ticked: review.labFiles[v.file].ticked.includes(v.ref),
   replaces: review.held.get(`${v.file}:${v.ref}`) ?? null,
   replacing: replacingOf(review, v),
-  error: blocks(v) && v.refusal && 'measurement' in v.refusal ? v.refusal.measurement.message : null,
+  error: blocks(review)(v) && v.refusal && 'measurement' in v.refusal ? v.refusal.measurement.message : null,
 });
 
 const replacingOf = (review: UploadReview, v: ClassifiedValue) => review.labFiles[v.file].replacing.includes(v.ref);
@@ -112,14 +119,34 @@ const replacingOf = (review: UploadReview, v: ClassifiedValue) => review.labFile
 /**
  * A selected core value the write would refuse blocks Save, as the web's review blocks it
  * (ReviewTable `refusedKept` over import-review-view `blocked`, US-13 AC5): sent, not written, and
- * out of its range or otherwise refused (a same-day loser is not an error).
+ * out of its range or otherwise refused (a same-day loser is not an error). Only a value Save would
+ * write blocks: one in conflict whose Replace is off keeps the saved value, so it never does (PR 1906).
  */
-const blocks = (v: ClassifiedValue) => v.ref[0] === 'v' && v.sent && !v.writes
-  && (v.group === 'unsure' ? v.reasons.includes('outOfRange') : v.group === 'notSaved' && v.reason !== 'sameDay');
+const blocks = (review: UploadReview) => (v: ClassifiedValue) => v.ref[0] === 'v' && v.sent && !v.writes
+  && (v.group === 'unsure' ? v.reasons.includes('outOfRange') && (!v.reasons.includes('conflict') || replacingOf(review, v)) : v.group === 'notSaved' && v.reason !== 'sameDay');
+
+/** Each reason once, naming its tests, as "Not saved" names them in the review (NOT_SAVED_TEXT); then each own line once. */
+function refusedLines(refused: NonNullable<SaveOutcome['refused']>): string[] {
+  const byReason = new Map<NotSavedReason, string[]>();
+  const lines = new Set<string>();
+  for (const r of refused) {
+    if ('line' in r) { lines.add(r.line); continue; }
+    const labels = byReason.get(r.reason) ?? [];
+    if (!labels.includes(r.label)) byReason.set(r.reason, [...labels, r.label]);
+  }
+  return [...[...byReason].map(([reason, labels]) => `${labels.join(', ')}: ${NOT_SAVED_TEXT[reason]}`), ...lines];
+}
+
+function screeningRow(plan: UploadSavePlan, fileId: string): ScreeningRow | null {
+  const update = plan.screenings.find((x) => x.fileId === fileId);
+  if (!update?.shown) return null;
+  return { checked: update.date !== null && update.ticked, enabled: update.date !== null, words: SCREENING_TEXT.update(update.type, update.date) };
+}
 
 function saveLabel(plan: UploadSavePlan): string {
   const { values, documents, originals } = plan.counts;
-  return values || documents || !originals ? UPLOAD_TEXT.saveBoth(values, documents) : UPLOAD_TEXT.saveOriginals(originals);
+  if (!values && !documents) return originals ? UPLOAD_TEXT.saveOriginals(originals) : UPLOAD_TEXT.saveNone;
+  return UPLOAD_TEXT.saveBoth(values, documents);
 }
 
 /** A read file with nothing in it, as the web says it (useUploadFlow `finish`): a document alone, or nothing found. */
@@ -147,7 +174,7 @@ function save(s: UploadState, plan: UploadSavePlan, review: UploadReview): Uploa
  * save itself refuses on the same rule (upload-save.ts), so nothing is written past it.
  */
 export function saveBlocked(review: UploadReview): string | null {
-  if (review.classification.values.some(blocks)) return FIX_ERRORS_TEXT;
+  if (review.classification.values.some(blocks(review))) return FIX_ERRORS_TEXT;
   return review.labFiles.some((f) => f.needsDay) ? UPLOAD_TEXT.chooseDay : null;
 }
 
@@ -171,7 +198,7 @@ export function uploadView(s: UploadState, record: RoadmapFile, now: string, rev
     ...(unsure.length ? [{ kind: 'unsure' as const, title: IMPORT_REVIEW_TEXT.checkTitle(unsure.length), footer: IMPORT_REVIEW_TEXT.checkFooter, rows: unsure.map(row) }] : []),
     ...(failed.length ? [{
       kind: 'failed' as const, title: UPLOAD_TEXT.failedTitle(failed.length),
-      rows: failed.map((f) => ({ fileId: f.id, name: f.name, line: failLine(f.status, s.platform) })),
+      rows: failed.map((f) => ({ fileId: f.id, name: f.name, line: failLine(f.status, s.platform), retry: s.phase === 'open' && RETRYABLE[f.status.reason] ? UPLOAD_TEXT.retryAll : null })),
       retry: s.phase === 'open' && failed.some((f) => RETRYABLE[f.status.reason]) ? UPLOAD_TEXT.retryAll : null,
     }] : []),
     ...(groups.total ? [{
@@ -187,11 +214,14 @@ export function uploadView(s: UploadState, record: RoadmapFile, now: string, rev
     sure: sure.length ? { line: IMPORT_REVIEW_TEXT.willSave(sure.filter((v) => v.writes).length), showAll: IMPORT_REVIEW_TEXT.showAll(sure.length), rows: sure.map(row) } : null,
     documents: plan.documents.length ? {
       line: UPLOAD_TEXT.documentsLine(plan.documents.length),
-      rows: plan.documents.map(({ fileId, fields }) => ({
-        fileId, title: fields.title,
-        kind: KIND_WORDS[(DOCUMENT_TYPES as readonly string[]).includes(fields.documentType) ? fields.documentType as DocumentType : 'other'][0],
-        date: fields.documentDate ?? UPLOAD_TEXT.noDate, dateKnown: fields.documentDate !== null,
-      })),
+      rows: plan.documents.map(({ fileId, fields }) => {
+        const type = (DOCUMENT_TYPES as readonly string[]).includes(fields.documentType) ? fields.documentType as DocumentType : 'other';
+        return {
+          fileId, title: fields.title, type, kind: KIND_WORDS[type][0],
+          date: fields.documentDate ?? UPLOAD_TEXT.noDate, dateKnown: fields.documentDate !== null,
+          screening: screeningRow(plan, fileId),
+        };
+      }),
     } : null,
     files: { row: UPLOAD_TEXT.filesRow(files.length), rows: files.map((f) => ({ fileId: f.id, name: f.name, status: emptyRead(f) ?? statusWords(f.status, s.platform) })) },
     // Read files with nothing in them, and files read only in part (US-12 AC9), in the web's words.
@@ -203,6 +233,11 @@ export function uploadView(s: UploadState, record: RoadmapFile, now: string, rev
       line: UPLOAD_TEXT.savedLine(s.outcome.values, s.outcome.documents),
       archived: s.outcome.archived ? UPLOAD_TEXT.archivedLine(s.outcome.archived) : null,
       unstored: s.outcome.unstored ? UPLOAD_TEXT.unstoredLine : null,
+      skipped: [
+        ...(s.outcome.skippedValues ? [UPLOAD_TEXT.skippedLine(s.outcome.skippedValues, false)] : []),
+        ...(s.outcome.skippedLabValues ? [UPLOAD_TEXT.skippedLine(s.outcome.skippedLabValues, true)] : []),
+      ],
+      notSaved: refusedLines(s.outcome.refused ?? []),
     } : null,
   };
 }

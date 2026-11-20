@@ -13,7 +13,7 @@ import { cleanup, fireEvent, render } from '@testing-library/react';
 import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import type { ApiLabValue } from '../lib/api-types';
 import { a11yTextWithDigits } from '../testing/a11y-text';
-import { ReviewTable } from './ReviewTable';
+import { ReviewTable } from '../testing/review-harness';
 import type { FileResult } from '../lib/upload-pipeline';
 import { showingAll } from '../testing/import-review';
 

@@ -7,7 +7,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, fireEvent, cleanup } from '@testing-library/react';
 import type { ApiMeasurement } from '@roadmap/health-core/mappings';
-import { ReviewTable } from './ReviewTable';
+import { ReviewTable } from '../testing/review-harness';
 import { buildMatrixModel } from '../lib/review-matrix';
 import type { FileResult } from '../lib/upload-pipeline';
 import { showingAll } from '../testing/import-review';
@@ -120,5 +120,18 @@ describe('US-12 AC12: a dated previous column is its own date in the review', ()
     expect(onSave.mock.calls[0][0].values.map((v: { valueSI: number; recordedAt: string }) => [v.valueSI, v.recordedAt])).toEqual([
       [2.6, '2026-03-11T00:00:00.000Z'], [3.1, `${PREVIOUS}T00:00:00.000Z`],
     ]);
+  });
+
+  // PR 1906 fix round, item 10: a day to come on the dated previous column is kept on screen, and Save waits for a past day.
+  it('a future day picked for the dated previous column stays shown, and Save waits with the reason', () => {
+    const { container, onSave, save, getByText } = renderReview();
+    const headers = container.querySelectorAll<HTMLInputElement>('input[aria-label="Choose column date"]');
+    fireEvent.change(headers[0], { target: { value: '2999-01-05' } });
+    // Shown as a column with no past day yet, as any such column is (US-13 AC8): its month and year, the day asked for.
+    expect(container.querySelector('.bt-header-row')!.textContent).toContain("— Jan'99");
+    expect(container.querySelector<HTMLButtonElement>('.review-save-btn')!.disabled).toBe(true);
+    expect(getByText('Choose the day of the test')).toBeTruthy();
+    save();
+    expect(onSave).not.toHaveBeenCalled();
   });
 });

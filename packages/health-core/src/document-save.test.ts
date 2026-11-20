@@ -27,11 +27,10 @@ function io(opts: { fail?: boolean } = {}) {
   const value: DocumentSaveIO<Uint8Array> = {
     hash: async (b) => hashOf(b),
     write: async (ref, b) => {
-      if (opts.fail) throw new Error('synthetic quota refusal');
+      if (opts.fail) { const error = new Error('synthetic quota refusal'); errors.push(error); throw error; }
       written.set(ref, b);
     },
     mimeType: () => 'application/pdf',
-    onWriteError: (e) => errors.push(e),
     now: () => '2026-02-01T00:00:00.000Z',
     newId: () => `doc-${++n}`,
   };
@@ -152,7 +151,7 @@ describe('saveDocuments: a failed blob write without a held row', () => {
     const file = fresh();
     const { plan, errors } = await save(file, [letter()], { fail: true });
     expect(errors).toHaveLength(1);
-    expect(plan.unstored).toBe(0);
+    expect(plan.unstored).toBe(1); // every failed write is unstored, one count for both clients (design 12c)
     expect(plan.saved).toEqual([expect.objectContaining({ fileRef: '', mimeType: '', contentHash: hashOf(bytes('letter bytes')) })]);
     expect(file.documents).toHaveLength(1);
   });

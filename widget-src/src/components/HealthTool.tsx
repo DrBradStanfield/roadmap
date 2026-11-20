@@ -730,7 +730,6 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
         onComplete={() => { const read = rereadRecord('upload'); answered(null); return read; }} // an upload is an answer, after a held change is taken in
         onStart={handleUploadStart}
         onClose={() => setShowUploadModal(false)}
-        onScreeningUpdate={handleScreeningChange}
         age={planBasis?.age}
         sex={sex}
         grading={grading}

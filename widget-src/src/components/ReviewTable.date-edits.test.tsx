@@ -6,8 +6,8 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render } from '@testing-library/react';
-import { ReviewTable } from './ReviewTable';
-import type { FileResult } from '../lib/upload-pipeline';
+import { ReviewTable } from '../testing/review-harness';
+import type { ReviewResult as FileResult } from '../testing/review-harness';
 import { showingAll } from '../testing/import-review';
 
 afterEach(cleanup);

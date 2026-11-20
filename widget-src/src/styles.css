@@ -169,7 +169,7 @@
   }
 }
 
-/* The form, locked while this tab's erase runs (US-16 AC2a): a plain box. */
+/* The form, locked while this tab's erase runs (US-16 AC2a), and the upload review while its Save runs: a plain box. */
 .health-form-lock.health-form-lock {
   border: 0;
   margin: 0;
@@ -1831,6 +1831,10 @@
 }
 
 .upload-modal {
+  /* Portaled outside .health-tool: the widget's own type, not the host page's. */
+  font-family: var(--font-family-base);
+  color: var(--color-text);
+  line-height: 1.45;
   background: #fff;
   border-radius: 12px;
   width: 100%;
@@ -1972,7 +1976,7 @@
 /* Processing */
 .upload-processing {
   text-align: center;
-  padding: 40px 0;
+  padding: 4px 0 16px;
 }
 
 .upload-progress-bar {
@@ -2123,16 +2127,105 @@
 }
 
 .review-disclosure {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   background: none;
   border: none;
   padding: 4px 0;
   min-height: 32px;
   font: inherit;
+  font-size: 14px;
   font-weight: 600;
-  color: var(--color-primary);
+  color: var(--color-brand-text);
   cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: 2px;
+  text-align: left;
+}
+.review-disclosure:hover {
+  color: var(--color-brand-text-hover);
+}
+/* The chevron the tool's other folding rows draw (.alr-chevron): down when shut, up when open. */
+.review-disclosure::after {
+  content: '';
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  margin-top: -3px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform 0.2s ease;
+}
+.review-disclosure[aria-expanded="true"]::after {
+  margin-top: 3px;
+  transform: rotate(-135deg);
+}
+
+/* The sections after the matrix: files not read, letters, the pick's files. */
+.review-failed-files,
+.review-documents,
+.review-files {
+  margin: 12px 0 0;
+  font-size: 14px;
+}
+.review-failed-files.review-failed-files {
+  margin-bottom: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--color-gray-border);
+  border-radius: 8px;
+}
+.review-failed-files li .review-retry-btn {
+  display: block;
+  margin-top: 8px;
+}
+.review-failed-files ul,
+.review-files ul {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+}
+.review-failed-files li,
+.review-files li {
+  margin: 6px 0;
+  overflow-wrap: anywhere;
+}
+.review-files li {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+.review-files .review-file-name {
+  font-size: 13px;
+}
+.review-documents .review-file-section {
+  margin: 8px 0 0;
+  padding-bottom: 12px;
+}
+/* Try again: the review's secondary button (.review-cancel-btn), smaller. */
+.review-retry-btn {
+  display: inline-block;
+  margin: 6px 8px 0 0;
+  padding: 6px 14px;
+  min-height: 32px;
+  font: inherit;
+  font-size: 13px;
+  background: none;
+  border: 1px solid var(--color-gray-border);
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--color-gray-dark);
+}
+.review-retry-btn:hover {
+  background: #f5f5f5;
+}
+.upload-select > .review-retry-btn {
+  display: block;
+  margin: 0 auto 12px;
+}
+/* Why Save waits, under the matrix and above the action bar. */
+.review-save-why {
+  margin: 12px 0 0;
+  font-size: 13px;
+  color: var(--color-text-secondary);
 }
 
 .review-not-saved {
@@ -2338,22 +2431,33 @@
 }
 
 .review-title-input {
+  box-sizing: border-box;
   width: 100%;
   padding: 6px 8px;
+  font-family: inherit;
   border: 1px solid var(--color-gray-border);
   border-radius: 4px;
   font-size: 14px;
   font-weight: 500;
 }
 
-.review-document-preview {
+/* The whole rebuilt letter in the review: the document page's look (.doc-lightbox-content), inside the card. */
+.review-document-letter.doc-lightbox-content {
+  padding: 4px 0 0;
+  max-height: none;
+  overflow: visible;
+  overflow-wrap: anywhere;
+}
+
+/* The kind control wears the kind badge (.review-doc-type-badge) and keeps the browser's own arrow. */
+.review-doc-kind.review-doc-type-badge {
+  font: inherit;
   font-size: 12px;
-  color: var(--color-gray-light);
-  line-height: 1.5;
-  max-height: 80px;
-  overflow: hidden;
-  margin-bottom: 8px;
-  white-space: pre-wrap;
+  font-weight: 600;
+  padding: 3px 6px;
+  border: none;
+  cursor: pointer;
+  max-width: 100%;
 }
 
 .review-screening-update {
@@ -2361,7 +2465,8 @@
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  padding: 8px 0 0;
+  margin-top: 12px;
+  padding: 10px 0 0;
   border-top: 1px solid var(--color-gray-border);
   cursor: pointer;
 }

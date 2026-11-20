@@ -82,8 +82,6 @@ export interface DocumentSaveIO<F> {
   write(ref: string, file: F): Promise<void>;
   /** The bytes' MIME type, '' when unknown. */
   mimeType(file: F): string;
-  /** A failed blob write, for the caller's telemetry. The save carries on. */
-  onWriteError?(error: unknown): void;
   /** ISO instant for `addedAt`; read once per document. */
   now?(): string;
   newId?(): string;
@@ -92,7 +90,7 @@ export interface DocumentSaveIO<F> {
 export interface DocumentSavePlan {
   /** The rows `commit` appends, in payload order. */
   saved: FileDocument[];
-  /** Failed blob writes behind a held metadata-only row: settled, not errors (US-14 AC4). */
+  /** Every original whose write failed: its row keeps the hash alone (US-14 AC4, AC10). One count for both clients (design 12c). */
   unstored: number;
   /**
    * Tombstone the metadata-only rows these uploads replace, then append
@@ -108,11 +106,12 @@ export interface DocumentSavePlan {
  * The six duplicate checks on the way into `documents[]` (US-52 AC14). Each
  * runs where it does because each surface knows different things at that
  * moment; none is a copy of another, so a de-dup must not fold them together.
- * 1. Website review, `isDocDuplicate` (ReviewTable.tsx): an exact
- *    `sourceFileName` match unticks the keep box. Titles drift between reads;
- *    the name does not, and the bytes are not hashed yet.
- * 2. iPhone review, `alreadySaved` (ios/engine/lab-review.ts): the same
- *    exact-name rule, so the app's card starts as the web's does.
+ * 1. Upload, before a read (upload-known.ts `knownAs`, both clients' shared
+ *    upload): a file whose bytes the record holds is never read; after a read,
+ *    a hashless older row with the same name, date and kind counts as known
+ *    (`legacyMatch`). The web's name-only untick went with design PR 10.
+ * 2. iPhone review, `alreadySaved` (ios/engine/lab-review.ts): an exact-name
+ *    rule that unticks the keep box, until its review page moves to the shared upload.
  * 3. Here: by hash, skipping only a row that holds a stored original and
  *    that the record still knows (`knownIndex`: a lab archive row only while
  *    its values live); a same-hash metadata-only row of the same kind (lab
@@ -131,12 +130,10 @@ export interface DocumentSavePlan {
  *    hashed or not, compared by `dedupFileName` on both sides (" (n)"
  *    stripped); a folder listing has names only, and rule 4 would nag every
  *    folder-imported file forever (US-37 AC1).
- * 6. Website archive step (widget-src archive-payloads.ts):
- *    `unarchivedOriginals` / `isFileable` keep a by-hash archived set
- *    (a `contentHash` with a stored original) and the `alreadyCovered` name
- *    set, and `pendingRowsFor` files an unselected letter behind its
- *    metadata-only row; the iPhone's review-time held check uses
- *    `pendingRowsFor` too.
+ * 6. The shared upload's plan (upload-plan.ts): `pendingRowsFor` starts a
+ *    letter's card from the metadata-only row holding its bytes, and files an
+ *    archive-only known file's original behind that row; the iPhone's
+ *    review-time held check uses `pendingRowsFor` too.
  */
 /**
  * Hash, dedup and write the blobs for `payloads` against `current`. Returns
@@ -169,7 +166,7 @@ export async function saveDocuments<F>(
 
   // Phase 1 (serial, order-dependent): dedup by hash, assign collision-safe
   // refs, build the metadata rows.
-  const writes: Array<{ doc: FileDocument; ref: string; file: F; lab: boolean; held?: DocumentView; /** The held row a failed write leaves standing. */ failed?: DocumentView }> = [];
+  const writes: Array<{ doc: FileDocument; ref: string; file: F; lab: boolean; held?: DocumentView; /** The held row a failed write leaves standing. */ failed?: DocumentView; lost?: true }> = [];
   /** Rows that land with no write: each replaces the held rows of its kind at commit, and `replaces`. */
   const filed: Array<{ doc: FileDocument; lab: boolean; replaces: string[] }> = [];
   const seen = new Set<string>();
@@ -232,14 +229,16 @@ export async function saveDocuments<F>(
   // folder would create duplicates); the rest pool. A failed write degrades
   // to metadata-only — unless a held row already holds these bytes: a
   // plain row beside it would list the letter twice, and every later upload
-  // would offer to archive it again (Sentry 7715862604).
+  // would offer to archive it again (Sentry 7715862604). Every failed write is counted `unstored`.
+  let lost = 0; // every write that failed
   const writeOne = async (w: (typeof writes)[number]) => {
     try {
       await io.write(w.ref, w.file);
       w.doc.fileRef = w.ref;
       w.doc.mimeType = io.mimeType(w.file);
-    } catch (error) {
-      io.onWriteError?.(error);
+    } catch {
+      // The caller's own write reports its failure (RoadmapStore.saveUpload); the save carries on.
+      lost += 1;
       w.failed = w.held; // a failure behind a held row is settled (below)
     }
   };
@@ -265,14 +264,13 @@ export async function saveDocuments<F>(
   // save, alike) is settled, never an error: an original that can never be
   // stored (a size cap) must not loop on "Failed to save". The held details
   // stay, unless the review changed the title or date: then a new
-  // metadata-only row carries them and replaces the held rows. `unstored`
-  // tells the done screen to say so (US-14 AC4).
-  const unstored = writes.flatMap(({ doc, failed }) => (failed ? [{ doc, held: failed }] : []));
-  const unchanged = new Set(unstored.filter(({ doc, held }) => sameRow(doc, held)).map((u) => u.doc));
+  // metadata-only row carries them and replaces the held rows.
+  const heldFailures = writes.flatMap(({ doc, failed }) => (failed ? [{ doc, held: failed }] : []));
+  const unchanged = new Set(heldFailures.filter(({ doc, held }) => sameRow(doc, held)).map((u) => u.doc));
   const saved = out.filter((d) => !unchanged.has(d));
   return {
     saved,
-    unstored: unstored.length,
+    unstored: lost,
     commit(file) {
       // The rows to replace, read from the file as it now is, so a same-hash
       // row merged in from another device during the upload goes too.

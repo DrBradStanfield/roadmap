@@ -30,16 +30,7 @@ import type { ProposedEdit } from '@roadmap/health-core/chat-edits';
 import { REMOTE_CHANGED_EVENT, RoadmapStore, type CorrectStatus } from '../storage/roadmap-store';
 import { BACKEND_KEY } from '../storage/web-record-host';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
-import {
-  addMeasurement,
-  bulkSaveLabValues,
-  correctValue,
-  flushRoadmapStore,
-  initRoadmapStore,
-  loadAllHistory,
-  saveChangedMeasurements,
-  setPreEraseHook,
-} from '../lib/roadmap-data';
+import { addMeasurement, correctValue, flushRoadmapStore, initRoadmapStore, loadAllHistory, saveChangedMeasurements, setPreEraseHook } from '../lib/roadmap-data';
 import { BT_TIMELINE_DRAFT_KEY, VITALS_DRAFT_KEY } from '../lib/storage';
 import { trackProductEvent } from '../lib/server-api';
 import { openAboutYou, showTables, trackLiveRefresh, stopLiveRefresh, recordOnDisk } from '../testing/health-tool-harness';
@@ -93,6 +84,7 @@ vi.mock('./UploadModal', () => ({
 import { HealthTool } from './HealthTool';
 import { ERASE_DONE } from '../lib/erase-copy';
 import { deleteButton, openSettings } from '../testing/settings';
+import { seedLabValues } from '../testing/record-seed';
 
 // Read at assertion time, not module load: a run that crosses local midnight stamps rows with the new day.
 const localToday = () => localDay(new Date());
@@ -565,7 +557,7 @@ describe('the 2026-09-22 feedback: a mistyped "add a blood test"', () => {
   // closing the group unmounted it first, taking the correction with it.
   it('US-21 AC5: a correction clicked away onto its group\'s header, which closes the group, is written', async () => {
     await guest({ weight: 82 });
-    await bulkSaveLabValues([{ metricName: 'Feritin', value: 45, unit: 'ug/L', recordedAt: `${localToday()}T00:00:00.000Z`, source: 'manual' }]);
+    await seedLabValues([{ metricName: 'Feritin', value: 45, unit: 'ug/L', recordedAt: `${localToday()}T00:00:00.000Z`, source: 'manual' }]);
     const view = render(<HealthTool />);
     const wrap = await shown<HTMLElement>(view.container, '.alr-wrap');
     showTables(view.container);
@@ -584,7 +576,7 @@ describe('the 2026-09-22 feedback: a mistyped "add a blood test"', () => {
 
   it('US-21 AC13: the same test twice on one day offers Replace, and Replace is a correction', async () => {
     await guest({ weight: 82 });
-    await bulkSaveLabValues([{ metricName: 'ferritin', value: 45, unit: 'µg/L', recordedAt: `${localToday()}T00:00:00.000Z`, source: 'manual' }]);
+    await seedLabValues([{ metricName: 'ferritin', value: 45, unit: 'µg/L', recordedAt: `${localToday()}T00:00:00.000Z`, source: 'manual' }]);
     const view = render(<HealthTool />);
     const wrap = await shown<HTMLElement>(view.container, '.alr-wrap');
     showTables(view.container);
@@ -1315,7 +1307,7 @@ describe('another writer changes a value the user is working on', () => {
 
   it('US-21 AC5: a lab value typed into an editor while another device corrects it is not saved over the correction', async () => {
     await guest({ weight: 82 });
-    await bulkSaveLabValues([{ metricName: 'ferritin', value: 45, unit: 'µg/L', recordedAt: `${RIGHT_DAY}T00:00:00.000Z`, source: 'manual' }]);
+    await seedLabValues([{ metricName: 'ferritin', value: 45, unit: 'µg/L', recordedAt: `${RIGHT_DAY}T00:00:00.000Z`, source: 'manual' }]);
     const view = render(<HealthTool />);
     const wrap = await shown<HTMLElement>(view.container, '.alr-wrap');
     showTables(view.container);

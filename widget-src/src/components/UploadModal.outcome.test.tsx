@@ -10,17 +10,17 @@ import { KEY_TEXT } from '@roadmap/health-core/upload-text';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { UploadModal } from './UploadModal';
+import { lastSaved, resetUploadStore, uploadStore } from '../testing/upload-store';
 import { checkLabImportQuota, labImport } from '../lib/upload-api';
-import { sha256Blob, synthesizeLabArchiveEntries } from '../lib/archive-payloads';
-import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getEraseIdentity } from '../lib/roadmap-data';
+import { sha256Blob } from '../lib/archive-payloads';
 import { trackProductEvent } from '../lib/server-api';
 import type { UploadHistory } from '../lib/api-types';
 import { findAllReviewValues, findReviewValue } from '../testing/import-review';
 
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn() }));
-vi.mock('../lib/roadmap-data', () => ({ uploadKnownIndex: vi.fn(() => new Map()), isLegacyUpload: vi.fn(() => false), getDocumentArchiveMode: vi.fn(() => 'cloud'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
+vi.mock('../lib/roadmap-data', async () => ({ ...(await import('../testing/upload-store')).uploadStoreMock(), uploadKnownIndex: vi.fn(() => new Map()), isLegacyUpload: vi.fn(() => false), getDocumentArchiveMode: vi.fn(() => 'cloud'), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
 vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn(), PROXY_PATH: '/apps/synthetic', parseJsonResponse: vi.fn() }));
-vi.mock('../lib/archive-payloads', async importOriginal => ({ ...await importOriginal<typeof import('../lib/archive-payloads')>(), sha256Blob: vi.fn(async () => ''), synthesizeLabArchiveEntries: vi.fn(() => []) }));
+vi.mock('../lib/archive-payloads', async importOriginal => ({ ...await importOriginal<typeof import('../lib/archive-payloads')>(), sha256Blob: vi.fn(async () => '') }));
 vi.mock('../lib/useIsMobile', () => ({ useIsMobile: () => false }));
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 // The build decides the wording (US-12 AC9): the Shopify page reads through
@@ -46,8 +46,10 @@ const pdf = (name: string, bytes = 1) => {
   Object.defineProperty(f, 'size', { value: bytes });
   return f;
 };
-/** The reason the list gives for one file, or null when the file is not listed. */
+/** The reason the list gives for one file, or, for a file not read, the review's failed section (US-12 AC26); null when it is not named. */
 function reasonFor(name: string): string | null {
+  const failed = [...document.querySelectorAll('.review-failed-files li')].filter(li => li.querySelector('.review-file-name')?.textContent === name);
+  if (failed.length) return failed.map(li => li.querySelector('.review-file-error')!.textContent).join(' | ');
   const list = screen.queryByRole('list', { name: 'Files to check' });
   if (!list) return null;
   const items = within(list).queryAllByText(name);
@@ -64,12 +66,10 @@ function outcomes() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  resetUploadStore();
   build.shopify = true;
   vi.mocked(checkLabImportQuota).mockResolvedValue({ allowed: true, remaining: 60 });
   vi.mocked(labImport).mockResolvedValue(withValues);
-  vi.mocked(bulkSaveMeasurements).mockResolvedValue({ saved: [{}], skippedDuplicates: 0, errorCount: 0, refused: [] } as unknown as Awaited<ReturnType<typeof bulkSaveMeasurements>>);
-  vi.mocked(bulkSaveDocuments).mockResolvedValue({ saved: [{}], errorCount: 0 } as Awaited<ReturnType<typeof bulkSaveDocuments>>);
-  vi.mocked(bulkSaveLabValues).mockResolvedValue({ saved: [], skippedDuplicates: 0, errorCount: 0, refused: [] });
   extractFromPdf.mockImplementation(async (f: File) => pages(f.name));
   Object.assign(window, { HealthUpload: {
     extractFromPdf,
@@ -82,8 +82,14 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
+let shown: ReturnType<typeof render> | null = null;
 function render_() {
-  render(<UploadModal open onOpen={() => {}} onClose={() => {}} unitSystem="si" grading={{}} history={history} onComplete={() => {}} />);
+  shown = render(<UploadModal open onOpen={() => {}} onClose={() => {}} unitSystem="si" grading={{}} history={history} onComplete={() => {}} />);
+}
+/** Ends the run as the page going away does: the run's one outcome is sent when the run is final (PR 1906 item 3). */
+function endRun() {
+  shown?.unmount();
+  shown = null;
 }
 
 describe('US-12 AC9: every file not fully read is named with a reason', () => {
@@ -148,6 +154,7 @@ describe('US-12 AC9: every file not fully read is named with a reason', () => {
     render_(); pick(pdf('good.pdf'), pdf('broken.pdf'));
     await findReviewValue('3.9');
     expect(reasonFor('broken.pdf')).toBe('Our server could not read it. Please try again.');
+    endRun();
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual(expect.objectContaining({ serverError: 1, limitError: 0 }));
   });
@@ -167,6 +174,7 @@ describe('US-12 AC9: every file not fully read is named with a reason', () => {
     await findReviewValue('3.9');
     expect(reasonFor('broken.pdf')).toBe('Not read. The daily upload limit was reached.');
     expect(reasonFor('late.pdf')).toBe('Not read. The daily upload limit was reached.');
+    endRun();
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual(expect.objectContaining({ serverError: 0, limitError: 2 }));
   });
@@ -178,6 +186,7 @@ describe('US-12 AC9: every file not fully read is named with a reason', () => {
     render_(); pick(pdf('good.pdf'), pdf('busy.pdf'));
     await findReviewValue('3.9');
     expect(reasonFor('busy.pdf')).toBe('Not read. Our server was busy. Please try again later.');
+    endRun();
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual(expect.objectContaining({ serverError: 1, limitError: 0 }));
   });
@@ -194,6 +203,7 @@ describe('US-12 AC9: every file not fully read is named with a reason', () => {
     await findReviewValue('3.9');
     expect(reasonFor('declined.pdf')).toBe('Not read. Claude declined to read this file, so trying again will not help.');
     expect(reasonFor('long.pdf')).toBe('Not read. The file is too long to read in one go.');
+    endRun();
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual(expect.objectContaining({ picked: 3, withValues: 1, refused: 1, tooLong: 1, serverError: 0 }));
   });
@@ -226,7 +236,10 @@ describe('US-12 AC10: one count-only upload_outcome per run', () => {
     render_();
     pick(pdf('good.pdf'), pdf('letter.pdf'), pdf('blank.pdf'), pdf('broken.pdf'), pdf('locked.pdf'), pdf('huge.pdf', 11 * 1024 * 1024));
     await findReviewValue('3.9');
-    await waitFor(() => expect(outcomes()).toHaveLength(1));
+    // The run is counted once, when Save ends it (PR 1906 item 3).
+    expect(outcomes()).toEqual([]);
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    await screen.findByRole('button', { name: 'Done' });
     expect(outcomes()[0]).toEqual({
       picked: 6, withValues: 1, documentOnly: 1, noValues: 1, openFailed: 1,
       tooLarge: 1, truncated: 1, serverError: 1, limitError: 0, refused: 0, tooLong: 0, valuesDropped: 0, docx: 0, picturesOnly: 0, undatedPrevious: 0, unitsGuessed: 0, unitsRefused: 0, valuesLimit: 0, valuesLimitUngraded: 0, cancelled: 0, known: 0, failedFinal: 2, firstReadSeconds: 0,
@@ -235,8 +248,7 @@ describe('US-12 AC10: one count-only upload_outcome per run', () => {
     // A zero is never sent, so a server a deploy behind never meets a new key it would refuse; a first read
     // under a second is a real time, so `firstReadSeconds: 0` is (US-12 AC30).
     expect(sent()[0]).toEqual({ picked: 6, withValues: 1, documentOnly: 1, noValues: 1, openFailed: 1, tooLarge: 1, truncated: 1, serverError: 1, failedFinal: 2, firstReadSeconds: 0 });
-    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-    await screen.findByRole('button', { name: 'Done' });
+    fireEvent.click(screen.getByRole('button', { name: 'Done' }));
     expect(outcomes()).toHaveLength(1);
   });
 
@@ -250,6 +262,7 @@ describe('US-12 AC10: one count-only upload_outcome per run', () => {
     vi.mocked(labImport).mockResolvedValue(undated);
     render_(); pick(pdf('baseline.pdf'));
     await findReviewValue('3.9');
+    endRun();
     await waitFor(() => expect(sent()).toHaveLength(1));
     expect(sent()[0]).toEqual({ picked: 1, withValues: 1, undatedPrevious: 2, firstReadSeconds: 0 });
   });
@@ -258,11 +271,13 @@ describe('US-12 AC10: one count-only upload_outcome per run', () => {
     extractFromPdf.mockRejectedValue(new Error('PasswordException'));
     render_(); pick(pdf('a.pdf'));
     await screen.findByText(/No readable files found/);
+    endRun();
     expect(outcomes()).toEqual([expect.objectContaining({ picked: 1, openFailed: 1, withValues: 0 })]);
   });
 
   it('fires for a pick of only oversize files', () => {
     render_(); pick(pdf('huge.pdf', 11 * 1024 * 1024));
+    endRun();
     expect(outcomes()).toEqual([expect.objectContaining({ picked: 1, tooLarge: 1 })]);
   });
 });
@@ -286,6 +301,7 @@ describe('US-12 AC9: a ZIP that gives no files is named too', () => {
     render_(); pick(pdf('good.pdf'), zip('broken.zip'));
     await findReviewValue('3.9');
     expect(reasonFor('broken.zip')).toMatch(/^Could not open it/);
+    endRun();
     expect(outcomes()).toEqual([expect.objectContaining({ picked: 2, openFailed: 1, withValues: 1 })]);
   });
 });
@@ -297,11 +313,12 @@ describe('US-12 AC9: values a file printed but the parse refused are not silent'
       return { result: { ...withValues.result!, droppedValueCount: dropped } } as Import;
     });
     render_(); pick(pdf('good.pdf'), pdf('partial.pdf'), pdf('one.pdf'));
-    await screen.findByText(/^Found /, { selector: '.review-summary' });
+    await screen.findByText(/^\d+ files?\b/, { selector: '.review-summary' });
     // US-13 AC13: one "Not saved" line across the files, not a notice per file.
     for (const name of ['partial.pdf', 'one.pdf', 'good.pdf']) expect(reasonFor(name)).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: '3 values not saved' }));
     expect(screen.getByRole('list', { name: 'Values not saved' }).textContent).toBe('3 values could not be read');
+    endRun();
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual(expect.objectContaining({ picked: 3, withValues: 3, valuesDropped: 3 }));
   });
@@ -325,6 +342,7 @@ describe('US-12 AC19: each value not saved is named, with why', () => {
     const items = within(screen.getByRole('list', { name: 'Values not saved' })).getAllByRole('listitem').map(li => li.textContent);
     expect(items).toEqual(['Vitamin D (25-OH), HDL Cholesterol: could not be read', '1 other value could not be read']);
     expect(items.join(' ')).not.toMatch(/vitamin_d|\bhdl\b/);
+    endRun();
     await waitFor(() => expect(sent()).toHaveLength(1));
     // A count and its reason word only: never a test's name or a value.
     expect(sent()[0]).toEqual({ picked: 1, withValues: 1, valuesDropped: 3, firstReadSeconds: 0 });
@@ -350,6 +368,7 @@ describe('US-12 AC20: the upload counts limits, and names the ungraded tests by 
     } } as Import);
     render_(); pick(pdf('limits.pdf'));
     await findReviewValue('3.9');
+    endRun();
     await waitFor(() => expect(sent()).toHaveLength(1));
     expect(sent()[0]).toEqual({ picked: 1, withValues: 1, valuesLimit: 5, valuesLimitUngraded: 3, firstReadSeconds: 0, limitUngradedTests: ['egfr', 'ldl', 'other'] });
     expect(JSON.stringify(sent()[0])).not.toMatch(/Made-up|Folate|nmol|1\.5|"30"|[<>]/);
@@ -361,19 +380,22 @@ describe('US-12 AC9: members of two ZIPs on one path stay apart', () => {
   const twoZips = (paths: string[]) => zipBundle(async (z: File) => paths.map(name => ({
     name, entry: { async: async () => new Blob([`${z.name}/${name}`]) },
   })));
-  /** The reviewed results the Save hands the archive step, each with its name, the value its own pages gave, and its original's bytes. */
+  /** The archive rows Save wrote, each with its name, the value its own rows hold, and its original's bytes (design 12c). */
   async function savedResults() {
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-    await waitFor(() => expect(synthesizeLabArchiveEntries).toHaveBeenCalled());
-    const results = vi.mocked(synthesizeLabArchiveEntries).mock.calls[0]![0];
-    return { results, identities: await Promise.all(results.map(async r => [r.fileName, r.values[0]?.valueSI, await r.file?.text()])) };
+    await screen.findByRole('button', { name: 'Done' });
+    const { values, documents } = lastSaved();
+    const valueOf = new Map(values.map(v => [v.id as string, v.value]));
+    const results = documents.filter(d => d.metadata?.labArchive === true).map(d => ({ fileName: d.sourceFileName!, contentHash: d.contentHash, value: valueOf.get((d.metadata?.rows as string[])[0]), bytes: uploadStore.written.get(d.fileRef) as Blob | undefined }));
+    return { results, identities: await Promise.all(results.map(async r => [r.fileName, r.value, await r.bytes?.text()])) };
   }
   beforeEach(() => {
     // A fake hash that names the bytes it was given.
     vi.mocked(sha256Blob).mockImplementation(async (b: Blob) => `sha256-${await b.text()}`);
     extractFromPdf.mockImplementation(async (f: File) => pages(await f.text()));
     // Each file's pages name it; its one value says which ZIP it came from.
-    vi.mocked(labImport).mockImplementation(async p => ({ result: { ...withValues.result!, values: [{ ...withValues.result!.values[0], valueSI: p[0].content.startsWith('labs-a') ? 3.9 : 4.2, displayValue: p[0].content.startsWith('labs-a') ? 3.9 : 4.2 }] } }) as Import);
+    // On days of their own, so each report's value is written and listed on its own archive row.
+    vi.mocked(labImport).mockImplementation(async p => ({ result: { ...withValues.result!, reportDate: p[0].content.startsWith('labs-a') ? '2024-06-01' : '2024-07-01', values: [{ ...withValues.result!.values[0], valueSI: p[0].content.startsWith('labs-a') ? 3.9 : 4.2, displayValue: p[0].content.startsWith('labs-a') ? 3.9 : 4.2 }] } }) as Import);
   });
 
   // The website half of "one name on both surfaces": a member path past the
@@ -416,6 +438,7 @@ describe('US-12 AC9: a ZIP member over the per-file limit is named and never rea
     await findReviewValue('3.9');
     expect(reasonFor('huge.pdf')).toBe('Too large to read. The limit is 10 MB per file.');
     expect(extractFromPdf.mock.calls.map(([f]) => (f as File).name)).toEqual(['good.pdf']);
+    endRun();
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual(expect.objectContaining({ picked: 2, tooLarge: 1, withValues: 1, openFailed: 0 }));
   });
@@ -437,6 +460,7 @@ describe('US-12 AC9: the Pages build names its own transport', () => {
     expect(reasonFor('broken.pdf')).toBe('Not read. Anthropic could not be reached or could not read it. Please try again.');
     expect(reasonFor('late.pdf')).toBe('Not read. Your Anthropic key hit its rate limit. Wait a minute and try again.');
     // The usage signal keeps its keys: a rate limit is still limitError.
+    endRun();
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual(expect.objectContaining({ serverError: 1, limitError: 1 }));
   });
@@ -450,6 +474,7 @@ describe('US-12 AC9: the Pages build names its own transport', () => {
     await findAllReviewValues('3.9');
     expect(labImport).toHaveBeenCalledTimes(30);
     expect(reasonFor('r7.pdf')).toBe(KEY_TEXT.rateLimit);
+    endRun();
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual(expect.objectContaining({ picked: 30, withValues: 29, limitError: 1, serverError: 0 }));
   });
@@ -463,6 +488,7 @@ describe('US-12 AC9: the Pages build names its own transport', () => {
     await findReviewValue('3.9');
     expect(reasonFor('refused.pdf')).toBe('Not read. Anthropic refused your API key. Check the key in the "Ask about your plan" panel.');
     expect(reasonFor('broke.pdf')).toBe('Not read. Your Anthropic account has no credit. Check its billing, then try again.');
+    endRun();
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual(expect.objectContaining({ serverError: 2, limitError: 0 }));
   });
@@ -479,6 +505,7 @@ describe('US-12 AC13: a .docx is read in the browser and sent as text', () => {
     expect(labImport).toHaveBeenCalledWith([{ type: 'text', content: 'Ferritin | 85 | 60 | ug/L | 30-400' }], 'si', expect.anything());
     expect(docxToText.mock.calls[0][0]).toBeInstanceOf(ArrayBuffer);
     expect(reasonFor('baseline.docx')).toBeNull();
+    endRun();
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual(expect.objectContaining({ picked: 1, withValues: 1, docx: 1 }));
   });
@@ -489,6 +516,7 @@ describe('US-12 AC13: a .docx is read in the browser and sent as text', () => {
     await findReviewValue('3.9');
     expect(reasonFor('empty.docx')).toBe('Could not open it. It may be password-protected, damaged, or not a PDF, photo or .docx file.');
     expect(reasonFor('bomb.docx')).toMatch(/^Could not open it/);
+    endRun();
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual(expect.objectContaining({ picked: 3, withValues: 1, openFailed: 2, docx: 2 }));
   });
@@ -498,6 +526,7 @@ describe('US-12 AC13: a .docx is read in the browser and sent as text', () => {
     await findReviewValue('3.9');
     expect(reasonFor('old.doc')).toBe('Word .doc files cannot be read. Save it as a PDF or .docx, then upload that.');
     expect(docxToText).not.toHaveBeenCalled();
+    endRun();
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual(expect.objectContaining({ picked: 2, openFailed: 1, docx: 0 }));
   });
@@ -508,6 +537,7 @@ describe('US-12 AC13: a .docx is read in the browser and sent as text', () => {
     render_(); pick(typed);
     await findReviewValue('3.9');
     expect(docxToText).toHaveBeenCalledTimes(1);
+    endRun();
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual(expect.objectContaining({ picked: 1, withValues: 1, docx: 1 }));
   });
@@ -517,6 +547,7 @@ describe('US-12 AC13: a .docx is read in the browser and sent as text', () => {
     render_(); pick(pdf('good.pdf'), word('scan.docx'));
     await findReviewValue('3.9');
     expect(reasonFor('scan.docx')).toBe('This Word file holds pictures, not text. Save it as a PDF, or upload a photo of the page.');
+    endRun();
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual(expect.objectContaining({ picked: 2, withValues: 1, picturesOnly: 1, openFailed: 0, docx: 1 }));
   });
@@ -526,6 +557,7 @@ describe('US-12 AC13: a .docx is read in the browser and sent as text', () => {
     render_(); pick(word('long.docx'));
     await findReviewValue('3.9');
     expect(reasonFor('long.docx')).toBe('This file is long, so only its first part was read.');
+    endRun();
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual(expect.objectContaining({ picked: 1, withValues: 1, truncated: 1, docx: 1 }));
   });
@@ -545,6 +577,7 @@ describe('US-12 AC13: a .docx is read in the browser and sent as text', () => {
     Object.defineProperty(huge, 'size', { value: 11 * 1024 * 1024 });
     render_(); pick(huge);
     expect(reasonFor('huge.docx')).toMatch(/^Too large/);
+    endRun();
     expect(outcomes()).toEqual([expect.objectContaining({ picked: 1, tooLarge: 1, docx: 1 })]);
   });
 
@@ -570,10 +603,9 @@ describe('US-12 AC15, AC16: refused and guessed units are shown and counted', ()
     const list = screen.getByRole('list', { name: 'Values not saved' });
     expect(list.textContent).toBe('Creatinine: this unit is usually a urine result');
     expect(reasonFor('acr.pdf')).toBeNull();
-    await waitFor(() => expect(sent()).toHaveLength(1));
-    expect(sent()[0]).toEqual({ picked: 1, withValues: 1, unitsGuessed: 1, unitsRefused: 1, firstReadSeconds: 0 });
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
     await screen.findByRole('button', { name: 'Done' });
+    expect(sent()).toEqual([{ picked: 1, withValues: 1, unitsGuessed: 1, unitsRefused: 1, firstReadSeconds: 0 }]);
   });
 
   it('a file whose only values were refused is not "No blood test values found." and not counted noValues', async () => {
@@ -583,75 +615,72 @@ describe('US-12 AC15, AC16: refused and guessed units are shown and counted', ()
     render_(); pick(pdf('acr.pdf'));
     await screen.findByRole('button', { name: '1 value not saved' });
     expect(reasonFor('acr.pdf')).toBeNull();
+    endRun();
     await waitFor(() => expect(sent()).toHaveLength(1));
     expect(sent()[0]).toEqual({ picked: 1, unitsRefused: 1, firstReadSeconds: 0 });
   });
 });
 
-// US-16 AC2a (Codex R2): a screening date rides with the upload that read it.
-// The record was erased, and the page showed it, while that upload saved: the
-// date belongs to the erased record, so it is not written.
+// US-16 AC2a (Codex R2): a screening date rides with the upload that read it. Design 12c: it is
+// written in the same edit as the upload's rows (health-core uploadSave), so an erase that refuses
+// that edit writes no date either.
 describe('US-16 AC2a: a screening date from an upload the erase overtook', () => {
   const screeningLetter: Import = { result: { ...letterOnly.result!, document: { ...letterOnly.result!.document!, classification: 'scan_result', metadata: { screeningType: 'colorectal' } } } } as unknown as Import;
-  const renderWithScreenings = (onScreeningUpdate: (key: string, value: string, erase: string) => void) =>
-    render(<UploadModal open onOpen={() => {}} onClose={() => {}} unitSystem="si" grading={{}} history={history} onComplete={() => {}} age={60} sex="male" onScreeningUpdate={onScreeningUpdate} />);
+  const renderWithScreenings = () =>
+    render(<UploadModal open onOpen={() => {}} onClose={() => {}} unitSystem="si" grading={{}} history={history} onComplete={() => {}} age={60} sex="male" />);
 
-  it('writes the date, stamped with the save\'s start, when nothing moved', async () => {
+  it('writes the date with the upload when nothing moved', async () => {
     vi.mocked(labImport).mockResolvedValue(screeningLetter);
-    const onScreeningUpdate = vi.fn();
-    renderWithScreenings(onScreeningUpdate);
+    renderWithScreenings();
     pick(pdf('scope.pdf'));
     fireEvent.click(await screen.findByRole('button', { name: /^Save / }));
     await screen.findByRole('button', { name: 'Done' });
-    expect(onScreeningUpdate).toHaveBeenCalledWith('colorectal_last_date', expect.any(String), '');
+    expect(uploadStore.record.screenings.colorectalLastDate).toEqual(expect.stringMatching(/^\d{4}-\d{2}/));
   });
 
   // US-07 AC1j (Brad 2026-11-12): an uploaded report does not say the result, so it keeps the schedule. The upload
-  // writes the last date alone, straight to handleScreeningChange (HealthTool's onScreeningUpdate), never through
-  // screeningWrites: a newer abnormal last date typed in the form starts the follow-up again, an upload never does.
+  // writes the last date alone (state-edits setScreening), never the follow-up answers.
   it('US-07 AC1j: an upload writes the last date alone and never clears the follow-up answers', async () => {
     vi.mocked(labImport).mockResolvedValue(screeningLetter);
-    const onScreeningUpdate = vi.fn();
-    renderWithScreenings(onScreeningUpdate);
+    const { fieldStamps: _f, updatedAt: _u, lamport: _l, ...before } = uploadStore.record.screenings as unknown as Record<string, unknown>;
+    renderWithScreenings();
     pick(pdf('scope.pdf'));
     fireEvent.click(await screen.findByRole('button', { name: /^Save / }));
     await screen.findByRole('button', { name: 'Done' });
-    expect(onScreeningUpdate.mock.calls).toEqual([['colorectal_last_date', expect.any(String), '']]);
+    const { fieldStamps: _f2, updatedAt: _u2, lamport: _l2, colorectalLastDate, ...after } = uploadStore.record.screenings as unknown as Record<string, unknown>;
+    expect(colorectalLastDate).toBeTruthy();
+    expect(after).toEqual(before);
   });
 
-  it('writes no date when the document save finished after an erase the page has shown', async () => {
+  it('writes no date when the erase refused the save', async () => {
     vi.mocked(labImport).mockResolvedValue(screeningLetter);
-    vi.mocked(bulkSaveDocuments).mockImplementation(async () => {
-      vi.mocked(getEraseIdentity).mockReturnValue('[1,"erased meanwhile"]'); // the erase lands while the blob uploads
-      return { saved: [], errorCount: 1 };
-    });
-    const onScreeningUpdate = vi.fn();
-    renderWithScreenings(onScreeningUpdate);
+    uploadStore.refuse = '';
+    renderWithScreenings();
     pick(pdf('scope.pdf'));
     fireEvent.click(await screen.findByRole('button', { name: /^Save / }));
-    await screen.findByText(/Failed to save/);
-    expect(onScreeningUpdate).not.toHaveBeenCalled();
-    vi.mocked(getEraseIdentity).mockReturnValue('');
+    // The page's words for a refused write (erase-copy WRITE_REFUSED), never "Failed to save" (PR 1906 item 9).
+    await screen.findByText(/^That change was not saved: your data was just deleted/);
+    expect(uploadStore.record.screenings.colorectalLastDate).toBeUndefined();
   });
 });
 
-// US-12 AC28: Cancel aborts every read in flight; the late answer changes nothing.
-describe('US-12 AC28: Cancel aborts the reads in flight', () => {
-  it('hands each read a signal that Cancel aborts', async () => {
+// US-12 AC28: Stop aborts every read in flight (owner ruling 2026-11-20: while a file is read, only Stop).
+describe('US-12 AC28: Stop aborts the reads in flight', () => {
+  it('hands each read a signal that Stop aborts', async () => {
     vi.mocked(labImport).mockImplementation(() => new Promise<Import>(() => {}));
     render_(); pick(pdf('a.pdf'), pdf('b.pdf'));
     await waitFor(() => expect(labImport).toHaveBeenCalledTimes(2));
     const signals = vi.mocked(labImport).mock.calls.map(c => c[2]?.signal);
     expect(signals.map(sig => sig?.aborted)).toEqual([false, false]);
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Stop' }));
     expect(signals.map(sig => sig?.aborted)).toEqual([true, true]);
   });
 });
 
 // US-12 AC9, AC10 (Brad 2026-11-11, U6 U8 U9): the runs that ended without a
-// count, and the files a pick past 200 left out without a word. Known gap: a
-// page unmounted mid-read sends nothing.
-describe('US-12 AC9, AC10: a quota refusal and a cancel count, and a pick past 200 says what it left out', () => {
+// count, and the files a pick past 200 left out without a word. Since PR 1906
+// item 3 a page unmounted mid-read counts the run as it stands.
+describe('US-12 AC9, AC10: a quota refusal and a Stop count, and a pick past 200 says what it left out', () => {
   const LEFT_OUT = (n: number) => `Not read. One upload takes at most 200 files. Upload ${n === 1 ? 'it' : 'them'} separately.`;
 
   it('US-12 AC10 (U6): a refused quota fires one upload_outcome, each file counted under limitError', async () => {
@@ -683,6 +712,7 @@ describe('US-12 AC9, AC10: a quota refusal and a cancel count, and a pick past 2
       await findReviewValue('3.9');
     } finally { vi.unstubAllGlobals(); }
     expect(screen.queryByText('Daily upload limit reached. You can upload more tomorrow.')).toBeNull();
+    endRun();
     expect(sent()).toEqual([{ picked: 1, withValues: 1, firstReadSeconds: 0 }]);
   });
 
@@ -695,13 +725,16 @@ describe('US-12 AC9, AC10: a quota refusal and a cancel count, and a pick past 2
     expect(sent()).toEqual([{ picked: 2, tooLarge: 1, limitError: 1, failedFinal: 1 }]);
   });
 
-  it('US-12 AC10 (U9): Cancel during a read fires one upload_outcome with cancelled: 1, and the read finishing later adds none', async () => {
+  // Owner ruling 2026-11-20 (after Brad's U9, 2026-11-11): while a file is read only Stop is offered, and a Stop
+  // that ends reads in flight is what sends `cancelled: 1`, once per run, beside the counts for what was read.
+  it('US-12 AC10 (U9): Stop during a read fires one upload_outcome with cancelled: 1, and the read finishing later adds none', async () => {
     const finishReads: Array<(r: Import) => void> = [];
     vi.mocked(labImport).mockImplementation(() => new Promise<Import>(resolve => { finishReads.push(resolve); }));
     docxToText.mockResolvedValue(docxText('synthetic'));
     render_(); pick(pdf('a.pdf'), new File(['x'], 'b.docx'), pdf('huge.pdf', 11 * 1024 * 1024));
     await waitFor(() => expect(labImport).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Stop' }));
+    endRun(); // the Stop's count waits for the run to end (owner ruling 2026-11-20)
     await waitFor(() => expect(sent()).toHaveLength(1));
     expect(sent()[0]).toEqual({ picked: 3, docx: 1, tooLarge: 1, cancelled: 1 });
     for (const finish of finishReads) finish(withValues);
@@ -709,45 +742,48 @@ describe('US-12 AC9, AC10: a quota refusal and a cancel count, and a pick past 2
     expect(sent()).toHaveLength(1);
   });
 
-  // Review R1 (Codex R2, adversary F2): a cancelled run counts on the pick's basis.
-  it('US-12 AC10 (U9): Cancel counts an oversize .docx as docx and too large', async () => {
+  // Review R1 (Codex R2, adversary F2): a stopped run counts on the pick's basis.
+  it('US-12 AC10 (U9): Stop counts an oversize .docx as docx and too large', async () => {
     vi.mocked(labImport).mockImplementation(() => new Promise<Import>(() => {}));
     const huge = new File(['x'], 'huge.docx');
     Object.defineProperty(huge, 'size', { value: 11 * 1024 * 1024 });
     render_(); pick(pdf('a.pdf'), huge);
     await waitFor(() => expect(labImport).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Stop' }));
+    endRun(); // the Stop's count waits for the run to end (owner ruling 2026-11-20)
     await waitFor(() => expect(sent()).toHaveLength(1));
     expect(sent()[0]).toEqual({ picked: 2, docx: 1, tooLarge: 1, cancelled: 1 });
   });
 
-  it('US-12 AC10 (U9): Cancel after a ZIP is listed counts it by its members', async () => {
+  it('US-12 AC10 (U9): Stop after a ZIP is listed counts it by its members', async () => {
     vi.mocked(labImport).mockImplementation(() => new Promise<Import>(() => {}));
     zipBundle(async () => ['m1.pdf', 'm2.pdf', 'm3.pdf'].map(name => ({ name, entry: { async: async () => new Blob([name]) } })));
     render_(); pick(zip('scans.zip'));
     await waitFor(() => expect(labImport).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Stop' }));
+    endRun(); // the Stop's count waits for the run to end (owner ruling 2026-11-20)
     await waitFor(() => expect(sent()).toHaveLength(1));
     expect(sent()[0]).toEqual({ picked: 3, cancelled: 1 });
   });
 
   // Review R2 (adversary, Codex): a ZIP counts by its members as soon as it is listed, not when every ZIP is.
-  it('US-12 AC10 (U9): Cancel while a second ZIP is still opening counts the first by its members and the second as one', async () => {
+  it('US-12 AC10 (U9): Stop while a second ZIP is still opening counts the first by its members, read and kept, and the second as one', async () => {
     const getZipEntries = vi.fn((f: File) => f.name === 'first.zip'
       ? Promise.resolve(['m1.pdf', 'm2.pdf', 'm3.pdf'].map(name => ({ name, entry: { async: async () => new Blob([name]) } })))
       : new Promise<unknown[]>(() => {}));
     zipBundle(getZipEntries);
     render_(); pick(zip('first.zip'), zip('second.zip'));
     await waitFor(() => expect(getZipEntries).toHaveBeenCalledTimes(2));
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Stop' }));
+    endRun(); // the Stop's count waits for the run to end (owner ruling 2026-11-20)
     await waitFor(() => expect(sent()).toHaveLength(1));
-    expect(sent()[0]).toEqual({ picked: 4, cancelled: 1, firstReadSeconds: 0 });
+    expect(sent()[0]).toEqual({ picked: 4, withValues: 3, cancelled: 1, firstReadSeconds: 0 });
   });
 
-  it('US-12 AC10 (U9): Cancel on the review sends nothing more: the read already counted', async () => {
+  it('US-12 AC10: Cancel on the review sends the run\'s one outcome, as it ends the run (PR 1906 item 3)', async () => {
     render_(); pick(pdf('a.pdf'));
     await findReviewValue('3.9');
-    await waitFor(() => expect(sent()).toHaveLength(1));
+    expect(sent()).toEqual([]);
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(sent()).toEqual([{ picked: 1, withValues: 1, firstReadSeconds: 0 }]);
   });
@@ -757,10 +793,9 @@ describe('US-12 AC9, AC10: a quota refusal and a cancel count, and a pick past 2
     await findAllReviewValues('3.9');
     expect(labImport).toHaveBeenCalledTimes(200);
     expect(reasonFor('2 more files')).toBe(LEFT_OUT(2));
-    await waitFor(() => expect(outcomes()).toHaveLength(1));
-    expect(outcomes()[0]).toEqual(expect.objectContaining({ picked: 202, withValues: 200, limitError: 2 }));
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
     await screen.findByRole('button', { name: 'Done' });
+    expect(outcomes()).toEqual([expect.objectContaining({ picked: 202, withValues: 200, limitError: 2 })]);
     expect(reasonFor('2 more files')).toBe(LEFT_OUT(2));
   });
 
@@ -776,6 +811,7 @@ describe('US-12 AC9, AC10: a quota refusal and a cancel count, and a pick past 2
     render_(); pick(...Array.from({ length: 201 }, (_, i) => pdf(`big${i}.pdf`, 11 * 1024 * 1024)));
     expect(reasonFor('1 more file')).toBe(LEFT_OUT(1));
     expect(checkLabImportQuota).not.toHaveBeenCalled();
+    endRun();
     expect(sent()).toEqual([{ picked: 201, tooLarge: 200, limitError: 1 }]);
   });
 });

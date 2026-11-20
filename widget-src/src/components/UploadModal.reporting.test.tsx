@@ -3,15 +3,17 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
 import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
+import { UPLOAD_TEXT } from '@roadmap/health-core/upload-text';
 import { RoadmapStore } from '../storage/roadmap-store';
 import { UploadModal } from './UploadModal';
-import { initRoadmapStore, addMeasurement, bulkSaveLabValues, correctValue, loadAllHistory, loadLabValues, flushRoadmapStore } from '../lib/roadmap-data';
+import { initRoadmapStore, addMeasurement, correctValue, loadAllHistory, loadLabValues, flushRoadmapStore } from '../lib/roadmap-data';
 import { checkLabImportQuota, labImport } from '../lib/upload-api';
 import { trackLiveRefresh, stopLiveRefresh } from '../testing/health-tool-harness';
+import { seedLabValues } from '../testing/record-seed';
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn() }));
 vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
-// Extraction and original-file archival are outside this value-save witness.
-vi.mock('../lib/archive-payloads', async original => ({ ...await original<typeof import('../lib/archive-payloads')>(), sha256Blob: vi.fn(async () => ''), synthesizeLabArchiveEntries: () => [] }));
+// Extraction is outside this value-save witness; the bytes' hash is a fixed synthetic one.
+vi.mock('../lib/archive-payloads', async original => ({ ...await original<typeof import('../lib/archive-payloads')>(), sha256Blob: vi.fn(async () => 'sha256-synthetic') }));
 vi.mock('../lib/useIsMobile', () => ({ useIsMobile: () => false }));
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../lib/build-flags', () => ({ SHOPIFY_SURFACE: true, LOCAL_FIRST: true }));
@@ -31,11 +33,11 @@ it.each([
   const cloud = new MemoryCloud();
   localStorage.clear();
   trackLiveRefresh();
-  const saveSpy = vi.spyOn(RoadmapStore.prototype, lab ? 'bulkSaveLabValues' : 'bulkSaveMeasurements');
+  const saveSpy = vi.spyOn(RoadmapStore.prototype, 'saveUpload');
   await initRoadmapStore(new MemoryAdapter(cloud));
   async function add(value: number) {
     if (lab) {
-      const result = await bulkSaveLabValues([{ metricName: 'Synthetic test', value, unit: 'units', recordedAt: '2024-06-01' }]);
+      const result = await seedLabValues([{ metricName: 'Synthetic test', value, unit: 'units', recordedAt: '2024-06-01' }]);
       expect(result.saved).toHaveLength(1);
       return result.saved[0].id;
     }
@@ -76,16 +78,21 @@ it.each([
   saveSpy.mockClear();
   fireEvent.click(screen.getByRole('button', { name: /^Save / }));
   await screen.findByRole('button', { name: 'Done' });
-  expect(saveSpy).toHaveBeenCalledWith(expect.arrayContaining([expect.objectContaining({ value: 3, correctsId: oldId })]));
+  // One Save through the shared upload save (design 12c): the reviewed value, with its Replace on the held row.
+  expect(saveSpy).toHaveBeenCalledOnce();
+  const asked = saveSpy.mock.calls[0][0];
+  const choices = 'files' in asked && asked.files[0].status.s === 'read' ? asked.files[0].status.choices : null;
+  expect(choices?.replace).toEqual(oldId ? { [lab ? 'a0' : 'v0']: oldId } : {});
   const text = document.body.textContent;
-  if (stale || duplicate) {
-    expect(text).toContain(`1 ${lab ? 'additional lab' : 'blood test'} value was not added.`);
-    expect(text).toContain('Check your blood test table');
-    expect(text).not.toContain('already saved');
-    expect(text).not.toContain('try again');
-  } else expect(text).not.toContain('was not added');
-  if (outcome === 'mixed') expect(text).toContain('Saved 1 blood test value');
-  else if (stale || duplicate) expect(text).not.toContain('Saved 1');
+  // PR 1906 item 8: Save plans on the record as it is when it runs. Another writer's value that landed
+  // before Save is judged then: no second active row, nothing claimed saved for it. Owner ruling
+  // 2026-11-20: the reviewed value Save did not write is named in the web's "not added" line; with no
+  // other writer, no line.
+  expect(text).not.toContain('try again');
+  if (outcome === 'mixed') expect(text).toContain('Saved 1 value');
+  else if (stale || duplicate) expect(text).not.toContain('Saved 1 value');
+  if (stale || duplicate) expect(text).toContain(UPLOAD_TEXT.skippedLine(1, lab));
+  else expect(text).not.toContain('not added');
   expect(completed).toHaveBeenCalledOnce();
   await flushRoadmapStore();
   const fresh = await RoadmapStore.create(new MemoryAdapter(cloud));

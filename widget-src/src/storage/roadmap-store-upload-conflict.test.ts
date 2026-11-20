@@ -4,6 +4,7 @@ import { RoadmapStore } from './roadmap-store';
 import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
 import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import { toOldShape } from '@roadmap/health-core/blood-tests';
+import { seedStoreLabValues } from '../testing/record-seed';
 
 function readCloudFile(cloud: MemoryCloud): RoadmapFile {
   return JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json) as RoadmapFile;
@@ -79,12 +80,12 @@ describe('RoadmapStore.bulkSaveLabValues with correctsId (US-32)', () => {
   it('flips the occupied lab row and appends the upload value with correctsId', async () => {
     const cloud = new MemoryCloud();
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
-    const first = store.bulkSaveLabValues([
+    const first = seedStoreLabValues(store, [
       { metricName: 'Ferritin', value: 120, unit: 'ug/L', recordedAt: '2024-06-01T00:00:00.000Z' },
     ]);
     const oldId = first.saved[0].id;
 
-    const result = store.bulkSaveLabValues([
+    const result = seedStoreLabValues(store, [
       { metricName: 'Ferritin', value: 95, unit: 'ug/L', recordedAt: '2024-06-01T00:00:00.000Z', correctsId: oldId },
     ]);
     expect(result.saved).toHaveLength(1);
@@ -103,10 +104,10 @@ describe('RoadmapStore.bulkSaveLabValues with correctsId (US-32)', () => {
 
   it('two batch rows naming the same lab correctsId leave ONE active row (US-32)', async () => {
     const store = await RoadmapStore.create(new MemoryAdapter(new MemoryCloud()));
-    const oldId = store.bulkSaveLabValues([
+    const oldId = seedStoreLabValues(store, [
       { metricName: 'Ferritin', value: 120, unit: 'ug/L', recordedAt: '2024-06-01T00:00:00.000Z' },
     ]).saved[0].id;
-    const result = store.bulkSaveLabValues([
+    const result = seedStoreLabValues(store, [
       { metricName: 'Ferritin', value: 95, unit: 'ug/L', recordedAt: '2024-06-01T00:00:00.000Z', correctsId: oldId },
       { metricName: 'Ferritin', value: 96, unit: 'ug/L', recordedAt: '2024-06-01T00:00:00.000Z', correctsId: oldId },
     ]);
@@ -121,7 +122,7 @@ describe('RoadmapStore.bulkSaveLabValues with correctsId (US-32)', () => {
 describe('RoadmapStore.bulkSaveLabValues with a core name (US-66 AC6)', () => {
   it('hands back an out-of-range core value as a measurement refusal', async () => {
     const store = await RoadmapStore.create(new MemoryAdapter(new MemoryCloud()));
-    const result = store.bulkSaveLabValues([
+    const result = seedStoreLabValues(store, [
       { metricName: 'LDL-C', value: 99999, unit: 'mg/dL', recordedAt: '2024-06-01T00:00:00.000Z', source: 'manual' },
     ]);
     expect(result.saved).toHaveLength(0);

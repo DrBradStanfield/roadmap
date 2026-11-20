@@ -1,0 +1,2917 @@
+[
+ {
+  "seed": 0,
+  "saved": true,
+  "rows": {
+   "m": [],
+   "l": [
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import_edited",
+     "status": "active",
+     "correctsId": null,
+     "id": "hdl|2026-09-01T00:00:00.000Z|1.15|active",
+     "value": 1.15,
+     "recordedAt": "2026-09-01T00:00:00.000Z",
+     "metricName": "hdl",
+     "unit": "mmol/L",
+     "core": true
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "Ferritin|2026-09-01T00:00:00.000Z|91|active",
+     "metricName": "Ferritin",
+     "value": 91,
+     "unit": "µg/L",
+     "recordedAt": "2026-09-01T00:00:00.000Z"
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "ldl|2026-09-01T00:00:00.000Z|2.1|active",
+     "value": 2.1,
+     "recordedAt": "2026-09-01T00:00:00.000Z",
+     "metricName": "ldl",
+     "unit": "mmol/L",
+     "core": true
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "manual",
+     "status": "active",
+     "correctsId": null,
+     "id": "Vitamin B12|2026-01-01T00:00:00.000Z|400|active",
+     "metricName": "Vitamin B12",
+     "value": 400,
+     "unit": "pmol/L",
+     "recordedAt": "2026-01-01T00:00:00.000Z"
+    }
+   ],
+   "d": [
+    {
+     "id": "sha256-22c08fbd3f9cfa210d38b51d2cf425880dd7fdbf3486dbb56ca98913cdd3891c|pathology_report|live",
+     "title": "Blood test results",
+     "type": "pathology_report",
+     "date": "2026-09-01",
+     "fileRef": "",
+     "contentHash": "sha256-22c08fbd3f9cfa210d38b51d2cf425880dd7fdbf3486dbb56ca98913cdd3891c",
+     "mimeType": "",
+     "extractedText": "",
+     "metadata": {
+      "labArchive": true,
+      "rows": [
+       "Ferritin|2026-09-01T00:00:00.000Z|91|active",
+       "hdl|2026-09-01T00:00:00.000Z|1.15|active",
+       "ldl|2026-09-01T00:00:00.000Z|2.1|active"
+      ]
+     },
+     "sourceFileName": "labs.pdf"
+    },
+    {
+     "id": "sha256-88ae57c89aee472ea526df0349db1383dbb8d42901749487c4f5a2d2fe5e38be|scan_result|live",
+     "title": "Synthetic scan 0",
+     "type": "scan_result",
+     "date": null,
+     "fileRef": "",
+     "contentHash": "sha256-88ae57c89aee472ea526df0349db1383dbb8d42901749487c4f5a2d2fe5e38be",
+     "mimeType": "",
+     "extractedText": "## Findings",
+     "metadata": {},
+     "sourceFileName": "scan-0.pdf"
+    },
+    {
+     "id": "sha256-e47eed1c0b4baa61a614407c484d0126728885e051784b370c2a25ff18b70b7b|clinic_letter|live",
+     "title": "Connector letter",
+     "type": "clinic_letter",
+     "date": "2026-07-20",
+     "fileRef": "",
+     "contentHash": "sha256-e47eed1c0b4baa61a614407c484d0126728885e051784b370c2a25ff18b70b7b",
+     "mimeType": "",
+     "extractedText": "",
+     "metadata": {
+      "importedVia": "connector"
+     },
+     "sourceFileName": "letter-0.pdf"
+    }
+   ],
+   "s": {},
+   "o": []
+  }
+ },
+ {
+  "seed": 1,
+  "saved": true,
+  "rows": {
+   "m": [],
+   "l": [
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "Ferritin|2026-09-01T00:00:00.000Z|82|active",
+     "metricName": "Ferritin",
+     "value": 82,
+     "unit": "µg/L",
+     "recordedAt": "2026-09-01T00:00:00.000Z"
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "hdl|2026-09-01T00:00:00.000Z|1.2|active",
+     "value": 1.2,
+     "recordedAt": "2026-09-01T00:00:00.000Z",
+     "metricName": "hdl",
+     "unit": "mmol/L",
+     "core": true
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "ldl|2026-09-01T00:00:00.000Z|2.2|active",
+     "value": 2.2,
+     "recordedAt": "2026-09-01T00:00:00.000Z",
+     "metricName": "ldl",
+     "unit": "mmol/L",
+     "core": true
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "manual",
+     "status": "active",
+     "correctsId": null,
+     "id": "Vitamin B12|2026-01-01T00:00:00.000Z|401|active",
+     "metricName": "Vitamin B12",
+     "value": 401,
+     "unit": "pmol/L",
+     "recordedAt": "2026-01-01T00:00:00.000Z"
+    }
+   ],
+   "d": [
+    {
+     "id": "sha256-36c811e4f50b6b9545a8474a70b914c5dc8e004dde9b540b14e3d5ff74844310|pathology_report|live",
+     "title": "Blood test results",
+     "type": "pathology_report",
+     "date": "2026-09-01",
+     "fileRef": "",
+     "contentHash": "sha256-36c811e4f50b6b9545a8474a70b914c5dc8e004dde9b540b14e3d5ff74844310",
+     "mimeType": "",
+     "extractedText": "",
+     "metadata": {
+      "labArchive": true,
+      "rows": [
+       "Ferritin|2026-09-01T00:00:00.000Z|82|active",
+       "hdl|2026-09-01T00:00:00.000Z|1.2|active",
+       "ldl|2026-09-01T00:00:00.000Z|2.2|active"
+      ]
+     },
+     "sourceFileName": "labs-1.zip/labs.pdf"
+    },
+    {
+     "id": "sha256-6e28350f27be5b1c397b434f7b6cd0773960d8f3667704ae4317aed6d722acf6|scan_result|live",
+     "title": "Synthetic scan 1",
+     "type": "scan_result",
+     "date": "2026-08-15",
+     "fileRef": "",
+     "contentHash": "sha256-6e28350f27be5b1c397b434f7b6cd0773960d8f3667704ae4317aed6d722acf6",
+     "mimeType": "",
+     "extractedText": "## Findings",
+     "metadata": {},
+     "sourceFileName": "scan-1.pdf"
+    },
+    {
+     "id": "sha256-9c4cc19b6c8332e9b09a8ecef3cef0c303071d5ae91e1600b4b4085f97295e8c|clinic_letter|live",
+     "title": "Connector letter",
+     "type": "clinic_letter",
+     "date": "2026-07-20",
+     "fileRef": "",
+     "contentHash": "sha256-9c4cc19b6c8332e9b09a8ecef3cef0c303071d5ae91e1600b4b4085f97295e8c",
+     "mimeType": "",
+     "extractedText": "",
+     "metadata": {
+      "importedVia": "connector"
+     },
+     "sourceFileName": "letter-1.pdf"
+    }
+   ],
+   "s": {},
+   "o": []
+  }
+ },
+ {
+  "seed": 2,
+  "saved": true,
+  "rows": {
+   "m": [],
+   "l": [
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "Ferritin|2026-09-01T00:00:00.000Z|93|active",
+     "metricName": "Ferritin",
+     "value": 93,
+     "unit": "µg/L",
+     "recordedAt": "2026-09-01T00:00:00.000Z"
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "hdl|2026-09-01T00:00:00.000Z|1.3|active",
+     "value": 1.3,
+     "recordedAt": "2026-09-01T00:00:00.000Z",
+     "metricName": "hdl",
+     "unit": "mmol/L",
+     "core": true
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "ldl|2026-09-01T00:00:00.000Z|2.3|active",
+     "value": 2.3,
+     "recordedAt": "2026-09-01T00:00:00.000Z",
+     "metricName": "ldl",
+     "unit": "mmol/L",
+     "core": true
+    }
+   ],
+   "d": [
+    {
+     "id": "sha256-833cd69a412a48e335635d2fcc76f1eb173639df156be37921bf729cc67c6a00|scan_result|live",
+     "title": "Synthetic scan 2",
+     "type": "scan_result",
+     "date": "2026-08-15",
+     "fileRef": "Scans/2026-08-15 Synthetic scan 2.pdf",
+     "contentHash": "sha256-833cd69a412a48e335635d2fcc76f1eb173639df156be37921bf729cc67c6a00",
+     "mimeType": "application/pdf",
+     "extractedText": "## Findings",
+     "metadata": {},
+     "sourceFileName": "scan-2.pdf"
+    },
+    {
+     "id": "sha256-c32b9144ea3d8566098e654eee7bb126ea7e5d388c3a2f1f34edfc3d3d61b3fe|clinic_letter|deleted",
+     "title": "Connector letter",
+     "type": "clinic_letter",
+     "date": "2026-07-20",
+     "fileRef": "",
+     "contentHash": "sha256-c32b9144ea3d8566098e654eee7bb126ea7e5d388c3a2f1f34edfc3d3d61b3fe",
+     "mimeType": "",
+     "extractedText": "",
+     "metadata": {
+      "importedVia": "connector"
+     },
+     "sourceFileName": "letter-2.pdf",
+     "deleted": true
+    },
+    {
+     "id": "sha256-c32b9144ea3d8566098e654eee7bb126ea7e5d388c3a2f1f34edfc3d3d61b3fe|clinic_letter|live",
+     "title": "Connector letter",
+     "type": "clinic_letter",
+     "date": "2026-07-20",
+     "fileRef": "Clinic letters/2026-07-20 Connector letter.pdf",
+     "contentHash": "sha256-c32b9144ea3d8566098e654eee7bb126ea7e5d388c3a2f1f34edfc3d3d61b3fe",
+     "mimeType": "application/pdf",
+     "extractedText": "Plan",
+     "metadata": {},
+     "sourceFileName": "letter-2.pdf"
+    },
+    {
+     "id": "sha256-ef5636430813bd6fe524db48a8852f47962f82fc7b0b3ff6af5f6e002a444258|pathology_report|live",
+     "title": "Blood test results",
+     "type": "pathology_report",
+     "date": "2026-09-01",
+     "fileRef": "Lab results/2026-09-01 Blood test results.pdf",
+     "contentHash": "sha256-ef5636430813bd6fe524db48a8852f47962f82fc7b0b3ff6af5f6e002a444258",
+     "mimeType": "application/pdf",
+     "extractedText": "",
+     "metadata": {
+      "labArchive": true,
+      "rows": [
+       "Ferritin|2026-09-01T00:00:00.000Z|93|active",
+       "hdl|2026-09-01T00:00:00.000Z|1.3|active",
+       "ldl|2026-09-01T00:00:00.000Z|2.3|active"
+      ]
+     },
+     "sourceFileName": "labs.pdf"
+    }
+   ],
+   "s": {},
+   "o": [
+    "Clinic letters/2026-07-20 Connector letter.pdf",
+    "Lab results/2026-09-01 Blood test results.pdf",
+    "Scans/2026-08-15 Synthetic scan 2.pdf"
+   ]
+  }
+ },
+ {
+  "seed": 3,
+  "saved": true,
+  "rows": {
+   "m": [],
+   "l": [
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "hdl|2026-09-01T00:00:00.000Z|1.4|active",
+     "value": 1.4,
+     "recordedAt": "2026-09-01T00:00:00.000Z",
+     "metricName": "hdl",
+     "unit": "mmol/L",
+     "core": true
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "ldl|2026-09-01T00:00:00.000Z|2.4|active",
+     "value": 2.4,
+     "recordedAt": "2026-09-01T00:00:00.000Z",
+     "metricName": "ldl",
+     "unit": "mmol/L",
+     "core": true
+    }
+   ],
+   "d": [
+    {
+     "id": "|scan_result|live",
+     "title": "Earlier scan",
+     "type": "scan_result",
+     "date": "2025-01-10",
+     "fileRef": "",
+     "contentHash": "",
+     "mimeType": "",
+     "extractedText": "Earlier",
+     "metadata": {},
+     "sourceFileName": "scan-3.pdf"
+    },
+    {
+     "id": "sha256-d6c57d61d244c4b2ae7e880d4f2fdf96c885a53327d1051994b432c2e81e5414|pathology_report|live",
+     "title": "Blood test results",
+     "type": "pathology_report",
+     "date": "2026-09-01",
+     "fileRef": "",
+     "contentHash": "sha256-d6c57d61d244c4b2ae7e880d4f2fdf96c885a53327d1051994b432c2e81e5414",
+     "mimeType": "",
+     "extractedText": "",
+     "metadata": {
+      "labArchive": true,
+      "rows": [
+       "hdl|2026-09-01T00:00:00.000Z|1.4|active",
+       "ldl|2026-09-01T00:00:00.000Z|2.4|active"
+      ]
+     },
+     "sourceFileName": "labs.pdf"
+    }
+   ],
+   "s": {},
+   "o": []
+  }
+ },
+ {
+  "seed": 4,
+  "saved": true,
+  "rows": {
+   "m": [],
+   "l": [
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "hdl|2026-10-01T00:00:00.000Z|1.5|active",
+     "value": 1.5,
+     "recordedAt": "2026-10-01T00:00:00.000Z",
+     "metricName": "hdl",
+     "unit": "mmol/L",
+     "core": true
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "ldl|2026-10-01T00:00:00.000Z|2.5|active",
+     "value": 2.5,
+     "recordedAt": "2026-10-01T00:00:00.000Z",
+     "metricName": "ldl",
+     "unit": "mmol/L",
+     "core": true
+    }
+   ],
+   "d": [
+    {
+     "id": "sha256-32fc88b7498b37a3637dd26cfff90eb803549dd8395b48d9fea918747e3a8432|pathology_report|live",
+     "title": "Blood test results",
+     "type": "pathology_report",
+     "date": "2026-10-01",
+     "fileRef": "",
+     "contentHash": "sha256-32fc88b7498b37a3637dd26cfff90eb803549dd8395b48d9fea918747e3a8432",
+     "mimeType": "",
+     "extractedText": "",
+     "metadata": {
+      "labArchive": true,
+      "rows": [
+       "hdl|2026-10-01T00:00:00.000Z|1.5|active",
+       "ldl|2026-10-01T00:00:00.000Z|2.5|active"
+      ]
+     },
+     "sourceFileName": "labs.pdf"
+    },
+    {
+     "id": "sha256-c34609ec8fbd2ee1c7bcc8623543cd66a05f8838199952ce44550f57ab99dfd9|clinic_letter|live",
+     "title": "Synthetic letter 4",
+     "type": "clinic_letter",
+     "date": "2026-07-20",
+     "fileRef": "",
+     "contentHash": "sha256-c34609ec8fbd2ee1c7bcc8623543cd66a05f8838199952ce44550f57ab99dfd9",
+     "mimeType": "",
+     "extractedText": "Plan",
+     "metadata": {},
+     "sourceFileName": "letter-4.pdf"
+    }
+   ],
+   "s": {},
+   "o": []
+  }
+ },
+ {
+  "seed": 5,
+  "saved": true,
+  "rows": {
+   "m": [],
+   "l": [
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import_edited",
+     "status": "active",
+     "correctsId": null,
+     "id": "hdl|2026-09-01T00:00:00.000Z|1.65|active",
+     "value": 1.65,
+     "recordedAt": "2026-09-01T00:00:00.000Z",
+     "metricName": "hdl",
+     "unit": "mmol/L",
+     "core": true
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": "ldl|2026-09-01T00:00:00.000Z|3.6|entered-in-error",
+     "id": "ldl|2026-09-01T00:00:00.000Z|2.6|active",
+     "value": 2.6,
+     "recordedAt": "2026-09-01T00:00:00.000Z",
+     "metricName": "ldl",
+     "unit": "mmol/L",
+     "core": true
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "Ferritin|2026-09-01T00:00:00.000Z|86|active",
+     "metricName": "Ferritin",
+     "value": 86,
+     "unit": "µg/L",
+     "recordedAt": "2026-09-01T00:00:00.000Z"
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "manual",
+     "status": "entered-in-error",
+     "correctsId": null,
+     "id": "ldl|2026-09-01T00:00:00.000Z|3.6|entered-in-error",
+     "value": 3.6,
+     "recordedAt": "2026-09-01T00:00:00.000Z",
+     "metricName": "ldl",
+     "unit": "mmol/L",
+     "core": true
+    }
+   ],
+   "d": [
+    {
+     "id": "sha256-543fdfe2541c948ac23b92477078f9b39871f36086034c5e16ed5109c3910057|clinic_letter|live",
+     "title": "Connector letter",
+     "type": "clinic_letter",
+     "date": "2026-07-20",
+     "fileRef": "",
+     "contentHash": "sha256-543fdfe2541c948ac23b92477078f9b39871f36086034c5e16ed5109c3910057",
+     "mimeType": "",
+     "extractedText": "",
+     "metadata": {
+      "importedVia": "connector"
+     },
+     "sourceFileName": "letter-5.pdf"
+    },
+    {
+     "id": "sha256-682499879f076244d482ef735651965741ce1b4d07b5b92977c8d661bcd76098|scan_result|live",
+     "title": "Synthetic scan 5",
+     "type": "scan_result",
+     "date": "2026-08-15",
+     "fileRef": "",
+     "contentHash": "sha256-682499879f076244d482ef735651965741ce1b4d07b5b92977c8d661bcd76098",
+     "mimeType": "",
+     "extractedText": "## Findings",
+     "metadata": {
+      "screeningType": "colorectal"
+     },
+     "sourceFileName": "scan-5.pdf"
+    },
+    {
+     "id": "sha256-80ef39e51ac448bfaf289bf4fd9aaba584dd156c7dc257481eb12dfe47b8d065|pathology_report|live",
+     "title": "Blood test results",
+     "type": "pathology_report",
+     "date": "2026-09-01",
+     "fileRef": "",
+     "contentHash": "sha256-80ef39e51ac448bfaf289bf4fd9aaba584dd156c7dc257481eb12dfe47b8d065",
+     "mimeType": "",
+     "extractedText": "",
+     "metadata": {
+      "labArchive": true,
+      "rows": [
+       "Ferritin|2026-09-01T00:00:00.000Z|86|active",
+       "hdl|2026-09-01T00:00:00.000Z|1.65|active",
+       "ldl|2026-09-01T00:00:00.000Z|2.6|active"
+      ]
+     },
+     "sourceFileName": "labs.pdf"
+    }
+   ],
+   "s": {},
+   "o": []
+  }
+ },
+ {
+  "seed": 6,
+  "saved": true,
+  "rows": {
+   "m": [],
+   "l": [
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "Ferritin|2026-09-01T00:00:00.000Z|87|active",
+     "metricName": "Ferritin",
+     "value": 87,
+     "unit": "µg/L",
+     "recordedAt": "2026-09-01T00:00:00.000Z"
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "hdl|2026-09-01T00:00:00.000Z|1.7|active",
+     "value": 1.7,
+     "recordedAt": "2026-09-01T00:00:00.000Z",
+     "metricName": "hdl",
+     "unit": "mmol/L",
+     "core": true
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "ldl|2026-09-01T00:00:00.000Z|2.7|active",
+     "value": 2.7,
+     "recordedAt": "2026-09-01T00:00:00.000Z",
+     "metricName": "ldl",
+     "unit": "mmol/L",
+     "core": true
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "manual",
+     "status": "active",
+     "correctsId": null,
+     "id": "Vitamin B12|2026-01-01T00:00:00.000Z|406|active",
+     "metricName": "Vitamin B12",
+     "value": 406,
+     "unit": "pmol/L",
+     "recordedAt": "2026-01-01T00:00:00.000Z"
+    }
+   ],
+   "d": [
+    {
+     "id": "sha256-adfb61178f8861a0627497c464e50318c5b74d75c0ef6f5866440aba0cd05d3f|pathology_report|live",
+     "title": "Blood test results",
+     "type": "pathology_report",
+     "date": "2026-09-01",
+     "fileRef": "Lab results/2026-09-01 Blood test results.pdf",
+     "contentHash": "sha256-adfb61178f8861a0627497c464e50318c5b74d75c0ef6f5866440aba0cd05d3f",
+     "mimeType": "application/pdf",
+     "extractedText": "",
+     "metadata": {
+      "labArchive": true,
+      "rows": [
+       "Ferritin|2026-09-01T00:00:00.000Z|87|active",
+       "hdl|2026-09-01T00:00:00.000Z|1.7|active",
+       "ldl|2026-09-01T00:00:00.000Z|2.7|active"
+      ]
+     },
+     "sourceFileName": "labs.pdf"
+    },
+    {
+     "id": "sha256-d246eb4238b24739c1dcc5583eca6e7a2ad4e56dee3a012c07a67288d523d373|clinic_letter|live",
+     "title": "Synthetic letter 6",
+     "type": "clinic_letter",
+     "date": "2026-07-20",
+     "fileRef": "Clinic letters/2026-07-20 Synthetic letter 6.pdf",
+     "contentHash": "sha256-d246eb4238b24739c1dcc5583eca6e7a2ad4e56dee3a012c07a67288d523d373",
+     "mimeType": "application/pdf",
+     "extractedText": "Plan",
+     "metadata": {},
+     "sourceFileName": "letter-6.pdf"
+    },
+    {
+     "id": "sha256-e6e42fedf4f9ac965b80d8add2fdb9958b202927f47e8fac664b74ad6c0ac308|scan_result|live",
+     "title": "Synthetic scan 6",
+     "type": "scan_result",
+     "date": "2026-08-15",
+     "fileRef": "Scans/2026-08-15 Synthetic scan 6.pdf",
+     "contentHash": "sha256-e6e42fedf4f9ac965b80d8add2fdb9958b202927f47e8fac664b74ad6c0ac308",
+     "mimeType": "application/pdf",
+     "extractedText": "## Findings",
+     "metadata": {
+      "screeningType": "colorectal"
+     },
+     "sourceFileName": "scan-6.pdf"
+    }
+   ],
+   "s": {
+    "colorectalLastDate": "2026-08-15"
+   },
+   "o": [
+    "Clinic letters/2026-07-20 Synthetic letter 6.pdf",
+    "Lab results/2026-09-01 Blood test results.pdf",
+    "Scans/2026-08-15 Synthetic scan 6.pdf"
+   ]
+  }
+ },
+ {
+  "seed": 7,
+  "saved": true,
+  "rows": {
+   "m": [],
+   "l": [
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import_edited",
+     "status": "active",
+     "correctsId": null,
+     "id": "hdl|2026-10-01T00:00:00.000Z|1.85|active",
+     "value": 1.85,
+     "recordedAt": "2026-10-01T00:00:00.000Z",
+     "metricName": "hdl",
+     "unit": "mmol/L",
+     "core": true
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "Ferritin|2026-10-01T00:00:00.000Z|88|active",
+     "metricName": "Ferritin",
+     "value": 88,
+     "unit": "µg/L",
+     "recordedAt": "2026-10-01T00:00:00.000Z"
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "ldl|2026-10-01T00:00:00.000Z|2.8|active",
+     "value": 2.8,
+     "recordedAt": "2026-10-01T00:00:00.000Z",
+     "metricName": "ldl",
+     "unit": "mmol/L",
+     "core": true
+    }
+   ],
+   "d": [
+    {
+     "id": "sha256-bd3dc32d729d7965f059dc2ef1a1f4c966cd83f6ae4c0e8fef8fc710efc99c59|pathology_report|live",
+     "title": "Blood test results",
+     "type": "pathology_report",
+     "date": "2026-10-01",
+     "fileRef": "",
+     "contentHash": "sha256-bd3dc32d729d7965f059dc2ef1a1f4c966cd83f6ae4c0e8fef8fc710efc99c59",
+     "mimeType": "",
+     "extractedText": "",
+     "metadata": {
+      "labArchive": true,
+      "rows": [
+       "Ferritin|2026-10-01T00:00:00.000Z|88|active",
+       "hdl|2026-10-01T00:00:00.000Z|1.85|active",
+       "ldl|2026-10-01T00:00:00.000Z|2.8|active"
+      ]
+     },
+     "sourceFileName": "labs.pdf"
+    }
+   ],
+   "s": {},
+   "o": []
+  }
+ },
+ {
+  "seed": 8,
+  "saved": true,
+  "rows": {
+   "m": [],
+   "l": [
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import_edited",
+     "status": "active",
+     "correctsId": null,
+     "id": "hdl|2026-10-01T00:00:00.000Z|1.15|active",
+     "value": 1.15,
+     "recordedAt": "2026-10-01T00:00:00.000Z",
+     "metricName": "hdl",
+     "unit": "mmol/L",
+     "core": true
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "ldl|2026-10-01T00:00:00.000Z|2.1|active",
+     "value": 2.1,
+     "recordedAt": "2026-10-01T00:00:00.000Z",
+     "metricName": "ldl",
+     "unit": "mmol/L",
+     "core": true
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "manual",
+     "status": "active",
+     "correctsId": null,
+     "id": "Vitamin B12|2026-01-01T00:00:00.000Z|408|active",
+     "metricName": "Vitamin B12",
+     "value": 408,
+     "unit": "pmol/L",
+     "recordedAt": "2026-01-01T00:00:00.000Z"
+    }
+   ],
+   "d": [
+    {
+     "id": "sha256-8fdf8a5b263f43b21ddfa4b81b1c4ade43e43ffcda83fce9992244bdb923ccb8|scan_result|live",
+     "title": "Synthetic scan 8",
+     "type": "scan_result",
+     "date": "2026-08-15",
+     "fileRef": "",
+     "contentHash": "sha256-8fdf8a5b263f43b21ddfa4b81b1c4ade43e43ffcda83fce9992244bdb923ccb8",
+     "mimeType": "",
+     "extractedText": "## Findings",
+     "metadata": {
+      "screeningType": "breast"
+     },
+     "sourceFileName": "scan-8.pdf"
+    },
+    {
+     "id": "sha256-b28141a7c0ad57abd4a745eac8e262e4b102a043b80def0be657eb385b93fc7c|pathology_report|live",
+     "title": "Blood test results",
+     "type": "pathology_report",
+     "date": "2026-10-01",
+     "fileRef": "",
+     "contentHash": "sha256-b28141a7c0ad57abd4a745eac8e262e4b102a043b80def0be657eb385b93fc7c",
+     "mimeType": "",
+     "extractedText": "",
+     "metadata": {
+      "labArchive": true,
+      "rows": [
+       "hdl|2026-10-01T00:00:00.000Z|1.15|active",
+       "ldl|2026-10-01T00:00:00.000Z|2.1|active"
+      ]
+     },
+     "sourceFileName": "labs-8.zip/labs.pdf"
+    }
+   ],
+   "s": {},
+   "o": []
+  }
+ },
+ {
+  "seed": 9,
+  "saved": true,
+  "rows": {
+   "m": [],
+   "l": [
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "Ferritin|2026-09-01T00:00:00.000Z|100|active",
+     "metricName": "Ferritin",
+     "value": 100,
+     "unit": "µg/L",
+     "recordedAt": "2026-09-01T00:00:00.000Z"
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "hdl|2026-09-01T00:00:00.000Z|1.2|active",
+     "value": 1.2,
+     "recordedAt": "2026-09-01T00:00:00.000Z",
+     "metricName": "hdl",
+     "unit": "mmol/L",
+     "core": true
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "manual",
+     "status": "active",
+     "correctsId": null,
+     "id": "ldl|2026-09-01T00:00:00.000Z|3.2|active",
+     "value": 3.2,
+     "recordedAt": "2026-09-01T00:00:00.000Z",
+     "metricName": "ldl",
+     "unit": "mmol/L",
+     "core": true
+    }
+   ],
+   "d": [
+    {
+     "id": "sha256-2c974794abf0e3ced5615a3bd86a47d834466ec706303e16abd28bdd76037618|pathology_report|live",
+     "title": "Blood test results",
+     "type": "pathology_report",
+     "date": "2026-09-01",
+     "fileRef": "Lab results/2026-09-01 Blood test results.pdf",
+     "contentHash": "sha256-2c974794abf0e3ced5615a3bd86a47d834466ec706303e16abd28bdd76037618",
+     "mimeType": "application/pdf",
+     "extractedText": "",
+     "metadata": {
+      "labArchive": true,
+      "rows": [
+       "Ferritin|2026-09-01T00:00:00.000Z|100|active",
+       "hdl|2026-09-01T00:00:00.000Z|1.2|active"
+      ]
+     },
+     "sourceFileName": "labs.pdf"
+    },
+    {
+     "id": "sha256-ad796e1cde02b6f6229048503e9b5781cf0c8421f0fe6d932d30e6c630160ca7|clinic_letter|deleted",
+     "title": "Connector letter",
+     "type": "clinic_letter",
+     "date": "2026-07-20",
+     "fileRef": "",
+     "contentHash": "sha256-ad796e1cde02b6f6229048503e9b5781cf0c8421f0fe6d932d30e6c630160ca7",
+     "mimeType": "",
+     "extractedText": "",
+     "metadata": {
+      "importedVia": "connector"
+     },
+     "sourceFileName": "letter-9.pdf",
+     "deleted": true
+    },
+    {
+     "id": "sha256-ad796e1cde02b6f6229048503e9b5781cf0c8421f0fe6d932d30e6c630160ca7|clinic_letter|live",
+     "title": "Connector letter",
+     "type": "clinic_letter",
+     "date": "2026-07-20",
+     "fileRef": "Clinic letters/2026-07-20 Connector letter.pdf",
+     "contentHash": "sha256-ad796e1cde02b6f6229048503e9b5781cf0c8421f0fe6d932d30e6c630160ca7",
+     "mimeType": "application/pdf",
+     "extractedText": "Plan",
+     "metadata": {},
+     "sourceFileName": "letter-9.pdf"
+    }
+   ],
+   "s": {},
+   "o": [
+    "Clinic letters/2026-07-20 Connector letter.pdf",
+    "Lab results/2026-09-01 Blood test results.pdf"
+   ]
+  }
+ },
+ {
+  "seed": 10,
+  "saved": true,
+  "rows": {
+   "m": [],
+   "l": [
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "Ferritin|2026-09-01T00:00:00.000Z|91|active",
+     "metricName": "Ferritin",
+     "value": 91,
+     "unit": "µg/L",
+     "recordedAt": "2026-09-01T00:00:00.000Z"
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "hdl|2026-09-01T00:00:00.000Z|1.3|active",
+     "value": 1.3,
+     "recordedAt": "2026-09-01T00:00:00.000Z",
+     "metricName": "hdl",
+     "unit": "mmol/L",
+     "core": true
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "ldl|2026-09-01T00:00:00.000Z|2.3|active",
+     "value": 2.3,
+     "recordedAt": "2026-09-01T00:00:00.000Z",
+     "metricName": "ldl",
+     "unit": "mmol/L",
+     "core": true
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "manual",
+     "status": "active",
+     "correctsId": null,
+     "id": "Vitamin B12|2026-01-01T00:00:00.000Z|410|active",
+     "metricName": "Vitamin B12",
+     "value": 410,
+     "unit": "pmol/L",
+     "recordedAt": "2026-01-01T00:00:00.000Z"
+    }
+   ],
+   "d": [
+    {
+     "id": "sha256-189316d96fad1324bdcbdb655b9ee2d2329c81f90a1a14941fc063ed407f39aa|pathology_report|live",
+     "title": "Blood test results",
+     "type": "pathology_report",
+     "date": "2026-09-01",
+     "fileRef": "",
+     "contentHash": "sha256-189316d96fad1324bdcbdb655b9ee2d2329c81f90a1a14941fc063ed407f39aa",
+     "mimeType": "",
+     "extractedText": "",
+     "metadata": {
+      "labArchive": true,
+      "rows": [
+       "Ferritin|2026-09-01T00:00:00.000Z|91|active",
+       "hdl|2026-09-01T00:00:00.000Z|1.3|active",
+       "ldl|2026-09-01T00:00:00.000Z|2.3|active"
+      ]
+     },
+     "sourceFileName": "labs-10.zip/labs.pdf"
+    },
+    {
+     "id": "sha256-5acb70674b98ce45de24c101574ebb060f31faef7eb0f980e10e689dc15810c4|scan_result|live",
+     "title": "Synthetic scan 10",
+     "type": "scan_result",
+     "date": "2026-08-15",
+     "fileRef": "",
+     "contentHash": "sha256-5acb70674b98ce45de24c101574ebb060f31faef7eb0f980e10e689dc15810c4",
+     "mimeType": "",
+     "extractedText": "## Findings",
+     "metadata": {
+      "screeningType": "colorectal"
+     },
+     "sourceFileName": "scan-10.pdf"
+    }
+   ],
+   "s": {},
+   "o": []
+  }
+ },
+ {
+  "seed": 11,
+  "saved": true,
+  "rows": {
+   "m": [],
+   "l": [
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "Ferritin|2026-10-01T00:00:00.000Z|92|active",
+     "metricName": "Ferritin",
+     "value": 92,
+     "unit": "µg/L",
+     "recordedAt": "2026-10-01T00:00:00.000Z"
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "hdl|2026-10-01T00:00:00.000Z|1.4|active",
+     "value": 1.4,
+     "recordedAt": "2026-10-01T00:00:00.000Z",
+     "metricName": "hdl",
+     "unit": "mmol/L",
+     "core": true
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "ldl|2026-10-01T00:00:00.000Z|2.4|active",
+     "value": 2.4,
+     "recordedAt": "2026-10-01T00:00:00.000Z",
+     "metricName": "ldl",
+     "unit": "mmol/L",
+     "core": true
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "manual",
+     "status": "active",
+     "correctsId": null,
+     "id": "Vitamin B12|2026-01-01T00:00:00.000Z|411|active",
+     "metricName": "Vitamin B12",
+     "value": 411,
+     "unit": "pmol/L",
+     "recordedAt": "2026-01-01T00:00:00.000Z"
+    }
+   ],
+   "d": [
+    {
+     "id": "sha256-3d362819192d70bd5508740aaabc64b7fb5f70f571cc3f594f28879c588bbe72|pathology_report|live",
+     "title": "Blood test results",
+     "type": "pathology_report",
+     "date": "2026-10-01",
+     "fileRef": "Lab results/2026-10-01 Blood test results.pdf",
+     "contentHash": "sha256-3d362819192d70bd5508740aaabc64b7fb5f70f571cc3f594f28879c588bbe72",
+     "mimeType": "application/pdf",
+     "extractedText": "",
+     "metadata": {
+      "labArchive": true,
+      "rows": [
+       "Ferritin|2026-10-01T00:00:00.000Z|92|active",
+       "hdl|2026-10-01T00:00:00.000Z|1.4|active",
+       "ldl|2026-10-01T00:00:00.000Z|2.4|active"
+      ]
+     },
+     "sourceFileName": "labs-11.zip/labs.pdf"
+    }
+   ],
+   "s": {},
+   "o": [
+    "Lab results/2026-10-01 Blood test results.pdf"
+   ]
+  }
+ },
+ {
+  "seed": 12,
+  "saved": true,
+  "rows": {
+   "m": [],
+   "l": [
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "Ferritin|2026-10-01T00:00:00.000Z|93|active",
+     "metricName": "Ferritin",
+     "value": 93,
+     "unit": "µg/L",
+     "recordedAt": "2026-10-01T00:00:00.000Z"
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "hdl|2026-10-01T00:00:00.000Z|1.5|active",
+     "value": 1.5,
+     "recordedAt": "2026-10-01T00:00:00.000Z",
+     "metricName": "hdl",
+     "unit": "mmol/L",
+     "core": true
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "ldl|2026-10-01T00:00:00.000Z|2.5|active",
+     "value": 2.5,
+     "recordedAt": "2026-10-01T00:00:00.000Z",
+     "metricName": "ldl",
+     "unit": "mmol/L",
+     "core": true
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "manual",
+     "status": "active",
+     "correctsId": null,
+     "id": "Vitamin B12|2026-01-01T00:00:00.000Z|412|active",
+     "metricName": "Vitamin B12",
+     "value": 412,
+     "unit": "pmol/L",
+     "recordedAt": "2026-01-01T00:00:00.000Z"
+    }
+   ],
+   "d": [
+    {
+     "id": "|scan_result|live",
+     "title": "Earlier scan",
+     "type": "scan_result",
+     "date": "2025-01-10",
+     "fileRef": "",
+     "contentHash": "",
+     "mimeType": "",
+     "extractedText": "Earlier",
+     "metadata": {},
+     "sourceFileName": "scan-12.pdf"
+    },
+    {
+     "id": "sha256-c42e580e1f3a533c31793205b6537df4592cffafb737e452359cbab2d10aee8b|pathology_report|live",
+     "title": "Blood test results",
+     "type": "pathology_report",
+     "date": "2026-10-01",
+     "fileRef": "",
+     "contentHash": "sha256-c42e580e1f3a533c31793205b6537df4592cffafb737e452359cbab2d10aee8b",
+     "mimeType": "",
+     "extractedText": "",
+     "metadata": {
+      "labArchive": true,
+      "rows": [
+       "Ferritin|2026-10-01T00:00:00.000Z|93|active",
+       "hdl|2026-10-01T00:00:00.000Z|1.5|active",
+       "ldl|2026-10-01T00:00:00.000Z|2.5|active"
+      ]
+     },
+     "sourceFileName": "labs.pdf"
+    },
+    {
+     "id": "sha256-ef7bf01db778a09a5d12c47740f6301da7668a2f6c4ef6a5041e3d9bb8346c2e|clinic_letter|live",
+     "title": "Connector letter",
+     "type": "clinic_letter",
+     "date": "2026-07-20",
+     "fileRef": "",
+     "contentHash": "sha256-ef7bf01db778a09a5d12c47740f6301da7668a2f6c4ef6a5041e3d9bb8346c2e",
+     "mimeType": "",
+     "extractedText": "",
+     "metadata": {
+      "importedVia": "connector"
+     },
+     "sourceFileName": "letter-12.pdf"
+    }
+   ],
+   "s": {},
+   "o": []
+  }
+ },
+ {
+  "seed": 13,
+  "saved": true,
+  "rows": {
+   "m": [],
+   "l": [
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "Ferritin|2026-10-01T00:00:00.000Z|94|active",
+     "metricName": "Ferritin",
+     "value": 94,
+     "unit": "µg/L",
+     "recordedAt": "2026-10-01T00:00:00.000Z"
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "hdl|2026-10-01T00:00:00.000Z|1.6|active",
+     "value": 1.6,
+     "recordedAt": "2026-10-01T00:00:00.000Z",
+     "metricName": "hdl",
+     "unit": "mmol/L",
+     "core": true
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "manual",
+     "status": "active",
+     "correctsId": null,
+     "id": "ldl|2026-10-01T00:00:00.000Z|3.6|active",
+     "value": 3.6,
+     "recordedAt": "2026-10-01T00:00:00.000Z",
+     "metricName": "ldl",
+     "unit": "mmol/L",
+     "core": true
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "manual",
+     "status": "active",
+     "correctsId": null,
+     "id": "Vitamin B12|2026-01-01T00:00:00.000Z|413|active",
+     "metricName": "Vitamin B12",
+     "value": 413,
+     "unit": "pmol/L",
+     "recordedAt": "2026-01-01T00:00:00.000Z"
+    }
+   ],
+   "d": [
+    {
+     "id": "sha256-162197185de79af0e96471a92d42c31250a898f4a1879164c56d80afc9d26811|clinic_letter|deleted",
+     "title": "Connector letter",
+     "type": "clinic_letter",
+     "date": "2026-07-20",
+     "fileRef": "",
+     "contentHash": "sha256-162197185de79af0e96471a92d42c31250a898f4a1879164c56d80afc9d26811",
+     "mimeType": "",
+     "extractedText": "",
+     "metadata": {
+      "importedVia": "connector"
+     },
+     "sourceFileName": "letter-13.pdf",
+     "deleted": true
+    },
+    {
+     "id": "sha256-162197185de79af0e96471a92d42c31250a898f4a1879164c56d80afc9d26811|clinic_letter|live",
+     "title": "Connector letter",
+     "type": "clinic_letter",
+     "date": "2026-07-20",
+     "fileRef": "Clinic letters/2026-07-20 Connector letter.pdf",
+     "contentHash": "sha256-162197185de79af0e96471a92d42c31250a898f4a1879164c56d80afc9d26811",
+     "mimeType": "application/pdf",
+     "extractedText": "Plan",
+     "metadata": {},
+     "sourceFileName": "letter-13.pdf"
+    },
+    {
+     "id": "sha256-dd9132e5f014739a0894e1975ac568c6b13114fa1ee0b6a1993752cf0729c497|pathology_report|live",
+     "title": "Blood test results",
+     "type": "pathology_report",
+     "date": "2026-10-01",
+     "fileRef": "Lab results/2026-10-01 Blood test results.pdf",
+     "contentHash": "sha256-dd9132e5f014739a0894e1975ac568c6b13114fa1ee0b6a1993752cf0729c497",
+     "mimeType": "application/pdf",
+     "extractedText": "",
+     "metadata": {
+      "labArchive": true,
+      "rows": [
+       "Ferritin|2026-10-01T00:00:00.000Z|94|active",
+       "hdl|2026-10-01T00:00:00.000Z|1.6|active"
+      ]
+     },
+     "sourceFileName": "labs-13.zip/labs.pdf"
+    }
+   ],
+   "s": {},
+   "o": [
+    "Clinic letters/2026-07-20 Connector letter.pdf",
+    "Lab results/2026-10-01 Blood test results.pdf"
+   ]
+  }
+ },
+ {
+  "seed": 14,
+  "saved": true,
+  "rows": {
+   "m": [],
+   "l": [
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": "ldl|2026-10-01T00:00:00.000Z|3.7|entered-in-error",
+     "id": "ldl|2026-10-01T00:00:00.000Z|2.7|active",
+     "value": 2.7,
+     "recordedAt": "2026-10-01T00:00:00.000Z",
+     "metricName": "ldl",
+     "unit": "mmol/L",
+     "core": true
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "Ferritin|2026-10-01T00:00:00.000Z|95|active",
+     "metricName": "Ferritin",
+     "value": 95,
+     "unit": "µg/L",
+     "recordedAt": "2026-10-01T00:00:00.000Z"
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "hdl|2026-10-01T00:00:00.000Z|1.7|active",
+     "value": 1.7,
+     "recordedAt": "2026-10-01T00:00:00.000Z",
+     "metricName": "hdl",
+     "unit": "mmol/L",
+     "core": true
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "manual",
+     "status": "entered-in-error",
+     "correctsId": null,
+     "id": "ldl|2026-10-01T00:00:00.000Z|3.7|entered-in-error",
+     "value": 3.7,
+     "recordedAt": "2026-10-01T00:00:00.000Z",
+     "metricName": "ldl",
+     "unit": "mmol/L",
+     "core": true
+    }
+   ],
+   "d": [
+    {
+     "id": "|scan_result|live",
+     "title": "Earlier scan",
+     "type": "scan_result",
+     "date": "2025-01-10",
+     "fileRef": "",
+     "contentHash": "",
+     "mimeType": "",
+     "extractedText": "Earlier",
+     "metadata": {},
+     "sourceFileName": "scan-14.pdf"
+    },
+    {
+     "id": "sha256-166302c24b0eaaed8b856c127a92dc12b23e6a477cd04fbae3d41fa1b18dc521|pathology_report|live",
+     "title": "Blood test results",
+     "type": "pathology_report",
+     "date": "2026-10-01",
+     "fileRef": "",
+     "contentHash": "sha256-166302c24b0eaaed8b856c127a92dc12b23e6a477cd04fbae3d41fa1b18dc521",
+     "mimeType": "",
+     "extractedText": "",
+     "metadata": {
+      "labArchive": true,
+      "rows": [
+       "Ferritin|2026-10-01T00:00:00.000Z|95|active",
+       "hdl|2026-10-01T00:00:00.000Z|1.7|active",
+       "ldl|2026-10-01T00:00:00.000Z|2.7|active"
+      ]
+     },
+     "sourceFileName": "labs.pdf"
+    },
+    {
+     "id": "sha256-d115df8dd1e0bda9914e45e7cad33099f2b886aa90808b54d53faa6ca3232af5|clinic_letter|live",
+     "title": "Connector letter",
+     "type": "clinic_letter",
+     "date": "2026-07-20",
+     "fileRef": "",
+     "contentHash": "sha256-d115df8dd1e0bda9914e45e7cad33099f2b886aa90808b54d53faa6ca3232af5",
+     "mimeType": "",
+     "extractedText": "",
+     "metadata": {
+      "importedVia": "connector"
+     },
+     "sourceFileName": "letter-14.pdf"
+    }
+   ],
+   "s": {},
+   "o": []
+  }
+ },
+ {
+  "seed": 15,
+  "saved": true,
+  "rows": {
+   "m": [],
+   "l": [
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "Ferritin|2026-09-01T00:00:00.000Z|96|active",
+     "metricName": "Ferritin",
+     "value": 96,
+     "unit": "µg/L",
+     "recordedAt": "2026-09-01T00:00:00.000Z"
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "hdl|2026-09-01T00:00:00.000Z|1.8|active",
+     "value": 1.8,
+     "recordedAt": "2026-09-01T00:00:00.000Z",
+     "metricName": "hdl",
+     "unit": "mmol/L",
+     "core": true
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "ldl|2026-09-01T00:00:00.000Z|2.8|active",
+     "value": 2.8,
+     "recordedAt": "2026-09-01T00:00:00.000Z",
+     "metricName": "ldl",
+     "unit": "mmol/L",
+     "core": true
+    }
+   ],
+   "d": [
+    {
+     "id": "sha256-dd95bfa845115381cb2546f7d1300132ec51c6cc2233b1c8b797bd7531a114c0|pathology_report|live",
+     "title": "Blood test results",
+     "type": "pathology_report",
+     "date": "2026-09-01",
+     "fileRef": "",
+     "contentHash": "sha256-dd95bfa845115381cb2546f7d1300132ec51c6cc2233b1c8b797bd7531a114c0",
+     "mimeType": "",
+     "extractedText": "",
+     "metadata": {
+      "labArchive": true,
+      "rows": [
+       "Ferritin|2026-09-01T00:00:00.000Z|96|active",
+       "hdl|2026-09-01T00:00:00.000Z|1.8|active",
+       "ldl|2026-09-01T00:00:00.000Z|2.8|active"
+      ]
+     },
+     "sourceFileName": "labs.pdf"
+    }
+   ],
+   "s": {},
+   "o": []
+  }
+ },
+ {
+  "seed": 16,
+  "saved": true,
+  "rows": {
+   "m": [],
+   "l": [
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import_edited",
+     "status": "active",
+     "correctsId": null,
+     "id": "hdl|2026-09-01T00:00:00.000Z|1.15|active",
+     "value": 1.15,
+     "recordedAt": "2026-09-01T00:00:00.000Z",
+     "metricName": "hdl",
+     "unit": "mmol/L",
+     "core": true
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "Ferritin|2026-09-01T00:00:00.000Z|97|active",
+     "metricName": "Ferritin",
+     "value": 97,
+     "unit": "µg/L",
+     "recordedAt": "2026-09-01T00:00:00.000Z"
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "ldl|2026-09-01T00:00:00.000Z|2.1|active",
+     "value": 2.1,
+     "recordedAt": "2026-09-01T00:00:00.000Z",
+     "metricName": "ldl",
+     "unit": "mmol/L",
+     "core": true
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "manual",
+     "status": "active",
+     "correctsId": null,
+     "id": "Vitamin B12|2026-01-01T00:00:00.000Z|416|active",
+     "metricName": "Vitamin B12",
+     "value": 416,
+     "unit": "pmol/L",
+     "recordedAt": "2026-01-01T00:00:00.000Z"
+    }
+   ],
+   "d": [
+    {
+     "id": "sha256-1e89321a280ddec30ba323b8ce29ff7ee0e4becd3d82939b96da26d14633142c|clinic_letter|live",
+     "title": "Synthetic letter 16",
+     "type": "clinic_letter",
+     "date": "2026-07-20",
+     "fileRef": "",
+     "contentHash": "sha256-1e89321a280ddec30ba323b8ce29ff7ee0e4becd3d82939b96da26d14633142c",
+     "mimeType": "",
+     "extractedText": "Plan",
+     "metadata": {},
+     "sourceFileName": "letter-16.pdf"
+    },
+    {
+     "id": "sha256-d7ca745a66878574fb8a046324e5dd3eb0c50bffddf2d17a7d7cf2288522388a|pathology_report|live",
+     "title": "Blood test results",
+     "type": "pathology_report",
+     "date": "2026-09-01",
+     "fileRef": "",
+     "contentHash": "sha256-d7ca745a66878574fb8a046324e5dd3eb0c50bffddf2d17a7d7cf2288522388a",
+     "mimeType": "",
+     "extractedText": "",
+     "metadata": {
+      "labArchive": true,
+      "rows": [
+       "Ferritin|2026-09-01T00:00:00.000Z|97|active",
+       "hdl|2026-09-01T00:00:00.000Z|1.15|active",
+       "ldl|2026-09-01T00:00:00.000Z|2.1|active"
+      ]
+     },
+     "sourceFileName": "labs.pdf"
+    }
+   ],
+   "s": {},
+   "o": []
+  }
+ },
+ {
+  "seed": 17,
+  "saved": true,
+  "rows": {
+   "m": [],
+   "l": [
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "Ferritin|2026-10-01T00:00:00.000Z|108|active",
+     "metricName": "Ferritin",
+     "value": 108,
+     "unit": "µg/L",
+     "recordedAt": "2026-10-01T00:00:00.000Z"
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "hdl|2026-10-01T00:00:00.000Z|1.2|active",
+     "value": 1.2,
+     "recordedAt": "2026-10-01T00:00:00.000Z",
+     "metricName": "hdl",
+     "unit": "mmol/L",
+     "core": true
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "ldl|2026-10-01T00:00:00.000Z|2.2|active",
+     "value": 2.2,
+     "recordedAt": "2026-10-01T00:00:00.000Z",
+     "metricName": "ldl",
+     "unit": "mmol/L",
+     "core": true
+    }
+   ],
+   "d": [
+    {
+     "id": "sha256-6af7ddeb1e0b995fd24cce107d9d9fb6aa2268ee8eef9979789547d1eb6cfec6|pathology_report|live",
+     "title": "Blood test results",
+     "type": "pathology_report",
+     "date": "2026-10-01",
+     "fileRef": "Lab results/2026-10-01 Blood test results.pdf",
+     "contentHash": "sha256-6af7ddeb1e0b995fd24cce107d9d9fb6aa2268ee8eef9979789547d1eb6cfec6",
+     "mimeType": "application/pdf",
+     "extractedText": "",
+     "metadata": {
+      "labArchive": true,
+      "rows": [
+       "Ferritin|2026-10-01T00:00:00.000Z|108|active",
+       "hdl|2026-10-01T00:00:00.000Z|1.2|active",
+       "ldl|2026-10-01T00:00:00.000Z|2.2|active"
+      ]
+     },
+     "sourceFileName": "labs.pdf"
+    },
+    {
+     "id": "sha256-ddf3cd50000c0d8273b7cb551e4fb80552e4c79a6cd8edfda8aef359ab540033|scan_result|live",
+     "title": "Synthetic scan 17",
+     "type": "scan_result",
+     "date": "2026-08-15",
+     "fileRef": "Scans/2026-08-15 Synthetic scan 17.pdf",
+     "contentHash": "sha256-ddf3cd50000c0d8273b7cb551e4fb80552e4c79a6cd8edfda8aef359ab540033",
+     "mimeType": "application/pdf",
+     "extractedText": "## Findings",
+     "metadata": {},
+     "sourceFileName": "scan-17.pdf"
+    }
+   ],
+   "s": {},
+   "o": [
+    "Lab results/2026-10-01 Blood test results.pdf",
+    "Scans/2026-08-15 Synthetic scan 17.pdf"
+   ]
+  }
+ },
+ {
+  "seed": 18,
+  "saved": true,
+  "rows": {
+   "m": [],
+   "l": [
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "Ferritin|2026-09-01T00:00:00.000Z|99|active",
+     "metricName": "Ferritin",
+     "value": 99,
+     "unit": "µg/L",
+     "recordedAt": "2026-09-01T00:00:00.000Z"
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "hdl|2026-09-01T00:00:00.000Z|1.3|active",
+     "value": 1.3,
+     "recordedAt": "2026-09-01T00:00:00.000Z",
+     "metricName": "hdl",
+     "unit": "mmol/L",
+     "core": true
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "ldl|2026-09-01T00:00:00.000Z|2.3|active",
+     "value": 2.3,
+     "recordedAt": "2026-09-01T00:00:00.000Z",
+     "metricName": "ldl",
+     "unit": "mmol/L",
+     "core": true
+    }
+   ],
+   "d": [
+    {
+     "id": "sha256-8ca4cf7ea631729867ed5be233e2463b269b334ab802989b0a9c3df1e12f6142|pathology_report|live",
+     "title": "Blood test results",
+     "type": "pathology_report",
+     "date": "2026-09-01",
+     "fileRef": "Lab results/2026-09-01 Blood test results.pdf",
+     "contentHash": "sha256-8ca4cf7ea631729867ed5be233e2463b269b334ab802989b0a9c3df1e12f6142",
+     "mimeType": "application/pdf",
+     "extractedText": "",
+     "metadata": {
+      "labArchive": true,
+      "rows": [
+       "Ferritin|2026-09-01T00:00:00.000Z|99|active",
+       "hdl|2026-09-01T00:00:00.000Z|1.3|active",
+       "ldl|2026-09-01T00:00:00.000Z|2.3|active"
+      ]
+     },
+     "sourceFileName": "labs-18.zip/labs.pdf"
+    },
+    {
+     "id": "sha256-92908ca6829f4aeba86d84fa4029e690c273aa66158f7eb848cf3aeb70a82446|scan_result|live",
+     "title": "Synthetic scan 18",
+     "type": "scan_result",
+     "date": "2026-08-15",
+     "fileRef": "Scans/2026-08-15 Synthetic scan 18.pdf",
+     "contentHash": "sha256-92908ca6829f4aeba86d84fa4029e690c273aa66158f7eb848cf3aeb70a82446",
+     "mimeType": "application/pdf",
+     "extractedText": "## Findings",
+     "metadata": {
+      "screeningType": "colorectal"
+     },
+     "sourceFileName": "scan-18.pdf"
+    }
+   ],
+   "s": {
+    "colorectalLastDate": "2026-08-15"
+   },
+   "o": [
+    "Lab results/2026-09-01 Blood test results.pdf",
+    "Scans/2026-08-15 Synthetic scan 18.pdf"
+   ]
+  }
+ },
+ {
+  "seed": 19,
+  "saved": true,
+  "rows": {
+   "m": [],
+   "l": [
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import_edited",
+     "status": "active",
+     "correctsId": null,
+     "id": "hdl|2026-10-01T00:00:00.000Z|1.45|active",
+     "value": 1.45,
+     "recordedAt": "2026-10-01T00:00:00.000Z",
+     "metricName": "hdl",
+     "unit": "mmol/L",
+     "core": true
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "ldl|2026-10-01T00:00:00.000Z|2.4|active",
+     "value": 2.4,
+     "recordedAt": "2026-10-01T00:00:00.000Z",
+     "metricName": "ldl",
+     "unit": "mmol/L",
+     "core": true
+    }
+   ],
+   "d": [
+    {
+     "id": "sha256-a826130b3b84478113c24c3a1166d7dbb819079fb33443c7dc7d5a636470211f|scan_result|live",
+     "title": "Synthetic scan 19",
+     "type": "scan_result",
+     "date": "2026-08-15",
+     "fileRef": "",
+     "contentHash": "sha256-a826130b3b84478113c24c3a1166d7dbb819079fb33443c7dc7d5a636470211f",
+     "mimeType": "",
+     "extractedText": "## Findings",
+     "metadata": {},
+     "sourceFileName": "scan-19.pdf"
+    },
+    {
+     "id": "sha256-d9773d637ef21038a00271980fc441eed33d808a07ec688ac6cfa33ce375f869|pathology_report|live",
+     "title": "Blood test results",
+     "type": "pathology_report",
+     "date": "2026-10-01",
+     "fileRef": "",
+     "contentHash": "sha256-d9773d637ef21038a00271980fc441eed33d808a07ec688ac6cfa33ce375f869",
+     "mimeType": "",
+     "extractedText": "",
+     "metadata": {
+      "labArchive": true,
+      "rows": [
+       "hdl|2026-10-01T00:00:00.000Z|1.45|active",
+       "ldl|2026-10-01T00:00:00.000Z|2.4|active"
+      ]
+     },
+     "sourceFileName": "labs.pdf"
+    }
+   ],
+   "s": {},
+   "o": []
+  }
+ },
+ {
+  "seed": 20,
+  "saved": true,
+  "rows": {
+   "m": [],
+   "l": [
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import_edited",
+     "status": "active",
+     "correctsId": null,
+     "id": "hdl|2026-09-01T00:00:00.000Z|1.55|active",
+     "value": 1.55,
+     "recordedAt": "2026-09-01T00:00:00.000Z",
+     "metricName": "hdl",
+     "unit": "mmol/L",
+     "core": true
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": "ldl|2026-09-01T00:00:00.000Z|3.5|entered-in-error",
+     "id": "ldl|2026-09-01T00:00:00.000Z|2.5|active",
+     "value": 2.5,
+     "recordedAt": "2026-09-01T00:00:00.000Z",
+     "metricName": "ldl",
+     "unit": "mmol/L",
+     "core": true
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "manual",
+     "status": "entered-in-error",
+     "correctsId": null,
+     "id": "ldl|2026-09-01T00:00:00.000Z|3.5|entered-in-error",
+     "value": 3.5,
+     "recordedAt": "2026-09-01T00:00:00.000Z",
+     "metricName": "ldl",
+     "unit": "mmol/L",
+     "core": true
+    }
+   ],
+   "d": [
+    {
+     "id": "sha256-10a00362da37f5dc78f043f6160337d55923b57a7d185a960fb15b3f7899774c|clinic_letter|live",
+     "title": "Synthetic letter 20",
+     "type": "clinic_letter",
+     "date": "2026-07-20",
+     "fileRef": "Clinic letters/2026-07-20 Synthetic letter 20.pdf",
+     "contentHash": "sha256-10a00362da37f5dc78f043f6160337d55923b57a7d185a960fb15b3f7899774c",
+     "mimeType": "application/pdf",
+     "extractedText": "Plan",
+     "metadata": {},
+     "sourceFileName": "letter-20.pdf"
+    },
+    {
+     "id": "sha256-194fc1826b696ddb5c00cbd35e695e773a844a79470e425cc5c5bdec52bad2dd|scan_result|live",
+     "title": "Synthetic scan 20",
+     "type": "scan_result",
+     "date": null,
+     "fileRef": "Scans/2026-11-02 Synthetic scan 20.pdf",
+     "contentHash": "sha256-194fc1826b696ddb5c00cbd35e695e773a844a79470e425cc5c5bdec52bad2dd",
+     "mimeType": "application/pdf",
+     "extractedText": "## Findings",
+     "metadata": {},
+     "sourceFileName": "scan-20.pdf"
+    },
+    {
+     "id": "sha256-d9f49f9a8a969b627119fb30f4b53a1acfd9029103c5a8b7608c04ebe8f389c1|pathology_report|live",
+     "title": "Blood test results",
+     "type": "pathology_report",
+     "date": "2026-09-01",
+     "fileRef": "Lab results/2026-09-01 Blood test results.pdf",
+     "contentHash": "sha256-d9f49f9a8a969b627119fb30f4b53a1acfd9029103c5a8b7608c04ebe8f389c1",
+     "mimeType": "application/pdf",
+     "extractedText": "",
+     "metadata": {
+      "labArchive": true,
+      "rows": [
+       "hdl|2026-09-01T00:00:00.000Z|1.55|active",
+       "ldl|2026-09-01T00:00:00.000Z|2.5|active"
+      ]
+     },
+     "sourceFileName": "labs-20.zip/labs.pdf"
+    }
+   ],
+   "s": {},
+   "o": [
+    "Clinic letters/2026-07-20 Synthetic letter 20.pdf",
+    "Lab results/2026-09-01 Blood test results.pdf",
+    "Scans/2026-11-02 Synthetic scan 20.pdf"
+   ]
+  }
+ },
+ {
+  "seed": 21,
+  "saved": true,
+  "rows": {
+   "m": [],
+   "l": [
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "Ferritin|2026-10-01T00:00:00.000Z|102|active",
+     "metricName": "Ferritin",
+     "value": 102,
+     "unit": "µg/L",
+     "recordedAt": "2026-10-01T00:00:00.000Z"
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "hdl|2026-10-01T00:00:00.000Z|1.6|active",
+     "value": 1.6,
+     "recordedAt": "2026-10-01T00:00:00.000Z",
+     "metricName": "hdl",
+     "unit": "mmol/L",
+     "core": true
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "ldl|2026-10-01T00:00:00.000Z|2.6|active",
+     "value": 2.6,
+     "recordedAt": "2026-10-01T00:00:00.000Z",
+     "metricName": "ldl",
+     "unit": "mmol/L",
+     "core": true
+    }
+   ],
+   "d": [
+    {
+     "id": "sha256-62eb3b5c77c017340dec1e1f48e9d4d90e78f4b426240e6d9127ae13289ed183|pathology_report|live",
+     "title": "Blood test results",
+     "type": "pathology_report",
+     "date": "2026-10-01",
+     "fileRef": "Lab results/2026-10-01 Blood test results.pdf",
+     "contentHash": "sha256-62eb3b5c77c017340dec1e1f48e9d4d90e78f4b426240e6d9127ae13289ed183",
+     "mimeType": "application/pdf",
+     "extractedText": "",
+     "metadata": {
+      "labArchive": true,
+      "rows": [
+       "Ferritin|2026-10-01T00:00:00.000Z|102|active",
+       "hdl|2026-10-01T00:00:00.000Z|1.6|active",
+       "ldl|2026-10-01T00:00:00.000Z|2.6|active"
+      ]
+     },
+     "sourceFileName": "labs.pdf"
+    }
+   ],
+   "s": {},
+   "o": [
+    "Lab results/2026-10-01 Blood test results.pdf"
+   ]
+  }
+ },
+ {
+  "seed": 22,
+  "saved": true,
+  "rows": {
+   "m": [],
+   "l": [
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import_edited",
+     "status": "active",
+     "correctsId": null,
+     "id": "hdl|2026-09-01T00:00:00.000Z|1.75|active",
+     "value": 1.75,
+     "recordedAt": "2026-09-01T00:00:00.000Z",
+     "metricName": "hdl",
+     "unit": "mmol/L",
+     "core": true
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": "ldl|2026-09-01T00:00:00.000Z|3.7|entered-in-error",
+     "id": "ldl|2026-09-01T00:00:00.000Z|2.7|active",
+     "value": 2.7,
+     "recordedAt": "2026-09-01T00:00:00.000Z",
+     "metricName": "ldl",
+     "unit": "mmol/L",
+     "core": true
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "Ferritin|2026-09-01T00:00:00.000Z|103|active",
+     "metricName": "Ferritin",
+     "value": 103,
+     "unit": "µg/L",
+     "recordedAt": "2026-09-01T00:00:00.000Z"
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "manual",
+     "status": "entered-in-error",
+     "correctsId": null,
+     "id": "ldl|2026-09-01T00:00:00.000Z|3.7|entered-in-error",
+     "value": 3.7,
+     "recordedAt": "2026-09-01T00:00:00.000Z",
+     "metricName": "ldl",
+     "unit": "mmol/L",
+     "core": true
+    }
+   ],
+   "d": [
+    {
+     "id": "sha256-d5ce6f1d30748394a8a6edbf9cb632b54617b8923d331b394e230089091a99e4|pathology_report|live",
+     "title": "Blood test results",
+     "type": "pathology_report",
+     "date": "2026-09-01",
+     "fileRef": "",
+     "contentHash": "sha256-d5ce6f1d30748394a8a6edbf9cb632b54617b8923d331b394e230089091a99e4",
+     "mimeType": "",
+     "extractedText": "",
+     "metadata": {
+      "labArchive": true,
+      "rows": [
+       "Ferritin|2026-09-01T00:00:00.000Z|103|active",
+       "hdl|2026-09-01T00:00:00.000Z|1.75|active",
+       "ldl|2026-09-01T00:00:00.000Z|2.7|active"
+      ]
+     },
+     "sourceFileName": "labs.pdf"
+    }
+   ],
+   "s": {},
+   "o": []
+  }
+ },
+ {
+  "seed": 23,
+  "saved": true,
+  "rows": {
+   "m": [],
+   "l": [
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "Ferritin|2026-09-01T00:00:00.000Z|114|active",
+     "metricName": "Ferritin",
+     "value": 114,
+     "unit": "µg/L",
+     "recordedAt": "2026-09-01T00:00:00.000Z"
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "hdl|2026-09-01T00:00:00.000Z|1.8|active",
+     "value": 1.8,
+     "recordedAt": "2026-09-01T00:00:00.000Z",
+     "metricName": "hdl",
+     "unit": "mmol/L",
+     "core": true
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "ldl|2026-09-01T00:00:00.000Z|2.8|active",
+     "value": 2.8,
+     "recordedAt": "2026-09-01T00:00:00.000Z",
+     "metricName": "ldl",
+     "unit": "mmol/L",
+     "core": true
+    }
+   ],
+   "d": [
+    {
+     "id": "|scan_result|live",
+     "title": "Earlier scan",
+     "type": "scan_result",
+     "date": "2025-01-10",
+     "fileRef": "",
+     "contentHash": "",
+     "mimeType": "",
+     "extractedText": "Earlier",
+     "metadata": {},
+     "sourceFileName": "scan-23.pdf"
+    },
+    {
+     "id": "sha256-1b9a598bc43fe3ed98d1cec2e0c08f50af7ec05066a7428998d62147795d1c99|pathology_report|live",
+     "title": "Blood test results",
+     "type": "pathology_report",
+     "date": "2026-09-01",
+     "fileRef": "Lab results/2026-09-01 Blood test results.pdf",
+     "contentHash": "sha256-1b9a598bc43fe3ed98d1cec2e0c08f50af7ec05066a7428998d62147795d1c99",
+     "mimeType": "application/pdf",
+     "extractedText": "",
+     "metadata": {
+      "labArchive": true,
+      "rows": [
+       "Ferritin|2026-09-01T00:00:00.000Z|114|active",
+       "hdl|2026-09-01T00:00:00.000Z|1.8|active",
+       "ldl|2026-09-01T00:00:00.000Z|2.8|active"
+      ]
+     },
+     "sourceFileName": "labs-23.zip/labs.pdf"
+    },
+    {
+     "id": "sha256-8b1fe855e3004cccaa333331b316731a4252662f87093da2b452572439df57c0|clinic_letter|live",
+     "title": "Synthetic letter 23",
+     "type": "clinic_letter",
+     "date": "2026-07-20",
+     "fileRef": "Clinic letters/2026-07-20 Synthetic letter 23.pdf",
+     "contentHash": "sha256-8b1fe855e3004cccaa333331b316731a4252662f87093da2b452572439df57c0",
+     "mimeType": "application/pdf",
+     "extractedText": "Plan",
+     "metadata": {},
+     "sourceFileName": "letter-23.pdf"
+    }
+   ],
+   "s": {},
+   "o": [
+    "Clinic letters/2026-07-20 Synthetic letter 23.pdf",
+    "Lab results/2026-09-01 Blood test results.pdf"
+   ]
+  }
+ },
+ {
+  "seed": 24,
+  "saved": true,
+  "rows": {
+   "m": [],
+   "l": [
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "hdl|2026-10-01T00:00:00.000Z|1.1|active",
+     "value": 1.1,
+     "recordedAt": "2026-10-01T00:00:00.000Z",
+     "metricName": "hdl",
+     "unit": "mmol/L",
+     "core": true
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "ldl|2026-10-01T00:00:00.000Z|2.1|active",
+     "value": 2.1,
+     "recordedAt": "2026-10-01T00:00:00.000Z",
+     "metricName": "ldl",
+     "unit": "mmol/L",
+     "core": true
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "manual",
+     "status": "active",
+     "correctsId": null,
+     "id": "Vitamin B12|2026-01-01T00:00:00.000Z|424|active",
+     "metricName": "Vitamin B12",
+     "value": 424,
+     "unit": "pmol/L",
+     "recordedAt": "2026-01-01T00:00:00.000Z"
+    }
+   ],
+   "d": [
+    {
+     "id": "sha256-51ee0ce7d89c3c7d74622dcf2163505b5f2a85399e64a46682b9c8446949cb6c|pathology_report|live",
+     "title": "Blood test results",
+     "type": "pathology_report",
+     "date": "2026-10-01",
+     "fileRef": "",
+     "contentHash": "sha256-51ee0ce7d89c3c7d74622dcf2163505b5f2a85399e64a46682b9c8446949cb6c",
+     "mimeType": "",
+     "extractedText": "",
+     "metadata": {
+      "labArchive": true,
+      "rows": [
+       "hdl|2026-10-01T00:00:00.000Z|1.1|active",
+       "ldl|2026-10-01T00:00:00.000Z|2.1|active"
+      ]
+     },
+     "sourceFileName": "labs.pdf"
+    }
+   ],
+   "s": {},
+   "o": []
+  }
+ },
+ {
+  "seed": 25,
+  "saved": true,
+  "rows": {
+   "m": [],
+   "l": [
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "Ferritin|2026-10-01T00:00:00.000Z|116|active",
+     "metricName": "Ferritin",
+     "value": 116,
+     "unit": "µg/L",
+     "recordedAt": "2026-10-01T00:00:00.000Z"
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "hdl|2026-10-01T00:00:00.000Z|1.2|active",
+     "value": 1.2,
+     "recordedAt": "2026-10-01T00:00:00.000Z",
+     "metricName": "hdl",
+     "unit": "mmol/L",
+     "core": true
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "ldl|2026-10-01T00:00:00.000Z|2.2|active",
+     "value": 2.2,
+     "recordedAt": "2026-10-01T00:00:00.000Z",
+     "metricName": "ldl",
+     "unit": "mmol/L",
+     "core": true
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "manual",
+     "status": "active",
+     "correctsId": null,
+     "id": "Vitamin B12|2026-01-01T00:00:00.000Z|425|active",
+     "metricName": "Vitamin B12",
+     "value": 425,
+     "unit": "pmol/L",
+     "recordedAt": "2026-01-01T00:00:00.000Z"
+    }
+   ],
+   "d": [
+    {
+     "id": "sha256-c891084abb2a3b86ffef50baf2b2fc68082e4d0715d18b64f1e978cccf53f08f|pathology_report|live",
+     "title": "Blood test results",
+     "type": "pathology_report",
+     "date": "2026-10-01",
+     "fileRef": "Lab results/2026-10-01 Blood test results.pdf",
+     "contentHash": "sha256-c891084abb2a3b86ffef50baf2b2fc68082e4d0715d18b64f1e978cccf53f08f",
+     "mimeType": "application/pdf",
+     "extractedText": "",
+     "metadata": {
+      "labArchive": true,
+      "rows": [
+       "Ferritin|2026-10-01T00:00:00.000Z|116|active",
+       "hdl|2026-10-01T00:00:00.000Z|1.2|active",
+       "ldl|2026-10-01T00:00:00.000Z|2.2|active"
+      ]
+     },
+     "sourceFileName": "labs.pdf"
+    }
+   ],
+   "s": {},
+   "o": [
+    "Lab results/2026-10-01 Blood test results.pdf"
+   ]
+  }
+ },
+ {
+  "seed": 26,
+  "saved": true,
+  "rows": {
+   "m": [],
+   "l": [
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import_edited",
+     "status": "active",
+     "correctsId": null,
+     "id": "hdl|2026-09-01T00:00:00.000Z|1.35|active",
+     "value": 1.35,
+     "recordedAt": "2026-09-01T00:00:00.000Z",
+     "metricName": "hdl",
+     "unit": "mmol/L",
+     "core": true
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "Ferritin|2026-09-01T00:00:00.000Z|117|active",
+     "metricName": "Ferritin",
+     "value": 117,
+     "unit": "µg/L",
+     "recordedAt": "2026-09-01T00:00:00.000Z"
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "manual",
+     "status": "active",
+     "correctsId": null,
+     "id": "ldl|2026-09-01T00:00:00.000Z|3.3|active",
+     "value": 3.3,
+     "recordedAt": "2026-09-01T00:00:00.000Z",
+     "metricName": "ldl",
+     "unit": "mmol/L",
+     "core": true
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "manual",
+     "status": "active",
+     "correctsId": null,
+     "id": "Vitamin B12|2026-01-01T00:00:00.000Z|426|active",
+     "metricName": "Vitamin B12",
+     "value": 426,
+     "unit": "pmol/L",
+     "recordedAt": "2026-01-01T00:00:00.000Z"
+    }
+   ],
+   "d": [
+    {
+     "id": "sha256-31acbc72f67a0e484246fba63cf871fb948a7f419cb828e0ac877974f06526ef|clinic_letter|live",
+     "title": "Connector letter",
+     "type": "clinic_letter",
+     "date": "2026-07-20",
+     "fileRef": "",
+     "contentHash": "sha256-31acbc72f67a0e484246fba63cf871fb948a7f419cb828e0ac877974f06526ef",
+     "mimeType": "",
+     "extractedText": "",
+     "metadata": {
+      "importedVia": "connector"
+     },
+     "sourceFileName": "letter-26.pdf"
+    },
+    {
+     "id": "sha256-b9bc93cddf662682940dcb95ea5218f27ffdcceedd3842637f80ca0e9aa20e92|scan_result|live",
+     "title": "Synthetic scan 26",
+     "type": "scan_result",
+     "date": "2026-08-15",
+     "fileRef": "",
+     "contentHash": "sha256-b9bc93cddf662682940dcb95ea5218f27ffdcceedd3842637f80ca0e9aa20e92",
+     "mimeType": "",
+     "extractedText": "## Findings",
+     "metadata": {
+      "screeningType": "colorectal"
+     },
+     "sourceFileName": "scan-26.pdf"
+    },
+    {
+     "id": "sha256-ccc52dc78ddd053c3b47581465e9faf27129f40d76131f67ec90029ced317ceb|pathology_report|live",
+     "title": "Blood test results",
+     "type": "pathology_report",
+     "date": "2026-09-01",
+     "fileRef": "",
+     "contentHash": "sha256-ccc52dc78ddd053c3b47581465e9faf27129f40d76131f67ec90029ced317ceb",
+     "mimeType": "",
+     "extractedText": "",
+     "metadata": {
+      "labArchive": true,
+      "rows": [
+       "Ferritin|2026-09-01T00:00:00.000Z|117|active",
+       "hdl|2026-09-01T00:00:00.000Z|1.35|active"
+      ]
+     },
+     "sourceFileName": "labs.pdf"
+    }
+   ],
+   "s": {},
+   "o": []
+  }
+ },
+ {
+  "seed": 27,
+  "saved": true,
+  "rows": {
+   "m": [],
+   "l": [
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "Ferritin|2026-10-01T00:00:00.000Z|108|active",
+     "metricName": "Ferritin",
+     "value": 108,
+     "unit": "µg/L",
+     "recordedAt": "2026-10-01T00:00:00.000Z"
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "hdl|2026-10-01T00:00:00.000Z|1.4|active",
+     "value": 1.4,
+     "recordedAt": "2026-10-01T00:00:00.000Z",
+     "metricName": "hdl",
+     "unit": "mmol/L",
+     "core": true
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "ldl|2026-10-01T00:00:00.000Z|2.4|active",
+     "value": 2.4,
+     "recordedAt": "2026-10-01T00:00:00.000Z",
+     "metricName": "ldl",
+     "unit": "mmol/L",
+     "core": true
+    }
+   ],
+   "d": [
+    {
+     "id": "sha256-492fa9562ed740d61944c977755eef00516262cfa5a667c075fc377e22f9f990|pathology_report|live",
+     "title": "Blood test results",
+     "type": "pathology_report",
+     "date": "2026-10-01",
+     "fileRef": "",
+     "contentHash": "sha256-492fa9562ed740d61944c977755eef00516262cfa5a667c075fc377e22f9f990",
+     "mimeType": "",
+     "extractedText": "",
+     "metadata": {
+      "labArchive": true,
+      "rows": [
+       "Ferritin|2026-10-01T00:00:00.000Z|108|active",
+       "hdl|2026-10-01T00:00:00.000Z|1.4|active",
+       "ldl|2026-10-01T00:00:00.000Z|2.4|active"
+      ]
+     },
+     "sourceFileName": "labs-27.zip/labs.pdf"
+    },
+    {
+     "id": "sha256-55c708cf6fbc9aed683782e10d6651d3f7c66c68e432af92d634d9bcb08ab569|clinic_letter|live",
+     "title": "Connector letter",
+     "type": "clinic_letter",
+     "date": "2026-07-20",
+     "fileRef": "",
+     "contentHash": "sha256-55c708cf6fbc9aed683782e10d6651d3f7c66c68e432af92d634d9bcb08ab569",
+     "mimeType": "",
+     "extractedText": "",
+     "metadata": {
+      "importedVia": "connector"
+     },
+     "sourceFileName": "letter-27.pdf"
+    },
+    {
+     "id": "sha256-72703801aa849f4176015f351f922082d56c72f049d624fa44080e19d20f2e7d|scan_result|live",
+     "title": "Synthetic scan 27",
+     "type": "scan_result",
+     "date": null,
+     "fileRef": "",
+     "contentHash": "sha256-72703801aa849f4176015f351f922082d56c72f049d624fa44080e19d20f2e7d",
+     "mimeType": "",
+     "extractedText": "## Findings",
+     "metadata": {
+      "screeningType": "colorectal"
+     },
+     "sourceFileName": "scan-27.pdf"
+    }
+   ],
+   "s": {},
+   "o": []
+  }
+ },
+ {
+  "seed": 28,
+  "saved": true,
+  "rows": {
+   "m": [],
+   "l": [
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "Ferritin|2026-10-01T00:00:00.000Z|109|active",
+     "metricName": "Ferritin",
+     "value": 109,
+     "unit": "µg/L",
+     "recordedAt": "2026-10-01T00:00:00.000Z"
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "hdl|2026-10-01T00:00:00.000Z|1.5|active",
+     "value": 1.5,
+     "recordedAt": "2026-10-01T00:00:00.000Z",
+     "metricName": "hdl",
+     "unit": "mmol/L",
+     "core": true
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "ldl|2026-10-01T00:00:00.000Z|2.5|active",
+     "value": 2.5,
+     "recordedAt": "2026-10-01T00:00:00.000Z",
+     "metricName": "ldl",
+     "unit": "mmol/L",
+     "core": true
+    }
+   ],
+   "d": [
+    {
+     "id": "sha256-01eef3c742e6cfa93e15b43280f29b1fc091c002ae3b5a603a2df0ac4ea3a5dd|pathology_report|live",
+     "title": "Blood test results",
+     "type": "pathology_report",
+     "date": "2026-10-01",
+     "fileRef": "Lab results/2026-10-01 Blood test results.pdf",
+     "contentHash": "sha256-01eef3c742e6cfa93e15b43280f29b1fc091c002ae3b5a603a2df0ac4ea3a5dd",
+     "mimeType": "application/pdf",
+     "extractedText": "",
+     "metadata": {
+      "labArchive": true,
+      "rows": [
+       "Ferritin|2026-10-01T00:00:00.000Z|109|active",
+       "hdl|2026-10-01T00:00:00.000Z|1.5|active",
+       "ldl|2026-10-01T00:00:00.000Z|2.5|active"
+      ]
+     },
+     "sourceFileName": "labs.pdf"
+    },
+    {
+     "id": "sha256-2b8e6a23744ecf894e1877af33f6fecd6c9dd2d76a13d3a6467a151a7a9eca24|scan_result|live",
+     "title": "Synthetic scan 28",
+     "type": "scan_result",
+     "date": "2026-08-15",
+     "fileRef": "Scans/2026-08-15 Synthetic scan 28.pdf",
+     "contentHash": "sha256-2b8e6a23744ecf894e1877af33f6fecd6c9dd2d76a13d3a6467a151a7a9eca24",
+     "mimeType": "application/pdf",
+     "extractedText": "## Findings",
+     "metadata": {
+      "screeningType": "colorectal"
+     },
+     "sourceFileName": "scan-28.pdf"
+    }
+   ],
+   "s": {
+    "colorectalLastDate": "2026-08-15"
+   },
+   "o": [
+    "Lab results/2026-10-01 Blood test results.pdf",
+    "Scans/2026-08-15 Synthetic scan 28.pdf"
+   ]
+  }
+ },
+ {
+  "seed": 29,
+  "saved": true,
+  "rows": {
+   "m": [],
+   "l": [
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import_edited",
+     "status": "active",
+     "correctsId": null,
+     "id": "hdl|2026-10-01T00:00:00.000Z|1.65|active",
+     "value": 1.65,
+     "recordedAt": "2026-10-01T00:00:00.000Z",
+     "metricName": "hdl",
+     "unit": "mmol/L",
+     "core": true
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "Ferritin|2026-10-01T00:00:00.000Z|110|active",
+     "metricName": "Ferritin",
+     "value": 110,
+     "unit": "µg/L",
+     "recordedAt": "2026-10-01T00:00:00.000Z"
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "ldl|2026-10-01T00:00:00.000Z|2.6|active",
+     "value": 2.6,
+     "recordedAt": "2026-10-01T00:00:00.000Z",
+     "metricName": "ldl",
+     "unit": "mmol/L",
+     "core": true
+    }
+   ],
+   "d": [
+    {
+     "id": "sha256-55b3fef0cc05419e3b98e29cf5d3f019d33b50b8a63cc9e2b627f593da327fe0|pathology_report|live",
+     "title": "Blood test results",
+     "type": "pathology_report",
+     "date": "2026-10-01",
+     "fileRef": "Lab results/2026-10-01 Blood test results.pdf",
+     "contentHash": "sha256-55b3fef0cc05419e3b98e29cf5d3f019d33b50b8a63cc9e2b627f593da327fe0",
+     "mimeType": "application/pdf",
+     "extractedText": "",
+     "metadata": {
+      "labArchive": true,
+      "rows": [
+       "Ferritin|2026-10-01T00:00:00.000Z|110|active",
+       "hdl|2026-10-01T00:00:00.000Z|1.65|active",
+       "ldl|2026-10-01T00:00:00.000Z|2.6|active"
+      ]
+     },
+     "sourceFileName": "labs.pdf"
+    },
+    {
+     "id": "sha256-87300a5a09fa9f3f106942b583a23607aaeaf4a614ead7697cb89215b960f0ee|scan_result|live",
+     "title": "Synthetic scan 29",
+     "type": "scan_result",
+     "date": "2026-08-15",
+     "fileRef": "Scans/2026-08-15 Synthetic scan 29.pdf",
+     "contentHash": "sha256-87300a5a09fa9f3f106942b583a23607aaeaf4a614ead7697cb89215b960f0ee",
+     "mimeType": "application/pdf",
+     "extractedText": "## Findings",
+     "metadata": {},
+     "sourceFileName": "scan-29.pdf"
+    }
+   ],
+   "s": {},
+   "o": [
+    "Lab results/2026-10-01 Blood test results.pdf",
+    "Scans/2026-08-15 Synthetic scan 29.pdf"
+   ]
+  }
+ },
+ {
+  "seed": 30,
+  "saved": true,
+  "rows": {
+   "m": [],
+   "l": [
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import_edited",
+     "status": "active",
+     "correctsId": null,
+     "id": "hdl|2026-10-01T00:00:00.000Z|1.75|active",
+     "value": 1.75,
+     "recordedAt": "2026-10-01T00:00:00.000Z",
+     "metricName": "hdl",
+     "unit": "mmol/L",
+     "core": true
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": "ldl|2026-10-01T00:00:00.000Z|3.7|entered-in-error",
+     "id": "ldl|2026-10-01T00:00:00.000Z|2.7|active",
+     "value": 2.7,
+     "recordedAt": "2026-10-01T00:00:00.000Z",
+     "metricName": "ldl",
+     "unit": "mmol/L",
+     "core": true
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "manual",
+     "status": "entered-in-error",
+     "correctsId": null,
+     "id": "ldl|2026-10-01T00:00:00.000Z|3.7|entered-in-error",
+     "value": 3.7,
+     "recordedAt": "2026-10-01T00:00:00.000Z",
+     "metricName": "ldl",
+     "unit": "mmol/L",
+     "core": true
+    }
+   ],
+   "d": [
+    {
+     "id": "sha256-15c21212cc1f4587c2d15d0b32f6603d10fedee56ccc5bb7299fe3f1df0ae485|pathology_report|live",
+     "title": "Blood test results",
+     "type": "pathology_report",
+     "date": "2026-10-01",
+     "fileRef": "Lab results/2026-10-01 Blood test results.pdf",
+     "contentHash": "sha256-15c21212cc1f4587c2d15d0b32f6603d10fedee56ccc5bb7299fe3f1df0ae485",
+     "mimeType": "application/pdf",
+     "extractedText": "",
+     "metadata": {
+      "labArchive": true,
+      "rows": [
+       "hdl|2026-10-01T00:00:00.000Z|1.75|active",
+       "ldl|2026-10-01T00:00:00.000Z|2.7|active"
+      ]
+     },
+     "sourceFileName": "labs.pdf"
+    },
+    {
+     "id": "sha256-e5356458a0c02abf3091a80debe5a3acc738e0518890d6c0e559595171c78dce|clinic_letter|deleted",
+     "title": "Connector letter",
+     "type": "clinic_letter",
+     "date": "2026-07-20",
+     "fileRef": "",
+     "contentHash": "sha256-e5356458a0c02abf3091a80debe5a3acc738e0518890d6c0e559595171c78dce",
+     "mimeType": "",
+     "extractedText": "",
+     "metadata": {
+      "importedVia": "connector"
+     },
+     "sourceFileName": "letter-30.pdf",
+     "deleted": true
+    },
+    {
+     "id": "sha256-e5356458a0c02abf3091a80debe5a3acc738e0518890d6c0e559595171c78dce|clinic_letter|live",
+     "title": "Connector letter",
+     "type": "clinic_letter",
+     "date": "2026-07-20",
+     "fileRef": "Clinic letters/2026-07-20 Connector letter.pdf",
+     "contentHash": "sha256-e5356458a0c02abf3091a80debe5a3acc738e0518890d6c0e559595171c78dce",
+     "mimeType": "application/pdf",
+     "extractedText": "Plan",
+     "metadata": {},
+     "sourceFileName": "letter-30.pdf"
+    }
+   ],
+   "s": {},
+   "o": [
+    "Clinic letters/2026-07-20 Connector letter.pdf",
+    "Lab results/2026-10-01 Blood test results.pdf"
+   ]
+  }
+ },
+ {
+  "seed": 31,
+  "saved": true,
+  "rows": {
+   "m": [],
+   "l": [
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "Ferritin|2026-10-01T00:00:00.000Z|112|active",
+     "metricName": "Ferritin",
+     "value": 112,
+     "unit": "µg/L",
+     "recordedAt": "2026-10-01T00:00:00.000Z"
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "hdl|2026-10-01T00:00:00.000Z|1.8|active",
+     "value": 1.8,
+     "recordedAt": "2026-10-01T00:00:00.000Z",
+     "metricName": "hdl",
+     "unit": "mmol/L",
+     "core": true
+    },
+    {
+     "referenceLow": null,
+     "referenceHigh": null,
+     "source": "lab_import",
+     "status": "active",
+     "correctsId": null,
+     "id": "ldl|2026-10-01T00:00:00.000Z|2.8|active",
+     "value": 2.8,
+     "recordedAt": "2026-10-01T00:00:00.000Z",
+     "metricName": "ldl",
+     "unit": "mmol/L",
+     "core": true
+    }
+   ],
+   "d": [
+    {
+     "id": "sha256-7f2a530afe32c8c64928bd6fbd7c16b85f4f68c3b3c8eb582addd4eff08099b2|pathology_report|live",
+     "title": "Blood test results",
+     "type": "pathology_report",
+     "date": "2026-10-01",
+     "fileRef": "Lab results/2026-10-01 Blood test results.pdf",
+     "contentHash": "sha256-7f2a530afe32c8c64928bd6fbd7c16b85f4f68c3b3c8eb582addd4eff08099b2",
+     "mimeType": "application/pdf",
+     "extractedText": "",
+     "metadata": {
+      "labArchive": true,
+      "rows": [
+       "Ferritin|2026-10-01T00:00:00.000Z|112|active",
+       "hdl|2026-10-01T00:00:00.000Z|1.8|active",
+       "ldl|2026-10-01T00:00:00.000Z|2.8|active"
+      ]
+     },
+     "sourceFileName": "labs.pdf"
+    }
+   ],
+   "s": {},
+   "o": [
+    "Lab results/2026-10-01 Blood test results.pdf"
+   ]
+  }
+ }
+]

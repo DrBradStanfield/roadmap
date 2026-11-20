@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render } from '@testing-library/react';
-import { ReviewTable } from './ReviewTable';
+import { ReviewTable } from '../testing/review-harness';
 import type { FileResult } from '../lib/upload-pipeline';
 import { cellToSI } from '../lib/blood-test-cell';
 import { showingAll } from '../testing/import-review';

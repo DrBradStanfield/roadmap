@@ -8,7 +8,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render } from '@testing-library/react';
 import type { ApiMeasurement } from '@roadmap/health-core/mappings';
-import { ReviewTable } from './ReviewTable';
+import { ReviewTable } from '../testing/review-harness';
 import { buildMatrixModel } from '../lib/review-matrix';
 import type { FileResult } from '../lib/upload-pipeline';
 import { showingAll } from '../testing/import-review';
@@ -35,7 +35,7 @@ function renderReview(results: FileResult[], measurements: ApiMeasurement[] = []
   const onSave = vi.fn();
   const view = showingAll(render(<ReviewTable grading={{}} results={results} history={{ measurements, labValues: [], documents: [] }}
     unitSystem="si" onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />));
-  const save = view.getByRole('button', { name: /^Save / }) as HTMLButtonElement;
+  const save = view.getByRole('button', { name: /^Save\b/ }) as HTMLButtonElement;
   const previousPicker = () => view.getByLabelText('Choose the date of the previous results') as HTMLInputElement;
   return { view, onSave, save, previousPicker };
 }

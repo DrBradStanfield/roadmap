@@ -57,6 +57,22 @@ export function requestFlags(platform: UploadPlatform): RequestFlags {
   return { ownDates: true, undatedPrev: platform === 'web', refusedRows: true };
 }
 
+/**
+ * D3, awaiting Brad (clinical; __fixtures__/upload-decisions.json "letter with values"): the web
+ * offers the values a letter prints beside the letter itself; the iPhone files the letter alone.
+ */
+export function letterValuesOffered(platform: UploadPlatform): boolean {
+  return platform === 'web';
+}
+
+/**
+ * D6, awaiting Brad ("nothing ticked, cloud connected"): the web files a lab report's original with
+ * no value ticked; the iPhone files it only with values it saves.
+ */
+export function originalWithoutValues(platform: UploadPlatform): boolean {
+  return platform === 'web';
+}
+
 /** keep: read it. tooLarge: over its cap. unsupported: no reader for its kind. hidden: archive junk or a dotfile. */
 export type FileVerdict = 'keep' | 'tooLarge' | 'unsupported' | 'hidden';
 

@@ -136,7 +136,8 @@
       { "case": "plain value", "web": { "ticked": true }, "phone": { "ticked": true } },
       { "case": "value with an extractor question", "web": { "ticked": true }, "phone": { "ticked": false }, "decision": "D1, decided 2026-11-20: ticked on both", "changedBy": "design PR 15 (the iPhone review page reads the engine)" },
       { "case": "document, sourceFileName not held", "web": { "keepDocument": true }, "phone": { "keepDocument": true } },
-      { "case": "document, sourceFileName held", "web": { "keepDocument": false }, "phone": { "keepDocument": false } },
+      { "case": "document, sourceFileName held", "web": { "keepDocument": true }, "phone": { "keepDocument": false },
+        "_note": "A name alone is no reason to skip a letter: the web saves every letter (owner ruling Q3; US-12 AC6b retired); the phone until its review page moves.", "decision": "Q3", "changedBy": "design PR 10" },
       { "case": "letter with values", "web": { "values": true, "document": true }, "phone": { "values": false, "document": true }, "decision": "D3", "changedBy": "a Brad decision PR (clinical)" }
     ]
   },

@@ -1,22 +1,26 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { checkLabImportQuota } from '../lib/upload-api';
-import { initialUpload, inFlight, transition, type RunRefusal, type UploadEvent, type UploadState } from '@roadmap/health-core/upload-flow';
+import { initialUpload, transition, type RunRefusal, type UploadEvent, type UploadFile, type UploadState } from '@roadmap/health-core/upload-flow';
+import type { ChoiceChange } from '@roadmap/health-core/upload-choices';
+import { lostReplaces, reviewedWrites, uploadReview, type ScreeningProfile } from '@roadmap/health-core/upload-review';
+import { uploadView } from '@roadmap/health-core/upload-view';
 import { uploadUsageCounts } from '@roadmap/health-core/upload-usage';
 import { UNDATED_PREVIOUS, uploadLimitSignal } from '@roadmap/health-core/lab-extraction';
 import type { UnitSystem } from '@roadmap/health-core/units';
 import { UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, type UploadOutcomeKey } from '@roadmap/health-core/product-events';
-import { getDocumentArchiveMode } from '../lib/roadmap-data';
+import { getDocumentArchiveMode, uploadRecord } from '../lib/roadmap-data';
 import { trackProductEvent, type ProductEventMetadata } from '../lib/server-api';
-import type { UploadHistory } from '../lib/api-types';
-import { UploadError, hasValues, type FileNotice, type ReviewDecisions, type FileResult } from '../lib/upload-pipeline';
+import type { LabImportResult, UploadHistory } from '../lib/api-types';
+import { UploadError, hasValues, readResult, type FileNotice, type FileResult } from '../lib/upload-pipeline';
 import { createUploadBundleLoader } from '../lib/upload-bundle';
 import { Sentry } from '../lib/sentry';
-import { recordFailure } from '../lib/error-diagnostics';
+import { recordFailure, WritesStoppedError } from '../lib/error-diagnostics';
 import { isDocx, isZip } from '../lib/file-kinds';
 import { runEffect, type UploadPort } from '../lib/upload-effects';
-import { emptyHeld, hasResults, MAX_FILES, NO_FILES_TEXT, phaseOf, pickedFiles, pickNotices, progressOf, readErrorOf, readOutcome, refusedForKey, type Held } from '../lib/upload-read';
-import { saveReview } from '../lib/upload-save';
-import { NO_OUTCOME, savedSoFar, withAttempt, type SaveOutcome } from '../lib/upload-save-outcome';
+import { emptyHeld, fileNameOf, hasResults, MAX_FILES, NO_FILES_TEXT, phaseOf, pickedFiles, progressOf, readErrorOf, readOutcome, refusedForKey, type Held } from '../lib/upload-read';
+import { saveAttempt } from '../lib/upload-save';
+import { useStable } from '../lib/use-stable';
+import { noticeText } from '../components/UploadNotices';
 // Type only: a value import would pull the lazy upload bundle into the main one.
 import type { HealthUploadAPI } from '../upload-entry';
 
@@ -24,23 +28,21 @@ import type { HealthUploadAPI } from '../upload-entry';
  * The upload flow (US-12): the shared upload state (health-core upload-flow.ts, one named state for
  * the web and the iPhone, US-12 AC26), changed only through its pure `transition`. This hook is the
  * web's adapter: it sends events, runs the effects the state asks for (lib/upload-effects.ts) and
- * the save (lib/upload-save.ts), and reads the screens from the state (lib/upload-read.ts). No mode
- * lives here: the refs hold the state read synchronously, the web's bytes by file id, reads in
- * flight to abort, one run's preparation, and the review's decisions and save counts.
+ * the save (lib/upload-save.ts), and hands the modal the screen as health-core draws it (`uploadView`)
+ * while files are still read. Every review choice is the state's (`chose`); no mode lives here: the
+ * refs hold the state read synchronously, the web's bytes by file id, reads in flight to abort, one
+ * run's preparation, and two once-per-run claims.
  */
 export type { UploadPhase } from '../lib/upload-read';
 export { MAX_FILES };
-
-const NONE: FileResult[] = [];
-const NO_READ = { results: NONE, notices: [] as FileNotice[] };
 
 /** US-12 AC10: one run's counts, integers only. Never a name, unit or value.
  *  `docx` is how many of the picked files were .docx (AC13); `values` holds
  *  value counts: `undatedPrevious` from an undated previous column (AC14),
  *  `unitsGuessed` (AC16), `unitsRefused` (AC15), and the read files' limits
  *  (`uploadLimitSignal`, AC20): `valuesLimit`, `valuesLimitUngraded`, and the
- *  closed-list keys of the ungraded tests, the one non-count; `cancelled` a
- *  read Cancel stopped; `known`, `failedFinal` and `firstReadSeconds` from the
+ *  closed-list keys of the ungraded tests, the one non-count; `cancelled` 1 for
+ *  a run a Stop cut short, counted when the run ends (U9); `known`, `failedFinal` and `firstReadSeconds` from the
  *  shared state (upload-usage.ts, AC30). A zero is never sent, except a first
  *  read under a second (`firstReadSeconds: 0`, a real time): every key is
  *  optional, so a server a deploy behind meets a new key only once it counts something. */
@@ -55,7 +57,7 @@ function trackUploadOutcome(picked: number, withValues: number, docx: number, no
 }
 
 /** A run's counts once its reading ends (US-12 AC10). */
-function countRun(s: UploadState, held: Held, results: FileResult[], notices: FileNotice[]): void {
+function countRun(s: UploadState, held: Held, results: FileResult[], notices: FileNotice[], stopped: boolean): void {
   const read = results.filter(r => !r.error);
   const values = {
     undatedPrevious: read.reduce((n, r) => n + [...r.values, ...r.additionalValues].filter(v => v.recordedAt === UNDATED_PREVIOUS).length, 0),
@@ -64,21 +66,34 @@ function countRun(s: UploadState, held: Held, results: FileResult[], notices: Fi
   };
   const { limitUngradedTests, ...limits } = uploadLimitSignal(read);
   const picked = (s.phase === 'choosing' ? 0 : s.files.length) + held.leftOut;
-  trackUploadOutcome(picked, read.filter(hasValues).length, held.docx, notices, { ...values, ...limits, ...uploadUsageCounts(s) }, limitUngradedTests);
+  trackUploadOutcome(picked, read.filter(hasValues).length, held.docx, notices, { ...values, ...limits, ...uploadUsageCounts(s), ...(stopped ? { cancelled: 1 } : {}) }, limitUngradedTests);
+}
+
+/** A read file as the review's matrix takes it, built once per extraction, so its identity holds while other files are read. */
+const RESULTS = new WeakMap<object, FileResult>();
+function resultOf(f: UploadFile): FileResult | null {
+  if (f.status.s !== 'read') return null;
+  const x = f.status.extraction;
+  let r = RESULTS.get(x);
+  if (!r) RESULTS.set(x, r = readResult(fileNameOf(f), x as unknown as LabImportResult).result);
+  return r;
 }
 
 export interface UploadFlowOptions {
   unitSystem: UnitSystem;
+  /** The page's record as last shown: a re-read changes it, and the review is judged again. */
   history: UploadHistory;
-  /** The page's re-read; a partial save waits for it before a retry (US-12 AC6c). */
+  /** The page's re-read, after a Save lands (US-12 AC6). */
   onComplete: () => void | Promise<void>;
   onStart?: () => Promise<void>;
   onClose: () => void;
-  /** `erase`: the erase the page showed as the save began (US-16 AC2a). */
-  onScreeningUpdate?: (screeningKey: string, value: string, erase: string) => void;
+  /** The plan's age and sex: whom a letter's screening update is judged for (US-06 AC5). */
+  screening: ScreeningProfile;
+  /** The review's `upload_review` counts as they stand, read when a Save lands (US-13 AC13). */
+  reviewCounts?: () => ProductEventMetadata;
 }
 
-export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClose, onScreeningUpdate }: UploadFlowOptions) {
+export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClose, screening, reviewCounts }: UploadFlowOptions) {
   const [upload, setUpload] = useState<UploadState>(() => initialUpload('web'));
   // The state read synchronously: a second pick or Save in the same render sees the first.
   const live = useRef(upload);
@@ -86,12 +101,10 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
   const held = useRef<Held>(emptyHeld());
   // The run's quota check, draft flush and upload bundle: one promise per run, shared by its effects.
   const prepared = useRef<{ run: number; ready: Promise<HealthUploadAPI | null> } | null>(null);
-  // The decisions the pending Save writes, for the `save` effect.
-  const decisions = useRef<ReviewDecisions | null>(null);
-  // What the review's Saves wrote beyond the shared state's counts, by run (US-12 AC6c).
-  const saved = useRef<{ run: number; outcome: SaveOutcome }>({ run: 0, outcome: NO_OUTCOME });
-  // The run whose review sent its `upload_review` (US-13 AC13): one per review, a synchronous claim.
+  // The run whose review sent its `upload_review` (US-13 AC13), and the run whose reading was counted
+  // (US-12 AC10): synchronous once-per-run claims, so a Try again never counts a run twice.
   const reviewEnded = useRef<number | null>(null);
+  const runCounted = useRef<number | null>(null);
   /** Sends the review's counts once: on a finished Save, or on Cancel or close. */
   const endReview = useRef((counts: ProductEventMetadata | undefined) => {
     const s = live.current;
@@ -102,8 +115,8 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
   // The connect-first gate was skipped (US-12 AC4): view state, kept by a cancel.
   const [skipArchive, setSkipArchive] = useState(false);
   const [loadUploadBundle] = useState(createUploadBundleLoader);
-  const props = useRef({ unitSystem, history, onComplete, onStart, onScreeningUpdate });
-  props.current = { unitSystem, history, onComplete, onStart, onScreeningUpdate };
+  const props = useRef({ unitSystem, onComplete, onStart, screening, reviewCounts });
+  props.current = { unitSystem, onComplete, onStart, screening, reviewCounts };
 
   // The adapter: built once, it reads only refs, so a late effect never sees an old render.
   const port = useRef<UploadPort | null>(null);
@@ -115,16 +128,21 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
       live.current = step.state;
       setUpload(step.state);
       const after = step.state;
-      // A run's reading ended, or a pick of only files too large started none: counted once (US-12 AC10).
-      if ((after.phase === 'open' || after.phase === 'failed') && inFlight(after) === 0 && (before.phase === 'choosing' || inFlight(before) > 0)) readEnded(after);
+      // A run is counted once, when it is final (US-12 AC10; PR 1906 item 3): refused or failed as a whole,
+      // saved, or left (discard, close, a new pick, the page going away). A file a Try again mends is counted
+      // as read; a run a Stop cut short counts as cancelled (U9, owner ruling 2026-11-20).
+      const left = before.phase !== 'choosing' && after.phase === 'choosing';
+      if (after.phase === 'failed' || after.phase === 'done' || left) runEnded(left ? before : after);
       for (const effect of step.effects) runEffect(port.current!, effect);
     };
     /** Counts the run; a run no file could open is reported, as before (US-12 AC3). */
-    const readEnded = (s: UploadState) => {
+    const runEnded = (s: UploadState) => {
       const h = held.current;
-      if (refusedForKey(s)) return; // the Pages build's missing key names and counts nothing
-      const { results, notices } = readOutcome(s, h, false);
-      countRun(s, h, results, notices);
+      if (refusedForKey(s) || runCounted.current === s.run) return; // the Pages build's missing key names and counts nothing
+      runCounted.current = s.run;
+      const { results, notices } = readOutcome(s, h);
+      // A file the Stop cut short holds `stopped` in the state: the run was cancelled.
+      countRun(s, h, results, notices, s.phase !== 'choosing' && s.files.some(f => f.status.s === 'stopped'));
       if (readErrorOf(s) === NO_FILES_TEXT) {
         Sentry.captureException(recordFailure(new UploadError(NO_FILES_TEXT, 'no_files'), 'Upload processing failed'), { tags: { feature: 'upload', uploadErrorCode: 'no_files' } });
         trackProductEvent('upload_extract_failed');
@@ -159,6 +177,11 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
         return null;
       }
     };
+    /** The page reads back what the Save wrote; a re-read that fails is only reported: what saved stays saved. */
+    const reread = () => {
+      const report = (err: unknown) => { if (!(err instanceof WritesStoppedError)) Sentry.captureException(recordFailure(err, 'Upload save failed'), { tags: { area: 'upload-save', branch: 'reread' } }); };
+      try { void Promise.resolve(props.current.onComplete()).catch(report); } catch (err) { report(err); }
+    };
     port.current = {
       live: () => live.current,
       held: () => held.current,
@@ -170,18 +193,15 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
       reads: new Map(),
       get unitSystem() { return props.current.unitSystem; },
       save: (run, attempt) => {
-        const d = decisions.current;
-        if (!d) return;
-        const { onComplete: complete, onScreeningUpdate: screening, history: shown } = props.current;
-        const before = saved.current.run === run ? saved.current.outcome : NO_OUTCOME;
-        void saveReview(d, { earlierRows: before.labRows, complete, screening, existing: shown.documents }).then(({ attempt: written, message }) => {
-          // This attempt's own counts add to what earlier attempts saved.
-          const total = written ? withAttempt(before, written) : before;
-          saved.current = { run, outcome: total };
-          if (message) return send({ type: 'saveFailed', run, attempt, message });
+        const s = live.current;
+        if (s.phase !== 'saving' || s.run !== run) return;
+        void saveAttempt(s, held.current, getDocumentArchiveMode() === 'cloud', props.current.screening).then((answer) => {
+          if ('message' in answer) return send({ type: 'saveFailed', run, attempt, message: answer.message });
           // One per review: a finished Save, never a failed one (US-13 AC13).
-          endReview.current(d.review);
-          send({ type: 'saved', run, attempt, outcome: { values: total.values + total.labValues, documents: total.documents.length, archived: 0 } });
+          // The review's counts as they stand when the Save lands (US-13 AC13).
+          endReview.current(props.current.reviewCounts?.());
+          send({ type: 'saved', run, attempt, outcome: answer.outcome });
+          reread();
         });
       },
     };
@@ -196,32 +216,49 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
     if (done) trackProductEvent('upload_saved', { count: done.outcome.values + done.outcome.documents });
   }, [done]);
 
-  // The screens, read from the state. Results and notices keep their identity for one read: the
-  // review keys its drafts and its one `upload_review` on them.
-  const files = upload.phase === 'choosing' ? null : upload.files;
-  const pickHeld = held.current;
-  // Nothing shows them while files are read, so they are built once reading ends. The pick's held
-  // data changes only together with `files` (each effect sends its event after writing it).
-  const reading = inFlight(upload) > 0;
+  // The screen as health-core draws it, from the state and the record as the page last read it; null
+  // before a pick opens. Results show as each file is read (US-12 AC26). `history` stands for the record:
+  // a re-read changes it, and the review is judged again.
   const cloud = getDocumentArchiveMode() === 'cloud';
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- `files`, the pick's held data and the archive mode are what change them
-  const { results, notices } = useMemo(() => (reading ? NO_READ : readOutcome(upload, pickHeld, cloud)), [files, pickHeld, reading, cloud]);
-  const phase = phaseOf(upload);
-  const reviewed = phase === 'reviewing' || phase === 'saving' || phase === 'saveFailed' || phase === 'done';
+  const { age, sex } = screening;
+  const shown = useMemo(() => {
+    if (upload.phase === 'choosing' || upload.phase === 'consent' || upload.phase === 'failed') return null;
+    const record = uploadRecord();
+    const now = new Date().toISOString();
+    const review = uploadReview(upload, record, now, { age, sex });
+    return { review, view: uploadView(upload, record, now, review, cloud) };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- `history` is the record's version as the page shows it
+  }, [upload, history, age, sex, cloud]);
 
-  // Cancel stops every read in flight and drops the run (US-12 AC28); a read it stopped is counted once (AC10).
-  const cancel = useCallback(() => {
-    const s = live.current;
-    if (s.phase === 'open' && inFlight(s) > 0) {
-      trackUploadOutcome(s.files.length + held.current.leftOut, 0, held.current.docx, pickNotices(s, held.current), { cancelled: 1, ...uploadUsageCounts(s) });
-    }
-    send({ type: 'discard' });
-  }, [send]);
+  // A Replace whose target the record no longer holds in that slot: the state drops it and unticks the value (owner ruling 2026-11-20).
+  useEffect(() => {
+    const lost = shown ? lostReplaces(shown.review, upload) : [];
+    if (lost.length) send({ type: 'replacesLost', lost });
+  }, [shown, upload, send]);
+
+  // The read lab reports in the review's order (its `labFiles`), as the matrix takes them; the same
+  // array while they are the same files, so a file read elsewhere never rebuilds the table.
+  const files = upload.phase === 'choosing' ? [] : upload.files;
+  const labs = useStable((shown?.review.labFiles ?? []).map(l => resultOf(files.find(f => f.id === l.fileId)!)!));
+
+  // The files a run did not fully read (US-12 AC9).
+  const pickHeld = held.current;
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- `files` and the pick's held data are what change them
+  const notices = useMemo(() => readOutcome(upload, pickHeld).notices, [files, pickHeld]);
+  // A failed file's own words, by file id, when the web has them (a .docx of pictures, a legacy .doc; US-12 AC9).
+  const failedFiles = files.filter(f => f.status.s === 'failed');
+  const failedNames = new Set(failedFiles.map(fileNameOf));
+  const failedLine = (id: string) => {
+    const f = failedFiles.find(x => x.id === id);
+    const notice = f && notices.find(n => n.name === fileNameOf(f));
+    return notice && notice.reason !== 'valuesDropped' ? noticeText({ ...notice, reason: notice.reason }) : null;
+  };
+  const phase = phaseOf(upload);
 
   // Close hides the modal. A screen with nothing to lose resets; elsewhere the work goes on, hidden.
   const close = useCallback(() => {
-    const shown = phaseOf(live.current);
-    if (shown === 'picking' || shown === 'readFailed' || shown === 'done') {
+    const shownPhase = phaseOf(live.current);
+    if (shownPhase === 'picking' || shownPhase === 'readFailed' || shownPhase === 'done') {
       send({ type: 'close' });
       setSkipArchive(false);
     }
@@ -237,8 +274,8 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
 
   /** Files from the picker or a drop: a new run, on a screen that takes a pick. */
   const pick = (selectedFiles: FileList | null) => {
-    const shown = phaseOf(live.current);
-    if (!selectedFiles?.length || (shown !== 'picking' && shown !== 'readFailed')) return;
+    const shownPhase = phaseOf(live.current);
+    if (!selectedFiles?.length || (shownPhase !== 'picking' && shownPhase !== 'readFailed')) return;
     const fileArray = Array.from(selectedFiles).slice(0, MAX_FILES);
     send({ type: 'close' }); // a read-failed or too-large screen gives way to the new run
     held.current = { ...emptyHeld(live.current.run + 1), leftOut: selectedFiles.length - fileArray.length, docx: fileArray.filter(isDocx).length };
@@ -250,21 +287,25 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
     });
   };
 
-  const save = useCallback((d: ReviewDecisions) => {
-    const s = live.current;
-    if (s.phase !== 'open' && s.phase !== 'saveFailed') return;
-    decisions.current = d;
-    // A new Save clears the last attempt's skips and refusals (US-12 AC6c).
-    saved.current = { run: s.run, outcome: saved.current.run === s.run ? savedSoFar(saved.current.outcome) : NO_OUTCOME };
-    send({ type: 'saveStarted' });
-  }, [send]);
+  /** Stop (AC28): every read in flight aborted, nothing more sent, what was read stays in the review. */
+  const stop = useCallback(() => send({ type: 'stop' }), [send]);
+  /** Try again for one failed file, or every one a retry can mend (AC26). */
+  const retry = useCallback((id: string | 'all') => send({ type: 'retry', id }), [send]);
+  /** One review choice, kept by the state on its file (US-13 AC13). */
+  const chose = useCallback((id: string, change: ChoiceChange) => send({ type: 'chose', id, change, now: new Date().toISOString() }), [send]);
+  /** Save: the shared state starts it, with what the shown review would write, and its effect runs it (lib/upload-save.ts). */
+  const reviewed = shown?.review;
+  const save = useCallback(() => send({ type: 'saveStarted', ...(reviewed ? { reviewed: reviewedWrites(reviewed) } : {}) }), [send, reviewed]);
 
   return {
-    phase, files: phase === 'readFailed' ? pickedFiles(upload) : [], notices, progress: progressOf(upload),
-    results: reviewed ? results : NONE,
-    outcome: saved.current.run === upload.run ? saved.current.outcome : NO_OUTCOME,
-    readError: readErrorOf(upload), saveError: upload.phase === 'saveFailed' ? upload.message : null,
+    phase, state: upload, view: shown?.view ?? null, review: shown?.review ?? null, results: labs as FileResult[],
+    files: phase === 'readFailed' ? pickedFiles(upload) : [], notices,
+    // In the review a failed file is said once, in its own section, with Try again (US-12 AC26).
+    reviewNotices: notices.filter(n => !failedNames.has(n.name)), failedLine, progress: progressOf(upload),
+    readError: readErrorOf(upload),
     skipArchive, skipConnect: () => setSkipArchive(true),
-    pick, cancel, close, discard, save, endReview: endReview.current,
+    pick, close, discard, stop, retry, chose, save, endReview: endReview.current,
   };
 }
+
+export type UploadFlow = ReturnType<typeof useUploadFlow>;

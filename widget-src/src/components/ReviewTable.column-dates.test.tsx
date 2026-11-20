@@ -4,7 +4,7 @@
 // Cases from the review rounds on PR #152 (branch austin-batch-2026-10-19).
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render } from '@testing-library/react';
-import { ReviewTable } from './ReviewTable';
+import { ReviewTable } from '../testing/review-harness';
 import type { FileResult } from '../lib/upload-pipeline';
 import { showingAll } from '../testing/import-review';
 
@@ -17,7 +17,7 @@ function review(reportDate: string | null) {
   const onSave = vi.fn();
   const view = showingAll(render(<ReviewTable results={[result]} history={{ measurements: [], labValues: [], documents: [] }}
     unitSystem="si" age={60} sex="male" grading={{}} onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />));
-  const save = view.getByRole('button', { name: /^Save / }) as HTMLButtonElement;
+  const save = view.getByRole('button', { name: /^Save\b/ }) as HTMLButtonElement;
   const picker = () => view.getByLabelText('Choose column date') as HTMLInputElement;
   return { view, onSave, save, picker };
 }

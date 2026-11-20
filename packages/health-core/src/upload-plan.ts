@@ -5,13 +5,16 @@
  * files filed behind the row the record holds. Pure; the bytes stay with the platform, by file id.
  */
 import { documentView, pendingRowsFor } from './document-save';
+import { zipMemberName } from './lab-extraction';
 import type { DocumentFields } from './document-rows';
 import { validDay, type BulkRow } from './record-edits';
 import { isReadableRow } from './readable-rows';
 import type { RoadmapFile } from './roadmap-file';
-import { documentDate } from './upload-choices';
+import { isScreeningEligible } from './types';
+import { documentDate, type FileChoices } from './upload-choices';
 import type { UploadState } from './upload-flow';
 import type { UploadReview } from './upload-review';
+import { originalWithoutValues } from './upload-rules';
 
 /**
  * The shared lab-archive builder once design PR 5 gives it the rows its import wrote
@@ -31,6 +34,13 @@ export interface UploadSavePlan {
   labArchives: Array<{ fileId: string; sourceFileName: string; reportDate: string | null }>;
   /** With a cloud: known files whose held row stores no original, filed behind it as the kind the record holds (US-14 AC4). */
   archiveOnly: Array<{ fileId: string; fields: DocumentFields }>;
+  /**
+   * Each letter's screening update, as the web's review offered it (US-06 AC5, US-13 AC6): shown when
+   * `isScreeningEligible`; ticked by the person, else by default when the age is known and eligible;
+   * `date`: the letter's day, else the month it printed while no day is set. Save writes the ticked
+   * ones with a date. Empty when the review offers none (the iPhone).
+   */
+  screenings: Array<{ fileId: string; type: string; key: string; date: string | null; shown: boolean; ticked: boolean }>;
   /** `originals`: the files Save stores in the cloud (lab archives and archive-only); 0 with no cloud. */
   counts: { values: number; documents: number; archived: number; originals: number };
 }
@@ -46,37 +56,51 @@ const fieldsOf = (d: ReturnType<typeof documentView>, sourceFileName: string): D
  */
 export function uploadSavePlan(s: UploadState, record: RoadmapFile, now: string, review: UploadReview, cloudConnected: boolean): UploadSavePlan {
   // Only rows this build reads (US-65) give a held title, date or kind, newest first, as upload-known.ts indexes them.
-  const views = record.documents.filter((d) => !d.deleted && isReadableRow('documents', d)).map(documentView);
+  let readable: ReturnType<typeof documentView>[] | null = null; // built on first use: most picks hold no letter
+  const views = () => (readable ??= record.documents.filter((d) => !d.deleted && isReadableRow('documents', d)).map(documentView));
   const labs = new Map(review.labFiles.map((f) => [f.fileId, f]));
+  const platform = 'platform' in s ? s.platform : 'web';
   const seen = new Set<string>();
   const documents: UploadSavePlan['documents'] = [];
   const labArchives: UploadSavePlan['labArchives'] = [];
   const archiveOnly: UploadSavePlan['archiveOnly'] = [];
+  const screenings: UploadSavePlan['screenings'] = [];
   for (const f of 'files' in s ? s.files : []) {
     if (f.hash && seen.has(f.hash)) continue;
+    // A ZIP member is named by its ZIP and its path, as the web and the connector name it (US-35 AC5): a document's stable key.
+    const sourceFileName = f.zip !== undefined ? zipMemberName(f.zip, f.name) : f.name;
     if (f.status.s === 'read' && f.status.extraction.classification !== 'lab_report' && f.status.extraction.document) {
       const doc = f.status.extraction.document;
       // A metadata-only row holding these bytes: the card starts from its title and date (US-14 AC4).
-      const held = pendingRowsFor(views, f.hash, false)[0];
+      const held = pendingRowsFor(views(), f.hash, false)[0];
       const fix = f.status.choices.document;
       const fixedDate = 'date' in fix ? documentDate(fix.date ?? null, now) : undefined; // an impossible date is never planned
+      const raw = held ? held.documentDate : doc.documentDate;
+      const day = fixedDate !== undefined ? fixedDate : validDay(raw ?? undefined, { now });
       documents.push({ fileId: f.id, fields: {
         documentType: fix.kind ?? doc.classification,
         title: fix.title ?? held?.title ?? doc.title,
-        documentDate: fixedDate !== undefined ? fixedDate : validDay((held ? held.documentDate : doc.documentDate) ?? undefined, { now }),
+        documentDate: day,
         contentMd: doc.contentMarkdown ?? '',
         metadata: doc.metadata ?? {},
-        sourceFileName: f.name,
+        sourceFileName,
       } });
+      const type = doc.metadata?.screeningType;
+      if (review.screening && typeof type === 'string' && type) {
+        // The letter's day, else, while the person has not set or removed one, the month it printed.
+        const date = day ?? (fixedDate === undefined ? monthOnly(raw, now) : null);
+        screenings.push(screeningOf(f.id, type, date, f.status.choices, review.screening));
+      }
     } else if (f.status.s === 'read') {
-      // A report's original is filed with its values: not while it waits for a day, nor with every value unticked (as the iPhone).
+      // A report's original is filed with its values: not while it waits for a day, nor, on the iPhone,
+      // with every value unticked (D6: the web files it alone, upload-rules.ts).
       const lab = labs.get(f.id);
-      if (!lab || lab.needsDay || !lab.ticked.length) continue;
-      labArchives.push({ fileId: f.id, sourceFileName: f.name, reportDate: lab.day });
+      if (!lab || lab.needsDay || (!lab.ticked.length && !originalWithoutValues(platform))) continue;
+      labArchives.push({ fileId: f.id, sourceFileName, reportDate: lab.day });
     } else if (cloudConnected && f.status.s === 'known' && f.status.archiveOnly && f.status.as !== 'legacy' && f.hash) {
-      const held = pendingRowsFor(views, f.hash, f.status.as === 'labReport')[0];
+      const held = pendingRowsFor(views(), f.hash, f.status.as === 'labReport')[0];
       if (!held) continue;
-      archiveOnly.push({ fileId: f.id, fields: fieldsOf(held, f.name) });
+      archiveOnly.push({ fileId: f.id, fields: fieldsOf(held, sourceFileName) });
     } else continue;
     if (f.hash) seen.add(f.hash);
   }
@@ -85,12 +109,22 @@ export function uploadSavePlan(s: UploadState, record: RoadmapFile, now: string,
     return rows ? [{ fileId, rows }] : [];
   });
   return {
-    labRows, documents, labArchives, archiveOnly,
+    labRows, documents, labArchives, archiveOnly, screenings,
     counts: {
       values: review.classification.rows.length, documents: documents.length, archived: archiveOnly.length,
       originals: cloudConnected ? labArchives.length + archiveOnly.length : 0,
     },
   };
+}
+
+/** A printed month alone ("2024-06") that has begun, as the web read a letter's date (review-dates `readDocumentDate`). */
+function monthOnly(raw: string | null | undefined, now: string): string | null {
+  return raw && /^\d{4}-\d{2}$/.test(raw) && validDay(`${raw}-01`, { now }) ? raw : null;
+}
+
+function screeningOf(fileId: string, type: string, date: string | null, choices: FileChoices, { age, sex }: { age?: number; sex?: 'male' | 'female' }): UploadSavePlan['screenings'][number] {
+  // `isScreeningEligible` unchanged, with the web's inputs: the card shows by it; no age (no plan) starts unticked.
+  return { fileId, type, key: `${type}_last_date`, date, shown: isScreeningEligible(type, age, sex), ticked: choices.screening ?? (age !== undefined && isScreeningEligible(type, age, sex)) };
 }
 
 /** Save would write nothing new: no value, no document, no original to store. */
