@@ -179,6 +179,25 @@ describe('US-12 AC6: edits after a failed Save are what the retry writes', () =>
   });
 });
 
+// PR 1906 fix round, item 5 (US-06 AC5, owner ruling (a)): the screening update is as visible as before:
+// shown outside the collapsed documents row, ticked by default, so no date is written from a letter the
+// person never saw offered.
+describe('US-06 AC5: a letter\'s screening update shows with the documents row closed', () => {
+  it('is visible and ticked with the list closed; unticked, no date is written', async () => {
+    answers({ 'scan.pdf': scan });
+    render_({ age: 60 }); pick(pdf('scan.pdf'));
+    const row = await screen.findByText((_, el) => el?.classList.contains('review-screening-update') ?? false);
+    expect(screen.getByRole('button', { name: '1 letter or document will be saved' }).getAttribute('aria-expanded')).toBe('false');
+    expect(row.textContent).toBe('Update colorectal screening date to 2024-05-01');
+    const box = row.querySelector('input')!;
+    expect(box.checked).toBe(true);
+    fireEvent.click(box);
+    fireEvent.click(saveButton());
+    await screen.findByRole('button', { name: 'Done' });
+    expect(uploadStore.record.screenings.colorectalLastDate).toBeUndefined();
+  });
+});
+
 describe('US-12 AC27: a file the record holds is counted, never offered again', () => {
   it('the summary and the files list count it; Save writes nothing for it', async () => {
     vi.mocked(uploadKnownIndex).mockReturnValue(new Map([['sha256-old.pdf', { as: 'document', archiveOnly: false }]]));

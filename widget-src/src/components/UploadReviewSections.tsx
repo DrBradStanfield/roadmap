@@ -47,6 +47,20 @@ export function UploadReviewSections({ view, documentOf, failedLine, onChose, on
         </div>
       )}
 
+      {/* Each letter's screening update, outside the collapsed list, so no date is written from a letter
+          the person never saw offered (US-06 AC5; owner ruling on PR 1906). */}
+      {view.documents?.rows.map((row) => row.screening && (
+        <label key={row.fileId} className="review-screening-update">
+          <input
+            type="checkbox"
+            checked={row.screening.checked}
+            disabled={!row.screening.enabled}
+            onChange={(e) => onChose(row.fileId, { screening: e.target.checked })}
+          />
+          <span>{row.screening.words[0]}<strong>{row.screening.words[1]}</strong>{row.screening.words[2]}</span>
+        </label>
+      ))}
+
       {view.documents && (
         <div className="review-documents">
           <button type="button" className="review-disclosure" aria-expanded={documents.open} onClick={documents.toggle}>{view.documents.line}</button>
@@ -92,17 +106,6 @@ export function UploadReviewSections({ view, documentOf, failedLine, onChose, on
                       {doc.contentMarkdown.slice(0, 300)}
                       {doc.contentMarkdown.length > 300 && '...'}
                     </div>
-                  )}
-                  {row.screening && (
-                    <label className="review-screening-update">
-                      <input
-                        type="checkbox"
-                        checked={row.screening.checked}
-                        disabled={!row.screening.enabled}
-                        onChange={(e) => onChose(row.fileId, { screening: e.target.checked })}
-                      />
-                      <span>{row.screening.words[0]}<strong>{row.screening.words[1]}</strong>{row.screening.words[2]}</span>
-                    </label>
                   )}
                 </div>
               </div>
