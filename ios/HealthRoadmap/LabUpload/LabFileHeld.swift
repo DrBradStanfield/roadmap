@@ -110,6 +110,26 @@ extension LabFileReader {
             return entries.enumerated().map { ("\(zip)#\($0)", $1) }
         }
 
+        /// Each original held, a file's or a listed member's (never a ZIP's own bytes), by id, with
+        /// its MIME type: what the save door may store (upload-save-door.ts `originalsJson`).
+        func originals() -> [String: String] {
+            records.withLock { records in
+                var out: [String: String] = [:]
+                let mimeType = { (name: String) in mimeTypes[pathExtension(name)] ?? "" }
+                for (id, item) in records.items {
+                    if let listing = item.listing {
+                        for (n, entry) in listing.entries.enumerated() where !listing.forgotten.contains(n) { out["\(id)#\(n)"] = mimeType(entry.name) }
+                    } else if pathExtension(item.name) != "zip" {
+                        out[id] = mimeType(item.name)
+                    }
+                }
+                return out
+            }
+        }
+
+        /// One original's bytes, a member's inflated now; nil when it is not held or will not read.
+        func original(_ id: String) -> Data? { try? read(id).bytes }
+
         /// One file's or member's 'sha256-<hex>', the web's sha256Blob format.
         func hash(_ id: String) throws -> String { contentHash(try read(id).bytes) }
 

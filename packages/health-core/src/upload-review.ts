@@ -10,7 +10,7 @@ import { classifyImportValues, importRow, reportImportFile, valueDays, type Impo
 import { bulkRowTarget } from './bulk-row-target';
 import { slotIndex, slotKey, validDay, type BulkRow } from './record-edits';
 import type { RoadmapFile } from './roadmap-file';
-import type { UploadFile, UploadState } from './upload-flow';
+import { uploadFileName, type UploadFile, type UploadState } from './upload-flow';
 
 type ReadFile = UploadFile & { status: Extract<UploadFile['status'], { s: 'read' }> };
 
@@ -116,7 +116,7 @@ export function uploadReview(s: UploadState, record: RoadmapFile, now: string): 
   }
   return {
     labFiles: labs.map((f, i) => ({
-      fileId: f.id, name: f.name, day: built[i].day, ticked: built[i].ticked, replacing: built[i].replacing,
+      fileId: f.id, name: uploadFileName(f), day: built[i].day, ticked: built[i].ticked, replacing: built[i].replacing,
       needsDay: built[i].needsTestDay || built[i].needsPreviousDay, needsTestDay: built[i].needsTestDay, needsPreviousDay: built[i].needsPreviousDay,
       previousMonth: [...(f.status.extraction.values ?? []), ...(f.status.extraction.additionalValues ?? [])].find((v) => v.printedMonth)?.printedMonth ?? null,
     })),

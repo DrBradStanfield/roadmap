@@ -6,6 +6,7 @@ import { oneLine } from './plan';
 import { type EditRejection } from './record-edits';
 import type { FileLabValue } from './roadmap-file';
 import { readableSlotRow, type ToolOutcome } from './mcp-tool-contract';
+import { UNREADABLE_VALUE_TEXT } from './upload-text';
 
 /**
  * A refusal in the agent's own terms. A taken slot is the one rejection with a
@@ -17,7 +18,7 @@ export function rejection(result: EditRejection): ToolOutcome {
   const held = result.existing;
   if (result.reason === 'slot-occupied' && held) {
     // A value no reader can read is never echoed (US-65 AC3): it may be anything.
-    const holds = readableSlotRow(held) ? oneLine(String(held.value)) : 'a value this app cannot read';
+    const holds = readableSlotRow(held) ? oneLine(String(held.value)) : UNREADABLE_VALUE_TEXT;
     return {
       status: 'rejected',
       reason: result.reason,

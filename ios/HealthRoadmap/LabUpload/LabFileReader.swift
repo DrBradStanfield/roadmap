@@ -246,13 +246,13 @@ enum LabFileReader {
     }
 
     /// A file's listed size, before any read; 0 when the system does not say.
-    private static func size(of url: URL) -> Int {
+    static func size(of url: URL) -> Int {
         (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
     }
 
     /// A file's bytes, read through a file coordinator so a File Provider (Dropbox, Google
     /// Drive) or iCloud placeholder downloads first (adversary R4), read whole inside it.
-    private static func coordinatedData(_ url: URL) throws -> Data {
+    static func coordinatedData(_ url: URL) throws -> Data {
         var refused: NSError?
         var read: Result<Data, Error> = .failure(Failure.unreadable(url.lastPathComponent))
         NSFileCoordinator().coordinate(readingItemAt: url, options: [], error: &refused) { url in
@@ -313,7 +313,7 @@ enum LabFileReader {
     }
 
     /// The type a browser gives a picked file of each kind, kept with the original.
-    private static let mimeTypes = ["pdf": "application/pdf", "jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png", "heic": "image/heic"]
+    static let mimeTypes = ["pdf": "application/pdf", "jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png", "heic": "image/heic"]
 
     private static func pdf(_ data: Data, name: String) throws -> Document {
         guard let pdf = PDFDocument(data: data), pdf.pageCount > 0 else { throw Failure.unreadable(name) }

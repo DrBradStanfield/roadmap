@@ -50,6 +50,8 @@ export const UPLOAD_TEXT = {
   archivedLine: (a: number) => `${plural(a, 'original file')} kept in your cloud.`,
   /** The web's done line for originals it could not store (UploadModal.tsx), byte for byte: no count. */
   unstoredLine: "The original file couldn't be stored; its details are saved.",
+  /** The iPhone's own word for the done screen's button and a picker's confirm (section 5 reuses "Done"). */
+  done: 'Done',
   /** The Save label when Save files only originals (the web's saveLabel, ReviewOverview.tsx). */
   saveOriginals: (a: number) => `Save ${plural(a, 'original')}`,
   /** Why Save waits while a report needs its day. */
@@ -57,6 +59,32 @@ export const UPLOAD_TEXT = {
   /** A conflict whose Replace is on (the web shows only the ticked box). */
   replaces: 'Replaces the value in your record.',
 } as const;
+
+/**
+ * A read value's words as the web's review says them, moved here byte for byte so both clients say
+ * the same: what the report printed when the unit was guessed (review-matrix.ts), and the Replace
+ * control on a value whose day the record already holds (ReviewMatrix.tsx).
+ */
+export const REVIEW_CELL_TEXT = {
+  printed: (value: string | number, unit: string) => `Printed: ${value} ${unit || '(no unit)'}`,
+  replace: 'Replace',
+  /** The Replace box's spoken name: the test and the day it would correct (ReviewMatrix.tsx aria-label). */
+  replaceLabel: (test: string, day: string) => `Replace the saved ${test} value from ${day}`,
+  /** A value whose unit the read guessed, in the iPhone review's words (LabReviewView.swift), byte for byte. */
+  checkUnit: 'Check this value and its unit against the report',
+} as const;
+
+/** A held value no reader can read is never echoed (US-65 AC3): the agent tools' words for it (mcp-refusals.ts), shared. */
+export const UNREADABLE_VALUE_TEXT = 'a value this app cannot read';
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+/** "5 Jan 2019" for 2019-01-05, "Jun 2025" for 2025-06; null for anything else (moved from the web's
+ *  review-dates.ts, byte for byte, so both clients write a day the same way). */
+export function longDate(day: string): string | null {
+  const m = /^(\d{4})-(\d{2})(?:-(\d{2}))?$/.exec(day);
+  const month = m ? MONTHS[Number(m[2]) - 1] ?? m[2] : '';
+  return m && `${m[3] ? `${Number(m[3])} ` : ''}${month} ${m[1]}`;
+}
 
 /** A file not fully read, as the web's notices word it (US-12 AC9); moved from UploadNotices.tsx. */
 export const FILE_NOTICE_TEXT = {

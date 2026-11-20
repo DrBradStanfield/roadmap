@@ -4,7 +4,7 @@
 // rule. Every input is checked once, where it enters, by health-core's strict schemas
 // (upload-schema.ts), and the PARSED value is what runs. A malformed input answers a refusal,
 // never a throw. Nothing is logged: the state holds file names, hashes and read values.
-import { initialUpload, transition, type UploadEvent, type UploadState } from '../../packages/health-core/src/upload-flow';
+import { initialUpload, transition, uploadFileName, type UploadEvent, type UploadState } from '../../packages/health-core/src/upload-flow';
 import { ATTEST_PART, NETWORK_FAILURE, UPLOAD_EVENTS, UPLOAD_STATE } from '../../packages/health-core/src/upload-schema';
 import { knownAs, knownIndex, readIsLegacy, type KnownIndex } from '../../packages/health-core/src/upload-known';
 import { appGateFailure, boundedWords, type FailDetail, type UploadFailure } from '../../packages/health-core/src/upload-failure';
@@ -119,8 +119,8 @@ function indexOf(record: RoadmapFile): KnownIndex {
 /** The wire event made whole with what only the engine knows (health-core's own rules). */
 function engineEvent(state: UploadState, wire: Wire, record: () => RoadmapFile): UploadEvent {
   const legacy = (id: string, extraction: Extract<UploadEvent, { type: 'answered' }>['extraction']) => {
-    const name = 'files' in state ? state.files.find((f) => f.id === id)?.name : undefined;
-    return name !== undefined && readIsLegacy(record(), name, extraction);
+    const file = 'files' in state ? state.files.find((f) => f.id === id) : undefined;
+    return file !== undefined && readIsLegacy(record(), uploadFileName(file), extraction);
   };
   switch (wire.type) {
     case 'hashed': return { ...wire, known: knownAs(indexOf(record()), wire.hash) };
@@ -170,12 +170,15 @@ export const uploadStep = (stateJson: string, eventJson: string, recordJson: str
 });
 
 /** One review per call, as health-core's callers take it: the view and its plan count the same rows. */
-const reviewed = (make: typeof uploadView | typeof uploadSavePlan) => (stateJson: string, recordJson: string, nowIso: string, cloudConnected: boolean, deviceId: string) => answer(() => {
-  const state = readState(stateJson);
-  const record = readUploadRecord(recordJson, nowIso, deviceId);
-  return make(state, record, nowIso, uploadReview(state, record, nowIso), cloudConnected);
-});
-export const uploadViewOf = reviewed(uploadView);
+const reviewed = <T,>(make: (state: UploadState, record: RoadmapFile, nowIso: string, review: ReturnType<typeof uploadReview>, cloudConnected: boolean) => T) =>
+  (stateJson: string, recordJson: string, nowIso: string, cloudConnected: boolean, deviceId: string) => answer(() => {
+    const state = readState(stateJson);
+    const record = readUploadRecord(recordJson, nowIso, deviceId);
+    return make(state, record, nowIso, uploadReview(state, record, nowIso), cloudConnected);
+  });
+/** The view, with the words the app shows when a later engine call gives no answer at all
+ *  (`engineError`, the doors' own engine-error line): the page keeps them from its last view. */
+export const uploadViewOf = reviewed((...args: Parameters<typeof uploadView>) => ({ ...uploadView(...args), engineError: REFUSAL_WORDS['engine-error'] }));
 export const uploadPlanOf = reviewed(uploadSavePlan);
 
 export const uploadUsage = (stateJson: string) => answer(() => uploadUsageCounts(readState(stateJson)));
