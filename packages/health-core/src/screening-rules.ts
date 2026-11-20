@@ -277,7 +277,7 @@ export const SCREENING_RULES: readonly ScreeningRule[] = [
       { value: 'normal', label: 'Normal', months: 60 },
       { value: 'osteopenia', label: 'Osteopenia', months: 24 },
       { value: 'osteoporosis', label: 'Osteoporosis', postMonths: 12,
-        followup: { name: 'treatment review', abnormalMeans: 'recorded result of osteoporosis', opening: 'You recorded a result of osteoporosis, which needs treatment and monitoring.' } },
+        followup: { name: 'treatment review', abnormalMeans: 'recorded result of osteoporosis', opening: 'You recorded a result of osteoporosis, which is usually treated and monitored.' } },
       { value: 'awaiting', label: 'Awaiting results' },
     ] },
     followupIgnoresUpperAge: false,

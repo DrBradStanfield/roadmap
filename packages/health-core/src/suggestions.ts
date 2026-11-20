@@ -191,7 +191,7 @@ export function weightMedicationTrigger(inputs: HealthInputs, results: HealthRes
 /** The GLP-1 card's text, shared by the cascade's first step and the standalone card. */
 function glp1Description(bmi: number, reasons: string[]): string {
   const and = reasons.length > 0 ? ` and ${joinWithAnd(reasons)}` : '';
-  return `With a BMI of ${bmi}${and}, consider discussing Tirzepatide (preferred) or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.`;
+  return `With a BMI of ${bmi}${and}, consider discussing Tirzepatide (listed first) or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.`;
 }
 
 /** A dose card's text (US-06 AC8): the steps the missing dose decides
@@ -629,7 +629,7 @@ export function generateSuggestions(
       // year (US-07 AC6) the "not started" lines go: they suggest a medicine.
       // What the user takes or did not tolerate stays.
       const notStarted = (line: string) => { if (medicinesShown(results)) checklist.push(line); };
-      if (medications) {
+      const medsFrom = checklist.length; if (medications) {
         const statinDrug = medications.statin?.drug;
         if (statinDrug && statinDrug !== 'none' && statinDrug !== 'not_tolerated') {
           const name = statinDrug.charAt(0).toUpperCase() + statinDrug.slice(1);
@@ -638,7 +638,7 @@ export function generateSuggestions(
         } else if (statinDrug === 'not_tolerated') {
           checklist.push('\u26A0\uFE0F Statin: not tolerated');
         } else {
-          notStarted('\u26A0\uFE0F Statin: not started \u2014 discuss with your doctor');
+          notStarted('\u26A0\uFE0F Statin: not started');
         }
 
         if (medications.ezetimibe === 'yes') {
@@ -646,7 +646,7 @@ export function generateSuggestions(
         } else if (medications.ezetimibe === 'not_tolerated') {
           checklist.push('\u26A0\uFE0F Ezetimibe: not tolerated');
         } else {
-          notStarted('\u26A0\uFE0F Ezetimibe: not started \u2014 discuss with your doctor');
+          notStarted('\u26A0\uFE0F Ezetimibe: not started');
         }
 
         if (medications.pcsk9i === 'yes') {
@@ -654,7 +654,7 @@ export function generateSuggestions(
         } else if (medications.pcsk9i === 'not_tolerated') {
           checklist.push('\u26A0\uFE0F PCSK9 inhibitor: not tolerated');
         } else {
-          notStarted('\u26A0\uFE0F PCSK9 inhibitor: not started \u2014 can lower Lp(a) ~25\u201330%; discuss with your doctor');
+          notStarted('\u26A0\uFE0F PCSK9 inhibitor: not started \u2014 can lower Lp(a) ~25\u201330%');
         }
       }
 
@@ -663,7 +663,7 @@ export function generateSuggestions(
         category: 'bloodwork',
         priority: 'attention',
         title: `Elevated Lp(a): ${bare('lpa', inputs.lpa)} nmol/L`,
-        description: `Lp(a) is genetically determined and cannot be changed by diet or lifestyle. With an elevated Lp(a), reducing all other modifiable cardiovascular risk factors is especially important.\n\nYour modifiable risk factors:\n${checklist.join('\n')}`,
+        description: `Lp(a) is genetically determined and cannot be changed by diet or lifestyle. With an elevated Lp(a), reducing all other modifiable cardiovascular risk factors is especially important.\n\nYour modifiable risk factors:\n${checklist.join('\n')}${checklist.length > medsFrom ? '\n\nConsider discussing these medicines with your doctor.' : ''}`,
       });
     } else if (inputs.lpa >= LPA_THRESHOLDS.normal) {
       suggestions.push({
@@ -728,7 +728,7 @@ export function generateSuggestions(
       category: 'bloodwork',
       priority: 'urgent',
       title: 'Very high triglycerides',
-      description: `Your triglycerides of ${shown('triglycerides', 'triglycerides', inputs.triglycerides)} are very high, increasing risk of pancreatitis. Immediate intervention is recommended.`,
+      description: `Your triglycerides of ${shown('triglycerides', 'triglycerides', inputs.triglycerides)} are very high, increasing risk of pancreatitis. Guidelines recommend immediate treatment at this level. See your doctor as soon as you can.`,
     });
   }
 
@@ -793,7 +793,7 @@ export function generateSuggestions(
     const pregnancyUnstudied = 'Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be.'
       + (statinDoses ? ` ${onStatinPregnancy}` : '');
     const stepCards: Record<LipidStep, [title: string, text: string]> = {
-      statin: ['Consider discussing a statin with your doctor', 'Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor. Statins are not recommended if you are pregnant or planning a pregnancy. Talk to your doctor.'],
+      statin: ['Consider discussing a statin with your doctor', 'Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor. If you are pregnant or planning a pregnancy, talk to your doctor before starting a statin.'],
       ezetimibe: ['Consider discussing Ezetimibe with your doctor', `Discuss adding Ezetimibe 10mg with your doctor. ${pregnancyUnstudied}`],
       'bempedoic-acid': ['Consider discussing bempedoic acid with your doctor', 'Bempedoic acid (Nexletol) lowers cholesterol via a different pathway than statins. Discuss with your doctor. Not recommended in pregnancy; talk to your doctor if you are pregnant or planning to be.'],
       'statin-dose': ['Add your statin dose', `${doseCardText('statin', switchesAtTop ? 'a more potent statin' : null)} ${onStatinPregnancy}`],

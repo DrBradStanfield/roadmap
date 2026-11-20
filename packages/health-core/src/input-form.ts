@@ -62,7 +62,7 @@ export const MEDICATION_TEXT = {
   /** An escalation field's label when the plan asks no step-up question. */
   escalationRecorded: 'Higher dose or switch (recorded answer)',
   statinLabel: 'Statin',
-  statinHint: 'Statins are the most effective first step. They reduce cholesterol production in the liver.',
+  statinHint: 'Guidelines name statins the first medicine to consider when cholesterol stays above target. They reduce cholesterol production in the liver.',
   ezetimibeLabel: 'On Ezetimibe 10mg?',
   ezetimibeHint: (lipid: string) => `Ezetimibe works differently — it blocks cholesterol absorption in the intestine, adding ~20% more ${lipid} reduction.`,
   bempedoicAcidLabel: 'Bempedoic acid',

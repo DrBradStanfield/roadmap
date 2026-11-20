@@ -1307,8 +1307,8 @@ describe('generateSuggestions', () => {
 
     // US-07 AC5: the sentence reads true at exactly the target.
     it.each([
-      { name: 'LDL 1.4', values: { ldlC: 1.4 }, text: 'Your LDL-c is 1.4 mmol/L; the treatment target is below 1.4 mmol/L. Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor. Statins are not recommended if you are pregnant or planning a pregnancy. Talk to your doctor.' },
-      { name: 'ApoB 0.5', values: { apoB: 0.5 }, text: 'Your ApoB is 0.50 g/L; the treatment target is below 0.50 g/L. Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor. Statins are not recommended if you are pregnant or planning a pregnancy. Talk to your doctor.' },
+      { name: 'LDL 1.4', values: { ldlC: 1.4 }, text: 'Your LDL-c is 1.4 mmol/L; the treatment target is below 1.4 mmol/L. Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor. If you are pregnant or planning a pregnancy, talk to your doctor before starting a statin.' },
+      { name: 'ApoB 0.5', values: { apoB: 0.5 }, text: 'Your ApoB is 0.50 g/L; the treatment target is below 0.50 g/L. Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor. If you are pregnant or planning a pregnancy, talk to your doctor before starting a statin.' },
     ])('med-statin at exactly the target, $name, shows and reads true (US-07 AC5)', ({ values, text }) => {
       const { inputs, results } = createTestData(values);
       expect(generateSuggestions(inputs, results, 'si', {}).find(s => s.id === 'med-statin')?.description).toBe(text);
@@ -1329,7 +1329,7 @@ describe('generateSuggestions', () => {
     it('the statin card says not to start one in pregnancy, and its reason cites the FDA and NICE (US-07 AC14)', () => {
       const { inputs, results } = createTestData({ ldlC: 3.0 });
       const card = generateSuggestions(inputs, results, 'si', {}).find(s => s.id === 'med-statin');
-      expect(card?.description).toMatch(/ Statins are not recommended if you are pregnant or planning a pregnancy\. Talk to your doctor\.$/);
+      expect(card?.description).toMatch(/ If you are pregnant or planning a pregnancy, talk to your doctor before starting a statin\.$/);
       expect(card?.reason).toContain('The FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive.');
       expect(card?.reason).not.toContain('Statins are not used in pregnancy');
       expect(card?.references?.map(r => r.url)).toEqual(expect.arrayContaining([
@@ -1370,7 +1370,7 @@ describe('generateSuggestions', () => {
     it('med-statin at exactly the non-HDL target of 1.6 shows (US-07 AC5)', () => {
       const { inputs, results } = createTestData({}, { nonHdlCholesterol: 1.6 });
       expect(generateSuggestions(inputs, results, 'si', {}).find(s => s.id === 'med-statin')?.description)
-        .toBe('Your non-HDL cholesterol is 1.6 mmol/L; the treatment target is below 1.6 mmol/L. Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor. Statins are not recommended if you are pregnant or planning a pregnancy. Talk to your doctor.');
+        .toBe('Your non-HDL cholesterol is 1.6 mmol/L; the treatment target is below 1.6 mmol/L. Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor. If you are pregnant or planning a pregnancy, talk to your doctor before starting a statin.');
     });
 
     it.each([
@@ -2295,7 +2295,7 @@ describe('generateSuggestions', () => {
       expect(glp1 !== undefined).toBe(row.on);
       if (row.on) {
         const and = row.reasons.length > 0 ? ` and ${joinWithAnd(row.reasons)}` : '';
-        expect(glp1!.description).toBe(`With a BMI of ${results.bmi}${and}, consider discussing Tirzepatide (preferred) or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.`);
+        expect(glp1!.description).toBe(`With a BMI of ${results.bmi}${and}, consider discussing Tirzepatide (listed first) or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.`);
       }
     });
 
@@ -2318,7 +2318,7 @@ describe('generateSuggestions', () => {
   });
 
   describe('Weight medication card wording (US-06 AC6)', () => {
-    const TAIL = ', consider discussing Tirzepatide (preferred) or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.';
+    const TAIL = ', consider discussing Tirzepatide (listed first) or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.';
     const cases: { name: string; bmi: number; whr?: number; inputs: Partial<HealthInputs>; text: string }[] = [
       { name: 'no reason', bmi: 30.5, inputs: {}, text: `With a BMI of 30.5${TAIL}` },
       { name: 'a whole-number BMI prints as the tile shows it', bmi: 31, inputs: {}, text: `With a BMI of 31${TAIL}` },
@@ -3849,11 +3849,14 @@ describe('US-07 AC6: who the plan is for', () => {
       expect(unknown).not.toMatch(MEDICINE_WORDS);
       expect(unknown).not.toContain('not started');
       const adult = desc({ ...adultBase, lpa: 200 }, {}, 'lpa-elevated');
-      expect(adult).toContain('\u26A0\uFE0F Statin: not started \u2014 discuss with your doctor');
-      expect(adult).toContain('\u26A0\uFE0F Ezetimibe: not started \u2014 discuss with your doctor');
+      expect(adult).toContain('\u26A0\uFE0F Statin: not started\n');
+      expect(adult).toContain('\u26A0\uFE0F Ezetimibe: not started\n');
       expect(adult).toContain('\u26A0\uFE0F PCSK9 inhibitor: not started \u2014 can lower Lp(a) ~25\u201330%');
+      // One doctor line for the card's medicines (US-07 AC17); the unknown age names none, so has none.
+      const LINE = '\n\nConsider discussing these medicines with your doctor.';
+      expect(adult.endsWith(LINE)).toBe(true);
       // Everything else in the checklist is the adult's, line for line.
-      expect(unknown).toBe(adult.split('\n').filter((line) => !line.includes('not started')).join('\n'));
+      expect(unknown).toBe(adult.slice(0, -LINE.length).split('\n').filter((line) => !line.includes('not started')).join('\n'));
     });
 
     it('high Lp(a): what the user takes or did not tolerate stays (facts, not suggestions)', () => {

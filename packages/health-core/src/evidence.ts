@@ -251,7 +251,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   // ── Weight & Diabetes Medications ──────────────────────────
 
   'weight-med-glp1': {
-    reason: 'GLP-1 receptor agonists like tirzepatide and semaglutide have been shown in large randomised trials to produce significant, sustained weight loss alongside improvements in blood sugar, blood pressure, and triglycerides. Tirzepatide is preferred due to its dual GIP/GLP-1 mechanism, which may provide greater weight loss. These medications work best alongside diet, exercise, and sleep optimisation.' + WEIGHT_MED_TRIGGER_NOTE,
+    reason: 'GLP-1 receptor agonists like tirzepatide and semaglutide have been shown in large randomised trials to produce significant, sustained weight loss alongside improvements in blood sugar, blood pressure, and triglycerides. This plan lists tirzepatide first because of its dual GIP/GLP-1 mechanism, which may provide greater weight loss. These medications work best alongside diet, exercise, and sleep optimisation.' + WEIGHT_MED_TRIGGER_NOTE,
     guidelines: [],
     references: [...REFS_GLP1, REF_CHOLESTEROL_2018],
   },
@@ -308,7 +308,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   // ── Blood Work: HbA1c ─────────────────────────────────────
 
   'hba1c-diabetic': {
-    reason: 'An HbA1c in the range the ADA calls diabetes (≥6.5% / ≥47.5 mmol/mol) indicates sustained high blood sugar levels over the past 2–3 months. This requires medical management to prevent complications including cardiovascular disease, kidney damage, nerve damage, and vision loss.',
+    reason: 'An HbA1c in the range the ADA calls diabetes (≥6.5% / ≥47.5 mmol/mol) indicates sustained high blood sugar levels over the past 2–3 months. Guidelines advise medical management at this level to prevent complications including cardiovascular disease, kidney damage, nerve damage, and vision loss.',
     guidelines: ['ADA Standards of Care'],
     references: [
       { label: 'ADA – Standards of Medical Care in Diabetes', url: 'https://diabetesjournals.org/care/issue/47/Supplement_1' },
@@ -738,7 +738,7 @@ export const STAT_CARD_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'hba1c': {
-    reason: 'HbA1c (glycated haemoglobin) reflects average blood sugar over the past 2–3 months. ADA thresholds: <5.7% (<38.8 mmol/mol) Normal, 5.7–6.4% (38.8–47.4 mmol/mol) Prediabetes range, a critical window where lifestyle change can prevent type 2 diabetes; and ≥6.5% (≥47.5 mmol/mol) Diabetes range, requiring medical management to prevent cardiovascular, kidney, nerve, and vision complications.',
+    reason: 'HbA1c (glycated haemoglobin) reflects average blood sugar over the past 2–3 months. ADA thresholds: <5.7% (<38.8 mmol/mol) Normal, 5.7–6.4% (38.8–47.4 mmol/mol) Prediabetes range, a critical window where lifestyle change can prevent type 2 diabetes; and ≥6.5% (≥47.5 mmol/mol) Diabetes range, where guidelines advise medical management to prevent cardiovascular, kidney, nerve, and vision complications.',
     guidelines: ['ADA'],
     references: [
       { label: 'ADA – Standards of Medical Care in Diabetes', url: 'https://diabetesjournals.org/care/issue/47/Supplement_1' },

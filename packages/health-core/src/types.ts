@@ -517,7 +517,7 @@ export const SCREENING_FOLLOWUP_INFO: Record<string, { followupName: string; abn
   cervical_pap_every_3yr: { followupName: 'colposcopy', abnormalMeans: 'abnormal Pap test' },
   cervical_other: { followupName: 'colposcopy', abnormalMeans: 'abnormal result' },
   lung_annual_ldct: { followupName: 'follow-up imaging', abnormalMeans: 'abnormal LDCT result' },
-  dexa_dexa_scan: { followupName: 'treatment review', abnormalMeans: 'recorded result of osteoporosis', opening: 'You recorded a result of osteoporosis, which needs treatment and monitoring.' },
+  dexa_dexa_scan: { followupName: 'treatment review', abnormalMeans: 'recorded result of osteoporosis', opening: 'You recorded a result of osteoporosis, which is usually treated and monitored.' },
 };
 
 /**

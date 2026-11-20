@@ -95,7 +95,7 @@
    "dexa_dexa_scan": {
     "followupName": "treatment review",
     "abnormalMeans": "recorded result of osteoporosis",
-    "opening": "You recorded a result of osteoporosis, which needs treatment and monitoring."
+    "opening": "You recorded a result of osteoporosis, which is usually treated and monitored."
    }
   },
   "LUNG_PACK_YEARS": 20,
@@ -1859,7 +1859,7 @@
   "C022": "screening-lung-followup [urgent] Organize follow-up imaging :: Your screening showed a abnormal LDCT result. Please organize a follow-up imaging with your doctor.",
   "C023": "screening-lung-followup [info] Lung screening up to date :: Following your abnormal LDCT result, next screening due Jul 2027.",
   "C024": "screening-dexa [attention] Consider a DEXA bone density scan :: A DEXA scan measures bone mineral density and can detect osteoporosis before a fracture occurs. Discuss with your doctor.",
-  "C025": "screening-dexa-followup [urgent] Organize treatment review :: You recorded a result of osteoporosis, which needs treatment and monitoring. Please organize a treatment review with your doctor.",
+  "C025": "screening-dexa-followup [urgent] Organize treatment review :: You recorded a result of osteoporosis, which is usually treated and monitored. Please organize a treatment review with your doctor.",
   "C026": "screening-dexa-upcoming [info] Bone density scan up to date :: Next DEXA scan due around Apr 2031.",
   "C027": "screening-dexa-overdue [attention] Bone density scan overdue :: Your next DEXA scan was due Apr 2026. Please schedule your scan.",
   "C028": "screening-colorectal [attention] Start colorectal cancer screening :: Colorectal screening is recommended. From 55, Dr Brad suggests a colonoscopy every 10 years. A FIT test every year is also a good option (American Cancer Society). Discuss with your doctor.",

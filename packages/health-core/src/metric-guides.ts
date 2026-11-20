@@ -239,7 +239,7 @@ export const METRIC_GUIDES: Record<string, MetricGuide> = {
   glp1: {
     title: 'GLP-1 medications',
     whatItIs: 'Medicines that copy gut hormones, taken as a weekly injection or a daily tablet. The app lists semaglutide (Ozempic, Wegovy, Rybelsus), dulaglutide (Trulicity) and tirzepatide (Mounjaro, Zepbound), which acts on two hormones, GLP-1 and GIP.',
-    whyItMatters: 'In large trials, semaglutide and tirzepatide led to substantial weight loss, with better blood sugar, blood pressure and triglycerides. Weight tends to return after stopping, so most people need them long term.',
+    whyItMatters: 'In large trials, semaglutide and tirzepatide led to substantial weight loss, with better blood sugar, blood pressure and triglycerides. Weight tends to return after stopping, so they are usually taken long term.',
     howTo: { heading: WORKS, points: [
       'They reduce appetite, slow stomach emptying and help release insulin after meals.',
       'Nausea, vomiting, diarrhoea and constipation are common, and usually ease over time.',

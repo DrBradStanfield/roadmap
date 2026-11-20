@@ -49,7 +49,7 @@ const recommends = (bmi: string, reasons?: string) => (reasons
   : `At a BMI of ${bmi}, medications that support weight management and metabolic health are an option to discuss with your doctor.`);
 /** The plan's GLP-1 card text (US-06 AC6). */
 const glp1Card = (bmi: string, reasons: string) =>
-  `With a BMI of ${bmi} and ${reasons}, consider discussing Tirzepatide (preferred) or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.`;
+  `With a BMI of ${bmi} and ${reasons}, consider discussing Tirzepatide (listed first) or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.`;
 
 interface GuestRecord {
   sex?: 'male';
@@ -274,7 +274,7 @@ describe('US-06 AC5: the weight cascade steps through what the plan does', () =>
 describe('US-06 AC8: with no dose recorded, the plan and the form ask for it', () => {
   const DOSE_HINT = 'Add your dose: what to discuss with your doctor next depends on it.';
   const GLP1_HINT = 'GLP-1 medications reduce appetite and improve blood sugar control, often leading to significant weight loss.';
-  const STATIN_HINT = 'Statins are the most effective first step. They reduce cholesterol production in the liver.';
+  const STATIN_HINT = 'Guidelines name statins the first medicine to consider when cholesterol stays above target. They reduce cholesterol production in the liver.';
   /** A medication field's hint, the line under its label: the dose hint takes it while the plan asks. */
   const fieldHint = (container: HTMLElement, selectId: string) =>
     container.querySelector(`#${selectId}`)?.closest('.health-field')?.querySelector('.med-step-hint')?.textContent ?? null;
@@ -567,7 +567,7 @@ describe('US-06 AC6: from BMI 25 a raised marker counts even with a healthy wais
 // age, the form drops its medicine wording: plain fields that still record
 // what someone takes, and no recommendation the plan does not make.
 describe('US-07 AC6: the form withholds its medicine wording when the plan does', () => {
-  const STATIN_HINT = 'Statins are the most effective first step. They reduce cholesterol production in the liver.';
+  const STATIN_HINT = 'Guidelines name statins the first medicine to consider when cholesterol stays above target. They reduce cholesterol production in the liver.';
   /** BMI 32, an HbA1c of 40 and LDL 3.0: an adult gets both cascades. */
   const MEDICINE_RECORD: GuestRecord = { sex: 'male', weight: 101.4, hba1c: 40, lipids: { ldl: 3 } };
   const hints = (container: HTMLElement) => Array.from(container.querySelectorAll('.med-step-hint')).map((h) => h.textContent);
