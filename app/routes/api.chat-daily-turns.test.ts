@@ -43,6 +43,8 @@ vi.mock('../lib/chat-router.server', async (original) => ({
   routeQuery: vi.fn(), reportRouterFailure: vi.fn(),
 }));
 vi.mock('../lib/chat-classifier.server', () => ({ classifyMessage: mocks.classify, shouldFireRouter: () => false }));
+const sentry = vi.hoisted(() => ({ captureMessage: vi.fn() }));
+vi.mock('@sentry/react-router', async (o) => ({ ...await o<object>(), captureMessage: sentry.captureMessage }));
 
 type Action = typeof import('./api.chat').action;
 let action: Action;
@@ -210,5 +212,57 @@ describe('US-15 AC45: web chat turns are capped per IP and per machine', () => {
     for (let i = 0; i < 3; i++) expect((await post('198.51.100.6', app)).status).toBe(200);
     expect((await post('198.51.100.6')).status).toBe(200);
     expect((await post('198.51.100.6')).status).toBe(429);
+  });
+});
+
+describe('US-15 AC45a: the machine spending its last web chat turn of the day is reported once', () => {
+  const capWarnings = () => sentry.captureMessage.mock.calls.filter(([m]) => m === 'Web chat machine cap reached');
+  const capLogs = () => vi.mocked(console.error).mock.calls.filter(([m]) => String(m).startsWith('Web chat machine cap reached'));
+
+  it('the last turn the machine allows sends one warning and one log line; the refusals after it send none', async () => {
+    await load('3');
+    expect((await post('198.51.100.40')).status).toBe(200);
+    expect((await post('198.51.100.41')).status).toBe(200);
+    expect(capWarnings()).toHaveLength(0); // turns left: nothing to say
+    expect((await post('198.51.100.42')).status).toBe(200); // the machine's last turn today
+    expect(capWarnings()).toEqual([['Web chat machine cap reached', { level: 'warning', tags: { feature: 'rate_limit', map: 'web chat turns per machine' } }]]);
+    expect(capLogs()).toEqual([['Web chat machine cap reached: this machine answers web chat with 429 until its day resets']]);
+    for (let i = 0; i < 5; i++) expect((await post('198.51.100.43')).status).toBe(429);
+    expect(capWarnings()).toHaveLength(1);
+    expect(capLogs()).toHaveLength(1);
+    // Fixed words only: no address, bucket or message text reaches Sentry or the log.
+    const sent = JSON.stringify([sentry.captureMessage.mock.calls, vi.mocked(console.error).mock.calls]);
+    expect(sent).not.toMatch(/198\.51\.100|LDL/);
+  });
+
+  it('an IP at its own cap is not the machine at its cap: no warning', async () => {
+    await load();
+    for (let i = 0; i < 200; i++) await post('198.51.100.44');
+    expect((await post('198.51.100.44')).status).toBe(429);
+    expect(capWarnings()).toHaveLength(0);
+    expect(capLogs()).toHaveLength(0);
+  });
+
+  it('WEB_CHAT_DAILY_CAP=0 switches web chat off on purpose: no warning', async () => {
+    await load('0');
+    for (let i = 0; i < 3; i++) expect((await post('198.51.100.45')).status).toBe(429);
+    expect(capWarnings()).toHaveLength(0);
+  });
+
+  it('the next day, reaching the cap again warns again', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      const t0 = new Date('2026-11-02T07:00:00Z').getTime();
+      vi.setSystemTime(t0);
+      await load('1');
+      expect((await post('198.51.100.46')).status).toBe(200);
+      expect((await post('198.51.100.47')).status).toBe(429);
+      expect(capWarnings()).toHaveLength(1);
+      vi.setSystemTime(t0 + 24 * 60 * 60_000 + 60_000); // the machine's day is over
+      expect((await post('198.51.100.47')).status).toBe(200);
+      expect(capWarnings()).toHaveLength(2);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

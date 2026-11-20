@@ -287,6 +287,22 @@ describe('US-62 AC21: the rows', () => {
     expect(within(view.container.querySelector<HTMLElement>('.md-page')!).getByRole('heading', { name: 'Waist' })).toBeTruthy();
   });
 
+  it('US-62 AC21a: a height typed in Settings that the plan refuses gives no ratio, so the waist row leads; a height it takes brings the ratio back', async () => {
+    const view = await show(RECORDS['urgent results, both cascades, a supplement']);
+    openSettings();
+    fireEvent.click([...document.querySelectorAll<HTMLElement>('.mh-settings button')].find(b => b.textContent?.startsWith('Height'))!);
+    const type = (value: string) => fireEvent.change(document.querySelector<HTMLInputElement>('#heightCm')!, { target: { value } });
+    const firstRow = () => view.container.querySelector('[data-topic="weight"] .md-row-label')?.textContent;
+    for (const refused of ['300', '17']) {
+      type(refused);
+      await waitFor(() => expect(firstRow(), refused).toBe('Waist'));
+      expect(rowNamed(view, '[data-topic="weight"]', 'Waist-to-height'), refused).toBeUndefined();
+    }
+    type('200');
+    await waitFor(() => expect(rowNamed(view, '[data-topic="weight"]', 'Waist-to-height')?.querySelector('.md-row-value')?.textContent)
+      .toBe(`${(101 / 200).toFixed(2)} (${(104 / 200).toFixed(2)})`));
+  });
+
   it('one eGFR row under creatinine, in Blood pressure and Blood tests: the plan\'s value, "Calculated", the day before in brackets', async () => {
     const view = await show(RECORDS['urgent results, both cascades, a supplement']);
     for (const scope of ['[data-topic="bloodPressure"]', '[data-topic="bloodTests"]']) {
