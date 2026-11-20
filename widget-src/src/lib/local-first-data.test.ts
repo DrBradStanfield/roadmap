@@ -7,6 +7,8 @@ import { initRoadmapStore, flushRoadmapStore } from './roadmap-data';
 import * as data from './roadmap-data';
 import { getChatHistory } from './chat-history-access';
 import { trackProductEvent } from './server-api';
+import { seedLabValues } from '../testing/record-seed';
+import { countRefusedSpellings } from './refused-spellings';
 
 vi.mock('./sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('./server-api', async importOriginal => ({
@@ -163,13 +165,21 @@ describe('explicit local-first data path', () => {
     }
   });
 
+  /** Lab rows written by the bulk rule, then their refused spellings counted, as the upload's Save
+   *  counts them once it lands (lib/roadmap-data saveUpload → countRefusedSpellings). */
+  const savedAndCounted = async (rows: Parameters<typeof seedLabValues>[0]) => {
+    const result = await seedLabValues(rows);
+    countRefusedSpellings(result.refused);
+    return result;
+  };
+
   // US-21 phase 3 · the usage signal. A refused unit is the only way to learn
   // which spelling to teach the catalogue next, and the counter must carry the
   // key and the spelling ALONE — the value is the one thing it may never hold.
   it('counts a refused lab unit with the catalogue key and the spelling, never the value', async () => {
     vi.mocked(trackProductEvent).mockClear();
 
-    const result = await data.bulkSaveLabValues([
+    const result = await savedAndCounted([
       { metricName: 'ferritin', value: 80, unit: 'mg/dL', recordedAt: '2024-06-01T09:00:00.000Z' },
       { metricName: 'sodium', value: 140, unit: 'mEq/L', recordedAt: '2024-06-01T09:00:00.000Z' },
     ]);
@@ -193,7 +203,7 @@ describe('explicit local-first data path', () => {
   it('US-21 AC15 — does not count a refusal under a spelling the test takes', async () => {
     vi.mocked(trackProductEvent).mockClear();
 
-    const result = await data.bulkSaveLabValues([
+    const result = await savedAndCounted([
       { metricName: 'Neutrophils', value: 2.4, unit: 'cells/uL', recordedAt: '2024-06-01T09:00:00.000Z' },
       { metricName: 'Platelets', value: 250000, unit: 'cells/µL', referenceLow: 150, referenceHigh: 400, recordedAt: '2024-06-01T09:00:00.000Z' },
       // A spelling the test does not take is counted (Lymphocytes in % was this example until US-21 AC28 stored it).
@@ -212,7 +222,7 @@ describe('explicit local-first data path', () => {
   it('US-21 AC22 — counts a blank unit as (blank) and keeps a bracketed power of ten', async () => {
     vi.mocked(trackProductEvent).mockClear();
 
-    await data.bulkSaveLabValues([
+    await savedAndCounted([
       { metricName: 'WBC', value: 6.2, unit: '', recordedAt: '2024-06-01T09:00:00.000Z' },
       { metricName: 'Platelets', value: 250, unit: '  ', recordedAt: '2024-06-01T09:00:00.000Z' },
       { metricName: 'RBC', value: 4.8, unit: 'x10(3)/uL', recordedAt: '2024-06-01T09:00:00.000Z' },
@@ -233,7 +243,7 @@ describe('explicit local-first data path', () => {
   it('does not send a refused unit that holds a value', async () => {
     vi.mocked(trackProductEvent).mockClear();
 
-    await data.bulkSaveLabValues([
+    await savedAndCounted([
       { metricName: 'ferritin', value: 80, unit: '80 mg/dL', recordedAt: '2024-06-01T09:00:00.000Z' },
     ]);
 

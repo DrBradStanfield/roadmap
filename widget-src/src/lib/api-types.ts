@@ -197,16 +197,3 @@ export interface BulkSaveResult {
   labRows?: Array<string | null>;
 }
 
-export interface BulkLabValuesResult {
-  saved: ApiLabValue[];
-  /** How many rows were already present (active) at this (user, metric_name, recorded_at). */
-  skippedDuplicates: number;
-  /** How many rows hit a server error. */
-  errorCount: number;
-  /** Rows refused for their unit — never silently dropped. */
-  refused: LabUnitRefusal[];
-  /** Core values (a core test's name, US-66 AC6) refused for their number — shown, never dropped. */
-  measurementRefusals?: MeasurementRefusal[];
-  /** As `BulkSaveResult.labRows`. */
-  labRows?: Array<string | null>;
-}

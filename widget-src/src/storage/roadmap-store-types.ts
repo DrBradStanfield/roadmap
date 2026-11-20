@@ -32,11 +32,6 @@ export type ProfileSave = { ok: false } | { ok: true; birthRefused: BirthRefusal
 export interface BulkMeasurementInput {
   metricType: string; value: number; recordedAt: string; source: MeasurementSource; correctsId?: string; comparator?: Comparator;
 }
-export interface BulkLabValueInput {
-  metricName: string; value: number; unit: string;
-  referenceLow?: number | null; referenceHigh?: number | null;
-  recordedAt: string; source?: string; correctsId?: string; comparator?: Comparator;
-}
 
 /** One upload Save: what it wrote, or `message` (the review's words; null when the erase refused it). */
 export type UploadStoreSave = { ok: true; outcome: SavedOutcome; added: ApiMeasurement[]; labRefusals: LabUnitRefusal[] } | { ok: false; message: string | null };

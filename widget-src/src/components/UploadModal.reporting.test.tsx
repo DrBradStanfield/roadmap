@@ -5,9 +5,10 @@ import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter'
 import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import { RoadmapStore } from '../storage/roadmap-store';
 import { UploadModal } from './UploadModal';
-import { initRoadmapStore, addMeasurement, bulkSaveLabValues, correctValue, loadAllHistory, loadLabValues, flushRoadmapStore } from '../lib/roadmap-data';
+import { initRoadmapStore, addMeasurement, correctValue, loadAllHistory, loadLabValues, flushRoadmapStore } from '../lib/roadmap-data';
 import { checkLabImportQuota, labImport } from '../lib/upload-api';
 import { trackLiveRefresh, stopLiveRefresh } from '../testing/health-tool-harness';
+import { seedLabValues } from '../testing/record-seed';
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn() }));
 vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
 // Extraction is outside this value-save witness; the bytes' hash is a fixed synthetic one.
@@ -35,7 +36,7 @@ it.each([
   await initRoadmapStore(new MemoryAdapter(cloud));
   async function add(value: number) {
     if (lab) {
-      const result = await bulkSaveLabValues([{ metricName: 'Synthetic test', value, unit: 'units', recordedAt: '2024-06-01' }]);
+      const result = await seedLabValues([{ metricName: 'Synthetic test', value, unit: 'units', recordedAt: '2024-06-01' }]);
       expect(result.saved).toHaveLength(1);
       return result.saved[0].id;
     }

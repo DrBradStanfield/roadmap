@@ -27,11 +27,10 @@ function io(opts: { fail?: boolean } = {}) {
   const value: DocumentSaveIO<Uint8Array> = {
     hash: async (b) => hashOf(b),
     write: async (ref, b) => {
-      if (opts.fail) throw new Error('synthetic quota refusal');
+      if (opts.fail) { const error = new Error('synthetic quota refusal'); errors.push(error); throw error; }
       written.set(ref, b);
     },
     mimeType: () => 'application/pdf',
-    onWriteError: (e) => errors.push(e),
     now: () => '2026-02-01T00:00:00.000Z',
     newId: () => `doc-${++n}`,
   };

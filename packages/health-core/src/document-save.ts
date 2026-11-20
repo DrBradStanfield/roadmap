@@ -82,8 +82,6 @@ export interface DocumentSaveIO<F> {
   write(ref: string, file: F): Promise<void>;
   /** The bytes' MIME type, '' when unknown. */
   mimeType(file: F): string;
-  /** A failed blob write, for the caller's telemetry. The save carries on. */
-  onWriteError?(error: unknown): void;
   /** ISO instant for `addedAt`; read once per document. */
   now?(): string;
   newId?(): string;
@@ -239,8 +237,8 @@ export async function saveDocuments<F>(
       await io.write(w.ref, w.file);
       w.doc.fileRef = w.ref;
       w.doc.mimeType = io.mimeType(w.file);
-    } catch (error) {
-      io.onWriteError?.(error);
+    } catch {
+      // The caller's own write reports its failure (RoadmapStore.saveUpload); the save carries on.
       lost += 1;
       w.failed = w.held; // a failure behind a held row is settled (below)
     }

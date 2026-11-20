@@ -13,15 +13,9 @@ import { LocalStorageAdapter } from './local-storage-adapter';
 import { Sentry } from '../lib/sentry';
 import { WritesStoppedError } from '../lib/error-diagnostics';
 import { StorageError } from '@roadmap/health-core/adapter';
+import { seedStoreDocuments } from '../testing/record-seed';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
-
-/** Holds every hash until released, so an erase can land before any write starts. */
-const hashGate = vi.hoisted(() => ({ wait: null as Promise<void> | null }));
-vi.mock('../lib/archive-payloads', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../lib/archive-payloads')>();
-  return { ...actual, sha256Blob: async (b: Blob) => { await hashGate.wait; return actual.sha256Blob(b); } };
-});
 
 const DOC_PREFIX = 'health_roadmap_doc_v2:';
 const blobKeys = () => Object.keys(localStorage).filter((k) => k.startsWith(DOC_PREFIX));
@@ -51,7 +45,6 @@ class HeldBlobs extends LocalStorageAdapter {
 
 beforeEach(() => {
   localStorage.clear();
-  hashGate.wait = null;
   vi.clearAllMocks();
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(new Date('2026-11-10T10:00:00.000Z'));
@@ -80,19 +73,18 @@ async function eraseLands(other: RoadmapStore, page: RoadmapStore) {
 
 it('a document save whose erase has already moved writes no copy on the device (US-11 AC1a)', async () => {
   const { other, page } = await twoTabs();
-  let release!: () => void;
-  hashGate.wait = new Promise<void>((r) => { release = r; });
-  const pending = page.bulkSaveDocuments([doc('Lipids')]);
+  // The upload's Save takes the erase the page shows as it starts (RoadmapStore.saveUpload); the bytes
+  // were hashed when the file was read, so the erase lands before the Save, not inside a hash.
+  page.showErase(page.eraseIdentity); // the page shows the record as it was before the erase
   await eraseLands(other, page);
-  release();
-  expect(await pending).toEqual({ saved: [], errorCount: 1 });
+  expect(await seedStoreDocuments(page, [doc('Lipids')])).toEqual({ saved: [], errorCount: 1 });
   expect(blobKeys()).toEqual([]);
   expect(Sentry.captureException).not.toHaveBeenCalled();
 });
 
 it('an accepted document save keeps its original (US-11 AC1a)', async () => {
   const { page } = await twoTabs();
-  const { saved } = await page.bulkSaveDocuments([doc('Lipids')]);
+  const { saved } = await seedStoreDocuments(page, [doc('Lipids')]);
   expect(saved).toHaveLength(1);
   await page.flush();
   expect(blobKeys()).toEqual([DOC_PREFIX + saved[0].fileRef]);
@@ -101,7 +93,7 @@ it('an accepted document save keeps its original (US-11 AC1a)', async () => {
 it('stated limit: a file write already in progress when the erase lands may leave a device copy; the writes after it never happen (US-11 AC1a)', async () => {
   const { other, adapter, page } = await twoTabs();
   const held = adapter.hold();
-  const pending = page.bulkSaveDocuments([doc('Lipids'), doc('Thyroid')]); // one folder: the first write runs alone
+  const pending = seedStoreDocuments(page, [doc('Lipids'), doc('Thyroid')]); // one folder: the first write runs alone
   await held.reached;
   await eraseLands(other, page);
   held.release();
@@ -124,7 +116,7 @@ class RefusingBlobs extends LocalStorageAdapter {
 
 it('A15: a document write the device refuses after log-off is not reported', async () => {
   const page = await RoadmapStore.create(new RefusingBlobs(new WritesStoppedError()));
-  const { saved } = await page.bulkSaveDocuments([doc('Lipids')]);
+  const { saved } = await seedStoreDocuments(page, [doc('Lipids')]);
   expect(saved).toHaveLength(1);
   expect(saved[0].fileRef).toBeNull(); // metadata kept, file not stored
   expect(Sentry.captureException).not.toHaveBeenCalled();
@@ -132,7 +124,7 @@ it('A15: a document write the device refuses after log-off is not reported', asy
 
 it('A15: a real document write failure (storage full) is still reported once', async () => {
   const page = await RoadmapStore.create(new RefusingBlobs(new StorageError('Synthetic storage full')));
-  await page.bulkSaveDocuments([doc('Lipids')]);
+  await seedStoreDocuments(page, [doc('Lipids')]);
   expect(Sentry.captureException).toHaveBeenCalledOnce();
   expect(vi.mocked(Sentry.captureException).mock.calls[0][0]).toMatchObject({ message: 'Document file not stored' });
 });

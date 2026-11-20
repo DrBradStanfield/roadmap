@@ -68,9 +68,9 @@ export { PENDING_MIRROR_KEY, SYNC_PENDING_EVENT, SAVE_STATUS_EVENT, REMOTE_CHANG
 export { ERASE_UNREACHABLE } from '@roadmap/health-core/record-session';
 
 // App-facing view shapes: one home, lib/api-types.ts (untangle W2-4).
-import type { AddMeasurementResult, ApiDocument, ApiLabValue, ApiMedicationHistory, ApiSupplement, BulkLabValuesResult, BulkSaveResult, LatestMeasurementsResult } from '../lib/api-types';
-import type { CorrectStatus, MoveOutcome, BirthRefusal, ProfileRangeRefusal, ProfileSave, BulkMeasurementInput, BulkLabValueInput, UploadStoreSave } from './roadmap-store-types';
-export type { CorrectStatus, MoveOutcome, BirthRefusal, ProfileRangeRefusal, ProfileSave, BulkMeasurementInput, BulkLabValueInput, UploadStoreSave } from './roadmap-store-types';
+import type { AddMeasurementResult, ApiDocument, ApiLabValue, ApiMedicationHistory, ApiSupplement, BulkSaveResult, LatestMeasurementsResult } from '../lib/api-types';
+import type { CorrectStatus, MoveOutcome, BirthRefusal, ProfileRangeRefusal, ProfileSave, BulkMeasurementInput, UploadStoreSave } from './roadmap-store-types';
+export type { CorrectStatus, MoveOutcome, BirthRefusal, ProfileRangeRefusal, ProfileSave, BulkMeasurementInput, UploadStoreSave } from './roadmap-store-types';
 
 /** What first opening a record in the old shape moved, for `blood_tests_unified` (US-66 AC13): counts only. */
 export type BloodTableReport = ReturnType<typeof bloodTableReport>;
@@ -340,12 +340,6 @@ export class RoadmapStore {
     return { saved: result.saved.map(valueView), skippedDuplicates: result.skippedDuplicates, errorCount: 0, refused: result.measurementRefusals, labRows: writtenLabRows(result) };
   }
 
-  bulkSaveLabValues(values: BulkLabValueInput[]): BulkLabValuesResult {
-    if (this.refuses()) return { saved: [], skippedDuplicates: 0, errorCount: values.length, refused: [] };
-    const result = this.bulkSave(values.map((v) => ({ kind: 'lab' as const, ...v, source: (v.source as MeasurementSource) ?? 'lab_import' })));
-    return { saved: result.saved as ApiLabValue[], skippedDuplicates: result.skippedDuplicates, errorCount: 0, refused: result.refused, measurementRefusals: result.measurementRefusals, labRows: writtenLabRows(result) };
-  }
-
   /** One lab value a person adds, by health-core's one lab add (`addLabValue`, the iPhone's too):
    *  null when this copy refuses to write (an erase it has not shown). */
   addLabValue(input: AddLabValueRequest, erase?: string): AddLabValueResult | null {
@@ -360,36 +354,6 @@ export class RoadmapStore {
     // Nothing saved hands back the same file: no change, no save.
     if (result.saved.length) this.session.edit(() => result.file);
     return result;
-  }
-
-  /**
-   * Save reviewed documents through health-core's one rule (saveDocuments,
-   * shared with the iPhone app): blob first, then the rows; hash dedup; a
-   * failed blob degrades to metadata-only; held metadata-only rows of the
-   * same kind are tombstoned once the original lands (US-13 AC1, US-14 AC4).
-   */
-  async bulkSaveDocuments(
-    documents: Array<DocumentPayload<Blob>>,
-  ): Promise<{ saved: ApiDocument[]; errorCount: number; unstored?: number }> {
-    // The batch stands for the erase the page showed as it started: refused
-    // before any upload if that is not this copy's, before each file write and
-    // at the commit, since an erase can land while the uploads run (US-11 AC1a).
-    const erase = this.shownErase;
-    if (this.refuses(erase)) return { saved: [], errorCount: documents.length };
-    const { saved, unstored, commit } = await saveDocuments(this.file, documents, {
-      hash: sha256Blob,
-      write: (ref, file) => (this.refuses(erase) ? Promise.reject(new Error('erase moved')) : this.host.store.writeDocument(ref, file)),
-      mimeType: (file) => file.type || '',
-      onWriteError: (error) => {
-        if (this.refuses(erase) || error instanceof WritesStoppedError) return; // a refusal, not a failure (A15)
-        console.warn('Document file not stored');
-        Sentry.captureException(recordFailure(error, 'Document file not stored'), {
-          tags: { area: 'cloud-sync', op: 'write-document', backend: this.host.store.id },
-        });
-      },
-    });
-    if (!this.session.edit(commit, erase)) return { saved: [], errorCount: documents.length };
-    return { saved: saved.map(documentView), errorCount: 0, ...(unstored ? { unstored } : {}) };
   }
 
   /**

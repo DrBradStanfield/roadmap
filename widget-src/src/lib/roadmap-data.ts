@@ -14,7 +14,7 @@ import { knownMinorOf } from '@roadmap/health-core/calculations';
 import { readableView } from '@roadmap/health-core/readable-rows';
 import { knownIndex, readIsLegacy, type KnownIndex } from '@roadmap/health-core/upload-known';
 import type { UnifiedExtractionResult } from '@roadmap/health-core/lab-extraction';
-import { RoadmapStore, type DerivedSeries, type BulkLabValueInput, type BulkMeasurementInput, type CorrectStatus, type MoveOutcome, type ProfileSave, type UploadStoreSave } from '../storage/roadmap-store';
+import { RoadmapStore, type DerivedSeries, type BulkMeasurementInput, type CorrectStatus, type MoveOutcome, type ProfileSave, type UploadStoreSave } from '../storage/roadmap-store';
 import { ChatHistoryStore } from '../storage/chat-history-store';
 import { getChatHistory, openChatHistory, setChatHistoryFactory } from './chat-history-access';
 import { eraseBegan, setChatEraseReader } from './chat-erase';
@@ -29,7 +29,6 @@ import type {
   ApiDocument,
   ApiLabValue,
   ApiMedicationHistory,
-  BulkLabValuesResult,
   BulkSaveResult,
   LatestMeasurementsResult,
 } from './api-types';
@@ -318,22 +317,11 @@ export async function bulkSaveMeasurements(measurements: BulkMeasurementInput[])
   countMeasuresAdded(result.saved.filter((row) => !row.correctsId));
   return result;
 }
-export async function bulkSaveLabValues(values: BulkLabValueInput[]): Promise<BulkLabValuesResult> {
-  if (!store) return { saved: [], skippedDuplicates: 0, errorCount: values.length, refused: [] };
-  const result = store.bulkSaveLabValues(values);
-  countRefusedSpellings(result.refused);
-  return result;
-}
 /** A lab value a person adds (US-21 AC2, US-25 AC25), by health-core's one lab add; null when nothing could be written. */
 export async function addLabValue(input: AddLabValueRequest, erase?: string): Promise<AddLabValueResult | null> {
   const result = store ? store.addLabValue(input, erase) : null;
   if (result && !result.ok && result.refused) countRefusedSpellings([result.refused]);
   return result;
-}
-export async function bulkSaveDocuments(
-  documents: Array<{ documentType: string; title: string; documentDate: string | null; contentMd: string; metadata: Record<string, unknown>; sourceFileName: string | null; file?: Blob; contentHash?: string }>,
-): Promise<{ saved: ApiDocument[]; errorCount: number; unstored?: number }> {
-  return store ? store.bulkSaveDocuments(documents) : { saved: [], errorCount: documents.length };
 }
 /**
  * One upload Save (health-core `uploadSave` in one edit, design 12c), with its usage signals: the

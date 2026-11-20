@@ -17,6 +17,7 @@ import { sha256Blob } from '../lib/archive-payloads';
 import { BT_TIMELINE_DRAFT_KEY } from '../lib/storage';
 import { REMOTE_CHANGED_EVENT, RoadmapStore } from './roadmap-store';
 import { BACKEND_KEY } from './web-record-host';
+import { seedStoreDocuments } from '../testing/record-seed';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 
@@ -49,7 +50,7 @@ async function seeded(adapter: MemoryAdapter) {
   const weight = store.addMeasurement('weight', 82, '2026-09-01');
   store.saveMedication('statin', 'rosuvastatin', 10, 'mg');
   store.saveSupplement('omega3', 'Omega-3', 1, 'g');
-  const { saved } = await store.bulkSaveDocuments([{
+  const { saved } = await seedStoreDocuments(store, [{
     documentType: 'lab_report', title: 'Synthetic report', documentDate: '2026-09-01',
     contentMd: 'Synthetic fixture', metadata: {}, sourceFileName: 'synthetic.pdf',
   }]);
@@ -69,9 +70,9 @@ const WRITES: Array<[string, (s: RoadmapStore, ids: { weightId: string; document
   ['deleteSupplementApi', (s) => s.deleteSupplementApi('omega3'), false],
   ['saveScreening', (s) => s.saveScreening('colorectal_method', 'fit'), false],
   ['bulkSaveMeasurements', (s) => s.bulkSaveMeasurements([{ metricType: 'waist', value: 90, recordedAt: '2026-09-02', source: 'manual' }]), { saved: [], skippedDuplicates: 0, errorCount: 1, refused: [] }],
-  ['bulkSaveLabValues', (s) => s.bulkSaveLabValues([{ metricName: 'Ferritin', value: 75, unit: 'µg/L', recordedAt: '2026-09-01' }]), { saved: [], skippedDuplicates: 0, errorCount: 1, refused: [] }],
-  ['bulkSaveDocuments', (s) => s.bulkSaveDocuments([{
-    documentType: 'lab_report', title: 'Another report', documentDate: '2026-09-02',
+  // The upload's Save (design 12c), which replaced the bulk lab and document writes.
+  ['saveUpload', (s) => seedStoreDocuments(s, [{
+    documentType: 'clinic_letter', title: 'Another report', documentDate: '2026-09-02',
     contentMd: 'Synthetic fixture', metadata: {}, sourceFileName: 'another.pdf',
   }]), { saved: [], errorCount: 1 }],
   ['deleteDocument', (s, ids) => s.deleteDocument(ids.documentId), false],
@@ -185,7 +186,7 @@ describe('US-16 AC2a: a document upload refused at its commit', () => {
     const adapter = new HeldBlobs(cloud);
     const { store } = await seeded(adapter);
     const held = adapter.hold();
-    const pending = store.bulkSaveDocuments(upload(new Blob(['held bytes'], { type: 'application/pdf' })));
+    const pending = seedStoreDocuments(store, upload(new Blob(['held bytes'], { type: 'application/pdf' })));
     await held.reached;
     expect((await store.deleteAllData()).success).toBe(true);
     held.release();
@@ -207,7 +208,7 @@ describe('US-16 AC2a: a document upload refused at its commit', () => {
     };
     fileOf(store).documents.push(row); // never seen by the other device, so its erase does not list it
     const held = adapter.hold();
-    const pending = store.bulkSaveDocuments(upload(bytes));
+    const pending = seedStoreDocuments(store, upload(bytes));
     await held.reached;
     await otherDeviceErases(cloud);
     expect(await store.refreshFromRemote()).toBe(true);
