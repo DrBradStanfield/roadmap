@@ -32,9 +32,10 @@ struct LabUploadSheet: View {
     /// The shared upload (design PR 15): made at the first file picked in Files.
     @State private var shared: UploadSession?
 
-    /// Close and swipe-down wait for a save, or for save all (AC8b).
+    /// Close and swipe-down wait for a save, or for save all (AC8b); on the shared page, as its view says.
     private var closeHeld: Bool {
         if case .savingAll = step { return true }
+        if case .shared = step, let shared, case .drawn(let text) = shared.model.state { return shared.page(text)?.closeEnabled == false }
         return reviewSaving
     }
 
@@ -112,12 +113,7 @@ struct LabUploadSheet: View {
                 Button("Choose another file") { send(.restart) }.buttonStyle(.bordered)
             }
             .padding()
-        case .shared(consent: true):
-            AIConsentView(consent: .labUpload) {
-                send(.consented)
-                if let shared { Task { await shared.runner.consented() } }
-            }
-        case .shared(consent: false):
+        case .shared:
             if let shared { sharedPage(shared) }
         case .finished:
             EmptyView()
@@ -129,14 +125,20 @@ struct LabUploadSheet: View {
         switch shared.model.state {
         case .drawn(let text):
             if let page = shared.page(text) {
-                UploadReviewView(page: page, send: shared.send, letter: shared.letter) {
-                    shared.send(.close)
-                    dismiss()
+                if page.phase == "consent" {
+                    // Nothing has run yet, not even a hash (AC13e): the engine waits for this agree.
+                    AIConsentView(consent: .labUpload) { Task { await shared.runner.consented() } }
+                } else {
+                    UploadReviewView(page: page, send: shared.send, letter: shared.letter) {
+                        shared.send(.close)
+                        dismiss()
+                    }
                 }
             }
         case .refused(let refusal):
             VStack(spacing: 16) {
-                if let refusal { Text(refusal.message).multilineTextAlignment(.center) }
+                // A call that answered nothing says the doors' own engine-error words, from the last view.
+                if let words = refusal?.message ?? shared.engineError { Text(verbatim: words).multilineTextAlignment(.center) }
                 Button("Choose another file") { shared.send(.discard); send(.restart) }.buttonStyle(.bordered)
             }
             .padding()
@@ -160,7 +162,7 @@ struct LabUploadSheet: View {
         let session = shared ?? UploadSession(engine: engine, store: store)
         shared = session
         let needsConsent = !AIConsent.labUpload.given
-        send(.sharedPicked(needsConsent: needsConsent))
+        send(.sharedPicked)
         start {
             if let file = await LabFileReader.picked(url, ask: { [engine] in await engine.uploadRules(files: $0, members: $1) }),
                await session.runner.pick([file], needsConsent: needsConsent) { return }

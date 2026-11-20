@@ -1,7 +1,8 @@
 import Foundation
 
 /// health-core's UploadView (upload-view.ts) as the review page draws it (design PR 15, US-52 AC8c):
-/// every word and count is the engine's. Swift decodes and draws; it computes nothing.
+/// every word and count is the engine's. Swift decodes and draws; it computes nothing. Fields an
+/// older engine may not send are optional, and the page draws without them.
 struct UploadPage: Decodable, Equatable, Sendable {
     struct Progress: Decodable, Equatable, Sendable {
         let done: Int
@@ -10,13 +11,24 @@ struct UploadPage: Decodable, Equatable, Sendable {
         let zip: String?
     }
 
+    /// One read value: its test, the number and unit as printed, the extractor's question, the
+    /// web's printed line for a guessed unit, its own day (YYYY-MM-DD) when not the report's, the
+    /// tick, and Replace (its word, the held row it corrects, and whether it is on).
     struct ValueRow: Decodable, Equatable, Sendable, Identifiable {
         let fileId: String
         let ref: String
         let label: String
+        let value: String?
+        let unit: String?
+        let question: String?
+        let printed: String?
+        let day: String?
         let conflict: String?
         let ticked: Bool
         let error: String?
+        let replace: String?
+        let replaces: String?
+        let replacing: Bool?
         var id: String { "\(fileId):\(ref)" }
     }
 
@@ -27,9 +39,18 @@ struct UploadPage: Decodable, Equatable, Sendable {
         var id: String { "\(fileId):\(line)" }
     }
 
+    /// A report with no full day: its picker opens from `choose`, and no day is assumed.
+    struct Undated: Decodable, Equatable, Sendable {
+        let fileId: String
+        let title: String
+        let label: String
+        let name: String
+        let choose: String?
+    }
+
     /// One section, in the order the view lists them. One this build does not know is `other`.
     enum Section: Decodable, Equatable, Sendable, Identifiable {
-        case undated(fileId: String, title: String, label: String, name: String)
+        case undated(Undated)
         case unsure(title: String, footer: String, rows: [ValueRow])
         case failed(title: String, rows: [FileLine], retry: String?)
         case notSaved(title: String, lines: [String], footer: String)
@@ -38,7 +59,7 @@ struct UploadPage: Decodable, Equatable, Sendable {
         /// Stable as files fill in, so a section's own controls keep their state.
         var id: String {
             switch self {
-            case .undated(let fileId, _, _, _): "undated:\(fileId)"
+            case .undated(let undated): "undated:\(undated.fileId)"
             case .unsure: "unsure"
             case .failed: "failed"
             case .notSaved: "notSaved"
@@ -46,13 +67,13 @@ struct UploadPage: Decodable, Equatable, Sendable {
             }
         }
 
-        private enum Key: String, CodingKey { case kind, fileId, title, label, name, footer, rows, retry, lines }
+        private enum Key: String, CodingKey { case kind, title, footer, rows, retry, lines }
 
         init(from decoder: Decoder) throws {
             let c = try decoder.container(keyedBy: Key.self)
             func text(_ key: Key) throws -> String { try c.decode(String.self, forKey: key) }
             switch try text(.kind) {
-            case "undated": self = .undated(fileId: try text(.fileId), title: try text(.title), label: try text(.label), name: try text(.name))
+            case "undated": self = .undated(try Undated(from: decoder))
             case "unsure": self = .unsure(title: try text(.title), footer: try text(.footer), rows: try c.decode([ValueRow].self, forKey: .rows))
             case "failed": self = .failed(title: try text(.title), rows: try c.decode([FileLine].self, forKey: .rows), retry: try c.decodeIfPresent(String.self, forKey: .retry))
             case "notSaved": self = .notSaved(title: try text(.title), lines: try c.decode([String].self, forKey: .lines), footer: try text(.footer))
@@ -65,6 +86,7 @@ struct UploadPage: Decodable, Equatable, Sendable {
         let line: String
         let showAll: String
         let rows: [ValueRow]
+        let hide: String?
     }
 
     struct Document: Decodable, Equatable, Sendable, Identifiable {
@@ -73,12 +95,24 @@ struct UploadPage: Decodable, Equatable, Sendable {
         let kind: String
         let date: String
         let dateKnown: Bool
+        /// The document type the kind choice sends, and the date as a calendar day.
+        let kindKey: String?
+        let day: String?
         var id: String { fileId }
+    }
+
+    struct Kind: Decodable, Equatable, Sendable, Identifiable {
+        let key: String
+        let word: String
+        var id: String { key }
     }
 
     struct Documents: Decodable, Equatable, Sendable {
         let line: String
         let rows: [Document]
+        let kinds: [Kind]?
+        let setDate: String?
+        let removeDate: String?
     }
 
     struct FileRow: Decodable, Equatable, Sendable, Identifiable {
@@ -118,6 +152,14 @@ struct UploadPage: Decodable, Equatable, Sendable {
     let save: Save
     let stop: Stop?
     let done: Done?
+    /// The machine's phase ("consent", "open", "saving", "saveFailed", "done", "failed"), a whole
+    /// run's refusal, whether Close may leave, the word for Done, and the doors' words for a later
+    /// call that answers nothing.
+    let phase: String?
+    let refused: String?
+    let closeEnabled: Bool?
+    let doneLabel: String?
+    let engineError: String?
 
     /// The view's text decoded; nil when it does not read.
     static func decoded(_ text: String) -> UploadPage? {
@@ -129,11 +171,15 @@ struct UploadPage: Decodable, Equatable, Sendable {
 /// page holds no rule: each tap is one event, and the engine decides what it changes.
 enum UploadAction: Equatable, Sendable {
     case tick(fileId: String, ref: String, on: Bool)
+    /// Replace on: the value saves as a correction of the held row `correctsId`; nil turns it off.
+    case replace(fileId: String, ref: String, correctsId: String?)
     /// A report's day of the test, as a calendar day (YYYY-MM-DD).
     case testDay(fileId: String, day: String)
     case title(fileId: String, title: String)
-    /// A document's date, as a calendar day.
-    case documentDate(fileId: String, day: String)
+    /// A document's kind, as the view's `kindKey`.
+    case kind(fileId: String, key: String)
+    /// A document's date, as a calendar day; nil removes it.
+    case documentDate(fileId: String, day: String?)
     case retryAll
     case stop
     case save
@@ -147,9 +193,11 @@ enum UploadAction: Equatable, Sendable {
         }
         switch self {
         case .tick(let id, let ref, let on): return chose(id, ["tick": ref, "on": on])
+        case .replace(let id, let ref, let correctsId): return chose(id, ["replace": ref, "correctsId": correctsId as Any? ?? NSNull()])
         case .testDay(let id, let day): return chose(id, ["testDay": day])
         case .title(let id, let title): return chose(id, ["document": ["title": title]])
-        case .documentDate(let id, let day): return chose(id, ["document": ["date": day]])
+        case .kind(let id, let key): return chose(id, ["document": ["kind": key]])
+        case .documentDate(let id, let day): return chose(id, ["document": ["date": day as Any? ?? NSNull()]])
         case .retryAll: return EngineNatives.json(["type": "retry", "id": "all"])
         case .stop: return EngineNatives.json(["type": "stop"])
         case .save: return EngineNatives.json(["type": "saveStarted"])

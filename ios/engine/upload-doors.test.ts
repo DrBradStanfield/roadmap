@@ -17,7 +17,7 @@ import { uploadUsageCounts } from '../../packages/health-core/src/upload-usage';
 import type { UnifiedExtractionResult } from '../../packages/health-core/src/lab-extraction';
 import { labStreamAnswer } from '../../packages/health-core/src/upload-answer';
 import { UPLOAD_STATE } from '../../packages/health-core/src/upload-schema';
-import { UPLOAD_REFUSAL_REASONS } from './upload-doors';
+import { REFUSAL_WORDS, UPLOAD_REFUSAL_REASONS } from './upload-doors';
 import { TOO_NEW_RECORD } from './my-data';
 
 const NOW = '2026-11-02T00:00:00.000Z';
@@ -166,7 +166,7 @@ describe('upload doors agree with health-core (shared upload PR 12, US-52 AC8c)'
         const review = uploadReview(s, RECORD, NOW);
         const view = uploadView(s, RECORD, NOW, review, cloud);
         const plan = uploadSavePlan(s, RECORD, NOW, review, cloud);
-        expect(JSON.parse(uploadViewJson(JSON.stringify(s), RECORD_TEXT, NOW, cloud, DEV)), where).toEqual(JSON.parse(JSON.stringify(view)));
+        expect(JSON.parse(uploadViewJson(JSON.stringify(s), RECORD_TEXT, NOW, cloud, DEV)), where).toEqual(JSON.parse(JSON.stringify({ ...view, engineError: REFUSAL_WORDS['engine-error'] })));
         expect(JSON.parse(uploadSavePlanJson(JSON.stringify(s), RECORD_TEXT, NOW, cloud, DEV)), where).toEqual(JSON.parse(JSON.stringify(plan)));
         expect(JSON.parse(uploadUsageJson(JSON.stringify(s))), where).toEqual(uploadUsageCounts(s));
         if (whole.type === 'hashed' && whole.known) seen.known++;

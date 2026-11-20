@@ -53,6 +53,9 @@ final class UploadSession {
         }
     }
 
+    /// The doors' words for a call that answered nothing, from the last view drawn.
+    var engineError: String? { drawn?.page?.engineError }
+
     /// The page for the model's view text, decoded once per text.
     func page(_ text: String) -> UploadPage? {
         if let drawn, drawn.text == text { return drawn.page }

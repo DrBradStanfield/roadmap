@@ -70,6 +70,14 @@ final class UploadPageTests: XCTestCase {
         return ###"{"classification":"clinic_letter","reportDate":null,"values":[],"additionalValues":[],"document":{"classification":"clinic_letter","title":"\###(title)","documentDate":\###(day),"contentMarkdown":"## Plan\n\nWalk daily.","metadata":{}}}"###
     }
 
+    /// The rows of the page's "check these values" section.
+    static func unsure(_ page: UploadPage) -> [UploadPage.ValueRow] {
+        page.sections.flatMap { section -> [UploadPage.ValueRow] in
+            if case .unsure(_, _, let rows) = section { return rows }
+            return []
+        }
+    }
+
     // MARK: Sections
 
     func testReadingShowsProgressStopAndEveryFileInPickedOrder() throws {
@@ -101,6 +109,7 @@ final class UploadPageTests: XCTestCase {
         guard case .unsure(let title, _, let rows) = page.sections.first(where: { if case .unsure = $0 { true } else { false } }) else { return XCTFail("no unsure section: \(page.sections)") }
         XCTAssertEqual(title, "Check this value")
         XCTAssertEqual(rows.map(\.ref), ["v1"])
+        XCTAssertEqual(rows.first.map { [$0.label, $0.value, $0.unit] }, ["HDL Cholesterol", "1.2", "mmol/L"], "a value is checked against its printed number")
         // The tick is the engine's default for the phone (upload-rules defaultTicked), drawn as given: not pinned here.
         XCTAssertEqual(page.save.label, rows.first?.ticked == true ? "Save 2 values and 1 document" : "Save 1 value and 1 document")
         guard case .failed(let failedTitle, let failed, let retry) = page.sections.first(where: { if case .failed = $0 { true } else { false } }) else { return XCTFail("no failed section") }
@@ -110,8 +119,15 @@ final class UploadPageTests: XCTestCase {
         XCTAssertEqual(retry, "Try again")
         XCTAssertEqual(page.sure?.line, "1 value will be saved")
         XCTAssertEqual(page.sure?.showAll, "Show all 1")
+        XCTAssertEqual(page.sure?.hide, "Hide")
         XCTAssertEqual(page.documents?.line, "1 letter or document will be saved")
-        XCTAssertEqual(page.documents?.rows.first, .init(fileId: "letter", title: "Cardiology follow-up", kind: "clinic letter", date: "2026-09-14", dateKnown: true))
+        XCTAssertEqual(page.documents?.rows.first, .init(fileId: "letter", title: "Cardiology follow-up", kind: "clinic letter", date: "2026-09-14", dateKnown: true,
+                                                         kindKey: "clinic_letter", day: "2026-09-14"))
+        XCTAssertEqual(page.documents?.kinds?.count, 6)
+        XCTAssertEqual([page.documents?.setDate, page.documents?.removeDate], ["Set the date", "Remove the date"])
+        XCTAssertEqual([page.phase, page.doneLabel], ["open", "Done"])
+        XCTAssertEqual(page.closeEnabled, true)
+        XCTAssertEqual(page.engineError, "The upload could not go on.")
         XCTAssertTrue(page.save.enabled, "a failed file never blocks Save")
     }
 
@@ -120,7 +136,7 @@ final class UploadPageTests: XCTestCase {
         drive.pick(["u"])
         drive.read("u", Self.lab(reportDate: nil, values: Self.ldl))
         var page = try drive.page()
-        XCTAssertEqual(page.sections.first, .undated(fileId: "u", title: "This report has no date", label: "Day of the test", name: "u.png"))
+        XCTAssertEqual(page.sections.first, .undated(.init(fileId: "u", title: "This report has no date", label: "Day of the test", name: "u.png", choose: "Choose the day of the test")))
         XCTAssertFalse(page.save.enabled)
         drive.step(UploadAction.testDay(fileId: "u", day: "2026-10-02").event(now: Self.now))
         page = try drive.page()
@@ -175,6 +191,44 @@ final class UploadPageTests: XCTestCase {
         XCTAssertFalse(page.save.enabled)
     }
 
+    /// A value whose day the record holds offers Replace in the web's word; a question is the read's
+    /// own words; the consent and saving phases are the engine's (the page holds no mode).
+    func testReplaceQuestionAndPhases() async throws {
+        let folder = FileManager.default.temporaryDirectory.appending(path: "Replace page \(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        var drive = try Drive()
+        let store = try RecordStore(folder: folder, engine: drive.engine, deviceId: "test")
+        _ = await store.apply(.add(metric: "ldl", value: 2.0, day: "2026-10-01"))
+        drive.record = store.recordJSON
+        drive.pick(["lab"])
+        let asked = #"{"metric":"hdl","valueSI":1.2,"displayValue":1.2,"displayUnit":"mmol/L","displaySystem":"si","confidence":"medium","question":"Was this fasting?"}"#
+        drive.read("lab", Self.lab(values: "\(Self.ldl),\(asked)"))
+        var page = try drive.page()
+        let rows = Self.unsure(page)
+        let ldl = try XCTUnwrap(rows.first { $0.ref == "v0" })
+        XCTAssertEqual(ldl.replace, "Replace")
+        let held = try XCTUnwrap(ldl.replaces)
+        XCTAssertEqual(rows.first { $0.ref == "v1" }?.question, "Was this fasting?")
+        drive.step(UploadAction.replace(fileId: "lab", ref: "v0", correctsId: held).event(now: Self.now))
+        page = try drive.page()
+        let replaced = Self.unsure(page).first { $0.ref == "v0" }
+        XCTAssertEqual(replaced?.replacing, true)
+        XCTAssertEqual(replaced?.conflict, "Replaces the value in your record.")
+
+        var consent = try Drive()
+        consent.step(["type": "picked", "needsConsent": true, "now": Self.now, "files": [["id": "a", "name": "a.png", "bytes": 100, "kind": "file"]]])
+        XCTAssertEqual(try consent.page().phase, "consent")
+        consent.step(["type": "consented"])
+        XCTAssertEqual(try consent.page().phase, "open")
+
+        var saving = try Drive()
+        saving.pick(["letter"])
+        saving.read("letter", Self.letter())
+        saving.step(UploadAction.save.event(now: Self.now))
+        XCTAssertEqual(try saving.page().closeEnabled, false, "Close waits while the save runs")
+    }
+
     // MARK: Actions
 
     /// Each tap is the engine's event, by its own schema (upload-schema.ts).
@@ -187,6 +241,10 @@ final class UploadPageTests: XCTestCase {
             (.testDay(fileId: "f", day: "2026-10-02"), ["type": "chose", "id": "f", "change": ["testDay": "2026-10-02"], "now": Self.now]),
             (.title(fileId: "f", title: "Heart clinic"), ["type": "chose", "id": "f", "change": ["document": ["title": "Heart clinic"]], "now": Self.now]),
             (.documentDate(fileId: "f", day: "2026-09-01"), ["type": "chose", "id": "f", "change": ["document": ["date": "2026-09-01"]], "now": Self.now]),
+            (.documentDate(fileId: "f", day: nil), ["type": "chose", "id": "f", "change": ["document": ["date": NSNull()]], "now": Self.now]),
+            (.kind(fileId: "f", key: "scan_result"), ["type": "chose", "id": "f", "change": ["document": ["kind": "scan_result"]], "now": Self.now]),
+            (.replace(fileId: "f", ref: "v0", correctsId: "m1"), ["type": "chose", "id": "f", "change": ["replace": "v0", "correctsId": "m1"], "now": Self.now]),
+            (.replace(fileId: "f", ref: "v0", correctsId: nil), ["type": "chose", "id": "f", "change": ["replace": "v0", "correctsId": NSNull()], "now": Self.now]),
             (.retryAll, ["type": "retry", "id": "all"]), (.stop, ["type": "stop"]), (.save, ["type": "saveStarted"]),
             (.close, ["type": "close"]), (.discard, ["type": "discard"]),
         ]

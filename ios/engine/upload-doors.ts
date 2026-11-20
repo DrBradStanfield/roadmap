@@ -136,12 +136,15 @@ export const uploadStep = (stateJson: string, eventJson: string, recordJson: str
 });
 
 /** One review per call, as health-core's callers take it: the view and its plan count the same rows. */
-const reviewed = (make: typeof uploadView | typeof uploadSavePlan) => (stateJson: string, recordJson: string, nowIso: string, cloudConnected: boolean, deviceId: string) => answer(() => {
-  const state = readState(stateJson);
-  const record = readUploadRecord(recordJson, nowIso, deviceId);
-  return make(state, record, nowIso, uploadReview(state, record, nowIso), cloudConnected);
-});
-export const uploadViewOf = reviewed(uploadView);
+const reviewed = <T,>(make: (state: UploadState, record: RoadmapFile, nowIso: string, review: ReturnType<typeof uploadReview>, cloudConnected: boolean) => T) =>
+  (stateJson: string, recordJson: string, nowIso: string, cloudConnected: boolean, deviceId: string) => answer(() => {
+    const state = readState(stateJson);
+    const record = readUploadRecord(recordJson, nowIso, deviceId);
+    return make(state, record, nowIso, uploadReview(state, record, nowIso), cloudConnected);
+  });
+/** The view, with the words the app shows when a later engine call gives no answer at all
+ *  (`engineError`, the doors' own engine-error line): the page keeps them from its last view. */
+export const uploadViewOf = reviewed((...args: Parameters<typeof uploadView>) => ({ ...uploadView(...args), engineError: REFUSAL_WORDS['engine-error'] }));
 export const uploadPlanOf = reviewed(uploadSavePlan);
 
 export const uploadUsage = (stateJson: string) => answer(() => uploadUsageCounts(readState(stateJson)));

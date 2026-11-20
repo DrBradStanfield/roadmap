@@ -48,6 +48,18 @@ export const UPLOAD_TEXT = {
   archivedLine: (a: number) => `${plural(a, 'original file')} kept in your cloud.`,
   /** The web's done line for originals it could not store (UploadModal.tsx), byte for byte: no count. */
   unstoredLine: "The original file couldn't be stored; its details are saved.",
+  /** The iPhone's own word for the done screen's button and a picker's confirm (section 5 reuses "Done"). */
+  done: 'Done',
+} as const;
+
+/**
+ * A read value's words as the web's review says them, moved here byte for byte so both clients say
+ * the same: what the report printed when the unit was guessed (review-matrix.ts), and the Replace
+ * control on a value whose day the record already holds (ReviewMatrix.tsx).
+ */
+export const REVIEW_CELL_TEXT = {
+  printed: (value: string | number, unit: string) => `Printed: ${value} ${unit || '(no unit)'}`,
+  replace: 'Replace',
 } as const;
 
 /**

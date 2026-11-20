@@ -83,6 +83,20 @@ final class UploadSessionTests: XCTestCase, CloudFixtures {
         XCTAssertEqual(store.recordJSON, before, "a repeat writes nothing")
     }
 
+    /// Consent first (AC13e): the page is in the engine's consent phase and nothing is sent until
+    /// the agree; then the read runs.
+    func testNothingIsSentBeforeConsentThenTheReadRuns() async throws {
+        let store = try phone()
+        let upload = session(store)
+        _ = await upload.runner.pick(Kit.pictures(1), needsConsent: true)
+        try await until("consent") { page(upload)?.phase == "consent" }
+        try await Task.sleep(for: .milliseconds(200))
+        XCTAssertEqual(server.count, 0, "nothing leaves the phone before the agree")
+        await upload.runner.consented()
+        try await until("read") { page(upload)?.save.enabled == true }
+        XCTAssertEqual(server.count, 1)
+    }
+
     /// A refused save says why and offers Save again; the second Save writes the record.
     func testARefusedSaveIsOfferedAgainAndThenSaves() async throws {
         let store = try phone()

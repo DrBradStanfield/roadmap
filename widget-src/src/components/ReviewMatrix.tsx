@@ -3,6 +3,7 @@ import { type LpaUnit, type UnitSystem, type MetricType, UNIT_DEFS, hasUnitChoic
 import { METRIC_LABELS, METRIC_TO_FIELD } from '@roadmap/health-core/mappings';
 import { labNameForUnit, resolveLabCatalogEntry, canonicalLabRow, labCountFault, labPlausibleBound } from '@roadmap/health-core/lab-catalog';
 import { withComparator, type Comparator } from '@roadmap/health-core/lab-limits';
+import { REVIEW_CELL_TEXT } from '@roadmap/health-core/upload-text';
 import { labUnitRefusalLine } from '@roadmap/health-core/lab-series';
 import { rowTarget } from '@roadmap/health-core/row-target';
 import { useMatrixScrollSync } from '../lib/useMatrixScrollSync';
@@ -352,7 +353,7 @@ const MatrixCellView = memo(function MatrixCellView({
           aria-label={`Replace the saved ${rowName(row)} value from ${columnWords}`}
           aria-describedby={describedBy(oldId, newId, newUnitShown && unitId)}
         />
-        <span aria-hidden="true">Replace</span>
+        <span aria-hidden="true">{REVIEW_CELL_TEXT.replace}</span>
       </label>}
     </div>
   );

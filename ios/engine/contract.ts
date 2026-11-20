@@ -431,7 +431,7 @@ export const DOORS = {
     kind: 'sync',
     optionalDoor: true,
     args: [['stateJson', text], ['recordJson', text], ['nowIso', text], ['cloudConnected', flag], ['deviceId', text]],
-    returns: "Shared upload (US-52 AC8c): the drawable view, health-core UploadView as JSON {progress, summary, sections, sure, documents, files, notices, save, stop, done}, every string resolved and every count made; one uploadReview of the state against the record per call, so it counts what uploadSavePlanJson writes for the same inputs. cloudConnected: originals are stored and counted only with a cloud. deviceId: the app's own, as the screen doors take it. Costly for a large upload (entry.ts): at most one call per frame, coalesced, off the main thread.",
+    returns: "Shared upload (US-52 AC8c): the drawable view, health-core UploadView as JSON {progress, summary, sections, sure, documents, files, notices, save, stop, done, phase, refused, closeEnabled, doneLabel} plus engineError (this door's own engine-error words, for a later call that answers nothing), every string resolved and every count made; one uploadReview of the state against the record per call, so it counts what uploadSavePlanJson writes for the same inputs. cloudConnected: originals are stored and counted only with a cloud. deviceId: the app's own, as the screen doors take it. Costly for a large upload (entry.ts): at most one call per frame, coalesced, off the main thread.",
   },
   uploadSavePlanJson: {
     kind: 'sync',

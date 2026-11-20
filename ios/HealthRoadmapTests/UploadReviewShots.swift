@@ -36,25 +36,25 @@ final class UploadReviewShots: XCTestCase {
         done.step(UploadAction.save.event(now: UploadPageTests.now))
         done.step(UploadSession.event(.success(.init(values: 3, documents: 1, archived: 0, unstored: 1)), run: done.run, attempt: 1))
 
-        let pages = [("reading", try reading.page()), ("mixed", try mixed.page()), ("undated", try undated.page()), ("done", try done.page())]
+        let pages = [("reading", try reading.page()), ("mixed", try mixed.page()), ("undated", try undated.page()), ("done", try done.page()), ("open", try mixed.page())]
         for (name, page) in pages {
             for (look, style, size) in [("light", UIUserInterfaceStyle.light, DynamicTypeSize.large), ("dark", .dark, .large), ("xxxl", .light, .accessibility3)] {
                 for (device, width) in [("iphone", 390.0), ("ipad", 820.0)] where look == "light" || device == "iphone" {
-                    try shoot(page, style: style, size: size, width: width, to: "\(out)/\(name)-\(device)-\(look).png")
+                    try shoot(page, open: name == "open" ? ["Cardiology letter"] : [], style: style, size: size, width: width, to: "\(out)/\(name)-\(device)-\(look).png")
                 }
             }
         }
     }
 
-    private func shoot(_ page: UploadPage, style: UIUserInterfaceStyle, size: DynamicTypeSize, width: CGFloat, to path: String) throws {
+    private func shoot(_ page: UploadPage, open: Set<String>, style: UIUserInterfaceStyle, size: DynamicTypeSize, width: CGFloat, to path: String) throws {
         let view = NavigationStack {
-            UploadReviewView(page: page, send: { _ in }, letter: { _ in "## Plan\n\nWalk daily. Recheck the blood pressure in three months." }, finish: {})
+            UploadReviewView(page: page, send: { _ in }, letter: { _ in "## Plan\n\nWalk daily. Recheck the blood pressure in three months." }, open: open, finish: {})
                 .navigationTitle("Add medical records")
                 .navigationBarTitleDisplayMode(.inline)
         }
         .dynamicTypeSize(size)
         let host = UIHostingController(rootView: view)
-        let height: CGFloat = 1800
+        let height: CGFloat = open.isEmpty ? 1800 : 2600
         let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
         let window = UIWindow(windowScene: scene)
         window.frame = CGRect(x: 0, y: 0, width: width, height: height)
