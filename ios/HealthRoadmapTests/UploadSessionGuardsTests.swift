@@ -184,6 +184,76 @@ final class UploadSessionGuardsTests: XCTestCase, CloudFixtures {
         upload.end()
     }
 
+    /// PR 1908 review: two Saves in a row fail with the same words on an unchanged record, so the
+    /// second outcome's view is the text the tap saw. Close waits during each attempt and is free
+    /// again once each attempt's outcome draws (US-52 AC8c).
+    func testTwoIdenticalFailedSavesEachFreeClose_US52_AC8c() async throws {
+        let store = try RecordStore(folder: folder, engine: HealthEngine(session: StubHTTP.session()), deviceId: "ios-test")
+        let gates = [StubHTTP.Gate(), StubHTTP.Gate()]
+        let attempts = OSAllocatedUnfairLock(initialState: 0)
+        let upload = session(store, save: { _, run, attempt in
+            let gate = gates[min(attempts.withLock { $0 += 1; return $0 } - 1, 1)]
+            await withCheckedContinuation { (done: CheckedContinuation<Void, Never>) in gate.hold { done.resume() } }
+            return UploadSession.event(.failure(LabRefusal(message: "Not saved.")), run: run, attempt: attempt)
+        })
+        try await readOne(upload)
+        for gate in gates {
+            upload.send(.save)
+            XCTAssertTrue(upload.saveClaimed, "Close waits from the tap")
+            try await until("saving") { page(upload)?.phase == "saving" }
+            XCTAssertTrue(upload.saveClaimed, "and while the attempt runs")
+            gate.open()
+            try await Kit.until("Close free after the attempt", timeout: 5) { !upload.saveClaimed }
+            XCTAssertEqual(page(upload)?.save.error, "Not saved.")
+        }
+        XCTAssertEqual(attempts.withLock { $0 }, 2)
+        upload.end()
+    }
+
+    // MARK: 2b. The backup prompt counts a Save of values (US-57 AC9)
+
+    /// An onboarded person with no cloud: values saved through three separate uploads count as three
+    /// own saves, so the backup prompt is due, as three lab reports on the old path make it. A
+    /// document-only upload, a refused Save and a repeat that writes no value count for nothing.
+    func testThreeUploadsOfValuesMakeTheBackupPromptDue_US57_AC9() async throws {
+        let store = try RecordStore(folder: folder, engine: HealthEngine(session: StubHTTP.session()), deviceId: "ios-test")
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: "test.backup.\(UUID().uuidString)"))
+        let prompt = CloudPrompt(defaults: defaults)
+        let lastSaved = OSAllocatedUnfairLock(initialState: "")
+        func upload(_ extraction: String, file: Int) async throws {
+            answers.set { _ in extraction }
+            let upload = session(store, save: { state, run, attempt in
+                lastSaved.withLock { $0 = state }
+                return UploadSession.event(await store.saveUpload(state: state, originals: [:], read: { _ in nil }, as: await store.screen), run: run, attempt: attempt)
+            })
+            let started = await upload.start({ Kit.pictures(1, from: file) }, needsConsent: false)
+            XCTAssertEqual(started, .running)
+            try await until("read") { page(upload)?.save.enabled == true }
+            upload.send(.save)
+            try await until("done") { page(upload)?.done != nil }
+            upload.end()
+            prompt.ownSaves(store.ownSaves) // RootView, once onboarded
+        }
+        try await upload(UploadPageTests.lab(reportDate: "2026-10-01", values: UploadPageTests.ldl), file: 0)
+        XCTAssertEqual(store.ownSaves, 1, "a Save of values counts once")
+        try await upload(UploadPageTests.letter("Letter A"), file: 3)
+        XCTAssertEqual(store.ownSaves, 1, "a document-only Save does not count")
+        let refused = await store.saveUpload(state: "{}", originals: [:], read: { _ in nil }, as: store.screen)
+        guard case .failure = refused else { return XCTFail("a malformed state is refused") }
+        XCTAssertEqual(store.ownSaves, 1, "a refused Save does not count")
+        try await upload(UploadPageTests.lab(reportDate: "2026-10-02", values: UploadPageTests.ldl), file: 6)
+        XCTAssertEqual(store.ownSaves, 2)
+        XCTAssertFalse(prompt.isDue(connected: false), "two saves: not yet")
+        // The page offers no Save when every value is held already, so the repeat is the same Save again.
+        let repeated = await store.saveUpload(state: lastSaved.withLock { $0 }, originals: [:], read: { _ in nil }, as: store.screen)
+        guard case .success(let outcome) = repeated else { return XCTFail("the repeat answers") }
+        XCTAssertEqual(outcome.values, 0, "the repeat writes no value")
+        XCTAssertEqual(store.ownSaves, 2, "a repeat that writes no value does not count")
+        try await upload(UploadPageTests.lab(reportDate: "2026-10-03", values: UploadPageTests.ldl), file: 9)
+        XCTAssertEqual(store.ownSaves, 3)
+        XCTAssertTrue(prompt.isDue(connected: false), "the third own save makes the backup prompt due")
+    }
+
     // MARK: 3. Close while a pick is read
 
     /// Close while a slow File Provider read is under way: the read's answer is never held or sent.
