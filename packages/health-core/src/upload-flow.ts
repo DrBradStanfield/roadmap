@@ -349,11 +349,12 @@ export function transition(s: UploadState, e: UploadEvent): UploadStep {
     }
     case 'stop': return s.phase === 'open' ? stop(s) : same(s);
     case 'chose': {
-      const file = s.phase === 'open' ? s.files.find((f) => f.id === e.id) : undefined;
-      if (s.phase !== 'open' || file?.status.s !== 'read') return same(s);
+      // A choice after a failed Save returns the upload to an ordinary review: the retry writes what it shows (US-12 AC6).
+      const file = s.phase === 'open' || s.phase === 'saveFailed' ? s.files.find((f) => f.id === e.id) : undefined;
+      if ((s.phase !== 'open' && s.phase !== 'saveFailed') || file?.status.s !== 'read') return same(s);
       const choices = choose(file.status.choices, e.change, e.now, file.status.extraction);
       if (!choices) return same(s); // refused: a document date that is no real past day
-      return same({ ...s, files: s.files.map((f) => (f === file ? { ...file, status: { ...file.status, choices } } : f)) });
+      return same({ ...pickOf(s), phase: 'open', files: s.files.map((f) => (f === file ? { ...file, status: { ...file.status, choices } } : f)) });
     }
     case 'saveStarted':
       if (s.phase === 'saveFailed') return save(s, s.attempt + 1);
@@ -362,7 +363,7 @@ export function transition(s: UploadState, e: UploadEvent): UploadStep {
       if (s.phase !== 'saving' || s.attempt !== e.attempt) return same(s);
       return { state: { ...pickOf(s), phase: 'done', outcome: e.outcome }, effects: forget(s.run, s.files.map((f) => f.id)) };
     case 'saveFailed':
-      return s.phase === 'saving' && s.attempt === e.attempt ? same({ ...s, phase: 'saveFailed', message: e.message }) : same(s);
+      return s.phase === 'saving' && s.attempt === e.attempt ? same({ ...pickOf(s), phase: 'saveFailed', attempt: s.attempt, message: e.message }) : same(s);
     case 'close': {
       if (s.phase === 'choosing' || s.phase === 'saving' || s.phase === 'saveFailed') return same(s);
       if (s.phase === 'open' && s.files.some((f) => f.status.s === 'read')) return same(s); // discard, or save, first

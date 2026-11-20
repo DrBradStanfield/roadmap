@@ -4,6 +4,7 @@ import { UNDATED_PREVIOUS } from '@roadmap/health-core/lab-extraction';
 import { isCalendarDay } from '@roadmap/health-core/measurement-history';
 import { getCurrentDateValue } from '../components/DatePicker';
 import { MONTHS_SHORT } from './constants';
+import { longDate } from '@roadmap/health-core/upload-text';
 
 /** Full date state: day/month/year. Day is null when the LLM didn't extract one. */
 export interface FullDate {
@@ -36,12 +37,6 @@ function monthLabel(month: string): string {
   return MONTHS_SHORT.find(m => m.value === month.padStart(2, '0'))?.label ?? month;
 }
 
-/** "5 Jan 2019" for 2019-01-05, "Jun 2025" for 2025-06; null for anything
- *  else (an undated column's key, `undated:<file>`, is no date). */
-export function longDate(day: string): string | null {
-  const m = /^(\d{4})-(\d{2})(?:-(\d{2}))?$/.exec(day);
-  return m && `${m[3] ? `${Number(m[3])} ` : ''}${monthLabel(m[2])} ${m[1]}`;
-}
 
 /** A column's date when it is a calendar day that has happened, else null:
  *  only then is it set, and Save allowed (US-13 AC8). */

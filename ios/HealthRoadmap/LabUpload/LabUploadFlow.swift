@@ -14,9 +14,9 @@ enum LabUploadFlow {
         case savingAll([LabResult], SaveAllProgress)
         case saveAllDone([LabResult], SaveAllSummary)
         case failed(String)
-        /// The shared upload's one review page owns the screen (design PR 15); its phase, consent
-        /// included, is the engine's, drawn from the view, not this step's.
-        case shared
+        /// The shared upload's one review page owns the screen (design PR 15), with the session that
+        /// runs it; its phase, consent included, is the engine's, drawn from the view, not this step's.
+        case shared(UploadSession)
         /// The last report is done with: the sheet closes.
         case finished
     }
@@ -45,14 +45,14 @@ enum LabUploadFlow {
         /// A not-saved report tapped in the summary.
         case open(Int)
         case done
-        /// A file from Files went to the shared upload.
-        case sharedPicked
+        /// A file from Files went to the shared upload, run by this session.
+        case sharedPicked(UploadSession)
     }
 
     static func transition(_ step: Step, _ event: Event) -> Step {
         switch (step, event) {
-        case (.choose, .sharedPicked):
-            return .shared
+        case (.choose, .sharedPicked(let session)):
+            return .shared(session)
         case (.choose, .picked), (.shared, .picked):
             return .working("Reading the file on your iPhone", nil, back: .choose)
         case (.working(_, _, let back), .readProgress(let done, let total, let at)):

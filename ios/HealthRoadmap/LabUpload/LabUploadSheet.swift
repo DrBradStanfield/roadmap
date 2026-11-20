@@ -29,13 +29,11 @@ struct LabUploadSheet: View {
     /// Each report's choices on its review, by report (US-52 AC8b): kept when the review goes,
     /// so save all saves what the person chose; a Try again's new answer starts fresh.
     @State private var held: [UUID: LabChoices] = [:]
-    /// The shared upload (design PR 15): made at the first file picked in Files.
-    @State private var shared: UploadSession?
 
     /// Close and swipe-down wait for a save, or for save all (AC8b); on the shared page, as its view says.
     private var closeHeld: Bool {
         if case .savingAll = step { return true }
-        if case .shared = step, let shared, case .drawn(let text) = shared.model.state { return shared.page(text)?.closeEnabled == false }
+        if case .shared(let shared) = step, case .drawn(let text) = shared.model.state { return shared.page(text)?.closeEnabled == false }
         return reviewSaving
     }
 
@@ -59,7 +57,7 @@ struct LabUploadSheet: View {
                 }
         }
         .interactiveDismissDisabled(closeHeld)
-        .onDisappear { work?.cancel() }
+        .onDisappear { leave() }
         .fileImporter(isPresented: $importing, allowedContentTypes: [.folder, .pdf, .jpeg, .png, .zip], allowsMultipleSelection: false) { result in
             if case .success(let urls) = result, let url = urls.first { pickShared(url) }
         }
@@ -113,8 +111,8 @@ struct LabUploadSheet: View {
                 Button("Choose another file") { send(.restart) }.buttonStyle(.bordered)
             }
             .padding()
-        case .shared:
-            if let shared { sharedPage(shared) }
+        case .shared(let shared):
+            sharedPage(shared)
         case .finished:
             EmptyView()
         }
@@ -134,6 +132,9 @@ struct LabUploadSheet: View {
                         dismiss()
                     }
                 }
+            } else if let words = shared.engineError {
+                // A view that does not read draws the doors' own words, never a blank page.
+                Text(verbatim: words).multilineTextAlignment(.center).padding()
             }
         case .refused(let refusal):
             VStack(spacing: 16) {
@@ -149,9 +150,18 @@ struct LabUploadSheet: View {
 
     /// Close: the shared upload is left, dropping what it read, as Close drops a review today.
     private func close() {
-        work?.cancel()
-        if case .shared = step { shared?.send(.discard) }
+        leave()
         dismiss()
+    }
+
+    /// The sheet is going: the pick being read is cancelled (never held or sent), and the shared
+    /// upload is left and its record unpinned.
+    private func leave() {
+        work?.cancel()
+        if case .shared(let shared) = step {
+            shared.send(.discard)
+            shared.end()
+        }
     }
 
     /// A file from Files goes to the shared upload: its bytes are held and the engine reads it.
@@ -159,23 +169,34 @@ struct LabUploadSheet: View {
     /// doors (an older over-the-air engine) takes today's flow instead.
     private func pickShared(_ url: URL) {
         guard case .choose = step else { return }
-        let session = shared ?? UploadSession(engine: engine, store: store)
-        shared = session
-        let needsConsent = !AIConsent.labUpload.given
-        send(.sharedPicked)
-        start {
-            if let file = await LabFileReader.picked(url, ask: { [engine] in await engine.uploadRules(files: $0, members: $1) }),
-               await session.runner.pick([file], needsConsent: needsConsent) { return }
-            guard !Task.isCancelled, case .shared = step, session.model.state == .unavailable || session.model.state == .starting else { return }
-            send(.picked)
-            await read(file: url)
+        let session = UploadSession(engine: engine, store: store, analytics: analytics)
+        send(.sharedPicked(session))
+        start { [engine] in
+            let started = await session.start({ await LabFileReader.picked(url, ask: { await engine.uploadRules(files: $0, members: $1) }).map { [$0] } },
+                                              needsConsent: !AIConsent.labUpload.given)
+            guard !Task.isCancelled else { return }
+            switch started {
+            case .running: break
+            case .refused(let message): send(.failed(message))
+            case .fallback:
+                // The route is the pick's answer, never what an earlier run left on the model.
+                send(.picked)
+                await read(file: url)
+            }
         }
     }
 
-    /// The one way the step moves; the last report done with closes the sheet.
+    /// The one way the step moves; the last report done with closes the sheet. Leaving the shared
+    /// page unpins its record.
     private func send(_ event: LabUploadFlow.Event) {
+        let before = step
         step = LabUploadFlow.transition(step, event)
+        if case .shared(let session) = before, !isShared(step, session) { session.end() }
         if case .finished = step { dismiss() }
+    }
+
+    private func isShared(_ step: LabUploadFlow.Step, _ session: UploadSession) -> Bool {
+        if case .shared(let now) = step { now === session } else { false }
     }
 
     // MARK: Where the report is (AC10)

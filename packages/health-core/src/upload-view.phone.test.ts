@@ -12,7 +12,9 @@ import type { UnifiedExtractionResult } from './lab-extraction';
 import type { FileChoices } from './upload-choices';
 import type { UploadFile, UploadState } from './upload-flow';
 import { uploadReview } from './upload-review';
-import { REFUSED_TEXT, REVIEW_CELL_TEXT } from './upload-text';
+import { longDate, REFUSED_TEXT, REVIEW_CELL_TEXT } from './upload-text';
+import { transition } from './upload-flow';
+import type { ChoiceChange } from './upload-choices';
 import { uploadView } from './upload-view';
 import type { RoadmapFile } from './roadmap-file';
 
@@ -35,14 +37,15 @@ describe('upload view for the phone: each value as the report printed it', () =>
     expect(rows.map((r) => [r.ref, r.value, r.unit])).toEqual([['v0', '< 0.6', 'mmol/L'], ['a0', '80', 'µg/L']]);
   });
 
-  it("the extractor's question as it was read, and the web's printed line only for a guessed unit", () => {
+  it("the extractor's question as it was read; a guessed unit is a check, never called printed", () => {
     const rows = all(open([read('lab', labX({ values: [
       core({ confidence: 'medium', question: 'Was this a fasting test?' }),
       core({ metric: 'hdl', confidence: 'medium', unitGuessed: true, displayValue: 1.2, valueSI: 1.2 }),
     ] }))]));
     const byRef = Object.fromEntries(rows.map((r) => [r.ref, r]));
-    expect(byRef.v0).toMatchObject({ question: 'Was this a fasting test?', printed: null });
-    expect(byRef.v1).toMatchObject({ question: null, printed: 'Printed: 1.2 mmol/L' });
+    expect(byRef.v0).toMatchObject({ question: 'Was this a fasting test?', unitNote: null });
+    expect(byRef.v1).toMatchObject({ question: null, unitNote: 'Check this value and its unit against the report' });
+    expect(Object.values(byRef).some((r) => 'printed' in r)).toBe(false);
   });
 
   it("a value's own day only when it is not the report's; an undated previous column has none", () => {
@@ -55,7 +58,7 @@ describe('upload view for the phone: each value as the report printed it', () =>
     const s = open([read('lab', labX())]);
     const v = viewOf(s, record);
     const row = v.sections.flatMap((x) => (x.kind === 'unsure' ? x.rows : []))[0];
-    expect(row).toMatchObject({ ref: 'v0', replace: 'Replace', replacing: false });
+    expect(row).toMatchObject({ ref: 'v0', replace: 'Replace', replaceLabel: 'Replace the saved LDL Cholesterol value from 1 Nov 2026', replacing: false });
     expect(row.replaces).toBeTruthy();
   });
 });
@@ -72,7 +75,7 @@ describe('upload view for the phone: documents, Hide and an undated report', () 
     expect(v.documents?.rows[0]).toMatchObject({ kindKey: 'clinic_letter', day: null, date: 'No date', dateKnown: false });
     expect([v.documents?.setDate, v.documents?.removeDate]).toEqual(['Set the date', 'Remove the date']);
     const dated = viewOf(open([read('l', letter, { ...CHOICES, document: { date: '2026-09-01', kind: 'scan_result' } })]));
-    expect(dated.documents?.rows[0]).toMatchObject({ kindKey: 'scan_result', kind: 'scan result', day: '2026-09-01', date: '2026-09-01' });
+    expect(dated.documents?.rows[0]).toMatchObject({ kindKey: 'scan_result', kind: 'scan result', day: '2026-09-01', date: '1 Sep 2026' });
   });
 
   it('Show all has its Hide; an undated report opens its picker from the approved words, no day assumed', () => {
@@ -93,7 +96,7 @@ describe('upload view for the phone: the phase, so the page holds no mode', () =
     ];
     for (const [s, close] of cases) {
       const v = viewOf(s);
-      expect([v.phase, v.closeEnabled, v.doneLabel]).toEqual([s.phase, close, 'Done']);
+      expect([v.phase, v.closeEnabled, v.doneLabel, v.editable]).toEqual([s.phase, close, 'Done', s.phase === 'open' || s.phase === 'saveFailed']);
     }
     expect(viewOf({ ...pick, phase: 'failed', refused: 'dailyLimit', files }).refused).toBe(REFUSED_TEXT.dailyLimit);
     expect(viewOf({ ...pick, phase: 'failed', refused: null, files }).refused).toBeNull();
@@ -102,5 +105,20 @@ describe('upload view for the phone: the phase, so the page holds no mode', () =
   it('the moved web words stay byte for byte', () => {
     expect(REVIEW_CELL_TEXT.printed(3.1, '')).toBe('Printed: 3.1 (no unit)');
     expect(REVIEW_CELL_TEXT.replace).toBe('Replace');
+    expect(REVIEW_CELL_TEXT.replaceLabel('Iron', '5 Jan 2019')).toBe('Replace the saved Iron value from 5 Jan 2019');
+    expect([longDate('2019-01-05'), longDate('2025-06'), longDate('undated:a')]).toEqual(['5 Jan 2019', 'Jun 2025', null]);
+  });
+
+  it('Replace selects its value through the engine, and clearing a value drops its Replace (Codex R3)', () => {
+    const record = recordWith([{ kind: 'measurement', metricType: 'ldl', value: 2.0 }]);
+    const s0 = open([read('lab', labX())]);
+    const held = viewOf(s0, record).sections.flatMap((x) => (x.kind === 'unsure' ? x.rows : []))[0].replaces!;
+    const step = (s: UploadState, change: ChoiceChange) => transition(s, { type: 'chose', id: 'lab', change, now: NOW }).state;
+    const unticked = step(s0, { tick: 'v0', on: false });
+    const replaced = step(unticked, { replace: 'v0', correctsId: held });
+    const row = viewOf(replaced, record).sections.flatMap((x) => (x.kind === 'unsure' ? x.rows : []))[0];
+    expect([row.ticked, row.replacing]).toEqual([true, true]);
+    const cleared = viewOf(step(replaced, { tick: 'v0', on: false }), record).sections.flatMap((x) => (x.kind === 'unsure' ? x.rows : []))[0];
+    expect([cleared.ticked, cleared.replacing]).toEqual([false, false]);
   });
 });

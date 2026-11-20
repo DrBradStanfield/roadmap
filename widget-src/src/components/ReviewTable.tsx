@@ -16,7 +16,8 @@ import { ReviewMatrix } from './ReviewMatrix';
 import { ReviewFileSections } from './ReviewFileSections';
 import { NotSavedLine, SureLine, saveLabel, useDisclosure } from './ReviewOverview';
 import { useReviewDocuments } from '../hooks/useReviewDocuments';
-import { type FullDate, parseReportDate, longDate, columnDay, getDaysInMonth, buildRecordedAt, fullDateToIso } from '../lib/review-dates';
+import { type FullDate, parseReportDate, columnDay, getDaysInMonth, buildRecordedAt, fullDateToIso } from '../lib/review-dates';
+import { longDate } from '@roadmap/health-core/upload-text';
 import type { FileResult, ReviewDecisions } from '../lib/upload-pipeline';
 import { type DateKey, type MatrixColumn, type ExistingCell, type EditableMatrixCell, type CoreCellView, sameValue, editId, replaceKey, buildMatrixModel } from '../lib/review-matrix';
 

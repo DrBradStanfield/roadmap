@@ -65,9 +65,14 @@ final class UploadSessionTests: XCTestCase, CloudFixtures {
         _ = await upload.runner.pick(files, needsConsent: false)
         try await until("both read") { page(upload)?.save.enabled == true }
         XCTAssertEqual(page(upload)?.save.label, "Save 2 documents")
+        // The order itself: as the record lands on disk (the store's edit hook), the engine has not
+        // yet taken `saved`: the page has no done screen, and the file already holds both letters.
+        var seenAtWrite: (done: Bool, onDisk: Bool)?
+        store.onEdit = { [unowned self] in seenAtWrite = (page(upload)?.done != nil, recordOnDisk.contains("Letter 1") && recordOnDisk.contains("Letter 2")) }
         upload.send(.save)
         try await until("done") { page(upload)?.done != nil }
-        XCTAssertTrue(recordOnDisk.contains("Letter 1") && recordOnDisk.contains("Letter 2"), "written before the page said saved")
+        XCTAssertEqual(seenAtWrite?.done, false, "the record was on disk before the page said saved")
+        XCTAssertEqual(seenAtWrite?.onDisk, true)
         XCTAssertEqual(page(upload)?.done?.line, "Saved 2 documents.")
         upload.send(.close)
 

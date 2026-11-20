@@ -42,4 +42,27 @@ extension HealthEngine {
         answer.order = order
         return answer
     }
+
+    /// This engine runs the shared upload as the page draws it: its doors answer, its view carries
+    /// the machine's phase, and its save door is there. An older engine over the air answers false,
+    /// and today's flow reads the pick. Probed with a state that saves nothing.
+    func runsSharedUpload() async -> Bool {
+        guard case .answered(let state)?? = try? uploadStart(platform: "phone"),
+              case .answered(let view)?? = try? uploadView(state: state, record: "", now: .now, cloudConnected: false, deviceId: "probe"),
+              view.contains(#""phase""#) else { return false }
+        let probe = try? await uploadSave(state: state, recordJSON: "", erase: "", now: .now, deviceId: "probe", originals: [:], read: { _ in nil })
+        return probe != nil
+    }
+
+    /// The upload's usage counts (health-core uploadUsageCounts): files known, failed, and seconds to the first read.
+    struct UploadUsage: Decodable, Sendable {
+        let known: Int?
+        let failedFinal: Int?
+        let firstReadSeconds: Int?
+    }
+
+    func uploadUsage(state: String) throws -> UploadUsage? {
+        guard let text = try doorUploadUsageJson(stateJson: state), case .answered(let json) = UploadDoors.answer(text) else { return nil }
+        return try JSONDecoder().decode(UploadUsage.self, from: Data(json.utf8))
+    }
 }

@@ -68,7 +68,20 @@ export const UPLOAD_TEXT = {
 export const REVIEW_CELL_TEXT = {
   printed: (value: string | number, unit: string) => `Printed: ${value} ${unit || '(no unit)'}`,
   replace: 'Replace',
+  /** The Replace box's spoken name: the test and the day it would correct (ReviewMatrix.tsx aria-label). */
+  replaceLabel: (test: string, day: string) => `Replace the saved ${test} value from ${day}`,
+  /** A value whose unit the read guessed, in the iPhone review's words (LabReviewView.swift), byte for byte. */
+  checkUnit: 'Check this value and its unit against the report',
 } as const;
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+/** "5 Jan 2019" for 2019-01-05, "Jun 2025" for 2025-06; null for anything else (moved from the web's
+ *  review-dates.ts, byte for byte, so both clients write a day the same way). */
+export function longDate(day: string): string | null {
+  const m = /^(\d{4})-(\d{2})(?:-(\d{2}))?$/.exec(day);
+  const month = m ? MONTHS[Number(m[2]) - 1] ?? m[2] : '';
+  return m && `${m[3] ? `${Number(m[3])} ` : ''}${month} ${m[1]}`;
+}
 
 /** A file not fully read, as the web's notices word it (US-12 AC9); moved from UploadNotices.tsx. */
 export const FILE_NOTICE_TEXT = {

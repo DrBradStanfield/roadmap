@@ -96,6 +96,9 @@ final class Analytics {
         /// US-13 AC13: the review's Show all opened, its not-saved detail opened, and a value
         /// unticked. Never a value, a test's name or a count.
         case labReviewShowAll = "Lab review show all", labReviewNotSavedOpened = "Lab review not saved opened", labReviewUntick = "Lab review untick"
+        /// US-12 AC30: an upload skipped a file already in the record, and its first file was read
+        /// within 30 seconds of the pick. Once a pick; never a count, a name or a hash.
+        case labUploadKnownSkipped = "Lab upload known skipped", labUploadFirstReadUnder30s = "Lab upload first read under 30 s"
 
         /// "Lab save one" only on an upload of two or more reports, where save all was there to
         /// choose instead, so the two counts compare like with like (US-52 AC8b).

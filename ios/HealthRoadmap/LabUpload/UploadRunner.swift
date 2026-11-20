@@ -69,7 +69,8 @@ actor UploadRunner {
         /// A test's stand-in for `sender.send`; nil in the app.
         var send: (@Sendable (Data) async throws -> LabReadSender.Outcome)?
         var unitSystem = "si"
-        var cloudConnected = false
+        /// Read as each view is drawn: a cloud connected or disconnected meanwhile counts at once.
+        var cloudConnected: @Sendable () async -> Bool = { false }
         /// The `save` effect (UploadSave.swift): the one save door, given the state that asked for
         /// it, answering the event to step (`saved` or `saveFailed`); nil saves nothing.
         var save: (@Sendable (_ state: String, _ run: Int, _ attempt: Int) async -> String)?
@@ -325,7 +326,7 @@ actor UploadRunner {
 
     private func drawViews() async {
         while view != .idle, let current = state {
-            let (record, deviceId, cloud) = (await setup.record(), setup.deviceId, setup.cloudConnected)
+            let (record, deviceId, cloud) = (await setup.record(), setup.deviceId, await setup.cloudConnected())
             let answer: UploadDoors.Answer<String>?? = try? await engine.perform {
                 try $0.uploadView(state: current, record: record, now: .now, cloudConnected: cloud, deviceId: deviceId)
             }
