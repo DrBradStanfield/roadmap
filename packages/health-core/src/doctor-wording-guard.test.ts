@@ -26,6 +26,8 @@ const BANNED_TITLE_START = ['Consider starting', 'Consider increasing'];
 const BANNED_TILE_WORDS = ['Obese', 'Diabetic', 'Prediabetic', 'Kidney Failure'];
 const BARE_BP_LABEL = /^(Stage \d hypertension|Hypertensive crisis)$/;
 const IMPERATIVE = /^(Start|Stop|Take|Increase|Switch to)\b/;
+/** A recommendation with no named recommender ("is typically recommended"): say who, "Guidelines typically recommend". */
+const UNNAMED_RECOMMENDER = /\b(is|are) typically recommended\b/;
 const SUPPLEMENT_LINE = 'Whether it suits you is worth discussing with your doctor or pharmacist.';
 const LPA_MEDICINE_LINE = 'Consider discussing these medicines with your doctor.';
 const MEDICINE_GUIDES = ['statin', 'ezetimibe', 'bempedoic_acid', 'pcsk9i', 'glp1', 'sglt2i', 'metformin'];
@@ -60,10 +62,10 @@ const MEDS: MedicationInputs[] = [
 const sentences = (text: string): string[] =>
   text.split(/\n+|(?<=[.!?])\s+/).map((s) => s.replace(/^[^A-Za-z(]+/, '').trim()).filter(Boolean);
 
-interface Shown { titles: string[]; text: string[]; tileWords: string[]; supplements: string[]; medicineTitles: string[]; medicineText: string[]; lpaCards: string[] }
+interface Shown { formIntros: string[]; titles: string[]; text: string[]; tileWords: string[]; supplements: string[]; medicineTitles: string[]; medicineText: string[]; lpaCards: string[] }
 
 function shownText(): Shown {
-  const out: Shown = { titles: [], text: [], tileWords: [], supplements: [], medicineTitles: [], medicineText: [], lpaCards: [] };
+  const out: Shown = { formIntros: [], titles: [], text: [], tileWords: [], supplements: [], medicineTitles: [], medicineText: [], lpaCards: [] };
   const card = (s: Suggestion) => {
     out.titles.push(s.title);
     out.text.push(s.title, s.description, s.reason ?? '');
@@ -93,6 +95,7 @@ function shownText(): Shown {
       for (const section of medicationForm(meds, basis)) {
         out.text.push(section.title, section.intro);
         out.medicineText.push(section.intro);
+        out.formIntros.push(section.intro);
         for (const f of section.groups.flatMap((g) => g.fields)) {
           const hint = 'hint' in f ? f.hint ?? '' : '';
           out.text.push(f.label, hint);
@@ -101,6 +104,9 @@ function shownText(): Shown {
       }
     }
   }
+  // No cascade on: the plain questions, under the neutral intro.
+  const flat = { lipidMarker: null, weightMedTrigger: { on: false, reasons: [] }, bmi: undefined, hasLipidInput: true, hasWeightInput: true, unitFor: () => 'si' as const };
+  for (const section of medicationForm({}, flat)) out.formIntros.push(section.intro);
   for (const [key, g] of Object.entries(METRIC_GUIDES)) {
     const words = [g.title, g.whatItIs, g.whyItMatters, ...g.howTo.points];
     out.text.push(...words);
@@ -147,6 +153,15 @@ describe('US-07 AC17: doctor-discussion wording guard', () => {
 
   it('no medicine sentence opens with an instruction to start, stop, take, raise or switch', () => {
     expect(shown.medicineText.flatMap(sentences).filter((s) => IMPERATIVE.test(s))).toEqual([]);
+  });
+
+  it('every medication form section, cascade or not, says once to discuss its medicines with a doctor', () => {
+    expect(shown.formIntros.length).toBeGreaterThan(0);
+    expect(shown.formIntros.filter((intro) => (intro.match(/with your doctor/g) ?? []).length !== 1)).toEqual([]);
+  });
+
+  it('a recommendation names who makes it', () => {
+    expect(shown.text.filter((t) => UNNAMED_RECOMMENDER.test(t))).toEqual([]);
   });
 
   it('no blood pressure label or card title is a bare condition name', () => {

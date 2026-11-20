@@ -43,7 +43,7 @@ import { openAboutYou, showTables } from '../testing/health-tool-harness';
 import { bmiOnRow, planTitles, suggestionText } from '../testing/plan-on-page';
 import { openSettings } from '../testing/settings';
 
-const NEUTRAL = 'Are you currently taking any weight or diabetes medications? Recording these helps track your health over time.';
+const NEUTRAL = 'Are you currently taking any weight or diabetes medications? Recording these helps track your health over time. Discuss them with your doctor.';
 const recommends = (bmi: string, reasons?: string) => (reasons
   ? `At a BMI of ${bmi} and ${reasons}, medications that support weight management and metabolic health are an option to discuss with your doctor.`
   : `At a BMI of ${bmi}, medications that support weight management and metabolic health are an option to discuss with your doctor.`);
@@ -141,7 +141,7 @@ const SAVED_WEIGHT_MIRROR = JSON.stringify({
   inputs: { heightCm: 178, sex: 'male' },
   previousMeasurements: [{ id: 'm1', metricType: 'weight', value: 80, recordedAt: '2026-09-01T12:00:00.000Z', createdAt: '2026-09-01T12:00:00.000Z' }],
 });
-const CHOLESTEROL_NEUTRAL = 'Are you currently taking any cholesterol medications? Recording these helps track your health over time.';
+const CHOLESTEROL_NEUTRAL = 'Are you currently taking any cholesterol medications? Recording these helps track your health over time. Discuss them with your doctor.';
 
 beforeEach(() => {
   localStorage.clear();
