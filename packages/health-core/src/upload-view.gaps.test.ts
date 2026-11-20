@@ -105,11 +105,12 @@ describe('gaps the list-view property found, fixed (owner rulings 2026-11-20)', 
     expect(view.save.why).toBe(UPLOAD_TEXT.saveNothing);
   });
 
-  it('editEqualSaysDifferent: an edit typed equal to the held value is already saved, never a conflict', () => {
+  // KNOWN, left for the engine-owned matrix work: ruling 7 was reverted (Codex re-check on c890ebc42), because counting an
+  // edit equal to the held value as saved, after slot placement, hid a differing sibling's conflict. The phone has no edit control.
+  it('KNOWN editEqualSaysDifferent: an edit typed equal to the held value reads "a different value"', () => {
     const s = chose(open([labRead('f0', { values: [core({ valueSI: 2.4, displayValue: 2.4 })] })]), 'f0', { edit: 'v0', value: 3.1 });
     const { view, review } = see(s, held([LDL(3.1)]));
-    expect(rows(view)).toEqual([]);
-    expect(view.alreadySaved).toBe(IMPORT_REVIEW_TEXT.alreadySaved(1));
+    expect(rows(view)).toMatchObject([{ conflict: IMPORT_REVIEW_TEXT.conflictKept }]);
     expect(review.classification.rows).toEqual([]);
   });
 

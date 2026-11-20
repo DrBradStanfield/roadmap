@@ -245,6 +245,29 @@ final class UploadSessionTests: XCTestCase, CloudFixtures {
         XCTAssertEqual(after, before, "a change the upload does not touch leaves the page as it was")
     }
 
+    /// Codex re-check on c890ebc42: Save is not taken while a choice is sent and the view carrying it is not drawn,
+    /// so Save never promises the page from before the choice. After the redraw, Save writes both values.
+    func testSaveWaitsForTheViewOfAChoiceJustMade() async throws {
+        let store = try phone()
+        _ = await store.apply(.add(metric: "ldl", value: 2.0, day: "2026-10-01"))
+        let hdl = #"{"metric":"hdl","valueSI":1.2,"displayValue":1.2,"displayUnit":"mmol/L","displaySystem":"si","confidence":"high"}"#
+        let report = UploadPageTests.lab(values: "\(UploadPageTests.ldl),\(hdl)")
+        StubHTTP.handler = { _ in Kit.read("{\"accepted\":true}\n{\"status\":200,\"body\":{\"success\":true,\"data\":\(report)}}\n") }
+        let upload = session(store)
+        _ = await upload.runner.pick(Kit.pictures(1), needsConsent: false)
+        try await until("read") { page(upload).map(UploadPageTests.unsure)?.first?.replaces != nil }
+        let ldl = try XCTUnwrap(page(upload).map(UploadPageTests.unsure)?.first)
+        upload.send(.replace(fileId: ldl.fileId, ref: ldl.ref, correctsId: ldl.replaces))
+        XCTAssertTrue(upload.choicePending, "the choice's view is not drawn yet")
+        upload.send(.save) // tapped before the redraw: not taken
+        try await until("the Replace drawn") { page(upload).map(UploadPageTests.unsure)?.first?.replacing == true && !upload.choicePending }
+        try await Task.sleep(for: .milliseconds(200))
+        XCTAssertNil(page(upload)?.done, "the early Save was not taken")
+        upload.send(.save)
+        try await until("done") { page(upload)?.done != nil }
+        XCTAssertEqual(page(upload)?.done?.line, "Saved 2 values.")
+    }
+
     /// Save writes exactly what the page showed: a sync lands a different LDL after the page was drawn and
     /// before the tap; the LDL the page promised is counted as not added, never written over the synced one.
     func testSaveWritesWhatThePageShowedWhenTheRecordMovesBeforeTheTap() async throws {

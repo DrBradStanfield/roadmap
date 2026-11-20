@@ -173,13 +173,6 @@ function slotOf(row: BulkRow): { slot: string; quantity: Quantity } {
 export const labReason = (r: BulkAppendResult['refused'][number]): NotSavedReason =>
   r.fault === 'implausible' || r.fault === 'ceiling' ? 'misread' : r.fault === 'scale' || r.fault === 'decimal' ? 'scale' : r.unit.trim() ? 'unit' : 'noUnit';
 
-/** The record already holds this row's reading, equal, on its day (`sameReading`, as the review compares). */
-export function holdsSameReading(row: BulkRow, record: RoadmapFile): boolean {
-  const { slot, quantity } = slotOf(row);
-  const holder = heldReadings(record)(slot);
-  return !!holder && sameReading(quantity, holder);
-}
-
 /** The write refuses this row even on an empty record (its unit, its count,
  *  its range): it takes no (test, day) slot. The review's groups and the
  *  website's matrix place readings by this one rule. */

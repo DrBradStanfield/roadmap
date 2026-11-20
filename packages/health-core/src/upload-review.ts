@@ -6,7 +6,7 @@
  * change, and pass the same one to `uploadView` and `uploadSavePlan`.
  */
 import { UNDATED_PREVIOUS } from './lab-extraction';
-import { classifyImportValues, holdsSameReading, importRow, isOfferedRef, PROBE_DAY, reportImportFile, valueDays, type ClassifiedValue, type ImportClassification, type ImportFile } from './import-review';
+import { classifyImportValues, importRow, isOfferedRef, PROBE_DAY, reportImportFile, valueDays, type ClassifiedValue, type ImportClassification, type ImportFile } from './import-review';
 import { bulkRowTarget } from './bulk-row-target';
 import { bulkAppendValues, slotIndex, slotKey, validDay, type BulkRow } from './record-edits';
 import { createEmptyFile, type RoadmapFile } from './roadmap-file';
@@ -122,16 +122,11 @@ function importFile(f: ReadFile, now: string, holderOf: (row: BulkRow) => string
 }
 
 /**
- * The upload's own readings of the shared classification (owner rulings 2026-11-20), leaving the web's
- * unchanged: a value with no real past day of its own is not saved (`futureDay`); a value typed equal
- * to the one the record holds that day is already saved, never a conflict.
+ * The upload's own reading of the shared classification (owner ruling 2026-11-20), leaving the web's
+ * unchanged: a value with no real past day of its own is not saved (`futureDay`, `futureCoreDay`).
  */
-function ownReading(v: ClassifiedValue, file: ReturnType<typeof importFile>, record: RoadmapFile): ClassifiedValue {
+function ownReading(v: ClassifiedValue, file: ReturnType<typeof importFile>): ClassifiedValue {
   if (file.undatable.includes(v.ref)) return { file: v.file, ref: v.ref, label: v.label, sent: false, writes: false, group: 'notSaved', reason: v.ref[0] === 'v' ? 'futureCoreDay' : 'futureDay' };
-  const row = file.file.rows[v.ref];
-  if (v.group === 'unsure' && !v.writes && row?.source === 'lab_import_edited' && !row.correctsId && holdsSameReading(row, record)) {
-    return { file: v.file, ref: v.ref, label: v.label, sent: v.sent, writes: false, group: 'saved' };
-  }
   return v;
 }
 
@@ -146,7 +141,7 @@ export function uploadReview(s: UploadState, record: RoadmapFile, now: string): 
   };
   const built = labs.map((f) => importFile(f, now, holderOf));
   const classified = classifyImportValues(built.map((b) => b.file), record, now);
-  const classification = { ...classified, values: classified.values.map((v) => (isOfferedRef(v.ref) ? ownReading(v, built[v.file], record) : v)) };
+  const classification = { ...classified, values: classified.values.map((v) => (isOfferedRef(v.ref) ? ownReading(v, built[v.file]) : v)) };
   // The written values come first in `values`, in the order of `rows` (import-review.ts).
   const written = classification.values.filter((v) => v.sent && v.writes);
   const rowsByFile = new Map<string, BulkRow[]>();

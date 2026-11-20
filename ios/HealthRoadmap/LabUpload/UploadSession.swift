@@ -27,6 +27,9 @@ final class UploadSession {
     /// once the attempt's `saved` or `saveFailed` has stepped and drawn, whatever its text.
     private enum Claim { case tapped, queued(Int) }
     private var claim: Claim?
+    /// A choice was sent and the view carrying it is not drawn yet: Save waits, so it never sends back the page from
+    /// before the choice (a claim, not a mode; Codex re-check on PR 1912). Observed: the page's Save reads it.
+    private var choice: Claim?
 
     /// How a pick went: the engine has it, the reader refused it (its words), or the loaded engine
     /// cannot run the shared upload (an older one over the air: today's flow reads it).
@@ -115,9 +118,11 @@ final class UploadSession {
     func send(_ action: UploadAction) {
         switch action {
         case .save:
+            guard !choicePending else { return }
             claim = .tapped
             tellUsage { [analytics, files = drawn?.page?.files.rows.count ?? 0] in analytics?.event(files >= 2 ? .labSaveAll : .labSaveOne) }
         case .close, .discard: tellUsage {}
+        case .tick, .replace, .testDay, .title, .kind, .documentDate: choice = .tapped
         default: break
         }
         let (runner, before, promised) = (runner, last, drawn?.page?.reviewed)
@@ -130,6 +135,10 @@ final class UploadSession {
                 // Save writes exactly what the page showed as to be written: the view's own list, sent back as drawn.
                 let number = await runner.queue(UploadAction.saveEvent(promised: promised))
                 self?.claim = .queued(number)
+                await runner.drain()
+            case .tick, .replace, .testDay, .title, .kind, .documentDate:
+                let number = await runner.queue(action.event(now: Date.now.formatted(HealthEngine.iso)))
+                self?.choice = .queued(number)
                 await runner.drain()
             default: await runner.submit(action.event(now: Date.now.formatted(HealthEngine.iso)))
             }
@@ -155,6 +164,13 @@ final class UploadSession {
         guard let claim, case .drawn(let text) = model.state else { return false }
         guard case .queued(let save) = claim else { return true }
         return model.drawnThrough < save || page(text)?.phase == "saving"
+    }
+
+    /// A choice is sent and its view not yet drawn: Save is not taken (the page's Save is disabled).
+    var choicePending: Bool {
+        guard let choice else { return false }
+        guard case .queued(let number) = choice else { return true }
+        return model.drawnThrough < number
     }
 
     /// The doors' words for a call that answered nothing, from the last view drawn.
