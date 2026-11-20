@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { checkLabImportQuota } from '../lib/upload-api';
 import { initialUpload, inFlight, transition, type RunRefusal, type UploadEvent, type UploadFile, type UploadState } from '@roadmap/health-core/upload-flow';
 import type { ChoiceChange } from '@roadmap/health-core/upload-choices';
-import { uploadReview, type ScreeningProfile } from '@roadmap/health-core/upload-review';
+import { reviewedWrites, uploadReview, type ScreeningProfile } from '@roadmap/health-core/upload-review';
 import { uploadView } from '@roadmap/health-core/upload-view';
 import { uploadUsageCounts } from '@roadmap/health-core/upload-usage';
 import { UNDATED_PREVIOUS, uploadLimitSignal } from '@roadmap/health-core/lab-extraction';
@@ -293,8 +293,9 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
   const retry = useCallback((id: string | 'all') => send({ type: 'retry', id }), [send]);
   /** One review choice, kept by the state on its file (US-13 AC13). */
   const chose = useCallback((id: string, change: ChoiceChange) => send({ type: 'chose', id, change, now: new Date().toISOString() }), [send]);
-  /** Save: the shared state starts it, and its effect runs it (lib/upload-save.ts). */
-  const save = useCallback(() => send({ type: 'saveStarted' }), [send]);
+  /** Save: the shared state starts it, with what the shown review would write, and its effect runs it (lib/upload-save.ts). */
+  const reviewed = shown?.review;
+  const save = useCallback(() => send({ type: 'saveStarted', ...(reviewed ? { reviewed: reviewedWrites(reviewed) } : {}) }), [send, reviewed]);
 
   return {
     phase, state: upload, view: shown?.view ?? null, review: shown?.review ?? null, results: labs as FileResult[],

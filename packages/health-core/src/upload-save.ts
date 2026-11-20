@@ -26,7 +26,8 @@ import { METRIC_LABELS } from './mappings';
 import type { RoadmapFile } from './roadmap-file';
 import type { SaveOutcome, UploadState } from './upload-flow';
 import { uploadSavePlan } from './upload-plan';
-import { uploadReview, type ScreeningProfile } from './upload-review';
+import { reviewedWrites, uploadReview, type ScreeningProfile } from './upload-review';
+import { measurementRefusalText } from './upload-text';
 import { saveBlocked } from './upload-view';
 
 /**
@@ -73,6 +74,9 @@ export async function uploadSave<F>(s: UploadState, record: RoadmapFile, now: st
 
   const rows = plan.labRows.flatMap((f) => f.rows);
   const rowFiles = plan.labRows.flatMap((f) => f.rows.map(() => f.fileId));
+  // Each row's value as `file:ref`, in `rows` order: by file, each file's in the order `rowsByFile` took them.
+  const writes = reviewedWrites(review);
+  const rowKeys = plan.labRows.flatMap((f) => writes.filter((v) => v.file === f.fileId).map((v) => `${v.file}:${v.ref}`));
   // The rows a write on `record` would give each report: what its archive row plans to list. The
   // commit writes them again on the record as it is then, and the lists take those rows' ids.
   const onRecord = bulkAppendValues(record, rows, now);
@@ -128,15 +132,20 @@ export async function uploadSave<F>(s: UploadState, record: RoadmapFile, now: st
       const screenings = plan.screenings.filter((x) => x.ticked && x.date !== null);
       const landed = values || docs.saved.length ? committedFile(written.file, docs) : file;
       const out = screenings.reduce((f, x) => setScreening(f, x.key, x.date!, now), landed);
-      // A reviewed row whose slot another writer took meanwhile is skipped, never a second active row, and counted (US-12 AC6a).
-      const skipped = (kind: 'measurement' | 'lab') => written.outcomes.filter((o, i) => o === 'skipped' && rows[i].kind === kind).length;
-      const [sv, sl] = [skipped('measurement'), skipped('lab')];
+      // A reviewed row whose slot another writer took meanwhile is skipped, never a second active row, and counted
+      // (US-12 AC6a): each value the reviewed page would write that this commit did not write nor refuse, the slot
+      // having gone before Save planned or before it committed; with no reviewed page given, the commit's own skips.
+      const settled = new Set(written.outcomes.flatMap((o, i) => (o === 'skipped' ? [] : [rowKeys[i]])));
+      const notWritten = s.reviewed?.filter((v) => !settled.has(`${v.file}:${v.ref}`))
+        ?? written.outcomes.flatMap((o, i) => (o === 'skipped' ? [{ lab: rows[i].kind === 'lab' }] : []));
+      const [sv, sl] = [notWritten.filter((v) => !v.lab).length, notWritten.filter((v) => v.lab).length];
       // A value the commit refused, the record having changed since the plan (a blood pressure's other half,
-      // say), is named in the review's not-saved words, never dropped silently (US-12 AC15). A core value's
-      // refusal has no reason word of its own: it reads as misread, as the review names a misread number.
+      // say), is named, never dropped silently (US-12 AC15): a lab in the review's not-saved words, a core value
+      // in the web's own refusal line. A core value out of range has no line without the cell's unit: it reads
+      // as misread, as the review names a misread number (it cannot newly arise at commit: the range is the value's own).
       const refused = [
         ...written.refused.map((r) => ({ label: labTestLabel(r.key), reason: labReason(r) })),
-        ...written.measurementRefusals.map((r) => ({ label: METRIC_LABELS[r.metricType] ?? labTestLabel(r.metricType), reason: 'misread' as const })),
+        ...written.measurementRefusals.map((r) => { const line = measurementRefusalText(r); return line !== null ? { line } : { label: METRIC_LABELS[r.metricType] ?? labTestLabel(r.metricType), reason: 'misread' as const }; }),
       ];
       return { file: out, outcome: { values, ...outcome, unstored: docs.unstored, ...(sv ? { skippedValues: sv } : {}), ...(sl ? { skippedLabValues: sl } : {}), ...(refused.length ? { refused } : {}) } };
     },

@@ -122,14 +122,16 @@ const replacingOf = (review: UploadReview, v: ClassifiedValue) => review.labFile
 const blocks = (v: ClassifiedValue) => v.ref[0] === 'v' && v.sent && !v.writes
   && (v.group === 'unsure' ? v.reasons.includes('outOfRange') : v.group === 'notSaved' && v.reason !== 'sameDay');
 
-/** Each reason once, naming its tests, as "Not saved" names them in the review (NOT_SAVED_TEXT). */
+/** Each reason once, naming its tests, as "Not saved" names them in the review (NOT_SAVED_TEXT); then each own line once. */
 function refusedLines(refused: NonNullable<SaveOutcome['refused']>): string[] {
   const byReason = new Map<NotSavedReason, string[]>();
-  for (const { label, reason } of refused) {
-    const labels = byReason.get(reason) ?? [];
-    if (!labels.includes(label)) byReason.set(reason, [...labels, label]);
+  const lines = new Set<string>();
+  for (const r of refused) {
+    if ('line' in r) { lines.add(r.line); continue; }
+    const labels = byReason.get(r.reason) ?? [];
+    if (!labels.includes(r.label)) byReason.set(r.reason, [...labels, r.label]);
   }
-  return [...byReason].map(([reason, labels]) => `${labels.join(', ')}: ${NOT_SAVED_TEXT[reason]}`);
+  return [...[...byReason].map(([reason, labels]) => `${labels.join(', ')}: ${NOT_SAVED_TEXT[reason]}`), ...lines];
 }
 
 function screeningRow(plan: UploadSavePlan, fileId: string): ScreeningRow | null {

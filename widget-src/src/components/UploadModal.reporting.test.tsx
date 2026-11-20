@@ -3,6 +3,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
 import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
+import { UPLOAD_TEXT } from '@roadmap/health-core/upload-text';
 import { RoadmapStore } from '../storage/roadmap-store';
 import { UploadModal } from './UploadModal';
 import { initRoadmapStore, addMeasurement, correctValue, loadAllHistory, loadLabValues, flushRoadmapStore } from '../lib/roadmap-data';
@@ -84,11 +85,14 @@ it.each([
   expect(choices?.replace).toEqual(oldId ? { [lab ? 'a0' : 'v0']: oldId } : {});
   const text = document.body.textContent;
   // PR 1906 item 8: Save plans on the record as it is when it runs. Another writer's value that landed
-  // before Save is judged then: no second active row, nothing claimed saved for it. The "not added" line
-  // stays for a slot taken while the originals upload (upload-save.test.ts, roadmap-store-save-upload.test.ts).
+  // before Save is judged then: no second active row, nothing claimed saved for it. Owner ruling
+  // 2026-11-20: the reviewed value Save did not write is named in the web's "not added" line; with no
+  // other writer, no line.
   expect(text).not.toContain('try again');
   if (outcome === 'mixed') expect(text).toContain('Saved 1 value');
   else if (stale || duplicate) expect(text).not.toContain('Saved 1 value');
+  if (stale || duplicate) expect(text).toContain(UPLOAD_TEXT.skippedLine(1, lab));
+  else expect(text).not.toContain('not added');
   expect(completed).toHaveBeenCalledOnce();
   await flushRoadmapStore();
   const fresh = await RoadmapStore.create(new MemoryAdapter(cloud));

@@ -30,6 +30,8 @@ describe('a value refused at the final commit (item 3)', () => {
     expect(file.measurements.filter((m) => m.metricType === 'systolic_bp')).toEqual([]);
     expect(outcome.values).toBe(0);
     const done: UploadState = { ...saving, phase: 'done', outcome };
-    expect(uploadView(done, file, NOW, uploadReview(done, file, NOW), false).done?.notSaved).toEqual(['Systolic BP: the number looks misread. Check the report']);
+    // Owner ruling 2026-11-20: in the web's own words for a refused blood test value (measurementRefusalLine), not "misread".
+    expect(uploadView(done, file, NOW, uploadReview(done, file, NOW), false).done?.notSaved)
+      .toEqual(['Blood pressure not saved: the top number (systolic) must be higher than the bottom number (diastolic). Check the report, then enter it again.']);
   });
 });

@@ -88,16 +88,17 @@ const file = strict({
 });
 const pick = { platform, run: count, files: z.array(file), started: text, firstRead: maybeText };
 const notSavedReason = z.enum(NOT_SAVED_REASONS);
+const reviewed = z.array(strict({ file: text, ref: text, lab: z.boolean() })).optional();
 const outcome = strict({
   values: count, documents: count, archived: count, unstored: count.optional(), skippedValues: count.optional(), skippedLabValues: count.optional(),
-  refused: z.array(strict({ label: text, reason: notSavedReason })).optional(),
+  refused: z.array(z.union([strict({ label: text, reason: notSavedReason }), strict({ line: text })])).optional(),
 });
 
 export const UPLOAD_STATE = z.discriminatedUnion('phase', [
   strict({ phase: z.literal('choosing'), platform, run: count }),
   strict({ phase: z.literal('consent'), ...pick }),
   strict({ phase: z.literal('open'), ...pick }),
-  strict({ phase: z.literal('saving'), ...pick, attempt: count }),
+  strict({ phase: z.literal('saving'), ...pick, attempt: count, reviewed }),
   strict({ phase: z.literal('saveFailed'), ...pick, attempt: count, message: text }),
   strict({ phase: z.literal('done'), ...pick, outcome }),
   strict({ phase: z.literal('failed'), ...pick, refused: runRefusal.nullable() }),
@@ -132,7 +133,7 @@ export const UPLOAD_EVENTS = {
   retry: strict({ type: z.literal('retry'), id: text }),
   stop: strict({ type: z.literal('stop') }),
   chose: strict({ type: z.literal('chose'), id: text, change, now: text }),
-  saveStarted: strict({ type: z.literal('saveStarted') }),
+  saveStarted: strict({ type: z.literal('saveStarted'), reviewed }),
   saved: strict({ type: z.literal('saved'), run: count, attempt: count, outcome }),
   saveFailed: strict({ type: z.literal('saveFailed'), run: count, attempt: count, message: text }),
   close: strict({ type: z.literal('close') }),

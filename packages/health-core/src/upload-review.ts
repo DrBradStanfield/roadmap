@@ -37,6 +37,19 @@ export interface UploadReview {
   screening: ScreeningProfile | null;
 }
 
+/** A value the reviewed page would write: its file, its ref, and whether it is another lab (not a core value). */
+export interface ReviewedValue { file: string; ref: string; lab: boolean }
+
+/**
+ * What the page the person reviewed would write, for `saveStarted` to carry (owner ruling 2026-11-20,
+ * US-12 AC6a): Save runs on the record as it is then, and names each of these it did not write.
+ */
+export function reviewedWrites(review: UploadReview): ReviewedValue[] {
+  // The written values come first in `values`, in the order of `rows` (import-review.ts).
+  return review.classification.values.filter((v) => v.sent && v.writes)
+    .map((v, k) => ({ file: review.labFiles[v.file].fileId, ref: v.ref, lab: review.classification.rows[k].kind === 'lab' }));
+}
+
 /** The plan's age and sex, as the web's review took them for `isScreeningEligible`; either may be unknown. */
 export interface ScreeningProfile { age?: number; sex?: 'male' | 'female' }
 

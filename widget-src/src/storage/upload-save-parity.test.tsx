@@ -109,14 +109,28 @@ const RULED = {
     const refs = new Set(mine.d.filter((d) => hashes.has(d.contentHash as string)).map((d) => d.fileRef));
     return { ...mine, d: mine.d.filter((d) => !hashes.has(d.contentHash as string)), o: mine.o.filter((ref) => !refs.has(ref)), s: screenings };
   },
+  /**
+   * recordedAtDayOnly (owner ruling 2026-11-20, PR 1906 parity P1): an upload's new value row carries
+   * `recordedAt` as the day alone, as the iPhone's save does; main's web wrote `YYYY-MM-DDT00:00:00.000Z`.
+   * A row the record held keeps its form, and so does a correction, which takes the day of the row it
+   * corrects as that row holds it (record-edits.ts). Ids, `correctsId` and archive lists follow the rename.
+   */
+  recordedAtDayOnly: (pin: Rows, sc: ParityScenario): Rows => {
+    const held = new Set([...sc.history.measurements.map((h) => `${h.metricType}|${h.recordedAt}|${h.value}|`), ...sc.history.labValues.map((h) => `${h.metricName}|${h.recordedAt}|${h.value}|`)]);
+    const renamed = new Map<string, string>();
+    const rows = (xs: Array<Record<string, unknown>>) => xs.map((row) => {
+      const at = row.recordedAt as string;
+      if (!at.endsWith('T00:00:00.000Z') || row.correctsId || held.has(`${row.metricType ?? row.metricName}|${at}|${row.value}|`)) return row;
+      const id = (row.id as string).replace(at, at.slice(0, 10));
+      renamed.set(row.id as string, id);
+      return { ...row, recordedAt: at.slice(0, 10), id };
+    });
+    const [m, l] = [rows(pin.m), rows(pin.l)];
+    const follow = (xs: Array<Record<string, unknown>>) => JSON.parse(JSON.stringify(xs), (_key, value) => (typeof value === 'string' ? renamed.get(value) ?? value : value)) as Array<Record<string, unknown>>;
+    return { ...pin, m: follow(m), l: follow(l), d: follow(pin.d) };
+  },
 };
 
-/**
- * NOT RULED, reported to the owner (PR 1906 fix round): main's web wrote an upload's value rows with
- * `recordedAt` as `YYYY-MM-DDT00:00:00.000Z`; this branch writes `YYYY-MM-DD`, as health-core's upload
- * save writes for the iPhone. Compared by day until the owner rules; every other field must match.
- */
-const AWAITING_RULING_recordedAtFormat = (rows: Rows): string => JSON.stringify(rows).split('T00:00:00.000Z').join('');
 const sorted = (rows: Rows): Rows => {
   const by = <T,>(xs: T[]) => [...xs].sort((p, q) => JSON.stringify(p).localeCompare(JSON.stringify(q)));
   return { ...rows, m: by(rows.m), l: by(rows.l), d: by(rows.d), o: [...rows.o].sort() };
@@ -166,9 +180,9 @@ describe('the web review and Save on this branch write what main\'s wrote (US-52
       await store.flush();
       const mine = parityRows(JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json) as RoadmapFile, [...cloud.docs.keys()]) as Rows;
       const pin = PIN.find((p) => p.seed === sc.seed)!.rows;
-      const expected = sorted(await RULED.knownFilesSkipped(RULED.editedLabMarker(pin, sc), sc));
+      const expected = sorted(RULED.recordedAtDayOnly(await RULED.knownFilesSkipped(RULED.editedLabMarker(pin, sc), sc), sc));
       const branch = sorted(await RULED.nameMatchSkipRetired(mine, sc, pin));
-      if (AWAITING_RULING_recordedAtFormat(branch) !== AWAITING_RULING_recordedAtFormat(expected)) unexplained.push(`seed ${sc.seed} (files ${files.map((f) => f.status.s).join(',')}): ${JSON.stringify(diff(expected, branch))}`);
+      if (JSON.stringify(branch) !== JSON.stringify(expected)) unexplained.push(`seed ${sc.seed} (files ${files.map((f) => f.status.s).join(',')}): ${JSON.stringify(diff(expected, branch))}`);
     }
     vi.useRealTimers();
     expect(unexplained).toEqual([]);
