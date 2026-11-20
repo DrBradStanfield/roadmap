@@ -91,6 +91,7 @@ useEffect(() => {
               <input
                 type="number"
                 className="supplement-dose"
+                aria-label={`${s.supplementName} dose`}
                 placeholder="Dose"
                 min={Number.MIN_VALUE}
                 max={99999}
@@ -112,6 +113,7 @@ useEffect(() => {
               />
               <select
                 className="supplement-unit"
+                aria-label={`${s.supplementName} dose unit`}
                 value={s.doseUnit ?? ''}
                 onChange={e => onSupplementChange(s.supplementKey, s.supplementName, s.doseValue, e.target.value || null)}
               >
@@ -121,6 +123,7 @@ useEffect(() => {
               <button
                 type="button"
                 className="supplement-remove"
+                aria-label={`Remove ${s.supplementName}`}
                 onClick={() => onSupplementDelete(s.supplementKey)}
                 title="Remove"
               >
