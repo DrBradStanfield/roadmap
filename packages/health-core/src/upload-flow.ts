@@ -7,7 +7,7 @@
  * No clock: events carry `now`. Run numbers are minted here, from the last one. Files keep the
  * order they were picked in, a ZIP's members at the ZIP's place (US-12 AC23).
  */
-import { zipMemberName, type UnifiedExtractionResult } from './lab-extraction';
+import { fileNameLine, MAX_FILE_NAME_LENGTH, zipMemberName, type UnifiedExtractionResult } from './lab-extraction';
 import type { FailDetail, UploadFailure } from './upload-failure';
 import { choose, NO_CHOICES, type ChoiceChange, type FileChoices } from './upload-choices';
 import type { Known } from './upload-known';
@@ -61,9 +61,11 @@ export interface UploadFile {
   id: string; name: string; zip?: string; bytes: number; hash: string | null;
   pages: { count: number; truncated: boolean } | null; status: FileStatus;
 }
-/** The name a file is filed and shown under: a ZIP member by zipMemberName (`zip/member`, the old iPhone
- *  path's and the web's rule, the dedup key of a document with no original), any other file as picked. */
-export const uploadFileName = (f: { name: string; zip?: string }): string => (f.zip !== undefined ? zipMemberName(f.zip, f.name) : f.name);
+/** The name a file is filed, matched and shown under, the dedup key of a document with no original (the old
+ *  iPhone path's `fileNamesJson`): a ZIP member by zipMemberName (`zip/member`, the web's rule too), any other
+ *  file on one line (fileNameLine) and cut to MAX_FILE_NAME_LENGTH. */
+export const uploadFileName = (f: { name: string; zip?: string }): string =>
+  (f.zip !== undefined ? zipMemberName(f.zip, f.name) : fileNameLine(f.name).slice(0, MAX_FILE_NAME_LENGTH));
 /** `unstored`: originals the save meant to keep in the cloud that did not land (upload-save.ts); absent is none. */
 export interface SaveOutcome { values: number; documents: number; archived: number; unstored?: number }
 
