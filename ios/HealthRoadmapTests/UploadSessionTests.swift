@@ -217,4 +217,31 @@ final class UploadSessionTests: XCTestCase, CloudFixtures {
         let letter = await upload.letter("f0")
         XCTAssertEqual(letter, "## Plan\n\nWalk daily.")
     }
+
+    // MARK: The record changes while the page sits idle (PR 1908 review, accepted)
+
+    /// Reading done, another writer lands a different LDL on the day the upload offers: the page draws
+    /// the conflict, with Replace and the held value, without a tap. A change elsewhere in the record
+    /// changes nothing on the page.
+    func testARecordChangeWhileIdleRedrawsThePage() async throws {
+        let store = try phone()
+        let report = UploadPageTests.lab(values: UploadPageTests.ldl)
+        StubHTTP.handler = { _ in Kit.read("{\"accepted\":true}\n{\"status\":200,\"body\":{\"success\":true,\"data\":\(report)}}\n") }
+        let upload = session(store)
+        _ = await upload.runner.pick(Kit.pictures(1), needsConsent: false)
+        try await until("read") { page(upload)?.save.enabled == true }
+        XCTAssertTrue(UploadPageTests.unsure(try XCTUnwrap(page(upload))).isEmpty, "no conflict yet")
+
+        _ = await store.apply(.add(metric: "ldl", value: 2.0, day: "2026-10-01"))
+        try await until("the conflict drawn") { page(upload).map(UploadPageTests.unsure)?.first?.replace != nil }
+        let row = try XCTUnwrap(page(upload).map(UploadPageTests.unsure)?.first)
+        XCTAssertEqual(row.held, "2 mmol/L")
+        XCTAssertNotNil(row.replaces)
+
+        guard case .drawn(let before) = upload.model.state else { return XCTFail("no view") }
+        _ = await store.apply(.add(metric: "hdl", value: 1.4, day: "2026-09-01"))
+        try await Task.sleep(for: .milliseconds(300))
+        guard case .drawn(let after) = upload.model.state else { return XCTFail("no view") }
+        XCTAssertEqual(after, before, "a change the upload does not touch leaves the page as it was")
+    }
 }

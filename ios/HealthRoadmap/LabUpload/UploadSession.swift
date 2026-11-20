@@ -57,6 +57,22 @@ final class UploadSession {
             frame: frame,
             held: held)
         runner = UploadRunner(engine: engine, model: UploadModel(), setup: setup)
+        watchRecord()
+    }
+
+    /// The record moved while the page is open (a sync from another device, an edit elsewhere): the
+    /// page is drawn again from the engine on the record as it is now, so a value another writer put in
+    /// a slot the upload offers shows its conflict without a tap. Not after `end()`. A record that is
+    /// no longer the one the page opened on (an erase, a Disconnect) still refuses its Save (the pin).
+    private func watchRecord() {
+        let seen = store.revision
+        withObservationTracking { _ = store.revision } onChange: { [weak self] in
+            Task { @MainActor in
+                guard let self, self.pinned else { return }
+                self.watchRecord()
+                if self.store.revision != seen { await self.runner.recordChanged() }
+            }
+        }
     }
 
     /// The page is gone: the record is no longer pinned. Once; the runner's own tasks end with it.
