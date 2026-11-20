@@ -166,14 +166,13 @@ describe('US-12 AC6: edits after a failed Save are what the retry writes', () =>
       { metric: 'ldl', valueSI: 3.9, displayValue: 3.9, displayUnit: 'mmol/L', confidence: 'high' },
       { metric: 'hdl', valueSI: 1.4, displayValue: 1.4, displayUnit: 'mmol/L', confidence: 'high' },
     ] }) });
-    uploadStore.refuse = '';
+    uploadStore.fail = new Error('synthetic save failure'); // a Save that throws: "Failed to save"
     render_(); pick(pdf('a.pdf'));
     await waitFor(() => { showAllValues(); expect(inputs()).toEqual(['1.4', '3.9']); });
     fireEvent.click(saveButton());
     await screen.findByText('Failed to save. Please try again.');
     fireEvent.change(screen.getByDisplayValue('3.9'), { target: { value: '4.4' } });
     fireEvent.change(screen.getByDisplayValue('1.4'), { target: { value: '' } });
-    uploadStore.refuse = null;
     fireEvent.click(saveButton());
     await screen.findByRole('button', { name: 'Done' });
     expect(lastSaved().values.map(v => [v.metricName, v.value])).toEqual([['ldl', 4.4]]);

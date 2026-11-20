@@ -39,8 +39,7 @@ interface ReviewTableProps {
   /** Whom the hints and status colours grade for; null for a known minor,
    *  as in the blood-test matrix (US-07 AC6). */
   grading: Grading;
-  /** Save, with the review's `upload_review` counts (US-13 AC13). */
-  onSave: (counts: Partial<Record<UploadReviewKey, number>>) => void;
+  onSave: () => void;
   onCancel: () => void;
   isSaving: boolean;
   /** Set each render to the review's `upload_review` counts, for a review
@@ -398,7 +397,7 @@ export function ReviewTable({
       <div className="review-actions">
         <button
           className="btn-primary review-save-btn"
-          onClick={() => onSave(reviewCounts(true))}
+          onClick={onSave}
           disabled={!view.save.enabled || hasInvalid || isSaving}
         >
           {isSaving ? UPLOAD_WINDOW_TEXT.saving : view.save.label}

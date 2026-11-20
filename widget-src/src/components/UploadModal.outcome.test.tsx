@@ -628,7 +628,8 @@ describe('US-16 AC2a: a screening date from an upload the erase overtook', () =>
     renderWithScreenings();
     pick(pdf('scope.pdf'));
     fireEvent.click(await screen.findByRole('button', { name: /^Save / }));
-    await screen.findByText(/Failed to save/);
+    // The page's words for a refused write (erase-copy WRITE_REFUSED), never "Failed to save" (PR 1906 item 9).
+    await screen.findByText(/^That change was not saved: your data was just deleted/);
     expect(uploadStore.record.screenings.colorectalLastDate).toBeUndefined();
   });
 });

@@ -21,6 +21,8 @@ import { eraseBegan, setChatEraseReader } from './chat-erase';
 import { PROXY_PATH, parseJsonResponse, trackProductEvent } from './server-api';
 import { countRefusedSpellings } from './refused-spellings';
 import { SHOPIFY_SURFACE } from './build-flags';
+import { Sentry } from './sentry';
+import { recordFailure } from './error-diagnostics';
 import type { StorageAdapter } from '@roadmap/health-core/adapter';
 import type {
   AddMeasurementResult,
@@ -338,12 +340,17 @@ export async function bulkSaveDocuments(
  * prompted measures it added (US-07 AC11) and the labs the review did not send for their unit
  * (US-21 AC15), counts and closed words only. `message`: why the review stays open (null: the erase refused it).
  */
-export async function saveUpload(state: UploadState, reviewed: RoadmapFile, now: string, cloud: boolean, io: Omit<UploadSaveIO<Blob>, 'write'>): Promise<UploadStoreSave> {
+export async function saveUpload(state: UploadState, now: string, cloud: boolean, io: Omit<UploadSaveIO<Blob>, 'write'>): Promise<UploadStoreSave> {
   if (!store) return { ok: false, message: null };
-  const answer = await store.saveUpload(state, reviewed, now, cloud, io);
+  const answer = await store.saveUpload(state, now, cloud, io);
+  // The rows have landed: a count that throws is reported, never a failed Save (PR 1906 item 8).
   if (answer.ok) {
-    countMeasuresAdded(answer.added);
-    countRefusedSpellings(answer.labRefusals);
+    try {
+      countMeasuresAdded(answer.added);
+      countRefusedSpellings(answer.labRefusals);
+    } catch (err) {
+      Sentry.captureException(recordFailure(err, 'Upload save failed'), { tags: { area: 'upload-save', branch: 'counts' } });
+    }
   }
   return answer;
 }

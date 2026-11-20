@@ -82,12 +82,10 @@ it.each([
   const choices = 'files' in asked && asked.files[0].status.s === 'read' ? asked.files[0].status.choices : null;
   expect(choices?.replace).toEqual(oldId ? { [lab ? 'a0' : 'v0']: oldId } : {});
   const text = document.body.textContent;
-  if (stale || duplicate) {
-    expect(text).toContain(`1 ${lab ? 'additional lab' : 'blood test'} value was not added.`);
-    expect(text).toContain('Check your blood test table');
-    expect(text).not.toContain('already saved');
-    expect(text).not.toContain('try again');
-  } else expect(text).not.toContain('was not added');
+  // PR 1906 item 8: Save plans on the record as it is when it runs. Another writer's value that landed
+  // before Save is judged then: no second active row, nothing claimed saved for it. The "not added" line
+  // stays for a slot taken while the originals upload (upload-save.test.ts, roadmap-store-save-upload.test.ts).
+  expect(text).not.toContain('try again');
   if (outcome === 'mixed') expect(text).toContain('Saved 1 value');
   else if (stale || duplicate) expect(text).not.toContain('Saved 1 value');
   expect(completed).toHaveBeenCalledOnce();

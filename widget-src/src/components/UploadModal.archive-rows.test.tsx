@@ -2,7 +2,7 @@
 /**
  * US-14 AC10 through the upload's one Save (health-core uploadSave, design 12c): off-cloud, a lab
  * report leaves a metadata-only archive row with its file's hash, listing the lab rows its values
- * wrote. One Save is one edit: a refused Save writes nothing, and the retry writes it all once (the
+ * wrote. One Save is one edit: a failed Save writes nothing, and the retry writes it all once (the
  * old two-branch partial save is gone). The record is in memory (testing/upload-store.ts).
  * Synthetic values, plain fake hashes.
  */
@@ -79,14 +79,13 @@ describe('US-14 AC10 — off-cloud archive rows keep the hash and list their row
     expect(archives()).toEqual([{ name: 'labs.pdf', hash: 'hash-labs', stored: false, rows: ['Ferritin@2025-09-02'] }]);
   });
 
-  it('a refused Save writes nothing and keeps the review; the retry writes it all once', async () => {
-    uploadStore.refuse = '';
+  it('a failed Save writes nothing and keeps the review; the retry writes it all once', async () => {
+    uploadStore.fail = new Error('synthetic save failure'); // a Save that throws: "Failed to save"
     await openReview();
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
     expect(await screen.findByText('Failed to save. Please try again.')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Done' })).toBeNull();
     expect(uploadStore.record.labValues).toEqual([]);
-    uploadStore.refuse = null;
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
     await screen.findByRole('button', { name: 'Done' });
     expect(archives()).toEqual([{ name: 'labs.pdf', hash: 'hash-labs', stored: false, rows: ['Ferritin@2025-09-02'] }]);

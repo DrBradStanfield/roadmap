@@ -245,8 +245,8 @@ describe('US-12 AC6: Save', () => {
     expect(screen.getByText('Saved 1 value and 1 document.')).toBeTruthy();
     expect(events('upload_saved')).toEqual([['upload_saved', { count: 2 }]]);
   });
-  it('US-12 AC6: a refused save stays in review with "Failed to save. Please try again." and the hidden indicator needs attention', async () => {
-    uploadStore.refuse = '';
+  it('US-12 AC6: a failed save stays in review with "Failed to save. Please try again." and the hidden indicator needs attention', async () => {
+    uploadStore.fail = new Error('synthetic save failure'); // a Save that throws: "Failed to save"
     render(<Harness />); await ready();
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
     expect(await screen.findByText('Failed to save. Please try again.')).toBeTruthy();

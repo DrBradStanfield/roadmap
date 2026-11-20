@@ -30,7 +30,7 @@ export function resetUploadStore(record: RoadmapFile = EMPTY()): void {
   Object.assign(uploadStore, { record, saves: [], refuse: null, written: new Map(), hold: null, fail: null, writeFails: false });
 }
 
-async function saveUpload(state: UploadState, _reviewed: RoadmapFile, now: string, cloud: boolean, io: Omit<UploadSaveIO<Blob>, 'write'>): Promise<UploadStoreSave> {
+async function saveUpload(state: UploadState, now: string, cloud: boolean, io: Omit<UploadSaveIO<Blob>, 'write'>): Promise<UploadStoreSave> {
   if (uploadStore.hold) await uploadStore.hold;
   if (uploadStore.fail) {
     const error = uploadStore.fail;

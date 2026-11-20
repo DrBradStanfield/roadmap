@@ -197,8 +197,8 @@ describe('US-12 AC4–6 upload session ownership', () => {
 describe('US-12 AC6: one Save, all or nothing', () => {
   const reviews = () => vi.mocked(trackProductEvent).mock.calls.filter(([name]) => name === 'upload_review').map(([, meta]) => meta);
 
-  it('a refused Save keeps the drafts for a retry; one upload_review, saved 1, when the retry lands (US-13 AC13)', async () => {
-    uploadStore.refuse = '';
+  it('a failed Save keeps the drafts for a retry; one upload_review, saved 1, when the retry lands (US-13 AC13)', async () => {
+    uploadStore.fail = new Error('synthetic save failure'); // a Save that throws: "Failed to save"
     render(<Harness />); const value = await ready();
     fireEvent.change(value, { target: { value: '4.2' } });
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
@@ -207,7 +207,6 @@ describe('US-12 AC6: one Save, all or nothing', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Close' }));
     fireEvent.click(screen.getByRole('button', { name: /Upload needs attention/ }));
     expect(screen.getByDisplayValue('4.2')).toBeTruthy();
-    uploadStore.refuse = null;
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
     await screen.findByRole('button', { name: 'Done' });
     expect(lastSaved().values).toEqual([expect.objectContaining({ metricName: 'ldl', value: 4.2, source: 'lab_import_edited' })]);
