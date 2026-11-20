@@ -4,8 +4,6 @@
  * Replace and edits, the cloud and originals, readable held rows, document dates, a failed save,
  * two files with one hash, read files with nothing in them, proposed words. Synthetic values.
  */
-import { readFileSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { core, DAY, EMPTY, extra, NOW, recordWith } from './import-review.test-helpers';
 import type { UnifiedExtractionResult } from './lab-extraction';
@@ -16,7 +14,6 @@ import { NO_CHOICES, type FileChoices } from './upload-choices';
 import { transition, type UploadFile, type UploadState } from './upload-flow';
 import { uploadSavePlan } from './upload-plan';
 import { uploadReview } from './upload-review';
-import { PROPOSED_WORDS } from './upload-text';
 import { uploadView } from './upload-view';
 
 const labX = (over: Partial<UnifiedExtractionResult> = {}): UnifiedExtractionResult =>
@@ -34,15 +31,14 @@ const both = (s: UploadState, record: RoadmapFile = EMPTY, cloud = true) => {
 };
 const asked = labX({ values: [core(), core({ metric: 'hdl', valueSI: 1.2, displayValue: 1.2, question: 'Was this a blood test?' })] });
 
-describe('1. a value the extractor asked about: each client\'s default today', () => {
-  it('the web saves it unless cleared; the iPhone leaves it out unless ticked; the row says which', () => {
+describe('1. a value the extractor asked about: saved unless cleared, on both clients (Brad 2026-11-20)', () => {
+  it('the web and the iPhone both save it unless cleared; clearing it leaves it out; the row says which', () => {
     const web = both(open([read('a', asked)], 'web'));
     const phone = both(open([read('a', asked)], 'phone'));
-    expect(web.plan.counts.values).toBe(2);
-    expect(phone.plan.counts.values).toBe(1);
+    expect([web.plan.counts.values, phone.plan.counts.values]).toEqual([2, 2]);
     const row = (v: typeof web.view) => v.sections.flatMap((x) => (x.kind === 'unsure' ? x.rows : [])).find((r) => r.ref === 'v1');
-    expect([row(web.view)?.ticked, row(phone.view)?.ticked]).toEqual([true, false]);
-    expect(both(open([read('a', asked, { ticks: { v1: true } })], 'phone')).plan.counts.values).toBe(2);
+    expect([row(web.view)?.ticked, row(phone.view)?.ticked]).toEqual([true, true]);
+    expect(both(open([read('a', asked, { ticks: { v1: false } })], 'phone')).plan.counts.values).toBe(1);
   });
 });
 
@@ -150,18 +146,6 @@ describe('9. a read file with nothing in it is said', () => {
       { fileId: 'e', name: 'e.pdf', line: 'No blood test values found.' },
       { fileId: 'n', name: 'n.pdf', line: 'No blood test values found.' },
     ]);
-  });
-});
-
-describe('12. proposed words', () => {
-  it('are listed in one place for Brad, and only upload-view.ts uses them', () => {
-    expect(PROPOSED_WORDS.length).toBeGreaterThan(0);
-    const sources = (dir: string): string[] => readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
-      e.isDirectory() ? (e.name === 'node_modules' ? [] : sources(join(dir, e.name))) : /\.tsx?$/.test(e.name) && !/\.test\.tsx?$/.test(e.name) ? [join(dir, e.name)] : []);
-    const root = join(__dirname, '../../..');
-    const users = [__dirname, join(root, 'widget-src/src'), join(root, 'ios/engine'), join(root, 'app')].flatMap(sources)
-      .filter((f) => !f.endsWith('upload-text.ts') && readFileSync(f, 'utf8').includes('UPLOAD_TEXT_PROPOSED'));
-    expect(users.map((f) => f.slice(f.lastIndexOf('/') + 1))).toEqual(['upload-view.ts']);
   });
 });
 

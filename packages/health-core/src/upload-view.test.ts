@@ -107,7 +107,7 @@ describe('upload view: section 4 screens', () => {
     const plan = planOf(s, record, NOW);
     expect(plan.counts.values).toBe(0);
     expect(plan.labArchives).toEqual([{ fileId: 'a', sourceFileName: 'a.pdf', reportDate: DAY }]);
-    // The original alone: a label section 5 does not have yet (UPLOAD_TEXT_PROPOSED).
+    // The original alone: its own label (UPLOAD_TEXT.saveOriginals, approved 2026-11-20).
     expect(viewOf(s, record, NOW).save).toEqual({ label: 'Save 1 original', enabled: true, why: null, error: null });
     const letterKnown = open([at('k', { s: 'known', as: 'document', archiveOnly: false })]);
     expect(viewOf(letterKnown, record, NOW).save).toEqual({ label: 'Save 0 values', enabled: false, why: 'Nothing new to save', error: null });
