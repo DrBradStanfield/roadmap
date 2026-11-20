@@ -3,7 +3,7 @@
  * Moved out of drive.ts unchanged (lead A3); the adapter passes a host that
  * exposes only what the loop reads.
  */
-import { ROADMAP_FILE_NAME, sleepUntilAborted, catchUpAfterFailure, StorageError, jsonBody } from '@roadmap/health-core/adapter';
+import { ROADMAP_FILE_NAME, sleepUntilAborted, catchUpAfterFailure, StorageError, jsonBody, fetchOrFail } from '@roadmap/health-core/adapter';
 import { DRIVE_API } from '@roadmap/health-core/drive-rest';
 import { isSignedOut } from './sign-in-state';
 
@@ -73,8 +73,10 @@ async function startPageToken(host: DriveWatchHost, signal: AbortSignal): Promis
   return json.startPageToken;
 }
 
+/** Bounded by the 30 s call deadline as well as the loop's signal: a read Drive
+ *  takes and never answers fails into the back-off (US-34 AC1c). */
 async function changesRequest(host: DriveWatchHost, url: string, signal: AbortSignal): Promise<Response> {
-  const res = await fetch(url, { headers: await host.authHeaders(), signal });
+  const res = await fetchOrFail('Google Drive', url, { headers: await host.authHeaders(), signal });
   if (!res.ok) host.refused(new StorageError(`Google Drive watch failed (${res.status}).`, undefined, undefined, res.status));
   return res;
 }
