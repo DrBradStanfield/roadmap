@@ -112,7 +112,7 @@ function importFile(f: ReadFile, now: string, holderOf: (row: BulkRow) => string
   // the stale target and the value is not written, never turned into a new row (US-35 AC8; PR 1906 item 1).
   const options = Object.fromEntries(offered.map(({ ref }) => {
     const correctsId = choices.replace[ref];
-    return [ref, { ...(correctsId ? { correctsId } : {}), ...(choices.edits[ref] !== undefined ? { edited: { value: choices.edits[ref] } } : {}) }];
+    return [ref, { ...(correctsId ? { correctsId } : {}), ...edited(ref) }];
   }));
   const file = reportImportFile(result, needsTestDay || needsPreviousDay ? [] : ticked.map((v) => v.ref), day, now, undatedDay, options);
   // A value printed on its own day that is no real past day (a misread date still to come) is never saved:

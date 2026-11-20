@@ -13,14 +13,6 @@ import { documentDate } from './upload-choices';
 import { uploadFileName, type UploadState } from './upload-flow';
 import type { UploadReview } from './upload-review';
 
-/**
- * The shared lab-archive builder once design PR 5 gives it the rows its import wrote
- * (document-save.ts `labArchivePayload`). Not joined here: the row ids exist only after the
- * write, so the caller builds each `labArchives` entry with them. Follow-up: join to PR 5's
- * builder.
- */
-export type LabArchiveBuilder = (sourceFileName: string | null, reportDate: string | null, rowIds: readonly string[]) => DocumentFields;
-
 export interface UploadSavePlan {
   /** Each read lab report's rows Save writes, in Save's order; a file with none is left out. */
   labRows: Array<{ fileId: string; rows: BulkRow[] }>;

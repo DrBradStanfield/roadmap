@@ -83,7 +83,7 @@ extension RecordStore {
             let answer = try await engine.documentSave(
                 recordJSON: seen.erase == nil ? before : "", extractionJSON: extractionJSON, choice: choice,
                 original: bytes, erase: seen.erase ?? "", now: .now, deviceId: deviceId)
-            guard answer.ok, let next = answer.record else { return .refused(answer.message ?? "That could not be saved.") }
+            guard answer.ok, let next = answer.record else { return .refused(answer.message ?? Self.uploadNotSaved) }
             let result = DocumentResult.saved(count: answer.saved ?? 0, stored: answer.stored, unstored: answer.unstored ?? 0, stale: answer.stale ?? false)
             if let erase = seen.erase {
                 // The engine's session took it; the screen follows unless it has moved on to another record.
@@ -95,7 +95,7 @@ extension RecordStore {
                 return result
             }
             guard try await commitPhoneDocument(next, over: before) else {
-                return .refused("Your record changed while this was saving, so it was not saved. Save again.")
+                return .refused(Self.changedWhileSaving)
             }
             return result
         } catch {
@@ -137,7 +137,7 @@ extension RecordStore {
                 return .success(outcome)
             }
             guard try await commitPhoneDocument(next, over: before) else {
-                return .failure(LabRefusal(message: "Your record changed while this was saving, so it was not saved. Save again."))
+                return .failure(LabRefusal(message: Self.changedWhileSaving))
             }
             return .success(outcome)
         } catch {
@@ -147,4 +147,6 @@ extension RecordStore {
 
     /// A refused or failed save, in the words a document save already uses.
     static let uploadNotSaved = "That could not be saved."
+    /// A save another writer overtook, in the words both save paths show.
+    static let changedWhileSaving = "Your record changed while this was saving, so it was not saved. Save again."
 }

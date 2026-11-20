@@ -293,6 +293,9 @@ export function classifyImportValues(files: readonly ImportFile[], record: Roadm
   return { values, rows: batch.filter((i) => groups.get(i)!.writes).map((i) => sent[i].row) };
 }
 
+/** A read document's kind as the review counts it: one this build names, else `other`. */
+export const documentKind = (t: string): DocumentType => ((DOCUMENT_TYPES as readonly string[]).includes(t) ? t as DocumentType : 'other');
+
 /** What the review found, for its first line (D4, D7). `documents` by kind, in `DOCUMENT_TYPES` order. */
 export interface ImportSummary {
   values: number;
@@ -309,7 +312,7 @@ export function importSummary(files: ReadonlyArray<Pick<ImportFile, 'result'>>):
     if (result.classification === 'lab_report') values += (result.values?.length ?? 0) + (result.additionalValues?.length ?? 0);
     // A document counts by its kind, values or not: a clinic letter that prints an LDL is still a letter.
     if (result.document && result.document.classification !== 'lab_report') {
-      const kind = (DOCUMENT_TYPES as readonly string[]).includes(result.document.classification) ? result.document.classification as DocumentType : 'other';
+      const kind = documentKind(result.document.classification);
       kinds.set(kind, (kinds.get(kind) ?? 0) + 1);
     }
   }

@@ -54,9 +54,9 @@ export interface FormSection { id: string; title: string; intro: string; groups:
 
 export const MEDICATION_TEXT = {
   lipidTitle: 'Cholesterol Medications',
-  lipidNeutral: 'Are you currently taking any cholesterol medications? Recording these helps track your health over time.',
+  lipidNeutral: 'Are you currently taking any cholesterol medications? Recording these helps track your health over time. Discuss any you take with your doctor.',
   weightTitle: 'Weight & Diabetes Medications',
-  weightNeutral: 'Are you currently taking any weight or diabetes medications? Recording these helps track your health over time.',
+  weightNeutral: 'Are you currently taking any weight or diabetes medications? Recording these helps track your health over time. Discuss any you take with your doctor.',
   /** A drug field's hint while the plan asks for its dose (US-06 AC8). */
   doseHint: 'Add your dose: what to discuss with your doctor next depends on it.',
   /** An escalation field's label when the plan asks no step-up question. */

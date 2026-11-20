@@ -219,7 +219,7 @@ export function labSearchJson(text: string): string {
 /** The upload's verdicts for one pick on the phone, as JSON (health-core upload-rules, US-52 AC7):
  *  `request` {files: [{name, bytes}], zipMembers: [path]} answers {limits, files: [verdict],
  *  zipMembers: [verdict]}, in order, each "keep", "tooLarge", "unsupported" or "hidden". An optional
- *  door: an app reaches it only through HealthEngine.optionalCall and keeps its Swift rules without it. */
+ *  door: an app reaches it only through HealthEngine.optionalCall and keeps nothing without it (lead U14). */
 export function uploadVerdictsJson(request: string): string {
   checkArgs('uploadVerdictsJson', arguments);
   const { files = [], zipMembers = [] } = JSON.parse(request) as { files?: Array<{ name: string; bytes: number }>; zipMembers?: string[] };
