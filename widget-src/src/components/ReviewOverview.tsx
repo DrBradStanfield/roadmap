@@ -14,13 +14,14 @@ export type Disclosure = ReturnType<typeof useDisclosure>;
 
 /** "{n} values will be saved", and the button that shows or hides them.
  *  `hidden` values sit behind it, in `rows` rows (a row of the record's own
- *  values too); `saving` of them Save writes. */
-export function SureLine({ hidden, rows, saving, total, all, controls }: { hidden: number; rows: number; saving: number; total: number; all: Disclosure; controls: string }) {
+ *  values too); `line` is health-core's view's own count, the one Save's label
+ *  comes from, so the two never part (PR 1906 smoke item B). */
+export function SureLine({ hidden, rows, line, total, all, controls }: { hidden: number; rows: number; line: string | null; total: number; all: Disclosure; controls: string }) {
   // While open, "Hide" stays even once nothing is left to hide (an edit keeps its row in sight).
   if ((rows === 0 || total === 0) && !all.open) return null;
   return (
     <p className="review-overview-line">
-      {hidden > 0 && <><span>{IMPORT_REVIEW_TEXT.willSave(saving)}</span>{' '}</>}
+      {hidden > 0 && line && <><span>{line}</span>{' '}</>}
       <button type="button" className="review-disclosure" aria-expanded={all.open} aria-controls={controls} onClick={all.toggle}>
         {all.open ? IMPORT_REVIEW_TEXT.hide : IMPORT_REVIEW_TEXT.showAll(total)}
       </button>

@@ -319,7 +319,6 @@ export function ReviewTable({
   const notSavedOpen = useDisclosure();
   const matrixId = useId();
   const shownMatrix = showAll.open ? matrix : rows.matrix;
-  const hiddenSaving = [...rows.hidden].filter(id => groups.writes.has(id)).length;
   /** The `upload_review` counts (US-13 AC13). The upload flow sends them once
    *  per review: on a finished Save, or on Cancel; never for a failed Save or a hide. */
   const reviewCounts = (saved: boolean) => {
@@ -385,7 +384,7 @@ export function ReviewTable({
         )}
       </div>
       {!showAll.open && checking > 0 && <p className="review-overview-footer">{IMPORT_REVIEW_TEXT.checkFooter}</p>}
-      <SureLine hidden={rows.hidden.size} rows={rows.hiddenRows} saving={hiddenSaving} total={totalEditableCells} all={showAll} controls={matrixId} />
+      <SureLine hidden={rows.hidden.size} rows={rows.hiddenRows} line={view.sure?.line ?? null} total={totalEditableCells} all={showAll} controls={matrixId} />
       {groups.held > 0 && <p className="review-overview-line">{IMPORT_REVIEW_TEXT.alreadySaved(groups.held)}</p>}
       <NotSavedLine notSaved={groups.notSaved} disclosure={notSavedOpen} />
 

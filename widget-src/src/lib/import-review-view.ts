@@ -60,8 +60,6 @@ export function reviewGroups(review: UploadReview) {
   const refused = classified.filter(v => v.sent && !v.writes && (v.group === 'unsure' ? v.reasons.includes('outOfRange') : v.group === 'notSaved' && v.reason !== 'sameDay'));
   return {
     groupOf: new Map<string, Group>(classified.map(v => [id(v), v.group])),
-    /** The values Save writes, by `editId`. */
-    writes: new Set(classified.filter(v => v.writes).map(id)),
     count: (group: Group) => classified.filter(v => v.group === group).length,
     /** Values the record already holds; an equal reading of this upload is counted nowhere (one copy saves). */
     held: classified.filter(v => v.group === 'saved' && !v.duplicate).length,
