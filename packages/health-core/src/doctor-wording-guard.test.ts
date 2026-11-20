@@ -10,6 +10,7 @@ import { medicationForm } from './input-form';
 import { lipidMarkerFor, weightMedicationTrigger } from './suggestions';
 import { METRIC_GUIDES } from './metric-guides';
 import { BP_TIER_LABEL } from './bp-tier';
+import { STAT_CARD_EVIDENCE, SUGGESTION_EVIDENCE } from './evidence';
 import { planSections } from './plan-sections';
 import { usProductSections } from './us-products';
 import { toCanonicalValue } from './units';
@@ -28,6 +29,10 @@ const BARE_BP_LABEL = /^(Stage \d hypertension|Hypertensive crisis)$/;
 const IMPERATIVE = /^(Start|Stop|Take|Increase|Switch to)\b/;
 /** A recommendation with no named recommender ("is typically recommended"): say who, "Guidelines typically recommend". */
 const UNNAMED_RECOMMENDER = /\b(is|are) typically recommended\b/;
+/** The one named exception, card and reason: wording awaits Brad, because at apob-very-high's line guidelines
+ *  decide by overall risk, so "Guidelines typically recommend" would not be true. A second hit fails. */
+const UNNAMED_EXCEPTION_ID = 'apob-very-high';
+const UNNAMED_EXCEPTION_SENTENCES = ['Statin therapy and lifestyle changes are typically recommended at this level.', 'and statin therapy is typically recommended.'];
 const SUPPLEMENT_LINE = 'Whether it suits you is worth discussing with your doctor or pharmacist.';
 const LPA_MEDICINE_LINE = 'Consider discussing these medicines with your doctor.';
 const MEDICINE_GUIDES = ['statin', 'ezetimibe', 'bempedoic_acid', 'pcsk9i', 'glp1', 'sglt2i', 'metformin'];
@@ -160,8 +165,12 @@ describe('US-07 AC17: doctor-discussion wording guard', () => {
     expect(shown.formIntros.filter((intro) => (intro.match(/with your doctor/g) ?? []).length !== 1)).toEqual([]);
   });
 
-  it('a recommendation names who makes it', () => {
-    expect(shown.text.filter((t) => UNNAMED_RECOMMENDER.test(t))).toEqual([]);
+  it('a recommendation names who makes it, in shown text and in every "why" reason (one named exception)', () => {
+    const reasons = Object.entries({ ...SUGGESTION_EVIDENCE, ...STAT_CARD_EVIDENCE }).filter(([, e]) => UNNAMED_RECOMMENDER.test(e.reason));
+    expect(reasons.map(([id]) => id)).toEqual([UNNAMED_EXCEPTION_ID]);
+    expect((reasons[0][1].reason.match(new RegExp(UNNAMED_RECOMMENDER, 'g')) ?? []).length).toBe(1);
+    const unexcused = (t: string) => UNNAMED_EXCEPTION_SENTENCES.reduce((rest, ok) => rest.replace(ok, ''), t);
+    expect(shown.text.filter((t) => UNNAMED_RECOMMENDER.test(unexcused(t)))).toEqual([]);
   });
 
   it('no blood pressure label or card title is a bare condition name', () => {

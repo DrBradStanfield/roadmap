@@ -44,7 +44,7 @@ describe('ApoB target attribution (US-07 AC1)', () => {
 // US-25 AC28 (App Review 1.4.1): a reason that states a treatment recommendation names the doctor.
 describe('treatment reasons carry the doctor line (US-25 AC28)', () => {
   it.each([
-    ['apob-very-high', 'A very high ApoB indicates significantly elevated cardiovascular risk, and guidelines typically recommend statin therapy. Discuss it with your doctor.\n\n'],
+    ['apob-very-high', 'A very high ApoB indicates significantly elevated cardiovascular risk, and statin therapy is typically recommended. Discuss it with your doctor.\n\n'],
     ['bp-stage2', 'At this level, guidelines typically recommend medication alongside lifestyle measures. Discuss it with your doctor.\n\n'],
     ['ldl-very-high', 'The AHA/ACC and ESC/EAS guidelines recommend statin therapy at this level. Discuss it with your doctor. A causal'],
     ['non-hdl-very-high', 'Guidelines typically recommend treatment with statins and lifestyle modification. Discuss it with your doctor.\n\n'],
