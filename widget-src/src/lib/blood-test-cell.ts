@@ -58,6 +58,15 @@ export function bpSysAdvance(typed: string): BpAdvance {
   return 'stay';
 }
 
+/** Diastolic → the next box (US-75 AC2): a complete diastolic, two digits 40–99 (no third digit
+ *  stays in range) or three digits 100–150, moves on at once; anything else stays. */
+export function bpDiaAdvance(typed: string): Exclude<BpAdvance, 'defer'> {
+  const t = typed.trim();
+  if (!/^\d{2,3}$/.test(t)) return 'stay';
+  const n = Number(t);
+  return n >= 40 && n <= 150 ? 'advance' : 'stay';
+}
+
 /**
  * A trend's shape, for the grid's sparkline and the phone rows' trend: each
  * point's spot in a `width` x `height` box (2px padding), the line through the

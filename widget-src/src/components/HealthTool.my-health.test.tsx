@@ -287,6 +287,22 @@ describe('US-62 AC21: the rows', () => {
     expect(within(view.container.querySelector<HTMLElement>('.md-page')!).getByRole('heading', { name: 'Waist' })).toBeTruthy();
   });
 
+  it('US-62 AC21a: a height typed in Settings that the plan refuses gives no ratio, so the waist row leads; a height it takes brings the ratio back', async () => {
+    const view = await show(RECORDS['urgent results, both cascades, a supplement']);
+    openSettings();
+    fireEvent.click([...document.querySelectorAll<HTMLElement>('.mh-settings button')].find(b => b.textContent?.startsWith('Height'))!);
+    const type = (value: string) => fireEvent.change(document.querySelector<HTMLInputElement>('#heightCm')!, { target: { value } });
+    const firstRow = () => view.container.querySelector('[data-topic="weight"] .md-row-label')?.textContent;
+    for (const refused of ['300', '17']) {
+      type(refused);
+      await waitFor(() => expect(firstRow(), refused).toBe('Waist'));
+      expect(rowNamed(view, '[data-topic="weight"]', 'Waist-to-height'), refused).toBeUndefined();
+    }
+    type('200');
+    await waitFor(() => expect(rowNamed(view, '[data-topic="weight"]', 'Waist-to-height')?.querySelector('.md-row-value')?.textContent)
+      .toBe(`${(101 / 200).toFixed(2)} (${(104 / 200).toFixed(2)})`));
+  });
+
   it('one eGFR row under creatinine, in Blood pressure and Blood tests: the plan\'s value, "Calculated", the day before in brackets', async () => {
     const view = await show(RECORDS['urgent results, both cascades, a supplement']);
     for (const scope of ['[data-topic="bloodPressure"]', '[data-topic="bloodTests"]']) {
@@ -712,6 +728,8 @@ describe('US-62 AC10 (design review 2026-11-06): the value page leads with its l
     // The ideal weight tile says the target: no "Target:" line beside it.
     expect(within(page).getByText('Ideal Body Weight', { selector: '.stat-label' })).toBeTruthy();
     expect(page.querySelector('.md-page-target')).toBeNull();
+    // A graded BMI tile shows a range, so the page says once that a range is not a diagnosis (US-07 AC17).
+    expect(page.querySelector('.md-page-range')?.textContent).toBe('A range is not a diagnosis. Your doctor confirms one.');
     const units = [...page.querySelectorAll('.md-history-row')].map(r => r.querySelector('.alr-cell-unit')?.textContent);
     expect(units).toEqual(['kg', 'kg']);
     expect(page.querySelector('.md-page-hint')!.textContent).toBe('Tap a value to correct it.');

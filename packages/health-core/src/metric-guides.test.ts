@@ -196,9 +196,9 @@ describe('METRIC_GUIDES (US-58)', () => {
     }
   });
 
-  it('AC1: each medicine\'s list ends with "talk to your doctor" (Brad\'s decision 5)', () => {
+  it('AC1: each medicine\'s list ends with its doctor line (Brad\'s decision 5; US-07 AC17 wording)', () => {
     for (const key of ['statin', 'ezetimibe', 'pcsk9i', 'bempedoic_acid', 'glp1', 'sglt2i', 'metformin']) {
-      expect(METRIC_GUIDES[key].howTo.points.at(-1), key).toMatch(/talk to your doctor\.$/);
+      expect(METRIC_GUIDES[key].howTo.points.at(-1), key).toBe('Whether it suits you is worth discussing with your doctor, as is any side effect you notice.');
     }
   });
 
