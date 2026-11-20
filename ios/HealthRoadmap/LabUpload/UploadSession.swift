@@ -22,9 +22,11 @@ final class UploadSession {
     @ObservationIgnored private var pinned = true
     @ObservationIgnored private var told = false
     /// Save was tapped and its outcome has not drawn yet: Close waits from the tap (a claim, not a mode).
-    /// Observed: the sheet's Close and swipe-down read it. The view drawn when Save was tapped: until
-    /// a newer view arrives, and while the newer one says saving, Close waits.
-    private var claimedAt: String?
+    /// Observed: the sheet's Close and swipe-down read it. `tapped` until the runner numbers the Save's
+    /// event; then Close waits until a view drawn through that event no longer says saving, which is
+    /// once the attempt's `saved` or `saveFailed` has stepped and drawn, whatever its text.
+    private enum Claim { case tapped, queued(Int) }
+    private var claim: Claim?
 
     /// How a pick went: the engine has it, the reader refused it (its words), or the loaded engine
     /// cannot run the shared upload (an older one over the air: today's flow reads it).
@@ -85,17 +87,21 @@ final class UploadSession {
     func send(_ action: UploadAction) {
         switch action {
         case .save:
-            claimedAt = drawnText
+            claim = .tapped
             tellUsage { [analytics, files = drawn?.page?.files.rows.count ?? 0] in analytics?.event(files >= 2 ? .labSaveAll : .labSaveOne) }
         case .close, .discard: tellUsage {}
         default: break
         }
         let (runner, before) = (runner, last)
-        last = Task {
+        last = Task { [weak self] in
             await before?.value
             switch action {
             case .close: await runner.close()
             case .discard: await runner.discard()
+            case .save:
+                let number = await runner.queue(action.event(now: Date.now.formatted(HealthEngine.iso)))
+                self?.claim = .queued(number)
+                await runner.drain()
             default: await runner.submit(action.event(now: Date.now.formatted(HealthEngine.iso)))
             }
         }
@@ -117,12 +123,10 @@ final class UploadSession {
 
     /// Save was tapped and its outcome has not drawn yet (a claim, not a mode): Close and swipe-down wait.
     var saveClaimed: Bool {
-        guard let claimedAt else { return false }
-        guard case .drawn(let text) = model.state else { return false }
-        return text == claimedAt || page(text)?.phase == "saving"
+        guard let claim, case .drawn(let text) = model.state else { return false }
+        guard case .queued(let save) = claim else { return true }
+        return model.drawnThrough < save || page(text)?.phase == "saving"
     }
-
-    private var drawnText: String? { if case .drawn(let text) = model.state { text } else { nil } }
 
     /// The doors' words for a call that answered nothing, from the last view drawn.
     var engineError: String? { drawn?.page?.engineError ?? drawn.flatMap { UploadPage.words($0.text) } }
