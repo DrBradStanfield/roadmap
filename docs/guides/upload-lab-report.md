@@ -10,7 +10,7 @@ You can add blood test results to [the tool](https://drstanfield.com/pages/roadm
 
 ## What you can upload
 
-A PDF from your lab, a photo of a printed report (JPG or PNG), a Word file (.docx), or a ZIP holding any of these. Each file can be up to 10 MB. You can upload up to 200 files a day, and each file inside a ZIP counts. A batch that would take you past that is refused as a whole, so split a larger set across days.
+A PDF from your lab, a photo of a printed report (JPG or PNG), a Word file (.docx), or a ZIP holding any of these. Each file can be up to 10 MB. You can upload up to 200 files a day, and each file inside a ZIP counts. Files past that are not read, and each one is named, so upload them the next day.
 
 Some files will not read. An old Word .doc file cannot be opened, so save it as a PDF or .docx first. A PDF with a password will not open either. A Word file that holds only pictures of the page needs to be saved as a PDF, or photographed.
 
@@ -26,7 +26,7 @@ Some files will not read. An old Word .doc file cannot be opened, so save it as 
 
 5. Drop your files in, or click to choose them. Reading starts straight away.
 
-A progress bar shows each file as it is read. A large batch takes longer. You can close the upload window and keep using the tool while it works: a small box at the edge of the screen shows the progress, and clicking it opens the upload again. Cancel stops the upload.
+A progress bar shows each file as it is read. A large upload takes longer. You can close the upload window and keep using the tool while it works: a small box at the edge of the screen shows the progress, and clicking it opens the upload again. Cancel stops the upload.
 
 ## Check what it read
 
@@ -74,14 +74,14 @@ The tool names each file it could not read, with the reason.
 
 - "Our server could not read it. Please try again." Upload that one file again later. Our server already retries short outages on its own, so pressing again at once rarely helps.
 - "Not read. Claude declined to read this file, so trying again will not help." Type those values in yourself.
-- "Not read. The daily upload limit was reached." Wait until the next day, then upload a smaller batch.
+- "Not read. The daily upload limit was reached." Wait until the next day, then upload the files that were not read.
 - "Not read. The file is too long to read in one go." Split it into shorter files, or type the values in.
 - "Could not open it." or "Too large to read." Save it again as a PDF under 10 MB, or upload a photo of the page.
 - "This file is long, so only its first part was read." Check the table for missing tests and type them in.
 
 ## Where your file goes
 
-Your browser reads the file first. From a PDF or Word file it takes the text. From a photo it takes a smaller copy, and from a scanned page a picture of the page. That goes to our server, which passes it to Anthropic's API, from the company that makes Claude, to pick out the test names, numbers, units and dates. The results come back to your browser for you to check. Our server does not store the file, its text or the values. When you upload 20 files or more at once, they go to Anthropic as one batch. Our server deletes that batch from our Anthropic account within about twenty minutes of the results reaching your browser. If you close the page first, it deletes the batch within about an hour of the upload. If our server restarts or is stopped while idle before then, it can lose track of the batch, and Anthropic keeps it in our account for up to 29 days.
+Your browser reads the file first. From a PDF or Word file it takes the text. From a photo it takes a smaller copy, and from a scanned page a picture of the page. That goes to our server, which passes it to Anthropic's API, from the company that makes Claude, to pick out the test names, numbers, units and dates. The results come back to your browser for you to check. Our server does not store the file, its text or the values.
 
 Anthropic's terms say they do not train models on customer content, and their privacy centre says API inputs and outputs are deleted within 30 days unless they need to keep them to enforce their usage policy or comply with the law ([their policy](https://privacy.claude.com/en/articles/7996866-how-long-do-you-store-my-organization-s-data)).
 

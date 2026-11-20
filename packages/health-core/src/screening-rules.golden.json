@@ -94,7 +94,8 @@
    },
    "dexa_dexa_scan": {
     "followupName": "treatment review",
-    "abnormalMeans": "osteoporosis diagnosed — treatment and monitoring required"
+    "abnormalMeans": "recorded result of osteoporosis",
+    "opening": "You recorded a result of osteoporosis, which is usually treated and monitored."
    }
   },
   "LUNG_PACK_YEARS": 20,
@@ -1858,7 +1859,7 @@
   "C022": "screening-lung-followup [urgent] Organize follow-up imaging :: Your screening showed a abnormal LDCT result. Please organize a follow-up imaging with your doctor.",
   "C023": "screening-lung-followup [info] Lung screening up to date :: Following your abnormal LDCT result, next screening due Jul 2027.",
   "C024": "screening-dexa [attention] Consider a DEXA bone density scan :: A DEXA scan measures bone mineral density and can detect osteoporosis before a fracture occurs. Discuss with your doctor.",
-  "C025": "screening-dexa-followup [urgent] Organize treatment review :: Your screening showed a osteoporosis diagnosed — treatment and monitoring required. Please organize a treatment review with your doctor.",
+  "C025": "screening-dexa-followup [urgent] Organize treatment review :: You recorded a result of osteoporosis, which is usually treated and monitored. Please organize a treatment review with your doctor.",
   "C026": "screening-dexa-upcoming [info] Bone density scan up to date :: Next DEXA scan due around Apr 2031.",
   "C027": "screening-dexa-overdue [attention] Bone density scan overdue :: Your next DEXA scan was due Apr 2026. Please schedule your scan.",
   "C028": "screening-colorectal [attention] Start colorectal cancer screening :: Colorectal screening is recommended. From 55, Dr Brad suggests a colonoscopy every 10 years. A FIT test every year is also a good option (American Cancer Society). Discuss with your doctor.",
@@ -1893,7 +1894,7 @@
   "C057": "screening-prostate-upcoming [info] PSA test up to date :: Next PSA test due Apr 2028.",
   "C058": "screening-dexa-upcoming [info] Bone density scan up to date :: Next DEXA scan due around Apr 2028.",
   "C059": "screening-dexa-followup [info] Dexa follow-up scheduled :: Your treatment review is scheduled. Keep your appointment.",
-  "C060": "screening-dexa-followup [info] Dexa screening up to date :: Following your osteoporosis diagnosed — treatment and monitoring required, next screening due Jul 2027.",
+  "C060": "screening-dexa-followup [info] Dexa screening up to date :: Following your recorded result of osteoporosis, next screening due Jul 2027.",
   "C061": "screening-colorectal-followup [info] Colorectal screening up to date :: Following your colonoscopy, your next colonoscopy is due Jul 2031, as your report advised.",
   "C062": "screening-colorectal-followup [attention] Colonoscopy overdue :: Following your colonoscopy, your next colonoscopy was due Jun 2026. Please book it with your doctor.",
   "C063": "screening-colorectal-followup [attention] Colonoscopy overdue :: Following your colonoscopy, your next colonoscopy was due Jun 2025. Please book it with your doctor.",
@@ -1936,9 +1937,9 @@
   "C100": "screening-lung-followup [info] Lung screening up to date :: Following your abnormal LDCT result, next screening due Nov 2026.",
   "C101": "screening-lung-followup [attention] Lung screening overdue :: Following your abnormal LDCT result, your next screening was due Oct 2026. Please schedule your screening.",
   "C102": "screening-lung-followup [attention] Lung screening overdue :: Following your abnormal LDCT result, your next screening was due Sep 2026. Please schedule your screening.",
-  "C103": "screening-dexa-followup [info] Dexa screening up to date :: Following your osteoporosis diagnosed — treatment and monitoring required, next screening due Nov 2026.",
-  "C104": "screening-dexa-followup [attention] Dexa screening overdue :: Following your osteoporosis diagnosed — treatment and monitoring required, your next screening was due Oct 2026. Please schedule your screening.",
-  "C105": "screening-dexa-followup [attention] Dexa screening overdue :: Following your osteoporosis diagnosed — treatment and monitoring required, your next screening was due Sep 2026. Please schedule your screening.",
+  "C103": "screening-dexa-followup [info] Dexa screening up to date :: Following your recorded result of osteoporosis, next screening due Nov 2026.",
+  "C104": "screening-dexa-followup [attention] Dexa screening overdue :: Following your recorded result of osteoporosis, your next screening was due Oct 2026. Please schedule your screening.",
+  "C105": "screening-dexa-followup [attention] Dexa screening overdue :: Following your recorded result of osteoporosis, your next screening was due Sep 2026. Please schedule your screening.",
   "C106": "screening-colorectal-upcoming [info] Colorectal screening up to date :: Next screening due Oct 2027.",
   "C107": "screening-prostate-repeat [attention] Repeat PSA test :: You chose not to have routine prostate screening, and that choice stands. An earlier PSA was 4.0 or higher, and your latest result does not show it is below 4.0, so checking it again is about that result, not screening. Dr Brad suggests repeating it every 3 months while it stays at 4.0 or higher. Discuss with your doctor.",
   "C108": "screening-prostate-repeat [attention] Repeat PSA test :: An earlier PSA was 4.0 or higher, and your latest result does not show it is below 4.0, so checking it again is about that result, not screening. Dr Brad suggests repeating it every 3 months while it stays at 4.0 or higher. Discuss with your doctor.",

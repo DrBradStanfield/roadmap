@@ -9,7 +9,7 @@ import { lazy, Suspense, useEffect, useId, useMemo, useReducer, useRef, useState
 import { type ApiMeasurement, METRIC_LABELS } from '@roadmap/health-core/mappings';
 import { type CellUnit, cellFromSI, cellLabel, cellText, cellToSI } from '@roadmap/health-core/cell-unit';
 import type { MetricType } from '@roadmap/health-core/units';
-import type { StatTile } from '@roadmap/health-core/stat-tiles';
+import { RANGE_NOT_DIAGNOSIS, rangeShown, type StatTile } from '@roadmap/health-core/stat-tiles';
 import { PRESSURE_ORDER, pressureInverted } from '@roadmap/health-core/validation';
 import { localDay } from '@roadmap/health-core/merge';
 import { groupLabValues, savedLabText } from '@roadmap/health-core/lab-series';
@@ -140,6 +140,7 @@ export function ValuePage({ subject, history, labValues, ctx, tiles, onSave, onC
       )}
       {targetShown && <p className="md-page-target">{target.full}</p>}
       {pageTiles.length > 0 && <div className="stats-grid md-page-tiles">{pageTiles.map(tile => <PlanTile key={tile.key} tile={tile}/>)}</div>}
+      {pageTiles.some(rangeShown) && <p className="md-page-range">{RANGE_NOT_DIAGNOSIS}</p>}
       {pageKey === 'creatinine' && labEgfrHeld && (
         <button type="button" className="md-foot-btn md-page-link" onClick={() => onOpen({ kind: 'lab', seriesKey: LAB_EGFR })}>Lab eGFR results</button>
       )}

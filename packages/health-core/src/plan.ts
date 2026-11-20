@@ -211,11 +211,11 @@ export interface WhtrPoint { id: string; day: string; ratio: number }
  * Every day's waist over the CURRENT height (the record holds one), to two
  * places, newest first (US-73 AC7): past ratios move if the height is edited.
  * The day's newest active waist decides it; one printed as a limit holds its
- * day with no ratio, as a lab eGFR limit does (US-12 AC20). None without a height.
+ * day with no ratio, as a lab eGFR limit does (US-12 AC20). None without a height the plan takes (US-62 AC21a).
  */
 export function whtrSeries(file: Pick<RoadmapFile, 'measurements' | 'labValues' | 'profile'>): WhtrPoint[] {
-  const height = file.profile.heightCm;
-  if (typeof height !== 'number' || height <= 0) return [];
+  const { heightCm: height } = sanitizeInputs({ heightCm: file.profile.heightCm });
+  if (height === undefined) return [];
   const days = new Map<string, WhtrPoint | null>();
   const waists = currentValueRows(file).filter((m) => m.metricType === 'waist').sort((a, b) => compareReadings(b, a));
   for (const waist of waists) {
