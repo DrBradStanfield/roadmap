@@ -233,6 +233,7 @@ export async function saveDocuments<F>(
   // to metadata-only — unless a held row already holds these bytes: a
   // plain row beside it would list the letter twice, and every later upload
   // would offer to archive it again (Sentry 7715862604). Every failed write is counted `unstored`.
+  let lost = 0; // every write that failed
   const writeOne = async (w: (typeof writes)[number]) => {
     try {
       await io.write(w.ref, w.file);
@@ -240,7 +241,7 @@ export async function saveDocuments<F>(
       w.doc.mimeType = io.mimeType(w.file);
     } catch (error) {
       io.onWriteError?.(error);
-      w.lost = true;
+      lost += 1;
       w.failed = w.held; // a failure behind a held row is settled (below)
     }
   };
@@ -267,12 +268,12 @@ export async function saveDocuments<F>(
   // stored (a size cap) must not loop on "Failed to save". The held details
   // stay, unless the review changed the title or date: then a new
   // metadata-only row carries them and replaces the held rows.
-  const unstored = writes.flatMap(({ doc, failed }) => (failed ? [{ doc, held: failed }] : []));
-  const unchanged = new Set(unstored.filter(({ doc, held }) => sameRow(doc, held)).map((u) => u.doc));
+  const heldFailures = writes.flatMap(({ doc, failed }) => (failed ? [{ doc, held: failed }] : []));
+  const unchanged = new Set(heldFailures.filter(({ doc, held }) => sameRow(doc, held)).map((u) => u.doc));
   const saved = out.filter((d) => !unchanged.has(d));
   return {
     saved,
-    unstored: writes.filter((w) => w.lost).length,
+    unstored: lost,
     commit(file) {
       // The rows to replace, read from the file as it now is, so a same-hash
       // row merged in from another device during the upload goes too.

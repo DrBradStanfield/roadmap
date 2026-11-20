@@ -415,7 +415,7 @@ export class RoadmapStore {
     this.session.edit((file) => {
       const held = new Set(file.measurements.map((m) => m.id));
       const { file: next, outcome } = out.commit(file);
-      landed = { ok: true, outcome, added: next.measurements.filter((m) => !held.has(m.id) && !m.correctsId).map(valueView) };
+      landed = { ok: true, outcome, labRefusals: out.labRefusals, added: next.measurements.filter((m) => !held.has(m.id) && !m.correctsId).map(valueView) };
       return next;
     }, erase);
     return landed ?? { ok: false, message: null };

@@ -56,7 +56,8 @@ const fieldsOf = (d: ReturnType<typeof documentView>, sourceFileName: string): D
  */
 export function uploadSavePlan(s: UploadState, record: RoadmapFile, now: string, review: UploadReview, cloudConnected: boolean): UploadSavePlan {
   // Only rows this build reads (US-65) give a held title, date or kind, newest first, as upload-known.ts indexes them.
-  const views = record.documents.filter((d) => !d.deleted && isReadableRow('documents', d)).map(documentView);
+  let readable: ReturnType<typeof documentView>[] | null = null; // built on first use: most picks hold no letter
+  const views = () => (readable ??= record.documents.filter((d) => !d.deleted && isReadableRow('documents', d)).map(documentView));
   const labs = new Map(review.labFiles.map((f) => [f.fileId, f]));
   const platform = 'platform' in s ? s.platform : 'web';
   const seen = new Set<string>();
@@ -71,20 +72,23 @@ export function uploadSavePlan(s: UploadState, record: RoadmapFile, now: string,
     if (f.status.s === 'read' && f.status.extraction.classification !== 'lab_report' && f.status.extraction.document) {
       const doc = f.status.extraction.document;
       // A metadata-only row holding these bytes: the card starts from its title and date (US-14 AC4).
-      const held = pendingRowsFor(views, f.hash, false)[0];
+      const held = pendingRowsFor(views(), f.hash, false)[0];
       const fix = f.status.choices.document;
       const fixedDate = 'date' in fix ? documentDate(fix.date ?? null, now) : undefined; // an impossible date is never planned
+      const raw = held ? held.documentDate : doc.documentDate;
+      const day = fixedDate !== undefined ? fixedDate : validDay(raw ?? undefined, { now });
       documents.push({ fileId: f.id, fields: {
         documentType: fix.kind ?? doc.classification,
         title: fix.title ?? held?.title ?? doc.title,
-        documentDate: fixedDate !== undefined ? fixedDate : validDay((held ? held.documentDate : doc.documentDate) ?? undefined, { now }),
+        documentDate: day,
         contentMd: doc.contentMarkdown ?? '',
         metadata: doc.metadata ?? {},
         sourceFileName,
       } });
       const type = doc.metadata?.screeningType;
       if (review.screening && typeof type === 'string' && type) {
-        const date = fixedDate !== undefined ? fixedDate : validDay((held ? held.documentDate : doc.documentDate) ?? undefined, { now }) ?? monthOnly(held ? held.documentDate : doc.documentDate, now);
+        // The letter's day, else, while the person has not set or removed one, the month it printed.
+        const date = day ?? (fixedDate === undefined ? monthOnly(raw, now) : null);
         screenings.push(screeningOf(f.id, type, date, f.status.choices, review.screening));
       }
     } else if (f.status.s === 'read') {
@@ -94,7 +98,7 @@ export function uploadSavePlan(s: UploadState, record: RoadmapFile, now: string,
       if (!lab || lab.needsDay || (!lab.ticked.length && !originalWithoutValues(platform))) continue;
       labArchives.push({ fileId: f.id, sourceFileName, reportDate: lab.day });
     } else if (cloudConnected && f.status.s === 'known' && f.status.archiveOnly && f.status.as !== 'legacy' && f.hash) {
-      const held = pendingRowsFor(views, f.hash, f.status.as === 'labReport')[0];
+      const held = pendingRowsFor(views(), f.hash, f.status.as === 'labReport')[0];
       if (!held) continue;
       archiveOnly.push({ fileId: f.id, fields: fieldsOf(held, sourceFileName) });
     } else continue;

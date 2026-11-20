@@ -16,6 +16,7 @@ import { refAt, reviewEventMetadata, reviewGroups, reviewRows, slotlessIds } fro
 import type { UploadHistory } from '../lib/api-types';
 import { type CellUnit, type Grading, cellNumber, cellText, cellToSI, hasNumericSyntax, NUMERIC_SYNTAX_GUIDANCE, readNumericCell, readTypedValue, validateTypedValue } from '../lib/blood-test-cell';
 import { useLpaUnit } from '../lib/lpa-unit';
+import { useStable } from '../lib/use-stable';
 import { ReviewMatrix } from './ReviewMatrix';
 import { NotSavedLine, SureLine, useDisclosure } from './ReviewOverview';
 import { type FullDate, parseReportDate, longDate, columnDay, getDaysInMonth, fullDateToIso, dateSource } from '../lib/review-dates';
@@ -62,13 +63,6 @@ function decodeDate(s: string): FullDate {
   if (!s.startsWith(PARTIAL)) return parseReportDate(s);
   const [year, month, day] = s.slice(PARTIAL.length).split(':');
   return { year, month, day: day || null };
-}
-
-/** The same array while its items are the same: the matrix rebuilds only when a file's choices change. */
-function useStable<T>(items: readonly T[]): readonly T[] {
-  const kept = useRef(items);
-  if (items.length !== kept.current.length || items.some((x, i) => x !== kept.current[i])) kept.current = items;
-  return kept.current;
 }
 
 export function ReviewTable({

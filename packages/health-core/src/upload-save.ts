@@ -18,7 +18,7 @@
  */
 import { LAB_ARCHIVE_ROWS, labRowsByFile, listedRows, writtenLabRows } from './document-rows';
 import { committedFile, labArchivePayload, saveDocuments, type DocumentPayload } from './document-save';
-import { bulkAppendValues } from './record-edits';
+import { bulkAppendValues, type LabUnitRefusal } from './record-edits';
 import { setScreening } from './state-edits';
 import type { RoadmapFile } from './roadmap-file';
 import type { SaveOutcome, UploadState } from './upload-flow';
@@ -52,7 +52,7 @@ export interface UploadSaveIO<F> {
  * them): their rows keep the hash alone, and a later upload of the same file can still store them.
  */
 export type UploadSaveResult =
-  | { ok: true; commit(file: RoadmapFile): { file: RoadmapFile; outcome: SavedOutcome } }
+  | { ok: true; labRefusals: LabUnitRefusal[]; commit(file: RoadmapFile): { file: RoadmapFile; outcome: SavedOutcome } }
   | { ok: false; reason: 'not-saving' | 'not-ready'; message: string };
 
 /** A landed Save's counts: every one but the skips, which are there only when some row was skipped. */
@@ -105,6 +105,8 @@ export async function uploadSave<F>(s: UploadState, record: RoadmapFile, now: st
 
   return {
     ok: true,
+    // The labs the review does not send for their unit or number, for the caller's refused-spelling count (US-21 AC15).
+    labRefusals: review.classification.values.flatMap((v) => (v.group === 'notSaved' && v.refusal && 'lab' in v.refusal ? [v.refusal.lab] : [])),
     // Once per Save: it writes the archive rows' lists in place.
     commit(file) {
       // On the record it planned on, the planned write stands; on any other, the values are written
@@ -125,8 +127,8 @@ export async function uploadSave<F>(s: UploadState, record: RoadmapFile, now: st
       const out = screenings.reduce((f, x) => setScreening(f, x.key, x.date!, now), landed);
       // A reviewed row whose slot another writer took meanwhile is skipped, never a second active row, and counted (US-12 AC6a).
       const skipped = (kind: 'measurement' | 'lab') => written.outcomes.filter((o, i) => o === 'skipped' && rows[i].kind === kind).length;
-      const late = { skippedValues: skipped('measurement'), skippedLabValues: skipped('lab') };
-      return { file: out, outcome: { values, ...outcome, unstored: docs.unstored, ...Object.fromEntries(Object.entries(late).filter(([, n]) => n > 0)) } };
+      const [sv, sl] = [skipped('measurement'), skipped('lab')];
+      return { file: out, outcome: { values, ...outcome, unstored: docs.unstored, ...(sv ? { skippedValues: sv } : {}), ...(sl ? { skippedLabValues: sl } : {}) } };
     },
   };
 }

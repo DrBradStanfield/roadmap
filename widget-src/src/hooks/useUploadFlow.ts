@@ -20,6 +20,8 @@ import { isDocx, isZip } from '../lib/file-kinds';
 import { runEffect, type UploadPort } from '../lib/upload-effects';
 import { emptyHeld, fileNameOf, hasResults, MAX_FILES, NO_FILES_TEXT, phaseOf, pickedFiles, pickNotices, progressOf, readErrorOf, readOutcome, refusedForKey, type Held } from '../lib/upload-read';
 import { saveAttempt } from '../lib/upload-save';
+import { useStable } from '../lib/use-stable';
+import { noticeText } from '../components/UploadNotices';
 // Type only: a value import would pull the lazy upload bundle into the main one.
 import type { HealthUploadAPI } from '../upload-entry';
 
@@ -228,18 +230,21 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
 
   // The read lab reports in the review's order (its `labFiles`), as the matrix takes them; the same
   // array while they are the same files, so a file read elsewhere never rebuilds the table.
-  const labs = useRef<FileResult[]>([]);
   const files = upload.phase === 'choosing' ? [] : upload.files;
-  const next = (shown?.review.labFiles ?? []).map(l => resultOf(files.find(f => f.id === l.fileId)!)!);
-  if (next.length !== labs.current.length || next.some((r, i) => r !== labs.current[i])) labs.current = next;
+  const labs = useStable((shown?.review.labFiles ?? []).map(l => resultOf(files.find(f => f.id === l.fileId)!)!));
 
   // The files a run did not fully read (US-12 AC9).
   const pickHeld = held.current;
   // eslint-disable-next-line react-hooks/exhaustive-deps -- `files` and the pick's held data are what change them
   const notices = useMemo(() => readOutcome(upload, pickHeld).notices, [files, pickHeld]);
-  // A failed file's own notice, by file id: its words when the web has its own (US-12 AC9).
-  const failed = new Map(files.filter(f => f.status.s === 'failed').map(f => [f.id, notices.find(n => n.name === fileNameOf(f))]));
-  const failedNames = new Set(files.filter(f => f.status.s === 'failed').map(fileNameOf));
+  // A failed file's own words, by file id, when the web has them (a .docx of pictures, a legacy .doc; US-12 AC9).
+  const failedFiles = files.filter(f => f.status.s === 'failed');
+  const failedNames = new Set(failedFiles.map(fileNameOf));
+  const failedLine = (id: string) => {
+    const f = failedFiles.find(x => x.id === id);
+    const notice = f && notices.find(n => n.name === fileNameOf(f));
+    return notice && notice.reason !== 'valuesDropped' ? noticeText({ ...notice, reason: notice.reason }) : null;
+  };
   const phase = phaseOf(upload);
 
   // Cancel stops every read in flight and drops the run (US-12 AC28); a read it stopped is counted once (AC10).
@@ -298,10 +303,10 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
   }, [send, shownRecord]);
 
   return {
-    phase, state: upload, view: shown?.view ?? null, review: shown?.review ?? null, results: labs.current,
+    phase, state: upload, view: shown?.view ?? null, review: shown?.review ?? null, results: labs as FileResult[],
     files: phase === 'readFailed' ? pickedFiles(upload) : [], notices,
     // In the review a failed file is said once, in its own section, with Try again (US-12 AC26).
-    reviewNotices: notices.filter(n => !failedNames.has(n.name)), failedNotice: (id: string) => failed.get(id), progress: progressOf(upload),
+    reviewNotices: notices.filter(n => !failedNames.has(n.name)), failedLine, progress: progressOf(upload),
     readError: readErrorOf(upload),
     skipArchive, skipConnect: () => setSkipArchive(true),
     pick, cancel, close, discard, stop, retry, chose, save, endReview: endReview.current,

@@ -1,6 +1,6 @@
 // The store's app-facing result shapes: moved from roadmap-store.ts unchanged, so that file does
 // not grow (file budget); roadmap-store.ts re-exports them, so importers are unchanged.
-import type { MoveRejection } from '@roadmap/health-core/record-edits';
+import type { LabUnitRefusal, MoveRejection } from '@roadmap/health-core/record-edits';
 import type { MeasurementSource } from '@roadmap/health-core/validation';
 import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import type { HealthInputs } from '@roadmap/health-core/types';
@@ -39,4 +39,4 @@ export interface BulkLabValueInput {
 }
 
 /** One upload Save: what it wrote, or `message` (the review's words; null when the erase refused it). */
-export type UploadStoreSave = { ok: true; outcome: SavedOutcome; added: ApiMeasurement[] } | { ok: false; message: string | null };
+export type UploadStoreSave = { ok: true; outcome: SavedOutcome; added: ApiMeasurement[]; labRefusals: LabUnitRefusal[] } | { ok: false; message: string | null };

@@ -49,7 +49,7 @@ async function saveUpload(state: UploadState, _reviewed: RoadmapFile, now: strin
   const { file, outcome } = out.commit(uploadStore.record);
   uploadStore.saves.push({ state, cloud, before: uploadStore.record, file });
   uploadStore.record = file;
-  return { ok: true, outcome, added: [] };
+  return { ok: true, outcome, added: [], labRefusals: out.labRefusals };
 }
 
 /** The roadmap-data functions the upload uses for its record and its Save. */

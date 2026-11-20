@@ -9,7 +9,7 @@ import type { UploadHistory } from '../lib/api-types';
 import type { Grading } from '../lib/blood-test-cell';
 import { ReviewTable } from './ReviewTable';
 import { UploadReviewSections } from './UploadReviewSections';
-import { FileNotices, noticeText } from './UploadNotices';
+import { FileNotices } from './UploadNotices';
 import { ErrorBoundary } from './ErrorBoundary';
 import { FloatingUploadIndicator } from './FloatingUploadIndicator';
 import { useUploadFlow, MAX_FILES } from '../hooks/useUploadFlow';
@@ -80,10 +80,6 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
   const documentOf = (fileId: string): DocumentResult | null => {
     const f = filesOf.find(x => x.id === fileId);
     return f?.status.s === 'read' ? (f.status.extraction.document as DocumentResult | null) ?? null : null;
-  };
-  const failedLine = (fileId: string) => {
-    const notice = flow.failedNotice(fileId);
-    return notice && notice.reason !== 'valuesDropped' ? noticeText({ ...notice, reason: notice.reason }) : null;
   };
 
   // Portal to body so position:fixed resolves against the viewport — the
@@ -192,7 +188,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
               isSaving={phase === 'saving'}
               countsRef={reviewCounts}
             >
-              <UploadReviewSections view={view} documentOf={documentOf} failedLine={failedLine} onChose={flow.chose} onRetry={flow.retry} />
+              <UploadReviewSections view={view} documentOf={documentOf} failedLine={flow.failedLine} onChose={flow.chose} onRetry={flow.retry} />
             </ReviewTable>
             </ErrorBoundary>
           )}
