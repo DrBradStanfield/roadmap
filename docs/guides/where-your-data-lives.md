@@ -32,7 +32,7 @@ When a daily job blanks text, the text can survive in Supabase's backups for a w
 
 Your browser reads the file first. It takes the text from a PDF, or a picture of a scanned page or photo. That goes through our server to Anthropic's API, from the company that makes Claude, which picks out the test names, numbers, units and dates. The results come back to your browser for you to check.
 
-Our server does not store the file, its text or the values. The original file is kept only in your cloud folder, if you connected one. A large upload goes to Anthropic as one batch, and our server deletes that batch from our Anthropic account after the results reach you. If our server restarts first, the batch can stay in our Anthropic account for up to 29 days. Anthropic's own policy governs what they keep. The details, with the times and a link to that policy, are in [upload a lab report](/blogs/guides/upload-lab-report#where-your-file-goes).
+Our server does not store the file, its text or the values. The original file is kept only in your cloud folder, if you connected one. Anthropic's own policy governs what they keep. The details, with the times and a link to that policy, are in [upload a lab report](/blogs/guides/upload-lab-report#where-your-file-goes).
 
 ## The chat on the tool page
 
