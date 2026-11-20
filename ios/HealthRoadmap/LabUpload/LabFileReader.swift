@@ -174,7 +174,11 @@ enum LabFileReader {
         switch ext {
         case "pdf": read = try pdf(data, name: name)
         case "jpg", "jpeg", "png", "heic":
-            guard let image = UIImage(data: data), let page = jpegPage(image) else { throw Failure.unreadable(name) }
+            guard let image = UIImage(data: data) else { throw Failure.unreadable(name) }
+            // A JPEG already within the page size (a photo the app resized) goes as it is: no second encode.
+            let fits = data.starts(with: [0xFF, 0xD8, 0xFF]) && max(image.size.width, image.size.height) * image.scale <= 2000
+            guard let page = fits ? Page(type: "image", content: data.base64EncodedString(), mimeType: "image/jpeg") : jpegPage(image)
+            else { throw Failure.unreadable(name) }
             read = Document(name: name, pages: [page], truncated: false)
         default: throw Failure.unsupported(name)
         }

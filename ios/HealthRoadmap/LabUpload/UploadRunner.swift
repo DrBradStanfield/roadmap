@@ -57,8 +57,9 @@ enum ViewLoop: Equatable {
 actor UploadRunner {
     /// One picked file, its bytes read: a ZIP by its name. `bytes` is its size: the bytes read, or
     /// the listed size of a file the rules call too large, never read, so the engine refuses it in
-    /// its own words. `keepsOriginal`: false for a photo or a scan, never a file, so Save stores no
-    /// original of it in the cloud (the consent screen says only a report picked from Files is).
+    /// its own words. `keepsOriginal`: false for a photo or a scan, never a file: it is picked
+    /// `original: false`, so the engine stores no original of it (the consent screen says only a
+    /// report picked from Files is kept in the cloud).
     struct Picked: Sendable {
         let id: String
         let name: String
@@ -169,7 +170,9 @@ actor UploadRunner {
         queued += 2
         waiting += [.event(EngineNatives.json(["type": "discard"])), .hold(files),
                     .event(EngineNatives.json(["type": "picked", "needsConsent": needsConsent, "now": Self.now(), "files": files.map { file -> [String: Any] in
+                        // A photo or a scan is picked `original: false`: the engine plans and stores no original for it.
                         ["id": file.id, "name": file.name, "bytes": file.bytes, "kind": LabFileReader.pathExtension(file.name) == "zip" ? "zip" : "file"]
+                            .merging(file.keepsOriginal ? [:] : ["original": false]) { $1 }
                     }]))]
         await drain()
         return true
@@ -213,7 +216,7 @@ actor UploadRunner {
         while !waiting.isEmpty {
             switch waiting.removeFirst() {
             case .hold(let files):
-                for file in files { held.hold(file.data, as: file.id, name: file.name, original: file.keepsOriginal) }
+                for file in files { held.hold(file.data, as: file.id, name: file.name) }
             case .event(let event):
                 let answer = await step(event)
                 stepped += 1 // before anything awaits, so a view of this step's state counts it

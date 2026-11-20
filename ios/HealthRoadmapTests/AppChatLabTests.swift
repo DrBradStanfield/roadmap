@@ -282,11 +282,13 @@ final class AppChatLabTests: XCTestCase {
         """#
         let groups = try XCTUnwrap(engine.blocking { [now] in
             try $0.labReviewGroups(recordJSON: "", extractionJSON: ldl, ticked: ["v0", "a0"], reportDay: "2026-10-01", now: now, deviceId: "test") })
-        XCTAssertNotNil(groups.refusal("v0"))
+        let refusal = try XCTUnwrap(groups.refusal("v0"))
         let start = try record(engine)
         let summary = try engine.blocking { [now] in try $0.labSaveSummary(recordJSON: start, extractionJSON: ldl, refs: ["v0", "a0"], reportDay: "2026-10-01", now: now, deviceId: "test") }.get()
         XCTAssertEqual(summary.saved, 1)
-        XCTAssertEqual(summary.refused.count, 1)
+        // The row and the save's receipt say the same engine words (the receipt's whole line, else its
+        // "Not saved," form, as the old receipt drew it).
+        XCTAssertEqual(summary.refused.map { $0.line ?? "Not saved, \($0.label): \($0.message)" }, [refusal], "the row and the receipt say the same words")
         XCTAssertEqual(groups.saveRefs, ["a0"])
     }
 
@@ -328,10 +330,8 @@ final class AppChatLabTests: XCTestCase {
         XCTAssertEqual(document.original?.mimeType, "application/pdf")
         let image = UIGraphicsImageRenderer(size: CGSize(width: 4, height: 4)).image { _ in }
         let photo = try await LabFileReader.picked(photo: try XCTUnwrap(image.jpegData(compressionQuality: 0.9)))
-        let held = LabFileReader.Held()
-        held.hold(photo.data, as: photo.id, name: photo.name, original: photo.keepsOriginal)
+        // Picked `original: false`; the engine then stores none (UploadSessionTests' cloud test).
         XCTAssertFalse(photo.keepsOriginal)
-        XCTAssertEqual(held.originals(), [:])
     }
 
     /// A ZIP member's name is the web's zipMemberName, cap and hash included, so the

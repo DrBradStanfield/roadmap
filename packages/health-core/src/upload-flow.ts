@@ -56,9 +56,10 @@ export type FileStatus =
   | { s: 'stopped' };                                      // Stop or Cancel reached it first
 export type FileStage = FileStatus['s'];
 
-/** `zip`: the ZIP's name for a member. `pages`: set once converted; the pages themselves stay with the platform. */
+/** `zip`: the ZIP's name for a member. `pages`: set once converted; the pages themselves stay with the platform.
+ *  `original: false`: a photo or a scan, which the plan never stores, counts or archives as an original (US-52 AC13e). */
 export interface UploadFile {
-  id: string; name: string; zip?: string; bytes: number; hash: string | null;
+  id: string; name: string; zip?: string; bytes: number; hash: string | null; original?: false;
   pages: { count: number; truncated: boolean } | null; status: FileStatus;
 }
 /** The name a file is filed, matched and shown under, the dedup key of a document with no original (the old
@@ -82,7 +83,7 @@ export type UploadState =
 type Open = Extract<UploadState, { phase: 'open' }>;
 
 /** One picked item; `kind` 'zip' is listed (members arrive in `listed`), never read itself. */
-export interface PickedFile { id: string; name: string; bytes: number; kind: 'file' | 'zip' }
+export interface PickedFile { id: string; name: string; bytes: number; kind: 'file' | 'zip'; original?: false }
 /** A ZIP member by its path inside the ZIP. */
 export interface ZipMember { id: string; name: string; bytes: number }
 
@@ -157,7 +158,7 @@ function admit(platform: UploadPlatform, picked: PickedFile[], zip?: string) {
     const member = zip !== undefined ? zipMemberVerdict(p.name, platform) : 'keep';
     if (member === 'hidden') { hidden.push(p.id); continue; }
     const verdict = member === 'keep' ? fileVerdict({ name: p.name, bytes: p.bytes, kind: p.kind, platform }) : member;
-    const base = { id: p.id, name: p.name, bytes: p.bytes, hash: null, pages: null, ...(zip !== undefined ? { zip } : {}) };
+    const base = { id: p.id, name: p.name, bytes: p.bytes, hash: null, pages: null, ...(zip !== undefined ? { zip } : {}), ...(p.original === false ? { original: false as const } : {}) };
     const status: FileStatus = verdict !== 'keep' ? { s: 'refused', verdict: verdict === 'tooLarge' ? 'tooLarge' : 'unsupported' }
       : p.kind === 'zip' ? { s: 'unlisted' } : { s: 'waiting' };
     files.push({ ...base, status });

@@ -53,6 +53,7 @@ final class UploadSourcesTests: XCTestCase {
     private func files(_ names: [String], in place: URL) throws {
         try FileManager.default.createDirectory(at: place, withIntermediateDirectories: true)
         for (n, name) in names.enumerated() {
+            try FileManager.default.createDirectory(at: place.appending(path: name).deletingLastPathComponent(), withIntermediateDirectories: true)
             try XCTUnwrap(Self.picture(CGFloat(n + 1) / 10, width: CGFloat(20 + n), height: 20).pngData()).write(to: place.appending(path: name))
         }
     }
@@ -129,6 +130,52 @@ final class UploadSourcesTests: XCTestCase {
         upload.send(.save)
         try await until("done") { self.page(upload)?.done != nil }
         XCTAssertEqual(self.page(upload)?.done?.line, "Saved 3 documents.")
+    }
+
+    /// A folder's file names reach the engine raw (`<folder>/<path inside>`) and the engine files them
+    /// by its one rule (uploadFileName): a line break becomes one space, a control character goes, and
+    /// the name is cut to 255. The names saved are the ones the old folder path saved (its
+    /// `"\(base)/\(inside)"` through fileNamesJson), pinned here as literals.
+    func testAFoldersNamesAreFiledByTheEnginesRuleAsBefore_US52_AC13d() async throws {
+        let store = try phone()
+        let records = folder.appending(path: "Records", directoryHint: .isDirectory)
+        let long = [String(repeating: "a", count: 100), String(repeating: "b", count: 100)].joined(separator: "/")
+        try files(["2025/line\nbreak.png", "bell\u{7}.png", "\(long)/\(String(repeating: "c", count: 80)).png"], in: records)
+        let upload = session(store)
+        defer { upload.end() }
+        let picked = try await LabFileReader.picked(records, ask: LabSourceTests.rules)
+        XCTAssertTrue(picked.contains { $0.name == "Records/2025/line\nbreak.png" }, "raw names go to the engine")
+        _ = await upload.start({ picked }, needsConsent: false)
+        try await until("read") { page(upload)?.save.enabled == true }
+        upload.send(.save)
+        try await until("saved") { page(upload)?.done != nil }
+        let record = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(store.recordJSON.utf8)) as? [String: Any])
+        let names = ((record["documents"] as? [[String: Any]]) ?? []).compactMap { $0["sourceFileName"] as? String }.sorted()
+        let longName = String("Records/\(long)/\(String(repeating: "c", count: 80)).png".prefix(255))
+        XCTAssertEqual(names, ["Records/2025/line break.png", longName, "Records/bell.png"].sorted())
+    }
+
+    /// A hashless legacy letter (saved by the old path, no contentHash) picked again from a folder is
+    /// known by its filed name, never filed twice.
+    func testAHashlessLegacyLetterFromAFolderIsKnown_US52_AC13d() async throws {
+        StubHTTP.handler = { _ in
+            let line = #"{"status":200,"body":{"success":true,"data":\#(UploadPageTests.letter("Legacy letter", date: nil))}}"#
+            return Kit.read("{\"accepted\":true}\n\(line)\n")
+        }
+        let store = try phone()
+        let choice = DocumentChoice(kind: .document, sourceFileName: "Records/old.png", title: "Legacy letter", documentDate: nil, mimeType: "")
+        _ = await store.saveDocument(extractionJSON: UploadPageTests.letter("Legacy letter", date: nil), choice: choice, original: nil)
+        let before = store.recordJSON
+        let records = folder.appending(path: "Records", directoryHint: .isDirectory)
+        try files(["old.png"], in: records)
+        let upload = session(store)
+        defer { upload.end() }
+        _ = await upload.start({ try await LabFileReader.picked(records, ask: LabSourceTests.rules) }, needsConsent: false)
+        try await until("known") { page(upload)?.summary == "Everything here is already in your record." }
+        XCTAssertEqual(page(upload)?.save.enabled, false)
+        upload.send(.save)
+        try await Task.sleep(for: .milliseconds(200))
+        XCTAssertEqual(store.recordJSON, before, "nothing filed twice")
     }
 
     // MARK: Refusals

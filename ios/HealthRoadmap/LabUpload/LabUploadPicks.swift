@@ -53,8 +53,10 @@ extension LabFileReader {
 
     /// A photo from the library, as a JPEG named by the app's word for it, resized as a picked
     /// picture's page is (`jpeg`: long side 2,000, quality 0.8), so a camera's file size is no limit.
+    /// `working`: told where the resize runs, a test's (US-25 AC21); nil in the app.
     @concurrent
-    static func picked(photo data: Data) async throws -> UploadRunner.Picked {
+    static func picked(photo data: Data, working: (@Sendable () -> Void)? = nil) async throws -> UploadRunner.Picked {
+        working?()
         guard let jpeg = UIImage(data: data).flatMap(jpeg) else { throw Failure.unreadable("The photo") }
         return UploadRunner.Picked(name: "Photo.jpg", data: jpeg, keepsOriginal: false)
     }
@@ -63,8 +65,10 @@ extension LabFileReader {
     /// Each page is the JPEG a picked picture is sent as (`jpeg`: long side 2,000, quality 0.8); the
     /// PDF is then a file like any other, under the rules' size. Past `maxPages` it keeps one page
     /// more, so the convert reads `maxPages` and says the rest was cut, as for a long PDF from Files.
+    /// `working`: told where the PDF is built, a test's (US-25 AC21); nil in the app.
     @concurrent
-    static func picked(scan images: [UIImage]) async throws -> UploadRunner.Picked {
+    static func picked(scan images: [UIImage], working: (@Sendable () -> Void)? = nil) async throws -> UploadRunner.Picked {
+        working?()
         let pages = images.prefix(maxPages + 1).compactMap { jpeg($0).flatMap(UIImage.init(data:)) }
         guard let first = pages.first else { throw Failure.unreadable("Scanned report") }
         let data = UIGraphicsPDFRenderer(bounds: CGRect(origin: .zero, size: first.size)).pdfData { context in

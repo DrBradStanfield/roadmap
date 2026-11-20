@@ -21,6 +21,7 @@ final class LabSourceTests: XCTestCase {
         XCTAssertEqual(read.pages.map(\.mimeType), ["image/jpeg"])
         let page = try XCTUnwrap(UIImage(data: try XCTUnwrap(Data(base64Encoded: try XCTUnwrap(read.pages.first).content))))
         XCTAssertEqual(max(page.size.width, page.size.height), 2000, "the long side is resized to the web's 2,000")
+        XCTAssertEqual(read.pages.first?.content, photo.data.base64EncodedString(), "the page sent is the held photo, byte for byte: no second encode")
         do {
             _ = try await LabFileReader.picked(photo: Data("not a picture".utf8))
             XCTFail("bytes that are no picture are refused")
@@ -50,6 +51,23 @@ final class LabSourceTests: XCTestCase {
 
         let nothing = try? await LabFileReader.picked(scan: [])
         XCTAssertNil(nothing, "no page, no report")
+    }
+
+    /// US-25 AC21: a photo is resized and a scan's PDF is built on the shared pool, never the main
+    /// thread, though the sheet (and this test) call them from the main actor.
+    func testAPhotoAndAScanAreMadeOffTheMainThread_US25_AC21() async throws {
+        let places = Places()
+        let image = Self.picture(width: 400, height: 600)
+        _ = try await LabFileReader.picked(photo: try XCTUnwrap(image.jpegData(compressionQuality: 0.9)), working: { places.add(Thread.isMainThread ? "main" : "pool") })
+        _ = try await LabFileReader.picked(scan: [image, image], working: { places.add(Thread.isMainThread ? "main" : "pool") })
+        XCTAssertEqual(places.all, ["pool", "pool"], "a photo, a scan")
+    }
+
+    private final class Places: @unchecked Sendable {
+        private let lock = NSLock()
+        private var seen: [String] = []
+        func add(_ place: String) { lock.withLock { seen.append(place) } }
+        var all: [String] { lock.withLock { seen } }
     }
 
     // MARK: A folder (AC13c)
