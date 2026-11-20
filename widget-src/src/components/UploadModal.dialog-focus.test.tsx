@@ -11,14 +11,15 @@ import { useState } from 'react';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { UploadModal } from './UploadModal';
 import { SettingsSheet } from './SettingsSheet';
-import { bulkSaveDocuments, bulkSaveMeasurements, getDocumentArchiveMode } from '../lib/roadmap-data';
+import { getDocumentArchiveMode } from '../lib/roadmap-data';
+import { resetUploadStore } from '../testing/upload-store';
 import { checkLabImportQuota, labImport } from '../lib/upload-api';
 import { findReviewValue } from '../testing/import-review';
 
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn() }));
-vi.mock('../lib/roadmap-data', () => ({ uploadKnownIndex: vi.fn(() => new Map()), isLegacyUpload: vi.fn(() => false), getDocumentArchiveMode: vi.fn(() => 'cloud'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
+vi.mock('../lib/roadmap-data', async () => ({ ...(await import('../testing/upload-store')).uploadStoreMock(), uploadKnownIndex: vi.fn(() => new Map()), isLegacyUpload: vi.fn(() => false), getDocumentArchiveMode: vi.fn(() => 'cloud'), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
 vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
-vi.mock('../lib/archive-payloads', async importOriginal => ({ ...await importOriginal<typeof import('../lib/archive-payloads')>(), sha256Blob: vi.fn(async () => ''), synthesizeLabArchiveEntries: vi.fn(() => []) }));
+vi.mock('../lib/archive-payloads', async importOriginal => ({ ...await importOriginal<typeof import('../lib/archive-payloads')>(), sha256Blob: vi.fn(async () => '') }));
 vi.mock('../lib/useIsMobile', () => ({ useIsMobile: () => false }));
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 
@@ -186,8 +187,8 @@ describe('US-12 AC4a: a window reopened from the floating indicator that then en
   async function reopened(shown: 'review' | 'failed read') {
     let fail: ((error: Error) => void) | undefined;
     vi.mocked(checkLabImportQuota).mockResolvedValue({ allowed: true, remaining: 60 } as never); vi.mocked(labImport).mockResolvedValue(extraction as never);
-    vi.mocked(bulkSaveMeasurements).mockResolvedValue({ saved: [{}], skippedDuplicates: 0, errorCount: 0, refused: [] } as never);
-    vi.mocked(bulkSaveDocuments).mockResolvedValue({ saved: [], errorCount: 0 } as never);
+    // Save runs health-core's uploadSave on an in-memory record (testing/upload-store.ts).
+    resetUploadStore();
     const extractFromPdf = shown === 'review' ? async () => ({ pages: [{ type: 'text', content: 'synthetic' }], truncated: false }) : () => new Promise((_, no) => { fail = no; });
     Object.assign(window, { HealthUpload: { extractFromPdf, isPdf: () => true, isZip: () => false, isImage: () => false } });
     render(<Page />);
