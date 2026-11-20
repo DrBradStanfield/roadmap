@@ -162,8 +162,10 @@ enum LabFileReader {
     /// The most a ZIP's members, or a folder's reports, may hold in all.
     static let maxFolderBytes = 200 * 1024 * 1024
 
-    /// One file's pages, as picked or as a ZIP member (`Held.convert`).
-    static func document(from data: Data, name: String, rules: Rules) throws -> Document {
+    /// One file's pages, as picked or as a ZIP member (`Held.convert`). `redrawn`: the bytes are a
+    /// JPEG this app drew (`picked(photo:)`), so they carry no metadata and go as they are; every
+    /// other picture is redrawn and re-encoded, which strips its metadata (a location, a device).
+    static func document(from data: Data, name: String, rules: Rules, redrawn: Bool = false) throws -> Document {
         switch rules.file(name, data.count) {
         case .tooLarge: throw Failure.tooLarge(name)
         case .keep: break
@@ -175,9 +177,7 @@ enum LabFileReader {
         case "pdf": read = try pdf(data, name: name)
         case "jpg", "jpeg", "png", "heic":
             guard let image = UIImage(data: data) else { throw Failure.unreadable(name) }
-            // A JPEG already within the page size (a photo the app resized) goes as it is: no second encode.
-            let fits = data.starts(with: [0xFF, 0xD8, 0xFF]) && max(image.size.width, image.size.height) * image.scale <= 2000
-            guard let page = fits ? Page(type: "image", content: data.base64EncodedString(), mimeType: "image/jpeg") : jpegPage(image)
+            guard let page = redrawn ? Page(type: "image", content: data.base64EncodedString(), mimeType: "image/jpeg") : jpegPage(image)
             else { throw Failure.unreadable(name) }
             read = Document(name: name, pages: [page], truncated: false)
         default: throw Failure.unsupported(name)

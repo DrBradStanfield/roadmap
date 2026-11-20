@@ -58,7 +58,7 @@ extension LabFileReader {
     static func picked(photo data: Data, working: (@Sendable () -> Void)? = nil) async throws -> UploadRunner.Picked {
         working?()
         guard let jpeg = UIImage(data: data).flatMap(jpeg) else { throw Failure.unreadable("The photo") }
-        return UploadRunner.Picked(name: "Photo.jpg", data: jpeg, keepsOriginal: false)
+        return UploadRunner.Picked(name: "Photo.jpg", data: jpeg, keepsOriginal: false, redrawn: true)
     }
 
     /// The document camera's pages as one PDF, a page each, named by the app's word for a scan.

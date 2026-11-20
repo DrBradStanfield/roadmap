@@ -1,3 +1,4 @@
+import ImageIO
 import PDFKit
 import XCTest
 @testable import HealthRoadmap
@@ -68,6 +69,73 @@ final class LabSourceTests: XCTestCase {
         private var seen: [String] = []
         func add(_ place: String) { lock.withLock { seen.append(place) } }
         var all: [String] { lock.withLock { seen } }
+    }
+
+    // MARK: No picture metadata reaches the server (owner ruling, privacy)
+
+    /// A JPEG with a GPS location, as a phone's camera writes one.
+    private static func jpegWithGPS() throws -> Data {
+        let image = try XCTUnwrap(picture(width: 300, height: 400).cgImage)
+        let out = NSMutableData()
+        let destination = try XCTUnwrap(CGImageDestinationCreateWithData(out, "public.jpeg" as CFString, 1, nil))
+        let gps: [CFString: Any] = [kCGImagePropertyGPSLatitude: 36.8, kCGImagePropertyGPSLatitudeRef: "S",
+                                    kCGImagePropertyGPSLongitude: 174.7, kCGImagePropertyGPSLongitudeRef: "E"]
+        CGImageDestinationAddImage(destination, image, [kCGImagePropertyGPSDictionary: gps] as CFDictionary)
+        XCTAssertTrue(CGImageDestinationFinalize(destination))
+        return out as Data
+    }
+
+    private static func hasGPS(_ data: Data) -> Bool {
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil),
+              let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any] else { return false }
+        return properties[kCGImagePropertyGPSDictionary] != nil
+    }
+
+    private static func pageBytes(_ document: LabFileReader.Document) throws -> [Data] {
+        try document.pages.map { try XCTUnwrap(Data(base64Encoded: $0.content)) }
+    }
+
+    /// A JPEG picked from Files can carry its location: its page is redrawn and re-encoded, so the
+    /// page sent holds no GPS and is not the source's bytes. Only the app's own photo, already
+    /// redrawn, goes as its own bytes.
+    func testAFilesJpegIsRedrawnSoItsLocationNeverLeaves_US52_AC10() async throws {
+        let source = try Self.jpegWithGPS()
+        XCTAssertTrue(Self.hasGPS(source), "the fixture carries a location")
+        let held = LabFileReader.Held()
+        held.hold(source, as: "f", name: "scan.jpg")
+        let pages = try Self.pageBytes(try held.convert("f", rules: .swift))
+        XCTAssertNotEqual(pages, [source])
+        XCTAssertFalse(pages.contains(where: Self.hasGPS))
+    }
+
+    /// The same for a JPEG in a folder pick, in a ZIP, and for a scan's pages.
+    func testAFolderOrZipJpegAndAScanSendNoLocation_US52_AC10() async throws {
+        let source = try Self.jpegWithGPS()
+        let folder = try newFolder("Located")
+        try source.write(to: folder.appending(path: "a.jpg"))
+        let picked = try await LabFileReader.picked(folder, ask: Self.rules)
+        let fromFolder = try Self.pageBytes(try Self.converted(try XCTUnwrap(picked.first)))
+        XCTAssertNotEqual(fromFolder, [source])
+        XCTAssertFalse(fromFolder.contains(where: Self.hasGPS), "a folder's JPEG")
+
+        let zip = ZipLazyReadTests.zip([.init("a.jpg", source, deflate: false)])
+        let fromZip = try await LabFileReader.documents(from: zip, name: "labs.zip")
+        let zipPages = try fromZip.flatMap(Self.pageBytes)
+        XCTAssertFalse(zipPages.isEmpty)
+        XCTAssertNotEqual(zipPages, [source])
+        XCTAssertFalse(zipPages.contains(where: Self.hasGPS), "a ZIP's JPEG")
+
+        let scan = try await LabFileReader.picked(scan: [try XCTUnwrap(UIImage(data: source))])
+        let scanPages = try Self.pageBytes(try Self.converted(scan))
+        XCTAssertFalse(scanPages.contains(where: Self.hasGPS), "a scan's pages")
+    }
+
+    /// The app's own photo: redrawn once when picked, so no location; its page is those bytes.
+    func testThePhotoPageIsTheHeldPhotoAndHasNoLocation_US52_AC10() async throws {
+        let photo = try await LabFileReader.picked(photo: try Self.jpegWithGPS())
+        XCTAssertFalse(Self.hasGPS(photo.data))
+        let pages = try Self.pageBytes(try Self.converted(photo))
+        XCTAssertEqual(pages, [photo.data])
     }
 
     // MARK: A folder (AC13c)
@@ -178,7 +246,7 @@ final class LabSourceTests: XCTestCase {
     /// One pick converted as the engine's `convert` effect converts it.
     private static func converted(_ picked: UploadRunner.Picked) throws -> LabFileReader.Document {
         let held = LabFileReader.Held()
-        held.hold(picked.data, as: picked.id, name: picked.name)
+        held.hold(picked.data, as: picked.id, name: picked.name, redrawn: picked.redrawn)
         return try held.convert(picked.id, rules: .swift)
     }
 

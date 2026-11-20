@@ -59,16 +59,19 @@ actor UploadRunner {
     /// the listed size of a file the rules call too large, never read, so the engine refuses it in
     /// its own words. `keepsOriginal`: false for a photo or a scan, never a file: it is picked
     /// `original: false`, so the engine stores no original of it (the consent screen says only a
-    /// report picked from Files is kept in the cloud).
+    /// report picked from Files is kept in the cloud). `redrawn`: the app's own photo, a JPEG it drew
+    /// with no metadata, sent as its own bytes; every other picture is redrawn before it is sent.
     struct Picked: Sendable {
         let id: String
         let name: String
         let data: Data
         let bytes: Int
         let keepsOriginal: Bool
+        let redrawn: Bool
 
-        init(id: String = UUID().uuidString, name: String, data: Data, bytes: Int? = nil, keepsOriginal: Bool = true) {
-            (self.id, self.name, self.data, self.bytes, self.keepsOriginal) = (id, name, data, bytes ?? data.count, keepsOriginal)
+        init(id: String = UUID().uuidString, name: String, data: Data, bytes: Int? = nil, keepsOriginal: Bool = true, redrawn: Bool = false) {
+            (self.id, self.name, self.data, self.bytes) = (id, name, data, bytes ?? data.count)
+            (self.keepsOriginal, self.redrawn) = (keepsOriginal, redrawn)
         }
     }
 
@@ -216,7 +219,7 @@ actor UploadRunner {
         while !waiting.isEmpty {
             switch waiting.removeFirst() {
             case .hold(let files):
-                for file in files { held.hold(file.data, as: file.id, name: file.name) }
+                for file in files { held.hold(file.data, as: file.id, name: file.name, redrawn: file.redrawn) }
             case .event(let event):
                 let answer = await step(event)
                 stepped += 1 // before anything awaits, so a view of this step's state counts it
