@@ -11,9 +11,9 @@
 import { DOCUMENT_TYPES, type DocumentType } from './validation';
 import { IMPORT_REVIEW_TEXT, isOfferedRef, KIND_WORDS, notSavedGroups, type ClassifiedValue, type UnsureReason } from './import-review';
 import type { FileLabValue, FileMeasurement, RoadmapFile } from './roadmap-file';
-import { isReadableRow } from './readable-rows';
+import { effectiveComparator, isReadableRow } from './readable-rows';
 import { getDisplayLabel, type MetricType } from './units';
-import { inFlight, RETRYABLE, saveEnabled, type FileStatus, type UploadFile, type UploadState } from './upload-flow';
+import { inFlight, RETRYABLE, saveEnabled, uploadFileName, type FileStatus, type UploadFile, type UploadState } from './upload-flow';
 import { planIsEmpty, uploadSavePlan, type UploadSavePlan } from './upload-plan';
 import type { UploadPlatform } from './upload-rules';
 import { readFiles, type UploadReview } from './upload-review';
@@ -147,15 +147,17 @@ function printedFacts(x: UnifiedExtractionResult | undefined, ref: string, repor
   };
 }
 
-/** A held row as the record stores it: its number with its limit sign and its unit; never a row no reader can read (US-65 AC3). */
-function heldText(row: FileMeasurement | FileLabValue | undefined): string | null {
+/** A held row as readers show it: its number with the limit sign this build reads in it (an older build's
+ *  copied sign on a correction left out, US-12 AC20) and its unit; never a row no reader can read (US-65 AC3). */
+function heldText(row: FileMeasurement | FileLabValue | undefined, record: RoadmapFile): string | null {
   if (!row) return null;
   if (!isReadableRow('metricType' in row ? 'measurements' : 'labValues', row)) return UNREADABLE_VALUE_TEXT;
   const unit = 'metricType' in row ? getDisplayLabel(row.metricType as MetricType, 'si') : row.unit;
-  return [withComparator(String(row.value), row.comparator), unit].filter(Boolean).join(' ');
+  const comparator = 'metricType' in row ? effectiveComparator(record.measurements, row) : effectiveComparator(record.labValues, row);
+  return [withComparator(String(row.value), comparator), unit].filter(Boolean).join(' ');
 }
 
-const valueRow = (review: UploadReview, extractions: Map<string, UnifiedExtractionResult>, rows: Map<string, FileMeasurement | FileLabValue>, now: string) =>
+const valueRow = (review: UploadReview, extractions: Map<string, UnifiedExtractionResult>, rows: Map<string, FileMeasurement | FileLabValue>, record: RoadmapFile, now: string) =>
   (v: ClassifiedValue): ValueRow => {
     const facts = printedFacts(extractions.get(review.labFiles[v.file].fileId), v.ref, review.labFiles[v.file].day, now);
     const heldId = review.held.get(`${v.file}:${v.ref}`);
@@ -163,7 +165,7 @@ const valueRow = (review: UploadReview, extractions: Map<string, UnifiedExtracti
     return { ...facts, dayLine, ...rowOf(review, v),
       replace: heldId ? REVIEW_CELL_TEXT.replace : null,
       replaceLabel: heldId && dayLine ? REVIEW_CELL_TEXT.replaceLabel(v.label, dayLine) : null,
-      held: heldText(heldId ? rows.get(heldId) : undefined),
+      held: heldText(heldId ? rows.get(heldId) : undefined, record),
     };
   };
 
@@ -233,7 +235,7 @@ export function uploadView(s: UploadState, record: RoadmapFile, now: string, rev
   const readById = new Map(readFiles(s).map((f) => [f.id, f]));
   const extractions = new Map([...readById].map(([id, f]) => [id, f.status.extraction]));
   const rowsById = new Map<string, FileMeasurement | FileLabValue>([...record.measurements, ...record.labValues].map((r) => [r.id, r]));
-  const row = valueRow(review, extractions, rowsById, now);
+  const row = valueRow(review, extractions, rowsById, record, now);
   const offered = values.filter((v) => isOfferedRef(v.ref));
   const unsure = offered.filter((v) => v.group === 'unsure');
   const sure = offered.filter((v) => v.group === 'sure');
@@ -250,7 +252,7 @@ export function uploadView(s: UploadState, record: RoadmapFile, now: string, rev
     ...(unsure.length ? [{ kind: 'unsure' as const, title: IMPORT_REVIEW_TEXT.checkTitle(unsure.length), footer: IMPORT_REVIEW_TEXT.checkFooter, rows: unsure.map(row) }] : []),
     ...(failed.length ? [{
       kind: 'failed' as const, title: UPLOAD_TEXT.failedTitle(failed.length),
-      rows: failed.map((f) => ({ fileId: f.id, name: f.name, line: failLine(f.status, s.platform) })),
+      rows: failed.map((f) => ({ fileId: f.id, name: uploadFileName(f), line: failLine(f.status, s.platform) })),
       retry: s.phase === 'open' && failed.some((f) => RETRYABLE[f.status.reason]) ? UPLOAD_TEXT.retryAll : null,
     }] : []),
     ...(groups.total ? [{
@@ -277,10 +279,10 @@ export function uploadView(s: UploadState, record: RoadmapFile, now: string, rev
       kinds: DOCUMENT_TYPES.map((key) => ({ key, word: KIND_WORDS[key][0] })),
       setDate: UPLOAD_TEXT.setDate, removeDate: UPLOAD_TEXT.removeDate,
     } : null,
-    files: { row: UPLOAD_TEXT.filesRow(files.length), rows: files.map((f) => ({ fileId: f.id, name: f.name, status: emptyRead(f) ?? statusWords(f.status, s.platform) })) },
+    files: { row: UPLOAD_TEXT.filesRow(files.length), rows: files.map((f) => ({ fileId: f.id, name: uploadFileName(f), status: emptyRead(f) ?? statusWords(f.status, s.platform) })) },
     // Read files with nothing in them, and files read only in part (US-12 AC9), in the web's words.
     notices: files.flatMap((f) => [emptyRead(f), f.pages?.truncated ? FILE_NOTICE_TEXT.truncated : null]
-      .flatMap((line) => (line ? [{ fileId: f.id, name: f.name, line }] : []))),
+      .flatMap((line) => (line ? [{ fileId: f.id, name: uploadFileName(f), line }] : []))),
     save: save(s, plan, review),
     stop: s.phase === 'open' && waiting ? { label: UPLOAD_TEXT.stop } : null,
     done: s.phase === 'done' ? {

@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { uploadSavePlanJson, uploadStartJson, uploadStepJson, uploadUsageJson, uploadViewJson } from './entry';
 import { createEmptyFile, type FileDocument, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { bulkAppendValues, type BulkRow } from '../../packages/health-core/src/record-edits';
-import { initialUpload, transition, type UploadEvent, type UploadState } from '../../packages/health-core/src/upload-flow';
+import { initialUpload, transition, uploadFileName, type UploadEvent, type UploadState } from '../../packages/health-core/src/upload-flow';
 import { knownAs, knownIndex, readIsLegacy } from '../../packages/health-core/src/upload-known';
 import { appGateFailure } from '../../packages/health-core/src/upload-failure';
 import { uploadReview } from '../../packages/health-core/src/upload-review';
@@ -118,7 +118,7 @@ function genEvent(r: () => number, s: UploadState, mint: () => string): { wire: 
     [8, () => {
       const id = idAt('sending');
       const extraction = pick(READS);
-      const name = files.find((f) => f.id === id)?.name;
+      const file = files.find((f) => f.id === id); const name = file && uploadFileName(file);
       return { wire: { type: 'answered', run, id, extraction, now: NOW },
         whole: { type: 'answered', run, id, extraction, now: NOW, legacy: name !== undefined && readIsLegacy(RECORD, name, extraction) } };
     }],
@@ -127,7 +127,7 @@ function genEvent(r: () => number, s: UploadState, mint: () => string): { wire: 
       const line = pick([JSON.stringify({ status: 200, body: { success: true, data: pick(READS) } }), JSON.stringify({ status: 429, body: { success: false } }),
         JSON.stringify({ status: 422, body: { errorCode: 'refused' } }), JSON.stringify({ status: 500, body: { success: false, error: 'Failed to process request' } }), null, '{cut']);
       const a = labStreamAnswer(line);
-      const name = files.find((f) => f.id === id)?.name;
+      const file = files.find((f) => f.id === id); const name = file && uploadFileName(file);
       return { wire: { type: 'streamEnded', run, id, line, now: NOW }, whole: 'extraction' in a
         ? { type: 'answered', run, id, extraction: a.extraction, legacy: name !== undefined && readIsLegacy(RECORD, name, a.extraction), now: NOW }
         : { type: 'sendFailed', run, id, failure: a.failure, ...(a.detail ? { detail: a.detail } : {}) } };
