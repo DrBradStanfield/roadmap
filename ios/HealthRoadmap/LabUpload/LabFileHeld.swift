@@ -24,6 +24,8 @@ extension LabFileReader {
             let name: String
             let data: Data
             let generation: Int
+            /// False for a photo or a scan: never offered to Save as an original (`originals()`).
+            let original: Bool
             var listing: Listing?
         }
         /// Files and ZIPs by id; pages by the id converted, a file's or a member's.
@@ -44,11 +46,12 @@ extension LabFileReader {
 
         init(beforeKeeping: (@Sendable (String) -> Void)? = nil) { self.beforeKeeping = beforeKeeping }
 
-        /// Holds a picked file's or ZIP's bytes under `id`, replacing what it held; `name` is how a read names it.
-        func hold(_ data: Data, as id: String, name: String) {
+        /// Holds a picked file's or ZIP's bytes under `id`, replacing what it held; `name` is how a read
+        /// names it; `original`: whether Save may store it as an original.
+        func hold(_ data: Data, as id: String, name: String, original: Bool = true) {
             records.withLock { records in
                 records.holds += 1
-                records.items[id] = Item(name: name, data: data, generation: records.holds)
+                records.items[id] = Item(name: name, data: data, generation: records.holds, original: original)
                 for page in records.pages.keys where page == id || Self.member(page)?.zip == id { records.pages[page] = nil }
             }
         }
@@ -110,13 +113,14 @@ extension LabFileReader {
             return entries.enumerated().map { ("\(zip)#\($0)", $1) }
         }
 
-        /// Each original held, a file's or a listed member's (never a ZIP's own bytes), by id, with
+        /// Each original held, a file's or a listed member's (never a ZIP's own bytes, nor a photo's or
+        /// a scan's), by id, with
         /// its MIME type: what the save door may store (upload-save-door.ts `originalsJson`).
         func originals() -> [String: String] {
             records.withLock { records in
                 var out: [String: String] = [:]
                 let mimeType = { (name: String) in mimeTypes[pathExtension(name)] ?? "" }
-                for (id, item) in records.items {
+                for (id, item) in records.items where item.original {
                     if let listing = item.listing {
                         for (n, entry) in listing.entries.enumerated() where !listing.forgotten.contains(n) { out["\(id)#\(n)"] = mimeType(entry.name) }
                     } else if pathExtension(item.name) != "zip" {

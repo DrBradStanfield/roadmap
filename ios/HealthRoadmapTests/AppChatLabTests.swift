@@ -318,8 +318,8 @@ final class AppChatLabTests: XCTestCase {
         XCTAssertNil(try engine.blocking { [now, extraction] in try $0.labReview(extractionJSON: extraction, now: now) }.document)
     }
 
-    /// A read file keeps its original bytes; a photo is a file now ("Photo.jpg"), so it keeps its
-    /// own too, as a picture picked in Files does.
+    /// A read file keeps its original bytes; a photo, though it goes as a file ("Photo.jpg"), is
+    /// never offered as an original (US-52 AC13e: the consent screen says only a report from Files is kept).
     func testAReadFileKeepsItsOriginalBytes() async throws {
         let pdf = UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: 200, height: 200)).pdfData { $0.beginPage() }
         let read = try await LabFileReader.documents(from: pdf, name: "a.pdf")
@@ -329,9 +329,9 @@ final class AppChatLabTests: XCTestCase {
         let image = UIGraphicsImageRenderer(size: CGSize(width: 4, height: 4)).image { _ in }
         let photo = try await LabFileReader.picked(photo: try XCTUnwrap(image.jpegData(compressionQuality: 0.9)))
         let held = LabFileReader.Held()
-        held.hold(photo.data, as: photo.id, name: photo.name)
-        XCTAssertEqual(held.originals(), [photo.id: "image/jpeg"])
-        XCTAssertEqual(held.original(photo.id), photo.data)
+        held.hold(photo.data, as: photo.id, name: photo.name, original: photo.keepsOriginal)
+        XCTAssertFalse(photo.keepsOriginal)
+        XCTAssertEqual(held.originals(), [:])
     }
 
     /// A ZIP member's name is the web's zipMemberName, cap and hash included, so the

@@ -57,15 +57,17 @@ enum ViewLoop: Equatable {
 actor UploadRunner {
     /// One picked file, its bytes read: a ZIP by its name. `bytes` is its size: the bytes read, or
     /// the listed size of a file the rules call too large, never read, so the engine refuses it in
-    /// its own words.
+    /// its own words. `keepsOriginal`: false for a photo or a scan, never a file, so Save stores no
+    /// original of it in the cloud (the consent screen says only a report picked from Files is).
     struct Picked: Sendable {
         let id: String
         let name: String
         let data: Data
         let bytes: Int
+        let keepsOriginal: Bool
 
-        init(id: String = UUID().uuidString, name: String, data: Data, bytes: Int? = nil) {
-            (self.id, self.name, self.data, self.bytes) = (id, name, data, bytes ?? data.count)
+        init(id: String = UUID().uuidString, name: String, data: Data, bytes: Int? = nil, keepsOriginal: Bool = true) {
+            (self.id, self.name, self.data, self.bytes, self.keepsOriginal) = (id, name, data, bytes ?? data.count, keepsOriginal)
         }
     }
 
@@ -211,7 +213,7 @@ actor UploadRunner {
         while !waiting.isEmpty {
             switch waiting.removeFirst() {
             case .hold(let files):
-                for file in files { held.hold(file.data, as: file.id, name: file.name) }
+                for file in files { held.hold(file.data, as: file.id, name: file.name, original: file.keepsOriginal) }
             case .event(let event):
                 let answer = await step(event)
                 stepped += 1 // before anything awaits, so a view of this step's state counts it
