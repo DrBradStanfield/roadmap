@@ -1206,9 +1206,9 @@ final class CloudSyncTests: XCTestCase, CloudFixtures {
         let (store, sync, _) = try app()
         await sync.start()
         let picked = folder.appending(path: "Letter.pdf")
-        try UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: 200, height: 200)).pdfData { $0.beginPage() }.write(to: picked)
-        let read = try await LabFileReader.documents(picked: picked, ask: LabFileReader.swiftRules)
-        let original = try XCTUnwrap(read.first?.original)
+        let bytes = UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: 200, height: 200)).pdfData { $0.beginPage() }
+        try bytes.write(to: picked)
+        let original = LabFileReader.Original(bytes, mimeType: "application/pdf").file(picked, scope: picked)
         try FileManager.default.removeItem(at: picked)
         let choice = DocumentChoice(kind: .document, sourceFileName: "Letter.pdf", title: "Heart clinic", documentDate: nil, mimeType: "application/pdf", contentHash: original.contentHash)
         let result = await store.saveDocument(extractionJSON: cloudLetter, choice: choice, original: original)

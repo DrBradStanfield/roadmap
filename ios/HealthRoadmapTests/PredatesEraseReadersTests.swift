@@ -23,24 +23,24 @@ final class PredatesEraseReadersTests: XCTestCase {
     }
 
     /// EraseHeldUndrawnTests' engine: its screen draw fails while `__screenFails` is set, it counts the cloud session's edits in `__cloudEdits`, and
-    /// keeps the record each lab review was given in `__reviewRecords`.
+    /// keeps the record each shared upload step was given in `__stepRecords`.
     private func engine() throws -> HealthEngine {
         let url = try XCTUnwrap(Bundle.main.url(forResource: "health-engine", withExtension: "js"))
         let source = try String(contentsOf: url, encoding: .utf8) + """
 
         globalThis.__screenFails = false;
         globalThis.__cloudEdits = 0;
-        globalThis.__reviewRecords = [];
-        HealthEngine = Object.assign({}, HealthEngine, { screenJson: (door => function () {
+        globalThis.__stepRecords = [];
+        HealthEngine = Object.assign({}, HealthEngine, { uploadStepJson: (door => function () {
+          __stepRecords.push(arguments[2]);
+          return door.apply(this, arguments);
+        })(HealthEngine.uploadStepJson), screenJson: (door => function () {
           if (__screenFails) throw new Error('test: the screen draw fails');
           return door.apply(this, arguments);
         })(HealthEngine.screenJson), cloudEdit: (door => function () {
           __cloudEdits += 1;
           return door.apply(this, arguments);
-        })(HealthEngine.cloudEdit), labReviewJson: (door => function () {
-          __reviewRecords.push(arguments[2]);
-          return door.apply(this, arguments);
-        })(HealthEngine.labReviewJson) });
+        })(HealthEngine.cloudEdit) });
 
         """
         return try HealthEngine(source: source, sourceURL: url)
@@ -50,8 +50,24 @@ final class PredatesEraseReadersTests: XCTestCase {
         try engine.blocking { try $0.evaluate("__cloudEdits").toInt32() }
     }
 
-    private func lastReviewRecord(_ engine: HealthEngine) throws -> String {
-        try engine.blocking { try $0.evaluate("__reviewRecords[__reviewRecords.length - 1]").toString() }
+    /// Every record the shared upload's steps were given, from the latest pick (`steps(from:)`).
+    private func stepRecords(_ engine: HealthEngine) throws -> [String] {
+        let text: String = try engine.blocking { try $0.evaluate("JSON.stringify(__stepRecords.splice(0))").toString() } ?? "[]"
+        return (try? JSONDecoder().decode([String].self, from: Data(text.utf8))) ?? []
+    }
+
+    /// A picture picked into the shared upload, held at its consent so nothing is sent: its steps
+    /// read the record as the sheet's session reads it. The session is ended.
+    private func pickedUpload(_ w: Window) async throws -> [String] {
+        _ = try stepRecords(w.engine)
+        let upload = UploadSession(engine: w.engine, store: w.store, frame: .milliseconds(1))
+        defer { upload.end() }
+        let started = await upload.start({ UploadTestKit.pictures(1) }, needsConsent: true)
+        XCTAssertEqual(started, .running)
+        try await UploadTestKit.until("consent") {
+            if case .drawn(let text) = upload.model.state { upload.page(text)?.phase == "consent" } else { false }
+        }
+        return try stepRecords(w.engine)
     }
 
     private enum Way: CaseIterable { case noRecord, movedSession }
@@ -193,13 +209,15 @@ final class PredatesEraseReadersTests: XCTestCase {
         }
     }
 
-    func testALabReviewIsGivenNoRecord_S52() async throws {
+    /// The shared upload's steps are given no record in the window, so nothing dedups against the
+    /// record the erase replaced; its Save is refused (testNothingIsWritten_S52).
+    func testALabUploadIsGivenNoRecord_S52() async throws {
         for way in Way.allCases {
             let w = try await window(way)
-            let result = LabResult(name: "Letter.pdf", truncated: false, extractionJSON: letter, failure: nil)
-            _ = await LabReportSave.saveWaiting(result, held: nil, engine: w.engine, store: w.store)
-            XCTAssertEqual(try lastReviewRecord(w.engine), "", "\(way): the review's no-record input, so no dedup against the old record")
-            XCTAssertEqual(w.store.recordJSON, w.filled, "\(way): the letter was not filed")
+            let records = try await pickedUpload(w)
+            XCTAssertFalse(records.isEmpty, "\(way): the pick stepped")
+            XCTAssertEqual(Set(records), [""], "\(way): the upload's no-record input, so no dedup against the old record")
+            XCTAssertEqual(w.store.recordJSON, w.filled, "\(way): nothing was filed")
             try FileManager.default.removeItem(at: folder)
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         }
@@ -225,6 +243,11 @@ final class PredatesEraseReadersTests: XCTestCase {
             let choice = DocumentChoice(kind: .document, sourceFileName: "Letter.pdf", title: "Cardiology follow-up", documentDate: nil, mimeType: "")
             let filed = await store.saveDocument(extractionJSON: letter, choice: choice, original: nil)
             XCTAssertEqual(filed, .refused(RecordStore.recordChanged), "\(way): a document save")
+            // The shared upload's one Save: refused before the engine is asked, whatever the state.
+            guard case .failure(let upload) = await store.saveUpload(state: "{}", originals: [:], read: { _ in nil }, as: store.screen) else {
+                return XCTFail("\(way): an upload save landed")
+            }
+            XCTAssertEqual(upload.message, RecordStore.recordChanged, "\(way): an upload save")
             // A chat edit asked before the erase meets the moved mark; one asked in the window, the store's guard.
             let inFlight = await store.applyChatEdit(.add(metric: "weight", value: 71, day: "2026-11-13"), on: w.asked)
             guard case .refused = inFlight.result else { return XCTFail("\(way): an in-flight chat edit landed") }
@@ -290,9 +313,9 @@ final class PredatesEraseReadersTests: XCTestCase {
         XCTAssertNotNil(reminders.reminders, "reminders read the record again")
         await sync.refresh()
         XCTAssertFalse(health.saved.isEmpty, "Apple Health is written the typed weight")
-        _ = await LabReportSave.saveWaiting(LabResult(name: "Letter.pdf", truncated: false, extractionJSON: letter, failure: nil),
-                                            held: nil, engine: w.engine, store: store)
-        XCTAssertEqual(try lastReviewRecord(w.engine), w.filled, "the lab review dedups against the record drawn")
+        let records = try await pickedUpload(w)
+        XCTAssertFalse(records.isEmpty)
+        XCTAssertEqual(Set(records), [w.filled], "the lab upload dedups against the record drawn")
         let edits = try cloudEdits(w.engine)
         _ = await store.apply(.add(metric: "weight", value: 70, day: "2026-11-13"))
         XCTAssertEqual(try cloudEdits(w.engine), edits + 1, "a typed edit reaches the session again")

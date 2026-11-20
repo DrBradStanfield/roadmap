@@ -218,13 +218,17 @@ enum LabFileReader {
 
     /// A JPEG at quality 0.8, the long side at most 2,000 points, as base64.
     static func jpegPage(_ image: UIImage) -> Page? {
+        jpeg(image).map { Page(type: "image", content: $0.base64EncodedString(), mimeType: "image/jpeg") }
+    }
+
+    /// The picture as a JPEG at quality 0.8, the long side at most 2,000 points.
+    static func jpeg(_ image: UIImage) -> Data? {
         let longest = max(image.size.width, image.size.height)
         let scale = longest > 2000 ? 2000 / longest : 1
         let size = CGSize(width: image.size.width * scale, height: image.size.height * scale)
         let format = UIGraphicsImageRendererFormat()
         format.scale = 1
-        let resized = UIGraphicsImageRenderer(size: size, format: format).image { _ in image.draw(in: CGRect(origin: .zero, size: size)) }
-        guard let jpeg = resized.jpegData(compressionQuality: 0.8) else { return nil }
-        return Page(type: "image", content: jpeg.base64EncodedString(), mimeType: "image/jpeg")
+        return UIGraphicsImageRenderer(size: size, format: format).image { _ in image.draw(in: CGRect(origin: .zero, size: size)) }
+            .jpegData(compressionQuality: 0.8)
     }
 }

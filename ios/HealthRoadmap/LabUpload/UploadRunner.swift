@@ -6,7 +6,7 @@ import Observation
 @MainActor @Observable
 final class UploadModel {
     enum State: Equatable {
-        /// The engine lacks the shared upload's doors: the app keeps today's flow.
+        /// The engine lacks the shared upload's doors: the sheet says the pick was not read.
         case unavailable
         /// A pick started, no view drawn yet.
         case starting
@@ -51,11 +51,18 @@ enum ViewLoop: Equatable {
 /// out the effects each step returns, and draws the view. The engine limits what runs at once
 /// (5 sends, 3 hashes or converts); the runner adds no limit and no retry of its own.
 actor UploadRunner {
-    /// One picked file, its bytes read: a ZIP by its name.
+    /// One picked file, its bytes read: a ZIP by its name. `bytes` is its size: the bytes read, or
+    /// the listed size of a file the rules call too large, never read, so the engine refuses it in
+    /// its own words.
     struct Picked: Sendable {
         let id: String
         let name: String
         let data: Data
+        let bytes: Int
+
+        init(id: String = UUID().uuidString, name: String, data: Data, bytes: Int? = nil) {
+            (self.id, self.name, self.data, self.bytes) = (id, name, data, bytes ?? data.count)
+        }
     }
 
     /// What the runner works with, besides the engine.
@@ -117,7 +124,7 @@ actor UploadRunner {
     /// Picks `files`, in picked order, starting the engine's upload on the first pick. A pick
     /// replaces an earlier one through the engine's own events (`discard`, then `picked`). False
     /// when it does not run: a newer pick, Close or Discard came first (nothing held, nothing
-    /// sent), or the engine lacks the doors (the model `unavailable`: the app keeps today's flow)
+    /// sent), or the engine lacks the doors (the model `unavailable`: the sheet says the pick was not read)
     /// or refused.
     func pick(_ files: [Picked], needsConsent: Bool) async -> Bool {
         picks += 1
@@ -137,7 +144,14 @@ actor UploadRunner {
             }
         }
         guard state != nil, mine == picks else { return false }
-        let asked = await setup.ask(files.map { LabFileReader.UploadFile(name: $0.name, bytes: $0.data.count) }, [])
+        // A ZIP's members are asked too, from its central directory: their paths, and each as the
+        // file `convert` reads (`<zip>/<path>`). A name not asked keeps nothing (`Rules`).
+        let members = files.flatMap { file in
+            LabFileReader.pathExtension(file.name) == "zip" ? ((try? ZipReader.entries(of: file.data)) ?? []).map { (zip: file.name, entry: $0) } : []
+        }
+        let asked = await setup.ask(files.map { LabFileReader.UploadFile(name: $0.name, bytes: $0.bytes) }
+                                        + members.map { LabFileReader.UploadFile(name: "\($0.zip)/\($0.entry.name)", bytes: $0.entry.size) },
+                                    members.map(\.entry.name))
         guard mine == picks else { return false }
         await model.show(.starting)
         guard mine == picks else { return false }
@@ -145,7 +159,7 @@ actor UploadRunner {
         // In one go, so the Discard's forgets land before the new bytes are held.
         waiting += [.event(EngineNatives.json(["type": "discard"])), .hold(files),
                     .event(EngineNatives.json(["type": "picked", "needsConsent": needsConsent, "now": Self.now(), "files": files.map { file -> [String: Any] in
-                        ["id": file.id, "name": file.name, "bytes": file.data.count, "kind": LabFileReader.pathExtension(file.name) == "zip" ? "zip" : "file"]
+                        ["id": file.id, "name": file.name, "bytes": file.bytes, "kind": LabFileReader.pathExtension(file.name) == "zip" ? "zip" : "file"]
                     }]))]
         await drain()
         return true

@@ -24,7 +24,7 @@ final class UploadRefusalTests: XCTestCase {
                         _ answer: @escaping @Sendable (Int) -> StubHTTP.Answer) async throws -> (lines: [String], retry: Bool, reasons: [String]) {
         Kit.serve(server, challenge: challenge, register: register, answer)
         let sender = LabReadSender(attest: Kit.client(attest, stored: stored), openDeadline: openDeadline)
-        let runner = UploadRunner(engine: try HealthEngine(), model: UploadModel(), setup: .init(deviceId: "test", record: { "" }, sender: sender, frame: .milliseconds(1)))
+        let runner = UploadRunner(engine: try HealthEngine(), model: UploadModel(), setup: .init(deviceId: "test", record: { "" }, ask: LabFileReader.swiftRules, sender: sender, frame: .milliseconds(1)))
         _ = await runner.pick(Kit.pictures(count), needsConsent: false)
         var found: ([String], Bool) = ([], false)
         try await Kit.until("every file failed and was drawn") {
