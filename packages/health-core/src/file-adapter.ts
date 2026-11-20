@@ -390,7 +390,11 @@ export class FileAdapter implements StorageAdapter {
     // newest and prunes a newer one instead. Compare on a normalised key.
     const key = (name: string) => name.replace(/:/g, '-');
     const order = (a: string, b: string) => (key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : 0);
-    for (const name of this.siblings().sort(order).slice(0, -BACKUPS_KEPT)) {
+    // Only names ending the way `backupPath` names do (either separator,
+    // optional `-n`). Any other `.bak-` sibling is the person's own copy:
+    // rotating it pushed this write's backup out while `lastBackup` named it.
+    const ours = /\.bak-\d{4}-\d{2}-\d{2}T\d{2}[-:]\d{2}[-:]\d{2}\.\d{3}Z(-\d+)?$/;
+    for (const name of this.siblings().filter((n) => ours.test(n)).sort(order).slice(0, -BACKUPS_KEPT)) {
       rmSync(join(dirname(this.path), name), { force: true });
     }
   }
