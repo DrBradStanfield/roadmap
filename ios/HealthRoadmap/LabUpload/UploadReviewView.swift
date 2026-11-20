@@ -13,6 +13,8 @@ struct UploadReviewView: View {
     let letter: (String) async -> String?
     /// The done screen's Done: the sheet closes.
     let finish: () -> Void
+    /// Save was tapped and its outcome has not drawn yet: every control waits (UploadSession `saveClaimed`).
+    var saveClaimed = false
 
     @Environment(\.analytics) private var analytics
     @State private var showAll = false
@@ -29,8 +31,9 @@ struct UploadReviewView: View {
 
     /// `open`: Show all, the documents list and these letters start open (the design review's shots).
     init(page: UploadPage, send: @escaping (UploadAction) -> Void, letter: @escaping (String) async -> String?,
-         open letters: Set<String> = [], finish: @escaping () -> Void) {
+         open letters: Set<String> = [], saveClaimed: Bool = false, finish: @escaping () -> Void) {
         self.page = page
+        self.saveClaimed = saveClaimed
         self.send = send
         self.letter = letter
         self.finish = finish
@@ -47,6 +50,8 @@ struct UploadReviewView: View {
                     Text(verbatim: done.line).font(.headline)
                     if let archived = done.archived { Text(verbatim: archived) }
                     if let unstored = done.unstored { Text(verbatim: unstored).foregroundStyle(.secondary) }
+                    ForEach(done.skipped ?? [], id: \.self) { Text(verbatim: $0).foregroundStyle(Color.status("attention")) }
+                    ForEach(done.notSaved ?? [], id: \.self) { Text(verbatim: $0).foregroundStyle(Color.status("attention")) }
                 }
                 // What was not saved stays named on the done screen, in the review's own words.
                 ForEach(page.sections) { if case .notSaved = $0 { section($0) } }
@@ -57,6 +62,12 @@ struct UploadReviewView: View {
                         .font(.title3.weight(.semibold))
                         .listRowBackground(Color.clear)
                         .listRowInsets(EdgeInsets(top: 4, leading: 20, bottom: 0, trailing: 20))
+                    if let alreadySaved = page.alreadySaved {
+                        Text(verbatim: alreadySaved)
+                            .foregroundStyle(.secondary)
+                            .listRowBackground(Color.clear)
+                            .listRowInsets(EdgeInsets(top: 4, leading: 20, bottom: 0, trailing: 20))
+                    }
                     if let refused = page.refused {
                         Text(verbatim: refused)
                             .foregroundStyle(Color.status("attention"))
@@ -78,7 +89,7 @@ struct UploadReviewView: View {
                         filesRow
                     }
                 }
-                .disabled(!editable)
+                .disabled(!editable || saveClaimed)
             }
         }
         // Save (or Done) stays in reach at the bottom however long the page is.
@@ -103,6 +114,7 @@ struct UploadReviewView: View {
             .accessibilityElement(children: .combine)
             if let stop = page.stop {
                 Button { send(.stop) } label: { Text(verbatim: stop.label) }
+                    .disabled(saveClaimed)
                     .accessibilityIdentifier("upload.stop")
             }
         }
@@ -178,7 +190,7 @@ struct UploadReviewView: View {
             if let value = row.value { Text(verbatim: [value, row.unit ?? ""].filter { !$0.isEmpty }.joined(separator: " ")).font(.body.monospacedDigit()) }
             // The day it saves on, so the same test from two reports is told apart.
             if let dayLine = row.dayLine { Text(verbatim: dayLine).font(.caption).foregroundStyle(.secondary) }
-            ForEach([row.question, row.unitNote].compactMap { $0 }, id: \.self) { Text(verbatim: $0).font(.caption).foregroundStyle(.secondary) }
+            ForEach([row.question, row.unitNote, row.copy].compactMap { $0 }, id: \.self) { Text(verbatim: $0).font(.caption).foregroundStyle(.secondary) }
             // The status tone, not system orange: AA contrast as caption text, light and dark.
             ForEach([row.conflict, row.error].compactMap { $0 }, id: \.self) {
                 Text(verbatim: $0).font(.caption).foregroundStyle(Color.status("attention"))
@@ -303,7 +315,7 @@ struct UploadReviewView: View {
                     send(.save)
                 } label: { Text(verbatim: page.save.label) }
                     .buttonStyle(.accent)
-                    .disabled(!page.save.enabled)
+                    .disabled(!page.save.enabled || saveClaimed)
                     .accessibilityIdentifier("upload.save")
                 if let why = page.save.why { Text(verbatim: why).font(.footnote).foregroundStyle(.secondary) }
                 if let error = page.save.error { Text(verbatim: error).font(.footnote).foregroundStyle(Color.status("attention")) }

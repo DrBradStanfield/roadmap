@@ -33,6 +33,20 @@ final class UploadModel {
         if new != state { state = new }
         if let through, through != drawnThrough { drawnThrough = through }
     }
+
+    /// The first view drawn through event `number`; nil once the run is refused or unavailable instead.
+    func drawn(through number: Int) async -> String? {
+        while true {
+            switch state {
+            case .drawn(let text) where drawnThrough >= number: return text
+            case .refused, .unavailable: return nil
+            default:
+                await withCheckedContinuation { (moved: CheckedContinuation<Void, Never>) in
+                    withObservationTracking { _ = (state, drawnThrough) } onChange: { moved.resume() }
+                }
+            }
+        }
+    }
 }
 
 /// Drawing the view: idle, drawing, or drawing with a newer state waiting to be drawn after.
@@ -334,6 +348,13 @@ actor UploadRunner {
     }
 
     // MARK: The view
+
+    /// The record changed while the page is open (another device synced, an edit elsewhere): the view
+    /// is drawn again from the engine with the current record, coalesced like any draw; nothing steps.
+    /// The view door drops a Replace whose target left its slot (health-core replacesLost).
+    func recordChanged() {
+        if state != nil { askView() }
+    }
 
     /// Asks for a view of the latest state: one is computed at a time, on the engine's queue, at
     /// most one a frame; steps meanwhile are drawn by the next.

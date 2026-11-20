@@ -19,10 +19,14 @@
 import { LAB_ARCHIVE_ROWS, labRowsByFile, listedRows, writtenLabRows } from './document-rows';
 import { committedFile, labArchivePayload, saveDocuments, type DocumentPayload } from './document-save';
 import { bulkAppendValues } from './record-edits';
+import { labReason } from './import-review';
+import { labTestLabel } from './lab-catalog';
+import { METRIC_LABELS } from './mappings';
 import type { RoadmapFile } from './roadmap-file';
 import type { SaveOutcome, UploadState } from './upload-flow';
 import { uploadSavePlan } from './upload-plan';
-import { uploadReview } from './upload-review';
+import { reviewedWrites, uploadReview } from './upload-review';
+import { measurementRefusalText } from './upload-text';
 import { saveBlocked } from './upload-view';
 
 /**
@@ -49,8 +53,11 @@ export interface UploadSaveIO<F> {
  * them): their rows keep the hash alone, and a later upload of the same file can still store them.
  */
 export type UploadSaveResult =
-  | { ok: true; commit(file: RoadmapFile): { file: RoadmapFile; outcome: Required<SaveOutcome> } }
+  | { ok: true; commit(file: RoadmapFile): { file: RoadmapFile; outcome: SavedOutcome } }
   | { ok: false; reason: 'not-saving' | 'not-ready'; message: string };
+
+/** A landed Save's counts: every one but the skips, which are there only when some row was skipped. */
+export type SavedOutcome = Required<Omit<SaveOutcome, 'skippedValues' | 'skippedLabValues' | 'refused'>> & SaveOutcome;
 
 /** An original as saveDocuments holds it: the file it is, with the hash the state read for its bytes. */
 interface Held { fileId: string; hash: string }
@@ -62,8 +69,16 @@ export async function uploadSave<F>(s: UploadState, record: RoadmapFile, now: st
   if (blocked) return { ok: false, reason: 'not-ready', message: blocked };
   const plan = uploadSavePlan(s, record, now, review, cloudConnected);
 
-  const rows = plan.labRows.flatMap((f) => f.rows);
-  const rowFiles = plan.labRows.flatMap((f) => f.rows.map(() => f.fileId));
+  // Each row's value as `file:ref`, in plan order: by file, each file's in the order `rowsByFile` took them.
+  const writes = reviewedWrites(review);
+  const planKeys = plan.labRows.flatMap((f) => writes.filter((v) => v.file === f.fileId).map((v) => `${v.file}:${v.ref}`));
+  // Only what the page displayed as to be written (`reviewed`, echoed from the view): a value the record now lets
+  // through that the page did not promise (a kept conflict whose held row went) is never written (owner ruling 2026-11-20).
+  const promised = s.reviewed && new Set(s.reviewed.map((v) => `${v.file}:${v.ref}`));
+  const keep = planKeys.map((k) => !promised || promised.has(k));
+  const rows = plan.labRows.flatMap((f) => f.rows).filter((_, i) => keep[i]);
+  const rowFiles = plan.labRows.flatMap((f) => f.rows.map(() => f.fileId)).filter((_, i) => keep[i]);
+  const rowKeys = planKeys.filter((_, i) => keep[i]);
   // The rows a write on `record` would give each report: what its archive row plans to list. The
   // commit writes them again on the record as it is then, and the lists take those rows' ids.
   const onRecord = bulkAppendValues(record, rows, now);
@@ -91,12 +106,13 @@ export async function uploadSave<F>(s: UploadState, record: RoadmapFile, now: st
     onWriteError: () => void (unstored += 1),
     mimeType: (f) => io.mimeType(f.fileId), now: io.now, newId: io.newId,
   });
-  // Counted as the web's done screen counts them (useUploadFlow.ts `documents`): every distinct row
-  // saved, a lab report's archive row and an original filed behind a held row included; `archived`
-  // is the last of those alone.
+  // Counted as the Save label promised them (owner ruling 2026-11-20): `documents` the letters and
+  // documents the list showed to be saved, never a lab report's hidden archive row nor an original
+  // filed behind a held row; `archived` is the last of those alone, which has its own line.
   const archiveOnly = new Set(plan.archiveOnly.map((d) => hashOf.get(d.fileId)));
+  const shown = new Set(plan.documents.map((d) => hashOf.get(d.fileId) ?? d.fields.sourceFileName));
   const outcome = {
-    documents: new Set(docs.saved.map((d) => d.contentHash ?? d.sourceFileName ?? d.id)).size,
+    documents: new Set(docs.saved.filter((d) => shown.has(d.contentHash ?? d.sourceFileName)).map((d) => d.contentHash ?? d.sourceFileName ?? d.id)).size,
     archived: docs.saved.filter((d) => archiveOnly.has(d.contentHash)).length,
   };
 
@@ -116,7 +132,22 @@ export async function uploadSave<F>(s: UploadState, record: RoadmapFile, now: st
         }
       }
       const values = written.saved.length;
-      return { file: values || docs.saved.length ? committedFile(written.file, docs) : file, outcome: { values, ...outcome, unstored } };
+      // A reviewed row whose slot another writer took meanwhile is skipped, never a second active row, and counted
+      // (US-12 AC6a): each value the reviewed page would write that this commit did not write nor refuse, the slot
+      // having gone before Save planned or before it committed; with no reviewed page given, the commit's own skips.
+      const settled = new Set(written.outcomes.flatMap((o, i) => (o === 'skipped' ? [] : [rowKeys[i]])));
+      const notWritten = s.reviewed?.filter((v) => !settled.has(`${v.file}:${v.ref}`))
+        ?? written.outcomes.flatMap((o, i) => (o === 'skipped' ? [{ lab: rows[i].kind === 'lab' }] : []));
+      const [sv, sl] = [notWritten.filter((v) => !v.lab).length, notWritten.filter((v) => v.lab).length];
+      // A value the commit refused, the record having changed since the plan (a blood pressure's other half,
+      // say), is named, never dropped silently (US-13 AC17): a lab in the review's not-saved words, a core value
+      // in the web's own refusal line. A core value out of range has no line without the cell's unit: it reads
+      // as misread, as the review names a misread number (it cannot newly arise at commit: the range is the value's own).
+      const refused = [
+        ...written.refused.map((r) => ({ label: labTestLabel(r.key), reason: labReason(r) })),
+        ...written.measurementRefusals.map((r) => { const line = measurementRefusalText(r); return line !== null ? { line } : { label: METRIC_LABELS[r.metricType] ?? labTestLabel(r.metricType), reason: 'misread' as const }; }),
+      ];
+      return { file: values || docs.saved.length ? committedFile(written.file, docs) : file, outcome: { values, ...outcome, unstored, ...(sv ? { skippedValues: sv } : {}), ...(sl ? { skippedLabValues: sl } : {}), ...(refused.length ? { refused } : {}) } };
     },
   };
 }

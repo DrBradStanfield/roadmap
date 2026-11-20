@@ -9,8 +9,10 @@
  */
 import { fileNameLine, MAX_FILE_NAME_LENGTH, zipMemberName, type UnifiedExtractionResult } from './lab-extraction';
 import type { FailDetail, UploadFailure } from './upload-failure';
+import type { NotSavedReason } from './import-review';
 import { choose, NO_CHOICES, type ChoiceChange, type FileChoices } from './upload-choices';
 import type { Known } from './upload-known';
+import type { ReviewedValue } from './upload-review';
 import { fileVerdict, requestFlags, UPLOAD_LIMITS, zipMemberVerdict, type RequestFlags, type UploadPlatform } from './upload-rules';
 
 /** unreadable: no pages came out of it. bytesUnreadable: the device could not read its bytes to hash them.
@@ -66,8 +68,15 @@ export interface UploadFile {
  *  file on one line (fileNameLine) and cut to MAX_FILE_NAME_LENGTH. */
 export const uploadFileName = (f: { name: string; zip?: string }): string =>
   (f.zip !== undefined ? zipMemberName(f.zip, f.name) : fileNameLine(f.name).slice(0, MAX_FILE_NAME_LENGTH));
-/** `unstored`: originals the save meant to keep in the cloud that did not land (upload-save.ts); absent is none. */
-export interface SaveOutcome { values: number; documents: number; archived: number; unstored?: number }
+/** `unstored`: originals the save meant to keep in the cloud that did not land (upload-save.ts); absent is none.
+ *  `skippedValues`, `skippedLabValues`: reviewed rows whose slot another writer took while the review was open
+ *  (US-12 AC6a), a core value or another lab; absent is none. `refused`: values the final commit refused,
+ *  the record having changed while the originals uploaded, by the test's label and the review's reason, or for a core
+ *  value the web's own refusal line (upload-text `measurementRefusalText`) (US-13 AC17). */
+export interface SaveOutcome {
+  values: number; documents: number; archived: number; unstored?: number; skippedValues?: number; skippedLabValues?: number;
+  refused?: Array<{ label: string; reason: NotSavedReason } | { line: string }>;
+}
 
 /** `started`, `firstRead`: ISO times, for the first-read count (design §7, R9). */
 interface Pick { platform: UploadPlatform; run: number; files: UploadFile[]; started: string; firstRead: string | null }
@@ -75,7 +84,7 @@ export type UploadState =
   | { phase: 'choosing'; platform: UploadPlatform; run: number }    // run: the last one, so the next is run + 1
   | (Pick & { phase: 'consent' })                                   // phone only (AC13e): nothing runs yet
   | (Pick & { phase: 'open' })                                      // reading and review at once (R5)
-  | (Pick & { phase: 'saving'; attempt: number })
+  | (Pick & { phase: 'saving'; attempt: number; reviewed?: ReviewedValue[] }) // reviewed: what the page would write when Save was pressed
   | (Pick & { phase: 'saveFailed'; attempt: number; message: string })
   | (Pick & { phase: 'done'; outcome: SaveOutcome })
   | (Pick & { phase: 'failed'; refused: RunRefusal | null });      // refused: the run as a whole (runRefused); null: only ZIPs that would not open
@@ -101,7 +110,8 @@ export type UploadEvent =
   | { type: 'retry'; id: string | 'all' }
   | { type: 'stop' }
   | { type: 'chose'; id: string; change: ChoiceChange; now: string } // now: to refuse a document date in the future
-  | { type: 'saveStarted' }
+  | { type: 'replacesLost'; lost: Array<{ id: string; ref: string }> } // upload-review `lostReplaces`: each dropped, its value unticked
+  | { type: 'saveStarted'; reviewed?: ReviewedValue[] } // reviewed: upload-review `reviewedWrites`, so Save names what it did not write
   | { type: 'saved'; run: number; attempt: number; outcome: SaveOutcome }
   | { type: 'saveFailed'; run: number; attempt: number; message: string }
   | { type: 'close' }    // leaves only when nothing read would be lost
@@ -306,8 +316,8 @@ function leave(s: Exclude<UploadState, { phase: 'choosing' }>): UploadStep {
   return { state: choosing, effects: [...abort(s.run, idsIn(s.files, ['sending'])), ...forget(s.run, s.files.map((f) => f.id))] };
 }
 
-function save(s: Pick, attempt: number): UploadStep {
-  return { state: { ...pickOf(s), phase: 'saving', attempt }, effects: [{ type: 'save', run: s.run, attempt }] };
+function save(s: Pick, attempt: number, reviewed: ReviewedValue[] | undefined): UploadStep {
+  return { state: { ...pickOf(s), phase: 'saving', attempt, ...(reviewed ? { reviewed } : {}) }, effects: [{ type: 'save', run: s.run, attempt }] };
 }
 
 const retries = (f: UploadFile, id: string) => f.status.s === 'failed' && RETRYABLE[f.status.reason] && (id === 'all' || f.id === id);
@@ -361,9 +371,24 @@ export function transition(s: UploadState, e: UploadEvent): UploadStep {
       if (!choices) return same(s); // refused: a document date that is no real past day
       return same({ ...pickOf(s), phase: 'open', files: s.files.map((f) => (f === file ? { ...file, status: { ...file.status, choices } } : f)) });
     }
+    case 'replacesLost': {
+      if (s.phase !== 'open' && s.phase !== 'saveFailed') return same(s);
+      // Nothing is written without the person's say: the value goes back to an ordinary unticked one (owner ruling 2026-11-20).
+      let changed = false;
+      const files = s.files.map((f): UploadFile => {
+        if (f.status.s !== 'read') return f;
+        const refs = e.lost.filter((l) => l.id === f.id && f.status.s === 'read' && f.status.choices.replace[l.ref] !== undefined).map((l) => l.ref);
+        if (!refs.length) return f;
+        changed = true;
+        const { choices } = f.status;
+        const replace = Object.fromEntries(Object.entries(choices.replace).filter(([ref]) => !refs.includes(ref)));
+        return { ...f, status: { ...f.status, choices: { ...choices, replace, ticks: { ...choices.ticks, ...Object.fromEntries(refs.map((ref) => [ref, false])) } } } };
+      });
+      return changed ? same({ ...pickOf(s), phase: 'open', files }) : same(s);
+    }
     case 'saveStarted':
-      if (s.phase === 'saveFailed') return save(s, s.attempt + 1);
-      return s.phase === 'open' && saveEnabled(s) ? save(s, 1) : same(s);
+      if (s.phase === 'saveFailed') return save(s, s.attempt + 1, e.reviewed);
+      return s.phase === 'open' && saveEnabled(s) ? save(s, 1, e.reviewed) : same(s);
     case 'saved':
       if (s.phase !== 'saving' || s.attempt !== e.attempt) return same(s);
       return { state: { ...pickOf(s), phase: 'done', outcome: e.outcome }, effects: forget(s.run, s.files.map((f) => f.id)) };

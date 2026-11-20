@@ -217,4 +217,193 @@ final class UploadSessionTests: XCTestCase, CloudFixtures {
         let letter = await upload.letter("f0")
         XCTAssertEqual(letter, "## Plan\n\nWalk daily.")
     }
+
+    // MARK: The record changes while the page sits idle (PR 1908 review, accepted)
+
+    /// Reading done, another writer lands a different LDL on the day the upload offers: the page draws
+    /// the conflict, with Replace and the held value, without a tap. A change elsewhere in the record
+    /// changes nothing on the page.
+    func testARecordChangeWhileIdleRedrawsThePage() async throws {
+        let store = try phone()
+        let report = UploadPageTests.lab(values: UploadPageTests.ldl)
+        StubHTTP.handler = { _ in Kit.read("{\"accepted\":true}\n{\"status\":200,\"body\":{\"success\":true,\"data\":\(report)}}\n") }
+        let upload = session(store)
+        _ = await upload.runner.pick(Kit.pictures(1), needsConsent: false)
+        try await until("read") { page(upload)?.save.enabled == true }
+        XCTAssertTrue(UploadPageTests.unsure(try XCTUnwrap(page(upload))).isEmpty, "no conflict yet")
+
+        _ = await store.apply(.add(metric: "ldl", value: 2.0, day: "2026-10-01"))
+        try await until("the conflict drawn") { page(upload).map(UploadPageTests.unsure)?.first?.replace != nil }
+        let row = try XCTUnwrap(page(upload).map(UploadPageTests.unsure)?.first)
+        XCTAssertEqual(row.held, "2 mmol/L")
+        XCTAssertNotNil(row.replaces)
+
+        guard case .drawn(let before) = upload.model.state else { return XCTFail("no view") }
+        _ = await store.apply(.add(metric: "hdl", value: 1.4, day: "2026-09-01"))
+        try await Task.sleep(for: .milliseconds(300))
+        guard case .drawn(let after) = upload.model.state else { return XCTFail("no view") }
+        XCTAssertEqual(after, before, "a change the upload does not touch leaves the page as it was")
+    }
+
+    /// Codex re-check on c890ebc42, then PR 1912 review (US-13 AC23): a Save tapped while a choice's view is not
+    /// drawn waits for that view and then saves it, from the one tap; it never sends back the page from before the choice.
+    func testSaveWaitsForTheViewOfAChoiceJustMade() async throws {
+        let store = try phone()
+        _ = await store.apply(.add(metric: "ldl", value: 2.0, day: "2026-10-01"))
+        let hdl = #"{"metric":"hdl","valueSI":1.2,"displayValue":1.2,"displayUnit":"mmol/L","displaySystem":"si","confidence":"high"}"#
+        let report = UploadPageTests.lab(values: "\(UploadPageTests.ldl),\(hdl)")
+        StubHTTP.handler = { _ in Kit.read("{\"accepted\":true}\n{\"status\":200,\"body\":{\"success\":true,\"data\":\(report)}}\n") }
+        let upload = session(store)
+        _ = await upload.runner.pick(Kit.pictures(1), needsConsent: false)
+        try await until("read") { page(upload).map(UploadPageTests.unsure)?.first?.replaces != nil }
+        let ldl = try XCTUnwrap(page(upload).map(UploadPageTests.unsure)?.first)
+        upload.send(.replace(fileId: ldl.fileId, ref: ldl.ref, correctsId: ldl.replaces))
+        XCTAssertTrue(upload.choicePending, "the choice's view is not drawn yet")
+        upload.send(.save) // tapped before the redraw: held until it draws, then taken
+        XCTAssertTrue(upload.saveClaimed, "Close waits from the tap")
+        try await until("done") { page(upload)?.done != nil }
+        XCTAssertEqual(page(upload)?.done?.line, "Saved 2 values.")
+    }
+
+    // MARK: One Save tap, in order after every choice (PR 1912 review R1, R2)
+
+    /// R1 (US-13 AC23): a letter's title typed and not submitted, then one Save tap. The Save button sends the title
+    /// first (its commitTitles), then Save: the save happens, and the record holds the typed title.
+    func testOneSaveTapWithATitleStillTypedSavesIt_US13_AC23() async throws {
+        let store = try phone()
+        let upload = session(store)
+        _ = await upload.runner.pick(Kit.pictures(1), needsConsent: false)
+        try await until("read") { page(upload)?.save.enabled == true }
+        let id = try XCTUnwrap(page(upload)?.documents?.rows.first?.fileId)
+        upload.send(.title(fileId: id, title: "Heart clinic")) // the Save button's commitTitles
+        upload.send(.save)
+        try await until("done") { page(upload)?.done != nil }
+        XCTAssertTrue(store.recordJSON.contains("Heart clinic"))
+        XCTAssertFalse(store.recordJSON.contains("Letter 1"))
+    }
+
+    /// R2 (US-13 AC23): two test-day changes wait behind a held engine, then Save. Save is taken only once the second
+    /// change's view is drawn: the value saves on the second day, never the first's or the day before them.
+    func testSaveAfterTwoQueuedChoicesWritesTheLastChoicesView_US13_AC23() async throws {
+        let store = try phone()
+        let report = UploadPageTests.lab(reportDate: nil, values: UploadPageTests.ldl)
+        StubHTTP.handler = { _ in Kit.read("{\"accepted\":true}\n{\"status\":200,\"body\":{\"success\":true,\"data\":\(report)}}\n") }
+        let upload = session(store)
+        _ = await upload.runner.pick(Kit.pictures(1), needsConsent: false)
+        func undated() -> UploadPage.Undated? {
+            page(upload)?.sections.lazy.compactMap { if case .undated(let u) = $0 { u } else { nil } }.first
+        }
+        try await until("the day asked") { undated() != nil }
+        let file = try XCTUnwrap(undated()?.fileId)
+        upload.send(.testDay(fileId: file, day: "2026-09-01"))
+        try await until("the first day drawn") { undated()?.chosen == "2026-09-01" && page(upload)?.save.enabled == true }
+        // The engine is held: both changes wait behind it, and Save is tapped before either is stepped.
+        let hold = DispatchSemaphore(value: 0)
+        store.engine.enqueue { _ in hold.wait() }
+        upload.send(.testDay(fileId: file, day: "2026-09-02"))
+        upload.send(.testDay(fileId: file, day: "2026-09-03"))
+        upload.send(.save)
+        XCTAssertTrue(upload.saveClaimed, "Close waits from the tap")
+        hold.signal()
+        try await until("done") { page(upload)?.done != nil }
+        let record = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(store.recordJSON.utf8)) as? [String: Any])
+        let ldl = ((record["labValues"] as? [[String: Any]]) ?? []).filter { $0["metricName"] as? String == "ldl" }
+        XCTAssertEqual(ldl.map { String(($0["recordedAt"] as? String ?? "").prefix(10)) }, ["2026-09-03"])
+    }
+
+    /// Two files: read 1 is a letter, read 2 is `second`, every later read never answers (a file kept in flight).
+    private func twoFiles(second: StubHTTP.Answer) {
+        let reads = OSAllocatedUnfairLock(initialState: 0)
+        StubHTTP.handler = { request in
+            guard request.url.path == LabReadSender.path else { return .init(body: Data(#"{"challenge":"c"}"#.utf8)) }
+            switch reads.withLock({ $0 += 1; return $0 }) {
+            case 1: return Kit.read("{\"accepted\":true}\n{\"status\":200,\"body\":{\"success\":true,\"data\":\(UploadPageTests.letter("Letter 1"))}}\n")
+            case 2: return second
+            default: return .init(hang: true)
+            }
+        }
+    }
+
+    /// PR 1912 ruling (US-13 AC23): Try again on a failed file, then Save at once, behind a held engine. Save waits for
+    /// the retry's view, which has a file in flight: Save is off there, so nothing is written and the claim is let go.
+    func testSaveAfterTryAgainWaitsForTheRetrysView_US13_AC23() async throws {
+        let store = try phone()
+        twoFiles(second: .init(status: 503, headers: Kit.json, body: Data(#"{"error":"Busy","reason":"unavailable"}"#.utf8)))
+        let upload = session(store)
+        _ = await upload.runner.pick(Kit.pictures(2), needsConsent: false)
+        try await until("one read, one failed") {
+            page(upload)?.save.enabled == true && page(upload)?.sections.contains { if case .failed(_, _, let retry) = $0 { retry != nil } else { false } } == true
+        }
+        let before = store.recordJSON
+        let hold = DispatchSemaphore(value: 0)
+        store.engine.enqueue { _ in hold.wait() }
+        upload.send(.retryAll)
+        upload.send(.save)
+        XCTAssertTrue(upload.saveClaimed, "Close waits from the tap")
+        hold.signal()
+        try await until("the claim let go") { !upload.saveClaimed && page(upload)?.save.enabled == false }
+        try await Task.sleep(for: .milliseconds(200))
+        XCTAssertEqual(page(upload)?.save.why, "Wait for 1 file to finish")
+        XCTAssertNil(page(upload)?.done)
+        XCTAssertEqual(store.recordJSON, before, "nothing written")
+        upload.end()
+    }
+
+    /// PR 1912 ruling (US-13 AC23): Stop while a file is read, then Save at once, behind a held engine. Save waits for
+    /// the stopped page and saves what it shows: the letter already read.
+    func testSaveAfterStopSavesTheStoppedPage_US13_AC23() async throws {
+        let store = try phone()
+        twoFiles(second: .init(hang: true))
+        let upload = session(store)
+        _ = await upload.runner.pick(Kit.pictures(2), needsConsent: false)
+        try await until("one read, one in flight") { page(upload)?.stop != nil && page(upload)?.documents?.rows.count == 1 }
+        let hold = DispatchSemaphore(value: 0)
+        store.engine.enqueue { _ in hold.wait() }
+        upload.send(.stop)
+        upload.send(.save)
+        XCTAssertTrue(upload.saveClaimed, "Close waits from the tap")
+        hold.signal()
+        try await until("done") { page(upload)?.done != nil }
+        XCTAssertEqual(page(upload)?.done?.line, "Saved 1 document.")
+        XCTAssertTrue(store.recordJSON.contains("Letter 1"))
+    }
+
+    /// US-13 AC23: Save tapped as a choice unticks the only value. The awaited view says Save is off: nothing is
+    /// written, the claim is let go (Close works), and the page shows the view's own reason.
+    func testSaveEndsWithoutWritingWhenTheAwaitedViewTurnsSaveOff_US13_AC23() async throws {
+        let store = try phone()
+        let report = UploadPageTests.lab(values: UploadPageTests.ldl)
+        StubHTTP.handler = { _ in Kit.read("{\"accepted\":true}\n{\"status\":200,\"body\":{\"success\":true,\"data\":\(report)}}\n") }
+        let upload = session(store)
+        _ = await upload.runner.pick(Kit.pictures(1), needsConsent: false)
+        try await until("read") { page(upload)?.save.label == "Save 1 value" && page(upload)?.save.enabled == true }
+        let row = try XCTUnwrap(page(upload)?.sure?.rows.first)
+        let before = store.recordJSON
+        upload.send(.tick(fileId: row.fileId, ref: row.ref, on: false))
+        upload.send(.save)
+        XCTAssertTrue(upload.saveClaimed, "Close waits from the tap")
+        try await until("the claim let go") { !upload.saveClaimed && page(upload)?.save.enabled == false }
+        try await Task.sleep(for: .milliseconds(200))
+        XCTAssertEqual(page(upload)?.save.why, "Nothing new to save")
+        XCTAssertNil(page(upload)?.done)
+        XCTAssertNotEqual(page(upload)?.closeEnabled, false, "Close works")
+        XCTAssertFalse(upload.saveClaimed)
+        XCTAssertEqual(store.recordJSON, before, "nothing written")
+    }
+
+    /// Save writes exactly what the page showed: a sync lands a different LDL after the page was drawn and
+    /// before the tap; the LDL the page promised is counted as not added, never written over the synced one.
+    func testSaveWritesWhatThePageShowedWhenTheRecordMovesBeforeTheTap() async throws {
+        let store = try phone()
+        let report = UploadPageTests.lab(values: UploadPageTests.ldl)
+        StubHTTP.handler = { _ in Kit.read("{\"accepted\":true}\n{\"status\":200,\"body\":{\"success\":true,\"data\":\(report)}}\n") }
+        let upload = session(store)
+        _ = await upload.runner.pick(Kit.pictures(1), needsConsent: false)
+        try await until("read") { page(upload)?.save.label == "Save 1 value" }
+        _ = await store.apply(.add(metric: "ldl", value: 2.0, day: "2026-10-01"))
+        upload.send(.save) // the page drawn before the sync is the one tapped
+        try await until("done") { page(upload)?.done != nil }
+        XCTAssertEqual(page(upload)?.done?.line, "Saved 0 values.")
+        XCTAssertEqual(page(upload)?.done?.skipped, ["1 blood test value was not added. Check your blood test table: a value was already recorded for that date, or changed during review."])
+    }
 }
