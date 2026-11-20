@@ -40,4 +40,23 @@ describe('US-15 AC12a: the store-wide chat bubble', () => {
     expect(dialog()).toBeNull();
     await waitFor(() => expect(document.activeElement).toBe(fab()));
   });
+
+  it.each([['a message', 'Synthetic draft'], ['only whitespace', ' \n ']])(
+    'keeps the dialog open with %s in the composer, but closes after it is cleared', async (_label, draft) => {
+      await openBubble();
+      const composer = dialog()!.querySelector('textarea')!;
+      composer.focus();
+      await act(async () => { fireEvent.change(composer, { target: { value: draft } }); });
+      expect(composer.value).toBe(draft);
+      await act(async () => { fireEvent.keyDown(composer, { key: 'Escape' }); });
+      expect(dialog()).not.toBeNull();
+      expect(composer.value).toBe(draft);
+      expect(document.activeElement).toBe(composer);
+
+      await act(async () => { fireEvent.change(composer, { target: { value: '' } }); });
+      await act(async () => { fireEvent.keyDown(composer, { key: 'Escape' }); });
+      expect(dialog()).toBeNull();
+      await waitFor(() => expect(document.activeElement).toBe(fab()));
+    },
+  );
 });

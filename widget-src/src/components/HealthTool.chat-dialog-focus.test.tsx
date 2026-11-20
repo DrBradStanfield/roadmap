@@ -8,11 +8,13 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { toOldShape } from '@roadmap/health-core/blood-tests';
 import { recordOnDisk, seedGuest, settle, showTables, useHealthToolLifecycle } from '../testing/health-tool-harness';
 import { typeInto } from '../testing/matrix-gestures';
+import type { ChatGate } from '../lib/chat-api';
 
+const { getChatGate } = vi.hoisted(() => ({ getChatGate: vi.fn<() => ChatGate | null>() }));
 vi.mock('../lib/build-flags', () => ({ LOCAL_FIRST: true, SHOPIFY_SURFACE: true }));
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../lib/server-api', async (original) => ({ ...(await original<typeof import('../lib/server-api')>()), trackProductEvent: vi.fn(), trackABImpression: vi.fn(), trackABConversion: vi.fn() }));
-vi.mock('../lib/chat-api', () => ({ getChatGate: () => null, listConversations: vi.fn(async () => ({ conversations: [] })), loadConversation: vi.fn(async () => []),
+vi.mock('../lib/chat-api', () => ({ getChatGate, listConversations: vi.fn(async () => ({ conversations: [] })), loadConversation: vi.fn(async () => []),
   sendMessage: vi.fn(() => new Promise(() => {})), deleteConversation: vi.fn() }));
 vi.mock('../lib/chat-sync', () => ({ postSync: vi.fn(), postInputSync: vi.fn(), subscribeSync: () => () => {}, generateInstanceId: () => 'test' }));
 vi.mock('./ChatEmbed', () => ({ ChatEmbed: () => null }));
@@ -29,6 +31,7 @@ const setWide = (to: boolean) => act(async () => { wide = to; heardBy.forEach((q
 
 useHealthToolLifecycle();
 beforeEach(() => {
+  getChatGate.mockReset().mockReturnValue(null);
   // A narrow desktop: no chat column and no phone tabs, so the floating chat is the chat. `setWide` crosses 1200px.
   wide = false;
   vi.stubGlobal('matchMedia', (q: string) => ({ get matches() { return matches(q); }, media: q,
@@ -57,6 +60,58 @@ describe('US-15 AC12a: the tool page floating chat', () => {
 
     await openFloatingChat();
     await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Close chat' })); });
+    await waitFor(() => expect(document.activeElement).toBe(fab()));
+  });
+
+  it('keeps a message draft when Escape is pressed in History, but still allows explicit Close', async () => {
+    await seedGuest({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, [['weight', 70]]);
+    render(<HealthTool />);
+    await openFloatingChat();
+    const draft = 'Synthetic draft';
+    const composer = dialog()!.querySelector('textarea')!;
+    fireEvent.change(composer, { target: { value: draft } });
+    expect(composer.value).toBe(draft);
+    fireEvent.click(screen.getByRole('button', { name: 'History' }));
+    expect(dialog()!.querySelector('textarea')).toBeNull();
+    const back = screen.getByRole('button', { name: 'Back' });
+    back.focus();
+    await act(async () => { fireEvent.keyDown(back, { key: 'Escape' }); });
+    expect(dialog()).not.toBeNull();
+    expect(document.activeElement).toBe(back);
+    fireEvent.click(back);
+    expect(dialog()!.querySelector('textarea')!.value).toBe(draft);
+
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Close chat' })); });
+    expect(dialog()).toBeNull();
+    await waitFor(() => expect(document.activeElement).toBe(fab()));
+  });
+
+  it.each(['key field', 'Close chat button'])('keeps an unsaved key with focus on the %s and no composer', async (focus) => {
+    const saveKey = vi.fn(() => null);
+    getChatGate.mockReturnValue({ needsKey: true, saveKey, clearKey: vi.fn() });
+    await seedGuest({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, [['weight', 70]]);
+    render(<HealthTool />);
+    await openFloatingChat();
+    expect(dialog()!.querySelector('textarea')).toBeNull();
+    const key = screen.getByLabelText<HTMLInputElement>('Anthropic API key');
+    const close = screen.getByRole('button', { name: 'Close chat' });
+    fireEvent.change(key, { target: { value: 'synthetic-key' } });
+    expect(key.value).toBe('synthetic-key');
+    const target = focus === 'key field' ? key : close;
+    target.focus();
+    await act(async () => { fireEvent.keyDown(target, { key: 'Escape' }); });
+    expect(dialog()).not.toBeNull();
+    expect(key.value).toBe('synthetic-key');
+    expect(document.activeElement).toBe(target);
+
+    if (target === key) {
+      fireEvent.change(key, { target: { value: '' } });
+      await act(async () => { fireEvent.keyDown(key, { key: 'Escape' }); });
+    } else {
+      await act(async () => { fireEvent.click(close); });
+    }
+    expect(dialog()).toBeNull();
+    expect(saveKey).not.toHaveBeenCalled();
     await waitFor(() => expect(document.activeElement).toBe(fab()));
   });
 

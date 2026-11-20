@@ -61,13 +61,13 @@ interface ChatSectionProps {
 
 /**
  * US-15 AC12a: the pop-up chat as a dialog. Its title takes the focus on opening, not the message
- * box, so that opening does not call up a phone's keyboard. Escape inside it closes it, but not the
- * key press that ends an IME composition (both forms of AC26a). Close and Escape give the focus to the
- * "Open chat" button the close brings back: both surfaces class it `chat-fab`, found on the next frame.
+ * box, so that opening does not call up a phone's keyboard. Escape inside it closes it unless there
+ * is unsent message text, an unsaved key, or an IME composition (both forms of AC26a). Closing gives
+ * focus to the "Open chat" button that comes back: both surfaces class it `chat-fab`, found on the next frame.
  * A panel drawn with no such button on the page was brought back by the page, not opened by a press
  * (the tool page, after a width change): it takes no focus, so a draft typed in a grid is not saved (US-03 AC5).
  */
-function useChatDialog(isExpanded: boolean, inline: boolean | undefined, hide: () => void) {
+function useChatDialog(isExpanded: boolean, inline: boolean | undefined, hide: () => void, hasDraft: () => boolean) {
   const titleRef = useRef<HTMLHeadingElement>(null);
   const [replacesButton] = useState(() => !!document.querySelector('.chat-fab'));
   const popup = isExpanded && !inline;
@@ -77,7 +77,7 @@ function useChatDialog(isExpanded: boolean, inline: boolean | undefined, hide: (
     requestAnimationFrame(() => document.querySelector<HTMLElement>('.chat-fab')?.focus());
   };
   const onKeyDown = (e: React.KeyboardEvent) => {
-    if (popup && e.key === 'Escape' && !e.nativeEvent.isComposing && e.keyCode !== 229) close();
+    if (popup && e.key === 'Escape' && !e.nativeEvent.isComposing && e.keyCode !== 229 && !hasDraft()) close();
   };
   return { titleRef, close, onKeyDown };
 }
@@ -98,7 +98,10 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
     onProposeEdit,
   });
   const { inputRef, messagesContainerRef } = refs;
-  const dialog = useChatDialog(isExpanded, inline, () => { setIsExpanded(false); onClose?.(); });
+  const keyInputRef = useRef<HTMLInputElement>(null);
+  const dialog = useChatDialog(isExpanded, inline, () => { setIsExpanded(false); onClose?.(); },
+    // The message can outlive its textbox (History); the key lives in the mounted gate.
+    () => state.inputText !== '' || !!keyInputRef.current?.value);
 
   // Load on mount when startExpanded (mirrors original lazy-load behavior).
   // chat_opened must fire on EVERY entry path — both live FABs mount
@@ -192,7 +195,7 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
         )}
 
         {!showThreads && gate?.needsKey && (
-          <ChatKeyGate gate={gate} onConnected={refreshGate} />
+          <ChatKeyGate gate={gate} onConnected={refreshGate} inputRef={keyInputRef} />
         )}
         {!showThreads && !gate?.needsKey && (
           <div className="chat-messages" ref={messagesContainerRef} onScroll={handleMessagesScroll}>
