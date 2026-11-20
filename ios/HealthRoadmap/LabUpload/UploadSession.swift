@@ -1,27 +1,30 @@
 import Foundation
+import Observation
 
 /// The app's shared upload (design PR 15, US-52 AC8c): one runner wired to the record store's
 /// record and save, the review page's taps sent to it in the order made. While it lives it pins
 /// the record the page opened on (US-25 AC11, lead S52), so an erase or a Disconnect meanwhile
 /// refuses its Save rather than writing into another record; `end()` lets it go.
-@MainActor
+@MainActor @Observable
 final class UploadSession {
-    let runner: UploadRunner
+    @ObservationIgnored let runner: UploadRunner
     var model: UploadModel { runner.model }
-    private let engine: HealthEngine
-    private let store: RecordStore
-    private let analytics: Analytics?
+    @ObservationIgnored private let engine: HealthEngine
+    @ObservationIgnored private let store: RecordStore
+    @ObservationIgnored private let analytics: Analytics?
     /// The last event sent: each waits for the one before, so the engine steps them in tap order.
-    private var last: Task<Void, Never>?
+    @ObservationIgnored private var last: Task<Void, Never>?
     /// The last view decoded, so a redraw with the same text decodes nothing.
-    private var drawn: (text: String, page: UploadPage?)?
+    @ObservationIgnored private var drawn: (text: String, page: UploadPage?)?
     /// Every planned letter's Markdown, for the state it was planned from.
-    private var letters: (state: String, byFile: [String: String])?
+    @ObservationIgnored private var letters: (state: String, byFile: [String: String])?
     /// The record is pinned until `end()`; the current pick's usage was told (once a pick).
-    private var pinned = true
-    private var told = false
+    @ObservationIgnored private var pinned = true
+    @ObservationIgnored private var told = false
     /// Save was tapped and its outcome has not drawn yet: Close waits from the tap (a claim, not a mode).
-    private(set) var saveClaimed = false
+    /// Observed: the sheet's Close and swipe-down read it. The view drawn when Save was tapped: until
+    /// a newer view arrives, and while the newer one says saving, Close waits.
+    private var claimedAt: String?
 
     /// How a pick went: the engine has it, the reader refused it (its words), or the loaded engine
     /// cannot run the shared upload (an older one over the air: today's flow reads it).
@@ -82,7 +85,7 @@ final class UploadSession {
     func send(_ action: UploadAction) {
         switch action {
         case .save:
-            saveClaimed = true
+            claimedAt = drawnText
             tellUsage { [analytics, files = drawn?.page?.files.rows.count ?? 0] in analytics?.event(files >= 2 ? .labSaveAll : .labSaveOne) }
         case .close, .discard: tellUsage {}
         default: break
@@ -112,6 +115,15 @@ final class UploadSession {
         }
     }
 
+    /// Save was tapped and its outcome has not drawn yet (a claim, not a mode): Close and swipe-down wait.
+    var saveClaimed: Bool {
+        guard let claimedAt else { return false }
+        guard case .drawn(let text) = model.state else { return false }
+        return text == claimedAt || page(text)?.phase == "saving"
+    }
+
+    private var drawnText: String? { if case .drawn(let text) = model.state { text } else { nil } }
+
     /// The doors' words for a call that answered nothing, from the last view drawn.
     var engineError: String? { drawn?.page?.engineError ?? drawn.flatMap { UploadPage.words($0.text) } }
 
@@ -120,7 +132,6 @@ final class UploadSession {
         if let drawn, drawn.text == text { return drawn.page }
         let page = UploadPage.decoded(text)
         drawn = (text, page)
-        if page?.phase == "saveFailed" || page?.phase == "done" { saveClaimed = false }
         return page
     }
 

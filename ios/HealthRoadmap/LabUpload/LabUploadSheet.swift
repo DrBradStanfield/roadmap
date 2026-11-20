@@ -153,6 +153,8 @@ struct LabUploadSheet: View {
 
     /// Close: the shared upload is left, dropping what it read, as Close drops a review today.
     private func close() {
+        // A Save tapped and not yet answered holds Close, even before its saving view draws.
+        guard !closeHeld else { return }
         leave()
         dismiss()
     }

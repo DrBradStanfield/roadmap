@@ -166,10 +166,13 @@ final class UploadSessionGuardsTests: XCTestCase, CloudFixtures {
         })
         try await readOne(upload)
         upload.send(.save)
+        XCTAssertTrue(upload.saveClaimed, "Close waits from the tap, before the saving view")
         try await until("saving") { page(upload)?.phase == "saving" }
+        XCTAssertTrue(upload.saveClaimed, "and while the engine is saving")
         XCTAssertEqual(page(upload)?.editable, false, "no choice while a Save runs")
         gate.open()
         try await until("refused") { page(upload)?.save.error == "Not saved." }
+        XCTAssertFalse(upload.saveClaimed, "the outcome drew: Close is free again")
         XCTAssertEqual(page(upload)?.editable, true)
         let id = try XCTUnwrap(page(upload)?.documents?.rows.first?.fileId)
         upload.send(.title(fileId: id, title: "Heart clinic"))

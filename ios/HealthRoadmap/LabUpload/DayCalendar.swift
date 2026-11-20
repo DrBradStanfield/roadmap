@@ -11,6 +11,8 @@ struct DayCalendar: UIViewRepresentable {
     let label: String
 
     func makeCoordinator() -> Coordinator { Coordinator(picked: picked) }
+    // Always the app's Gregorian calendar (DayText): a phone set to the Japanese or Buddhist
+    // calendar would otherwise send year 0008 or 2569.
 
     func makeUIView(context: Context) -> UICalendarView {
         let view = Self.calendar(delegate: context.coordinator)
@@ -22,11 +24,12 @@ struct DayCalendar: UIViewRepresentable {
         context.coordinator.picked = picked
     }
 
-    /// The calendar in the phone's calendar, days up to today, single-day selection with none selected.
-    static func calendar(delegate: Coordinator, now: Date = .now, calendar: Calendar = .current) -> UICalendarView {
+    /// The calendar, Gregorian, days up to today, single-day selection with none selected.
+    static func calendar(delegate: Coordinator, now: Date = .now, calendar: Calendar = DayText.gregorian) -> UICalendarView {
         let view = UICalendarView()
         view.calendar = calendar
         view.availableDateRange = DateInterval(start: .distantPast, end: now)
+        delegate.calendar = calendar
         let selection = UICalendarSelectionSingleDate(delegate: delegate)
         selection.selectedDate = nil
         view.selectionBehavior = selection
@@ -35,11 +38,18 @@ struct DayCalendar: UIViewRepresentable {
 
     final class Coordinator: NSObject, UICalendarSelectionSingleDateDelegate {
         var picked: (String) -> Void
+        /// The calendar the view shows; a selection is read in its own calendar, else this one.
+        var calendar = DayText.gregorian
         init(picked: @escaping (String) -> Void) { self.picked = picked }
 
+        /// The tapped day through a Date, then written as a Gregorian day (DayText.iso), whatever the
+        /// calendar the components came in.
         func dateSelection(_ selection: UICalendarSelectionSingleDate, didSelectDate components: DateComponents?) {
-            guard let year = components?.year, let month = components?.month, let day = components?.day else { return }
-            picked(String(format: "%04d-%02d-%02d", year, month, day))
+            guard var components else { return }
+            let source = components.calendar ?? calendar
+            components.hour = 12
+            guard let date = source.date(from: components) else { return }
+            picked(DayText.iso(date, calendar: source))
         }
     }
 }

@@ -175,7 +175,7 @@ const rowOf = (review: UploadReview, v: ClassifiedValue) => ({
   ticked: review.labFiles[v.file].ticked.includes(v.ref),
   replaces: review.held.get(`${v.file}:${v.ref}`) ?? null,
   replacing: replacingOf(review, v),
-  error: blocks(v) && v.refusal && 'measurement' in v.refusal ? v.refusal.measurement.message : null,
+  error: blocks(review)(v) && v.refusal && 'measurement' in v.refusal ? v.refusal.measurement.message : null,
 });
 
 const replacingOf = (review: UploadReview, v: ClassifiedValue) => review.labFiles[v.file].replacing.includes(v.ref);
@@ -185,8 +185,8 @@ const replacingOf = (review: UploadReview, v: ClassifiedValue) => review.labFile
  * (ReviewTable `refusedKept` over import-review-view `blocked`, US-13 AC5): sent, not written, and
  * out of its range or otherwise refused (a same-day loser is not an error).
  */
-const blocks = (v: ClassifiedValue) => v.ref[0] === 'v' && v.sent && !v.writes
-  && (v.group === 'unsure' ? v.reasons.includes('outOfRange') : v.group === 'notSaved' && v.reason !== 'sameDay');
+const blocks = (review: UploadReview) => (v: ClassifiedValue) => v.ref[0] === 'v' && v.sent && !v.writes
+  && (v.group === 'unsure' ? v.reasons.includes('outOfRange') && (!v.reasons.includes('conflict') || replacingOf(review, v)) : v.group === 'notSaved' && v.reason !== 'sameDay');
 
 function saveLabel(plan: UploadSavePlan): string {
   const { values, documents, originals } = plan.counts;
@@ -218,7 +218,7 @@ function save(s: UploadState, plan: UploadSavePlan, review: UploadReview): Uploa
  * save itself refuses on the same rule (upload-save.ts), so nothing is written past it.
  */
 export function saveBlocked(review: UploadReview): string | null {
-  if (review.classification.values.some(blocks)) return FIX_ERRORS_TEXT;
+  if (review.classification.values.some(blocks(review))) return FIX_ERRORS_TEXT;
   return review.labFiles.some((f) => f.needsDay) ? UPLOAD_TEXT.chooseDay : null;
 }
 
