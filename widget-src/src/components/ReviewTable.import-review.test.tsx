@@ -170,7 +170,7 @@ describe('US-13 AC13 usage signal: one counts-only upload_review per review end'
   });
 
   it('the counts a Cancel or close sends (the upload flow sends them once): saved 0, and nothing but counts', () => {
-    const countsRef: { current: (() => object) | null } = { current: null };
+    const countsRef: { current: ((saved: boolean) => object) | null } = { current: null };
     render(<ReviewTable grading={{}} results={[labs([v('ldl', 3.9)])]} history={{ measurements: [], labValues: [], documents: [] }}
       unitSystem="si" onSave={vi.fn()} onCancel={vi.fn()} isSaving={false} error={null} countsRef={countsRef} />);
     expect(countsRef.current!(false)).toEqual({ sure: 1, saved: 0 });
