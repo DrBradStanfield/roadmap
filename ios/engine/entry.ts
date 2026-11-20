@@ -9,7 +9,8 @@ import { CURRENT_SCHEMA_VERSION } from '../../packages/health-core/src/roadmap-f
 import { planSections, topicSections, type PlanSection, type TopicLayout } from '../../packages/health-core/src/plan-sections';
 import { statTiles, type StatTile } from '../../packages/health-core/src/stat-tiles';
 import { cmToFeetInches, formatDisplayValue, fromCanonicalValue, toCanonicalValue, UNIT_DEFS, type MetricType, type UnitSystem } from '../../packages/health-core/src/units';
-import { fileNameLine, labSearch, MAX_FILE_NAME_LENGTH, zipMemberName } from '../../packages/health-core/src/lab-extraction';
+import { labSearch } from '../../packages/health-core/src/lab-extraction';
+import { uploadFileName } from '../../packages/health-core/src/upload-flow';
 import { deviceWrites } from '../../packages/health-core/src/device-export';
 import { usProductSections, type UsPlanSection } from '../../packages/health-core/src/us-products';
 import { applyEdit, movedRecord, myData, newRecord, parseEdit, readNumber, readRecord, readView } from './my-data';
@@ -59,13 +60,13 @@ export { documentSave } from './cloud-documents';
 // "Delete all my data" on the phone's own file (erase.ts); a cloud's is cloudErase.
 export { erasePhoneJson } from './erase';
 /** The `sourceFileName` of each file read, as JSON (US-52 AC13d): the document
- *  dedup key, by health-core's own rules, one call per read. A ZIP member
- *  (`{ zip, path }`) by zipMemberName, the web's rule and cap; any other file
- *  (`{ name }`) on one line and cut to the cap, as the connector stores one. */
+ *  dedup key, by health-core's own rule (uploadFileName, the shared upload's too), one call per read. A
+ *  ZIP member (`{ zip, path }`) by zipMemberName, the web's rule and cap; any other file (`{ name }`) on
+ *  one line and cut to the cap, as the connector stores one. */
 export function fileNamesJson(filesJson: string): string {
   checkArgs('fileNamesJson', arguments);
   const files = JSON.parse(filesJson) as Array<{ name: string } | { zip: string; path: string }>;
-  return JSON.stringify(files.map((f) => ('zip' in f ? zipMemberName(f.zip, f.path) : fileNameLine(f.name).slice(0, MAX_FILE_NAME_LENGTH))));
+  return JSON.stringify(files.map((f) => uploadFileName('zip' in f ? { zip: f.zip, name: f.path } : { name: f.name })));
 }
 
 /** The plan for a record, as JSON. `nowIso` is passed in so tests can pin it. `unitsJson`,

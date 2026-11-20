@@ -24,10 +24,14 @@ final class UploadModel {
         }
     }
     private(set) var state: State = .starting
+    /// How many queued events the drawn view's state has stepped. It moves with a view whose text is
+    /// unchanged too, so a caller tells a view drawn after its event from one drawn before it.
+    private(set) var drawnThrough = 0
 
-    func show(_ next: State) {
+    func show(_ next: State, through: Int? = nil) {
         let new = State.transition(state, next)
         if new != state { state = new }
+        if let through, through != drawnThrough { drawnThrough = through }
     }
 }
 
@@ -98,6 +102,9 @@ actor UploadRunner {
     private enum Queued { case event(String), hold([Picked]) }
     private var waiting: [Queued] = []
     private var stepping = false
+    /// Events queued and events stepped so far: an event's number is its place in the queue.
+    private var queued = 0
+    private var stepped = 0
     /// Each send in flight by file id, with a token of its own: an id and attempt recur in a later run.
     private var sends: [String: (token: UUID, task: Task<Void, Never>)] = [:]
     private var work: [UUID: Task<Void, Never>] = [:]
@@ -143,6 +150,7 @@ actor UploadRunner {
         guard mine == picks else { return false }
         rules = asked
         // In one go, so the Discard's forgets land before the new bytes are held.
+        queued += 2
         waiting += [.event(EngineNatives.json(["type": "discard"])), .hold(files),
                     .event(EngineNatives.json(["type": "picked", "needsConsent": needsConsent, "now": Self.now(), "files": files.map { file -> [String: Any] in
                         ["id": file.id, "name": file.name, "bytes": file.data.count, "kind": LabFileReader.pathExtension(file.name) == "zip" ? "zip" : "file"]
@@ -170,11 +178,20 @@ actor UploadRunner {
     /// Queues one event; the first caller steps every queued event in order, each on the state
     /// the last step returned, so no two steps ever start from one state (uploadStepJson's rule).
     func submit(_ event: String) async {
-        waiting.append(.event(event))
+        queue(event)
         await drain()
     }
 
-    private func drain() async {
+    /// Queues one event without stepping it, answering its number: a view drawn through it
+    /// (`UploadModel.drawnThrough`) shows its step. `drain()` then steps it.
+    @discardableResult
+    func queue(_ event: String) -> Int {
+        queued += 1
+        waiting.append(.event(event))
+        return queued
+    }
+
+    func drain() async {
         guard !stepping else { return }
         stepping = true
         while !waiting.isEmpty {
@@ -182,7 +199,9 @@ actor UploadRunner {
             case .hold(let files):
                 for file in files { held.hold(file.data, as: file.id, name: file.name) }
             case .event(let event):
-                switch await step(event) {
+                let answer = await step(event)
+                stepped += 1 // before anything awaits, so a view of this step's state counts it
+                switch answer {
                 case .answered: break
                 case .refused(let refusal): await refuse(refusal)
                 case nil: await refuse(nil)
@@ -326,12 +345,13 @@ actor UploadRunner {
 
     private func drawViews() async {
         while view != .idle, let current = state {
+            let through = stepped
             let (record, deviceId, cloud) = (await setup.record(), setup.deviceId, await setup.cloudConnected())
             let answer: UploadDoors.Answer<String>?? = try? await engine.perform {
                 try $0.uploadView(state: current, record: record, now: .now, cloudConnected: cloud, deviceId: deviceId)
             }
             switch answer {
-            case .answered(let drawn)??: await model.show(.drawn(drawn))
+            case .answered(let drawn)??: await model.show(.drawn(drawn), through: through)
             case .refused(let refusal)??: await model.show(.refused(refusal))
             default: await model.show(.refused(nil))
             }

@@ -10,7 +10,7 @@ import { validDay, type BulkRow } from './record-edits';
 import { isReadableRow } from './readable-rows';
 import type { RoadmapFile } from './roadmap-file';
 import { documentDate } from './upload-choices';
-import type { UploadState } from './upload-flow';
+import { uploadFileName, type UploadState } from './upload-flow';
 import type { UploadReview } from './upload-review';
 
 /**
@@ -66,17 +66,17 @@ export function uploadSavePlan(s: UploadState, record: RoadmapFile, now: string,
         documentDate: fixedDate !== undefined ? fixedDate : validDay((held ? held.documentDate : doc.documentDate) ?? undefined, { now }),
         contentMd: doc.contentMarkdown ?? '',
         metadata: doc.metadata ?? {},
-        sourceFileName: f.name,
+        sourceFileName: uploadFileName(f),
       } });
     } else if (f.status.s === 'read') {
       // A report's original is filed with its values: not while it waits for a day, nor with every value unticked (as the iPhone).
       const lab = labs.get(f.id);
       if (!lab || lab.needsDay || !lab.ticked.length) continue;
-      labArchives.push({ fileId: f.id, sourceFileName: f.name, reportDate: lab.day });
+      labArchives.push({ fileId: f.id, sourceFileName: uploadFileName(f), reportDate: lab.day });
     } else if (cloudConnected && f.status.s === 'known' && f.status.archiveOnly && f.status.as !== 'legacy' && f.hash) {
       const held = pendingRowsFor(views, f.hash, f.status.as === 'labReport')[0];
       if (!held) continue;
-      archiveOnly.push({ fileId: f.id, fields: fieldsOf(held, f.name) });
+      archiveOnly.push({ fileId: f.id, fields: fieldsOf(held, uploadFileName(f)) });
     } else continue;
     if (f.hash) seen.add(f.hash);
   }
