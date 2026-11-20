@@ -5221,6 +5221,7 @@
   outline: none;
 }
 .md-page-target,
+.md-page-range,
 .md-page-hint,
 .md-page-empty {
   font-size: 13px;

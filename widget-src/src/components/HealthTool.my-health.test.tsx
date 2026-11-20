@@ -719,6 +719,8 @@ describe('US-62 AC10 (design review 2026-11-06): the value page leads with its l
     // The ideal weight tile says the target: no "Target:" line beside it.
     expect(within(page).getByText('Ideal Body Weight', { selector: '.stat-label' })).toBeTruthy();
     expect(page.querySelector('.md-page-target')).toBeNull();
+    // A graded BMI tile shows a range, so the page says once that a range is not a diagnosis (US-07 AC17).
+    expect(page.querySelector('.md-page-range')?.textContent).toBe('A range is not a diagnosis. Your doctor confirms one.');
     const units = [...page.querySelectorAll('.md-history-row')].map(r => r.querySelector('.alr-cell-unit')?.textContent);
     expect(units).toEqual(['kg', 'kg']);
     expect(page.querySelector('.md-page-hint')!.textContent).toBe('Tap a value to correct it.');

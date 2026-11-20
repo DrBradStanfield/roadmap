@@ -16,7 +16,7 @@ import type { AdditionalLabValue, DocumentResult, ExtractedValue, RefusedLabValu
 import { UNIT_SYSTEMS } from './units';
 import type { ChoiceChange, FileChoices } from './upload-choices';
 import { NOT_SAVED_REASONS } from './import-review';
-import { UPLOAD_FAILURES, type UploadFailure } from './upload-failure';
+import { GATE_WORDS_MAX, NETWORK_FAILURES, UPLOAD_FAILURES, type UploadFailure } from './upload-failure';
 import type { UploadEffect, UploadEvent, UploadState } from './upload-flow';
 
 const text = z.string();
@@ -65,7 +65,13 @@ const choices = strict({
   replace: z.record(z.string(), z.string()), edits: z.record(z.string(), z.number()), document: documentFix,
   screening: z.boolean().optional(), columnDays: z.record(z.string(), z.string()).optional(),
 });
-const failReason = z.enum(['unreadable', 'bytesUnreadable', 'zipUnreadable', 'zipEmpty', 'timeout', 'busy', 'dailyLimit', 'declined', 'tooLong', 'server', 'network', 'keyRefused', 'noCredit', 'keyRateLimit', 'noKey']);
+const failReason = z.enum(['unreadable', 'bytesUnreadable', 'zipUnreadable', 'zipEmpty', 'timeout', 'busy', 'dailyLimit', 'declined', 'tooLong', 'server', 'network', 'keyRefused', 'noCredit', 'keyRateLimit', 'noKey', 'appRefused', 'tooLarge', 'cannotAttest', 'attestFailed']);
+/** An App Attest step or code: a short word, nothing else from the error (US-52 AC7e). */
+export const ATTEST_PART = z.string().regex(/^[A-Za-z0-9_-]{1,24}$/);
+/** upload-failure.ts FailDetail: the server's own words, as text; the App Attest step and code; or how the request failed. */
+export const NETWORK_FAILURE = z.enum(NETWORK_FAILURES);
+const failDetail = z.union([strict({ message: z.string().min(1).max(GATE_WORDS_MAX) }), strict({ stage: ATTEST_PART, code: ATTEST_PART }),
+  strict({ network: NETWORK_FAILURE })]);
 const runRefusal = z.enum(['dailyLimit', 'noKey', 'server']);
 const status = z.discriminatedUnion('s', [
   strict({ s: z.literal('unlisted') }),
@@ -79,7 +85,7 @@ const status = z.discriminatedUnion('s', [
   strict({ s: z.literal('ready'), attempt: count }),
   strict({ s: z.literal('sending'), attempt: count }),
   strict({ s: z.literal('read'), extraction: UPLOAD_EXTRACTION, choices }),
-  strict({ s: z.literal('failed'), reason: failReason, attempt: count }),
+  strict({ s: z.literal('failed'), reason: failReason, attempt: count, detail: failDetail.optional() }),
   strict({ s: z.literal('stopped') }),
 ]);
 const file = strict({
@@ -128,7 +134,7 @@ export const UPLOAD_EVENTS = {
   converted: strict({ type: z.literal('converted'), run: count, id: text, pages: count, truncated: z.boolean() }),
   convertFailed: strict({ type: z.literal('convertFailed'), run: count, id: text, reason: z.enum(['unreadable', 'timeout']) }),
   answered: strict({ type: z.literal('answered'), run: count, id: text, extraction: UPLOAD_EXTRACTION, legacy: z.boolean(), now: text }),
-  sendFailed: strict({ type: z.literal('sendFailed'), run: count, id: text, failure }),
+  sendFailed: strict({ type: z.literal('sendFailed'), run: count, id: text, failure, detail: failDetail.optional() }),
   runRefused: strict({ type: z.literal('runRefused'), run: count, reason: runRefusal }),
   retry: strict({ type: z.literal('retry'), id: text }),
   stop: strict({ type: z.literal('stop') }),

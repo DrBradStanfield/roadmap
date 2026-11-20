@@ -131,7 +131,7 @@ const flat: MedicationBasis = {
 };
 const elevated: MedicationBasis = {
   ...flat, lipidMarker: { kind: 'apoB', label: 'ApoB', value: 1.2, target: 0.8, elevated: true },
-  weightMedTrigger: { on: true, reasons: ['prediabetic HbA1c'] }, bmi: 31,
+  weightMedTrigger: { on: true, reasons: ['an HbA1c in the prediabetes range'] }, bmi: 31,
 };
 
 describe('screeningForm', () => {
@@ -331,7 +331,7 @@ describe('medicationForm', () => {
     const form = medicationForm({}, elevated);
     expect(keys(form)).toEqual(['statin', 'glp1']);
     expect(form[0].intro).toMatch(/ApoB/);
-    expect(field(form, 'statin').hint).toBe('Statins are the most effective first step. They reduce cholesterol production in the liver.');
+    expect(field(form, 'statin').hint).toBe('Guidelines name statins the first medicine to consider when cholesterol stays above target. They reduce cholesterol production in the liver.');
     const onStatin: MedicationInputs = { statin: { drug: 'atorvastatin', dose: 10 } };
     expect(keys(medicationForm(onStatin, elevated))).toEqual(['statin', 'statin_dose', 'ezetimibe', 'glp1']);
     expect(field(medicationForm(onStatin, elevated), 'ezetimibe').hint).toMatch(/more ApoB reduction/);

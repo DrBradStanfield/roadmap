@@ -9,11 +9,18 @@ enum UploadTestKit {
     /// App Attest that signs with its one key, each assertion naming its counter ("a1", "a2", ...).
     final class Attest: AttestService, Sendable {
         let made = OSAllocatedUnfairLock(initialState: 0)
-        var isSupported: Bool { true }
+        /// A device without App Attest, or one whose every assertion fails with this error.
+        let isSupported: Bool
+        let assertFails: (any Error & Sendable)?
+        init(supported: Bool = true, assertFails: (any Error & Sendable)? = nil) {
+            isSupported = supported
+            self.assertFails = assertFails
+        }
         func generateKey() async throws -> String { "key" }
         func attestKey(_ keyId: String, clientDataHash: Data) async throws -> Data { Data("attestation".utf8) }
         func generateAssertion(_ keyId: String, clientDataHash: Data) async throws -> Data {
-            Data("a\(made.withLock { $0 += 1; return $0 })".utf8)
+            if let assertFails { throw assertFails }
+            return Data("a\(made.withLock { $0 += 1; return $0 })".utf8)
         }
     }
 
@@ -28,10 +35,17 @@ enum UploadTestKit {
     static let finalLine = #"{"status":200,"body":{"success":true,"data":\#(extraction)}}"#
     static let json = ["Content-Type": "application/json"]
 
-    /// Answers every lab read with `answer(n)`, n counting from 1.
-    static func serve(_ server: Server, _ answer: @escaping @Sendable (Int) -> StubHTTP.Answer) {
+    /// Answers every lab read with `answer(n)`, n counting from 1; App Attest's challenge and
+    /// registration as given (by default, each accepted).
+    static func serve(_ server: Server, challenge: StubHTTP.Answer = .init(body: Data(#"{"challenge":"c"}"#.utf8)),
+                      register: StubHTTP.Answer = .init(body: Data(#"{"ok":true}"#.utf8)), _ answer: @escaping @Sendable (Int) -> StubHTTP.Answer) {
         StubHTTP.handler = { request in
-            guard request.url.path == LabReadSender.path else { return .init(status: 404) }
+            switch request.url.path {
+            case "/api/app/v1/attest/challenge": return challenge
+            case "/api/app/v1/attest/register": return register
+            case LabReadSender.path: break
+            default: return .init(status: 404)
+            }
             let n = server.seen.withLock { $0.append(request.headers["x-app-attest-assertion"] ?? ""); return $0.count }
             return answer(n)
         }
@@ -41,8 +55,9 @@ enum UploadTestKit {
         .init(status: 200, headers: ["Content-Type": "application/x-ndjson"], body: Data(body.utf8), delay: delay, bodyGate: gate, chunk: chunk)
     }
 
-    static func client(_ attest: Attest = Attest()) -> AppAttestClient {
-        AppAttestClient(session: StubHTTP.session(), service: attest, keys: KeyStore(read: { "key" }, save: { _ in }, delete: {}))
+    /// `stored`: the key id the Keychain holds, nil for a phone that must register one first.
+    static func client(_ attest: Attest = Attest(), stored: String? = "key") -> AppAttestClient {
+        AppAttestClient(session: StubHTTP.session(), service: attest, keys: KeyStore(read: { stored }, save: { _ in }, delete: {}))
     }
 
     /// `count` distinct pictures, ids f0, f1, ...

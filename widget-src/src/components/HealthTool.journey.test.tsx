@@ -698,7 +698,7 @@ describe('the 2026-09-22 feedback: edits that added new things instead', () => {
     await addMeasurement('systolic_bp', 98, '2026-10-27');
     expect(await activeOn('systolic_bp')).toEqual([[150, '2026-10-26'], [98, '2026-10-27']]);
     const view = render(<HealthTool />);
-    await waitFor(() => expect(view.container.textContent).toContain('Stage 2 hypertension'));
+    await waitFor(() => expect(view.container.textContent).toContain('Blood pressure in the stage 2 range'));
     expect(view.container.textContent).not.toContain('The top number (systolic) must be higher than the bottom number (diastolic).');
   });
 

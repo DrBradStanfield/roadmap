@@ -20,8 +20,8 @@ const SCALE = { min: 0.35, max: 0.65, line: 0.5 } as const;
  *  "Healthy" (7) and "Elevated" (8) would differ, and space padding does not hide it (Codex review
  *  1871b R1). The pad is U+2060 WORD JOINER: not whitespace, so Clarity counts it; zero width and
  *  default-ignorable, so no font draws it and screen readers skip it. Lengths: the longest of each kind
- *  ("Elevated"; "Underweight"), a ratio ("0.47"), a BMI ("124.1") and a target ("<49.2 in"). */
-const WIDTH = { grade: 8, category: 11, ratio: 4, bmi: 5, target: 8 } as const;
+ *  ("Elevated"; "Underweight range"), a ratio ("0.47"), a BMI ("124.1") and a target ("<49.2 in"). */
+const WIDTH = { grade: 8, category: 17, ratio: 4, bmi: 5, target: 8 } as const;
 export const PAD = '\u2060';
 export const fixed = (text: string | undefined, width: number) => (text ?? '') + PAD.repeat(Math.max(0, width - (text ?? '').length));
 const GREEN = '#0B6B54';

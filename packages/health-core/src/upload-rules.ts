@@ -58,15 +58,6 @@ export function requestFlags(platform: UploadPlatform): RequestFlags {
 }
 
 /**
- * A value's tick before the person touches it. Awaiting Brad: unify. Today the clients differ:
- * the web saves every value unless its cell is cleared (ReviewTable), a question included; the
- * iPhone leaves a value the extractor asked about unticked (LabChoices: never saved unnoticed).
- */
-export function defaultTicked(platform: UploadPlatform, value: { question?: string }): boolean {
-  return platform === 'web' || !value.question;
-}
-
-/**
  * D3, awaiting Brad (clinical; __fixtures__/upload-decisions.json "letter with values"): the web
  * offers the values a letter prints beside the letter itself; the iPhone files the letter alone.
  */

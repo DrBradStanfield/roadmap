@@ -11,7 +11,7 @@ import { bulkRowTarget } from './bulk-row-target';
 import { slotIndex, slotKey, validDay, type BulkRow } from './record-edits';
 import type { RoadmapFile } from './roadmap-file';
 import type { UploadFile, UploadState } from './upload-flow';
-import { defaultTicked, letterValuesOffered, type UploadPlatform } from './upload-rules';
+import { letterValuesOffered } from './upload-rules';
 
 type ReadFile = UploadFile & { status: Extract<UploadFile['status'], { s: 'read' }> };
 
@@ -19,7 +19,7 @@ export interface UploadReview {
   /** The read lab reports, in picked order; `classification.values[i].file` indexes this list. */
   labFiles: Array<{
     fileId: string; name: string; day: string | null;
-    /** The refs ticked now, the platform's default resolved (upload-rules `defaultTicked`). */
+    /** The refs ticked now: every value the person has not cleared. */
     ticked: string[];
     /** The refs whose Replace stands: still aimed at the held row on the value's day. */
     replacing: string[];
@@ -69,12 +69,13 @@ export function previousDay(pick: string | null, reportDay: string | null, now: 
 
 /**
  * One report as `classifyImportValues` takes it (`reportImportFile`, the row rule the iPhone's
- * `classifyReport` shares). Each value starts ticked by the platform's rule; the person's ticks
- * win. Each ticked value is on its own day or the test's (the person's pick, else the report's
+ * `classifyReport` shares). Each value starts ticked, one the extractor asked about included, on
+ * both clients: saved unless cleared (Brad 2026-11-20: "we need to back ourselves that we are
+ * going to get this right"); the person's ticks win. Each ticked value is on its own day or the test's (the person's pick, else the report's
  * own full day); an undated previous column's on its own day. Replace and an edited number go
  * on the row, as the web's review sends them through `chose`.
  */
-function importFile(f: ReadFile, platform: UploadPlatform, now: string, holderOf: (row: BulkRow) => string | undefined) {
+function importFile(f: ReadFile, now: string, holderOf: (row: BulkRow) => string | undefined) {
   const { choices } = f.status;
   // A dated previous column's pick as a real past day, or null while it is not one yet (PR 1906 item 10).
   const columnDays = Object.entries(choices.columnDays ?? {}).map(([printed, day]) => [printed, validDay(day, { now })] as const);
@@ -87,7 +88,7 @@ function importFile(f: ReadFile, platform: UploadPlatform, now: string, holderOf
     ...(extraction.values ?? []).map((v, i) => ({ ref: `v${i}`, value: v, own: v.recordedAt })),
     ...(extraction.additionalValues ?? []).map((v, i) => ({ ref: `a${i}`, value: v, own: v.recordedAt })),
   ];
-  const ticked = offered.filter(({ ref, value }) => choices.ticks[ref] ?? defaultTicked(platform, value));
+  const ticked = offered.filter(({ ref }) => choices.ticks[ref] ?? true);
   // A ticked value with no day of its own waits for the test's day, one in an undated previous
   // column for that column's, and so does the whole report (iPhone `valuesWait`, web `allDatesSet`).
   const needsTestDay = day === null && ticked.some((v) => v.own === undefined);
@@ -133,7 +134,7 @@ export function uploadReview(s: UploadState, record: RoadmapFile, now: string, s
     const target = bulkRowTarget(row);
     return slots.get(slotKey(target.slot, target.metric, row.recordedAt))?.id;
   };
-  const built = labs.map((f) => importFile(f, platform, now, holderOf));
+  const built = labs.map((f) => importFile(f, now, holderOf));
   const classification = classifyImportValues(built.map((b) => b.file), record, now);
   // The written values come first in `values`, in the order of `rows` (import-review.ts).
   const written = classification.values.filter((v) => v.sent && v.writes);
