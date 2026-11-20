@@ -84,7 +84,7 @@ export function ReviewTable({
       const c = choices[fi];
       dates[fi] = c.testDay !== null ? decodeDate(c.testDay) : parseReportDate(r.reportDate);
       if (c.previousDay !== null) dates[dateSource(fi, UNDATED_PREVIOUS)] = decodeDate(c.previousDay);
-      for (const [printed, day] of Object.entries(c.columnDays ?? {})) dates[dateSource(fi, printed)] = parseReportDate(day);
+      for (const [printed, day] of Object.entries(c.columnDays ?? {})) dates[dateSource(fi, printed)] = decodeDate(day);
     });
     return dates;
   }, [results, choices]);
@@ -346,7 +346,8 @@ export function ReviewTable({
       const printed = at < 0 ? null : source.slice(at + 1);
       if (printed === null) onChose(fileIdOf(fi), { testDay: encodeDate(merged) });
       else if (printed === UNDATED_PREVIOUS) onChose(fileIdOf(fi), { previousDay: encodeDate(merged) });
-      else { const day = columnDay(merged); if (day) onChose(fileIdOf(fi), { columnDay: printed, day }); }
+      // A pick that is no past day yet stays on the column, and Save waits for one (PR 1906 item 10).
+      else onChose(fileIdOf(fi), { columnDay: printed, day: encodeDate(merged) });
     }
   };
 

@@ -93,14 +93,26 @@ describe('a letter\'s screening date in the shared plan and save (design 12c, US
 describe('choices the web needs, through `choose` (US-12 AC12)', () => {
   const prev = (day: string): UnifiedExtractionResult => ({ classification: 'lab_report', reportDate: '2026-10-01', values: [core({ recordedAt: day })], additionalValues: [], unrecognized: [], document: null });
 
-  it('a dated previous column\'s day moves its values; a day not yet happened is refused', () => {
+  it('a dated previous column\'s day moves its values', () => {
     const x = prev('2026-05-01');
     const picked = choose(NO_CHOICES, { columnDay: '2026-05-01', day: '2026-05-02' }, NOW, x);
     expect(picked?.columnDays).toEqual({ '2026-05-01': expect.stringMatching(/^2026-05-02/) });
-    expect(choose(NO_CHOICES, { columnDay: '2026-05-01', day: '2999-01-01' }, NOW, x)).toBeNull();
     const s = state('open', [read('lab', x, picked!)]);
     expect(uploadReview(s, EMPTY, NOW).classification.rows.map((r) => r.recordedAt.slice(0, 10))).toEqual(['2026-05-02']);
     expect(choose(picked!, { columnDay: '2026-05-01', day: null }, NOW, x)?.columnDays).toEqual({});
+  });
+
+  // PR 1906 fix round, item 10: a pick that is no real past day is kept, so it stays on screen, and Save waits.
+  it('a partial or future pick on a dated previous column is kept; nothing of it is written and Save waits for a day', () => {
+    const x = prev('2026-05-01');
+    for (const day of ['2999-01-01', 'partial:2026:5:']) {
+      const picked = choose(NO_CHOICES, { columnDay: '2026-05-01', day }, NOW, x);
+      expect(picked?.columnDays).toEqual({ '2026-05-01': day });
+      const s = state('open', [read('lab', x, picked!)]);
+      const review = uploadReview(s, EMPTY, NOW);
+      expect(review.classification.rows).toEqual([]);
+      expect(uploadView(s, EMPTY, NOW, review, false).save).toMatchObject({ enabled: false, why: 'Choose the day of the test' });
+    }
   });
 
   it('a moved column clears the Replace on its values (US-13 AC7)', () => {

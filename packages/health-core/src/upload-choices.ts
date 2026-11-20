@@ -25,7 +25,7 @@ export interface FileChoices {
   document: DocumentFix;
   /** A letter's screening update (web, US-06 AC5): absent, the platform's default (upload-plan.ts). */
   screening?: boolean;
-  /** A dated previous-results column's day, by the day it printed (web, US-12 AC12): a real past day. */
+  /** A dated previous-results column's day, by the day it printed (web, US-12 AC12): a real past day, or a pick still waiting to be one. */
   columnDays?: Record<string, string>;
 }
 export type ChoiceChange =
@@ -76,8 +76,9 @@ export function choose(c: FileChoices, change: ChoiceChange, now: string, extrac
   if ('replace' in change) return { ...c, replace: change.correctsId === null ? without(c.replace, change.replace) : { ...c.replace, [change.replace]: change.correctsId } };
   if ('screening' in change) return { ...c, screening: change.screening };
   if ('columnDay' in change) {
-    const day = change.day === null ? null : validDay(change.day, { now });
-    if (change.day !== null && day === null) return null; // refused: no real past day
+    // A real past day as `validDay` gives it; any other pick (a part missing, a day to come) as given,
+    // so the column keeps showing it and the report waits for a day (upload-review.ts).
+    const day = change.day === null ? null : validDay(change.day, { now }) ?? change.day;
     const before = c.columnDays?.[change.columnDay] ?? change.columnDay;
     const columnDays = day === null ? without(c.columnDays ?? {}, change.columnDay) : { ...c.columnDays, [change.columnDay]: day };
     return { ...c, columnDays, replace: moved(c, movedRefs(extraction, { printed: change.columnDay }), before, day ?? change.columnDay, now) };

@@ -63,7 +63,7 @@ export function previousDay(pick: string | null, reportDay: string | null, now: 
  */
 function importFile(f: ReadFile, platform: UploadPlatform, now: string, holderOf: (row: BulkRow) => string | undefined) {
   const { choices } = f.status;
-  const extraction = withColumnDays(f.status.extraction, choices.columnDays);
+  const extraction = withColumnDays(f.status.extraction, choices.columnDays, now);
   // A letter whose values the platform offers (D3) is classified as the report its values are.
   const result = { ...extraction, classification: 'lab_report' } as ImportFile['result'];
   const day = validDay(choices.testDay ?? extraction.reportDate ?? undefined, { now });
@@ -77,6 +77,9 @@ function importFile(f: ReadFile, platform: UploadPlatform, now: string, holderOf
   // column for that column's, and so does the whole report (iPhone `valuesWait`, web `allDatesSet`).
   const needsTestDay = day === null && ticked.some((v) => v.own === undefined);
   const needsPreviousDay = undatedDay === null && ticked.some((v) => v.own === UNDATED_PREVIOUS);
+  // A dated previous column whose pick is no real past day yet: its ticked values wait for one (PR 1906 item 10).
+  const waiting = Object.entries(choices.columnDays ?? {}).filter(([, day]) => !validDay(day, { now })).map(([printed]) => printed);
+  const needsColumnDay = ticked.some((v) => v.own !== undefined && waiting.includes(v.own));
   // A Replace counts only while its target is still the held row on the value's day (US-13 AC7).
   const days = valueDays(result, day, undatedDay);
   const replaces = (ref: string) => {
@@ -88,14 +91,15 @@ function importFile(f: ReadFile, platform: UploadPlatform, now: string, holderOf
     const correctsId = replaces(ref);
     return [ref, { ...(correctsId ? { correctsId } : {}), ...(choices.edits[ref] !== undefined ? { edited: { value: choices.edits[ref] } } : {}) }];
   }));
-  const file = reportImportFile(result, needsTestDay || needsPreviousDay ? [] : ticked.map((v) => v.ref), day, now, undatedDay, options);
-  return { file, day, ticked: ticked.map((v) => v.ref), needsTestDay, needsPreviousDay, replacing: Object.keys(options).filter((ref) => options[ref].correctsId) };
+  const file = reportImportFile(result, needsTestDay || needsPreviousDay || needsColumnDay ? [] : ticked.map((v) => v.ref), day, now, undatedDay, options);
+  return { file, day, ticked: ticked.map((v) => v.ref), needsTestDay, needsPreviousDay, needsColumnDay, replacing: Object.keys(options).filter((ref) => options[ref].correctsId) };
 }
 
 /** A dated previous column's values on the day the person picked for it (US-12 AC12); the extraction itself when none. */
-function withColumnDays(x: ReadFile['status']['extraction'], days: Readonly<Record<string, string>> | undefined): ReadFile['status']['extraction'] {
+function withColumnDays(x: ReadFile['status']['extraction'], days: Readonly<Record<string, string>> | undefined, now: string): ReadFile['status']['extraction'] {
   if (!days || !Object.keys(days).length) return x;
-  const moved = <V extends { recordedAt?: string }>(v: V): V => (v.recordedAt && days[v.recordedAt] ? { ...v, recordedAt: days[v.recordedAt] } : v);
+  // Only a real past day moves its values; a pick still waiting leaves them printed, and the report waits (`needsColumnDay`).
+  const moved = <V extends { recordedAt?: string }>(v: V): V => (v.recordedAt && days[v.recordedAt] && validDay(days[v.recordedAt], { now }) ? { ...v, recordedAt: days[v.recordedAt] } : v);
   return { ...x, values: x.values?.map(moved), additionalValues: x.additionalValues?.map(moved) };
 }
 
@@ -137,7 +141,7 @@ export function uploadReview(s: UploadState, record: RoadmapFile, now: string, s
   return {
     labFiles: labs.map((f, i) => ({
       fileId: f.id, name: f.name, day: built[i].day, ticked: built[i].ticked, replacing: built[i].replacing,
-      needsDay: built[i].needsTestDay || built[i].needsPreviousDay, needsTestDay: built[i].needsTestDay, needsPreviousDay: built[i].needsPreviousDay,
+      needsDay: built[i].needsTestDay || built[i].needsPreviousDay || built[i].needsColumnDay, needsTestDay: built[i].needsTestDay, needsPreviousDay: built[i].needsPreviousDay,
       previousMonth: [...(f.status.extraction.values ?? []), ...(f.status.extraction.additionalValues ?? [])].find((v) => v.printedMonth)?.printedMonth ?? null,
     })),
     classification,
