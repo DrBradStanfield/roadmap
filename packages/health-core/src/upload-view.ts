@@ -143,10 +143,9 @@ function printedFacts(x: UnifiedExtractionResult | undefined, ref: string, repor
   const number = coreValue ? coreValue.displayValue : x!.additionalValues![i].value;
   const day = own.recordedAt && own.recordedAt !== UNDATED_PREVIOUS ? validDay(own.recordedAt, { now })?.slice(0, 10) ?? null : null;
   // An edited number is what Save writes (`importRow`): a core value in its SI unit, a lab in its own, no limit sign.
-  const printedUnit = coreValue ? coreValue.displayUnit : x!.additionalValues![i].unit;
   return {
     value: edit !== undefined ? String(edit) : withComparator(String(number), own.comparator),
-    unit: edit !== undefined && coreValue ? getDisplayLabel(coreValue.metric as MetricType, 'si') : printedUnit,
+    unit: edit !== undefined && coreValue ? getDisplayLabel(coreValue.metric as MetricType, 'si') : coreValue ? coreValue.displayUnit : x!.additionalValues![i].unit,
     question: own.question ?? null,
     unitNote: coreValue?.unitGuessed ? REVIEW_CELL_TEXT.checkUnit : null,
     day: day ?? reportDay?.slice(0, 10) ?? null,
@@ -165,8 +164,7 @@ const valueRow = (review: UploadReview, reads: Map<string, ReturnType<typeof rea
   (v: ClassifiedValue): ValueRow => {
     const read = reads.get(review.labFiles[v.file].fileId);
     const facts = printedFacts(read?.status.extraction, v.ref, review.labFiles[v.file].day, now, read?.status.choices.edits[v.ref]);
-    // A copy carries no Replace: it is never written; Replace lives on the reading that holds the slot.
-    const heldId = v.copy ? undefined : review.held.get(`${v.file}:${v.ref}`);
+    const heldId = review.held.get(`${v.file}:${v.ref}`);
     const dayLine = facts.day ? longDate(facts.day) ?? facts.day : null;
     return { ...facts, dayLine, ...rowOf(review, v),
       replace: heldId ? REVIEW_CELL_TEXT.replace : null,
@@ -182,7 +180,7 @@ const rowOf = (review: UploadReview, v: ClassifiedValue) => ({
   conflict: v.group === 'unsure' && v.reasons.includes('conflict')
     ? (replacingOf(review, v) ? UPLOAD_TEXT.replaces : IMPORT_REVIEW_TEXT.conflictKept) : null,
   ticked: review.labFiles[v.file].ticked.includes(v.ref),
-  replaces: v.copy ? null : review.held.get(`${v.file}:${v.ref}`) ?? null,
+  replaces: review.held.get(`${v.file}:${v.ref}`) ?? null,
   replacing: replacingOf(review, v),
   error: blocks(review)(v) && v.refusal && 'measurement' in v.refusal ? v.refusal.measurement.message : null,
 });

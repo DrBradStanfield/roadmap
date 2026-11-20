@@ -191,10 +191,10 @@ export function resolveRecordedAt(recordedAt: string | undefined, ctx: EditConte
   return day;
 }
 
-/** Rule 9 as a day or null: absent or refused is null (the review's column date, US-13 AC8). */
 /** A lab value's day refused: the words the add-a-value write says, and the upload's not-saved line for a value with no real past day. */
 export const LAB_DAY_REFUSAL = 'A lab value is for a real day, today or before.';
 
+/** Rule 9 as a day or null: absent or refused is null (the review's column date, US-13 AC8). */
 export function validDay(day: string | null | undefined, ctx: EditContext): string | null {
   const resolved = day ? resolveRecordedAt(day, ctx) : null;
   return typeof resolved === 'string' ? resolved : null;

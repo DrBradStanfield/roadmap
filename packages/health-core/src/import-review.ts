@@ -186,7 +186,7 @@ export function refusedAlone(row: BulkRow, now: string): boolean {
 
 /** A day no value lands on: a value with no day is written there alone, on an
  *  empty record, only to read its refusal. */
-const PROBE_DAY = '2000-01-01';
+export const PROBE_DAY = '2000-01-01';
 
 type Info = { file: number; ref: string; label: string; reasons: UnsureReason[]; rank: 0 | 1 | 2 };
 type Group = ClassifiedValue extends infer V ? V extends ClassifiedValue ? Omit<V, 'file' | 'ref' | 'label' | 'sent'> : never : never;

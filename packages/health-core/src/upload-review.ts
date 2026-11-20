@@ -6,7 +6,7 @@
  * change, and pass the same one to `uploadView` and `uploadSavePlan`.
  */
 import { UNDATED_PREVIOUS } from './lab-extraction';
-import { classifyImportValues, holdsSameReading, importRow, isOfferedRef, reportImportFile, valueDays, type ClassifiedValue, type ImportClassification, type ImportFile } from './import-review';
+import { classifyImportValues, holdsSameReading, importRow, isOfferedRef, PROBE_DAY, reportImportFile, valueDays, type ClassifiedValue, type ImportClassification, type ImportFile } from './import-review';
 import { bulkRowTarget } from './bulk-row-target';
 import { bulkAppendValues, slotIndex, slotKey, validDay, type BulkRow } from './record-edits';
 import { createEmptyFile, type RoadmapFile } from './roadmap-file';
@@ -80,6 +80,7 @@ function importFile(f: ReadFile, now: string, holderOf: (row: BulkRow) => string
   ];
   const ticked = offered.filter(({ ref }) => choices.ticks[ref] ?? true);
   // A value the write refuses for its unit or number whatever its day sits under Not saved and asks no day (owner ruling 2026-11-20).
+  // Lab refusals only, unlike `refusedAlone`: a core value out of range still asks the day, since it can be corrected and then saves.
   const edited = (ref: string) => (choices.edits[ref] !== undefined ? { edited: { value: choices.edits[ref] } } : {});
   const refusedAnyDay = (ref: string) => {
     const row = importRow(result, ref, PROBE_DAY, edited(ref));
@@ -106,11 +107,8 @@ function importFile(f: ReadFile, now: string, holderOf: (row: BulkRow) => string
   // A value printed on its own day that is no real past day (a misread date still to come) is never saved:
   // it is named under Not saved, never shown as a value to tick (owner ruling 2026-11-20).
   const undatable = offered.filter((v) => v.own !== undefined && v.own !== UNDATED_PREVIOUS && validDay(v.own, { now }) === null).map((v) => v.ref);
-  return { file, day, ticked: ticked.map((v) => v.ref), needsTestDay, needsPreviousDay, replacing: offered.map(({ ref }) => ref).filter((ref) => replaces(ref)), undatable };
+  return { file, day, ticked: ticked.map((v) => v.ref), needsTestDay, needsPreviousDay, replacing: offered.filter(({ ref }) => replaces(ref)).map((v) => v.ref), undatable };
 }
-
-/** A day no value lands on: a value is written there alone, on an empty record, only to read its refusal (import-review.ts PROBE_DAY). */
-const PROBE_DAY = '2000-01-01';
 
 /**
  * The upload's own readings of the shared classification (owner rulings 2026-11-20), leaving the web's
@@ -149,7 +147,8 @@ export function uploadReview(s: UploadState, record: RoadmapFile, now: string): 
   });
   const held = new Map<string, string>();
   for (const v of classification.values) {
-    if (v.group !== 'unsure' || !v.reasons.includes('conflict')) continue;
+    // A copy is never written, so it has no Replace: Replace lives on the reading that holds the slot.
+    if (v.copy || v.group !== 'unsure' || !v.reasons.includes('conflict')) continue;
     const { file } = built[v.file];
     const day = file.days[v.ref];
     const row = day ? importRow(file.result, v.ref, day) : null;
