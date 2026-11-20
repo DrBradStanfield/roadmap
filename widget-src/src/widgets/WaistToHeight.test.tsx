@@ -667,11 +667,11 @@ describe('US-74 third review round', () => {
     expect(clarity('Healthy\u00a0')).not.toBe(clarity('Elevated'));
     expect(clarity('Healthy\u2060')).toBe(clarity('Elevated'));
     const cases = [
-      ['80', '49.1', 'Healthy', 'Underweight'],
+      ['80', '49.1', 'Healthy', 'Underweight range'],
       ['80', '60', 'Healthy', 'Normal'],
       ['80', '78', 'Healthy', 'Normal'], // BMI 27 with a healthy ratio
-      ['90', '78', 'Elevated', 'Overweight'],
-      ['95', '95', 'Elevated', 'Obese'],
+      ['90', '78', 'Elevated', 'Overweight range'],
+      ['95', '95', 'Elevated', 'Obesity range'],
     ];
     const lengths = cases.map(([waist, weight, grade, category]) => {
       const { container, unmount } = render(<WaistToHeightWidget />);

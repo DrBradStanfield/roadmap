@@ -58,11 +58,11 @@ export const MEDICATION_TEXT = {
   weightTitle: 'Weight & Diabetes Medications',
   weightNeutral: 'Are you currently taking any weight or diabetes medications? Recording these helps track your health over time.',
   /** A drug field's hint while the plan asks for its dose (US-06 AC8). */
-  doseHint: 'Add your dose: your next step depends on it.',
+  doseHint: 'Add your dose: what to discuss with your doctor next depends on it.',
   /** An escalation field's label when the plan asks no step-up question. */
   escalationRecorded: 'Higher dose or switch (recorded answer)',
   statinLabel: 'Statin',
-  statinHint: 'Statins are the most effective first step. They reduce cholesterol production in the liver.',
+  statinHint: 'Guidelines name statins the first medicine to consider when cholesterol stays above target. They reduce cholesterol production in the liver.',
   ezetimibeLabel: 'On Ezetimibe 10mg?',
   ezetimibeHint: (lipid: string) => `Ezetimibe works differently — it blocks cholesterol absorption in the intestine, adding ~20% more ${lipid} reduction.`,
   bempedoicAcidLabel: 'Bempedoic acid',
