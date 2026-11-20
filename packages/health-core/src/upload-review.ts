@@ -50,6 +50,17 @@ export function reviewedWrites(review: UploadReview): ReviewedValue[] {
     .map((v, k) => ({ file: review.labFiles[v.file].fileId, ref: v.ref, lab: review.classification.rows[k].kind === 'lab' }));
 }
 
+/**
+ * The Replace choices whose target no longer holds the value's slot on the record the review was judged
+ * on (another writer moved or corrected it), for `replacesLost` (owner ruling 2026-11-20, US-13 AC7).
+ */
+export function lostReplaces(review: UploadReview, s: UploadState): Array<{ id: string; ref: string }> {
+  return readFiles(s).flatMap((f) => {
+    const lab = review.labFiles.find((l) => l.fileId === f.id);
+    return lab ? Object.keys(f.status.choices.replace).filter((ref) => !lab.replacing.includes(ref)).map((ref) => ({ id: f.id, ref })) : [];
+  });
+}
+
 /** The plan's age and sex, as the web's review took them for `isScreeningEligible`; either may be unknown. */
 export interface ScreeningProfile { age?: number; sex?: 'male' | 'female' }
 

@@ -17,7 +17,7 @@ function review(reportDate: string | null) {
   const onSave = vi.fn();
   const view = showingAll(render(<ReviewTable results={[result]} history={{ measurements: [], labValues: [], documents: [] }}
     unitSystem="si" age={60} sex="male" grading={{}} onSave={onSave} onCancel={() => {}} isSaving={false} error={null} />));
-  const save = view.getByRole('button', { name: /^Save / }) as HTMLButtonElement;
+  const save = view.getByRole('button', { name: /^Save\b/ }) as HTMLButtonElement;
   const picker = () => view.getByLabelText('Choose column date') as HTMLInputElement;
   return { view, onSave, save, picker };
 }

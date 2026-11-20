@@ -143,7 +143,8 @@ function screeningRow(plan: UploadSavePlan, fileId: string): ScreeningRow | null
 
 function saveLabel(plan: UploadSavePlan): string {
   const { values, documents, originals } = plan.counts;
-  return values || documents || !originals ? UPLOAD_TEXT.saveBoth(values, documents) : UPLOAD_TEXT.saveOriginals(originals);
+  if (!values && !documents) return originals ? UPLOAD_TEXT.saveOriginals(originals) : UPLOAD_TEXT.saveNone;
+  return UPLOAD_TEXT.saveBoth(values, documents);
 }
 
 /** A read file with nothing in it, as the web says it (useUploadFlow `finish`): a document alone, or nothing found. */

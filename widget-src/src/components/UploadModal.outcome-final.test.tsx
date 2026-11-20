@@ -61,6 +61,24 @@ describe('the run is counted once, when it is final (item 3)', () => {
     expect(sent()).toEqual([expect.objectContaining({ picked: 1, failedFinal: 1 })]);
   });
 
+  // Owner ruling 2026-11-20: a Stop's count waits for the end of the run too, still with cancelled: 1.
+  it('a Stop, then a failed file read on Try again and saved: one outcome, that file counted as read, cancelled 1', async () => {
+    vi.mocked(labImport).mockImplementation(async p => (p[0].content === 'slow' ? new Promise<Import>(() => {}) : busy));
+    extractFromPdf.mockImplementation(async (f: File) => ({ pages: [{ type: 'text', content: f.name === 'b.pdf' ? 'slow' : 'synthetic' }], truncated: false }));
+    render_();
+    fireEvent.change(document.querySelector('input[type=file]')!, { target: { files: [new File(['a'], 'a.pdf', { type: 'application/pdf' }), new File(['b'], 'b.pdf', { type: 'application/pdf' })] } });
+    await screen.findByRole('button', { name: 'Try again' });
+    fireEvent.click(screen.getByRole('button', { name: 'Stop' }));
+    expect(sent()).toEqual([]);
+    vi.mocked(labImport).mockResolvedValue(lab);
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    await findReviewValue('3.9');
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    await screen.findByRole('button', { name: 'Done' });
+    expect(sent()).toEqual([expect.objectContaining({ picked: 2, withValues: 1, cancelled: 1 })]);
+    expect(sent()[0]).not.toHaveProperty('failedFinal');
+  });
+
   it('fails on this device and is closed: one outcome with the final failure; closing again sends nothing', async () => {
     extractFromPdf.mockRejectedValue(new Error('timeout'));
     render_(); pick();

@@ -47,6 +47,8 @@ export const UPLOAD_TEXT = {
   saveBoth: (n: number, m: number) => (m === 0 ? IMPORT_REVIEW_TEXT.save(n) : n === 0 ? `Save ${plural(m, 'document')}` : `Save ${plural(n, 'value')} and ${plural(m, 'document')}`),
   saveWait: (k: number) => `Wait for ${plural(k, 'file')} to finish`,
   saveNothing: 'Nothing new to save',
+  /** Save's label with nothing to write: the old web's bare word (ReviewOverview `saveLabel`), byte for byte (owner ruling 2026-11-20). */
+  saveNone: 'Save',
   /** 26. Each part dropped at zero, as 23. */
   savedLine: (n: number, m: number) => `Saved ${[...(n || !m ? [plural(n, 'value')] : []), ...(m ? [plural(m, 'document')] : [])].join(' and ')}.`,
   archivedLine: (a: number) => `${plural(a, 'original file')} kept in your cloud.`,

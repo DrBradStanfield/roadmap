@@ -734,6 +734,7 @@ describe('US-12 AC9, AC10: a quota refusal and a Stop count, and a pick past 200
     render_(); pick(pdf('a.pdf'), new File(['x'], 'b.docx'), pdf('huge.pdf', 11 * 1024 * 1024));
     await waitFor(() => expect(labImport).toHaveBeenCalled());
     fireEvent.click(screen.getByRole('button', { name: 'Stop' }));
+    endRun(); // the Stop's count waits for the run to end (owner ruling 2026-11-20)
     await waitFor(() => expect(sent()).toHaveLength(1));
     expect(sent()[0]).toEqual({ picked: 3, docx: 1, tooLarge: 1, cancelled: 1 });
     for (const finish of finishReads) finish(withValues);
@@ -749,6 +750,7 @@ describe('US-12 AC9, AC10: a quota refusal and a Stop count, and a pick past 200
     render_(); pick(pdf('a.pdf'), huge);
     await waitFor(() => expect(labImport).toHaveBeenCalled());
     fireEvent.click(screen.getByRole('button', { name: 'Stop' }));
+    endRun(); // the Stop's count waits for the run to end (owner ruling 2026-11-20)
     await waitFor(() => expect(sent()).toHaveLength(1));
     expect(sent()[0]).toEqual({ picked: 2, docx: 1, tooLarge: 1, cancelled: 1 });
   });
@@ -759,6 +761,7 @@ describe('US-12 AC9, AC10: a quota refusal and a Stop count, and a pick past 200
     render_(); pick(zip('scans.zip'));
     await waitFor(() => expect(labImport).toHaveBeenCalled());
     fireEvent.click(screen.getByRole('button', { name: 'Stop' }));
+    endRun(); // the Stop's count waits for the run to end (owner ruling 2026-11-20)
     await waitFor(() => expect(sent()).toHaveLength(1));
     expect(sent()[0]).toEqual({ picked: 3, cancelled: 1 });
   });
@@ -772,6 +775,7 @@ describe('US-12 AC9, AC10: a quota refusal and a Stop count, and a pick past 200
     render_(); pick(zip('first.zip'), zip('second.zip'));
     await waitFor(() => expect(getZipEntries).toHaveBeenCalledTimes(2));
     fireEvent.click(screen.getByRole('button', { name: 'Stop' }));
+    endRun(); // the Stop's count waits for the run to end (owner ruling 2026-11-20)
     await waitFor(() => expect(sent()).toHaveLength(1));
     expect(sent()[0]).toEqual({ picked: 4, withValues: 3, cancelled: 1, firstReadSeconds: 0 });
   });

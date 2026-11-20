@@ -67,6 +67,8 @@ describe('upload view: section 4 screens', () => {
     const v = viewOf(open([at('a', { s: 'known', as: 'labReport', archiveOnly: false }), at('b', { s: 'known', as: 'document', archiveOnly: false })]), EMPTY, NOW);
     expect(v.summary).toBe('Everything here is already in your record.');
     expect(v.save).toMatchObject({ enabled: false, why: 'Nothing new to save' });
+    // Owner ruling 2026-11-20: with nothing to save the button is main's bare "Save", never "Save 0 values".
+    expect(v.save.label).toBe('Save');
   });
 
   it('failed: one section naming each file in the web\'s words, Try again only when a retry can help; Save not blocked', () => {
@@ -110,7 +112,7 @@ describe('upload view: section 4 screens', () => {
     // The original alone: its own label (UPLOAD_TEXT.saveOriginals, approved 2026-11-20).
     expect(viewOf(s, record, NOW).save).toEqual({ label: 'Save 1 original', enabled: true, why: null, error: null });
     const letterKnown = open([at('k', { s: 'known', as: 'document', archiveOnly: false })]);
-    expect(viewOf(letterKnown, record, NOW).save).toEqual({ label: 'Save 0 values', enabled: false, why: 'Nothing new to save', error: null });
+    expect(viewOf(letterKnown, record, NOW).save).toEqual({ label: 'Save', enabled: false, why: 'Nothing new to save', error: null });
   });
 
   it('done: originals that were not stored say so in the web\'s own words; none says nothing (PR 1848 Codex)', () => {

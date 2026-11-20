@@ -105,6 +105,7 @@ export type UploadEvent =
   | { type: 'retry'; id: string | 'all' }
   | { type: 'stop' }
   | { type: 'chose'; id: string; change: ChoiceChange; now: string } // now: to refuse a document date in the future
+  | { type: 'replacesLost'; lost: Array<{ id: string; ref: string }> } // upload-review `lostReplaces`: each dropped, its value unticked
   | { type: 'saveStarted'; reviewed?: ReviewedValue[] } // reviewed: upload-review `reviewedWrites`, so Save names what it did not write
   | { type: 'saved'; run: number; attempt: number; outcome: SaveOutcome }
   | { type: 'saveFailed'; run: number; attempt: number; message: string }
@@ -364,6 +365,21 @@ export function transition(s: UploadState, e: UploadEvent): UploadStep {
       const choices = choose(file.status.choices, e.change, e.now, file.status.extraction);
       if (!choices) return same(s); // refused: a document date that is no real past day
       return same({ ...pickOf(s), phase: 'open', files: s.files.map((f) => (f === file ? { ...file, status: { ...file.status, choices } } : f)) });
+    }
+    case 'replacesLost': {
+      if (s.phase !== 'open' && s.phase !== 'saveFailed') return same(s);
+      // Nothing is written without the person's say: the value goes back to an ordinary unticked one (owner ruling 2026-11-20).
+      let changed = false;
+      const files = s.files.map((f): UploadFile => {
+        if (f.status.s !== 'read') return f;
+        const refs = e.lost.filter((l) => l.id === f.id && f.status.s === 'read' && f.status.choices.replace[l.ref] !== undefined).map((l) => l.ref);
+        if (!refs.length) return f;
+        changed = true;
+        const { choices } = f.status;
+        const replace = Object.fromEntries(Object.entries(choices.replace).filter(([ref]) => !refs.includes(ref)));
+        return { ...f, status: { ...f.status, choices: { ...choices, replace, ticks: { ...choices.ticks, ...Object.fromEntries(refs.map((ref) => [ref, false])) } } } };
+      });
+      return changed ? same({ ...pickOf(s), phase: 'open', files }) : same(s);
     }
     case 'saveStarted':
       if (s.phase === 'saveFailed') return save(s, s.attempt + 1, e.reviewed);

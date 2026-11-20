@@ -122,7 +122,13 @@ export function ReviewTable({
   const touched = useMemo(() => new Map([...typed.values()].flatMap((t) => { const id = idOf(t); return id ? [[id, { display: t.display }] as const] : []; })),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `typedUnits` stands for the typed cells and their units
     [typedUnits, idOf]);
-  const editedDisplayValues = useMemo(() => Object.fromEntries([...typed.values()].flatMap((t) => { const id = idOf(t); return id ? [[id, t.text]] : []; })), [typed, idOf]);
+  // A value the state holds unticked shows as a cleared cell even when nothing was typed (a Replace the
+  // state dropped, owner ruling 2026-11-20): the screen never shows a number Save will not write.
+  const editedDisplayValues = useMemo(() => {
+    const shown: Record<string, string> = Object.fromEntries([...typed.values()].flatMap((t) => { const id = idOf(t); return id ? [[id, t.text]] : []; }));
+    for (const [id, v] of edits) if (v === null && !(id in shown)) shown[id] = '';
+    return shown;
+  }, [typed, idOf, edits]);
   const matrix = useMemo(
     () => buildMatrixModel(results, fileDates, history.measurements, history.labValues, unitSystem, units, touched, slotless, edits),
     [results, fileDates, history.measurements, history.labValues, unitSystem, units, touched, slotless, edits],

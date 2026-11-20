@@ -1,8 +1,8 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { checkLabImportQuota } from '../lib/upload-api';
-import { initialUpload, inFlight, transition, type RunRefusal, type UploadEvent, type UploadFile, type UploadState } from '@roadmap/health-core/upload-flow';
+import { initialUpload, transition, type RunRefusal, type UploadEvent, type UploadFile, type UploadState } from '@roadmap/health-core/upload-flow';
 import type { ChoiceChange } from '@roadmap/health-core/upload-choices';
-import { reviewedWrites, uploadReview, type ScreeningProfile } from '@roadmap/health-core/upload-review';
+import { lostReplaces, reviewedWrites, uploadReview, type ScreeningProfile } from '@roadmap/health-core/upload-review';
 import { uploadView } from '@roadmap/health-core/upload-view';
 import { uploadUsageCounts } from '@roadmap/health-core/upload-usage';
 import { UNDATED_PREVIOUS, uploadLimitSignal } from '@roadmap/health-core/lab-extraction';
@@ -42,7 +42,7 @@ export { MAX_FILES };
  *  `unitsGuessed` (AC16), `unitsRefused` (AC15), and the read files' limits
  *  (`uploadLimitSignal`, AC20): `valuesLimit`, `valuesLimitUngraded`, and the
  *  closed-list keys of the ungraded tests, the one non-count; `cancelled` 1 for
- *  a run whose reads Stop ended (U9); `known`, `failedFinal` and `firstReadSeconds` from the
+ *  a run a Stop cut short, counted when the run ends (U9); `known`, `failedFinal` and `firstReadSeconds` from the
  *  shared state (upload-usage.ts, AC30). A zero is never sent, except a first
  *  read under a second (`firstReadSeconds: 0`, a real time): every key is
  *  optional, so a server a deploy behind meets a new key only once it counts something. */
@@ -129,20 +129,20 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
       setUpload(step.state);
       const after = step.state;
       // A run is counted once, when it is final (US-12 AC10; PR 1906 item 3): refused or failed as a whole,
-      // saved, ended by a Stop while reads were in flight (U9: one cancelled run, owner ruling 2026-11-20), or
-      // left (discard, close, a new pick, the page going away). A file a Try again mends is counted as read.
-      const stopped = event.type === 'stop' && inFlight(before) > 0;
+      // saved, or left (discard, close, a new pick, the page going away). A file a Try again mends is counted
+      // as read; a run a Stop cut short counts as cancelled (U9, owner ruling 2026-11-20).
       const left = before.phase !== 'choosing' && after.phase === 'choosing';
-      if (after.phase === 'failed' || after.phase === 'done' || stopped || left) runEnded(left ? before : after, stopped);
+      if (after.phase === 'failed' || after.phase === 'done' || left) runEnded(left ? before : after);
       for (const effect of step.effects) runEffect(port.current!, effect);
     };
     /** Counts the run; a run no file could open is reported, as before (US-12 AC3). */
-    const runEnded = (s: UploadState, stopped: boolean) => {
+    const runEnded = (s: UploadState) => {
       const h = held.current;
       if (refusedForKey(s) || runCounted.current === s.run) return; // the Pages build's missing key names and counts nothing
       runCounted.current = s.run;
       const { results, notices } = readOutcome(s, h);
-      countRun(s, h, results, notices, stopped);
+      // A file the Stop cut short holds `stopped` in the state: the run was cancelled.
+      countRun(s, h, results, notices, s.phase !== 'choosing' && s.files.some(f => f.status.s === 'stopped'));
       if (readErrorOf(s) === NO_FILES_TEXT) {
         Sentry.captureException(recordFailure(new UploadError(NO_FILES_TEXT, 'no_files'), 'Upload processing failed'), { tags: { feature: 'upload', uploadErrorCode: 'no_files' } });
         trackProductEvent('upload_extract_failed');
@@ -229,6 +229,12 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
     return { review, view: uploadView(upload, record, now, review, cloud) };
   // eslint-disable-next-line react-hooks/exhaustive-deps -- `history` is the record's version as the page shows it
   }, [upload, history, age, sex, cloud]);
+
+  // A Replace whose target the record no longer holds in that slot: the state drops it and unticks the value (owner ruling 2026-11-20).
+  useEffect(() => {
+    const lost = shown ? lostReplaces(shown.review, upload) : [];
+    if (lost.length) send({ type: 'replacesLost', lost });
+  }, [shown, upload, send]);
 
   // The read lab reports in the review's order (its `labFiles`), as the matrix takes them; the same
   // array while they are the same files, so a file read elsewhere never rebuilds the table.
