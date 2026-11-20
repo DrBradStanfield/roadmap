@@ -1,0 +1,72 @@
+// @vitest-environment jsdom
+// Run from main's code (3f02bb3de, extracted outside the branch): main's web review (ReviewTable,
+// useReviewDocuments, classifyReview, toDecisions) and main's save (saveReview: bulk saves,
+// synthesizeLabArchiveEntries, connectorDocumentEntries, bulkSaveDocuments, the page's screening write)
+// on each parity scenario, and the record it leaves, pinned. Known files are skipped as main's
+// upload-effects skipped them (an archive-only one read with a cloud open).
+import { describe, it, vi } from 'vitest';
+import { writeFileSync } from 'node:fs';
+import { cleanup, fireEvent, render } from '@testing-library/react';
+import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
+import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
+import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
+import { knownAs, knownIndex } from '@roadmap/health-core/upload-known';
+import { zipMemberName } from '@roadmap/health-core/lab-extraction';
+import { ReviewTable } from '../components/ReviewTable';
+import { initRoadmapStore, flushRoadmapStore, saveScreening } from '../lib/roadmap-data';
+import { saveReview } from '../lib/upload-save';
+import { readResult, type FileResult, type ReviewDecisions } from '../lib/upload-pipeline';
+import type { LabImportResult } from '../lib/api-types';
+import { showingAll } from '../testing/import-review';
+import { parityHash, parityRecord, parityRows, parityScenarios, PARITY_NOW } from './upload-save-parity.scenarios';
+
+vi.mock('../lib/server-api', async (o) => ({ ...(await o<typeof import('../lib/server-api')>()), trackProductEvent: vi.fn() }));
+
+describe('generate the old web review and save pin from main', () => {
+  it('writes the pin', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(PARITY_NOW));
+    const out: unknown[] = [];
+    for (const sc of await parityScenarios()) {
+      const cloud = new MemoryCloud();
+      const record = parityRecord(sc.history);
+      cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(record), version: 1 });
+      await initRoadmapStore(new MemoryAdapter(cloud));
+      const known = knownIndex(record);
+      const results: FileResult[] = [];
+      for (const f of sc.files) {
+        const hash = await parityHash(f.bytes);
+        const k = knownAs(known, hash);
+        if (k && !(k.archiveOnly && sc.cloud)) continue; // main's knownOnWeb: never read
+        const name = f.zip ? zipMemberName(f.zip, f.name) : f.name;
+        const { result } = readResult(name, f.extraction as unknown as LabImportResult);
+        results.push({ ...result, contentHash: hash, ...(sc.cloud ? { file: new File([f.bytes], f.name.split('/').pop()!, { type: 'application/pdf' }) } : {}) });
+      }
+      let decisions: ReviewDecisions | null = null;
+      const view = showingAll(render(<ReviewTable grading={{}} results={results} history={sc.history as never} unitSystem="si" age={sc.age} sex={sc.sex}
+        onSave={(d) => { decisions = d; }} onCancel={() => {}} isSaving={false} error={null} />));
+      for (const a of sc.actions) {
+        if (a.kind === 'edit' || a.kind === 'clear') {
+          const input = [...view.container.querySelectorAll<HTMLInputElement>('.bt-cell-input input')].find((i) => i.value === a.from);
+          if (input) fireEvent.change(input, { target: { value: a.kind === 'edit' ? a.to : '' } });
+        } else if (a.kind === 'replace') {
+          const box = view.queryAllByRole('checkbox', { name: new RegExp(`Replace the saved ${a.test}`) })[0];
+          if (box) fireEvent.click(box);
+        } else {
+          const box = view.container.querySelector<HTMLInputElement>('.review-screening-update input');
+          if (box && !box.disabled && box.checked) fireEvent.click(box);
+        }
+      }
+      const save = view.container.querySelector<HTMLButtonElement>('.review-save-btn');
+      if (save && !save.disabled) fireEvent.click(save);
+      cleanup();
+      if (decisions) {
+        const answer = await saveReview(decisions, { earlierRows: new Map(), complete: () => {}, existing: sc.history.documents as never, screening: (key, value) => void saveScreening(key, value) });
+        if (answer.message) throw new Error(`seed ${sc.seed}: ${answer.message}`);
+      }
+      await flushRoadmapStore();
+      out.push({ seed: sc.seed, saved: !!decisions, rows: parityRows(JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json) as RoadmapFile, [...cloud.docs.keys()]) });
+    }
+    writeFileSync(process.env.PARITY_PIN_OUT!, `${JSON.stringify(out, null, 1)}\n`);
+  });
+});
