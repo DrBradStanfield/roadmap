@@ -39,7 +39,7 @@ import {
 import type { FileDocument, FileLabValue, FileMeasurement, RoadmapFile } from './roadmap-file';
 import { CANONICAL_UNITS, formatRange, getDisplayLabel, getDisplayRange, reportedToCanonical, UNIT_DEFS, UNIT_SWAP_FLOORS, unitSystemOf, type MetricType, type UnitSystem } from './units';
 import { comparatorOf, formatValue, withComparator, type Comparator } from './lab-limits';
-import { IMPORT_REFUSALS, importHint } from './import-hints';
+import { IMPORT_REFUSALS, importHint, refusedNote } from './import-hints';
 import { LAB_ARCHIVE_TITLE } from './document-path';
 import { dedupFileName, labRowsByFile, writtenLabRows } from './document-rows';
 import { importDocumentRows, isAlreadyImported, type ImportedMatch } from './import-documents';
@@ -271,7 +271,7 @@ function dayFault(day: string, ctx: EditContext): EditRejection | null {
   return typeof resolved === 'string' ? null : resolved;
 }
 
-type PreparedImport = { payload: ImportPayload; files: Array<z.infer<typeof importFileOutput>>; unrecognized: string[] };
+type PreparedImport = { payload: ImportPayload; files: Array<z.infer<typeof importFileOutput>>; unrecognized: string[]; refused: number };
 
 /**
  * US-36 AC7a: `file_results` takes at most MAX_LAB_ROWS_PER_CALL rows, so a
@@ -292,7 +292,7 @@ function splitReportNote(route: ImportRoute, values: number): string[] {
  * where to look, so text from a document never rides in it (AC9).
  */
 export function extractNext(prepared: PreparedImport, remaining: string[], route: ImportRoute): string {
-  const { payload, files, unrecognized } = prepared;
+  const { payload, files } = prepared;
   const tool = route === 'assistant' ? 'file_results' : 'import_documents';
   const lines: string[] = [];
   const count = (state: SlotState) => payload.candidates.filter((c) => c.slot.state === state).length;
@@ -301,7 +301,7 @@ export function extractNext(prepared: PreparedImport, remaining: string[], route
   const docs = payload.documents.length;
   const notRead = files.filter((f) => f.status !== 'extracted').length;
   const partial = files.filter((f) => f.droppedValues).length;
-  const dropped = unrecognized.length ? ` ${unrecognized.length} value(s) could not be filed: show unrecognized.` : '';
+  const dropped = refusedNote(prepared.refused, prepared.unrecognized.length);
 
   if (payload.candidates.length || docs) {
     lines.push(
@@ -589,7 +589,7 @@ export function prepareImport(
     return first ? { ...rest, sameDayAs: first } : rest;
   });
   const payload: ImportPayload = { id: ctx.payloadId, route: bundle.route, createdAt: ctx.now, candidates: offered, documents };
-  return { payload, files, unrecognized: unrecognized.slice(0, MAX_UNRECOGNIZED_LINES) };
+  return { payload, files, unrecognized: unrecognized.slice(0, MAX_UNRECOGNIZED_LINES), refused: unrecognized.length };
 }
 
 // ---------------------------------------------------------------------------
