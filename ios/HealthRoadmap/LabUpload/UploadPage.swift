@@ -23,6 +23,9 @@ struct UploadPage: Decodable, Equatable, Sendable {
         let question: String?
         let unitNote: String?
         let day: String?
+        /// The day it saves on, as the web writes dates; the held value it would replace.
+        let dayLine: String?
+        let held: String?
         let conflict: String?
         let ticked: Bool
         let error: String?

@@ -20,6 +20,8 @@ final class UploadSession {
     /// The record is pinned until `end()`; the current pick's usage was told (once a pick).
     private var pinned = true
     private var told = false
+    /// Save was tapped and its outcome has not drawn yet: Close waits from the tap (a claim, not a mode).
+    private(set) var saveClaimed = false
 
     /// How a pick went: the engine has it, the reader refused it (its words), or the loaded engine
     /// cannot run the shared upload (an older one over the air: today's flow reads it).
@@ -33,6 +35,8 @@ final class UploadSession {
         self.store = store
         self.analytics = analytics
         store.pinScreen()
+        // Every Save is checked against this record, whatever the pin does later (a Close, a new pick).
+        let opened = store.pinned ?? store.screen
         let held = LabFileReader.Held()
         let setup = UploadRunner.Setup(
             deviceId: store.deviceId,
@@ -42,7 +46,7 @@ final class UploadSession {
             unitSystem: store.myData?.unitSystem ?? "si",
             cloudConnected: { await store.cloudErase != nil },
             save: save ?? { state, run, attempt in
-                let saved = await store.saveUpload(state: state, originals: held.originals(), read: { held.original($0) })
+                let saved = await store.saveUpload(state: state, originals: held.originals(), read: { held.original($0) }, as: opened)
                 return Self.event(saved, run: run, attempt: attempt)
             },
             frame: frame,
@@ -77,7 +81,9 @@ final class UploadSession {
     /// shared upload's own counts as fixed names (US-12 AC30).
     func send(_ action: UploadAction) {
         switch action {
-        case .save: tellUsage { [analytics, files = drawn?.page?.files.rows.count ?? 0] in analytics?.event(files >= 2 ? .labSaveAll : .labSaveOne) }
+        case .save:
+            saveClaimed = true
+            tellUsage { [analytics, files = drawn?.page?.files.rows.count ?? 0] in analytics?.event(files >= 2 ? .labSaveAll : .labSaveOne) }
         case .close, .discard: tellUsage {}
         default: break
         }
@@ -114,6 +120,7 @@ final class UploadSession {
         if let drawn, drawn.text == text { return drawn.page }
         let page = UploadPage.decoded(text)
         drawn = (text, page)
+        if page?.phase == "saveFailed" || page?.phase == "done" { saveClaimed = false }
         return page
     }
 

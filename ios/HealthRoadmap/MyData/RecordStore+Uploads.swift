@@ -108,9 +108,9 @@ extension RecordStore {
     /// Saves the upload whose state is `state`, in the record's turn, as `saveDocument` files one
     /// document: in the cloud through the engine's session at the erase the screen shows, then drawn;
     /// on the phone over the record the save began from, written to the file before it answers.
-    func saveUpload(state: String, originals: [String: String], read: @escaping @Sendable (String) -> Data?) async -> Result<UploadSaveAnswer.Outcome, LabRefusal> {
-        let seen = pinned ?? screen
-        return await chain { await self.saveUploadInTurn(state: state, originals: originals, read: read, as: seen) }.value
+    /// `seen`: the record the page opened on, refused if the store no longer shows it.
+    func saveUpload(state: String, originals: [String: String], read: @escaping @Sendable (String) -> Data?, as seen: Screen) async -> Result<UploadSaveAnswer.Outcome, LabRefusal> {
+        await chain { await self.saveUploadInTurn(state: state, originals: originals, read: read, as: seen) }.value
     }
 
     private func saveUploadInTurn(state: String, originals: [String: String], read: @escaping @Sendable (String) -> Data?, as seen: Screen) async -> Result<UploadSaveAnswer.Outcome, LabRefusal> {

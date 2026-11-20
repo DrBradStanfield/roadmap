@@ -33,7 +33,10 @@ struct LabUploadSheet: View {
     /// Close and swipe-down wait for a save, or for save all (AC8b); on the shared page, as its view says.
     private var closeHeld: Bool {
         if case .savingAll = step { return true }
-        if case .shared(let shared) = step, case .drawn(let text) = shared.model.state { return shared.page(text)?.closeEnabled == false }
+        if case .shared(let shared) = step {
+            if shared.saveClaimed { return true }
+            if case .drawn(let text) = shared.model.state { return shared.page(text)?.closeEnabled == false }
+        }
         return reviewSaving
     }
 

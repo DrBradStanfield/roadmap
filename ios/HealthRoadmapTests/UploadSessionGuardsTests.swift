@@ -101,6 +101,38 @@ final class UploadSessionGuardsTests: XCTestCase, CloudFixtures {
         upload.end()
     }
 
+    /// Codex re-check 1: another device's erase lands, then Save and at once Close (which unpins the
+    /// record) before the saving view comes back. The Save is still checked against the record the
+    /// page opened on: refused, nothing in the erased record, no original put. Close waits from the tap.
+    func testSaveThenCloseAfterAnEraseIsStillRefused() async throws {
+        let before = try record(days: ["2026-10-01"], device: "web")
+        dropbox.put(before)
+        let (store, sync) = try await cloud()
+        let upload = session(store)
+        try await readOne(upload)
+        var erased = before
+        erased["measurements"] = []
+        erased["erasedRows"] = ["fromEpoch": 1, "ids": ((before["measurements"] as? [[String: Any]]) ?? []).compactMap { $0["id"] as? String }]
+        var meta = before["meta"] as! [String: Any]
+        meta["eraseEpoch"] = 1
+        meta["erasedAt"] = "2026-10-21T09:00:00.000Z"
+        meta["updatedAt"] = "2026-10-21T09:00:00.000Z"
+        meta["lamport"] = ((meta["lamport"] as? Int) ?? 0) + 10
+        erased["meta"] = meta
+        dropbox.put(erased)
+        await sync.syncNow()
+        upload.send(.save)
+        XCTAssertTrue(upload.saveClaimed, "Close waits from the instant of the tap")
+        upload.end() // Close's unpin, before the saving view arrives
+        try await until("refused") { page(upload)?.save.error != nil }
+        XCTAssertEqual(page(upload)?.save.error, RecordStore.recordChanged)
+        XCTAssertFalse(upload.saveClaimed)
+        XCTAssertEqual(dropbox.documents, [:], "no original put")
+        XCTAssertFalse(store.recordJSON.contains("Letter 1"))
+        await sync.background()
+        XCTAssertFalse(String(data: try JSONSerialization.data(withJSONObject: dropbox.record), encoding: .utf8)!.contains("Letter 1"))
+    }
+
     /// A Disconnect while the page is open: Save is refused, never written to the phone's file instead.
     func testADisconnectWhileThePageIsOpenRefusesItsSave() async throws {
         dropbox.put(try record(days: [], device: "web"))
@@ -130,7 +162,7 @@ final class UploadSessionGuardsTests: XCTestCase, CloudFixtures {
                 await withCheckedContinuation { (done: CheckedContinuation<Void, Never>) in gate.hold { done.resume() } }
                 return UploadSession.event(.failure(LabRefusal(message: "Not saved.")), run: run, attempt: attempt)
             }
-            return UploadSession.event(await store.saveUpload(state: state, originals: [:], read: { _ in nil }), run: run, attempt: attempt)
+            return UploadSession.event(await store.saveUpload(state: state, originals: [:], read: { _ in nil }, as: await store.screen), run: run, attempt: attempt)
         })
         try await readOne(upload)
         upload.send(.save)

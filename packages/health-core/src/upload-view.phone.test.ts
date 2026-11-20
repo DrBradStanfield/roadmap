@@ -48,9 +48,15 @@ describe('upload view for the phone: each value as the report printed it', () =>
     expect(Object.values(byRef).some((r) => 'printed' in r)).toBe(false);
   });
 
-  it("a value's own day only when it is not the report's; an undated previous column has none", () => {
+  it('every value shows the day it saves on: its own, else its report\'s, written as the web writes dates', () => {
     const rows = all(open([read('lab', labX({ values: [core(), core({ metric: 'hdl', recordedAt: '2026-06-01', displayValue: 1.2, valueSI: 1.2 })] }))]));
-    expect(rows.map((r) => [r.ref, r.day])).toEqual([['v0', null], ['v1', '2026-06-01']]);
+    expect(rows.map((r) => [r.ref, r.day, r.dayLine])).toEqual([['v0', DAY, '1 Nov 2026'], ['v1', '2026-06-01', '1 Jun 2026']]);
+  });
+
+  it('the same test in two reports on different days is told apart by its day (Codex re-check item 2)', () => {
+    const v = viewOf(open([read('a', labX()), read('b', labX({ reportDate: '2026-09-15' }))]));
+    const rows = v.sure?.rows ?? [];
+    expect(rows.map((r) => [r.label, r.dayLine])).toEqual([['LDL Cholesterol', '1 Nov 2026'], ['LDL Cholesterol', '15 Sep 2026']]);
   });
 
   it('Replace is offered on a value whose day the record already holds, in the web\'s word', () => {
@@ -60,6 +66,7 @@ describe('upload view for the phone: each value as the report printed it', () =>
     const row = v.sections.flatMap((x) => (x.kind === 'unsure' ? x.rows : []))[0];
     expect(row).toMatchObject({ ref: 'v0', replace: 'Replace', replaceLabel: 'Replace the saved LDL Cholesterol value from 1 Nov 2026', replacing: false });
     expect(row.replaces).toBeTruthy();
+    expect([row.value, row.unit, row.held]).toEqual(['3.1', 'mmol/L', '2 mmol/L']);
   });
 });
 

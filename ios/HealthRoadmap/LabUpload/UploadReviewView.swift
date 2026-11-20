@@ -153,6 +153,8 @@ struct UploadReviewView: View {
         if let replace = row.replace, let held = row.replaces {
             VStack(alignment: .leading, spacing: 8) {
                 valueText(row)
+                // What the record holds that day, beside the switch, as the web's conflict cell shows it.
+                if let held = row.held { Text(verbatim: held).font(.body.monospacedDigit()).foregroundStyle(.secondary) }
                 Toggle(isOn: Binding(get: { row.replacing ?? false }, set: { on in
                     send(.replace(fileId: row.fileId, ref: row.ref, correctsId: on ? held : nil))
                 })) { Text(verbatim: replace) }
@@ -172,8 +174,8 @@ struct UploadReviewView: View {
         VStack(alignment: .leading, spacing: 2) {
             Text(verbatim: row.label)
             if let value = row.value { Text(verbatim: [value, row.unit ?? ""].filter { !$0.isEmpty }.joined(separator: " ")).font(.body.monospacedDigit()) }
-            // The app's existing words for a value's own day.
-            if let day = row.day { Text("Dated \(DayText.short(day)) on the report").font(.caption).foregroundStyle(.secondary) }
+            // The day it saves on, so the same test from two reports is told apart.
+            if let dayLine = row.dayLine { Text(verbatim: dayLine).font(.caption).foregroundStyle(.secondary) }
             ForEach([row.question, row.unitNote].compactMap { $0 }, id: \.self) { Text(verbatim: $0).font(.caption).foregroundStyle(.secondary) }
             // The status tone, not system orange: AA contrast as caption text, light and dark.
             ForEach([row.conflict, row.error].compactMap { $0 }, id: \.self) {

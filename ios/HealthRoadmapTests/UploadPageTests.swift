@@ -209,6 +209,8 @@ final class UploadPageTests: XCTestCase {
         let rows = Self.unsure(page)
         let ldl = try XCTUnwrap(rows.first { $0.ref == "v0" })
         XCTAssertEqual(ldl.replace, "Replace")
+        XCTAssertEqual([ldl.value, ldl.held], ["3.1", "2 mmol/L"], "both numbers, the held one as stored")
+        XCTAssertEqual(ldl.dayLine, "1 Oct 2026")
         let held = try XCTUnwrap(ldl.replaces)
         XCTAssertEqual(rows.first { $0.ref == "v1" }?.question, "Was this fasting?")
         drive.step(UploadAction.replace(fileId: "lab", ref: "v0", correctsId: held).event(now: Self.now))

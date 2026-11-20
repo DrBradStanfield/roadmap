@@ -173,7 +173,7 @@ describe('bridge contract (US-25 AC18)', () => {
       documents: [{ id: 'd2', title: 'Held', type: 'clinic_letter', date: '2026-01-01', fileRef: '', contentHash: 'h-meta', mimeType: '', extractedText: '', addedAt: NOW, metadata: {}, sourceFileName: 'kn.pdf' }] });
     const call = (name: string, ...args: unknown[]) => JSON.parse(door[name](...args));
     const row = { fileId: 'string', ref: 'string', label: 'string', reasons: 'object', conflict: 'string?', ticked: 'boolean', replaces: 'string?', replacing: 'boolean', error: 'string?',
-      value: 'string', unit: 'string', question: 'string?', unitNote: 'string?', day: 'string?', replace: 'string?', replaceLabel: 'string?' };
+      value: 'string', unit: 'string', question: 'string?', unitNote: 'string?', day: 'string?', dayLine: 'string?', replace: 'string?', replaceLabel: 'string?', held: 'string?' };
     const SECTIONS: Record<string, unknown> = {
       undated: { kind: 'string', fileId: 'string', title: 'string', label: 'string', name: 'string', choose: 'string', chosen: 'string?' },
       undatedPrevious: { kind: 'string', fileId: 'string', name: 'string', month: 'string?', before: 'string?' },

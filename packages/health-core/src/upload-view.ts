@@ -10,12 +10,14 @@
  */
 import { DOCUMENT_TYPES, type DocumentType } from './validation';
 import { IMPORT_REVIEW_TEXT, isOfferedRef, KIND_WORDS, notSavedGroups, type ClassifiedValue, type UnsureReason } from './import-review';
-import type { RoadmapFile } from './roadmap-file';
+import type { FileLabValue, FileMeasurement, RoadmapFile } from './roadmap-file';
+import { isReadableRow } from './readable-rows';
+import { getDisplayLabel, type MetricType } from './units';
 import { inFlight, RETRYABLE, saveEnabled, type FileStatus, type UploadFile, type UploadState } from './upload-flow';
 import { planIsEmpty, uploadSavePlan, type UploadSavePlan } from './upload-plan';
 import type { UploadPlatform } from './upload-rules';
 import { readFiles, type UploadReview } from './upload-review';
-import { failLine, FILE_NOTICE_TEXT, FIX_ERRORS_TEXT, longDate, REFUSED_TEXT, REVIEW_CELL_TEXT, UPLOAD_TEXT } from './upload-text';
+import { failLine, FILE_NOTICE_TEXT, FIX_ERRORS_TEXT, longDate, REFUSED_TEXT, REVIEW_CELL_TEXT, UNREADABLE_VALUE_TEXT, UPLOAD_TEXT } from './upload-text';
 import { UNDATED_PREVIOUS, type UnifiedExtractionResult } from './lab-extraction';
 import { withComparator } from './lab-limits';
 import { validDay } from './record-edits';
@@ -31,10 +33,12 @@ export interface ValueRow {
   ticked: boolean; replaces: string | null; replacing: boolean; error: string | null;
   /** Added for the iPhone's page (design PR 15), additive: the value as the report printed it, its
    *  limit sign kept ("< 0.6"), and its unit; the extractor's own question (data from the read);
-   *  `unitNote` when the read guessed the unit; the value's own day (YYYY-MM-DD) when it is not the
-   *  report's; the Replace control's word and spoken name when there is a held row to replace. */
-  value?: string; unit?: string; question?: string | null; unitNote?: string | null; day?: string | null;
-  replace?: string | null; replaceLabel?: string | null;
+   *  `unitNote` when the read guessed the unit; the day it will be saved on (its own, else its
+   *  report's; YYYY-MM-DD, null while the report waits for one) and that day as the web writes it;
+   *  the Replace control's word and spoken name, and `held`, the value the record holds that day
+   *  (number and unit as stored, or the words for a value no reader can read), when there is one. */
+  value?: string; unit?: string; question?: string | null; unitNote?: string | null; day?: string | null; dayLine?: string | null;
+  replace?: string | null; replaceLabel?: string | null; held?: string | null;
 }
 export type UploadSection =
   /** `choose`: the button that opens the day picker; no day is assumed (design PR 15). `chosen`: the
@@ -124,7 +128,7 @@ function progress(s: UploadState, files: readonly UploadFile[]): UploadView['pro
 /**
  * A read value as the report printed it (the phone's lab review rule, ios/engine/lab-review.ts): the
  * number with its limit sign, its unit, the extractor's question, a note when the read guessed the
- * unit, and its own day when that is not the report's (`reportDay`). The number shown is the printed
+ * unit, and the day it saves on: its own, else its report's (`reportDay`). The number shown is the printed
  * one, so the web's "Printed:" line (shown only when the two differ) never applies.
  */
 function printedFacts(x: UnifiedExtractionResult | undefined, ref: string, reportDay: string | null, now: string) {
@@ -139,19 +143,29 @@ function printedFacts(x: UnifiedExtractionResult | undefined, ref: string, repor
     unit: coreValue ? coreValue.displayUnit : x!.additionalValues![i].unit,
     question: own.question ?? null,
     unitNote: coreValue?.unitGuessed ? REVIEW_CELL_TEXT.checkUnit : null,
-    day: day && day !== reportDay?.slice(0, 10) ? day : null,
-    slotDay: day ?? reportDay?.slice(0, 10) ?? null,
+    day: day ?? reportDay?.slice(0, 10) ?? null,
   };
 }
 
-const valueRow = (review: UploadReview, extractions: Map<string, UnifiedExtractionResult>, now: string) => (v: ClassifiedValue): ValueRow => {
-  const { slotDay, ...facts } = printedFacts(extractions.get(review.labFiles[v.file].fileId), v.ref, review.labFiles[v.file].day, now);
-  const held = review.held.has(`${v.file}:${v.ref}`);
-  return { ...facts, ...rowOf(review, v),
-    replace: held ? REVIEW_CELL_TEXT.replace : null,
-    replaceLabel: held && slotDay ? REVIEW_CELL_TEXT.replaceLabel(v.label, longDate(slotDay) ?? slotDay) : null,
+/** A held row as the record stores it: its number with its limit sign and its unit; never a row no reader can read (US-65 AC3). */
+function heldText(row: FileMeasurement | FileLabValue | undefined): string | null {
+  if (!row) return null;
+  if (!isReadableRow('metricType' in row ? 'measurements' : 'labValues', row)) return UNREADABLE_VALUE_TEXT;
+  const unit = 'metricType' in row ? getDisplayLabel(row.metricType as MetricType, 'si') : row.unit;
+  return [withComparator(String(row.value), row.comparator), unit].filter(Boolean).join(' ');
+}
+
+const valueRow = (review: UploadReview, extractions: Map<string, UnifiedExtractionResult>, rows: Map<string, FileMeasurement | FileLabValue>, now: string) =>
+  (v: ClassifiedValue): ValueRow => {
+    const facts = printedFacts(extractions.get(review.labFiles[v.file].fileId), v.ref, review.labFiles[v.file].day, now);
+    const heldId = review.held.get(`${v.file}:${v.ref}`);
+    const dayLine = facts.day ? longDate(facts.day) ?? facts.day : null;
+    return { ...facts, dayLine, ...rowOf(review, v),
+      replace: heldId ? REVIEW_CELL_TEXT.replace : null,
+      replaceLabel: heldId && dayLine ? REVIEW_CELL_TEXT.replaceLabel(v.label, dayLine) : null,
+      held: heldText(heldId ? rows.get(heldId) : undefined),
+    };
   };
-};
 
 const rowOf = (review: UploadReview, v: ClassifiedValue) => ({
   fileId: review.labFiles[v.file].fileId, ref: v.ref, label: v.label,
@@ -218,7 +232,8 @@ export function uploadView(s: UploadState, record: RoadmapFile, now: string, rev
   const values = review.classification.values;
   const readById = new Map(readFiles(s).map((f) => [f.id, f]));
   const extractions = new Map([...readById].map(([id, f]) => [id, f.status.extraction]));
-  const row = valueRow(review, extractions, now);
+  const rowsById = new Map<string, FileMeasurement | FileLabValue>([...record.measurements, ...record.labValues].map((r) => [r.id, r]));
+  const row = valueRow(review, extractions, rowsById, now);
   const offered = values.filter((v) => isOfferedRef(v.ref));
   const unsure = offered.filter((v) => v.group === 'unsure');
   const sure = offered.filter((v) => v.group === 'sure');

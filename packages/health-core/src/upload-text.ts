@@ -74,6 +74,9 @@ export const REVIEW_CELL_TEXT = {
   checkUnit: 'Check this value and its unit against the report',
 } as const;
 
+/** A held value no reader can read is never echoed (US-65 AC3): the agent tools' words for it (mcp-refusals.ts), shared. */
+export const UNREADABLE_VALUE_TEXT = 'a value this app cannot read';
+
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 /** "5 Jan 2019" for 2019-01-05, "Jun 2025" for 2025-06; null for anything else (moved from the web's
  *  review-dates.ts, byte for byte, so both clients write a day the same way). */
