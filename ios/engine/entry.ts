@@ -257,9 +257,12 @@ export function uploadStartJson(platform: string): string {
  *   none), contentType (its header, null when none)}: a real HTTP refusal before any stream (the
  *   gate's 401, 413, 429, 503) or a thrown request; the door adds `failure` (appGateFailure: a final 401, and any other 4xx but 422 and 429, is
  *   app_refused, a 413 too_large; the gate's own `error` words, trimmed and capped, travel as text).
- *   `local` (optional): {kind: "cannotAttest"} or {kind: "attestFailed", stage, code} (each letters, digits,
- *   dash or underscore, at most 24): the phone could not prove the app and sent nothing; status and
- *   body are then not read (US-52 AC7e).
+ *   `local` (optional), the phone's own outcome when no lab-read answer came; status and body are
+ *   then not read (US-52 AC7e): {kind: "cannotAttest"}; {kind: "attestFailed", stage, code} (each
+ *   letters, digits, dash or underscore, at most 24); {kind: "refused", status, message}, the App
+ *   Attest registration or challenge refused (under 500 app_refused, from 500 server_error, with
+ *   its words); {kind: "badAnswer"}; or {kind: "timeout" | "dropped" | "unreachable"}, how the
+ *   request failed on the way. The gate's 400 `body_read_failed` is the network's, mended.
  * - answered {run, id, extraction (a read, as received), now}: for a route that answers the read
  *   whole; the door checks it (health-core UPLOAD_EXTRACTION) and adds `legacy` (readIsLegacy).
  * - chose {id, change, now}: change is one of {tick, on}, {testDay}, {previousDay}, {replace,

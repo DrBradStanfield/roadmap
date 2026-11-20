@@ -260,7 +260,7 @@ actor UploadRunner {
                 } catch is CancellationError {
                     return // aborted: the engine already moved the file on
                 } catch {
-                    outcome = LabReadSender.noAnswer
+                    outcome = .local(.dropped) // nothing to send: no pages held for it
                 }
                 await self?.sent(id, token: token, event: Self.event(for: outcome, run: run, id: id))
             })
@@ -303,12 +303,9 @@ actor UploadRunner {
         case .ended(let line):
             EngineNatives.json(["type": "streamEnded", "run": run, "id": id, "line": line ?? NSNull(), "now": now()])
         case .refused(let status, let body, let contentType):
-            EngineNatives.json(["type": "sendFailed", "run": run, "id": id, "status": status ?? NSNull(), "body": body ?? NSNull(), "contentType": contentType ?? NSNull()])
-        case .cannotAttest:
-            EngineNatives.json(["type": "sendFailed", "run": run, "id": id, "status": NSNull(), "body": NSNull(), "contentType": NSNull(), "local": ["kind": "cannotAttest"]])
-        case .attestFailed(let stage, let code):
-            EngineNatives.json(["type": "sendFailed", "run": run, "id": id, "status": NSNull(), "body": NSNull(), "contentType": NSNull(),
-                                "local": ["kind": "attestFailed", "stage": stage, "code": code]])
+            EngineNatives.json(["type": "sendFailed", "run": run, "id": id, "status": status, "body": body, "contentType": contentType ?? NSNull()])
+        case .local(let local):
+            EngineNatives.json(["type": "sendFailed", "run": run, "id": id, "status": NSNull(), "body": NSNull(), "contentType": NSNull(), "local": local.wire])
         }
     }
 

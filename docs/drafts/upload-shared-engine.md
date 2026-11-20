@@ -252,7 +252,7 @@ Add medical records                                   Close
  Day of the test              [ 3 Nov 2026 ]
 ---------------------------------------------------------------
  CHECK THESE 2 VALUES             (IMPORT_REVIEW_TEXT, as built)
- [x] Ferritin  ...  /  [ ] HbA1c  ... question
+ [x] Ferritin  ...  /  [x] HbA1c  ... question  (saved unless cleared, Brad 2026-11-20)
 ---------------------------------------------------------------
  1 FILE NOT READ
  scan-3.jpg   Our server was busy.            [ Try again ]

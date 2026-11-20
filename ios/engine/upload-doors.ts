@@ -5,9 +5,10 @@
 // (upload-schema.ts), and the PARSED value is what runs. A malformed input answers a refusal,
 // never a throw. Nothing is logged: the state holds file names, hashes and read values.
 import { initialUpload, transition, type UploadEvent, type UploadState } from '../../packages/health-core/src/upload-flow';
-import { ATTEST_PART, UPLOAD_EVENTS, UPLOAD_STATE } from '../../packages/health-core/src/upload-schema';
+import { ATTEST_PART, NETWORK_FAILURE, UPLOAD_EVENTS, UPLOAD_STATE } from '../../packages/health-core/src/upload-schema';
 import { knownAs, knownIndex, readIsLegacy, type KnownIndex } from '../../packages/health-core/src/upload-known';
-import { appGateFailure } from '../../packages/health-core/src/upload-failure';
+import { appGateFailure, boundedWords, type FailDetail, type UploadFailure } from '../../packages/health-core/src/upload-failure';
+import { PHONE_FAIL_TEXT } from '../../packages/health-core/src/upload-text';
 import { labStreamAnswer } from '../../packages/health-core/src/upload-answer';
 import { uploadReview } from '../../packages/health-core/src/upload-review';
 import { uploadView } from '../../packages/health-core/src/upload-view';
@@ -36,11 +37,37 @@ export class Refused extends Error {
 // --- The wire -------------------------------------------------------------------------------
 
 const platform = z.enum(['web', 'phone']);
-/** A send that never reached the server because the phone could not prove the app (US-52 AC7e). */
+/**
+ * A send with no lab-read answer, as the phone saw it (US-52 AC7e): the phone could not prove the
+ * app, its App Attest registration was refused (`refused`, with the status and the words today's
+ * iPhone shows), an answer it could not read, or how the request failed on the way (its kind).
+ */
 const LOCAL = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('cannotAttest') }),
   z.strictObject({ kind: z.literal('attestFailed'), stage: ATTEST_PART, code: ATTEST_PART }),
+  z.strictObject({ kind: z.literal('refused'), status: z.number().int().min(100).max(599), message: z.string().max(2000) }),
+  z.strictObject({ kind: z.literal('badAnswer') }),
+  z.strictObject({ kind: NETWORK_FAILURE }),
 ]);
+
+/**
+ * The phone's own outcome as the failure: a refused registration under 500 (a 429 included: the
+ * registration's limit, not the upload's day) is app_refused, which Try again never mends, so taps
+ * cannot spend registrations; from 500 the server's failure, which it mends; each with its words.
+ */
+function localFailure(local: z.infer<typeof LOCAL>): { failure: UploadFailure; detail?: FailDetail } {
+  switch (local.kind) {
+    case 'cannotAttest': return { failure: 'cannot_attest' };
+    case 'attestFailed': return { failure: 'attest_failed', detail: { stage: local.stage, code: local.code } };
+    case 'badAnswer': return { failure: 'app_refused', detail: { message: PHONE_FAIL_TEXT.badAnswer } };
+    case 'refused': {
+      const message = boundedWords(local.message);
+      const failure = local.status < 500 ? 'app_refused' : 'server_error';
+      return message ? { failure, detail: { message } } : { failure };
+    }
+    default: return { failure: 'network', detail: { network: local.kind } };
+  }
+}
 const maybeText = z.string().nullable();
 const E = UPLOAD_EVENTS;
 /**
@@ -99,17 +126,15 @@ function engineEvent(state: UploadState, wire: Wire, record: () => RoadmapFile):
     case 'answered': return { ...wire, legacy: legacy(wire.id, wire.extraction) };
     case 'sendFailed': {
       const { status, body, contentType, local, ...rest } = wire;
-      // The phone's own App Attest outcome, when there is one, is the failure: status and body are not read.
-      if (local?.kind === 'cannotAttest') return { ...rest, failure: 'cannot_attest' };
-      if (local) return { ...rest, failure: 'attest_failed', detail: { stage: local.stage, code: local.code } };
-      return { ...rest, ...appGateFailure(status, body, contentType) };
+      // The phone's own outcome, when there is one, is the failure: status and body are not read.
+      return { ...rest, ...(local ? localFailure(local) : appGateFailure(status, body, contentType)) };
     }
     case 'streamEnded': {
       const { run, id, line, now } = wire;
       const answer = labStreamAnswer(line);
       return 'extraction' in answer
         ? { type: 'answered', run, id, extraction: answer.extraction, legacy: legacy(id, answer.extraction), now }
-        : { type: 'sendFailed', run, id, failure: answer.failure };
+        : { type: 'sendFailed', run, id, failure: answer.failure, ...(answer.detail ? { detail: answer.detail } : {}) };
     }
     default: return wire;
   }

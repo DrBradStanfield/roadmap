@@ -74,8 +74,17 @@ const SEND_ANSWERS: Array<{ status: number | null; body: string | null; contentT
   { status: 400, body: '{"success":false,"error":"Invalid request"}', contentType: 'application/json' },
   { status: 503, body: '{"success":false,"error":"This is not available right now. Please try again later.","reason":"unavailable"}', contentType: 'application/json' },
 ];
-/** A send the phone could not prove: no answer was asked for. */
-const LOCALS = [{ kind: 'cannotAttest' }, { kind: 'attestFailed', stage: 'assert', code: '3' }] as const;
+/** A send with no lab-read answer, as the phone saw it, and what the engine makes of it (an oracle written out, not computed). */
+const LOCALS = [
+  [{ kind: 'cannotAttest' }, { failure: 'cannot_attest' }],
+  [{ kind: 'attestFailed', stage: 'assert', code: '3' }, { failure: 'attest_failed', detail: { stage: 'assert', code: '3' } }],
+  [{ kind: 'refused', status: 429, message: ' The app could not be registered. ' }, { failure: 'app_refused', detail: { message: 'The app could not be registered.' } }],
+  [{ kind: 'refused', status: 503, message: 'Busy' }, { failure: 'server_error', detail: { message: 'Busy' } }],
+  [{ kind: 'badAnswer' }, { failure: 'app_refused', detail: { message: "The server's answer could not be read." } }],
+  [{ kind: 'timeout' }, { failure: 'network', detail: { network: 'timeout' } }],
+  [{ kind: 'dropped' }, { failure: 'network', detail: { network: 'dropped' } }],
+  [{ kind: 'unreachable' }, { failure: 'network', detail: { network: 'unreachable' } }],
+] as const;
 const NAMES = ['old.pdf', 'a.pdf', 'b.jpg', 'c.docx', '__MACOSX/e.pdf'];
 
 type Wire = Record<string, unknown> & { type: string };
@@ -116,12 +125,12 @@ function genEvent(r: () => number, s: UploadState, mint: () => string): { wire: 
     [4, () => {
       const id = idAt('sending');
       const line = pick([JSON.stringify({ status: 200, body: { success: true, data: pick(READS) } }), JSON.stringify({ status: 429, body: { success: false } }),
-        JSON.stringify({ status: 422, body: { errorCode: 'refused' } }), null, '{cut']);
+        JSON.stringify({ status: 422, body: { errorCode: 'refused' } }), JSON.stringify({ status: 500, body: { success: false, error: 'Failed to process request' } }), null, '{cut']);
       const a = labStreamAnswer(line);
       const name = files.find((f) => f.id === id)?.name;
       return { wire: { type: 'streamEnded', run, id, line, now: NOW }, whole: 'extraction' in a
         ? { type: 'answered', run, id, extraction: a.extraction, legacy: name !== undefined && readIsLegacy(RECORD, name, a.extraction), now: NOW }
-        : { type: 'sendFailed', run, id, failure: a.failure } };
+        : { type: 'sendFailed', run, id, failure: a.failure, ...(a.detail ? { detail: a.detail } : {}) } };
     }],
     [2, () => {
       const id = idAt('sending');
@@ -130,10 +139,8 @@ function genEvent(r: () => number, s: UploadState, mint: () => string): { wire: 
     }],
     [1, () => {
       const id = idAt('sending');
-      const local = pick(LOCALS);
-      return { wire: { type: 'sendFailed', run, id, status: null, body: null, contentType: null, local }, whole: local.kind === 'cannotAttest'
-        ? { type: 'sendFailed', run, id, failure: 'cannot_attest' }
-        : { type: 'sendFailed', run, id, failure: 'attest_failed', detail: { stage: local.stage, code: local.code } } };
+      const [local, made] = pick(LOCALS);
+      return { wire: { type: 'sendFailed', run, id, status: null, body: null, contentType: null, local }, whole: { type: 'sendFailed', run, id, ...made } as UploadEvent };
     }],
     [2, () => same({ type: 'retry', id: coin(0.5) ? 'all' : idAt('failed') })],
     [1, () => same({ type: 'stop' })],
@@ -310,6 +317,30 @@ describe('upload doors refuse malformed input and never throw (shared upload PR 
       }
     }
   });
+});
+
+describe('a send that failed, through the step door: each answer\'s reason and words, written out (US-52 AC7e)', () => {
+  const sending = JSON.stringify({
+    phase: 'open', platform: 'phone', run: 1, started: NOW, firstRead: null,
+    files: [{ id: 'f', name: 'f.pdf', bytes: 1, hash: 'h', pages: { count: 1, truncated: false }, status: { s: 'sending', attempt: 1 } }],
+  });
+  const json = 'application/json';
+  const cases: Array<[number | null, string | null, string | null, unknown]> = [
+    [401, '{"success":false,"error":"This request was not signed by the app.","reason":"bad_signature"}', json, { s: 'failed', reason: 'appRefused', attempt: 1, detail: { message: 'This request was not signed by the app.' } }],
+    [413, '{"success":false,"error":"Request too large","reason":"too_large"}', json, { s: 'failed', reason: 'tooLarge', attempt: 1, detail: { message: 'Request too large' } }],
+    [400, '{"success":false,"error":"The request did not arrive whole. Please try again.","reason":"body_read_failed"}', json, { s: 'failed', reason: 'network', attempt: 1, detail: { message: 'The request did not arrive whole. Please try again.' } }],
+    [400, '{"success":false,"error":"Invalid request"}', json, { s: 'failed', reason: 'appRefused', attempt: 1, detail: { message: 'Invalid request' } }],
+    [429, '{"success":false,"error":"Daily limit reached. Please try again tomorrow.","reason":"limit"}', json, { s: 'failed', reason: 'dailyLimit', attempt: 1, detail: { message: 'Daily limit reached. Please try again tomorrow.' } }],
+    [503, '{"success":false,"error":"This is not available right now. Please try again later.","reason":"unavailable"}', json, { s: 'failed', reason: 'server', attempt: 1, detail: { message: 'This is not available right now. Please try again later.' } }],
+    [502, '<html>', 'text/html', { s: 'failed', reason: 'server', attempt: 1 }],
+    [null, null, null, { s: 'failed', reason: 'network', attempt: 1 }],
+  ];
+  for (const [status, body, contentType, want] of cases) {
+    it(`${status} ${body?.slice(0, 40)}`, () => {
+      const step = JSON.parse(uploadStepJson(sending, JSON.stringify({ type: 'sendFailed', run: 1, id: 'f', status, body, contentType }), RECORD_TEXT, DEV));
+      expect(step.state.files[0].status).toEqual(want);
+    });
+  }
 });
 
 describe('upload view cost (shared upload PR 12)', () => {

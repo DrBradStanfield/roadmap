@@ -47,41 +47,52 @@ export function uploadFailure(status: number | null, body: unknown): WebUploadFa
  * `parseJsonResponse`): a body its header does not call JSON is null; JSON that will not parse, undefined.
  */
 export function uploadFailureOfText(status: number | null, text: string | null, contentType: string | null): WebUploadFailure {
-  let body: unknown = null;
-  if (text !== null && (contentType ?? '').includes('application/json')) {
-    try { body = JSON.parse(text); } catch { body = undefined; }
-  }
-  return uploadFailure(status, body);
+  return uploadFailure(status, bodyOf(text, contentType));
+}
+
+/** The body as the web's reader reads it: null when its header does not call it JSON; undefined when it will not parse. */
+function bodyOf(text: string | null, contentType: string | null): unknown {
+  if (text === null || !(contentType ?? '').includes('application/json')) return null;
+  try { return JSON.parse(text); } catch { return undefined; }
 }
 
 /**
- * What a failed send said beyond its code, for its line (US-52 AC7e): the app gate's own `error`
- * words, as today's iPhone shows them; or the phone's App Attest step and code that failed.
+ * What a failed send said beyond its code, for its line (US-52 AC7e): the server's own `error`
+ * words, as today's iPhone shows them; the phone's App Attest step and code that failed; or how the
+ * phone's request failed on the way (`network`), which today's iPhone words each its own way.
  */
-export type FailDetail = { message: string } | { stage: string; code: string };
-/** The gate's words are shown as text, never read: trimmed, at most this long. */
+export const NETWORK_FAILURES = ['timeout', 'dropped', 'unreachable'] as const;
+export type NetworkFailure = (typeof NETWORK_FAILURES)[number];
+export type FailDetail = { message: string } | { stage: string; code: string } | { network: NetworkFailure };
+/** The server's words are shown as text, never read: trimmed, at most this many UTF-16 units. */
 export const GATE_WORDS_MAX = 200;
+
+/** Text as words to show: trimmed, cut at GATE_WORDS_MAX between code points (never inside an emoji's pair); null when none. */
+export function boundedWords(text: unknown): string | null {
+  if (typeof text !== 'string') return null;
+  let out = '';
+  for (const point of text.trim()) {
+    if (out.length + point.length > GATE_WORDS_MAX) break;
+    out += point;
+  }
+  return out.trimEnd() || null;
+}
 
 /**
  * The app gate's refusal before a stream, as the iPhone saw it (app-gate.server.ts, lab-read): read
  * as `uploadFailureOfText` reads it, except that a 401 (final: the app already retried the one it
  * mends) is `app_refused`, a 413 `too_large`, and any other 4xx but 422 and 429 `app_refused` too,
- * none of which Try again mends, as today's iPhone never offers it under 500. A refusal from 400 up,
- * but a 422, carries the gate's own `error` words, as today's iPhone shows them.
+ * none of which Try again mends, as today's iPhone never offers it under 500. One 400 is mended: the
+ * gate's `body_read_failed`, an upload that did not arrive whole, the network's fault and uncharged
+ * (owner ruling on PR 1907, S1). A refusal from 400 up, but a 422, carries the gate's own `error`
+ * words, as today's iPhone shows them.
  */
 export function appGateFailure(status: number | null, text: string | null, contentType: string | null): { failure: UploadFailure; detail?: FailDetail } {
-  const gate = status !== null && status >= 400 && status < 500 && ![413, 422, 429].includes(status);
-  const failure = gate ? 'app_refused' : status === 413 ? 'too_large' : uploadFailureOfText(status, text, contentType);
-  const message = status !== null && status >= 400 && status !== 422 ? gateWords(text, contentType) : null;
+  const body = bodyOf(text, contentType);
+  const said = body !== null && typeof body === 'object' ? (body as { error?: unknown; reason?: unknown }) : {};
+  const failure = status === 400 && said.reason === 'body_read_failed' ? 'network'
+    : status !== null && status >= 400 && status < 500 && ![413, 422, 429].includes(status) ? 'app_refused'
+      : status === 413 ? 'too_large' : uploadFailure(status, body);
+  const message = status !== null && status >= 400 && status !== 422 ? boundedWords(said.error) : null;
   return message ? { failure, detail: { message } } : { failure };
-}
-
-function gateWords(text: string | null, contentType: string | null): string | null {
-  if (text === null || !(contentType ?? '').includes('application/json')) return null;
-  try {
-    const error: unknown = (JSON.parse(text) as { error?: unknown } | null)?.error;
-    return typeof error === 'string' ? error.trim().slice(0, GATE_WORDS_MAX) || null : null;
-  } catch {
-    return null;
-  }
 }

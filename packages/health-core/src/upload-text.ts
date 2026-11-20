@@ -103,6 +103,14 @@ export const PHONE_FAIL_TEXT = {
   cannotAttest: 'Chat and lab upload need a device that can prove the app is genuine (Apple App Attest). This device cannot.',
   /** Followed by " (App Attest <stage> <code>)" when the step and code are known. */
   attestFailed: 'This iPhone could not prove the app is genuine, so nothing was sent. Please try again.',
+  /** A server answer the app could not read (AppAttestClient.Failure.badResponse). */
+  badAnswer: "The server's answer could not be read.",
+  /** How a request failed on the way (AppAttestClient.words, its subject "The server"). */
+  network: {
+    timeout: 'The server took too long to answer. Please try again.',
+    dropped: 'The connection dropped before the answer finished. Please try again.',
+    unreachable: 'The server could not be reached. Check your connection, then try again.',
+  },
 } as const;
 
 /**
@@ -136,6 +144,8 @@ export const FAIL_TEXT: Record<FailReason, string> = {
 /** Where the iPhone's line differs from the web's for the same reason: an AI that declined or stopped short, a server failure with no words. */
 const PHONE_LINE: Partial<Record<FailReason, string>> = {
   declined: PHONE_FAIL_TEXT.declined, tooLong: PHONE_FAIL_TEXT.declined, server: PHONE_FAIL_TEXT.noAnswer,
+  // A stream that ended with no last line: the connection's failure, in today's words for one.
+  network: PHONE_FAIL_TEXT.network.dropped,
 };
 
 /**
@@ -145,6 +155,8 @@ const PHONE_LINE: Partial<Record<FailReason, string>> = {
  */
 export function failLine(status: { reason: FailReason; detail?: FailDetail }, platform: UploadPlatform): string {
   const { detail, reason } = status;
-  if (detail) return 'message' in detail ? detail.message : `${PHONE_FAIL_TEXT.attestFailed} (App Attest ${detail.stage} ${detail.code})`;
+  if (detail && 'message' in detail) return detail.message;
+  if (detail && 'network' in detail) return PHONE_FAIL_TEXT.network[detail.network];
+  if (detail) return `${PHONE_FAIL_TEXT.attestFailed} (App Attest ${detail.stage} ${detail.code})`;
   return (platform === 'phone' ? PHONE_LINE[reason] : undefined) ?? FAIL_TEXT[reason];
 }

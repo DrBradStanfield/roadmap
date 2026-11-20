@@ -15,7 +15,7 @@ import { COMPARATORS } from './lab-limits';
 import type { AdditionalLabValue, DocumentResult, ExtractedValue, RefusedLabValue, UnifiedExtractionResult } from './lab-extraction';
 import { UNIT_SYSTEMS } from './units';
 import type { ChoiceChange, FileChoices } from './upload-choices';
-import { GATE_WORDS_MAX, UPLOAD_FAILURES, type UploadFailure } from './upload-failure';
+import { GATE_WORDS_MAX, NETWORK_FAILURES, UPLOAD_FAILURES, type UploadFailure } from './upload-failure';
 import type { UploadEffect, UploadEvent, UploadState } from './upload-flow';
 
 const text = z.string();
@@ -66,8 +66,10 @@ const choices = strict({
 const failReason = z.enum(['unreadable', 'bytesUnreadable', 'zipUnreadable', 'zipEmpty', 'timeout', 'busy', 'dailyLimit', 'declined', 'tooLong', 'server', 'network', 'keyRefused', 'noCredit', 'keyRateLimit', 'noKey', 'appRefused', 'tooLarge', 'cannotAttest', 'attestFailed']);
 /** An App Attest step or code: a short word, nothing else from the error (US-52 AC7e). */
 export const ATTEST_PART = z.string().regex(/^[A-Za-z0-9_-]{1,24}$/);
-/** upload-failure.ts FailDetail: the gate's own words, as text, or the App Attest step and code. */
-const failDetail = z.union([strict({ message: z.string().min(1).max(GATE_WORDS_MAX) }), strict({ stage: ATTEST_PART, code: ATTEST_PART })]);
+/** upload-failure.ts FailDetail: the server's own words, as text; the App Attest step and code; or how the request failed. */
+export const NETWORK_FAILURE = z.enum(NETWORK_FAILURES);
+const failDetail = z.union([strict({ message: z.string().min(1).max(GATE_WORDS_MAX) }), strict({ stage: ATTEST_PART, code: ATTEST_PART }),
+  strict({ network: NETWORK_FAILURE })]);
 const runRefusal = z.enum(['dailyLimit', 'noKey', 'server']);
 const status = z.discriminatedUnion('s', [
   strict({ s: z.literal('unlisted') }),

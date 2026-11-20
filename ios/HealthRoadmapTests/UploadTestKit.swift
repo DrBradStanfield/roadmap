@@ -35,12 +35,14 @@ enum UploadTestKit {
     static let finalLine = #"{"status":200,"body":{"success":true,"data":\#(extraction)}}"#
     static let json = ["Content-Type": "application/json"]
 
-    /// Answers every lab read with `answer(n)`, n counting from 1.
-    static func serve(_ server: Server, _ answer: @escaping @Sendable (Int) -> StubHTTP.Answer) {
+    /// Answers every lab read with `answer(n)`, n counting from 1; App Attest's challenge and
+    /// registration as given (by default, each accepted).
+    static func serve(_ server: Server, challenge: StubHTTP.Answer = .init(body: Data(#"{"challenge":"c"}"#.utf8)),
+                      register: StubHTTP.Answer = .init(body: Data(#"{"ok":true}"#.utf8)), _ answer: @escaping @Sendable (Int) -> StubHTTP.Answer) {
         StubHTTP.handler = { request in
             switch request.url.path {
-            case "/api/app/v1/attest/challenge": return .init(body: Data(#"{"challenge":"c"}"#.utf8))
-            case "/api/app/v1/attest/register": return .init(body: Data(#"{"ok":true}"#.utf8))
+            case "/api/app/v1/attest/challenge": return challenge
+            case "/api/app/v1/attest/register": return register
             case LabReadSender.path: break
             default: return .init(status: 404)
             }
@@ -53,8 +55,9 @@ enum UploadTestKit {
         .init(status: 200, headers: ["Content-Type": "application/x-ndjson"], body: Data(body.utf8), delay: delay, bodyGate: gate, chunk: chunk)
     }
 
-    static func client(_ attest: Attest = Attest()) -> AppAttestClient {
-        AppAttestClient(session: StubHTTP.session(), service: attest, keys: KeyStore(read: { "key" }, save: { _ in }, delete: {}))
+    /// `stored`: the key id the Keychain holds, nil for a phone that must register one first.
+    static func client(_ attest: Attest = Attest(), stored: String? = "key") -> AppAttestClient {
+        AppAttestClient(session: StubHTTP.session(), service: attest, keys: KeyStore(read: { stored }, save: { _ in }, delete: {}))
     }
 
     /// `count` distinct pictures, ids f0, f1, ...
