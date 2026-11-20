@@ -205,7 +205,7 @@ describe('US-30 AC1/AC3/AC4 — the three output modes', () => {
     expect(text).toMatch(/LDL Cholesterol\s+2\.1 mmol\/L\s+2026-07-14/);
     expect(text).toContain('Ferritin');
     expect(text).toContain('DUE NOW   Colorectal screening');
-    expect(text).toContain('Discuss adding Ezetimibe with your doctor');
+    expect(text).toContain('Consider discussing Ezetimibe with your doctor');
     expect(text).toContain('https://doi.org/10.1016/j.jacc.2025.11.016');
   });
 
@@ -256,7 +256,7 @@ describe('US-30 AC1/AC3/AC4 — the three output modes', () => {
     // DailyMed holds the lipid drug labels' pregnancy sections (US-06 AC20, 2026-11-09).
     expect(html).not.toMatch(/(src|href)\s*=\s*["']https?:\/\/(?!doi\.org|www\.cancer\.org|diabetesjournals\.org|www\.who\.int|www\.nhlbi\.nih\.gov|www\.fda\.gov|www\.nice\.org\.uk|dailymed\.nlm\.nih\.gov)/i);
     expect(html).toContain('<style>');
-    expect(html).toContain('Discuss adding Ezetimibe with your doctor');
+    expect(html).toContain('Consider discussing Ezetimibe with your doctor');
   });
 
   it('AC1/AC4: a record whose only rows are unknown metrics shows the empty state, not an empty table', () => {

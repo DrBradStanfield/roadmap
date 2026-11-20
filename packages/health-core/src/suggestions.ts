@@ -2,7 +2,7 @@ import type { HealthInputs, HealthResults, SuggestionInputs, Suggestion, Medicat
 import { SUGGESTION_EVIDENCE } from './evidence';
 import { BP_TIER_LABEL, bpTier, isBpRaised } from './bp-tier';
 import { getPostFollowupDueDate, getScreeningNextDueDate, MAX_GLP1_DRUG, STATIN_DRUGS, shouldSuggestSwitch } from './types';
-import { SCREENING_REFS, inAges, opensFollowup, ruleOf, ruleTakes, screeningFollowupInfo, type CardText, type ScreeningRule } from './screening-rules';
+import { SCREENING_REFS, inAges, opensFollowup, ruleOf, ruleTakes, screeningFollowupInfo, type CardText, type FollowupInfo, type ScreeningRule } from './screening-rules';
 import { colonoscopyCard, monthLabel } from './colonoscopy-schedule';
 import { psaNextDue, psaRaised, psaRuleHolds, raisedPsaCards } from './psa-schedule';
 import { weightCascade, lipidCascade, type WeightStep, type LipidStep } from './medication-cascades';
@@ -38,7 +38,8 @@ export const REDUCE_ALCOHOL_ID = 'reduce-alcohol';
 const FOLLOWUP_INFO = screeningFollowupInfo();
 
 // Supplement card text, in pieces, so each US variant below is the card's own
-// text minus what it drops, never a second copy (US-61 AC3).
+// text minus what it drops, never a second copy (US-61 AC3). Each ends with the doctor line (US-07 AC17).
+const discuss = (text: string) => `${text} Whether it suits you is worth discussing with your doctor or pharmacist.`;
 const BASE_COSMOS = 'A meta-analysis of three COSMOS trial sub-studies (2024) found that a daily multivitamin improved global cognition and episodic memory in older adults. This suggests broad micronutrient support may benefit brain health alongside filling common dietary gaps.';
 const BASE_WHO = 'The WHO\'s 2026 dementia guideline recommends against vitamin B, vitamin E, omega-3 and multivitamin-mineral supplements to reduce the risk of cognitive decline and dementia in people without a diagnosed deficiency, a strong recommendation based on moderate-certainty evidence. It kept its earlier recommendation without reassessing supplements, and did not cite the COSMOS trials.';
 const BASE_K2 = 'If you take warfarin (Coumadin, Marevan) or another vitamin K antagonist, check with your doctor or anticoagulation clinic before starting or stopping vitamin K2, because it can change your INR.';
@@ -54,11 +55,11 @@ const LUTEIN_AREDS = 'In the AREDS trial, a formula containing beta-carotene slo
  */
 export const US_SUPPLEMENT_DESCRIPTIONS: Readonly<Partial<Record<UsProductCardId, string>>> = {
   // No WHO dementia sentences (a disease outcome beside a named product).
-  'supplement-micronutrient-base': `${BASE_COSMOS} ${BASE_K2}`,
+  'supplement-micronutrient-base': discuss(`${BASE_COSMOS} ${BASE_K2}`),
   // Strength and lean mass only: no memory sentence.
-  'supplement-creatine': CREATINE_STRENGTH,
+  'supplement-creatine': discuss(CREATINE_STRENGTH),
   // Macular pigment only: no macular degeneration outcome.
-  'supplement-lutein-zeaxanthin': LUTEIN_PIGMENT,
+  'supplement-lutein-zeaxanthin': discuss(LUTEIN_PIGMENT),
 };
 
 /** Dietary advice for elevated lipids: the lipid-diet card's text. */
@@ -136,7 +137,7 @@ export function lipidTargetSentence(marker: LipidMarker, unitFor: (metric: Metri
 }
 
 /** The form's cholesterol intro says it after lipidTargetSentence (US-73 AC6, Brad 2026-11-05). */
-export const LIPID_MEDS_IN_STEPS = 'In addition to a great diet, cholesterol-lowering medications can also be added in steps.';
+export const LIPID_MEDS_IN_STEPS = 'In addition to a great diet, cholesterol-lowering medications can be added in steps, each one to discuss with your doctor.';
 
 /** Join a list the way the plan writes it: "a, b and c". */
 export function joinWithAnd(items: string[]): string {
@@ -177,7 +178,7 @@ export function weightMedicationTrigger(inputs: HealthInputs, results: HealthRes
   const reasons: string[] = [];
   // A diabetic-range HbA1c is named as such, matching its urgent card (Brad 2026-11-06, US-06 AC6).
   if (inputs.hba1c !== undefined && inputs.hba1c >= HBA1C_THRESHOLDS.prediabetes) {
-    reasons.push(inputs.hba1c >= HBA1C_THRESHOLDS.diabetes ? 'diabetic-range HbA1c' : 'prediabetic HbA1c');
+    reasons.push(inputs.hba1c >= HBA1C_THRESHOLDS.diabetes ? 'an HbA1c in the diabetes range' : 'an HbA1c in the prediabetes range');
   }
   if (inputs.triglycerides !== undefined && inputs.triglycerides >= TRIGLYCERIDES_THRESHOLDS.borderline) reasons.push('elevated triglycerides');
   if (isBpRaised(inputs.systolicBp, inputs.diastolicBp)) reasons.push('elevated blood pressure');
@@ -190,7 +191,7 @@ export function weightMedicationTrigger(inputs: HealthInputs, results: HealthRes
 /** The GLP-1 card's text, shared by the cascade's first step and the standalone card. */
 function glp1Description(bmi: number, reasons: string[]): string {
   const and = reasons.length > 0 ? ` and ${joinWithAnd(reasons)}` : '';
-  return `With a BMI of ${bmi}${and}, you may benefit from discussing Tirzepatide (preferred) or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.`;
+  return `With a BMI of ${bmi}${and}, consider discussing Tirzepatide (preferred) or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.`;
 }
 
 /** A dose card's text (US-06 AC8): the steps the missing dose decides
@@ -198,8 +199,8 @@ function glp1Description(bmi: number, reasons: string[]): string {
  *  would move to; null when the highest dose moves on to the next medication
  *  (tirzepatide, rosuvastatin). */
 function doseCardText(kind: string, switchTo: string | null): string {
-  const choice = switchTo ? `A higher dose or ${switchTo} may help.` : 'A higher dose may help, or you may already take the highest.';
-  return `Your ${kind} dose isn't recorded, and your next step depends on it. ${choice} Add your current dose to see which.`;
+  const rest = switchTo ? `A higher dose or ${switchTo} may help, and which one to discuss with your doctor depends on your current dose. Add it to see which.` : 'A higher dose may help, or you may already take the highest. Add your current dose to see whether a higher dose is one to discuss with your doctor.';
+  return `Your ${kind} dose isn't recorded. ${rest}`;
 }
 
 /** The form's weight-medication intro, in the plan's words: the BMI and the
@@ -241,7 +242,7 @@ export function generateSuggestions(
       category: 'general',
       priority: 'info',
       title: 'This plan is built for adults',
-      description: 'The suggestions here, including medicines, are designed for people aged 18 and over. For anyone younger, talk with their doctor.',
+      description: 'The suggestions here, including medicines to discuss with a doctor, are designed for people aged 18 and over. For anyone younger, talk with their doctor.',
     }]);
   }
 
@@ -413,16 +414,16 @@ export function generateSuggestions(
   if (weightMeds.on) {
     const glp1Text = glp1Description(results.bmi!, weightMeds.reasons);
     if (!medications) {
-      suggestions.push({ id: 'weight-glp1', category: 'medication', priority: 'attention', title: 'Weight management medication', description: glp1Text });
+      suggestions.push({ id: 'weight-glp1', category: 'medication', priority: 'attention', title: 'Consider discussing a weight management medication with your doctor', description: glp1Text });
     } else {
       // Weight & diabetes medication cascade (GLP-1 → its dose if not recorded → escalate → SGLT2i → Metformin)
       const stepCards: Record<WeightStep, [priority: Suggestion['priority'], title: string, text: string]> = {
         glp1: ['attention', 'Consider discussing a GLP-1 medication with your doctor', glp1Text],
         'glp1-dose': ['attention', 'Add your GLP-1 dose', doseCardText('GLP-1', medications.glp1?.drug === MAX_GLP1_DRUG ? null : 'a switch to Tirzepatide')],
-        'glp1-increase': ['attention', 'Consider increasing GLP-1 dose', 'Discuss with your doctor the pros and cons of a higher dose of your current GLP-1 medication.'],
-        'glp1-switch': ['attention', 'Discuss switching to Tirzepatide', 'Tirzepatide (Mounjaro/Zepbound) may be more effective for weight management. Discuss switching with your doctor.'],
-        sglt2i: ['attention', 'Discuss adding an SGLT2 inhibitor', 'SGLT2 inhibitors like Empagliflozin or Dapagliflozin provide additional metabolic benefits and cardiovascular protection. Discuss with your doctor.'],
-        metformin: ['info', 'Discuss adding Metformin', 'Metformin provides additional glycemic control and has potential long-term health benefits. Extended-release formulations may have fewer GI side effects. Discuss with your doctor.'],
+        'glp1-increase': ['attention', 'Consider discussing your GLP-1 dose with your doctor', 'Discuss with your doctor the pros and cons of a higher dose of your current GLP-1 medication.'],
+        'glp1-switch': ['attention', 'Consider discussing Tirzepatide with your doctor', 'Tirzepatide (Mounjaro/Zepbound) may be more effective for weight management. Discuss switching with your doctor.'],
+        sglt2i: ['attention', 'Consider discussing an SGLT2 inhibitor with your doctor', 'SGLT2 inhibitors like Empagliflozin or Dapagliflozin provide additional metabolic benefits and cardiovascular protection. Discuss with your doctor.'],
+        metformin: ['info', 'Consider discussing Metformin with your doctor', 'Metformin provides additional glycemic control and has potential long-term health benefits. Extended-release formulations may have fewer GI side effects. Discuss with your doctor.'],
       };
       for (const step of weightCascade(medications).suggest) {
         const [priority, title, description] = stepCards[step];
@@ -438,16 +439,16 @@ export function generateSuggestions(
         id: 'hba1c-diabetic',
         category: 'bloodwork',
         priority: 'urgent',
-        title: 'HbA1c in diabetic range',
-        description: `Your HbA1c of ${shown('hba1c', 'hba1c', inputs.hba1c)} is in the range guidelines use for diabetes. See your doctor to confirm and plan care, including lifestyle changes.`,
+        title: 'HbA1c in the diabetes range',
+        description: `Your HbA1c of ${shown('hba1c', 'hba1c', inputs.hba1c)} is in the range the ADA calls diabetes. See your doctor to confirm and plan care, including lifestyle changes.`,
       });
     } else if (inputs.hba1c >= HBA1C_THRESHOLDS.prediabetes) {
       suggestions.push({
         id: 'hba1c-prediabetic',
         category: 'bloodwork',
         priority: 'attention',
-        title: 'HbA1c indicates prediabetes',
-        description: `Your HbA1c of ${shown('hba1c', 'hba1c', inputs.hba1c)} is in the prediabetic range. Lifestyle changes now can prevent progression to diabetes.`,
+        title: 'HbA1c in the prediabetes range',
+        description: `Your HbA1c of ${shown('hba1c', 'hba1c', inputs.hba1c)} is in the range the ADA calls prediabetes. Consider discussing it with your doctor. Lifestyle changes now can prevent progression to diabetes.`,
       });
     } else {
       suggestions.push({
@@ -654,7 +655,7 @@ export function generateSuggestions(
         } else if (medications.pcsk9i === 'not_tolerated') {
           checklist.push('\u26A0\uFE0F PCSK9 inhibitor: not tolerated');
         } else {
-          notStarted('\u26A0\uFE0F PCSK9 inhibitor: not started \u2014 can lower Lp(a) ~25\u201330%');
+          notStarted('\u26A0\uFE0F PCSK9 inhibitor: not started \u2014 can lower Lp(a) ~25\u201330%; discuss with your doctor');
         }
       }
 
@@ -763,7 +764,7 @@ export function generateSuggestions(
         category: 'blood_pressure',
         priority: 'urgent',
         title: BP_TIER_LABEL.stage2,
-        description: `Your BP of ${bare('systolicBp', sys)}/${bare('diastolicBp', dia)} mmHg indicates stage 2 hypertension. ${medicinesShown(results) ? 'Guidelines typically recommend medication at this level. Discuss it with your doctor.' : 'Discuss treatment with your doctor.'}\n\nLifestyle measures that also help: reduce sodium intake (<1,500mg/day), exercise regularly, and prioritize quality sleep.${bpExtra}`,
+        description: `Your BP of ${bare('systolicBp', sys)}/${bare('diastolicBp', dia)} mmHg is in the range the ACC/AHA guideline calls stage 2 hypertension. ${medicinesShown(results) ? 'Guidelines typically recommend medication at this level. Discuss it with your doctor.' : 'Discuss treatment with your doctor.'}\n\nLifestyle measures that also help: reduce sodium intake (<1,500mg/day), exercise regularly, and prioritize quality sleep.${bpExtra}`,
       });
     } else if (tier === 'stage1') {
       suggestions.push({
@@ -771,7 +772,7 @@ export function generateSuggestions(
         category: 'blood_pressure',
         priority: 'attention',
         title: BP_TIER_LABEL.stage1,
-        description: `Your BP of ${bare('systolicBp', sys)}/${bare('diastolicBp', dia)} mmHg indicates stage 1 hypertension. Target is <${bpTargetFor(results.age)}/80.\n\nKey lifestyle measures: reduce sodium intake (<1,500mg/day), exercise regularly (150+ min/week), and prioritize quality sleep (7-9 hours).${bpExtra}`,
+        description: `Your BP of ${bare('systolicBp', sys)}/${bare('diastolicBp', dia)} mmHg is in the range the ACC/AHA guideline calls stage 1 hypertension. Consider discussing it with your doctor. Target is <${bpTargetFor(results.age)}/80.\n\nKey lifestyle measures: reduce sodium intake (<1,500mg/day), exercise regularly (150+ min/week), and prioritize quality sleep (7-9 hours).${bpExtra}`,
       });
     }
   }
@@ -793,13 +794,13 @@ export function generateSuggestions(
     const pregnancyUnstudied = 'Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be.'
       + (statinDoses ? ` ${onStatinPregnancy}` : '');
     const stepCards: Record<LipidStep, [title: string, text: string]> = {
-      statin: ['Consider starting a statin', "Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor. Don't start a statin if you are pregnant or planning a pregnancy."],
-      ezetimibe: ['Discuss adding Ezetimibe with your doctor', `Discuss adding Ezetimibe 10mg with your doctor. ${pregnancyUnstudied}`],
-      'bempedoic-acid': ['Discuss adding bempedoic acid with your doctor', 'Bempedoic acid (Nexletol) lowers cholesterol via a different pathway than statins. Discuss with your doctor. Not recommended in pregnancy; talk to your doctor if you are pregnant or planning to be.'],
+      statin: ['Consider discussing a statin with your doctor', 'Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor. Statins are not recommended if you are pregnant or planning a pregnancy. Talk to your doctor.'],
+      ezetimibe: ['Consider discussing Ezetimibe with your doctor', `Discuss adding Ezetimibe 10mg with your doctor. ${pregnancyUnstudied}`],
+      'bempedoic-acid': ['Consider discussing bempedoic acid with your doctor', 'Bempedoic acid (Nexletol) lowers cholesterol via a different pathway than statins. Discuss with your doctor. Not recommended in pregnancy; talk to your doctor if you are pregnant or planning to be.'],
       'statin-dose': ['Add your statin dose', `${doseCardText('statin', switchesAtTop ? 'a more potent statin' : null)} ${onStatinPregnancy}`],
-      'statin-increase': ['Discuss increasing your statin dose with your doctor', `Discuss increasing your statin dose with your doctor. ${onStatinPregnancy}`],
-      'statin-switch': ['Discuss switching to a more potent statin with your doctor', `You're at or near the maximum dose of ${statinDrug.charAt(0).toUpperCase() + statinDrug.slice(1)}. Discuss switching to a more potent statin (e.g. Rosuvastatin) with your doctor. ${onStatinPregnancy}`],
-      pcsk9i: ['Discuss a PCSK9 inhibitor with your doctor', `Discuss a PCSK9 inhibitor with your doctor. ${pregnancyUnstudied}`],
+      'statin-increase': ['Consider discussing your statin dose with your doctor', `Discuss increasing your statin dose with your doctor. ${onStatinPregnancy}`],
+      'statin-switch': ['Consider discussing a more potent statin with your doctor', `You're at or near the maximum dose of ${statinDrug.charAt(0).toUpperCase() + statinDrug.slice(1)}. Discuss switching to a more potent statin (e.g. Rosuvastatin) with your doctor. ${onStatinPregnancy}`],
+      pcsk9i: ['Consider discussing a PCSK9 inhibitor with your doctor', `Discuss a PCSK9 inhibitor with your doctor. ${pregnancyUnstudied}`],
     };
     // On a statin: statin → ezetimibe → the statin's dose if not recorded, a step up or a PCSK9 inhibitor.
     // Statin not tolerated: PCSK9 inhibitor → ezetimibe → bempedoic acid (US-06 AC20).
@@ -864,7 +865,7 @@ export function generateSuggestions(
     ): Suggestion | null {
       if (!opensFollowup(r, result)) return null;
       const type = r.id;
-      const info = FOLLOWUP_INFO[`${type}_${method}`] ?? { followupName: 'follow-up', abnormalMeans: 'abnormal result' };
+      const info: FollowupInfo = FOLLOWUP_INFO[`${type}_${method}`] ?? { followupName: 'follow-up', abnormalMeans: 'abnormal result' };
 
       if (!followupStatus || followupStatus === 'not_organized') {
         return {
@@ -872,7 +873,7 @@ export function generateSuggestions(
           category: 'screening',
           priority: 'urgent',
           title: `Organize ${info.followupName}`,
-          description: `Your screening showed a ${info.abnormalMeans}. Please organize a ${info.followupName} with your doctor.`,
+          description: `${info.opening ?? `Your screening showed a ${info.abnormalMeans}.`} Please organize a ${info.followupName} with your doctor.`,
         };
       }
 
@@ -1004,7 +1005,7 @@ export function generateSuggestions(
   // === Supplement suggestions (always shown) ===
   // Generic, evidence-based ingredient profiles — no product names, no links.
   // The US product overlay (US-61) adds its blocks on screen, never here.
-  suggestions.push(
+  suggestions.push(...([
     {
       id: 'supplement-micronutrient-base',
       category: 'supplements',
@@ -1068,7 +1069,7 @@ export function generateSuggestions(
         'Magnesium glycinate',
       ],
     },
-  );
+  ] satisfies Suggestion[]).map((card) => ({ ...card, description: discuss(card.description) })));
 
   // === Skin health suggestions (adults, like the whole plan) ===
   suggestions.push(
@@ -1118,7 +1119,7 @@ export function generateSuggestions(
     category: 'general',
     priority: 'info',
     title: 'Add your birth year',
-    description: 'Medicine suggestions need your age. Add your birth year to see them.',
+    description: 'Suggestions about medicines to discuss with your doctor need your age. Add your birth year to see them.',
   });
   return withEvidence(kept);
 }

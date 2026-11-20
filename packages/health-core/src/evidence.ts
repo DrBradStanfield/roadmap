@@ -165,7 +165,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
 
   // Same scope rule, for an unknown age: it stands in for the medicine cards.
   'add-birth-year': {
-    reason: 'The medicines this plan can suggest come from guidelines written for adults aged 18 and over. Without your birth year the plan cannot tell whether they apply to you, so it leaves them out until you add it.',
+    reason: 'The medicines this plan can suggest discussing with your doctor come from guidelines written for adults aged 18 and over. Without your birth year the plan cannot tell whether they apply to you, so it leaves them out until you add it.',
     guidelines: [],
     references: [],
   },
@@ -257,7 +257,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'weight-med-glp1-dose': {
-    reason: 'GLP-1 medications are started at a low dose and stepped up gradually; clinical trials used this dose escalation to improve tolerability. Which step comes next depends on the dose you take now.',
+    reason: 'GLP-1 medications are started at a low dose and stepped up gradually; clinical trials used this dose escalation to improve tolerability. Which option to discuss with your doctor next depends on the dose you take now.',
     guidelines: [],
     references: REFS_GLP1,
   },
@@ -308,7 +308,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   // ── Blood Work: HbA1c ─────────────────────────────────────
 
   'hba1c-diabetic': {
-    reason: 'An HbA1c in the diabetic range (≥6.5% / ≥47.5 mmol/mol) indicates sustained high blood sugar levels over the past 2–3 months. This requires medical management to prevent complications including cardiovascular disease, kidney damage, nerve damage, and vision loss.',
+    reason: 'An HbA1c in the range the ADA calls diabetes (≥6.5% / ≥47.5 mmol/mol) indicates sustained high blood sugar levels over the past 2–3 months. This requires medical management to prevent complications including cardiovascular disease, kidney damage, nerve damage, and vision loss.',
     guidelines: ['ADA Standards of Care'],
     references: [
       { label: 'ADA – Standards of Medical Care in Diabetes', url: 'https://diabetesjournals.org/care/issue/47/Supplement_1' },
@@ -316,7 +316,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'hba1c-prediabetic': {
-    reason: 'An HbA1c in the prediabetic range (5.7–6.4% / 38.8–47.4 mmol/mol) means your blood sugar is higher than normal but not yet diabetic. This is a critical window — lifestyle changes at this stage can prevent or significantly delay progression to type 2 diabetes.',
+    reason: 'An HbA1c in the range the ADA calls prediabetes (5.7–6.4% / 38.8–47.4 mmol/mol) means your blood sugar is higher than normal but below the diabetes range. This is a critical window — lifestyle changes at this stage can prevent or significantly delay progression to type 2 diabetes.',
     guidelines: ['ADA Standards of Care'],
     references: [
       { label: 'ADA – Standards of Medical Care in Diabetes', url: 'https://diabetesjournals.org/care/issue/47/Supplement_1' },
@@ -451,13 +451,13 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'bp-stage2': {
-    reason: 'Stage 2 hypertension (≥140/90 mmHg) significantly increases the risk of heart attack, stroke, kidney disease, and heart failure. At this level, medication is typically recommended alongside lifestyle measures. Discuss it with your doctor.\n\nSome doctors target <120/80 mmHg for adults under 65, based on the SPRINT trial (9,300 participants), which showed that intensive blood pressure lowering to <120 mmHg significantly reduced cardiovascular events and mortality compared to the standard <140 mmHg target. The ESPRIT trial (11,255 participants) confirmed these benefits extend to patients with diabetes and prior stroke.',
+    reason: 'Blood pressure in the stage 2 range (≥140/90 mmHg) significantly increases the risk of heart attack, stroke, kidney disease, and heart failure. At this level, medication is typically recommended alongside lifestyle measures. Discuss it with your doctor.\n\nSome doctors target <120/80 mmHg for adults under 65, based on the SPRINT trial (9,300 participants), which showed that intensive blood pressure lowering to <120 mmHg significantly reduced cardiovascular events and mortality compared to the standard <140 mmHg target. The ESPRIT trial (11,255 participants) confirmed these benefits extend to patients with diabetes and prior stroke.',
     guidelines: [...GUIDELINES_BP, 'SPRINT 2015', 'ESPRIT 2024'],
     references: [...REFS_BP_LIFESTYLE, ...REFS_SODIUM, ...REFS_BP_TRIALS],
   },
 
   'bp-stage1': {
-    reason: 'Stage 1 hypertension (130–139 systolic or 80–89 diastolic mmHg) is the point at which blood pressure starts to cause meaningful cardiovascular damage over time. Lifestyle measures are the first-line treatment: reduce sodium, increase potassium-rich foods, exercise regularly, prioritise sleep, and manage weight.\n\nSome doctors target <120/80 mmHg for adults under 65. The SPRINT trial showed that targeting <120 mmHg (vs <140 mmHg) reduced cardiovascular events by 25% and all-cause mortality by 27%. The ESPRIT trial extended these findings to a broader population including those with diabetes.',
+    reason: 'Blood pressure in the stage 1 range (130–139 systolic or 80–89 diastolic mmHg) is the point at which blood pressure starts to cause meaningful cardiovascular damage over time. Lifestyle measures are the first-line treatment: reduce sodium, increase potassium-rich foods, exercise regularly, prioritise sleep, and manage weight.\n\nSome doctors target <120/80 mmHg for adults under 65. The SPRINT trial showed that targeting <120 mmHg (vs <140 mmHg) reduced cardiovascular events by 25% and all-cause mortality by 27%. The ESPRIT trial extended these findings to a broader population including those with diabetes.',
     guidelines: [...GUIDELINES_BP, 'SPRINT 2015', 'ESPRIT 2024'],
     references: [...REFS_BP_LIFESTYLE, ...REFS_SODIUM, ...REFS_BP_TRIALS],
   },
@@ -474,7 +474,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'med-ezetimibe': {
-    reason: 'Ezetimibe works differently from statins — it blocks cholesterol absorption in the intestine. Adding ezetimibe to a statin typically lowers LDL by an additional 15–20%. Recent evidence shows that starting ezetimibe early alongside a statin produces better cardiovascular outcomes than adding it later.\n\nIf a statin is not tolerated, this plan suggests a PCSK9 inhibitor first, because the outcome evidence for ezetimibe on its own is limited, and ezetimibe after it if your level is still above target.\n\nIts US label says there are not enough data on ezetimibe in pregnancy to judge the risk.',
+    reason: 'Ezetimibe works differently from statins — it blocks cholesterol absorption in the intestine. Adding ezetimibe to a statin typically lowers LDL by an additional 15–20%. Recent evidence shows that starting ezetimibe early alongside a statin produces better cardiovascular outcomes than adding it later.\n\nIf a statin is not tolerated, this plan suggests discussing a PCSK9 inhibitor first, because the outcome evidence for ezetimibe on its own is limited, and ezetimibe after it if your level is still above target.\n\nIts US label says there are not enough data on ezetimibe in pregnancy to judge the risk.',
     guidelines: [...GUIDELINES_LIPIDS],
     references: [
       ...REFS_LIPID_GUIDELINES,
@@ -485,7 +485,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'med-bempedoic-acid': {
-    reason: 'Bempedoic acid (Nexletol) inhibits ATP citrate lyase, lowering cholesterol production via a different pathway than statins. The CLEAR Outcomes trial showed a 13% reduction in major adverse cardiovascular events in statin-intolerant patients. This plan suggests it only if you cannot take a statin and your level is still above target after the PCSK9 inhibitor and ezetimibe steps (each taken, declined or not tolerated). The combination pill with ezetimibe (Nexlizet) offers convenience.\n\nIts US label says to stop it when pregnancy is recognized, unless the benefits outweigh the possible risks to the baby.',
+    reason: 'Bempedoic acid (Nexletol) inhibits ATP citrate lyase, lowering cholesterol production via a different pathway than statins. The CLEAR Outcomes trial showed a 13% reduction in major adverse cardiovascular events in statin-intolerant patients. This plan suggests discussing it only if you cannot take a statin and your level is still above target after the PCSK9 inhibitor and ezetimibe steps (each taken, declined or not tolerated). The combination pill with ezetimibe (Nexlizet) offers convenience.\n\nIts US label says to stop it when pregnancy is recognized, unless the benefits outweigh the possible risks to the baby.',
     guidelines: ['ACC/AHA 2026', 'ESC/EAS 2019'],
     references: [
       { label: 'Nissen 2023 – CLEAR Outcomes: bempedoic acid in statin-intolerant patients (NEJM)', url: 'https://doi.org/10.1056/NEJMoa2215024' },
@@ -494,7 +494,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'med-statin-dose': {
-    reason: 'Statin strength depends on both the drug and the dose. Doubling a statin dose typically lowers LDL by a further 6–7% (the "rule of 6"), and rosuvastatin 40mg gives the largest reduction (~63%). Which step comes next depends on the dose you take now.',
+    reason: 'Statin strength depends on both the drug and the dose. Doubling a statin dose typically lowers LDL by a further 6–7% (the "rule of 6"), and rosuvastatin 40mg gives the largest reduction (~63%). Which option to discuss with your doctor next depends on the dose you take now.',
     guidelines: [...GUIDELINES_STATIN_STEPS],
     references: [REF_ESC_EAS_2019, ...REFS_STATIN_PREGNANCY],
   },
@@ -512,7 +512,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'med-pcsk9i': {
-    reason: 'PCSK9 inhibitors (evolocumab, alirocumab) are injectable medications that can lower LDL by an additional 50–60% beyond statins. They are recommended by AHA/ACC and ESC/EAS guidelines when lipid targets are not met with maximally tolerated statin plus ezetimibe. They also lower Lp(a) by approximately 25–30%.\n\nStatin muscle damage is rare. If it happens, the statin is usually stopped, and a PCSK9 inhibitor is one option to discuss with your doctor. If a statin is not tolerated for any reason, this plan suggests a PCSK9 inhibitor next. If your level is still above target after that step (taken, declined or not tolerated), ezetimibe comes next; bempedoic acid last.\n\nTheir US labels say there are not enough data on PCSK9 inhibitors in pregnancy to judge the risk.',
+    reason: 'PCSK9 inhibitors (evolocumab, alirocumab) are injectable medications that can lower LDL by an additional 50–60% beyond statins. They are recommended by AHA/ACC and ESC/EAS guidelines when lipid targets are not met with maximally tolerated statin plus ezetimibe. They also lower Lp(a) by approximately 25–30%.\n\nStatin muscle damage is rare. If it happens, the statin is usually stopped, and a PCSK9 inhibitor is one option to discuss with your doctor. If a statin is not tolerated for any reason, this plan suggests discussing a PCSK9 inhibitor next. If your level is still above target after that step (taken, declined or not tolerated), ezetimibe comes next; bempedoic acid last.\n\nTheir US labels say there are not enough data on PCSK9 inhibitors in pregnancy to judge the risk.',
     guidelines: [...GUIDELINES_LIPIDS],
     references: [
       ...REFS_LIPID_GUIDELINES,
@@ -720,7 +720,7 @@ export const STAT_CARD_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'egfr': {
-    reason: 'Estimated glomerular filtration rate (eGFR) measures kidney function. The plan uses the eGFR printed on your lab report when it is from your latest test; otherwise it calculates one with the CKD-EPI 2021 equation (race-free) from your creatinine, age, and sex. Bands: ≥70 Normal, 60-69 Low Normal, 45-59 Mildly to Moderately Decreased (KDIGO G3a), 30-44 Moderately to Severely Decreased (G3b), 15-29 Severely Decreased (G4), <15 Kidney Failure (G5). The two bands from 60 up are this tool\'s own: KDIGO 2024 calls 60-89 mildly decreased (G2). An eGFR below 60 sustained for 3+ months is consistent with chronic kidney disease.',
+    reason: 'Estimated glomerular filtration rate (eGFR) measures kidney function. The plan uses the eGFR printed on your lab report when it is from your latest test; otherwise it calculates one with the CKD-EPI 2021 equation (race-free) from your creatinine, age, and sex. Bands: ≥70 Normal, 60-69 Low Normal, 45-59 Mildly to Moderately Decreased (KDIGO G3a), 30-44 Moderately to Severely Decreased (G3b), 15-29 Severely Decreased (G4), below 15 (G5, which KDIGO calls kidney failure). The two bands from 60 up are this tool\'s own: KDIGO 2024 calls 60-89 mildly decreased (G2). An eGFR below 60 sustained for 3+ months is consistent with chronic kidney disease.',
     guidelines: ['KDIGO'],
     references: REFS_EGFR,
   },
@@ -738,7 +738,7 @@ export const STAT_CARD_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'hba1c': {
-    reason: 'HbA1c (glycated haemoglobin) reflects average blood sugar over the past 2–3 months. ADA thresholds: <5.7% (<38.8 mmol/mol) Normal, 5.7–6.4% (38.8–47.4 mmol/mol) Prediabetic — a critical window where lifestyle change can prevent type 2 diabetes — and ≥6.5% (≥47.5 mmol/mol) Diabetic, requiring medical management to prevent cardiovascular, kidney, nerve, and vision complications.',
+    reason: 'HbA1c (glycated haemoglobin) reflects average blood sugar over the past 2–3 months. ADA thresholds: <5.7% (<38.8 mmol/mol) Normal, 5.7–6.4% (38.8–47.4 mmol/mol) Prediabetes range, a critical window where lifestyle change can prevent type 2 diabetes; and ≥6.5% (≥47.5 mmol/mol) Diabetes range, requiring medical management to prevent cardiovascular, kidney, nerve, and vision complications.',
     guidelines: ['ADA'],
     references: [
       { label: 'ADA – Standards of Medical Care in Diabetes', url: 'https://diabetesjournals.org/care/issue/47/Supplement_1' },

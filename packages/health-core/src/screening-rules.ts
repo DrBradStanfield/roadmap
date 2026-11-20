@@ -53,8 +53,8 @@ export type ScreeningId = 'colorectal' | 'breast' | 'cervical' | 'lung' | 'prost
 export type AgeRange = readonly [min: number, max?: number];
 export type Ages = AgeRange | { readonly female: AgeRange; readonly male: AgeRange };
 
-/** A follow-up's name and what the abnormal result means, as the follow-up card says them. */
-export interface Followup { readonly name: string; readonly abnormalMeans: string }
+/** A follow-up's name and what the abnormal result means, as the follow-up card says them; `opening` replaces the card's first sentence. */
+export interface Followup { readonly name: string; readonly abnormalMeans: string; readonly opening?: string }
 
 interface Option { readonly value: string; readonly label: string }
 /** A choice option (a method). `months` is its screening interval. */
@@ -277,7 +277,7 @@ export const SCREENING_RULES: readonly ScreeningRule[] = [
       { value: 'normal', label: 'Normal', months: 60 },
       { value: 'osteopenia', label: 'Osteopenia', months: 24 },
       { value: 'osteoporosis', label: 'Osteoporosis', postMonths: 12,
-        followup: { name: 'treatment review', abnormalMeans: 'osteoporosis diagnosed — treatment and monitoring required' } },
+        followup: { name: 'treatment review', abnormalMeans: 'recorded result of osteoporosis', opening: 'You recorded a result of osteoporosis, which needs treatment and monitoring.' } },
       { value: 'awaiting', label: 'Awaiting results' },
     ] },
     followupIgnoresUpperAge: false,
@@ -444,9 +444,11 @@ export function postFollowupIntervals(rules: readonly ScreeningRule[] = SCREENIN
   return Object.fromEntries(rules.flatMap(followups).map(([key, f]) => [key, f.postMonths]));
 }
 
+/** A follow-up card's words: its name, what the result means, and an `opening` that replaces its first sentence. */
+export interface FollowupInfo { followupName: string; abnormalMeans: string; opening?: string }
 /** SCREENING_FOLLOWUP_INFO, keyed `${id}_${method}`, in row order. */
-export function screeningFollowupInfo(rules: readonly ScreeningRule[] = SCREENING_RULES): Record<string, { followupName: string; abnormalMeans: string }> {
-  return Object.fromEntries(rules.flatMap(followups).map(([key, f]) => [key, { followupName: f.followup.name, abnormalMeans: f.followup.abnormalMeans }]));
+export function screeningFollowupInfo(rules: readonly ScreeningRule[] = SCREENING_RULES): Record<string, FollowupInfo> {
+  return Object.fromEntries(rules.flatMap(followups).map(([key, f]) => [key, { followupName: f.followup.name, abnormalMeans: f.followup.abnormalMeans, ...(f.followup.opening ? { opening: f.followup.opening } : {}) }]));
 }
 
 /** SCREENING_MIN_AGE: the rows with an upload gate. */

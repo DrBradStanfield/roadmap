@@ -6,7 +6,7 @@
 // length of masked text (US-74 AC5): nothing here varies with the stage or the
 // value, and every result text is padded to one length (US-75 AC7).
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { BP_TIER_LABEL, type BpTier } from '@roadmap/health-core/bp-tier';
+import { BP_TIER_SHORT, type BpTier } from '@roadmap/health-core/bp-tier';
 import { localDay } from '@roadmap/health-core/merge';
 import { formatShortDate } from '../lib/constants';
 import { trackProductEvent } from '../lib/server-api';
@@ -20,7 +20,7 @@ import { PILL, canvasDraws, drawPill, fixed } from './WidgetResults';
 /** Result text lengths, each padded with WidgetResults' word joiner (fixed), which Clarity counts and
  *  no one sees: "250/150", the longest tier name, and the plan's longest card (the stage 2 card with
  *  its medicine and both lifestyle sentences), with room. Tested against every card. */
-export const WIDTH = { value: 7, tier: 20, advice: 1000 } as const;
+export const WIDTH = { value: 7, tier: Math.max(...Object.values(BP_TIER_SHORT).map((label) => label.length)), advice: 1000 } as const;
 /** The plan's card opens "Your BP of"; on this page the abbreviation is spelled out on first use (Brad
  *  2026-11-19). Only the page's copy changes; the card itself, everywhere else, is the engine's. */
 export const spelledOut = (text: string | undefined) => text?.replace(/^Your BP of /, 'Your blood pressure of ');
@@ -77,7 +77,7 @@ function BpResults({ result }: { result: Result | null }) {
   const tier = result ? result.tier ?? 'none' : null;
   useLayoutEffect(() => {
     // A known minor's result has no stage: the canvas is left blank, and `drawn` still says only whether it draws.
-    if (tier) setDrawn(tier === 'none' ? canvasDraws(pill.current) : drawPill(pill.current, BP_TIER_LABEL[tier], PILL[TONE[tier]], true));
+    if (tier) setDrawn(tier === 'none' ? canvasDraws(pill.current) : drawPill(pill.current, BP_TIER_SHORT[tier], PILL[TONE[tier]], true));
   }, [tier]);
   return (
     <output className="hr-widget-results" aria-live="polite">
@@ -87,7 +87,7 @@ function BpResults({ result }: { result: Result | null }) {
             <div className="hr-widget-k">Average blood pressure</div>
             <div className="hr-widget-v">{fixed(`${result.pair.sys}/${result.pair.dia}`, WIDTH.value)}<small className="hr-widget-mmhg"> mmHg</small></div>
             <canvas ref={pill} className="hr-widget-pill hr-widget-bp-pill" aria-hidden="true" />
-            <span className={drawn ? 'hr-widget-sr' : 'hr-widget-status'}>{fixed(result.tier ? BP_TIER_LABEL[result.tier] : '', WIDTH.tier)}</span>
+            <span className={drawn ? 'hr-widget-sr' : 'hr-widget-status'}>{fixed(result.tier ? BP_TIER_SHORT[result.tier] : '', WIDTH.tier)}</span>
           </div>
           {/* One element whatever the card: its paragraphs are line breaks (pre-line), so their count is not
               in the page's structure. With no card (Normal, Elevated, a known minor) it is hidden, so the box

@@ -131,7 +131,7 @@ const flat: MedicationBasis = {
 };
 const elevated: MedicationBasis = {
   ...flat, lipidMarker: { kind: 'apoB', label: 'ApoB', value: 1.2, target: 0.8, elevated: true },
-  weightMedTrigger: { on: true, reasons: ['prediabetic HbA1c'] }, bmi: 31,
+  weightMedTrigger: { on: true, reasons: ['an HbA1c in the prediabetes range'] }, bmi: 31,
 };
 
 describe('screeningForm', () => {

@@ -507,7 +507,7 @@ export function getPostFollowupDueDate(
  * Human-readable follow-up information for abnormal screening results.
  * Keyed by "{screeningType}_{method}".
  */
-export const SCREENING_FOLLOWUP_INFO: Record<string, { followupName: string; abnormalMeans: string }> = {
+export const SCREENING_FOLLOWUP_INFO: Record<string, { followupName: string; abnormalMeans: string; opening?: string }> = {
   colorectal_fit_annual: { followupName: 'colonoscopy', abnormalMeans: 'positive FIT test' },
   colorectal_colonoscopy_10yr: { followupName: 'repeat colonoscopy', abnormalMeans: 'polyps found on colonoscopy' },
   colorectal_other: { followupName: 'follow-up investigation', abnormalMeans: 'abnormal result' },
@@ -517,7 +517,7 @@ export const SCREENING_FOLLOWUP_INFO: Record<string, { followupName: string; abn
   cervical_pap_every_3yr: { followupName: 'colposcopy', abnormalMeans: 'abnormal Pap test' },
   cervical_other: { followupName: 'colposcopy', abnormalMeans: 'abnormal result' },
   lung_annual_ldct: { followupName: 'follow-up imaging', abnormalMeans: 'abnormal LDCT result' },
-  dexa_dexa_scan: { followupName: 'treatment review', abnormalMeans: 'osteoporosis diagnosed — treatment and monitoring required' },
+  dexa_dexa_scan: { followupName: 'treatment review', abnormalMeans: 'recorded result of osteoporosis', opening: 'You recorded a result of osteoporosis, which needs treatment and monitoring.' },
 };
 
 /**
