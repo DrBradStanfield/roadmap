@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import type { UnitSystem, MetricType } from '@roadmap/health-core/units';
 import { NO_CHOICES } from '@roadmap/health-core/upload-choices';
 import type { DocumentResult } from '@roadmap/health-core/lab-extraction';
-import { UPLOAD_WINDOW_TEXT } from '@roadmap/health-core/upload-text';
+import { UPLOAD_TEXT, UPLOAD_WINDOW_TEXT } from '@roadmap/health-core/upload-text';
 import type { UploadHistory } from '../lib/api-types';
 import type { Grading } from '../lib/blood-test-cell';
 import { ReviewTable } from './ReviewTable';
@@ -45,6 +45,8 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
   const picking = phase === 'picking' || phase === 'readFailed';
   // The review shows while files are still read: results appear as each one is (US-12 AC26).
   const reviewing = !!view && !!review && (phase === 'reading' || phase === 'reviewing' || phase === 'saving' || phase === 'saveFailed');
+  const failedSection = view?.sections.find(s => s.kind === 'failed');
+  const retryAll = failedSection?.kind === 'failed' && failedSection.rows.some(r => r.retry) ? UPLOAD_TEXT.retryAll : null;
   const handleClose = flow.close;
   const handleDiscard = () => {
     if (phase === 'reviewing' || phase === 'saveFailed') flow.endReview(reviewCounts.current?.(false));
@@ -148,6 +150,8 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
               )}
               {readError && <p className="upload-error">{readError}</p>}
               <FileNotices notices={notices} />
+              {/* Files that failed on this device keep their Try again where a retry can mend them (PR 1906 item 2). */}
+              {phase === 'readFailed' && retryAll && <button type="button" className="review-retry-btn" onClick={() => flow.retry('all')}>{retryAll}</button>}
             </div>
           )}
 

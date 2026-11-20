@@ -82,8 +82,14 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
+let shown: ReturnType<typeof render> | null = null;
 function render_() {
-  render(<UploadModal open onOpen={() => {}} onClose={() => {}} unitSystem="si" grading={{}} history={history} onComplete={() => {}} />);
+  shown = render(<UploadModal open onOpen={() => {}} onClose={() => {}} unitSystem="si" grading={{}} history={history} onComplete={() => {}} />);
+}
+/** Ends the run as the page going away does: the run's one outcome is sent when the run is final (PR 1906 item 3). */
+function endRun() {
+  shown?.unmount();
+  shown = null;
 }
 
 describe('US-12 AC9: every file not fully read is named with a reason', () => {
@@ -148,6 +154,7 @@ describe('US-12 AC9: every file not fully read is named with a reason', () => {
     render_(); pick(pdf('good.pdf'), pdf('broken.pdf'));
     await findReviewValue('3.9');
     expect(reasonFor('broken.pdf')).toBe('Our server could not read it. Please try again.');
+    endRun();
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual(expect.objectContaining({ serverError: 1, limitError: 0 }));
   });
@@ -167,6 +174,7 @@ describe('US-12 AC9: every file not fully read is named with a reason', () => {
     await findReviewValue('3.9');
     expect(reasonFor('broken.pdf')).toBe('Not read. The daily upload limit was reached.');
     expect(reasonFor('late.pdf')).toBe('Not read. The daily upload limit was reached.');
+    endRun();
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual(expect.objectContaining({ serverError: 0, limitError: 2 }));
   });
@@ -178,6 +186,7 @@ describe('US-12 AC9: every file not fully read is named with a reason', () => {
     render_(); pick(pdf('good.pdf'), pdf('busy.pdf'));
     await findReviewValue('3.9');
     expect(reasonFor('busy.pdf')).toBe('Not read. Our server was busy. Please try again later.');
+    endRun();
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual(expect.objectContaining({ serverError: 1, limitError: 0 }));
   });
@@ -194,6 +203,7 @@ describe('US-12 AC9: every file not fully read is named with a reason', () => {
     await findReviewValue('3.9');
     expect(reasonFor('declined.pdf')).toBe('Not read. Claude declined to read this file, so trying again will not help.');
     expect(reasonFor('long.pdf')).toBe('Not read. The file is too long to read in one go.');
+    endRun();
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual(expect.objectContaining({ picked: 3, withValues: 1, refused: 1, tooLong: 1, serverError: 0 }));
   });
@@ -226,7 +236,10 @@ describe('US-12 AC10: one count-only upload_outcome per run', () => {
     render_();
     pick(pdf('good.pdf'), pdf('letter.pdf'), pdf('blank.pdf'), pdf('broken.pdf'), pdf('locked.pdf'), pdf('huge.pdf', 11 * 1024 * 1024));
     await findReviewValue('3.9');
-    await waitFor(() => expect(outcomes()).toHaveLength(1));
+    // The run is counted once, when Save ends it (PR 1906 item 3).
+    expect(outcomes()).toEqual([]);
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    await screen.findByRole('button', { name: 'Done' });
     expect(outcomes()[0]).toEqual({
       picked: 6, withValues: 1, documentOnly: 1, noValues: 1, openFailed: 1,
       tooLarge: 1, truncated: 1, serverError: 1, limitError: 0, refused: 0, tooLong: 0, valuesDropped: 0, docx: 0, picturesOnly: 0, undatedPrevious: 0, unitsGuessed: 0, unitsRefused: 0, valuesLimit: 0, valuesLimitUngraded: 0, cancelled: 0, known: 0, failedFinal: 2, firstReadSeconds: 0,
@@ -235,8 +248,7 @@ describe('US-12 AC10: one count-only upload_outcome per run', () => {
     // A zero is never sent, so a server a deploy behind never meets a new key it would refuse; a first read
     // under a second is a real time, so `firstReadSeconds: 0` is (US-12 AC30).
     expect(sent()[0]).toEqual({ picked: 6, withValues: 1, documentOnly: 1, noValues: 1, openFailed: 1, tooLarge: 1, truncated: 1, serverError: 1, failedFinal: 2, firstReadSeconds: 0 });
-    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-    await screen.findByRole('button', { name: 'Done' });
+    fireEvent.click(screen.getByRole('button', { name: 'Done' }));
     expect(outcomes()).toHaveLength(1);
   });
 
@@ -250,6 +262,7 @@ describe('US-12 AC10: one count-only upload_outcome per run', () => {
     vi.mocked(labImport).mockResolvedValue(undated);
     render_(); pick(pdf('baseline.pdf'));
     await findReviewValue('3.9');
+    endRun();
     await waitFor(() => expect(sent()).toHaveLength(1));
     expect(sent()[0]).toEqual({ picked: 1, withValues: 1, undatedPrevious: 2, firstReadSeconds: 0 });
   });
@@ -258,11 +271,13 @@ describe('US-12 AC10: one count-only upload_outcome per run', () => {
     extractFromPdf.mockRejectedValue(new Error('PasswordException'));
     render_(); pick(pdf('a.pdf'));
     await screen.findByText(/No readable files found/);
+    endRun();
     expect(outcomes()).toEqual([expect.objectContaining({ picked: 1, openFailed: 1, withValues: 0 })]);
   });
 
   it('fires for a pick of only oversize files', () => {
     render_(); pick(pdf('huge.pdf', 11 * 1024 * 1024));
+    endRun();
     expect(outcomes()).toEqual([expect.objectContaining({ picked: 1, tooLarge: 1 })]);
   });
 });
@@ -286,6 +301,7 @@ describe('US-12 AC9: a ZIP that gives no files is named too', () => {
     render_(); pick(pdf('good.pdf'), zip('broken.zip'));
     await findReviewValue('3.9');
     expect(reasonFor('broken.zip')).toMatch(/^Could not open it/);
+    endRun();
     expect(outcomes()).toEqual([expect.objectContaining({ picked: 2, openFailed: 1, withValues: 1 })]);
   });
 });
@@ -302,6 +318,7 @@ describe('US-12 AC9: values a file printed but the parse refused are not silent'
     for (const name of ['partial.pdf', 'one.pdf', 'good.pdf']) expect(reasonFor(name)).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: '3 values not saved' }));
     expect(screen.getByRole('list', { name: 'Values not saved' }).textContent).toBe('3 values could not be read');
+    endRun();
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual(expect.objectContaining({ picked: 3, withValues: 3, valuesDropped: 3 }));
   });
@@ -325,6 +342,7 @@ describe('US-12 AC19: each value not saved is named, with why', () => {
     const items = within(screen.getByRole('list', { name: 'Values not saved' })).getAllByRole('listitem').map(li => li.textContent);
     expect(items).toEqual(['Vitamin D (25-OH), HDL Cholesterol: could not be read', '1 other value could not be read']);
     expect(items.join(' ')).not.toMatch(/vitamin_d|\bhdl\b/);
+    endRun();
     await waitFor(() => expect(sent()).toHaveLength(1));
     // A count and its reason word only: never a test's name or a value.
     expect(sent()[0]).toEqual({ picked: 1, withValues: 1, valuesDropped: 3, firstReadSeconds: 0 });
@@ -350,6 +368,7 @@ describe('US-12 AC20: the upload counts limits, and names the ungraded tests by 
     } } as Import);
     render_(); pick(pdf('limits.pdf'));
     await findReviewValue('3.9');
+    endRun();
     await waitFor(() => expect(sent()).toHaveLength(1));
     expect(sent()[0]).toEqual({ picked: 1, withValues: 1, valuesLimit: 5, valuesLimitUngraded: 3, firstReadSeconds: 0, limitUngradedTests: ['egfr', 'ldl', 'other'] });
     expect(JSON.stringify(sent()[0])).not.toMatch(/Made-up|Folate|nmol|1\.5|"30"|[<>]/);
@@ -419,6 +438,7 @@ describe('US-12 AC9: a ZIP member over the per-file limit is named and never rea
     await findReviewValue('3.9');
     expect(reasonFor('huge.pdf')).toBe('Too large to read. The limit is 10 MB per file.');
     expect(extractFromPdf.mock.calls.map(([f]) => (f as File).name)).toEqual(['good.pdf']);
+    endRun();
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual(expect.objectContaining({ picked: 2, tooLarge: 1, withValues: 1, openFailed: 0 }));
   });
@@ -440,6 +460,7 @@ describe('US-12 AC9: the Pages build names its own transport', () => {
     expect(reasonFor('broken.pdf')).toBe('Not read. Anthropic could not be reached or could not read it. Please try again.');
     expect(reasonFor('late.pdf')).toBe('Not read. Your Anthropic key hit its rate limit. Wait a minute and try again.');
     // The usage signal keeps its keys: a rate limit is still limitError.
+    endRun();
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual(expect.objectContaining({ serverError: 1, limitError: 1 }));
   });
@@ -453,6 +474,7 @@ describe('US-12 AC9: the Pages build names its own transport', () => {
     await findAllReviewValues('3.9');
     expect(labImport).toHaveBeenCalledTimes(30);
     expect(reasonFor('r7.pdf')).toBe(KEY_TEXT.rateLimit);
+    endRun();
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual(expect.objectContaining({ picked: 30, withValues: 29, limitError: 1, serverError: 0 }));
   });
@@ -466,6 +488,7 @@ describe('US-12 AC9: the Pages build names its own transport', () => {
     await findReviewValue('3.9');
     expect(reasonFor('refused.pdf')).toBe('Not read. Anthropic refused your API key. Check the key in the "Ask about your plan" panel.');
     expect(reasonFor('broke.pdf')).toBe('Not read. Your Anthropic account has no credit. Check its billing, then try again.');
+    endRun();
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual(expect.objectContaining({ serverError: 2, limitError: 0 }));
   });
@@ -482,6 +505,7 @@ describe('US-12 AC13: a .docx is read in the browser and sent as text', () => {
     expect(labImport).toHaveBeenCalledWith([{ type: 'text', content: 'Ferritin | 85 | 60 | ug/L | 30-400' }], 'si', expect.anything());
     expect(docxToText.mock.calls[0][0]).toBeInstanceOf(ArrayBuffer);
     expect(reasonFor('baseline.docx')).toBeNull();
+    endRun();
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual(expect.objectContaining({ picked: 1, withValues: 1, docx: 1 }));
   });
@@ -492,6 +516,7 @@ describe('US-12 AC13: a .docx is read in the browser and sent as text', () => {
     await findReviewValue('3.9');
     expect(reasonFor('empty.docx')).toBe('Could not open it. It may be password-protected, damaged, or not a PDF, photo or .docx file.');
     expect(reasonFor('bomb.docx')).toMatch(/^Could not open it/);
+    endRun();
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual(expect.objectContaining({ picked: 3, withValues: 1, openFailed: 2, docx: 2 }));
   });
@@ -501,6 +526,7 @@ describe('US-12 AC13: a .docx is read in the browser and sent as text', () => {
     await findReviewValue('3.9');
     expect(reasonFor('old.doc')).toBe('Word .doc files cannot be read. Save it as a PDF or .docx, then upload that.');
     expect(docxToText).not.toHaveBeenCalled();
+    endRun();
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual(expect.objectContaining({ picked: 2, openFailed: 1, docx: 0 }));
   });
@@ -511,6 +537,7 @@ describe('US-12 AC13: a .docx is read in the browser and sent as text', () => {
     render_(); pick(typed);
     await findReviewValue('3.9');
     expect(docxToText).toHaveBeenCalledTimes(1);
+    endRun();
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual(expect.objectContaining({ picked: 1, withValues: 1, docx: 1 }));
   });
@@ -520,6 +547,7 @@ describe('US-12 AC13: a .docx is read in the browser and sent as text', () => {
     render_(); pick(pdf('good.pdf'), word('scan.docx'));
     await findReviewValue('3.9');
     expect(reasonFor('scan.docx')).toBe('This Word file holds pictures, not text. Save it as a PDF, or upload a photo of the page.');
+    endRun();
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual(expect.objectContaining({ picked: 2, withValues: 1, picturesOnly: 1, openFailed: 0, docx: 1 }));
   });
@@ -529,6 +557,7 @@ describe('US-12 AC13: a .docx is read in the browser and sent as text', () => {
     render_(); pick(word('long.docx'));
     await findReviewValue('3.9');
     expect(reasonFor('long.docx')).toBe('This file is long, so only its first part was read.');
+    endRun();
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual(expect.objectContaining({ picked: 1, withValues: 1, truncated: 1, docx: 1 }));
   });
@@ -548,6 +577,7 @@ describe('US-12 AC13: a .docx is read in the browser and sent as text', () => {
     Object.defineProperty(huge, 'size', { value: 11 * 1024 * 1024 });
     render_(); pick(huge);
     expect(reasonFor('huge.docx')).toMatch(/^Too large/);
+    endRun();
     expect(outcomes()).toEqual([expect.objectContaining({ picked: 1, tooLarge: 1, docx: 1 })]);
   });
 
@@ -573,10 +603,9 @@ describe('US-12 AC15, AC16: refused and guessed units are shown and counted', ()
     const list = screen.getByRole('list', { name: 'Values not saved' });
     expect(list.textContent).toBe('Creatinine: this unit is usually a urine result');
     expect(reasonFor('acr.pdf')).toBeNull();
-    await waitFor(() => expect(sent()).toHaveLength(1));
-    expect(sent()[0]).toEqual({ picked: 1, withValues: 1, unitsGuessed: 1, unitsRefused: 1, firstReadSeconds: 0 });
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
     await screen.findByRole('button', { name: 'Done' });
+    expect(sent()).toEqual([{ picked: 1, withValues: 1, unitsGuessed: 1, unitsRefused: 1, firstReadSeconds: 0 }]);
   });
 
   it('a file whose only values were refused is not "No blood test values found." and not counted noValues', async () => {
@@ -586,6 +615,7 @@ describe('US-12 AC15, AC16: refused and guessed units are shown and counted', ()
     render_(); pick(pdf('acr.pdf'));
     await screen.findByRole('button', { name: '1 value not saved' });
     expect(reasonFor('acr.pdf')).toBeNull();
+    endRun();
     await waitFor(() => expect(sent()).toHaveLength(1));
     expect(sent()[0]).toEqual({ picked: 1, unitsRefused: 1, firstReadSeconds: 0 });
   });
@@ -648,8 +678,8 @@ describe('US-12 AC28: Stop aborts the reads in flight', () => {
 });
 
 // US-12 AC9, AC10 (Brad 2026-11-11, U6 U8 U9): the runs that ended without a
-// count, and the files a pick past 200 left out without a word. Known gap: a
-// page unmounted mid-read sends nothing.
+// count, and the files a pick past 200 left out without a word. Since PR 1906
+// item 3 a page unmounted mid-read counts the run as it stands.
 describe('US-12 AC9, AC10: a quota refusal and a Stop count, and a pick past 200 says what it left out', () => {
   const LEFT_OUT = (n: number) => `Not read. One upload takes at most 200 files. Upload ${n === 1 ? 'it' : 'them'} separately.`;
 
@@ -682,6 +712,7 @@ describe('US-12 AC9, AC10: a quota refusal and a Stop count, and a pick past 200
       await findReviewValue('3.9');
     } finally { vi.unstubAllGlobals(); }
     expect(screen.queryByText('Daily upload limit reached. You can upload more tomorrow.')).toBeNull();
+    endRun();
     expect(sent()).toEqual([{ picked: 1, withValues: 1, firstReadSeconds: 0 }]);
   });
 
@@ -745,10 +776,10 @@ describe('US-12 AC9, AC10: a quota refusal and a Stop count, and a pick past 200
     expect(sent()[0]).toEqual({ picked: 4, withValues: 3, cancelled: 1, firstReadSeconds: 0 });
   });
 
-  it('US-12 AC10 (U9): Cancel on the review sends nothing more: the read already counted', async () => {
+  it('US-12 AC10: Cancel on the review sends the run\'s one outcome, as it ends the run (PR 1906 item 3)', async () => {
     render_(); pick(pdf('a.pdf'));
     await findReviewValue('3.9');
-    await waitFor(() => expect(sent()).toHaveLength(1));
+    expect(sent()).toEqual([]);
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(sent()).toEqual([{ picked: 1, withValues: 1, firstReadSeconds: 0 }]);
   });
@@ -758,10 +789,9 @@ describe('US-12 AC9, AC10: a quota refusal and a Stop count, and a pick past 200
     await findAllReviewValues('3.9');
     expect(labImport).toHaveBeenCalledTimes(200);
     expect(reasonFor('2 more files')).toBe(LEFT_OUT(2));
-    await waitFor(() => expect(outcomes()).toHaveLength(1));
-    expect(outcomes()[0]).toEqual(expect.objectContaining({ picked: 202, withValues: 200, limitError: 2 }));
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
     await screen.findByRole('button', { name: 'Done' });
+    expect(outcomes()).toEqual([expect.objectContaining({ picked: 202, withValues: 200, limitError: 2 })]);
     expect(reasonFor('2 more files')).toBe(LEFT_OUT(2));
   });
 
@@ -777,6 +807,7 @@ describe('US-12 AC9, AC10: a quota refusal and a Stop count, and a pick past 200
     render_(); pick(...Array.from({ length: 201 }, (_, i) => pdf(`big${i}.pdf`, 11 * 1024 * 1024)));
     expect(reasonFor('1 more file')).toBe(LEFT_OUT(1));
     expect(checkLabImportQuota).not.toHaveBeenCalled();
+    endRun();
     expect(sent()).toEqual([{ picked: 201, tooLarge: 200, limitError: 1 }]);
   });
 });

@@ -103,12 +103,14 @@ function importFile(f: ReadFile, now: string, holderOf: (row: BulkRow) => string
     const row = target && days[ref] ? importRow(result, ref, validDay(days[ref]!, { now }) ?? days[ref]!) : null;
     return row && holderOf(row) === target ? target : undefined;
   };
+  // The chosen target goes on the row even when it no longer holds the slot: the write then refuses
+  // the stale target and the value is not written, never turned into a new row (US-35 AC8; PR 1906 item 1).
   const options = Object.fromEntries(offered.map(({ ref }) => {
-    const correctsId = replaces(ref);
+    const correctsId = choices.replace[ref];
     return [ref, { ...(correctsId ? { correctsId } : {}), ...(choices.edits[ref] !== undefined ? { edited: { value: choices.edits[ref] } } : {}) }];
   }));
   const file = reportImportFile(result, needsTestDay || needsPreviousDay || needsColumnDay ? [] : ticked.map((v) => v.ref), day, now, undatedDay, options);
-  return { file, day, ticked: ticked.map((v) => v.ref), needsTestDay, needsPreviousDay, needsColumnDay, replacing: Object.keys(options).filter((ref) => options[ref].correctsId) };
+  return { file, day, ticked: ticked.map((v) => v.ref), needsTestDay, needsPreviousDay, needsColumnDay, replacing: offered.map(({ ref }) => ref).filter((ref) => replaces(ref)) };
 }
 
 /** A dated previous column's values on the day the person picked for it (US-12 AC12); the extraction itself when none. */

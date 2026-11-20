@@ -128,13 +128,16 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
       live.current = step.state;
       setUpload(step.state);
       const after = step.state;
-      // A run's reading ended, or a pick of only files too large started none: counted once (US-12 AC10);
-      // a Stop that ended reads in flight as one cancelled run (U9, owner ruling 2026-11-20).
-      if ((after.phase === 'open' || after.phase === 'failed') && inFlight(after) === 0 && (before.phase === 'choosing' || inFlight(before) > 0)) readEnded(after, event.type === 'stop');
+      // A run is counted once, when it is final (US-12 AC10; PR 1906 item 3): refused or failed as a whole,
+      // saved, ended by a Stop while reads were in flight (U9: one cancelled run, owner ruling 2026-11-20), or
+      // left (discard, close, a new pick, the page going away). A file a Try again mends is counted as read.
+      const stopped = event.type === 'stop' && inFlight(before) > 0;
+      const left = before.phase !== 'choosing' && after.phase === 'choosing';
+      if (after.phase === 'failed' || after.phase === 'done' || stopped || left) runEnded(left ? before : after, stopped);
       for (const effect of step.effects) runEffect(port.current!, effect);
     };
     /** Counts the run; a run no file could open is reported, as before (US-12 AC3). */
-    const readEnded = (s: UploadState, stopped: boolean) => {
+    const runEnded = (s: UploadState, stopped: boolean) => {
       const h = held.current;
       if (refusedForKey(s) || runCounted.current === s.run) return; // the Pages build's missing key names and counts nothing
       runCounted.current = s.run;

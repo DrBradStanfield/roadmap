@@ -7,7 +7,6 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-libra
 import { UploadModal } from './UploadModal';
 import { resetUploadStore } from '../testing/upload-store';
 import { checkLabImportQuota, labImport } from '../lib/upload-api';
-import { trackProductEvent } from '../lib/server-api';
 import type { UploadHistory } from '../lib/api-types';
 import { findReviewValue } from '../testing/import-review';
 
@@ -79,10 +78,11 @@ describe('US-12 AC4: read runs', () => {
     const button = screen.getByRole('button', { name: 'Stop' });
     await act(async () => {
       readA.resolve(pages);
-      // Wait until the read has handed over its result (its outcome is counted
-      // just before), while the reading screen is still the one rendered.
-      for (let i = 0; i < 50 && !vi.mocked(trackProductEvent).mock.calls.some(([n]) => n === 'upload_outcome'); i++) await new Promise(r => setTimeout(r, 0));
-      expect(vi.mocked(trackProductEvent).mock.calls.some(([n]) => n === 'upload_outcome')).toBe(true);
+      // Wait until the read has handed over its result, while the reading screen is still the one rendered
+      // (the run's outcome is now counted only when the run ends: PR 1906 item 3).
+      for (let i = 0; i < 50 && !vi.mocked(labImport).mock.results.length; i++) await new Promise(r => setTimeout(r, 0));
+      await vi.mocked(labImport).mock.results[0].value;
+      for (let i = 0; i < 5; i++) await new Promise(r => setTimeout(r, 0));
       expect(button.isConnected).toBe(true);
       fireEvent.click(button);
     });
