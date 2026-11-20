@@ -40,8 +40,8 @@ interface UploadModalProps {
 export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit, history, onComplete, onStart, onClose, age, sex, grading, open, onOpen }: UploadModalProps) {
   // A review that Cancel discards sends its counts; × and Escape only hide it, to
   // resume (US-12 AC4). The flow sends one per review, none while a Save runs (US-13 AC13).
-  const reviewCounts = useRef<(() => ProductEventMetadata) | null>(null);
-  const flow = useUploadFlow({ unitSystem, history, onComplete, onStart, onClose, screening: { age, sex }, reviewCounts: () => reviewCounts.current?.() ?? {} });
+  const reviewCounts = useRef<((saved: boolean) => ProductEventMetadata) | null>(null);
+  const flow = useUploadFlow({ unitSystem, history, onComplete, onStart, onClose, screening: { age, sex }, reviewCounts: () => reviewCounts.current?.(true) ?? {} });
   const { phase, state, view, review, files, notices, progress, readError, skipArchive } = flow;
   const picking = phase === 'picking' || phase === 'readFailed';
   // The review shows while files are still read: results appear as each one is (US-12 AC26).
@@ -51,7 +51,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
   const handleDiscard = () => {
     // While files are read, Cancel stops them and drops the run, as before (US-12 AC28).
     if (reading) return flow.cancel();
-    if (phase === 'reviewing' || phase === 'saveFailed') flow.endReview(reviewCounts.current?.());
+    if (phase === 'reviewing' || phase === 'saveFailed') flow.endReview(reviewCounts.current?.(false));
     flow.discard();
   };
   // Connect-first gate (decision record: encourage, don't block). 'device-only'

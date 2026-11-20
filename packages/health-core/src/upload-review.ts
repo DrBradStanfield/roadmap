@@ -59,11 +59,13 @@ export function previousDay(pick: string | null, reportDay: string | null, now: 
  * `classifyReport` shares). Each value starts ticked by the platform's rule; the person's ticks
  * win. Each ticked value is on its own day or the test's (the person's pick, else the report's
  * own full day); an undated previous column's on its own day. Replace and an edited number go
- * on the row as the web's review puts them (import-review-view.ts `classifyReview`).
+ * on the row, as the web's review sends them through `chose`.
  */
 function importFile(f: ReadFile, platform: UploadPlatform, now: string, holderOf: (row: BulkRow) => string | undefined) {
   const { choices } = f.status;
-  const extraction = withColumnDays(f.status.extraction, choices.columnDays, now);
+  // A dated previous column's pick as a real past day, or null while it is not one yet (PR 1906 item 10).
+  const columnDays = Object.entries(choices.columnDays ?? {}).map(([printed, day]) => [printed, validDay(day, { now })] as const);
+  const extraction = withColumnDays(f.status.extraction, Object.fromEntries(columnDays.filter(([, day]) => day !== null)) as Record<string, string>);
   // A letter whose values the platform offers (D3) is classified as the report its values are.
   const result = { ...extraction, classification: 'lab_report' } as ImportFile['result'];
   const day = validDay(choices.testDay ?? extraction.reportDate ?? undefined, { now });
@@ -78,7 +80,7 @@ function importFile(f: ReadFile, platform: UploadPlatform, now: string, holderOf
   const needsTestDay = day === null && ticked.some((v) => v.own === undefined);
   const needsPreviousDay = undatedDay === null && ticked.some((v) => v.own === UNDATED_PREVIOUS);
   // A dated previous column whose pick is no real past day yet: its ticked values wait for one (PR 1906 item 10).
-  const waiting = Object.entries(choices.columnDays ?? {}).filter(([, day]) => !validDay(day, { now })).map(([printed]) => printed);
+  const waiting = columnDays.filter(([, day]) => day === null).map(([printed]) => printed);
   const needsColumnDay = ticked.some((v) => v.own !== undefined && waiting.includes(v.own));
   // A Replace counts only while its target is still the held row on the value's day (US-13 AC7).
   const days = valueDays(result, day, undatedDay);
@@ -96,10 +98,10 @@ function importFile(f: ReadFile, platform: UploadPlatform, now: string, holderOf
 }
 
 /** A dated previous column's values on the day the person picked for it (US-12 AC12); the extraction itself when none. */
-function withColumnDays(x: ReadFile['status']['extraction'], days: Readonly<Record<string, string>> | undefined, now: string): ReadFile['status']['extraction'] {
-  if (!days || !Object.keys(days).length) return x;
-  // Only a real past day moves its values; a pick still waiting leaves them printed, and the report waits (`needsColumnDay`).
-  const moved = <V extends { recordedAt?: string }>(v: V): V => (v.recordedAt && days[v.recordedAt] && validDay(days[v.recordedAt], { now }) ? { ...v, recordedAt: days[v.recordedAt] } : v);
+function withColumnDays(x: ReadFile['status']['extraction'], days: Readonly<Record<string, string>>): ReadFile['status']['extraction'] {
+  if (!Object.keys(days).length) return x;
+  // Only a real past day moves its values (`days` holds no other); a pick still waiting leaves them printed, and the report waits (`needsColumnDay`).
+  const moved = <V extends { recordedAt?: string }>(v: V): V => (v.recordedAt && days[v.recordedAt] ? { ...v, recordedAt: days[v.recordedAt] } : v);
   return { ...x, values: x.values?.map(moved), additionalValues: x.additionalValues?.map(moved) };
 }
 

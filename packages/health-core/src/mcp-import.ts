@@ -545,7 +545,7 @@ export function prepareImport(
           ? '1 value on this report could not be read and was left out. Check the report for it.'
           : `${n} values on this report could not be read and were left out. Check the report for them.`;
       }
-      // The row the website writes for a lab PDF (`synthesizeLabArchiveEntries`),
+      // The row the website writes for a lab PDF (upload-plan.ts `labArchives`),
       // which its Documents list hides: the values are the record, the file is the archive.
       doc = { type: 'pathology_report', title: LAB_ARCHIVE_TITLE, date: day };
     } else {

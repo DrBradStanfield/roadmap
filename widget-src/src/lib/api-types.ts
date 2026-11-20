@@ -13,7 +13,7 @@ import type { HealthInputs } from '@roadmap/health-core/types';
 import type { DocumentType } from '@roadmap/health-core/validation';
 import type { ApiMeasurement, ApiMedication, ApiScreening } from '@roadmap/health-core/mappings';
 import type { MedicationChange } from '@roadmap/health-core/medication-annotations';
-import type { LabUnitRefusal, MeasurementRefusal } from '@roadmap/health-core/record-edits';
+import type { MeasurementRefusal } from '@roadmap/health-core/record-edits';
 import type { RefusedLabValue, UnreadLabValue } from '@roadmap/health-core/lab-extraction';
 import type { ExtractionStopCode } from '@roadmap/health-core/models';
 

@@ -97,7 +97,8 @@ export const isOfferedRef = (ref: string) => /^[va]\d+$/.test(ref);
  *  (outside its input range, or half of a blood pressure the wrong way up). */
 export type UnsureReason = 'confidence' | 'question' | 'unitGuessed' | 'outOfRange' | 'conflict';
 /** Why a value is not saved (D5). */
-export type NotSavedReason = 'unit' | 'noUnit' | 'misread' | 'scale' | 'unreadable' | 'urine' | 'sameDay';
+export const NOT_SAVED_REASONS = ['unit', 'noUnit', 'misread', 'scale', 'unreadable', 'urine', 'sameDay'] as const;
+export type NotSavedReason = (typeof NOT_SAVED_REASONS)[number];
 
 /**
  * One value's place in the review. `ref`: `v<i>` a core value, `a<i>` an

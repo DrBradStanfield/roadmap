@@ -15,6 +15,7 @@ import { COMPARATORS } from './lab-limits';
 import type { AdditionalLabValue, DocumentResult, ExtractedValue, RefusedLabValue, UnifiedExtractionResult } from './lab-extraction';
 import { UNIT_SYSTEMS } from './units';
 import type { ChoiceChange, FileChoices } from './upload-choices';
+import { NOT_SAVED_REASONS } from './import-review';
 import { UPLOAD_FAILURES, type UploadFailure } from './upload-failure';
 import type { UploadEffect, UploadEvent, UploadState } from './upload-flow';
 
@@ -86,7 +87,7 @@ const file = strict({
   pages: strict({ count, truncated: z.boolean() }).nullable(), status,
 });
 const pick = { platform, run: count, files: z.array(file), started: text, firstRead: maybeText };
-const notSavedReason = z.enum(['unit', 'noUnit', 'misread', 'scale', 'unreadable', 'urine', 'sameDay']);
+const notSavedReason = z.enum(NOT_SAVED_REASONS);
 const outcome = strict({
   values: count, documents: count, archived: count, unstored: count.optional(), skippedValues: count.optional(), skippedLabValues: count.optional(),
   refused: z.array(strict({ label: text, reason: notSavedReason })).optional(),

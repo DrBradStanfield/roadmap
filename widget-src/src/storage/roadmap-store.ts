@@ -23,12 +23,11 @@
  *    build hides them.
  *  - Medication-history chart annotations use explicit change types saved at write time.
  */
-import { sha256Blob } from '../lib/archive-payloads';
 import { type AddLabValueRequest, type AddLabValueResult, type BulkRow, addLabValue as addRecordLabValue, bulkAppendValues, placeMeasurement, type MoveKeep, type MoveRejection, type MovePlan, correctValue as correctRecordValue, moveBloodTest as moveRecordBloodTest, planBloodTestMove } from '@roadmap/health-core/record-edits';
 import { LiveRefresh } from '@roadmap/health-core/live-refresh';
 import { RecordSession, saveRecordInto, type EraseResult, type EraseSteps } from '@roadmap/health-core/record-session';
-import { birthInFuture, type MeasurementSource, inputRangeFault } from '@roadmap/health-core/validation';
-import { saveDocuments, documentView, writtenLabRows, type DocumentPayload } from '@roadmap/health-core/document-save';
+import { birthInFuture, inputRangeFault } from '@roadmap/health-core/validation';
+import { documentView, writtenLabRows } from '@roadmap/health-core/document-save';
 import type { UploadState } from '@roadmap/health-core/upload-flow';
 import { uploadSave, type UploadSaveIO } from '@roadmap/health-core/upload-save';
 import { setReminderOptIn, setScreening, stampProfile, upsertMedication, upsertSupplement } from '@roadmap/health-core/state-edits';
@@ -68,7 +67,7 @@ export { PENDING_MIRROR_KEY, SYNC_PENDING_EVENT, SAVE_STATUS_EVENT, REMOTE_CHANG
 export { ERASE_UNREACHABLE } from '@roadmap/health-core/record-session';
 
 // App-facing view shapes: one home, lib/api-types.ts (untangle W2-4).
-import type { AddMeasurementResult, ApiDocument, ApiLabValue, ApiMedicationHistory, ApiSupplement, BulkSaveResult, LatestMeasurementsResult } from '../lib/api-types';
+import type { AddMeasurementResult, ApiLabValue, ApiMedicationHistory, ApiSupplement, BulkSaveResult, LatestMeasurementsResult } from '../lib/api-types';
 import type { CorrectStatus, MoveOutcome, BirthRefusal, ProfileRangeRefusal, ProfileSave, BulkMeasurementInput, UploadStoreSave } from './roadmap-store-types';
 export type { CorrectStatus, MoveOutcome, BirthRefusal, ProfileRangeRefusal, ProfileSave, BulkMeasurementInput, UploadStoreSave } from './roadmap-store-types';
 

@@ -45,7 +45,7 @@ interface LegacyProps {
   onCancel: () => void;
   isSaving: boolean;
   error?: string | null;
-  countsRef?: MutableRefObject<(() => Partial<Record<UploadReviewKey, number>>) | null>;
+  countsRef?: MutableRefObject<((saved: boolean) => Partial<Record<UploadReviewKey, number>>) | null>;
   /** Hashes, by result, when the suite gives the files their bytes' identity. */
   hashes?: Array<string | undefined>;
 }
@@ -94,11 +94,11 @@ export function ReviewTable({ results, history, age, sex, onSave, countsRef, has
   if (next.length !== labResults.current.length || next.some((r, i) => r !== labResults.current[i])) labResults.current = next;
   const choices = review.labFiles.map((l) => { const f = files.find((x) => x.id === l.fileId)!; return f.status.s === 'read' ? f.status.choices : NO_CHOICES; });
   const chose = (id: string, change: ChoiceChange) => setState((s) => transition(s, { type: 'chose', id, change, now: NOW() }).state);
-  const counts = useRef<(() => Partial<Record<UploadReviewKey, number>>) | null>(null);
+  const counts = useRef<((saved: boolean) => Partial<Record<UploadReviewKey, number>>) | null>(null);
   const save = () => {
     const plan = uploadSavePlan(state, record, now, review, cloud);
     const keyOf = (id: string) => fileKeyOf(files.find((f) => f.id === id)?.hash ?? undefined, index(id));
-    const decisions: ReviewDecisions = { values: [], labValues: [], documents: [], review: { ...counts.current?.(), saved: 1 } };
+    const decisions: ReviewDecisions = { values: [], labValues: [], documents: [], review: counts.current?.(true) ?? {} };
     // As the old Save wrote them: a day at midnight UTC, and no reference range a report did not print.
     const at = (day: string) => (day.length === 10 ? `${day}T00:00:00.000Z` : day);
     for (const { fileId, rows } of plan.labRows) for (const row of rows) {

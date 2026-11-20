@@ -173,8 +173,8 @@ describe('US-13 AC13 usage signal: one counts-only upload_review per review end'
     const countsRef: { current: (() => object) | null } = { current: null };
     render(<ReviewTable grading={{}} results={[labs([v('ldl', 3.9)])]} history={{ measurements: [], labValues: [], documents: [] }}
       unitSystem="si" onSave={vi.fn()} onCancel={vi.fn()} isSaving={false} error={null} countsRef={countsRef} />);
-    expect(countsRef.current!()).toEqual({ sure: 1, saved: 0 });
-    expect(Object.values(countsRef.current!()).every(n => Number.isInteger(n))).toBe(true);
+    expect(countsRef.current!(false)).toEqual({ sure: 1, saved: 0 });
+    expect(Object.values(countsRef.current!(false)).every(n => Number.isInteger(n))).toBe(true);
   });
 });
 

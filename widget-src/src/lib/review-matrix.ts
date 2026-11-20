@@ -129,7 +129,7 @@ export function buildMatrixModel(
    *  saved"); a core value, or an edited lab, keeps its cell where no placed
    *  reading has it, so its error blocks Save (US-13 AC5). */
   slotless?: { has(id: string): boolean },
-  /** Each edited value's current number (`currentEdits`), null when cleared:
+  /** Each edited value's current number (the upload state's edits), null when cleared:
    *  readings are placed as the table now stands, and a cleared one claims no
    *  slot, so the reading it hid takes it and shows (US-13 AC13). */
   edits?: ReadonlyMap<string, number | null>,

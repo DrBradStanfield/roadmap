@@ -44,7 +44,7 @@ interface ReviewTableProps {
   isSaving: boolean;
   /** Set each render to the review's `upload_review` counts, for a review
    *  that Cancel ends (US-13 AC13). */
-  countsRef?: MutableRefObject<(() => Partial<Record<UploadReviewKey, number>>) | null>;
+  countsRef?: MutableRefObject<((saved: boolean) => Partial<Record<UploadReviewKey, number>>) | null>;
   /** The review's other sections, after "Not saved": failed files, documents, the file list. */
   children?: ReactNode;
 }
@@ -108,30 +108,29 @@ export function ReviewTable({
   // (so a unit toggle after typing never misconverts it). Kept by file id and value ref, never by the
   // file's place in the review, which moves when an earlier file is read late (PR 1906 item 1). A number
   // it reads goes to the state as an edit; text with an error stays here and blocks Save (US-13 AC5).
-  const [typed, setTyped] = useState<ReadonlyMap<string, { text: string; display?: CellUnit }>>(new Map());
-  const stableKey = (id: string) => { const { fi, ref } = refAt(id); return `${fileIdOf(fi)}|${ref}`; };
-  // The same, by this render's `editId`: a typed cell stays a cell, never hidden as already saved.
-  const { touched, editedDisplayValues } = useMemo(() => {
+  type Typed = { fileId: string; ref: string; text: string; display?: CellUnit };
+  const [typed, setTyped] = useState<ReadonlyMap<string, Typed>>(new Map());
+  // This render's `editId` for a typed cell, by its file's place in the review now.
+  const idOf = useMemo(() => {
     const fiOf = new Map(review.labFiles.map((l, fi) => [l.fileId, fi]));
-    const byId = new Map<string, { display?: CellUnit }>();
-    const texts: Record<string, string> = {};
-    for (const [key, { text, display }] of typed) {
-      const cut = key.lastIndexOf('|');
-      const fi = fiOf.get(key.slice(0, cut));
-      if (fi === undefined) continue;
-      const id = `${fi}:${key.slice(cut + 1)}`;
-      byId.set(id, { display });
-      texts[id] = text;
-    }
-    return { touched: byId, editedDisplayValues: texts };
-  }, [typed, review.labFiles]);
+    return (t: Typed) => { const fi = fiOf.get(t.fileId); return fi === undefined ? null : `${fi}:${t.ref}`; };
+  }, [review.labFiles]);
+  // Which cells were typed, and in which unit: a typed cell stays a cell, never hidden as already
+  // saved. It changes only when a cell is first typed or its unit changes, so a keystroke's text
+  // alone never rebuilds the table.
+  const typedUnits = [...typed.values()].map((t) => `${t.fileId}|${t.ref}|${t.display ?? ''}`).join('\n');
+  const touched = useMemo(() => new Map([...typed.values()].flatMap((t) => { const id = idOf(t); return id ? [[id, { display: t.display }] as const] : []; })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `typedUnits` stands for the typed cells and their units
+    [typedUnits, idOf]);
+  const editedDisplayValues = useMemo(() => Object.fromEntries([...typed.values()].flatMap((t) => { const id = idOf(t); return id ? [[id, t.text]] : []; })), [typed, idOf]);
   const matrix = useMemo(
     () => buildMatrixModel(results, fileDates, history.measurements, history.labValues, unitSystem, units, touched, slotless, edits),
     [results, fileDates, history.measurements, history.labValues, unitSystem, units, touched, slotless, edits],
   );
 
-  // What the cell helpers read as typed: this render's, or a keystroke's own before it renders.
-  let touchedNow: ReadonlyMap<string, { display?: CellUnit }> = touched;
+  /** A cell as typed: this render's, or a keystroke's own (`now`) before it renders. */
+  type Touch = { display?: CellUnit } | undefined;
+  const touchOf = (cell: EditableMatrixCell, now?: Touch): Touch => now ?? touched.get(editId(cell));
   const metricOf = (cell: EditableMatrixCell) =>
     cell.kind === 'core' ? results[cell.fi]?.values[cell.vi]?.metric as MetricType | undefined : undefined;
   const extractedError = (cell: EditableMatrixCell): string | null => {
@@ -142,33 +141,35 @@ export function ReviewTable({
   };
   // Equal rendered text preserves valid extraction precision. An explicit
   // correction of an invalid extraction must instead use the typed quantity.
-  const isEditedText = (cell: EditableMatrixCell, editedStr: string) => {
-    const typedIn = touchedNow.get(editId(cell))?.display;
+  const isEditedText = (cell: EditableMatrixCell, editedStr: string, now?: Touch) => {
+    const touch = touchOf(cell, now);
+    const typedIn = touch?.display;
     const metric = metricOf(cell);
-    return (touchedNow.has(editId(cell)) && extractedError(cell) !== null)
+    return (!!touch && extractedError(cell) !== null)
       || editedStr !== (typedIn && metric && UNIT_DEFS[metric] ? cellNumber(metric, cell.valueSI, typedIn, cell.comparator) : cell.initialDisplay);
   };
   /** The value a cell saves (SI for a core metric): the extracted one while
    *  untouched, which re-deriving from its rounded display would move (Lp(a)
    *  124.9 nmol/L shows "50.0" mg/dL → 125); once edited, the typed number in the
    *  unit it was typed in, so a toggle after typing never misconverts it. */
-  const savedValue = (cell: EditableMatrixCell, editedStr: string): number | undefined => {
-    if (!isEditedText(cell, editedStr)) return cell.valueSI;
+  const savedValue = (cell: EditableMatrixCell, editedStr: string, now?: Touch): number | undefined => {
+    if (!isEditedText(cell, editedStr, now)) return cell.valueSI;
     const metric = metricOf(cell);
-    const typedIn = metric && UNIT_DEFS[metric] ? touchedNow.get(editId(cell))?.display ?? units[metric] ?? unitSystem : undefined;
+    const typedIn = metric && UNIT_DEFS[metric] ? touchOf(cell, now)?.display ?? units[metric] ?? unitSystem : undefined;
     const parsed = metric && typedIn ? readTypedValue(metric, editedStr, typedIn) : readNumericCell(editedStr);
     if (parsed === undefined) return undefined;
     return metric && typedIn ? cellToSI(metric, parsed, typedIn) : parsed;
   };
   // Validate the quantity we save, not a rounded rendering after a unit switch.
-  const cellError = (cell: EditableMatrixCell, text: string): string | null => {
+  const cellError = (cell: EditableMatrixCell, text: string, now?: Touch): string | null => {
     const metric = metricOf(cell);
     if (!text) return null;
-    if (isEditedText(cell, text) && !hasNumericSyntax(text)) return NUMERIC_SYNTAX_GUIDANCE;
-    if (!metric || !UNIT_DEFS[metric]) return !isEditedText(cell, text) ? null
+    const edited = isEditedText(cell, text, now);
+    if (edited && !hasNumericSyntax(text)) return NUMERIC_SYNTAX_GUIDANCE;
+    if (!metric || !UNIT_DEFS[metric]) return !edited ? null
       : commaQuestion(text) ?? (readNumericCell(text) === undefined ? 'Enter a number' : null);
-    if (isEditedText(cell, text)) {
-      return validateTypedValue(metric, text, touchedNow.get(editId(cell))?.display ?? units[metric] ?? unitSystem).error;
+    if (edited) {
+      return validateTypedValue(metric, text, touchOf(cell, now)?.display ?? units[metric] ?? unitSystem).error;
     }
     return extractedError(cell);
   };
@@ -183,12 +184,11 @@ export function ReviewTable({
 
   /** A cell's text changed: kept as typed, and what it now says sent to the state as a choice. */
   const updateEditedDisplayValue = (id: string, value: string, display?: CellUnit) => {
-    const key = stableKey(id);
-    const unit = display ?? typed.get(key)?.display;
-    setTyped(prev => new Map(prev).set(key, { text: value, display: unit }));
-    // This keystroke's unit, read below before the next render does.
-    touchedNow = new Map(touched).set(id, { display: unit });
     const { fi, ref } = refAt(id);
+    const key = `${fileIdOf(fi)}|${ref}`;
+    setTyped(prev => new Map(prev).set(key, { fileId: fileIdOf(fi), ref, text: value, display: display ?? prev.get(key)?.display }));
+    // This keystroke's unit, read below before the next render does.
+    const now: Touch = { display: display ?? typed.get(key)?.display };
     const c = choices[fi];
     if (!c) return;
     const text = value.trim();
@@ -196,8 +196,8 @@ export function ReviewTable({
     if (!text) return void (c.ticks[ref] !== false && onChose(fileIdOf(fi), { tick: ref, on: false }));
     if (c.ticks[ref] === false) onChose(fileIdOf(fi), { tick: ref, on: true });
     const cell = [...matrix.cells.values()].find((x): x is EditableMatrixCell => x.state === 'editable' && editId(x) === id);
-    if (!cell || cellError(cell, text)) return;
-    const number = isEditedText(cell, text) ? savedValue(cell, text) : undefined;
+    if (!cell || cellError(cell, text, now)) return;
+    const number = isEditedText(cell, text, now) ? savedValue(cell, text, now) : undefined;
     if (number !== c.edits[ref]) onChose(fileIdOf(fi), { edit: ref, value: number ?? null });
   };
 
@@ -254,7 +254,7 @@ export function ReviewTable({
       }
       const valueSI = savedValue(cell, text);
       const shownIn = units[metric] ?? unitSystem;
-      const typedIn = touchedNow.get(editId(cell))?.display ?? shownIn;
+      const typedIn = touched.get(editId(cell))?.display ?? shownIn;
       views.set(editId(cell), {
         ...limit,
         valueSI,
@@ -326,7 +326,7 @@ export function ReviewTable({
     const replaced = Object.keys(replaceChecked).map(k => k.slice(0, k.indexOf('>')));
     return reviewEventMetadata(groups, [...touched.keys(), ...replaced], { showAll: showAll.opened, notSaved: notSavedOpen.opened }, saved);
   };
-  if (countsRef) countsRef.current = () => reviewCounts(false);
+  if (countsRef) countsRef.current = reviewCounts;
 
   /** Column-level date editing: every date source the column stands for takes the pick, as a
    *  choice on its file. New-column dates only — existing-history columns are read-only. */

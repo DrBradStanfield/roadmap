@@ -12,7 +12,14 @@ import type { UnifiedExtractionResult } from '@roadmap/health-core/lab-extractio
 import type { MeasurementSource } from '@roadmap/health-core/validation';
 import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import type { UploadFile, UploadState } from '@roadmap/health-core/upload-flow';
-import { RoadmapStore, type BulkLabValueInput } from '../storage/roadmap-store';
+import { RoadmapStore } from '../storage/roadmap-store';
+import type { Comparator } from '@roadmap/health-core/lab-limits';
+
+/** A lab row as the deleted bulk write took it. */
+export interface BulkLabValueInput {
+  metricName: string; value: number; unit: string; referenceLow?: number | null; referenceHigh?: number | null;
+  recordedAt: string; source?: string; correctsId?: string; comparator?: Comparator;
+}
 import { sha256Blob } from '../lib/archive-payloads';
 import type { ApiDocument, ApiLabValue } from '../lib/api-types';
 

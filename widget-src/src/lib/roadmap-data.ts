@@ -26,7 +26,6 @@ import { recordFailure } from './error-diagnostics';
 import type { StorageAdapter } from '@roadmap/health-core/adapter';
 import type {
   AddMeasurementResult,
-  ApiDocument,
   ApiLabValue,
   ApiMedicationHistory,
   BulkSaveResult,

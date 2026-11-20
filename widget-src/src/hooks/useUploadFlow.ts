@@ -195,8 +195,7 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
           if ('message' in answer) return send({ type: 'saveFailed', run, attempt, message: answer.message });
           // One per review: a finished Save, never a failed one (US-13 AC13).
           // The review's counts as they stand when the Save lands (US-13 AC13).
-          const counts = props.current.reviewCounts?.();
-          endReview.current(counts && { ...counts, saved: 1 });
+          endReview.current(props.current.reviewCounts?.());
           send({ type: 'saved', run, attempt, outcome: answer.outcome });
           reread();
         });

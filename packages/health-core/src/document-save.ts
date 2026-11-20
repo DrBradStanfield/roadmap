@@ -106,11 +106,12 @@ export interface DocumentSavePlan {
  * The six duplicate checks on the way into `documents[]` (US-52 AC14). Each
  * runs where it does because each surface knows different things at that
  * moment; none is a copy of another, so a de-dup must not fold them together.
- * 1. Website review, `isDocDuplicate` (ReviewTable.tsx): an exact
- *    `sourceFileName` match unticks the keep box. Titles drift between reads;
- *    the name does not, and the bytes are not hashed yet.
- * 2. iPhone review, `alreadySaved` (ios/engine/lab-review.ts): the same
- *    exact-name rule, so the app's card starts as the web's does.
+ * 1. Upload, before a read (upload-known.ts `knownAs`, both clients' shared
+ *    upload): a file whose bytes the record holds is never read; after a read,
+ *    a hashless older row with the same name, date and kind counts as known
+ *    (`legacyMatch`). The web's name-only untick went with design PR 10.
+ * 2. iPhone review, `alreadySaved` (ios/engine/lab-review.ts): an exact-name
+ *    rule that unticks the keep box, until its review page moves to the shared upload.
  * 3. Here: by hash, skipping only a row that holds a stored original and
  *    that the record still knows (`knownIndex`: a lab archive row only while
  *    its values live); a same-hash metadata-only row of the same kind (lab
@@ -129,12 +130,10 @@ export interface DocumentSavePlan {
  *    hashed or not, compared by `dedupFileName` on both sides (" (n)"
  *    stripped); a folder listing has names only, and rule 4 would nag every
  *    folder-imported file forever (US-37 AC1).
- * 6. Website archive step (widget-src archive-payloads.ts):
- *    `unarchivedOriginals` / `isFileable` keep a by-hash archived set
- *    (a `contentHash` with a stored original) and the `alreadyCovered` name
- *    set, and `pendingRowsFor` files an unselected letter behind its
- *    metadata-only row; the iPhone's review-time held check uses
- *    `pendingRowsFor` too.
+ * 6. The shared upload's plan (upload-plan.ts): `pendingRowsFor` starts a
+ *    letter's card from the metadata-only row holding its bytes, and files an
+ *    archive-only known file's original behind that row; the iPhone's
+ *    review-time held check uses `pendingRowsFor` too.
  */
 /**
  * Hash, dedup and write the blobs for `payloads` against `current`. Returns
