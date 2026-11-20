@@ -16,11 +16,14 @@ import type { UploadFile, UploadState } from '../../packages/health-core/src/upl
 import { uploadSavePlan } from '../../packages/health-core/src/upload-plan';
 import { uploadReview } from '../../packages/health-core/src/upload-review';
 import { importRow } from '../../packages/health-core/src/import-review';
+import { localDay } from '../../packages/health-core/src/merge';
 import { uploadView } from '../../packages/health-core/src/upload-view';
 
 const NOW = '2026-11-15T00:00:00.000Z';
 const DAYS = ['2026-10-01', '2026-10-02', '2026-10-03'];
-const TODAY = '2026-11-15';
+// The phone's "today" is its own calendar day at NOW, as the engine judges a future day (localDay): in
+// Los Angeles that is 2026-11-14, so a UTC day here was a future day there.
+const TODAY = localDay(NOW);
 
 function mulberry32(seed: number): () => number {
   let a = seed >>> 0;
