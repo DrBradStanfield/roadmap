@@ -36,6 +36,13 @@ describe('US-12 AC1b: choosing a file from the keyboard', () => {
     expect(zone.className).toBe('upload-dropzone');
   });
 
+  it('names the drop zone with the instruction and file hint, without the decorative icon', () => {
+    const zone = renderModal();
+    expect(screen.getByRole('button', {
+      name: 'Drop health records here, or click to browse PDF, JPG, PNG, DOCX, or ZIP — up to 200 files',
+    })).toBe(zone);
+  });
+
   it('Enter on the drop zone opens the file chooser once', () => {
     const zone = renderModal();
     const notPrevented = fireEvent.keyDown(zone, { key: 'Enter' });

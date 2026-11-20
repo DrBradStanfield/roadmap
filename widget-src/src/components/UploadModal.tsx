@@ -138,7 +138,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
                 onClick={() => fileInputRef.current?.click()}
                 onKeyDown={(e) => browseOnKey(e, fileInputRef.current)}
               >
-                <div className="upload-dropzone-icon">&#128196;</div>
+                <div className="upload-dropzone-icon" aria-hidden="true">&#128196;</div>
                 <p className="upload-dropzone-text">Drop health records here, or click to browse</p>
                 <p className="upload-dropzone-hint">PDF, JPG, PNG, DOCX, or ZIP &mdash; up to {MAX_FILES} files</p>
               </div>
