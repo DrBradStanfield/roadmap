@@ -169,7 +169,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
               </div>
               <p className="upload-progress-file">{progress.fileName}</p>
               <button className="btn-primary upload-cancel-btn" onClick={flow.cancel}>
-                Cancel
+                {UPLOAD_TEXT.cancel}
               </button>
             </div>
           )}
