@@ -8,12 +8,13 @@
  * write it again. The new fields on each lab file (`needsColumnDay` false, `waits` empty, `days`) are
  * checked, then left out, before the hash. Every seed is compared.
  *
- * US-14 AC11 (Brad 2026-11-21) changes, on purpose, exactly the seeds with a cloud and a read lab report
- * with nothing ticked that is not waiting for a day and in which the read found something: Save now keeps
- * that report's original alone (`labArchives`, `counts.originals`, the Save label). Those seeds no longer
- * answer as main did; the test names them by that rule from the inputs alone and asserts the changed set is
- * exactly it, so every other seed still answers as main. (`outcome.archived` is not hashed here: the done
- * phase's outcome is the seed's own.) Synthetic values only.
+ * US-14 AC11 (Brad 2026-11-21) changes, on purpose, exactly the seeds with a cloud and a read lab report with
+ * nothing ticked in which the read found something, dated or not: Save now keeps that report's original alone.
+ * The test names those reports from the inputs alone, asserts the changed seeds are exactly the seeds holding one,
+ * and asserts how each changed: one new `labArchives` entry per such report (its fileId, name and the review's day),
+ * `counts.originals` up by as many, and the Save button as the label rule gives it; with those three undone, every
+ * changed seed hashes to main's answer again. (`outcome.archived` is not hashed here: the done phase's outcome is
+ * the seed's own.) Synthetic values only.
  */
 import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -24,9 +25,10 @@ import { bulkAppendValues, type BulkRow } from './record-edits';
 import { createEmptyFile, type RoadmapFile } from './roadmap-file';
 import { NO_CHOICES, type FileChoices } from './upload-choices';
 import type { UploadFile, UploadState } from './upload-flow';
-import { labReadFound, uploadSavePlan } from './upload-plan';
+import { labReadFound, planIsEmpty, uploadSavePlan, type UploadSavePlan } from './upload-plan';
 import { uploadReview } from './upload-review';
-import { uploadView } from './upload-view';
+import { UPLOAD_TEXT } from './upload-text';
+import { uploadView, type UploadView } from './upload-view';
 
 const GOLDEN = join(__dirname, '__fixtures__', 'upload-pr0-golden.json');
 const SEEDS = 800;
@@ -154,7 +156,7 @@ function canonical(value: unknown): string {
 
 /** Main's answer for a case: the new fields checked (no column waits), then left out. `days` is the review's
  *  own record of each value's day, which main kept inside the review; its effect is in the plan and view. */
-function answer(c: Case): string {
+function parts(c: Case) {
   const review = uploadReview(c.state, c.record, NOW);
   const plan = uploadSavePlan(c.state, c.record, NOW, review, c.cloud);
   const view = uploadView(c.state, c.record, NOW, review, c.cloud);
@@ -164,7 +166,41 @@ function answer(c: Case): string {
     expect(waits ?? []).toEqual([]);
     return old;
   });
-  return canonical({ review: { ...review, labFiles }, plan, view });
+  return { review: { ...review, labFiles }, plan, view };
+}
+const answer = (c: Case): string => canonical(parts(c));
+
+/**
+ * US-14 AC11's reports in a case, from the inputs alone: with a cloud, a read lab report with nothing ticked in
+ * which the read found something (`labReadFound`), dated or undated (nothing ticked never waits for a day). The
+ * plan's other conditions are not tested here because this generator cannot reach them, and the test asserts so:
+ * every file has a hash; none is a photo or scan (`original` is never set); no record row stores an original (the
+ * one document, `held-doc`, has `fileRef ''`); and every file's bytes are its own (`h-f<i>`), so no other copy in
+ * the pick can claim them.
+ */
+function keptAlone(c: Case): Array<{ fileId: string; sourceFileName: string; reportDate: string | null }> {
+  const files = 'files' in c.state ? c.state.files : [];
+  expect(files.every((f) => f.hash && f.original === undefined)).toBe(true);
+  expect(new Set(files.map((f) => f.hash)).size).toBe(files.length);
+  expect(c.record.documents.every((d) => !d.fileRef)).toBe(true);
+  if (!c.cloud) return [];
+  return uploadReview(c.state, c.record, NOW).labFiles.flatMap((l) => {
+    const f = files.find((x) => x.id === l.fileId);
+    return !l.ticked.length && f?.status.s === 'read' && labReadFound(f.status.extraction) ? [{ fileId: l.fileId, sourceFileName: f.name, reportDate: l.day }] : [];
+  });
+}
+
+/** The answer with AC11's change undone: its entries out of `labArchives`, `originals` down, the Save button as main's rule gave it. */
+function asMain(c: Case, kept: ReturnType<typeof keptAlone>): string {
+  const { review, plan, view } = parts(c);
+  const ids = new Set(kept.map((k) => k.fileId));
+  const main: UploadSavePlan = { ...plan, labArchives: plan.labArchives.filter((a) => !ids.has(a.fileId)), counts: { ...plan.counts, originals: plan.counts.originals - kept.length } };
+  const { values, documents, originals } = main.counts;
+  const label = values || documents || !originals ? UPLOAD_TEXT.saveBoth(values, documents) : UPLOAD_TEXT.saveOriginals(originals);
+  // Only an open page asks the plan whether Save has anything to do; nothing else in the view reads these fields.
+  const empty = c.state.phase === 'open' && view.save.why === null && planIsEmpty(main);
+  const save: UploadView['save'] = { ...view.save, label, ...(empty ? { enabled: false, why: UPLOAD_TEXT.saveNothing } : {}) };
+  return canonical({ review, plan: main, view: { ...view, save } });
 }
 
 const hash = (text: string) => createHash('sha256').update(text).digest('hex').slice(0, 24);
@@ -176,15 +212,20 @@ describe('US-13 AC24: PR 0 is inert with none of its choices set', () => {
     if (process.env.UPDATE_PR0_GOLDEN) writeFileSync(GOLDEN, `${JSON.stringify(now, null, 0)}\n`);
     const golden = JSON.parse(readFileSync(GOLDEN, 'utf8')) as Record<string, string>;
     expect(Object.keys(golden)).toHaveLength(SEEDS);
-    // US-14 AC11: the seeds it changes, named from the inputs, never from the plan: a cloud, and a read lab report
-    // not waiting for a day, with nothing ticked and something found. Every other seed answers as main did.
-    const keepsAlone = (c: Case) => c.cloud && uploadReview(c.state, c.record, NOW).labFiles.some((l) => {
-      const f = 'files' in c.state ? c.state.files.find((x) => x.id === l.fileId) : undefined;
-      return !l.ticked.length && !l.needsDay && f?.status.s === 'read' && labReadFound(f.status.extraction);
-    });
+    // US-14 AC11: the seeds it changes are exactly those holding one of its reports (`keptAlone`); every other seed
+    // answers as main did.
     const changed = Object.keys(now).filter((seed) => golden[seed] !== now[seed]);
-    expect(changed).toEqual(Object.keys(now).filter((seed) => keepsAlone(genCase(Number(seed)))));
+    expect(changed).toEqual(Object.keys(now).filter((seed) => keptAlone(genCase(Number(seed))).length > 0));
     expect(changed).toHaveLength(AC11_SEEDS);
+    // And how: each kept report is one new `labArchives` entry, `originals` counts it, the label says so; undone, main's answer.
+    for (const seed of changed) {
+      const c = genCase(Number(seed));
+      const kept = keptAlone(c);
+      const { plan, view } = parts(c);
+      expect(plan.labArchives, seed).toEqual(expect.arrayContaining(kept));
+      if (!plan.counts.values && !plan.counts.documents) expect(view.save.label, seed).toBe(UPLOAD_TEXT.saveOriginals(plan.counts.originals));
+      expect(hash(asMain(c, kept)), seed).toBe(golden[seed]);
+    }
     // Both platforms and every phase are covered.
     const cases = Object.keys(now).map((seed) => genCase(Number(seed)).state);
     expect(new Set(cases.map((s) => ('platform' in s ? s.platform : '')))).toEqual(new Set(['web', 'phone']));

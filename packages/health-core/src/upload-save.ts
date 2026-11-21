@@ -98,12 +98,11 @@ export async function uploadSave<F>(s: UploadState, record: RoadmapFile, now: st
     ...plan.labArchives.map((a) => labArchivePayload(a.sourceFileName, a.reportDate, held(a.fileId), { rows: rowsOf.get(bytesOf(a.fileId)), contentHash: hashOf.get(a.fileId) })),
     ...plan.archiveOnly.map((d) => ({ ...d.fields, file: held(d.fileId), contentHash: hashOf.get(d.fileId) })),
   ];
-  // What this Save itself wrote, and tried to: the counts below come from these, never from the plan's lists.
-  const [tried, wrote] = [new Set<string>(), new Set<string>()];
+  // What this Save itself wrote: `archived` comes from it, never from the plan's lists.
+  const wrote = new Set<string>();
   const docs = await saveDocuments(record, payloads, {
     hash: async (f) => f.hash,
     write: async (ref, f) => {
-      tried.add(f.hash);
       const bytes = io.original(f.fileId);
       if (bytes === null) throw new Error('The original could not be read.');
       await io.write(ref, bytes, f.fileId);
@@ -115,13 +114,11 @@ export async function uploadSave<F>(s: UploadState, record: RoadmapFile, now: st
   // 2026-11-20), never a lab report's hidden archive row nor an original filed behind a held row.
   const shown = new Set(plan.documents.map((d) => hashOf.get(d.fileId) ?? d.fields.sourceFileName));
   const documents = new Set(docs.saved.filter((d) => shown.has(d.contentHash ?? d.sourceFileName)).map((d) => d.contentHash ?? d.sourceFileName ?? d.id)).size;
-  // Every original the plan stores ends in the cloud, already stored, or counted here: one never tried (not held) too.
-  const stored = storedHashes(record);
+  // The originals the plan stores, by bytes.
   const nominated = new Set([...plan.documents, ...plan.labArchives, ...plan.archiveOnly].flatMap(({ fileId }) => {
     const hash = hashOf.get(fileId);
-    return cloudConnected && hash && !noOriginal.has(fileId) && !tried.has(hash) && !stored.has(hash) ? [hash] : [];
+    return cloudConnected && hash && !noOriginal.has(fileId) ? [hash] : [];
   }));
-  const unstored = docs.unstored + nominated.size;
 
   return {
     ok: true,
@@ -157,7 +154,12 @@ export async function uploadSave<F>(s: UploadState, record: RoadmapFile, now: st
         ...written.refused.map((r) => ({ label: labTestLabel(r.key), reason: labReason(r) })),
         ...written.measurementRefusals.map((r) => { const line = measurementRefusalText(r); return line !== null ? { line } : { label: METRIC_LABELS[r.metricType] ?? labTestLabel(r.metricType), reason: 'misread' as const }; }),
       ];
-      return { file: values || docs.saved.length ? committedFile(written.file, docs) : file, outcome: { values, documents, archived, unstored, ...(sv ? { skippedValues: sv } : {}), ...(sl ? { skippedLabValues: sl } : {}), ...(refused.length ? { refused } : {}) } };
+      const out = values || docs.saved.length ? committedFile(written.file, docs) : file;
+      // `unstored`: each original the plan stores that no live row on the committed record stores (a failed or
+      // untried write, the app not holding it), judged at commit so another writer's copy counts as kept.
+      const stored = storedHashes(out);
+      const unstored = [...nominated].filter((h) => !stored.has(h)).length;
+      return { file: out, outcome: { values, documents, archived, unstored, ...(sv ? { skippedValues: sv } : {}), ...(sl ? { skippedLabValues: sl } : {}), ...(refused.length ? { refused } : {}) } };
     },
   };
 }

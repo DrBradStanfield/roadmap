@@ -8,7 +8,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { DAY, EMPTY, extra, NOW } from './import-review.test-helpers';
-import { documentView, isLabArchiveDocument, listedRows } from './document-rows';
+import { documentRow, documentView, isLabArchiveDocument, labArchiveFields, listedRows } from './document-rows';
 import type { UnifiedExtractionResult } from './lab-extraction';
 import { bulkAppendValues, type BulkRow } from './record-edits';
 import type { RoadmapFile } from './roadmap-file';
@@ -73,9 +73,14 @@ function genCase(seed: number): Case {
   };
 }
 
-/** Another writer, between the originals and the commit: every held value deleted, and a Vitamin D on the day. */
-const meanwhile = (f: RoadmapFile) => bulkAppendValues({ ...f, labValues: f.labValues.map((v) => ({ ...v, status: 'entered-in-error' as const })) },
-  [{ kind: 'lab', metricName: 'Vitamin D', value: 55, unit: 'nmol/L', referenceLow: null, referenceHigh: null, recordedAt: DAY, source: 'manual' }], NOW).file;
+/** Another writer, between the originals and the commit: every held value deleted, a Vitamin D on the day, and
+ *  h-1's original filed by another device (a lab archive row that stores it). */
+const otherDevice = documentRow({ ...labArchiveFields('other.pdf', DAY), sourceFileName: 'other.pdf' }, { id: 'other-device', contentHash: 'h-1', mimeType: 'application/pdf', addedAt: NOW });
+const meanwhile = (f: RoadmapFile) => {
+  const next = bulkAppendValues({ ...f, labValues: f.labValues.map((v) => ({ ...v, status: 'entered-in-error' as const })) },
+    [{ kind: 'lab', metricName: 'Vitamin D', value: 55, unit: 'nmol/L', referenceLow: null, referenceHigh: null, recordedAt: DAY, source: 'manual' }], NOW).file;
+  return { ...next, documents: [...next.documents, { ...otherDevice, fileRef: 'Lab results/other.pdf' }] };
+};
 
 async function run(c: Case, record: RoadmapFile, opts: { reviewed: boolean; meanwhile: boolean }) {
   const review = uploadReview(c.s, record, NOW);
@@ -106,13 +111,15 @@ describe('US-14 AC11: one Save keeps every original or says so, and counts what 
       const label = `seed ${seed}`;
       const { plan, at, file, outcome, stored } = await run(c, c.record, c);
       const before = c.record;
-      const beforeRefs = new Set(before.documents.map((d) => d.fileRef).filter(Boolean));
+      // Refs held before this Save wrote anything: the planning record's and any another writer filed meanwhile.
+      const beforeRefs = new Set([...before.documents, ...at.documents].map((d) => d.fileRef).filter(Boolean));
       const pickHashes = new Set(('files' in c.s ? c.s.files : []).map((f) => f.hash!));
       const newRows = file.labValues.filter((v) => !at.labValues.some((b) => b.id === v.id));
       const valued = new Set(newRows.map((v) => hashOfTest.get(v.metricName) ?? ''));
       const gained = live(file).filter((d) => d.fileRef && !beforeRefs.has(d.fileRef));
 
-      // 1. Kept (mutation: drop `+ nominated.size` from `unstored` in upload-save.ts; also main's
+      // 1. Kept (mutations: `unstored = docs.unstored`, main's count; `storedHashes(record)` for `storedHashes(out)`,
+      //    judging "already stored" before the writes, which another device's copy meanwhile shows; main's
       //    `!lab.ticked.length -> continue` in upload-plan.ts): with a cloud, every hash in the pick has a live row with an
       //    original after Save, or is counted unstored. Never neither.
       if (c.cloud) {
@@ -148,7 +155,8 @@ describe('US-14 AC11: one Save keeps every original or says so, and counts what 
         expect(planIsEmpty(plan), `${label}: 4 empty`).toBe(file === before);
       }
 
-      // 5. Idempotence (mutation: drop `!stored.has(hash)` from `nominated` in upload-save.ts): a second Save on the
+      // 5. Idempotence (mutation: the plan's stored skip also skipping hash-only rows, so an original that failed is
+      //    never offered again): a second Save on the
       //    result writes nothing; an original that cannot be stored is counted again, never a new row.
       const again = await run(c, file, { reviewed: false, meanwhile: false });
       expect(again.file, `${label}: 5 same file`).toBe(file);
