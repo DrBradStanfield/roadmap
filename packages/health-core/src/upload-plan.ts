@@ -70,7 +70,12 @@ export function uploadSavePlan(s: UploadState, record: RoadmapFile, now: string,
       const fix = f.status.choices.document;
       const fixedDate = 'date' in fix ? documentDate(fix.date ?? null, now) : undefined; // an impossible date is never planned
       const raw = held ? held.documentDate : doc.documentDate;
-      const screening = s.platform === 'web' && person ? screeningBox(doc.metadata, raw, fixedDate, fix.screening, person, now) : null;
+      // The box dates from the same source as the card, the held row first; a row with no date falls back to the reader's
+      // day or month. A row that stores these bytes' original counts too (a file the review never shows, US-12 AC27), so a
+      // repeat Save on the record this one wrote finds the same date (US-13 AC6).
+      const row = held ?? (f.hash ? views.find((d) => d.contentHash === f.hash) : undefined);
+      const boxRaw = row?.documentDate ?? doc.documentDate;
+      const screening = s.platform === 'web' && person ? screeningBox(doc.metadata, boxRaw, fixedDate, fix.screening, person, now) : null;
       documents.push({ fileId: f.id, fields: {
         ...readDocumentFields(doc, uploadFileName(f)),
         documentType: fix.kind ?? doc.classification,

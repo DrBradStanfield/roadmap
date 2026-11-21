@@ -67,9 +67,14 @@ const cloud = (failing: Set<string>): UploadSaveIO<string> => {
     write: async (_ref, _bytes, id) => { if (failing.has(id)) throw new Error('refused'); },
   };
 };
-/** A row the record holds for these bytes: its original stored, or metadata-only (no original) and dated. */
-const heldDoc = (hash: string, stored: boolean): FileDocument => ({
-  id: `held-${hash}`, title: 'Held', type: 'scan_result', date: stored ? null : HELD_DATE, fileRef: stored ? 'docs/held.pdf' : '', contentHash: hash,
+/** A row the record holds for these bytes: its original stored, or metadata-only (no original), dated or not. */
+type Held = 'stored' | 'dated' | 'undated';
+const heldDoc = (hash: string, kind: Held | boolean): FileDocument => {
+  const k: Held = kind === true ? 'stored' : kind === false ? 'dated' : kind;
+  return heldRow(hash, k);
+};
+const heldRow = (hash: string, k: Held): FileDocument => ({
+  id: `held-${hash}`, title: 'Held', type: 'scan_result', date: k === 'dated' ? HELD_DATE : null, fileRef: k === 'stored' ? 'docs/held.pdf' : '', contentHash: hash,
   mimeType: 'application/pdf', extractedText: '', addedAt: NOW, metadata: {}, sourceFileName: 'held.pdf',
 } as FileDocument);
 const field = (key: string) => key.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
@@ -95,40 +100,50 @@ const TYPES = [...IN_TABLE, 'knee', 'colorectal_method', 'endometrial', null];
 const PEOPLE: ScreeningPerson[] = [{}, { age: 20 }, { age: 30 }, { age: 42, sex: 'female' }, { age: 47, sex: 'male' }, { age: 55 }, { age: 72, sex: 'female' }, { age: 60, sex: 'male' }, { sex: 'female' }];
 
 describe('US-13 AC6: a letter\'s screening box, written by the shared Save (web only)', () => {
-  it('over 800 seeded picks: the dates written are exactly the oracle\'s and exactly the boxes the list page shows ticked', async () => {
+  it('over 800 seeded picks: the dates written are exactly the oracle\'s and the boxes the list page shows ticked, and a second Save changes nothing', async () => {
     // How often each case the properties name came up: every one must, or the seeds prove nothing about it.
-    const seen = { written: 0, unticked: 0, ineligible: 0, copy: 0, phone: 0, twoOfAType: 0, outsideTable: 0, heldOriginal: 0, heldMetadata: 0, writeFailed: 0 };
+    const seen = { written: 0, unticked: 0, ineligible: 0, copy: 0, phone: 0, twoOfAType: 0, threeOfAType: 0, outsideTable: 0, heldOriginal: 0, heldDated: 0, heldUndated: 0, writeFailed: 0, monthOnly: 0, cloudOn: 0, cloudOff: 0 };
     for (let seed = 1; seed <= 800; seed++) {
       const r = mulberry32(seed);
       const pick = <T,>(xs: T[]) => xs[Math.floor(r() * xs.length)];
       const platform = r() < 0.8 ? 'web' : 'phone';
       const person = r() < 0.9 ? pick(PEOPLE) : undefined;
       const on = r() < 0.5;
-      const held = new Map<string, boolean>(); // hash -> whether the record stores its original
+      const held = new Map<string, Held>();
+      // Some picks are letters of one type only, so two and three of a type come up in every order of their dates.
+      const oneType = r() < 0.3 ? pick(IN_TABLE) : null;
       const failing = new Set<string>();
       const letters: Array<{ type: string | null; hash: string; rawDate: string | null; fix: string | null | undefined; tick: boolean | undefined; file: UploadFile }> = [];
-      for (let i = 0, n = 1 + Math.floor(r() * 4); i < n; i++) {
-        const type = pick(TYPES);
+      for (let i = 0, n = 1 + Math.floor(r() * (oneType ? 5 : 4)); i < n; i++) {
+        const type = oneType ?? pick(TYPES);
         const [raw, rawDate] = pick(RAW);
         const fix = pick(FIX);
         const tick = pick([undefined, undefined, true, false]);
         // A copy of an earlier file in the pick (not shown, not saved), or bytes the record already holds.
         const hash = letters.length && r() < 0.15 ? pick(letters).hash : `h${i}`;
-        if (!held.has(hash) && r() < 0.2) held.set(hash, r() < 0.5);
+        if (!held.has(hash) && r() < 0.25) held.set(hash, pick<Held>(['stored', 'dated', 'undated']));
         if (r() < 0.2) failing.add(`f${i}`);
         const document: DocumentFix = { ...(fix ? fix[0] : {}), ...(tick === undefined ? {} : { screening: tick }) };
         letters.push({ type, hash, rawDate, fix: fix ? fix[1] : undefined, tick, file: readFile(`f${i}`, hash, letter(type, raw), document) });
       }
       const expected = new Map<string, string>();
+      const perType = new Map<string, number>();
       letters.forEach(({ type, hash, rawDate, fix, tick, file: f }, i) => {
         const shown = letters.findIndex((l) => l.hash === hash) === i;
-        const date = fix !== undefined ? fix : held.get(hash) === false ? HELD_DATE : rawDate;
+        // The person's fix; else a metadata-only held row's date when it has one; else the reader's day or month.
+        const date = fix !== undefined ? fix : held.get(hash) === 'dated' ? HELD_DATE : rawDate;
         const ticked = tick ?? (person?.age !== undefined);
         const rest = Boolean(type && date && ticked && person);
         if (platform === 'web' && rest && shown && eligible(type!, person!)) {
-          if (expected.has(`${type}_last_date`)) seen.twoOfAType++;
-          if (held.get(hash) === true) seen.heldOriginal++;
-          if (held.get(hash) === false) seen.heldMetadata++;
+          const count = (perType.get(type!) ?? 0) + 1;
+          perType.set(type!, count);
+          if (count === 2) seen.twoOfAType++;
+          if (count === 3) seen.threeOfAType++;
+          if (held.get(hash) === 'stored') seen.heldOriginal++;
+          if (held.get(hash) === 'dated') seen.heldDated++;
+          if (held.get(hash) === 'undated') seen.heldUndated++;
+          if (date!.length === 7) seen.monthOnly++;
+          if (on) seen.cloudOn++; else seen.cloudOff++;
           if (on && failing.has(f.id)) seen.writeFailed++;
           expected.set(`${type}_last_date`, date!);
           seen.written++;
@@ -138,7 +153,7 @@ describe('US-13 AC6: a letter\'s screening box, written by the shared Save (web 
         else if (rest && platform === 'web' && !shown && eligible(type!, person!)) seen.copy++;
         else if (type && date && person && platform === 'web' && shown && eligible(type, person) && !ticked) seen.unticked++;
       });
-      const record = held.size ? { ...EMPTY, documents: [...held].map(([h, stored]) => heldDoc(h, stored)) } : EMPTY;
+      const record = held.size ? { ...EMPTY, documents: [...held].map(([h, k]) => heldRow(h, k)) } : EMPTY;
       const s = saving(platform, letters.map((l) => l.file));
       const { file, outcome } = await save(s, record, person, on, on ? cloud(failing) : offCloud());
       expect(writtenKeys(file), `seed ${seed}`).toEqual([...expected.keys()].map(field).sort());
@@ -146,6 +161,9 @@ describe('US-13 AC6: a letter\'s screening box, written by the shared Save (web 
       expect(outcome.screenings, `seed ${seed}`).toBe(expected.size || undefined);
       // What the page shows ticked is what Save writes, nothing more and nothing less.
       expect(shownTicked(s, record, on, person), `seed ${seed} page`).toEqual(expected);
+      // The same upload saved again on the record it wrote leaves its screening dates byte for byte, stamps included.
+      const again = await save(s, file, person, on, on ? cloud(failing) : offCloud());
+      expect(JSON.stringify(again.file.screenings), `seed ${seed} repeat`).toBe(JSON.stringify(file.screenings));
     }
     for (const [name, n] of Object.entries(seen)) expect(n, name).toBeGreaterThan(3);
   });
@@ -184,6 +202,14 @@ describe('US-13 AC6: a letter\'s screening box, written by the shared Save (web 
     expect(first.file.screenings.fieldStamps?.[field('colorectal_last_date')]).toEqual({ lamport: 1, updatedAt: NOW });
     const again = await save(retry, first.file, { age: 60 });
     expect(again.file.screenings).toBe(first.file.screenings);
+  });
+
+  it('a repeat Save of the same upload on the record it saved leaves the screening dates as they are (a month-only letter included)', async () => {
+    const s = saving('web', [readFile('a', 'ha', letter('colorectal', '2026-03-02'), {}), readFile('b', 'hb', letter('colorectal', '2026-10'), {})]);
+    const first = await save(s, EMPTY, { age: 60 });
+    expect(written(first.file, 'colorectal_last_date')).toBe('2026-10');
+    const again = await save(s, first.file, { age: 60 });
+    expect(again.file.screenings).toEqual(first.file.screenings);
   });
 
   // Pinned until Brad answers "Should a screening date ever go backwards?" (docs/decisions-for-brad.md, Open): today the
