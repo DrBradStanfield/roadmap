@@ -136,7 +136,7 @@ export function UploadList({ list, view, page, choose, reread, save, stop, retry
   };
 
   const failed = view.sections.find((s) => s.kind === 'failed');
-  if (view.done) return <Done done={view.done} label={view.doneLabel} files={[...view.notices, ...(failed?.kind === 'failed' ? failed.rows : [])]} onDone={done} />;
+  if (view.done) return <Done done={view.done} label={view.doneLabel} files={view.files.rows.filter((f) => f.notFullyRead).map((f) => ({ name: f.name, line: f.status }))} onDone={done} />;
 
   const notSaved = view.sections.find((s) => s.kind === 'notSaved');
   const days = new Map(list.days.map((d) => [d.key, d]));
@@ -195,7 +195,7 @@ export function UploadList({ list, view, page, choose, reread, save, stop, retry
         />
       )}
       {notSaved?.kind === 'notSaved' && <NotSaved section={notSaved} />}
-      <Files files={view.files} notices={view.notices} failed={failed?.kind === 'failed' ? failed : undefined} retry={retry} />
+      <Files files={view.files} failed={failed?.kind === 'failed' ? failed : undefined} retry={retry} />
       <div className="review-actions upload-list-actions">
         <div className="upload-list-save-line" role="status">
           {view.save.why && <p className="upload-list-why">{view.save.why}</p>}

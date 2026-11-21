@@ -43,6 +43,8 @@ async function save(
   try { mimeTypes = ORIGINALS.parse(JSON.parse(originalsJson)); } catch { return refusal('invalid-originals'); }
   if (erase && (!at || open !== at)) return refusal('not-open');
   const cap = UPLOAD_LIMITS[state.platform].fileBytes;
+  /** The session this Save began on is still open, at the erase the screen showed. */
+  const gone = () => (open !== at ? refusal('not-open') : at!.session.refuses(erase) ? refusal('erased') : null);
   const io: UploadSaveIO<ArrayBuffer> = {
     holds: (fileId) => Object.hasOwn(mimeTypes, fileId),
     // Anything but an ArrayBuffer under the per-file cap is no original: never held (its row keeps the hash).
@@ -51,7 +53,12 @@ async function save(
       return isArrayBuffer(bytes) && bytes.byteLength > 0 && bytes.byteLength <= cap ? bytes : null;
     },
     mimeType: (fileId) => mimeTypes[fileId] ?? '',
-    write: (ref, bytes, fileId) => at!.host.store.writeDocument(ref, new Blob([bytes], { type: io.mimeType(fileId) })),
+    // Checked with the bytes in hand, right before each write, as the web does (US-11 AC1a): once the
+    // erase moves, no further original is written, and the check after the originals answers it.
+    write: async (ref, bytes, fileId) => {
+      if (gone()) throw new Error('erase moved');
+      await at!.host.store.writeDocument(ref, new Blob([bytes], { type: io.mimeType(fileId) }));
+    },
   };
   if (!at) {
     const phone = readUploadRecord(recordJson, nowIso, deviceId);
@@ -60,8 +67,6 @@ async function save(
     const { file, outcome } = out.commit(phone);
     return { ok: true, record: JSON.stringify(file), outcome };
   }
-  /** The session this Save began on is still open, at the erase the screen showed. */
-  const gone = () => (open !== at ? refusal('not-open') : at.session.refuses(erase) ? refusal('erased') : null);
   const refusedBefore = gone();
   if (refusedBefore) return refusedBefore;
   const out = await uploadSave(state, at.session.file, nowIso, true, io);

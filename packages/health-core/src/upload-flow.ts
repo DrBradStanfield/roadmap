@@ -15,7 +15,7 @@ import type { MetricTypeValue } from './validation';
 import { choose, NO_CHOICES, untick, type ChoiceChange, type FileChoices } from './upload-choices';
 import type { Known } from './upload-known';
 import type { ReviewedValue } from './upload-review';
-import { fileVerdict, requestFlags, UPLOAD_LIMITS, zipMemberVerdict, type RequestFlags, type UploadPlatform } from './upload-rules';
+import { fileVerdict, requestFlags, UPLOAD_LIMITS, zipMemberVerdict, type RequestFlags, type UploadPlatform, type UploadReader } from './upload-rules';
 
 /** unreadable: no pages came out of it. bytesUnreadable: the device could not read its bytes to hash them.
  *  zipUnreadable: a ZIP that would not open; zipEmpty: one with no file we can read inside (both named
@@ -92,9 +92,10 @@ export type RefusedCode =
   | { kind: 'lab'; key: string; reason: 'unit' | 'value'; unit?: string };
 
 /** `started`, `firstRead`: ISO times, for the first-read count (design §7, R9). */
-interface Pick { platform: UploadPlatform; run: number; files: UploadFile[]; started: string; firstRead: string | null }
+/** `reader`: set once at upload start, by the web alone (`initialUpload`); it words a failed read (US-12 AC9). */
+interface Pick { platform: UploadPlatform; reader?: UploadReader; run: number; files: UploadFile[]; started: string; firstRead: string | null }
 export type UploadState =
-  | { phase: 'choosing'; platform: UploadPlatform; run: number }    // run: the last one, so the next is run + 1
+  | { phase: 'choosing'; platform: UploadPlatform; reader?: UploadReader; run: number } // run: the last one, so the next is run + 1
   | (Pick & { phase: 'consent' })                                   // phone only (AC13e): nothing runs yet
   | (Pick & { phase: 'open' })                                      // reading and review at once (R5)
   | (Pick & { phase: 'saving'; attempt: number; reviewed?: ReviewedValue[] }) // reviewed: what the page would write when Save was pressed
@@ -142,8 +143,8 @@ export type UploadEffect =
 
 export interface UploadStep { state: UploadState; effects: UploadEffect[] }
 
-export function initialUpload(platform: UploadPlatform): UploadState {
-  return { phase: 'choosing', platform, run: 0 };
+export function initialUpload(platform: UploadPlatform, reader?: UploadReader): UploadState {
+  return { phase: 'choosing', platform, ...readerOf({ reader }), run: 0 };
 }
 
 // --- derived ----------------------------------------------------------------
@@ -167,7 +168,8 @@ const same = (state: UploadState): UploadStep => ({ state, effects: [] });
 const idsIn = (files: UploadFile[], stages: readonly FileStage[]) => files.filter((f) => stages.includes(f.status.s)).map((f) => f.id);
 const forget = (run: number, ids: string[]): UploadEffect[] => (ids.length ? [{ type: 'forget', run, ids }] : []);
 const abort = (run: number, ids: string[]): UploadEffect[] => (ids.length ? [{ type: 'abort', run, ids }] : []);
-const pickOf = ({ platform, run, files, started, firstRead }: Pick): Pick => ({ platform, run, files, started, firstRead });
+const readerOf = ({ reader }: { reader?: UploadReader }) => (reader ? { reader } : {});
+const pickOf = ({ platform, reader, run, files, started, firstRead }: Pick): Pick => ({ platform, ...readerOf({ reader }), run, files, started, firstRead });
 const failed = (f: UploadFile, reason: FailReason, attempt = 0, detail?: FailDetail): UploadFile =>
   ({ ...f, status: { s: 'failed', reason, attempt, ...(detail ? { detail } : {}) } });
 const dailyLimited = (f: UploadFile) => f.status.s === 'failed' && f.status.reason === 'dailyLimit';
@@ -325,7 +327,7 @@ function runRefused(s: Open, reason: RunRefusal): UploadStep {
 
 /** Back to choosing: aborts what is sending and drops every held file. */
 function leave(s: Exclude<UploadState, { phase: 'choosing' }>): UploadStep {
-  const choosing: UploadState = { phase: 'choosing', platform: s.platform, run: s.run };
+  const choosing: UploadState = { phase: 'choosing', platform: s.platform, ...readerOf(s), run: s.run };
   if (s.phase === 'failed' || s.phase === 'done') return same(choosing); // both already dropped everything
   return { state: choosing, effects: [...abort(s.run, idsIn(s.files, ['sending'])), ...forget(s.run, s.files.map((f) => f.id))] };
 }
@@ -343,7 +345,7 @@ export function transition(s: UploadState, e: UploadEvent): UploadStep {
       if (s.phase !== 'choosing' || !e.files.length) return same(s);
       const run = s.run + 1;
       const { files, hidden } = admit(s.platform, e.files);
-      const pick: Pick = { platform: s.platform, run, files, started: e.now, firstRead: null };
+      const pick: Pick = { platform: s.platform, ...readerOf(s), run, files, started: e.now, firstRead: null };
       // Consent first: nothing runs, not even a hash, until the person agrees (AC13e).
       if (e.needsConsent) return same({ ...pick, phase: 'consent' });
       return pump({ ...pick, phase: 'open' }, opening(run, files, hidden));

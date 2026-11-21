@@ -39,7 +39,7 @@ import { NO_CHOICES, type FileChoices } from './upload-choices';
 import type { UploadFile, UploadState } from './upload-flow';
 import { labReadFound, planIsEmpty, uploadSavePlan, type UploadSavePlan } from './upload-plan';
 import { uploadReview } from './upload-review';
-import { UPLOAD_TEXT } from './upload-text';
+import { FILE_NOTICE_TEXT, UPLOAD_TEXT } from './upload-text';
 import { documentDateLine, uploadView } from './upload-view';
 
 const GOLDEN = join(__dirname, '__fixtures__', 'upload-pr0-golden.json');
@@ -184,7 +184,7 @@ function parts(c: Case, previewEdits = true) {
     expect(waits ?? []).toEqual([]);
     return old;
   });
-  return { review: { ...review, labFiles }, plan, view: mainView(view) };
+  return { review: { ...review, labFiles }, plan, view: mainView(view, c.state) };
 }
 const answer = (c: Case): string => canonical(parts(c));
 
@@ -264,13 +264,31 @@ function asMainHeld(c: Case, f: UploadFile): string {
 /**
  * The view as main drew it: the web list's new keys (PR 1a) deleted, and nothing else touched. Each row's `saves`, each
  * day section's `key`, and Save's `blockers`. No `unitOf` is passed, so no row has `shown`.
+ *
+ * PR 1974's one placement rule for a file's reason (US-12 AC9) moves, on purpose, a read file's empty-read line: main put
+ * it both in its Files row and in `notices`; now it sits in one of them, by what the screen draws. Undone here for every
+ * seed: each Files row's `notFullyRead` deleted, and the line put back in both places. No seed is cut short, so the
+ * empty-read lines are the only soft reasons. Before that, each line is checked to sit in exactly one place: in the
+ * notices beside a row reading "Read" on the iPhone's review, else in the row with no notice.
  */
 const MAIN_VIEW_OMITS = { row: ['saves'], section: ['key'], save: ['blockers'] } as const;
-function mainView(view: ReturnType<typeof uploadView>) {
+function mainView(view: ReturnType<typeof uploadView>, s: UploadState) {
   const omit = <T extends object>(x: T, keys: readonly string[]) => Object.fromEntries(Object.entries(x).filter(([k]) => !keys.includes(k)));
   const row = (r: object) => omit(r, MAIN_VIEW_OMITS.row);
+  const empty: readonly string[] = [FILE_NOTICE_TEXT.noValues, FILE_NOTICE_TEXT.documentOnly];
+  if (s.platform === 'phone' && s.phase !== 'done') {
+    expect(view.files.rows.filter((r) => empty.includes(r.status))).toEqual([]);
+    for (const n of view.notices) expect(view.files.rows.find((r) => r.fileId === n.fileId)?.status).toBe(UPLOAD_TEXT.statusRead);
+    expect(new Set(view.notices.map((n) => n.fileId)).size).toBe(view.notices.length);
+  } else {
+    expect(view.notices).toEqual([]);
+  }
+  const soft = new Map([...view.files.rows.filter((r) => empty.includes(r.status)).map((r) => [r.fileId, r.status] as const),
+    ...view.notices.map((n) => [n.fileId, n.line] as const)]);
   return {
     ...view,
+    files: { ...view.files, rows: view.files.rows.map(({ notFullyRead: _, ...r }) => ({ ...r, status: soft.get(r.fileId) ?? r.status })) },
+    notices: view.files.rows.filter((r) => soft.has(r.fileId)).map((r) => ({ fileId: r.fileId, name: r.name, line: soft.get(r.fileId)! })),
     sections: view.sections.map((x) => omit('rows' in x && x.kind === 'unsure' ? { ...x, rows: x.rows.map(row) } : x, MAIN_VIEW_OMITS.section)),
     sure: view.sure && { ...view.sure, rows: view.sure.rows.map(row) },
     save: omit(view.save, MAIN_VIEW_OMITS.save),
