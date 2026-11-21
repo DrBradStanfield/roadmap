@@ -15,7 +15,7 @@ function isRefusal(error: unknown): boolean {
 
 const NEWER_SCHEMA_LINE = 'A newer version of Health by Dr Brad wrote this record. Reload the page to get that version; if this stays, the newer version is not on the web yet. Nothing was written.';
 /** The single-topic widgets' line: their stores are de-doctored, so no name (US-74, review U5). */
-const NEWER_SCHEMA_NEUTRAL = 'A newer version of this tool wrote this record. Reload the page to get that version; if this stays, the newer version is not on the web yet. Nothing was written.';
+const NEWER_SCHEMA_NEUTRAL = 'A newer version of this tool wrote this record. Reload the page to get that version; if this stays, the newer version is not on the web yet. Nothing was saved.';
 
 /**
  * The load failure's panel. `neutral`: for the single-topic widgets, whose

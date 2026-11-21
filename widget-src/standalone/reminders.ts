@@ -68,7 +68,7 @@ export function clearAutoEnrolBlock(): void {
  *  answers by showing a one-time typed field — never a silent enrolment. */
 export class ReminderEmailNeeded extends Error {
   constructor() {
-    super('We could not read the email on your cloud account — type the address reminders should go to.');
+    super('We could not read the email from your cloud storage. Type the address reminders should go to.');
     this.name = 'ReminderEmailNeeded';
   }
 }

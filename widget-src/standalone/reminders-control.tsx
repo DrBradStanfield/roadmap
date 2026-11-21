@@ -116,7 +116,7 @@ export function RemindersControl({ backend }: { backend: Backend }) {
       ) : confirming ? (
         <div className="hr-sync-form">
           <span className="hr-sync-detail">
-            Reminders go to the email on your connected cloud account.
+            Reminders go to the email address of your connected cloud storage.
           </span>
           {needsEmail && (
             <input
