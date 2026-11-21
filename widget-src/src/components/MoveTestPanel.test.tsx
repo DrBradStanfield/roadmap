@@ -335,3 +335,90 @@ describe('US-04 AC5: a lab group header moves the same test', () => {
     expect(lab.status()).toBe(MOVE_TYPED);
   });
 });
+
+/** A move held open until the test lands it. */
+function held() {
+  let land!: (outcome: unknown) => void;
+  const fn = vi.fn(() => new Promise(resolve => { land = resolve; }));
+  return { fn, land: (outcome: unknown) => act(async () => { land(outcome); await vi.advanceTimersByTimeAsync(0); }) };
+}
+const ERROR = 'Could not save. Check your connection and try again.';
+
+describe('US-04 AC5: the Move press, one save at a time', () => {
+  const cancelButton = (panel: HTMLElement) => within(panel).getByRole('button', { name: 'Cancel' }) as HTMLButtonElement;
+  const line = (panel: HTMLElement) => panel.querySelector('.alr-add-notice')?.textContent ?? null;
+
+  it('P1: Move and Cancel stay disabled while the save is out, and a second press sends nothing', async () => {
+    const move = held();
+    const { pick, moveButton, panel, onMove } = matrix(move.fn);
+    pick(FROM, TO);
+    fireEvent.click(moveButton());
+    await wait(0);
+    expect(moveButton().disabled).toBe(true);
+    expect(cancelButton(panel()!).disabled).toBe(true);
+    fireEvent.click(moveButton());
+    await wait(0);
+    expect(onMove).toHaveBeenCalledTimes(1);
+    await move.land({ status: 'error' });
+    expect(moveButton().disabled).toBe(false);
+    expect(cancelButton(panel()!).disabled).toBe(false);
+  });
+
+  it('P2: an error says so; the line clears as the retry is sent, and the retry sends the same move', async () => {
+    const retry = held();
+    const onMove = vi.fn().mockResolvedValueOnce({ status: 'error' }).mockImplementationOnce(retry.fn);
+    const { pick, moveButton, panel } = matrix(onMove);
+    pick(FROM, TO);
+    fireEvent.click(moveButton());
+    await wait(0);
+    expect(line(panel()!)).toBe(ERROR);
+    fireEvent.click(moveButton());
+    await wait(0);
+    expect(line(panel()!)).toBeNull();
+    expect(onMove).toHaveBeenCalledTimes(2);
+    expect(onMove.mock.calls[1]).toEqual(onMove.mock.calls[0]);
+    await retry.land({ status: 'invalid', refusal: { ok: false, reason: 'future-date', message: 'x' } });
+    expect(line(panel()!)).toBe('That day has not happened yet.');
+  });
+
+  it('P3: a throw gives Move and Cancel back with no words, and still escapes for Sentry (D2)', async () => {
+    // The throw escapes the press as an unhandled rejection, so Sentry's global handler sees it: caught here.
+    const caught: unknown[] = [];
+    const before = process.listeners('unhandledRejection');
+    process.removeAllListeners('unhandledRejection');
+    const mine = (e: unknown) => { caught.push(e); };
+    process.on('unhandledRejection', mine);
+    try {
+      const { pick, moveButton, panel, onMove } = matrix(vi.fn().mockRejectedValue(new Error('test move threw')));
+      pick(FROM, TO);
+      fireEvent.click(moveButton());
+      await wait(0);
+      await wait(0);
+      expect(onMove).toHaveBeenCalledTimes(1);
+      expect(caught).toHaveLength(1);
+      expect(moveButton().disabled).toBe(false);
+      expect(cancelButton(panel()!).disabled).toBe(false);
+      expect(line(panel()!)).toBeNull();
+    } finally {
+      process.off('unhandledRejection', mine);
+      for (const l of before) process.on('unhandledRejection', l);
+    }
+  });
+
+  it('P4: a new pick while a save is out stays open when the old save lands (D3)', async () => {
+    const move = held();
+    const { view, pick, moveButton, panel, status } = matrix(move.fn);
+    pick(FROM, TO);
+    fireEvent.click(moveButton());
+    await wait(0);
+    // The blood test header's input now reads TO; pick again from the lab group's header for the same day.
+    fireEvent.click(view.container.querySelector('.alr-group-header')!);
+    helpers(view.container, '.alr-wrap').pick(FROM, '2024-02-20');
+    await wait(0);
+    expect(panel()!.textContent).toContain("Move the blood test from 12 Mar '24 to 20 Feb '24?");
+    await move.land({ status: 'ok' });
+    expect(panel()).not.toBeNull();
+    expect(panel()!.textContent).toContain("Move the blood test from 12 Mar '24 to 20 Feb '24?");
+    expect(status()).toBe("Moved to 21 Feb '24.");
+  });
+});
