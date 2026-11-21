@@ -8,7 +8,7 @@
  * ReviewTable, saveReview, the real RoadmapStore, saveDocuments. Only the network, the quota, the read, the hash
  * and the archive mode are stubbed. Synthetic only.
  */
-import { afterEach, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
 import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
@@ -56,6 +56,13 @@ async function pick(files: Array<[name: string, result: object]>) {
   fireEvent.change(document.querySelector('input[type=file]')!, { target: { files: files.map(([name]) => new File([name], name, { type: 'application/pdf' })) } });
   return cloud;
 }
+/** The done screen as the person sees it: each element, its classes and its text (Brad 2026-11-22: the layout stays nice). */
+const doneLines = () => [...document.querySelector('.upload-done')!.children].map((el) => `${el.tagName.toLowerCase()}.${el.className}: ${el.textContent}`);
+const [ICON, DONE] = ['div.upload-done-icon: \u2713', 'button.btn-primary upload-done-btn: Done'];
+// The letter's existing file notice, unchanged here.
+const NOTICE = 'div.upload-file-notices: Check these files:l.pdf Filed as a document. No blood test values found.';
+const letter = { classification: 'clinic_letter', reportDate: null, values: [], additionalValues: [],
+  document: { classification: 'clinic_letter', title: 'Synthetic letter', documentDate: DAY, contentMarkdown: 'letter text', metadata: {} } };
 const saved = async (cloud: MemoryCloud) => { await flushRoadmapStore(); return JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json) as RoadmapFile; };
 
 it('US-14 AC11: with a cloud, a report with only refused values offers Save and stores its original', async () => {
@@ -64,9 +71,8 @@ it('US-14 AC11: with a cloud, a report with only refused values offers Save and 
   expect(save.disabled).toBe(false);
   fireEvent.click(save);
   await screen.findByRole('button', { name: 'Done' });
-  // The web's done screen as it reads today: the kept original counts as one document, with no other line.
-  expect(document.querySelector('.upload-done .upload-done-text')?.textContent).toBe('1 document');
-  expect(document.querySelectorAll('.upload-done p.upload-done-skipped')).toHaveLength(0);
+  // US-14 AC13: the hidden archive row is no document; the kept line, the iPhone's words, is the main line.
+  expect(doneLines()).toEqual([ICON, 'p.upload-done-text: 1 original file kept in your cloud.', DONE]);
 
   const record = await saved(cloud);
   expect(record.labValues).toEqual([]);
@@ -88,4 +94,21 @@ it('US-14 AC11: with no cloud, a refused-only report beside one that saves leave
   expect(record.documents.map((d) => d.contentHash)).toEqual(['sha256-a.pdf']); // A's hash-only archive row; none for B
   expect(cloud.docs.size).toBe(0);
   expect(knownIndex(record).has('sha256-b.pdf')).toBe(false); // so the next pick reads B again
+});
+
+describe('US-14 AC13: the done screen after a Save that kept originals, with a cloud, through the real Save', () => {
+  it.each([
+    ['three refused-only reports', [['a.pdf', refusedOnly], ['b.pdf', refusedOnly], ['c.pdf', refusedOnly]], ['p.upload-done-text: 3 original files kept in your cloud.']],
+    ['a report that saves a value beside a refused-only one', [['a.pdf', withValue], ['b.pdf', refusedOnly]],
+      ['p.upload-done-text: 1 additional lab value', 'p.upload-done-skipped: 1 original file kept in your cloud.']],
+    ['a letter beside a refused-only report', [['l.pdf', letter], ['b.pdf', refusedOnly]],
+      ['p.upload-done-text: 1 document', 'p.upload-done-skipped: 1 original file kept in your cloud.', NOTICE]],
+    ['a report that saves a value alone: its original is not counted a document', [['a.pdf', withValue]], ['p.upload-done-text: 1 additional lab value']],
+    ['a letter alone still counts as a document', [['l.pdf', letter]], ['p.upload-done-text: 1 document', NOTICE]],
+  ] as Array<[string, Array<[string, object]>, string[]]>)('%s', async (_name, files, lines) => {
+    await pick(files);
+    fireEvent.click(await screen.findByRole('button', { name: /^Save / }));
+    await screen.findByRole('button', { name: 'Done' });
+    expect(doneLines()).toEqual([ICON, ...lines, DONE]);
+  });
 });

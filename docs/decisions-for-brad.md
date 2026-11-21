@@ -30,6 +30,12 @@ None today.
 - Screen-reader name for a second reading: "<test> value from <column>, another reading" ("sure").
 - The GLP-1 hint sentence "GLP-1 medications reduce appetite and improve blood sugar control." is approved.
 
+2026-11-22, Brad's words in quotes ("do all of your recommendations"):
+- After a Save that only kept originals, the iPhone shows "1 original file kept in your cloud." on its own,
+  without "Saved 0 values." above it.
+- The web no longer counts a lab report's kept original as a document. With nothing else saved it shows the
+  same kept line as the iPhone; beside other items it shows that line under them, in the existing layout.
+
 2026-11-21, the owner's calls (Fable, not Brad):
 - Invalid text reverts when the field loses focus.
 - An emptied input unticks its row.

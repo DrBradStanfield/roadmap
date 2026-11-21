@@ -358,9 +358,11 @@ export function uploadView(s: UploadState, record: RoadmapFile, now: string, rev
       .flatMap((line) => (line ? [{ fileId: f.id, name: uploadFileName(f), line }] : []))),
     save: save(s, plan, review),
     stop: s.phase === 'open' && waiting ? { label: UPLOAD_TEXT.stop } : null,
+    // A Save that kept originals and wrote nothing else heads with the kept line alone, never "Saved 0 values." (US-14 AC13).
     done: s.phase === 'done' ? {
-      line: UPLOAD_TEXT.savedLine(s.outcome.values, s.outcome.documents),
-      archived: s.outcome.archived ? UPLOAD_TEXT.archivedLine(s.outcome.archived) : null,
+      ...(s.outcome.archived && !s.outcome.values && !s.outcome.documents
+        ? { line: UPLOAD_TEXT.archivedLine(s.outcome.archived), archived: null }
+        : { line: UPLOAD_TEXT.savedLine(s.outcome.values, s.outcome.documents), archived: s.outcome.archived ? UPLOAD_TEXT.archivedLine(s.outcome.archived) : null }),
       unstored: s.outcome.unstored ? UPLOAD_TEXT.unstoredLine : null,
       skipped: [
         ...(s.outcome.skippedValues ? [UPLOAD_TEXT.skippedLine(s.outcome.skippedValues, false)] : []),

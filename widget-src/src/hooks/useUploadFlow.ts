@@ -181,7 +181,7 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
           if (message) return send({ type: 'saveFailed', run, attempt, message });
           // One per review: a finished Save, never a failed one (US-13 AC13).
           endReview.current(d.review);
-          send({ type: 'saved', run, attempt, outcome: { values: total.values + total.labValues, documents: total.documents.length, archived: 0 } });
+          send({ type: 'saved', run, attempt, outcome: { values: total.values + total.labValues, documents: total.documents.length, archived: total.archived.length } });
         });
       },
     };

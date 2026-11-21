@@ -71,7 +71,7 @@ describe('US-14 AC11: nothing ticked, the original is kept with a cloud', () => 
     expect(archives(file)[0]).toMatchObject({ contentHash: 'h-a', fileRef: stored[0], date: DAY });
     expect(listedRows(archives(file)[0])).toBeNull(); // list-less: known by the date rule, as the web files it
     expect(outcome).toEqual({ values: 0, documents: 0, archived: 1, unstored: 0 });
-    expect(done).toMatchObject({ line: UPLOAD_TEXT.savedLine(0, 0), archived: KEPT, unstored: null });
+    expect(done).toMatchObject({ line: KEPT, archived: null, unstored: null }); // US-14 AC13: the kept line alone
   });
 
   it('with no cloud: nothing to save, as on main', async () => {
@@ -120,7 +120,7 @@ describe('US-14 AC11: the counts come from what Save wrote', () => {
       expect(stored).toHaveLength(1);
       expect(archives(file)).toHaveLength(1);
       expect(outcome).toMatchObject({ values: 0, archived: 1, unstored: 0 });
-      expect(done).toMatchObject({ line: UPLOAD_TEXT.savedLine(0, 0), archived: KEPT });
+      expect(done).toMatchObject({ line: KEPT, archived: null }); // US-14 AC13: never "Saved 0 values." above it
     }
   });
 
@@ -130,7 +130,7 @@ describe('US-14 AC11: the counts come from what Save wrote', () => {
     expect(stored).toHaveLength(1);
     expect(newLabIds(record, file)).toEqual([]);
     expect(outcome).toMatchObject({ values: 0, archived: 1 });
-    expect(done).toMatchObject({ archived: KEPT });
+    expect(done).toMatchObject({ line: KEPT, archived: null }); // US-14 AC13
   });
 
   it('a report that saves a core value alone is never counted "kept": its bytes wrote a value', async () => {
