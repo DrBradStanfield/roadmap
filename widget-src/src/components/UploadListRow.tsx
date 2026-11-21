@@ -49,6 +49,7 @@ export function UploadListRow({ row, value, draftLabel, hidden, editable, on }: 
   const metric = row.shown.cell?.metric;
   // An open draft draws the unit it was typed under, and no control: a press could not change what it writes (Codex R1).
   const typing = draftLabel !== null;
+  const proposing = !typing && row.typed === null;
   const unitLabel = draftLabel ?? row.unit.label;
   const toggle = typing ? null : row.unit.toggle;
   const lpa = typing ? null : row.unit.choices && row.unit.current;
@@ -99,14 +100,15 @@ export function UploadListRow({ row, value, draftLabel, hidden, editable, on }: 
             type="checkbox" checked={row.replacing} disabled={!editable}
             aria-label={row.replaceLabel ?? undefined}
             // Replace's label is not unique on its own: the row's label, the saved value and the proposed one tie it to its row.
-            aria-describedby={describedBy(labelId, held && heldId, proposedId)}
+            aria-describedby={describedBy(labelId, held && heldId, proposing && proposedId)}
             onChange={(e) => on.choose(row.fileId, { replace: row.ref, correctsId: e.target.checked ? row.replaces : null })}
           />
           {REVIEW_CELL_TEXT.replace}
         </label>
       )}
-      {/* The value Replace would write, as text: a description names text, never an input (US-13 AC10). */}
-      {row.replaces !== null && <span id={proposedId} className="hr-sr-only">{`${value} ${unitLabel}`}</span>}
+      {/* The value Replace would write, as the engine shows it: a description names text, never an input (US-13 AC10).
+          None while the row holds text or a draft: that text is no value Replace could write (adversary R4). */}
+      {row.replaces !== null && proposing && <span id={proposedId} className="hr-sr-only">{`${row.shown.text} ${row.unit.label}`}</span>}
       {row.reasons.length > 0 && (
         <ul id={reasonsId} className="upload-list-reasons">
           {row.reasons.map((r) => <li key={r} className="bt-cell-question upload-list-reason">{r}</li>)}

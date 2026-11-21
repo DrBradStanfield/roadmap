@@ -23,13 +23,15 @@
  *       a unit press with a draft open commits it first, with no blur (S2, checked by K3b);
  *   K3i no row that was visible becomes hidden on a step that is not a press of Show all, and Show all's state changes
  *       only on its press (S4: a latch);
- *   K3j the list's announcement changes only on a step where a row newly has an error, and no row is an alert (S7).
+ *   K3j the list's announcement changes only on a person's step where a row has an error text it did not have (from the
+ *       engine's rows), never on an engine step; a step of one choice says each such text; no row is an alert (S7, T2, T3).
  * Mutations it was shown failing on (PR body): M1 commit skipped on focus moving to another row; M2 the input's value
  * read from a stale local copy; M3 day groups keyed by index; M4 a letter's title draft never sent; M5 the draft's unit
  * re-read from the row at commit; M6 a row hidden whatever its draft or focus; M7 held text labelled by the row's unit now;
  * M8 an open draft labelled by the row's unit now; M9 Show all a live expression of `list.check`; M10 a unit press that
  * leaves the draft to a blur; M11 every current error announced on each change; M12 a day picker's words made by the
- * screen; M13 the printed note dropped. Synthetic values only.
+ * screen; M13 the printed note dropped; M14 announcements keyed on the row alone; M15 `acted` kept after a choice that
+ * changed nothing. (The promise path of Save, restored, fails the typecheck: `choose` returns void.) Synthetic values only.
  */
 import { act, cleanup, fireEvent, render } from '@testing-library/react';
 import { afterEach, describe, it } from 'vitest';
@@ -65,7 +67,8 @@ type File = Open['files'][number];
 const COLUMN = '2026-09-15';
 const X0: UnifiedExtractionResult = {
   classification: 'lab_report', reportDate: DAY, unrecognized: [], document: null,
-  values: [core({}), core({ metric: 'hba1c', valueSI: 40, displayValue: 40, displayUnit: 'mmol/mol', question: 'Is this HbA1c?', unitGuessed: true })], additionalValues: [extra()],
+  // Lp(a) out of range: f0 lands with an error, an engine step that must say nothing (T3).
+  values: [core({}), core({ metric: 'hba1c', valueSI: 40, displayValue: 40, displayUnit: 'mmol/mol', question: 'Is this HbA1c?', unitGuessed: true }), core({ metric: 'lpa', valueSI: 9000, displayValue: 9000, displayUnit: 'nmol/L' })], additionalValues: [extra()],
 };
 const X1: UnifiedExtractionResult = {
   classification: 'lab_report', reportDate: null, unrecognized: [], document: null,
@@ -127,10 +130,14 @@ function runSequence(seed: number, steps: number) {
 
   const see = (s: UploadState, record: RoadmapFile) => engineSee(s, record, NOW, h.units());
   /** K3j: the rows with an error before a step, and each error a row newly had during it (a commit, then a tick, say). */
-  let hadError = new Set<string>();
+  // From the engine's rows alone, never the screen: an error text a row did not have just before each choice (T2).
+  let hadError = new Map<string, string | null>();
   const madeErrors = new Set<string>();
+  const errorsOf = (s: UploadState, record: RoadmapFile) => new Map(see(s, record).list.rows.map((x) => [x.key, x.error]));
+  const newErrorsIn = (s: UploadState, record: RoadmapFile, since: Map<string, string | null>) => [...errorsOf(s, record)].filter(([k, e]) => e && since.get(k) !== e).map(([, e]) => e!);
   const noteErrors = (s: UploadState, record: RoadmapFile) => {
-    for (const x of see(s, record).list.rows) if (x.error && !hadError.has(x.key)) madeErrors.add(x.error);
+    for (const e of newErrorsIn(s, record, hadError)) madeErrors.add(e);
+    hadError = errorsOf(s, record);
   };
   /** The state after a commit of `d`, by the engine's own transition. */
   const committed = (s: UploadState, record: RoadmapFile, d: Draft): UploadState => {
@@ -181,8 +188,12 @@ function runSequence(seed: number, steps: number) {
     const activeRow = rowOfInput(active);
     const wasShown = new Set([...document.querySelectorAll<HTMLElement>('li[data-key]')].filter((li) => !li.hidden).map((li) => li.dataset.key!));
     const wasOpen = document.querySelector('.review-disclosure')?.getAttribute('aria-expanded') ?? null;
-    hadError = new Set(rows.filter((x) => x.error).map((x) => x.key));
+    hadError = new Map(rows.map((x) => [x.key, x.error]));
+    const stepStart = hadError;
     madeErrors.clear();
+    let engineStep = false;
+    const sentBefore = h.sent.length;
+    const pressesBefore = h.presses.length;
     const wasSaid = document.querySelector('.upload-list [aria-live]')?.textContent ?? null;
     let toggled = false;
     const r = rand();
@@ -278,6 +289,7 @@ function runSequence(seed: number, steps: number) {
     } else if (r < 0.88) {
       if (before.phase !== 'open' || !before.files.some((f) => f.id === 'f0' && f.status.s === 'sending')) continue;
       trace.push('f0 read');
+      engineStep = true;
       const e: UploadEvent = { type: 'answered', run: 1, id: 'f0', extraction: X0, legacy: false, now: NOW };
       act(() => h.send(e));
       expected = transition(before, e).state;
@@ -327,11 +339,13 @@ function runSequence(seed: number, steps: number) {
       } else {
         const unit: CellUnit = rand() < 0.5 ? 'si' : 'conventional';
         trace.push(`units ${unit}`);
+        engineStep = true;
         act(() => h.setUnits(() => unit));
       }
     } else if (r < 0.96) {
       const next = pick(RECORDS);
       trace.push(`record ${RECORDS.indexOf(next)}`);
+      engineStep = true;
       act(() => h.setRecord(next));
       const lost = lostReplaces(uploadReview(before, next, NOW), before);
       expected = lost.length ? transition(before, { type: 'replacesLost', lost }).state : before;
@@ -339,6 +353,7 @@ function runSequence(seed: number, steps: number) {
       if (before.phase !== 'saving') continue;
       const ok = rand() < 0.2;
       trace.push(ok ? 'saved' : 'save failed');
+      engineStep = true;
       const e: UploadEvent = ok ? { type: 'saved', run: 1, attempt: before.attempt, outcome: { values: 1, documents: 0, archived: 0 } } : { type: 'saveFailed', run: 1, attempt: before.attempt, message: 'Network' };
       act(() => h.send(e));
       expected = transition(before, e).state;
@@ -363,10 +378,15 @@ function runSequence(seed: number, steps: number) {
       const isOpen = document.querySelector('.review-disclosure')?.getAttribute('aria-expanded') ?? null;
       if (wasOpen !== null && isOpen !== null && isOpen !== wasOpen) fail('K3i', `Show all went ${wasOpen} -> ${isOpen} on "${trace[trace.length - 1]}"`);
     }
-    // K3j: an announcement only for an error a row did not have before the step; never a row alert.
+    // K3j: an announcement only for an error text a row did not have before the person's step; never on an engine step,
+    // never a row alert; and a step that sent one choice and no unit press says every error text it made.
     if (document.querySelector('.upload-list [role="alert"]')) fail('K3j', 'a row is an alert');
     const nowSaid = document.querySelector('.upload-list [aria-live]')?.textContent ?? null;
-    noteErrors(h.state(), h.record());
+    if (engineStep && nowSaid !== wasSaid) fail('K3j', `announced "${nowSaid}" on the engine's step "${trace[trace.length - 1]}"`);
+    const made = after.view.done ? [] : newErrorsIn(h.state(), h.record(), stepStart);
+    const oneChoice = h.sent.slice(sentBefore).filter((e) => e.type === 'chose').length === 1 && h.presses.length === pressesBefore;
+    if (!engineStep && oneChoice && nowSaid !== null) for (const e of made) if (!nowSaid.includes(e)) fail('K3j', `"${e}" appeared on "${trace[trace.length - 1]}" and was not said ("${nowSaid}")`);
+    if (!engineStep) noteErrors(h.state(), h.record());
     // It says only errors a row newly had in this step, and nothing else.
     const rest = [...madeErrors].reduce((t, e) => t.split(e).join(''), nowSaid ?? '');
     if (wasSaid !== null && nowSaid !== null && nowSaid !== wasSaid && (!madeErrors.size || rest.trim())) {

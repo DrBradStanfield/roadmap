@@ -15,7 +15,7 @@ const unitOf = (key: string) => row(key).querySelector('.upload-list-unit')!.tex
 const twoLdl = () => labRead('f0', { values: [core({ valueSI: 500, displayValue: 500 }), core({ valueSI: 2.9, displayValue: 2.9, recordedAt: '2026-09-15' })] });
 /** The text of every element an aria-describedby names, in order. */
 const described = (el: Element) => (el.getAttribute('aria-describedby') ?? '').split(' ').filter(Boolean).map((id) => document.getElementById(id)?.textContent ?? null);
-const announced = () => document.querySelector<HTMLElement>('.upload-list [aria-live="assertive"]')!;
+const announced = () => document.querySelector<HTMLElement>('.upload-list [aria-live]')!;
 
 describe('S1: an open draft keeps the unit label it was typed under (Codex R1, US-13 AC5)', () => {
   it('the display unit changes mid-typing: the label still reads the typed unit, no toggle shows, and Save writes that unit', () => {
@@ -87,16 +87,13 @@ describe('S4: Show all is a latch (adversary F4, owner ruling)', () => {
   });
 });
 
-describe('S5: Replace is described by the saved value and the proposed one, as text (Codex R3, US-13 AC10)', () => {
-  it('the description follows the typed text and keeps the draft\'s unit', () => {
+describe('S5: Replace is described by the saved value and the value it would write, as text (Codex R3, US-13 AC10)', () => {
+  it('with no text held, the engine\'s shown value and unit; never an input', () => {
     const host = mount(open([labRead('f0', { values: [core({})] })]), bulkAppendValues(EMPTY, [LDL(2.9)], NOW).file);
     const r = host.see().list.rows[0];
     const box = within(row('f0:v0')).getByRole('checkbox', { name: r.replaceLabel! });
     expect(described(box)).toEqual([r.label, r.held, `${r.shown.text} ${r.unit.label}`]);
     expect(screen.getByRole('checkbox', { description: `${r.label} ${r.held} ${r.shown.text} ${r.unit.label}` })).toBe(box);
-    typeInto('f0:v0', '3.4');
-    act(() => host.setUnits(() => 'conventional'));
-    expect(described(box)).toEqual([r.label, r.held, `3.4 ${r.unit.label}`]);
     for (const id of box.getAttribute('aria-describedby')!.split(' ')) expect(document.getElementById(id)!.matches('input, select, button')).toBe(false);
   });
 });
@@ -141,32 +138,6 @@ describe('S7: an error is announced once, when the person\'s step makes it (adve
     fireEvent.click(row('f0:v0').querySelector('button.bt-unit-chip')!);
     expect(announced().firstElementChild).toBe(node);
     expect(announced().textContent).toBe(NUMERIC_SYNTAX_GUIDANCE);
-  });
-});
-
-describe('S8: a Save press never saves from a view the commit has not reached (adversary F2)', () => {
-  it('with a host whose choices land on a later tick, held text typed then Save refuses and focuses it', async () => {
-    const host = mount(open([labRead('f0', { values: [core({})] })]), EMPTY, () => 'si', { later: true });
-    expect(host.see().view.save.enabled).toBe(true);
-    typeInto('f0:v0', 'abc');
-    await act(async () => {
-      fireEvent.click(save());
-      await new Promise((r) => setTimeout(r, 10));
-    });
-    expect(host.state().phase).toBe('open');
-    expect(host.see().list.rows[0].typed?.text).toBe('abc');
-    expect(document.activeElement).toBe(input('f0:v0'));
-  });
-
-  it('and a fix typed then Save saves once the commit has landed', async () => {
-    const host = mount(open([labRead('f0', { values: [core({ valueSI: 500, displayValue: 500 })] })]), EMPTY, () => 'si', { later: true });
-    expect(host.see().view.save.enabled).toBe(false);
-    typeInto('f0:v0', '3.2');
-    await act(async () => {
-      fireEvent.click(save());
-      await new Promise((r) => setTimeout(r, 10));
-    });
-    expect(host.state().phase).toBe('saving');
   });
 });
 

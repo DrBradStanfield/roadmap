@@ -113,7 +113,7 @@ describe('B7: a row\'s error is announced when it appears', () => {
     mount(open([ldl(3.1)]));
     typeInto('f0:v0', 'abc');
     blur();
-    expect(document.querySelector('.upload-list [aria-live="assertive"]')!.textContent).toBe(NUMERIC_SYNTAX_GUIDANCE);
+    expect(document.querySelector('.upload-list [aria-live]')!.textContent).toBe(NUMERIC_SYNTAX_GUIDANCE);
     expect(within(row('f0:v0')).getByText(NUMERIC_SYNTAX_GUIDANCE)).toBeTruthy();
   });
 });

@@ -1,6 +1,6 @@
 # The web upload list: the screen (PR 2)
 
-Status: draft for review, 2026-11-22, round six (the engine's printed note, letter preview and picker words, PR 1953). Built
+Status: draft for review, 2026-11-22, round seven (the final re-check's T1-T6). Built
 unmounted: production keeps drawing ReviewTable's grid.
 Engine: `uploadList` (packages/health-core/src/upload-list.ts), `uploadView` (upload-view.ts) and `uploadListPage`
 (upload-list-page.ts).
@@ -50,7 +50,7 @@ row shown since Show all was last pressed, so no row hides under the person's ha
 | Unit | `row.unit.label`; a chip when `row.unit.toggle` (a press commits any open draft, then asks for that unit); Lp(a)'s three when `row.unit.choices`, `current` marked; neither while the row holds text. While a draft is open on the row: the label captured at its first keystroke, and no control | UnitChip.tsx, LpaUnitControl.tsx |
 | Printed | `row.printed` under the value, in the grid's `.bt-cell-printed` note style; it describes the input (US-13 AC11) | `.bt-cell-printed` |
 | Caption | `row.caption`, unless it is `row.error`'s words; a conflict's `row.held` leads it, muted, a separate word | `.review-overview-footer` look |
-| Replace | its own line under the caption, 44px; named `row.replaceLabel`, described by the row's label, the held value and a hidden text mirror of the value it would write (`value` and its unit label; while a draft is open, the draft's text and captured label) | `REVIEW_CELL_TEXT.replace` |
+| Replace | its own line under the caption, 44px; named `row.replaceLabel`, described by the row's label, the held value and a hidden text of the value it would write, `row.shown.text` and `row.unit.label` exactly; none while the row holds text or a draft (that text is no value Replace could write) | `REVIEW_CELL_TEXT.replace` |
 | Reasons | each of `row.reasons`; the input then takes the warning underline | `.bt-cell-question`, `.bt-cell-low-confidence` |
 | Error | `row.error`, as text; announced by the list, not the row (below) | `--color-error`, as `.upload-error` |
 
@@ -70,10 +70,14 @@ then shows what the engine returned. Focus or typing moving to another input com
 a unit press (iOS Safari may not blur on a tap of a control that takes no focus). Enter while an input method composes
 does nothing. Escape drops it unsent. A draft whose input is gone is dropped.
 
-Save press: commit, then read the view the commit reached (`reread()`), save if `save.enabled`, else focus the control
-of `save.blockers[0].at`. The contract (on `UploadListProps.choose`): `reread()` reflects a choice once `choose` has
-returned, or, when `choose` returns a promise, once it resolves; the press awaits that promise before it reads. Awaiting
-was simpler than refusing until the view changes, since a commit that changes nothing never changes the view.
+Save press: commit, then read the view (`reread()`), save if `save.enabled`, else focus the control of
+`save.blockers[0].at`. The host's contract (on `UploadListProps.reread`): `choose` applies a choice before it returns,
+and `reread()` returns the view of the state after every `choose` already called, read from the flow's live state,
+never React state. useUploadFlow's `send` (hooks/useUploadFlow.ts, the port's `send`) sets `live.current` to the
+transition's state before it returns. A commit by blur or Enter has therefore landed before any press, and a second
+press reads the first's save. The round-five ruling that allowed an awaited, promise-returning `choose` is withdrawn
+(round seven, T1): the promise path was a hidden mode, did not await a commit made by blur or Enter, and let a second
+press read the view from before the commit. `choose` returns `void`, so restoring it fails the typecheck.
 
 ## Keyboard and screen reader
 
@@ -86,14 +90,15 @@ was simpler than refusing until the view changes, since a commit that changes no
 - Names: tick and input are named `row.label`, the day picker its `label`; the input is described by
   its unit (Lp(a)'s: the one unit shown, never all three), caption, reasons and error. The picker's name replaces its
   content, so the day it shows is its description, before its hint and file.
-- Errors: no row is an alert. The list owns one `aria-live="assertive"` region and says in it the errors a person's
-  choice made on rows that had none (a commit, a tick, a day). A review that opens with errors, a unit press and an
-  engine step say nothing.
+- Errors: no row is an alert. The list owns one `aria-live="polite"` region (a check after a blur never cuts off the
+  next field's name) and says in it each error text a person's choice made, keyed on row and text: a row's new error,
+  or a new text on a row that had one (held "abc", then "1,234" asks which number, US-13 AC12). A review that opens with
+  errors, a unit press, a choice the engine refuses and an engine step say nothing.
 - Day picker by keyboard (WebKit 26.4, Safari semantics): Tab reaches text fields only, Option+Tab (or Safari's "Press
   Tab to highlight each item") the button; Enter and Space call `showPicker()`, focus stays on the button. Without
   `showPicker` (Safari before 16) the press clicks the input instead. Not verified: choosing a day inside the native
-  popover by keyboard, and VoiceOver (neither can be scripted). The engine's fuller names (`ListRow.name`, `DayControl.name`)
-  await Brad's yes (docs/decisions-for-brad.md, Open): one constant, `ENGINE_NAMES` in
+  popover by keyboard, and VoiceOver (neither can be scripted). Owner ruling: keep the button and its click fallback.
+- The engine's fuller names (`ListRow.name`, `DayControl.name`) await Brad's yes (docs/decisions-for-brad.md, Open): one constant, `ENGINE_NAMES` in
   widget-src/src/lib/upload-list-names.ts, switches every control to them. A letter's title is labelled by its
   visible "Document title" and its file name; its kind select by its file name alone (no word for it yet).
 
@@ -114,8 +119,9 @@ The widget has no dark theme, so dark mode draws as light.
 | row label, caption, reasons, error, Replace name | `row.label`, `row.caption`, `row.reasons`, `row.error`, `row.replaceLabel` |
 | Replace | `REVIEW_CELL_TEXT.replace` |
 | Show all n / Hide | `list.showAll`, `list.hide` |
-| day controls | `label`, `printedLine`, `hint`, `fileName` (`UPLOAD_TEXT`, `DAY_CONTROL_TEXT`) |
-| letters | `view.documents` line, title, kinds, `setDate`, `removeDate`; "Document title", "Document date" from ReviewFileSections.tsx |
+| day controls | `label`, `printedLine`, `pickerLine`, `hint`, `fileName` (`UPLOAD_TEXT`, `DAY_CONTROL_TEXT`) |
+| printed note | `row.printed` |
+| letters | `view.documents` line, title, kinds, `removeDate`; `page.letters[].pickerLine`, `preview`; "Document title", "Document date" from ReviewFileSections.tsx |
 | files, Try again | `view.files`, `view.notices`, `view.sections` failed `retry` |
 | Save, why, error | `view.save.label`, `view.save.why`, `view.save.error` |
 | Save, Saving..., Cancel, Close | `page.save`, `page.close` (`UPLOAD_TEXT`) |
@@ -138,22 +144,30 @@ The widget has no dark theme, so dark mode draws as light.
 
 ## For the mount PR
 
-- Commit then save through the real useUploadFlow: its `send` is synchronous, so `choose` returns nothing and
-  `reread()` reads `live.current`. Any async path must return the promise of the commit (UploadListProps.choose).
+- The adapter calls the flow's synchronous `send` for `choose` and reads `live.current` (never React state) for
+  `reread`. A test through the real `useUploadFlow` types a correction, presses Save without a blur, and finds the
+  correction in what was saved.
 - Unit presses must SET the unit the chip names. `unitTo(metric, unit)` and `lpaUnitTo(unit)` carry it; the web's
   `handleToggleFieldUnit(METRIC_TO_FIELD[metric])` (hooks/useUnits.ts) only flips, which can disagree with the chip
   while the record's units are held (US-34 AC7a). Wire a setter, or assert the flip lands on `unit`. Lp(a): lib/lpa-unit.ts
   `useLpaUnit`'s setter. The engine reads both back through `unitOf`.
 - The modal's portal sits outside `.health-tool`: `[hidden]` (handled in UploadList.css), the `--bt-ink-*` tokens the
-  unit controls read (UploadList.css carries the four), and the font (`.health-tool` sets it; the grid's unit pill sets
+  unit controls and the grid's notes read (UploadList.css carries five: 50, 200, 500, 700, 900), and the font (`.health-tool` sets it; the grid's unit pill sets
   its own) are not inherited there. The harness gives its portal root `font-family: var(--font-family-base)`; the mount
   must give the modal (or the list) the same. Check each in the live store.
-- VoiceOver and keyboard date picking in real Safari, on a Mac and an iPhone: the native popover could not be scripted.
+- Scope the `--bt-ink-*` tokens once on the modal root, or pin the three copies (styles.css `.health-tool`,
+  `.bt-timeline`, UploadList.css `.upload-list`) equal by a test (R7).
+- Reconcile the engine's "Show all n" count with the rows the screen keeps shown after a press (R5a).
+- The Files block's quiet styling (13px, secondary while every file says the same) is a screen decision (R5b).
+- K3 copies the DayControl-to-change mapping (`test` / `previous` / `columnDay`) rather than deriving it (R5c).
+- Untested at mount: paste and line breaks in a letter title; the live region once `view.done` ends the list; the CSS
+  under the real modal portal; Clarity masking of the hidden proposed-value span; VoiceOver and keyboard date picking
+  in real Safari, on a Mac and an iPhone (the native popover could not be scripted).
 - `ENGINE_NAMES` awaits Brad (Needs Brad 1).
 - UploadList.css must ship in the Shopify build: check the built CSS holds `.upload-list-row[hidden]`.
 
 ## What a later PR does
 
 Mounts UploadList from UploadModal in place of ReviewTable, wires the unit presses, runs Save through the shared `uploadSave`,
-does the list above, and deletes ReviewTable, ReviewMatrix, review-matrix.ts
-and import-review-view.ts.
+does the list above, and deletes ReviewTable.tsx, ReviewMatrix.tsx, lib/review-matrix.ts and import-review-view.ts,
+with whatever only they import.
