@@ -246,7 +246,7 @@ function refusedLines(refused: NonNullable<SaveOutcome['refused']>): string[] {
   return [...[...byReason].map(([reason, labels]) => `${labels.join(', ')}: ${NOT_SAVED_TEXT[reason]}`), ...lines];
 }
 
-function saveLabel(plan: UploadSavePlan): string {
+export function saveLabel(plan: UploadSavePlan): string {
   const { values, documents, originals } = plan.counts;
   return values || documents || !originals ? UPLOAD_TEXT.saveBoth(values, documents) : UPLOAD_TEXT.saveOriginals(originals);
 }
