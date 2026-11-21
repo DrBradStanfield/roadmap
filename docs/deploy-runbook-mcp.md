@@ -114,7 +114,7 @@ per client id**, and that pool is SHARED with the widget. Each MCP connection mi
 (`prompt=consent`, a stateless server has nowhere to keep a token it did not just
 receive, and Google issues one only on a first authorization or an explicit re-consent).
 Reconnecting orphans the previous one. Past 100, Google silently drops the OLDEST, which
-can be the widget's, the user's website login then quietly needs reconnecting. Nobody
+can be the widget's, the website's Drive connection then quietly needs reconnecting. Nobody
 should reach 100, and if support reports "my Drive keeps disconnecting", this is the first
 thing to check.
 

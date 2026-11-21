@@ -34,7 +34,7 @@ change below. The original plan and its reasoning:
   claude_business `tools/shopify-llms-txt.js`.
 - `/pages/roadmap`: intro text, `WebApplication` JSON-LD, SEO title and
   description. Ten guides carry `TechArticle` JSON-LD, including upload-lab-report (upload
-  and fix a value), find-your-record (where the file sits, backups, erase),
+  and correct a value), find-your-record (where the file sits, backups, erase),
   track-blood-tests-with-ai (the entry page for "track my blood tests with
   ChatGPT or Claude"), connect-google-drive (the Drive box people miss) and
   where-your-data-lives (the privacy page: what touches our server, Supabase,
@@ -55,7 +55,7 @@ change below. The original plan and its reasoning:
 - potassiumfiber.com has 10 articles of its own, including potassium citrate vs
   chloride and the other forms.
 - GitHub repo: description, homepage, 11 topics, `glama.json`, release v1.0.2.
-- `get-plan --from-values`: a plan from numbers with no record file (US-30 AC7).
+- `get-plan --from-values`: a plan from numbers with no health record (US-30 AC7).
 - No third-party clinical pathways (2026-10-22, US-15 AC39): pathway content left the repo and the
   chatbot after the publisher wrote to Brad. No agent surface may describe the tool as built on
   third-party pathways. The live `llms.txt` credit was dropped and redeployed (claude_business 8fc2d9ed).
