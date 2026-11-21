@@ -25,7 +25,7 @@ import { createEmptyFile, type FileLabValue, type FileMeasurement, type RoadmapF
 import type { ChoiceChange } from './upload-choices';
 import { initialUpload, inFlight, transition, type PickedFile, type UploadEvent, type UploadState } from './upload-flow';
 import { uploadSavePlan } from './upload-plan';
-import { lostReplaces, previousDay, reviewedWrites, uploadReview, type UploadReview } from './upload-review';
+import { lostReplaces, reviewedWrites, uploadReview, type UploadReview } from './upload-review';
 import { requestFlags, type UploadPlatform } from './upload-rules';
 import { uploadSave, type UploadSaveIO } from './upload-save';
 import { uploadView, type UploadView, type ValueRow } from './upload-view';
@@ -50,6 +50,8 @@ const PICKED_DAY = '2026-10-20';
 const FUTURE = '2026-12-01';
 /** A previous column's day before every report and test day the run picks. */
 const EARLY = '2026-09-01';
+/** A second past day a web report prints, as a dated previous column (US-13 AC24). */
+const COLUMN = '2026-09-15';
 /** A misread report date that has not happened: the only way the server keeps a future own day (lab-extraction.ts `ownDay`: own < report). */
 const REPORT_FUTURE = '2026-12-15';
 
@@ -62,7 +64,8 @@ const extra = (over: Partial<AdditionalLabValue>): AdditionalLabValue => ({ name
 interface Setup { extractions: Record<string, UnifiedExtractionResult>; record: RoadmapFile; cloud: boolean; failWrites: string[]; platform: UploadPlatform }
 
 /** One lab report: core values (ldl, hba1c) and labs from a small pool, each on no day, a past day or (rarely) a future one;
- *  where the platform asks the server for it (`requestFlags` undatedPrev: the web), sometimes the undated previous column. */
+ *  where the platform asks the server for it (`requestFlags` undatedPrev: the web), sometimes the undated previous column,
+ *  and some values on a second past day (`COLUMN`), a dated previous column the web's review can move (US-13 AC24). */
 function genLab(r: () => number, platform: UploadPlatform): UnifiedExtractionResult {
   const pick = <T,>(xs: readonly T[]): T => xs[Math.floor(r() * xs.length)];
   const coin = (p: number) => r() < p;
@@ -70,7 +73,8 @@ function genLab(r: () => number, platform: UploadPlatform): UnifiedExtractionRes
   // The server keeps an own day only before the report's full day (lab-extraction.ts `ownDay`): none on an undated
   // report, and a future one only before a future report date.
   const undatedPrev = requestFlags(platform).undatedPrev;
-  const own = () => (undatedPrev && coin(0.15) ? UNDATED_PREVIOUS : reportDate === null || coin(0.6) ? undefined : reportDate === REPORT_FUTURE && coin(0.5) ? FUTURE : PAST);
+  const past = () => (undatedPrev && coin(0.4) ? COLUMN : PAST);
+  const own = () => (undatedPrev && coin(0.15) ? UNDATED_PREVIOUS : reportDate === null || coin(0.6) ? undefined : reportDate === REPORT_FUTURE && coin(0.5) ? FUTURE : past());
   const values: ExtractedValue[] = [];
   const additionalValues: AdditionalLabValue[] = [];
   const n = 1 + Math.floor(r() * 4);
@@ -265,11 +269,12 @@ function checkView(s: UploadState, record: RoadmapFile, cloud: boolean, note: No
       }
     } else if (why === UPLOAD_TEXT.chooseDay) {
       for (const lf of review.labFiles.filter((f) => f.needsDay)) {
-        if (!daySection.has(lf.fileId)) fail('P4', `${lf.fileId} needs a day and no section asks it`);
-        const change: ChoiceChange = lf.needsTestDay ? { testDay: PICKED_DAY } : { previousDay: EARLY };
-        const after = transition(s, { type: 'chose', id: lf.fileId, change, now: NOW }).state;
+        // A dated previous column's day has no control yet (US-13 AC24: the web's matrix draws it in a later PR): its pick resolves it.
+        if ((lf.needsTestDay || lf.needsPreviousDay) && !daySection.has(lf.fileId)) fail('P4', `${lf.fileId} needs a day and no section asks it`);
+        const changes: ChoiceChange[] = lf.needsTestDay ? [{ testDay: PICKED_DAY }] : lf.needsPreviousDay ? [{ previousDay: EARLY }] : columnFixes(s, lf);
+        const after = changes.reduce<UploadState>((st, change) => transition(st, { type: 'chose', id: lf.fileId, change, now: NOW }).state, s);
         const again = uploadReview(after, record, NOW).labFiles.find((f) => f.fileId === lf.fileId)!;
-        if (lf.needsTestDay ? again.needsTestDay : again.needsPreviousDay) fail('P4', `choosing the day leaves ${lf.fileId} waiting`);
+        if (lf.needsTestDay ? again.needsTestDay : lf.needsPreviousDay ? again.needsPreviousDay : again.needsColumnDay) fail('P4', `choosing the day leaves ${lf.fileId} waiting`);
         // Never a day asked only for values the write refuses whatever the day (they sit under Not saved).
         const fi = review.labFiles.indexOf(lf);
         const dayless = review.classification.values.filter((v) => v.file === fi && !v.sent && lf.ticked.includes(v.ref));
@@ -323,10 +328,9 @@ function checkOracles(s: UploadState, review: UploadReview, record: RoadmapFile)
     const st = reads.get(lf.fileId)!;
     const x = st.extraction;
     const printed = ref[0] === 'v' ? x.values?.[Number(ref.slice(1))] : x.additionalValues?.[Number(ref.slice(1))];
-    // An undated previous column's value is on the day picked for it, by the review's rule; it has no printed day.
-    const undated = printed?.recordedAt === UNDATED_PREVIOUS;
-    const own = undated ? undefined : printed?.recordedAt;
-    const day = undated ? previousDay(st.choices.previousDay, lf.day, NOW)?.slice(0, 10) ?? null : own !== undefined ? own : lf.day?.slice(0, 10) ?? null;
+    // The value's day is the review's (`days`: its own, the test's, or the one picked for its column); an undated column's has no printed day.
+    const own = printed?.recordedAt === UNDATED_PREVIOUS ? undefined : printed?.recordedAt;
+    const day = lf.days[ref]?.slice(0, 10) ?? null;
     const edit = st.choices.edits[ref];
     const row = day ? importRow(x, ref, day, edit !== undefined && sent ? { edited: { value: edit } } : {}) : null;
     return { printed, own, row, slot: row ? slotKey(bulkRowTarget(row).slot, bulkRowTarget(row).metric, row.recordedAt) : null };
@@ -335,6 +339,9 @@ function checkOracles(s: UploadState, review: UploadReview, record: RoadmapFile)
   for (const v of values) {
     if (v.ref[0] === 'r') { if (v.group !== 'notSaved' || v.reason !== 'noUnit') fail('O', `${v.ref} refused row is ${v.group}`); continue; }
     if (!isOfferedRef(v.ref)) continue;
+    // A value whose dated column waits for its pick has no day (US-13 AC24): it is never written. Its group is the
+    // classifier's preview on the day it printed, which the review's days do not hold (open question, PR 1926).
+    if (review.labFiles[v.file].waits.includes(v.ref)) { if (v.sent && v.writes) fail('O', `${v.ref} waits for its column's day and is written`); continue; }
     const f = facts(v.file, v.ref, v.sent);
     if (v.group === 'saved') {
       if (!f.row || !f.slot) fail('O', `${v.ref} saved with no day`);
@@ -592,6 +599,8 @@ function genStep(r: () => number, run: Run, phase: { saves: number; chosen: numb
     if (day && day.kind === 'undated') return { type: 'event', e: { type: 'chose', id: day.fileId, change: { testDay: coin(0.8) ? PICKED_DAY : DAY }, now: NOW } };
     const prev = v.sections.find((x) => x.kind === 'undatedPrevious');
     if (prev && prev.kind === 'undatedPrevious') return { type: 'event', e: { type: 'chose', id: prev.fileId, change: { previousDay: coin(0.8) ? EARLY : PAST }, now: NOW } };
+    const column = run.last?.review.labFiles.find((f) => f.needsColumnDay);
+    if (column) return { type: 'event', e: { type: 'chose', id: column.fileId, change: columnFixes(s, column)[0], now: NOW } };
   }
   // Nothing in flight: Save as the person would, only when the view enables it; else give up the sequence.
   if (run.last?.view.save.enabled) return tapOrSave(r, run);
@@ -602,7 +611,7 @@ function genStep(r: () => number, run: Run, phase: { saves: number; chosen: numb
  * A change the list lets the person make: on a row it shows (tick, Replace with the row's held id or
  * a stale one, an edit), the test's day only while the undated section asks it, a document's fixes.
  * The previous column's day on the web, while the file prints one (the phone never asks for one): a past day before the
- * report's, one on or after it, a partial pick, or none.
+ * report's, one on or after it, a partial pick, or none; a dated previous column's day on the web (US-13 AC24).
  */
 function genChange(r: () => number, run: Run, fileId: string): ChoiceChange | null {
   const pick = <T,>(xs: readonly T[]): T => xs[Math.floor(r() * xs.length)];
@@ -622,6 +631,13 @@ function genChange(r: () => number, run: Run, fileId: string): ChoiceChange | nu
   if (asksDay && (!rows.length || coin(0.4))) return { testDay: pick([PICKED_DAY, DAY, PAST]) };
   const printsUndated = [...(f.status.extraction.values ?? []), ...(f.status.extraction.additionalValues ?? [])].some((x) => x.recordedAt === UNDATED_PREVIOUS);
   if (printsUndated && coin(0.3)) return { previousDay: pick([EARLY, PAST, PICKED_DAY, DAY, '2026-10', null]) };
+  // A dated previous column's day, on the web only (US-13 AC24): a valid early day, a partial pick that waits, or another column's printed day.
+  const columns = printedDays(f.status.extraction);
+  if (run.setup.platform === 'web' && columns.length && coin(0.25)) {
+    const columnDay = pick(columns);
+    const others = columns.filter((d) => d !== columnDay);
+    return { columnDay, day: pick([EARLY, '2026-10', ...(others.length ? [pick(others)] : [])]) };
+  }
   if (!rows.length) return null;
   const row = pick(rows);
   const k = r();
@@ -633,6 +649,18 @@ function genChange(r: () => number, run: Run, fileId: string): ChoiceChange | nu
     return row.replaces || coin(0.2) ? { replace: row.ref, correctsId } : { tick: row.ref, on: !row.ticked };
   }
   return { edit: row.ref, value: pick([2.0, 3.1, 52, 500, null, Number.NaN]) };
+}
+
+/** The real past days a report's values printed: each a dated column the web's review can move (US-13 AC24). */
+const printedDays = (x: UnifiedExtractionResult): string[] =>
+  [...new Set([...(x.values ?? []), ...(x.additionalValues ?? [])].map((v) => v.recordedAt).filter((d): d is string => !!d && d !== UNDATED_PREVIOUS && d <= NOW.slice(0, 10)))];
+
+/** A valid early day for each column a lab file waits on (`waits`, by the day each value printed). */
+function columnFixes(s: UploadState, lf: UploadReview['labFiles'][number]): ChoiceChange[] {
+  const f = 'files' in s ? s.files.find((x) => x.id === lf.fileId) : undefined;
+  if (f?.status.s !== 'read') return [];
+  const { extraction } = f.status;
+  return [...new Set(lf.waits.map((ref) => valueRecordedAt(extraction, ref)!))].map((columnDay) => ({ columnDay, day: EARLY }));
 }
 
 /** Save as the person taps it; sometimes another writer acts between the drawn page and the tap. */
@@ -702,6 +730,15 @@ const brief = (setup: Setup) => JSON.stringify({
 /** A Replace the run had chosen was just dropped by the door (its target deleted). */
 const lostBefore = (run: Run) => run.lostReplace;
 
+/** A row drawn to be written whose day is a column pick, not the day it printed (US-13 AC24). */
+const movedColumn = (view: UploadView, review: UploadReview, s: UploadState) => (view.reviewed ?? []).some((w) => {
+  const f = 'files' in s ? s.files.find((x) => x.id === w.file) : undefined;
+  const lf = review.labFiles.find((x) => x.fileId === w.file);
+  const printed = f?.status.s === 'read' ? valueRecordedAt(f.status.extraction, w.ref) : undefined;
+  const day = lf?.days[w.ref]?.slice(0, 10);
+  return !!printed && printed !== UNDATED_PREVIOUS && !!day && day !== printed && allRows(view).some((row) => row.fileId === w.file && row.ref === w.ref && row.day === day);
+});
+
 const valueRecordedAt = (x: UnifiedExtractionResult, ref: string) => (ref[0] === 'v' ? x.values?.[Number(ref.slice(1))] : x.additionalValues?.[Number(ref.slice(1))])?.recordedAt;
 
 const SEEDS = 3000;
@@ -711,7 +748,7 @@ describe('upload-view property: the list view against Save (US-52 AC8c, US-13 AC
     const gaps: Record<string, number[]> = {};
     const reach = {
       steps: 0, saved: 0, saveFailedThenSaved: 0, replacing: 0, corrections: 0, changedBeforeSave: 0, blockedFix: 0, blockedDay: 0, conflicts: 0, documents: 0,
-      merges: 0, replaceLost: 0, changedBeforeTap: 0, freedBeforeCommit: 0, skipped: 0, unstored: 0, archiveOnly: 0, copies: 0, alreadySaved: 0, futureDay: 0, undatedPrevious: 0, pressureRefused: 0, limitTicked: 0, labAsCore: 0, edited: 0, noOriginalSaved: 0,
+      merges: 0, replaceLost: 0, changedBeforeTap: 0, freedBeforeCommit: 0, skipped: 0, unstored: 0, archiveOnly: 0, copies: 0, alreadySaved: 0, futureDay: 0, undatedPrevious: 0, pressureRefused: 0, limitTicked: 0, labAsCore: 0, edited: 0, noOriginalSaved: 0, columnMoved: 0,
     };
     for (let seed = 1; seed <= SEEDS; seed++) {
       const r = mulberry32(seed);
@@ -730,6 +767,8 @@ describe('upload-view property: the list view against Save (US-52 AC8c, US-13 AC
         }
         reach.steps++;
         if (step.type === 'save' && run.s.phase === 'done') reach.corrections += run.corrections;
+        // A dated previous column's value moved by its pick, drawn to be written on the page Save ran from and saved (P7 checked its day).
+        if (step.type === 'save' && run.s.phase === 'done' && run.last && movedColumn(run.last.view, run.last.review, run.s)) reach.columnMoved++;
         if (run.s.phase === 'done') { reach.saved++; if (phase.saves) reach.saveFailedThenSaved++; if (run.s.files.some((f) => f.original === false)) reach.noOriginalSaved++; }
         if (step.type === 'save' && step.meanwhile) reach.changedBeforeSave++;
         if (step.type === 'tap') reach.changedBeforeTap++;
