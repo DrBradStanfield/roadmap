@@ -73,9 +73,7 @@ final class UploadRunnerTests: XCTestCase {
         let store = try RecordStore(folder: folder, engine: HealthEngine(), deviceId: "test")
         let letter = ##"{"classification":"clinic_letter","reportDate":null,"values":[],"additionalValues":[],"document":{"classification":"clinic_letter","title":"Letter","documentDate":null,"contentMarkdown":"# Letter","metadata":{}}}"##
         let bytes = Data("%PDF synthetic".utf8)
-        let original = LabFileReader.Original(bytes, mimeType: "application/pdf")
-        let choice = DocumentChoice(kind: .document, sourceFileName: "Letter.pdf", title: "Letter", documentDate: nil, mimeType: "application/pdf", contentHash: original.contentHash)
-        _ = await store.saveDocument(extractionJSON: letter, choice: choice, original: original)
+        try await store.fileForTest(letter, name: "Letter.pdf", title: "Letter", mimeType: "application/pdf", hash: LabFileReader.contentHash(bytes))
         serve { _ in Kit.read() }
         let record = store.recordJSON
         let runner = try runner(record: { record })

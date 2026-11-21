@@ -54,15 +54,21 @@ final class UploadDecisionPinsTests: XCTestCase {
     func testEachFilesSourceFileName() async throws {
         let engine = try HealthEngine()
         for row in try rows("naming") {
-            let document: LabFileReader.Document
-            if row["kind"] as? String == "zip" {
-                let zip = try XCTUnwrap(row["zip"] as? String), path = text(row["path"])
-                document = LabFileReader.Document(name: "\(zip)/\(path)", pages: [], truncated: false, zipMember: .init(zip: zip, path: path))
-            } else {
-                document = LabFileReader.Document(name: text(row["name"]), pages: [], truncated: false)
-            }
-            let named = await engine.named([document]).map(\.name)
-            XCTAssertEqual(named, [text(row["phone"])], document.name)
+            let file: [String: String] = row["kind"] as? String == "zip"
+                ? ["zip": try XCTUnwrap(row["zip"] as? String), "path": text(row["path"])]
+                : ["name": text(row["name"])]
+            let named = try await engine.sourceFileNames([file])
+            XCTAssertEqual(named, [text(row["phone"])], "\(file)")
         }
+    }
+}
+
+extension HealthEngine {
+    /// Each file named as health-core stores a `sourceFileName` (the fileNames door, the document dedup
+    /// key): a ZIP member ({zip, path}) by the web's zipMemberName, any other file ({name}) on one line
+    /// and cut to its cap.
+    func sourceFileNames(_ files: [[String: String]]) throws -> [String] {
+        let answer = try doorFileNamesJson(filesJson: String(decoding: try JSONEncoder().encode(files), as: UTF8.self))
+        return try JSONDecoder().decode([String].self, from: Data(answer.utf8))
     }
 }

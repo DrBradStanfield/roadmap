@@ -152,13 +152,11 @@ final class UploadPageTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: folder) }
         var drive = try Drive()
         let store = try RecordStore(folder: folder, engine: drive.engine, deviceId: "test")
-        let bytes = Data("%PDF synthetic".utf8)
-        let original = LabFileReader.Original(bytes, mimeType: "application/pdf")
-        let choice = DocumentChoice(kind: .document, sourceFileName: "Letter.pdf", title: "Letter", documentDate: nil, mimeType: "application/pdf", contentHash: original.contentHash)
-        _ = await store.saveDocument(extractionJSON: Self.letter(), choice: choice, original: original)
+        let hash = LabFileReader.contentHash(Data("%PDF synthetic".utf8))
+        try await store.fileForTest(Self.letter(), name: "Letter.pdf", title: "Letter", mimeType: "application/pdf", hash: hash)
         drive.record = store.recordJSON
         drive.pick(["k"])
-        drive.step(["type": "hashed", "run": drive.run, "id": "k", "hash": original.contentHash])
+        drive.step(["type": "hashed", "run": drive.run, "id": "k", "hash": hash])
         let page = try drive.page()
         XCTAssertEqual(page.summary, "Everything here is already in your record.")
         XCTAssertEqual(page.sections, [])
@@ -171,7 +169,7 @@ final class UploadPageTests: XCTestCase {
         var drive = try Drive()
         drive.pick(["letter"])
         drive.read("letter", Self.letter())
-        drive.step(UploadAction.save.event(now: Self.now))
+        drive.step(UploadAction.saveEvent(promised: try drive.page().reviewed))
         drive.step(["type": "saveFailed", "run": drive.run, "attempt": 1, "message": "Not saved."])
         let page = try drive.page()
         XCTAssertEqual(page.save.error, "Not saved.")
@@ -183,7 +181,7 @@ final class UploadPageTests: XCTestCase {
         var drive = try Drive()
         drive.pick(["letter"])
         drive.read("letter", Self.letter())
-        drive.step(UploadAction.save.event(now: Self.now))
+        drive.step(UploadAction.saveEvent(promised: try drive.page().reviewed))
         drive.step(UploadSession.event(.success(.init(values: 0, documents: 1, archived: 0, unstored: 1)), run: drive.run, attempt: 1))
         let page = try drive.page()
         XCTAssertEqual(page.done?.line, "Saved 1 document.")
@@ -228,7 +226,7 @@ final class UploadPageTests: XCTestCase {
         var saving = try Drive()
         saving.pick(["letter"])
         saving.read("letter", Self.letter())
-        saving.step(UploadAction.save.event(now: Self.now))
+        saving.step(UploadAction.saveEvent(promised: try saving.page().reviewed))
         XCTAssertEqual(try saving.page().closeEnabled, false, "Close waits while the save runs")
     }
 
@@ -262,7 +260,7 @@ final class UploadPageTests: XCTestCase {
         drive.pick(["lab"])
         let report = #"{"classification":"lab_report","reportDate":"2026-10-01","values":[\#(Self.ldl)],"additionalValues":[],"unreadValues":[{"name":"Ferritin","reason":"unreadable"}],"document":null}"#
         drive.read("lab", report)
-        drive.step(UploadAction.save.event(now: Self.now))
+        drive.step(UploadAction.saveEvent(promised: try drive.page().reviewed))
         drive.step(UploadSession.event(.success(.init(values: 1, documents: 1, archived: 0, unstored: nil)), run: drive.run, attempt: 1))
         let page = try drive.page()
         XCTAssertEqual(page.done?.line, "Saved 1 value and 1 document.")
@@ -322,7 +320,7 @@ final class UploadPageTests: XCTestCase {
         var drive = try Drive()
         drive.pick(["lab"])
         drive.read("lab", Self.lab(values: Self.ldl))
-        drive.step(UploadAction.save.event(now: Self.now))
+        drive.step(UploadAction.saveEvent(promised: try drive.page().reviewed))
         let line = "Blood pressure not saved: the top number (systolic) must be higher than the bottom number (diastolic). Check the report, then enter it again."
         drive.step(UploadSession.event(.success(.init(values: 0, documents: 0, archived: 0, unstored: nil, refused: [["line": line], ["label": "Ferritin", "reason": "unit"]])), run: drive.run, attempt: 1))
         let page = try drive.page()
@@ -374,5 +372,22 @@ final class UploadPageTests: XCTestCase {
         page = try drive.page()
         XCTAssertNil(page.stop)
         XCTAssertEqual(Set(page.files.rows.filter { ["busy", "slow"].contains($0.fileId) }.map(\.status)), ["Not read: you stopped the upload."])
+    }
+}
+
+extension RecordStore {
+    /// Test seed: one document filed onto the phone's record through the engine's `documentSave` door,
+    /// as the per-document Save of builds 12 and 13 filed it (no original off-cloud). The shared upload
+    /// must still know such a row. `hash`: the file's 'sha256-<hex>'; nil for a legacy hashless row.
+    func fileForTest(_ extraction: String, name: String, title: String, mimeType: String = "", hash: String? = nil) async throws {
+        var choice: [String: Any] = ["kind": "document", "sourceFileName": name, "title": title, "mimeType": mimeType]
+        if let hash { choice["contentHash"] = hash }
+        let before = recordJSON
+        let answer = try await engine.doorDocumentSave(recordJson: before, extractionJson: extraction, choiceJson: EngineNatives.json(choice), original: nil,
+                                                       erase: "", nowIso: Date.now.formatted(HealthEngine.iso), deviceId: deviceId)
+        let saved = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(answer.utf8)) as? [String: Any])
+        let next = try XCTUnwrap(saved["record"] as? String, "not filed: \(saved["message"] ?? "")")
+        let written = try await commitPhoneDocument(next, over: before)
+        XCTAssertTrue(written)
     }
 }

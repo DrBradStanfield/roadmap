@@ -148,7 +148,7 @@ final class AppChatLabTests: XCTestCase {
         XCTAssertEqual(String(decoding: AppAttestClient.clientData(path: "/api/app/v1/chat", body: body), as: UTF8.self), "POST\n/api/app/v1/chat\n\(hash)")
     }
 
-    // MARK: AC7/AC8: lab review and the write
+    // MARK: AC8: the lab import, and originals
 
     private let extraction = #"""
     {"classification":"lab_report","reportDate":"2026-10-01",
@@ -158,22 +158,9 @@ final class AppChatLabTests: XCTestCase {
      "refusedValues":[{"metric":"creatinine","value":80,"unit":"","reason":"unit unknown"}]}
     """#
 
-    func testTheLabReviewAndSaveRunTheWebsBulkRule() throws {
+    func testTheLabImportRunsTheWebsBulkRule() throws {
         let engine = try HealthEngine()
-        let review = try engine.blocking { [now, extraction] in try $0.labReview(extractionJSON: extraction, now: now) }
-        XCTAssertEqual(review.reportDay, "2026-10-01")
-        XCTAssertEqual(review.items.map(\.ref), ["v0", "v1", "a0"])
-        XCTAssertEqual(review.items[1].day, "2025-04-02")
         let held = try record(engine, .add(metric: "ldl", value: 2.5, day: "2026-10-01"))
-        let groups = try XCTUnwrap(engine.blocking { [now, extraction] in
-            try $0.labReviewGroups(recordJSON: held, extractionJSON: extraction, ticked: ["v0", "v1", "a0"], reportDay: "2026-10-01", now: now, deviceId: "test") })
-        XCTAssertEqual(groups.notSaved?.lines, ["Creatinine: no unit was printed"])
-        // The held LDL is a row that is never written (Q2a); Save sends the rest.
-        XCTAssertNotNil(groups.conflict("v0"))
-        XCTAssertEqual(groups.saveRefs, ["a0", "v1"], "in the order Save must send them")
-        let summary = try engine.blocking { [now, extraction] in try $0.labSaveSummary(recordJSON: held, extractionJSON: extraction, refs: ["v0", "v1", "a0"], reportDay: "2026-10-01", now: now, deviceId: "test") }.get()
-        XCTAssertEqual(summary, LabSaveSummary(saved: 2, skipped: 1, refused: [], sameDay: []))
-
         let outcome = try engine.blocking { [now, extraction] in try $0.apply(.labImport(extractionJSON: extraction, refs: ["v0", "v1", "a0"], reportDay: "2026-10-01"), to: held, now: now, deviceId: "test") }
         XCTAssertTrue(outcome.ok, outcome.message ?? "")
         let file = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(try XCTUnwrap(outcome.record).utf8)) as? [String: Any])
@@ -185,149 +172,12 @@ final class AppChatLabTests: XCTestCase {
         XCTAssertEqual(imported.filter { $0["core"] as? Bool == true }.count, 1)
         XCTAssertEqual(rows.count, 3)
         XCTAssertFalse((file["measurements"] as? [[String: Any]] ?? []).contains { $0["source"] as? String == "lab_import" })
-
-        XCTAssertThrowsError(try engine.blocking { [now, extraction] in try $0.labSaveSummary(recordJSON: held, extractionJSON: extraction, refs: ["v0"], reportDay: "2099-01-01", now: now, deviceId: "test") }.get())
     }
 
-    /// US-12 AC19 (break-it pass 2026-11-01): HDL printed "> 60" and Lp(a) "<5" said only
-    /// "2 values could not be read". The review now names them, with why.
-    func testEachValueNotReadIsNamedWithWhy() throws {
-        let engine = try HealthEngine()
-        let unread = #"""
-        {"classification":"lab_report","reportDate":"2026-10-01",
-         "values":[{"metric":"ldl","valueSI":3.1,"displayValue":3.1,"displayUnit":"mmol/L","displaySystem":"si","confidence":"high"}],
-         "additionalValues":[], "droppedValueCount":4,
-         "unreadValues":[{"name":"hdl","reason":"unreadable"},{"name":"lpa","reason":"unreadable"},{"name":"hdl","reason":"unreadable"}]}
-        """#
-        let review = try engine.blocking { [now] in try $0.labReview(extractionJSON: unread, now: now) }
-        let groups = try XCTUnwrap(engine.blocking { [now] in
-            try $0.labReviewGroups(recordJSON: "", extractionJSON: unread, ticked: ["v0"], reportDay: "2026-10-01", now: now, deviceId: "test") })
-        // Each label once (review R1); tests with the same reason share a line (US-13 AC13's
-        // words). A limit is saved since US-12 AC20, so it is never here.
-        XCTAssertEqual(groups.notSaved?.title, "4 values not saved")
-        XCTAssertEqual(groups.notSaved?.lines, ["HDL Cholesterol, Lp(a): could not be read", "1 other value could not be read"])
-        XCTAssertEqual(review.items.map(\.label), ["LDL Cholesterol"])
-    }
-
-    // MARK: US-13 AC13: the review's groups
-
-    /// A sure value is hidden behind Show all and still saves: the engine writes it. Fails if a
-    /// hidden value stopped saving.
-    func testAHiddenSureValueKeepsItsTickAndSaves_US13_AC13() throws {
-        let engine = try HealthEngine()
-        let review = try engine.blocking { [now, extraction] in try $0.labReview(extractionJSON: extraction, now: now) }
-        // Every value ticked but one the extractor asked about, as a review opens.
-        let ticked = Set(review.items.filter { $0.question == nil }.map(\.ref))
-        let groups = try XCTUnwrap(engine.blocking { [now, extraction] in
-            try $0.labReviewGroups(recordJSON: "", extractionJSON: extraction, ticked: ticked, reportDay: "2026-10-01", now: now, deviceId: "test") })
-        XCTAssertEqual(groups.summary, "Found 3 blood test values")
-        XCTAssertEqual(groups.rows("sure", of: review).map(\.ref), ["v0", "a0"], "no row unless Show all")
-        XCTAssertEqual(groups.rows("unsure", of: review).map(\.ref), ["v1"])
-        XCTAssertEqual(groups.check?.title, "Check this value")
-        XCTAssertEqual(groups.sure, LabReviewGroups.Sure(willSave: "2 values will be saved", showAll: "Show all 2", hide: "Hide"))
-        XCTAssertEqual(groups.save, "Save 3 values")
-        XCTAssertEqual(groups.saveRefs, ["v0", "a0", "v1"], "the engine writes every ticked sure value, hidden ones included, in send order")
-    }
-
-    /// The not-saved lines are the engine's, in the person's words: no raw key and no text
-    /// written for assistants (US-52 AC8, H400). Fails if a key reached the screen.
-    func testNotSavedNamesNoKey_US13_AC13() throws {
-        let engine = try HealthEngine()
-        // Units neither test takes: a white-cell % is stored as its own test since US-21 AC28.
-        let refused = #"""
-        {"classification":"lab_report","reportDate":"2026-10-01","values":[],
-         "additionalValues":[{"name":"rdw_sd","value":42,"unit":"mg/L"},{"name":"immature_granulocytes","value":0.4,"unit":"mg/L"}]}
-        """#
-        let groups = try XCTUnwrap(engine.blocking { [now] in
-            try $0.labReviewGroups(recordJSON: "", extractionJSON: refused, ticked: ["a0", "a1"], reportDay: "2026-10-01", now: now, deviceId: "test") })
-        let lines = try XCTUnwrap(groups.notSaved?.lines)
-        XCTAssertFalse(lines.isEmpty)
-        for line in lines + [groups.notSaved?.title ?? "", groups.summary] {
-            XCTAssertFalse(line.contains("_"), line)
-            XCTAssertFalse(line.contains("Do not"), line)
-        }
-        XCTAssertEqual(groups.saveRefs, [])
-        XCTAssertNil(groups.save, "nothing to save: no Save (D3)")
-        // Ticked values are named by the save's own refusals; nothing of the extraction's own is omitted (AC8b).
-        XCTAssertEqual(groups.omitted, [])
-    }
-
-    /// The groups decode from the engine's JSON, with null sections absent.
-    func testTheGroupsDecode_US13_AC13() throws {
-        let json = #"""
-        {"summary":"Found 1 blood test value","items":[{"ref":"v0","group":"unsure","reasons":["conflict"],"conflict":"Kept."}],
-         "check":{"title":"Check this value","footer":"F"},"sure":null,"alreadySaved":null,"notSaved":null,"omitted":[],"saveRefs":[],"save":"Save 0 values"}
-        """#
-        let groups = try JSONDecoder().decode(LabReviewGroups.self, from: Data(json.utf8))
-        XCTAssertEqual(groups.items, [LabReviewGroups.Item(ref: "v0", group: "unsure", conflict: "Kept.", refusal: nil)])
-        XCTAssertEqual(groups.check?.title, "Check this value")
-        XCTAssertNil(groups.sure)
-        XCTAssertEqual(groups.conflict("v0"), "Kept.")
-    }
-
-    /// An engine without the groups door still names what it did not read, as before.
-    func testAnOlderEnginesNotSavedListStillShows_US52_AC8() throws {
-        let json = #"{"isLabReport":true,"reportDay":"2026-10-01","items":[],"document":null,"notSaved":[{"label":"Creatinine","reason":"unit unknown"}],"unreadCount":2}"#
-        let review = try JSONDecoder().decode(LabReview.self, from: Data(json.utf8))
-        XCTAssertEqual(review.legacyNotSaved, ["Creatinine: unit unknown", "2 values could not be read."])
-    }
-
-    /// A value outside its range shows the save's own refusal on its row (US-52 AC8).
-    func testAnOutOfRangeValueSaysWhyOnItsRow_US52_AC8() throws {
-        let engine = try HealthEngine()
-        let ldl = #"""
-        {"classification":"lab_report","reportDate":"2026-10-01",
-         "values":[{"metric":"ldl","valueSI":500,"displayValue":500,"displayUnit":"mmol/L","displaySystem":"si","confidence":"high"}],
-         "additionalValues":[{"name":"Ferritin","value":85,"unit":"µg/L"}]}
-        """#
-        let groups = try XCTUnwrap(engine.blocking { [now] in
-            try $0.labReviewGroups(recordJSON: "", extractionJSON: ldl, ticked: ["v0", "a0"], reportDay: "2026-10-01", now: now, deviceId: "test") })
-        let refusal = try XCTUnwrap(groups.refusal("v0"))
-        let start = try record(engine)
-        let summary = try engine.blocking { [now] in try $0.labSaveSummary(recordJSON: start, extractionJSON: ldl, refs: ["v0", "a0"], reportDay: "2026-10-01", now: now, deviceId: "test") }.get()
-        XCTAssertEqual(summary.saved, 1)
-        // The row and the save's receipt say the same engine words (the receipt's whole line, else its
-        // "Not saved," form, as the old receipt drew it).
-        XCTAssertEqual(summary.refused.map { $0.line ?? "Not saved, \($0.label): \($0.message)" }, [refusal], "the row and the receipt say the same words")
-        XCTAssertEqual(groups.saveRefs, ["a0"])
-    }
-
-    /// A reading displaced by another of the same test that day reaches save all's notes in the
-    /// review's words; an older engine's summary without it still decodes (US-52 AC8b).
-    func testADisplacedReadingIsInTheSummary_US52_AC8b() throws {
-        let engine = try HealthEngine()
-        let two = #"""
-        {"classification":"lab_report","reportDate":"2026-10-01","additionalValues":[],
-         "values":[{"metric":"ldl","valueSI":3.1,"displayValue":3.1,"displayUnit":"mmol/L","displaySystem":"si","confidence":"high"},
-                   {"metric":"ldl","valueSI":2.8,"displayValue":2.8,"displayUnit":"mmol/L","displaySystem":"si","confidence":"high","recordedAt":"2026-09-01"}]}
-        """#
-        let start = try record(engine)
-        let summary = try engine.blocking { [now] in try $0.labSaveSummary(recordJSON: start, extractionJSON: two, refs: ["v0", "v1"], reportDay: "2026-09-01", now: now, deviceId: "test") }.get()
-        XCTAssertEqual(summary, LabSaveSummary(saved: 1, skipped: 0, refused: [], sameDay: ["LDL Cholesterol: another reading of this test is on the same day"]))
-        let older = try JSONDecoder().decode(LabSaveSummary.self, from: Data(#"{"saved":1,"skipped":0,"refused":[]}"#.utf8))
-        XCTAssertNil(older.sameDay)
-    }
-
-    // MARK: AC13d: documents
-
-    func testALetterGetsTheWebsDocumentCard() throws {
-        let engine = try HealthEngine()
-        let letter = #"{"classification":"discharge_summary","reportDate":null,"values":[],"additionalValues":[],"document":{"classification":"discharge_summary","title":"Discharge","documentDate":"2026-09","contentMarkdown":"Short text","metadata":{}}}"#
-        let start = try record(engine)
-        let review = try engine.blocking { [now] in try $0.labReview(extractionJSON: letter, now: now, recordJSON: start, sourceFileName: "d.pdf", deviceId: "test") }
-        XCTAssertFalse(review.isLabReport)
-        XCTAssertEqual(review.document, LabReview.Document(classification: "discharge_summary", title: "Discharge", documentDate: nil, preview: "Short text", alreadySaved: false, held: false))
-        XCTAssertNil(try engine.blocking { [now, extraction] in try $0.labReview(extractionJSON: extraction, now: now) }.document)
-    }
-
-    /// A read file keeps its original bytes; a photo, though it goes as a file ("Photo.jpg"), is
-    /// never offered as an original (US-52 AC13e: the consent screen says only a report from Files is kept).
-    func testAReadFileKeepsItsOriginalBytes() async throws {
-        let pdf = UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: 200, height: 200)).pdfData { $0.beginPage() }
-        let read = try await LabFileReader.documents(from: pdf, name: "a.pdf")
-        let document = try XCTUnwrap(read.first)
-        XCTAssertEqual(document.original?.verifiedData(), pdf)
-        XCTAssertEqual(document.original?.mimeType, "application/pdf")
+    /// A photo, though it goes as a file ("Photo.jpg"), is never offered as an original (US-52
+    /// AC13e: the consent screen says only a report from Files is kept). A file's original: the
+    /// folder test below.
+    func testAPhotoIsNeverOfferedAsAnOriginal() async throws {
         let image = UIGraphicsImageRenderer(size: CGSize(width: 4, height: 4)).image { _ in }
         let photo = try await LabFileReader.picked(photo: try XCTUnwrap(image.jpegData(compressionQuality: 0.9)))
         // Picked `original: false`; the engine then stores none (UploadSessionTests' cloud test).
@@ -335,20 +185,17 @@ final class AppChatLabTests: XCTestCase {
     }
 
     /// A ZIP member's name is the web's zipMemberName, cap and hash included, so the
-    /// document dedup key (`sourceFileName`) is one on the phone and the web. One call per ZIP.
+    /// document dedup key (`sourceFileName`) is one on the phone and the web.
     @MainActor
     func testAZipMembersNameIsTheWebsZipMemberName() async throws {
         let engine = try HealthEngine()
-        let image = UIGraphicsImageRenderer(size: CGSize(width: 4, height: 4)).pngData { _ in }
         let long = String(repeating: "d", count: 260) + "/letter.png"
-        let zip = Self.zip([("a/b.png", image, false), (long, image, false)])
-        let names = await engine.named(try await LabFileReader.documents(from: zip, name: "Records.zip")).map(\.name)
+        let names = try await engine.sourceFileNames([["zip": "Records.zip", "path": "a/b.png"], ["zip": "Records.zip", "path": long]])
         // What health-core's zipMemberName gives in Node for these (computed 2026-10-22):
         // the long one cut to 255 with the FNV-1a hash of the whole name, its end kept.
         XCTAssertEqual(names, ["Records.zip/a/b.png", "~635451cb/" + String(repeating: "d", count: 234) + "/letter.png"])
         // R7: any other file's name goes through the same cleanup (one line, capped), in the same call.
-        let plain = LabFileReader.Document(name: "Bad\u{7}\nname.pdf", pages: [], truncated: false)
-        let cleaned = await engine.named([plain]).map(\.name)
+        let cleaned = try await engine.sourceFileNames([["name": "Bad\u{7}\nname.pdf"]])
         XCTAssertEqual(cleaned, ["Bad name.pdf"])
     }
 

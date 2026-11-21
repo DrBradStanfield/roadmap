@@ -145,7 +145,7 @@ extension LabFileReader {
         func convert(_ id: String, rules: Rules) throws -> Document {
             let (name, bytes, member, source) = try read(id)
             let (redrawn, made) = member == nil ? records.withLock { ($0.items[id]?.redrawn ?? false, $0.items[id]?.made) } : (false, nil)
-            var doc: Document
+            let doc: Document
             if let made {
                 // A scan: the pages the size check saw, as they are (the rules still judge the file).
                 guard rules.file(name, bytes.count) == .keep else { throw Failure.tooLarge(name) }
@@ -153,7 +153,6 @@ extension LabFileReader {
             } else {
                 doc = try LabFileReader.document(from: bytes, name: name, rules: rules, redrawn: redrawn)
             }
-            doc.zipMember = member
             let pages = doc.pages
             beforeKeeping?(id)
             records.withLock { records in

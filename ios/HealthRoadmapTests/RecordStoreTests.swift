@@ -83,13 +83,7 @@ final class RecordStoreTests: XCTestCase {
         XCTAssertEqual(store.ownSaves, 1, "an edit no sheet opened (Apple Health) does not")
         await XCTAssertSaved(await store.apply(.units("conventional")))
         XCTAssertEqual(store.ownSaves, 1, "a units choice does not")
-        let extraction = #"""
-        {"classification":"lab_report","reportDate":"2026-10-01",
-         "values":[{"metric":"ldl","valueSI":3.1,"displayValue":3.1,"displayUnit":"mmol/L","displaySystem":"si","confidence":"high"}],
-         "additionalValues":[], "refusedValues":[]}
-        """#
-        _ = try (await store.importLabs(extractionJSON: extraction, refs: ["v0"], reportDay: "2026-10-01")).get()
-        XCTAssertEqual(store.ownSaves, 2, "a saved lab report counts once")
+        // A lab report's Save: UploadSessionGuardsTests (the shared upload's one Save).
     }
 
     /// Review R5: an edit the engine finds changes nothing is not a save.
@@ -644,43 +638,28 @@ final class RecordStoreTests: XCTestCase {
         await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 81, day: "2026-10-02")), "a sheet opened after the erase saves")
     }
 
-    /// US-25 AC11g, the document path: a lab review pinned before an erase of the phone's file
-    /// files no document text into the erased record. Both cloud erases are nil, so only the
-    /// pin's eraseEpoch and erase count (Mark.holds) tell the erase apart.
-    func testADocumentFromAReviewOpenedBeforeAPhoneEraseIsRefused_US25_AC11g() async throws {
+    /// US-25 AC11g: an upload opened before an erase of the phone's file is refused as a whole,
+    /// with applyInTurn's words, and nothing is written. Both cloud erases are nil, so only the
+    /// pin's eraseEpoch and erase count (Mark.holds) tell the erase apart. A real saving state, so
+    /// only the store's guard can refuse it.
+    func testAnUploadOpenedBeforeAPhoneEraseIsRefused_US25_AC11g() async throws {
         let store = try store()
-        store.pinScreen() // the review opens on the pre-erase record
+        store.pinScreen() // the upload opens on the pre-erase record
+        defer { store.unpinScreen() }
+        let opened = store.pinned ?? store.screen
+        var drive = try UploadPageTests.Drive(record: store.recordJSON)
+        drive.pick(["lab", "letter"])
+        drive.read("lab", UploadPageTests.lab(values: UploadPageTests.ldl))
+        drive.read("letter", UploadPageTests.letter())
+        drive.step(UploadAction.saveEvent(promised: try drive.page().reviewed))
         guard case .erased = await store.erasePhone(historyJSON: nil, keepChat: { _, _ in true }) else { return XCTFail("not erased") }
         let erased = try String(contentsOf: file, encoding: .utf8)
-        let letter = ##"{"classification":"clinic_letter","reportDate":null,"values":[],"additionalValues":[],"document":{"classification":"clinic_letter","title":"Cardiology follow-up","documentDate":null,"contentMarkdown":"# Letter","metadata":{}}}"##
-        let choice = DocumentChoice(kind: .document, sourceFileName: "Letter.pdf", title: "Cardiology follow-up", documentDate: nil, mimeType: "application/pdf", contentHash: "")
-        guard case .refused = await store.saveDocument(extractionJSON: letter, choice: choice, original: nil) else {
-            return XCTFail("the old review's document must not land in the erased record")
-        }
-        XCTAssertEqual(try String(contentsOf: file, encoding: .utf8), erased, "nothing written")
-        XCTAssertFalse(store.recordJSON.contains("# Letter"))
-        store.unpinScreen()
-    }
-
-    /// US-25 AC11g, the lab path: a lab review pinned before an erase of the phone's file is
-    /// refused as a whole, with applyInTurn's words, and nothing is written. A behaviour pin:
-    /// applyInTurn already refused the values; the guard now refuses before the summary is read.
-    func testALabImportFromAReviewOpenedBeforeAPhoneEraseIsRefused_US25_AC11g() async throws {
-        let store = try store()
-        store.pinScreen() // the review opens on the pre-erase record
-        guard case .erased = await store.erasePhone(historyJSON: nil, keepChat: { _, _ in true }) else { return XCTFail("not erased") }
-        let erased = try String(contentsOf: file, encoding: .utf8)
-        let extraction = #"""
-        {"classification":"lab_report","reportDate":"2026-10-01",
-         "values":[{"metric":"ldl","valueSI":3.1,"displayValue":3.1,"displayUnit":"mmol/L","displaySystem":"si","confidence":"high"}],
-         "additionalValues":[], "refusedValues":[]}
-        """#
-        guard case .failure(let refusal) = await store.importLabs(extractionJSON: extraction, refs: ["v0"], reportDay: "2026-10-01") else {
-            return XCTFail("the old review's values must not land in the erased record")
+        guard case .failure(let refusal) = await store.saveUpload(state: drive.state, originals: [:], read: { _ in nil }, as: opened) else {
+            return XCTFail("the old upload's values must not land in the erased record")
         }
         XCTAssertEqual(refusal.message, RecordStore.recordChanged)
         XCTAssertEqual(try String(contentsOf: file, encoding: .utf8), erased, "nothing written")
-        store.unpinScreen()
+        XCTAssertFalse(store.recordJSON.contains("Walk daily"))
     }
 
     func testTheMasterSwitchClearsEveryChoice() async throws {
@@ -831,31 +810,6 @@ final class RecordStoreTests: XCTestCase {
         await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 80, day: "2026-10-20"), as: seen))
         let refused = await store.chooseLpaUnit("g/L").value
         XCTAssertEqual(refused, "Lp(a) is in nmol/L, mg/dL or mg/L.")
-    }
-
-    /// US-52 AC13d: with no cloud, a letter is a text-only row, as the web saves one
-    /// off-cloud: no original, its text kept, and since US-14 AC10 the file's hash kept, so a later
-    /// upload of the same file knows it. On disk before the screen.
-    func testALetterOnThePhoneAloneIsATextOnlyRow() async throws {
-        let store = try store()
-        let letter = ##"{"classification":"clinic_letter","reportDate":null,"values":[],"additionalValues":[],"document":{"classification":"clinic_letter","title":"Cardiology follow-up","documentDate":null,"contentMarkdown":"# Letter","metadata":{}}}"##
-        let original = LabFileReader.Original(Data("%PDF".utf8), mimeType: "application/pdf")
-        let choice = DocumentChoice(kind: .document, sourceFileName: "Letter.pdf", title: "Cardiology follow-up", documentDate: nil, mimeType: "application/pdf", contentHash: original.contentHash)
-        let result = await store.saveDocument(extractionJSON: letter, choice: choice, original: original)
-        XCTAssertEqual(result, .saved(count: 1, stored: nil, unstored: 0, stale: false))
-        let onDisk = try JSONSerialization.jsonObject(with: Data(contentsOf: file)) as? [String: Any]
-        let row = try XCTUnwrap((onDisk?["documents"] as? [[String: Any]])?.first)
-        XCTAssertEqual(row["fileRef"] as? String, "")
-        XCTAssertEqual(row["contentHash"] as? String, original.contentHash)
-        XCTAssertEqual(original.contentHash, "sha256-" + SHA256.hash(data: Data("%PDF".utf8)).map { String(format: "%02x", $0) }.joined())
-        XCTAssertEqual(row["mimeType"] as? String, "")
-        XCTAssertEqual(row["extractedText"] as? String, "# Letter")
-        XCTAssertTrue(row["date"] is NSNull)
-        XCTAssertEqual(try String(contentsOf: file, encoding: .utf8), store.recordJSON)
-        // The review of the same file now says it is already saved (the web's sourceFileName dedup).
-        let engine = try HealthEngine()
-        let shown = store.recordJSON
-        XCTAssertEqual(try engine.blocking { try $0.labReview(extractionJSON: letter, now: .now, recordJSON: shown, sourceFileName: "Letter.pdf", deviceId: "test") }.document?.alreadySaved, true)
     }
 
     /// US-52 AC13d (R5): a document save's record lands on the phone's file only over the

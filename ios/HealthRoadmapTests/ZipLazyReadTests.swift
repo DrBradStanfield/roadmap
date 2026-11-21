@@ -90,9 +90,7 @@ final class ZipLazyReadTests: XCTestCase {
         XCTAssertEqual(members.map(\.entry.name), ["a.png", "b.png"])
         let first = try held.convert(members[0].id, rules: .swift)
         XCTAssertEqual(first.name, "labs.zip/a.png")
-        XCTAssertEqual(first.zipMember?.zip, "labs.zip")
-        XCTAssertEqual(first.zipMember?.path, "a.png")
-        XCTAssertEqual(first.original?.verifiedData(), Self.png)
+        XCTAssertEqual(held.original(members[0].id), Self.png)
         XCTAssertEqual(try held.hash(members[0].id), LabFileReader.contentHash(Self.png))
         XCTAssertThrowsError(try held.convert(members[1].id, rules: .swift)) { XCTAssertEqual(String(describing: $0), "notAZip") }
     }
@@ -176,7 +174,6 @@ final class ZipLazyReadTests: XCTestCase {
         let held = LabFileReader.Held()
         held.hold(Self.png, as: "p", name: "scan.png")
         XCTAssertEqual(try held.convert("p", rules: .swift).pages.map(\.type), ["image"])
-        XCTAssertNil(try held.convert("p", rules: .swift).zipMember)
         held.hold(Self.zip([.init("a.png", Self.png)]), as: "z", name: "labs.zip")
         let listed = try held.list("z", rules: .swift)
         let member = try XCTUnwrap(listed.first)
