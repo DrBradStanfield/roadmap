@@ -36,12 +36,14 @@ export type ListStatus =
 /**
  * `key`: `fileId:ref`, the key Save's blockers name. `section`: its day control's key (`dayKey`), from the day it printed.
  * `typed`: text held in its input. `shown`: its number in the person's unit. `error`: its fault's words, ticked or not.
- * `replaces`: a conflict's held row, for Replace; `held` that row's value as readers show it.
+ * `replaces`: a conflict's held row, for Replace; `held` that row's value as readers show it. `input`: whether its input
+ * takes typing, the rule `choose` keeps: `none` for a core metric the units table lacks, whose number can never be written,
+ * so its only control is its tick. Fixed per row, whatever its status.
  */
 export interface ListRow {
   key: string; fileId: string; ref: string; label: string; section: string;
   status: ListStatus; caption: string | null; saves: boolean;
-  ticked: boolean; typed: TypedText | null; shown: ShownValue; error: string | null;
+  ticked: boolean; typed: TypedText | null; shown: ShownValue; error: string | null; input: 'number' | 'none';
   replaces: string | null; replacing: boolean; held: string | null;
   attention: boolean;
 }
@@ -116,7 +118,7 @@ export function uploadList(s: UploadState, record: RoadmapFile, now: string, rev
     return {
       key: `${c.fileId}:${c.ref}`, fileId: c.fileId, ref: c.ref, label: c.v.label, section, status, caption: captionOf(status, error),
       saves: c.v.sent && c.v.writes && (!promised || promised.has(`${c.fileId}:${c.ref}`)),
-      ticked: c.ticked, typed: c.typed,
+      ticked: c.ticked, typed: c.typed, input: c.at.kind === 'core' && !isCellMetric(c.at.value.metric) ? 'none' : 'number',
       shown: shownValue(c.at, c.edit, c.at.kind === 'core' && isCellMetric(c.at.value.metric) ? unitOf(c.at.value.metric) : 'si'), error,
       replaces, replacing, held: heldText(replaces ? rowsById.get(replaces) : undefined, record),
       attention: (c.v.group === 'unsure' && c.v.reasons.length > 0) || error !== null || touched,
