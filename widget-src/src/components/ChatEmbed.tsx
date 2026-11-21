@@ -1,5 +1,5 @@
 /**
- * ChatEmbed — always-expanded inline chat panel. Thread list lives in a
+ * ChatEmbed — always-expanded inline chat panel. The chat history list lives in a
  * hamburger-triggered drawer at all breakpoints.
  *
  * Conversations load lazily via IntersectionObserver — fires only when the

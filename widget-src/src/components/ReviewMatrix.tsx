@@ -85,7 +85,7 @@ export function ReviewMatrix({
 
         {matrix.additionalRows.length > 0 && (
           <>
-            <div className="bt-section-divider">Additional Lab Values</div>
+            <div className="bt-section-divider">Additional blood tests</div>
             {matrix.additionalRows.map((row, i) => (
               <MatrixRowView
                 key={row.nameKey}

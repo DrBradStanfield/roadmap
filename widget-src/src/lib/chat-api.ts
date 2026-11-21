@@ -27,7 +27,7 @@ import { getChatArticle } from './assistant-config';
 export interface ChatConversation {
   id: string;
   title: string;
-  /** Absent on a thread the chat listed itself as its first reply landed (chat-turn.ts `done`). */
+  /** Absent on a conversation the chat listed itself as its first reply landed (chat-turn.ts `done`). */
   updatedAt?: string;
   createdAt?: string;
 }
@@ -53,7 +53,7 @@ export interface SendMessageResult {
   proposedEdits?: ProposedEdit[];
   /** Parts of the reply's edits refused as unreadable, with the iPhone's words (US-67 AC2). */
   editRefusals?: ChatEditRefusal[];
-  /** A subscription change for the customer to confirm (US-59; commerce, logged in). */
+  /** A subscription change for the customer to confirm (US-59; commerce, signed in). */
   subscriptionCard?: SubscriptionCard;
 }
 

@@ -140,7 +140,7 @@ export async function sendMessage(
   conversationId?: string | null,
   guestInputs?: Record<string, unknown> | null,
   // The shared hook's history, delta callback and edit flag: this transport
-  // reads its history from the store, and the hook's copy (the thread on
+  // reads its history from the store, and the hook's copy (the conversation on
   // screen) only when no store could be opened (US-15 AC47a); it does not
   // stream (US-15 AC16 is the Shopify widget's), and always sends its tools,
   // since it runs only inside the app.
@@ -194,7 +194,7 @@ export async function sendMessage(
     content = turn.final.text;
     proposedEdits = turn.proposedEdits;
     // Tool-only response (the model proposed an edit with no prose): give the
-    // chat thread something to show. The confirmation card carries the detail.
+    // conversation something to show. The confirmation card carries the detail.
     if (!content && (proposedEdits.length > 0 || turn.refused > 0)) {
       content = toolOnlyAck(proposedEdits, false, turn.refused);
     }

@@ -1,4 +1,4 @@
-// My data's view state (US-62 AC10, AC11): which value page is open, whether
+// My health's view state (US-62 AC10, AC11): which value page is open, whether
 // the grids show as a table, and the browser history entry a page owns.
 //
 // The page machine, in one place:
@@ -7,7 +7,7 @@
 //        (after a switch, on what held the focus as it switched)
 //   page ──erase / chat reveal──▶ rows (drop: goes back too; its popstate,
 //        if it lands before the page unmounts, closes as Back does)
-// Back is ignored while My data's tab is hidden; with Settings over the page,
+// Back is ignored while My health's tab is hidden; with Settings over the page,
 // Back closes Settings and the page keeps its entry. A reload drops a stale entry.
 // The view is one named state (lib/value-view-machine): rows or a page, each
 // carrying the table toggle; showTable opens and closes it, and a chat edit to
@@ -66,7 +66,7 @@ export function useValuePage(revealCell: RevealCell, panelRef: RefObject<HTMLDiv
     pageDirty.current = false;
     if (onPageEntry()) window.history.back();
   };
-  // "‹ My data": goes back, so its popstate closes the page.
+  // "‹ Back": goes back, so its popstate closes the page.
   const closePage = () => {
     if (!mayLeave()) return;
     pageDirty.current = false;
@@ -96,7 +96,7 @@ export function useValuePage(revealCell: RevealCell, panelRef: RefObject<HTMLDiv
   useEffect(() => {
     if (!open) return;
     const onPop = () => {
-      // A page left open on My data while another tab shows does not answer Back.
+      // A page left open on My health while another tab shows does not answer Back.
       if (onPageEntry() || panelRef.current?.closest('[hidden]')) return;
       // Settings cover the page: Back closes them (HealthTool), and the page keeps its entry.
       if (panelRef.current?.querySelector('.mh-page-host[hidden]')) { pushPageEntry(); return; }

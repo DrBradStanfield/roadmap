@@ -102,7 +102,7 @@ function readFrom(fileName: string, getItem: (key: string) => string | null): Re
 
 export class LocalStorageAdapter implements StorageAdapter {
   readonly id = 'local' as const;
-  readonly label = 'This device only';
+  readonly label = 'This browser only';
 
   async connect(): Promise<void> {
     /* nothing to authorise */
@@ -233,7 +233,7 @@ export class LocalStorageAdapter implements StorageAdapter {
       localStorage.setItem(DOC_KEY_PREFIX + ref, dataUrl);
     } catch (error) {
       throw new StorageError(
-        'Could not store the document on this device (local storage is likely full). Connect a cloud backend for documents.',
+        'Could not store the document in this browser (its storage is likely full). Connect a cloud backend for documents.',
         undefined,
         error,
       );

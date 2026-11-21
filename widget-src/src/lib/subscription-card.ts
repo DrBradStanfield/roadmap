@@ -1,6 +1,6 @@
 /**
  * The subscription change card (US-59): what the chat server sends when the
- * model proposed pausing, skipping or cancelling one of a logged-in customer's
+ * model proposed pausing, skipping or cancelling one of a signed-in customer's
  * subscriptions, the confirm call, and the plain words for each outcome.
  * Shopify commerce surface only; the server sends no card anywhere else.
  * The card's token is the gateway's: one use, 10 minutes, bound to this

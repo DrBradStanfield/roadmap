@@ -355,8 +355,8 @@ export function BloodTestTimeline({
                 disabled
               >Upload your lab results</button>
               <div className="upload-lab-tooltip">
-                <p>Upload health records to automatically extract blood tests, scan results, and more.</p>
-                {loginUrl && <a href={loginUrl} className="upload-lab-tooltip-link">Log in to use this feature →</a>}
+                <p>Upload lab reports, scan reports and clinic letters, and the blood tests, scan results and more in them are read for you.</p>
+                {loginUrl && <a href={loginUrl} className="upload-lab-tooltip-link">Sign in to use this feature →</a>}
               </div>
             </div>
           ) : onUploadClick ? (
