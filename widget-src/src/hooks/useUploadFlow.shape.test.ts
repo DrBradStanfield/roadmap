@@ -24,7 +24,7 @@ describe('US-12 AC26: the upload adapter holds no mode beside the shared state',
   });
 
   it('its refs are the state read synchronously, held data and claims: none starts as a boolean', () => {
-    expect(all(/const (\w+) = useRef/g)).toEqual(['live', 'held', 'prepared', 'reviewCounts', 'reviewEnded', 'endReview', 'props', 'port']);
+    expect(all(/const (\w+) = useRef/g)).toEqual(['live', 'held', 'prepared', 'reviewCounts', 'reviewEnded', 'outcomeSent', 'endReview', 'props', 'port']);
     expect(source).not.toMatch(/useRef(<boolean>)?\((true|false)\)/);
   });
 

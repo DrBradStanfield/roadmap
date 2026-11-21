@@ -89,6 +89,13 @@ export function useUploadFlow({ unitSystem, onComplete, onStart, onClose, person
   const reviewCounts = useRef<ProductEventMetadata | undefined>(undefined);
   // The run whose review sent its `upload_review` (US-13 AC13): one per review, a synchronous claim.
   const reviewEnded = useRef<number | null>(null);
+  // The run that sent its `upload_outcome` (US-12 AC10): one per run, a synchronous claim. True when this call claims it.
+  const outcomeSent = useRef<number | null>(null);
+  const claimOutcome = (run: number) => {
+    if (outcomeSent.current === run) return false;
+    outcomeSent.current = run;
+    return true;
+  };
   /** Sends the review's counts once: on a finished Save, or on Cancel or close. */
   const endReview = useRef((counts: ProductEventMetadata | undefined) => {
     const s = live.current;
@@ -122,6 +129,8 @@ export function useUploadFlow({ unitSystem, onComplete, onStart, onClose, person
     const readEnded = (s: UploadState) => {
       const h = held.current;
       if (refusedForKey(s)) return; // the Pages build's missing key names and counts nothing
+      // One per run, at its first settlement (AC10: "when it reaches review or fails"): Try again keeps the run's number.
+      if (!claimOutcome(s.run)) return;
       const { results, notices } = readOutcome(s, h);
       countRun(s, h, results, notices);
       if (readErrorOf(s) === NO_FILES_TEXT) {
@@ -207,7 +216,7 @@ export function useUploadFlow({ unitSystem, onComplete, onStart, onClose, person
   // Cancel stops every read in flight and drops the run (US-12 AC28); a read it stopped is counted once (AC10).
   const cancel = useCallback(() => {
     const s = live.current;
-    if (s.phase === 'open' && inFlight(s) > 0) {
+    if (s.phase === 'open' && inFlight(s) > 0 && claimOutcome(s.run)) {
       trackUploadOutcome(s.files.length + held.current.leftOut, 0, held.current.docx, pickNotices(s, held.current), { cancelled: 1, ...uploadUsageCounts(s) });
     }
     send({ type: 'discard' });
