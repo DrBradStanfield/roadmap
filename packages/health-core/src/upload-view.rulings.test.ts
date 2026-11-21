@@ -81,11 +81,14 @@ describe('4. originals need a cloud', () => {
     expect(off.plan.archiveOnly).toEqual([]);
     expect(off.view.save).toMatchObject({ enabled: false, why: 'Nothing new to save' });
   });
-  it('a report whose values the record holds files its original only with a cloud; every value unticked plans no archive', () => {
+  it('a report whose values the record holds files its original only with a cloud; every value unticked plans no archive row with values', () => {
     const record = recordWith([{ kind: 'measurement', metricType: 'ldl', value: 3.1 }]);
     expect(both(open([read('a', labX())]), record, true).view.save).toMatchObject({ label: 'Save 1 original', enabled: true });
     expect(both(open([read('a', labX())]), record, false).view.save).toMatchObject({ enabled: false });
-    expect(both(open([read('a', labX(), { ticks: { v0: false } })])).plan.labArchives).toEqual([]);
+    // Brad 2026-11-21 (US-14 AC11): unticked, the original alone is still kept with a cloud, archive-only.
+    const untickedPlan = both(open([read('a', labX(), { ticks: { v0: false } })])).plan;
+    expect(untickedPlan.labArchives).toEqual([]);
+    expect(untickedPlan.archiveOnly.map((d) => d.fileId)).toEqual(['a']);
   });
 });
 

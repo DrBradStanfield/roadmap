@@ -110,12 +110,12 @@ export async function uploadSave<F>(s: UploadState, record: RoadmapFile, now: st
   });
   // Counted as the Save label promised them (owner ruling 2026-11-20): `documents` the letters and
   // documents the list showed to be saved, never a lab report's hidden archive row nor an original
-  // filed behind a held row; `archived` is the last of those alone, which has its own line.
+  // filed behind a held row; `archived` is the archive-only originals that landed in the cloud, which have their own line.
   const archiveOnly = new Set(plan.archiveOnly.map((d) => hashOf.get(d.fileId)));
   const shown = new Set(plan.documents.map((d) => hashOf.get(d.fileId) ?? d.fields.sourceFileName));
   const outcome = {
     documents: new Set(docs.saved.filter((d) => shown.has(d.contentHash ?? d.sourceFileName)).map((d) => d.contentHash ?? d.sourceFileName ?? d.id)).size,
-    archived: docs.saved.filter((d) => archiveOnly.has(d.contentHash)).length,
+    archived: docs.saved.filter((d) => archiveOnly.has(d.contentHash) && d.fileRef).length,
   };
 
   return {
