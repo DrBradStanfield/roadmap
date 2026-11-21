@@ -103,7 +103,7 @@
         "cloudConnected",
         "deviceId"
       ],
-      "returns": "Shared upload (US-52 AC8c): what one Save writes, health-core UploadSavePlan as JSON {labRows: [{fileId, rows}], documents: [{fileId, fields}], labArchives: [{fileId, sourceFileName, reportDate}], archiveOnly: [{fileId, fields}], counts: {values, documents, archived, originals}}, from the same review rule as uploadViewJson. Read only: the save itself still goes through cloudLabImport, labSaveSummaryJson and documentSave."
+      "returns": "Shared upload (US-52 AC8c): what one Save writes, health-core UploadSavePlan as JSON {labRows: [{fileId, rows}], documents: [{fileId, fields}], labArchives: [{fileId, sourceFileName, reportDate}], archiveOnly: [{fileId, fields}], counts: {values, documents, archived, originals}}, from the same review rule as uploadViewJson. Read only: the save itself goes through uploadSaveJson."
     },
     "uploadUsageJson": {
       "args": [

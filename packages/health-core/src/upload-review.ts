@@ -6,7 +6,7 @@
  * change, and pass the same one to `uploadView` and `uploadSavePlan`.
  */
 import { UNDATED_PREVIOUS } from './lab-extraction';
-import { classifyImportValues, importRow, isOfferedRef, offeredValues, PROBE_DAY, reportImportFile, rowSlot, valueDays, type ClassifiedValue, type ImportClassification, type ImportFile } from './import-review';
+import { classifyImportValues, importRow, isCoreRef, isOfferedRef, offeredValues, PROBE_DAY, reportImportFile, rowSlot, valueDays, type ClassifiedValue, type ImportClassification, type ImportFile } from './import-review';
 import { bulkAppendValues, slotIndex, validDay, type BulkRow } from './record-edits';
 import { createEmptyFile, type RoadmapFile } from './roadmap-file';
 import { uploadFileName, type UploadFile, type UploadState } from './upload-flow';
@@ -122,7 +122,7 @@ function importFile(f: ReadFile, now: string, holderOf: (row: BulkRow) => string
  * unchanged: a value with no real past day of its own is not saved (`futureDay`, `futureCoreDay`).
  */
 function ownReading(v: ClassifiedValue, file: ReturnType<typeof importFile>): ClassifiedValue {
-  if (file.undatable.includes(v.ref)) return { file: v.file, ref: v.ref, label: v.label, sent: false, writes: false, group: 'notSaved', reason: v.ref[0] === 'v' ? 'futureCoreDay' : 'futureDay' };
+  if (file.undatable.includes(v.ref)) return { file: v.file, ref: v.ref, label: v.label, sent: false, writes: false, group: 'notSaved', reason: isCoreRef(v.ref) ? 'futureCoreDay' : 'futureDay' };
   return v;
 }
 

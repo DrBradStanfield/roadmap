@@ -9,7 +9,7 @@
  * documents for held rows.
  */
 import { DOCUMENT_TYPES, type DocumentType } from './validation';
-import { documentKind, IMPORT_REVIEW_TEXT, isOfferedRef, KIND_WORDS, NOT_SAVED_TEXT, notSavedGroups, valueAt, type ClassifiedValue, type NotSavedReason, type UnsureReason } from './import-review';
+import { documentKind, IMPORT_REVIEW_TEXT, isCoreRef, isOfferedRef, KIND_WORDS, NOT_SAVED_TEXT, notSavedGroups, valueAt, type ClassifiedValue, type NotSavedReason, type UnsureReason } from './import-review';
 import type { FileLabValue, FileMeasurement, RoadmapFile } from './roadmap-file';
 import { effectiveComparator, isReadableRow } from './readable-rows';
 import { getDisplayLabel, type MetricType } from './units';
@@ -200,7 +200,7 @@ const replacingOf = (review: UploadReview, v: ClassifiedValue) => !v.copy && rev
  * (ReviewTable `refusedKept` over import-review-view `blocked`, US-13 AC5): sent, not written, and
  * out of its range or otherwise refused (a same-day loser is not an error).
  */
-const blocks = (review: UploadReview) => (v: ClassifiedValue) => v.ref[0] === 'v' && v.sent && !v.writes
+const blocks = (review: UploadReview) => (v: ClassifiedValue) => isCoreRef(v.ref) && v.sent && !v.writes
   && (v.group === 'unsure' ? v.reasons.includes('outOfRange') && (!v.reasons.includes('conflict') || replacingOf(review, v)) : v.group === 'notSaved' && v.reason !== 'sameDay');
 
 /** Each reason once, naming its tests, as "Not saved" names them in the review (NOT_SAVED_TEXT); then each own line once. */

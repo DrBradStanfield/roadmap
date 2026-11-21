@@ -46,13 +46,17 @@ export const offeredValues = (result: Offers): OfferedValue[] => [
   ...(result.additionalValues ?? []).map((value, i): OfferedValue => ({ ref: `a${i}`, kind: 'lab', value })),
 ];
 
-/** The value a ref names, or undefined when the extraction holds none: the one place a ref is read. */
+/** The value a ref names, or undefined when the extraction holds none: the shared engine's reader (ios/engine/lab-review.ts and
+ *  the web's ReviewTable still parse refs themselves). */
 export function valueAt(result: Offers, ref: string): OfferedValue | undefined {
   const i = Number(ref.slice(1));
   const core = ref[0] === 'v' && Number.isInteger(i) ? result.values?.[i] : undefined;
   const lab = ref[0] === 'a' && Number.isInteger(i) ? result.additionalValues?.[i] : undefined;
   return core ? { ref, kind: 'core', value: core } : lab ? { ref, kind: 'lab', value: lab } : undefined;
 }
+
+/** A core value's ref (`v<i>`), by its prefix alone. */
+export const isCoreRef = (ref: string) => ref[0] === 'v';
 
 /** Each value's day: its own printed day, else `fileDay` (the report's, or
  *  the one picked); an undated previous column's is `undatedDay` (null until picked). */
@@ -173,13 +177,14 @@ function heldReadings(record: RoadmapFile): (slot: string) => Quantity | undefin
 }
 
 /** A row's slot, from its metric and day as the write keys it (`slotIndex`'s key). */
-export const rowSlot = (row: BulkRow, target = bulkRowTarget(row)): string => slotKey(target.slot, target.metric, row.recordedAt);
+const slotFor = (row: BulkRow, target: ReturnType<typeof bulkRowTarget>): string => slotKey(target.slot, target.metric, row.recordedAt);
+export const rowSlot = (row: BulkRow): string => slotFor(row, bulkRowTarget(row));
 
 /** A row's slot, and what it compares as: a lab the write files as a core value compares as one. */
 function slotOf(row: BulkRow): { slot: string; quantity: Quantity } {
   const target = bulkRowTarget(row);
   const limit = row.comparator ? { comparator: row.comparator } : null;
-  const slot = rowSlot(row, target);
+  const slot = slotFor(row, target);
   if (row.kind === 'measurement') return { slot, quantity: { valueSI: row.value, ...limit } };
   const asCore = !target.asLab ? coreStored(target.named as MetricType, row.value, row.unit)?.value : undefined;
   return { slot, quantity: asCore !== undefined ? { valueSI: asCore, ...limit } : { lab: { name: row.metricName, value: row.value, unit: row.unit, ...limit } } };
