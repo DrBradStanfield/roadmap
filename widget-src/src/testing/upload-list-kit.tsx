@@ -23,9 +23,9 @@ export const letterRead = (id: string, title: string, name = `${id}.pdf`): Open[
 export const open = (files: Open['files']): Open => ({ phase: 'open', platform: 'web', run: 1, files, started: NOW, firstRead: NOW });
 export const LDL = (value: number, recordedAt = DAY): BulkRow => ({ kind: 'measurement', metricType: 'ldl', value, recordedAt, source: 'manual' });
 
-export function mount(s: UploadState, record = EMPTY, unitOf: (m: MetricType) => CellUnit = () => 'si') {
+export function mount(s: UploadState, record = EMPTY, unitOf: (m: MetricType) => CellUnit = () => 'si', { later = false } = {}) {
   const host = { current: null as ListHost | null };
-  const view = render(<UploadListHost initial={s} record={record} now={NOW} host={host} unitOf={unitOf} />);
+  const view = render(<UploadListHost initial={s} record={record} now={NOW} host={host} unitOf={unitOf} later={later} />);
   return Object.assign(host.current!, { unmount: view.unmount });
 }
 export const row = (key: string) => document.querySelector<HTMLLIElement>(`li[data-key="${key}"]`)!;

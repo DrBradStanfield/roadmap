@@ -1,6 +1,6 @@
 # The web upload list: the screen (PR 2)
 
-Status: draft for review, 2026-11-22, round four (the engine's units, picker, page words and letter text, PR 1951). Built
+Status: draft for review, 2026-11-22, round five (the re-check's S1-S10). Built
 unmounted: production keeps drawing ReviewTable's grid.
 Engine: `uploadList` (packages/health-core/src/upload-list.ts), `uploadView` (upload-view.ts) and `uploadListPage`
 (upload-list-page.ts).
@@ -10,9 +10,11 @@ Stories: US-13 AC5, AC10, AC12, AC21, AC24, AC26; US-02 AC4, AC7; US-12; US-14 A
 
 The screen draws what the engine exposes and adds no rule. It never decides whether a row saves, is in
 error, blocks Save or takes typing, nor which caption, reason or heading shows. It never parses a
-number and never counts. It owns one thing: the draft of the focused text input, with the unit it was typed in.
-Its view state, by owner ruling: Show all (open from the start while `list.check` is null), and the row holding the
-draft or the focus, which is never hidden.
+number and never counts. It owns one thing: the draft of the focused text input, with the unit it was typed in and that unit's label.
+Its view state, by owner ruling: Show all, a latch; the row holding the focus; and the list's last announcement.
+Show all's latch is set once, when the review first has rows (open while `list.check` is null, else closed); after
+that only its press changes it. Rows with `attention`, the draft's row and the focused row always show; so does every
+row shown since Show all was last pressed, so no row hides under the person's hand (K3i).
 
 ## Layout, top to bottom
 
@@ -23,7 +25,9 @@ draft or the focus, which is never hidden.
    first row. Each group opens with its `DayControl`: `label`, a dated column's `printedLine`, `fileName`, a picker
    showing `picker` (one named button, the native date input beside it, never nested), and `hint` beside it.
    A row never moves group, so a status change never remounts it (K3e). Rows with `attention` show; the rest carry
-   `hidden` while "Show all" is closed. Open, rows stand in engine order: AC26 says a row never moves.
+   `hidden` while "Show all" is closed (the latch above). Open, rows stand in engine order: AC26 says a row never moves.
+   `.upload-list-row[hidden]` sets `display: none` itself: the modal draws through a portal on body, outside
+   `.health-tool [hidden]`, and the row's `display: grid` would otherwise win (checked in WebKit).
 5. "Show all n" / "Hide" (`list.showAll` / `list.hide`) as the list's last row, at the label indent.
 6. Letters: `view.documents.line`, then each letter's title (text input), kind (`kinds` as a select)
    and date (the list's picker, `setDate` while it has none, `removeDate` as a link), and its text (`page.letters`) as
@@ -43,11 +47,11 @@ draft or the focus, which is never hidden.
 | --- | --- | --- |
 | Tick and label | one `<label>`, 44px; `row.ticked`; sends `{tick: ref, on}` | native checkbox, brand accent |
 | Number input | only when `row.input === 'number'`; else `row.shown.text` as text. Value: the draft while it names the row, else `row.typed?.text ?? row.shown.text` | `.bt-input` |
-| Unit | `row.unit.label`; a chip when `row.unit.toggle` (a press asks for that unit); Lp(a)'s three when `row.unit.choices`, `current` marked; neither while the row holds text | UnitChip.tsx, LpaUnitControl.tsx |
+| Unit | `row.unit.label`; a chip when `row.unit.toggle` (a press commits any open draft, then asks for that unit); Lp(a)'s three when `row.unit.choices`, `current` marked; neither while the row holds text. While a draft is open on the row: the label captured at its first keystroke, and no control | UnitChip.tsx, LpaUnitControl.tsx |
 | Caption | `row.caption`, unless it is `row.error`'s words; a conflict's `row.held` leads it, muted, a separate word | `.review-overview-footer` look |
-| Replace | its own line under the caption, 44px; named `row.replaceLabel`, described by the row's label and the held value | `REVIEW_CELL_TEXT.replace` |
+| Replace | its own line under the caption, 44px; named `row.replaceLabel`, described by the row's label, the held value and a hidden text mirror of the value it would write (`value` and its unit label; while a draft is open, the draft's text and captured label) | `REVIEW_CELL_TEXT.replace` |
 | Reasons | each of `row.reasons`; the input then takes the warning underline | `.bt-cell-question`, `.bt-cell-low-confidence` |
-| Error | `row.error`, `role="alert"` | `--color-error`, as `.upload-error` |
+| Error | `row.error`, as text; announced by the list, not the row (below) | `--color-error`, as `.upload-error` |
 
 The input is a plain `<input type="text" inputMode="decimal">`, not `NumericInputCell`: that cell
 validates, waits on ranges, grades and filters keys, all rules the engine owns. Held text must reach
@@ -56,14 +60,19 @@ of the selection, line breaks as visible spaces, so "1\n2" never joins into 12 (
 
 ## The draft (the one state the screen owns)
 
-`type Draft = null | { key: string; text: string }`, changed only by a pure `transition(draft, event)`
-(widget-src/src/lib/upload-list-draft.ts) with a table test. A key is a row's (`fileId:ref`) or a
-letter's title (`title:<fileId>`). A draft keeps `row.unit.typeIn` from its first keystroke; a commit sends
-`{typed: ref, text, unit}`
-or `{document: {title}}` and drops the draft; the input then shows what the engine returned. Focus or
-typing moving to another input commits the old draft first. Enter while an input method composes does nothing. Escape drops it unsent. A draft whose input
-is gone is dropped. Save press: commit, re-read the view (`reread()`), save if `save.enabled`, else
-focus the control of `save.blockers[0].at`.
+`type Draft = null | { key: string; text: string; unit: CellUnit | null; unitLabel: string | null }`, changed only by
+a pure `transition(draft, event)` (widget-src/src/lib/upload-list-draft.ts) with a table test. A key is a row's
+(`fileId:ref`) or a letter's title (`title:<fileId>`). A draft keeps `row.unit.typeIn` and `row.unit.label` from its
+first keystroke; the label is drawn beside the input while the draft is open, so it never names a unit the commit does
+not write (Codex R1). A commit sends `{typed: ref, text, unit}` or `{document: {title}}` and drops the draft; the input
+then shows what the engine returned. Focus or typing moving to another input commits the old draft first, and so does
+a unit press (iOS Safari may not blur on a tap of a control that takes no focus). Enter while an input method composes
+does nothing. Escape drops it unsent. A draft whose input is gone is dropped.
+
+Save press: commit, then read the view the commit reached (`reread()`), save if `save.enabled`, else focus the control
+of `save.blockers[0].at`. The contract (on `UploadListProps.choose`): `reread()` reflects a choice once `choose` has
+returned, or, when `choose` returns a promise, once it resolves; the press awaits that promise before it reads. Awaiting
+was simpler than refusing until the view changes, since a commit that changes nothing never changes the view.
 
 ## Keyboard and screen reader
 
@@ -74,7 +83,15 @@ focus the control of `save.blockers[0].at`.
   none) or a day's picker button, named by its label and described by its hint and file. A blocker row always
   has `attention`, so it is never hidden.
 - Names: tick and input are named `row.label`, the day picker its `label`; the input is described by
-  its unit, caption, reasons and error. The engine's fuller names (`ListRow.name`, `DayControl.name`)
+  its unit (Lp(a)'s: the one unit shown, never all three), caption, reasons and error. The picker's name replaces its
+  content, so the day it shows is its description, before its hint and file.
+- Errors: no row is an alert. The list owns one `aria-live="assertive"` region and says in it the errors a person's
+  choice made on rows that had none (a commit, a tick, a day). A review that opens with errors, a unit press and an
+  engine step say nothing.
+- Day picker by keyboard (WebKit 26.4, Safari semantics): Tab reaches text fields only, Option+Tab (or Safari's "Press
+  Tab to highlight each item") the button; Enter and Space call `showPicker()`, focus stays on the button. Without
+  `showPicker` (Safari before 16) the press clicks the input instead. Not verified: choosing a day inside the native
+  popover by keyboard, and VoiceOver (neither can be scripted). The engine's fuller names (`ListRow.name`, `DayControl.name`)
   await Brad's yes (docs/decisions-for-brad.md, Open): one constant, `ENGINE_NAMES` in
   widget-src/src/lib/upload-list-names.ts, switches every control to them. A letter's title is labelled by its
   visible "Document title" and its file name; its kind select by its file name alone (no word for it yet).
@@ -117,15 +134,28 @@ The widget has no dark theme, so dark mode draws as light.
 ## What the engine still does not expose
 
 - A letter's file name: the screen looks it up in `view.files` by file id.
+- Coming on claude/upload-list-engine-1f (`it.todo` in UploadList.round5.test.tsx): the "Printed: <number> <unit>" note
+  under a converted or guessed-unit row, tied to its input (US-13 AC11); a letter's preview cut (the grid shows 300
+  characters and "..."; until then the full text, visually clipped); the picker's day in words and unset placeholder
+  (then delete the screen-made '—', `longDate(..) ?? c.picker` and `setDate ?? d.date`).
 
-## Units, for the mount PR
+## For the mount PR
 
-A unit press calls `unitTo(metric, unit)` or `lpaUnitTo(unit)`. The mount wires them to the web's setters
-(hooks/useUnits.ts `handleToggleFieldUnit(METRIC_TO_FIELD[metric])`, which turns to the other unit as the
-engine's `toggle` names; lib/lpa-unit.ts `useLpaUnit`'s setter), and the engine reads them back through `unitOf`.
+- Commit then save through the real useUploadFlow: its `send` is synchronous, so `choose` returns nothing and
+  `reread()` reads `live.current`. Any async path must return the promise of the commit (UploadListProps.choose).
+- Unit presses must SET the unit the chip names. `unitTo(metric, unit)` and `lpaUnitTo(unit)` carry it; the web's
+  `handleToggleFieldUnit(METRIC_TO_FIELD[metric])` (hooks/useUnits.ts) only flips, which can disagree with the chip
+  while the record's units are held (US-34 AC7a). Wire a setter, or assert the flip lands on `unit`. Lp(a): lib/lpa-unit.ts
+  `useLpaUnit`'s setter. The engine reads both back through `unitOf`.
+- The modal's portal sits outside `.health-tool`: `[hidden]` (handled in UploadList.css), the `--bt-ink-*` tokens the
+  unit controls read (UploadList.css carries the four), and the font (`.health-tool` sets it; the grid's unit pill sets
+  its own) are not inherited there. Check each in the live store.
+- VoiceOver and keyboard date picking in real Safari, on a Mac and an iPhone: the native popover could not be scripted.
+- `ENGINE_NAMES` awaits Brad (Needs Brad 1).
+- UploadList.css must ship in the Shopify build: check the built CSS holds `.upload-list-row[hidden]`.
 
 ## What a later PR does
 
 Mounts UploadList from UploadModal in place of ReviewTable, wires the unit presses, runs Save through the shared `uploadSave`,
-checks the Shopify build ships UploadList.css, and deletes ReviewTable, ReviewMatrix, review-matrix.ts
+does the list above, and deletes ReviewTable, ReviewMatrix, review-matrix.ts
 and import-review-view.ts.

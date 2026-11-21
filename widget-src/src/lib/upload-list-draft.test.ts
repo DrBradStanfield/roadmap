@@ -4,15 +4,15 @@
 import { describe, expect, it } from 'vitest';
 import { transition, type Draft, type DraftEvent } from './upload-list-draft';
 
-const A: Draft = { key: 'f0:v0', text: '3.4', unit: 'si' };
+const A: Draft = { key: 'f0:v0', text: '3.4', unit: 'si', unitLabel: 'mmol/L' };
 const rows = (...keys: string[]): DraftEvent => ({ type: 'rows', inputs: new Set(keys) });
 
 describe('upload list draft (US-13 AC26)', () => {
   it.each<[string, Draft, DraftEvent, Draft, Draft]>([
-    ['typing starts a draft in the unit on screen', null, { type: 'type', key: 'f0:v0', text: '3', unit: 'conventional' }, { key: 'f0:v0', text: '3', unit: 'conventional' }, null],
-    ['typing on keeps the unit it started in (Codex R2)', A, { type: 'type', key: 'f0:v0', text: '3.45', unit: 'conventional' }, { key: 'f0:v0', text: '3.45', unit: 'si' }, null],
-    ['typing in another row commits the old draft first', A, { type: 'type', key: 'f0:v1', text: '9', unit: null }, { key: 'f0:v1', text: '9', unit: null }, A],
-    ['an emptied input is a draft too (the engine clears the row)', A, { type: 'type', key: 'f0:v0', text: '', unit: 'si' }, { key: 'f0:v0', text: '', unit: 'si' }, null],
+    ['typing starts a draft in the unit on screen, with its label', null, { type: 'type', key: 'f0:v0', text: '3', unit: 'conventional', unitLabel: 'mg/dL' }, { key: 'f0:v0', text: '3', unit: 'conventional', unitLabel: 'mg/dL' }, null],
+    ['typing on keeps the unit and label it started in (Codex R2, R1)', A, { type: 'type', key: 'f0:v0', text: '3.45', unit: 'conventional', unitLabel: 'mg/dL' }, { key: 'f0:v0', text: '3.45', unit: 'si', unitLabel: 'mmol/L' }, null],
+    ['typing in another row commits the old draft first', A, { type: 'type', key: 'f0:v1', text: '9', unit: null, unitLabel: null }, { key: 'f0:v1', text: '9', unit: null, unitLabel: null }, A],
+    ['an emptied input is a draft too (the engine clears the row)', A, { type: 'type', key: 'f0:v0', text: '', unit: 'si', unitLabel: 'mmol/L' }, { key: 'f0:v0', text: '', unit: 'si', unitLabel: 'mmol/L' }, null],
     ['commit sends the draft and drops it', A, { type: 'commit' }, null, A],
     ['commit with no draft sends nothing', null, { type: 'commit' }, null, null],
     ['focus on the same row keeps the draft', A, { type: 'focus', key: 'f0:v0' }, A, null],

@@ -109,11 +109,12 @@ describe('B6: the day picker is one named control', () => {
 });
 
 describe('B7: a row\'s error is announced when it appears', () => {
-  it('held text\'s guidance is an alert', () => {
+  it('held text\'s guidance is announced by the list, and shown on its row (S7: never a row alert)', () => {
     mount(open([ldl(3.1)]));
     typeInto('f0:v0', 'abc');
     blur();
-    expect(within(row('f0:v0')).getByRole('alert').textContent).toBe(NUMERIC_SYNTAX_GUIDANCE);
+    expect(document.querySelector('.upload-list [aria-live="assertive"]')!.textContent).toBe(NUMERIC_SYNTAX_GUIDANCE);
+    expect(within(row('f0:v0')).getByText(NUMERIC_SYNTAX_GUIDANCE)).toBeTruthy();
   });
 });
 

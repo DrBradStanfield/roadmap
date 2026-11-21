@@ -17,10 +17,17 @@
  *       the draft while it names the row, else the held text, else the shown number; each row sits under its own day;
  *   K3e no row's node, nor its input, is ever replaced while its row stands (status changes and rows landing before it);
  *   K3f the row being typed in, or holding the focus, is never hidden;
- *   K3g held text keeps the unit label it was typed under, whatever unit chip or Lp(a) choice was pressed since.
+ *   K3g held text keeps the unit label it was typed under, whatever unit chip or Lp(a) choice was pressed since;
+ *   K3h the unit label beside an open draft is the one on screen at its first keystroke, whatever was pressed since (S1);
+ *       a unit press with a draft open commits it first, with no blur (S2, checked by K3b);
+ *   K3i no row that was visible becomes hidden on a step that is not a press of Show all, and Show all's state changes
+ *       only on its press (S4: a latch);
+ *   K3j the list's announcement changes only on a step where a row newly has an error, and no row is an alert (S7).
  * Mutations it was shown failing on (PR body): M1 commit skipped on focus moving to another row; M2 the input's value
  * read from a stale local copy; M3 day groups keyed by index; M4 a letter's title draft never sent; M5 the draft's unit
- * re-read from the row at commit; M6 a row hidden whatever its draft or focus; M7 held text labelled by the row's unit now. Synthetic values only.
+ * re-read from the row at commit; M6 a row hidden whatever its draft or focus; M7 held text labelled by the row's unit now;
+ * M8 an open draft labelled by the row's unit now; M9 Show all a live expression of `list.check`; M10 a unit press that
+ * leaves the draft to a blur; M11 every current error announced on each change. Synthetic values only.
  */
 import { act, cleanup, fireEvent, render } from '@testing-library/react';
 import { afterEach, describe, it } from 'vitest';
@@ -63,6 +70,10 @@ const X1: UnifiedExtractionResult = {
   values: [core({ valueSI: 500, displayValue: 500 }), core({ metric: 'vitamin_zz', valueSI: 12, displayValue: 12, displayUnit: 'zz/L' }), core({ valueSI: 3.4, displayValue: 3.4, recordedAt: COLUMN }), core({ metric: 'lpa', valueSI: 900, displayValue: 900, displayUnit: 'nmol/L' })],
   additionalValues: [extra({ name: 'Vitamin B12', value: 300, unit: 'pmol/L' })],
 };
+/** X1 with nothing to check, so a run can start with Show all open (K3i). */
+const X1_CLEAN: UnifiedExtractionResult = {
+  ...X1, values: [core({ valueSI: 3.0, displayValue: 3.0 }), core({ valueSI: 3.4, displayValue: 3.4, recordedAt: COLUMN }), core({ metric: 'lpa', valueSI: 90, displayValue: 90, displayUnit: 'nmol/L' })],
+};
 const LETTER: UnifiedExtractionResult = {
   classification: 'clinic_letter', reportDate: null, values: [], additionalValues: [], unrecognized: [],
   document: { classification: 'clinic_letter', title: 'Clinic letter', documentDate: '2026-10-20', contentMarkdown: 'Plan', metadata: {} },
@@ -101,7 +112,7 @@ function runSequence(seed: number, steps: number) {
   const rand = mulberry32(seed);
   const pick = <T,>(xs: readonly T[]): T => xs[Math.floor(rand() * xs.length)];
   const f0: File = rand() < 0.6 ? file('f0', { s: 'sending', attempt: 1 }) : file('f0', { s: 'read', extraction: X0, choices: NO_CHOICES });
-  const initial: Open = { phase: 'open', platform: 'web', run: 1, files: [f0, file('f1', { s: 'read', extraction: X1, choices: NO_CHOICES }), file('f2', { s: 'read', extraction: LETTER, choices: NO_CHOICES })], started: NOW, firstRead: NOW };
+  const initial: Open = { phase: 'open', platform: 'web', run: 1, files: [f0, file('f1', { s: 'read', extraction: rand() < 0.35 ? X1_CLEAN : X1, choices: NO_CHOICES }), file('f2', { s: 'read', extraction: LETTER, choices: NO_CHOICES })], started: NOW, firstRead: NOW };
   const record0 = pick(RECORDS);
   const host = { current: null as ListHost | null };
   render(<UploadListHost initial={initial} record={record0} now={NOW} host={host} />);
@@ -113,6 +124,12 @@ function runSequence(seed: number, steps: number) {
   const fail = (prop: string, msg: string) => { throw new Error(`${prop} seed ${seed}: ${msg}\n  steps: ${trace.join(' > ')}`); };
 
   const see = (s: UploadState, record: RoadmapFile) => engineSee(s, record, NOW, h.units());
+  /** K3j: the rows with an error before a step, and each error a row newly had during it (a commit, then a tick, say). */
+  let hadError = new Set<string>();
+  const madeErrors = new Set<string>();
+  const noteErrors = (s: UploadState, record: RoadmapFile) => {
+    for (const x of see(s, record).list.rows) if (x.error && !hadError.has(x.key)) madeErrors.add(x.error);
+  };
   /** The state after a commit of `d`, by the engine's own transition. */
   const committed = (s: UploadState, record: RoadmapFile, d: Draft): UploadState => {
     if (!d) return s;
@@ -122,6 +139,7 @@ function runSequence(seed: number, steps: number) {
     const change: ChoiceChange = { typed: row.ref, text: d.text, unit: d.unit };
     const after = transition(s, { type: 'chose', id: row.fileId, change, now: NOW }).state;
     if (after !== s) held = heldOf(s, row, d.text, d.unit, d.label);
+    noteErrors(after, record);
     return after;
   };
   /** What the engine must hold for text committed at `row` (K3c), from `typedCommit` on the choices before. */
@@ -159,6 +177,12 @@ function runSequence(seed: number, steps: number) {
     let focusAt: string | null | undefined;
     const active = document.activeElement as HTMLElement | null;
     const activeRow = rowOfInput(active);
+    const wasShown = new Set([...document.querySelectorAll<HTMLElement>('li[data-key]')].filter((li) => !li.hidden).map((li) => li.dataset.key!));
+    const wasOpen = document.querySelector('.review-disclosure')?.getAttribute('aria-expanded') ?? null;
+    hadError = new Set(rows.filter((x) => x.error).map((x) => x.key));
+    madeErrors.clear();
+    const wasSaid = document.querySelector('.upload-list [aria-live]')?.textContent ?? null;
+    let toggled = false;
     const r = rand();
     if (r < 0.2) {
       const titles = see(before, record).view.documents?.rows.map((d) => `title:${d.fileId}`) ?? [];
@@ -237,6 +261,7 @@ function runSequence(seed: number, steps: number) {
       trace.push('show all');
       if (focusMoves(button)) { expected = committed(before, record, draft); draft = null; }
       fireEvent.click(button);
+      toggled = true;
     } else if (r < 0.84) {
       const button = document.querySelector<HTMLButtonElement>('.review-save-btn');
       if (!button || button.disabled) continue;
@@ -290,8 +315,12 @@ function runSequence(seed: number, steps: number) {
       const chips = [...document.querySelectorAll<HTMLButtonElement>('li[data-key]:not([hidden]) .upload-list-unit button')];
       if (how < 0.6 && chips.length) {
         const chip = pick(chips);
-        trace.push(`unit ${chip.closest<HTMLElement>('li')!.dataset.key} ${chip.textContent}`);
-        if (focusMoves(chip)) { expected = committed(before, record, draft); draft = null; }
+        // A tap that moves no focus (iOS Safari), or a click that does: either way the draft is sent before the press (S2).
+        const tap = rand() < 0.5;
+        trace.push(`unit ${chip.closest<HTMLElement>('li')!.dataset.key} ${chip.textContent}${tap ? ', no focus' : ''}`);
+        if (!tap && focusMoves(chip)) { expected = committed(before, record, draft); draft = null; }
+        // Lp(a)'s marked choice is no press: it changes nothing.
+        if (chip.getAttribute('aria-checked') !== 'true') { expected = committed(expected, record, draft); draft = null; }
         fireEvent.click(chip);
       } else {
         const unit: CellUnit = rand() < 0.5 ? 'si' : 'conventional';
@@ -322,6 +351,25 @@ function runSequence(seed: number, steps: number) {
     const after = see(h.state(), h.record());
     const live = after.view.done ? [] : after.list.rows;
     if (!live.length) { draft = null; held = null; nodes.clear(); }
+    // K3h: the label beside an open draft is the one at its first keystroke.
+    if (draft && !draft.key.startsWith('title:') && rowEl(draft.key) && unitLabel(draft.key) !== draft.label) {
+      fail('K3h', `${draft.key} was typed under ${draft.label}, its open draft now labelled ${unitLabel(draft.key)}`);
+    }
+    // K3i: Show all is a latch; nothing shown hides unless it is pressed.
+    if (!toggled) {
+      for (const key of wasShown) if (rowEl(key)?.hidden) fail('K3i', `${key} was shown and hid on "${trace[trace.length - 1]}"`);
+      const isOpen = document.querySelector('.review-disclosure')?.getAttribute('aria-expanded') ?? null;
+      if (wasOpen !== null && isOpen !== null && isOpen !== wasOpen) fail('K3i', `Show all went ${wasOpen} -> ${isOpen} on "${trace[trace.length - 1]}"`);
+    }
+    // K3j: an announcement only for an error a row did not have before the step; never a row alert.
+    if (document.querySelector('.upload-list [role="alert"]')) fail('K3j', 'a row is an alert');
+    const nowSaid = document.querySelector('.upload-list [aria-live]')?.textContent ?? null;
+    noteErrors(h.state(), h.record());
+    // It says only errors a row newly had in this step, and nothing else.
+    const rest = [...madeErrors].reduce((t, e) => t.split(e).join(''), nowSaid ?? '');
+    if (wasSaid !== null && nowSaid !== null && nowSaid !== wasSaid && (!madeErrors.size || rest.trim())) {
+      fail('K3j', `announced "${nowSaid}" with no new error on "${trace[trace.length - 1]}"`);
+    }
     // K3a
     const shownDraft = document.querySelector<HTMLElement>('.upload-list')?.dataset.draft ?? null;
     if (shownDraft !== (draft?.key ?? null)) fail('K3a', `the screen's draft is ${shownDraft}, the person's ${draft?.key ?? null}`);

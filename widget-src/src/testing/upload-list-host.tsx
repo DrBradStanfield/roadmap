@@ -40,8 +40,9 @@ export function engineSee(s: UploadState, record: RoadmapFile, now: string, unit
   };
 }
 
-export function UploadListHost({ initial, record, now, unitOf = () => 'si', host }: {
-  initial: UploadState; record: RoadmapFile; now: string; unitOf?: UnitOf; host?: MutableRefObject<ListHost | null>;
+/** `later`: each choice lands on a later tick, and `choose` returns the promise of it (the awaited-commit contract). */
+export function UploadListHost({ initial, record, now, unitOf = () => 'si', host, later = false }: {
+  initial: UploadState; record: RoadmapFile; now: string; unitOf?: UnitOf; host?: MutableRefObject<ListHost | null>; later?: boolean;
 }) {
   const live = useRef({ s: initial, record, base: unitOf, own: {} as Partial<Record<MetricType, CellUnit>> });
   const [, redraw] = useState(0);
@@ -82,7 +83,12 @@ export function UploadListHost({ initial, record, now, unitOf = () => 'si', host
   return (
     <UploadList
       list={list} view={view} page={page}
-      choose={(id, change) => screen({ type: 'chose', id, change, now })}
+      choose={(id, change) => {
+        const e: UploadEvent = { type: 'chose', id, change, now };
+        if (!later) return screen(e);
+        sent.current.push(e);
+        return new Promise<void>((done) => setTimeout(() => { send(e); done(); }, 0));
+      }}
       reread={() => see().view}
       save={() => screen({ type: 'saveStarted', reviewed: reviewedWrites(see().review) })}
       stop={() => screen({ type: 'stop' })}

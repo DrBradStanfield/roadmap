@@ -1,6 +1,7 @@
 // A page that draws the unmounted web upload list over the real engine, for screenshots and real-WebKit checks (web
 // list PR 2). Not shipped: no build entry names upload-list-harness.html; serve it with Vite (the PR body says how).
 // `?s=` picks a scenario; `window.uploadListHost` sends engine events. Synthetic values only.
+import { createPortal } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 import { core, DAY, EMPTY, extra, NOW } from '@roadmap/health-core/import-review.test-helpers';
 import type { UnifiedExtractionResult } from '@roadmap/health-core/lab-extraction';
@@ -35,6 +36,8 @@ const chose = (s: UploadState, change: Parameters<typeof transition>[1] & { type
 const TWO_LDL = open([read('f0', 'blood-tests-nov.pdf', x({ values: [core({}), core({ valueSI: 2.9, displayValue: 2.9, recordedAt: '2026-09-15' }), core({ metric: 'lpa', valueSI: 90, displayValue: 90, displayUnit: 'nmol/L' })] }))]);
 const SCENARIOS: Record<string, { s: UploadState; record: RoadmapFile; unitOf?: (m: MetricType) => CellUnit }> = {
   fresh: { s: fresh, record: EMPTY },
+  // Nothing to check: Show all starts open (the latch, S4).
+  clean: { s: open([read('f0', 'blood-tests-nov.pdf', x({ values: [core({}), core({ metric: 'hba1c', valueSI: 40, displayValue: 40, displayUnit: 'mmol/mol' })] }))]), record: EMPTY },
   held: { s: chose(fresh, { type: 'chose', id: 'f0', change: { typed: 'v0', text: '3..1', unit: 'si' }, now: NOW }), record: EMPTY },
   conflict: { s: fresh, record: bulkAppendValues(EMPTY, [{ kind: 'measurement', metricType: 'ldl', value: 2.9, recordedAt: DAY, source: 'manual' }], NOW).file },
   waiting: { s: open([read('f0', 'scan-no-date.pdf', x({ reportDate: null, values: [core({}), core({ metric: 'hba1c', valueSI: 40, displayValue: 40, displayUnit: 'mmol/mol' })], additionalValues: [extra()] }))]), record: EMPTY },
@@ -56,14 +59,18 @@ declare global { interface Window { uploadListHost?: ListHost; uploadListReport?
 const scenario = SCENARIOS[new URLSearchParams(location.search).get('s') ?? 'fresh'] ?? SCENARIOS.fresh;
 const host = { current: null as ListHost | null };
 window.uploadListReport = REPORT;
+// As UploadModal draws it: from inside the widget, through a portal on body, so `.health-tool [hidden]` never reaches it.
 createRoot(document.getElementById('root')!).render(
   <div className="health-tool">
-    <div className="upload-modal" style={{ margin: '0 auto', maxHeight: 'none', boxShadow: 'none' }}>
-      <div className="upload-modal-header"><h3>Upload Health Records</h3></div>
-      <div className="upload-modal-body">
-        <UploadListHost initial={scenario.s} record={scenario.record} now={NOW} host={host} unitOf={scenario.unitOf} />
-      </div>
-    </div>
+    {createPortal(
+      <div className="upload-modal" style={{ margin: '0 auto', maxHeight: 'none', boxShadow: 'none' }}>
+        <div className="upload-modal-header"><h3>Upload Health Records</h3></div>
+        <div className="upload-modal-body">
+          <UploadListHost initial={scenario.s} record={scenario.record} now={NOW} host={host} unitOf={scenario.unitOf} />
+        </div>
+      </div>,
+      document.body,
+    )}
   </div>,
 );
 Object.defineProperty(window, 'uploadListHost', { get: () => host.current ?? undefined });

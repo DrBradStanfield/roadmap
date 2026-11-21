@@ -164,7 +164,7 @@ describe('what the engine now says (US-13 AC10, AC26; US-14 AC11-13)', () => {
     const r = host.see().list.rows[0];
     const box = within(row('f0:v0')).getByRole('checkbox', { name: r.replaceLabel! });
     const described = box.getAttribute('aria-describedby')!.split(' ').map((id) => document.getElementById(id)!.textContent);
-    expect(described).toEqual([r.label, r.held]);
+    expect(described).toEqual([r.label, r.held, `${r.shown.text} ${r.unit.label}`]); // and the proposed value (S5)
     const caption = within(row('f0:v0')).getByText(IMPORT_REVIEW_TEXT.conflictKept, { exact: false });
     expect(caption.textContent).toBe(`${r.held} ${IMPORT_REVIEW_TEXT.conflictKept}`);
     fireEvent.click(box);

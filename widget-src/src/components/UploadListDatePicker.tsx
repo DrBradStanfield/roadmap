@@ -7,7 +7,7 @@ import { useRef } from 'react';
 export function ListDatePicker({ value, shown, empty, name, describedBy, disabled, at, onDay }: {
   /** The input's day, YYYY-MM-DD, or '' for none. */
   value: string;
-  /** What the button shows: the day in words, or what to pick. `shownId` lets a description name it. */
+  /** What the button shows: the day in words, or what to pick; `id` makes it the button's description. */
   shown: { text: string; id: string };
   empty: boolean;
   name: string;
@@ -18,14 +18,17 @@ export function ListDatePicker({ value, shown, empty, name, describedBy, disable
   onDay: (day: string) => void;
 }) {
   const input = useRef<HTMLInputElement>(null);
-  // As DraftDateCell opens its picker.
+  // As DraftDateCell opens its picker; a browser without showPicker (Safari before 16) gets the click too (S9).
   const open = () => {
-    try { input.current?.showPicker?.(); } catch { input.current?.click(); }
+    const el = input.current;
+    try { if (el?.showPicker) return el.showPicker(); } catch { /* the click below */ }
+    el?.click();
   };
   return (
     <span className="upload-list-picker" data-at={at}>
       <button type="button" className={`upload-list-picker-button${empty ? ' upload-list-picker-button--empty' : ''}`}
-        aria-label={name} aria-describedby={describedBy} disabled={disabled} onClick={open}>
+        // The name replaces the button's content, so the day it shows is read as its description (adversary F6).
+        aria-label={name} aria-describedby={[shown.id, describedBy].filter(Boolean).join(' ')} disabled={disabled} onClick={open}>
         <span id={shown.id}>{shown.text}</span>
       </button>
       <input ref={input} type="date" tabIndex={-1} aria-hidden="true" className="bt-date-hidden-icon" value={value} disabled={disabled}

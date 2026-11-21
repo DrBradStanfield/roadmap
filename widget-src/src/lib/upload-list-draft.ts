@@ -3,15 +3,16 @@
  * sent to the engine. Everything else the screen shows is the engine's (`uploadList`, `uploadView`). Changed only
  * through this pure `transition`; `send` is a draft the screen hands the engine (a row's `{typed: ref, text, unit}`, a
  * letter's title). `unit`: the unit on screen when the typing started, kept to the commit (Codex R2), null for a lab or a
- * title.
+ * title; `unitLabel`: its words, drawn beside the input while the draft is open, so the label never names a unit the
+ * commit does not write (Codex R1).
  */
 import type { CellUnit } from '@roadmap/health-core/cell-unit';
 
-export type Draft = null | { key: string; text: string; unit: CellUnit | null };
+export type Draft = null | { key: string; text: string; unit: CellUnit | null; unitLabel: string | null };
 
 export type DraftEvent =
-  /** `unit`: the unit the row shows now; read only when this starts a draft. */
-  | { type: 'type'; key: string; text: string; unit: CellUnit | null }
+  /** `unit`, `unitLabel`: the unit the row shows now; read only when this starts a draft. */
+  | { type: 'type'; key: string; text: string; unit: CellUnit | null; unitLabel: string | null }
   /** Blur, Enter, or a Save press. */
   | { type: 'commit' }
   /** A control of row `key` took the focus. */
@@ -27,7 +28,7 @@ export function transition(draft: Draft, e: DraftEvent): DraftStep {
     case 'type':
       // The same input: its text changes, its unit stays. Another input: the old draft is committed first, never lost.
       if (draft && draft.key === e.key) return { draft: { ...draft, text: e.text }, send: null };
-      return { draft: { key: e.key, text: e.text, unit: e.unit }, send: draft };
+      return { draft: { key: e.key, text: e.text, unit: e.unit, unitLabel: e.unitLabel }, send: draft };
     case 'commit': return { draft: null, send: draft };
     case 'focus': return draft && draft.key !== e.key ? { draft: null, send: draft } : { draft, send: null };
     case 'escape': return { draft: null, send: null };

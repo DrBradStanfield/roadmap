@@ -3,8 +3,8 @@
  * yet: UploadModal still draws ReviewTable. It draws only what the engine exposes (`uploadList`, `uploadView`) and adds
  * no rule: it never decides a status, a caption, an error, a blocker or whether an input takes typing, never parses a
  * number and never counts. Its one state is the focused input's draft (lib/upload-list-draft.ts). Its view state: Show
- * all (open from the start when nothing needs checking), and which row holds the focus, which is never hidden (owner
- * ruling 2026-11-21, the one rule the screen owns).
+ * all, a latch set once when the review first has rows (open when nothing needs checking) and then only by its press;
+ * which row holds the focus, which is never hidden (owner rulings 2026-11-21, 2026-11-22); and the last error announced.
  */
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { ChoiceChange } from '@roadmap/health-core/upload-choices';
@@ -25,16 +25,20 @@ export interface UploadListProps {
   view: UploadView;
   /** Save's and close's words, and each letter's text (`uploadListPage`). */
   page: ListPage;
-  /** One choice for one read file (upload-flow `chose`). */
-  choose: (fileId: string, change: ChoiceChange) => void;
-  /** The view of the live state, read at once: a Save press reads it after committing a draft. */
+  /** One choice for one read file (upload-flow `chose`). The commit-then-save contract: `reread()` reflects a choice once
+   *  `choose` has returned, or, when it returns a promise, once that promise resolves. A Save press with a draft open
+   *  commits it and awaits that promise before it reads the view, so it never saves from a view the commit has not reached
+   *  (adversary F2). useUploadFlow's `send` is synchronous: it returns nothing. */
+  choose: (fileId: string, change: ChoiceChange) => void | Promise<void>;
+  /** The view of the live state, read at once: a Save press reads it after its commit has landed. */
   reread: () => UploadView;
   save: () => void;
   stop: () => void;
   retry: () => void;
   cancel: () => void;
   done: () => void;
-  /** A row's unit press: the web's unit setters (hooks/useUnits.ts, lib/lpa-unit.ts); the engine reads it back. */
+  /** A row's unit press: the web's unit setters (hooks/useUnits.ts, lib/lpa-unit.ts); the engine reads it back. Each must
+   *  SET the unit it is given (a flip can disagree while the record's units are held, US-34 AC7a). */
   unitTo: (metric: MetricType, unit: CellUnit) => void;
   lpaUnitTo: (unit: LpaUnit) => void;
 }
@@ -52,18 +56,38 @@ function bySection(rows: ListRow[]): Array<{ key: string; rows: ListRow[] }> {
   return [...groups].map(([key, rs]) => ({ key, rows: rs }));
 }
 
+/** The errors a person's step made: on rows that had none in the list before it (adversary F8). */
+const newErrors = (before: List, after: List) => {
+  const had = new Set(before.rows.filter((r) => r.error).map((r) => r.key));
+  return after.rows.filter((r) => r.error && !had.has(r.key)).map((r) => r.error!);
+};
+
 export function UploadList({ list, view, page, choose, reread, save, stop, retry, cancel, done, unitTo, lpaUnitTo }: UploadListProps) {
   // The draft, read synchronously as well as drawn: a blur and the next row's typing land in one batch.
   const live = useRef<Draft>(null);
   const [draft, setDraft] = useState<Draft>(null);
-  const [toggled, setToggled] = useState<boolean | null>(null);
+  // Show all: a latch, set once when the review first has rows, then only by its press (adversary F4, owner ruling); and
+  // the rows shown since that press, which stay shown, so no row hides under the person's hand.
+  const [latch, setLatch] = useState<{ open: boolean | null; kept: ReadonlySet<string> }>({ open: null, kept: new Set() });
+  if (latch.open === null && list.rows.length > 0) setLatch({ ...latch, open: list.check === null });
   const [focused, setFocused] = useState<string | null>(null);
+  // The list the errors were last compared on, whether the person chose since, and the last announcement.
+  const [said, setSaid] = useState({ list, acted: false, n: 0, text: '' });
+  if (said.list !== list) {
+    const fresh = said.acted ? newErrors(said.list, list) : [];
+    setSaid(fresh.length ? { list, acted: false, n: said.n + 1, text: fresh.join(' ') } : { ...said, list, acted: false });
+  }
   const root = useRef<HTMLDivElement>(null);
   const rowsId = useId();
   const byKey = useMemo(() => new Map(list.rows.map((r) => [r.key, r])), [list]);
   const editable = view.editable ?? false;
-  const all = toggled ?? list.check === null;
+  const all = latch.open ?? list.check === null;
 
+  /** Every choice the person makes goes through here, so an error it makes is announced. */
+  const pick = (fileId: string, change: ChoiceChange) => {
+    setSaid((s) => (s.acted ? s : { ...s, acted: true }));
+    return choose(fileId, change);
+  };
   const dispatch = (e: DraftEvent) => {
     const step = transition(live.current, e);
     live.current = step.draft;
@@ -72,28 +96,34 @@ export function UploadList({ list, view, page, choose, reread, save, stop, retry
     if (!sent) return;
     const row = byKey.get(sent.key);
     const letter = view.documents?.rows.find((d) => titleKey(d.fileId) === sent.key);
-    if (row) choose(row.fileId, { typed: row.ref, text: sent.text, unit: sent.unit });
-    else if (letter) choose(letter.fileId, { document: { title: sent.text } });
+    if (row) return pick(row.fileId, { typed: row.ref, text: sent.text, unit: sent.unit });
+    if (letter) return pick(letter.fileId, { document: { title: sent.text } });
   };
   // A draft whose input is gone (the review closed) is dropped unsent.
   const inputs = useMemo(() => new Set([...list.rows.filter((r) => r.input === 'number').map((r) => r.key), ...(view.documents?.rows ?? []).map((d) => titleKey(d.fileId))]), [list, view.documents]);
   useEffect(() => { if (live.current && !inputs.has(live.current.key)) dispatch({ type: 'rows', inputs }); }, [inputs]);
 
   const on: RowEvents = {
-    type: (key, text, unit) => dispatch({ type: 'type', key, text, unit }),
-    commit: () => dispatch({ type: 'commit' }),
+    type: (key, text, unit, unitLabel) => dispatch({ type: 'type', key, text, unit, unitLabel }),
+    commit: () => { dispatch({ type: 'commit' }); },
     focus: (key) => dispatch({ type: 'focus', key }),
     escape: () => { const had = live.current !== null; dispatch({ type: 'escape' }); return had; },
-    choose,
-    unitTo,
-    lpaUnitTo,
+    choose: pick,
+    // A press commits any open draft first: iOS Safari may not blur on a tap of a control that takes no focus (F3).
+    unitTo: (metric, unit) => { dispatch({ type: 'commit' }); unitTo(metric, unit); },
+    lpaUnitTo: (unit) => { dispatch({ type: 'commit' }); lpaUnitTo(unit); },
   };
 
+  // Commit, then read the view the commit reached: at once, or when the host's promise says it landed (F2).
   const pressSave = () => {
-    dispatch({ type: 'commit' });
-    const now = reread();
-    if (now.save.enabled) save();
-    else if (now.save.blockers[0]) controlAt(root.current, now.save.blockers[0].at)?.focus();
+    const decide = () => {
+      const now = reread();
+      if (now.save.enabled) save();
+      else if (now.save.blockers[0]) controlAt(root.current, now.save.blockers[0].at)?.focus();
+    };
+    const landed = dispatch({ type: 'commit' });
+    if (landed) void landed.then(decide);
+    else decide();
   };
 
   if (view.done) return <Done done={view.done} label={view.doneLabel} onDone={done} />;
@@ -101,14 +131,18 @@ export function UploadList({ list, view, page, choose, reread, save, stop, retry
   const failed = view.sections.find((s) => s.kind === 'failed');
   const notSaved = view.sections.find((s) => s.kind === 'notSaved');
   const days = new Map(list.days.map((d) => [d.key, d]));
-  // The row being typed in, or holding the focus, is never hidden.
-  const shown = (row: ListRow) => all || row.attention || row.key === draft?.key || row.key === focused;
+  // The row being typed in, or holding the focus, is never hidden; nor is one shown since Show all was last pressed.
+  const shown = (row: ListRow) => all || row.attention || row.key === draft?.key || row.key === focused || latch.kept.has(row.key);
+  const newlyShown = list.rows.filter((r) => shown(r) && !latch.kept.has(r.key));
+  if (newlyShown.length) setLatch({ ...latch, kept: new Set([...latch.kept, ...newlyShown.map((r) => r.key)]) });
   return (
     <div
       className="upload-list" ref={root} data-draft={draft?.key}
       onFocus={(e) => setFocused(e.target.closest<HTMLElement>('li[data-key]')?.dataset.key ?? null)}
       onBlur={(e) => { if (!root.current?.contains(e.relatedTarget as Node | null)) setFocused(null); }}
     >
+      {/* The list's one alert: an error the person's last step made, said once (adversary F8). */}
+      <div className="hr-sr-only" aria-live="assertive">{said.text && <p key={said.n}>{said.text}</p>}</div>
       <p className="review-summary">{view.summary}</p>
       {view.alreadySaved && <p className="review-overview-line">{view.alreadySaved}</p>}
       {view.refused && <p className="upload-error">{view.refused}</p>}
@@ -126,12 +160,13 @@ export function UploadList({ list, view, page, choose, reread, save, stop, retry
           const control = days.get(g.key);
           return (
             <section key={g.key} className="upload-list-group" data-section={g.key}>
-              {control && <DayHeader control={control} editable={editable} choose={choose} />}
+              {control && <DayHeader control={control} editable={editable} choose={pick} />}
               <ul className="upload-list-rows">
                 {g.rows.map((row) => (
                   <UploadListRow
                     key={row.key} row={row} on={on} editable={editable} hidden={!shown(row)}
                     value={draft?.key === row.key ? draft.text : row.typed?.text ?? row.shown.text}
+                    draftLabel={draft?.key === row.key ? draft.unitLabel ?? row.unit.label : null}
                   />
                 ))}
               </ul>
@@ -140,7 +175,7 @@ export function UploadList({ list, view, page, choose, reread, save, stop, retry
         })}
         {(list.showAll || all) && (
           <p className="upload-list-show-all">
-            <button type="button" className="review-disclosure" aria-expanded={all} aria-controls={rowsId} onClick={() => setToggled(!all)}>
+            <button type="button" className="review-disclosure" aria-expanded={all} aria-controls={rowsId} onClick={() => setLatch({ open: !all, kept: new Set() })}>
               {all ? list.hide : list.showAll}
             </button>
           </p>
@@ -149,7 +184,7 @@ export function UploadList({ list, view, page, choose, reread, save, stop, retry
       {view.documents && (
         <UploadListDocuments
           documents={view.documents} names={new Map(view.files.rows.map((f) => [f.fileId, f.name]))} letters={page.letters} editable={editable} on={on}
-          fix={(fileId, fix) => choose(fileId, { document: fix })}
+          fix={(fileId, fix) => pick(fileId, { document: fix })}
           titleOf={(fileId, title) => (draft?.key === titleKey(fileId) ? draft.text : title)}
         />
       )}

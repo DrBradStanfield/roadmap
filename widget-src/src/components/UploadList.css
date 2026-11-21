@@ -1,6 +1,9 @@
 /* The web upload list (US-13 AC26, web list PR 2; docs/drafts/upload-list-screen.md). Imported by UploadList.tsx
    alone, so nothing ships it until a later PR mounts the list. Phone first. Colours are styles.css tokens; warning ink
    is --color-grade-warn-text, which reads at 4.5:1 on white and on the amber tint. */
+/* The unit chip and Lp(a)'s control read .bt-timeline's ink, set on .health-tool and .bt-timeline; the modal's portal on
+   body reaches neither, so the list carries the four they use (styles.css, .bt-timeline). */
+.upload-list { --bt-ink-50: #f6f7f8; --bt-ink-200: #d7dbdf; --bt-ink-500: #5b6670; --bt-ink-900: #111417; }
 .upload-list .review-summary { border-bottom: none; padding-bottom: 4px; margin-bottom: 8px; }
 .upload-list input[type="checkbox"] { accent-color: var(--color-brand); }
 
@@ -42,6 +45,8 @@
   padding: 6px 0 10px;
   border-bottom: 1px solid var(--color-gray-border);
 }
+/* `hidden` must beat `display: grid`: the modal draws through a portal on body, outside `.health-tool [hidden]` (F1). */
+.upload-list-row[hidden] { display: none; }
 .upload-list-row > * { grid-column: 2; }
 .upload-list-row > .upload-list-check { grid-column: 1 / -1; }
 .upload-list-check { display: flex; align-items: center; gap: 10px; min-height: 44px; cursor: pointer; }

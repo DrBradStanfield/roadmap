@@ -24,7 +24,7 @@ function Letter({ d, documents, fileName, title, text, editable, on, fix }: {
       <label id={titleId} htmlFor={`${id}input`} className="upload-list-document-label">Document title</label>
       <input
         id={`${id}input`} type="text" className="review-title-input" disabled={!editable} value={title} aria-labelledby={`${titleId} ${fileId}`}
-        onChange={(e) => on.type(titleKey(d.fileId), e.target.value, null)}
+        onChange={(e) => on.type(titleKey(d.fileId), e.target.value, null, null)}
         onBlur={on.commit}
         onKeyDown={draftKeys(on)}
       />
