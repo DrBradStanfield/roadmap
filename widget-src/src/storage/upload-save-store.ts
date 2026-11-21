@@ -6,7 +6,6 @@
  * for the phone. Not mounted yet: the web list's mount (PR 3b) calls it in place of lib/upload-save.ts.
  */
 import type { ApiMeasurement } from '@roadmap/health-core/mappings';
-import type { RecordHost } from '@roadmap/health-core/record-host';
 import type { RecordSession } from '@roadmap/health-core/record-session';
 import type { UploadState } from '@roadmap/health-core/upload-flow';
 import { uploadSave, type SavedOutcome, type UploadSaveIO } from '@roadmap/health-core/upload-save';
@@ -37,8 +36,11 @@ export function reportUnstored(error: unknown, backend: string): void {
   Sentry.captureException(recordFailure(error, 'Document file not stored'), { tags: { area: 'cloud-sync', op: 'write-document', backend } });
 }
 
+/** The person's cloud, as the store holds it: the one writer of an original's bytes stays in the store (US-09 AC2c). */
+export interface OriginalsCloud { write(ref: string, blob: Blob): Promise<void>; backend: string }
+
 export async function saveUploadThrough(
-  session: RecordSession, host: RecordHost, s: UploadState, now: string, cloudConnected: boolean, io: WebUploadIO, person?: ScreeningPerson,
+  session: RecordSession, cloud: OriginalsCloud, s: UploadState, now: string, cloudConnected: boolean, io: WebUploadIO, person?: ScreeningPerson,
 ): Promise<UploadSaveAnswer> {
   // The Save stands for the erase the page showed as it began: refused before any write, before each original and at
   // the commit, since an erase can land while the originals upload (US-16 AC2a, US-11 AC1a).
@@ -51,9 +53,9 @@ export async function saveUploadThrough(
     write: async (ref, original) => {
       try {
         if (session.refuses(erase)) throw new Error('erase moved');
-        await host.store.writeDocument(ref, await original());
+        await cloud.write(ref, await original());
       } catch (error) {
-        if (!session.refuses(erase)) reportUnstored(error, host.store.id);
+        if (!session.refuses(erase)) reportUnstored(error, cloud.backend);
         throw error;
       }
     },

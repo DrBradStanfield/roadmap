@@ -440,7 +440,7 @@ export class RoadmapStore {
 
   /** The shared upload's one Save, its rows in one edit (upload-save-store.ts). */
   saveUpload(s: UploadState, now: string, cloudConnected: boolean, io: WebUploadIO, person?: ScreeningPerson): Promise<UploadSaveAnswer> {
-    return saveUploadThrough(this.session, this.host, s, now, cloudConnected, io, person);
+    return saveUploadThrough(this.session, { write: (ref, blob) => this.host.store.writeDocument(ref, blob), backend: this.host.store.id }, s, now, cloudConnected, io, person);
   }
 
   /** Read a stored document's bytes back (viewer). */
