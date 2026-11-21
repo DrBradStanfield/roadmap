@@ -33,6 +33,6 @@ describe('US-12 AC9: the phone\'s doors never hold a reader', () => {
   it('the same state with no reader is read', () => {
     const view = JSON.parse(uploadViewJson(JSON.stringify(open('phone')), '', NOW, false, 'phone'));
     expect(view.reason).toBeUndefined();
-    expect(view.files.rows).toEqual([{ fileId: 'f', name: 'a.pdf', status: expect.any(String) }]);
+    expect(view.files.rows).toEqual([{ fileId: 'f', name: 'a.pdf', status: expect.any(String), notFullyRead: expect.any(Boolean) }]);
   });
 });

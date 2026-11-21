@@ -23,6 +23,7 @@ import { UNDATED_PREVIOUS, type UnifiedExtractionResult } from './lab-extraction
 import { withComparator } from './lab-limits';
 import { candidates } from './upload-candidates';
 import { validDay } from './record-edits';
+import type { UploadPlatform } from './upload-rules';
 
 /**
  * `ticked`: the tick shown now, ticked unless cleared. `replaces`: a conflict's held row,
@@ -76,12 +77,13 @@ export interface UploadView {
     line: string; rows: Array<{ fileId: string; title: string; kind: string; date: string; dateKnown: boolean; kindKey?: DocumentType; day?: string | null }>;
     kinds?: Array<{ key: DocumentType; word: string }>; setDate?: string; removeDate?: string;
   } | null;
-  /** The collapsed "Files" list. */
-  files: { row: string; rows: Array<{ fileId: string; name: string; status: string }> };
-  /** Read files with nothing in them, and files read only in part, in the web's notice words (US-12 AC9); once done, files
-   *  refused before reading too. Each is said once on each screen: in review, a file with nothing in it here alone (its
-   *  status reads "Read"), a refused one by its status alone; once done, here and as its status, since the web's done
-   *  screen draws only these and the failed rows, and the iPhone's only the Files rows. */
+  /** The "Files" list. `notFullyRead`: the file at rest was not fully read (`fileReason`), so its reason is on this
+   *  row, or in `notices` where the screen draws them; a done screen may show only these rows. */
+  files: { row: string; rows: Array<{ fileId: string; name: string; status: string; notFullyRead: boolean }> };
+  /** A read file's soft reasons (cut short, nothing in it), only where the screen draws notices beside the Files rows
+   *  (FILE_REASON_DRAWN): there the row reads "Read". Invariant (US-12 AC9): on every screen, each file at rest that was not
+   *  fully read shows its one reason exactly once over the channels that screen draws; a fully read file shows none.
+   *  The one exception: FILE_REASON_TWICE. */
   notices: Array<{ fileId: string; name: string; line: string }>;
   /** `error`: a failed save's message; Save then retries. `blockers`: each thing Save waits on (`saveBlockers`), with the
    *  control that removes it; `why` is the first, or what else holds Save. */
@@ -111,6 +113,41 @@ export interface Blocker { why: string; at: string }
 
 const READING: readonly FileStatus['s'][] = ['converting', 'sending'];
 const AT_REST: readonly FileStatus['s'][] = ['known', 'refused', 'read', 'failed', 'stopped'];
+
+/** The channels each screen draws a file's reason in (US-12 AC9): the Files rows, the notices beside them, the failed
+ *  section. 'done' once saved, else 'review'. The web's from widget-src UploadList.tsx as the list mount draws it; the
+ *  phone's is a declared claim about ios UploadReviewView.swift, which nothing here checks. */
+export const FILE_REASON_DRAWN: Record<UploadPlatform, Record<'review' | 'done', ReadonlyArray<'files' | 'notices' | 'failed'>>> = {
+  web: { review: ['files'], done: ['files'] },
+  phone: { review: ['failed', 'notices', 'files'], done: ['files'] },
+};
+/** The one cell that shows a reason twice: the iPhone's review names a failed file in its failed section (with Try again)
+ *  and again in its collapsed Files row; the web's review draws the same rows with no failed section. */
+export const FILE_REASON_TWICE = { platform: 'phone', screen: 'review', status: 'failed' } as const;
+
+/** A read file's soft reasons, in order: cut short, then nothing in it. Never for a file not read: it never was, so
+ *  "only its first part was read" would be false. */
+function softReasons(f: UploadFile): string[] {
+  if (f.status.s !== 'read') return [];
+  return [f.pages?.truncated ? FILE_NOTICE_TEXT.truncated : null, emptyRead(f)].filter((l): l is string => l !== null);
+}
+
+/**
+ * Why a file at rest was not fully read, in existing words (US-12 AC9), or null: fully read, or still in flight. Hard
+ * reasons (known, refused, failed, stopped) are its status words; a read file's soft ones join with a space.
+ */
+export function fileReason(f: UploadFile, s: UploadState): string | null {
+  const status = f.status;
+  switch (status.s) {
+    case 'known': case 'refused': case 'failed': case 'stopped': return statusWords(status, s);
+    case 'read': return softReasons(f).join(' ') || null;
+    case 'unlisted': case 'listing': case 'waiting': case 'hashing': case 'hashed': case 'converting': case 'ready': case 'sending': return null;
+    default: {
+      const unknown: never = status;
+      throw new Error(`fileReason: no rule for status ${(unknown as FileStatus).s}`);
+    }
+  }
+}
 
 function statusWords(status: FileStatus, s: UploadState): string {
   switch (status.s) {
@@ -348,6 +385,7 @@ export function uploadView(s: UploadState, record: RoadmapFile, now: string, rev
     }] : []),
   ];
   const waiting = inFlight(s);
+  const beside = FILE_REASON_DRAWN[s.platform][s.phase === 'done' ? 'done' : 'review'].includes('notices');
   // Held already, equal: one copy of an equal reading of this upload is counted nowhere (one saves), as the web counts.
   const alreadySaved = offered.filter((v) => v.group === 'saved' && !('duplicate' in v && v.duplicate)).length;
   return {
@@ -368,11 +406,13 @@ export function uploadView(s: UploadState, record: RoadmapFile, now: string, rev
       kinds: DOCUMENT_TYPES.map((key) => ({ key, word: KIND_WORDS[key][0] })),
       setDate: UPLOAD_TEXT.setDate, removeDate: UPLOAD_TEXT.removeDate,
     } : null,
-    files: { row: UPLOAD_TEXT.filesRow(files.length), rows: files.map((f) => ({ fileId: f.id, name: uploadFileName(f), status: (s.phase === 'done' ? emptyRead(f) : null) ?? statusWords(f.status, s) })) },
-    // Read files with nothing in them, and files read only in part (US-12 AC9), in the web's words; once done, files
-    // refused before reading too, in their Files row's words (the web's done screen draws no Files rows).
-    notices: files.flatMap((f) => [s.phase === 'done' && f.status.s === 'refused' ? statusWords(f.status, s) : null, emptyRead(f), f.pages?.truncated ? FILE_NOTICE_TEXT.truncated : null]
-      .flatMap((line) => (line ? [{ fileId: f.id, name: uploadFileName(f), line }] : []))),
+    files: { row: UPLOAD_TEXT.filesRow(files.length), rows: files.map((f) => {
+      const reason = fileReason(f, s);
+      // A hard reason owns the row; a soft one too, unless the screen draws it beside the row.
+      const status = reason !== null && !(beside && f.status.s === 'read') ? reason : statusWords(f.status, s);
+      return { fileId: f.id, name: uploadFileName(f), status, notFullyRead: reason !== null };
+    }) },
+    notices: beside ? files.flatMap((f) => softReasons(f).map((line) => ({ fileId: f.id, name: uploadFileName(f), line }))) : [],
     save: save(s, plan, review),
     stop: s.phase === 'open' && waiting ? { label: UPLOAD_TEXT.stop } : null,
     // A Save that kept originals and wrote nothing else heads with the kept line alone, never "Saved 0 values." (US-14 AC13).
