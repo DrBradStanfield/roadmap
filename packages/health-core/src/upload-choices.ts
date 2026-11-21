@@ -7,7 +7,7 @@
 import { UNDATED_PREVIOUS, type UnifiedExtractionResult } from './lab-extraction';
 import { offeredValues, valueAt } from './import-review';
 import { typedCommit } from './cell-input';
-import type { CellUnit } from './cell-unit';
+import { isCellMetric, type CellUnit } from './cell-unit';
 import { validDay } from './record-edits';
 
 /** A document's corrections before Save (design Q3 (a)). `date` null: the person removed it. */
@@ -63,8 +63,15 @@ function unheld(c: FileChoices, ref: string): FileChoices {
   return Object.keys(typed).length ? { ...rest, typed } : rest;
 }
 
-/** A value cleared: unticked, its Replace dropped (a Replace selects its value), and any text held in its row. */
-export const untick = (c: FileChoices, ref: string): FileChoices => ({ ...unheld(c, ref), ticks: { ...c.ticks, [ref]: false }, replace: without(c.replace, ref) });
+/** A value cleared: unticked, and its Replace dropped (a Replace selects its value). The person's input in it (held text,
+ *  an edit) stays: only their own clear drops held text (`choose`), never a lost Replace (US-13 AC21, AC26). */
+export const untick = (c: FileChoices, ref: string): FileChoices => ({ ...c, ticks: { ...c.ticks, [ref]: false }, replace: without(c.replace, ref) });
+
+/** A core value whose metric the units table lacks. */
+const unknownCore = (x: Pick<UnifiedExtractionResult, 'values' | 'additionalValues'>, ref: string) => {
+  const at = valueAt(x, ref);
+  return at?.kind === 'core' && !isCellMetric(at.value.metric);
+};
 
 /** The refs a day change moves: values on the test's day (no day of their own), in the undated previous column, or printed on one day. */
 function movedRefs(x: Pick<UnifiedExtractionResult, 'values' | 'additionalValues'>, own: string | undefined): string[] {
@@ -81,9 +88,10 @@ function moved(c: FileChoices, refs: string[], before: string | null, after: str
  * The choices after one change, or null when the change is refused (an impossible document
  * date, a column day for no real past day a value printed). `extraction`: the file's, to know which values a day change moves.
  */
-export function choose(c: FileChoices, change: ChoiceChange, now: string, extraction: Pick<UnifiedExtractionResult, 'values' | 'additionalValues' | 'reportDate'>): FileChoices | null {
+export function choose(c: FileChoices, change: ChoiceChange, now: string, extraction: Pick<UnifiedExtractionResult, 'values' | 'additionalValues' | 'reportDate'> & Partial<Pick<UnifiedExtractionResult, 'classification'>>): FileChoices | null {
   // Replace saves the value as a correction, so it selects the value; clearing a value drops its Replace.
-  if ('tick' in change) return change.on ? { ...c, ticks: { ...c.ticks, [change.tick]: true } } : untick(c, change.tick);
+  // The person's own clear drops any text held in the row too.
+  if ('tick' in change) return change.on ? { ...c, ticks: { ...c.ticks, [change.tick]: true } } : unheld(untick(c, change.tick), change.tick);
   if ('testDay' in change) {
     const report = extraction.reportDate ?? null;
     return { ...c, testDay: change.testDay, replace: moved(c, movedRefs(extraction, undefined), c.testDay ?? report, change.testDay ?? report, now) };
@@ -103,10 +111,14 @@ export function choose(c: FileChoices, change: ChoiceChange, now: string, extrac
     const columnDays = day === null ? without(c.columnDays ?? {}, change.columnDay) : { ...c.columnDays, [change.columnDay]: day };
     return { ...c, columnDays, replace: moved(c, refs, c.columnDays?.[change.columnDay] ?? change.columnDay, day ?? change.columnDay, now) };
   }
+  // A core metric this build does not know takes no number: the write refuses it whatever it is (round one, F1).
+  if (('edit' in change || 'typed' in change) && unknownCore(extraction, 'edit' in change ? change.edit : change.typed)) return null;
   if ('edit' in change) return { ...unheld(c, change.edit), edits: change.value === null || !Number.isFinite(change.value) ? without(c.edits, change.edit) : { ...c.edits, [change.edit]: change.value } };
   if ('typed' in change) {
     // An emptied input unticks its row and drops its text (owner ruling 2026-11-21); text that is no number stays, held.
-    if (!change.text.trim()) return untick(c, change.typed);
+    // Only a lab report's values are saved, so only they hold text (a letter's are filed with it, never saved).
+    if (extraction.classification !== 'lab_report') return null;
+    if (!change.text.trim()) return unheld(untick(c, change.typed), change.typed);
     const at = valueAt(extraction, change.typed);
     const commit = at && typedCommit(change.text, at, c.edits[change.typed], change.unit);
     if (!commit) return null;

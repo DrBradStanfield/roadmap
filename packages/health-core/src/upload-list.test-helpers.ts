@@ -6,13 +6,18 @@ import { cellRange, rangeMessage, type CellUnit } from './cell-unit';
 import { ENTER_A_NUMBER, NUMERIC_SYNTAX_GUIDANCE } from './cell-input';
 import { offeredValues, type ClassifiedValue } from './import-review';
 import { UNDATED_PREVIOUS } from './lab-extraction';
-import { rangeFault, type MetricType } from './units';
+import { rangeFault, UNIT_DEFS, type MetricType } from './units';
+import type { TypedText } from './upload-choices';
 import type { UploadState } from './upload-flow';
 import type { UploadList } from './upload-list';
 import type { UploadReview } from './upload-review';
 import type { UploadView } from './upload-view';
 
 type Fail = (prop: string, msg: string) => never;
+/** What the person entered in each row, by `fileId:ref`, as the harness logged it from their own events (L7 keeps it). */
+export type PersonInputs = ReadonlyMap<string, { typed: TypedText | null; edit: number | undefined }>;
+/** A core metric the units table holds; an unfamiliar one has no range and no unit. */
+const known = (metric: string): metric is MetricType => Object.prototype.hasOwnProperty.call(UNIT_DEFS, metric);
 type Read = Extract<Extract<UploadState, { files: unknown }>['files'][number]['status'], { s: 'read' }>;
 
 /** Each read lab report's state, in the review's order (picked order). */
@@ -37,18 +42,20 @@ export function checkExistence(s: UploadState, review: UploadReview, list: Uploa
 }
 
 /**
- * L2 input shown. From the choices alone: ticked is `ticks[ref] ?? true`, the held text is `typed[ref]`, the number is
- * `edits[ref]` else the one read. Mutation: `ticked: c.v.sent` (a waiting value drawn unticked) fails it.
+ * L2 input shown. Ticked is `ticks[ref] ?? true`; the held text and the edit are what the person's own events left
+ * (`inputs`, the harness's log, never the choices after the engine touched them); the number is that edit else the one
+ * read. Mutation: `ticked: c.v.sent` (a waiting value drawn unticked) fails it.
  */
-export function checkInputs(s: UploadState, review: UploadReview, list: UploadList, fail: Fail) {
+export function checkInputs(s: UploadState, review: UploadReview, list: UploadList, inputs: PersonInputs, fail: Fail) {
   const byKey = new Map(list.rows.map((r) => [r.key, r]));
   for (const { lf, st } of labReads(s, review)) {
     for (const at of offeredValues(st.extraction)) {
       const row = byKey.get(`${lf.fileId}:${at.ref}`);
       if (!row) continue; // L1's
       const ticked = st.choices.ticks[at.ref] ?? true;
-      const typed = st.choices.typed?.[at.ref] ?? null;
-      const current = st.choices.edits[at.ref] ?? (at.kind === 'core' ? at.value.valueSI : at.value.value);
+      const entered = inputs.get(`${lf.fileId}:${at.ref}`);
+      const typed = entered?.typed ?? null;
+      const current = entered?.edit ?? (at.kind === 'core' ? at.value.valueSI : at.value.value);
       if (row.ticked !== ticked || JSON.stringify(row.typed) !== JSON.stringify(typed) || row.shown.current !== current) {
         fail('L2', `${row.key} shows ticked ${row.ticked}, typed ${JSON.stringify(row.typed)}, ${row.shown.current}; chose ${ticked}, ${JSON.stringify(typed)}, ${current}`);
       }
@@ -60,18 +67,37 @@ export function checkInputs(s: UploadState, review: UploadReview, list: UploadLi
 export const holdsText = (s: UploadState) => ('files' in s ? s.files : []).some((f) => f.status.s === 'read' && Object.keys(f.status.choices.typed ?? {}).length > 0);
 
 /**
- * L3 typed blocks. Any held text means Save is off and a blocker sits at that row, read from the choices alone (the run
- * checks `uploadSave` refuses too). Mutation: the typed blocker read only for sent values (`c.typed && c.v.sent`) fails it
- * on text held in a report waiting for its day.
+ * L3 typed blocks. Any text the person's own events left held (`inputs`) means Save is off and a blocker sits at that
+ * row (the run checks `uploadSave` refuses too). Mutation: the typed blocker read only for sent values
+ * (`c.typed && c.v.sent`) fails it on text held in a report waiting for its day.
  */
-export function checkTypedBlocks(s: UploadState, view: UploadView, fail: Fail) {
+export function checkTypedBlocks(s: UploadState, view: UploadView, inputs: PersonInputs, fail: Fail) {
   if (s.phase !== 'open' && s.phase !== 'saveFailed') return;
   const at = new Set(view.save.blockers.map((b) => b.at));
+  for (const [key, { typed }] of inputs) {
+    if (!typed) continue;
+    if (view.save.enabled) fail('L3', `Save on while ${key} holds text`);
+    if (!at.has(key)) fail('L3', `no blocker at ${key}, which holds text`);
+  }
+}
+
+/**
+ * L7 input kept. Across every step that is not the person's own choice on a row (door steps, record changes, reads
+ * landing, Save and its outcome), each row's held text and edit are what the person's own events left; only a choice
+ * naming that row changes them. The log is the harness's own. Mutation: `replacesLost` reducing with the person's clear
+ * (held text erased by a lost Replace) fails it.
+ */
+export function keepInputs(s: UploadState, inputs: Map<string, { typed: TypedText | null; edit: number | undefined }>, chosen: string | null, fail: Fail) {
+  if (!('files' in s)) { inputs.clear(); return; }
   for (const f of s.files) {
     if (f.status.s !== 'read') continue;
-    for (const ref of Object.keys(f.status.choices.typed ?? {})) {
-      if (view.save.enabled) fail('L3', `Save on while ${f.id}:${ref} holds text`);
-      if (!at.has(`${f.id}:${ref}`)) fail('L3', `no blocker at ${f.id}:${ref}, which holds text`);
+    for (const { ref } of offeredValues(f.status.extraction)) {
+      const key = `${f.id}:${ref}`;
+      const now = { typed: f.status.choices.typed?.[ref] ?? null, edit: f.status.choices.edits[ref] };
+      if (key === chosen) { inputs.set(key, now); continue; }
+      const was = inputs.get(key) ?? { typed: null, edit: undefined };
+      if (JSON.stringify(was) !== JSON.stringify(now)) fail('L7', `${key} changed without the person: ${JSON.stringify(was)} -> ${JSON.stringify(now)}`);
+      inputs.set(key, now);
     }
   }
 }
@@ -101,7 +127,7 @@ export function checkOneQuantity(s: UploadState, review: UploadReview, view: Upl
       const v = classified.get(`${i}:${at.ref}`);
       if (!row || !v) continue;
       const typed = st.choices.typed?.[at.ref];
-      const metric = at.kind === 'core' ? at.value.metric as MetricType : null;
+      const metric = at.kind === 'core' && known(at.value.metric) ? at.value.metric : null;
       const candidate = st.choices.edits[at.ref] ?? (at.kind === 'core' ? at.value.valueSI : at.value.value);
       const range = !typed && metric ? rangeFault(cellRange(metric, 'si'), candidate) : null;
       // The carve-out: a sent value the write refuses that its own number does not show (a pressure pair, a lab filed as a core value).

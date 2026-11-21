@@ -36,6 +36,7 @@ None today.
 - The GLP-1 hint sentence "GLP-1 medications reduce appetite and improve blood sugar control." is approved.
 
 2026-11-21, the owner's calls (Fable, not Brad):
-- Invalid text reverts when the field loses focus.
+- Invalid text stays in its row, shows the existing guidance and blocks Save (US-13 AC5, AC12); an earlier owner call to
+  revert it was withdrawn on 2026-11-21 after review.
 - An emptied input unticks its row.
 - A dated previous column's day stays editable.

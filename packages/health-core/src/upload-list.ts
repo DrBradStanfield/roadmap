@@ -8,7 +8,7 @@
  */
 import { IMPORT_REVIEW_TEXT, NOT_SAVED_TEXT, type NotSavedReason, type UnsureReason } from './import-review';
 import { UNDATED_PREVIOUS } from './lab-extraction';
-import { rangeMessage, type CellUnit } from './cell-unit';
+import { isCellMetric, rangeMessage, type CellUnit } from './cell-unit';
 import { shownValue, typedTextError, type ShownValue } from './cell-input';
 import { validDay } from './record-edits';
 import type { FileLabValue, FileMeasurement, RoadmapFile } from './roadmap-file';
@@ -117,7 +117,7 @@ export function uploadList(s: UploadState, record: RoadmapFile, now: string, rev
       key: `${c.fileId}:${c.ref}`, fileId: c.fileId, ref: c.ref, label: c.v.label, section, status, caption: captionOf(status, error),
       saves: c.v.sent && c.v.writes && (!promised || promised.has(`${c.fileId}:${c.ref}`)),
       ticked: c.ticked, typed: c.typed,
-      shown: shownValue(c.at, c.edit, c.at.kind === 'core' ? unitOf(c.at.value.metric as MetricType) : 'si'), error,
+      shown: shownValue(c.at, c.edit, c.at.kind === 'core' && isCellMetric(c.at.value.metric) ? unitOf(c.at.value.metric) : 'si'), error,
       replaces, replacing, held: heldText(replaces ? rowsById.get(replaces) : undefined, record),
       attention: (c.v.group === 'unsure' && c.v.reasons.length > 0) || error !== null || touched,
     };

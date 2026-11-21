@@ -39,7 +39,7 @@ import { bulkAppendValues, slotKey, slotOfRow, validDay, type BulkRow } from './
 import { DAY_NOT_HAPPENED, LAB_DAY_REFUSAL } from './lab-series';
 import { mergeFiles } from './merge';
 import { knownAs, knownIndex } from './upload-known';
-import { rangeFault, reportedToCanonical, type MetricType } from './units';
+import { rangeFault, reportedToCanonical, UNIT_DEFS, type MetricType } from './units';
 import { PRESSURE_ORDER } from './validation';
 import { createEmptyFile, type FileLabValue, type FileMeasurement, type RoadmapFile } from './roadmap-file';
 import type { ChoiceChange, FileChoices } from './upload-choices';
@@ -50,7 +50,8 @@ import { requestFlags, type UploadPlatform } from './upload-rules';
 import { uploadSave, type UploadSaveIO } from './upload-save';
 import { uploadView, type UploadView, type ValueRow } from './upload-view';
 import { uploadList, type UploadList } from './upload-list';
-import { checkExistence, checkInputs, checkKeysKept, checkNoSilentNonWrite, checkOneQuantity, checkTypedBlocks, holdsText } from './upload-list.test-helpers';
+import { checkExistence, checkInputs, checkKeysKept, checkNoSilentNonWrite, checkOneQuantity, checkTypedBlocks, holdsText, keepInputs, type PersonInputs } from './upload-list.test-helpers';
+import type { TypedText } from './upload-choices';
 import { FIX_ERRORS_TEXT, UPLOAD_TEXT } from './upload-text';
 import { IMPORT_REVIEW_TEXT, importRow, isOfferedRef, offeredValues, PROBE_DAY, valueAt } from './import-review';
 import { cellLabel, cellRange, cellToSI } from './cell-unit';
@@ -104,7 +105,7 @@ function genLab(r: () => number, platform: UploadPlatform): UnifiedExtractionRes
   const additionalValues: AdditionalLabValue[] = [];
   const n = 1 + Math.floor(r() * 4);
   for (let i = 0; i < n; i++) {
-    const kind = pick(['ldl', 'hba1c', 'ldlQ', 'ldlGuess', 'ldlHigh', 'ferritin', 'refusedAlone', 'bp', 'ldlLimit', 'ldlAsLab', 'ldlMgdl'] as const);
+    const kind = pick(['ldl', 'hba1c', 'ldlQ', 'ldlGuess', 'ldlHigh', 'ferritin', 'refusedAlone', 'bp', 'ldlLimit', 'ldlAsLab', 'ldlMgdl', 'unknownCore'] as const);
     const recordedAt = own();
     const day = recordedAt ? { recordedAt } : {};
     const ldl = pick([3.1, 2.4]);
@@ -126,6 +127,8 @@ function genLab(r: () => number, platform: UploadPlatform): UnifiedExtractionRes
     // A lab the write files as a core value (bulk-row-target.ts).
     if (kind === 'ldlAsLab') additionalValues.push(extra({ name: 'LDL Cholesterol', value: 2.9, unit: 'mmol/L', ...day }));
     // Printed in mg/dL: the row shows the printed number, the record stores its SI conversion.
+    // A core metric this build does not know (the schema takes any text): the write refuses it alone (round one, F1).
+    if (kind === 'unknownCore') values.push(core({ metric: 'vitamin_zz', valueSI: 12, displayValue: 12, displayUnit: 'zz/L', ...day }));
     if (kind === 'ldlMgdl') values.push(core({ valueSI: reportedToCanonical('ldl', 116, 'mg/dL')!.valueSI, displayValue: 116, displayUnit: 'mg/dL', displaySystem: 'conventional', ...day }));
   }
   return {
@@ -227,7 +230,7 @@ function checkText(view: UploadView) {
 type Note = (gap: string) => void;
 
 /** P1, P2 (same record), P3, P4, B on one view, in the person's units on the web. `note`: a known gap seen. */
-function checkView(s: UploadState, record: RoadmapFile, setup: Setup, note: Note): { view: UploadView; review: UploadReview; list: UploadList } {
+function checkView(s: UploadState, record: RoadmapFile, setup: Setup, note: Note, inputs: PersonInputs): { view: UploadView; review: UploadReview; list: UploadList } {
   const { cloud } = setup;
   const review = uploadReview(s, record, NOW);
   const view = uploadView(s, record, NOW, review, cloud, unitsOf(setup));
@@ -237,8 +240,8 @@ function checkView(s: UploadState, record: RoadmapFile, setup: Setup, note: Note
   checkText(view);
   checkText(list as unknown as UploadView);
   checkExistence(s, review, list, fail);
-  checkInputs(s, review, list, fail);
-  checkTypedBlocks(s, view, fail);
+  checkInputs(s, review, list, inputs, fail);
+  checkTypedBlocks(s, view, inputs, fail);
   checkOneQuantity(s, review, view, list, unitOf, fail);
   checkNoSilentNonWrite(s, review, list, fail);
   const rows = allRows(view);
@@ -413,10 +416,11 @@ function checkBlockers(s: UploadState, view: UploadView, review: UploadReview, l
       const ticked = st.choices.ticks[ref] ?? true;
       const v = classified.get(`${f.id}:${ref}`)!;
       const typed = st.choices.typed?.[ref] !== undefined;
-      const metric = at.kind === 'core' ? at.value.metric as MetricType : null;
+      const metric = at.kind === 'core' && Object.prototype.hasOwnProperty.call(UNIT_DEFS, at.value.metric) ? at.value.metric as MetricType : null;
+      const pairOrUnknown = at.kind === 'core' && !metric;
       const candidate = st.choices.edits[ref] ?? (at.kind === 'core' ? at.value.valueSI : at.value.value);
       const pair = v.sent && !v.writes && v.group === 'unsure' && v.reasons.includes('outOfRange');
-      const fault = !!metric && (!!rangeFault(cellRange(metric, 'si'), candidate) || pair);
+      const fault = (!!metric && (!!rangeFault(cellRange(metric, 'si'), candidate) || pair)) || (pairOrUnknown && pair);
       const kept = v.group === 'unsure' && v.reasons.includes('conflict') && (!!v.copy || !review.labFiles.find((l) => l.fileId === f.id)!.replacing.includes(ref));
       const future = v.group === 'notSaved' && (v.reason === 'futureDay' || v.reason === 'futureCoreDay');
       if (typed || (ticked && fault && !kept && !future)) fixes.add(`${f.id}:${ref}`);
@@ -623,6 +627,8 @@ class Run {
   k4 = 0;
   /** Saves refused for held text (L3). */
   typedRefused = 0;
+  /** What the person entered in each row, logged from their own events (L7). */
+  inputs = new Map<string, { typed: TypedText | null; edit: number | undefined }>();
 
   async apply(step: Step): Promise<void> {
     const before = this.last?.view;
@@ -675,13 +681,18 @@ class Run {
     else if (step.type === 'record') this.record = this.write(this.record, step.rows, step.merge);
     else if (step.type === 'delete') this.record = { ...this.record, labValues: this.record.labValues.map((l) => (l.id === step.id ? { ...l, status: 'entered-in-error' as const } : l)), measurements: this.record.measurements.map((m) => (m.id === step.id ? { ...m, status: 'entered-in-error' as const } : m)) };
     else await this.save(step);
+    const ch = step.type === 'event' && step.e.type === 'chose' ? step.e : null;
+    const ref = ch && ('tick' in ch.change ? ch.change.tick : 'replace' in ch.change ? ch.change.replace : 'edit' in ch.change ? ch.change.edit : 'typed' in ch.change ? ch.change.typed : null);
+    keepInputs(this.s, this.inputs, ch && ref ? `${ch.id}:${ref}` : null, fail);
     if (this.s.phase === 'done' || this.s.phase === 'saving') return;
     if (this.s.phase === 'open' || this.s.phase === 'saveFailed') {
       const door = doorState(this.s, this.record);
       this.lostReplace = door !== this.s;
       this.s = door;
     }
-    const { view, review, list } = checkView(this.s, this.record, this.setup, this.note);
+    // The door's own step (a lost Replace dropped) is not the person's: L7 checks it too.
+    keepInputs(this.s, this.inputs, null, fail);
+    const { view, review, list } = checkView(this.s, this.record, this.setup, this.note, this.inputs);
     this.last = { view, review, list, record: this.record };
   }
 
@@ -903,7 +914,9 @@ function genChange(r: () => number, run: Run, fileId: string): ChoiceChange | nu
   // Text typed into a row, on the web (US-13 AC12): a number, one the cells question, one that is no number, or nothing.
   if (run.setup.platform === 'web' && coin(0.5)) {
     const at = valueAt(f.status.extraction, row.ref);
-    return { typed: row.ref, text: pick(['abc', '3..5', '1,234', '3.6', '12.9', '500', '', '3.14']), unit: at?.kind === 'core' ? run.setup.system : null };
+    // Mostly the unit the person reads; sometimes one that does not fit the value (round one, F3: refused, never a throw).
+    const unit = coin(0.15) ? pick(['nmol/L', 'mg/L', 'mg/dL', 'si', null] as const) : at?.kind === 'core' ? run.setup.system : null;
+    return { typed: row.ref, text: pick(['abc', '3..5', '1,234', '3.6', '12.9', '500', '', '3.14']), unit };
   }
   return { edit: row.ref, value: pick([2.0, 3.1, 52, 500, null, Number.NaN]) };
 }

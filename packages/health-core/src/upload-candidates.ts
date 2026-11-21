@@ -2,8 +2,8 @@
  * One candidate per offered value (web list PR 1b; US-13 AC5, AC12, AC26): the number Save would send for it, the person's
  * edit else the one read; a value holding typed text has none. Its fault comes from that candidate alone: the held text, or
  * a core value outside its range in the units table. One exception: a sent value the write refuses for a reason its own
- * number does not show (a blood pressure half of a pair the wrong way up, a lab filed as a core value out of its range)
- * carries the review's own refusal.
+ * number does not show (a blood pressure half of a pair the wrong way up, a lab filed as a core value out of its range, a
+ * core metric this build does not know) carries the review's own refusal.
  *
  * A value is selected when ticked, its conflict not kept unless replacing (US-13 AC5), and it can be saved at all (no own
  * day still to come). It blocks Save when it holds typed text, or when it is a selected core value with a fault, sent or
@@ -11,7 +11,7 @@
  * (upload-list.ts) and Save's blockers (upload-view.ts `saveBlockers`) both read this. Pure.
  */
 import { isCoreRef, offeredValues, type ClassifiedValue, type OfferedValue } from './import-review';
-import { cellRange } from './cell-unit';
+import { cellRange, isCellMetric } from './cell-unit';
 import { rangeFault, type MetricType } from './units';
 import { PRESSURE_ORDER } from './validation';
 import type { TypedText } from './upload-choices';
@@ -42,7 +42,8 @@ const undatable = (v: ClassifiedValue) => v.group === 'notSaved' && (v.reason ==
 function faultOf(at: OfferedValue, v: ClassifiedValue, typed: TypedText | null, candidate: number | null): RowFault | null {
   if (typed) return { kind: 'typed', text: typed.text };
   if (candidate === null) return null;
-  const metric = at.kind === 'core' ? at.value.metric as MetricType : null;
+  // A core metric the units table lacks has no range: the write refuses it alone, below.
+  const metric = at.kind === 'core' && isCellMetric(at.value.metric) ? at.value.metric : null;
   const range = metric && rangeFault(cellRange(metric, 'si'), candidate);
   if (metric && range) return { kind: 'range', metric, fault: range };
   // A sent value the write refuses for a reason its own number in the units table does not show: a blood pressure half
