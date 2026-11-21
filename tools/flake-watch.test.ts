@@ -9,7 +9,7 @@ import { mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { flakyJobs, filesFromAnnotations, filesFromLog, watch, formatMarkdown, main } from './flake-watch.mjs';
+import { flakyJobs, filesFromAnnotations, filesFromLog, watch, formatMarkdown, main, createApi, FETCH_TIMEOUT_MS } from './flake-watch.mjs';
 
 const FX = join(dirname(fileURLToPath(import.meta.url)), 'fixtures/flake-watch');
 const fx = (name: string) => readFileSync(join(FX, name), 'utf8');
@@ -29,10 +29,9 @@ const baseRoutes = () => ({
 });
 
 describe('flakyJobs (US-64 AC36)', () => {
-  it('names each job that failed on an earlier attempt and passed on its latest', () => {
+  it('names each job that failed on an earlier attempt and passed on its latest, never the `test` gate that only follows them', () => {
     const got = flakyJobs([json('attempt-1-jobs.json').jobs, json('attempt-2-jobs.json').jobs]);
     expect(got).toEqual([
-      { name: 'test', failedAttempt: 1, failedJobId: 136713695509, conclusion: 'failure' },
       { name: 'unit (2, UTC)', failedAttempt: 1, failedJobId: FAILED_JOB, conclusion: 'failure' },
     ]);
   });
@@ -73,11 +72,11 @@ describe('watch', () => {
     expect(unit).toMatchObject({ failedAttempt: 1, files: ['tools/split-stories.test.ts'], source: 'annotations' });
   });
 
-  it('falls back to the log, and says so when neither can be read', async () => {
-    const api = fakeApi({ ...baseRoutes(), [`actions/jobs/${FAILED_JOB}/logs`]: fx('fail-log.txt') });
-    const got = await watch(RUN, api);
-    expect(got.flaky.find((f: { name: string }) => f.name === 'unit (2, UTC)')).toMatchObject({ files: ['tools/split-stories.test.ts'], source: 'log' });
-    expect(got.flaky.find((f: { name: string }) => f.name === 'test')).toMatchObject({ files: [], source: 'none' });
+  it('falls back to the log (a local gh token can read it), and says so when neither can be read (CI)', async () => {
+    const withLog = await watch(RUN, fakeApi({ ...baseRoutes(), [`actions/jobs/${FAILED_JOB}/logs`]: fx('fail-log.txt') }));
+    expect(withLog.flaky).toEqual([expect.objectContaining({ name: 'unit (2, UTC)', files: ['tools/split-stories.test.ts'], source: 'log' })]);
+    const none = await watch(RUN, fakeApi(baseRoutes()));
+    expect(none.flaky).toEqual([expect.objectContaining({ name: 'unit (2, UTC)', files: [], source: 'none' })]);
   });
 
   it('a first attempt has nothing to report and reads no jobs', async () => {
@@ -86,11 +85,37 @@ describe('watch', () => {
   });
 });
 
+describe('createApi: a hung request cannot hold the job (owner ruling R1)', () => {
+  it('gives every request a 20 s abort signal, and a hung one rejects', async () => {
+    expect(FETCH_TIMEOUT_MS).toBe(20_000);
+    const signals: AbortSignal[] = [];
+    const hang = (_url: string, init: { signal: AbortSignal }) => {
+      signals.push(init.signal);
+      return new Promise((_, reject) => init.signal.addEventListener('abort', () => reject(init.signal.reason)));
+    };
+    const api = createApi('o/r', { GH_TOKEN: 'test-token-good' }, hang as unknown as typeof fetch, 30);
+    await expect(api.json('actions/runs/1')).rejects.toThrow();
+    expect(signals.length).toBeGreaterThan(0);
+    expect(signals.every((s) => s instanceof AbortSignal)).toBe(true);
+  });
+
+  it('retries a 403 without the token, with a signal on both requests', async () => {
+    const calls: { auth: boolean; signal: unknown }[] = [];
+    const f = async (_url: string, init: { headers: Record<string, string>; signal: unknown }) => {
+      calls.push({ auth: 'authorization' in init.headers, signal: init.signal });
+      return calls.length === 1 ? new Response('', { status: 403 }) : new Response('{"ok":1}', { status: 200 });
+    };
+    expect(await createApi('o/r', { GH_TOKEN: 'test-token-good' }, f as unknown as typeof fetch).json('x')).toEqual({ ok: 1 });
+    expect(calls.map((c) => c.auth)).toEqual([true, false]);
+    expect(calls.every((c) => c.signal instanceof AbortSignal)).toBe(true);
+  });
+});
+
 describe('formatMarkdown and main (the CI step)', () => {
   it('writes the record to the job summary and one warning per flaky job, exit 0', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'flake-'));
     const summary = join(dir, 'summary.md');
-    const routes = { ...baseRoutes(), [`check-runs/${FAILED_JOB}/annotations`]: json('annotations-136713072392.json'), 'check-runs/136713695509/annotations': [] };
+    const routes = { ...baseRoutes(), [`check-runs/${FAILED_JOB}/annotations`]: json('annotations-136713072392.json') };
     const out: string[] = [];
     const code = await main([String(RUN)], { GITHUB_STEP_SUMMARY: summary }, (s: string) => out.push(s), fakeApi(routes));
     expect(code).toBe(0);
@@ -98,8 +123,16 @@ describe('formatMarkdown and main (the CI step)', () => {
     expect(md).toContain('### Flake watch: run 44860674548, attempt 2');
     expect(md).toContain('| `unit (2, UTC)` | 1 | failure | `tools/split-stories.test.ts` |');
     const warnings = out.filter((l) => l.startsWith('::warning '));
-    expect(warnings).toHaveLength(2);
-    expect(warnings[1]).toContain('unit (2, UTC) failed on attempt 1, passed on attempt 2: tools/split-stories.test.ts');
+    expect(warnings).toEqual(['::warning title=Flaky CI job::unit (2, UTC) failed on attempt 1, passed on attempt 2: tools/split-stories.test.ts']);
+  });
+
+  it('a job with no file evidence is reported plainly, not as a flaky test', async () => {
+    const out: string[] = [];
+    await main([String(RUN)], {}, (s: string) => out.push(s), fakeApi(baseRoutes()));
+    const text = out.join('\n');
+    expect(text).toContain('| `unit (2, UTC)` | 1 | failure | no test file found |');
+    expect(text).toContain('::warning title=Flaky CI job::unit (2, UTC) failed on attempt 1, passed on attempt 2; a job failed then passed, no test file found');
+    expect(text).not.toMatch(/flaky test to fix/);
   });
 
   it('says plainly when the run passed first time', () => {

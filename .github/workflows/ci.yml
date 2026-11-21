@@ -181,8 +181,11 @@ jobs:
   # A rerun that turned main green (US-64 AC36): names the jobs that failed on an earlier attempt and
   # the test files that failed there, in this job's summary and as a warning on the run. It reads
   # public run data with the workflow's read-only token, so it needs no new permission.
+  # continue-on-error: merge-gated judges main by the run's conclusion, so this job failing
+  # or timing out must never turn a green rerun red.
   flake-watch:
     needs: [test]
+    continue-on-error: true
     if: github.ref == 'refs/heads/main' && github.run_attempt != '1' && needs.test.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 5

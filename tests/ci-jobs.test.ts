@@ -127,6 +127,8 @@ describe('ci.yml jobs (US-64 AC12)', () => {
     expect(runs('refs/heads/main', '3', 'failure')).toBe(false);
     expect(runs('refs/pull/42/merge', '2', 'success')).toBe(false);
     expect(fw.needs).toEqual(['test']);
+    // merge-gated judges main by the run's conclusion: a failed or hung flake-watch must not turn a green rerun red.
+    expect((fw as { 'continue-on-error'?: boolean })['continue-on-error']).toBe(true);
     const text = job('flake-watch');
     expect(text).toContain('RUN_ID: ${{ github.run_id }}');
     expect(text).toContain('run: node tools/flake-watch.mjs "${RUN_ID}"');
