@@ -14,6 +14,7 @@ vi.mock('./roadmap-data', () => ({ saveUpload: vi.fn() }));
 vi.mock('./sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 
 const saving: Extract<UploadState, { phase: 'saving' }> = { phase: 'saving', platform: 'web', run: 3, files: [], started: '', firstRead: null, attempt: 2 };
+const ENGINE = { uploadSave: vi.fn(), uploadReview: vi.fn() };
 const OUTCOME = { values: 2, documents: 1, archived: 0, unstored: 0 };
 type Answer = Awaited<ReturnType<typeof saveUpload>>;
 
@@ -27,21 +28,21 @@ describe('mount 3a: the shared Save\'s flow event and re-read', () => {
   ])('%s', async (_case, answer, event, rereads) => {
     vi.mocked(saveUpload).mockResolvedValue(answer);
     const complete = vi.fn();
-    expect(await sharedSave(saving, emptyHeld(3), undefined, complete)).toEqual(event);
+    expect(await sharedSave(ENGINE, saving, emptyHeld(3), undefined, complete)).toEqual(event);
     expect(complete).toHaveBeenCalledTimes(rereads);
   });
 
   it('a throw is a failed Save in the page\'s words, reported with tags only', async () => {
     vi.mocked(saveUpload).mockRejectedValue(new Error('Synthetic test: the store threw'));
     const complete = vi.fn();
-    expect(await sharedSave(saving, emptyHeld(3), undefined, complete)).toEqual({ type: 'saveFailed', run: 3, attempt: 2, message: 'Failed to save. Please try again.' });
+    expect(await sharedSave(ENGINE, saving, emptyHeld(3), undefined, complete)).toEqual({ type: 'saveFailed', run: 3, attempt: 2, message: 'Failed to save. Please try again.' });
     expect(complete).not.toHaveBeenCalled();
     expect(vi.mocked(Sentry.captureException).mock.calls[0][1]).toEqual({ tags: { area: 'upload-save', branch: 'commit' } });
   });
 
   it('a re-read that fails is only reported: the Save stands', async () => {
     vi.mocked(saveUpload).mockResolvedValue({ ok: true, outcome: OUTCOME, added: [] });
-    const event = await sharedSave(saving, emptyHeld(3), undefined, () => Promise.reject(new Error('Synthetic test: the re-read failed')));
+    const event = await sharedSave(ENGINE, saving, emptyHeld(3), undefined, () => Promise.reject(new Error('Synthetic test: the re-read failed')));
     await Promise.resolve();
     expect(event).toMatchObject({ type: 'saved' });
     expect(vi.mocked(Sentry.captureException).mock.calls[0][1]).toEqual({ tags: { area: 'upload-save', branch: 'reread' } });
@@ -49,7 +50,7 @@ describe('mount 3a: the shared Save\'s flow event and re-read', () => {
 
   it('the person reaches the Save as the caller hands it', async () => {
     vi.mocked(saveUpload).mockResolvedValue({ ok: true, outcome: OUTCOME, added: [] });
-    await sharedSave(saving, emptyHeld(3), { age: 55, sex: 'female' }, () => {});
-    expect(vi.mocked(saveUpload).mock.calls.at(-1)?.[3]).toEqual({ age: 55, sex: 'female' });
+    await sharedSave(ENGINE, saving, emptyHeld(3), { age: 55, sex: 'female' }, () => {});
+    expect(vi.mocked(saveUpload).mock.calls.at(-1)?.[4]).toEqual({ age: 55, sex: 'female' });
   });
 });

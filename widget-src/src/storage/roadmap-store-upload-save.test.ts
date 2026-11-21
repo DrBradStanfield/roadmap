@@ -12,6 +12,7 @@ import type { UnifiedExtractionResult } from '@roadmap/health-core/lab-extractio
 import { NO_CHOICES } from '@roadmap/health-core/upload-choices';
 import type { UploadFile, UploadState } from '@roadmap/health-core/upload-flow';
 import { reviewedWrites, uploadReview } from '@roadmap/health-core/upload-review';
+import { uploadSave } from '@roadmap/health-core/upload-save';
 import { Sentry } from '../lib/sentry';
 import { emptyHeld, type Held } from '../lib/upload-read';
 import { webUploadIO } from '../lib/upload-save-io';
@@ -33,6 +34,7 @@ const letterX: UnifiedExtractionResult = {
 const read = (id: string, x: UnifiedExtractionResult, more: Partial<UploadFile> = {}): UploadFile =>
   ({ id, name: `${id}.pdf`, bytes: 9, hash: `hash-${id}`, pages: { count: 1, truncated: false }, status: { s: 'read', extraction: x, choices: NO_CHOICES }, ...more });
 const PERSON = { age: 55, sex: 'female' as const };
+const ENGINE = { uploadSave, uploadReview };
 
 /** The pick as Save starts it on `store`'s record: the reviewed page's writes echoed, as the flow sends them. */
 function saving(store: RoadmapStore, files: UploadFile[]): UploadState {
@@ -83,7 +85,7 @@ describe('US-52 AC8c, US-16 AC2a: one Save, one edit', () => {
     adapter.gate = new Promise((r) => { release = r; });
     const writing = new Promise<void>((r) => { adapter.reached = r; });
     const s = saving(store, [read('lab', labX), read('letter', letterX)]);
-    const save = store.saveUpload(s, NOW, true, webUploadIO(held({ lab: pdf('lab'), letter: pdf('letter') })), PERSON);
+    const save = store.saveUpload(ENGINE, s, NOW, true, webUploadIO(held({ lab: pdf('lab'), letter: pdf('letter') })), PERSON);
     await writing;
     expect(rowsOf(store)).toEqual({ labs: 0, documents: 0, stored: 0, screening: null });
     release();
@@ -96,7 +98,7 @@ describe('US-52 AC8c, US-16 AC2a: one Save, one edit', () => {
   it('a Save the page began before an erase it no longer shows is refused before any original is written', async () => {
     const { adapter, store } = await opened();
     store.showErase('[0,"an erase the page showed"]');
-    const answer = await store.saveUpload(saving(store, [read('lab', labX)]), NOW, true, webUploadIO(held({ lab: pdf('lab') })), PERSON);
+    const answer = await store.saveUpload(ENGINE, saving(store, [read('lab', labX)]), NOW, true, webUploadIO(held({ lab: pdf('lab') })), PERSON);
     expect(answer).toEqual({ ok: false, reason: 'erased', message: 'Failed to save. Please try again.' });
     expect(adapter.writes).toEqual([]);
     expect(rowsOf(store)).toEqual({ labs: 0, documents: 0, stored: 0, screening: null });
@@ -107,7 +109,7 @@ describe('US-52 AC8c, US-16 AC2a: one Save, one edit', () => {
     let release!: () => void;
     adapter.gate = new Promise((r) => { release = r; });
     const writing = new Promise<void>((r) => { adapter.reached = r; });
-    const save = store.saveUpload(saving(store, [read('lab', labX), read('letter', letterX)]), NOW, true, webUploadIO(held({ lab: pdf('lab'), letter: pdf('letter') })), PERSON);
+    const save = store.saveUpload(ENGINE, saving(store, [read('lab', labX), read('letter', letterX)]), NOW, true, webUploadIO(held({ lab: pdf('lab'), letter: pdf('letter') })), PERSON);
     await writing;
     adapter.gate = null;
     const erased = await store.deleteAllData();
@@ -123,13 +125,42 @@ describe('US-14 AC12: a failed original is reported, tags only, and counted unst
   it('each failed original is reported as the store reports one, and its row keeps the hash alone', async () => {
     const { adapter, store } = await opened();
     adapter.fail = true;
-    const answer = await store.saveUpload(saving(store, [read('lab', labX), read('letter', letterX)]), NOW, true, webUploadIO(held({ lab: pdf('lab'), letter: pdf('letter') })), PERSON);
+    const answer = await store.saveUpload(ENGINE, saving(store, [read('lab', labX), read('letter', letterX)]), NOW, true, webUploadIO(held({ lab: pdf('lab'), letter: pdf('letter') })), PERSON);
     expect(answer).toMatchObject({ ok: true, outcome: { values: 2, documents: 1, unstored: 2 } });
     expect(store.file.documents.map((d) => [d.contentHash, d.fileRef])).toEqual([['hash-letter', ''], ['hash-lab', '']]);
     const calls = vi.mocked(Sentry.captureException).mock.calls;
     expect(calls.map(([, hint]) => hint)).toEqual([0, 1].map(() => ({ tags: { area: 'cloud-sync', op: 'write-document', backend: 'memory' } })));
     // No name, title, value or hash in any report.
     expect(JSON.stringify(calls)).not.toMatch(/lab\.pdf|letter\.pdf|colonoscopy|hash-|2\.8|Ferritin/i);
+  });
+});
+
+describe('US-16 AC2a: no write starts after an erase', () => {
+  it('an erase that lands while a ZIP member inflates: its original is never sent', async () => {
+    const { adapter, store } = await opened();
+    let inflate!: (b: Blob) => void;
+    let asked!: () => void;
+    const reading = new Promise<void>((r) => { asked = r; });
+    const member = { async: () => { asked(); return new Promise<Blob>((r) => { inflate = r; }); } };
+    const save = store.saveUpload(ENGINE, saving(store, [read('zip/0', labX, { zip: 'bundle.zip', name: 'member.pdf' })]), NOW, true, webUploadIO(held({ 'zip/0': member })), PERSON);
+    await reading;
+    expect((await store.deleteAllData()).success).toBe(true);
+    inflate(new Blob(['bytes of member']));
+    expect(await save).toEqual({ ok: false, reason: 'erased', message: 'Failed to save. Please try again.' });
+    expect(adapter.writes).toEqual([]);
+    expect(Sentry.captureException).not.toHaveBeenCalled();
+  });
+});
+
+describe('US-14 AC12: an original that cannot be read is counted unstored and reported as a read, not as the cloud\'s refusal', () => {
+  it('a ZIP member that will not inflate: no cloud write, one upload-save report, the row keeps the hash', async () => {
+    const { adapter, store } = await opened();
+    const member = { async: () => Promise.reject(new Error('Synthetic test: the member would not inflate')) };
+    const answer = await store.saveUpload(ENGINE, saving(store, [read('zip/0', labX, { zip: 'bundle.zip', name: 'member.pdf' })]), NOW, true, webUploadIO(held({ 'zip/0': member })), PERSON);
+    expect(answer).toMatchObject({ ok: true, outcome: { values: 2, unstored: 1 } });
+    expect(adapter.writes).toEqual([]);
+    expect(vi.mocked(Sentry.captureException).mock.calls.map(([, hint]) => hint)).toEqual([{ tags: { area: 'upload-save', branch: 'original' } }]);
+    expect(store.file.documents.map((d) => [d.contentHash, d.fileRef])).toEqual([['hash-zip/0', '']]);
   });
 });
 
@@ -142,10 +173,10 @@ describe('US-12 AC23: a ZIP member\'s original is inflated only as it is written
     const io = webUploadIO(held({ 'zip/0': member }));
     expect(io.holds('zip/0')).toBe(true);
     expect(member.async).not.toHaveBeenCalled();
-    await store.saveUpload(s, NOW, false, io, PERSON);
+    await store.saveUpload(ENGINE, s, NOW, false, io, PERSON);
     expect(member.async).not.toHaveBeenCalled();
     const { store: clouded } = await opened();
-    await clouded.saveUpload(saving(clouded, files), NOW, true, io, PERSON);
+    await clouded.saveUpload(ENGINE, saving(clouded, files), NOW, true, io, PERSON);
     expect(member.async).toHaveBeenCalledTimes(1);
     expect(clouded.file.documents[0].fileRef).not.toBe('');
   });

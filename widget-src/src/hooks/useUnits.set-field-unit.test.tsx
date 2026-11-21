@@ -62,6 +62,21 @@ describe('US-05 AC2, US-34 AC7a: setFieldUnit sets the named unit, never flips',
     expect(hook.unitOverrides.ldlC).toBe('si');
   });
 
+  it('US-05 AC2: two fields set in one tick both keep their unit', () => {
+    page({}, false);
+    act(() => { hook.setFieldUnit('ldlC', 'conventional'); hook.setFieldUnit('hdlC', 'conventional'); });
+    expect(hook.unitOverrides).toEqual({ ldlC: 'conventional', hdlC: 'conventional' });
+    expect(stored()).toEqual({ ldlC: 'conventional', hdlC: 'conventional' });
+  });
+
+  it('US-05 AC2: one field set twice in one tick: the second call sees the first', () => {
+    page({}, false);
+    let turns: unknown[] = [];
+    act(() => { turns = [hook.setFieldUnit('ldlC', 'conventional'), hook.setFieldUnit('ldlC', 'si')]; });
+    expect(turns).toEqual([{ from: 'si', to: 'conventional' }, { from: 'conventional', to: 'si' }]);
+    expect(hook.unitOverrides.ldlC).toBeUndefined();
+  });
+
   it('US-05 AC2: the toggle still flips, through the same setter', () => {
     page({}, false);
     act(() => { hook.handleToggleFieldUnit('ldlC'); });

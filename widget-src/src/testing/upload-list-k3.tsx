@@ -1,4 +1,4 @@
-// @vitest-environment jsdom
+// Test support: the K3 property's harness and properties, run by components/UploadList.k3.part*.test.tsx, 40 seeds each.
 /**
  * K3, the web upload list's screen property (US-13 AC26, web list PR 2; seeded, mulberry32, no dependency). Each run
  * interleaves a person's DOM steps (focus, type, blur, Enter, Escape, tick, Replace, a day, Show all, a letter's title,
@@ -38,7 +38,6 @@
  * checking (the withdrawn ruling); M19 a press's claim kept after a cancelled press (the code before T12). (The promise path of Save, restored, fails the typecheck: `choose` returns void.) Synthetic values only.
  */
 import { act, cleanup, fireEvent, render } from '@testing-library/react';
-import { afterEach, describe, it } from 'vitest';
 import { typedCommit } from '@roadmap/health-core/cell-input';
 import { core, DAY, EMPTY, extra, NOW } from '@roadmap/health-core/import-review.test-helpers';
 import { valueAt } from '@roadmap/health-core/import-review';
@@ -50,10 +49,8 @@ import { NO_CHOICES, type ChoiceChange } from '@roadmap/health-core/upload-choic
 import { transition, type UploadEvent, type UploadState } from '@roadmap/health-core/upload-flow';
 import type { DayControl, ListRow } from '@roadmap/health-core/upload-list';
 import { lostReplaces, reviewedWrites, uploadReview } from '@roadmap/health-core/upload-review';
-import { engineSee, UploadListHost, type ListHost } from '../testing/upload-list-host';
-import { controlAt } from './UploadList';
-
-afterEach(cleanup);
+import { engineSee, UploadListHost, type ListHost } from './upload-list-host';
+import { controlAt } from '../components/UploadList';
 
 function mulberry32(seed: number): () => number {
   let a = seed >>> 0;
@@ -117,7 +114,7 @@ const rowOfInput = (el: Element | null) => {
   return doc ? `title:${doc}` : el.closest<HTMLLIElement>('li[data-key]')?.dataset.key ?? null;
 };
 
-function runSequence(seed: number, steps: number) {
+export function runSequence(seed: number, steps: number) {
   const rand = mulberry32(seed);
   const pick = <T,>(xs: readonly T[]): T => xs[Math.floor(rand() * xs.length)];
   const f0: File = rand() < 0.6 ? file('f0', { s: 'sending', attempt: 1 }) : file('f0', { s: 'read', extraction: X0, choices: NO_CHOICES });
@@ -465,10 +462,3 @@ function runSequence(seed: number, steps: number) {
   }
   cleanup();
 }
-
-describe('K3: the web upload list keeps the person\'s input and draws the engine (US-13 AC26)', () => {
-  // 120 seeds in three tests of 40, each inside CI's 60 s test budget (one test took 60.6 s in CI shard 1, round seven).
-  it.each([1, 41, 81])('over seeded runs of interleaved screen and engine steps, seeds %i to +39', (first) => {
-    for (let seed = first; seed < first + 40; seed++) runSequence(seed, 45);
-  });
-});

@@ -7,7 +7,7 @@
  */
 import type { UploadEvent, UploadState } from '@roadmap/health-core/upload-flow';
 import type { ScreeningPerson } from '@roadmap/health-core/upload-screening';
-import { SAVE_FAILED } from '../storage/upload-save-store';
+import { SAVE_FAILED, type UploadEngine } from '../storage/upload-save-store';
 import { recordFailure, WritesStoppedError } from './error-diagnostics';
 import { saveUpload } from './roadmap-data';
 import { Sentry } from './sentry';
@@ -21,12 +21,13 @@ const reportReread = (err: unknown) => {
   if (!(err instanceof WritesStoppedError)) Sentry.captureException(recordFailure(err, 'Upload save failed'), { tags: { area: 'upload-save', branch: 'reread' } });
 };
 
-/** `complete`: the page's re-read (HealthTool's `rereadRecord`), run after a landed commit and not awaited. */
-export async function sharedSave(s: Saving, held: Held, person: ScreeningPerson | undefined, complete: () => void | Promise<void>): Promise<Extract<UploadEvent, { type: 'saved' | 'saveFailed' }>> {
+/** `engine`: the upload bundle the flow already loaded for the read. `complete`: the page's re-read (HealthTool's
+ *  `rereadRecord`), run after a landed commit and not awaited. */
+export async function sharedSave(engine: UploadEngine, s: Saving, held: Held, person: ScreeningPerson | undefined, complete: () => void | Promise<void>): Promise<Extract<UploadEvent, { type: 'saved' | 'saveFailed' }>> {
   const { run, attempt } = s;
   let answer: Awaited<ReturnType<typeof saveUpload>>;
   try {
-    answer = await saveUpload(s, new Date().toISOString(), webUploadIO(held), person);
+    answer = await saveUpload(engine, s, new Date().toISOString(), webUploadIO(held), person);
   } catch (err) {
     if (!(err instanceof WritesStoppedError)) Sentry.captureException(recordFailure(err, 'Upload save failed'), { tags: { area: 'upload-save', branch: 'commit' } });
     return { type: 'saveFailed', run, attempt, message: SAVE_FAILED };

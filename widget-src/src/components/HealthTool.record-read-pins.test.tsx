@@ -33,6 +33,8 @@ import { Sentry } from '../lib/sentry';
 import { NO_CHOICES } from '@roadmap/health-core/upload-choices';
 import type { UploadFile, UploadState } from '@roadmap/health-core/upload-flow';
 import { sharedSave } from '../lib/upload-shared-save';
+import { uploadSave } from '@roadmap/health-core/upload-save';
+import { uploadReview } from '@roadmap/health-core/upload-review';
 import { emptyHeld } from '../lib/upload-read';
 const { scrubEvent: realScrubEvent } = await vi.importActual<typeof import('../lib/sentry')>('../lib/sentry');
 
@@ -1137,7 +1139,7 @@ describe('US-34 AC4, US-16 AC2a (H52): a re-read inside a list save\'s 300 ms sh
     } } };
     const saving: Extract<UploadState, { phase: 'saving' }> = { phase: 'saving', platform: 'web', run: 1, files: [letter], started: now, firstRead: now, attempt: 1 };
     let answer: Awaited<ReturnType<typeof sharedSave>> | undefined;
-    await act(async () => { answer = await sharedSave(saving, emptyHeld(1), { age: 66, sex: 'female' }, upload.complete!); });
+    await act(async () => { answer = await sharedSave({ uploadSave, uploadReview }, saving, emptyHeld(1), { age: 66, sex: 'female' }, upload.complete!); });
     expect(answer).toMatchObject({ type: 'saved', outcome: { documents: 1, screenings: 1 } });
     await settle(400);
     await act(async () => { await flushRoadmapStore(); });

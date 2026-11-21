@@ -51,7 +51,7 @@ export interface DerivedSeries { whtr: WhtrPoint[]; egfr: EgfrPoint[] }
 import type { RecordHost } from '@roadmap/health-core/record-host';
 import { ensureIsoDatetime } from '../lib/recordedAt';
 import { webRecordHost } from './web-record-host';
-import { reportUnstored, saveUploadThrough, type UploadSaveAnswer, type WebUploadIO } from './upload-save-store';
+import { reportUnstored, saveUploadThrough, type UploadEngine, type UploadSaveAnswer, type WebUploadIO } from './upload-save-store';
 import type { UploadState } from '@roadmap/health-core/upload-flow';
 import type { ScreeningPerson } from '@roadmap/health-core/upload-screening';
 
@@ -439,8 +439,8 @@ export class RoadmapStore {
   }
 
   /** The shared upload's one Save, its rows in one edit (upload-save-store.ts). */
-  saveUpload(s: UploadState, now: string, cloudConnected: boolean, io: WebUploadIO, person?: ScreeningPerson): Promise<UploadSaveAnswer> {
-    return saveUploadThrough(this.session, { write: (ref, blob) => this.host.store.writeDocument(ref, blob), backend: this.host.store.id }, s, now, cloudConnected, io, person);
+  saveUpload(engine: UploadEngine, s: UploadState, now: string, cloudConnected: boolean, io: WebUploadIO, person?: ScreeningPerson): Promise<UploadSaveAnswer> {
+    return saveUploadThrough(this.session, { write: (ref, blob) => this.host.store.writeDocument(ref, blob), backend: this.host.store.id }, engine, s, now, cloudConnected, io, person);
   }
 
   /** Read a stored document's bytes back (viewer). */

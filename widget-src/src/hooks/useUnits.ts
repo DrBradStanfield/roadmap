@@ -38,6 +38,8 @@ export function useUnits(setInputs: Dispatch<SetStateAction<Partial<HealthInputs
 
   // Per-field unit overrides (persisted to localStorage).
   const [unitOverrides, setUnitOverrides] = useState(start.overrides);
+  // The overrides read synchronously, so two sets in one tick both land (data, not a mode).
+  const overrides = useRef(start.overrides);
   const [switchListeners] = useState(() => new Set<UnitSwitchListener>());
 
   /** A field in the tool has the focus: an input, select or textarea. Measured as each event is sent. */
@@ -57,6 +59,7 @@ export function useUnits(setInputs: Dispatch<SetStateAction<Partial<HealthInputs
         for (const listener of switchListeners) listener(from, to);
         saveUnitPreference(to);
         setInputs(prev => ({ ...prev, unitSystem: to }));
+        overrides.current = {};
         setUnitOverrides({});
         safeRemoveItem(UNIT_OVERRIDES_KEY);
       }
@@ -69,15 +72,16 @@ export function useUnits(setInputs: Dispatch<SetStateAction<Partial<HealthInputs
   // they apply a frame later, and the chip's unit is kept through them (US-34 AC7a, Q4).
   const setFieldUnit = useCallback((field: string, to: UnitSystem) => {
     const state = machine.current;
-    const from = unitOverrides[field] ?? seenUnits(state);
-    const next = { ...unitOverrides, [field]: to };
+    const from = overrides.current[field] ?? seenUnits(state);
+    const next = { ...overrides.current, [field]: to };
     if (to === state.shown && !heldUnits(state)) delete next[field];
+    overrides.current = next;
     setUnitOverrides(next);
     safeSetItem(UNIT_OVERRIDES_KEY, JSON.stringify(next));
     return { from, to };
-  }, [unitOverrides]);
+  }, []);
   // A field's own unit control: the other unit from the one the person saw (a press holds that).
-  const handleToggleFieldUnit = useCallback((field: string) => setFieldUnit(field, opposite(unitOverrides[field] ?? seenUnits(machine.current))), [setFieldUnit, unitOverrides]);
+  const handleToggleFieldUnit = useCallback((field: string) => setFieldUnit(field, opposite(overrides.current[field] ?? seenUnits(machine.current))), [setFieldUnit]);
 
   // Convert field-keyed overrides to MetricType-keyed for health-core + ResultsPanel.
   // Lp(a) has its own three-unit control (US-05 AC2): an old build's two-way
