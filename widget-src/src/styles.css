@@ -1861,6 +1861,14 @@
   font-size: 18px;
   color: var(--color-text-heading);
 }
+/* The title takes the focus on opening (US-12 AC4a): a target, not a control, so no ring. */
+.upload-modal-header h3:focus {
+  outline: none;
+}
+/* The phone's upload sheet runs edge to edge: no backdrop strips beside it. */
+.upload-modal-backdrop:has(> .upload-modal--mobile:not(.alcohol-dialog):not(.doc-lightbox)) {
+  padding: 0;
+}
 
 .upload-modal-close {
   background: none;
@@ -3857,9 +3865,7 @@
 /* ──────────────────────────────────────────────────────────────────────────
    BloodTestTimeline single-scroller layout. Native horizontal scroll moves
    all rows together; sticky-left name cells and sticky-right trend cells
-   stay anchored. All rules scoped to `.bt-timeline-scroll` so the upload
-   ReviewTable (also uses `.bt-timeline`, but the per-row .bt-cell-strip
-   layout, not this wrapper) is unaffected.
+   stay anchored. All rules scoped to `.bt-timeline-scroll`.
    ──────────────────────────────────────────────────────────────────────── */
 .bt-timeline-scroll {
   overflow-x: auto;
@@ -4037,35 +4043,6 @@
   color: var(--bt-ink-400);
   margin-top: 3px;
   line-height: 1.2;
-}
-
-.bt-cell-strip {
-  flex: 1;
-  overflow-x: auto;
-  overflow-y: hidden;
-  position: relative;
-  /* Hide horizontal scrollbars — scroll is gesture/wheel only, no visible bar.
-     Firefox: scrollbar-width: none; WebKit: ::-webkit-scrollbar display:none. */
-  scrollbar-width: none;
-  /* Reserve a uniform gutter so header + body strips have identical scrollable
-     width — without this, sub-pixel differences shifted columns out of line. */
-  scrollbar-gutter: stable;
-  /* `pan-x` scrolls the matrix horizontally; `pan-y` lets vertical
-     gestures bubble through to the page so users can scroll the page
-     up/down even when the touch starts on a strip — without this, a
-     touch starting on Weight/Waist/BP rows freezes the page (mirrors
-     the `.bt-timeline-scroll` rule). */
-  touch-action: pan-x pan-y;
-}
-.bt-cell-strip::-webkit-scrollbar { display: none; }
-.bt-strip-inner {
-  display: flex;
-  min-width: 100%;
-  height: 100%;
-}
-.bt-strip-spacer {
-  flex: 1 0 0;
-  min-width: 0;
 }
 
 .bt-cell-value {
@@ -4593,11 +4570,9 @@
 .lpa-check-wait { align-self: center; }
 .lpa-check-status { margin: 8px 0 0; }
 /* US-04 AC1: a matrix's live region for its cells' messages; each shows in its cell.
-   US-13 AC10: a review cell's new value, mirrored as text for its Replace box.
    US-62 AC11: what the phone's My data says when a chat edit closes a value page. */
 .bt-cell-messages,
-.md-panel-messages,
-.bt-cell-heard {
+.md-panel-messages {
   position: absolute;
   width: 1px;
   height: 1px;

@@ -429,7 +429,7 @@ describe('US-12 AC9: a ZIP member over the per-file limit is named and never rea
 describe('US-12 AC9: the Pages build names its own transport', () => {
   beforeEach(() => { build.shopify = false; });
 
-  // KNOWN (mount 3b, put to the owner): the list draws each failed file's line from the shared engine, which has no
+  // KNOWN (mount 3b, owner ruling Q1 (a): the engine PR claude/upload-engine-read-failure-words words it; flip then): the list draws each failed file's line from the shared engine, which has no
   // build, so a Pages page names a failed read in the Shopify words ("Our server could not read it.") where the grid's
   // notice said Anthropic's. Fails while that stands; passes once the engine words the Pages build.
   it.fails('KNOWN: a failed read on the Pages build names Anthropic, never "our server"', async () => {
@@ -505,10 +505,11 @@ describe('US-12 AC13: a .docx is read in the browser and sent as text', () => {
     expect(outcomes()[0]).toEqual(expect.objectContaining({ picked: 3, withValues: 1, openFailed: 2, docx: 2 }));
   });
 
-  it('refuses a legacy .doc with a notice to save it as PDF or .docx, and never reads it', async () => {
+  // KNOWN (owner ruling Q3, 2026-11-22): the file is named twice, with two reasons: the web's own note beside the list
+  // (heldNotices) and the engine's failed line in the list. Lead: engine words these statuses. No screen rule hides either.
+  it('KNOWN: refuses a legacy .doc with a notice to save it as PDF or .docx, and never reads it', async () => {
     render_(); pick(pdf('good.pdf'), word('old.doc'));
     await findReviewValue('3.9');
-    // The web's own words beside the list (useUploadFlow `heldNotices`), then the list's status for the file.
     expect(reasonFor('old.doc')).toBe('Word .doc files cannot be read. Save it as a PDF or .docx, then upload that. | Could not open it. It may be password-protected, damaged, or not a PDF, photo or .docx file.');
     expect(docxToText).not.toHaveBeenCalled();
     await waitFor(() => expect(outcomes()).toHaveLength(1));
@@ -525,11 +526,11 @@ describe('US-12 AC13: a .docx is read in the browser and sent as text', () => {
     expect(outcomes()[0]).toEqual(expect.objectContaining({ picked: 1, withValues: 1, docx: 1 }));
   });
 
-  it('names a .docx of pictures and no text with its own notice, and counts it', async () => {
+  // KNOWN (owner ruling Q3): named twice, as the legacy .doc above. Lead: engine words these statuses.
+  it('KNOWN: names a .docx of pictures and no text with its own notice, and counts it', async () => {
     docxToText.mockResolvedValue(docxText('', { picturesOnly: true }));
     render_(); pick(pdf('good.pdf'), word('scan.docx'));
     await findReviewValue('3.9');
-    // The web's own words beside the list (useUploadFlow `heldNotices`), then the list's status for the file.
     expect(reasonFor('scan.docx')).toBe('This Word file holds pictures, not text. Save it as a PDF, or upload a photo of the page. | Could not open it. It may be password-protected, damaged, or not a PDF, photo or .docx file.');
     await waitFor(() => expect(outcomes()).toHaveLength(1));
     expect(outcomes()[0]).toEqual(expect.objectContaining({ picked: 2, withValues: 1, picturesOnly: 1, openFailed: 0, docx: 1 }));

@@ -30,10 +30,15 @@ vi.mock('../lib/useIsMobile', () => ({ useIsMobile: () => false }));
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../lib/build-flags', () => ({ SHOPIFY_SURFACE: true, LOCAL_FIRST: true }));
 
-const P: Probes = Object.assign(probes, { sentryCalls: () => vi.mocked(Sentry.captureException).mock.calls.length });
+/** US-12 AC20: a report that printed Lp(a) as a limit, "< 10" nmol/L. */
+const LIMIT_READS: Record<string, Awaited<ReturnType<typeof labImport>>> = {
+  lpaLimit: { result: { classification: 'lab_report', document: null, reportDate: '2025-09-02', additionalValues: [],
+    values: [{ metric: 'lpa', valueSI: 10, displayValue: 10, displayUnit: 'nmol/L', displaySystem: 'si', confidence: 'high', comparator: '<' }] } } as unknown as Awaited<ReturnType<typeof labImport>>,
+};
+const P: Probes =Object.assign(probes, { sentryCalls: () => vi.mocked(Sentry.captureException).mock.calls.length });
 beforeEach(() => {
   vi.mocked(checkLabImportQuota).mockResolvedValue({ allowed: true, remaining: 60 });
-  vi.mocked(labImport).mockClear().mockImplementation(async (pages) => readFor(pages));
+  vi.mocked(labImport).mockClear().mockImplementation(async (pages) => LIMIT_READS[(pages[0] as { content: string }).content.slice('read:'.length)] ?? readFor(pages));
   Object.assign(window, { HealthUpload: parityBundle() });
   // A failed first Save (`failFirst`): the shared Save rejects once.
   const shared = RoadmapStore.prototype.saveUpload;
@@ -49,6 +54,10 @@ const EVENTS = ['lab_unit_refused', 'measurement_refused', 'measurement_added'];
 const events = (side: Side) => side.events.filter(([n]) => EVENTS.includes(n)).map((e) => `${e[0]} ${JSON.stringify(e[1])}${e.length > 2 ? ` key ${(e as unknown[])[2]}` : ''}`).sort();
 const documents = (side: Side) => rows(side.record.documents);
 const labs = (side: Side) => rows(side.record.labValues).map((r) => `${r.metricName} ${r.recordedAt} ${r.value} ${r.unit} ${r.status}${r.correctsId ? ` corrects ${r.correctsId}` : ''}`);
+/** Each Lp(a) row: value, comparator, the row it corrects (named by content), status; in record order of status. */
+const lpa = (side: Side) => rows(side.record.labValues).filter((r) => r.metricName === 'lpa')
+  .map((r) => ({ value: r.value, comparator: r.comparator, correctsId: r.correctsId, status: r.status }))
+  .sort((a, b) => String(b.status).localeCompare(String(a.status)));
 const archives = (side: Side) => documents(side).filter((d) => !d.deleted && (d.metadata as { labArchive?: boolean } | undefined)?.labArchive);
 
 type Case = Seed & { holds: (side: Side) => void };
@@ -141,6 +150,29 @@ const CASES: Case[] = [
     name: 'ruled: every letter saves, none unticked', cloud: true, files: [pdf('letterA')],
     record: async (store) => { await store.bulkSaveDocuments([{ documentType: 'clinic_letter', title: 'Synthetic earlier letter', documentDate: '2025-01-01', contentMd: 'Synthetic', metadata: {}, sourceFileName: 'letterA.pdf', contentHash: 'hash-other-bytes' }]); },
     holds: (s) => { expect(s.done).toBe(true); expect(s.record.documents).toContain(letterRow('Synthetic letter A', '2025-08-01')); expect(s.counts).toEqual({ values: 0, documents: 1, skipped: 0, refused: 0 }); },
+  },
+  // US-12 AC20 (moved from UploadModal.lab-limits.test.tsx): a printed limit saves as a limit; an edit is exact.
+  {
+    name: 'US-12 AC20: an uploaded limit, untouched, saves as the limit it printed (control)', cloud: true, files: [pdf('lpaLimit')],
+    holds: (s) => expect(lpa(s)).toEqual([{ value: 10, comparator: '<', correctsId: null, status: 'active' }]),
+  },
+  {
+    name: 'US-12 AC20: an uploaded limit edited to 12 saves exact, with no comparator', cloud: true, files: [pdf('lpaLimit')],
+    choices: () => [{ file: 0, change: { edit: 'v0', value: 12 } }],
+    holds: (s) => expect(lpa(s)).toEqual([{ value: 12, comparator: undefined, correctsId: null, status: 'active' }]),
+  },
+  {
+    name: 'US-12 AC20: a held exact 10 and an uploaded "< 10" offer Replace, and Replace writes the limit as its correction', cloud: true, files: [pdf('lpaLimit')],
+    record: (store) => { store.addMeasurement('lpa', 10, '2025-09-02'); },
+    choices: (review) => {
+      // The held exact value and the printed limit are a conflict: the review holds the row Replace corrects.
+      expect(review.held.get('0:v0')).toEqual(expect.any(String));
+      return [{ file: 0, change: { replace: 'v0', correctsId: review.held.get('0:v0')! } }];
+    },
+    holds: (s) => expect(lpa(s)).toEqual([
+      { value: 10, comparator: undefined, correctsId: null, status: 'entered-in-error' },
+      { value: 10, comparator: '<', correctsId: 'lpa|2025-09-02|10|nmol/L|entered-in-error', status: 'active' },
+    ]),
   },
   { name: 'ruled: a report with nothing ticked keeps its original, with a cloud (US-14 AC11)', ...nothingTicked(true), holds: (s) => expect(s.record.originals).toHaveLength(1) },
   { name: 'ruled: a report with nothing ticked writes no row, with no cloud (US-14 AC11)', ...nothingTicked(false), holds: (s) => expect(s.record.labValues).toEqual([]) },
