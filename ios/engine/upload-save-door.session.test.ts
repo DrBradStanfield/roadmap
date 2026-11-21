@@ -62,4 +62,19 @@ describe('the iPhone Save checks for an erase before each original it writes, as
     expect(a.puts).toHaveLength(1);
     expect(cloud.commits).toEqual([]);
   });
+
+  it('the session it began on closes after the first of two originals: the second is never written, and the answer is not-open', async () => {
+    const a = session('a');
+    // The session closes as the first original's write finishes.
+    a.at.host.store.writeDocument = async (ref: string) => { a.puts.push(ref); cloud.open = null; };
+    cloud.open = a.at;
+    cloud.commits.length = 0;
+    const file = (id: string) => ({ id, name: `${id}.pdf`, bytes: 1, hash: `sha256-${id}`, pages: { count: 1, truncated: false },
+      status: { s: 'read', extraction: { ...letter, document: { ...letter.document, title: `Synthetic letter ${id}` } }, choices: NO_CHOICES } });
+    const state = JSON.stringify({ ...JSON.parse(STATE), files: [file('one'), file('two')] });
+    const answer = await uploadSaveRun(state, '', '[0,null]', NOW, 'phone', JSON.stringify({ one: 'application/pdf', two: 'application/pdf' }), () => new Uint8Array([1]).buffer);
+    expect(JSON.parse(answer)).toMatchObject({ ok: false, reason: 'not-open' });
+    expect(a.puts).toHaveLength(1);
+    expect(cloud.commits).toEqual([]);
+  });
 });
