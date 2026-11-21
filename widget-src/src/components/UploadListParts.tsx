@@ -20,7 +20,7 @@ export function NotSaved({ section }: { section: Section<'notSaved'> }) {
 
 /** The files and their status; quiet when every file says the same. */
 export function Files({ files, failed, retry }: { files: UploadView['files']; failed: Section<'failed'> | undefined; retry: () => void }) {
-  const quiet = new Set(files.rows.map((f) => f.status)).size <= 1;
+  const quiet = new Set(files.rows.map((f) => f.status)).size <= 1 && !files.rows.some((f) => f.notFullyRead);
   return (
     <section className={`upload-list-files${quiet ? ' upload-list-files--quiet' : ''}`}>
       <h4 className="review-check-title">{files.row}</h4>

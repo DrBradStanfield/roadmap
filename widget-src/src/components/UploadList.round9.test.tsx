@@ -101,12 +101,23 @@ describe('US-12 AC9: each reason once on the review and the done screen (the eng
     { ...labRead('f3', {}, 'held.pdf'), pages: null, status: { s: 'known', as: 'document', archiveOnly: false } },
     { ...labRead('f4', {}, 'big.pdf'), hash: null, pages: null, status: { s: 'refused', verdict: 'tooLarge' } },
   ];
-  const reasons = [FILE_NOTICE_TEXT.truncated, UPLOAD_TEXT.stoppedLine, UPLOAD_TEXT.statusKnown, UPLOAD_TEXT.statusRefused('tooLarge')];
+  const reasons = [FILE_NOTICE_TEXT.truncated, UPLOAD_TEXT.stoppedLine, UPLOAD_TEXT.statusRefused('tooLarge')];
   const times = (text: string) => document.body.textContent!.split(text).length - 1;
   for (const screenName of ['review', 'done'] as const) {
     it(`on the ${screenName} screen`, () => {
       mount(screenName === 'review' ? open(files) : done(open(files)));
       for (const reason of reasons) expect(times(reason), reason).toBe(1);
+      // A file already in the record is no problem: its status shows in the review's Files list, never in the done list.
+      expect(times(UPLOAD_TEXT.statusKnown)).toBe(screenName === 'review' ? 1 : 0);
+      expect(times('held.pdf')).toBe(screenName === 'review' ? 1 : 0);
     });
   }
+
+  it('a lone file with a reason never mutes the Files block; a lone plain one does', () => {
+    mount(open([{ ...labRead('f1', { values: [core({})] }, 'long-report.pdf'), pages: { count: 40, truncated: true } }]));
+    expect(document.querySelector('.upload-list-files')!.classList.contains('upload-list-files--quiet')).toBe(false);
+    cleanup();
+    mount(open([labRead('f0', { values: [core({})] }, 'good.pdf')]));
+    expect(document.querySelector('.upload-list-files')!.classList.contains('upload-list-files--quiet')).toBe(true);
+  });
 });

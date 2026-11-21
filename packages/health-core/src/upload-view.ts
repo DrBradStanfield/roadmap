@@ -81,9 +81,10 @@ export interface UploadView {
    *  row, or in `notices` where the screen draws them; a done screen may show only these rows. */
   files: { row: string; rows: Array<{ fileId: string; name: string; status: string; notFullyRead: boolean }> };
   /** A read file's soft reasons (cut short, nothing in it), only where the screen draws notices beside the Files rows
-   *  (FILE_REASON_DRAWN): there the row reads "Read". Invariant (US-12 AC9): on every screen, each file at rest that was not
-   *  fully read shows its one reason exactly once over the channels that screen draws; a fully read file shows none.
-   *  The one exception: FILE_REASON_TWICE. */
+   *  (FILE_REASON_DRAWN): there the row reads "Read". Invariant (US-12 AC9): on every screen, each file refused, failed or
+   *  stopped, and each read file cut short or with nothing in it, shows its one reason exactly once over the channels that
+   *  screen draws; any other file (read in full, already in the record, in flight) shows none. The one exception:
+   *  FILE_REASON_TWICE. */
   notices: Array<{ fileId: string; name: string; line: string }>;
   /** `error`: a failed save's message; Save then retries. `blockers`: each thing Save waits on (`saveBlockers`), with the
    *  control that removes it; `why` is the first, or what else holds Save. */
@@ -133,15 +134,16 @@ function softReasons(f: UploadFile): string[] {
 }
 
 /**
- * Why a file at rest was not fully read, in existing words (US-12 AC9), or null: fully read, or still in flight. Hard
- * reasons (known, refused, failed, stopped) are its status words; a read file's soft ones join with a space.
+ * Why a file at rest was not fully read, in existing words (US-12 AC9), or null: read in full, still in flight, or already
+ * in the record ("Already in your record" is a status, like "Read", not a reason). Hard reasons (refused, failed, stopped)
+ * are its status words; a read file's soft ones join with a space.
  */
 export function fileReason(f: UploadFile, s: UploadState): string | null {
   const status = f.status;
   switch (status.s) {
-    case 'known': case 'refused': case 'failed': case 'stopped': return statusWords(status, s);
+    case 'refused': case 'failed': case 'stopped': return statusWords(status, s);
     case 'read': return softReasons(f).join(' ') || null;
-    case 'unlisted': case 'listing': case 'waiting': case 'hashing': case 'hashed': case 'converting': case 'ready': case 'sending': return null;
+    case 'known': case 'unlisted': case 'listing': case 'waiting': case 'hashing': case 'hashed': case 'converting': case 'ready': case 'sending': return null;
     default: {
       const unknown: never = status;
       throw new Error(`fileReason: no rule for status ${(unknown as FileStatus).s}`);
