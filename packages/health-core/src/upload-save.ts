@@ -96,7 +96,6 @@ export async function uploadSave<F>(s: UploadState, record: RoadmapFile, now: st
     ...plan.labArchives.map((a) => labArchivePayload(a.sourceFileName, a.reportDate, held(a.fileId), { rows: rowsOf.get(a.fileId), contentHash: hashOf.get(a.fileId) })),
     ...plan.archiveOnly.map((d) => ({ ...d.fields, file: held(d.fileId), contentHash: hashOf.get(d.fileId) })),
   ];
-  let unstored = 0;
   const docs = await saveDocuments(record, payloads, {
     hash: async (f) => f.hash,
     write: async (ref, f) => {
@@ -104,8 +103,6 @@ export async function uploadSave<F>(s: UploadState, record: RoadmapFile, now: st
       if (bytes === null) throw new Error('The original could not be read.');
       await io.write(ref, bytes, f.fileId);
     },
-    // Every write that throws, the unreadable included: saveDocuments' own count is only those behind a held row.
-    onWriteError: () => void (unstored += 1),
     mimeType: (f) => io.mimeType(f.fileId), now: io.now, newId: io.newId,
   });
   // Counted as the Save label promised them (owner ruling 2026-11-20): `documents` the letters and
@@ -149,7 +146,7 @@ export async function uploadSave<F>(s: UploadState, record: RoadmapFile, now: st
         ...written.refused.map((r) => ({ label: labTestLabel(r.key), reason: labReason(r) })),
         ...written.measurementRefusals.map((r) => { const line = measurementRefusalText(r); return line !== null ? { line } : { label: METRIC_LABELS[r.metricType] ?? labTestLabel(r.metricType), reason: 'misread' as const }; }),
       ];
-      return { file: values || docs.saved.length ? committedFile(written.file, docs) : file, outcome: { values, ...outcome, unstored, ...(sv ? { skippedValues: sv } : {}), ...(sl ? { skippedLabValues: sl } : {}), ...(refused.length ? { refused } : {}) } };
+      return { file: values || docs.saved.length ? committedFile(written.file, docs) : file, outcome: { values, ...outcome, unstored: docs.unstored, ...(sv ? { skippedValues: sv } : {}), ...(sl ? { skippedLabValues: sl } : {}), ...(refused.length ? { refused } : {}) } };
     },
   };
 }

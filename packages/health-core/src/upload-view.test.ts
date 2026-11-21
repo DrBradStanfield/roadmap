@@ -120,6 +120,11 @@ describe('upload view: section 4 screens', () => {
     expect(viewOf(done(2), EMPTY, NOW).done?.unstored).toBe("The original file couldn't be stored; its details are saved.");
     expect(viewOf(done(0), EMPTY, NOW).done?.unstored).toBeNull();
     expect(viewOf(done(), EMPTY, NOW).done?.unstored).toBeNull();
+    // US-14 AC12: the iPhone's done screen (UploadReviewView) for 0, 1 and 3, one line whatever the count.
+    const line = "The original file couldn't be stored; its details are saved.";
+    for (const [n, unstored] of [[0, null], [1, line], [3, line]] as const) {
+      expect(viewOf(done(n), EMPTY, NOW).done).toEqual({ line: 'Saved 1 value and 1 document.', archived: null, unstored, skipped: [], notSaved: [] });
+    }
   });
 
   it('done: one line, each part dropped at zero, and the originals kept', () => {

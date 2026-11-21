@@ -527,14 +527,25 @@ describe('US-12 AC4–6 upload session ownership', () => {
   });
 });
 
-// US-14 AC4: an original the cloud would not store, behind a row it already
-// holds, is settled, never a silent checkmark.
-it('US-14 AC4: the done screen says when an original could not be stored', async () => {
-  vi.mocked(bulkSaveDocuments).mockResolvedValue({ saved: [], errorCount: 0, unstored: 1 });
+// US-14 AC4, AC12, layout pin (Brad 2026-11-21: the same layout elements as the save confirmation): the
+// not-stored line sits in the confirmation's own line element (the skipped-value lines' `p.upload-done-skipped`),
+// once, whatever the count: no new element, no new words. The store's answer is mocked here; the count itself is
+// proved through the real store in UploadModal.unstored.test.tsx.
+it.each([0, 1, 3])('US-14 AC12 layout pin: the done screen with %i unstored originals', async (unstored) => {
+  vi.mocked(bulkSaveDocuments).mockResolvedValue({ saved: [], errorCount: 0, ...(unstored ? { unstored } : {}) });
   vi.mocked(synthesizeLabArchiveEntries).mockReturnValue([{ documentType: 'pathology_report', title: 'Blood test results', documentDate: null, contentMd: '', metadata: {}, sourceFileName: 'test.pdf' }]);
   render(<Harness />); await ready();
   fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-  expect(await screen.findByText("The original file couldn't be stored; its details are saved.")).toBeTruthy();
+  await screen.findByRole('button', { name: 'Done' });
+  const done = document.querySelector('.upload-done')!;
+  const lines = [...done.children].map((el) => `${el.tagName.toLowerCase()}.${el.className}: ${el.textContent}`);
+  const unstoredLine = "p.upload-done-skipped: The original file couldn't be stored; its details are saved.";
+  expect(lines).toEqual([
+    'div.upload-done-icon: \u2713',
+    'p.upload-done-text: Saved 1 blood test value',
+    ...(unstored ? [unstoredLine] : []),
+    'button.btn-primary upload-done-btn: Done',
+  ]);
 });
 
 // Based on Austin Bell's PR #152 (robertaustinbell).

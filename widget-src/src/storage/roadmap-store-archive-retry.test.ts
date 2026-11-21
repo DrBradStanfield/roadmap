@@ -30,6 +30,8 @@ describe('US-14 AC4: a failed original retains its dedup identity', () => {
     expect(adapter.writeDocument).toHaveBeenCalledTimes(1);
     expect(result.saved).toHaveLength(1);
     expect(result.saved[0]).toMatchObject({ fileRef: null, contentHash: hash });
+    // US-14 AC12: a first failure, with no row held, is counted too, so the done screen says so.
+    expect(result.unstored).toBe(1);
     expect(read(cloud).documents).toHaveLength(1);
   });
   it('a later successful retry tombstones the metadata-only row, including after reload', async () => {
