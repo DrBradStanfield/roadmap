@@ -34,7 +34,7 @@ enum FormField: Decodable, Identifiable, Equatable {
     /// A month, YYYY-MM, past or future; never before `min` when set (US-07 AC1j: colorectal's follow-up date).
     case month(key: String, label: String, value: String, future: Bool, min: String?)
     case number(key: String, label: String, hint: String?, value: String)
-    /// A dated value kept as a measurement (PSA).
+    /// A dated value kept as a core lab value (PSA).
     case measurement(metric: String, label: String, hint: String?)
 
     var id: String {

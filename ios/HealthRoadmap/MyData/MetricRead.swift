@@ -63,7 +63,7 @@ enum MetricRead {
 
     /// The page for `read` at the store's `revision`. A state from an older revision reads as
     /// reading until the page asks: the store's `kept` chart if it has values, else "No data yet"
-    /// only when My data has no reading, so it never flashes before a chart (US-58 AC4b).
+    /// only when My health has no reading, so it never flashes before a chart (US-58 AC4b).
     /// `screenHasReading`: whether the screen last drawn holds a value for the metric; nil when
     /// none was drawn or it predates an erase (`MetricDetailView.screenHasReading`).
     nonisolated static func page(_ read: Read, revision: Int, problem: RecordProblem?, kept: ChartData?, hasReadings: Bool,

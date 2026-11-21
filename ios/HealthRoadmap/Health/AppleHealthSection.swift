@@ -37,7 +37,7 @@ struct AppleHealthSection: View {
                     if case .failed(let why) = health.status { Text(why).foregroundStyle(.red) }
                     if health.status == .notAllowed { Text(LiveFooter.access) }
                     if health.owedFooter { Text(EraseText.healthOwed) }
-                    Text("Weight, height, waist and blood pressure come in from Health. Values you type here go to Health. A value you typed is never replaced by Health, and deleting a reading in Health leaves it here.")
+                    Text("Weight, height, waist and blood pressure come in from Apple Health. Values you type here go to Apple Health. A value you typed is never replaced by Apple Health, and deleting a reading in Apple Health leaves it here.")
                     if live?.available == true { Text(LiveFooter.cards) }
                 }
             }

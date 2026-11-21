@@ -99,7 +99,7 @@ final class AppleHealthSync {
     /// the erase names Apple Health and deletes its samples (US-25 AC16).
     var everConnected: Bool { memory.connected }
 
-    /// Connected and not failed. Otherwise My data's Apple Health row offers Connect, the one
+    /// Connected and not failed. Otherwise the Apple Health row in Settings offers Connect, the one
     /// way in, so Vitals offers no Turn On (US-25 AC15, US-56 AC5).
     var connected: Bool {
         switch status {

@@ -59,7 +59,7 @@ extension RecordStore {
 /// What the phone's file holds, as RecordStore shows it.
 struct PhoneLoad: Sendable {
     let record: String
-    /// My data and the plan; nil when it cannot be read.
+    /// My health's rows and the plan; nil when it cannot be read.
     let drawn: HealthEngine.Drawn?
     /// Why it cannot be read; the app then writes nothing.
     let problem: RecordProblem?
@@ -139,7 +139,7 @@ extension HealthEngine {
         }
     }
 
-    /// My data and the plan for `record`, drawn first, then the record written: one that cannot be
+    /// My health's rows and the plan for `record`, drawn first, then the record written: one that cannot be
     /// drawn is never written. `marking`: set the pending marker before the write, in
     /// this same step, so an app killed between the two never leaves an unmarked edit;
     /// a refused write puts back the generation it found (none, or the earlier one an
@@ -157,7 +157,7 @@ extension HealthEngine {
         return shown
     }
 
-    /// One edit to the phone's file: the engine's write rules, My data and the plan in `shownIn`
+    /// One edit to the phone's file: the engine's write rules, My health's rows and the plan in `shownIn`
     /// (the per-test units in force after it), then the atomic write.
     func applyOnPhone(_ edit: RecordEdit, to record: String, units: String, shownIn: String, file: URL, marking: PhoneFiles?, deviceId: String) throws -> PhoneApply {
         let outcome = try apply(edit, to: record, now: .now, deviceId: deviceId, units: units)

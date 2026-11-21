@@ -60,7 +60,7 @@ enum OnboardingFlow {
 
     enum Event {
         /// begin() read the record: the first page, or nil when there is nothing to ask
-        /// (an unreadable record: My data says why, review R13).
+        /// (an unreadable record: My health says why, review R13).
         case began(Page?)
         case allowTapped
         /// Apple Health answered: the step after its page, nil when there is none.

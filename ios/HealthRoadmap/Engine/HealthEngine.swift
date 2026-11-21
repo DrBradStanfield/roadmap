@@ -37,7 +37,7 @@ actor HealthEngine {
     nonisolated var unownedExecutor: UnownedSerialExecutor { queue.asUnownedSerialExecutor() }
 
     private let context: JSContext
-    /// The bundle's exports (ios/engine/entry.ts): the plan, My data and the cloud doors.
+    /// The bundle's exports (ios/engine/entry.ts): the plan, My health and the cloud doors.
     private let exports: JSValue
     /// HTTP, timers and the cloud calls the engine reaches Swift through.
     let natives: EngineNatives
@@ -109,11 +109,11 @@ actor HealthEngine {
         queue.async { run(self) }
     }
 
-    /// What My data and the Plan tab show for a record, from one engine call (`screenJson`):
+    /// What My health shows for a record, from one engine call (`screenJson`):
     /// one read and one plan, so the two always show the same record (US-25 AC2). The plan
     /// half carries how long the engine took to plan (D2's plan budget). A plan the engine
-    /// cannot make never blanks My data; tiles it cannot draw come back empty, never blanking
-    /// the plan. My data the engine cannot draw throws the whole call.
+    /// cannot make never blanks My health; tiles it cannot draw come back empty, never blanking
+    /// the plan. My health's rows the engine cannot draw throw the whole call.
     /// `units`: the phone's per-test units as JSON (UnitChoices, US-25 AC17e); "{}" for none.
     func screen(recordJSON: String, now: Date, deviceId: String, units: String = "{}") throws -> Drawn {
         let json = try doorScreenJson(recordJson: recordJSON, nowIso: now.formatted(Self.iso), deviceId: deviceId, unitsJson: units, isUS: storefrontIsUS)
@@ -121,7 +121,7 @@ actor HealthEngine {
         return Drawn(myData: answer.myData, plan: answer.plan.state, topics: answer.plan.topics, movedRecord: answer.movedRecord)
     }
 
-    /// One record as the screens show it: My data and the plan, from the same engine call.
+    /// One record as the screens show it: My health's rows and the plan, from the same engine call.
     struct Drawn: Sendable {
         let myData: MyData
         let plan: PlanState
@@ -151,7 +151,7 @@ actor HealthEngine {
             /// Read leniently: a layout Swift cannot read leaves the cards under Other, never a broken plan.
             let topics: TopicLayout?
             enum CodingKeys: CodingKey { case sections, tiles, ms, error, planError, usProducts, topics }
-            /// Sections decode strictly: sections Swift cannot read fail the plan, never My data.
+            /// Sections decode strictly: sections Swift cannot read fail the plan, never My health.
             /// A tile Swift cannot read leaves no tiles, never a blank plan.
             init(from decoder: Decoder) throws {
                 let c = try decoder.container(keyedBy: CodingKeys.self)

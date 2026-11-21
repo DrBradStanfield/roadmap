@@ -31,7 +31,7 @@ struct EngineBoot: Sendable {
     @MainActor
     func start() async throws -> Choice {
         let (choice, trial) = try await pick()
-        // The mark stays until the user's own record is shown (My data or the plan).
+        // The mark stays until the user's own record is shown (My health or the plan).
         if let trial, let folder { choice.engine.trial = EngineTrial(version: trial, folder: folder, bundled: bundled.facts.version) }
         return choice
     }

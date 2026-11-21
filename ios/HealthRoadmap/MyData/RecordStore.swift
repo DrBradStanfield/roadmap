@@ -163,7 +163,7 @@ final class RecordStore {
         return task
     }
 
-    /// My data and the plan, from one engine call, together. A downloaded engine on trial
+    /// My health's rows and the plan, from one engine call, together. A downloaded engine on trial
     /// is proven once it has drawn the user's own record and planned it (a plan, or
     /// health-core's PlanError), never when the plan threw: the failure the trial exists
     /// to catch (US-25 AC18, review R5).
@@ -415,7 +415,7 @@ final class RecordStore {
             // The master switch clears every choice, published only with the record it
             // changed: a failed write keeps both as they were (Codex R1).
             let choices = Self.clearsChoices(edit) ? UnitChoices() : unitChoices
-            // One engine call: the edit, My data and the atomic write, off the main thread.
+            // One engine call: the edit, My health and the atomic write, off the main thread.
             let answer = try await engine.applyOnPhone(edit, to: recordJSON, units: seen.choices, shownIn: choices.json, file: file, marking: source.link?.pending, deviceId: deviceId)
             switch answer {
             case .refused(let outcome):

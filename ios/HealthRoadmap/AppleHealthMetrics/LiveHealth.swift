@@ -87,7 +87,7 @@ final class LiveHealth {
         Task { await refresh() }
     }
 
-    /// Checks whether the sheet is still due, then reads the cards, each time My data shows
+    /// Checks whether the sheet is still due, then reads the cards, each time My health shows
     /// (AC2). A refresh asked for during one runs once more after it, unless the running
     /// read began under about 2 s before: its answer is as fresh (E1). `force` always runs it
     /// once more (after Apple's sheet, N2). A cancelled read writes nothing (N1). The one asked
