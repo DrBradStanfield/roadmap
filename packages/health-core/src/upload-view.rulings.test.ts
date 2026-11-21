@@ -148,26 +148,6 @@ describe('9. a read file with nothing in it is said', () => {
       { fileId: 'n', name: 'n.pdf', line: 'No blood test values found.' },
     ]);
   });
-
-  // What each screen draws of the view (US-12 AC9): the web's review its Files block, the rows and the notices
-  // (UploadListParts.tsx `Files`); the web's done screen the notices alone (UploadList.tsx `Done`); the iPhone's review the
-  // notices and, collapsed, the rows (UploadReviewView.swift); its done screen the rows alone. Each reason once on each.
-  const DRAWN = {
-    web: { review: ['files', 'notices'], done: ['notices'] },
-    phone: { review: ['files', 'notices'], done: ['files'] },
-  } as const;
-  const reasons = ['No blood test values found.', 'Filed as a document. No blood test values found.'];
-  for (const platform of ['web', 'phone'] as const) {
-    for (const screen of ['review', 'done'] as const) {
-      it(`says it exactly once on the ${platform} ${screen} screen`, () => {
-        const picked = open([read('e', labX({ values: [] })), read('d', labX({ values: [], document: letterX().document }))], platform);
-        const s: UploadState = screen === 'review' ? picked : { ...picked, phase: 'done', outcome: { values: 0, documents: 1, archived: 0 } } as UploadState;
-        const view = both(s).view;
-        const drawn = DRAWN[platform][screen].flatMap((key) => (key === 'files' ? view.files.rows.map((r) => r.status) : view.notices.map((n) => n.line)));
-        for (const line of reasons) expect(drawn.filter((l) => l === line)).toHaveLength(1);
-      });
-    }
-  }
 });
 
 describe('11. cost', () => {

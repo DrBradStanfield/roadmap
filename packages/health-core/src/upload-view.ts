@@ -78,9 +78,10 @@ export interface UploadView {
   } | null;
   /** The collapsed "Files" list. */
   files: { row: string; rows: Array<{ fileId: string; name: string; status: string }> };
-  /** Read files with nothing in them, and files read only in part, in the web's notice words (US-12 AC9). A file with
-   *  nothing in it is said once on each screen: in review here alone (its status reads "Read"); once saved, also as its
-   *  status, since the web's done screen draws only these and the iPhone's only the Files rows. */
+  /** Read files with nothing in them, and files read only in part, in the web's notice words (US-12 AC9); once done, files
+   *  refused before reading too. Each is said once on each screen: in review, a file with nothing in it here alone (its
+   *  status reads "Read"), a refused one by its status alone; once done, here and as its status, since the web's done
+   *  screen draws only these and the failed rows, and the iPhone's only the Files rows. */
   notices: Array<{ fileId: string; name: string; line: string }>;
   /** `error`: a failed save's message; Save then retries. `blockers`: each thing Save waits on (`saveBlockers`), with the
    *  control that removes it; `why` is the first, or what else holds Save. */
@@ -368,8 +369,9 @@ export function uploadView(s: UploadState, record: RoadmapFile, now: string, rev
       setDate: UPLOAD_TEXT.setDate, removeDate: UPLOAD_TEXT.removeDate,
     } : null,
     files: { row: UPLOAD_TEXT.filesRow(files.length), rows: files.map((f) => ({ fileId: f.id, name: uploadFileName(f), status: (s.phase === 'done' ? emptyRead(f) : null) ?? statusWords(f.status, s) })) },
-    // Read files with nothing in them, and files read only in part (US-12 AC9), in the web's words.
-    notices: files.flatMap((f) => [emptyRead(f), f.pages?.truncated ? FILE_NOTICE_TEXT.truncated : null]
+    // Read files with nothing in them, and files read only in part (US-12 AC9), in the web's words; once done, files
+    // refused before reading too, in their Files row's words (the web's done screen draws no Files rows).
+    notices: files.flatMap((f) => [s.phase === 'done' && f.status.s === 'refused' ? statusWords(f.status, s) : null, emptyRead(f), f.pages?.truncated ? FILE_NOTICE_TEXT.truncated : null]
       .flatMap((line) => (line ? [{ fileId: f.id, name: uploadFileName(f), line }] : []))),
     save: save(s, plan, review),
     stop: s.phase === 'open' && waiting ? { label: UPLOAD_TEXT.stop } : null,
