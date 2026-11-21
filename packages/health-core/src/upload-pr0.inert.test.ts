@@ -19,7 +19,9 @@ import { NO_CHOICES, type FileChoices } from './upload-choices';
 import type { UploadFile, UploadState } from './upload-flow';
 import { uploadSavePlan } from './upload-plan';
 import { uploadReview } from './upload-review';
-import { uploadView } from './upload-view';
+import { uploadView, type ValueRow } from './upload-view';
+import { valueAt } from './import-review';
+import { FIX_ERRORS_TEXT, UPLOAD_TEXT } from './upload-text';
 
 const GOLDEN = join(__dirname, '__fixtures__', 'upload-pr0-golden.json');
 const SEEDS = 800;
@@ -150,12 +152,46 @@ function answer(c: Case): string {
   const plan = uploadSavePlan(c.state, c.record, NOW, review, c.cloud);
   const view = uploadView(c.state, c.record, NOW, review, c.cloud);
   const labFiles = review.labFiles.map((l) => {
-    const { needsColumnDay, waits, days: _days, ...old } = l as typeof l & { needsColumnDay?: boolean; waits?: readonly string[]; days?: unknown };
+    const { needsColumnDay, waits, waitingColumns, days: _days, ...old } = l as typeof l & { needsColumnDay?: boolean; waits?: readonly string[]; waitingColumns?: readonly string[]; days?: unknown };
     expect(needsColumnDay ?? false).toBe(false);
     expect(waits ?? []).toEqual([]);
+    expect(waitingColumns ?? []).toEqual([]);
     return old;
   });
-  return canonical({ review: { ...review, labFiles }, plan, view });
+  return canonical({ review: { ...review, labFiles }, plan, view: mainView(c, review, view) });
+}
+
+/**
+ * The view as main drew it, after the web list's additive fields (PR 1) are checked and left out: each row's `saves`
+ * (sent and written; no `reviewed` in these states) and `name`, each day section's `key`, the undated previous column's
+ * `day`, Save's `blockers`; a dated previous column's section (web only); and an undated previous column's section main
+ * would not ask (PR 1 draws it whenever the report prints the column, so a pick can be changed; the iPhone never gets one).
+ */
+function mainView(c: Case, review: ReturnType<typeof uploadReview>, view: ReturnType<typeof uploadView>) {
+  const writes = new Set(review.classification.values.filter((v) => v.sent && v.writes).map((v) => `${review.labFiles[v.file].fileId}:${v.ref}`));
+  const row = ({ saves, name, ...old }: ValueRow) => {
+    expect(saves).toBe(writes.has(`${old.fileId}:${old.ref}`));
+    expect(name).toMatch(/ value from /);
+    return old;
+  };
+  // Main's rule for the undated previous column: a ticked value waits for it, or a cleared one does.
+  const reads = new Map(('files' in c.state ? c.state.files : []).flatMap((f) => (f.status.s === 'read' ? [[f.id, f.status.extraction] as const] : [])));
+  const asked = (fileId: string) => {
+    const i = review.labFiles.findIndex((f) => f.fileId === fileId);
+    return review.labFiles[i].needsPreviousDay || review.classification.values.some((v) => v.file === i && v.group === 'waiting' && valueAt(reads.get(fileId)!, v.ref)?.value.recordedAt === UNDATED_PREVIOUS);
+  };
+  const { blockers, ...save } = view.save;
+  // Save's blocker line is the first blocker; there are none while nothing can be chosen.
+  if (save.why === FIX_ERRORS_TEXT || save.why === UPLOAD_TEXT.chooseDay) expect(blockers[0].why).toBe(save.why);
+  if (c.state.phase !== 'open' && c.state.phase !== 'saveFailed') expect(blockers).toEqual([]);
+  const sections = view.sections.flatMap((x): unknown[] => {
+    if (x.kind === 'datedPrevious') { expect(c.state.platform).toBe('web'); return []; }
+    if (x.kind === 'undatedPrevious') { const { key: _k, day: _d, ...old } = x; return asked(x.fileId) ? [old] : []; }
+    if (x.kind === 'undated') { const { key: _k, ...old } = x; return [old]; }
+    if (x.kind === 'unsure') return [{ ...x, rows: x.rows.map(row) }];
+    return [x];
+  });
+  return { ...view, sections, save, sure: view.sure && { ...view.sure, rows: view.sure.rows.map(row) } };
 }
 
 const hash = (text: string) => createHash('sha256').update(text).digest('hex').slice(0, 24);

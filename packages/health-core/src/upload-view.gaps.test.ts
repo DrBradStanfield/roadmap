@@ -256,29 +256,30 @@ describe('a dated previous column waiting for its pick (US-13 AC24)', () => {
   })]), platform: 'web' }, 'f0', { columnDay: PRINTED, day: '2026-10' });
   const record = held([LDL(2.0, PRINTED), { kind: 'lab', metricName: 'Ferritin', value: 80, unit: 'µg/L', referenceLow: null, referenceHigh: null, recordedAt: PRINTED, source: 'manual' }]);
 
-  // KNOWN, for the PR that first DRAWS the column picker, which must flip this pin: a value whose dated column waits for its
-  // pick has no day (the review's `days` is null), yet the classifier still previews it on its printed day. It can read
-  // "already in your record", or offer Replace against the printed-day slot, for a column the person is moving. The deeper fix:
-  // `valueDays` (import-review.ts) takes a column map beside `undatedDay`, so `ImportFile.days` and the lab file's `days` are one record.
-  it('KNOWN columnWaitsPreviewedOnPrintedDay: a waiting column\'s values are classified on the day they printed', () => {
+  // Was KNOWN columnWaitsPreviewedOnPrintedDay (PR 1926), closed where the column's day is drawn (`datedPrevious`): `valueDays`
+  // takes the column map, so `ImportFile.days` and the lab file's `days` are one record and a waiting value has no day.
+  it('columnWaitsPreviewedOnPrintedDay, closed: a waiting column\'s values wait behind their column\'s day, never judged on the day they printed', () => {
     const { review, view } = see(s(), record);
     expect(review.labFiles[0]).toMatchObject({ needsColumnDay: true, days: { v0: null, a0: null }, waits: ['v0', 'a0'] });
-    expect(view.alreadySaved).toBe(IMPORT_REVIEW_TEXT.alreadySaved(1));
-    expect(rows(view)).toMatchObject([{ ref: 'v0', day: null, conflict: IMPORT_REVIEW_TEXT.conflictKept, replace: expect.any(String) }]);
+    expect(review.classification.values.map((v) => [v.ref, v.group])).toEqual([['v0', 'waiting'], ['a0', 'waiting']]);
+    expect(view.alreadySaved).toBeNull();
+    expect(rows(view)).toEqual([]);
+    expect(view.sections).toContainEqual({ kind: 'datedPrevious', key: `f0|printed:${PRINTED}`, fileId: 'f0', name: 'f0.pdf', printed: PRINTED, day: null });
+    expect(view.save.blockers).toEqual([{ why: UPLOAD_TEXT.chooseDay, at: `f0|printed:${PRINTED}` }]);
   });
 
-  // KNOWN (PR 1926 R2), for the PR that draws the column picker to decide: `needsColumnDay` counts a value the write refuses
-  // on any day (a lab with an unknown unit), so that value alone holds up the report while its column waits. The test's day
-  // beside it does not wait for such a value (`refusedAnyDay`: it sits under Not saved and asks no day).
-  it('KNOWN columnWaitsOnRefusedValue: a waiting column holding only a value refused on any day still holds up Save', () => {
+  // Was KNOWN columnWaitsOnRefusedValue (PR 1926 R2): a value the write refuses on any day asks no day, as the test's day
+  // does not (`refusedAnyDay`): it sits under Not saved and the rest of the report saves.
+  it('columnWaitsOnRefusedValue, closed: a waiting column holding only a value refused on any day does not hold up Save', () => {
     const lone = chose({ ...open([labRead('f0', {
       values: [core({ valueSI: 3.1, displayValue: 3.1 })],
       additionalValues: [extra({ unit: 'zzz', recordedAt: PRINTED })],
     })]), platform: 'web' }, 'f0', { columnDay: PRINTED, day: '2026-10' });
     const { review, view } = see(lone, EMPTY);
-    expect(review.labFiles[0]).toMatchObject({ needsColumnDay: true, waits: ['a0'] });
-    expect(review.classification.rows).toEqual([]);
-    expect(view.save).toMatchObject({ enabled: false, why: UPLOAD_TEXT.chooseDay });
+    expect(review.labFiles[0]).toMatchObject({ needsColumnDay: false, waits: ['a0'] });
+    expect(review.classification.rows).toHaveLength(1);
+    expect(notSaved(view)).toEqual([expect.stringContaining('Ferritin')]);
+    expect(view.save).toMatchObject({ enabled: true, why: null, blockers: [] });
   });
 
   it('columnWaitsNeverWritten (negative pin): nothing of a report whose column waits is written, and Save says to choose the day', () => {

@@ -58,10 +58,14 @@ export function valueAt(result: Offers, ref: string): OfferedValue | undefined {
 /** A core value's ref (`v<i>`), by its prefix alone. */
 export const isCoreRef = (ref: string) => ref[0] === 'v';
 
+/** A dated previous column's day by the day it printed (the shared upload's, US-13 AC24): `moving`, a real past day picked
+ *  for it; `waiting`, a pick that is no such day yet, so its values have none. */
+export interface ColumnDays { moving: ReadonlyMap<string, string>; waiting: ReadonlySet<string> }
+
 /** Each value's day: its own printed day, else `fileDay` (the report's, or
- *  the one picked); an undated previous column's is `undatedDay` (null until picked). */
-export function valueDays(result: ImportFile['result'], fileDay: string | null, undatedDay: string | null = null): Record<string, string | null> {
-  const day = (own?: string) => (own === undefined ? fileDay : own === UNDATED_PREVIOUS ? undatedDay : own);
+ *  the one picked); an undated previous column's is `undatedDay` (null until picked); a dated column's, its pick (`columns`). */
+export function valueDays(result: ImportFile['result'], fileDay: string | null, undatedDay: string | null = null, columns?: ColumnDays): Record<string, string | null> {
+  const day = (own?: string) => (own === undefined ? fileDay : own === UNDATED_PREVIOUS ? undatedDay : columns?.waiting.has(own) ? null : columns?.moving.get(own) ?? own);
   return Object.fromEntries(offeredValues(result).map(({ ref, value }) => [ref, day(value.recordedAt)]));
 }
 
@@ -97,9 +101,9 @@ export function importRow(result: ImportFile['result'], ref: string, day: string
  */
 export function reportImportFile(
   result: ImportFile['result'], ticked: Iterable<string>, day: string | null, now: string, undatedDay: string | null = null,
-  options: Readonly<Record<string, { correctsId?: string; edited?: { value: number } }>> = {},
+  options: Readonly<Record<string, { correctsId?: string; edited?: { value: number } }>> = {}, columns?: ColumnDays,
 ): ImportFile {
-  const days = valueDays(result, day, undatedDay);
+  const days = valueDays(result, day, undatedDay, columns);
   const rows: Record<string, BulkRow> = {};
   for (const ref of ticked) {
     const on = days[ref] ? validDay(days[ref]!, { now }) : null;

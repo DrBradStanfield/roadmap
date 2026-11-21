@@ -45,7 +45,7 @@ describe('1. a value the extractor asked about: saved unless cleared, on both cl
 describe('2. Save waits for every report that needs a day', () => {
   it('one dated report and one undated: Save is off with the why line, and the dated one is not saved alone', () => {
     const { view, plan } = both(open([read('a', labX()), read('u', labX({ reportDate: null }))]));
-    expect(view.save).toEqual({ label: 'Save 1 value', enabled: false, why: 'Choose the day of the test', error: null });
+    expect(view.save).toEqual({ label: 'Save 1 value', enabled: false, why: 'Choose the day of the test', error: null, blockers: [{ why: 'Choose the day of the test', at: 'u|test' }] });
     expect(plan.labRows.map((l) => l.fileId)).toEqual(['a']);
   });
 });

@@ -36,7 +36,7 @@ describe('upload view: section 4 screens', () => {
     const v = viewOf(s, EMPTY, NOW);
     expect(v.progress).toEqual({ done: 1, total: 4, line: 'Reading 1 of 4 files', zip: 'health.zip: 0 of 2 inside' });
     expect(v.stop).toEqual({ label: 'Stop' });
-    expect(v.save).toEqual({ label: 'Save 1 value', enabled: false, why: 'Wait for 3 files to finish', error: null });
+    expect(v.save).toEqual({ label: 'Save 1 value', enabled: false, why: 'Wait for 3 files to finish', error: null, blockers: [] });
     expect(v.files.rows.map((r) => r.status)).toEqual(['Read', 'Reading', 'Waiting', 'Reading']);
     expect(v.files.row).toBe('Files (4)');
   });
@@ -57,7 +57,7 @@ describe('upload view: section 4 screens', () => {
     expect(v.sure).toMatchObject({ line: '2 values will be saved', showAll: 'Show all 2' });
     expect(v.documents).toMatchObject({ line: '1 letter or document will be saved', rows: [{ fileId: 'letter', title: 'Cardiology letter', kind: 'clinic letter', date: '20 Oct 2026', dateKnown: true, kindKey: 'clinic_letter', day: '2026-10-20' }] });
     expect(plan.counts).toEqual({ values: 3, documents: 1, archived: 0, originals: 1 });
-    expect(v.save).toEqual({ label: 'Save 3 values and 1 document', enabled: true, why: null, error: null });
+    expect(v.save).toEqual({ label: 'Save 3 values and 1 document', enabled: true, why: null, error: null, blockers: [] });
     expect(v.files.rows[0].status).toBe('Already in your record');
     // The known file is counted, never a row: no value, document or section names it.
     expect(JSON.stringify([v.sections, v.sure, v.documents])).not.toContain('"k"');
@@ -85,7 +85,7 @@ describe('upload view: section 4 screens', () => {
         { fileId: 'z', name: 'z.pdf', line: 'No files we can read inside this ZIP.' },
       ],
     }]);
-    expect(v.save).toEqual({ label: 'Save 1 value', enabled: true, why: null, error: null });
+    expect(v.save).toEqual({ label: 'Save 1 value', enabled: true, why: null, error: null, blockers: [] });
     const final = viewOf(open([read('a', labX()), at('limit', { s: 'failed', reason: 'dailyLimit', attempt: 1 })]), EMPTY, NOW);
     expect(final.sections[0]).toMatchObject({ title: '1 file not read', retry: null });
   });
@@ -93,13 +93,13 @@ describe('upload view: section 4 screens', () => {
   it('undated report: one section per report with no full day; its values wait until a day is picked', () => {
     const undated = labX({ reportDate: null });
     const v = viewOf(open([read('u', undated)]), EMPTY, NOW);
-    expect(v.sections[0]).toEqual({ kind: 'undated', fileId: 'u', title: 'This report has no date', label: 'Day of the test', name: 'u.pdf', choose: 'Choose the day of the test', chosen: null });
+    expect(v.sections[0]).toEqual({ kind: 'undated', key: 'u|test', fileId: 'u', title: 'This report has no date', label: 'Day of the test', name: 'u.pdf', choose: 'Choose the day of the test', chosen: null });
     expect(v.save).toMatchObject({ enabled: false, why: 'Choose the day of the test' }); // proposed words
     expect(planOf(open([read('u', undated)]), EMPTY, NOW).labArchives).toEqual([]); // the original waits with its values
     const picked = viewOf(open([read('u', undated, { ...CHOICES, testDay: DAY })]), EMPTY, NOW);
     // The picked day stays on the page, to be seen and changed (owner ruling 2026-11-20).
-    expect(picked.sections).toEqual([{ kind: 'undated', fileId: 'u', title: 'This report has no date', label: 'Day of the test', name: 'u.pdf', choose: 'Choose the day of the test', chosen: DAY }]);
-    expect(picked.save).toEqual({ label: 'Save 1 value', enabled: true, why: null, error: null });
+    expect(picked.sections).toEqual([{ kind: 'undated', key: 'u|test', fileId: 'u', title: 'This report has no date', label: 'Day of the test', name: 'u.pdf', choose: 'Choose the day of the test', chosen: DAY }]);
+    expect(picked.save).toEqual({ label: 'Save 1 value', enabled: true, why: null, error: null, blockers: [] });
   });
 
   it('nothing new to save: every value already in the record, the report\'s original still filed', () => {
@@ -109,9 +109,9 @@ describe('upload view: section 4 screens', () => {
     expect(plan.counts.values).toBe(0);
     expect(plan.labArchives).toEqual([{ fileId: 'a', sourceFileName: 'a.pdf', reportDate: DAY }]);
     // The original alone: its own label (UPLOAD_TEXT.saveOriginals, approved 2026-11-20).
-    expect(viewOf(s, record, NOW).save).toEqual({ label: 'Save 1 original', enabled: true, why: null, error: null });
+    expect(viewOf(s, record, NOW).save).toEqual({ label: 'Save 1 original', enabled: true, why: null, error: null, blockers: [] });
     const letterKnown = open([at('k', { s: 'known', as: 'document', archiveOnly: false })]);
-    expect(viewOf(letterKnown, record, NOW).save).toEqual({ label: 'Save 0 values', enabled: false, why: 'Nothing new to save', error: null });
+    expect(viewOf(letterKnown, record, NOW).save).toEqual({ label: 'Save 0 values', enabled: false, why: 'Nothing new to save', error: null, blockers: [] });
   });
 
   it('done: originals that were not stored say so in the web\'s own words; none says nothing (PR 1848 Codex)', () => {
@@ -149,6 +149,6 @@ describe('upload plan: documents and originals', () => {
     const plan = planOf(open([at('k', { s: 'known', as: 'document', archiveOnly: true }), at('g', { s: 'known', as: 'legacy', archiveOnly: false })]), record, NOW);
     expect(plan.archiveOnly).toEqual([{ fileId: 'k', fields: { documentType: 'clinic_letter', title: 'Held', documentDate: null, contentMd: 'text', metadata: {}, sourceFileName: 'k.pdf' } }]);
     expect(plan.counts).toEqual({ values: 0, documents: 0, archived: 1, originals: 1 });
-    expect(viewOf(open([at('k', { s: 'known', as: 'document', archiveOnly: true })]), record, NOW).save).toEqual({ label: 'Save 1 original', enabled: true, why: null, error: null });
+    expect(viewOf(open([at('k', { s: 'known', as: 'document', archiveOnly: true })]), record, NOW).save).toEqual({ label: 'Save 1 original', enabled: true, why: null, error: null, blockers: [] });
   });
 });

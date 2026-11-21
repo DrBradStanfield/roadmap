@@ -10,7 +10,7 @@ import { knownAs, knownIndex, readIsLegacy, type KnownIndex } from '../../packag
 import { appGateFailure, boundedWords, type FailDetail, type UploadFailure } from '../../packages/health-core/src/upload-failure';
 import { PHONE_FAIL_TEXT } from '../../packages/health-core/src/upload-text';
 import { labStreamAnswer } from '../../packages/health-core/src/upload-answer';
-import { lostReplaces, uploadReview, type UploadReview } from '../../packages/health-core/src/upload-review';
+import { choosesReplace, dropLostReplaces, uploadReview, type UploadReview } from '../../packages/health-core/src/upload-review';
 import { uploadView } from '../../packages/health-core/src/upload-view';
 import { uploadSavePlan } from '../../packages/health-core/src/upload-plan';
 import { uploadUsageCounts } from '../../packages/health-core/src/upload-usage';
@@ -176,19 +176,16 @@ export const uploadStep = (stateJson: string, eventJson: string, recordJson: str
 
 /**
  * A chosen Replace whose target another writer moved, corrected or deleted on this record is dropped and its
- * value unticked (health-core `replacesLost`, owner ruling 2026-11-20, US-13 AC21), before the next event and
+ * value unticked (health-core `dropLostReplaces`, owner ruling 2026-11-20, US-13 AC21), before the next event and
  * in every view, so the page shows an ordinary value to tick again. The record is read only when a Replace is chosen.
- * `review`: the review it judged by, when nothing was dropped, so a view reviews that state once.
  */
 function withoutLostReplaces(state: UploadState, recordJson: string, record: () => RoadmapFile, now: string): { state: UploadState; review?: UploadReview } {
   // No record to judge by ('' while the app has none it can read) or one that will not read drops nothing (adversary R1):
   // every Replace stands, and the next record that reads is judged.
-  if (recordJson === '' || !('files' in state) || !state.files.some((f) => f.status.s === 'read' && Object.keys(f.status.choices.replace).length)) return { state };
+  if (recordJson === '' || !choosesReplace(state)) return { state };
   let read: RoadmapFile;
   try { read = record(); } catch { return { state }; }
-  const review = uploadReview(state, read, now);
-  const lost = lostReplaces(review, state);
-  return lost.length ? { state: transition(state, { type: 'replacesLost', lost }).state } : { state, review };
+  return dropLostReplaces(state, read, now);
 }
 
 /** One review per call, as health-core's callers take it: the view and its plan count the same rows. */

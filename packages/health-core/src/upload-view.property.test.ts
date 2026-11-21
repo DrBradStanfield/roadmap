@@ -7,8 +7,13 @@
  *   writable are the rows Save writes; P3 the Save label and the "will be saved" lines count them;
  *   P4 a disabled Save names a blocker the view gives a control for, and that control clears it;
  *   P5 FHIR after commit; P6 no broken string. A failure prints the seed and a minimised event list.
- *   P7 each written row shows what Save writes (its number, unit, day, the value a Replace replaces).
+ *   P7 each written row shows what Save writes (its number, unit, day, the value a Replace replaces), in the person's unit too.
  *   P8 the review's day for each value (`days`, `waits`) is the one worked out from the extraction and the choices alone.
+ * The web list's (web list PR 1, owner decision 2026-11-21), each with an oracle that never reads what the view computed:
+ *   K1 a day change keeps the view's day controls, by key, and moves only its own source's rows in its file (a test day
+ *      may also take or give back a previous column's day, by the before-the-test rule); a unit change moves nothing but `shown`;
+ *   K2 every row's name is its own, and no (test, day) slot has two rows that save;
+ *   K4 while saving, only what the press promised is drawn as saving; every promised value is written, skipped or refused.
  * The gaps it found (owner rulings 2026-11-20) are pinned, fixed, in upload-view.gaps.test.ts.
  * Synthetic values, names and hashes only.
  */
@@ -32,6 +37,8 @@ import { uploadSave, type UploadSaveIO } from './upload-save';
 import { uploadView, type UploadView, type ValueRow } from './upload-view';
 import { FIX_ERRORS_TEXT, UPLOAD_TEXT } from './upload-text';
 import { IMPORT_REVIEW_TEXT, importRow, isOfferedRef, offeredValues, valueAt } from './import-review';
+import { cellLabel, cellToSI } from './cell-unit';
+import type { UnitSystem } from './units';
 
 function mulberry32(seed: number): () => number {
   let a = seed >>> 0;
@@ -149,6 +156,8 @@ type Step =
   | { type: 'record'; rows: BulkRow[]; merge: boolean }
   /** Another writer deletes a held row (entered in error, no correction): a Replace aimed at it is lost. */
   | { type: 'delete'; id: string }
+  /** The person switches the units they read core values in (the web's setting). */
+  | { type: 'unit'; system: UnitSystem }
   /** Save tapped on the page drawn before another writer acts (rows appended, or `free`: a held row deleted): the app
    *  sends back the drawn page's `reviewed`. */
   | { type: 'tap'; rows: BulkRow[]; merge: boolean; free: string | null }
@@ -198,18 +207,20 @@ function checkText(view: UploadView) {
 /** A known gap seen, by name. */
 type Note = (gap: string) => void;
 
-/** P1, P2 (same record), P3, P4 on one view. `note`: a known gap seen. */
-function checkView(s: UploadState, record: RoadmapFile, cloud: boolean, note: Note): { view: UploadView; review: UploadReview } {
+/** P1, P2 (same record), P3, P4, K2 on one view, in the person's units (`system`). `note`: a known gap seen. */
+function checkView(s: UploadState, record: RoadmapFile, cloud: boolean, note: Note, system: UnitSystem = 'si'): { view: UploadView; review: UploadReview } {
   const review = uploadReview(s, record, NOW);
-  const view = uploadView(s, record, NOW, review, cloud);
+  const view = uploadView(s, record, NOW, review, cloud, () => system);
   checkText(view);
   const rows = allRows(view);
+  checkNames(s, rows, note);
   // P1: each offered value once, as a row or a not-saved line, or behind its report's day question.
   const seen = new Map<string, number>();
   for (const row of rows) seen.set(key(row.fileId, row.ref), (seen.get(key(row.fileId, row.ref)) ?? 0) + 1);
   for (const [k, n] of seen) if (n > 1) fail('P1', `two rows for ${k}`);
   const notSavedLines = view.sections.flatMap((x) => (x.kind === 'notSaved' ? x.lines : []));
-  const daySection = new Set(view.sections.flatMap((x) => (x.kind === 'undated' || x.kind === 'undatedPrevious' ? [x.fileId] : [])));
+  const daySection = new Set(view.sections.flatMap((x) => (x.kind === 'undated' || x.kind === 'undatedPrevious' || x.kind === 'datedPrevious' ? [x.fileId] : [])));
+  const controls = new Set(view.sections.flatMap((x) => ('key' in x ? [x.key] : [])));
   review.labFiles.forEach((lf, i) => {
     const f = ('files' in s ? s.files : []).find((x) => x.id === lf.fileId)!;
     if (f.status.s !== 'read') return;
@@ -223,7 +234,8 @@ function checkView(s: UploadState, record: RoadmapFile, cloud: boolean, note: No
       if (v!.group === 'notSaved') { if (!notSavedLines.some((l) => l.includes(v!.label))) fail('P1', `${ref} not saved, in no line`); continue; }
       if (v!.group === 'saved') continue; // counted in the already-saved line (checked below), or an equal copy of a reading that saves
       if (v!.group === 'waiting') {
-        if (daySection.has(lf.fileId)) continue;
+        // Behind its own source's control (K1's keys, from the printed day alone).
+        if (controls.has(sourceKey(lf.fileId, x, ref))) continue;
         fail('P1', `${lf.fileId} ${ref} waits for a day no section asks (ticked ${lf.ticked.includes(ref)})`);
       }
       fail('P1', `${lf.fileId} ${ref} (${v!.group}) is missing from the view`);
@@ -240,6 +252,9 @@ function checkView(s: UploadState, record: RoadmapFile, cloud: boolean, note: No
   const plan = uploadSavePlan(s, record, NOW, review, cloud);
   if (plan.labRows.flatMap((x) => x.rows).length !== writes.size) fail('P2', 'plan rows != written values');
   for (const k of writes) if (!shown.has(k)) fail('P2', `${k} is written but not shown ticked and writable`);
+  checkSlots(s, rows);
+  // `saves` is what the row shows: ticked and writable (outside saving, where K4 checks it).
+  if (s.phase !== 'saving') for (const row of rows) if (row.saves !== shown.has(key(row.fileId, row.ref))) fail('P2', `${row.fileId} ${row.ref} saves ${row.saves}, shown writable ${!row.saves}`);
   for (const k of shown) if (!writes.has(k)) {
     const [fileId, ref] = k.split('|');
     const fi = review.labFiles.findIndex((x) => x.fileId === fileId);
@@ -255,12 +270,16 @@ function checkView(s: UploadState, record: RoadmapFile, cloud: boolean, note: No
   const sureWrites = (view.sure?.rows ?? []).filter((row) => writes.has(key(row.fileId, row.ref))).length;
   if (view.sure && view.sure.line !== IMPORT_REVIEW_TEXT.willSave(sureWrites)) fail('P3', `sure line ${view.sure.line} != ${sureWrites}`);
   checkDays(s, review);
-  checkNumbers(s, review, rows, writes, record);
+  checkNumbers(s, review, rows, writes, record, system);
   checkOracles(s, review, record);
+  // P4: each blocker names a row or day control the view draws.
+  const rowKeys = new Set(rows.map((row) => `${row.fileId}:${row.ref}`));
+  for (const b of view.save.blockers) if (!rowKeys.has(b.at) && !controls.has(b.at)) fail('P4', `blocker "${b.why}" at ${b.at}, which the view does not draw`);
   // P4: a disabled Save with nothing in flight names a blocker the view lets the person clear.
   if ((s.phase === 'open' || s.phase === 'saveFailed') && !view.save.enabled && inFlight(s) === 0) {
     const why = view.save.why;
     if (!why) fail('P4', 'disabled with no reason');
+    if (why !== UPLOAD_TEXT.saveNothing && view.save.blockers[0]?.why !== why) fail('P4', `why "${why}" is not the first blocker`);
     if (why === FIX_ERRORS_TEXT) {
       const errs = rows.filter((row) => row.error && row.ticked);
       if (!errs.length) fail('P4', 'fix errors, but no ticked row has an error');
@@ -271,8 +290,7 @@ function checkView(s: UploadState, record: RoadmapFile, cloud: boolean, note: No
       }
     } else if (why === UPLOAD_TEXT.chooseDay) {
       for (const lf of review.labFiles.filter((f) => f.needsDay)) {
-        // A dated previous column's day has no control yet (US-13 AC24: the web's matrix draws it in a later PR): its pick resolves it.
-        if ((lf.needsTestDay || lf.needsPreviousDay) && !daySection.has(lf.fileId)) fail('P4', `${lf.fileId} needs a day and no section asks it`);
+        if (!daySection.has(lf.fileId)) fail('P4', `${lf.fileId} needs a day and no section asks it`);
         const changes: ChoiceChange[] = lf.needsTestDay ? [{ testDay: PICKED_DAY }] : lf.needsPreviousDay ? [{ previousDay: EARLY }] : columnFixes(s, lf);
         const after = changes.reduce<UploadState>((st, change) => transition(st, { type: 'chose', id: lf.fileId, change, now: NOW }).state, s);
         const again = uploadReview(after, record, NOW).labFiles.find((f) => f.fileId === lf.fileId)!;
@@ -291,16 +309,27 @@ function checkView(s: UploadState, record: RoadmapFile, cloud: boolean, note: No
  * P7: each row Save writes shows what Save writes: its number (an edit as typed; else as printed, whose SI
  * conversion is what a core value stores), its unit, its day; a Replace shows the value it replaces.
  */
-function checkNumbers(s: UploadState, review: UploadReview, rows: ValueRow[], writes: Set<string>, record: RoadmapFile) {
+function checkNumbers(s: UploadState, review: UploadReview, rows: ValueRow[], writes: Set<string>, record: RoadmapFile, system: UnitSystem) {
   const planned = new Map(review.classification.values.filter((v) => v.sent && v.writes).map((v, k) => [key(review.labFiles[v.file].fileId, v.ref), review.classification.rows[k]]));
   const reads = new Map(('files' in s ? s.files : []).flatMap((f) => (f.status.s === 'read' ? [[f.id, f.status] as const] : [])));
   for (const row of rows) {
     const k = key(row.fileId, row.ref);
     const bulk = planned.get(k);
+    // K1: every row drawn as saving shows the day its plan row writes.
+    if (row.saves && (!bulk || row.day !== bulk.recordedAt.slice(0, 10))) fail('K1', `${k} saves on ${row.day}, its plan row ${bulk?.recordedAt ?? 'none'}`);
     if (!writes.has(k) || !bulk) continue;
     const edit = reads.get(row.fileId)?.choices.edits[row.ref];
     const shown = Number((row.value ?? '').replace(/^[<>]=?\s*/, ''));
     if (row.day !== bulk.recordedAt.slice(0, 10)) fail('P7', `${k} shows day ${row.day}, Save writes ${bulk.recordedAt}`);
+    // In the person's unit: a core value's shown number, read back from their unit, is what Save writes (to display rounding).
+    const own = row.shown;
+    if (!own) fail('P7', `${k} has no shown value`);
+    if (bulk.kind === 'measurement') {
+      const metric = bulk.metricType as MetricType;
+      if (own!.unit !== cellLabel(metric, system)) fail('P7', `${k} shown in ${own!.unit}, the person reads ${cellLabel(metric, system)}`);
+      const back = cellToSI(metric, Number(own!.number), system);
+      if (Math.abs(back - bulk.value) > 0.01 * Math.abs(bulk.value) + 1e-9) fail('P7', `${k} shows ${own!.number} ${own!.unit} (${back} SI), Save writes ${bulk.value}`);
+    } else if (Number(own!.number) !== bulk.value || own!.unit !== bulk.unit) fail('P7', `${k} shows ${own!.number} ${own!.unit}, Save writes ${bulk.value} ${bulk.unit}`);
     if (edit !== undefined) {
       if (shown !== edit || bulk.value !== edit) fail('P7', `${k} edited to ${edit}: shows ${row.value}, Save writes ${bulk.value}`);
     } else if (bulk.kind === 'measurement') {
@@ -397,6 +426,82 @@ function expectedDay(st: { extraction: UnifiedExtractionResult; choices: FileCho
   return { day, waits: day === null };
 }
 
+/** A value's day source as its control's key, from the day it printed alone (never the view's `dayKey`). */
+function sourceKey(fileId: string, x: UnifiedExtractionResult, ref: string): string {
+  const printed = valueAt(x, ref)?.value.recordedAt;
+  return `${fileId}|${printed === undefined ? 'test' : printed === UNDATED_PREVIOUS ? 'previous' : `printed:${printed}`}`;
+}
+
+/**
+ * K2: every row's name is its own. KNOWN nameThirdReading: three or more rows of one test from one file on one day (or
+ * none) share "another reading", as no approved words tell them apart (question to the owner, web list PR 1).
+ */
+function checkNames(s: UploadState, rows: ValueRow[], note: Note) {
+  const byName = new Map<string, ValueRow[]>();
+  for (const row of rows) byName.set(row.name, [...(byName.get(row.name) ?? []), row]);
+  for (const [name, same] of byName) {
+    if (same.length < 2) continue;
+    // The rows of that test there, from the extraction and the expected day, never the view's label or day.
+    const [a] = same;
+    const st = readStatus(s, a.fileId);
+    // The test as the write files it: a lab the write files as a core value is that test (bulk-row-target.ts).
+    const test = (ref: string) => bulkRowTarget(importRow(st.extraction, ref, DAY)!).metric;
+    const there = rows.filter((r) => r.fileId === a.fileId && expectedDay(st, r.ref).day === expectedDay(st, a.ref).day && test(r.ref) === test(a.ref));
+    if (there.length >= 3) { note('nameThirdReading'); continue; }
+    fail('K2', `${same.length} rows named "${name}": ${same.map((r) => `${r.fileId} ${r.ref}`).join(', ')}`);
+  }
+}
+
+/** K2: no (test, day) slot has two rows that save; each row's slot from the extraction, its expected day and its edit. */
+function checkSlots(s: UploadState, rows: ValueRow[]) {
+  const slots = new Map<string, string>();
+  for (const row of rows.filter((r) => r.saves)) {
+    const st = readStatus(s, row.fileId);
+    const { day } = expectedDay(st, row.ref);
+    const edit = st.choices.edits[row.ref];
+    const bulk = day ? importRow(st.extraction, row.ref, day, edit !== undefined ? { edited: { value: edit } } : {}) : null;
+    if (!bulk) fail('K2', `${row.fileId} ${row.ref} saves with no day`);
+    const slot = slotKey(bulkRowTarget(bulk!).slot, bulkRowTarget(bulk!).metric, bulk!.recordedAt);
+    if (slots.has(slot)) fail('K2', `${slots.get(slot)} and ${row.fileId} ${row.ref} both save in ${slot}`);
+    slots.set(slot, `${row.fileId} ${row.ref}`);
+  }
+}
+
+const readStatus = (s: UploadState, fileId: string) => {
+  const f = 'files' in s ? s.files.find((x) => x.id === fileId) : undefined;
+  if (f?.status.s !== 'read') throw new Error(`${fileId} is not read`);
+  return f.status;
+};
+
+/**
+ * K1: a day change (a full day, as the list's date input sends it) keeps every day control, by key; in its file it moves
+ * only its own source's rows, but a test day may also take or give back a previous column's day (its pick must be
+ * before the test's: the row's day becomes none, or its pick); no other file's row moves. A unit change moves nothing but `shown`.
+ */
+function checkDayChange(before: UploadView, after: UploadView, s: UploadState, e: Extract<UploadEvent, { type: 'chose' }> | null) {
+  const keysOf = (v: UploadView) => JSON.stringify(v.sections.flatMap((x) => ('key' in x ? [x.key] : [])).sort());
+  if (keysOf(before) !== keysOf(after)) fail('K1', `day controls ${keysOf(before)} became ${keysOf(after)}`);
+  if (!e) {
+    const strip = (v: UploadView) => JSON.stringify({ ...v, sections: v.sections.map((x) => (x.kind === 'unsure' ? { ...x, rows: x.rows.map(({ shown: _, ...r }) => r) } : x)), sure: v.sure && { ...v.sure, rows: v.sure.rows.map(({ shown: _, ...r }) => r) } });
+    if (strip(before) !== strip(after)) fail('K1', 'a unit change moved more than the shown numbers');
+    return;
+  }
+  const change = e.change;
+  const source = 'testDay' in change ? 'test' : 'previousDay' in change ? 'previous' : 'columnDay' in change ? `printed:${change.columnDay}` : null;
+  const was = new Map(allRows(before).map((r) => [key(r.fileId, r.ref), r.day]));
+  for (const row of allRows(after)) {
+    const k = key(row.fileId, row.ref);
+    if (!was.has(k) || was.get(k) === row.day) continue;
+    const st = readStatus(s, row.fileId);
+    const own = sourceKey(row.fileId, st.extraction, row.ref);
+    if (row.fileId === e.id && own === `${e.id}|${source}`) continue;
+    // The before-the-test rule: a previous column's row loses its day, or gets its pick back, when the test's day moves.
+    const pick = valueAt(st.extraction, row.ref)?.value.recordedAt === UNDATED_PREVIOUS ? st.choices.previousDay : st.choices.columnDays?.[valueAt(st.extraction, row.ref)?.value.recordedAt ?? ''];
+    if (row.fileId === e.id && source === 'test' && !own.endsWith('|test') && (row.day === null || row.day === validDay(pick ?? undefined, { now: NOW })?.slice(0, 10))) continue;
+    fail('K1', `a ${source} day change in ${e.id} moved ${k} (${own}) from ${was.get(k)} to ${row.day}`);
+  }
+}
+
 /** P5: FHIR after a commit of `before` into `after`. */
 function checkFhir(before: RoadmapFile, after: RoadmapFile) {
   const slots = new Map<string, number>();
@@ -445,9 +550,24 @@ class Run {
   lostReplace = false;
   /** The last commit's facts, for the reach counts: values skipped, originals unstored, originals filed behind a held row. */
   saved = { skipped: 0, unstored: 0, archiveOnly: 0 };
+  /** The units the person reads core values in. */
+  system: UnitSystem = 'si';
+  /** Steps K1 compared: a day change (of them, a dated column's), a unit change. */
+  k1 = { days: 0, columns: 0, units: 0 };
   constructor(readonly setup: Setup, readonly note: Note) { this.record = setup.record; this.s = initialUpload(setup.platform); }
 
   async apply(step: Step): Promise<void> {
+    const before = this.last?.view;
+    const phaseBefore = this.s.phase;
+    const dayChange = step.type === 'event' && step.e.type === 'chose' && fullDayChange(step.e.change) ? step.e : null;
+    await this.step(step);
+    if (!before || (phaseBefore !== 'open' && phaseBefore !== 'saveFailed') || (this.s.phase !== 'open' && this.s.phase !== 'saveFailed') || !this.last) return;
+    if (dayChange) { checkDayChange(before, this.last.view, this.s, dayChange); this.k1.days++; if ('columnDay' in dayChange.change) this.k1.columns++; }
+    if (step.type === 'unit') { checkDayChange(before, this.last.view, this.s, null); this.k1.units++; }
+  }
+
+  private async step(step: Step): Promise<void> {
+    if (step.type === 'unit') this.system = step.system;
     // The engine door drops a Replace whose target left its slot before each event and in each view (replacesLost).
     if (step.type === 'event') this.s = doorState(this.s, this.record);
     // The engine door fills what the page would write when Save is pressed (ios/engine/upload-doors.ts); the app computes nothing.
@@ -460,15 +580,26 @@ class Run {
     else if (step.type === 'event') this.s = transition(this.s, step.e).state;
     else if (step.type === 'record') this.record = this.write(this.record, step.rows, step.merge);
     else if (step.type === 'delete') this.record = { ...this.record, labValues: this.record.labValues.map((l) => (l.id === step.id ? { ...l, status: 'entered-in-error' as const } : l)), measurements: this.record.measurements.map((m) => (m.id === step.id ? { ...m, status: 'entered-in-error' as const } : m)) };
-    else await this.save(step);
+    else if (step.type === 'save') await this.save(step);
+    if (this.s.phase === 'saving') this.checkSaving();
     if (this.s.phase === 'done' || this.s.phase === 'saving') return;
     if (this.s.phase === 'open' || this.s.phase === 'saveFailed') {
       const door = doorState(this.s, this.record);
       this.lostReplace = door !== this.s;
       this.s = door;
     }
-    const { view, review } = checkView(this.s, this.record, this.setup.cloud, this.note);
+    const { view, review } = checkView(this.s, this.record, this.setup.cloud, this.note, this.system);
     this.last = { view, review, record: this.record };
+  }
+
+  /** K4: while saving, the page drawn on the record as it is now shows as saving only what the press promised (`reviewed`). */
+  private checkSaving() {
+    if (this.s.phase !== 'saving' || !this.s.reviewed) return;
+    const promised = new Set(this.s.reviewed.map((v) => key(v.file, v.ref)));
+    const view = uploadView(this.s, this.record, NOW, uploadReview(this.s, this.record, NOW), this.setup.cloud, () => this.system);
+    const extra = allRows(view).filter((row) => row.saves && !promised.has(key(row.fileId, row.ref)));
+    if (extra.length) fail('K4', `drawn as saving but never promised: ${extra.map((row) => key(row.fileId, row.ref)).join(', ')}`);
+    if (allRows(view).some((row) => !row.saves && promised.has(key(row.fileId, row.ref)))) this.note('promisedNoLongerWrites');
   }
 
   /** Another writer's rows: on this record, or on another device's copy of the record as it was at the start, merged in. */
@@ -498,6 +629,22 @@ class Run {
     this.saved = { skipped: (outcome.skippedValues ?? 0) + (outcome.skippedLabValues ?? 0), unstored: outcome.unstored, archiveOnly: outcome.archived };
     if (added.length !== outcome.values) fail('P2', `outcome says ${outcome.values} values, the commit added ${added.length}`);
     const skipped = (outcome.skippedValues ?? 0) + (outcome.skippedLabValues ?? 0);
+    // K4: what the press promised (`reviewed`, the list sent back, not any view of now) is all accounted for: each value
+    // written, counted skipped or named refused; every row added is a promised value's, by its slot from the extraction.
+    const promised = this.s.reviewed;
+    if (promised) {
+      const refusedN = outcome.refused?.length ?? 0;
+      if (outcome.values + skipped + refusedN !== promised.length) fail('K4', `${promised.length} promised, ${outcome.values} written, ${skipped} skipped, ${refusedN} refused`);
+      const slotOf = (v: { file: string; ref: string }) => {
+        const st = readStatus(this.s, v.file);
+        const { day } = expectedDay(st, v.ref);
+        const edit = st.choices.edits[v.ref];
+        const row = day ? importRow(st.extraction, v.ref, day, edit !== undefined ? { edited: { value: edit } } : {}) : null;
+        return row ? slotKey(bulkRowTarget(row).slot, bulkRowTarget(row).metric, row.recordedAt) : null;
+      };
+      const slots = new Set(promised.map(slotOf));
+      for (const row of added) if (!slots.has(slotOfRow(row))) fail('K4', `added ${slotOfRow(row)}, which no promised value fills`);
+    }
     if (seen) {
       // P2: what the view showed writable is what the commit added (metric, day, value, correctsId).
       const plan = uploadSavePlan(this.s, seen.record, NOW, seen.review, this.setup.cloud);
@@ -607,6 +754,7 @@ function genStep(r: () => number, run: Run, phase: { saves: number; chosen: numb
     return { type: 'event', e: { type: 'answered', run: run_, id: f.id, extraction: run.setup.extractions[f.id], legacy: coin(0.03), now: NOW } };
   }
   if (roll < 0.74) return { type: 'event', e: { type: 'retry', id: 'all' } };
+  if (roll < 0.755 && read.length) return { type: 'unit', system: run.system === 'si' ? 'conventional' : 'si' };
   if (roll < 0.76 && busy.length) return { type: 'event', e: { type: 'stop' } };
   if (roll < 0.8 && phase.chosen < 30) {
     // Mostly a write; sometimes a deletion of a held row, often the one a Replace aims at.
@@ -685,6 +833,12 @@ function genChange(r: () => number, run: Run, fileId: string): ChoiceChange | nu
   }
   return { edit: row.ref, value: pick([2.0, 3.1, 52, 500, null, Number.NaN]) };
 }
+
+/** A day change the list's date input can send: a whole day (it ignores an emptied input and never sends part of one). */
+const fullDayChange = (c: ChoiceChange) => {
+  const day = 'testDay' in c ? c.testDay : 'previousDay' in c ? c.previousDay : 'columnDay' in c ? c.day : undefined;
+  return typeof day === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(day);
+};
 
 /** The real past days a report's values printed: each a dated column the web's review can move (US-13 AC24). */
 const printedDays = (x: UnifiedExtractionResult): string[] =>
@@ -795,6 +949,7 @@ describe('upload-view property: the list view against Save (US-52 AC8c, US-13 AC
     const reach = {
       steps: 0, saved: 0, saveFailedThenSaved: 0, replacing: 0, corrections: 0, changedBeforeSave: 0, blockedFix: 0, blockedDay: 0, conflicts: 0, documents: 0,
       merges: 0, replaceLost: 0, changedBeforeTap: 0, freedBeforeCommit: 0, skipped: 0, unstored: 0, archiveOnly: 0, copies: 0, alreadySaved: 0, futureDay: 0, undatedPrevious: 0, pressureRefused: 0, limitTicked: 0, labAsCore: 0, edited: 0, noOriginalSaved: 0, columnMoved: 0, columnNotBefore: 0,
+      k1DayChanges: 0, k1UnitChanges: 0, k1ColumnChanges: 0, anotherReading: 0, conventionalShown: 0,
     };
     for (let seed = 1; seed <= SEEDS; seed++) {
       const r = mulberry32(seed);
@@ -812,6 +967,8 @@ describe('upload-view property: the list view against Save (US-52 AC8c, US-13 AC
           throw new Error(`${e.message}\nseed ${seed}, step ${i}\nsetup: ${brief(setup)}\nminimised steps: ${JSON.stringify(small)}`);
         }
         reach.steps++;
+        if (run.last && allRows(run.last.view).some((row) => row.name.endsWith(', another reading'))) reach.anotherReading++;
+        if (run.system === 'conventional' && run.last && allRows(run.last.view).some((row) => row.shown?.unit === 'mg/dL')) reach.conventionalShown++;
         if (step.type === 'save' && run.s.phase === 'done') reach.corrections += run.corrections;
         // A dated previous column's value moved by its pick, drawn to be written on the page Save ran from and saved (P7 checked its day).
         if (step.type === 'save' && run.s.phase === 'done' && run.last && movedColumn(run.last.view, run.last.review, run.s)) reach.columnMoved++;
@@ -842,8 +999,8 @@ describe('upload-view property: the list view against Save (US-52 AC8c, US-13 AC
           if (allRows(v).some((row) => run.last?.view.reviewed?.some((w) => w.file === row.fileId && w.ref === row.ref) && run.s.phase === 'open' && run.s.files.some((f) => f.id === row.fileId && f.status.s === 'read' && valueRecordedAt(f.status.extraction, row.ref) === UNDATED_PREVIOUS))) reach.undatedPrevious++;
         }
       }
-    }
-    if (process.env.UPLOAD_VIEW_PROPERTY_OUT) writeFileSync(process.env.UPLOAD_VIEW_PROPERTY_OUT, JSON.stringify({ reach, gaps: Object.fromEntries(Object.entries(gaps).map(([k, v]) => [k, { seqs: v.length, first: v.slice(0, 5) }])) }, null, 1));
+      reach.k1DayChanges += run.k1.days; reach.k1ColumnChanges += run.k1.columns; reach.k1UnitChanges += run.k1.units;
+    }    if (process.env.UPLOAD_VIEW_PROPERTY_OUT) writeFileSync(process.env.UPLOAD_VIEW_PROPERTY_OUT, JSON.stringify({ reach, gaps: Object.fromEntries(Object.entries(gaps).map(([k, v]) => [k, { seqs: v.length, first: v.slice(0, 5) }])) }, null, 1));
     expect(reach.steps).toBeGreaterThan(20000);
     for (const [name, k] of Object.entries(reach)) expect([name, k > 0]).toEqual([name, true]);
     // About 14 s locally; CI shards measured 22, 36, 46, 47 and 73 s (PR 1926), so 60 s failed a run.

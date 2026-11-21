@@ -76,6 +76,9 @@ export const REVIEW_CELL_TEXT = {
   replaceLabel: (test: string, day: string) => `Replace the saved ${test} value from ${day}`,
   /** A value whose unit the read guessed, in the iPhone review's words (LabReviewView.swift), byte for byte. */
   checkUnit: 'Check this value and its unit against the report',
+  /** A row's accessible name (web list PR 1; the pattern approved 2026-11-21): the Replace label's "<test> value from", then
+   *  where it was read; a second reading of the test there adds "another reading" (NOT_SAVED_TEXT.sameDay's words). */
+  rowName: (test: string, from: string, again: boolean) => `${test} value from ${from}${again ? ', another reading' : ''}`,
 } as const;
 
 /** A held value no reader can read is never echoed (US-65 AC3): the agent tools' words for it (mcp-refusals.ts), shared. */

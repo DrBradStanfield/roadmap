@@ -2,9 +2,10 @@
 // review matrix. Anything that touches React state stays in the consuming
 // components; everything here is data → data.
 
-import { commaQuestion, parseLocalisedNumber } from '@roadmap/health-core/parseNumber';
+import { commaQuestion } from '@roadmap/health-core/parseNumber';
 import { rangeFault, type MetricType, type ValidationRange } from '@roadmap/health-core/units';
 import { rangeMessage, cellRange, cellToSI, limitCellText, type CellUnit } from '@roadmap/health-core/cell-unit';
+import { hasNumericSyntax, readTypedValue } from '@roadmap/health-core/cell-input';
 import { statusOf, type GradeStatus } from '@roadmap/health-core/row-grade';
 import { trendRange } from '@roadmap/health-core/recent-trend';
 
@@ -92,36 +93,12 @@ export function trendGeometry(points: number[], limits: boolean[] | undefined, w
 /** A saved core value as its cell shows it: a limit with its symbol, "> 1.55" (US-12 AC20). */
 export const savedCellText = limitCellText;
 
-/**
- * A typed value that changes nothing, so saving it writes nothing (US-03
- * AC3): the number the user saw, typed again in any spelling ("3.20", "3,2"),
- * or the stored value itself once converted. `typed` is in the unit it was
- * typed in and `shown` is the saved value as displayed in that unit;
- * `candidate` and `stored` are in the unit the record keeps. The typed
- * number is never rounded: 3.24 over a shown 3.2 is a change.
- */
-export function sameAsSaved(typed: number, shown: string, candidate: number, stored: number): boolean {
-  const seen = parseLocalisedNumber(shown);
-  return (seen !== undefined && closeTo(typed, seen)) || closeTo(candidate, stored);
-}
-
-/** Equal up to float noise (1e-9 relative), which is all a unit round trip leaves. */
-function closeTo(a: number, b: number): boolean {
-  return Math.abs(a - b) <= 1e-9 * Math.max(Math.abs(a), Math.abs(b));
-}
+// Reading typed text lives in health-core (cell-input.ts), which the shared upload list commits through too.
+export { sameAsSaved, hasNumericSyntax, readNumericCell, readTypedValue } from '@roadmap/health-core/cell-input';
 
 /** Numeric cells accept unsigned plain decimals, not signs or exponent syntax.
  * Keep this UI contract separate from the shared record/clinical parser. */
 export const NUMERIC_SYNTAX_GUIDANCE = 'Type one decimal number, without signs, < > or spaces';
-
-export function hasNumericSyntax(text: string): boolean {
-  return /^[0-9.,]+$/.test(text);
-}
-
-/** Free-form rows have no metric range for resolving grouped commas. */
-export function readNumericCell(text: string): number | undefined {
-  return hasNumericSyntax(text) ? parseLocalisedNumber(text) : undefined;
-}
 
 /** Text kept for refusal because stripping it could change the number
  *  (US-02 AC4). Lab flag arrows and a unit's own superscript ('5.2 ↑',
@@ -143,12 +120,6 @@ export function numericCellText(text: string): string {
   if (CHANGES_THE_NUMBER.some((pattern) => pattern.test(text))) return text;
   const token = text.match(/^[^0-9.,]*([0-9.,]+)[^0-9.,]*$/);
   return token ? token[1] : /[0-9.,]/.test(text) ? text : '';
-}
-
-/** A typed number in the unit it was typed in: "1,234" is the one reading
- *  inside the metric's input range there, else undefined (US-02 AC7). */
-export function readTypedValue(metric: MetricType, typed: string, display: CellUnit): number | undefined {
-  return hasNumericSyntax(typed) ? parseLocalisedNumber(typed, cellRange(metric, display)) : undefined;
 }
 
 /** Whether a whole number still being typed could reach the range with more
