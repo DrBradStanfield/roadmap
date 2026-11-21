@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, useRef, useId, type MutableRefObject, type ReactNode } from 'react';
-import { DAY_CONTROL_TEXT, FIX_ERRORS_TEXT } from '@roadmap/health-core/upload-text';
+import { DAY_CONTROL_TEXT, FIX_ERRORS_TEXT, UPLOAD_TEXT } from '@roadmap/health-core/upload-text';
 import { type UnitSystem, type MetricType, UNIT_DEFS } from '@roadmap/health-core/units';
 import { healthInputSchema } from '@roadmap/health-core/validation';
 import { METRIC_TO_FIELD } from '@roadmap/health-core/mappings';
@@ -14,7 +14,7 @@ import { type CellUnit, type Grading, cellNumber, cellText, cellToSI, hasNumeric
 import { useLpaUnit } from '../lib/lpa-unit';
 import { ReviewMatrix } from './ReviewMatrix';
 import { ReviewFileSections } from './ReviewFileSections';
-import { NotSavedLine, REVIEW_ACTION_TEXT, SureLine, saveLabel, useDisclosure } from './ReviewOverview';
+import { NotSavedLine, SureLine, saveLabel, useDisclosure } from './ReviewOverview';
 import { useReviewDocuments } from '../hooks/useReviewDocuments';
 import { type FullDate, parseReportDate, columnDay, getDaysInMonth, buildRecordedAt, fullDateToIso } from '../lib/review-dates';
 import type { FileResult, ReviewDecisions } from '../lib/upload-pipeline';
@@ -466,10 +466,10 @@ export function ReviewTable({
           onClick={handleSave}
           disabled={hasInvalid || refusedKept || (nothingSelected && archiveCount === 0) || !allDatesSet || isSaving}
         >
-          {isSaving ? REVIEW_ACTION_TEXT.saving : saveLabel(savedCount, selectedDocCount, archiveCount)}
+          {isSaving ? UPLOAD_TEXT.saving : saveLabel(savedCount, selectedDocCount, archiveCount)}
         </button>}
         <button className="review-cancel-btn" onClick={onCancel} disabled={isSaving}>
-          {nothingToSave ? REVIEW_ACTION_TEXT.close : REVIEW_ACTION_TEXT.cancel}
+          {nothingToSave ? UPLOAD_TEXT.close : UPLOAD_TEXT.cancel}
         </button>
       </div>
     </div>

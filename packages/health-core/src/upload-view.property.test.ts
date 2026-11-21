@@ -56,6 +56,8 @@ import { uploadSave, type UploadSaveIO } from './upload-save';
 import { uploadView, type UploadView, type ValueRow } from './upload-view';
 import { uploadList, type UploadList } from './upload-list';
 import { checkExistence, checkHeading, checkInputKind, checkInputs, checkKeysKept, checkNames, checkNoSilentNonWrite, checkOneQuantity, checkTypedBlocks, checkWhy, checkDayNames, holdsText, keepInputs, type PersonInputs } from './upload-list.test-helpers';
+import { checkDayWords, checkLetters, checkSaveBar, checkUnits } from './upload-list-page.test-helpers';
+import { uploadListPage, type ListPage } from './upload-list-page';
 import type { TypedText } from './upload-choices';
 import { FIX_ERRORS_TEXT, UPLOAD_TEXT } from './upload-text';
 import { IMPORT_REVIEW_TEXT, importRow, isOfferedRef, offeredValues, PROBE_DAY, valueAt } from './import-review';
@@ -235,7 +237,7 @@ function checkText(view: UploadView) {
 type Note = (gap: string) => void;
 
 /** P1, P2 (same record), P3, P4, B on one view, in the person's units on the web. `note`: a known gap seen. */
-function checkView(s: UploadState, record: RoadmapFile, setup: Setup, note: Note, inputs: PersonInputs): { view: UploadView; review: UploadReview; list: UploadList } {
+function checkView(s: UploadState, record: RoadmapFile, setup: Setup, note: Note, inputs: PersonInputs): { view: UploadView; review: UploadReview; list: UploadList; page: ListPage } {
   const { cloud } = setup;
   const review = uploadReview(s, record, NOW);
   const view = uploadView(s, record, NOW, review, cloud, unitsOf(setup));
@@ -254,6 +256,13 @@ function checkView(s: UploadState, record: RoadmapFile, setup: Setup, note: Note
   checkDayNames(s, list, note, fail);
   checkHeading(s, review, list, fail);
   checkNames(s, review, list, NOW, note, fail);
+  // L13 in the person's units; across unit toggles on its own seeds (upload-list.units.property.test.ts), so this run
+  // stays inside CI's time budget.
+  checkUnits(s, list, unitOf, fail);
+  checkDayWords(s, list, NOW, fail);
+  const page = uploadListPage(s, record, NOW, review, cloud);
+  checkLetters(s, view, page, fail);
+  checkSaveBar(s, review, view, page, fail);
   const rows = allRows(view);
   // P1: each offered value once, as a row or a not-saved line, or behind its report's day question.
   const seen = new Map<string, number>();
@@ -341,7 +350,7 @@ function checkView(s: UploadState, record: RoadmapFile, setup: Setup, note: Note
       }
     } else if (why !== UPLOAD_TEXT.saveNothing) fail('P4', `unknown blocker ${why}`);
   }
-  return { view, review, list };
+  return { view, review, list, page };
 }
 
 /**
@@ -623,7 +632,7 @@ function doorState(s: UploadState, record: RoadmapFile): UploadState {
 class Run {
   s: UploadState;
   record: RoadmapFile;
-  last: { view: UploadView; review: UploadReview; list: UploadList; record: RoadmapFile } | null = null;
+  last: { view: UploadView; review: UploadReview; list: UploadList; page: ListPage; record: RoadmapFile } | null = null;
   /** Rows the last commit wrote as corrections (Replace). */
   corrections = 0;
   /** The last step's view came after the door dropped a lost Replace. */
@@ -635,6 +644,8 @@ class Run {
   /** Day changes K1 compared; saving pages K4 checked with a row written now that was never promised. */
   k1 = 0;
   k4 = 0;
+  /** Saving pages whose Save words L16 checked. */
+  savingWords = 0;
   /** Saves refused for held text (L3). */
   typedRefused = 0;
   /** What the person entered in each row, logged from their own events (L7). */
@@ -675,6 +686,9 @@ class Run {
     const extra = allRows(view).filter((row) => row.saves && !promised.has(key(row.fileId, row.ref)));
     if (extra.length) fail('K4', `drawn as saving but never promised: ${extra.map((row) => key(row.fileId, row.ref)).join(', ')}`);
     if (allRows(view).some((row) => !row.saves && promised.has(key(row.fileId, row.ref)))) this.note('promisedNoLongerWrites');
+    // L16 while saving: the Save button says "Saving...".
+    checkSaveBar(this.s, review, view, uploadListPage(this.s, this.record, NOW, review, this.setup.cloud), fail);
+    this.savingWords++;
   }
 
   private async step(step: Step): Promise<void> {
@@ -703,8 +717,8 @@ class Run {
     }
     // The door's own step (a lost Replace dropped) is not the person's: L7 checks it too.
     keepInputs(this.s, this.inputs, null, fail);
-    const { view, review, list } = checkView(this.s, this.record, this.setup, this.note, this.inputs);
-    this.last = { view, review, list, record: this.record };
+    const { view, review, list, page } = checkView(this.s, this.record, this.setup, this.note, this.inputs);
+    this.last = { view, review, list, page, record: this.record };
   }
 
   /** Another writer's rows: on this record, or on another device's copy of the record as it was at the start, merged in. */
@@ -785,8 +799,11 @@ class Run {
     this.record = file;
     this.s = transition(this.s, { type: 'saved', run: this.s.run, attempt: (this.s as { attempt: number }).attempt, outcome }).state;
     if (this.s.phase !== 'done') fail('P3', 'saved but not done');
-    const done = uploadView(this.s, file, NOW, uploadReview(this.s, file, NOW), this.setup.cloud);
+    const doneReview = uploadReview(this.s, file, NOW);
+    const done = uploadView(this.s, file, NOW, doneReview, this.setup.cloud);
     checkText(done);
+    // L16 once done: close is the done screen's own label.
+    checkSaveBar(this.s, doneReview, done, uploadListPage(this.s, file, NOW, doneReview, this.setup.cloud), fail);
     // US-14 AC13: originals kept and nothing else written heads with the kept line alone.
     const keptOnly = outcome.archived > 0 && !outcome.values && !outcome.documents;
     if (done.done?.line !== (keptOnly ? UPLOAD_TEXT.archivedLine(outcome.archived) : UPLOAD_TEXT.savedLine(outcome.values, outcome.documents))) fail('P3', 'done line');
@@ -915,7 +932,8 @@ function genChange(r: () => number, run: Run, fileId: string): ChoiceChange | nu
   const rows = surface(run).filter((row) => row.fileId === fileId);
   const asksDay = view.sections.some((x) => x.kind === 'undated' && x.fileId === fileId);
   // The phone's pickers offer only days up to today (UploadReviewView.swift `in: ...Date.now`, DayCalendar).
-  if (asksDay && (!rows.length || coin(0.4))) return { testDay: pick([PICKED_DAY, DAY, PAST]) };
+  // The web's date input has no limit (UploadListDays.tsx), so a day to come too.
+  if (asksDay && (!rows.length || coin(0.4))) return { testDay: pick(run.setup.platform === 'web' ? [PICKED_DAY, DAY, PAST, FUTURE] : [PICKED_DAY, DAY, PAST]) };
   const printsUndated = [...(f.status.extraction.values ?? []), ...(f.status.extraction.additionalValues ?? [])].some((x) => x.recordedAt === UNDATED_PREVIOUS);
   if (printsUndated && coin(0.3)) return { previousDay: pick([EARLY, PAST, PICKED_DAY, DAY, '2026-10', null]) };
   // A dated previous column's day, on the web only (US-13 AC24): a valid early day, a partial pick that waits, another column's
@@ -924,7 +942,7 @@ function genChange(r: () => number, run: Run, fileId: string): ChoiceChange | nu
   if (run.setup.platform === 'web' && columns.length && coin(0.25)) {
     const columnDay = pick(columns);
     const others = columns.filter((d) => d !== columnDay);
-    return { columnDay, day: pick([EARLY, '2026-10', DAY, PICKED_DAY, ...(others.length ? [pick(others)] : [])]) };
+    return { columnDay, day: pick([EARLY, '2026-10', DAY, PICKED_DAY, FUTURE, ...(others.length ? [pick(others)] : [])]) };
   }
   if (!rows.length) return null;
   const row = pick(rows);
@@ -1070,6 +1088,7 @@ describe('upload-view property: the list view against Save (US-52 AC8c, US-13 AC
       k1DayChanges: 0, k4Unpromised: 0, conventionalShown: 0, blockedAtColumn: 0, blockedAtRowAndDay: 0,
       typedRefused: 0, typedSavedAfter: 0, sameNamed: 0, listAlreadyInRecord: 0, listWaits: 0, listSameDayTicked: 0, listCopyError: 0, unsentBlocked: 0, tickOnHeld: 0, inputNone: 0,
       listReasons: 0, listHeading: 0, anotherReading: 0, replaceNamed: 0, listCheckNote: 0, editUnitKept: 0, twoColumns: 0, zipMembers: 0, longName: 0, touchedUncounted: 0,
+      heldOtherUnit: 0, heldBesideToggle: 0, dayNotHappened: 0, dayLimits: 0, lettersShown: 0, closeWord: 0, savingWord: 0,
     };
     for (let seed = 1; seed <= SEEDS; seed++) {
       const r = mulberry32(seed);
@@ -1120,6 +1139,15 @@ describe('upload-view property: the list view against Save (US-52 AC8c, US-13 AC
           if (run.s.files.some((f) => f.status.s === 'read' && f.status.choices.editUnits)) reach.editUnitKept++;
           if (list.days.some((d, i) => d.source === 'column' && list.days.some((e, j) => j !== i && e.source === 'column' && e.fileId === d.fileId))) reach.twoColumns++;
           if (list.rows.some((r) => r.status.kind === 'waits')) reach.listWaits++;
+          // Web list PR 1e: held text in a unit the person no longer reads (L13); a pick that waits, by each of its words (L14);
+          // a letter's text previewed (L15); the close button saying Close (L16).
+          if (list.rows.some((r) => r.typed?.unit && r.typed.unit !== run.setup.system)) reach.heldOtherUnit++;
+          // A row holding text (no toggle) beside a row of the same test that keeps its toggle (L13, owner ruling on PR 1951).
+          if (list.rows.some((r) => r.typed && r.shown.cell && list.rows.some((o) => o !== r && o.unit.toggle && o.shown.cell?.metric === r.shown.cell!.metric))) reach.heldBesideToggle++;
+          if (list.days.some((d) => d.chosen && !d.day && d.hint === DAY_NOT_HAPPENED)) reach.dayNotHappened++;
+          if (list.days.some((d) => d.chosen && !d.day && d.hint !== DAY_NOT_HAPPENED)) reach.dayLimits++;
+          if (run.last!.page.letters.some((l) => l.text)) reach.lettersShown++;
+          if (run.last!.page.close === UPLOAD_TEXT.close) reach.closeWord++;
           if (list.rows.some((r) => r.status.kind === 'sameDay' && r.ticked)) reach.listSameDayTicked++;
           if (list.rows.some((r) => r.status.kind === 'error' && r.error !== null && !allRows(v!).some((x) => x.fileId === r.fileId && x.ref === r.ref && x.error))) reach.listCopyError++;
           if (v?.save.blockers.some((b) => b.why === FIX_ERRORS_TEXT && run.last!.review.classification.values.some((c) => !c.sent && `${run.last!.review.labFiles[c.file].fileId}:${c.ref}` === b.at))) reach.unsentBlocked++;
@@ -1145,6 +1173,7 @@ describe('upload-view property: the list view against Save (US-52 AC8c, US-13 AC
       }
       reach.k1DayChanges += run.k1;
       reach.k4Unpromised += run.k4;
+      reach.savingWord += run.savingWords;
       reach.typedRefused += run.typedRefused;
       if (run.typedRefused && run.s.phase === 'done') reach.typedSavedAfter++;
     }

@@ -48,9 +48,6 @@ export function NotSavedLine({ notSaved, disclosure }: { notSaved: ReviewGroups[
   );
 }
 
-/** The review's own button words, one copy for the grid and the list (ReviewTable.tsx, UploadList.tsx). */
-export const REVIEW_ACTION_TEXT = { saving: 'Saving...', cancel: 'Cancel', close: 'Close' } as const;
-
 /** The Save button's words: "Save 3 values", then any documents and originals (string 12). */
 export function saveLabel(values: number, documents: number, originals: number): string {
   const extras = [
