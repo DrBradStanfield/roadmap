@@ -48,23 +48,24 @@ import { inFlight, type UploadState } from './upload-flow';
 import type { UploadReview } from './upload-review';
 import type { UploadView } from './upload-view';
 import { FIX_ERRORS_TEXT, UPLOAD_TEXT } from './upload-text';
-import { mulberry32, NOW, type Setup, type Step, rowsOf, allRows, Failure, valueRecordedAt } from './upload-view.property.base.test-helpers';
+import { mulberry32, seedIds, withSeededIds, NOW, type Setup, type Step, rowsOf, allRows, Failure, valueRecordedAt } from './upload-view.property.base.test-helpers';
 import { Run } from './upload-view.property.run.test-helpers';
 import { genStep, genSetup } from './upload-view.property.gen.test-helpers';
 
-/** Runs `steps` from scratch; the failure's property, or null. */
-async function replay(setup: Setup, steps: Step[]): Promise<Failure | null> {
+/** Runs `steps` from scratch, with the ids seed `seed` ran them on; the failure's property, or null. */
+async function replay(seed: number, setup: Setup, steps: Step[]): Promise<Failure | null> {
+  seedIds(seed, 'run');
   const run = new Run(setup, () => {});
   try { for (const step of steps) await run.apply(step); } catch (e) { if (e instanceof Failure) return e; throw e; }
   return null;
 }
 
 /** Drops steps one at a time while the same property still fails. */
-async function minimise(setup: Setup, steps: Step[], prop: string): Promise<Step[]> {
+async function minimise(seed: number, setup: Setup, steps: Step[], prop: string): Promise<Step[]> {
   let cur = steps;
   for (let i = cur.length - 1; i >= 0; i--) {
     const next = [...cur.slice(0, i), ...cur.slice(i + 1)];
-    const f = await replay(setup, next);
+    const f = await replay(seed, setup, next);
     if (f?.prop === prop) cur = next;
   }
   return cur;
@@ -107,10 +108,12 @@ export const SEEDS = 3000;
 export interface Sweep { reach: Record<string, number>; gaps: Record<string, number[]> }
 
 /**
- * Seeds `from` to `to` (of 1 to SEEDS), each exactly as the single test ran it: seed N draws the same sequence. `out`: a
- * path; the reach and the gaps seen are written to it, suffixed with the range.
+ * Seeds `from` to `to` (of 1 to SEEDS), each exactly as the single test ran it: seed N draws the same sequence, and its rows
+ * the same ids (withSeededIds). `out`: a path; the reach and the gaps seen are written to it, suffixed with the range.
  */
-export async function sweepSeeds(from: number, to: number, out?: string): Promise<Sweep> {
+export const sweepSeeds = (from: number, to: number, out?: string): Promise<Sweep> => withSeededIds(() => sweep(from, to, out));
+
+async function sweep(from: number, to: number, out?: string): Promise<Sweep> {
   const gaps: Record<string, number[]> = {};
   const reach = {
     steps: 0, saved: 0, saveFailedThenSaved: 0, replacing: 0, corrections: 0, changedBeforeSave: 0, blockedFix: 0, blockedDay: 0, conflicts: 0, documents: 0,
@@ -118,11 +121,13 @@ export async function sweepSeeds(from: number, to: number, out?: string): Promis
     k1DayChanges: 0, k4Unpromised: 0, conventionalShown: 0, blockedAtColumn: 0, blockedAtRowAndDay: 0,
     typedRefused: 0, typedSavedAfter: 0, sameNamed: 0, listAlreadyInRecord: 0, listWaits: 0, listSameDayTicked: 0, listCopyError: 0, unsentBlocked: 0, tickOnHeld: 0, inputNone: 0,
     listReasons: 0, listHeading: 0, anotherReading: 0, replaceNamed: 0, listCheckNote: 0, editUnitKept: 0, twoColumns: 0, zipMembers: 0, longName: 0, touchedUncounted: 0,
-    heldOtherUnit: 0, heldBesideToggle: 0, dayNotHappened: 0, dayLimits: 0, lettersShown: 0, closeWord: 0, savingWord: 0,
+    heldBesideToggle: 0, dayNotHappened: 0, dayLimits: 0, lettersShown: 0, closeWord: 0, savingWord: 0,
   };
   for (let seed = from; seed <= to; seed++) {
     const r = mulberry32(seed);
+    seedIds(seed, 'setup');
     const setup = genSetup(r, seed % 2 ? 'si' : 'conventional');
+    seedIds(seed, 'run');
     const run = new Run(setup, (gap) => { const seeds = (gaps[gap] ??= []); if (seeds[seeds.length - 1] !== seed) seeds.push(seed); });
     const steps: Step[] = [];
     const phase = { saves: 0, chosen: 0, resolved: 0 };
@@ -132,7 +137,7 @@ export async function sweepSeeds(from: number, to: number, out?: string): Promis
       steps.push(step);
       try { await run.apply(step); } catch (e) {
         if (!(e instanceof Failure)) throw e;
-        const small = await minimise(setup, steps, e.prop);
+        const small = await minimise(seed, setup, steps, e.prop);
         throw new Error(`${e.message}\nseed ${seed}, step ${i}\nsetup: ${brief(setup)}\nminimised steps: ${JSON.stringify(small)}`);
       }
       reach.steps++;
@@ -169,9 +174,9 @@ export async function sweepSeeds(from: number, to: number, out?: string): Promis
         if (run.s.files.some((f) => f.status.s === 'read' && f.status.choices.editUnits)) reach.editUnitKept++;
         if (list.days.some((d, i) => d.source === 'column' && list.days.some((e, j) => j !== i && e.source === 'column' && e.fileId === d.fileId))) reach.twoColumns++;
         if (list.rows.some((r) => r.status.kind === 'waits')) reach.listWaits++;
-        // Web list PR 1e: held text in a unit the person no longer reads (L13); a pick that waits, by each of its words (L14);
-        // a letter's text previewed (L15); the close button saying Close (L16).
-        if (list.rows.some((r) => r.typed?.unit && r.typed.unit !== run.setup.system)) reach.heldOtherUnit++;
+        // Web list PR 1e: a pick that waits, by each of its words (L14); a letter's text previewed (L15); the close button saying
+        // Close (L16). Held text in a unit the person no longer reads (L13) is counted where it is reached: one seed in 3000
+        // reached it here, upload-list.units.property.test.ts 2428 times in its 400 seeds, with checkUnits as its oracle.
         // A row holding text (no toggle) beside a row of the same test that keeps its toggle (L13, owner ruling on PR 1951).
         if (list.rows.some((r) => r.typed && r.shown.cell && list.rows.some((o) => o !== r && o.unit.toggle && o.shown.cell?.metric === r.shown.cell!.metric))) reach.heldBesideToggle++;
         if (list.days.some((d) => d.chosen && !d.day && d.hint === DAY_NOT_HAPPENED)) reach.dayNotHappened++;
@@ -215,10 +220,10 @@ export async function sweepSeeds(from: number, to: number, out?: string): Promis
 export const PARTS = 6;
 
 /**
- * Reach counters some ranges never reach, each with the parts that must reach it (asserted there alone). heldOtherUnit
- * (PR 1951): one seed of the 3000 reaches it, in part 4.
+ * Reach counters some ranges never reach, each with the parts that must reach it (asserted there alone). None today: with
+ * the ids seeded, every range reaches every counter it keeps (measured 2026-11-22).
  */
-export const REACHED_ONLY_IN: Record<string, number[]> = { heldOtherUnit: [4] };
+export const REACHED_ONLY_IN: Record<string, number[]> = {};
 
 /**
  * Part `part` (1 to PARTS) of the seeds as one test. The single test over all 3000 took 116 s on a loaded CI runner
