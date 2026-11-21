@@ -25,12 +25,14 @@
  */
 import { LAB_ARCHIVE_ROWS, labRowsByFile, listedRows, writtenLabRows } from './document-rows';
 import { committedFile, labArchivePayload, saveDocuments, type DocumentPayload } from './document-save';
-import { bulkAppendValues } from './record-edits';
+import { bulkAppendValues, type BulkAppendResult } from './record-edits';
 import { labReason } from './import-review';
-import { labTestLabel } from './lab-catalog';
+import { labTestLabel, labUnitTaken, resolveLabCatalogEntry } from './lab-catalog';
 import { METRIC_LABELS } from './mappings';
+import { labUnitForEvent } from './product-events';
 import type { RoadmapFile } from './roadmap-file';
-import type { SaveOutcome, UploadState } from './upload-flow';
+import type { MetricTypeValue } from './validation';
+import type { RefusedCode, SaveOutcome, UploadState } from './upload-flow';
 import { storedHashes, uploadSavePlan } from './upload-plan';
 import { reviewedWrites, uploadReview } from './upload-review';
 import { isScreeningDateKey, writeScreeningDates, type ScreeningPerson } from './upload-screening';
@@ -65,7 +67,21 @@ export type UploadSaveResult =
   | { ok: false; reason: 'not-saving' | 'not-ready'; message: string };
 
 /** A landed Save's counts: every one but the skips and the screening dates, which are there only when some were. */
-export type SavedOutcome = Required<Omit<SaveOutcome, 'skippedValues' | 'skippedLabValues' | 'refused' | 'screenings'>> & SaveOutcome;
+export type SavedOutcome = Required<Omit<SaveOutcome, 'skippedValues' | 'skippedLabValues' | 'refused' | 'refusedCodes' | 'screenings'>> & SaveOutcome;
+
+/** Each value a write refused as its closed code (US-12 AC6), labs then core values, as `refused` lists them: the
+ *  `lab_unit_refused` counter's test (refused-spellings.ts) and words, and `measurement_refused`'s reason and metric. */
+export function refusalCodes(written: Pick<BulkAppendResult, 'refused' | 'measurementRefusals'>): RefusedCode[] {
+  return [
+    ...written.refused.map((r): RefusedCode => {
+      if (labUnitTaken(resolveLabCatalogEntry(r.key), r.unit)) return { kind: 'lab', key: r.key, reason: 'value' };
+      const unit = labUnitForEvent(r.unit);
+      return { kind: 'lab', key: r.key, reason: 'unit', ...(unit !== undefined ? { unit } : {}) };
+    }),
+    ...written.measurementRefusals.map((r): RefusedCode => (r.reason === 'unknown-metric' ? { kind: 'measurement', reason: r.reason }
+      : { kind: 'measurement', reason: r.reason, metricType: r.metricType as MetricTypeValue })),
+  ];
+}
 
 /** An original as saveDocuments holds it: the file it is, with the hash the state read for its bytes. */
 interface Held { fileId: string; hash: string }
@@ -171,7 +187,7 @@ export async function uploadSave<F>(s: UploadState, record: RoadmapFile, now: st
       // untried write, the app not holding it), judged at commit so another writer's copy counts as kept.
       const stored = storedHashes(out);
       const unstored = [...nominated].filter((h) => !stored.has(h)).length;
-      return { file: out, outcome: { values, documents, archived, unstored, ...(sv ? { skippedValues: sv } : {}), ...(sl ? { skippedLabValues: sl } : {}), ...(refused.length ? { refused } : {}), ...(dates.size ? { screenings: dates.size } : {}) } };
+      return { file: out, outcome: { values, documents, archived, unstored, ...(sv ? { skippedValues: sv } : {}), ...(sl ? { skippedLabValues: sl } : {}), ...(refused.length ? { refused, refusedCodes: refusalCodes(written) } : {}), ...(dates.size ? { screenings: dates.size } : {}) } };
     },
   };
 }

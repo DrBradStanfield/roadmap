@@ -16,6 +16,8 @@ import type { AdditionalLabValue, DocumentResult, ExtractedValue, RefusedLabValu
 import { LPA_UNITS, UNIT_SYSTEMS } from './units';
 import type { ChoiceChange, FileChoices } from './upload-choices';
 import { NOT_SAVED_REASONS } from './import-review';
+import { isLabKeyWord, isLabUnitWord, LAB_UNIT_BLANK, MEASUREMENT_REFUSAL_REASONS } from './product-events';
+import { METRIC_TYPES } from './validation';
 import { GATE_WORDS_MAX, NETWORK_FAILURES, UPLOAD_FAILURES, type UploadFailure } from './upload-failure';
 import type { UploadEffect, UploadEvent, UploadState } from './upload-flow';
 
@@ -103,6 +105,11 @@ const reviewed = z.array(strict({ file: text, ref: text, lab: z.boolean() })).op
 const outcome = strict({
   values: count, documents: count, archived: count, unstored: count.optional(), skippedValues: count.optional(), skippedLabValues: count.optional(), screenings: count.optional(),
   refused: z.array(z.union([strict({ label: text, reason: notSavedReason }), strict({ line: text })])).optional(),
+  // Closed words only (US-12 AC6): a key or unit that is no catalogue key or unit word is refused, so no value rides in one.
+  refusedCodes: z.array(z.union([
+    strict({ kind: z.literal('measurement'), reason: z.enum(MEASUREMENT_REFUSAL_REASONS), metricType: z.enum(METRIC_TYPES).optional() }),
+    strict({ kind: z.literal('lab'), key: text.refine(isLabKeyWord), reason: z.enum(['unit', 'value']), unit: text.refine((u) => u === LAB_UNIT_BLANK || isLabUnitWord(u)).optional() }),
+  ])).optional(),
 });
 
 export const UPLOAD_STATE = z.discriminatedUnion('phase', [
