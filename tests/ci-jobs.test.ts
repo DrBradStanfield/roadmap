@@ -111,6 +111,29 @@ describe('ci.yml jobs (US-64 AC12)', () => {
     expect(ciYaml.jobs.test.needs).toEqual(['checks', 'unit']);
   });
 
+  it('each shard writes its timing and a warn-only step reads it, whatever the tests did (US-64 AC36)', () => {
+    const unit = job('unit');
+    // Naming a reporter drops vitest's defaults: the failure annotations flake-watch reads must stay.
+    expect(unit).toContain('--reporter=default --reporter=github-actions --reporter=./tools/test-time-budget.mjs');
+    expect(unit).toMatch(/if: always\(\)\n\s+env:\n\s+LABEL: shard \$\{\{ matrix\.shard \}\}\/6, \$\{\{ matrix\.tz \}\}\n\s+run: node tools\/test-time-budget\.mjs test-timing\.json "\$\{LABEL\}"/);
+  });
+
+  it('flake-watch runs only on a main rerun whose `test` passed, read-only, and gates nothing (US-64 AC36)', () => {
+    const fw = ciYaml.jobs['flake-watch'];
+    const runs = (ref: string, run_attempt: string, result: string) =>
+      Boolean(evalExpr(fw.if!, { github: { ref, run_attempt }, needs: { test: { result } } }));
+    expect(runs('refs/heads/main', '2', 'success')).toBe(true);
+    expect(runs('refs/heads/main', '1', 'success')).toBe(false);
+    expect(runs('refs/heads/main', '3', 'failure')).toBe(false);
+    expect(runs('refs/pull/42/merge', '2', 'success')).toBe(false);
+    expect(fw.needs).toEqual(['test']);
+    const text = job('flake-watch');
+    expect(text).toContain('RUN_ID: ${{ github.run_id }}');
+    expect(text).toContain('run: node tools/flake-watch.mjs "${RUN_ID}"');
+    expect(text).not.toMatch(/permissions|secrets\./);
+    expect(ciYaml.jobs.test.needs).not.toContain('flake-watch');
+  });
+
   it('the checks job keeps every gate the single job had, plus the story gate (AC11)', () => {
     const checks = job('checks');
     for (const step of [

@@ -281,6 +281,22 @@ deploy, repeated for every PR after each conflict. A batch pays one 3 min CI run
 Tests: `tests/worktree-guard.test.ts`, `tests/git-push-guard.test.ts` (runs `.claude/hooks/git-push-guard.test.sh`),
 `tests/write-gate.test.ts`, `tests/release-checkout.test.ts` and `tests/stale-prs.test.ts`, all in `test:all`. claude_business has no worktree guard since 2026-11-04; its push guard is a separate copy with its own rules.
 
+## Test time and flake watch
+
+Two CI outputs warn before a slow or flaky test turns main red (US-64 AC36). Neither fails a job.
+
+- **Test time.** Each `unit` shard's "Test time budget" step prints its ten slowest files, with seconds and
+  test count; the run's summary page shows every shard's table. A yellow warning names a file over 40 s, or a
+  test past half its own timeout ("took 45.6 s of its 60.0 s timeout (76%)"). The second kind is the one to act
+  on: speed the test up, or give it a stated timeout, before a loaded runner pushes it over. 40 s is a starting
+  number from main's runners on 2026-11-21: every file ran under 30 s except `tools/codex-review.test.ts` (55 s)
+  and `upload-view.property.test.ts` (46 s, the one that timed out). Change `FILE_BUDGET_MS` in
+  `tools/test-time-budget.mjs` once a few weeks of tables show where the line belongs.
+- **Flake watch.** When someone reruns a red run on main and it goes green, a `flake-watch` job runs at the end.
+  Its summary lists each job that failed on an earlier attempt, the attempt, and the failed test files; each
+  also shows as a warning on the run. A rerun-to-green is a flaky test to fix, not a pass: open a lead for it.
+  To check any run by hand: `node tools/flake-watch.mjs <run id> --repo DrBradStanfield/roadmap`.
+
 ## Exceptions
 
 - **Cloud loops** run in their own throwaway checkout and commit straight to `main` (docs/loops/LOOP.md § Repo

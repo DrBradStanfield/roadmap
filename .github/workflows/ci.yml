@@ -153,8 +153,16 @@ jobs:
       # test:all runs the root vitest config — a strict superset of `npm test`
       # (health-core + app/lib) that also picks up widget-src and app/routes
       # suites, which were previously never executed in CI. Each runner takes
-      # a sixth of the test files.
-      - run: npm run test:all -- --shard=${{ matrix.shard }}/6
+      # a sixth of the test files. Naming any reporter drops vitest's defaults, so default and
+      # github-actions (the failure annotations flake-watch reads) are named beside the timing one.
+      - run: npm run test:all -- --shard=${{ matrix.shard }}/6 --reporter=default --reporter=github-actions --reporter=./tools/test-time-budget.mjs
+      # Time budget per test file (US-64 AC36): the slowest files, and a warning for a file over
+      # 40 s or a test past half its timeout. Warn-only: it exits 0, so the job's result is the tests'.
+      - name: Test time budget (warns, never fails)
+        if: always()
+        env:
+          LABEL: shard ${{ matrix.shard }}/6, ${{ matrix.tz }}
+        run: node tools/test-time-budget.mjs test-timing.json "${LABEL}"
 
   test:
     if: always()
@@ -169,3 +177,22 @@ jobs:
         run: |
           echo "checks: ${CHECKS}, unit shards: ${UNIT}"
           [ "${CHECKS}" = success ] && [ "${UNIT}" = success ]
+
+  # A rerun that turned main green (US-64 AC36): names the jobs that failed on an earlier attempt and
+  # the test files that failed there, in this job's summary and as a warning on the run. It reads
+  # public run data with the workflow's read-only token, so it needs no new permission.
+  flake-watch:
+    needs: [test]
+    if: github.ref == 'refs/heads/main' && github.run_attempt != '1' && needs.test.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Record jobs that passed only on a rerun
+        env:
+          RUN_ID: ${{ github.run_id }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node tools/flake-watch.mjs "${RUN_ID}"

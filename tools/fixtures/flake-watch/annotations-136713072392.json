@@ -1,0 +1,14 @@
+[
+  {
+    "path": ".github",
+    "annotation_level": "failure",
+    "title": "",
+    "message": "Process completed with exit code 1."
+  },
+  {
+    "path": "tools/split-stories.test.ts",
+    "annotation_level": "failure",
+    "title": "tools/split-stories.test.ts > writing into a repo that already holds parts (the PR 3 rebase path) > PR 3: the first split on main, with no docs/stories/ yet, needs no flag",
+    "message": "Error: ENOENT, No such file or directory '/tmp/split-stories-repo-767v79/.git/objects'\n ❯ tools/split-stories.test.ts:420:5\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\nSerialized Error: { errno: 2, code: 'ENOENT', path: '/tmp/split-stories-repo-767v79/.git/objects', syscall: 'cp' }\n"
+  }
+]
