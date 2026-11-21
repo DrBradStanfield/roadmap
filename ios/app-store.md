@@ -212,7 +212,8 @@ declares the three rows below; declare them as written.
    the app's server points at a closed local port. It checks no wording itself, so read
    every picture for wording, and its notes for any screen it could not reach. The store
    text and any reply to App Review are audited claim by claim first
-   (docs/git-workflow.md, § Reviews).
+   (docs/git-workflow.md, § Reviews). Why: Apple rejected build 12 under guideline 1.4.1
+   on wording, and build 14's wording check then needed a simulator pass built by hand.
 8. Archive in Xcode, upload, TestFlight, then submit.
 9. Get advice on whether the app counts as a medical device in each market
    (ios/architecture.md, Open questions). Apple asks medical apps for regulatory

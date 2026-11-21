@@ -191,7 +191,9 @@ every 2 to 3 days, and whenever Apple answers on a build. It is:
 ## Slow and flaky tests
 
 Brad 2026-11-21. A test file over its time budget, or a test that failed and then passed on a rerun, gets a look
-the same day. Checks that flag both are being built.
+the same day. Checks that flag both are being built. Why: on 21 Nov 2026 main went red twice for reasons outside
+the product (a property test timed out on a loaded runner; a git maintenance lock raced a copy in a tools test),
+and each time merges were blocked.
 
 ## Who builds, and reports
 
@@ -212,7 +214,8 @@ the same day. Checks that flag both are being built.
   what it is, the issue that raised it, the options with their consequences, and the recommendation and why. No
   private labels (never "D3"): every item is named in plain words. Final messages link to the page. A settled
   item moves to the page's short "Decided" list, with the date and his words, kept to the last 20. The repo is
-  public: no tester names, no health values, no security detail of an unfixed issue, nothing private.
+  public: no tester names, no health values, no security detail of an unfixed issue, nothing private. Why: on
+  21 Nov 2026 Brad had to ask what "D3" and "D6" meant in a report.
 
 ## Contributor PRs merge in batches
 

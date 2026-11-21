@@ -132,7 +132,9 @@ change keeps the cap above.
 
 **The cap applies to a design, not only to each PR** (Brad 2026-11-21). Two refuted reviews of the same design,
 across PRs or note revisions, mean stop: call `helper` for a diagnosis of the shape. Do not patch a third time.
-Why: PR 1906 went eight rounds.
+Why: PR 1906 went eight rounds. Where the two caps meet, the design cap wins: a value-interpretation path keeps
+its five rounds only while each round finds a defect of a different kind. The second round that finds a defect of
+the same kind as an earlier one (in PR 1906, "the screen differs from what Save writes") is a refuted design.
 
 **Every finding left open gets an owner before merge** (author's duty, Brad 2026-11-06; not a
 reviewer check: the issues are opened after the review, so a reviewer never flags their absence).
