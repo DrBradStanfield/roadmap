@@ -27,11 +27,15 @@ export const joinRows = (a: ReadonlyMap<string, string[]>, b: ReadonlyMap<string
 
 /** One attempt added to the session: saved counts add up, documents by key
  *  once; skips, unstored and refusals are the attempt's own. */
-export const withAttempt = (o: SaveOutcome, attempt: SaveOutcome): SaveOutcome => ({
-  ...attempt,
-  values: o.values + attempt.values,
-  labValues: o.labValues + attempt.labValues,
-  documents: [...new Set([...o.documents, ...attempt.documents])],
-  archived: [...new Set([...o.archived, ...attempt.archived])],
-  labRows: joinRows(o.labRows, attempt.labRows),
-});
+export const withAttempt = (o: SaveOutcome, attempt: SaveOutcome): SaveOutcome => {
+  const labRows = joinRows(o.labRows, attempt.labRows);
+  return {
+    ...attempt,
+    values: o.values + attempt.values,
+    labValues: o.labValues + attempt.labValues,
+    documents: [...new Set([...o.documents, ...attempt.documents])],
+    // Kept means its bytes wrote no value in the session as it ends: a retry that writes them drops it (US-14 AC13).
+    archived: [...new Set([...o.archived, ...attempt.archived])].filter((k) => !labRows.get(k)?.length),
+    labRows,
+  };
+};

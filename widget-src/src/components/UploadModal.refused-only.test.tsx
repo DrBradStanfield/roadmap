@@ -16,14 +16,15 @@ import { LAB_ARCHIVE_FLAG } from '@roadmap/health-core/document-rows';
 import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { knownIndex } from '@roadmap/health-core/upload-known';
 import { UploadModal } from './UploadModal';
-import { flushRoadmapStore, initRoadmapStore } from '../lib/roadmap-data';
+import { bulkSaveLabValues, flushRoadmapStore, initRoadmapStore } from '../lib/roadmap-data';
 import { checkLabImportQuota, labImport } from '../lib/upload-api';
 import { stopLiveRefresh, trackLiveRefresh } from '../testing/health-tool-harness';
 
 const mode = vi.hoisted(() => ({ archive: 'cloud' as 'cloud' | 'no-prompt' }));
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn() }));
 vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
-vi.mock('../lib/roadmap-data', async (original) => ({ ...await original<typeof import('../lib/roadmap-data')>(), getDocumentArchiveMode: () => mode.archive }));
+// The real store; `bulkSaveLabValues` passes through to it, so a test can fail one write.
+vi.mock('../lib/roadmap-data', async (original) => { const real = await original<typeof import('../lib/roadmap-data')>(); return { ...real, getDocumentArchiveMode: () => mode.archive, bulkSaveLabValues: vi.fn(real.bulkSaveLabValues) }; });
 // Each file's hash is its own text, so two files are two sets of bytes.
 vi.mock('../lib/archive-payloads', async (original) => ({ ...await original<typeof import('../lib/archive-payloads')>(), sha256Blob: vi.fn(async (b: Blob) => `sha256-${await b.text()}`) }));
 vi.mock('../lib/useIsMobile', () => ({ useIsMobile: () => false }));
@@ -111,4 +112,15 @@ describe('US-14 AC13: the done screen after a Save that kept originals, with a c
     await screen.findByRole('button', { name: 'Done' });
     expect(doneLines()).toEqual([ICON, ...lines, DONE]);
   });
+});
+
+it('US-14 AC13: the first value write fails and the retry writes it: the done screen names the value, never the original as kept', async () => {
+  const cloud = await pick([['a.pdf', withValue]]);
+  vi.mocked(bulkSaveLabValues).mockRejectedValueOnce(new Error('synthetic store failure'));
+  fireEvent.click(await screen.findByRole('button', { name: /^Save / }));
+  await screen.findByText('Some items could not be saved. Please try again.');
+  fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+  await screen.findByRole('button', { name: 'Done' });
+  expect(doneLines()).toEqual([ICON, 'p.upload-done-text: 1 additional lab value', DONE]);
+  expect((await saved(cloud)).labValues).toEqual([expect.objectContaining({ metricName: 'Ferritin', status: 'active' })]);
 });
