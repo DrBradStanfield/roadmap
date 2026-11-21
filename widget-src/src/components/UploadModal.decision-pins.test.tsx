@@ -122,11 +122,10 @@ describe('upload decisions: a picked photo is sent at its long side (D10)', () =
   });
 });
 
-// Mount 3b: the web's Save is the shared engine's, so a plain file is named by the shared rule, the table's phone column
-// (control characters to spaces, 255 at most). The table's web column (the raw name) awaits the owner's update of the
-// shared fixture (health-core, engine path).
+// The web's Save is the shared engine's (mount 3b): a plain file is named by the shared rule (control characters to
+// spaces, 255 at most), the table's web column.
 describe('upload decisions: a plain file\'s sourceFileName (D13)', () => {
-  it.each(table.naming.rows.filter(r => r.kind === 'plain'))('$name → the shared name', async ({ name, phone: web }) => {
+  it.each(table.naming.rows.filter(r => r.kind === 'plain'))('$name → $web', async ({ name, web }) => {
     vi.mocked(labImport).mockResolvedValue(extraction({ classification: 'clinic_letter', reportDate: null, document: letter }));
     open();
     pick(text(name!), 1, 'application/pdf');
@@ -166,24 +165,21 @@ describe('upload decisions: what the review starts with (D1, D3)', () => {
   it('document, sourceFileName not held → its keep tick', async () => {
     expect(await keeps(null)).toBe(row(rows, 'document, sourceFileName not held').web.keepDocument);
   });
-  // Mount 3b: the list saves every read letter (US-13 AC14, owner R6/Q3), so a letter named like one the record holds
-  // is kept. The table's row (both columns: unticked) awaits the owner's update of the shared fixture (engine path).
-  it('document, sourceFileName held → kept, every letter saves (US-13 AC14)', async () => {
+  // Every read letter saves (US-13 AC14): a letter named like one the record holds is kept.
+  it('document, sourceFileName held → its keep tick', async () => {
     const held = createEmptyFile({ deviceId: 'web', now: '2024-06-02T00:00:00.000Z' });
     held.documents.push({ id: 'D', type: 'clinic_letter', title: 'Earlier', date: null, sourceFileName: 'letter.pdf', extractedText: '', metadata: {}, createdAt: '2024-06-02T00:00:00.000Z' } as unknown as RoadmapFile['documents'][number]);
-    expect(row(rows, 'document, sourceFileName held').web.keepDocument).toBe(false);
-    expect(await keeps(held)).toBe(true);
+    expect(await keeps(held)).toBe(row(rows, 'document, sourceFileName held').web.keepDocument);
   });
 
-  // Mount 3b: a letter's values are never saved by the shared engine (US-13 AC26), the table's phone column. The table
-  // names D3 a Brad decision (clinical); the web column (values saved too) awaits his word and the fixture's update.
-  it('a letter with values: the letter alone, as the shared engine saves it (D3, phone column)', async () => {
+  // D3, decided by Brad 2026-11-21: the letter is filed alone, its values not saved.
+  it('a letter with values: the letter alone (D3)', async () => {
     vi.mocked(labImport).mockResolvedValue(extraction({ classification: 'clinic_letter', values: [value('ldl', 2.8)], document: letter }));
     open();
     pick('letter.pdf');
     const label = (await saveButton()).textContent ?? '';
-    const phone = row(rows, 'letter with values').phone;
-    expect([/1 value\b/.test(label), /1 document/.test(label)]).toEqual([phone.values, phone.document]);
+    const web = row(rows, 'letter with values').web;
+    expect([/1 value\b/.test(label), /1 document/.test(label)]).toEqual([web.values, web.document]);
   });
 });
 
