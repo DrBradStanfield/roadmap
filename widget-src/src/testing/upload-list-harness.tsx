@@ -36,6 +36,8 @@ const chose = (s: UploadState, change: Parameters<typeof transition>[1] & { type
 const TWO_LDL = open([read('f0', 'blood-tests-nov.pdf', x({ values: [core({}), core({ valueSI: 2.9, displayValue: 2.9, recordedAt: '2026-09-15' }), core({ metric: 'lpa', valueSI: 90, displayValue: 90, displayUnit: 'nmol/L' })] }))]);
 const SCENARIOS: Record<string, { s: UploadState; record: RoadmapFile; unitOf?: (m: MetricType) => CellUnit }> = {
   fresh: { s: fresh, record: EMPTY },
+  // An LDL printed in mg/dL, shown in mmol/L: the engine's "Printed:" note under it (US-13 AC11).
+  converted: { s: open([read('f0', 'blood-tests-nov.pdf', x({ values: [core({ valueSI: 3.1, displayValue: 120, displayUnit: 'mg/dL' }), core({ metric: 'hba1c', valueSI: 40, displayValue: 40, displayUnit: 'mmol/mol', unitGuessed: true })] }))]), record: EMPTY },
   // Nothing to check: Show all starts open (the latch, S4).
   clean: { s: open([read('f0', 'blood-tests-nov.pdf', x({ values: [core({}), core({ metric: 'hba1c', valueSI: 40, displayValue: 40, displayUnit: 'mmol/mol' })] }))]), record: EMPTY },
   held: { s: chose(fresh, { type: 'chose', id: 'f0', change: { typed: 'v0', text: '3..1', unit: 'si' }, now: NOW }), record: EMPTY },
@@ -43,7 +45,7 @@ const SCENARIOS: Record<string, { s: UploadState; record: RoadmapFile; unitOf?: 
   waiting: { s: open([read('f0', 'scan-no-date.pdf', x({ reportDate: null, values: [core({}), core({ metric: 'hba1c', valueSI: 40, displayValue: 40, displayUnit: 'mmol/mol' })], additionalValues: [extra()] }))]), record: EMPTY },
   letter: { s: open([read('f0', 'blood-tests-nov.pdf', REPORT), read('f1', 'cardiology-clinic.pdf', x({ classification: 'clinic_letter', reportDate: null,
     document: { classification: 'clinic_letter', title: 'Cardiology clinic follow-up', documentDate: '2026-10-20', metadata: {},
-      contentMarkdown: '## Cardiology clinic\n\nSeen today for follow-up. Blood pressure well controlled.\n\n**Plan:** repeat lipids in three months.' } }))]), record: EMPTY },
+      contentMarkdown: '## Cardiology clinic\n\nSeen today for follow-up. Blood pressure well controlled on the current dose. No chest pain, no breathlessness on exertion, no palpitations. Examination unremarkable; heart sounds normal, no oedema.\n\n**Plan:** repeat lipids in three months, continue the current treatment, and review in clinic in six months with the results. Synthetic text for the harness only.' } }))]), record: EMPTY },
   columns: { s: open([read('f0', 'blood-tests-nov.pdf', x({ values: [core({}), core({ valueSI: 2.9, displayValue: 2.9, recordedAt: '2026-09-15' }), core({ metric: 'hba1c', valueSI: 40, displayValue: 40, displayUnit: 'mmol/mol' }), core({ metric: 'hba1c', valueSI: 42, displayValue: 42, displayUnit: 'mmol/mol', recordedAt: '2026-09-15' })] }))]), record: EMPTY },
   notsaved: { s: open([read('f0', 'blood-tests-nov.pdf', x({ values: [core({})], unreadValues: [{ name: 'Vitamin D', reason: 'unreadable' }], refusedValues: [{ metric: 'creatinine', value: 3, unit: 'mmol/24h', reason: 'unit' }] }))]), record: EMPTY },
   // Held text typed in mmol/L, then LDL switched to mg/dL on the other row: the held row keeps its unit.
@@ -60,10 +62,11 @@ const scenario = SCENARIOS[new URLSearchParams(location.search).get('s') ?? 'fre
 const host = { current: null as ListHost | null };
 window.uploadListReport = REPORT;
 // As UploadModal draws it: from inside the widget, through a portal on body, so `.health-tool [hidden]` never reaches it.
+// The portal root takes the app's font token (`.health-tool` sets it, the portal is outside): the mount PR must too.
 createRoot(document.getElementById('root')!).render(
   <div className="health-tool">
     {createPortal(
-      <div className="upload-modal" style={{ margin: '0 auto', maxHeight: 'none', boxShadow: 'none' }}>
+      <div className="upload-modal" style={{ margin: '0 auto', maxHeight: 'none', boxShadow: 'none', fontFamily: 'var(--font-family-base)' }}>
         <div className="upload-modal-header"><h3>Upload Health Records</h3></div>
         <div className="upload-modal-body">
           <UploadListHost initial={scenario.s} record={scenario.record} now={NOW} host={host} unitOf={scenario.unitOf} />

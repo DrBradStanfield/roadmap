@@ -40,7 +40,7 @@ export function UploadListRow({ row, value, draftLabel, hidden, editable, on }: 
   row: ListRow; value: string; draftLabel: string | null; hidden: boolean; editable: boolean; on: RowEvents;
 }) {
   const id = useId();
-  const [unitId, captionId, reasonsId, errorId, labelId, heldId, proposedId] = ['unit', 'caption', 'reasons', 'error', 'label', 'held', 'proposed'].map((p) => `${id}${p}`);
+  const [unitId, captionId, reasonsId, errorId, labelId, heldId, proposedId, printedId] = ['unit', 'caption', 'reasons', 'error', 'label', 'held', 'proposed', 'printed'].map((p) => `${id}${p}`);
   // A blocking row's caption is its error: said once.
   const caption = row.caption !== row.error ? row.caption : null;
   const held = row.replaces !== null ? row.held : null;
@@ -67,7 +67,7 @@ export function UploadListRow({ row, value, draftLabel, hidden, editable, on }: 
           <input
             type="text" inputMode="decimal" size={1} className="bt-input upload-list-input" value={value} disabled={!editable}
             aria-label={name} aria-invalid={row.error !== null}
-            aria-describedby={describedBy(unitId, caption && captionId, row.reasons.length > 0 && reasonsId, row.error && errorId)}
+            aria-describedby={describedBy(unitId, row.printed && printedId, caption && captionId, row.reasons.length > 0 && reasonsId, row.error && errorId)}
             data-at={row.key}
             onChange={(e) => type(e.target.value)}
             {...insertedText(value, type)}
@@ -84,6 +84,8 @@ export function UploadListRow({ row, value, draftLabel, hidden, editable, on }: 
         {/* Lp(a)'s three would all be read: the input is described by the one shown (adversary F6). */}
         {lpa && <span id={unitId} className="hr-sr-only">{unitLabel}</span>}
       </span>
+      {/* What the report printed, while the row shows another number or a guessed unit: the grid's note (US-13 AC11). */}
+      {row.printed && <p id={printedId} className="bt-cell-printed upload-list-printed">{row.printed}</p>}
       {(caption || held) && (
         // The saved value leads the caption that says what happens to it; separate words for assistive tech.
         <p id={captionId} className="upload-list-caption">

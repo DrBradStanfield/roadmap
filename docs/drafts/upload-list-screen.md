@@ -1,6 +1,6 @@
 # The web upload list: the screen (PR 2)
 
-Status: draft for review, 2026-11-22, round five (the re-check's S1-S10). Built
+Status: draft for review, 2026-11-22, round six (the engine's printed note, letter preview and picker words, PR 1953). Built
 unmounted: production keeps drawing ReviewTable's grid.
 Engine: `uploadList` (packages/health-core/src/upload-list.ts), `uploadView` (upload-view.ts) and `uploadListPage`
 (upload-list-page.ts).
@@ -23,15 +23,15 @@ row shown since Show all was last pressed, so no row hides under the person's ha
 3. `list.check` as the heading, `list.checkNote` under it, when set.
 4. The rows under their days: rows grouped by `row.section` (fixed per row), groups in the order of each day's
    first row. Each group opens with its `DayControl`: `label`, a dated column's `printedLine`, `fileName`, a picker
-   showing `picker` (one named button, the native date input beside it, never nested), and `hint` beside it.
+   showing `pickerLine` (one named button, the native date input beside it, never nested), and `hint` beside it.
    A row never moves group, so a status change never remounts it (K3e). Rows with `attention` show; the rest carry
    `hidden` while "Show all" is closed (the latch above). Open, rows stand in engine order: AC26 says a row never moves.
    `.upload-list-row[hidden]` sets `display: none` itself: the modal draws through a portal on body, outside
    `.health-tool [hidden]`, and the row's `display: grid` would otherwise win (checked in WebKit).
 5. "Show all n" / "Hide" (`list.showAll` / `list.hide`) as the list's last row, at the label indent.
 6. Letters: `view.documents.line`, then each letter's title (text input), kind (`kinds` as a select)
-   and date (the list's picker, `setDate` while it has none, `removeDate` as a link), and its text (`page.letters`) as
-   plain text in the grid's preview box, as the iPhone draws them. Changes go out as `{document: DocumentFix}`; the title commits through the draft.
+   and date (the list's picker showing `page.letters[].pickerLine`, `removeDate` as a link), and its preview
+   (`page.letters[].preview`, the grid's 300-character cut) as plain text in the grid's preview box, as the iPhone draws them. Changes go out as `{document: DocumentFix}`; the title commits through the draft.
 7. Not saved: `view.sections` kind `notSaved` (title, lines, footer), as the iPhone draws it.
 8. Files: `view.files.row`, each file's name and status, `view.notices`, and Try again (`view.sections`
    kind `failed`, `retry`); quiet (13px, secondary) while every file says the same.
@@ -48,6 +48,7 @@ row shown since Show all was last pressed, so no row hides under the person's ha
 | Tick and label | one `<label>`, 44px; `row.ticked`; sends `{tick: ref, on}` | native checkbox, brand accent |
 | Number input | only when `row.input === 'number'`; else `row.shown.text` as text. Value: the draft while it names the row, else `row.typed?.text ?? row.shown.text` | `.bt-input` |
 | Unit | `row.unit.label`; a chip when `row.unit.toggle` (a press commits any open draft, then asks for that unit); Lp(a)'s three when `row.unit.choices`, `current` marked; neither while the row holds text. While a draft is open on the row: the label captured at its first keystroke, and no control | UnitChip.tsx, LpaUnitControl.tsx |
+| Printed | `row.printed` under the value, in the grid's `.bt-cell-printed` note style; it describes the input (US-13 AC11) | `.bt-cell-printed` |
 | Caption | `row.caption`, unless it is `row.error`'s words; a conflict's `row.held` leads it, muted, a separate word | `.review-overview-footer` look |
 | Replace | its own line under the caption, 44px; named `row.replaceLabel`, described by the row's label, the held value and a hidden text mirror of the value it would write (`value` and its unit label; while a draft is open, the draft's text and captured label) | `REVIEW_CELL_TEXT.replace` |
 | Reasons | each of `row.reasons`; the input then takes the warning underline | `.bt-cell-question`, `.bt-cell-low-confidence` |
@@ -134,10 +135,6 @@ The widget has no dark theme, so dark mode draws as light.
 ## What the engine still does not expose
 
 - A letter's file name: the screen looks it up in `view.files` by file id.
-- Coming on claude/upload-list-engine-1f (`it.todo` in UploadList.round5.test.tsx): the "Printed: <number> <unit>" note
-  under a converted or guessed-unit row, tied to its input (US-13 AC11); a letter's preview cut (the grid shows 300
-  characters and "..."; until then the full text, visually clipped); the picker's day in words and unset placeholder
-  (then delete the screen-made '—', `longDate(..) ?? c.picker` and `setDate ?? d.date`).
 
 ## For the mount PR
 
@@ -149,7 +146,8 @@ The widget has no dark theme, so dark mode draws as light.
   `useLpaUnit`'s setter. The engine reads both back through `unitOf`.
 - The modal's portal sits outside `.health-tool`: `[hidden]` (handled in UploadList.css), the `--bt-ink-*` tokens the
   unit controls read (UploadList.css carries the four), and the font (`.health-tool` sets it; the grid's unit pill sets
-  its own) are not inherited there. Check each in the live store.
+  its own) are not inherited there. The harness gives its portal root `font-family: var(--font-family-base)`; the mount
+  must give the modal (or the list) the same. Check each in the live store.
 - VoiceOver and keyboard date picking in real Safari, on a Mac and an iPhone: the native popover could not be scripted.
 - `ENGINE_NAMES` awaits Brad (Needs Brad 1).
 - UploadList.css must ship in the Shopify build: check the built CSS holds `.upload-list-row[hidden]`.

@@ -15,6 +15,7 @@
  *       `typedCommit` makes of it), until the person changes that row again;
  *   K3d the DOM's inputs are the engine's rows: one text input per row with `input: 'number'`, none otherwise, showing
  *       the draft while it names the row, else the held text, else the shown number; each row sits under its own day;
+ *       a row with `printed` shows it, one without shows no note; each picker button shows exactly its `pickerLine`;
  *   K3e no row's node, nor its input, is ever replaced while its row stands (status changes and rows landing before it);
  *   K3f the row being typed in, or holding the focus, is never hidden;
  *   K3g held text keeps the unit label it was typed under, whatever unit chip or Lp(a) choice was pressed since;
@@ -27,7 +28,8 @@
  * read from a stale local copy; M3 day groups keyed by index; M4 a letter's title draft never sent; M5 the draft's unit
  * re-read from the row at commit; M6 a row hidden whatever its draft or focus; M7 held text labelled by the row's unit now;
  * M8 an open draft labelled by the row's unit now; M9 Show all a live expression of `list.check`; M10 a unit press that
- * leaves the draft to a blur; M11 every current error announced on each change. Synthetic values only.
+ * leaves the draft to a blur; M11 every current error announced on each change; M12 a day picker's words made by the
+ * screen; M13 the printed note dropped. Synthetic values only.
  */
 import { act, cleanup, fireEvent, render } from '@testing-library/react';
 import { afterEach, describe, it } from 'vitest';
@@ -404,8 +406,17 @@ function runSequence(seed: number, steps: number) {
     const order = sections.flatMap((sec) => live.filter((x) => x.section === sec).map((x) => x.key));
     if (lis.map((li) => li.dataset.key).join() !== order.join()) fail('K3d', 'the DOM rows are not the engine rows under their days');
     for (const li of lis) if (li.closest<HTMLElement>('[data-section]')?.dataset.section !== live.find((x) => x.key === li.dataset.key)?.section) fail('K3d', `${li.dataset.key} is not under its day`);
+    for (const d of after.list.days) {
+      const text = document.querySelector(`[data-at="${d.key}"] .upload-list-picker-button`)?.textContent;
+      if (!after.view.done && text !== d.pickerLine) fail('K3d', `day ${d.key} button shows "${text}", the engine "${d.pickerLine}"`);
+    }
+    for (const l of after.view.done ? [] : after.page.letters) {
+      const text = docEl(l.fileId)?.querySelector('.upload-list-picker-button')?.textContent;
+      if (text !== l.pickerLine) fail('K3d', `letter ${l.fileId} date button shows "${text}", the engine "${l.pickerLine}"`);
+    }
     for (const row of live) {
       const li = rowEl(row.key)!;
+      if ((li.querySelector('.bt-cell-printed')?.textContent ?? null) !== row.printed) fail('K3d', `${row.key} printed note "${li.querySelector('.bt-cell-printed')?.textContent}", the engine "${row.printed}"`);
       const input = textInput(li);
       if ((input !== null) !== (row.input === 'number')) fail('K3d', `${row.key} input ${input !== null}, engine says ${row.input}`);
       const want = draft?.key === row.key ? draft.text : row.typed?.text ?? row.shown.text;

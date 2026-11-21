@@ -13,8 +13,8 @@ import { draftKeys, type RowEvents } from './UploadListRow';
 export const titleKey = (fileId: string) => `title:${fileId}`;
 type Letters = NonNullable<UploadView['documents']>;
 
-function Letter({ d, documents, fileName, title, text, editable, on, fix }: {
-  d: Letters['rows'][number]; documents: Letters; fileName: string; title: string; text: string | null; editable: boolean; on: RowEvents; fix: (change: DocumentFix) => void;
+function Letter({ d, documents, fileName, title, page, editable, on, fix }: {
+  d: Letters['rows'][number]; documents: Letters; fileName: string; title: string; page: ListPage['letters'][number] | undefined; editable: boolean; on: RowEvents; fix: (change: DocumentFix) => void;
 }) {
   const id = useId();
   const [fileId, titleId, dateId] = ['file', 'title', 'date'].map((p) => `${id}${p}`);
@@ -37,22 +37,22 @@ function Letter({ d, documents, fileName, title, text, editable, on, fix }: {
         <span>Date:</span>
         <ListDatePicker
           value={d.day ?? ''} empty={!d.dateKnown} name="Document date" describedBy={fileId} disabled={!editable}
-          shown={{ id: dateId, text: d.dateKnown ? d.date : documents.setDate ?? d.date }}
+          shown={{ id: dateId, text: page?.pickerLine ?? '' }}
           onDay={(day) => fix({ date: day })}
         />
         {d.dateKnown && documents.removeDate && (
           <button type="button" className="upload-list-remove-date" disabled={!editable} onClick={() => fix({ date: null })}>{documents.removeDate}</button>
         )}
       </span>
-      {/* The reader's Markdown, shown as plain text (never HTML), in the grid's preview box (ReviewFileSections.tsx). */}
-      {text !== null && <div className="review-document-preview upload-list-letter-text">{text}</div>}
+      {/* The engine's preview of the reader's Markdown (the grid's cut), as plain text, never HTML, in the grid's box. */}
+      {page && <div className="review-document-preview upload-list-letter-text">{page.preview}</div>}
     </li>
   );
 }
 
 export function UploadListDocuments({ documents, names, letters, titleOf, editable, on, fix }: {
   documents: Letters;
-  /** Each letter's text, from `uploadListPage().letters`. */
+  /** Each letter's preview and date button words, from `uploadListPage().letters`. */
   letters: ListPage['letters'];
   /** Each letter's file name by file id (`uploadView().files`): the documents carry none of their own. */
   names: ReadonlyMap<string, string>;
@@ -68,7 +68,7 @@ export function UploadListDocuments({ documents, names, letters, titleOf, editab
       <ul>
         {documents.rows.map((d) => (
           <Letter key={d.fileId} d={d} documents={documents} fileName={names.get(d.fileId) ?? ''} title={titleOf(d.fileId, d.title)}
-            text={letters.find((l) => l.fileId === d.fileId)?.text ?? null}
+            page={letters.find((l) => l.fileId === d.fileId)}
             editable={editable} on={on} fix={(change) => fix(d.fileId, change)} />
         ))}
       </ul>

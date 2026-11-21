@@ -93,7 +93,7 @@ describe('the page\'s words and letters (US-14 AC11-13)', () => {
     if (letter.status.s !== 'read') throw new Error('a read letter');
     letter.status.extraction.document!.contentMarkdown = '## Plan\n<b>bold?</b> <img src=x onerror=alert(1)>';
     const host = mount(open([letter]));
-    const text = host.see().page.letters[0].text;
+    const text = host.see().page.letters[0].preview;
     const preview = document.querySelector<HTMLElement>('li[data-doc="l0"] .review-document-preview')!;
     expect(preview.textContent).toBe(text);
     expect(preview.querySelector('b, img, h2')).toBeNull();

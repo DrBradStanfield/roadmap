@@ -4,7 +4,6 @@
 import { useId } from 'react';
 import type { ChoiceChange } from '@roadmap/health-core/upload-choices';
 import type { DayControl } from '@roadmap/health-core/upload-list';
-import { longDate } from '@roadmap/health-core/upload-text';
 import { describedBy } from '../lib/aria';
 import { dayName } from '../lib/upload-list-names';
 import { ListDatePicker } from './UploadListDatePicker';
@@ -26,7 +25,7 @@ export function DayHeader({ control: c, editable, choose }: { control: DayContro
       <span className="upload-list-day-input">
         <ListDatePicker
           value={c.picker ?? ''} empty={empty} at={c.key} name={dayName(c)} disabled={!editable}
-          shown={{ id: `${id}shown`, text: c.picker ? longDate(c.picker) ?? c.picker : '—' }}
+          shown={{ id: `${id}shown`, text: c.pickerLine }}
           describedBy={describedBy(c.hint && `${id}hint`, `${id}file`)}
           onDay={(day) => choose(c.fileId, change(c, day))}
         />

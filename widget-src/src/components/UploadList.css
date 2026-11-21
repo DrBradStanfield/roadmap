@@ -2,8 +2,8 @@
    alone, so nothing ships it until a later PR mounts the list. Phone first. Colours are styles.css tokens; warning ink
    is --color-grade-warn-text, which reads at 4.5:1 on white and on the amber tint. */
 /* The unit chip and Lp(a)'s control read .bt-timeline's ink, set on .health-tool and .bt-timeline; the modal's portal on
-   body reaches neither, so the list carries the four they use (styles.css, .bt-timeline). */
-.upload-list { --bt-ink-50: #f6f7f8; --bt-ink-200: #d7dbdf; --bt-ink-500: #5b6670; --bt-ink-900: #111417; }
+   body reaches neither, so the list carries the five they and the grid's notes use (styles.css, .bt-timeline). */
+.upload-list { --bt-ink-50: #f6f7f8; --bt-ink-200: #d7dbdf; --bt-ink-500: #5b6670; --bt-ink-700: #2b3036; --bt-ink-900: #111417; }
 .upload-list .review-summary { border-bottom: none; padding-bottom: 4px; margin-bottom: 8px; }
 .upload-list input[type="checkbox"] { accent-color: var(--color-brand); }
 
@@ -70,6 +70,7 @@
 .upload-list-replace input { width: 20px; height: 20px; margin: 0; }
 .upload-list-reasons { list-style: none; margin: 0; padding: 0; }
 .upload-list-reasons .bt-cell-question.upload-list-reason { font-size: 13px; text-align: left; }
+.upload-list .bt-cell-printed.upload-list-printed { margin: 0; font-size: 13px; text-align: left; }
 .upload-list-error { margin: 2px 0 0; font-size: 13px; font-weight: 600; color: var(--color-error); }
 .upload-list-row--cleared .upload-list-label,
 .upload-list-row--cleared .upload-list-value { opacity: 0.55; }
@@ -82,7 +83,8 @@
   .upload-list-row > .upload-list-value { grid-column: 3; grid-row: 1; }
   .upload-list-row > .upload-list-caption,
   .upload-list-row > .upload-list-error { grid-column: 2 / -1; }
-  .upload-list-row > .upload-list-reasons { grid-column: 3 / -1; }
+  .upload-list-row > .upload-list-reasons,
+  .upload-list-row > .upload-list-printed { grid-column: 3 / -1; }
 }
 
 /* Letters. */

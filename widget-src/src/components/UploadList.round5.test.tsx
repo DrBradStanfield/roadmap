@@ -6,9 +6,9 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { core, EMPTY, NOW } from '@roadmap/health-core/import-review.test-helpers';
 import { NUMERIC_SYNTAX_GUIDANCE } from '@roadmap/health-core/cell-input';
 import { bulkAppendValues } from '@roadmap/health-core/record-edits';
-import { longDate } from '@roadmap/health-core/upload-text';
+import { longDate, UPLOAD_TEXT } from '@roadmap/health-core/upload-text';
 import { controlAt } from './UploadList';
-import { blur, input, LDL, labRead, mount, open, row, save, showAll, typeInto } from '../testing/upload-list-kit';
+import { blur, input, LDL, labRead, letterRead, mount, open, row, save, showAll, typeInto } from '../testing/upload-list-kit';
 
 afterEach(cleanup);
 const unitOf = (key: string) => row(key).querySelector('.upload-list-unit')!.textContent;
@@ -170,8 +170,44 @@ describe('S8: a Save press never saves from a view the commit has not reached (a
   });
 });
 
-describe('waiting on engine fields (claude/upload-list-engine-1f)', () => {
-  it.todo('a converted or guessed-unit row shows "Printed: <number> <unit>" under it, tied to its input by aria-describedby (US-13 AC11)');
-  it.todo('a letter\'s text shows the engine\'s preview cut (the grid: first 300 characters and "..."); until then the full text, visually clipped');
-  it.todo('the picker\'s day in words and its unset placeholder come from the engine; delete the screen-made \'—\', `longDate(..) ?? c.picker` and `setDate ?? d.date`');
+describe('round six: the engine\'s printed note, letter preview and picker words (PR 1953)', () => {
+  it('a value printed in another unit shows the engine\'s "Printed:" note under it, describing its input (US-13 AC11)', () => {
+    const host = mount(open([labRead('f0', { values: [core({ valueSI: 3.1, displayValue: 120, displayUnit: 'mg/dL' })] })]));
+    const r = host.see().list.rows[0];
+    expect(r.printed).not.toBeNull();
+    const note = within(row('f0:v0')).getByText(r.printed!);
+    expect(note.classList.contains('bt-cell-printed')).toBe(true);
+    expect(described(input('f0:v0'))).toContain(r.printed);
+  });
+
+  it('a row the report printed as shown has no note', () => {
+    const host = mount(open([labRead('f0', { values: [core({})] })]));
+    expect(host.see().list.rows[0].printed).toBeNull();
+    expect(row('f0:v0').querySelector('.bt-cell-printed')).toBeNull();
+  });
+
+  it('a long letter shows the engine\'s preview cut, as text', () => {
+    const letter = letterRead('l0', 'Clinic letter');
+    if (letter.status.s !== 'read') throw new Error('a read letter');
+    letter.status.extraction.document!.contentMarkdown = `Plan <b>x</b> ${'a'.repeat(400)}`;
+    const host = mount(open([letter]));
+    const page = host.see().page.letters[0];
+    expect(page.preview).not.toBe(page.text);
+    const box = document.querySelector<HTMLElement>('li[data-doc="l0"] .review-document-preview')!;
+    expect(box.textContent).toBe(page.preview);
+    expect(box.querySelector('b')).toBeNull();
+  });
+
+  it('each picker shows exactly the engine\'s pickerLine: an unset day, a picked day, a letter with and without a date', () => {
+    const host = mount(open([labRead('f0', { reportDate: null, values: [core({})] }), letterRead('l0', 'Clinic letter')]));
+    const dayButton = () => controlAt(document, 'f0|test')!;
+    expect(dayButton().textContent).toBe(host.see().list.days[0].pickerLine);
+    fireEvent.change(document.querySelector('[data-at="f0|test"] input')!, { target: { value: '2026-10-20' } });
+    expect(dayButton().textContent).toBe(host.see().list.days[0].pickerLine);
+    const letterButton = () => document.querySelector<HTMLElement>('li[data-doc="l0"] .upload-list-picker-button')!;
+    expect(letterButton().textContent).toBe(host.see().page.letters[0].pickerLine);
+    fireEvent.click(screen.getByRole('button', { name: UPLOAD_TEXT.removeDate }));
+    expect(letterButton().textContent).toBe(host.see().page.letters[0].pickerLine);
+    expect(letterButton().textContent).toBe(UPLOAD_TEXT.setDate);
+  });
 });
