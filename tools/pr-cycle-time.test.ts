@@ -112,11 +112,12 @@ describe('main', () => {
     expect(out.split('\n')[1]).toMatch(/^2026-W46,pr_cycle_time_median_h,5,0,,/);
   });
 
-  it('asks gh for the two windows with margin, and refuses a result cut at the limit', () => {
+  it('asks gh for the two windows with margin, and refuses a result at the 1000-result search cap', () => {
     let args: string[] = [];
     fetchWithGh(END, (_cmd: string, a: string[]) => { args = a; return '[]'; });
     expect(args).toContain('merged:2026-11-01..2026-11-17');
-    const full = JSON.stringify(Array.from({ length: 2000 }, () => ({})));
+    expect(args).toContain('1000');
+    const full = JSON.stringify(Array.from({ length: 1000 }, () => ({})));
     expect(() => fetchWithGh(END, () => full)).toThrow(/limit/);
   });
 

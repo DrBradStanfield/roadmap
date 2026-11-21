@@ -14,7 +14,8 @@ import { pathToFileURL } from 'node:url';
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
 const ENGINE_RELEASE = /^Engine release \d{12}\b/;
-const GH_LIMIT = 2000;
+// GitHub search (behind `gh pr list --search`) returns at most 1000 results, whatever --limit says.
+const GH_LIMIT = 1000;
 
 /** gh (`createdAt`, `author.is_bot`) and REST/MCP (`created_at`, `user.type`) shapes, one shape out. */
 export function normalizePr(p) {
