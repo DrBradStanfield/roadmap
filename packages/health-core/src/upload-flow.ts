@@ -10,6 +10,8 @@
 import { fileNameLine, MAX_FILE_NAME_LENGTH, zipMemberName, type UnifiedExtractionResult } from './lab-extraction';
 import type { FailDetail, UploadFailure } from './upload-failure';
 import type { NotSavedReason } from './import-review';
+import type { MeasurementRefusal } from './record-edits';
+import type { MetricTypeValue } from './validation';
 import { choose, NO_CHOICES, untick, type ChoiceChange, type FileChoices } from './upload-choices';
 import type { Known } from './upload-known';
 import type { ReviewedValue } from './upload-review';
@@ -74,11 +76,20 @@ export const uploadFileName = (f: { name: string; zip?: string }): string =>
  *  (US-12 AC6a), a core value or another lab; absent is none. `refused`: values the final commit refused,
  *  the record having changed while the originals uploaded, by the test's label and the review's reason, or for a core
  *  value the web's own refusal line (upload-text `measurementRefusalText`) (US-13 AC17). `screenings`: screening dates a
- *  letter's box wrote (web only, US-13 AC6); absent is none. */
+ *  letter's box wrote (web only, US-13 AC6); absent is none. `refusedCodes`: the same refusals, one code each, in the
+ *  closed words the web's usage events take (US-12 AC6); absent is none. */
 export interface SaveOutcome {
   values: number; documents: number; archived: number; unstored?: number; skippedValues?: number; skippedLabValues?: number; screenings?: number;
   refused?: Array<{ label: string; reason: NotSavedReason } | { line: string }>;
+  refusedCodes?: RefusedCode[];
 }
+/** A value the final commit refused, never its value: a core value by its refusal reason and, unless the metric is one the
+ *  record does not know (free text), its id, as `measurement_refused` reads them; a lab by its catalogue key, `unit` when
+ *  the test does not take the printed spelling (the `lab_unit_refused` case, with the spelling as `labUnitForEvent` words
+ *  it, absent when it is no unit word) or `value` when the test takes it and the number was refused. */
+export type RefusedCode =
+  | { kind: 'measurement'; reason: MeasurementRefusal['reason']; metricType?: MetricTypeValue }
+  | { kind: 'lab'; key: string; reason: 'unit' | 'value'; unit?: string };
 
 /** `started`, `firstRead`: ISO times, for the first-read count (design §7, R9). */
 interface Pick { platform: UploadPlatform; run: number; files: UploadFile[]; started: string; firstRead: string | null }
