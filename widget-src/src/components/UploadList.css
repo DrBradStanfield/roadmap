@@ -1,0 +1,122 @@
+/* The web upload list (US-13 AC26, web list PR 2; docs/drafts/upload-list-screen.md). Imported by UploadList.tsx
+   alone, so nothing ships it until a later PR mounts the list. Phone first. Colours are styles.css tokens; warning ink
+   is --color-grade-warn-text, which reads at 4.5:1 on white and on the amber tint. */
+/* The unit chip and Lp(a)'s control read .bt-timeline's ink, set on .health-tool and .bt-timeline; the modal's portal on
+   body reaches neither, so the list carries the five they and the grid's notes use (styles.css, .bt-timeline). */
+.upload-list { --bt-ink-50: #f6f7f8; --bt-ink-200: #d7dbdf; --bt-ink-500: #5b6670; --bt-ink-700: #2b3036; --bt-ink-900: #111417; }
+.upload-list .review-summary { border-bottom: none; padding-bottom: 4px; margin-bottom: 8px; }
+.upload-list input[type="checkbox"] { accent-color: var(--color-brand); }
+
+/* A day: its words, the day it printed, its file, and its picker; amber only while it asks for a day. */
+.upload-list-group { margin-top: 16px; }
+.upload-list-day {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "words input" "printed input" "file input" "hint hint";
+  gap: 2px 12px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid var(--color-gray-border);
+  border-radius: 8px;
+}
+.upload-list-day--asks { border-left: 3px solid #f5b400; }
+.upload-list-day-words { grid-area: words; font-size: 14px; font-weight: 600; color: var(--color-text-heading); }
+.upload-list-day-printed { grid-area: printed; font-size: 13px; color: var(--color-text); }
+.upload-list-day-file { grid-area: file; font-size: 13px; color: var(--color-text-secondary); overflow-wrap: anywhere; }
+.upload-list-day-input { grid-area: input; }
+.upload-list-day-hint { grid-area: hint; margin-top: 4px; font-size: 13px; color: var(--color-grade-warn-text); }
+
+/* The picker: one line, a 1px border, 44px tall; with no day, its words in warning ink on the amber tint. */
+.upload-list-picker { position: relative; display: inline-block; }
+.upload-list-picker-button {
+  min-height: 44px; max-width: 12em; padding: 6px 12px;
+  border: 1px solid var(--color-gray-border); border-radius: 6px; background: #fff;
+  font: inherit; font-size: 14px; font-weight: 600; color: var(--color-brand-text); text-align: left; cursor: pointer;
+}
+.upload-list-picker-button--empty { border-color: var(--color-warning); background: #fff8e1; color: var(--color-grade-warn-text); }
+
+/* A row: tick and label in one 44px target; everything else at the label's indent (30px: a 20px tick and its gap). */
+.upload-list-rows { list-style: none; margin: 8px 0 0; padding: 0; border-top: 1px solid var(--color-gray-border); }
+.upload-list-row {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 2px 0;
+  align-items: center;
+  padding: 6px 0 10px;
+  border-bottom: 1px solid var(--color-gray-border);
+}
+/* `hidden` must beat `display: grid`: the modal draws through a portal on body, outside `.health-tool [hidden]` (F1). */
+.upload-list-row[hidden] { display: none; }
+.upload-list-row > * { grid-column: 2; }
+.upload-list-row > .upload-list-check { grid-column: 1 / -1; }
+.upload-list-check { display: flex; align-items: center; gap: 10px; min-height: 44px; cursor: pointer; }
+.upload-list-tick { width: 20px; height: 20px; margin: 0; flex: none; }
+.upload-list-label { font-size: 14px; font-weight: 600; color: var(--color-text-heading); overflow-wrap: anywhere; }
+.upload-list-value { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+/* Three classes: styles.css's `.bt-input.bt-input` reset loads after this file and would win at two. */
+.upload-list .bt-input.upload-list-input {
+  width: 6em; flex: none; text-align: left; font-size: 16px;
+  border-bottom: 1px solid var(--color-gray-border);
+}
+.upload-list .bt-cell-low-confidence .bt-input.upload-list-input { border-bottom: 1.5px solid var(--color-warning); }
+.upload-list .bt-input.upload-list-input:focus { border-bottom: 1.5px solid var(--color-brand); }
+.upload-list .bt-input.upload-list-input[aria-invalid="true"] { color: var(--color-error); border-bottom: 1.5px solid var(--color-error); }
+.upload-list-number { width: 6em; flex: none; font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.upload-list-unit { font-size: 13px; color: var(--color-text-secondary); }
+.upload-list-unit .bt-unit-segments, .upload-list-unit .bt-unit-chip { font-size: 13px; }
+.upload-list-caption { margin: 2px 0 0; font-size: 13px; line-height: 1.4; color: var(--color-text-secondary); }
+.upload-list-held { color: var(--color-text-secondary); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.upload-list-replace { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-size: 14px; cursor: pointer; justify-self: start; }
+.upload-list-replace input { width: 20px; height: 20px; margin: 0; }
+.upload-list-reasons { list-style: none; margin: 0; padding: 0; }
+.upload-list-reasons .bt-cell-question.upload-list-reason { font-size: 13px; text-align: left; }
+.upload-list .bt-cell-printed.upload-list-printed { margin: 0; font-size: 13px; text-align: left; }
+.upload-list-error { margin: 2px 0 0; font-size: 13px; font-weight: 600; color: var(--color-error); }
+.upload-list-row--cleared .upload-list-label,
+.upload-list-row--cleared .upload-list-value { opacity: 0.55; }
+.upload-list-show-all { margin: 0; padding: 8px 0 8px 30px; border-bottom: 1px solid var(--color-gray-border); }
+
+/* From 600px: fixed tracks, so every value shares one edge beside its name. */
+@media (min-width: 600px) {
+  .upload-list-row { grid-template-columns: 30px 16em 12em minmax(0, 1fr); }
+  .upload-list-row > .upload-list-check { grid-column: 1 / 3; }
+  .upload-list-row > .upload-list-value { grid-column: 3; grid-row: 1; }
+  .upload-list-row > .upload-list-caption,
+  .upload-list-row > .upload-list-error { grid-column: 2 / -1; }
+  .upload-list-row > .upload-list-reasons,
+  .upload-list-row > .upload-list-printed { grid-column: 3 / -1; }
+}
+
+/* Letters. */
+.upload-list-documents { margin-top: 16px; }
+.upload-list-documents ul { list-style: none; margin: 0; padding: 0; }
+.upload-list-document { display: flex; flex-wrap: wrap; gap: 6px 8px; padding: 10px 0; border-bottom: 1px solid var(--color-gray-border); align-items: center; }
+.upload-list-document > .upload-list-file-name,
+.upload-list-document > .upload-list-document-label { flex: 1 1 100%; }
+.upload-list-document-label { font-size: 13px; color: var(--color-text-secondary); }
+.upload-list-document .review-title-input { flex: 1 1 100%; font-size: 16px; }
+.upload-list-document .upload-list-letter-text { flex: 1 1 100%; margin: 0; }
+.upload-list-document .upload-list-kind { flex: 1 1 10em; width: auto; min-height: 44px; font: inherit; font-size: 16px; }
+.upload-list-document-date { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 14px; }
+.upload-list-remove-date {
+  background: none; border: none; padding: 0; min-height: 44px; font: inherit; font-size: 13px;
+  color: var(--color-text-secondary); text-decoration: underline; cursor: pointer;
+}
+
+.upload-list-not-saved { margin-top: 16px; font-size: 14px; }
+.upload-list-not-saved ul { margin: 0; padding-left: 18px; }
+.upload-list-files ul { list-style: none; margin: 0 0 8px; padding: 0; font-size: 14px; }
+.upload-list-files li { padding: 4px 0; overflow-wrap: anywhere; }
+.upload-list-files { margin-top: 16px; }
+.upload-list-files--quiet, .upload-list-files--quiet ul { font-size: 13px; color: var(--color-text-secondary); }
+.upload-list-files--quiet .review-check-title { font-size: 13px; color: var(--color-text-secondary); }
+.upload-list-file-name { font-weight: 600; }
+
+/* Save: pressable while it waits, dimmed as a disabled button looks, the reason in warning ink. */
+.upload-list-actions { flex-wrap: wrap; }
+.upload-list-save-line { flex-basis: 100%; }
+.upload-list-save-line p { margin: 0; }
+.upload-list-why { font-size: 13px; color: var(--color-grade-warn-text); }
+.upload-list .review-save-btn[aria-disabled="true"] { background: var(--color-gray-light); }
+
+.upload-list.upload-done p { max-width: 44ch; margin-inline: auto; }

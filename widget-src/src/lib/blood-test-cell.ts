@@ -107,12 +107,14 @@ const CHANGES_THE_NUMBER = [
   /[0-9.,][eE]/, // exponent notation: '1e1'
 ];
 
+/** Text inputs remove line breaks. Keep a visible separator in state too,
+ *  so DOM selection offsets and replacement pastes address the same text. */
+export const lineBreaksAsSpaces = (text: string): string => text.replace(/\r\n|[\r\n]/g, ' ');
+
 /** Strip decorations only around a single numeric token (US-02 AC4).
  * Keep ambiguous text so validation and every save caller can refuse it. */
 export function numericCellText(text: string): string {
-  // Text inputs remove line breaks. Keep a visible separator in state too,
-  // so DOM selection offsets and replacement pastes address the same text.
-  text = text.replace(/\r\n|[\r\n]/g, ' ');
+  text = lineBreaksAsSpaces(text);
   if (CHANGES_THE_NUMBER.some((pattern) => pattern.test(text))) return text;
   const token = text.match(/^[^0-9.,]*([0-9.,]+)[^0-9.,]*$/);
   return token ? token[1] : /[0-9.,]/.test(text) ? text : '';
