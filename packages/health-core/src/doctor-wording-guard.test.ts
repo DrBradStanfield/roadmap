@@ -22,6 +22,8 @@ const BANNED_TEXT = [
   'Immediate intervention is recommended', 'Statins are the most effective', 'most people need them long term',
   'Tirzepatide is preferred', 'Tirzepatide (preferred)', 'This requires medical management', 'which needs treatment and monitoring',
   'Statins are not recommended',
+  // Retired 2026-11-21 (framing): the GLP-1 hint names what the medicine does, not a promised result.
+  'often leading to significant weight loss',
 ];
 const BANNED_TITLE_START = ['Consider starting', 'Consider increasing'];
 const BANNED_TILE_WORDS = ['Obese', 'Diabetic', 'Prediabetic', 'Kidney Failure'];
