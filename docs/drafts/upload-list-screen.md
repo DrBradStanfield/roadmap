@@ -1,6 +1,6 @@
 # The web upload list: the screen (PR 2)
 
-Status: draft for review, 2026-11-22, round seven (the final re-check's T1-T7). Built
+Status: draft for review, 2026-11-22, round seven (the final re-check's T1-T9). Built
 unmounted: production keeps drawing ReviewTable's grid.
 Engine: `uploadList` (packages/health-core/src/upload-list.ts), `uploadView` (upload-view.ts) and `uploadListPage`
 (upload-list-page.ts).
@@ -52,7 +52,7 @@ row shown since Show all was last pressed, so no row hides under the person's ha
 | --- | --- | --- |
 | Tick and label | one `<label>`, 44px; `row.ticked`; sends `{tick: ref, on}` | native checkbox, brand accent |
 | Number input | only when `row.input === 'number'`; else `row.shown.text` as text. Value: the draft while it names the row, else `row.typed?.text ?? row.shown.text` | `.bt-input` |
-| Unit | `row.unit.label`; a chip when `row.unit.toggle` (a press commits any open draft, then asks for that unit); Lp(a)'s three when `row.unit.choices`, `current` marked; neither while the row holds text. While a draft is open on the row: the label captured at its first keystroke, and no control | UnitChip.tsx, LpaUnitControl.tsx |
+| Unit | disabled, and its press ignored, while `view.editable` is false; `row.unit.label`; a chip when `row.unit.toggle` (a press commits any open draft, then asks for that unit); Lp(a)'s three when `row.unit.choices`, `current` marked; neither while the row holds text. While a draft is open on the row: the label captured at its first keystroke, and no control | UnitChip.tsx, LpaUnitControl.tsx |
 | Printed | `row.printed` under the value, in the grid's `.bt-cell-printed` note style; it describes the input (US-13 AC11) | `.bt-cell-printed` |
 | Caption | `row.caption`, unless it is `row.error`'s words; a conflict's `row.held` leads it, muted, a separate word | `.review-overview-footer` look |
 | Replace | its own line under the caption, 44px; named `row.replaceLabel`, described by the row's label, the held value and a hidden text of the value it would write, `row.shown.text` and `row.unit.label` exactly; none while the row holds text or a draft (that text is no value Replace could write) | `REVIEW_CELL_TEXT.replace` |
@@ -74,6 +74,11 @@ not write (Codex R1). A commit sends `{typed: ref, text, unit}` or `{document: {
 then shows what the engine returned. Focus or typing moving to another input commits the old draft first, and so does
 a unit press (iOS Safari may not blur on a tap of a control that takes no focus). Enter while an input method composes
 does nothing. Escape drops it unsent. A draft whose input is gone is dropped.
+
+A press acts on what the person saw when they pressed (T8). A press on a row's tick or Replace blurs the row's input
+first, and that commit can flip the same box (an emptied input unticks its row; typing into a cleared row ticks it).
+One helper (`usePress`, UploadListRow.tsx) claims the intent at pointerdown on the box's label, or Space on the box,
+from the state drawn then, and sends that instead of the box's state after the commit; the commit still runs first.
 
 Save press: commit, then read the view (`reread()`), save if `save.enabled`, else focus the control of
 `save.blockers[0].at`. The host's contract (on `UploadListProps.reread`): `choose` applies a choice before it returns,

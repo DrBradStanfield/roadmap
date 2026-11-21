@@ -7,7 +7,8 @@
  * a row whose input takes none and rows with reasons. After every step:
  *   K3a the draft is none, or names a row whose input takes typing or a letter's title, and it is the one the person's
  *       steps left; each letter's title input shows its draft, else the engine's title;
- *   K3b the screen sent the engine exactly what the person's steps say (a cleared letter date is `{date: null}`; a cleared
+ *   K3b the screen sent the engine exactly what the person's steps say (a press on a tick or Replace is pointerdown, the
+ *       blur's commit, then the click, and acts on the box as drawn before the press, T8) (a cleared letter date is `{date: null}`; a cleared
  *       lab day sends nothing, as the grid), worked out by the engine's own `transition` from
  *       the state before the step (a commit is `{typed: ref, text, unit}`, the unit on screen when the person started
  *       typing, read by this test from the screen then, never from the component; a Save press with a draft is commit, re-read,
@@ -32,7 +33,8 @@
  * M8 an open draft labelled by the row's unit now; M9 Show all a live expression of `list.check`; M10 a unit press that
  * leaves the draft to a blur; M11 every current error announced on each change; M12 a day picker's words made by the
  * screen; M13 the printed note dropped; M14 announcements keyed on the row alone; M15 `acted` kept after a choice that
- * changed nothing; M16 a cleared letter date dropped. (The promise path of Save, restored, fails the typecheck: `choose` returns void.) Synthetic values only.
+ * changed nothing; M16 a cleared letter date dropped; M17 a tick or Replace press that sends the box's state after the
+ * blur's commit, not as drawn when pressed (the code before T8). (The promise path of Save, restored, fails the typecheck: `choose` returns void.) Synthetic values only.
  */
 import { act, cleanup, fireEvent, render } from '@testing-library/react';
 import { afterEach, describe, it } from 'vitest';
@@ -237,14 +239,17 @@ function runSequence(seed: number, steps: number) {
     } else if (r < 0.62) {
       const target = visible(rows, () => true).filter((x) => !rowEl(x.key)!.querySelector<HTMLInputElement>('.upload-list-tick')!.disabled);
       if (!target.length) continue;
-      const row = pick(target);
+      // Half the time, the row holding the draft: its own tick pressed while its input has the focus (T8).
+      const own = draft && target.find((x) => x.key === draft!.key);
+      const row = own && rand() < 0.5 ? own : pick(target);
       const tick = rowEl(row.key)!.querySelector<HTMLInputElement>('.upload-list-tick')!;
       trace.push(`tick ${row.key}`);
+      // A mouse press: pointerdown, the blur it causes (the draft commits), then the click. It acts on the tick as drawn
+      // before the press (`row`, the engine's row then), never as the commit left it.
+      fireEvent.pointerDown(tick);
       if (focusMoves(tick)) { expected = committed(before, record, draft); draft = null; }
-      const mid = expected;
-      const rowMid = see(mid, record).list.rows.find((x) => x.key === row.key)!;
       fireEvent.click(tick);
-      expected = transition(mid, { type: 'chose', id: row.fileId, change: { tick: row.ref, on: !rowMid.ticked }, now: NOW }).state;
+      expected = transition(expected, { type: 'chose', id: row.fileId, change: { tick: row.ref, on: !row.ticked }, now: NOW }).state;
       if (held?.key === row.key) held = null;
     } else if (r < 0.67) {
       const target = visible(rows, (x) => x.replaces !== null).filter((x) => !rowEl(x.key)!.querySelector<HTMLInputElement>('.upload-list-replace input')!.disabled);
@@ -252,10 +257,12 @@ function runSequence(seed: number, steps: number) {
       const row = pick(target);
       const box = rowEl(row.key)!.querySelector<HTMLInputElement>('.upload-list-replace input')!;
       trace.push(`replace ${row.key}`);
+      fireEvent.pointerDown(box);
       if (focusMoves(box)) { expected = committed(before, record, draft); draft = null; }
       const rowMid = see(expected, record).list.rows.find((x) => x.key === row.key)!;
       fireEvent.click(box);
-      if (rowMid.replaces !== null) expected = transition(expected, { type: 'chose', id: row.fileId, change: { replace: row.ref, correctsId: rowMid.replacing ? null : rowMid.replaces }, now: NOW }).state;
+      // As drawn before the press (T8): on unless it showed on.
+      if (rowMid.replaces !== null) expected = transition(expected, { type: 'chose', id: row.fileId, change: { replace: row.ref, correctsId: row.replacing ? null : rowMid.replaces }, now: NOW }).state;
       if (held?.key === row.key) held = null;
     } else if (r < 0.74) {
       const days = list.days.filter((d) => !document.querySelector<HTMLInputElement>(`[data-at="${d.key}"] input`)!.disabled);
