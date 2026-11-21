@@ -163,8 +163,7 @@ final class UploadSourcesTests: XCTestCase {
             return Kit.read("{\"accepted\":true}\n\(line)\n")
         }
         let store = try phone()
-        let choice = DocumentChoice(kind: .document, sourceFileName: "Records/old.png", title: "Legacy letter", documentDate: nil, mimeType: "")
-        _ = await store.saveDocument(extractionJSON: UploadPageTests.letter("Legacy letter", date: nil), choice: choice, original: nil)
+        try await store.fileForTest(UploadPageTests.letter("Legacy letter", date: nil), name: "Records/old.png", title: "Legacy letter")
         let before = store.recordJSON
         let records = folder.appending(path: "Records", directoryHint: .isDirectory)
         try files(["old.png"], in: records)

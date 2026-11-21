@@ -6,7 +6,7 @@
 import { describe, expect, it } from 'vitest';
 import { core, DAY, EMPTY, extra, NOW } from './import-review.test-helpers';
 import { IMPORT_REVIEW_TEXT, NOT_SAVED_TEXT } from './import-review';
-import type { UnifiedExtractionResult } from './lab-extraction';
+import { UNDATED_PREVIOUS, type UnifiedExtractionResult } from './lab-extraction';
 import { bulkAppendValues, type BulkRow } from './record-edits';
 import { DAY_NOT_HAPPENED, LAB_DAY_REFUSAL } from './lab-series';
 import type { RoadmapFile } from './roadmap-file';
@@ -202,5 +202,46 @@ describe('gaps the list-view property found, fixed (owner rulings 2026-11-20)', 
   it('P7: an edited value shows the number Save writes, in its SI unit', () => {
     const s = chose(open([labRead('f0', { values: [core({ valueSI: 3.0, displayValue: 116, displayUnit: 'mg/dL', displaySystem: 'conventional' })] })]), 'f0', { edit: 'v0', value: 2.5 });
     expect(rows(see(s, EMPTY).view)).toMatchObject([{ value: '2.5', unit: 'mmol/L' }]);
+  });
+});
+
+// Found reviewing PR 1926 (adversary R2, R3; 2026-11-21), on main: an undated previous column's value.
+describe('the undated previous column (US-13 AC25)', () => {
+  const undated = (reportDate: string | null) => labRead('f0', { reportDate, values: [core({ recordedAt: UNDATED_PREVIOUS })] });
+
+  it('undatedPreviousDay: once its day is picked, its row shows that day, the day Save writes (before, the report\'s)', () => {
+    let s: UploadState = open([undated(DAY)]);
+    expect(rows(see(s, EMPTY).view)).toEqual([]); // before a pick it waits behind the day question, no row
+    s = chose(s, 'f0', { previousDay: '2026-10-05' });
+    const { review, view } = see(s, EMPTY);
+    expect(rows(view)[0]).toMatchObject({ ref: 'v0', day: '2026-10-05' });
+    expect(uploadSavePlan(s, EMPTY, NOW, review, false).labRows[0].rows[0].recordedAt.slice(0, 10)).toBe('2026-10-05');
+  });
+
+  // Property seed 66 with the generator extended to the web's undated column: a cleared value vanished from the page.
+  it('undatedClearedStaysReachable: a cleared value whose column\'s day stops being valid keeps the day question, so it can be found again', () => {
+    let s: UploadState = { ...open([undated(DAY)]), platform: 'web' };
+    s = chose(s, 'f0', { previousDay: '2026-10-05' });
+    s = chose(s, 'f0', { tick: 'v0', on: false });
+    s = chose(s, 'f0', { previousDay: DAY }); // on the report's day: no longer a previous day
+    const { review, view } = see(s, EMPTY);
+    expect(review.classification.values.find((v) => v.ref === 'v0')).toMatchObject({ group: 'waiting' });
+    expect(view.sections).toContainEqual(expect.objectContaining({ kind: 'undatedPrevious', fileId: 'f0' }));
+    expect(view.save.why).not.toBe(UPLOAD_TEXT.chooseDay); // nothing ticked waits: the question holds up no Save
+  });
+
+  it('undatedReplaceKept: a Replace on it is kept, never dropped and unticked, when its pick stops being before the test\'s day', () => {
+    const record = held([LDL(2.0, '2026-10-05')]);
+    const target = record.labValues[0].id;
+    let s: UploadState = open([undated(null)]);
+    s = chose(s, 'f0', { previousDay: '2026-10-05' });
+    s = chose(s, 'f0', { replace: 'v0', correctsId: target });
+    expect(see(s, record).review.labFiles[0].replacing).toEqual(['v0']);
+    s = chose(s, 'f0', { testDay: '2026-10-03' }); // the previous day is no longer before the test's: the column waits
+    const { review, view } = see(s, record);
+    expect(lostReplaces(review, s)).toEqual([]);
+    expect(review.labFiles[0]).toMatchObject({ needsPreviousDay: true, ticked: ['v0'], replacing: ['v0'] });
+    expect(review.classification.rows).toEqual([]);
+    expect(view.save).toMatchObject({ enabled: false, why: UPLOAD_TEXT.chooseDay });
   });
 });

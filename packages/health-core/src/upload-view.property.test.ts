@@ -13,7 +13,7 @@
  */
 import { writeFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import type { AdditionalLabValue, ExtractedValue, UnifiedExtractionResult } from './lab-extraction';
+import { UNDATED_PREVIOUS, type AdditionalLabValue, type ExtractedValue, type UnifiedExtractionResult } from './lab-extraction';
 import { bulkRowTarget } from './bulk-row-target';
 import { bulkAppendValues, slotKey, slotOfRow, type BulkRow } from './record-edits';
 import { DAY_NOT_HAPPENED, LAB_DAY_REFUSAL } from './lab-series';
@@ -25,7 +25,8 @@ import { createEmptyFile, type FileLabValue, type FileMeasurement, type RoadmapF
 import type { ChoiceChange } from './upload-choices';
 import { initialUpload, inFlight, transition, type PickedFile, type UploadEvent, type UploadState } from './upload-flow';
 import { uploadSavePlan } from './upload-plan';
-import { lostReplaces, reviewedWrites, uploadReview, type UploadReview } from './upload-review';
+import { lostReplaces, previousDay, reviewedWrites, uploadReview, type UploadReview } from './upload-review';
+import { requestFlags, type UploadPlatform } from './upload-rules';
 import { uploadSave, type UploadSaveIO } from './upload-save';
 import { uploadView, type UploadView, type ValueRow } from './upload-view';
 import { FIX_ERRORS_TEXT, UPLOAD_TEXT } from './upload-text';
@@ -47,6 +48,8 @@ const DAY = '2026-11-01';
 const PAST = '2026-10-01';
 const PICKED_DAY = '2026-10-20';
 const FUTURE = '2026-12-01';
+/** A previous column's day before every report and test day the run picks. */
+const EARLY = '2026-09-01';
 /** A misread report date that has not happened: the only way the server keeps a future own day (lab-extraction.ts `ownDay`: own < report). */
 const REPORT_FUTURE = '2026-12-15';
 
@@ -55,17 +58,19 @@ const REPORT_FUTURE = '2026-12-15';
 const core = (over: Partial<ExtractedValue>): ExtractedValue => ({ metric: 'ldl', valueSI: 3.1, displayValue: 3.1, displayUnit: 'mmol/L', displaySystem: 'si', confidence: 'high', ...over });
 const extra = (over: Partial<AdditionalLabValue>): AdditionalLabValue => ({ name: 'Ferritin', value: 80, unit: 'µg/L', ...over });
 
-/** `failWrites`: files whose original the cloud refuses (an unstored original). */
-interface Setup { extractions: Record<string, UnifiedExtractionResult>; record: RoadmapFile; cloud: boolean; failWrites: string[] }
+/** `failWrites`: files whose original the cloud refuses (an unstored original). `platform`: the device the run is on. */
+interface Setup { extractions: Record<string, UnifiedExtractionResult>; record: RoadmapFile; cloud: boolean; failWrites: string[]; platform: UploadPlatform }
 
-/** One lab report: core values (ldl, hba1c) and labs from a small pool, each on no day, a past day or (rarely) a future one. */
-function genLab(r: () => number): UnifiedExtractionResult {
+/** One lab report: core values (ldl, hba1c) and labs from a small pool, each on no day, a past day or (rarely) a future one;
+ *  where the platform asks the server for it (`requestFlags` undatedPrev: the web), sometimes the undated previous column. */
+function genLab(r: () => number, platform: UploadPlatform): UnifiedExtractionResult {
   const pick = <T,>(xs: readonly T[]): T => xs[Math.floor(r() * xs.length)];
   const coin = (p: number) => r() < p;
   const reportDate = coin(0.65) ? DAY : coin(0.9) ? null : REPORT_FUTURE;
   // The server keeps an own day only before the report's full day (lab-extraction.ts `ownDay`): none on an undated
   // report, and a future one only before a future report date.
-  const own = () => (reportDate === null || coin(0.6) ? undefined : reportDate === REPORT_FUTURE && coin(0.5) ? FUTURE : PAST);
+  const undatedPrev = requestFlags(platform).undatedPrev;
+  const own = () => (undatedPrev && coin(0.15) ? UNDATED_PREVIOUS : reportDate === null || coin(0.6) ? undefined : reportDate === REPORT_FUTURE && coin(0.5) ? FUTURE : PAST);
   const values: ExtractedValue[] = [];
   const additionalValues: AdditionalLabValue[] = [];
   const n = 1 + Math.floor(r() * 4);
@@ -261,7 +266,7 @@ function checkView(s: UploadState, record: RoadmapFile, cloud: boolean, note: No
     } else if (why === UPLOAD_TEXT.chooseDay) {
       for (const lf of review.labFiles.filter((f) => f.needsDay)) {
         if (!daySection.has(lf.fileId)) fail('P4', `${lf.fileId} needs a day and no section asks it`);
-        const change: ChoiceChange = lf.needsTestDay ? { testDay: PICKED_DAY } : { previousDay: PAST };
+        const change: ChoiceChange = lf.needsTestDay ? { testDay: PICKED_DAY } : { previousDay: EARLY };
         const after = transition(s, { type: 'chose', id: lf.fileId, change, now: NOW }).state;
         const again = uploadReview(after, record, NOW).labFiles.find((f) => f.fileId === lf.fileId)!;
         if (lf.needsTestDay ? again.needsTestDay : again.needsPreviousDay) fail('P4', `choosing the day leaves ${lf.fileId} waiting`);
@@ -318,8 +323,10 @@ function checkOracles(s: UploadState, review: UploadReview, record: RoadmapFile)
     const st = reads.get(lf.fileId)!;
     const x = st.extraction;
     const printed = ref[0] === 'v' ? x.values?.[Number(ref.slice(1))] : x.additionalValues?.[Number(ref.slice(1))];
-    const own = printed?.recordedAt;
-    const day = own !== undefined ? own : lf.day?.slice(0, 10) ?? null;
+    // An undated previous column's value is on the day picked for it, by the review's rule; it has no printed day.
+    const undated = printed?.recordedAt === UNDATED_PREVIOUS;
+    const own = undated ? undefined : printed?.recordedAt;
+    const day = undated ? previousDay(st.choices.previousDay, lf.day, NOW)?.slice(0, 10) ?? null : own !== undefined ? own : lf.day?.slice(0, 10) ?? null;
     const edit = st.choices.edits[ref];
     const row = day ? importRow(x, ref, day, edit !== undefined && sent ? { edited: { value: edit } } : {}) : null;
     return { printed, own, row, slot: row ? slotKey(bulkRowTarget(row).slot, bulkRowTarget(row).metric, row.recordedAt) : null };
@@ -388,7 +395,7 @@ function doorState(s: UploadState, record: RoadmapFile): UploadState {
 
 /** One sequence run step by step; every step checked. */
 class Run {
-  s: UploadState = initialUpload('phone');
+  s: UploadState;
   record: RoadmapFile;
   last: { view: UploadView; review: UploadReview; record: RoadmapFile } | null = null;
   /** Rows the last commit wrote as corrections (Replace). */
@@ -397,7 +404,7 @@ class Run {
   lostReplace = false;
   /** The last commit's facts, for the reach counts: values skipped, originals unstored, originals filed behind a held row. */
   saved = { skipped: 0, unstored: 0, archiveOnly: 0 };
-  constructor(readonly setup: Setup, readonly note: Note) { this.record = setup.record; }
+  constructor(readonly setup: Setup, readonly note: Note) { this.record = setup.record; this.s = initialUpload(setup.platform); }
 
   async apply(step: Step): Promise<void> {
     // The engine door drops a Replace whose target left its slot before each event and in each view (replacesLost).
@@ -583,6 +590,8 @@ function genStep(r: () => number, run: Run, phase: { saves: number; chosen: numb
     if (err) return { type: 'event', e: { type: 'chose', id: err.fileId, change: coin(0.6) ? { tick: err.ref, on: false } : { edit: err.ref, value: 3.1 }, now: NOW } };
     const day = v.sections.find((x) => x.kind === 'undated');
     if (day && day.kind === 'undated') return { type: 'event', e: { type: 'chose', id: day.fileId, change: { testDay: coin(0.8) ? PICKED_DAY : DAY }, now: NOW } };
+    const prev = v.sections.find((x) => x.kind === 'undatedPrevious');
+    if (prev && prev.kind === 'undatedPrevious') return { type: 'event', e: { type: 'chose', id: prev.fileId, change: { previousDay: coin(0.8) ? EARLY : PAST }, now: NOW } };
   }
   // Nothing in flight: Save as the person would, only when the view enables it; else give up the sequence.
   if (run.last?.view.save.enabled) return tapOrSave(r, run);
@@ -592,7 +601,8 @@ function genStep(r: () => number, run: Run, phase: { saves: number; chosen: numb
 /**
  * A change the list lets the person make: on a row it shows (tick, Replace with the row's held id or
  * a stale one, an edit), the test's day only while the undated section asks it, a document's fixes.
- * The phone's list has no previous-column day (the phone never asks for one).
+ * The previous column's day on the web, while the file prints one (the phone never asks for one): a past day before the
+ * report's, one on or after it, a partial pick, or none.
  */
 function genChange(r: () => number, run: Run, fileId: string): ChoiceChange | null {
   const pick = <T,>(xs: readonly T[]): T => xs[Math.floor(r() * xs.length)];
@@ -610,6 +620,8 @@ function genChange(r: () => number, run: Run, fileId: string): ChoiceChange | nu
   const asksDay = view.sections.some((x) => x.kind === 'undated' && x.fileId === fileId);
   // The phone's pickers offer only days up to today (UploadReviewView.swift `in: ...Date.now`, DayCalendar).
   if (asksDay && (!rows.length || coin(0.4))) return { testDay: pick([PICKED_DAY, DAY, PAST]) };
+  const printsUndated = [...(f.status.extraction.values ?? []), ...(f.status.extraction.additionalValues ?? [])].some((x) => x.recordedAt === UNDATED_PREVIOUS);
+  if (printsUndated && coin(0.3)) return { previousDay: pick([EARLY, PAST, PICKED_DAY, DAY, '2026-10', null]) };
   if (!rows.length) return null;
   const row = pick(rows);
   const k = r();
@@ -656,8 +668,9 @@ function otherWriter(r: () => number, run: Run): BulkRow[] {
 
 function genSetup(r: () => number): Setup {
   const extractions: Record<string, UnifiedExtractionResult> = {};
-  for (let i = 0; i < 3; i++) extractions[`f${i}`] = r() < 0.75 ? genLab(r) : genLetter(r);
-  return { extractions, record: genRecord(r), cloud: r() < 0.5, failWrites: r() < 0.2 ? ['f0'] : [] };
+  const platform: UploadPlatform = r() < 0.5 ? 'web' : 'phone';
+  for (let i = 0; i < 3; i++) extractions[`f${i}`] = r() < 0.75 ? genLab(r, platform) : genLetter(r);
+  return { extractions, record: genRecord(r), cloud: r() < 0.5, failWrites: r() < 0.2 ? ['f0'] : [], platform };
 }
 
 /** Runs `steps` from scratch; the failure's property, or null. */
@@ -689,6 +702,8 @@ const brief = (setup: Setup) => JSON.stringify({
 /** A Replace the run had chosen was just dropped by the door (its target deleted). */
 const lostBefore = (run: Run) => run.lostReplace;
 
+const valueRecordedAt = (x: UnifiedExtractionResult, ref: string) => (ref[0] === 'v' ? x.values?.[Number(ref.slice(1))] : x.additionalValues?.[Number(ref.slice(1))])?.recordedAt;
+
 const SEEDS = 3000;
 
 describe('upload-view property: the list view against Save (US-52 AC8c, US-13 AC13)', () => {
@@ -696,7 +711,7 @@ describe('upload-view property: the list view against Save (US-52 AC8c, US-13 AC
     const gaps: Record<string, number[]> = {};
     const reach = {
       steps: 0, saved: 0, saveFailedThenSaved: 0, replacing: 0, corrections: 0, changedBeforeSave: 0, blockedFix: 0, blockedDay: 0, conflicts: 0, documents: 0,
-      merges: 0, replaceLost: 0, changedBeforeTap: 0, freedBeforeCommit: 0, skipped: 0, unstored: 0, archiveOnly: 0, copies: 0, alreadySaved: 0, futureDay: 0, pressureRefused: 0, limitTicked: 0, labAsCore: 0, edited: 0, noOriginalSaved: 0,
+      merges: 0, replaceLost: 0, changedBeforeTap: 0, freedBeforeCommit: 0, skipped: 0, unstored: 0, archiveOnly: 0, copies: 0, alreadySaved: 0, futureDay: 0, undatedPrevious: 0, pressureRefused: 0, limitTicked: 0, labAsCore: 0, edited: 0, noOriginalSaved: 0,
     };
     for (let seed = 1; seed <= SEEDS; seed++) {
       const r = mulberry32(seed);
@@ -736,6 +751,8 @@ describe('upload-view property: the list view against Save (US-52 AC8c, US-13 AC
           if (allRows(v).some((row) => row.ticked && row.value?.startsWith('<'))) reach.limitTicked++;
           if (allRows(v).some((row) => row.ticked && row.ref[0] === 'a' && row.label === 'LDL Cholesterol')) reach.labAsCore++;
           if (run.s.files.some((f) => f.status.s === 'read' && Object.keys(f.status.choices.edits).length)) reach.edited++;
+          // A value of the undated previous column on a picked day, shown to be written (P7 checks its day).
+          if (allRows(v).some((row) => run.last?.view.reviewed?.some((w) => w.file === row.fileId && w.ref === row.ref) && run.s.phase === 'open' && run.s.files.some((f) => f.id === row.fileId && f.status.s === 'read' && valueRecordedAt(f.status.extraction, row.ref) === UNDATED_PREVIOUS))) reach.undatedPrevious++;
         }
       }
     }
