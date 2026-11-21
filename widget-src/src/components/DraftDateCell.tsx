@@ -3,6 +3,7 @@
 
 import { useRef } from 'react';
 import { MONTHS_SHORT } from '../lib/constants';
+import { DAY_CONTROL_TEXT } from '@roadmap/health-core/upload-text';
 
 const MONTH_LABELS = MONTHS_SHORT.map(m => m.label);
 
@@ -44,7 +45,7 @@ export function DraftDateCell({ date, onChange, needsDay, placeholder, ariaLabel
             title={title ?? (needsDay ? 'Pick the exact day' : 'Click to change date')}
             className={className ?? `bt-cell-value bt-cell-draft-date${needsDay ? ' bt-cell-draft-date-incomplete' : ''}`}>
       {label && <span className="bt-draft-label">{label}</span>}
-      <span className="bt-date-day">{needsDay && placeholder ? placeholder : `${needsDay ? '—' : day} ${mon}`}</span>
+      <span className="bt-date-day">{needsDay && placeholder ? placeholder : `${needsDay ? DAY_CONTROL_TEXT.noDay : day} ${mon}`}</span>
       <div className="bt-draft-date-year-row">
         {!(needsDay && placeholder) && <span className="bt-date-year">'{yr}</span>}
         <svg width="10" height="10" viewBox="0 0 16 16" fill="none" aria-hidden="true" className="bt-draft-date-icon">

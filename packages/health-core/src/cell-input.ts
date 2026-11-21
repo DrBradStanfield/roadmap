@@ -4,8 +4,10 @@
 import { commaQuestion, parseLocalisedNumber } from './parseNumber';
 import { cellFromSI, cellLabel, cellNumber, cellRange, cellToSI, isCellMetric, unitFits, type CellUnit } from './cell-unit';
 import type { OfferedValue } from './import-review';
+import type { ExtractedValue } from './lab-extraction';
 import { withComparator } from './lab-limits';
 import { rangeFault, type MetricType } from './units';
+import { REVIEW_CELL_TEXT } from './upload-text';
 
 /**
  * A typed value that changes nothing, so saving it writes nothing (US-03
@@ -75,6 +77,14 @@ export function shownValue(at: OfferedValue, edit: number | undefined, unit: Cel
   // An edit in the unit it was typed in, exact but for the float noise a unit round trip leaves (12 significant digits).
   const number = edit === undefined || editUnit !== unit ? cellNumber(metric, current, unit, comparator) : String(Number(cellFromSI(metric, edit, unit).toPrecision(12)));
   return { text: withComparator(number, comparator), number, unit: cellLabel(metric, unit), current, cell: { metric, unit } };
+}
+
+/** What the report printed, when a core value read shows something else in `unit` (US-13 AC11; moved from the web's
+ *  review-matrix.ts): a converted number, or a unit the read guessed. By number: "1.10" is "1.1". A core metric the units
+ *  table lacks shows as printed, so only a guessed unit names it. The value as read, never the person's edit. */
+export function printedNote(v: Pick<ExtractedValue, 'metric' | 'valueSI' | 'displayValue' | 'displayUnit' | 'comparator' | 'unitGuessed'>, unit: CellUnit): string | null {
+  const shown = isCellMetric(v.metric) ? Number(cellNumber(v.metric, v.valueSI, unit, v.comparator)) : v.displayValue;
+  return v.unitGuessed || shown !== v.displayValue ? REVIEW_CELL_TEXT.printed(v.displayValue, v.displayUnit) : null;
 }
 
 /**

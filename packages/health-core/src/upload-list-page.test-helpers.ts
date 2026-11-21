@@ -91,26 +91,33 @@ function today(now: string): string {
  * "That day has not happened yet."}").
  */
 export function checkDayWords(s: UploadState, list: UploadList, now: string, fail: Fail) {
+  for (const d of list.days) {
+    const want = dayWant(s, d, now);
+    if (!want) { fail('L14', `${d.key} names no read file`); return; }
+    const got = { day: d.day, picker: d.picker, hint: d.hint };
+    if (JSON.stringify(got) !== JSON.stringify(want.want)) fail('L14', `${d.key} picked ${JSON.stringify(want.pick)} (printed ${want.printed}) shows ${JSON.stringify(got)}; want ${JSON.stringify(want.want)}`);
+  }
+}
+
+/** L14's expectation for one control, from the extraction, the choices and the clock alone; null when it names no read file. */
+export function dayWant(s: UploadState, d: UploadList['days'][number], now: string) {
   const day0 = today(now);
   const come = (d: string | null) => (d && d <= day0 ? d : null);
-  for (const d of list.days) {
-    const st = reads(s).find((f) => f.id === d.fileId)?.st;
-    if (!st) { fail('L14', `${d.key} names no read file`); return; }
-    const x = st.extraction;
-    const c = st.choices;
-    const test = come(calendarDay(c.testDay ?? x.reportDate));
-    const before = (pick: string | null) => { const p = come(calendarDay(pick)); return p && (!test || p < test) ? p : null; };
-    const month = [...(x.values ?? []), ...(x.additionalValues ?? [])].find((v) => v.printedMonth)?.printedMonth ?? null;
-    const pick = d.source === 'test' ? c.testDay : d.source === 'previous' ? c.previousDay : c.columnDays?.[d.printed] ?? null;
-    const day = d.source === 'test' ? test : d.source === 'previous' ? before(pick) : pick === null ? d.printed : before(pick);
-    const shown = calendarDay(pick ?? (d.source === 'test' ? x.reportDate : null));
-    const limits = d.source === 'test' ? DAY_CONTROL_TEXT.pickDay(null, null) : DAY_CONTROL_TEXT.pickDay(d.source === 'previous' ? month : null, test);
-    const asks = d.source === 'test' ? UPLOAD_TEXT.undatedTitle : limits;
-    const want = day ? { day, picker: day, hint: null }
-      : { day: null, picker: shown, hint: shown && shown > day0 ? DAY_NOT_HAPPENED : pick !== null ? limits : asks };
-    const got = { day: d.day, picker: d.picker, hint: d.hint };
-    if (JSON.stringify(got) !== JSON.stringify(want)) fail('L14', `${d.key} picked ${JSON.stringify(pick)} (printed ${x.reportDate}) shows ${JSON.stringify(got)}; want ${JSON.stringify(want)}`);
-  }
+  const st = reads(s).find((f) => f.id === d.fileId)?.st;
+  if (!st) return null;
+  const x = st.extraction;
+  const c = st.choices;
+  const test = come(calendarDay(c.testDay ?? x.reportDate));
+  const before = (pick: string | null) => { const p = come(calendarDay(pick)); return p && (!test || p < test) ? p : null; };
+  const month = [...(x.values ?? []), ...(x.additionalValues ?? [])].find((v) => v.printedMonth)?.printedMonth ?? null;
+  const pick = d.source === 'test' ? c.testDay : d.source === 'previous' ? c.previousDay : c.columnDays?.[d.printed] ?? null;
+  const day = d.source === 'test' ? test : d.source === 'previous' ? before(pick) : pick === null ? d.printed : before(pick);
+  const shown = calendarDay(pick ?? (d.source === 'test' ? x.reportDate : null));
+  const limits = d.source === 'test' ? DAY_CONTROL_TEXT.pickDay(null, null) : DAY_CONTROL_TEXT.pickDay(d.source === 'previous' ? month : null, test);
+  const asks = d.source === 'test' ? UPLOAD_TEXT.undatedTitle : limits;
+  const want = day ? { day, picker: day, hint: null }
+    : { day: null, picker: shown, hint: shown && shown > day0 ? DAY_NOT_HAPPENED : pick !== null ? limits : asks };
+  return { want, pick, printed: x.reportDate };
 }
 
 /**
@@ -123,7 +130,7 @@ export function checkLetters(s: UploadState, view: UploadView, page: ListPage, f
     const doc = reads(s).find((f) => f.id === d.fileId)?.st.extraction.document;
     return { fileId: d.fileId, text: doc?.contentMarkdown ?? '' };
   });
-  if (JSON.stringify(page.letters) !== JSON.stringify(want)) fail('L15', `letters ${JSON.stringify(page.letters.map((l) => [l.fileId, l.text.slice(0, 20)]))}, view lists ${JSON.stringify(want.map((l) => l.fileId))}`);
+  if (JSON.stringify(page.letters.map(({ fileId, text }) => ({ fileId, text }))) !== JSON.stringify(want)) fail('L15', `letters ${JSON.stringify(page.letters.map((l) => [l.fileId, l.text.slice(0, 20)]))}, view lists ${JSON.stringify(want.map((l) => l.fileId))}`);
 }
 
 /**

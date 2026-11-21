@@ -1,4 +1,5 @@
 import { isScreeningEligible } from '@roadmap/health-core/types';
+import { letterPreview } from '@roadmap/health-core/upload-list-page';
 import { DraftDateCell } from './DraftDateCell';
 import { pastDay } from '../lib/review-dates';
 import type { ReviewDocuments } from '../hooks/useReviewDocuments';
@@ -83,8 +84,7 @@ export function ReviewFileSections({ docs, age: userAge, sex }: ReviewFileSectio
                 </div>
 
                 <div className="review-document-preview">
-                  {r.document.contentMarkdown.slice(0, 300)}
-                  {r.document.contentMarkdown.length > 300 && '...'}
+                  {letterPreview(r.document.contentMarkdown)}
                 </div>
 
                 {!!r.document.metadata?.screeningType && isScreeningEligible(String(r.document.metadata.screeningType), userAge, sex) && (
