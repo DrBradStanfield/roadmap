@@ -24,7 +24,9 @@ describe('mount 3a: the shared Save\'s flow event and re-read', () => {
   it.each([
     ['a landed commit: saved, then the re-read', { ok: true, outcome: OUTCOME, added: [] } as Answer, { type: 'saved', run: 3, attempt: 2, outcome: OUTCOME }, 1],
     ['an erase refusal: the page\'s words, no re-read', { ok: false, reason: 'erased', message: 'Failed to save. Please try again.' } as Answer, { type: 'saveFailed', run: 3, attempt: 2, message: 'Failed to save. Please try again.' }, 0],
-    ['a not-ready refusal: the engine\'s own words, no re-read', { ok: false, reason: 'not-ready', message: 'Synthetic engine words.' } as Answer, { type: 'saveFailed', run: 3, attempt: 2, message: 'Synthetic engine words.' }, 0],
+    // Owner ruling 5 (2026-11-22): the engine's refusal words are for developers; the person reads the page's own.
+    ['a not-ready refusal: the page\'s words, no re-read', { ok: false, reason: 'not-ready', message: 'Synthetic engine words.' } as Answer, { type: 'saveFailed', run: 3, attempt: 2, message: 'Failed to save. Please try again.' }, 0],
+    ['a not-saving refusal: the page\'s words, no re-read', { ok: false, reason: 'not-saving', message: 'The upload is not saving.' } as Answer, { type: 'saveFailed', run: 3, attempt: 2, message: 'Failed to save. Please try again.' }, 0],
   ])('%s', async (_case, answer, event, rereads) => {
     vi.mocked(saveUpload).mockResolvedValue(answer);
     const complete = vi.fn();

@@ -19,11 +19,12 @@ const all = (re: RegExp) => [...source.matchAll(re)].map((m) => m[1]);
 
 describe('US-12 AC26: the upload adapter holds no mode beside the shared state', () => {
   it('its React state is the shared state, the connect-first skip and the bundle loader, nothing else', () => {
-    expect(all(/const \[(\w+)(?:, \w+)?\] = useState/g)).toEqual(['upload', 'skipArchive', 'loadUploadBundle']);
+    // `engine`: the loaded upload bundle, data the list and the Save read (mount 3b, owner ruling 4), never a mode.
+    expect(all(/const \[(\w+)(?:, \w+)?\] = useState/g)).toEqual(['upload', 'skipArchive', 'loadUploadBundle', 'engine']);
   });
 
   it('its refs are the state read synchronously, held data and claims: none starts as a boolean', () => {
-    expect(all(/const (\w+) = useRef/g)).toEqual(['live', 'held', 'prepared', 'decisions', 'saved', 'reviewEnded', 'endReview', 'props', 'port']);
+    expect(all(/const (\w+) = useRef/g)).toEqual(['live', 'held', 'prepared', 'reviewCounts', 'reviewEnded', 'endReview', 'props', 'port']);
     expect(source).not.toMatch(/useRef(<boolean>)?\((true|false)\)/);
   });
 
@@ -37,7 +38,9 @@ describe('US-12 AC26: the upload adapter holds no mode beside the shared state',
     expect(fieldsOf('Held')).toEqual(['run', 'leftOut', 'docx', 'known', 'files']);
     expect(fieldsOf('HeldFile')).toEqual(['file', 'entry', 'pages', 'note']);
     expect(source).toMatch(/useRef<\{ run: number; ready: Promise<HealthUploadAPI \| null> \} \| null>\(null\)/);
-    expect(source).toMatch(/useRef<\{ run: number; outcome: SaveOutcome \}>/);
+    // The pending Save's counts only: no outcome of a Save is held beside the state (mount 3b).
+    expect(source).toMatch(/useRef<ProductEventMetadata \| undefined>\(undefined\)/);
+    expect(source).not.toMatch(/SaveOutcome/);
     expect(read).not.toMatch(/\b(stopped|failure|refused|status|phase|mode)\??:/);
   });
 });

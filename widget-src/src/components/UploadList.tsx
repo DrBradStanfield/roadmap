@@ -1,6 +1,6 @@
 /**
- * The web upload review as a list (US-13 AC26, web list PR 2; design docs/drafts/upload-list-screen.md). Not mounted
- * yet: UploadModal still draws ReviewTable. It draws only what the engine exposes (`uploadList`, `uploadView`) and adds
+ * The web upload review as a list (US-13 AC26, web list PR 2; design docs/drafts/upload-list-screen.md), mounted in
+ * UploadModal through UploadReviewList.tsx. It draws only what the engine exposes (`uploadList`, `uploadView`) and adds
  * no rule: it never decides a status, a caption, an error, a blocker or whether an input takes typing, never parses a
  * number and never counts. Its one state is the focused input's draft (lib/upload-list-draft.ts). Its view state: Show
  * all, a latch set once when the review first has rows (`SHOW_ALL_AT_START`, closed) and then only by its press;
@@ -41,6 +41,8 @@ export interface UploadListProps {
    *  SET the unit it is given (a flip can disagree while the record's units are held, US-34 AC7a). */
   unitTo: (metric: MetricType, unit: CellUnit) => void;
   lpaUnitTo: (unit: LpaUnit) => void;
+  /** The person opened "Show all": the review's `showAll` count (US-13 AC13). */
+  openedAll?: () => void;
 }
 
 /** The element that removes a blocker: a row's input (its tick when it takes none) or a day control's picker button. */
@@ -67,7 +69,7 @@ const newErrors = (before: List, after: List) => {
   return after.rows.filter((r) => r.error && had.get(r.key) !== r.error).map((r) => r.error!);
 };
 
-export function UploadList({ list, view, page, choose, reread, save, stop, retry, cancel, done, unitTo, lpaUnitTo }: UploadListProps) {
+export function UploadList({ list, view, page, choose, reread, save, stop, retry, cancel, done, unitTo, lpaUnitTo, openedAll }: UploadListProps) {
   // The draft, read synchronously as well as drawn: a blur and the next row's typing land in one batch.
   const live = useRef<Draft>(null);
   const [draft, setDraft] = useState<Draft>(null);
@@ -179,7 +181,7 @@ export function UploadList({ list, view, page, choose, reread, save, stop, retry
         })}
         {(list.showAll || all) && (
           <p className="upload-list-show-all">
-            <button type="button" className="review-disclosure" aria-expanded={all} aria-controls={rowsId} onClick={() => setLatch({ open: !all, kept: new Set() })}>
+            <button type="button" className="review-disclosure" aria-expanded={all} aria-controls={rowsId} onClick={() => { if (!all) openedAll?.(); setLatch({ open: !all, kept: new Set() }); }}>
               {all ? list.hide : list.showAll}
             </button>
           </p>
