@@ -39,7 +39,7 @@ it is scanned; it does not read comments, identifiers or tests.
   to their AI assistant.
 - **Retired:** "Health Roadmap" (in prose people read, except where Apple shows the iPhone app's name); "health
   roadmap" in lower case ("Your health roadmap"); "Roadmap" as a name; "Health Plan by Dr Brad" (except the cloud
-  folder names); "Dr Brad's Health Roadmap" and "Brad's roadmap" (clinical files; Brad's lines); "Health Plan" as the
+  folder names); "Brad's roadmap" (the guideline pages in `docs/guideline/`; Brad's lines); "Health Plan" as the
   tool's name, if Brad says the hero heading should change.
 - **Keep:**
   - The iPhone display name is "Health Roadmap" (`ios/HealthRoadmap.xcodeproj/project.pbxproj`). iOS Settings, Apple
