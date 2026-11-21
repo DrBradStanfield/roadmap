@@ -16,7 +16,7 @@ import { getDisplayLabel, type MetricType } from './units';
 import type { CellUnit } from './cell-unit';
 import { shownValue, type ShownValue } from './cell-input';
 import { inFlight, RETRYABLE, saveEnabled, uploadFileName, type FileStatus, type SaveOutcome, type UploadFile, type UploadState } from './upload-flow';
-import { planIsEmpty, uploadSavePlan, type UploadSavePlan } from './upload-plan';
+import { labReadFound, planIsEmpty, uploadSavePlan, type UploadSavePlan } from './upload-plan';
 import type { UploadPlatform } from './upload-rules';
 import { readFiles, reviewedWrites, type ReviewedValue, type UploadReview } from './upload-review';
 import { failLine, FILE_NOTICE_TEXT, FIX_ERRORS_TEXT, longDate, REFUSED_TEXT, REVIEW_CELL_TEXT, UNREADABLE_VALUE_TEXT, UPLOAD_TEXT } from './upload-text';
@@ -250,7 +250,7 @@ function emptyRead(f: UploadFile): string | null {
   if (f.status.s !== 'read') return null;
   const x = f.status.extraction;
   const lab = x.classification === 'lab_report';
-  if (lab && (x.values?.length ?? 0) + (x.additionalValues?.length ?? 0) + (x.refusedValues?.length ?? 0) > 0) return null;
+  if (lab && labReadFound(x)) return null;
   if (!lab && x.document) return null;
   return x.document ? FILE_NOTICE_TEXT.documentOnly : FILE_NOTICE_TEXT.noValues;
 }
