@@ -8,6 +8,7 @@
  *   P4 a disabled Save names a blocker the view gives a control for, and that control clears it;
  *   P5 FHIR after commit; P6 no broken string. A failure prints the seed and a minimised event list.
  *   P7 each written row shows what Save writes (its number, unit, day, the value a Replace replaces).
+ *   P8 the review's day for each value (`days`, `waits`) is the one worked out from the extraction and the choices alone.
  * The gaps it found (owner rulings 2026-11-20) are pinned, fixed, in upload-view.gaps.test.ts.
  * Synthetic values, names and hashes only.
  */
@@ -22,7 +23,7 @@ import { knownAs, knownIndex } from './upload-known';
 import { reportedToCanonical, type MetricType } from './units';
 import { PRESSURE_ORDER } from './validation';
 import { createEmptyFile, type FileLabValue, type FileMeasurement, type RoadmapFile } from './roadmap-file';
-import type { ChoiceChange } from './upload-choices';
+import type { ChoiceChange, FileChoices } from './upload-choices';
 import { initialUpload, inFlight, transition, type PickedFile, type UploadEvent, type UploadState } from './upload-flow';
 import { uploadSavePlan } from './upload-plan';
 import { lostReplaces, reviewedWrites, uploadReview, type UploadReview } from './upload-review';
@@ -253,6 +254,7 @@ function checkView(s: UploadState, record: RoadmapFile, cloud: boolean, note: No
   if (view.save.label !== label) fail('P3', `label ${view.save.label} != ${label}`);
   const sureWrites = (view.sure?.rows ?? []).filter((row) => writes.has(key(row.fileId, row.ref))).length;
   if (view.sure && view.sure.line !== IMPORT_REVIEW_TEXT.willSave(sureWrites)) fail('P3', `sure line ${view.sure.line} != ${sureWrites}`);
+  checkDays(s, review);
   checkNumbers(s, review, rows, writes, record);
   checkOracles(s, review, record);
   // P4: a disabled Save with nothing in flight names a blocker the view lets the person clear.
@@ -327,10 +329,9 @@ function checkOracles(s: UploadState, review: UploadReview, record: RoadmapFile)
     const lf = review.labFiles[fi];
     const st = reads.get(lf.fileId)!;
     const x = st.extraction;
-    const printed = ref[0] === 'v' ? x.values?.[Number(ref.slice(1))] : x.additionalValues?.[Number(ref.slice(1))];
-    // The value's day is the review's (`days`: its own, the test's, or the one picked for its column); an undated column's has no printed day.
+    const printed = valueAt(x, ref)?.value;
     const own = printed?.recordedAt === UNDATED_PREVIOUS ? undefined : printed?.recordedAt;
-    const day = lf.days[ref]?.slice(0, 10) ?? null;
+    const { day } = expectedDay(st, ref);
     const edit = st.choices.edits[ref];
     const row = day ? importRow(x, ref, day, edit !== undefined && sent ? { edited: { value: edit } } : {}) : null;
     return { printed, own, row, slot: row ? slotKey(bulkRowTarget(row).slot, bulkRowTarget(row).metric, row.recordedAt) : null };
@@ -340,8 +341,8 @@ function checkOracles(s: UploadState, review: UploadReview, record: RoadmapFile)
     if (v.ref[0] === 'r') { if (v.group !== 'notSaved' || v.reason !== 'noUnit') fail('O', `${v.ref} refused row is ${v.group}`); continue; }
     if (!isOfferedRef(v.ref)) continue;
     // A value whose dated column waits for its pick has no day (US-13 AC24): it is never written. Its group is the
-    // classifier's preview on the day it printed, which the review's days do not hold (open question, PR 1926).
-    if (review.labFiles[v.file].waits.includes(v.ref)) { if (v.sent && v.writes) fail('O', `${v.ref} waits for its column's day and is written`); continue; }
+    // classifier's preview on the day it printed (KNOWN columnWaitsPreviewedOnPrintedDay, upload-view.gaps.test.ts).
+    if (expectedDay(reads.get(review.labFiles[v.file].fileId)!, v.ref).waits) { if (v.sent && v.writes) fail('O', `${v.ref} waits for its column's day and is written`); continue; }
     const f = facts(v.file, v.ref, v.sent);
     if (v.group === 'saved') {
       if (!f.row || !f.slot) fail('O', `${v.ref} saved with no day`);
@@ -361,6 +362,39 @@ function checkOracles(s: UploadState, review: UploadReview, record: RoadmapFile)
       if ((v.reason === 'futureDay' || v.reason === 'futureCoreDay') && !(f.own && f.own > today)) fail('O', `${v.ref} future-day with own day ${f.own}`);
     }
   }
+}
+
+/** P8: the review's day for each offered value (`days`, `waits`) is the one worked out from the extraction and the choices alone. */
+function checkDays(s: UploadState, review: UploadReview) {
+  for (const lf of review.labFiles) {
+    const f = 'files' in s ? s.files.find((x) => x.id === lf.fileId) : undefined;
+    if (f?.status.s !== 'read') continue;
+    for (const { ref } of offeredValues(f.status.extraction)) {
+      const want = expectedDay(f.status, ref);
+      const got = lf.days[ref]?.slice(0, 10) ?? null;
+      if (got !== want.day || lf.waits.includes(ref) !== want.waits) fail('P8', `${lf.fileId}|${ref} has day ${got}${lf.waits.includes(ref) ? ' (waits)' : ''}, expected ${want.day}${want.waits ? ' (waits)' : ''}`);
+    }
+  }
+}
+
+/**
+ * A value's day from the raw extraction and the choices alone, never from the review: the test's (the picked day, else
+ * the report's); its own printed day (one still to come as printed: it is never saved); the undated column's pick, or a
+ * dated column's (US-13 AC24), when that is a real past day before the test's (any while the test has none), else none;
+ * a dated column with a pick that is not such a day waits.
+ */
+function expectedDay(st: { extraction: UnifiedExtractionResult; choices: FileChoices }, ref: string): { day: string | null; waits: boolean } {
+  const { extraction: x, choices } = st;
+  const real = (d: string | null | undefined) => (d ? validDay(d, { now: NOW })?.slice(0, 10) ?? null : null);
+  const test = real(choices.testDay ?? x.reportDate);
+  const before = (pick: string | null | undefined) => { const d = real(pick); return d && (!test || d < test) ? d : null; };
+  const printed = valueAt(x, ref)?.value.recordedAt;
+  if (printed === undefined) return { day: test, waits: false };
+  if (printed === UNDATED_PREVIOUS) return { day: before(choices.previousDay), waits: false };
+  const pick = real(printed) ? choices.columnDays?.[printed] : undefined;
+  if (pick === undefined) return { day: printed.slice(0, 10), waits: false };
+  const day = before(pick);
+  return { day, waits: day === null };
 }
 
 /** P5: FHIR after a commit of `before` into `after`. */
