@@ -95,6 +95,8 @@ export const DAY_CONTROL_TEXT = {
   previous: 'Choose the date of the previous results',
   /** The old grid's alone (ReviewMatrix.tsx): "column" means nothing on the list. Goes with the grid. */
   column: 'Choose column date',
+  /** A date button's day while none is picked: the grid's date cell's (DraftDateCell.tsx), moved byte for byte. */
+  noDay: '—',
   /** `month` YYYY-MM, `before` YYYY-MM-DD; either unknown, left out. */
   pickDay: (month: string | null, before: string | null) => `Pick a day${month ? ` in ${longDate(month)}` : ''}${before ? ` before ${longDate(before)}` : ''}`,
 } as const;

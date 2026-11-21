@@ -6,7 +6,7 @@ import type { LabQuantity } from '@roadmap/health-core/record-edits';
 import { placeReadings, readingRank, type Quantity } from '@roadmap/health-core/review-slots';
 import { UNDATED_PREVIOUS } from '@roadmap/health-core/lab-extraction';
 import { withComparator, comparatorOf, type Comparator } from '@roadmap/health-core/lab-limits';
-import { REVIEW_CELL_TEXT } from '@roadmap/health-core/upload-text';
+import { printedNote } from '@roadmap/health-core/cell-input';
 import type { ApiLabValue } from './api-types';
 import { labValueLabel } from '@roadmap/health-core/lab-series';
 import { type CellUnit, cellNumber } from './blood-test-cell';
@@ -275,10 +275,8 @@ export function buildMatrixModel(
           initialDisplay,
           confidence: v.confidence,
           question: v.question,
-          // What the report printed, when the cell shows something else: a
-          // converted number, or a guessed unit (US-13 AC11). By number: "1.10" is "1.1".
-          printed: v.unitGuessed || Number(initialDisplay) !== v.displayValue
-            ? REVIEW_CELL_TEXT.printed(v.displayValue, v.displayUnit) : undefined,
+          // What the report printed, when the cell shows something else (US-13 AC11; the list's rule too).
+          printed: printedNote(v, displayFor(metric)) ?? undefined,
           valueSI: v.valueSI,
           displayUnit: v.displayUnit,
           existing,

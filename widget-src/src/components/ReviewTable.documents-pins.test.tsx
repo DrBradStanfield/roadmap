@@ -93,6 +93,13 @@ describe('per-document review pins', () => {
     expect(view.container.querySelector('.review-screening-update')!.textContent).toBe('Update colorectal screening date (pick the document date first)');
   });
 
+  // US-14 AC11: the cut moved to health-core `letterPreview` (web list PR 1f), which the list screen reads too.
+  it('US-14 AC11: previews a letter whole up to 300 characters, else its first 300 and "..."', () => {
+    const view = review();
+    const preview = (name: string) => view.sectionOf(name).querySelector('.review-document-preview')!.textContent;
+    expect([preview('letter-old.pdf'), preview('scan.pdf')]).toEqual(['Synthetic Old letter', `${'x'.repeat(300)}...`]);
+  });
+
   it('US-13 AC6: an unticked document saves nothing for it, yet stays in reviewed', () => {
     const view = review();
     fireEvent.click(view.sectionOf('misc.pdf').querySelector<HTMLInputElement>('.review-row-check input')!);

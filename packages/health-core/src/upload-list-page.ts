@@ -11,7 +11,7 @@ import { inFlight, type UploadState } from './upload-flow';
 import { planIsEmpty, uploadSavePlan } from './upload-plan';
 import type { UploadReview } from './upload-review';
 import { UPLOAD_TEXT } from './upload-text';
-import { saveLabel } from './upload-view';
+import { documentDateLine, saveLabel } from './upload-view';
 
 /**
  * `save`: the Save button's words, "Saving..." while it saves, else the view's label (`uploadView().save.label`).
@@ -22,9 +22,15 @@ import { saveLabel } from './upload-view';
  * button, "Done" (`uploadView().doneLabel`, owner ruling on PR 1951). `letters`: each letter Save files, in the plan's order (the order of
  * `uploadView().documents.rows`), with the text Save writes (`contentMd`). That text is the reader's Markdown from an
  * uploaded file: data, shown as text only, never as HTML. The person's title, kind and date fixes change the fields
- * beside it, never the text.
+ * beside it, never the text. `preview`: the text as the grid previews it (`letterPreview`), so no reader hears a whole
+ * letter. `pickerLine`: what its date button shows, keyed here by `fileId` rather than on `uploadView().documents.rows`,
+ * which the iPhone draws: its date in words, else "Set the date", as the phone's documents row shows it.
  */
-export interface ListPage { save: string; close: string; letters: Array<{ fileId: string; text: string }> }
+export interface ListPage { save: string; close: string; letters: Array<{ fileId: string; text: string; preview: string; pickerLine: string }> }
+
+/** A letter's preview, the grid's cut (moved from ReviewFileSections.tsx): its first 300 characters, then "..." when there
+ *  is more; 300 or fewer, the whole text and no "...". */
+export const letterPreview = (text: string): string => (text.length > 300 ? `${text.slice(0, 300)}...` : text);
 
 export function uploadListPage(s: UploadState, record: RoadmapFile, now: string, review: UploadReview, cloudConnected: boolean): ListPage {
   const plan = uploadSavePlan(s, record, now, review, cloudConnected);
@@ -32,6 +38,9 @@ export function uploadListPage(s: UploadState, record: RoadmapFile, now: string,
   return {
     save: s.phase === 'saving' ? UPLOAD_TEXT.saving : saveLabel(plan),
     close: s.phase === 'done' ? UPLOAD_TEXT.done : inFlight(s) || offered || !planIsEmpty(plan) ? UPLOAD_TEXT.cancel : UPLOAD_TEXT.close,
-    letters: plan.documents.map(({ fileId, fields }) => ({ fileId, text: fields.contentMd })),
+    letters: plan.documents.map(({ fileId, fields }) => ({
+      fileId, text: fields.contentMd, preview: letterPreview(fields.contentMd),
+      pickerLine: fields.documentDate === null ? UPLOAD_TEXT.setDate : documentDateLine(fields.documentDate),
+    })),
   };
 }
