@@ -13,7 +13,7 @@ import { NO_CHOICES } from './upload-choices';
 import { initialUpload, transition, type FailReason, type FileStatus, type UploadEvent, type UploadFile, type UploadState } from './upload-flow';
 import type { UploadPlatform } from './upload-rules';
 import { uploadReview } from './upload-review';
-import { FAIL_TEXT, FILE_NOTICE_TEXT, OVER_LIMIT_TEXT, PHONE_FAIL_TEXT, UPLOAD_TEXT } from './upload-text';
+import { FAIL_TEXT, FILE_NOTICE_TEXT, KEY_TEXT, OVER_LIMIT_TEXT, PHONE_FAIL_TEXT, UPLOAD_TEXT } from './upload-text';
 import { FILE_REASON_DRAWN, FILE_REASON_TWICE, fileReason, uploadView, type UploadView } from './upload-view';
 
 type Screen = 'review' | 'done';
@@ -160,6 +160,42 @@ describe('US-12 AC9: a mixed pick, one readable file and one over the size cap, 
         expect(shown(viewOf(states[screen]), platform, screen, 'b')).toEqual(['Too large to read']);
         expect(shown(viewOf(states[screen]), platform, screen, 'a')).toEqual([]);
       }
+    });
+  }
+});
+
+// A run refused before any read (`runRefused`, US-12 AC10): its own line (`view.refused`) is a channel too, drawn on both
+// clients (widget-src UploadList.tsx `view.refused`; the iPhone's failed phase). Each file's reason, counted over the
+// screen's channels and that line, shows once: where the run's line already says a file's words, the file says nothing
+// of its own (US-12 AC10: the no-key run names no file). The other refusals word each file apart from the run's line.
+describe('US-12 AC9, AC10: a refused run says each reason once, counting its own line', () => {
+  const refusedRun = (platform: UploadPlatform, reason: 'dailyLimit' | 'noKey' | 'server') => {
+    const step = (s: UploadState, e: UploadEvent) => transition(s, e).state;
+    const s = step(initialUpload(platform), { type: 'picked', needsConsent: false, now: NOW, files: [
+      { id: 'a', name: 'a.pdf', bytes: 1000, kind: 'file' }, { id: 'b', name: 'b.pdf', bytes: 1000, kind: 'file' }] });
+    return step(s, { type: 'runRefused', run: 1, reason });
+  };
+  /** Every line the refused screen draws in a file's words, its run's line included where that line is those words. */
+  const drawn = (view: UploadView, platform: UploadPlatform, fileId: string, words: string) =>
+    [...shown(view, platform, 'review', fileId), ...(view.refused === words ? [view.refused] : [])].filter((l) => l === words);
+
+  it('web, no key: the run\'s line alone says it; no file repeats it or is marked not fully read', () => {
+    const view = viewOf(refusedRun('web', 'noKey'));
+    expect(view.refused).toBe(KEY_TEXT.missing);
+    for (const id of ['a', 'b']) {
+      expect(drawn(view, 'web', id, KEY_TEXT.missing), id).toEqual([KEY_TEXT.missing]);
+      expect(view.files.rows.find((r) => r.fileId === id)?.notFullyRead, id).toBe(false);
+    }
+  });
+
+  // The iPhone is never refused for a missing key (its reader is the server); its run-level refusals word each file apart
+  // from the run's line, so what it draws is unchanged: each file's line on its review's two channels (FILE_REASON_TWICE).
+  for (const reason of ['dailyLimit', 'server'] as const) {
+    it(`phone, ${reason}: each file keeps its own line, apart from the run's, twice on the review`, () => {
+      const view = viewOf(refusedRun('phone', reason));
+      const words = failWords(reason, 'phone');
+      expect(view.refused).not.toBe(words);
+      for (const id of ['a', 'b']) expect(drawn(view, 'phone', id, words), id).toEqual([words, words]);
     });
   }
 });

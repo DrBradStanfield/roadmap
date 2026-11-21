@@ -39,6 +39,7 @@ const SCENARIOS: Record<string, { files: string[]; held?: boolean; save?: 'hang'
   saving: { files: ['clean.pdf'], save: 'hang' },
   failed: { files: ['clean.pdf'], save: 'throw' },
   unstored: { files: ['clean.pdf', 'colonoscopy-letter.pdf'], refuseOriginals: true },
+  large: { files: ['clean.pdf', 'big-scan.pdf'] },
 };
 const name = new URLSearchParams(location.search).get('s') ?? 'review';
 const scenario = SCENARIOS[name] ?? SCENARIOS.review;
@@ -82,7 +83,8 @@ async function start() {
     const input = document.querySelector<HTMLInputElement>('input[type=file]');
     if (!input) return void setTimeout(pick, 50);
     const files = new DataTransfer();
-    for (const f of scenario.files) files.items.add(new File([f], f, { type: 'application/pdf' }));
+    // A `big-` file is over the 10 MB cap, never read (US-12 AC9).
+    for (const f of scenario.files) files.items.add(new File([f.startsWith('big-') ? new Uint8Array(11 * 1024 * 1024) : f], f, { type: 'application/pdf' }));
     input.files = files.files;
     input.dispatchEvent(new Event('change', { bubbles: true }));
   };

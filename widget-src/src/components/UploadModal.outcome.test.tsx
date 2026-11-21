@@ -107,6 +107,36 @@ describe('US-12 AC9: every file not fully read is named with a reason', () => {
     expect(extractFromPdf).toHaveBeenCalledOnce();
   });
 
+  // US-12 AC9 (engine PR 1974, one placement rule): the done screen names the file not read, with its reason, once.
+  it('after Save, the done screen names an oversize file with its reason exactly once', async () => {
+    render_(); pick(pdf('good.pdf'), pdf('huge.pdf', 11 * 1024 * 1024));
+    await findReviewValue('3.9');
+    fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+    await screen.findByRole('button', { name: 'Done' });
+    expect(reasonFor('huge.pdf')).toBe('Too large to read');
+    expect([...document.querySelectorAll('li')].filter(li => li.textContent!.startsWith('huge.pdf'))).toHaveLength(1);
+    expect(reasonFor('good.pdf')).toBeNull();
+  });
+
+  // "Already in your record" is a status, not a reason (PR 1974): the done screen leaves a known file out.
+  it('after Save, a file the record already holds is not named on the done screen', async () => {
+    const { uploadKnownIndex } = await import('../lib/roadmap-data');
+    vi.mocked(sha256Blob).mockImplementation(async (b: Blob) => `sha256-${await b.text()}`);
+    vi.mocked(uploadKnownIndex).mockReturnValue(new Map([['sha256-held', { as: 'document', archiveOnly: false }]]) as never);
+    try {
+      render_(); pick(pdf('good.pdf'), new File(['held'], 'held.pdf', { type: 'application/pdf' }));
+      await findReviewValue('3.9');
+      // The review's Files row shows the status; it is the file the record holds (the control for the done check).
+      expect(reasonFor('held.pdf')).toMatch(/already in your record/i);
+      fireEvent.click(screen.getByRole('button', { name: /^Save / }));
+      await screen.findByRole('button', { name: 'Done' });
+      expect(reasonFor('held.pdf')).toBeNull();
+    } finally {
+      vi.mocked(uploadKnownIndex).mockReturnValue(new Map());
+      vi.mocked(sha256Blob).mockImplementation(async () => '');
+    }
+  });
+
   it('lists oversize files when nothing else was picked, and starts no run', async () => {
     render_(); pick(pdf('huge.pdf', 11 * 1024 * 1024), pdf('huger.pdf', 12 * 1024 * 1024));
     expect(reasonFor('huge.pdf')).toMatch(/^Too large/);
@@ -134,8 +164,8 @@ describe('US-12 AC9: every file not fully read is named with a reason', () => {
     vi.mocked(labImport).mockImplementation(async pages => (pages[0].content === 'blank.pdf' ? nothing : withValues));
     render_(); pick(pdf('good.pdf'), pdf('blank.pdf'));
     await findReviewValue('3.9');
-    // The engine words it twice, as the file's status and as its notice (`uploadView` files and notices; reported, mount 3b).
-    expect(reasonFor('blank.pdf')).toBe('No blood test values found. | No blood test values found.');
+    // Once, in its Files row (the engine's one placement rule, PR 1974).
+    expect(reasonFor('blank.pdf')).toBe('No blood test values found.');
   });
 
   it('tells a server error from the daily limit', async () => {
@@ -429,10 +459,8 @@ describe('US-12 AC9: a ZIP member over the per-file limit is named and never rea
 describe('US-12 AC9: the Pages build names its own transport', () => {
   beforeEach(() => { build.shopify = false; });
 
-  // KNOWN (mount 3b, owner ruling Q1 (a): the engine PR claude/upload-engine-read-failure-words words it; flip then): the list draws each failed file's line from the shared engine, which has no
-  // build, so a Pages page names a failed read in the Shopify words ("Our server could not read it.") where the grid's
-  // notice said Anthropic's. Fails while that stands; passes once the engine words the Pages build.
-  it.fails('KNOWN: a failed read on the Pages build names Anthropic, never "our server"', async () => {
+  // The engine words the self-hosted build's failed read (it knows the reader, PR 1974), as the grid's notice did.
+  it('a failed read on the Pages build names Anthropic, never "our server"', async () => {
     vi.mocked(labImport).mockImplementation(async pages => (
       pages[0].content === 'broken.pdf' ? { result: null, error: 'Network error reaching Anthropic. Check your connection.', errorCode: 'network' } : withValues));
     render_(); pick(pdf('good.pdf'), pdf('broken.pdf'));

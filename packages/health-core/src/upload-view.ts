@@ -93,7 +93,7 @@ export interface UploadView {
   /** The done screen's lines. `skipped`: reviewed values another writer beat to their slot (US-12 AC6a).
    *  `notSaved`: values the final commit refused, one line per reason in the review's words. */
   done: { line: string; archived: string | null; unstored: string | null; skipped: string[]; notSaved: string[] } | null;
-  /** Values the record already holds, equal, on their day: counted, as the web's review counts them (ReviewTable.tsx). */
+  /** Values the record already holds, equal, on their day: counted, as the web's old review counted them (ReviewTable.tsx). */
   alreadySaved?: string | null;
   /** What this page shows as to be written (upload-review `reviewedWrites`): the app sends it back, as drawn, on
    *  `saveStarted`, and Save writes nothing else (owner ruling 2026-11-20, US-13 AC23). */
@@ -134,12 +134,23 @@ function softReasons(f: UploadFile): string[] {
 }
 
 /**
+ * A file of a run refused before any read (`runRefused`, US-12 AC10) whose own line is the run's line, word for word
+ * (`view.refused`; today the missing key's): the run's line says it once, so the file names no reason of its own on any
+ * channel, as the web's modal names no file for it. Every other refusal words each file apart from its run and keeps it.
+ */
+function saidByRun(f: UploadFile, s: UploadState): boolean {
+  return s.phase === 'failed' && !!s.refused && f.status.s === 'failed' && f.status.reason === s.refused
+    && failLine(f.status, s.platform, s.reader) === REFUSED_TEXT[s.refused];
+}
+
+/**
  * Why a file at rest was not fully read, in existing words (US-12 AC9), or null: read in full, still in flight, or already
  * in the record ("Already in your record" is a status, like "Read", not a reason). Hard reasons (refused, failed, stopped)
  * are its status words; a read file's soft ones join with a space.
  */
 export function fileReason(f: UploadFile, s: UploadState): string | null {
   const status = f.status;
+  if (saidByRun(f, s)) return null;
   switch (status.s) {
     case 'refused': case 'failed': case 'stopped': return statusWords(status, s);
     case 'read': return softReasons(f).join(' ') || null;
@@ -268,7 +279,7 @@ const rowOf = (review: UploadReview, v: ClassifiedValue) => ({
 const replacingOf = (review: UploadReview, v: ClassifiedValue) => !v.copy && review.labFiles[v.file].replacing.includes(v.ref);
 
 /**
- * A selected core value the write would refuse blocks Save, as the web's review blocks it
+ * A selected core value the write would refuse blocks Save, as the web's old review blocked it
  * (ReviewTable `refusedKept` over import-review-view `blocked`, US-13 AC5): sent, not written, and
  * out of its range or otherwise refused (a same-day loser is not an error).
  */
@@ -364,7 +375,7 @@ export function uploadView(s: UploadState, record: RoadmapFile, now: string, rev
   const offered = values.filter((v) => isOfferedRef(v.ref));
   const unsure = offered.filter((v) => v.group === 'unsure');
   const sure = offered.filter((v) => v.group === 'sure');
-  const failed = files.filter((f): f is UploadFile & { status: Extract<FileStatus, { s: 'failed' }> } => f.status.s === 'failed');
+  const failed = files.filter((f): f is UploadFile & { status: Extract<FileStatus, { s: 'failed' }> } => f.status.s === 'failed' && !saidByRun(f, s));
   const groups = notSavedGroups(values);
   const sections: UploadSection[] = [
     ...review.labFiles.flatMap((f): UploadSection[] => {
@@ -410,8 +421,9 @@ export function uploadView(s: UploadState, record: RoadmapFile, now: string, rev
     } : null,
     files: { row: UPLOAD_TEXT.filesRow(files.length), rows: files.map((f) => {
       const reason = fileReason(f, s);
-      // A hard reason owns the row; a soft one too, unless the screen draws it beside the row.
-      const status = reason !== null && !(beside && f.status.s === 'read') ? reason : statusWords(f.status, s);
+      // A hard reason owns the row; a soft one too, unless the screen draws it beside the row. A file whose reason its
+      // refused run's line says is named with no words of its own (`saidByRun`).
+      const status = reason !== null && !(beside && f.status.s === 'read') ? reason : saidByRun(f, s) ? '' : statusWords(f.status, s);
       return { fileId: f.id, name: uploadFileName(f), status, notFullyRead: reason !== null };
     }) },
     notices: beside ? files.flatMap((f) => softReasons(f).map((line) => ({ fileId: f.id, name: uploadFileName(f), line }))) : [],
