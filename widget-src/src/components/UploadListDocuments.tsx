@@ -39,6 +39,8 @@ function Letter({ d, documents, fileName, title, page, editable, on, fix }: {
           value={d.day ?? ''} empty={!d.dateKnown} name="Document date" describedBy={fileId} disabled={!editable}
           shown={{ id: dateId, text: page?.pickerLine ?? '' }}
           onDay={(day) => fix({ date: day })}
+          // Cleared is unknown, the same change "Remove the date" sends (US-13 AC6, ReviewFileSections.tsx).
+          onClear={() => fix({ date: null })}
         />
         {d.dateKnown && documents.removeDate && (
           <button type="button" className="upload-list-remove-date" disabled={!editable} onClick={() => fix({ date: null })}>{documents.removeDate}</button>

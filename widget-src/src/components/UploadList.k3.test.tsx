@@ -7,7 +7,8 @@
  * a row whose input takes none and rows with reasons. After every step:
  *   K3a the draft is none, or names a row whose input takes typing or a letter's title, and it is the one the person's
  *       steps left; each letter's title input shows its draft, else the engine's title;
- *   K3b the screen sent the engine exactly what the person's steps say, worked out by the engine's own `transition` from
+ *   K3b the screen sent the engine exactly what the person's steps say (a cleared letter date is `{date: null}`; a cleared
+ *       lab day sends nothing, as the grid), worked out by the engine's own `transition` from
  *       the state before the step (a commit is `{typed: ref, text, unit}`, the unit on screen when the person started
  *       typing, read by this test from the screen then, never from the component; a Save press with a draft is commit, re-read,
  *       then Save if the view allows it, else the focus on the first blocker's control);
@@ -31,7 +32,7 @@
  * M8 an open draft labelled by the row's unit now; M9 Show all a live expression of `list.check`; M10 a unit press that
  * leaves the draft to a blur; M11 every current error announced on each change; M12 a day picker's words made by the
  * screen; M13 the printed note dropped; M14 announcements keyed on the row alone; M15 `acted` kept after a choice that
- * changed nothing. (The promise path of Save, restored, fails the typecheck: `choose` returns void.) Synthetic values only.
+ * changed nothing; M16 a cleared letter date dropped. (The promise path of Save, restored, fails the typecheck: `choose` returns void.) Synthetic values only.
  */
 import { act, cleanup, fireEvent, render } from '@testing-library/react';
 import { afterEach, describe, it } from 'vitest';
@@ -314,7 +315,8 @@ function runSequence(seed: number, steps: number) {
         if (focusMoves(doc.querySelector<HTMLElement>('.upload-list-document-date button')!)) { expected = committed(before, record, draft); draft = null; }
         if (date.value !== day) {
           fireEvent.change(date, { target: { value: day } });
-          if (day) expected = transition(expected, { type: 'chose', id: 'f2', change: { document: { date: day } }, now: NOW }).state;
+          // A cleared letter date is unknown (US-13 AC6): the same change as "Remove the date" (T7).
+          expected = transition(expected, { type: 'chose', id: 'f2', change: { document: { date: day || null } }, now: NOW }).state;
         }
       } else {
         const remove = doc.querySelector<HTMLButtonElement>('.upload-list-remove-date');

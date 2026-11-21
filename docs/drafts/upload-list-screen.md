@@ -1,6 +1,6 @@
 # The web upload list: the screen (PR 2)
 
-Status: draft for review, 2026-11-22, round seven (the final re-check's T1-T6). Built
+Status: draft for review, 2026-11-22, round seven (the final re-check's T1-T7). Built
 unmounted: production keeps drawing ReviewTable's grid.
 Engine: `uploadList` (packages/health-core/src/upload-list.ts), `uploadView` (upload-view.ts) and `uploadListPage`
 (upload-list-page.ts).
@@ -32,6 +32,11 @@ row shown since Show all was last pressed, so no row hides under the person's ha
 6. Letters: `view.documents.line`, then each letter's title (text input), kind (`kinds` as a select)
    and date (the list's picker showing `page.letters[].pickerLine`, `removeDate` as a link), and its preview
    (`page.letters[].preview`, the grid's 300-character cut) as plain text in the grid's preview box, as the iPhone draws them. Changes go out as `{document: DocumentFix}`; the title commits through the draft.
+   Clearing a letter's native date input sends `{document: {date: null}}`, the change "Remove the date" sends, so the
+   date is unknown (US-13 AC6, as ReviewFileSections.tsx does). A cleared lab day sends nothing: the engine would take
+   a null day (upload-choices.ts `testDay`, `previousDay`, `columnDay` with `day: null`), but the grid ignores an empty
+   lab pick (ReviewMatrix.tsx DateHeader: `parseIsoToFullDate('')` is null, so `onDateChange` never runs), and the list
+   keeps that.
 7. Not saved: `view.sections` kind `notSaved` (title, lines, footer), as the iPhone draws it.
 8. Files: `view.files.row`, each file's name and status, `view.notices`, and Try again (`view.sections`
    kind `failed`, `retry`); quiet (13px, secondary) while every file says the same.

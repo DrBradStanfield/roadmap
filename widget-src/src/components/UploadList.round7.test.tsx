@@ -8,6 +8,7 @@ import { NUMERIC_SYNTAX_GUIDANCE } from '@roadmap/health-core/cell-input';
 import { bulkAppendValues } from '@roadmap/health-core/record-edits';
 import type { UploadEvent } from '@roadmap/health-core/upload-flow';
 import { reviewedWrites, uploadReview } from '@roadmap/health-core/upload-review';
+import { uploadSavePlan } from '@roadmap/health-core/upload-plan';
 import { blur, input, LDL, labRead, letterRead, mount, open, row, save, typeInto } from '../testing/upload-list-kit';
 
 afterEach(cleanup);
@@ -99,5 +100,33 @@ describe('T4: Replace never describes held text as the value it would write (adv
     expect(host.see().list.rows[0].typed?.text).toBe('abc');
     expect(described(box())).toEqual([r.label, r.held]);
     expect(row('f0:v0').textContent).not.toContain('abc mmol/L');
+  });
+});
+
+describe('T7: clearing a letter\'s date makes it unknown; a cleared lab day is ignored, as the grid does (US-13 AC6)', () => {
+  const datesSaved = (host: ReturnType<typeof mount>) =>
+    uploadSavePlan(host.state(), EMPTY, NOW, uploadReview(host.state(), EMPTY, NOW), false).documents.map((d) => d.fields.documentDate);
+  const dateInput = () => document.querySelector<HTMLInputElement>('li[data-doc="l0"] input[type="date"]')!;
+
+  it('a letter\'s native date cleared: Save plans no document date, and the picker says so (ReviewTable.document-dates port)', () => {
+    const host = mount(open([letterRead('l0', 'Clinic letter')]));
+    expect(datesSaved(host)).toEqual(['2026-10-20']);
+    fireEvent.change(dateInput(), { target: { value: '2024-08-09' } });
+    expect(datesSaved(host)).toEqual(['2024-08-09']);
+    fireEvent.change(dateInput(), { target: { value: '' } });
+    expect(host.sent.at(-1)).toMatchObject({ type: 'chose', change: { document: { date: null } } });
+    expect(datesSaved(host)).toEqual([null]);
+    expect(host.see().view.documents!.rows[0].dateKnown).toBe(false);
+    expect(document.querySelector('li[data-doc="l0"] .upload-list-picker-button')!.textContent).toBe(host.see().page.letters[0].pickerLine);
+  });
+
+  it('a lab day cleared in its picker sends nothing: the grid ignores an empty lab day (ReviewMatrix.tsx DateHeader)', () => {
+    const host = mount(open([labRead('f0', { reportDate: null, values: [core({})] })]));
+    const picker = () => document.querySelector<HTMLInputElement>('[data-at="f0|test"] input')!;
+    fireEvent.change(picker(), { target: { value: '2026-10-20' } });
+    const sent = host.sent.length;
+    fireEvent.change(picker(), { target: { value: '' } });
+    expect(host.sent).toHaveLength(sent);
+    expect(host.see().list.days[0].picker).toBe('2026-10-20');
   });
 });
