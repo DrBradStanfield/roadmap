@@ -48,6 +48,27 @@ describe('US-13 AC24: a dated previous column\'s day', () => {
     }
   });
 
+  // One rule for every previous column (`previousDay`, orchestrator ruling 2026-11-21): a previous result is before the report's day.
+  it('a pick on or after the report\'s day waits, as the undated column\'s does', () => {
+    for (const day of ['2026-10-01', '2026-10-05']) {
+      const s = open(prev(), choose(NO_CHOICES, { columnDay: COLUMN, day }, NOW, prev())!);
+      expect(uploadReview(s, EMPTY, NOW).labFiles[0], day).toMatchObject({ needsDay: true, needsColumnDay: true });
+      expect(days(s), day).toEqual([]);
+    }
+    // The test's day the person picked is the report's day: a column pick after it waits too.
+    const picked = choose({ ...NO_CHOICES, testDay: '2026-09-01' }, { columnDay: COLUMN, day: '2026-09-10' }, NOW, prev())!;
+    expect(uploadReview(open(prev(), picked), EMPTY, NOW).labFiles[0]).toMatchObject({ needsColumnDay: true });
+  });
+
+  it('an undated report: any real past day is taken until the test\'s day is set, then it must come before it', () => {
+    const undated: UnifiedExtractionResult = { ...prev(), reportDate: null, values: [core({ recordedAt: COLUMN })] };
+    const picked = choose(NO_CHOICES, { columnDay: COLUMN, day: '2026-10-05' }, NOW, undated)!;
+    expect(uploadReview(open(undated, picked), EMPTY, NOW).labFiles[0]).toMatchObject({ needsDay: false, needsColumnDay: false });
+    expect(days(open(undated, picked))).toEqual(['2026-10-05']);
+    const dated = choose(picked, { testDay: '2026-10-03' }, NOW, undated)!;
+    expect(uploadReview(open(undated, dated), EMPTY, NOW).labFiles[0]).toMatchObject({ needsDay: true, needsColumnDay: true });
+  });
+
   it('a waiting pick on a column whose values are all cleared holds up nothing', () => {
     const picked = choose({ ...NO_CHOICES, ticks: { v0: false } }, { columnDay: COLUMN, day: '2999-01-01' }, NOW, prev());
     expect(uploadReview(open(prev(), picked!), EMPTY, NOW).labFiles[0]).toMatchObject({ needsDay: false, needsColumnDay: false });

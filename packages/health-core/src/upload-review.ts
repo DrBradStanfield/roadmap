@@ -82,17 +82,18 @@ export function previousDay(pick: string | null, reportDay: string | null, now: 
  */
 function importFile(f: ReadFile, now: string, holderOf: (row: BulkRow) => string | undefined) {
   const { choices } = f.status;
-  // Each dated previous column's pick, once (US-13 AC24): a real past day moves the column's values; any other waits.
+  const day = validDay(choices.testDay ?? f.status.extraction.reportDate ?? undefined, { now });
+  // Each dated previous column's pick, once (US-13 AC24), by the undated column's rule (`previousDay`): a real past
+  // day before the report's (any real past day while the report has none) moves the column's values; any other waits.
   const moving = new Map<string, string>();
   const waiting = new Set<string>();
   for (const [printed, pick] of Object.entries(choices.columnDays ?? {})) {
     if (!validDay(printed, { now })) continue; // a printed day to come is never saved (`undatable`), whatever the pick
-    if (validDay(pick, { now })) moving.set(printed, pick);
+    if (previousDay(pick, day, now)) moving.set(printed, pick);
     else waiting.add(printed);
   }
   const extraction = withColumnDays(f.status.extraction, moving);
   const result = extraction as ImportFile['result'];
-  const day = validDay(choices.testDay ?? extraction.reportDate ?? undefined, { now });
   const undatedDay = previousDay(choices.previousDay, day, now);
   const offered = offeredValues(extraction).map(({ ref, value }) => ({ ref, own: value.recordedAt }));
   const ticked = offered.filter(({ ref }) => choices.ticks[ref] ?? true);
