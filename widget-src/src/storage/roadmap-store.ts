@@ -432,7 +432,9 @@ export class RoadmapStore {
       write: (ref, file) => (this.refuses(erase) ? Promise.reject(new Error('erase moved')) : this.host.store.writeDocument(ref, file)),
       mimeType: (file) => file.type || '',
       onWriteError: (error) => {
-        if (this.refuses(erase) || error instanceof WritesStoppedError) return; // a refusal, not a failure (A15)
+        // A refusal, not a failure (A15): not reported. saveDocuments still counts it `unstored` (US-14 AC12);
+        // an erase refusal then fails the commit below, which drops that count.
+        if (this.refuses(erase) || error instanceof WritesStoppedError) return;
         console.warn('Document file not stored');
         Sentry.captureException(recordFailure(error, 'Document file not stored'), {
           tags: { area: 'cloud-sync', op: 'write-document', backend: this.host.store.id },
