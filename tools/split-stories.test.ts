@@ -395,6 +395,10 @@ describe('writing into a repo that already holds parts (the PR 3 rebase path)', 
   beforeAll(() => {
     template = repo = mkdtempSync(join(tmpdir(), 'split-stories-tmpl-'));
     run('init', '-q', '-b', 'main');
+    // No auto-maintenance. Each commit starts a detached `git maintenance run --auto` that holds
+    // .git/objects/maintenance.lock after the commit returns; the cpSync below listed that file, the child
+    // removed it, and the copy failed with ENOENT on .git/objects (CI run 44860674548). Copies inherit this.
+    run('config', 'maintenance.auto', 'false');
     mkdirSync(join(repo, 'docs'));
     writeFileSync(join(repo, 'docs/user-stories.md'), text);
     commit('base');
