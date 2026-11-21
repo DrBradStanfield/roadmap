@@ -28,6 +28,10 @@
  *   non-write; L6 the repeat-Save probe runs after every Save (on a record another writer changed, it must not refuse).
  *   B now reads the blockers from the candidate (no KNOWN case left): mutation, the column blocker kept for a value
  *   refused on any day (`needsColumnDay = ticked.some((v) => v.waits)`), fails it.
+ * Web list PR 1d (mutations named in upload-list.test-helpers.ts): L9 each row's reasons are the read's, attention is
+ *   exactly unsure, error or entered, and every row with attention says why (KNOWN confidenceUnworded noted); L10 the
+ *   heading counts the rows with attention and Show all the rest; L11 each row's name is its test, file and day, distinct
+ *   but where three share them (KNOWN thirdReadingShared noted), and a Replace is named with its day.
  * The gaps it found (owner rulings 2026-11-20) are pinned, fixed, in upload-view.gaps.test.ts.
  * Synthetic values, names and hashes only.
  */
@@ -50,7 +54,7 @@ import { requestFlags, type UploadPlatform } from './upload-rules';
 import { uploadSave, type UploadSaveIO } from './upload-save';
 import { uploadView, type UploadView, type ValueRow } from './upload-view';
 import { uploadList, type UploadList } from './upload-list';
-import { checkExistence, checkInputKind, checkInputs, checkKeysKept, checkNoSilentNonWrite, checkOneQuantity, checkTypedBlocks, holdsText, keepInputs, type PersonInputs } from './upload-list.test-helpers';
+import { checkExistence, checkHeading, checkInputKind, checkInputs, checkKeysKept, checkNames, checkNoSilentNonWrite, checkOneQuantity, checkTypedBlocks, checkWhy, holdsText, keepInputs, type PersonInputs } from './upload-list.test-helpers';
 import type { TypedText } from './upload-choices';
 import { FIX_ERRORS_TEXT, UPLOAD_TEXT } from './upload-text';
 import { IMPORT_REVIEW_TEXT, importRow, isOfferedRef, offeredValues, PROBE_DAY, valueAt } from './import-review';
@@ -245,6 +249,9 @@ function checkView(s: UploadState, record: RoadmapFile, setup: Setup, note: Note
   checkInputKind(s, review, list, NOW, fail);
   checkOneQuantity(s, review, view, list, unitOf, fail);
   checkNoSilentNonWrite(s, review, list, fail);
+  checkWhy(s, review, list, note, fail);
+  checkHeading(list, fail);
+  checkNames(s, review, list, NOW, note, fail);
   const rows = allRows(view);
   // P1: each offered value once, as a row or a not-saved line, or behind its report's day question.
   const seen = new Map<string, number>();
@@ -1049,6 +1056,7 @@ describe('upload-view property: the list view against Save (US-52 AC8c, US-13 AC
       merges: 0, replaceLost: 0, changedBeforeTap: 0, freedBeforeCommit: 0, skipped: 0, unstored: 0, archiveOnly: 0, copies: 0, alreadySaved: 0, futureDay: 0, undatedPrevious: 0, pressureRefused: 0, limitTicked: 0, labAsCore: 0, edited: 0, noOriginalSaved: 0, columnMoved: 0, columnNotBefore: 0,
       k1DayChanges: 0, k4Unpromised: 0, conventionalShown: 0, blockedAtColumn: 0, blockedAtRowAndDay: 0,
       typedRefused: 0, typedSavedAfter: 0, sameNamed: 0, listAlreadyInRecord: 0, listWaits: 0, listSameDayTicked: 0, listCopyError: 0, unsentBlocked: 0, tickOnHeld: 0, inputNone: 0,
+      listReasons: 0, listHeading: 0, anotherReading: 0, replaceNamed: 0,
     };
     for (let seed = 1; seed <= SEEDS; seed++) {
       const r = mulberry32(seed);
@@ -1088,6 +1096,10 @@ describe('upload-view property: the list view against Save (US-52 AC8c, US-13 AC
         if (list && run.s.phase === 'open') {
           if ('files' in run.s && new Set(run.s.files.map((f) => f.name)).size < run.s.files.length && list.rows.length) reach.sameNamed++;
           if (list.rows.some((r) => r.status.kind === 'alreadyInRecord')) reach.listAlreadyInRecord++;
+          if (list.rows.some((r) => r.reasons.length)) reach.listReasons++;
+          if (list.check) reach.listHeading++;
+          if (list.rows.some((r) => r.name.endsWith(', another reading'))) reach.anotherReading++;
+          if (list.rows.some((r) => r.replaceLabel)) reach.replaceNamed++;
           if (list.rows.some((r) => r.status.kind === 'waits')) reach.listWaits++;
           if (list.rows.some((r) => r.status.kind === 'sameDay' && r.ticked)) reach.listSameDayTicked++;
           if (list.rows.some((r) => r.status.kind === 'error' && r.error !== null && !allRows(v!).some((x) => x.fileId === r.fileId && x.ref === r.ref && x.error))) reach.listCopyError++;

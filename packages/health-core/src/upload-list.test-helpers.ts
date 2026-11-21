@@ -4,13 +4,15 @@
 import { commaQuestion } from './parseNumber';
 import { cellRange, rangeMessage, type CellUnit } from './cell-unit';
 import { ENTER_A_NUMBER, NUMERIC_SYNTAX_GUIDANCE, typedCommit } from './cell-input';
-import { offeredValues, type ClassifiedValue, type OfferedValue } from './import-review';
+import { IMPORT_REVIEW_TEXT, offeredValues, type ClassifiedValue, type OfferedValue } from './import-review';
 import { UNDATED_PREVIOUS } from './lab-extraction';
+import { validDay } from './record-edits';
 import { rangeFault, UNIT_DEFS, type MetricType } from './units';
 import { choose, type ChoiceChange, type TypedText } from './upload-choices';
 import type { UploadState } from './upload-flow';
 import type { UploadList } from './upload-list';
 import type { UploadReview } from './upload-review';
+import { longDate, REVIEW_CELL_TEXT } from './upload-text';
 import type { UploadView } from './upload-view';
 
 type Fail = (prop: string, msg: string) => never;
@@ -223,4 +225,80 @@ export function checkNoSilentNonWrite(s: UploadState, review: UploadReview, list
 export function checkKeysKept(before: UploadList, after: UploadList, fail: Fail) {
   const keys = (l: UploadList) => l.rows.map((r) => `${r.key} ${r.section}`).join(',');
   if (keys(before) !== keys(after)) fail('L1', `a choice changed the rows: ${keys(before)} -> ${keys(after)}`);
+}
+
+/** What the person entered in a row, read from the choices alone: a tick set, Replace chosen, an edit, held text. */
+const entered = (st: Read, ref: string) => st.choices.ticks[ref] !== undefined || st.choices.replace[ref] !== undefined
+  || st.choices.edits[ref] !== undefined || st.choices.typed?.[ref] !== undefined;
+
+/**
+ * L9 why (web list PR 1d). Each row's `reasons` are the extraction's own: its question, then the guessed-unit note
+ * (`REVIEW_CELL_TEXT.checkUnit`). A row needs attention exactly when the review is unsure of it for a reason, it has an
+ * error, or the person entered something in it (read from the choices); and every such row says why: a caption, a reason,
+ * an error, or what the person entered. A value unsure only for its read's confidence has no words yet: KNOWN
+ * confidenceUnworded (noted, Needs Brad). Mutations: `reasons: []` fails it on the first question; `attention` without
+ * `touched` fails it on the first cleared tick.
+ */
+export function checkWhy(s: UploadState, review: UploadReview, list: UploadList, note: (gap: string) => void, fail: Fail) {
+  const classified = new Map(review.classification.values.map((v) => [`${v.file}:${v.ref}`, v]));
+  const byKey = new Map(list.rows.map((r) => [r.key, r]));
+  for (const { lf, i, st } of labReads(s, review)) {
+    for (const at of offeredValues(st.extraction)) {
+      const row = byKey.get(`${lf.fileId}:${at.ref}`);
+      const v = classified.get(`${i}:${at.ref}`);
+      if (!row || !v) continue;
+      const words = [at.value.question, at.kind === 'core' && at.value.unitGuessed ? REVIEW_CELL_TEXT.checkUnit : undefined].filter(Boolean);
+      if (JSON.stringify(row.reasons) !== JSON.stringify(words)) fail('L9', `${row.key} reasons ${JSON.stringify(row.reasons)}, read ${JSON.stringify(words)}`);
+      const person = entered(st, at.ref);
+      const unsure = v.group === 'unsure' && v.reasons.length > 0;
+      if (row.attention !== (unsure || row.error !== null || person)) fail('L9', `${row.key} attention ${row.attention}; unsure ${unsure}, error ${row.error !== null}, entered ${person}`);
+      if (!row.attention || row.caption || row.reasons.length || row.error || person) continue;
+      if (v.group === 'unsure' && v.reasons.every((x) => x === 'confidence')) { note('confidenceUnworded'); continue; }
+      fail('L9', `${row.key} needs attention and says nothing (${row.status.kind}, ${JSON.stringify(v)})`);
+    }
+  }
+}
+
+/**
+ * L10 heading (web list PR 1d). The rows shown before "Show all" are those with `attention`; the heading counts them
+ * (`checkTitle`), Show all counts the rest, and none is left out. Mutation: the heading counted from the review's unsure
+ * values (`review.classification.values.filter((v) => v.group === 'unsure').length`, the view's count) fails it on the
+ * first touched or held-text row the review is sure of.
+ */
+export function checkHeading(list: UploadList, fail: Fail) {
+  const loud = list.rows.filter((r) => r.attention).length;
+  const quiet = list.rows.length - loud;
+  if (list.check !== (loud ? IMPORT_REVIEW_TEXT.checkTitle(loud) : null)) fail('L10', `heading ${JSON.stringify(list.check)} over ${loud} rows with attention`);
+  if (list.showAll !== (quiet ? IMPORT_REVIEW_TEXT.showAll(quiet) : null)) fail('L10', `Show all ${JSON.stringify(list.showAll)} over ${quiet} quiet rows`);
+}
+
+const AGAIN = ', another reading';
+/**
+ * L11 names (web list PR 1d; US-13 AC10). Each row's name is "<test> value from <file name>", then ", <day in words>" when
+ * the review files it on a real past day, nothing more while it has no day; a later row with the same words adds
+ * ", another reading". Names are distinct but where three or more rows share the words: KNOWN thirdReadingShared (noted,
+ * Needs Brad). A row with a Replace and a day names its Replace with that day. Mutations: `again` always false fails it
+ * on the first two LDLs of one report and day; the file name left out of `from` fails it on the first row.
+ */
+export function checkNames(s: UploadState, review: UploadReview, list: UploadList, now: string, note: (gap: string) => void, fail: Fail) {
+  const byKey = new Map(list.rows.map((r) => [r.key, r]));
+  const bases = new Map<string, string[]>();
+  for (const { lf, st } of labReads(s, review)) {
+    const file = ('files' in s ? s.files : []).find((f) => f.id === lf.fileId)!;
+    for (const at of offeredValues(st.extraction)) {
+      const row = byKey.get(`${lf.fileId}:${at.ref}`);
+      if (!row) continue;
+      const base = row.name.endsWith(AGAIN) ? row.name.slice(0, -AGAIN.length) : row.name;
+      const filed = lf.days[at.ref] ?? null;
+      const day = filed === null ? null : validDay(filed, { now })?.slice(0, 10);
+      const want = `${row.label} value from ${file.name}`;
+      if (day === null ? base !== want : day ? base !== `${want}, ${longDate(day)}` : !base.startsWith(want)) fail('L11', `${row.key} named ${JSON.stringify(row.name)}, from ${JSON.stringify(want)} on ${day}`);
+      bases.set(base, [...(bases.get(base) ?? []), row.name]);
+      if (row.replaces && day && row.replaceLabel !== REVIEW_CELL_TEXT.replaceLabel(row.label, longDate(day)!)) fail('L11', `${row.key} Replace named ${JSON.stringify(row.replaceLabel)}`);
+    }
+  }
+  for (const [base, names] of bases) {
+    if (names.length >= 3) { note('thirdReadingShared'); continue; }
+    if (names.length === 2 && names.filter((n) => n === base).length !== 1) fail('L11', `two rows named ${JSON.stringify(names)}`);
+  }
 }

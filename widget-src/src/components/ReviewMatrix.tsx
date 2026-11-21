@@ -3,7 +3,7 @@ import { type LpaUnit, type UnitSystem, type MetricType, UNIT_DEFS, hasUnitChoic
 import { METRIC_LABELS, METRIC_TO_FIELD } from '@roadmap/health-core/mappings';
 import { labNameForUnit, resolveLabCatalogEntry, canonicalLabRow, labCountFault, labPlausibleBound } from '@roadmap/health-core/lab-catalog';
 import { withComparator, type Comparator } from '@roadmap/health-core/lab-limits';
-import { REVIEW_CELL_TEXT } from '@roadmap/health-core/upload-text';
+import { DAY_CONTROL_TEXT, REVIEW_CELL_TEXT } from '@roadmap/health-core/upload-text';
 import { labUnitRefusalLine } from '@roadmap/health-core/lab-series';
 import { rowTarget } from '@roadmap/health-core/row-target';
 import { useMatrixScrollSync } from '../lib/useMatrixScrollSync';
@@ -136,7 +136,7 @@ function MatrixColumnHeader({ col, set, hint, onDateChange }: { col: MatrixColum
       date={col.date.undated ? '' : fullDateToIso(col.date)}
       needsDay={!set}
       placeholder={hint}
-      ariaLabel={col.undated ? 'Choose the date of the previous results' : 'Choose column date'}
+      ariaLabel={col.undated ? DAY_CONTROL_TEXT.previous : DAY_CONTROL_TEXT.column}
       onChange={onChange}
     />
   );

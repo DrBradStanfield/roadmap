@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, useRef, useId, type MutableRefObject, type ReactNode } from 'react';
-import { FIX_ERRORS_TEXT } from '@roadmap/health-core/upload-text';
+import { DAY_CONTROL_TEXT, FIX_ERRORS_TEXT } from '@roadmap/health-core/upload-text';
 import { type UnitSystem, type MetricType, UNIT_DEFS } from '@roadmap/health-core/units';
 import { healthInputSchema } from '@roadmap/health-core/validation';
 import { METRIC_TO_FIELD } from '@roadmap/health-core/mappings';
@@ -17,7 +17,6 @@ import { ReviewFileSections } from './ReviewFileSections';
 import { NotSavedLine, SureLine, saveLabel, useDisclosure } from './ReviewOverview';
 import { useReviewDocuments } from '../hooks/useReviewDocuments';
 import { type FullDate, parseReportDate, columnDay, getDaysInMonth, buildRecordedAt, fullDateToIso } from '../lib/review-dates';
-import { longDate } from '@roadmap/health-core/upload-text';
 import type { FileResult, ReviewDecisions } from '../lib/upload-pipeline';
 import { type DateKey, type MatrixColumn, type ExistingCell, type EditableMatrixCell, type CoreCellView, sameValue, editId, replaceKey, buildMatrixModel } from '../lib/review-matrix';
 
@@ -309,10 +308,7 @@ export function ReviewTable({
   const pickHints = useMemo(() => new Map(matrix.columns.flatMap(col => {
     if (!col.undated) return [];
     const { printedMonth: month } = col.undated;
-    const report = columnDay(fileDates[col.undated.fi]);
-    const inMonth = month ? ` in ${longDate(month)}` : '';
-    const before = report ? ` before ${longDate(report)}` : '';
-    return [[col.dateKey, `Pick a day${inMonth}${before}`] as const];
+    return [[col.dateKey, DAY_CONTROL_TEXT.pickDay(month ?? null, columnDay(fileDates[col.undated.fi]))] as const];
   })), [matrix.columns, fileDates]);
 
   /** A column with no date isn't saveable. Existing-history columns always
