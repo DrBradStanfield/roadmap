@@ -11,7 +11,7 @@ import { DAY_NOT_HAPPENED } from './lab-series';
 import type { RoadmapFile } from './roadmap-file';
 import type { CellUnit } from './cell-unit';
 import { NO_CHOICES, type ChoiceChange } from './upload-choices';
-import { transition, type UploadState } from './upload-flow';
+import { initialUpload, transition, type UploadState } from './upload-flow';
 import { uploadList } from './upload-list';
 import { uploadListPage } from './upload-list-page';
 import { uploadSavePlan } from './upload-plan';
@@ -59,19 +59,22 @@ describe('1. a row\'s unit control (US-13 AC26, US-02)', () => {
     ]);
   });
 
-  it('held text keeps the unit it was typed in beside it, whatever the row now shows (AC5)', () => {
-    const s = chose(open([labRead('f0', { values: [core({})] })]), 'f0', { typed: 'v0', text: 'abc', unit: 'conventional' });
+  // Owner ruling on PR 1951: a row holding text offers no unit control (fix or clear the text first); the test's other
+  // rows keep theirs, and the held row's label stays at the unit typed.
+  it('held text keeps the unit it was typed in beside it and offers no toggle; another row of the test keeps its own (AC5)', () => {
+    const s = chose(open([labRead('f0', { values: [core({}), core({ valueSI: 2.4, displayValue: 2.4, recordedAt: '2026-10-01' })] })]), 'f0', { typed: 'v0', text: 'abc', unit: 'conventional' });
     for (const shows of ['si', 'conventional'] as const) {
-      const row = list(s, () => shows).rows[0];
+      const [row, other] = list(s, () => shows).rows;
       expect(row.typed).toEqual({ text: 'abc', unit: 'conventional' });
       expect(row.unit).toMatchObject({ label: 'mg/dL', typeIn: 'conventional' });
-      expect(row.unit.toggle).toBe(shows === 'si' ? 'conventional' : 'si');
+      expect(row.unit).toMatchObject({ toggle: null, choices: null });
+      expect(other.unit).toEqual({ label: shows === 'si' ? 'mmol/L' : 'mg/dL', typeIn: shows, toggle: shows === 'si' ? 'conventional' : 'si', choices: null });
     }
   });
 
   it('held Lp(a) text typed in mg/dL keeps mg/dL beside it while the person reads nmol/L', () => {
     const s = chose(open([labRead('f0', { values: [lpa()] })]), 'f0', { typed: 'v0', text: '1,2,3', unit: 'mg/dL' });
-    expect(list(s, () => 'si').rows[0].unit).toMatchObject({ label: 'mg/dL', typeIn: 'mg/dL' });
+    expect(list(s, () => 'si').rows[0].unit).toEqual({ label: 'mg/dL', typeIn: 'mg/dL', toggle: null, choices: null });
   });
 });
 
@@ -145,5 +148,27 @@ describe('4. the Save and close buttons\' words (moved from ReviewTable.tsx and 
 
   it('the words are the web\'s, byte for byte', () => {
     expect([UPLOAD_TEXT.saving, UPLOAD_TEXT.cancel, UPLOAD_TEXT.close]).toEqual(['Saving...', 'Cancel', 'Close']);
+  });
+
+  // Owner ruling on PR 1951: one source per phase. While saving the review's close button still shows, disabled
+  // (ReviewTable.tsx:471-473); once done, the done screen's own button.
+  it('close in every phase', () => {
+    const review = uploadReview(s, EMPTY, NOW);
+    const reviewed = uploadView(s, EMPTY, NOW, review, false).reviewed;
+    const saving = transition(s, { type: 'saveStarted', reviewed }).state;
+    const outcome = { values: 1, documents: 0, archived: 0, unstored: 0 } as never;
+    const phases: Array<[UploadState, string]> = [
+      [initialUpload('web'), 'Close'],
+      [{ ...s, phase: 'consent' } as UploadState, 'Cancel'],
+      [s, 'Cancel'],
+      [open([labRead('f0', {})]), 'Close'],
+      [saving, 'Cancel'],
+      [{ ...s, phase: 'saveFailed', attempt: 1, message: 'The cloud refused the write.' }, 'Cancel'],
+      [{ ...s, phase: 'done', outcome }, 'Done'],
+      [{ ...s, phase: 'failed', refused: 'server' }, 'Cancel'],
+      [{ ...open([labRead('f0', {})]), phase: 'failed', refused: 'server' }, 'Close'],
+    ];
+    expect(phases.map(([state]) => [state.phase, page(state).close])).toEqual(phases.map(([state, close]) => [state.phase, close]));
+    expect(page({ ...s, phase: 'done', outcome }).close).toBe(uploadView({ ...s, phase: 'done', outcome }, EMPTY, NOW, review, false).doneLabel);
   });
 });

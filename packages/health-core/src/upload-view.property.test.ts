@@ -256,13 +256,9 @@ function checkView(s: UploadState, record: RoadmapFile, setup: Setup, note: Note
   checkDayNames(s, list, note, fail);
   checkHeading(s, review, list, fail);
   checkNames(s, review, list, NOW, note, fail);
-  // L13 across a unit toggle: the same state read in the person's units, then, while text is held (the one place the
-  // label does not follow the toggle), in the other system. Gated so the run stays inside CI's time budget.
+  // L13 in the person's units; across unit toggles on its own seeds (upload-list.units.property.test.ts), so this run
+  // stays inside CI's time budget.
   checkUnits(s, list, unitOf, fail);
-  if (holdsText(s)) {
-    const toggled = () => (setup.system === 'si' ? 'conventional' : 'si') as UnitSystem;
-    checkUnits(s, uploadList(s, record, NOW, review, toggled), toggled, fail);
-  }
   checkDayWords(s, review, list, NOW, fail);
   const page = uploadListPage(s, record, NOW, review, cloud);
   checkLetters(s, view, page, fail);
@@ -803,8 +799,11 @@ class Run {
     this.record = file;
     this.s = transition(this.s, { type: 'saved', run: this.s.run, attempt: (this.s as { attempt: number }).attempt, outcome }).state;
     if (this.s.phase !== 'done') fail('P3', 'saved but not done');
-    const done = uploadView(this.s, file, NOW, uploadReview(this.s, file, NOW), this.setup.cloud);
+    const doneReview = uploadReview(this.s, file, NOW);
+    const done = uploadView(this.s, file, NOW, doneReview, this.setup.cloud);
     checkText(done);
+    // L16 once done: close is the done screen's own label.
+    checkSaveBar(this.s, doneReview, done, uploadListPage(this.s, file, NOW, doneReview, this.setup.cloud), fail);
     // US-14 AC13: originals kept and nothing else written heads with the kept line alone.
     const keptOnly = outcome.archived > 0 && !outcome.values && !outcome.documents;
     if (done.done?.line !== (keptOnly ? UPLOAD_TEXT.archivedLine(outcome.archived) : UPLOAD_TEXT.savedLine(outcome.values, outcome.documents))) fail('P3', 'done line');
@@ -1089,7 +1088,7 @@ describe('upload-view property: the list view against Save (US-52 AC8c, US-13 AC
       k1DayChanges: 0, k4Unpromised: 0, conventionalShown: 0, blockedAtColumn: 0, blockedAtRowAndDay: 0,
       typedRefused: 0, typedSavedAfter: 0, sameNamed: 0, listAlreadyInRecord: 0, listWaits: 0, listSameDayTicked: 0, listCopyError: 0, unsentBlocked: 0, tickOnHeld: 0, inputNone: 0,
       listReasons: 0, listHeading: 0, anotherReading: 0, replaceNamed: 0, listCheckNote: 0, editUnitKept: 0, twoColumns: 0, zipMembers: 0, longName: 0, touchedUncounted: 0,
-      heldOtherUnit: 0, dayNotHappened: 0, dayLimits: 0, lettersShown: 0, closeWord: 0, savingWord: 0,
+      heldOtherUnit: 0, heldBesideToggle: 0, dayNotHappened: 0, dayLimits: 0, lettersShown: 0, closeWord: 0, savingWord: 0,
     };
     for (let seed = 1; seed <= SEEDS; seed++) {
       const r = mulberry32(seed);
@@ -1143,6 +1142,8 @@ describe('upload-view property: the list view against Save (US-52 AC8c, US-13 AC
           // Web list PR 1e: held text in a unit the person no longer reads (L13); a pick that waits, by each of its words (L14);
           // a letter's text previewed (L15); the close button saying Close (L16).
           if (list.rows.some((r) => r.typed?.unit && r.typed.unit !== run.setup.system)) reach.heldOtherUnit++;
+          // A row holding text (no toggle) beside a row of the same test that keeps its toggle (L13, owner ruling on PR 1951).
+          if (list.rows.some((r) => r.typed && r.shown.cell && list.rows.some((o) => o !== r && o.unit.toggle && o.shown.cell?.metric === r.shown.cell!.metric))) reach.heldBesideToggle++;
           if (list.days.some((d) => d.chosen && !d.day && d.hint === DAY_NOT_HAPPENED)) reach.dayNotHappened++;
           if (list.days.some((d) => d.chosen && !d.day && d.hint !== DAY_NOT_HAPPENED)) reach.dayLimits++;
           if (run.last!.page.letters.some((l) => l.text)) reach.lettersShown++;

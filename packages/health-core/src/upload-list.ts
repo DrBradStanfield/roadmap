@@ -63,7 +63,9 @@ export interface ListRow {
  * typed in (`ChoiceChange` typed `unit`), the same one, so the label never names a unit the text is not read in; null for
  * a lab or a core metric the units table lacks, which take none. `toggle`: the unit one press of its chip shows the test in,
  * the other of its two from the one the person reads (`unitOf`); null where the unit is fixed (mmHg, PSA), for Lp(a), a lab
- * or an unknown metric. `choices`: Lp(a)'s three units, the one shown being `shown.cell.unit`; null for any other row.
+ * or an unknown metric. `choices`: Lp(a)'s three units, the one shown being `shown.cell.unit`; null for any other row. While
+ * the row holds text, neither: the person fixes or clears the text first, since a toggle would change nothing on that row
+ * (owner ruling on PR 1951); other rows of the test keep theirs.
  */
 export interface RowUnit { label: string; typeIn: CellUnit | null; toggle: CellUnit | null; choices: readonly LpaUnit[] | null }
 
@@ -74,8 +76,8 @@ function rowUnit(at: OfferedValue, typed: TypedText | null, shown: ShownValue, u
   const typeIn = typed?.unit ?? reads;
   return {
     label: cellLabel(metric, typeIn), typeIn,
-    toggle: metric !== 'lpa' && hasUnitChoice(metric) ? (reads === 'si' ? 'conventional' : 'si') : null,
-    choices: metric === 'lpa' ? LPA_UNITS : null,
+    toggle: !typed && metric !== 'lpa' && hasUnitChoice(metric) ? (reads === 'si' ? 'conventional' : 'si') : null,
+    choices: !typed && metric === 'lpa' ? LPA_UNITS : null,
   };
 }
 

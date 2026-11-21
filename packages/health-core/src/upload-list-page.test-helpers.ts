@@ -25,10 +25,13 @@ const labelOf = (metric: MetricType, unit: CellUnit) => (unit === 'si' || unit =
  * the held text's own (`typed.unit`) while it holds text, else the one the person reads (`unitOf`), so across any sequence
  * of unit toggles the label, the commit's unit and `typed.unit` agree (US-13 AC5); held text's error comes from the text
  * alone and names no unit (L4 checks its words). Its toggle is the other system where the test's two labels differ and it
- * is not Lp(a); Lp(a) offers its three units. A lab or an unknown metric shows its own unit and offers nothing. The run
- * checks every state in the person's units and again in the other system, as after a toggle. Mutation: `label: shown.unit`
- * (the row's display unit) fails it on held text typed in a unit the person no longer reads (seed 35: "L13: f0:v0 shows
- * unit "mg/dL" (si), held text typed in si").
+ * is not Lp(a); Lp(a) offers its three units; a row holding text offers neither, while the test's other rows keep theirs
+ * and that row's label stays at `typed.unit` (owner ruling on PR 1951). A lab or an unknown metric shows its own unit and
+ * offers nothing. upload-view.property.test.ts checks it in the person's units; upload-list.units.property.test.ts across
+ * unit toggles on its own seeds. Mutations: `label: shown.unit` (the row's display unit) fails it on held text typed in a
+ * unit the person no longer reads (units file, seed 1: "L13: f0:v0 shows unit "mg/dL" (si), held text typed in si"); a
+ * toggle kept on a row holding text (`!typed &&` dropped) fails it (units file, seed 1, and the main run, seed 35: "L13:
+ * f0:v0 toggles to conventional, want null (holds text)").
  */
 export function checkUnits(s: UploadState, list: UploadList, unitOf: (m: MetricType) => CellUnit, fail: Fail) {
   const byKey = new Map(list.rows.map((r) => [r.key, r]));
@@ -46,10 +49,11 @@ export function checkUnits(s: UploadState, list: UploadList, unitOf: (m: MetricT
       const typed = st.choices.typed?.[at.ref];
       const typeIn = typed?.unit ?? unitOf(metric);
       if (row.unit.typeIn !== typeIn || row.unit.label !== labelOf(metric, typeIn)) fail('L13', `${row.key} shows unit ${JSON.stringify(row.unit.label)} (${row.unit.typeIn}), ${typed ? `held text typed in ${typed.unit}` : `read in ${unitOf(metric)}`}`);
-      const two = metric !== 'lpa' && UNIT_DEFS[metric].label.si !== UNIT_DEFS[metric].label.conventional;
+      // A row holding text offers no unit control; every other row of the test keeps its own (owner ruling on PR 1951).
+      const two = !typed && metric !== 'lpa' && UNIT_DEFS[metric].label.si !== UNIT_DEFS[metric].label.conventional;
       const toggle = two ? (unitOf(metric) === 'si' ? 'conventional' : 'si') : null;
-      if (row.unit.toggle !== toggle) fail('L13', `${row.key} toggles to ${row.unit.toggle}, want ${toggle}`);
-      if (JSON.stringify(row.unit.choices) !== JSON.stringify(metric === 'lpa' ? LPA_UNITS : null)) fail('L13', `${row.key} choices ${JSON.stringify(row.unit.choices)}`);
+      if (row.unit.toggle !== toggle) fail('L13', `${row.key} toggles to ${row.unit.toggle}, want ${toggle}${typed ? ' (holds text)' : ''}`);
+      if (JSON.stringify(row.unit.choices) !== JSON.stringify(!typed && metric === 'lpa' ? LPA_UNITS : null)) fail('L13', `${row.key} choices ${JSON.stringify(row.unit.choices)}${typed ? ' (holds text)' : ''}`);
     }
   }
 }
@@ -94,13 +98,15 @@ export function checkLetters(s: UploadState, view: UploadView, page: ListPage, f
 /**
  * L16 save bar. Save says "Saving..." while saving, else the view's label; close says "Close" exactly when nothing is read
  * still, no offered value sure, unsure or waiting (ticked or cleared), and Save would write nothing, as the web's review
- * says it; else "Cancel". Mutations: close without the offered values (`inFlight(s) || !planIsEmpty(plan)`) fails it on
+ * says it; else "Cancel"; once done, the done screen's own label (`doneLabel`). Mutations: close without the offered values (`inFlight(s) || !planIsEmpty(plan)`) fails it on
  * a report with every value cleared (seed 4: "L16: close "Close" with values offered, 0 in flight, Save "Save 0 values"");
- * close from the plan alone fails it while files are read (seed 1: "close "Close" with no value offered, 3 in flight").
+ * close from the plan alone fails it while files are read (seed 1: "close "Close" with no value offered, 3 in flight");
+ * close once done by the review's rule (the `done` branch dropped) fails it at the done screen (seed 1, step 81: "L16:
+ * close "Cancel" with values offered, 0 in flight, Save "Save 0 values"").
  */
 export function checkSaveBar(s: UploadState, review: UploadReview, view: UploadView, page: ListPage, fail: Fail) {
   if (page.save !== (s.phase === 'saving' ? 'Saving...' : view.save.label)) fail('L16', `save says ${JSON.stringify(page.save)} in ${s.phase}`);
   const offered = review.classification.values.some((v) => isOfferedRef(v.ref) && ['sure', 'unsure', 'waiting'].includes(v.group));
   const nothing = !inFlight(s) && !offered && view.save.label === UPLOAD_TEXT.saveBoth(0, 0) && !view.documents;
-  if (page.close !== (nothing ? 'Close' : 'Cancel')) fail('L16', `close ${JSON.stringify(page.close)} with ${offered ? 'values offered' : 'no value offered'}, ${inFlight(s)} in flight, Save "${view.save.label}"`);
+  if (page.close !== (s.phase === 'done' ? view.doneLabel : nothing ? 'Close' : 'Cancel')) fail('L16', `close ${JSON.stringify(page.close)} with ${offered ? 'values offered' : 'no value offered'}, ${inFlight(s)} in flight, Save "${view.save.label}"`);
 }
