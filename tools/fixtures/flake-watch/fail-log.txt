@@ -1,0 +1,13 @@
+2026-11-21T03:22:44.5464445Z 
+2026-11-21T03:22:44.7388941Z  [32m✓[39m widget-src/src/upload-entry.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 3[2mms[22m[39m
+2026-11-21T03:22:44.7466171Z 
+2026-11-21T03:22:44.7466783Z [31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+2026-11-21T03:22:44.7467036Z 
+2026-11-21T03:22:44.7469543Z [41m[1m FAIL [22m[49m tools/split-stories.test.ts[2m > [22mwriting into a repo that already holds parts (the PR 3 rebase path)[2m > [22mPR 3: the first split on main, with no docs/stories/ yet, needs no flag
+2026-11-21T03:22:44.7475136Z [31m[1mError[22m: ENOENT, No such file or directory '/tmp/split-stories-repo-767v79/.git/objects'[39m
+2026-11-21T03:22:44.7476069Z [36m [2m❯[22m tools/split-stories.test.ts:[2m420:5[22m[39m
+2026-11-21T03:22:44.7603579Z     [90m418|[39m   [34mbeforeEach[39m(() [33m=>[39m {
+2026-11-21T03:22:44.7604255Z     [90m419|[39m     repo [33m=[39m [34mmkdtempSync[39m([34mjoin[39m([34mtmpdir[39m()[33m,[39m [32m'split-stories-repo-'[39m))[33m;[39m
+2026-11-21T03:22:44.7605081Z     [90m420|[39m     [34mcpSync[39m(template[33m,[39m repo[33m,[39m { recursive[33m:[39m [35mtrue[39m })[33m;[39m
+2026-11-21T03:22:44.7605740Z     [90m   |[39m     [31m^[39m
+2026-11-21T03:22:44.7606112Z     [90m421|[39m   })[33m;[39m
