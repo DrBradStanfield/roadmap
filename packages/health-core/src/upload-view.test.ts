@@ -153,12 +153,15 @@ describe('upload view: section 4 screens', () => {
 });
 
 describe('upload plan: documents and originals', () => {
-  it('a letter is saved by default with the person\'s fixes; a held metadata-only row gives the starting title and date', () => {
+  it('a letter is saved by default with the person\'s fixes; it starts from the reader\'s title and date, never a row the record holds for its bytes', () => {
+    // A metadata-only row for the same bytes that another writer added after the file was read (owner ruling on PR 1957,
+    // 2026-11-22; US-14 AC4): the card, and Save, keep the reader's answer.
     const held = documentRow({ documentType: 'clinic_letter', title: 'Held title', documentDate: '2026-09-01', contentMd: '', metadata: {}, sourceFileName: 'old.pdf' },
       { id: 'd1', contentHash: 'h-l', mimeType: '', addedAt: NOW });
     const record = { ...EMPTY, documents: [held] };
     const plain = planOf(open([read('l', letterX())]), record, NOW);
-    expect(plain.documents[0].fields).toMatchObject({ title: 'Held title', documentDate: '2026-09-01', documentType: 'clinic_letter', contentMd: '## Plan', sourceFileName: 'l.pdf' });
+    expect(plain.documents[0].fields).toMatchObject({ title: 'Cardiology letter', documentDate: '2026-10-20', documentType: 'clinic_letter', contentMd: '## Plan', sourceFileName: 'l.pdf' });
+    expect(planOf(open([read('l', letterX())]), EMPTY, NOW).documents).toEqual(plain.documents);
     const fixed = planOf(open([read('l', letterX(), { ...CHOICES, document: { title: 'Mine', kind: 'discharge_summary', date: null } })]), record, NOW);
     expect(fixed.documents[0].fields).toMatchObject({ title: 'Mine', documentType: 'discharge_summary', documentDate: null });
   });

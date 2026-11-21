@@ -39,6 +39,13 @@ export function letterDate(raw: string | null | undefined, now: string): { day: 
   return { day, month: !day && raw && /^\d{4}-\d{2}$/.test(raw) && validDay(`${raw}-01`, { now }) ? raw : null };
 }
 
+/** Where a read letter starts, before the person's fixes: the reader's title, day and month (`letterDate`), from its
+ *  answer in the upload state alone, never from the record, so the card, its box and what Save writes cannot part
+ *  (owner ruling on PR 1957, 2026-11-22; US-13 AC6, US-14 AC4). */
+export interface LetterStart { title: string; day: string | null; month: string | null }
+export const letterStart = (doc: { title: string; documentDate?: string | null }, now: string): LetterStart =>
+  ({ title: doc.title, ...letterDate(doc.documentDate, now) });
+
 /** The reader's screening type, when it named one in the screening table and the person is eligible for it: the box
  *  shows. Any other type gives no box. */
 export function screeningTypeShown(metadata: Record<string, unknown> | null | undefined, person: ScreeningPerson): string | null {
@@ -62,16 +69,16 @@ export function writeScreeningDates(file: RoadmapFile, dates: Iterable<readonly 
 export const screeningTickedByDefault = (person: ScreeningPerson): boolean => person.age !== undefined;
 
 /**
- * A letter's box, or null when it shows none. `raw`: the date the letter starts from (a held row's, else the reader's);
+ * A letter's box, or null when it shows none. `start`: where the letter starts (`letterStart`), as its card does;
  * `fixed`: the person's date fix, when they set or removed one (a day, or null), which drops a month-only date.
  * `ticked`: the person's tick, absent for the default.
  */
 export function screeningBox(
-  metadata: Record<string, unknown> | null | undefined, raw: string | null | undefined, fixed: string | null | undefined,
-  ticked: boolean | undefined, person: ScreeningPerson, now: string,
+  metadata: Record<string, unknown> | null | undefined, start: LetterStart, fixed: string | null | undefined,
+  ticked: boolean | undefined, person: ScreeningPerson,
 ): ScreeningBox | null {
   const type = screeningTypeShown(metadata, person);
   if (!type) return null;
-  const { day, month } = fixed !== undefined ? { day: fixed, month: null } : letterDate(raw, now);
-  return { type, key: `${type}_last_date`, date: day ?? month, ticked: ticked ?? screeningTickedByDefault(person) };
+  const date = fixed !== undefined ? fixed : start.day ?? start.month;
+  return { type, key: `${type}_last_date`, date, ticked: ticked ?? screeningTickedByDefault(person) };
 }

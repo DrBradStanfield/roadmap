@@ -48,8 +48,9 @@ const eligible = (type: string, p: ScreeningPerson) => {
 const RAW: Array<[string | null, string | null]> = [['2026-10-20', '2026-10-20'], ['2026-06', '2026-06'], ['2027-01-01', null], [null, null], ['junk', null]];
 /** Each date fix with what it writes: a past day, or removed. */
 const FIX: Array<[DocumentFix, string | null] | null> = [null, null, [{ date: '2026-09-09' }, '2026-09-09'], [{ date: null }, null]];
-/** A metadata-only row the record holds for a letter's bytes starts its card, and its box, from the row's date (US-14 AC4). */
+/** The dates a row the record holds for a letter's bytes carries: unlike any reader date, so a row that dated a box shows. */
 const HELD_DATE = '2026-05-05';
+const STORED_DATE = '2026-04-04';
 
 const letter = (type: string | null, raw: string | null): UnifiedExtractionResult => ({
   classification: 'scan_result', reportDate: null, values: [], additionalValues: [], unrecognized: [],
@@ -67,14 +68,12 @@ const cloud = (failing: Set<string>): UploadSaveIO<string> => {
     write: async (_ref, _bytes, id) => { if (failing.has(id)) throw new Error('refused'); },
   };
 };
-/** A row the record holds for these bytes: its original stored, or metadata-only (no original), dated or not. */
-type Held = 'stored' | 'dated' | 'undated';
-const heldDoc = (hash: string, kind: Held | boolean): FileDocument => {
-  const k: Held = kind === true ? 'stored' : kind === false ? 'dated' : kind;
-  return heldRow(hash, k);
-};
+/** A row the record holds for these bytes: its original stored, or metadata-only (no original); each dated or not. */
+type Held = 'stored' | 'storedDated' | 'dated' | 'undated';
+const HELD: Held[] = ['stored', 'storedDated', 'dated', 'undated'];
 const heldRow = (hash: string, k: Held): FileDocument => ({
-  id: `held-${hash}`, title: 'Held', type: 'scan_result', date: k === 'dated' ? HELD_DATE : null, fileRef: k === 'stored' ? 'docs/held.pdf' : '', contentHash: hash,
+  id: `held-${hash}`, title: 'Held', type: 'scan_result', date: k === 'dated' ? HELD_DATE : k === 'storedDated' ? STORED_DATE : null,
+  fileRef: k.startsWith('stored') ? 'docs/held.pdf' : '', contentHash: hash,
   mimeType: 'application/pdf', extractedText: '', addedAt: NOW, metadata: {}, sourceFileName: 'held.pdf',
 } as FileDocument);
 const field = (key: string) => key.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
@@ -102,7 +101,7 @@ const PEOPLE: ScreeningPerson[] = [{}, { age: 20 }, { age: 30 }, { age: 42, sex:
 describe('US-13 AC6: a letter\'s screening box, written by the shared Save (web only)', () => {
   it('over 800 seeded picks: the dates written are exactly the oracle\'s and the boxes the list page shows ticked, and a second Save changes nothing', async () => {
     // How often each case the properties name came up: every one must, or the seeds prove nothing about it.
-    const seen = { written: 0, unticked: 0, ineligible: 0, copy: 0, phone: 0, twoOfAType: 0, threeOfAType: 0, outsideTable: 0, heldOriginal: 0, heldDated: 0, heldUndated: 0, writeFailed: 0, monthOnly: 0, cloudOn: 0, cloudOff: 0 };
+    const seen = { written: 0, unticked: 0, ineligible: 0, copy: 0, phone: 0, twoOfAType: 0, threeOfAType: 0, outsideTable: 0, heldStored: 0, heldStoredDated: 0, heldDated: 0, heldUndated: 0, writeFailed: 0, monthOnly: 0, cloudOn: 0, cloudOff: 0 };
     for (let seed = 1; seed <= 800; seed++) {
       const r = mulberry32(seed);
       const pick = <T,>(xs: T[]) => xs[Math.floor(r() * xs.length)];
@@ -121,7 +120,7 @@ describe('US-13 AC6: a letter\'s screening box, written by the shared Save (web 
         const tick = pick([undefined, undefined, true, false]);
         // A copy of an earlier file in the pick (not shown, not saved), or bytes the record already holds.
         const hash = letters.length && r() < 0.15 ? pick(letters).hash : `h${i}`;
-        if (!held.has(hash) && r() < 0.25) held.set(hash, pick<Held>(['stored', 'dated', 'undated']));
+        if (!held.has(hash) && r() < 0.25) held.set(hash, pick(HELD));
         if (r() < 0.2) failing.add(`f${i}`);
         const document: DocumentFix = { ...(fix ? fix[0] : {}), ...(tick === undefined ? {} : { screening: tick }) };
         letters.push({ type, hash, rawDate, fix: fix ? fix[1] : undefined, tick, file: readFile(`f${i}`, hash, letter(type, raw), document) });
@@ -130,8 +129,9 @@ describe('US-13 AC6: a letter\'s screening box, written by the shared Save (web 
       const perType = new Map<string, number>();
       letters.forEach(({ type, hash, rawDate, fix, tick, file: f }, i) => {
         const shown = letters.findIndex((l) => l.hash === hash) === i;
-        // The person's fix; else a metadata-only held row's date when it has one; else the reader's day or month.
-        const date = fix !== undefined ? fix : held.get(hash) === 'dated' ? HELD_DATE : rawDate;
+        // US-13 AC6: the person's date fix, else the date the reader gave (a day, or a month alone). A row the record
+        // holds for the same bytes, stored or metadata-only, dated or not, never dates the box (owner ruling 2026-11-22).
+        const date = fix !== undefined ? fix : rawDate;
         const ticked = tick ?? (person?.age !== undefined);
         const rest = Boolean(type && date && ticked && person);
         if (platform === 'web' && rest && shown && eligible(type!, person!)) {
@@ -139,7 +139,8 @@ describe('US-13 AC6: a letter\'s screening box, written by the shared Save (web 
           perType.set(type!, count);
           if (count === 2) seen.twoOfAType++;
           if (count === 3) seen.threeOfAType++;
-          if (held.get(hash) === 'stored') seen.heldOriginal++;
+          if (held.get(hash) === 'stored') seen.heldStored++;
+          if (held.get(hash) === 'storedDated') seen.heldStoredDated++;
           if (held.get(hash) === 'dated') seen.heldDated++;
           if (held.get(hash) === 'undated') seen.heldUndated++;
           if (date!.length === 7) seen.monthOnly++;
@@ -168,11 +169,11 @@ describe('US-13 AC6: a letter\'s screening box, written by the shared Save (web 
     for (const [name, n] of Object.entries(seen)) expect(n, name).toBeGreaterThan(3);
   });
 
-  it('a letter whose bytes the record holds, with or without the original, still writes its ticked date (as the web\'s own Save does)', async () => {
-    for (const stored of [true, false]) {
-      const record = { ...EMPTY, documents: [heldDoc('ha', stored)] };
+  it('a letter whose bytes the record holds, with or without the original, dated or not, still writes its ticked date: the reader\'s', async () => {
+    for (const k of HELD) {
+      const record = { ...EMPTY, documents: [heldRow('ha', k)] };
       const { file, outcome } = await save(saving('web', [readFile('a', 'ha', letter('colorectal', '2026-10-20'), {})]), record, { age: 60 });
-      expect(written(file, 'colorectal_last_date'), String(stored)).toBe(stored ? '2026-10-20' : HELD_DATE);
+      expect(written(file, 'colorectal_last_date'), k).toBe('2026-10-20');
       expect(outcome.screenings).toBe(1);
     }
   });
