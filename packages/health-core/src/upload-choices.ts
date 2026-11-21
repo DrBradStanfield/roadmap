@@ -5,6 +5,7 @@
  * Replace on a conflict, an edited value, a document's title, kind and date.
  */
 import { UNDATED_PREVIOUS, type UnifiedExtractionResult } from './lab-extraction';
+import { offeredValues } from './import-review';
 import { validDay } from './record-edits';
 
 /** A document's corrections before Save (design Q3 (a)). `date` null: the person removed it. */
@@ -41,13 +42,13 @@ export function documentDate(date: string | null, now: string): string | null | 
 
 const without = <T,>(r: Record<string, T>, key: string): Record<string, T> => Object.fromEntries(Object.entries(r).filter(([k]) => k !== key));
 
+/** A value cleared: unticked, and its Replace dropped, since a Replace selects its value. */
+export const untick = (c: FileChoices, ref: string): FileChoices => ({ ...c, ticks: { ...c.ticks, [ref]: false }, replace: without(c.replace, ref) });
+
 /** The refs a day change moves: values on the test's day (no day of their own), or in the undated previous column. */
 function movedRefs(x: Pick<UnifiedExtractionResult, 'values' | 'additionalValues'>, column: 'test' | 'previous'): string[] {
   const on = (own?: string) => (column === 'test' ? own === undefined : own === UNDATED_PREVIOUS);
-  return [
-    ...(x.values ?? []).flatMap((v, i) => (on(v.recordedAt) ? [`v${i}`] : [])),
-    ...(x.additionalValues ?? []).flatMap((v, i) => (on(v.recordedAt) ? [`a${i}`] : [])),
-  ];
+  return offeredValues(x).filter(({ value }) => on(value.recordedAt)).map(({ ref }) => ref);
 }
 
 /** A Replace never follows its value to another day (US-13 AC7): a day that changes clears the moved values' Replace. */
@@ -62,7 +63,7 @@ function moved(c: FileChoices, refs: string[], before: string | null, after: str
  */
 export function choose(c: FileChoices, change: ChoiceChange, now: string, extraction: Pick<UnifiedExtractionResult, 'values' | 'additionalValues' | 'reportDate'>): FileChoices | null {
   // Replace saves the value as a correction, so it selects the value; clearing a value drops its Replace.
-  if ('tick' in change) return { ...c, ticks: { ...c.ticks, [change.tick]: change.on }, replace: change.on ? c.replace : without(c.replace, change.tick) };
+  if ('tick' in change) return change.on ? { ...c, ticks: { ...c.ticks, [change.tick]: true } } : untick(c, change.tick);
   if ('testDay' in change) {
     const report = extraction.reportDate ?? null;
     return { ...c, testDay: change.testDay, replace: moved(c, movedRefs(extraction, 'test'), c.testDay ?? report, change.testDay ?? report, now) };

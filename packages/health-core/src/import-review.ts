@@ -9,7 +9,7 @@
  * The assistant's refusal text is never read or changed here. No new server
  * or AI call. Design: docs/drafts/import-review-redesign.md.
  */
-import { UNDATED_PREVIOUS, isUrineOrRatioUnit, type UnifiedExtractionResult } from './lab-extraction';
+import { UNDATED_PREVIOUS, isUrineOrRatioUnit, type AdditionalLabValue, type ExtractedValue, type UnifiedExtractionResult } from './lab-extraction';
 import { labTestLabel } from './lab-catalog';
 import { DAY_NOT_HAPPENED, LAB_DAY_REFUSAL } from './lab-series';
 import { bulkAppendValues, slotIndex, slotKey, validDay, type BulkAppendResult, type BulkRow } from './record-edits';
@@ -36,14 +36,29 @@ export interface ImportFile {
   days: Readonly<Record<string, string | null>>;
 }
 
+/** A value the person can tick, by its ref: `v<i>` a core value, `a<i>` an additional one. */
+export type OfferedValue = { ref: string; kind: 'core'; value: ExtractedValue } | { ref: string; kind: 'lab'; value: AdditionalLabValue };
+type Offers = Partial<Pick<UnifiedExtractionResult, 'values' | 'additionalValues'>>;
+
+/** Every value the person can tick, core values first: the one place a ref is minted. */
+export const offeredValues = (result: Offers): OfferedValue[] => [
+  ...(result.values ?? []).map((value, i): OfferedValue => ({ ref: `v${i}`, kind: 'core', value })),
+  ...(result.additionalValues ?? []).map((value, i): OfferedValue => ({ ref: `a${i}`, kind: 'lab', value })),
+];
+
+/** The value a ref names, or undefined when the extraction holds none: the one place a ref is read. */
+export function valueAt(result: Offers, ref: string): OfferedValue | undefined {
+  const i = Number(ref.slice(1));
+  const core = ref[0] === 'v' && Number.isInteger(i) ? result.values?.[i] : undefined;
+  const lab = ref[0] === 'a' && Number.isInteger(i) ? result.additionalValues?.[i] : undefined;
+  return core ? { ref, kind: 'core', value: core } : lab ? { ref, kind: 'lab', value: lab } : undefined;
+}
+
 /** Each value's day: its own printed day, else `fileDay` (the report's, or
  *  the one picked); an undated previous column's is `undatedDay` (null until picked). */
 export function valueDays(result: ImportFile['result'], fileDay: string | null, undatedDay: string | null = null): Record<string, string | null> {
   const day = (own?: string) => (own === undefined ? fileDay : own === UNDATED_PREVIOUS ? undatedDay : own);
-  return Object.fromEntries([
-    ...(result.values ?? []).map((v, i) => [`v${i}`, day(v.recordedAt)]),
-    ...(result.additionalValues ?? []).map((v, i) => [`a${i}`, day(v.recordedAt)]),
-  ]);
+  return Object.fromEntries(offeredValues(result).map(({ ref, value }) => [ref, day(value.recordedAt)]));
 }
 
 /**
@@ -55,16 +70,15 @@ export function valueDays(result: ImportFile['result'], fileDay: string | null, 
  * US-12 AC20). Null for a ref the extraction does not hold.
  */
 export function importRow(result: ImportFile['result'], ref: string, day: string, opts: { correctsId?: string; edited?: { value: number; unit?: string } } = {}): BulkRow | null {
-  const i = Number(ref.slice(1));
+  const at = valueAt(result, ref);
+  if (!at) return null;
   const { correctsId, edited } = opts;
   const common = { recordedAt: day, source: edited ? 'lab_import_edited' as const : 'lab_import' as const, ...(correctsId ? { correctsId } : null) };
-  if (ref[0] === 'v') {
-    const v = result.values?.[i];
-    if (!v || !Number.isInteger(i)) return null;
+  if (at.kind === 'core') {
+    const v = at.value;
     return { kind: 'measurement', metricType: v.metric, value: edited ? edited.value : v.valueSI, ...common, ...(!edited && v.comparator ? { comparator: v.comparator } : null) };
   }
-  const a = ref[0] === 'a' ? result.additionalValues?.[i] : undefined;
-  if (!a || !Number.isInteger(i)) return null;
+  const a = at.value;
   return {
     kind: 'lab', metricName: a.name, value: edited ? edited.value : a.value, unit: edited?.unit ?? a.unit,
     referenceLow: a.referenceLow ?? null, referenceHigh: a.referenceHigh ?? null, ...common, ...(!edited && a.comparator ? { comparator: a.comparator } : null),
@@ -158,12 +172,14 @@ function heldReadings(record: RoadmapFile): (slot: string) => Quantity | undefin
   };
 }
 
-/** A row's slot, from its metric and day as the write keys it, and what it
- *  compares as: a lab the write files as a core value compares as one. */
+/** A row's slot, from its metric and day as the write keys it (`slotIndex`'s key). */
+export const rowSlot = (row: BulkRow, target = bulkRowTarget(row)): string => slotKey(target.slot, target.metric, row.recordedAt);
+
+/** A row's slot, and what it compares as: a lab the write files as a core value compares as one. */
 function slotOf(row: BulkRow): { slot: string; quantity: Quantity } {
   const target = bulkRowTarget(row);
   const limit = row.comparator ? { comparator: row.comparator } : null;
-  const slot = slotKey(target.slot, target.metric, row.recordedAt);
+  const slot = rowSlot(row, target);
   if (row.kind === 'measurement') return { slot, quantity: { valueSI: row.value, ...limit } };
   const asCore = !target.asLab ? coreStored(target.named as MetricType, row.value, row.unit)?.value : undefined;
   return { slot, quantity: asCore !== undefined ? { valueSI: asCore, ...limit } : { lab: { name: row.metricName, value: row.value, unit: row.unit, ...limit } } };
@@ -237,12 +253,14 @@ export function classifyImportValues(files: readonly ImportFile[], record: Roadm
       if (row && isClinicalDay(row.recordedAt)) sent.push({ ...info, row });
       else unsent.push({ ...info, day: isClinicalDay(days[ref]) ? days[ref]!.slice(0, 10) : null });
     };
-    (result.values ?? []).forEach((v, i) => add(`v${i}`, METRIC_LABELS[v.metric] ?? labTestLabel(v.metric), [
-      ...(v.confidence !== 'high' ? ['confidence' as const] : []), ...(v.question ? ['question' as const] : []), ...(v.unitGuessed ? ['unitGuessed' as const] : []),
-    ], v.recordedAt));
-    (result.additionalValues ?? []).forEach((v, i) => add(`a${i}`, labTestLabel(v.name), [
-      ...(v.confidence && v.confidence !== 'high' ? ['confidence' as const] : []), ...(v.question ? ['question' as const] : []),
-    ], v.recordedAt));
+    for (const { ref, kind, value: v } of offeredValues(result)) {
+      if (kind === 'core') add(ref, METRIC_LABELS[v.metric] ?? labTestLabel(v.metric), [
+        ...(v.confidence !== 'high' ? ['confidence' as const] : []), ...(v.question ? ['question' as const] : []), ...(v.unitGuessed ? ['unitGuessed' as const] : []),
+      ], v.recordedAt);
+      else add(ref, labTestLabel(v.name), [
+        ...(v.confidence && v.confidence !== 'high' ? ['confidence' as const] : []), ...(v.question ? ['question' as const] : []),
+      ], v.recordedAt);
+    }
   });
 
   // 1) One reading per (test, day), by the review's precedence (US-12 AC12, AC14; US-13 AC3).

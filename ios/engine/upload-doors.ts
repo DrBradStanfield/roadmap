@@ -5,7 +5,7 @@
 // (upload-schema.ts), and the PARSED value is what runs. A malformed input answers a refusal,
 // never a throw. Nothing is logged: the state holds file names, hashes and read values.
 import { initialUpload, transition, uploadFileName, type UploadEvent, type UploadState } from '../../packages/health-core/src/upload-flow';
-import { ATTEST_PART, NETWORK_FAILURE, UPLOAD_EVENTS, UPLOAD_STATE } from '../../packages/health-core/src/upload-schema';
+import { ATTEST_PART, maybeText, NETWORK_FAILURE, platform, UPLOAD_EVENTS, UPLOAD_STATE } from '../../packages/health-core/src/upload-schema';
 import { knownAs, knownIndex, readIsLegacy, type KnownIndex } from '../../packages/health-core/src/upload-known';
 import { appGateFailure, boundedWords, type FailDetail, type UploadFailure } from '../../packages/health-core/src/upload-failure';
 import { PHONE_FAIL_TEXT } from '../../packages/health-core/src/upload-text';
@@ -36,7 +36,6 @@ export class Refused extends Error {
 
 // --- The wire -------------------------------------------------------------------------------
 
-const platform = z.enum(['web', 'phone']);
 /**
  * A send with no lab-read answer, as the phone saw it (US-52 AC7e): the phone could not prove the
  * app, its App Attest registration was refused (`refused`, with the status and the words today's
@@ -69,7 +68,6 @@ function localFailure(local: z.infer<typeof LOCAL>): { failure: UploadFailure; d
     default: return { failure: 'network', detail: { network: local.kind } };
   }
 }
-const maybeText = z.string().nullable();
 const E = UPLOAD_EVENTS;
 /**
  * The events Swift sends (entry.ts uploadStepJson lists them): health-core's, less what only the

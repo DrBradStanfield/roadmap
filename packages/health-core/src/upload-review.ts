@@ -6,9 +6,8 @@
  * change, and pass the same one to `uploadView` and `uploadSavePlan`.
  */
 import { UNDATED_PREVIOUS } from './lab-extraction';
-import { classifyImportValues, importRow, isOfferedRef, PROBE_DAY, reportImportFile, valueDays, type ClassifiedValue, type ImportClassification, type ImportFile } from './import-review';
-import { bulkRowTarget } from './bulk-row-target';
-import { bulkAppendValues, slotIndex, slotKey, validDay, type BulkRow } from './record-edits';
+import { classifyImportValues, importRow, isOfferedRef, offeredValues, PROBE_DAY, reportImportFile, rowSlot, valueDays, type ClassifiedValue, type ImportClassification, type ImportFile } from './import-review';
+import { bulkAppendValues, slotIndex, validDay, type BulkRow } from './record-edits';
 import { createEmptyFile, type RoadmapFile } from './roadmap-file';
 import { uploadFileName, type UploadFile, type UploadState } from './upload-flow';
 
@@ -85,10 +84,7 @@ function importFile(f: ReadFile, now: string, holderOf: (row: BulkRow) => string
   const result = extraction as ImportFile['result'];
   const day = validDay(choices.testDay ?? extraction.reportDate ?? undefined, { now });
   const undatedDay = previousDay(choices.previousDay, day, now);
-  const offered = [
-    ...(extraction.values ?? []).map((v, i) => ({ ref: `v${i}`, value: v, own: v.recordedAt })),
-    ...(extraction.additionalValues ?? []).map((v, i) => ({ ref: `a${i}`, value: v, own: v.recordedAt })),
-  ];
+  const offered = offeredValues(extraction).map(({ ref, value }) => ({ ref, own: value.recordedAt }));
   const ticked = offered.filter(({ ref }) => choices.ticks[ref] ?? true);
   // A value the write refuses for its unit or number whatever its day sits under Not saved and asks no day (owner ruling 2026-11-20).
   // Lab refusals only, unlike `refusedAlone`: a core value out of range still asks the day, since it can be corrected and then saves.
@@ -135,10 +131,7 @@ export function uploadReview(s: UploadState, record: RoadmapFile, now: string): 
   const labs = readFiles(s).filter(isLabReport);
   // The record's slots, indexed once: each conflict's held row, and each Replace's check.
   const slots = slotIndex(record);
-  const holderOf = (row: BulkRow) => {
-    const target = bulkRowTarget(row);
-    return slots.get(slotKey(target.slot, target.metric, row.recordedAt))?.id;
-  };
+  const holderOf = (row: BulkRow) => slots.get(rowSlot(row))?.id;
   const built = labs.map((f) => importFile(f, now, holderOf));
   const classified = classifyImportValues(built.map((b) => b.file), record, now);
   const classification = { ...classified, values: classified.values.map((v) => (isOfferedRef(v.ref) ? ownReading(v, built[v.file]) : v)) };

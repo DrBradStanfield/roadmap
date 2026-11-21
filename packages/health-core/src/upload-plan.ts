@@ -11,6 +11,7 @@ import { isReadableRow } from './readable-rows';
 import type { RoadmapFile } from './roadmap-file';
 import { documentDate } from './upload-choices';
 import { uploadFileName, type UploadState } from './upload-flow';
+import { readDocumentFields } from './upload-known';
 import type { UploadReview } from './upload-review';
 
 export interface UploadSavePlan {
@@ -53,12 +54,10 @@ export function uploadSavePlan(s: UploadState, record: RoadmapFile, now: string,
       const fix = f.status.choices.document;
       const fixedDate = 'date' in fix ? documentDate(fix.date ?? null, now) : undefined; // an impossible date is never planned
       documents.push({ fileId: f.id, fields: {
+        ...readDocumentFields(doc, uploadFileName(f)),
         documentType: fix.kind ?? doc.classification,
         title: fix.title ?? held?.title ?? doc.title,
         documentDate: fixedDate !== undefined ? fixedDate : validDay((held ? held.documentDate : doc.documentDate) ?? undefined, { now }),
-        contentMd: doc.contentMarkdown ?? '',
-        metadata: doc.metadata ?? {},
-        sourceFileName: uploadFileName(f),
       } });
     } else if (f.status.s === 'read') {
       // A report's original is filed with its values: not while it waits for a day, nor with every value unticked (as the iPhone),

@@ -9,7 +9,7 @@
  * documents for held rows.
  */
 import { DOCUMENT_TYPES, type DocumentType } from './validation';
-import { documentKind, IMPORT_REVIEW_TEXT, isOfferedRef, KIND_WORDS, NOT_SAVED_TEXT, notSavedGroups, type ClassifiedValue, type NotSavedReason, type UnsureReason } from './import-review';
+import { documentKind, IMPORT_REVIEW_TEXT, isOfferedRef, KIND_WORDS, NOT_SAVED_TEXT, notSavedGroups, valueAt, type ClassifiedValue, type NotSavedReason, type UnsureReason } from './import-review';
 import type { FileLabValue, FileMeasurement, RoadmapFile } from './roadmap-file';
 import { effectiveComparator, isReadableRow } from './readable-rows';
 import { getDisplayLabel, type MetricType } from './units';
@@ -140,16 +140,16 @@ function progress(s: UploadState, files: readonly UploadFile[]): UploadView['pro
  * one, so the web's "Printed:" line (shown only when the two differ) never applies.
  */
 function printedFacts(x: UnifiedExtractionResult | undefined, ref: string, reportDay: string | null, now: string, edit: number | undefined) {
-  const i = Number(ref.slice(1));
-  const own = ref[0] === 'v' ? x?.values?.[i] : x?.additionalValues?.[i];
-  if (!own) return {};
-  const coreValue = ref[0] === 'v' ? x!.values![i] : null;
-  const number = coreValue ? coreValue.displayValue : x!.additionalValues![i].value;
+  const at = x && valueAt(x, ref);
+  if (!at) return {};
+  const own = at.value;
+  const coreValue = at.kind === 'core' ? at.value : null;
+  const number = at.kind === 'core' ? at.value.displayValue : at.value.value;
   const day = own.recordedAt && own.recordedAt !== UNDATED_PREVIOUS ? validDay(own.recordedAt, { now })?.slice(0, 10) ?? null : null;
   // An edited number is what Save writes (`importRow`): a core value in its SI unit, a lab in its own, no limit sign.
   return {
     value: edit !== undefined ? String(edit) : withComparator(String(number), own.comparator),
-    unit: edit !== undefined && coreValue ? getDisplayLabel(coreValue.metric as MetricType, 'si') : coreValue ? coreValue.displayUnit : x!.additionalValues![i].unit,
+    unit: edit !== undefined && coreValue ? getDisplayLabel(coreValue.metric as MetricType, 'si') : at.kind === 'core' ? at.value.displayUnit : at.value.unit,
     question: own.question ?? null,
     unitNote: coreValue?.unitGuessed ? REVIEW_CELL_TEXT.checkUnit : null,
     day: day ?? reportDay?.slice(0, 10) ?? null,
