@@ -133,11 +133,12 @@ function runSequence(seed: number, steps: number) {
   // From the engine's rows alone, never the screen: an error text a row did not have just before each choice (T2).
   let hadError = new Map<string, string | null>();
   const madeErrors = new Set<string>();
-  const errorsOf = (s: UploadState, record: RoadmapFile) => new Map(see(s, record).list.rows.map((x) => [x.key, x.error]));
-  const newErrorsIn = (s: UploadState, record: RoadmapFile, since: Map<string, string | null>) => [...errorsOf(s, record)].filter(([k, e]) => e && since.get(k) !== e).map(([, e]) => e!);
-  const noteErrors = (s: UploadState, record: RoadmapFile) => {
-    for (const e of newErrorsIn(s, record, hadError)) madeErrors.add(e);
-    hadError = errorsOf(s, record);
+  // Each takes rows the step already read from the engine: K3 stays inside CI's 60 s budget.
+  const errorsOf = (rows: ListRow[]) => new Map(rows.map((x) => [x.key, x.error]));
+  const newErrorsIn = (now: Map<string, string | null>, since: Map<string, string | null>) => [...now].filter(([k, e]) => e && since.get(k) !== e).map(([, e]) => e!);
+  const noteErrors = (now: Map<string, string | null>) => {
+    for (const e of newErrorsIn(now, hadError)) madeErrors.add(e);
+    hadError = now;
   };
   /** The state after a commit of `d`, by the engine's own transition. */
   const committed = (s: UploadState, record: RoadmapFile, d: Draft): UploadState => {
@@ -148,7 +149,7 @@ function runSequence(seed: number, steps: number) {
     const change: ChoiceChange = { typed: row.ref, text: d.text, unit: d.unit };
     const after = transition(s, { type: 'chose', id: row.fileId, change, now: NOW }).state;
     if (after !== s) held = heldOf(s, row, d.text, d.unit, d.label);
-    noteErrors(after, record);
+    noteErrors(errorsOf(see(after, record).list.rows));
     return after;
   };
   /** What the engine must hold for text committed at `row` (K3c), from `typedCommit` on the choices before. */
@@ -188,7 +189,7 @@ function runSequence(seed: number, steps: number) {
     const activeRow = rowOfInput(active);
     const wasShown = new Set([...document.querySelectorAll<HTMLElement>('li[data-key]')].filter((li) => !li.hidden).map((li) => li.dataset.key!));
     const wasOpen = document.querySelector('.review-disclosure')?.getAttribute('aria-expanded') ?? null;
-    hadError = new Map(rows.map((x) => [x.key, x.error]));
+    hadError = errorsOf(rows);
     const stepStart = hadError;
     madeErrors.clear();
     let engineStep = false;
@@ -383,10 +384,11 @@ function runSequence(seed: number, steps: number) {
     if (document.querySelector('.upload-list [role="alert"]')) fail('K3j', 'a row is an alert');
     const nowSaid = document.querySelector('.upload-list [aria-live]')?.textContent ?? null;
     if (engineStep && nowSaid !== wasSaid) fail('K3j', `announced "${nowSaid}" on the engine's step "${trace[trace.length - 1]}"`);
-    const made = after.view.done ? [] : newErrorsIn(h.state(), h.record(), stepStart);
+    const errorsAfter = errorsOf(after.list.rows);
+    const made = after.view.done ? [] : newErrorsIn(errorsAfter, stepStart);
     const oneChoice = h.sent.slice(sentBefore).filter((e) => e.type === 'chose').length === 1 && h.presses.length === pressesBefore;
     if (!engineStep && oneChoice && nowSaid !== null) for (const e of made) if (!nowSaid.includes(e)) fail('K3j', `"${e}" appeared on "${trace[trace.length - 1]}" and was not said ("${nowSaid}")`);
-    if (!engineStep) noteErrors(h.state(), h.record());
+    if (!engineStep) noteErrors(errorsAfter);
     // It says only errors a row newly had in this step, and nothing else.
     const rest = [...madeErrors].reduce((t, e) => t.split(e).join(''), nowSaid ?? '');
     if (wasSaid !== null && nowSaid !== null && nowSaid !== wasSaid && (!madeErrors.size || rest.trim())) {
@@ -450,7 +452,8 @@ function runSequence(seed: number, steps: number) {
 }
 
 describe('K3: the web upload list keeps the person\'s input and draws the engine (US-13 AC26)', () => {
-  it('over seeded runs of interleaved screen and engine steps', () => {
-    for (let seed = 1; seed <= 120; seed++) runSequence(seed, 45);
+  // 120 seeds in three tests of 40, each inside CI's 60 s test budget (one test took 60.6 s in CI shard 1, round seven).
+  it.each([1, 41, 81])('over seeded runs of interleaved screen and engine steps, seeds %i to +39', (first) => {
+    for (let seed = first; seed < first + 40; seed++) runSequence(seed, 45);
   });
 });
