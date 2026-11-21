@@ -50,7 +50,7 @@ import { requestFlags, type UploadPlatform } from './upload-rules';
 import { uploadSave, type UploadSaveIO } from './upload-save';
 import { uploadView, type UploadView, type ValueRow } from './upload-view';
 import { uploadList, type UploadList } from './upload-list';
-import { checkExistence, checkInputs, checkKeysKept, checkNoSilentNonWrite, checkOneQuantity, checkTypedBlocks, holdsText, keepInputs, type PersonInputs } from './upload-list.test-helpers';
+import { checkExistence, checkInputKind, checkInputs, checkKeysKept, checkNoSilentNonWrite, checkOneQuantity, checkTypedBlocks, holdsText, keepInputs, type PersonInputs } from './upload-list.test-helpers';
 import type { TypedText } from './upload-choices';
 import { FIX_ERRORS_TEXT, UPLOAD_TEXT } from './upload-text';
 import { IMPORT_REVIEW_TEXT, importRow, isOfferedRef, offeredValues, PROBE_DAY, valueAt } from './import-review';
@@ -242,6 +242,7 @@ function checkView(s: UploadState, record: RoadmapFile, setup: Setup, note: Note
   checkExistence(s, review, list, fail);
   checkInputs(s, review, list, inputs, fail);
   checkTypedBlocks(s, view, inputs, fail);
+  checkInputKind(s, review, list, NOW, fail);
   checkOneQuantity(s, review, view, list, unitOf, fail);
   checkNoSilentNonWrite(s, review, list, fail);
   const rows = allRows(view);
@@ -670,6 +671,7 @@ class Run {
   private async step(step: Step): Promise<void> {
     // The engine door drops a Replace whose target left its slot before each event and in each view (replacesLost).
     if (step.type === 'event') this.s = doorState(this.s, this.record);
+    const takesChoices = this.s.phase === 'open' || this.s.phase === 'saveFailed';
     // The engine door fills what the page would write when Save is pressed (ios/engine/upload-doors.ts); the app computes nothing.
     // Save carries the drawn page's `reviewed`, echoed by the app as it was drawn (the view the person tapped).
     if (step.type === 'event' && step.e.type === 'saveStarted') this.s = transition(this.s, { ...step.e, reviewed: this.last?.view.reviewed }).state;
@@ -682,8 +684,8 @@ class Run {
     else if (step.type === 'delete') this.record = { ...this.record, labValues: this.record.labValues.map((l) => (l.id === step.id ? { ...l, status: 'entered-in-error' as const } : l)), measurements: this.record.measurements.map((m) => (m.id === step.id ? { ...m, status: 'entered-in-error' as const } : m)) };
     else await this.save(step);
     const ch = step.type === 'event' && step.e.type === 'chose' ? step.e : null;
-    const ref = ch && ('tick' in ch.change ? ch.change.tick : 'replace' in ch.change ? ch.change.replace : 'edit' in ch.change ? ch.change.edit : 'typed' in ch.change ? ch.change.typed : null);
-    keepInputs(this.s, this.inputs, ch && ref ? `${ch.id}:${ref}` : null, fail);
+    // The machine takes a choice only open or after a failed Save (upload-flow.ts 'chose'); L7 logs the expected effect then.
+    keepInputs(this.s, this.inputs, ch ? { id: ch.id, change: ch.change, taken: takesChoices } : null, fail);
     if (this.s.phase === 'done' || this.s.phase === 'saving') return;
     if (this.s.phase === 'open' || this.s.phase === 'saveFailed') {
       const door = doorState(this.s, this.record);
@@ -907,7 +909,8 @@ function genChange(r: () => number, run: Run, fileId: string): ChoiceChange | nu
   if (!rows.length) return null;
   const row = pick(rows);
   const k = r();
-  if (k < 0.45) return { tick: row.ref, on: !row.ticked };
+  // Sometimes a tick on a ticked row that holds text (a tap on a checked box): it must keep the text (L7).
+  if (k < 0.45) return { tick: row.ref, on: !row.ticked || (k < 0.15 && !!row.typed) };
   if (k < 0.75) {
     if (row.replacing) return { replace: row.ref, correctsId: null };
     const stale = rowsOf(run.record).filter((x) => !isActive(x)).map((x) => x.id);
@@ -925,10 +928,10 @@ function genChange(r: () => number, run: Run, fileId: string): ChoiceChange | nu
 }
 
 /** The rows the platform draws, as a person acts on them: the web's list, the phone's view. `blocks`: it holds up Save. */
-function surface(run: Run): Array<{ fileId: string; ref: string; ticked: boolean; replaces: string | null; replacing: boolean; blocks: boolean }> {
+function surface(run: Run): Array<{ fileId: string; ref: string; ticked: boolean; replaces: string | null; replacing: boolean; blocks: boolean; typed: TypedText | null }> {
   if (!run.last) return [];
   if (run.setup.platform === 'web') return run.last.list.rows.map((r) => ({ ...r, blocks: r.status.kind === 'error' }));
-  return allRows(run.last.view).map((r) => ({ ...r, blocks: !!r.error && r.ticked }));
+  return allRows(run.last.view).map((r) => ({ ...r, blocks: !!r.error && r.ticked, typed: null }));
 }
 
 /** The real past days a report's values printed: each a dated column the web's review can move (US-13 AC24). */
@@ -1045,7 +1048,7 @@ describe('upload-view property: the list view against Save (US-52 AC8c, US-13 AC
       steps: 0, saved: 0, saveFailedThenSaved: 0, replacing: 0, corrections: 0, changedBeforeSave: 0, blockedFix: 0, blockedDay: 0, conflicts: 0, documents: 0,
       merges: 0, replaceLost: 0, changedBeforeTap: 0, freedBeforeCommit: 0, skipped: 0, unstored: 0, archiveOnly: 0, copies: 0, alreadySaved: 0, futureDay: 0, undatedPrevious: 0, pressureRefused: 0, limitTicked: 0, labAsCore: 0, edited: 0, noOriginalSaved: 0, columnMoved: 0, columnNotBefore: 0,
       k1DayChanges: 0, k4Unpromised: 0, conventionalShown: 0, blockedAtColumn: 0, blockedAtRowAndDay: 0,
-      typedRefused: 0, typedSavedAfter: 0, sameNamed: 0, listAlreadyInRecord: 0, listWaits: 0, listSameDayTicked: 0, listCopyError: 0, unsentBlocked: 0,
+      typedRefused: 0, typedSavedAfter: 0, sameNamed: 0, listAlreadyInRecord: 0, listWaits: 0, listSameDayTicked: 0, listCopyError: 0, unsentBlocked: 0, tickOnHeld: 0, inputNone: 0,
     };
     for (let seed = 1; seed <= SEEDS; seed++) {
       const r = mulberry32(seed);
@@ -1072,6 +1075,9 @@ describe('upload-view property: the list view against Save (US-52 AC8c, US-13 AC
         if (step.type === 'save' && run.s.phase === 'done' && run.last && movedColumn(run.last.view, run.last.review, run.s)) reach.columnMoved++;
         if (run.s.phase === 'done') { reach.saved++; if (phase.saves) reach.saveFailedThenSaved++; if (run.s.files.some((f) => f.original === false)) reach.noOriginalSaved++; }
         if (step.type === 'save' && step.meanwhile) reach.changedBeforeSave++;
+        // A tick on a row holding text, which keeps it (L7); a row whose input takes no typing (L8).
+        if (step.type === 'event' && step.e.type === 'chose' && 'tick' in step.e.change && step.e.change.on && run.inputs.get(`${step.e.id}:${step.e.change.tick}`)?.typed) reach.tickOnHeld++;
+        if (run.last?.list.rows.some((row) => row.input === 'none')) reach.inputNone++;
         if (step.type === 'tap') reach.changedBeforeTap++;
         if (step.type === 'save' && step.free) reach.freedBeforeCommit++;
         if ((step.type === 'record' || (step.type === 'save' && step.meanwhile)) && step.merge) reach.merges++;

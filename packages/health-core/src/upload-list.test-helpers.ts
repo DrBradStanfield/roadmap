@@ -3,11 +3,11 @@
 // pair) the review, never what `uploadList` computed. The mutation each was shown failing on is named beside it.
 import { commaQuestion } from './parseNumber';
 import { cellRange, rangeMessage, type CellUnit } from './cell-unit';
-import { ENTER_A_NUMBER, NUMERIC_SYNTAX_GUIDANCE } from './cell-input';
-import { offeredValues, type ClassifiedValue } from './import-review';
+import { ENTER_A_NUMBER, NUMERIC_SYNTAX_GUIDANCE, typedCommit } from './cell-input';
+import { offeredValues, type ClassifiedValue, type OfferedValue } from './import-review';
 import { UNDATED_PREVIOUS } from './lab-extraction';
 import { rangeFault, UNIT_DEFS, type MetricType } from './units';
-import type { TypedText } from './upload-choices';
+import { choose, type ChoiceChange, type TypedText } from './upload-choices';
 import type { UploadState } from './upload-flow';
 import type { UploadList } from './upload-list';
 import type { UploadReview } from './upload-review';
@@ -81,23 +81,84 @@ export function checkTypedBlocks(s: UploadState, view: UploadView, inputs: Perso
   }
 }
 
+type Entered = { typed: TypedText | null; edit: number | undefined };
+
 /**
- * L7 input kept. Across every step that is not the person's own choice on a row (door steps, record changes, reads
- * landing, Save and its outcome), each row's held text and edit are what the person's own events left; only a choice
- * naming that row changes them. The log is the harness's own. Mutation: `replacesLost` reducing with the person's clear
- * (held text erased by a lost Replace) fails it.
+ * What one of the person's own changes leaves in the row it names, from the change alone (US-13 AC5, AC12, AC21, AC26):
+ * - tick on, Replace on or off, a day: text and edit kept;
+ * - tick off: the text goes, the edit stays (upload-choices.ts `untick` never touches `edits`, as on main; AC26: "an
+ *   emptied input clears the row and drops the text", and only the person's own clear drops it);
+ * - an emptied input: the same as tick off;
+ * - a number (an `edit`, or typed text that reads as one): the edit is that number, the text goes; an `edit` of null or
+ *   no finite number drops the edit; typed text that is the shown number again keeps the edit as it was (US-03 AC3);
+ * - text that is no number: held, and the edit beneath it stays (`choose` builds the held text on top of the choices with
+ *   their `edits`), so clearing the text shows the edit again;
+ * - refused, nothing changes: an `edit` or `typed` on a core metric the units table lacks (an emptied input too), `typed`
+ *   on a letter's value, a unit that does not fit the value.
+ * The number typed text reads as comes from the cells' own rule (`typedCommit`), never from `choose`.
  */
-export function keepInputs(s: UploadState, inputs: Map<string, { typed: TypedText | null; edit: number | undefined }>, chosen: string | null, fail: Fail) {
+export function expectedInput(change: ChoiceChange, at: OfferedValue, lab: boolean, was: Entered): Entered {
+  const unknownCore = at.kind === 'core' && !known(at.value.metric);
+  if ('tick' in change) return change.on ? was : { typed: null, edit: was.edit };
+  if ('edit' in change) return unknownCore ? was : { typed: null, edit: change.value === null || !Number.isFinite(change.value) ? undefined : change.value };
+  if (!('typed' in change)) return was;
+  if (unknownCore || !lab) return was;
+  if (!change.text.trim()) return { typed: null, edit: was.edit };
+  const commit = typedCommit(change.text, at, was.edit, change.unit);
+  if (!commit) return was;
+  if (commit.kind === 'hold') return { typed: { text: change.text, unit: change.unit }, edit: was.edit };
+  return { typed: null, edit: commit.kind === 'edit' ? commit.value : was.edit };
+}
+
+/** The ref a change names, if any. */
+const refOf = (c: ChoiceChange): string | null => ('tick' in c ? c.tick : 'replace' in c ? c.replace : 'edit' in c ? c.edit : 'typed' in c ? c.typed : null);
+
+/**
+ * L7 input kept. The harness logs each row's held text and edit from the person's own events alone: the expected effect of
+ * each change (`expectedInput`), applied when the machine takes a choice at all (open or after a failed Save, on a read
+ * file). Every other step (door steps, record changes, reads landing, Save and its outcome) and every other row keeps
+ * them. The engine's state must match the log after every step. Mutations: `replacesLost` reducing with the person's clear
+ * (held text erased by a lost Replace) fails it; a tick on that erases held text (upload-choices.ts `choose`,
+ * `change.on ? unheld({ ...c, ticks: ... }, change.tick)`) fails it.
+ */
+export function keepInputs(s: UploadState, inputs: Map<string, Entered>, chose: { id: string; change: ChoiceChange; taken: boolean } | null, fail: Fail) {
   if (!('files' in s)) { inputs.clear(); return; }
+  const named = chose?.taken ? refOf(chose.change) : null;
   for (const f of s.files) {
     if (f.status.s !== 'read') continue;
-    for (const { ref } of offeredValues(f.status.extraction)) {
-      const key = `${f.id}:${ref}`;
-      const now = { typed: f.status.choices.typed?.[ref] ?? null, edit: f.status.choices.edits[ref] };
-      if (key === chosen) { inputs.set(key, now); continue; }
+    const lab = f.status.extraction.classification === 'lab_report';
+    for (const at of offeredValues(f.status.extraction)) {
+      const key = `${f.id}:${at.ref}`;
       const was = inputs.get(key) ?? { typed: null, edit: undefined };
-      if (JSON.stringify(was) !== JSON.stringify(now)) fail('L7', `${key} changed without the person: ${JSON.stringify(was)} -> ${JSON.stringify(now)}`);
-      inputs.set(key, now);
+      const want = chose && named === at.ref && chose.id === f.id ? expectedInput(chose.change, at, lab, was) : was;
+      const now = { typed: f.status.choices.typed?.[at.ref] ?? null, edit: f.status.choices.edits[at.ref] };
+      if (JSON.stringify(want) !== JSON.stringify(now)) fail('L7', `${key} holds ${JSON.stringify(now)}, the person's events left ${JSON.stringify(want)}`);
+      inputs.set(key, want);
+    }
+  }
+}
+
+/** A text the row does not hold already, so a held text always changes the choices. */
+const freshText = (held: TypedText | undefined) => (held?.text === 'abc' ? 'abd' : 'abc');
+
+/**
+ * L8 input kind. Every row says whether its input takes typing (`input`), and the engine agrees: a schema-valid typed
+ * change addressed to the row (text that is no number, in the unit that fits it: SI for a core value, none for a lab)
+ * changes its file's choices (`choose`) exactly when the row says `number`. A row that says `none` holds no text and no
+ * edit. Mutations: `input: shown.cell ? 'number' : 'none'` fails it on the first plain lab; `input: 'number'` fails it on
+ * the first core metric the units table lacks.
+ */
+export function checkInputKind(s: UploadState, review: UploadReview, list: UploadList, now: string, fail: Fail) {
+  const byKey = new Map(list.rows.map((r) => [r.key, r]));
+  for (const { lf, st } of labReads(s, review)) {
+    for (const at of offeredValues(st.extraction)) {
+      const row = byKey.get(`${lf.fileId}:${at.ref}`);
+      if (!row) continue; // L1's
+      const change: ChoiceChange = { typed: at.ref, text: freshText(st.choices.typed?.[at.ref]), unit: at.kind === 'core' ? 'si' : null };
+      const after = choose(st.choices, change, now, st.extraction);
+      const takes = after !== null && JSON.stringify(after) !== JSON.stringify(st.choices);
+      if ((row.input === 'number') !== takes) fail('L8', `${row.key} says input ${row.input}; a typed change ${takes ? 'changes' : 'leaves'} its choices`);
+      if (row.input === 'none' && (st.choices.typed?.[at.ref] !== undefined || st.choices.edits[at.ref] !== undefined)) fail('L8', `${row.key} takes no input but holds some`);
     }
   }
 }
