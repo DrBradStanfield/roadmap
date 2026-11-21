@@ -34,6 +34,7 @@
  *   heading counts the rows with attention and Show all the rest; L11 each row's name is its test, file and day, distinct
  *   but where three share them (KNOWN thirdReadingShared noted), and a Replace is named with its day.
  * The gaps it found (owner rulings 2026-11-20) are pinned, fixed, in upload-view.gaps.test.ts.
+ * The harness lives here; upload-view.property.part1.test.ts to part6 each run one range of the same seeds (sweepPart).
  * Synthetic values, names and hashes only.
  */
 import { writeFileSync } from 'node:fs';
@@ -1059,10 +1060,17 @@ const movedColumn = (view: UploadView, review: UploadReview, s: UploadState) => 
 
 const valueRecordedAt = (x: UnifiedExtractionResult, ref: string) => valueAt(x, ref)?.value.recordedAt;
 
-const SEEDS = 3000;
+export const SEEDS = 3000;
 
-describe('upload-view property: the list view against Save (US-52 AC8c, US-13 AC13)', () => {
-  it(`holds for ${SEEDS} seeded uploads, P1-P6 after every step`, async () => {
+/** What a run of seeds reached (each counter: steps or sequences that met it) and the known gaps it saw, by seed. */
+export interface Sweep { reach: Record<string, number>; gaps: Record<string, number[]> }
+
+/**
+ * Seeds `from` to `to` (of 1 to SEEDS), each exactly as the single test ran it: seed N draws the same sequence. Kept at the
+ * single test's indent so the move from upload-view.property.test.ts stays a rename that merges.
+ */
+export const seedSweep = {
+  async run(from: number, to: number): Promise<Sweep> {
     const gaps: Record<string, number[]> = {};
     const reach = {
       steps: 0, saved: 0, saveFailedThenSaved: 0, replacing: 0, corrections: 0, changedBeforeSave: 0, blockedFix: 0, blockedDay: 0, conflicts: 0, documents: 0,
@@ -1071,7 +1079,7 @@ describe('upload-view property: the list view against Save (US-52 AC8c, US-13 AC
       typedRefused: 0, typedSavedAfter: 0, sameNamed: 0, listAlreadyInRecord: 0, listWaits: 0, listSameDayTicked: 0, listCopyError: 0, unsentBlocked: 0, tickOnHeld: 0, inputNone: 0,
       listReasons: 0, listHeading: 0, anotherReading: 0, replaceNamed: 0, listCheckNote: 0, editUnitKept: 0, twoColumns: 0, zipMembers: 0, longName: 0, touchedUncounted: 0,
     };
-    for (let seed = 1; seed <= SEEDS; seed++) {
+    for (let seed = from; seed <= to; seed++) {
       const r = mulberry32(seed);
       const setup = genSetup(r, seed % 2 ? 'si' : 'conventional');
       const run = new Run(setup, (gap) => { const seeds = (gaps[gap] ??= []); if (seeds[seeds.length - 1] !== seed) seeds.push(seed); });
@@ -1148,10 +1156,37 @@ describe('upload-view property: the list view against Save (US-52 AC8c, US-13 AC
       reach.typedRefused += run.typedRefused;
       if (run.typedRefused && run.s.phase === 'done') reach.typedSavedAfter++;
     }
-    if (process.env.UPLOAD_VIEW_PROPERTY_OUT) writeFileSync(process.env.UPLOAD_VIEW_PROPERTY_OUT, JSON.stringify({ reach, gaps: Object.fromEntries(Object.entries(gaps).map(([k, v]) => [k, { seqs: v.length, first: v.slice(0, 5) }])) }, null, 1));
-    expect(reach.steps).toBeGreaterThan(20000);
-    for (const [name, k] of Object.entries(reach)) expect([name, k > 0]).toEqual([name, true]);
-    // About 14 s locally; CI shards measured 22, 36, 46, 47 and 73 s (PR 1926), so 60 s failed a run.
-  }, 120_000);
-});
+    if (process.env.UPLOAD_VIEW_PROPERTY_OUT) writeFileSync(`${process.env.UPLOAD_VIEW_PROPERTY_OUT}.${from}-${to}.json`, JSON.stringify({ reach, gaps: Object.fromEntries(Object.entries(gaps).map(([k, v]) => [k, { seqs: v.length, first: v.slice(0, 5) }])) }, null, 1));
+    return { reach, gaps };
+  },
+};
+
+/** The seeds run as this many ranges, one test file each (upload-view.property.part1.test.ts and on). */
+export const PARTS = 6;
+
+/** Reach counters some ranges never reach, each with the parts that must reach it (asserted there alone). */
+export const REACHED_ONLY_IN: Record<string, number[]> = {};
+
+/**
+ * Part `part` (1 to PARTS) of the seeds as one test. The single test over all 3000 took 116 s on a loaded CI runner
+ * (main, run 44894369479), 4 s short of its 120 s timeout and over the 40 s file budget; locally a part takes about 4 s.
+ * Reach: the single test asserted 20000 steps and every counter over all seeds. Each part asserts its share of the steps
+ * (the shares sum to 20000) and every counter within its own range, which each range reached when the run was split
+ * (2026-11-22), except a counter named in REACHED_ONLY_IN, asserted in the parts it names. No counter goes unasserted: one
+ * named there must name a part. A counter a range stops reaching fails here by name; name it there with the parts that
+ * still reach it (each seed's reach: run seedSweep.run(seed, seed)).
+ */
+export function sweepPart(part: number): void {
+  const size = SEEDS / PARTS;
+  const from = (part - 1) * size + 1;
+  const to = part * size;
+  describe('upload-view property: the list view against Save (US-52 AC8c, US-13 AC13)', () => {
+    it(`holds for seeds ${from}-${to} of ${SEEDS} seeded uploads, P1-P6 after every step`, async () => {
+      const { reach } = await seedSweep.run(from, to);
+      expect(reach.steps).toBeGreaterThan((20000 * size) / SEEDS);
+      for (const [name, k] of Object.entries(reach)) if (REACHED_ONLY_IN[name]?.includes(part) ?? true) expect([name, k > 0]).toEqual([name, true]);
+      for (const [name, parts] of Object.entries(REACHED_ONLY_IN)) expect([name, name in reach && parts.length > 0 && parts.every((p) => p >= 1 && p <= PARTS)]).toEqual([name, true]);
+    }, 90_000);
+  });
+}
 
