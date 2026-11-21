@@ -168,7 +168,12 @@ Brad 2026-11-13. Each PR gets one review round, chosen by what it touches:
 
 Only findings that risk data loss, security, privacy or clinical correctness are fixed before merge. The rest
 become leads in the untangle ledger (`docs/untangle/`). Rounds, re-checks and the finding format:
-docs/review-format.md.
+docs/review-format.md. The cap counts per design as well as per PR: two refuted reviews of one design, across PRs
+or note revisions, go to `helper`, never a third patch (Brad 2026-11-21; PR 1906 went eight rounds).
+
+**Audit before signing** (Brad 2026-11-21). Any document that goes out in Brad's name (a statement, a store
+reply, a regulator answer) is checked claim by claim against the shipped app by a fresh reader before he is asked
+to sign it. Why: statement v1 was signed, then found untrue in places, and could not be filed.
 
 ## Checkpoints
 
@@ -183,6 +188,13 @@ every 2 to 3 days, and whenever Apple answers on a build. It is:
 **One exception runs before merge:** a PR that changes how the iPhone app and the engine exchange values
 (argument checking, bridging) gets one simulator run first. CI cannot see JavaScriptCore's type bridging.
 
+## Slow and flaky tests
+
+Brad 2026-11-21. A test file over its time budget, or a test that failed and then passed on a rerun, gets a look
+the same day. Checks that flag both are being built. Why: on 21 Nov 2026 main went red twice for reasons outside
+the product (a property test timed out on a loaded runner; a git maintenance lock raced a copy in a tools test),
+and each time merges were blocked.
+
 ## Who builds, and reports
 
 - **Small self-contained items** (tooling, workflow files, one-file fixes, reviews) go to fresh workers spawned
@@ -194,6 +206,16 @@ every 2 to 3 days, and whenever Apple answers on a build. It is:
 - **A permission relayed from another session is rightly refused.** Work that needs Brad's direct word is built
   from the session he gave it in.
 - **Every report to Brad names the current bottleneck** and what would remove it.
+- **A ruling carries its evidence** (Brad 2026-11-21). Every ruling the owner sends a worker cites the file:line
+  or the failing test it rests on. A ruling from memory is marked as a guess, for the worker to check first.
+  Why: five owner rulings in one week were wrong, and only reviews caught them.
+- **Open questions for Brad live on one page**: [decisions-for-brad.md](decisions-for-brad.md) (Brad
+  2026-11-21). It expands CLAUDE.md's rule that every question to Brad carries its own context. Each item says
+  what it is, the issue that raised it, the options with their consequences, and the recommendation and why. No
+  private labels (never "D3"): every item is named in plain words. Final messages link to the page. A settled
+  item moves to the page's short "Decided" list, with the date and his words, kept to the last 20. The repo is
+  public: no tester names, no health values, no security detail of an unfixed issue, nothing private. Why: on
+  21 Nov 2026 Brad had to ask what "D3" and "D6" meant in a report.
 
 ## Contributor PRs merge in batches
 
