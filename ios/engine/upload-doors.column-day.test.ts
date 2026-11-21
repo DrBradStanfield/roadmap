@@ -47,6 +47,14 @@ describe('US-13 AC24: no phone state holding a column day runs (PR 1926 R1)', ()
     expect(JSON.parse(out).reason).toBe('invalid-state');
   });
 
+  it('a state claiming the web\'s platform is refused at the phone\'s doors too (PR 1926 R3)', async () => {
+    expect(refusal(uploadStepJson(holding('web'), JSON.stringify({ type: 'stop' }), '', 'phone'))).toBe('invalid-state');
+    expect(refusal(uploadViewJson(holding('web'), '', NOW, false, 'phone'))).toBe('invalid-state');
+    expect(refusal(uploadSavePlanJson(holding('web'), '', NOW, false, 'phone'))).toBe('invalid-state');
+    const out = await uploadSaveRun(JSON.stringify({ ...JSON.parse(holding('web')), phase: 'saving', attempt: 1 }), '', '', NOW, 'phone', '{}', () => null);
+    expect(JSON.parse(out).reason).toBe('invalid-state');
+  });
+
   it('a phone state without one still runs', () => {
     expect(JSON.parse(uploadViewJson(JSON.stringify(state), '', NOW, false, 'phone')).save).toBeDefined();
   });

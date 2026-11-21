@@ -665,12 +665,13 @@ function genChange(r: () => number, run: Run, fileId: string): ChoiceChange | nu
   if (asksDay && (!rows.length || coin(0.4))) return { testDay: pick([PICKED_DAY, DAY, PAST]) };
   const printsUndated = [...(f.status.extraction.values ?? []), ...(f.status.extraction.additionalValues ?? [])].some((x) => x.recordedAt === UNDATED_PREVIOUS);
   if (printsUndated && coin(0.3)) return { previousDay: pick([EARLY, PAST, PICKED_DAY, DAY, '2026-10', null]) };
-  // A dated previous column's day, on the web only (US-13 AC24): a valid early day, a partial pick that waits, or another column's printed day.
+  // A dated previous column's day, on the web only (US-13 AC24): a valid early day, a partial pick that waits, another column's
+  // printed day, or a real day on or after the test's (DAY, PICKED_DAY: it waits, PR 1926 R1).
   const columns = printedDays(f.status.extraction);
   if (run.setup.platform === 'web' && columns.length && coin(0.25)) {
     const columnDay = pick(columns);
     const others = columns.filter((d) => d !== columnDay);
-    return { columnDay, day: pick([EARLY, '2026-10', ...(others.length ? [pick(others)] : [])]) };
+    return { columnDay, day: pick([EARLY, '2026-10', DAY, PICKED_DAY, ...(others.length ? [pick(others)] : [])]) };
   }
   if (!rows.length) return null;
   const row = pick(rows);
@@ -764,6 +765,17 @@ const brief = (setup: Setup) => JSON.stringify({
 /** A Replace the run had chosen was just dropped by the door (its target deleted). */
 const lostBefore = (run: Run) => run.lostReplace;
 
+/** A lab file waiting on a column whose pick is a real past day, but not before the test's day (US-13 AC24). */
+const waitsNotBefore = (review: UploadReview, s: UploadState) => review.labFiles.some((lf) => {
+  const f = 'files' in s ? s.files.find((x) => x.id === lf.fileId) : undefined;
+  if (f?.status.s !== 'read') return false;
+  const { extraction, choices } = f.status;
+  return lf.waits.some((ref) => {
+    const pick = validDay(choices.columnDays?.[valueRecordedAt(extraction, ref) ?? ''] ?? undefined, { now: NOW })?.slice(0, 10);
+    return !!pick && !!lf.day && pick >= lf.day.slice(0, 10);
+  });
+});
+
 /** A row drawn to be written whose day is a column pick, not the day it printed (US-13 AC24). */
 const movedColumn = (view: UploadView, review: UploadReview, s: UploadState) => (view.reviewed ?? []).some((w) => {
   const f = 'files' in s ? s.files.find((x) => x.id === w.file) : undefined;
@@ -782,7 +794,7 @@ describe('upload-view property: the list view against Save (US-52 AC8c, US-13 AC
     const gaps: Record<string, number[]> = {};
     const reach = {
       steps: 0, saved: 0, saveFailedThenSaved: 0, replacing: 0, corrections: 0, changedBeforeSave: 0, blockedFix: 0, blockedDay: 0, conflicts: 0, documents: 0,
-      merges: 0, replaceLost: 0, changedBeforeTap: 0, freedBeforeCommit: 0, skipped: 0, unstored: 0, archiveOnly: 0, copies: 0, alreadySaved: 0, futureDay: 0, undatedPrevious: 0, pressureRefused: 0, limitTicked: 0, labAsCore: 0, edited: 0, noOriginalSaved: 0, columnMoved: 0,
+      merges: 0, replaceLost: 0, changedBeforeTap: 0, freedBeforeCommit: 0, skipped: 0, unstored: 0, archiveOnly: 0, copies: 0, alreadySaved: 0, futureDay: 0, undatedPrevious: 0, pressureRefused: 0, limitTicked: 0, labAsCore: 0, edited: 0, noOriginalSaved: 0, columnMoved: 0, columnNotBefore: 0,
     };
     for (let seed = 1; seed <= SEEDS; seed++) {
       const r = mulberry32(seed);
@@ -824,6 +836,8 @@ describe('upload-view property: the list view against Save (US-52 AC8c, US-13 AC
           if (allRows(v).some((row) => row.ticked && row.value?.startsWith('<'))) reach.limitTicked++;
           if (allRows(v).some((row) => row.ticked && row.ref[0] === 'a' && row.label === 'LDL Cholesterol')) reach.labAsCore++;
           if (run.s.files.some((f) => f.status.s === 'read' && Object.keys(f.status.choices.edits).length)) reach.edited++;
+          // A column that waits because its pick, a real past day, is not before the test's day (P8 checks the wait).
+          if (run.last && waitsNotBefore(run.last.review, run.s)) reach.columnNotBefore++;
           // A value of the undated previous column on a picked day, shown to be written (P7 checks its day).
           if (allRows(v).some((row) => run.last?.view.reviewed?.some((w) => w.file === row.fileId && w.ref === row.ref) && run.s.phase === 'open' && run.s.files.some((f) => f.id === row.fileId && f.status.s === 'read' && valueRecordedAt(f.status.extraction, row.ref) === UNDATED_PREVIOUS))) reach.undatedPrevious++;
         }

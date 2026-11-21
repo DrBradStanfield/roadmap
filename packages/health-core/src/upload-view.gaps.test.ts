@@ -267,6 +267,20 @@ describe('a dated previous column waiting for its pick (US-13 AC24)', () => {
     expect(rows(view)).toMatchObject([{ ref: 'v0', day: null, conflict: IMPORT_REVIEW_TEXT.conflictKept, replace: expect.any(String) }]);
   });
 
+  // KNOWN (PR 1926 R2), for the PR that draws the column picker to decide: `needsColumnDay` counts a value the write refuses
+  // on any day (a lab with an unknown unit), so that value alone holds up the report while its column waits. The test's day
+  // beside it does not wait for such a value (`refusedAnyDay`: it sits under Not saved and asks no day).
+  it('KNOWN columnWaitsOnRefusedValue: a waiting column holding only a value refused on any day still holds up Save', () => {
+    const lone = chose({ ...open([labRead('f0', {
+      values: [core({ valueSI: 3.1, displayValue: 3.1 })],
+      additionalValues: [extra({ unit: 'zzz', recordedAt: PRINTED })],
+    })]), platform: 'web' }, 'f0', { columnDay: PRINTED, day: '2026-10' });
+    const { review, view } = see(lone, EMPTY);
+    expect(review.labFiles[0]).toMatchObject({ needsColumnDay: true, waits: ['a0'] });
+    expect(review.classification.rows).toEqual([]);
+    expect(view.save).toMatchObject({ enabled: false, why: UPLOAD_TEXT.chooseDay });
+  });
+
   it('columnWaitsNeverWritten (negative pin): nothing of a report whose column waits is written, and Save says to choose the day', () => {
     const { review, view } = see(s(), record);
     expect(review.classification.rows).toEqual([]);
