@@ -3,7 +3,7 @@
  * K3, the web upload list's screen property (US-13 AC26, web list PR 2; seeded, mulberry32, no dependency). Each run
  * interleaves a person's DOM steps (focus, type, blur, Enter, Escape, tick, Replace, a day, Show all, a letter's title,
  * kind and date, a Save press with and without focus on Save) with the engine's (a file's read landing before another's
- * rows, another writer changing the record, a Save answering) and the person switching their display unit. The pick holds
+ * rows, another writer changing the record, a Save answering) and unit presses (a row's chip, Lp(a)'s choices, the whole system). The pick holds
  * a row whose input takes none and rows with reasons. After every step:
  *   K3a the draft is none, or names a row whose input takes typing or a letter's title, and it is the one the person's
  *       steps left; each letter's title input shows its draft, else the engine's title;
@@ -16,10 +16,11 @@
  *   K3d the DOM's inputs are the engine's rows: one text input per row with `input: 'number'`, none otherwise, showing
  *       the draft while it names the row, else the held text, else the shown number; each row sits under its own day;
  *   K3e no row's node, nor its input, is ever replaced while its row stands (status changes and rows landing before it);
- *   K3f the row being typed in, or holding the focus, is never hidden.
+ *   K3f the row being typed in, or holding the focus, is never hidden;
+ *   K3g held text keeps the unit label it was typed under, whatever unit chip or Lp(a) choice was pressed since.
  * Mutations it was shown failing on (PR body): M1 commit skipped on focus moving to another row; M2 the input's value
  * read from a stale local copy; M3 day groups keyed by index; M4 a letter's title draft never sent; M5 the draft's unit
- * re-read from the row at commit; M6 a row hidden whatever its draft or focus. Synthetic values only.
+ * re-read from the row at commit; M6 a row hidden whatever its draft or focus; M7 held text labelled by the row's unit now. Synthetic values only.
  */
 import { act, cleanup, fireEvent, render } from '@testing-library/react';
 import { afterEach, describe, it } from 'vitest';
@@ -59,7 +60,7 @@ const X0: UnifiedExtractionResult = {
 };
 const X1: UnifiedExtractionResult = {
   classification: 'lab_report', reportDate: null, unrecognized: [], document: null,
-  values: [core({ valueSI: 500, displayValue: 500 }), core({ metric: 'vitamin_zz', valueSI: 12, displayValue: 12, displayUnit: 'zz/L' }), core({ valueSI: 3.4, displayValue: 3.4, recordedAt: COLUMN })],
+  values: [core({ valueSI: 500, displayValue: 500 }), core({ metric: 'vitamin_zz', valueSI: 12, displayValue: 12, displayUnit: 'zz/L' }), core({ valueSI: 3.4, displayValue: 3.4, recordedAt: COLUMN }), core({ metric: 'lpa', valueSI: 900, displayValue: 900, displayUnit: 'nmol/L' })],
   additionalValues: [extra({ name: 'Vitamin B12', value: 300, unit: 'pmol/L' })],
 };
 const LETTER: UnifiedExtractionResult = {
@@ -76,11 +77,17 @@ const KINDS = ['clinic_letter', 'scan_result', 'other'];
 
 /** The person's model of the draft: the text typed into the focused input and not yet committed or cancelled. */
 /** `unit`: the unit on screen when the person started typing it (Codex R2), read from what the screen showed then. */
-type Draft = { key: string; text: string; unit: CellUnit | null } | null;
-type Held = { key: string; text: string; expect: 'hold' | 'edit' | 'none'; value?: number };
+type Draft = { key: string; text: string; unit: CellUnit | null; label: string | null } | null;
+/** `label`: for held text, the unit label on screen when it was typed, which it keeps (K3g). */
+type Held = { key: string; text: string; expect: 'hold' | 'edit' | 'none'; value?: number; label?: string | null };
 
 const rowEl = (key: string) => document.querySelector<HTMLLIElement>(`li[data-key="${key}"]`);
 const textInput = (li: Element | null) => li?.querySelector<HTMLInputElement>('input[type="text"]') ?? null;
+/** A row's unit as drawn: its label, its chip's label, or the one of Lp(a)'s three marked. */
+const unitLabel = (key: string) => {
+  const line = rowEl(key)?.querySelector('.upload-list-unit');
+  return line?.querySelector('[aria-checked="true"]')?.textContent ?? line?.textContent ?? null;
+};
 const docEl = (fileId: string) => document.querySelector<HTMLLIElement>(`li[data-doc="${fileId}"]`);
 /** The text input a draft key names: a row's number, or a letter's title (`title:<fileId>`). */
 const inputOf = (key: string) => (key.startsWith('title:') ? textInput(docEl(key.slice(6))) : textInput(rowEl(key)));
@@ -114,18 +121,18 @@ function runSequence(seed: number, steps: number) {
     if (!row) return s;
     const change: ChoiceChange = { typed: row.ref, text: d.text, unit: d.unit };
     const after = transition(s, { type: 'chose', id: row.fileId, change, now: NOW }).state;
-    if (after !== s) held = heldOf(s, row, d.text, d.unit);
+    if (after !== s) held = heldOf(s, row, d.text, d.unit, d.label);
     return after;
   };
   /** What the engine must hold for text committed at `row` (K3c), from `typedCommit` on the choices before. */
-  const heldOf = (s: UploadState, row: ListRow, text: string, unit: CellUnit | null): Held | null => {
+  const heldOf = (s: UploadState, row: ListRow, text: string, unit: CellUnit | null, label: string | null): Held | null => {
     const f = 'files' in s ? s.files.find((x) => x.id === row.fileId) : undefined;
     if (f?.status.s !== 'read') return null;
     const at = valueAt(f.status.extraction, row.ref)!;
     if (!text.trim()) return { key: row.key, text, expect: 'none' };
     const c = typedCommit(text, at, f.status.choices.edits[row.ref], unit);
     if (!c) return null;
-    return c.kind === 'hold' ? { key: row.key, text, expect: 'hold' } : c.kind === 'edit' ? { key: row.key, text, expect: 'edit', value: c.value } : { key: row.key, text, expect: 'none' };
+    return c.kind === 'hold' ? { key: row.key, text, expect: 'hold', label } : c.kind === 'edit' ? { key: row.key, text, expect: 'edit', value: c.value } : { key: row.key, text, expect: 'none' };
   };
   /** A Save press: any draft committed, then Save if the view allows it (K3b). */
   const pressed = (s: UploadState, record: RoadmapFile, d: Draft): { state: UploadState; focus: string | null } => {
@@ -165,10 +172,11 @@ function runSequence(seed: number, steps: number) {
       const text = pick(activeRow.startsWith('title:') ? TITLES : TEXTS);
       trace.push(`type "${text}"`);
       if ((active as HTMLInputElement).value !== text) {
-        // The unit the row shows as the person starts typing, read from the screen's own unit line.
-        const onScreen = activeRow.startsWith('title:') ? null : see(before, record).list.rows.find((x) => x.key === activeRow)!.shown.cell?.unit ?? null;
+        // The unit the row is typed in as the person starts typing (the engine's `unit.typeIn`, drawn as its label).
+        const onScreen = activeRow.startsWith('title:') ? null : see(before, record).list.rows.find((x) => x.key === activeRow)!.unit.typeIn;
         fireEvent.change(active!, { target: { value: text } });
-        draft = draft?.key === activeRow ? { ...draft, text } : { key: activeRow, text, unit: onScreen };
+        const label = activeRow.startsWith('title:') ? null : unitLabel(activeRow);
+        draft = draft?.key === activeRow ? { ...draft, text } : { key: activeRow, text, unit: onScreen, label };
         if (held?.key === activeRow) held = null;
       }
     } else if (r < 0.44) {
@@ -277,10 +285,19 @@ function runSequence(seed: number, steps: number) {
         expected = transition(expected, { type: 'chose', id: 'f2', change: { document: { date: null } }, now: NOW }).state;
       }
     } else if (r < 0.93) {
-      // The person switches the unit their values show in (the grid's unit toggle), typing or not.
-      const unit: CellUnit = rand() < 0.5 ? 'si' : 'conventional';
-      trace.push(`units ${unit}`);
-      act(() => h.setUnits(() => unit));
+      // A unit press: a row's chip, Lp(a)'s choices, or the whole system, typing or not (a press moves the focus first).
+      const how = rand();
+      const chips = [...document.querySelectorAll<HTMLButtonElement>('li[data-key]:not([hidden]) .upload-list-unit button')];
+      if (how < 0.6 && chips.length) {
+        const chip = pick(chips);
+        trace.push(`unit ${chip.closest<HTMLElement>('li')!.dataset.key} ${chip.textContent}`);
+        if (focusMoves(chip)) { expected = committed(before, record, draft); draft = null; }
+        fireEvent.click(chip);
+      } else {
+        const unit: CellUnit = rand() < 0.5 ? 'si' : 'conventional';
+        trace.push(`units ${unit}`);
+        act(() => h.setUnits(() => unit));
+      }
     } else if (r < 0.96) {
       const next = pick(RECORDS);
       trace.push(`record ${RECORDS.indexOf(next)}`);
@@ -327,6 +344,10 @@ function runSequence(seed: number, steps: number) {
       const ok = draft?.key === held.key ? textInput(rowEl(held.key))?.value === draft.text
         : !choices || (held.expect === 'hold' ? typed?.text === held.text : !typed && (held.expect !== 'edit' || choices.edits[ref] === held.value));
       if (!ok) fail('K3c', `${held.key}: "${held.text}" typed and committed, the engine holds ${JSON.stringify({ typed, edit: choices?.edits[ref] })}`);
+      // K3g: held text keeps the unit label it was typed under, whatever unit presses came since.
+      if (held.expect === 'hold' && draft?.key !== held.key && typed?.text === held.text && unitLabel(held.key) !== held.label) {
+        fail('K3g', `${held.key} holds "${held.text}" typed in ${held.label}, now labelled ${unitLabel(held.key)}`);
+      }
     }
     // K3d, K3e
     const lis = [...document.querySelectorAll<HTMLLIElement>('li[data-key]')];

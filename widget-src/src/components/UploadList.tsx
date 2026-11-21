@@ -9,9 +9,11 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { ChoiceChange } from '@roadmap/health-core/upload-choices';
 import type { ListRow, UploadList as List } from '@roadmap/health-core/upload-list';
+import type { ListPage } from '@roadmap/health-core/upload-list-page';
+import type { CellUnit } from '@roadmap/health-core/cell-unit';
+import type { LpaUnit, MetricType } from '@roadmap/health-core/units';
 import type { UploadView } from '@roadmap/health-core/upload-view';
 import { transition, type Draft, type DraftEvent } from '../lib/upload-list-draft';
-import { REVIEW_ACTION_TEXT } from './ReviewOverview';
 import { UploadListRow, type RowEvents } from './UploadListRow';
 import { DayHeader } from './UploadListDays';
 import { titleKey, UploadListDocuments } from './UploadListDocuments';
@@ -21,6 +23,8 @@ import './UploadList.css';
 export interface UploadListProps {
   list: List;
   view: UploadView;
+  /** Save's and close's words, and each letter's text (`uploadListPage`). */
+  page: ListPage;
   /** One choice for one read file (upload-flow `chose`). */
   choose: (fileId: string, change: ChoiceChange) => void;
   /** The view of the live state, read at once: a Save press reads it after committing a draft. */
@@ -30,6 +34,9 @@ export interface UploadListProps {
   retry: () => void;
   cancel: () => void;
   done: () => void;
+  /** A row's unit press: the web's unit setters (hooks/useUnits.ts, lib/lpa-unit.ts); the engine reads it back. */
+  unitTo: (metric: MetricType, unit: CellUnit) => void;
+  lpaUnitTo: (unit: LpaUnit) => void;
 }
 
 /** The element that removes a blocker: a row's input (its tick when it takes none) or a day control's picker button. */
@@ -45,7 +52,7 @@ function bySection(rows: ListRow[]): Array<{ key: string; rows: ListRow[] }> {
   return [...groups].map(([key, rs]) => ({ key, rows: rs }));
 }
 
-export function UploadList({ list, view, choose, reread, save, stop, retry, cancel, done }: UploadListProps) {
+export function UploadList({ list, view, page, choose, reread, save, stop, retry, cancel, done, unitTo, lpaUnitTo }: UploadListProps) {
   // The draft, read synchronously as well as drawn: a blur and the next row's typing land in one batch.
   const live = useRef<Draft>(null);
   const [draft, setDraft] = useState<Draft>(null);
@@ -78,6 +85,8 @@ export function UploadList({ list, view, choose, reread, save, stop, retry, canc
     focus: (key) => dispatch({ type: 'focus', key }),
     escape: () => { const had = live.current !== null; dispatch({ type: 'escape' }); return had; },
     choose,
+    unitTo,
+    lpaUnitTo,
   };
 
   const pressSave = () => {
@@ -139,7 +148,7 @@ export function UploadList({ list, view, choose, reread, save, stop, retry, canc
       </div>
       {view.documents && (
         <UploadListDocuments
-          documents={view.documents} names={new Map(view.files.rows.map((f) => [f.fileId, f.name]))} editable={editable} on={on}
+          documents={view.documents} names={new Map(view.files.rows.map((f) => [f.fileId, f.name]))} letters={page.letters} editable={editable} on={on}
           fix={(fileId, fix) => choose(fileId, { document: fix })}
           titleOf={(fileId, title) => (draft?.key === titleKey(fileId) ? draft.text : title)}
         />
@@ -152,9 +161,9 @@ export function UploadList({ list, view, choose, reread, save, stop, retry, canc
           {view.save.error && <p className="upload-error">{view.save.error}</p>}
         </div>
         <button type="button" className="btn-primary review-save-btn" aria-disabled={!view.save.enabled} disabled={!editable} onClick={pressSave}>
-          {view.phase === 'saving' ? REVIEW_ACTION_TEXT.saving : view.save.label}
+          {page.save}
         </button>
-        <button type="button" className="review-cancel-btn" disabled={view.closeEnabled === false} onClick={cancel}>{REVIEW_ACTION_TEXT.cancel}</button>
+        <button type="button" className="review-cancel-btn" disabled={view.closeEnabled === false} onClick={cancel}>{page.close}</button>
       </div>
     </div>
   );

@@ -5,10 +5,13 @@ import { useId } from 'react';
 import type { CellUnit } from '@roadmap/health-core/cell-unit';
 import type { ChoiceChange } from '@roadmap/health-core/upload-choices';
 import type { ListRow } from '@roadmap/health-core/upload-list';
+import type { LpaUnit, MetricType } from '@roadmap/health-core/units';
 import { REVIEW_CELL_TEXT } from '@roadmap/health-core/upload-text';
 import { describedBy } from '../lib/aria';
 import { rowName } from '../lib/upload-list-names';
+import { LpaUnitControl } from './LpaUnitControl';
 import { insertedText } from './NumericInputCell';
+import { UnitChip } from './UnitChip';
 
 export interface RowEvents {
   /** `unit`: the unit on screen as the person types; the draft keeps the first. */
@@ -18,6 +21,9 @@ export interface RowEvents {
   /** Escape in an input; true when there was a draft to drop. */
   escape: () => boolean;
   choose: (fileId: string, change: ChoiceChange) => void;
+  /** A unit press: the web's own setters (hooks/useUnits.ts per test, lib/lpa-unit.ts for Lp(a)), read back through `unitOf`. */
+  unitTo: (metric: MetricType, unit: CellUnit) => void;
+  lpaUnitTo: (unit: LpaUnit) => void;
 }
 
 /** Enter commits, Escape drops the draft (and stops the key only then, so a dialog's Escape still closes it otherwise).
@@ -35,7 +41,9 @@ export function UploadListRow({ row, value, hidden, editable, on }: { row: ListR
   const caption = row.caption !== row.error ? row.caption : null;
   const held = row.replaces !== null ? row.held : null;
   const name = rowName(row);
-  const type = (text: string) => on.type(row.key, text, row.shown.cell?.unit ?? null);
+  const type = (text: string) => on.type(row.key, text, row.unit.typeIn);
+  const metric = row.shown.cell?.metric;
+  const { toggle, choices, current } = row.unit;
   return (
     <li className={`upload-list-row upload-list-row--${row.status.kind}`} data-key={row.key} hidden={hidden} onFocus={() => on.focus(row.key)}>
       <label className="upload-list-check">
@@ -59,7 +67,12 @@ export function UploadListRow({ row, value, hidden, editable, on }: { row: ListR
             onKeyDown={draftKeys(on)}
           />
         ) : <span className="upload-list-number">{row.shown.text}</span>}
-        <span id={unitId} className="upload-list-unit">{row.shown.unit}</span>
+        {/* The engine's unit control: Lp(a)'s three, another test's two-way chip, else its label (held text's own unit). */}
+        <span id={unitId} className="upload-list-unit">
+          {choices && current ? <LpaUnitControl unit={current} onChange={on.lpaUnitTo} />
+            : toggle && metric ? <UnitChip label={row.unit.label} onToggle={() => on.unitTo(metric, toggle)} />
+            : row.unit.label}
+        </span>
       </span>
       {(caption || held) && (
         // The saved value leads the caption that says what happens to it; separate words for assistive tech.

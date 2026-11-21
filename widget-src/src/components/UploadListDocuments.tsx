@@ -1,10 +1,11 @@
 // The letters and documents an upload will save (US-14 AC11-13; web list PR 2), drawn from `uploadView().documents` as the
-// iPhone draws them (UploadReviewView.swift `documentsRow`): each with its file, title, kind and date, changed through the
+// iPhone draws them (UploadReviewView.swift `documentsRow`): each with its file, title, kind, date and text, changed through the
 // engine's `{document: DocumentFix}`. The title is typed into the list's one draft (key `title:<fileId>`), so it commits
 // as a value does. "Document title", "Date:" and "Document date" are ReviewFileSections.tsx's words. Each control is
 // named with its letter's file, so two letters read apart.
 import { useId } from 'react';
 import type { DocumentFix } from '@roadmap/health-core/upload-choices';
+import type { ListPage } from '@roadmap/health-core/upload-list-page';
 import type { UploadView } from '@roadmap/health-core/upload-view';
 import { ListDatePicker } from './UploadListDatePicker';
 import { draftKeys, type RowEvents } from './UploadListRow';
@@ -12,8 +13,8 @@ import { draftKeys, type RowEvents } from './UploadListRow';
 export const titleKey = (fileId: string) => `title:${fileId}`;
 type Letters = NonNullable<UploadView['documents']>;
 
-function Letter({ d, documents, fileName, title, editable, on, fix }: {
-  d: Letters['rows'][number]; documents: Letters; fileName: string; title: string; editable: boolean; on: RowEvents; fix: (change: DocumentFix) => void;
+function Letter({ d, documents, fileName, title, text, editable, on, fix }: {
+  d: Letters['rows'][number]; documents: Letters; fileName: string; title: string; text: string | null; editable: boolean; on: RowEvents; fix: (change: DocumentFix) => void;
 }) {
   const id = useId();
   const [fileId, titleId, dateId] = ['file', 'title', 'date'].map((p) => `${id}${p}`);
@@ -43,12 +44,16 @@ function Letter({ d, documents, fileName, title, editable, on, fix }: {
           <button type="button" className="upload-list-remove-date" disabled={!editable} onClick={() => fix({ date: null })}>{documents.removeDate}</button>
         )}
       </span>
+      {/* The reader's Markdown, shown as plain text (never HTML), in the grid's preview box (ReviewFileSections.tsx). */}
+      {text !== null && <div className="review-document-preview upload-list-letter-text">{text}</div>}
     </li>
   );
 }
 
-export function UploadListDocuments({ documents, names, titleOf, editable, on, fix }: {
+export function UploadListDocuments({ documents, names, letters, titleOf, editable, on, fix }: {
   documents: Letters;
+  /** Each letter's text, from `uploadListPage().letters`. */
+  letters: ListPage['letters'];
   /** Each letter's file name by file id (`uploadView().files`): the documents carry none of their own. */
   names: ReadonlyMap<string, string>;
   /** The title input's text: the draft while it names this letter, else the engine's title. */
@@ -63,6 +68,7 @@ export function UploadListDocuments({ documents, names, titleOf, editable, on, f
       <ul>
         {documents.rows.map((d) => (
           <Letter key={d.fileId} d={d} documents={documents} fileName={names.get(d.fileId) ?? ''} title={titleOf(d.fileId, d.title)}
+            text={letters.find((l) => l.fileId === d.fileId)?.text ?? null}
             editable={editable} on={on} fix={(change) => fix(d.fileId, change)} />
         ))}
       </ul>

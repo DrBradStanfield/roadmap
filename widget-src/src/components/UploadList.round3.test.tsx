@@ -8,7 +8,6 @@ import { IMPORT_REVIEW_TEXT } from '@roadmap/health-core/import-review';
 import { NUMERIC_SYNTAX_GUIDANCE } from '@roadmap/health-core/cell-input';
 import { bulkAppendValues } from '@roadmap/health-core/record-edits';
 import { UPLOAD_TEXT } from '@roadmap/health-core/upload-text';
-import { REVIEW_ACTION_TEXT } from './ReviewOverview';
 import { controlAt } from './UploadList';
 import { blur, input, LDL, labRead, letterRead, mount, open, row, save, typeInto } from '../testing/upload-list-kit';
 
@@ -139,9 +138,9 @@ describe('B8: no screen-made text', () => {
 
   it('Cancel and Saving... are the review\'s own words, from one place', () => {
     mount(open([ldl(3.1)]));
-    expect(screen.getByRole('button', { name: REVIEW_ACTION_TEXT.cancel })).toBeTruthy();
+    expect(screen.getByRole('button', { name: UPLOAD_TEXT.cancel })).toBeTruthy();
     fireEvent.click(save());
-    expect(save().textContent).toBe(REVIEW_ACTION_TEXT.saving);
+    expect(save().textContent).toBe(UPLOAD_TEXT.saving);
   });
 });
 
@@ -175,11 +174,4 @@ describe('B9: presses, leaving and composing', () => {
     expect(within(document.querySelector<HTMLElement>('.upload-list-save-line')!).getByText(UPLOAD_TEXT.chooseDay)).toBeTruthy();
     expect(DAY).toBe('2026-11-01');
   });
-});
-
-describe('waiting on the engine (PR in progress elsewhere)', () => {
-  it.todo('ENGINE: each row keeps the grid\'s per-row unit toggle (UnitChip, ReviewMatrix.tsx:171)');
-  it.todo('ENGINE: held text shows beside it the unit it was typed in, not the row\'s unit now');
-  it.todo('ENGINE: a day chosen while the engine still waits shows what the engine says (delete UploadListDays\' `chosen ?? day ?? printed` fallback)');
-  it.todo('ENGINE: a letter shows its text, as the iPhone (DocumentText) and the grid\'s preview do');
 });

@@ -9,7 +9,7 @@
 .upload-list-day {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas: "words input" "printed input" "file input";
+  grid-template-areas: "words input" "printed input" "file input" "hint hint";
   gap: 2px 12px;
   align-items: center;
   padding: 10px 12px;
@@ -21,6 +21,7 @@
 .upload-list-day-printed { grid-area: printed; font-size: 13px; color: var(--color-text); }
 .upload-list-day-file { grid-area: file; font-size: 13px; color: var(--color-text-secondary); overflow-wrap: anywhere; }
 .upload-list-day-input { grid-area: input; }
+.upload-list-day-hint { grid-area: hint; margin-top: 4px; font-size: 13px; color: var(--color-grade-warn-text); }
 
 /* The picker: one line, a 1px border, 44px tall; with no day, its words in warning ink on the amber tint. */
 .upload-list-picker { position: relative; display: inline-block; }
@@ -57,6 +58,7 @@
 .upload-list .bt-input.upload-list-input[aria-invalid="true"] { color: var(--color-error); border-bottom: 1.5px solid var(--color-error); }
 .upload-list-number { width: 6em; flex: none; font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .upload-list-unit { font-size: 13px; color: var(--color-text-secondary); }
+.upload-list-unit .bt-unit-segments, .upload-list-unit .bt-unit-chip { font-size: 13px; }
 .upload-list-caption { margin: 2px 0 0; font-size: 13px; line-height: 1.4; color: var(--color-text-secondary); }
 .upload-list-held { color: var(--color-text-secondary); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .upload-list-replace { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-size: 14px; cursor: pointer; justify-self: start; }
@@ -86,6 +88,7 @@
 .upload-list-document > .upload-list-document-label { flex: 1 1 100%; }
 .upload-list-document-label { font-size: 13px; color: var(--color-text-secondary); }
 .upload-list-document .review-title-input { flex: 1 1 100%; font-size: 16px; }
+.upload-list-document .upload-list-letter-text { flex: 1 1 100%; margin: 0; }
 .upload-list-document .upload-list-kind { flex: 1 1 10em; width: auto; min-height: 44px; font: inherit; font-size: 16px; }
 .upload-list-document-date { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 14px; }
 .upload-list-remove-date {
