@@ -20,6 +20,11 @@ import { PROXY_PATH, parseJsonResponse, trackProductEvent } from './server-api';
 import { countRefusedSpellings } from './refused-spellings';
 import { SHOPIFY_SURFACE } from './build-flags';
 import type { StorageAdapter } from '@roadmap/health-core/adapter';
+import type { UploadState } from '@roadmap/health-core/upload-flow';
+import { uploadReview } from '@roadmap/health-core/upload-review';
+import type { ScreeningPerson } from '@roadmap/health-core/upload-screening';
+import { SAVE_FAILED, type UploadSaveAnswer, type WebUploadIO } from '../storage/upload-save-store';
+import { labRefusalsAt } from './upload-save-events';
 import type {
   AddMeasurementResult,
   ApiDocument,
@@ -324,6 +329,17 @@ export async function bulkSaveDocuments(
   documents: Array<{ documentType: string; title: string; documentDate: string | null; contentMd: string; metadata: Record<string, unknown>; sourceFileName: string | null; file?: Blob; contentHash?: string }>,
 ): Promise<{ saved: ApiDocument[]; errorCount: number; unstored?: number }> {
   return store ? store.bulkSaveDocuments(documents) : { saved: [], errorCount: documents.length };
+}
+/** The shared upload's one Save (storage/upload-save-store.ts) and the counts today's writers send for it: the labs the
+ *  review did not send for their unit (lib/upload-save-events.ts), the vitals the commit added. Mounted in PR 3b. */
+export async function saveUpload(s: UploadState, now: string, io: WebUploadIO, person?: ScreeningPerson): Promise<UploadSaveAnswer> {
+  if (!store) return { ok: false, reason: 'erased', message: SAVE_FAILED };
+  const refused = labRefusalsAt(uploadReview(s, store.file, now)); // the review uploadSave judges, on the record it starts from
+  const answer = await store.saveUpload(s, now, getDocumentArchiveMode() === 'cloud', io, person);
+  if (!answer.ok) return answer;
+  countRefusedSpellings(refused);
+  countMeasuresAdded(answer.added);
+  return answer;
 }
 export async function deleteDocument(documentId: string): Promise<boolean> {
   return store ? store.deleteDocument(documentId) : false;

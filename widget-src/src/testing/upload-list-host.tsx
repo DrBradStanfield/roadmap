@@ -9,10 +9,8 @@ import type { CellUnit } from '@roadmap/health-core/cell-unit';
 import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import type { MetricType } from '@roadmap/health-core/units';
 import { transition, type UploadEvent, type UploadState } from '@roadmap/health-core/upload-flow';
-import { uploadList } from '@roadmap/health-core/upload-list';
-import { uploadListPage } from '@roadmap/health-core/upload-list-page';
 import { lostReplaces, reviewedWrites, uploadReview } from '@roadmap/health-core/upload-review';
-import { uploadView } from '@roadmap/health-core/upload-view';
+import { uploadScreens } from '../lib/upload-screens';
 import { UploadList } from '../components/UploadList';
 
 type UnitOf = (m: MetricType) => CellUnit;
@@ -32,13 +30,7 @@ export interface ListHost {
   see: () => ReturnType<typeof engineSee>;
 }
 
-export function engineSee(s: UploadState, record: RoadmapFile, now: string, unitOf: UnitOf) {
-  const review = uploadReview(s, record, now);
-  return {
-    review, list: uploadList(s, record, now, review, unitOf), view: uploadView(s, record, now, review, false, unitOf),
-    page: uploadListPage(s, record, now, review, false),
-  };
-}
+export const engineSee = (s: UploadState, record: RoadmapFile, now: string, unitOf: UnitOf) => uploadScreens(s, record, now, false, unitOf);
 
 export function UploadListHost({ initial, record, now, unitOf = () => 'si', host }: {
   initial: UploadState; record: RoadmapFile; now: string; unitOf?: UnitOf; host?: MutableRefObject<ListHost | null>;

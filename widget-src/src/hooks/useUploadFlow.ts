@@ -266,5 +266,7 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
     readError: readErrorOf(upload), saveError: upload.phase === 'saveFailed' ? upload.message : null,
     skipArchive, skipConnect: () => setSkipArchive(true),
     pick, cancel, close, discard, save, endReview: endReview.current,
+    // For the list's mount (PR 3b): `send` sets `live.current` before it returns, so a read right after a choice holds it.
+    send, live,
   };
 }

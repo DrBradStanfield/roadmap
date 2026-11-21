@@ -1,0 +1,69 @@
+/**
+ * The web's one upload Save (US-52 AC8c, US-14 AC10, US-16 AC2a): health-core `uploadSave` on the open record, its
+ * originals written to the person's cloud through the store's adapter, then its `commit` applied through ONE
+ * `session.edit` stamped with the erase the page showed when the Save began. Values, documents, originals' rows and
+ * screening dates land together or not at all; there is no second write path. As ios/engine/upload-save-door.ts does
+ * for the phone. Not mounted yet: the web list's mount (PR 3b) calls it in place of lib/upload-save.ts.
+ */
+import type { ApiMeasurement } from '@roadmap/health-core/mappings';
+import type { RecordHost } from '@roadmap/health-core/record-host';
+import type { RecordSession } from '@roadmap/health-core/record-session';
+import type { UploadState } from '@roadmap/health-core/upload-flow';
+import { uploadSave, type SavedOutcome, type UploadSaveIO } from '@roadmap/health-core/upload-save';
+import type { ScreeningPerson } from '@roadmap/health-core/upload-screening';
+import { recordFailure, WritesStoppedError } from '../lib/error-diagnostics';
+import { Sentry } from '../lib/sentry';
+
+/** An original as the web holds it: its bytes are read only as it is written, so a ZIP member inflates then. */
+export type Original = () => Promise<Blob>;
+/** What the page holds of the pick: the store adds the cloud write. */
+export type WebUploadIO = Omit<UploadSaveIO<Original>, 'write'>;
+
+/** The page's words for a Save that wrote nothing: an erase moved, or a throw. */
+export const SAVE_FAILED = 'Failed to save. Please try again.';
+
+/** `added`: the vitals this Save inserted as new, never a correction (`measurement_added`, US-07 AC11). */
+export type UploadSaveAnswer =
+  | { ok: true; outcome: SavedOutcome; added: ApiMeasurement[] }
+  | { ok: false; reason: 'not-saving' | 'not-ready' | 'erased'; message: string };
+
+const ERASED = { ok: false, reason: 'erased', message: SAVE_FAILED } as const;
+
+/** A failed original write, reported as the store reports one: tags only, never a name, a value or the bytes. A
+ *  log-off refusal is not reported (US-09 AC2c). */
+export function reportUnstored(error: unknown, backend: string): void {
+  if (error instanceof WritesStoppedError) return;
+  console.warn('Document file not stored');
+  Sentry.captureException(recordFailure(error, 'Document file not stored'), { tags: { area: 'cloud-sync', op: 'write-document', backend } });
+}
+
+export async function saveUploadThrough(
+  session: RecordSession, host: RecordHost, s: UploadState, now: string, cloudConnected: boolean, io: WebUploadIO, person?: ScreeningPerson,
+): Promise<UploadSaveAnswer> {
+  // The Save stands for the erase the page showed as it began: refused before any write, before each original and at
+  // the commit, since an erase can land while the originals upload (US-16 AC2a, US-11 AC1a).
+  const erase = session.shownErase;
+  if (session.refuses(erase)) return ERASED;
+  const out = await uploadSave(s, session.file, now, cloudConnected, {
+    ...io,
+    // A failed write is reported, then rethrown: the engine counts it `unstored` and its row keeps the hash alone.
+    // The bytes go as the page holds them, a File with its own type, as the store's document save writes them.
+    write: async (ref, original) => {
+      try {
+        if (session.refuses(erase)) throw new Error('erase moved');
+        await host.store.writeDocument(ref, await original());
+      } catch (error) {
+        if (!session.refuses(erase)) reportUnstored(error, host.store.id);
+        throw error;
+      }
+    },
+  }, person);
+  if (!out.ok) return out;
+  const before = new Set(session.file.measurements.map((m) => m.id));
+  let landed: ReturnType<typeof out.commit> | null = null;
+  // The rows land on the record as it is now: an edit that landed while the originals uploaded is kept.
+  if (!session.edit((file) => (landed = out.commit(file)).file, erase) || !landed) return ERASED;
+  const { outcome } = landed as ReturnType<typeof out.commit>;
+  const added = session.file.measurements.filter((m) => !before.has(m.id) && m.status === 'active' && !m.correctsId) as unknown as ApiMeasurement[];
+  return { ok: true, outcome, added };
+}

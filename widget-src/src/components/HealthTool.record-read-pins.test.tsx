@@ -30,6 +30,10 @@ import { WRITE_REFUSED } from '../lib/erase-copy';
 import { press, pressMouse, pressWithoutFocus, releaseMouse, typeInto } from '../testing/matrix-gestures';
 import { cellText } from '../lib/blood-test-cell';
 import { Sentry } from '../lib/sentry';
+import { NO_CHOICES } from '@roadmap/health-core/upload-choices';
+import type { UploadFile, UploadState } from '@roadmap/health-core/upload-flow';
+import { sharedSave } from '../lib/upload-shared-save';
+import { emptyHeld } from '../lib/upload-read';
 const { scrubEvent: realScrubEvent } = await vi.importActual<typeof import('../lib/sentry')>('../lib/sentry');
 
 vi.mock('../lib/build-flags', () => ({ LOCAL_FIRST: true, SHOPIFY_SURFACE: true }));
@@ -1109,6 +1113,32 @@ describe('US-34 AC4, US-16 AC2a (H52): a re-read inside a list save\'s 300 ms sh
       upload.screening!('colorectal_last_date', '2025-06', getShownErase());
       await upload.complete!();
     });
+    await settle(400);
+    await act(async () => { await flushRoadmapStore(); });
+    expect((await recorded()).colonoscopy).toBe('2025-06');
+    expect(select(view, 'select#colorectal_last_date').value).toBe('2025-06');
+  });
+
+  it('US-34 AC4, US-13 AC6 (mount 3a): through the shared Save, a letter\'s screening date written in its commit shows after the adapter\'s re-read', async () => {
+    await saveChangedMeasurements({ sex: 'female', heightCm: 165, birthYear: 1960, birthMonth: 1 }, {});
+    await addMeasurement('weight', 70, '2026-09-01');
+    await saveScreening('colorectal_method', 'colonoscopy_10yr');
+    await saveScreening('colorectal_last_date', '2024-03');
+    await flushRoadmapStore();
+    const view = render(<HealthTool />);
+    await waitFor(() => expect(q(view, 'select#colorectal_last_date')).toBeTruthy());
+    await waitFor(() => expect(upload.complete).toBeTruthy());
+    // A read letter whose reader named a colonoscopy, dated by month: its box is ticked for a known age, and the shared
+    // commit writes the date through `setScreening`, skipping the form's in-memory patch (useListSaves.ts:77).
+    const now = new Date().toISOString();
+    const letter: UploadFile = { id: 'f0', name: 'letter.pdf', bytes: 1, hash: 'hash-synthetic-letter', pages: { count: 1, truncated: false }, status: { s: 'read', choices: NO_CHOICES, extraction: {
+      classification: 'clinic_letter', reportDate: null, values: [], additionalValues: [], unrecognized: [],
+      document: { classification: 'clinic_letter', title: 'Synthetic colonoscopy', documentDate: '2025-06', contentMarkdown: 'Synthetic', metadata: { screeningType: 'colorectal' } },
+    } } };
+    const saving: Extract<UploadState, { phase: 'saving' }> = { phase: 'saving', platform: 'web', run: 1, files: [letter], started: now, firstRead: now, attempt: 1 };
+    let answer: Awaited<ReturnType<typeof sharedSave>> | undefined;
+    await act(async () => { answer = await sharedSave(saving, emptyHeld(1), { age: 66, sex: 'female' }, upload.complete!); });
+    expect(answer).toMatchObject({ type: 'saved', outcome: { documents: 1, screenings: 1 } });
     await settle(400);
     await act(async () => { await flushRoadmapStore(); });
     expect((await recorded()).colonoscopy).toBe('2025-06');
