@@ -27,7 +27,7 @@ Add your height, weight, blood pressure and blood tests. Apple Health can fill i
 the vitals, and you can upload a lab report from your phone, Dropbox or Google
 Drive. The app reads it and asks you to confirm each value before saving it.
 
-If you allow it, My data also shows your resting heart rate, sleep, VO2
+If you allow it, My health also shows your resting heart rate, sleep, VO2
 max and steps from Apple Health, with a chart for each. They stay out of your record
 and never leave your iPhone.
 *(For the next version: 0.1 is in review with the old text, "They are shown from Apple
@@ -116,9 +116,9 @@ declares the three rows below; declare them as written.
   Apple's permission sheet. Allow or Don't Allow, then answer height, sex and birth
   year. A person who declines can turn access on later in iOS Settings (My health shows
   Open Settings); one who came in through 'I already use Health Roadmap' connects from
-  My data's Apple Health row. To see a full plan quickly, add LDL cholesterol 160 mg/dL
+  the Apple Health row in the app's own Settings (the person button on My health). To see a full plan quickly, add LDL cholesterol 160 mg/dL
   and systolic blood pressure 145 mmHg. Tap a step marked "Sources" to see its sources.
-- Cloud sync is optional (My data, Sync). A reviewer Dropbox account: give the
+- Cloud sync is optional (My health, Sync). A reviewer Dropbox account: give the
   details in the notes field, never in this file.
 - Chat and lab upload use Apple's App Attest to prove the request comes from this
   app; there is no user account.
@@ -144,7 +144,7 @@ declares the three rows below; declare them as written.
   record and writes typed values back. In the same single permission sheet, shown once
   during onboarding (the Apple Health page's "Continue"), it also asks to read resting
   heart rate, sleep, VO2 max and steps. A person who connected before this
-  was added gets "Turn On" on My data, the same sheet again; after a refusal, "Open Settings"
+  was added gets "Turn On" on My health, the same sheet again; after a refusal, "Open Settings"
   opens Settings. These four never go into the record: the app keeps a copy of what the cards
   and charts draw (each card's latest reading and trend values, each chart's daily history, the
   last week of hourly values, and sleep's stages) in files on this iPhone only (not backed up,

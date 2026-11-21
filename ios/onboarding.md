@@ -43,7 +43,7 @@ flowchart TD
   Q1[Sex] --> Q2[Birth month and year]
   Q2 --> Q3[Height]
   Q3 --> Q4[Weight]
-  Q4 -->|nothing from Health| P[My plan]
+  Q4 -->|nothing from Health| P[My health]
   Q4 -->|something from Health| R[From Apple Health: check, Edit, Continue]
   R --> P
 ```
@@ -77,7 +77,7 @@ flowchart TD
    today's Apple Health reading, never written back to Health. A relaunch keeps all this:
    which steps came from Health is kept by name, and the rest is read from the record. The skipped answers are
    listed on one last screen, "From Apple Health", each with **Edit**, and one
-   **Continue**. Health holding everything: the sheet, that screen, Continue, My plan.
+   **Continue**. Health holding everything: the sheet, that screen, Continue, My health.
 3. **Sex.** Female or Male, two large buttons. One line on why: the plan's targets and
    screenings depend on it. A tap saves and moves on; there is no Continue. A sex from
    Apple Health is not asked (AC3b): it is saved and listed on the summary; opened from
@@ -88,10 +88,10 @@ flowchart TD
 5. **Height.** A large number box, focused on arrival: centimetres, or feet and inches
    (two boxes). A cm / ft in switch beside it starts from the record's units.
 6. **Weight.** The same, in kilograms or pounds. Required (Brad 2026-10-23): no Skip.
-7. **My plan.** The plan, straight away.
+7. **My health.** The plan, straight away.
 
 The unit switch is for entry only (review 2026-10-23): it never writes the record's
-units, which come from the region default and change in My data › About you › Units.
+units, which come from the region default and change in Settings › About you › Units.
 A box left alone shows the record's value again in the new units; a typed one is
 converted, through the engine (`convertJson`, health-core's factors). On Continue a typed
 value is converted once to the units the engine's edit reads. A box filled from the
@@ -169,7 +169,7 @@ Health, and see my plan, without facing the full form.
 
 ## The tour (US-57, approved and built 2026-10-25)
 
-After the last question the person lands on My plan, and a three-tip tour starts. It uses
+After the last question the person lands on My health, and a three-tip tour starts. It uses
 Apple's TipKit, shows each tip once and can be skipped. Brad: "This tour mustn't go on and
 on", so each tip is one line. The story and its ACs are US-57.
 
@@ -189,14 +189,14 @@ tests heading. The list below is the 2026-10-25 tour, kept for its reasons.
 
 Every tip ends on one row (Brad 2026-10-25): "Skip tour" as plain text on the left, its
 counter ("1/3", read "Tip 1 of 3") centred, "Next" on the right; tip 3's reads "Done".
-Tip 2's Next switches to My data, which scrolls Blood tests into view for tip 3. There
+Tip 2's Next scrolls My health to Blood tests for tip 3. There
 is no x. A tap outside a tip also moves on (review R2a, 2026-10-25): TipKit only hides a
-popover then, and the tour must end; after tip 2 it stays on My plan, and tip 3 waits
-for My data. A screen that cannot draw a tip's anchor passes that step. The person's third
+popover then, and the tour must end; after tip 2 it stays on My health, and tip 3 waits for
+the Blood tests heading. A screen that cannot draw a tip's anchor passes that step. The person's third
 own save ends a tour still running. At accessibility text sizes a tip scrolls.
 
-No cloud sign-up in the tour. One prompt after the person's third own save (a My data
-edit or a saved lab report, not onboarding's answers, Apple Health or a merge) offers a
+No cloud sign-up in the tour. One prompt after the person's third own save (an edit on My health
+or in Settings, or a saved lab report, not onboarding's answers, Apple Health or a merge) offers a
 copy in their own Dropbox or Google Drive. It shows once, waits for no sheet or tip to
 be up, and opens the Sync sheet once it has gone. Onboarding's last answer lands in the
 same turn as onboarding ends, so `RootView.finished` passes over it (review R1).
