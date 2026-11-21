@@ -776,7 +776,10 @@ class Run {
     if (this.s.phase !== 'done') fail('P3', 'saved but not done');
     const done = uploadView(this.s, file, NOW, uploadReview(this.s, file, NOW), this.setup.cloud);
     checkText(done);
-    if (done.done?.line !== UPLOAD_TEXT.savedLine(outcome.values, outcome.documents)) fail('P3', 'done line');
+    // US-14 AC13: originals kept and nothing else written heads with the kept line alone.
+    const keptOnly = outcome.archived > 0 && !outcome.values && !outcome.documents;
+    if (done.done?.line !== (keptOnly ? UPLOAD_TEXT.archivedLine(outcome.archived) : UPLOAD_TEXT.savedLine(outcome.values, outcome.documents))) fail('P3', 'done line');
+    if (done.done?.archived !== (outcome.archived && !keptOnly ? UPLOAD_TEXT.archivedLine(outcome.archived) : null)) fail('P3', 'done kept line');
     const lines = [...(outcome.skippedValues ? [UPLOAD_TEXT.skippedLine(outcome.skippedValues, false)] : []), ...(outcome.skippedLabValues ? [UPLOAD_TEXT.skippedLine(outcome.skippedLabValues, true)] : [])];
     if (JSON.stringify(done.done?.skipped) !== JSON.stringify(lines)) fail('P3', `done skipped lines ${JSON.stringify(done.done?.skipped)}`);
     if (!!done.done?.unstored !== outcome.unstored > 0) fail('P3', 'unstored line');
