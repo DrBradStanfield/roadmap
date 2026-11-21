@@ -241,7 +241,8 @@ final class CloudSyncTests: XCTestCase, CloudFixtures {
         drive.pick(["lab"])
         drive.read("lab", extraction)
         let reviewed = try XCTUnwrap(try drive.page().reviewed)
-        XCTAssertFalse(reviewed.isEmpty, "the report's values are offered")
+        XCTAssertEqual(reviewed.count, 3, "the report's three values are offered")
+        XCTAssertEqual(Set(reviewed.map(\.ref)), ["v0", "v1", "a0"])
         drive.step(UploadAction.saveEvent(promised: reviewed))
         // The re-read and the save race; whichever lands first, the count must match.
         let reread = Task { await sync.syncNow() }
@@ -1205,7 +1206,10 @@ final class CloudSyncTests: XCTestCase, CloudFixtures {
         erased["meta"] = meta
         dropbox.put(erased)
         await sync.syncNow()
-        guard case .failure = await store.saveUpload(state: drive.state, originals: [:], read: { _ in nil }, as: opened) else { return XCTFail("a pre-erase document was saved") }
+        // A real original offered, so a Save that wrote it before refusing would leave it in Dropbox.
+        let bytes = Data("%PDF-1.7 synthetic letter".utf8)
+        let refused = await store.saveUpload(state: drive.state, originals: ["letter": "application/pdf"], read: { _ in bytes }, as: opened)
+        XCTAssertEqual(refused, .failure(LabRefusal(message: RecordStore.recordChanged)), "a pre-erase document was refused by the store's guard")
         guard case .refused = await store.apply(.add(metric: "weight", value: 80, day: "2026-10-02")) else { return XCTFail("a pre-erase value was saved") }
         XCTAssertEqual(dropbox.documents, [:])
     }
