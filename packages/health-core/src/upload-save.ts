@@ -31,8 +31,7 @@ import type { RoadmapFile } from './roadmap-file';
 import type { SaveOutcome, UploadState } from './upload-flow';
 import { storedHashes, uploadSavePlan } from './upload-plan';
 import { reviewedWrites, uploadReview } from './upload-review';
-import type { ScreeningPerson } from './upload-screening';
-import { setScreening } from './state-edits';
+import { isScreeningDateKey, writeScreeningDates, type ScreeningPerson } from './upload-screening';
 import { measurementRefusalText } from './upload-text';
 import { saveBlocked } from './upload-view';
 
@@ -165,8 +164,8 @@ export async function uploadSave<F>(s: UploadState, record: RoadmapFile, now: st
       // Each ticked, dated box of a letter this commit saved, by type, the last in picked order standing.
       const savedLetters = new Set<string | null | undefined>(docs.saved.map((d) => d.contentHash ?? d.sourceFileName));
       const dates = new Map<string, string>(plan.documents.flatMap(({ fileId, fields, screening: box }) =>
-        (box?.ticked && box.date !== null && savedLetters.has(hashOf.get(fileId) ?? fields.sourceFileName) ? [[box.key, box.date]] : [])));
-      const out = [...dates].reduce((f, [key, date]) => setScreening(f, key, date, now), filed);
+        (box?.ticked && box.date !== null && isScreeningDateKey(box.key) && savedLetters.has(hashOf.get(fileId) ?? fields.sourceFileName) ? [[box.key, box.date]] : [])));
+      const out = writeScreeningDates(filed, dates, now);
       // `unstored`: each original the plan stores that no live row on the committed record stores (a failed or
       // untried write, the app not holding it), judged at commit so another writer's copy counts as kept.
       const stored = storedHashes(out);

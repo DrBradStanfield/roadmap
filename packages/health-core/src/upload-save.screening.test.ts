@@ -14,7 +14,7 @@ import type { FileDocument, RoadmapFile } from './roadmap-file';
 import { NO_CHOICES, type DocumentFix } from './upload-choices';
 import type { UploadFile, UploadState } from './upload-flow';
 import { uploadSave, type UploadSaveIO } from './upload-save';
-import type { ScreeningPerson } from './upload-screening';
+import { writeScreeningDates, type ScreeningPerson } from './upload-screening';
 
 function mulberry32(seed: number): () => number {
   let a = seed >>> 0;
@@ -31,6 +31,7 @@ function mulberry32(seed: number): () => number {
 const RULES: Record<string, { age: number; sex?: 'male' | 'female' }> = { colorectal: { age: 35 }, breast: { age: 40, sex: 'female' }, prostate: { age: 45, sex: 'male' } };
 const eligible = (type: string, p: ScreeningPerson) => {
   const r = RULES[type];
+  if (!r) return false; // a type outside the screening table: never a box, never written
   if (p.sex && r.sex && p.sex !== r.sex) return false;
   return p.age === undefined || p.age >= r.age;
 };
@@ -60,14 +61,15 @@ async function save(s: UploadState, record: RoadmapFile, person?: ScreeningPerso
   return out.commit(record);
 }
 
-const TYPES = ['colorectal', 'breast', 'prostate', null];
+/** `knee` and `colorectal_method` are outside the screening table (validation.ts SCREENING_KEYS has no `<type>_last_date`). */
+const TYPES = ['colorectal', 'breast', 'prostate', 'knee', 'colorectal_method', null];
 const PEOPLE: ScreeningPerson[] = [{}, { age: 30 }, { age: 42, sex: 'female' }, { age: 60, sex: 'male' }, { age: 60 }, { sex: 'female' }];
 
 describe('US-13 AC6: a letter\'s screening box, written by the shared Save (web only)', () => {
-  it('over 400 seeded picks: each type written exactly as the oracle says, at most once, the last ticked saved letter in picked order winning', async () => {
+  it('over 800 seeded picks: each type written exactly as the oracle says, at most once, the last ticked saved letter in picked order winning', async () => {
     // How often each case the properties name came up: every one must, or the seeds prove nothing about it.
-    const seen = { written: 0, unticked: 0, ineligible: 0, notSaved: 0, phone: 0, twoOfAType: 0 };
-    for (let seed = 1; seed <= 400; seed++) {
+    const seen = { written: 0, unticked: 0, ineligible: 0, notSaved: 0, phone: 0, twoOfAType: 0, outsideTable: 0 };
+    for (let seed = 1; seed <= 800; seed++) {
       const r = mulberry32(seed);
       const pick = <T,>(xs: T[]) => xs[Math.floor(r() * xs.length)];
       const platform = r() < 0.8 ? 'web' : 'phone';
@@ -95,6 +97,7 @@ describe('US-13 AC6: a letter\'s screening box, written by the shared Save (web 
           expected.set(`${type}_last_date`, date);
           seen.written++;
         } else if (rest && platform === 'phone' && person && eligible(type!, person) && saved && ticked) seen.phone++;
+        else if (rest && platform === 'web' && person && saved && ticked && !RULES[type!]) seen.outsideTable++;
         else if (rest && platform === 'web' && person && saved && ticked && !eligible(type!, person)) seen.ineligible++;
         else if (rest && platform === 'web' && person && eligible(type!, person) && ticked && !saved) seen.notSaved++;
         else if (rest && platform === 'web' && person && eligible(type!, person) && saved && !ticked) seen.unticked++;
@@ -102,6 +105,8 @@ describe('US-13 AC6: a letter\'s screening box, written by the shared Save (web 
       const files = letters.map((l) => l.file);
       const record = held.size ? { ...EMPTY, documents: [...held].map(heldDoc) } : EMPTY;
       const { file, outcome } = await save(saving(platform, files), record, person);
+      expect(Object.keys(file.screenings).filter((k) => !['updatedAt', 'lamport', 'fieldStamps'].includes(k)).sort(), `seed ${seed}`)
+        .toEqual([...expected.keys()].map(field).sort());
       for (const type of ['colorectal', 'breast', 'prostate']) {
         const key = `${type}_last_date`;
         expect(written(file, key), `seed ${seed} ${key}`).toBe(expected.get(key));
@@ -116,6 +121,19 @@ describe('US-13 AC6: a letter\'s screening box, written by the shared Save (web 
     const { file, outcome } = await save(s, EMPTY, { age: 60 });
     expect(written(file, 'colorectal_last_date')).toBe('2026-03-02');
     expect(outcome.screenings).toBe(1);
+  });
+
+  it('a screening box only for a type in the screening table: a ticked letter of any other type writes nothing', async () => {
+    for (const type of ['knee', 'colorectal_method', 'endometrial']) {
+      const { file, outcome } = await save(saving('web', [readFile('a', 'ha', letter(type, '2026-10-20'), { screening: true })]), EMPTY, { age: 60 });
+      expect(Object.keys(file.screenings).filter((k) => !['updatedAt', 'lamport', 'fieldStamps'].includes(k)), type).toEqual([]);
+      expect(outcome.screenings, type).toBeUndefined();
+    }
+  });
+
+  it('the write itself takes only a key in the screening table, whatever a state carries', () => {
+    const file = writeScreeningDates(EMPTY, [['knee_last_date', '2026-10-20'], ['colorectal_method', '2026-10-20'], ['colorectal_last_date', '2026-10-20']], NOW);
+    expect(Object.keys(file.screenings).filter((k) => !['updatedAt', 'lamport', 'fieldStamps'].includes(k))).toEqual(['colorectalLastDate']);
   });
 
   it('a phone Save writes no screening date, even for an eligible ticked letter', async () => {

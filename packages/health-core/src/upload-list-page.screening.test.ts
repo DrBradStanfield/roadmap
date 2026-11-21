@@ -45,6 +45,8 @@ describe('US-13 AC6: the screening box on the web list', () => {
     expect(page(open('web', letter('breast', '2026-10-20')), { age: 60, sex: 'male' }).letters[0].screening).toBeUndefined();
     expect(page(open('web', letter('colorectal', '2026-10-20')), { age: 30 }).letters[0].screening).toBeUndefined();
     expect(page(open('web', letter(null, '2026-10-20')), { age: 60 }).letters[0].screening).toBeUndefined();
+    // A screening box only for a type in the screening table.
+    for (const type of ['knee', 'colorectal_method', 'endometrial']) expect(page(open('web', letter(type, '2026-10-20')), { age: 60 }).letters[0].screening, type).toBeUndefined();
     expect(page(open('phone', letter('colorectal', '2026-10-20')), { age: 60 }).letters[0].screening).toBeUndefined();
     expect(page(open('web', letter('colorectal', '2026-10-20'))).letters[0].screening).toBeUndefined();
   });

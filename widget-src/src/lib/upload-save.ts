@@ -15,6 +15,7 @@ import { toStoreInputs } from './to-store-inputs';
 import { Sentry } from './sentry';
 import { recordFailure, WritesStoppedError } from './error-diagnostics';
 import { joinRows, type SaveOutcome } from './upload-save-outcome';
+import { isScreeningDateKey } from '@roadmap/health-core/upload-screening';
 
 export interface SaveContext {
   /** The lab rows earlier attempts of this review wrote. */
@@ -94,7 +95,7 @@ export async function saveReview(d: ReviewDecisions, { earlierRows, complete, sc
     // Update screening dates for documents with screening mappings, unless
     // the record was erased while the save ran: the date belongs to it.
     for (const doc of getEraseIdentity() === erase ? documents : []) {
-      if (doc.screeningUpdate && screening) screening(doc.screeningUpdate.key, doc.screeningUpdate.date, erase);
+      if (doc.screeningUpdate && screening && isScreeningDateKey(doc.screeningUpdate.key)) screening(doc.screeningUpdate.key, doc.screeningUpdate.date, erase);
     }
 
     // A re-read that fails, at once or later, is only reported: what saved stays saved.

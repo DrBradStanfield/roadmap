@@ -7,7 +7,15 @@
  * never has one. Pure.
  */
 import { validDay } from './record-edits';
+import type { RoadmapFile } from './roadmap-file';
+import { setScreening } from './state-edits';
 import { isScreeningEligible } from './types';
+import { SCREENING_KEYS } from './validation';
+
+/** The screening table's last-date keys (validation.ts SCREENING_KEYS): a box is offered, and a date written, only for these. */
+const LAST_DATE_KEYS: ReadonlySet<string> = new Set(SCREENING_KEYS.filter((k) => k.endsWith('_last_date')));
+/** A key in the screening table that a letter's box may write. */
+export const isScreeningDateKey = (key: string): boolean => LAST_DATE_KEYS.has(key);
 
 /** Who the plan is for, as the web's plan has it: age and sex set eligibility (US-06 AC5). */
 export interface ScreeningPerson { age?: number; sex?: 'male' | 'female' }
@@ -30,10 +38,19 @@ export function letterDate(raw: string | null | undefined, now: string): { day: 
   return { day, month: !day && raw && /^\d{4}-\d{2}$/.test(raw) && validDay(`${raw}-01`, { now }) ? raw : null };
 }
 
-/** The reader's screening type, when it named one and the person is eligible for it: the box shows. */
+/** The reader's screening type, when it named one in the screening table and the person is eligible for it: the box
+ *  shows. Any other type gives no box. */
 export function screeningTypeShown(metadata: Record<string, unknown> | null | undefined, person: ScreeningPerson): string | null {
   const type = metadata?.screeningType;
-  return type && isScreeningEligible(String(type), person.age, person.sex) ? String(type) : null;
+  return typeof type === 'string' && isScreeningDateKey(`${type}_last_date`) && isScreeningEligible(type, person.age, person.sex) ? type : null;
+}
+
+/** The dates a Save writes, `[key, date]` in order: only a key in the screening table, whatever the caller hands it.
+ *  Each lands through `setScreening`, stamped `now`. */
+export function writeScreeningDates(file: RoadmapFile, dates: Iterable<readonly [string, string]>, now: string): RoadmapFile {
+  let out = file;
+  for (const [key, date] of dates) if (isScreeningDateKey(key)) out = setScreening(out, key, date, now);
+  return out;
 }
 
 /** Ticked by default only with a known age: with none, eligibility is unknown (US-06 AC5). The person can still tick it. */
