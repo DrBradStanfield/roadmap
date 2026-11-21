@@ -314,8 +314,11 @@ Two CI outputs warn before a slow or flaky test turns main red (US-64 AC36). Nei
   up, or give it a stated timeout, before a loaded runner pushes it over. GitHub shows at most 10 warning
   annotations per step; the job summary lists them all. 40 s is a starting number from main push run
   44863827263 (2026-11-21): every file ran under 30 s except `tools/codex-review.test.ts` (55 s) and
-  `upload-view.property.test.ts` (46 s, the one that timed out). Change `FILE_BUDGET_MS` in
-  `tools/test-time-budget.mjs` once a few weeks of tables show where the line belongs.
+  `upload-view.property.test.ts` (46 s, the one that timed out). That file reached 116 s and then timed out at
+  126.6 s, so PR 1952 split its 3000 seeds into `upload-view.property.part1.test.ts` to `part6`, 500 seeds each,
+  sharing one harness. On PR 1952's run 44899857040 the parts took 7.8 to 20.4 s, under 40 s, each with a 90 s
+  timeout. Change `FILE_BUDGET_MS` in `tools/test-time-budget.mjs` once a few weeks of tables show where the
+  line belongs.
 - **Flake watch.** When someone reruns a red run on main and it goes green, a `flake-watch` job runs at the end.
   Its summary lists each job that failed on an earlier attempt (not the `test` gate, which only follows them),
   the attempt, and the failed test files; each also shows as a warning on the run. In CI the files come only

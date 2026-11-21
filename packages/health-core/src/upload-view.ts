@@ -246,6 +246,9 @@ function refusedLines(refused: NonNullable<SaveOutcome['refused']>): string[] {
   return [...[...byReason].map(([reason, labels]) => `${labels.join(', ')}: ${NOT_SAVED_TEXT[reason]}`), ...lines];
 }
 
+/** A document's date as its row writes it: in words, else "No date". */
+export const documentDateLine = (date: string | null): string => (date && longDate(date.slice(0, 10))) ?? UPLOAD_TEXT.noDate;
+
 export function saveLabel(plan: UploadSavePlan): string {
   const { values, documents, originals } = plan.counts;
   return values || documents || !originals ? UPLOAD_TEXT.saveBoth(values, documents) : UPLOAD_TEXT.saveOriginals(originals);
@@ -356,7 +359,7 @@ export function uploadView(s: UploadState, record: RoadmapFile, now: string, rev
         const kindKey = documentKind(fields.documentType);
         return {
           fileId, title: fields.title, kind: KIND_WORDS[kindKey][0],
-          date: (fields.documentDate && longDate(fields.documentDate.slice(0, 10))) ?? UPLOAD_TEXT.noDate, dateKnown: fields.documentDate !== null,
+          date: documentDateLine(fields.documentDate), dateKnown: fields.documentDate !== null,
           kindKey, day: fields.documentDate?.slice(0, 10) ?? null,
         };
       }),

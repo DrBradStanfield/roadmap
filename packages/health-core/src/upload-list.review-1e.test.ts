@@ -135,7 +135,7 @@ describe('3. each letter\'s text for its preview (US-14 AC11-13)', () => {
   it('is the text Save writes, as the plan has it, in the view\'s order', () => {
     const s = open([letterRead('d0', '## Plan\n\nWalk daily.'), labRead('f0', { values: [core({})] }), letterRead('d1')]);
     const review = uploadReview(s, EMPTY, NOW);
-    expect(page(s).letters).toEqual([{ fileId: 'd0', text: '## Plan\n\nWalk daily.' }, { fileId: 'd1', text: '' }]);
+    expect(page(s).letters).toEqual([{ fileId: 'd0', text: '## Plan\n\nWalk daily.', preview: '## Plan\n\nWalk daily.', pickerLine: '20 Oct 2026' }, { fileId: 'd1', text: '', preview: '', pickerLine: '20 Oct 2026' }]);
     expect(page(s).letters.map((l) => l.fileId)).toEqual(uploadView(s, EMPTY, NOW, review, false).documents!.rows.map((d) => d.fileId));
   });
 
@@ -144,12 +144,12 @@ describe('3. each letter\'s text for its preview (US-14 AC11-13)', () => {
     for (const fix of [{ title: 'Renamed' }, { kind: 'scan_result' }, { date: null }, { date: '2026-10-01' }]) s = chose(s, 'd0', { document: fix });
     const plan = uploadSavePlan(s, EMPTY, NOW, uploadReview(s, EMPTY, NOW), false);
     expect(plan.documents[0].fields.title).toBe('Renamed');
-    expect(page(s).letters).toEqual([{ fileId: 'd0', text: '<b>not html</b>' }]);
+    expect(page(s).letters).toEqual([{ fileId: 'd0', text: '<b>not html</b>', preview: '<b>not html</b>', pickerLine: '1 Oct 2026' }]);
   });
 
   it('two picks of the same bytes preview once, as Save files them once', () => {
     const twin = { ...letterRead('d1', 'B'), hash: 'h-d0' };
-    expect(page(open([letterRead('d0', 'A'), twin])).letters).toEqual([{ fileId: 'd0', text: 'A' }]);
+    expect(page(open([letterRead('d0', 'A'), twin])).letters).toEqual([{ fileId: 'd0', text: 'A', preview: 'A', pickerLine: '20 Oct 2026' }]);
   });
 });
 

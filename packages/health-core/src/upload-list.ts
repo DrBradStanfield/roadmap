@@ -9,7 +9,7 @@
 import { IMPORT_REVIEW_TEXT, NOT_SAVED_TEXT, type NotSavedReason, type OfferedValue, type UnsureReason } from './import-review';
 import { UNDATED_PREVIOUS } from './lab-extraction';
 import { cellLabel, isCellMetric, isLpaUnit, rangeMessage, recordLpaUnit, type CellUnit } from './cell-unit';
-import { shownValue, typedTextError, type ShownValue } from './cell-input';
+import { printedNote, shownValue, typedTextError, type ShownValue } from './cell-input';
 import { DAY_NOT_HAPPENED } from './lab-series';
 import { validDay } from './record-edits';
 import type { FileLabValue, FileMeasurement, RoadmapFile } from './roadmap-file';
@@ -45,14 +45,15 @@ export type ListStatus =
  * the iPhone. `name`: its accessible name (US-13 AC10), "<test> value from <file>, <day>", the day it saves on left out
  * while none, ", another reading" on a later row of the same test there (KNOWN: a third shares the second's name).
  * `replaceLabel`: the Replace control's name with that day in words, while there is a Replace and a day. `unit`: its
- * unit control (`RowUnit`).
+ * unit control (`RowUnit`). `printed`: what the report printed, while the row shows another number or a guessed unit
+ * (`printedNote`, the grid's "Printed:" line, US-13 AC11), from the value as read in the person's unit, an edit or not.
  */
 export interface ListRow {
   key: string; fileId: string; ref: string; label: string; section: string;
   status: ListStatus; caption: string | null; saves: boolean;
   ticked: boolean; typed: TypedText | null; shown: ShownValue; error: string | null; input: 'number' | 'none';
   replaces: string | null; replacing: boolean; held: string | null;
-  attention: boolean; reasons: string[]; name: string; replaceLabel: string | null; unit: RowUnit;
+  attention: boolean; reasons: string[]; name: string; replaceLabel: string | null; unit: RowUnit; printed: string | null;
 }
 
 /**
@@ -96,8 +97,8 @@ function rowUnit(at: OfferedValue, typed: TypedText | null, shown: ShownValue, u
  *  limits (`DAY_CONTROL_TEXT.pickDay`: a previous column's day comes before the test's); else null. `fileName`: its file
  *  as rows name it (`uploadFileName`, a ZIP member by its path).
  *  `name`: its accessible name, ready-made: its label, the printed day when it has one, its file's name (KNOWN: two files
- *  of one name share it). */
-export type DayControl = { key: string; fileId: string; chosen: string | null; day: string | null; picker: string | null; label: string; hint: string | null; fileName: string; name: string } & (
+ *  of one name share it). `pickerLine`: what its button shows: `picker` in words, else the grid's empty day ("—"). */
+export type DayControl = { key: string; fileId: string; chosen: string | null; day: string | null; picker: string | null; pickerLine: string; label: string; hint: string | null; fileName: string; name: string } & (
   | { source: 'test' }
   | { source: 'previous'; month: string | null; before: string | null }
   | { source: 'column'; printed: string; printedLine: string });
@@ -147,11 +148,12 @@ function captionOf(status: ListStatus, error: string | null): string | null {
  *  calendar day, to come or not: one still to come has not happened (web list PR 1e review, H2: a report printed on a day
  *  to come said "This report has no date"; the iPhone's page still does, KNOWN phoneFutureReportDate). */
 function pickerOf(chosen: string | null, day: string | null, now: string, asks: string | null, limits: string, printed: string | null = null) {
-  if (day) return { picker: day, hint: null };
+  const shown = (picker: string | null, hint: string | null) => ({ picker, pickerLine: picker ? longDate(picker) ?? picker : DAY_CONTROL_TEXT.noDay, hint });
+  if (day) return shown(day, null);
   const calendar = validDay(chosen ?? printed, { now, latestDay: '9999-12-31' });
   const ahead = !!calendar && !validDay(calendar, { now });
-  if (chosen === null) return ahead ? { picker: calendar, hint: DAY_NOT_HAPPENED } : { picker: null, hint: asks };
-  return { picker: calendar, hint: ahead ? DAY_NOT_HAPPENED : limits };
+  if (chosen === null) return ahead ? shown(calendar, DAY_NOT_HAPPENED) : shown(null, asks);
+  return shown(calendar, ahead ? DAY_NOT_HAPPENED : limits);
 }
 
 /** A value's day source, from the day it printed alone. */
@@ -213,6 +215,7 @@ export function uploadList(s: UploadState, record: RoadmapFile, now: string, rev
       name: REVIEW_CELL_TEXT.rowName(c.v.label, from, again),
       replaceLabel: replaces && dayLine ? REVIEW_CELL_TEXT.replaceLabel(c.v.label, dayLine) : null,
       unit: rowUnit(c.at, c.typed, shown, unitOf),
+      printed: c.at.kind === 'core' ? printedNote(c.at.value, isCellMetric(c.at.value.metric) ? unitOf(c.at.value.metric) : 'si') : null,
     };
     if (row.attention && c.v.group === 'unsure' && !row.caption && !row.reasons.length && !row.error) unworded = true;
     return row;
