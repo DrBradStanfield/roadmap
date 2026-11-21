@@ -176,10 +176,16 @@ export type Snapshot = Awaited<ReturnType<typeof snapshot>>;
 const STAMPS = new Set(['createdAt', 'addedAt', 'updatedAt', 'lamport', 'deviceId', 'lastDeviceId']);
 /**
  * What a person keeps of a record: every field of every value row and document (metadata keys, extracted text, the
- * original's ref and type included), every id named by the content of the row it names, stamps left out; each stored
- * original's bytes and type, read from the cloud; the screening dates. Each table sorted.
+ * original's ref and type included), every id named by the content of the row it names, stamps left out, a value's
+ * day compared as the day (`dayForms` names the form each upload wrote); each stored original's bytes and type, read
+ * from the cloud; the screening dates. Each table sorted.
  */
-export async function snapshot(file: RoadmapFile, cloud: MemoryCloud | null) {
+export async function snapshot(written: RoadmapFile, cloud: MemoryCloud | null) {
+  // The forms an upload wrote its values' days in (owner ruling 2026-11-22, U1): a bare day or ISO midnight name one
+  // slot (merge.ts `dayOf`, record-edits.ts `slotKey`), so the tables compare the day and this list names each form.
+  const form = (at: string) => (/^\d{4}-\d{2}-\d{2}$/.test(at) ? 'day' : /^\d{4}-\d{2}-\d{2}T00:00:00\.000Z$/.test(at) ? 'iso-midnight' : `other ${at}`);
+  const dayForms = [...new Set([...written.measurements, ...written.labValues].filter((r) => r.source.startsWith('lab_import')).map((r) => form(r.recordedAt)))].sort();
+  const file: RoadmapFile = JSON.parse(JSON.stringify(written).replace(/"recordedAt":"(\d{4}-\d{2}-\d{2})T00:00:00\.000Z"/g, '"recordedAt":"$1"'));
   const name = new Map<string, string>();
   for (const m of file.measurements) name.set(m.id, `${m.metricType}|${m.recordedAt}|${m.value}|${m.status}`);
   for (const l of file.labValues) name.set(l.id, `${l.metricName}|${l.recordedAt}|${l.value}|${l.unit}|${l.status}`);
@@ -199,6 +205,7 @@ export async function snapshot(file: RoadmapFile, cloud: MemoryCloud | null) {
     documents: table(file.documents),
     originals: originals.sort(),
     screenings: Object.fromEntries(Object.entries(file.screenings).filter(([k, v]) => /LastDate$/.test(k) && v)),
+    dayForms,
   };
 }
 

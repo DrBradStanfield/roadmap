@@ -2,7 +2,8 @@
 /**
  * Mount step 3a, the proof (US-52 AC8c, US-14 AC10, US-13 AC6, AC14, US-16 AC2a): today's web Save (the grid's
  * `saveReview`) and the shared Save's web adapter (`sharedSave` → `saveUpload`), each over a real RoadmapStore, from
- * the same starting record, the same reads and the same review choices. Compared: every field of every value row and
+ * the same starting record, the same reads and the same review choices. Compared: every field of every value row (its
+ * day as the day, each side's written form asserted) and
  * document (ids named by content, stamps left out), each stored original's bytes and type, the screening dates, the
  * failed originals reported, whether the Save finished, the counts each Save says it made (values, documents, skipped
  * values, refused lines) and the usage events both send (`lab_unit_refused`, `measurement_refused`,
@@ -90,6 +91,8 @@ type Case = Seed & {
 const pdf = (read: string, name = `${read}.pdf`) => ({ name, read });
 /** A read letter's row and its stored original, as the snapshot names them. */
 const letterRow = (title: string, date: string) => JSON.stringify({ id: 'another id', title, type: 'clinic_letter', date, fileRef: `Clinic letters/${date} ${title}.pdf`, contentHash: 'hash-read:letterA', mimeType: 'application/pdf', extractedText: 'Synthetic letter text', metadata: {}, sourceFileName: 'letterA.pdf' });
+const hdlRow = (value: number, source: string) => JSON.stringify({ referenceLow: null, referenceHigh: null, source, status: 'active', correctsId: null, id: `hdl|2025-09-02|${value}|mmol/L|active`, value, recordedAt: '2025-09-02', metricName: 'hdl', unit: 'mmol/L', core: true });
+const labAArchive = (listed: string[]) => JSON.stringify({ id: 'another id', title: 'Blood test results', type: 'pathology_report', date: '2025-09-02', fileRef: 'Lab results/2025-09-02 Blood test results.pdf', contentHash: 'hash-read:labA', mimeType: 'application/pdf', extractedText: '', metadata: { labArchive: true, rows: listed }, sourceFileName: 'labA.pdf' });
 const letterOriginal = (title: string, date: string) => `Clinic letters/${date} ${title}.pdf: application/pdf read:letterA`;
 const heldLdl = (review: UploadReview) => review.held.get('0:v0')!;
 const showAll = () => fireEvent.click(screen.getByRole('button', { name: /^Show all \d+$/ }));
@@ -170,10 +173,23 @@ const CASES: Case[] = [
     name: 'another writer\'s edit between plan and commit (the same slot)', cloud: true, files: [pdf('labA'), pdf('letterA')],
     midway: async () => { await addMeasurement('hdl', 1.6, '2025-09-02'); },
     holds: (t) => expect(labs(t).filter((r) => r.startsWith('hdl'))).toHaveLength(1),
+    // U2, ruled 2026-11-22 (US-12 AC6a): today writes the values before the originals (lib/upload-save.ts:54-55), so the
+    // upload's HDL takes the slot first and the other writer's does not land. The shared Save commits last
+    // (health-core upload-save.ts:150-156): the other writer's HDL stays, the upload's is skipped and counted, and the
+    // report's archive row lists only the rows its commit wrote.
+    differs: {
+      labValues: { onlyToday: [hdlRow(1.4, 'lab_import')], onlyAdapter: [hdlRow(1.6, 'manual')] },
+      documents: { onlyToday: [labAArchive(['Ferritin|2025-09-02|90|µg/L|active', 'hdl|2025-09-02|1.4|mmol/L|active', 'ldl|2025-09-02|2.8|mmol/L|active'])], onlyAdapter: [labAArchive(['Ferritin|2025-09-02|90|µg/L|active', 'ldl|2025-09-02|2.8|mmol/L|active'])] },
+      saveCounts: { today: { values: 5, documents: 1, skipped: 0, refused: 0 }, adapter: { values: 4, documents: 1, skipped: 1, refused: 0 } },
+    },
   },
   {
     name: 'a retry after a failed Save', cloud: true, failFirst: true, files: [pdf('labA'), pdf('letterA')],
     holds: (t) => { expect(t.done).toBe(true); expect(documents(t).filter((d) => d.fileRef)).toHaveLength(2); },
+    // U3, ruled 2026-11-22: the records are equal. Today's second attempt finds the first attempt's values saved and
+    // counts them skipped (lib/upload-save.ts:85, lib/upload-save-outcome.ts `withAttempt` keeps the last attempt's
+    // skips); the shared Save's one commit wrote them and skipped none, the true count.
+    differs: { saveCounts: { today: { values: 5, documents: 1, skipped: 5, refused: 0 }, adapter: { values: 5, documents: 1, skipped: 0, refused: 0 } } },
   },
   {
     name: 'an erase between plan and commit', cloud: true, midway: eraseHere, files: [pdf('labA'), pdf('letterA')],
@@ -221,7 +237,17 @@ describe('mount 3a: the shared Save keeps what today\'s Save keeps', () => {
       c.holds(today);
       const adapter = await adapterSave(c, parityBundle(), P);
       if (process.env.PARITY_DISCOVER) console.log(`SEED ${c.name}`, JSON.stringify({ differs: differences(today, adapter), today: view(today) }));
-      expect(differences(today, adapter)).toEqual(c.differs ?? {});
+      // U1, ruled 2026-11-22: today writes a value's day as ISO midnight (lib/review-dates.ts:63-65 `buildRecordedAt`);
+      // the shared Save as a bare day (health-core import-review.ts:89 `recordedAt: day`). One slot either way (merge.ts
+      // `dayOf`, record-edits.ts `slotKey`; pinned in merge.test.ts and record-edits.test.ts), so the tables compare the
+      // day, and each side's form is asserted here: a third form fails. Today's correction of a held row keeps that row's
+      // own form (a bare day in the Replace seed), so today may write both.
+      const wrote = today.record.dayForms.length > 0;
+      expect(adapter.record.dayForms).toEqual(wrote ? ['day'] : []);
+      if (wrote) expect(today.record.dayForms.filter((f) => f !== 'day')).toEqual(['iso-midnight']);
+      const { dayForms: _t, ...t } = today.record;
+      const { dayForms: _a, ...a } = adapter.record;
+      expect(differences({ ...today, record: t as Side['record'] }, { ...adapter, record: a as Side['record'] })).toEqual(c.differs ?? {});
     });
   }
   it.todo('a value the commit refuses after the record changed sends measurement_refused on both sides (engine PR: closed codes for commit refusals)');
