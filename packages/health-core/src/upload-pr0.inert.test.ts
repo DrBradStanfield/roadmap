@@ -3,9 +3,9 @@
  * dated previous column's day (`columnDays`, `needsColumnDay`) lands inert. Over 800 seeded uploads, on
  * both platforms, with no `columnDays` set, `uploadReview`,
  * `uploadView` and `uploadSavePlan` answer exactly what main answered before PR 0. The golden file
- * (__fixtures__/upload-pr0-golden.json) holds, per seed, the SHA-256 of that answer as main (25ca16dc8)
- * computed it; run with UPDATE_PR0_GOLDEN=1 on main's code to write it again. The one new field, each
- * lab file's `needsColumnDay`, is checked false, then left out, before the hash. Every seed is compared.
+ * (__fixtures__/upload-pr0-golden.json) holds, per seed, the SHA-256 of that answer as main (5c31aa5d1)
+ * computed it; run with UPDATE_PR0_GOLDEN=1 on main's code to write it again. The new fields on each lab
+ * file (`needsColumnDay` false, `waits` empty, `days`) are checked, then left out, before the hash. Every seed is compared.
  * Synthetic values only.
  */
 import { createHash } from 'node:crypto';
@@ -142,14 +142,16 @@ function canonical(value: unknown): string {
   });
 }
 
-/** Main's answer for a case: the new field checked false, then left out. */
+/** Main's answer for a case: the new fields checked (no column waits), then left out. `days` is the review's
+ *  own record of each value's day, which main kept inside the review; its effect is in the plan and view. */
 function answer(c: Case): string {
   const review = uploadReview(c.state, c.record, NOW);
   const plan = uploadSavePlan(c.state, c.record, NOW, review, c.cloud);
   const view = uploadView(c.state, c.record, NOW, review, c.cloud);
   const labFiles = review.labFiles.map((l) => {
-    const { needsColumnDay, ...old } = l as typeof l & { needsColumnDay?: boolean };
+    const { needsColumnDay, waits, days: _days, ...old } = l as typeof l & { needsColumnDay?: boolean; waits?: readonly string[]; days?: unknown };
     expect(needsColumnDay ?? false).toBe(false);
+    expect(waits ?? []).toEqual([]);
     return old;
   });
   return canonical({ review: { ...review, labFiles }, plan, view });
