@@ -1,7 +1,7 @@
 /**
  * US-21 phase 1 — pure grouping/series logic for surfacing stored
  * `labValues` (beyond the core 8 matrix): the web's tables and phone rows,
- * and the iPhone's My data rows (US-25 AC17). Moved here unchanged from the
+ * and the iPhone's My health rows (US-25 AC17). Moved here unchanged from the
  * widget (lab-rows.ts, lab-value-labels.ts, blood-test-cell.ts) so both apps
  * group, name and print a lab test one way.
  * Read-only: no editing, no unit conversion — values render as-reported
@@ -183,7 +183,7 @@ export function groupLabValues(rows: LabValueRow[]): LabValueGroup[] {
   return result;
 }
 
-/** A lab test's row, as the web's phone rows and the iPhone's My data draw it (US-62 AC8). */
+/** A lab test's row, as the web's phone rows and the iPhone's My health draw it (US-62 AC8). */
 export interface LabSeriesRow {
   seriesKey: string;
   label: string;

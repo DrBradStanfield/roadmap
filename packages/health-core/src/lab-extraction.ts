@@ -581,7 +581,7 @@ export const EXTRACTION_MAX_TOKENS = 12288;
 const NUMBER_TOKEN = /^\s*([+-]?[\d.,]+)/;
 
 /**
- * Lab values frequently encode non-numeric measurements as strings:
+ * Lab values frequently encode non-numeric results as strings:
  *   "<5"       (below detection limit)
  *   ">2000"    (above range)
  *   "trace", "POS", "Not detected"

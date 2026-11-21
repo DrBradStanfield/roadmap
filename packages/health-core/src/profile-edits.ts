@@ -2,7 +2,7 @@
  * The profile write (US-34, US-54 AC5b/AC5c): who the record is about. Every
  * writer calls this one function: the MCP tool `update_profile` (hosted and
  * stdio, through `callTool`), the CLI (`get-plan --from-values`) and the
- * iPhone engine (My data's profile edit, the chat's profile part). Beside
+ * iPhone engine (the Settings sheet's profile edit, the chat's profile part). Beside
  * `record-edits.ts` (rows) and `state-edits.ts` (current state), whose
  * `stampProfile` it writes through. Lead I-7 moved it out of mcp-tools.ts.
  *

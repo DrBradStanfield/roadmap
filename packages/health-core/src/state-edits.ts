@@ -121,7 +121,7 @@ export function upsertSupplement(file: RoadmapFile, save: SupplementSave, now: s
  * Change profile fields (US-10 AC6): only the fields named take a new stamp,
  * one past the copy they were made on (`stampFields`), so a concurrent edit
  * of another field elsewhere is kept. The web form, the connector's
- * `update_profile` and the iPhone app's My data tab all write through it.
+ * `update_profile` and the iPhone app's My health tab and Settings sheet all write through it.
  */
 export function stampProfile(file: RoadmapFile, changes: Partial<RoadmapProfile>, now: string): RoadmapFile {
   return stampUpdatedAt({ ...file, profile: stampFields(file.profile, changes, now) }, now);
