@@ -106,6 +106,9 @@ function statusWords(status: FileStatus, platform: UploadPlatform): string {
   }
 }
 
+/** A value printed in the undated previous column. */
+const undatedValue = (f: ReturnType<typeof readFiles>[number] | undefined, ref: string) => !!f && valueAt(f.status.extraction, ref)?.value.recordedAt === UNDATED_PREVIOUS;
+
 /** "18 files: 7 already in your record, 8 clinic letters, 3 lab reports"; all known has its own line. */
 function summary(files: readonly UploadFile[], plan: UploadSavePlan, labReports: number): string {
   const known = files.filter((f) => f.status.s === 'known').length;
@@ -276,7 +279,8 @@ export function uploadView(s: UploadState, record: RoadmapFile, now: string, rev
       const chosen = read && !validDay(read.status.extraction.reportDate ?? undefined, { now }) ? validDay(read.status.choices.testDay ?? undefined, { now })?.slice(0, 10) ?? null : null;
       return f.needsTestDay || chosen ? [{ kind: 'undated', fileId: f.fileId, title: UPLOAD_TEXT.undatedTitle, label: UPLOAD_TEXT.dayOfTest, name: f.name, choose: UPLOAD_TEXT.chooseDay, chosen }] : [];
     }),
-    ...review.labFiles.filter((f) => f.needsPreviousDay).map((f): UploadSection => ({ kind: 'undatedPrevious', fileId: f.fileId, name: f.name, month: f.previousMonth, before: f.day?.slice(0, 10) ?? null })),
+    // Asked while a ticked value waits for it, and while a cleared one does, so the cleared one can be found again (US-13 AC25).
+    ...review.labFiles.filter((f, i) => f.needsPreviousDay || values.some((v) => v.file === i && v.group === 'waiting' && undatedValue(readById.get(f.fileId), v.ref))).map((f): UploadSection => ({ kind: 'undatedPrevious', fileId: f.fileId, name: f.name, month: f.previousMonth, before: f.day?.slice(0, 10) ?? null })),
     ...(unsure.length ? [{ kind: 'unsure' as const, title: IMPORT_REVIEW_TEXT.checkTitle(unsure.length), footer: IMPORT_REVIEW_TEXT.checkFooter, rows: unsure.map(row) }] : []),
     ...(failed.length ? [{
       kind: 'failed' as const, title: UPLOAD_TEXT.failedTitle(failed.length),

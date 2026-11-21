@@ -218,6 +218,18 @@ describe('the undated previous column (US-13 AC25)', () => {
     expect(uploadSavePlan(s, EMPTY, NOW, review, false).labRows[0].rows[0].recordedAt.slice(0, 10)).toBe('2026-10-05');
   });
 
+  // Property seed 66 with the generator extended to the web's undated column: a cleared value vanished from the page.
+  it('undatedClearedStaysReachable: a cleared value whose column\'s day stops being valid keeps the day question, so it can be found again', () => {
+    let s: UploadState = { ...open([undated(DAY)]), platform: 'web' };
+    s = chose(s, 'f0', { previousDay: '2026-10-05' });
+    s = chose(s, 'f0', { tick: 'v0', on: false });
+    s = chose(s, 'f0', { previousDay: DAY }); // on the report's day: no longer a previous day
+    const { review, view } = see(s, EMPTY);
+    expect(review.classification.values.find((v) => v.ref === 'v0')).toMatchObject({ group: 'waiting' });
+    expect(view.sections).toContainEqual(expect.objectContaining({ kind: 'undatedPrevious', fileId: 'f0' }));
+    expect(view.save.why).not.toBe(UPLOAD_TEXT.chooseDay); // nothing ticked waits: the question holds up no Save
+  });
+
   it('undatedReplaceKept: a Replace on it is kept, never dropped and unticked, when its pick stops being before the test\'s day', () => {
     const record = held([LDL(2.0, '2026-10-05')]);
     const target = record.labValues[0].id;
