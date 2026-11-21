@@ -11,7 +11,8 @@ import { UPLOAD_ENGINE } from '../testing/upload-engine';
 import { UploadModal } from './UploadModal';
 import { checkLabImportQuota, labImport } from '../lib/upload-api';
 import { trackProductEvent } from '../lib/server-api';
-import { findReviewValue } from '../testing/import-review';
+import { findReviewValue, reasonFor } from '../testing/import-review';
+import { UPLOAD_TEXT } from '@roadmap/health-core/upload-text';
 
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn() }));
 vi.mock('../lib/roadmap-data', () => ({ recordFileSync: vi.fn(() => null), saveUpload: vi.fn(), uploadKnownIndex: vi.fn(() => new Map()), isLegacyUpload: vi.fn(() => false), getDocumentArchiveMode: vi.fn(() => 'cloud'), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
@@ -50,6 +51,24 @@ async function firstSettled() {
 }
 const tryAgain = () => fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
 const settle = () => new Promise((r) => setTimeout(r, 20));
+
+// US-12 AC28 with the mounted list (Codex on PR 1972; new with the mount: main's reading screen had no Stop): a Stop
+// before any file is read is the person's choice, not a failed extraction. The list stays, each file says the engine's
+// stopped words once, and no `upload_extract_failed` goes out.
+describe('US-12 AC28: Stop before any file is read', () => {
+  it('keeps the list, names each file stopped once, and reports no failed extraction', async () => {
+    vi.mocked(labImport).mockImplementation(() => new Promise<Import>(() => {}));
+    render(<UploadModal open onOpen={() => {}} onClose={() => {}} unitSystem="si" onComplete={() => {}} />);
+    fireEvent.change(document.querySelector('input[type=file]')!, { target: { files: [pdf('a.pdf'), pdf('b.pdf')] } });
+    await waitFor(() => expect(labImport).toHaveBeenCalledTimes(2));
+    fireEvent.click(await screen.findByRole('button', { name: 'Stop' }));
+    await settle();
+    expect(screen.queryByText(/No readable files found/)).toBeNull();
+    for (const name of ['a.pdf', 'b.pdf']) expect(reasonFor(name), name).toBe(UPLOAD_TEXT.stoppedLine);
+    expect(vi.mocked(trackProductEvent).mock.calls.filter(([n]) => n === 'upload_extract_failed')).toEqual([]);
+    expect(outcomes()).toHaveLength(1);
+  });
+});
 
 describe('US-12 AC10: one upload_outcome per run, at its first settlement, whatever Try again does after', () => {
   it('a retry that reads the file sends no second event', async () => {

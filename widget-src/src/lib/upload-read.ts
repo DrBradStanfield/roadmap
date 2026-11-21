@@ -62,7 +62,7 @@ const badZip = (f: UploadFile) => f.status.s === 'failed' && (f.status.reason ==
 const filesOf = (s: UploadState) => (s.phase === 'choosing' ? [] : s.files);
 
 /** The screen a state shows. `open` is reading while anything is in flight, then the review once a
- *  file reached the server or is already held; a pick of only files too large stays on the dropzone. */
+ *  file reached the server, is already held or was stopped; a pick of only files too large stays on the dropzone. */
 export function phaseOf(s: UploadState): UploadPhase {
   switch (s.phase) {
     case 'choosing': case 'consent': return 'picking';
@@ -70,7 +70,8 @@ export function phaseOf(s: UploadState): UploadPhase {
     case 'saving': case 'saveFailed': case 'done': return s.phase;
     case 'open':
       if (inFlight(s) > 0) return 'reading';
-      if (s.files.some((f) => reached(f) || f.status.s === 'known')) return 'reviewing';
+      // A file the person stopped is their choice, not a failed read: the list stays and names it (US-12 AC28).
+      if (s.files.some((f) => reached(f) || f.status.s === 'known' || f.status.s === 'stopped')) return 'reviewing';
       return s.files.every((f) => f.status.s === 'refused') ? 'picking' : 'readFailed';
   }
 }
