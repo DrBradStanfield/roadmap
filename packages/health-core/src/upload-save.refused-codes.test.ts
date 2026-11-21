@@ -5,7 +5,7 @@
 import { describe, expect, it } from 'vitest';
 import { DAY, EMPTY, extra, NOW } from './import-review.test-helpers';
 import type { ExtractedValue, UnifiedExtractionResult } from './lab-extraction';
-import { labUnitTaken, resolveLabCatalogEntry } from './lab-catalog';
+import { LAB_CATALOG, labUnitTaken, resolveLabCatalogEntry } from './lab-catalog';
 import { isLabKeyWord, labUnitForEvent, MEASUREMENT_REFUSAL_REASONS } from './product-events';
 import { bulkAppendValues, type BulkAppendResult, type BulkRow } from './record-edits';
 import type { RoadmapFile } from './roadmap-file';
@@ -13,7 +13,7 @@ import { NO_CHOICES } from './upload-choices';
 import type { RefusedCode, UploadState } from './upload-flow';
 import { uploadSavePlan } from './upload-plan';
 import { uploadReview } from './upload-review';
-import { UPLOAD_STATE } from './upload-schema';
+import { REFUSED_CODE_KEYS, UPLOAD_STATE } from './upload-schema';
 import { refusalCodes, uploadSave } from './upload-save';
 import { METRIC_TYPES, type MetricTypeValue } from './validation';
 
@@ -46,6 +46,7 @@ function assertClosed(codes: RefusedCode[]): void {
       expect(c.kind).toBe('lab');
       expect(['key', 'kind', 'reason', 'unit']).toEqual(expect.arrayContaining(Object.keys(c)));
       expect(isLabKeyWord(c.key)).toBe(true);
+      expect(REFUSED_CODE_KEYS.has(c.key), c.key).toBe(true); // only a key the writer can emit
       expect(['unit', 'value']).toContain(c.reason);
       if (c.unit !== undefined) expect(c.reason).toBe('unit');
     }
@@ -109,6 +110,16 @@ describe('US-12 AC6: a stored done state carries the codes in closed words only 
   it('takes each code shape', () => {
     expect(parses([{ kind: 'measurement', metricType: 'systolic_bp', reason: 'out-of-range' }, { kind: 'measurement', reason: 'unknown-metric' },
       { kind: 'lab', key: 'ferritin', reason: 'unit', unit: 'mmol/L' }, { kind: 'lab', key: 'ferritin', reason: 'unit', unit: '(blank)' }, { kind: 'lab', key: 'ferritin', reason: 'value' }])).toBe(true);
+  });
+  it('takes a lab key with digits that the catalogue holds', () => {
+    expect(LAB_CATALOG.some((e) => e.key === 'vitamin_b12')).toBe(true);
+    expect(parses([{ kind: 'lab', key: 'vitamin_b12', reason: 'value' }])).toBe(true);
+  });
+  it('refuses a lab key the writer cannot emit, though shaped like one: a number may not ride in it', () => {
+    for (const key of ['glucose_180', 'ldl2', 'thyroxine_free']) {
+      expect(LAB_CATALOG.some((e) => e.key === key), key).toBe(false);
+      expect(parses([{ kind: 'lab', key, reason: 'value' }]), key).toBe(false);
+    }
   });
   it('refuses a code holding free text or a value', () => {
     for (const bad of [

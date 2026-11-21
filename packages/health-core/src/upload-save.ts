@@ -73,6 +73,7 @@ export type SavedOutcome = Required<Omit<SaveOutcome, 'skippedValues' | 'skipped
  *  `lab_unit_refused` counter's test (refused-spellings.ts) and words, and `measurement_refused`'s reason and metric. */
 export function refusalCodes(written: Pick<BulkAppendResult, 'refused' | 'measurementRefusals'>): RefusedCode[] {
   return [
+    // No commit produces a lab code today: a lab refusal turns on the row alone (record-edits.ts:944-958), so the plan drops it first.
     ...written.refused.map((r): RefusedCode => {
       if (labUnitTaken(resolveLabCatalogEntry(r.key), r.unit)) return { kind: 'lab', key: r.key, reason: 'value' };
       const unit = labUnitForEvent(r.unit);
