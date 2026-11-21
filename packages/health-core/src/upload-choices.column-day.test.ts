@@ -135,8 +135,13 @@ describe('US-13 AC24: review fixes (PR 1926 adversary and Codex)', () => {
     expect(rows.map((r) => r.day).sort()).toEqual(plan.map((r) => r.recordedAt.slice(0, 10)).sort());
     expect(rows.find((r) => r.ref === 'v0')?.day).toBe('2026-05-02');
     const waits = open(prev(), choose(NO_CHOICES, { columnDay: COLUMN, day: 'partial:2026::' }, NOW, prev())!);
-    const w = uploadView(waits, EMPTY, NOW, uploadReview(waits, EMPTY, NOW), false);
-    expect([...(w.sure?.rows ?? [])].find((r) => r.ref === 'v0')).toMatchObject({ day: null, dayLine: null });
+    const wr = uploadReview(waits, EMPTY, NOW);
+    const w = uploadView(waits, EMPTY, NOW, wr, false);
+    // A waiting column's value has no day, so it is judged on none (web list PR 1a): it waits behind its column's day
+    // control, which Save names; no row is drawn for it until the web draws that control (PR 1b).
+    expect(wr.labFiles[0].days.v0).toBeNull();
+    expect([...(w.sure?.rows ?? [])].find((r) => r.ref === 'v0')).toBeUndefined();
+    expect(w.save.blockers).toEqual([{ why: UPLOAD_TEXT.chooseDay, at: `lab|printed:${COLUMN}` }]);
   });
 
   it('D: while a column waits, a Replace chosen on its value is kept, not lost, and nothing is written', () => {

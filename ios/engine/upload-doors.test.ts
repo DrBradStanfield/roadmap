@@ -391,6 +391,9 @@ describe('the doors drop a Replace whose target another writer took away (owner 
     // With no record the app can read (''), nothing is dropped, in a step or a view (adversary R1).
     const kept0 = JSON.parse(uploadStepJson(JSON.stringify(open), JSON.stringify({ type: 'stop' }), '', DEV));
     expect(kept0.state.files[0].status.choices).toMatchObject({ replace: { v0: record.labValues[0].id }, ticks: {} });
+    // Nor with one that will not read: the door drops nothing, as for '' (health-core `dropLostReplaces`, web list PR 1a).
+    const unread = JSON.parse(uploadStepJson(JSON.stringify(open), JSON.stringify({ type: 'stop' }), '{', DEV));
+    expect(unread.state.files[0].status.choices).toMatchObject({ replace: { v0: record.labValues[0].id }, ticks: {} });
     const blind = JSON.parse(uploadViewJson(JSON.stringify(open), '', NOW, false, DEV));
     expect([...blind.sections.flatMap((x: { kind: string; rows?: unknown[] }) => (x.kind === 'unsure' ? x.rows : [])), ...(blind.sure?.rows ?? [])][0]).toMatchObject({ ticked: true });
     // With the target still there, nothing changes.
