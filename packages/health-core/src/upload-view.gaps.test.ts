@@ -319,7 +319,7 @@ describe('a dated previous column waiting for its pick (US-13 AC24)', () => {
     const list = uploadList(state, record, NOW, review, () => 'si');
     expect(list.days).toEqual([{ key: `f0|printed:${PRINTED}`, fileId: 'f0', source: 'column', printed: PRINTED, chosen: '2026-10', day: null, printedLine: '1 Oct 2026', label: DAY_CONTROL_TEXT.previous,
       // Web list PR 1e: a partial pick shows nothing in the picker, and the control names its limits (it said nothing).
-      picker: null, hint: DAY_CONTROL_TEXT.pickDay(null, '2026-11-01'),
+      picker: null, pickerLine: DAY_CONTROL_TEXT.noDay, hint: DAY_CONTROL_TEXT.pickDay(null, '2026-11-01'),
       fileName: 'f0.pdf', name: `${DAY_CONTROL_TEXT.previous}, 1 Oct 2026, f0.pdf` }]);
     expect(list.rows.map((r) => [r.key, r.section, r.status.kind])).toEqual([['f0:v0', `f0|printed:${PRINTED}`, 'waits'], ['f0:a0', `f0|printed:${PRINTED}`, 'waits']]);
   });
