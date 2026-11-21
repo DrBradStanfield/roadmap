@@ -101,6 +101,9 @@ function importFile(f: ReadFile, now: string, holderOf: (row: BulkRow) => string
   const days = valueDays(result, day, undatedDay);
   const replaces = (ref: string) => {
     const target = choices.replace[ref];
+    // A value with no day yet (its column waits for a pick) has no slot to judge its Replace on: kept as chosen,
+    // never lost; nothing of the report is written while it waits (US-13 AC25).
+    if (target && days[ref] === null) return target;
     const row = target && days[ref] ? importRow(result, ref, validDay(days[ref]!, { now }) ?? days[ref]!) : null;
     return row && holderOf(row) === target ? target : undefined;
   };
