@@ -75,7 +75,7 @@ export const MEDICATION_TEXT = {
     switch: (lipid: string) => `A more potent statin can provide greater ${lipid} reduction at the same or lower dose.`,
   },
   glp1Label: 'GLP-1 Medication',
-  glp1Hint: 'GLP-1 medications reduce appetite and improve blood sugar control, often leading to significant weight loss.',
+  glp1Hint: 'GLP-1 medications reduce appetite and improve blood sugar control.',
   glp1EscalationLabel: { increase: 'Tried increasing GLP-1 dose?', switch: 'Tried switching to Tirzepatide?' },
   glp1EscalationHint: {
     increase: 'A higher dose may improve results.',

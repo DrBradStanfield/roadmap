@@ -273,7 +273,7 @@ describe('US-06 AC5: the weight cascade steps through what the plan does', () =>
 // on to the next drug.
 describe('US-06 AC8: with no dose recorded, the plan and the form ask for it', () => {
   const DOSE_HINT = 'Add your dose: what to discuss with your doctor next depends on it.';
-  const GLP1_HINT = 'GLP-1 medications reduce appetite and improve blood sugar control, often leading to significant weight loss.';
+  const GLP1_HINT = 'GLP-1 medications reduce appetite and improve blood sugar control.';
   const STATIN_HINT = 'Guidelines name statins the first medicine to consider when cholesterol stays above target. They reduce cholesterol production in the liver.';
   /** A medication field's hint, the line under its label: the dose hint takes it while the plan asks. */
   const fieldHint = (container: HTMLElement, selectId: string) =>

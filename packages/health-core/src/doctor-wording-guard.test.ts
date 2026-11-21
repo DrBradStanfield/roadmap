@@ -6,7 +6,7 @@
 import { describe, expect, it } from 'vitest';
 import { calculateHealthResults } from './calculations';
 import { statTiles } from './stat-tiles';
-import { medicationForm } from './input-form';
+import { MEDICATION_TEXT, medicationForm } from './input-form';
 import { lipidMarkerFor, weightMedicationTrigger } from './suggestions';
 import { METRIC_GUIDES } from './metric-guides';
 import { BP_TIER_LABEL } from './bp-tier';
@@ -22,6 +22,8 @@ const BANNED_TEXT = [
   'Immediate intervention is recommended', 'Statins are the most effective', 'most people need them long term',
   'Tirzepatide is preferred', 'Tirzepatide (preferred)', 'This requires medical management', 'which needs treatment and monitoring',
   'Statins are not recommended',
+  // Retired 2026-11-21 (framing): the GLP-1 form hint drops its weight-loss result clause.
+  'often leading to significant weight loss',
 ];
 const BANNED_TITLE_START = ['Consider starting', 'Consider increasing'];
 const BANNED_TILE_WORDS = ['Obese', 'Diabetic', 'Prediabetic', 'Kidney Failure'];
@@ -125,6 +127,7 @@ describe('US-07 AC17: doctor-discussion wording guard', () => {
 
   it('walks the medicine cards, the overlay and the Lp(a) checklist (the guard is not vacuous)', () => {
     expect(shown.titles).toContain('Consider discussing a statin with your doctor');
+    expect(shown.text).toContain(MEDICATION_TEXT.glp1Hint);
     expect(shown.titles).toContain('Consider discussing your GLP-1 dose with your doctor');
     expect(shown.titles).toContain('Consider discussing a PCSK9 inhibitor with your doctor');
     expect(shown.titles).toContain('HbA1c in the diabetes range');
