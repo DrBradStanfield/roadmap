@@ -1193,8 +1193,11 @@ export const seedSweep = {
 /** The seeds run as this many ranges, one test file each (upload-view.property.part1.test.ts and on). */
 export const PARTS = 6;
 
-/** Reach counters some ranges never reach, each with the parts that must reach it (asserted there alone). */
-export const REACHED_ONLY_IN: Record<string, number[]> = {};
+/**
+ * Reach counters some ranges never reach, each with the parts that must reach it (asserted there alone). heldOtherUnit
+ * (PR 1951): one seed of the 3000 reaches it, in part 4.
+ */
+export const REACHED_ONLY_IN: Record<string, number[]> = { heldOtherUnit: [4] };
 
 /**
  * Part `part` (1 to PARTS) of the seeds as one test. The single test over all 3000 took 116 s on a loaded CI runner
