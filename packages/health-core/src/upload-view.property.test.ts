@@ -846,6 +846,7 @@ describe('upload-view property: the list view against Save (US-52 AC8c, US-13 AC
     if (process.env.UPLOAD_VIEW_PROPERTY_OUT) writeFileSync(process.env.UPLOAD_VIEW_PROPERTY_OUT, JSON.stringify({ reach, gaps: Object.fromEntries(Object.entries(gaps).map(([k, v]) => [k, { seqs: v.length, first: v.slice(0, 5) }])) }, null, 1));
     expect(reach.steps).toBeGreaterThan(20000);
     for (const [name, k] of Object.entries(reach)) expect([name, k > 0]).toEqual([name, true]);
-  }, 60_000);
+    // About 14 s locally; CI shards measured 22, 36, 46, 47 and 73 s (PR 1926), so 60 s failed a run.
+  }, 120_000);
 });
 
