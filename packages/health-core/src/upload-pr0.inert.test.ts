@@ -150,10 +150,9 @@ function answer(c: Case): string {
   const plan = uploadSavePlan(c.state, c.record, NOW, review, c.cloud);
   const view = uploadView(c.state, c.record, NOW, review, c.cloud);
   const labFiles = review.labFiles.map((l) => {
-    const { needsColumnDay, waits, waitingColumns, days: _days, ...old } = l as typeof l & { needsColumnDay?: boolean; waits?: readonly string[]; waitingColumns?: readonly string[]; days?: unknown };
+    const { needsColumnDay, waits, days: _days, ...old } = l as typeof l & { needsColumnDay?: boolean; waits?: readonly string[]; days?: unknown };
     expect(needsColumnDay ?? false).toBe(false);
     expect(waits ?? []).toEqual([]);
-    expect(waitingColumns ?? []).toEqual([]);
     return old;
   });
   return canonical({ review: { ...review, labFiles }, plan, view: mainView(view) });

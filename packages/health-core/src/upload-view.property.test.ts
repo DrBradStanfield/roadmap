@@ -15,9 +15,10 @@
  *      back a previous column's day, by the before-the-test rule). Mutation: the test-day control's key holding the day
  *      picked (`key: \`${f.fileId}|test|${chosen}\``).
  *   B  Save's blockers are what the extraction and choices make them: a ticked value with no day waits at its source's
- *      control, a ticked row with an error at its row; each names a row or control the view draws (a dated column's, which
- *      this PR does not draw yet, by the day it printed); Save is enabled only with none. Mutation: the test-day blocker
- *      keyed at the previous column's control.
+ *      control, a ticked row with an error at its row; each names a row or control the view draws; Save is enabled only
+ *      with none. Two KNOWN pins of main's own, for 1b (upload-view.gaps.test.ts): columnBlockerUndrawn (a waiting dated
+ *      column's day has no control yet) and copyBlocksWithoutError. Mutation: the test-day blocker keyed at the previous
+ *      column's control.
  *   K4 while saving, a row drawn as saving is one the press promised (`reviewed`), matched by (file, ref); outside saving,
  *      `saves` is what the row shows ticked and writable (P2). Mutation: `saves` ignoring `reviewed`.
  *   P7 also: a written row's `shown` number, read back in the person's unit, is what Save writes (web; the phone gets none).
@@ -240,9 +241,6 @@ function checkView(s: UploadState, record: RoadmapFile, setup: Setup, note: Note
       if (v!.group === 'saved') continue; // counted in the already-saved line (checked below), or an equal copy of a reading that saves
       if (v!.group === 'waiting') {
         if (daySection.has(lf.fileId)) continue;
-        // A value waiting for its dated column's pick (US-13 AC24) waits behind that column's day control, which this PR does
-        // not draw yet (web list PR 1b): Save names it when ticked (B); a cleared one is reachable again only once it is drawn.
-        if (expectedDay(f.status, ref).waits) { note(lf.ticked.includes(ref) ? 'columnControlUndrawn' : 'columnClearedUndrawn'); continue; }
         fail('P1', `${lf.fileId} ${ref} waits for a day no section asks (ticked ${lf.ticked.includes(ref)})`);
       }
       fail('P1', `${lf.fileId} ${ref} (${v!.group}) is missing from the view`);
@@ -387,15 +385,17 @@ function checkBlockers(s: UploadState, view: UploadView, rows: ValueRow[], plan:
     printedColumns.set(f.id, new Set(printedDays(st.extraction)));
     for (const { ref } of offeredValues(st.extraction)) {
       if (!(st.choices.ticks[ref] ?? true) || expectedDay(st, ref).day !== null) continue;
+      // Only the test's day never waits for a value the write refuses on any day (main's rule; a column's does, KNOWN
+      // columnWaitsOnRefusedValue).
       const at = sourceKey(f.id, st.extraction, ref);
-      if (at.endsWith('|previous') || !refusedAnyDay(st, ref)) days.add(at);
+      if (!at.endsWith('|test') || !refusedAnyDay(st, ref)) days.add(at);
     }
   }
   // A copy of a reading the write refuses blocks at its own row too, though it draws no error of its own (main's rule:
-  // it is sent and not written; KNOWN copyBlocksWithoutError, for the owner).
+  // it is sent and not written; KNOWN copyBlocksWithoutError, upload-view.gaps.test.ts, for 1b).
   const refusedCopy = (row: ValueRow) => !!row.copy && row.reasons.includes('outOfRange') && !row.reasons.includes('conflict');
   const fixes = new Set(rows.filter((row) => row.ticked && (row.error || refusedCopy(row))).map((row) => `${row.fileId}:${row.ref}`));
-  if (rows.some((row) => row.ticked && refusedCopy(row))) note('copyBlocksWithoutError');
+  if (rows.some((row) => row.ticked && refusedCopy(row))) note('KNOWN copyBlocksWithoutError');
   const want = [...fixes, ...days].sort();
   const got = blockers.map((b) => b.at).sort();
   if (JSON.stringify(got) !== JSON.stringify(want)) fail('B', `blockers at ${JSON.stringify(got)}, expected ${JSON.stringify(want)}\nrows ${JSON.stringify(rows.filter((r) => got.includes(`${r.fileId}:${r.ref}`) !== want.includes(`${r.fileId}:${r.ref}`)))}`);
@@ -404,9 +404,11 @@ function checkBlockers(s: UploadState, view: UploadView, rows: ValueRow[], plan:
     const wantWhy = fixes.has(b.at) ? FIX_ERRORS_TEXT : UPLOAD_TEXT.chooseDay;
     if (b.why !== wantWhy) fail('B', `blocker at ${b.at} says "${b.why}"`);
     if (fixes.has(b.at) || controls.has(b.at)) continue;
+    // KNOWN columnBlockerUndrawn (upload-view.gaps.test.ts), main's own state, for 1b to close: a waiting dated column's day
+    // has no control in the view yet, so its blocker names a column the file printed and nothing drawn. Anything else fails.
     const [fileId, source] = b.at.split('|');
     if (!source?.startsWith('printed:') || !printedColumns.get(fileId)?.has(source.slice('printed:'.length))) fail('B', `blocker at ${b.at}, which the view does not draw`);
-    note('columnControlUndrawn');
+    note('KNOWN columnBlockerUndrawn');
   }
   if (blockers.length && view.save.enabled) fail('B', 'Save enabled with a blocker');
   if (blockers.length && inFlight(s) === 0 && view.save.why !== blockers[0].why) fail('B', `why "${view.save.why}" is not the first blocker`);
@@ -479,13 +481,9 @@ function checkOracles(s: UploadState, review: UploadReview, record: RoadmapFile)
   for (const v of values) {
     if (v.ref[0] === 'r') { if (v.group !== 'notSaved' || v.reason !== 'noUnit') fail('O', `${v.ref} refused row is ${v.group}`); continue; }
     if (!isOfferedRef(v.ref)) continue;
-    // A value whose dated column waits for its pick has no day (US-13 AC24): it is never written, and it is judged on no
-    // day, so never held already nor in conflict with a slot (columnWaitsPreviewedOnPrintedDay, closed in web list PR 1a).
-    if (expectedDay(reads.get(review.labFiles[v.file].fileId)!, v.ref).waits) {
-      if (v.sent && v.writes) fail('O', `${v.ref} waits for its column's day and is written`);
-      if (v.group === 'saved' || (v.group === 'unsure' && v.reasons.includes('conflict'))) fail('O', `${v.ref} waits for its column's day and is judged ${v.group} on a day`);
-      continue;
-    }
+    // A value whose dated column waits for its pick has no day (US-13 AC24): it is never written. Its group is the
+    // classifier's preview on the day it printed (KNOWN columnWaitsPreviewedOnPrintedDay, upload-view.gaps.test.ts).
+    if (expectedDay(reads.get(review.labFiles[v.file].fileId)!, v.ref).waits) { if (v.sent && v.writes) fail('O', `${v.ref} waits for its column's day and is written`); continue; }
     const f = facts(v.file, v.ref, v.sent);
     if (v.group === 'saved') {
       if (!f.row || !f.slot) fail('O', `${v.ref} saved with no day`);

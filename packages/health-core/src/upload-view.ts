@@ -257,7 +257,7 @@ function emptyRead(f: UploadFile): string | null {
 
 function save(s: UploadState, plan: UploadSavePlan, review: UploadReview): UploadView['save'] {
   const label = saveLabel(plan);
-  const blockers = s.phase === 'open' || s.phase === 'saveFailed' ? saveBlockers(review) : [];
+  const blockers = s.phase === 'open' || s.phase === 'saveFailed' ? saveBlockers(review, s) : [];
   const blocked = blockers[0]?.why ?? null;
   // After a failed Save, Save tries again, unless the record changed meanwhile so that it would refuse: then it waits, saying why.
   if (s.phase === 'saveFailed') return { label, enabled: blocked === null, why: blocked, error: s.message, blockers };
@@ -269,16 +269,18 @@ function save(s: UploadState, plan: UploadSavePlan, review: UploadReview): Uploa
 
 /**
  * What Save waits on, each once with the control that removes it: a selected value the write would refuse (its row),
- * then a report still waiting for a day (that day's control; no report is ever skipped by Save).
+ * then a report still waiting for a day (that day's control; no report is ever skipped by Save). A dated previous
+ * column waits by the day it printed (`printed:<day>`), for each ticked value of it in `waits` (US-13 AC24).
  */
-export function saveBlockers(review: UploadReview): Blocker[] {
+export function saveBlockers(review: UploadReview, s: UploadState): Blocker[] {
   const choose = (fileId: string, source: Parameters<typeof dayKey>[1]) => ({ why: UPLOAD_TEXT.chooseDay, at: dayKey(fileId, source) });
+  const reads = new Map(readFiles(s).map((f) => [f.id, f.status.extraction]));
   const all = [
     ...review.classification.values.filter(blocks(review)).map((v) => ({ why: FIX_ERRORS_TEXT, at: `${review.labFiles[v.file].fileId}:${v.ref}` })),
     ...review.labFiles.flatMap((f) => [
       ...(f.needsTestDay ? [choose(f.fileId, 'test')] : []),
       ...(f.needsPreviousDay ? [choose(f.fileId, 'previous')] : []),
-      ...f.waitingColumns.map((printed) => choose(f.fileId, `printed:${printed}`)),
+      ...f.waits.filter((ref) => f.ticked.includes(ref)).map((ref) => choose(f.fileId, `printed:${valueAt(reads.get(f.fileId) ?? {}, ref)?.value.recordedAt}`)),
     ]),
   ];
   return all.filter((b, i) => all.findIndex((o) => o.at === b.at) === i);
@@ -288,7 +290,7 @@ export function saveBlockers(review: UploadReview): Blocker[] {
  * Why Save may not write this review, in the view's words, or null: the first of `saveBlockers`. The save itself refuses
  * on the same rule (upload-save.ts), so nothing is written past it.
  */
-export const saveBlocked = (review: UploadReview): string | null => saveBlockers(review)[0]?.why ?? null;
+export const saveBlocked = (review: UploadReview, s: UploadState): string | null => saveBlockers(review, s)[0]?.why ?? null;
 
 /**
  * `review`: the caller's `uploadReview`, the same one it hands `uploadSavePlan`, so the screen
