@@ -1,4 +1,4 @@
-// The contract between the native app and its JavaScript engine (I-2, ios/architecture.md D3,
+// The contract between the iPhone app and its JavaScript engine (I-2, ios/architecture.md D3,
 // D14): the one source. contract-json.ts generates bridge-contract.json (hashed: its first 16
 // SHA-256 hex digits are the bridge id) and bridge-optional.json (additions that keep the id)
 // from it, byte for byte; contract.test.ts fails when either file drifts from it. Edit here,
@@ -47,7 +47,7 @@ const maybeFlag = flag.optional();
 const callback = z.custom<(text: string) => unknown>((v) => typeof v === 'function').meta({ wire: 'callback' });
 const maybeCallback = z.custom<(text: string) => string>((v) => typeof v === 'function').meta({ wire: 'callback' }).optional();
 
-// --- Edit: every change the My data tab, the chat and Apple Health ask for -----------------
+// --- Edit: every change My health, Settings, the chat and Apple Health ask for -------------
 // Wire shapes only; `.meta({ id })` names one for the generated Swift (contract-swift.ts). A field
 // the engine checks with words of its own (units, alcohol, Lp(a)'s unit, a supplement's status,
 // the chat part) is plain text here, so those words stay the answer.

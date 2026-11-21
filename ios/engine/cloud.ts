@@ -205,7 +205,7 @@ export function commit(at: Open, next: RoadmapFile, erase: string, nowIso: strin
 }
 
 /**
- * One My data edit, through the session (D4): the engine's write rule on the
+ * One edit, through the session (D4): the engine's write rule on the
  * working copy, then `RecordSession.edit` with the erase the screen showed, so
  * it is saved by the save loop, merged on a conflict, and refused if an erase
  * from another device has arrived since. The phone's copy and its pending

@@ -1,5 +1,5 @@
-// The iOS app's My data tab (US-25 AC4/AC5): what it shows, and every write
-// it makes. Each write is health-core's own function, the one the CLI and the
+// The iPhone app's My health tab and Settings (US-25 AC4/AC5): what they show, and every write
+// they make. Each write is health-core's own function, the one the CLI and the
 // connector use, so the app follows the record's rules without copying them.
 // Values come in and go out in the user's units; the record stores SI. Web
 // twins: the widget's InputPanel.tsx and BloodTestTimeline.tsx, writing through
