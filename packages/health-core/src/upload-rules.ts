@@ -56,6 +56,16 @@ export function requestFlags(platform: UploadPlatform): RequestFlags {
   return { ownDates: true, undatedPrev: platform === 'web', refusedRows: true };
 }
 
+/**
+ * What each platform's review does with the person's choices (owner ruling 2026-11-21, web list PR 1b): `previewEdits`, a
+ * value not sent is previewed with its edit (`ImportFile.options`). The web's list edits any row; the phone's page has no
+ * value-edit control, so its preview stays on the number read (KNOWN phoneEditPreview: when it gets one, this turns on).
+ */
+export interface ReviewFlags { previewEdits: boolean }
+export function reviewFlags(platform: UploadPlatform): ReviewFlags {
+  return { previewEdits: platform === 'web' };
+}
+
 /** keep: read it. tooLarge: over its cap. unsupported: no reader for its kind. hidden: archive junk or a dotfile. */
 export type FileVerdict = 'keep' | 'tooLarge' | 'unsupported' | 'hidden';
 

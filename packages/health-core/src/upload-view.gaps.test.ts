@@ -17,6 +17,8 @@ import { lostReplaces, reviewedWrites, uploadReview } from './upload-review';
 import { uploadSave } from './upload-save';
 import { FIX_ERRORS_TEXT, UPLOAD_TEXT } from './upload-text';
 import { uploadView, type UploadView, type ValueRow } from './upload-view';
+import { uploadList } from './upload-list';
+import { PRESSURE_ORDER } from './validation';
 
 const PICKED_DAY = '2026-10-20';
 const FUTURE = '2026-12-01';
@@ -246,15 +248,30 @@ describe('the undated previous column (US-13 AC25)', () => {
   });
 });
 
-// Found by the list-view property on PR 1942 (seed 71), owner ruling 2026-11-21: main's rule, left for 1b, where each row's
-// error comes from its own candidate.
-describe('a copy of a refused reading (web list PR 1a)', () => {
-  it('KNOWN copyBlocksWithoutError: a copy of a blood pressure the write refuses blocks Save at its own row, which draws no error', () => {
+// KNOWN phoneEditPreview (owner ruling 2026-11-21, web list PR 1b): the phone's door takes an edit (PHONE_CHANGE) though no
+// page sends one, and its preview of a value not sent reads the number read, never the edit (`reviewFlags`). A lead, not
+// a fault today: when the phone gets a value-edit control, its preview must take the edit too.
+describe('the phone\'s preview of a value not sent', () => {
+  it('KNOWN phoneEditPreview: an edited, cleared out-of-range value of a waiting report is still previewed out of range on the phone', () => {
+    let s: UploadState = open([labRead('f0', { reportDate: null, values: [core({ valueSI: 500, displayValue: 500 })] })]);
+    s = chose(chose(s, 'f0', { tick: 'v0', on: false }), 'f0', { edit: 'v0', value: 3.1 });
+    expect(see(s, EMPTY).review.classification.values[0]).toMatchObject({ group: 'unsure', reasons: ['outOfRange'] });
+    expect(see({ ...s, platform: 'web' } as UploadState, EMPTY).review.classification.values[0]).toMatchObject({ group: 'waiting' });
+  });
+});
+
+// Found by the list-view property on PR 1942 (seed 71), owner ruling 2026-11-21; closed in web list PR 1b, where each row's
+// error comes from its own candidate (upload-candidates.ts). The phone's view is unchanged: its copies still draw none.
+describe('a copy of a refused reading (web list PR 1b)', () => {
+  it('copyBlocksWithoutError, closed: in the web list a copy of a blood pressure the write refuses draws the error it blocks Save for', () => {
     const turned = [core({ metric: 'systolic_bp', valueSI: 80, displayValue: 80, displayUnit: 'mmHg' }), core({ metric: 'diastolic_bp', valueSI: 120, displayValue: 120, displayUnit: 'mmHg' })];
-    const { view } = see(open([labRead('f0', { values: [...turned, ...turned] })]), EMPTY);
+    const s = open([labRead('f0', { values: [...turned, ...turned] })]);
+    const { view, review } = see(s, EMPTY);
     expect(view.save.blockers).toEqual(['v0', 'v1', 'v2', 'v3'].map((ref) => ({ why: FIX_ERRORS_TEXT, at: `f0:${ref}` })));
-    const copies = rows(view).filter((r) => r.ref === 'v2' || r.ref === 'v3');
-    expect(copies.map((r) => [r.ref, r.error, r.copy])).toEqual([['v2', null, NOT_SAVED_TEXT.sameDay], ['v3', null, NOT_SAVED_TEXT.sameDay]]);
+    const list = uploadList(s, EMPTY, NOW, review, () => 'si');
+    expect(list.rows.map((r) => [r.ref, r.error, r.status.kind])).toEqual(['v0', 'v1', 'v2', 'v3'].map((ref) => [ref, PRESSURE_ORDER, 'error']));
+    // The phone's view, as main drew it.
+    expect(rows(view).filter((r) => r.ref === 'v2' || r.ref === 'v3').map((r) => [r.ref, r.error, r.copy])).toEqual([['v2', null, NOT_SAVED_TEXT.sameDay], ['v3', null, NOT_SAVED_TEXT.sameDay]]);
   });
 });
 
@@ -268,37 +285,40 @@ describe('a dated previous column waiting for its pick (US-13 AC24)', () => {
   })]), platform: 'web' }, 'f0', { columnDay: PRINTED, day: '2026-10' });
   const record = held([LDL(2.0, PRINTED), { kind: 'lab', metricName: 'Ferritin', value: 80, unit: 'µg/L', referenceLow: null, referenceHigh: null, recordedAt: PRINTED, source: 'manual' }]);
 
-  // KNOWN, for the PR that first DRAWS the column picker, which must flip this pin: a value whose dated column waits for its
-  // pick has no day (the review's `days` is null), yet the classifier still previews it on its printed day. It can read
-  // "already in your record", or offer Replace against the printed-day slot, for a column the person is moving. The deeper fix:
-  // `valueDays` (import-review.ts) takes a column map beside `undatedDay`, so `ImportFile.days` and the lab file's `days` are one record.
-  it('KNOWN columnWaitsPreviewedOnPrintedDay: a waiting column\'s values are classified on the day they printed', () => {
+  // Closed in web list PR 1b (`valueDays` takes the column map): a value whose dated column waits for its pick has no day,
+  // so it is judged on none, never previewed on the day it printed: no "already in your record", no Replace against a slot
+  // the person is moving it off.
+  it('columnWaitsPreviewedOnPrintedDay, closed: a waiting column\'s values are judged on no day', () => {
     const { review, view } = see(s(), record);
     expect(review.labFiles[0]).toMatchObject({ needsColumnDay: true, days: { v0: null, a0: null }, waits: ['v0', 'a0'] });
-    expect(view.alreadySaved).toBe(IMPORT_REVIEW_TEXT.alreadySaved(1));
-    expect(rows(view)).toMatchObject([{ ref: 'v0', day: null, conflict: IMPORT_REVIEW_TEXT.conflictKept, replace: expect.any(String) }]);
+    expect(view.alreadySaved).toBeNull();
+    expect(rows(view)).toEqual([]);
+    expect(review.classification.values.filter((v) => v.ref[0] !== 'r').map((v) => [v.ref, v.group])).toEqual([['v0', 'waiting'], ['a0', 'waiting']]);
+    expect(review.held.size).toBe(0);
   });
 
-  // KNOWN (PR 1926 R2), for the PR that draws the column picker to decide: `needsColumnDay` counts a value the write refuses
-  // on any day (a lab with an unknown unit), so that value alone holds up the report while its column waits. The test's day
-  // beside it does not wait for such a value (`refusedAnyDay`: it sits under Not saved and asks no day).
-  it('KNOWN columnWaitsOnRefusedValue: a waiting column holding only a value refused on any day still holds up Save', () => {
+  // Closed in web list PR 1b (owner's word): a value the write refuses on any day does not make its column wait, as the
+  // test's day does not wait for one; it sits under Not saved.
+  it('columnWaitsOnRefusedValue, closed: a waiting column holding only a value refused on any day holds up nothing', () => {
     const lone = chose({ ...open([labRead('f0', {
       values: [core({ valueSI: 3.1, displayValue: 3.1 })],
       additionalValues: [extra({ unit: 'zzz', recordedAt: PRINTED })],
     })]), platform: 'web' }, 'f0', { columnDay: PRINTED, day: '2026-10' });
     const { review, view } = see(lone, EMPTY);
-    expect(review.labFiles[0]).toMatchObject({ needsColumnDay: true, waits: ['a0'] });
-    expect(review.classification.rows).toEqual([]);
-    expect(view.save).toMatchObject({ enabled: false, why: UPLOAD_TEXT.chooseDay });
+    expect(review.labFiles[0]).toMatchObject({ needsColumnDay: false, waits: ['a0'] });
+    expect(review.classification.rows).toHaveLength(1);
+    expect(view.save).toMatchObject({ enabled: true, why: null, label: IMPORT_REVIEW_TEXT.save(1) });
+    expect(notSaved(view)).toEqual([`Ferritin: ${NOT_SAVED_TEXT.unit}`]);
   });
 
-  // KNOWN (web list PR 1a, owner ruling 2026-11-21), for 1b to close: the view draws no control for a dated column's day yet,
-  // so Save's blocker for a waiting column names a key no section has. Property B allows this case alone (241 of 3000 seeds; first 14, 19, 29).
-  it('KNOWN columnBlockerUndrawn: a waiting dated column\'s blocker names a day control the view does not draw', () => {
-    const { view } = see(s(), record);
+  // Closed in web list PR 1b: the web's list draws a control for every day source, a dated column's by the day it printed.
+  it('columnBlockerUndrawn, closed: a waiting dated column\'s blocker names a day control the list draws', () => {
+    const state = s();
+    const { view, review } = see(state, record);
     expect(view.save.blockers).toEqual([{ why: UPLOAD_TEXT.chooseDay, at: `f0|printed:${PRINTED}` }]);
-    expect(view.sections.flatMap((x) => ('key' in x ? [x.key] : []))).toEqual([]);
+    const list = uploadList(state, record, NOW, review, () => 'si');
+    expect(list.days).toEqual([{ key: `f0|printed:${PRINTED}`, fileId: 'f0', source: 'column', printed: PRINTED, chosen: '2026-10', day: null }]);
+    expect(list.rows.map((r) => [r.key, r.section, r.status.kind])).toEqual([['f0:v0', `f0|printed:${PRINTED}`, 'waits'], ['f0:a0', `f0|printed:${PRINTED}`, 'waits']]);
   });
 
   it('columnWaitsNeverWritten (negative pin): nothing of a report whose column waits is written, and Save says to choose the day', () => {
