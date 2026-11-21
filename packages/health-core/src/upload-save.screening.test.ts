@@ -37,8 +37,9 @@ const RULES: Record<string, { age: number; sex?: 'male' | 'female' }> = {
   lung: { age: 50 }, prostate: { age: 45, sex: 'male' }, dexa: { age: 50 },
 };
 const IN_TABLE = Object.keys(RULES);
+const inTable = (type: string) => Object.prototype.hasOwnProperty.call(RULES, type);
 const eligible = (type: string, p: ScreeningPerson) => {
-  if (!Object.hasOwn(RULES, type)) return false; // a type outside the screening table: never a box, never written
+  if (!inTable(type)) return false; // a type outside the screening table: never a box, never written
   const r = RULES[type];
   if (p.sex && r.sex && p.sex !== r.sex) return false;
   return p.age === undefined || p.age >= r.age;
@@ -132,7 +133,7 @@ describe('US-13 AC6: a letter\'s screening box, written by the shared Save (web 
           expected.set(`${type}_last_date`, date!);
           seen.written++;
         } else if (rest && platform === 'phone' && shown && eligible(type!, person!)) seen.phone++;
-        else if (rest && platform === 'web' && shown && !Object.hasOwn(RULES, type!)) seen.outsideTable++;
+        else if (rest && platform === 'web' && shown && !inTable(type!)) seen.outsideTable++;
         else if (rest && platform === 'web' && shown && !eligible(type!, person!)) seen.ineligible++;
         else if (rest && platform === 'web' && !shown && eligible(type!, person!)) seen.copy++;
         else if (type && date && person && platform === 'web' && shown && eligible(type, person) && !ticked) seen.unticked++;
