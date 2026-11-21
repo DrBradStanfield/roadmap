@@ -10,6 +10,7 @@ import { classifyImportValues, importRow, isCoreRef, isOfferedRef, offeredValues
 import { bulkAppendValues, slotIndex, validDay, type BulkRow } from './record-edits';
 import { createEmptyFile, type RoadmapFile } from './roadmap-file';
 import { transition, uploadFileName, type UploadFile, type UploadState } from './upload-flow';
+import { reviewFlags, type ReviewFlags } from './upload-rules';
 
 type ReadFile = UploadFile & { status: Extract<UploadFile['status'], { s: 'read' }> };
 
@@ -100,7 +101,7 @@ export function previousDay(pick: string | null, reportDay: string | null, now: 
  * own full day); an undated previous column's on its own day. Replace and an edited number go
  * on the row as the web's review puts them (import-review-view.ts `classifyReview`).
  */
-function importFile(f: ReadFile, now: string, holderOf: (row: BulkRow) => string | undefined) {
+function importFile(f: ReadFile, now: string, holderOf: (row: BulkRow) => string | undefined, flags: ReviewFlags) {
   const { choices } = f.status;
   const day = validDay(choices.testDay ?? f.status.extraction.reportDate ?? undefined, { now });
   const picks = columnPicks(choices.columnDays, day, now);
@@ -142,7 +143,8 @@ function importFile(f: ReadFile, now: string, holderOf: (row: BulkRow) => string
     const correctsId = choices.replace[ref];
     return [ref, { ...(correctsId ? { correctsId } : {}), ...edited(ref) }];
   }));
-  const file = reportImportFile(result, needsDay ? [] : ticked.map((v) => v.ref), day, now, undatedDay, options, picks);
+  const sent = reportImportFile(result, needsDay ? [] : ticked.map((v) => v.ref), day, now, undatedDay, options, picks);
+  const file = flags.previewEdits ? { ...sent, options } : sent;
   // A value printed on its own day that is no real past day (a misread date still to come) is never saved:
   // it is named under Not saved, never shown as a value to tick (owner ruling 2026-11-20).
   const undatable = offered.filter((v) => v.own !== undefined && v.own !== UNDATED_PREVIOUS && validDay(v.own, { now }) === null).map((v) => v.ref);
@@ -182,7 +184,8 @@ export function uploadReview(s: UploadState, record: RoadmapFile, now: string): 
   // The record's slots, indexed once: each conflict's held row, and each Replace's check.
   const slots = slotIndex(record);
   const holderOf = (row: BulkRow) => slots.get(rowSlot(row))?.id;
-  const built = labs.map((f) => importFile(f, now, holderOf));
+  const flags = reviewFlags(s.platform);
+  const built = labs.map((f) => importFile(f, now, holderOf, flags));
   const classified = classifyImportValues(built.map((b) => b.file), record, now);
   // A row holding typed text that is no number (`FileChoices.typed`, web only) keeps its slot, so holding text moves no
   // sibling, but is never written: it leaves the rows, `reviewed` and the label's count, and blocks Save (US-13 AC12).

@@ -248,6 +248,18 @@ describe('the undated previous column (US-13 AC25)', () => {
   });
 });
 
+// KNOWN phoneEditPreview (owner ruling 2026-11-21, web list PR 1b): the phone's door takes an edit (PHONE_CHANGE) though no
+// page sends one, and its preview of a value not sent reads the number read, never the edit (`reviewFlags`). A lead, not
+// a fault today: when the phone gets a value-edit control, its preview must take the edit too.
+describe('the phone\'s preview of a value not sent', () => {
+  it('KNOWN phoneEditPreview: an edited, cleared out-of-range value of a waiting report is still previewed out of range on the phone', () => {
+    let s: UploadState = open([labRead('f0', { reportDate: null, values: [core({ valueSI: 500, displayValue: 500 })] })]);
+    s = chose(chose(s, 'f0', { tick: 'v0', on: false }), 'f0', { edit: 'v0', value: 3.1 });
+    expect(see(s, EMPTY).review.classification.values[0]).toMatchObject({ group: 'unsure', reasons: ['outOfRange'] });
+    expect(see({ ...s, platform: 'web' } as UploadState, EMPTY).review.classification.values[0]).toMatchObject({ group: 'waiting' });
+  });
+});
+
 // Found by the list-view property on PR 1942 (seed 71), owner ruling 2026-11-21; closed in web list PR 1b, where each row's
 // error comes from its own candidate (upload-candidates.ts). The phone's view is unchanged: its copies still draw none.
 describe('a copy of a refused reading (web list PR 1b)', () => {

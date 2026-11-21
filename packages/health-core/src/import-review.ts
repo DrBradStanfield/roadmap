@@ -34,7 +34,8 @@ export interface ImportFile {
    *  person's choice for an undated column and any edited report date; null
    *  while it has none (`valueDays`). */
   days: Readonly<Record<string, string | null>>;
-  /** Each ref's Replace and edited number, as `importRow` takes them: a value not sent is previewed with its edit too. */
+  /** Each ref's Replace and edited number, as `importRow` takes them: given, a value not sent is previewed with its edit
+   *  too (the shared upload gives it where `reviewFlags` says so). */
   options?: Readonly<Record<string, ImportOptions>>;
 }
 /** A ref's Replace (`correctsId`) and edited number. */
@@ -114,7 +115,7 @@ export function reportImportFile(
     const row = on ? importRow(result, ref, on, options[ref]) : null;
     if (row) rows[ref] = row;
   }
-  return { result, rows, days, options };
+  return { result, rows, days };
 }
 
 /** A value the person can tick: a core (`v<i>`) or additional (`a<i>`) one, never a refused or unread row. */

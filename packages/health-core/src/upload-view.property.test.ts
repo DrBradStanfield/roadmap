@@ -265,10 +265,6 @@ function checkView(s: UploadState, record: RoadmapFile, setup: Setup, note: Note
         // The web draws the list, where every value is a row under its day control (L1): a waiting value it unticked, or
         // one whose dated column waits for its pick (US-13 AC24), need no section of the phone's view.
         if (setup.platform === 'web') continue;
-        // KNOWN phoneEditPreview, for the owner's ruling (web list PR 1b): a value not sent is now previewed with its edit
-        // (D3). The phone's page sends no edit (UploadSession.swift), though its door takes one (PHONE_CHANGE): an edit that
-        // brings a cleared out-of-range value of a waiting report into range moves it from a row to behind the day question.
-        if (f.status.choices.edits[ref] !== undefined && !lf.ticked.includes(ref)) { note('KNOWN phoneEditPreview'); continue; }
         fail('P1', `${lf.fileId} ${ref} waits for a day no section asks (ticked ${lf.ticked.includes(ref)})`);
       }
       fail('P1', `${lf.fileId} ${ref} (${v!.group}) is missing from the view`);
@@ -497,8 +493,9 @@ function checkOracles(s: UploadState, review: UploadReview, record: RoadmapFile)
   const today = NOW.slice(0, 10);
   const reads = new Map(('files' in s ? s.files : []).flatMap((f) => (f.status.s === 'read' ? [[f.id, f.status] as const] : [])));
   const held = rowsOf(record).filter(isActive);
-  // A value is judged on the number Save would send, its edit included, sent or not (import-review step 3, web list PR 1b).
-  const facts = (fi: number, ref: string) => {
+  // A value is judged on the number Save would send, its edit included; one not sent too, on the web alone (import-review
+  // step 3; owner ruling 2026-11-21: the phone's preview reads the number read, KNOWN phoneEditPreview).
+  const facts = (fi: number, ref: string, sent = true) => {
     const lf = review.labFiles[fi];
     const st = reads.get(lf.fileId)!;
     const x = st.extraction;
@@ -506,7 +503,7 @@ function checkOracles(s: UploadState, review: UploadReview, record: RoadmapFile)
     const own = printed?.recordedAt === UNDATED_PREVIOUS ? undefined : printed?.recordedAt;
     const { day } = expectedDay(st, ref);
     const edit = st.choices.edits[ref];
-    const row = day ? importRow(x, ref, day, edit !== undefined ? { edited: { value: edit } } : {}) : null;
+    const row = day ? importRow(x, ref, day, edit !== undefined && (sent || s.platform === 'web') ? { edited: { value: edit } } : {}) : null;
     return { printed, own, row, slot: row ? slotKey(bulkRowTarget(row).slot, bulkRowTarget(row).metric, row.recordedAt) : null };
   };
   const values = review.classification.values;
@@ -515,7 +512,7 @@ function checkOracles(s: UploadState, review: UploadReview, record: RoadmapFile)
     if (!isOfferedRef(v.ref)) continue;
     // A value whose dated column waits for its pick has no day (US-13 AC24): it is never written, and judged on no day.
     if (expectedDay(reads.get(review.labFiles[v.file].fileId)!, v.ref).waits) { if (v.sent && v.writes) fail('O', `${v.ref} waits for its column's day and is written`); continue; }
-    const f = facts(v.file, v.ref);
+    const f = facts(v.file, v.ref, v.sent);
     if (v.group === 'saved') {
       if (!f.row || !f.slot) fail('O', `${v.ref} saved with no day`);
       const equal = (value: number) => Math.abs(value - f.row!.value) < 1e-9;

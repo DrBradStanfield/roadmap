@@ -153,3 +153,39 @@ describe('typed text commits (US-13 AC5, AC12; US-02 AC4, AC7)', () => {
     expect(await saveRefused(s, EMPTY)).toBe(FIX_ERRORS_TEXT);
   });
 });
+
+describe('owner rulings on PR 1944 (2026-11-21)', () => {
+  it('Save\'s blockers: sent rows first, then days, then rows not sent, so the phone\'s `why` stays main\'s', () => {
+    const s = chose(open([
+      labRead('f0', { values: [core({ valueSI: 500, displayValue: 500 })] }), // sent, out of range
+      labRead('f1', { reportDate: null, values: [core({ valueSI: 600, displayValue: 600 })] }), // waits for its day; out of range, not sent
+    ]), 'f1', { typed: 'v0', text: 'abc', unit: 'si' });
+    const { view } = see(s, EMPTY);
+    expect(view.save.blockers).toEqual([
+      { why: FIX_ERRORS_TEXT, at: 'f0:v0' },
+      { why: UPLOAD_TEXT.chooseDay, at: 'f1|test' },
+      { why: FIX_ERRORS_TEXT, at: 'f1:v0' },
+    ]);
+    expect(view.save.why).toBe(FIX_ERRORS_TEXT);
+  });
+
+  // KNOWN labAsCoreOutOfRange (main's rule kept): an additional lab the engine files as a core metric, out of range, is
+  // not written and does not block Save; the list shows the write's own words on the row, so it is never silent (L5).
+  it('KNOWN labAsCoreOutOfRange: not written, no blocker, the write\'s words on the row', () => {
+    const s = open([labRead('f0', { values: [core({ metric: 'hba1c', valueSI: 40, displayValue: 40, displayUnit: 'mmol/mol' })], additionalValues: [extra({ name: 'LDL Cholesterol', value: 500, unit: 'mmol/L' })] })]);
+    const { list, view, review } = see(s, EMPTY);
+    const row = list.rows.find((r) => r.ref === 'a0')!;
+    expect(row).toMatchObject({ ticked: true, saves: false, status: { kind: 'check' }, error: expect.any(String) });
+    expect(row.caption).toBe(row.error);
+    expect(view.save).toMatchObject({ enabled: true, blockers: [], label: IMPORT_REVIEW_TEXT.save(1) });
+    expect(reviewedWrites(review).map((v) => v.ref)).toEqual(['v0']);
+  });
+
+  it('a ticked, out-of-range value whose own printed day is still to come does not block: not saved, captioned', () => {
+    let s: UploadState = open([labRead('f0', { reportDate: '2026-12-15', values: [core({ valueSI: 500, displayValue: 500, recordedAt: '2026-12-01' }), core({ metric: 'hba1c', valueSI: 40, displayValue: 40, displayUnit: 'mmol/mol' })] })]);
+    s = chose(s, 'f0', { testDay: '2026-10-20' });
+    const { list, view } = see(s, EMPTY);
+    expect(list.rows[0]).toMatchObject({ ticked: true, saves: false, error: 'Max 12.9 mmol/L', status: { kind: 'notSaved', reason: 'futureCoreDay' }, caption: NOT_SAVED_TEXT.futureCoreDay });
+    expect(view.save).toMatchObject({ enabled: true, blockers: [] });
+  });
+});

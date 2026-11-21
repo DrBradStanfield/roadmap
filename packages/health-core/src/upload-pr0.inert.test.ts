@@ -14,7 +14,13 @@
  * and asserts how each changed: one new `labArchives` entry per such report (its fileId, name and the review's day),
  * `counts.originals` up by as many, and the Save button as the label rule gives it; with those three undone, every
  * changed seed hashes to main's answer again. (`outcome.archived` is not hashed here: the done phase's outcome is
- * the seed's own.) Synthetic values only.
+ * the seed's own.)
+ *
+ * Web list PR 1b (owner ruling 2026-11-21) changes, on purpose, one more class: on the web a value not sent is
+ * previewed with its edit. The test names its seeds (a web read lab report holding an edit on a value the review does
+ * not send, whose answer differs once that preview is undone), asserts the changed seeds are exactly those and AC11's,
+ * and that with the preview undone each hashes to main's answer. Every phone seed, edits included, answers as main did:
+ * the phone's preview never reads an edit. Unreachable today: the web never calls the engine's view yet. Synthetic values only.
  */
 import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -39,6 +45,8 @@ const COLUMN = '2026-09-15';
 const FUTURE = '2026-12-01';
 /** How many seeds the US-14 AC11 rule names (see the header): the rule is the check, this count pins the seeds' spread. */
 const AC11_SEEDS = 15;
+/** How many seeds the web list PR 1b rule names (`editPreviewCandidate`): 19, all on the web. */
+const EDIT_PREVIEW_SEEDS = 19;
 
 /** Kept here, not shared: a shared generator that changed would change every seed and the golden with it. */
 function mulberry32(seed: number): () => number {
@@ -156,8 +164,10 @@ function canonical(value: unknown): string {
 
 /** Main's answer for a case: the new fields checked (no column waits), then left out. `days` is the review's
  *  own record of each value's day, which main kept inside the review; its effect is in the plan and view. */
-function parts(c: Case) {
-  const review = uploadReview(c.state, c.record, NOW);
+function parts(c: Case, previewEdits = true) {
+  // `previewEdits` false: the review as main judged it, a value not sent previewed on its number read (`reviewFlags`,
+  // which turns the edit's preview on for the web only; the review reads the platform for nothing else).
+  const review = uploadReview(previewEdits ? c.state : { ...c.state, platform: 'phone' }, c.record, NOW);
   const plan = uploadSavePlan(c.state, c.record, NOW, review, c.cloud);
   const view = uploadView(c.state, c.record, NOW, review, c.cloud);
   const labFiles = review.labFiles.map((l) => {
@@ -187,6 +197,21 @@ function keptAlone(c: Case): Array<{ fileId: string; sourceFileName: string; rep
   return uploadReview(c.state, c.record, NOW).labFiles.flatMap((l) => {
     const f = files.find((x) => x.id === l.fileId);
     return !l.ticked.length && f?.status.s === 'read' && labReadFound(f.status.extraction) ? [{ fileId: l.fileId, sourceFileName: f.name, reportDate: l.day }] : [];
+  });
+}
+
+/**
+ * Web list PR 1b (owner ruling 2026-11-21): on the web a value not sent is previewed with its edit (`reviewFlags`). The
+ * seeds it may change, from the case: web, and a read lab report holding an edit on a value the review does not send.
+ * Unreachable today: the web's page never calls the engine's view yet (UploadModal draws the web's own review).
+ */
+function editPreviewCandidate(c: Case): boolean {
+  if (c.state.platform !== 'web' || !('files' in c.state)) return false;
+  const files = c.state.files;
+  const review = uploadReview(c.state, c.record, NOW);
+  return review.classification.values.some((v) => {
+    const f = files.find((x) => x.id === review.labFiles[v.file].fileId);
+    return !v.sent && f?.status.s === 'read' && f.status.choices.edits[v.ref] !== undefined;
   });
 }
 
@@ -228,13 +253,22 @@ describe('US-13 AC24: PR 0 is inert with none of its choices set', () => {
     if (process.env.UPDATE_PR0_GOLDEN) writeFileSync(GOLDEN, `${JSON.stringify(now, null, 0)}\n`);
     const golden = JSON.parse(readFileSync(GOLDEN, 'utf8')) as Record<string, string>;
     expect(Object.keys(golden)).toHaveLength(SEEDS);
-    // US-14 AC11: the seeds it changes are exactly those holding one of its reports (`keptAlone`); every other seed
-    // answers as main did.
+    // US-14 AC11: the seeds it changes are those holding one of its reports (`keptAlone`). Web list PR 1b: the others it
+    // changes are exactly the web seeds holding an edit on a value not sent (`editPreviewCandidate`) whose answer differs
+    // once the edit's preview is undone. Every other seed, every phone seed with an edit included, answers as main did.
     const changed = Object.keys(now).filter((seed) => golden[seed] !== now[seed]);
-    expect(changed).toEqual(Object.keys(now).filter((seed) => keptAlone(genCase(Number(seed))).length > 0));
-    expect(changed).toHaveLength(AC11_SEEDS);
+    const ac11 = Object.keys(now).filter((seed) => keptAlone(genCase(Number(seed))).length > 0);
+    const previewed = Object.keys(now).filter((seed) => {
+      const c = genCase(Number(seed));
+      return editPreviewCandidate(c) && hash(canonical(parts(c, false))) !== now[seed];
+    });
+    expect(changed).toEqual(Object.keys(now).filter((seed) => ac11.includes(seed) || previewed.includes(seed)));
+    expect(ac11).toHaveLength(AC11_SEEDS);
+    expect(previewed.filter((seed) => !ac11.includes(seed))).toHaveLength(EDIT_PREVIEW_SEEDS);
+    // And how: with the edit's preview undone, each answers as main did.
+    for (const seed of previewed.filter((x) => !ac11.includes(x))) expect(hash(canonical(parts(genCase(Number(seed)), false))), seed).toBe(golden[seed]);
     // And how: each kept report is one new `labArchives` entry, `originals` counts it, the label says so; undone, main's answer.
-    for (const seed of changed) {
+    for (const seed of ac11) {
       const c = genCase(Number(seed));
       const kept = keptAlone(c);
       const { plan, view } = parts(c);
