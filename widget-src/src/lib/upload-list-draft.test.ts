@@ -1,17 +1,18 @@
 // The web upload list's one screen state, the focused input's draft (US-13 AC26, web list PR 2): a table test of its
-// pure transition. Every event against every draft shape, and what each sends to the engine.
+// pure transition. Every event against every draft shape, and what each sends to the engine. A draft keeps the unit it
+// was typed in from its first keystroke (Codex R2): a unit switch while typing never re-reads it.
 import { describe, expect, it } from 'vitest';
 import { transition, type Draft, type DraftEvent } from './upload-list-draft';
 
-const A: Draft = { key: 'f0:v0', text: '3.4' };
+const A: Draft = { key: 'f0:v0', text: '3.4', unit: 'si' };
 const rows = (...keys: string[]): DraftEvent => ({ type: 'rows', inputs: new Set(keys) });
 
 describe('upload list draft (US-13 AC26)', () => {
-  it.each<[string, Draft, DraftEvent, Draft, { key: string; text: string } | null]>([
-    ['typing starts a draft', null, { type: 'type', key: 'f0:v0', text: '3' }, { key: 'f0:v0', text: '3' }, null],
-    ['typing in the same row replaces its text', A, { type: 'type', key: 'f0:v0', text: '3.45' }, { key: 'f0:v0', text: '3.45' }, null],
-    ['typing in another row commits the old draft first', A, { type: 'type', key: 'f0:v1', text: '9' }, { key: 'f0:v1', text: '9' }, A],
-    ['an emptied input is a draft too (the engine clears the row)', A, { type: 'type', key: 'f0:v0', text: '' }, { key: 'f0:v0', text: '' }, null],
+  it.each<[string, Draft, DraftEvent, Draft, Draft]>([
+    ['typing starts a draft in the unit on screen', null, { type: 'type', key: 'f0:v0', text: '3', unit: 'conventional' }, { key: 'f0:v0', text: '3', unit: 'conventional' }, null],
+    ['typing on keeps the unit it started in (Codex R2)', A, { type: 'type', key: 'f0:v0', text: '3.45', unit: 'conventional' }, { key: 'f0:v0', text: '3.45', unit: 'si' }, null],
+    ['typing in another row commits the old draft first', A, { type: 'type', key: 'f0:v1', text: '9', unit: null }, { key: 'f0:v1', text: '9', unit: null }, A],
+    ['an emptied input is a draft too (the engine clears the row)', A, { type: 'type', key: 'f0:v0', text: '', unit: 'si' }, { key: 'f0:v0', text: '', unit: 'si' }, null],
     ['commit sends the draft and drops it', A, { type: 'commit' }, null, A],
     ['commit with no draft sends nothing', null, { type: 'commit' }, null, null],
     ['focus on the same row keeps the draft', A, { type: 'focus', key: 'f0:v0' }, A, null],

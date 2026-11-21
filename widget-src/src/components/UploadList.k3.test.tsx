@@ -3,20 +3,23 @@
  * K3, the web upload list's screen property (US-13 AC26, web list PR 2; seeded, mulberry32, no dependency). Each run
  * interleaves a person's DOM steps (focus, type, blur, Enter, Escape, tick, Replace, a day, Show all, a letter's title,
  * kind and date, a Save press with and without focus on Save) with the engine's (a file's read landing before another's
- * rows, another writer changing the record, a Save answering). The pick holds a row whose input takes none and rows with
- * reasons. After every step:
+ * rows, another writer changing the record, a Save answering) and the person switching their display unit. The pick holds
+ * a row whose input takes none and rows with reasons. After every step:
  *   K3a the draft is none, or names a row whose input takes typing or a letter's title, and it is the one the person's
  *       steps left; each letter's title input shows its draft, else the engine's title;
  *   K3b the screen sent the engine exactly what the person's steps say, worked out by the engine's own `transition` from
- *       the state before the step (a commit is `{typed: ref, text, unit}`; a Save press with a draft is commit, re-read,
+ *       the state before the step (a commit is `{typed: ref, text, unit}`, the unit on screen when the person started
+ *       typing, read by this test from the screen then, never from the component; a Save press with a draft is commit, re-read,
  *       then Save if the view allows it, else the focus on the first blocker's control);
  *   K3c the last text typed at a row and not cancelled is the draft's, or the engine holds it (held text, or the edit
  *       `typedCommit` makes of it), until the person changes that row again;
  *   K3d the DOM's inputs are the engine's rows: one text input per row with `input: 'number'`, none otherwise, showing
- *       the draft while it names the row, else the held text, else the shown number;
- *   K3e no row's node, nor its input, is ever replaced while its row stands (status changes and rows landing before it).
+ *       the draft while it names the row, else the held text, else the shown number; each row sits under its own day;
+ *   K3e no row's node, nor its input, is ever replaced while its row stands (status changes and rows landing before it);
+ *   K3f the row being typed in, or holding the focus, is never hidden.
  * Mutations it was shown failing on (PR body): M1 commit skipped on focus moving to another row; M2 the input's value
- * read from a stale local copy; M3 rows keyed by index; M4 a letter's title draft never sent. Synthetic values only.
+ * read from a stale local copy; M3 day groups keyed by index; M4 a letter's title draft never sent; M5 the draft's unit
+ * re-read from the row at commit; M6 a row hidden whatever its draft or focus. Synthetic values only.
  */
 import { act, cleanup, fireEvent, render } from '@testing-library/react';
 import { afterEach, describe, it } from 'vitest';
@@ -26,6 +29,7 @@ import { valueAt } from '@roadmap/health-core/import-review';
 import type { UnifiedExtractionResult } from '@roadmap/health-core/lab-extraction';
 import { bulkAppendValues, type BulkRow } from '@roadmap/health-core/record-edits';
 import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
+import type { CellUnit } from '@roadmap/health-core/cell-unit';
 import { NO_CHOICES, type ChoiceChange } from '@roadmap/health-core/upload-choices';
 import { transition, type UploadEvent, type UploadState } from '@roadmap/health-core/upload-flow';
 import type { DayControl, ListRow } from '@roadmap/health-core/upload-list';
@@ -71,7 +75,8 @@ const TITLES = ['Cardiology letter', '', 'Clinic letter'];
 const KINDS = ['clinic_letter', 'scan_result', 'other'];
 
 /** The person's model of the draft: the text typed into the focused input and not yet committed or cancelled. */
-type Draft = { key: string; text: string } | null;
+/** `unit`: the unit on screen when the person started typing it (Codex R2), read from what the screen showed then. */
+type Draft = { key: string; text: string; unit: CellUnit | null } | null;
 type Held = { key: string; text: string; expect: 'hold' | 'edit' | 'none'; value?: number };
 
 const rowEl = (key: string) => document.querySelector<HTMLLIElement>(`li[data-key="${key}"]`);
@@ -100,25 +105,25 @@ function runSequence(seed: number, steps: number) {
   const nodes = new Map<string, { li: Element; input: HTMLInputElement | null }>();
   const fail = (prop: string, msg: string) => { throw new Error(`${prop} seed ${seed}: ${msg}\n  steps: ${trace.join(' > ')}`); };
 
-  const see = (s: UploadState, record: RoadmapFile) => engineSee(s, record, NOW, () => 'si');
+  const see = (s: UploadState, record: RoadmapFile) => engineSee(s, record, NOW, h.units());
   /** The state after a commit of `d`, by the engine's own transition. */
   const committed = (s: UploadState, record: RoadmapFile, d: Draft): UploadState => {
     if (!d) return s;
     if (d.key.startsWith('title:')) return transition(s, { type: 'chose', id: d.key.slice(6), change: { document: { title: d.text } }, now: NOW }).state;
     const row = see(s, record).list.rows.find((r) => r.key === d.key);
     if (!row) return s;
-    const change: ChoiceChange = { typed: row.ref, text: d.text, unit: row.shown.cell?.unit ?? null };
+    const change: ChoiceChange = { typed: row.ref, text: d.text, unit: d.unit };
     const after = transition(s, { type: 'chose', id: row.fileId, change, now: NOW }).state;
-    if (after !== s) held = heldOf(s, row, d.text);
+    if (after !== s) held = heldOf(s, row, d.text, d.unit);
     return after;
   };
   /** What the engine must hold for text committed at `row` (K3c), from `typedCommit` on the choices before. */
-  const heldOf = (s: UploadState, row: ListRow, text: string): Held | null => {
+  const heldOf = (s: UploadState, row: ListRow, text: string, unit: CellUnit | null): Held | null => {
     const f = 'files' in s ? s.files.find((x) => x.id === row.fileId) : undefined;
     if (f?.status.s !== 'read') return null;
     const at = valueAt(f.status.extraction, row.ref)!;
     if (!text.trim()) return { key: row.key, text, expect: 'none' };
-    const c = typedCommit(text, at, f.status.choices.edits[row.ref], row.shown.cell?.unit ?? null);
+    const c = typedCommit(text, at, f.status.choices.edits[row.ref], unit);
     if (!c) return null;
     return c.kind === 'hold' ? { key: row.key, text, expect: 'hold' } : c.kind === 'edit' ? { key: row.key, text, expect: 'edit', value: c.value } : { key: row.key, text, expect: 'none' };
   };
@@ -160,8 +165,10 @@ function runSequence(seed: number, steps: number) {
       const text = pick(activeRow.startsWith('title:') ? TITLES : TEXTS);
       trace.push(`type "${text}"`);
       if ((active as HTMLInputElement).value !== text) {
+        // The unit the row shows as the person starts typing, read from the screen's own unit line.
+        const onScreen = activeRow.startsWith('title:') ? null : see(before, record).list.rows.find((x) => x.key === activeRow)!.shown.cell?.unit ?? null;
         fireEvent.change(active!, { target: { value: text } });
-        draft = { key: activeRow, text };
+        draft = draft?.key === activeRow ? { ...draft, text } : { key: activeRow, text, unit: onScreen };
         if (held?.key === activeRow) held = null;
       }
     } else if (r < 0.44) {
@@ -262,13 +269,18 @@ function runSequence(seed: number, steps: number) {
           if (day) expected = transition(expected, { type: 'chose', id: 'f2', change: { document: { date: day } }, now: NOW }).state;
         }
       } else {
-        const remove = doc.querySelector<HTMLButtonElement>('.upload-list-document-date .review-disclosure');
+        const remove = doc.querySelector<HTMLButtonElement>('.upload-list-remove-date');
         if (!remove) continue;
         trace.push('remove letter date');
         if (focusMoves(remove)) { expected = committed(before, record, draft); draft = null; }
         fireEvent.click(remove);
         expected = transition(expected, { type: 'chose', id: 'f2', change: { document: { date: null } }, now: NOW }).state;
       }
+    } else if (r < 0.93) {
+      // The person switches the unit their values show in (the grid's unit toggle), typing or not.
+      const unit: CellUnit = rand() < 0.5 ? 'si' : 'conventional';
+      trace.push(`units ${unit}`);
+      act(() => h.setUnits(() => unit));
     } else if (r < 0.96) {
       const next = pick(RECORDS);
       trace.push(`record ${RECORDS.indexOf(next)}`);
@@ -298,6 +310,10 @@ function runSequence(seed: number, steps: number) {
     if (shownDraft !== (draft?.key ?? null)) fail('K3a', `the screen's draft is ${shownDraft}, the person's ${draft?.key ?? null}`);
     const letters = (after.view.documents?.rows ?? []).map((d) => `title:${d.fileId}`);
     if (draft && !letters.includes(draft.key) && live.find((x) => x.key === draft!.key)?.input !== 'number') fail('K3a', `the draft names ${draft.key}, which takes no input`);
+    // K3f: the row being typed in, or holding the focus, is never hidden (B5).
+    const focusedRow = (document.activeElement as HTMLElement | null)?.closest<HTMLElement>('li[data-key]');
+    if (draft && !letters.includes(draft.key) && rowEl(draft.key)?.hidden) fail('K3f', `${draft.key} holds the draft and is hidden`);
+    if (focusedRow?.hidden) fail('K3f', `${focusedRow.dataset.key} holds the focus and is hidden`);
     for (const d of after.view.documents?.rows ?? []) {
       const want = draft?.key === `title:${d.fileId}` ? draft.text : d.title;
       if (textInput(docEl(d.fileId))?.value !== want) fail('K3d', `letter ${d.fileId} title shows "${textInput(docEl(d.fileId))?.value}", want "${want}"`);
@@ -314,7 +330,11 @@ function runSequence(seed: number, steps: number) {
     }
     // K3d, K3e
     const lis = [...document.querySelectorAll<HTMLLIElement>('li[data-key]')];
-    if (lis.map((li) => li.dataset.key).join() !== live.map((x) => x.key).join()) fail('K3d', 'the DOM rows are not the engine rows');
+    // Under each day, in the order of each day's first row; in engine order within a day (B4).
+    const sections = [...new Set(live.map((x) => x.section))];
+    const order = sections.flatMap((sec) => live.filter((x) => x.section === sec).map((x) => x.key));
+    if (lis.map((li) => li.dataset.key).join() !== order.join()) fail('K3d', 'the DOM rows are not the engine rows under their days');
+    for (const li of lis) if (li.closest<HTMLElement>('[data-section]')?.dataset.section !== live.find((x) => x.key === li.dataset.key)?.section) fail('K3d', `${li.dataset.key} is not under its day`);
     for (const row of live) {
       const li = rowEl(row.key)!;
       const input = textInput(li);

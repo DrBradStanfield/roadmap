@@ -37,6 +37,8 @@ const SCENARIOS: Record<string, { s: UploadState; record: RoadmapFile }> = {
   waiting: { s: open([read('f0', 'scan-no-date.pdf', x({ reportDate: null, values: [core({}), core({ metric: 'hba1c', valueSI: 40, displayValue: 40, displayUnit: 'mmol/mol' })], additionalValues: [extra()] }))]), record: EMPTY },
   letter: { s: open([read('f0', 'blood-tests-nov.pdf', REPORT), read('f1', 'cardiology-clinic.pdf', x({ classification: 'clinic_letter', reportDate: null,
     document: { classification: 'clinic_letter', title: 'Cardiology clinic follow-up', documentDate: '2026-10-20', contentMarkdown: 'Plan', metadata: {} } }))]), record: EMPTY },
+  columns: { s: open([read('f0', 'blood-tests-nov.pdf', x({ values: [core({}), core({ valueSI: 2.9, displayValue: 2.9, recordedAt: '2026-09-15' }), core({ metric: 'hba1c', valueSI: 40, displayValue: 40, displayUnit: 'mmol/mol' }), core({ metric: 'hba1c', valueSI: 42, displayValue: 42, displayUnit: 'mmol/mol', recordedAt: '2026-09-15' })] }))]), record: EMPTY },
+  notsaved: { s: open([read('f0', 'blood-tests-nov.pdf', x({ values: [core({})], unreadValues: [{ name: 'Vitamin D', reason: 'unreadable' }], refusedValues: [{ metric: 'creatinine', value: 3, unit: 'mmol/24h', reason: 'unit' }] }))]), record: EMPTY },
   done: { s: { ...fresh, phase: 'done', outcome: { values: 4, documents: 1, archived: 1, skippedValues: 1 } }, record: EMPTY },
   // A file still reading before one already read: its rows land above the focused row (the WebKit focus check).
   reorder: { s: open([{ ...read('f0', 'first.pdf', REPORT), status: { s: 'sending', attempt: 1 } }, read('f1', 'second.pdf', x({ values: [core({ valueSI: 500, displayValue: 500 })] }))]), record: EMPTY },

@@ -18,6 +18,9 @@ export interface ListHost {
   send: (e: UploadEvent) => void;
   /** Another writer changed the record: the review re-reads it, and a Replace it lost is dropped. */
   setRecord: (r: RoadmapFile) => void;
+  /** The person switched the unit their values show in (the grid's unit toggle). */
+  setUnits: (unitOf: (m: MetricType) => CellUnit) => void;
+  units: () => (m: MetricType) => CellUnit;
   /** Every event the screen sent, in order. */
   sent: UploadEvent[];
   see: () => { list: ReturnType<typeof uploadList>; view: ReturnType<typeof uploadView> };
@@ -31,7 +34,7 @@ export function engineSee(s: UploadState, record: RoadmapFile, now: string, unit
 export function UploadListHost({ initial, record, now, unitOf = () => 'si', host }: {
   initial: UploadState; record: RoadmapFile; now: string; unitOf?: (m: MetricType) => CellUnit; host?: MutableRefObject<ListHost | null>;
 }) {
-  const live = useRef({ s: initial, record });
+  const live = useRef({ s: initial, record, unitOf });
   const [, redraw] = useState(0);
   const sent = useRef<UploadEvent[]>([]);
   const send = (e: UploadEvent) => {
@@ -40,7 +43,7 @@ export function UploadListHost({ initial, record, now, unitOf = () => 'si', host
     live.current = { ...live.current, s: step.state };
     redraw((n) => n + 1);
   };
-  const see = () => engineSee(live.current.s, live.current.record, now, unitOf);
+  const see = () => engineSee(live.current.s, live.current.record, now, live.current.unitOf);
   const handle: ListHost = {
     state: () => live.current.s,
     record: () => live.current.record,
@@ -51,6 +54,8 @@ export function UploadListHost({ initial, record, now, unitOf = () => 'si', host
       if (lost.length) send({ type: 'replacesLost', lost });
       redraw((n) => n + 1);
     },
+    setUnits: (u) => { live.current = { ...live.current, unitOf: u }; redraw((n) => n + 1); },
+    units: () => live.current.unitOf,
     sent: sent.current,
     see: () => { const { list, view } = see(); return { list, view }; },
   };

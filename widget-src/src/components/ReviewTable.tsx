@@ -14,7 +14,7 @@ import { type CellUnit, type Grading, cellNumber, cellText, cellToSI, hasNumeric
 import { useLpaUnit } from '../lib/lpa-unit';
 import { ReviewMatrix } from './ReviewMatrix';
 import { ReviewFileSections } from './ReviewFileSections';
-import { NotSavedLine, SureLine, saveLabel, useDisclosure } from './ReviewOverview';
+import { NotSavedLine, REVIEW_ACTION_TEXT, SureLine, saveLabel, useDisclosure } from './ReviewOverview';
 import { useReviewDocuments } from '../hooks/useReviewDocuments';
 import { type FullDate, parseReportDate, columnDay, getDaysInMonth, buildRecordedAt, fullDateToIso } from '../lib/review-dates';
 import type { FileResult, ReviewDecisions } from '../lib/upload-pipeline';
@@ -466,10 +466,10 @@ export function ReviewTable({
           onClick={handleSave}
           disabled={hasInvalid || refusedKept || (nothingSelected && archiveCount === 0) || !allDatesSet || isSaving}
         >
-          {isSaving ? 'Saving...' : saveLabel(savedCount, selectedDocCount, archiveCount)}
+          {isSaving ? REVIEW_ACTION_TEXT.saving : saveLabel(savedCount, selectedDocCount, archiveCount)}
         </button>}
         <button className="review-cancel-btn" onClick={onCancel} disabled={isSaving}>
-          {nothingToSave ? 'Close' : 'Cancel'}
+          {nothingToSave ? REVIEW_ACTION_TEXT.close : REVIEW_ACTION_TEXT.cancel}
         </button>
       </div>
     </div>

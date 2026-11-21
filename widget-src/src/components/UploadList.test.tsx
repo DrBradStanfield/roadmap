@@ -47,8 +47,7 @@ describe('the three cases that sank PR 1937, drawn (US-13 AC26)', () => {
     const OCT = '2026-10-01';
     const host = mount(open([labRead('f0', { values: [core({ recordedAt: OCT })] })]), bulkAppendValues(EMPTY, [LDL(3.1, SEP)], NOW).file);
     const li = row('f0:v0');
-    expect(li.hidden).toBe(true); // it saves and needs nothing: behind Show all
-    fireEvent.click(screen.getByRole('button', { name: /^Show all/ }));
+    expect(li.hidden).toBe(false); // nothing needs checking: every row shows from the start (B5)
     typeInto('f0:v0', 'abc');
     blur();
     const day = document.querySelector<HTMLInputElement>(`[data-at="f0|printed:${OCT}"] input`)!;
@@ -66,8 +65,7 @@ describe('the three cases that sank PR 1937, drawn (US-13 AC26)', () => {
 
   it('(b) LDL twice on one day, the second unticked and typed into: its row stays, with its text, then its edit and caption', () => {
     const host = mount(open([labRead('f0', { values: [core({}), core({ valueSI: 3.5, displayValue: 3.5 })] })]));
-    expect(row('f0:v1').hidden).toBe(true); // the same-day loser needs nothing: behind Show all
-    fireEvent.click(screen.getByRole('button', { name: /^Show all/ }));
+    expect(row('f0:v1').hidden).toBe(false); // nothing needs checking: every row shows from the start (B5)
     const li = row('f0:v1');
     fireEvent.click(within(li).getByRole('checkbox'));
     expect((within(li).getByRole('checkbox') as HTMLInputElement).checked).toBe(false);
@@ -155,10 +153,10 @@ describe('what the engine now says (US-13 AC10, AC26; US-14 AC11-13)', () => {
     const host = mount(open([labRead('f0', { reportDate: null, values: [core({ valueSI: 500, displayValue: 500 })] })]));
     const { list } = host.see();
     expect(input('f0:v0').getAttribute('aria-label')).toBe(list.rows[0].label);
-    expect(controlAt(document, 'f0|test')!.querySelector('input')!.getAttribute('aria-label')).toBe(list.days[0].label);
-    expect(within(document.querySelector<HTMLElement>('.upload-list-days')!).getByText(list.days[0].fileName)).toBeTruthy();
+    expect(controlAt(document, 'f0|test')!.getAttribute('aria-label')).toBe(list.days[0].label);
+    expect(within(document.querySelector<HTMLElement>('.upload-list-day')!).getByText(list.days[0].fileName)).toBeTruthy();
     expect(screen.getByText(list.days[0].hint!)).toBeTruthy(); // drawn in the picker, never a day that reads as picked
-    expect(controlAt(document, 'f0|test')!.querySelector('input')!.value).toBe('');
+    expect(document.querySelector<HTMLInputElement>('[data-at="f0|test"] input')!.value).toBe('');
   });
 
   it('Replace is named by the engine, tied to its row, and the saved value sits beside the caption', () => {
@@ -168,14 +166,13 @@ describe('what the engine now says (US-13 AC10, AC26; US-14 AC11-13)', () => {
     const described = box.getAttribute('aria-describedby')!.split(' ').map((id) => document.getElementById(id)!.textContent);
     expect(described).toEqual([r.label, r.held]);
     const caption = within(row('f0:v0')).getByText(IMPORT_REVIEW_TEXT.conflictKept, { exact: false });
-    expect(caption.textContent).toBe(`${r.held}${IMPORT_REVIEW_TEXT.conflictKept}`);
+    expect(caption.textContent).toBe(`${r.held} ${IMPORT_REVIEW_TEXT.conflictKept}`);
     fireEvent.click(box);
     expect(host.see().list.rows[0]).toMatchObject({ replacing: true, caption: UPLOAD_TEXT.replaces });
   });
 
   it('retyping the shown text of a printed limit changes nothing', () => {
     const host = mount(open([labRead('f0', { additionalValues: [{ name: 'CRP', value: 0.6, unit: 'mg/L', comparator: '<' }] })]));
-    fireEvent.click(screen.getByRole('button', { name: /^Show all/ }));
     const shown = input('f0:a0').value;
     typeInto('f0:a0', `${shown}1`);
     typeInto('f0:a0', shown);
@@ -191,7 +188,7 @@ describe('what the engine now says (US-13 AC10, AC26; US-14 AC11-13)', () => {
         document: { classification: 'clinic_letter', title: 'Clinic letter', documentDate: '2026-10-20', contentMarkdown: 'Plan', metadata: {} } } },
     };
     const host = mount(open([letter]));
-    const title = screen.getByRole('textbox', { name: 'Document title' }) as HTMLInputElement;
+    const title = screen.getByRole('textbox', { name: 'Document title letter.pdf' }) as HTMLInputElement;
     act(() => title.focus());
     fireEvent.change(title, { target: { value: 'Cardiology letter' } });
     expect(host.see().view.documents!.rows[0].title).toBe('Clinic letter'); // a draft until it is left
@@ -202,7 +199,7 @@ describe('what the engine now says (US-13 AC10, AC26; US-14 AC11-13)', () => {
     fireEvent.click(screen.getByRole('button', { name: UPLOAD_TEXT.removeDate }));
     expect(host.see().view.documents!.rows[0]).toMatchObject({ dateKnown: false });
     expect(screen.getByText(UPLOAD_TEXT.setDate)).toBeTruthy();
-    fireEvent.change(screen.getByLabelText('Document date'), { target: { value: '2026-09-01' } });
+    fireEvent.change(document.querySelector('li[data-doc="l0"] input[type="date"]')!, { target: { value: '2026-09-01' } });
     expect(host.see().view.documents!.rows[0]).toMatchObject({ dateKnown: true, day: '2026-09-01' });
   });
 });
