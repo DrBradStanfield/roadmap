@@ -35,6 +35,8 @@ const SCENARIOS: Record<string, { s: UploadState; record: RoadmapFile }> = {
   held: { s: chose(fresh, { type: 'chose', id: 'f0', change: { typed: 'v0', text: '3..1', unit: 'si' }, now: NOW }), record: EMPTY },
   conflict: { s: fresh, record: bulkAppendValues(EMPTY, [{ kind: 'measurement', metricType: 'ldl', value: 2.9, recordedAt: DAY, source: 'manual' }], NOW).file },
   waiting: { s: open([read('f0', 'scan-no-date.pdf', x({ reportDate: null, values: [core({}), core({ metric: 'hba1c', valueSI: 40, displayValue: 40, displayUnit: 'mmol/mol' })], additionalValues: [extra()] }))]), record: EMPTY },
+  letter: { s: open([read('f0', 'blood-tests-nov.pdf', REPORT), read('f1', 'cardiology-clinic.pdf', x({ classification: 'clinic_letter', reportDate: null,
+    document: { classification: 'clinic_letter', title: 'Cardiology clinic follow-up', documentDate: '2026-10-20', contentMarkdown: 'Plan', metadata: {} } }))]), record: EMPTY },
   done: { s: { ...fresh, phase: 'done', outcome: { values: 4, documents: 1, archived: 1, skippedValues: 1 } }, record: EMPTY },
   // A file still reading before one already read: its rows land above the focused row (the WebKit focus check).
   reorder: { s: open([{ ...read('f0', 'first.pdf', REPORT), status: { s: 'sending', attempt: 1 } }, read('f1', 'second.pdf', x({ values: [core({ valueSI: 500, displayValue: 500 })] }))]), record: EMPTY },

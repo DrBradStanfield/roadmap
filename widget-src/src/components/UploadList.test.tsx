@@ -11,8 +11,11 @@ import type { UnifiedExtractionResult } from '@roadmap/health-core/lab-extractio
 import { bulkAppendValues, type BulkRow } from '@roadmap/health-core/record-edits';
 import { NO_CHOICES } from '@roadmap/health-core/upload-choices';
 import type { UploadState } from '@roadmap/health-core/upload-flow';
-import { FIX_ERRORS_TEXT, UPLOAD_TEXT } from '@roadmap/health-core/upload-text';
+import { FIX_ERRORS_TEXT, REVIEW_CELL_TEXT, UPLOAD_TEXT } from '@roadmap/health-core/upload-text';
+import { IMPORT_REVIEW_TEXT } from '@roadmap/health-core/import-review';
+import { ENGINE_NAMES } from '../lib/upload-list-names';
 import { UploadListHost, type ListHost } from '../testing/upload-list-host';
+import { controlAt } from './UploadList';
 
 afterEach(cleanup);
 
@@ -48,7 +51,7 @@ describe('the three cases that sank PR 1937, drawn (US-13 AC26)', () => {
     fireEvent.click(screen.getByRole('button', { name: /^Show all/ }));
     typeInto('f0:v0', 'abc');
     blur();
-    const day = document.querySelector<HTMLInputElement>(`input[data-at="f0|printed:${OCT}"]`)!;
+    const day = document.querySelector<HTMLInputElement>(`[data-at="f0|printed:${OCT}"] input`)!;
     fireEvent.change(day, { target: { value: SEP } });
     expect(day.value).toBe(SEP);
     expect(row('f0:v0')).toBe(li); // never remounted
@@ -103,7 +106,7 @@ describe('the three cases that sank PR 1937, drawn (US-13 AC26)', () => {
     expect(within(li).getByText(UPLOAD_TEXT.chooseDay)).toBeTruthy();
     fireEvent.click(save());
     expect(host.state().phase).toBe('open');
-    expect(document.activeElement).toBe(document.querySelector('input[data-at="f0|test"]'));
+    expect(document.activeElement).toBe(controlAt(document, 'f0|test'));
   });
 });
 
@@ -126,8 +129,80 @@ describe('the draft (US-13 AC26)', () => {
     expect(host.state().phase).toBe('saving');
   });
 
-  it('a row whose input takes none draws no input', () => {
-    mount(open([labRead('f0', { values: [core({ metric: 'vitamin_zz', valueSI: 12, displayValue: 12, displayUnit: 'zz/L' })] })]));
+});
+
+describe('what the engine now says (US-13 AC10, AC26; US-14 AC11-13)', () => {
+  it('the check heading, its note, and each row\'s reasons under it, all in the engine\'s words', () => {
+    const host = mount(open([labRead('f0', { values: [core({ question: 'Is this LDL or total cholesterol?', unitGuessed: true }), core({ metric: 'hba1c', valueSI: 40, displayValue: 40, displayUnit: 'mmol/mol', confidence: 'medium' })] })]));
+    const { list } = host.see();
+    expect(list.check).toBe(IMPORT_REVIEW_TEXT.checkTitle(2));
+    expect(screen.getByRole('heading', { name: list.check! })).toBeTruthy();
+    expect(screen.getByText(IMPORT_REVIEW_TEXT.checkFooter)).toBeTruthy();
+    const reasons = within(row('f0:v0')).getAllByRole('listitem').map((li) => li.textContent);
+    expect(reasons).toEqual(['Is this LDL or total cholesterol?', REVIEW_CELL_TEXT.checkUnit]);
+    expect(input('f0:v0').getAttribute('aria-describedby')).toContain(within(row('f0:v0')).getByRole('list').id);
+  });
+
+  it('a row whose input takes none draws its number as text and only a tick, named by its label', () => {
+    const host = mount(open([labRead('f0', { values: [core({ metric: 'vitamin_zz', valueSI: 12, displayValue: 12, displayUnit: 'zz/L' })] })]));
     expect(within(row('f0:v0')).queryByRole('textbox')).toBeNull();
+    expect(within(row('f0:v0')).getByText(host.see().list.rows[0].shown.text)).toBeTruthy();
+    expect(within(row('f0:v0')).getByRole('checkbox').getAttribute('aria-label')).toBe(host.see().list.rows[0].label);
+  });
+
+  it('accessible names stay the labels until Brad\'s yes (one constant)', () => {
+    expect(ENGINE_NAMES).toBe(false);
+    const host = mount(open([labRead('f0', { reportDate: null, values: [core({ valueSI: 500, displayValue: 500 })] })]));
+    const { list } = host.see();
+    expect(input('f0:v0').getAttribute('aria-label')).toBe(list.rows[0].label);
+    expect(controlAt(document, 'f0|test')!.querySelector('input')!.getAttribute('aria-label')).toBe(list.days[0].label);
+    expect(within(document.querySelector<HTMLElement>('.upload-list-days')!).getByText(list.days[0].fileName)).toBeTruthy();
+    expect(screen.getByText(list.days[0].hint!)).toBeTruthy(); // drawn in the picker, never a day that reads as picked
+    expect(controlAt(document, 'f0|test')!.querySelector('input')!.value).toBe('');
+  });
+
+  it('Replace is named by the engine, tied to its row, and the saved value sits beside the caption', () => {
+    const host = mount(open([labRead('f0', { values: [core({})] })]), bulkAppendValues(EMPTY, [LDL(2.9)], NOW).file);
+    const r = host.see().list.rows[0];
+    const box = within(row('f0:v0')).getByRole('checkbox', { name: r.replaceLabel! });
+    const described = box.getAttribute('aria-describedby')!.split(' ').map((id) => document.getElementById(id)!.textContent);
+    expect(described).toEqual([r.label, r.held]);
+    const caption = within(row('f0:v0')).getByText(IMPORT_REVIEW_TEXT.conflictKept, { exact: false });
+    expect(caption.textContent).toBe(`${r.held}${IMPORT_REVIEW_TEXT.conflictKept}`);
+    fireEvent.click(box);
+    expect(host.see().list.rows[0]).toMatchObject({ replacing: true, caption: UPLOAD_TEXT.replaces });
+  });
+
+  it('retyping the shown text of a printed limit changes nothing', () => {
+    const host = mount(open([labRead('f0', { additionalValues: [{ name: 'CRP', value: 0.6, unit: 'mg/L', comparator: '<' }] })]));
+    fireEvent.click(screen.getByRole('button', { name: /^Show all/ }));
+    const shown = input('f0:a0').value;
+    typeInto('f0:a0', `${shown}1`);
+    typeInto('f0:a0', shown);
+    blur();
+    expect(host.see().list.rows[0]).toMatchObject({ typed: null, error: null });
+    expect(input('f0:a0').value).toBe(shown);
+  });
+
+  it('a letter: its title commits on blur, its kind and date through the engine', () => {
+    const letter: Open['files'][number] = {
+      id: 'l0', name: 'letter.pdf', bytes: 1, hash: 'h-l0', pages: { count: 1, truncated: false },
+      status: { s: 'read', choices: NO_CHOICES, extraction: { classification: 'clinic_letter', reportDate: null, values: [], additionalValues: [], unrecognized: [],
+        document: { classification: 'clinic_letter', title: 'Clinic letter', documentDate: '2026-10-20', contentMarkdown: 'Plan', metadata: {} } } },
+    };
+    const host = mount(open([letter]));
+    const title = screen.getByRole('textbox', { name: 'Document title' }) as HTMLInputElement;
+    act(() => title.focus());
+    fireEvent.change(title, { target: { value: 'Cardiology letter' } });
+    expect(host.see().view.documents!.rows[0].title).toBe('Clinic letter'); // a draft until it is left
+    blur();
+    expect(host.see().view.documents!.rows[0].title).toBe('Cardiology letter');
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'scan_result' } });
+    expect(host.see().view.documents!.rows[0].kindKey).toBe('scan_result');
+    fireEvent.click(screen.getByRole('button', { name: UPLOAD_TEXT.removeDate }));
+    expect(host.see().view.documents!.rows[0]).toMatchObject({ dateKnown: false });
+    expect(screen.getByText(UPLOAD_TEXT.setDate)).toBeTruthy();
+    fireEvent.change(screen.getByLabelText('Document date'), { target: { value: '2026-09-01' } });
+    expect(host.see().view.documents!.rows[0]).toMatchObject({ dateKnown: true, day: '2026-09-01' });
   });
 });

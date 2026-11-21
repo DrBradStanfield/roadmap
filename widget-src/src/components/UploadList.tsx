@@ -11,6 +11,7 @@ import type { UploadView } from '@roadmap/health-core/upload-view';
 import { transition, type Draft, type DraftEvent } from '../lib/upload-list-draft';
 import { UploadListRow, type RowEvents } from './UploadListRow';
 import { UploadListDays } from './UploadListDays';
+import { titleKey, UploadListDocuments } from './UploadListDocuments';
 import './UploadList.css';
 
 export interface UploadListProps {
@@ -27,9 +28,12 @@ export interface UploadListProps {
   done: () => void;
 }
 
-/** The element that removes a blocker: a row's input (its tick when it takes none) or a day control's input. */
-const controlAt = (root: HTMLElement | null, at: string) =>
-  [...(root?.querySelectorAll<HTMLElement>('[data-at]') ?? [])].find((el) => el.dataset.at === at) ?? null;
+/** The element that removes a blocker: a row's input (its tick when it takes none) or a day control's picker. */
+export function controlAt(root: ParentNode | null, at: string): HTMLElement | null {
+  const el = [...(root?.querySelectorAll<HTMLElement>('[data-at]') ?? [])].find((e) => e.dataset.at === at);
+  // A day control's picker is a button around its date input.
+  return el && !el.matches('input, button') ? el.querySelector<HTMLElement>('button') : el ?? null;
+}
 
 export function UploadList({ list, view, choose, reread, save, stop, retry, cancel, done }: UploadListProps) {
   // The draft, read synchronously as well as drawn: a blur and the next row's typing land in one batch.
@@ -45,11 +49,14 @@ export function UploadList({ list, view, choose, reread, save, stop, retry, canc
     const step = transition(live.current, e);
     live.current = step.draft;
     setDraft(step.draft);
-    const row = step.send && byKey.get(step.send.key);
-    if (step.send && row) choose(row.fileId, { typed: row.ref, text: step.send.text, unit: row.shown.cell?.unit ?? null });
+    if (!step.send) return;
+    const row = byKey.get(step.send.key);
+    const letter = view.documents?.rows.find((d) => titleKey(d.fileId) === step.send!.key);
+    if (row) choose(row.fileId, { typed: row.ref, text: step.send.text, unit: row.shown.cell?.unit ?? null });
+    else if (letter) choose(letter.fileId, { document: { title: step.send.text } });
   };
-  // A draft whose row no longer takes input (the review closed) is dropped unsent.
-  const inputs = useMemo(() => new Set(list.rows.filter((r) => r.input === 'number').map((r) => r.key)), [list]);
+  // A draft whose input is gone (the review closed) is dropped unsent.
+  const inputs = useMemo(() => new Set([...list.rows.filter((r) => r.input === 'number').map((r) => r.key), ...(view.documents?.rows ?? []).map((d) => titleKey(d.fileId))]), [list, view.documents]);
   useEffect(() => { if (live.current && !inputs.has(live.current.key)) dispatch({ type: 'rows', inputs }); }, [inputs]);
 
   const on: RowEvents = {
@@ -79,7 +86,6 @@ export function UploadList({ list, view, choose, reread, save, stop, retry, canc
     );
   }
 
-  const names = new Map(view.files.rows.map((f) => [f.fileId, f.name]));
   const failed = view.sections.find((s) => s.kind === 'failed');
   return (
     <div className="upload-list" ref={root} data-draft={draft?.key}>
@@ -93,7 +99,9 @@ export function UploadList({ list, view, choose, reread, save, stop, retry, canc
           {view.stop && <button type="button" className="review-cancel-btn" onClick={stop}>{view.stop.label}</button>}
         </div>
       )}
-      <UploadListDays days={list.days} names={names} editable={editable} choose={choose} />
+      <UploadListDays days={list.days} editable={editable} choose={choose} />
+      {list.check && <h4 className="review-check-title">{list.check}</h4>}
+      {list.checkNote && <p className="review-overview-footer">{list.checkNote}</p>}
       <ul className="upload-list-rows" id={rowsId}>
         {list.rows.map((row) => (
           <UploadListRow
@@ -109,7 +117,12 @@ export function UploadList({ list, view, choose, reread, save, stop, retry, canc
           </button>
         </p>
       )}
-      {view.documents && <p className="review-overview-line">{view.documents.line}</p>}
+      {view.documents && (
+        <UploadListDocuments
+          documents={view.documents} editable={editable} on={on} fix={(fileId, fix) => choose(fileId, { document: fix })}
+          titleOf={(fileId, title) => (draft?.key === titleKey(fileId) ? draft.text : title)}
+        />
+      )}
       <section className="upload-list-files">
         <h4 className="review-check-title">{view.files.row}</h4>
         <ul>

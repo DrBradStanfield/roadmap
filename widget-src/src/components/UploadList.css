@@ -11,7 +11,7 @@
 .upload-list-day {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas: "words input" "file input";
+  grid-template-areas: "words input" "printed input" "file input";
   gap: 2px 12px;
   align-items: center;
   padding: 10px 12px;
@@ -21,7 +21,14 @@
 }
 .upload-list-day-words { grid-area: words; font-size: 14px; font-weight: 600; color: var(--color-text-heading); }
 .upload-list-day-file { grid-area: file; font-size: 13px; color: var(--color-text-secondary); overflow-wrap: anywhere; }
-.upload-list-day-input { grid-area: input; font: inherit; font-size: 16px; min-height: 36px; }
+.upload-list-day-printed { grid-area: printed; font-size: 13px; color: var(--color-text); }
+.upload-list-day-input { grid-area: input; }
+/* The grid's picker, out of its table: a box of its own, the hint wrapping inside it. */
+.upload-list-day-input .bt-cell-draft-date,
+.upload-list-document-date .bt-cell-draft-date {
+  min-width: 96px; max-width: 160px; min-height: 44px; padding: 6px 10px; border-radius: 6px;
+  border: 1px solid var(--color-gray-border); border-left-width: 3px;
+}
 
 .upload-list-rows {
   list-style: none;
@@ -36,6 +43,7 @@
     "tick label replace"
     ".    value value"
     ".    caption caption"
+    ".    reasons reasons"
     ".    error error";
   gap: 4px 10px;
   align-items: center;
@@ -58,10 +66,11 @@
 .upload-list .bt-input.upload-list-input[aria-invalid="true"] { color: var(--color-error); border-bottom: 1.5px solid var(--color-error); }
 .upload-list-number { font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .upload-list-unit { font-size: 13px; color: var(--color-text-secondary); }
-.upload-list-replace { grid-area: replace; display: flex; align-items: center; gap: 8px; font-size: 13px; }
-.upload-list-replace label { display: inline-flex; align-items: center; gap: 4px; min-height: 32px; cursor: pointer; }
-.upload-list-held { color: var(--color-text-secondary); overflow-wrap: anywhere; }
+.upload-list-replace { grid-area: replace; display: inline-flex; align-items: center; gap: 4px; min-height: 32px; font-size: 13px; cursor: pointer; }
+.upload-list-held { margin-right: 8px; font-weight: 600; color: var(--color-text); overflow-wrap: anywhere; }
 .upload-list-caption { grid-area: caption; margin: 0; font-size: 13px; line-height: 1.4; color: var(--color-text-secondary); }
+.upload-list-reasons { grid-area: reasons; list-style: none; margin: 0; padding: 0; }
+.upload-list-reasons .bt-cell-question.upload-list-reason { font-size: 13px; text-align: left; }
 .upload-list-error { grid-area: error; margin: 0; font-size: 13px; font-weight: 600; color: var(--color-error); }
 .upload-list-row--cleared .upload-list-label,
 .upload-list-row--cleared .upload-list-value { opacity: 0.55; }
@@ -80,6 +89,15 @@
     grid-template-areas:
       "tick label value replace"
       ".    caption caption caption"
+      ".    reasons reasons reasons"
       ".    error error error";
   }
 }
+
+.upload-list-documents { margin-top: 16px; }
+.upload-list-documents ul { list-style: none; margin: 0; padding: 0; }
+.upload-list-document { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--color-gray-border); align-items: center; }
+.upload-list-document .review-title-input { flex: 1 1 100%; font-size: 16px; }
+.upload-list-document .upload-list-kind { flex: 1 1 10em; }
+.upload-list-kind { font: inherit; font-size: 16px; min-height: 36px; }
+.upload-list-document-date { display: inline-flex; align-items: center; gap: 8px; }
