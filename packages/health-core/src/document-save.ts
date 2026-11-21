@@ -9,10 +9,10 @@
  * panel.pdf'), THEN the caller commits the rows, so an interrupted save leaves
  * a harmless orphan blob, never a dangling ref. A failed blob write (e.g.
  * GitHub's ~1 MB cap, localStorage quota) degrades to metadata-only: the
- * extracted values are never lost with the file. Except behind a held
- * metadata-only row (below): there the details already exist, so the failure
- * is settled, counted in `unstored`, and only a changed title or date files a
- * new row.
+ * extracted values are never lost with the file. Every failed write is
+ * counted in `unstored` (US-14 AC12). Behind a held metadata-only row (below)
+ * the details already exist, so the failure is settled and only a changed
+ * title or date files a new row.
  *
  * `contentHash` is ONE key for the website and the connector (US-35 AC6): a
  * live row that carries the hash AND a `fileRef` is the archived original, so
@@ -92,7 +92,7 @@ export interface DocumentSaveIO<F> {
 export interface DocumentSavePlan {
   /** The rows `commit` appends, in payload order. */
   saved: FileDocument[];
-  /** Failed blob writes behind a held metadata-only row: settled, not errors (US-14 AC4). */
+  /** Every original whose write failed, its row keeping the hash alone (US-14 AC4, AC12): the done screen says so. */
   unstored: number;
   /**
    * Tombstone the metadata-only rows these uploads replace, then append
@@ -232,7 +232,8 @@ export async function saveDocuments<F>(
   // folder would create duplicates); the rest pool. A failed write degrades
   // to metadata-only — unless a held row already holds these bytes: a
   // plain row beside it would list the letter twice, and every later upload
-  // would offer to archive it again (Sentry 7715862604).
+  // would offer to archive it again (Sentry 7715862604). Every failed write is counted `unstored`.
+  let unstored = 0;
   const writeOne = async (w: (typeof writes)[number]) => {
     try {
       await io.write(w.ref, w.file);
@@ -240,6 +241,7 @@ export async function saveDocuments<F>(
       w.doc.mimeType = io.mimeType(w.file);
     } catch (error) {
       io.onWriteError?.(error);
+      unstored += 1;
       w.failed = w.held; // a failure behind a held row is settled (below)
     }
   };
@@ -265,14 +267,13 @@ export async function saveDocuments<F>(
   // save, alike) is settled, never an error: an original that can never be
   // stored (a size cap) must not loop on "Failed to save". The held details
   // stay, unless the review changed the title or date: then a new
-  // metadata-only row carries them and replaces the held rows. `unstored`
-  // tells the done screen to say so (US-14 AC4).
-  const unstored = writes.flatMap(({ doc, failed }) => (failed ? [{ doc, held: failed }] : []));
-  const unchanged = new Set(unstored.filter(({ doc, held }) => sameRow(doc, held)).map((u) => u.doc));
+  // metadata-only row carries them and replaces the held rows (US-14 AC4).
+  const settled = writes.flatMap(({ doc, failed }) => (failed ? [{ doc, held: failed }] : []));
+  const unchanged = new Set(settled.filter(({ doc, held }) => sameRow(doc, held)).map((u) => u.doc));
   const saved = out.filter((d) => !unchanged.has(d));
   return {
     saved,
-    unstored: unstored.length,
+    unstored,
     commit(file) {
       // The rows to replace, read from the file as it now is, so a same-hash
       // row merged in from another device during the upload goes too.

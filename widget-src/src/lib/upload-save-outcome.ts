@@ -2,8 +2,8 @@ import type { LabUnitRefusal, MeasurementRefusal } from '@roadmap/health-core/re
 
 /** One session's save outcome (US-12 AC6c). The saved counts add up across a
  *  retry, which finishes what the first Save began; the rest are the last
- *  attempt's. Documents count by content, else name: a retry may refile one. `unstored`: originals the cloud would not store behind details it
- *  already holds (US-14 AC4). The refusals are lab rows in a unit the record
+ *  attempt's. Documents count by content, else name: a retry may refile one. `unstored`: originals the cloud would not store; their details
+ *  are saved (US-14 AC4, AC12). The refusals are lab rows in a unit the record
  *  does not know for that test, and core values it refused: each is named, as
  *  a dropped value must never be silent (US-21 phase 3, US-35 AC17). */
 export interface SaveOutcome {
