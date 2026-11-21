@@ -5,7 +5,7 @@
  * files filed behind the row the record holds. Pure; the bytes stay with the platform, by file id.
  */
 import { documentView, pendingRowsFor } from './document-save';
-import { labArchiveFields, type DocumentFields } from './document-rows';
+import { LAB_ARCHIVE_ROWS, labArchiveFields, type DocumentFields } from './document-rows';
 import type { UnifiedExtractionResult } from './lab-extraction';
 import { validDay, type BulkRow } from './record-edits';
 import { isReadableRow } from './readable-rows';
@@ -33,6 +33,12 @@ export interface UploadSavePlan {
 /** A read lab report holds something to review: a value, an extra lab or one the write refuses. */
 export const labReadFound = (x: UnifiedExtractionResult) => (x.values?.length ?? 0) + (x.additionalValues?.length ?? 0) + (x.refusedValues?.length ?? 0) > 0;
 
+/** A report's original kept with no value written: its archive row lists no rows, explicitly (US-14 AC11, F4). */
+const keptAlone = (name: string, day: string | null): DocumentFields => {
+  const fields = labArchiveFields(name, day);
+  return { ...fields, metadata: { ...fields.metadata, [LAB_ARCHIVE_ROWS]: [] } };
+};
+
 const fieldsOf = (d: ReturnType<typeof documentView>, sourceFileName: string): DocumentFields => ({
   documentType: d.documentType, title: d.title, documentDate: d.documentDate, contentMd: d.contentMd, metadata: d.metadata, sourceFileName,
 });
@@ -47,10 +53,15 @@ export function uploadSavePlan(s: UploadState, record: RoadmapFile, now: string,
   const views = record.documents.filter((d) => !d.deleted && isReadableRow('documents', d)).map(documentView);
   const labs = new Map(review.labFiles.map((f) => [f.fileId, f]));
   const seen = new Set<string>();
+  // Bytes some read lab report will write values from: that copy files the original, never a copy that writes none (F1).
+  const files = 'files' in s ? s.files : [];
+  const writing = new Set(files.flatMap((f) => (f.hash && review.rowsByFile.has(f.id) ? [f.hash] : [])));
+  // Bytes whose original a live row already stores: never offered again (F3).
+  const stored = new Set(record.documents.flatMap((d) => (!d.deleted && d.fileRef && d.contentHash && isReadableRow('documents', d) ? [d.contentHash] : [])));
   const documents: UploadSavePlan['documents'] = [];
   const labArchives: UploadSavePlan['labArchives'] = [];
   const archiveOnly: UploadSavePlan['archiveOnly'] = [];
-  for (const f of 'files' in s ? s.files : []) {
+  for (const f of files) {
     if (f.hash && seen.has(f.hash)) continue;
     if (f.status.s === 'read' && f.status.extraction.classification !== 'lab_report' && f.status.extraction.document) {
       const doc = f.status.extraction.document;
@@ -65,14 +76,20 @@ export function uploadSavePlan(s: UploadState, record: RoadmapFile, now: string,
         documentDate: fixedDate !== undefined ? fixedDate : validDay((held ? held.documentDate : doc.documentDate) ?? undefined, { now }),
       } });
     } else if (f.status.s === 'read') {
-      // A report's original is filed with its values: not while it waits for a day, nor for a photo or a scan, which has
-      // none (`original: false`, US-52 AC13e): no hidden archive row for it at all. With nothing ticked and a cloud, its
-      // original alone is kept, as an archive-only one (US-14 AC11, Brad 2026-11-21), unless the read found nothing in it.
+      // A report's original is filed with the values it writes: not while it waits for a day, nor for a photo or a scan,
+      // which has none (`original: false`, US-52 AC13e): no hidden archive row for it at all. One that writes no value
+      // keeps its original alone with a cloud, archive-only, listing no rows so a later upload reads it again (US-14 AC11,
+      // Brad 2026-11-21), unless the read found nothing in it or a live row already stores it. With no cloud, as before:
+      // a ticked report leaves its hash-only row.
       const lab = labs.get(f.id);
       if (!lab || lab.needsDay || f.original === false) continue;
-      if (lab.ticked.length) labArchives.push({ fileId: f.id, sourceFileName: uploadFileName(f), reportDate: lab.day });
-      else if (cloudConnected && f.hash && labReadFound(f.status.extraction)) archiveOnly.push({ fileId: f.id, fields: labArchiveFields(uploadFileName(f), lab.day) });
-      else continue;
+      const writes = review.rowsByFile.has(f.id);
+      if (!writes && f.hash && writing.has(f.hash)) continue;
+      if (writes || (!cloudConnected && lab.ticked.length)) labArchives.push({ fileId: f.id, sourceFileName: uploadFileName(f), reportDate: lab.day });
+      else if (cloudConnected && f.hash && labReadFound(f.status.extraction)) {
+        // Already stored, it is not filed again, but its bytes stay claimed: no later copy in the pick is planned for them.
+        if (!stored.has(f.hash)) archiveOnly.push({ fileId: f.id, fields: keptAlone(uploadFileName(f), lab.day) });
+      } else continue;
     } else if (cloudConnected && f.status.s === 'known' && f.status.archiveOnly && f.status.as !== 'legacy' && f.hash && f.original !== false) {
       const held = pendingRowsFor(views, f.hash, f.status.as === 'labReport')[0];
       if (!held) continue;

@@ -84,7 +84,10 @@ describe('gaps the list-view property found, fixed (owner rulings 2026-11-20)', 
     expect(view.sections.filter((x) => x.kind === 'undated')).toEqual([]);
     expect(view.save).toMatchObject({ enabled: true, label: IMPORT_REVIEW_TEXT.save(1) });
     expect(notSaved(view)).toEqual([expect.stringContaining('Ferritin')]);
-    expect(uploadSavePlan(s, EMPTY, NOW, review, true).labArchives).toContainEqual({ fileId: 'f0', sourceFileName: 'f0.pdf', reportDate: null });
+    // It writes no value, so with a cloud its original is kept alone, archive-only (US-14 AC11, owner ruling F2).
+    const plan = uploadSavePlan(s, EMPTY, NOW, review, true);
+    expect(plan.labArchives.map((a) => a.fileId)).toEqual(['f1']);
+    expect(plan.archiveOnly).toEqual([{ fileId: 'f0', fields: expect.objectContaining({ documentDate: null, sourceFileName: 'f0.pdf', metadata: { labArchive: true, rows: [] } }) }]);
   });
 
   it('futureOwnDay for a lab: the lab words', () => {

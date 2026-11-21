@@ -83,8 +83,10 @@ export async function uploadSave<F>(s: UploadState, record: RoadmapFile, now: st
   // commit writes them again on the record as it is then, and the lists take those rows' ids.
   const onRecord = bulkAppendValues(record, rows, now);
   const planned = writtenLabRows(onRecord);
-  const rowsOf = labRowsByFile(planned, rowFiles);
   const hashOf = new Map(s.files.map((f) => [f.id, f.hash ?? undefined]));
+  // By the bytes, not the copy: two copies of one report in a pick file one archive row listing every value either wrote (US-14 AC10).
+  const bytesOf = (fileId: string) => hashOf.get(fileId) ?? fileId;
+  const rowsOf = labRowsByFile(planned, rowFiles.map(bytesOf));
   // A photo or a scan (`original: false`, US-52 AC13e) is never stored, a letter read from it included.
   const noOriginal = new Set(s.files.filter((f) => f.original === false).map((f) => f.id));
   const held = (fileId: string): Held | undefined => {
@@ -93,7 +95,7 @@ export async function uploadSave<F>(s: UploadState, record: RoadmapFile, now: st
   };
   const payloads: DocumentPayload<Held>[] = [
     ...plan.documents.map((d) => ({ ...d.fields, file: held(d.fileId), contentHash: hashOf.get(d.fileId) })),
-    ...plan.labArchives.map((a) => labArchivePayload(a.sourceFileName, a.reportDate, held(a.fileId), { rows: rowsOf.get(a.fileId), contentHash: hashOf.get(a.fileId) })),
+    ...plan.labArchives.map((a) => labArchivePayload(a.sourceFileName, a.reportDate, held(a.fileId), { rows: rowsOf.get(bytesOf(a.fileId)), contentHash: hashOf.get(a.fileId) })),
     ...plan.archiveOnly.map((d) => ({ ...d.fields, file: held(d.fileId), contentHash: hashOf.get(d.fileId) })),
   ];
   let unstored = 0;

@@ -107,7 +107,9 @@ describe('upload view: section 4 screens', () => {
     const s = open([read('a', labX())]);
     const plan = planOf(s, record, NOW);
     expect(plan.counts.values).toBe(0);
-    expect(plan.labArchives).toEqual([{ fileId: 'a', sourceFileName: 'a.pdf', reportDate: DAY }]);
+    // It writes no value, so with a cloud its original is kept alone, archive-only (US-14 AC11, owner ruling F2).
+    expect(plan.labArchives).toEqual([]);
+    expect(plan.archiveOnly).toEqual([{ fileId: 'a', fields: expect.objectContaining({ documentDate: DAY, sourceFileName: 'a.pdf', metadata: { labArchive: true, rows: [] } }) }]);
     // The original alone: its own label (UPLOAD_TEXT.saveOriginals, approved 2026-11-20).
     expect(viewOf(s, record, NOW).save).toEqual({ label: 'Save 1 original', enabled: true, why: null, error: null });
     const letterKnown = open([at('k', { s: 'known', as: 'document', archiveOnly: false })]);
