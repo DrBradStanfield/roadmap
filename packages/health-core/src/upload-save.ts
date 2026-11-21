@@ -18,8 +18,10 @@
  *
  * A letter's ticked, dated screening box (web only, `person` given; upload-screening.ts, US-13 AC6) writes its
  * `<type>_last_date` in the same commit, so one erase stamp covers the letter and its date (US-16 AC2a), as the web's
- * own Save checked the erase before it set them (lib/upload-save.ts, `getEraseIdentity() === erase`). Only for a letter
- * the commit saved; one value per type, the last such letter in picked order, as the web's per-key save let the last call win.
+ * own Save checked the erase before it set them (lib/upload-save.ts, `getEraseIdentity() === erase`). For every letter
+ * the page shows with its box ticked, whatever its document save did, as the web's own Save loops over every ticked
+ * letter (lib/upload-save.ts); one value per type, the last such letter in picked order, as the web's per-key save let
+ * the last call win.
  */
 import { LAB_ARCHIVE_ROWS, labRowsByFile, listedRows, writtenLabRows } from './document-rows';
 import { committedFile, labArchivePayload, saveDocuments, type DocumentPayload } from './document-save';
@@ -161,10 +163,9 @@ export async function uploadSave<F>(s: UploadState, record: RoadmapFile, now: st
         ...written.measurementRefusals.map((r) => { const line = measurementRefusalText(r); return line !== null ? { line } : { label: METRIC_LABELS[r.metricType] ?? labTestLabel(r.metricType), reason: 'misread' as const }; }),
       ];
       const filed = values || docs.saved.length ? committedFile(written.file, docs) : file;
-      // Each ticked, dated box of a letter this commit saved, by type, the last in picked order standing.
-      const savedLetters = new Set<string | null | undefined>(docs.saved.map((d) => d.contentHash ?? d.sourceFileName));
-      const dates = new Map<string, string>(plan.documents.flatMap(({ fileId, fields, screening: box }) =>
-        (box?.ticked && box.date !== null && isScreeningDateKey(box.key) && savedLetters.has(hashOf.get(fileId) ?? fields.sourceFileName) ? [[box.key, box.date]] : [])));
+      // Each ticked, dated box the page shows, by type, the last in picked order standing.
+      const dates = new Map<string, string>(plan.documents.flatMap(({ screening: box }) =>
+        (box?.ticked && box.date !== null && isScreeningDateKey(box.key) ? [[box.key, box.date]] : [])));
       const out = writeScreeningDates(filed, dates, now);
       // `unstored`: each original the plan stores that no live row on the committed record stores (a failed or
       // untried write, the app not holding it), judged at commit so another writer's copy counts as kept.

@@ -6,6 +6,7 @@
  * note, 2026-11-22): the iPhone shows no box and writes no screening date from a letter, so a phone upload
  * never has one. Pure.
  */
+import { screeningFieldName } from './file-inputs';
 import { validDay } from './record-edits';
 import type { RoadmapFile } from './roadmap-file';
 import { setScreening } from './state-edits';
@@ -46,10 +47,14 @@ export function screeningTypeShown(metadata: Record<string, unknown> | null | un
 }
 
 /** The dates a Save writes, `[key, date]` in order: only a key in the screening table, whatever the caller hands it.
- *  Each lands through `setScreening`, stamped `now`. */
+ *  Each lands through `setScreening`, stamped `now`; a date the record already holds is left as it is, so a retry or a
+ *  repeat writes each date once. */
 export function writeScreeningDates(file: RoadmapFile, dates: Iterable<readonly [string, string]>, now: string): RoadmapFile {
   let out = file;
-  for (const [key, date] of dates) if (isScreeningDateKey(key)) out = setScreening(out, key, date, now);
+  for (const [key, date] of dates) {
+    const held = (out.screenings as unknown as Record<string, unknown>)[screeningFieldName(key)];
+    if (isScreeningDateKey(key) && held !== date) out = setScreening(out, key, date, now);
+  }
   return out;
 }
 

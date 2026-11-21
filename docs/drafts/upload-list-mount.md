@@ -135,6 +135,9 @@ FHIR-class Save reviewable on its own, and 3-0 lets Brad see the screening box's
 - Split accepted: 3-0, 3a, 3b, each its own branch and PR on `hold`. This note lands with 3-0.
 - The caller passes `person` (age, sex) from the form's plan basis, as the grid's props do today: 3a must pass it
   to `uploadSave` and `uploadListPage`. A screening box only for a type in the screening table (`SCREENING_KEYS`).
+- 3a: the shared commit writes the screening date through `setScreening` and skips the form's in-memory patch
+  (`handleScreeningChange` / `patchScreening`, useListSaves.ts:77), so the adapter re-reads the record after a
+  commit or the form shows the old date. Keep HealthTool.record-read-pins.test.tsx green.
 - G1: built in the engine for the web only. Default ticked for an eligible letter with a known age, as today. The
   web's words move to health-core byte for byte (`SCREENING_BOX_TEXT`); no new words. The phone is unchanged: no
   box, no screening date from a letter; its doors refuse a change or a state holding the tick. iPhone parity is a lead.
