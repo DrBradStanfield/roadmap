@@ -16,7 +16,12 @@ issue, and nothing private.
 
 ## Open
 
-None today.
+- **What the done screen says when a kept original fails to store.** Issue: when a lab report saved with
+  nothing ticked fails to reach your cloud, the screen says "The original file couldn't be stored; its
+  details are saved." But for that report no details were saved: nothing was ticked. Options: (1) keep the
+  sentence as it is: no new words, but its second half is not true in this case; (2) for this case show
+  "The original file couldn't be stored." alone: true, but new words, so it needs your yes. Recommendation
+  (the owner's): option 2, because the screen should never claim something was saved when it was not.
 
 ## Decided
 
@@ -29,6 +34,12 @@ None today.
   confirmation.
 - Screen-reader name for a second reading: "<test> value from <column>, another reading" ("sure").
 - The GLP-1 hint sentence "GLP-1 medications reduce appetite and improve blood sugar control." is approved.
+
+2026-11-21, Brad's words in quotes ("do all of your recommendations"):
+- After a Save that only kept originals, the iPhone shows "1 original file kept in your cloud." on its own,
+  without "Saved 0 values." above it.
+- The web stops counting a lab report's kept original as a document, and shows the same kept line as the
+  iPhone. This lands with the web upload list, when the web draws the shared done screen.
 
 2026-11-21, the owner's calls (Fable, not Brad):
 - Invalid text reverts when the field loses focus.

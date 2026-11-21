@@ -134,6 +134,22 @@ describe('upload view: section 4 screens', () => {
     expect(viewOf(done(0, 1, 2), EMPTY, NOW).done).toEqual({ line: 'Saved 1 document.', archived: '2 original files kept in your cloud.', unstored: null, skipped: [], notSaved: [] });
     expect(viewOf(done(1, 0, 1), EMPTY, NOW).done).toEqual({ line: 'Saved 1 value.', archived: '1 original file kept in your cloud.', unstored: null, skipped: [], notSaved: [] });
   });
+
+  it('US-14 AC13: a Save that wrote no value and no shown document and kept an original heads with the kept line alone', () => {
+    const done = (values: number, documents: number, archived: number, unstored?: number): UploadState =>
+      ({ phase: 'done', platform: 'phone', run: 1, files: [], started: NOW, firstRead: null, outcome: { values, documents, archived, ...(unstored === undefined ? {} : { unstored }) } });
+    const unstored = "The original file couldn't be stored; its details are saved.";
+    // What the done screen draws (UploadReviewView): `line` as its headline, then `archived`, then `unstored`.
+    const drawn = (s: UploadState) => { const d = viewOf(s, EMPTY, NOW).done!; return [d.line, d.archived, d.unstored].filter((x) => x !== null); };
+    expect(drawn(done(0, 0, 1))).toEqual(['1 original file kept in your cloud.']);
+    expect(drawn(done(0, 0, 3))).toEqual(['3 original files kept in your cloud.']);
+    expect(drawn(done(0, 0, 1, 1))).toEqual(['1 original file kept in your cloud.', unstored]);
+    expect(drawn(done(2, 0, 1))).toEqual(['Saved 2 values.', '1 original file kept in your cloud.']);
+    expect(drawn(done(0, 1, 1))).toEqual(['Saved 1 document.', '1 original file kept in your cloud.']);
+    // Nothing saved and nothing kept: unchanged.
+    expect(drawn(done(0, 0, 0))).toEqual(['Saved 0 values.']);
+    expect(drawn(done(0, 0, 0, 1))).toEqual(['Saved 0 values.', unstored]);
+  });
 });
 
 describe('upload plan: documents and originals', () => {
