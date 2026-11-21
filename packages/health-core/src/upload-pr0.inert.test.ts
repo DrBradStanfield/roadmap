@@ -2,11 +2,18 @@
  * PR 0 of the upload matrix (docs/drafts/upload-matrix.md section 4, ruling d1; US-13 AC24): the
  * dated previous column's day (`columnDays`, `needsColumnDay`) lands inert. Over 800 seeded uploads, on
  * both platforms, with no `columnDays` set, `uploadReview`,
- * `uploadView` and `uploadSavePlan` answer exactly what main answered before PR 0. The golden file
- * (__fixtures__/upload-pr0-golden.json) holds, per seed, the SHA-256 of that answer as main (5c31aa5d1)
- * computed it; run with UPDATE_PR0_GOLDEN=1 on main's code to write it again. The new fields on each lab
- * file (`needsColumnDay` false, `waits` empty, `days`) are checked, then left out, before the hash. Every seed is compared.
- * Synthetic values only.
+ * `uploadView` and `uploadSavePlan` answer exactly what main answered before PR 0, but for one class of seed
+ * named below. The golden file (__fixtures__/upload-pr0-golden.json) holds, per seed, the SHA-256 of that
+ * answer as main (5c31aa5d1) computed it, unchanged since; run with UPDATE_PR0_GOLDEN=1 on main's code to
+ * write it again. The new fields on each lab file (`needsColumnDay` false, `waits` empty, `days`) are
+ * checked, then left out, before the hash. Every seed is compared.
+ *
+ * US-14 AC11 (Brad 2026-11-21) changes, on purpose, exactly the seeds with a cloud and a read lab report
+ * with nothing ticked that is not waiting for a day and in which the read found something: Save now keeps
+ * that report's original alone (`labArchives`, `counts.originals`, the Save label). Those seeds no longer
+ * answer as main did; the test names them by that rule from the inputs alone and asserts the changed set is
+ * exactly it, so every other seed still answers as main. (`outcome.archived` is not hashed here: the done
+ * phase's outcome is the seed's own.) Synthetic values only.
  */
 import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -17,7 +24,7 @@ import { bulkAppendValues, type BulkRow } from './record-edits';
 import { createEmptyFile, type RoadmapFile } from './roadmap-file';
 import { NO_CHOICES, type FileChoices } from './upload-choices';
 import type { UploadFile, UploadState } from './upload-flow';
-import { uploadSavePlan } from './upload-plan';
+import { labReadFound, uploadSavePlan } from './upload-plan';
 import { uploadReview } from './upload-review';
 import { uploadView } from './upload-view';
 
@@ -28,6 +35,8 @@ const DAY = '2026-11-01';
 const PAST = '2026-10-01';
 const COLUMN = '2026-09-15';
 const FUTURE = '2026-12-01';
+/** How many seeds the US-14 AC11 rule names (see the header): the rule is the check, this count pins the seeds' spread. */
+const AC11_SEEDS = 15;
 
 /** Kept here, not shared: a shared generator that changed would change every seed and the golden with it. */
 function mulberry32(seed: number): () => number {
@@ -167,7 +176,15 @@ describe('US-13 AC24: PR 0 is inert with none of its choices set', () => {
     if (process.env.UPDATE_PR0_GOLDEN) writeFileSync(GOLDEN, `${JSON.stringify(now, null, 0)}\n`);
     const golden = JSON.parse(readFileSync(GOLDEN, 'utf8')) as Record<string, string>;
     expect(Object.keys(golden)).toHaveLength(SEEDS);
-    expect(Object.keys(now).filter((seed) => golden[seed] !== now[seed])).toEqual([]);
+    // US-14 AC11: the seeds it changes, named from the inputs, never from the plan: a cloud, and a read lab report
+    // not waiting for a day, with nothing ticked and something found. Every other seed answers as main did.
+    const keepsAlone = (c: Case) => c.cloud && uploadReview(c.state, c.record, NOW).labFiles.some((l) => {
+      const f = 'files' in c.state ? c.state.files.find((x) => x.id === l.fileId) : undefined;
+      return !l.ticked.length && !l.needsDay && f?.status.s === 'read' && labReadFound(f.status.extraction);
+    });
+    const changed = Object.keys(now).filter((seed) => golden[seed] !== now[seed]);
+    expect(changed).toEqual(Object.keys(now).filter((seed) => keepsAlone(genCase(Number(seed)))));
+    expect(changed).toHaveLength(AC11_SEEDS);
     // Both platforms and every phase are covered.
     const cases = Object.keys(now).map((seed) => genCase(Number(seed)).state);
     expect(new Set(cases.map((s) => ('platform' in s ? s.platform : '')))).toEqual(new Set(['web', 'phone']));
