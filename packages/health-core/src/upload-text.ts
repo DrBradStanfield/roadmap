@@ -78,6 +78,20 @@ export const REVIEW_CELL_TEXT = {
   checkUnit: 'Check this value and its unit against the report',
   /** A row whose value the record already holds, equal, on its day: the web list's caption (Brad 2026-11-21, US-13 AC26). */
   alreadyInRecord: 'Already in your record',
+  /** A row's accessible name (the pattern Brad approved 2026-11-21): the Replace label's "<test> value from", then where it
+   *  was read; a later reading of the test there adds "another reading" (NOT_SAVED_TEXT.sameDay's words). */
+  rowName: (test: string, from: string, again: boolean) => `${test} value from ${from}${again ? ', another reading' : ''}`,
+} as const;
+
+/** A previous column's day control, moved from the web's grid byte for byte: its names (ReviewMatrix.tsx aria-label) and,
+ *  while an undated one has no day, its limits: a day in its printed month, before its report's day (ReviewTable.tsx). */
+export const DAY_CONTROL_TEXT = {
+  /** Both previous columns' name on the list (owner ruling 2026-11-21); a dated one adds the day it printed. */
+  previous: 'Choose the date of the previous results',
+  /** The old grid's alone (ReviewMatrix.tsx): "column" means nothing on the list. Goes with the grid. */
+  column: 'Choose column date',
+  /** `month` YYYY-MM, `before` YYYY-MM-DD; either unknown, left out. */
+  pickDay: (month: string | null, before: string | null) => `Pick a day${month ? ` in ${longDate(month)}` : ''}${before ? ` before ${longDate(before)}` : ''}`,
 } as const;
 
 /** A held value no reader can read is never echoed (US-65 AC3): the agent tools' words for it (mcp-refusals.ts), shared. */

@@ -58,7 +58,7 @@ export type UploadSection =
    *  day the person picked (YYYY-MM-DD), so the section stays, showing it, to be changed. `key`: its control (`dayKey`). */
   | { kind: 'undated'; key: string; fileId: string; title: string; label: string; name: string; choose?: string; chosen?: string | null }
   /** An undated previous column's day (US-12 AC14; web only): a day in `month` (YYYY-MM) before
-   *  `before`, when known. Its words stay in the web's ReviewTable until they move (no string yet). */
+   *  `before`, when known. Its words: upload-text.ts `DAY_CONTROL_TEXT` (the web's list carries them, `uploadList`). */
   | { kind: 'undatedPrevious'; key: string; fileId: string; name: string; month: string | null; before: string | null }
   | { kind: 'unsure'; title: string; footer: string; rows: ValueRow[] }
   | { kind: 'failed'; title: string; rows: Array<{ fileId: string; name: string; line: string }>; retry: string | null }
@@ -171,9 +171,14 @@ function printedFacts(x: UnifiedExtractionResult | undefined, ref: string, day: 
     unit: edit !== undefined && coreValue ? getDisplayLabel(coreValue.metric as MetricType, 'si') : at.kind === 'core' ? at.value.displayUnit : at.value.unit,
     question: own.question ?? null,
     unitNote: coreValue?.unitGuessed ? REVIEW_CELL_TEXT.checkUnit : null,
-    day: day == null ? null : validDay(day, { now })?.slice(0, 10) ?? reportDay?.slice(0, 10) ?? null,
+    day: savesOn(day, reportDay, now),
   };
 }
+
+/** The day a value saves on, from the day the review files it on: none while it has none; an own day that is no real past
+ *  day shows its report's (`printedFacts`). */
+export const savesOn = (day: string | null | undefined, reportDay: string | null, now: string): string | null =>
+  day == null ? null : validDay(day, { now })?.slice(0, 10) ?? reportDay?.slice(0, 10) ?? null;
 
 /** A held row as readers show it: its number with the limit sign this build reads in it (an older build's
  *  copied sign on a correction left out, US-12 AC20) and its unit; never a row no reader can read (US-65 AC3). */
@@ -202,7 +207,7 @@ const valueRow = (review: UploadReview, reads: Map<string, ReturnType<typeof rea
       held: heldText(heldId ? rows.get(heldId) : undefined, record),
       copy: v.copy ? NOT_SAVED_TEXT.sameDay : null,
       saves: v.sent && v.writes && (!promised || promised.has(`${lab.fileId}:${v.ref}`)),
-      ...(unitOf && at ? { shown: shownValue(at, edit, at.kind === 'core' ? unitOf(at.value.metric as MetricType) : 'si') } : {}),
+      ...(unitOf && at ? { shown: shownValue(at, edit, at.kind === 'core' ? unitOf(at.value.metric as MetricType) : 'si', read?.status.choices.editUnits?.[v.ref]) } : {}),
     };
   };
 

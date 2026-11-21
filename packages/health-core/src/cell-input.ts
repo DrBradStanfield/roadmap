@@ -2,7 +2,7 @@
 // value as the person reads it in their unit, so the web's cells and the shared upload read one rule. Pure.
 
 import { commaQuestion, parseLocalisedNumber } from './parseNumber';
-import { cellLabel, cellNumber, cellRange, cellToSI, isCellMetric, unitFits, type CellUnit } from './cell-unit';
+import { cellFromSI, cellLabel, cellNumber, cellRange, cellToSI, isCellMetric, unitFits, type CellUnit } from './cell-unit';
 import type { OfferedValue } from './import-review';
 import { withComparator } from './lab-limits';
 import { rangeFault, type MetricType } from './units';
@@ -53,12 +53,14 @@ export function readTypedValue(metric: MetricType, typed: string, display: CellU
 
 /** A row's number as the person reads and types it: `text` with any limit sign, `number` for the input, `unit` its label;
  *  `current` the value Save would write (a core value in SI), exact; `cell` a core value's metric and unit, null for a lab.
- *  Only `current` is exact: `number` and `text` are rounded to the unit's display step (12.94 shows "12.9"). */
+ *  A value as read shows rounded to the unit's display step (12.94 shows "12.9"); the person's own edit shows exact in the
+ *  unit they typed it in, never rounded (US-13 AC5: "4.25" stays "4.25"), and in any other unit rounded, as a value read. */
 export interface ShownValue { text: string; number: string; unit: string; current: number; cell: { metric: MetricType; unit: CellUnit } | null }
 
 /** A read value as the person reads it: a core value in `unit`, a lab as printed; an edit as Save writes it, exact. A core
- *  metric the units table lacks is shown as printed (its number and unit), `current` still the number Save would send. */
-export function shownValue(at: OfferedValue, edit: number | undefined, unit: CellUnit): ShownValue {
+ *  metric the units table lacks is shown as printed (its number and unit), `current` still the number Save would send.
+ *  `editUnit`: the unit the edit was typed in (`FileChoices.editUnits`, web only); none, the edit is rounded as a value read. */
+export function shownValue(at: OfferedValue, edit: number | undefined, unit: CellUnit, editUnit?: CellUnit): ShownValue {
   const comparator = edit === undefined ? at.value.comparator ?? null : null;
   if (at.kind === 'lab') {
     const number = String(edit ?? at.value.value);
@@ -70,28 +72,31 @@ export function shownValue(at: OfferedValue, edit: number | undefined, unit: Cel
   }
   const metric = at.value.metric;
   const current = edit ?? at.value.valueSI;
-  const number = cellNumber(metric, current, unit, comparator);
+  // An edit in the unit it was typed in, exact but for the float noise a unit round trip leaves (12 significant digits).
+  const number = edit === undefined || editUnit !== unit ? cellNumber(metric, current, unit, comparator) : String(Number(cellFromSI(metric, edit, unit).toPrecision(12)));
   return { text: withComparator(number, comparator), number, unit: cellLabel(metric, unit), current, cell: { metric, unit } };
 }
 
 /**
  * Non-empty text typed into a row, committed (owner rulings 2026-11-21; US-13 AC5, AC12; US-02 AC4, AC7): `hold` when it is
- * no number (the text stays in its row, explained, and blocks Save); `same` when it is the shown number again, or the exact
- * value, and that value is in range, so nothing changes (US-03 AC3); else `edit`, a core value in SI, a lab in its own unit.
+ * no number (the text stays in its row, explained, and blocks Save); `same` when it is the row's shown text again (a printed
+ * limit's "< 0.6" too), the shown number, or the exact value, and that value is in range, so nothing changes (US-03 AC3);
+ * else `edit`, a core value in SI, a lab in its own unit.
  * Retyping the rounded display of an out-of-range value corrects it to the typed number (AC5: LDL 12.94 shown "12.9").
  * The typed number is never rounded: "3.12" over a shown "3.1" is an edit. `unit`: the one typed in (a core value's; null for
  * a lab); null, no change, when the unit does not fit the value (a system unit for a core value, an Lp(a) unit for Lp(a)
- * alone), or for a core metric the units table lacks.
+ * alone), or for a core metric the units table lacks. `editUnit`: the unit `edit` was typed in, as `shownValue` takes it.
  */
-export function typedCommit(text: string, at: OfferedValue, edit: number | undefined, unit: CellUnit | null): { kind: 'hold' } | { kind: 'same' } | { kind: 'edit'; value: number } | null {
+export function typedCommit(text: string, at: OfferedValue, edit: number | undefined, unit: CellUnit | null, editUnit?: CellUnit): { kind: 'hold' } | { kind: 'same' } | { kind: 'edit'; value: number } | null {
   if ((at.kind === 'core') !== (unit !== null)) return null;
   const metric = at.kind === 'core' ? at.value.metric : null;
   if (metric !== null && (!isCellMetric(metric) || !unitFits(metric, unit!))) return null;
   const t = text.trim();
+  const shown = shownValue(at, edit, unit ?? 'si', editUnit);
+  const valid = !metric || rangeFault(cellRange(metric, 'si'), shown.current) === null;
+  if (valid && t === shown.text) return { kind: 'same' };
   const typed = metric && unit ? readTypedValue(metric, t, unit) : readNumericCell(t);
   if (typed === undefined) return { kind: 'hold' };
   const candidate = metric && unit ? cellToSI(metric, typed, unit) : typed;
-  const shown = shownValue(at, edit, unit ?? 'si');
-  const valid = !metric || rangeFault(cellRange(metric, 'si'), shown.current) === null;
   return valid && sameAsSaved(typed, shown.number, candidate, shown.current) ? { kind: 'same' } : { kind: 'edit', value: candidate };
 }

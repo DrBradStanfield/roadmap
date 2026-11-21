@@ -34,6 +34,16 @@ describe('US-13 AC12: the phone never holds typed text', () => {
     }
   });
 
+  // Owner ruling on PR 1949: the unit an edit was typed in is the web's alone, refused as held text is.
+  it('a state holding an edit\'s typed unit is refused by the step and view doors, on either platform', () => {
+    for (const platform of ['phone', 'web']) {
+      const s = JSON.parse(state(platform));
+      s.files[0].status.choices = { ...choices, edits: { v0: 4.25 }, editUnits: { v0: 'si' } };
+      expect(reason(uploadStepJson(JSON.stringify(s), JSON.stringify({ type: 'stop' }), '', 'phone'))).toBe('invalid-state');
+      expect(reason(uploadViewJson(JSON.stringify(s), '', NOW, false, 'phone'))).toBe('invalid-state');
+    }
+  });
+
   it('a phone state without held text still runs', () => {
     expect(JSON.parse(uploadViewJson(state('phone'), '', NOW, false, 'phone')).save).toBeDefined();
   });

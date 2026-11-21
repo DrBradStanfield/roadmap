@@ -32,6 +32,9 @@ export interface FileChoices {
   /** Text typed into a row that is no number, by ref, with the unit it was typed in (web only, US-13 AC5, AC12): it stays
    *  in its row, explained, and blocks Save until a number, an emptied input or a cleared tick replaces it. Absent is none. */
   typed?: Record<string, TypedText>;
+  /** The unit each edit was typed in, by ref (web only, owner ruling 2026-11-21): set by the typed commit that makes the
+   *  edit, gone with the edit or when a plain `edit` replaces it. A core value's alone. Absent is none. */
+  editUnits?: Record<string, CellUnit>;
 }
 /** Held text and its unit: a core value's (so "1,234" keeps the unit it was typed in), null for a lab. */
 export interface TypedText { text: string; unit: CellUnit | null }
@@ -54,6 +57,13 @@ export function documentDate(date: string | null, now: string): string | null | 
 }
 
 const without = <T,>(r: Record<string, T>, key: string): Record<string, T> => Object.fromEntries(Object.entries(r).filter(([k]) => k !== key));
+
+/** A row's edit unit dropped, then `unit` set for it when given; the key absent when none is left. */
+function editUnit(c: FileChoices, ref: string, unit: CellUnit | null): FileChoices {
+  const { editUnits: _, ...rest } = c;
+  const units = { ...without(c.editUnits ?? {}, ref), ...(unit ? { [ref]: unit } : {}) };
+  return Object.keys(units).length ? { ...rest, editUnits: units } : rest;
+}
 
 /** A row's held text dropped; the key absent when none is left, as before any was typed. */
 function unheld(c: FileChoices, ref: string): FileChoices {
@@ -113,20 +123,20 @@ export function choose(c: FileChoices, change: ChoiceChange, now: string, extrac
   }
   // A core metric this build does not know takes no number: the write refuses it whatever it is (round one, F1).
   if (('edit' in change || 'typed' in change) && unknownCore(extraction, 'edit' in change ? change.edit : change.typed)) return null;
-  if ('edit' in change) return { ...unheld(c, change.edit), edits: change.value === null || !Number.isFinite(change.value) ? without(c.edits, change.edit) : { ...c.edits, [change.edit]: change.value } };
+  if ('edit' in change) return { ...editUnit(unheld(c, change.edit), change.edit, null), edits: change.value === null || !Number.isFinite(change.value) ? without(c.edits, change.edit) : { ...c.edits, [change.edit]: change.value } };
   if ('typed' in change) {
     // An emptied input unticks its row and drops its text (owner ruling 2026-11-21); text that is no number stays, held.
     // Only a lab report's values are saved, so only they hold text (a letter's are filed with it, never saved).
     if (extraction.classification !== 'lab_report') return null;
     if (!change.text.trim()) return unheld(untick(c, change.typed), change.typed);
     const at = valueAt(extraction, change.typed);
-    const commit = at && typedCommit(change.text, at, c.edits[change.typed], change.unit);
+    const commit = at && typedCommit(change.text, at, c.edits[change.typed], change.unit, c.editUnits?.[change.typed]);
     if (!commit) return null;
     // Anything typed into a cleared row ticks it again (owner ruling 2026-11-21): a number to save, or held text, which
     // then blocks Save at that row until it is fixed or cleared.
     const kept = { ...unheld(c, change.typed), ...(c.ticks[change.typed] === false ? { ticks: { ...c.ticks, [change.typed]: true } } : {}) };
     if (commit.kind === 'hold') return { ...kept, typed: { ...c.typed, [change.typed]: { text: change.text, unit: change.unit } } };
-    return commit.kind === 'same' ? kept : { ...kept, edits: { ...c.edits, [change.typed]: commit.value } };
+    return commit.kind === 'same' ? kept : { ...editUnit(kept, change.typed, change.unit), edits: { ...c.edits, [change.typed]: commit.value } };
   }
   const { date, ...rest } = change.document;
   if (date === undefined) return { ...c, document: { ...c.document, ...rest } };
