@@ -6,7 +6,7 @@
  * The one password login on this auth server, and the one provider credential
  * held server-side, both for an invented account: Brad's recorded exception
  * (docs/mcp-architecture.md). Built for OpenAI's review, whose reviewer twice
- * stopped at a Dropbox or Google login that emailed a code. OpenAI's review
+ * stopped at a Dropbox or Google sign-in that emailed a code. OpenAI's review
  * ended 2026-10-29 and will not be resubmitted (Brad 2026-11-02), so the box
  * now serves Anthropic's review only. After Anthropic's verdict the whole
  * reviewer sign-in is deleted (Brad 2026-10-29). Plan:

@@ -60,7 +60,7 @@ async function getAuthOrGuest(
   request: Request,
   sessionToken?: string | null,
   // Local-first clients (Health Plan v2 on drstanfield.com): the user's plan
-  // lives in THEIR cloud, never our DB, so even a logged-in Shopify customer has
+  // lives in THEIR cloud, never our DB, so even a signed-in Shopify customer has
   // no server-side health record to read. Force the guest path — context comes
   // from the client-supplied `guestInputs`, conversations store under the guest
   // session. Only the app-proxy HMAC is checked: no customer lookup, no user
@@ -400,11 +400,11 @@ async function chatAction(request: Request, app: boolean) {
       const sanitizedFirst = firstUserMsg ? sanitizeForRouter(firstUserMsg) : undefined;
       const sanitizedRecent = recentUserMsgs.map(sanitizeForRouter);
 
-      // Stage 1: classifier + (logged-in) orders fetch dispatch first so their
+      // Stage 1: classifier + (signed-in) orders fetch dispatch first so their
       // network round-trips overlap the synchronous context assembly below.
       // Health context is client-supplied on every v2 surface — the v1
       // server-side health tables were purged June 2026 — so it's built from
-      // body.guestInputs for guests and logged-in customers alike
+      // body.guestInputs for guests and signed-in customers alike
       // (missing/invalid inputs degrade to the empty context).
       const ordersPromise = !auth.isGuest && auth.admin
         ? getCachedOrders(auth.admin, auth.customerId!)

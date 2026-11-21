@@ -256,7 +256,7 @@ function prominentUnsubscribeBlock(unsubscribeUrl: string): string {
       <div style="border:1px solid #e5e7eb;border-radius:6px;padding:14px;margin:24px 0 0;text-align:center;">
         <p style="color:#555;font-size:13px;line-height:1.5;margin:0;">
           Didn't ask for these reminders, or got this by mistake?
-          <a href="${unsubscribeUrl}" style="color:#2563eb;text-decoration:underline;">Stop them with one click</a>. No login, no questions.
+          <a href="${unsubscribeUrl}" style="color:#2563eb;text-decoration:underline;">Stop them with one click</a>. No sign-in, no questions.
         </p>
       </div>`;
 }

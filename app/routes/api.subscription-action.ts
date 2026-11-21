@@ -8,7 +8,7 @@
  * checks Shopify's signature on THIS request (forwarded as signed), the
  * one-time token, every eligibility rule and its own limits, then makes one
  * Appstle call and reads it back. This route only checks the app-proxy
- * signature, that a customer is logged in, the JSON shape, and a per-customer
+ * signature, that a customer is signed in, the JSON shape, and a per-customer
  * rate limit. A JSON content type is required, so another site cannot send a
  * confirm from a plain form; and the token only ever appears in the chat's own
  * response, which another site cannot read.

@@ -200,14 +200,14 @@ export const EMPTY_CHAT_CONTEXT: ChatContext = Object.freeze({
 });
 
 /**
- * Resolve the health context for a chat turn — logged-in or guest alike.
+ * Resolve the health context for a chat turn — signed-in or guest alike.
  *
  * The v1 server-side health tables were purged June 2026, so the
  * client-supplied `guestInputs` is the ONLY possible source of health context.
  * Inputs that are absent or hold nothing (an empty form — v2 invites chat
  * before any data entry — or a malformed payload) degrade to the empty
  * context, never an error; saved values with no sex or height still reach the
- * model, with no plan (US-15 AC36). (Regression: Sentry 7563968375 — the logged-in
+ * model, with no plan (US-15 AC36). (Regression: Sentry 7563968375 — the signed-in
  * path used to read the purged tables and 500 on every message.) The Pages
  * BYOK chat builds the same JSON with the same function, which is also the
  * anti-injection boundary: see health-core chat-context.ts (US-15 AC11).
@@ -286,7 +286,7 @@ export function buildSystemBlocks(
     });
   }
 
-  // US-59: the logged-in customer's subscriptions and the rules for proposing a
+  // US-59: the signed-in customer's subscriptions and the rules for proposing a
   // change (brand surface, while enabled). Per request and uncached, like orders.
   if (opts?.subscriptionBlock) {
     blocks.push({ type: 'text', text: opts.subscriptionBlock });
@@ -458,7 +458,7 @@ const subscriptionToolResult: ToolResultFor = (b, blocks) => {
  * the first call's usage and the round's counts.
  *
  * `opts.subscriptionTool` (US-59): the propose-only subscription tool, sent on
- * every brand-surface turn while subscription actions are enabled, logged in or
+ * every brand-surface turn while subscription actions are enabled, signed in or
  * not, so that surface keeps one cached prefix shape. In a run_roadmap round its
  * call gets its own tool_result, and the proposal is read from both calls' blocks.
  *
