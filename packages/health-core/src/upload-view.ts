@@ -16,7 +16,7 @@ import { getDisplayLabel, type MetricType } from './units';
 import { inFlight, RETRYABLE, saveEnabled, uploadFileName, type FileStatus, type SaveOutcome, type UploadFile, type UploadState } from './upload-flow';
 import { planIsEmpty, uploadSavePlan, type UploadSavePlan } from './upload-plan';
 import type { UploadPlatform } from './upload-rules';
-import { previousDay, readFiles, reviewedWrites, type ReviewedValue, type UploadReview } from './upload-review';
+import { readFiles, reviewedWrites, type ReviewedValue, type UploadReview } from './upload-review';
 import { failLine, FILE_NOTICE_TEXT, FIX_ERRORS_TEXT, longDate, REFUSED_TEXT, REVIEW_CELL_TEXT, UNREADABLE_VALUE_TEXT, UPLOAD_TEXT } from './upload-text';
 import { UNDATED_PREVIOUS, type UnifiedExtractionResult } from './lab-extraction';
 import { withComparator } from './lab-limits';
@@ -139,24 +139,24 @@ function progress(s: UploadState, files: readonly UploadFile[]): UploadView['pro
 /**
  * A read value as the report printed it (the phone's lab review rule, ios/engine/lab-review.ts): the
  * number with its limit sign, its unit, the extractor's question, a note when the read guessed the
- * unit, and the day it saves on: its own, else its report's (`reportDay`); an undated previous column's, the day
- * picked for it (`undatedDay`, US-13 AC25). The number shown is the printed
+ * unit, and the day it saves on: the one the review files it on (`days`, upload-review.ts `importFile`: its own, its
+ * report's, or the day picked for its column, US-13 AC24, AC25), none while it has none. A printed own day that is no
+ * real past day is never saved; its row shows the report's (`reportDay`). The number shown is the printed
  * one, so the web's "Printed:" line (shown only when the two differ) never applies.
  */
-function printedFacts(x: UnifiedExtractionResult | undefined, ref: string, reportDay: string | null, now: string, edit: number | undefined, undatedDay: string | null) {
+function printedFacts(x: UnifiedExtractionResult | undefined, ref: string, day: string | null | undefined, reportDay: string | null, now: string, edit: number | undefined) {
   const at = x && valueAt(x, ref);
   if (!at) return {};
   const own = at.value;
   const coreValue = at.kind === 'core' ? at.value : null;
   const number = at.kind === 'core' ? at.value.displayValue : at.value.value;
-  const day = own.recordedAt && own.recordedAt !== UNDATED_PREVIOUS ? validDay(own.recordedAt, { now })?.slice(0, 10) ?? null : null;
   // An edited number is what Save writes (`importRow`): a core value in its SI unit, a lab in its own, no limit sign.
   return {
     value: edit !== undefined ? String(edit) : withComparator(String(number), own.comparator),
     unit: edit !== undefined && coreValue ? getDisplayLabel(coreValue.metric as MetricType, 'si') : at.kind === 'core' ? at.value.displayUnit : at.value.unit,
     question: own.question ?? null,
     unitNote: coreValue?.unitGuessed ? REVIEW_CELL_TEXT.checkUnit : null,
-    day: own.recordedAt === UNDATED_PREVIOUS ? undatedDay?.slice(0, 10) ?? null : day ?? reportDay?.slice(0, 10) ?? null,
+    day: day == null ? null : validDay(day, { now })?.slice(0, 10) ?? reportDay?.slice(0, 10) ?? null,
   };
 }
 
@@ -172,9 +172,9 @@ function heldText(row: FileMeasurement | FileLabValue | undefined, record: Roadm
 
 const valueRow = (review: UploadReview, reads: Map<string, ReturnType<typeof readFiles>[number]>, rows: Map<string, FileMeasurement | FileLabValue>, record: RoadmapFile, now: string) =>
   (v: ClassifiedValue): ValueRow => {
-    const read = reads.get(review.labFiles[v.file].fileId);
-    const { day } = review.labFiles[v.file];
-    const facts = printedFacts(read?.status.extraction, v.ref, day, now, read?.status.choices.edits[v.ref], previousDay(read?.status.choices.previousDay ?? null, day, now));
+    const lab = review.labFiles[v.file];
+    const read = reads.get(lab.fileId);
+    const facts = printedFacts(read?.status.extraction, v.ref, lab.days[v.ref], lab.day, now, read?.status.choices.edits[v.ref]);
     const heldId = review.held.get(`${v.file}:${v.ref}`);
     const dayLine = facts.day ? longDate(facts.day) ?? facts.day : null;
     return { ...facts, dayLine, ...rowOf(review, v),

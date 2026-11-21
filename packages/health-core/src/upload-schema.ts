@@ -63,6 +63,7 @@ const documentFix = strict({ title: text.optional(), kind: text.optional(), date
 const choices = strict({
   ticks: z.record(z.string(), z.boolean()), testDay: maybeText, previousDay: maybeText,
   replace: z.record(z.string(), z.string()), edits: z.record(z.string(), z.number()), document: documentFix,
+  columnDays: z.record(z.string(), z.string()).optional(),
 });
 const failReason = z.enum(['unreadable', 'bytesUnreadable', 'zipUnreadable', 'zipEmpty', 'timeout', 'busy', 'dailyLimit', 'declined', 'tooLong', 'server', 'network', 'keyRefused', 'noCredit', 'keyRateLimit', 'noKey', 'appRefused', 'tooLarge', 'cannotAttest', 'attestFailed']);
 /** An App Attest step or code: a short word, nothing else from the error (US-52 AC7e). */
@@ -110,14 +111,18 @@ export const UPLOAD_STATE = z.discriminatedUnion('phase', [
 ]);
 
 /** Strict branches: a change naming two kinds (a tick and a day) matches none and is refused. */
-const change = z.union([
+const phoneChanges = [
   strict({ tick: text, on: z.boolean() }),
   strict({ testDay: maybeText }),
   strict({ previousDay: maybeText }),
   strict({ replace: text, correctsId: maybeText }),
   strict({ edit: text, value: z.number().nullable() }),
   strict({ document: documentFix }),
-]);
+] as const;
+/** The changes the iPhone's page makes: its door takes no other (ios/engine/upload-doors.ts, US-13 AC24). */
+export const PHONE_CHANGE = z.union(phoneChanges);
+/** Every change: the web's review adds a dated previous column's day. */
+const change = z.union([...phoneChanges, strict({ columnDay: text, day: maybeText })]);
 const failure = z.enum(UPLOAD_FAILURES);
 
 /** Each event by its type, for a caller that sends some of them in a shape of its own (the doors' wire). */
