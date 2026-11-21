@@ -108,7 +108,7 @@ export interface DocumentSavePlan {
  * The six duplicate checks on the way into `documents[]` (US-52 AC14). Each
  * runs where it does because each surface knows different things at that
  * moment; none is a copy of another, so a de-dup must not fold them together.
- * 1. Website review, `isDocDuplicate` (ReviewTable.tsx): an exact
+ * 1. The web's old review, `isDocDuplicate` (useReviewDocuments.ts; gone with the list, where every read letter saves, US-13 AC14): an exact
  *    `sourceFileName` match unticks the keep box. Titles drift between reads;
  *    the name does not, and the bytes are not hashed yet.
  * 2. iPhone review, `alreadySaved` (ios/engine/lab-review.ts): the same

@@ -56,28 +56,28 @@ export const UPLOAD_TEXT = {
   unstoredLine: "The original file couldn't be stored; its details are saved.",
   /** The iPhone's own word for the done screen's button and a picker's confirm (section 5 reuses "Done"). */
   done: 'Done',
-  /** The Save label when Save files only originals (the web's saveLabel, ReviewOverview.tsx). */
+  /** The Save label when Save files only originals (moved from the web's old review, ReviewOverview.tsx `saveLabel`). */
   saveOriginals: (a: number) => `Save ${plural(a, 'original')}`,
   /** Why Save waits while a report needs its day. */
   chooseDay: 'Choose the day of the test',
   /** A conflict whose Replace is on (the web shows only the ticked box). */
   replaces: 'Replaces the value in your record.',
-  /** The web review's Save button while it saves, and its close button's two words (ReviewTable.tsx, UploadModal.tsx's
-   *  Cancel while files are read), byte for byte; both now import them. */
+  /** The Save button's words while it saves, and the close button's two words, moved byte for byte from the web's old
+   *  review (ReviewTable.tsx) and UploadModal.tsx's Cancel while files are read. */
   saving: 'Saving...',
   cancel: 'Cancel',
   close: 'Close',
 } as const;
 
 /**
- * A read value's words as the web's review says them, moved here byte for byte so both clients say
+ * A read value's words as the web's old review said them, moved here byte for byte so both clients say
  * the same: what the report printed when the unit was guessed (review-matrix.ts), and the Replace
  * control on a value whose day the record already holds (ReviewMatrix.tsx).
  */
 export const REVIEW_CELL_TEXT = {
   printed: (value: string | number, unit: string) => `Printed: ${value} ${unit || '(no unit)'}`,
   replace: 'Replace',
-  /** The Replace box's spoken name: the test and the day it would correct (ReviewMatrix.tsx aria-label). */
+  /** The Replace box's spoken name: the test and the day it would correct (the old ReviewMatrix.tsx aria-label). */
   replaceLabel: (test: string, day: string) => `Replace the saved ${test} value from ${day}`,
   /** A value whose unit the read guessed, in the iPhone review's words (LabReviewView.swift), byte for byte. */
   checkUnit: 'Check this value and its unit against the report',
@@ -88,12 +88,12 @@ export const REVIEW_CELL_TEXT = {
   rowName: (test: string, from: string, again: boolean) => `${test} value from ${from}${again ? ', another reading' : ''}`,
 } as const;
 
-/** A previous column's day control, moved from the web's grid byte for byte: its names (ReviewMatrix.tsx aria-label) and,
+/** A previous column's day control, moved from the web's old grid byte for byte: its names (ReviewMatrix.tsx aria-label) and,
  *  while an undated one has no day, its limits: a day in its printed month, before its report's day (ReviewTable.tsx). */
 export const DAY_CONTROL_TEXT = {
   /** Both previous columns' name on the list (owner ruling 2026-11-21); a dated one adds the day it printed. */
   previous: 'Choose the date of the previous results',
-  /** The old grid's alone (ReviewMatrix.tsx): "column" means nothing on the list. Goes with the grid. */
+  /** The old grid's alone (ReviewMatrix.tsx): "column" means nothing on the list. Unused once the list replaces the grid: delete it then. */
   column: 'Choose column date',
   /** A date button's day while none is picked: the grid's date cell's (DraftDateCell.tsx), moved byte for byte. */
   noDay: '—',
