@@ -1,297 +1,282 @@
 # One model for the web upload matrix
 
-Design, 21 Nov 2026; builds on [upload-shared-engine.md](upload-shared-engine.md). Owner rulings on section 5: 21 Nov.
-Lines: health-core at 6f2b9f5dc (PR 1923, merges before PR 0); widget at main a4bace53c; "1906" is 33d47a5de.
+Design, 21 Nov 2026, revised the same day after an adversary review (section 5 holds both rounds of
+rulings). Builds on [upload-shared-engine.md](upload-shared-engine.md). Lines: main f50116be8.
 
 ## Why
 
 PR 1906 failed eight review passes, each a real case of the screen differing from what Save
 writes, or Save waiting with no control. The engine is sound (`uploadSave` reruns the view's
-`uploadReview`, upload-save.ts:67-70); the web matrix is a second model. `buildMatrixModel` (review-matrix.ts:117-379) and ReviewTable work out each value's
-column, slot, sent state, validity, already-saved state, day blockers and counts from their own
-inputs. The cell map keeps one reading per (row, column) by write order (review-matrix.ts:355,
-359), not the engine's winner. The engine gives a matrix nothing to draw from, and `saveBlocked`
-(upload-view.ts:248) returns a bare string with no pointer to a control. The fix: the engine owns
-"what this cell is"; the web draws it and keeps only the text being typed.
+`uploadReview`, upload-save.ts:67-70); the web matrix is a second model. `buildMatrixModel`
+(widget-src/src/lib/review-matrix.ts:117-379) and ReviewTable work out each value's column, slot,
+sent state, validity, already-saved state, day blockers and counts from their own inputs, and the
+cell map keeps one reading per (row, column) by write order (review-matrix.ts:355, 359). The fix:
+the engine owns what each cell is, what typed text means, and every blocker; the web draws it and
+holds only the text of the one input being typed in.
 
-## 1. Engine PR (health-core only, inert)
+## 1. Engine PR (health-core, inert; ships with its property test)
 
-Nothing today reads the new fields; every addition is optional or internal; the bridge id stays. It builds on PR 1923's helpers: values are
-walked with `offeredValues` and read with `valueAt` (import-review.ts:44, 50), slots keyed with
-`rowSlot` (176), and a value cleared with `untick` (upload-choices.ts:46). No new ref loop or slot key.
+Nothing today reads the new fields; every addition is optional; the bridge id stays. It uses the
+existing helpers: `offeredValues`, `valueAt` (import-review.ts:44, 51), `rowSlot` (181), `untick`
+(upload-choices.ts:46). Paths below are packages/health-core/src.
 
-### 1a. `uploadReview` exposes each value's row and day
+**1a. Rows by key.** `UploadReview` (upload-review.ts:16) gains `rowOf: ReadonlyMap<ValueKey,
+BulkRow>` (every row Save would submit, `file.rows` from 113; `classification.rows[k]` is the same
+object) and `dayOf: ReadonlyMap<ValueKey, string | null>` (`file.days`, 101, through `validDay`).
+`ValueKey` is `${fileId}:${ref}`, never a file index. `reviewedWrites` (43-47) and `rowsByFile`
+(140-146) read `rowOf`. upload-save.ts:74 and 78-81 pair `planKeys` with `plan.labRows` rows by
+position; they become one list built from the rows themselves,
+`plan.labRows.flatMap((f) => f.rows.map((row) => ({ key: keyOf.get(row)!, row, fileId: f.fileId })))`
+(`keyOf` inverts `rowOf` by identity), and `keep`, `rows`, `rowFiles`, `rowKeys` all filter that
+one list. The private `rowOf` in upload-view.ts:183 becomes `rowFacts`.
+
+**1b. Typed text is engine state.** `FileChoices` (upload-choices.ts:20) gains
+`typed?: Record<string, { text: string; unit: CellUnit | null }>` (named to avoid the `u<i>` refs of
+`unreadValues`). `ChoiceChange` (28) gains `{ typed: string; text: string; unit: CellUnit | null }`:
+the text the web commits and the unit the cell was shown in (null for a lab). `choose` (64) parses
+it with the functions the web uses today, moved byte for byte from widget-src/src/lib/blood-test-cell.ts
+into cell-unit.ts: `hasNumericSyntax` (117), `readNumericCell` (122), `readTypedValue` (150), and
+`NUMERIC_SYNTAX_GUIDANCE` (115) into upload-text.ts; then `cellToSI`, `cellNumber`
+(cell-unit.ts:30, 55) and `commaQuestion` (parseNumber.ts:40). Outcomes:
+- a number equal to what the cell showed for the printed value (`cellNumber` of `valueSI` in that
+  unit, or the lab's printed number): no edit, the printed value stands (the Lp(a) case below);
+- another number: `edits[ref] = cellToSI(...)` (a lab: as typed), and the value is ticked;
+- `""`, or text that is not a number: the value is not sent, holds no slot, writes nothing and is
+  not counted. Non-empty text blocks Save at its cell. The Replace choice and the tick survive.
+  `importFile` (upload-review.ts:82) leaves such values out of `ticked`, so nothing sends them,
+  no day is asked for them (98), and the plan's original rule (upload-plan.ts:66) reads them as cleared.
+
+The text is kept in every case, so the cell shows what was typed in the unit it was typed in (main
+does the same, ReviewTable.tsx:284-286); shown in another unit, the cell shows `cellNumber` of the
+edit. A `typed` commit replaces it; `edit` (the iPhone's control) deletes it; nothing else clears
+it. A `typed` commit ticks the value; `edit` and `untick` leave ticks as they are (choose: 66, 76).
+The state is in memory: a reload ends the upload and the review with it, as today. The cell's
+error words: `NUMERIC_SYNTAX_GUIDANCE`, `commaQuestion(text)`, or "Enter a number"
+(ReviewTable.tsx:189-191), moved to upload-text.ts. The Lp(a) pin: 124.9 nmol/L shown as "50.0"
+mg/dL, committed unchanged, saves 124.9 (ReviewTable.date-edits.test.tsx:76-79,
+ReviewTable.archive.test.tsx:217-228); a health-core copy goes in upload-choices.test.ts.
+
+**1c. Blockers.** `saveBlocked` (upload-view.ts:248) returns
+`Array<{ why: string; at: { cell: ValueKey } | { day: { fileId: string; column: DayColumn } } }>`,
+with `DayColumn = { kind: 'test' } | { kind: 'previous' } | { kind: 'printed'; printed: string }`.
+Cell causes: `blocks` (203) and non-empty `typed` text that is not a number; day causes:
+`needsTestDay`, `needsPreviousDay` (upload-review.ts:98-99) and PR 0's `needsColumnDay`. Words:
+FIX_ERRORS_TEXT and UPLOAD_TEXT.chooseDay, as today. `save()` (236, 239) and upload-save.ts:68
+read `[0]?.why`, so `view.save.why` is unchanged.
+
+**1d. One door for lost Replaces.** `withoutLostReplaces` (ios/engine/upload-doors.ts:179-188)
+moves into upload-review.ts as `dropLostReplaces(state, record, now)`; the iPhone door and the web
+both call it before each event and each view.
+
+**1e. upload-matrix.ts** (new, pure, under 300 lines):
+
 ```ts
-/** `${fileId}:${ref}`: a value's one key; never a file index, which moves when a file is read late. */
-export type ValueKey = string;
-export const valueKey = (fileId: string, ref: string): ValueKey => `${fileId}:${ref}`;
-export interface UploadReview {          // upload-review.ts:16-34, plus:
-  /** Every row Save would submit: `importFile`'s `file.rows` (built at 113). The rows Save writes are
-   *  these objects: `classification.rows[k] === rowOf.get(key)` by identity. */
-  rowOf: ReadonlyMap<ValueKey, BulkRow>;
-  /** Each offered value's day (YYYY-MM-DD): `file.days` (`valueDays`, 101) through `validDay`;
-   *  null while it has none, or when its own day is no real past day. */
-  dayOf: ReadonlyMap<ValueKey, string | null>;
-}
-```
-
-Three places pair values with rows by position; they use `rowOf` instead: `reviewedWrites` (upload-review.ts:43-47), `rowsByFile`
-(upload-review.ts:138-146), `planKeys` (upload-save.ts:73-74). upload-view.ts has a private
-`rowOf` (183): rename it `rowFacts` so one name means one thing.
-
-### 1b. Structured blockers
-```ts
-/** Which picker sets a value's day. `printed` comes from PR 0's `columnDays`. */
-export type DayColumn = { kind: 'test' } | { kind: 'previous' } | { kind: 'printed'; printed: string };
-export type BlockerAt = { cell: ValueKey } | { day: { fileId: string; column: DayColumn } };
-/** `why` in existing words: FIX_ERRORS_TEXT for a cell, UPLOAD_TEXT.chooseDay for a day. */
-export interface Blocker { why: string; at: BlockerAt }
-export function saveBlocked(review: UploadReview): Blocker[];   // upload-view.ts:248-251
-```
-
-A cell blocker comes from each value `blocks(review)` accepts (upload-view.ts:203-204) and each
-ticked `unread` value (1c). A day blocker comes from each lab file's `needsTestDay` and
-`needsPreviousDay` (upload-review.ts:98-99), and from PR 0's `needsColumnDay`, per waiting
-printed column. Callers keep their words: `save()` (upload-view.ts:236, 239) takes
-`saveBlocked(review)[0]?.why ?? null`; upload-save.ts:68-69 refuses on a non-empty list with
-`[0].why`. `view.save.why` is unchanged.
-
-### 1c. Text that is not a number becomes a choice
-
-Today the web keeps it in a local buffer and blocks Save itself (`hasInvalid`, inside
-`collectSaveableCells`, ReviewTable.tsx:211-241). The engine cannot see it, so a cell that loses
-its place stops blocking. In upload-choices.ts: `FileChoices.unread?: Record<string, true>` (20-27)
-and `ChoiceChange` `{ unread: string; on: boolean }` (28-35). In `choose` (64-81), `unread on` sets
-the ref, drops its edit and ticks it; `unread off` and an `edit` remove it; `untick` (46) removes it
-too. upload-schema.ts (64-65, 116, the `pin`s at 169-170) accepts both. A number is always sent as
-an `edit`; the engine judges its range through the write (`blocks`). A test pins that the write's
-range equals `healthInputSchema`'s, which the web checks today (ReviewTable.tsx:156-161).
-
-### 1d. upload-matrix.ts (new, pure, under 300 lines)
-```ts
-export function uploadMatrix(s: UploadState, record: RoadmapFile, now: string, review: UploadReview): UploadMatrix;
-export interface UploadMatrix {
-  columns: MatrixColumn[];  // waiting columns first, then by day, oldest left
-  rows: MatrixRow[];        // core: BLOOD_TEST_METRICS then VITAL_METRICS order; labs by label (review-matrix.ts:371-376)
-  cells: MatrixCell[];
-  notSaved: ReturnType<typeof notSavedGroups>;  // import-review.ts:381, over the offered values with no cell
-  hidden: { rows: number; readings: number; saving: number };  // behind Show all: SureLine's numbers
-  blockers: Blocker[];
-}
-/** key: the day once it has one, else `${fileId}|test` or `${fileId}|previous`. upload: false for a record-only day.
- *  controls: one per (file, DayColumn) whose values sit here; a merged column has several (ruling e). */
+export function uploadMatrix(s: UploadState, record: RoadmapFile, now: string, review: UploadReview, unitOf: (metric: MetricType) => CellUnit): UploadMatrix;
+export interface UploadMatrix { columns: MatrixColumn[]; rows: MatrixRow[]; cells: MatrixCell[]; notSaved: ReturnType<typeof notSavedGroups>; blockers: Blocker[] }
+/** key, as main keys columns (review-matrix.ts:146-157, 164-166): a PRINTED day (a dated report, a dated previous column,
+ *  a record-only day) is keyed by that day and merges across files; a PICKED day (an undated report's test column,
+ *  an undated previous column) is keyed `${fileId}|test` or `${fileId}|previous`, picked or not: never re-keyed, never merged. */
 export interface MatrixColumn { key: string; day: string | null; upload: boolean; controls: DayControl[] }
-/** pick: the raw pick the choices hold (partial or future too), for the picker. blocks: a Blocker points here.
- *  month, before: the hint's printed month (`previousMonth`) and the report day to precede. */
 export interface DayControl { fileId: string; column: DayColumn; pick: string | null; blocks: boolean; month: string | null; before: string | null }
-/** key: `${slot}|${metric}` from `bulkRowTarget`, so a lab filed as core sits in the core row. label: METRIC_LABELS,
- *  else `labValueLabel`. unit: a lab row's first-seen unit (`displayLabUnit`), null for core. shown: the `reviewRows`
- *  rule (import-review-view.ts:187-219), moved here. */
-export interface MatrixRow { key: string; kind: 'core' | 'lab'; metric: string; label: string; unit: string | null;
-  referenceLow: number | null; referenceHigh: number | null; shown: boolean }
-/** key: the slot (`rowSlot`); for a waiting column `${row}|${column}`. held.text: `heldText`.
- *  readings: the one that saves first, else the slot's claimant, then review order. */
-export interface MatrixCell { key: string; row: string; column: string; readings: MatrixReading[];
-  held: { id: string; value: number; unit: string | null; comparator?: Comparator; text: string } | null }
+/** key: `${slot}|${metric}` from `bulkRowTarget`: a lab filed as core sits in the core row. shown: the `reviewRows` rule. */
+export interface MatrixRow { key: string; kind: 'core' | 'lab'; metric: string; label: string; unit: string | null; referenceLow: number | null; referenceHigh: number | null; shown: boolean }
+/** One per (row, column) with something in it; `held`: the record's row in that slot (`heldText`). */
+export interface MatrixCell { row: string; column: string; slot: string | null; held: Held | null; readings: MatrixReading[] }
+export type Status = 'saves' | 'alreadySaved' | 'conflictKept' | 'second' | 'error' | 'notSaved' | 'unticked' | 'cleared' | 'typedText' | 'waiting';
 export interface MatrixReading {
-  key: ValueKey; fileId: string; ref: string;
-  printed: { value: number; unit: string; comparator?: Comparator };  // core in SI, lab in its unit (`printedFacts`)
-  edit: number | null; unread: boolean; ticked: boolean;              // choices.edits, .unread, .ticks
-  group: ClassifiedValue['group']; reasons: UnsureReason[];
-  second: 'copy' | 'sameDay' | null;  // not written beside the one that saves: equal (copy, duplicate) or different
-  refusal: ImportRefusal | null; blocks: boolean;                     // import-review.ts:138
-  replaces: string | null; replacing: boolean;                        // as ValueRow (upload-view.ts:31-44)
-  saves: BulkRow | null;    // review.rowOf.get(key) when its classified value `writes`
+  key: ValueKey; status: Status; shown: string;   // the number or text to draw, in the row's unit
+  editable: boolean; refusal: ImportRefusal | null; replaces: string | null; replacing: boolean;
+  saves: BulkRow | null;                          // rowOf.get(key) exactly when status is 'saves'
 }
 ```
 
-Derivations, all from the one `UploadReview`:
-- **Slot.** A sent value: `rowSlot(rowOf.get(key))` (import-review.ts:176). An unsent value with
-  a day: `rowSlot(importRow(result, ref, day))`, as the held loop does (upload-review.ts:153).
-- **Columns.** From `dayOf` and each value's printed day (`valueAt(...).value.recordedAt`: none is
-  the test's column, `UNDATED_PREVIOUS` the previous one, a date a printed one). Record-only days
-  as review-matrix.ts:181-220 seeds them. A column with a real day is keyed by it, so a picked
-  undated column merges with that day's (ruling e).
-- **Cells.** One per slot; every offered value with a slot is a reading in exactly one cell. A
-  value with no slot (a lab refused whatever its day, a printed day still to come) is named in
-  `notSaved` instead, unless it has an edit or `unread`: then it keeps a cell, so its control stays.
-- **Order.** `saves` first; then a sent value that is not `second` (the `placeReadings` claimant,
-  review-slots.ts:59-77); then the rest in review order. A `sameDay` reading stays in its cell,
-  out of `notSaved` (ruling b), and never has `saves`.
-- **`shown`.** Any reading not `sure`, a `held`, `blocks`, an edit, `unread`, or a column control.
-- **`heldText`** (upload-view.ts:161-167) and **`printedFacts`** (142-157) are exported, not copied. No words here.
+`status` is a total function of the engine's fields, first match wins: non-empty `typed` text
+that is not a number, `typedText`; `typed` text `""`, `cleared`; not ticked, `unticked`; group
+`waiting` or its file `needsDay`, `waiting`; `writes`, `saves`; `copy`, `duplicate` or `notSaved`
+reason `sameDay`, `second`; group `saved`, `alreadySaved`; `blocks`, `error`; group `unsure` with
+`conflict`, `conflictKept`; group `notSaved`, `notSaved`. Anything else throws (P6 finds it).
 
-Tests (`upload-matrix.test.ts`): a table test per derivation; `rowOf` holds the `classification.rows` objects;
-`saveBlocked` keeps main's `why`; `uploadView` is unchanged over the property seeds.
+Cells and rows: a value with a slot or a waiting column has a reading in its column (its printed
+day's, else its file's picked column). A merged printed-day column can hold several readings in
+one cell (ruling b). A slot can also sit in a printed-day column and a picked column of the same
+day; the loser is drawn in its own cell with the `sameDay` caption. A
+value with neither (a lab refused whatever its day, a printed day still to come) is named in
+`notSaved`, unless it has `typed` text or an edit, so its control stays. `editable` is false only
+for `second`: while the slot's writer is sent, a loser cannot save (review-slots.ts:66-67), and
+an edited reading is never a duplicate, so editing it changes nothing Save does; to change the
+outcome the person clears the writer, whose input is in reach. The one cell with two editable
+readings is in "For Brad"; every other input keeps "<test> value from <column>" (ReviewMatrix.tsx:306). `shown` uses `cellNumber`, `typed` text or the lab's number; the web formats nothing.
 
-## 2. upload-matrix.property.test.ts
+## 2. Properties (upload-matrix.property.test.ts, in the engine PR)
 
-Move the generators and `Run` of upload-view.property.test.ts (`mulberry32` 34, `Run` 390,
-`genStep` 514, `genChange` 597, `genSetup` 657) byte for byte into
-`packages/health-core/src/testing/upload-property-harness.ts`, so both tests share one copy.
-Extend `genChange` with `previousDay` (past, partial, future, after the report day), `unread`, and
-an edit equal to the held row; late `answered` and `retry` already shift file order. 1500 seeds.
-After every step, with `m = uploadMatrix(...)` and `view` from one review:
+The generators and `Run` of upload-view.property.test.ts (`mulberry32` 34, `Run` 390, `genStep`
+514, `genChange` 597, `genSetup` 657) move byte for byte into `testing/upload-property-harness.ts`.
+`genChange` gains `typed` (numbers, the printed number, "", "1,2", "abc", in every unit),
+`previousDay` (past, partial, future, after the report day) and an edit equal to the held row.
+1500 seeds; after every step:
 
-- **P1** Every offered value (`isOfferedRef`) is in exactly one cell reading, or has no cell and
-  is counted in exactly one `m.notSaved` line.
-- **P2** The `saves` rows are exactly `uploadSavePlan(...).labRows`' rows, by identity; after a
-  commit on the same record, the added rows match them by slot, value and `correctsId` (as
-  upload-view.property.test.ts:456-463 compares).
-- **P3** `view.save.label` counts the readings with `saves`, and
-  `IMPORT_REVIEW_TEXT.willSave(m.hidden.saving)` the hidden ones. The matrix moves only where an
-  unsaved reading is drawn: the offered values in `m.notSaved` plus the `sameDay` readings are
-  exactly the offered `notSaved` values of `review.classification`, and no `sameDay` reading saves.
-- **P4** With Save disabled and nothing in flight, each blocker's `at` names a reading or a
-  control in a shown row and column, and its fix removes it: untick or a valid edit for a cell,
-  a past day (before the report's, for a previous column) for a control.
-- **P5** At most one reading per cell has `saves`.
+- **P6** Every offered value has exactly one drawn status: one reading, or a `notSaved` line.
+  `saves !== null` exactly when the status is `saves`.
+- **P1** The statuses partition the offered values (no value twice, none missing).
+- **P2** The `saves` rows are `uploadSavePlan(...).labRows`' rows, by identity. After each commit,
+  on the same record or after the harness's `record` and `meanwhile` steps changed it, every added
+  row is a `saves` row, and each `saves` row not added is counted skipped or refused
+  (upload-view.property.test.ts:451-471 compares this way).
+- **P3** Counts are sums over statuses: `view.save.label` counts `saves`; the sure line counts
+  `saves` in hidden rows; the already-saved line counts `alreadySaved`; the web's Not saved line
+  counts `m.notSaved`; and `m.notSaved` plus the `second` readings with reason `sameDay` are the
+  classification's offered `notSaved` values (ruling b).
+- **P4** With Save disabled and nothing in flight, each blocker names a reading or control in a
+  shown row and column, and its fix (untick, a number, a past day) removes it. Converse: an oracle
+  that finds causes from the state and record alone (each ticked value's dry run on the record,
+  `typed` text, each file's days) finds none, then there are no blockers.
+- **P5** Across the whole matrix, at most one reading per slot has status `saves`.
+- **P7** Each `saves` reading sits in the row of its row's `bulkRowTarget` and in a column whose
+  day is the row's `recordedAt`.
 
-Pinned cases, one named `it` each as fixed steps (not seeds), from 1906's commits and the helper's
-diagnosis of 20 Nov. L1-L4 are unrun leads; a pin that does not reproduce stays as a guard.
+Pins, one named `it` each, fixed steps not seeds. "jsdom" rows live in the web PR's generative
+test, because they were web-state bugs that no engine property can see.
 
-| Pin | Past defect | Checked by |
+| Pin | Past defect (1906 commit) | Checked by |
 |---|---|---|
-| D1 | Typed text keyed by file index moved to another value when an earlier file was read late (17ebf66a6) | P2; DOM half in section 3 |
-| D2 | An edit after a failed Save shown, not written on retry (17ebf66a6) | P2 |
-| D3 | A value refused at the final commit vanished (9e5a5496c) | P2 after commit |
-| D4 | A slot another writer took between review and Save vanished (a637aeb26) | P2 after commit |
+| D1 | Typed text keyed by file index moved to another value when a file was read late (17ebf66a6) | jsdom |
+| D2 | An edit after a failed Save shown, not written on retry (17ebf66a6) | jsdom |
+| D3 | A value refused at the final commit vanished (9e5a5496c) | P2 on a changed record |
+| D4 | A slot another writer took between review and Save vanished (a637aeb26) | P2 on a changed record |
 | D5 | "2 values will be saved" beside "Save 3 values" (593d6c259) | P3 |
-| D6 | A stale Replace became a new row (6e75b4172) | P2 |
-| D7 | A lost Replace left a typed number Save skipped (eee39a8cf) | P2; DOM half in section 3 |
-| D8 | An out-of-range conflict blocked Save with Replace off (be0b68049) | P4 |
-| D9 | A printed future day on a previous column: ticked, shown, not written (33d47a5de) | P1, P2 |
+| D6 | A stale Replace became a new row (6e75b4172) | P2, P7 |
+| D7 | A lost Replace left a typed number Save skipped (eee39a8cf) | jsdom |
+| D8 | An out-of-range conflict blocked Save with Replace off (be0b68049) | P4 converse |
+| D9 | A printed future day: ticked, shown, not written (33d47a5de) | P6 |
 | D10 | A partial or future pick on a dated previous column (66873781a) | P4 (PR 0) |
-| R1 | Undated report holding only refused values: Save waits for a day, no picker | P4 |
-| R2 | A: LDL 3.1 on 1 Jun; B: LDL 3.4 on 2 Jun; clear B, move it to 1 Jun: cell blank, Save writes A | P1, P5 |
-| L1 | A lab filed as core shown in a lab row, saved in the core slot (lead) | P1 via row key |
-| L2 | Text typed back to the printed number stayed "edited" (lead) | section 3 |
+| R1 | Undated report of refused values: Save waits, no picker | P4 |
+| R2 | A: LDL 3.1 on 1 Jun, B: 3.4 on 2 Jun; clear B, move it to 1 Jun: blank cell, A saved | P5, P6 |
+| L1 | A lab filed as core drawn in a lab row (lead) | P7 |
+| L2 | Text typed back to the printed number stayed "edited" (lead) | P2 via `typed` |
 | L3 | `history` and the upload's record were two snapshots (lead) | gone: one record in |
-| L4 | An invalid typed cell, moved by a column pick, stopped blocking (lead) | P4 via `unread` |
+| L4 | An invalid typed cell, moved by a pick, stopped blocking (lead) | P4 both ways |
+| C1 | A picked column's day equal to a printed column's day: two cells, one slot | P5, P6 (loser `second`) |
 
-## 3. Web PR
+## 3. Web PRs
 
-ReviewTable and ReviewMatrix draw `uploadMatrix` and send `chose`, with 1906's wiring (section 4:
-main's ReviewTable is not on the upload state yet). The web keeps
-layout, units (`cellNumber`, `cellText`, `cellToSI`, `readTypedValue`, blood-test-cell.ts), the
-Lp(a) unit, grading, the Show all and Not saved toggles, and one buffer:
+The web keeps layout, grading, the Show all and Not saved toggles, the person's Lp(a) unit setting
+(`useLpaUnit`, lpa-unit.ts:53, passed as `unitOf`), and one piece of view state:
+`draft: { key: string; text: string } | null` for the focused input (a value's `ValueKey`, or a
+column control's key for a day picker). Each keystroke changes only the draft. Blur or Enter
+commits it: a `typed` choice for a cell, `testDay`/`previousDay`/`columnDay` for a picker; then the
+draft is dropped. Escape drops it unsent. Because nothing reaches the engine mid-typing, no
+blocker or column moves while a person types.
 
-```ts
-/** What a keystroke sent the engine. */
-type Sent = { edit: number | null } | { unread: true } | { cleared: true };
-const [typed, setTyped] = useState<ReadonlyMap<ValueKey, { text: string; unit?: CellUnit; sent: Sent }>>(new Map());
-```
+Deleted from widget-src/src (grep each before and after; tests excluded): review-matrix.ts
+`buildMatrixModel` (117-379) and its types, `editId`, `replaceKey`, `matrixCellKey`, the rest
+where orphaned; import-review-view.ts `currentEdits` (50), `slotlessIds` (82), `refusedKeptIds`
+(100), `classifyReview` (118), `toDecisions` (160), `reviewRows` (187), `KeptValue`
+(`reviewEventMetadata`, 224, stays); ReviewTable.tsx `fileDates` (73), `touchedRef`, `touchedCount`
+(88-91), `editedDisplayValues` and its effect (93, 139-152), `editsNow`, `pinnedNow`, `editsKey`
+(97-102), `refusedNow`, `slotless` (104-105), `units` (69, as conversion input), `initialDisplayValues`
+(113), `replaceChecked` (123), `metricOf`, `extractedError`, `isEditedText`, `savedValue`, `cellError`,
+`replacesNothing` (154-205), `collectSaveableCells` (211), `heldEqual` (246-261), `coreCellViews`
+(266), `totalEditableCells` (291), `datedColumns` (300), `needsDay` (324), `groups` to `refusedKept`
+(335-369), `rows` (370), `handleColumnDateChange`'s source loop (387-405), `nothingToSave` (415),
+`checking` (418); ReviewMatrix.tsx's lab refusal recompute (290-302) and every `cellNumber`,
+`cellText`, `cellToSI`, `readTypedValue` call in both files; review-dates.ts `valueDate`,
+`dateSource`, `buildDatePrefix`, `columnDay` where orphaned; blood-test-cell.ts's three moved functions.
 
-A keystroke parses the text in its typed unit: a number sends `{ edit }` (ticking a cleared value),
-the printed number `{ edit: null }`, empty `{ tick: off }`, anything else `{ unread: on }`. The input shows `typed.text` only while the reading still matches `sent`;
-otherwise it shows the engine's number in the row's unit. The buffer is one input's view state;
-it never decides what saves. A cell draws only its readings: the first reading's number as its
-input; a `sameDay` reading as a second line with its own input and the caption
-`NOT_SAVED_TEXT.sameDay` (ruling b); Replace from `replaces`/`replacing`, so an edit equal to the
-held row shows as a conflict, as the engine judges it (ruling c); the error from `refusal`
-(`measurementRefusalLine`, lab-value-labels.ts:13; `labUnitRefusalLine`, lab-series.ts:34) or,
-for `unread`, `NUMERIC_SYNTAX_GUIDANCE` (blood-test-cell.ts:115). A lab's stored-unit note comes
-from `saves`. Headers draw every control in `controls`, with ReviewTable's hint words (313-315)
-fed by `month` and `before`. Save's label, reason and state come from `view.save`.
+The split (each PR leaves the page and the engine agreeing):
+- **3a, the matrix component** (about +300): `UploadMatrixView.tsx` draws an `UploadMatrix` and
+  its draft, with the jsdom generative test (150 seeds; each DOM input shows its reading's
+  `shown`, inputs drawn as saving are the `saves` readings, Save is disabled exactly when
+  `view.save.enabled` is false, every blocker's control is in the DOM) and gesture pins D1, D2, D7.
+  Not mounted: see the merge condition in section 6.
+- **3b, the swap** (about -950): ReviewTable mounts it on the upload state, `chose` and
+  `uploadSave` (1906's wiring, section 4), and the deletions above land.
 
-Deleted in this PR (grep each name before and after; tests and testing support excluded):
+A split by model (engine display, today's editing) would put two models on one screen for a
+release, the defect this note exists to remove; 3a/3b splits by component instead.
 
-| File | Symbols |
-|---|---|
-| lib/review-matrix.ts | `buildMatrixModel` (117-379), `MatrixColumn`, `MatrixCell`, `EditableMatrixCell`, `ExistingCell`, `UnshownReading`, `CoreCellView`, `editId`, `replaceKey`, `matrixCellKey`; `sameValue`, `normaliseLabName`, `rowName`, `matrixRowKey` where orphaned. Likely the whole file. |
-| lib/import-review-view.ts | `currentEdits` (50), `slotlessIds` (82), `refusedKeptIds` (100), `classifyReview` (118), `toDecisions` (160), `reviewRows` (187), `KeptValue`; 1906's `reviewGroups` (1906:56), `refAt` (1906:30). `reviewEventMetadata` (224) stays, fed from the matrix. |
-| components/ReviewTable.tsx | `fileDates` (73), `touchedRef`, `touchedCount` (88-91), `editedDisplayValues` and its reseed effect (93, 139-152), `editsNow`, `pinnedNow`, `editsKey` (97-102), `refusedNow`, `slotless` (104-105), `initialDisplayValues` (113), `replaceChecked`, `toggleReplace` (123-126), `metricOf`, `extractedError`, `isEditedText`, `savedValue`, `cellError`, `replacesNothing` (154-205), `collectSaveableCells` (211), `heldEqual` and its effect (246-261), `coreCellViews` (266), `totalEditableCells` (291), `datedColumns` (300), `needsDay` (324), `groups`, `savedCount`, `cellViews`, `refusedKept` (335-369), `rows` (370), the source loop of `handleColumnDateChange` (387-405), `nothingToSave` (415), `checking` (418); from 1906 `PARTIAL`, `encodeDate`, `decodeDate` (57-65), `edits`, `pinned`, `idOf`, `touched` (94-124), `hasInvalid` (278). |
-| components/ReviewMatrix.tsx | The lab refusal recompute (290-302); props `datedColumns`, `pickHints`, `replaceChecked`, `heldEqual`, `coreCellViews`, `editedDisplayValues`. |
-| lib/review-dates.ts | `valueDate`, `dateSource`, `buildDatePrefix`, `columnDay`, where orphaned. |
+## 4. PR 1906
 
-Tests: `ReviewTable.matrix.property.test.tsx` (jsdom, 150 seeds, the section 2 harness driving
-1906's `testing/review-harness.tsx`): after each step each DOM input, found by its label
-("<test> value from <column>"), shows its reading's number in the row's unit; the inputs drawn as
-saving are exactly the readings with `saves`; Save is disabled exactly when `view.save.enabled`
-is false; each blocker's control is in the DOM and enabled. Gesture tests for D1, D7, L2 and L4:
-type, then a late file, `replacesLost`, a column move, or the printed number typed back; the DOM
-shows the engine's number. 1906's parity pin stays green against main.
+It keeps `hold` until 3b opens, then closes as superseded. Picks are diffed against main first.
+- **PR 0:** the `columnDays` and `needsColumnDay` parts of 3b7c05702 and 66873781a only.
+- **3b:** 6a018d8d4 without ReviewTable and review-matrix; a59fd9e54 (review harness); 056800426;
+  web halves of ccae2abec, 6e75b4172, 33d47a5de; cfdb1e3cf; ad7d8572f; the letter half of
+  be0b68049; 593d6c259 styles; tests 630317675, 198a557fa, 723fed14b (parity pin), 1be8066b2,
+  1af978b42, 155d2f7a2, cdc615329, dfdc21cdf, 79e007636; stories a411059f0, edited.
+- **Later, own PR (U):** 3b7c05702's `unstored` change (document-save.ts). Today `saveDocuments`
+  counts only failed writes behind a held metadata-only row; after, every failed original write.
+  The shared `uploadSave` already counts every failure itself (upload-save.ts:108), so its done
+  screens on both clients do not change. What changes: the iPhone's cloud-documents door
+  (ios/engine/cloud-documents.ts:80) and the web's own save path (widget-src/src/lib/upload-save.ts:77,
+  85) would show the unstored line for any failed original, not only one behind a held row.
+- **Out of the series:** 5529f2446 (D3, D6; see "For Brad"). **Dropped:** 17ebf66a6, 15e81ef69,
+  the web halves of eee39a8cf, be0b68049, 66873781a; the engine half of 33d47a5de (main rules a
+  printed future day Not saved, upload-review.ts:114-116); 6a9281bb3, 9e5a5496c, the engine parts
+  of 43dcf3010 (PR 1912 landed its own); the merges.
 
-## 4. What happens to PR 1906
+**For Brad.** D3: a letter that prints values. (i) Both clients offer them beside the letter (the
+web before 1906); (ii) both file the letter alone (main's shared engine reads values only from lab
+reports); (iii) per platform. D6: a lab report with nothing ticked, cloud connected. (i) Both file
+the original; (ii) both file it only with saved values (main's engine, upload-plan.ts:63);
+(iii) per platform. No recommendation here: D3 is clinical content. Second input name (words:
+owner): two readings of one test that both claim one slot, at the same rank, the first equal to
+the held row and the second different (`placeReadings`, review-slots.ts:66-67, lets both in). It
+happens when one report prints a test twice in a column, or two reports of one printed day both
+print it. Suggested, from existing words: "<test> value from <column>, another reading": the cell
+label (ReviewMatrix.tsx:306) plus "another reading" from `NOT_SAVED_TEXT.sameDay`
+(import-review.ts). Needs a yes, since the joined phrase is new.
 
-Not merged, not rebased: it keeps `hold` until the web PR opens, then closes as superseded. Each
-pick is diffed against main first (PRs 1908 and 1912 already landed stale Replace, refused at
-commit, taken meanwhile, `replacesLost`), and PR 0's picks are redone on PR 1923's helpers:
-`offeredValues`/`valueAt` for 1906's own ref loops, `untick` for its tick-off, `readDocumentFields`
-(upload-known.ts:123) in the plan.
+## 5. Rulings
 
-- **PR 0 (engine half):** 3b7c05702 (screening, `columnDays`, unstored count), 5529f2446 (D3/D6
-  per platform), the engine part of 66873781a (`needsColumnDay`).
-- **Web PR, wiring:** 6a018d8d4 without ReviewTable and review-matrix; a59fd9e54 (review harness);
-  056800426 (locked while saving); the web halves of ccae2abec and 6e75b4172 (Stop, Try again, one
-  `upload_outcome`); cfdb1e3cf (store bulk writes deleted); ad7d8572f (letter screening); the
-  letter half of be0b68049; the web half of 33d47a5de (no title in an attribute); 593d6c259 styles.
-- **Web PR, tests and stories:** 630317675, 198a557fa, 723fed14b (parity pin), 1be8066b2,
-  1af978b42, 155d2f7a2, cdc615329, dfdc21cdf, 79e007636; a411059f0, edited to the matrix.
-- **Drop:** 17ebf66a6 and 15e81ef69 (typed-cell keying: the section 3 buffer replaces it); the
-  web halves of eee39a8cf, be0b68049 and 66873781a (the matrix draws the engine); the engine half
-  of 33d47a5de (superseded: main rules a printed future day Not saved, upload-review.ts:114-116);
-  6a9281bb3, 9e5a5496c and the engine parts of 43dcf3010 (main has its own, PR 1912); the four merges.
+**First round, 21 Nov.** (a) a1: main's rule stands (upload-review.ts:89-98): a lab refused whatever
+its day asks no day; a core value out of range still waits; the matrix draws both controls. Not
+chosen: a2, no day asked for it either. (b) b1: the loser is drawn in a cell with
+`NOT_SAVED_TEXT.sameDay`, not in the web's Not saved line; Save and its label stay the engine's
+(P3). Not chosen: b2, Not saved only; b3, a "1 more" control. (c) c2: the engine's rule wins; an
+edit equal to the held row is a conflict (import-review.ts:223, review-slots.ts:64). c1 stays out:
+ruling 7 (fab595fcf) was reverted in 287f3fd25 after the Codex re-check of PR 1912 because, applied
+after slot placement, it "hid a differing sibling's conflict" (upload-view.gaps.test.ts:110). A
+later c1 PR must decide in placement, keep a differing sibling's conflict and Replace, keep limits
+exact, flip that KNOWN pin and pass both property tests. (d) d1, narrowed in round two. (e) e1,
+reversed in round two.
 
-## 5. Owner rulings (21 Nov 2026)
-
-**(a) An undated report holding only refused values. Decided: a1.** Main's rule stands (owner, 20
-Nov; upload-review.ts:89-98): a lab the write refuses whatever its day asks no day; a core value
-out of range still makes the report wait, since it can be corrected and then saves. The matrix
-draws the waiting column's picker and the value's error cell, so both blockers have a control
-(P4). Not chosen: (a2) no day asked for it either; the blocker would move as the person types.
-
-**(b) The second reading in a merged cell. Decided: b1.** A second line in the cell with its own
-input and the existing caption `NOT_SAVED_TEXT.sameDay`, left out of the web's Not saved line.
-Condition: what Save writes and the Save label's count stay the engine's; only where the unsaved
-reading is drawn differs from the iPhone (P3 asserts both). Not chosen: (b2) Not saved only, not
-correctable from the matrix; (b3) a "1 more" control needing new words.
-
-**(c) An edit typed equal to the saved row. Decided: c2 for this series.** The engine's rule wins
-and the web draws it: an edit is never "already saved" (import-review.ts:218, review-slots.ts:64),
-so an equal edit reads as a conflict, and Replace writes a same-number correction (FHIR-valid,
-noise in the history). The web's own `heldEqual` rule (ReviewTable.tsx:246-261) goes with the
-other local derivations. c1 is not in this series.
-
-**c1, later.** (i) Why it was reverted. Owner ruling 7 of 20 Nov made it so in the shared upload
-(fab595fcf, US-13 AC20): `ownReading` in upload-review.ts turned an edited, unwritten conflict
-into `saved` when `holdsSameReading` (import-review.ts) found the held row equal. The Codex
-re-check on PR 1912 (c890ebc42) refuted it, and 287f3fd25 reverted both. Its test comment says
-counting it as saved "after slot placement, hid a differing sibling's conflict"; AC20, now
-withdrawn, says it "hid a differing reading of the same test and day". Our reading of the code,
-not rerun: the override ran after `placeReadings`, so the equal edit still claimed the slot and pushed a different reading of the
-same slot to `hidden`/`sameDay`, then itself vanished from the view: that reading's conflict was
-never shown. (ii) A c1 PR would have to prove: the rule lives in placement (`placeReadings` and
-`groupsOf`), so an equal edit claims no slot and a differing sibling of the same slot keeps its
-conflict and Replace; the equal edit writes nothing and offers no Replace; a held limit and an
-exact edit of one number still differ, and a lab compares by `sameLabQuantity`; the pin `KNOWN
-editEqualSaysDifferent` (upload-view.gaps.test.ts:110) flips and its negative pin holds; the
-upload-view and upload-matrix property tests pass with siblings generated around an equal edit;
-and the iPhone, which has no edit control today, is unchanged. Engine path, adversary and Codex.
-
-**(d) 1906's health-core half first. Decided: d1.** PR 0 lands it on main after PR 1923, proven
-inert for today's web and the iPhone (the iPhone's upload-doors.ts never sends the new choices;
-main's web does not read them; the upload-view property test unchanged). PR 1 builds on it. Not
-chosen: (d2) drop the dated previous column's picker, or fold it into the web PR.
-
-**(e) A picked undated previous column. Decided: e1.** It merges with that day's column, whose
-header shows both controls (today it never merges, review-matrix.ts:43-47). Not chosen: (e2) apart.
+**Second round, 21 Nov (adversary findings).**
+- B1: PR 0 is `columnDays` + `needsColumnDay` only; `unstored` is PR U for a separate ruling; D3
+  and D6 leave the series. Not chosen: carrying the whole engine half.
+- B2/G4/G5: typed text lives in the engine (1b), number text included, so the screen shows what
+  Save writes; emptying a cell never unticks; the web holds one draft. Not chosen: a per-keystroke `unread` flag, which held a slot and dropped Replace.
+- G3: the engine parses and converts (1b); `dropLostReplaces` is one shared function (1d).
+- B3, final (after my note that main merges dated columns by day): columns behave exactly as main
+  does (1e): printed days keyed by day and merged, picked days keyed by file and never re-keyed or
+  merged, so a pick never remounts a header and two dated reports of one day still share a column.
+  Cells by (row, column); P5 per slot; pin C1. Not chosen: e1 (every column by day, re-keyed on a
+  pick); every column by file (changes main for two reports of one day).
+- B4/G1: P6, and P1 and P3 rebuilt on it. G2: P2 over changed records; P4's converse; D1, D2, D7
+  pinned in jsdom.
+- G6: one accessible name per input; `second` readings are not inputs (1e).
+- a1 follow-on: with commit on blur the blocker no longer moves mid-typing. A lab refused whatever
+  its day has no cell, so it cannot be edited from the matrix. A lab that had a cell, was edited
+  to an implausible number and then back to a plausible one in an undated report makes the report
+  wait: yes, there is a control, the picker on that cell's own column (`${fileId}|test`).
+- G7: PR 1 and PR 2 merged; PR 3 split as 3a/3b, accepted on the merge condition in section 6;
+  `planKeys` built from rows (1a).
 
 ## 6. PR order and size
 
-| # | PR | Paths | Net prod LOC (estimate) |
-|---|---|---|---|
-| 0 | 1906 engine half, after PR 1923, on its helpers | health-core | +120, measured on the pick |
-| 1 | `rowOf`, `dayOf`, blockers, `unread`, upload-matrix.ts | health-core | +260 (matrix +230, review +25, choices and schema +12, positional code -10) |
-| 2 | upload-matrix.property.test.ts, shared harness | health-core tests | 0 |
-| 3 | Web matrix from the engine, with 1906's wiring | widget-src | -450 to -650 |
+| # | PR | Net prod LOC |
+|---|---|---|
+| 0 | `columnDays`, `needsColumnDay` (engine path) | about +60 |
+| 1 | `rowOf`, typed text, blockers, `dropLostReplaces`, upload-matrix.ts, properties (engine path) | about +300 |
+| 3a | `UploadMatrixView.tsx` and its jsdom test | about +300 |
+| 3b | Mount, 1906's wiring, deletions; 1906 closes | about -950 |
+| U | `unstored` counts every failed write (needs a ruling) | about 0 |
 
-PRs 0 and 1 are engine path (list files for the merge check); 0, 1 and 3 feed the write: adversary and Codex each.
-
-Must not grow past 500 lines (at 6f2b9f5dc or main, then expected): health-core `upload-flow.ts`
-404, about 445 after PR 0 and nothing in PR 1; `import-review.ts` 408, about 410; `upload-view.ts`
-334, about 395; `upload-review.ts` 167, about 260; `upload-matrix.ts` new, under 300; widget
-`ReviewTable.tsx` 481, about 220; `ReviewMatrix.tsx` 360, about 330; `useUploadFlow.ts` 311 in
-1906, under 330. `record-edits.ts` (1029, baseline) must not change.
-
-Usage signal: `upload_review`, `upload_outcome` (US-13 AC13, US-12 AC10). No new words. 1906 closes after PR 3.
+Merge condition for 3a and 3b: 3b's PR is opened, green and reviewed before 3a merges, and the
+two merge back to back, so main never carries the unmounted component across a deploy.
+PRs 0 and 1 list their files for the engine-path merge check; 0, 1 and 3b feed the write, so each
+gets the adversary and Codex pair. Under 500 lines (now, then expected): `upload-flow.ts` 404,
+nothing added; `import-review.ts` 413, unchanged; `upload-view.ts` 334, about 345;
+`upload-review.ts` 167, about 210; `upload-choices.ts` 81, about 120; `cell-unit.ts` grows by the
+moved functions; `upload-matrix.ts` under 300; `ReviewTable.tsx` 481, about 200; `ReviewMatrix.tsx`
+360, folded into `UploadMatrixView.tsx`. `record-edits.ts` (1029, baseline) must not change.
+Usage signal: `upload_review`, `upload_outcome` (US-13 AC13, US-12 AC10). No new words beyond the
+one marked "words: owner".
