@@ -54,7 +54,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
   // Connect-first gate (decision record: encourage, don't block). 'device-only'
   // + not skipped → show the connect panel instead of the dropzone.
   const archiveMode = getDocumentArchiveMode();
-  const { values: savedCount, labValues: savedLabCount, documents: { length: savedDocCount }, archived: { length: keptCount }, skippedValues: skippedMeasurements, skippedLabValues, unstored: unstoredCount, refusedLabUnits, refusedMeasurements } = flow.outcome;
+  const { values: savedCount, labValues: savedLabCount, documents: { length: savedDocCount }, skippedValues: skippedMeasurements, skippedLabValues, unstored: unstoredCount, refusedLabUnits, refusedMeasurements } = flow.outcome;
   // Lp(a)'s refusal names its range in the unit its field shows (US-05 AC2).
   const [lpaUnit] = useLpaUnit(unitSystem);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -211,13 +211,10 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
                 {savedLabCount > 0 && `${savedLabCount} additional lab value${savedLabCount !== 1 ? 's' : ''}`}
                 {savedLabCount > 0 && savedDocCount > 0 && ', '}
                 {savedDocCount > 0 && `${savedDocCount} document${savedDocCount !== 1 ? 's' : ''}`}
-                {/* Originals kept and nothing else saved: the kept line is the main line (US-14 AC13). */}
-                {savedCount === 0 && savedLabCount === 0 && savedDocCount === 0 && keptCount > 0 && UPLOAD_TEXT.archivedLine(keptCount)}
-                {savedCount === 0 && savedLabCount === 0 && savedDocCount === 0 && keptCount === 0
+                {savedCount === 0 && savedLabCount === 0 && savedDocCount === 0
                   && skippedMeasurements === 0 && skippedLabValues === 0
                   && unstoredCount === 0 && refusedLabUnits.length === 0 && refusedMeasurements.length === 0 && 'No items saved'}
               </p>
-              {keptCount > 0 && savedCount + savedLabCount + savedDocCount > 0 && <p className="upload-done-skipped">{UPLOAD_TEXT.archivedLine(keptCount)}</p>}
               {skippedMeasurements > 0 && (
                 <p className="upload-done-skipped">
                   {UPLOAD_TEXT.skippedLine(skippedMeasurements, false)}

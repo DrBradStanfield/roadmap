@@ -38,8 +38,8 @@ issue, and nothing private.
 2026-11-21, Brad's words in quotes ("do all of your recommendations"):
 - After a Save that only kept originals, the iPhone shows "1 original file kept in your cloud." on its own,
   without "Saved 0 values." above it.
-- The web no longer counts a lab report's kept original as a document. With nothing else saved it shows the
-  same kept line as the iPhone; beside other items it shows that line under them, in the existing layout.
+- The web stops counting a lab report's kept original as a document, and shows the same kept line as the
+  iPhone. This lands with the web upload list, when the web draws the shared done screen.
 
 2026-11-21, the owner's calls (Fable, not Brad):
 - Invalid text reverts when the field loses focus.

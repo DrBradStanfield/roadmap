@@ -5,7 +5,7 @@
  * says what it saved, or why the review stays open.
  */
 import type { DocumentPayload, ExistingDoc } from '@roadmap/health-core/document-save';
-import { isLabArchiveDocument, labRowsByFile, listedRows } from '@roadmap/health-core/document-rows';
+import { labRowsByFile } from '@roadmap/health-core/document-rows';
 import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getEraseIdentity, getShownErase } from './roadmap-data';
 import { countRefusedSpellings } from './refused-spellings';
 import type { BulkLabValuesResult, BulkSaveResult } from './api-types';
@@ -76,15 +76,11 @@ export async function saveReview(d: ReviewDecisions, { earlierRows, complete, sc
     docPayloads.push(...connectorDocumentEntries(reviewed, existing, covered));
     const savedDocs = docPayloads.length > 0 ? await bulkSaveDocuments(docPayloads).catch(failed('documents', { saved: [], errorCount: docPayloads.length, unstored: 0 })) : { saved: [], errorCount: 0, unstored: 0 };
 
-    // A lab report's hidden archive row is no document; it is counted kept when it stored the original of a report that wrote no value (US-14 AC13).
-    const key = (doc: { id: string; contentHash?: string | null; sourceFileName?: string | null }) => doc.contentHash ?? doc.sourceFileName ?? doc.id;
-    const [shownDocs, hiddenDocs] = [savedDocs.saved.filter(doc => !isLabArchiveDocument(doc)), savedDocs.saved.filter(isLabArchiveDocument)];
     const saveErrors = savedValues.errorCount + savedLabValues.errorCount + savedDocs.errorCount;
     const attempt: SaveOutcome = {
       values: savedValues.saved.length,
       labValues: savedLabValues.saved.length,
-      documents: [...new Set(shownDocs.map(key))],
-      archived: [...new Set(hiddenDocs.filter(doc => doc.fileRef && !listedRows(doc)?.length).map(key))],
+      documents: [...new Set(savedDocs.saved.map(doc => doc.contentHash ?? doc.sourceFileName ?? doc.id))],
       skippedValues: savedValues.skippedDuplicates, skippedLabValues: savedLabValues.skippedDuplicates,
       unstored: savedDocs.unstored ?? 0,
       refusedLabUnits: savedLabValues.refused, refusedMeasurements: savedValues.refused,

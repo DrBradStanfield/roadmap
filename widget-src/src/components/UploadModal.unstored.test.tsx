@@ -13,7 +13,6 @@ import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { UploadModal } from './UploadModal';
 import { flushRoadmapStore, initRoadmapStore } from '../lib/roadmap-data';
 import { checkLabImportQuota, labImport } from '../lib/upload-api';
-import { sha256Blob } from '../lib/archive-payloads';
 import { stopLiveRefresh, trackLiveRefresh } from '../testing/health-tool-harness';
 
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn() }));
@@ -56,34 +55,4 @@ it('US-14 AC12: a new letter whose original the cloud refuses says so on the don
   await flushRoadmapStore();
   const record = JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json) as RoadmapFile;
   expect(record.documents).toEqual([expect.objectContaining({ title: 'Synthetic letter', fileRef: '', contentHash: 'sha256-synthetic' })]);
-});
-
-it('US-14 AC13: one original kept and one refused, nothing else saved: the kept line is the main line, the not-stored line under it', async () => {
-  vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('no external calls'); }));
-  vi.spyOn(console, 'warn').mockImplementation(() => {});
-  trackLiveRefresh();
-  const adapter = new MemoryAdapter(new MemoryCloud());
-  const write = adapter.writeDocument.bind(adapter);
-  let calls = 0;
-  adapter.writeDocument = async (...args) => { if (calls++ > 0) throw new Error('synthetic quota refusal'); return write(...args); };
-  await initRoadmapStore(adapter);
-  vi.mocked(checkLabImportQuota).mockResolvedValue({ allowed: true, remaining: 60 });
-  vi.mocked(labImport).mockResolvedValue({ result: { classification: 'lab_report', reportDate: '2025-08-01', values: [], additionalValues: [], document: null,
-    refusedValues: [{ metric: 'creatinine', value: 80, unit: '', reason: 'unit unknown' }] } } as unknown as Awaited<ReturnType<typeof labImport>>);
-  Object.assign(window, { HealthUpload: {
-    extractFromPdf: vi.fn(async (f: File) => ({ pages: [{ type: 'text', content: f.name }], truncated: false })),
-    isPdf: () => true, isZip: () => false, isImage: () => false,
-  } });
-  // Two files, two sets of bytes.
-  vi.mocked(sha256Blob).mockImplementation(async (b: Blob) => `sha256-${await b.text()}`);
-  render(<UploadModal open onOpen={() => {}} onClose={() => {}} unitSystem="si" grading={{}} history={{ measurements: [], labValues: [], documents: [] }} onComplete={() => {}} />);
-  fireEvent.change(document.querySelector('input[type=file]')!, { target: { files: [new File(['a'], 'a.pdf', { type: 'application/pdf' }), new File(['b'], 'b.pdf', { type: 'application/pdf' })] } });
-  fireEvent.click(await screen.findByRole('button', { name: 'Save 2 originals' }));
-  await screen.findByRole('button', { name: 'Done' });
-  expect([...document.querySelector('.upload-done')!.children].map((el) => `${el.tagName.toLowerCase()}.${el.className}: ${el.textContent}`)).toEqual([
-    'div.upload-done-icon: ✓',
-    'p.upload-done-text: 1 original file kept in your cloud.',
-    "p.upload-done-skipped: The original file couldn't be stored; its details are saved.",
-    'button.btn-primary upload-done-btn: Done',
-  ]);
 });
