@@ -25,6 +25,33 @@ export function mulberry32(seed: number): () => number {
   };
 }
 
+/**
+ * Row ids for a sweep. Production mints them with crypto.randomUUID (record-edits.ts newId, with no seam to pass a
+ * source), and ids steer a run: mergeFiles sorts rows by id and breaks a createdAt tie by the larger id (merge.ts
+ * rowIsNewer), and every row here is created at NOW. With random ids 24 of 3000 seeds took a different number of steps
+ * from one run to the next, and a failing seed could move. While `withSeededIds` runs, the ids are valid v4 UUIDs from
+ * their own stream, reset by `seedIds` for each seed and phase, never drawn from the generator's.
+ */
+let ids: (() => number) | null = null;
+export const seedIds = (seed: number, phase: 'setup' | 'run') => { ids = mulberry32(((seed * 2 + (phase === 'run' ? 1 : 0)) ^ 0x9e3779b9) >>> 0); };
+const seededUuid = () => {
+  if (!ids) throw new Error('seededUuid outside a seed: call seedIds first');
+  const hex = Array.from({ length: 32 }, () => Math.floor(ids!() * 16).toString(16));
+  hex[12] = '4';
+  hex[16] = (8 + Math.floor(ids() * 4)).toString(16);
+  const h = hex.join('');
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}` as `${string}-${string}-${string}-${string}-${string}`;
+};
+export async function withSeededIds<T>(body: () => Promise<T>): Promise<T> {
+  const own = Object.getOwnPropertyDescriptor(globalThis.crypto, 'randomUUID');
+  Object.defineProperty(globalThis.crypto, 'randomUUID', { configurable: true, writable: true, value: seededUuid });
+  try { return await body(); } finally {
+    if (own) Object.defineProperty(globalThis.crypto, 'randomUUID', own);
+    else delete (globalThis.crypto as { randomUUID?: unknown }).randomUUID;
+    ids = null;
+  }
+}
+
 export const NOW = '2026-11-02T00:00:00.000Z';
 export const DAY = '2026-11-01';
 export const PAST = '2026-10-01';
