@@ -6,8 +6,8 @@ import { act, cleanup, fireEvent, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest';
 import { core } from '@roadmap/health-core/import-review.test-helpers';
 import type { UploadState } from '@roadmap/health-core/upload-flow';
-import { FILE_NOTICE_TEXT } from '@roadmap/health-core/upload-text';
-import { labRead, mount, open, row, typeInto } from '../testing/upload-list-kit';
+import { FILE_NOTICE_TEXT, UPLOAD_TEXT } from '@roadmap/health-core/upload-text';
+import { labRead, mount, open, row, typeInto, type Open } from '../testing/upload-list-kit';
 
 afterEach(cleanup);
 const done = (s: ReturnType<typeof open>): UploadState => ({ ...s, phase: 'done', outcome: { values: 1, documents: 0, archived: 0 } });
@@ -18,7 +18,7 @@ describe('T10: the done screen names the files not fully read (US-12 AC9)', () =
     const cut = { ...labRead('f0', { values: [core({})] }, 'long-report.pdf'), pages: { count: 40, truncated: true } };
     const host = mount(done(open([cut])));
     const { view } = host.see();
-    expect(view.notices).toEqual([expect.objectContaining({ name: 'long-report.pdf', line: FILE_NOTICE_TEXT.truncated })]);
+    expect(view.files.rows).toEqual([expect.objectContaining({ name: 'long-report.pdf', status: FILE_NOTICE_TEXT.truncated, notFullyRead: true })]);
     expect(screen.getByText(view.done!.line)).toBeTruthy();
     const list = within(notices()!).getByRole('list');
     expect(within(list).getByText('long-report.pdf')).toBeTruthy();
@@ -91,4 +91,22 @@ describe('T10: the error screens name them too (US-12 AC9), in the list\'s Files
     expect(files.textContent).toContain('scan.pdf');
     expect(files.textContent).toContain(section.rows[0].line);
   });
+});
+
+describe('US-12 AC9: each reason once on the review and the done screen (the engine\'s one rule, PR 1974)', () => {
+  const files: Open['files'] = [
+    labRead('f0', { values: [core({})] }, 'good.pdf'),
+    { ...labRead('f1', { values: [core({})] }, 'long-report.pdf'), pages: { count: 40, truncated: true } },
+    { ...labRead('f2', {}, 'stopped.pdf'), pages: null, status: { s: 'stopped' } },
+    { ...labRead('f3', {}, 'held.pdf'), pages: null, status: { s: 'known', as: 'document', archiveOnly: false } },
+    { ...labRead('f4', {}, 'big.pdf'), hash: null, pages: null, status: { s: 'refused', verdict: 'tooLarge' } },
+  ];
+  const reasons = [FILE_NOTICE_TEXT.truncated, UPLOAD_TEXT.stoppedLine, UPLOAD_TEXT.statusKnown, UPLOAD_TEXT.statusRefused('tooLarge')];
+  const times = (text: string) => document.body.textContent!.split(text).length - 1;
+  for (const screenName of ['review', 'done'] as const) {
+    it(`on the ${screenName} screen`, () => {
+      mount(screenName === 'review' ? open(files) : done(open(files)));
+      for (const reason of reasons) expect(times(reason), reason).toBe(1);
+    });
+  }
 });
