@@ -13,6 +13,7 @@ import type { RoadmapFile } from './roadmap-file';
 import { NO_CHOICES, type ChoiceChange } from './upload-choices';
 import { transition, type UploadState } from './upload-flow';
 import { dropLostReplaces, reviewedWrites, uploadReview } from './upload-review';
+import { uploadSave } from './upload-save';
 import { FIX_ERRORS_TEXT, UPLOAD_TEXT } from './upload-text';
 import { uploadView, type UploadView, type ValueRow } from './upload-view';
 import type { CellUnit } from './cell-unit';
@@ -133,5 +134,71 @@ describe('dropLostReplaces: one rule for the engine door and the web', () => {
     expect(kept.review?.labFiles[0].replacing).toEqual(['v0']);
     const none = open([labRead('f0', { values: [core({})] })]);
     expect(dropLostReplaces(none, deleted, NOW)).toEqual({ state: none });
+  });
+});
+
+describe('typed text held in a row (owner ruling 2026-11-21 after review; US-13 AC5, AC12; US-02 AC4)', () => {
+  const type = (s: UploadState, id: string, ref: string, text: string, unit: CellUnit | null = 'si') => chose(s, id, { typed: ref, text, unit });
+  const all = (view: UploadView) => [...rows(view), ...view.sections.flatMap((x) => (x.kind === 'datedPrevious' || x.kind === 'undatedPrevious' ? x.rows ?? [] : []))];
+  const off = { holds: () => false, original: () => null, mimeType: () => '', write: async () => {} };
+
+  it('stays drawn with its text and the cells\' words, never saves, and blocks Save at its row until cleared', async () => {
+    const s = type(open([labRead('f0', { values: [core({}), core({ metric: 'hba1c', valueSI: 40, displayValue: 40, displayUnit: 'mmol/mol' })] })]), 'f0', 'v0', '1,234');
+    const view = see(s);
+    expect(rows(view).find((r) => r.ref === 'v0')).toMatchObject({ typed: '1,234', error: 'Did you mean 1234 or 1.234?', ticked: true, saves: false });
+    expect(rows(view).find((r) => r.ref === 'v1')).toMatchObject({ saves: true });
+    expect(view.save).toMatchObject({ enabled: false, why: FIX_ERRORS_TEXT, blockers: [{ why: FIX_ERRORS_TEXT, at: 'f0:v0' }] });
+    const out = await uploadSave({ ...(s as Open), phase: 'saving', attempt: 1 }, EMPTY, NOW, false, off);
+    expect(out).toMatchObject({ ok: false, reason: 'not-ready' });
+    expect(see(type(s, 'f0', 'v0', '3.4')).save).toMatchObject({ enabled: true, blockers: [] });
+    expect(see(chose(s, 'f0', { tick: 'v0', on: false })).save.blockers).toEqual([]);
+  });
+
+  it('a held text changes no other row: a second reading of the test that day keeps its saving', () => {
+    const s = open([labRead('f0', { values: [core({}), core({})] }), labRead('f1', { values: [core({ valueSI: 2.4, displayValue: 2.4 })] })]);
+    const others = (v: UploadView) => all(v).filter((r) => !(r.fileId === 'f0' && r.ref === 'v1')).map((r) => [r.fileId, r.ref, r.saves, r.copy]);
+    expect(others(see(type(s, 'f0', 'v1', 'abc')))).toEqual(others(see(s)));
+  });
+
+  it('a number typed into a cleared row ticks it again; an emptied input clears it', () => {
+    const cleared = chose(open([labRead('f0', { values: [core({})] })]), 'f0', { tick: 'v0', on: false });
+    expect(rows(see(type(cleared, 'f0', 'v0', '3.4')))[0]).toMatchObject({ ticked: true, saves: true, value: '3.4' });
+    expect(rows(see(type(cleared, 'f0', 'v0', '3.1')))[0]).toMatchObject({ ticked: true, saves: true });
+    expect(rows(see(type(open([labRead('f0', { values: [core({})] })]), 'f0', 'v0', '')))[0]).toMatchObject({ ticked: false, saves: false });
+  });
+
+  it('while its report waits for a day, an out-of-range value\'s error is drawn on its row; Save asks the day first, and the row blocks after it', () => {
+    const s = open([labRead('f0', { reportDate: null, values: [core({ valueSI: 500, displayValue: 500 })] })]);
+    const waiting = see(s);
+    expect(rows(waiting)[0]).toMatchObject({ error: 'LDL-c must be at most 12.9 mmol/L', saves: false });
+    expect(waiting.save.blockers).toEqual([{ why: UPLOAD_TEXT.chooseDay, at: 'f0|test' }, { why: FIX_ERRORS_TEXT, at: 'f0:v0' }]);
+    expect(see(chose(s, 'f0', { testDay: '2026-10-20' })).save.blockers).toEqual([{ why: FIX_ERRORS_TEXT, at: 'f0:v0' }]);
+  });
+
+  it('while its column waits for a day, a held text is drawn in the column and blocks at its row first; picking the day leaves it', () => {
+    let s: UploadState = open([labRead('f0', { values: [core({ recordedAt: '2026-05-02' })] })]);
+    s = type(s, 'f0', 'v0', '-5');
+    s = chose(s, 'f0', { columnDay: '2026-05-02', day: '2026-12-01' }); // a day to come: the column waits
+    const waiting = see(s);
+    const column = waiting.sections.find((x) => x.kind === 'datedPrevious');
+    expect(column?.kind === 'datedPrevious' && column.rows).toMatchObject([{ typed: '-5', error: 'Type one decimal number, without signs, < > or spaces', saves: false }]);
+    expect(waiting.save.blockers).toEqual([{ why: FIX_ERRORS_TEXT, at: 'f0:v0' }, { why: UPLOAD_TEXT.chooseDay, at: 'f0|printed:2026-05-02' }]);
+    expect(see(chose(s, 'f0', { columnDay: '2026-05-02', day: '2026-05-01' })).save.blockers).toEqual([{ why: FIX_ERRORS_TEXT, at: 'f0:v0' }]);
+  });
+});
+
+describe('a waiting dated column\'s values are drawn (owner ruling 2026-11-21, adversary A2; US-13 AC24)', () => {
+  it('printed 2026-05-02, its day picked as 2026-05-01, then the test day moved to 2026-04-01: its values wait in its section, a Replace kept in view', () => {
+    const record = held([LDL(2.0, '2026-05-01')]);
+    let s: UploadState = open([labRead('f0', { reportDate: '2026-10-01', values: [core({ recordedAt: '2026-05-02' })] })]);
+    s = chose(s, 'f0', { columnDay: '2026-05-02', day: '2026-05-01' });
+    s = chose(s, 'f0', { replace: 'v0', correctsId: record.labValues[0].id });
+    expect(rows(see(s, record))[0]).toMatchObject({ day: '2026-05-01', replacing: true });
+    s = chose(s, 'f0', { testDay: '2026-04-01' });
+    const view = see(s, record);
+    expect(rows(view)).toEqual([]);
+    expect(view.sections.find((x) => x.kind === 'datedPrevious')).toMatchObject({ key: 'f0|printed:2026-05-02', day: null,
+      rows: [{ ref: 'v0', day: null, ticked: true, saves: false, replacing: true }] });
+    expect(view.save.blockers).toEqual([{ why: UPLOAD_TEXT.chooseDay, at: 'f0|printed:2026-05-02' }]);
   });
 });

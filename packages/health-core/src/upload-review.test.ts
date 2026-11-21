@@ -40,7 +40,7 @@ describe('the upload honours it (US-12 AC14)', () => {
   it('with no day picked, the whole report waits and the view asks for the column\'s day', () => {
     const s = state(REPORT);
     expect(rowsOf(s)).toEqual([]);
-    expect(uploadView(s, EMPTY, NOW, uploadReview(s, EMPTY, NOW), true).sections).toContainEqual({ kind: 'undatedPrevious', key: 'a|previous', fileId: 'a', name: 'a.pdf', month: '2026-06', before: REPORT, day: null });
+    expect(uploadView(s, EMPTY, NOW, uploadReview(s, EMPTY, NOW), true).sections).toContainEqual({ kind: 'undatedPrevious', key: 'a|previous', fileId: 'a', name: 'a.pdf', month: '2026-06', before: REPORT, day: null, rows: [expect.objectContaining({ fileId: 'a', day: null, ticked: true, saves: false })] });
   });
 
   it('a day picked before the report\'s files the column\'s values on it, the rest on the report\'s', () => {

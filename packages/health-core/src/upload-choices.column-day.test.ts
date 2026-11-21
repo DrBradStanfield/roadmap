@@ -136,9 +136,10 @@ describe('US-13 AC24: review fixes (PR 1926 adversary and Codex)', () => {
     expect(rows.find((r) => r.ref === 'v0')?.day).toBe('2026-05-02');
     const waits = open(prev(), choose(NO_CHOICES, { columnDay: COLUMN, day: 'partial:2026::' }, NOW, prev())!);
     const w = uploadView(waits, EMPTY, NOW, uploadReview(waits, EMPTY, NOW), false);
-    // A waiting column's value has no day, so it is no row: it waits behind its column's day control (web list PR 1).
+    // A waiting column's value has no day: it is drawn in its column's section, day none, not saving (web list PR 1).
     expect([...(w.sure?.rows ?? [])].find((r) => r.ref === 'v0')).toBeUndefined();
-    expect(w.sections).toContainEqual({ kind: 'datedPrevious', key: `lab|printed:${COLUMN}`, fileId: 'lab', name: 'lab.pdf', printed: COLUMN, day: null });
+    expect(w.sections).toContainEqual({ kind: 'datedPrevious', key: `lab|printed:${COLUMN}`, fileId: 'lab', name: 'lab.pdf', printed: COLUMN, day: null,
+      rows: [expect.objectContaining({ ref: 'v0', day: null, dayLine: null, ticked: true, saves: false })] });
   });
 
   it('D: while a column waits, a Replace chosen on its value is kept, not lost, and nothing is written', () => {

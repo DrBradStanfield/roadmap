@@ -31,6 +31,9 @@ export interface UploadReview {
     waits: string[];
     /** The days the columns printed whose pick the report waits on (`needsColumnDay`): a ticked value there the write could take. */
     waitingColumns: string[];
+    /** The refs whose row holds typed text that is no number (`FileChoices.typed`) and is drawn: each blocks Save (US-13
+     *  AC5, AC12). A value another reading of its test that day hides (not saved) blocks nothing until it is drawn again. */
+    typedRefs: string[];
     /** The month an undated previous column printed (YYYY-MM), if any. */
     previousMonth: string | null;
   }>;
@@ -149,7 +152,8 @@ function importFile(f: ReadFile, now: string, holderOf: (row: BulkRow) => string
   // A value printed on its own day that is no real past day (a misread date still to come) is never saved:
   // it is named under Not saved, never shown as a value to tick (owner ruling 2026-11-20).
   const undatable = offered.filter((v) => v.own !== undefined && v.own !== UNDATED_PREVIOUS && validDay(v.own, { now }) === null).map((v) => v.ref);
-  return { file, day, days, waits: [...waits], waitingColumns, ticked: ticked.map((v) => v.ref), needsDay, needsTestDay, needsPreviousDay, needsColumnDay, replacing: offered.filter(({ ref }) => replaces(ref)).map((v) => v.ref), undatable };
+  const typed = offered.filter(({ ref }) => choices.typed?.[ref] !== undefined);
+  return { file, day, days, waits: [...waits], waitingColumns, typed, ticked: ticked.map((v) => v.ref), needsDay, needsTestDay, needsPreviousDay, needsColumnDay, replacing: offered.filter(({ ref }) => replaces(ref)).map((v) => v.ref), undatable };
 }
 
 /**
@@ -197,6 +201,11 @@ export function uploadReview(s: UploadState, record: RoadmapFile, now: string): 
     if (rows) rows.push(row);
     else rowsByFile.set(id, [row]);
   });
+  // A value drawn as a row: to check or sure, or waiting for a previous column's day (never the test's, which has no rows).
+  const drawn = (refs: Array<{ ref: string; own: string | undefined }>, file: number) => refs.filter(({ ref, own }) => {
+    const v = classification.values.find((c) => c.file === file && c.ref === ref);
+    return v && (v.group === 'unsure' || v.group === 'sure' || (v.group === 'waiting' && own !== undefined));
+  }).map((v) => v.ref);
   const held = new Map<string, string>();
   for (const v of classification.values) {
     // A copy is never written, so it has no Replace: Replace lives on the reading that holds the slot.
@@ -209,7 +218,7 @@ export function uploadReview(s: UploadState, record: RoadmapFile, now: string): 
   }
   return {
     labFiles: labs.map((f, i) => ({
-      fileId: f.id, name: uploadFileName(f), day: built[i].day, days: built[i].days, waits: built[i].waits, waitingColumns: built[i].waitingColumns, ticked: built[i].ticked, replacing: built[i].replacing,
+      fileId: f.id, name: uploadFileName(f), day: built[i].day, days: built[i].days, waits: built[i].waits, waitingColumns: built[i].waitingColumns, typedRefs: drawn(built[i].typed, i), ticked: built[i].ticked, replacing: built[i].replacing,
       needsDay: built[i].needsDay, needsTestDay: built[i].needsTestDay, needsPreviousDay: built[i].needsPreviousDay, needsColumnDay: built[i].needsColumnDay,
       previousMonth: [...(f.status.extraction.values ?? []), ...(f.status.extraction.additionalValues ?? [])].find((v) => v.printedMonth)?.printedMonth ?? null,
     })),

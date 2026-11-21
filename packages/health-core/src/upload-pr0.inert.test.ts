@@ -152,7 +152,8 @@ function answer(c: Case): string {
   const plan = uploadSavePlan(c.state, c.record, NOW, review, c.cloud);
   const view = uploadView(c.state, c.record, NOW, review, c.cloud);
   const labFiles = review.labFiles.map((l) => {
-    const { needsColumnDay, waits, waitingColumns, days: _days, ...old } = l as typeof l & { needsColumnDay?: boolean; waits?: readonly string[]; waitingColumns?: readonly string[]; days?: unknown };
+    const { needsColumnDay, waits, waitingColumns, typedRefs, days: _days, ...old } = l as typeof l & { needsColumnDay?: boolean; waits?: readonly string[]; waitingColumns?: readonly string[]; typedRefs?: readonly string[]; days?: unknown };
+    expect(typedRefs ?? []).toEqual([]);
     expect(needsColumnDay ?? false).toBe(false);
     expect(waits ?? []).toEqual([]);
     expect(waitingColumns ?? []).toEqual([]);
@@ -169,9 +170,12 @@ function answer(c: Case): string {
  */
 function mainView(c: Case, review: ReturnType<typeof uploadReview>, view: ReturnType<typeof uploadView>) {
   const writes = new Set(review.classification.values.filter((v) => v.sent && v.writes).map((v) => `${review.labFiles[v.file].fileId}:${v.ref}`));
+  const sent = new Set(review.classification.values.filter((v) => v.sent).map((v) => `${review.labFiles[v.file].fileId}:${v.ref}`));
   const row = ({ saves, name, ...old }: ValueRow) => {
     expect(saves).toBe(writes.has(`${old.fileId}:${old.ref}`));
     expect(name).toMatch(/ value from /);
+    // PR 1 draws an unsent value's error while its report waits for a day; main drew none for an unsent value.
+    if (!sent.has(`${old.fileId}:${old.ref}`)) return { ...old, error: null };
     return old;
   };
   // Main's rule for the undated previous column: a ticked value waits for it, or a cleared one does.
@@ -186,7 +190,12 @@ function mainView(c: Case, review: ReturnType<typeof uploadReview>, view: Return
   if (c.state.phase !== 'open' && c.state.phase !== 'saveFailed') expect(blockers).toEqual([]);
   const sections = view.sections.flatMap((x): unknown[] => {
     if (x.kind === 'datedPrevious') { expect(c.state.platform).toBe('web'); return []; }
-    if (x.kind === 'undatedPrevious') { const { key: _k, day: _d, ...old } = x; return asked(x.fileId) ? [old] : []; }
+    if (x.kind === 'undatedPrevious') {
+      const { key: _k, day: _d, rows: waiting, ...old } = x;
+      // Its rows are the values waiting for its day, which main drew nowhere (their group is `waiting`).
+      for (const r of waiting ?? []) expect(review.classification.values.find((v) => review.labFiles[v.file].fileId === r.fileId && v.ref === r.ref)?.group).toBe('waiting');
+      return asked(x.fileId) ? [old] : [];
+    }
     if (x.kind === 'undated') { const { key: _k, ...old } = x; return [old]; }
     if (x.kind === 'unsure') return [{ ...x, rows: x.rows.map(row) }];
     return [x];

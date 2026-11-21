@@ -5,7 +5,7 @@
 import { commaQuestion } from '@roadmap/health-core/parseNumber';
 import { rangeFault, type MetricType, type ValidationRange } from '@roadmap/health-core/units';
 import { rangeMessage, cellRange, cellToSI, limitCellText, type CellUnit } from '@roadmap/health-core/cell-unit';
-import { hasNumericSyntax, readTypedValue } from '@roadmap/health-core/cell-input';
+import { ENTER_A_NUMBER, hasNumericSyntax, NUMERIC_SYNTAX_GUIDANCE, readTypedValue } from '@roadmap/health-core/cell-input';
 import { statusOf, type GradeStatus } from '@roadmap/health-core/row-grade';
 import { trendRange } from '@roadmap/health-core/recent-trend';
 
@@ -94,11 +94,7 @@ export function trendGeometry(points: number[], limits: boolean[] | undefined, w
 export const savedCellText = limitCellText;
 
 // Reading typed text lives in health-core (cell-input.ts), which the shared upload list commits through too.
-export { sameAsSaved, hasNumericSyntax, readNumericCell, readTypedValue } from '@roadmap/health-core/cell-input';
-
-/** Numeric cells accept unsigned plain decimals, not signs or exponent syntax.
- * Keep this UI contract separate from the shared record/clinical parser. */
-export const NUMERIC_SYNTAX_GUIDANCE = 'Type one decimal number, without signs, < > or spaces';
+export { sameAsSaved, hasNumericSyntax, readNumericCell, readTypedValue, NUMERIC_SYNTAX_GUIDANCE } from '@roadmap/health-core/cell-input';
 
 /** Text kept for refusal because stripping it could change the number
  *  (US-02 AC4). Lab flag arrows and a unit's own superscript ('5.2 ↑',
@@ -145,7 +141,7 @@ export function validateTypedValue(
   if (typed === '') return { error: null, range };
   if (!hasNumericSyntax(typed)) return { error: NUMERIC_SYNTAX_GUIDANCE, range };
   const n = readTypedValue(metric, typed, display);
-  if (n === undefined) return { error: commaQuestion(typed) ?? 'Enter a number', range };
+  if (n === undefined) return { error: commaQuestion(typed) ?? ENTER_A_NUMBER, range };
   // Include the display unit in min/max errors so a user who typed (e.g.)
   // a mg/dL number into an mmol/L field can see the unit mismatch instead
   // of a bare "Max 22.6".

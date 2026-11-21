@@ -13,7 +13,8 @@ import { documentKind, IMPORT_REVIEW_TEXT, isCoreRef, isOfferedRef, KIND_WORDS, 
 import type { FileLabValue, FileMeasurement, RoadmapFile } from './roadmap-file';
 import { effectiveComparator, isReadableRow } from './readable-rows';
 import { getDisplayLabel, type MetricType } from './units';
-import { cellLabel, cellNumber, type CellUnit } from './cell-unit';
+import type { CellUnit } from './cell-unit';
+import { shownValue, typedTextError, type ShownValue } from './cell-input';
 import { inFlight, RETRYABLE, saveEnabled, uploadFileName, type FileStatus, type SaveOutcome, type UploadFile, type UploadState } from './upload-flow';
 import { planIsEmpty, uploadSavePlan, type UploadSavePlan } from './upload-plan';
 import type { UploadPlatform } from './upload-rules';
@@ -47,10 +48,10 @@ export interface ValueRow {
   saves: boolean;
   name: string;
   shown?: ShownValue;
+  /** Text typed into the row that is no number (web only), drawn back into its input; `error` then says why (US-13 AC12). */
+  typed?: string;
 }
-/** A row's number as the person reads and types it: `text` with any limit sign, `number` for the input, `unit` its label;
- *  `current` the value Save would write (a core value in SI); `cell` a core value's metric and unit, null for a lab (cell-input.ts). */
-export interface ShownValue { text: string; number: string; unit: string; current: number; cell: { metric: MetricType; unit: CellUnit } | null }
+export type { ShownValue } from './cell-input';
 /** A day control's key, one per day source of a file, never holding the day itself: the test's, the undated previous
  *  column's, or a dated previous column's by the day it printed. A blocker's `at` names one, or a row (`fileId:ref`). */
 export const dayKey = (fileId: string, source: 'test' | 'previous' | `printed:${string}`) => `${fileId}|${source}`;
@@ -61,10 +62,11 @@ export type UploadSection =
   /** An undated previous column's day (US-12 AC14; web only): a day in `month` (YYYY-MM) before
    *  `before`, when known. Its words stay in the web's ReviewTable until they move (no string yet). `day`: the one its
    *  values save on, null while none. Drawn whenever the report prints the column, so a pick can be changed. */
-  | { kind: 'undatedPrevious'; key: string; fileId: string; name: string; month: string | null; before: string | null; day?: string | null }
+  | { kind: 'undatedPrevious'; key: string; fileId: string; name: string; month: string | null; before: string | null; day?: string | null; rows?: ValueRow[] }
   /** A dated previous column's day (US-13 AC24; web only, which alone sets one): the day it `printed`, and `day`, the one its
-   *  values save on (the pick, else the printed day), null while its pick waits. Always there, so a misread day can be fixed. */
-  | { kind: 'datedPrevious'; key: string; fileId: string; name: string; printed: string; day: string | null }
+   *  values save on (the pick, else the printed day), null while its pick waits. Always there, so a misread day can be fixed.
+   *  `rows` (both previous columns): the values waiting for this day, drawn with no day, to be seen and cleared. */
+  | { kind: 'datedPrevious'; key: string; fileId: string; name: string; printed: string; day: string | null; rows: ValueRow[] }
   | { kind: 'unsure'; title: string; footer: string; rows: ValueRow[] }
   | { kind: 'failed'; title: string; rows: Array<{ fileId: string; name: string; line: string }>; retry: string | null }
   | { kind: 'notSaved'; title: string; lines: string[]; footer: string };
@@ -128,13 +130,19 @@ function statusWords(status: FileStatus, platform: UploadPlatform): string {
 
 /** Each dated previous column of a report: one per real past day its values printed (one to come is never saved, so it
  *  has none), its day the one its values save on (`days`, the same for each value there). */
-function datedColumns(f: UploadReview['labFiles'][number], read: ReturnType<typeof readFiles>[number] | undefined, now: string): UploadSection[] {
+function datedColumns(f: UploadReview['labFiles'][number], read: ReturnType<typeof readFiles>[number] | undefined, now: string): Array<Omit<Extract<UploadSection, { kind: 'datedPrevious' }>, 'rows'>> {
   const columns = new Map<string, string>();
   for (const { ref, value } of read ? offeredValues(read.status.extraction) : []) {
     const at = value.recordedAt;
     if (at && at !== UNDATED_PREVIOUS && validDay(at, { now }) && !columns.has(at)) columns.set(at, ref);
   }
   return [...columns].map(([printed, ref]) => ({ kind: 'datedPrevious', key: dayKey(f.fileId, `printed:${printed}`), fileId: f.fileId, name: f.name, printed, day: f.days[ref]?.slice(0, 10) ?? null }));
+}
+
+/** A value's previous column, as its day control's source: the undated one, or a dated one by the day it printed; null for the test's day. */
+function previousSource(f: ReturnType<typeof readFiles>[number] | undefined, ref: string): 'previous' | `printed:${string}` | null {
+  const at = f && valueAt(f.status.extraction, ref)?.value.recordedAt;
+  return !at ? null : at === UNDATED_PREVIOUS ? 'previous' : `printed:${at}`;
 }
 
 /** A value printed in the undated previous column. */
@@ -201,22 +209,6 @@ function heldText(row: FileMeasurement | FileLabValue | undefined, record: Roadm
   return [withComparator(String(row.value), comparator), unit].filter(Boolean).join(' ');
 }
 
-/** A value as the person reads it (`ShownValue`): a core value in their unit, a lab as printed; an edit as Save writes it. */
-function shownValue(x: UnifiedExtractionResult | undefined, ref: string, edit: number | undefined, unitOf: (metric: MetricType) => CellUnit): ShownValue | undefined {
-  const at = x && valueAt(x, ref);
-  if (!at) return undefined;
-  const comparator = edit === undefined ? at.value.comparator ?? null : null;
-  if (at.kind === 'lab') {
-    const number = String(edit ?? at.value.value);
-    return { text: withComparator(number, comparator), number, unit: at.value.unit, current: edit ?? at.value.value, cell: null };
-  }
-  const metric = at.value.metric as MetricType;
-  const unit = unitOf(metric);
-  const current = edit ?? at.value.valueSI;
-  const number = cellNumber(metric, current, unit, comparator);
-  return { text: withComparator(number, comparator), number, unit: cellLabel(metric, unit), current, cell: { metric, unit } };
-}
-
 /** `promised`: while saving, what the press promised (`reviewed`), by `fileId:ref`; null when every written row saves. */
 const valueRow = (review: UploadReview, reads: Map<string, ReturnType<typeof readFiles>[number]>, rows: Map<string, FileMeasurement | FileLabValue>, record: RoadmapFile, now: string,
   promised: Set<string> | null, unitOf: ((metric: MetricType) => CellUnit) | undefined) =>
@@ -227,13 +219,17 @@ const valueRow = (review: UploadReview, reads: Map<string, ReturnType<typeof rea
     const facts = printedFacts(read?.status.extraction, v.ref, lab.days[v.ref], lab.day, now, edit);
     const heldId = review.held.get(`${v.file}:${v.ref}`);
     const dayLine = facts.day ? longDate(facts.day) ?? facts.day : null;
-    const shown = unitOf && shownValue(read?.status.extraction, v.ref, edit, unitOf);
+    const at = read && valueAt(read.status.extraction, v.ref);
+    const shown = unitOf && at && shownValue(at, edit, at.kind === 'core' ? unitOf(at.value.metric as MetricType) : 'si');
+    // Text typed into the row that is no number stays there, explained, and blocks Save (US-13 AC5, AC12): never drawn as saving.
+    const typed = read?.status.choices.typed?.[v.ref];
     return { ...facts, dayLine, ...rowOf(review, v),
+      ...(typed !== undefined ? { typed, error: typedTextError(typed) } : {}),
       replace: heldId ? REVIEW_CELL_TEXT.replace : null,
       replaceLabel: heldId && dayLine ? REVIEW_CELL_TEXT.replaceLabel(v.label, dayLine) : null,
       held: heldText(heldId ? rows.get(heldId) : undefined, record),
       copy: v.copy ? NOT_SAVED_TEXT.sameDay : null,
-      saves: v.sent && v.writes && (!promised || promised.has(`${lab.fileId}:${v.ref}`)),
+      saves: v.sent && v.writes && typed === undefined && (!promised || promised.has(`${lab.fileId}:${v.ref}`)),
       ...(shown ? { shown } : {}),
     };
   };
@@ -261,7 +257,7 @@ const rowOf = (review: UploadReview, v: ClassifiedValue) => ({
   ticked: review.labFiles[v.file].ticked.includes(v.ref),
   replaces: review.held.get(`${v.file}:${v.ref}`) ?? null,
   replacing: replacingOf(review, v),
-  error: blocks(review)(v) && v.refusal && 'measurement' in v.refusal ? v.refusal.measurement.message : null,
+  error: (blocks(review)(v) || waitsWithError(review)(v)) && v.refusal && 'measurement' in v.refusal ? v.refusal.measurement.message : null,
 });
 
 /** A copy is never written, so its Replace, if one was chosen, does nothing (`copy`). */
@@ -274,6 +270,13 @@ const replacingOf = (review: UploadReview, v: ClassifiedValue) => !v.copy && rev
  */
 const blocks = (review: UploadReview) => (v: ClassifiedValue) => isCoreRef(v.ref) && v.sent && !v.writes
   && (v.group === 'unsure' ? v.reasons.includes('outOfRange') && (!v.reasons.includes('conflict') || replacingOf(review, v)) : v.group === 'notSaved' && v.reason !== 'sameDay');
+
+/**
+ * A ticked core value the write would refuse, not sent because its report waits for a day: its error is drawn on its row
+ * now, and it blocks Save after the day (`saveBlockers` lists it last, so Save asks for the day first).
+ */
+const waitsWithError = (review: UploadReview) => (v: ClassifiedValue) => isCoreRef(v.ref) && !v.sent && v.group === 'unsure' && v.reasons.includes('outOfRange')
+  && review.labFiles[v.file].needsDay && review.labFiles[v.file].ticked.includes(v.ref);
 
 /** Each reason once, naming its tests, as "Not saved" names them in the review (NOT_SAVED_TEXT); then each own line once. */
 function refusedLines(refused: NonNullable<SaveOutcome['refused']>): string[] {
@@ -315,19 +318,24 @@ function save(s: UploadState, plan: UploadSavePlan, review: UploadReview): Uploa
 }
 
 /**
- * What Save waits on, each with the control that removes it: a selected value the write would refuse (its row), then a
- * report still waiting for a day (that day's control; no report is ever skipped by Save).
+ * What Save waits on, each with the control that removes it, once: a selected value the write would refuse, and a row
+ * holding text that is no number (their rows); then a report still waiting for a day (that day's control; no report is
+ * ever skipped by Save); then a value with an error that waits for that day (its row).
  */
 export function saveBlockers(review: UploadReview): Blocker[] {
   const choose = (fileId: string, source: Parameters<typeof dayKey>[1]) => ({ why: UPLOAD_TEXT.chooseDay, at: dayKey(fileId, source) });
-  return [
-    ...review.classification.values.filter(blocks(review)).map((v) => ({ why: FIX_ERRORS_TEXT, at: `${review.labFiles[v.file].fileId}:${v.ref}` })),
+  const fix = (v: { file: number; ref: string }) => ({ why: FIX_ERRORS_TEXT, at: `${review.labFiles[v.file].fileId}:${v.ref}` });
+  const all = [
+    ...review.classification.values.filter(blocks(review)).map(fix),
+    ...review.labFiles.flatMap((f, file) => f.typedRefs.map((ref) => fix({ file, ref }))),
     ...review.labFiles.flatMap((f) => [
       ...(f.needsTestDay ? [choose(f.fileId, 'test')] : []),
       ...(f.needsPreviousDay ? [choose(f.fileId, 'previous')] : []),
       ...f.waitingColumns.map((printed) => choose(f.fileId, `printed:${printed}`)),
     ]),
+    ...review.classification.values.filter(waitsWithError(review)).map(fix),
   ];
+  return all.filter((b, i) => all.findIndex((o) => o.at === b.at) === i);
 }
 
 /**
@@ -355,8 +363,13 @@ export function uploadView(s: UploadState, record: RoadmapFile, now: string, rev
   const sure = offered.filter((v) => v.group === 'sure');
   // Named across the whole view, the rows to check first, as drawn.
   const fileName = (fileId: string) => review.labFiles.find((f) => f.fileId === fileId)?.name ?? '';
-  const drawn = named([...unsure, ...sure].map(row), fileName);
-  const [unsureRows, sureRows] = [drawn.slice(0, unsure.length), drawn.slice(unsure.length)];
+  // A value waiting for its previous column's day is drawn in that column's section, day none, so it can be seen and
+  // cleared, and a Replace kept on it is in view (owner ruling 2026-11-21, US-13 AC24, AC25).
+  const waitingRows = offered.filter((v) => v.group === 'waiting' && previousSource(readById.get(review.labFiles[v.file].fileId), v.ref));
+  const drawn = named([...unsure, ...sure, ...waitingRows].map(row), fileName);
+  const [unsureRows, sureRows] = [drawn.slice(0, unsure.length), drawn.slice(unsure.length, unsure.length + sure.length)];
+  const inSection = (key: string) => drawn.slice(unsure.length + sure.length)
+    .filter((r) => dayKey(r.fileId, previousSource(readById.get(r.fileId), r.ref)!) === key);
   const failed = files.filter((f): f is UploadFile & { status: Extract<FileStatus, { s: 'failed' }> } => f.status.s === 'failed');
   const groups = notSavedGroups(values);
   const sections: UploadSection[] = [
@@ -368,8 +381,8 @@ export function uploadView(s: UploadState, record: RoadmapFile, now: string, rev
     }),
     // Asked whenever the report prints the column, so a cleared value can be found again (US-13 AC25) and a pick changed.
     ...review.labFiles.filter((f) => offeredValues(readById.get(f.fileId)?.status.extraction ?? {}).some(({ ref }) => undatedValue(readById.get(f.fileId), ref)))
-      .map((f): UploadSection => ({ kind: 'undatedPrevious', key: dayKey(f.fileId, 'previous'), fileId: f.fileId, name: f.name, month: f.previousMonth, before: f.day?.slice(0, 10) ?? null, day: previousDay(readById.get(f.fileId)?.status.choices.previousDay ?? null, f.day, now)?.slice(0, 10) ?? null })),
-    ...(s.platform === 'web' ? review.labFiles.flatMap((f) => datedColumns(f, readById.get(f.fileId), now)) : []),
+      .map((f): UploadSection => ({ kind: 'undatedPrevious', key: dayKey(f.fileId, 'previous'), fileId: f.fileId, name: f.name, month: f.previousMonth, before: f.day?.slice(0, 10) ?? null, day: previousDay(readById.get(f.fileId)?.status.choices.previousDay ?? null, f.day, now)?.slice(0, 10) ?? null, rows: inSection(dayKey(f.fileId, 'previous')) })),
+    ...(s.platform === 'web' ? review.labFiles.flatMap((f) => datedColumns(f, readById.get(f.fileId), now).map((x) => ({ ...x, rows: inSection(x.key) }))) : []),
     ...(unsure.length ? [{ kind: 'unsure' as const, title: IMPORT_REVIEW_TEXT.checkTitle(unsure.length), footer: IMPORT_REVIEW_TEXT.checkFooter, rows: unsureRows }] : []),
     ...(failed.length ? [{
       kind: 'failed' as const, title: UPLOAD_TEXT.failedTitle(failed.length),

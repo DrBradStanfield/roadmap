@@ -264,7 +264,9 @@ describe('a dated previous column waiting for its pick (US-13 AC24)', () => {
     expect(review.classification.values.map((v) => [v.ref, v.group])).toEqual([['v0', 'waiting'], ['a0', 'waiting']]);
     expect(view.alreadySaved).toBeNull();
     expect(rows(view)).toEqual([]);
-    expect(view.sections).toContainEqual({ kind: 'datedPrevious', key: `f0|printed:${PRINTED}`, fileId: 'f0', name: 'f0.pdf', printed: PRINTED, day: null });
+    // Drawn in their column's section, day none, so they can be seen and cleared (owner ruling 2026-11-21, adversary A2).
+    expect(view.sections).toContainEqual({ kind: 'datedPrevious', key: `f0|printed:${PRINTED}`, fileId: 'f0', name: 'f0.pdf', printed: PRINTED, day: null,
+      rows: [expect.objectContaining({ ref: 'v0', day: null, ticked: true, saves: false, conflict: null, replace: null }), expect.objectContaining({ ref: 'a0', day: null, ticked: true, saves: false })] });
     expect(view.save.blockers).toEqual([{ why: UPLOAD_TEXT.chooseDay, at: `f0|printed:${PRINTED}` }]);
   });
 

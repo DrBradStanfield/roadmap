@@ -94,9 +94,10 @@ function parsed<S extends z.ZodType>(json: string, schema: S, reason: UploadRefu
   if (!read.success) throw new Refused(reason);
   return read.data;
 }
-/** No state at the phone's doors holds the web's column day, whatever platform it claims (US-13 AC24): no step, view, plan or Save door runs one. */
+/** No state at the phone's doors holds the web's column day (US-13 AC24) or a row's typed text (AC12), whatever platform it
+ *  claims: no step, view, plan or Save door runs one. */
 const PHONE_STATE = UPLOAD_STATE.refine((s) => !('files' in s)
-  || s.files.every((f) => f.status.s !== 'read' || f.status.choices.columnDays === undefined));
+  || s.files.every((f) => f.status.s !== 'read' || (f.status.choices.columnDays === undefined && f.status.choices.typed === undefined)));
 export const readState = (json: string): UploadState => parsed(json, PHONE_STATE, 'invalid-state');
 
 /** The record as the save writes it (read raw), through the app's own deviceId, so the screen doors'

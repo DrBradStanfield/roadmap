@@ -5,7 +5,9 @@
  * Replace on a conflict, an edited value, a document's title, kind and date.
  */
 import { UNDATED_PREVIOUS, type UnifiedExtractionResult } from './lab-extraction';
-import { offeredValues } from './import-review';
+import { offeredValues, valueAt } from './import-review';
+import { typedCommit } from './cell-input';
+import type { CellUnit } from './cell-unit';
 import { validDay } from './record-edits';
 
 /** A document's corrections before Save (design Q3 (a)). `date` null: the person removed it. */
@@ -27,6 +29,9 @@ export interface FileChoices {
   /** A dated previous column's day by the day it printed (web only, US-13 AC24): a real past day, or a pick
    *  still waiting to be one (a part missing, a day to come), kept so the column shows it while the report waits. */
   columnDays?: Record<string, string>;
+  /** Text typed into a row that is no number, by ref (web only, US-13 AC5, AC12): it stays in its row, explained, and
+   *  blocks Save until a number, an emptied input or a cleared tick replaces it. Absent is none. */
+  typed?: Record<string, string>;
 }
 export type ChoiceChange =
   | { tick: string; on: boolean }
@@ -35,7 +40,10 @@ export type ChoiceChange =
   | { replace: string; correctsId: string | null }
   | { edit: string; value: number | null }
   | { document: DocumentFix }
-  | { columnDay: string; day: string | null };
+  | { columnDay: string; day: string | null }
+  /** Text typed into a row and committed (web only; `cell-input.ts` `typedCommit`): `unit` the one it was typed in, a
+   *  core value's, null for a lab. */
+  | { typed: string; text: string; unit: CellUnit | null };
 
 export const NO_CHOICES: FileChoices = { ticks: {}, testDay: null, previousDay: null, replace: {}, edits: {}, document: {} };
 
@@ -46,8 +54,16 @@ export function documentDate(date: string | null, now: string): string | null | 
 
 const without = <T,>(r: Record<string, T>, key: string): Record<string, T> => Object.fromEntries(Object.entries(r).filter(([k]) => k !== key));
 
-/** A value cleared: unticked, and its Replace dropped, since a Replace selects its value. */
-export const untick = (c: FileChoices, ref: string): FileChoices => ({ ...c, ticks: { ...c.ticks, [ref]: false }, replace: without(c.replace, ref) });
+/** A row's held text dropped; absent when none is left, as before any was typed. */
+function unheld(c: FileChoices, ref: string): FileChoices {
+  if (!c.typed?.[ref]) return c;
+  const { typed: _, ...rest } = c;
+  const typed = without(c.typed, ref);
+  return Object.keys(typed).length ? { ...rest, typed } : rest;
+}
+
+/** A value cleared: unticked, its Replace dropped (a Replace selects its value), and any text held in its row. */
+export const untick = (c: FileChoices, ref: string): FileChoices => ({ ...unheld(c, ref), ticks: { ...c.ticks, [ref]: false }, replace: without(c.replace, ref) });
 
 /** The refs a day change moves: values on the test's day (no day of their own), in the undated previous column, or printed on one day. */
 function movedRefs(x: Pick<UnifiedExtractionResult, 'values' | 'additionalValues'>, own: string | undefined): string[] {
@@ -86,7 +102,19 @@ export function choose(c: FileChoices, change: ChoiceChange, now: string, extrac
     const columnDays = day === null ? without(c.columnDays ?? {}, change.columnDay) : { ...c.columnDays, [change.columnDay]: day };
     return { ...c, columnDays, replace: moved(c, refs, c.columnDays?.[change.columnDay] ?? change.columnDay, day ?? change.columnDay, now) };
   }
-  if ('edit' in change) return { ...c, edits: change.value === null || !Number.isFinite(change.value) ? without(c.edits, change.edit) : { ...c.edits, [change.edit]: change.value } };
+  if ('edit' in change) return { ...unheld(c, change.edit), edits: change.value === null || !Number.isFinite(change.value) ? without(c.edits, change.edit) : { ...c.edits, [change.edit]: change.value } };
+  if ('typed' in change) {
+    // An emptied input unticks its row (owner ruling 2026-11-21); text that is no number stays, held; a number commits.
+    if (!change.text.trim()) return untick(c, change.typed);
+    const at = valueAt(extraction, change.typed);
+    const commit = at && typedCommit(change.text, at, c.edits[change.typed], change.unit);
+    if (!commit) return null;
+    // Anything typed into a cleared row selects it again, the mirror of an emptied input (owner ruling 2026-11-21): a
+    // number to save, or text that is no number, which then blocks Save at that row until it is fixed or cleared.
+    const kept = { ...unheld(c, change.typed), ...(c.ticks[change.typed] === false ? { ticks: { ...c.ticks, [change.typed]: true } } : {}) };
+    if (commit.kind === 'hold') return { ...kept, typed: { ...c.typed, [change.typed]: change.text } };
+    return commit.kind === 'same' ? kept : { ...kept, edits: { ...c.edits, [change.typed]: commit.value } };
+  }
   const { date, ...rest } = change.document;
   if (date === undefined) return { ...c, document: { ...c.document, ...rest } };
   const day = documentDate(date, now);
