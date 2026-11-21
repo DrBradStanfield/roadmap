@@ -148,6 +148,12 @@ describe('9. a read file with nothing in it is said', () => {
       { fileId: 'n', name: 'n.pdf', line: 'No blood test values found.' },
     ]);
   });
+
+  it('says it once: the notice, while the Files row reads a plain "Read" (US-12 AC9)', () => {
+    const view = both(open([read('e', labX({ values: [] })), read('d', labX({ values: [], document: letterX().document }))])).view;
+    expect(view.files.rows.map((r) => r.status)).toEqual(['Read', 'Read']);
+    expect(view.notices.map((n) => n.line)).toEqual(['No blood test values found.', 'Filed as a document. No blood test values found.']);
+  });
 });
 
 describe('11. cost', () => {

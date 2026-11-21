@@ -17,7 +17,6 @@ import type { CellUnit } from './cell-unit';
 import { shownValue, type ShownValue } from './cell-input';
 import { inFlight, RETRYABLE, saveEnabled, uploadFileName, type FileStatus, type SaveOutcome, type UploadFile, type UploadState } from './upload-flow';
 import { labReadFound, planIsEmpty, uploadSavePlan, type UploadSavePlan } from './upload-plan';
-import type { UploadPlatform } from './upload-rules';
 import { readFiles, reviewedWrites, type ReviewedValue, type UploadReview } from './upload-review';
 import { failLine, FILE_NOTICE_TEXT, FIX_ERRORS_TEXT, longDate, REFUSED_TEXT, REVIEW_CELL_TEXT, UNREADABLE_VALUE_TEXT, UPLOAD_TEXT } from './upload-text';
 import { UNDATED_PREVIOUS, type UnifiedExtractionResult } from './lab-extraction';
@@ -79,7 +78,8 @@ export interface UploadView {
   } | null;
   /** The collapsed "Files" list. */
   files: { row: string; rows: Array<{ fileId: string; name: string; status: string }> };
-  /** Read files with nothing in them, and files read only in part, in the web's notice words (US-12 AC9). */
+  /** Read files with nothing in them, and files read only in part, in the web's notice words (US-12 AC9): said here
+   *  alone, never also as the file's status (that reads "Read"). */
   notices: Array<{ fileId: string; name: string; line: string }>;
   /** `error`: a failed save's message; Save then retries. `blockers`: each thing Save waits on (`saveBlockers`), with the
    *  control that removes it; `why` is the first, or what else holds Save. */
@@ -110,12 +110,12 @@ export interface Blocker { why: string; at: string }
 const READING: readonly FileStatus['s'][] = ['converting', 'sending'];
 const AT_REST: readonly FileStatus['s'][] = ['known', 'refused', 'read', 'failed', 'stopped'];
 
-function statusWords(status: FileStatus, platform: UploadPlatform): string {
+function statusWords(status: FileStatus, s: UploadState): string {
   switch (status.s) {
     case 'known': return UPLOAD_TEXT.statusKnown;
     case 'refused': return UPLOAD_TEXT.statusRefused(status.verdict);
     case 'read': return UPLOAD_TEXT.statusRead;
-    case 'failed': return failLine(status, platform);
+    case 'failed': return failLine(status, s.platform, s.reader);
     case 'stopped': return UPLOAD_TEXT.stoppedLine;
     default: return READING.includes(status.s) ? UPLOAD_TEXT.statusReading : UPLOAD_TEXT.statusWaiting;
   }
@@ -337,7 +337,7 @@ export function uploadView(s: UploadState, record: RoadmapFile, now: string, rev
     ...(unsure.length ? [{ kind: 'unsure' as const, title: IMPORT_REVIEW_TEXT.checkTitle(unsure.length), footer: IMPORT_REVIEW_TEXT.checkFooter, rows: unsure.map(row) }] : []),
     ...(failed.length ? [{
       kind: 'failed' as const, title: UPLOAD_TEXT.failedTitle(failed.length),
-      rows: failed.map((f) => ({ fileId: f.id, name: uploadFileName(f), line: failLine(f.status, s.platform) })),
+      rows: failed.map((f) => ({ fileId: f.id, name: uploadFileName(f), line: failLine(f.status, s.platform, s.reader) })),
       retry: s.phase === 'open' && failed.some((f) => RETRYABLE[f.status.reason]) ? UPLOAD_TEXT.retryAll : null,
     }] : []),
     ...(groups.total ? [{
@@ -366,7 +366,7 @@ export function uploadView(s: UploadState, record: RoadmapFile, now: string, rev
       kinds: DOCUMENT_TYPES.map((key) => ({ key, word: KIND_WORDS[key][0] })),
       setDate: UPLOAD_TEXT.setDate, removeDate: UPLOAD_TEXT.removeDate,
     } : null,
-    files: { row: UPLOAD_TEXT.filesRow(files.length), rows: files.map((f) => ({ fileId: f.id, name: uploadFileName(f), status: emptyRead(f) ?? statusWords(f.status, s.platform) })) },
+    files: { row: UPLOAD_TEXT.filesRow(files.length), rows: files.map((f) => ({ fileId: f.id, name: uploadFileName(f), status: statusWords(f.status, s) })) },
     // Read files with nothing in them, and files read only in part (US-12 AC9), in the web's words.
     notices: files.flatMap((f) => [emptyRead(f), f.pages?.truncated ? FILE_NOTICE_TEXT.truncated : null]
       .flatMap((line) => (line ? [{ fileId: f.id, name: uploadFileName(f), line }] : []))),
