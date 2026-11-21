@@ -143,6 +143,8 @@ let template: string;
 beforeAll(() => {
   template = root = mkdtempSync(join(tmpdir(), "kb-tmpl-"));
   sh(["init", "-q"]); sh(["config", "user.email", "t@t"]); sh(["config", "user.name", "t"]);
+  // A commit's detached auto-maintenance can remove .git/objects/maintenance.lock mid-cpSync (CI run 44860674548).
+  sh(["config", "maintenance.auto", "false"]);
   put("docs/blog/alpha.md", fx("alpha.base.md"));
   put("docs/guideline/beta.md", fx("beta.base.md"));
   put("docs/blog/index.json", INDEX);

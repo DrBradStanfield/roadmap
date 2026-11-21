@@ -35,6 +35,10 @@ const files = (root: string) => {
 const cli = (cwd: string, ...args: string[]) => spawnSync('node', [SCRIPT, ...args], { cwd, encoding: 'utf8' });
 const NORMALIZE = 'run `node tools/split-stories.mjs --normalize`';
 const git = (cwd: string, ...args: string[]) => execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+// A test repo with no auto-maintenance. Each commit starts a detached `git maintenance run --auto` that holds
+// .git/objects/maintenance.lock after the commit returns; a cpSync of the repo listed that file, the child removed
+// it, and the copy failed with ENOENT on .git/objects (CI run 44860674548). A copy inherits the setting.
+const gitInit = (cwd: string, ...args: string[]) => (git(cwd, 'init', '-q', ...args), git(cwd, 'config', 'maintenance.auto', 'false'));
 
 // Small fixtures: a monolith with the constitution, one epic and the given stories.
 const US01 = '### US-01 · One — **shipped**\n- AC1 see [web](https://x.test) and [g](git-workflow.md).';
@@ -95,7 +99,7 @@ describe('the round trip on the real stories', () => {
     const repo = join(scratch, 'from-ref');
     mkdirSync(join(repo, 'docs'), { recursive: true });
     writeFileSync(join(repo, 'docs/user-stories.md'), SOURCE);
-    git(repo, 'init', '-q');
+    gitInit(repo);
     git(repo, 'add', '-A');
     git(repo, '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '-m', 'monolith');
     writeFileSync(join(repo, 'docs/user-stories.md'), 'changed after the commit\n');
@@ -253,7 +257,7 @@ describe('--normalize fixes the shape of a split tree, never its content (US-64 
     mkdirSync(join(dir, 'docs'));
     writeFileSync(join(dir, 'docs/user-stories.md'), monolith(US01, '', US02, '', '### US-03 · Three\n- AC1 three'));
     expect(cli(dir).status).toBe(0);
-    git(dir, 'init', '-q');
+    gitInit(dir);
   });
   afterEach(() => rmSync(dir, { recursive: true, force: true }));
 
@@ -394,11 +398,7 @@ describe('writing into a repo that already holds parts (the PR 3 rebase path)', 
   let template: string;
   beforeAll(() => {
     template = repo = mkdtempSync(join(tmpdir(), 'split-stories-tmpl-'));
-    run('init', '-q', '-b', 'main');
-    // No auto-maintenance. Each commit starts a detached `git maintenance run --auto` that holds
-    // .git/objects/maintenance.lock after the commit returns; the cpSync below listed that file, the child
-    // removed it, and the copy failed with ENOENT on .git/objects (CI run 44860674548). Copies inherit this.
-    run('config', 'maintenance.auto', 'false');
+    gitInit(repo, '-b', 'main');
     mkdirSync(join(repo, 'docs'));
     writeFileSync(join(repo, 'docs/user-stories.md'), text);
     commit('base');
