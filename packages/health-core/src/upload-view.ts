@@ -13,6 +13,8 @@ import { documentKind, IMPORT_REVIEW_TEXT, isCoreRef, isOfferedRef, KIND_WORDS, 
 import type { FileLabValue, FileMeasurement, RoadmapFile } from './roadmap-file';
 import { effectiveComparator, isReadableRow } from './readable-rows';
 import { getDisplayLabel, type MetricType } from './units';
+import type { CellUnit } from './cell-unit';
+import { shownValue, type ShownValue } from './cell-input';
 import { inFlight, RETRYABLE, saveEnabled, uploadFileName, type FileStatus, type SaveOutcome, type UploadFile, type UploadState } from './upload-flow';
 import { planIsEmpty, uploadSavePlan, type UploadSavePlan } from './upload-plan';
 import type { UploadPlatform } from './upload-rules';
@@ -41,14 +43,22 @@ export interface ValueRow {
   replace?: string | null; replaceLabel?: string | null; held?: string | null;
   /** An equal reading of this upload is on the same test and day: this one is not written, and Replace lives only on that one. */
   copy?: string | null;
+  /** Added for the web's list (web list PR 1a), additive: Save writes this row (sent and written; while saving, only what
+   *  the press promised, `reviewed`); and, given the person's units (`uploadView`'s `unitOf`), its number in them. */
+  saves: boolean;
+  shown?: ShownValue;
 }
+export type { ShownValue } from './cell-input';
+/** A day control's key, one per day source of a file, never holding the day itself: the test's, the undated previous
+ *  column's, or a dated previous column's by the day it printed. A blocker's `at` names one, or a row (`fileId:ref`). */
+export const dayKey = (fileId: string, source: 'test' | 'previous' | `printed:${string}`) => `${fileId}|${source}`;
 export type UploadSection =
   /** `choose`: the button that opens the day picker; no day is assumed (design PR 15). `chosen`: the
-   *  day the person picked (YYYY-MM-DD), so the section stays, showing it, to be changed. */
-  | { kind: 'undated'; fileId: string; title: string; label: string; name: string; choose?: string; chosen?: string | null }
+   *  day the person picked (YYYY-MM-DD), so the section stays, showing it, to be changed. `key`: its control (`dayKey`). */
+  | { kind: 'undated'; key: string; fileId: string; title: string; label: string; name: string; choose?: string; chosen?: string | null }
   /** An undated previous column's day (US-12 AC14; web only): a day in `month` (YYYY-MM) before
    *  `before`, when known. Its words stay in the web's ReviewTable until they move (no string yet). */
-  | { kind: 'undatedPrevious'; fileId: string; name: string; month: string | null; before: string | null }
+  | { kind: 'undatedPrevious'; key: string; fileId: string; name: string; month: string | null; before: string | null }
   | { kind: 'unsure'; title: string; footer: string; rows: ValueRow[] }
   | { kind: 'failed'; title: string; rows: Array<{ fileId: string; name: string; line: string }>; retry: string | null }
   | { kind: 'notSaved'; title: string; lines: string[]; footer: string };
@@ -70,8 +80,9 @@ export interface UploadView {
   files: { row: string; rows: Array<{ fileId: string; name: string; status: string }> };
   /** Read files with nothing in them, and files read only in part, in the web's notice words (US-12 AC9). */
   notices: Array<{ fileId: string; name: string; line: string }>;
-  /** `error`: a failed save's message; Save then retries. */
-  save: { label: string; enabled: boolean; why: string | null; error: string | null };
+  /** `error`: a failed save's message; Save then retries. `blockers`: each thing Save waits on (`saveBlockers`), with the
+   *  control that removes it; `why` is the first, or what else holds Save. */
+  save: { label: string; enabled: boolean; why: string | null; error: string | null; blockers: Blocker[] };
   stop: { label: string } | null;
   /** The done screen's lines. `skipped`: reviewed values another writer beat to their slot (US-12 AC6a).
    *  `notSaved`: values the final commit refused, one line per reason in the review's words. */
@@ -91,6 +102,9 @@ export interface UploadView {
   /** The review's choices can be changed: open, or after a failed Save; never while saving. */
   editable?: boolean;
 }
+
+/** One thing Save waits on, in the view's words, and the key of the row (`fileId:ref`) or day control that removes it. */
+export interface Blocker { why: string; at: string }
 
 const READING: readonly FileStatus['s'][] = ['converting', 'sending'];
 const AT_REST: readonly FileStatus['s'][] = ['known', 'refused', 'read', 'failed', 'stopped'];
@@ -170,18 +184,24 @@ function heldText(row: FileMeasurement | FileLabValue | undefined, record: Roadm
   return [withComparator(String(row.value), comparator), unit].filter(Boolean).join(' ');
 }
 
-const valueRow = (review: UploadReview, reads: Map<string, ReturnType<typeof readFiles>[number]>, rows: Map<string, FileMeasurement | FileLabValue>, record: RoadmapFile, now: string) =>
+/** `promised`: while saving, what the press promised (`reviewed`), by `fileId:ref`; null when every written row saves. */
+const valueRow = (review: UploadReview, reads: Map<string, ReturnType<typeof readFiles>[number]>, rows: Map<string, FileMeasurement | FileLabValue>, record: RoadmapFile, now: string,
+  promised: Set<string> | null, unitOf: ((metric: MetricType) => CellUnit) | undefined) =>
   (v: ClassifiedValue): ValueRow => {
     const lab = review.labFiles[v.file];
     const read = reads.get(lab.fileId);
-    const facts = printedFacts(read?.status.extraction, v.ref, lab.days[v.ref], lab.day, now, read?.status.choices.edits[v.ref]);
+    const edit = read?.status.choices.edits[v.ref];
+    const facts = printedFacts(read?.status.extraction, v.ref, lab.days[v.ref], lab.day, now, edit);
     const heldId = review.held.get(`${v.file}:${v.ref}`);
     const dayLine = facts.day ? longDate(facts.day) ?? facts.day : null;
+    const at = unitOf && read ? valueAt(read.status.extraction, v.ref) : undefined;
     return { ...facts, dayLine, ...rowOf(review, v),
       replace: heldId ? REVIEW_CELL_TEXT.replace : null,
       replaceLabel: heldId && dayLine ? REVIEW_CELL_TEXT.replaceLabel(v.label, dayLine) : null,
       held: heldText(heldId ? rows.get(heldId) : undefined, record),
       copy: v.copy ? NOT_SAVED_TEXT.sameDay : null,
+      saves: v.sent && v.writes && (!promised || promised.has(`${lab.fileId}:${v.ref}`)),
+      ...(unitOf && at ? { shown: shownValue(at, edit, at.kind === 'core' ? unitOf(at.value.metric as MetricType) : 'si') } : {}),
     };
   };
 
@@ -237,36 +257,55 @@ function emptyRead(f: UploadFile): string | null {
 
 function save(s: UploadState, plan: UploadSavePlan, review: UploadReview): UploadView['save'] {
   const label = saveLabel(plan);
+  const blockers = s.phase === 'open' || s.phase === 'saveFailed' ? saveBlockers(review, s) : [];
+  const blocked = blockers[0]?.why ?? null;
   // After a failed Save, Save tries again, unless the record changed meanwhile so that it would refuse: then it waits, saying why.
-  if (s.phase === 'saveFailed') { const why = saveBlocked(review); return { label, enabled: why === null, why, error: s.message }; }
-  if (s.phase !== 'open') return { label, enabled: false, why: null, error: null };
+  if (s.phase === 'saveFailed') return { label, enabled: blocked === null, why: blocked, error: s.message, blockers };
+  if (s.phase !== 'open') return { label, enabled: false, why: null, error: null, blockers };
   const waiting = inFlight(s);
-  const why = waiting ? UPLOAD_TEXT.saveWait(waiting) : saveBlocked(review) ?? (planIsEmpty(plan) ? UPLOAD_TEXT.saveNothing : null);
-  return { label, enabled: saveEnabled(s) && why === null, why, error: null };
+  const why = waiting ? UPLOAD_TEXT.saveWait(waiting) : blocked ?? (planIsEmpty(plan) ? UPLOAD_TEXT.saveNothing : null);
+  return { label, enabled: saveEnabled(s) && why === null, why, error: null, blockers };
 }
 
 /**
- * Why Save may not write this review, in the view's words, or null: a selected value the write
- * would refuse, or a report still waiting for its day (no report is ever skipped by Save). The
- * save itself refuses on the same rule (upload-save.ts), so nothing is written past it.
+ * What Save waits on, each once with the control that removes it: a selected value the write would refuse (its row),
+ * then a report still waiting for a day (that day's control; no report is ever skipped by Save). A dated previous
+ * column waits by the day it printed (`printed:<day>`), for each ticked value of it in `waits` (US-13 AC24).
  */
-export function saveBlocked(review: UploadReview): string | null {
-  if (review.classification.values.some(blocks(review))) return FIX_ERRORS_TEXT;
-  return review.labFiles.some((f) => f.needsDay) ? UPLOAD_TEXT.chooseDay : null;
+export function saveBlockers(review: UploadReview, s: UploadState): Blocker[] {
+  const choose = (fileId: string, source: Parameters<typeof dayKey>[1]) => ({ why: UPLOAD_TEXT.chooseDay, at: dayKey(fileId, source) });
+  const reads = new Map(readFiles(s).map((f) => [f.id, f.status.extraction]));
+  const all = [
+    ...review.classification.values.filter(blocks(review)).map((v) => ({ why: FIX_ERRORS_TEXT, at: `${review.labFiles[v.file].fileId}:${v.ref}` })),
+    ...review.labFiles.flatMap((f) => [
+      ...(f.needsTestDay ? [choose(f.fileId, 'test')] : []),
+      ...(f.needsPreviousDay ? [choose(f.fileId, 'previous')] : []),
+      ...f.waits.filter((ref) => f.ticked.includes(ref)).map((ref) => choose(f.fileId, `printed:${valueAt(reads.get(f.fileId) ?? {}, ref)?.value.recordedAt}`)),
+    ]),
+  ];
+  return all.filter((b, i) => all.findIndex((o) => o.at === b.at) === i);
 }
+
+/**
+ * Why Save may not write this review, in the view's words, or null: the first of `saveBlockers`. The save itself refuses
+ * on the same rule (upload-save.ts), so nothing is written past it.
+ */
+export const saveBlocked = (review: UploadReview, s: UploadState): string | null => saveBlockers(review, s)[0]?.why ?? null;
 
 /**
  * `review`: the caller's `uploadReview`, the same one it hands `uploadSavePlan`, so the screen
- * counts what Save writes. `cloudConnected`: originals are stored, and counted, only with a cloud.
+ * counts what Save writes. `cloudConnected`: originals are stored, and counted, only with a cloud. `unitOf`: the unit
+ * the person reads each core value in (the web's); without it no row has `shown`.
  */
-export function uploadView(s: UploadState, record: RoadmapFile, now: string, review: UploadReview, cloudConnected: boolean): UploadView {
+export function uploadView(s: UploadState, record: RoadmapFile, now: string, review: UploadReview, cloudConnected: boolean, unitOf?: (metric: MetricType) => CellUnit): UploadView {
   const plan = uploadSavePlan(s, record, now, review, cloudConnected);
   const files = 'files' in s ? s.files : [];
   const values = review.classification.values;
   const readById = new Map(readFiles(s).map((f) => [f.id, f]));
   // Read only for a conflict's held row: no conflict, no index.
   const rowsById = new Map<string, FileMeasurement | FileLabValue>(review.held.size ? [...record.measurements, ...record.labValues].map((r) => [r.id, r]) : []);
-  const row = valueRow(review, readById, rowsById, record, now);
+  const promised = s.phase === 'saving' && s.reviewed ? new Set(s.reviewed.map((v) => `${v.file}:${v.ref}`)) : null;
+  const row = valueRow(review, readById, rowsById, record, now, promised, unitOf);
   const offered = values.filter((v) => isOfferedRef(v.ref));
   const unsure = offered.filter((v) => v.group === 'unsure');
   const sure = offered.filter((v) => v.group === 'sure');
@@ -277,10 +316,10 @@ export function uploadView(s: UploadState, record: RoadmapFile, now: string, rev
       // A report that prints no full day asks for one; once picked, it shows the pick to be changed.
       const read = readById.get(f.fileId);
       const chosen = read && !validDay(read.status.extraction.reportDate ?? undefined, { now }) ? validDay(read.status.choices.testDay ?? undefined, { now })?.slice(0, 10) ?? null : null;
-      return f.needsTestDay || chosen ? [{ kind: 'undated', fileId: f.fileId, title: UPLOAD_TEXT.undatedTitle, label: UPLOAD_TEXT.dayOfTest, name: f.name, choose: UPLOAD_TEXT.chooseDay, chosen }] : [];
+      return f.needsTestDay || chosen ? [{ kind: 'undated', key: dayKey(f.fileId, 'test'), fileId: f.fileId, title: UPLOAD_TEXT.undatedTitle, label: UPLOAD_TEXT.dayOfTest, name: f.name, choose: UPLOAD_TEXT.chooseDay, chosen }] : [];
     }),
     // Asked while a ticked value waits for it, and while a cleared one does, so the cleared one can be found again (US-13 AC25).
-    ...review.labFiles.filter((f, i) => f.needsPreviousDay || values.some((v) => v.file === i && v.group === 'waiting' && undatedValue(readById.get(f.fileId), v.ref))).map((f): UploadSection => ({ kind: 'undatedPrevious', fileId: f.fileId, name: f.name, month: f.previousMonth, before: f.day?.slice(0, 10) ?? null })),
+    ...review.labFiles.filter((f, i) => f.needsPreviousDay || values.some((v) => v.file === i && v.group === 'waiting' && undatedValue(readById.get(f.fileId), v.ref))).map((f): UploadSection => ({ kind: 'undatedPrevious', key: dayKey(f.fileId, 'previous'), fileId: f.fileId, name: f.name, month: f.previousMonth, before: f.day?.slice(0, 10) ?? null })),
     ...(unsure.length ? [{ kind: 'unsure' as const, title: IMPORT_REVIEW_TEXT.checkTitle(unsure.length), footer: IMPORT_REVIEW_TEXT.checkFooter, rows: unsure.map(row) }] : []),
     ...(failed.length ? [{
       kind: 'failed' as const, title: UPLOAD_TEXT.failedTitle(failed.length),

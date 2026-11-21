@@ -155,7 +155,23 @@ function answer(c: Case): string {
     expect(waits ?? []).toEqual([]);
     return old;
   });
-  return canonical({ review: { ...review, labFiles }, plan, view });
+  return canonical({ review: { ...review, labFiles }, plan, view: mainView(view) });
+}
+
+/**
+ * The view as main drew it: the web list's new keys (PR 1a) deleted, and nothing else touched. Each row's `saves`, each
+ * day section's `key`, and Save's `blockers`. No `unitOf` is passed, so no row has `shown`.
+ */
+const MAIN_VIEW_OMITS = { row: ['saves'], section: ['key'], save: ['blockers'] } as const;
+function mainView(view: ReturnType<typeof uploadView>) {
+  const omit = <T extends object>(x: T, keys: readonly string[]) => Object.fromEntries(Object.entries(x).filter(([k]) => !keys.includes(k)));
+  const row = (r: object) => omit(r, MAIN_VIEW_OMITS.row);
+  return {
+    ...view,
+    sections: view.sections.map((x) => omit('rows' in x && x.kind === 'unsure' ? { ...x, rows: x.rows.map(row) } : x, MAIN_VIEW_OMITS.section)),
+    sure: view.sure && { ...view.sure, rows: view.sure.rows.map(row) },
+    save: omit(view.save, MAIN_VIEW_OMITS.save),
+  };
 }
 
 const hash = (text: string) => createHash('sha256').update(text).digest('hex').slice(0, 24);
