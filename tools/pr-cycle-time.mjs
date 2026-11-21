@@ -100,14 +100,19 @@ export function toRows({ week, current: c, prior: p }) {
 
 const ymd = (ms) => new Date(ms).toISOString().slice(0, 10);
 
-/** Merged PRs from gh, a day of margin each side; cycleTime() trims to the exact windows. */
+/** Merged PRs from gh, one query per 7d window with a day of margin each side (each stays under the
+ *  search cap), deduped by number; cycleTime() trims to the exact windows. */
 export function fetchWithGh(end, run = execFileSync) {
-  const search = `merged:${ymd(end - 15 * DAY)}..${ymd(end + DAY)}`;
-  const out = run('gh', ['pr', 'list', '--state', 'merged', '--search', search,
-    '--json', 'number,title,createdAt,mergedAt,author', '--limit', String(GH_LIMIT)], { encoding: 'utf8' });
-  const prs = JSON.parse(out);
-  if (prs.length >= GH_LIMIT) throw new Error(`gh returned ${prs.length} PRs, the limit: counts would be cut short`);
-  return prs;
+  const byNumber = new Map();
+  for (const winEnd of [end, end - 7 * DAY]) {
+    const search = `merged:${ymd(winEnd - 8 * DAY)}..${ymd(winEnd + DAY)}`;
+    const out = run('gh', ['pr', 'list', '--state', 'merged', '--search', search,
+      '--json', 'number,title,createdAt,mergedAt,author', '--limit', String(GH_LIMIT)], { encoding: 'utf8' });
+    const prs = JSON.parse(out);
+    if (prs.length >= GH_LIMIT) throw new Error(`gh returned ${prs.length} PRs for ${search}, the search cap: counts would be cut short`);
+    for (const p of prs) byNumber.set(p.number, p);
+  }
+  return [...byNumber.values()];
 }
 
 export function main(argv = process.argv.slice(2), { now = Date.now(), fetch = fetchWithGh } = {}) {

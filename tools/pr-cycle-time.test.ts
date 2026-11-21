@@ -112,13 +112,21 @@ describe('main', () => {
     expect(out.split('\n')[1]).toMatch(/^2026-W46,pr_cycle_time_median_h,5,0,,/);
   });
 
-  it('asks gh for the two windows with margin, and refuses a result at the 1000-result search cap', () => {
-    let args: string[] = [];
-    fetchWithGh(END, (_cmd: string, a: string[]) => { args = a; return '[]'; });
-    expect(args).toContain('merged:2026-11-01..2026-11-17');
-    expect(args).toContain('1000');
-    const full = JSON.stringify(Array.from({ length: 1000 }, () => ({})));
-    expect(() => fetchWithGh(END, () => full)).toThrow(/limit/);
+  it('asks gh once per window with margin, dedupes the overlap, and refuses a result at the 1000-result search cap', () => {
+    const calls: string[][] = [];
+    const overlap = pr(7 * 24, 3);
+    const got = fetchWithGh(END, (_cmd: string, a: string[]) => {
+      calls.push(a);
+      return JSON.stringify(calls.length === 1 ? [pr(1, 1), overlap] : [overlap, pr(8 * 24, 2)]);
+    });
+    expect(calls.map((a) => a[a.indexOf('--search') + 1])).toEqual(['merged:2026-11-08..2026-11-17', 'merged:2026-11-01..2026-11-10']);
+    expect(calls[0]).toContain('1000');
+    expect(got).toHaveLength(3);
+    expect(got.filter((p) => p.number === overlap.number)).toHaveLength(1);
+    const full = JSON.stringify(Array.from({ length: 1000 }, (_, i) => ({ number: i })));
+    expect(() => fetchWithGh(END, () => full)).toThrow(/search cap/);
+    const r = cycleTime(fetchWithGh(END, () => JSON.stringify(Array.from({ length: 999 }, (_, i) => pr(1, 1, { number: 10_000 + i })))), END);
+    expect(r.current.merged).toBe(999);
   });
 
   it('refuses a bad --end', () => {
