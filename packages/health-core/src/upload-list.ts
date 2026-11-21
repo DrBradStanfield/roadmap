@@ -8,12 +8,12 @@
  */
 import { IMPORT_REVIEW_TEXT, NOT_SAVED_TEXT, type NotSavedReason, type OfferedValue, type UnsureReason } from './import-review';
 import { UNDATED_PREVIOUS } from './lab-extraction';
-import { cellLabel, isCellMetric, rangeMessage, type CellUnit } from './cell-unit';
+import { cellLabel, isCellMetric, isLpaUnit, rangeMessage, recordLpaUnit, type CellUnit } from './cell-unit';
 import { shownValue, typedTextError, type ShownValue } from './cell-input';
 import { DAY_NOT_HAPPENED } from './lab-series';
 import { validDay } from './record-edits';
 import type { FileLabValue, FileMeasurement, RoadmapFile } from './roadmap-file';
-import { hasUnitChoice, LPA_UNITS, type LpaUnit, type MetricType } from './units';
+import { hasUnitChoice, LPA_UNITS, type LpaUnit, type MetricType, type UnitSystem } from './units';
 import { candidates, type Candidate, type RowFault } from './upload-candidates';
 import type { TypedText } from './upload-choices';
 import type { UploadState } from './upload-flow';
@@ -65,12 +65,15 @@ export interface ListRow {
  * the other of its two from the one the person reads (`unitOf`); null where the unit is fixed (mmHg, PSA), for Lp(a), a lab
  * or an unknown metric. `choices`: Lp(a)'s three units, the one shown being `shown.cell.unit`; null for any other row. While
  * the row holds text, neither: the person fixes or clears the text first, since a toggle would change nothing on that row
- * (owner ruling on PR 1951); other rows of the test keep theirs.
+ * (owner ruling on PR 1951); other rows of the test keep theirs. `current`: on an Lp(a) row, the one of its three units the
+ * person reads it in (the one `choices` marks, and the unit `shown` is in): `unitOf`'s answer, or for a system the unit the
+ * web's rule gives it (lib/lpa-unit.ts `effectiveLpaUnit`, through health-core `recordLpaUnit`: US units mg/dL, else
+ * nmol/L); null on any other row.
  */
-export interface RowUnit { label: string; typeIn: CellUnit | null; toggle: CellUnit | null; choices: readonly LpaUnit[] | null }
+export interface RowUnit { label: string; typeIn: CellUnit | null; toggle: CellUnit | null; choices: readonly LpaUnit[] | null; current: LpaUnit | null }
 
 function rowUnit(at: OfferedValue, typed: TypedText | null, shown: ShownValue, unitOf: (metric: MetricType) => CellUnit): RowUnit {
-  if (at.kind !== 'core' || !isCellMetric(at.value.metric)) return { label: shown.unit, typeIn: null, toggle: null, choices: null };
+  if (at.kind !== 'core' || !isCellMetric(at.value.metric)) return { label: shown.unit, typeIn: null, toggle: null, choices: null, current: null };
   const metric = at.value.metric;
   const reads = unitOf(metric);
   const typeIn = typed?.unit ?? reads;
@@ -78,6 +81,7 @@ function rowUnit(at: OfferedValue, typed: TypedText | null, shown: ShownValue, u
     label: cellLabel(metric, typeIn), typeIn,
     toggle: !typed && metric !== 'lpa' && hasUnitChoice(metric) ? (reads === 'si' ? 'conventional' : 'si') : null,
     choices: !typed && metric === 'lpa' ? LPA_UNITS : null,
+    current: metric !== 'lpa' ? null : isLpaUnit(reads) ? reads : recordLpaUnit(undefined, reads as UnitSystem),
   };
 }
 
@@ -139,11 +143,15 @@ function captionOf(status: ListStatus, error: string | null): string | null {
 }
 
 /** A day control's picker and words (`DayControl`), from its pick and its day. `asks`: its words with no pick; `limits` its
- *  limits' words. `pick`: the pick as a calendar day, to come or not. */
-function pickerOf(chosen: string | null, day: string | null, now: string, asks: string | null, limits: string) {
+ *  limits' words; `printed`: the report's own day, for the test's control. A pick, or with none the printed day, read as a
+ *  calendar day, to come or not: one still to come has not happened (web list PR 1e review, H2: a report printed on a day
+ *  to come said "This report has no date"; the iPhone's page still does, KNOWN phoneFutureReportDate). */
+function pickerOf(chosen: string | null, day: string | null, now: string, asks: string | null, limits: string, printed: string | null = null) {
   if (day) return { picker: day, hint: null };
-  const pick = validDay(chosen, { now, latestDay: '9999-12-31' });
-  return { picker: pick, hint: chosen === null ? asks : pick && !validDay(pick, { now }) ? DAY_NOT_HAPPENED : limits };
+  const calendar = validDay(chosen ?? printed, { now, latestDay: '9999-12-31' });
+  const ahead = !!calendar && !validDay(calendar, { now });
+  if (chosen === null) return ahead ? { picker: calendar, hint: DAY_NOT_HAPPENED } : { picker: null, hint: asks };
+  return { picker: calendar, hint: ahead ? DAY_NOT_HAPPENED : limits };
 }
 
 /** A value's day source, from the day it printed alone. */
@@ -171,7 +179,7 @@ export function uploadList(s: UploadState, record: RoadmapFile, now: string, rev
       const day = lab.days[c.ref]?.slice(0, 10) ?? null;
       const control = (label: string, printedLine?: string) => ({ key: section, fileId: c.fileId, day, label, fileName: lab.name, name: [label, printedLine, lab.name].filter(Boolean).join(', ') });
       const before = lab.day?.slice(0, 10) ?? null;
-      if (printed === undefined) days.set(section, { ...control(UPLOAD_TEXT.dayOfTest), source: 'test', chosen: choices.testDay, ...pickerOf(choices.testDay, day, now, UPLOAD_TEXT.undatedTitle, DAY_CONTROL_TEXT.pickDay(null, null)) });
+      if (printed === undefined) days.set(section, { ...control(UPLOAD_TEXT.dayOfTest), source: 'test', chosen: choices.testDay, ...pickerOf(choices.testDay, day, now, UPLOAD_TEXT.undatedTitle, DAY_CONTROL_TEXT.pickDay(null, null), reads.get(c.fileId)!.extraction.reportDate ?? null) });
       else if (printed === UNDATED_PREVIOUS) {
         const limits = DAY_CONTROL_TEXT.pickDay(lab.previousMonth, before);
         days.set(section, { ...control(DAY_CONTROL_TEXT.previous), source: 'previous', chosen: choices.previousDay, month: lab.previousMonth, before, ...pickerOf(choices.previousDay, day, now, limits, limits) });

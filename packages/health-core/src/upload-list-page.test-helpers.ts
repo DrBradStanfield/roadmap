@@ -3,13 +3,12 @@
 // `uploadList` or `uploadListPage` computed. The mutation each was shown failing on is named beside it.
 import { isOfferedRef, offeredValues } from './import-review';
 import { DAY_NOT_HAPPENED } from './lab-series';
-import { validDay } from './record-edits';
 import { LPA_UNITS, UNIT_DEFS, type MetricType } from './units';
 import type { CellUnit } from './cell-unit';
 import { inFlight, type UploadState } from './upload-flow';
 import type { UploadList } from './upload-list';
-import type { ListPage } from './upload-list-page';
 import type { UploadReview } from './upload-review';
+import type { ListPage } from './upload-list-page';
 import { DAY_CONTROL_TEXT, UPLOAD_TEXT } from './upload-text';
 import type { UploadView } from './upload-view';
 
@@ -30,7 +29,8 @@ const labelOf = (metric: MetricType, unit: CellUnit) => (unit === 'si' || unit =
  * offers nothing. upload-view.property.test.ts checks it in the person's units; upload-list.units.property.test.ts across
  * unit toggles on its own seeds. Mutations: `label: shown.unit` (the row's display unit) fails it on held text typed in a
  * unit the person no longer reads (units file, seed 1: "L13: f0:v0 shows unit "mg/dL" (si), held text typed in si"); a
- * toggle kept on a row holding text (`!typed &&` dropped) fails it (units file, seed 1, and the main run, seed 35: "L13:
+ * system unit given for Lp(a)'s `current` unmapped (`reads as LpaUnit`) fails it (units file, seed 3: "L13: f0:v3 current
+ * si, shown in nmol/L; reads si"); a toggle kept on a row holding text (`!typed &&` dropped) fails it (units file, seed 1, and the main run, seed 35: "L13:
  * f0:v0 toggles to conventional, want null (holds text)").
  */
 export function checkUnits(s: UploadState, list: UploadList, unitOf: (m: MetricType) => CellUnit, fail: Fail) {
@@ -42,7 +42,7 @@ export function checkUnits(s: UploadState, list: UploadList, unitOf: (m: MetricT
       if (!row) continue;
       if (at.kind !== 'core' || !known(at.value.metric)) {
         const own = at.kind === 'core' ? at.value.displayUnit : at.value.unit;
-        if (JSON.stringify(row.unit) !== JSON.stringify({ label: own, typeIn: null, toggle: null, choices: null })) fail('L13', `${row.key} unit ${JSON.stringify(row.unit)}, printed ${own}`);
+        if (JSON.stringify(row.unit) !== JSON.stringify({ label: own, typeIn: null, toggle: null, choices: null, current: null })) fail('L13', `${row.key} unit ${JSON.stringify(row.unit)}, printed ${own}`);
         continue;
       }
       const metric = at.value.metric;
@@ -54,31 +54,62 @@ export function checkUnits(s: UploadState, list: UploadList, unitOf: (m: MetricT
       const toggle = two ? (unitOf(metric) === 'si' ? 'conventional' : 'si') : null;
       if (row.unit.toggle !== toggle) fail('L13', `${row.key} toggles to ${row.unit.toggle}, want ${toggle}${typed ? ' (holds text)' : ''}`);
       if (JSON.stringify(row.unit.choices) !== JSON.stringify(!typed && metric === 'lpa' ? LPA_UNITS : null)) fail('L13', `${row.key} choices ${JSON.stringify(row.unit.choices)}${typed ? ' (holds text)' : ''}`);
+      // Lp(a)'s current unit is the one of its three the person reads it in, by its label in the units table; its number is
+      // shown in it, and it is among the choices whenever they are offered (review H3).
+      const current = metric === 'lpa' ? labelOf(metric, unitOf(metric)) : null;
+      if (row.unit.current !== current || (current && row.shown.unit !== current)) fail('L13', `${row.key} current ${row.unit.current}, shown in ${row.shown.unit}; reads ${unitOf(metric)}`);
+      if (row.unit.choices && !row.unit.choices.includes(row.unit.current!)) fail('L13', `${row.key} current ${row.unit.current} not among ${JSON.stringify(row.unit.choices)}`);
     }
   }
 }
 
+/** A calendar day ("YYYY-MM-DD", alone or before a time), else null: by the calendar, not by the engine's rule. */
+function calendarDay(x: string | null | undefined): string | null {
+  const m = x ? /^(\d{4})-(\d{2})-(\d{2})(?:[T ]|$)/.exec(x) : null;
+  if (!m) return null;
+  const d = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
+  return d.getUTCMonth() === Number(m[2]) - 1 && d.getUTCDate() === Number(m[3]) ? `${m[1]}-${m[2]}-${m[3]}` : null;
+}
+/** Today on this device: `now` in local time, as a person's calendar reads it. */
+function today(now: string): string {
+  const d = new Date(now);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 /**
- * L14 day words. Every day control's picker shows its day, else a pick that is a calendar day, else nothing; a control
- * with a pick and no day always carries words saying why: a pick still to come "That day has not happened yet." (by the
- * clock), any other its limits (a day before the test's, in the undated column's printed month). Mutation: the words as
- * before PR 1e (`pickerOf` answering `hint: asks`, a dated column none) fails it (seed 7: "L14: f0|test picked 2026-12-01,
- * no day, says "This report has no date"; want "That day has not happened yet."").
+ * L14 day words, from first principles (review H4): for each control, from the extraction's printed days, the choices'
+ * picks and the clock alone. The test's day is its pick, else the report's printed day, when that is a calendar day that
+ * has come; a previous column's (undated or dated) is its pick when that has come and falls before the test's day, a dated
+ * column's with no pick the day it printed. With a day, the picker shows it and there are no words. Without one, the
+ * picker shows the pick, else for the test the report's printed day, when it is a calendar day; and the words say why: a
+ * day shown that is still to come has not happened; else, with a pick, the control's limits ("Pick a day", before the
+ * test's day, in the printed month for the undated column); with none, what it asks for ("This report has no date", or the
+ * undated column's limits). Mutations: the words as before PR 1e (`pickerOf` answering `hint: asks`, a dated column none)
+ * fail it (seed 7: "L14: f0|test picked 2026-12-01, no day, says "This report has no date"; want "That day has not
+ * happened yet.""); no `printed` passed for the test's control (review H2) fails it (seed 102: "L14: f0|test picked null (printed
+ * 2026-12-15) shows {"day":null,"picker":null,"hint":"This report has no date"}; want {...,"picker":"2026-12-15","hint":
+ * "That day has not happened yet."}").
  */
-export function checkDayWords(s: UploadState, review: UploadReview, list: UploadList, now: string, fail: Fail) {
-  const lab = new Map(review.labFiles.map((f) => [f.fileId, f]));
+export function checkDayWords(s: UploadState, list: UploadList, now: string, fail: Fail) {
+  const day0 = today(now);
+  const come = (d: string | null) => (d && d <= day0 ? d : null);
   for (const d of list.days) {
-    const pick = d.chosen === null ? null : validDay(d.chosen, { now, latestDay: '9999-12-31' });
-    const picker = d.day ?? pick;
-    if (d.picker !== picker) fail('L14', `${d.key} picker ${JSON.stringify(d.picker)}, day ${d.day}, picked ${d.chosen}`);
-    if (d.chosen === null || d.day !== null) continue;
-    const test = lab.get(d.fileId)?.day?.slice(0, 10) ?? null;
     const st = reads(s).find((f) => f.id === d.fileId)?.st;
-    // The month the report printed for its previous results, as the extraction gives it.
-    const month = st && [...(st.extraction.values ?? []), ...(st.extraction.additionalValues ?? [])].find((v) => v.printedMonth)?.printedMonth;
-    const want = pick && !validDay(pick, { now }) ? DAY_NOT_HAPPENED
-      : d.source === 'test' ? DAY_CONTROL_TEXT.pickDay(null, null) : DAY_CONTROL_TEXT.pickDay(d.source === 'previous' ? month ?? null : null, test);
-    if (d.hint !== want) fail('L14', `${d.key} picked ${d.chosen}, no day, says ${JSON.stringify(d.hint)}; want ${JSON.stringify(want)}`);
+    if (!st) { fail('L14', `${d.key} names no read file`); return; }
+    const x = st.extraction;
+    const c = st.choices;
+    const test = come(calendarDay(c.testDay ?? x.reportDate));
+    const before = (pick: string | null) => { const p = come(calendarDay(pick)); return p && (!test || p < test) ? p : null; };
+    const month = [...(x.values ?? []), ...(x.additionalValues ?? [])].find((v) => v.printedMonth)?.printedMonth ?? null;
+    const pick = d.source === 'test' ? c.testDay : d.source === 'previous' ? c.previousDay : c.columnDays?.[d.printed] ?? null;
+    const day = d.source === 'test' ? test : d.source === 'previous' ? before(pick) : pick === null ? d.printed : before(pick);
+    const shown = calendarDay(pick ?? (d.source === 'test' ? x.reportDate : null));
+    const limits = d.source === 'test' ? DAY_CONTROL_TEXT.pickDay(null, null) : DAY_CONTROL_TEXT.pickDay(d.source === 'previous' ? month : null, test);
+    const asks = d.source === 'test' ? UPLOAD_TEXT.undatedTitle : limits;
+    const want = day ? { day, picker: day, hint: null }
+      : { day: null, picker: shown, hint: shown && shown > day0 ? DAY_NOT_HAPPENED : pick !== null ? limits : asks };
+    const got = { day: d.day, picker: d.picker, hint: d.hint };
+    if (JSON.stringify(got) !== JSON.stringify(want)) fail('L14', `${d.key} picked ${JSON.stringify(pick)} (printed ${x.reportDate}) shows ${JSON.stringify(got)}; want ${JSON.stringify(want)}`);
   }
 }
 

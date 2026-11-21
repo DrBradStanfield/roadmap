@@ -41,21 +41,21 @@ const sbp = () => core({ metric: 'systolic_bp' as never, valueSI: 120, displayVa
 describe('1. a row\'s unit control (US-13 AC26, US-02)', () => {
   it('a two-unit test offers a toggle to the other unit; the label is the unit shown', () => {
     const s = open([labRead('f0', { values: [core({})] })]);
-    expect(list(s, () => 'si').rows[0].unit).toEqual({ label: 'mmol/L', typeIn: 'si', toggle: 'conventional', choices: null });
-    expect(list(s, () => 'conventional').rows[0].unit).toEqual({ label: 'mg/dL', typeIn: 'conventional', toggle: 'si', choices: null });
+    expect(list(s, () => 'si').rows[0].unit).toEqual({ label: 'mmol/L', typeIn: 'si', toggle: 'conventional', choices: null, current: null });
+    expect(list(s, () => 'conventional').rows[0].unit).toEqual({ label: 'mg/dL', typeIn: 'conventional', toggle: 'si', choices: null, current: null });
   });
 
   it('Lp(a) offers its three units to choose from, no toggle; its label is the unit chosen', () => {
     const s = open([labRead('f0', { values: [lpa()] })]);
-    expect(list(s, (m) => (m === 'lpa' ? 'mg/L' : 'si')).rows[0].unit).toEqual({ label: 'mg/L', typeIn: 'mg/L', toggle: null, choices: ['nmol/L', 'mg/dL', 'mg/L'] });
+    expect(list(s, (m) => (m === 'lpa' ? 'mg/L' : 'si')).rows[0].unit).toEqual({ label: 'mg/L', typeIn: 'mg/L', toggle: null, choices: ['nmol/L', 'mg/dL', 'mg/L'], current: 'mg/L' });
   });
 
   it('a fixed unit, a lab and a core metric this build does not know offer no control', () => {
     const s = open([labRead('f0', { values: [sbp(), core({ metric: 'mystery' as never, valueSI: 5, displayValue: 5, displayUnit: 'zz' })], additionalValues: [extra({})] })]);
     expect(list(s).rows.map((r) => r.unit)).toEqual([
-      { label: 'mmHg', typeIn: 'si', toggle: null, choices: null },
-      { label: 'zz', typeIn: null, toggle: null, choices: null },
-      { label: 'µg/L', typeIn: null, toggle: null, choices: null },
+      { label: 'mmHg', typeIn: 'si', toggle: null, choices: null, current: null },
+      { label: 'zz', typeIn: null, toggle: null, choices: null, current: null },
+      { label: 'µg/L', typeIn: null, toggle: null, choices: null, current: null },
     ]);
   });
 
@@ -68,13 +68,24 @@ describe('1. a row\'s unit control (US-13 AC26, US-02)', () => {
       expect(row.typed).toEqual({ text: 'abc', unit: 'conventional' });
       expect(row.unit).toMatchObject({ label: 'mg/dL', typeIn: 'conventional' });
       expect(row.unit).toMatchObject({ toggle: null, choices: null });
-      expect(other.unit).toEqual({ label: shows === 'si' ? 'mmol/L' : 'mg/dL', typeIn: shows, toggle: shows === 'si' ? 'conventional' : 'si', choices: null });
+      expect(other.unit).toEqual({ label: shows === 'si' ? 'mmol/L' : 'mg/dL', typeIn: shows, toggle: shows === 'si' ? 'conventional' : 'si', choices: null, current: null });
+    }
+  });
+
+  // Review H3: the screen marks the chosen Lp(a) unit from `current`, never by mapping a system unit itself.
+  it('Lp(a)\'s current unit: unitOf\'s Lp(a) unit, or for a system the web\'s rule (US units mg/dL, else nmol/L); the shown number is in it', () => {
+    const s = open([labRead('f0', { values: [lpa()] })]);
+    const cases: Array<[CellUnit, string]> = [['nmol/L', 'nmol/L'], ['mg/dL', 'mg/dL'], ['mg/L', 'mg/L'], ['si', 'nmol/L'], ['conventional', 'mg/dL']];
+    for (const [unit, current] of cases) {
+      const row = list(s, () => unit).rows[0];
+      expect([unit, row.unit.current, row.shown.unit]).toEqual([unit, current, current]);
+      expect(row.unit.choices).toContain(row.unit.current);
     }
   });
 
   it('held Lp(a) text typed in mg/dL keeps mg/dL beside it while the person reads nmol/L', () => {
     const s = chose(open([labRead('f0', { values: [lpa()] })]), 'f0', { typed: 'v0', text: '1,2,3', unit: 'mg/dL' });
-    expect(list(s, () => 'si').rows[0].unit).toEqual({ label: 'mg/dL', typeIn: 'mg/dL', toggle: null, choices: null });
+    expect(list(s, () => 'si').rows[0].unit).toEqual({ label: 'mg/dL', typeIn: 'mg/dL', toggle: null, choices: null, current: 'nmol/L' });
   });
 });
 
@@ -98,6 +109,19 @@ describe('2. a day control\'s picker and words (US-13 AC24, AC26)', () => {
     const base = open([labRead('f0', { values: [core({ recordedAt: UNDATED_PREVIOUS, printedMonth: '2026-10' })] })]);
     expect(list(chose(base, 'f0', { previousDay: DAY })).days[0]).toMatchObject({ chosen: DAY, day: null, picker: DAY, hint: DAY_CONTROL_TEXT.pickDay('2026-10', DAY) });
     expect(list(chose(base, 'f0', { previousDay: '2026-10' })).days[0]).toMatchObject({ chosen: '2026-10', day: null, picker: null, hint: DAY_CONTROL_TEXT.pickDay('2026-10', DAY) });
+  });
+
+  // Review H2: a report printed on a day still to come, with no pick, has a date, one that has not happened.
+  it('a report printed on a day to come, no pick: the picker shows the printed day, and that day has not happened', () => {
+    const s = open([labRead('f0', { reportDate: '2026-12-15', values: [core({})] })]);
+    expect(list(s).days[0]).toMatchObject({ chosen: null, day: null, picker: '2026-12-15', hint: DAY_NOT_HAPPENED });
+  });
+
+  // KNOWN phoneFutureReportDate (lead): the iPhone's page, unchanged, still titles that report "This report has no date".
+  it('KNOWN phoneFutureReportDate: the phone\'s view still says "This report has no date" for a report printed on a day to come', () => {
+    const s: UploadState = { ...open([labRead('f0', { reportDate: '2026-12-15', values: [core({})] })]), platform: 'phone' };
+    const section = uploadView(s, EMPTY, NOW, uploadReview(s, EMPTY, NOW), false).sections.find((x) => x.kind === 'undated');
+    expect(section).toMatchObject({ title: UPLOAD_TEXT.undatedTitle, chosen: null });
   });
 
   it('with a day, the picker shows it and no words; with none and no pick, the asking words as before', () => {

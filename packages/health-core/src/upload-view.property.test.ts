@@ -259,7 +259,7 @@ function checkView(s: UploadState, record: RoadmapFile, setup: Setup, note: Note
   // L13 in the person's units; across unit toggles on its own seeds (upload-list.units.property.test.ts), so this run
   // stays inside CI's time budget.
   checkUnits(s, list, unitOf, fail);
-  checkDayWords(s, review, list, NOW, fail);
+  checkDayWords(s, list, NOW, fail);
   const page = uploadListPage(s, record, NOW, review, cloud);
   checkLetters(s, view, page, fail);
   checkSaveBar(s, review, view, page, fail);

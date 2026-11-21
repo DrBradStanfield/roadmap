@@ -61,7 +61,8 @@ describe('L13 across unit toggles, on its own seeds', () => {
         s = transition(s, { type: 'chose', id: 'f0', change, now: NOW }).state;
         // The person's units now: each test's toggle, or Lp(a)'s pick, chosen afresh, as after any sequence of toggles.
         const system = pick(['si', 'conventional'] as const);
-        const lpa = pick(LPA_UNITS);
+        // Lp(a) as the web may read it: one of its three units, or a system unit (review H3: `current` maps it).
+        const lpa = pick(UNITS);
         const unitOf = (m: MetricType): CellUnit => (m === 'lpa' ? lpa : system);
         const list = uploadList(s, EMPTY, NOW, uploadReview(s, EMPTY, NOW), unitOf);
         try { checkUnits(s, list, unitOf, fail); } catch (e) {

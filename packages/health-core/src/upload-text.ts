@@ -63,7 +63,7 @@ export const UPLOAD_TEXT = {
   /** A conflict whose Replace is on (the web shows only the ticked box). */
   replaces: 'Replaces the value in your record.',
   /** The web review's Save button while it saves, and its close button's two words (ReviewTable.tsx, UploadModal.tsx's
-   *  Cancel while files are read), byte for byte; the grid keeps its copies until the list replaces it. */
+   *  Cancel while files are read), byte for byte; both now import them. */
   saving: 'Saving...',
   cancel: 'Cancel',
   close: 'Close',
