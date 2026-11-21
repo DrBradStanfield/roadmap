@@ -73,8 +73,10 @@ both call it before each event and each view.
 ```ts
 export function uploadMatrix(s: UploadState, record: RoadmapFile, now: string, review: UploadReview, unitOf: (metric: MetricType) => CellUnit): UploadMatrix;
 export interface UploadMatrix { columns: MatrixColumn[]; rows: MatrixRow[]; cells: MatrixCell[]; notSaved: ReturnType<typeof notSavedGroups>; blockers: Blocker[] }
-/** key: `${fileId}|test`, `${fileId}|previous`, `${fileId}|${printed}`, or a record-only day. Never re-keyed by a pick. */
-export interface MatrixColumn { key: string; day: string | null; upload: boolean; control: DayControl | null }
+/** key, as main keys columns (review-matrix.ts:146-157, 164-166): a PRINTED day (a dated report, a dated previous column,
+ *  a record-only day) is keyed by that day and merges across files; a PICKED day (an undated report's test column,
+ *  an undated previous column) is keyed `${fileId}|test` or `${fileId}|previous`, picked or not: never re-keyed, never merged. */
+export interface MatrixColumn { key: string; day: string | null; upload: boolean; controls: DayControl[] }
 export interface DayControl { fileId: string; column: DayColumn; pick: string | null; blocks: boolean; month: string | null; before: string | null }
 /** key: `${slot}|${metric}` from `bulkRowTarget`: a lab filed as core sits in the core row. shown: the `reviewRows` rule. */
 export interface MatrixRow { key: string; kind: 'core' | 'lab'; metric: string; label: string; unit: string | null; referenceLow: number | null; referenceHigh: number | null; shown: boolean }
@@ -94,15 +96,16 @@ that is not a number, `typedText`; `typed` text `""`, `cleared`; not ticked, `un
 reason `sameDay`, `second`; group `saved`, `alreadySaved`; `blocks`, `error`; group `unsure` with
 `conflict`, `conflictKept`; group `notSaved`, `notSaved`. Anything else throws (P6 finds it).
 
-Cells and rows: a value with a slot or a waiting column has a reading in its file's column; a
+Cells and rows: a value with a slot or a waiting column has a reading in its column (its printed
+day's, else its file's picked column). A merged printed-day column can hold several readings in
+one cell (ruling b). A slot can also sit in a printed-day column and a picked column of the same
+day; the loser is drawn in its own cell with the `sameDay` caption. A
 value with neither (a lab refused whatever its day, a printed day still to come) is named in
 `notSaved`, unless it has `typed` text or an edit, so its control stays. `editable` is false only
 for `second`: while the slot's writer is sent, a loser cannot save (review-slots.ts:66-67), and
 an edited reading is never a duplicate, so editing it changes nothing Save does; to change the
-outcome the person clears the writer, whose input is in reach. In a cell with two editable
-readings (one file printing a test twice, one equal to the held row and one not), the second
-input's name is "words: owner"; the first keeps "<test> value from <column>"
-(ReviewMatrix.tsx:306). `shown` uses `cellNumber`, `typed` text or the lab's number; the web formats nothing.
+outcome the person clears the writer, whose input is in reach. The one cell with two editable
+readings is in "For Brad"; every other input keeps "<test> value from <column>" (ReviewMatrix.tsx:306). `shown` uses `cellNumber`, `typed` text or the lab's number; the web formats nothing.
 
 ## 2. Properties (upload-matrix.property.test.ts, in the engine PR)
 
@@ -152,6 +155,7 @@ test, because they were web-state bugs that no engine property can see.
 | L2 | Text typed back to the printed number stayed "edited" (lead) | P2 via `typed` |
 | L3 | `history` and the upload's record were two snapshots (lead) | gone: one record in |
 | L4 | An invalid typed cell, moved by a pick, stopped blocking (lead) | P4 both ways |
+| C1 | A picked column's day equal to a printed column's day: two cells, one slot | P5, P6 (loser `second`) |
 
 ## 3. Web PRs
 
@@ -183,7 +187,7 @@ The split (each PR leaves the page and the engine agreeing):
   its draft, with the jsdom generative test (150 seeds; each DOM input shows its reading's
   `shown`, inputs drawn as saving are the `saves` readings, Save is disabled exactly when
   `view.save.enabled` is false, every blocker's control is in the DOM) and gesture pins D1, D2, D7.
-  Not mounted yet.
+  Not mounted: see the merge condition in section 6.
 - **3b, the swap** (about -950): ReviewTable mounts it on the upload state, `chose` and
   `uploadSave` (1906's wiring, section 4), and the deletions above land.
 
@@ -213,7 +217,13 @@ It keeps `hold` until 3b opens, then closes as superseded. Picks are diffed agai
 web before 1906); (ii) both file the letter alone (main's shared engine reads values only from lab
 reports); (iii) per platform. D6: a lab report with nothing ticked, cloud connected. (i) Both file
 the original; (ii) both file it only with saved values (main's engine, upload-plan.ts:63);
-(iii) per platform. No recommendation here: D3 is clinical content.
+(iii) per platform. No recommendation here: D3 is clinical content. Second input name (words:
+owner): two readings of one test that both claim one slot, at the same rank, the first equal to
+the held row and the second different (`placeReadings`, review-slots.ts:66-67, lets both in). It
+happens when one report prints a test twice in a column, or two reports of one printed day both
+print it. Suggested, from existing words: "<test> value from <column>, another reading": the cell
+label (ReviewMatrix.tsx:306) plus "another reading" from `NOT_SAVED_TEXT.sameDay`
+(import-review.ts). Needs a yes, since the joined phrase is new.
 
 ## 5. Rulings
 
@@ -232,13 +242,14 @@ reversed in round two.
 **Second round, 21 Nov (adversary findings).**
 - B1: PR 0 is `columnDays` + `needsColumnDay` only; `unstored` is PR U for a separate ruling; D3
   and D6 leave the series. Not chosen: carrying the whole engine half.
-- B2/G4/G5: typed text lives in the engine (1b); emptying a cell never unticks; the web holds one
-  draft. Not chosen: a per-keystroke `unread` flag, which held a slot and dropped Replace.
+- B2/G4/G5: typed text lives in the engine (1b), number text included, so the screen shows what
+  Save writes; emptying a cell never unticks; the web holds one draft. Not chosen: a per-keystroke `unread` flag, which held a slot and dropped Replace.
 - G3: the engine parses and converts (1b); `dropLostReplaces` is one shared function (1d).
-- B3: columns are keyed by file and never merge or re-key; cells by (row, column); P5 per slot.
-  Not chosen: e1. Disagreement, for the record: main merges dated columns of different files by
-  day (review-matrix.ts:146-157, 164-166); only an undated previous column is keyed by its file.
-  So this ruling changes main: two reports of one day now show as two columns.
+- B3, final (after my note that main merges dated columns by day): columns behave exactly as main
+  does (1e): printed days keyed by day and merged, picked days keyed by file and never re-keyed or
+  merged, so a pick never remounts a header and two dated reports of one day still share a column.
+  Cells by (row, column); P5 per slot; pin C1. Not chosen: e1 (every column by day, re-keyed on a
+  pick); every column by file (changes main for two reports of one day).
 - B4/G1: P6, and P1 and P3 rebuilt on it. G2: P2 over changed records; P4's converse; D1, D2, D7
   pinned in jsdom.
 - G6: one accessible name per input; `second` readings are not inputs (1e).
@@ -246,7 +257,8 @@ reversed in round two.
   its day has no cell, so it cannot be edited from the matrix. A lab that had a cell, was edited
   to an implausible number and then back to a plausible one in an undated report makes the report
   wait: yes, there is a control, the picker on that cell's own column (`${fileId}|test`).
-- G7: PR 1 and PR 2 merged; PR 3 split as 3a/3b; `planKeys` built from rows (1a).
+- G7: PR 1 and PR 2 merged; PR 3 split as 3a/3b, accepted on the merge condition in section 6;
+  `planKeys` built from rows (1a).
 
 ## 6. PR order and size
 
@@ -258,6 +270,8 @@ reversed in round two.
 | 3b | Mount, 1906's wiring, deletions; 1906 closes | about -950 |
 | U | `unstored` counts every failed write (needs a ruling) | about 0 |
 
+Merge condition for 3a and 3b: 3b's PR is opened, green and reviewed before 3a merges, and the
+two merge back to back, so main never carries the unmounted component across a deploy.
 PRs 0 and 1 list their files for the engine-path merge check; 0, 1 and 3b feed the write, so each
 gets the adversary and Codex pair. Under 500 lines (now, then expected): `upload-flow.ts` 404,
 nothing added; `import-review.ts` 413, unchanged; `upload-view.ts` 334, about 345;
