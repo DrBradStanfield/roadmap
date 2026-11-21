@@ -20,9 +20,9 @@ import { GATE_WORDS_MAX, NETWORK_FAILURES, UPLOAD_FAILURES, type UploadFailure }
 import type { UploadEffect, UploadEvent, UploadState } from './upload-flow';
 
 const text = z.string();
-const maybeText = z.string().nullable();
+export const maybeText = z.string().nullable();
 const count = z.number().int().nonnegative();
-const platform = z.enum(['web', 'phone']);
+export const platform = z.enum(['web', 'phone']);
 const comparator = z.enum(COMPARATORS).optional();
 const day = { recordedAt: text.optional(), printedMonth: text.optional() };
 const confidence = z.enum(['high', 'medium', 'low']);

@@ -389,7 +389,7 @@ export const DOORS = {
     kind: 'sync',
     optionalDoor: true,
     args: [['request', text]],
-    returns: "Shared upload PR 3 (US-52 AC7): the upload's verdicts for one pick, by health-core upload-rules (fileVerdict, zipMemberVerdict, UPLOAD_LIMITS.phone), as JSON {limits: {fileBytes, zipBytes, filesPerPick, zipMembers, pdfPages, textPageChars, folderBytes, photoPx, sendsInFlight, convertsInFlight}, files: [verdict], zipMembers: [verdict]} for request {files: [{name, bytes}], zipMembers: [path]}, in order; each verdict \"keep\", \"tooLarge\", \"unsupported\" or \"hidden\". An engine before it has no such door: the app reads that as unavailable (optionalCall answers nil) and keeps LabFileReader's Swift rules, which answer the same today (lead U14: delete them once the engine floor guarantees the door).",
+    returns: "Shared upload PR 3 (US-52 AC7): the upload's verdicts for one pick, by health-core upload-rules (fileVerdict, zipMemberVerdict, UPLOAD_LIMITS.phone), as JSON {limits: {fileBytes, zipBytes, filesPerPick, zipMembers, pdfPages, textPageChars, folderBytes, photoPx, sendsInFlight, convertsInFlight}, files: [verdict], zipMembers: [verdict]} for request {files: [{name, bytes}], zipMembers: [path]}, in order; each verdict \"keep\", \"tooLarge\", \"unsupported\" or \"hidden\". An engine before it has no such door: the app reads that as unavailable (optionalCall answers nil) and keeps nothing: the shared upload runs only on an engine that has the door, and the app holds no Swift copy of these rules (lead U14).",
   },
   labReviewGroupsJson: {
     kind: 'sync',
@@ -414,7 +414,7 @@ export const DOORS = {
   // "invalid-state", "invalid-event", "invalid-record", "record-too-new" or "engine-error"; never a throw. The
   // state is health-core UploadState, opaque to the app: it stores what a door answered and
   // sends it back. An engine before them has no such doors: optionalCall answers nil, and the
-  // app keeps today's per-report flow, never a crash.
+  // app says the pick was not read, never a crash.
   uploadStartJson: {
     kind: 'sync',
     optionalDoor: true,
@@ -437,7 +437,7 @@ export const DOORS = {
     kind: 'sync',
     optionalDoor: true,
     args: [['stateJson', text], ['recordJson', text], ['nowIso', text], ['cloudConnected', flag], ['deviceId', text]],
-    returns: "Shared upload (US-52 AC8c): what one Save writes, health-core UploadSavePlan as JSON {labRows: [{fileId, rows}], documents: [{fileId, fields}], labArchives: [{fileId, sourceFileName, reportDate}], archiveOnly: [{fileId, fields}], counts: {values, documents, archived, originals}}, from the same review rule as uploadViewJson. Read only: the save itself still goes through cloudLabImport, labSaveSummaryJson and documentSave.",
+    returns: "Shared upload (US-52 AC8c): what one Save writes, health-core UploadSavePlan as JSON {labRows: [{fileId, rows}], documents: [{fileId, fields}], labArchives: [{fileId, sourceFileName, reportDate}], archiveOnly: [{fileId, fields}], counts: {values, documents, archived, originals}}, from the same review rule as uploadViewJson. Read only: the save itself goes through uploadSaveJson.",
   },
   uploadUsageJson: {
     kind: 'sync',

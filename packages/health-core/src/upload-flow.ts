@@ -10,7 +10,7 @@
 import { fileNameLine, MAX_FILE_NAME_LENGTH, zipMemberName, type UnifiedExtractionResult } from './lab-extraction';
 import type { FailDetail, UploadFailure } from './upload-failure';
 import type { NotSavedReason } from './import-review';
-import { choose, NO_CHOICES, type ChoiceChange, type FileChoices } from './upload-choices';
+import { choose, NO_CHOICES, untick, type ChoiceChange, type FileChoices } from './upload-choices';
 import type { Known } from './upload-known';
 import type { ReviewedValue } from './upload-review';
 import { fileVerdict, requestFlags, UPLOAD_LIMITS, zipMemberVerdict, type RequestFlags, type UploadPlatform } from './upload-rules';
@@ -382,9 +382,7 @@ export function transition(s: UploadState, e: UploadEvent): UploadStep {
         const refs = e.lost.filter((l) => l.id === f.id && f.status.s === 'read' && f.status.choices.replace[l.ref] !== undefined).map((l) => l.ref);
         if (!refs.length) return f;
         changed = true;
-        const { choices } = f.status;
-        const replace = Object.fromEntries(Object.entries(choices.replace).filter(([ref]) => !refs.includes(ref)));
-        return { ...f, status: { ...f.status, choices: { ...choices, replace, ticks: { ...choices.ticks, ...Object.fromEntries(refs.map((ref) => [ref, false])) } } } };
+        return { ...f, status: { ...f.status, choices: refs.reduce(untick, f.status.choices) } };
       });
       return changed ? same({ ...pickOf(s), phase: 'open', files }) : same(s);
     }
