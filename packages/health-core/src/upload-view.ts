@@ -22,6 +22,7 @@ import { readFiles, reviewedWrites, type ReviewedValue, type UploadReview } from
 import { failLine, FILE_NOTICE_TEXT, FIX_ERRORS_TEXT, longDate, REFUSED_TEXT, REVIEW_CELL_TEXT, UNREADABLE_VALUE_TEXT, UPLOAD_TEXT } from './upload-text';
 import { UNDATED_PREVIOUS, type UnifiedExtractionResult } from './lab-extraction';
 import { withComparator } from './lab-limits';
+import { candidates } from './upload-candidates';
 import { validDay } from './record-edits';
 
 /**
@@ -176,7 +177,7 @@ function printedFacts(x: UnifiedExtractionResult | undefined, ref: string, day: 
 
 /** A held row as readers show it: its number with the limit sign this build reads in it (an older build's
  *  copied sign on a correction left out, US-12 AC20) and its unit; never a row no reader can read (US-65 AC3). */
-function heldText(row: FileMeasurement | FileLabValue | undefined, record: RoadmapFile): string | null {
+export function heldText(row: FileMeasurement | FileLabValue | undefined, record: RoadmapFile): string | null {
   if (!row) return null;
   if (!isReadableRow('metricType' in row ? 'measurements' : 'labValues', row)) return UNREADABLE_VALUE_TEXT;
   const unit = 'metricType' in row ? getDisplayLabel(row.metricType as MetricType, 'si') : row.unit;
@@ -268,20 +269,25 @@ function save(s: UploadState, plan: UploadSavePlan, review: UploadReview): Uploa
 }
 
 /**
- * What Save waits on, each once with the control that removes it: a selected value the write would refuse (its row),
- * then a report still waiting for a day (that day's control; no report is ever skipped by Save). A dated previous
- * column waits by the day it printed (`printed:<day>`), for each ticked value of it in `waits` (US-13 AC24).
+ * What Save waits on, each once with the control that removes it: a value that blocks (upload-candidates.ts: held typed
+ * text, or selected with a fault) at its row, a report still waiting for a day at that day's control (no report is ever
+ * skipped by Save). A dated previous column waits by the day it printed (`printed:<day>`), for each ticked value of it in
+ * `waits` the write could take (US-13 AC24). Sent rows first, then days, then rows not sent: the first says `why`.
  */
 export function saveBlockers(review: UploadReview, s: UploadState): Blocker[] {
   const choose = (fileId: string, source: Parameters<typeof dayKey>[1]) => ({ why: UPLOAD_TEXT.chooseDay, at: dayKey(fileId, source) });
-  const reads = new Map(readFiles(s).map((f) => [f.id, f.status.extraction]));
+  const values = candidates(review, s);
+  const fix = (sent: boolean) => values.filter((c) => c.blocks && c.v.sent === sent).map((c) => ({ why: FIX_ERRORS_TEXT, at: `${c.fileId}:${c.ref}` }));
   const all = [
-    ...review.classification.values.filter(blocks(review)).map((v) => ({ why: FIX_ERRORS_TEXT, at: `${review.labFiles[v.file].fileId}:${v.ref}` })),
-    ...review.labFiles.flatMap((f) => [
+    ...fix(true),
+    ...review.labFiles.flatMap((f, i) => [
       ...(f.needsTestDay ? [choose(f.fileId, 'test')] : []),
       ...(f.needsPreviousDay ? [choose(f.fileId, 'previous')] : []),
-      ...f.waits.filter((ref) => f.ticked.includes(ref)).map((ref) => choose(f.fileId, `printed:${valueAt(reads.get(f.fileId) ?? {}, ref)?.value.recordedAt}`)),
+      // A value the write refuses whatever its day sits under Not saved and holds up no column (`needsColumnDay`).
+      ...(f.needsColumnDay ? values.filter((c) => c.file === i && c.ticked && f.waits.includes(c.ref) && c.v.group !== 'notSaved')
+        .map((c) => choose(f.fileId, `printed:${c.at.value.recordedAt}`)) : []),
     ]),
+    ...fix(false),
   ];
   return all.filter((b, i) => all.findIndex((o) => o.at === b.at) === i);
 }

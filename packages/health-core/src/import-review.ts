@@ -34,7 +34,11 @@ export interface ImportFile {
    *  person's choice for an undated column and any edited report date; null
    *  while it has none (`valueDays`). */
   days: Readonly<Record<string, string | null>>;
+  /** Each ref's Replace and edited number, as `importRow` takes them: a value not sent is previewed with its edit too. */
+  options?: Readonly<Record<string, ImportOptions>>;
 }
+/** A ref's Replace (`correctsId`) and edited number. */
+export interface ImportOptions { correctsId?: string; edited?: { value: number } }
 
 /** A value the person can tick, by its ref: `v<i>` a core value, `a<i>` an additional one. */
 export type OfferedValue = { ref: string; kind: 'core'; value: ExtractedValue } | { ref: string; kind: 'lab'; value: AdditionalLabValue };
@@ -58,10 +62,14 @@ export function valueAt(result: Offers, ref: string): OfferedValue | undefined {
 /** A core value's ref (`v<i>`), by its prefix alone. */
 export const isCoreRef = (ref: string) => ref[0] === 'v';
 
-/** Each value's day: its own printed day, else `fileDay` (the report's, or
- *  the one picked); an undated previous column's is `undatedDay` (null until picked). */
-export function valueDays(result: ImportFile['result'], fileDay: string | null, undatedDay: string | null = null): Record<string, string | null> {
-  const day = (own?: string) => (own === undefined ? fileDay : own === UNDATED_PREVIOUS ? undatedDay : own);
+/** A dated previous column's day by the day it printed (the shared upload's, US-13 AC24): `moving`, a real past day picked
+ *  for it; `waiting`, a pick that is no such day yet, so its values have none. */
+export interface ColumnDays { moving: ReadonlyMap<string, string>; waiting: ReadonlySet<string> }
+
+/** Each value's day: its own printed day, else `fileDay` (the report's, or the one picked); an undated previous column's
+ *  is `undatedDay` (null until picked); a dated previous column's, its pick (`columns`), none while that waits. */
+export function valueDays(result: ImportFile['result'], fileDay: string | null, undatedDay: string | null = null, columns?: ColumnDays): Record<string, string | null> {
+  const day = (own?: string) => (own === undefined ? fileDay : own === UNDATED_PREVIOUS ? undatedDay : columns?.waiting.has(own) ? null : columns?.moving.get(own) ?? own);
   return Object.fromEntries(offeredValues(result).map(({ ref, value }) => [ref, day(value.recordedAt)]));
 }
 
@@ -97,16 +105,16 @@ export function importRow(result: ImportFile['result'], ref: string, day: string
  */
 export function reportImportFile(
   result: ImportFile['result'], ticked: Iterable<string>, day: string | null, now: string, undatedDay: string | null = null,
-  options: Readonly<Record<string, { correctsId?: string; edited?: { value: number } }>> = {},
+  options: Readonly<Record<string, ImportOptions>> = {}, columns?: ColumnDays,
 ): ImportFile {
-  const days = valueDays(result, day, undatedDay);
+  const days = valueDays(result, day, undatedDay, columns);
   const rows: Record<string, BulkRow> = {};
   for (const ref of ticked) {
     const on = days[ref] ? validDay(days[ref]!, { now }) : null;
     const row = on ? importRow(result, ref, on, options[ref]) : null;
     if (row) rows[ref] = row;
   }
-  return { result, rows, days };
+  return { result, rows, days, options };
 }
 
 /** A value the person can tick: a core (`v<i>`) or additional (`a<i>`) one, never a refused or unread row. */
@@ -296,7 +304,9 @@ export function classifyImportValues(files: readonly ImportFile[], record: Roadm
   // 3) A value not sent: what ticking it alone would do; with no day, only its refusal.
   for (const u of unsent) {
     const file = files[u.file];
-    const row = importRow(file.result, u.ref, u.day ?? PROBE_DAY)!;
+    // Previewed with the person's edit, as it would be sent (never a Replace: it has no slot until it is sent).
+    const edited = file.options?.[u.ref]?.edited;
+    const row = importRow(file.result, u.ref, u.day ?? PROBE_DAY, edited ? { edited } : {})!;
     const [g] = u.day ? groupsOf([{ row, reasons: [...u.reasons] }], record, held, now) : groupsOf([{ row, reasons: [...u.reasons] }], empty, heldEmpty, now);
     const shown: Group = u.day || g.group === 'notSaved' || (g.group === 'unsure' && g.reasons.includes('outOfRange')) ? { ...g, writes: false } : { group: 'waiting', writes: false };
     values.push({ ...label(u, false), ...shown } as ClassifiedValue);

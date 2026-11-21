@@ -76,6 +76,8 @@ export const REVIEW_CELL_TEXT = {
   replaceLabel: (test: string, day: string) => `Replace the saved ${test} value from ${day}`,
   /** A value whose unit the read guessed, in the iPhone review's words (LabReviewView.swift), byte for byte. */
   checkUnit: 'Check this value and its unit against the report',
+  /** A row whose value the record already holds, equal, on its day: the web list's caption (Brad 2026-11-21, US-13 AC26). */
+  alreadyInRecord: 'Already in your record',
 } as const;
 
 /** A held value no reader can read is never echoed (US-65 AC3): the agent tools' words for it (mcp-refusals.ts), shared. */

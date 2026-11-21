@@ -14,6 +14,7 @@ import { UPLOAD_EVENT, UPLOAD_STATE } from './upload-schema';
 import { UPLOAD_TEXT } from './upload-text';
 import { uploadSavePlan } from './upload-plan';
 import { lostReplaces } from './upload-review';
+import { uploadList } from './upload-list';
 import { uploadView } from './upload-view';
 
 const COLUMN = '2026-05-01';
@@ -135,8 +136,11 @@ describe('US-13 AC24: review fixes (PR 1926 adversary and Codex)', () => {
     expect(rows.map((r) => r.day).sort()).toEqual(plan.map((r) => r.recordedAt.slice(0, 10)).sort());
     expect(rows.find((r) => r.ref === 'v0')?.day).toBe('2026-05-02');
     const waits = open(prev(), choose(NO_CHOICES, { columnDay: COLUMN, day: 'partial:2026::' }, NOW, prev())!);
-    const w = uploadView(waits, EMPTY, NOW, uploadReview(waits, EMPTY, NOW), false);
-    expect([...(w.sure?.rows ?? [])].find((r) => r.ref === 'v0')).toMatchObject({ day: null, dayLine: null });
+    const wr = uploadReview(waits, EMPTY, NOW);
+    // Web list PR 1b: a waiting column's value has no day, so it is judged on none (never previewed on the day it printed):
+    // it waits, out of the phone's view, and is a row of the web's list under its column, saving nothing.
+    expect(wr.classification.values.find((v) => v.ref === 'v0')).toMatchObject({ group: 'waiting', sent: false });
+    expect(uploadList(waits, EMPTY, NOW, wr, () => 'si').rows.find((r) => r.ref === 'v0')).toMatchObject({ section: `lab|printed:${COLUMN}`, status: { kind: 'waits' }, saves: false });
   });
 
   it('D: while a column waits, a Replace chosen on its value is kept, not lost, and nothing is written', () => {

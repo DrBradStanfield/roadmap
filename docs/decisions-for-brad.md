@@ -28,6 +28,11 @@ None today.
 - The not-stored count counts every failed original, using the same layout elements as the original save
   confirmation.
 - Screen-reader name for a second reading: "<test> value from <column>, another reading" ("sure").
+- The web upload list shows every value the reader offered as a row, in every state; a row never disappears, only
+  its caption changes; untouched rows that need nothing sit behind "Show all" (US-13 AC26).
+- The caption for a value the record already holds: "Already in your record".
+- Two readings of one test on one day (the owner thread's ruling): both rows are drawn; the one that loses stays ticked
+  and editable, says "another reading of this test is on the same day" and saves nothing.
 - The GLP-1 hint sentence "GLP-1 medications reduce appetite and improve blood sugar control." is approved.
 
 2026-11-21, the owner's calls (Fable, not Brad):

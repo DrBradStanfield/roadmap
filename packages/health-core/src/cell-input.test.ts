@@ -5,7 +5,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { core, EMPTY, extra, NOW } from './import-review.test-helpers';
-import { shownValue } from './cell-input';
+import { ENTER_A_NUMBER, NUMERIC_SYNTAX_GUIDANCE, shownValue, typedCommit, typedTextError } from './cell-input';
 import { valueAt } from './import-review';
 import type { UnifiedExtractionResult } from './lab-extraction';
 import { NO_CHOICES } from './upload-choices';
@@ -49,5 +49,29 @@ describe('the upload view carries it only when given units', () => {
   it('the web\'s rows show the number in the person\'s unit; the iPhone\'s, given none, have no `shown`', () => {
     expect(rows('web', () => 'conventional')).toEqual([expect.objectContaining({ ref: 'v0', saves: true, shown: expect.objectContaining({ number: '120', unit: 'mg/dL' }) })]);
     expect(rows('phone')[0]).not.toHaveProperty('shown');
+  });
+});
+
+describe('typed text in a row (web list PR 1b; US-13 AC5, AC12; US-02 AC4, AC7)', () => {
+  const ldl = (valueSI: number) => valueAt({ values: [core({ valueSI, displayValue: valueSI })] }, 'v0')!;
+  const ferritin = valueAt({ additionalValues: [extra({})] }, 'a0')!;
+
+  it('held text reads the cells\' guidance, moved byte for byte', () => {
+    expect(typedTextError('abc')).toBe(NUMERIC_SYNTAX_GUIDANCE);
+    expect(typedTextError('3..5')).toBe(ENTER_A_NUMBER);
+    expect(ENTER_A_NUMBER).toBe('Enter a number');
+    expect(typedTextError('1,234')).toMatch(/1234/);
+  });
+
+  it('commits: held, the same, or an edit in SI; a unit that does not fit the value is refused', () => {
+    expect(typedCommit('abc', ldl(3.1), undefined, 'si')).toEqual({ kind: 'hold' });
+    expect(typedCommit('3.10', ldl(3.1), undefined, 'si')).toEqual({ kind: 'same' });
+    expect(typedCommit('120', ldl(3.1), undefined, 'conventional')).toEqual({ kind: 'same' }); // 3.1 mmol/L shows "120"
+    expect(typedCommit('121', ldl(3.1), undefined, 'conventional')).toMatchObject({ kind: 'edit' });
+    expect(typedCommit('12.9', ldl(12.94), undefined, 'si')).toEqual({ kind: 'edit', value: 12.9 }); // AC5: a correction
+    expect(typedCommit('3.12', ldl(3.1), 3.14, 'si')).toEqual({ kind: 'edit', value: 3.12 }); // finer than the step shown
+    expect(typedCommit('90', ferritin, undefined, null)).toEqual({ kind: 'edit', value: 90 });
+    expect(typedCommit('90', ferritin, undefined, 'si')).toBeNull();
+    expect(typedCommit('3.1', ldl(3.1), undefined, null)).toBeNull();
   });
 });
