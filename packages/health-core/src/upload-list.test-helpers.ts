@@ -9,7 +9,7 @@ import { UNDATED_PREVIOUS } from './lab-extraction';
 import { validDay } from './record-edits';
 import { rangeFault, UNIT_DEFS, type MetricType } from './units';
 import { choose, type ChoiceChange, type TypedText } from './upload-choices';
-import type { UploadState } from './upload-flow';
+import { uploadFileName, type UploadState } from './upload-flow';
 import type { UploadList } from './upload-list';
 import type { UploadReview } from './upload-review';
 import { DAY_CONTROL_TEXT, longDate, REVIEW_CELL_TEXT } from './upload-text';
@@ -237,14 +237,32 @@ export function checkKeysKept(before: UploadList, after: UploadList, fail: Fail)
 const entered = (st: Read, ref: string) => st.choices.ticks[ref] !== undefined || st.choices.replace[ref] !== undefined
   || st.choices.edits[ref] !== undefined || st.choices.typed?.[ref] !== undefined;
 
+/** Not-saved reasons no change of the person's lifts (owner ruling on PR 1949 review, G1). */
+const UNLIFTABLE = ['unit', 'noUnit', 'urine', 'unreadable', 'futureDay', 'futureCoreDay'];
+
+/**
+ * Whether a row needs checking, from the extraction, the choices and the review alone: the review is unsure of it for a
+ * reason; it has a reason in the read (a question, a guessed unit) and the person can still act on it for this Save, that
+ * is unless, ticked, it is held already (equal, no copy) or not saved for a reason no change lifts; or it has an error (its
+ * fault, which L4 checks from the candidate). A row only touched does not.
+ */
+function needsCheck(st: Read, at: OfferedValue, v: ClassifiedValue, error: string | null): boolean {
+  const read = !!at.value.question || (at.kind === 'core' && !!at.value.unitGuessed);
+  const ticked = st.choices.ticks[at.ref] ?? true;
+  const fixed = ticked && ((v.group === 'saved' && !v.copy && !('duplicate' in v && v.duplicate)) || (v.group === 'notSaved' && UNLIFTABLE.includes(v.reason)));
+  return (v.group === 'unsure' && v.reasons.length > 0) || (read && !fixed) || error !== null;
+}
+
 /**
  * L9 why (web list PR 1d). Each row's `reasons` are the extraction's own: its question, then the guessed-unit note
- * (`REVIEW_CELL_TEXT.checkUnit`). A row needs attention exactly when the review is unsure of it for a reason, it has an
- * error, or the person entered something in it (read from the choices); and every such row says why: a caption, a reason,
+ * (`REVIEW_CELL_TEXT.checkUnit`). A row needs attention exactly when it needs checking (`needsCheck`) or the person entered
+ * something in it (read from the choices); and every such row says why: a caption, a reason,
  * an error, or what the person entered, or the group carries its note (`checkNote`, the review's footer), which it does
  * exactly while a row with attention the review is unsure of says nothing itself (confidenceUnworded, closed by owner
  * ruling 2026-11-21). Mutations: `reasons: []` fails it on the first question; `attention` without `touched` fails it on
- * the first cleared tick; `checkNote: null` fails it on the first low-confidence value.
+ * the first cleared tick; `checkNote: null` fails it on the first low-confidence value; `attention` reading the review's
+ * reasons alone (no read reason) fails it on the first row with a read reason the review is not unsure of ("f1:v0
+ * attention false; needs checking true, entered false (copy)").
  */
 export function checkWhy(s: UploadState, review: UploadReview, list: UploadList, fail: Fail) {
   const classified = new Map(review.classification.values.map((v) => [`${v.file}:${v.ref}`, v]));
@@ -259,7 +277,8 @@ export function checkWhy(s: UploadState, review: UploadReview, list: UploadList,
       if (JSON.stringify(row.reasons) !== JSON.stringify(words)) fail('L9', `${row.key} reasons ${JSON.stringify(row.reasons)}, read ${JSON.stringify(words)}`);
       const person = entered(st, at.ref);
       const unsure = v.group === 'unsure' && v.reasons.length > 0;
-      if (row.attention !== (unsure || row.error !== null || person)) fail('L9', `${row.key} attention ${row.attention}; unsure ${unsure}, error ${row.error !== null}, entered ${person}`);
+      const check = needsCheck(st, at, v, row.error);
+      if (row.attention !== (check || person)) fail('L9', `${row.key} attention ${row.attention}; needs checking ${check}, entered ${person} (${row.status.kind})`);
       if (row.attention && unsure && !row.caption && !row.reasons.length && !row.error) unworded = true;
       if (!row.attention || row.caption || row.reasons.length || row.error || person || list.checkNote) continue;
       fail('L9', `${row.key} needs attention and says nothing, with no group note (${row.status.kind}, ${JSON.stringify(v)})`);
@@ -269,15 +288,24 @@ export function checkWhy(s: UploadState, review: UploadReview, list: UploadList,
 }
 
 /**
- * L10 heading (web list PR 1d). The rows shown before "Show all" are those with `attention`; the heading counts them
- * (`checkTitle`), Show all counts the rest, and none is left out. Mutation: the heading counted from the review's unsure
- * values (`review.classification.values.filter((v) => v.group === 'unsure').length`, the view's count) fails it on the
- * first touched or held-text row the review is sure of.
+ * L10 heading (owner ruling on PR 1949 review, G2). The heading counts the rows that need checking (`needsCheck`, from the
+ * extraction, choices, review and faults), never a row only touched; Show all counts the rows outside the first group.
+ * Mutation: the heading counted from the list's own `attention` fails it on the first touched row the review is sure of
+ * ("heading "Check these 4 values" over 3 rows that need checking").
  */
-export function checkHeading(list: UploadList, fail: Fail) {
-  const loud = list.rows.filter((r) => r.attention).length;
-  const quiet = list.rows.length - loud;
-  if (list.check !== (loud ? IMPORT_REVIEW_TEXT.checkTitle(loud) : null)) fail('L10', `heading ${JSON.stringify(list.check)} over ${loud} rows with attention`);
+export function checkHeading(s: UploadState, review: UploadReview, list: UploadList, fail: Fail) {
+  const classified = new Map(review.classification.values.map((v) => [`${v.file}:${v.ref}`, v]));
+  const byKey = new Map(list.rows.map((r) => [r.key, r]));
+  let checks = 0;
+  for (const { lf, i, st } of labReads(s, review)) {
+    for (const at of offeredValues(st.extraction)) {
+      const row = byKey.get(`${lf.fileId}:${at.ref}`);
+      const v = classified.get(`${i}:${at.ref}`);
+      if (row && v && needsCheck(st, at, v, row.error)) checks++;
+    }
+  }
+  const quiet = list.rows.filter((r) => !r.attention).length;
+  if (list.check !== (checks ? IMPORT_REVIEW_TEXT.checkTitle(checks) : null)) fail('L10', `heading ${JSON.stringify(list.check)} over ${checks} rows that need checking`);
   if (list.showAll !== (quiet ? IMPORT_REVIEW_TEXT.showAll(quiet) : null)) fail('L10', `Show all ${JSON.stringify(list.showAll)} over ${quiet} quiet rows`);
 }
 
@@ -286,7 +314,8 @@ const AGAIN = ', another reading';
  * L11 names (web list PR 1d; US-13 AC10). Each row's name is "<test> value from <file name>", then ", <day in words>" when
  * the review files it on a real past day, nothing more while it has no day; a later row with the same words adds
  * ", another reading". Names are distinct but where three or more rows share the words: KNOWN thirdReadingShared (noted,
- * Needs Brad). A row with a Replace and a day names its Replace with that day. Mutations: `again` always false fails it
+ * Needs Brad). A row with a Replace and a day names its Replace with that day; two can share it (KNOWN
+ * replaceLabelShared, noted). The file is named as `uploadFileName` names it (a ZIP member by its path). Mutations: `again` always false fails it
  * on the first two LDLs of one report and day; the file name left out of `from` fails it on the first row.
  */
 export function checkNames(s: UploadState, review: UploadReview, list: UploadList, now: string, note: (gap: string) => void, fail: Fail) {
@@ -300,12 +329,16 @@ export function checkNames(s: UploadState, review: UploadReview, list: UploadLis
       const base = row.name.endsWith(AGAIN) ? row.name.slice(0, -AGAIN.length) : row.name;
       const filed = lf.days[at.ref] ?? null;
       const day = filed === null ? null : validDay(filed, { now })?.slice(0, 10);
-      const want = `${row.label} value from ${file.name}`;
+      const want = `${row.label} value from ${uploadFileName(file)}`;
       if (day === null ? base !== want : day ? base !== `${want}, ${longDate(day)}` : !base.startsWith(want)) fail('L11', `${row.key} named ${JSON.stringify(row.name)}, from ${JSON.stringify(want)} on ${day}`);
       bases.set(base, [...(bases.get(base) ?? []), row.name]);
       if (row.replaces && day && row.replaceLabel !== REVIEW_CELL_TEXT.replaceLabel(row.label, longDate(day)!)) fail('L11', `${row.key} Replace named ${JSON.stringify(row.replaceLabel)}`);
     }
   }
+  const replaces = list.rows.flatMap((r) => (r.replaceLabel ? [r.replaceLabel] : []));
+  // Two rows can replace one saved value (two files, one test, one day): the label names that saved value, so it is
+  // shared; the screen ties each Replace to its row's name. KNOWN replaceLabelShared.
+  if (new Set(replaces).size < replaces.length) note('replaceLabelShared');
   for (const [base, names] of bases) {
     if (names.length >= 3) { note('thirdReadingShared'); continue; }
     if (names.length === 2 && names.filter((n) => n === base).length !== 1) fail('L11', `two rows named ${JSON.stringify(names)}`);
@@ -317,15 +350,17 @@ export function checkNames(s: UploadState, review: UploadReview, list: UploadLis
  * printed in words (`printedLine`, `longDate` of the day it printed) and its file's name, is distinct in every state; both
  * previous columns say "Choose the date of the previous results". Two files of one name can share a control's name: KNOWN
  * sameNamedFileDays (noted; as their rows, no words tell them apart). Mutation: `printedLine` the report's day in words
- * instead of the column's (`longDate(lab.day)`) fails it on the first dated column.
+ * instead of the column's (`longDate(lab.day)`) fails it on the first dated column; the name without its file's name, or
+ * `fileName` the picked name rather than `uploadFileName` (a ZIP member without its ZIP), fails it on the first control.
  */
 export function checkDayNames(s: UploadState, list: UploadList, note: (gap: string) => void, fail: Fail) {
-  const files = new Map(('files' in s ? s.files : []).map((f) => [f.id, f.name]));
+  const files = new Map(('files' in s ? s.files : []).map((f) => [f.id, uploadFileName(f)]));
   const seen = new Map<string, string>();
   for (const d of list.days) {
     if (d.source !== 'test' && d.label !== DAY_CONTROL_TEXT.previous) fail('L12', `${d.key} labelled ${JSON.stringify(d.label)}`);
     if (d.source === 'column' && d.printedLine !== longDate(d.printed)) fail('L12', `${d.key} printed line ${JSON.stringify(d.printedLine)}`);
-    const name = [d.label, d.source === 'column' ? d.printedLine : '', files.get(d.fileId)].join('|');
+    const name = [d.label, d.source === 'column' ? d.printedLine : '', files.get(d.fileId)].filter(Boolean).join(', ');
+    if (d.fileName !== files.get(d.fileId) || d.name !== name) fail('L12', `${d.key} file ${JSON.stringify(d.fileName)}, named ${JSON.stringify(d.name)}; want ${JSON.stringify(name)}`);
     const other = seen.get(name);
     if (other !== undefined) {
       if (other !== d.fileId && files.get(other) === files.get(d.fileId)) { note('sameNamedFileDays'); continue; }

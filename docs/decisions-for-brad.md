@@ -23,6 +23,19 @@ issue, and nothing private.
   "The original file couldn't be stored." alone: true, but new words, so it needs your yes. Recommendation
   (the owner's): option 2, because the screen should never claim something was saved when it was not.
 
+- **What a screen reader calls each value on the web's new upload list.** Issue: you approved the pattern
+  "<test> value from <column>, another reading" (2026-11-21). A list has no columns, so the engine (PR 1949)
+  fills that slot with the file's name and the day the value saves on: "LDL Cholesterol value from
+  report.pdf, 1 Nov 2026", and "LDL Cholesterol value from report.pdf, 1 Nov 2026, another reading" for a
+  second LDL from that report on that day. That filling is new composition from existing words, not yet
+  yours. The day controls are named the same way: their label, then the day a previous column printed when
+  it has one, then the file's name ("Choose the date of the previous results, 15 Sep 2026, report.pdf").
+  Options: (1) this composition: every value is told apart, but for a third reading of one test in one file
+  on one day, and two files with one name; (2) test and day only ("LDL Cholesterol value from 1 Nov 2026"):
+  shorter, but two reports from the same day read the same, so a screen-reader user cannot tell which file a
+  value came from. Recommendation (the owner's): option 1, because it is the only composition from existing
+  words that tells files apart. Nothing draws these names until you answer.
+
 ## Decided
 
 2026-11-21, Brad's words in quotes:
