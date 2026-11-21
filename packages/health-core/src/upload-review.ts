@@ -24,7 +24,8 @@ export interface UploadReview {
     /** The report waits for the test's day, its undated previous column's, or a dated previous column's
      *  pick that is no real past day yet: none of it saves, and Save waits. */
     needsDay: boolean; needsTestDay: boolean; needsPreviousDay: boolean; needsColumnDay: boolean;
-    /** Each value's day by ref, the one the plan writes and the view shows (`importFile`); null while it has none. */
+    /** Each value's day by ref, the one the plan writes and the view shows (`importFile`); null while it has none.
+     *  It differs from the classified file's `days` only for `waits`, which the classifier previews on their printed day. */
     days: Readonly<Record<string, string | null>>;
     /** The refs whose dated previous column waits for a pick that is no real past day yet (US-13 AC24). */
     waits: string[];

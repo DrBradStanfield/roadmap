@@ -15,7 +15,7 @@ import { writeFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { UNDATED_PREVIOUS, type AdditionalLabValue, type ExtractedValue, type UnifiedExtractionResult } from './lab-extraction';
 import { bulkRowTarget } from './bulk-row-target';
-import { bulkAppendValues, slotKey, slotOfRow, type BulkRow } from './record-edits';
+import { bulkAppendValues, slotKey, slotOfRow, validDay, type BulkRow } from './record-edits';
 import { DAY_NOT_HAPPENED, LAB_DAY_REFUSAL } from './lab-series';
 import { mergeFiles } from './merge';
 import { knownAs, knownIndex } from './upload-known';
@@ -30,7 +30,7 @@ import { requestFlags, type UploadPlatform } from './upload-rules';
 import { uploadSave, type UploadSaveIO } from './upload-save';
 import { uploadView, type UploadView, type ValueRow } from './upload-view';
 import { FIX_ERRORS_TEXT, UPLOAD_TEXT } from './upload-text';
-import { IMPORT_REVIEW_TEXT, importRow, isOfferedRef } from './import-review';
+import { IMPORT_REVIEW_TEXT, importRow, isOfferedRef, offeredValues, valueAt } from './import-review';
 
 function mulberry32(seed: number): () => number {
   let a = seed >>> 0;
@@ -653,7 +653,7 @@ function genChange(r: () => number, run: Run, fileId: string): ChoiceChange | nu
 
 /** The real past days a report's values printed: each a dated column the web's review can move (US-13 AC24). */
 const printedDays = (x: UnifiedExtractionResult): string[] =>
-  [...new Set([...(x.values ?? []), ...(x.additionalValues ?? [])].map((v) => v.recordedAt).filter((d): d is string => !!d && d !== UNDATED_PREVIOUS && d <= NOW.slice(0, 10)))];
+  [...new Set(offeredValues(x).map(({ value }) => value.recordedAt).filter((d): d is string => !!d && !!validDay(d, { now: NOW })))];
 
 /** A valid early day for each column a lab file waits on (`waits`, by the day each value printed). */
 function columnFixes(s: UploadState, lf: UploadReview['labFiles'][number]): ChoiceChange[] {
@@ -739,7 +739,7 @@ const movedColumn = (view: UploadView, review: UploadReview, s: UploadState) => 
   return !!printed && printed !== UNDATED_PREVIOUS && !!day && day !== printed && allRows(view).some((row) => row.fileId === w.file && row.ref === w.ref && row.day === day);
 });
 
-const valueRecordedAt = (x: UnifiedExtractionResult, ref: string) => (ref[0] === 'v' ? x.values?.[Number(ref.slice(1))] : x.additionalValues?.[Number(ref.slice(1))])?.recordedAt;
+const valueRecordedAt = (x: UnifiedExtractionResult, ref: string) => valueAt(x, ref)?.value.recordedAt;
 
 const SEEDS = 3000;
 

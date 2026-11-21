@@ -29,6 +29,7 @@ const PAST = '2026-10-01';
 const COLUMN = '2026-09-15';
 const FUTURE = '2026-12-01';
 
+/** Kept here, not shared: a shared generator that changed would change every seed and the golden with it. */
 function mulberry32(seed: number): () => number {
   let a = seed >>> 0;
   return () => {
