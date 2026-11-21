@@ -17,6 +17,7 @@ import { uploadSavePlan } from './upload-plan';
 import { uploadReview } from './upload-review';
 import { uploadSave, type UploadSaveIO } from './upload-save';
 import type { ScreeningPerson } from './upload-screening';
+import { UPLOAD_TEXT } from './upload-text';
 import { uploadView } from './upload-view';
 
 function mulberry32(seed: number): () => number {
@@ -104,34 +105,47 @@ function genRows(r: () => number, hashes: string[], kinds: readonly Kind[] = KIN
 
 describe('US-13 AC6, US-14 AC4: a read letter starts from the upload state, never from the record', () => {
   it('O1: on any record, a letter\'s box names the date its card saves, or a month alone the reader gave when the card has no day', () => {
+    // Each branch must come up, or the property passes on nothing.
+    const reach = { box: 0, day: 0, month: 0, undated: 0, sameRow: 0 };
     for (let seed = 1; seed <= 600; seed++) {
       const r = mulberry32(seed);
       const c = genCase(r);
       const record = withRows(EMPTY, genRows(r, c.hashes).map((x) => x.row));
       for (const { fileId, fields, screening: box } of planOf(state('open', c.files), record, c.on).documents) {
         if (!box) continue;
-        if (fields.documentDate !== null) expect(box.date, `seed ${seed} ${fileId}`).toBe(fields.documentDate);
+        reach.box++;
+        if (record.documents.some((d) => d.contentHash === c.files.find((f) => f.id === fileId)!.hash)) reach.sameRow++;
+        if (fields.documentDate !== null) { reach.day++; expect(box.date, `seed ${seed} ${fileId}`).toBe(fields.documentDate); }
         else if (box.date !== null) {
+          reach.month++;
           expect(box.date, `seed ${seed} ${fileId} month`).toBe(c.raw.get(fileId));
           expect(box.date, `seed ${seed} ${fileId} month`).toMatch(/^\d{4}-\d{2}$/);
           expect('date' in c.fix.get(fileId)!, `seed ${seed} ${fileId} no date fix`).toBe(false);
-        }
+        } else reach.undated++;
       }
     }
+    for (const [name, n] of Object.entries(reach)) expect(n, name).toBeGreaterThan(20);
   });
 
   it('O2: the letters\' title, date and box are the same on any two records, and on the record this Save wrote', async () => {
+    // Letters with a box and with a dated box on records that differ in their rows for those bytes: else the equality is empty.
+    const reach = { box: 0, dated: 0, recordsDiffer: 0 };
     for (let seed = 1; seed <= 400; seed++) {
       const r = mulberry32(seed);
       const c = genCase(r);
       const a = withRows(EMPTY, genRows(r, c.hashes).map((x) => x.row));
       const b = withRows(EMPTY, genRows(r, c.hashes).map((x) => x.row));
       const s = state('saving', c.files);
-      expect(letters(s, b, c.on), `seed ${seed} two records`).toEqual(letters(s, a, c.on));
+      const onA = letters(s, a, c.on);
+      reach.box += onA.filter((l) => l.screening).length;
+      reach.dated += onA.filter((l) => l.screening?.date).length;
+      if (JSON.stringify(a.documents.map((d) => [d.contentHash, d.title, d.date, d.fileRef])) !== JSON.stringify(b.documents.map((d) => [d.contentHash, d.title, d.date, d.fileRef]))) reach.recordsDiffer++;
+      expect(letters(s, b, c.on), `seed ${seed} two records`).toEqual(onA);
       const out = await uploadSave(s, a, NOW, c.on, io(c.on, c.failing), PERSON);
       if (!out.ok) throw new Error(out.reason);
-      expect(letters(s, out.commit(a).file, c.on), `seed ${seed} after commit`).toEqual(letters(s, a, c.on));
+      expect(letters(s, out.commit(a).file, c.on), `seed ${seed} after commit`).toEqual(onA);
     }
+    for (const [name, n] of Object.entries(reach)) expect(n, name).toBeGreaterThan(50);
   });
 
   it('O3, O4: the dates written are the page\'s ticked dates when another writer adds rows for the same bytes between page, Save and commit', async () => {
@@ -175,5 +189,58 @@ describe('US-13 AC6, US-14 AC4: a read letter starts from the upload state, neve
         expect(written(file).size, `${kind} cloud ${on}`).toBe(0);
       }
     }
+  });
+});
+
+describe('US-13 AC6: a read letter\'s start, edge cases', () => {
+  const one = (x: UnifiedExtractionResult, fix: DocumentFix & { screening?: boolean } = {}) => [readFile('f0', 'h0', x, fix)];
+
+  it('a decoded date fix that is no possible past day is never planned: the card and the box both keep the reader\'s date, and agree', () => {
+    for (const date of ['2026-02-30', '2027-01-01', 'junk', '2026-13-01']) {
+      const [{ fields, screening }] = planOf(state('open', one(letter('colorectal', '2026-10-20'), { date })), EMPTY, false).documents;
+      expect([fields.documentDate, screening?.date], date).toEqual(['2026-10-20', '2026-10-20']);
+    }
+  });
+
+  it('a screening type that is not a string gives no box', () => {
+    for (const screeningType of [42, true, ['colorectal'], { type: 'colorectal' }, null]) {
+      const x = letter('colorectal', '2026-10-20');
+      x.document = { ...x.document!, metadata: { screeningType } };
+      expect(planOf(state('open', one(x)), EMPTY, false).documents[0].screening, JSON.stringify(screeningType)).toBeUndefined();
+    }
+  });
+
+  // KNOWN (same as main): the page and Save each judge "a day to come" by their own clock, so a reader day still to come on the
+  // page shows a disabled box, and a Save on a later day may write that date. The gap spans two days so the pin holds in any time zone.
+  it('KNOWN: a reader day still to come when the page is drawn, past when Save runs, is written though the page showed the box disabled', async () => {
+    const [page, save] = ['2026-11-01T12:00:00.000Z', '2026-11-03T12:00:00.000Z'];
+    const files = one(letter('colorectal', '2026-11-03'));
+    const open = state('open', files);
+    const drawn = uploadListPage(open, EMPTY, page, uploadReview(open, EMPTY, page), false, PERSON).letters[0];
+    expect(drawn.screening).toMatchObject({ checked: false, disabled: true });
+    expect(drawn.pickerLine).toBe(UPLOAD_TEXT.setDate);
+    const out = await uploadSave(state('saving', files), EMPTY, save, false, io(false, new Set()), PERSON);
+    if (!out.ok) throw new Error(out.reason);
+    const { file } = out.commit(EMPTY);
+    expect(written(file)).toEqual(new Map([['colorectalLastDate', '2026-11-03']]));
+    expect(file.documents.map((d) => d.date)).toEqual(['2026-11-03']);
+  });
+
+  // KNOWN (adversary R1 on PR 1957; main behaves the same; a lead): a pick holding two copies of one file's bytes, the first known
+  // (hashed after a metadata-only row landed) and the second read, plans the read copy only when the held row is gone at plan time.
+  it('KNOWN: the held row tombstoned between page and Save changes whether the read copy of the same bytes is planned', async () => {
+    const files: UploadFile[] = [
+      { id: 'k', name: 'k.pdf', bytes: 1, hash: 'h0', pages: { count: 1, truncated: false }, status: { s: 'known', as: 'document', archiveOnly: true } },
+      readFile('f0', 'h0', letter('colorectal', '2026-10-20'), { screening: true }),
+    ];
+    const held = row('metaDated', 'h0');
+    const pageRecord = withRows(EMPTY, [held]);
+    const saveRecord = { ...EMPTY, documents: [{ ...held, deleted: true }] };
+    const open = state('open', files);
+    expect(uploadListPage(open, pageRecord, NOW, uploadReview(open, pageRecord, NOW), true, PERSON).letters).toEqual([]);
+    expect(planOf(state('saving', files), saveRecord, true).documents.map((d) => [d.fileId, d.screening?.date])).toEqual([['f0', '2026-10-20']]);
+    const out = await uploadSave(state('saving', files), saveRecord, NOW, true, io(true, new Set()), PERSON);
+    if (!out.ok) throw new Error(out.reason);
+    expect(written(out.commit(saveRecord).file)).toEqual(new Map([['colorectalLastDate', '2026-10-20']]));
   });
 });
