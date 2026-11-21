@@ -1,5 +1,5 @@
 /** Local-first health records and client-side reports, on every widget surface. */
-import type { AddLabValueRequest, AddLabValueResult, MoveKeep, MoveRejection, MovePlan } from '@roadmap/health-core/record-edits';
+import type { AddLabValueRequest, AddLabValueResult, MeasurementRefusal, MoveKeep, MoveRejection, MovePlan } from '@roadmap/health-core/record-edits';
 import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import { dayOf } from '@roadmap/health-core/merge';
 import type { FileReminderOptIn, RoadmapFile } from '@roadmap/health-core/roadmap-file';
@@ -20,6 +20,9 @@ import { PROXY_PATH, parseJsonResponse, trackProductEvent } from './server-api';
 import { countRefusedSpellings } from './refused-spellings';
 import { SHOPIFY_SURFACE } from './build-flags';
 import type { StorageAdapter } from '@roadmap/health-core/adapter';
+import type { UploadState } from '@roadmap/health-core/upload-flow';
+import type { ScreeningPerson } from '@roadmap/health-core/upload-screening';
+import { SAVE_FAILED, type UploadEngine, type UploadSaveAnswer, type WebUploadIO } from '../storage/upload-save-store';
 import type {
   AddMeasurementResult,
   ApiDocument,
@@ -292,19 +295,20 @@ export async function deleteSupplementApi(supplementKey: string): Promise<boolea
 export async function saveScreening(screeningKey: string, value: string, erase?: string): Promise<boolean> {
   return store ? store.saveScreening(screeningKey, value, erase) : false;
 }
+/** One refused core value, counted like a refused lab unit, in closed words only (US-35 AC17). The
+ *  metric rides only on an invalid value: an out-of-range one would say this
+ *  visitor's value is past a bound, and an unknown metric is free text. An
+ *  out-of-range metric still keys the tab's throttle, locally, so two tests
+ *  past their bounds count twice. */
+function countMeasurementRefused(reason: MeasurementRefusal['reason'], metricType: string | undefined): void {
+  if (MEASUREMENT_REFUSALS_WITH_METRIC.includes(reason)) trackProductEvent('measurement_refused', { metric: metricType as MetricType, refusal: reason });
+  else if (reason === 'out-of-range') trackProductEvent('measurement_refused', { refusal: reason }, metricType);
+  else trackProductEvent('measurement_refused', { refusal: reason });
+}
 export async function bulkSaveMeasurements(measurements: BulkMeasurementInput[]): Promise<BulkSaveResult> {
   if (!store) return { saved: [], skippedDuplicates: 0, errorCount: measurements.length, refused: [] };
   const result = store.bulkSaveMeasurements(measurements);
-  // Counted like a refused lab unit, in closed words only (US-35 AC17). The
-  // metric rides only on an invalid value: an out-of-range one would say this
-  // visitor's value is past a bound, and an unknown metric is free text. An
-  // out-of-range metric still keys the tab's throttle, locally, so two tests
-  // past their bounds count twice.
-  for (const row of result.refused) {
-    if (MEASUREMENT_REFUSALS_WITH_METRIC.includes(row.reason)) trackProductEvent('measurement_refused', { metric: row.metricType as MetricType, refusal: row.reason });
-    else if (row.reason === 'out-of-range') trackProductEvent('measurement_refused', { refusal: row.reason }, row.metricType);
-    else trackProductEvent('measurement_refused', { refusal: row.reason });
-  }
+  for (const row of result.refused) countMeasurementRefused(row.reason, row.metricType);
   countMeasuresAdded(result.saved.filter((row) => !row.correctsId));
   return result;
 }
@@ -324,6 +328,27 @@ export async function bulkSaveDocuments(
   documents: Array<{ documentType: string; title: string; documentDate: string | null; contentMd: string; metadata: Record<string, unknown>; sourceFileName: string | null; file?: Blob; contentHash?: string }>,
 ): Promise<{ saved: ApiDocument[]; errorCount: number; unstored?: number }> {
   return store ? store.bulkSaveDocuments(documents) : { saved: [], errorCount: documents.length };
+}
+/** The shared upload's one Save (storage/upload-save-store.ts), and the counts today's writers send for it: each lab
+ *  the review did not send for its unit or number, by its own refusal (`lab_unit_refused`, US-21 AC15, as the grid's
+ *  Save counts them), and the vitals the commit added. A core value the write refuses never reaches Save: the review
+ *  holds it as unsure until it is cleared. With no record open, the Save fails as today's does. Mounted in PR 3b. */
+export async function saveUpload(engine: UploadEngine, s: UploadState, now: string, io: WebUploadIO, person?: ScreeningPerson): Promise<UploadSaveAnswer> {
+  if (!store) return { ok: false, reason: 'no-record', message: SAVE_FAILED };
+  // The review uploadSave judges, on the record it starts from (uploadSave builds its own; it takes none).
+  const refused = engine.uploadReview(s, store.file, now).classification.values.flatMap((v) => (v.group === 'notSaved' && v.refusal && 'lab' in v.refusal ? [v.refusal.lab] : []));
+  const answer = await store.saveUpload(engine, s, now, getDocumentArchiveMode() === 'cloud', io, person);
+  if (!answer.ok) return answer;
+  countRefusedSpellings(refused);
+  // The rows the commit refused, the record having changed since the review (US-12 AC6): each core value as the
+  // store's writer counts it, each lab unit refusal as `countRefusedSpellings` words it (the code is made only for a
+  // unit the test does not take). A lab `value` code sends nothing: no event counts a refused lab number today.
+  for (const code of answer.outcome.refusedCodes ?? []) {
+    if (code.kind === 'measurement') countMeasurementRefused(code.reason, code.metricType);
+    else if (code.reason === 'unit') trackProductEvent('lab_unit_refused', code.unit !== undefined ? { key: code.key, unit: code.unit } : { key: code.key });
+  }
+  countMeasuresAdded(answer.added);
+  return answer;
 }
 export async function deleteDocument(documentId: string): Promise<boolean> {
   return store ? store.deleteDocument(documentId) : false;

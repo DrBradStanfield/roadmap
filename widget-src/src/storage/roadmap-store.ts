@@ -51,8 +51,9 @@ export interface DerivedSeries { whtr: WhtrPoint[]; egfr: EgfrPoint[] }
 import type { RecordHost } from '@roadmap/health-core/record-host';
 import { ensureIsoDatetime } from '../lib/recordedAt';
 import { webRecordHost } from './web-record-host';
-import { Sentry } from '../lib/sentry';
-import { recordFailure, WritesStoppedError } from '../lib/error-diagnostics';
+import { reportUnstored, saveUploadThrough, type UploadEngine, type UploadSaveAnswer, type WebUploadIO } from './upload-save-store';
+import type { UploadState } from '@roadmap/health-core/upload-flow';
+import type { ScreeningPerson } from '@roadmap/health-core/upload-screening';
 
 /** Re-exported so the widget's own modules keep importing it from the store
  *  that uses it. It is defined in health-core (roadmap-doc.ts) because the
@@ -431,16 +432,15 @@ export class RoadmapStore {
       hash: sha256Blob,
       write: (ref, file) => (this.refuses(erase) ? Promise.reject(new Error('erase moved')) : this.host.store.writeDocument(ref, file)),
       mimeType: (file) => file.type || '',
-      onWriteError: (error) => {
-        if (this.refuses(erase) || error instanceof WritesStoppedError) return; // a refusal (A15): not reported, still counted unstored (US-14 AC12)
-        console.warn('Document file not stored');
-        Sentry.captureException(recordFailure(error, 'Document file not stored'), {
-          tags: { area: 'cloud-sync', op: 'write-document', backend: this.host.store.id },
-        });
-      },
+      onWriteError: (error) => { if (!this.refuses(erase)) reportUnstored(error, this.host.store.id); }, // a refusal (A15): not reported, still counted unstored (US-14 AC12)
     });
     if (!this.session.edit(commit, erase)) return { saved: [], errorCount: documents.length };
     return { saved: saved.map(documentView), errorCount: 0, ...(unstored ? { unstored } : {}) };
+  }
+
+  /** The shared upload's one Save, its rows in one edit (upload-save-store.ts). */
+  saveUpload(engine: UploadEngine, s: UploadState, now: string, cloudConnected: boolean, io: WebUploadIO, person?: ScreeningPerson): Promise<UploadSaveAnswer> {
+    return saveUploadThrough(this.session, { write: (ref, blob) => this.host.store.writeDocument(ref, blob), backend: this.host.store.id }, engine, s, now, cloudConnected, io, person);
   }
 
   /** Read a stored document's bytes back (viewer). */
