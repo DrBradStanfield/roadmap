@@ -73,9 +73,10 @@ export const uploadFileName = (f: { name: string; zip?: string }): string =>
  *  `skippedValues`, `skippedLabValues`: reviewed rows whose slot another writer took while the review was open
  *  (US-12 AC6a), a core value or another lab; absent is none. `refused`: values the final commit refused,
  *  the record having changed while the originals uploaded, by the test's label and the review's reason, or for a core
- *  value the web's own refusal line (upload-text `measurementRefusalText`) (US-13 AC17). */
+ *  value the web's own refusal line (upload-text `measurementRefusalText`) (US-13 AC17). `screenings`: screening dates a
+ *  letter's box wrote (web only, US-13 AC6); absent is none. */
 export interface SaveOutcome {
-  values: number; documents: number; archived: number; unstored?: number; skippedValues?: number; skippedLabValues?: number;
+  values: number; documents: number; archived: number; unstored?: number; skippedValues?: number; skippedLabValues?: number; screenings?: number;
   refused?: Array<{ label: string; reason: NotSavedReason } | { line: string }>;
 }
 

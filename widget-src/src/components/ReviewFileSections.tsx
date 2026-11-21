@@ -1,4 +1,4 @@
-import { isScreeningEligible } from '@roadmap/health-core/types';
+import { SCREENING_BOX_TEXT, screeningTypeShown } from '@roadmap/health-core/upload-screening';
 import { letterPreview } from '@roadmap/health-core/upload-list-page';
 import { DraftDateCell } from './DraftDateCell';
 import { pastDay } from '../lib/review-dates';
@@ -30,6 +30,7 @@ export function ReviewFileSections({ docs, age: userAge, sex }: ReviewFileSectio
         const month = documentDates[fi]?.month;
         const screeningDate = screeningDateFor(fi);
         const isDocDup = r.document ? docs.isSaved(r) : false;
+        const screeningType = r.document ? screeningTypeShown(r.document.metadata, { age: userAge, sex }) : null;
 
         return (
           <div key={fi} className="review-file-section">
@@ -87,7 +88,7 @@ export function ReviewFileSections({ docs, age: userAge, sex }: ReviewFileSectio
                   {letterPreview(r.document.contentMarkdown)}
                 </div>
 
-                {!!r.document.metadata?.screeningType && isScreeningEligible(String(r.document.metadata.screeningType), userAge, sex) && (
+                {screeningType && (
                   <label className="review-screening-update">
                     <input
                       type="checkbox"
@@ -96,8 +97,7 @@ export function ReviewFileSections({ docs, age: userAge, sex }: ReviewFileSectio
                       onChange={(e) => setScreeningChecked(prev => ({ ...prev, [fi]: e.target.checked }))}
                     />
                     <span>
-                      Update <strong>{String(r.document.metadata.screeningType)}</strong> screening date
-                      {screeningDate ? ` to ${screeningDate}` : ' (pick the document date first)'}
+                      {SCREENING_BOX_TEXT.lead}<strong>{screeningType}</strong>{SCREENING_BOX_TEXT.tail(screeningDate)}
                     </span>
                   </label>
                 )}

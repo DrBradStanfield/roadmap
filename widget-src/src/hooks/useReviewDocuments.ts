@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import type { DocumentType } from '@roadmap/health-core/validation';
-import { isScreeningEligible } from '@roadmap/health-core/types';
+import { screeningTickedByDefault, screeningTypeShown } from '@roadmap/health-core/upload-screening';
 import { pendingRowsFor } from '@roadmap/health-core/document-save';
 import type { ApiDocument, UploadHistory } from '../lib/api-types';
 import { unarchivedOriginals } from '../lib/archive-payloads';
@@ -120,8 +120,8 @@ export function useReviewDocuments(results: FileResult[], history: UploadHistory
   const [screeningChecked, setScreeningChecked] = useState<Record<number, boolean>>(() => {
     const map: Record<number, boolean> = {};
     results.forEach((r, fi) => {
-      const st = r.document?.metadata?.screeningType as string | undefined;
-      if (st && userAge !== undefined && isScreeningEligible(st, userAge, sex)) {
+      const person = { age: userAge, sex };
+      if (r.document && screeningTypeShown(r.document.metadata, person) && screeningTickedByDefault(person)) {
         map[fi] = true;
       }
     });

@@ -44,6 +44,16 @@ issue, and nothing private.
   clean report shows all its rows. Recommendation (the owner's): option 2 for the web. Until you answer, the
   list follows option 1; your yes is a one-line change (`SHOW_ALL_AT_START` in UploadList.tsx).
 
+- **Should a screening date ever go backwards?** Issue: when a letter's screening box is ticked, Save writes
+  that letter's date as the "last" screening date, even when the record already holds a later one. With two
+  letters of one type in one upload, the one picked later wins, not the later-dated one. This is how the web
+  has always worked; the shared upload engine now does the same. Options: (1) keep it: the person may be
+  correcting a wrong later date; (2) only ever move the date forward: an older letter leaves a later date
+  alone, and among letters in one upload the latest date wins (the person can still set an earlier date by
+  hand in the form). Recommendation (the owner's): option 2, because an old letter uploaded for the record
+  should not make a recent screening look overdue. It changes the plan's screening reminders, so it is your
+  call. Until you answer, today's behaviour stays, pinned by its test.
+
 ## Decided
 
 2026-11-21, Brad's words in quotes:

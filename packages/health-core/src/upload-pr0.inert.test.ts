@@ -20,7 +20,13 @@
  * previewed with its edit. The test names its seeds (a web read lab report holding an edit on a value the review does
  * not send, whose answer differs once that preview is undone), asserts the changed seeds are exactly those and AC11's,
  * and that with the preview undone each hashes to main's answer. Every phone seed, edits included, answers as main did:
- * the phone's preview never reads an edit. Unreachable today: the web never calls the engine's view yet. Synthetic values only.
+ * the phone's preview never reads an edit. Unreachable today: the web never calls the engine's view yet.
+ *
+ * Owner ruling on PR 1957 (2026-11-22) changes, on purpose, one more class, on both platforms: a read letter starts from
+ * the reader's answer in the upload state, never from a row the record holds for its bytes. The test names its seeds from
+ * the inputs alone (the record holds the metadata-only letter row `held-doc` for `h-f1`, and f1 is a read letter), asserts
+ * the changed seeds are exactly those and the classes above, and that with the held row's title and date put back where
+ * the person made no fix (in the plan and in the view's documents row) each hashes to main's answer. Synthetic values only.
  */
 import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -34,7 +40,7 @@ import type { UploadFile, UploadState } from './upload-flow';
 import { labReadFound, planIsEmpty, uploadSavePlan, type UploadSavePlan } from './upload-plan';
 import { uploadReview } from './upload-review';
 import { UPLOAD_TEXT } from './upload-text';
-import { uploadView } from './upload-view';
+import { documentDateLine, uploadView } from './upload-view';
 
 const GOLDEN = join(__dirname, '__fixtures__', 'upload-pr0-golden.json');
 const SEEDS = 800;
@@ -47,6 +53,8 @@ const FUTURE = '2026-12-01';
 const AC11_SEEDS = 15;
 /** How many seeds the web list PR 1b rule names (`editPreviewCandidate`): 19, all on the web. */
 const EDIT_PREVIEW_SEEDS = 19;
+/** How many seeds the read-letter ruling names (`heldLetter`): the spread, on both platforms. */
+const HELD_LETTER_SEEDS = 35;
 
 /** Kept here, not shared: a shared generator that changed would change every seed and the golden with it. */
 function mulberry32(seed: number): () => number {
@@ -228,6 +236,31 @@ function asMain(c: Case, kept: ReturnType<typeof keptAlone>): string {
   return canonical({ review, plan: main, view: { ...view, save } });
 }
 
+/** The metadata-only letter row `genRecord` may hold, for `h-f1`: its title and date, as main's plan started from them. */
+const HELD_ROW = { title: 'Held letter', date: '2026-01-01' };
+
+/** The read-letter ruling's seeds, from the inputs alone: the record holds `held-doc` and f1 is a read letter. */
+function heldLetter(c: Case): UploadFile | null {
+  if (!c.record.documents.some((d) => d.id === 'held-doc' && d.contentHash === 'h-f1' && !d.fileRef)) return null;
+  const f = 'files' in c.state ? c.state.files.find((x) => x.id === 'f1') : undefined;
+  return f?.status.s === 'read' && f.status.extraction.classification !== 'lab_report' && f.status.extraction.document ? f : null;
+}
+
+/** The answer with the ruling undone: the letter's title and date as the held row gave them where the person made no
+ *  fix, in the plan and in the view's documents row drawn from it. */
+function asMainHeld(c: Case, f: UploadFile): string {
+  const { review, plan, view } = parts(c);
+  const fix = f.status.s === 'read' ? f.status.choices.document : {};
+  const undo = <T extends { title: string; documentDate: string | null }>(x: T): T =>
+    ({ ...x, ...(fix.title === undefined ? { title: HELD_ROW.title } : {}), ...('date' in fix ? {} : { documentDate: HELD_ROW.date }) });
+  const documents = plan.documents.map((d) => (d.fileId === f.id ? { ...d, fields: undo(d.fields) } : d));
+  const fields = documents.find((d) => d.fileId === f.id)!.fields;
+  const rows = view.documents && view.documents.rows.map((r) => (r.fileId !== f.id ? r : {
+    ...r, title: fields.title, date: documentDateLine(fields.documentDate), dateKnown: fields.documentDate !== null, day: fields.documentDate?.slice(0, 10) ?? null,
+  }));
+  return canonical({ review, plan: { ...plan, documents }, view: { ...view, documents: view.documents && { ...view.documents, rows } } });
+}
+
 /**
  * The view as main drew it: the web list's new keys (PR 1a) deleted, and nothing else touched. Each row's `saves`, each
  * day section's `key`, and Save's `blockers`. No `unitOf` is passed, so no row has `shown`.
@@ -262,9 +295,19 @@ describe('US-13 AC24: PR 0 is inert with none of its choices set', () => {
       const c = genCase(Number(seed));
       return editPreviewCandidate(c) && hash(canonical(parts(c, false))) !== now[seed];
     });
-    expect(changed).toEqual(Object.keys(now).filter((seed) => ac11.includes(seed) || previewed.includes(seed)));
+    const held = Object.keys(now).filter((seed) => heldLetter(genCase(Number(seed))) !== null);
+    expect(changed).toEqual(Object.keys(now).filter((seed) => ac11.includes(seed) || previewed.includes(seed) || held.includes(seed)));
     expect(ac11).toHaveLength(AC11_SEEDS);
     expect(previewed.filter((seed) => !ac11.includes(seed))).toHaveLength(EDIT_PREVIEW_SEEDS);
+    // The read-letter class shares no seed with the others, so each is undone alone.
+    expect(held.filter((seed) => ac11.includes(seed) || previewed.includes(seed))).toEqual([]);
+    expect(held).toHaveLength(HELD_LETTER_SEEDS);
+    expect(new Set(held.map((seed) => genCase(Number(seed)).state.platform))).toEqual(new Set(['web', 'phone']));
+    // And how: with the held row's title and date put back where the person made no fix, each answers as main did.
+    for (const seed of held) {
+      const c = genCase(Number(seed));
+      expect(hash(asMainHeld(c, heldLetter(c)!)), seed).toBe(golden[seed]);
+    }
     // And how: with the edit's preview undone, each answers as main did.
     for (const seed of previewed.filter((x) => !ac11.includes(x))) expect(hash(canonical(parts(genCase(Number(seed)), false))), seed).toBe(golden[seed]);
     // And how: each kept report is one new `labArchives` entry, `originals` counts it, the label says so; undone, main's answer.

@@ -25,11 +25,11 @@ const colonoscopy: FileResult[] = [{
   contentHash: 'sha256-colo',
 }];
 
-function screeningBox(age: number | undefined) {
+function screeningBox(age: number | undefined, results = colonoscopy) {
   const { container } = showingAll(render(
     <ReviewTable
       grading={{}}
-      results={colonoscopy}
+      results={results}
       history={{ measurements: [], labValues: [], documents: [] }}
       unitSystem="si"
       age={age}
@@ -54,6 +54,13 @@ describe('ReviewTable — screening-date checkbox (US-06 AC5)', () => {
 
   it('US-06 AC5: with an eligible age it still starts ticked', () => {
     expect(screeningBox(60).checked).toBe(true);
+  });
+
+  it('US-13 AC6: a screening box only for a type in the screening table', () => {
+    for (const type of ['knee', 'colorectal_method', 'endometrial']) {
+      const other = [{ ...colonoscopy[0], document: { ...colonoscopy[0].document!, metadata: { screeningType: type } } }];
+      expect(screeningBox(60, other), type).toBeNull();
+    }
   });
 });
 

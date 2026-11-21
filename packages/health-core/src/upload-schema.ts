@@ -62,9 +62,11 @@ const strict = z.strictObject;
 /** A core value's unit as typed (cell-unit.ts `CellUnit`), null for a lab. */
 const cellUnit = z.enum([...UNIT_SYSTEMS, ...LPA_UNITS]).nullable();
 const documentFix = strict({ title: text.optional(), kind: text.optional(), date: maybeText.optional() });
+/** The web's letter also takes the screening box's tick (upload-screening.ts); the phone's never does. */
+const webDocumentFix = documentFix.extend({ screening: z.boolean().optional() });
 const choices = strict({
   ticks: z.record(z.string(), z.boolean()), testDay: maybeText, previousDay: maybeText,
-  replace: z.record(z.string(), z.string()), edits: z.record(z.string(), z.number()), document: documentFix,
+  replace: z.record(z.string(), z.string()), edits: z.record(z.string(), z.number()), document: webDocumentFix,
   columnDays: z.record(z.string(), z.string()).optional(), typed: z.record(z.string(), strict({ text: z.string(), unit: cellUnit })).optional(),
   editUnits: z.record(z.string(), cellUnit.unwrap()).optional(),
 });
@@ -99,7 +101,7 @@ const pick = { platform, run: count, files: z.array(file), started: text, firstR
 const notSavedReason = z.enum(NOT_SAVED_REASONS);
 const reviewed = z.array(strict({ file: text, ref: text, lab: z.boolean() })).optional();
 const outcome = strict({
-  values: count, documents: count, archived: count, unstored: count.optional(), skippedValues: count.optional(), skippedLabValues: count.optional(),
+  values: count, documents: count, archived: count, unstored: count.optional(), skippedValues: count.optional(), skippedLabValues: count.optional(), screenings: count.optional(),
   refused: z.array(z.union([strict({ label: text, reason: notSavedReason }), strict({ line: text })])).optional(),
 });
 
@@ -124,8 +126,8 @@ const phoneChanges = [
 ] as const;
 /** The changes the iPhone's page makes: its door takes no other (ios/engine/upload-doors.ts, US-13 AC24). */
 export const PHONE_CHANGE = z.union(phoneChanges);
-/** Every change: the web's review adds a dated previous column's day, and text typed into a row. */
-const change = z.union([...phoneChanges, strict({ columnDay: text, day: maybeText }), strict({ typed: text, text: z.string(), unit: cellUnit })]);
+/** Every change: the web's review adds a dated previous column's day, text typed into a row, and a letter's screening tick. */
+const change = z.union([...phoneChanges, strict({ columnDay: text, day: maybeText }), strict({ typed: text, text: z.string(), unit: cellUnit }), strict({ document: webDocumentFix })]);
 const failure = z.enum(UPLOAD_FAILURES);
 
 /** Each event by its type, for a caller that sends some of them in a shape of its own (the doors' wire). */
