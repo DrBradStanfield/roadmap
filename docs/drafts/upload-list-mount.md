@@ -1,6 +1,6 @@
 # Mounting the web upload list (PR 3): the note before code
 
-Status: step 0, 2026-11-22. Stops here: one gap (G1) needs an engine change and a ruling on words.
+Status: step 0, 2026-11-22; owner's rulings below. G1 is built in PR 3-0 (`claude/upload-screening-engine`).
 Screen design: [upload-list-screen.md](upload-list-screen.md). Engine plan: upload-shared-engine.md rows 10 and 12c.
 
 ## (a) The adapter
@@ -129,3 +129,14 @@ archive-payloads.ts), which is what `uploadSavePlan` decides. So instead:
 
 Recommendation: this order. 3b alone deletes about 2,300 lines and rewrites 38 test files; 3a keeps the
 FHIR-class Save reviewable on its own, and 3-0 lets Brad see the screening box's words first.
+
+## Owner's rulings (2026-11-22)
+
+- Split accepted: 3-0, 3a, 3b, each its own branch and PR on `hold`. This note lands with 3-0.
+- G1: built in the engine for the web only. Default ticked for an eligible letter with a known age, as today. The
+  web's words move to health-core byte for byte (`SCREENING_BOX_TEXT`); no new words. The phone is unchanged: no
+  box, no screening date from a letter; its doors refuse a change or a state holding the tick. iPhone parity is a lead.
+- `upload_saved` counting one fewer per lab report: accepted (as the iPhone counts); the story says so, dated, in 3a.
+- `upload_review.notSavedOpened`: dropped in 3b, with the story; check the key's consumers first.
+- Stop and Try again: existing `UPLOAD_TEXT` words the iPhone shows (build of 21 Nov); 3b amends US-12 AC26.
+- 3b also removes the known metadata-only re-read (upload-effects.ts:41-50) and updates US-12 AC27.

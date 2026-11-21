@@ -5,6 +5,7 @@ import { isCalendarDay } from '@roadmap/health-core/measurement-history';
 import { getCurrentDateValue } from '../components/DatePicker';
 import { MONTHS_SHORT } from './constants';
 import { longDate } from '@roadmap/health-core/upload-text';
+import { letterDate } from '@roadmap/health-core/upload-screening';
 
 /** Full date state: day/month/year. Day is null when the LLM didn't extract one. */
 export interface FullDate {
@@ -49,12 +50,9 @@ export function pastDay(raw: string | null | undefined): string | null {
   return validDay(raw, { now: new Date().toISOString() });
 }
 
-/** The model's document date as review state (US-13 AC6), read as the
- *  connector reads it: a past calendar day, else unknown. A month alone keeps
- *  no day, which is the user's to pick, but it may still date a screening. */
+/** The model's document date as review state (US-13 AC6), by this device's clock: health-core's rule (upload-screening.ts `letterDate`). */
 export function readDocumentDate(raw: string | null | undefined): { day: string | null; month: string | null } {
-  const day = pastDay(raw);
-  return { day, month: !day && raw && /^\d{4}-\d{2}$/.test(raw) && pastDay(`${raw}-01`) ? raw : null };
+  return letterDate(raw, new Date().toISOString());
 }
 
 export function getDaysInMonth(month: string, year: string): number {

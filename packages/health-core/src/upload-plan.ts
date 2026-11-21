@@ -14,12 +14,15 @@ import { documentDate } from './upload-choices';
 import { uploadFileName, type UploadState } from './upload-flow';
 import { readDocumentFields } from './upload-known';
 import type { UploadReview } from './upload-review';
+import { screeningBox, type ScreeningBox, type ScreeningPerson } from './upload-screening';
 
 export interface UploadSavePlan {
   /** Each read lab report's rows Save writes, in Save's order; a file with none is left out. */
   labRows: Array<{ fileId: string; rows: BulkRow[] }>;
-  /** Every read letter or document, saved by default (owner's ruling Q3 a), with the person's fixes. */
-  documents: Array<{ fileId: string; fields: DocumentFields }>;
+  /** Every read letter or document, saved by default (owner's ruling Q3 a), with the person's fixes. `screening`: its
+   *  screening box (US-13 AC6), on the web only and only when the caller names the person; Save writes `key` with `date`
+   *  when it is ticked and dated (upload-save.ts). */
+  documents: Array<{ fileId: string; fields: DocumentFields; screening?: ScreeningBox }>;
   /** Each read lab report's hidden archive row, built at write time with the rows it wrote: with no cloud only one with a
    *  value ticked (a hash-only row); with a cloud also one with none ticked, its original kept alone (US-14 AC11). */
   labArchives: Array<{ fileId: string; sourceFileName: string; reportDate: string | null }>;
@@ -43,9 +46,10 @@ const fieldsOf = (d: ReturnType<typeof documentView>, sourceFileName: string): D
 /**
  * `review`: the caller's `uploadReview`, the same one it hands `uploadView`. Each file is
  * planned once in picked order: a second file with the bytes of one already planned writes
- * nothing (`saveDocuments` would skip it by hash, US-13 AC1).
+ * nothing (`saveDocuments` would skip it by hash, US-13 AC1). `person`: the web's plan's age and sex, for a letter's
+ * screening box; the phone passes none and has none.
  */
-export function uploadSavePlan(s: UploadState, record: RoadmapFile, now: string, review: UploadReview, cloudConnected: boolean): UploadSavePlan {
+export function uploadSavePlan(s: UploadState, record: RoadmapFile, now: string, review: UploadReview, cloudConnected: boolean, person?: ScreeningPerson): UploadSavePlan {
   // Only rows this build reads (US-65) give a held title, date or kind, newest first, as upload-known.ts indexes them.
   const views = record.documents.filter((d) => !d.deleted && isReadableRow('documents', d)).map(documentView);
   const labs = new Map(review.labFiles.map((f) => [f.fileId, f]));
@@ -65,12 +69,14 @@ export function uploadSavePlan(s: UploadState, record: RoadmapFile, now: string,
       const held = pendingRowsFor(views, f.hash, false)[0];
       const fix = f.status.choices.document;
       const fixedDate = 'date' in fix ? documentDate(fix.date ?? null, now) : undefined; // an impossible date is never planned
+      const raw = held ? held.documentDate : doc.documentDate;
+      const screening = s.platform === 'web' && person ? screeningBox(doc.metadata, raw, fixedDate, fix.screening, person, now) : null;
       documents.push({ fileId: f.id, fields: {
         ...readDocumentFields(doc, uploadFileName(f)),
         documentType: fix.kind ?? doc.classification,
         title: fix.title ?? held?.title ?? doc.title,
-        documentDate: fixedDate !== undefined ? fixedDate : validDay((held ? held.documentDate : doc.documentDate) ?? undefined, { now }),
-      } });
+        documentDate: fixedDate !== undefined ? fixedDate : validDay(raw ?? undefined, { now }),
+      }, ...(screening ? { screening } : {}) });
     } else if (f.status.s === 'read') {
       // A report's original is filed with its values: not while it waits for a day, nor for a photo or a scan, which has
       // none (`original: false`, US-52 AC13e): no hidden archive row for it at all. With every value unticked, only with a
