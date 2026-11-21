@@ -129,9 +129,10 @@ describe('typed text commits (US-13 AC5, AC12; US-02 AC4, AC7)', () => {
     expect(choicesAfter(ldl(3.14), '3.1')?.edits).toEqual({});
   });
 
-  it('an edit finer than the display step is exact, shown rounded, and a finer number typed over it is an edit', () => {
+  // Web list PR 1d (US-13 AC5): the person's own edit shows as they gave it, never rounded.
+  it('an edit finer than the display step is exact, shown as typed, and a finer number typed over it is an edit', () => {
     const s = chose(ldl(3.1), 'f0', { typed: 'v0', text: '3.14', unit: 'si' });
-    expect(see(s, EMPTY).list.rows[0].shown).toMatchObject({ number: '3.1', current: 3.14 });
+    expect(see(s, EMPTY).list.rows[0].shown).toMatchObject({ text: '3.14', number: '3.14', current: 3.14 });
     expect(choicesAfter(s, '3.12')?.edits).toEqual({ v0: 3.12 });
     expect(choicesAfter(s, '3.14')?.edits).toEqual({ v0: 3.14 });
   });

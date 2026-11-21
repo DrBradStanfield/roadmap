@@ -15,7 +15,7 @@ import { transition, type UploadState } from './upload-flow';
 import { uploadSavePlan } from './upload-plan';
 import { lostReplaces, reviewedWrites, uploadReview } from './upload-review';
 import { uploadSave } from './upload-save';
-import { FIX_ERRORS_TEXT, UPLOAD_TEXT } from './upload-text';
+import { DAY_CONTROL_TEXT, FIX_ERRORS_TEXT, UPLOAD_TEXT } from './upload-text';
 import { uploadView, type UploadView, type ValueRow } from './upload-view';
 import { uploadList } from './upload-list';
 import { PRESSURE_ORDER } from './validation';
@@ -317,7 +317,8 @@ describe('a dated previous column waiting for its pick (US-13 AC24)', () => {
     const { view, review } = see(state, record);
     expect(view.save.blockers).toEqual([{ why: UPLOAD_TEXT.chooseDay, at: `f0|printed:${PRINTED}` }]);
     const list = uploadList(state, record, NOW, review, () => 'si');
-    expect(list.days).toEqual([{ key: `f0|printed:${PRINTED}`, fileId: 'f0', source: 'column', printed: PRINTED, chosen: '2026-10', day: null }]);
+    expect(list.days).toEqual([{ key: `f0|printed:${PRINTED}`, fileId: 'f0', source: 'column', printed: PRINTED, chosen: '2026-10', day: null, printedLine: '1 Oct 2026', label: DAY_CONTROL_TEXT.previous, hint: null,
+      fileName: 'f0.pdf', name: `${DAY_CONTROL_TEXT.previous}, 1 Oct 2026, f0.pdf` }]);
     expect(list.rows.map((r) => [r.key, r.section, r.status.kind])).toEqual([['f0:v0', `f0|printed:${PRINTED}`, 'waits'], ['f0:a0', `f0|printed:${PRINTED}`, 'waits']]);
   });
 
