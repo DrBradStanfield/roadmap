@@ -12,6 +12,8 @@ import { transition, type UploadFile, type UploadState } from './upload-flow';
 import { uploadReview } from './upload-review';
 import { UPLOAD_EVENT, UPLOAD_STATE } from './upload-schema';
 import { UPLOAD_TEXT } from './upload-text';
+import { uploadSavePlan } from './upload-plan';
+import { lostReplaces } from './upload-review';
 import { uploadView } from './upload-view';
 
 const COLUMN = '2026-05-01';
@@ -103,6 +105,53 @@ describe('US-13 AC24: a dated previous column\'s day', () => {
     // A state that holds such a pick anyway still never saves a value printed on a day to come.
     const s = open(future, { ...NO_CHOICES, columnDays: { '2027-01-01': '2026-05-02' } });
     expect(uploadReview(s, EMPTY, NOW).classification.values.find((v) => v.ref === 'v0')).toMatchObject({ writes: false, group: 'notSaved', reason: 'futureCoreDay' });
+  });
+});
+
+describe('US-13 AC24: review fixes (PR 1926 adversary and Codex)', () => {
+  const two: UnifiedExtractionResult = { ...prev(), values: [core({ recordedAt: '2026-05-01' }), core({ metric: 'hba1c', valueSI: 40, displayValue: 40, displayUnit: 'mmol/mol', recordedAt: '2026-06-01' })] };
+
+  it('A: a column is judged by the day its values printed, so a value moved onto a waiting column\'s day is not held up by it', () => {
+    const c: FileChoices = { ...NO_CHOICES, ticks: { v1: false }, columnDays: { '2026-05-01': '2026-06-01', '2026-06-01': 'partial:2026::' } };
+    const review = uploadReview(open(two, c), EMPTY, NOW);
+    expect(review.labFiles[0]).toMatchObject({ needsDay: false, needsColumnDay: false });
+    expect(review.classification.rows.map((r) => r.recordedAt.slice(0, 10))).toEqual(['2026-06-01']);
+    // The waiting column's own value, ticked, still waits.
+    expect(uploadReview(open(two, { ...c, ticks: {} }), EMPTY, NOW).labFiles[0]).toMatchObject({ needsColumnDay: true });
+  });
+
+  // A guard: the raw pick never reached a row before (the write cleans its day too); it is now cleaned where it is read.
+  it('A: a pick with a time is used as the undated column\'s rule cleans it, as the same day without one', () => {
+    const at = (pick: string) => { const s = open(prev(), { ...NO_CHOICES, columnDays: { [COLUMN]: pick } }); const review = uploadReview(s, EMPTY, NOW); return { rows: review.classification.rows, view: uploadView(s, EMPTY, NOW, review, false).sure?.rows.map((r) => [r.ref, r.day]) }; };
+    expect(at('2026-05-02T09:30:00.000Z')).toEqual(at('2026-05-02'));
+  });
+
+  it('C: after a column pick, each saving row\'s day in the view is the day Save writes; a waiting column\'s value has none', () => {
+    const s = open(prev(), choose(NO_CHOICES, { columnDay: COLUMN, day: '2026-05-02' }, NOW, prev())!);
+    const review = uploadReview(s, EMPTY, NOW);
+    const view = uploadView(s, EMPTY, NOW, review, false);
+    const rows = [...(view.sure?.rows ?? []), ...view.sections.flatMap((x) => (x.kind === 'unsure' ? x.rows : []))];
+    const plan = uploadSavePlan(s, EMPTY, NOW, review, false).labRows.flatMap((f) => f.rows);
+    expect(rows.map((r) => r.day).sort()).toEqual(plan.map((r) => r.recordedAt.slice(0, 10)).sort());
+    expect(rows.find((r) => r.ref === 'v0')?.day).toBe('2026-05-02');
+    const waits = open(prev(), choose(NO_CHOICES, { columnDay: COLUMN, day: 'partial:2026::' }, NOW, prev())!);
+    const w = uploadView(waits, EMPTY, NOW, uploadReview(waits, EMPTY, NOW), false);
+    expect([...(w.sure?.rows ?? [])].find((r) => r.ref === 'v0')).toMatchObject({ day: null, dayLine: null });
+  });
+
+  it('D: while a column waits, a Replace chosen on its value is kept, not lost, and nothing is written', () => {
+    const undated: UnifiedExtractionResult = { ...prev(), reportDate: null, values: [core({ recordedAt: COLUMN })] };
+    const record = recordWith([{ kind: 'measurement', metricType: 'ldl', value: 2.0, recordedAt: '2026-10-05' }]);
+    const held = record.labValues[0].id;
+    let c = choose(NO_CHOICES, { columnDay: COLUMN, day: '2026-10-05' }, NOW, undated)!;
+    c = choose(c, { replace: 'v0', correctsId: held }, NOW, undated)!;
+    expect(uploadReview(open(undated, c), record, NOW).labFiles[0].replacing).toEqual(['v0']);
+    c = choose(c, { testDay: '2026-10-03' }, NOW, undated)!; // the column's pick is no longer before the report's day: it waits
+    const s = open(undated, c);
+    const review = uploadReview(s, record, NOW);
+    expect(review.labFiles[0]).toMatchObject({ needsColumnDay: true, replacing: ['v0'] });
+    expect(lostReplaces(review, s)).toEqual([]);
+    expect(review.classification.rows).toEqual([]);
   });
 });
 

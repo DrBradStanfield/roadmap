@@ -1,8 +1,10 @@
 // US-13 AC24: the web's dated previous column's day (`columnDay`) never runs on the iPhone. The step
 // door takes only the changes the phone's page makes (health-core PHONE_CHANGE), so a column day
-// answers 'invalid-event' and no phone state can hold one; the phone's own changes still run.
+// answers 'invalid-event'; and every door that reads a state refuses a phone state that holds one
+// ('invalid-state'), so none can run. The phone's own changes still run.
 import { describe, expect, it } from 'vitest';
-import { uploadStepJson } from './entry';
+import { uploadSavePlanJson, uploadStepJson, uploadViewJson } from './entry';
+import { uploadSaveRun } from './upload-save-door';
 
 const NOW = '2026-11-02T00:00:00.000Z';
 const extraction = {
@@ -26,5 +28,26 @@ describe('US-13 AC24: the phone door refuses a column day', () => {
   it('the phone\'s own changes still run', () => {
     const answer = chose({ tick: 'v0', on: false });
     expect(answer.state.files[0].status.choices).toEqual({ ticks: { v0: false }, testDay: null, previousDay: null, replace: {}, edits: {}, document: {} });
+  });
+});
+
+describe('US-13 AC24: no phone state holding a column day runs (PR 1926 R1)', () => {
+  const holding = (platform: string) => JSON.stringify({ ...state, platform, files: [{ ...state.files[0], status: { ...state.files[0].status, choices: { ...state.files[0].status.choices, columnDays: { '2026-05-01': '2026-05-02' } } } }] });
+  const refusal = (json: string) => JSON.parse(json).reason;
+
+  it('the step, view and save plan doors answer invalid-state', () => {
+    expect(refusal(uploadStepJson(holding('phone'), JSON.stringify({ type: 'stop' }), '', 'phone'))).toBe('invalid-state');
+    expect(refusal(uploadViewJson(holding('phone'), '', NOW, false, 'phone'))).toBe('invalid-state');
+    expect(refusal(uploadSavePlanJson(holding('phone'), '', NOW, false, 'phone'))).toBe('invalid-state');
+  });
+
+  it('the save door refuses it too', async () => {
+    const saving = JSON.parse(holding('phone'));
+    const out = await uploadSaveRun(JSON.stringify({ ...saving, phase: 'saving', attempt: 1 }), '', '', NOW, 'phone', '{}', () => null);
+    expect(JSON.parse(out).reason).toBe('invalid-state');
+  });
+
+  it('a phone state without one still runs', () => {
+    expect(JSON.parse(uploadViewJson(JSON.stringify(state), '', NOW, false, 'phone')).save).toBeDefined();
   });
 });

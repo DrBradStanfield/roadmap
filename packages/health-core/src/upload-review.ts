@@ -83,19 +83,13 @@ export function previousDay(pick: string | null, reportDay: string | null, now: 
 function importFile(f: ReadFile, now: string, holderOf: (row: BulkRow) => string | undefined) {
   const { choices } = f.status;
   const day = validDay(choices.testDay ?? f.status.extraction.reportDate ?? undefined, { now });
-  // Each dated previous column's pick, once (US-13 AC24), by the undated column's rule (`previousDay`): a real past
-  // day before the report's (any real past day while the report has none) moves the column's values; any other waits.
-  const moving = new Map<string, string>();
-  const waiting = new Set<string>();
-  for (const [printed, pick] of Object.entries(choices.columnDays ?? {})) {
-    if (!validDay(printed, { now })) continue; // a printed day to come is never saved (`undatable`), whatever the pick
-    if (previousDay(pick, day, now)) moving.set(printed, pick);
-    else waiting.add(printed);
-  }
-  const extraction = withColumnDays(f.status.extraction, moving);
+  const picks = columnPicks(choices.columnDays, day, now);
+  const extraction = withColumnDays(f.status.extraction, picks);
   const result = extraction as ImportFile['result'];
   const undatedDay = previousDay(choices.previousDay, day, now);
-  const offered = offeredValues(extraction).map(({ ref, value }) => ({ ref, own: value.recordedAt }));
+  // `printed`: the day the value printed, before any column pick moved it: a column's values are known by it.
+  const printed = new Map(offeredValues(f.status.extraction).map(({ ref, value }) => [ref, value.recordedAt]));
+  const offered = offeredValues(extraction).map(({ ref, value }) => ({ ref, own: value.recordedAt, waits: picks.waiting.has(printed.get(ref) ?? '') }));
   const ticked = offered.filter(({ ref }) => choices.ticks[ref] ?? true);
   // A value the write refuses for its unit or number whatever its day sits under Not saved and asks no day (owner ruling 2026-11-20).
   // Lab refusals only, unlike `refusedAlone`: a core value out of range still asks the day, since it can be corrected and then saves.
@@ -108,12 +102,15 @@ function importFile(f: ReadFile, now: string, holderOf: (row: BulkRow) => string
   // column for that column's, and so does the whole report (iPhone `valuesWait`, web `allDatesSet`).
   const needsTestDay = day === null && ticked.some((v) => v.own === undefined && !refusedAnyDay(v.ref));
   const needsPreviousDay = undatedDay === null && ticked.some((v) => v.own === UNDATED_PREVIOUS);
-  const needsColumnDay = ticked.some((v) => v.own !== undefined && waiting.has(v.own));
+  const needsColumnDay = ticked.some((v) => v.waits);
   const needsDay = needsTestDay || needsPreviousDay || needsColumnDay;
   // A Replace counts only while its target is still the held row on the value's day (US-13 AC7).
   const days = valueDays(result, day, undatedDay);
+  const waits = new Set(offered.filter((v) => v.waits).map((v) => v.ref));
   const replaces = (ref: string) => {
     const target = choices.replace[ref];
+    // A value whose column waits for its day has no day to judge its Replace on: kept as chosen, never lost (nothing is written).
+    if (waits.has(ref)) return target;
     const row = target && days[ref] ? importRow(result, ref, validDay(days[ref]!, { now }) ?? days[ref]!) : null;
     return row && holderOf(row) === target ? target : undefined;
   };
@@ -130,8 +127,30 @@ function importFile(f: ReadFile, now: string, holderOf: (row: BulkRow) => string
   return { file, day, ticked: ticked.map((v) => v.ref), needsDay, needsTestDay, needsPreviousDay, needsColumnDay, replacing: offered.filter(({ ref }) => replaces(ref)).map((v) => v.ref), undatable };
 }
 
+/**
+ * Each dated previous column's pick (US-13 AC24), by the day the column printed, under the undated column's rule
+ * (`previousDay`): a real past day before the report's (any real past day while the report has none), as that rule
+ * cleans it, moves the column's values (`moving`); any other pick waits (`waiting`). A column printed on a day to
+ * come is in neither: it is never saved (`undatable`), whatever the pick.
+ */
+export function columnPicks(columnDays: Readonly<Record<string, string>> | undefined, reportDay: string | null, now: string) {
+  const moving = new Map<string, string>();
+  const waiting = new Set<string>();
+  for (const [printed, pick] of Object.entries(columnDays ?? {})) {
+    if (!validDay(printed, { now })) continue;
+    const day = previousDay(pick, reportDay, now);
+    if (day) moving.set(printed, day);
+    else waiting.add(printed);
+  }
+  return { moving, waiting };
+}
+
+/** A value's day after the column picks: the picked day, null while its column waits, else its own printed day. */
+export const pickedDay = (own: string | undefined, picks: ReturnType<typeof columnPicks>): string | null | undefined =>
+  (own === undefined ? own : picks.waiting.has(own) ? null : picks.moving.get(own) ?? own);
+
 /** A dated previous column's values on the real past day picked for it, by printed day (US-13 AC24). */
-function withColumnDays(x: ReadFile['status']['extraction'], moving: ReadonlyMap<string, string>): ReadFile['status']['extraction'] {
+function withColumnDays(x: ReadFile['status']['extraction'], { moving }: ReturnType<typeof columnPicks>): ReadFile['status']['extraction'] {
   if (!moving.size) return x;
   const move = <V extends { recordedAt?: string }>(v: V): V => {
     const pick = v.recordedAt !== undefined ? moving.get(v.recordedAt) : undefined;

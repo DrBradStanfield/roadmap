@@ -16,7 +16,7 @@ import { getDisplayLabel, type MetricType } from './units';
 import { inFlight, RETRYABLE, saveEnabled, uploadFileName, type FileStatus, type SaveOutcome, type UploadFile, type UploadState } from './upload-flow';
 import { planIsEmpty, uploadSavePlan, type UploadSavePlan } from './upload-plan';
 import type { UploadPlatform } from './upload-rules';
-import { readFiles, reviewedWrites, type ReviewedValue, type UploadReview } from './upload-review';
+import { columnPicks, pickedDay, readFiles, reviewedWrites, type ReviewedValue, type UploadReview } from './upload-review';
 import { failLine, FILE_NOTICE_TEXT, FIX_ERRORS_TEXT, longDate, REFUSED_TEXT, REVIEW_CELL_TEXT, UNREADABLE_VALUE_TEXT, UPLOAD_TEXT } from './upload-text';
 import { UNDATED_PREVIOUS, type UnifiedExtractionResult } from './lab-extraction';
 import { withComparator } from './lab-limits';
@@ -137,22 +137,24 @@ function progress(s: UploadState, files: readonly UploadFile[]): UploadView['pro
  * A read value as the report printed it (the phone's lab review rule, ios/engine/lab-review.ts): the
  * number with its limit sign, its unit, the extractor's question, a note when the read guessed the
  * unit, and the day it saves on: its own, else its report's (`reportDay`). The number shown is the printed
- * one, so the web's "Printed:" line (shown only when the two differ) never applies.
+ * one, so the web's "Printed:" line (shown only when the two differ) never applies. A dated previous column's day
+ * is the one the review files it on (`pickedDay`, US-13 AC24): the picked day, or none while its pick waits.
  */
-function printedFacts(x: UnifiedExtractionResult | undefined, ref: string, reportDay: string | null, now: string, edit: number | undefined) {
+function printedFacts(x: UnifiedExtractionResult | undefined, ref: string, reportDay: string | null, now: string, edit: number | undefined, picks: ReturnType<typeof columnPicks>) {
   const at = x && valueAt(x, ref);
   if (!at) return {};
   const own = at.value;
   const coreValue = at.kind === 'core' ? at.value : null;
   const number = at.kind === 'core' ? at.value.displayValue : at.value.value;
-  const day = own.recordedAt && own.recordedAt !== UNDATED_PREVIOUS ? validDay(own.recordedAt, { now })?.slice(0, 10) ?? null : null;
+  const picked = pickedDay(own.recordedAt, picks);
+  const day = picked && picked !== UNDATED_PREVIOUS ? validDay(picked, { now })?.slice(0, 10) ?? null : null;
   // An edited number is what Save writes (`importRow`): a core value in its SI unit, a lab in its own, no limit sign.
   return {
     value: edit !== undefined ? String(edit) : withComparator(String(number), own.comparator),
     unit: edit !== undefined && coreValue ? getDisplayLabel(coreValue.metric as MetricType, 'si') : at.kind === 'core' ? at.value.displayUnit : at.value.unit,
     question: own.question ?? null,
     unitNote: coreValue?.unitGuessed ? REVIEW_CELL_TEXT.checkUnit : null,
-    day: day ?? reportDay?.slice(0, 10) ?? null,
+    day: picked === null ? null : day ?? reportDay?.slice(0, 10) ?? null,
   };
 }
 
@@ -166,10 +168,12 @@ function heldText(row: FileMeasurement | FileLabValue | undefined, record: Roadm
   return [withComparator(String(row.value), comparator), unit].filter(Boolean).join(' ');
 }
 
-const valueRow = (review: UploadReview, reads: Map<string, ReturnType<typeof readFiles>[number]>, rows: Map<string, FileMeasurement | FileLabValue>, record: RoadmapFile, now: string) =>
-  (v: ClassifiedValue): ValueRow => {
+const valueRow = (review: UploadReview, reads: Map<string, ReturnType<typeof readFiles>[number]>, rows: Map<string, FileMeasurement | FileLabValue>, record: RoadmapFile, now: string) => {
+  // Each report's column picks, once (US-13 AC24).
+  const picks = review.labFiles.map(({ fileId, day }) => columnPicks(reads.get(fileId)?.status.choices.columnDays, day, now));
+  return (v: ClassifiedValue): ValueRow => {
     const read = reads.get(review.labFiles[v.file].fileId);
-    const facts = printedFacts(read?.status.extraction, v.ref, review.labFiles[v.file].day, now, read?.status.choices.edits[v.ref]);
+    const facts = printedFacts(read?.status.extraction, v.ref, review.labFiles[v.file].day, now, read?.status.choices.edits[v.ref], picks[v.file]);
     const heldId = review.held.get(`${v.file}:${v.ref}`);
     const dayLine = facts.day ? longDate(facts.day) ?? facts.day : null;
     return { ...facts, dayLine, ...rowOf(review, v),
@@ -179,6 +183,7 @@ const valueRow = (review: UploadReview, reads: Map<string, ReturnType<typeof rea
       copy: v.copy ? NOT_SAVED_TEXT.sameDay : null,
     };
   };
+};
 
 const rowOf = (review: UploadReview, v: ClassifiedValue) => ({
   fileId: review.labFiles[v.file].fileId, ref: v.ref, label: v.label,

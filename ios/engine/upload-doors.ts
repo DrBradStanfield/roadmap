@@ -94,7 +94,10 @@ function parsed<S extends z.ZodType>(json: string, schema: S, reason: UploadRefu
   if (!read.success) throw new Refused(reason);
   return read.data;
 }
-export const readState = (json: string): UploadState => parsed(json, UPLOAD_STATE, 'invalid-state');
+/** A phone state never holds the web's column day (US-13 AC24): no step, view, plan or Save door runs one. */
+const PHONE_STATE = UPLOAD_STATE.refine((s) => !('files' in s) || s.platform !== 'phone'
+  || s.files.every((f) => f.status.s !== 'read' || f.status.choices.columnDays === undefined));
+export const readState = (json: string): UploadState => parsed(json, PHONE_STATE, 'invalid-state');
 
 /** The record as the save writes it (read raw), through the app's own deviceId, so the screen doors'
  *  cached read is shared, not emptied; '' is a record with nothing in it yet. Read-only here. */
