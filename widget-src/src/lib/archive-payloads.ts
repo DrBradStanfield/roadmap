@@ -23,11 +23,13 @@ export async function sha256Blob(blob: Blob): Promise<string> {
 
 /** A file the archive step can file: read, not saved as a reviewed document
  *  (`alreadyCovered`, by `fileKey`, never the name two files can share), and
- *  either a document or extracted values, refused ones included (US-14 AC11,
- *  as health-core `labReadFound`). `index`: its place in the pick. */
+ *  either a document or extracted values; refused values only with the
+ *  original's bytes, in a cloud (US-14 AC11, as health-core `labReadFound`):
+ *  off-cloud a hash-only row would make the date rule call it known though
+ *  nothing was kept. `index`: its place in the pick. */
 function isFileable(r: FileResult, index: number, alreadyCovered: ReadonlySet<string>): boolean {
   if (r.error || alreadyCovered.has(fileKey(r, index))) return false;
-  return !!r.document || r.values.length > 0 || r.additionalValues.length > 0 || !!r.refusedValues?.length;
+  return !!r.document || r.values.length > 0 || r.additionalValues.length > 0 || (!!r.refusedValues?.length && !!r.file);
 }
 
 

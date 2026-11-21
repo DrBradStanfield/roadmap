@@ -63,7 +63,10 @@ function genCase(seed: number): Case {
   if (r() < 0.3) held.push(lab('Ferritin', 80, 'µg/L')); // a duplicate of h-1's value
   if (r() < 0.3) held.push(lab('Vitamin B12', 450, 'pmol/L')); // a conflict with h-2's
   if (r() < 0.3) held.push(lab('Calcium', 2.4, 'mmol/L')); // another value on the report's day
-  const record = held.length ? bulkAppendValues(EMPTY, held, NOW).file : EMPTY;
+  const valued = held.length ? bulkAppendValues(EMPTY, held, NOW).file : EMPTY;
+  // h-2's original already stored, on an archive row whose listed values are all gone: the file is read again,
+  // and a ticked copy files a copy of that row with the stored original and its new rows (no second write).
+  const record = r() < 0.2 ? { ...valued, documents: [{ ...deadStored, fileRef: 'Lab results/old.pdf' }] } : valued;
   const ids = files.map((f) => f.id);
   return {
     s: { phase: 'open', platform: pick(['web', 'phone'] as const), run: 1, files, started: NOW, firstRead: NOW },
@@ -73,12 +76,15 @@ function genCase(seed: number): Case {
   };
 }
 
-/** Another writer, between the originals and the commit: every held value deleted, a Vitamin D on the day, and
- *  h-1's original filed by another device (a lab archive row that stores it). */
+const deadStored = documentRow({ ...labArchiveFields('old.pdf', DAY, ['gone']), sourceFileName: 'old.pdf' }, { id: 'dead-stored', contentHash: 'h-2', mimeType: 'application/pdf', addedAt: NOW });
+
+/** Another writer, between the originals and the commit: every held value deleted, a Vitamin D, a Vitamin B12 and a
+ *  Folate on the day (taking h-2's slots, so its copy writes nothing), and h-1's original filed by another device. */
 const otherDevice = documentRow({ ...labArchiveFields('other.pdf', DAY), sourceFileName: 'other.pdf' }, { id: 'other-device', contentHash: 'h-1', mimeType: 'application/pdf', addedAt: NOW });
 const meanwhile = (f: RoadmapFile) => {
   const next = bulkAppendValues({ ...f, labValues: f.labValues.map((v) => ({ ...v, status: 'entered-in-error' as const })) },
-    [{ kind: 'lab', metricName: 'Vitamin D', value: 55, unit: 'nmol/L', referenceLow: null, referenceHigh: null, recordedAt: DAY, source: 'manual' }], NOW).file;
+    [['Vitamin D', 55, 'nmol/L'], ['Vitamin B12', 410, 'pmol/L'], ['Folate', 25, 'nmol/L']].map(([metricName, value, unit]) =>
+      ({ kind: 'lab', metricName: metricName as string, value: value as number, unit: unit as string, referenceLow: null, referenceHigh: null, recordedAt: DAY, source: 'manual' })), NOW).file;
   return { ...next, documents: [...next.documents, { ...otherDevice, fileRef: 'Lab results/other.pdf' }] };
 };
 
@@ -129,18 +135,20 @@ describe('US-14 AC11: one Save keeps every original or says so, and counts what 
         expect(gained, `${label}: 1 off cloud`).toEqual([]);
       }
 
-      // 2. Archived (mutation: drop `!valued.has(...)` from `archived` in upload-save.ts): the hashes that gained an
+      // 2. Archived (mutations: drop `!valued.has(...)` from `archived` in upload-save.ts; count any fileRef, not only one
+      //    this Save wrote, which the dead stored h-2 row with its slots taken meanwhile shows): the hashes that gained an
       //    original in this Save on a lab archive row and whose bytes wrote no value now.
       const archived = new Set(gained.filter((d) => isArchive(d) && !valued.has(d.contentHash ?? '')).map((d) => d.contentHash));
       expect(outcome.archived, `${label}: 2`).toBe(archived.size);
       kept += archived.size;
 
       // 3. Lists (mutation: rows grouped by file id, not by bytes: `rowsOf = labRowsByFile(planned, rowFiles)`): every
-      //    listed id is a lab row of the record, and every new lab row is listed on the archive row of its bytes. Bytes a
+      //    listed id is a lab row of the record or was listed before (a dead list is kept, US-14 AC10), and every new lab row is listed on the archive row of its bytes. Bytes a
       //    letter copy files are left out: a letter claims its bytes ahead of a lab copy, as on main (no archive row).
       const listed = live(file).filter(isArchive).flatMap((d) => (listedRows(d) ?? []).map((id) => [d.contentHash, id] as const));
       const asLetter = new Set(live(file).filter((d) => !isArchive(d)).map((d) => d.contentHash));
-      for (const [, id] of listed) expect(file.labValues.some((v) => v.id === id), `${label}: 3 listed`).toBe(true);
+      const listedBefore = new Set(before.documents.flatMap((d) => listedRows(d) ?? []));
+      for (const [, id] of listed) expect(file.labValues.some((v) => v.id === id) || listedBefore.has(id), `${label}: 3 listed`).toBe(true);
       for (const v of newRows.filter((x) => !asLetter.has(hashOfTest.get(x.metricName) ?? ''))) {
         expect(listed.some(([h, id]) => h === hashOfTest.get(v.metricName) && id === v.id), `${label}: 3 new`).toBe(true);
       }
@@ -150,8 +158,10 @@ describe('US-14 AC11: one Save keeps every original or says so, and counts what 
       //    `labArchives`, claiming nothing, in upload-plan.ts): the originals and documents the label counts are the
       //    originals stored plus those counted unstored; Save writes nothing exactly when the plan is empty. With a cloud
       //    only: off it, a report whose ticked values are all refused files a hash-only row under an empty plan, as on main.
+      //    The count only where no row stored an original before: a ticked copy behind one is counted though it writes
+      //    none (main's label, which the plan's shared dedup, PR C, would settle).
       if (c.cloud) {
-        expect(plan.counts.originals + plan.counts.documents, `${label}: 4 count`).toBe(stored.length + outcome.unstored);
+        if (!before.documents.some((d) => d.fileRef)) expect(plan.counts.originals + plan.counts.documents, `${label}: 4 count`).toBe(stored.length + outcome.unstored);
         expect(planIsEmpty(plan), `${label}: 4 empty`).toBe(file === before);
       }
 
