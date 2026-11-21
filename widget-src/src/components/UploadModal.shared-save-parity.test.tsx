@@ -24,7 +24,8 @@ vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: v
 const probes = vi.hoisted(() => ({ tracked: [], todayTotals: [], failNext: { today: false, shared: false } }) as unknown as Omit<Probes, 'sentryCalls'>);
 vi.mock('../lib/server-api', async (original) => ({
   ...(await original<typeof import('../lib/server-api')>()),
-  trackProductEvent: (name: string, meta?: unknown) => { probes.tracked.push([name, meta]); },
+  // The throttle key too: an out-of-range core value keys the tab's throttle by its metric (roadmap-data.ts).
+  trackProductEvent: (name: string, meta?: unknown, key?: string) => { probes.tracked.push(key === undefined ? [name, meta] : [name, meta, key] as unknown as [string, unknown]); },
 }));
 vi.mock('../lib/archive-payloads', async (original) => ({
   ...(await original<typeof import('../lib/archive-payloads')>()),
@@ -66,7 +67,7 @@ const archiveRows = (side: Side) => rows(side.record.documents).filter((d) => !d
 const view = (side: Side, today = false) => ({
   ...side.record, sentry: side.sentry, done: side.done,
   saveCounts: side.counts && today ? { ...side.counts, documents: side.counts.documents - archiveRows(side) } : side.counts,
-  events: side.events.filter(([n]) => EVENTS.includes(n)).map(([n, m]) => `${n} ${JSON.stringify(m)}`).sort(),
+  events: side.events.filter(([n]) => EVENTS.includes(n)).map((e) => `${e[0]} ${JSON.stringify(e[1])}${e.length > 2 ? ` key ${(e as unknown[])[2]}` : ''}`).sort(),
 });
 /** What differs, key by key: a list by its items on one side alone. */
 function differences(today: Side, adapter: Side) {
@@ -184,6 +185,13 @@ const CASES: Case[] = [
     },
   },
   {
+    // The one refusal a commit can produce: another writer's diastolic lands after the review, so the upload's systolic
+    // reads the wrong way up beside it. Both Saves refuse it with the same measurement_refused.
+    name: 'a blood-pressure half from another writer, after the review: the pair reads the wrong way up', cloud: true, files: [pdf('labBP')],
+    beforeValues: async () => { await addMeasurement('diastolic_bp', 130, '2025-09-02'); },
+    holds: (t) => expect(view(t).events.filter((e) => e.startsWith('measurement_refused'))).toEqual(['measurement_refused {"refusal":"out-of-range"} key diastolic_bp', 'measurement_refused {"refusal":"out-of-range"} key systolic_bp']),
+  },
+  {
     name: 'a retry after a failed Save', cloud: true, failFirst: true, files: [pdf('labA'), pdf('letterA')],
     holds: (t) => { expect(t.done).toBe(true); expect(documents(t).filter((d) => d.fileRef)).toHaveLength(2); },
     // U3, ruled 2026-11-22: the records are equal. Today's second attempt finds the first attempt's values saved and
@@ -250,7 +258,6 @@ describe('mount 3a: the shared Save keeps what today\'s Save keeps', () => {
       expect(differences({ ...today, record: t as Side['record'] }, { ...adapter, record: a as Side['record'] })).toEqual(c.differs ?? {});
     });
   }
-  it.todo('a value the commit refuses after the record changed sends measurement_refused on both sides (engine PR: closed codes for commit refusals)');
   // Not expressible on today's grid: a ZIP member that reaches Save still as an entry (today reads every member it saves,
   // upload-effects.ts:96); covered through the store in storage/roadmap-store-upload-save.test.ts.
 });

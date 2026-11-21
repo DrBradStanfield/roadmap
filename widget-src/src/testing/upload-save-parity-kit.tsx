@@ -36,6 +36,9 @@ export interface Seed {
   failWrite?: boolean;
   /** Runs as the first original is written: between the plan and the commit (an erase, another writer's edit). */
   midway?: () => Promise<void>;
+  /** Another writer's edit after the review was read and before the Save writes its values: today, just before Save is
+   *  pressed (today writes values first); shared, at the first original write (it writes values at the commit). */
+  beforeValues?: () => Promise<void>;
   /** The first Save fails (today: its documents' write rejects; shared: the Save rejects), and the person saves again. */
   failFirst?: boolean;
   /** The starting record, written through the store's own writers. */
@@ -64,10 +67,11 @@ export interface Probes {
 
 /** A cloud whose originals fail, or that runs the seed's midway step at the first one. */
 class SeedCloud extends MemoryAdapter {
-  constructor(cloud: MemoryCloud, private readonly seed: Seed) { super(cloud); }
+  constructor(cloud: MemoryCloud, private readonly seed: Seed, private readonly shared: boolean) { super(cloud); }
   private reached = false;
   async writeDocument(ref: string, bytes: Blob): Promise<void> {
-    if (this.seed.midway && !this.reached) { this.reached = true; await this.seed.midway(); }
+    const midway = this.shared && this.seed.beforeValues ? this.seed.beforeValues : this.seed.midway;
+    if (midway && !this.reached) { this.reached = true; await midway(); }
     if (this.seed.failWrite) throw new Error('Synthetic test: the cloud refused the original');
     return super.writeDocument(ref, bytes);
   }
@@ -80,7 +84,7 @@ export async function eraseHere(): Promise<void> {
 }
 
 /** A fresh record for one side: seeded through a store, then opened by the data layer as the page opens it. */
-async function open(seed: Seed): Promise<MemoryCloud | null> {
+async function open(seed: Seed, shared: boolean): Promise<MemoryCloud | null> {
   localStorage.clear();
   // A cloud page runs with its backend remembered, so it owns this device's off-file data and may erase (US-11 AC6).
   if (seed.cloud) localStorage.setItem(BACKEND_KEY, 'memory');
@@ -88,7 +92,7 @@ async function open(seed: Seed): Promise<MemoryCloud | null> {
   const first = await RoadmapStore.create(seed.cloud ? new MemoryAdapter(cloud) : new LocalStorageAdapter());
   await seed.record?.(first);
   await first.flush();
-  await initRoadmapStore(seed.cloud ? new SeedCloud(cloud, seed) : new LocalStorageAdapter());
+  await initRoadmapStore(seed.cloud ? new SeedCloud(cloud, seed, shared) : new LocalStorageAdapter());
   return seed.cloud ? cloud : null;
 }
 
@@ -97,7 +101,7 @@ const tick = () => act(async () => { await new Promise((r) => setTimeout(r, 0));
 
 /** Today: the grid over the real store, picked, chosen and saved as a person does. */
 export async function todaySave(seed: Seed, probes: Probes): Promise<Side> {
-  const cloud = await open(seed);
+  const cloud = await open(seed, false);
   probes.tracked.length = 0;
   probes.todayTotals.length = 0;
   const sentry0 = probes.sentryCalls();
@@ -110,6 +114,7 @@ export async function todaySave(seed: Seed, probes: Probes): Promise<Side> {
   // A review with nothing to write offers no Save: today writes nothing.
   const save = await screen.findByRole('button', { name: /^Save / }).catch(() => null);
   await seed.grid?.();
+  if (seed.beforeValues) await act(seed.beforeValues);
   const outcome = async () => Promise.race([
     screen.findByRole('button', { name: 'Done' }).then(() => true, () => null),
     screen.findByText(/Please try again\./).then(() => false, () => null),
@@ -139,7 +144,7 @@ export async function todaySave(seed: Seed, probes: Probes): Promise<Side> {
 /** The shared Save's web adapter: the same pick read by the web's own effects, the same choices sent, then the Save the
  *  flow will run (`sharedSave`), answered with the flow's own event; a failed Save is saved again from `saveFailed`. */
 export async function adapterSave(seed: Seed, upload: HealthUploadAPI, probes: Probes): Promise<Side> {
-  const cloud = await open(seed);
+  const cloud = await open(seed, true);
   probes.tracked.length = 0;
   const sentry0 = probes.sentryCalls();
   const run = drive(upload, seed.files.map(fileOf));
@@ -225,6 +230,7 @@ export const READS: Record<string, Import> = {
   labPrev: lab('2025-09-02', [core('ldl', 2.8), core('ldl', 3.3, { recordedAt: '2025-03-01' })], [{ name: 'Ferritin', value: 85, unit: 'µg/L', recordedAt: '2025-03-01' }]),
   labUndated: lab(null, [core('ldl', 3.1)], [{ name: 'Ferritin', value: 60, unit: 'µg/L' }]),
   labRefused: lab('2025-09-02', [core('hdl', 1.4)], [{ name: 'Ferritin', value: 90, unit: 'mmol/L' }], { refusedValues: [{ metric: 'creatinine', value: 80, unit: 'mg/g', reason: 'This is a urine test.' }] }),
+  labBP: lab('2025-09-02', [core('systolic_bp', 120), core('diastolic_bp', 80)], [{ name: 'Ferritin', value: 90, unit: 'µg/L' }]),
   labConflict: lab('2025-09-02', [core('ldl', 3.5), core('hdl', 1.4)]),
   labOutOfRange: lab('2025-09-02', [core('ldl', 95), core('hdl', 1.4)]),
   letterA: letter('Synthetic letter A', '2025-08-01'),
