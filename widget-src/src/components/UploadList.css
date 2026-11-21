@@ -1,0 +1,85 @@
+/* The web upload list (US-13 AC26, web list PR 2; docs/drafts/upload-list-screen.md). Imported by UploadList.tsx
+   alone, so nothing ships it until a later PR mounts the list. Phone first: a row is a tick, its label and Replace,
+   then its number, caption and error under the label. Colours are styles.css tokens. */
+.upload-list-days {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+.upload-list-day {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "words input" "file input";
+  gap: 2px 12px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid var(--color-gray-border);
+  border-left: 3px solid #f5b400;
+  border-radius: 8px;
+}
+.upload-list-day-words { grid-area: words; font-size: 14px; font-weight: 600; color: var(--color-text-heading); }
+.upload-list-day-file { grid-area: file; font-size: 13px; color: var(--color-text-secondary); overflow-wrap: anywhere; }
+.upload-list-day-input { grid-area: input; font: inherit; font-size: 16px; min-height: 36px; }
+
+.upload-list-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--color-gray-border);
+}
+.upload-list-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "tick label replace"
+    ".    value value"
+    ".    caption caption"
+    ".    error error";
+  gap: 4px 10px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-gray-border);
+}
+.upload-list-row[hidden] { display: none; }
+.upload-list-tick { grid-area: tick; width: 20px; height: 20px; margin: 0; }
+.upload-list-label { grid-area: label; font-size: 14px; font-weight: 600; color: var(--color-text-heading); overflow-wrap: anywhere; }
+.upload-list-value { grid-area: value; display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+/* Three classes: styles.css's `.bt-input.bt-input` reset loads after this file and would win at two. */
+.upload-list .bt-input.upload-list-input {
+  width: 6em;
+  flex: none;
+  text-align: left;
+  font-size: 16px;
+  border-bottom: 1px solid var(--color-gray-border);
+}
+.upload-list .bt-input.upload-list-input:focus { border-bottom: 1.5px solid var(--color-brand); }
+.upload-list .bt-input.upload-list-input[aria-invalid="true"] { color: var(--color-error); border-bottom: 1.5px solid var(--color-error); }
+.upload-list-number { font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.upload-list-unit { font-size: 13px; color: var(--color-text-secondary); }
+.upload-list-replace { grid-area: replace; display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.upload-list-replace label { display: inline-flex; align-items: center; gap: 4px; min-height: 32px; cursor: pointer; }
+.upload-list-held { color: var(--color-text-secondary); overflow-wrap: anywhere; }
+.upload-list-caption { grid-area: caption; margin: 0; font-size: 13px; line-height: 1.4; color: var(--color-text-secondary); }
+.upload-list-error { grid-area: error; margin: 0; font-size: 13px; font-weight: 600; color: var(--color-error); }
+.upload-list-row--cleared .upload-list-label,
+.upload-list-row--cleared .upload-list-value { opacity: 0.55; }
+
+.upload-list-files ul { list-style: none; margin: 0 0 8px; padding: 0; font-size: 14px; }
+.upload-list-files li { padding: 4px 0; overflow-wrap: anywhere; }
+.upload-list-files { margin-top: 16px; }
+.upload-list-file-name { font-weight: 600; }
+.upload-list-actions { flex-wrap: wrap; }
+.upload-list-save-line { flex-basis: 100%; }
+.upload-list-save-line p { margin: 0; }
+
+@media (min-width: 600px) {
+  .upload-list-row {
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      "tick label value replace"
+      ".    caption caption caption"
+      ".    error error error";
+  }
+}
