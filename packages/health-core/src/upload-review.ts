@@ -84,7 +84,7 @@ export const readFiles = (s: UploadState): ReadFile[] =>
 export const isLabReport = (f: ReadFile) => f.status.extraction.classification === 'lab_report';
 
 /**
- * An undated previous column's day as the web's old review took it (ReviewTable.tsx `datedColumns`,
+ * An undated previous column's day as the web takes it (ReviewTable.tsx `datedColumns`,
  * `handleColumnDateChange`, US-12 AC14): a real past day, and before the report's own day when
  * that is known; any other pick is refused, so the column still has none.
  */
@@ -99,7 +99,7 @@ export function previousDay(pick: string | null, reportDay: string | null, now: 
  * both clients: saved unless cleared (Brad 2026-11-20: "we need to back ourselves that we are
  * going to get this right"); the person's ticks win. Each ticked value is on its own day or the test's (the person's pick, else the report's
  * own full day); an undated previous column's on its own day. Replace and an edited number go
- * on the row as the web's old review put them (import-review-view.ts `classifyReview`).
+ * on the row as the web's review puts them (import-review-view.ts `classifyReview`).
  */
 function importFile(f: ReadFile, now: string, holderOf: (row: BulkRow) => string | undefined, flags: ReviewFlags) {
   const { choices } = f.status;

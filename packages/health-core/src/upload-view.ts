@@ -78,8 +78,9 @@ export interface UploadView {
   } | null;
   /** The collapsed "Files" list. */
   files: { row: string; rows: Array<{ fileId: string; name: string; status: string }> };
-  /** Read files with nothing in them, and files read only in part, in the web's notice words (US-12 AC9): said here
-   *  alone, never also as the file's status (that reads "Read"). */
+  /** Read files with nothing in them, and files read only in part, in the web's notice words (US-12 AC9). A file with
+   *  nothing in it is said once on each screen: in review here alone (its status reads "Read"); once saved, also as its
+   *  status, since the web's done screen draws only these and the iPhone's only the Files rows. */
   notices: Array<{ fileId: string; name: string; line: string }>;
   /** `error`: a failed save's message; Save then retries. `blockers`: each thing Save waits on (`saveBlockers`), with the
    *  control that removes it; `why` is the first, or what else holds Save. */
@@ -88,7 +89,7 @@ export interface UploadView {
   /** The done screen's lines. `skipped`: reviewed values another writer beat to their slot (US-12 AC6a).
    *  `notSaved`: values the final commit refused, one line per reason in the review's words. */
   done: { line: string; archived: string | null; unstored: string | null; skipped: string[]; notSaved: string[] } | null;
-  /** Values the record already holds, equal, on their day: counted, as the web's old review counted them (ReviewTable.tsx). */
+  /** Values the record already holds, equal, on their day: counted, as the web's review counts them (ReviewTable.tsx). */
   alreadySaved?: string | null;
   /** What this page shows as to be written (upload-review `reviewedWrites`): the app sends it back, as drawn, on
    *  `saveStarted`, and Save writes nothing else (owner ruling 2026-11-20, US-13 AC23). */
@@ -227,7 +228,7 @@ const rowOf = (review: UploadReview, v: ClassifiedValue) => ({
 const replacingOf = (review: UploadReview, v: ClassifiedValue) => !v.copy && review.labFiles[v.file].replacing.includes(v.ref);
 
 /**
- * A selected core value the write would refuse blocks Save, as the web's old review blocked it
+ * A selected core value the write would refuse blocks Save, as the web's review blocks it
  * (ReviewTable `refusedKept` over import-review-view `blocked`, US-13 AC5): sent, not written, and
  * out of its range or otherwise refused (a same-day loser is not an error).
  */
@@ -366,7 +367,7 @@ export function uploadView(s: UploadState, record: RoadmapFile, now: string, rev
       kinds: DOCUMENT_TYPES.map((key) => ({ key, word: KIND_WORDS[key][0] })),
       setDate: UPLOAD_TEXT.setDate, removeDate: UPLOAD_TEXT.removeDate,
     } : null,
-    files: { row: UPLOAD_TEXT.filesRow(files.length), rows: files.map((f) => ({ fileId: f.id, name: uploadFileName(f), status: statusWords(f.status, s) })) },
+    files: { row: UPLOAD_TEXT.filesRow(files.length), rows: files.map((f) => ({ fileId: f.id, name: uploadFileName(f), status: (s.phase === 'done' ? emptyRead(f) : null) ?? statusWords(f.status, s) })) },
     // Read files with nothing in them, and files read only in part (US-12 AC9), in the web's words.
     notices: files.flatMap((f) => [emptyRead(f), f.pages?.truncated ? FILE_NOTICE_TEXT.truncated : null]
       .flatMap((line) => (line ? [{ fileId: f.id, name: uploadFileName(f), line }] : []))),

@@ -1,8 +1,8 @@
 /**
  * Which upload reading takes a (test, day) slot, and when two readings are the
  * same result: the review's one precedence rule (US-12 AC12, AC14; US-13 AC3),
- * for the import review's groups (`import-review.ts`); the web's old matrix
- * (`review-matrix.ts` `place`) shared it until the list replaced it. Pure.
+ * shared by the import review's groups (`import-review.ts`) and the website's
+ * matrix (`review-matrix.ts` `place`), so the two cannot disagree. Pure.
  */
 import { sameLabQuantity, sameValue, type LabQuantity } from './record-edits';
 import type { Comparator } from './lab-limits';

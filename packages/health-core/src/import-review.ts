@@ -5,7 +5,7 @@
  * In agreement with Save by construction: the review classifies the very rows
  * Save would submit (`importRow`, the one builder both clients save with),
  * by each row's own outcome in one dry run of `bulkAppendValues`; slot
- * precedence is `review-slots.ts`. Pure.
+ * precedence is `review-slots.ts`, which the website's matrix shares. Pure.
  * The assistant's refusal text is never read or changed here. No new server
  * or AI call. Design: docs/drafts/import-review-redesign.md.
  */
@@ -51,8 +51,8 @@ export const offeredValues = (result: Offers): OfferedValue[] => [
   ...(result.additionalValues ?? []).map((value, i): OfferedValue => ({ ref: `a${i}`, kind: 'lab', value })),
 ];
 
-/** The value a ref names, or undefined when the extraction holds none: the shared engine's reader (ios/engine/lab-review.ts
- *  still parses refs itself). */
+/** The value a ref names, or undefined when the extraction holds none: the shared engine's reader (ios/engine/lab-review.ts and
+ *  the web's ReviewTable still parse refs themselves). */
 export function valueAt(result: Offers, ref: string): OfferedValue | undefined {
   const i = Number(ref.slice(1));
   const core = ref[0] === 'v' && Number.isInteger(i) ? result.values?.[i] : undefined;
