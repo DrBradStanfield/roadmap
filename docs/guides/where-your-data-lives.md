@@ -12,11 +12,11 @@ Some features do send data to our server, or to another company. This page lists
 
 ## Your record
 
-Your browser reads and writes the file in your cloud directly. With Dropbox, the tool can reach only its own app folder. With Google Drive, it can see only the files it created. With GitHub, it uses a token you create, which we ask you to limit to one repository.
+Your browser reads and writes the file in your cloud directly. With Dropbox, the website can reach only its own app folder. With Google Drive, it can see only the files it created. With GitHub, it uses a token you create, which we ask you to limit to one repository.
 
-Google gives a lasting sign-in only to apps that hold a secret. So when you connect Google Drive, our server swaps Google's sign-in code for a token and hands the result straight back to your browser. While you use the tool, your browser sends that token back through our server about once an hour to get a fresh one. Our server stores nothing from either exchange and does not open your Drive.
+Google gives a lasting sign-in only to apps that hold a secret. So when you connect Google Drive, our server swaps Google's sign-in code for a token and hands the result straight back to your browser. While you use the website, your browser sends that token back through our server about once an hour to get a fresh one. Our server stores nothing from either exchange and does not open your Drive.
 
-The sign-in tokens for your cloud are kept in this browser's local storage, for this site. So is a working copy of your record. To clear both from a shared computer, use Log off this device, described in [find your health record file](/blogs/guides/find-your-record#log-off-a-device).
+The sign-in tokens for your cloud are kept in this browser, for this site. So is a working copy of your record. To clear both from a shared computer, use Log off this device, described in [find your health record](/blogs/guides/find-your-record#log-off-a-device).
 
 The file is plain JSON. Its format is published as a [JSON Schema](https://raw.githubusercontent.com/DrBradStanfield/roadmap/main/docs/health-roadmap-file.schema.json), and the tool's code is open source under the MIT licence on [GitHub](https://github.com/DrBradStanfield/roadmap), so you can check what it does.
 
@@ -56,7 +56,7 @@ If you are not signed in, the chat is tied to a random session id, stored with a
 
 ## The questions we keep
 
-Just before the daily job blanks a question you asked on the tool page or in the chat bubble, we keep a copy of that one question, with no end date, to improve the chatbot. We copy only questions about your health or your measurements, never questions about orders, subscriptions or your account, and never the reply. Before we keep it, an automatic step tries to remove names, places, dates (the year stays), exact ages (the decade stays), contact details, account and order numbers, and the names of employers and schools. It can miss some. The copy keeps the health details, and we do not link it to your account.
+Just before the daily job blanks a question you asked on the tool page or in the chat bubble, we keep a copy of that one question, with no end date, to improve the chatbot. We copy only questions about your health or your values, never questions about orders, subscriptions or your account, and never the reply. Before we keep it, an automatic step tries to remove names, places, dates (the year stays), exact ages (the decade stays), contact details, account and order numbers, and the names of employers and schools. It can miss some. The copy keeps the health details, and we do not link it to your account.
 
 Making the copy sends the question to Anthropic once more, and their 30-day API retention applies. A question in a chat bubble or embed conversation you delete within 30 days of asking it is never copied; a copy made before you deleted it stays until you ask us to delete it. Deleting a conversation on the tool page does not reach our server, so it does not stop the copy. Delete All My Data cannot reach our server, so a question you asked on the tool page before you pressed it is still copied. To have a copy deleted, email brad@drstanfield.com the wording and we will search for it.
 
@@ -68,11 +68,11 @@ What your assistant reads goes to its own company, OpenAI or Anthropic, under th
 
 If you ask your assistant to report a bug, our server files it as a public issue on the project's GitHub page. It holds the assistant's description of the problem. The tool refuses a report that looks like it holds a value, an email or a phone number. It can miss one, and it cannot spot a diagnosis written in words, so read the report before you agree.
 
-If you would rather our server never saw your record, the same tools run on your own computer, straight against your file: see [connect Claude](/blogs/guides/connect-claude) and [the command line](/blogs/guides/command-line).
+If you would rather our server never saw your record, the same tools run on your own computer, straight against your record: see [connect Claude](/blogs/guides/connect-claude) and [the command line](/blogs/guides/command-line).
 
 ## Email
 
-Connecting Dropbox, Google Drive or GitHub on this website turns on check-up reminders, unless you switched them off before. It does not for a WebDAV server, for anyone the tool knows is under 18, or when your provider gives us no email address. Our server then receives the email address from your cloud account, the names of the check-ups and blood tests that are due, and their dates. It receives no results. When you sign up, it sends you one email that lists that schedule. Every reminder has a one-click off link. When you turn reminders off, the schedule is emptied, and the row with your address is deleted 90 days later. If you turn them off while connected to Google Drive and Google confirms that address at that moment, the row is deleted at once instead.
+Connecting Dropbox, Google Drive or GitHub on this website turns on check-up reminders, unless you switched them off before. It does not for a WebDAV server, for anyone the website knows is under 18, or when Dropbox, Google Drive or GitHub gives us no email address. Our server then receives the email address from your Dropbox, Google Drive or GitHub account, the names of the check-ups and blood tests that are due, and their dates. It receives no results. When you sign up, it sends you one email that lists that schedule. Every reminder has a one-click off link. When you turn reminders off, the schedule is emptied, and the row with your address is deleted 90 days later. If you turn them off while connected to Google Drive and Google confirms that address at that moment, the row is deleted at once instead.
 
 If you tick the box in the reminders control to join the mailing list, the address you type there goes to a marketing mailing list for Dr Brad's other business. Typing your email into the box beside your plan also adds you to that list, which the note beside the box names. If your plan has check-ups due, it turns on reminders for that address too. That list is held by Klaviyo. Our emails are sent through Resend. You can unsubscribe from any email.
 
@@ -80,19 +80,19 @@ The feedback box stores your email address and your message, up to 2,000 charact
 
 ## Usage counts, recordings and error reports
 
-The page counts what people use, so we can tell which features to keep. Each event is a fixed name with a few fixed labels, such as which cloud you picked, plus a random visitor id kept in this browser. Free text and the numbers you type are rejected. A few events name a test or measurement, such as one the tool refused to save or the unit you chose for an Lp(a) result, but never its value.
+The page counts what people use, so we can tell which features to keep. Each event is a fixed name with a few fixed labels, such as which cloud you picked, plus a random visitor id kept in this browser. Free text and the numbers you type are rejected. A few events name a test or measurement, such as one the website refused to save or the unit you chose for an Lp(a) result, but never its value.
 
 The site uses Microsoft Clarity, which records how visitors move around a page. We mark the tool, the chat and the upload window for Clarity to mask, so their text, including your values, is hidden in those recordings.
 
 Errors are reported to Sentry. Before a report leaves your browser or our server, our code removes request bodies and cookies, known health and identity fields, and numbers that sit next to a unit or a test name. It cannot recognise a diagnosis written in plain words.
 
-Most requests from the tool reach our server through Shopify, which hosts this site. Reminder sign-ups and the Google Drive token exchange go to our server directly. Our server runs on Fly.io in the United States.
+Most requests from the website reach our server through Shopify, which hosts this site. Reminder sign-ups and the Google Drive token exchange go to our server directly. Our server runs on Fly.io in the United States.
 
 ## Delete your data
 
-Use the Delete all my data button at the bottom of Settings on a computer, or of the Account tab on a phone. It erases your health record and chat history in this browser and in your connected cloud, and turns off reminders. A few things are out of its reach, including your uploaded files, your provider's version history, the chat text our server keeps for 30 days, the copy it keeps of each health question, your account row if you used the chat bubble or embed while signed in, and the chat session and audit rows. [Find your health record file](/blogs/guides/find-your-record#delete-your-data) lists what it leaves in your cloud and says how to remove each one.
+Use the Delete all my data button at the bottom of Settings on a computer, or of the Account tab on a phone. It deletes your health record and chat history in this browser, empties the files that hold them in your connected cloud (the files stay), and turns off reminders. A few things are out of its reach, including your uploaded files, the version history in your cloud storage, the chat text our server keeps for 30 days, the copy it keeps of each health question, your account row if you used the chat bubble or embed while signed in, and the chat session and audit rows. [Find your health record](/blogs/guides/find-your-record#delete-your-data) lists what it leaves in your cloud and says how to remove each one.
 
-To cut the tool off from your cloud, remove the app in your provider's settings: [dropbox.com/account/connected_apps](https://www.dropbox.com/account/connected_apps) for Dropbox, [myaccount.google.com/connections](https://myaccount.google.com/connections) for Google Drive. That also disconnects any AI assistant you connected through us.
+To cut the website off from your cloud, remove the app in your cloud storage settings: [dropbox.com/account/connected_apps](https://www.dropbox.com/account/connected_apps) for Dropbox, [myaccount.google.com/connections](https://myaccount.google.com/connections) for Google Drive. That also disconnects any AI assistant you connected through us.
 
 ## Your rights
 
@@ -100,4 +100,4 @@ This site's [privacy policy](https://drstanfield.com/policies/privacy-policy) na
 
 ## If you get stuck
 
-Ask the chat on the tool page. On a phone it is the Chat tab.
+Ask Chat on the website. On a phone it is the Chat tab.
