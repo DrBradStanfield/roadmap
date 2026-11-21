@@ -33,7 +33,7 @@ final class UploadReviewShots: XCTestCase {
         var done = try Drive()
         done.pick(["letter"])
         done.read("letter", UploadPageTests.letter())
-        done.step(UploadAction.save.event(now: UploadPageTests.now))
+        done.step(UploadAction.saveEvent(promised: try done.page().reviewed))
         done.step(UploadSession.event(.success(.init(values: 3, documents: 1, archived: 0, unstored: 1)), run: done.run, attempt: 1))
 
         let pages = [("reading", try reading.page()), ("mixed", try mixed.page()), ("undated", try undated.page()), ("done", try done.page()), ("open", try mixed.page())]

@@ -15,65 +15,10 @@ enum LabFileReader {
         let mimeType: String?
     }
 
-    /// The file as it was picked, kept in the person's cloud when one is connected
-    /// (US-52 AC13d): the bytes the web archives, never the pages sent to the server.
-    struct Original: Sendable {
-        enum Source: Sendable {
-            /// A ZIP member: already in memory.
-            case bytes(Data)
-            /// A file picked in Files, opened again under `scope`'s access when it is
-            /// saved: bytes mapped from it would outlive the picker's access. `contentHash`:
-            /// the hash of the bytes the review read, taken when it was kept as the file.
-            case file(URL, scope: URL, contentHash: String)
-        }
-        let source: Source
-        let mimeType: String
-        /// The fingerprint of the bytes the review read: their size, and their
-        /// 'sha256-<hex>', the web's sha256Blob format, which is the row's `contentHash`.
-        let size: Int
-        /// Hashed when asked, never on every convert: the shared upload hashes through `Held.hash`.
-        var contentHash: String {
-            switch source {
-            case .bytes(let data): LabFileReader.contentHash(data)
-            case .file(_, _, let hash): hash
-            }
-        }
-
-        init(_ data: Data, mimeType: String) {
-            source = .bytes(data)
-            self.mimeType = mimeType
-            size = data.count
-        }
-
-        private init(source: Source, of read: Original) {
-            self.source = source
-            mimeType = read.mimeType
-            size = read.size
-        }
-
-        /// The same original, kept as the picked file rather than its bytes.
-        func file(_ url: URL, scope: URL) -> Original { Original(source: .file(url, scope: scope, contentHash: contentHash), of: self) }
-
-        /// The bytes the review read, or nil when the file has changed (its size, then
-        /// its hash), gone, or cannot be read: the row is then saved without it.
-        func verifiedData() -> Data? {
-            switch source {
-            case .bytes(let data): return data
-            case .file(let url, let scope, let hash):
-                let scoped = scope.startAccessingSecurityScopedResource()
-                defer { if scoped { scope.stopAccessingSecurityScopedResource() } }
-                guard (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) == size,
-                      let data = try? LabFileReader.coordinatedData(url), LabFileReader.contentHash(data) == hash
-                else { return nil }
-                return data
-            }
-        }
-    }
-
     /// Bytes' 'sha256-<hex>', lowercase: the web's sha256Blob (archive-payloads.ts), a row's `contentHash`.
     static func contentHash(_ data: Data) -> String { "sha256-" + ManifestCheck.sha256(data) }
 
-    /// A ZIP member's ZIP and path, which the engine names by the web's rule (`HealthEngine.named`).
+    /// A ZIP member's ZIP and path (`Held.read`).
     struct ZipMember: Sendable {
         let zip: String
         let path: String
@@ -85,9 +30,6 @@ enum LabFileReader {
         let pages: [Page]
         /// More pages than the website reads, or a page cut short: the review says so.
         let truncated: Bool
-        /// Nil for a photo or a scan, which were never a file.
-        var original: Original? = nil
-        var zipMember: ZipMember? = nil
     }
 
     enum Failure: LocalizedError {
@@ -177,7 +119,7 @@ enum LabFileReader {
         default: throw Failure.unsupported(name)
         }
         let ext = pathExtension(name)
-        var read: Document
+        let read: Document
         switch ext {
         case "pdf": read = try pdf(data, name: name)
         case "jpg", "jpeg", "png", "heic":
@@ -187,7 +129,6 @@ enum LabFileReader {
             read = Document(name: name, pages: [page], truncated: false)
         default: throw Failure.unsupported(name)
         }
-        read.original = Original(data, mimeType: mimeTypes[ext] ?? "")
         return read
     }
 

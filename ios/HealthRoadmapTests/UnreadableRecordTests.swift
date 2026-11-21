@@ -75,16 +75,18 @@ final class UnreadableRecordTests: XCTestCase {
         XCTAssertEqual(store.recordJSON, "")
     }
 
-    /// AC11p: a lab import on an unreadable record is refused with the problem's words, not a
+    /// AC11p: an upload's Save on an unreadable record is refused with the problem's words, not a
     /// fault from reading an empty record.
-    func testALabImportOnAnUnreadableRecordGivesTheProblemsWords_US25_AC11p() async throws {
+    func testAnUploadOnAnUnreadableRecordGivesTheProblemsWords_US25_AC11p() async throws {
         let engine = try HealthEngine()
         let store = try await onTheCloudThenUnreadable(engine)
         await store.showPhone().value
         let problem = try XCTUnwrap(store.problem)
-        // The fixture of RecordSourcePinsTests.testALabImportAskedWhileLeavingTheCloudIsRefused.
-        let extraction = #"{"classification":"lab_report","reportDate":"2026-10-01","values":[{"metric":"ldl","valueSI":3.1,"displayValue":3.1,"displayUnit":"mmol/L","displaySystem":"si","confidence":"high"}],"additionalValues":[],"refusedValues":[]}"#
-        let result = await store.importLabs(extractionJSON: extraction, refs: ["v9"], reportDay: "2026-10-01")
+        var drive = try UploadPageTests.Drive()
+        drive.pick(["lab"])
+        drive.read("lab", UploadPageTests.lab(values: UploadPageTests.ldl))
+        drive.step(UploadAction.saveEvent(promised: try drive.page().reviewed))
+        let result = await store.saveUpload(state: drive.state, originals: [:], read: { _ in nil }, as: store.screen)
         XCTAssertEqual(result, .failure(LabRefusal(message: problem.words)))
         XCTAssertFalse(FileManager.default.fileExists(atPath: phoneFile.path(percentEncoded: false)))
     }

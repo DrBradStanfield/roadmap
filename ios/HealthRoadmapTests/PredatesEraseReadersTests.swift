@@ -125,13 +125,6 @@ final class PredatesEraseReadersTests: XCTestCase {
         }
     }
 
-    private let dated = #"""
-    {"classification":"lab_report","reportDate":"2026-10-01",
-     "values":[{"metric":"ldl","valueSI":3.1,"displayValue":3.1,"displayUnit":"mmol/L","displaySystem":"si","confidence":"high"}],
-     "additionalValues":[], "refusedValues":[]}
-    """#
-    private let letter = ##"{"classification":"clinic_letter","reportDate":null,"values":[],"additionalValues":[],"document":{"classification":"clinic_letter","title":"Cardiology follow-up","documentDate":"2026-09-14","contentMarkdown":"# Letter","metadata":{}}}"##
-
     // MARK: Readers
 
     func testNothingOutsideTheStoreReadsTheRecord_S52() async throws {
@@ -236,13 +229,6 @@ final class PredatesEraseReadersTests: XCTestCase {
             XCTAssertEqual(typed, refused, "\(way): a typed edit")
             let units = await store.apply(.units("conventional"))
             XCTAssertEqual(units, refused, "\(way): keepUnits")
-            guard case .failure(let labs) = await store.importLabs(extractionJSON: dated, refs: ["v0"], reportDay: "2026-10-01") else {
-                return XCTFail("\(way): a lab import landed")
-            }
-            XCTAssertEqual(labs.message, RecordStore.recordChanged, "\(way): a lab import")
-            let choice = DocumentChoice(kind: .document, sourceFileName: "Letter.pdf", title: "Cardiology follow-up", documentDate: nil, mimeType: "")
-            let filed = await store.saveDocument(extractionJSON: letter, choice: choice, original: nil)
-            XCTAssertEqual(filed, .refused(RecordStore.recordChanged), "\(way): a document save")
             // The shared upload's one Save: refused before the engine is asked, whatever the state.
             guard case .failure(let upload) = await store.saveUpload(state: "{}", originals: [:], read: { _ in nil }, as: store.screen) else {
                 return XCTFail("\(way): an upload save landed")
