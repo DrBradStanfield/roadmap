@@ -1,14 +1,12 @@
 /**
  * PR 0 of the upload matrix (docs/drafts/upload-matrix.md section 4, ruling d1; US-13 AC24): the
- * engine half of the held web branch lands inert. Over 800 seeded uploads, on both platforms, with
- * none of the new choices set (no `screening`, no `columnDays`) and no screening profile, `uploadReview`,
+ * dated previous column's day (`columnDays`, `needsColumnDay`) lands inert. Over 800 seeded uploads, on
+ * both platforms, with no `columnDays` set, `uploadReview`,
  * `uploadView` and `uploadSavePlan` answer exactly what main answered before PR 0. The golden file
  * (__fixtures__/upload-pr0-golden.json) holds, per seed, the SHA-256 of that answer as main (25ca16dc8)
- * computed it; run with UPDATE_PR0_GOLDEN=1 on main's code to write it again. New fields are checked
- * empty, then left out, before the hash: the review's `screening` (null), each lab file's
- * `needsColumnDay` (false) and the plan's `screenings` ([]). The one other change is per platform, on
- * the web alone (D3, D6, upload-rules.ts): a web upload holding a letter that prints values, or a lab
- * report with every value cleared and a cloud, is counted apart and not compared. Synthetic values only.
+ * computed it; run with UPDATE_PR0_GOLDEN=1 on main's code to write it again. The one new field, each
+ * lab file's `needsColumnDay`, is checked false, then left out, before the hash. Every seed is compared.
+ * Synthetic values only.
  */
 import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -74,7 +72,7 @@ function genExtraction(r: () => number): UnifiedExtractionResult {
   const classification = r() < 0.5 ? 'clinic_letter' : 'scan_result';
   const metadata = r() < 0.4 ? { screeningType: r() < 0.5 ? 'colorectal' : 'breast' } : {};
   const documentDate = r() < 0.6 ? '2026-10-20' : r() < 0.5 ? '2026-06' : null;
-  // A letter that prints values: the web offers them (D3); the iPhone files the letter alone.
+  // A letter that prints values: filed as a letter alone on both platforms.
   const values = r() < 0.4 ? genValues(r) : { values: [], additionalValues: [] };
   return { classification, reportDate: null, ...values, unrecognized: [], document: { classification, title: 'Synthetic letter', documentDate, contentMarkdown: '## Plan', metadata } };
 }
@@ -90,7 +88,7 @@ function genRecord(r: () => number): RoadmapFile {
   return r() < 0.2 ? { ...file, documents: [{ id: 'held-doc', title: 'Held letter', type: 'clinic_letter', date: '2026-01-01', fileRef: '', contentHash: 'h-f1', mimeType: '', extractedText: '', addedAt: NOW, metadata: {}, sourceFileName: 'held.pdf' }] } : file;
 }
 
-/** The web's and the iPhone's choices today: ticks, the days, Replace, edits, a document's fixes. Never `screening` or `columnDays`. */
+/** The web's and the iPhone's choices today: ticks, the days, Replace, edits, a document's fixes. Never `columnDays`. */
 function genChoices(r: () => number, x: UnifiedExtractionResult, record: RoadmapFile): FileChoices {
   const refs = [...(x.values ?? []).map((_, i) => `v${i}`), ...(x.additionalValues ?? []).map((_, i) => `a${i}`)];
   const held = [...record.measurements, ...record.labValues].map((row) => row.id);
@@ -129,19 +127,6 @@ function genCase(seed: number): Case {
   return { state, record, cloud: r() < 0.5 };
 }
 
-/** D3 and D6 on the web (upload-rules.ts): a letter that prints values, or a lab report with nothing ticked and a cloud. */
-function webPlatformRule(c: Case): boolean {
-  if (c.state.phase === 'choosing' || c.state.platform !== 'web') return false;
-  return c.state.files.some((f) => {
-    if (f.status.s !== 'read') return false;
-    const x = f.status.extraction;
-    const refs = [...(x.values ?? []).map((_, i) => `v${i}`), ...(x.additionalValues ?? []).map((_, i) => `a${i}`)];
-    if (x.classification !== 'lab_report') return refs.length > 0;
-    const { ticks } = f.status.choices;
-    return c.cloud && refs.every((ref) => ticks[ref] === false);
-  });
-}
-
 /** Maps as entries, row ids (random per run) by first appearance. */
 function canonical(value: unknown): string {
   const ids = new Map<string, string>();
@@ -157,21 +142,17 @@ function canonical(value: unknown): string {
   });
 }
 
-/** Main's answer for a case: new PR 0 fields checked empty, then left out. */
+/** Main's answer for a case: the new field checked false, then left out. */
 function answer(c: Case): string {
-  const review = uploadReview(c.state, c.record, NOW) as ReturnType<typeof uploadReview> & { screening?: unknown };
-  const plan = uploadSavePlan(c.state, c.record, NOW, review, c.cloud) as ReturnType<typeof uploadSavePlan> & { screenings?: unknown[] };
+  const review = uploadReview(c.state, c.record, NOW);
+  const plan = uploadSavePlan(c.state, c.record, NOW, review, c.cloud);
   const view = uploadView(c.state, c.record, NOW, review, c.cloud);
-  const { screening, ...reviewOld } = review;
-  expect(screening ?? null).toBeNull();
   const labFiles = review.labFiles.map((l) => {
     const { needsColumnDay, ...old } = l as typeof l & { needsColumnDay?: boolean };
     expect(needsColumnDay ?? false).toBe(false);
     return old;
   });
-  const { screenings, ...planOld } = plan;
-  expect(screenings ?? []).toEqual([]);
-  return canonical({ review: { ...reviewOld, labFiles }, plan: planOld, view });
+  return canonical({ review: { ...review, labFiles }, plan, view });
 }
 
 const hash = (text: string) => createHash('sha256').update(text).digest('hex').slice(0, 24);
@@ -179,20 +160,13 @@ const hash = (text: string) => createHash('sha256').update(text).digest('hex').s
 describe('US-13 AC24: PR 0 is inert with none of its choices set', () => {
   it(`uploadReview, uploadView and uploadSavePlan answer as main did, for ${SEEDS} seeds on both platforms`, () => {
     const now: Record<string, string> = {};
-    const apart: number[] = [];
-    for (let seed = 1; seed <= SEEDS; seed++) {
-      const c = genCase(seed);
-      now[seed] = hash(answer(c));
-      if (webPlatformRule(c)) apart.push(seed);
-    }
+    for (let seed = 1; seed <= SEEDS; seed++) now[seed] = hash(answer(genCase(seed)));
     if (process.env.UPDATE_PR0_GOLDEN) writeFileSync(GOLDEN, `${JSON.stringify(now, null, 0)}\n`);
     const golden = JSON.parse(readFileSync(GOLDEN, 'utf8')) as Record<string, string>;
-    const compared = Object.keys(now).filter((seed) => !apart.includes(Number(seed)));
-    const differ = compared.filter((seed) => golden[seed] !== now[seed]);
-    expect(differ).toEqual([]);
-    expect(compared.length).toBeGreaterThanOrEqual(500);
+    expect(Object.keys(golden)).toHaveLength(SEEDS);
+    expect(Object.keys(now).filter((seed) => golden[seed] !== now[seed])).toEqual([]);
     // Both platforms and every phase are covered.
-    const cases = compared.map((seed) => genCase(Number(seed)).state);
+    const cases = Object.keys(now).map((seed) => genCase(Number(seed)).state);
     expect(new Set(cases.map((s) => ('platform' in s ? s.platform : '')))).toEqual(new Set(['web', 'phone']));
     expect(new Set(cases.map((s) => s.phase))).toEqual(new Set(['open', 'saveFailed', 'saving', 'done']));
   });

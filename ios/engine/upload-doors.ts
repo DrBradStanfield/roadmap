@@ -5,7 +5,7 @@
 // (upload-schema.ts), and the PARSED value is what runs. A malformed input answers a refusal,
 // never a throw. Nothing is logged: the state holds file names, hashes and read values.
 import { initialUpload, transition, uploadFileName, type UploadEvent, type UploadState } from '../../packages/health-core/src/upload-flow';
-import { ATTEST_PART, maybeText, NETWORK_FAILURE, platform, UPLOAD_EVENTS, UPLOAD_STATE } from '../../packages/health-core/src/upload-schema';
+import { ATTEST_PART, maybeText, NETWORK_FAILURE, PHONE_CHANGE, platform, UPLOAD_EVENTS, UPLOAD_STATE } from '../../packages/health-core/src/upload-schema';
 import { knownAs, knownIndex, readIsLegacy, type KnownIndex } from '../../packages/health-core/src/upload-known';
 import { appGateFailure, boundedWords, type FailDetail, type UploadFailure } from '../../packages/health-core/src/upload-failure';
 import { PHONE_FAIL_TEXT } from '../../packages/health-core/src/upload-text';
@@ -79,7 +79,8 @@ const WIRE_EVENT = z.discriminatedUnion('type', [
   E.answered.omit({ legacy: true }),
   E.sendFailed.omit({ failure: true, detail: true }).extend({ status: z.number().int().nullable(), body: maybeText, contentType: maybeText, local: LOCAL.optional() }),
   z.strictObject({ type: z.literal('streamEnded'), run: z.number().int().nonnegative(), id: z.string(), line: maybeText, now: z.string() }),
-  E.retry, E.stop, E.chose, E.saveStarted, E.saved, E.saveFailed, E.close, E.discard,
+  // Only the changes the iPhone's page makes: the web's column day is refused here (US-13 AC24).
+  E.retry, E.stop, E.chose.extend({ change: PHONE_CHANGE }), E.saveStarted, E.saved, E.saveFailed, E.close, E.discard,
 ]);
 type Wire = z.infer<typeof WIRE_EVENT>;
 
