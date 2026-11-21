@@ -6,6 +6,7 @@ import { UNDATED_PREVIOUS, uploadLimitSignal } from '@roadmap/health-core/lab-ex
 import type { UnitSystem } from '@roadmap/health-core/units';
 import { UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, type UploadOutcomeKey } from '@roadmap/health-core/product-events';
 import { getDocumentArchiveMode } from '../lib/roadmap-data';
+import { SHOPIFY_SURFACE } from '../lib/build-flags';
 import { trackProductEvent, type ProductEventMetadata } from '../lib/server-api';
 import type { UploadHistory } from '../lib/api-types';
 import { UploadError, hasValues, type FileNotice, type ReviewDecisions, type FileResult } from '../lib/upload-pipeline';
@@ -79,7 +80,8 @@ export interface UploadFlowOptions {
 }
 
 export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClose, onScreeningUpdate }: UploadFlowOptions) {
-  const [upload, setUpload] = useState<UploadState>(() => initialUpload('web'));
+  // The Shopify build's files are read by our server; the Pages build's by the person's own key (US-12 AC9).
+  const [upload, setUpload] = useState<UploadState>(() => initialUpload('web', SHOPIFY_SURFACE ? 'server' : 'ownKey'));
   // The state read synchronously: a second pick or Save in the same render sees the first.
   const live = useRef(upload);
   // What the web holds beside the state: bytes, pages and the server's words, by file id; one per pick.

@@ -11,7 +11,7 @@ import { METRIC_LABELS } from './mappings';
 import type { MeasurementRefusal } from './record-edits';
 import type { FailDetail } from './upload-failure';
 import type { FailReason, RunRefusal } from './upload-flow';
-import type { UploadPlatform } from './upload-rules';
+import type { UploadPlatform, UploadReader } from './upload-rules';
 import { PRESSURE_ORDER, type DocumentType } from './validation';
 
 /** Section 5, rows 1 to 27, by key, with the words added since; all approved by Brad 2026-11-20. */
@@ -139,6 +139,8 @@ export const KEY_TEXT = {
   noCredit: 'Your Anthropic account has no credit. Check its billing, then try again.',
   rateLimit: 'Not read. Your Anthropic key hit its rate limit. Wait a minute and try again.',
   missing: 'Connect your Anthropic API key (in the "Ask about your plan" panel) to process documents on this page.',
+  /** A file the key's read failed: no server of ours was asked (US-12 AC9); moved from UploadNotices.tsx. */
+  unread: 'Not read. Anthropic could not be reached or could not read it. Please try again.',
 } as const;
 /** A whole run's refusal (upload-flow.ts runRefused), as the web's read-failed screen says it; moved from useUploadFlow.ts. */
 export const REFUSED_TEXT: Record<RunRefusal, string> = {
@@ -215,16 +217,18 @@ const PHONE_LINE: Partial<Record<FailReason, string>> = {
   // A stream that ended with no last line: the connection's failure, in today's words for one.
   network: PHONE_FAIL_TEXT.network.dropped,
 };
+/** Where the Pages build's line differs from the server's: its own key read the file, so no server of ours failed. */
+const OWN_KEY_LINE: Partial<Record<FailReason, string>> = { server: KEY_TEXT.unread, network: KEY_TEXT.unread };
 
 /**
  * A failed file's line (US-52 AC7e): the send's own words first, the gate's `error` text or the App
  * Attest step and code, as today's iPhone shows them; then the iPhone's words where they differ from
- * the web's (PHONE_LINE); then FAIL_TEXT.
+ * the web's (PHONE_LINE), or the Pages build's (OWN_KEY_LINE, its `reader`); then FAIL_TEXT.
  */
-export function failLine(status: { reason: FailReason; detail?: FailDetail }, platform: UploadPlatform): string {
+export function failLine(status: { reason: FailReason; detail?: FailDetail }, platform: UploadPlatform, reader?: UploadReader): string {
   const { detail, reason } = status;
   if (detail && 'message' in detail) return detail.message;
   if (detail && 'network' in detail) return PHONE_FAIL_TEXT.network[detail.network];
   if (detail) return `${PHONE_FAIL_TEXT.attestFailed} (App Attest ${detail.stage} ${detail.code})`;
-  return (platform === 'phone' ? PHONE_LINE[reason] : undefined) ?? FAIL_TEXT[reason];
+  return (platform === 'phone' ? PHONE_LINE[reason] : reader === 'ownKey' ? OWN_KEY_LINE[reason] : undefined) ?? FAIL_TEXT[reason];
 }

@@ -20,12 +20,14 @@ import { NOT_SAVED_REASONS } from './import-review';
 import { isLabUnitWord, LAB_UNIT_BLANK, MEASUREMENT_REFUSAL_REASONS } from './product-events';
 import { METRIC_TYPES } from './validation';
 import { GATE_WORDS_MAX, NETWORK_FAILURES, UPLOAD_FAILURES, type UploadFailure } from './upload-failure';
+import { UPLOAD_READERS } from './upload-rules';
 import type { UploadEffect, UploadEvent, UploadState } from './upload-flow';
 
 const text = z.string();
 export const maybeText = z.string().nullable();
 const count = z.number().int().nonnegative();
 export const platform = z.enum(['web', 'phone']);
+const reader = z.enum(UPLOAD_READERS).optional();
 const comparator = z.enum(COMPARATORS).optional();
 const day = { recordedAt: text.optional(), printedMonth: text.optional() };
 const confidence = z.enum(['high', 'medium', 'low']);
@@ -100,7 +102,7 @@ const file = strict({
   id: text, name: text, zip: text.optional(), bytes: z.number(), hash: maybeText, original: z.literal(false).optional(),
   pages: strict({ count, truncated: z.boolean() }).nullable(), status,
 });
-const pick = { platform, run: count, files: z.array(file), started: text, firstRead: maybeText };
+const pick = { platform, reader, run: count, files: z.array(file), started: text, firstRead: maybeText };
 const notSavedReason = z.enum(NOT_SAVED_REASONS);
 const reviewed = z.array(strict({ file: text, ref: text, lab: z.boolean() })).optional();
 /** Every key a lab refusal can name (record-edits.ts bulkAppendValues): a catalogue entry's, or a core blood test's. */
@@ -116,7 +118,7 @@ const outcome = strict({
 });
 
 export const UPLOAD_STATE = z.discriminatedUnion('phase', [
-  strict({ phase: z.literal('choosing'), platform, run: count }),
+  strict({ phase: z.literal('choosing'), platform, reader, run: count }),
   strict({ phase: z.literal('consent'), ...pick }),
   strict({ phase: z.literal('open'), ...pick }),
   strict({ phase: z.literal('saving'), ...pick, attempt: count, reviewed }),

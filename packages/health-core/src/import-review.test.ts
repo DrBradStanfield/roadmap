@@ -2,7 +2,7 @@
 // one rule for the website and the iPhone (docs/drafts/import-review-redesign.md).
 import { describe, it, expect } from 'vitest';
 import {
-  classifyImportValues, importSummary, importSummaryText, IMPORT_REVIEW_TEXT, notSavedGroups, recordFromHistory, valueDays,
+  classifyImportValues, importRow, importSummary, importSummaryText, IMPORT_REVIEW_TEXT, notSavedGroups, recordFromHistory, valueDays,
   type ClassifiedValue, type ImportFile,
 } from './import-review';
 import { UNDATED_PREVIOUS } from './lab-extraction';
@@ -236,5 +236,21 @@ describe('PR 1826 fix round (US-13 AC13)', () => {
   it('importSummary counts a document by its kind even when its file also holds values', () => {
     const letter = { classification: 'lab_report', values: [core()], document: { classification: 'clinic_letter', title: 'x', documentDate: null, contentMarkdown: '', metadata: {} } } as ImportFile['result'];
     expect(importSummaryText(importSummary([{ result: letter }]))).toBe('Found 1 blood test value and 1 clinic letter');
+  });
+});
+
+describe('US-12 AC20: an edited limit saves exact', () => {
+  const result = { values: [core({ metric: 'lpa', valueSI: 10, displayValue: 10, displayUnit: 'nmol/L', comparator: '<' })], additionalValues: [extra({ value: 5, comparator: '<' })] } as ImportFile['result'];
+
+  it('a core "< 10" Lp(a) edited to 12 saves 12 with no limit sign; unedited it keeps "<"', () => {
+    expect(importRow(result, 'v0', DAY, { edited: { value: 12 } })).toEqual({ kind: 'measurement', metricType: 'lpa', value: 12, recordedAt: DAY, source: 'lab_import_edited' });
+    expect(importRow(result, 'v0', DAY)).toMatchObject({ value: 10, comparator: '<', source: 'lab_import' });
+  });
+
+  it('a lab "< 5" edited to 7 saves 7 with no limit sign; unedited it keeps "<"', () => {
+    const edited = importRow(result, 'a0', DAY, { edited: { value: 7 } });
+    expect(edited).toMatchObject({ kind: 'lab', value: 7, source: 'lab_import_edited' });
+    expect(edited).not.toHaveProperty('comparator');
+    expect(importRow(result, 'a0', DAY)).toMatchObject({ value: 5, comparator: '<', source: 'lab_import' });
   });
 });
