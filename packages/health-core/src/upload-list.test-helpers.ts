@@ -12,12 +12,12 @@ import { choose, type ChoiceChange, type TypedText } from './upload-choices';
 import type { UploadState } from './upload-flow';
 import type { UploadList } from './upload-list';
 import type { UploadReview } from './upload-review';
-import { longDate, REVIEW_CELL_TEXT } from './upload-text';
+import { DAY_CONTROL_TEXT, longDate, REVIEW_CELL_TEXT } from './upload-text';
 import type { UploadView } from './upload-view';
 
 type Fail = (prop: string, msg: string) => never;
 /** What the person entered in each row, by `fileId:ref`, as the harness logged it from their own events (L7 keeps it). */
-export type PersonInputs = ReadonlyMap<string, { typed: TypedText | null; edit: number | undefined }>;
+export type PersonInputs = ReadonlyMap<string, { typed: TypedText | null; edit: number | undefined; editUnit?: CellUnit }>;
 /** A core metric the units table holds; an unfamiliar one has no range and no unit. */
 const known = (metric: string): metric is MetricType => Object.prototype.hasOwnProperty.call(UNIT_DEFS, metric);
 type Read = Extract<Extract<UploadState, { files: unknown }>['files'][number]['status'], { s: 'read' }>;
@@ -83,7 +83,8 @@ export function checkTypedBlocks(s: UploadState, view: UploadView, inputs: Perso
   }
 }
 
-type Entered = { typed: TypedText | null; edit: number | undefined };
+/** `editUnit`: the unit the edit was typed in (web only, owner ruling on PR 1949); it goes and comes with the edit. */
+type Entered = { typed: TypedText | null; edit: number | undefined; editUnit?: CellUnit };
 
 /**
  * What one of the person's own changes leaves in the row it names, from the change alone (US-13 AC5, AC12, AC21, AC26):
@@ -101,15 +102,18 @@ type Entered = { typed: TypedText | null; edit: number | undefined };
  */
 export function expectedInput(change: ChoiceChange, at: OfferedValue, lab: boolean, was: Entered): Entered {
   const unknownCore = at.kind === 'core' && !known(at.value.metric);
-  if ('tick' in change) return change.on ? was : { typed: null, edit: was.edit };
-  if ('edit' in change) return unknownCore ? was : { typed: null, edit: change.value === null || !Number.isFinite(change.value) ? undefined : change.value };
+  const kept = { edit: was.edit, editUnit: was.editUnit };
+  if ('tick' in change) return change.on ? was : { typed: null, ...kept };
+  // A plain edit (the phone's kind) carries no unit, so the unit typed goes.
+  if ('edit' in change) return unknownCore ? was : { typed: null, edit: change.value === null || !Number.isFinite(change.value) ? undefined : change.value, editUnit: undefined };
   if (!('typed' in change)) return was;
   if (unknownCore || !lab) return was;
-  if (!change.text.trim()) return { typed: null, edit: was.edit };
-  const commit = typedCommit(change.text, at, was.edit, change.unit);
+  if (!change.text.trim()) return { typed: null, ...kept };
+  const commit = typedCommit(change.text, at, was.edit, change.unit, was.editUnit);
   if (!commit) return was;
-  if (commit.kind === 'hold') return { typed: { text: change.text, unit: change.unit }, edit: was.edit };
-  return { typed: null, edit: commit.kind === 'edit' ? commit.value : was.edit };
+  if (commit.kind === 'hold') return { typed: { text: change.text, unit: change.unit }, ...kept };
+  // A number typed is an edit in the unit typed (a core value's; a lab's has none).
+  return commit.kind === 'edit' ? { typed: null, edit: commit.value, editUnit: change.unit ?? undefined } : { typed: null, ...kept };
 }
 
 /** The ref a change names, if any. */
@@ -121,7 +125,9 @@ const refOf = (c: ChoiceChange): string | null => ('tick' in c ? c.tick : 'repla
  * file). Every other step (door steps, record changes, reads landing, Save and its outcome) and every other row keeps
  * them. The engine's state must match the log after every step. Mutations: `replacesLost` reducing with the person's clear
  * (held text erased by a lost Replace) fails it; a tick on that erases held text (upload-choices.ts `choose`,
- * `change.on ? unheld({ ...c, ticks: ... }, change.tick)`) fails it.
+ * `change.on ? unheld({ ...c, ticks: ... }, change.tick)`) fails it. It logs the unit each edit was typed in too (web
+ * list PR 1d): a typed commit that sets no unit (`editUnit(kept, change.typed, null)`) fails it ("f2:v1 holds
+ * {"typed":null,"edit":500}, the person's events left {...,"editUnit":"si"}"); a plain edit that keeps the unit fails it.
  */
 export function keepInputs(s: UploadState, inputs: Map<string, Entered>, chose: { id: string; change: ChoiceChange; taken: boolean } | null, fail: Fail) {
   if (!('files' in s)) { inputs.clear(); return; }
@@ -131,9 +137,9 @@ export function keepInputs(s: UploadState, inputs: Map<string, Entered>, chose: 
     const lab = f.status.extraction.classification === 'lab_report';
     for (const at of offeredValues(f.status.extraction)) {
       const key = `${f.id}:${at.ref}`;
-      const was = inputs.get(key) ?? { typed: null, edit: undefined };
+      const was = inputs.get(key) ?? { typed: null, edit: undefined, editUnit: undefined };
       const want = chose && named === at.ref && chose.id === f.id ? expectedInput(chose.change, at, lab, was) : was;
-      const now = { typed: f.status.choices.typed?.[at.ref] ?? null, edit: f.status.choices.edits[at.ref] };
+      const now = { typed: f.status.choices.typed?.[at.ref] ?? null, edit: f.status.choices.edits[at.ref], editUnit: f.status.choices.editUnits?.[at.ref] };
       if (JSON.stringify(want) !== JSON.stringify(now)) fail('L7', `${key} holds ${JSON.stringify(now)}, the person's events left ${JSON.stringify(want)}`);
       inputs.set(key, want);
     }
@@ -235,13 +241,15 @@ const entered = (st: Read, ref: string) => st.choices.ticks[ref] !== undefined |
  * L9 why (web list PR 1d). Each row's `reasons` are the extraction's own: its question, then the guessed-unit note
  * (`REVIEW_CELL_TEXT.checkUnit`). A row needs attention exactly when the review is unsure of it for a reason, it has an
  * error, or the person entered something in it (read from the choices); and every such row says why: a caption, a reason,
- * an error, or what the person entered. A value unsure only for its read's confidence has no words yet: KNOWN
- * confidenceUnworded (noted, Needs Brad). Mutations: `reasons: []` fails it on the first question; `attention` without
- * `touched` fails it on the first cleared tick.
+ * an error, or what the person entered, or the group carries its note (`checkNote`, the review's footer), which it does
+ * exactly while a row with attention the review is unsure of says nothing itself (confidenceUnworded, closed by owner
+ * ruling 2026-11-21). Mutations: `reasons: []` fails it on the first question; `attention` without `touched` fails it on
+ * the first cleared tick; `checkNote: null` fails it on the first low-confidence value.
  */
-export function checkWhy(s: UploadState, review: UploadReview, list: UploadList, note: (gap: string) => void, fail: Fail) {
+export function checkWhy(s: UploadState, review: UploadReview, list: UploadList, fail: Fail) {
   const classified = new Map(review.classification.values.map((v) => [`${v.file}:${v.ref}`, v]));
   const byKey = new Map(list.rows.map((r) => [r.key, r]));
+  let unworded = false;
   for (const { lf, i, st } of labReads(s, review)) {
     for (const at of offeredValues(st.extraction)) {
       const row = byKey.get(`${lf.fileId}:${at.ref}`);
@@ -252,11 +260,12 @@ export function checkWhy(s: UploadState, review: UploadReview, list: UploadList,
       const person = entered(st, at.ref);
       const unsure = v.group === 'unsure' && v.reasons.length > 0;
       if (row.attention !== (unsure || row.error !== null || person)) fail('L9', `${row.key} attention ${row.attention}; unsure ${unsure}, error ${row.error !== null}, entered ${person}`);
-      if (!row.attention || row.caption || row.reasons.length || row.error || person) continue;
-      if (v.group === 'unsure' && v.reasons.every((x) => x === 'confidence')) { note('confidenceUnworded'); continue; }
-      fail('L9', `${row.key} needs attention and says nothing (${row.status.kind}, ${JSON.stringify(v)})`);
+      if (row.attention && unsure && !row.caption && !row.reasons.length && !row.error) unworded = true;
+      if (!row.attention || row.caption || row.reasons.length || row.error || person || list.checkNote) continue;
+      fail('L9', `${row.key} needs attention and says nothing, with no group note (${row.status.kind}, ${JSON.stringify(v)})`);
     }
   }
+  if (list.checkNote !== (unworded ? IMPORT_REVIEW_TEXT.checkFooter : null)) fail('L9', `group note ${JSON.stringify(list.checkNote)}; a row unsure with no words of its own: ${unworded}`);
 }
 
 /**
@@ -300,5 +309,28 @@ export function checkNames(s: UploadState, review: UploadReview, list: UploadLis
   for (const [base, names] of bases) {
     if (names.length >= 3) { note('thirdReadingShared'); continue; }
     if (names.length === 2 && names.filter((n) => n === base).length !== 1) fail('L11', `two rows named ${JSON.stringify(names)}`);
+  }
+}
+
+/**
+ * L12 day-control names (owner ruling 2026-11-21). Each control's accessible name, its label, the day a dated column
+ * printed in words (`printedLine`, `longDate` of the day it printed) and its file's name, is distinct in every state; both
+ * previous columns say "Choose the date of the previous results". Two files of one name can share a control's name: KNOWN
+ * sameNamedFileDays (noted; as their rows, no words tell them apart). Mutation: `printedLine` the report's day in words
+ * instead of the column's (`longDate(lab.day)`) fails it on the first dated column.
+ */
+export function checkDayNames(s: UploadState, list: UploadList, note: (gap: string) => void, fail: Fail) {
+  const files = new Map(('files' in s ? s.files : []).map((f) => [f.id, f.name]));
+  const seen = new Map<string, string>();
+  for (const d of list.days) {
+    if (d.source !== 'test' && d.label !== DAY_CONTROL_TEXT.previous) fail('L12', `${d.key} labelled ${JSON.stringify(d.label)}`);
+    if (d.source === 'column' && d.printedLine !== longDate(d.printed)) fail('L12', `${d.key} printed line ${JSON.stringify(d.printedLine)}`);
+    const name = [d.label, d.source === 'column' ? d.printedLine : '', files.get(d.fileId)].join('|');
+    const other = seen.get(name);
+    if (other !== undefined) {
+      if (other !== d.fileId && files.get(other) === files.get(d.fileId)) { note('sameNamedFileDays'); continue; }
+      fail('L12', `two day controls named ${JSON.stringify(name)}`);
+    }
+    seen.set(name, d.fileId);
   }
 }

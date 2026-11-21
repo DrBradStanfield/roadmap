@@ -40,11 +40,18 @@ describe('why a row needs checking (US-13 AC26)', () => {
     expect(rows.map((r) => [r.status.kind, r.reasons])).toEqual([['waits', ['Is this LDL?']], ['waits', []]]);
   });
 
-  // KNOWN confidenceUnworded (Needs Brad): a value read with less than high confidence, and nothing else, needs checking
-  // but no words exist for why. The row says nothing of its own until Brad gives the words.
-  it('KNOWN confidenceUnworded: a low-confidence value needs attention and has no words', () => {
-    const [row] = list(open([labRead('f0', { values: [core({ confidence: 'medium' })] })])).rows;
-    expect(row).toMatchObject({ status: { kind: 'check', reasons: ['confidence'] }, attention: true, caption: null, reasons: [], error: null });
+  // confidenceUnworded, closed (owner ruling 2026-11-21, option b, no new words): a value unsure only for its read's
+  // confidence has no words of its own, so the group carries the review's footer as its note under the heading.
+  it('confidenceUnworded, closed: a low-confidence value has no words of its own, and the group note says why', () => {
+    const l = list(open([labRead('f0', { values: [core({ confidence: 'medium' })] })]));
+    expect(l.rows[0]).toMatchObject({ status: { kind: 'check', reasons: ['confidence'] }, attention: true, caption: null, reasons: [], error: null });
+    expect(l.checkNote).toBe(IMPORT_REVIEW_TEXT.checkFooter);
+    expect(IMPORT_REVIEW_TEXT.checkFooter).toBe('We were not sure about these. Check each against the report.');
+  });
+
+  it('no group note while every unsure row says why itself, or none is unsure', () => {
+    expect(list(open([labRead('f0', { values: [core({ question: 'Is this LDL?' }), hba1c({ unitGuessed: true })] })])).checkNote).toBeNull();
+    expect(list(chose(open([labRead('f0', { values: [core({})] })]), 'f0', { tick: 'v0', on: false })).checkNote).toBeNull();
   });
 });
 
@@ -108,11 +115,19 @@ describe('each day control carries its words (US-12 AC14, US-13 AC24)', () => {
     expect(list(s).days.map((d) => [d.source, d.label, d.hint])).toEqual([
       ['test', UPLOAD_TEXT.dayOfTest, UPLOAD_TEXT.undatedTitle],
       ['previous', DAY_CONTROL_TEXT.previous, 'Pick a day'],
-      ['column', DAY_CONTROL_TEXT.column, null],
+      ['column', DAY_CONTROL_TEXT.previous, null],
     ]);
+    expect(list(s).days[2]).toMatchObject({ source: 'column', printed: '2026-09-15', printedLine: '15 Sep 2026' });
     expect(list(withMonth).days.find((d) => d.source === 'previous')?.hint).toBe('Pick a day in Jun 2024 before 1 Nov 2026');
     const picked = list(chose(chose(s, 'f0', { testDay: '2026-10-20' }), 'f0', { previousDay: '2026-09-01' })).days;
     expect(picked.map((d) => d.hint)).toEqual([null, null, null]);
+  });
+
+  it('two dated columns of one file share the label and are told apart by the day each printed, in words', () => {
+    const days = list(open([labRead('f0', { values: [core({ recordedAt: '2026-09-15' }), core({ recordedAt: '2026-08-02' })] })])).days;
+    expect(days.map((d) => [d.label, d.source === 'column' ? d.printedLine : null])).toEqual([
+      [DAY_CONTROL_TEXT.previous, '15 Sep 2026'], [DAY_CONTROL_TEXT.previous, '2 Aug 2026'],
+    ]);
   });
 
   it('the words moved from the web\'s grid, byte for byte', () => {

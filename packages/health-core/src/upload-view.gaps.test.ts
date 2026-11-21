@@ -317,7 +317,7 @@ describe('a dated previous column waiting for its pick (US-13 AC24)', () => {
     const { view, review } = see(state, record);
     expect(view.save.blockers).toEqual([{ why: UPLOAD_TEXT.chooseDay, at: `f0|printed:${PRINTED}` }]);
     const list = uploadList(state, record, NOW, review, () => 'si');
-    expect(list.days).toEqual([{ key: `f0|printed:${PRINTED}`, fileId: 'f0', source: 'column', printed: PRINTED, chosen: '2026-10', day: null, label: DAY_CONTROL_TEXT.column, hint: null }]);
+    expect(list.days).toEqual([{ key: `f0|printed:${PRINTED}`, fileId: 'f0', source: 'column', printed: PRINTED, chosen: '2026-10', day: null, printedLine: '1 Oct 2026', label: DAY_CONTROL_TEXT.previous, hint: null }]);
     expect(list.rows.map((r) => [r.key, r.section, r.status.kind])).toEqual([['f0:v0', `f0|printed:${PRINTED}`, 'waits'], ['f0:a0', `f0|printed:${PRINTED}`, 'waits']]);
   });
 

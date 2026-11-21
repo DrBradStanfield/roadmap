@@ -207,7 +207,7 @@ const valueRow = (review: UploadReview, reads: Map<string, ReturnType<typeof rea
       held: heldText(heldId ? rows.get(heldId) : undefined, record),
       copy: v.copy ? NOT_SAVED_TEXT.sameDay : null,
       saves: v.sent && v.writes && (!promised || promised.has(`${lab.fileId}:${v.ref}`)),
-      ...(unitOf && at ? { shown: shownValue(at, edit, at.kind === 'core' ? unitOf(at.value.metric as MetricType) : 'si') } : {}),
+      ...(unitOf && at ? { shown: shownValue(at, edit, at.kind === 'core' ? unitOf(at.value.metric as MetricType) : 'si', read?.status.choices.editUnits?.[v.ref]) } : {}),
     };
   };
 

@@ -66,6 +66,7 @@ const choices = strict({
   ticks: z.record(z.string(), z.boolean()), testDay: maybeText, previousDay: maybeText,
   replace: z.record(z.string(), z.string()), edits: z.record(z.string(), z.number()), document: documentFix,
   columnDays: z.record(z.string(), z.string()).optional(), typed: z.record(z.string(), strict({ text: z.string(), unit: cellUnit })).optional(),
+  editUnits: z.record(z.string(), cellUnit.unwrap()).optional(),
 });
 const failReason = z.enum(['unreadable', 'bytesUnreadable', 'zipUnreadable', 'zipEmpty', 'timeout', 'busy', 'dailyLimit', 'declined', 'tooLong', 'server', 'network', 'keyRefused', 'noCredit', 'keyRateLimit', 'noKey', 'appRefused', 'tooLarge', 'cannotAttest', 'attestFailed']);
 /** An App Attest step or code: a short word, nothing else from the error (US-52 AC7e). */

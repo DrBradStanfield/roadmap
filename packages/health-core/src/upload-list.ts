@@ -55,16 +55,20 @@ export interface ListRow {
 
 /** A day control, one per day source a file's values printed: the test's, the undated previous column's, or a dated
  *  previous column's (a real past day; one still to come is never saved). `chosen`: the person's pick as given; `day`: the
- *  day its values save on now, null while none. Its key names the source, never the day. `label`: its name; `hint`: what
- *  it asks for while it has no day (an undated report says so; an undated previous column names its limits), else null. */
+ *  day its values save on now, null while none. Its key names the source, never the day. `label`: its name, one for both
+ *  previous columns (owner ruling 2026-11-21); a dated one also shows `printedLine`, the day it printed in words, so two
+ *  of one file are told apart. `hint`: what it asks for while it has no day (an undated report says so; an undated previous
+ *  column names its limits), else null. */
 export type DayControl = { key: string; fileId: string; chosen: string | null; day: string | null; label: string; hint: string | null } & (
   | { source: 'test' }
   | { source: 'previous'; month: string | null; before: string | null }
-  | { source: 'column'; printed: string });
+  | { source: 'column'; printed: string; printedLine: string });
 
 /** `check`: the heading over the rows with `attention`, which show before "Show all" (null when none); `showAll` counts the
- *  rest. */
-export interface UploadList { rows: ListRow[]; days: DayControl[]; check: string | null; showAll: string | null; hide: string }
+ *  rest. `checkNote`: the review's footer under the heading (owner ruling 2026-11-21, no new words), exactly while a row with
+ *  attention that the review is unsure of says nothing itself (no caption, reason or error: a value unsure only for its
+ *  read's confidence); else null. */
+export interface UploadList { rows: ListRow[]; days: DayControl[]; check: string | null; checkNote: string | null; showAll: string | null; hide: string }
 
 const errorWords = (fault: RowFault | null, unitOf: (metric: MetricType) => CellUnit): string | null =>
   !fault ? null : fault.kind === 'typed' ? typedTextError(fault.text) : fault.kind === 'range' ? rangeMessage(fault.metric, unitOf(fault.metric), fault.fault) : fault.message;
@@ -108,6 +112,7 @@ export function uploadList(s: UploadState, record: RoadmapFile, now: string, rev
   const rowsById = new Map<string, FileMeasurement | FileLabValue>(review.held.size ? [...record.measurements, ...record.labValues].map((r) => [r.id, r]) : []);
   const days = new Map<string, DayControl>();
   const named = new Set<string>();
+  let unworded = false;
   const rows = candidates(review, s).map((c): ListRow => {
     const lab = review.labFiles[c.file];
     const choices = reads.get(c.fileId)!.choices;
@@ -119,7 +124,7 @@ export function uploadList(s: UploadState, record: RoadmapFile, now: string, rev
       const before = lab.day?.slice(0, 10) ?? null;
       if (printed === undefined) days.set(section, { ...control, source: 'test', chosen: choices.testDay, label: UPLOAD_TEXT.dayOfTest, hint: day ? null : UPLOAD_TEXT.undatedTitle });
       else if (printed === UNDATED_PREVIOUS) days.set(section, { ...control, source: 'previous', chosen: choices.previousDay, month: lab.previousMonth, before, label: DAY_CONTROL_TEXT.previous, hint: day ? null : DAY_CONTROL_TEXT.pickDay(lab.previousMonth, before) });
-      else if (validDay(printed, { now })) days.set(section, { ...control, source: 'column', printed, chosen: choices.columnDays?.[printed] ?? null, label: DAY_CONTROL_TEXT.column, hint: null });
+      else if (validDay(printed, { now })) days.set(section, { ...control, source: 'column', printed, chosen: choices.columnDays?.[printed] ?? null, printedLine: longDate(printed) ?? printed, label: DAY_CONTROL_TEXT.previous, hint: null });
     }
     const replacing = !c.v.copy && lab.replacing.includes(c.ref);
     const status = statusOf(c, replacing);
@@ -131,19 +136,22 @@ export function uploadList(s: UploadState, record: RoadmapFile, now: string, rev
     const again = named.has(`${c.v.label}\n${from}`);
     named.add(`${c.v.label}\n${from}`);
     const touched = choices.ticks[c.ref] !== undefined || c.edit !== undefined || c.typed !== null || choices.replace[c.ref] !== undefined;
-    return {
+    const row: ListRow = {
       key: `${c.fileId}:${c.ref}`, fileId: c.fileId, ref: c.ref, label: c.v.label, section, status, caption: captionOf(status, error),
       saves: c.v.sent && c.v.writes && (!promised || promised.has(`${c.fileId}:${c.ref}`)),
       ticked: c.ticked, typed: c.typed, input: c.at.kind === 'core' && !isCellMetric(c.at.value.metric) ? 'none' : 'number',
-      shown: shownValue(c.at, c.edit, c.at.kind === 'core' && isCellMetric(c.at.value.metric) ? unitOf(c.at.value.metric) : 'si'), error,
+      shown: shownValue(c.at, c.edit, c.at.kind === 'core' && isCellMetric(c.at.value.metric) ? unitOf(c.at.value.metric) : 'si', choices.editUnits?.[c.ref]), error,
       replaces, replacing, held: heldText(replaces ? rowsById.get(replaces) : undefined, record),
       attention: (c.v.group === 'unsure' && c.v.reasons.length > 0) || error !== null || touched,
       reasons: [c.at.value.question, c.at.kind === 'core' && c.at.value.unitGuessed ? REVIEW_CELL_TEXT.checkUnit : null].filter((w): w is string => !!w),
       name: REVIEW_CELL_TEXT.rowName(c.v.label, from, again),
       replaceLabel: replaces && dayLine ? REVIEW_CELL_TEXT.replaceLabel(c.v.label, dayLine) : null,
     };
+    if (row.attention && c.v.group === 'unsure' && !row.caption && !row.reasons.length && !row.error) unworded = true;
+    return row;
   });
   const loud = rows.filter((r) => r.attention).length;
   const quiet = rows.length - loud;
-  return { rows, days: [...days.values()], check: loud ? IMPORT_REVIEW_TEXT.checkTitle(loud) : null, showAll: quiet ? IMPORT_REVIEW_TEXT.showAll(quiet) : null, hide: IMPORT_REVIEW_TEXT.hide };
+  return { rows, days: [...days.values()], check: loud ? IMPORT_REVIEW_TEXT.checkTitle(loud) : null,
+    checkNote: unworded ? IMPORT_REVIEW_TEXT.checkFooter : null, showAll: quiet ? IMPORT_REVIEW_TEXT.showAll(quiet) : null, hide: IMPORT_REVIEW_TEXT.hide };
 }

@@ -84,9 +84,12 @@ describe('typed text in a row (web list PR 1b; US-13 AC5, AC12; US-02 AC4, AC7)'
     expect(typedCommit('<0.5', limit, undefined, 'si')).toEqual({ kind: 'hold' }); // other text with a sign stays held
   });
 
-  it('an edit shows at the precision the person gave, never rounded; retyping it is no change', () => {
-    expect(shownValue(ldl(3.1), 4.25, 'si')).toMatchObject({ text: '4.25', number: '4.25', current: 4.25 });
-    expect(typedCommit('4.25', ldl(3.1), 4.25, 'si')).toEqual({ kind: 'same' });
+  // The unit it was typed in is the fourth argument (`FileChoices.editUnits`, owner ruling on PR 1949).
+  it('an edit shows at the precision the person gave in the unit they typed it in; retyping it is no change', () => {
+    expect(shownValue(ldl(3.1), 4.25, 'si', 'si')).toMatchObject({ text: '4.25', number: '4.25', current: 4.25 });
+    expect(typedCommit('4.25', ldl(3.1), 4.25, 'si', 'si')).toEqual({ kind: 'same' });
+    expect(shownValue(ldl(3.1), 4.25, 'conventional', 'si')).toMatchObject({ text: '164', current: 4.25 }); // another unit: rounded
+    expect(typedCommit('164', ldl(3.1), 4.25, 'conventional', 'si')).toEqual({ kind: 'same' });
     expect(shownValue(ldl(3.1), undefined, 'si')).toMatchObject({ text: '3.1', number: '3.1' }); // untouched: rounded as today
     expect(shownValue(ldl(12.94), undefined, 'si').text).toBe('12.9');
   });
@@ -95,8 +98,8 @@ describe('typed text in a row (web list PR 1b; US-13 AC5, AC12; US-02 AC4, AC7)'
     const commit = typedCommit('116.3', ldl(3.1), undefined, 'conventional');
     expect(commit).toMatchObject({ kind: 'edit' });
     const value = (commit as { value: number }).value;
-    expect(shownValue(ldl(3.1), value, 'conventional')).toMatchObject({ text: '116.3', number: '116.3', unit: 'mg/dL' });
-    expect(typedCommit('116.3', ldl(3.1), value, 'conventional')).toEqual({ kind: 'same' });
+    expect(shownValue(ldl(3.1), value, 'conventional', 'conventional')).toMatchObject({ text: '116.3', number: '116.3', unit: 'mg/dL' });
+    expect(typedCommit('116.3', ldl(3.1), value, 'conventional', 'conventional')).toEqual({ kind: 'same' });
     const lab = valueAt({ additionalValues: [extra({})] }, 'a0')!;
     expect(shownValue(lab, 80.25, 'si')).toMatchObject({ text: '80.25', number: '80.25' });
     expect(typedCommit('80.25', lab, 80.25, null)).toEqual({ kind: 'same' });

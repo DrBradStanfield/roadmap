@@ -86,7 +86,9 @@ export const REVIEW_CELL_TEXT = {
 /** A previous column's day control, moved from the web's grid byte for byte: its names (ReviewMatrix.tsx aria-label) and,
  *  while an undated one has no day, its limits: a day in its printed month, before its report's day (ReviewTable.tsx). */
 export const DAY_CONTROL_TEXT = {
+  /** Both previous columns' name on the list (owner ruling 2026-11-21); a dated one adds the day it printed. */
   previous: 'Choose the date of the previous results',
+  /** The old grid's alone (ReviewMatrix.tsx): "column" means nothing on the list. Goes with the grid. */
   column: 'Choose column date',
   /** `month` YYYY-MM, `before` YYYY-MM-DD; either unknown, left out. */
   pickDay: (month: string | null, before: string | null) => `Pick a day${month ? ` in ${longDate(month)}` : ''}${before ? ` before ${longDate(before)}` : ''}`,
