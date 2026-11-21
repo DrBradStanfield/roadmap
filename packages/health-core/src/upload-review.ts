@@ -9,7 +9,7 @@ import { UNDATED_PREVIOUS } from './lab-extraction';
 import { classifyImportValues, importRow, isCoreRef, isOfferedRef, offeredValues, PROBE_DAY, reportImportFile, rowSlot, valueDays, type ClassifiedValue, type ImportClassification, type ImportFile } from './import-review';
 import { bulkAppendValues, slotIndex, validDay, type BulkRow } from './record-edits';
 import { createEmptyFile, type RoadmapFile } from './roadmap-file';
-import { uploadFileName, type UploadFile, type UploadState } from './upload-flow';
+import { transition, uploadFileName, type UploadFile, type UploadState } from './upload-flow';
 
 type ReadFile = UploadFile & { status: Extract<UploadFile['status'], { s: 'read' }> };
 
@@ -62,6 +62,21 @@ export function lostReplaces(review: UploadReview, s: UploadState): Array<{ id: 
     return lab ? Object.keys(f.status.choices.replace).filter((ref) => !lab.replacing.includes(ref)).map((ref) => ({ id: f.id, ref })) : [];
   });
 }
+
+/**
+ * The state with each lost Replace dropped and its value unticked (`replacesLost`), as the engine door steps and views it
+ * (ios/engine/upload-doors.ts). Judged only while a Replace is chosen (`choosesReplace`). `review`: the review it judged
+ * by, when nothing was dropped, so a view reviews that state once.
+ */
+export function dropLostReplaces(s: UploadState, record: RoadmapFile, now: string): { state: UploadState; review?: UploadReview } {
+  if (!choosesReplace(s)) return { state: s };
+  const review = uploadReview(s, record, now);
+  const lost = lostReplaces(review, s);
+  return lost.length ? { state: transition(s, { type: 'replacesLost', lost }).state } : { state: s, review };
+}
+
+/** Some read file holds a Replace: only then can one be lost, so only then is the record read. */
+export const choosesReplace = (s: UploadState) => readFiles(s).some((f) => Object.keys(f.status.choices.replace).length > 0);
 
 export const readFiles = (s: UploadState): ReadFile[] =>
   ('files' in s ? s.files : []).filter((f): f is ReadFile => f.status.s === 'read');

@@ -65,7 +65,7 @@ interface Held { fileId: string; hash: string }
 export async function uploadSave<F>(s: UploadState, record: RoadmapFile, now: string, cloudConnected: boolean, io: UploadSaveIO<F>): Promise<UploadSaveResult> {
   if (s.phase !== 'saving') return { ok: false, reason: 'not-saving', message: 'The upload is not saving.' };
   const review = uploadReview(s, record, now);
-  const blocked = saveBlocked(review);
+  const blocked = saveBlocked(review, s);
   if (blocked) return { ok: false, reason: 'not-ready', message: blocked };
   const plan = uploadSavePlan(s, record, now, review, cloudConnected);
 

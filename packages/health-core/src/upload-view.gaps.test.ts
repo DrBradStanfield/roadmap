@@ -246,6 +246,18 @@ describe('the undated previous column (US-13 AC25)', () => {
   });
 });
 
+// Found by the list-view property on PR 1942 (seed 71), owner ruling 2026-11-21: main's rule, left for 1b, where each row's
+// error comes from its own candidate.
+describe('a copy of a refused reading (web list PR 1a)', () => {
+  it('KNOWN copyBlocksWithoutError: a copy of a blood pressure the write refuses blocks Save at its own row, which draws no error', () => {
+    const turned = [core({ metric: 'systolic_bp', valueSI: 80, displayValue: 80, displayUnit: 'mmHg' }), core({ metric: 'diastolic_bp', valueSI: 120, displayValue: 120, displayUnit: 'mmHg' })];
+    const { view } = see(open([labRead('f0', { values: [...turned, ...turned] })]), EMPTY);
+    expect(view.save.blockers).toEqual(['v0', 'v1', 'v2', 'v3'].map((ref) => ({ why: FIX_ERRORS_TEXT, at: `f0:${ref}` })));
+    const copies = rows(view).filter((r) => r.ref === 'v2' || r.ref === 'v3');
+    expect(copies.map((r) => [r.ref, r.error, r.copy])).toEqual([['v2', null, NOT_SAVED_TEXT.sameDay], ['v3', null, NOT_SAVED_TEXT.sameDay]]);
+  });
+});
+
 // Found by the list-view property on PR 1926 (seed 964), owner ruling 2026-11-21: option A for PR 0, since nothing draws column days yet.
 describe('a dated previous column waiting for its pick (US-13 AC24)', () => {
   const PRINTED = '2026-10-01';
@@ -279,6 +291,14 @@ describe('a dated previous column waiting for its pick (US-13 AC24)', () => {
     expect(review.labFiles[0]).toMatchObject({ needsColumnDay: true, waits: ['a0'] });
     expect(review.classification.rows).toEqual([]);
     expect(view.save).toMatchObject({ enabled: false, why: UPLOAD_TEXT.chooseDay });
+  });
+
+  // KNOWN (web list PR 1a, owner ruling 2026-11-21), for 1b to close: the view draws no control for a dated column's day yet,
+  // so Save's blocker for a waiting column names a key no section has. Property B allows this case alone (241 of 3000 seeds; first 14, 19, 29).
+  it('KNOWN columnBlockerUndrawn: a waiting dated column\'s blocker names a day control the view does not draw', () => {
+    const { view } = see(s(), record);
+    expect(view.save.blockers).toEqual([{ why: UPLOAD_TEXT.chooseDay, at: `f0|printed:${PRINTED}` }]);
+    expect(view.sections.flatMap((x) => ('key' in x ? [x.key] : []))).toEqual([]);
   });
 
   it('columnWaitsNeverWritten (negative pin): nothing of a report whose column waits is written, and Save says to choose the day', () => {

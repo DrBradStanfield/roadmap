@@ -28,7 +28,7 @@ import type { UploadFile, UploadState } from './upload-flow';
 import { labReadFound, planIsEmpty, uploadSavePlan, type UploadSavePlan } from './upload-plan';
 import { uploadReview } from './upload-review';
 import { UPLOAD_TEXT } from './upload-text';
-import { uploadView, type UploadView } from './upload-view';
+import { uploadView } from './upload-view';
 
 const GOLDEN = join(__dirname, '__fixtures__', 'upload-pr0-golden.json');
 const SEEDS = 800;
@@ -166,7 +166,7 @@ function parts(c: Case) {
     expect(waits ?? []).toEqual([]);
     return old;
   });
-  return { review: { ...review, labFiles }, plan, view };
+  return { review: { ...review, labFiles }, plan, view: mainView(view) };
 }
 const answer = (c: Case): string => canonical(parts(c));
 
@@ -199,8 +199,24 @@ function asMain(c: Case, kept: ReturnType<typeof keptAlone>): string {
   const label = values || documents || !originals ? UPLOAD_TEXT.saveBoth(values, documents) : UPLOAD_TEXT.saveOriginals(originals);
   // Only an open page asks the plan whether Save has anything to do; nothing else in the view reads these fields.
   const empty = c.state.phase === 'open' && view.save.why === null && planIsEmpty(main);
-  const save: UploadView['save'] = { ...view.save, label, ...(empty ? { enabled: false, why: UPLOAD_TEXT.saveNothing } : {}) };
+  const save = { ...view.save, label, ...(empty ? { enabled: false, why: UPLOAD_TEXT.saveNothing } : {}) };
   return canonical({ review, plan: main, view: { ...view, save } });
+}
+
+/**
+ * The view as main drew it: the web list's new keys (PR 1a) deleted, and nothing else touched. Each row's `saves`, each
+ * day section's `key`, and Save's `blockers`. No `unitOf` is passed, so no row has `shown`.
+ */
+const MAIN_VIEW_OMITS = { row: ['saves'], section: ['key'], save: ['blockers'] } as const;
+function mainView(view: ReturnType<typeof uploadView>) {
+  const omit = <T extends object>(x: T, keys: readonly string[]) => Object.fromEntries(Object.entries(x).filter(([k]) => !keys.includes(k)));
+  const row = (r: object) => omit(r, MAIN_VIEW_OMITS.row);
+  return {
+    ...view,
+    sections: view.sections.map((x) => omit('rows' in x && x.kind === 'unsure' ? { ...x, rows: x.rows.map(row) } : x, MAIN_VIEW_OMITS.section)),
+    sure: view.sure && { ...view.sure, rows: view.sure.rows.map(row) },
+    save: omit(view.save, MAIN_VIEW_OMITS.save),
+  };
 }
 
 const hash = (text: string) => createHash('sha256').update(text).digest('hex').slice(0, 24);
