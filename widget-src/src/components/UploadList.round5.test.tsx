@@ -8,7 +8,7 @@ import { NUMERIC_SYNTAX_GUIDANCE } from '@roadmap/health-core/cell-input';
 import { bulkAppendValues } from '@roadmap/health-core/record-edits';
 import { longDate, UPLOAD_TEXT } from '@roadmap/health-core/upload-text';
 import { controlAt } from './UploadList';
-import { blur, input, LDL, labRead, letterRead, mount, open, row, save, showAll, typeInto } from '../testing/upload-list-kit';
+import { blur, input, LDL, labRead, letterRead, mount, open, openAll, row, save, showAll, typeInto } from '../testing/upload-list-kit';
 
 afterEach(cleanup);
 const unitOf = (key: string) => row(key).querySelector('.upload-list-unit')!.textContent;
@@ -60,9 +60,10 @@ describe('S2: a unit press commits an open draft first, with no blur (adversary 
 });
 
 describe('S4: Show all is a latch (adversary F4, owner ruling)', () => {
-  it('a clean report opens; typing "abc" in one row and leaving it collapses nothing, and the next row\'s press lands', () => {
+  it('a clean report, opened by the person; typing "abc" in one row and leaving it collapses nothing, and the next row\'s press lands', () => {
     const host = mount(open([labRead('f0', { values: [core({}), core({ metric: 'hba1c', valueSI: 40, displayValue: 40, displayUnit: 'mmol/mol' })] })]));
     expect(host.see().list.check).toBeNull();
+    openAll(); // it starts closed (T11)
     typeInto('f0:v0', 'abc');
     blur(); // iOS Safari: a tap on a checkbox blurs the input and focuses nothing
     expect(host.see().list.check).not.toBeNull();
@@ -118,6 +119,7 @@ describe('S6: the day picker says its day; an Lp(a) input names its current unit
 
   it('an Lp(a) input is described by its current unit, not all three', () => {
     const host = mount(open([labRead('f0', { values: [core({ metric: 'lpa', valueSI: 90, displayValue: 90, displayUnit: 'nmol/L' })] })]));
+    openAll(); // Show all starts closed (T11)
     const r = host.see().list.rows[0];
     expect(described(input('f0:v0'))).toEqual([r.unit.current]);
   });
@@ -144,6 +146,7 @@ describe('S7: an error is announced once, when the person\'s step makes it (adve
 describe('round six: the engine\'s printed note, letter preview and picker words (PR 1953)', () => {
   it('a value printed in another unit shows the engine\'s "Printed:" note under it, describing its input (US-13 AC11)', () => {
     const host = mount(open([labRead('f0', { values: [core({ valueSI: 3.1, displayValue: 120, displayUnit: 'mg/dL' })] })]));
+    openAll(); // Show all starts closed (T11)
     const r = host.see().list.rows[0];
     expect(r.printed).not.toBeNull();
     const note = within(row('f0:v0')).getByText(r.printed!);

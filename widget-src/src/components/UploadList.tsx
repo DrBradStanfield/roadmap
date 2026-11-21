@@ -3,7 +3,7 @@
  * yet: UploadModal still draws ReviewTable. It draws only what the engine exposes (`uploadList`, `uploadView`) and adds
  * no rule: it never decides a status, a caption, an error, a blocker or whether an input takes typing, never parses a
  * number and never counts. Its one state is the focused input's draft (lib/upload-list-draft.ts). Its view state: Show
- * all, a latch set once when the review first has rows (open when nothing needs checking) and then only by its press;
+ * all, a latch set once when the review first has rows (`SHOW_ALL_AT_START`, closed) and then only by its press;
  * which row holds the focus, which is never hidden (owner rulings 2026-11-21, 2026-11-22); and the last error announced.
  */
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
@@ -56,6 +56,11 @@ function bySection(rows: ListRow[]): Array<{ key: string; rows: ListRow[] }> {
   return [...groups].map(([key, rs]) => ({ key, rows: rs }));
 }
 
+/** Show all's starting state, set once when the review first has rows: closed, as US-13 AC26 and Brad's decision of
+ *  2026-11-21 say (untouched rows that need nothing sit behind "Show all"). Open: docs/decisions-for-brad.md asks whether
+ *  a report with nothing to check should show its values straight away; a yes makes this `list.check === null`. */
+const SHOW_ALL_AT_START = false;
+
 /** The errors a person's step made: an error text a row did not have in the list before it (adversary F8, R3). */
 const newErrors = (before: List, after: List) => {
   const had = new Map(before.rows.map((r) => [r.key, r.error]));
@@ -82,7 +87,7 @@ export function UploadList({ list, view, page, choose, reread, save, stop, retry
   const rowsId = useId();
   const byKey = useMemo(() => new Map(list.rows.map((r) => [r.key, r])), [list]);
   const editable = view.editable ?? false;
-  const open = latch.open ?? (list.rows.length > 0 ? list.check === null : null);
+  const open = latch.open ?? (list.rows.length > 0 ? SHOW_ALL_AT_START : null);
   const all = open ?? list.check === null;
   // The row being typed in, or holding the focus, is never hidden; nor is one shown since Show all was last pressed.
   const shown = (row: ListRow) => all || row.attention || row.key === draft?.key || row.key === focused || latch.kept.has(row.key);
@@ -128,9 +133,9 @@ export function UploadList({ list, view, page, choose, reread, save, stop, retry
     else if (now.save.blockers[0]) controlAt(root.current, now.save.blockers[0].at)?.focus();
   };
 
-  if (view.done) return <Done done={view.done} label={view.doneLabel} onDone={done} />;
-
   const failed = view.sections.find((s) => s.kind === 'failed');
+  if (view.done) return <Done done={view.done} label={view.doneLabel} files={[...view.notices, ...(failed?.kind === 'failed' ? failed.rows : [])]} onDone={done} />;
+
   const notSaved = view.sections.find((s) => s.kind === 'notSaved');
   const days = new Map(list.days.map((d) => [d.key, d]));
   return (

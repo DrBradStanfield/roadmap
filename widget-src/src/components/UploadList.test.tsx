@@ -14,6 +14,7 @@ import type { UploadState } from '@roadmap/health-core/upload-flow';
 import { FIX_ERRORS_TEXT, REVIEW_CELL_TEXT, UPLOAD_TEXT } from '@roadmap/health-core/upload-text';
 import { IMPORT_REVIEW_TEXT } from '@roadmap/health-core/import-review';
 import { ENGINE_NAMES } from '../lib/upload-list-names';
+import { openAll } from '../testing/upload-list-kit';
 import { UploadListHost, type ListHost } from '../testing/upload-list-host';
 import { controlAt } from './UploadList';
 
@@ -46,8 +47,9 @@ describe('the three cases that sank PR 1937, drawn (US-13 AC26)', () => {
     const SEP = '2026-09-01';
     const OCT = '2026-10-01';
     const host = mount(open([labRead('f0', { values: [core({ recordedAt: OCT })] })]), bulkAppendValues(EMPTY, [LDL(3.1, SEP)], NOW).file);
+    openAll(); // nothing needs checking: the rows sit behind Show all (T11)
     const li = row('f0:v0');
-    expect(li.hidden).toBe(false); // nothing needs checking: every row shows from the start (B5)
+    expect(li.hidden).toBe(false);
     typeInto('f0:v0', 'abc');
     blur();
     const day = document.querySelector<HTMLInputElement>(`[data-at="f0|printed:${OCT}"] input`)!;
@@ -65,7 +67,8 @@ describe('the three cases that sank PR 1937, drawn (US-13 AC26)', () => {
 
   it('(b) LDL twice on one day, the second unticked and typed into: its row stays, with its text, then its edit and caption', () => {
     const host = mount(open([labRead('f0', { values: [core({}), core({ valueSI: 3.5, displayValue: 3.5 })] })]));
-    expect(row('f0:v1').hidden).toBe(false); // nothing needs checking: every row shows from the start (B5)
+    openAll(); // nothing needs checking: the rows sit behind Show all (T11)
+    expect(row('f0:v1').hidden).toBe(false);
     const li = row('f0:v1');
     fireEvent.click(within(li).getByRole('checkbox'));
     expect((within(li).getByRole('checkbox') as HTMLInputElement).checked).toBe(false);
@@ -173,6 +176,7 @@ describe('what the engine now says (US-13 AC10, AC26; US-14 AC11-13)', () => {
 
   it('retyping the shown text of a printed limit changes nothing', () => {
     const host = mount(open([labRead('f0', { additionalValues: [{ name: 'CRP', value: 0.6, unit: 'mg/L', comparator: '<' }] })]));
+    openAll(); // Show all starts closed (T11)
     const shown = input('f0:a0').value;
     typeInto('f0:a0', `${shown}1`);
     typeInto('f0:a0', shown);

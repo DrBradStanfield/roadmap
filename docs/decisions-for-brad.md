@@ -36,6 +36,14 @@ issue, and nothing private.
   value came from. Recommendation (the owner's): option 1, because it is the only composition from existing
   words that tells files apart. Nothing draws these names until you answer.
 
+- **When a report has nothing to check, should the web list show its values straight away?** Issue: with
+  nothing flagged, the new web list shows only the date, "Show all 5" and "Save 5 values"; a first-time user
+  may think nothing was read. Options: (1) keep the values behind "Show all", as you decided on 2026-11-21 and
+  as the iPhone does: the list stays short, but a clean report looks empty until the press; (2) show every
+  value when none needs checking (the design review's recommendation): the list is never empty, but a long
+  clean report shows all its rows. Recommendation (the owner's): option 2 for the web. Until you answer, the
+  list follows option 1; your yes is a one-line change (`SHOW_ALL_AT_START` in UploadList.tsx).
+
 ## Decided
 
 2026-11-21, Brad's words in quotes:

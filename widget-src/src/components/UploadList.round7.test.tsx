@@ -9,7 +9,7 @@ import { bulkAppendValues } from '@roadmap/health-core/record-edits';
 import type { UploadEvent } from '@roadmap/health-core/upload-flow';
 import { reviewedWrites, uploadReview } from '@roadmap/health-core/upload-review';
 import { uploadSavePlan } from '@roadmap/health-core/upload-plan';
-import { blur, input, LDL, labRead, letterRead, mount, open, row, save, typeInto } from '../testing/upload-list-kit';
+import { blur, input, LDL, labRead, letterRead, mount, open, openAll, row, save, typeInto } from '../testing/upload-list-kit';
 
 afterEach(cleanup);
 const ldl = (valueSI: number) => labRead('f0', { values: [core({ valueSI, displayValue: valueSI })] });
@@ -33,6 +33,7 @@ describe('T1: Save saves exactly what the engine holds after the commit (Codex R
 
   it.each(Object.keys(leave) as Array<keyof typeof leave>)('held text, committed by %s, then Save: nothing is saved and the focus goes to the row', (how) => {
     const host = mount(open([ldl(3.1)]));
+    openAll(); // Show all starts closed (T11)
     typeInto('f0:v0', 'abc');
     leave[how]();
     fireEvent.click(save());
@@ -52,6 +53,7 @@ describe('T1: Save saves exactly what the engine holds after the commit (Codex R
 
   it('a press whose commit leaves Save refused focuses the blocker and saves nothing', () => {
     const host = mount(open([ldl(3.1)]));
+    openAll(); // Show all starts closed (T11)
     typeInto('f0:v0', 'abc');
     fireEvent.click(save()); // the focus never left the input
     expect(host.see().list.rows[0].typed?.text).toBe('abc');
@@ -63,6 +65,7 @@ describe('T1: Save saves exactly what the engine holds after the commit (Codex R
 describe('T2: a new error text on a row that had one is announced, politely (adversary R3, US-13 AC12)', () => {
   it('held "abc", then "1,234": the row now asks which number, and that is said', () => {
     const host = mount(open([ldl(3.1)]));
+    openAll(); // Show all starts closed (T11)
     expect(announced().getAttribute('aria-live')).toBe('polite');
     typeInto('f0:v0', 'abc');
     blur();

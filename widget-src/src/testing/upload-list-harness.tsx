@@ -53,6 +53,8 @@ const SCENARIOS: Record<string, { s: UploadState; record: RoadmapFile; unitOf?: 
   units: { s: TWO_LDL, record: EMPTY },
   futureday: { s: chose(open([read('f0', 'scan-no-date.pdf', x({ reportDate: null, values: [core({})] }))]), { type: 'chose', id: 'f0', change: { testDay: '2026-12-01' }, now: NOW }), record: EMPTY },
   done: { s: { ...fresh, phase: 'done', outcome: { values: 4, documents: 1, archived: 1, skippedValues: 1 } }, record: EMPTY },
+  // Done after a read cut short and a file that failed: the files not fully read are named (US-12 AC9).
+  donewarn: { s: { ...open([{ ...read('f0', 'long-report.pdf', REPORT), pages: { count: 40, truncated: true } }, { ...read('f1', 'scan.pdf', REPORT), status: { s: 'failed', reason: 'server', attempt: 3 } }]), phase: 'done', outcome: { values: 4, documents: 0, archived: 0 } }, record: EMPTY },
   // A file still reading before one already read: its rows land above the focused row (the WebKit focus check).
   reorder: { s: open([{ ...read('f0', 'first.pdf', REPORT), status: { s: 'sending', attempt: 1 } }, read('f1', 'second.pdf', x({ values: [core({ valueSI: 500, displayValue: 500 })] }))]), record: EMPTY },
 };

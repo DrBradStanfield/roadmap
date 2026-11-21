@@ -24,7 +24,7 @@
  *   K3h the unit label beside an open draft is the one on screen at its first keystroke, whatever was pressed since (S1);
  *       a unit press with a draft open commits it first, with no blur (S2, checked by K3b);
  *   K3i no row that was visible becomes hidden on a step that is not a press of Show all, and Show all's state changes
- *       only on its press (S4: a latch);
+ *       only on its press (S4: a latch); it starts closed and stays closed until that press (T11);
  *   K3j the list's announcement changes only on a person's step where a row has an error text it did not have (from the
  *       engine's rows), never on an engine step; a step of one choice says each such text; no row is an alert (S7, T2, T3).
  * Mutations it was shown failing on (PR body): M1 commit skipped on focus moving to another row; M2 the input's value
@@ -34,7 +34,8 @@
  * leaves the draft to a blur; M11 every current error announced on each change; M12 a day picker's words made by the
  * screen; M13 the printed note dropped; M14 announcements keyed on the row alone; M15 `acted` kept after a choice that
  * changed nothing; M16 a cleared letter date dropped; M17 a tick or Replace press that sends the box's state after the
- * blur's commit, not as drawn when pressed (the code before T8). (The promise path of Save, restored, fails the typecheck: `choose` returns void.) Synthetic values only.
+ * blur's commit, not as drawn when pressed (the code before T8); M18 Show all opening by itself when nothing needs
+ * checking (the withdrawn ruling); M19 a press's claim kept after a cancelled press (the code before T12). (The promise path of Save, restored, fails the typecheck: `choose` returns void.) Synthetic values only.
  */
 import { act, cleanup, fireEvent, render } from '@testing-library/react';
 import { afterEach, describe, it } from 'vitest';
@@ -126,6 +127,7 @@ function runSequence(seed: number, steps: number) {
   render(<UploadListHost initial={initial} record={record0} now={NOW} host={host} />);
   const h = host.current!;
   const trace: string[] = [];
+  let everPressed = false;
   let draft = null as Draft;
   let held = null as Held | null;
   const nodes = new Map<string, { li: Element; input: HTMLInputElement | null }>();
@@ -284,6 +286,7 @@ function runSequence(seed: number, steps: number) {
       if (focusMoves(button)) { expected = committed(before, record, draft); draft = null; }
       fireEvent.click(button);
       toggled = true;
+      everPressed = true;
     } else if (r < 0.84) {
       const button = document.querySelector<HTMLButtonElement>('.review-save-btn');
       if (!button || button.disabled) continue;
@@ -383,6 +386,9 @@ function runSequence(seed: number, steps: number) {
       fail('K3h', `${draft.key} was typed under ${draft.label}, its open draft now labelled ${unitLabel(draft.key)}`);
     }
     // K3i: Show all is a latch; nothing shown hides unless it is pressed.
+    // K3i: Show all starts closed (T11); until the person presses it, it stays closed.
+    const expanded = document.querySelector('.review-disclosure')?.getAttribute('aria-expanded');
+    if (!everPressed && expanded === 'true') fail('K3i', `Show all opened before any press, on "${trace[trace.length - 1]}"`);
     if (!toggled) {
       for (const key of wasShown) if (rowEl(key)?.hidden) fail('K3i', `${key} was shown and hid on "${trace[trace.length - 1]}"`);
       const isOpen = document.querySelector('.review-disclosure')?.getAttribute('aria-expanded') ?? null;

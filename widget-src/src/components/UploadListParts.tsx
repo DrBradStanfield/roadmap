@@ -2,6 +2,7 @@
 // done screen. No state, no rule.
 import { useId } from 'react';
 import type { UploadView } from '@roadmap/health-core/upload-view';
+import { FileNotices } from './UploadNotices';
 
 type Section<K extends UploadView['sections'][number]['kind']> = Extract<UploadView['sections'][number], { kind: K }>;
 
@@ -32,12 +33,18 @@ export function Files({ files, notices, failed, retry }: { files: UploadView['fi
   );
 }
 
-export function Done({ done, label, onDone }: { done: NonNullable<UploadView['done']>; label: string | undefined; onDone: () => void }) {
+/** The done screen. `files`: the files not fully read, each with the engine's line (`view.notices`, and the failed section's
+ *  rows), named as today's done screen names them (US-12 AC9). */
+export function Done({ done, label, files, onDone }: {
+  done: NonNullable<UploadView['done']>; label: string | undefined; files: Array<{ name: string; line: string }>; onDone: () => void;
+}) {
   return (
     <div className="upload-list upload-done">
       <div className="upload-done-icon">&#10003;</div>
       <p className="upload-done-text">{done.line}</p>
       {[done.archived, done.unstored, ...done.skipped, ...done.notSaved].filter((l): l is string => !!l).map((line, i) => <p key={i} className="upload-done-skipped">{line}</p>)}
+      {/* The modal's own notices list; `text` carries the engine's line, so the reason is never read. */}
+      <FileNotices notices={files.map((f) => ({ name: f.name, reason: 'openFailed' as const, text: f.line }))} />
       <button type="button" className="btn-primary upload-done-btn" onClick={onDone}>{label}</button>
     </div>
   );

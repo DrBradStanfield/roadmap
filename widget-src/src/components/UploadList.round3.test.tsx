@@ -9,7 +9,7 @@ import { NUMERIC_SYNTAX_GUIDANCE } from '@roadmap/health-core/cell-input';
 import { bulkAppendValues } from '@roadmap/health-core/record-edits';
 import { UPLOAD_TEXT } from '@roadmap/health-core/upload-text';
 import { controlAt } from './UploadList';
-import { blur, input, LDL, labRead, letterRead, mount, open, row, save, typeInto } from '../testing/upload-list-kit';
+import { blur, input, LDL, labRead, letterRead, mount, open, openAll, row, save, typeInto } from '../testing/upload-list-kit';
 
 afterEach(cleanup);
 const ldl = (valueSI: number) => labRead('f0', { values: [core({ valueSI, displayValue: valueSI })] });
@@ -86,9 +86,12 @@ describe('B5: a row being typed in is never hidden; nothing to check opens the l
     expect(document.activeElement).toBe(input('f0:v0'));
   });
 
-  it('with nothing to check, every row shows from the start (a report waiting for its day shows its values)', () => {
+  it('with nothing to check, a report waiting for its day shows its day control and Show all; its values open on the press (T11)', () => {
     const host = mount(open([labRead('f0', { reportDate: null, values: [core({}), core({ metric: 'hba1c', valueSI: 40, displayValue: 40, displayUnit: 'mmol/mol' })] })]));
     expect(host.see().list.check).toBeNull();
+    expect([...document.querySelectorAll<HTMLElement>('li[data-key]')].every((li) => li.hidden)).toBe(true);
+    expect(document.querySelector('.upload-list-day')).toBeTruthy();
+    openAll();
     expect([...document.querySelectorAll<HTMLElement>('li[data-key]')].every((li) => !li.hidden)).toBe(true);
     expect(screen.getByRole('button', { name: IMPORT_REVIEW_TEXT.hide })).toBeTruthy();
   });
@@ -111,6 +114,7 @@ describe('B6: the day picker is one named control', () => {
 describe('B7: a row\'s error is announced when it appears', () => {
   it('held text\'s guidance is announced by the list, and shown on its row (S7: never a row alert)', () => {
     mount(open([ldl(3.1)]));
+    openAll(); // Show all starts closed (T11)
     typeInto('f0:v0', 'abc');
     blur();
     expect(document.querySelector('.upload-list [aria-live]')!.textContent).toBe(NUMERIC_SYNTAX_GUIDANCE);

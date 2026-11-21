@@ -40,17 +40,21 @@ export const draftKeys = (on: RowEvents) => (e: React.KeyboardEvent<HTMLInputEle
  * A checkbox that acts on what the person saw when they pressed it (Codex at 8cb68bc78). A press on a row's tick or
  * Replace blurs the row's input first, and that commit can flip the same box (an emptied input unticks its row); the
  * click would then toggle the new state. So the intent is claimed at pointerdown on its label, or Space on the box, from
- * the state drawn then, and sent instead of the box's post-commit state; the commit still runs first. A synchronous claim.
+ * the state drawn then, and sent instead of the box's post-commit state; the commit still runs first. A synchronous claim,
+ * good for the next change of this box only: a cancelled press (pointercancel, the pointer leaving, the box's blur)
+ * drops it, so a later click with no press of its own (assistive tech, `.click()`) sends the box's own state.
  */
 function usePress(checked: boolean, act: (on: boolean) => void) {
   const intent = useRef<boolean | null>(null);
   const claim = () => { intent.current = !checked; };
+  const drop = () => { intent.current = null; };
   return {
-    label: { onPointerDown: claim },
+    label: { onPointerDown: claim, onPointerCancel: drop, onPointerLeave: drop },
     box: {
       checked,
       onKeyDown: (e: React.KeyboardEvent) => { if (e.key === ' ') claim(); },
-      onChange: (e: React.ChangeEvent<HTMLInputElement>) => { const on = intent.current ?? e.target.checked; intent.current = null; act(on); },
+      onBlur: drop,
+      onChange: (e: React.ChangeEvent<HTMLInputElement>) => { const on = intent.current ?? e.target.checked; drop(); act(on); },
     },
   };
 }

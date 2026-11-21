@@ -1,6 +1,6 @@
 # The web upload list: the screen (PR 2)
 
-Status: draft for review, 2026-11-22, round seven (the final re-check's T1-T9). Built
+Status: draft for review, 2026-11-22, round seven (the final re-check's T1-T12). Built
 unmounted: production keeps drawing ReviewTable's grid.
 Engine: `uploadList` (packages/health-core/src/upload-list.ts), `uploadView` (upload-view.ts) and `uploadListPage`
 (upload-list-page.ts).
@@ -12,8 +12,12 @@ The screen draws what the engine exposes and adds no rule. It never decides whet
 error, blocks Save or takes typing, nor which caption, reason or heading shows. It never parses a
 number and never counts. It owns one thing: the draft of the focused text input, with the unit it was typed in and that unit's label.
 Its view state, by owner ruling: Show all, a latch; the row holding the focus; and the list's last announcement.
-Show all's latch is set once, when the review first has rows (open while `list.check` is null, else closed); after
-that only its press changes it. Rows with `attention`, the draft's row and the focused row always show; so does every
+Show all's latch is set once, when the review first has rows, from one constant, `SHOW_ALL_AT_START` (UploadList.tsx):
+closed, as US-13 AC26 and Brad's decision of 2026-11-21 say; after that only its press changes it. The owner's earlier
+ruling (open while `list.check` is null) is withdrawn pending Brad's answer in docs/decisions-for-brad.md ("When a
+report has nothing to check, should the web list show its values straight away?"); a yes makes the constant
+`list.check === null`. Meanwhile a clean or undated report shows its day control, "Show all n" and a dimmed Save with its
+reason. Rows with `attention`, the draft's row and the focused row always show; so does every
 row shown since Show all was last pressed, so no row hides under the person's hand (K3i).
 
 ## Layout, top to bottom
@@ -44,7 +48,9 @@ row shown since Show all was last pressed, so no row hides under the person's ha
    (`page.save`) and the close button (`page.close`). Save is never hidden; with nothing to save it is refused and
    its line says `view.save.why` ("Nothing new to save").
 10. The done screen replaces 1-9: ✓, `view.done.line`, `archived`, `unstored`, each `skipped` and
-    `notSaved` line, then Done (`view.doneLabel`).
+    `notSaved` line, then the files not fully read (`view.notices` and the failed section's rows, in the modal's own
+    FileNotices list, US-12 AC9), then Done (`view.doneLabel`). The error screens (a failed Save, a failed run) keep the
+    list, whose Files block names the same files (item 8).
 
 ## A row's parts
 
@@ -79,6 +85,8 @@ A press acts on what the person saw when they pressed (T8). A press on a row's t
 first, and that commit can flip the same box (an emptied input unticks its row; typing into a cleared row ticks it).
 One helper (`usePress`, UploadListRow.tsx) claims the intent at pointerdown on the box's label, or Space on the box,
 from the state drawn then, and sends that instead of the box's state after the commit; the commit still runs first.
+The claim is good for that box's next change only: pointercancel, the pointer leaving, or the box's blur drops it, so a
+later click with no press of its own (assistive tech, `.click()`) sends the box's own state (T12).
 
 Save press: commit, then read the view (`reread()`), save if `save.enabled`, else focus the control of
 `save.blockers[0].at`. The host's contract (on `UploadListProps.reread`): `choose` applies a choice before it returns,

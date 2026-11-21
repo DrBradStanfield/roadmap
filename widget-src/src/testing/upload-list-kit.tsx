@@ -37,3 +37,5 @@ export const typeInto = (key: string, text: string) => {
 export const blur = () => act(() => (document.activeElement as HTMLElement).blur());
 export const save = () => document.querySelector<HTMLButtonElement>('.review-save-btn')!;
 export const showAll = () => fireEvent.click(screen.getByRole('button', { name: /^Show all/ }));
+/** The person opens Show all when the list offers it: it starts closed (T11). */
+export const openAll = () => { const b = screen.queryByRole('button', { name: /^Show all/ }); if (b) fireEvent.click(b); };
