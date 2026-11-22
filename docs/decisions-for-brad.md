@@ -29,31 +29,32 @@ issue, and nothing private.
   value came from. Recommendation (the owner's): option 1, because it is the only composition from existing
   words that tells files apart. Nothing draws these names until you answer.
   Brad chose option 1 on 2026-11-23; it is held for an owner check (US-13 AC10).
-- **How original files are stored in the background after Save.** Issue: you asked (2026-11-23) that Save
-  show the done screen at once and store the originals afterwards, with no action from the person but one
-  "Try again" when a file finally fails. Design: [drafts/background-originals.md](drafts/background-originals.md).
-  Until stored, the files wait on the phone or in the browser. Questions:
-  (1) How long health files may wait on a device. Options: 7 days, or 30 days. After that the copy is deleted
-  and the person is told to upload the file again. 7 days leaves less health data on a device; 30 gives a
-  rarely opened phone more time. Recommendation: 7 days.
-  (2) The privacy notice and the erase confirm gain one sentence: files waiting to be stored stay on this device
-  until stored, and an erase or the time limit deletes them. Options: add it (recommended: the notice must match
-  what the app does), or not. Exact words come with the PR.
-  (3) A shared phone or browser: when another account connects, the person signs out or disconnects, the waiting
-  files are dropped and deleted, never sent. Options: drop (recommended: one person's files must never reach
-  another's cloud), or keep them for a reconnect to the same account (they would then sit on the device longer).
-  (4) "Done" will mean "details saved; originals being stored". The done screen says so in one line that turns
-  into today's "kept in your cloud" or "couldn't be stored" line when the files land. Options: that line
-  (recommended), or a done screen that waits a few seconds so small uploads finish first (slower Save).
-  (5) Waiting files are tracked on the device only, so another device shows such a document as today, details
-  without the original (recommended), rather than a marker in the record (a format change that a lost device
-  could leave set for good).
-  (6) Retry about 8 times, then show the failure with Try again (recommended), rather than retrying for days.
-  Also: the new sentences in section 5 of the note, each with options.
+- **Should the erase confirm mention files saved offline on another device?** Issue: originals are now stored
+  in the background after Save ([drafts/background-originals.md](drafts/background-originals.md), section 6). An
+  erase removes every document it saw, and the files waiting for it. A document saved on a device that was offline,
+  and synced only after an erase made elsewhere, was never seen by that erase: it stays, as any such row does
+  today, and its original is then stored. Options: (1) leave the confirm as it is: it stays short, and the case
+  matches what the app already does for every value saved offline; (2) add a line naming the case: more exact,
+  longer, about a rare case. Recommendation: option 1, because the confirm already promises only what the erase
+  saw, and the rule is the same for every kind of row.
 
 ## Decided
 
 2026-11-23, Brad's words in quotes:
+- Original files are stored in the background after Save, with no action from the person at Save and at every
+  launch; the person acts only on a final failure, with one "Try again" (Brad's requirement).
+- Files waiting to be stored may stay on a device for 30 days: "this". Kept because a medical file should not sit
+  indefinitely in a browser on a shared computer, and a job that can never succeed needs an end.
+- The privacy notice and erase confirm gain "Files waiting to be stored in your cloud are kept on this device until
+  they are stored. Erasing your data removes them.": "do it. I approve the sentence that you draft".
+- One person's files never reach another person's cloud: "agreed". The design ties the files to their own record,
+  so another account's record never receives them; they wait for their own record rather than being deleted at once.
+- "Done" appears at once, with one live line while originals are stored: "yes".
+- Another device shows such a document with its details and without the file: "yes".
+- About eight retries, then "Try again": "yes".
+- Words: "I agree with your wording, so long as it's succinct": "Storing {n} original files in your cloud." (one
+  file: "Storing 1 original file in your cloud."), "{n} original files couldn't be stored; their details are saved.",
+  "Original being stored", with the existing kept, not-stored, "Try again" and "Done" words.
 - When a lab report saved with nothing ticked fails to reach the cloud, the done screen says "The original file couldn't
   be stored." alone, since no details were saved; every other case keeps "; its details are saved.": "this" (option 2).
 - When a report has nothing to check, its values stay behind "Show all": "this. we want the UI to be clean and if a
