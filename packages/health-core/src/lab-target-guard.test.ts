@@ -20,10 +20,30 @@ function read(values: unknown[], additionalValues: unknown[] = []) {
 const core = (value: string, metric = 'total_cholesterol', printedName = 'Total cholesterol', unit = 'mmol/L') => ({ metric, value, unit, confidence: 'high', printedName });
 
 describe('US-12 AC20b: a target printed after the result is never saved silently as the result (Brad 2026-11-23)', () => {
-  it('a result then its target on one value ("4.7 < 5.5") saves the result, not the target', () => {
-    const [v] = read([core('4.7 < 5.5')]).values;
-    expect(v).toMatchObject({ metric: 'total_cholesterol', displayValue: 4.7, confidence: 'high' });
-    expect(v.comparator).toBeUndefined();
+  it('a result then its target on one value ("3.1 < 4.0", spaced or not) saves the result, offered for checking', () => {
+    for (const printed of ['3.1 < 4.0', '3.1<4.0', '3.1 <4.0']) {
+      const [v] = read([core(printed)]).values;
+      expect(v, printed).toMatchObject({ metric: 'total_cholesterol', displayValue: 3.1, confidence: 'medium' });
+      expect(v.comparator, printed).toBeUndefined();
+    }
+    const [lab] = read([], [{ name: 'apob_ratio_made_up', value: '3.1 < 4.0', unit: '', referenceLow: null, referenceHigh: null }]).additionalValues;
+    expect(lab).toMatchObject({ value: 3.1, confidence: 'medium' });
+    expect(read([core('3.1 < 4.0')].map((c) => ({ ...c, confidence: 'low' }))).values[0].confidence).toBe('low');
+  });
+
+  it('a negative or exponent number beside a symbol is never split into a result', () => {
+    const { values, unreadValues } = read([core('1e3 < 4.0'), core('3.1 < -4.0', 'ldl', 'LDL cholesterol')]);
+    expect(values).toEqual([]);
+    expect(unreadValues).toHaveLength(2);
+  });
+
+  it('a limit printed with its range (">90   >60") keeps its limit, and both symbols together are never a plain value', () => {
+    const { additionalValues, unreadValues } = read([], [
+      { name: 'egfr', value: '>90', unit: 'mL/min/1.73m2', referenceLow: 60, referenceHigh: null },
+      { name: 'egfr', value: '>90 >60', unit: 'mL/min/1.73m2', referenceLow: 60, referenceHigh: null, recordedAt: '2026-01-02' },
+    ]);
+    expect(additionalValues.map((a) => [a.value, a.comparator, a.confidence])).toEqual([[90, '>', undefined]]);
+    expect(unreadValues).toHaveLength(1);
   });
 
   it('a core value read as a bare limit ("< 5.5") is kept as a limit but offered for checking', () => {
@@ -53,7 +73,7 @@ describe('US-12 AC20b: a target printed after the result is never saved silently
 
   it('the prompt says a limit after the result is its target, never its value', () => {
     for (const mode of ['full', 'metadata'] as const) {
-      expect(unifiedSystemPrompt(mode)).toContain('A row printed as its result and then a limit ("4.7   < 5.5") has the result 4.7: that limit is its target or range, never its value.');
+      expect(unifiedSystemPrompt(mode)).toContain('A row printed as a result with no symbol and then a limit ("3.1   < 4.0") has the result 3.1: that limit is its target or range, never its value. A result printed with a symbol and then its range (">90   >60") is the limit ">90".');
     }
   });
 });
@@ -70,6 +90,16 @@ describe('US-21 AC29: the cholesterol/HDL ratio is one test under either stored 
     expect(resolveLabCatalogEntry('Total Cholesterol/HDL Ratio')).toBe(a);
     expect(labSlotKey('cholesterol_total_hdl_ratio')).toBe(labSlotKey('total_cholesterol_hdl_ratio'));
     expect(labTestLabel('total_cholesterol_hdl_ratio')).toBe('Cholesterol/HDL ratio');
+    for (const name of ['Chol/HDL Ratio', 'TC/HDL', 'TC/HDL ratio', 'chol_hdl_ratio', 'tc_hdl_ratio']) {
+      expect(resolveLabCatalogEntry(name)?.key, name).toBe('cholesterol_hdl_ratio');
+    }
+  });
+
+  it('no neighbouring test is captured by the ratio', () => {
+    for (const name of ['LDL/HDL ratio', 'LDL/HDL', 'Trig/HDL ratio', 'TG/HDL', 'Non-HDL cholesterol', 'non_hdl', 'Total cholesterol', 'total_cholesterol', 'HDL', 'HDL cholesterol', 'Cholesterol', 'cholesterol']) {
+      expect(resolveLabCatalogEntry(name)?.key, name).not.toBe('cholesterol_hdl_ratio');
+      expect(labSlotKey(name), name).not.toBe('cholesterol_hdl_ratio');
+    }
   });
 
   it('rows stored under either name read as one series, in one unit, without rewriting them', () => {

@@ -313,7 +313,7 @@ export const LAB_CATALOG: LabCatalogEntry[] = [
   { key: 'c_peptide', label: 'C-peptide', group: 'metabolic', unit: 'pmol/L', aliases: [], conversions: { 'ng/ml': 331.1, 'µg/l': 331.1, 'nmol/l': 1000 }, ceiling: 50000 }, // C-peptide 3020.3 g/mol; a nanomole is a thousand picomoles
   // Derived values the app does not derive (eAG from HbA1c, VLDL from triglycerides): kept as printed tests.
   { key: 'eag', label: 'eAG', group: 'metabolic', unit: 'mmol/L', aliases: ['estimated average glucose'], conversions: GLUCOSE },
-  { key: 'cholesterol_hdl_ratio', label: 'Cholesterol/HDL ratio', group: 'metabolic', unit: 'ratio', aliases: ['cholesterol total hdl ratio', 'total cholesterol hdl ratio'] }, // one test under both stored names (US-21 AC29); no range, no flag
+  { key: 'cholesterol_hdl_ratio', label: 'Cholesterol/HDL ratio', group: 'metabolic', unit: 'ratio', aliases: ['cholesterol total hdl ratio', 'total cholesterol hdl ratio', 'chol/hdl ratio', 'tc/hdl', 'tc/hdl ratio'] }, // one test under both stored names (US-21 AC29); no range, no flag
   { key: 'vldl', label: 'VLDL cholesterol', group: 'metabolic', unit: 'mmol/L', aliases: ['vldl-c', 'vldl chol'], conversions: { 'mg/dl': 0.02586 } }, // cholesterol 386.65 g/mol
   { key: 'lactate', label: 'Lactate', group: 'metabolic', unit: 'mmol/L', aliases: ['lactic acid'], conversions: { 'mg/dl': 0.111 } }, // lactic acid 90.08 g/mol
   { key: 'fructosamine', label: 'Fructosamine', group: 'metabolic', unit: 'µmol/L', aliases: [] },

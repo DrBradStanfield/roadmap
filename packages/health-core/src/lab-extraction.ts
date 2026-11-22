@@ -20,7 +20,7 @@ import { cutText } from './chat-history';
 import { parseLocalisedNumber } from './parseNumber';
 import { DOCUMENT_TYPES, METRIC_TYPES } from './validation';
 import { isCalendarDay } from './measurement-history';
-import { COMPARATORS, comparatorOf, limitAtItsBound, readPrintedLimit, resultBeforeLimit, uploadLimitUngraded, type Comparator } from './lab-limits';
+import { COMPARATORS, comparatorOf, limitAtItsBound, recoveredConfidence, uploadLimitUngraded, withPrintedLimit, type Comparator } from './lab-limits';
 import { BLOOD_TEST_METRICS, METRIC_LABELS, METRIC_TO_FIELD } from './mappings';
 
 // ---------------------------------------------------------------------------
@@ -496,7 +496,7 @@ ${VALID_METRICS.map((metric) => `  - "${metric}" — ${CORE_METRIC_ALIASES[metri
   8. A measured blood pressure printed as one reading ("120/80 mmHg") is two TARGET METRICS: systolic_bp 120 and diastolic_bp 80, both in "values".
   9. UNITS, in "values" and "additionalValues" alike: copy each row's unit exactly as the report prints it for that row: the unit beside the result; else the unit printed in that row's own reference range ("200-900 pg/mL" gives "pg/mL"); else the unit in that column's header. NEVER convert a value and NEVER relabel its unit to the one you expect for that test: a result printed in pg/mL is returned in pg/mL, even where pmol/L is more common. If no unit is printed anywhere for the row, return "unit": "" (an empty string). Never guess one.
   10. REFERENCE RANGES: for each "additionalValues" row, return the row's printed reference range as "referenceLow" and "referenceHigh": the numbers as printed, in the row's printed unit, never converted. A one-sided range sets one side ("<5" is referenceHigh 5, ">40" is referenceLow 40) and the other is null; both are null when no range is printed.
-  11. A result printed with <, >, ≤ or ≥ (">60", "<5", "≤ 0.1") is returned exactly as printed, as a string with its symbol, in "values" and "additionalValues" alike: never as its number alone. A row printed as its result and then a limit ("4.7   < 5.5") has the result 4.7: that limit is its target or range, never its value.
+  11. A result printed with <, >, ≤ or ≥ (">60", "<5", "≤ 0.1") is returned exactly as printed, as a string with its symbol, in "values" and "additionalValues" alike: never as its number alone. A row printed as a result with no symbol and then a limit ("3.1   < 4.0") has the result 3.1: that limit is its target or range, never its value. A result printed with a symbol and then its range (">90   >60") is the limit ">90".
 ${mode === 'full' ? '  12. Every row in "values" and "additionalValues" also has "printedName": the test name exactly as the report prints it.\n' : ''}
   ADDITIONAL VALUES — use these standardized snake_case names when applicable:
 ${LAB_GROUPS.map((group) => [group.label, LAB_CATALOG.filter((entry) => entry.group === group.id).map((entry) => entry.key)] as const)
@@ -733,25 +733,13 @@ function unreadValue(row: unknown): UnreadLabValue {
   };
 }
 
-/**
- * A row as the schema reads it: a value printed as a limit ("> 60", "<5")
- * becomes its number and its code (US-12 AC20); any `comparator` the model
- * sent itself is dropped, so only the printed symbol sets one.
- */
-function withPrintedLimit(row: unknown): unknown {
-  if (row === null || typeof row !== 'object' || Array.isArray(row)) return row;
-  const { comparator: _sent, ...rest } = row as Record<string, unknown>;
-  const limit = typeof rest.value === 'string' ? readPrintedLimit(rest.value) ?? resultBeforeLimit(rest.value) : null;
-  return limit ? { ...rest, value: limit.rest, ...comparatorOf(limit) } : rest;
-}
-
 /** The rows of `rows` that `schema` reads; the rest are dropped, each to
  *  `unread`. */
-function readableRows<T extends z.ZodTypeAny>(schema: T, rows: unknown[], unread: UnreadLabValue[]): Array<z.output<T>> {
+function readableRows<T extends z.ZodType<object>>(schema: T, rows: unknown[], unread: UnreadLabValue[]): Array<z.output<T>> {
   return rows.flatMap(raw => {
     const row = withPrintedLimit(raw);
     const r = schema.safeParse(row);
-    if (r.success && !refusedCountRow(row)) return [r.data];
+    if (r.success && !refusedCountRow(row)) return [Object.assign(r.data, recoveredConfidence(raw, r.data))];
     unread.push(unreadValue(raw));
     return [];
   });

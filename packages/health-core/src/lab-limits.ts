@@ -94,13 +94,36 @@ export function readPrintedLimit(text: string): { comparator: Comparator; rest: 
 }
 
 /**
- * A result printed before the lab's target on one line ("4.7 < 5.5"): the
- * result's text, as `readPrintedLimit` splits a limit, so the target is never
- * read as the result (US-12 AC20b, Brad 2026-11-23). Else null.
+ * A result printed before the lab's target on one line ("3.1 < 4.0", spaced or
+ * not): the result's text, so the target is never read as the result (US-12
+ * AC20b, Brad 2026-11-23). Else null. The symbol splits the two numbers either
+ * way; the first takes no exponent and the second no sign, so "1e3 < 4.0" and
+ * "3.1 < -4.0" stay unreadable.
  */
-export function resultBeforeLimit(text: string): { comparator?: undefined; rest: string } | null {
-  const m = /^\s*([+-]?\d[\d.,]*)\s+[<>≤≥]\s*\d[\d.,]*\s*$/.exec(text);
-  return m ? { rest: m[1] } : null;
+export function resultBeforeLimit(text: string): string | null {
+  return /^\s*([+-]?\d[\d.,]*)\s*[<>≤≥]\s*\d[\d.,]*\s*$/.exec(text)?.[1] ?? null;
+}
+
+/**
+ * A model row as the schema reads it: a value printed as a limit ("> 60",
+ * "<5") becomes its number and its code (US-12 AC20); any `comparator` the
+ * model sent itself is dropped, so only the printed symbol sets one. A result
+ * printed before its target ("3.1 < 4.0") becomes the result (AC20b).
+ */
+export function withPrintedLimit(row: unknown): unknown {
+  if (row === null || typeof row !== 'object' || Array.isArray(row)) return row;
+  const { comparator: _sent, ...rest } = row as Record<string, unknown>;
+  const text = typeof rest.value === 'string' ? rest.value : '';
+  const limit = readPrintedLimit(text);
+  return limit ? { ...rest, value: limit.rest, comparator: limit.comparator } : { ...rest, value: resultBeforeLimit(text) ?? rest.value };
+}
+
+/** A value `withPrintedLimit` took from before a target is at most medium confidence: the reader
+ *  mixed two numbers, so the review offers it for checking (US-12 AC20b). `read`: the row as parsed. */
+export function recoveredConfidence(raw: unknown, read: unknown): { confidence?: 'medium' | 'low' } {
+  const value = (raw as { value?: unknown } | null)?.value;
+  const low = (read as { confidence?: unknown } | null)?.confidence === 'low';
+  return typeof value === 'string' && resultBeforeLimit(value) !== null ? { confidence: low ? 'low' : 'medium' } : {};
 }
 
 /**
