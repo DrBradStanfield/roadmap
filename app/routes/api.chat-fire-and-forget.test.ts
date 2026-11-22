@@ -58,6 +58,7 @@ describe('api.chat fire-and-forget writes: resolved value and rejection', () => 
   it.each([
     ['insert chat_messages assistant', 'error', 'Chat: Failed to save assistant message'],
     ['insert chat_match_events', 'error', 'Chat: Match-event insert failed'],
+    ['update chat_conversations', 'error', 'Chat: Failed to update conversation timestamp'],
     ['insert chat_messages assistant', 'rejects', 'Chat: Failed to save assistant message'],
     ['update chat_conversations', 'rejects', 'Chat: Failed to update conversation timestamp'],
     ['insert chat_match_events', 'rejects', 'Chat: Match-event insert failed'],

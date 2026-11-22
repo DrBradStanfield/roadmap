@@ -3,8 +3,8 @@
  * and the per-user RLS client. Split out of supabase.server.ts (issue #429).
  */
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-export type { SupabaseClient };
 import jwt from 'jsonwebtoken';
+export type { SupabaseClient };
 
 // ---------------------------------------------------------------------------
 // Environment
