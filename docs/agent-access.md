@@ -347,6 +347,14 @@ user connects once and then asks in words. It offers nine tools, `read_record`,
 `report_feedback`, `import_documents`, `file_results`,
 over the user's own Dropbox or Google Drive folder, and it enforces the rules above in
 code rather than asking you to keep them. Two ways a lab file comes in (US-35, US-36).
+
+Gemini (web and app) is a supported client, pending one live confirmation (US-32 AC59-AC62,
+2026-11-23): Gemini → Settings → Connected apps → add a custom app → `https://mcp.drstanfield.com/mcp`,
+client id and secret left blank. To verify, a US tester connects once while someone watches
+`fly logs -a <the hosted MCP app>` (name: docs/deploy-runbook.md) for `/mcp/register` and an
+`authorize refused` line (host only), and counts `mcp_authorize_shown`, `mcp_connect` and
+`mcp_connect_failed` rows with `client = gemini`, plus `mcp_authorize_refused` rows with
+`reason = register-redirect` (`detail` `gemini-like` means Gemini sent a shape we do not accept).
 `file_results` is the chat route: you drop a file into ChatGPT or Claude, on any device
 and on either cloud, and your assistant reads it itself; the file never reaches our
 server. Only the values it read do, in memory for one request, and they are written to

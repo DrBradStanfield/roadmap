@@ -11,6 +11,7 @@ import { sameBytes } from './crypto-compare.server';
 import type { McpOAuthDetail, McpOAuthReason } from '../../packages/health-core/src/product-events';
 import { issuer, resourceUrl } from './mcp-config.server';
 import { isAllowedRedirect, redirectMatches, redirectMiss, type McpClient } from './mcp-clients.server';
+import { GEMINI_CLIENT_ID, GEMINI_MAX_STATE_LENGTH, isGeminiRedirect } from './mcp-gemini.server';
 import { nowSeconds, STATE_LIFETIME_SECONDS, type StatePayload } from './mcp-grants.server';
 import type { McpProvider } from './mcp-providers.server';
 import { packSealed } from './mcp-seal.server';
@@ -100,7 +101,12 @@ function fail(reason: keyof typeof OAUTH_FAILURES, redirectable = true, detail?:
  */
 export function checkAuthorize(params: URLSearchParams, client: McpClient): AuthorizeCheck {
   const redirectUri = params.get('redirect_uri') ?? '';
-  if (!client.redirectUris.some((registered) => redirectMatches(registered, redirectUri)) || !isAllowedRedirect(redirectUri)) {
+  const gemini = client.clientId === GEMINI_CLIENT_ID;
+  // The pinned Gemini client is judged by shape and nothing else (US-32 AC61); every other client as before.
+  const accepted = gemini
+    ? isGeminiRedirect(redirectUri)
+    : client.redirectUris.some((registered) => redirectMatches(registered, redirectUri)) && isAllowedRedirect(redirectUri);
+  if (!accepted) {
     // The HOST only, never the URL or the query — this file may not log a URL.
     // A vendor quietly changing its callback shows up in Sentry as this line
     // with its own hostname; anything else is someone probing us.
@@ -112,7 +118,7 @@ export function checkAuthorize(params: URLSearchParams, client: McpClient): Auth
   const codeChallenge = params.get('code_challenge') ?? '';
   if (!/^[A-Za-z0-9._~-]{43,128}$/.test(codeChallenge)) return fail('code-challenge');
   const clientState = params.get('state') ?? '';
-  if (clientState.length > MAX_STATE_LENGTH) return fail('state-too-long');
+  if (clientState.length > (gemini ? GEMINI_MAX_STATE_LENGTH : MAX_STATE_LENGTH)) return fail('state-too-long');
   const request: AuthorizeRequest = { client, redirectUri, codeChallenge, clientState };
   // US-32 AC14: size the actual wire format, including the consent nonce and
   // client-id prefix. No compression: nonce contents cannot change this size.
