@@ -137,7 +137,7 @@ describe('saving: what a save leaves behind', () => {
     expect(store.saves).toEqual([{ current: { heightCm: 180 }, previous: {}, erase: 'e1' }]);
   });
 
-  it('a cleared field is saved as cleared: the saved copy and the chat copy drop it', async () => {
+  it('US-15 AC10: a cleared field is saved as cleared: the saved copy and the chat copy drop it', async () => {
     const { view } = setup({ heightCm: 170, sex: 'male' });
     act(() => view.result.current.save.markSaved({ heightCm: 170, sex: 'male' }));
     act(() => view.result.current.setInputs({ sex: 'male' }));
