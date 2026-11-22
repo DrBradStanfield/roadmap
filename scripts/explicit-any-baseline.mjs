@@ -24,12 +24,12 @@ export function countExplicitAny(sourceText, fileName) {
 }
 
 export const readBaseline = () => JSON.parse(readFileSync(BASELINE_PATH, 'utf8'));
-
-/** Every tracked .ts/.tsx/.mts/.cts (hand-written .d.ts/.d.mts included), minus files the file-size tool marks GENERATED. */
+export const isScanned = (f) => /\.[cm]?tsx?$/.test(f); // .ts/.tsx/.mts/.cts, hand-written .d.ts/.d.mts included; not .mjs/.js
+/** Every tracked file isScanned keeps, minus files the file-size tool marks GENERATED. */
 export function scannedFiles() {
   const generated = new Set(generatedFiles());
   return execFileSync('git', ['ls-files', '-z'], { cwd: ROOT, maxBuffer: 1 << 26 }).toString().split('\0')
-    .filter((f) => /\.[cm]?tsx?$/.test(f) && !generated.has(f) && existsSync(join(ROOT, f)));
+    .filter((f) => isScanned(f) && !generated.has(f) && existsSync(join(ROOT, f)));
 }
 
 /** Files with at least one explicit `any` today: { file: count }. */

@@ -2,7 +2,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { anyCounts, countExplicitAny, fresh, grown, readBaseline, scannedFiles } from './explicit-any-baseline.mjs';
+import { anyCounts, countExplicitAny, fresh, grown, isScanned, readBaseline, scannedFiles } from './explicit-any-baseline.mjs';
 import { ROOT } from './file-size-baseline.mjs';
 
 // The named exceptions. A new one is a change to this list.
@@ -20,9 +20,10 @@ describe('explicit-any ratchet (US-64 AC37)', () => {
     expect(fresh(baseline.files, now), fresh(baseline.files, now).join('\n')).toEqual([]);
   });
 
-  it('scans .mts and .cts too (.d.mts included), parsed as TS', () => {
+  it('scans .ts, .tsx, .mts and .cts (.d.mts included), not .mjs/.js; .mts parses as TS', () => {
+    expect(['a.ts', 'a.tsx', 'a.mts', 'a.cts', 'a.d.mts', 'a.mjs', 'a.js', 'a.json'].filter(isScanned)).toEqual(['a.ts', 'a.tsx', 'a.mts', 'a.cts', 'a.d.mts']);
     expect(scannedFiles()).toEqual(expect.arrayContaining(['instrument-self-report.d.mts', 'ios/scripts/app-store-video-lab-server.mts']));
-    expect(countExplicitAny('const s = <any>h;', 'snippet.mts')).toBe(1);
+    expect(countExplicitAny('const x = y as any;', 'snippet.mts')).toBe(1);
   });
 
   it('the checks on a made-up baseline: a rise and a new file fail; a fall, a clear and a removed file pass', () => {
