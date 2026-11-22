@@ -123,11 +123,13 @@ a verified fix lands, or Brad resolves it. Disputed optional findings need no
 further round. **One round, by class** (Brad 2026-11-13; the class table: docs/git-workflow.md § Reviews):
 clinical, record save/merge/FHIR, security, privacy and agent-contract changes get a fresh adversary and Codex
 together, once; visible UI adds a design review from real-WebKit screenshots; tooling gets one adversary;
-byte-pure splits and docs get none, a byte-identity proof instead. Only findings that risk data loss,
-security, privacy or clinical correctness are fixed before merge; the rest become leads in the untangle
+byte-pure splits and docs get none, a byte-identity proof instead. In a local session every adversarial check
+has a Codex run beside it (CLAUDE.md); loops and cloud sessions use the fresh `adversary` alone. Only findings
+that risk data loss, security, privacy or clinical correctness are fixed before merge, and so is code the PR
+orphans (it dies in the same PR, CLAUDE.md); the rest become leads in the untangle
 ledger (`docs/untangle/`). A fix for such a finding gets at most ONE re-check scoped to the fix diff and the
-findings it answers (Brad, 2026-10-19). Anything still unresolved after the re-check goes to Brad with both
-positions; never a third round or a fresh full re-review, with the evidence.
+findings it answers (Brad, 2026-10-19). Anything still unresolved after the re-check goes to `helper`, then to
+Brad with both positions; never a third round or a fresh full re-review, with the evidence.
 
 **Value-interpretation paths** (Brad 2026-11-10): code that decides what a typed or stored number means (its
 unit, conversion, rounding, or which row and day it lands on). There, review rounds continue while each round
