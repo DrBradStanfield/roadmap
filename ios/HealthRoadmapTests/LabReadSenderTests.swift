@@ -96,7 +96,7 @@ final class LabReadSenderTests: XCTestCase {
         let gate = StubHTTP.Gate()
         Kit.serve(server) { _ in Kit.read(gate: gate) }
         let outcome = try await LabReadSender(attest: Kit.client(), readDeadline: .milliseconds(300)).send(Self.body)
-        XCTAssertEqual(outcome, LabReadSender.noAnswer)
+        XCTAssertEqual(outcome, .local(.timeout))
         try await Kit.until("cancelled") { StubHTTP.stopped >= 1 }
         gate.open()
     }

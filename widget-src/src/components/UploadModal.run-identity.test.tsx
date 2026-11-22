@@ -3,16 +3,16 @@
 // wins over a read that finishes in the same render.
 import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { UPLOAD_ENGINE } from '../testing/upload-engine';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { UploadModal } from './UploadModal';
 import { checkLabImportQuota, labImport } from '../lib/upload-api';
 import { trackProductEvent } from '../lib/server-api';
-import type { UploadHistory } from '../lib/api-types';
 
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn() }));
-vi.mock('../lib/roadmap-data', () => ({ uploadKnownIndex: vi.fn(() => new Map()), isLegacyUpload: vi.fn(() => false), getDocumentArchiveMode: vi.fn(() => 'cloud'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
+vi.mock('../lib/roadmap-data', () => ({ recordFileSync: vi.fn(() => null), saveUpload: vi.fn(), uploadKnownIndex: vi.fn(() => new Map()), isLegacyUpload: vi.fn(() => false), getDocumentArchiveMode: vi.fn(() => 'cloud'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
 vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
-vi.mock('../lib/archive-payloads', async importOriginal => ({ ...await importOriginal<typeof import('../lib/archive-payloads')>(), sha256Blob: vi.fn(async () => ''), synthesizeLabArchiveEntries: vi.fn(() => []) }));
+vi.mock('../lib/archive-payloads', async importOriginal => ({ ...await importOriginal<typeof import('../lib/archive-payloads')>(), sha256Blob: vi.fn(async () => '') }));
 vi.mock('../lib/useIsMobile', () => ({ useIsMobile: () => false }));
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 
@@ -23,13 +23,12 @@ function deferred<T>() {
   return { promise, resolve };
 }
 const extraction = { result: { classification: 'lab_report', document: null, reportDate: '2024-06-01', values: [{ metric: 'ldl', valueSI: 3.9, displayValue: 3.9, displayUnit: 'mmol/L', confidence: 'high' }], additionalValues: [] } };
-const emptyHistory: UploadHistory = { measurements: [], labValues: [], documents: [] };
 const pages: Pages = { pages: [{ type: 'text', content: 'synthetic' }], truncated: false };
 const extractFromPdf = vi.fn();
 function Harness() {
   const [open, setOpen] = useState(true);
   return <UploadModal open={open} onOpen={() => setOpen(true)} onClose={() => setOpen(false)}
-    unitSystem="si" grading={{}} history={emptyHistory} onComplete={() => {}} />;
+    unitSystem="si" onComplete={() => {}} />;
 }
 const pick = (name: string) => fireEvent.change(document.querySelector('input[type=file]')!, { target: { files: [new File(['synthetic'], name, { type: 'application/pdf' })] } });
 const cancel = () => fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
@@ -40,7 +39,7 @@ beforeEach(() => {
   vi.mocked(checkLabImportQuota).mockResolvedValue({ allowed: true, remaining: 60 });
   vi.mocked(labImport).mockResolvedValue(extraction as Awaited<ReturnType<typeof labImport>>);
   extractFromPdf.mockReset();
-  Object.assign(window, { HealthUpload: { extractFromPdf, isPdf: () => true, isZip: () => false, isImage: () => false } });
+  Object.assign(window, { HealthUpload: { ...UPLOAD_ENGINE, extractFromPdf, isPdf: () => true, isZip: () => false, isImage: () => false } });
 });
 afterEach(cleanup);
 

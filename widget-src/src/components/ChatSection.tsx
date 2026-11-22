@@ -7,7 +7,7 @@
  *
  * All API calls are lazy — nothing fires until the user clicks the bubble.
  */
-import React, { useState, useEffect, useCallback, useReducer } from 'react';
+import React, { useState, useEffect, useCallback, useReducer, useRef } from 'react';
 import { FeedbackForm } from './FeedbackForm';
 import { trackProductEvent } from '../lib/server-api';
 import { getChatGate } from '../lib/chat-api';
@@ -59,6 +59,37 @@ interface ChatSectionProps {
   muted?: boolean;
 }
 
+function hasChatDraft(message: string, keyField: HTMLInputElement | null) {
+  return message !== '' || !!keyField?.value;
+}
+
+function dismissesChat(e: React.KeyboardEvent, hasDraft: () => boolean) {
+  return e.key === 'Escape' && !e.nativeEvent.isComposing && e.keyCode !== 229 && !hasDraft();
+}
+
+/**
+ * US-15 AC12a: the pop-up chat as a dialog. Its title takes the focus on opening, not the message
+ * box, so that opening does not call up a phone's keyboard. Escape inside it closes it unless there
+ * is unsent message text, an unsaved key, or an IME composition (both forms of AC26a). Closing gives
+ * focus to the "Open chat" button that comes back: both surfaces class it `chat-fab`, found on the next frame.
+ * A panel drawn with no such button on the page was brought back by the page, not opened by a press
+ * (the tool page, after a width change): it takes no focus, so a draft typed in a grid is not saved (US-03 AC5).
+ */
+function useChatDialog(isExpanded: boolean, inline: boolean | undefined, hide: () => void, hasDraft: () => boolean) {
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const [replacesButton] = useState(() => !!document.querySelector('.chat-fab'));
+  const popup = isExpanded && !inline;
+  useEffect(() => { if (popup && replacesButton) titleRef.current?.focus(); }, [popup, replacesButton]);
+  const close = () => {
+    hide();
+    requestAnimationFrame(() => document.querySelector<HTMLElement>('.chat-fab')?.focus());
+  };
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (popup && dismissesChat(e, hasDraft)) close();
+  };
+  return { titleRef, close, onKeyDown };
+}
+
 export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpand, guestInputs, prefetchedData, onProposeEdit, muted }: ChatSectionProps) {
   const [isExpanded, setIsExpanded] = useState(startExpanded ?? false);
   const [showFeedback, setShowFeedback] = useState(false);
@@ -75,6 +106,10 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
     onProposeEdit,
   });
   const { inputRef, messagesContainerRef } = refs;
+  const keyInputRef = useRef<HTMLInputElement>(null);
+  const dialog = useChatDialog(isExpanded, inline, () => { setIsExpanded(false); onClose?.(); },
+    // The message can outlive its textbox (History); the key lives in the mounted gate.
+    () => hasChatDraft(state.inputText, keyInputRef.current));
 
   // Load on mount when startExpanded (mirrors original lazy-load behavior).
   // chat_opened must fire on EVERY entry path — both live FABs mount
@@ -144,14 +179,14 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
 
   // ----- EXPANDED STATE -----
   return (
-    <div className={`chat-section chat-expanded${inline ? ' chat-expanded--inline' : ''} no-print`} role="dialog" aria-label={copy.label} data-clarity-mask="true">
+    <div className={`chat-section chat-expanded${inline ? ' chat-expanded--inline' : ''} no-print`} role="dialog" aria-label={copy.label} data-clarity-mask="true" onKeyDown={dialog.onKeyDown}>
       <div className="chat-header">
         <button className="chat-threads-btn" onClick={() => setShowThreads(!showThreads)}>
           {showThreads ? 'Back' : 'History'}
         </button>
-        <ChatHeaderTitle title={copy.title} subtitle={muted ? MUTED_CHAT.subtitle : copy.subtitle} />
+        <ChatHeaderTitle title={copy.title} subtitle={muted ? MUTED_CHAT.subtitle : copy.subtitle} titleRef={dialog.titleRef} />
         {!inline && (
-          <button className="chat-close-btn" aria-label="Close chat" onClick={() => { setIsExpanded(false); onClose?.(); }}>✕</button>
+          <button className="chat-close-btn" aria-label="Close chat" onClick={dialog.close}>✕</button>
         )}
       </div>
 
@@ -168,7 +203,7 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
         )}
 
         {!showThreads && gate?.needsKey && (
-          <ChatKeyGate gate={gate} onConnected={refreshGate} />
+          <ChatKeyGate gate={gate} onConnected={refreshGate} inputRef={keyInputRef} />
         )}
         {!showThreads && !gate?.needsKey && (
           <div className="chat-messages" ref={messagesContainerRef} onScroll={handleMessagesScroll}>
@@ -193,7 +228,7 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
             {state.replying && (
               <ChatPendingReply isLocalSender={state.isLocalSender} pending={state.pending} />
             )}
-            {state.error && <div className="chat-error">{state.error}</div>}
+            {state.error && <div className="chat-error" role="alert">{state.error}</div>}
             {showScrollBtn && (
               <button
                 className="chat-scroll-btn"

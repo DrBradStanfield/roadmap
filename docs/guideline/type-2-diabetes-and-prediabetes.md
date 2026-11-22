@@ -54,8 +54,8 @@ Prediabetes means sugar is above normal but below the diabetes line. Risk rises 
 | HbA1c | What the plan calls it | Plan card |
 |---|---|---|
 | Under 38.8 mmol/mol (under 5.7%) | Normal | "HbA1c in normal range" |
-| 38.8 mmol/mol (5.7%) or more | Prediabetes | "HbA1c indicates prediabetes" |
-| 47.5 mmol/mol (6.5%) or more | Diabetes range, urgent | "HbA1c in diabetic range" |
+| 38.8 mmol/mol (5.7%) or more | Prediabetes range | "HbA1c in the prediabetes range" |
+| 47.5 mmol/mol (6.5%) or more | Diabetes range, urgent | "HbA1c in the diabetes range" |
 
 The plan sets these lines in % and converts them exactly, so 5.7% is 38.8 mmol/mol and 6.5% is 47.5 mmol/mol. Laboratories and guidelines round them to 39 and 48 mmol/mol [1]. The plan flags a single reading of 6.5% or more as urgent; guidelines confirm diabetes with a repeat test (below) [1]. A raised HbA1c in the plan also counts as a marker for its weight-medicine trigger from a BMI of 25 (Brad's current guidance, 2 Nov 2026). The plan reminds you to repeat a test you have tracked once the last result is more than 12 months old (Brad's current guidance, 2 Nov 2026).
 

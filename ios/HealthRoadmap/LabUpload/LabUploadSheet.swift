@@ -2,9 +2,10 @@ import PhotosUI
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// "Add medical records" (US-52 AC7–AC13): where the report is (Files, Photos or the
-/// camera), then the file read on the phone, then consent before the first send, then
-/// each report sent and reviewed. The web twin is widget-src/src/components/UploadModal.tsx.
+/// "Add medical records" (US-52 AC7–AC13, AC8c): where the records are (Files, Photos or the
+/// camera), then the one review page of the shared upload, drawn from the engine's view, with
+/// consent before the first send as the engine's own phase. The web twin is
+/// widget-src/src/components/UploadModal.tsx.
 struct LabUploadSheet: View {
     let engine: HealthEngine
     let store: RecordStore
@@ -12,28 +13,19 @@ struct LabUploadSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.analytics) private var analytics
     /// The sheet's one named state, moved only by `send(_:)` (LabUploadFlow).
-    @State private var step = Self.firstStep
-    #if DEBUG
-    private static var firstStep: LabUploadFlow.Step { LabSaveAllDemo.step ?? .choose }
-    #else
-    private static let firstStep = LabUploadFlow.Step.choose
-    #endif
+    @State private var step = LabUploadFlow.Step.choose
     @State private var importing = false
     @State private var scanning = false
     @State private var picking = false
     @State private var photo: PhotosPickerItem?
-    /// A review is saving: the sheet stays open until it lands.
-    @State private var reviewSaving = false
-    /// The read or send under way, cancelled when the sheet closes (review R1, Codex).
+    /// The pick being read into bytes, cancelled when the sheet closes.
     @State private var work: Task<Void, Never>?
-    /// Each report's choices on its review, by report (US-52 AC8b): kept when the review goes,
-    /// so save all saves what the person chose; a Try again's new answer starts fresh.
-    @State private var held: [UUID: LabChoices] = [:]
-
-    /// Close and swipe-down wait for a save, or for save all (AC8b).
+    /// Close and swipe-down wait from a Save's tap until its outcome draws, and while the view says so.
     private var closeHeld: Bool {
-        if case .savingAll = step { return true }
-        return reviewSaving
+        guard case .shared(let shared) = step else { return false }
+        if shared.saveClaimed { return true }
+        guard case .drawn(let text) = shared.model.state else { return false }
+        return shared.page(text)?.closeEnabled == false
     }
 
     var body: some View {
@@ -42,7 +34,7 @@ struct LabUploadSheet: View {
                 .navigationTitle("Add medical records")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
-                    ToolbarItem(placement: .cancellationAction) { Button("Close") { work?.cancel(); dismiss() }.disabled(closeHeld) }
+                    ToolbarItem(placement: .cancellationAction) { Button("Close") { close() }.disabled(closeHeld) }
                     if case .choose = step, AIConsent.labUpload.given {
                         ToolbarItem(placement: .primaryAction) {
                             Menu {
@@ -56,9 +48,11 @@ struct LabUploadSheet: View {
                 }
         }
         .interactiveDismissDisabled(closeHeld)
-        .onDisappear { work?.cancel() }
+        .onDisappear { leave() }
         .fileImporter(isPresented: $importing, allowedContentTypes: [.folder, .pdf, .jpeg, .png, .zip], allowsMultipleSelection: false) { result in
-            if case .success(let urls) = result, let url = urls.first { pick { await read(file: url) } }
+            if case .success(let urls) = result, let url = urls.first {
+                pick { [engine] in try await LabFileReader.picked(url, ask: { await engine.uploadRules(files: $0, members: $1) }) }
+            }
         }
         // Presented from the sheet's root, like Files: an inline PhotosPicker row took
         // the whole sheet down with it when a photo was picked (iOS 27, seen 2026-10-22).
@@ -66,12 +60,12 @@ struct LabUploadSheet: View {
         .onChange(of: photo) {
             guard let item = photo else { return }
             photo = nil
-            pick { await read(photo: item) }
+            pick { [try await LabFileReader.picked(photoLoad: { try await item.loadTransferable(type: Data.self) })] }
         }
         .fullScreenCover(isPresented: $scanning) {
             DocumentScanner { pages in
                 scanning = false
-                if !pages.isEmpty { pick { await read { [try await LabFileReader.pictures(pages, name: "Scanned report")] } } }
+                if !pages.isEmpty { pick { [engine] in [try await LabFileReader.picked(scan: pages, ask: { await engine.uploadRules(files: $0, members: $1) })] } }
             }
             .ignoresSafeArea()
         }
@@ -81,29 +75,8 @@ struct LabUploadSheet: View {
         switch step {
         case .choose:
             chooser
-        case .consent(let documents):
-            AIConsentView(consent: .labUpload) { start { await send(documents) } }
-        case .working(let what, let progress, _):
-            VStack {
-                LabReadingDiagram(step: what, progress: progress)
-                // A way out of a wait that may run to the timeout (AC7a); Close stays too.
-                Button("Cancel") { work?.cancel(); send(.cancel) }.buttonStyle(.bordered)
-            }
-        case .review(let results, let index, let from):
-            let result = results[index]
-            let waiting = results.count - index
-            LabReviewView(engine: engine, store: store, result: result, position: (index + 1, results.count), saving: $reviewSaving,
-                          tryAgain: result.retry == nil ? nil : { retry(results, at: index) },
-                          held: Binding(get: { held[result.id] }, set: { held[result.id] = $0 }),
-                          saveAll: from == nil && waiting >= 2 ? ("Save all (\(waiting) reports)", { saveAll(results, from: index) }) : nil,
-                          leaveTitle: from == nil ? nil : "Back to summary") {
-                send(.next($0))
-            }
-            .id(result.id)
-        case .savingAll(_, let progress):
-            SaveAllProgressView(progress: progress)
-        case .saveAllDone(let results, let summary):
-            SaveAllSummaryView(results: results, summary: summary, open: { send(.open($0)) }, done: { send(.done) })
+        case .shared(let shared):
+            sharedPage(shared)
         case .failed(let message):
             VStack(spacing: 16) {
                 Text(message).multilineTextAlignment(.center)
@@ -115,13 +88,68 @@ struct LabUploadSheet: View {
         }
     }
 
-    /// The one way the step moves; the last report done with closes the sheet.
+    /// The shared upload's page, drawn from the engine's view (UploadReviewView); its consent is
+    /// the engine's phase.
+    @ViewBuilder private func sharedPage(_ shared: UploadSession) -> some View {
+        switch shared.model.state {
+        case .drawn(let text):
+            if let page = shared.page(text) {
+                if page.phase == "consent" {
+                    // Nothing has run yet, not even a hash (AC13e): the engine waits for this agree.
+                    AIConsentView(consent: .labUpload) { Task { await shared.runner.consented() } }
+                } else {
+                    UploadReviewView(page: page, send: shared.send, letter: shared.letter, saveClaimed: shared.saveClaimed) {
+                        shared.send(.close)
+                        dismiss()
+                    }
+                }
+            } else if let words = shared.engineError {
+                // A view that does not read draws the doors' own words, never a blank page.
+                Text(verbatim: words).multilineTextAlignment(.center).padding()
+            }
+        case .refused(let refusal):
+            VStack(spacing: 16) {
+                // A call that answered nothing says the doors' own engine-error words, from the last view.
+                if let words = refusal?.message ?? shared.engineError { Text(verbatim: words).multilineTextAlignment(.center) }
+                Button("Choose another file") { shared.send(.discard); send(.restart) }.buttonStyle(.bordered)
+            }
+            .padding()
+        case .starting, .unavailable:
+            ProgressView()
+        }
+    }
+
+    /// The one way the step moves; Done closes the sheet. Leaving the shared page unpins its record.
     private func send(_ event: LabUploadFlow.Event) {
+        let before = step
         step = LabUploadFlow.transition(step, event)
+        if case .shared(let session) = before, !isShared(step, session) { session.end() }
         if case .finished = step { dismiss() }
     }
 
-    // MARK: Where the report is (AC10)
+    private func isShared(_ step: LabUploadFlow.Step, _ session: UploadSession) -> Bool {
+        if case .shared(let now) = step { now === session } else { false }
+    }
+
+    /// Close: the shared upload is left, dropping what it read.
+    private func close() {
+        // A Save tapped and not yet answered holds Close, even before its saving view draws.
+        guard !closeHeld else { return }
+        leave()
+        dismiss()
+    }
+
+    /// The sheet is going: the pick being read is cancelled (never held or sent), and the shared
+    /// upload is left and its record unpinned.
+    private func leave() {
+        work?.cancel()
+        if case .shared(let shared) = step {
+            shared.send(.discard)
+            shared.end()
+        }
+    }
+
+    // MARK: Where the records are (AC10)
 
     /// Files first: it reaches Dropbox, Google Drive and iCloud Drive through their apps,
     /// and hands over only the file picked (Brad 2026-10-25). Then Photos and Scan.
@@ -153,161 +181,28 @@ struct LabUploadSheet: View {
         }
     }
 
-    /// Runs a read or a send as the sheet's tracked work, which Close cancels. One at a
-    /// time: a new one cancels the last, so a late answer never moves the screen (review R1).
-    private func start(_ operation: @escaping @MainActor () async -> Void) {
-        work?.cancel()
-        work = Task { await operation() }
-    }
-
-    /// Starts a read from a pick. Only from the sources: a second pick while one is under
-    /// way (a double tap) is ignored and never cancels the first (review R6). The screen
-    /// moves at the pick, so nothing can slip in before the read starts.
-    private func pick(_ operation: @escaping @MainActor () async -> Void) {
+    /// Starts the shared upload from a pick: its bytes read off the main thread, then held and
+    /// read by the engine. Only from the sources: a second pick while one is under way (a double
+    /// tap) is ignored. A pick the reader refuses says why in its words; an engine without the
+    /// shared upload's doors cannot read it.
+    private func pick(_ files: @escaping @Sendable () async throws -> [UploadRunner.Picked]) {
         guard case .choose = step else { return }
-        send(.picked)
-        start(operation)
-    }
-
-    // MARK: Reading, on the phone
-
-    /// Reads the report on the phone, then sends it, or asks for consent first.
-    /// Nothing leaves the phone for the server before the user agrees. Started by `pick`.
-    private func read(_ documents: () async throws -> [LabFileReader.Document]) async {
-        do {
-            let read = try await documents()
-            // Closed or cancelled while it read: nothing is sent (review R1).
-            try Task.checkCancellation()
-            if AIConsent.labUpload.given {
-                await send(read)
-            } else {
-                send(.needsConsent(read))
-            }
-        } catch {
-            if !Task.isCancelled { send(.failed(error.localizedDescription)) }
-        }
-    }
-
-    /// A file or folder from Files. The picker's access closes once it is read, before
-    /// the engine names it; a folder counts its reports on the reading screen.
-    private func read(file url: URL) async {
-        await read {
-            let read: [LabFileReader.Document]
-            do {
-                let scoped = url.startAccessingSecurityScopedResource()
-                defer { if scoped { url.stopAccessingSecurityScopedResource() } }
-                read = try await LabFileReader.decoded(picked: url, progress: { done, total in
-                    send(.readProgress(done: done, total: total, at: .now))
-                }, ask: { [engine] in await engine.uploadRules(files: $0, members: $1) })
-            }
-            return await engine.named(read)
-        }
-    }
-
-    private func read(photo item: PhotosPickerItem) async {
-        await read {
-            guard let data = try await item.loadTransferable(type: Data.self) else { throw LabFileReader.Failure.unreadable("The photo") }
-            return [try await LabFileReader.photo(data)]
-        }
-    }
-
-    // MARK: Sending, with consent
-
-    private func send(_ documents: [LabFileReader.Document]) async {
-        guard AIConsent.labUpload.given else { send(.needsConsent(documents)); return }
-        let results = await Self.extractEach(documents, extract: extract) { n, _ in
-            send(.sending(n, of: documents, at: .now))
-        }
-        if let results {
-            held = [:]
-            send(.extracted(results))
-        }
-    }
-
-    private func extract(_ document: LabFileReader.Document) async throws -> String {
-        try await LabUploadClient().extract(document, unitSystem: store.myData?.unitSystem ?? "si")
-    }
-
-    /// Try again (AC7a): the report read on the phone goes again, with no new pick. Cancel
-    /// goes back to the review it came from. Tapped only: the app never retries on its own.
-    /// The screen moves at the tap, so a same-instant Next or Done cannot be overridden later.
-    private func retry(_ results: [LabResult], at index: Int) {
-        send(.retrying(at: index))
-        start { if let again = await Self.retried(results, at: index, extract: extract) { send(.retried(again, at: index)) } }
-    }
-
-    /// Save all (US-52 AC8b): each waiting report saved in turn, in picked order, as its own
-    /// Save would, through the same calls. A refusal that would repeat for every report left
-    /// (the record the review showed is gone: erased, changed, or the cloud disconnected)
-    /// stops the run (`saveWaiting`). The record stays pinned to the one the review showed
-    /// until the run ends.
-    private func saveAll(_ results: [LabResult], from index: Int) {
-        store.pinScreen()
-        analytics?.event(.labSaveAll)  // AC8b's usage signal: once per run, nothing with it
-        send(.saveAll)
-        start {
-            defer { store.unpinScreen() }
-            for i in index..<results.count {
-                if Task.isCancelled { return }
-                send(.reportStarted(i))
-                switch await LabReportSave.saveWaiting(results[i], held: held[results[i].id], engine: engine, store: store) {
-                case .success(let outcome):
-                    send(.reportFinished(i, outcome))
-                case .failure(let stop):
-                    send(.stopped(i, stop))
-                    return
-                }
+        let session = UploadSession(engine: engine, store: store, analytics: analytics)
+        send(.sharedPicked(session))
+        work?.cancel()
+        work = Task {
+            let started = await session.start({ try await files() }, needsConsent: !AIConsent.labUpload.given)
+            guard !Task.isCancelled else { return }
+            switch started {
+            case .running: break
+            case .refused(let message): send(.failed(message))
+            case .fallback: send(.failed(Self.notRead))
             }
         }
     }
 
-    /// `results` with the report at `index` sent again; nil when it keeps no report or the
-    /// task was cancelled.
-    static func retried(_ results: [LabResult], at index: Int, extract: (LabFileReader.Document) async throws -> String) async -> [LabResult]? {
-        guard let document = results[index].retry, let again = await extractEach([document], extract: extract, progress: { _, _ in }) else { return nil }
-        var results = results
-        results[index] = again[0]
-        return results
-    }
-
-    /// A failed read in plain words: the server's own, or ours. Never an exception's text.
-    static func words(for error: Error) -> String {
-        switch error {
-        case is AppAttestClient.Failure: error.localizedDescription
-        case let url as URLError: AppAttestClient.words(for: url, subject: "The server")
-        default: "Something went wrong, so this report was not read. Please try again."
-        }
-    }
-
-    /// Each report sent in turn, or nil once the sheet is closed: a report not yet
-    /// sent when the task is cancelled is never sent (review R1, Codex).
-    static func extractEach(_ documents: [LabFileReader.Document], extract: (LabFileReader.Document) async throws -> String,
-                            progress: (Int, LabFileReader.Document) -> Void) async -> [LabResult]? {
-        var results: [LabResult] = []
-        for (n, document) in documents.enumerated() {
-            if Task.isCancelled { return nil }
-            progress(n, document)
-            do {
-                let extraction = try await extract(document)
-                results.append(LabResult(name: document.name, truncated: document.truncated, extractionJSON: extraction, failure: nil,
-                                         original: document.original))
-            } catch {
-                // Try again only for a failure that may mend: the network (a timeout, no
-                // connection, a dropped one), the phone's App Attest (US-52 AC1c) or the
-                // server's own trouble (5xx). A refused
-                // attestation (401), a file too large (413), one the AI declined (422) and the
-                // daily limit (429) fail the same way again (review R5).
-                let (failure, mends): (String, Bool) = switch error {
-                case AppAttestClient.Failure.server(status: 422, message: _): ("The AI could not read this file.", false)
-                case AppAttestClient.Failure.server(status: let status, message: _): (words(for: error), status >= 500)
-                case is URLError, AppAttestClient.Failure.device: (words(for: error), true)
-                default: (words(for: error), false)
-                }
-                results.append(LabResult(name: document.name, truncated: false, extractionJSON: nil, failure: failure, retry: mends ? document : nil))
-            }
-        }
-        return Task.isCancelled ? nil : results
-    }
+    /// The app's words for a pick it could not read at all (an engine too old for the upload).
+    static let notRead = "Something went wrong, so this report was not read. Please try again."
 }
 
 /// One way in to "Add medical records": a symbol, a title and a few words on what happens.
@@ -335,18 +230,4 @@ struct SourceRow: View {
         }
         .padding(.vertical, 2)
     }
-}
-
-/// One file's answer from the server, or why there is none.
-struct LabResult: Sendable {
-    /// A new answer, a Try again's included, opens a fresh review.
-    let id = UUID()
-    let name: String
-    let truncated: Bool
-    let extractionJSON: String?
-    let failure: String?
-    /// The picked file, to keep in the person's cloud (US-52 AC13d); the engine keeps it only there.
-    var original: LabFileReader.Original? = nil
-    /// The report as read on the phone, kept after a failure Try again can mend (AC7a).
-    var retry: LabFileReader.Document? = nil
 }

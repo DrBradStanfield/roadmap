@@ -1,0 +1,17 @@
+{
+  "about": "Fictional values for ios/scripts/review-shots.sh, made up for screenshots; they belong to nobody. Laid over docs/examples/health-roadmap.sample.json: the profile's fields replace the sample's, these measurements replace its measurements, and the medications are emptied, so the plan shows its medicine steps. Metric units: [metric, value, day].",
+  "profile": { "sex": "male", "birthYear": 1971, "birthMonth": 3, "heightCm": 175 },
+  "measurements": [
+    ["weight", 102, "2026-08-18"],
+    ["waist", 112, "2026-08-18"],
+    ["systolic_bp", 162, "2026-08-18"],
+    ["diastolic_bp", 101, "2026-08-18"],
+    ["hba1c", 43, "2026-08-10"],
+    ["ldl", 4.4, "2026-08-10"],
+    ["hdl", 1.0, "2026-08-10"],
+    ["total_cholesterol", 6.4, "2026-08-10"],
+    ["triglycerides", 2.1, "2026-08-10"],
+    ["apob", 1.25, "2026-08-10"],
+    ["creatinine", 135, "2026-08-10"]
+  ]
+}

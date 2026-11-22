@@ -33,7 +33,7 @@ final class AppServerE2ETests: XCTestCase {
         print("E2E chat: \(statuses.count) status lines, \(streamed.count) streamed characters, final \(final?.count ?? 0) characters")
     }
 
-    func testOneSyntheticLabReportIsReadAndWritten() async throws {
+    @MainActor func testOneSyntheticLabReportIsReadAndWritten() async throws {
         try XCTSkipUnless(enabled, "set TEST_RUNNER_HEALTH_ROADMAP_E2E=1 with a local server running")
         // A made-up report: no real person, no real result.
         let lines = [
@@ -50,22 +50,23 @@ final class AppServerE2ETests: XCTestCase {
             context.beginPage()
             (lines.joined(separator: "\n") as NSString).draw(in: CGRect(x: 40, y: 40, width: 530, height: 700), withAttributes: [.font: UIFont.systemFont(ofSize: 13)])
         }
-        let documents = try await LabFileReader.documents(from: pdf, name: "synthetic.pdf")
-        let document = try XCTUnwrap(documents.first)
-        let extraction = try await LabUploadClient().extract(document, unitSystem: "si")
-
-        let engine = try HealthEngine()
-        let review = try engine.blocking { try $0.labReview(extractionJSON: extraction, now: .now) }
-        XCTAssertTrue(review.isLabReport)
-        XCTAssertGreaterThanOrEqual(review.items.count, 5)
-        let record = try engine.blocking { try $0.newRecord(now: .now, deviceId: "e2e", locale: Locale(identifier: "en-NZ"), timeZone: TimeZone(identifier: "Pacific/Auckland")!) }
-        let day = review.reportDay ?? "2026-10-01"
-        let refs = review.items.map(\.ref)
-        let summary = try engine.blocking { try $0.labSaveSummary(recordJSON: record, extractionJSON: extraction, refs: refs, reportDay: day, now: .now, deviceId: "e2e") }.get()
-        let outcome = try engine.blocking { try $0.apply(.labImport(extractionJSON: extraction, refs: refs, reportDay: day), to: record, now: .now, deviceId: "e2e") }
-        XCTAssertTrue(outcome.ok, outcome.message ?? "")
-        let data = try engine.blocking { try $0.myData(recordJSON: try XCTUnwrap(outcome.record), now: .now, deviceId: "e2e") }
-        XCTAssertEqual(data.bloodTests.first { $0.metric == "ldl" }?.latest?.day, day)
-        print("E2E lab: \(review.items.count) values found, report day \(review.reportDay ?? "none"), saved \(summary.saved), skipped \(summary.skipped), refused \(summary.refused.count)")
+        // Through the shared upload, as the sheet runs a file from Files: one read, one Save.
+        let folder = FileManager.default.temporaryDirectory.appending(path: "E2E \(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let file = folder.appending(path: "synthetic.pdf")
+        try pdf.write(to: file)
+        let store = try RecordStore(folder: folder, engine: HealthEngine(), deviceId: "e2e")
+        let upload = UploadSession(engine: store.engine, store: store)
+        defer { upload.end() }
+        let engine = store.engine
+        let started = await upload.start({ try await LabFileReader.picked(file) { await engine.uploadRules(files: $0, members: $1) } }, needsConsent: false)
+        XCTAssertEqual(started, .running)
+        func page() -> UploadPage? { if case .drawn(let text) = upload.model.state { upload.page(text) } else { nil } }
+        try await UploadTestKit.until("read", timeout: 120) { page()?.save.enabled == true }
+        upload.send(.save)
+        try await UploadTestKit.until("saved") { page()?.done != nil }
+        XCTAssertNotNil(store.myData?.bloodTests.first { $0.metric == "ldl" }?.latest?.day, "LDL saved")
+        print("E2E lab: \(page()?.done?.line ?? "no done line")")
     }
 }

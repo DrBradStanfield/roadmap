@@ -159,7 +159,7 @@ final class RedrawHeldEraseTests: XCTestCase {
     private let dated = #"""
     {"classification":"lab_report","reportDate":"2026-10-01",
      "values":[{"metric":"ldl","valueSI":3.1,"displayValue":3.1,"displayUnit":"mmol/L","displaySystem":"si","confidence":"high"}],
-     "additionalValues":[], "refusedValues":[]}
+     "additionalValues":[], "refusedValues":[], "document":null}
     """#
     private let letter = ##"{"classification":"clinic_letter","reportDate":null,"values":[],"additionalValues":[],"document":{"classification":"clinic_letter","title":"Cardiology follow-up","documentDate":"2026-09-14","contentMarkdown":"# Letter","metadata":{}}}"##
 
@@ -178,16 +178,13 @@ final class RedrawHeldEraseTests: XCTestCase {
         XCTAssertEqual(try eraseEpoch(cloudBefore), 1)
         XCTAssertEqual(try weights(cloudBefore).count, 0)
 
-        let labs = await store.importLabs(extractionJSON: dated, refs: ["v0"], reportDay: "2026-10-01")
-        if case .failure(let refusal) = labs {
+        let saved = await store.saveUpload(state: try Self.saving(lab: dated, letter: letter), originals: [:], read: { _ in nil }, as: store.screen)
+        if case .failure(let refusal) = saved {
             XCTAssertNotEqual(refusal.message, RecordStore.recordChanged, "the store's guard did not refuse it")
         }
-        guard case .success = labs else { return XCTFail("the lab import did not land: \(labs)") }
-        let choice = DocumentChoice(kind: .document, sourceFileName: "Letter.pdf", title: "Cardiology follow-up", documentDate: nil, mimeType: "")
-        let filed = await store.saveDocument(extractionJSON: letter, choice: choice, original: nil)
-        XCTAssertNotEqual(filed, .refused(RecordStore.recordChanged), "the store's guard did not refuse it")
-        guard case .saved(let count, _, _, _) = filed else { return XCTFail("the document did not land: \(filed)") }
-        XCTAssertEqual(count, 1)
+        guard case .success(let outcome) = saved else { return XCTFail("the upload did not land: \(saved)") }
+        XCTAssertEqual(outcome.values, 1)
+        XCTAssertEqual(outcome.documents, 1)
 
         // The session throttles its uploads: write now, then read the session's file.
         let flushed = try await held.engine.cloudFlush()
@@ -201,9 +198,19 @@ final class RedrawHeldEraseTests: XCTestCase {
             XCTAssertEqual(ldl.first?["value"] as? Double, 3.1, "\(name)")
             XCTAssertEqual(try labValues(json).count, 1, "\(name): no lab row from before the erase")
             let documents = try documents(json)
-            XCTAssertEqual(documents.count, 1, "\(name): the document landed")
-            XCTAssertEqual(documents.first?["title"] as? String, "Cardiology follow-up", "\(name)")
+            XCTAssertEqual(documents.filter { $0["title"] as? String == "Cardiology follow-up" }.count, 1, "\(name): the document landed")
+            XCTAssertEqual(documents.count, 2, "\(name): the letter and the lab report's archive row")
         }
+    }
+
+    /// The shared upload's state, saving: `lab` and `letter` read, every reviewed row promised.
+    private static func saving(lab: String? = nil, letter: String) throws -> String {
+        var drive = try UploadPageTests.Drive()
+        drive.pick((lab == nil ? [] : ["lab"]) + ["letter"])
+        if let lab { drive.read("lab", lab) }
+        drive.read("letter", letter)
+        drive.step(UploadAction.saveEvent(promised: try drive.page().reviewed))
+        return drive.state
     }
 
     private func labValues(_ json: String) throws -> [[String: Any]] {
@@ -258,14 +265,13 @@ final class RedrawHeldEraseTests: XCTestCase {
         withExtendedLifetime(sync) {}
     }
 
-    /// Lead H17 (US-25 AC16f): the same for a document saved to the cloud session (saveDocumentInTurn).
+    /// Lead H17 (US-25 AC16f): the same for a document saved to the cloud session (saveUploadInTurn).
     func testACloudDocumentSaveWhoseDrawFailsIsHeldUndrawn_H17() async throws {
         let (store, engine, sync) = try await openCloud()
         XCTAssertEqual(try documents(store.recordJSON).count, 0)
-        let choice = DocumentChoice(kind: .document, sourceFileName: "Letter.pdf", title: "Cardiology follow-up", documentDate: nil, mimeType: "")
-        let filed = await store.saveDocument(extractionJSON: letter, choice: choice, original: nil)
-        guard case .saved(let count, _, _, _) = filed else { return XCTFail("the document did not land: \(filed)") }
-        XCTAssertEqual(count, 1)
+        let saved = await store.saveUpload(state: try Self.saving(letter: letter), originals: [:], read: { _ in nil }, as: store.screen)
+        guard case .success(let outcome) = saved else { return XCTFail("the document did not land: \(saved)") }
+        XCTAssertEqual(outcome.documents, 1)
 
         XCTAssertEqual(try documents(store.recordJSON).count, 1, "the store holds the record with the document")
         XCTAssertEqual(store.hold, .heldUndrawn)

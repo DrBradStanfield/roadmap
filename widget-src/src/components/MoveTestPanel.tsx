@@ -7,7 +7,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { METRIC_LABELS, METRIC_TO_FIELD } from '@roadmap/health-core/mappings';
 import { isCoreRow } from '@roadmap/health-core/blood-tests';
-import { labValueLabel, savedLabText } from '@roadmap/health-core/lab-series';
+import { DAY_NOT_HAPPENED, labValueLabel, savedLabText } from '@roadmap/health-core/lab-series';
 import type { FileLabValue, FileMeasurement } from '@roadmap/health-core/roadmap-file';
 import type { MetricType, UnitSystem } from '@roadmap/health-core/units';
 import type { MoveKeep, MovePlan, MoveRejection } from '@roadmap/health-core/record-edits';
@@ -64,7 +64,7 @@ const nameOf = (row: Row) => {
 function refusalText(refusal: MoveRejection): string {
   switch (refusal.reason) {
     case 'same-day': return 'The test is already on that day.';
-    case 'future-date': return 'That day has not happened yet.';
+    case 'future-date': return DAY_NOT_HAPPENED;
     case 'invalid-date': return 'That is not a date.';
     case 'empty-day': return 'No blood test is saved on that day.';
     case 'duplicate-slot': {

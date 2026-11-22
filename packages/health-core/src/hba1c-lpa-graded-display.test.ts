@@ -26,7 +26,7 @@ const HBA1C_PRE = PCT(5.7);
 const HBA1C_DIA = PCT(6.5);
 const hba1cGrade = (v: number) => (v >= HBA1C_DIA ? 'diabetic' : v >= HBA1C_PRE ? 'prediabetic' : 'normal');
 const lpaGrade = (v: number) => (v >= 125 ? 'elevated' : v >= 75 ? 'borderline' : 'normal');
-const TILE = { normal: 'Normal', prediabetic: 'Prediabetic', diabetic: 'Diabetic', borderline: 'Borderline', elevated: 'Elevated' } as const;
+const TILE = { normal: 'Normal', prediabetic: 'Prediabetes range', diabetic: 'Diabetes range', borderline: 'Borderline', elevated: 'Elevated' } as const;
 
 function hba1cView(hba1c: number, unitSystem: UnitSystem, overrides?: Partial<Record<MetricType, UnitSystem>>) {
   const r = calculateHealthResults({ ...base, hba1c }, unitSystem, undefined, undefined, overrides, NOW);
@@ -57,8 +57,8 @@ describe('US-07 AC15: HbA1c prints on the side of 5.7 % and 6.5 % its grade is o
   it('47 mmol/mol in % reads 6.45 %, prediabetic (it read 6.5 %, the diabetes line)', () => {
     const v = hba1cView(47, 'conventional');
     expect(v.id).toBe('hba1c-prediabetic');
-    expect(v.text).toContain('Your HbA1c of 6.45 % is in the prediabetic range.');
-    expect([v.tile, v.unit, v.status]).toEqual(['6.45', '%', 'Prediabetic']);
+    expect(v.text).toContain('Your HbA1c of 6.45 % is in the range the ADA calls prediabetes.');
+    expect([v.tile, v.unit, v.status]).toEqual(['6.45', '%', 'Prediabetes range']);
   });
 
   it('the same with the per-field % toggle on an mmol/mol profile (US-05)', () => {

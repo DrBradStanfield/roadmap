@@ -1831,6 +1831,7 @@
 }
 
 .upload-modal {
+  font-family: var(--font-family-base); /* portaled outside .health-tool, as the list's harness root is */
   background: #fff;
   border-radius: 12px;
   width: 100%;
@@ -1859,6 +1860,14 @@
   margin: 0;
   font-size: 18px;
   color: var(--color-text-heading);
+}
+/* The title takes the focus on opening (US-12 AC4a): a target, not a control, so no ring. */
+.upload-modal-header h3:focus {
+  outline: none;
+}
+/* The phone's upload sheet runs edge to edge: no backdrop strips beside it. */
+.upload-modal-backdrop:has(> .upload-modal--mobile:not(.alcohol-dialog):not(.doc-lightbox)) {
+  padding: 0;
 }
 
 .upload-modal-close {
@@ -2041,22 +2050,6 @@
   line-height: 1.45;
 }
 
-/* US-12 AC6: the review's save answer is a live region. Kept displayed while
-   empty (the storefront theme hides div:empty), so what lands in it is heard. */
-.review-save-outcome.review-save-outcome:empty {
-  display: block;
-}
-
-/* Refusals under the save error in review: padding, not the done screen's
-   negative margin, so they never overlap it, even if a theme zeroes p margins. */
-.review-refusals {
-  padding-top: 8px;
-}
-
-.review-refusals .upload-done-skipped.upload-done-skipped {
-  margin: 0 0 8px;
-}
-
 .upload-done-btn {
   padding: 10px 32px;
   font-size: 15px;
@@ -2133,77 +2126,6 @@
   cursor: pointer;
   text-decoration: underline;
   text-underline-offset: 2px;
-}
-
-.review-not-saved {
-  margin: 8px 0 16px;
-  font-size: 14px;
-}
-
-.review-not-saved ul {
-  margin: 4px 0;
-  padding-left: 18px;
-  overflow-wrap: anywhere;
-}
-
-.review-file-section {
-  margin-bottom: 20px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.review-file-header {
-  margin-bottom: 8px;
-}
-
-.review-file-name {
-  font-weight: 600;
-  font-size: 14px;
-  color: var(--color-text-heading);
-}
-
-.review-file-error {
-  color: var(--color-error);
-  font-size: 13px;
-}
-
-.review-file-date {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 12px;
-  font-size: 13px;
-  flex-wrap: wrap;
-}
-
-.review-no-values {
-  font-size: 13px;
-  color: var(--color-gray-light);
-  font-style: italic;
-}
-
-.review-row-check {
-  flex-shrink: 0;
-}
-
-.review-row-dup {
-  font-size: 12px;
-  color: var(--color-gray-dark);
-  background: #f5f5f5;
-  border: 1px solid var(--color-gray-border);
-  padding: 2px 7px;
-  border-radius: 4px;
-  font-weight: 500;
-}
-
-.review-date-hint {
-  margin: 12px 0 0;
-  padding: 8px 12px;
-  font-size: 13px;
-  color: var(--color-text);
-  background: #fff8e1;
-  border-left: 3px solid #f5b400;
-  border-radius: 4px;
 }
 
 .review-actions {
@@ -2299,22 +2221,8 @@
 }
 
 /* ============================================================
-   Document Review Cards (in ReviewTable)
+   Document type badges (DocumentLightbox) and the upload list's letter controls
    ============================================================ */
-
-.review-document-card {
-  background: #f9fafb;
-  border: 1px solid var(--color-gray-border);
-  border-radius: 8px;
-  padding: 12px 16px;
-}
-
-.review-document-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-}
 
 .review-doc-type-badge {
   display: inline-block;
@@ -2332,10 +2240,6 @@
 .review-doc-type--discharge_summary { background: #fff3cd; color: #856404; }
 .review-doc-type--pathology_report { background: #f8d7da; color: #721c24; }
 .review-doc-type--vaccination_record { background: #e2e3f1; color: #383d6b; }
-
-.review-document-title {
-  margin-bottom: 8px;
-}
 
 .review-title-input {
   width: 100%;
@@ -3961,9 +3865,7 @@
 /* ──────────────────────────────────────────────────────────────────────────
    BloodTestTimeline single-scroller layout. Native horizontal scroll moves
    all rows together; sticky-left name cells and sticky-right trend cells
-   stay anchored. All rules scoped to `.bt-timeline-scroll` so the upload
-   ReviewTable (also uses `.bt-timeline`, but the per-row .bt-cell-strip
-   layout, not this wrapper) is unaffected.
+   stay anchored. All rules scoped to `.bt-timeline-scroll`.
    ──────────────────────────────────────────────────────────────────────── */
 .bt-timeline-scroll {
   overflow-x: auto;
@@ -4141,35 +4043,6 @@
   color: var(--bt-ink-400);
   margin-top: 3px;
   line-height: 1.2;
-}
-
-.bt-cell-strip {
-  flex: 1;
-  overflow-x: auto;
-  overflow-y: hidden;
-  position: relative;
-  /* Hide horizontal scrollbars — scroll is gesture/wheel only, no visible bar.
-     Firefox: scrollbar-width: none; WebKit: ::-webkit-scrollbar display:none. */
-  scrollbar-width: none;
-  /* Reserve a uniform gutter so header + body strips have identical scrollable
-     width — without this, sub-pixel differences shifted columns out of line. */
-  scrollbar-gutter: stable;
-  /* `pan-x` scrolls the matrix horizontally; `pan-y` lets vertical
-     gestures bubble through to the page so users can scroll the page
-     up/down even when the touch starts on a strip — without this, a
-     touch starting on Weight/Waist/BP rows freezes the page (mirrors
-     the `.bt-timeline-scroll` rule). */
-  touch-action: pan-x pan-y;
-}
-.bt-cell-strip::-webkit-scrollbar { display: none; }
-.bt-strip-inner {
-  display: flex;
-  min-width: 100%;
-  height: 100%;
-}
-.bt-strip-spacer {
-  flex: 1 0 0;
-  min-width: 0;
 }
 
 .bt-cell-value {
@@ -4464,60 +4337,12 @@
      a few px. */
 }
 
-/* ---------------------------------------------------------------------------
-   Review Matrix — upload review modal's metric × date grid. Reuses the
-   .bt-* classes; only adds the review-specific bits (context cell, section
-   divider, low-confidence accent, editable date header).
-   --------------------------------------------------------------------------- */
-
-.review-matrix {
-  margin: 0 0 20px;
-}
-
-/* Greyed-out cell: an existing-history value, not editable from the modal.
-   Keep pointer events so the title-tooltip ("Already saved at this date")
-   still fires on hover; user-select stops accidental text selection. */
-.bt-cell-context {
-  opacity: 0.55;
-  cursor: default;
-  user-select: none;
-  background: var(--bt-ink-50);
-}
-.bt-cell-context .bt-value-num {
-  color: var(--bt-ink-500);
-}
-
 .bt-cell-empty {
   background: transparent;
   pointer-events: none;
 }
 
-.bt-cell-review {
-  background: transparent;
-}
-
-/* Conflict cell: the saved value struck through, the uploaded value editable
-   below it, and a Replace tick the user must assert before it saves.
-   box-sizing + an explicit column direction are load-bearing — WebKit's flex
-   default is content-box, which blows the cell past the strip's column width. */
-.bt-cell-conflict {
-  box-sizing: border-box;
-  /* The column's width, like .bt-cell-value: content-sized, a conflict cell
-     ran narrower (or, with a long unit, wider) than its column and slid every
-     later reading in the row off its date. */
-  flex: 0 0 var(--bt-value-w);
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 2px;
-  min-width: 0;
-}
-/* A lab cell whose unit differs from its row's (US-35 AC6), the SI value a
-   converted lab saves, and a core value's question (both US-21 AC18) and
-   printed value (US-13 AC11), and a lab row past its ceiling (US-21 AC21). */
-.bt-cell-unit,
-.bt-cell-si,
-.bt-cell-refused,
+/* A core value's question (US-21 AC18) and printed value (US-13 AC11), under an upload list row's value. */
 .bt-cell-printed,
 .bt-cell-question {
   display: block;
@@ -4525,21 +4350,6 @@
   text-align: center;
   color: var(--bt-ink-700);
   overflow-wrap: anywhere;
-}
-.bt-cell-conflict-old {
-  opacity: 0.55;
-  text-decoration: line-through;
-  font-size: 0.85em;
-  text-align: center;
-  /* A saved value with its unit ("99.5 mL/min/1.73m²") wraps inside the cell. */
-  overflow-wrap: anywhere;
-}
-.bt-cell-conflict-replace {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  font-size: 0.75em;
 }
 /* Low or medium confidence: a doubtful read or a guessed unit (US-21 AC18). */
 .bt-cell-low-confidence .bt-input {
@@ -4557,27 +4367,6 @@
   color: var(--color-warning, #b27300);
 }
 
-/* Document card date row — DraftDateCell sits inline with the "Date:" label. */
-.review-file-date .bt-cell-draft-date {
-  width: auto;
-  min-width: 90px;
-  height: auto;
-  padding: 4px 8px;
-}
-
-/* Section divider between core metrics and additional lab values. */
-.bt-section-divider {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.6px;
-  text-transform: uppercase;
-  color: var(--bt-ink-500);
-  background: var(--bt-ink-50);
-  padding: 6px 8px;
-  border-top: 1px solid var(--bt-ink-200);
-  border-bottom: 1px solid var(--bt-ink-100);
-  margin-top: 4px;
-}
 
 /* ============================================================================
  * AdditionalLabRows (US-21 phase 1) — grouped, collapsed-by-default read-only
@@ -4781,11 +4570,9 @@
 .lpa-check-wait { align-self: center; }
 .lpa-check-status { margin: 8px 0 0; }
 /* US-04 AC1: a matrix's live region for its cells' messages; each shows in its cell.
-   US-13 AC10: a review cell's new value, mirrored as text for its Replace box.
    US-62 AC11: what the phone's My data says when a chat edit closes a value page. */
 .bt-cell-messages,
-.md-panel-messages,
-.bt-cell-heard {
+.md-panel-messages {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -5221,6 +5008,7 @@
   outline: none;
 }
 .md-page-target,
+.md-page-range,
 .md-page-hint,
 .md-page-empty {
   font-size: 13px;

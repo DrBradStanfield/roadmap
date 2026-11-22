@@ -7,11 +7,15 @@
  * No clock: events carry `now`. Run numbers are minted here, from the last one. Files keep the
  * order they were picked in, a ZIP's members at the ZIP's place (US-12 AC23).
  */
-import type { UnifiedExtractionResult } from './lab-extraction';
-import type { UploadFailure } from './upload-failure';
-import { choose, NO_CHOICES, type ChoiceChange, type FileChoices } from './upload-choices';
+import { fileNameLine, MAX_FILE_NAME_LENGTH, zipMemberName, type UnifiedExtractionResult } from './lab-extraction';
+import type { FailDetail, UploadFailure } from './upload-failure';
+import type { NotSavedReason } from './import-review';
+import type { MeasurementRefusal } from './record-edits';
+import type { MetricTypeValue } from './validation';
+import { choose, NO_CHOICES, untick, type ChoiceChange, type FileChoices } from './upload-choices';
 import type { Known } from './upload-known';
-import { fileVerdict, requestFlags, UPLOAD_LIMITS, zipMemberVerdict, type RequestFlags, type UploadPlatform } from './upload-rules';
+import type { ReviewedValue } from './upload-review';
+import { fileVerdict, requestFlags, UPLOAD_LIMITS, zipMemberVerdict, type RequestFlags, type UploadPlatform, type UploadReader } from './upload-rules';
 
 /** unreadable: no pages came out of it. bytesUnreadable: the device could not read its bytes to hash them.
  *  zipUnreadable: a ZIP that would not open; zipEmpty: one with no file we can read inside (both named
@@ -20,17 +24,22 @@ import { fileVerdict, requestFlags, UPLOAD_LIMITS, zipMemberVerdict, type Reques
  *  key's per-minute limit, which never stops the run) and noKey (no key at all, a whole run's refusal). The phone
  *  never produces the key reasons. */
 export type FailReason = 'unreadable' | 'bytesUnreadable' | 'zipUnreadable' | 'zipEmpty' | 'timeout' | 'busy' | 'dailyLimit' | 'declined' | 'tooLong' | 'server' | 'network'
-  | 'keyRefused' | 'noCredit' | 'keyRateLimit' | 'noKey';
+  | 'keyRefused' | 'noCredit' | 'keyRateLimit' | 'noKey'
+  // The iPhone's alone (US-52 AC7e): the app gate refused for good (appRefused) or the body was too large;
+  // the phone cannot prove the app at all (cannotAttest), or its proof failed this time (attestFailed).
+  | 'appRefused' | 'tooLarge' | 'cannotAttest' | 'attestFailed';
 
 /** Which failures Try again can mend: a busy or unreachable server, a convert that ran out of time, a key's minute limit. */
 export const RETRYABLE: Record<FailReason, boolean> = {
   unreadable: false, bytesUnreadable: true, zipUnreadable: false, zipEmpty: false, timeout: true, busy: true, dailyLimit: false, declined: false, tooLong: false, server: true, network: true,
   keyRefused: false, noCredit: false, keyRateLimit: true, noKey: false,
+  appRefused: false, tooLarge: false, cannotAttest: false, attestFailed: true,
 };
 /** The server's failure (upload-failure.ts) as a file's reason. */
 const SEND_FAILURE: Record<UploadFailure, FailReason> = {
   rate_limit: 'dailyLimit', busy: 'busy', server_error: 'server', network: 'network', refused: 'declined', too_long: 'tooLong',
   key_refused: 'keyRefused', no_credit: 'noCredit', key_rate_limit: 'keyRateLimit',
+  app_refused: 'appRefused', too_large: 'tooLarge', cannot_attest: 'cannotAttest', attest_failed: 'attestFailed',
 };
 /** A whole run refused before any send: the daily limit, no key (Pages), or the reader could not start. */
 export type RunRefusal = Extract<FailReason, 'dailyLimit' | 'noKey' | 'server'>;
@@ -47,32 +56,56 @@ export type FileStatus =
   | { s: 'ready'; attempt: number }                        // pages held, waiting for a send slot
   | { s: 'sending'; attempt: number }
   | { s: 'read'; extraction: UnifiedExtractionResult; choices: FileChoices }
-  | { s: 'failed'; reason: FailReason; attempt: number }   // attempt: sends tried
+  | { s: 'failed'; reason: FailReason; attempt: number; detail?: FailDetail } // attempt: sends tried; detail: the send's own words
   | { s: 'stopped' };                                      // Stop or Cancel reached it first
 export type FileStage = FileStatus['s'];
 
-/** `zip`: the ZIP's name for a member. `pages`: set once converted; the pages themselves stay with the platform. */
+/** `zip`: the ZIP's name for a member. `pages`: set once converted; the pages themselves stay with the platform.
+ *  `original: false`: a photo or a scan, which the plan never stores, counts or archives as an original (US-52 AC13e). */
 export interface UploadFile {
-  id: string; name: string; zip?: string; bytes: number; hash: string | null;
+  id: string; name: string; zip?: string; bytes: number; hash: string | null; original?: false;
   pages: { count: number; truncated: boolean } | null; status: FileStatus;
 }
-/** `unstored`: originals the save meant to keep in the cloud that did not land (upload-save.ts); absent is none. */
-export interface SaveOutcome { values: number; documents: number; archived: number; unstored?: number }
+/** The name a file is filed, matched and shown under, the dedup key of a document with no original (the old
+ *  iPhone path's `fileNamesJson`): a ZIP member by zipMemberName (`zip/member`, the web's rule too), any other
+ *  file on one line (fileNameLine) and cut to MAX_FILE_NAME_LENGTH. */
+export const uploadFileName = (f: { name: string; zip?: string }): string =>
+  (f.zip !== undefined ? zipMemberName(f.zip, f.name) : fileNameLine(f.name).slice(0, MAX_FILE_NAME_LENGTH));
+/** `unstored`: originals the save meant to keep in the cloud that did not land (upload-save.ts); absent is none.
+ *  `skippedValues`, `skippedLabValues`: reviewed rows whose slot another writer took while the review was open
+ *  (US-12 AC6a), a core value or another lab; absent is none. `refused`: values the final commit refused,
+ *  the record having changed while the originals uploaded, by the test's label and the review's reason, or for a core
+ *  value the web's own refusal line (upload-text `measurementRefusalText`) (US-13 AC17). `screenings`: screening dates a
+ *  letter's box wrote (web only, US-13 AC6); absent is none. `refusedCodes`: the same refusals, one code each, in the
+ *  closed words the web's usage events take (US-12 AC6); absent is none. */
+export interface SaveOutcome {
+  values: number; documents: number; archived: number; unstored?: number; skippedValues?: number; skippedLabValues?: number; screenings?: number;
+  refused?: Array<{ label: string; reason: NotSavedReason } | { line: string }>;
+  refusedCodes?: RefusedCode[];
+}
+/** A value the final commit refused, never its value: a core value by its refusal reason and, unless the metric is one the
+ *  record does not know (free text), its id, as `measurement_refused` reads them; a lab by its catalogue key, `unit` when
+ *  the test does not take the printed spelling (the `lab_unit_refused` case, with the spelling as `labUnitForEvent` words
+ *  it, absent when it is no unit word) or `value` when the test takes it and the number was refused. */
+export type RefusedCode =
+  | { kind: 'measurement'; reason: MeasurementRefusal['reason']; metricType?: MetricTypeValue }
+  | { kind: 'lab'; key: string; reason: 'unit' | 'value'; unit?: string };
 
 /** `started`, `firstRead`: ISO times, for the first-read count (design §7, R9). */
-interface Pick { platform: UploadPlatform; run: number; files: UploadFile[]; started: string; firstRead: string | null }
+/** `reader`: set once at upload start, by the web alone (`initialUpload`); it words a failed read (US-12 AC9). */
+interface Pick { platform: UploadPlatform; reader?: UploadReader; run: number; files: UploadFile[]; started: string; firstRead: string | null }
 export type UploadState =
-  | { phase: 'choosing'; platform: UploadPlatform; run: number }    // run: the last one, so the next is run + 1
+  | { phase: 'choosing'; platform: UploadPlatform; reader?: UploadReader; run: number } // run: the last one, so the next is run + 1
   | (Pick & { phase: 'consent' })                                   // phone only (AC13e): nothing runs yet
   | (Pick & { phase: 'open' })                                      // reading and review at once (R5)
-  | (Pick & { phase: 'saving'; attempt: number })
+  | (Pick & { phase: 'saving'; attempt: number; reviewed?: ReviewedValue[] }) // reviewed: what the page would write when Save was pressed
   | (Pick & { phase: 'saveFailed'; attempt: number; message: string })
   | (Pick & { phase: 'done'; outcome: SaveOutcome })
   | (Pick & { phase: 'failed'; refused: RunRefusal | null });      // refused: the run as a whole (runRefused); null: only ZIPs that would not open
 type Open = Extract<UploadState, { phase: 'open' }>;
 
 /** One picked item; `kind` 'zip' is listed (members arrive in `listed`), never read itself. */
-export interface PickedFile { id: string; name: string; bytes: number; kind: 'file' | 'zip' }
+export interface PickedFile { id: string; name: string; bytes: number; kind: 'file' | 'zip'; original?: false }
 /** A ZIP member by its path inside the ZIP. */
 export interface ZipMember { id: string; name: string; bytes: number }
 
@@ -86,12 +119,13 @@ export type UploadEvent =
   | { type: 'converted'; run: number; id: string; pages: number; truncated: boolean }
   | { type: 'convertFailed'; run: number; id: string; reason: 'unreadable' | 'timeout' }
   | { type: 'answered'; run: number; id: string; extraction: UnifiedExtractionResult; legacy: boolean; now: string } // legacy: legacyMatch said known
-  | { type: 'sendFailed'; run: number; id: string; failure: UploadFailure }
+  | { type: 'sendFailed'; run: number; id: string; failure: UploadFailure; detail?: FailDetail }
   | { type: 'runRefused'; run: number; reason: RunRefusal } // before any send: every file not yet read fails with the reason
   | { type: 'retry'; id: string | 'all' }
   | { type: 'stop' }
   | { type: 'chose'; id: string; change: ChoiceChange; now: string } // now: to refuse a document date in the future
-  | { type: 'saveStarted' }
+  | { type: 'replacesLost'; lost: Array<{ id: string; ref: string }> } // upload-review `lostReplaces`: each dropped, its value unticked
+  | { type: 'saveStarted'; reviewed?: ReviewedValue[] } // reviewed: upload-review `reviewedWrites`, so Save names what it did not write
   | { type: 'saved'; run: number; attempt: number; outcome: SaveOutcome }
   | { type: 'saveFailed'; run: number; attempt: number; message: string }
   | { type: 'close' }    // leaves only when nothing read would be lost
@@ -109,15 +143,15 @@ export type UploadEffect =
 
 export interface UploadStep { state: UploadState; effects: UploadEffect[] }
 
-export function initialUpload(platform: UploadPlatform): UploadState {
-  return { phase: 'choosing', platform, run: 0 };
+export function initialUpload(platform: UploadPlatform, reader?: UploadReader): UploadState {
+  return { phase: 'choosing', platform, ...readerOf({ reader }), run: 0 };
 }
 
 // --- derived ----------------------------------------------------------------
 
 const IN_FLIGHT: readonly FileStage[] = ['unlisted', 'listing', 'waiting', 'hashing', 'hashed', 'converting', 'ready', 'sending'];
 /** Not yet sent, so the daily limit fails them: everything in flight but a send. */
-const UNSENT: readonly FileStage[] = ['unlisted', 'listing', 'waiting', 'hashing', 'hashed', 'converting', 'ready'];
+const UNSENT: readonly FileStage[] = IN_FLIGHT.filter((s) => s !== 'sending');
 
 /** Files and ZIPs still being read: Save waits for these, and only these (a failed file never blocks it). */
 export function inFlight(s: UploadState): number {
@@ -134,8 +168,10 @@ const same = (state: UploadState): UploadStep => ({ state, effects: [] });
 const idsIn = (files: UploadFile[], stages: readonly FileStage[]) => files.filter((f) => stages.includes(f.status.s)).map((f) => f.id);
 const forget = (run: number, ids: string[]): UploadEffect[] => (ids.length ? [{ type: 'forget', run, ids }] : []);
 const abort = (run: number, ids: string[]): UploadEffect[] => (ids.length ? [{ type: 'abort', run, ids }] : []);
-const pickOf = ({ platform, run, files, started, firstRead }: Pick): Pick => ({ platform, run, files, started, firstRead });
-const failed = (f: UploadFile, reason: FailReason, attempt = 0): UploadFile => ({ ...f, status: { s: 'failed', reason, attempt } });
+const readerOf = ({ reader }: { reader?: UploadReader }) => (reader ? { reader } : {});
+const pickOf = ({ platform, reader, run, files, started, firstRead }: Pick): Pick => ({ platform, ...readerOf({ reader }), run, files, started, firstRead });
+const failed = (f: UploadFile, reason: FailReason, attempt = 0, detail?: FailDetail): UploadFile =>
+  ({ ...f, status: { s: 'failed', reason, attempt, ...(detail ? { detail } : {}) } });
 const dailyLimited = (f: UploadFile) => f.status.s === 'failed' && f.status.reason === 'dailyLimit';
 
 /** Entries for a pick, or a ZIP's members, in order, by upload-rules' verdicts; a hidden member is dropped. */
@@ -146,7 +182,7 @@ function admit(platform: UploadPlatform, picked: PickedFile[], zip?: string) {
     const member = zip !== undefined ? zipMemberVerdict(p.name, platform) : 'keep';
     if (member === 'hidden') { hidden.push(p.id); continue; }
     const verdict = member === 'keep' ? fileVerdict({ name: p.name, bytes: p.bytes, kind: p.kind, platform }) : member;
-    const base = { id: p.id, name: p.name, bytes: p.bytes, hash: null, pages: null, ...(zip !== undefined ? { zip } : {}) };
+    const base = { id: p.id, name: p.name, bytes: p.bytes, hash: null, pages: null, ...(zip !== undefined ? { zip } : {}), ...(p.original === false ? { original: false as const } : {}) };
     const status: FileStatus = verdict !== 'keep' ? { s: 'refused', verdict: verdict === 'tooLarge' ? 'tooLarge' : 'unsupported' }
       : p.kind === 'zip' ? { s: 'unlisted' } : { s: 'waiting' };
     files.push({ ...base, status });
@@ -226,11 +262,13 @@ function sendFailed(s: UploadState, e: Extract<UploadEvent, { type: 'sendFailed'
   if (s.phase !== 'open') return same(s);
   const file = s.files.find((f) => f.id === e.id);
   if (!file || file.status.s !== 'sending') return same(s);
+  const { attempt } = file.status;
   const reason = SEND_FAILURE[e.failure];
   const limited = reason === 'dailyLimit' || s.files.some(dailyLimited);
   const own = limited && RETRYABLE[reason] ? 'dailyLimit' : reason;
   const files = s.files.map((f): UploadFile => {
-    if (f.id === e.id) return failed(f, own, file.status.s === 'sending' ? file.status.attempt : 0);
+    // The send's own words only for its own reason, never under the daily limit that replaced it.
+    if (f.id === e.id) return failed(f, own, attempt, own === reason ? e.detail : undefined);
     if (!limited) return f;
     if (UNSENT.includes(f.status.s)) return failed(f, 'dailyLimit');
     return f.status.s === 'failed' && RETRYABLE[f.status.reason] ? failed(f, 'dailyLimit', f.status.attempt) : f;
@@ -289,13 +327,13 @@ function runRefused(s: Open, reason: RunRefusal): UploadStep {
 
 /** Back to choosing: aborts what is sending and drops every held file. */
 function leave(s: Exclude<UploadState, { phase: 'choosing' }>): UploadStep {
-  const choosing: UploadState = { phase: 'choosing', platform: s.platform, run: s.run };
+  const choosing: UploadState = { phase: 'choosing', platform: s.platform, ...readerOf(s), run: s.run };
   if (s.phase === 'failed' || s.phase === 'done') return same(choosing); // both already dropped everything
   return { state: choosing, effects: [...abort(s.run, idsIn(s.files, ['sending'])), ...forget(s.run, s.files.map((f) => f.id))] };
 }
 
-function save(s: Pick, attempt: number): UploadStep {
-  return { state: { ...pickOf(s), phase: 'saving', attempt }, effects: [{ type: 'save', run: s.run, attempt }] };
+function save(s: Pick, attempt: number, reviewed: ReviewedValue[] | undefined): UploadStep {
+  return { state: { ...pickOf(s), phase: 'saving', attempt, ...(reviewed ? { reviewed } : {}) }, effects: [{ type: 'save', run: s.run, attempt }] };
 }
 
 const retries = (f: UploadFile, id: string) => f.status.s === 'failed' && RETRYABLE[f.status.reason] && (id === 'all' || f.id === id);
@@ -307,7 +345,7 @@ export function transition(s: UploadState, e: UploadEvent): UploadStep {
       if (s.phase !== 'choosing' || !e.files.length) return same(s);
       const run = s.run + 1;
       const { files, hidden } = admit(s.platform, e.files);
-      const pick: Pick = { platform: s.platform, run, files, started: e.now, firstRead: null };
+      const pick: Pick = { platform: s.platform, ...readerOf(s), run, files, started: e.now, firstRead: null };
       // Consent first: nothing runs, not even a hash, until the person agrees (AC13e).
       if (e.needsConsent) return same({ ...pick, phase: 'consent' });
       return pump({ ...pick, phase: 'open' }, opening(run, files, hidden));
@@ -342,20 +380,34 @@ export function transition(s: UploadState, e: UploadEvent): UploadStep {
     }
     case 'stop': return s.phase === 'open' ? stop(s) : same(s);
     case 'chose': {
-      const file = s.phase === 'open' ? s.files.find((f) => f.id === e.id) : undefined;
-      if (s.phase !== 'open' || file?.status.s !== 'read') return same(s);
+      // A choice after a failed Save returns the upload to an ordinary review: the retry writes what it shows (US-12 AC6).
+      const file = s.phase === 'open' || s.phase === 'saveFailed' ? s.files.find((f) => f.id === e.id) : undefined;
+      if ((s.phase !== 'open' && s.phase !== 'saveFailed') || file?.status.s !== 'read') return same(s);
       const choices = choose(file.status.choices, e.change, e.now, file.status.extraction);
       if (!choices) return same(s); // refused: a document date that is no real past day
-      return same({ ...s, files: s.files.map((f) => (f === file ? { ...file, status: { ...file.status, choices } } : f)) });
+      return same({ ...pickOf(s), phase: 'open', files: s.files.map((f) => (f === file ? { ...file, status: { ...file.status, choices } } : f)) });
+    }
+    case 'replacesLost': {
+      if (s.phase !== 'open' && s.phase !== 'saveFailed') return same(s);
+      // Nothing is written without the person's say: the value goes back to an ordinary unticked one (owner ruling 2026-11-20).
+      let changed = false;
+      const files = s.files.map((f): UploadFile => {
+        if (f.status.s !== 'read') return f;
+        const refs = e.lost.filter((l) => l.id === f.id && f.status.s === 'read' && f.status.choices.replace[l.ref] !== undefined).map((l) => l.ref);
+        if (!refs.length) return f;
+        changed = true;
+        return { ...f, status: { ...f.status, choices: refs.reduce(untick, f.status.choices) } };
+      });
+      return changed ? same({ ...pickOf(s), phase: 'open', files }) : same(s);
     }
     case 'saveStarted':
-      if (s.phase === 'saveFailed') return save(s, s.attempt + 1);
-      return s.phase === 'open' && saveEnabled(s) ? save(s, 1) : same(s);
+      if (s.phase === 'saveFailed') return save(s, s.attempt + 1, e.reviewed);
+      return s.phase === 'open' && saveEnabled(s) ? save(s, 1, e.reviewed) : same(s);
     case 'saved':
       if (s.phase !== 'saving' || s.attempt !== e.attempt) return same(s);
       return { state: { ...pickOf(s), phase: 'done', outcome: e.outcome }, effects: forget(s.run, s.files.map((f) => f.id)) };
     case 'saveFailed':
-      return s.phase === 'saving' && s.attempt === e.attempt ? same({ ...s, phase: 'saveFailed', message: e.message }) : same(s);
+      return s.phase === 'saving' && s.attempt === e.attempt ? same({ ...pickOf(s), phase: 'saveFailed', attempt: s.attempt, message: e.message }) : same(s);
     case 'close': {
       if (s.phase === 'choosing' || s.phase === 'saving' || s.phase === 'saveFailed') return same(s);
       if (s.phase === 'open' && s.files.some((f) => f.status.s === 'read')) return same(s); // discard, or save, first

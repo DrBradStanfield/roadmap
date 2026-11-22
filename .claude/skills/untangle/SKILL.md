@@ -113,6 +113,19 @@ Hooks talk to each other: one hook's event drives another's transition. Survey
 that protocol too. Write it as a table of events x machines (who sends, who
 reacts, in what order) and test the pairs that can race.
 
+## Properties before the screen
+
+Brad 2026-11-21. A screen that saves health data is built in two PRs, in order:
+
+1. The engine rule and its generated (property) test land first, in their own PR.
+2. The screen PR then only draws what the engine exposes. It adds no rule of its own.
+
+Each property has an oracle that does not read the value under test. Show each
+property failing against a named mutation: the PR body says what you broke and
+how the property failed.
+
+Why: the web upload grid failed ten reviews because the UI was built first.
+
 ## Split by what changes together
 
 Split a file by what changes together, never by line count alone. A feature's

@@ -149,6 +149,16 @@ describe('US-25 AC8, US-06 — the web screening cards are screeningForm', () =>
     const notYet = renderPanel({ sex: 'male', basis: { age: 60 }, screenings: { lung_smoking_history: 'former_smoker', lung_pack_years: '15', lung_screening: 'not_yet_started' } });
     expect(notYet.querySelector('#lung-screening')).not.toBeNull();
   });
+
+  it('US-07 AC1k: with no sex at 86, the web draws the cancer card only while a group shows, as screeningForm does', () => {
+    const lung = { lung_smoking_history: 'former_smoker', lung_pack_years: '25', lung_screening: 'annual_ldct' };
+    expectParity(renderPanel({ basis: { age: 86 }, screenings: lung }), screeningForm(86, undefined, screeningsToInputs(screeningRows(lung))));
+    cleanup();
+    const intro = screeningForm(85, undefined, {})[0].intro;
+    expect(renderPanel({ basis: { age: 85 } }).textContent).toContain(intro);
+    cleanup();
+    expect(renderPanel({ basis: { age: 86 } }).textContent).not.toContain(intro);
+  });
 });
 
 describe('US-25 AC8, US-06 — the web medication cards are medicationForm', () => {

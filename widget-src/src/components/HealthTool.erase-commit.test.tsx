@@ -18,6 +18,7 @@
  * Whole widget over a REAL RoadmapStore on jsdom's localStorage. Synthetic data only.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { UPLOAD_ENGINE } from '../testing/upload-engine';
 import { flushSync } from 'react-dom';
 import { render, fireEvent, waitFor, act, screen, within, type RenderResult } from '@testing-library/react';
 import { CURRENT_SCHEMA_VERSION, type RoadmapFile } from '@roadmap/health-core/roadmap-file';
@@ -120,7 +121,7 @@ beforeEach(() => {
   vi.mocked(labImport).mockResolvedValue(extraction as Awaited<ReturnType<typeof labImport>>);
   vi.mocked(sendGuestReport).mockResolvedValue({ success: true });
   vi.spyOn(window, 'open').mockReturnValue(null);
-  vi.stubGlobal('HealthUpload', {
+  vi.stubGlobal('HealthUpload', { ...UPLOAD_ENGINE,
     extractFromPdf: vi.fn(async () => ({ pages: [{ type: 'text', content: 'synthetic' }], truncated: false })),
     isPdf: () => true, isZip: () => false, isImage: () => false,
   });
