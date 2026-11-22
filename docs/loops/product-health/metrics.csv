@@ -650,3 +650,7 @@ week,metric,count_7d,count_prior_7d,delta_pct,source,note
 2026-W47,prs_merged,101,602,-83,github,"opened->merged, PRs merged in the 7d window; 0 bot/engine-release PRs left out"
 2026-W47,pr_cycle_time_median_h,0.6,0.3,100,github,"0 open >7d, longest 145.3h"
 2026-W47,pr_cycle_time_p90_h,46,3,1433,github,"nearest-rank p90; 0 open >7d, longest 145.3h"
+2026-W47,mutation_score_calculations,92.5,92.5,0,stryker,"334 killed, 27 open (baseline 21); same keys as W46: abdc3c1 limit path (202/215/242/273) and 2dc4afb3 sex gate (286); baseline still 02ae5f5 (10-30)"
+2026-W47,mutation_score_suggestions,90.1,88.9,1,stryker,"1369 killed, 150 open (baseline 311); 64 new vs baseline across 4 files (report.log kept in run scratch); by blame 9 suggestions mutants on lines changed 11-15..11-20 (2eae8903 :208/:500/:531, bc4bf5bb :766/:774, 476cf3f2 :731 very-high-TG card text)"
+2026-W47,mutation_score_units,93.0,93.2,0,stryker,"410 killed, 31 open (baseline 37); new: 9cac0bf formatGradedReading 753 (psa), 9dc1400 WHTR_TARGET 714, 7e0e248 441; 11 errors, 15 timeouts"
+2026-W47,mutation_score_merge,91.8,91.1,1,stryker,"630 killed, 56 open (baseline 82); new: 0598287 eraseTimeLater 753, 6269694 752; rootIdOf 202 / rootBeforeMoveOf 650, mergeSlotted 285, mergeFiles 777 carried"

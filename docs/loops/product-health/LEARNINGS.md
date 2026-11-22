@@ -25,7 +25,7 @@ duplicates.
   in a durable way: the zero measured REACH, not demand — default-on + the
   typed lane (08-13/14) brought 18 enrolments in a week. A zero on an
   opt-in-shaped event indicts the surface before the feature. Confirmed W46:
-  upload runs ~5/day → 1/week after the US-62 redesign hid the button (deploys
+  upload runs ~5/day → 1/week, then 0 for 13 days (W47), after the US-62 redesign hid the button (deploys
   10-31, 11-02, 11-06), while onboardings doubled; per-day counts against deploy times proved it.
 - **2026-08-16 [tooling]** Sentry per-issue event COUNTS are not reproducible across pulls (86/24
   in W32, then 1/1 twice in W33; summed `stats` buckets read 0 for a real event). Trend on
@@ -166,12 +166,9 @@ duplicates.
   redesign dropped `guide_opened`'s `header` emit (40 → 9) and redefined `results_viewed` twice.
 - **2026-10-18 [feedback]** Replies to our emails are feedback the form search misses: W40's Drive
   complaint and W42's urine-creatinine defect both came that way. Search them every run.
-- **2026-10-18 [instrumentation]** `upload_started`/`upload_saved` fire once per TAB
-  (server-api.ts:164-171); only `upload_outcome` (live 10-13) counts runs. Unit refusals with no
-  nearby start/save are a tab's later runs (W41's "untraced path"); started vs saved hides those runs.
-- **2026-11-09 [instrumentation]** `upload_saved`'s `count` is the session's total since US-12 AC6c:
-  a retry after a partial save adds to what the first Save saved (documents by content hash, else file name).
-  Before, it was the last attempt's alone. The event still fires once per tab.
+- **2026-10-18 [instrumentation]** `upload_started`/`upload_saved` fire once per TAB; only
+  `upload_outcome` (live 10-13) counts runs, so started vs saved hides a tab's later runs. Since
+  US-12 AC6c (11-09) `upload_saved`'s `count` is the session's total, a retry included.
 - **2026-10-20 [instrumentation]** From the PR #197 deploy, `cloud_connect_*` events throttle once per
   TAB per PROVIDER (was per tab): a tab trying Dropbox then Drive now sends both starts. New
   `cloud_connect_cancelled` counts only the provider's Cancel/Deny (redirect path); browser Back and
@@ -195,3 +192,6 @@ duplicates.
   erase machine (fix 4 PR 2b-3): one count per erase, when the screen showing it commits. Fewer
   rows from that deploy (no count for an erase already shown, one overtaken, or a failed read) are
   the new rule, not a trend. Detail: US-34's usage-signal line.
+- **2026-11-22 [tooling]** A `chat_match_events` YouTube `commentId` seen twice is the THREAD id:
+  the second row is a follow-up reply (`router_context.followUpCommentId` set), not a re-run or a
+  double post (W47: 22 of 22; W46: 16 of 16). Check that key before calling a repeat a duplicate.
