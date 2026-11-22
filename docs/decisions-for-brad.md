@@ -29,6 +29,17 @@ issue, and nothing private.
   value came from. Recommendation (the owner's): option 1, because it is the only composition from existing
   words that tells files apart. Nothing draws these names until you answer.
   Brad chose option 1 on 2026-11-23; it is held for an owner check (US-13 AC10).
+- **How original files are stored in the background after Save.** Issue: you asked (2026-11-23) that Save
+  show the done screen at once and store the originals afterwards; the design is in
+  [drafts/background-originals.md](drafts/background-originals.md). Questions: (1) keep the "still being
+  stored" list on the device only, or mark it in the record so other devices can see it (recommended: device
+  only, so the record and merging stay as they are); (2) another device shows such a document as it does today,
+  details without the original (recommended); (3) retry about 8 times, then show a failure with Try again,
+  rather than for days or forever (recommended: 8 times); (4) never wait on Save for small uploads; the done
+  screen's line turns to "kept" when they land (recommended); (5) on Google Drive, check for the file before a
+  retry, and fail GitHub files over about 1 MB at once (recommended); (6) keep "Saving..." and the Dropbox
+  first-write change after this lands (recommended); (7) on disconnect, drop the waiting files (recommended);
+  and the new sentences in section 5 of the note, each with options.
 
 ## Decided
 
