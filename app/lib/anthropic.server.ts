@@ -22,7 +22,7 @@ import {
 } from '../../packages/health-core/src/models';
 import {
   ANTHROPIC_TIMEOUT_MS, fetchAnthropicRaw, readJson, toErrorType, toResult, toUsage,
-  type AnthropicContentBlock, type AnthropicResult, type ReadControl,
+  type AnthropicContentBlock, type AnthropicResult, type ReadControl, type TokenUsage,
 } from './anthropic-fetch.server';
 // The HTTP layer moved to anthropic-fetch.server.ts; its public names keep this import path.
 export { isNetworkOrTimeoutError, type AnthropicUsage, type AnthropicResult } from './anthropic-fetch.server';
@@ -163,13 +163,14 @@ type StreamDelta =
 /**
  * The fields readEventStream reads from one SSE event, by `type`. It describes
  * what the code reads; nothing checks it: each `data:` line goes in as parsed.
+ * Other event and delta types fall through and are ignored.
  */
 type StreamEvent =
-  | { type: 'message_start'; message?: { usage?: Record<string, number> } }
+  | { type: 'message_start'; message?: { usage?: TokenUsage } }
   | { type: 'content_block_start'; index: number; content_block: AnthropicContentBlock }
   | { type: 'content_block_delta'; index: number; delta?: StreamDelta }
   | { type: 'content_block_stop'; index: number }
-  | { type: 'message_delta'; usage?: Record<string, number>; delta?: { stop_reason?: string | null; stop_details?: { category?: unknown } } }
+  | { type: 'message_delta'; usage?: TokenUsage; delta?: { stop_reason?: string | null; stop_details?: { category?: unknown } } }
   | { type: 'message_stop' | 'ping' }
   | { type: 'error'; error?: { type?: unknown } };
 
@@ -188,7 +189,7 @@ async function readEventStream(
 ): Promise<AnthropicResult> {
   const blocks: AnthropicContentBlock[] = [];
   const toolJson = new Map<number, string>();
-  let rawUsage: Record<string, number> = {};
+  let rawUsage: TokenUsage = {};
   let stopReason: string | undefined;
   let category: unknown;
   let stopped = false;
@@ -200,6 +201,7 @@ async function readEventStream(
         break;
       case 'content_block_start':
         blocks[event.index] = { ...event.content_block };
+        // `content_block` is typed required for the spread; the reply is not validated, so `?.` stays.
         if (event.content_block?.type === 'tool_use') toolJson.set(event.index, '');
         break;
       case 'content_block_delta': {
