@@ -67,7 +67,7 @@ describe('chat failure telemetry', () => {
   it('does not log a provider error body in the lower-level chat request', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(secret, { status: 400 })));
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-    const completion = await getChatCompletion([], [{ role: 'user', content: secret }], false);
+    const completion = await getChatCompletion([], [{ role: 'user', content: secret }], false, undefined, { purpose: 'CHAT' });
     reportChatFallback({ completion, platform: 'discord', latencyMs: 10 });
     await Sentry.flush();
     expect(completion.isFallback).toBe(true);
@@ -133,7 +133,7 @@ describe('chat failure telemetry', () => {
   });
 
   it.each([
-    ['extractOrClassify', () => extractOrClassify([{ type: 'text', content: 'doc' }])],
+    ['extractOrClassify', () => extractOrClassify([{ type: 'text', content: 'doc' }], { purpose: 'LABS' })],
   ])('%s discards a provider 400 body instead of logging it', async (_name, call) => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(secret, { status: 400 })));
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -145,7 +145,7 @@ describe('chat failure telemetry', () => {
   });
 
   it.each([
-    ['extractOrClassify', () => extractOrClassify([{ type: 'text', content: 'doc' }])],
+    ['extractOrClassify', () => extractOrClassify([{ type: 'text', content: 'doc' }], { purpose: 'LABS' })],
   ])('%s throws a fixed parse error when a 200 body is not JSON, quoting nothing', async (_name, call) => {
     // JSON.parse would put a fragment of this body in its message, and that
     // error reaches console.error + Sentry in api.lab-import-v2.

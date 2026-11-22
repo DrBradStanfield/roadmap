@@ -247,7 +247,7 @@ describe('US-52 AC7e: an accepted read streams NDJSON', () => {
   it('the read is the old route\'s call: one 90 s budget with the 429 retry', async () => {
     await registered();
     await lines(await appLabRead(signed(NEW, body), store, slots));
-    expect(mocks.extract).toHaveBeenCalledWith(body.pages, { timeoutMs: 90_000, retryRateLimit: true, oneDeadline: true, onRetry: expect.any(Function) });
+    expect(mocks.extract).toHaveBeenCalledWith(body.pages, { purpose: 'LABS', timeoutMs: 90_000, retryRateLimit: true, oneDeadline: true, onRetry: expect.any(Function) });
   });
 });
 

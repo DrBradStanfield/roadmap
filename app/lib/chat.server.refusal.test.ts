@@ -37,7 +37,7 @@ afterEach(() => {
 describe('US-15 AC13: the answer body comes from the model pin', () => {
   it('sends Sonnet 5.5 with adaptive thinking (summarized), effort medium, no sampling param', async () => {
     const fetchMock = respond('end_turn', [{ type: 'text', text: 'An answer.' }]);
-    await getChatCompletion([], [{ role: 'user', content: 'hi' }], true);
+    await getChatCompletion([], [{ role: 'user', content: 'hi' }], true, undefined, { purpose: 'CHAT' });
     const body = JSON.parse(fetchMock.mock.calls[0][1].body);
     expect(body.model).toBe('claude-sonnet-5-5');
     expect(body.max_tokens).toBe(4096);
@@ -61,7 +61,7 @@ describe('US-15 AC19: tools only where a client can apply them', () => {
 
   it('canApplyEdits: false sends no tools', async () => {
     const fetchMock = respond('end_turn', [{ type: 'text', text: 'An answer.' }]);
-    await getChatCompletion([], [{ role: 'user', content: 'hi' }], false);
+    await getChatCompletion([], [{ role: 'user', content: 'hi' }], false, undefined, { purpose: 'CHAT' });
     expect(JSON.parse(fetchMock.mock.calls[0][1].body)).not.toHaveProperty('tools');
   });
 });
@@ -128,7 +128,7 @@ describe('US-15 AC14: a refusal is its own outcome', () => {
     ['frontier_llm', REFUSAL_RESPONSES.request],
   ])('category %s gets its line; the partial text is discarded', async (category, line) => {
     refusal(category);
-    const result = await getChatCompletion([], [{ role: 'user', content: 'q' }], true);
+    const result = await getChatCompletion([], [{ role: 'user', content: 'q' }], true, undefined, { purpose: 'CHAT' });
     expect(result.isRefusal).toBe(true);
     expect(result.isFallback).toBe(false);
     expect(result.failureMode).toBe('refusal');
@@ -148,7 +148,7 @@ describe('US-15 AC14: a refusal is its own outcome', () => {
   it('a max_tokens stop keeps the answer, appends nothing, and logs only the stop reason', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     respond('max_tokens', [{ type: 'text', text: 'An answer cut off mid' }]);
-    const result = await getChatCompletion([], [{ role: 'user', content: 'q' }], true);
+    const result = await getChatCompletion([], [{ role: 'user', content: 'q' }], true, undefined, { purpose: 'CHAT' });
     expect(result.content).toBe('An answer cut off mid');
     expect(result.isFallback).toBe(false);
     expect(result.isRefusal).toBeUndefined();
@@ -160,7 +160,7 @@ describe('US-15 AC14: a refusal is its own outcome', () => {
 
   it('Sentry gets a warning tagged with the stop reason and category only', async () => {
     refusal('bio');
-    const completion = await getChatCompletion([], [{ role: 'user', content: 'q' }], true);
+    const completion = await getChatCompletion([], [{ role: 'user', content: 'q' }], true, undefined, { purpose: 'CHAT' });
     reportChatFallback({ completion, platform: 'shopify', latencyMs: 12, conversationId: null });
     expect(Sentry.captureException).not.toHaveBeenCalled();
     expect(Sentry.captureMessage).toHaveBeenCalledTimes(1);
@@ -195,7 +195,7 @@ describe('US-15 AC16: getChatCompletion streams when given onEvent', () => {
   it('sends stream: true, forwards the deltas, and returns the answer', async () => {
     const fetchMock = streamed([start, ...textBlock('An answer.'), ...end('end_turn')]);
     const onEvent = vi.fn();
-    const result = await getChatCompletion([], [{ role: 'user', content: 'q' }], true, onEvent);
+    const result = await getChatCompletion([], [{ role: 'user', content: 'q' }], true, onEvent, { purpose: 'CHAT' });
     expect(JSON.parse(fetchMock.mock.calls[0][1].body).stream).toBe(true);
     expect(onEvent).toHaveBeenCalledWith({ type: 'text', text: 'An answer.' });
     expect(result).toMatchObject({ content: 'An answer.', isFallback: false, stopReason: 'end_turn' });
@@ -203,13 +203,13 @@ describe('US-15 AC16: getChatCompletion streams when given onEvent', () => {
 
   it('a refusal after text streamed is still the refusal line', async () => {
     streamed([start, ...textBlock(PARTIAL), ...end('refusal', { type: 'refusal', category: 'bio', explanation: 'x' })]);
-    const result = await getChatCompletion([], [{ role: 'user', content: 'q' }], true, vi.fn());
+    const result = await getChatCompletion([], [{ role: 'user', content: 'q' }], true, vi.fn(), { purpose: 'CHAT' });
     expect(result).toMatchObject({ isRefusal: true, content: REFUSAL_RESPONSES.clinical, failureMode: 'refusal' });
   });
 
   it('a stream that breaks after text streamed is the api-error fallback', async () => {
     streamed([start, ...textBlock(PARTIAL)]);
-    const result = await getChatCompletion([], [{ role: 'user', content: 'q' }], true, vi.fn());
+    const result = await getChatCompletion([], [{ role: 'user', content: 'q' }], true, vi.fn(), { purpose: 'CHAT' });
     expect(result).toMatchObject({ isFallback: true, failureMode: 'api-error', content: FALLBACK_RESPONSE });
   });
 
@@ -220,7 +220,7 @@ describe('US-15 AC16: getChatCompletion streams when given onEvent', () => {
       { type: 'content_block_delta', index: 0, delta: { type: 'thinking_delta', thinking: 'Weighing it up' } },
       { type: 'content_block_stop', index: 0 },
       ...end('max_tokens')]);
-    const result = await getChatCompletion([], [{ role: 'user', content: 'q' }], true, vi.fn());
+    const result = await getChatCompletion([], [{ role: 'user', content: 'q' }], true, vi.fn(), { purpose: 'CHAT' });
     expect(result).toMatchObject({ isFallback: true, failureMode: 'empty-response', stopReason: 'max_tokens', content: FALLBACK_RESPONSE });
     expect(warn).toHaveBeenCalledWith(JSON.stringify({ evt: 'chat_truncated', stopReason: 'max_tokens' }));
     warn.mockRestore();
@@ -228,7 +228,7 @@ describe('US-15 AC16: getChatCompletion streams when given onEvent', () => {
 
   it('without onEvent the request is not streamed', async () => {
     const fetchMock = respond('end_turn', [{ type: 'text', text: 'An answer.' }]);
-    await getChatCompletion([], [{ role: 'user', content: 'q' }], true);
+    await getChatCompletion([], [{ role: 'user', content: 'q' }], true, undefined, { purpose: 'CHAT' });
     expect(JSON.parse(fetchMock.mock.calls[0][1].body)).not.toHaveProperty('stream');
   });
 });

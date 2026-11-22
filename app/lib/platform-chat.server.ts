@@ -85,7 +85,7 @@ export async function platformChatCompletion(params: {
   const sanitizedRecent = recentUserMsgs.map(sanitizeForRouter);
 
   // Stage 1: classifier (Discord has no per-user data fetch to parallelize with).
-  const classifierResult = await classifyMessage(sanitizedCurrent, sanitizedFirst, sanitizedRecent);
+  const classifierResult = await classifyMessage(sanitizedCurrent, sanitizedFirst, sanitizedRecent, 'DISCORD');
   const classifier = {
     classification: classifierResult.classification,
     routerSkipped: classifierResult.routerSkipped,
@@ -100,7 +100,7 @@ export async function platformChatCompletion(params: {
 
   // Stage 2: router fires only when the classifier didn't bypass it (ROUTE/ERROR → fire).
   const routerResult: RouterResult | null = shouldFireRouter(classifierResult)
-    ? await routeQuery(sanitizedCurrent, sanitizedFirst, sanitizedRecent)
+    ? await routeQuery(sanitizedCurrent, sanitizedFirst, sanitizedRecent, 'DISCORD')
     : null;
 
   // US-50 AC14: an older post gives way to its topic masters unless the message gives its URL or handle.
@@ -113,7 +113,7 @@ export async function platformChatCompletion(params: {
   const systemBlocks = buildSystemBlocks(DISCORD_PLATFORM_CONTEXT, { surfaceContext: DOCTOR_POSTURE, savedChat: savedChatBlock(DISCORD_SAVED_CHAT), blogArticles });
   const conversationMessages = buildConversationMessages(history, message);
   // No form here to apply an edit to, so no tools (US-15 AC19).
-  const completion = await getChatCompletion(systemBlocks, conversationMessages, false);
+  const completion = await getChatCompletion(systemBlocks, conversationMessages, false, undefined, { purpose: 'DISCORD' });
 
   return {
     content: completion.content,

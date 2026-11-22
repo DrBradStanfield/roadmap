@@ -179,7 +179,7 @@ describe('US-15 AC34: extractOrClassify makes at most two calls', () => {
       .mockResolvedValueOnce(anthropicMessage(validUnifiedJson));
     global.fetch = fetchMock as unknown as typeof fetch;
 
-    const result = await extractOrClassify([{ type: 'text', content: 'doc' }]);
+    const result = await extractOrClassify([{ type: 'text', content: 'doc' }], { purpose: 'LABS' });
     expect(result.classification).toBe('lab_report');
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
@@ -188,7 +188,7 @@ describe('US-15 AC34: extractOrClassify makes at most two calls', () => {
     const fetchMock = vi.fn().mockResolvedValue(anthropicMessage('never valid json'));
     global.fetch = fetchMock as unknown as typeof fetch;
 
-    await expect(extractOrClassify([{ type: 'text', content: 'doc' }])).rejects.toThrow('extraction returned malformed JSON');
+    await expect(extractOrClassify([{ type: 'text', content: 'doc' }], { purpose: 'LABS' })).rejects.toThrow('extraction returned malformed JSON');
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });
@@ -205,7 +205,7 @@ describe('US-15 AC34: the extraction request on Haiku 5.5', () => {
       bodies.push(JSON.parse(init.body as string));
       return anthropicMessage(bodies.length === 1 ? 'not json at all' : validUnifiedJson);
     }) as unknown as typeof fetch;
-    const result = await extractOrClassify([{ type: 'text', content: 'doc' }]);
+    const result = await extractOrClassify([{ type: 'text', content: 'doc' }], { purpose: 'LABS' });
     expect(result.classification).toBe('lab_report');
     expect(bodies).toHaveLength(2);
     expect(bodies[1]).toEqual(bodies[0]);
@@ -222,7 +222,7 @@ describe('US-15 AC34: the extraction request on Haiku 5.5', () => {
       content: [{ type: 'thinking', thinking: '', signature: 'sig' }, { type: 'text', text: validUnifiedJson }],
       usage: { input_tokens: 10, output_tokens: 5 },
     })) as unknown as typeof fetch;
-    const result = await extractOrClassify([{ type: 'text', content: 'doc' }]);
+    const result = await extractOrClassify([{ type: 'text', content: 'doc' }], { purpose: 'LABS' });
     expect(result.classification).toBe('lab_report');
   });
 });
@@ -334,7 +334,7 @@ describe('US-35 AC5 — extractOrClassify with httpAttempts: 1 makes ONE request
       return anthropicMessage(validUnifiedJson);
     }) as unknown as typeof fetch;
     await extractOrClassify([{ type: 'text', content: 'x' }], { documentMode: 'metadata' });
-    await extractOrClassify([{ type: 'text', content: 'x' }]);
+    await extractOrClassify([{ type: 'text', content: 'x' }], { purpose: 'LABS' });
     const [metadata, full] = bodies;
     expect(metadata.system).toMatch(/Do NOT transcribe/);
     expect(metadata.system).toMatch(/summary: ONE sentence of at most 120 characters/);
@@ -353,7 +353,7 @@ describe('US-35 AC5 — extractOrClassify with httpAttempts: 1 makes ONE request
       .mockRejectedValueOnce(new DOMException('signal timed out', 'TimeoutError'))
       .mockResolvedValueOnce(anthropicMessage(validUnifiedJson));
     global.fetch = fetchMock as unknown as typeof fetch;
-    await extractOrClassify([{ type: 'text', content: 'x' }]);
+    await extractOrClassify([{ type: 'text', content: 'x' }], { purpose: 'LABS' });
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });
@@ -380,7 +380,7 @@ describe('extraction failures carry no document text', () => {
     const fetchMock = vi.fn().mockResolvedValue(anthropicMessage(`Sure. Your ${SENTINEL} reads high.`));
     global.fetch = fetchMock as unknown as typeof fetch;
 
-    const error = await extractOrClassify([{ type: 'text', content: 'doc' }])
+    const error = await extractOrClassify([{ type: 'text', content: 'doc' }], { purpose: 'LABS' })
       .then(() => null, (e: unknown) => e as Error);
 
     expect(error).toBeInstanceOf(Error);
@@ -418,7 +418,7 @@ describe('extraction failures carry no document text', () => {
       .mockResolvedValueOnce(anthropicMessage(badShape));
     global.fetch = fetchMock as unknown as typeof fetch;
 
-    const error = await extractOrClassify([{ type: 'text', content: 'doc' }])
+    const error = await extractOrClassify([{ type: 'text', content: 'doc' }], { purpose: 'LABS' })
       .then(() => null, (e: unknown) => e as Error);
 
     expect(error!.message).toBe('extraction returned malformed JSON');
@@ -480,7 +480,7 @@ describe('US-15 AC14: stop_reason is returned; a refusal is a distinct result', 
 
   it('extraction treats a refusal as a failed call, not a document', async () => {
     global.fetch = vi.fn().mockResolvedValue(stopped('refusal', [], { type: 'refusal', category: 'other' })) as unknown as typeof fetch;
-    await expect(extractOrClassify([{ type: 'text', content: 'doc' }])).rejects.toThrow('Anthropic refusal');
+    await expect(extractOrClassify([{ type: 'text', content: 'doc' }], { purpose: 'LABS' })).rejects.toThrow('Anthropic refusal');
   });
 });
 
@@ -495,7 +495,7 @@ describe('US-12 AC8: extractOrClassify refuses a dot-thousands count written as 
 
   it('on the first parse', async () => {
     global.fetch = vi.fn().mockResolvedValueOnce(anthropicMessage(`{${body}`)) as unknown as typeof fetch;
-    const result = await extractOrClassify([{ type: 'text', content: 'doc' }]);
+    const result = await extractOrClassify([{ type: 'text', content: 'doc' }], { purpose: 'LABS' });
     expect(result.additionalValues.map(v => [v.name, v.value])).toEqual([['urine_specific_gravity', 1.02]]);
     expect(result.droppedValueCount).toBe(1);
   });
@@ -504,7 +504,7 @@ describe('US-12 AC8: extractOrClassify refuses a dot-thousands count written as 
     global.fetch = vi.fn()
       .mockResolvedValueOnce(anthropicMessage('not json'))
       .mockResolvedValueOnce(anthropicMessage(`{${body}`)) as unknown as typeof fetch;
-    const result = await extractOrClassify([{ type: 'text', content: 'doc' }]);
+    const result = await extractOrClassify([{ type: 'text', content: 'doc' }], { purpose: 'LABS' });
     expect(result.additionalValues.map(v => [v.name, v.value])).toEqual([['urine_specific_gravity', 1.02]]);
     expect(result.droppedValueCount).toBe(1);
   });
@@ -518,7 +518,7 @@ describe('US-15 AC34: an extraction that stopped short is not re-sent', () => {
   it('makes one call on a refusal, then throws with its bounded category', async () => {
     const fetchMock = vi.fn().mockResolvedValue(Response.json({ stop_reason: 'refusal', stop_details: { category: 'cyber' }, content: [] }));
     global.fetch = fetchMock as unknown as typeof fetch;
-    const error = await extractOrClassify([{ type: 'text', content: 'doc' }]).catch(e => e);
+    const error = await extractOrClassify([{ type: 'text', content: 'doc' }], { purpose: 'LABS' }).catch(e => e);
     expect(error).toBeInstanceOf(ExtractionStopError);
     expect(error).toMatchObject({ code: 'refused', refusalCategory: 'cyber', name: 'ExtractionStopError' });
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -527,7 +527,7 @@ describe('US-15 AC34: an extraction that stopped short is not re-sent', () => {
   it('makes one call on a max_tokens stop, then throws too_long', async () => {
     const fetchMock = vi.fn().mockResolvedValue(Response.json({ stop_reason: 'max_tokens', content: [{ type: 'text', text: '{"classification":"lab_rep' }] }));
     global.fetch = fetchMock as unknown as typeof fetch;
-    const error = await extractOrClassify([{ type: 'text', content: 'doc' }]).catch(e => e);
+    const error = await extractOrClassify([{ type: 'text', content: 'doc' }], { purpose: 'LABS' }).catch(e => e);
     expect(error).toBeInstanceOf(ExtractionStopError);
     expect(error).toMatchObject({ code: 'too_long' });
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -538,7 +538,7 @@ describe('US-15 AC34: an extraction that stopped short is not re-sent', () => {
       .mockResolvedValueOnce(Response.json({ stop_reason: 'end_turn', content: [{ type: 'text', text: 'not json' }] }))
       .mockResolvedValueOnce(Response.json({ stop_reason: 'end_turn', content: [{ type: 'text', text: validUnifiedJson }] }));
     global.fetch = fetchMock as unknown as typeof fetch;
-    await extractOrClassify([{ type: 'text', content: 'doc' }]);
+    await extractOrClassify([{ type: 'text', content: 'doc' }], { purpose: 'LABS' });
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });

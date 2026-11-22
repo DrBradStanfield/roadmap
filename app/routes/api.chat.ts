@@ -416,7 +416,7 @@ async function chatAction(request: Request, app: boolean) {
       const subscriptionsPromise = subscriptionsOn && !auth.isGuest && auth.customerId
         ? getCachedSubscriptions(request, auth.customerId)
         : Promise.resolve(null);
-      const classifierPromise = classifyMessage(sanitizedCurrent, sanitizedFirst, sanitizedRecent);
+      const classifierPromise = classifyMessage(sanitizedCurrent, sanitizedFirst, sanitizedRecent, 'CHAT');
       const context = resolveChatContext(body.guestInputs);
       const [orderSummary, classifierResult, subscriptions] = await Promise.all([ordersPromise, classifierPromise, subscriptionsPromise]);
 
@@ -427,7 +427,7 @@ async function chatAction(request: Request, app: boolean) {
       const fireRouter = shouldFireRouter(classifierResult);
       if (fireRouter) write({ type: 'status', text: 'Finding relevant articles' });
       const routerResult = fireRouter
-        ? await routeQuery(sanitizedCurrent, sanitizedFirst, sanitizedRecent)
+        ? await routeQuery(sanitizedCurrent, sanitizedFirst, sanitizedRecent, 'CHAT')
         : null;
 
       const tAfterContext = Date.now();
@@ -511,7 +511,7 @@ async function chatAction(request: Request, app: boolean) {
       // replacing a health answer. run_roadmap reads the widget's own record (US-15 AC33).
       const subscriptionTool = subscriptionsOn && !appOrToolPage;
       const completion = await getChatCompletion(systemBlocks, conversationMessages, canApplyEdits, onEvent,
-        subscriptionTool || canApplyEdits ? { subscriptionTool, guestInputs: body.guestInputs, ...(canApplyProfileEdits ? { profileEdits: true } : {}), ...(appEdits ? { app: true } : {}) } : undefined);
+        { purpose: 'CHAT', ...(subscriptionTool || canApplyEdits ? { subscriptionTool, guestInputs: body.guestInputs, ...(canApplyProfileEdits ? { profileEdits: true } : {}), ...(appEdits ? { app: true } : {}) } : {}) });
       const tAfterLlm = Date.now();
       // US-15 AC33 usage signal: one counter per run_roadmap round, the numbers of
       // stated values used and rejected and nothing else. Fire-and-forget. It is a

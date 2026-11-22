@@ -36,7 +36,7 @@ describe('US-59 AC7 — the subscription tool in getChatCompletion', () => {
 
   it('without it: no tools at all, and a stray proposal is ignored', async () => {
     const bodies = stubAnthropic([{ type: 'text', text: 'An answer.' }, proposal]);
-    const r = await getChatCompletion([], messages, false);
+    const r = await getChatCompletion([], messages, false, undefined, { purpose: 'CHAT' });
     expect(bodies()[0]).not.toHaveProperty('tools');
     expect(r.subscriptionProposal).toBeUndefined();
   });
