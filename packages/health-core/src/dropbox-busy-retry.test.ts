@@ -23,14 +23,13 @@ function provider(answers: Array<() => Response>, onCall: (n: number) => void = 
 const letter = (title: string, documentType: DocumentPayload<Bytes>['documentType'] = 'clinic_letter'): DocumentPayload<Bytes> => ({
   documentType, title, documentDate: '2026-01-01', contentMd: '', metadata: {}, sourceFileName: `${title}.pdf`, file: new TextEncoder().encode(title),
 });
-/** Letters saved through Dropbox; `gone` is the caller's erase check, run before every write as both clients do. */
-function save(over: Partial<DocumentSaveIO<Bytes>> & { gone?: () => boolean } = {}, payloads = [letter('Synthetic letter')]) {
-  const { gone = () => false, ...rest } = over;
+/** Letters saved through Dropbox; `stopped` is the caller's erase check, which the engine asks before every attempt. */
+function save(over: Partial<DocumentSaveIO<Bytes>> = {}, payloads = [letter('Synthetic letter')]) {
   let n = 0;
   const io: DocumentSaveIO<Bytes> = {
     hash: async (b) => `sha256-${new TextDecoder().decode(b)}`,
-    write: (ref, bytes) => (gone() ? Promise.reject(new Error('erase moved')) : dropboxUploadDocument('token', ref, bytes)),
-    mimeType: () => 'application/pdf', now: () => NOW, newId: () => `doc-${++n}`, makesFolders: true, random: () => 0, ...rest,
+    write: (ref, bytes) => dropboxUploadDocument('token', ref, bytes), stopped: () => false,
+    mimeType: () => 'application/pdf', now: () => NOW, newId: () => `doc-${++n}`, makesFolders: true, random: () => 0, ...over,
   };
   return saveDocuments(createEmptyFile({ deviceId: 'd', now: NOW }), payloads, io);
 }
@@ -69,11 +68,13 @@ describe('a busy Dropbox refusal is tried again (US-14 AC5)', () => {
     expect(waits).toEqual([625, 1250]); // 0.5 s then 1 s, each with a quarter more of jitter at random 0.5
   });
 
-  it('the added wait is at most 5 s per file, a long Retry-After included', async () => {
-    provider([() => new Response('{}', { status: 429, headers: { 'Retry-After': '4' } })]);
+  it('never early: Retry-After 4 twice is two attempts, one 4 s wait, then not stored (a second 4 s wait would pass 5 s)', async () => {
+    const fetchMock = provider([() => new Response('{}', { status: 429, headers: { 'Retry-After': '4' } })]);
     const waits: number[] = [];
-    await save({ sleep: async (ms) => { waits.push(ms); } });
-    expect(waits).toEqual([4000, 1000]);
+    const plan = await save({ sleep: async (ms) => { waits.push(ms); } });
+    expect(waits).toEqual([4000]);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(plan.unstored).toBe(1);
   });
 
   it('any other refusal (a full Dropbox, a 500): one attempt', async () => {
@@ -89,7 +90,7 @@ describe('a busy Dropbox refusal is tried again (US-14 AC5)', () => {
   it('an erase landing between the refusal and the retry: no second write', async () => {
     let erased = false;
     const fetchMock = provider([BUSY_409, OK], () => { erased = true; });
-    const done = save({ gone: () => erased });
+    const done = save({ stopped: () => erased });
     await vi.runAllTimersAsync();
     expect((await done).unstored).toBe(1);
     expect(fetchMock).toHaveBeenCalledTimes(1);

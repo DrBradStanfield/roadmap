@@ -82,23 +82,30 @@ export const writeMakesFolders = (backend: string): boolean => backend === 'drop
 /** At most this much added wait per original across its busy retries. */
 const BUSY_BUDGET_MS = 5000;
 
+/** Thrown when `io.stopped()` says stop: the original is not written, counted unstored, and not reported. */
+const STOPPED = new Error('The save was stopped.');
+
 /**
- * One original's write. A busy refusal (`busyWait`: Dropbox's folder lock, or too many requests) is tried at most twice
- * more, each time through the caller's own `write`, so its erase and closed-session check runs again first (US-14 AC5).
- * Each wait is the one Dropbox names, else 0.5 s then 1 s, plus up to half again of jitter, 5 s in all at most.
- * Any other failure, or a third refusal, rejects as it came.
+ * One original's write. `io.stopped()` is asked immediately before every attempt, so no write starts once an erase
+ * moved or the session closed (US-11 AC1a). A busy refusal (`busyWait`: Dropbox's folder lock, or too many requests) is
+ * tried at most twice more (US-14 AC5): after the wait Dropbox names, else 0.5 s then 1 s, plus up to half again of
+ * jitter. A wait that would take the total past 5 s is not shortened: the retries end there. Any other failure, a third
+ * refusal, or a wait past the budget rejects as it came.
  */
 async function writeBusyRetried<F>(io: DocumentSaveIO<F>, ref: string, file: F): Promise<void> {
   const random = io.random ?? Math.random;
   const sleep = io.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
   let waited = 0;
   for (let attempt = 1; ; attempt++) {
+    if (io.stopped()) throw STOPPED;
     try {
       return await io.write(ref, file);
     } catch (error) {
       const named = busyWait(error);
-      if (named === null || attempt === 3 || waited >= BUSY_BUDGET_MS) throw error;
-      const ms = Math.min((named || 500 * 2 ** (attempt - 1)) * (1 + random() / 2), BUSY_BUDGET_MS - waited);
+      if (named === null || attempt === 3) throw error;
+      const ms = (named || 500 * 2 ** (attempt - 1)) * (1 + random() / 2);
+      // Never early: a wait that would pass the budget ends the retries instead of shortening the wait.
+      if (waited + ms > BUSY_BUDGET_MS) throw error;
       waited += ms;
       await sleep(ms);
     }
@@ -111,6 +118,9 @@ export interface DocumentSaveIO<F> {
   hash(file: F): Promise<string>;
   /** Write the bytes at `ref`; reject on failure. */
   write(ref: string, file: F): Promise<void>;
+  /** Asked immediately before every write attempt: true when the save must write nothing more (an erase moved, the
+   *  session closed). Required, so no door forgets the check. */
+  stopped(): boolean;
   /** The bytes' MIME type, '' when unknown. */
   mimeType(file: F): string;
   /** `writeMakesFolders`: no first write per folder runs alone. */
@@ -277,7 +287,7 @@ export async function saveDocuments<F>(
       w.doc.fileRef = w.ref;
       w.doc.mimeType = io.mimeType(w.file);
     } catch (error) {
-      io.onWriteError?.(error);
+      if (error !== STOPPED) io.onWriteError?.(error);
       unstored += 1;
       w.failed = w.held; // a failure behind a held row is settled (below)
     }

@@ -64,22 +64,34 @@ describe('the iPhone Save checks for an erase before each original it writes, as
     expect(cloud.commits).toEqual([]);
   });
 
-  // US-14 AC5 (2026-11-23): a busy refusal is tried again through this door's write, so `gone()` runs first.
-  it('on Dropbox: an erase landing between a busy refusal and its retry: no second write, and the answer is erased', async () => {
+  // US-14 AC5, US-11 AC1a (2026-11-23): a busy refusal is tried again, and the engine asks `stopped` (this door's
+  // `gone()`) before the retry. The control half proves the retry is reached: with no erase, the second try lands.
+  it('on Dropbox: a busy refusal is retried; an erase landing before the retry stops it: one write, erased', async () => {
     vi.useFakeTimers();
-    const a = session('a');
-    let erased = false;
-    a.at.session.refuses = () => erased;
-    Object.assign(a.at.host.store, { id: 'dropbox' });
-    a.at.host.store.writeDocument = async (ref: string) => { a.puts.push(ref); erased = true; throw new BusyError('busy', 0, 409); };
-    cloud.open = a.at;
-    cloud.commits.length = 0;
-    const answer = uploadSaveRun(STATE, '', '[0,null]', NOW, 'phone', JSON.stringify({ other: 'application/pdf' }), () => new Uint8Array([1]).buffer);
-    await vi.runAllTimersAsync();
-    vi.useRealTimers();
-    expect(JSON.parse(await answer)).toMatchObject({ ok: false, reason: 'erased' });
-    expect(a.puts).toHaveLength(1);
-    expect(cloud.commits).toEqual([]);
+    const run = async (eraseDuringWait: boolean) => {
+      const a = session('a');
+      let erased = false;
+      let refusals = 1;
+      a.at.session.refuses = () => erased;
+      Object.assign(a.at.host.store, { id: 'dropbox' });
+      a.at.host.store.writeDocument = async (ref: string) => {
+        a.puts.push(ref);
+        if (refusals-- <= 0) return;
+        if (eraseDuringWait) setTimeout(() => { erased = true; }, 1);
+        throw new BusyError('busy', 0, 409);
+      };
+      cloud.open = a.at;
+      cloud.commits.length = 0;
+      const answer = uploadSaveRun(STATE, '', '[0,null]', NOW, 'phone', JSON.stringify({ other: 'application/pdf' }), () => new Uint8Array([1]).buffer);
+      await vi.runAllTimersAsync();
+      return { answer: JSON.parse(await answer), puts: a.puts.length, commits: cloud.commits.length };
+    };
+    try {
+      expect(await run(false)).toMatchObject({ answer: { ok: true, outcome: { unstored: 0 } }, puts: 2, commits: 1 });
+      expect(await run(true)).toMatchObject({ answer: { ok: false, reason: 'erased' }, puts: 1, commits: 0 });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   // US-14 AC5 (2026-11-23): Dropbox makes a ref's folders in the write, so its writes pool from the first (no solo

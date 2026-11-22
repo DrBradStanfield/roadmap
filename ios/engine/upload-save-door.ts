@@ -55,12 +55,10 @@ async function save(
     },
     mimeType: (fileId) => mimeTypes[fileId] ?? '',
     makesFolders: !!at && writeMakesFolders(at.host.store.id),
-    // Checked with the bytes in hand, right before each write, as the web does (US-11 AC1a): once the
-    // erase moves, no further original is written, and the check after the originals answers it.
-    write: async (ref, bytes, fileId) => {
-      if (gone()) throw new Error('erase moved');
-      await at!.host.store.writeDocument(ref, new Blob([bytes], { type: io.mimeType(fileId) }));
-    },
+    // The engine asks it right before every write attempt (US-11 AC1a): once the erase moves or the session
+    // closes, no further original is written, and the check after the originals answers it.
+    stopped: () => gone() !== null,
+    write: (ref, bytes, fileId) => at!.host.store.writeDocument(ref, new Blob([bytes], { type: io.mimeType(fileId) })),
   };
   if (!at) {
     const phone = readUploadRecord(recordJson, nowIso, deviceId);

@@ -61,7 +61,7 @@ const state = (phase: 'open' | 'saving', files: UploadFile[]): UploadState =>
 const io = (on: boolean, failing: Set<string>): UploadSaveIO<string> => {
   let n = 0;
   return {
-    holds: () => on, original: (id) => (on ? `bytes of ${id}` : null), mimeType: () => 'application/pdf', now: () => NOW, newId: () => `id-${n++}`,
+    stopped: () => false, holds: () => on, original: (id) => (on ? `bytes of ${id}` : null), mimeType: () => 'application/pdf', now: () => NOW, newId: () => `id-${n++}`,
     write: async (_ref, _bytes, id) => { if (!on || failing.has(id)) throw new Error('refused'); },
   };
 };

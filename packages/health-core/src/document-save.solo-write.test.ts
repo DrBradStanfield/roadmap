@@ -26,6 +26,7 @@ function gated(makesFolders?: boolean) {
   let n = 0;
   const io: DocumentSaveIO<Uint8Array> = {
     hash: async (b) => `sha256-${new TextDecoder().decode(b)}`,
+    stopped: () => false,
     write: (ref) => new Promise<void>((resolve) => {
       events.push({ kind: 'start', ref });
       peak = Math.max(peak, ++active);
@@ -80,5 +81,23 @@ describe('saveDocuments: the solo first write per folder (US-14 AC5)', () => {
       expect(firstEnd, folder).toBeLessThan(secondStart);
     }
     expect(t.peak()).toBe(3);
+  });
+});
+
+describe('saveDocuments asks `stopped` before every write attempt (US-11 AC1a)', () => {
+  it('a guard that turns true after the first attempt: exactly one write, the other lanes stop at their next attempt, no error report', async () => {
+    let stop = false;
+    const refs: string[] = [];
+    const errors: unknown[] = [];
+    const io: DocumentSaveIO<Uint8Array> = {
+      hash: async (b) => `sha256-${new TextDecoder().decode(b)}`,
+      write: async (ref) => { refs.push(ref); stop = true; },
+      stopped: () => stop,
+      mimeType: () => 'application/pdf', makesFolders: true, onWriteError: (e) => errors.push(e),
+    };
+    const plan = await saveDocuments(createEmptyFile({ deviceId: 'd', now: '2026-02-01T00:00:00.000Z' }), EIGHTEEN.slice(0, 5), io);
+    expect(refs).toHaveLength(1);
+    expect(plan.unstored).toBe(4);
+    expect(errors).toEqual([]);
   });
 });

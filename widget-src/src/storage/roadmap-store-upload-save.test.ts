@@ -146,26 +146,31 @@ describe('US-14 AC5: a busy refusal is reported on its own', () => {
   async function saveLetter(busy: number) {
     const { adapter, store } = await opened();
     adapter.busy = busy;
+    let inflated = 0;
+    // A ZIP member: its bytes are read (inflated) only as its original is written.
+    const member = { async: async () => { inflated += 1; return new Blob(['bytes of letter'], { type: 'application/pdf' }); } };
     vi.useFakeTimers({ toFake: ['setTimeout'] });
     try {
-      const answer = store.saveUpload(ENGINE, saving(store, [read('letter', letterX)]), NOW, true, webUploadIO(held({ letter: pdf('letter') })), PERSON);
+      const answer = store.saveUpload(ENGINE, saving(store, [read('letter', letterX)]), NOW, true, webUploadIO(held({ letter: member })), PERSON);
       await vi.runAllTimersAsync();
-      return { answer: await answer, reports: vi.mocked(Sentry.captureException).mock.calls.map(([, hint]) => hint) };
+      return { answer: await answer, inflated, writes: adapter.writes.length, reports: vi.mocked(Sentry.captureException).mock.calls.map(([, hint]) => hint) };
     } finally {
       vi.useRealTimers();
     }
   }
 
-  it('refused once, then stored: one busy report, no "not stored" report', async () => {
-    const { answer, reports } = await saveLetter(1);
+  it('refused once, then stored: one busy report, no "not stored" report, the bytes read once', async () => {
+    const { answer, reports, inflated, writes } = await saveLetter(1);
     expect(answer).toMatchObject({ ok: true, outcome: { documents: 1, unstored: 0 } });
     expect(reports).toEqual([BUSY]);
+    expect({ inflated, writes }).toEqual({ inflated: 1, writes: 2 });
   });
 
-  it('refused on every try: a busy report for each of the three, and exactly one "not stored"', async () => {
-    const { answer, reports } = await saveLetter(99);
+  it('refused on every try: one busy report for the original, and exactly one "not stored"', async () => {
+    const { answer, reports, writes } = await saveLetter(99);
     expect(answer).toMatchObject({ ok: true, outcome: { documents: 1, unstored: 1 } });
-    expect(reports).toEqual([BUSY, BUSY, BUSY, NOT_STORED]);
+    expect(writes).toBe(3);
+    expect(reports).toEqual([BUSY, NOT_STORED]);
     expect(JSON.stringify(vi.mocked(Sentry.captureException).mock.calls)).not.toMatch(/letter\.pdf|colonoscopy|hash-/i);
   });
 });
