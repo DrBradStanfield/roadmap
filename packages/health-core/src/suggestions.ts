@@ -463,8 +463,8 @@ export function generateSuggestions(
   // === Atherogenic marker hierarchy: ApoB > non-HDL > LDL-c ===
   // Only show the best available marker. ApoB is the gold standard for
   // atherogenic particle burden; non-HDL is next best; LDL-c is fallback.
-  const hasApoBData = inputs.apoB !== undefined;
-  const hasNonHdlData = results.nonHdlCholesterol !== undefined;
+  const apoB = inputs.apoB, hasApoBData = apoB !== undefined; // locals, so the checks below narrow them
+  const nonHdl = results.nonHdlCholesterol, hasNonHdlData = nonHdl !== undefined;
   const lipidMarker = lipidMarkerFor(inputs, results);
 
   // Track whether medication cascade will absorb lipid context,
@@ -481,31 +481,31 @@ export function generateSuggestions(
   // With no birth year (US-07 AC6) the very-high cards suggest no medicine in
   // their own text; their "why" reasons explain the guideline and stay.
   if (hasApoBData && !lipidMedCascadeActive) {
-    if (inputs.apoB! >= APOB_THRESHOLDS.veryHigh) {
+    if (apoB >= APOB_THRESHOLDS.veryHigh) {
       hasElevatedAtherogenicSuggestion = true;
       suggestions.push({
         id: 'apob-very-high',
         category: 'bloodwork',
         priority: 'urgent',
         title: 'Very high ApoB',
-        description: `Your ApoB of ${shown('apoB', 'apob', inputs.apoB!)} is very high, indicating significantly elevated cardiovascular risk. ${medicinesShown(results) ? 'Statin therapy and lifestyle changes are typically recommended at this level. Discuss it with your doctor.' : 'Discuss treatment, including lifestyle changes, with your doctor.'}`,
+        description: `Your ApoB of ${shown('apoB', 'apob', apoB)} is very high, indicating significantly elevated cardiovascular risk. ${medicinesShown(results) ? 'Statin therapy and lifestyle changes are typically recommended at this level. Discuss it with your doctor.' : 'Discuss treatment, including lifestyle changes, with your doctor.'}`,
       });
-    } else if (inputs.apoB! >= APOB_THRESHOLDS.high) {
+    } else if (apoB >= APOB_THRESHOLDS.high) {
       hasElevatedAtherogenicSuggestion = true;
       suggestions.push({
         id: 'apob-high',
         category: 'bloodwork',
         priority: 'attention',
         title: 'High ApoB',
-        description: `Your ApoB of ${shown('apoB', 'apob', inputs.apoB!)} is elevated. Lifestyle changes and treatment options to reduce cardiovascular risk are typically discussed at this level. Discuss them with your doctor.`,
+        description: `Your ApoB of ${shown('apoB', 'apob', apoB)} is elevated. Lifestyle changes and treatment options to reduce cardiovascular risk are typically discussed at this level. Discuss them with your doctor.`,
       });
-    } else if (inputs.apoB! >= APOB_THRESHOLDS.borderline) {
+    } else if (apoB >= APOB_THRESHOLDS.borderline) {
       suggestions.push({
         id: 'apob-borderline',
         category: 'bloodwork',
         priority: 'info',
         title: 'Borderline high ApoB',
-        description: `Your ApoB of ${shown('apoB', 'apob', inputs.apoB!)} is borderline. Optimal is <${fmtLipidTarget('apob', APOB_THRESHOLDS.borderline, us('apob'))}.`,
+        description: `Your ApoB of ${shown('apoB', 'apob', apoB)} is borderline. Optimal is <${fmtLipidTarget('apob', APOB_THRESHOLDS.borderline, us('apob'))}.`,
       });
     }
   }
@@ -544,31 +544,31 @@ export function generateSuggestions(
   // Non-HDL cholesterol — only when ApoB is unavailable
   // Uses 'ldl' for formatDisplayValue/getDisplayLabel since non-HDL shares the same units (mmol/L / mg/dL)
   if (!hasApoBData && hasNonHdlData && !lipidMedCascadeActive) {
-    if (results.nonHdlCholesterol! >= NON_HDL_THRESHOLDS.veryHigh) {
+    if (nonHdl >= NON_HDL_THRESHOLDS.veryHigh) {
       hasElevatedAtherogenicSuggestion = true;
       suggestions.push({
         id: 'non-hdl-very-high',
         category: 'bloodwork',
         priority: 'urgent',
         title: 'Very high non-HDL cholesterol',
-        description: `Your non-HDL cholesterol of ${formatDisplayValue('ldl', results.nonHdlCholesterol!, us('ldl'))} ${getDisplayLabel('ldl', us('ldl'))} is very high. This reflects total atherogenic particle burden and indicates significantly elevated cardiovascular risk.`,
+        description: `Your non-HDL cholesterol of ${formatDisplayValue('ldl', nonHdl, us('ldl'))} ${getDisplayLabel('ldl', us('ldl'))} is very high. This reflects total atherogenic particle burden and indicates significantly elevated cardiovascular risk.`,
       });
-    } else if (results.nonHdlCholesterol! >= NON_HDL_THRESHOLDS.high) {
+    } else if (nonHdl >= NON_HDL_THRESHOLDS.high) {
       hasElevatedAtherogenicSuggestion = true;
       suggestions.push({
         id: 'non-hdl-high',
         category: 'bloodwork',
         priority: 'attention',
         title: 'High non-HDL cholesterol',
-        description: `Your non-HDL cholesterol of ${formatDisplayValue('ldl', results.nonHdlCholesterol!, us('ldl'))} ${getDisplayLabel('ldl', us('ldl'))} is high. Lifestyle changes to reduce cardiovascular risk are typically discussed at this level. Discuss them with your doctor.`,
+        description: `Your non-HDL cholesterol of ${formatDisplayValue('ldl', nonHdl, us('ldl'))} ${getDisplayLabel('ldl', us('ldl'))} is high. Lifestyle changes to reduce cardiovascular risk are typically discussed at this level. Discuss them with your doctor.`,
       });
-    } else if (results.nonHdlCholesterol! >= NON_HDL_THRESHOLDS.borderline) {
+    } else if (nonHdl >= NON_HDL_THRESHOLDS.borderline) {
       suggestions.push({
         id: 'non-hdl-borderline',
         category: 'bloodwork',
         priority: 'info',
         title: 'Borderline high non-HDL cholesterol',
-        description: `Your non-HDL cholesterol of ${formatDisplayValue('ldl', results.nonHdlCholesterol!, us('ldl'))} ${getDisplayLabel('ldl', us('ldl'))} is borderline. Optimal is <${fmtLipidTarget('ldl', LIPID_TREATMENT_TARGETS.nonHdlMmol, us('ldl'))}.`,
+        description: `Your non-HDL cholesterol of ${formatDisplayValue('ldl', nonHdl, us('ldl'))} ${getDisplayLabel('ldl', us('ldl'))} is borderline. Optimal is <${fmtLipidTarget('ldl', LIPID_TREATMENT_TARGETS.nonHdlMmol, us('ldl'))}.`,
       });
     }
   }
