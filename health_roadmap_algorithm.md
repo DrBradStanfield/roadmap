@@ -788,7 +788,8 @@ Three-file sync: `evidence.ts` changes one sentence, `trig-nutrition`'s reason (
 |----|-----------|----------|
 | `hba1c-diabetic` | >= 47.5 mmol/mol (>= 6.5%) | urgent |
 | `hba1c-prediabetic` | >= 38.8 mmol/mol (>= 5.7%) | attention |
-| `hba1c-normal` | < 38.8 mmol/mol | info |
+
+Below 38.8 mmol/mol there is no card: the HbA1c result row and tile already say Normal (Brad 2026-11-23, US-07 AC18; the `hba1c-normal` card, "Your HbA1c of {value} is in the normal range. Continue healthy habits to maintain this.", is gone).
 
 ### Atherogenic Lipid Hierarchy
 
@@ -812,7 +813,8 @@ Each marker has three tiers (borderline/high/very high) using the thresholds in 
 |----|-----------|----------|
 | `lpa-elevated` | >= 125 nmol/L | attention |
 | `lpa-borderline` | 75-125 nmol/L | info |
-| `lpa-normal` | < 75 nmol/L | info |
+
+Below 75 nmol/L (in any unit it was typed in) there is no card: the Lp(a) result row and tile already say Normal (Brad 2026-11-23, US-07 AC18; the `lpa-normal` card, "Your Lp(a) is in the normal range (<75 nmol/L). This is a one-time test…", is gone). Nothing in the plan asks for Lp(a) to be tested again: no card, reminder or prompt ever did.
 
 **Elevated Lp(a) checklist** (modifiable risk factors):
 - Lipids (ApoB > non-HDL > LDL, on-treatment targets; ⚠️ at or above the target, shown as "target <X")
