@@ -744,6 +744,15 @@ describe('forms (AC8)', () => {
     expect(data.screeningNote).toBe('Some screening questions depend on your sex. Add it in About you.');
   });
 
+  // US-07 AC1k: from 86 with no sex no cancer group applies, so the app draws no empty cancer section and says why.
+  it('from 86 with no sex, shows no empty cancer section and says the sexed questions wait for sex', () => {
+    const file = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'),
+      { kind: 'profile', birthYear: 1940, birthMonth: 1, height: 170 });
+    const data = myData(file, NOW);
+    expect(data.screenings).toEqual([]);
+    expect(data.screeningNote).toBe('Some screening questions depend on your sex. Add it in About you.');
+  });
+
   it('asks the web\'s questions for the plan\'s age and sex, and the cascade\'s first step', () => {
     const data = myData(man60(), NOW);
     expect(data.screenings[0].groups.map((g) => g.id)).toEqual(['colorectal', 'lung', 'prostate']);
