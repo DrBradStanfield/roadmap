@@ -11,6 +11,7 @@
  * the lab read, the upload bundle) and the chat's own UI are stubbed.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { UPLOAD_ENGINE } from '../testing/upload-engine';
 import { render, fireEvent, waitFor, act, screen } from '@testing-library/react';
 import { REMOTE_CHANGED_EVENT, RoadmapStore } from '../storage/roadmap-store';
 import { addMeasurement, deleteUserData, loadAllHistorySync } from '../lib/roadmap-data';
@@ -61,7 +62,7 @@ beforeEach(() => {
   vi.spyOn(RoadmapStore.prototype, 'startLiveRefresh').mockImplementation(() => () => {});
   vi.mocked(checkLabImportQuota).mockResolvedValue({ allowed: true, remaining: 60 });
   vi.mocked(labImport).mockResolvedValue(extraction as Awaited<ReturnType<typeof labImport>>);
-  vi.stubGlobal('HealthUpload', {
+  vi.stubGlobal('HealthUpload', { ...UPLOAD_ENGINE,
     extractFromPdf: vi.fn(async () => ({ pages: [{ type: 'text', content: 'synthetic' }], truncated: false })),
     isPdf: () => true, isZip: () => false, isImage: () => false,
   });

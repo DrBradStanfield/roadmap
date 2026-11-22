@@ -17,7 +17,7 @@ afterEach(cleanup);
 
 describe('US-12 AC26: send and live for the list\'s mount', () => {
   it('a read of live.current right after send holds the change, before a render', () => {
-    const { result } = renderHook(() => useUploadFlow({ unitSystem: 'si', history: { measurements: [], labValues: [], documents: [] }, onComplete: () => {}, onClose: () => {} }));
+    const { result } = renderHook(() => useUploadFlow({ unitSystem: 'si', onComplete: () => {}, onClose: () => {} }));
     const { send, live } = result.current;
     const seen: string[] = [];
     act(() => {
@@ -31,7 +31,7 @@ describe('US-12 AC26: send and live for the list\'s mount', () => {
   });
 
   it('an event the state refuses leaves live.current as it was', () => {
-    const { result } = renderHook(() => useUploadFlow({ unitSystem: 'si', history: { measurements: [], labValues: [], documents: [] }, onComplete: () => {}, onClose: () => {} }));
+    const { result } = renderHook(() => useUploadFlow({ unitSystem: 'si', onComplete: () => {}, onClose: () => {} }));
     const before = result.current.live.current;
     act(() => result.current.send({ type: 'saveStarted' }));
     expect(result.current.live.current).toBe(before);

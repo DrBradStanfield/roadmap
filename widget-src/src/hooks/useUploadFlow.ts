@@ -1,23 +1,23 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { checkLabImportQuota } from '../lib/upload-api';
 import { initialUpload, inFlight, transition, type RunRefusal, type UploadEvent, type UploadState } from '@roadmap/health-core/upload-flow';
+import type { ReviewedValue } from '@roadmap/health-core/upload-review';
+import type { ScreeningPerson } from '@roadmap/health-core/upload-screening';
 import { uploadUsageCounts } from '@roadmap/health-core/upload-usage';
 import { UNDATED_PREVIOUS, uploadLimitSignal } from '@roadmap/health-core/lab-extraction';
 import type { UnitSystem } from '@roadmap/health-core/units';
 import { UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, type UploadOutcomeKey } from '@roadmap/health-core/product-events';
-import { getDocumentArchiveMode } from '../lib/roadmap-data';
 import { SHOPIFY_SURFACE } from '../lib/build-flags';
 import { trackProductEvent, type ProductEventMetadata } from '../lib/server-api';
-import type { UploadHistory } from '../lib/api-types';
-import { UploadError, hasValues, type FileNotice, type ReviewDecisions, type FileResult } from '../lib/upload-pipeline';
+import { UploadError, hasValues, type FileNotice, type FileResult } from '../lib/upload-pipeline';
 import { createUploadBundleLoader } from '../lib/upload-bundle';
 import { Sentry } from '../lib/sentry';
 import { recordFailure } from '../lib/error-diagnostics';
 import { isDocx, isZip } from '../lib/file-kinds';
 import { runEffect, type UploadPort } from '../lib/upload-effects';
-import { emptyHeld, hasResults, MAX_FILES, NO_FILES_TEXT, phaseOf, pickedFiles, pickNotices, progressOf, readErrorOf, readOutcome, refusedForKey, type Held } from '../lib/upload-read';
-import { saveReview } from '../lib/upload-save';
-import { NO_OUTCOME, savedSoFar, withAttempt, type SaveOutcome } from '../lib/upload-save-outcome';
+import { emptyHeld, hasResults, heldNotices, MAX_FILES, NO_FILES_TEXT, phaseOf, pickedFiles, pickNotices, progressOf, readErrorOf, readOutcome, refusedForKey, type Held } from '../lib/upload-read';
+import { sharedSave } from '../lib/upload-shared-save';
+import { SAVE_FAILED, type UploadEngine } from '../storage/upload-save-store';
 // Type only: a value import would pull the lazy upload bundle into the main one.
 import type { HealthUploadAPI } from '../upload-entry';
 
@@ -25,15 +25,15 @@ import type { HealthUploadAPI } from '../upload-entry';
  * The upload flow (US-12): the shared upload state (health-core upload-flow.ts, one named state for
  * the web and the iPhone, US-12 AC26), changed only through its pure `transition`. This hook is the
  * web's adapter: it sends events, runs the effects the state asks for (lib/upload-effects.ts) and
- * the save (lib/upload-save.ts), and reads the screens from the state (lib/upload-read.ts). No mode
+ * the shared Save (lib/upload-shared-save.ts), and reads the picking screens from the state
+ * (lib/upload-read.ts); the list draws the rest from the engine (UploadReviewList.tsx). No mode
  * lives here: the refs hold the state read synchronously, the web's bytes by file id, reads in
- * flight to abort, one run's preparation, and the review's decisions and save counts.
+ * flight to abort, one run's preparation, and the counts the pending Save sends once it lands.
  */
 export type { UploadPhase } from '../lib/upload-read';
 export { MAX_FILES };
 
-const NONE: FileResult[] = [];
-const NO_READ = { results: NONE, notices: [] as FileNotice[] };
+const NO_READ = { results: [] as FileResult[], notices: [] as FileNotice[] };
 
 /** US-12 AC10: one run's counts, integers only. Never a name, unit or value.
  *  `docx` is how many of the picked files were .docx (AC13); `values` holds
@@ -70,16 +70,15 @@ function countRun(s: UploadState, held: Held, results: FileResult[], notices: Fi
 
 export interface UploadFlowOptions {
   unitSystem: UnitSystem;
-  history: UploadHistory;
-  /** The page's re-read; a partial save waits for it before a retry (US-12 AC6c). */
+  /** The page's re-read, run after a Save's commit landed: the commit wrote any screening date (US-13 AC6). */
   onComplete: () => void | Promise<void>;
   onStart?: () => Promise<void>;
   onClose: () => void;
-  /** `erase`: the erase the page showed as the save began (US-16 AC2a). */
-  onScreeningUpdate?: (screeningKey: string, value: string, erase: string) => void;
+  /** The plan's age and sex, for a letter's screening box (US-13 AC6): the list's page and the Save read the same. */
+  person?: ScreeningPerson;
 }
 
-export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClose, onScreeningUpdate }: UploadFlowOptions) {
+export function useUploadFlow({ unitSystem, onComplete, onStart, onClose, person }: UploadFlowOptions) {
   // The Shopify build's files are read by our server; the Pages build's by the person's own key (US-12 AC9).
   const [upload, setUpload] = useState<UploadState>(() => initialUpload('web', SHOPIFY_SURFACE ? 'server' : 'ownKey'));
   // The state read synchronously: a second pick or Save in the same render sees the first.
@@ -88,12 +87,17 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
   const held = useRef<Held>(emptyHeld());
   // The run's quota check, draft flush and upload bundle: one promise per run, shared by its effects.
   const prepared = useRef<{ run: number; ready: Promise<HealthUploadAPI | null> } | null>(null);
-  // The decisions the pending Save writes, for the `save` effect.
-  const decisions = useRef<ReviewDecisions | null>(null);
-  // What the review's Saves wrote beyond the shared state's counts, by run (US-12 AC6c).
-  const saved = useRef<{ run: number; outcome: SaveOutcome }>({ run: 0, outcome: NO_OUTCOME });
+  // The `upload_review` counts the pending Save sends once its commit lands (US-13 AC13).
+  const reviewCounts = useRef<ProductEventMetadata | undefined>(undefined);
   // The run whose review sent its `upload_review` (US-13 AC13): one per review, a synchronous claim.
   const reviewEnded = useRef<number | null>(null);
+  // The run that sent its `upload_outcome` (US-12 AC10): one per run, a synchronous claim. True when this call claims it.
+  const outcomeSent = useRef<number | null>(null);
+  const claimOutcome = (run: number) => {
+    if (outcomeSent.current === run) return false;
+    outcomeSent.current = run;
+    return true;
+  };
   /** Sends the review's counts once: on a finished Save, or on Cancel or close. */
   const endReview = useRef((counts: ProductEventMetadata | undefined) => {
     const s = live.current;
@@ -104,8 +108,10 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
   // The connect-first gate was skipped (US-12 AC4): view state, kept by a cancel.
   const [skipArchive, setSkipArchive] = useState(false);
   const [loadUploadBundle] = useState(createUploadBundleLoader);
-  const props = useRef({ unitSystem, history, onComplete, onStart, onScreeningUpdate });
-  props.current = { unitSystem, history, onComplete, onStart, onScreeningUpdate };
+  // The shared engine once the upload bundle loaded: the list's review and the Save run the same code (owner ruling 4).
+  const [engine, setEngine] = useState<UploadEngine | null>(() => window.HealthUpload ?? null);
+  const props = useRef({ unitSystem, onComplete, onStart, person });
+  props.current = { unitSystem, onComplete, onStart, person };
 
   // The adapter: built once, it reads only refs, so a late effect never sees an old render.
   const port = useRef<UploadPort | null>(null);
@@ -125,7 +131,9 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
     const readEnded = (s: UploadState) => {
       const h = held.current;
       if (refusedForKey(s)) return; // the Pages build's missing key names and counts nothing
-      const { results, notices } = readOutcome(s, h, false);
+      // One per run, at its first settlement (AC10: "when it reaches review or fails"): Try again keeps the run's number.
+      if (!claimOutcome(s.run)) return;
+      const { results, notices } = readOutcome(s, h);
       countRun(s, h, results, notices);
       if (readErrorOf(s) === NO_FILES_TEXT) {
         Sentry.captureException(recordFailure(new UploadError(NO_FILES_TEXT, 'no_files'), 'Upload processing failed'), { tags: { feature: 'upload', uploadErrorCode: 'no_files' } });
@@ -150,6 +158,7 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
         const s = live.current;
         trackProductEvent('upload_started', { count: s.phase === 'open' ? s.files.filter(f => f.status.s !== 'refused').length : 0 });
         const bundle = await loadUploadBundle();
+        setEngine(bundle);
         return current() ? bundle : null;
       } catch (err) {
         if (current()) {
@@ -172,19 +181,17 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
       reads: new Map(),
       get unitSystem() { return props.current.unitSystem; },
       save: (run, attempt) => {
-        const d = decisions.current;
-        if (!d) return;
-        const { onComplete: complete, onScreeningUpdate: screening, history: shown } = props.current;
-        const before = saved.current.run === run ? saved.current.outcome : NO_OUTCOME;
-        void saveReview(d, { earlierRows: before.labRows, complete, screening, existing: shown.documents }).then(({ attempt: written, message }) => {
-          // This attempt's own counts add to what earlier attempts saved.
-          const total = written ? withAttempt(before, written) : before;
-          saved.current = { run, outcome: total };
-          if (message) return send({ type: 'saveFailed', run, attempt, message });
-          // One per review: a finished Save, never a failed one (US-13 AC13).
-          endReview.current(d.review);
-          send({ type: 'saved', run, attempt, outcome: { values: total.values + total.labValues, documents: total.documents.length, archived: 0 } });
-        });
+        const s = live.current;
+        if (s.phase !== 'saving' || s.run !== run || s.attempt !== attempt) return;
+        const { onComplete: complete, person: shown } = props.current;
+        const counts = reviewCounts.current;
+        void loadUploadBundle()
+          .then((upload) => sharedSave(upload, s, held.current, shown, complete), () => ({ type: 'saveFailed' as const, run, attempt, message: SAVE_FAILED }))
+          .then((event) => {
+            // One per review: a finished Save, never a failed one (US-13 AC13).
+            if (event.type === 'saved') endReview.current(counts);
+            send(event);
+          });
       },
     };
   }
@@ -198,23 +205,20 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
     if (done) trackProductEvent('upload_saved', { count: done.outcome.values + done.outcome.documents });
   }, [done]);
 
-  // The screens, read from the state. Results and notices keep their identity for one read: the
-  // review keys its drafts and its one `upload_review` on them.
+  // The picking screens' notices, read from the state; the list draws the rest from the engine.
   const files = upload.phase === 'choosing' ? null : upload.files;
   const pickHeld = held.current;
   // Nothing shows them while files are read, so they are built once reading ends. The pick's held
   // data changes only together with `files` (each effect sends its event after writing it).
   const reading = inFlight(upload) > 0;
-  const cloud = getDocumentArchiveMode() === 'cloud';
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- `files`, the pick's held data and the archive mode are what change them
-  const { results, notices } = useMemo(() => (reading ? NO_READ : readOutcome(upload, pickHeld, cloud)), [files, pickHeld, reading, cloud]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- `files` and the pick's held data are what change them
+  const { notices } = useMemo(() => (reading ? NO_READ : readOutcome(upload, pickHeld)), [files, pickHeld, reading]);
   const phase = phaseOf(upload);
-  const reviewed = phase === 'reviewing' || phase === 'saving' || phase === 'saveFailed' || phase === 'done';
 
   // Cancel stops every read in flight and drops the run (US-12 AC28); a read it stopped is counted once (AC10).
   const cancel = useCallback(() => {
     const s = live.current;
-    if (s.phase === 'open' && inFlight(s) > 0) {
+    if (s.phase === 'open' && inFlight(s) > 0 && claimOutcome(s.run)) {
       trackUploadOutcome(s.files.length + held.current.leftOut, 0, held.current.docx, pickNotices(s, held.current), { cancelled: 1, ...uploadUsageCounts(s) });
     }
     send({ type: 'discard' });
@@ -252,23 +256,22 @@ export function useUploadFlow({ unitSystem, history, onComplete, onStart, onClos
     });
   };
 
-  const save = useCallback((d: ReviewDecisions) => {
+  /** Save: what the page the person reviewed would write (`reviewedWrites`), and the `upload_review` counts it sends once its commit lands. */
+  const save = useCallback((reviewed: ReviewedValue[], counts: ProductEventMetadata) => {
     const s = live.current;
     if (s.phase !== 'open' && s.phase !== 'saveFailed') return;
-    decisions.current = d;
-    // A new Save clears the last attempt's skips and refusals (US-12 AC6c).
-    saved.current = { run: s.run, outcome: saved.current.run === s.run ? savedSoFar(saved.current.outcome) : NO_OUTCOME };
-    send({ type: 'saveStarted' });
+    reviewCounts.current = counts;
+    send({ type: 'saveStarted', reviewed });
   }, [send]);
 
   return {
     phase, files: phase === 'readFailed' ? pickedFiles(upload) : [], notices, progress: progressOf(upload),
-    results: reviewed ? results : NONE,
-    outcome: saved.current.run === upload.run ? saved.current.outcome : NO_OUTCOME,
-    readError: readErrorOf(upload), saveError: upload.phase === 'saveFailed' ? upload.message : null,
+    // What only the web knows of the pick, said beside the list: the shared state never saw it (US-12 AC9, AC13).
+    heldNotices: heldNotices(upload, pickHeld),
+    readError: readErrorOf(upload),
     skipArchive, skipConnect: () => setSkipArchive(true),
     pick, cancel, close, discard, save, endReview: endReview.current,
-    // For the list's mount (PR 3b): `send` sets `live.current` before it returns, so a read right after a choice holds it.
-    send, live,
+    // The list's adapter: `send` sets `live.current` before it returns, so a read right after a choice holds it.
+    upload, send, live, engine,
   };
 }

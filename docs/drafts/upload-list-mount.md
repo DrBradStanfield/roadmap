@@ -1,6 +1,7 @@
 # Mounting the web upload list (PR 3): the note before code
 
-Status: step 0, 2026-11-22; owner's rulings below. G1 is built in PR 3-0 (`claude/upload-screening-engine`).
+Status: step 0, 2026-11-22; owner's rulings below. G1 is built in PR 3-0 (`claude/upload-screening-engine`), 3a in
+PR 1959; 3b (the mount and the deletions) on `claude/web-upload-list-mount`, with the owner's rulings 1-10 of 2026-11-22.
 Screen design: [upload-list-screen.md](upload-list-screen.md). Engine plan: upload-shared-engine.md rows 10 and 12c.
 
 ## (a) The adapter

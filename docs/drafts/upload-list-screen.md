@@ -1,7 +1,7 @@
 # The web upload list: the screen (PR 2)
 
-Status: draft for review, 2026-11-22, round seven (the final re-check's T1-T12). Built
-unmounted: production keeps drawing ReviewTable's grid.
+Status: draft for review, 2026-11-22, round seven (the final re-check's T1-T12). Mounted in the upload modal by
+mount 3b (`UploadReviewList.tsx`); the grid is gone.
 Engine: `uploadList` (packages/health-core/src/upload-list.ts), `uploadView` (upload-view.ts) and `uploadListPage`
 (upload-list-page.ts).
 Stories: US-13 AC5, AC10, AC12, AC21, AC24, AC26; US-02 AC4, AC7; US-12; US-14 AC11-13.

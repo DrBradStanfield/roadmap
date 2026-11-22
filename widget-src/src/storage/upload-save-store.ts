@@ -3,7 +3,7 @@
  * originals written to the person's cloud through the store's adapter, then its `commit` applied through ONE
  * `session.edit` stamped with the erase the page showed when the Save began. Values, documents, originals' rows and
  * screening dates land together or not at all; there is no second write path. As ios/engine/upload-save-door.ts does
- * for the phone. Not mounted yet: the web list's mount (PR 3b) calls it in place of lib/upload-save.ts.
+ * for the phone. The web's upload flow calls it through lib/upload-shared-save.ts (mount 3b).
  */
 import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import type { RecordSession } from '@roadmap/health-core/record-session';
