@@ -39,7 +39,16 @@ needs, then fix the design so most of them go.
 - Brad's yes first on clinical items and on workflow changes.
 - Announce a section lock in the agent channel (docs/agent-channel.md) before
   work starts there. No repo-wide freeze.
-- Low-risk PRs merge in batches of 8-10. High-risk ones merge one at a time.
+- A PR may be batched (reviewed together, released together) only if BOTH
+  hold: (1) it touches no guarded path: packages/health-core, ios/engine,
+  ios/scripts, the clinical files (health_roadmap_algorithm.md, evidence*.ts,
+  roadmap_text.html), merge and record-edit code, auth and server routes
+  (app/), .github/workflows, tools/merge-gated.sh; (2) it provably changes
+  nothing a person sees: docs or tests only, or a pure move or type-only
+  change whose built output is byte-identical before and after (the PR body
+  shows the check). Anything else passes its own gate, however small.
+  Batching never skips a PR's own CI and review (docs/git-workflow.md).
+  (Brad 2026-11-23)
 
 ## Per area: the steps
 
