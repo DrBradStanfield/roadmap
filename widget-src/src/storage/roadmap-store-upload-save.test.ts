@@ -7,6 +7,7 @@
  * as its original is written. Synthetic values and names, plain fake hashes.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { BusyError } from '@roadmap/health-core/adapter';
 import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
 import type { UnifiedExtractionResult } from '@roadmap/health-core/lab-extraction';
 import { NO_CHOICES } from '@roadmap/health-core/upload-choices';
@@ -52,6 +53,8 @@ const pdf = (id: string) => new File([`bytes of ${id}`], `${id}.pdf`, { type: 'a
 class GatedCloud extends MemoryAdapter {
   gate: Promise<void> | null = null;
   fail = false;
+  /** Writes still to refuse as busy (Dropbox's folder lock). */
+  busy = 0;
   writes: string[] = [];
   reached: () => void = () => {};
   async writeDocument(ref: string, bytes: Blob): Promise<void> {
@@ -59,6 +62,7 @@ class GatedCloud extends MemoryAdapter {
     this.reached();
     if (this.gate) await this.gate;
     if (this.fail) throw new Error('Synthetic test: the cloud refused it');
+    if (this.busy > 0 && this.busy--) throw new BusyError('Synthetic test: busy', 0, 409);
     return super.writeDocument(ref, bytes);
   }
 }
@@ -132,6 +136,37 @@ describe('US-14 AC12: a failed original is reported, tags only, and counted unst
     expect(calls.map(([, hint]) => hint)).toEqual([0, 1].map(() => ({ tags: { area: 'cloud-sync', op: 'write-document', backend: 'memory' } })));
     // No name, title, value or hash in any report.
     expect(JSON.stringify(calls)).not.toMatch(/lab\.pdf|letter\.pdf|colonoscopy|hash-|2\.8|Ferritin/i);
+  });
+});
+
+// US-14 AC5 (2026-11-23): a busy refusal is counted under its own tag, never as "not stored" unless it never lands.
+describe('US-14 AC5: a busy refusal is reported on its own', () => {
+  const BUSY = { tags: { area: 'cloud-sync', op: 'write-document-busy', backend: 'memory' } };
+  const NOT_STORED = { tags: { area: 'cloud-sync', op: 'write-document', backend: 'memory' } };
+  async function saveLetter(busy: number) {
+    const { adapter, store } = await opened();
+    adapter.busy = busy;
+    vi.useFakeTimers({ toFake: ['setTimeout'] });
+    try {
+      const answer = store.saveUpload(ENGINE, saving(store, [read('letter', letterX)]), NOW, true, webUploadIO(held({ letter: pdf('letter') })), PERSON);
+      await vi.runAllTimersAsync();
+      return { answer: await answer, reports: vi.mocked(Sentry.captureException).mock.calls.map(([, hint]) => hint) };
+    } finally {
+      vi.useRealTimers();
+    }
+  }
+
+  it('refused once, then stored: one busy report, no "not stored" report', async () => {
+    const { answer, reports } = await saveLetter(1);
+    expect(answer).toMatchObject({ ok: true, outcome: { documents: 1, unstored: 0 } });
+    expect(reports).toEqual([BUSY]);
+  });
+
+  it('refused on every try: a busy report for each of the three, and exactly one "not stored"', async () => {
+    const { answer, reports } = await saveLetter(99);
+    expect(answer).toMatchObject({ ok: true, outcome: { documents: 1, unstored: 1 } });
+    expect(reports).toEqual([BUSY, BUSY, BUSY, NOT_STORED]);
+    expect(JSON.stringify(vi.mocked(Sentry.captureException).mock.calls)).not.toMatch(/letter\.pdf|colonoscopy|hash-/i);
   });
 });
 

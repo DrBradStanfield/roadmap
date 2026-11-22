@@ -5,6 +5,7 @@
  * screening dates land together or not at all; there is no second write path. As ios/engine/upload-save-door.ts does
  * for the phone. The web's upload flow calls it through lib/upload-shared-save.ts (mount 3b).
  */
+import { busyWait } from '@roadmap/health-core/adapter';
 import { writeMakesFolders } from '@roadmap/health-core/document-save';
 import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import type { RecordSession } from '@roadmap/health-core/record-session';
@@ -71,9 +72,16 @@ export async function saveUploadThrough(
       try {
         await cloud.write(ref, bytes);
       } catch (error) {
-        if (!session.refuses(erase)) reportUnstored(error, cloud.backend);
+        // A busy refusal may still land on the engine's retry: counted on its own; `onWriteError` reports it if it never does.
+        if (session.refuses(erase)) throw error;
+        if (busyWait(error) === null) reportUnstored(error, cloud.backend);
+        else Sentry.captureException(recordFailure(error, 'Document write busy'), { tags: { area: 'cloud-sync', op: 'write-document-busy', backend: cloud.backend } });
         throw error;
       }
+    },
+    // Once per original that never landed: only the busy ones, since every other failure was reported as it came.
+    onWriteError: (error) => {
+      if (busyWait(error) !== null && !session.refuses(erase)) reportUnstored(error, cloud.backend);
     },
   }, person);
   if (!out.ok) return out;
