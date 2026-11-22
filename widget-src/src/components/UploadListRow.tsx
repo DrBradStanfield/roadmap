@@ -106,7 +106,7 @@ export function UploadListRow({ row, value, draftLabel, hidden, editable, on }: 
           {/* No unit press while the engine says the review takes none (saving, say). */}
           {lpa ? <LpaUnitControl unit={lpa} disabled={!editable} onChange={(u) => { if (editable) on.lpaUnitTo(u); }} />
             : toggle && metric ? <UnitChip label={unitLabel} disabled={!editable} onToggle={() => { if (editable) on.unitTo(metric, toggle); }} />
-            : unitLabel}
+            : <span className="upload-list-unit-text">{unitLabel}</span>}
         </span>
         {/* Lp(a)'s three would all be read: the input is described by the one shown (adversary F6). */}
         {lpa && <span id={unitId} className="hr-sr-only">{unitLabel}</span>}

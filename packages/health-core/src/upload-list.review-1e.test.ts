@@ -175,7 +175,7 @@ describe('4. the Save and close buttons\' words (moved from ReviewTable.tsx and 
   });
 
   // Owner ruling on PR 1951: one source per phase. While saving the review's close button still shows, disabled
-  // (ReviewTable.tsx:471-473); once done, the done screen's own button.
+  // (the web's old ReviewTable.tsx, gone in mount 3b); once done, the done screen's own button.
   it('close in every phase', () => {
     const review = uploadReview(s, EMPTY, NOW);
     const reviewed = uploadView(s, EMPTY, NOW, review, false).reviewed;

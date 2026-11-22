@@ -62,7 +62,7 @@ const badZip = (f: UploadFile) => f.status.s === 'failed' && (f.status.reason ==
 const filesOf = (s: UploadState) => (s.phase === 'choosing' ? [] : s.files);
 
 /** The screen a state shows. `open` is reading while anything is in flight, then the review once a
- *  file reached the server or is already held; a pick of only files too large stays on the dropzone. */
+ *  file reached the server, is already held or was stopped; a pick of only files too large stays on the dropzone. */
 export function phaseOf(s: UploadState): UploadPhase {
   switch (s.phase) {
     case 'choosing': case 'consent': return 'picking';
@@ -70,7 +70,8 @@ export function phaseOf(s: UploadState): UploadPhase {
     case 'saving': case 'saveFailed': case 'done': return s.phase;
     case 'open':
       if (inFlight(s) > 0) return 'reading';
-      if (s.files.some((f) => reached(f) || f.status.s === 'known')) return 'reviewing';
+      // A file the person stopped is their choice, not a failed read: the list stays and names it (US-12 AC28).
+      if (s.files.some((f) => reached(f) || f.status.s === 'known' || f.status.s === 'stopped')) return 'reviewing';
       return s.files.every((f) => f.status.s === 'refused') ? 'picking' : 'readFailed';
   }
 }
@@ -116,8 +117,17 @@ export function pickNotices(s: UploadState, held: Held): FileNotice[] {
   return [...large.map((f): FileNotice => ({ name: f.name, reason: 'tooLarge' })), ...(held.leftOut > 0 ? [leftOutNotice(held.leftOut)] : [])];
 }
 
+/** What the web alone knows of a pick, said beside the list (US-12 AC9, AC13): each file's own words for why it gave no
+ *  pages (a legacy .doc, a .docx of pictures, a ZIP member too large once inflated), and the files left out past
+ *  MAX_FILES. The shared state holds neither. */
+export function heldNotices(s: UploadState, held: Held): FileNotice[] {
+  if (held.run !== s.run) return [];
+  const notes = filesOf(s).flatMap((f) => (f.status.s === 'failed' && held.files.get(f.id)?.note ? [held.files.get(f.id)!.note!] : []));
+  return [...notes, ...(held.leftOut > 0 ? [leftOutNotice(held.leftOut)] : [])];
+}
+
 /** What one file gives the review and its notices, in the shapes the review took before. */
-function outcomeOf(f: UploadFile, h: HeldFile | undefined, cloud: boolean): { result?: FileResult; notices: FileNotice[] } {
+function outcomeOf(f: UploadFile, h: HeldFile | undefined): { result?: FileResult; notices: FileNotice[] } {
   const name = fileNameOf(f);
   const truncated: FileNotice[] = f.pages?.truncated ? [{ name, reason: 'truncated' }] : [];
   const st = f.status;
@@ -126,9 +136,7 @@ function outcomeOf(f: UploadFile, h: HeldFile | undefined, cloud: boolean): { re
       return { notices: st.verdict === 'tooLarge' ? [{ name, reason: 'tooLarge' }] : st.verdict === 'tooMany' ? [{ name, reason: 'limitError', text: OVER_LIMIT_TEXT }] : [] };
     case 'read': {
       const { result, notice } = readResult(name, st.extraction as unknown as LabImportResult);
-      // The original travels with its result only where the backend can archive it; its hash always (US-14 AC10).
-      const file = cloud ? h?.file : undefined;
-      return { result: { ...result, ...(file ? { file } : null), ...(f.hash ? { contentHash: f.hash } : null) }, notices: [...truncated, ...(notice ? [notice] : [])] };
+      return { result, notices: [...truncated, ...(notice ? [notice] : [])] };
     }
     case 'failed': {
       const unread = UNREAD[st.reason];
@@ -146,11 +154,11 @@ function outcomeOf(f: UploadFile, h: HeldFile | undefined, cloud: boolean): { re
 
 /** Every file's result and notice, in picked order (US-12 AC23), then the files left out, then the
  *  read files that gave no values (a file whose only values were refused is said under "Not saved", AC15). */
-export function readOutcome(s: UploadState, held: Held, cloud: boolean): { results: FileResult[]; notices: FileNotice[] } {
+export function readOutcome(s: UploadState, held: Held): { results: FileResult[]; notices: FileNotice[] } {
   const results: FileResult[] = [];
   const notices: FileNotice[] = [];
   for (const f of filesOf(s)) {
-    const out = outcomeOf(f, held.files.get(f.id), cloud);
+    const out = outcomeOf(f, held.files.get(f.id));
     if (out.result) results.push(out.result);
     notices.push(...out.notices);
   }

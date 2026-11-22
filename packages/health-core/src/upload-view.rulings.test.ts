@@ -141,12 +141,15 @@ describe('8. two read files with the same bytes', () => {
 });
 
 describe('9. a read file with nothing in it is said', () => {
-  it('a lab report with no values, and a file with no document, in the web\'s words', () => {
-    const view = both(open([read('e', labX({ values: [] })), read('n', { ...letterX(), document: null })])).view;
-    expect(view.notices).toEqual([
+  it('a lab report with no values, and a file with no document, in the web\'s words: in the iPhone review\'s notices, in the web\'s Files rows (US-12 AC9)', () => {
+    const files = [read('e', labX({ values: [] })), read('n', { ...letterX(), document: null })];
+    expect(both(open(files, 'phone')).view.notices).toEqual([
       { fileId: 'e', name: 'e.pdf', line: 'No blood test values found.' },
       { fileId: 'n', name: 'n.pdf', line: 'No blood test values found.' },
     ]);
+    const web = both(open(files, 'web')).view;
+    expect(web.notices).toEqual([]);
+    expect(web.files.rows.map((r) => r.status)).toEqual(['No blood test values found.', 'No blood test values found.']);
   });
 });
 

@@ -15,17 +15,27 @@
  * classified saved, and saveDocuments skips bytes the record already holds. It refuses, writing
  * nothing, while the view would: a selected value the write refuses, or a report waiting for its day
  * (`saveBlocked`). Pure but for `io`: the bytes and the cloud writes are the caller's.
+ *
+ * A letter's ticked, dated screening box (web only, `person` given; upload-screening.ts, US-13 AC6) writes its
+ * `<type>_last_date` in the same commit, so one erase stamp covers the letter and its date (US-16 AC2a), as the web's
+ * own Save checked the erase before it set them (the old lib/upload-save.ts, `getEraseIdentity() === erase`). For every letter
+ * the page shows with its box ticked, whatever its document save did, as the web's own Save looped over every ticked
+ * letter (lib/upload-save.ts); one value per type, the last such letter in picked order, as the web's per-key save let
+ * the last call win.
  */
 import { LAB_ARCHIVE_ROWS, labRowsByFile, listedRows, writtenLabRows } from './document-rows';
 import { committedFile, labArchivePayload, saveDocuments, type DocumentPayload } from './document-save';
-import { bulkAppendValues } from './record-edits';
+import { bulkAppendValues, type BulkAppendResult } from './record-edits';
 import { labReason } from './import-review';
-import { labTestLabel } from './lab-catalog';
+import { labTestLabel, labUnitTaken, resolveLabCatalogEntry } from './lab-catalog';
 import { METRIC_LABELS } from './mappings';
+import { labUnitForEvent } from './product-events';
 import type { RoadmapFile } from './roadmap-file';
-import type { SaveOutcome, UploadState } from './upload-flow';
+import type { MetricTypeValue } from './validation';
+import type { RefusedCode, SaveOutcome, UploadState } from './upload-flow';
 import { storedHashes, uploadSavePlan } from './upload-plan';
 import { reviewedWrites, uploadReview } from './upload-review';
+import { isScreeningDateKey, writeScreeningDates, type ScreeningPerson } from './upload-screening';
 import { measurementRefusalText } from './upload-text';
 import { saveBlocked } from './upload-view';
 
@@ -56,18 +66,33 @@ export type UploadSaveResult =
   | { ok: true; commit(file: RoadmapFile): { file: RoadmapFile; outcome: SavedOutcome } }
   | { ok: false; reason: 'not-saving' | 'not-ready'; message: string };
 
-/** A landed Save's counts: every one but the skips, which are there only when some row was skipped. */
-export type SavedOutcome = Required<Omit<SaveOutcome, 'skippedValues' | 'skippedLabValues' | 'refused'>> & SaveOutcome;
+/** A landed Save's counts: every one but the skips and the screening dates, which are there only when some were. */
+export type SavedOutcome = Required<Omit<SaveOutcome, 'skippedValues' | 'skippedLabValues' | 'refused' | 'refusedCodes' | 'screenings'>> & SaveOutcome;
+
+/** Each value a write refused as its closed code (US-12 AC6), labs then core values, as `refused` lists them: the
+ *  `lab_unit_refused` counter's test (refused-spellings.ts) and words, and `measurement_refused`'s reason and metric. */
+export function refusalCodes(written: Pick<BulkAppendResult, 'refused' | 'measurementRefusals'>): RefusedCode[] {
+  return [
+    // No commit produces a lab code today: a lab refusal turns on the row alone (record-edits.ts:944-958), so the plan drops it first.
+    ...written.refused.map((r): RefusedCode => {
+      if (labUnitTaken(resolveLabCatalogEntry(r.key), r.unit)) return { kind: 'lab', key: r.key, reason: 'value' };
+      const unit = labUnitForEvent(r.unit);
+      return { kind: 'lab', key: r.key, reason: 'unit', ...(unit !== undefined ? { unit } : {}) };
+    }),
+    ...written.measurementRefusals.map((r): RefusedCode => (r.reason === 'unknown-metric' ? { kind: 'measurement', reason: r.reason }
+      : { kind: 'measurement', reason: r.reason, metricType: r.metricType as MetricTypeValue })),
+  ];
+}
 
 /** An original as saveDocuments holds it: the file it is, with the hash the state read for its bytes. */
 interface Held { fileId: string; hash: string }
 
-export async function uploadSave<F>(s: UploadState, record: RoadmapFile, now: string, cloudConnected: boolean, io: UploadSaveIO<F>): Promise<UploadSaveResult> {
+export async function uploadSave<F>(s: UploadState, record: RoadmapFile, now: string, cloudConnected: boolean, io: UploadSaveIO<F>, person?: ScreeningPerson): Promise<UploadSaveResult> {
   if (s.phase !== 'saving') return { ok: false, reason: 'not-saving', message: 'The upload is not saving.' };
   const review = uploadReview(s, record, now);
   const blocked = saveBlocked(review, s);
   if (blocked) return { ok: false, reason: 'not-ready', message: blocked };
-  const plan = uploadSavePlan(s, record, now, review, cloudConnected);
+  const plan = uploadSavePlan(s, record, now, review, cloudConnected, person);
 
   // Each row's value as `file:ref`, in plan order: by file, each file's in the order `rowsByFile` took them.
   const writes = reviewedWrites(review);
@@ -154,12 +179,17 @@ export async function uploadSave<F>(s: UploadState, record: RoadmapFile, now: st
         ...written.refused.map((r) => ({ label: labTestLabel(r.key), reason: labReason(r) })),
         ...written.measurementRefusals.map((r) => { const line = measurementRefusalText(r); return line !== null ? { line } : { label: METRIC_LABELS[r.metricType] ?? labTestLabel(r.metricType), reason: 'misread' as const }; }),
       ];
-      const out = values || docs.saved.length ? committedFile(written.file, docs) : file;
+      const filed = values || docs.saved.length ? committedFile(written.file, docs) : file;
+      // Each ticked, dated box the page shows; of one type the latest date is written, and only when it is later than
+      // the record's (Brad 2026-11-23).
+      const dates = plan.documents.flatMap(({ screening: box }) =>
+        (box?.ticked && box.date !== null && isScreeningDateKey(box.key) ? [[box.key, box.date] as const] : []));
+      const { file: out, written: screenings } = writeScreeningDates(filed, dates, now);
       // `unstored`: each original the plan stores that no live row on the committed record stores (a failed or
       // untried write, the app not holding it), judged at commit so another writer's copy counts as kept.
       const stored = storedHashes(out);
       const unstored = [...nominated].filter((h) => !stored.has(h)).length;
-      return { file: out, outcome: { values, documents, archived, unstored, ...(sv ? { skippedValues: sv } : {}), ...(sl ? { skippedLabValues: sl } : {}), ...(refused.length ? { refused } : {}) } };
+      return { file: out, outcome: { values, documents, archived, unstored, ...(sv ? { skippedValues: sv } : {}), ...(sl ? { skippedLabValues: sl } : {}), ...(refused.length ? { refused, refusedCodes: refusalCodes(written) } : {}), ...(screenings ? { screenings } : {}) } };
     },
   };
 }

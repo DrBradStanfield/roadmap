@@ -57,7 +57,7 @@ export interface ListRow {
 }
 
 /**
- * A row's unit, as the grid's unit chip and Lp(a) control draw it (ReviewMatrix.tsx, US-05 AC2), so the screen knows no
+ * A row's unit, as the old grid's unit chip and Lp(a) control drew it (ReviewMatrix.tsx, US-05 AC2), so the screen knows no
  * unit itself. The person's choice lives in the web (hooks/useUnits.ts per-field overrides, lib/lpa-unit.ts the record's
  * Lp(a) unit); the engine reads it only through `unitOf`. `label`: the unit beside the input: held text's own unit, the one
  * it was typed in (`typed.unit`, US-13 AC5), else the unit its number shows in. `typeIn`: the unit a commit from the row is
