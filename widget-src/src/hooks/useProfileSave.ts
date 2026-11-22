@@ -10,7 +10,7 @@ import { useDebouncedSave } from '../lib/useDebouncedSave';
 /** The profile fields a save carries: height, sex, the birth date and the unit system. */
 const PROFILE_FIELDS: ReadonlyArray<keyof HealthInputs> = [...PREFILL_FIELDS, 'unitSystem'];
 
-/** Copy one field across; generic so the key's value type matches on both sides. */
+/** Copy one field across; generic so tsc accepts the per-key copy without a cast. */
 function copyField<K extends keyof HealthInputs>(to: Partial<HealthInputs>, from: Partial<HealthInputs>, key: K): void {
   to[key] = from[key];
 }
