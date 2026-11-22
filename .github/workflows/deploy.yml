@@ -355,8 +355,7 @@ jobs:
               --build-arg SENTRY_RELEASE="health-tool-app@$(git rev-parse --short HEAD)" \
               --build-secret sentry_auth_token="$SENTRY_AUTH_TOKEN" 2>&1 | tee "$log" && exit 0
             rc=$?
-            [ "$try" = 1 ] && grep -q 'failed to fetch an image or build from source' "$log" \
-              && grep -q 'rpc error' "$log" && grep -Eq 'Unavailable|EOF' "$log" || exit "$rc"
+            [ "$try" = 1 ] && grep -Eq 'failed to fetch an image or build from source.*rpc error: code = Unavailable' "$log" || exit "$rc"
             echo "::warning::Fly's remote builder dropped the connection; retrying the deploy once"
           done
 
@@ -374,8 +373,7 @@ jobs:
               --build-arg SENTRY_RELEASE="health-tool-edu@$(git rev-parse --short HEAD)" \
               --build-secret sentry_auth_token="$SENTRY_AUTH_TOKEN" 2>&1 | tee "$log" && exit 0
             rc=$?
-            [ "$try" = 1 ] && grep -q 'failed to fetch an image or build from source' "$log" \
-              && grep -q 'rpc error' "$log" && grep -Eq 'Unavailable|EOF' "$log" || exit "$rc"
+            [ "$try" = 1 ] && grep -Eq 'failed to fetch an image or build from source.*rpc error: code = Unavailable' "$log" || exit "$rc"
             echo "::warning::Fly's remote builder dropped the connection; retrying the deploy once"
           done
 

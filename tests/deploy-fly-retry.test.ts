@@ -1,6 +1,6 @@
-// US-46 AC19: a dropped connection to Fly's remote builder does not fail the Deploy. On 2026-11-22 run
-// 44937567239 died one second into the build, after the Shopify extensions were published, leaving the widget
-// new and the servers old. Each Fly deploy step retries once, and only on that builder-transport error. Runs
+// US-46 AC19: a dropped connection to Fly's remote builder does not fail the Deploy. On 2026-11-21 (UTC) run
+// 44937567239's first Fly step failed about 28 s in, after the Shopify extensions were published, leaving the
+// widget new and the servers old. Each Fly deploy step retries once, and only on that builder-transport error. Runs
 // the real steps under a fake `flyctl`.
 import { spawnSync } from "node:child_process";
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
@@ -28,12 +28,12 @@ function stepScript(name: string): string {
   return step.slice(run + 1).map((l) => l.slice(indent)).join("\n");
 }
 
-// The 2026-11-22 output, verbatim.
+// Run 44937567239's output line, verbatim.
 const EOF_DROP = "Error: failed to fetch an image or build from source: error building: failed to receive status: rpc error: code = Unavailable desc = error reading from server: EOF";
 const SECRET = "test-token-good";
 
 /** Runs a step with a fake `flyctl` whose call n prints outputs[n-1] and fails, or succeeds past the list. */
-function run(config: keyof typeof STEPS, outputs: string[]) {
+function run(config: keyof typeof STEPS, outputs: string[], failRc = 1) {
   const dir = mkdtempSync(join(tmpdir(), "fly-retry-"));
   const bin = join(dir, "bin");
   const log = join(dir, "calls.log");
@@ -43,7 +43,7 @@ printf '%s\\n' "$*" >> "$LOG"
 n=$(wc -l < "$LOG" | tr -d ' ')
 out=$(sed -n "\${n}p" "$OUTS")
 [ -n "$out" ] || { echo "deployed"; exit 0; }
-echo "==> Building image" ; echo "$out" >&2; exit 1
+echo "==> Building image"; printf '%b\\n' "$out" >&2; exit "\${FAIL_RC:-1}"
 `);
   writeFileSync(join(bin, "git"), `#!/bin/sh\necho abc1234\n`);
   chmodSync(join(bin, "flyctl"), 0o755);
@@ -52,7 +52,7 @@ echo "==> Building image" ; echo "$out" >&2; exit 1
   writeFileSync(join(dir, "step.sh"), stepScript(STEPS[config].name));
   // GitHub runs a bare `run:` as `bash -e {0}`.
   const r = spawnSync("bash", ["-e", join(dir, "step.sh")], {
-    env: { PATH: `${bin}:${process.env.PATH}`, LOG: log, OUTS: join(dir, "outs"), SENTRY_AUTH_TOKEN: SECRET, FLY_API_TOKEN: SECRET },
+    env: { PATH: `${bin}:${process.env.PATH}`, LOG: log, OUTS: join(dir, "outs"), SENTRY_AUTH_TOKEN: SECRET, FLY_API_TOKEN: SECRET, FAIL_RC: String(failRc) },
     encoding: "utf8",
   });
   const calls = existsSync(log) ? readFileSync(log, "utf8").split("\n").filter(Boolean) : [];
@@ -91,6 +91,22 @@ describe("US-46 AC19: Fly deploy retries once on a dropped builder connection", 
           expect(r.calls, other).toHaveLength(1);
           expect(r.out).not.toContain("::warning::");
         }
+      });
+      it("a build error with another rpc code beside an unrelated EOF line is not retried; flyctl's code is kept", () => {
+        const r = run(config, ["Error: failed to fetch an image or build from source: error building: rpc error: code = Unknown desc = exit 1\\nnpm ERR! Unexpected EOF"]);
+        expect(r.code).toBe(1);
+        expect(r.calls).toHaveLength(1);
+        expect(r.out).not.toContain("::warning::");
+      });
+      it("a non-matching failure exits with flyctl's own code (3)", () => {
+        const r = run(config, ["Error: smoke checks failed"], 3);
+        expect(r.code).toBe(3);
+        expect(r.calls).toHaveLength(1);
+      });
+      it("the real line, among other output lines, still retries once", () => {
+        const r = run(config, [`==> Verifying app config\\n${EOF_DROP}\\nsome later line`]);
+        expect(r.code).toBe(0);
+        expect(r.calls).toEqual([argv, argv]);
       });
       it("never prints the secret", () => {
         expect(run(config, [EOF_DROP]).out).not.toContain(SECRET);
