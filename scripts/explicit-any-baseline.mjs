@@ -13,7 +13,7 @@ export const BASELINE_PATH = join(ROOT, 'scripts/explicit-any-baseline.json');
 /** Explicit `any` in one file: each `any` keyword the parser sees as a type. Comments, strings and names do not count. */
 export function countExplicitAny(sourceText, fileName) {
   if (!/\bany\b/.test(sourceText)) return 0; // no word `any`, no keyword: skip the parse
-  const kind = fileName.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
+  const kind = fileName.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS; // .mts/.cts parse as TS
   let n = 0;
   const visit = (node) => {
     if (node.kind === ts.SyntaxKind.AnyKeyword) n++;
@@ -25,11 +25,11 @@ export function countExplicitAny(sourceText, fileName) {
 
 export const readBaseline = () => JSON.parse(readFileSync(BASELINE_PATH, 'utf8'));
 
-/** Every tracked .ts/.tsx (hand-written .d.ts included), minus files the file-size tool marks GENERATED. */
+/** Every tracked .ts/.tsx/.mts/.cts (hand-written .d.ts/.d.mts included), minus files the file-size tool marks GENERATED. */
 export function scannedFiles() {
   const generated = new Set(generatedFiles());
   return execFileSync('git', ['ls-files', '-z'], { cwd: ROOT, maxBuffer: 1 << 26 }).toString().split('\0')
-    .filter((f) => /\.tsx?$/.test(f) && !generated.has(f) && existsSync(join(ROOT, f)));
+    .filter((f) => /\.[cm]?tsx?$/.test(f) && !generated.has(f) && existsSync(join(ROOT, f)));
 }
 
 /** Files with at least one explicit `any` today: { file: count }. */
