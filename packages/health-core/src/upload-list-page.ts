@@ -19,7 +19,7 @@ import { documentDateLine, saveLabel } from './upload-view';
  * `close`: "Close" when nothing could be saved, as the web's old review said it (ReviewTable.tsx `nothingToSave`: no value
  * offered to save, ticked or cleared, and nothing the plan writes, letters and originals included), else "Cancel", as it
  * says while files are still read (UploadModal.tsx); while saving the same, as the old review's close button showed it then,
- * disabled (ReviewTable.tsx:471-473, `disabled={isSaving}`; the view's `closeEnabled`); once done, the done screen's own
+ * disabled (`disabled={isSaving}` in the web's old ReviewTable.tsx, gone in mount 3b; the view's `closeEnabled`); once done, the done screen's own
  * button, "Done" (`uploadView().doneLabel`, owner ruling on PR 1951). `letters`: each letter Save files, in the plan's order (the order of
  * `uploadView().documents.rows`), with the text Save writes (`contentMd`). That text is the reader's Markdown from an
  * uploaded file: data, shown as text only, never as HTML. The person's title, kind and date fixes change the fields
