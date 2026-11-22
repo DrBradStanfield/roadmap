@@ -229,6 +229,7 @@ export async function scrubQuestion(text: string, deps: ScrubDeps = {}): Promise
         tool_choice: { type: 'tool', name: TOOL_NAME, disable_parallel_tool_use: true },
         messages: [{ role: 'user', content: `<question>\n${question}\n</question>` }],
       },
+      'PURGE',
       deps.timeoutMs ?? SCRUB_TIMEOUT_MS,
       1, // no retries: the run has a 5-minute budget, and a skip is the safe failure
     );

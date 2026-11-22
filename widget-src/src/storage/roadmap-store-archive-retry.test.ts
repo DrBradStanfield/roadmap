@@ -6,8 +6,7 @@ import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { RoadmapStore } from './roadmap-store';
 import { MemoryAdapter, MemoryCloud } from './index';
-import { sha256Blob, unarchivedOriginals } from '../lib/archive-payloads';
-import type { FileResult } from '../lib/upload-pipeline';
+import { sha256Blob } from '../lib/archive-payloads';
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 afterEach(() => vi.restoreAllMocks());
 const payload = () => ({
@@ -178,33 +177,5 @@ describe('US-14 AC4: a re-upload replaces a failed row only of its own kind', ()
     expect(labs.documents.find(d => d.id === labs.original.id)?.deleted).toBe(true);
     const letters = await failedThenRetried(payload(), { ...payload(), documentType: 'discharge_summary' });
     expect(letters.documents.find(d => d.id === letters.original.id)?.deleted).toBe(true);
-  });
-});
-
-describe('US-14 AC4: a failed website row is a pending original', () => {
-  it('the review offers its bytes again, as it does a connector row', async () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const adapter = new MemoryAdapter(new MemoryCloud());
-    adapter.writeDocument = async () => { throw new Error('synthetic quota refusal'); };
-    const store = await RoadmapStore.create(adapter);
-    const doc = payload();
-    const row = (await store.bulkSaveDocuments([doc])).saved[0];
-    const letter: FileResult = { fileName: doc.sourceFileName, reportDate: null, values: [], additionalValues: [], file: doc.file,
-      contentHash: await sha256Blob(doc.file),
-      document: { classification: 'clinic_letter', title: doc.title, documentDate: doc.documentDate, contentMarkdown: doc.contentMd, metadata: {} } };
-    expect(unarchivedOriginals([letter], [row], new Set())).toEqual([letter]);
-  });
-
-  it('bytes held only by a failed lab-archive row never file a deselected letter', async () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const adapter = new MemoryAdapter(new MemoryCloud());
-    adapter.writeDocument = async () => { throw new Error('synthetic quota refusal'); };
-    const store = await RoadmapStore.create(adapter);
-    const lab = labPayload();
-    const row = (await store.bulkSaveDocuments([lab])).saved[0];
-    const letter: FileResult = { fileName: lab.sourceFileName, reportDate: null, values: [], additionalValues: [], file: lab.file,
-      contentHash: await sha256Blob(lab.file),
-      document: { classification: 'clinic_letter', title: 'Synthetic letter', documentDate: null, contentMarkdown: 'Synthetic note', metadata: {} } };
-    expect(unarchivedOriginals([letter], [row], new Set())).toEqual([]);
   });
 });

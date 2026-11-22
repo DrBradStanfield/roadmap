@@ -1,10 +1,8 @@
-// Test support: today's web upload Save (UploadModal's grid, lib/upload-save.ts `saveReview`) and the shared Save's
-// web adapter (lib/roadmap-data.ts `saveUpload`, storage/upload-save-store.ts) run from the same starting record,
-// the same reads and the same review choices, each over a real RoadmapStore, and their records reduced to what a
-// person keeps: every field of every row, ids named by content and stamps left out, and each stored original's bytes
-// and type. The caller mocks the transport, the hash, the analytics and Sentry (see
-// components/UploadModal.shared-save-parity*.test.tsx). Imported by tests only.
-import { fireEvent, render, screen, cleanup, act } from '@testing-library/react';
+// Test support: the shared Save's web adapter (lib/roadmap-data.ts `saveUpload`, storage/upload-save-store.ts) run
+// from a starting record, reads and review choices over a real RoadmapStore, and its record reduced to what a person
+// keeps: every field of every row, ids named by content and stamps left out, and each stored original's bytes and
+// type. Until mount 3b it ran beside the grid's Save (`todaySave`, gone with the grid). The caller mocks the transport,
+// the hash, the analytics and Sentry (see components/UploadModal.shared-save-records.test.tsx). Imported by tests only.
 import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
 import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { inFlight, type SaveOutcome as SharedOutcome, type UploadState } from '@roadmap/health-core/upload-flow';
@@ -12,9 +10,7 @@ import type { ChoiceChange } from '@roadmap/health-core/upload-choices';
 import { reviewedWrites, uploadReview, type UploadReview } from '@roadmap/health-core/upload-review';
 import { uploadSave } from '@roadmap/health-core/upload-save';
 import type { ScreeningPerson } from '@roadmap/health-core/upload-screening';
-import { UploadModal } from '../components/UploadModal';
-import { deleteUserData, flushRoadmapStore, initRoadmapStore, loadAllHistorySync, loadLabValuesSync, loadLatestMeasurementsSync, recordFileSync, saveScreening } from '../lib/roadmap-data';
-import type { SaveOutcome as TodayOutcome } from '../lib/upload-save-outcome';
+import { deleteUserData, flushRoadmapStore, initRoadmapStore, recordFileSync } from '../lib/roadmap-data';
 import { sharedSave } from '../lib/upload-shared-save';
 import { uploadScreens } from '../lib/upload-screens';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
@@ -36,18 +32,15 @@ export interface Seed {
   failWrite?: boolean;
   /** Runs as the first original is written: between the plan and the commit (an erase, another writer's edit). */
   midway?: () => Promise<void>;
-  /** Another writer's edit after the review was read and before the Save writes its values: today, just before Save is
-   *  pressed (today writes values first); shared, at the first original write (it writes values at the commit). */
+  /** Another writer's edit after the review was read and before the Save commits: at the first original write. */
   beforeValues?: () => Promise<void>;
-  /** The first Save fails (today: its documents' write rejects; shared: the Save rejects), and the person saves again. */
+  /** The first Save fails (the Save rejects), and the person saves again. */
   failFirst?: boolean;
   /** The starting record, written through the store's own writers. */
   record?: (store: RoadmapStore) => void | Promise<void>;
   files: Pick[];
   person?: ScreeningPerson;
-  /** Today's choices, on the grid. */
-  grid?: () => void | Promise<void>;
-  /** The same choices, as the shared state's events: `(file index in picked order, change)`. */
+  /** The person's choices, as the shared state's events: `(file index in picked order, change)`. */
   choices?: (review: UploadReview, s: UploadState) => Array<{ file: number; change: ChoiceChange }>;
 }
 
@@ -55,22 +48,20 @@ export interface Seed {
 export interface Counts { values: number; documents: number; skipped: number; refused: number }
 export interface Side { record: Snapshot; events: Array<[string, unknown]>; sentry: number; done: boolean; counts: Counts | null }
 
-/** The test's hooks into each side, set by the caller's mocks. */
+/** The test's hooks into the Save, set by the caller's mocks. */
 export interface Probes {
   tracked: Array<[string, unknown]>;
   sentryCalls: () => number;
-  /** Today's session totals, each attempt's as it lands (useUploadFlow.ts `withAttempt`). */
-  todayTotals: TodayOutcome[];
-  /** Fail the next document save today, or the next shared Save. */
-  failNext: { today: boolean; shared: boolean };
+  /** Fail the next shared Save. */
+  failNext: { shared: boolean };
 }
 
 /** A cloud whose originals fail, or that runs the seed's midway step at the first one. */
 class SeedCloud extends MemoryAdapter {
-  constructor(cloud: MemoryCloud, private readonly seed: Seed, private readonly shared: boolean) { super(cloud); }
+  constructor(cloud: MemoryCloud, private readonly seed: Seed) { super(cloud); }
   private reached = false;
   async writeDocument(ref: string, bytes: Blob): Promise<void> {
-    const midway = this.shared && this.seed.beforeValues ? this.seed.beforeValues : this.seed.midway;
+    const midway = this.seed.beforeValues ?? this.seed.midway;
     if (midway && !this.reached) { this.reached = true; await midway(); }
     if (this.seed.failWrite) throw new Error('Synthetic test: the cloud refused the original');
     return super.writeDocument(ref, bytes);
@@ -83,8 +74,8 @@ export async function eraseHere(): Promise<void> {
   if (!erase.success) throw new Error(`Synthetic test: the erase was refused: ${erase.error}`);
 }
 
-/** A fresh record for one side: seeded through a store, then opened by the data layer as the page opens it. */
-async function open(seed: Seed, shared: boolean): Promise<MemoryCloud | null> {
+/** A fresh record: seeded through a store, then opened by the data layer as the page opens it. */
+async function open(seed: Seed): Promise<MemoryCloud | null> {
   localStorage.clear();
   // A cloud page runs with its backend remembered, so it owns this device's off-file data and may erase (US-11 AC6).
   if (seed.cloud) localStorage.setItem(BACKEND_KEY, 'memory');
@@ -92,59 +83,16 @@ async function open(seed: Seed, shared: boolean): Promise<MemoryCloud | null> {
   const first = await RoadmapStore.create(seed.cloud ? new MemoryAdapter(cloud) : new LocalStorageAdapter());
   await seed.record?.(first);
   await first.flush();
-  await initRoadmapStore(seed.cloud ? new SeedCloud(cloud, seed, shared) : new LocalStorageAdapter());
+  await initRoadmapStore(seed.cloud ? new SeedCloud(cloud, seed) : new LocalStorageAdapter());
   return seed.cloud ? cloud : null;
 }
 
 const fileOf = (p: Pick) => new File([`read:${'read' in p ? p.read : p.members.map((m) => m.read).join(',')}`], p.name, { type: p.name.endsWith('.zip') ? 'application/zip' : 'application/pdf' });
-const tick = () => act(async () => { await new Promise((r) => setTimeout(r, 0)); });
 
-/** Today: the grid over the real store, picked, chosen and saved as a person does. */
-export async function todaySave(seed: Seed, probes: Probes): Promise<Side> {
-  const cloud = await open(seed, false);
-  probes.tracked.length = 0;
-  probes.todayTotals.length = 0;
-  const sentry0 = probes.sentryCalls();
-  const history = { measurements: loadAllHistorySync(), labValues: loadLabValuesSync() ?? [], documents: loadLatestMeasurementsSync()?.documents ?? [] };
-  render(<UploadModal open onOpen={() => {}} onClose={() => {}} unitSystem="si" metricUnitOverrides={{}} grading={{}} history={history}
-    onComplete={() => {}} onScreeningUpdate={(key, value, erase) => void saveScreening(key, value, erase)} age={seed.person?.age} sex={seed.person?.sex} />);
-  // On the device the page asks to connect a cloud first; the person goes on without (US-12 AC4).
-  if (!seed.cloud) fireEvent.click(screen.getByRole('button', { name: /Continue without keeping my files/ }));
-  fireEvent.change(document.querySelector('input[type=file]')!, { target: { files: seed.files.map(fileOf) } });
-  // A review with nothing to write offers no Save: today writes nothing.
-  const save = await screen.findByRole('button', { name: /^Save / }).catch(() => null);
-  await seed.grid?.();
-  if (seed.beforeValues) await act(seed.beforeValues);
-  const outcome = async () => Promise.race([
-    screen.findByRole('button', { name: 'Done' }).then(() => true, () => null),
-    screen.findByText(/Please try again\./).then(() => false, () => null),
-  ]);
-  let done: boolean | null = false;
-  if (save) {
-    probes.failNext.today = !!seed.failFirst;
-    fireEvent.click(save);
-    done = await outcome();
-    if (seed.failFirst && done === false) {
-      await tick();
-      fireEvent.click(screen.getByRole('button', { name: /^Save / }));
-      done = await outcome();
-    }
-  }
-  await tick();
-  await flushRoadmapStore().catch(() => {});
-  const total = probes.todayTotals.at(-1);
-  const side: Side = {
-    record: await snapshot(recordFileSync()!, cloud), events: [...probes.tracked], sentry: probes.sentryCalls() - sentry0, done: done === true,
-    counts: total ? { values: total.values + total.labValues, documents: total.documents.length, skipped: total.skippedValues + total.skippedLabValues, refused: total.refusedLabUnits.length + total.refusedMeasurements.length } : null,
-  };
-  cleanup();
-  return side;
-}
-
-/** The shared Save's web adapter: the same pick read by the web's own effects, the same choices sent, then the Save the
- *  flow will run (`sharedSave`), answered with the flow's own event; a failed Save is saved again from `saveFailed`. */
+/** The shared Save's web adapter: the pick read by the web's own effects, the choices sent, then the Save the flow runs
+ *  (`sharedSave`), answered with the flow's own event; a failed Save is saved again from `saveFailed`. */
 export async function adapterSave(seed: Seed, upload: HealthUploadAPI, probes: Probes): Promise<Side> {
-  const cloud = await open(seed, true);
+  const cloud = await open(seed);
   probes.tracked.length = 0;
   const sentry0 = probes.sentryCalls();
   const run = drive(upload, seed.files.map(fileOf));
@@ -154,7 +102,7 @@ export async function adapterSave(seed: Seed, upload: HealthUploadAPI, probes: P
   for (const { file, change } of seed.choices?.(uploadReview(run.state(), recordFileSync()!, now), run.state()) ?? []) {
     run.send({ type: 'chose', id: ids[file], change, now });
   }
-  const { review, view } = uploadScreens(run.state(), recordFileSync()!, now, seed.cloud, () => 'si', seed.person);
+  const { review, view } = uploadScreens(upload, run.state(), recordFileSync()!, now, seed.cloud, () => 'si', seed.person);
   let outcome: SharedOutcome | null = null;
   // The list offers Save only when its view enables it, as the grid offers none with nothing to write.
   if (view.save.enabled) {

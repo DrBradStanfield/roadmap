@@ -17,7 +17,7 @@ import { REFUSED_CODE_KEYS, UPLOAD_STATE } from './upload-schema';
 import { refusalCodes, uploadSave } from './upload-save';
 import { METRIC_TYPES, type MetricTypeValue } from './validation';
 
-const IO = { holds: () => false, original: () => null, mimeType: () => '', write: async () => {} };
+const IO = { stopped: () => false, holds: () => false, original: () => null, mimeType: () => '', write: async () => {} };
 const bpValue = (metric: 'systolic_bp' | 'diastolic_bp', v: number): ExtractedValue =>
   ({ metric, valueSI: v, displayValue: v, displayUnit: 'mmHg', displaySystem: 'si', confidence: 'high' });
 const report = (values: ExtractedValue[], additionalValues = [extra()]): UnifiedExtractionResult =>

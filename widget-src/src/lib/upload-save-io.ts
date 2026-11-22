@@ -1,7 +1,7 @@
 /**
  * What the page holds of a pick, for the shared Save (storage/upload-save-store.ts): each file's original by its id in
  * the upload state, as the web holds it (lib/upload-read.ts `Held`): a picked File, or a ZIP member's entry, inflated
- * only as its original is written. The cloud write is the store's. Not mounted yet (PR 3b).
+ * only as its original is written. The cloud write is the store's. The flow's Save hands it over (lib/upload-shared-save.ts).
  */
 import type { Original, WebUploadIO } from '../storage/upload-save-store';
 import type { Held } from './upload-read';

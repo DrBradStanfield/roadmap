@@ -527,7 +527,7 @@ export function prepareImport(
         // committed under the other would throw away the value it offered.
         offer(slotKey('lab', metric, own), {
           kind: 'lab', metric, value: value.value, unit, displayValue: display, displayUnit: unit, ...comparatorOf(value),
-          recordedAt: own, confidence: 'high',
+          recordedAt: own, confidence: value.confidence ?? 'high', // the row's own doubt rides on (US-12 AC20b)
           referenceLow: value.referenceLow ?? null, referenceHigh: value.referenceHigh ?? null,
           sourceFileName: name, ...printed({ printedName: value.printedName ?? value.name }),
         });

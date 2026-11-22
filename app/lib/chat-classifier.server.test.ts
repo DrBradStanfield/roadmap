@@ -20,7 +20,7 @@ describe('chat classifier request (US-15 AC34)', () => {
 
   it('asks Haiku 5.5 with thinking off, no sampling params, and room past the longest label', async () => {
     call.mockResolvedValue({ content: 'MEASUREMENT', contentBlocks: [], usage, stopReason: 'end_turn' });
-    const result = await classifyMessage('My blood pressure was 120/80 this morning');
+    const result = await classifyMessage('My blood pressure was 120/80 this morning', undefined, undefined, 'CHAT');
     const body = call.mock.calls[0][0];
     expect(body).toMatchObject({ model: 'claude-haiku-5-5', max_tokens: 16, thinking: { type: 'disabled' } });
     expect(body).not.toHaveProperty('temperature');
@@ -29,14 +29,14 @@ describe('chat classifier request (US-15 AC34)', () => {
 
   it('reads the label from the first word, so text the model adds after it never turns a label into ERROR', async () => {
     call.mockResolvedValue({ content: 'MEASUREMENT\nThe user is logging a reading.', contentBlocks: [], usage, stopReason: 'end_turn' });
-    expect((await classifyMessage('120/80 today')).classification).toBe('MEASUREMENT');
+    expect((await classifyMessage('120/80 today', undefined, undefined, 'CHAT')).classification).toBe('MEASUREMENT');
     call.mockResolvedValue({ content: 'Not sure', contentBlocks: [], usage, stopReason: 'end_turn' });
-    expect((await classifyMessage('120/80 today')).classification).toBe('ERROR');
+    expect((await classifyMessage('120/80 today', undefined, undefined, 'CHAT')).classification).toBe('ERROR');
   });
 
   it('reports a refusal as its own signal with the category, not as unparseable output', async () => {
     call.mockResolvedValue({ content: '', contentBlocks: [], usage, stopReason: 'refusal', refusalCategory: 'bio' });
-    const result = await classifyMessage('a question');
+    const result = await classifyMessage('a question', undefined, undefined, 'CHAT');
     expect(result.classification).toBe('ERROR');
     expect(result.routerSkipped).toBe(false);
     expect(result.error).toBe('refusal');
@@ -52,7 +52,7 @@ describe('spam label (US-15 AC41)', () => {
 
   it('SPAM is a label of its own, so the model naming the category never fails open as ERROR', async () => {
     call.mockResolvedValue({ content: 'SPAM', contentBlocks: [], usage, stopReason: 'end_turn' });
-    const result = await classifyMessage('Got my Semax from VendorX, real quality.');
+    const result = await classifyMessage('Got my Semax from VendorX, real quality.', undefined, undefined, 'CHAT');
     expect(result.classification).toBe('SPAM');
     expect(result.routerSkipped).toBe(true);
   });
@@ -64,17 +64,17 @@ describe('unreadable classifier answers (US-15 AC48)', () => {
 
   it('US-15 AC48: a refusal or a non-label answer is unreadable; a timeout, an API failure or a label is not', async () => {
     call.mockResolvedValue({ content: '', contentBlocks: [], usage, stopReason: 'refusal', refusalCategory: 'bio' });
-    expect(isUnreadableAnswer(await classifyMessage('a question'))).toBe(true);
+    expect(isUnreadableAnswer(await classifyMessage('a question', undefined, undefined, 'CHAT'))).toBe(true);
     call.mockResolvedValue({ content: 'PROMOTION', contentBlocks: [], usage, stopReason: 'end_turn' });
-    expect(isUnreadableAnswer(await classifyMessage('a question'))).toBe(true);
+    expect(isUnreadableAnswer(await classifyMessage('a question', undefined, undefined, 'CHAT'))).toBe(true);
     call.mockRejectedValue(Object.assign(new Error('aborted'), { name: 'AbortError' }));
-    const timedOut = await classifyMessage('a question');
+    const timedOut = await classifyMessage('a question', undefined, undefined, 'CHAT');
     expect(timedOut).toMatchObject({ classification: 'ERROR', error: 'timeout' });
     expect(isUnreadableAnswer(timedOut)).toBe(false);
     call.mockRejectedValue(new Error('Anthropic API 529: overloaded'));
-    expect(isUnreadableAnswer(await classifyMessage('a question'))).toBe(false);
+    expect(isUnreadableAnswer(await classifyMessage('a question', undefined, undefined, 'CHAT'))).toBe(false);
     call.mockResolvedValue({ content: 'ROUTE', contentBlocks: [], usage, stopReason: 'end_turn' });
-    expect(isUnreadableAnswer(await classifyMessage('a question'))).toBe(false);
+    expect(isUnreadableAnswer(await classifyMessage('a question', undefined, undefined, 'CHAT'))).toBe(false);
   });
 });
 
@@ -88,8 +88,8 @@ describe('missing classifier prompt (US-15 AC48)', () => {
     vi.mocked(sentry.captureMessage).mockClear();
     const fresh = await import('./chat-classifier.server');
     try {
-      const first = await fresh.classifyMessage('Got my peptides from VendorX');
-      const second = await fresh.classifyMessage('a question');
+      const first = await fresh.classifyMessage('Got my peptides from VendorX', undefined, undefined, 'CHAT');
+      const second = await fresh.classifyMessage('a question', undefined, undefined, 'CHAT');
       for (const result of [first, second]) {
         expect(result).toMatchObject({ classification: 'ERROR', routerSkipped: false, error: 'no prompt' });
         expect(fresh.isUnreadableAnswer(result)).toBe(false);

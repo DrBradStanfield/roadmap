@@ -32,7 +32,7 @@ const see = (s: UploadState, record: RoadmapFile) => {
 const chose = (s: UploadState, id: string, change: ChoiceChange) => transition(s, { type: 'chose', id, change, now: NOW }).state;
 const held = (rows: BulkRow[]) => bulkAppendValues(EMPTY, rows, NOW).file;
 const LDL = (value: number, recordedAt = DAY): BulkRow => ({ kind: 'measurement', metricType: 'ldl', value, recordedAt, source: 'manual' });
-const off = { holds: () => false, original: () => null, mimeType: () => '', write: async () => {}, now: () => NOW };
+const off = { stopped: () => false, holds: () => false, original: () => null, mimeType: () => '', write: async () => {}, now: () => NOW };
 const saveRefused = async (s: UploadState, record: RoadmapFile) => {
   const saving = transition(s, { type: 'saveStarted', reviewed: reviewedWrites(uploadReview(s, record, NOW)) }).state;
   const out = await uploadSave(saving, record, NOW, false, off);

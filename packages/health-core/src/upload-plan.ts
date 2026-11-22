@@ -71,7 +71,7 @@ export function uploadSavePlan(s: UploadState, record: RoadmapFile, now: string,
       // for these bytes (owner ruling on PR 1957, 2026-11-22; US-13 AC6, US-14 AC4), so what the page shows is what
       // Save writes, whatever another writer adds meanwhile.
       const start = letterStart(doc, now);
-      const screening = s.platform === 'web' && person ? screeningBox(doc.metadata, start, fixedDate, fix.screening, person) : null;
+      const screening = s.platform === 'web' && person ? screeningBox(doc.metadata, start, fixedDate, fix.screening, person, record, now) : null;
       documents.push({ fileId: f.id, fields: {
         ...readDocumentFields(doc, uploadFileName(f)),
         documentType: fix.kind ?? doc.classification,

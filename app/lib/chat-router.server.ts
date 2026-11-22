@@ -12,7 +12,7 @@ import * as Sentry from '@sentry/react-router';
 import fs from 'fs';
 import path from 'path';
 import * as z from '../../packages/health-core/src/zod';
-import { callAnthropicWithUsage, type AnthropicUsage } from './anthropic.server';
+import { callAnthropicWithUsage, type AnthropicUsage, type ChatPurpose } from './anthropic.server';
 import { loadBlogIndex } from './blog-index.server';
 import { routerView, routerIndexBlock } from './router-view';
 import { parseRouterReply } from './router-reply';
@@ -204,8 +204,9 @@ export function sanitizeRawHandles(handles: unknown, valid?: ReadonlySet<string>
 
 export async function routeQuery(
   currentMessage: string,
-  firstMessage?: string,
-  recentUserMessages?: string[],
+  firstMessage: string | undefined,
+  recentUserMessages: string[] | undefined,
+  purpose: ChatPurpose,
 ): Promise<RouterResult> {
   const t0 = Date.now();
 
@@ -256,7 +257,7 @@ export async function routeQuery(
   let usage = EMPTY_USAGE;
 
   try {
-    const result = await callAnthropicWithUsage(body, ROUTER_TIMEOUT_MS);
+    const result = await callAnthropicWithUsage(body, purpose, ROUTER_TIMEOUT_MS);
     rawJson = result.content;
     usage = result.usage;
 

@@ -429,8 +429,8 @@ export class RoadmapStore {
     const erase = this.shownErase;
     if (this.refuses(erase)) return { saved: [], errorCount: documents.length };
     const { saved, unstored, commit } = await saveDocuments(this.file, documents, {
-      hash: sha256Blob,
-      write: (ref, file) => (this.refuses(erase) ? Promise.reject(new Error('erase moved')) : this.host.store.writeDocument(ref, file)),
+      hash: sha256Blob, stopped: () => this.refuses(erase), // asked before every write attempt (US-11 AC1a)
+      write: (ref, file) => this.host.store.writeDocument(ref, file),
       mimeType: (file) => file.type || '',
       onWriteError: (error) => { if (!this.refuses(erase)) reportUnstored(error, this.host.store.id); }, // a refusal (A15): not reported, still counted unstored (US-14 AC12)
     });

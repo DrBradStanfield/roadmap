@@ -37,7 +37,7 @@ export function DraftDateCell({ date, onChange, needsDay, placeholder, ariaLabel
   const mon = MONTH_LABELS[d.getMonth()];
   const yr = String(d.getFullYear()).slice(-2);
   const open = () => {
-    try { (ref.current as any)?.showPicker?.(); }
+    try { ref.current?.showPicker?.(); }
     catch { ref.current?.click(); }
   };
   return (

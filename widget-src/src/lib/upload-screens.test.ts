@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { createEmptyFile } from '@roadmap/health-core/roadmap-file';
 import { NO_CHOICES } from '@roadmap/health-core/upload-choices';
 import type { UploadState } from '@roadmap/health-core/upload-flow';
+import { uploadReview } from '@roadmap/health-core/upload-review';
 import { uploadScreens } from './upload-screens';
 
 const NOW = '2026-11-22T00:00:00.000Z';
@@ -15,7 +16,7 @@ const s: UploadState = { phase: 'open', platform: 'web', run: 1, started: NOW, f
     document: { classification: 'clinic_letter', title: 'Synthetic colonoscopy', documentDate: '2025-06-12', contentMarkdown: 'Synthetic', metadata: { screeningType: 'colorectal' } },
   } },
 }] };
-const page = (person?: { age?: number; sex?: 'male' | 'female' }) => uploadScreens(s, createEmptyFile({ deviceId: 'web', now: NOW }), NOW, false, () => 'si', person).page;
+const page = (person?: { age?: number; sex?: 'male' | 'female' }) => uploadScreens({ uploadReview }, s,createEmptyFile({ deviceId: 'web', now: NOW }), NOW, false, () => 'si', person).page;
 
 describe('US-13 AC6: the person reaches the list\'s page', () => {
   it.each([

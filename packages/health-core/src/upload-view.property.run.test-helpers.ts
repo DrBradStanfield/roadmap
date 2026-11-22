@@ -24,9 +24,9 @@ import { checkText, checkView } from './upload-view.property.view.test-helpers';
 function io(cloud: boolean, failWrites: readonly string[] = []): UploadSaveIO<string> {
   let n = 0;
   return cloud
-    ? { holds: () => true, original: (id) => `bytes of ${id}`, mimeType: () => 'application/pdf', now: () => NOW, newId: () => `doc-${n++}`,
+    ? { stopped: () => false, holds: () => true, original: (id) => `bytes of ${id}`, mimeType: () => 'application/pdf', now: () => NOW, newId: () => `doc-${n++}`,
       write: async (_ref, _bytes, id) => { if (failWrites.includes(id)) throw new Error('The cloud refused it.'); } }
-    : { holds: () => false, original: () => null, mimeType: () => '', write: async () => { throw new Error('no cloud'); }, now: () => NOW, newId: () => `doc-${n++}` };
+    : { stopped: () => false, holds: () => false, original: () => null, mimeType: () => '', write: async () => { throw new Error('no cloud'); }, now: () => NOW, newId: () => `doc-${n++}` };
 }
 
 /** The state as the engine door steps and views it: a Replace whose target left its slot dropped, its value unticked. */

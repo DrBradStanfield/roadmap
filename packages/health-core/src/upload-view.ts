@@ -93,7 +93,7 @@ export interface UploadView {
   /** The done screen's lines. `skipped`: reviewed values another writer beat to their slot (US-12 AC6a).
    *  `notSaved`: values the final commit refused, one line per reason in the review's words. */
   done: { line: string; archived: string | null; unstored: string | null; skipped: string[]; notSaved: string[] } | null;
-  /** Values the record already holds, equal, on their day: counted, as the web's review counts them (ReviewTable.tsx). */
+  /** Values the record already holds, equal, on their day: counted, as the web's old review counted them (ReviewTable.tsx). */
   alreadySaved?: string | null;
   /** What this page shows as to be written (upload-review `reviewedWrites`): the app sends it back, as drawn, on
    *  `saveStarted`, and Save writes nothing else (owner ruling 2026-11-20, US-13 AC23). */
@@ -268,7 +268,7 @@ const rowOf = (review: UploadReview, v: ClassifiedValue) => ({
 const replacingOf = (review: UploadReview, v: ClassifiedValue) => !v.copy && review.labFiles[v.file].replacing.includes(v.ref);
 
 /**
- * A selected core value the write would refuse blocks Save, as the web's review blocks it
+ * A selected core value the write would refuse blocks Save, as the web's old review blocked it
  * (ReviewTable `refusedKept` over import-review-view `blocked`, US-13 AC5): sent, not written, and
  * out of its range or otherwise refused (a same-day loser is not an error).
  */
@@ -290,7 +290,9 @@ function refusedLines(refused: NonNullable<SaveOutcome['refused']>): string[] {
 /** A document's date as its row writes it: in words, else "No date". */
 export const documentDateLine = (date: string | null): string => (date && longDate(date.slice(0, 10))) ?? UPLOAD_TEXT.noDate;
 
-export function saveLabel(plan: UploadSavePlan): string {
+/** "Saving..." while it saves, on every platform (US-12 AC6), else what Save will write. */
+export function saveLabel(s: UploadState, plan: UploadSavePlan): string {
+  if (s.phase === 'saving') return UPLOAD_TEXT.saving;
   const { values, documents, originals } = plan.counts;
   return values || documents || !originals ? UPLOAD_TEXT.saveBoth(values, documents) : UPLOAD_TEXT.saveOriginals(originals);
 }
@@ -306,7 +308,7 @@ function emptyRead(f: UploadFile): string | null {
 }
 
 function save(s: UploadState, plan: UploadSavePlan, review: UploadReview): UploadView['save'] {
-  const label = saveLabel(plan);
+  const label = saveLabel(s, plan);
   const blockers = s.phase === 'open' || s.phase === 'saveFailed' ? saveBlockers(review, s) : [];
   const blocked = blockers[0]?.why ?? null;
   // After a failed Save, Save tries again, unless the record changed meanwhile so that it would refuse: then it waits, saying why.
@@ -422,7 +424,8 @@ export function uploadView(s: UploadState, record: RoadmapFile, now: string, rev
       ...(s.outcome.archived && !s.outcome.values && !s.outcome.documents
         ? { line: UPLOAD_TEXT.archivedLine(s.outcome.archived), archived: null }
         : { line: UPLOAD_TEXT.savedLine(s.outcome.values, s.outcome.documents), archived: s.outcome.archived ? UPLOAD_TEXT.archivedLine(s.outcome.archived) : null }),
-      unstored: s.outcome.unstored ? UPLOAD_TEXT.unstoredLine : null,
+      // A Save that wrote no value and no shown document saved no details, so it never says it did (US-14 AC12, Brad 2026-11-23).
+      unstored: s.outcome.unstored ? (s.outcome.values || s.outcome.documents ? UPLOAD_TEXT.unstoredLine : UPLOAD_TEXT.unstoredAlone) : null,
       skipped: [
         ...(s.outcome.skippedValues ? [UPLOAD_TEXT.skippedLine(s.outcome.skippedValues, false)] : []),
         ...(s.outcome.skippedLabValues ? [UPLOAD_TEXT.skippedLine(s.outcome.skippedLabValues, true)] : []),
