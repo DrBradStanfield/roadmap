@@ -89,9 +89,9 @@ const brandsOf = ({ value, label }: { value: string; label: string }): Array<[st
   return [paren[1], ...paren[2].split('/')].filter((w) => /^[A-Za-z]+$/.test(w))
     .map((w) => w.toLowerCase()).filter((w) => !value.split('_').includes(w)).map((w) => [w, value]);
 };
-/** The user's words that mean one of the question's own answers (Brad 2026-11-02): an option's own label ("Other GLP-1");
- *  "not taking" is "no" where the question has a "No" (US-06 AC22), as is "none" for ezetimibe or a PCSK9 inhibitor; "not yet"
- *  a drug is its "haven't tried yet" ('none'); the drug's own name is "yes"; a brand its option's label names, or a listed statin's brand, is that option. */
+/** The user's words that mean one of the question's own answers (Brad 2026-11-02): an option's own label ("Other GLP-1"); "not taking" is "no"
+ *  where the question has a "No" (US-06 AC22); "none" is "no" for ezetimibe or a PCSK9 inhibitor, which have no 'none', but on purpose stays
+ *  "haven't tried yet" ('none') for a drug, as "not yet" is; the drug's own name is "yes"; a brand its option's label names, or a listed statin's brand, is that option. */
 const SAME_ANSWER = new Map(MEDICATION_KEYS.map((key) => [key, new Map<string, string>([
   ...MEDICATION_ANSWERS[key].map((o): [string, string] => [tokenOf(o.label), o.value]),
   ...MEDICATION_ANSWERS[key].flatMap(brandsOf),

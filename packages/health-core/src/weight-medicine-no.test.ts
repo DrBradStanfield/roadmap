@@ -60,6 +60,20 @@ describe('US-06 AC22: "No" on each weight and diabetes picker', () => {
     expect(cards({ ...all, glp1: { drug: 'none', dose: null } })).toEqual(['weight-med-glp1']);
   });
 
+  it('US-06 AC22: GLP-1 "No" after a recorded step-up answer still shows that answer, as "Not tolerated" does', () => {
+    for (const drug of ['no', 'not_tolerated']) {
+      const meds: MedicationInputs = { glp1: { drug, dose: null }, glp1Escalation: 'not_tolerated' };
+      expect(cards(meds), drug).toEqual(['weight-med-sglt2i']);
+      expect(fields(meds).map((f) => f.key), drug).toEqual(['glp1', 'glp1_escalation', 'sglt2i']);
+      expect(fields(meds).find((f) => f.key === 'glp1_escalation')?.value, drug).toBe('not_tolerated');
+    }
+  });
+
+  it.each([['statin', 'tier_1'], ['glp1', 'liraglutide'], ['sglt2i', 'ertugliflozin']])(
+    'US-06 AC22: a %s answer off the dose table (%s) saves with no dose and no unit', (key, value) => {
+      expect(medicationWrites({}, false, key, value)).toEqual([{ medicationKey: key, drugName: value, doseValue: null, doseUnit: null }]);
+    });
+
   it.each(['glp1', 'sglt2i', 'metformin'])('US-06 AC22: %s "No" saves as no with no dose, and reads back as no', (key) => {
     expect(medicationWrites({}, true, key, 'no')).toEqual([{ medicationKey: key, drugName: 'no', doseValue: null, doseUnit: null }]);
     const back = roundTrip({}, key, 'no');
@@ -80,4 +94,12 @@ describe('US-06 AC22: "No" on each weight and diabetes picker', () => {
     expect(saved('not taking')).toBe('no');
     expect(saved('not yet')).toBe('none');
   });
+
+  // Deliberate: a weight medicine's own "Haven't tried yet" value is 'none', so the chat's "none" keeps it;
+  // ezetimibe and the PCSK9 inhibitor have no 'none' answer, and their "none" means "no" (US-16 AC3).
+  it.each([['glp1', 'none'], ['sglt2i', 'none'], ['metformin', 'none'], ['ezetimibe', 'no'], ['pcsk9i', 'no']])(
+    'US-06 AC22: the chat saves "none" for %s as %s', (medicationKey, value) => {
+      expect((parseProposedEdit(PROPOSE_MEDICATION_EDIT_TOOL.name, { medicationKey, drugName: 'none' }) as ProposedMedicationEdit | null)?.drugName)
+        .toBe(value);
+    });
 });
