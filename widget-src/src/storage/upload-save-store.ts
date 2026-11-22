@@ -53,7 +53,7 @@ export async function saveUploadThrough(
   // the commit, since an erase can land while the originals upload (US-16 AC2a, US-11 AC1a).
   const erase = session.shownErase;
   if (session.refuses(erase)) return ERASED;
-  /** An original a busy refusal will retry: its bytes kept, so a retry does not inflate them again. */
+  /** An original a busy refusal will retry: its bytes kept, so a retry does not inflate them again, until it settles. */
   const retrying = new Map<string, Blob>();
   /** Originals already reported busy: once each, at the first refusal. */
   const busy = new Set<string>();
@@ -68,7 +68,6 @@ export async function saveUploadThrough(
       let bytes: Blob;
       try {
         bytes = retrying.get(ref) ?? await original();
-        retrying.delete(ref);
       } catch (error) {
         // The page could not read its own bytes (a ZIP member that would not inflate): no cloud refused anything.
         Sentry.captureException(recordFailure(error, 'Upload save failed'), { tags: { area: 'upload-save', branch: 'original' } });
@@ -91,6 +90,8 @@ export async function saveUploadThrough(
         throw error;
       }
     },
+    // Stored, failed or stopped, the original is done: its kept bytes go, so at most the lanes' bytes are held.
+    settled: (ref) => { retrying.delete(ref); },
     // Once per original that never landed: only the busy ones, since every other failure was reported as it came.
     onWriteError: (error) => {
       if (busyWait(error) !== null && !session.refuses(erase)) reportUnstored(error, cloud.backend);

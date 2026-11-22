@@ -130,6 +130,8 @@ export interface DocumentSaveIO<F> {
   sleep?(ms: number): Promise<void>;
   /** A failed blob write, for the caller's telemetry. The save carries on. */
   onWriteError?(error: unknown): void;
+  /** The original at `ref` is done, stored or not (stopped included): what the caller kept for its retries can go. */
+  settled?(ref: string): void;
   /** ISO instant for `addedAt`; read once per document. */
   now?(): string;
   newId?(): string;
@@ -290,6 +292,8 @@ export async function saveDocuments<F>(
       if (error !== STOPPED) io.onWriteError?.(error);
       unstored += 1;
       w.failed = w.held; // a failure behind a held row is settled (below)
+    } finally {
+      io.settled?.(w.ref);
     }
   };
   const seenFolders = new Set<string>();
