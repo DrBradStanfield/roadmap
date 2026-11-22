@@ -1,7 +1,7 @@
 # Decisions for Brad
 
 The one page for open questions to Brad (Brad 2026-11-21; the rule: docs/git-workflow.md, § Who builds, and
-reports). Final messages link here instead of asking in prose.
+reports). Final messages carry each question in full and link here.
 
 Each open item says:
 - what it is, named in plain words (never a private label such as "D3");
