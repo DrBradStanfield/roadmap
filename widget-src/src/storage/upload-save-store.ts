@@ -5,6 +5,7 @@
  * screening dates land together or not at all; there is no second write path. As ios/engine/upload-save-door.ts does
  * for the phone. The web's upload flow calls it through lib/upload-shared-save.ts (mount 3b).
  */
+import { writeMakesFolders } from '@roadmap/health-core/document-save';
 import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import type { RecordSession } from '@roadmap/health-core/record-session';
 import type { UploadState } from '@roadmap/health-core/upload-flow';
@@ -53,6 +54,7 @@ export async function saveUploadThrough(
   if (session.refuses(erase)) return ERASED;
   const out = await engine.uploadSave(s, session.file, now, cloudConnected, {
     ...io,
+    makesFolders: writeMakesFolders(cloud.backend),
     // A failed read or write is reported, then rethrown: the engine counts it `unstored` and its row keeps the hash
     // alone. The bytes go as the page holds them, a File with its own type, as the store's document save writes them.
     write: async (ref, original) => {

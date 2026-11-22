@@ -74,6 +74,10 @@ export function pendingRowsFor<T extends ExistingDoc>(existing: readonly T[], ha
     .sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''));
 }
 
+/** Dropbox's upload makes a ref's parent folders itself (dropbox-rest.ts `dropboxUploadDocument`); every other backend
+ *  keeps the solo first write per folder: Google Drive finds or creates each folder, and an unknown one is not trusted. */
+export const writeMakesFolders = (backend: string): boolean => backend === 'dropbox';
+
 /** The I/O a save needs. Nothing here touches storage itself. */
 export interface DocumentSaveIO<F> {
   /** 'sha256-<hex>' of the bytes. JavaScriptCore has no crypto.subtle, so the caller hashes. */
@@ -82,6 +86,8 @@ export interface DocumentSaveIO<F> {
   write(ref: string, file: F): Promise<void>;
   /** The bytes' MIME type, '' when unknown. */
   mimeType(file: F): string;
+  /** The provider makes a ref's folders in the write itself (Dropbox), so no first write per folder runs alone. */
+  makesFolders?: boolean;
   /** A failed blob write, for the caller's telemetry. The save carries on. */
   onWriteError?(error: unknown): void;
   /** ISO instant for `addedAt`; read once per document. */
@@ -229,7 +235,8 @@ export async function saveDocuments<F>(
   // Phase 2: blob uploads, 3 at a time — serial writes made a 20-file batch
   // ~40 sequential round trips (20-40s on a slow link). The FIRST write into
   // each folder still runs alone (concurrent find-or-create of the same new
-  // folder would create duplicates); the rest pool. A failed write degrades
+  // folder would create duplicates), unless the provider makes folders in the
+  // write (`makesFolders`); the rest pool. A failed write degrades
   // to metadata-only — unless a held row already holds these bytes: a
   // plain row beside it would list the letter twice, and every later upload
   // would offer to archive it again (Sentry 7715862604). Every failed write is counted `unstored`.
@@ -249,7 +256,7 @@ export async function saveDocuments<F>(
   const pooled: typeof writes = [];
   for (const w of writes) {
     const folder = splitDocumentRef(w.ref).folder ?? '';
-    if (seenFolders.has(folder)) {
+    if (io.makesFolders || seenFolders.has(folder)) {
       pooled.push(w);
     } else {
       seenFolders.add(folder);

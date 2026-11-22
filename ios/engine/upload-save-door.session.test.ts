@@ -63,6 +63,36 @@ describe('the iPhone Save checks for an erase before each original it writes, as
     expect(cloud.commits).toEqual([]);
   });
 
+  // US-14 AC10: Dropbox makes a ref's folders in the write, so its writes pool from the first (no solo round); the
+  // erase check before every write still holds there.
+  it('on Dropbox: three originals start before any lands, and an erase landing mid-way stops every later write', async () => {
+    const a = session('a');
+    let erased = false;
+    let landed = 0;
+    let startedBeforeAnyLanded = 0;
+    a.at.session.refuses = () => erased;
+    Object.assign(a.at.host.store, { id: 'dropbox' });
+    a.at.host.store.writeDocument = async (ref: string) => {
+      a.puts.push(ref);
+      if (landed === 0) startedBeforeAnyLanded = a.puts.length;
+      await new Promise((r) => setTimeout(r, 1));
+      landed += 1;
+      if (landed === 4) erased = true; // the erase lands as the fourth original's write finishes
+    };
+    cloud.open = a.at;
+    cloud.commits.length = 0;
+    const ids = ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight'];
+    const file = (id: string) => ({ id, name: `${id}.pdf`, bytes: 1, hash: `sha256-${id}`, pages: { count: 1, truncated: false },
+      status: { s: 'read', extraction: { ...letter, document: { ...letter.document, title: `Synthetic letter ${id}` } }, choices: NO_CHOICES } });
+    const state = JSON.stringify({ ...JSON.parse(STATE), files: ids.map(file) });
+    const answer = await uploadSaveRun(state, '', '[0,null]', NOW, 'phone', JSON.stringify(Object.fromEntries(ids.map((id) => [id, 'application/pdf']))), () => new Uint8Array([1]).buffer);
+    expect(JSON.parse(answer)).toMatchObject({ ok: false, reason: 'erased' });
+    expect(startedBeforeAnyLanded).toBe(3);
+    // Four landed; the writes already in flight then finish, and none starts after the erase.
+    expect(a.puts).toHaveLength(6);
+    expect(cloud.commits).toEqual([]);
+  });
+
   it('the session it began on closes after the first of two originals: the second is never written, and the answer is not-open', async () => {
     const a = session('a');
     // The session closes as the first original's write finishes.

@@ -53,6 +53,8 @@ export interface UploadSaveIO<F> {
   mimeType(fileId: string): string;
   /** Write file `fileId`'s bytes at `ref` in the person's cloud; reject on failure. */
   write(ref: string, bytes: F, fileId: string): Promise<void>;
+  /** The cloud makes a ref's folders in the write (`writeMakesFolders`): no solo first write per folder. */
+  makesFolders?: boolean;
   now?(): string;
   newId?(): string;
 }
@@ -133,7 +135,7 @@ export async function uploadSave<F>(s: UploadState, record: RoadmapFile, now: st
       await io.write(ref, bytes, f.fileId);
       wrote.add(ref);
     },
-    mimeType: (f) => io.mimeType(f.fileId), now: io.now, newId: io.newId,
+    mimeType: (f) => io.mimeType(f.fileId), makesFolders: io.makesFolders, now: io.now, newId: io.newId,
   });
   // `documents`: the letters and documents the list showed to be saved, as the Save label counts them (owner ruling
   // 2026-11-20), never a lab report's hidden archive row nor an original filed behind a held row.

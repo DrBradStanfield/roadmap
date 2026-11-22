@@ -4,6 +4,7 @@
 // engine writes each original the plan stores, reading its bytes from Swift by file id as it writes
 // it, then commits every row on the session's record as it stands then (an edit that landed
 // meanwhile is kept). Nothing is logged; a refusal's words never carry a value, a name or a hash.
+import { writeMakesFolders } from '../../packages/health-core/src/document-save';
 import { uploadSave, type UploadSaveIO } from '../../packages/health-core/src/upload-save';
 import { UPLOAD_LIMITS } from '../../packages/health-core/src/upload-rules';
 import * as z from '../../packages/health-core/src/zod';
@@ -53,6 +54,7 @@ async function save(
       return isArrayBuffer(bytes) && bytes.byteLength > 0 && bytes.byteLength <= cap ? bytes : null;
     },
     mimeType: (fileId) => mimeTypes[fileId] ?? '',
+    makesFolders: !!at && writeMakesFolders(at.host.store.id),
     // Checked with the bytes in hand, right before each write, as the web does (US-11 AC1a): once the
     // erase moves, no further original is written, and the check after the originals answers it.
     write: async (ref, bytes, fileId) => {
