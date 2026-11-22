@@ -47,7 +47,7 @@ describe('US-15 AC33: the run_roadmap round (JSON path)', () => {
   it('US-16 AC3: a refused medication answer with an empty second reply says it was not saved, never the fallback', async () => {
     const misfit = { type: 'tool_use', id: 'toolu_med', name: 'propose_medication_edit', input: { medicationKey: 'ezetimibe', drugName: 'atorvastatin' } };
     replies(json('tool_use', [misfit]), json('max_tokens', []));
-    const result = await getChatCompletion([], user, true, undefined, { guestInputs: PROFILE });
+    const result = await getChatCompletion([], user, true, undefined, { purpose: 'CHAT', guestInputs: PROFILE });
     expect(result).toMatchObject({ isFallback: false, content: "One medication change was not saved, as its answer is not one of the listed answers. Tell me which one applies, or choose it yourself." });
     expect(result).not.toHaveProperty('proposedEdits');
   });
@@ -57,7 +57,7 @@ describe('US-15 AC33: the run_roadmap round (JSON path)', () => {
       json('tool_use', [THINKING, { type: 'text', text: 'Let me run that.' }, RUN, FIELD]),
       json('end_turn', [{ type: 'text', text: ANSWER }]),
     );
-    const result = await getChatCompletion([], user, true, undefined, { guestInputs: PROFILE });
+    const result = await getChatCompletion([], user, true, undefined, { purpose: 'CHAT', guestInputs: PROFILE });
     const [first, second] = bodies();
     expect(bodies()).toHaveLength(2);
     expect(first).not.toHaveProperty('tool_choice');
@@ -79,14 +79,14 @@ describe('US-15 AC33: the run_roadmap round (JSON path)', () => {
 
   it('one round at most: a second reply that asks again gets no third call', async () => {
     const { bodies } = replies(json('tool_use', [RUN]), json('tool_use', [{ type: 'text', text: ANSWER }, RUN]));
-    const result = await getChatCompletion([], user, true, undefined, { guestInputs: PROFILE });
+    const result = await getChatCompletion([], user, true, undefined, { purpose: 'CHAT', guestInputs: PROFILE });
     expect(bodies()).toHaveLength(2);
     expect(result.content).toBe(ANSWER);
   });
 
   it('a failed second call is the api-error fallback, with no tool output and no edits', async () => {
     replies(json('tool_use', [RUN, FIELD]), new TypeError('fetch failed'), new TypeError('fetch failed'));
-    const result = await getChatCompletion([], user, true, undefined, { guestInputs: PROFILE });
+    const result = await getChatCompletion([], user, true, undefined, { purpose: 'CHAT', guestInputs: PROFILE });
     expect(result).toMatchObject({ content: FALLBACK_RESPONSE, isFallback: true, failureMode: 'api-error', errorKind: 'timeout' });
     expect(result).not.toHaveProperty('proposedEdits');
     expect(JSON.stringify(result)).not.toContain('4.1');
@@ -94,28 +94,28 @@ describe('US-15 AC33: the run_roadmap round (JSON path)', () => {
 
   it('US-15 AC33 (S4): a failed second call keeps the first call\'s usage and still records the round', async () => {
     replies(json('tool_use', [RUN, FIELD]), new TypeError('fetch failed'), new TypeError('fetch failed'));
-    const result = await getChatCompletion([], user, true, undefined, { guestInputs: PROFILE });
+    const result = await getChatCompletion([], user, true, undefined, { purpose: 'CHAT', guestInputs: PROFILE });
     expect(result.usage).toEqual({ inputTokens: 10, outputTokens: 5, cacheCreationTokens: 0, cacheReadTokens: 100 });
     expect(result.roadmapRun).toEqual({ applied: 2, rejected: 0 });
   });
 
   it('a failed first call reports zero usage and no round, as before', async () => {
     replies(new TypeError('fetch failed'), new TypeError('fetch failed'));
-    const result = await getChatCompletion([], user, true, undefined, { guestInputs: PROFILE });
+    const result = await getChatCompletion([], user, true, undefined, { purpose: 'CHAT', guestInputs: PROFILE });
     expect(result.usage).toEqual({ inputTokens: 0, outputTokens: 0, cacheCreationTokens: 0, cacheReadTokens: 0 });
     expect(result).not.toHaveProperty('roadmapRun');
   });
 
   it('no run_roadmap: one call, as before', async () => {
     const { bodies } = replies(json('end_turn', [{ type: 'text', text: 'An answer.' }]));
-    const result = await getChatCompletion([], user, true, undefined, { guestInputs: PROFILE });
+    const result = await getChatCompletion([], user, true, undefined, { purpose: 'CHAT', guestInputs: PROFILE });
     expect(bodies()).toHaveLength(1);
     expect(result).not.toHaveProperty('roadmapRun');
   });
 
   it('no tools (Discord, YouTube, the bubble, the embed): a run_roadmap block is never run', async () => {
     const { bodies } = replies(json('tool_use', [{ type: 'text', text: 'An answer.' }, RUN]));
-    const result = await getChatCompletion([], user, false, undefined, { guestInputs: PROFILE });
+    const result = await getChatCompletion([], user, false, undefined, { purpose: 'CHAT', guestInputs: PROFILE });
     expect(bodies()).toHaveLength(1);
     expect(bodies()[0]).not.toHaveProperty('tools');
     expect(result).not.toHaveProperty('roadmapRun');
@@ -147,7 +147,7 @@ describe('US-15 AC33: the run_roadmap round (streamed)', () => {
         ...end('end_turn')]));
     global.fetch = fetchMock as unknown as typeof fetch;
     const onEvent = vi.fn();
-    const result = await getChatCompletion([], user, true, onEvent, { guestInputs: PROFILE });
+    const result = await getChatCompletion([], user, true, onEvent, { purpose: 'CHAT', guestInputs: PROFILE });
 
     expect(onEvent.mock.calls.map((c) => c[0])).toEqual([
       { type: 'thinking', text: 'Run it.' },
@@ -185,7 +185,7 @@ describe('US-15 AC33: the run_roadmap round (streamed)', () => {
         { type: 'content_block_stop', index: 0 },
         ...end('end_turn')])) as unknown as typeof fetch;
     const onEvent = vi.fn();
-    const result = await getChatCompletion([], user, true, onEvent, { guestInputs: PROFILE });
+    const result = await getChatCompletion([], user, true, onEvent, { purpose: 'CHAT', guestInputs: PROFILE });
     const events = onEvent.mock.calls.map((c) => c[0]);
     expect(events).toEqual([
       { type: 'text', text: PREAMBLE },
@@ -201,7 +201,7 @@ describe('US-15 AC33: the run_roadmap round (streamed)', () => {
       .mockResolvedValueOnce(preambleThenRun())
       .mockRejectedValue(new TypeError('fetch failed')) as unknown as typeof fetch;
     const onEvent = vi.fn();
-    const result = await getChatCompletion([], user, true, onEvent, { guestInputs: PROFILE });
+    const result = await getChatCompletion([], user, true, onEvent, { purpose: 'CHAT', guestInputs: PROFILE });
     expect(onEvent.mock.calls.map((c) => c[0])).toEqual([
       { type: 'text', text: PREAMBLE },
       { type: 'status', text: ROADMAP_STATUS },
@@ -217,7 +217,7 @@ describe('US-15 AC33: the run_roadmap round (streamed)', () => {
 describe('US-59 + US-15 AC33: a run_roadmap round with the subscription tool', () => {
   const SUB = { type: 'tool_use', id: 'toolu_sub', name: 'propose_subscription_change', input: { subscription: 'S1', action: 'pause' } };
   const digits = [{ role: 'user' as const, content: 'LDL 4.1 mmol/L, and pause my subscription' }];
-  const opts = { subscriptionTool: true, guestInputs: PROFILE, profileEdits: true };
+  const opts = { purpose: 'CHAT' as const, subscriptionTool: true, guestInputs: PROFILE, profileEdits: true };
 
   it('offers run_roadmap, the form tools and the subscription tool; the proposal from the first call becomes the result', async () => {
     const { bodies } = replies(
@@ -267,21 +267,21 @@ describe('US-16 AC2: the profile tool and its edits only for a client that appli
 
   it('without profileEdits: the old tool set, and a profile edit the model sends anyway is dropped', async () => {
     const { bodies } = replies(json('tool_use', [{ type: 'text', text: 'Noted.' }, PROFILE_CALL, FIELD]));
-    const result = await getChatCompletion([], said, true, undefined, { guestInputs: PROFILE });
+    const result = await getChatCompletion([], said, true, undefined, { purpose: 'CHAT', guestInputs: PROFILE });
     expect(names(bodies()[0])).toEqual(['propose_field_edit', 'propose_medication_edit', 'run_roadmap']);
     expect(result.proposedEdits).toEqual([{ kind: 'field', field: 'ldlC', displayValue: 4.1, unitSystem: 'si', date: null }]);
   });
 
   it('without profileEdits, a reply holding only a profile edit is not a tool-only ack', async () => {
     replies(json('tool_use', [PROFILE_CALL]));
-    const result = await getChatCompletion([], said, true, undefined, { guestInputs: PROFILE });
+    const result = await getChatCompletion([], said, true, undefined, { purpose: 'CHAT', guestInputs: PROFILE });
     expect(result.proposedEdits).toBeUndefined();
     expect(result.isFallback).toBe(true);
   });
 
   it('with profileEdits: the tool is offered and the edit comes back', async () => {
     const { bodies } = replies(json('tool_use', [{ type: 'text', text: 'Please confirm.' }, PROFILE_CALL]));
-    const result = await getChatCompletion([], said, true, undefined, { guestInputs: PROFILE, profileEdits: true });
+    const result = await getChatCompletion([], said, true, undefined, { purpose: 'CHAT', guestInputs: PROFILE, profileEdits: true });
     expect(names(bodies()[0])).toEqual(['propose_field_edit', 'propose_medication_edit', 'propose_profile_edit', 'run_roadmap']);
     expect(result.proposedEdits).toEqual([{ kind: 'profile', sex: 'male', heightCm: 178 }]);
   });
