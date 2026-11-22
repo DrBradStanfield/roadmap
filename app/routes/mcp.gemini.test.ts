@@ -25,6 +25,7 @@ vi.mock('../lib/product-events.server', async (importOriginal) => {
 });
 import { recordServerEvent } from '../lib/product-events.server';
 import { resetMcpMemory } from '../lib/mcp-grants.server';
+import { KNOWN_CLIENTS } from '../lib/mcp-clients.server';
 import { GEMINI_CLIENT_ID, GEMINI_MAX_STATE_LENGTH, isGeminiRedirect } from '../lib/mcp-gemini.server';
 import { action, loader } from './mcp.$';
 
@@ -43,6 +44,7 @@ beforeEach(() => {
   process.env.MCP_CLIENT_HMAC_KEY = Buffer.alloc(32, 4).toString('base64');
   process.env.DROPBOX_APP_KEY = 'app-key';
   process.env.DROPBOX_APP_SECRET = 'app-secret';
+  process.env.MCP_GEMINI = 'on';
   resetMcpMemory();
   vi.mocked(recordServerEvent).mockClear();
   vi.stubGlobal('fetch', vi.fn(async () => Response.json({
@@ -55,6 +57,7 @@ beforeEach(() => {
 afterEach(() => {
   vi.unstubAllGlobals();
   delete process.env.MCP_SEAL_KEYS;
+  delete process.env.MCP_GEMINI;
 });
 
 function unescapeHtml(text: string): string {
@@ -145,6 +148,13 @@ describe('US-32 AC59: isGeminiRedirect accepts one shape, naming this server', (
     ['a dot segment', `${RELAY}../1-mcp_example_test`],
     ['an empty id', `${RELAY}-mcp_example_test`],
     ['an over-long id', `${RELAY}${'1'.repeat(65)}-mcp_example_test`],
+    ['an @ in the id', `${RELAY}1@2-mcp_example_test`],
+    ['a backslash in the id', `${RELAY}1\\2-mcp_example_test`],
+    ['a tab in the id', `${RELAY}1\t2-mcp_example_test`],
+    ['a newline in the id', `${RELAY}1\n2-mcp_example_test`],
+    ['a non-ASCII digit in the id', `${RELAY}1٣2-mcp_example_test`],
+    ['a hyphen in the id', `${RELAY}1-2-mcp_example_test`],
+    ['%2F in the id', `${RELAY}1%2F2-mcp_example_test`],
     ['a claude callback', 'https://claude.ai/api/mcp/auth_callback'],
     ['loopback', 'http://localhost/callback'],
   ])('refuses %s', (_, uri) => {
@@ -224,5 +234,61 @@ describe('US-32 AC61: authorize and token for the pinned Gemini client', () => {
       client_id: 'https://claude.ai/oauth/mcp-oauth-client-metadata',
       redirect_uri: USER_A, response_type: 'code', code_challenge: CHALLENGE, code_challenge_method: 'S256', state: 'x',
     })}`)).status).toBe(400);
+  });
+});
+
+describe('US-32 AC63: the MCP_GEMINI switch, off unless exactly "on"', () => {
+  it.each([undefined, '', 'ON', 'true', '1', ' on'])('MCP_GEMINI=%j: no pin, main\'s refusal, no gemini client anywhere', async (value) => {
+    if (value === undefined) delete process.env.MCP_GEMINI;
+    else process.env.MCP_GEMINI = value;
+    const refused = await register([USER_A]);
+    const legacy = await register(['https://evil.test/cb']);
+    expect(refused.status).toBe(400);
+    expect(await refused.text()).toBe(await legacy.text());
+    const res = await authorize(USER_A, 'x');
+    expect(res.status).toBe(400);
+    expect(await res.text()).not.toContain('Gemini');
+  });
+
+  it('switching off ends a code minted while on', async () => {
+    const back = await codeFor(USER_A, 'x');
+    process.env.MCP_GEMINI = 'off';
+    const res = await token({ grant_type: 'authorization_code', code: back.searchParams.get('code')!, client_id: GEMINI_CLIENT_ID, redirect_uri: USER_A, code_verifier: VERIFIER });
+    expect(res.status).toBe(400);
+  });
+});
+
+describe('US-32 AC64: a refused registration counts at most the per-IP allowance', () => {
+  it('ten refusals from one IP write one row, in either switch state', async () => {
+    for (const state of ['on', 'off']) {
+      resetMcpMemory();
+      vi.mocked(recordServerEvent).mockClear();
+      process.env.MCP_GEMINI = state;
+      for (let i = 0; i < 10; i++) expect((await register([USER_A, 'https://evil.test/cb'])).status).toBe(400);
+      expect(vi.mocked(recordServerEvent).mock.calls.filter(([name]) => name === 'mcp_authorize_refused')).toHaveLength(1);
+    }
+  });
+});
+
+describe('US-32 AC65: any Gemini redirect beside any other is refused before truncation', () => {
+  const five = Array.from({ length: 5 }, () => 'https://claude.ai/api/mcp/auth_callback');
+  it.each(['on', 'off'])('MCP_GEMINI=%s: Gemini in position 6, and in position 1', async (state) => {
+    process.env.MCP_GEMINI = state;
+    expect((await register([...five, USER_A])).status).toBe(400);
+    expect((await register([USER_A, ...five])).status).toBe(400);
+  });
+
+  it('nine Gemini redirects, an empty list, or a non-string entry are refused', async () => {
+    expect((await register(Array.from({ length: 9 }, () => USER_A))).status).toBe(400);
+    expect((await register([])).status).toBe(400);
+    expect((await post('/mcp/register', {
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ redirect_uris: [USER_A, 7] }),
+    })).status).toBe(400);
+  });
+
+  it('the pin keeps no redirect list, and authorize judges gemini by shape alone', async () => {
+    expect(KNOWN_CLIENTS.get(GEMINI_CLIENT_ID)!.redirectUris).toEqual([]);
+    expect((await authorize('https://claude.ai/api/mcp/auth_callback', 'x')).status).toBe(400);
   });
 });

@@ -11,7 +11,7 @@ import { sameBytes } from './crypto-compare.server';
 import type { McpOAuthDetail, McpOAuthReason } from '../../packages/health-core/src/product-events';
 import { issuer, resourceUrl } from './mcp-config.server';
 import { isAllowedRedirect, redirectMatches, redirectMiss, type McpClient } from './mcp-clients.server';
-import { GEMINI_CLIENT_ID, GEMINI_MAX_STATE_LENGTH, isGeminiRedirect } from './mcp-gemini.server';
+import { GEMINI_CLIENT_ID, GEMINI_MAX_STATE_LENGTH, geminiEnabled, isGeminiRedirect } from './mcp-gemini.server';
 import { nowSeconds, STATE_LIFETIME_SECONDS, type StatePayload } from './mcp-grants.server';
 import type { McpProvider } from './mcp-providers.server';
 import { packSealed } from './mcp-seal.server';
@@ -101,7 +101,7 @@ function fail(reason: keyof typeof OAUTH_FAILURES, redirectable = true, detail?:
  */
 export function checkAuthorize(params: URLSearchParams, client: McpClient): AuthorizeCheck {
   const redirectUri = params.get('redirect_uri') ?? '';
-  const gemini = client.clientId === GEMINI_CLIENT_ID;
+  const gemini = client.clientId === GEMINI_CLIENT_ID && geminiEnabled();
   // The pinned Gemini client is judged by shape and nothing else (US-32 AC61); every other client as before.
   const accepted = gemini
     ? isGeminiRedirect(redirectUri)

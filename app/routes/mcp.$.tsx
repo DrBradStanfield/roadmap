@@ -481,7 +481,7 @@ async function registerEndpoint(request: Request): Promise<Response> {
   }
   const client = registerClient(body);
   if (!client) {
-    void recordServerEvent('mcp_authorize_refused', { reason: 'register-redirect', detail: registrationMiss(body) });
+    if (allowRateLimitEvent(`register:${getClientIp(request, 'fly')}`)) void recordServerEvent('mcp_authorize_refused', { reason: 'register-redirect', detail: registrationMiss(body) });
     return oauthError('invalid_redirect_uri', 'This server registers only known assistant redirect URIs');
   }
   return Response.json(

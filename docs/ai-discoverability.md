@@ -74,7 +74,7 @@ change below. The original plan and its reasoning:
 | Official MCP Registry | Listed | namespace `io.github.DrBradStanfield` |
 | OpenAI (ChatGPT apps) | Declined 2026-10-29 on scope (health apps out of scope); left to stand, no resubmission (Brad 2026-11-02). Custom connector in developer mode still works | [chatgpt-app-listing.md](chatgpt-app-listing.md) |
 | Claude directory | Submitted 2026-10-21, in review | [claude-directory-listing.md](claude-directory-listing.md) |
-| Gemini custom connector | Supported, pending one live confirmation (2026-11-23); no directory listing. How a US tester verifies it: [agent-access.md](agent-access.md) § The hosted path | US-32 AC59-AC62 |
+| Gemini custom connector | Off by default (`MCP_GEMINI`); pending one live confirmation (2026-11-23); no directory listing. How a US tester verifies it: [agent-access.md](agent-access.md) § The hosted path | US-32 AC59-AC65 |
 | Glama | Server and connector listed, claimed, build passes; profile 83% (2026-10-21), tools A, maintenance B | glama.ai/mcp/servers/DrBradStanfield/roadmap (Admin → score) |
 | mcp.so | Live, paid ($39) | mcp.so/servers/health-by-dr-brad |
 | mcprush | Listed by them from a public index 2026-10-22, unclaimed; points straight at mcp.drstanfield.com (not proxied); category wrong (Lifestyle & Local) | mcprush.com/drbradstanfield/health-by-dr-brad-mcp |

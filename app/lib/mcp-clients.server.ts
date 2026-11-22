@@ -13,7 +13,7 @@ import { pipeline, type Transform } from 'node:stream';
 import zlib from 'node:zlib';
 import type { McpOAuthDetail } from '../../packages/health-core/src/product-events';
 import { clientHmacKey } from './mcp-config.server';
-import { GEMINI_CLIENT_ID, registerGemini } from './mcp-gemini.server';
+import { GEMINI_CLIENT_ID, geminiEnabled, registerGemini } from './mcp-gemini.server';
 export { registrationMiss } from './mcp-gemini.server';
 import { b64url } from './mcp-seal.server';
 import { readCapped } from './capped-body.server';
@@ -215,7 +215,7 @@ function canonicalMetadata(input: unknown): ClientMetadata | null {
 
 export function registerClient(input: unknown): McpClient | null {
   const gemini = registerGemini(input);
-  if (gemini) return gemini;
+  if (gemini) return gemini === 'refused' ? null : gemini;
   const metadata = canonicalMetadata(input);
   if (!metadata) return null;
   const body = Buffer.from(JSON.stringify(metadata), 'utf8');
@@ -457,7 +457,8 @@ export async function resolveClient(clientId: string, nowMs = Date.now(), miss: 
   }
   // Exact string only: a lookalike id falls through to the fetch path below.
   const known = KNOWN_CLIENTS.get(clientId);
-  if (known) return known;
+  // Switched off, the Gemini pin is no client (US-32 AC63).
+  if (known) return clientId === GEMINI_CLIENT_ID && !geminiEnabled() ? null : known;
   if (clientId.startsWith('https://')) return fetchClientMetadata(clientId, nowMs, miss);
   return null;
 }

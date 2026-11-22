@@ -69,12 +69,31 @@ export function isGeminiRedirect(uri: string): boolean {
   return id.length <= GEMINI_ID_MAX && /^[A-Za-z0-9_]+$/.test(id);
 }
 
-/** The pinned Gemini client, when EVERY redirect in a registration is Gemini's; else null. */
-export function registerGemini(input: unknown): McpClient | null {
-  const uris = (input as { redirect_uris?: unknown } | null)?.redirect_uris;
-  if (!Array.isArray(uris) || uris.length === 0 || uris.length > GEMINI_MAX_REDIRECTS) return null;
-  if (!uris.every((u): u is string => typeof u === 'string' && isGeminiRedirect(u))) return null;
-  return { clientId: GEMINI_CLIENT_ID, name: 'Gemini', redirectUris: uris };
+/**
+ * The switch (US-32 AC63, owner ruling 2026-11-23): the Gemini pin exists only
+ * while the server's own `MCP_GEMINI` is exactly `on`. Off, `gemini` is no
+ * client at all: registration refuses as before, `resolveClient` knows no such
+ * id, and `unpackSealed` opens no blob minted for it, so turning it off ends
+ * every Gemini connection. Off by default until one live attempt shows Google's
+ * relay delivers a code only to the account its redirect names.
+ */
+export function geminiEnabled(): boolean {
+  return process.env.MCP_GEMINI === 'on';
+}
+
+/**
+ * null when no redirect is Gemini's (the ordinary path decides). Otherwise the
+ * pinned client, only while switched on and only when EVERY redirect (1 to 8,
+ * all strings) is Gemini's; any other list holding a Gemini redirect is
+ * `refused`, in both switch states, before the ordinary path can truncate it.
+ */
+export function registerGemini(input: unknown): McpClient | 'refused' | null {
+  const raw = (input as { redirect_uris?: unknown } | null)?.redirect_uris;
+  const uris: unknown[] = Array.isArray(raw) ? raw : [];
+  const gemini = uris.filter((u) => typeof u === 'string' && isGeminiRedirect(u));
+  if (gemini.length === 0) return null;
+  if (!geminiEnabled() || gemini.length !== uris.length || uris.length > GEMINI_MAX_REDIRECTS) return 'refused';
+  return { clientId: GEMINI_CLIENT_ID, name: 'Gemini', redirectUris: gemini as string[] };
 }
 
 /** A refused registration's closed category for the counter: never a URI or host. */
