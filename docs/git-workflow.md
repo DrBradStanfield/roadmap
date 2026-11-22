@@ -249,7 +249,7 @@ and Brad merges them. One at a time, each merge made the rest conflict and re-ru
    changes need Brad's explicit yes. A rejected PR stays out of the batch, with a comment on it saying why.
    Never merge a PR into a batch and then revert it: its head would still reach main, and GitHub would mark
    it merged.
-3. **Build the batch, 8 to 10 low-risk PRs** (high-risk ones alone, or in a group of at most three).
+3. **Build the batch from PRs that pass the batching test** in `.claude/skills/untangle/SKILL.md` (high-risk ones alone, or in a group of at most three).
    `sh tools/worktree-new.sh batch-<date>-<n>`, write a list file (`<pr> <full reviewed head sha>` per line),
    run `node tools/merge-batch.mjs <list-file>` in the worktree. To drop a rejected PR, keep the list file and
    rebuild on a fresh worktree: `node tools/merge-batch.mjs <list-file> --skip <pr>[,<pr>...]`. It stops
