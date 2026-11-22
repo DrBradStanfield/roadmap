@@ -110,13 +110,9 @@ describe('generateSuggestions', () => {
       expect(hba1cSuggestion?.priority).toBe('attention');
     });
 
-    it('generates normal suggestion for HbA1c < 5.7% (<38.8 mmol/mol)', () => {
+    it('US-07 AC18: no card for HbA1c < 5.7% (<38.8 mmol/mol)', () => {
       const { inputs, results } = createTestData({ hba1c: hba1c(5.2) });
-      const suggestions = generateSuggestions(inputs, results);
-
-      const hba1cSuggestion = suggestions.find(s => s.id === 'hba1c-normal');
-      expect(hba1cSuggestion).toBeDefined();
-      expect(hba1cSuggestion?.priority).toBe('info');
+      expect(generateSuggestions(inputs, results).filter(s => s.id.startsWith('hba1c-'))).toEqual([]);
     });
   });
 
@@ -2888,14 +2884,9 @@ describe('generateSuggestions', () => {
       expect(generateSuggestions(inputs, results).find(s => s.id === 'lpa-elevated')?.description).toContain(line);
     });
 
-    it('generates normal suggestion for Lp(a) < 75 nmol/L', () => {
+    it('US-07 AC18: no card for Lp(a) < 75 nmol/L', () => {
       const { inputs, results } = createTestData({ lpa: 30 });
-      const suggestions = generateSuggestions(inputs, results);
-      const lpaSuggestion = suggestions.find(s => s.id === 'lpa-normal');
-      expect(lpaSuggestion).toBeDefined();
-      expect(lpaSuggestion?.priority).toBe('info');
-      expect(lpaSuggestion?.description).toContain('normal range');
-      expect(lpaSuggestion?.description).toContain('one-time test');
+      expect(generateSuggestions(inputs, results).filter(s => s.id.startsWith('lpa-'))).toEqual([]);
     });
 
     it('generates borderline suggestion for Lp(a) 75-124 nmol/L', () => {
@@ -2984,11 +2975,11 @@ describe('generateSuggestions', () => {
     });
 
     it('shows same unit (nmol/L) in both SI and conventional', () => {
-      const { inputs, results } = createTestData({ lpa: 50 });
+      const { inputs, results } = createTestData({ lpa: 100 });
       const siSuggestions = generateSuggestions(inputs, results, 'si');
       const convSuggestions = generateSuggestions(inputs, results, 'conventional');
-      expect(siSuggestions.find(s => s.id === 'lpa-normal')?.title).toContain('nmol/L');
-      expect(convSuggestions.find(s => s.id === 'lpa-normal')?.title).toContain('nmol/L');
+      expect(siSuggestions.find(s => s.id === 'lpa-borderline')?.title).toContain('nmol/L');
+      expect(convSuggestions.find(s => s.id === 'lpa-borderline')?.title).toContain('nmol/L');
     });
 
     it('uses LDL when ApoB is unavailable in checklist', () => {
@@ -3024,7 +3015,6 @@ describe('generateSuggestions', () => {
       const { inputs, results } = createTestData({ lpa: 75 });
       const suggestions = generateSuggestions(inputs, results);
       expect(suggestions.find(s => s.id === 'lpa-borderline')).toBeDefined();
-      expect(suggestions.find(s => s.id === 'lpa-normal')).toBeUndefined();
     });
 
     it('handles exact boundary at 125 nmol/L (elevated)', () => {

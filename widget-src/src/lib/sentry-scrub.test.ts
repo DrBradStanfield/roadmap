@@ -26,6 +26,23 @@ describe('scrubEvent — the upload review boundary (feature upload_review)', ()
   });
 });
 
+// US-14 AC5 (2026-11-23): a Dropbox busy refusal of an original is its own capture (upload-save-store.ts). Its op tag
+// is a constant the strict branch keeps; nothing else of the error survives. Synthetic text.
+describe('scrubEvent — a busy original write (op write-document-busy)', () => {
+  it('keeps area, op and backend; no file name, hash, response body or value survives', () => {
+    const marker = 'Clinic letters/2026-01-01 Zinc 0.4.pdf sha256-abc path/too_many_write_operations weird';
+    const scrubbed = scrubEvent(makeEvent({
+      message: marker,
+      tags: { area: 'cloud-sync', op: 'write-document-busy', backend: 'dropbox', ref: marker },
+      exception: { values: [{ type: 'BusyError', value: marker, mechanism: { type: 'generic', handled: true } }] },
+      breadcrumbs: [{ category: 'fetch', message: marker }],
+      extra: { body: marker },
+    }));
+    expect(scrubbed?.tags).toEqual({ area: 'cloud-sync', op: 'write-document-busy', backend: 'dropbox' });
+    expect(JSON.stringify(scrubbed)).not.toMatch(/weird|Zinc|sha256|too_many|Clinic letters/);
+  });
+});
+
 // US-16 AC2f: a throwing "Delete all my data" write is captured under area
 // 'erase'. A cloud adapter's error text can quote the record, so it takes the
 // strict branch, as 'cloud-sync' does. Synthetic text.

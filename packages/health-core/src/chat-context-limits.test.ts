@@ -16,11 +16,11 @@ function context(inputs: Partial<HealthInputs>, dated: Parameters<typeof chatCon
 }
 
 describe('US-12 AC20: the chat context and a lab limit', () => {
-  it('latestValues says a deciding limit as printed, and the card text carries the limit, never the representative', () => {
+  it('latestValues says a deciding limit as printed, never the representative; normal, so no card (US-07 AC18)', () => {
     const inputs = withRowValue(base, 'lpa', 10, '<');
     const json = context(inputs, [{ metricType: 'lpa', value: 10, comparator: '<', recordedAt: '2026-08-01' }]);
     expect(json.latestValues.lpa).toBe('< 10');
-    expect(json.currentSuggestions.find((s: { id: string }) => s.id === 'lpa-normal').title).toBe('Lp(a): < 10 nmol/L');
+    expect(json.currentSuggestions.some((s: { id: string }) => s.id.startsWith('lpa-'))).toBe(false);
     expect(json.measurementHistory.lpa).toEqual([{ date: '2026-08-01', value: 10, comparator: '<' }]);
     expect(JSON.stringify(json)).not.toMatch(new RegExp(`"lpa":"?${inputs.lpa}\\b`));
   });

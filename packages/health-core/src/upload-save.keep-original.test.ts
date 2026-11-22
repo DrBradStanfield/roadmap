@@ -35,7 +35,7 @@ function cloudIO(fail: { notHeld?: string[]; refused?: string[] } = {}): UploadS
   const stored: string[] = [];
   let n = 0;
   return {
-    stored, holds: (id) => !fail.notHeld?.includes(id), original: (id) => `bytes of ${id}`, mimeType: () => 'application/pdf',
+    stored, stopped: () => false, holds: (id) => !fail.notHeld?.includes(id), original: (id) => `bytes of ${id}`, mimeType: () => 'application/pdf',
     write: async (ref, _b, id) => { if (fail.refused?.includes(id)) throw new Error('refused'); stored.push(ref); },
     now: () => NOW, newId: () => `doc-${n++}`,
   };
