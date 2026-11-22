@@ -122,8 +122,11 @@ $files
 EOF
 # Sets gatefile and ciyml from a newline-separated path list. Whole lines only: a near name (a trailing space,
 # another folder, a suffix) never matches. Case is ignored (perl lc), failing closed: `Tools/Merge-Gated.sh`
-# counts as the gate file, since a case-insensitive disk collides the two.
+# counts as the gate file, since a case-insensitive disk collides the two. A path holding a non-ASCII byte is
+# judged by main's copy (gatefile=true); a failed check refuses 4.
 scan() {
+  printf '%s' "$1" | LC_ALL=C perl -ne 'exit 1 if /[^\x0a\x20-\x7e]/'
+  case $? in 0) ;; 1) gatefile=true ;; *) die "cannot check PR $pr's paths for non-ASCII bytes" 4 ;; esac
   lower=$(printf '%s' "$1" | perl -pe '$_ = lc') || die "cannot lower-case PR $pr's paths" 4
   set -- "$lower"
   case "

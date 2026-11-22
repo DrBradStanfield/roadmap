@@ -288,7 +288,7 @@ describe('US-64 AC32 merge-gated.sh', () => {
         expect(r.status).toBe(7);
         expect(r.merges).toEqual([]);
         const near = ['tools/merge-gated.sh ', ' tools/merge-gated.sh', 'x/tools/merge-gated.sh', 'tools/merge-gated.sh.bak',
-          'tools/merge gated.sh', 'tools/generated-files.json~', '.github/workflows/ci.yml.orig', 'café/tools/merge-gated.sh'].join('\n');
+          'tools/merge gated.sh', 'tools/generated-files.json~', '.github/workflows/ci.yml.orig'].join('\n');
         const p = gate(['123', SHA], {}, { GIT_DIFF: near, MAIN_COPY: fakeMain(7) });
         expect(p.status).toBe(0);
         expect(p.stderr).not.toMatch(/main's copy|main copy/);
@@ -308,6 +308,22 @@ describe('US-64 AC32 merge-gated.sh', () => {
           expect(r.status, lookalike).toBe(0);
           expect(r.merges).toEqual([MERGE_ARGV]);
         }
+      });
+      it("a path holding a non-ASCII byte is judged by main's copy, through gh's list and git's; all-ASCII is unaffected", () => {
+        for (const path of ['tools/merge-gated.ſh', 'docs/café.md', 'café/tools/merge-gated.sh']) {
+          const viaGit = gate(['123', SHA], {}, { GIT_DIFF: `docs/a.md\n${path}`, MAIN_COPY: fakeMain(7) });
+          expect(viaGit.status, path).toBe(7);
+          expect(viaGit.stderr).toContain("main's copy judges it");
+          expect(viaGit.merges).toEqual([]);
+          const viaGh = gate(['123', SHA], { files: { changedFiles: 2, files: [{ path: 'docs/a.md' }, { path }] } }, { MAIN_COPY: fakeMain(7) });
+          expect(viaGh.status, path).toBe(7);
+          expect(viaGh.gits.map((c) => c[1])).toEqual(['fetch', 'show', 'show']);
+        }
+        const ascii = gate(['123', SHA], { files: { changedFiles: 2, files: [{ path: 'docs/a.md' }, { path: 'docs/cafe.md' }] } },
+          { GIT_DIFF: 'docs/a.md\ndocs/cafe.md', MAIN_COPY: fakeMain(7) });
+        expect(ascii.status).toBe(0);
+        expect(ascii.stderr).not.toMatch(/main's copy|main copy/);
+        expect(ascii.merges).toEqual([MERGE_ARGV]);
       });
       it("main's copy, run with the marker, does not route again on git's list", () => {
         const r = gate(['123', SHA], {}, { GIT_DIFF: 'tools/merge-gated.sh', MERGE_GATED_FROM_MAIN: '1' });
