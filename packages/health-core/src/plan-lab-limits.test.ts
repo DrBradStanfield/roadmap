@@ -74,10 +74,9 @@ describe('US-12 AC20: eGFR printed as a limit', () => {
 });
 
 describe('US-12 AC20: the common cases', () => {
-  it('Lp(a) "< 10" nmol/L decides: the normal card, titled with the limit', () => {
+  it('Lp(a) "< 10" nmol/L decides: normal, so no card (US-07 AC18); the value prints as the limit', () => {
     const payload = planPayload(computePlan(record([{ metricType: 'lpa', value: 10, comparator: '<' }]), NOW));
-    const card = payload.suggestions.find((s) => s.id === 'lpa-normal');
-    expect(card?.title).toBe('Lp(a): < 10 nmol/L');
+    expect(payload.suggestions.filter((s) => s.id.startsWith('lpa-'))).toEqual([]);
     expect(payload.inputs.lpa).toBe('< 10');
     expect(payload.currentValues.find((v) => v.metric === 'lpa')).toMatchObject({ value: '< 10', comparator: '<' });
   });
@@ -114,7 +113,9 @@ describe('US-12 AC20: the common cases', () => {
   it('a strict limit at a cutoff decides; the non-strict one at the same cutoff does not (HbA1c at the prediabetes line)', () => {
     const at = HBA1C_THRESHOLDS.prediabetes; // 38.8 mmol/mol as displayed
     const strict = computePlan(record([{ metricType: 'hba1c', value: at, comparator: '<' }]), NOW);
-    expect(strict.results.suggestions.find((s) => s.id === 'hba1c-normal')?.description).toContain('< 38.8');
+    // Normal, so no card (US-07 AC18): the plan grades it, the loose one it does not.
+    expect(strict.inputs.hba1c).toBeDefined();
+    expect(strict.results.suggestions.some((s) => s.id.startsWith('hba1c-'))).toBe(false);
     const loose = computePlan(record([{ metricType: 'hba1c', value: at, comparator: '<=' }]), NOW);
     expect(loose.results.suggestions.some((s) => s.id.startsWith('hba1c-'))).toBe(false);
     expect(planPayload(loose).currentValues.find((v) => v.metric === 'hba1c')?.value).toBe('≤ 38.8');
