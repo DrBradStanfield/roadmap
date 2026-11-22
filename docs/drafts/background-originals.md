@@ -11,16 +11,14 @@ check 9): the rule and its exhaustive test below come before any screen.
    document, lab archive and archive-only file, holding a file's bytes only with a cloud (upload-save.ts:117-125).
 2. `saveDocuments` phase 1, serial: hash, dedup by `contentHash`, mint each ref against the record's refs, find the
    held metadata-only row the upload replaces (document-save.ts:170-227; `held` at :204, `writes.push` at :217).
-3. Phase 2: every blob written to the cloud, the first write per folder alone, the rest 3 at a time
-   (document-save.ts:229-264). A failure keeps the row's hash and counts `unstored` (:242-246).
-4. A repeat failure behind a held row is settled, nothing new filed (document-save.ts:266-273).
+3. Phase 2: every blob written, first write per folder alone, the rest 3 at a time (document-save.ts:229-264).
+4. A failure keeps the row's hash, counts `unstored` (:242-246); behind a held row it is settled (:266-273).
 5. Only then `commit(file)` writes values and rows on the record as it stands (upload-save.ts:151-193;
    document-save.ts:277-305): replaced held rows get `deleted`, new rows are appended.
-6. iPhone: the engine door checks the erase and the open session before each write and before the commit
-   (ios/engine/upload-save-door.ts:47, :58-61, :74-82); one Save at a time (ios/engine/cloud-documents.ts:24-28).
-7. Web: the same, through one `session.edit` stamped with the erase the page showed (widget-src/src/storage/upload-save-store.ts:52-53, :68, :81).
-8. The sheet waits on all of it (ios/HealthRoadmap/MyData/RecordStore+Uploads.swift:13-56): with ~18 PDFs and
-   Dropbox, about 20 s greyed out.
+6. iPhone: erase and open-session checks before each write and the commit (ios/engine/upload-save-door.ts:47,
+   :58-61, :74-82); one Save at a time (ios/engine/cloud-documents.ts:24-28).
+7. Web: the same, one `session.edit` at the erase the page showed (widget-src/src/storage/upload-save-store.ts:52-53, :68, :81).
+8. The sheet waits on all of it (ios/HealthRoadmap/MyData/RecordStore+Uploads.swift:13-56): ~20 s for ~18 PDFs.
 
 **The rule relaxed.** Today it is "one commit or none": every row lands with its original's outcome already known.
 New: **one commit for the values and the rows now; then, per batch, later commits that only attach originals.** A
@@ -63,18 +61,15 @@ Pure `transition(state, event, job) → state` (no clock, no I/O; the uploader s
 
 **Where it lives: on the device, outside the record.** Two choices:
 
-- (A) Device-only queue (recommended). The record holds the metadata-only row it already holds. The job list and
-  bytes live in the app's container (iPhone) or IndexedDB (web). They survive the sheet closing, backgrounding and a
-  kill. Nothing in the record changes shape. Rows stay immutable and merge stays append-only plus `deleted`
-  OR-ed (merge.ts:22-23).
-- (B) A marker on the row (`originalPending: deviceId`). Rows are never mutated, so clearing it means a new row and
-  a tombstone. A device that dies leaves a marker that is never cleared. It needs a schema key, a merge rule and an
-  agent-contract note (`read_record` would have to hide or explain it).
+- (A) Device-only queue (recommended). Jobs and bytes live in the app's container (iPhone) or IndexedDB (web) and
+  survive the sheet closing, backgrounding and a kill. The record keeps today's shapes; merge stays append-only
+  plus `deleted` OR-ed (merge.ts:22-23).
+- (B) A marker on the row (`originalPending: deviceId`). Clearing it means a new row and a tombstone; a device that
+  dies leaves it forever; it needs a schema key, a merge rule and an agent-contract note.
 
-**What a second device shows.** Under (A), the same as for any metadata-only row today: the document with its
-details, no original. It never has the bytes, holds no job and never tries to upload. If the person uploads the same
-file there, US-14 AC4 files it behind the held row; device A's job then sees a stored twin and ends `stored`
-without writing (dedup, section 4).
+**What a second device shows.** Under (A), what it shows for any metadata-only row today: details, no original. It
+holds no bytes and no job, so it never uploads. If the person uploads the same file there, US-14 AC4 files it behind
+the held row, and device A's job sees a stored twin and ends `stored` with no write.
 
 ## 3. Where the bytes wait
 
@@ -88,17 +83,15 @@ task, never on the main actor. Per-file cap: the existing `UPLOAD_LIMITS.phone.f
 a pick's total is already capped by the upload rules.
 
 **Web.** Today an original is a lazy `() => Promise<Blob>` over the picked `File` (upload-save-store.ts:19). It dies
-with the tab. New: one IndexedDB database holding the jobs and their Blobs, written after the first commit. Limits,
-stated: in a private window the store goes when the window closes; the browser may evict it under pressure (no
-`navigator.storage.persist()` prompt); a tab closed in the second between commit and the IndexedDB write loses the
-job. In every such case the row stays metadata-only, as a failed write leaves it today, and a later upload of the
-same file stores it (US-14 AC4). On the next load, a job whose Blob is missing ends `failed: bytes-lost`.
+with the tab. New: IndexedDB holds the jobs and Blobs, written after the first commit. Stated limits: a private
+window's store goes with the window; the browser may evict it; a tab closed between commit and the IndexedDB write
+loses the job. Each leaves the row metadata-only, as a failed write does today, and a later upload of the same file
+stores it (US-14 AC4). A job whose Blob is missing on the next load ends `failed: bytes-lost`.
 
-**When the bytes go.** On `stored` and on `abandoned` the bytes file and the job go at once. `failed` keeps them
-until retry or dismiss. An erase deletes the whole pending store on that device: add it to the residue US-11 AC1
-names (user-stories.md:570), and the uploader's per-write erase check (AC1a, user-stories.md:571) stops any write not
-yet begun. A write already in flight when the erase lands may leave a file in the cloud folder: the stated limit of
-US-11 AC1a and AC5 (gotchas.md:7), unchanged.
+**When the bytes go.** On `stored` or `abandoned`, at once; `failed` keeps them until retry or dismiss. An erase
+deletes the device's whole pending store (add it to US-11 AC1's residue, user-stories.md:570), and the per-write
+erase check (AC1a, :571) stops any write not begun. A write in flight may leave a cloud file: AC1a and AC5's stated
+limit (gotchas.md:7), unchanged.
 
 ## 4. The uploader
 
@@ -111,9 +104,33 @@ US-11 AC1a and AC5 (gotchas.md:7), unchanged.
   thread already); GitHub's base64 step runs on the main thread (github.ts:164) but is capped near 1 MB. No service
   worker: Background Fetch is absent in Safari and a worker cannot run `session.edit`. A hidden tab keeps going;
   timers slow, the uploader's backoff tolerates it.
-- **Concurrency.** Today's rule kept: the first write into a new folder runs alone, the rest 3 at a time
-  (document-save.ts:248-264); lanes per provider, one batch at a time through the existing queue
-  (cloud-documents.ts:24-28). Any interim Dropbox exception (item f) carries over as a provider flag.
+- **Concurrency.** One batch at a time per device through the existing queue (cloud-documents.ts:24-28); how a
+  batch writes is per provider, below. Today's rule (first write into a folder alone, then 3 at a time,
+  document-save.ts:248-264) stays where the provider needs it.
+
+**Write method per provider.** Claims about provider APIs here are from memory: to verify against each provider's
+docs before PR 4.
+
+- *Dropbox.* Today: one `files/upload` per file, `overwrite` (dropbox-rest.ts:160). Each commits alone under a lock
+  on the whole app folder, so parallel uploads can be refused `too_many_write_operations` (to verify). The route for
+  many files: an upload session per file (`upload_session/start` with `close: true`, or `append_v2` for large ones;
+  concurrent), then one `upload_session/finish_batch_v2` committing all under one lock (to verify: entry cap, size
+  cap, inline answer or `finish_batch/check`). Changes: (1) a result per entry, so each job moves alone, success to
+  `written`, failure to pending or failed by reason; partial failure is normal. (2) Each entry keeps its own path,
+  `overwrite`, `autorename: false`. (3) One erase check, right before the finish: an unfinished session writes
+  nothing to the folder (to verify; sessions expire), so an erase during the transfer leaves no file, a smaller
+  window than US-11 AC1a's today. (4) Only an entry's own success makes `written`; a finish with no answer leaves
+  its jobs `storing`, and resume re-uploads with `overwrite`. (5) Dropbox makes folders from paths, so it needs no
+  solo first write. Recommend: sessions, 3 started at a time, one finish per batch; one file keeps `files/upload`.
+- *Google Drive.* Drive's batch endpoint carries metadata calls, not media uploads (to verify). Drive makes a
+  second folder of the same name on a concurrent find-or-create, which is why the solo rule exists. Recommend:
+  today's per-file create, first write per folder alone, then 3 at a time, plus the resume lookup above.
+- *GitHub (web only; the iPhone offers Dropbox and Drive, cloud-adapters.ts:16).* The Git data API could store a
+  batch as one commit: a blob per file (parallel), one tree, one commit, one ref update. That gives one commit in
+  the person's history instead of one per file, but it is four new calls, and the ref update fails when the record
+  file was written to the same branch meanwhile, so it needs its own retry. Files over about 1 MB still cannot be
+  read back through the contents API (github.ts:158). Recommend: keep today's per-file PUT; GitHub is the
+  self-hosted minority and batches there are small. Revisit if usage says otherwise.
 - **Retry.** Transient (network, 429, 5xx, timeout): backoff 5 s, 30 s, 2 min, then each launch or foreground;
   cap 8 attempts, then `failed: retries-spent`. Permanent: too large for the provider (GitHub's ~1 MB, github.ts:158),
   the cloud full (`storage-full`, cloud-adapters.ts:277), a refused path, bytes lost.
@@ -140,10 +157,8 @@ US-11 AC1a and AC5 (gotchas.md:7), unchanged.
   `stored` it becomes today's kept line (`archivedLine`, upload-text.ts:52); if any failed, today's unstored line
   (upload-text.ts:56-58). Close is never held for it.
 - After the sheet closes: one quiet indicator by the documents list while any job is unfinished; none otherwise.
-- A failure after the sheet closed: one line atop the documents list with a Try again (job `retry`) and a dismiss
-  (job `dismiss`, so the row stays details-only and the line goes).
-- A row whose original is pending reads as storing; a row whose job failed, or with no job, reads as today
-  (details saved, no original).
+- A later failure: one line atop the documents list with Try again (`retry`) and dismiss (`dismiss`; row stays as is).
+- A row whose original is pending reads as storing; failed or no job reads as today (details saved, no original).
 
 **Sentences that need Brad (options; reuse marked):**
 
@@ -200,8 +215,7 @@ Each PR ≤ about 300 lines, mergeable alone, behaviour unchanged until its swit
 9. Swift: pending folder, `jobs.json`, erase and disconnect wipe. No caller.
 10. Swift switch: Save in 'later' mode, uploader runs, indicator and failed line. App build.
 
-Stories: US-14 gains an AC for background storing; US-11 AC1 lists the pending store; US-52 AC8c's "one step"
-becomes two commits.
+Stories: a new US-14 AC for background storing; US-11 AC1 lists the pending store; US-52 AC8c becomes two commits.
 
 ## 8. Open questions for the owner
 
@@ -216,22 +230,21 @@ becomes two commits.
 - **(d) Briefly await small uploads.** Option 1: never wait; the done screen's line turns to "kept" live. Option 2:
   wait up to about 2 s so most Saves end fully stored. Recommend option 1: it is what Brad asked for, and the screen
   updates anyway.
-- **(e) Google Drive and GitHub.** Drive creates only, so resume looks the name up first; GitHub refuses files over
-  about 1 MB, so those fail permanently at once, never retried. Recommend both as written.
+- **(e) Write method per provider (section 4).** Dropbox: upload sessions and one batch finish (recommended) or
+  today's single uploads. Drive: today's per-file create with a lookup before a retry (recommended). GitHub: today's
+  per-file PUT (recommended) or one Git commit per batch. Files over about 1 MB on GitHub fail at once, never retried.
 - **(f) The interim steps (Save reading "Saving...", Dropbox skipping the solo first write).** "Saving..." stays for
-  the first commit's short wait. The Dropbox exception moves into the uploader as a provider flag. Recommend keep both.
+  the first commit's short wait. The Dropbox exception becomes the uploader's rule: with a batch finish, Dropbox
+  needs no solo write. Recommend keep both.
 - **(g) Disconnect while jobs wait.** Option 1: abandon them and delete the bytes. Option 2: keep them for a
   reconnect to the same record. Recommend option 1: the record they belong to is no longer open.
 
-Known risk, unchanged from today: two devices minting the same ref for different files at the same moment; Dropbox
-overwrites. The background job widens the window slightly. Not addressed here.
+Known risk, as today: two devices minting one ref for different files at once; the job widens that window a little.
 
 ## 9. Do not
 
 - Block or run on the UI thread: no copy, inflate, hash, write or commit on the main actor or in a React render.
 - Send bytes anywhere but the person's own cloud. No Brad server, no telemetry payload.
 - Log or report file names, refs, hashes or health values; errors carry tags only (upload-save-store.ts:36-42).
-- Mutate a row. An attach appends a row and flags `deleted` on the held one, nothing else.
-- Write after an erase, or keep pending bytes after one.
-- Upload bytes a device does not hold, or infer a pending original from another device's row.
-- Add a boolean or timer beside the job state to encode a mode.
+- Mutate a row (an attach appends one and flags `deleted` on the held one); write or keep bytes after an erase.
+- Upload bytes a device does not hold; add a boolean or timer beside the job state to encode a mode.

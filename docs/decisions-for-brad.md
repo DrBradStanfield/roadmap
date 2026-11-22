@@ -36,8 +36,9 @@ issue, and nothing private.
   only, so the record and merging stay as they are); (2) another device shows such a document as it does today,
   details without the original (recommended); (3) retry about 8 times, then show a failure with Try again,
   rather than for days or forever (recommended: 8 times); (4) never wait on Save for small uploads; the done
-  screen's line turns to "kept" when they land (recommended); (5) on Google Drive, check for the file before a
-  retry, and fail GitHub files over about 1 MB at once (recommended); (6) keep "Saving..." and the Dropbox
+  screen's line turns to "kept" when they land (recommended); (5) how each cloud receives a batch: Dropbox stores the
+  whole batch in one step instead of file by file, which avoids its "too many writes" refusals; Google Drive and
+  GitHub keep file by file, Drive checking for the file before a retry (recommended); (6) keep "Saving..." and the Dropbox
   first-write change after this lands (recommended); (7) on disconnect, drop the waiting files (recommended);
   and the new sentences in section 5 of the note, each with options.
 
