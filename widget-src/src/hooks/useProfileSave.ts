@@ -10,6 +10,11 @@ import { useDebouncedSave } from '../lib/useDebouncedSave';
 /** The profile fields a save carries: height, sex, the birth date and the unit system. */
 const PROFILE_FIELDS: ReadonlyArray<keyof HealthInputs> = [...PREFILL_FIELDS, 'unitSystem'];
 
+/** Copy one field across; generic so the key's value type matches on both sides. */
+function copyField<K extends keyof HealthInputs>(to: Partial<HealthInputs>, from: Partial<HealthInputs>, key: K): void {
+  to[key] = from[key];
+}
+
 /**
  * The profile's save: height, sex, birth month and year, and the unit system
  * (US-02 AC5, US-34 AC4, US-54 AC5b).
@@ -72,8 +77,8 @@ export function useProfileSave(args: {
     // otherwise apply the other device's units over this later choice (US-34 AC7a).
     const switched = units.pending() !== undefined;
     for (const field of PROFILE_FIELDS) {
-      if (inputs[field] !== undefined) (current as any)[field] = inputs[field];
-      if (saved.current[field] !== undefined && !(switched && field === 'unitSystem')) (previous as any)[field] = saved.current[field];
+      if (inputs[field] !== undefined) copyField(current, inputs, field);
+      if (saved.current[field] !== undefined && !(switched && field === 'unitSystem')) copyField(previous, saved.current, field);
     }
 
     const hasChanges = switched || PROFILE_FIELDS.some(f => inputs[f] !== saved.current[f]);
@@ -92,7 +97,7 @@ export function useProfileSave(args: {
     const kept = new Set(Object.keys(result.refused ?? {}) as Array<keyof HealthInputs>);
     if (refused) { kept.add('birthYear'); kept.add('birthMonth'); }
     for (const field of PROFILE_FIELDS) {
-      if (!kept.has(field)) (saved.current as any)[field] = inputs[field];
+      if (!kept.has(field)) copyField(saved.current, inputs, field);
     }
     if (refused) {
       // US-54 AC5b: the form shows the record's pair again, unless typed over
