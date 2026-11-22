@@ -32,7 +32,11 @@ for a in "$@"; do [ "$prev" = --jq ] && jqf=$a; [ "$prev" = --status ] && st=$a;
 json() { printf '%s\\n' "$1" | jq -r "$jqf"; }
 case "$*" in
   *"pr view"*state,headRefOid*) json "$PR" ;;
-  *"pr view"*changedFiles*) json "$FILES" ;;
+  # gh pr view lists at most 100 files, as the real one does.
+  *"pr view"*changedFiles*) json "$(printf '%s\\n' "$FILES" | jq -c '.files |= (. // [])[0:100]')" ;;
+  # The REST files endpoint: pages of 100, each file with its previous name when renamed; --jq runs per page.
+  *"api --paginate repos/{owner}/{repo}/pulls/"*"/files"*) printf '%s\\n' "$FILES" | jq -c '.files // [] | map({filename: .path} + (if .previous then {previous_filename: .previous} else {} end))
+      | range(0; length; 100) as $i | .[$i:$i + 100]' | while IFS= read -r page; do json "$page"; done ;;
   *"pr view"*statusCheckRollup*) json "{\\"statusCheckRollup\\":$ROLLUP}" ;;
   *"pr view"*labels*) json "{\\"labels\\":$LABELS}" ;;
   # Main's runs: newest first, filtered by --event, then cut to --limit, as the API does.
@@ -212,6 +216,41 @@ describe('US-64 AC32 merge-gated.sh', () => {
       const hundred = Array.from({ length: 100 }, (_, i) => ({ path: `f${i}.ts` }));
       expect(gate(['123', SHA], { files: { changedFiles: 183, files: hundred } }).status).toBe(17);
       expect(gate(['123', SHA], { files: { changedFiles: 183, files: [...hundred.slice(1), { path: 'tools/merge-gated.sh' }] } }).status).toBe(16);
+    });
+
+    describe('2026-11-23: the file list is read in full, paged 100 at a time (a 121-file PR was refused 17 on 2026-11-22)', () => {
+      const many = (n: number) => Array.from({ length: n }, (_, i) => ({ path: `f${i}.ts` }) as { path: string; previous?: string });
+      it('121 files, none a gate file: passes the count check and merges', () => {
+        const r = gate(['123', SHA], { files: { changedFiles: 121, files: many(121) } });
+        expect(r.stderr).not.toMatch(/cannot check them/);
+        expect(r.status).toBe(0);
+        expect(r.merges).toEqual([MERGE_ARGV]);
+        expect(r.calls.some((c) => c.slice(0, 2).join(' ') === 'api --paginate' && c[2].endsWith('/pulls/123/files?per_page=100'))).toBe(true);
+      });
+      it("121 files with .github/workflows/ci.yml at position 115: main's copy judges it, before step 6's fetch", () => {
+        const files = many(121);
+        files[114] = { path: '.github/workflows/ci.yml' };
+        const r = gate(['123', SHA], { files: { changedFiles: 121, files } }, { MAIN_COPY: fakeMain(0) });
+        expect(r.stderr).toContain(`main copy: marker=1 args=123 ${SHA}`);
+        expect(r.gits.map((c) => c[1])).toEqual(['fetch', 'show', 'show']);
+        expect(r.status).toBe(0);
+        expect(r.merges).toEqual([]);
+      });
+      it("a gate file renamed away past position 100 is caught by its previous name", () => {
+        const files = many(121);
+        files[105] = { path: 'tools/old-gate.sh', previous: 'tools/merge-gated.sh' };
+        const r = gate(['123', SHA], { files: { changedFiles: 121, files } }, { MAIN_COPY: fakeMain(9) });
+        expect(r.stderr).toContain("main's copy judges it");
+        expect(r.gits.map((c) => c[1])).toEqual(['fetch', 'show', 'show']);
+        expect(r.status).toBe(9);
+        expect(r.merges).toEqual([]);
+      });
+      it('a complete listing shorter than the count still refuses (17)', () => {
+        const r = gate(['123', SHA], { files: { changedFiles: 121, files: many(120) } });
+        expect(r.status).toBe(17);
+        expect(r.stderr).toContain('PR 123 changes 121 files and gh lists 120; cannot check them for gate files');
+        expect(r.merges).toEqual([]);
+      });
     });
 
     describe("T-13: judges gate files by git's path list (renames split), not only gh's", () => {
@@ -616,7 +655,7 @@ describe('US-64 AC32 merge-gated.sh', () => {
   });
 
   it('refuses on any gh failure, at every step', () => {
-    for (const step of ['state,headRefOid', 'changedFiles', 'ci.yml', 'statusCheckRollup', 'deploy.yml']) {
+    for (const step of ['state,headRefOid', 'changedFiles', 'pulls/123/files', 'ci.yml', 'statusCheckRollup', 'deploy.yml']) {
       const r = gate(['123', SHA], {}, { GH_FAIL: step });
       expect(r.status).toBe(4);
       expect(r.merges).toEqual([]);

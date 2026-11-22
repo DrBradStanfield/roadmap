@@ -16,8 +16,10 @@
 #      workflow PRs are legitimate and Brad-reviewed). Gate files are looked for twice: first in gh's file list,
 #      then in git's path list, which step 6 reuses (T-13: fetch main and the PR head, merge base, `git diff
 #      --name-only --no-renames`; a failure refuses 4). Git's list splits a rename, so a gate file renamed away
-#      shows under its old path, and it has no page limit. Each path matches only as a whole line. gh lists at
-#      most 100 files; a PR with more and no gate file in git's list still refuses (17).
+#      shows under its old path, and it has no page limit. Each path matches only as a whole line. gh's list is
+#      the REST files endpoint read in full, 100 a page (2026-11-23: `gh pr view` stopped at 100 and refused a
+#      121-file PR), each rename with its previous path too; GitHub caps it at 3000. When its length still
+#      differs from the PR's changedFiles, the script refuses (17).
 #   4. CI's own workflow: the newest ci.yml run on the sha (by createdAt) exists (11), is completed (14) and ended
 #      success (15). So a job named `test` from another workflow cannot stand in for CI, and a draft PR's run
 #      (every job skipped, the run's conclusion `skipped`) never passes.
@@ -106,14 +108,34 @@ case "$head" in
   *) die "unparsable PR answer: $head" 4 ;;
 esac
 
-files=$(gh pr view "$pr" --json changedFiles,files --jq '[.files // [] | .[].path] as $p
-  | "\(.changedFiles) \($p | length) \(any($p[]; . == "tools/merge-gated.sh" or . == "tools/generated-files.json")) \(any($p[]; . == ".github/workflows/ci.yml"))"') \
-  || die "gh pr view $pr --json files failed" 4
-case "$files" in
-  [0-9]*" "[0-9]*" "true" "*|[0-9]*" "[0-9]*" "false" "*) set -- $files ;;
-  *) die "unparsable files answer" 4 ;;
-esac
-changed=$1 listed=$2 gatefile=$3 ciyml=$4
+changed=$(gh pr view "$pr" --json changedFiles --jq .changedFiles) || die "gh pr view $pr --json changedFiles failed" 4
+case "$changed" in ''|*[!0-9]*) die "unparsable files answer" 4 ;; esac
+# One line a file: its path, then its previous path when renamed (@tsv escapes tabs and newlines in a name).
+files=$(gh api --paginate "repos/{owner}/{repo}/pulls/$pr/files?per_page=100" --jq '.[] | [.filename, (.previous_filename // "")] | @tsv') \
+  || die "gh api pulls/$pr/files failed" 4
+listed=0 names= gatefile=false ciyml=false
+[ -z "$files" ] || while IFS='	' read -r new old; do listed=$((listed + 1)) names="$names
+$new
+$old"; done <<EOF
+$files
+EOF
+# Sets gatefile and ciyml from a newline-separated path list. Whole lines only: a near name (a trailing space,
+# another folder, a suffix) never matches.
+scan() {
+  case "
+$1
+" in *"
+tools/merge-gated.sh
+"*|*"
+tools/generated-files.json
+"*) gatefile=true ;; esac
+  case "
+$1
+" in *"
+.github/workflows/ci.yml
+"*) ciyml=true ;; esac
+}
+scan "$names"
 # Runs main's copy and exits with its code when a gate file changed; returns otherwise, or in main's copy itself.
 to_main() {
   [ "${MERGE_GATED_FROM_MAIN:-}" != 1 ] && { [ "$gatefile" = true ] || [ "$ciyml" = true ]; } || return 0
@@ -133,19 +155,7 @@ bounded git fetch -q origin +refs/heads/main:refs/remotes/origin/main "refs/pull
 base=$(git merge-base refs/remotes/origin/main "$sha") || die "PR $pr's head $sha has no merge base with main" 4
 behind=$(git rev-list --count "$base..refs/remotes/origin/main") || behind=0
 paths=$(git -c core.quotepath=false diff --name-only --no-renames --no-relative "$base" "$sha") || die "git diff on PR $pr failed" 4
-# Whole lines only: a near name (a trailing space, another folder, a suffix) never matches.
-case "
-$paths
-" in *"
-tools/merge-gated.sh
-"*|*"
-tools/generated-files.json
-"*) gatefile=true ;; esac
-case "
-$paths
-" in *"
-.github/workflows/ci.yml
-"*) ciyml=true ;; esac
+scan "$paths"
 to_main
 [ "$ciyml" = true ] && echo "merge-gated: note: PR $pr changes .github/workflows/ci.yml, so its own CI result came from the PR's workflow; the reviewer must have read that diff" >&2
 [ "$changed" = "$listed" ] || die "PR $pr changes $changed files and gh lists $listed; cannot check them for gate files" 17
