@@ -28,8 +28,8 @@ import {
   BLOOD_TEST_STALE_MONTHS,
   LIPID_METRICS,
   MEDICATION_REVIEW_STALE_MONTHS,
+  countsForMedicationReview,
   getCategoryGroup,
-  isActiveMedication,
 } from './reminders';
 import { knownMinorOf } from './calculations';
 import { dayOf, localDay } from './merge';
@@ -240,11 +240,13 @@ function bloodTestSchedule(measurementDates: MeasurementDates, items: ReminderSc
 }
 
 function medicationSchedule(medications: MedicationRecord[], items: ReminderScheduleItem[]): void {
-  const active = medications.filter(isActiveMedication);
-  if (active.length === 0) return;
-  // Review is due 12 months after the oldest usable active review day.
+  const counted = medications.filter(countsForMedicationReview);
+  if (counted.length === 0) return;
+  // One review, due 12 months after the oldest usable day among the drugs taken
+  // and declined (US-23 AC17): the earliest answer is the one a year stale first,
+  // and a later decline never pushes a taker's review back.
   // Unknown dates contribute no candidate; never infer or persist a review.
-  const oldest = active.map((m) => typeof m.updatedAt === 'string' ? dayOf(m.updatedAt) : '')
+  const oldest = counted.map((m) => typeof m.updatedAt === 'string' ? dayOf(m.updatedAt) : '')
     .filter(isCalendarDay).sort()[0];
   if (!oldest) return;
   items.push({

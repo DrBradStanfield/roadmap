@@ -39,10 +39,11 @@ export const MEDICATION_REVIEW_STALE_MONTHS = 12;
 /** Lipid metric types that count as "lipids" for blood_test_lipids reminders. */
 export const LIPID_METRICS = ['ldl', 'total_cholesterol', 'hdl', 'triglycerides', 'apob'];
 
-/** Active = a real drug, not a "no/none/not yet" sentinel, and not an
- *  escalation answer (US-06 AC11). */
-export function isActiveMedication(m: { medicationKey: string; drugName: string }): boolean {
-  return !isEscalationKey(m.medicationKey) && isTakingDrug(m.drugName);
+/** A row the medication review counts: a real drug, or a decision against one
+ *  ("No", "Not tolerated"; US-23 AC17, Brad 2026-11-23). "Haven't tried yet"
+ *  decided nothing, and an escalation answer is not a medication (US-06 AC11). */
+export function countsForMedicationReview(m: { medicationKey: string; drugName: string }): boolean {
+  return !isEscalationKey(m.medicationKey) && (isTakingDrug(m.drugName) || m.drugName === 'no' || m.drugName === 'not_tolerated');
 }
 
 // ===== Profile info needed for reminder eligibility =====

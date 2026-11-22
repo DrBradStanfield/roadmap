@@ -1331,7 +1331,7 @@ Threshold: **12 months**. Only for metrics the user has previously tracked.
 
 ### Medication Review
 
-Triggers when ANY active medication (drug name not in `['none', 'not_yet', 'not_tolerated', 'no']`) has `updatedAt` older than 12 months. Returns a single aggregate reminder (not per-medication).
+Due 12 months after the oldest `updatedAt` among the medications it counts (`countsForMedicationReview`): a drug taken (drug name not in `['none', 'not_yet', 'not_tolerated', 'no']`), or a decision against one, "No" (`'no'`) or "Not tolerated" (`'not_tolerated'`) (US-23 AC17, Brad 2026-11-23). "Haven't tried yet" decides nothing and counts for nothing; an escalation answer is not a medication. Returns a single aggregate reminder (not per-medication), with the same label and opt-out whichever rows count, so a "No" is reviewed a year after the answer without the card returning in between, and a decline later than a drug taken never moves the review.
 
 ### Screening Reminders
 
