@@ -36,7 +36,7 @@ describe('US-07 AC18: no card for a normal HbA1c or Lp(a) (Brad 2026-11-23)', ()
   it.each([
     [30, 'nmol/L', []], [74.9, 'nmol/L', []], [75, 'nmol/L', ['lpa-borderline']], [125, 'nmol/L', ['lpa-elevated']],
     [12, 'mg/dL', []], [29.9, 'mg/dL', []], [30, 'mg/dL', ['lpa-borderline']], [50, 'mg/dL', ['lpa-elevated']],
-    [299, 'mg/L', []], [500, 'mg/L', ['lpa-elevated']],
+    [299, 'mg/L', []], [300, 'mg/L', ['lpa-borderline']], [499, 'mg/L', ['lpa-borderline']], [500, 'mg/L', ['lpa-elevated']],
   ])('Lp(a) %s %s: cards %j, value still in the plan', (value, unit, cards) => {
     expect(plan('lpa', lpa(value, unit))).toEqual({ cards, shown: true });
   });

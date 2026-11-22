@@ -3015,7 +3015,6 @@ describe('generateSuggestions', () => {
       const { inputs, results } = createTestData({ lpa: 75 });
       const suggestions = generateSuggestions(inputs, results);
       expect(suggestions.find(s => s.id === 'lpa-borderline')).toBeDefined();
-      expect(suggestions.find(s => s.id === 'lpa-normal')).toBeUndefined();
     });
 
     it('handles exact boundary at 125 nmol/L (elevated)', () => {
