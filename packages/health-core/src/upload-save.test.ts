@@ -60,16 +60,16 @@ const MIXED = saving([
 ]);
 
 describe('uploadSave: one step for values and rows (US-52 AC8c)', () => {
-  it('a mixed pick saves once: its values are the plan\'s the view showed, its documents counted as the web counts them', async () => {
+  it('a mixed pick saves once: its values are the plan\'s the view showed, its documents the ones the list showed (owner ruling 2026-11-20)', async () => {
     const record = withDocs([heldDoc({})]);
     const plan = uploadSavePlan(MIXED, record, NOW, uploadReview(MIXED, record, NOW), true);
     const io = cloud();
     const out = await saveOn(MIXED, record, true, io);
     expect(out.unstored).toBe(0);
-    // The web's done count (useUploadFlow.ts): every distinct row saved, the letter, the lab report's
-    // archive row and the original filed behind the held row; `archived` is the last alone.
-    expect(out.outcome).toEqual({ values: plan.counts.values, documents: plan.counts.documents + plan.labArchives.length + plan.counts.archived, archived: plan.counts.archived, unstored: 0 });
-    expect(out.outcome).toEqual({ values: 2, documents: 3, archived: 1, unstored: 0 });
+    // The Save label's count: the letter the list showed. The lab report's hidden archive row and the
+    // original filed behind the held row are not counted as documents; `archived` is the last, with its own line.
+    expect(out.outcome).toEqual({ values: plan.counts.values, documents: plan.counts.documents, archived: plan.counts.archived, unstored: 0 });
+    expect(out.outcome).toEqual({ values: 2, documents: 1, archived: 1, unstored: 0 });
     const live = out.file.documents.filter((d) => !d.deleted);
     const archive = live.find((d) => d.metadata?.[LAB_ARCHIVE_FLAG] === true)!;
     // The archive row lists exactly the lab rows its values wrote, and holds its original.

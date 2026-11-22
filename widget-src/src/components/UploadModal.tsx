@@ -1,16 +1,11 @@
-import { useRef, useEffect, useId, type RefObject } from 'react';
+import { useRef, useEffect, useId, useMemo, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import type { UnitSystem, MetricType } from '@roadmap/health-core/units';
-import type { UploadHistory } from '../lib/api-types';
-import { measurementRefusalLine } from '../lib/lab-value-labels';
-import { labUnitRefusalLine } from '@roadmap/health-core/lab-series';
 import { UPLOAD_TEXT } from '@roadmap/health-core/upload-text';
-import { useLpaUnit } from '../lib/lpa-unit';
-import type { Grading } from '../lib/blood-test-cell';
-import { ReviewTable } from './ReviewTable';
 import { FileNotices } from './UploadNotices';
 import { ErrorBoundary } from './ErrorBoundary';
 import { FloatingUploadIndicator } from './FloatingUploadIndicator';
+import { UploadReviewList } from './UploadReviewList';
 import { useUploadFlow, MAX_FILES } from '../hooks/useUploadFlow';
 import { getDocumentArchiveMode } from '../lib/roadmap-data';
 import { useIsMobile } from '../lib/useIsMobile';
@@ -21,19 +16,15 @@ import { opensRow } from './ChatThreadList';
 interface UploadModalProps {
   unitSystem: UnitSystem;
   metricUnitOverrides?: Partial<Record<MetricType, UnitSystem>>;
-  onToggleFieldUnit?: (field: string) => void;
-  history: UploadHistory;
-  /** The page's re-read; a partial save waits for it before a retry (US-12 AC6c). */
+  /** useUnits' `setFieldUnit`: a row's unit press sets the unit its chip names (US-34 AC7a). */
+  onSetFieldUnit?: (field: string, to: UnitSystem) => void;
+  /** The page's re-read, after a Save's commit landed. */
   onComplete: () => void | Promise<void>;
   onStart?: () => Promise<void>;
   onClose: () => void;
-  /** `erase`: the erase the page showed as the save began (US-16 AC2a). */
-  onScreeningUpdate?: (screeningKey: string, value: string, erase: string) => void;
-  /** The plan's age, for the review's screening eligibility (US-06 AC5). */
+  /** The plan's age, for a letter's screening box (US-06 AC5, US-13 AC6). */
   age?: number;
   sex?: 'male' | 'female';
-  /** Whom the review's hints and colours grade for; null for a known minor (US-07 AC6). */
-  grading: Grading;
   /** Visibility does not end the session or discard review drafts. */
   open: boolean;
   onOpen: () => void;
@@ -46,25 +37,24 @@ function browseOnKey(e: React.KeyboardEvent, input: HTMLInputElement | null): vo
   input?.click();
 }
 
-export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit, history, onComplete, onStart, onClose, onScreeningUpdate, age, sex, grading, open, onOpen }: UploadModalProps) {
-  const flow = useUploadFlow({ unitSystem, history, onComplete, onStart, onClose, onScreeningUpdate });
-  const { phase, files, notices, progress, results, readError, saveError, skipArchive } = flow;
+export function UploadModal({ unitSystem, metricUnitOverrides, onSetFieldUnit, onComplete, onStart, onClose, age, sex, open, onOpen }: UploadModalProps) {
+  const person = useMemo(() => (age === undefined && sex === undefined ? undefined : { age, sex }), [age, sex]);
+  const flow = useUploadFlow({ unitSystem, onComplete, onStart, onClose, person });
+  const { phase, files, notices, progress, readError, skipArchive, engine } = flow;
   const picking = phase === 'picking' || phase === 'readFailed';
-  const reviewing = phase === 'reviewing' || phase === 'saving' || phase === 'saveFailed';
+  // The list shows the files as each is read, the review, the Save and its done screen (US-12 AC26), once the upload
+  // bundle has loaded the engine it draws with; before that, the reading screen's progress.
+  const listed = !!engine && (phase === 'reading' || phase === 'reviewing' || phase === 'saving' || phase === 'saveFailed' || phase === 'done');
+  const handleClose = flow.close;
   // A review that Cancel discards sends its counts; × and Escape only hide it, to
   // resume (US-12 AC4). The flow sends one per review, none while a Save runs (US-13 AC13).
-  const reviewCounts = useRef<(() => ProductEventMetadata) | null>(null);
-  const handleClose = flow.close;
-  const handleDiscard = () => {
-    if (phase === 'reviewing' || phase === 'saveFailed') flow.endReview(reviewCounts.current?.());
+  const handleDiscard = (counts?: ProductEventMetadata) => {
+    if (phase === 'reviewing' || phase === 'saveFailed') flow.endReview(counts);
     flow.discard();
   };
   // Connect-first gate (decision record: encourage, don't block). 'device-only'
   // + not skipped → show the connect panel instead of the dropzone.
   const archiveMode = getDocumentArchiveMode();
-  const { values: savedCount, labValues: savedLabCount, documents: { length: savedDocCount }, skippedValues: skippedMeasurements, skippedLabValues, unstored: unstoredCount, refusedLabUnits, refusedMeasurements } = flow.outcome;
-  // Lp(a)'s refusal names its range in the unit its field shows (US-05 AC2).
-  const [lpaUnit] = useLpaUnit(unitSystem);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isMobile = useIsMobile(768);
   const titleId = useId();
@@ -84,20 +74,6 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
     e.preventDefault();
     flow.pick(e.dataTransfer.files);
   };
-
-  // One report can refuse the same test on several dates; the user needs it
-  // named once. A note says what to look for instead, where there is one, and
-  // a unit the test takes was refused for its number, not its unit (US-21
-  // AC15). Shown on the done screen and, beside the retry message, in review
-  // (US-12 AC6): a refusal is settled the moment the save answers.
-  const refusalLines = <>
-    {[...new Map(refusedLabUnits.map(r => [`${r.key}|${r.unit}|${r.bound ?? ''}`, r])).values()].map(r => (
-      <p key={`${r.key}|${r.unit}|${r.bound ?? ''}`} className="upload-done-skipped">{labUnitRefusalLine(r.key, r.unit, r.fault, r.bound)}</p>
-    ))}
-    {[...new Set(refusedMeasurements.map(r => measurementRefusalLine(r, r.metricType === 'lpa' ? lpaUnit : metricUnitOverrides?.[r.metricType as MetricType] ?? unitSystem)))].map(line => (
-      <p key={line} className="upload-done-skipped">{line}</p>
-    ))}
-  </>;
 
   // Portal to body so position:fixed resolves against the viewport — the
   // .health-tool container has a transform/contain that would otherwise pin
@@ -170,7 +146,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
             </div>
           )}
 
-          {phase === 'reading' && (
+          {phase === 'reading' && !listed && (
             <div className="upload-processing">
               <div className="upload-progress-bar">
                 <div
@@ -180,69 +156,25 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
               </div>
               <p className="upload-progress-file">{progress.fileName}</p>
               <button className="btn-primary upload-cancel-btn" onClick={flow.cancel}>
-                Cancel
+                {UPLOAD_TEXT.cancel}
               </button>
             </div>
           )}
 
-          {reviewing && <FileNotices notices={notices} />}
-          {reviewing && (
+          {listed && <FileNotices notices={flow.heldNotices} />}
+          {listed && engine && (
             // A review that throws while rendering is never a dead widget (US-13 AC9).
             <ErrorBoundary feature="upload_review" fallback={
               <div className="upload-review-error" role="alert">
                 <p>Something went wrong showing these results. Your file was read; please try again.</p>
-                <button type="button" className="btn-primary" onClick={handleDiscard}>Cancel</button>
+                <button type="button" className="btn-primary" onClick={() => handleDiscard()}>Cancel</button>
               </div>
             }>
-            <ReviewTable
-              results={results}
-              history={history}
-              unitSystem={unitSystem}
-              metricUnitOverrides={metricUnitOverrides}
-              onToggleFieldUnit={onToggleFieldUnit}
-              age={age}
-              sex={sex}
-              grading={grading}
-              onSave={flow.save}
-              onCancel={handleDiscard}
-              isSaving={phase === 'saving'}
-              error={saveError}
-              refusals={refusedLabUnits.length + refusedMeasurements.length > 0 ? refusalLines : undefined}
-              countsRef={reviewCounts}
+            <UploadReviewList
+              flow={flow} engine={engine} unitSystem={unitSystem} metricUnitOverrides={metricUnitOverrides}
+              setFieldUnit={onSetFieldUnit} person={person} discard={handleDiscard}
             />
             </ErrorBoundary>
-          )}
-
-          {phase === 'done' && (
-            <div className="upload-done">
-              <div className="upload-done-icon">&#10003;</div>
-              <p className="upload-done-text">
-                {savedCount > 0 && `Saved ${savedCount} blood test value${savedCount !== 1 ? 's' : ''}`}
-                {savedCount > 0 && (savedLabCount > 0 || savedDocCount > 0) && ', '}
-                {savedLabCount > 0 && `${savedLabCount} additional lab value${savedLabCount !== 1 ? 's' : ''}`}
-                {savedLabCount > 0 && savedDocCount > 0 && ', '}
-                {savedDocCount > 0 && `${savedDocCount} document${savedDocCount !== 1 ? 's' : ''}`}
-                {savedCount === 0 && savedLabCount === 0 && savedDocCount === 0
-                  && skippedMeasurements === 0 && skippedLabValues === 0
-                  && unstoredCount === 0 && refusedLabUnits.length === 0 && refusedMeasurements.length === 0 && 'No items saved'}
-              </p>
-              {skippedMeasurements > 0 && (
-                <p className="upload-done-skipped">
-                  {skippedMeasurements} blood test value{skippedMeasurements !== 1 ? 's were' : ' was'} not added. Check your blood test table: a value was already recorded for that date, or changed during review.
-                </p>
-              )}
-              {skippedLabValues > 0 && (
-                <p className="upload-done-skipped">
-                  {skippedLabValues} additional lab value{skippedLabValues !== 1 ? 's were' : ' was'} not added. Check your blood test table: a value was already recorded for that date, or changed during review.
-                </p>
-              )}
-              {refusalLines}
-              {unstoredCount > 0 && <p className="upload-done-skipped">{UPLOAD_TEXT.unstoredLine}</p>}
-              <FileNotices notices={notices} />
-              <button className="btn-primary upload-done-btn" onClick={handleClose}>
-                Done
-              </button>
-            </div>
           )}
         </div>
       </div>

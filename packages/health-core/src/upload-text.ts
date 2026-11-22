@@ -7,10 +7,12 @@
  */
 import { IMPORT_LIMITS } from './import-hints';
 import { IMPORT_REVIEW_TEXT, KIND_WORDS, plural } from './import-review';
+import { METRIC_LABELS } from './mappings';
+import type { MeasurementRefusal } from './record-edits';
 import type { FailDetail } from './upload-failure';
 import type { FailReason, RunRefusal } from './upload-flow';
-import type { UploadPlatform } from './upload-rules';
-import type { DocumentType } from './validation';
+import type { UploadPlatform, UploadReader } from './upload-rules';
+import { PRESSURE_ORDER, type DocumentType } from './validation';
 
 /** Section 5, rows 1 to 27, by key, with the words added since; all approved by Brad 2026-11-20. */
 export const UPLOAD_TEXT = {
@@ -48,15 +50,68 @@ export const UPLOAD_TEXT = {
   /** 26. Each part dropped at zero, as 23. */
   savedLine: (n: number, m: number) => `Saved ${[...(n || !m ? [plural(n, 'value')] : []), ...(m ? [plural(m, 'document')] : [])].join(' and ')}.`,
   archivedLine: (a: number) => `${plural(a, 'original file')} kept in your cloud.`,
+  /** The web's done lines for reviewed values another writer beat to their slot (US-12 AC6a; UploadModal.tsx), byte for byte. */
+  skippedLine: (n: number, lab: boolean) => `${n} ${lab ? 'additional lab' : 'blood test'} value${n !== 1 ? 's were' : ' was'} not added. Check your blood test table: a value was already recorded for that date, or changed during review.`,
   /** The web's done line for originals it could not store (UploadModal.tsx), byte for byte: no count. */
   unstoredLine: "The original file couldn't be stored; its details are saved.",
-  /** The Save label when Save files only originals (the web's saveLabel, ReviewOverview.tsx). */
+  /** The same, for a Save that saved no details (a lab report with nothing ticked): Brad's words, 2026-11-23. */
+  unstoredAlone: "The original file couldn't be stored.",
+  /** The iPhone's own word for the done screen's button and a picker's confirm (section 5 reuses "Done"). */
+  done: 'Done',
+  /** The Save label when Save files only originals (moved from the web's old review, ReviewOverview.tsx `saveLabel`). */
   saveOriginals: (a: number) => `Save ${plural(a, 'original')}`,
   /** Why Save waits while a report needs its day. */
   chooseDay: 'Choose the day of the test',
   /** A conflict whose Replace is on (the web shows only the ticked box). */
   replaces: 'Replaces the value in your record.',
+  /** The Save button's words while it saves, and the close button's two words, moved byte for byte from the web's old
+   *  review (ReviewTable.tsx) and UploadModal.tsx's Cancel while files are read. */
+  saving: 'Saving...',
+  cancel: 'Cancel',
+  close: 'Close',
 } as const;
+
+/**
+ * A read value's words as the web's old review said them, moved here byte for byte so both clients say
+ * the same: what the report printed when the unit was guessed (review-matrix.ts), and the Replace
+ * control on a value whose day the record already holds (ReviewMatrix.tsx).
+ */
+export const REVIEW_CELL_TEXT = {
+  printed: (value: string | number, unit: string) => `Printed: ${value} ${unit || '(no unit)'}`,
+  replace: 'Replace',
+  /** The Replace box's spoken name: the test and the day it would correct (the old ReviewMatrix.tsx aria-label). */
+  replaceLabel: (test: string, day: string) => `Replace the saved ${test} value from ${day}`,
+  /** A value whose unit the read guessed, in the iPhone review's words (LabReviewView.swift), byte for byte. */
+  checkUnit: 'Check this value and its unit against the report',
+  /** A row whose value the record already holds, equal, on its day: the web list's caption (Brad 2026-11-21, US-13 AC26). */
+  alreadyInRecord: 'Already in your record',
+  /** A row's accessible name (the pattern Brad approved 2026-11-21): the Replace label's "<test> value from", then where it
+   *  was read; a later reading of the test there adds "another reading" (NOT_SAVED_TEXT.sameDay's words). */
+  rowName: (test: string, from: string, again: boolean) => `${test} value from ${from}${again ? ', another reading' : ''}`,
+} as const;
+
+/** A previous column's day control, moved from the web's old grid byte for byte: its names (ReviewMatrix.tsx aria-label) and,
+ *  while an undated one has no day, its limits: a day in its printed month, before its report's day (ReviewTable.tsx). */
+export const DAY_CONTROL_TEXT = {
+  /** Both previous columns' name on the list (owner ruling 2026-11-21); a dated one adds the day it printed. */
+  previous: 'Choose the date of the previous results',
+  /** A date button's day while none is picked: the grid's date cell's (DraftDateCell.tsx), moved byte for byte. */
+  noDay: '—',
+  /** `month` YYYY-MM, `before` YYYY-MM-DD; either unknown, left out. */
+  pickDay: (month: string | null, before: string | null) => `Pick a day${month ? ` in ${longDate(month)}` : ''}${before ? ` before ${longDate(before)}` : ''}`,
+} as const;
+
+/** A held value no reader can read is never echoed (US-65 AC3): the agent tools' words for it (mcp-refusals.ts), shared. */
+export const UNREADABLE_VALUE_TEXT = 'a value this app cannot read';
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+/** "5 Jan 2019" for 2019-01-05, "Jun 2025" for 2025-06; null for anything else (moved from the web's
+ *  review-dates.ts, byte for byte, so both clients write a day the same way). */
+export function longDate(day: string): string | null {
+  const m = /^(\d{4})-(\d{2})(?:-(\d{2}))?$/.exec(day);
+  const month = m ? MONTHS[Number(m[2]) - 1] ?? m[2] : '';
+  return m && `${m[3] ? `${Number(m[3])} ` : ''}${month} ${m[1]}`;
+}
 
 /** A file not fully read, as the web's notices word it (US-12 AC9); moved from UploadNotices.tsx. */
 export const FILE_NOTICE_TEXT = {
@@ -84,6 +139,8 @@ export const KEY_TEXT = {
   noCredit: 'Your Anthropic account has no credit. Check its billing, then try again.',
   rateLimit: 'Not read. Your Anthropic key hit its rate limit. Wait a minute and try again.',
   missing: 'Connect your Anthropic API key (in the "Ask about your plan" panel) to process documents on this page.',
+  /** A file the key's read failed: no server of ours was asked (US-12 AC9); moved from UploadNotices.tsx. */
+  unread: 'Not read. Anthropic could not be reached or could not read it. Please try again.',
 } as const;
 /** A whole run's refusal (upload-flow.ts runRefused), as the web's read-failed screen says it; moved from useUploadFlow.ts. */
 export const REFUSED_TEXT: Record<RunRefusal, string> = {
@@ -91,6 +148,19 @@ export const REFUSED_TEXT: Record<RunRefusal, string> = {
   noKey: KEY_TEXT.missing,
   server: 'An error occurred while processing files. Please try again.',
 };
+/**
+ * The line for a blood test value the record refused (US-12 AC6, US-35 AC17): the cases that name no unit, as the web's
+ * old `measurementRefusalLine` said them (gone with the grid, mount 3b).
+ * Null for a value out of range, whose line names the end it missed in the unit the cell shows.
+ */
+export function measurementRefusalText({ metricType, reason, message }: Pick<MeasurementRefusal, 'metricType' | 'reason' | 'message'>): string | null {
+  const label = Object.prototype.hasOwnProperty.call(METRIC_LABELS, metricType) ? METRIC_LABELS[metricType] : metricType;
+  if (reason === 'unknown-metric') return `${label}: not a test the record knows, so it was not saved.`;
+  if (reason === 'invalid-value') return `${label}: the value was not a number the record can store, so it was not saved.`;
+  // A blood pressure the wrong way up (US-02 AC8): no end of a range was missed.
+  if (message === PRESSURE_ORDER) return `Blood pressure not saved: ${PRESSURE_ORDER[0].toLowerCase()}${PRESSURE_ORDER.slice(1)} Check the report, then enter it again.`;
+  return null;
+}
 /** An empty ZIP, or one of unsupported files, named itself (US-12 AC9); moved from useUploadFlow.ts. */
 export const EMPTY_ZIP_TEXT = 'No files we can read inside this ZIP.';
 
@@ -147,16 +217,18 @@ const PHONE_LINE: Partial<Record<FailReason, string>> = {
   // A stream that ended with no last line: the connection's failure, in today's words for one.
   network: PHONE_FAIL_TEXT.network.dropped,
 };
+/** Where the Pages build's line differs from the server's: its own key read the file, so no server of ours failed. */
+const OWN_KEY_LINE: Partial<Record<FailReason, string>> = { server: KEY_TEXT.unread, network: KEY_TEXT.unread };
 
 /**
  * A failed file's line (US-52 AC7e): the send's own words first, the gate's `error` text or the App
  * Attest step and code, as today's iPhone shows them; then the iPhone's words where they differ from
- * the web's (PHONE_LINE); then FAIL_TEXT.
+ * the web's (PHONE_LINE), or the Pages build's (OWN_KEY_LINE, its `reader`); then FAIL_TEXT.
  */
-export function failLine(status: { reason: FailReason; detail?: FailDetail }, platform: UploadPlatform): string {
+export function failLine(status: { reason: FailReason; detail?: FailDetail }, platform: UploadPlatform, reader?: UploadReader): string {
   const { detail, reason } = status;
   if (detail && 'message' in detail) return detail.message;
   if (detail && 'network' in detail) return PHONE_FAIL_TEXT.network[detail.network];
   if (detail) return `${PHONE_FAIL_TEXT.attestFailed} (App Attest ${detail.stage} ${detail.code})`;
-  return (platform === 'phone' ? PHONE_LINE[reason] : undefined) ?? FAIL_TEXT[reason];
+  return (platform === 'phone' ? PHONE_LINE[reason] : reader === 'ownKey' ? OWN_KEY_LINE[reason] : undefined) ?? FAIL_TEXT[reason];
 }

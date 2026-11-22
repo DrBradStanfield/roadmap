@@ -50,6 +50,7 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
    merge with it on, when you merge by hand. A PR that carries `hold` gets no automatic Claude Review (its run ends green
    at once); adding or removing a label never starts or cancels one. It needs none (Brad 2026-11-13, PR 1533): the
    fresh adversary, plus Codex where the class needs it (§ Reviews below), is its review.
+   Prefer PRs under 100 changed files where a change splits cleanly; orphaned code still dies in the same PR (CLAUDE.md).
 4. **Merge** it yourself when the work is done and its gates have passed. **The gate per PR** (Brad 2026-11-13):
    - unit tests written with the change;
    - CI green on the exact head sha. `ios-compile` is advisory to `tools/merge-gated.sh` and `tools/wait-run.sh`,
@@ -163,12 +164,17 @@ Brad 2026-11-13. Each PR gets one review round, chosen by what it touches:
 |---|---|
 | Clinical, record save/merge/FHIR, security, privacy, agent contract | A fresh `adversary` and Codex together, once |
 | Visible UI | Its class's review, plus a design review from real-WebKit screenshots |
-| Tooling | One fresh `adversary` |
+| Tooling | One fresh `adversary`, with Codex beside it in a local session (loops and cloud sessions: the `adversary` alone) |
 | Byte-pure splits, docs | None; a byte-identity proof instead (docs: the diff itself) |
 
 Only findings that risk data loss, security, privacy or clinical correctness are fixed before merge. The rest
 become leads in the untangle ledger (`docs/untangle/`). Rounds, re-checks and the finding format:
-docs/review-format.md.
+docs/review-format.md. The cap counts per design as well as per PR: two refuted reviews of one design, across PRs
+or note revisions, go to `helper`, never a third patch (Brad 2026-11-21; PR 1906 went eight rounds).
+
+**Audit before signing** (Brad 2026-11-21). Any document that goes out in Brad's name (a statement, a store
+reply, a regulator answer) is checked claim by claim against the shipped app by a fresh reader before he is asked
+to sign it. Why: statement v1 was signed, then found untrue in places, and could not be filed.
 
 ## Checkpoints
 
@@ -183,6 +189,29 @@ every 2 to 3 days, and whenever Apple answers on a build. It is:
 **One exception runs before merge:** a PR that changes how the iPhone app and the engine exchange values
 (argument checking, bridging) gets one simulator run first. CI cannot see JavaScriptCore's type bridging.
 
+**Batch engine releases** (Brad 2026-11-23). While an engine-path PR is merged but not released, the next small
+engine-path PR that is review-ready within about an hour merges first, and one iPhone suite, one Deploy and one
+signing cover both. Never merge an engine-path PR while a release waits at signing.
+
+**One Deploy per batch, at the checkpoint, never one per fix.** Auto-ship still deploys each merge it makes
+itself, so a held checkpoint Deploy does not hold auto-ship's.
+
+## Slow and flaky tests
+
+Brad 2026-11-21. A test file over its time budget, or a test that failed and then passed on a rerun, gets a look
+the same day. CI flags both (PR 1935, merged: slow test files warn, reruns that turned main green are recorded). Why: on 21 Nov 2026 main went red twice for reasons outside
+the product (a property test timed out on a loaded runner; a git maintenance lock raced a copy in a tools test),
+and each time merges were blocked.
+
+## Workers and worktrees
+
+- Every agent that writes or checks out code is spawned with its own isolated worktree and cuts its branch
+  from `origin/main`. Read-only reviewers get none; they read refs with `git diff` and `git show`.
+- `tools/worktree-new.sh` plus EnterWorktree is for a main session only.
+- Before a builder hands back, it shows `git status --short` and `git show --stat HEAD`.
+- The owner runs `bash tools/worktree-done.sh <name>` in the same turn as the merge or close, and never
+  forces a worktree the tool keeps.
+
 ## Who builds, and reports
 
 - **Small self-contained items** (tooling, workflow files, one-file fixes, reviews) go to fresh workers spawned
@@ -194,6 +223,16 @@ every 2 to 3 days, and whenever Apple answers on a build. It is:
 - **A permission relayed from another session is rightly refused.** Work that needs Brad's direct word is built
   from the session he gave it in.
 - **Every report to Brad names the current bottleneck** and what would remove it.
+- **A ruling carries its evidence** (Brad 2026-11-21). Every ruling the owner sends a worker cites the file:line
+  or the failing test it rests on. A ruling from memory is marked as a guess, for the worker to check first.
+  Why: five owner rulings in one week were wrong, and only reviews caught them.
+- **Open questions for Brad live on one page**: [decisions-for-brad.md](decisions-for-brad.md) (Brad
+  2026-11-21). It expands CLAUDE.md's rule that every question to Brad carries its own context. Each item says
+  what it is, the issue that raised it, the options with their consequences, and the recommendation and why. No
+  private labels (never "D3"): every item is named in plain words. Final messages link to the page. A settled
+  item moves to the page's short "Decided" list, with the date and his words, kept to the last 20. The repo is
+  public: no tester names, no health values, no security detail of an unfixed issue, nothing private. Why: on
+  21 Nov 2026 Brad had to ask what "D3" and "D6" meant in a report.
 
 ## Contributor PRs merge in batches
 
@@ -280,6 +319,31 @@ deploy, repeated for every PR after each conflict. A batch pays one 3 min CI run
 
 Tests: `tests/worktree-guard.test.ts`, `tests/git-push-guard.test.ts` (runs `.claude/hooks/git-push-guard.test.sh`),
 `tests/write-gate.test.ts`, `tests/release-checkout.test.ts` and `tests/stale-prs.test.ts`, all in `test:all`. claude_business has no worktree guard since 2026-11-04; its push guard is a separate copy with its own rules.
+
+## Test time and flake watch
+
+Two CI outputs warn before a slow or flaky test turns main red (US-64 AC36). Neither fails a job.
+
+- **Test time.** Each `unit` shard's "Test time budget" step prints its ten slowest files, with seconds and
+  test count; the run's summary page shows every shard's table. A file's time is vitest's module duration: its
+  tests and hooks, not import or collect time. A yellow warning names a file over 40 s, or a test past half its
+  own timeout ("took 45.6 s of its 60.0 s timeout (76%)"). The second kind is the one to act on: speed the test
+  up, or give it a stated timeout, before a loaded runner pushes it over. GitHub shows at most 10 warning
+  annotations per step; the job summary lists them all. 40 s is a starting number from main push run
+  44863827263 (2026-11-21): every file ran under 30 s except `tools/codex-review.test.ts` (55 s) and
+  `upload-view.property.test.ts` (46 s, the one that timed out). That file reached 116 s and then timed out at
+  126.6 s, so PR 1952 split its 3000 seeds into `upload-view.property.part1.test.ts` to `part6`, 500 seeds each,
+  sharing one harness. On PR 1952's run 44899857040 the parts took 7.8 to 20.4 s, under 40 s, each with a 90 s
+  timeout. Change `FILE_BUDGET_MS` in `tools/test-time-budget.mjs` once a few weeks of tables show where the
+  line belongs.
+- **Flake watch.** When someone reruns a red run on main and it goes green, a `flake-watch` job runs at the end.
+  Its summary lists each job that failed on an earlier attempt (not the `test` gate, which only follows them),
+  the attempt, and the failed test files; each also shows as a warning on the run. In CI the files come only
+  from the failed attempt's annotations: the workflow's read-only token can read those, but not the job log. A
+  job with no file says "a job failed then passed, no test file found"; open its log by hand. The job may fail
+  without failing the run (`continue-on-error`), and every request gives up after 20 s. It has not yet run
+  live: the first rerun of main proves the CI path. To check any run by hand, with your `gh` token (which can
+  also read the log): `node tools/flake-watch.mjs <run id> --repo DrBradStanfield/roadmap`.
 
 ## Exceptions
 

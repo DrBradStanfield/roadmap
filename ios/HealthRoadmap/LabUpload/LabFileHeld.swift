@@ -24,6 +24,10 @@ extension LabFileReader {
             let name: String
             let data: Data
             let generation: Int
+            /// The app's own photo (`Picked.redrawn`): converted as its own bytes.
+            let redrawn: Bool
+            /// A scan's pages as the app made them (`Picked.pages`): converted as they are.
+            let made: Document?
             var listing: Listing?
         }
         /// Files and ZIPs by id; pages by the id converted, a file's or a member's.
@@ -44,11 +48,13 @@ extension LabFileReader {
 
         init(beforeKeeping: (@Sendable (String) -> Void)? = nil) { self.beforeKeeping = beforeKeeping }
 
-        /// Holds a picked file's or ZIP's bytes under `id`, replacing what it held; `name` is how a read names it.
-        func hold(_ data: Data, as id: String, name: String) {
+        /// Holds a picked file's or ZIP's bytes under `id`, replacing what it held; `name` is how a read
+        /// names it; `redrawn`: the app's own photo, a JPEG it drew (`document(from:redrawn:)`).
+        /// `made`: a scan's pages as the app made them, sent as they are, never drawn again.
+        func hold(_ data: Data, as id: String, name: String, redrawn: Bool = false, made: Document? = nil) {
             records.withLock { records in
                 records.holds += 1
-                records.items[id] = Item(name: name, data: data, generation: records.holds)
+                records.items[id] = Item(name: name, data: data, generation: records.holds, redrawn: redrawn, made: made)
                 for page in records.pages.keys where page == id || Self.member(page)?.zip == id { records.pages[page] = nil }
             }
         }
@@ -110,6 +116,26 @@ extension LabFileReader {
             return entries.enumerated().map { ("\(zip)#\($0)", $1) }
         }
 
+        /// Each original held, a file's or a listed member's (never a ZIP's own bytes), by id, with
+        /// its MIME type: what the save door may store (upload-save-door.ts `originalsJson`).
+        func originals() -> [String: String] {
+            records.withLock { records in
+                var out: [String: String] = [:]
+                let mimeType = { (name: String) in mimeTypes[pathExtension(name)] ?? "" }
+                for (id, item) in records.items {
+                    if let listing = item.listing {
+                        for (n, entry) in listing.entries.enumerated() where !listing.forgotten.contains(n) { out["\(id)#\(n)"] = mimeType(entry.name) }
+                    } else if pathExtension(item.name) != "zip" {
+                        out[id] = mimeType(item.name)
+                    }
+                }
+                return out
+            }
+        }
+
+        /// One original's bytes, a member's inflated now; nil when it is not held or will not read.
+        func original(_ id: String) -> Data? { try? read(id).bytes }
+
         /// One file's or member's 'sha256-<hex>', the web's sha256Blob format.
         func hash(_ id: String) throws -> String { contentHash(try read(id).bytes) }
 
@@ -118,16 +144,23 @@ extension LabFileReader {
         /// they were made from is still the one held: never after a forget or a newer hold.
         func convert(_ id: String, rules: Rules) throws -> Document {
             let (name, bytes, member, source) = try read(id)
-            var document = try document(from: bytes, name: name, rules: rules)
-            document.zipMember = member
-            let pages = document.pages
+            let (redrawn, made) = member == nil ? records.withLock { ($0.items[id]?.redrawn ?? false, $0.items[id]?.made) } : (false, nil)
+            let doc: Document
+            if let made {
+                // A scan: the pages the size check saw, as they are (the rules still judge the file).
+                guard rules.file(name, bytes.count) == .keep else { throw Failure.tooLarge(name) }
+                doc = made
+            } else {
+                doc = try LabFileReader.document(from: bytes, name: name, rules: rules, redrawn: redrawn)
+            }
+            let pages = doc.pages
             beforeKeeping?(id)
             records.withLock { records in
                 guard let item = records.items[source.key], item.generation == source.generation,
                       source.member.map({ !(item.listing?.forgotten.contains($0) ?? true) }) ?? true else { return }
                 records.pages[id] = pages
             }
-            return document
+            return doc
         }
 
         /// The bytes `id` holds, a member's inflated now, with its name (`<zip name>/<path>` for a

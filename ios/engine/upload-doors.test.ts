@@ -7,17 +7,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { uploadSavePlanJson, uploadStartJson, uploadStepJson, uploadUsageJson, uploadViewJson } from './entry';
 import { createEmptyFile, type FileDocument, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { bulkAppendValues, type BulkRow } from '../../packages/health-core/src/record-edits';
-import { initialUpload, transition, type UploadEvent, type UploadState } from '../../packages/health-core/src/upload-flow';
+import { initialUpload, transition, uploadFileName, type UploadEvent, type UploadState } from '../../packages/health-core/src/upload-flow';
 import { knownAs, knownIndex, readIsLegacy } from '../../packages/health-core/src/upload-known';
 import { appGateFailure } from '../../packages/health-core/src/upload-failure';
-import { uploadReview } from '../../packages/health-core/src/upload-review';
+import { lostReplaces, uploadReview } from '../../packages/health-core/src/upload-review';
 import { uploadView } from '../../packages/health-core/src/upload-view';
 import { uploadSavePlan } from '../../packages/health-core/src/upload-plan';
 import { uploadUsageCounts } from '../../packages/health-core/src/upload-usage';
 import type { UnifiedExtractionResult } from '../../packages/health-core/src/lab-extraction';
 import { labStreamAnswer } from '../../packages/health-core/src/upload-answer';
 import { UPLOAD_STATE } from '../../packages/health-core/src/upload-schema';
-import { UPLOAD_REFUSAL_REASONS } from './upload-doors';
+import { REFUSAL_WORDS, UPLOAD_REFUSAL_REASONS } from './upload-doors';
 import { TOO_NEW_RECORD } from './my-data';
 
 const NOW = '2026-11-02T00:00:00.000Z';
@@ -118,7 +118,7 @@ function genEvent(r: () => number, s: UploadState, mint: () => string): { wire: 
     [8, () => {
       const id = idAt('sending');
       const extraction = pick(READS);
-      const name = files.find((f) => f.id === id)?.name;
+      const file = files.find((f) => f.id === id); const name = file && uploadFileName(file);
       return { wire: { type: 'answered', run, id, extraction, now: NOW },
         whole: { type: 'answered', run, id, extraction, now: NOW, legacy: name !== undefined && readIsLegacy(RECORD, name, extraction) } };
     }],
@@ -127,7 +127,7 @@ function genEvent(r: () => number, s: UploadState, mint: () => string): { wire: 
       const line = pick([JSON.stringify({ status: 200, body: { success: true, data: pick(READS) } }), JSON.stringify({ status: 429, body: { success: false } }),
         JSON.stringify({ status: 422, body: { errorCode: 'refused' } }), JSON.stringify({ status: 500, body: { success: false, error: 'Failed to process request' } }), null, '{cut']);
       const a = labStreamAnswer(line);
-      const name = files.find((f) => f.id === id)?.name;
+      const file = files.find((f) => f.id === id); const name = file && uploadFileName(file);
       return { wire: { type: 'streamEnded', run, id, line, now: NOW }, whole: 'extraction' in a
         ? { type: 'answered', run, id, extraction: a.extraction, legacy: name !== undefined && readIsLegacy(RECORD, name, a.extraction), now: NOW }
         : { type: 'sendFailed', run, id, failure: a.failure, ...(a.detail ? { detail: a.detail } : {}) } };
@@ -149,7 +149,8 @@ function genEvent(r: () => number, s: UploadState, mint: () => string): { wire: 
       { replace: 'v0', correctsId: coin(0.5) ? HELD_ID : null }, { edit: 'v1', value: coin(0.5) ? 1.4 : null },
       { document: { title: 'Fixed title', date: pick(['2026-02-01', null, '2999-01-01']) } },
     ]) })],
-    [3, () => same({ type: 'saveStarted' })],
+    // The app echoes what the page it showed would write (the view's `reviewed`), opaque; the door adds nothing.
+    [3, () => (r() < 0.5 ? same({ type: 'saveStarted' }) : same({ type: 'saveStarted', reviewed: [{ file: 'f', ref: 'v0', lab: false }] }))],
     [2, () => same({ type: 'saved', run, attempt: 'attempt' in s ? s.attempt : 1, outcome: { values: 1, documents: 0, archived: 0 } })],
     [1, () => same({ type: 'saveFailed', run, attempt: 'attempt' in s ? s.attempt : 1, message: 'Could not save.' })],
     [1, () => same({ type: 'close' })],
@@ -158,6 +159,12 @@ function genEvent(r: () => number, s: UploadState, mint: () => string): { wire: 
   let w = r() * kinds.reduce((n, [k]) => n + k, 0);
   for (const [k, make] of kinds) if ((w -= k) < 0) return make();
   return kinds[0][1]();
+}
+
+/** A Replace whose target no longer holds its slot on RECORD, dropped and its value unticked, as the doors do. */
+function withoutLost(s: UploadState): UploadState {
+  const lost = lostReplaces(uploadReview(s, RECORD, new Date().toISOString()), s);
+  return lost.length ? transition(s, { type: 'replacesLost', lost }).state : s;
 }
 
 describe('upload doors agree with health-core (shared upload PR 12, US-52 AC8c)', () => {
@@ -175,6 +182,8 @@ describe('upload doors agree with health-core (shared upload PR 12, US-52 AC8c)'
       const len = 1 + Math.floor(r() * 80);
       const events: Wire[] = [];
       for (let i = 0; i < len; i++) {
+        // The doors drop a Replace whose target left its slot before each event and in each view (replacesLost).
+        s = withoutLost(s);
         const { wire, whole } = genEvent(r, s, mint);
         events.push(wire);
         const where = `seed ${seed} step ${i}: ${JSON.stringify(events.map((e) => e.type))}`;
@@ -183,11 +192,12 @@ describe('upload doors agree with health-core (shared upload PR 12, US-52 AC8c)'
         expect(step, where).toEqual(direct);
         expect(UPLOAD_STATE.safeParse(step.state).success, where).toBe(true);
         s = direct.state;
+        const shown = withoutLost(s);
         const cloud = r() < 0.5;
-        const review = uploadReview(s, RECORD, NOW);
-        const view = uploadView(s, RECORD, NOW, review, cloud);
-        const plan = uploadSavePlan(s, RECORD, NOW, review, cloud);
-        expect(JSON.parse(uploadViewJson(JSON.stringify(s), RECORD_TEXT, NOW, cloud, DEV)), where).toEqual(JSON.parse(JSON.stringify(view)));
+        const review = uploadReview(shown, RECORD, NOW);
+        const view = uploadView(shown, RECORD, NOW, review, cloud);
+        const plan = uploadSavePlan(shown, RECORD, NOW, review, cloud);
+        expect(JSON.parse(uploadViewJson(JSON.stringify(s), RECORD_TEXT, NOW, cloud, DEV)), where).toEqual(JSON.parse(JSON.stringify({ ...view, engineError: REFUSAL_WORDS['engine-error'] })));
         expect(JSON.parse(uploadSavePlanJson(JSON.stringify(s), RECORD_TEXT, NOW, cloud, DEV)), where).toEqual(JSON.parse(JSON.stringify(plan)));
         expect(JSON.parse(uploadUsageJson(JSON.stringify(s))), where).toEqual(uploadUsageCounts(s));
         if (whole.type === 'hashed' && whole.known) seen.known++;
@@ -362,5 +372,32 @@ describe('upload view cost (shared upload PR 12)', () => {
     for (let i = 0; i < runs; i++) expect(JSON.parse(uploadViewJson(state, RECORD_TEXT, NOW, true, DEV)).summary).toMatch(/^200 files/);
     const ms = (performance.now() - start) / runs;
     expect(ms).toBeLessThan(1500);
+  });
+});
+
+describe('the doors drop a Replace whose target another writer took away (owner ruling 2026-11-20, US-13 AC7)', () => {
+  it('a held row deleted during the review: the view shows the value unticked with no conflict, and the next step carries that', () => {
+    const DAY = '2026-10-01';
+    const record = bulkAppendValues(createEmptyFile({ deviceId: 'test', now: NOW }), [{ kind: 'measurement', metricType: 'ldl', value: 2.0, recordedAt: DAY, source: 'manual' }], NOW).file;
+    const extraction = { classification: 'lab_report', reportDate: DAY, values: [{ metric: 'ldl', valueSI: 3.1, displayValue: 3.1, displayUnit: 'mmol/L', displaySystem: 'si', confidence: 'high' }], additionalValues: [], unrecognized: [], document: null } as UnifiedExtractionResult;
+    const open: UploadState = { phase: 'open', platform: 'phone', run: 1, started: NOW, firstRead: NOW, files: [{ id: 'f', name: 'f.pdf', bytes: 1, hash: 'h-f', pages: null,
+      status: { s: 'read', extraction, choices: { ticks: {}, testDay: null, previousDay: null, replace: { v0: record.labValues[0].id }, edits: {}, document: {} } } }] };
+    const deleted = JSON.stringify({ ...record, labValues: record.labValues.map((l) => ({ ...l, status: 'entered-in-error' })) });
+    const view = JSON.parse(uploadViewJson(JSON.stringify(open), deleted, NOW, false, DEV));
+    const row = [...view.sections.flatMap((x: { kind: string; rows?: unknown[] }) => (x.kind === 'unsure' ? x.rows : [])), ...(view.sure?.rows ?? [])][0];
+    expect(row).toMatchObject({ ref: 'v0', ticked: false, conflict: null, replaces: null });
+    const step = JSON.parse(uploadStepJson(JSON.stringify(open), JSON.stringify({ type: 'chose', id: 'f', change: { tick: 'v0', on: true }, now: NOW }), deleted, DEV));
+    expect(step.state.files[0].status.choices).toMatchObject({ replace: {}, ticks: { v0: true } });
+    // With no record the app can read (''), nothing is dropped, in a step or a view (adversary R1).
+    const kept0 = JSON.parse(uploadStepJson(JSON.stringify(open), JSON.stringify({ type: 'stop' }), '', DEV));
+    expect(kept0.state.files[0].status.choices).toMatchObject({ replace: { v0: record.labValues[0].id }, ticks: {} });
+    // Nor with one that will not read: the door drops nothing, as for '' (health-core `dropLostReplaces`, web list PR 1a).
+    const unread = JSON.parse(uploadStepJson(JSON.stringify(open), JSON.stringify({ type: 'stop' }), '{', DEV));
+    expect(unread.state.files[0].status.choices).toMatchObject({ replace: { v0: record.labValues[0].id }, ticks: {} });
+    const blind = JSON.parse(uploadViewJson(JSON.stringify(open), '', NOW, false, DEV));
+    expect([...blind.sections.flatMap((x: { kind: string; rows?: unknown[] }) => (x.kind === 'unsure' ? x.rows : [])), ...(blind.sure?.rows ?? [])][0]).toMatchObject({ ticked: true });
+    // With the target still there, nothing changes.
+    const kept = JSON.parse(uploadViewJson(JSON.stringify(open), JSON.stringify(record), NOW, false, DEV));
+    expect(kept.sections.find((x: { kind: string }) => x.kind === 'unsure').rows[0]).toMatchObject({ replacing: true });
   });
 });

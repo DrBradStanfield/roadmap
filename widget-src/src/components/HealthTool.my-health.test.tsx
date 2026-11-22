@@ -165,6 +165,17 @@ describe('US-62 AC17: the sections, in the iPhone\'s order', () => {
     expect(topics(view)).not.toContain('screening');
   });
 
+  // US-07 AC1k (Brad 2026-11-12, D9): from 86 with no sex no cancer group applies, so no section; at 85 colorectal's still does.
+  // The LDL opens the whole form with no sex recorded (opensFullForm), as a returning record does.
+  it('an 86-year-old with no sex recorded has no Cancer screening section, and an 85-year-old has one', async () => {
+    const at = (age: number) => show(() => seedGuest({ heightCm: 170, birthYear: new Date().getFullYear() - age, birthMonth: 1, unitSystem: 'si' }, [['weight', 70], ['ldl', 2.8]], [], DAY));
+    const old = await at(86);
+    expect(topics(old).length).toBeGreaterThan(0); // the plan is drawn
+    expect(topics(old)).not.toContain('screening');
+    old.unmount();
+    expect(topics(await at(85))).toContain('screening');
+  });
+
   it('with no lipid value and nothing elevated, no cholesterol medicine questions (US-06 AC5 hidden mode)', async () => {
     const view = await show(() => seedGuest({ sex: 'male', heightCm: 180, birthYear: 1975, birthMonth: 1, unitSystem: 'si' }, [['weight', 80]], [], DAY));
     expect(topics(view).length).toBeGreaterThan(0); // the plan is drawn

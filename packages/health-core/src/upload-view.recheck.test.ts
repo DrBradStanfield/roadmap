@@ -33,7 +33,8 @@ describe('US-13 AC5: a selected core value out of its range blocks Save', () => 
     expect(view.save).toMatchObject({ enabled: false, why: FIX_ERRORS_TEXT });
     expect(rows(wild, EMPTY).find((r) => r.ref === 'v0')?.error).toEqual(expect.any(String));
     expect(both(chose(wild, { edit: 'v0', value: 3.5 })).view.save).toMatchObject({ enabled: true, why: null });
-    expect(both(chose(wild, { tick: 'v0', on: false })).view.save).toMatchObject({ why: 'Nothing new to save' });
+    // Unticked with a cloud, Save keeps the report's original alone (US-14 AC11, Brad 2026-11-21).
+    expect(both(chose(wild, { tick: 'v0', on: false })).view.save).toMatchObject({ label: 'Save 1 original', enabled: true, why: null });
     expect(both(chose(wild, { tick: 'v0', on: false })).view.save.why).not.toBe(FIX_ERRORS_TEXT);
   });
 });
@@ -70,11 +71,14 @@ describe('US-13 AC7: a Replace never follows its value to another day', () => {
 });
 
 describe('US-12 AC9: a file read only in part is named', () => {
-  it('in the open review and on the done screen, in the web\'s words', () => {
+  it('in the open review and on the done screen, in the web\'s words: in its Files row (PR 1974\'s one rule)', () => {
     const s = open([read('a', {}, true)]);
-    expect(both(s).view.notices).toEqual([{ fileId: 'a', name: 'a.pdf', line: FILE_NOTICE_TEXT.truncated }]);
     const done: UploadState = { ...s, phase: 'done', outcome: { values: 1, documents: 0, archived: 0 } } as UploadState;
-    expect(both(done).view.notices).toEqual([{ fileId: 'a', name: 'a.pdf', line: FILE_NOTICE_TEXT.truncated }]);
+    for (const state of [s, done]) {
+      const { view } = both(state);
+      expect(view.files.rows).toEqual([{ fileId: 'a', name: 'a.pdf', status: FILE_NOTICE_TEXT.truncated, notFullyRead: true }]);
+      expect(view.notices).toEqual([]);
+    }
   });
 });
 

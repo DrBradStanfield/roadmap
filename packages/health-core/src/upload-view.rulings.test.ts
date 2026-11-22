@@ -45,7 +45,7 @@ describe('1. a value the extractor asked about: saved unless cleared, on both cl
 describe('2. Save waits for every report that needs a day', () => {
   it('one dated report and one undated: Save is off with the why line, and the dated one is not saved alone', () => {
     const { view, plan } = both(open([read('a', labX()), read('u', labX({ reportDate: null }))]));
-    expect(view.save).toEqual({ label: 'Save 1 value', enabled: false, why: 'Choose the day of the test', error: null });
+    expect(view.save).toEqual({ label: 'Save 1 value', enabled: false, why: 'Choose the day of the test', error: null, blockers: [{ why: 'Choose the day of the test', at: 'u|test' }] });
     expect(plan.labRows.map((l) => l.fileId)).toEqual(['a']);
   });
 });
@@ -81,11 +81,12 @@ describe('4. originals need a cloud', () => {
     expect(off.plan.archiveOnly).toEqual([]);
     expect(off.view.save).toMatchObject({ enabled: false, why: 'Nothing new to save' });
   });
-  it('a report whose values the record holds files its original only with a cloud; every value unticked plans no archive', () => {
+  it('a report whose values the record holds files its original only with a cloud; every value unticked, only with a cloud (US-14 AC11)', () => {
     const record = recordWith([{ kind: 'measurement', metricType: 'ldl', value: 3.1 }]);
     expect(both(open([read('a', labX())]), record, true).view.save).toMatchObject({ label: 'Save 1 original', enabled: true });
     expect(both(open([read('a', labX())]), record, false).view.save).toMatchObject({ enabled: false });
-    expect(both(open([read('a', labX(), { ticks: { v0: false } })])).plan.labArchives).toEqual([]);
+    expect(both(open([read('a', labX(), { ticks: { v0: false } })]), EMPTY, false).plan.labArchives).toEqual([]);
+    expect(both(open([read('a', labX(), { ticks: { v0: false } })])).plan.labArchives).toEqual([{ fileId: 'a', sourceFileName: 'a.pdf', reportDate: DAY }]);
   });
 });
 
@@ -140,12 +141,15 @@ describe('8. two read files with the same bytes', () => {
 });
 
 describe('9. a read file with nothing in it is said', () => {
-  it('a lab report with no values, and a file with no document, in the web\'s words', () => {
-    const view = both(open([read('e', labX({ values: [] })), read('n', { ...letterX(), document: null })])).view;
-    expect(view.notices).toEqual([
+  it('a lab report with no values, and a file with no document, in the web\'s words: in the iPhone review\'s notices, in the web\'s Files rows (US-12 AC9)', () => {
+    const files = [read('e', labX({ values: [] })), read('n', { ...letterX(), document: null })];
+    expect(both(open(files, 'phone')).view.notices).toEqual([
       { fileId: 'e', name: 'e.pdf', line: 'No blood test values found.' },
       { fileId: 'n', name: 'n.pdf', line: 'No blood test values found.' },
     ]);
+    const web = both(open(files, 'web')).view;
+    expect(web.notices).toEqual([]);
+    expect(web.files.rows.map((r) => r.status)).toEqual(['No blood test values found.', 'No blood test values found.']);
   });
 });
 

@@ -15,63 +15,10 @@ enum LabFileReader {
         let mimeType: String?
     }
 
-    /// The file as it was picked, kept in the person's cloud when one is connected
-    /// (US-52 AC13d): the bytes the web archives, never the pages sent to the server.
-    struct Original: Sendable {
-        enum Source: Sendable {
-            /// A ZIP member: already in memory.
-            case bytes(Data)
-            /// A file picked in Files, opened again under `scope`'s access when it is
-            /// saved: bytes mapped from it would outlive the picker's access.
-            case file(URL, scope: URL)
-        }
-        let source: Source
-        let mimeType: String
-        /// The fingerprint of the bytes the review read: their size, and their
-        /// 'sha256-<hex>', the web's sha256Blob format, which is the row's `contentHash`.
-        let size: Int
-        let contentHash: String
-
-        init(_ data: Data, mimeType: String) {
-            source = .bytes(data)
-            self.mimeType = mimeType
-            size = data.count
-            contentHash = LabFileReader.contentHash(data)
-        }
-
-        private init(source: Source, of read: Original) {
-            self.source = source
-            mimeType = read.mimeType
-            size = read.size
-            contentHash = read.contentHash
-        }
-
-        /// The same original, kept as the picked file rather than its bytes.
-        func file(_ url: URL, scope: URL) -> Original { Original(source: .file(url, scope: scope), of: self) }
-
-        /// The bytes the review read, or nil when the file has changed (its size, then
-        /// its hash), gone, or cannot be read: the row is then saved without it.
-        func verifiedData() -> Data? {
-            switch source {
-            case .bytes(let data): return data
-            case .file(let url, let scope):
-                let scoped = scope.startAccessingSecurityScopedResource()
-                defer { if scoped { scope.stopAccessingSecurityScopedResource() } }
-                guard (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) == size,
-                      let data = try? LabFileReader.coordinatedData(url), LabFileReader.contentHash(data) == contentHash
-                else { return nil }
-                return data
-            }
-        }
-    }
-
     /// Bytes' 'sha256-<hex>', lowercase: the web's sha256Blob (archive-payloads.ts), a row's `contentHash`.
     static func contentHash(_ data: Data) -> String { "sha256-" + ManifestCheck.sha256(data) }
 
-    /// `(done, total)` before each file or ZIP member a read converts, on the main actor.
-    typealias Progress = @MainActor @Sendable (Int, Int) -> Void
-
-    /// A ZIP member's ZIP and path, which the engine names by the web's rule (`HealthEngine.named`).
+    /// A ZIP member's ZIP and path (`Held.read`).
     struct ZipMember: Sendable {
         let zip: String
         let path: String
@@ -83,9 +30,6 @@ enum LabFileReader {
         let pages: [Page]
         /// More pages than the website reads, or a page cut short: the review says so.
         let truncated: Bool
-        /// Nil for a photo or a scan, which were never a file.
-        var original: Original? = nil
-        var zipMember: ZipMember? = nil
     }
 
     enum Failure: LocalizedError {
@@ -110,119 +54,10 @@ enum LabFileReader {
     /// A page with fewer characters than this is a scan (pdf-extract.ts TEXT_THRESHOLD).
     static let textThreshold = 50
 
-    /// False when a file of this size is over the web's limit: 20 MB for a ZIP
-    /// (IMPORT_LIMITS.zipMb), 10 MB otherwise.
-    static func fits(name: String, bytes: Int) -> Bool {
-        bytes <= (pathExtension(name) == "zip" ? 20 * 1024 * 1024 : maxFileBytes)
-    }
-
-    /// The documents in one picked file: one, or one per report inside a ZIP. A ZIP
-    /// member is named `zip/path` here; `HealthEngine.named` gives it the web's name.
-    /// `rules`: health-core's, asked for this file and its members (`UploadRules.swift`), else the Swift copy.
-    /// A ZIP is listed and checked first (`Held`, AC7f), then each kept member is inflated and
-    /// converted in turn, `progress(done, total)` before each. Close cancels it between members (AC7a).
-    static func documents(from data: Data, name: String, rules: Rules = .swift, progress: Progress = { _, _ in }) async throws -> [Document] {
-        guard pathExtension(name) == "zip" else { return [try document(from: data, name: name, rules: rules)] }
-        let held = Held()
-        held.hold(data, as: name, name: name)
-        let members = try held.list(name, rules: rules).filter { rules.member($0.entry.name) == .keep }
-        guard !members.isEmpty else { throw Failure.empty }
-        var documents: [Document] = []
-        for (done, member) in members.enumerated() {
-            try await report(progress, done, members.count)
-            documents.append(try held.convert(member.id, rules: rules))
-        }
-        return documents
-    }
-
-    /// A count from a read still running, checked where it lands on the main actor: a read cancelled
-    /// meanwhile publishes nothing, so its late count never moves the next upload's screen (AC7a).
-    /// Throws CancellationError before the count and again after it, so a read cancelled while the
-    /// count waited on a busy main actor reads nothing more.
-    private static func report(_ progress: Progress, _ done: Int, _ total: Int) async throws {
-        try Task.checkCancellation()
-        await MainActor.run { if !Task.isCancelled { progress(done, total) } }
-        try Task.checkCancellation()
-    }
-
-    /// Asks no engine: the Swift copy of the rules.
-    static let swiftRules: AskRules = { _, _ in .swift }
-
-    /// A file or folder picked in Files, read on the shared pool, never the caller's actor:
-    /// its PDFs are rendered and its ZIPs opened off the main thread (AC21, merge review R2).
-    /// `progress(done, total)` before each of a folder's files.
-    @concurrent
-    /// `ask`: the upload rules for each step (`HealthEngine.uploadRules`).
-    static func decoded(picked url: URL, progress: Progress = { _, _ in }, ask: AskRules = swiftRules) async throws -> [Document] {
-        decodingWatch?()
-        return try url.hasDirectoryPath ? await documents(inFolder: url, progress: progress, ask: ask) : await documents(picked: url, progress: progress, ask: ask)
-    }
-
-    /// Called where a report is decoded, so a test can see which thread does it (US-25
-    /// AC21, Codex re-check R1). Nil in the app; set only by a test, before it reads.
-    nonisolated(unsafe) static var decodingWatch: (@Sendable () -> Void)?
-
-    /// The reports in one file picked in Files: a ZIP's members keep their bytes; a single
-    /// file's original is the file, opened again when it is saved. Its size is checked
-    /// before it is read (adversary R3). The rules come from `ask`: first for the file's listed
-    /// size, then, once read, for its bytes and, in a ZIP, each member's path and size.
-    /// `progress(done, total)` before each of a ZIP's members.
-    static func documents(picked url: URL, progress: Progress = { _, _ in }, ask: AskRules) async throws -> [Document] {
-        let name = url.lastPathComponent, listed = size(of: url)
-        guard await ask([UploadFile(name: name, bytes: listed)], []).file(name, listed) != .tooLarge else { throw Failure.tooLarge(name) }
-        let data = try coordinatedData(url)
-        // A ZIP that will not list is refused by the read below, in its own words.
-        let entries = pathExtension(name) == "zip" ? (try? ZipReader.entries(of: data)) ?? [] : []
-        let files = [UploadFile(name: name, bytes: data.count)] + entries.map { UploadFile(name: "\(name)/\($0.name)", bytes: $0.size) }
-        let rules = await ask(files, entries.map(\.name))
-        return try await documents(from: data, name: name, rules: rules, progress: progress).map { keptAsFile($0, url) }
-    }
-
-    /// A single file's original kept as the picked file, opened again when it is saved.
-    private static func keptAsFile(_ read: Document, _ url: URL) -> Document {
-        guard read.zipMember == nil, let original = read.original else { return read }
-        var kept = read
-        kept.original = original.file(url, scope: url)
-        return kept
-    }
-
-    /// The reports in a picked folder and the folders inside it (US-52 AC13c): every PDF,
-    /// JPEG and PNG, as a ZIP's members are read, in name order, at most the ZIP's 200.
-    /// The walk stops at `maxFolderEntries`. Every size is checked before anything is read:
-    /// one file over the web's limit, or more than `maxFolderBytes` in all, refuses the
-    /// folder (adversary R3). Close cancels it between files; `progress(done, total)` before each.
-    static func documents(inFolder folder: URL, maxBytes: Int = maxFolderBytes,
-                          progress: Progress = { _, _ in }, ask: AskRules = swiftRules) async throws -> [Document] {
-        let files = try listed(folder).sorted { $0.url.path.localizedStandardCompare($1.url.path) == .orderedAscending }.prefix(maxFolderFiles)
-        guard !files.isEmpty else { throw Failure.folderEmpty }
-        // A size the system does not give is unknown: the reads below are checked instead (re-check N2).
-        let sized = files.compactMap { file in file.size.map { UploadFile(name: file.url.lastPathComponent, bytes: $0) } }
-        let listedRules = await ask(sized, [])
-        if let big = files.first(where: { file in file.size.map { listedRules.file(file.url.lastPathComponent, $0) == .tooLarge } ?? false }) {
-            throw Failure.tooLarge(big.url.lastPathComponent)
-        }
-        guard files.reduce(0, { $0 + ($1.size ?? 0) }) <= maxBytes else { throw Failure.folderTooLarge }
-        let base = folder.lastPathComponent
-        var documents: [Document] = []
-        var bytes = 0
-        for (done, file) in files.enumerated() {
-            try await report(progress, done, files.count)
-            let inside = file.url.path.dropFirst(folder.path.count).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-            let data = try coordinatedData(file.url)
-            bytes += data.count
-            guard bytes <= maxBytes else { throw Failure.folderTooLarge }
-            let name = "\(base)/\(inside)"
-            var read = try document(from: data, name: name, rules: await ask([UploadFile(name: name, bytes: data.count)], []))
-            read.original = read.original?.file(file.url, scope: folder)
-            documents.append(read)
-        }
-        return documents
-    }
-
     /// The report files in a folder and the folders inside it, with their listed sizes (nil
     /// when not given), walked under a file coordinator so a File Provider lists the folder
     /// onto the phone first (re-check N1). The walk stops at `maxFolderEntries`.
-    private static func listed(_ folder: URL) throws -> [(url: URL, size: Int?)] {
+    static func listed(_ folder: URL) throws -> [(url: URL, size: Int?)] {
         let keys: [URLResourceKey] = [.isRegularFileKey, .fileSizeKey]
         var refused: NSError?
         var walked: Result<[(url: URL, size: Int?)], Error> = .failure(Failure.unreadable(folder.lastPathComponent))
@@ -246,13 +81,13 @@ enum LabFileReader {
     }
 
     /// A file's listed size, before any read; 0 when the system does not say.
-    private static func size(of url: URL) -> Int {
+    static func size(of url: URL) -> Int {
         (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
     }
 
     /// A file's bytes, read through a file coordinator so a File Provider (Dropbox, Google
     /// Drive) or iCloud placeholder downloads first (adversary R4), read whole inside it.
-    private static func coordinatedData(_ url: URL) throws -> Data {
+    static func coordinatedData(_ url: URL) throws -> Data {
         var refused: NSError?
         var read: Result<Data, Error> = .failure(Failure.unreadable(url.lastPathComponent))
         NSFileCoordinator().coordinate(readingItemAt: url, options: [], error: &refused) { url in
@@ -274,46 +109,31 @@ enum LabFileReader {
     /// The most a ZIP's members, or a folder's reports, may hold in all.
     static let maxFolderBytes = 200 * 1024 * 1024
 
-    /// Pictures of one paper report, from the document camera: a JPEG page each, as the
-    /// web sends a picked image (US-52 AC10). Its 20-page limit holds. A picture is resized,
-    /// so a camera's file size is no limit. On the shared pool, never the main thread (AC21).
-    @concurrent
-    static func pictures(_ images: [UIImage], name: String) async throws -> Document {
-        decodingWatch?()
-        let pages = images.prefix(maxPages).compactMap(jpegPage)
-        guard !pages.isEmpty else { throw Failure.unreadable(name) }
-        return Document(name: name, pages: pages, truncated: images.count > maxPages)
-    }
-
-    /// A photo from the library, as its file's bytes: decoded and resized off the main thread too.
-    @concurrent
-    static func photo(_ data: Data) async throws -> Document {
-        guard let image = UIImage(data: data) else { throw Failure.unreadable("The photo") }
-        return try await pictures([image], name: "Photo")
-    }
-
-    /// One file's pages, as picked or as a ZIP member (`Held.convert`).
-    static func document(from data: Data, name: String, rules: Rules) throws -> Document {
+    /// One file's pages, as picked or as a ZIP member (`Held.convert`). `redrawn`: the bytes are a
+    /// JPEG this app drew (`picked(photo:)`), so they carry no metadata and go as they are; every
+    /// other picture is redrawn and re-encoded, which strips its metadata (a location, a device).
+    static func document(from data: Data, name: String, rules: Rules, redrawn: Bool = false) throws -> Document {
         switch rules.file(name, data.count) {
         case .tooLarge: throw Failure.tooLarge(name)
         case .keep: break
         default: throw Failure.unsupported(name)
         }
         let ext = pathExtension(name)
-        var read: Document
+        let read: Document
         switch ext {
         case "pdf": read = try pdf(data, name: name)
         case "jpg", "jpeg", "png", "heic":
-            guard let image = UIImage(data: data), let page = jpegPage(image) else { throw Failure.unreadable(name) }
+            guard let image = UIImage(data: data) else { throw Failure.unreadable(name) }
+            guard let page = redrawn ? Page(type: "image", content: data.base64EncodedString(), mimeType: "image/jpeg") : jpegPage(image)
+            else { throw Failure.unreadable(name) }
             read = Document(name: name, pages: [page], truncated: false)
         default: throw Failure.unsupported(name)
         }
-        read.original = Original(data, mimeType: mimeTypes[ext] ?? "")
         return read
     }
 
     /// The type a browser gives a picked file of each kind, kept with the original.
-    private static let mimeTypes = ["pdf": "application/pdf", "jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png", "heic": "image/heic"]
+    static let mimeTypes = ["pdf": "application/pdf", "jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png", "heic": "image/heic"]
 
     private static func pdf(_ data: Data, name: String) throws -> Document {
         guard let pdf = PDFDocument(data: data), pdf.pageCount > 0 else { throw Failure.unreadable(name) }
@@ -348,13 +168,17 @@ enum LabFileReader {
 
     /// A JPEG at quality 0.8, the long side at most 2,000 points, as base64.
     static func jpegPage(_ image: UIImage) -> Page? {
+        jpeg(image).map { Page(type: "image", content: $0.base64EncodedString(), mimeType: "image/jpeg") }
+    }
+
+    /// The picture as a JPEG at `quality` (0.8), the long side at most `longSide` (2,000) points.
+    static func jpeg(_ image: UIImage, longSide: CGFloat = 2000, quality: CGFloat = 0.8) -> Data? {
         let longest = max(image.size.width, image.size.height)
-        let scale = longest > 2000 ? 2000 / longest : 1
+        let scale = longest > longSide ? longSide / longest : 1
         let size = CGSize(width: image.size.width * scale, height: image.size.height * scale)
         let format = UIGraphicsImageRendererFormat()
         format.scale = 1
-        let resized = UIGraphicsImageRenderer(size: size, format: format).image { _ in image.draw(in: CGRect(origin: .zero, size: size)) }
-        guard let jpeg = resized.jpegData(compressionQuality: 0.8) else { return nil }
-        return Page(type: "image", content: jpeg.base64EncodedString(), mimeType: "image/jpeg")
+        return UIGraphicsImageRenderer(size: size, format: format).image { _ in image.draw(in: CGRect(origin: .zero, size: size)) }
+            .jpegData(compressionQuality: quality)
     }
 }

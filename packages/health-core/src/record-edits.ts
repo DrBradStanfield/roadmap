@@ -43,7 +43,7 @@ import { isCalendarDay, isClinicalDay } from './measurement-history';
 import { CORE_BLOOD_UNITS, createLabValue, createMeasurement, recordSchemaVersion, type FileLabValue, type FileMeasurement, type RoadmapFile } from './roadmap-file';
 import { canonicalToReported, reportedToCanonical, UNIT_DEFS, type MetricType } from './units';
 import { comparatorOf, type Comparator } from './lab-limits';
-import { formatLabValue, labNumberText, labUnitRefusalLine, savedLabText } from './lab-series';
+import { formatLabValue, LAB_DAY_REFUSAL, labNumberText, labUnitRefusalLine, savedLabText } from './lab-series';
 import { withEffectiveComparator } from './readable-rows';
 import { healthInputSchema, type MeasurementSource, METRIC_TYPES, PRESSURE_ORDER, pressureInverted } from './validation';
 import type { MEASUREMENT_REFUSAL_REASONS } from './product-events';
@@ -553,7 +553,7 @@ export function addLabValue(file: RoadmapFile, request: AddLabValueRequest, now:
   if (vital) return { ok: false, reason: 'core-metric', message: `"${name}" is not a lab test: add it from its own row.` };
   if (!Number.isFinite(request.value) || request.value < 0) return { ok: false, reason: 'invalid-value', message: 'A lab value is a number, 0 or more.' };
   const day = resolveRecordedAt(request.day, { now });
-  if (typeof day !== 'string') return { ok: false, reason: 'invalid-date', message: 'A lab value is for a real day, today or before.' };
+  if (typeof day !== 'string') return { ok: false, reason: 'invalid-date', message: LAB_DAY_REFUSAL };
   const entry = resolveLabCatalogEntry(name);
   if (!given && !entry && !bloodTestKeyOf(name) && !request.existingSeries) return { ok: false, reason: 'invalid-value', message: NEEDS_UNIT };
   // Checked here in the unit typed, which the write below may already have converted from (US-21 AC26).

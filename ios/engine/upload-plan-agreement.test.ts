@@ -2,7 +2,9 @@
 // iPhone save writes for the same choices (ios/engine lab-review.ts `labRows`, behind Swift's
 // LabSavePlan, its ticks every value, as Brad decided 2026-11-20 for both clients (saved unless
 // cleared; today's LabChoices still leaves a value with a question out, until design PR 15), the test day to the report's),
-// and files each letter as its review card does (`labReview(...).document`). The one
+// and files each letter as its review card does (`labReview(...).document`) for a file whose bytes the record holds
+// no row for: a read letter starts from the reader's answer, never from such a row (owner ruling on PR 1957,
+// 2026-11-22; US-14 AC4), where that card started from a metadata-only one. The other
 // exception is R3: a letter whose name the record already holds is skipped by today's card
 // and saved by the plan, since the upload's own duplicate rule (upload-known.ts) runs before
 // the read. The web classifies every file at once as the plan does; across files that never
@@ -15,11 +17,15 @@ import { documentRow } from '../../packages/health-core/src/document-rows';
 import type { UploadFile, UploadState } from '../../packages/health-core/src/upload-flow';
 import { uploadSavePlan } from '../../packages/health-core/src/upload-plan';
 import { uploadReview } from '../../packages/health-core/src/upload-review';
+import { importRow } from '../../packages/health-core/src/import-review';
+import { localDay } from '../../packages/health-core/src/merge';
 import { uploadView } from '../../packages/health-core/src/upload-view';
 
 const NOW = '2026-11-15T00:00:00.000Z';
 const DAYS = ['2026-10-01', '2026-10-02', '2026-10-03'];
-const TODAY = '2026-11-15';
+// The phone's "today" is its own calendar day at NOW, as the engine judges a future day (localDay): in
+// Los Angeles that is 2026-11-14, so a UTC day here was a future day there.
+const TODAY = localDay(NOW);
 
 function mulberry32(seed: number): () => number {
   let a = seed >>> 0;
@@ -84,7 +90,14 @@ describe('upload plan agrees with today\'s iPhone save', () => {
       const ownDay = (ref: string) => (ref[0] === 'v' ? x.values![Number(ref.slice(1))].recordedAt : x.additionalValues![Number(ref.slice(1))].recordedAt);
       // The phone's test day starts at the report's, else today, and waits to be confirmed when a
       // ticked value needs it (LabChoices.valuesWait): then it saves nothing, and neither does the plan.
-      if (!testDay && !x.reportDate && ticked.some((ref) => ownDay(ref) === undefined)) {
+      // Here the plan departs from today's iPhone save on purpose (owner ruling 2026-11-20, US-13 AC18): a value the
+      // write refuses for its unit whatever the day asks no day, so a report whose undated ticked values are all such
+      // refusals saves its dated values, where today's flow waits. Those seeds compare against today's rows below.
+      const refusedAnyDay = (ref: string) => {
+        const row = importRow(x as never, ref, '2000-01-01');
+        return !!row && bulkAppendValues(createEmptyFile({ deviceId: 'probe', now: NOW }), [row], NOW).refused.length > 0;
+      };
+      if (!testDay && !x.reportDate && ticked.some((ref) => ownDay(ref) === undefined && !refusedAnyDay(ref))) {
         expect([seed, planned]).toEqual([seed, []]);
         waited++;
         continue;
@@ -124,8 +137,9 @@ describe('upload plan agrees with today\'s iPhone save', () => {
     expect(plan.labRows.map((l) => l.fileId)).toEqual(['a']);
   });
 
-  it('a letter: the title, kind and date of today\'s review card, held row included; R3 differs only on a same-name letter', () => {
+  it('a letter: the title, kind and date of today\'s review card with no row for its bytes, a held row included; R3 differs only on a same-name letter', () => {
     let r3 = 0;
+    let moved = 0;
     for (let seed = 1; seed <= 120; seed++) {
       const r = mulberry32(seed);
       const doc = { classification: 'clinic_letter', title: `Letter ${seed}`, documentDate: r() < 0.3 ? null : r() < 0.5 ? '2026-10-05' : '2026-10', contentMarkdown: 'text', metadata: {} };
@@ -134,12 +148,17 @@ describe('upload plan agrees with today\'s iPhone save', () => {
       if (r() < 0.3) rows.push(documentRow({ documentType: 'clinic_letter', title: 'Held', documentDate: '2026-09-09', contentMd: '', metadata: {}, sourceFileName: 'other.pdf' }, { id: 'h', contentHash: 'h-a', mimeType: '', addedAt: NOW }));
       if (r() < 0.2) rows.push(documentRow({ documentType: 'clinic_letter', title: 'Same name', documentDate: null, contentMd: 't', metadata: {}, sourceFileName: 'a.pdf' }, { id: 's', contentHash: '', mimeType: '', addedAt: NOW }));
       const record = { ...createEmptyFile({ deviceId: 't', now: NOW }), documents: rows };
-      const card = labReview(x, NOW, record, 'a.pdf', 'h-a').document!;
+      // No hash: the card as it starts when the record holds no row for these bytes. The plan never reads such a row.
+      const card = labReview(x, NOW, record, 'a.pdf', null).document!;
+      const heldCard = labReview(x, NOW, record, 'a.pdf', 'h-a').document!;
       const plan = planOf(open([{ ...readFile('a', x), status: { s: 'read', extraction: { unrecognized: [], values: [], additionalValues: [], ...x } as never, choices: { ticks: {}, testDay: null, previousDay: null, replace: {}, edits: {}, document: {} } } }]), record, NOW);
       expect([seed, plan.documents[0].fields]).toMatchObject([seed, { title: card.title, documentDate: card.documentDate, documentType: card.classification, sourceFileName: 'a.pdf' }]);
       if (card.alreadySaved) r3++;
+      // Where today's card started from the held row, the plan keeps the reader's title and date instead.
+      if (heldCard.held && heldCard.title !== card.title) moved++;
     }
     expect(r3).toBeGreaterThan(0);
+    expect(moved).toBeGreaterThan(0);
   });
 });
 

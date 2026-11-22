@@ -10,8 +10,8 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { UploadModal } from './UploadModal';
 import { getDocumentArchiveMode } from '../lib/roadmap-data';
 
-vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn(), labImportBatch: vi.fn(), pollBatchStatus: vi.fn() }));
-vi.mock('../lib/roadmap-data', () => ({ getDocumentArchiveMode: vi.fn(() => 'cloud'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
+vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn() }));
+vi.mock('../lib/roadmap-data', () => ({ getDocumentArchiveMode: vi.fn(() => 'cloud'), recordFileSync: vi.fn(() => null), saveUpload: vi.fn(), uploadKnownIndex: vi.fn(() => new Map()), isLegacyUpload: vi.fn(() => false), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
 vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
 vi.mock('../lib/useIsMobile', () => ({ useIsMobile: () => false }));
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
@@ -19,7 +19,7 @@ vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 let inputClicks: ReturnType<typeof vi.fn<() => void>>;
 
 function renderModal() {
-  render(<UploadModal open onOpen={() => {}} onClose={() => {}} onComplete={() => {}} unitSystem="si" grading={{}} history={{ measurements: [], labValues: [], documents: [] }} />);
+  render(<UploadModal open onOpen={() => {}} onClose={() => {}} onComplete={() => {}} unitSystem="si" />);
   const input = document.querySelector<HTMLInputElement>('input[type=file]')!;
   inputClicks = vi.fn<() => void>();
   input.click = inputClicks;

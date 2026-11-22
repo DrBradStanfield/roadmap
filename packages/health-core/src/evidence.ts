@@ -370,7 +370,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'non-hdl-very-high': {
-    reason: 'Non-HDL cholesterol captures all atherogenic particles (LDL + VLDL + remnants) and is a better predictor of cardiovascular risk than LDL cholesterol alone. Your level is very high, indicating significantly elevated risk. Treatment with statins and lifestyle modification is typically recommended. Discuss it with your doctor.\n\nNote: ApoB is the most accurate single marker. If available, ask your doctor about testing ApoB.',
+    reason: 'Non-HDL cholesterol captures all atherogenic particles (LDL + VLDL + remnants) and is a better predictor of cardiovascular risk than LDL cholesterol alone. Your level is very high, indicating significantly elevated risk. Guidelines typically recommend treatment with statins and lifestyle modification. Discuss it with your doctor.\n\nNote: ApoB is the most accurate single marker. If available, ask your doctor about testing ApoB.',
     guidelines: [...GUIDELINES_LIPIDS],
     references: REFS_LIPID_EVIDENCE,
   },
@@ -451,7 +451,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'bp-stage2': {
-    reason: 'Blood pressure in the stage 2 range (≥140/90 mmHg) significantly increases the risk of heart attack, stroke, kidney disease, and heart failure. At this level, medication is typically recommended alongside lifestyle measures. Discuss it with your doctor.\n\nSome doctors target <120/80 mmHg for adults under 65, based on the SPRINT trial (9,300 participants), which showed that intensive blood pressure lowering to <120 mmHg significantly reduced cardiovascular events and mortality compared to the standard <140 mmHg target. The ESPRIT trial (11,255 participants) confirmed these benefits extend to patients with diabetes and prior stroke.',
+    reason: 'Blood pressure in the stage 2 range (≥140/90 mmHg) significantly increases the risk of heart attack, stroke, kidney disease, and heart failure. At this level, guidelines typically recommend medication alongside lifestyle measures. Discuss it with your doctor.\n\nSome doctors target <120/80 mmHg for adults under 65, based on the SPRINT trial (9,300 participants), which showed that intensive blood pressure lowering to <120 mmHg significantly reduced cardiovascular events and mortality compared to the standard <140 mmHg target. The ESPRIT trial (11,255 participants) confirmed these benefits extend to patients with diabetes and prior stroke.',
     guidelines: [...GUIDELINES_BP, 'SPRINT 2015', 'ESPRIT 2024'],
     references: [...REFS_BP_LIFESTYLE, ...REFS_SODIUM, ...REFS_BP_TRIALS],
   },

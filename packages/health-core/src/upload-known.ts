@@ -27,7 +27,7 @@
  */
 import { dedupFileName, documentView, isLabArchiveDocument, listedRows, type DocumentFields } from './document-rows';
 import { isActive } from './blood-tests';
-import type { UnifiedExtractionResult } from './lab-extraction';
+import type { DocumentResult, UnifiedExtractionResult } from './lab-extraction';
 import { dayOf, rootIdOf } from './merge';
 import { isReadableRow } from './readable-rows';
 import type { FileLabValue, RoadmapFile } from './roadmap-file';
@@ -116,8 +116,11 @@ export function legacyMatch(record: RoadmapFile, name: string, read: DocumentFie
  */
 export function readIsLegacy(record: RoadmapFile, name: string, extraction: Pick<UnifiedExtractionResult, 'classification' | 'document'>): boolean {
   const doc = extraction.classification === 'lab_report' ? null : extraction.document;
-  return !!doc && legacyMatch(record, name, {
-    documentType: doc.classification, title: doc.title, documentDate: doc.documentDate ?? null,
-    contentMd: doc.contentMarkdown ?? '', metadata: doc.metadata ?? {}, sourceFileName: name,
-  });
+  return !!doc && legacyMatch(record, name, readDocumentFields(doc, name));
 }
+
+/** A read document's own fields, before the person's fixes: what `legacyMatch` checks and Save starts from (upload-plan.ts). */
+export const readDocumentFields = (doc: DocumentResult, sourceFileName: string): DocumentFields => ({
+  documentType: doc.classification, title: doc.title, documentDate: doc.documentDate ?? null,
+  contentMd: doc.contentMarkdown ?? '', metadata: doc.metadata ?? {}, sourceFileName,
+});

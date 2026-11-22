@@ -79,21 +79,6 @@ extension HealthEngine {
         return (outcome, stamp())
     }
 
-    /// A lab report's ticked values through the open session, and what saving them did:
-    /// one engine door takes the summary against the session's working copy and runs
-    /// the import on it in the same step (cloud.ts `cloudLabImport`), so a value another
-    /// device brought in is never counted as saved (US-52 AC8).
-    func cloudLabImport(extractionJSON: String, refs: [String], reportDay: String, erase: String, units: String, now: Date, choices: String) throws -> (outcome: EditOutcome, order: Int, summary: LabSaveSummary?) {
-        let refsJSON = String(decoding: try JSONEncoder().encode(refs), as: UTF8.self)
-        let json = try doorCloudLabImport(extractionJson: extractionJSON, refsJson: refsJSON, reportDay: reportDay, erase: erase, shownUnits: units, nowIso: now.formatted(Self.iso), unitsJson: choices)
-        let outcome = try JSONDecoder().decode(EditOutcome.self, from: Data(json.utf8))
-        return (outcome, stamp(), try JSONDecoder().decode(Summarised.self, from: Data(json.utf8)).summary)
-    }
-
-    private struct Summarised: Decodable {
-        let summary: LabSaveSummary?
-    }
-
     /// The app came to the foreground: re-read, and retry a refused save.
     func cloudVisible() throws { _ = try doorCloudVisible() }
     /// The app left the screen.

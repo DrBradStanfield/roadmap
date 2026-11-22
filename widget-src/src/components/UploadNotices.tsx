@@ -1,12 +1,10 @@
 // The upload modal's notices: why a file was not fully read (US-12 AC9), with
 // their wording. Refused and dropped values are the review's "Not saved" (US-13 AC13).
-import { FILE_NOTICE_TEXT } from '@roadmap/health-core/upload-text';
+import { FILE_NOTICE_TEXT, KEY_TEXT } from '@roadmap/health-core/upload-text';
 import { SHOPIFY_SURFACE } from '../lib/build-flags';
 import { shortName, type FileNotice, type FileNoticeReason } from '../lib/upload-pipeline';
 
-const BYOK_NOTICE_TEXT: Partial<Record<FileNoticeReason, string>> = {
-  serverError: 'Not read. Anthropic could not be reached or could not read it. Please try again.',
-};
+const BYOK_NOTICE_TEXT: Partial<Record<FileNoticeReason, string>> = { serverError: KEY_TEXT.unread };
 
 function noticeText({ reason, text }: FileNotice & { reason: Exclude<FileNoticeReason, 'valuesDropped'> }): string {
   return text || (!SHOPIFY_SURFACE && BYOK_NOTICE_TEXT[reason]) || FILE_NOTICE_TEXT[reason];
