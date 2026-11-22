@@ -46,6 +46,7 @@ export function declinedMedicationReviewCases(zone: string): void {
       ['ezetimibe', 'no'], ['pcsk9i', 'no'], ['glp1', 'no'], ['sglt2i', 'no'],
       ['statin', 'not_tolerated'], ['ezetimibe', 'not_tolerated'], ['pcsk9i', 'not_tolerated'], ['bempedoic_acid', 'not_tolerated'],
       ['glp1', 'not_tolerated'], ['sglt2i', 'not_tolerated'], ['metformin', 'not_tolerated'],
+      ['bempedoic_acid', 'none'], // its 'none' is labelled "Not taking", a decision (types.ts BEMPEDOIC_ACID_OPTIONS)
     ])('%s "%s" behaves as metformin "No"', (key, value) => {
       expect(schedule([[key, value, '2025-10-23T12:00:00Z']])).toEqual([review('2026-10-23')]);
     });
