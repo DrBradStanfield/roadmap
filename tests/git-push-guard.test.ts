@@ -20,9 +20,11 @@ import { fileURLToPath } from 'node:url';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SCRIPT = join(ROOT, '.claude/hooks/git-push-guard.test.sh');
 
-// A clean git: no user or system config (signing, hooks), a fixed identity.
+// A clean git: no user or system config (signing, hooks), a fixed identity. A local session: run from a cloud
+// session, CLAUDE_CODE_REMOTE would switch on the guard's cloud rules (the shell test covers those).
+const { CLAUDE_CODE_REMOTE: _cloud, ...LOCAL_ENV } = process.env;
 const GIT_ENV = {
-  ...process.env,
+  ...LOCAL_ENV,
   GIT_CONFIG_NOSYSTEM: '1',
   GIT_CONFIG_GLOBAL: '/dev/null',
   GIT_AUTHOR_NAME: 'test',
@@ -150,6 +152,9 @@ describe('git push guard, as .claude/settings.json runs it', () => {
       expect(verdict(`gh pr merge 415 --merge ${flag} --match-head-commit abc1234`), flag).toBe('deny');
     }
     expect(verdict('gh pr merge 415')).toBe('ask');
+    // A cloud loop's push to main skips the auto-mode classifier only in this exact form; the guard's rule 4 holds
+    // its path scope (2026-11-22).
+    expect(allow.filter((r: string) => /git push/.test(r))).toEqual(['Bash(git push origin main)']);
   });
 
   it('loads and allows a plain push it cannot fetch for', () => {

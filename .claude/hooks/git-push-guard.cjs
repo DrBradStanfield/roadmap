@@ -7,9 +7,11 @@
 //      lacks, unless the same command pulls/merges first: merge deliberately, then push.
 //   3. A claude/ branch never pushes to main, and `gh pr merge` runs only as
 //      `--merge --match-head-commit <sha>` (docs/git-workflow.md).
-// Fails open on fetch errors (GitHub still rejects a non-fast-forward push); fails
+//   4. A cloud session (CLAUDE_CODE_REMOTE=true) pushes to main only paths inside LOOP_WRITE_SCOPES: settings.json
+//      allows `git push origin main` past the auto-mode classifier, so this rule holds the scope. Fails closed.
+// Fails open on fetch errors (GitHub still rejects a non-fast-forward push), except rule 4; fails
 // closed on a git push it cannot tokenize. The same file lives in claude_business
-// and roadmap: edit both.
+// and roadmap: edit both. Rule 4 (2026-11-22) still needs its claude_business copy.
 const { execFileSync } = require('child_process');
 const path = require('path');
 
@@ -133,6 +135,9 @@ function plainDelete(g) {
   if (byFlag ? specs.some((r) => r.includes(':')) : !specs.every((r) => /^:[^:]/.test(r))) return null;
   return { remote, branches: specs.map((r) => r.replace(/^:/, '')) };
 }
+// Rule 4: the paths a cloud loop may push to main, from the "Write scope" sections of docs/loops/*/LOOP.md.
+const LOOP_WRITE_SCOPES = [/^docs\/loops\//, /^docs\/user-stories\.md$/, // usage-evidence lines; sentry-fix added ACs
+  /^docs\/(pathway|guideline|blog)\//, /^tools\/test-queries\.json$/]; // chat-health summaries, index.json, cases
 // Config that makes a plain push force, delete or mirror (remote.<name>.push=+... or =:..., remote.<name>.mirror);
 // an unknown value ("=?", from --config-env) counts as bad.
 const badConfig = (kv) => /^remote\..*\.(push=\s*[+:?]|mirror(=|$))/i.test(kv) && !/\.mirror=\s*false$/i.test(kv);
@@ -307,24 +312,48 @@ for (const seg of segs) {
         + `(\`git push -u origin <branch>\`), then merge the PR.${hint(refspecs.find((r) => /[$\`]/.test(r)) || '')}`);
     }
   }
-  if (synced.has(dir)) continue;
+  const cloud = process.env.CLAUDE_CODE_REMOTE === 'true';
+  if (synced.has(dir) && !cloud) continue;
   // A push that cannot land on main (a claude/ branch push, docs/git-workflow.md) skips the behind-main check:
   // that branch merges origin/main at PR time. Unknown, --all, or a bare push whose destination comes from
   // config (remote.*.push, push.default upstream/tracking, from the repo or -c) counts as main-bound.
   const specs = refspecs.length ? refspecs : [configured ? 'main' : (current || 'main')];
-  if (!g.args.some((a) => a === '--all' || a === '--branches') && specs.map(toDst).every((d) => d && d !== 'main')) continue;
+  const all = g.args.some((a) => a === '--all' || a === '--branches');
+  if (!all && specs.map(toDst).every((d) => d && d !== 'main')) continue;
 
   let behind = 0;
   try {
     execFileSync('git', ['-C', dir, 'fetch', '-q', 'origin', 'main'], { stdio: 'ignore', timeout: 30000 });
     behind = parseInt(execFileSync('git', ['-C', dir, 'rev-list', '--count', 'HEAD..origin/main'],
       { encoding: 'utf8', timeout: 10000, stdio: ['ignore', 'pipe', 'ignore'] }).trim(), 10) || 0;
-  } catch { continue; }
-  if (behind > 0) {
+  } catch {
+    if (!cloud) continue;
+    deny('Push guard could not fetch origin/main, so it cannot check which paths this push to main changes. Retry.');
+  }
+  if (behind > 0 && !synced.has(dir)) {
     deny(`origin/main has ${behind} commit(s) this checkout lacks (a cloud loop or another session pushed). `
       + 'Commit first, then `git pull --no-rebase` (on main) or `git fetch origin main && git merge --no-edit origin/main` '
       + '(on a claude/ branch), resolve any conflict deliberately (ledgers/CSVs keep '
       + 'BOTH sides\' rows, never "take mine"), then push. Never force.');
+  }
+  if (!cloud) continue;
+  // Rule 4: what each source pushed onto main adds beyond origin/main (three dots: from the merge base, so a pull
+  // in this same command adds nothing). --no-renames, so a move out of app/ shows its deleted path too.
+  const srcs = refspecs.filter((r) => toDst(r) === 'main').map((r) => (r.includes(':') ? r.slice(0, r.indexOf(':')) : r) || 'HEAD');
+  if (!refspecs.length) srcs.push('HEAD');
+  if (all) srcs.push('main');
+  for (const src of srcs) {
+    let changed;
+    try {
+      if (/[$`]/.test(src)) throw new Error('unresolved');
+      changed = execFileSync('git', ['-C', dir, 'diff', '--name-only', '--no-renames', `origin/main...${src}`, '--'],
+        { encoding: 'utf8', timeout: 10000, stdio: ['ignore', 'pipe', 'ignore'] }).split('\n').filter(Boolean);
+    } catch { deny(`Push guard could not list the paths "${src}" adds to main, so this cloud push to main is refused.`); }
+    const out = changed.filter((p) => !LOOP_WRITE_SCOPES.some((re) => re.test(p)));
+    if (out.length) {
+      deny(`A cloud session pushes to main only the loop write scopes (docs/loops/*/LOOP.md); this push changes `
+        + `${out.slice(0, 5).join(', ')}${out.length > 5 ? ` and ${out.length - 5} more` : ''}. Put it on a claude/ branch and PR instead.`);
+    }
   }
 }
 process.exit(0);

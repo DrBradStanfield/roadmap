@@ -7,7 +7,10 @@ fail=0
 S=$(mktemp -d); rm -rf "$S"; mkdir -p "$S"; cd "$S" || exit 1
 git init -q --bare -b main remote.git; git clone -q remote.git a 2>/dev/null
 (cd a && git commit -q --allow-empty -m one && git push -q origin main); git clone -q remote.git b
-t(){ out=$(printf '{"cwd":"%s","tool_input":{"command":%s}}' "$1" "$(node -e 'console.log(JSON.stringify(process.argv[1]))' "$2")" | node "$G")
+# t runs the hook as a local session; tc as a cloud one (CLAUDE_CODE_REMOTE=true), whatever this shell has.
+tc(){ R=true t "$@"; }
+t(){ out=$(printf '{"cwd":"%s","tool_input":{"command":%s}}' "$1" "$(node -e 'console.log(JSON.stringify(process.argv[1]))' "$2")" \
+    | env -u CLAUDE_CODE_REMOTE ${R:+CLAUDE_CODE_REMOTE=true} node "$G")
   case "$out" in *deny*) r=DENY;; *) r=allow;; esac; printf '%-6s expected %-6s %s\n' "$r" "$3" "[$2] in $(basename "$1")"; [ "$r" = "$3" ] || fail=1; }
 t "$S/b" "git push" allow
 t "$S/b" "git push --force origin main" DENY
@@ -80,7 +83,7 @@ t "$S/b" "git -c push.default=upstream push" DENY
 t "$S/b" "git push" DENY
 t "$S/b" "git push origin" DENY
 t "$S/b" "git push origin claude/x" allow
-CLAUDE_CODE_REMOTE=true t "$S/b" "git push origin HEAD:main" allow   # cloud loops commit to main by design
+tc "$S/b" "git push origin HEAD:main" allow   # cloud loops commit to main by design
 (cd b && git branch -q --unset-upstream)
 # PR 415 review round 2: an inline upstream of main (Codex R3), a variable destination (adversary R4).
 t "$S/b" "git -c branch.claude/x.merge=refs/heads/main -c push.default=upstream push" DENY
@@ -201,6 +204,19 @@ t "$S/e" "git push origin --delete claude/m1" DENY
 # A tip this checkout has not fetched: one `git fetch origin main` brings it, then the check runs.
 (cd a && git pull -q --no-rebase && git commit -q --allow-empty -m three && git push -q origin main main:refs/heads/claude/m3)
 t "$S/b" "git push origin --delete claude/m3" allow
+# Rule 4 (2026-11-22): a cloud push to main changes only the loop write scopes; local sessions are unchanged.
+git clone -q remote.git f
+mk(){ (cd f && git reset -q --hard origin/main && for p in "$@"; do mkdir -p "$(dirname "$p")"; echo x > "$p"; git add "$p"; done \
+  && git commit -q -m c); }
+mk docs/loops/x.md; tc "$S/f" "git push origin main" allow
+mk app/x.ts; tc "$S/f" "git push origin main" DENY; t "$S/f" "git push origin main" allow
+mk docs/loops/x.md app/x.ts; tc "$S/f" "git push origin main" DENY
+mk docs/user-stories.md; tc "$S/f" "git push origin main" allow
+mk app/x.ts; (cd f && git push -q origin main && mkdir -p docs/loops && git mv app/x.ts docs/loops/x.ts && git commit -q -m mv)
+tc "$S/f" "git push origin main" DENY   # a move out of app/ deletes app/x.ts on main
+(cd f && git reset -q --hard origin/main && git checkout -q -b claude/c && echo y > app/y.ts && git add app/y.ts && git commit -q -m y)
+tc "$S/f" "git push -u origin claude/c" allow
+tc "$S/f" "git push origin HEAD:main" DENY
 t /nonexistent "git push" allow
 t "$S/b" "git commit -m 'note' && echo pushed" allow
 exit $fail
