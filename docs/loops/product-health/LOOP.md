@@ -184,7 +184,7 @@ also ships a fix is a good run, a run that ships three fixes and no report is
 a failed one.
 
 ## Delivery
-Commit `product-health: weekly report YYYY-Www` by PR to main — the report is the
+Commit `product-health: weekly report YYYY-Www` to main — the report is the
 delivery (constitution: no email by default). Open a "🎯 Decision needed"
 issue ONLY for items requiring Brad's call (keep-or-kill, spend, scope).
 

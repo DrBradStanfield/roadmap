@@ -175,7 +175,7 @@ grant under another name.
 
 ## Delivery
 
-Commit `repo-health: <date> <summary>` by PR to main — the committed report is the
+Commit `repo-health: <date> <summary>` to main — the committed report is the
 delivery. No email. Open a "🎯 Decision needed" issue only when a run is
 blocked on Brad: a security report, a clinical question, a feature worth his
 time, or a drafted reply you want posted in his voice.
