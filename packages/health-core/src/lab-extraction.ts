@@ -20,7 +20,7 @@ import { cutText } from './chat-history';
 import { parseLocalisedNumber } from './parseNumber';
 import { DOCUMENT_TYPES, METRIC_TYPES } from './validation';
 import { isCalendarDay } from './measurement-history';
-import { COMPARATORS, comparatorOf, readPrintedLimit, uploadLimitUngraded, type Comparator } from './lab-limits';
+import { COMPARATORS, comparatorOf, limitAtItsBound, readPrintedLimit, resultBeforeLimit, uploadLimitUngraded, type Comparator } from './lab-limits';
 import { BLOOD_TEST_METRICS, METRIC_LABELS, METRIC_TO_FIELD } from './mappings';
 
 // ---------------------------------------------------------------------------
@@ -435,10 +435,10 @@ export function resolveLabValues(rawValues: Array<{ metric: string; value: numbe
       displayUnit: v.unit,
       displaySystem: system,
       // A number that fits both scales (Lp(a) 50) is low; any question (a
-      // guessed unit, the model's doubt, a creatinine too high for blood) is at
-      // most medium, so the review flags it and it never saves unnoticed
-      // (US-21 AC18, US-13 AC11).
-      confidence: fitsBoth ? 'low' : question && v.confidence === 'high' ? 'medium' : v.confidence,
+      // guessed unit, the model's doubt, a creatinine too high for blood) or a
+      // limit (it may be the lab's target, US-12 AC20b) is at most medium, so the
+      // review flags it and it never saves unnoticed (US-21 AC18, US-13 AC11).
+      confidence: fitsBoth ? 'low' : (question || v.comparator) && v.confidence === 'high' ? 'medium' : v.confidence,
       question,
       ...(v.recordedAt ? { recordedAt: v.recordedAt } : null),
       ...(v.printedMonth ? { printedMonth: v.printedMonth } : null),
@@ -496,7 +496,7 @@ ${VALID_METRICS.map((metric) => `  - "${metric}" — ${CORE_METRIC_ALIASES[metri
   8. A measured blood pressure printed as one reading ("120/80 mmHg") is two TARGET METRICS: systolic_bp 120 and diastolic_bp 80, both in "values".
   9. UNITS, in "values" and "additionalValues" alike: copy each row's unit exactly as the report prints it for that row: the unit beside the result; else the unit printed in that row's own reference range ("200-900 pg/mL" gives "pg/mL"); else the unit in that column's header. NEVER convert a value and NEVER relabel its unit to the one you expect for that test: a result printed in pg/mL is returned in pg/mL, even where pmol/L is more common. If no unit is printed anywhere for the row, return "unit": "" (an empty string). Never guess one.
   10. REFERENCE RANGES: for each "additionalValues" row, return the row's printed reference range as "referenceLow" and "referenceHigh": the numbers as printed, in the row's printed unit, never converted. A one-sided range sets one side ("<5" is referenceHigh 5, ">40" is referenceLow 40) and the other is null; both are null when no range is printed.
-  11. A result printed with <, >, ≤ or ≥ (">60", "<5", "≤ 0.1") is returned exactly as printed, as a string with its symbol, in "values" and "additionalValues" alike: never as its number alone.
+  11. A result printed with <, >, ≤ or ≥ (">60", "<5", "≤ 0.1") is returned exactly as printed, as a string with its symbol, in "values" and "additionalValues" alike: never as its number alone. A row printed as its result and then a limit ("4.7   < 5.5") has the result 4.7: that limit is its target or range, never its value.
 ${mode === 'full' ? '  12. Every row in "values" and "additionalValues" also has "printedName": the test name exactly as the report prints it.\n' : ''}
   ADDITIONAL VALUES — use these standardized snake_case names when applicable:
 ${LAB_GROUPS.map((group) => [group.label, LAB_CATALOG.filter((entry) => entry.group === group.id).map((entry) => entry.key)] as const)
@@ -741,8 +741,8 @@ function unreadValue(row: unknown): UnreadLabValue {
 function withPrintedLimit(row: unknown): unknown {
   if (row === null || typeof row !== 'object' || Array.isArray(row)) return row;
   const { comparator: _sent, ...rest } = row as Record<string, unknown>;
-  const limit = typeof rest.value === 'string' ? readPrintedLimit(rest.value) : null;
-  return limit ? { ...rest, value: limit.rest, comparator: limit.comparator } : rest;
+  const limit = typeof rest.value === 'string' ? readPrintedLimit(rest.value) ?? resultBeforeLimit(rest.value) : null;
+  return limit ? { ...rest, value: limit.rest, ...comparatorOf(limit) } : rest;
 }
 
 /** The rows of `rows` that `schema` reads; the rest are dropped, each to
@@ -939,7 +939,7 @@ export function toUnifiedResult(parsed: ReturnType<typeof parseUnifiedResult>, m
     } else if (free && PROMOTABLE.has(metric!) && reportedToCanonical(metric!, v.value, v.unit)) {
       promote();
     } else if (metric !== 'creatinine' || foldName(v.name) === 'cr' || !refusesCreatinine(v)) {
-      additionalValues.push({ ...v, name: labNameForUnit(v.name, v.unit) }); // a count's name in % is its share's (US-21 AC28)
+      additionalValues.push({ ...v, name: labNameForUnit(v.name, v.unit), ...limitAtItsBound(v) }); // a count's name in % is its share's (US-21 AC28)
     }
   }
   return {

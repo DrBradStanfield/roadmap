@@ -93,6 +93,26 @@ export function readPrintedLimit(text: string): { comparator: Comparator; rest: 
   return m && m[2].trim() ? { comparator: PRINTED[m[1]], rest: m[2] } : null;
 }
 
+/**
+ * A result printed before the lab's target on one line ("4.7 < 5.5"): the
+ * result's text, as `readPrintedLimit` splits a limit, so the target is never
+ * read as the result (US-12 AC20b, Brad 2026-11-23). Else null.
+ */
+export function resultBeforeLimit(text: string): { comparator?: undefined; rest: string } | null {
+  const m = /^\s*([+-]?\d[\d.,]*)\s+[<>≤≥]\s*\d[\d.,]*\s*$/.exec(text);
+  return m ? { rest: m[1] } : null;
+}
+
+/**
+ * A limit equal to its own row's printed bound on the same side ("< 0.9"
+ * beside a range "< 0.9") may be that target read as the result: low
+ * confidence, so the review asks the person to check it (US-12 AC20b).
+ */
+export function limitAtItsBound(row: { value: number; comparator?: Comparator; referenceLow?: number | null; referenceHigh?: number | null }): { confidence?: 'low' } {
+  const bound = row.comparator === '<' || row.comparator === '<=' ? row.referenceHigh : row.comparator ? row.referenceLow : undefined;
+  return typeof bound === 'number' && bound === row.value ? { confidence: 'low' } : {};
+}
+
 /** The inputs a lab limit can land in: the graded blood tests and the lab's printed eGFR. */
 export type LimitField = 'hba1c' | 'ldlC' | 'totalCholesterol' | 'hdlC' | 'triglycerides' | 'apoB' | 'creatinine'
   | 'psa' | 'lpa' | 'systolicBp' | 'diastolicBp' | 'labEgfr';

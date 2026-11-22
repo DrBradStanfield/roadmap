@@ -313,6 +313,7 @@ export const LAB_CATALOG: LabCatalogEntry[] = [
   { key: 'c_peptide', label: 'C-peptide', group: 'metabolic', unit: 'pmol/L', aliases: [], conversions: { 'ng/ml': 331.1, 'µg/l': 331.1, 'nmol/l': 1000 }, ceiling: 50000 }, // C-peptide 3020.3 g/mol; a nanomole is a thousand picomoles
   // Derived values the app does not derive (eAG from HbA1c, VLDL from triglycerides): kept as printed tests.
   { key: 'eag', label: 'eAG', group: 'metabolic', unit: 'mmol/L', aliases: ['estimated average glucose'], conversions: GLUCOSE },
+  { key: 'cholesterol_hdl_ratio', label: 'Cholesterol/HDL ratio', group: 'metabolic', unit: 'ratio', aliases: ['cholesterol total hdl ratio', 'total cholesterol hdl ratio'] }, // one test under both stored names (US-21 AC29); no range, no flag
   { key: 'vldl', label: 'VLDL cholesterol', group: 'metabolic', unit: 'mmol/L', aliases: ['vldl-c', 'vldl chol'], conversions: { 'mg/dl': 0.02586 } }, // cholesterol 386.65 g/mol
   { key: 'lactate', label: 'Lactate', group: 'metabolic', unit: 'mmol/L', aliases: ['lactic acid'], conversions: { 'mg/dl': 0.111 } }, // lactic acid 90.08 g/mol
   { key: 'fructosamine', label: 'Fructosamine', group: 'metabolic', unit: 'µmol/L', aliases: [] },
@@ -423,7 +424,7 @@ export function displayLabUnit(reportedUnit: string, entry?: LabCatalogEntry): s
   const norm = normalizeLabUnit(reportedUnit);
   if (entry) {
     const lower = norm.toLowerCase();
-    if (lower === entry.unit.toLowerCase() || entry.unitAliases?.includes(lower)) return entry.unit;
+    if (lower === entry.unit.toLowerCase() || entry.unitAliases?.includes(lower) || (!lower && factorOf(entry, lower) === 1)) return entry.unit;
   }
   return norm;
 }
@@ -516,7 +517,7 @@ export function canonicalLabValue(
 
 /** The factor from a matched spelling to the entry's unit, or `undefined` when it takes no such spelling. */
 function factorOf(entry: LabCatalogEntry, spelling: string): number | undefined {
-  if (!spelling) return undefined;
+  if (!spelling) return entry.unit === 'ratio' ? 1 : undefined; // a ratio prints with no unit (US-21 AC29)
   return spelling === entry.unit.toLowerCase() || entry.unitAliases?.includes(spelling) ? 1 : entry.conversions?.[spelling];
 }
 
@@ -704,7 +705,6 @@ export function resolveLabCatalogEntry(reportedName: string): LabCatalogEntry | 
 
 export { labNameForUnit } from './lab-catalog-shares';
 
-
 /** A test's plain label wherever a person reads it: a core metric's, else
  *  the catalogue's, else its name title-cased (US-12 AC19). */
 export function labTestLabel(name: string): string {
@@ -798,5 +798,5 @@ export function metricNameWords(minLength: number): string[] {
  */
 export const CATALOG_UNITS: readonly string[] = [...new Set([
   ...Object.values(UNIT_DEFS).flatMap((def) => [def.canonical, def.label.si, def.label.conventional]),
-  ...LAB_CATALOG.map((entry) => entry.unit),
+  ...LAB_CATALOG.map((entry) => entry.unit).filter((unit) => unit !== 'ratio'),
 ])].sort();
