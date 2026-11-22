@@ -8,6 +8,7 @@
  */
 import { screeningFieldName } from './file-inputs';
 import { validDay } from './record-edits';
+import { screeningDate } from './screening-inputs';
 import type { RoadmapFile } from './roadmap-file';
 import { setScreening } from './state-edits';
 import { longDate } from './upload-text';
@@ -61,10 +62,13 @@ const asDay = (date: unknown): string | null => {
   return m ? `${m[1]}${m[2] ?? '-01'}` : null;
 };
 /** A screening date only ever moves forward (Brad 2026-11-23): `date` is later than the day the record holds for `key`,
- *  or the record holds none. The person can still set an earlier date by hand in the form. */
-const movesForward = (file: RoadmapFile, key: string, date: string): boolean => {
+ *  or the record holds none. The held date is read as the plan reads it (screening-inputs `screeningDate`, a "last done"
+ *  date by `now`), so one the plan does not read as a date counts as none. The person can still set an earlier date by
+ *  hand in the form. */
+const movesForward = (file: RoadmapFile, key: string, date: string, now: string): boolean => {
   const day = asDay(date);
-  const held = asDay((file.screenings as unknown as Record<string, unknown>)[screeningFieldName(key)]);
+  const stored = (file.screenings as unknown as Record<string, unknown>)[screeningFieldName(key)];
+  const held = asDay(typeof stored === 'string' ? screeningDate(stored, new Date(now)) : undefined);
   return day !== null && (held === null || day > held);
 };
 
@@ -80,7 +84,7 @@ export function writeScreeningDates(file: RoadmapFile, dates: Iterable<readonly 
   let out = file;
   let written = 0;
   for (const [key, date] of latest) {
-    if (movesForward(out, key, date)) { out = setScreening(out, key, date, now); written++; }
+    if (movesForward(out, key, date, now)) { out = setScreening(out, key, date, now); written++; }
   }
   return { file: out, written };
 }
@@ -96,12 +100,12 @@ export const screeningTickedByDefault = (person: ScreeningPerson): boolean => pe
  */
 export function screeningBox(
   metadata: Record<string, unknown> | null | undefined, start: LetterStart, fixed: string | null | undefined,
-  ticked: boolean | undefined, person: ScreeningPerson, record: RoadmapFile,
+  ticked: boolean | undefined, person: ScreeningPerson, record: RoadmapFile, now: string,
 ): ScreeningBox | null {
   const type = screeningTypeShown(metadata, person);
   if (!type) return null;
   const key = `${type}_last_date`;
   const date = fixed !== undefined ? fixed : start.day ?? start.month;
-  if (date !== null && !movesForward(record, key, date)) return null;
+  if (date !== null && !movesForward(record, key, date, now)) return null;
   return { type, key, date, ticked: ticked ?? screeningTickedByDefault(person) };
 }

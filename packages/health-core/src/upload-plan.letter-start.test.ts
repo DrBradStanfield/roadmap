@@ -157,8 +157,12 @@ describe('US-13 AC6, US-14 AC4: a read letter starts from the upload state, neve
       expect(letters(s, b, c.on), `seed ${seed} two records`).toEqual(onA);
       const out = await uploadSave(s, a, NOW, c.on, io(c.on, c.failing), PERSON);
       if (!out.ok) throw new Error(out.reason);
-      // The record's screening dates are held apart: a date this Save wrote hides a box no later (Brad 2026-11-23).
-      expect(letters(s, { ...out.commit(a).file, screenings: a.screenings }, c.on), `seed ${seed} after commit`).toEqual(onA);
+      // O2 is about rows for the letters' bytes, so the letters are compared on the committed rows with the record's
+      // screening dates as they were: a date this Save wrote rightly hides every box no later than it (Brad 2026-11-23).
+      // The dates it wrote are asserted apart: the latest the page showed ticked per type, and nothing else.
+      const committed = out.commit(a).file;
+      expect(letters(s, { ...committed, screenings: a.screenings }, c.on), `seed ${seed} after commit`).toEqual(onA);
+      expect(written(committed), `seed ${seed} dates`).toEqual(new Map([...shownTicked(state('open', c.files), a, c.on)].map(([k, v]) => [field(k), v])));
     }
     for (const [name, n] of Object.entries(reach)) expect(n, name).toBeGreaterThan(50);
   });

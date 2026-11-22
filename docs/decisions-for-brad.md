@@ -28,8 +28,7 @@ issue, and nothing private.
   shorter, but two reports from the same day read the same, so a screen-reader user cannot tell which file a
   value came from. Recommendation (the owner's): option 1, because it is the only composition from existing
   words that tells files apart. Nothing draws these names until you answer.
-  Brad chose option 1 on 2026-11-23; it is held until the owner has checked how accessible names are treated by
-  session replay (US-13 AC10).
+  Brad chose option 1 on 2026-11-23; it is held for an owner check (US-13 AC10).
 
 ## Decided
 
@@ -38,9 +37,9 @@ issue, and nothing private.
   be stored." alone, since no details were saved; every other case keeps "; its details are saved.": "this" (option 2).
 - When a report has nothing to check, its values stay behind "Show all": "this. we want the UI to be clean and if a
   person wants to investigate their blood tests further, then they can click 'show all'" (option 1).
-- A screening date never goes backwards: a letter's date is written only when it is later than the record's, and among
-  letters of one type in one upload the latest wins; an earlier date can still be set by hand in the form: "this"
-  (option 2).
+- A screening date never goes backwards, within one Save: a ticked letter's date is written only if it is later than the
+  date the record holds when the Save commits; among letters in one upload the latest wins. Across devices the record
+  still merges last-writer-wins. An earlier date can still be set by hand in the form: "this" (option 2).
 - Erase leaves original files in the person's cloud folder, and the confirm text keeps saying so: "this".
 
 2026-11-21, Brad's words in quotes:
