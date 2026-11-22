@@ -11,6 +11,7 @@ import { createEmptyFile, createLabValue } from './roadmap-file';
 import { mergeFiles } from './merge';
 import { bulkAppendValues } from './record-edits';
 import { scrubText } from './sentry-scrub';
+import { prepareImport } from './mcp-import';
 
 /** The model's answer for a synthetic lipid report, mocked: no read is made. */
 function read(values: unknown[], additionalValues: unknown[] = []) {
@@ -69,6 +70,20 @@ describe('US-12 AC20b: a target printed after the result is never saved silently
       ['egfr', 90, '>', undefined], ['hs_crp', 0.3, '<', undefined],
     ]);
     expect(values[0]).toMatchObject({ metric: 'lpa', displayValue: 10, comparator: '<' });
+  });
+
+  it('the connector preview carries a doubtful lab row as not high: a recovered result and a limit at its own bound', () => {
+    const result = read([], [
+      { name: 'ferritin', value: '31 < 40', unit: 'ug/L', referenceLow: null, referenceHigh: null },
+      { name: 'egfr', value: '> 60', unit: 'mL/min/1.73m2', referenceLow: 60, referenceHigh: null },
+      { name: 'hs_crp', value: '< 0.3', unit: 'mg/L', referenceLow: null, referenceHigh: 5 },
+    ]);
+    const file = { name: 'made-up.pdf', contentHash: 'sha256-made-up', mimeType: 'application/pdf', status: 'extracted' as const, result };
+    const { payload } = prepareImport(createEmptyFile({ deviceId: 'c', now: '2026-03-10T00:00:00.000Z' }), { route: 'dropbox', files: [file], remaining: [] },
+      { now: '2026-03-10T00:00:00.000Z', maxCorrectionAgeDays: 90, payloadId: 'p1' });
+    expect(payload.candidates.map((c) => [c.metric, c.confidence])).toEqual([
+      ['ferritin', 'medium'], ['egfr', 'low'], ['crp', 'high'],
+    ]);
   });
 
   it('the prompt says a limit after the result is its target, never its value', () => {
