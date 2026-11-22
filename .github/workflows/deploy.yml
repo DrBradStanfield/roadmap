@@ -346,20 +346,38 @@ jobs:
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_DEPLOY_TOKEN_PROD }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        # One retry, only when Fly's remote builder drops the connection (US-46 AC19, run 44937567239).
         run: |
-          flyctl deploy -c fly.toml --strategy canary \
-            --build-arg SENTRY_RELEASE="health-tool-app@$(git rev-parse --short HEAD)" \
-            --build-secret sentry_auth_token="$SENTRY_AUTH_TOKEN"
+          set -o pipefail
+          log=$(mktemp)
+          for try in 1 2; do
+            flyctl deploy -c fly.toml --strategy canary \
+              --build-arg SENTRY_RELEASE="health-tool-app@$(git rev-parse --short HEAD)" \
+              --build-secret sentry_auth_token="$SENTRY_AUTH_TOKEN" 2>&1 | tee "$log" && exit 0
+            rc=$?
+            [ "$try" = 1 ] && grep -q 'failed to fetch an image or build from source' "$log" \
+              && grep -q 'rpc error' "$log" && grep -Eq 'Unavailable|EOF' "$log" || exit "$rc"
+            echo "::warning::Fly's remote builder dropped the connection; retrying the deploy once"
+          done
 
       - name: Fly deploy — health-tool-edu (education)
         if: inputs.surfaces != 'shopify-only'
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_DEPLOY_TOKEN_EDU }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        # One retry, only when Fly's remote builder drops the connection (US-46 AC19, run 44937567239).
         run: |
-          flyctl deploy -c fly.edu.toml --strategy canary \
-            --build-arg SENTRY_RELEASE="health-tool-edu@$(git rev-parse --short HEAD)" \
-            --build-secret sentry_auth_token="$SENTRY_AUTH_TOKEN"
+          set -o pipefail
+          log=$(mktemp)
+          for try in 1 2; do
+            flyctl deploy -c fly.edu.toml --strategy canary \
+              --build-arg SENTRY_RELEASE="health-tool-edu@$(git rev-parse --short HEAD)" \
+              --build-secret sentry_auth_token="$SENTRY_AUTH_TOKEN" 2>&1 | tee "$log" && exit 0
+            rc=$?
+            [ "$try" = 1 ] && grep -q 'failed to fetch an image or build from source' "$log" \
+              && grep -q 'rpc error' "$log" && grep -Eq 'Unavailable|EOF' "$log" || exit "$rc"
+            echo "::warning::Fly's remote builder dropped the connection; retrying the deploy once"
+          done
 
       - name: Health gates
         if: inputs.surfaces != 'shopify-only'
