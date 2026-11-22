@@ -312,19 +312,19 @@ export function measurementsToInputs(
 
   if (profile) {
     if (profile.sex != null) {
-      (inputs as any).sex = decodeSex(profile.sex);
+      inputs.sex = decodeSex(profile.sex);
     }
     if (profile.birthYear != null) {
-      (inputs as any).birthYear = profile.birthYear;
+      inputs.birthYear = profile.birthYear;
     }
     if (profile.birthMonth != null) {
-      (inputs as any).birthMonth = profile.birthMonth;
+      inputs.birthMonth = profile.birthMonth;
     }
     if (profile.unitSystem != null) {
-      (inputs as any).unitSystem = decodeUnitSystem(profile.unitSystem);
+      inputs.unitSystem = decodeUnitSystem(profile.unitSystem);
     }
     if (profile.height != null) {
-      (inputs as any).heightCm = profile.height;
+      inputs.heightCm = profile.height;
     }
     // The file may be hand-edited: only the two answers count (US-60).
     if (isAlcoholAnswer(profile.alcohol)) {
