@@ -12,6 +12,7 @@ export const EXPECTED_NETWORK_ERRORS = [
 
 type RecordFailure =
   | 'Document file not stored'
+  | 'Document write busy'
   | 'Cloud sync failed'
   | 'Chat-history erase failed'
   | 'Chat-history save failed'

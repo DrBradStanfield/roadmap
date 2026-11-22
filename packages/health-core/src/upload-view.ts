@@ -290,7 +290,9 @@ function refusedLines(refused: NonNullable<SaveOutcome['refused']>): string[] {
 /** A document's date as its row writes it: in words, else "No date". */
 export const documentDateLine = (date: string | null): string => (date && longDate(date.slice(0, 10))) ?? UPLOAD_TEXT.noDate;
 
-export function saveLabel(plan: UploadSavePlan): string {
+/** "Saving..." while it saves, on every platform (US-12 AC6), else what Save will write. */
+export function saveLabel(s: UploadState, plan: UploadSavePlan): string {
+  if (s.phase === 'saving') return UPLOAD_TEXT.saving;
   const { values, documents, originals } = plan.counts;
   return values || documents || !originals ? UPLOAD_TEXT.saveBoth(values, documents) : UPLOAD_TEXT.saveOriginals(originals);
 }
@@ -306,7 +308,7 @@ function emptyRead(f: UploadFile): string | null {
 }
 
 function save(s: UploadState, plan: UploadSavePlan, review: UploadReview): UploadView['save'] {
-  const label = saveLabel(plan);
+  const label = saveLabel(s, plan);
   const blockers = s.phase === 'open' || s.phase === 'saveFailed' ? saveBlockers(review, s) : [];
   const blocked = blockers[0]?.why ?? null;
   // After a failed Save, Save tries again, unless the record changed meanwhile so that it would refuse: then it waits, saying why.
