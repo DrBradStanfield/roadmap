@@ -642,7 +642,7 @@ describe('US-13 AC6: a letter\'s screening box reaches the Save', () => {
     render(<UploadModal open onOpen={() => {}} onClose={() => {}} unitSystem="si" onComplete={() => {}} age={60} sex="male" />);
     pick(pdf('scope.pdf'));
     await waitFor(() => expect(box().checked).toBe(true));
-    expect(box().closest('label')!.textContent).toBe('Update colorectal screening date to 2024-06-01');
+    expect(box().closest('label')!.textContent).toBe('Update colorectal screening date to 1 Jun 2024');
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
     await screen.findByRole('button', { name: 'Done' });
     expect(vi.mocked(saveUpload).mock.calls[0]![4]).toEqual({ age: 60, sex: 'male' });

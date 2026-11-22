@@ -147,7 +147,7 @@ describe('US-14 AC11: the counts come from what Save wrote', () => {
     expect(stored).toEqual([]);
     expect(archives(file).every((d) => !d.fileRef)).toBe(true); // its hash alone, so a later upload can still store it
     expect(outcome).toEqual({ values: 0, documents: 0, archived: 0, unstored: 1 });
-    expect(done).toMatchObject({ archived: null, unstored: UPLOAD_TEXT.unstoredLine });
+    expect(done).toMatchObject({ archived: null, unstored: UPLOAD_TEXT.unstoredAlone }); // no details were saved (Brad 2026-11-23)
   });
 
   it('a ticked report and a letter the caller does not hold are counted unstored too', async () => {
@@ -161,7 +161,7 @@ describe('US-14 AC11: the counts come from what Save wrote', () => {
     expect(stored).toEqual([]);
     expect(archives(file).every((d) => !d.fileRef)).toBe(true);
     expect(outcome).toEqual({ values: 0, documents: 0, archived: 0, unstored: 1 });
-    expect(done).toMatchObject({ archived: null, unstored: UPLOAD_TEXT.unstoredLine });
+    expect(done).toMatchObject({ archived: null, unstored: UPLOAD_TEXT.unstoredAlone }); // no details were saved (Brad 2026-11-23)
   });
 });
 

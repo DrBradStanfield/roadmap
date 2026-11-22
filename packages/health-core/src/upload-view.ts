@@ -134,23 +134,12 @@ function softReasons(f: UploadFile): string[] {
 }
 
 /**
- * A file of a run refused before any read (`runRefused`, US-12 AC10) whose own line is the run's line, word for word
- * (`view.refused`; today the missing key's): the run's line says it once, so the file names no reason of its own on any
- * channel, as the web's modal names no file for it. Every other refusal words each file apart from its run and keeps it.
- */
-function saidByRun(f: UploadFile, s: UploadState): boolean {
-  return s.phase === 'failed' && !!s.refused && f.status.s === 'failed' && f.status.reason === s.refused
-    && failLine(f.status, s.platform, s.reader) === REFUSED_TEXT[s.refused];
-}
-
-/**
  * Why a file at rest was not fully read, in existing words (US-12 AC9), or null: read in full, still in flight, or already
  * in the record ("Already in your record" is a status, like "Read", not a reason). Hard reasons (refused, failed, stopped)
  * are its status words; a read file's soft ones join with a space.
  */
 export function fileReason(f: UploadFile, s: UploadState): string | null {
   const status = f.status;
-  if (saidByRun(f, s)) return null;
   switch (status.s) {
     case 'refused': case 'failed': case 'stopped': return statusWords(status, s);
     case 'read': return softReasons(f).join(' ') || null;
@@ -375,7 +364,7 @@ export function uploadView(s: UploadState, record: RoadmapFile, now: string, rev
   const offered = values.filter((v) => isOfferedRef(v.ref));
   const unsure = offered.filter((v) => v.group === 'unsure');
   const sure = offered.filter((v) => v.group === 'sure');
-  const failed = files.filter((f): f is UploadFile & { status: Extract<FileStatus, { s: 'failed' }> } => f.status.s === 'failed' && !saidByRun(f, s));
+  const failed = files.filter((f): f is UploadFile & { status: Extract<FileStatus, { s: 'failed' }> } => f.status.s === 'failed');
   const groups = notSavedGroups(values);
   const sections: UploadSection[] = [
     ...review.labFiles.flatMap((f): UploadSection[] => {
@@ -421,9 +410,8 @@ export function uploadView(s: UploadState, record: RoadmapFile, now: string, rev
     } : null,
     files: { row: UPLOAD_TEXT.filesRow(files.length), rows: files.map((f) => {
       const reason = fileReason(f, s);
-      // A hard reason owns the row; a soft one too, unless the screen draws it beside the row. A file whose reason its
-      // refused run's line says is named with no words of its own (`saidByRun`).
-      const status = reason !== null && !(beside && f.status.s === 'read') ? reason : saidByRun(f, s) ? '' : statusWords(f.status, s);
+      // A hard reason owns the row; a soft one too, unless the screen draws it beside the row.
+      const status = reason !== null && !(beside && f.status.s === 'read') ? reason : statusWords(f.status, s);
       return { fileId: f.id, name: uploadFileName(f), status, notFullyRead: reason !== null };
     }) },
     notices: beside ? files.flatMap((f) => softReasons(f).map((line) => ({ fileId: f.id, name: uploadFileName(f), line }))) : [],
@@ -434,7 +422,8 @@ export function uploadView(s: UploadState, record: RoadmapFile, now: string, rev
       ...(s.outcome.archived && !s.outcome.values && !s.outcome.documents
         ? { line: UPLOAD_TEXT.archivedLine(s.outcome.archived), archived: null }
         : { line: UPLOAD_TEXT.savedLine(s.outcome.values, s.outcome.documents), archived: s.outcome.archived ? UPLOAD_TEXT.archivedLine(s.outcome.archived) : null }),
-      unstored: s.outcome.unstored ? UPLOAD_TEXT.unstoredLine : null,
+      // A Save that wrote no value and no shown document saved no details, so it never says it did (US-14 AC12, Brad 2026-11-23).
+      unstored: s.outcome.unstored ? (s.outcome.values || s.outcome.documents ? UPLOAD_TEXT.unstoredLine : UPLOAD_TEXT.unstoredAlone) : null,
       skipped: [
         ...(s.outcome.skippedValues ? [UPLOAD_TEXT.skippedLine(s.outcome.skippedValues, false)] : []),
         ...(s.outcome.skippedLabValues ? [UPLOAD_TEXT.skippedLine(s.outcome.skippedLabValues, true)] : []),

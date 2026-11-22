@@ -17,6 +17,7 @@ import type { UploadFile, UploadState } from './upload-flow';
 import { uploadListPage } from './upload-list-page';
 import { uploadReview } from './upload-review';
 import { uploadSave, type UploadSaveIO } from './upload-save';
+import { setScreening } from './state-edits';
 import { writeScreeningDates, type ScreeningPerson } from './upload-screening';
 
 function mulberry32(seed: number): () => number {
@@ -86,11 +87,36 @@ async function save(s: UploadState, record: RoadmapFile, person?: ScreeningPerso
   return out.commit(record);
 }
 
-/** What the list page shows ticked, by key: the date its words name, the later letter in page order standing. */
-function shownTicked(s: UploadState, record: RoadmapFile, on: boolean, person?: ScreeningPerson): Map<string, string> {
+const MONTH_WORDS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+/** The date a box's words name, as every other date on the list reads: "20 Oct 2026" is 2026-10-20, "Jun 2026" 2026-06. */
+const dateOf = (said: string) => {
+  const [d, m, y] = said.split(' ').length === 3 ? said.split(' ') : [null, ...said.split(' ')];
+  const month = `${y}-${String(MONTH_WORDS.indexOf(m!) + 1).padStart(2, '0')}`;
+  return d ? `${month}-${d.padStart(2, '0')}` : month;
+};
+/** A date as a day, to compare: a month alone is its first day. */
+const dayOf = (date: string) => (date.length === 7 ? `${date}-01` : date);
+/** A screening date the record holds, with the day the plan reads it as (screening-inputs.ts, by hand): none, a day, a
+ *  month, equal to a letter's date, later or earlier than every letter, and three the plan reads as no date (no 13th
+ *  month, no 30 Feb, a month after NOW's). */
+const HELD_SCREENING: Array<[string | null, string | null]> = [
+  [null, null], [null, null], [null, null], [null, null], ['2026-10-20', '2026-10-20'], ['2026-06', '2026-06-01'], ['2026-10-01', '2026-10-01'],
+  ['2025-01-15', '2025-01-15'], ['2026-11-01', '2026-11-01'], ['2026-13', null], ['2026-02-30', null], ['2027-03', null],
+];
+const page = (s: UploadState, record: RoadmapFile, on: boolean, person?: ScreeningPerson) => {
   const open = { ...s, phase: 'open' } as UploadState;
-  const page = uploadListPage(open, record, NOW, uploadReview(open, record, NOW), on, person);
-  return new Map(page.letters.flatMap(({ screening: b }) => (b?.checked ? [[`${b.type}_last_date`, / to (\S+)$/.exec(b.tail)![1]] as const] : [])));
+  return uploadListPage(open, record, NOW, uploadReview(open, record, NOW), on, person);
+};
+/** What the list page shows ticked, by key: the latest date its words name. An older ticked box of the same type is
+ *  drawn but not written (a known gap, PR 1995's leads), so the page is checked against what Save writes this way. */
+function shownTicked(s: UploadState, record: RoadmapFile, on: boolean, person?: ScreeningPerson): Map<string, string> {
+  const shown = new Map<string, string>();
+  for (const { screening: b } of page(s, record, on, person).letters) {
+    const date = b?.checked ? dateOf(/ to (.+)$/.exec(b.tail)![1]) : null;
+    const key = `${b?.type}_last_date`;
+    if (date && (!shown.has(key) || dayOf(date) > dayOf(shown.get(key)!))) shown.set(key, date);
+  }
+  return shown;
 }
 
 /** `knee`, `colorectal_method` and `endometrial` are outside the screening table (validation.ts SCREENING_KEYS has no
@@ -99,10 +125,10 @@ const TYPES = [...IN_TABLE, 'knee', 'colorectal_method', 'endometrial', null];
 const PEOPLE: ScreeningPerson[] = [{}, { age: 20 }, { age: 30 }, { age: 42, sex: 'female' }, { age: 47, sex: 'male' }, { age: 55 }, { age: 72, sex: 'female' }, { age: 60, sex: 'male' }, { sex: 'female' }];
 
 describe('US-13 AC6: a letter\'s screening box, written by the shared Save (web only)', () => {
-  it('over 800 seeded picks: the dates written are exactly the oracle\'s and the boxes the list page shows ticked, and a second Save changes nothing', async () => {
+  it('over 1200 seeded picks: the dates written are exactly the oracle\'s, the latest the list page shows ticked per type, and a second Save changes nothing', async () => {
     // How often each case the properties name came up: every one must, or the seeds prove nothing about it.
-    const seen = { written: 0, unticked: 0, ineligible: 0, copy: 0, phone: 0, twoOfAType: 0, threeOfAType: 0, outsideTable: 0, heldStored: 0, heldStoredDated: 0, heldDated: 0, heldUndated: 0, writeFailed: 0, monthOnly: 0, cloudOn: 0, cloudOff: 0 };
-    for (let seed = 1; seed <= 800; seed++) {
+    const seen = { written: 0, heldBeaten: 0, heldBehind: 0, heldUnread: 0, unticked: 0, ineligible: 0, copy: 0, phone: 0, twoOfAType: 0, threeOfAType: 0, outsideTable: 0, heldStored: 0, heldStoredDated: 0, heldDated: 0, heldUndated: 0, writeFailed: 0, monthOnly: 0, cloudOn: 0, cloudOff: 0 };
+    for (let seed = 1; seed <= 1200; seed++) {
       const r = mulberry32(seed);
       const pick = <T,>(xs: T[]) => xs[Math.floor(r() * xs.length)];
       const platform = r() < 0.8 ? 'web' : 'phone';
@@ -112,6 +138,8 @@ describe('US-13 AC6: a letter\'s screening box, written by the shared Save (web 
       // Some picks are letters of one type only, so two and three of a type come up in every order of their dates.
       const oneType = r() < 0.3 ? pick(IN_TABLE) : null;
       const failing = new Set<string>();
+      // A screening date the record already holds, per type.
+      const heldDates = new Map(IN_TABLE.map((t) => [`${t}_last_date`, pick(HELD_SCREENING)] as const));
       const letters: Array<{ type: string | null; hash: string; rawDate: string | null; fix: string | null | undefined; tick: boolean | undefined; file: UploadFile }> = [];
       for (let i = 0, n = 1 + Math.floor(r() * (oneType ? 5 : 4)); i < n; i++) {
         const type = oneType ?? pick(TYPES);
@@ -134,7 +162,14 @@ describe('US-13 AC6: a letter\'s screening box, written by the shared Save (web 
         const date = fix !== undefined ? fix : rawDate;
         const ticked = tick ?? (person?.age !== undefined);
         const rest = Boolean(type && date && ticked && person);
-        if (platform === 'web' && rest && shown && eligible(type!, person!)) {
+        // Brad 2026-11-23: a box shows, and its date is written, only when it is later than the day the plan reads the
+        // record's date as; a date the plan does not read counts as none.
+        const [stored, heldDay] = type && inTable(type) ? heldDates.get(`${type}_last_date`)! : [null, null];
+        const forward = date !== null && (heldDay === null || dayOf(date) > heldDay);
+        if (platform === 'web' && rest && shown && eligible(type!, person!) && !forward) seen.heldBeaten++;
+        else if (platform === 'web' && rest && shown && eligible(type!, person!)) {
+          if (heldDay !== null) seen.heldBehind++;
+          else if (stored !== null) seen.heldUnread++;
           const count = (perType.get(type!) ?? 0) + 1;
           perType.set(type!, count);
           if (count === 2) seen.twoOfAType++;
@@ -146,7 +181,9 @@ describe('US-13 AC6: a letter\'s screening box, written by the shared Save (web 
           if (date!.length === 7) seen.monthOnly++;
           if (on) seen.cloudOn++; else seen.cloudOff++;
           if (on && failing.has(f.id)) seen.writeFailed++;
-          expected.set(`${type}_last_date`, date!);
+          // Among letters of one type the latest date is written, whatever the pick order.
+          const key = `${type}_last_date`;
+          if (!expected.has(key) || dayOf(date!) > dayOf(expected.get(key)!)) expected.set(key, date!);
           seen.written++;
         } else if (rest && platform === 'phone' && shown && eligible(type!, person!)) seen.phone++;
         else if (rest && platform === 'web' && shown && !inTable(type!)) seen.outsideTable++;
@@ -154,13 +191,17 @@ describe('US-13 AC6: a letter\'s screening box, written by the shared Save (web 
         else if (rest && platform === 'web' && !shown && eligible(type!, person!)) seen.copy++;
         else if (type && date && person && platform === 'web' && shown && eligible(type, person) && !ticked) seen.unticked++;
       });
-      const record = held.size ? { ...EMPTY, documents: [...held].map(([h, k]) => heldRow(h, k)) } : EMPTY;
+      const docs = held.size ? { ...EMPTY, documents: [...held].map(([h, k]) => heldRow(h, k)) } : EMPTY;
+      const record = [...heldDates].reduce((f, [key, [stored]]) => (stored === null ? f : setScreening(f, key, stored, NOW)), docs);
+      const after = new Map<string, string>([...heldDates].flatMap(([key, [stored]]) => (stored === null ? [] : [[key, stored] as const])));
+      for (const [key, date] of expected) after.set(key, date);
       const s = saving(platform, letters.map((l) => l.file));
       const { file, outcome } = await save(s, record, person, on, on ? cloud(failing) : offCloud());
-      expect(writtenKeys(file), `seed ${seed}`).toEqual([...expected.keys()].map(field).sort());
-      for (const type of IN_TABLE) expect(written(file, `${type}_last_date`), `seed ${seed} ${type}`).toBe(expected.get(`${type}_last_date`));
+      expect(writtenKeys(file), `seed ${seed}`).toEqual([...after.keys()].map(field).sort());
+      for (const type of IN_TABLE) expect(written(file, `${type}_last_date`), `seed ${seed} ${type}`).toBe(after.get(`${type}_last_date`));
       expect(outcome.screenings, `seed ${seed}`).toBe(expected.size || undefined);
-      // What the page shows ticked is what Save writes, nothing more and nothing less.
+      // The latest date the page shows ticked per type is what Save writes. Not every ticked box is written: an older
+      // letter of a type beside a later one is drawn ticked and not written.
       expect(shownTicked(s, record, on, person), `seed ${seed} page`).toEqual(expected);
       // The same upload saved again on the record it wrote leaves its screening dates byte for byte, stamps included.
       const again = await save(s, file, person, on, on ? cloud(failing) : offCloud());
@@ -213,13 +254,55 @@ describe('US-13 AC6: a letter\'s screening box, written by the shared Save (web 
     expect(again.file.screenings).toEqual(first.file.screenings);
   });
 
-  // Pinned until Brad answers "Should a screening date ever go backwards?" (docs/decisions-for-brad.md, Open): today the
-  // later letter in picked order wins, even when its date is the earlier one, as the web has always done.
-  it('two eligible ticked letters of one type: the later in picked order is written, once (as the web\'s per-key save, last call wins)', async () => {
-    const s = saving('web', [readFile('a', 'ha', letter('colorectal', '2026-10-20'), {}), readFile('b', 'hb', letter('colorectal', '2026-03-02'), {})]);
-    const { file, outcome } = await save(s, EMPTY, { age: 60 });
-    expect(written(file, 'colorectal_last_date')).toBe('2026-03-02');
-    expect(outcome.screenings).toBe(1);
+  // Brad 2026-11-23 ("this", option 2): a screening date never goes backwards.
+  it('two eligible ticked letters of one type: the latest date is written, once, whatever the pick order', async () => {
+    for (const [a, b] of [['2026-10-20', '2026-03-02'], ['2026-03-02', '2026-10-20'], ['2026-10', '2026-03-02'], ['2026-03-02', '2026-10']]) {
+      const s = saving('web', [readFile('a', 'ha', letter('colorectal', a), {}), readFile('b', 'hb', letter('colorectal', b), {})]);
+      const { file, outcome } = await save(s, EMPTY, { age: 60 });
+      expect(written(file, 'colorectal_last_date'), `${a} ${b}`).toBe(a > b ? a : b);
+      expect(outcome.screenings).toBe(1);
+    }
+  });
+
+  it('a letter no later than the date the record holds offers no box and writes nothing; a later one does (Brad 2026-11-23)', async () => {
+    const one = (raw: string) => saving('web', [readFile('a', 'ha', letter('colorectal', raw), {})]);
+    for (const [held, raw, moves] of [
+      ['2026-10-20', '2026-03-02', false], ['2026-10-20', '2026-10-20', false], ['2026-10-20', '2026-10', false], ['2026-10', '2026-10-01', false],
+      ['2026-03-02', '2026-10-20', true], ['2026-10', '2026-10-20', true], ['2026-03-02', '2026-10', true],
+    ] as const) {
+      const record = setScreening(EMPTY, 'colorectal_last_date', held, NOW);
+      const box = page(one(raw), record, false, { age: 60 }).letters[0].screening;
+      const { file, outcome } = await save(one(raw), record, { age: 60 });
+      expect(box?.checked, `${held} ${raw} box`).toBe(moves ? true : undefined);
+      expect(written(file, 'colorectal_last_date'), `${held} ${raw}`).toBe(moves ? raw : held);
+      expect(outcome.screenings, `${held} ${raw} count`).toBe(moves ? 1 : undefined);
+    }
+  });
+
+  it('a held date the plan reads as no date (no 13th month, no 30 Feb, a future month) lets a letter\'s date be written', async () => {
+    for (const held of ['2026-13', '2026-02-30', '2027-03']) {
+      const record = setScreening(EMPTY, 'colorectal_last_date', held, NOW);
+      const s = saving('web', [readFile('a', 'ha', letter('colorectal', '2026-10-20'), {})]);
+      expect(page(s, record, false, { age: 60 }).letters[0].screening?.checked, held).toBe(true);
+      const { file, outcome } = await save(s, record, { age: 60 });
+      expect(written(file, 'colorectal_last_date'), held).toBe('2026-10-20');
+      expect(outcome.screenings, held).toBe(1);
+    }
+  });
+
+  it('a later date that lands between the plan and the commit is never moved back, and the outcome counts no date', async () => {
+    const out = await uploadSave(saving('web', [readFile('a', 'ha', letter('colorectal', '2026-03-02'), {})]), EMPTY, NOW, false, offCloud(), { age: 60 });
+    if (!out.ok) throw new Error(out.reason);
+    const { file, outcome } = out.commit(setScreening(EMPTY, 'colorectal_last_date', '2026-10-20', NOW));
+    expect(written(file, 'colorectal_last_date')).toBe('2026-10-20');
+    expect(outcome.screenings).toBeUndefined();
+  });
+
+  it('the box prints its date as every other date on the list reads, the type still apart for bold', () => {
+    for (const [raw, said] of [['2026-10-20', ' screening date to 20 Oct 2026'], ['2026-06', ' screening date to Jun 2026']]) {
+      const box = page(saving('web', [readFile('a', 'ha', letter('colorectal', raw), {})]), EMPTY, false, { age: 60 }).letters[0].screening!;
+      expect([box.lead, box.type, box.tail]).toEqual(['Update ', 'colorectal', said]);
+    }
   });
 
   it('a screening box only for a type in the screening table: a ticked letter of any other type writes nothing', async () => {
@@ -231,7 +314,7 @@ describe('US-13 AC6: a letter\'s screening box, written by the shared Save (web 
   });
 
   it('the write itself takes only a key in the screening table, whatever a state carries', () => {
-    const file = writeScreeningDates(EMPTY, [['knee_last_date', '2026-10-20'], ['colorectal_method', '2026-10-20'], ['colorectal_last_date', '2026-10-20']], NOW);
+    const { file } = writeScreeningDates(EMPTY, [['knee_last_date', '2026-10-20'], ['colorectal_method', '2026-10-20'], ['colorectal_last_date', '2026-10-20']], NOW);
     expect(writtenKeys(file)).toEqual(['colorectalLastDate']);
   });
 
