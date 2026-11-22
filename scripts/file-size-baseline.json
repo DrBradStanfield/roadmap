@@ -6,7 +6,7 @@
   },
   "files": {
     "tools/codex-review.mjs": 1483,
-    "packages/health-core/src/lab-extraction.ts": 1166,
+    "packages/health-core/src/lab-extraction.ts": 1154,
     "packages/health-core/src/suggestions.ts": 1132,
     "packages/health-core/src/record-edits.ts": 1029,
     "packages/health-core/src/mcp-import.ts": 914,

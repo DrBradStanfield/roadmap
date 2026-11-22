@@ -3358,7 +3358,8 @@ describe('US-36 AC3 — the printed name must agree with the claimed metric', ()
     const out = prepared(labCall([row('hdl', 'Non-HDL Cholesterol', 3.9, 'mmol/L'), row('total_cholesterol', 'Chol/HDL ratio', 4.0, 'ratio')]));
     expect(out.unrecognized).toEqual([
       'Non-HDL Cholesterol 3.9 mmol/L: printed name Non-HDL Cholesterol is not a name this record knows for hdl. If the report really calls hdl that, tell the user and add it with add_measurement.',
-      'Chol/HDL ratio 4 ratio: printed name Chol/HDL ratio is not a name this record knows for total_cholesterol. If the report really calls total_cholesterol that, tell the user and add it with add_measurement.',
+      // Catalogued since US-21 AC29 (Brad 2026-11-23): the agent is told the ratio's own key.
+      'Chol/HDL ratio 4 ratio: printed name Chol/HDL ratio is cholesterol_hdl_ratio, not total_cholesterol. Re-send it as cholesterol_hdl_ratio.',
     ]);
     // Sent as a lab under its printed name, an unknown test still files (labSlotKey), so nothing the report holds is lost.
     const asLab = prepared(labCall([row('Non-HDL Cholesterol', 'Non-HDL Cholesterol', 3.9, 'mmol/L')]));

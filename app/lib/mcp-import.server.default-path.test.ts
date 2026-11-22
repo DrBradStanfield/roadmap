@@ -101,7 +101,7 @@ describe('T30 · the hosted importer with no extractor passed calls the real mod
           "maxTokens": 3072,
           "method": "POST",
           "model": "claude-haiku-5-5",
-          "system": "f0e5629030a10ade",
+          "system": "b20d243d93e068e0",
           "url": "https://api.anthropic.com/v1/messages",
         },
         {
@@ -112,7 +112,7 @@ describe('T30 · the hosted importer with no extractor passed calls the real mod
           "maxTokens": 3072,
           "method": "POST",
           "model": "claude-haiku-5-5",
-          "system": "f0e5629030a10ade",
+          "system": "b20d243d93e068e0",
           "url": "https://api.anthropic.com/v1/messages",
         },
         {
@@ -123,7 +123,7 @@ describe('T30 · the hosted importer with no extractor passed calls the real mod
           "maxTokens": 3072,
           "method": "POST",
           "model": "claude-haiku-5-5",
-          "system": "f0e5629030a10ade",
+          "system": "b20d243d93e068e0",
           "url": "https://api.anthropic.com/v1/messages",
         },
         {
@@ -134,7 +134,7 @@ describe('T30 · the hosted importer with no extractor passed calls the real mod
           "maxTokens": 3072,
           "method": "POST",
           "model": "claude-haiku-5-5",
-          "system": "f0e5629030a10ade",
+          "system": "b20d243d93e068e0",
           "url": "https://api.anthropic.com/v1/messages",
         },
       ]
