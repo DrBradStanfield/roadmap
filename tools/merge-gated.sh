@@ -68,8 +68,9 @@
 #      with both passes. --match-head-commit and Deploy's own concurrency group are the backstop.
 #   9. then `gh pr merge <pr> --merge --match-head-commit <sha>`, nothing else; its failure exits 13.
 # A gh error, timeout or an answer it cannot parse refuses with exit 4; usage errors exit 2. Every gh call,
-# the merge too, and the git fetch get MERGE_GATED_GH_TIMEOUT seconds (default 60; zero or not a number is 60). A
-# merge that times out exits 13 with its outcome unknown: check the PR.
+# the merge too, and the git fetch get MERGE_GATED_GH_TIMEOUT seconds (default 60; zero or not a number is 60). The
+# paginated file listing is one gh call, so one budget covers all its pages; a timeout there refuses (4), fail
+# closed. A merge that times out exits 13 with its outcome unknown: check the PR.
 # Ghost runs (GitHub queues a run that never gets jobs): one newer than the real CI run refuses (14) and is named
 # so it can be cancelled (`gh run cancel <id>`); an older one is ignored. It adds nothing to the rollup. A ghost
 # Deploy run blocks (12) the same way, by id.
@@ -120,8 +121,11 @@ $old"; done <<EOF
 $files
 EOF
 # Sets gatefile and ciyml from a newline-separated path list. Whole lines only: a near name (a trailing space,
-# another folder, a suffix) never matches.
+# another folder, a suffix) never matches. Case is ignored (perl lc), failing closed: `Tools/Merge-Gated.sh`
+# counts as the gate file, since a case-insensitive disk collides the two.
 scan() {
+  lower=$(printf '%s' "$1" | perl -pe '$_ = lc') || die "cannot lower-case PR $pr's paths" 4
+  set -- "$lower"
   case "
 $1
 " in *"

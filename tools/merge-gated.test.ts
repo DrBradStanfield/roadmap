@@ -294,6 +294,21 @@ describe('US-64 AC32 merge-gated.sh', () => {
         expect(p.stderr).not.toMatch(/main's copy|main copy/);
         expect(p.merges).toEqual([MERGE_ARGV]);
       });
+      it("a gate path differing only in case is a gate file (fail closed: a case-insensitive disk collides them)", () => {
+        for (const variant of ['Tools/merge-gated.sh', 'tools/Merge-Gated.sh', 'TOOLS/GENERATED-FILES.JSON', '.github/workflows/CI.yml', '.GitHub/Workflows/ci.YML']) {
+          const viaGit = gate(['123', SHA], {}, { GIT_DIFF: variant, MAIN_COPY: fakeMain(7) });
+          expect(viaGit.status, variant).toBe(7);
+          expect(viaGit.merges).toEqual([]);
+          const viaGh = gate(['123', SHA], { files: { changedFiles: 1, files: [{ path: variant }] } }, { MAIN_COPY: fakeMain(7) });
+          expect(viaGh.status, variant).toBe(7);
+          expect(viaGh.gits.map((c) => c[1])).toEqual(['fetch', 'show', 'show']);
+        }
+        for (const lookalike of ['Tools/Merge_Gated.sh', 'tools/merge-gated2.SH', '.github/workflows/CI.yaml', 'TOOLS/generated-files.json5']) {
+          const r = gate(['123', SHA], { files: { changedFiles: 1, files: [{ path: lookalike }] } }, { GIT_DIFF: lookalike, MAIN_COPY: fakeMain(7) });
+          expect(r.status, lookalike).toBe(0);
+          expect(r.merges).toEqual([MERGE_ARGV]);
+        }
+      });
       it("main's copy, run with the marker, does not route again on git's list", () => {
         const r = gate(['123', SHA], {}, { GIT_DIFF: 'tools/merge-gated.sh', MERGE_GATED_FROM_MAIN: '1' });
         expect(r.status).toBe(0);

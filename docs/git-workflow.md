@@ -50,9 +50,7 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
    merge with it on, when you merge by hand. A PR that carries `hold` gets no automatic Claude Review (its run ends green
    at once); adding or removing a label never starts or cancels one. It needs none (Brad 2026-11-13, PR 1533): the
    fresh adversary, plus Codex where the class needs it (§ Reviews below), is its review.
-   **Keep a PR under 100 changed files** (Brad 2026-11-23). When a change orphans more than that, the change and
-   the deletion of what it orphans may land as two PRs merged back to back, the deletion PR opened before the
-   first merges and named in its body.
+   Prefer PRs under 100 changed files where a change splits cleanly; orphaned code still dies in the same PR (CLAUDE.md).
 4. **Merge** it yourself when the work is done and its gates have passed. **The gate per PR** (Brad 2026-11-13):
    - unit tests written with the change;
    - CI green on the exact head sha. `ios-compile` is advisory to `tools/merge-gated.sh` and `tools/wait-run.sh`,
