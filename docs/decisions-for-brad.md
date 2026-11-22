@@ -29,8 +29,8 @@ issue, and nothing private.
   value came from. Recommendation (the owner's): option 1, because it is the only composition from existing
   words that tells files apart. Nothing draws these names until you answer.
   Brad chose option 1 on 2026-11-23; it is held for an owner check (US-13 AC10).
-- **Should the erase confirm mention files saved offline on another device?** Issue: originals are now stored
-  in the background after Save ([drafts/background-originals.md](drafts/background-originals.md), section 6). An
+- **Should the erase confirm mention files saved offline on another device?** Issue: originals are to be stored
+  in the background after Save (design parked) ([drafts/background-originals.md](drafts/background-originals.md), section 6). An
   erase removes every document it saw, and the files waiting for it. A document saved on a device that was offline,
   and synced only after an erase made elsewhere, was never seen by that erase: it stays, as any such row does
   today, and its original is then stored. Options: (1) leave the confirm as it is: it stays short, and the case
@@ -38,14 +38,26 @@ issue, and nothing private.
   longer, about a rare case. Recommendation: option 1, because the confirm already promises only what the erase
   saw, and the rule is the same for every kind of row.
 
+- **Older app versions and the new background storing.** Issue: storing originals after Save adds a new kind of
+  document row ([drafts/background-originals.md](drafts/background-originals.md), open problem (b)). An app version
+  from before the change would read that row wrongly, so the record will be marked so that older versions refuse
+  it. Once a phone stores an original this way, an app version from before the change cannot open that record until
+  it is updated. Options: (a) accept, and ship the reader change one app version before the writer, so almost nobody
+  is caught; (b) do not build background storing, and Save keeps waiting for the files. Recommendation: (a), because
+  the wait at Save is what you asked to remove, and one version's head start leaves only people who skip updates.
+
 ## Decided
 
 2026-11-23, Brad's words in quotes:
 - Original files are stored in the background after Save, with no action from the person at Save and at every
   launch; the person acts only on a final failure, with one "Try again" (Brad's requirement).
 - Files waiting to be stored may stay on a device for 30 days: "this". Kept because a medical file should not sit
-  indefinitely in a browser on a shared computer, and a job that can never succeed needs an end.
-- The privacy notice and erase confirm gain "Files waiting to be stored in your cloud are kept on this device until
+  indefinitely in a browser on a shared computer, and a job that can never succeed needs an end. Narrowed by the
+  next line: the limit now applies to the phone apps only, for jobs that can never succeed.
+- The website keeps no waiting file once the page is gone; the phone apps keep them until stored: "the webapp
+  shouldn't keep it, but the iOS (and eventually the android app) can keep". On the web, uploads run while the page
+  stays open, leaving asks first, and a file not stored by then stays as details only (uploading it again stores it).
+- The phone apps' privacy notice and erase confirm gain "Files waiting to be stored in your cloud are kept on this device until
   they are stored. Erasing your data removes them.": "do it. I approve the sentence that you draft".
 - One person's files never reach another person's cloud: "agreed". The design ties the files to their own record,
   so another account's record never receives them; they wait for their own record rather than being deleted at once.
