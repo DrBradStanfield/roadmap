@@ -193,7 +193,7 @@ describe('US-13 AC6: a letter\'s screening box, written by the shared Save (web 
       });
       const docs = held.size ? { ...EMPTY, documents: [...held].map(([h, k]) => heldRow(h, k)) } : EMPTY;
       const record = [...heldDates].reduce((f, [key, [stored]]) => (stored === null ? f : setScreening(f, key, stored, NOW)), docs);
-      const after = new Map([...heldDates].flatMap(([key, [stored]]) => (stored === null ? [] : [[key, stored] as const])));
+      const after = new Map<string, string>([...heldDates].flatMap(([key, [stored]]) => (stored === null ? [] : [[key, stored] as const])));
       for (const [key, date] of expected) after.set(key, date);
       const s = saving(platform, letters.map((l) => l.file));
       const { file, outcome } = await save(s, record, person, on, on ? cloud(failing) : offCloud());
