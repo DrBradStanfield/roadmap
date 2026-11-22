@@ -3,16 +3,16 @@
 // so scripts and tsx tools can import it.
 
 /** The frontmatter keys, quotes stripped and one-line JSON arrays parsed. Null with no block. */
-export function parseFrontmatter(content: string): Record<string, any> | null {
+export function parseFrontmatter(content: string): Record<string, unknown> | null {
   const match = content.match(/^---\n([\s\S]*?)\n---/);
   if (!match) return null;
 
-  const fm: Record<string, any> = {};
+  const fm: Record<string, string | unknown[]> = {};
   for (const line of match[1].split('\n')) {
     const kv = line.match(/^(\w+):\s*(.+)$/);
     if (!kv) continue;
     const [, key, rawValue] = kv;
-    let value: any = rawValue.trim();
+    let value: string | unknown[] = rawValue.trim();
 
     // Strip surrounding quotes
     if ((value.startsWith('"') && value.endsWith('"')) ||
