@@ -1,4 +1,4 @@
-// US-64 AC37: app and test TypeScript add no explicit `any`; a file's count can only fall.
+// US-64 AC39: app and test TypeScript add no explicit `any`; a file's count can only fall.
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -11,7 +11,7 @@ const ALLOWED_EXCEPTIONS = ['packages/health-core/src/sentry-scrub-server.ts'];
 const baseline: { exceptions: Record<string, string>; files: Record<string, number> } = readBaseline();
 const now: Record<string, number> = anyCounts();
 
-describe('explicit-any ratchet (US-64 AC37)', () => {
+describe('explicit-any ratchet (US-64 AC39)', () => {
   it('no baseline file has more explicit any than recorded: remove one, never add one', () => {
     expect(grown(baseline.files, now), grown(baseline.files, now).join('\n')).toEqual([]);
   });
