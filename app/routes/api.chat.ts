@@ -12,7 +12,7 @@ import { getClientIp } from '../lib/local-first-route.server';
 import { cappedBody } from '../lib/capped-body.server';
 import { takeWebChatTurn } from '../lib/rate-limiter';
 import { ipBucket } from '../lib/app-gate.server';
-import { authenticate } from '../shopify.server';
+import { authenticate, type AdminApiContext } from '../shopify.server';
 import { createUserClient } from '../lib/supabase-client.server';
 import { logAudit } from '../lib/supabase-identity.server';
 import { getOrCreateGuestSession, GuestRateLimitError } from '../lib/supabase-guest.server';
@@ -51,7 +51,7 @@ interface AuthResult {
   client: any;
   userId: string;
   customerId: string | null;
-  admin: any;
+  admin: AdminApiContext | null | undefined;
   isGuest: boolean;
   sessionToken?: string;
 }

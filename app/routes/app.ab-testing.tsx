@@ -3,6 +3,7 @@ import { data, useLoaderData, useSubmit, useNavigation } from "react-router";
 import { useState } from "react";
 import * as z from "../../packages/health-core/src/zod";
 
+import type { AdminApiContext } from "../shopify.server";
 import { authenticateAdmin, authenticateOwnerAdmin } from "../lib/admin-shop.server";
 import { zod3Message } from "../../packages/health-core/src/validation";
 import {
@@ -36,18 +37,21 @@ const createTestSchema = z.object({
 // Metafield helpers
 // ---------------------------------------------------------------------------
 
-async function getShopId(admin: any): Promise<string> {
+async function getShopId(admin: AdminApiContext): Promise<string> {
   const result = await admin.graphql(`query { shop { id } }`);
   return (await result.json()).data.shop.id;
 }
 
-function handleGraphQLError(e: any, operation: string): { error: string } {
+/** What a thrown Shopify GraphQL error may carry; every field is optional. */
+type ThrownGraphQLError = { body?: { errors?: { graphQLErrors?: unknown } }; message?: unknown } | null | undefined;
+
+function handleGraphQLError(e: ThrownGraphQLError, operation: string): { error: string } {
   const details = e?.body?.errors?.graphQLErrors || e?.message || e;
   console.error(`Failed to ${operation}:`, JSON.stringify(details, null, 2));
   return { error: typeof details === 'string' ? details : JSON.stringify(details) };
 }
 
-async function writeABMetafield(admin: any, shopId: string, tests: ABTest[]): Promise<{ error: string | null }> {
+async function writeABMetafield(admin: AdminApiContext, shopId: string, tests: ABTest[]): Promise<{ error: string | null }> {
   try {
     const result = await admin.graphql(`
       mutation MetafieldsSet($metafields: [MetafieldsSetInput!]!) {
@@ -75,12 +79,12 @@ async function writeABMetafield(admin: any, shopId: string, tests: ABTest[]): Pr
     const errors = resultJson.data?.metafieldsSet?.userErrors;
     if (errors?.length) return { error: errors[0].message };
     return { error: null };
-  } catch (e: any) {
-    return handleGraphQLError(e, 'write AB metafield');
+  } catch (e) {
+    return handleGraphQLError(e as ThrownGraphQLError, 'write AB metafield');
   }
 }
 
-async function deleteABMetafield(admin: any, shopId: string): Promise<{ error: string | null }> {
+async function deleteABMetafield(admin: AdminApiContext, shopId: string): Promise<{ error: string | null }> {
   try {
     const result = await admin.graphql(`
       mutation metafieldsDelete($metafields: [MetafieldIdentifierInput!]!) {
@@ -98,8 +102,8 @@ async function deleteABMetafield(admin: any, shopId: string): Promise<{ error: s
     const errors = resultJson.data?.metafieldsDelete?.userErrors;
     if (errors?.length) return { error: errors[0].message };
     return { error: null };
-  } catch (e: any) {
-    return handleGraphQLError(e, 'delete AB metafield');
+  } catch (e) {
+    return handleGraphQLError(e as ThrownGraphQLError, 'delete AB metafield');
   }
 }
 
