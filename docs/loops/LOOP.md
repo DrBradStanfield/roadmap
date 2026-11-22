@@ -107,7 +107,7 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   emails him (missing = a retro gap). Never Gmail drafts.
 - **Commit early — truncation-proof the run**: commit report + data as soon as
   the numbers are in, before polish and retro; a cut-off run still leaves its
-  data on main, marked "run truncated after <step>".
+  data on its pushed branch, marked "run truncated after <step>".
 - **Final chat message = a brief for Brad (Brad, 2026-10-07)**: what was done
   and why, what is outstanding, what needs his decision — each with the context
   (options, risk, recommendation) to decide unaided. Nothing needed → say so.
@@ -119,17 +119,15 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   gotcha archiving, plus the essentials restated below.
 - **First git act:** `git fetch origin main && git checkout main && git merge --ff-only origin/main` (cloud copies arrive
   on a detached HEAD since 2026-10-01, where pull and push fail).
-- Commit everything to main and push (no branches, no PRs; the cloud copy holds only this run's work, so local
-  sessions' worktree + PR rule doesn't apply — EXCEPT Tier 3 code changes, which go via `claude/` branch + PR).
+- Commit on the session's `claude/` branch, push it and open ONE PR to main for the run (Brad 2026-11-22: the cloud
+  runner refuses pushes to main, W46 and W47). The loop never merges its own PR; a build session or Brad merges it.
   `docs/products.md` must be a REAL file (mode 100644), never a symlink
   (inverted 2026-08-10; `scripts/check-symlinks.mjs` enforces).
-- **Landing check — the run's LAST git act**: `git rev-list --count
-  origin/main..HEAD` prints 0, or an OPEN Tier 3 PR holds the commits — else
-  push to main before ending. **Push rejected** (someone pushed meanwhile):
-  `git fetch origin main && git merge origin/main` (never force or rebase;
-  conflicts keep BOTH sides' rows), push again, up to 3 tries; the cloud copy
-  is discarded, so unpushed work is lost. Session branches strand work invisibly
-  (chat-health W34, twice, 2026-08). Backstop: `stranded-branch-watch.yml`.
+- **Landing check — the run's LAST git act**: `git rev-list --count origin/<branch>..HEAD` prints 0 AND an
+  OPEN PR holds the commits; name it in the report and the final message. **Push rejected**: `git fetch origin
+  <branch> && git merge FETCH_HEAD` (never force or rebase; conflicts keep BOTH sides' rows), push again, up to
+  3 tries; the cloud copy is discarded, so unpushed work is lost. A branch with no PR strands work invisibly
+  (chat-health W34 twice, W46). Backstop: `stranded-branch-watch.yml`.
 - Never print secret values; never commit real user data or health values;
   anonymize quoted user content.
 - **Sweep by touch (code-touching runs):** in any file your fix already
