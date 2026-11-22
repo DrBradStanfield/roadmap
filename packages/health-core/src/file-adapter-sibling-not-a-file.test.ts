@@ -89,7 +89,9 @@ describe('US-31 AC8c: a pipe named like a backup beside an erased record', () =>
 });
 
 describe('US-31 AC8c: the prune reads only a regular file, and reads the one it checked', () => {
-  type Fn = (...args: any[]) => any;
+  /** A stand-in for one `node:fs` call: it sees the arguments as given and passes back what the real call returns. */
+  type Fake<R> = (...args: unknown[]) => R;
+  type Watched = 'lstatSync' | 'statSync' | 'openSync' | 'readFileSync';
 
   /**
    * One write at erase counter 2, through an adapter whose `node:fs` refuses any read of something
@@ -111,12 +113,12 @@ describe('US-31 AC8c: the prune reads only a regular file, and reads the one it 
         return null; // the real call reports it
       }
     };
-    const watch = (name: 'lstatSync' | 'statSync' | 'openSync' | 'readFileSync', blocks: (args: any[]) => boolean): Fn => (...args) => {
+    const watch = <K extends Watched>(name: K, blocks: (args: unknown[]) => boolean): Fake<ReturnType<typeof real[K]>> => (...args) => {
       if (blocks(args)) {
         stuck.push(`${name} ${typeof args[0] === 'number' ? 'a descriptor' : basename(String(args[0]))}`);
         throw new Error(`${name} would never return here`);
       }
-      const out = (real[name] as Fn)(...args);
+      const out = (real[name] as Fake<ReturnType<typeof real[K]>>)(...args);
       // By name: the adapter holds the folder's real path, not the temp alias.
       if (swap && !swapped && typeof args[0] === 'string' && basename(args[0]) === basename(swap.at)) {
         swapped = true;
@@ -132,7 +134,7 @@ describe('US-31 AC8c: the prune reads only a regular file, and reads the one it 
       default: real,
       lstatSync: watch('lstatSync', () => false),
       statSync: watch('statSync', () => false),
-      openSync: (...args: any[]) => {
+      openSync: (...args: unknown[]) => {
         const fd = open(...args);
         if (basename(String(args[0])).includes('.bak-')) leftOpen.add(fd);
         return fd;
