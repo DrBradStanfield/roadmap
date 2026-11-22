@@ -20,7 +20,7 @@ describe('explicit-any ratchet (US-64 AC37)', () => {
     expect(fresh(baseline.files, now), fresh(baseline.files, now).join('\n')).toEqual([]);
   });
 
-  it('scans .ts, .tsx, .mts and .cts (.d.mts included), not .mjs/.js; .mts parses as TS', () => {
+  it('scans .ts, .tsx, .mts and .cts (.d.mts included), not .mjs/.js; an .mts snippet counts `as any`', () => {
     expect(['a.ts', 'a.tsx', 'a.mts', 'a.cts', 'a.d.mts', 'a.mjs', 'a.js', 'a.json'].filter(isScanned)).toEqual(['a.ts', 'a.tsx', 'a.mts', 'a.cts', 'a.d.mts']);
     expect(scannedFiles()).toEqual(expect.arrayContaining(['instrument-self-report.d.mts', 'ios/scripts/app-store-video-lab-server.mts']));
     expect(countExplicitAny('const x = y as any;', 'snippet.mts')).toBe(1);
