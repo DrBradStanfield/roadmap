@@ -54,6 +54,8 @@ export const UPLOAD_TEXT = {
   skippedLine: (n: number, lab: boolean) => `${n} ${lab ? 'additional lab' : 'blood test'} value${n !== 1 ? 's were' : ' was'} not added. Check your blood test table: a value was already recorded for that date, or changed during review.`,
   /** The web's done line for originals it could not store (UploadModal.tsx), byte for byte: no count. */
   unstoredLine: "The original file couldn't be stored; its details are saved.",
+  /** The same, for a Save that saved no details (a lab report with nothing ticked): Brad's words, 2026-11-23. */
+  unstoredAlone: "The original file couldn't be stored.",
   /** The iPhone's own word for the done screen's button and a picker's confirm (section 5 reuses "Done"). */
   done: 'Done',
   /** The Save label when Save files only originals (moved from the web's old review, ReviewOverview.tsx `saveLabel`). */

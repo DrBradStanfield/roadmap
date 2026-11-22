@@ -16,45 +16,22 @@ issue, and nothing private.
 
 ## Open
 
-- **What the done screen says when a kept original fails to store.** Issue: when a lab report saved with
-  nothing ticked fails to reach your cloud, the screen says "The original file couldn't be stored; its
-  details are saved." But for that report no details were saved: nothing was ticked. Options: (1) keep the
-  sentence as it is: no new words, but its second half is not true in this case; (2) for this case show
-  "The original file couldn't be stored." alone: true, but new words, so it needs your yes. Recommendation
-  (the owner's): option 2, because the screen should never claim something was saved when it was not.
-
-- **What a screen reader calls each value on the web's new upload list.** Issue: you approved the pattern
-  "<test> value from <column>, another reading" (2026-11-21). A list has no columns, so the engine (PR 1949)
-  fills that slot with the file's name and the day the value saves on: "LDL Cholesterol value from
-  report.pdf, 1 Nov 2026", and "LDL Cholesterol value from report.pdf, 1 Nov 2026, another reading" for a
-  second LDL from that report on that day. That filling is new composition from existing words, not yet
-  yours. The day controls are named the same way: their label, then the day a previous column printed when
-  it has one, then the file's name ("Choose the date of the previous results, 15 Sep 2026, report.pdf").
-  Options: (1) this composition: every value is told apart, but for a third reading of one test in one file
-  on one day, and two files with one name; (2) test and day only ("LDL Cholesterol value from 1 Nov 2026"):
-  shorter, but two reports from the same day read the same, so a screen-reader user cannot tell which file a
-  value came from. Recommendation (the owner's): option 1, because it is the only composition from existing
-  words that tells files apart. Nothing draws these names until you answer.
-
-- **When a report has nothing to check, should the web list show its values straight away?** Issue: with
-  nothing flagged, the new web list shows only the date, "Show all 5" and "Save 5 values"; a first-time user
-  may think nothing was read. Options: (1) keep the values behind "Show all", as you decided on 2026-11-21 and
-  as the iPhone does: the list stays short, but a clean report looks empty until the press; (2) show every
-  value when none needs checking (the design review's recommendation): the list is never empty, but a long
-  clean report shows all its rows. Recommendation (the owner's): option 2 for the web. Until you answer, the
-  list follows option 1; your yes is a one-line change (`SHOW_ALL_AT_START` in UploadList.tsx).
-
-- **Should a screening date ever go backwards?** Issue: when a letter's screening box is ticked, Save writes
-  that letter's date as the "last" screening date, even when the record already holds a later one. With two
-  letters of one type in one upload, the one picked later wins, not the later-dated one. This is how the web
-  has always worked; the shared upload engine now does the same. Options: (1) keep it: the person may be
-  correcting a wrong later date; (2) only ever move the date forward: an older letter leaves a later date
-  alone, and among letters in one upload the latest date wins (the person can still set an earlier date by
-  hand in the form). Recommendation (the owner's): option 2, because an old letter uploaded for the record
-  should not make a recent screening look overdue. It changes the plan's screening reminders, so it is your
-  call. Until you answer, today's behaviour stays, pinned by its test.
+Nothing open.
 
 ## Decided
+
+2026-11-23, Brad's words in quotes:
+- When a lab report saved with nothing ticked fails to reach the cloud, the done screen says "The original file couldn't
+  be stored." alone, since no details were saved; every other case keeps "; its details are saved.": "this" (option 2).
+- A screen reader names each value on the web upload list "<test> value from <file>, <day>" (", another reading" for a
+  second), and each day control by its label, the previous column's printed day when it has one, then the file: "this"
+  (option 1).
+- When a report has nothing to check, its values stay behind "Show all": "this. we want the UI to be clean and if a
+  person wants to investigate their blood tests further, then they can click 'show all'" (option 1).
+- A screening date never goes backwards: a letter's date is written only when it is later than the record's, and among
+  letters of one type in one upload the latest wins; an earlier date can still be set by hand in the form: "this"
+  (option 2).
+- Erase leaves original files in the person's cloud folder, and the confirm text keeps saying so: "this".
 
 2026-11-21, Brad's words in quotes:
 - The web upload review page is the iPhone's list: "do this".

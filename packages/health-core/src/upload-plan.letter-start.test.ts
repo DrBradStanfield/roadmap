@@ -68,10 +68,24 @@ const io = (on: boolean, failing: Set<string>): UploadSaveIO<string> => {
 const planOf = (s: UploadState, record: RoadmapFile, on: boolean) => uploadSavePlan(s, record, NOW, uploadReview(s, record, NOW), on, PERSON);
 const letters = (s: UploadState, record: RoadmapFile, on: boolean) =>
   planOf(s, record, on).documents.map(({ fileId, fields, screening }) => ({ fileId, title: fields.title, documentDate: fields.documentDate, screening }));
-/** The page's ticked boxes by key, the date its words name, the later in page order standing. */
+const MONTH_WORDS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+/** The date a box's words name: "20 Oct 2026" is 2026-10-20, "Jun 2026" is 2026-06. */
+const dateOf = (words: string) => {
+  const [d, m, y] = words.split(' ').length === 3 ? words.split(' ') : [null, ...words.split(' ')];
+  const month = `${y}-${String(MONTH_WORDS.indexOf(m!) + 1).padStart(2, '0')}`;
+  return d ? `${month}-${d.padStart(2, '0')}` : month;
+};
+const dayOf = (date: string) => (date.length === 7 ? `${date}-01` : date);
+/** The page's ticked boxes by key, the date its words name, the latest standing (Brad 2026-11-23). */
 function shownTicked(s: UploadState, record: RoadmapFile, on: boolean): Map<string, string> {
   const page = uploadListPage(s, record, NOW, uploadReview(s, record, NOW), on, PERSON);
-  return new Map(page.letters.flatMap(({ screening: b }) => (b?.checked ? [[`${b.type}_last_date`, / to (\S+)$/.exec(b.tail)![1]] as const] : [])));
+  const shown = new Map<string, string>();
+  for (const { screening: b } of page.letters) {
+    const date = b?.checked ? dateOf(/ to (.+)$/.exec(b.tail)![1]) : null;
+    const key = `${b?.type}_last_date`;
+    if (date && (!shown.has(key) || dayOf(date) > dayOf(shown.get(key)!))) shown.set(key, date);
+  }
+  return shown;
 }
 const field = (key: string) => key.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
 const written = (file: RoadmapFile) => new Map(Object.entries(file.screenings as unknown as Record<string, unknown>)
@@ -143,7 +157,8 @@ describe('US-13 AC6, US-14 AC4: a read letter starts from the upload state, neve
       expect(letters(s, b, c.on), `seed ${seed} two records`).toEqual(onA);
       const out = await uploadSave(s, a, NOW, c.on, io(c.on, c.failing), PERSON);
       if (!out.ok) throw new Error(out.reason);
-      expect(letters(s, out.commit(a).file, c.on), `seed ${seed} after commit`).toEqual(onA);
+      // The record's screening dates are held apart: a date this Save wrote hides a box no later (Brad 2026-11-23).
+      expect(letters(s, { ...out.commit(a).file, screenings: a.screenings }, c.on), `seed ${seed} after commit`).toEqual(onA);
     }
     for (const [name, n] of Object.entries(reach)) expect(n, name).toBeGreaterThan(50);
   });

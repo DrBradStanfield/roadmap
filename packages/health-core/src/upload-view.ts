@@ -434,7 +434,8 @@ export function uploadView(s: UploadState, record: RoadmapFile, now: string, rev
       ...(s.outcome.archived && !s.outcome.values && !s.outcome.documents
         ? { line: UPLOAD_TEXT.archivedLine(s.outcome.archived), archived: null }
         : { line: UPLOAD_TEXT.savedLine(s.outcome.values, s.outcome.documents), archived: s.outcome.archived ? UPLOAD_TEXT.archivedLine(s.outcome.archived) : null }),
-      unstored: s.outcome.unstored ? UPLOAD_TEXT.unstoredLine : null,
+      // A Save that wrote no value and no shown document saved no details, so it never says it did (US-14 AC12, Brad 2026-11-23).
+      unstored: s.outcome.unstored ? (s.outcome.values || s.outcome.documents ? UPLOAD_TEXT.unstoredLine : UPLOAD_TEXT.unstoredAlone) : null,
       skipped: [
         ...(s.outcome.skippedValues ? [UPLOAD_TEXT.skippedLine(s.outcome.skippedValues, false)] : []),
         ...(s.outcome.skippedLabValues ? [UPLOAD_TEXT.skippedLine(s.outcome.skippedLabValues, true)] : []),

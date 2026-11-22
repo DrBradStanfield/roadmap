@@ -9,7 +9,6 @@ import type { ListRow } from '@roadmap/health-core/upload-list';
 import type { LpaUnit, MetricType } from '@roadmap/health-core/units';
 import { REVIEW_CELL_TEXT } from '@roadmap/health-core/upload-text';
 import { describedBy } from '../lib/aria';
-import { rowName } from '../lib/upload-list-names';
 import { LpaUnitControl } from './LpaUnitControl';
 import { insertedText } from './NumericInputCell';
 import { UnitChip } from './UnitChip';
@@ -67,7 +66,7 @@ export function UploadListRow({ row, value, draftLabel, hidden, editable, on }: 
   // A blocking row's caption is its error: said once.
   const caption = row.caption !== row.error ? row.caption : null;
   const held = row.replaces !== null ? row.held : null;
-  const name = rowName(row);
+  const name = row.name;
   const type = (text: string) => on.type(row.key, text, row.unit.typeIn, row.unit.label);
   const metric = row.shown.cell?.metric;
   // An open draft draws the unit it was typed under, and no control: a press could not change what it writes (Codex R1).

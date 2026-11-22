@@ -10,6 +10,7 @@ import { screeningFieldName } from './file-inputs';
 import { validDay } from './record-edits';
 import type { RoadmapFile } from './roadmap-file';
 import { setScreening } from './state-edits';
+import { longDate } from './upload-text';
 import { isScreeningEligible } from './types';
 import { SCREENING_KEYS } from './validation';
 
@@ -29,7 +30,7 @@ export interface ScreeningBox { type: string; key: string; date: string | null; 
  *  bold, then the tail. */
 export const SCREENING_BOX_TEXT = {
   lead: 'Update ',
-  tail: (date: string | null): string => ` screening date${date ? ` to ${date}` : ' (pick the document date first)'}`,
+  tail: (date: string | null): string => ` screening date${date ? ` to ${longDate(date) ?? date}` : ' (pick the document date first)'}`,
 } as const;
 
 /** The model's document date (US-13 AC6), read as the connector reads it: a past calendar day, else unknown. A month
@@ -53,16 +54,35 @@ export function screeningTypeShown(metadata: Record<string, unknown> | null | un
   return typeof type === 'string' && isScreeningDateKey(`${type}_last_date`) && isScreeningEligible(type, person.age, person.sex) ? type : null;
 }
 
-/** The dates a Save writes, `[key, date]` in order: only a key in the screening table, whatever the caller hands it.
- *  Each lands through `setScreening`, stamped `now`; a date the record already holds is left as it is, so a retry or a
- *  repeat writes each date once. */
-export function writeScreeningDates(file: RoadmapFile, dates: Iterable<readonly [string, string]>, now: string): RoadmapFile {
-  let out = file;
+/** A date as a day, compared as text so it is the same in every time zone: a month alone is its first day; anything
+ *  else is none. */
+const asDay = (date: unknown): string | null => {
+  const m = typeof date === 'string' ? /^(\d{4}-\d{2})(-\d{2})?$/.exec(date) : null;
+  return m ? `${m[1]}${m[2] ?? '-01'}` : null;
+};
+/** A screening date only ever moves forward (Brad 2026-11-23): `date` is later than the day the record holds for `key`,
+ *  or the record holds none. The person can still set an earlier date by hand in the form. */
+const movesForward = (file: RoadmapFile, key: string, date: string): boolean => {
+  const day = asDay(date);
+  const held = asDay((file.screenings as unknown as Record<string, unknown>)[screeningFieldName(key)]);
+  return day !== null && (held === null || day > held);
+};
+
+/** The dates a Save writes, `[key, date]`: only a key in the screening table, whatever the caller hands it. Among dates
+ *  of one key the latest stands, whatever their order, and it lands through `setScreening`, stamped `now`, only when it
+ *  moves the record's date forward, so a retry or a repeat writes nothing. `written`: the dates it wrote. */
+export function writeScreeningDates(file: RoadmapFile, dates: Iterable<readonly [string, string]>, now: string): { file: RoadmapFile; written: number } {
+  const latest = new Map<string, string>();
   for (const [key, date] of dates) {
-    const held = (out.screenings as unknown as Record<string, unknown>)[screeningFieldName(key)];
-    if (isScreeningDateKey(key) && held !== date) out = setScreening(out, key, date, now);
+    const was = latest.get(key);
+    if (isScreeningDateKey(key) && (was === undefined || (asDay(date) ?? '') > (asDay(was) ?? ''))) latest.set(key, date);
   }
-  return out;
+  let out = file;
+  let written = 0;
+  for (const [key, date] of latest) {
+    if (movesForward(out, key, date)) { out = setScreening(out, key, date, now); written++; }
+  }
+  return { file: out, written };
 }
 
 /** Ticked by default only with a known age: with none, eligibility is unknown (US-06 AC5). The person can still tick it. */
@@ -71,14 +91,17 @@ export const screeningTickedByDefault = (person: ScreeningPerson): boolean => pe
 /**
  * A letter's box, or null when it shows none. `start`: where the letter starts (`letterStart`), as its card does;
  * `fixed`: the person's date fix, when they set or removed one (a day, or null), which drops a month-only date.
- * `ticked`: the person's tick, absent for the default.
+ * `ticked`: the person's tick, absent for the default. A dated letter no later than the date `record` holds for its
+ * type shows none: Save would not write it (Brad 2026-11-23).
  */
 export function screeningBox(
   metadata: Record<string, unknown> | null | undefined, start: LetterStart, fixed: string | null | undefined,
-  ticked: boolean | undefined, person: ScreeningPerson,
+  ticked: boolean | undefined, person: ScreeningPerson, record: RoadmapFile,
 ): ScreeningBox | null {
   const type = screeningTypeShown(metadata, person);
   if (!type) return null;
+  const key = `${type}_last_date`;
   const date = fixed !== undefined ? fixed : start.day ?? start.month;
-  return { type, key: `${type}_last_date`, date, ticked: ticked ?? screeningTickedByDefault(person) };
+  if (date !== null && !movesForward(record, key, date)) return null;
+  return { type, key, date, ticked: ticked ?? screeningTickedByDefault(person) };
 }
