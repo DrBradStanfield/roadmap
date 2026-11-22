@@ -16,16 +16,26 @@ issue, and nothing private.
 
 ## Open
 
-Nothing open.
+- **What a screen reader calls each value on the web's new upload list.** Issue: you approved the pattern
+  "<test> value from <column>, another reading" (2026-11-21). A list has no columns, so the engine (PR 1949)
+  fills that slot with the file's name and the day the value saves on: "LDL Cholesterol value from
+  report.pdf, 1 Nov 2026", and "LDL Cholesterol value from report.pdf, 1 Nov 2026, another reading" for a
+  second LDL from that report on that day. That filling is new composition from existing words, not yet
+  yours. The day controls are named the same way: their label, then the day a previous column printed when
+  it has one, then the file's name ("Choose the date of the previous results, 15 Sep 2026, report.pdf").
+  Options: (1) this composition: every value is told apart, but for a third reading of one test in one file
+  on one day, and two files with one name; (2) test and day only ("LDL Cholesterol value from 1 Nov 2026"):
+  shorter, but two reports from the same day read the same, so a screen-reader user cannot tell which file a
+  value came from. Recommendation (the owner's): option 1, because it is the only composition from existing
+  words that tells files apart. Nothing draws these names until you answer.
+  Brad chose option 1 on 2026-11-23; it is held until the owner has checked how accessible names are treated by
+  session replay (US-13 AC10).
 
 ## Decided
 
 2026-11-23, Brad's words in quotes:
 - When a lab report saved with nothing ticked fails to reach the cloud, the done screen says "The original file couldn't
   be stored." alone, since no details were saved; every other case keeps "; its details are saved.": "this" (option 2).
-- A screen reader names each value on the web upload list "<test> value from <file>, <day>" (", another reading" for a
-  second), and each day control by its label, the previous column's printed day when it has one, then the file: "this"
-  (option 1).
 - When a report has nothing to check, its values stay behind "Show all": "this. we want the UI to be clean and if a
   person wants to investigate their blood tests further, then they can click 'show all'" (option 1).
 - A screening date never goes backwards: a letter's date is written only when it is later than the record's, and among
