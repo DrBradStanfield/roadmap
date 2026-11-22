@@ -81,7 +81,7 @@ describe('chat failure telemetry', () => {
       content: [{ type: 'text', text: secret }], usage: {},
     });
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(body)));
-    const result = await routeQuery(secret);
+    const result = await routeQuery(secret, undefined, undefined, 'CHAT');
     expect(result.error).toBeTruthy();
     reportRouterFailure(result);
     await Sentry.flush();
@@ -93,7 +93,7 @@ describe('chat failure telemetry', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
       content: [{ type: 'text', text: secret }], usage: {},
     }))));
-    const result = await classifyMessage(secret);
+    const result = await classifyMessage(secret, undefined, undefined, 'CHAT');
     expect(result.raw).toBe(secret); // conversation/audit storage policy is unchanged
     await Sentry.flush();
     expect(eventEnvelopes()).toHaveLength(1);

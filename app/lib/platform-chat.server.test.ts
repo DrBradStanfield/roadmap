@@ -29,7 +29,7 @@ describe('platformChatCompletion on spam (US-15 AC48)', () => {
 
   it('US-15 AC48: a SPAM message returns silent with no content, never routing or answering', async () => {
     edge.classify.mockResolvedValueOnce({ classification: 'SPAM', routerSkipped: true, latencyMs: 3, cacheHit: true, raw: 'SPAM', usage, error: null });
-    const result = await platformChatCompletion({ message: 'Got my peptides from VendorX, best shop around.', history: [] });
+    const result = await platformChatCompletion({ message: 'Got my peptides from VendorX, best shop around.', history: [], purpose: 'DISCORD' });
     expect(result).toMatchObject({
       silent: true, content: '', isFallback: false, routerResult: null,
       classifier: { classification: 'SPAM', routerSkipped: true, latencyMs: 3, error: null },
@@ -41,7 +41,7 @@ describe('platformChatCompletion on spam (US-15 AC48)', () => {
   it('US-15 AC48: a GREETING still gets an answer', async () => {
     edge.classify.mockResolvedValueOnce({ classification: 'GREETING', routerSkipped: true, latencyMs: 3, cacheHit: true, raw: 'GREETING', usage, error: null });
     edge.complete.mockResolvedValueOnce({ content: 'Hello!', usage, isFallback: false });
-    const result = await platformChatCompletion({ message: 'hi there', history: [] });
+    const result = await platformChatCompletion({ message: 'hi there', history: [], purpose: 'DISCORD' });
     expect(result.content).toBe('Hello!');
     expect(result.silent).toBeFalsy();
     expect(edge.complete).toHaveBeenCalledTimes(1);

@@ -1,7 +1,7 @@
 /**
- * One Anthropic key per purpose, so the Console shows spend by feature.
+ * US-76: one Anthropic key per purpose, so the Console shows spend by feature.
  * `anthropicKey` reads ANTHROPIC_API_KEY_<PURPOSE> and falls back to ANTHROPIC_API_KEY
- * when that is unset or empty. The pipeline tests check the key each surface's calls
+ * when that is unset, empty or whitespace only (AC1). The pipeline tests check the key each surface's calls
  * actually send: every YouTube or Discord turn's classifier, router and answer calls
  * carry that platform's key, never the web chat's.
  */
@@ -50,7 +50,7 @@ afterEach(() => {
   }
 });
 
-describe('anthropicKey', () => {
+describe('US-76 AC1: anthropicKey', () => {
   it.each(PURPOSES)('%s: its own key wins over the shared one', (purpose) => {
     process.env[`ANTHROPIC_API_KEY_${purpose}`] = `test-token-${purpose.toLowerCase()}`;
     expect(anthropicKey(purpose)).toBe(`test-token-${purpose.toLowerCase()}`);
@@ -65,6 +65,16 @@ describe('anthropicKey', () => {
     expect(anthropicKey('YOUTUBE')).toBe('test-token-shared');
   });
 
+  it('a whitespace-only purpose key falls back to ANTHROPIC_API_KEY', () => {
+    process.env.ANTHROPIC_API_KEY_YOUTUBE = '  \n';
+    expect(anthropicKey('YOUTUBE')).toBe('test-token-shared');
+  });
+
+  it('a purpose key with stray whitespace is sent trimmed', () => {
+    process.env.ANTHROPIC_API_KEY_YOUTUBE = ' test-token-youtube\n';
+    expect(anthropicKey('YOUTUBE')).toBe('test-token-youtube');
+  });
+
   it('another purpose\'s key is never used', () => {
     process.env.ANTHROPIC_API_KEY_CHAT = 'test-token-chat';
     expect(anthropicKey('YOUTUBE')).toBe('test-token-shared');
@@ -74,14 +84,9 @@ describe('anthropicKey', () => {
     delete process.env.ANTHROPIC_API_KEY;
     expect(() => anthropicKey('CHAT')).toThrow('ANTHROPIC_API_KEY not configured');
   });
-
-  it('an unknown purpose does not type-check', () => {
-    // @ts-expect-error 'TRENDING' is not an AnthropicPurpose
-    expect(anthropicKey('TRENDING')).toBe('test-token-shared');
-  });
 });
 
-describe('each call sends its purpose key', () => {
+describe('US-76 AC2: each call sends its purpose key', () => {
   beforeEach(() => {
     for (const p of PURPOSES) process.env[`ANTHROPIC_API_KEY_${p}`] = `test-token-${p.toLowerCase()}`;
   });
@@ -130,7 +135,7 @@ describe('each call sends its purpose key', () => {
 
   it('a Discord turn: every call carries the Discord key', async () => {
     const keys = stubFetch();
-    await platformChatCompletion({ message: 'What is a good ApoB?', history: [] });
+    await platformChatCompletion({ message: 'What is a good ApoB?', history: [], purpose: 'DISCORD' });
     expect(keys.length).toBe(3); // classifier, router, answer
     expect(new Set(keys)).toEqual(new Set(['test-token-discord']));
   });

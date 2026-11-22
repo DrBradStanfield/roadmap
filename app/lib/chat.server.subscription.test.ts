@@ -27,7 +27,7 @@ const messages = [{ role: 'user' as const, content: 'Pause my subscription, I am
 describe('US-59 AC7 — the subscription tool in getChatCompletion', () => {
   it('offered only with subscriptionTool; a tool-only answer is a short line plus the proposal', async () => {
     const bodies = stubAnthropic([proposal]);
-    const r = await getChatCompletion([], messages, false, undefined, { subscriptionTool: true });
+    const r = await getChatCompletion([], messages, false, undefined, { purpose: 'CHAT', subscriptionTool: true });
     expect(bodies()[0].tools.map((t: { name: string }) => t.name)).toEqual(['propose_subscription_change']);
     expect(r.isFallback).toBe(false);
     expect(r.content).toBe(SUBSCRIPTION_TOOL_ONLY_ACK);
@@ -43,7 +43,7 @@ describe('US-59 AC7 — the subscription tool in getChatCompletion', () => {
 
   it('with the form tools too, both are sent', async () => {
     const bodies = stubAnthropic([{ type: 'text', text: 'Press Confirm below.' }, proposal]);
-    const r = await getChatCompletion([], messages, true, undefined, { subscriptionTool: true, profileEdits: true });
+    const r = await getChatCompletion([], messages, true, undefined, { purpose: 'CHAT', subscriptionTool: true, profileEdits: true });
     expect(bodies()[0].tools.map((t: { name: string }) => t.name)).toEqual(['propose_field_edit', 'propose_medication_edit', 'propose_profile_edit', 'propose_subscription_change']);
     expect(r.content).toBe('Press Confirm below.');
     expect(r.subscriptionProposal?.action).toBe('pause');
@@ -51,7 +51,7 @@ describe('US-59 AC7 — the subscription tool in getChatCompletion', () => {
 
   it('Codex C5: a tool-only answer with a form edit AND a subscription proposal keeps both', async () => {
     stubAnthropic([{ type: 'tool_use', id: 'tu_0', name: 'propose_field_edit', input: { field: 'weightKg', value: 80, unit: 'kg' } }, proposal]);
-    const r = await getChatCompletion([], messages, true, undefined, { subscriptionTool: true });
+    const r = await getChatCompletion([], messages, true, undefined, { purpose: 'CHAT', subscriptionTool: true });
     expect(r.proposedEdits).toHaveLength(1);
     expect(r.subscriptionProposal).toEqual({ ref: 'S1', action: 'pause', reason: 'taking_a_break' });
   });

@@ -299,7 +299,12 @@ Moved out of CLAUDE.md 2026-09-24 (entropy pass). `.env` has all of them.
   - `ANTHROPIC_API_KEY_PURGE`: the chat-purge cron's question scrub (`RUN_SHARED_CRONS`). health-tool-app.
   - `ANTHROPIC_API_KEY_LABS`: lab file reads from the website and the iPhone app. Both apps.
   - `ANTHROPIC_API_KEY_CONNECTOR`: the hosted MCP's `import_documents`. health-tool-edu.
-  Keep them in one Console workspace: prompt caches are not shared across workspaces.
+  Keep them in one Console workspace: prompt caches are not shared across workspaces. A purpose key that is
+  set but wrong breaks that surface (no fallback), so check the surface after setting it. Console key names,
+  all in the Default workspace, follow `roadmap-<commerce|edu>-<purpose>`: roadmap-commerce-chat,
+  roadmap-commerce-youtube, roadmap-commerce-discord, roadmap-commerce-purge, roadmap-commerce-labs,
+  roadmap-edu-chat, roadmap-edu-labs, roadmap-edu-connector. Spend by key: `tools/anthropic-spend.mjs`
+  ([docs/ops/anthropic-spend.md](ops/anthropic-spend.md)). Story: US-76.
 - **Fly-only**: MCP_ISSUER, MCP_SEAL_KEYS, MCP_CLIENT_HMAC_KEY,
   GITHUB_ISSUES_TOKEN (edu; the connector files bug
   reports with it, and without it hands the user a link), DROPBOX_APP_KEY/SECRET,

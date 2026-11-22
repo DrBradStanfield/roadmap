@@ -73,7 +73,7 @@ describe('US-12: fetchAnthropicRaw retry policy (via callAnthropicWithUsage)', (
     const fetchMock = vi.fn().mockResolvedValue(anthropicMessage('hello'));
     global.fetch = fetchMock as unknown as typeof fetch;
 
-    const result = await callAnthropicWithUsage({ model: 'x' });
+    const result = await callAnthropicWithUsage({ model: 'x' }, 'CHAT');
     expect(result.content).toBe('hello');
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(Sentry.captureException).not.toHaveBeenCalled();
@@ -85,7 +85,7 @@ describe('US-12: fetchAnthropicRaw retry policy (via callAnthropicWithUsage)', (
       .mockResolvedValueOnce(anthropicMessage('recovered'));
     global.fetch = fetchMock as unknown as typeof fetch;
 
-    const result = await callAnthropicWithUsage({ model: 'x' });
+    const result = await callAnthropicWithUsage({ model: 'x' }, 'CHAT');
     expect(result.content).toBe('recovered');
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(Sentry.captureException).not.toHaveBeenCalled();
@@ -95,7 +95,7 @@ describe('US-12: fetchAnthropicRaw retry policy (via callAnthropicWithUsage)', (
     const fetchMock = vi.fn().mockResolvedValue(errResponse(503));
     global.fetch = fetchMock as unknown as typeof fetch;
 
-    await expect(callAnthropicWithUsage({ model: 'x' })).rejects.toThrow(/status 503/);
+    await expect(callAnthropicWithUsage({ model: 'x' }, 'CHAT')).rejects.toThrow(/status 503/);
     expect(fetchMock).toHaveBeenCalledTimes(2); // RETRY_MAX_ATTEMPTS
     expect(Sentry.captureException).not.toHaveBeenCalled(); // transient capacity — silenced
   });
@@ -104,7 +104,7 @@ describe('US-12: fetchAnthropicRaw retry policy (via callAnthropicWithUsage)', (
     const fetchMock = vi.fn().mockResolvedValue(errResponse(502));
     global.fetch = fetchMock as unknown as typeof fetch;
 
-    await expect(callAnthropicWithUsage({ model: 'x' })).rejects.toThrow(/status 502/);
+    await expect(callAnthropicWithUsage({ model: 'x' }, 'CHAT')).rejects.toThrow(/status 502/);
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(Sentry.captureException).toHaveBeenCalledTimes(1); // not a silenced status
   });
@@ -113,7 +113,7 @@ describe('US-12: fetchAnthropicRaw retry policy (via callAnthropicWithUsage)', (
     const fetchMock = vi.fn().mockResolvedValue(errResponse(429));
     global.fetch = fetchMock as unknown as typeof fetch;
 
-    await expect(callAnthropicWithUsage({ model: 'x' })).rejects.toThrow(/status 429/);
+    await expect(callAnthropicWithUsage({ model: 'x' }, 'CHAT')).rejects.toThrow(/status 429/);
     expect(fetchMock).toHaveBeenCalledTimes(1); // 429 is structural, not retryable
     expect(Sentry.captureException).toHaveBeenCalledTimes(1);
   });
@@ -124,7 +124,7 @@ describe('US-12: fetchAnthropicRaw retry policy (via callAnthropicWithUsage)', (
       .mockResolvedValueOnce(anthropicMessage('recovered'));
     global.fetch = fetchMock as unknown as typeof fetch;
 
-    const result = await callAnthropicWithUsage({ model: 'x' });
+    const result = await callAnthropicWithUsage({ model: 'x' }, 'CHAT');
     expect(result.content).toBe('recovered');
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
@@ -144,7 +144,7 @@ describe('US-12: fetchAnthropicRaw retry policy (via callAnthropicWithUsage)', (
       .mockResolvedValueOnce(anthropicMessage('recovered'));
     global.fetch = fetchMock as unknown as typeof fetch;
 
-    const result = await callAnthropicWithUsage({ model: 'x' });
+    const result = await callAnthropicWithUsage({ model: 'x' }, 'CHAT');
     expect(result.content).toBe('recovered');
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
@@ -156,7 +156,7 @@ describe('US-12: fetchAnthropicRaw retry policy (via callAnthropicWithUsage)', (
     }));
     global.fetch = fetchMock as unknown as typeof fetch;
 
-    const result = await callAnthropicWithUsage({ model: 'x' });
+    const result = await callAnthropicWithUsage({ model: 'x' }, 'CHAT');
     expect(result.content).toBe('');
     expect(result.contentBlocks).toHaveLength(1);
   });
@@ -235,7 +235,7 @@ describe('US-35 AC5 — extractOrClassify with httpAttempts: 1 makes ONE request
     const timeout = new DOMException('signal timed out', 'TimeoutError');
     const fetchMock = vi.fn().mockRejectedValue(timeout);
     global.fetch = fetchMock as unknown as typeof fetch;
-    await expect(extractOrClassify([{ type: 'text', content: 'x' }], { timeoutMs: 100, httpAttempts: 1 })).rejects.toBe(timeout);
+    await expect(extractOrClassify([{ type: 'text', content: 'x' }], { purpose: 'CONNECTOR', timeoutMs: 100, httpAttempts: 1 })).rejects.toBe(timeout);
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
@@ -247,7 +247,7 @@ describe('US-35 AC5 — extractOrClassify with httpAttempts: 1 makes ONE request
         .mockImplementationOnce(async () => { vi.advanceTimersByTime(15_000); return anthropicMessage('not json at all'); })
         .mockResolvedValueOnce(anthropicMessage(validUnifiedJson));
       global.fetch = fetchMock as unknown as typeof fetch;
-      await extractOrClassify([{ type: 'text', content: 'x' }], { timeoutMs: 20_000, httpAttempts: 1 });
+      await extractOrClassify([{ type: 'text', content: 'x' }], { purpose: 'CONNECTOR', timeoutMs: 20_000, httpAttempts: 1 });
       expect(fetchMock).toHaveBeenCalledTimes(2);
       expect(timeouts.mock.calls.map(([ms]) => ms)).toEqual([20_000, 5_000]);
 
@@ -255,7 +255,7 @@ describe('US-35 AC5 — extractOrClassify with httpAttempts: 1 makes ONE request
       timeouts.mockClear();
       const late = vi.fn().mockImplementationOnce(async () => { vi.advanceTimersByTime(20_000); return anthropicMessage('not json'); });
       global.fetch = late as unknown as typeof fetch;
-      await expect(extractOrClassify([{ type: 'text', content: 'x' }], { timeoutMs: 20_000, httpAttempts: 1 })).rejects.toMatchObject({ name: 'TimeoutError' });
+      await expect(extractOrClassify([{ type: 'text', content: 'x' }], { purpose: 'CONNECTOR', timeoutMs: 20_000, httpAttempts: 1 })).rejects.toMatchObject({ name: 'TimeoutError' });
       expect(late).toHaveBeenCalledTimes(1);
       timeouts.mockRestore();
     } finally {
@@ -294,7 +294,7 @@ describe('US-35 AC5 — extractOrClassify with httpAttempts: 1 makes ONE request
       for (const r of replies) fetchMock.mockImplementationOnce(r);
       global.fetch = fetchMock as unknown as typeof fetch;
       const start = Date.now();
-      const run = extractOrClassify([{ type: 'text', content: 'x' }], { timeoutMs: 90_000, oneDeadline: true });
+      const run = extractOrClassify([{ type: 'text', content: 'x' }], { purpose: 'LABS', timeoutMs: 90_000, oneDeadline: true });
       if (fails) await expect(run).rejects.toMatchObject({ name: fails });
       else await expect(run).resolves.toMatchObject({ classification: 'lab_report' });
       expect(fetchMock).toHaveBeenCalledTimes(replies.length);
@@ -313,7 +313,7 @@ describe('US-35 AC5 — extractOrClassify with httpAttempts: 1 makes ONE request
       for (const r of replies) fetchMock.mockImplementationOnce(r);
       global.fetch = fetchMock as unknown as typeof fetch;
       const onRetry = vi.fn();
-      await expect(extractOrClassify([{ type: 'text', content: 'x' }], { timeoutMs: 90_000, oneDeadline: true, onRetry }))
+      await expect(extractOrClassify([{ type: 'text', content: 'x' }], { purpose: 'LABS', timeoutMs: 90_000, oneDeadline: true, onRetry }))
         .resolves.toMatchObject({ classification: 'lab_report' });
       expect(onRetry).toHaveBeenCalledTimes(retries);
     });
@@ -321,7 +321,7 @@ describe('US-35 AC5 — extractOrClassify with httpAttempts: 1 makes ONE request
     it('the website keeps its retry of a timed-out attempt, in a fresh window', async () => {
       const fetchMock = vi.fn(hangs);
       global.fetch = fetchMock as unknown as typeof fetch;
-      await expect(extractOrClassify([{ type: 'text', content: 'x' }], { timeoutMs: 60_000 })).rejects.toMatchObject({ name: 'TimeoutError' });
+      await expect(extractOrClassify([{ type: 'text', content: 'x' }], { purpose: 'LABS', timeoutMs: 60_000 })).rejects.toMatchObject({ name: 'TimeoutError' });
       expect(fetchMock).toHaveBeenCalledTimes(2);
       expect(timeouts.mock.calls.map(([ms]) => ms)).toEqual([60_000, 60_000]);
     });
@@ -333,7 +333,7 @@ describe('US-35 AC5 — extractOrClassify with httpAttempts: 1 makes ONE request
       bodies.push(JSON.parse(init.body as string));
       return anthropicMessage(validUnifiedJson);
     }) as unknown as typeof fetch;
-    await extractOrClassify([{ type: 'text', content: 'x' }], { documentMode: 'metadata' });
+    await extractOrClassify([{ type: 'text', content: 'x' }], { purpose: 'CONNECTOR', documentMode: 'metadata' });
     await extractOrClassify([{ type: 'text', content: 'x' }], { purpose: 'LABS' });
     const [metadata, full] = bodies;
     expect(metadata.system).toMatch(/Do NOT transcribe/);
@@ -401,7 +401,7 @@ describe('extraction failures carry no document text', () => {
       text: async () => `${BODY_SENTINEL} report`,
     } as unknown as Response) as unknown as typeof fetch;
 
-    const error = await callAnthropicWithUsage({ model: 'x' }).then(() => null, (e: unknown) => e as Error);
+    const error = await callAnthropicWithUsage({ model: 'x' }, 'CHAT').then(() => null, (e: unknown) => e as Error);
 
     expect(error).toBeInstanceOf(SyntaxError);
     expect(error!.message).toBe('Anthropic response was not JSON');
@@ -446,7 +446,7 @@ describe('US-15 AC14: stop_reason is returned; a refusal is a distinct result', 
       { type: 'refusal', category: 'bio', explanation: 'free text that must not leave the process' },
     )) as unknown as typeof fetch;
 
-    const result = await callAnthropicWithUsage({ model: 'x' });
+    const result = await callAnthropicWithUsage({ model: 'x' }, 'CHAT');
     expect(result.stopReason).toBe('refusal');
     expect(result.refusalCategory).toBe('bio');
     expect(result.content).toBe('');
@@ -457,7 +457,7 @@ describe('US-15 AC14: stop_reason is returned; a refusal is a distinct result', 
 
   it('returns an empty refusal (the usual shape) instead of throwing "No text"', async () => {
     global.fetch = vi.fn().mockResolvedValue(stopped('refusal', [], { type: 'refusal', category: 'general_harms' })) as unknown as typeof fetch;
-    const result = await callAnthropicWithUsage({ model: 'x' });
+    const result = await callAnthropicWithUsage({ model: 'x' }, 'CHAT');
     expect(result.stopReason).toBe('refusal');
     expect(result.refusalCategory).toBe('general_harms');
   });
@@ -466,13 +466,13 @@ describe('US-15 AC14: stop_reason is returned; a refusal is a distinct result', 
     global.fetch = vi.fn()
       .mockResolvedValueOnce(stopped('refusal', [], { type: 'refusal', category: 'something-new <script>' }))
       .mockResolvedValueOnce(stopped('refusal', [], null)) as unknown as typeof fetch;
-    expect((await callAnthropicWithUsage({ model: 'x' })).refusalCategory).toBe('other');
-    expect((await callAnthropicWithUsage({ model: 'x' })).refusalCategory).toBe('other');
+    expect((await callAnthropicWithUsage({ model: 'x' }, 'CHAT')).refusalCategory).toBe('other');
+    expect((await callAnthropicWithUsage({ model: 'x' }, 'CHAT')).refusalCategory).toBe('other');
   });
 
   it('returns a max_tokens stop with its text and the stop reason', async () => {
     global.fetch = vi.fn().mockResolvedValue(stopped('max_tokens', [{ type: 'text', text: 'cut off mid' }])) as unknown as typeof fetch;
-    const result = await callAnthropicWithUsage({ model: 'x' });
+    const result = await callAnthropicWithUsage({ model: 'x' }, 'CHAT');
     expect(result.stopReason).toBe('max_tokens');
     expect(result.content).toBe('cut off mid');
     expect(result.refusalCategory).toBeUndefined();
@@ -566,7 +566,7 @@ describe('US-15 AC40: an API error names its type and nothing else from the body
 
   async function failWith(response: Response): Promise<Error> {
     global.fetch = vi.fn().mockResolvedValue(response) as unknown as typeof fetch;
-    return callAnthropicWithUsage({ model: 'x' }).catch(e => e);
+    return callAnthropicWithUsage({ model: 'x' }, 'CHAT').catch(e => e);
   }
 
   it.each(['billing_error', 'invalid_request_error'])('a 400 %s is in the error, the Sentry tag and the log line', async (type) => {
@@ -635,7 +635,7 @@ describe('US-15 AC40: an API error names its type and nothing else from the body
       .mockResolvedValueOnce(errorJson(529, 'overloaded_error'));
     global.fetch = fetchMock as unknown as typeof fetch;
 
-    const err = await callAnthropicWithUsage({ model: 'x' }).catch(e => e);
+    const err = await callAnthropicWithUsage({ model: 'x' }, 'CHAT').catch(e => e);
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(cancel).toHaveBeenCalledTimes(1);
     expect(err.message).toBe('Anthropic API error (status 529) (overloaded_error)');
@@ -648,7 +648,7 @@ describe('US-15 AC40: an API error names its type and nothing else from the body
       .mockResolvedValueOnce(errorJson(503, 'api_error'))
       .mockResolvedValueOnce(anthropicMessage('recovered'));
     global.fetch = fetchMock as unknown as typeof fetch;
-    expect((await callAnthropicWithUsage({ model: 'x' })).content).toBe('recovered');
+    expect((await callAnthropicWithUsage({ model: 'x' }, 'CHAT')).content).toBe('recovered');
     expect(Sentry.captureException).not.toHaveBeenCalled();
   });
 });

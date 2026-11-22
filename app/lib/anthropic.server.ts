@@ -29,14 +29,14 @@ export { isNetworkOrTimeoutError, type AnthropicUsage, type AnthropicResult } fr
 
 /**
  * What a model call is for. Each has its own optional key, ANTHROPIC_API_KEY_<PURPOSE>, so the
- * Console shows spend by feature; an unset or empty one falls back to ANTHROPIC_API_KEY.
+ * Console shows spend by feature; an unset, empty or whitespace-only one falls back to ANTHROPIC_API_KEY (US-76).
  */
 export type AnthropicPurpose = 'CHAT' | 'YOUTUBE' | 'DISCORD' | 'PURGE' | 'LABS' | 'CONNECTOR';
 /** The chat pipeline's purposes: the surface whose turn it is (classifier, router and answer alike). */
 export type ChatPurpose = Extract<AnthropicPurpose, 'CHAT' | 'YOUTUBE' | 'DISCORD'>;
 
 export function anthropicKey(purpose: AnthropicPurpose): string {
-  const apiKey = process.env[`ANTHROPIC_API_KEY_${purpose}`] || process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env[`ANTHROPIC_API_KEY_${purpose}`]?.trim() || process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY not configured');
   return apiKey;
 }

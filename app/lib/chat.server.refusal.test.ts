@@ -52,8 +52,8 @@ describe('US-15 AC19: tools only where a client can apply them', () => {
   it('canApplyEdits: true sends the form tools, and run_roadmap when the message has a digit (US-15 AC33)', async () => {
     const fetchMock = respond('end_turn', [{ type: 'text', text: 'An answer.' }]);
     // profileEdits: the widget that applies a profile edit (US-16 AC2); without it, no profile tool (run-roadmap test).
-    await getChatCompletion([], [{ role: 'user', content: 'hi' }], true, undefined, { profileEdits: true });
-    await getChatCompletion([], [{ role: 'user', content: 'LDL 4.1 mmol/L, how is that?' }], true, undefined, { profileEdits: true });
+    await getChatCompletion([], [{ role: 'user', content: 'hi' }], true, undefined, { purpose: 'CHAT', profileEdits: true });
+    await getChatCompletion([], [{ role: 'user', content: 'LDL 4.1 mmol/L, how is that?' }], true, undefined, { purpose: 'CHAT', profileEdits: true });
     const names = (i: number) => JSON.parse(fetchMock.mock.calls[i][1].body).tools.map((t: { name: string }) => t.name);
     expect(names(0)).toEqual(['propose_field_edit', 'propose_medication_edit', 'propose_profile_edit']);
     expect(names(1)).toEqual(['propose_field_edit', 'propose_medication_edit', 'propose_profile_edit', 'run_roadmap']);
@@ -73,7 +73,7 @@ describe('US-67 AC3: the app\'s tools and tool-only line', () => {
 
   it('US-67 AC3: app: true sends the app\'s tool words, and the tool-only line says ready to save', async () => {
     const fetchMock = respond('end_turn', [ldl]);
-    const result = await getChatCompletion([], [{ role: 'user', content: 'my LDL is 3.4 mmol/L' }], true, undefined, { profileEdits: true, app: true });
+    const result = await getChatCompletion([], [{ role: 'user', content: 'my LDL is 3.4 mmol/L' }], true, undefined, { purpose: 'CHAT', profileEdits: true, app: true });
     const tools = JSON.parse(fetchMock.mock.calls[0][1].body).tools;
     expect(tools.map((t: { name: string }) => t.name)).toEqual(['propose_field_edit', 'propose_medication_edit', 'propose_profile_edit', 'run_roadmap']);
     expect(tools[0].description).toMatch(/banner/);
@@ -83,7 +83,7 @@ describe('US-67 AC3: the app\'s tools and tool-only line', () => {
 
   it('US-67 AC3: without app the web\'s words and line are unchanged', async () => {
     const fetchMock = respond('end_turn', [ldl]);
-    const result = await getChatCompletion([], [{ role: 'user', content: 'my LDL is 3.4 mmol/L' }], true, undefined, { profileEdits: true });
+    const result = await getChatCompletion([], [{ role: 'user', content: 'my LDL is 3.4 mmol/L' }], true, undefined, { purpose: 'CHAT', profileEdits: true });
     expect(JSON.parse(fetchMock.mock.calls[0][1].body).tools[0].description).toMatch(/^Pre-fill a value/);
     expect(result.content).toBe("I've pre-filled that in your form — review the highlighted value and press Save.");
   });
@@ -99,7 +99,7 @@ describe('US-67 AC2: the server asks about a value that looks like the wrong uni
       .mockResolvedValueOnce(reply([suspect]))
       .mockResolvedValueOnce(reply([{ type: 'text', text: 'Did you mean 3.4 mmol/L?' }]));
     global.fetch = fetchMock as unknown as typeof fetch;
-    const result = await getChatCompletion([], [{ role: 'user', content: 'my LDL is 3.4 mg/dL' }], true, undefined, { profileEdits: true, ...flags });
+    const result = await getChatCompletion([], [{ role: 'user', content: 'my LDL is 3.4 mg/dL' }], true, undefined, { purpose: 'CHAT', profileEdits: true, ...flags });
     expect(fetchMock).toHaveBeenCalledTimes(2);
     const second = JSON.parse(fetchMock.mock.calls[1][1].body);
     expect(second.tool_choice).toEqual({ type: 'none' });
@@ -112,7 +112,7 @@ describe('US-67 AC2: the server asks about a value that looks like the wrong uni
 
   it('US-67 AC2: LDL 130 mg/dL goes through in one call', async () => {
     const fetchMock = respond('end_turn', [{ ...suspect, input: { field: 'ldlC', value: 130, unit: 'mg/dL' } }]);
-    const result = await getChatCompletion([], [{ role: 'user', content: 'my LDL is 130 mg/dL' }], true, undefined, { profileEdits: true, app: true });
+    const result = await getChatCompletion([], [{ role: 'user', content: 'my LDL is 130 mg/dL' }], true, undefined, { purpose: 'CHAT', profileEdits: true, app: true });
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(result.proposedEdits).toEqual([{ kind: 'field', field: 'ldlC', displayValue: 130, unitSystem: 'conventional', date: null }]);
   });
