@@ -282,7 +282,7 @@ export const GLP1_NAMES = [
   { value: 'semaglutide_oral', label: 'Semaglutide oral (Rybelsus)' },
   { value: 'dulaglutide', label: 'Dulaglutide (Trulicity)' },
   { value: 'other', label: 'Other GLP-1' },
-  { value: 'not_tolerated', label: 'Not tolerated' },
+  { value: 'no', label: 'No' }, { value: 'not_tolerated', label: 'Not tolerated' },
 ] as const;
 
 export type Glp1NameValue = typeof GLP1_NAMES[number]['value'];
@@ -300,7 +300,7 @@ export function canIncreaseGlp1Dose(drug: string | undefined, dose: number | nul
 
 /** Check if user should switch to tirzepatide (on max dose of a less potent GLP-1). */
 export function shouldSuggestGlp1Switch(drug: string | undefined, dose: number | null): boolean {
-  if (!drug || drug === 'none' || drug === 'not_tolerated') return false;
+  if (!drug || drug === 'none' || drug === 'no' || drug === 'not_tolerated') return false;
   if (drug === 'other') return true;
   if (dose === null) return false;
   if (drug === MAX_GLP1_DRUG) return false;
@@ -326,7 +326,7 @@ export const SGLT2I_NAMES = [
   { value: 'empagliflozin', label: 'Empagliflozin (Jardiance)' },
   { value: 'dapagliflozin', label: 'Dapagliflozin (Farxiga)' },
   { value: 'canagliflozin', label: 'Canagliflozin (Invokana)' },
-  { value: 'not_tolerated', label: 'Not tolerated' },
+  { value: 'no', label: 'No' }, { value: 'not_tolerated', label: 'Not tolerated' },
 ] as const;
 
 export type Sglt2iNameValue = typeof SGLT2I_NAMES[number]['value'];
@@ -346,7 +346,7 @@ export const METFORMIN_OPTIONS = [
   { value: 'xr_1000', label: 'XR 1000mg/day' },
   { value: 'xr_1500', label: 'XR 1500mg/day' },
   { value: 'xr_2000', label: 'XR 2000mg/day' },
-  { value: 'not_tolerated', label: 'Not tolerated' },
+  { value: 'no', label: 'No' }, { value: 'not_tolerated', label: 'Not tolerated' },
 ] as const;
 
 export type MetforminValue = typeof METFORMIN_OPTIONS[number]['value'];

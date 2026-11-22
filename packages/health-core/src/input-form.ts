@@ -287,9 +287,9 @@ export function medicationWrites(meds: MedicationInputs, cascadeMode: boolean, f
     case 'bempedoic_acid':
       return [value === 'bempedoic_acid' || value === 'bempedoic_acid_ezetimibe' ? save('bempedoic_acid', value, 180, 'mg') : save('bempedoic_acid', value)];
     case 'statin_escalation': case 'glp1_escalation': return [save(field, value)];
-    case 'glp1': return [...reset('glp1_escalation', meds.glp1Escalation), pickDrug('glp1', GLP1_DRUGS, ['none', 'not_tolerated', 'other'])];
+    case 'glp1': return [...reset('glp1_escalation', meds.glp1Escalation), pickDrug('glp1', GLP1_DRUGS, ['none', 'no', 'not_tolerated', 'other'])];
     case 'glp1_dose': return [...reset('glp1_escalation', meds.glp1Escalation), save('glp1', meds.glp1?.drug ?? 'none', Number(value), 'mg')];
-    case 'sglt2i': return [pickDrug('sglt2i', SGLT2I_DRUGS, ['none', 'not_tolerated'])];
+    case 'sglt2i': return [pickDrug('sglt2i', SGLT2I_DRUGS, ['none', 'no', 'not_tolerated'])];
     case 'sglt2i_dose': return [save('sglt2i', meds.sglt2i?.drug ?? 'none', Number(value), 'mg')];
     case 'metformin': return [save('metformin', value)];
     default: return [];

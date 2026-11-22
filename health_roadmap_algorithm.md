@@ -1038,9 +1038,11 @@ The same trigger drives the cascade (medications tracked), the standalone `weigh
 
 **Text:** "With a BMI of {bmi}{ and {reasons}}, consider discussing Tirzepatide (listed first) or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health." The reasons join as "a, b and c".
 
+**"No" (US-06 AC22, Brad 2026-11-23):** the GLP-1, SGLT2 inhibitor and metformin pickers each offer "No" (`'no'`), just before "Not tolerated". It means the person is not taking the medicine and has decided, perhaps with their doctor: that medicine's card stops showing and the cascade moves on to the next step, exactly as "Not tolerated" does. GLP-1 "No" asks no dose or step-up question and goes to the SGLT2 inhibitor; SGLT2 inhibitor "No" goes to metformin; metformin "No" ends the cascade. "No" records no medicine as started. The picker stays on the form, so choosing "Haven't tried yet" again brings the card back.
+
 ### Step 2: GLP-1 Escalation (`weight-med-glp1-increase` or `weight-med-glp1-switch`)
 
-**Condition:** On a GLP-1 (or on 'other') AND escalation gate `glp1Escalation` is `undefined` or `'not_yet'`.
+**Condition:** On a GLP-1 (or on 'other'; not `'no'` or `'not_tolerated'`) AND escalation gate `glp1Escalation` is `undefined` or `'not_yet'`.
 
 - `canIncreaseGlp1Dose(drug, dose)`: Higher dose available for current drug
 - `shouldSuggestGlp1Switch(drug, dose)`: On `'other'`, OR on max dose of non-tirzepatide GLP-1
@@ -1056,7 +1058,7 @@ The same trigger drives the cascade (medications tracked), the standalone `weigh
 
 ### Step 4: Metformin (`weight-med-metformin`)
 
-**Condition:** SGLT2i handled (on one or not tolerated) AND metformin is `undefined` or `'none'`.
+**Condition:** SGLT2i handled (on one, `'no'` or not tolerated) AND metformin is `undefined` or `'none'`.
 
 ### Standalone GLP-1 Suggestion (`weight-glp1`)
 
@@ -1097,7 +1099,7 @@ Options: `'not_yet'`, `'yes'`, `'no'`, `'not_tolerated'`.
 | semaglutide_oral | 3, 7, 14 |
 | dulaglutide | 0.75, 1.5, 3, 4.5 |
 
-Additional options: `'none'`, `'other'`, `'not_tolerated'`.
+Additional options: `'none'`, `'other'`, `'no'`, `'not_tolerated'`.
 
 **Max potency drug:** tirzepatide (switch target in escalation).
 
@@ -1109,11 +1111,11 @@ Additional options: `'none'`, `'other'`, `'not_tolerated'`.
 | dapagliflozin | 5, 10 |
 | canagliflozin | 100, 300 |
 
-Status options: `'none'`, actual drug name, `'not_tolerated'`.
+Status options: `'none'`, actual drug name, `'no'`, `'not_tolerated'`.
 
 ### Metformin
 
-Options: `'none'`, `'ir_500'` through `'ir_2000'`, `'xr_500'` through `'xr_2000'`, `'not_tolerated'`. IR = Immediate Release, XR = Extended Release.
+Options: `'none'`, `'ir_500'` through `'ir_2000'`, `'xr_500'` through `'xr_2000'`, `'no'`, `'not_tolerated'`. IR = Immediate Release, XR = Extended Release.
 
 ---
 

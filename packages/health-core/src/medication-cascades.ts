@@ -52,7 +52,7 @@ export function weightCascade(meds: MedicationInputs): WeightCascade {
   const glp1Drug = glp1?.drug;
   const glp1Answered = !!glp1Drug && glp1Drug !== 'none';
   const onOther = glp1Drug === 'other';
-  const onGlp1 = glp1Answered && glp1Drug !== 'not_tolerated' && !onOther;
+  const onGlp1 = glp1Answered && glp1Drug !== 'no' && glp1Drug !== 'not_tolerated' && !onOther;
   const dose = glp1?.dose ?? null;
   // A listed GLP-1 with no dose: ask for it. An unlisted name has no dose to
   // give, so it moves on.
