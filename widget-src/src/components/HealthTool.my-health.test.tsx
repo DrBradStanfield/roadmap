@@ -21,6 +21,7 @@ import {
 import { seedGuest, useHealthToolLifecycle } from '../testing/health-tool-harness';
 import { deleteButton, openSettings } from '../testing/settings';
 import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
+import { trackProductEvent } from '../lib/server-api';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../lib/server-api', async (importOriginal) => ({
@@ -32,7 +33,11 @@ vi.mock('../lib/server-api', async (importOriginal) => ({
 vi.mock('../lib/chat-api', () => ({ listConversations: () => Promise.resolve(null), getChatGate: () => null }));
 vi.mock('./ChatEmbed', () => ({ ChatEmbed: () => null }));
 vi.mock('./ChatSection', () => ({ ChatSection: () => null }));
-vi.mock('./UploadModal', () => ({ UploadModal: () => null }));
+// The upload as the page opens it: a dialog while `open`, with a way out (US-73 AC14).
+vi.mock('./UploadModal', () => ({
+  UploadModal: ({ open, onClose }: { open: boolean; onClose: () => void }) =>
+    open ? <div role="dialog" aria-label="Lab upload"><button type="button" onClick={onClose}>Close upload</button></div> : null,
+}));
 // The plan's suggestions, as usePlanView is handed them: what the page must draw.
 const planSeen = vi.hoisted(() => ({ suggestions: [] as Suggestion[] }));
 vi.mock('./ResultsPanel', async (importOriginal) => {
@@ -347,10 +352,25 @@ describe('US-62 AC21: the rows', () => {
 });
 
 describe('US-62 AC22, AC23: Blood tests and Supplements', () => {
-  it('"+" uploads on the Blood tests heading; "Add blood test" and "All results as a table" end its rows', async () => {
+  it('US-73 AC14: "Upload labs" sits on the Weight & diabetes, Cholesterol and Blood tests headings only; each opens the upload and names its heading', async () => {
+    const view = await show(RECORDS['urgent results, both cascades, a supplement']);
+    const heads = [...view.container.querySelectorAll<HTMLElement>('.mh-topic')]
+      .filter(t => within(t.querySelector<HTMLElement>('.mh-topic-head')!).queryByRole('button', { name: 'Upload labs' }));
+    expect(heads.map(t => t.dataset.topic)).toEqual(['weight', 'cholesterol', 'bloodTests']);
+    expect(view.queryByRole('button', { name: 'Upload lab results' })).toBeNull(); // the bare "+" is gone
+    for (const head of heads) {
+      vi.mocked(trackProductEvent).mockClear();
+      expect(view.queryByRole('dialog', { name: 'Lab upload' })).toBeNull();
+      fireEvent.click(within(head.querySelector<HTMLElement>('.mh-topic-head')!).getByRole('button', { name: 'Upload labs' }));
+      expect(view.getByRole('dialog', { name: 'Lab upload' })).toBeTruthy();
+      expect(vi.mocked(trackProductEvent).mock.calls).toEqual([['upload_labs_opened', { placement: head.dataset.topic }]]);
+      fireEvent.click(view.getByRole('button', { name: 'Close upload' }));
+    }
+  });
+
+  it('"Add blood test" and "All results as a table" end Blood tests\' rows', async () => {
     const view = await show(RECORDS['urgent results, both cascades, a supplement']);
     const section = view.container.querySelector<HTMLElement>('[data-topic="bloodTests"]')!;
-    expect(within(section.querySelector<HTMLElement>('.mh-topic-head')!).getByRole('button', { name: 'Upload lab results' })).toBeTruthy();
     const add = within(section).getByRole('button', { name: '+ Add a blood test' });
     const table = within(section).getByRole('button', { name: 'All results as a table' });
     expect(add.compareDocumentPosition(table) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();

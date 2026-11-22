@@ -2,9 +2,9 @@ import SwiftUI
 import TipKit
 
 /// A My health heading (US-73): a row in the list's own flow, so the pills can scroll to it by
-/// `anchor`; any controls at its trailing end (Blood tests: lab upload and Sync, round 7). At the
-/// largest sizes a one-word title shrinks to one line and any controls go under it, so no word
-/// breaks ("Supplem-ents", TextSizeLayoutTests, US-25 AC26). `tip`: tour tip 3's action, when the
+/// `anchor`; any controls at its trailing end ("Upload labs", US-73 AC14). When the title and the
+/// controls do not fit on one line the controls go under it, and at the largest sizes a one-word
+/// title shrinks to one line, so no word breaks ("Supplem-ents", TextSizeLayoutTests, US-25 AC26). `tip`: tour tip 3's action, when the
 /// tip shows on this heading (US-57 AC7). Split out of MyDataView.swift (US-64 AC23), so the
 /// Documents headings share it (US-73 AC12).
 struct TopicHeading<Controls: View>: View {
@@ -12,7 +12,6 @@ struct TopicHeading<Controls: View>: View {
     let anchor: String
     var tip: (@MainActor () -> Void)?
     let controls: Controls
-    @Environment(\.dynamicTypeSize) private var typeSize
 
     init(_ title: SectionTitle, anchor: String, tip: (@MainActor () -> Void)? = nil, @ViewBuilder controls: () -> Controls) {
         self.title = title
@@ -29,13 +28,14 @@ struct TopicHeading<Controls: View>: View {
                 .lineLimit(title.title.contains(" ") ? nil : 1)
                 .minimumScaleFactor(0.7)
                 .accessibilityAddTraits(.isHeader)
-            let buttons = HStack(spacing: 14) { controls }
-                .buttonStyle(.borderless)
-                .labelStyle(.iconOnly)
-                .font(.title3)
-            let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8)) : AnyLayout(HStackLayout(spacing: 14))
-            let row = layout { text; Spacer(minLength: 0); buttons }
-                .frame(maxWidth: .infinity, alignment: .leading)
+            // As the title row (MyDataView+Top.swift): beside the title when both fit unbroken, else under it.
+            let row = ViewThatFits(in: .horizontal) {
+                HStack(spacing: 14) { text.fixedSize(horizontal: true, vertical: false); Spacer(minLength: 0); controls }
+                VStack(alignment: .leading, spacing: 8) { text; controls }
+            }
+            .buttonStyle(.borderless)
+            .font(.body)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .listRowBackground(Color.clear)
             .listRowInsets(EdgeInsets(top: 20, leading: 4, bottom: 0, trailing: 4))
             .id(anchor)

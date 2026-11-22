@@ -5238,7 +5238,7 @@
 .mh-pill:focus-visible,
 .mh-banner:focus-visible,
 .mh-info-btn:focus-visible,
-.mh-head-icon-btn:focus-visible,
+.mh-head-text-btn:focus-visible,
 .health-tool .mh-nav-link:focus-visible {
   outline: 2px solid var(--color-brand-text);
   outline-offset: 2px;
@@ -5338,6 +5338,7 @@
 }
 .mh-topic-head {
   margin: 8px 4px 0;
+  flex-wrap: wrap; /* an action that does not fit beside the title goes under it; the title never breaks for it (US-73 AC14) */
 }
 .mh-topic-head .health-section-title {
   font-size: 20px;
@@ -5360,20 +5361,19 @@
   padding-top: 4px !important;
   padding-bottom: 4px !important;
 }
-.mh-head-icon-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
+/* "Upload labs" (US-73 AC14): the accent's quiet text button. */
+.mh-head-text-btn,
+.mh-head-text-btn:hover {
+  min-height: 44px;
   padding: 0;
   border: 0;
-  border-radius: 50%;
+  border-radius: 6px;
   background: none;
   color: var(--color-brand-text);
   font: inherit;
-  font-size: 28px;
-  line-height: 1;
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
   cursor: pointer;
 }
 
