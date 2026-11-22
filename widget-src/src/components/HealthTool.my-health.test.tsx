@@ -134,11 +134,8 @@ describe('US-62 AC17: the sections, in the iPhone\'s order', () => {
 
   const DOCTOR_LINE = 'For education, not medical advice. Always talk to your doctor.';
   const lines = (view: RenderResult) => [...view.container.querySelectorAll('p.mh-education')];
-  it.each([
-    ['a phone', (q: string) => q.includes('max-width')],
-    ['a desktop under 1200px, with no chat column', (q: string) => q.includes('min-width') && !q.includes('1200px')],
-  ])('US-73 AC13 (App Review 1.4.1): on %s the doctor line sits right under the title, before the pills', async (_name, matches) => {
-    vi.stubGlobal('matchMedia', (q: string) => ({ matches: matches(q), media: q, addEventListener() {}, removeEventListener() {} }));
+  it('US-73 AC13 (App Review 1.4.1): on a phone the doctor line sits right under the (hidden) title, before the pills', async () => {
+    vi.stubGlobal('matchMedia', (q: string) => ({ matches: q.includes('max-width'), media: q, addEventListener() {}, removeEventListener() {} }));
     const view = await show(RECORDS['urgent results, both cascades, a supplement']);
     expect(lines(view)).toHaveLength(1);
     const line = view.container.querySelector('.mh-header + p.mh-education');
@@ -147,16 +144,21 @@ describe('US-62 AC17: the sections, in the iPhone\'s order', () => {
     expect(line!.compareDocumentPosition(pills) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  // Beside the chat column the line spans both columns, so it pushes neither down alone and the chat
-  // card's top stays on the line of My health's first card (design review 2026-11-06, webkit-verify).
-  it('US-73 AC13: beside the chat column the doctor line spans both columns, once, before them', async () => {
+  // Desktop, with the chat column or without: the line is on My health's title row, after the title and
+  // before Sign in, never above the columns (Brad 2026-11-23).
+  it.each([
+    ['a desktop under 1200px, with no chat column', (q: string) => q.includes('min-width') && !q.includes('1200px')],
+    ['a desktop beside the chat column', (q: string) => q.includes('min-width')],
+  ])('US-73 AC13: on %s the doctor line sits on the title row, right after "My health"', async (name, matches) => {
+    vi.stubGlobal('matchMedia', (q: string) => ({ matches: matches(q), media: q, addEventListener() {}, removeEventListener() {} }));
     const view = await show(RECORDS['urgent results, both cascades, a supplement']);
+    expect(view.container.querySelector('.health-tool-chat') !== null).toBe(name.includes('beside'));
     expect(lines(view)).toHaveLength(1);
-    const content = view.container.querySelector('.health-tool-content')!;
-    expect(content.querySelector('.health-tool-chat')).not.toBeNull();
-    expect(content.firstElementChild?.matches('p.mh-education.mh-education--above')).toBe(true);
-    expect(content.firstElementChild?.textContent).toBe(DOCTOR_LINE);
-    expect(view.container.querySelector('.mh-page .mh-education')).toBeNull();
+    const line = view.container.querySelector('.mh-header .mh-title + p.mh-education');
+    expect(line?.textContent).toBe(DOCTOR_LINE);
+    const actions = view.container.querySelector('.mh-header-actions');
+    if (actions) expect(line!.compareDocumentPosition(actions) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(view.container.querySelector('.health-tool-content > p')).toBeNull();
   });
 
   it('a 25-year-old, too young for any screening, has no Cancer screening section', async () => {
