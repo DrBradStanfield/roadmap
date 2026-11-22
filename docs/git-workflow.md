@@ -50,6 +50,7 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
    merge with it on, when you merge by hand. A PR that carries `hold` gets no automatic Claude Review (its run ends green
    at once); adding or removing a label never starts or cancels one. It needs none (Brad 2026-11-13, PR 1533): the
    fresh adversary, plus Codex where the class needs it (§ Reviews below), is its review.
+   Prefer PRs under 100 changed files where a change splits cleanly; orphaned code still dies in the same PR (CLAUDE.md).
 4. **Merge** it yourself when the work is done and its gates have passed. **The gate per PR** (Brad 2026-11-13):
    - unit tests written with the change;
    - CI green on the exact head sha. `ios-compile` is advisory to `tools/merge-gated.sh` and `tools/wait-run.sh`,
@@ -163,7 +164,7 @@ Brad 2026-11-13. Each PR gets one review round, chosen by what it touches:
 |---|---|
 | Clinical, record save/merge/FHIR, security, privacy, agent contract | A fresh `adversary` and Codex together, once |
 | Visible UI | Its class's review, plus a design review from real-WebKit screenshots |
-| Tooling | One fresh `adversary` |
+| Tooling | One fresh `adversary`, with Codex beside it in a local session (loops and cloud sessions: the `adversary` alone) |
 | Byte-pure splits, docs | None; a byte-identity proof instead (docs: the diff itself) |
 
 Only findings that risk data loss, security, privacy or clinical correctness are fixed before merge. The rest
@@ -188,12 +189,28 @@ every 2 to 3 days, and whenever Apple answers on a build. It is:
 **One exception runs before merge:** a PR that changes how the iPhone app and the engine exchange values
 (argument checking, bridging) gets one simulator run first. CI cannot see JavaScriptCore's type bridging.
 
+**Batch engine releases** (Brad 2026-11-23). While an engine-path PR is merged but not released, the next small
+engine-path PR that is review-ready within about an hour merges first, and one iPhone suite, one Deploy and one
+signing cover both. Never merge an engine-path PR while a release waits at signing.
+
+**One Deploy per batch, at the checkpoint, never one per fix.** Auto-ship still deploys each merge it makes
+itself, so a held checkpoint Deploy does not hold auto-ship's.
+
 ## Slow and flaky tests
 
 Brad 2026-11-21. A test file over its time budget, or a test that failed and then passed on a rerun, gets a look
-the same day. Checks that flag both are being built. Why: on 21 Nov 2026 main went red twice for reasons outside
+the same day. CI flags both (PR 1935, merged: slow test files warn, reruns that turned main green are recorded). Why: on 21 Nov 2026 main went red twice for reasons outside
 the product (a property test timed out on a loaded runner; a git maintenance lock raced a copy in a tools test),
 and each time merges were blocked.
+
+## Workers and worktrees
+
+- Every agent that writes or checks out code is spawned with its own isolated worktree and cuts its branch
+  from `origin/main`. Read-only reviewers get none; they read refs with `git diff` and `git show`.
+- `tools/worktree-new.sh` plus EnterWorktree is for a main session only.
+- Before a builder hands back, it shows `git status --short` and `git show --stat HEAD`.
+- The owner runs `bash tools/worktree-done.sh <name>` in the same turn as the merge or close, and never
+  forces a worktree the tool keeps.
 
 ## Who builds, and reports
 

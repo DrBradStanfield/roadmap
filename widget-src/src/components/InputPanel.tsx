@@ -13,7 +13,7 @@ import type { ApiLabValue, ApiSupplement } from '../lib/api-types';
 import type { FieldUnitToggle, UnitSwitchSource } from '../lib/useBloodDraftUnits';
 import { useLeaveField, type PanelOnboarding } from '../hooks/useOnboarding';
 
-import { FIELD_METRIC_MAP, type ApiMeasurement, type ApiMedication, type ApiScreening, METRIC_TO_FIELD } from '@roadmap/health-core/mappings';
+import { FIELD_METRIC_MAP, type ApiMeasurement, type ApiMedication, type ApiScreening, METRIC_TO_FIELD, screeningsToInputs } from '@roadmap/health-core/mappings';
 import { type WeightMedicationTrigger, type LipidMarker } from '@roadmap/health-core/suggestions';
 import { type UnitSystem, fromCanonicalValue, toCanonicalValue, getDisplayLabel, getDisplayRange, UNIT_DEFS, hasUnitChoice } from '@roadmap/health-core/units';
 import { identityFieldRange } from '@roadmap/health-core/validation';
@@ -36,7 +36,7 @@ import { previousReference, WEIGHT_STILL_COUNTS_ID, WeightStillCounts } from './
 import { AddLabTest } from './AddLabTest';
 import { SupplementsSection } from './SupplementsSection';
 import type { FormSlots, Placement } from './MyHealth';
-import { type FormKit } from './form-kit';
+import { errorAria, type FormKit } from './form-kit';
 import { ScreeningQuestions } from './ScreeningQuestions';
 import { LipidMedications } from './LipidMedications';
 import { WeightMedications } from './WeightMedications';
@@ -401,7 +401,7 @@ export function InputPanel({
           <input
             type="number"
             id={field} ref={field === 'weightKg' ? weightRef : undefined}
-            onWheel={blurOnWheel} aria-describedby={previous && rawInputs[field] === '' ? WEIGHT_STILL_COUNTS_ID : undefined}
+            onWheel={blurOnWheel} {...errorAria(`${field}-error`, [unreadable[field], errors[field]], previous && rawInputs[field] === '' ? WEIGHT_STILL_COUNTS_ID : undefined)}
             value={rawInputs[field] !== undefined ? rawInputs[field] : toDisplay(field, (inputs[field] as number | undefined) ?? previous?.value)}
             onChange={(e) => {
               const raw = e.target.value;
@@ -444,7 +444,7 @@ export function InputPanel({
           <span className="previous-reference">Saved {formatShortDate(previous.recordedAt)}</span>
         )}
         {(unreadable[field] || errors[field]) && (
-          <span className="error-message">{unreadable[field] ? 'Enter a number' : errors[field]}</span>
+          <span className="error-message" id={`${field}-error`}>{unreadable[field] ? 'Enter a number' : errors[field]}</span>
         )}
       </div>
     );
@@ -614,7 +614,7 @@ export function InputPanel({
   // Null, not an empty element, when no screening applies: My health draws a topic for any element (US-62 AC17).
   const renderScreening = (place: Placement) => {
     const age = planBasis?.age;
-    if (age === undefined || !anyScreeningEligible(age, inputs.sex)) return null;
+    if (age === undefined || !anyScreeningEligible(age, inputs.sex, screeningsToInputs(screenings))) return null;
     return <ScreeningQuestions place={place} form={form} screenings={screenings} onScreeningChange={onScreeningChange}
                                psaDate={psaDate} onPsaDateChange={onPsaDateChange} onPsaCommit={onPsaCommit} bloodTestHistory={bloodTestHistory}
                                age={age} writeScreening={writeScreening} renderScreeningDateInput={renderScreeningDateInput}/>;

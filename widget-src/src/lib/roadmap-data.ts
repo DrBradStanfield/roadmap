@@ -332,7 +332,7 @@ export async function bulkSaveDocuments(
 /** The shared upload's one Save (storage/upload-save-store.ts), and the counts today's writers send for it: each lab
  *  the review did not send for its unit or number, by its own refusal (`lab_unit_refused`, US-21 AC15, as the grid's
  *  Save counts them), and the vitals the commit added. A core value the write refuses never reaches Save: the review
- *  holds it as unsure until it is cleared. With no record open, the Save fails as today's does. Mounted in PR 3b. */
+ *  holds it as unsure until it is cleared. With no record open, the Save fails. The flow's Save (lib/upload-shared-save.ts) calls it. */
 export async function saveUpload(engine: UploadEngine, s: UploadState, now: string, io: WebUploadIO, person?: ScreeningPerson): Promise<UploadSaveAnswer> {
   if (!store) return { ok: false, reason: 'no-record', message: SAVE_FAILED };
   // The review uploadSave judges, on the record it starts from (uploadSave builds its own; it takes none).

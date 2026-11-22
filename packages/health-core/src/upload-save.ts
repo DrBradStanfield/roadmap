@@ -18,8 +18,8 @@
  *
  * A letter's ticked, dated screening box (web only, `person` given; upload-screening.ts, US-13 AC6) writes its
  * `<type>_last_date` in the same commit, so one erase stamp covers the letter and its date (US-16 AC2a), as the web's
- * own Save checked the erase before it set them (lib/upload-save.ts, `getEraseIdentity() === erase`). For every letter
- * the page shows with its box ticked, whatever its document save did, as the web's own Save loops over every ticked
+ * own Save checked the erase before it set them (the old lib/upload-save.ts, `getEraseIdentity() === erase`). For every letter
+ * the page shows with its box ticked, whatever its document save did, as the web's own Save looped over every ticked
  * letter (lib/upload-save.ts); one value per type, the last such letter in picked order, as the web's per-key save let
  * the last call win.
  */
@@ -180,15 +180,16 @@ export async function uploadSave<F>(s: UploadState, record: RoadmapFile, now: st
         ...written.measurementRefusals.map((r) => { const line = measurementRefusalText(r); return line !== null ? { line } : { label: METRIC_LABELS[r.metricType] ?? labTestLabel(r.metricType), reason: 'misread' as const }; }),
       ];
       const filed = values || docs.saved.length ? committedFile(written.file, docs) : file;
-      // Each ticked, dated box the page shows, by type, the last in picked order standing.
-      const dates = new Map<string, string>(plan.documents.flatMap(({ screening: box }) =>
-        (box?.ticked && box.date !== null && isScreeningDateKey(box.key) ? [[box.key, box.date]] : [])));
-      const out = writeScreeningDates(filed, dates, now);
+      // Each ticked, dated box the page shows; of one type the latest date is written, and only when it is later than
+      // the record's (Brad 2026-11-23).
+      const dates = plan.documents.flatMap(({ screening: box }) =>
+        (box?.ticked && box.date !== null && isScreeningDateKey(box.key) ? [[box.key, box.date] as const] : []));
+      const { file: out, written: screenings } = writeScreeningDates(filed, dates, now);
       // `unstored`: each original the plan stores that no live row on the committed record stores (a failed or
       // untried write, the app not holding it), judged at commit so another writer's copy counts as kept.
       const stored = storedHashes(out);
       const unstored = [...nominated].filter((h) => !stored.has(h)).length;
-      return { file: out, outcome: { values, documents, archived, unstored, ...(sv ? { skippedValues: sv } : {}), ...(sl ? { skippedLabValues: sl } : {}), ...(refused.length ? { refused, refusedCodes: refusalCodes(written) } : {}), ...(dates.size ? { screenings: dates.size } : {}) } };
+      return { file: out, outcome: { values, documents, archived, unstored, ...(sv ? { skippedValues: sv } : {}), ...(sl ? { skippedLabValues: sl } : {}), ...(refused.length ? { refused, refusedCodes: refusalCodes(written) } : {}), ...(screenings ? { screenings } : {}) } };
     },
   };
 }

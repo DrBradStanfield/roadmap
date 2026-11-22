@@ -127,7 +127,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   const rootRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null), readyTitleRef = useRef<HTMLHeadingElement>(null); // My health's, for the landings' focus
   // The unit system and each field's own unit (hooks/useUnits, US-05); the record's, held while a field has the focus (hooks/units-machine).
-  const { unitSystem, unitOverrides, startUnitOf, metricUnitOverrides, handleToggleFieldUnit, onSwitch, record: units } = useUnits(setInputs, rootRef);
+  const { unitSystem, unitOverrides, startUnitOf, metricUnitOverrides, handleToggleFieldUnit, setFieldUnit, onSwitch, record: units } = useUnits(setInputs, rootRef);
 
   // The page's reads of the record: the values, both matrices, the lab rows (hooks/useRecordReads).
   const { reloadValues, refreshLabValues, loadHistory } = useRecordReads({ setPreviousMeasurements, setHistory, setLabValueHistory });
@@ -535,13 +535,6 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     });
   }, [selectTab]);
 
-  // Memoised so the UploadModal's matrix doesn't rebuild on unrelated
-  // HealthTool re-renders (typing, mobile-tab switches, etc.).
-  const uploadHistory = useMemo(
-    () => ({ measurements: history, labValues: labValueHistory, documents: documentHistory }),
-    [history, labValueHistory, documentHistory],
-  );
-
   // The form's medicine and screening questions, as health-core builds them
   // (the InputPanel parity test pins the two together): a suggestion sits on
   // the question that asks it (US-62 AC20).
@@ -725,15 +718,12 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
         onOpen={() => setShowUploadModal(true)}
         unitSystem={unitSystem}
         metricUnitOverrides={metricUnitOverrides}
-        onToggleFieldUnit={handleToggleFieldUnit}
-        history={uploadHistory}
+        onSetFieldUnit={setFieldUnit}
         onComplete={() => { const read = rereadRecord('upload'); answered(null); return read; }} // an upload is an answer, after a held change is taken in
         onStart={handleUploadStart}
         onClose={() => setShowUploadModal(false)}
-        onScreeningUpdate={handleScreeningChange}
         age={planBasis?.age}
         sex={sex}
-        grading={grading}
       />
 
       {chatEditBanners}

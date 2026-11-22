@@ -1,5 +1,5 @@
 /**
- * The shared Save as the web's upload flow runs it once the list mounts (PR 3b; until then lib/upload-save.ts saves):
+ * The shared Save as the web's upload flow runs it (hooks/useUploadFlow.ts, the `save` effect):
  * one `saveUpload` (lib/roadmap-data.ts), answered with the flow's own event. After a commit landed, the page re-reads
  * the record: the commit wrote any screening date through `setScreening` and skipped the form's in-memory patch, so
  * without the re-read the form would show the old date (owner ruling, 2026-11-22; US-13 AC6, US-34 AC4). One commit
@@ -32,7 +32,8 @@ export async function sharedSave(engine: UploadEngine, s: Saving, held: Held, pe
     if (!(err instanceof WritesStoppedError)) Sentry.captureException(recordFailure(err, 'Upload save failed'), { tags: { area: 'upload-save', branch: 'commit' } });
     return { type: 'saveFailed', run, attempt, message: SAVE_FAILED };
   }
-  if (!answer.ok) return { type: 'saveFailed', run, attempt, message: answer.message };
+  // A refusal says the page's own words for a failed Save: the engine's are for developers (owner ruling 5, 2026-11-22).
+  if (!answer.ok) return { type: 'saveFailed', run, attempt, message: SAVE_FAILED };
   try { void Promise.resolve(complete()).catch(reportReread); } catch (err) { reportReread(err); }
   return { type: 'saved', run, attempt, outcome: answer.outcome };
 }

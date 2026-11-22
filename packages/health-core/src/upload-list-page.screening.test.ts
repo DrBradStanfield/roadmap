@@ -26,11 +26,11 @@ const page = (s: UploadState, person?: ScreeningPerson) => uploadListPage(s, EMP
 describe('US-13 AC6: the screening box on the web list', () => {
   it('names the type and the date it writes, in the grid\'s words, ticked by default with a known age', () => {
     expect(page(open('web', letter('colorectal', '2026-10-20')), { age: 60 }).letters[0].screening)
-      .toEqual({ lead: 'Update ', type: 'colorectal', tail: ' screening date to 2026-10-20', checked: true, disabled: false });
+      .toEqual({ lead: 'Update ', type: 'colorectal', tail: ' screening date to 20 Oct 2026', checked: true, disabled: false });
   });
 
   it('a month alone dates it; a removed date disables it, unticked, asking for the date first', () => {
-    expect(page(open('web', letter('colorectal', '2026-06')), { age: 60 }).letters[0].screening?.tail).toBe(' screening date to 2026-06');
+    expect(page(open('web', letter('colorectal', '2026-06')), { age: 60 }).letters[0].screening?.tail).toBe(' screening date to Jun 2026');
     expect(page(open('web', letter('colorectal', '2026-06'), { date: null }), { age: 60 }).letters[0].screening)
       .toEqual({ lead: 'Update ', type: 'colorectal', tail: ' screening date (pick the document date first)', checked: false, disabled: true });
   });
