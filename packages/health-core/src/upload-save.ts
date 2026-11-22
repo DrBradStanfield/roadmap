@@ -24,7 +24,7 @@
  * the last call win.
  */
 import { LAB_ARCHIVE_ROWS, labRowsByFile, listedRows, writtenLabRows } from './document-rows';
-import { committedFile, labArchivePayload, saveDocuments, type DocumentPayload } from './document-save';
+import { committedFile, labArchivePayload, saveDocuments, type DocumentPayload, type DocumentSaveIO } from './document-save';
 import { bulkAppendValues, type BulkAppendResult } from './record-edits';
 import { labReason } from './import-review';
 import { labTestLabel, labUnitTaken, resolveLabCatalogEntry } from './lab-catalog';
@@ -53,8 +53,7 @@ export interface UploadSaveIO<F> {
   mimeType(fileId: string): string;
   /** Write file `fileId`'s bytes at `ref` in the person's cloud; reject on failure. */
   write(ref: string, bytes: F, fileId: string): Promise<void>;
-  /** The cloud makes a ref's folders in the write (`writeMakesFolders`): no solo first write per folder. */
-  makesFolders?: boolean;
+  makesFolders?: DocumentSaveIO<F>['makesFolders'];
   now?(): string;
   newId?(): string;
 }

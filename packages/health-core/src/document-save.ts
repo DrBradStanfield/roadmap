@@ -22,6 +22,7 @@
  * row lands with the blob and the old one is tombstoned, never edited
  * (documents are immutable under merge).
  */
+import { busyWait } from './adapter';
 import { buildDocumentRef, splitDocumentRef } from './document-path';
 import { documentRow, documentView, isLabArchiveDocument, LAB_ARCHIVE_ROWS, labArchiveFields, listedRows, withStoredOriginal, type DocumentFields, type DocumentView } from './document-rows';
 import { isReadableRow } from './readable-rows';
@@ -78,6 +79,32 @@ export function pendingRowsFor<T extends ExistingDoc>(existing: readonly T[], ha
  *  keeps the solo first write per folder: Google Drive finds or creates each folder, and an unknown one is not trusted. */
 export const writeMakesFolders = (backend: string): boolean => backend === 'dropbox';
 
+/** At most this much added wait per original across its busy retries. */
+const BUSY_BUDGET_MS = 5000;
+
+/**
+ * One original's write. A busy refusal (`busyWait`: Dropbox's folder lock, or too many requests) is tried at most twice
+ * more, each time through the caller's own `write`, so its erase and closed-session check runs again first (US-14 AC5).
+ * Each wait is the one Dropbox names, else 0.5 s then 1 s, plus up to half again of jitter, 5 s in all at most.
+ * Any other failure, or a third refusal, rejects as it came.
+ */
+async function writeBusyRetried<F>(io: DocumentSaveIO<F>, ref: string, file: F): Promise<void> {
+  const random = io.random ?? Math.random;
+  const sleep = io.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
+  let waited = 0;
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await io.write(ref, file);
+    } catch (error) {
+      const named = busyWait(error);
+      if (named === null || attempt === 3 || waited >= BUSY_BUDGET_MS) throw error;
+      const ms = Math.min((named || 500 * 2 ** (attempt - 1)) * (1 + random() / 2), BUSY_BUDGET_MS - waited);
+      waited += ms;
+      await sleep(ms);
+    }
+  }
+}
+
 /** The I/O a save needs. Nothing here touches storage itself. */
 export interface DocumentSaveIO<F> {
   /** 'sha256-<hex>' of the bytes. JavaScriptCore has no crypto.subtle, so the caller hashes. */
@@ -86,8 +113,11 @@ export interface DocumentSaveIO<F> {
   write(ref: string, file: F): Promise<void>;
   /** The bytes' MIME type, '' when unknown. */
   mimeType(file: F): string;
-  /** The provider makes a ref's folders in the write itself (Dropbox), so no first write per folder runs alone. */
+  /** `writeMakesFolders`: no first write per folder runs alone. */
   makesFolders?: boolean;
+  /** The busy retry's jitter source and timer, for tests; Math.random and setTimeout otherwise. */
+  random?(): number;
+  sleep?(ms: number): Promise<void>;
   /** A failed blob write, for the caller's telemetry. The save carries on. */
   onWriteError?(error: unknown): void;
   /** ISO instant for `addedAt`; read once per document. */
@@ -235,15 +265,15 @@ export async function saveDocuments<F>(
   // Phase 2: blob uploads, 3 at a time — serial writes made a 20-file batch
   // ~40 sequential round trips (20-40s on a slow link). The FIRST write into
   // each folder still runs alone (concurrent find-or-create of the same new
-  // folder would create duplicates), unless the provider makes folders in the
-  // write (`makesFolders`); the rest pool. A failed write degrades
+  // folder would create duplicates), except `makesFolders`; the rest pool. A
+  // busy refusal is tried again (`writeBusyRetried`). A failed write degrades
   // to metadata-only — unless a held row already holds these bytes: a
   // plain row beside it would list the letter twice, and every later upload
   // would offer to archive it again (Sentry 7715862604). Every failed write is counted `unstored`.
   let unstored = 0;
   const writeOne = async (w: (typeof writes)[number]) => {
     try {
-      await io.write(w.ref, w.file);
+      await writeBusyRetried(io, w.ref, w.file);
       w.doc.fileRef = w.ref;
       w.doc.mimeType = io.mimeType(w.file);
     } catch (error) {

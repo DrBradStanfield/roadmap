@@ -1,5 +1,5 @@
 /**
- * US-14 AC10: the web's Save tells the engine whether its cloud makes a ref's folders in the write itself. Dropbox
+ * US-14 AC5: the web's Save tells the engine whether its cloud makes a ref's folders in the write itself. Dropbox
  * does (an overwrite upload makes the parents), so its originals pool from the first write; every other backend
  * keeps the solo first write per folder (Google Drive's find-or-create). Synthetic state only.
  */
@@ -25,7 +25,7 @@ async function ioFor(backend: string): Promise<UploadSaveIO<Original>> {
   return seen!;
 }
 
-describe('the web Save says whether its cloud makes folders (US-14 AC10)', () => {
+describe('the web Save says whether its cloud makes folders (US-14 AC5)', () => {
   it('Dropbox: makesFolders; Google Drive, GitHub and the device: the default solo first write', async () => {
     expect((await ioFor('dropbox')).makesFolders).toBe(true);
     for (const backend of ['google-drive', 'github', 'local', 'self-host']) expect((await ioFor(backend)).makesFolders, backend).toBe(false);

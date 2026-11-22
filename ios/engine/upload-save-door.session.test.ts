@@ -3,6 +3,7 @@
 // lands in B. The window is too narrow for the bundled fake cloud (closing A stops its writes, so the
 // queue drains before B opens), so `./cloud` is a stand-in here whose open session the test swaps.
 import { describe, expect, it, vi } from 'vitest';
+import { BusyError } from '../../packages/health-core/src/adapter';
 import { createEmptyFile } from '../../packages/health-core/src/roadmap-file';
 import { NO_CHOICES } from '../../packages/health-core/src/upload-choices';
 
@@ -63,8 +64,26 @@ describe('the iPhone Save checks for an erase before each original it writes, as
     expect(cloud.commits).toEqual([]);
   });
 
-  // US-14 AC10: Dropbox makes a ref's folders in the write, so its writes pool from the first (no solo round); the
-  // erase check before every write still holds there.
+  // US-14 AC5 (2026-11-23): a busy refusal is tried again through this door's write, so `gone()` runs first.
+  it('on Dropbox: an erase landing between a busy refusal and its retry: no second write, and the answer is erased', async () => {
+    vi.useFakeTimers();
+    const a = session('a');
+    let erased = false;
+    a.at.session.refuses = () => erased;
+    Object.assign(a.at.host.store, { id: 'dropbox' });
+    a.at.host.store.writeDocument = async (ref: string) => { a.puts.push(ref); erased = true; throw new BusyError('busy', 0, 409); };
+    cloud.open = a.at;
+    cloud.commits.length = 0;
+    const answer = uploadSaveRun(STATE, '', '[0,null]', NOW, 'phone', JSON.stringify({ other: 'application/pdf' }), () => new Uint8Array([1]).buffer);
+    await vi.runAllTimersAsync();
+    vi.useRealTimers();
+    expect(JSON.parse(await answer)).toMatchObject({ ok: false, reason: 'erased' });
+    expect(a.puts).toHaveLength(1);
+    expect(cloud.commits).toEqual([]);
+  });
+
+  // US-14 AC5 (2026-11-23): Dropbox makes a ref's folders in the write, so its writes pool from the first (no solo
+  // round); the erase check before every write still holds there.
   it('on Dropbox: three originals start before any lands, and an erase landing mid-way stops every later write', async () => {
     const a = session('a');
     let erased = false;

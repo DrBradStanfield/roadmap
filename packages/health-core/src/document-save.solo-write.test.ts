@@ -1,4 +1,4 @@
-// US-14 AC10: the originals a Save stores. The first write into each folder runs alone only where the provider
+// US-14 AC5: the originals a Save stores. The first write into each folder runs alone only where the provider
 // needs it (Google Drive's find-or-create of a folder, the default); a writer whose provider makes the folders in
 // the write itself (Dropbox, `makesFolders`) pools every write, still at most three at once. Synthetic bytes only.
 import { describe, expect, it } from 'vitest';
@@ -50,7 +50,7 @@ function gated(makesFolders?: boolean) {
   return { io, events, waiting, peak: () => peak, settle, drain };
 }
 
-describe('saveDocuments: the solo first write per folder (US-14 AC10)', () => {
+describe('saveDocuments: the solo first write per folder (US-14 AC5)', () => {
   it('a writer that makes its folders: 18 originals across 4 folders start three at once, no solo round, never more than 3 in flight', async () => {
     const t = gated(true);
     const done = saveDocuments(createEmptyFile({ deviceId: 'd', now: '2026-02-01T00:00:00.000Z' }), EIGHTEEN, t.io);
