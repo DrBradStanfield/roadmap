@@ -1,250 +1,277 @@
 # Store originals in the background after Save
 
-Status: design note, 2026-11-23. No code yet. Owner decision (Brad, 2026-11-23): Save commits the values and the
-document rows at once and shows the done screen; the original files go to the person's cloud afterwards, in the
-background, on the iPhone and the web. Nothing of this runs on the UI thread. Properties first (docs/review-format.md
-check 9): the rule and its exhaustive test below come before any screen.
+Status: design note, 2026-11-23, revised after an adversarial review. No code yet. Properties first
+(docs/review-format.md check 9): the rules and the exhaustive test come before any screen.
+
+**Owner requirements (Brad, 2026-11-23).** Save commits the values and the document rows at once and shows the
+done screen. The original files go to the person's cloud afterwards, in the background, on the iPhone and the web.
+Nothing of it runs on the UI thread. Storing starts with no action from the person, at Save and at every launch.
+The person acts only when a file has finally failed: one "Try again".
 
 ## 1. Today, and the rule this relaxes
 
-1. Save runs health-core `uploadSave` (packages/health-core/src/upload-save.ts:90), which builds one payload per
-   document, lab archive and archive-only file, holding a file's bytes only with a cloud (upload-save.ts:117-125).
-2. `saveDocuments` phase 1, serial: hash, dedup by `contentHash`, mint each ref against the record's refs, find the
-   held metadata-only row the upload replaces (document-save.ts:170-227; `held` at :204, `writes.push` at :217).
-3. Phase 2: every blob written, first write per folder alone, the rest 3 at a time (document-save.ts:229-264).
-4. A failure keeps the row's hash, counts `unstored` (:242-246); behind a held row it is settled (:266-273).
-5. Only then `commit(file)` writes values and rows on the record as it stands (upload-save.ts:151-193;
-   document-save.ts:277-305): replaced held rows get `deleted`, new rows are appended.
-6. iPhone: erase and open-session checks before each write and the commit (ios/engine/upload-save-door.ts:47,
-   :58-61, :74-82); one Save at a time (ios/engine/cloud-documents.ts:24-28).
-7. Web: the same, one `session.edit` at the erase the page showed (widget-src/src/storage/upload-save-store.ts:52-53, :68, :81).
-8. The sheet waits on all of it (ios/HealthRoadmap/MyData/RecordStore+Uploads.swift:13-56): ~20 s for ~18 PDFs.
+1. `uploadSave` (packages/health-core/src/upload-save.ts:90) builds one payload per document, lab archive and
+   archive-only file, with bytes only when a cloud is connected (:117-125).
+2. `saveDocuments` phase 1 (document-save.ts:170-227) hashes, dedups by `contentHash`, mints refs and finds the
+   held metadata-only row an upload replaces (:204, :217). Phase 2 writes the blobs (:229-264).
+3. `commit(file)` writes values and rows on the record as it stands (upload-save.ts:151-193; document-save.ts:277-305).
+4. Both clients check the erase before each write and at the commit (ios/engine/upload-save-door.ts:47, :58-61,
+   :74-82; widget-src/src/storage/upload-save-store.ts:52-53, :68, :81). The sheet waits for all of it
+   (ios/HealthRoadmap/MyData/RecordStore+Uploads.swift:13-56): about 20 s for about 18 PDFs.
 
-**The rule relaxed.** Today it is "one commit or none": every row lands with its original's outcome already known.
-New: **one commit for the values and the rows now; then, per batch, later commits that only attach originals.** A
-later commit never adds or changes a value, never touches a row other than the held row it replaces, and is refused
-after an erase, as every write is today.
+**Relaxed:** "one commit or none" becomes **one commit for the values and rows now, then later commits that only
+attach originals.** An attach never adds or changes a value and touches only the held row it replaces.
 
-The key fact: the record already has the "details saved, original not yet stored" row. It is the metadata-only row
-with the bytes' `contentHash` and no `fileRef` (US-14 AC4, AC10; `archiveOnly` in upload-known.ts:40, :81), and
-`saveDocuments` already knows how a later upload replaces it: write the blob, append a row with `fileRef`, tombstone
-the held row (document-save.ts:204-217, :290-302), carrying a lab archive's row list (:296-300). So the first commit
-writes exactly the rows today's Save writes when every original fails. The second commit is today's "later upload of
-the same bytes", run by the app instead of the person. No new row shape, no schema change, no merge change.
+**Reused shape.** The first commit writes what today's Save writes when every original fails: a metadata-only row
+with the bytes' `contentHash` and no `fileRef` (US-14 AC4, AC10; `archiveOnly`, upload-known.ts:40, :81). An attach
+is today's "later upload of the same bytes": append a row with `fileRef`, flag the held row `deleted`, carry a lab
+archive's row list (document-save.ts:204-217, :290-302). No schema change, no merge change.
 
-## 2. The model: one named state per original
+**Cost, stated.** Each original stored this way leaves one extra tombstoned held row in the record. It keeps its
+title, its text (`contentMd`) and, for a lab archive, its list of row ids. A letter's text is therefore held twice
+in the record file (once live, once tombstoned); lab archive rows add only an id list. For a pick of 18 letters of
+a few KB of text each, the file grows by tens of KB.
+
+## 2. The outbox and its state
+
+**Job key.** Each job is bound to `{ provider, accountId, recordFileId, eraseAtSave }`. Provider plus erase identity
+alone is not enough: every never-erased record has the same identity, `[0, null]` (erase-identity.ts:17-18). At
+every wake the uploader compares the key with what is connected. Any mismatch (another account, re-authorised as
+someone else, another provider, signed out, disconnected) is the `unbound` event.
 
 ```ts
-type OriginalJob = { id: string; record: string /* provider + erase identity at Save */; hash: string;
-  kind: 'lab' | 'document'; mime: string; attempts: number };
+type OriginalJob = { id: string; key: JobKey; heldRowId: string; heldAddedAt: string; hash: string;
+  kind: 'lab' | 'document'; mime: string; ref: string /* minted at Save */; savedAt: string; attempts: number };
 type OriginalState =
-  | { s: 'pending'; nextAt: string }               // bytes held on this device, not yet sent
-  | { s: 'storing'; ref: string }                  // a write to `ref` began (persisted BEFORE the write starts)
-  | { s: 'written'; ref: string }                  // the blob landed; the attaching commit has not
-  | { s: 'stored'; ref: string }                   // a live row holds this hash with a fileRef (ours or a twin's)
-  | { s: 'failed'; reason: 'too-large' | 'cloud-full' | 'refused' | 'bytes-lost' | 'retries-spent' }
-  | { s: 'abandoned'; why: 'erased' | 'row-gone' | 'disconnected' | 'dismissed' };
+  | { s: 'pending'; nextAt: string }      // bytes in the outbox, not yet sent
+  | { s: 'storing' }                      // a write to job.ref began (persisted before the write starts)
+  | { s: 'written' }                      // the provider holds these bytes at job.ref, by a content check
+  | { s: 'stored' }                       // a live row holds this hash and kind with a fileRef
+  | { s: 'failed'; reason: FailReason }   // shown; Try again for any reason that still has bytes
+  | { s: 'abandoned'; why: 'erased' | 'unbound' | 'row-gone' | 'expired'; orphan?: true };
+type FailReason = 'too-large' | 'cloud-full' | 'refused' | 'bytes-lost' | 'retries-spent' | 'attach-failed';
 ```
 
-Pure `transition(state, event, job) → state` (no clock, no I/O; the uploader supplies `now`):
+**Outbox order.** Save first persists each job and its bytes, then makes the first commit. The commit's row ids
+are minted before it (`newId`), so each job names its held row. On load, a job whose held row is not in the record
+ends `abandoned: row-gone` and its bytes are deleted: the commit never landed, or the person deleted the document.
 
-| from \ event | start(ref) | wrote | writeFailed(transient) | writeFailed(permanent r) | committed | twinStored | erased | rowGone | disconnected | relaunch | retry | dismiss |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| pending | storing | - | - | - | - | stored | abandoned | abandoned | abandoned | pending | - | - |
-| storing | - | written | pending (+1, backoff) or failed `retries-spent` at the cap | failed r | - | stored | abandoned | abandoned | abandoned | pending (resume rule, section 4) | - | - |
-| written | - | - | - | - | stored | stored | abandoned | abandoned | abandoned | written | - | - |
-| stored | - | - | - | - | - | - | - | - | - | stored | - | - |
-| failed | - | - | - | - | - | stored | abandoned | abandoned | abandoned | failed | pending (attempts 0) | abandoned |
-| abandoned | - | - | - | - | - | - | - | - | - | abandoned | - | - |
+**Transition table.** Pure `transition(state, event) → state`; the uploader supplies the clock. "=" is unchanged.
 
-"-" leaves the state unchanged. `stored` and `abandoned` are final; `failed` is final until the person taps retry.
+| from | start | wrote | failT | failP r | bytesLost | committed | commitFailed | twinStored | erased | unbound | rowGone | expired | relaunch | retry |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| pending | storing | = | = | = | failed bytes-lost | = | = | stored | abandoned | abandoned | abandoned | abandoned expired | = | = |
+| storing | = | written | pending +1 (failed retries-spent at cap) | failed r | failed bytes-lost | = | = | stored | abandoned orphan | abandoned orphan | abandoned orphan | = | pending (resume check) | = |
+| written | = | = | = | = | = | stored | written +1 (failed attach-failed at cap) | stored | abandoned orphan | abandoned orphan | abandoned orphan | = | = | = |
+| stored | = | = | = | = | = | = | = | = | = | = | = | = | = | = |
+| failed | = | = | = | = | = | = | = | stored | abandoned | abandoned | abandoned | abandoned expired | = | pending, or written for attach-failed |
+| abandoned | = | = | = | = | = | = | = | = | = | = | = | = | = | = |
 
-**Where it lives: on the device, outside the record.** Two choices:
+`expired` fires at the device retention limit (section 3); an `abandoned: expired` job is shown once, as a
+failure is. `stored` and `abandoned` are final. `committed`, `twinStored`, `erased` and `rowGone` come only from
+a fresh cloud read (section 4).
 
-- (A) Device-only queue (recommended). Jobs and bytes live in the app's container (iPhone) or IndexedDB (web) and
-  survive the sheet closing, backgrounding and a kill. The record keeps today's shapes; merge stays append-only
-  plus `deleted` OR-ed (merge.ts:22-23).
-- (B) A marker on the row (`originalPending: deviceId`). Clearing it means a new row and a tombstone; a device that
-  dies leaves it forever; it needs a schema key, a merge rule and an agent-contract note.
+**Orphans.** `erased`, `unbound` or `rowGone` from `storing` or `written` may leave a file in the cloud. After an
+erase or a row gone, while the same account is still connected, the uploader deletes the file at `job.ref` if a
+content check shows these bytes; otherwise the file stays, which is US-11 AC1a and AC5's stated limit for files in
+the cloud folder. After `unbound` nothing is written to an account no longer connected: the file stays.
 
-**What a second device shows.** Under (A), what it shows for any metadata-only row today: details, no original. It
-holds no bytes and no job, so it never uploads. If the person uploads the same file there, US-14 AC4 files it behind
-the held row, and device A's job sees a stored twin and ends `stored` with no write.
+**Where the state lives: on the device only.** The record keeps today's shapes. A marker in the record would need
+a schema key and a merge rule, and a device that dies would leave it set forever (option (a) below).
 
-## 3. Where the bytes wait
+**Single flight.** iPhone: one uploader actor per app process. Web: one uploader per origin, holding the job store
+under a Web Locks lock (`navigator.locks`); another tab waits or shows the same status. One batch at a time per
+device, through the existing document queue (ios/engine/cloud-documents.ts:24-28).
 
-**iPhone.** Today the bytes live only in memory, in the session's `LabFileReader.Held`
-(ios/HealthRoadmap/LabUpload/LabFileHeld.swift:10; made per session at UploadSession.swift:51, read by the Save at
-:62-63). New: at Save, a detached task copies each original the plan stores into
-`Application Support/PendingOriginals/<job id>`, with the record's protection class (readable after first unlock,
-RecordFile.swift:37) and `isExcludedFromBackup` (as RecordFile.swift:20), plus one `jobs.json` the engine writes.
-The task holds `Held` until its copy ends, so closing the sheet does not drop bytes. A ZIP member is inflated in that
-task, never on the main actor. Per-file cap: the existing `UPLOAD_LIMITS.phone.fileBytes` (upload-save-door.ts:45);
-a pick's total is already capped by the upload rules.
+## 3. Where the bytes wait, and when they go
 
-**Web.** Today an original is a lazy `() => Promise<Blob>` over the picked `File` (upload-save-store.ts:19). It dies
-with the tab. New: IndexedDB holds the jobs and Blobs, written after the first commit. Stated limits: a private
-window's store goes with the window; the browser may evict it; a tab closed between commit and the IndexedDB write
-loses the job. Each leaves the row metadata-only, as a failed write does today, and a later upload of the same file
-stores it (US-14 AC4). A job whose Blob is missing on the next load ends `failed: bytes-lost`.
+**iPhone.** Today the bytes live in the session's `LabFileReader.Held` (LabFileHeld.swift:10; UploadSession.swift:51,
+:62-63). New: before the first commit, a detached task writes each original to a temp file and renames it into
+`Application Support/PendingOriginals/<job id>`, with the record's protection class (RecordFile.swift:37) and
+excluded from backup (RecordFile.swift:20), and writes `jobs.json` the same way. ZIP members inflate in that task,
+never on the main actor. Per-file cap: `UPLOAD_LIMITS.phone.fileBytes` (upload-save-door.ts:45).
 
-**When the bytes go.** On `stored` or `abandoned`, at once; `failed` keeps them until retry or dismiss. An erase
-deletes the device's whole pending store (add it to US-11 AC1's residue, user-stories.md:570), and the per-write
-erase check (AC1a, :571) stops any write not begun. A write in flight may leave a cloud file: AC1a and AC5's stated
-limit (gotchas.md:7), unchanged.
+**Web.** Today an original is a lazy `() => Promise<Blob>` over the picked `File` (upload-save-store.ts:19). New:
+each Blob and its job go into IndexedDB in one transaction, before the first commit. A private window's store goes
+with the window; the browser may evict it. Either case is `bytesLost` and is shown.
+
+**Integrity.** Before every write the uploader re-hashes the bytes. A mismatch, or missing bytes, is `bytesLost`.
+
+**Retention (privacy).** Health files must not wait on a device indefinitely. A job still not stored after the
+retention limit (options for Brad: 7 or 30 days from `savedAt`) ends: its bytes are deleted, and the person is told
+once that the original was not stored and that uploading the file again will store it.
+
+**Full wipe list.** Bytes and jobs are deleted on: `stored`; `abandoned`; an erase on this device; an erase taken in
+from another device (on the first read that shows it); Delete all my data; disconnect; account or provider mismatch;
+sign-out; the retention limit. `failed` keeps bytes only until Try again succeeds or the limit. The pending store
+joins the residue list of US-11 AC1 (user-stories.md:570).
+
+**Privacy text.** The privacy notice and the erase confirm must say that files waiting to be stored stay on this
+device until stored, and are deleted by an erase and after the retention limit. Brad approves the words.
 
 ## 4. The uploader
 
-- **Off the UI thread.** iPhone: the engine does the cloud writes (Swift never touches the cloud,
-  upload-save-door.ts:1-6); Swift calls a new engine door from a detached task, never the main actor, reading bytes
-  from disk by job id as the door asks. It runs after Save, at launch, on foreground, and on going to background under
-  `beginBackgroundTask` as the record sync does (HealthRoadmapApp.swift:93-98, :107-124). URLSession background
-  transfers: not now. They need file uploads owned by Swift outside the engine, and the attaching commit still needs
-  the engine afterwards; resume at next foreground is enough. Web: plain async in the page (network is off the main
-  thread already); GitHub's base64 step runs on the main thread (github.ts:164) but is capped near 1 MB. No service
-  worker: Background Fetch is absent in Safari and a worker cannot run `session.edit`. A hidden tab keeps going;
-  timers slow, the uploader's backoff tolerates it.
-- **Concurrency.** One batch at a time per device through the existing queue (cloud-documents.ts:24-28); how a
-  batch writes is per provider, below. Today's rule (first write into a folder alone, then 3 at a time,
-  document-save.ts:248-264) stays where the provider needs it.
+**Off the UI thread.** iPhone: the engine does the cloud writes (Swift never touches the cloud,
+upload-save-door.ts:1-6). Swift calls the uploader door from a detached task after Save, at launch, on foreground,
+and on going to background under `beginBackgroundTask`, as the record sync does (HealthRoadmapApp.swift:93-98,
+:107-124). URLSession background transfers: not now; they would move uploads outside the engine, and the attach
+still needs the engine. Web: async page code, started after Save and on every load; no service worker (Safari has
+no Background Fetch, and a worker cannot run `session.edit`).
 
-**Write method per provider.** Claims about provider APIs here are from memory: to verify against each provider's
-docs before PR 4.
+**Fresh read before acting.** An erase made on another device reaches this device only when it reads the record
+again, and `session.refuses` compares against this device's copy (record-session.ts:208-209). So the uploader reads
+the cloud record fresh immediately before each write batch and again inside the attach commit. A moved erase is
+`erased`. A missing held row is `rowGone`. A stored twin is `twinStored`.
 
-- *Dropbox.* Today: one `files/upload` per file, `overwrite` (dropbox-rest.ts:160). Each commits alone under a lock
-  on the whole app folder, so parallel uploads can be refused `too_many_write_operations` (to verify). The route for
-  many files: an upload session per file (`upload_session/start` with `close: true`, or `append_v2` for large ones;
-  concurrent), then one `upload_session/finish_batch_v2` committing all under one lock (to verify: entry cap, size
-  cap, inline answer or `finish_batch/check`). Changes: (1) a result per entry, so each job moves alone, success to
-  `written`, failure to pending or failed by reason; partial failure is normal. (2) Each entry keeps its own path,
-  `overwrite`, `autorename: false`. (3) One erase check, right before the finish: an unfinished session writes
-  nothing to the folder (to verify; sessions expire), so an erase during the transfer leaves no file, a smaller
-  window than US-11 AC1a's today. (4) Only an entry's own success makes `written`; a finish with no answer leaves
-  its jobs `storing`, and resume re-uploads with `overwrite`. (5) Dropbox makes folders from paths, so it needs no
-  solo first write. Recommend: sessions, 3 started at a time, one finish per batch; one file keeps `files/upload`.
-- *Google Drive.* Drive's batch endpoint carries metadata calls, not media uploads (to verify). Drive makes a
-  second folder of the same name on a concurrent find-or-create, which is why the solo rule exists. Recommend:
-  today's per-file create, first write per folder alone, then 3 at a time, plus the resume lookup above.
-- *GitHub (web only; the iPhone offers Dropbox and Drive, cloud-adapters.ts:16).* The Git data API could store a
-  batch as one commit: a blob per file (parallel), one tree, one commit, one ref update. That gives one commit in
-  the person's history instead of one per file, but it is four new calls, and the ref update fails when the record
-  file was written to the same branch meanwhile, so it needs its own retry. Files over about 1 MB still cannot be
-  read back through the contents API (github.ts:158). Recommend: keep today's per-file PUT; GitHub is the
-  self-hosted minority and batches there are small. Revisit if usage says otherwise.
-- **Retry.** Transient (network, 429, 5xx, timeout): backoff 5 s, 30 s, 2 min, then each launch or foreground;
-  cap 8 attempts, then `failed: retries-spent`. Permanent: too large for the provider (GitHub's ~1 MB, github.ts:158),
-  the cloud full (`storage-full`, cloud-adapters.ts:277), a refused path, bytes lost.
-- **Resume after a kill.** `pending` and `written` resume as they are. `storing` resumes by provider: Dropbox writes
-  with `overwrite` (dropbox-rest.ts:160), so rewriting the same ref is safe; GitHub's PUT fetches the sha and
-  overwrites (github.ts:173-176); Google Drive only creates (drive-rest-files.ts:175-178), so a blind retry can leave
-  two files with one name. On Drive, resume first looks the name up in its folder (`driveFindFileId`) and, if found,
-  moves to `written`.
-- **The attaching commit.** One `session.edit` (web) or engine `commit` (iPhone) per batch, stamped with the erase
-  identity of the original Save. Before writing it checks: the erase has not moved (else `abandoned: erased`); the
-  held row is still live (else `rowGone`: the person deleted the document); no live row of that hash and kind holds
-  a `fileRef` (else `twinStored`). It then runs `saveDocuments`' own replacement (document-save.ts:277-305). Two
-  launches racing on one device: the queue is single-flight per device; a duplicate attach is a no-op because the
-  twin check runs inside the edit, on the file as it is then.
-- **Dedup.** Before any write, `knownIndex` (upload-known.ts:68) on the current record: a hash already stored ends
-  the job `stored` with no bytes sent.
-- **Ref.** Minted when the job starts, against the record then (`buildDocumentRef` with the record's refs), and
-  persisted in `storing` before the write.
+**Attach row stamp.** The merge keeps a document row stamped after an erase (`CREATED_STAMPS`, merge.ts:608). The
+attach row therefore takes the held row's `addedAt` (`heldAddedAt`), never the time of the attach. An erase that
+covers the held row covers its attach too.
+
+**Refs.** Each ref is minted at Save, so an undated document's date in its name is fixed then, not at a retry. It is
+minted against the record's refs plus every live job's ref. Writes are create-only: the uploader never replaces an
+existing different file. Chosen: create-only mode with a conflict answer (Dropbox `add`, GitHub PUT without a sha,
+both to verify). On a conflict, a content check decides: the same bytes mean `written`; different bytes mean a new
+ref (" (2)") and a fresh try. Not chosen: a content-hash suffix in the name. It needs no conflict handling but puts
+a code in every file name the person sees in their own folder.
+
+**Content check, not a name match.** A job becomes `written` only when the provider holds these bytes at the ref:
+from the write's own success answer, or on resume and after a conflict, by a check. Dropbox: compare its
+`content_hash`, computed locally by Dropbox's published method (to verify). Drive: write the SHA-256 into the file's
+`appProperties` at create and look it up by that (to verify); Drive allows two files with one name, so a name is
+never proof. GitHub: compare the Git blob sha, computable locally (to verify).
+
+**Per-provider method (the owner thread's technical call).**
+- Dropbox: one upload session per file, 3 started at a time, then one `upload_session/finish_batch_v2` per batch,
+  which commits all entries under one folder lock (to verify: entry and size caps, inline or polled answer). One
+  finish commits many files, so the fresh read and erase check run immediately before the finish. Each entry's own
+  result moves its job. A finish with no answer leaves its jobs `storing`, and none becomes `written` without the
+  content check. Dropbox creates folders from paths, so no solo first write. One file uses plain `files/upload`.
+- Google Drive: per-file create with `appProperties`, the first write into a new folder alone, then 3 at a time
+  (document-save.ts:248-264), since a concurrent find-or-create can make two folders of one name.
+- GitHub (web only; the iPhone offers Dropbox and Drive, cloud-adapters.ts:16): per-file create. One Git commit per
+  batch through the Git data API is not worth four new calls and a ref race with the record file. Files over about
+  1 MB fail at once as `too-large` (github.ts:158).
+
+**Retry.** Transient (network, 429, 5xx, timeout): backoff 5 s, 30 s, 2 min, then at each launch or foreground; cap
+8 attempts, then `failed: retries-spent`. Permanent: too large, cloud full (cloud-adapters.ts:277), a refused path.
+The attach commit retries the same way; at its cap, `failed: attach-failed`, shown, with the file named an orphan
+until Try again attaches it.
+
+**Twins across devices.** Two devices can hold jobs for the same bytes and the same held row (device B's Save finds
+A's held row and plans its own job against it). Rule: the attach is skipped when the fresh read shows a live stored
+row for that hash and kind (`twinStored`). If two attaches still race and the merge keeps both rows (it unions by
+id), the winner is the row first by (`addedAt`, `id`). At its next wake the losing device flags its own row `deleted`
+(as every replacement does; no other change) and deletes its file if the content check matches.
+Until then the documents list shows one entry per hash and kind.
+
+**Dedup.** Before any write, `knownIndex` (upload-known.ts:68) on the fresh record: a stored hash ends the job
+`stored` with no bytes sent.
+
+**Engine rollback.** If an engine without the uploader door is installed (a rollback), Swift still owns the outbox
+folder: it keeps calling for the door, and deletes jobs and bytes itself at the retention limit and on every wipe
+event in section 3.
 
 ## 5. What the person sees (properties, drawn from the engine)
 
-- The done screen appears as soon as the first commit lands. Its counts are values and documents, as today.
-- One quiet line while any job of this Save is `pending`, `storing` or `written`. It updates live: when all are
-  `stored` it becomes today's kept line (`archivedLine`, upload-text.ts:52); if any failed, today's unstored line
-  (upload-text.ts:56-58). Close is never held for it.
+- The done screen appears once the first commit lands. "Done" means "details saved; originals being stored", and
+  the screen says so with one line while any job of this Save is unfinished.
+- That line updates live: all stored becomes the kept line (`archivedLine`, upload-text.ts:52); any failed becomes
+  the unstored line (upload-text.ts:56-58). Close is never held for it.
 - After the sheet closes: one quiet indicator by the documents list while any job is unfinished; none otherwise.
-- A later failure: one line atop the documents list with Try again (`retry`) and dismiss (`dismiss`; row stays as is).
-- A row whose original is pending reads as storing; failed or no job reads as today (details saved, no original).
+- A final failure: one line atop the documents list with one "Try again" (`retryAll`, upload-text.ts:34). An expired
+  job's line has no button; it tells the person to upload the file again.
+- A row whose original is pending reads as storing; otherwise as today (details saved, no original).
 
-**Sentences that need Brad (options; reuse marked):**
+**Sentences for Brad (options; reuse marked):**
+1. Storing: (a) "Storing {n} original files in your cloud." (b) "Your original files are being stored in your cloud."
+2. Kept, failed on the done screen, Try again: reuse upload-text.ts:52, :56, :58, :34.
+3. Failed later: (a) "{n} original files couldn't be stored; their details are saved." (b) :56 for one, (a) for more.
+4. Expired: (a) "{n} original files weren't stored. Upload them again to keep the originals."
+5. Pending row: (a) "Original being stored" (b) no words, the indicator alone.
+6. Privacy and erase text: one added sentence each (section 3), words to come with the PR.
 
-1. Storing line: (a) "Storing {n} original files in your cloud." (b) "Your original files are being stored in your cloud."
-2. Kept: reuse "{n} original files kept in your cloud." (upload-text.ts:52).
-3. Failed, on the done screen: reuse upload-text.ts:56 and :58 as they stand.
-4. Failed, later, on the documents list: (a) "{n} original files couldn't be stored; their details are saved."
-   (b) reuse :56 for one file, and the plural (a) for more.
-5. Buttons: reuse "Try again" (`retryAll`, upload-text.ts:34); dismiss: (a) reuse "Done" (upload-text.ts:60) (b) "Dismiss".
-6. A pending row on the documents list: (a) "Original being stored" (b) no words, the indicator alone.
+## 6. Usage signal (Lane B)
 
-## 6. The exhaustive property
+Product event `originals_outcome`, once per job when it ends, plus a daily roll-up per device: counts only, never a
+name, ref, hash or value. Fields: `outcome` (stored, failed, abandoned), `reason` (the closed codes above), `provider`,
+`platform`, `attempts`, `waitBucket` (under 10 s, under 1 min, under 1 h, longer). Success signal: the share of
+originals stored within 1 minute of Save, and failed plus expired as a share of all.
 
-**Every picked original that Save nominates ends in exactly one of stored, failed-and-shown, or abandoned. No live
-row claims a `fileRef` the cloud does not hold with those bytes. After an erase, no pending bytes remain and no
-cloud write begins.**
+## 7. The exhaustive property
+
+**Every original Save nominates ends in exactly one of: stored; failed and shown; abandoned (expired is shown; an
+orphan is named). After every device drains, no live row claims a `fileRef` the cloud does not hold with those bytes,
+and at most one live stored row exists per (hash, kind). An erase, on this device or another, leaves no bytes in any
+outbox, starts no later write, and brings back no row. No job writes to an account it is not bound to.**
 
 Tests (health-core, no network):
+- `original-state.test.ts`: every (state x event) cell of the table, written by hand, never read from production
+  (gotchas.md:15).
+- `background-originals.property.test.ts`: seeded runs over platform (web, phone) x provider (Dropbox, Drive, GitHub
+  fakes with create-only, conflict and checksum rules) x events. Events: write ok, transient and permanent failure,
+  conflict with same and different bytes, bytes lost or changed, kill at any step then relaunch (memory dropped,
+  outbox kept), erase on this device, account switch, provider switch, disconnect, retention limit, Try again.
+  Named cases:
+  - erase on device B, then device A wakes with pending jobs: no write, no row comes back, bytes deleted;
+  - account switch with jobs pending: no write to the new account, bytes deleted;
+  - two tabs on one origin: one uploader, each job written once;
+  - two devices with jobs for the same bytes: after both drain, one live stored row per (hash, kind);
+  - kill between persisting the job and the first commit: the job ends `row-gone`, bytes deleted;
+  - kill mid Dropbox finish: no job becomes `written` without the content check.
+  Assert the property after each run, and that no row changed but for `deleted`. Keep runs small: a 3000-run test
+  once timed out on CI (gotchas.md:13).
+- Pin for step 2: a later-mode Save drained to the end gives the same live rows as today's Save with every write
+  landing, plus exactly one tombstoned held row per stored original.
 
-- `original-state.test.ts`: the transition table above, every (state × event) cell, written out by hand, never
-  read from production (gotchas.md:15).
-- `background-originals.property.test.ts`: seeded random runs over platform (web, phone) × provider (Dropbox, Drive,
-  GitHub fakes with their real overwrite or create rules) × events (write ok, transient and permanent failure, kill
-  at any step: in-memory state dropped, persisted state kept, then relaunch; erase at any step; disconnect; another
-  device's merge that deletes the row or stores a twin; the person's retry and dismiss). After draining with the
-  network up, assert: each job is `stored`, `failed` with a shown line, or `abandoned`; every live row with a
-  `fileRef` matches a fake-cloud file with its hash; at most one live stored row per (hash, kind); no row changed but
-  for `deleted`; no write after the erase step and an empty pending store; on Drive, no two files with one name.
-  Keep each run small: a 3000-run test once timed out on CI (gotchas.md:13).
-- Pins: `uploadSave` in later mode followed by draining every job gives the same record, ids and times aside, as
-  today's Save with every write succeeding.
+## 8. What ships how, and the PR order
 
-## 7. What ships how, and the PR order
-
-- **Over the air (engine release):** everything in health-core and `ios/engine`: the state, the transition, the
-  split Save, the attach, the uploader loop, the view lines. On an installed iPhone they stay inert until Swift calls
-  them (gotchas.md:14).
-- **Needs Swift and an app build:** copying bytes to the pending folder at Save, `jobs.json`, calling the uploader
-  door at Save, launch, foreground and background, deleting the folder on erase and disconnect, drawing the
-  indicator and the failed line outside the upload sheet, and the Save no longer awaiting originals.
-- **Web only:** the IndexedDB store, its erase and disconnect wipe, resume on page load.
+- **Over the air (engine release):** health-core and `ios/engine`. Inert on installed iPhones until Swift calls the
+  doors (gotchas.md:14).
+- **Needs Swift and an app build:** the outbox folder and `jobs.json`, persisting before the commit, calling the
+  uploader door, the wipe events, the retention sweep, the indicator and failed line outside the sheet.
+- **Web only:** the IndexedDB outbox, the Web Locks lock, the wipe events, resume on load.
 
 Each PR ≤ about 300 lines, mergeable alone, behaviour unchanged until its switch:
+1. health-core: job key, outbox entry, union, `transition`, table test.
+2. health-core: `uploadSave` option `originals: 'later'` returning outbox entries (ids, refs, held stamps) before
+   the commit; outbox-first contract in the type; the pin test.
+3. health-core: `attachOriginal`: fresh-read guard, held-row stamp, twin rule, create-only write with conflict and
+   content check.
+4. health-core: uploader loop: per-provider method, backoff, resume, retention, orphan clean-up; the property test.
+5. Usage event `originals_outcome`: health-core counts and the server allow-list.
+6. health-core view: storing, kept, failed and expired lines; documents-list status. Words wait for Brad.
+7. Privacy notice and erase confirm sentences; US-11 AC1 wipe list; a new US-14 AC. Words wait for Brad.
+8. Web outbox: IndexedDB, one-transaction writes, Web Locks, every wipe event. No caller.
+9. Web switch: Save in later mode, uploader after Save and on load.
+10. Engine doors (optional in the bridge): later-mode Save, the uploader door.
+11. Swift outbox: temp-and-rename writes, `jobs.json`, wipe events, retention sweep. No caller.
+12. Swift switch: Save in later mode, uploader at Save, launch, foreground and background. App build.
 
-1. health-core `original-state.ts`: union, `transition`, table test. No caller.
-2. health-core `uploadSave` option `originals: 'now' | 'later'` (default 'now'); 'later' plans the metadata-only
-   rows and returns jobs. The pin test above.
-3. health-core `attachOriginal`: dedup, ref, write, the guarded attaching commit via `saveDocuments`. Tests.
-4. health-core uploader loop: lanes, backoff, resume rules per provider, injected clock. The property test.
-5. health-core view: storing, kept and failed lines; documents-list status. Words wait for Brad.
-6. Web: IndexedDB store plus erase and disconnect wipe (US-11 AC1 list). No caller yet.
-7. Web switch: Save in 'later' mode, uploader started after commit and on load. Story ACs and tests.
-8. Engine doors (optional in the bridge): later-mode Save and the uploader door. Inert on installed builds.
-9. Swift: pending folder, `jobs.json`, erase and disconnect wipe. No caller.
-10. Swift switch: Save in 'later' mode, uploader runs, indicator and failed line. App build.
+Interim steps already being built: "Saving..." stays for the first commit's short wait. Dropbox's skipped solo
+first write becomes the uploader's rule above.
 
-Stories: a new US-14 AC for background storing; US-11 AC1 lists the pending store; US-52 AC8c becomes two commits.
+## 9. Open questions for the owner
 
-## 8. Open questions for the owner
+- **(a) Where waiting files are tracked.** Device only (recommended): the record and merge stay as they are. A
+  marker in the record would let other devices say "being stored", but needs a schema key and can be left set.
+- **(b) A second device** shows such a document as today, details without the original (recommended); a hint
+  needs (a)'s marker.
+- **(c) Retries.** 8 attempts, then shown with Try again (recommended), over retrying for days or forever.
+- **(d) Waiting on Save.** Never wait (recommended); the done line turns to "kept" when the files land.
+- **(e) Retention on the device.** 7 days (recommended: least health data left on a device) or 30 days (more
+  time for a phone that rarely opens the app).
+- **(f) Another account or a shared device.** Waiting files are dropped and deleted when another account
+  connects or the person signs out (recommended); keeping them risks writing one person's files to another's cloud.
+- **(g) Privacy text.** Add one sentence to the privacy notice and the erase confirm about files waiting on the
+  device (recommended: the notice must match what the app does).
+- **(h) What "done" means.** "Details saved; originals being stored", said in one live line (recommended), over a
+  done screen that waits a few seconds for small uploads.
 
-- **(a) Pending state in the record or on the device.** Device-only keeps the record and merge unchanged; a marker in
-  the record lets other devices say "being stored", at the cost of a schema key, a merge rule and stale markers when a
-  device dies. Recommend device-only.
-- **(b) What a second device shows.** Option 1: as today, details without an original. Option 2: a "stored from
-  another device" hint, which needs (a)'s marker. Recommend option 1.
-- **(c) How long to retry.** Option 1: 8 attempts, then failed and shown. Option 2: retry for 7 days. Option 3:
-  forever until stored. Recommend option 1: a shown failure with Try again beats a silent loop, and bytes do not sit
-  on the phone for weeks.
-- **(d) Briefly await small uploads.** Option 1: never wait; the done screen's line turns to "kept" live. Option 2:
-  wait up to about 2 s so most Saves end fully stored. Recommend option 1: it is what Brad asked for, and the screen
-  updates anyway.
-- **(e) Write method per provider (section 4).** Dropbox: upload sessions and one batch finish (recommended) or
-  today's single uploads. Drive: today's per-file create with a lookup before a retry (recommended). GitHub: today's
-  per-file PUT (recommended) or one Git commit per batch. Files over about 1 MB on GitHub fail at once, never retried.
-- **(f) The interim steps (Save reading "Saving...", Dropbox skipping the solo first write).** "Saving..." stays for
-  the first commit's short wait. The Dropbox exception becomes the uploader's rule: with a batch finish, Dropbox
-  needs no solo write. Recommend keep both.
-- **(g) Disconnect while jobs wait.** Option 1: abandon them and delete the bytes. Option 2: keep them for a
-  reconnect to the same record. Recommend option 1: the record they belong to is no longer open.
-
-Known risk, as today: two devices minting one ref for different files at once; the job widens that window a little.
-
-## 9. Do not
+## 10. Do not
 
 - Block or run on the UI thread: no copy, inflate, hash, write or commit on the main actor or in a React render.
-- Send bytes anywhere but the person's own cloud. No Brad server, no telemetry payload.
+- Send bytes anywhere but the bound account's own cloud. No Brad server, no telemetry payload.
 - Log or report file names, refs, hashes or health values; errors carry tags only (upload-save-store.ts:36-42).
-- Mutate a row (an attach appends one and flags `deleted` on the held one); write or keep bytes after an erase.
+- Mutate a row: an attach appends one and flags `deleted` on the held one; replace a different existing file.
+- Write after an erase, or keep bytes after any wipe event; mark `written` from a name match.
 - Upload bytes a device does not hold; add a boolean or timer beside the job state to encode a mode.

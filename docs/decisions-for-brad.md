@@ -30,17 +30,26 @@ issue, and nothing private.
   words that tells files apart. Nothing draws these names until you answer.
   Brad chose option 1 on 2026-11-23; it is held for an owner check (US-13 AC10).
 - **How original files are stored in the background after Save.** Issue: you asked (2026-11-23) that Save
-  show the done screen at once and store the originals afterwards; the design is in
-  [drafts/background-originals.md](drafts/background-originals.md). Questions: (1) keep the "still being
-  stored" list on the device only, or mark it in the record so other devices can see it (recommended: device
-  only, so the record and merging stay as they are); (2) another device shows such a document as it does today,
-  details without the original (recommended); (3) retry about 8 times, then show a failure with Try again,
-  rather than for days or forever (recommended: 8 times); (4) never wait on Save for small uploads; the done
-  screen's line turns to "kept" when they land (recommended); (5) how each cloud receives a batch: Dropbox stores the
-  whole batch in one step instead of file by file, which avoids its "too many writes" refusals; Google Drive and
-  GitHub keep file by file, Drive checking for the file before a retry (recommended); (6) keep "Saving..." and the Dropbox
-  first-write change after this lands (recommended); (7) on disconnect, drop the waiting files (recommended);
-  and the new sentences in section 5 of the note, each with options.
+  show the done screen at once and store the originals afterwards, with no action from the person but one
+  "Try again" when a file finally fails. Design: [drafts/background-originals.md](drafts/background-originals.md).
+  Until stored, the files wait on the phone or in the browser. Questions:
+  (1) How long health files may wait on a device. Options: 7 days, or 30 days. After that the copy is deleted
+  and the person is told to upload the file again. 7 days leaves less health data on a device; 30 gives a
+  rarely opened phone more time. Recommendation: 7 days.
+  (2) The privacy notice and the erase confirm gain one sentence: files waiting to be stored stay on this device
+  until stored, and an erase or the time limit deletes them. Options: add it (recommended: the notice must match
+  what the app does), or not. Exact words come with the PR.
+  (3) A shared phone or browser: when another account connects, the person signs out or disconnects, the waiting
+  files are dropped and deleted, never sent. Options: drop (recommended: one person's files must never reach
+  another's cloud), or keep them for a reconnect to the same account (they would then sit on the device longer).
+  (4) "Done" will mean "details saved; originals being stored". The done screen says so in one line that turns
+  into today's "kept in your cloud" or "couldn't be stored" line when the files land. Options: that line
+  (recommended), or a done screen that waits a few seconds so small uploads finish first (slower Save).
+  (5) Waiting files are tracked on the device only, so another device shows such a document as today, details
+  without the original (recommended), rather than a marker in the record (a format change that a lost device
+  could leave set for good).
+  (6) Retry about 8 times, then show the failure with Try again (recommended), rather than retrying for days.
+  Also: the new sentences in section 5 of the note, each with options.
 
 ## Decided
 
