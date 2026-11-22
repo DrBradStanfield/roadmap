@@ -182,7 +182,7 @@ LEARNINGS line counts). The lint adds a section: compact the others to stay ≤1
 
 ## Delivery
 
-Commit `chat-health: weekly retrieval report YYYY-Www` to main; the committed
+Commit `chat-health: weekly retrieval report YYYY-Www` and land it by PR; the committed
 report is the delivery (no email, constitution rule). Its TL;DR carries fixes
 with numbers, the top 3 new or growing content gaps, and what needs Brad.
 
