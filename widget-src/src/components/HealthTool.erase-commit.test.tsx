@@ -174,7 +174,7 @@ const writers: Record<string, Writer> = {
     seed: seedProfile,
     open: async () => {
       fireEvent.click((await screen.findAllByRole('button', { name: 'Upload labs' }))[0]);
-      fireEvent.click(screen.getByRole('button', { name: /Continue without keeping my files/ }));
+      fireEvent.click(screen.getByRole('button', { name: /Continue without keeping the files/ }));
       fireEvent.change(document.querySelector('input[type=file]')!, { target: { files: [new File(['synthetic'], 'synthetic.pdf', { type: 'application/pdf' })] } });
       await findReviewValue('3.9'); // opens "Show all": the sure value sits behind it (US-13 AC13)
       // findBy waits with act() off, so React may leave a render in the Scheduler. Run it out

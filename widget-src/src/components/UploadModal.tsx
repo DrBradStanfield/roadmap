@@ -1,15 +1,16 @@
 import { useRef, useEffect, useId, useMemo, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import type { UnitSystem, MetricType } from '@roadmap/health-core/units';
-import { UPLOAD_TEXT } from '@roadmap/health-core/upload-text';
+import { UPLOAD_EXPLAINER_TEXT, UPLOAD_TEXT } from '@roadmap/health-core/upload-text';
 import { FileNotices } from './UploadNotices';
+import { UploadExplainer } from './UploadExplainer';
 import { ErrorBoundary } from './ErrorBoundary';
 import { FloatingUploadIndicator } from './FloatingUploadIndicator';
 import { UploadReviewList } from './UploadReviewList';
 import { useUploadFlow, MAX_FILES } from '../hooks/useUploadFlow';
 import { getDocumentArchiveMode } from '../lib/roadmap-data';
 import { useIsMobile } from '../lib/useIsMobile';
-import { openBackendPicker, UPLOAD_STORAGE_NOTICE } from '../lib/storage-notice';
+import { openBackendPicker } from '../lib/storage-notice';
 import type { ProductEventMetadata } from '../lib/server-api';
 
 interface UploadModalProps {
@@ -81,10 +82,12 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onSetFieldUnit, o
         </div>
 
         <div className="upload-modal-body">
+          {/* What the upload is, before anything is picked (US-12 AC32); the Shopify build reads through our server. */}
+          {picking && files.length === 0 && <UploadExplainer reader={flow.upload.reader ?? 'server'} />}
           {picking && archiveMode === 'device-only' && !skipArchive && (
             <div className="upload-select upload-connect-first">
-              <h3 className="upload-connect-title">Keep your original documents</h3>
-              <p className="upload-connect-text">{UPLOAD_STORAGE_NOTICE}</p>
+              <h3 className="upload-connect-title">{UPLOAD_EXPLAINER_TEXT.connectTitle}</h3>
+              <p className="upload-connect-text">{UPLOAD_EXPLAINER_TEXT.connectText}</p>
               <button
                 type="button"
                 className="upload-btn-primary"
@@ -93,10 +96,10 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onSetFieldUnit, o
                   openBackendPicker();
                 }}
               >
-                Choose where to keep it
+                {UPLOAD_EXPLAINER_TEXT.connectButton}
               </button>
               <button type="button" className="upload-connect-skip" onClick={flow.skipConnect}>
-                Continue without keeping my files ›
+                {UPLOAD_EXPLAINER_TEXT.connectSkip}
               </button>
             </div>
           )}

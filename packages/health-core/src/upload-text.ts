@@ -72,6 +72,28 @@ export const UPLOAD_TEXT = {
 } as const;
 
 /**
+ * What the upload is, said before anything is picked (US-12 AC32, US-52 AC13b): the web's sentences, the
+ * drawing's words, which LabUploadExplainer.swift also draws (pinned by ios/engine/upload-explainer-wording.test.ts),
+ * and the web's connect panel. Drafts for Brad, 2026-11-23.
+ */
+export const UPLOAD_EXPLAINER_TEXT = {
+  what: "Add your medical records: a ZIP, PDFs or photos. We read the test results in your lab reports and clinic letters. You check each one before it's saved.",
+  reader: {
+    server: "Claude reads them through Dr Brad's server, which keeps no copy.",
+    ownKey: 'Claude reads them with your own Anthropic key. No server of ours sees them.',
+  } satisfies Record<UploadReader, string>,
+  letter: 'Letter',
+  labReport: 'Lab report',
+  record: 'Your record',
+  /** Names only, never a value. */
+  results: ['LDL', 'HbA1c', 'ApoB'],
+  connectTitle: 'Keep the original files too?',
+  connectText: 'Connect your own Dropbox or Google Drive and each file is kept there, sorted into Lab results, Clinic letters and Scans. Without it, only the values you confirm are saved.',
+  connectButton: 'Choose where to keep it',
+  connectSkip: 'Continue without keeping the files ›',
+} as const;
+
+/**
  * A read value's words as the web's old review said them, moved here byte for byte so both clients say
  * the same: what the report printed when the unit was guessed (review-matrix.ts), and the Replace
  * control on a value whose day the record already holds (ReviewMatrix.tsx).

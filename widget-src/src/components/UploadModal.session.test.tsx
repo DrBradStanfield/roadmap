@@ -220,11 +220,11 @@ describe('US-12 AC4–6 upload session ownership', () => {
     vi.mocked(getDocumentArchiveMode).mockReturnValue('device-only');
     extractFromPdf.mockReturnValue(deferred<never>().promise);
     render(<Harness />);
-    fireEvent.click(screen.getByRole('button', { name: /Continue without keeping my files/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Continue without keeping the files/ }));
     selectFile();
     fireEvent.click(await screen.findByRole('button', { name: 'Cancel' }));
     expect(document.querySelector('input[type=file]')).toBeTruthy();
-    expect(screen.queryByText('Keep your original documents')).toBeNull();
+    expect(screen.queryByText('Keep the original files too?')).toBeNull();
   });
   it('preserves a pending save, prevents discard, and resets after completion closes', async () => {
     const saving = deferred<Awaited<ReturnType<typeof saveUpload>>>();
