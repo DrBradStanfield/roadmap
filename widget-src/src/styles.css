@@ -3617,10 +3617,6 @@
     grid-template-columns: minmax(0, 1000px) minmax(340px, 420px);
     row-gap: 0;
   }
-  /* The doctor line above both columns (US-73 AC13): wrapped or not, both columns start under it. */
-  .health-tool-content > .mh-education--above {
-    grid-column: 1 / -1;
-  }
 }
 
 .health-tool-chat {
@@ -5939,6 +5935,19 @@
 @media (min-width: 769px) {
   .mh-header {
     min-height: 28px;
+  }
+  /* The doctor line on the title's row, baselines aligned (Brad 2026-11-23); where the row is
+     too narrow for it, it drops under the title whole, then wraps. The title never wraps. */
+  .mh-heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    flex: 1 1 0;
+    column-gap: 16px;
+    min-width: 0;
+  }
+  .mh-heading > .mh-education {
+    margin: 0 0 6px;
   }
   .mh-sections {
     display: grid;

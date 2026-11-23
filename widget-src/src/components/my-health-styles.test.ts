@@ -60,6 +60,16 @@ describe('US-62 AC30: My health styles', () => {
     expect(cascaded(title, 'font-size', DESKTOP)).toBe('28px');
     expect(cascaded(title, 'clip', DESKTOP)).toBeUndefined();
   });
+
+  it('US-73 AC13: on desktop the doctor line shares the title row, baselines aligned, wrapping under it only when it must', () => {
+    const line = nest('mh-header', 'mh-heading', 'p|mh-education');
+    const heading = line.parentElement!;
+    expect(cascaded(heading, 'display', DESKTOP)).toBe('flex');
+    expect(cascaded(heading, 'flex-wrap', DESKTOP)).toBe('wrap');
+    expect(cascaded(heading, 'align-items', DESKTOP)).toBe('baseline');
+    expect(cascaded(line, 'margin-top', DESKTOP)).toBe('0'); // no offset from the title's baseline
+    expect(cascaded(nest('mh-title'), 'flex', DESKTOP)).toBe('0 0 auto'); // the title never shrinks or wraps
+  });
 });
 
 describe('US-62 AC35: the Account tab design', () => {

@@ -5,6 +5,10 @@ ledgers). Every Brad-applied constitution change gets a dated entry, newest
 first. The one-in-one-out rule applies to the constitution itself, never to
 this record.
 
+- **2026-11-22, later (Brad-directed: reversed, loops write to main):** Brad: "no, reverse this. you can write to
+  main to log your findings, save your work in the ledger, etc." The by-PR landing rule (PR #2016) is undone: Repo
+  rules, landing check, commit-early and the three charter delivery lines are back to main. The commit-to-main line
+  now names Brad's standing permission, so a cloud session's permission check can see it. Lines back to 196.
 - **2026-11-22 (Brad-directed: cloud loops land by PR):** The cloud runner refused pushes to main in chat-health
   W46 and W47, so both runs sat on a session branch with no PR. Brad: "do it" to "(a) a build session opens a PR
   from the branch and merges it; (b) change the landing rule so cloud loops land by PR". Repo rules now: commit on

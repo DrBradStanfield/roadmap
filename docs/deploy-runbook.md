@@ -311,6 +311,7 @@ Moved out of CLAUDE.md 2026-09-24 (entropy pass). `.env` has all of them.
   GOOGLE_DRIVE_CLIENT_ID/SECRET (BOTH Fly apps: `health-tool-app` for the
   widget's Google exchange, edu for the MCP's Drive leg). Setup and rotation:
   [deploy-runbook-mcp.md](deploy-runbook-mcp.md).
+- **`MCP_GEMINI` (edu app, the hosted MCP; not a secret):** exactly `on` accepts Gemini's custom connector as the pinned `gemini` client (US-32 AC59-AC65). Anything else, unset included, is off: Gemini registrations are refused, the `gemini` client is unknown, and every Gemini code and token stops opening. Off by default; Brad sets it himself, only after the cross-account check in [agent-access.md](agent-access.md) § The hosted path.
 - **Per-app secrets diverge post-split**: each app has its own SHOPIFY_ pair;
   KLAVIYO_ is shared (every sign-up joins the MicroVitamin list; the drstanfield
   Klaviyo account is shut down, Brad 2026-09-28); edu omits the Discord and
