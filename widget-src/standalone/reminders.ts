@@ -200,7 +200,7 @@ export async function optInToReminders(
   backend: Backend,
   { marketingEmail, email, silent }: { marketingEmail?: string; email?: string; silent?: { from: FileReminderOptIn | undefined } } = {},
 ): Promise<OptInResult> {
-  if (!remindersSupported(backend)) throw new Error('Reminders need a connected cloud account.');
+  if (!remindersSupported(backend)) throw new Error('Reminders need connected cloud storage.');
   // US-07 AC6: the plan is built for adults, and so are its reminders.
   if (isKnownMinorNow()) throw new Error('Check-up reminders are for adults aged 18 and over.');
   // The record this enrolment was asked for: a reply landing after an erase
