@@ -16,12 +16,20 @@
  * every non-merge commit since main, so a file added then removed is still refused. Anything else goes by a
  * `claude/` branch and PR (docs/loops/LOOP.md § Repo rules).
  *
- * Residuals, left to the classifier and review: a credential helper or other git config that runs a program
- * (credential.helper, core.askPass, protocol.ext.allow), set by an earlier command; a merge commit that adds
- * and a later merge that removes content (only non-merge commits are walked); and an agent editing this file.
+ * Every merge since main is checked too, by its combined diff: only what the merge itself made (paths that
+ * differ from every parent, such as a resolved CSV), never what it brought from origin's main.
+ *
+ * origin must be `https://...`, `ssh://...` or `user@host:path`. A plain local path is accepted ONLY when
+ * LOOP_PUSH_TEST_ALLOW_LOCAL=1 and CLAUDE_CODE_REMOTE is not `true`: TEST-ONLY, for tools/loop-push.test.ts's
+ * bare remotes. It is no bypass of origin's main: it reaches only a repo on this disk, and in Claude Code an
+ * earlier command cannot set the environment of a later Bash call, so an allow-listed run never sees it.
+ *
+ * Residuals, left to the classifier and review: a credential helper (credential.helper), set by an earlier
+ * command, still runs; and an agent editing this file.
  */
 import { execFileSync } from 'node:child_process';
 
+const PINNED = ['-c', 'core.hooksPath=/dev/null', '-c', 'protocol.ext.allow=never', '-c', 'core.fsmonitor=false', '-c', 'core.askPass='];
 const NO_REPLACE_ENV = { GIT_NO_REPLACE_OBJECTS: '1', GIT_TERMINAL_PROMPT: '0' };
 const BRAD_ONLY = ['docs/loops/loop.md', 'docs/loops/registry.md', 'docs/loops/_template.md'];
 const MOVED = 'main has moved: run `git fetch origin main` and `git merge --no-edit origin/main` (separately), then run node tools/loop-push.mjs again.';
@@ -43,7 +51,7 @@ let root = null;
 /** Runs git with no shell, no hooks and no GIT_* from the caller. Returns stdout, or throws with .status. */
 function git(args) {
   const pre = root ? ['-C', root] : [];
-  return execFileSync('git', [...pre, '-c', 'core.hooksPath=/dev/null', ...args], {
+  return execFileSync('git', [...pre, ...PINNED, ...args], {
     env: ENV, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 256 * 1024 * 1024,
   });
 }
@@ -81,16 +89,27 @@ function inScope(path) {
   return path === 'docs/user-stories.md' || (path.startsWith('docs/loops/') && path.length > 'docs/loops/'.length);
 }
 
-/** Parses `diff-tree -r -z --raw --no-renames` output: ":old new oldsha newsha S\0path\0" per entry. */
+/**
+ * Parses `diff-tree -r -z --raw` output, ":old new oldsha newsha S\0path\0" per entry, or for a merge's combined
+ * diff (-c) "::m1 m2 new s1 s2 snew MM\0path\0": with n leading colons (n parents), the new mode is field n.
+ */
 function parseRaw(out) {
   const parts = out.split('\0');
   const entries = [];
   for (let i = 0; i + 1 < parts.length; i += 2) {
     const meta = parts[i].replace(/^\n/, '');
-    if (!meta.startsWith(':')) refuse(`unexpected diff-tree output: ${JSON.stringify(meta.slice(0, 40))}`);
-    entries.push({ mode: meta.slice(1).split(' ')[1], path: parts[i + 1] });
+    const n = meta.match(/^:+/)?.[0].length ?? 0;
+    if (!n) refuse(`unexpected diff-tree output: ${JSON.stringify(meta.slice(0, 40))}`);
+    entries.push({ mode: meta.slice(n).split(' ')[n], path: parts[i + 1] });
   }
   return entries;
+}
+
+/** https, ssh or scp-style ssh; a bare local path only for the tests (see the header). */
+function allowedUrl(url) {
+  if (/^https:\/\/[^\s]+$/.test(url) || /^ssh:\/\/[^\s]+$/.test(url)) return true;
+  if (/^[A-Za-z0-9._-]+@[A-Za-z0-9][A-Za-z0-9.-]*:[^:\s][^\s]*$/.test(url)) return true;
+  return process.env.LOOP_PUSH_TEST_ALLOW_LOCAL === '1' && process.env.CLAUDE_CODE_REMOTE !== 'true' && /^\/[^:\s]*$/.test(url);
 }
 
 const DIFF = ['diff-tree', '-r', '-z', '--raw', '--no-renames', '--ignore-submodules=none', '--no-commit-id'];
@@ -107,6 +126,7 @@ function main() {
   const pushUrls = lines(gitOrNull(['remote', 'get-url', '--push', '--all', 'origin']) ?? '');
   if (fetchUrls.length !== 1 || pushUrls.length !== 1) refuse('origin must have exactly one fetch URL and one push URL.');
   if (fetchUrls[0] !== pushUrls[0]) refuse("origin's push URL differs from its fetch URL.");
+  if (!allowedUrl(fetchUrls[0])) refuse('origin must be an https:// or ssh URL.');
   for (const key of ['remote.origin.receivepack', 'remote.origin.uploadpack', 'core.sshCommand']) {
     if (gitOrNull(['config', '--get-all', key]) !== null) refuse(`${key} is set; unset it first.`);
   }
@@ -131,11 +151,14 @@ function main() {
   }
   if (gitOrNull(['merge-base', '--is-ancestor', R, sha]) === null) refuse(MOVED);
 
-  // f. scope: the net change, then every non-merge commit since main against its parent.
+  // f. scope: the net change, every non-merge commit since main against its parent, every merge by its combined diff.
   const net = parseRaw(git([...DIFF, R, sha]));
   const bad = new Set(scopeProblems(net));
   for (const c of lines(git(['rev-list', '--no-merges', `${R}..${sha}`]))) {
     for (const p of scopeProblems(parseRaw(git([...DIFF, '--root', c])))) bad.add(p);
+  }
+  for (const m of lines(git(['rev-list', '--merges', `${R}..${sha}`]))) {
+    for (const p of scopeProblems(parseRaw(git([...DIFF, '-c', m])))) bad.add(p);
   }
   if (bad.size) {
     const list = [...bad];

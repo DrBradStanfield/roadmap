@@ -11,7 +11,11 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const SCRIPT = join(dirname(fileURLToPath(import.meta.url)), 'loop-push.mjs');
-const BASE_ENV: NodeJS.ProcessEnv = Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith('GIT_')));
+// The test remotes are local bare paths, which the script accepts only with this test-only variable, outside a cloud session.
+const BASE_ENV: NodeJS.ProcessEnv = {
+  ...Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith('GIT_') && k !== 'CLAUDE_CODE_REMOTE')),
+  LOOP_PUSH_TEST_ALLOW_LOCAL: '1',
+};
 const ID = ['-c', 'user.name=t', '-c', 'user.email=t@example.invalid', '-c', 'init.defaultBranch=main', '-c', 'commit.gpgsign=false'];
 
 let dir = '';
@@ -211,6 +215,53 @@ describe('loop-push: what it refuses (US-64 AC39)', () => {
     expect(g(work, 'log', '-1', '--format=%s%n', '--name-only')).toContain('LEARNINGS');
     expectRefused(run(work), before, /app\/x\.ts/);
   });
+
+  it('refuses a merge that brings in app/x.ts, even when a later merge removes it', () => {
+    const before = remoteMain();
+    const other = clone('other');
+    commit(work, { 'docs/loops/x/LEARNINGS.md': 'l\n' });
+    commit(other, { 'app/y.ts': 'y\n' }, 'main moves');
+    g(other, 'push', '-q', 'origin', 'main');
+    g(work, 'fetch', '-q', 'origin', 'main');
+    g(work, 'merge', '-q', '--no-commit', '--no-ff', 'origin/main');
+    mkdirSync(join(work, 'app'), { recursive: true });
+    writeFileSync(join(work, 'app/x.ts'), 'evil\n');
+    g(work, 'add', '-A');
+    g(work, 'commit', '-q', '--no-edit');
+    const moved = commit(other, { 'app/z.ts': 'z\n' }, 'main moves again');
+    g(other, 'push', '-q', 'origin', 'main');
+    g(work, 'fetch', '-q', 'origin', 'main');
+    g(work, 'merge', '-q', '--no-commit', '--no-ff', 'origin/main');
+    g(work, 'rm', '-q', 'app/x.ts');
+    g(work, 'commit', '-q', '--no-edit');
+    expect(g(work, 'diff', '--name-only', 'origin/main', 'HEAD')).toBe('docs/loops/x/LEARNINGS.md');
+    expect(before).not.toBe(moved);
+    expectRefused(run(work), moved, /outside a loop's scope: app\/x\.ts/);
+  });
+
+  it('refuses an ext:: origin before any transport runs', () => {
+    const before = remoteMain();
+    const marker = join(dir, 'ext-marker');
+    g(work, 'remote', 'set-url', 'origin', `ext::sh -c touch% ${marker}`);
+    commit(work, { 'docs/loops/x/LEARNINGS.md': 'l\n' });
+    expectRefused(run(work), before, /origin must be an https:\/\/ or ssh URL/);
+    expect(existsSync(marker)).toBe(false);
+  });
+
+  it('refuses a file:// origin, even with the test variable set', () => {
+    const before = remoteMain();
+    g(work, 'remote', 'set-url', 'origin', `file://${remote}`);
+    commit(work, { 'docs/loops/x/LEARNINGS.md': 'l\n' });
+    expectRefused(run(work), before, /origin must be an https:\/\/ or ssh URL/);
+  });
+
+  for (const [label, env] of [['without the test variable', { LOOP_PUSH_TEST_ALLOW_LOCAL: '' }], ['in a cloud session', { CLAUDE_CODE_REMOTE: 'true' }]] as const) {
+    it(`refuses a local-path origin ${label}`, () => {
+      const before = remoteMain();
+      commit(work, { 'docs/loops/x/LEARNINGS.md': 'l\n' });
+      expectRefused(run(work, [], env), before, /origin must be an https:\/\/ or ssh URL/);
+    });
+  }
 
   it('refuses when the push URL differs from the fetch URL, and neither remote moves', () => {
     const before = remoteMain();
