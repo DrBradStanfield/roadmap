@@ -50,14 +50,20 @@ const named = {
   'the notifications direction (RemindersSection)': lineWith(swift('Reminders/RemindersSection.swift'), 'Allow notifications for'),
   'the notification title (ReminderScheduler)': lineWith(swift('Reminders/ReminderScheduler.swift'), 'content.title ='),
 };
-const permissionKeys = [
-  'NSCameraUsageDescription',
-  'NSHealthShareUsageDescription',
-  'NSHealthUpdateUsageDescription',
-  'NSHealthClinicalHealthRecordsShareUsageDescription',
-];
+// The four permission prompts open "This app …", not the display name (Brad 2026-11-23): the
+// rest of each sentence is unchanged, so these pin the words the user reads in each prompt.
+const permissionPrompts: Record<string, string> = {
+  NSCameraUsageDescription:
+    "This app uses the camera to scan a paper lab report. With your agreement, the pages are sent to Dr Brad's server and an AI service to be read.",
+  NSHealthShareUsageDescription:
+    'This app reads your sex, month and year of birth, weight, height, waist and blood pressure from Apple Health, so your record and your plan stay up to date without typing. It never keeps your day of birth. Those go only into your record, on this iPhone or in the Dropbox or Google Drive you connect. It also reads your resting heart rate, sleep, VO2 max and steps, which it shows you and keeps only on this iPhone, never in your record.',
+  NSHealthUpdateUsageDescription:
+    'This app saves the weight, waist and blood pressure you type into the app to Apple Health.',
+  NSHealthClinicalHealthRecordsShareUsageDescription:
+    "This app reads the lab results your healthcare provider sent to Health, so they appear in your plan. They are kept in your record, on this iPhone or in the Dropbox or Google Drive you connect. If you use the chat, your question is sent with your record's values and their recent history.",
+};
 
-describe('US-25 AC29: directions, the notification title and the permission prompts use the home screen name', () => {
+describe('US-25 AC29: directions and the notification title use the home screen name', () => {
   const name = displayNames[0];
 
   it.each(Object.entries(named))('%s names the app by its display name', (_, line) => {
@@ -69,12 +75,11 @@ describe('US-25 AC29: directions, the notification title and the permission prom
     expect(named['the notification title (ReminderScheduler)']).toContain(`content.title = "${name}"`);
   });
 
-  it.each(permissionKeys)('%s starts with the display name in Debug and Release', (key) => {
+});
+
+describe('US-25 AC29: the permission prompts open "This app"', () => {
+  it.each(Object.entries(permissionPrompts))('%s reads word for word in Debug and Release', (key, expected) => {
     const strings = [...pbxproj.matchAll(new RegExp(`INFOPLIST_KEY_${key} = "([^"]*)";`, 'g'))].map((m) => m[1]);
-    expect(strings).toHaveLength(2);
-    for (const text of strings) {
-      expect(text.startsWith(`${name} `)).toBe(true);
-      expect(text).not.toContain('Health Roadmap');
-    }
+    expect(strings).toEqual([expected, expected]);
   });
 });
