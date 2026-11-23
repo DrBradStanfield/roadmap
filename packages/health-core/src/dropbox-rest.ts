@@ -14,7 +14,7 @@
  * browser refreshes with PKCE and the server refreshes as a confidential
  * client.
  */
-import { ConflictError, fetchOrFail, jsonBody, StorageError, type DocumentAccess, type ReadResult, type StorageAdapter, type StoredFile, type WriteResult } from './adapter';
+import { BusyError, ConflictError, fetchOrFail, jsonBody, StorageError, type DocumentAccess, type ReadResult, type StorageAdapter, type StoredFile, type WriteResult } from './adapter';
 import { TRANSFER_DEADLINE_MS } from './transfer-deadline';
 
 export const DROPBOX_TOKEN_URL = 'https://api.dropboxapi.com/oauth2/token';
@@ -169,7 +169,17 @@ export async function dropboxUploadDocument(accessToken: string, ref: string, by
     },
     body: bytes,
   });
-  if (!res.ok) throw new StorageError(`${PROVIDER} document write failed (${res.status}).`, undefined, undefined, res.status);
+  if (!res.ok) {
+    const busy = res.status === 429 || (res.status === 409 && /^path\/too_many_write_operations\b/.test(errorSummary(await res.text()) ?? ''));
+    if (busy) throw new BusyError(`${PROVIDER} document write refused as busy (${res.status}).`, retryAfterMs(res.headers.get('Retry-After')), res.status);
+    throw new StorageError(`${PROVIDER} document write failed (${res.status}).`, undefined, undefined, res.status);
+  }
+}
+
+/** The wait Dropbox asks for (`Retry-After`, in seconds), in ms; 0 when it names none. */
+function retryAfterMs(header: string | null): number {
+  const seconds = Number(header);
+  return header && Number.isFinite(seconds) && seconds > 0 ? seconds * 1000 : 0;
 }
 
 /** One folder-relative entry of a listing, as the connector reads it. */

@@ -9,6 +9,7 @@ import { createPortal } from 'react-dom';
 import { byNewestDocument, DOCUMENT_TYPE_LABELS } from '@roadmap/health-core/document-path';
 import { isLabArchiveDocument } from '@roadmap/health-core/document-save';
 import { TOPICS, type TopicId } from '@roadmap/health-core/plan-sections';
+import { UPLOAD_LABS_PLACEMENTS } from '@roadmap/health-core/product-events';
 import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import type { StatTile } from '@roadmap/health-core/stat-tiles';
 import { DocumentLightbox } from './DocumentLightbox';
@@ -105,21 +106,18 @@ export interface MyHealthProps {
   /** The page's title and "Your plan is ready."'s heading: HealthTool moves the focus to them (US-62 AC24, AC25, AC31). */
   titleRef?: RefObject<HTMLHeadingElement>;
   readyTitleRef?: RefObject<HTMLHeadingElement>;
-  /** The doctor line is drawn above both columns (HealthTool, beside the chat column), so the
-   *  chat card's top stays on the line of the first card's (US-73 AC13, US-62 AC27). */
-  educationAbove?: boolean;
 }
 
 /** A topic's parts beyond its cards: rows, what follows (its medicines), its heading's action. */
-interface TopicParts { rows?: ReactNode; after?: ReactNode; action?: ReactNode; always?: boolean; sectionRef?: RefObject<HTMLElement> }
+interface TopicParts { rows?: ReactNode; after?: ReactNode; always?: boolean; sectionRef?: RefObject<HTMLElement> }
 
 /** The phone's jump pills (US-62 AC17): ids only, their words TOPICS'. */
 const PILLS: readonly TopicId[] = ['bloodTests', 'cholesterol', 'supplements'];
 const titleOf = (id: TopicId) => TOPICS.find(t => t.topic === id)!.title;
 
-/** Under the title (App Review 1.4.1, US-73 AC13), the iPhone's `EducationNote.myHealth`. Words: Brad, 2026-11-15.
- *  Beside the chat column HealthTool draws it above both columns instead (`educationAbove`). */
-export const EDUCATION_LINE = 'For education, not medical advice. Always talk to your doctor.';
+/** App Review 1.4.1 (US-73 AC13), the iPhone's `EducationNote.myHealth`. Words: Brad, 2026-11-15.
+ *  Desktop: on the title's row, after it; a phone: under the (hidden) title. */
+const EDUCATION_LINE = 'For education, not medical advice. Always talk to your doctor.';
 
 const RowsCard = memo(function RowsCard({ rows, onOpen, extra }: { rows: Array<RowModel | null>; onOpen: (s: ValueSubject, from?: Element) => void; extra?: ReactNode }) {
   return (
@@ -131,7 +129,7 @@ const RowsCard = memo(function RowsCard({ rows, onOpen, extra }: { rows: Array<R
 });
 
 export function MyHealth({ form, plan, tiles, series, egfrCurrent, storageBar, personButton, saveAlert, syncAlert, settingsOpen, onSettingsClose, settingsHost, reminders, storageCard, onDelete, recordHeld, isDeleting, storageAtFoot,
-  sectionsRef, healthDocuments, onDocumentDeleted, setShowUploadModal, onPlanReadyDismiss, titleRef, readyTitleRef, educationAbove }: MyHealthProps) {
+  sectionsRef, healthDocuments, onDocumentDeleted, setShowUploadModal, onPlanReadyDismiss, titleRef, readyTitleRef }: MyHealthProps) {
   // The form's row opener changes every render; the rows take a stable one, so memo'd rows stay put.
   const openRef = useRef(form.rows.open);
   openRef.current = form.rows.open;
@@ -186,11 +184,6 @@ export function MyHealth({ form, plan, tiles, series, egfrCurrent, storageBar, p
       screening: { rows: (screening || bone) ? <>{screening}{bone}</> : undefined },
       bloodTests: {
         always: true,
-        action: setShowUploadModal && (
-          <button type="button" className="mh-head-icon-btn" aria-label="Upload lab results" title="Upload lab results" onClick={() => setShowUploadModal(true)}>
-            <span aria-hidden="true">+</span>
-          </button>
-        ),
         rows: (
           <div className="section-card section-card--bt mh-rows-card">
             {!form.tableShown && (
@@ -216,9 +209,14 @@ export function MyHealth({ form, plan, tiles, series, egfrCurrent, storageBar, p
     const p = parts[id] ?? {};
     const cards = plan.topics.get(id);
     if (!p.always && !p.rows && !p.after && !cards) return null;
+    // "Upload labs" on the right of three headings (US-73 AC14, Brad's words 2026-11-23), naming its heading.
+    const placement = UPLOAD_LABS_PLACEMENTS.find(word => word === id);
+    const upload = placement && setShowUploadModal && (
+      <button type="button" className="mh-head-text-btn" onClick={() => { trackProductEvent('upload_labs_opened', { placement }); setShowUploadModal(true); }}>Upload labs</button>
+    );
     return (
       <section key={id} className="mh-topic" data-topic={id} aria-labelledby={`mh-topic-${id}`} ref={p.sectionRef}>
-        <TopicHeading title={titleOf(id)} icon={id} id={`mh-topic-${id}`} action={p.action}/>
+        <TopicHeading title={titleOf(id)} icon={id} id={`mh-topic-${id}`} action={upload}/>
         {cards && cards.urgent.length > 0 && <PlanCardList cards={cards.urgent} plan={plan}/>}
         {p.rows}
         {cards && cards.others.length > 0 && <PlanCardList cards={cards.others} plan={plan}/>}
@@ -268,14 +266,17 @@ export function MyHealth({ form, plan, tiles, series, egfrCurrent, storageBar, p
       </div>
     ),
   ];
+  const title = <h2 ref={titleRef} className="mh-title" tabIndex={-1}>My health</h2>;
+  // Desktop: the doctor line on the title's row (Brad 2026-11-23); a phone: under it, as before (US-73 AC13).
+  const education = <p className="mh-education">{EDUCATION_LINE}</p>;
   return (
     <div ref={form.panelRef} className={`health-input-panel mh-page${form.pageOpen || settingsOpen ? ' md-page-open' : ''}`}>
       <div className="mh-header">
-        <h2 ref={titleRef} className="mh-title" tabIndex={-1}>My health</h2>
+        {inTab ? title : <div className="mh-heading">{title}{education}</div>}
         {!inTab && (personButton || storageBar) && <div className="mh-header-actions">{storageBar}{personButton}</div>}
         {inTab && <>{saveAlert}{syncAlert}</>}
       </div>
-      {!educationAbove && <p className="mh-education">{EDUCATION_LINE}</p>}
+      {inTab && education}
       {inTab
         ? settingsHost && createPortal(<SettingsSheet action={storageBar}>{settingsParts}</SettingsSheet>, settingsHost)
         : settingsOpen && <SettingsSheet onClose={onSettingsClose}>{settingsParts}</SettingsSheet>}

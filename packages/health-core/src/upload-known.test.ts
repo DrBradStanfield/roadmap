@@ -245,7 +245,7 @@ const letterPayload = (hash: string): DocumentPayload<string> => ({
 async function saveOne(rec: RoadmapFile, payload: DocumentPayload<string>, fail: boolean) {
   const written: string[] = [];
   const io: DocumentSaveIO<string> = {
-    hash: async (f) => f, mimeType: () => 'application/pdf', now: () => '2026-02-01T00:00:00.000Z', newId: () => 'new',
+    stopped: () => false, hash: async (f) => f, mimeType: () => 'application/pdf', now: () => '2026-02-01T00:00:00.000Z', newId: () => 'new',
     write: async (ref) => { if (fail) throw new Error('synthetic refusal'); written.push(ref); },
   };
   const file = structuredClone(rec);

@@ -89,11 +89,11 @@
   },
 
   "naming": {
-    "_note": "A file's sourceFileName (the document dedup key). A ZIP member is health-core zipMemberName on both. A plain file: the web keeps its raw name; the phone puts it on one line and cuts it to 255. D13.",
+    "_note": "A file's sourceFileName (the document dedup key). A ZIP member is health-core zipMemberName on both. A plain file: the shared name rule on both, on one line (control characters become spaces) and cut to 255. D13, settled by the shared Save.",
     "rows": [
       { "kind": "plain", "name": "Labs 2026.pdf", "web": "Labs 2026.pdf", "phone": "Labs 2026.pdf" },
-      { "kind": "plain", "name": "Bad\u0007\nname.pdf", "web": "Bad\u0007\nname.pdf", "phone": "Bad name.pdf", "decision": "D13", "changedBy": "a later PR on the shared name rule (orchestrator: dedup)" },
-      { "kind": "plain", "name": [{ "repeat": "a", "times": 300 }, ".pdf"], "web": [{ "repeat": "a", "times": 300 }, ".pdf"], "phone": [{ "repeat": "a", "times": 255 }], "decision": "D13", "changedBy": "a later PR on the shared name rule (orchestrator: dedup)" },
+      { "kind": "plain", "name": "Bad\u0007\nname.pdf", "web": "Bad name.pdf", "phone": "Bad name.pdf" },
+      { "kind": "plain", "name": [{ "repeat": "a", "times": 300 }, ".pdf"], "web": [{ "repeat": "a", "times": 255 }], "phone": [{ "repeat": "a", "times": 255 }] },
       { "kind": "zip", "zip": "Records.zip", "path": "a/b.png", "web": "Records.zip/a/b.png", "phone": "Records.zip/a/b.png" },
       { "kind": "zip", "zip": "Records.zip", "path": [{ "repeat": "d", "times": 260 }, "/letter.png"], "web": ["~635451cb/", { "repeat": "d", "times": 234 }, "/letter.png"], "phone": ["~635451cb/", { "repeat": "d", "times": 234 }, "/letter.png"] }
     ]
@@ -136,8 +136,8 @@
       { "case": "plain value", "web": { "ticked": true }, "phone": { "ticked": true } },
       { "case": "value with an extractor question", "web": { "ticked": true }, "phone": { "ticked": false }, "decision": "D1, decided 2026-11-20: ticked on both", "changedBy": "design PR 15 (the iPhone review page reads the engine)" },
       { "case": "document, sourceFileName not held", "web": { "keepDocument": true }, "phone": { "keepDocument": true } },
-      { "case": "document, sourceFileName held", "web": { "keepDocument": false }, "phone": { "keepDocument": false } },
-      { "case": "letter with values", "web": { "values": true, "document": true }, "phone": { "values": false, "document": true }, "decision": "D3", "changedBy": "a Brad decision PR (clinical)" }
+      { "case": "document, sourceFileName held", "web": { "keepDocument": true }, "phone": { "keepDocument": true }, "_note": "Every read letter saves on both (US-13 AC14): the shared plan (upload-plan.ts) files each read letter; only a legacy name-and-date match with no hash is skipped (upload-known.ts legacyMatch)." },
+      { "case": "letter with values", "web": { "values": false, "document": true }, "phone": { "values": false, "document": true }, "decision": "D3, decided by Brad 2026-11-21: the letter is filed alone, its values not saved, on both" }
     ]
   },
 

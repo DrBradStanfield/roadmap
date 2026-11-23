@@ -21,7 +21,7 @@ import { InputPanel, type PlanBasis } from './InputPanel';
 import { usePlanView } from './ResultsPanel';
 import { OpenEvidenceContext } from './PlanCards';
 import { PersonButton } from './SettingsSheet';
-import { EDUCATION_LINE, MyHealth, type FormSlots } from './MyHealth';
+import { MyHealth, type FormSlots } from './MyHealth';
 import { revealAndFocus } from '../lib/reveal';
 import { CHAT_BUBBLES } from './icons';
 import { ChatSection, type ChatPrefetchData } from './ChatSection';
@@ -127,7 +127,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   const rootRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null), readyTitleRef = useRef<HTMLHeadingElement>(null); // My health's, for the landings' focus
   // The unit system and each field's own unit (hooks/useUnits, US-05); the record's, held while a field has the focus (hooks/units-machine).
-  const { unitSystem, unitOverrides, startUnitOf, metricUnitOverrides, handleToggleFieldUnit, onSwitch, record: units } = useUnits(setInputs, rootRef);
+  const { unitSystem, unitOverrides, startUnitOf, metricUnitOverrides, handleToggleFieldUnit, setFieldUnit, onSwitch, record: units } = useUnits(setInputs, rootRef);
 
   // The page's reads of the record: the values, both matrices, the lab rows (hooks/useRecordReads).
   const { reloadValues, refreshLabValues, loadHistory } = useRecordReads({ setPreviousMeasurements, setHistory, setLabValueHistory });
@@ -535,13 +535,6 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     });
   }, [selectTab]);
 
-  // Memoised so the UploadModal's matrix doesn't rebuild on unrelated
-  // HealthTool re-renders (typing, mobile-tab switches, etc.).
-  const uploadHistory = useMemo(
-    () => ({ measurements: history, labValues: labValueHistory, documents: documentHistory }),
-    [history, labValueHistory, documentHistory],
-  );
-
   // The form's medicine and screening questions, as health-core builds them
   // (the InputPanel parity test pins the two together): a suggestion sits on
   // the question that asks it (US-62 AC20).
@@ -614,7 +607,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     recordHeld: readFailed || unreadable > 0 || Object.keys(inputs).length > 0 || [previousMeasurements, medications, screenings, supplements, documentHistory, labValueHistory].some(list => list.length > 0), onDelete: async () => { if (await eraseAll()) closeSettings(); }, isDeleting,
     storageAtFoot: getBackendKind() === 'local',
     onPlanReadyDismiss: planReady ? dismissPlanReady : undefined,
-    healthDocuments: documentHistory, onDocumentDeleted: dropDocument, educationAbove: !isMobile && isWideDesktop,
+    healthDocuments: documentHistory, onDocumentDeleted: dropDocument,
   };
   // The reasons open on screen are the PDF's too (US-62 AC28).
   const myHealth = (form: FormSlots) => (
@@ -710,8 +703,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
         </>
       ) : (
         <div className="health-tool-content">
-          {/* US-62 AC16: one My health column, centred; from 1200px the chat beside it, the doctor line over both (US-73 AC13). */}
-          {isWideDesktop && <p className="mh-education mh-education--above">{EDUCATION_LINE}</p>}
+          {/* US-62 AC16: one My health column, centred; from 1200px the chat beside it. */}
           <div className="health-tool-main">{healthForm}</div>
           {isWideDesktop && chat}
         </div>
@@ -725,15 +717,12 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
         onOpen={() => setShowUploadModal(true)}
         unitSystem={unitSystem}
         metricUnitOverrides={metricUnitOverrides}
-        onToggleFieldUnit={handleToggleFieldUnit}
-        history={uploadHistory}
+        onSetFieldUnit={setFieldUnit}
         onComplete={() => { const read = rereadRecord('upload'); answered(null); return read; }} // an upload is an answer, after a held change is taken in
         onStart={handleUploadStart}
         onClose={() => setShowUploadModal(false)}
-        onScreeningUpdate={handleScreeningChange}
         age={planBasis?.age}
         sex={sex}
-        grading={grading}
       />
 
       {chatEditBanners}

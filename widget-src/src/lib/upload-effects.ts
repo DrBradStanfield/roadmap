@@ -12,7 +12,7 @@ import type { UnitSystem } from '@roadmap/health-core/units';
 import type { UploadErrorCode } from './api-types';
 import { labImport } from './upload-api';
 import { sha256Blob } from './archive-payloads';
-import { getDocumentArchiveMode, isLegacyUpload, uploadKnownIndex } from './roadmap-data';
+import { isLegacyUpload, uploadKnownIndex } from './roadmap-data';
 import { readPages, shortName } from './upload-pipeline';
 import { fileNameOf, type Held } from './upload-read';
 // Type only: a value import would pull the lazy upload bundle into the main one.
@@ -41,15 +41,13 @@ function still(port: UploadPort, run: number, id: string, stage: string) {
 const asFailure = (code: UploadErrorCode | undefined): UploadFailure => (isUploadFailure(code) ? code : 'server_error');
 
 /**
- * A file the record holds. One the record holds without its original, with a cloud open, is read as
- * before: today's save files that original only from a read (US-35 AC8, US-14 AC4); the shared save
- * plan (design PR 10) files it unread. The record is read once per pick, at its first hash: a delete or
- * save before the pick is in it, so the file is read or skipped as the record now says.
+ * A file the record holds: never read again (US-12 AC27). One held without its original is filed unread
+ * by the shared Save (`archiveOnly`, upload-plan.ts). The record is read once per pick, at its first
+ * hash: a delete or save before the pick is in it, so the file is read or skipped as the record now says.
  */
 function knownOnWeb(held: Held, hash: string): Known | null {
   held.known ??= uploadKnownIndex();
-  const known = knownAs(held.known, hash);
-  return known && !(known.archiveOnly && getDocumentArchiveMode() === 'cloud') ? known : null;
+  return knownAs(held.known, hash);
 }
 
 async function list(port: UploadPort, run: number, id: string): Promise<void> {

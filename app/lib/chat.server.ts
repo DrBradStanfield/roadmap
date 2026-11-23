@@ -15,7 +15,7 @@ import { SUGGESTION_EVIDENCE } from '../../packages/health-core/src/evidence';
 import { buildChatContextJson } from '../../packages/health-core/src/chat-context';
 import { toolOnlyAck, type ProposedEdit } from '../../packages/health-core/src/chat-edits';
 import { chatToolsFor, withRoadmapRound, type ChatTurnMessage, type RoadmapRoundCounts, type ToolResultFor } from '../../packages/health-core/src/run-roadmap';
-import { callAnthropicWithUsage, streamAnthropicWithUsage, isNetworkOrTimeoutError, type AnthropicStreamEvent, type AnthropicUsage } from './anthropic.server';
+import { callAnthropicWithUsage, streamAnthropicWithUsage, isNetworkOrTimeoutError, type AnthropicStreamEvent, type AnthropicUsage, type ChatPurpose } from './anthropic.server';
 import { CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, PROMPT_CACHE, REFUSAL_RESPONSES, modelParams, refusalLine, type RefusalCategory } from '../../packages/health-core/src/models';
 import { cutText } from '../../packages/health-core/src/chat-history';
 import { PRODUCTS_BLOCK_FILES, productsBlockText } from './chat-products-block';
@@ -474,8 +474,8 @@ export async function getChatCompletion(
   systemBlocks: SystemBlock[],
   messages: ChatTurnMessage[],
   canApplyEdits: boolean,
-  onEvent?: (event: ChatStreamEvent) => void,
-  opts?: { subscriptionTool?: boolean; guestInputs?: unknown; profileEdits?: boolean; app?: boolean },
+  onEvent: ((event: ChatStreamEvent) => void) | undefined,
+  opts: { purpose: ChatPurpose; subscriptionTool?: boolean; guestInputs?: unknown; profileEdits?: boolean; app?: boolean },
 ): Promise<ChatCompletionResult> {
   // Backstop for any caller that skipped its own guard (US-15 AC65).
   if (CHAT_PROMPT.kind === 'missing') throw new Error('Chat system prompt missing; no model call');
@@ -493,7 +493,7 @@ export async function getChatCompletion(
   let calls = 0;
   const send = async (fields: { messages: ChatTurnMessage[]; tool_choice?: { type: 'none' } }) => {
     if (++calls > 1) roadmapRun = { ...roadmapRun, toolRound: true };
-    const reply = onEvent ? await streamAnthropicWithUsage({ ...body, ...fields }, onEvent) : await callAnthropicWithUsage({ ...body, ...fields });
+    const reply = onEvent ? await streamAnthropicWithUsage({ ...body, ...fields }, onEvent, opts.purpose) : await callAnthropicWithUsage({ ...body, ...fields }, opts.purpose);
     usage = addUsage(usage, reply.usage);
     return reply;
   };

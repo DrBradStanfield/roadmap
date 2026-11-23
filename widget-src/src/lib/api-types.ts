@@ -22,17 +22,6 @@ export interface ApiReminderPreference {
   enabled: boolean;
 }
 
-/** Snapshot of the user's saved data needed by the upload review modal
- *  for dedup badges + matrix context columns. One object, not three
- *  separate props, so call sites don't grow with each new history
- *  dimension. */
-export interface UploadHistory {
-  /** Every active measurement: the review seeds blood tests and BP (US-12 AC11). */
-  measurements: ApiMeasurement[];
-  labValues: ApiLabValue[];
-  documents: ApiDocument[];
-}
-
 /** Result from loading latest measurements: pre-fill inputs + raw measurements for "Previous:" labels. */
 export interface LatestMeasurementsResult {
   /** Only demographic/height fields for pre-filling the form. */

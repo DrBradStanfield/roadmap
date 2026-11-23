@@ -431,7 +431,8 @@ export function generateSuggestions(
     }
   }
 
-  // HbA1c suggestions (thresholds in mmol/mol IFCC)
+  // HbA1c suggestions (thresholds in mmol/mol IFCC). A normal HbA1c gets no
+  // card: its result row says so (Brad 2026-11-23, US-07 AC18).
   if (inputs.hba1c !== undefined) {
     if (inputs.hba1c >= HBA1C_THRESHOLDS.diabetes) {
       suggestions.push({
@@ -448,14 +449,6 @@ export function generateSuggestions(
         priority: 'attention',
         title: 'HbA1c in the prediabetes range',
         description: `Your HbA1c of ${shown('hba1c', 'hba1c', inputs.hba1c)} is in the range the ADA calls prediabetes. Consider discussing it with your doctor. Lifestyle changes now can prevent progression to diabetes.`,
-      });
-    } else {
-      suggestions.push({
-        id: 'hba1c-normal',
-        category: 'bloodwork',
-        priority: 'info',
-        title: 'HbA1c in normal range',
-        description: `Your HbA1c of ${shown('hba1c', 'hba1c', inputs.hba1c)} is in the normal range. Continue healthy habits to maintain this.`,
       });
     }
   }
@@ -576,6 +569,7 @@ export function generateSuggestions(
   // === Lp(a) — personalized risk context card ===
   // Lp(a) is genetic and unmodifiable. When elevated, show a personalized
   // checklist of modifiable risk factors showing which are on/off target.
+  // A normal Lp(a) gets no card: its result row says so (Brad 2026-11-23, US-07 AC18).
   if (inputs.lpa !== undefined) {
     if (inputs.lpa >= LPA_THRESHOLDS.elevated) {
       const checklist: string[] = [];
@@ -672,14 +666,6 @@ export function generateSuggestions(
         priority: 'info',
         title: `Borderline Lp(a): ${bare('lpa', inputs.lpa)} nmol/L`,
         description: 'Your Lp(a) is in the borderline range (75\u2013125 nmol/L). Lp(a) is genetically determined and does not change with lifestyle. Continue to optimize other cardiovascular risk factors.',
-      });
-    } else {
-      suggestions.push({
-        id: 'lpa-normal',
-        category: 'bloodwork',
-        priority: 'info',
-        title: `Lp(a): ${bare('lpa', inputs.lpa)} nmol/L`,
-        description: 'Your Lp(a) is in the normal range (<75 nmol/L). This is a one-time test \u2014 Lp(a) is genetically determined and does not change significantly over time.',
       });
     }
   }
