@@ -43,7 +43,7 @@ struct SyncProblem: Equatable {
     func words(_ provider: CloudProvider) -> String {
         switch kind {
         case .signIn: "\(provider.label) needs you to sign in again. Your changes are on this iPhone until then."
-        case .tooNew: "A newer version of Health Roadmap wrote this record. Update the app to sync. Your changes are on this iPhone."
+        case .tooNew: "A newer version of this app wrote this record. Update the app to sync. Your changes are on this iPhone."
         case .unreachable: "\(provider.label) could not be reached. Your changes are on this iPhone, and go up when it answers."
         case .storageFull: "Your \(provider.label) is full, so changes cannot go up. Free some space there. Your changes are on this iPhone."
         case .busy: "Changes kept arriving while the app opened your \(provider.label) record. They are on this iPhone, and go up when you come back to the app."

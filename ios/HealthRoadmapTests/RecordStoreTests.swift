@@ -532,7 +532,7 @@ final class RecordStoreTests: XCTestCase {
         XCTAssertTrue(notRecord.hasSuffix("nothing will be saved over it. This file is not a health record."), notRecord)
         try Data("{\"schemaVersion\": 999, \"measurements\": []}".utf8).write(to: file)
         let tooNew = try XCTUnwrap(try store().problem?.words)
-        XCTAssertTrue(tooNew.hasSuffix("A newer version of Health Roadmap wrote this record. Update the app to open it."), tooNew)
+        XCTAssertTrue(tooNew.hasSuffix("A newer version of this app wrote this record. Update the app to open it."), tooNew)
         let engine = try HealthEngine()
         XCTAssertThrowsError(try engine.blocking { try $0.eraseOnPhone(recordJSON: "[]", historyJSON: nil, now: .now, deviceId: "test") }) {
             XCTAssertEqual($0.localizedDescription, "This file is not a health record.")

@@ -83,3 +83,14 @@ describe('US-25 AC29: the permission prompts open "This app"', () => {
     expect(strings).toEqual([expected, expected]);
   });
 });
+
+// A record written by a newer version says "this app", not an app name (Brad 2026-11-23).
+describe('US-25 AC29: the too-new-record message says "this app"', () => {
+  it.each([
+    ['the Sync screen (SyncProblem)', lineWith(swift('Sync/SyncProblem.swift'), 'case .tooNew:')],
+    ['the engine refusal (my-data TOO_NEW_RECORD)', lineWith(readFileSync(join(__dirname, 'my-data.ts'), 'utf8'), 'export const TOO_NEW_RECORD')],
+  ])('%s', (_, line) => {
+    expect(line).toContain('A newer version of this app wrote this record.');
+    expect(line).not.toContain('Health Roadmap');
+  });
+});

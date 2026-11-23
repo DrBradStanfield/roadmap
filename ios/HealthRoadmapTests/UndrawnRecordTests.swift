@@ -9,7 +9,7 @@ import XCTest
 final class UndrawnRecordTests: XCTestCase {
     /// Each hold gives today's heading and words; only a drawn record gives none (no page).
     func testEachHoldsWords_US11_H114() {
-        let refused = RecordProblem(HealthEngine.EngineError.refused("A newer version of Health Roadmap wrote this record. Update the app to open it."))
+        let refused = RecordProblem(HealthEngine.EngineError.refused("A newer version of this app wrote this record. Update the app to open it."))
         let failed = RecordProblem(HealthEngine.EngineError.loadFailed("test"))
         let didNotLoad = (heading: "Your record did not load", words: "")
         let rows: [(RecordStore.Hold, RecordProblem?, (heading: String, words: String)?)] = [

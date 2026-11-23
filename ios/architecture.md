@@ -2171,7 +2171,8 @@ The name under the icon (`INFOPLIST_KEY_CFBundleDisplayName`, Debug and Release)
 wants it a recognisable short form of the App Store name, "Health Roadmap by Dr Brad". The store name, bundle
 id, target, scheme and CFBundleName stay. Directions and the notification title use the same name
 (Brad 2026-11-23, option a). The four permission prompts (camera, Health read, Health write, health
-records) open "This app …" instead (Brad 2026-11-23); the rest of each sentence is unchanged. Pinned by
+records) open "This app …" instead (Brad 2026-11-23); the rest of each sentence is unchanged. The too-new-record message says "A newer version of this
+app" (Brad 2026-11-23). Pinned by
 `ios/engine/home-screen-name.test.ts`.
 
 ## Phases
