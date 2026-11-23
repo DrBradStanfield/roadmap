@@ -8,18 +8,17 @@
  * redirect is judged by shape at `/authorize`. `/token` still wants the exact
  * string `/authorize` saw (`redirectMatches`).
  *
- * The shape is FIELD-OBSERVED, not documented by Google: public reports show
- * `https://oauth-redirect.googleusercontent.com/r/user_bound_custom-mcp-<USER_ID>-<slug>`
- * where the slug is the connector's host with dots as underscores
- * (mcpus.coros.com -> mcpus_coros_com). One live connection must confirm it.
- * The `-sandbox` and `-test` relay hosts some reports list are NOT accepted:
- * nothing shows the consumer app using them.
+ * The shape is the one Gemini sends (read from its "Copy redirect URI" button,
+ * 2026-11-23), not documented by Google:
+ * `https://oauth-redirect.googleusercontent.com/r/user_bound_custom-mcp-<id>`,
+ * the id 24 lowercase letters and digits, nothing after it. The `-sandbox`
+ * and `-test` relay hosts some reports list are NOT accepted: nothing shows
+ * the consumer app using them.
  *
  * NOTHING HERE MAY LOG A URL.
  */
 import type { McpOAuthDetail } from '../../packages/health-core/src/product-events';
 import type { McpClient } from './mcp-clients.server';
-import { issuer } from './mcp-config.server';
 
 /** Short, fixed and public: it is a name, not a secret. */
 export const GEMINI_CLIENT_ID = 'gemini';
@@ -27,15 +26,11 @@ export const GEMINI_CLIENT_ID = 'gemini';
 /** Gemini was seen sending 6; anything past 8 is not Gemini as observed. */
 const GEMINI_MAX_REDIRECTS = 8;
 
-/** Google user ids seen are ~21 digits; 64 leaves room and bounds the state budget below. */
-const GEMINI_ID_MAX = 64;
-
-const GEMINI_RELAY = 'https://oauth-redirect.googleusercontent.com/r/user_bound_custom-mcp-';
-
-/** This server's slug as Gemini spells it (field-observed form): mcp.drstanfield.com -> mcp_drstanfield_com. */
-export function geminiServerSlug(): string {
-  return new URL(issuer()).hostname.replace(/\./g, '_');
-}
+/**
+ * The relay prefix, then an id, then the end. The id seen is 24 characters;
+ * 16 to 40 leaves room and bounds the state budget below.
+ */
+const GEMINI_REDIRECT = /^https:\/\/oauth-redirect\.googleusercontent\.com\/r\/user_bound_custom-mcp-[a-z0-9]{16,40}$/;
 
 /**
  * The longest `state` the Gemini client may send. Arithmetic, for the
@@ -43,9 +38,9 @@ export function geminiServerSlug(): string {
  *
  *   payload JSON = 166 fixed bytes (keys, quotes, "gemini", "dropbox", a
  *   43-character nonce, a 10-digit exp) + redirect + challenge + state.
- *   redirect <= 69 (relay prefix) + 64 (id) + 1 + 19 (mcp_drstanfield_com) = 153;
+ *   redirect <= 69 (relay prefix) + 40 (id) = 109;
  *   challenge <= 128 (the PKCE regex). So an ASCII state of 1536 gives
- *   166 + 153 + 128 + 1536 = 1983 <= 2044: it stays in the 2048 bucket.
+ *   166 + 109 + 128 + 1536 = 1939 <= 2044: it stays in the 2048 bucket.
  *   That bucket seals to 175 + 1 + 2768 = 2944 characters, and the cookie is
  *   17 (name=) + 9 ("gemini" base64url + "~") + 2944 + 54 (attributes) = 3024
  *   <= 4096 (measured 2026-11-23). The long DCR id was the overflow; the
@@ -57,16 +52,13 @@ export function geminiServerSlug(): string {
 export const GEMINI_MAX_STATE_LENGTH = 1536;
 
 /**
- * The one redirect shape the Gemini client may use: exact prefix, exact
- * suffix naming THIS server, and an id of word characters between them.
- * Matched on the raw string, so an uppercase host, a port, userinfo, a
- * percent-escape, a slash, a query or a fragment all fail the match.
+ * The one redirect shape the Gemini client may use: exact prefix, then an id
+ * of 16 to 40 lowercase letters and digits, then the end of the string.
+ * Matched on the raw string, so an uppercase host or id, a port, userinfo, a
+ * percent-escape, a slash, a query, a fragment or any suffix fails the match.
  */
 export function isGeminiRedirect(uri: string): boolean {
-  const suffix = `-${geminiServerSlug()}`;
-  if (!uri.startsWith(GEMINI_RELAY) || !uri.endsWith(suffix)) return false;
-  const id = uri.slice(GEMINI_RELAY.length, uri.length - suffix.length);
-  return id.length <= GEMINI_ID_MAX && /^[A-Za-z0-9_]+$/.test(id);
+  return GEMINI_REDIRECT.test(uri);
 }
 
 /**
