@@ -3,15 +3,15 @@
 // sessions all push to main; nobody may overwrite anyone's work).
 //   1. Denies force, delete (--delete, -d, ":dest"), mirror, prune and "+refspec" pushes. One exception (Brad
 //      2026-11-02): a plain delete of claude/ branches on origin whose tips are already in origin/main.
-//   2. Fetches origin/main and denies the push while origin/main holds commits HEAD
-//      lacks, unless the same command pulls/merges first: merge deliberately, then push.
+//   2. Fetches main from the push's remote into refs/push-guard/main and denies the push while it holds commits
+//      HEAD lacks, unless the same command pulls/merges first: merge deliberately, then push.
 //   3. A claude/ branch never pushes to main, and `gh pr merge` runs only as
 //      `--merge --match-head-commit <sha>` (docs/git-workflow.md).
-//   4. A cloud session (CLAUDE_CODE_REMOTE=true) pushes to main only paths inside LOOP_WRITE_SCOPES: settings.json
-//      allows `git push origin main` past the auto-mode classifier, so this rule holds the scope. Fails closed.
-// Fails open on fetch errors (GitHub still rejects a non-fast-forward push), except rule 4; fails
-// closed on a git push it cannot tokenize. The same file lives in claude_business
-// and roadmap: edit both. Rule 4 (2026-11-22) still needs its claude_business copy.
+//   4. (US-64 AC39, Brad 2026-11-22) Any push to main, local or cloud, changes only docs/loops/** (minus the files
+//      in BRAD_ONLY) and docs/user-stories.md, run plainly, with no HEAD rewrite earlier in the command:
+//      settings.json lets `git push origin main` past the auto-mode classifier, so this rule holds the scope.
+// Fails closed on a git push it cannot tokenize, and on a push to main it cannot check (remote URL, fetch or
+// diff). The same file lives in claude_business and roadmap: edit both. Rule 4 still needs its claude_business copy.
 const { execFileSync } = require('child_process');
 const path = require('path');
 
@@ -135,9 +135,11 @@ function plainDelete(g) {
   if (byFlag ? specs.some((r) => r.includes(':')) : !specs.every((r) => /^:[^:]/.test(r))) return null;
   return { remote, branches: specs.map((r) => r.replace(/^:/, '')) };
 }
-// Rule 4: the paths a cloud loop may push to main, from the "Write scope" sections of docs/loops/*/LOOP.md.
-const LOOP_WRITE_SCOPES = [/^docs\/loops\//, /^docs\/user-stories\.md$/, // usage-evidence lines; sentry-fix added ACs
-  /^docs\/(pathway|guideline|blog)\//, /^tools\/test-queries\.json$/]; // chat-health summaries, index.json, cases
+// Rule 4 (US-64 AC39): the paths a push to main may change, from the loops' "Write scope" (docs/loops/*/LOOP.md):
+// their own folders and docs/user-stories.md (usage-evidence lines, added ACs). The constitution, the charters, the
+// registry and the template are Brad's; every other change goes through a claude/ branch and its PR.
+const BRAD_ONLY = /^docs\/loops\/(LOOP|REGISTRY|_TEMPLATE)\.md$|^docs\/loops\/[^/]+\/LOOP\.md$/;
+const inLoopScope = (p) => (p.startsWith('docs/loops/') && !BRAD_ONLY.test(p)) || p === 'docs/user-stories.md';
 // Config that makes a plain push force, delete or mirror (remote.<name>.push=+... or =:..., remote.<name>.mirror);
 // an unknown value ("=?", from --config-env) counts as bad.
 const badConfig = (kv) => /^remote\..*\.(push=\s*[+:?]|mirror(=|$))/i.test(kv) && !/\.mirror=\s*false$/i.test(kv);
@@ -151,6 +153,7 @@ if (segs === null) {
 let here = cwd; // follows `cd` through the command
 let configChanged = false;
 const synced = new Set(); // repos an earlier git pull/merge in this same command synced
+let rewrote = ''; // rule 4: an earlier git command in this one that moves HEAD after the guard has read it
 for (const seg of segs) {
   if (seg[0] === 'cd' || seg[0] === 'pushd') { here = path.resolve(here, expand(seg[1] || process.env.HOME || '~')); continue; }
   // A PR merges only as a merge commit of the exact head that was reviewed (docs/git-workflow.md step 4; Brad
@@ -198,7 +201,13 @@ for (const seg of segs) {
   const g = gitCall(seg, here);
   if (!g) continue;
   const dir = g.dir;
-  if (g.sub === 'pull' || g.sub === 'merge') { synced.add(dir); continue; }
+  const mergeOf = g.args.filter((a) => !a.startsWith('-'));
+  if (g.sub === 'pull' || (g.sub === 'merge' && mergeOf.length && mergeOf.every((a) => /^(origin\/main|FETCH_HEAD)$/.test(a)))) {
+    synced.add(dir); continue;
+  }
+  if (/^(commit|merge|reset|checkout|switch|cherry-pick|am|rebase|revert)$/.test(g.sub) || (g.sub === 'stash' && g.args[0] === 'pop')) {
+    rewrote = rewrote || `git ${g.sub}`; continue;
+  }
   // A `git config` that rewrites push behaviour runs after this hook, so its effect cannot be checked here.
   if (g.sub === 'config' && g.args.some((a) => /^remote\..*\.(push|mirror)\b/i.test(a))) configChanged = true;
   if (g.sub !== 'push') continue;
@@ -212,6 +221,14 @@ for (const seg of segs) {
       + 'claude/<name>` alone. Any other branch delete Brad has approved: he runs it himself.');
   }
   const gitq = (args, timeout = 10000) => { try { return execFileSync('git', ['-C', dir, ...args], { encoding: 'utf8', timeout, stdio: ['ignore', 'pipe', 'ignore'] }).trim(); } catch { return ''; } };
+  // One repo for the check and the push: the remote's one fetch URL is its one push URL (insteadOf rewrites applied),
+  // and no receivepack, uploadpack or ssh wrapper, any of which can reach another repo. Rules 1 and 4.
+  const oneRepo = (r) => {
+    const urls = (...o) => gitq(['remote', 'get-url', ...o, '--all', r]).split('\n').filter(Boolean);
+    const [f, pu] = [urls(), urls('--push')];
+    return /^[A-Za-z0-9._-]+$/.test(r) && f.length === 1 && pu.length === 1 && f[0] === pu[0]
+      && !gitq(['config', '--get-regexp', `^(remote\\.${r.replace(/\./g, '\\.')}\\.(receivepack|uploadpack)|core\\.sshcommand)$`]);
+  };
   // Push config from the repo ("key value") and from this command's -c ("key=value"), as "key=value" lines.
   const conf = [...gitq(['config', '--get-regexp', '^(remote\\..*\\.(push|mirror)|push\\.default)$']).split('\n').filter(Boolean)
     .map((l) => l.replace(' ', '=')), ...g.cfg];
@@ -235,17 +252,8 @@ for (const seg of segs) {
         refuse(`"${del.branches[k]}" is not a literal claude/ branch`);
       }
     });
-    // The check reads origin's fetch URL; the delete goes to every push URL (insteadOf rewrites applied). Exactly one
-    // of each, and the same repo.
-    const fetchUrls = gitq(['remote', 'get-url', '--all', 'origin']).split('\n').filter(Boolean);
-    const pushUrls = gitq(['remote', 'get-url', '--push', '--all', 'origin']).split('\n').filter(Boolean);
-    // A receivepack setting can run a command that reaches another repo, as can an ssh wrapper.
-    if (gitq(['config', '--get-regexp', '^(remote\\.origin\\.receivepack|core\\.sshcommand)$'])) {
-      refuse('the check could not run (origin sets receivepack or an ssh command)');
-    }
-    if (fetchUrls.length !== 1 || pushUrls.length !== 1 || fetchUrls[0] !== pushUrls[0]) {
-      refuse('the check could not run (origin needs exactly one URL, the same for fetch and push)');
-    }
+    // The check reads origin's fetch URL; the delete goes to every push URL.
+    if (!oneRepo('origin')) refuse('the check could not run (origin needs one URL, the same for fetch and push, and no receivepack or ssh command)');
     const tips = new Map(gitq(['ls-remote', 'origin', 'refs/heads/main', ...names.map((n) => `refs/heads/${n}`)], 30000)
       .split('\n').filter(Boolean).map((l) => l.split('\t').reverse()));
     const mainTip = tips.get('refs/heads/main');
@@ -312,8 +320,6 @@ for (const seg of segs) {
         + `(\`git push -u origin <branch>\`), then merge the PR.${hint(refspecs.find((r) => /[$\`]/.test(r)) || '')}`);
     }
   }
-  const cloud = process.env.CLAUDE_CODE_REMOTE === 'true';
-  if (synced.has(dir) && !cloud) continue;
   // A push that cannot land on main (a claude/ branch push, docs/git-workflow.md) skips the behind-main check:
   // that branch merges origin/main at PR time. Unknown, --all, or a bare push whose destination comes from
   // config (remote.*.push, push.default upstream/tracking, from the repo or -c) counts as main-bound.
@@ -321,14 +327,21 @@ for (const seg of segs) {
   const all = g.args.some((a) => a === '--all' || a === '--branches');
   if (!all && specs.map(toDst).every((d) => d && d !== 'main')) continue;
 
-  let behind = 0;
-  try {
-    execFileSync('git', ['-C', dir, 'fetch', '-q', 'origin', 'main'], { stdio: 'ignore', timeout: 30000 });
-    behind = parseInt(execFileSync('git', ['-C', dir, 'rev-list', '--count', 'HEAD..origin/main'],
-      { encoding: 'utf8', timeout: 10000, stdio: ['ignore', 'pipe', 'ignore'] }).trim(), 10) || 0;
-  } catch {
-    if (!cloud) continue;
-    deny('Push guard could not fetch origin/main, so it cannot check which paths this push to main changes. Retry.');
+  // Rule 4 (US-64 AC39). The guard reads the repo before the command runs, so the push must be the plain push of
+  // what is committed now: nothing before `git`, no option that changes the repo or remote it reaches.
+  if (rewrote) deny(`This command runs ${rewrote} before a push to main, which the guard checks before either runs: commit first, then run \`git push origin main\` on its own.`);
+  if (!/(^|\/)git$/.test(seg[0]) || g.cfg.length || g.args.some((a) => /^--(repo|receive-pack|exec)(=|$)/.test(a))) {
+    deny('Run a push to main plainly (`git push origin main`): nothing before git, and no -c, --repo, --receive-pack or --exec.');
+  }
+  // Main is read from the remote itself into a private ref: refs/remotes/origin/main and the fetch refspec are local
+  // and can say anything.
+  const remote = positional[0] || [`branch.${current}.pushRemote`, 'remote.pushDefault', `branch.${current}.remote`]
+    .map((k) => gitq(['config', k])).find(Boolean) || 'origin';
+  let fetched = oneRepo(remote);
+  try { if (fetched) execFileSync('git', ['-C', dir, 'fetch', '-q', remote, '+refs/heads/main:refs/push-guard/main'], { stdio: 'ignore', timeout: 30000 }); } catch { fetched = false; }
+  const behind = parseInt(gitq(['rev-list', '--count', 'HEAD..refs/push-guard/main']), 10);
+  if (!fetched || !(behind >= 0)) {
+    deny(`Push guard could not read main from "${remote}" (it needs one URL, the same for fetch and push, and a working fetch), so it cannot check this push to main.`);
   }
   if (behind > 0 && !synced.has(dir)) {
     deny(`origin/main has ${behind} commit(s) this checkout lacks (a cloud loop or another session pushed). `
@@ -336,9 +349,8 @@ for (const seg of segs) {
       + '(on a claude/ branch), resolve any conflict deliberately (ledgers/CSVs keep '
       + 'BOTH sides\' rows, never "take mine"), then push. Never force.');
   }
-  if (!cloud) continue;
-  // Rule 4: what each source pushed onto main adds beyond origin/main (three dots: from the merge base, so a pull
-  // in this same command adds nothing). --no-renames, so a move out of app/ shows its deleted path too.
+  // What each source pushed onto main adds beyond main (three dots: from the merge base, so a pull in this same
+  // command adds nothing). --no-renames, so a move out of app/ shows its deleted path too.
   const srcs = refspecs.filter((r) => toDst(r) === 'main').map((r) => (r.includes(':') ? r.slice(0, r.indexOf(':')) : r) || 'HEAD');
   if (!refspecs.length) srcs.push('HEAD');
   if (all) srcs.push('main');
@@ -346,13 +358,16 @@ for (const seg of segs) {
     let changed;
     try {
       if (/[$`]/.test(src)) throw new Error('unresolved');
-      changed = execFileSync('git', ['-C', dir, 'diff', '--name-only', '--no-renames', `origin/main...${src}`, '--'],
+      changed = execFileSync('git', ['-C', dir, 'diff', '--name-only', '--no-renames', `refs/push-guard/main...${src}`, '--'],
         { encoding: 'utf8', timeout: 10000, stdio: ['ignore', 'pipe', 'ignore'] }).split('\n').filter(Boolean);
-    } catch { deny(`Push guard could not list the paths "${src}" adds to main, so this cloud push to main is refused.`); }
-    const out = changed.filter((p) => !LOOP_WRITE_SCOPES.some((re) => re.test(p)));
+    } catch { deny(`Push guard could not list the paths "${src}" adds to main, so this push to main is refused.`); }
+    const out = changed.filter((p) => !inLoopScope(p));
+    const brad = out.filter((p) => BRAD_ONLY.test(p));
     if (out.length) {
-      deny(`A cloud session pushes to main only the loop write scopes (docs/loops/*/LOOP.md); this push changes `
-        + `${out.slice(0, 5).join(', ')}${out.length > 5 ? ` and ${out.length - 5} more` : ''}. Put it on a claude/ branch and PR instead.`);
+      deny(`A push to main changes only docs/loops/** and docs/user-stories.md (US-64 AC39); this one changes `
+        + `${out.slice(0, 5).join(', ')}${out.length > 5 ? ` and ${out.length - 5} more` : ''}.`
+        + `${brad.length ? ` ${brad.join(', ')}: the constitution, a charter, the registry or the template, which are Brad's.` : ''}`
+        + ' Put it on a claude/ branch and PR instead.');
     }
   }
 }

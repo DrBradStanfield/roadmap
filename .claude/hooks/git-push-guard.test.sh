@@ -204,19 +204,43 @@ t "$S/e" "git push origin --delete claude/m1" DENY
 # A tip this checkout has not fetched: one `git fetch origin main` brings it, then the check runs.
 (cd a && git pull -q --no-rebase && git commit -q --allow-empty -m three && git push -q origin main main:refs/heads/claude/m3)
 t "$S/b" "git push origin --delete claude/m3" allow
-# Rule 4 (2026-11-22): a cloud push to main changes only the loop write scopes; local sessions are unchanged.
-git clone -q remote.git f
-mk(){ (cd f && git reset -q --hard origin/main && for p in "$@"; do mkdir -p "$(dirname "$p")"; echo x > "$p"; git add "$p"; done \
-  && git commit -q -m c); }
-mk docs/loops/x.md; tc "$S/f" "git push origin main" allow
-mk app/x.ts; tc "$S/f" "git push origin main" DENY; t "$S/f" "git push origin main" allow
-mk docs/loops/x.md app/x.ts; tc "$S/f" "git push origin main" DENY
+# Rule 4 (US-64 AC39, Brad 2026-11-22): any push to main, local or cloud, changes only docs/loops/** (minus the
+# constitution, the charters, the registry and the template) and docs/user-stories.md, read from the remote itself,
+# failing closed, with no HEAD rewrite earlier in the command.
+git clone -q remote.git f; U=$(git -C f remote get-url origin)
+mk(){ (cd f && git fetch -q origin && git checkout -q main && git reset -q --hard origin/main && for p in "$@"; do mkdir -p "$(dirname "$p")"
+  echo "$p $(git rev-parse HEAD)" > "$p"; git add "$p"; done && git commit -q -m c); }
+mk docs/loops/x.md; tc "$S/f" "git push origin main" allow; t "$S/f" "git push origin main" allow; t "$S/f" "git push" allow
+mk docs/loops/x/LEARNINGS.md docs/loops/x/changelog.md docs/loops/x/ledger.csv; tc "$S/f" "git push origin main" allow
 mk docs/user-stories.md; tc "$S/f" "git push origin main" allow
+mk docs/loops/x/LOOP.md; tc "$S/f" "git push origin main" DENY
+mk docs/loops/REGISTRY.md; tc "$S/f" "git push origin main" DENY
+mk docs/blog/x.md; tc "$S/f" "git push origin main" DENY
+mk app/x.ts; tc "$S/f" "git push origin main" DENY; t "$S/f" "git push origin main" DENY; t "$S/f" "git push" DENY
+t "$S/f" "git push --all origin" DENY; tc "$S/f" "git push origin \$S:main" DENY
+mk docs/loops/x.md app/x.ts; tc "$S/f" "git push origin main" DENY
+mk docs/loops/x.md
+tc "$S/f" "git commit -qm x && git push origin main" DENY
+t "$S/f" "git reset -q HEAD~1; git push origin main" DENY
+t "$S/f" "GIT_DIR=$S/a/.git git push origin main" DENY
+t "$S/f" "git -c core.x=1 push origin main" DENY
+(cd f && git config remote.origin.pushurl "$S/x.git"); tc "$S/f" "git push origin main" DENY   # pushurl is not url
+(cd f && git config --unset remote.origin.pushurl && git remote set-url origin "$S/nope.git")
+tc "$S/f" "git push origin main" DENY; t "$S/f" "git push origin main" DENY   # unreachable remote: fails closed
+(cd f && git remote set-url origin "$U")
 mk app/x.ts; (cd f && git push -q origin main && mkdir -p docs/loops && git mv app/x.ts docs/loops/x.ts && git commit -q -m mv)
 tc "$S/f" "git push origin main" DENY   # a move out of app/ deletes app/x.ts on main
+# A pull in the same command stays allowed: main gained an app/ commit, the loop commit is docs/loops only.
+mk app/u.ts; (cd f && git push -q origin main && git reset -q --hard HEAD~1 && echo p > docs/loops/p.md && git add docs/loops/p.md \
+  && git commit -q -m p)
+tc "$S/f" "git pull --no-rebase && git push origin main" allow; tc "$S/f" "git push origin main" DENY
+# A forged origin/main (adversary repro): moved to HEAD, with a fetch refspec that never updates it.
+mk app/x.ts; (cd f && git update-ref refs/remotes/origin/main HEAD && git config remote.origin.fetch +refs/heads/none:refs/remotes/origin/none)
+tc "$S/f" "git push origin main" DENY
+(cd f && git config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*')
 (cd f && git reset -q --hard origin/main && git checkout -q -b claude/c && echo y > app/y.ts && git add app/y.ts && git commit -q -m y)
 tc "$S/f" "git push -u origin claude/c" allow
 tc "$S/f" "git push origin HEAD:main" DENY
-t /nonexistent "git push" allow
+t /nonexistent "git push" DENY   # a push to main it cannot check fails closed
 t "$S/b" "git commit -m 'note' && echo pushed" allow
 exit $fail

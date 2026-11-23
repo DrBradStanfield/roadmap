@@ -157,11 +157,11 @@ describe('git push guard, as .claude/settings.json runs it', () => {
     expect(allow.filter((r: string) => /git push/.test(r))).toEqual(['Bash(git push origin main)']);
   });
 
-  it('loads and allows a plain push it cannot fetch for', () => {
+  it('loads and refuses a push to main it cannot check (US-64 AC39: fails closed)', () => {
     const r = runHook(scratch, 'git push');
     expect(r.stderr).toBe('');
     expect(r.status).toBe(0);
-    expect(r.stdout).toBe('');
+    expect(JSON.parse(r.stdout).hookSpecificOutput.permissionDecisionReason).toMatch(/could not read main/);
   });
 });
 
