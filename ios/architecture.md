@@ -1217,7 +1217,7 @@ due") is visible to anyone holding the phone: the wording is a decision for the 
 - **The annual check-in slides**, as on the web: it is a year from the last time the app
   computed it, so a user who opens the app once a year never gets it. A user enrolled in
   the web's emails who also turns on phone reminders is reminded twice; no dedupe.
-- **Lock-screen words: generic.** Title "Health Roadmap", body "A check-up is due. Open
+- **Lock-screen words: generic.** Title "Dr Brad", body "A check-up is due. Open
   the app to see which." The procedure's name is shown only inside the app. Revisit if
   Brad prefers the name ("Colonoscopy due") on the lock screen. The in-app list names a
   follow-up after an abnormal result as its plan card does ("Follow-up to organize:
@@ -2168,7 +2168,7 @@ document delete door, and the web's delete is its store's own tombstone (Brad's 
 
 The name under the icon (`INFOPLIST_KEY_CFBundleDisplayName`, Debug and Release) is "Dr Brad". About
 11 to 12 characters fit under an icon, so "Health Roadmap" showed as "Health Roadma...", and Apple
-wants it a recognisable short form of the App Store name, "Health by Dr Brad". The store name, bundle
+wants it a recognisable short form of the App Store name, "Health Roadmap by Dr Brad". The store name, bundle
 id, target, scheme and CFBundleName stay. Directions and the notification title use the same name
 (Brad 2026-11-23, option a). The four permission prompts (camera, Health read, Health write, health
 records) open "This app …" instead (Brad 2026-11-23); the rest of each sentence is unchanged. Pinned by
