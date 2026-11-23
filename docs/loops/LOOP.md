@@ -121,13 +121,13 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   on a detached HEAD since 2026-10-01, where pull and push fail).
 - Commit to main and land it with `node tools/loop-push.mjs`, never a raw `git push` to main, by Brad's standing permission
   for every run (2026-11-22). It pushes HEAD only as a fast-forward of origin's main, and refuses any path outside
-  `docs/loops/` and `docs/user-stories.md`, Brad's LOOP.md, REGISTRY.md and _TEMPLATE.md files, and any gitlink or symlink.
-  Out-of-scope paths (e.g. chat-health's knowledge-base summary lines, `tools/test-queries.json`) and Tier 3 code
-  go by a `claude/` branch + PR. The cloud copy holds only this run's work, so the local worktree rule doesn't apply.
-  `docs/products.md` must be a REAL file (mode 100644), never a symlink
-  (inverted 2026-08-10; `scripts/check-symlinks.mjs` enforces).
+  `docs/loops/` and `docs/user-stories.md`, Brad's files (REGISTRY.md, _TEMPLATE.md, any LOOP.md or lint-allowlist.json),
+  any gitlink or symlink, and unknown git config. Out-of-scope work (e.g. chat-health's knowledge-base summary lines,
+  `tools/test-queries.json`) and Tier 3 code go in a SEPARATE commit on a `claude/` branch with a PR, never in the
+  report commit. The cloud copy holds only this run's work, so the local worktree rule doesn't apply.
+  `docs/products.md` must be a REAL file (mode 100644), never a symlink (inverted 2026-08-10; `scripts/check-symlinks.mjs` enforces).
 - **Landing check — the run's LAST git act**: `git rev-list --count
-  origin/main..HEAD` prints 0, or an OPEN Tier 3 PR holds the commits — else
+  origin/main..HEAD` prints 0, or an OPEN `claude/` PR holds the commits — else
   run `node tools/loop-push.mjs` before ending. **Main has moved** (someone pushed meanwhile):
   `git fetch origin main`, then `git merge --no-edit origin/main` (never force or rebase;
   conflicts keep BOTH sides' rows), run the script again, up to 3 tries; the cloud copy
