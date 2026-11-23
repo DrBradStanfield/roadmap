@@ -207,6 +207,66 @@ describe('US-32 AC60: registration answers Gemini with one pinned client', () =>
   });
 });
 
+describe('US-32 AC59/AC60: the list of six Gemini sends registers; authorize stays strict', () => {
+  const ID = 'abcdefabcdef012345012345';
+  const HOSTS = ['oauth-redirect-sandbox', 'oauth-redirect-test', 'oauth-redirect'];
+  const at = (host: string, letter: string) => `https://${host}.googleusercontent.com/${letter}/user_bound_custom-mcp-${ID}`;
+  /** The order the shape log recorded: the three hosts with /r/, then the three with the other letter. */
+  const SIX = [...HOSTS.map((h) => at(h, 'r')), ...HOSTS.map((h) => at(h, 'a'))];
+  const MAIN = at('oauth-redirect', 'r');
+  const NON_AUTHORIZE = SIX.filter((u) => u !== MAIN);
+
+  it('the six register as the pinned client, and the answer lists only the one authorize accepts', async () => {
+    const res = await register(SIX);
+    expect(res.status).toBe(201);
+    const body = await res.json();
+    expect(body.client_id).toBe(GEMINI_CLIENT_ID);
+    expect(body.redirect_uris).toEqual([MAIN]);
+  });
+
+  it.each([
+    ['one extra outside redirect', [...SIX, 'https://evil.test/cb']],
+    ['a look-alike relay host', [...SIX.slice(1), at('oauth-redirect-prod', 'r')]],
+    ['a relay host under another domain', [...SIX.slice(1), MAIN.replace('googleusercontent.com', 'googleusercontent.com.evil.test')]],
+    ['a two-letter prefix segment', [...SIX.slice(0, 5), at('oauth-redirect', 'ab')]],
+    ['an uppercase prefix segment', [...SIX.slice(0, 5), at('oauth-redirect', 'A')]],
+    ['a digit prefix segment', [...SIX.slice(0, 5), at('oauth-redirect', '1')]],
+    ['only sandbox and test hosts', [at('oauth-redirect-sandbox', 'r'), at('oauth-redirect-test', 'r')]],
+    ['only non-/r/ entries', HOSTS.map((h) => at(h, 'a'))],
+  ])('refuses %s', async (_, list) => {
+    expect((await register(list)).status).toBe(400);
+  });
+
+  it.each(NON_AUTHORIZE)('authorize refuses %s', async (uri) => {
+    expect((await authorize(uri, 'x')).status).toBe(400);
+  });
+
+  it('authorize accepts the main /r/ entry, and token still wants that exact string', async () => {
+    expect((await authorize(MAIN, 'x')).status).toBe(200);
+    const back = await codeFor(MAIN, 'x');
+    const base = { grant_type: 'authorization_code', code: back.searchParams.get('code')!, client_id: GEMINI_CLIENT_ID, code_verifier: VERIFIER };
+    expect((await token({ ...base, redirect_uri: at('oauth-redirect', 'a') })).status).toBe(400);
+    expect((await token({ ...base, redirect_uri: MAIN })).status).toBe(200);
+  });
+
+  it('switched off, the six are refused', async () => {
+    process.env.MCP_GEMINI = 'off';
+    expect((await register(SIX)).status).toBe(400);
+  });
+
+  it('an accepted six writes no shape line; a list with no /r/ main entry logs its own reason', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      await register(SIX);
+      expect(warn).not.toHaveBeenCalled();
+    } finally {
+      warn.mockRestore();
+    }
+    expect(redirectShapes({ redirect_uris: NON_AUTHORIZE }, true)).toContain('reason=no-authorize-shape count=5 ');
+    expect(redirectShapes({ redirect_uris: [...SIX, 'https://evil.test/cb'] }, true)).toContain('reason=mixed count=7 ');
+  });
+});
+
 describe('US-32 AC61: authorize and token for the pinned Gemini client', () => {
   it('a ~1,400-character state completes to a code, and token needs the same redirect and PKCE', async () => {
     const state = 's'.repeat(1400);
@@ -290,6 +350,8 @@ describe('US-32 AC65: any Gemini redirect beside any other is refused before tru
     process.env.MCP_GEMINI = state;
     expect((await register([...five, USER_A])).status).toBe(400);
     expect((await register([USER_A, ...five])).status).toBe(400);
+    expect((await register([...five, USER_A.replace('oauth-redirect.', 'oauth-redirect-sandbox.')])).status).toBe(400);
+    expect((await register([...five, USER_A.replace('/r/', '/a/')])).status).toBe(400);
   });
 
   it('nine Gemini redirects, an empty list, or a non-string entry are refused', async () => {
@@ -375,7 +437,7 @@ describe('US-32 AC66: a refused Gemini-like registration logs allow-listed words
     const ALLOWED = new Set(['oauth', 'redirect', 'sandbox', 'test', 'googleusercontent', 'com', 'other', 'google', 'host',
       'segments', 'len', 'non', 'string', 'unparseable', 'query', 'fragment', 'port', 'userinfo', 'id', 'more', 'mcp', 'gemini',
       'like', 'registration', 'refused', 'reason', 'count', 'switch', 'off', 'over', 'cap', 'mixed', 'no', 'match', 'user',
-      'bound', 'custom', 'normalized']);
+      'bound', 'custom', 'normalized', 'authorize', 'shape', 'accepted']);
     let seed = 20261123;
     const rand = (n: number) => { seed = (seed * 48271) % 2147483647; return seed % n; };
     const CHARS = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/-_.@%:~+?#=&;!$ ';
