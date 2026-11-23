@@ -126,9 +126,9 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   `tools/test-queries.json`) and Tier 3 code go in a SEPARATE commit on a `claude/` branch with a PR, never in the
   report commit. The cloud copy holds only this run's work, so the local worktree rule doesn't apply.
   `docs/products.md` must be a REAL file (mode 100644), never a symlink (inverted 2026-08-10; `scripts/check-symlinks.mjs` enforces).
-- **Landing check — the run's LAST git act**: `git rev-list --count
-  origin/main..HEAD` prints 0, or an OPEN `claude/` PR holds the commits — else
-  run `node tools/loop-push.mjs` before ending. **Main has moved** (someone pushed meanwhile):
+- **Landing check — the run's LAST git act**: after `git fetch origin main`, `git rev-list --count
+  origin/main..main` prints 0 (the report commit landed), AND every pushed `claude/` branch holding
+  out-of-scope commits has an open PR — else run `node tools/loop-push.mjs` before ending. **Main has moved** (someone pushed meanwhile):
   `git fetch origin main`, then `git merge --no-edit origin/main` (never force or rebase;
   conflicts keep BOTH sides' rows), run the script again, up to 3 tries; the cloud copy
   is discarded, so unpushed work is lost. Session branches strand work invisibly

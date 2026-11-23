@@ -12,16 +12,18 @@
  * - /usr/bin/git by absolute path, no shell, hooks off, ext transport off, no fsmonitor, no askpass; every
  *   GIT_* variable removed (but a GIT_SSL_CAINFO file, below), replace objects and grafts ignored; a grafts file or alternates refuse.
  * - git config read whole: any key off CONFIG_ALLOWED refuses (credential.*, url.*, include*, remote.*.vcs, ...).
- * - origin: one URL, https or ssh (no pushurl); origin's main fetched into its own ref; HEAD resolved to a sha once.
+ * - origin: one URL, https only (no pushurl; ssh would run an `ssh` binary or ~/.ssh ProxyCommand); origin's main fetched into its own ref; HEAD resolved to a sha once.
  * - this file must be `<toplevel>/tools/loop-push.mjs` and byte-equal to main's copy. That catches a copy run
  *   from another folder and an accidental edit; an edit that deletes this check runs its own code (residual).
- * - the push is plain, never forced: git and the server allow only a fast-forward of main.
+ * - the push is plain, never forced: the client sends a plain fast-forward push (pushArgs); GitHub ruleset
+ *   26809362 (no force-push, no deletion, no bypass actors) is the server guarantee.
  *
  * Scope: `docs/loops/**` except Brad's files (docs/loops/REGISTRY.md, _TEMPLATE.md, any LOOP.md and any
  * lint-allowlist.json at any depth, case ignored), plus exactly docs/user-stories.md. Never a gitlink or a
  * symlink. Checked on the net change, on every non-merge commit since main against its parent, and on every
  * merge by its combined diff (what the merge itself made, never what it brought from main). Anything else goes
- * by a `claude/` branch and PR (docs/loops/LOOP.md § Repo rules).
+ * by a `claude/` branch and PR (docs/loops/LOOP.md § Repo rules). Cloud copies are shallow clones: the shallow
+ * boundary can only hide commits from the per-commit walk, and the net-diff and ancestry checks bound what lands.
  *
  * TEST-ONLY: LOOP_PUSH_TEST_ALLOW_LOCAL=1, outside a cloud session (CLAUDE_CODE_REMOTE != true), lets origin be a
  * plain local path, for tools/loop-push.test.ts's bare remotes. It reaches only a repo on this disk, never
@@ -33,8 +35,10 @@
  * Unproven until the first real cloud run; a refusal or TLS failure there strands the report, as before, and
  * never harms main.
  *
- * Residuals, left to the classifier and review: `node` itself is found through PATH (a planted node runs before
- * this code); a system credential.helper=osxkeychain is accepted (Apple git ships it); an agent editing this file.
+ * Residuals: cloud sessions run as root, so any binary or config file an earlier command can replace (node,
+ * /usr/bin/git, /usr/lib/git-core, /etc/gitconfig) stays the classifier's to judge, at the command that plants it;
+ * this script closes the push step only. Also: a system credential.helper=osxkeychain is accepted (Apple git ships
+ * it), and an agent editing this file.
  */
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs';
@@ -46,11 +50,17 @@ const PINNED = ['-c', 'core.hooksPath=/dev/null', '-c', 'protocol.ext.allow=neve
 const PINNED_ENV = { GIT_NO_REPLACE_OBJECTS: '1', GIT_GRAFT_FILE: '/dev/null', GIT_TERMINAL_PROMPT: '0' };
 const MOVED = 'main has moved: run `git fetch origin main` and `git merge --no-edit origin/main` (separately), then run node tools/loop-push.mjs again.';
 
-/** Every config key git may hold, by scope (lowercase; `*` is one subsection). What a cloud container carries. */
+/**
+ * Every config key git may hold, by scope (lowercase; `*` is one subsection). What a cloud container carries.
+ * gpg.ssh.program stays: the cloud carries it globally for commit signing, and push never signs (no --signed).
+ * safe.directory is allowed in every scope (ANY_SCOPE): it only widens which repo owners git trusts, runs nothing
+ * and changes no push; the GitHub runner image sets it at system scope.
+ */
+const ANY_SCOPE = ['safe.directory'];
 const CONFIG_ALLOWED = {
   system: ['filter.lfs.clean', 'filter.lfs.smudge', 'filter.lfs.process', 'filter.lfs.required', 'credential.helper=osxkeychain'],
   global: ['user.name', 'user.email', 'user.signingkey', 'gpg.format', 'gpg.ssh.program', 'commit.gpgsign',
-    'http.proxyauthmethod', 'core.checkstat', 'core.trustctime', 'push.negotiate', 'safe.directory'],
+    'http.proxyauthmethod', 'core.checkstat', 'core.trustctime', 'push.negotiate'],
   local: ['core.repositoryformatversion', 'core.filemode', 'core.bare', 'core.logallrefupdates', 'core.ignorecase',
     'core.precomposeunicode', 'core.symlinks', 'gc.auto', 'remote.origin.url', 'remote.origin.fetch',
     'branch.*.remote', 'branch.*.merge', 'user.name', 'user.email'],
@@ -95,7 +105,7 @@ function gitOrNull(args) {
 const lines = (out) => out.split('\n').filter((l) => l !== '');
 
 /** Config keys (from `config --list --show-scope -z`) that are off CONFIG_ALLOWED, as "scope key". */
-function configProblems(out) {
+export function configProblems(out) {
   const parts = out.split('\0');
   const bad = [];
   for (let i = 0; i + 1 < parts.length; i += 2) {
@@ -103,7 +113,7 @@ function configProblems(out) {
     const nl = parts[i + 1].indexOf('\n');
     const key = (nl < 0 ? parts[i + 1] : parts[i + 1].slice(0, nl)).toLowerCase();
     const value = nl < 0 ? '' : parts[i + 1].slice(nl + 1);
-    const ok = (CONFIG_ALLOWED[scope] ?? []).some((rule) => {
+    const ok = [...ANY_SCOPE, ...(CONFIG_ALLOWED[scope] ?? [])].some((rule) => {
       const [name, want] = rule.split('=');
       const rx = new RegExp(`^${name.replace(/[.]/g, '\\.').replace('*', '.+')}$`);
       return rx.test(key) && (want === undefined || value === want);
@@ -151,11 +161,15 @@ function parseRaw(out) {
   return entries;
 }
 
-/** https, ssh or scp-style ssh; a bare local path only for the tests (see the header). */
+/** https only; a bare local path only for the tests (see the header). */
 function allowedUrl(url) {
-  if (/^https:\/\/[^\s]+$/.test(url) || /^ssh:\/\/[^\s]+$/.test(url)) return true;
-  if (/^[A-Za-z0-9._-]+@[A-Za-z0-9][A-Za-z0-9.-]*:[^:\s][^\s]*$/.test(url)) return true;
+  if (/^https:\/\/[^\s]+$/.test(url)) return true;
   return process.env.LOOP_PUSH_TEST_ALLOW_LOCAL === '1' && process.env.CLAUDE_CODE_REMOTE !== 'true' && /^\/[^:\s]*$/.test(url);
+}
+
+/** The push: plain, so only a fast-forward; never a `+` refspec or a --force flag. */
+export function pushArgs(sha) {
+  return ['push', '--no-verify', '--porcelain', '--no-follow-tags', '--recurse-submodules=no', 'origin', `${sha}:refs/heads/main`];
 }
 
 /** A path under the repo's common git folder exists. (Not `--git-path`: it reports GIT_GRAFT_FILE's /dev/null.) */
@@ -185,7 +199,7 @@ function main() {
   // b. origin: one URL, https or ssh. (A pushurl or url.*.insteadOf is refused above, so push uses this one.)
   const urls = lines(gitOrNull(['remote', 'get-url', '--all', 'origin']) ?? '');
   if (urls.length !== 1) refuse('origin must have exactly one URL.');
-  if (!allowedUrl(urls[0])) refuse('origin must be an https:// or ssh URL.');
+  if (!allowedUrl(urls[0])) refuse('origin must be an https:// URL.');
 
   // c. the one sha this run checks and pushes.
   const sha = (gitOrNull(['rev-parse', '--verify', '--end-of-options', 'HEAD^{commit}']) ?? '').trim();
@@ -239,7 +253,7 @@ function main() {
 
   // g. push that sha, never forced: only a fast-forward of main is accepted.
   try {
-    git(['push', '--no-verify', '--porcelain', '--no-follow-tags', '--recurse-submodules=no', 'origin', `${sha}:refs/heads/main`]);
+    git(pushArgs(sha));
   } catch (e) {
     console.error(String(e.stderr || e.message).trim());
     refuse(`push failed. ${MOVED}`);

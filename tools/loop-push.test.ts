@@ -4,7 +4,7 @@
  * in a temp folder whose main holds this script, runs `node tools/loop-push.mjs` there with a temp HOME, and checks
  * the remote's main afterwards, not just the exit code.
  */
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest';
 import { execFileSync, spawnSync } from 'node:child_process';
 import {
   mkdtempSync, rmSync, writeFileSync, mkdirSync, existsSync, readFileSync, chmodSync, symlinkSync, copyFileSync, appendFileSync,
@@ -12,7 +12,7 @@ import {
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { gitEnv } from './loop-push.mjs';
+import { gitEnv, pushArgs, configProblems } from './loop-push.mjs';
 
 const SCRIPT = join(dirname(fileURLToPath(import.meta.url)), 'loop-push.mjs');
 const ID = ['-c', 'user.name=t', '-c', 'user.email=t@example.invalid', '-c', 'init.defaultBranch=main', '-c', 'commit.gpgsign=false'];
@@ -76,6 +76,17 @@ beforeEach(() => {
 });
 
 afterEach(() => rmSync(dir, { recursive: true, force: true }));
+
+// The tests cannot control this machine's system git config (the script strips GIT_CONFIG_NOSYSTEM), so a system
+// key off the script's allow-list would make every run refuse for that reason. Name it once, clearly, instead.
+beforeAll(() => {
+  let sys = '';
+  try {
+    sys = execFileSync('/usr/bin/git', ['config', '--system', '--list', '--show-scope', '-z'],
+      { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+  } catch { /* no system config file */ }
+  expect(configProblems(sys), "this machine's system git config holds keys loop-push refuses").toEqual([]);
+});
 
 function expectRefused(r: { status: number | null; out: string }, before: string, text: RegExp) {
   expect(r.status, r.out).not.toBe(0);
@@ -385,22 +396,37 @@ describe('loop-push: the repo and its config (US-64 AC39)', () => {
     const marker = join(dir, 'ext-marker');
     g(work, 'remote', 'set-url', 'origin', `ext::sh -c touch% ${marker}`);
     commit(work, loopFile);
-    expectRefused(run(work), before, /origin must be an https:\/\/ or ssh URL/);
+    expectRefused(run(work), before, /origin must be an https:\/\/ URL/);
     expect(existsSync(marker)).toBe(false);
   });
+
+  for (const url of ['ssh://example.invalid/o/r.git', 'git@example.invalid:o/r.git']) {
+    it(`refuses an ssh origin (${url}), and never runs an ssh planted on PATH`, () => {
+      const before = remoteMain();
+      const bin = join(dir, 'bin');
+      const marker = join(dir, 'PWNED_SSH');
+      mkdirSync(bin, { recursive: true });
+      writeFileSync(join(bin, 'ssh'), `#!/bin/sh\ntouch '${marker}'\nexit 1\n`);
+      chmodSync(join(bin, 'ssh'), 0o755);
+      g(work, 'remote', 'set-url', 'origin', url);
+      commit(work, loopFile);
+      expectRefused(run(work, [], { PATH: `${bin}:${process.env.PATH}` }), before, /origin must be an https:\/\/ URL/);
+      expect(existsSync(marker)).toBe(false);
+    });
+  }
 
   it('refuses a file:// origin, even with the test variable set', () => {
     const before = remoteMain();
     g(work, 'remote', 'set-url', 'origin', `file://${remote}`);
     commit(work, loopFile);
-    expectRefused(run(work), before, /origin must be an https:\/\/ or ssh URL/);
+    expectRefused(run(work), before, /origin must be an https:\/\/ URL/);
   });
 
   for (const [label, extra] of [['without the test variable', { LOOP_PUSH_TEST_ALLOW_LOCAL: '' }], ['in a cloud session', { CLAUDE_CODE_REMOTE: 'true' }]] as const) {
     it(`refuses a local-path origin ${label}`, () => {
       const before = remoteMain();
       commit(work, loopFile);
-      expectRefused(run(work, [], extra), before, /origin must be an https:\/\/ or ssh URL/);
+      expectRefused(run(work, [], extra), before, /origin must be an https:\/\/ URL/);
     });
   }
 
@@ -466,5 +492,32 @@ describe('loop-push: the git env (US-64 AC39)', () => {
     const r = run(work, [], { GIT_SSL_CAINFO: ca });
     expect(r.status, r.out).toBe(0);
     expect(remoteMain()).toBe(sha);
+  });
+});
+
+describe('loop-push: the push and the config rules (US-64 AC39)', () => {
+  it('the push is plain: no + refspec, no --force flag, one refspec to main', () => {
+    const sha = 'a'.repeat(40);
+    const args = pushArgs(sha);
+    expect(args.filter((a: string) => a.startsWith('+') || /^--force/.test(a) || a === '-f' || a === '--mirror')).toEqual([]);
+    expect(args.filter((a: string) => a.includes(':'))).toEqual([`${sha}:refs/heads/main`]);
+    expect(args[0]).toBe('push');
+  });
+
+  it('the script pushes through pushArgs, not a refspec of its own', () => {
+    const src = readFileSync(SCRIPT, 'utf8');
+    expect(src).toContain('git(pushArgs(sha))');
+    expect(src.match(/'push'/g)).toHaveLength(1);
+  });
+
+  it('safe.directory is allowed in every scope; another key in the same scope is not', () => {
+    const rec = (scope: string, kv: string) => `${scope}\0${kv}\0`;
+    for (const scope of ['system', 'global', 'local', 'worktree']) {
+      expect(configProblems(rec(scope, 'safe.directory\n*')), scope).toEqual([]);
+      expect(configProblems(rec(scope, 'Safe.Directory\n/x')), scope).toEqual([]);
+      expect(configProblems(rec(scope, 'core.sshcommand\nx')), scope).toEqual([`${scope} core.sshcommand`]);
+    }
+    expect(configProblems(rec('system', 'credential.helper\nosxkeychain'))).toEqual([]);
+    expect(configProblems(rec('system', 'credential.helper\nstore'))).toEqual(['system credential.helper']);
   });
 });
