@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { UPLOAD_EXPLAINER_TEXT } from '@roadmap/health-core/upload-text';
 import { UPLOAD_ENGINE } from '../testing/upload-engine';
-import { findReviewValue } from '../testing/import-review';
+import { findAllReviewValues, findReviewValue, reasonFor } from '../testing/import-review';
 import { UploadModal } from './UploadModal';
 import { checkLabImportQuota, labImport } from '../lib/upload-api';
 import { getDocumentArchiveMode } from '../lib/roadmap-data';
@@ -123,6 +123,50 @@ describe('US-12 AC32: a cloud connected, the drop zone', () => {
     rerender(<UploadModal open onOpen={() => {}} onClose={onClose} unitSystem="si" onComplete={() => {}} />);
     expect(drawing()).toBeTruthy();
     expect(screen.getByText(UPLOAD_EXPLAINER_TEXT.what)).toBeTruthy();
+  });
+});
+
+// US-12 AC9, AC32 (PR 2030 re-check): the files a pick left out past MAX_FILES belong to that pick alone.
+// A stale count kept the old notice on a fresh open, and so hid the explainer.
+describe('US-12 AC9, AC32: the left-out notice lives only as long as its pick', () => {
+  const files = (n: number, bytes = 1) => Array.from({ length: n }, (_, i) => {
+    const f = new File(['x'], `r${i}.pdf`, { type: 'application/pdf' });
+    Object.defineProperty(f, 'size', { value: bytes });
+    return f;
+  });
+  const pickMany = (list: File[]) => fireEvent.change(document.querySelector('input[type=file]')!, { target: { files: list } });
+  const reopen = (rerender: ReturnType<typeof show>['rerender']) => {
+    rerender(<UploadModal open={false} onOpen={() => {}} onClose={onClose} unitSystem="si" onComplete={() => {}} />);
+    rerender(<UploadModal open onOpen={() => {}} onClose={onClose} unitSystem="si" onComplete={() => {}} />);
+  };
+
+  it('a pick past the limit whose every file is refused, closed and reopened, shows no notice and shows the explainer', async () => {
+    const { rerender } = show();
+    pickMany(files(201, 11 * 1024 * 1024));
+    expect(await screen.findByText('1 more file')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    reopen(rerender);
+    expect(screen.queryByText('1 more file')).toBeNull();
+    expect(drawing()).toBeTruthy();
+  });
+
+  it('a pick past the limit of readable files still says what it left out on its review', async () => {
+    show();
+    pickMany(files(201));
+    await findAllReviewValues('3.9');
+    expect(reasonFor('1 more file')).toMatch(/^Not read\. One upload takes at most 200 files/);
+    expect(drawing()).toBeNull();
+  });
+
+  it('after a discarded review that had the notice, a fresh open shows no notice and shows the explainer', async () => {
+    const { rerender } = show();
+    pickMany(files(201));
+    await findAllReviewValues('3.9');
+    expect(reasonFor('1 more file')).not.toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    reopen(rerender);
+    expect(screen.queryByText('1 more file')).toBeNull();
+    expect(drawing()).toBeTruthy();
   });
 });
 
