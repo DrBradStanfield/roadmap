@@ -5936,18 +5936,21 @@
   .mh-header {
     min-height: 28px;
   }
-  /* The doctor line on the title's row, baselines aligned (Brad 2026-11-23); where the row is
-     too narrow for it, it drops under the title whole, then wraps. The title never wraps. */
+  /* The doctor line on the title's row (Brad 2026-11-23). Short of room it wraps its words
+     beside the title, its last line on the title's baseline, so two lines still fit the 44px
+     row and the cards line up with the chat column's. Under 180px beside it, it drops under
+     the title. The title never wraps. */
   .mh-heading {
     display: flex;
     flex-wrap: wrap;
-    align-items: baseline;
+    align-items: last baseline;
     flex: 1 1 0;
     column-gap: 16px;
     min-width: 0;
   }
   .mh-heading > .mh-education {
-    margin: 0 0 6px;
+    flex: 1 1 180px;
+    margin: 0;
   }
   .mh-sections {
     display: grid;
