@@ -10,7 +10,7 @@ import { GLP1_NAMES, SGLT2I_NAMES, METFORMIN_OPTIONS, type MedicationInputs } fr
 import { medicationForm, medicationWrites, type MedicationBasis } from './input-form';
 import { medicationsToInputs } from './mappings';
 import { classifyMedicationChange, isTakingDrug } from './history-change';
-import { isActiveMedication } from './reminders';
+import { countsForMedicationReview } from './reminders';
 import { parseProposedEdit, PROPOSE_MEDICATION_EDIT_TOOL, type ProposedMedicationEdit } from './chat-edits';
 
 const BMI_32 = { heightCm: 178, sex: 'male', birthYear: 1980, weightKg: 101.4 } as const;
@@ -80,11 +80,11 @@ describe('US-06 AC22: "No" on each weight and diabetes picker', () => {
     expect(key === 'metformin' ? back.metformin : back[key as 'glp1' | 'sglt2i']).toEqual(key === 'metformin' ? 'no' : { drug: 'no', dose: null });
   });
 
-  it('US-06 AC22: "No" is not taking: no history row, no chart pin, no medication review', () => {
+  it('US-06 AC22: "No" is not taking: no history row, no chart pin; US-23 AC17: it counts for the medication review', () => {
     expect(isTakingDrug('no')).toBe(false);
     expect(classifyMedicationChange(undefined, { medicationKey: 'metformin', drugName: 'no', doseValue: null, doseUnit: null })).toBeNull();
     expect(classifyMedicationChange({ drugName: 'none', doseValue: null, doseUnit: null }, { medicationKey: 'glp1', drugName: 'no', doseValue: null, doseUnit: null })).toBeNull();
-    expect(isActiveMedication({ medicationKey: 'sglt2i', drugName: 'no' })).toBe(false);
+    expect(countsForMedicationReview({ medicationKey: 'sglt2i', drugName: 'no' })).toBe(true);
   });
 
   it.each(['glp1', 'sglt2i', 'metformin'])('US-06 AC22: the chat saves "no" and "not taking" for %s as no', (medicationKey) => {

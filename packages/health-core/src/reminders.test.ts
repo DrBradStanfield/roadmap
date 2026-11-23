@@ -332,15 +332,19 @@ describe('due reminders on the schedule', () => {
       expect(result.reminders.find(r => r.category === 'medication_review')).toBeUndefined();
     });
 
-    it('does not return medication review for inactive medications (none/not_yet/not_tolerated)', () => {
+    it('does not return medication review for answers that decided nothing (none/not_yet)', () => {
       const medications: MedicationRecord[] = [
         { medicationKey: 'statin', drugName: 'none', updatedAt: monthsAgo(14) },
         { medicationKey: 'ezetimibe', drugName: 'not_yet', updatedAt: monthsAgo(14) },
-        { medicationKey: 'pcsk9i', drugName: 'not_tolerated', updatedAt: monthsAgo(14) },
-        { medicationKey: 'glp1', drugName: 'no', updatedAt: monthsAgo(14) },
       ];
       const result = dueReminders(maleProfile, undefined, {}, medications, NOW);
       expect(result.reminders.find(r => r.category === 'medication_review')).toBeUndefined();
+    });
+
+    it.each(['not_tolerated', 'no'])('US-23 AC17: a declined medicine (%s) 14 months ago is due for review', (drugName) => {
+      const medications: MedicationRecord[] = [{ medicationKey: 'pcsk9i', drugName, updatedAt: monthsAgo(14) }];
+      const result = dueReminders(maleProfile, undefined, {}, medications, NOW);
+      expect(result.reminders.find(r => r.category === 'medication_review')).toBeDefined();
     });
 
     it('does not return medication review when no medications', () => {

@@ -1331,7 +1331,7 @@ Threshold: **12 months**. Only for metrics the user has previously tracked.
 
 ### Medication Review
 
-Triggers when ANY active medication (drug name not in `['none', 'not_yet', 'not_tolerated', 'no']`) has `updatedAt` older than 12 months. Returns a single aggregate reminder (not per-medication).
+One aggregate reminder (not per-medication), with the same label and opt-out whichever rows count, due on the earliest candidate among the medications it counts (`countsForMedicationReview`). A drug taken (drug name not in `['none', 'not_yet', 'not_tolerated', 'no']`) is due 12 months after its `updatedAt`, and may be overdue. A decision against one (`isDeclinedMedicine`): "No" (`'no'`), "Not tolerated" (`'not_tolerated'`), or bempedoic acid's "Not taking" (`'none'`; on every other picker `none` is "Haven't tried yet") is reviewed once a year, on the anniversary of the decision: its candidate is the first of `updatedAt` + 12, 24, … months that is not before today's UTC day (US-23 AC17, Brad 2026-11-23). So the reminder for a decline is never overdue, and nobody is emailed about an old decision the moment this ships. A decline can bring the review earlier than a taker's date only to today or later; a taker's overdue review stays as it was. While a decline exists the review is always within 12 months, so the annual check-in floor does not also fire: the review takes its place. There is no "reviewed" action, so the review never clears (a lead, not built; a taker's review has none either). "Haven't tried yet" decides nothing and counts for nothing; an escalation answer is not a medication. The iPhone follows this rule once the engine release that carries it is signed.
 
 ### Screening Reminders
 
