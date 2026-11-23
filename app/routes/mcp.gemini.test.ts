@@ -350,6 +350,8 @@ describe('US-32 AC65: any Gemini redirect beside any other is refused before tru
     process.env.MCP_GEMINI = state;
     expect((await register([...five, USER_A])).status).toBe(400);
     expect((await register([USER_A, ...five])).status).toBe(400);
+    expect((await register([...five, USER_A.replace('oauth-redirect.', 'oauth-redirect-sandbox.')])).status).toBe(400);
+    expect((await register([...five, USER_A.replace('/r/', '/a/')])).status).toBe(400);
   });
 
   it('nine Gemini redirects, an empty list, or a non-string entry are refused', async () => {
@@ -435,7 +437,7 @@ describe('US-32 AC66: a refused Gemini-like registration logs allow-listed words
     const ALLOWED = new Set(['oauth', 'redirect', 'sandbox', 'test', 'googleusercontent', 'com', 'other', 'google', 'host',
       'segments', 'len', 'non', 'string', 'unparseable', 'query', 'fragment', 'port', 'userinfo', 'id', 'more', 'mcp', 'gemini',
       'like', 'registration', 'refused', 'reason', 'count', 'switch', 'off', 'over', 'cap', 'mixed', 'no', 'match', 'user',
-      'bound', 'custom', 'normalized', 'authorize', 'shape']);
+      'bound', 'custom', 'normalized', 'authorize', 'shape', 'accepted']);
     let seed = 20261123;
     const rand = (n: number) => { seed = (seed * 48271) % 2147483647; return seed % n; };
     const CHARS = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/-_.@%:~+?#=&;!$ ';

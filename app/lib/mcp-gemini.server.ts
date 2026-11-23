@@ -150,7 +150,8 @@ export function redirectShapes(input: unknown, switchOn: boolean): string {
   const uris: unknown[] = Array.isArray(raw) ? raw : [];
   const shaped = uris.filter((u): u is string => typeof u === 'string' && isGeminiRegistrationRedirect(u));
   const reason = shaped.length === 0 ? 'no-match' : !switchOn ? 'switch-off' : uris.length > GEMINI_MAX_REDIRECTS ? 'over-cap'
-    : shaped.length !== uris.length ? 'mixed' : !shaped.some(isGeminiRedirect) ? 'no-authorize-shape' : 'mixed';
+    : shaped.length !== uris.length ? 'mixed' : !shaped.some(isGeminiRedirect) ? 'no-authorize-shape'
+    : 'accepted'; // Not reached from the route: such a list registers, so it is never logged.
   const shapes = uris.slice(0, GEMINI_MAX_REDIRECTS).map(redirectShape);
   if (uris.length > GEMINI_MAX_REDIRECTS) shapes.push(`+${uris.length - GEMINI_MAX_REDIRECTS} more`);
   const line = [`[mcp] gemini-like registration refused: reason=${reason} count=${uris.length}`, ...shapes].join(' ');
