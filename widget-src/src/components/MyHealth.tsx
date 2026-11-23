@@ -9,6 +9,7 @@ import { createPortal } from 'react-dom';
 import { byNewestDocument, DOCUMENT_TYPE_LABELS } from '@roadmap/health-core/document-path';
 import { isLabArchiveDocument } from '@roadmap/health-core/document-save';
 import { TOPICS, type TopicId } from '@roadmap/health-core/plan-sections';
+import { UPLOAD_LABS_PLACEMENTS } from '@roadmap/health-core/product-events';
 import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import type { StatTile } from '@roadmap/health-core/stat-tiles';
 import { DocumentLightbox } from './DocumentLightbox';
@@ -108,7 +109,7 @@ export interface MyHealthProps {
 }
 
 /** A topic's parts beyond its cards: rows, what follows (its medicines), its heading's action. */
-interface TopicParts { rows?: ReactNode; after?: ReactNode; action?: ReactNode; always?: boolean; sectionRef?: RefObject<HTMLElement> }
+interface TopicParts { rows?: ReactNode; after?: ReactNode; always?: boolean; sectionRef?: RefObject<HTMLElement> }
 
 /** The phone's jump pills (US-62 AC17): ids only, their words TOPICS'. */
 const PILLS: readonly TopicId[] = ['bloodTests', 'cholesterol', 'supplements'];
@@ -183,11 +184,6 @@ export function MyHealth({ form, plan, tiles, series, egfrCurrent, storageBar, p
       screening: { rows: (screening || bone) ? <>{screening}{bone}</> : undefined },
       bloodTests: {
         always: true,
-        action: setShowUploadModal && (
-          <button type="button" className="mh-head-icon-btn" aria-label="Upload lab results" title="Upload lab results" onClick={() => setShowUploadModal(true)}>
-            <span aria-hidden="true">+</span>
-          </button>
-        ),
         rows: (
           <div className="section-card section-card--bt mh-rows-card">
             {!form.tableShown && (
@@ -213,9 +209,14 @@ export function MyHealth({ form, plan, tiles, series, egfrCurrent, storageBar, p
     const p = parts[id] ?? {};
     const cards = plan.topics.get(id);
     if (!p.always && !p.rows && !p.after && !cards) return null;
+    // "Upload labs" on the right of three headings (US-73 AC14, Brad's words 2026-11-23), naming its heading.
+    const placement = UPLOAD_LABS_PLACEMENTS.find(word => word === id);
+    const upload = placement && setShowUploadModal && (
+      <button type="button" className="mh-head-text-btn" onClick={() => { trackProductEvent('upload_labs_opened', { placement }); setShowUploadModal(true); }}>Upload labs</button>
+    );
     return (
       <section key={id} className="mh-topic" data-topic={id} aria-labelledby={`mh-topic-${id}`} ref={p.sectionRef}>
-        <TopicHeading title={titleOf(id)} icon={id} id={`mh-topic-${id}`} action={p.action}/>
+        <TopicHeading title={titleOf(id)} icon={id} id={`mh-topic-${id}`} action={upload}/>
         {cards && cards.urgent.length > 0 && <PlanCardList cards={cards.urgent} plan={plan}/>}
         {p.rows}
         {cards && cards.others.length > 0 && <PlanCardList cards={cards.others} plan={plan}/>}

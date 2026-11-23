@@ -52,8 +52,7 @@ export const PRODUCT_EVENT_NAMES = [
   // only, `local` (another tab of this browser) or `cloud` — never what changed.
   'remote_change_applied',
   // US-21 additional blood tests: phase-1 surfacing + phase-2 manual add.
-  'lab_rows_viewed',
-  'lab_row_added',
+  'lab_rows_viewed', 'lab_row_added',
   // US-21 phase 3: a lab row was refused for its unit, so nothing was written.
   // Metadata is the catalogue KEY and the unit spelling — never the value.
   'lab_unit_refused',
@@ -155,6 +154,7 @@ export const PRODUCT_EVENT_NAMES = [
   'measurement_added',
   'waist_widget_viewed', 'waist_widget_saved', 'bp_widget_viewed', 'bp_widget_saved', // US-74, US-75: a widget block mounted / saved; the names alone, never a value, grade or unit
   'save_retry', // US-09 AC30: a retry of a failed cloud save; metadata { trigger, outcome } (save-retry-words.ts) only
+  'upload_labs_opened', // US-73 AC14: an "Upload labs" heading button pressed; metadata { placement } (UPLOAD_LABS_PLACEMENTS) only
 ] as const;
 
 /** The `measurement_added` counter's words (US-07 AC11): which prompted measure was saved. */
@@ -248,7 +248,7 @@ export const SIGNIN_PLACEMENTS = ['top_bar', 'plan_panel'] as const;
 export const TOOL_DEVICES = ['phone', 'desktop'] as const;
 /** The `onboarding_step` counter's step names (US-62 AC1): which question, never its answer. */
 export const ONBOARDING_STEPS = ['measurements', 'sex', 'birth'] as const;
-export { UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, UPLOAD_REVIEW_KEYS, UPLOAD_REVIEW_FLAGS, type UploadOutcomeKey, type UploadReviewKey } from './upload-events';
+export { UPLOAD_LABS_PLACEMENTS, UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, UPLOAD_REVIEW_KEYS, UPLOAD_REVIEW_FLAGS, type UploadOutcomeKey, type UploadReviewKey } from './upload-events';
 /** The `remote_change_applied` counter's tiers (US-34): another tab, or a cloud. */
 export const REMOTE_CHANGE_BACKENDS = ['local', 'cloud'] as const;
 /** `nudge`: a read found folder files not in the record and said so (US-37). */

@@ -49,6 +49,7 @@ final class AnalyticsMaskingTests: XCTestCase {
             "Lab save all", "Lab save one", // US-52 AC8b: once per save action, never a count or a name
             "Lab review show all", "Lab review not saved opened", "Lab review untick", // US-13 AC13: never a value, name or count
             "Lab upload known skipped", "Lab upload first read under 30 s", // US-12 AC30: never a count, name or hash
+            "Upload labs weight", "Upload labs cholesterol", "Upload labs blood tests", // US-73 AC14: the heading, never a value
         ])
         let sdk = FakeSDK()
         let analytics = Analytics(sdk: sdk, projectId: "abc", testing: false)

@@ -47,7 +47,7 @@ async function reviewReadThenHidden() {
   await seedGuest({ birthYear: 1974, birthMonth: 1, sex: 'male', heightCm: 178 }, [['weight', 82]]);
   render(<HealthTool />);
   await wait(600);
-  fireEvent.click(await screen.findByRole('button', { name: 'Upload lab results' }));
+  fireEvent.click((await screen.findAllByRole('button', { name: 'Upload labs' }))[0]);
   // A guest on this device is first offered a place to keep originals.
   fireEvent.click(screen.getByRole('button', { name: /Continue without keeping my files/ }));
   fireEvent.change(document.querySelector('input[type=file]')!, { target: { files: [new File(['synthetic'], 'synthetic.pdf', { type: 'application/pdf' })] } });
