@@ -5939,10 +5939,11 @@
   /* The doctor line on the title's row (Brad 2026-11-23). Short of room it wraps its words
      beside the title, its last line on the title's baseline, so two lines still fit the 44px
      row and the cards line up with the chat column's. Under 180px beside it, it drops under
-     the title. The title never wraps. */
+     the title. The title never wraps. A Safari without last baseline keeps the first. */
   .mh-heading {
     display: flex;
     flex-wrap: wrap;
+    align-items: baseline;
     align-items: last baseline;
     flex: 1 1 0;
     column-gap: 16px;
