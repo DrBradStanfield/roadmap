@@ -4,7 +4,7 @@
 //   1. Denies force, delete (--delete, -d, ":dest"), mirror, prune and "+refspec" pushes. One exception (Brad
 //      2026-11-02): a plain delete of claude/ branches on origin whose tips are already in origin/main.
 //   2. Fetches main from the push's remote into refs/push-guard/main and denies the push while it holds commits
-//      HEAD lacks, unless the same command pulls/merges first: merge deliberately, then push.
+//      HEAD lacks: pull or merge deliberately, on its own, then push.
 //   3. A claude/ branch never pushes to main, and `gh pr merge` runs only as
 //      `--merge --match-head-commit <sha>` (docs/git-workflow.md).
 //   4. (US-64 AC39, Brad 2026-11-22) Any push to main, local or cloud, changes only docs/loops/** (minus the files
@@ -152,7 +152,9 @@ if (segs === null) {
 
 let here = cwd; // follows `cd` through the command
 let configChanged = false;
-const synced = new Set(); // repos an earlier git pull/merge in this same command synced
+// Rule 4: a pull, merge or fetch anywhere in a command that pushes to main moves what the push sends after the guard
+// has read it, so a push to main runs alone.
+const pulls = segs.map((sg) => gitCall(sg, cwd)).find((c) => c && /^(pull|merge|fetch)$/.test(c.sub));
 let rewrote = ''; // rule 4: an earlier git command in this one that moves HEAD after the guard has read it
 for (const seg of segs) {
   if (seg[0] === 'cd' || seg[0] === 'pushd') { here = path.resolve(here, expand(seg[1] || process.env.HOME || '~')); continue; }
@@ -201,11 +203,7 @@ for (const seg of segs) {
   const g = gitCall(seg, here);
   if (!g) continue;
   const dir = g.dir;
-  const mergeOf = g.args.filter((a) => !a.startsWith('-'));
-  if (g.sub === 'pull' || (g.sub === 'merge' && mergeOf.length && mergeOf.every((a) => /^(origin\/main|FETCH_HEAD)$/.test(a)))) {
-    synced.add(dir); continue;
-  }
-  if (/^(commit|merge|reset|checkout|switch|cherry-pick|am|rebase|revert)$/.test(g.sub) || (g.sub === 'stash' && g.args[0] === 'pop')) {
+  if (/^(commit|reset|checkout|switch|cherry-pick|am|rebase|revert)$/.test(g.sub) || (g.sub === 'stash' && g.args[0] === 'pop')) {
     rewrote = rewrote || `git ${g.sub}`; continue;
   }
   // A `git config` that rewrites push behaviour runs after this hook, so its effect cannot be checked here.
@@ -296,8 +294,7 @@ for (const seg of segs) {
     + '`git push -u origin HEAD`.' : '');
   const pushConf = conf.filter((l) => /^remote\..*\.push=/i.test(l)).map((l) => toDst(l.slice(l.indexOf('=') + 1)));
   const configured = pushConf.length > 0 || conf.some((l) => /^push\.default=(upstream|tracking)$/i.test(l));
-  // A claude/ branch reaches main only through its PR: a push of it to main is refused, even right after a pull
-  // or merge (checked before that shortcut). That covers an explicit main destination, and a bare push (no
+  // A claude/ branch reaches main only through its PR: a push of it to main is refused. That covers an explicit main destination, and a bare push (no
   // refspec) whose destination config names main: a remote.*.push refspec, or an upstream of main. Cloud loops
   // commit to main by design (LOOP.md) and skip this.
   // Whatever the current branch (the main checkout, a detached HEAD), an explicit refspec onto main must push main
@@ -329,6 +326,7 @@ for (const seg of segs) {
 
   // Rule 4 (US-64 AC39). The guard reads the repo before the command runs, so the push must be the plain push of
   // what is committed now: nothing before `git`, no option that changes the repo or remote it reaches.
+  if (pulls) deny(`This command runs git ${pulls.sub} with a push to main. Run \`git pull --no-rebase\` (or fetch and merge) on its own first, then \`git push origin main\` on its own.`);
   if (rewrote) deny(`This command runs ${rewrote} before a push to main, which the guard checks before either runs: commit first, then run \`git push origin main\` on its own.`);
   if (!/(^|\/)git$/.test(seg[0]) || g.cfg.length || g.args.some((a) => /^--(repo|receive-pack|exec)(=|$)/.test(a))) {
     deny('Run a push to main plainly (`git push origin main`): nothing before git, and no -c, --repo, --receive-pack or --exec.');
@@ -343,7 +341,7 @@ for (const seg of segs) {
   if (!fetched || !(behind >= 0)) {
     deny(`Push guard could not read main from "${remote}" (it needs one URL, the same for fetch and push, and a working fetch), so it cannot check this push to main.`);
   }
-  if (behind > 0 && !synced.has(dir)) {
+  if (behind > 0) {
     deny(`origin/main has ${behind} commit(s) this checkout lacks (a cloud loop or another session pushed). `
       + 'Commit first, then `git pull --no-rebase` (on main) or `git fetch origin main && git merge --no-edit origin/main` '
       + '(on a claude/ branch), resolve any conflict deliberately (ledgers/CSVs keep '

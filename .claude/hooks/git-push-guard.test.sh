@@ -47,8 +47,8 @@ t "$S/b" "git push" DENY
 t "$S" "git -C b push origin main" DENY
 t "$S" "git -C \"b\" push" DENY
 t "$S/b" "git --no-pager push" DENY
-t "$S/b" "git pull --ff-only && git push origin main" allow
-t "$S/b" "git pull --no-rebase -q; git push" allow
+t "$S/b" "git pull --ff-only && git push origin main" DENY   # a push to main runs alone (US-64 AC39)
+t "$S/b" "git pull --no-rebase -q; git push" DENY
 t "$S/b" "git pull --ff-only && git push --force" DENY
 t "$S/b" "git -C ../a pull --ff-only && git push origin main" DENY
 t "$S/b" "bash -c 'git push'" DENY
@@ -230,10 +230,18 @@ tc "$S/f" "git push origin main" DENY; t "$S/f" "git push origin main" DENY   # 
 (cd f && git remote set-url origin "$U")
 mk app/x.ts; (cd f && git push -q origin main && mkdir -p docs/loops && git mv app/x.ts docs/loops/x.ts && git commit -q -m mv)
 tc "$S/f" "git push origin main" DENY   # a move out of app/ deletes app/x.ts on main
-# A pull in the same command stays allowed: main gained an app/ commit, the loop commit is docs/loops only.
+# A push to main runs alone: main gained an app/ commit, the loop commit is docs/loops only. With a pull, merge or
+# fetch in the same command it is refused; after a separate pull it goes.
 mk app/u.ts; (cd f && git push -q origin main && git reset -q --hard HEAD~1 && echo p > docs/loops/p.md && git add docs/loops/p.md \
   && git commit -q -m p)
-tc "$S/f" "git pull --no-rebase && git push origin main" allow; tc "$S/f" "git push origin main" DENY
+tc "$S/f" "git pull --no-rebase && git push origin main" DENY; tc "$S/f" "git push origin main" DENY
+(cd f && git pull -q --no-rebase --no-edit)   # up to date now: only the runs-alone rule refuses the next two
+tc "$S/f" "git fetch -q origin; git push origin main" DENY; t "$S/f" "git push origin main && git merge --no-edit origin/main" DENY
+tc "$S/f" "git push origin main" allow
+# A separate merge of a foreign branch carrying app/x.ts: the diff against main as the remote holds it catches it.
+mk docs/loops/q.md; (cd f && git checkout -q -b foreign HEAD~1 && echo z > app/x.ts && git add app/x.ts && git commit -q -m z \
+  && git checkout -q main && git merge -q --no-edit foreign)
+tc "$S/f" "git push origin main" DENY
 # A forged origin/main (adversary repro): moved to HEAD, with a fetch refspec that never updates it.
 mk app/x.ts; (cd f && git update-ref refs/remotes/origin/main HEAD && git config remote.origin.fetch +refs/heads/none:refs/remotes/origin/none)
 tc "$S/f" "git push origin main" DENY
