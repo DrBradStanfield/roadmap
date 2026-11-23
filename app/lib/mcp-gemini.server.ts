@@ -8,12 +8,14 @@
  * redirect is judged by shape at `/authorize`. `/token` still wants the exact
  * string `/authorize` saw (`redirectMatches`).
  *
- * The shape is the one Gemini sends (read from its "Copy redirect URI" button,
- * 2026-11-23), not documented by Google:
- * `https://oauth-redirect.googleusercontent.com/r/user_bound_custom-mcp-<id>`,
- * the id 24 lowercase letters and digits, nothing after it. The `-sandbox`
- * and `-test` relay hosts some reports list are NOT accepted: nothing shows
- * the consumer app using them.
+ * Two shapes, neither documented by Google. Registration tolerates the list
+ * Gemini sends (logged 2026-11-23): six entries, the three relay hosts
+ * (main, `-sandbox`, `-test`) each with `/r/` and with one other one-letter
+ * segment. Registration grants nothing for the pinned id, so tolerance there
+ * costs nothing. `/authorize`, the sealed state and `/token` accept only
+ * `https://oauth-redirect.googleusercontent.com/r/user_bound_custom-mcp-<id>`
+ * (the address Gemini's "Copy redirect URI" button shows), the id 24
+ * lowercase letters and digits, nothing after it.
  *
  * Nothing here may log a URL; `redirectShapes` logs allow-listed words and lengths only.
  */
@@ -32,13 +34,17 @@ const GEMINI_MAX_REDIRECTS = 8;
  */
 const GEMINI_REDIRECT = /^https:\/\/oauth-redirect\.googleusercontent\.com\/r\/user_bound_custom-mcp-[a-z0-9]{16,40}$/;
 
+/** Registration only: any of the three relay hosts, any one lowercase letter where `/r/` sits. */
+const GEMINI_REGISTRATION_REDIRECT = /^https:\/\/oauth-redirect(?:-sandbox|-test)?\.googleusercontent\.com\/[a-z]\/user_bound_custom-mcp-[a-z0-9]{16,40}$/;
+
 /**
  * The longest `state` the Gemini client may send. Arithmetic, for the
  * byte checks in `checkAuthorize` (sealed payload + 4 <= 2048, cookie <= 4096):
  *
  *   payload JSON = 166 fixed bytes (keys, quotes, "gemini", "dropbox", a
  *   43-character nonce, a 10-digit exp) + redirect + challenge + state.
- *   redirect <= 69 (relay prefix) + 40 (id) = 109;
+ *   redirect <= 69 (relay prefix) + 40 (id) = 109 (only the authorize shape
+ *   reaches the state; the wider registration shape never does);
  *   challenge <= 128 (the PKCE regex). So an ASCII state of 1536 gives
  *   166 + 109 + 128 + 1536 = 1939 <= 2044: it stays in the 2048 bucket.
  *   That bucket seals to 175 + 1 + 2768 = 2944 characters, and the cookie is
@@ -61,6 +67,11 @@ export function isGeminiRedirect(uri: string): boolean {
   return GEMINI_REDIRECT.test(uri);
 }
 
+/** The wider shape `registerGemini` checks a list against; never used at `/authorize` or `/token`. */
+export function isGeminiRegistrationRedirect(uri: string): boolean {
+  return GEMINI_REGISTRATION_REDIRECT.test(uri);
+}
+
 /**
  * The switch (US-32 AC63, owner ruling 2026-11-23): the Gemini pin exists only
  * while the server's own `MCP_GEMINI` is exactly `on`. Off, `gemini` is no
@@ -74,18 +85,24 @@ export function geminiEnabled(): boolean {
 }
 
 /**
- * null when no redirect is Gemini's (the ordinary path decides). Otherwise the
- * pinned client, only while switched on and only when EVERY redirect (1 to 8,
- * all strings) is Gemini's; any other list holding a Gemini redirect is
+ * null when no redirect has the registration shape (the ordinary path decides).
+ * Otherwise the pinned client, only while switched on, only when EVERY redirect
+ * (1 to 8, all strings) has the registration shape, and only when at least one
+ * has the authorize shape; any other list holding a Gemini-shaped redirect is
  * `refused`, in both switch states, before the ordinary path can truncate it.
+ *
+ * The answer lists only the authorize-shape entries, so the server never claims
+ * a redirect `/authorize` would refuse. RFC 7591 section 3.2.1 lets a server
+ * replace requested metadata and answer with the values it registered.
  */
 export function registerGemini(input: unknown): McpClient | 'refused' | null {
   const raw = (input as { redirect_uris?: unknown } | null)?.redirect_uris;
   const uris: unknown[] = Array.isArray(raw) ? raw : [];
-  const gemini = uris.filter((u) => typeof u === 'string' && isGeminiRedirect(u));
-  if (gemini.length === 0) return null;
-  if (!geminiEnabled() || gemini.length !== uris.length || uris.length > GEMINI_MAX_REDIRECTS) return 'refused';
-  return { clientId: GEMINI_CLIENT_ID, name: 'Gemini', redirectUris: gemini as string[] };
+  const shaped = uris.filter((u): u is string => typeof u === 'string' && isGeminiRegistrationRedirect(u));
+  if (shaped.length === 0) return null;
+  const usable = shaped.filter(isGeminiRedirect);
+  if (!geminiEnabled() || shaped.length !== uris.length || uris.length > GEMINI_MAX_REDIRECTS || usable.length === 0) return 'refused';
+  return { clientId: GEMINI_CLIENT_ID, name: 'Gemini', redirectUris: usable };
 }
 
 /** A refused registration's closed category for the counter: never a URI or host. */
@@ -131,8 +148,9 @@ function redirectShape(uri: unknown): string {
 export function redirectShapes(input: unknown, switchOn: boolean): string {
   const raw = (input as { redirect_uris?: unknown } | null)?.redirect_uris;
   const uris: unknown[] = Array.isArray(raw) ? raw : [];
-  const matched = uris.some((u) => typeof u === 'string' && isGeminiRedirect(u));
-  const reason = !matched ? 'no-match' : !switchOn ? 'switch-off' : uris.length > GEMINI_MAX_REDIRECTS ? 'over-cap' : 'mixed';
+  const shaped = uris.filter((u): u is string => typeof u === 'string' && isGeminiRegistrationRedirect(u));
+  const reason = shaped.length === 0 ? 'no-match' : !switchOn ? 'switch-off' : uris.length > GEMINI_MAX_REDIRECTS ? 'over-cap'
+    : shaped.length !== uris.length ? 'mixed' : !shaped.some(isGeminiRedirect) ? 'no-authorize-shape' : 'mixed';
   const shapes = uris.slice(0, GEMINI_MAX_REDIRECTS).map(redirectShape);
   if (uris.length > GEMINI_MAX_REDIRECTS) shapes.push(`+${uris.length - GEMINI_MAX_REDIRECTS} more`);
   const line = [`[mcp] gemini-like registration refused: reason=${reason} count=${uris.length}`, ...shapes].join(' ');
