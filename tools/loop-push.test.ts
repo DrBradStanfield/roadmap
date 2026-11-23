@@ -12,6 +12,7 @@ import {
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { gitEnv } from './loop-push.mjs';
 
 const SCRIPT = join(dirname(fileURLToPath(import.meta.url)), 'loop-push.mjs');
 const ID = ['-c', 'user.name=t', '-c', 'user.email=t@example.invalid', '-c', 'init.defaultBranch=main', '-c', 'commit.gpgsign=false'];
@@ -433,5 +434,37 @@ describe('loop-push: the allow rule (US-64 AC39)', () => {
     const allow: string[] = settings.permissions.allow;
     expect(allow.filter((r) => /loop-push/.test(r))).toEqual(['Bash(node tools/loop-push.mjs)']);
     expect(allow.filter((r) => /git\s+push/.test(r))).toEqual([]);
+  });
+});
+
+describe('loop-push: the git env (US-64 AC39)', () => {
+  it('keeps GIT_SSL_CAINFO only when it names a regular file, and drops every other GIT_* variable', () => {
+    const tmp = mkdtempSync(join(tmpdir(), 'loop-push-ca-'));
+    try {
+      const ca = join(tmp, 'ca-bundle.crt');
+      writeFileSync(ca, 'not a real bundle\n');
+      const base = { PATH: '/usr/bin', HTTPS_PROXY: 'http://proxy.invalid', GIT_DIR: '/elsewhere', GIT_ASKPASS: '/bin/x', GIT_CONFIG_COUNT: '1' };
+      const kept = gitEnv({ ...base, GIT_SSL_CAINFO: ca });
+      expect(kept.GIT_SSL_CAINFO).toBe(ca);
+      expect(Object.keys(kept).filter((k) => k.startsWith('GIT_')).sort())
+        .toEqual(['GIT_GRAFT_FILE', 'GIT_NO_REPLACE_OBJECTS', 'GIT_SSL_CAINFO', 'GIT_TERMINAL_PROMPT']);
+      expect(kept.HTTPS_PROXY).toBe('http://proxy.invalid');
+      expect(kept.GIT_GRAFT_FILE).toBe('/dev/null');
+      for (const bad of [tmp, join(tmp, 'missing.crt'), '']) {
+        expect(gitEnv({ ...base, GIT_SSL_CAINFO: bad }), JSON.stringify(bad)).not.toHaveProperty('GIT_SSL_CAINFO');
+      }
+      expect(gitEnv(base)).not.toHaveProperty('GIT_SSL_CAINFO');
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+
+  it('a push still lands with GIT_SSL_CAINFO set to a regular file', () => {
+    const ca = join(dir, 'ca-bundle.crt');
+    writeFileSync(ca, 'not a real bundle\n');
+    const sha = commit(work, loopFile);
+    const r = run(work, [], { GIT_SSL_CAINFO: ca });
+    expect(r.status, r.out).toBe(0);
+    expect(remoteMain()).toBe(sha);
   });
 });

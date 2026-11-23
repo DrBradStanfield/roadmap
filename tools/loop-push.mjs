@@ -10,7 +10,7 @@
  * So this script is the only allow-listed push (`.claude/settings.json`), and it reads nothing it does not
  * pin itself (docs/gotchas.md, 2026-11-23):
  * - /usr/bin/git by absolute path, no shell, hooks off, ext transport off, no fsmonitor, no askpass; every
- *   GIT_* variable removed, replace objects and grafts ignored; a grafts file or alternates refuse.
+ *   GIT_* variable removed (but a GIT_SSL_CAINFO file, below), replace objects and grafts ignored; a grafts file or alternates refuse.
  * - git config read whole: any key off CONFIG_ALLOWED refuses (credential.*, url.*, include*, remote.*.vcs, ...).
  * - origin: one URL, https or ssh (no pushurl); origin's main fetched into its own ref; HEAD resolved to a sha once.
  * - this file must be `<toplevel>/tools/loop-push.mjs` and byte-equal to main's copy. That catches a copy run
@@ -27,15 +27,17 @@
  * plain local path, for tools/loop-push.test.ts's bare remotes. It reaches only a repo on this disk, never
  * origin's main, and in Claude Code an earlier command cannot set the environment of a later Bash call.
  *
- * Unproven until the first real cloud run: the push's authentication. The stripped env drops the cloud's
- * GIT_ASKPASS, GIT_SSL_CAINFO and command-scope config (credential.interactive, url insteadOf to https). A refusal
- * or auth failure there strands the report, as before, and never harms main.
+ * One GIT_* variable is kept: GIT_SSL_CAINFO, when it names an existing regular file. The cloud's egress proxy
+ * re-signs TLS, so the push's TLS through the proxy relies on GIT_SSL_CAINFO; auth is the proxy's (the cloud's
+ * GIT_ASKPASS is empty). A CA file changes only which TLS certificates git trusts, never what is pushed or what runs.
+ * Unproven until the first real cloud run; a refusal or TLS failure there strands the report, as before, and
+ * never harms main.
  *
  * Residuals, left to the classifier and review: `node` itself is found through PATH (a planted node runs before
  * this code); a system credential.helper=osxkeychain is accepted (Apple git ships it); an agent editing this file.
  */
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync, realpathSync } from 'node:fs';
+import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import { join, isAbsolute, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -60,7 +62,16 @@ function refuse(line) {
   process.exit(1);
 }
 
-const ENV = { ...Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith('GIT_'))), ...PINNED_ENV };
+/** The env git runs with: the caller's minus every GIT_*, but GIT_SSL_CAINFO kept when it names a regular file. */
+export function gitEnv(env) {
+  const out = Object.fromEntries(Object.entries(env).filter(([k]) => !k.startsWith('GIT_')));
+  const ca = env.GIT_SSL_CAINFO;
+  let isFile = false;
+  try { isFile = typeof ca === 'string' && ca !== '' && statSync(ca).isFile(); } catch { /* missing: dropped */ }
+  return { ...out, ...(isFile ? { GIT_SSL_CAINFO: ca } : {}), ...PINNED_ENV };
+}
+
+const ENV = gitEnv(process.env);
 let root = null;
 
 /** Runs /usr/bin/git with no shell, the pins and no GIT_* from the caller. Returns stdout, or throws with .status. */
@@ -238,4 +249,7 @@ function main() {
   console.log(`loop-push: pushed ${sha} to main (${net.length} paths)`);
 }
 
-main();
+// Run only as `node tools/loop-push.mjs`; an import (the test of gitEnv) runs nothing.
+let direct = false;
+try { direct = realpathSync(process.argv[1] ?? '') === realpathSync(fileURLToPath(import.meta.url)); } catch { /* not direct */ }
+if (direct) main();
