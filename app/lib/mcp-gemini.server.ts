@@ -11,11 +11,13 @@
  * The shape is the one Gemini sends (read from its "Copy redirect URI" button,
  * 2026-11-23), not documented by Google:
  * `https://oauth-redirect.googleusercontent.com/r/user_bound_custom-mcp-<id>`,
- * the id 24 lowercase letters and digits, nothing after it. The `-sandbox`
- * and `-test` relay hosts some reports list are NOT accepted: nothing shows
- * the consumer app using them.
+ * the id 24 lowercase letters and digits, nothing after it. Google's
+ * `oauth-redirect-sandbox` and `oauth-redirect-test` relay hosts are accepted
+ * with the same path rule (owner ruling 2026-11-23): live, one redirect of the
+ * shape above registered, while the Gemini app's own registration seconds
+ * later was refused, so its list holds entries beyond that one.
  *
- * NOTHING HERE MAY LOG A URL.
+ * Nothing here may log a URL; `redirectShapes` logs shapes with every id masked.
  */
 import type { McpOAuthDetail } from '../../packages/health-core/src/product-events';
 import type { McpClient } from './mcp-clients.server';
@@ -27,10 +29,10 @@ export const GEMINI_CLIENT_ID = 'gemini';
 const GEMINI_MAX_REDIRECTS = 8;
 
 /**
- * The relay prefix, then an id, then the end. The id seen is 24 characters;
- * 16 to 40 leaves room and bounds the state budget below.
+ * One of the three relay hosts, the prefix, then an id, then the end. The id
+ * seen is 24 characters; 16 to 40 leaves room and bounds the state budget below.
  */
-const GEMINI_REDIRECT = /^https:\/\/oauth-redirect\.googleusercontent\.com\/r\/user_bound_custom-mcp-[a-z0-9]{16,40}$/;
+const GEMINI_REDIRECT = /^https:\/\/oauth-redirect(?:-sandbox|-test)?\.googleusercontent\.com\/r\/user_bound_custom-mcp-[a-z0-9]{16,40}$/;
 
 /**
  * The longest `state` the Gemini client may send. Arithmetic, for the
@@ -38,9 +40,10 @@ const GEMINI_REDIRECT = /^https:\/\/oauth-redirect\.googleusercontent\.com\/r\/u
  *
  *   payload JSON = 166 fixed bytes (keys, quotes, "gemini", "dropbox", a
  *   43-character nonce, a 10-digit exp) + redirect + challenge + state.
- *   redirect <= 69 (relay prefix) + 40 (id) = 109;
+ *   redirect <= 77 (the sandbox relay prefix, 8 longer than the main one's
+ *   69) + 40 (id) = 117;
  *   challenge <= 128 (the PKCE regex). So an ASCII state of 1536 gives
- *   166 + 109 + 128 + 1536 = 1939 <= 2044: it stays in the 2048 bucket.
+ *   166 + 117 + 128 + 1536 = 1947 <= 2044: it stays in the 2048 bucket.
  *   That bucket seals to 175 + 1 + 2768 = 2944 characters, and the cookie is
  *   17 (name=) + 9 ("gemini" base64url + "~") + 2944 + 54 (attributes) = 3024
  *   <= 4096 (measured 2026-11-23). The long DCR id was the overflow; the
@@ -52,7 +55,8 @@ const GEMINI_REDIRECT = /^https:\/\/oauth-redirect\.googleusercontent\.com\/r\/u
 export const GEMINI_MAX_STATE_LENGTH = 1536;
 
 /**
- * The one redirect shape the Gemini client may use: exact prefix, then an id
+ * The one redirect shape the Gemini client may use: one of the three relay
+ * hosts, the exact path prefix, then an id
  * of 16 to 40 lowercase letters and digits, then the end of the string.
  * Matched on the raw string, so an uppercase host or id, a port, userinfo, a
  * percent-escape, a slash, a query, a fragment or any suffix fails the match.
@@ -93,4 +97,30 @@ export function registrationMiss(input: unknown): McpOAuthDetail<'register-redir
   const uris = (input as { redirect_uris?: unknown } | null)?.redirect_uris;
   const googleRelay = (u: unknown) => typeof u === 'string' && URL.canParse(u) && new URL(u).hostname.endsWith('.googleusercontent.com');
   return Array.isArray(uris) && uris.some(googleRelay) ? 'gemini-like' : 'other';
+}
+
+/** A run of 6+ letters and digits holding a digit: an id, masked to its length. */
+const maskIds = (text: string) => text.replace(/[A-Za-z0-9]{6,}/g, (run) => (/\d/.test(run) ? `<id:${run.length}>` : run));
+
+/** One redirect's shape: a Google host or `other-host`, the masked path, never a query or fragment value. */
+function redirectShape(uri: unknown): string {
+  if (typeof uri !== 'string') return 'non-string';
+  if (!URL.canParse(uri)) return 'unparseable';
+  const url = new URL(uri);
+  const host = url.hostname.endsWith('.googleusercontent.com') ? url.hostname : 'other-host';
+  return maskIds(host + url.pathname) + (url.search ? '?query' : '') + (url.hash ? '#fragment' : '');
+}
+
+/**
+ * The one log line for a refused Gemini-like registration (US-32 AC66): why it
+ * was refused, how many redirects, and each one's shape (8 listed, then "+N
+ * more"), with every id masked. Capped at 600 characters.
+ */
+export function redirectShapes(input: unknown, switchOn: boolean): string {
+  const raw = (input as { redirect_uris?: unknown } | null)?.redirect_uris;
+  const uris: unknown[] = Array.isArray(raw) ? raw : [];
+  const reason = !switchOn ? 'switch-off' : uris.length > GEMINI_MAX_REDIRECTS ? 'over-cap' : 'mixed';
+  const shapes = uris.slice(0, GEMINI_MAX_REDIRECTS).map(redirectShape);
+  if (uris.length > GEMINI_MAX_REDIRECTS) shapes.push(`+${uris.length - GEMINI_MAX_REDIRECTS} more`);
+  return [`[mcp] gemini-like registration refused: reason=${reason} count=${uris.length}`, ...shapes].join(' ').slice(0, 600);
 }

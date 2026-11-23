@@ -38,6 +38,7 @@ import {
   type McpClientLabel,
 } from '../lib/mcp-clients.server';
 import { isMcpEnabled, issuer } from '../lib/mcp-config.server';
+import { geminiEnabled, redirectShapes } from '../lib/mcp-gemini.server';
 import { allowAuthorize, allowRateLimitEvent, allowToken, claimCode, CODE_LIFETIME_SECONDS, grantLive, issueTokens, STATE_LIFETIME_SECONDS, type CodePayload, type Grant, type RefreshPayload, type StatePayload } from '../lib/mcp-grants.server';
 import {
   availableProviders,
@@ -481,7 +482,11 @@ async function registerEndpoint(request: Request): Promise<Response> {
   }
   const client = registerClient(body);
   if (!client) {
-    if (allowRateLimitEvent(`register:${getClientIp(request, 'fly')}`)) void recordServerEvent('mcp_authorize_refused', { reason: 'register-redirect', detail: registrationMiss(body) });
+    if (allowRateLimitEvent(`register:${getClientIp(request, 'fly')}`)) {
+      const detail = registrationMiss(body);
+      void recordServerEvent('mcp_authorize_refused', { reason: 'register-redirect', detail });
+      if (detail === 'gemini-like') console.warn(redirectShapes(body, geminiEnabled()));
+    }
     return oauthError('invalid_redirect_uri', 'This server registers only known assistant redirect URIs');
   }
   return Response.json(
