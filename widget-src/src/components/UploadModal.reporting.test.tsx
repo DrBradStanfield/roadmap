@@ -79,7 +79,7 @@ it.each([
   expect(saveSpy).toHaveBeenCalledWith(expect.arrayContaining([expect.objectContaining({ value: 3, correctsId: oldId })]));
   const text = document.body.textContent;
   if (stale || duplicate) {
-    expect(text).toContain(`1 ${lab ? 'additional lab' : 'blood test'} value was not added.`);
+    expect(text).toContain(`1 ${lab ? 'additional blood test' : 'blood test'} value was not added.`);
     expect(text).toContain('Check your blood test table');
     expect(text).not.toContain('already saved');
     expect(text).not.toContain('try again');
