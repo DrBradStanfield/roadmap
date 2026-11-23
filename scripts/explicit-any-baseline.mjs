@@ -39,7 +39,9 @@ export function anyCounts() {
     .filter(([, n]) => n > 0));
 }
 
-/** Baseline files whose count rose: remove one, never add one. A count that fell passes (no stale check yet). */
+export const WRITE_CMD = 'node scripts/explicit-any-baseline.mjs --write';
+
+/** Baseline files whose count rose: remove one, never add one. */
 export const grown = (files, now) => Object.entries(files)
   .filter(([f, recorded]) => (now[f] ?? 0) > recorded)
   .map(([f, recorded]) => `${f}: recorded ${recorded} explicit any, now ${now[f]}. Give it a real type or unknown.`);
@@ -48,6 +50,17 @@ export const grown = (files, now) => Object.entries(files)
 export const fresh = (files, now) => Object.entries(now)
   .filter(([f]) => !(f in files))
   .map(([f, n]) => `${f}: ${n} explicit any and not in the baseline. Give it a real type or unknown.`);
+
+/** Baseline entries above today's count: a file now at 0 or gone (stale), or below its recorded count (loose). */
+export function loose(files, now, exists = (f) => existsSync(join(ROOT, f))) {
+  const stale = Object.keys(files)
+    .filter((f) => !(f in now))
+    .map((f) => `${f}: ${exists(f) ? 'now 0 explicit any' : 'no longer exists'}. Delete its entry: run \`${WRITE_CMD}\`.`);
+  const lower = Object.entries(files)
+    .filter(([f, recorded]) => f in now && now[f] < recorded)
+    .map(([f, recorded]) => `${f}: recorded ${recorded} explicit any, now ${now[f]}. Lower the entry: run \`${WRITE_CMD}\`.`);
+  return [...stale, ...lower];
+}
 
 const sorted = (o) => Object.fromEntries(Object.entries(o).sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1)));
 
