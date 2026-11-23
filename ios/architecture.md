@@ -2169,7 +2169,8 @@ document delete door, and the web's delete is its store's own tombstone (Brad's 
 The name under the icon (`INFOPLIST_KEY_CFBundleDisplayName`, Debug and Release) is "Dr Brad". About
 11 to 12 characters fit under an icon, so "Health Roadmap" showed as "Health Roadma...", and Apple
 wants it a recognisable short form of the App Store name, "Health by Dr Brad". The store name, bundle
-id, target, scheme and CFBundleName stay. Pinned by `ios/engine/home-screen-name.test.ts`.
+id, target, scheme and CFBundleName stay. Directions, the notification title and the permission prompts
+use the same name (Brad 2026-11-23, option a). Pinned by `ios/engine/home-screen-name.test.ts`.
 
 ## Phases
 

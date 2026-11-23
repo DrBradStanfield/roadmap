@@ -32,3 +32,49 @@ describe('US-25 AC29: the home screen name', () => {
     expect(pbxproj).toContain('PRODUCT_BUNDLE_IDENTIFIER = com.drstanfield.healthroadmap;');
   });
 });
+
+// Option (a), Brad 2026-11-23: wherever iOS shows the app's name, the app's own words use the
+// same one. Settings lists the app, its notifications and its Health access under the display
+// name, so a direction naming any other name points at a row that is not there.
+const swift = (path: string) => readFileSync(join(__dirname, '../HealthRoadmap', path), 'utf8');
+const lineWith = (source: string, marker: string) => {
+  const line = source.split('\n').find((l) => l.includes(marker));
+  if (!line) throw new Error(`no line with ${marker}`);
+  return line;
+};
+const liveCards = swift('AppleHealthMetrics/LiveCards.swift');
+const named = {
+  'the Health settings path (LiveCards healthPath)': lineWith(liveCards, 'Data Access & Devices ›'),
+  'the Health access line (LiveCards access)': lineWith(liveCards, 'static var access'),
+  'the delete-it-yourself steps (EraseText)': lineWith(swift('MyData/EraseText.swift'), 'healthDeleteSteps ='),
+  'the notifications direction (RemindersSection)': lineWith(swift('Reminders/RemindersSection.swift'), 'Allow notifications for'),
+  'the notification title (ReminderScheduler)': lineWith(swift('Reminders/ReminderScheduler.swift'), 'content.title ='),
+};
+const permissionKeys = [
+  'NSCameraUsageDescription',
+  'NSHealthShareUsageDescription',
+  'NSHealthUpdateUsageDescription',
+  'NSHealthClinicalHealthRecordsShareUsageDescription',
+];
+
+describe('US-25 AC29: directions, the notification title and the permission prompts use the home screen name', () => {
+  const name = displayNames[0];
+
+  it.each(Object.entries(named))('%s names the app by its display name', (_, line) => {
+    expect(line).toContain(name);
+    expect(line).not.toContain('Health Roadmap');
+  });
+
+  it('the notification title is the display name itself', () => {
+    expect(named['the notification title (ReminderScheduler)']).toContain(`content.title = "${name}"`);
+  });
+
+  it.each(permissionKeys)('%s starts with the display name in Debug and Release', (key) => {
+    const strings = [...pbxproj.matchAll(new RegExp(`INFOPLIST_KEY_${key} = "([^"]*)";`, 'g'))].map((m) => m[1]);
+    expect(strings).toHaveLength(2);
+    for (const text of strings) {
+      expect(text.startsWith(`${name} `)).toBe(true);
+      expect(text).not.toContain('Health Roadmap');
+    }
+  });
+});

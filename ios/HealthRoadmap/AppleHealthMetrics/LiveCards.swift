@@ -38,13 +38,13 @@ enum LiveFooter {
     /// 2026-11-01 (the app's own Settings page has no Health row); iOS 17's is Apple's known
     /// layout, not seen on a simulator.
     static func healthPath(appsMenu: Bool) -> String {
-        "Settings › \(appsMenu ? "Apps › " : "")Health › Data Access & Devices › Health Roadmap"
+        "Settings › \(appsMenu ? "Apps › " : "")Health › Data Access & Devices › Dr Brad"
     }
     static var healthPath: String {
         if #available(iOS 18, *) { return healthPath(appsMenu: true) }
         return healthPath(appsMenu: false)
     }
-    static var access: String { "To change what Health Roadmap can read: \(healthPath)." }
+    static var access: String { "To change what Dr Brad can read: \(healthPath)." }
     /// The settings sheet's line on the cards: kept on this iPhone, and where to change access.
     static var cards: String { "\(shownOnly) \(access)" }
     /// The Turn On and Open Settings row's words (AC5, AC5b).
