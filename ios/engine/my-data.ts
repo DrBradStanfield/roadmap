@@ -137,7 +137,7 @@ export type EditOutcome =
   | { ok: false; reason: string; message: string; existingId?: string };
 
 /** A record a newer app wrote: readRecord refuses it in these words. */
-export const TOO_NEW_RECORD = 'A newer version of Health Roadmap wrote this record. Update the app to open it.';
+export const TOO_NEW_RECORD = 'A newer version of this app wrote this record. Update the app to open it.';
 /**
  * Words meant for the person. HealthEngine shows them as they are; any other
  * exception's text stays hidden (US-25 AC6b, review R8).
