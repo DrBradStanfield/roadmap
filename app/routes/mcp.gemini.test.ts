@@ -3,8 +3,8 @@
  *
  * Gemini's custom connector registers several per-user relay redirects on
  * Google's own host. The server answers that registration with one pinned
- * client, accepts at `/authorize` only a redirect of that one shape naming
- * THIS server, and asks `/token` for the very redirect `/authorize` saw.
+ * client, accepts at `/authorize` only a redirect of that one shape, and asks
+ * `/token` for the very redirect `/authorize` saw.
  *
  * Same harness as `mcp.hosted.test.ts`: real Requests through the route's own
  * loader/action, Dropbox's token endpoint stubbed.
@@ -29,11 +29,11 @@ import { KNOWN_CLIENTS } from '../lib/mcp-clients.server';
 import { GEMINI_CLIENT_ID, GEMINI_MAX_STATE_LENGTH, isGeminiRedirect } from '../lib/mcp-gemini.server';
 import { action, loader } from './mcp.$';
 
-/** The test issuer's host, mcp.example.test, gives the slug mcp_example_test. */
 const ISSUER = 'https://mcp.example.test';
 const RELAY = 'https://oauth-redirect.googleusercontent.com/r/user_bound_custom-mcp-';
-const USER_A = `${RELAY}104857600012345678901-mcp_example_test`;
-const USER_B = `${RELAY}209715200098765432109-mcp_example_test`;
+/** Made-up ids in the shape Gemini sends: 24 lowercase letters and digits, nothing after. */
+const USER_A = `${RELAY}abcdefabcdef012345012345`;
+const USER_B = `${RELAY}012345012345abcdefabcdef`;
 const VERIFIER = 'v'.repeat(64);
 const CHALLENGE = crypto.createHash('sha256').update(VERIFIER, 'ascii').digest('base64url');
 
@@ -119,10 +119,12 @@ function token(form: Record<string, string>): Promise<Response> {
   });
 }
 
-describe('US-32 AC59: isGeminiRedirect accepts one shape, naming this server', () => {
-  it('accepts the field-observed relay shape for this server', () => {
+describe('US-32 AC59: isGeminiRedirect accepts one shape, the one Gemini sends', () => {
+  it('accepts the relay prefix and a 16 to 40 character lowercase id, nothing after', () => {
+    expect(USER_A.length).toBe(93);
     expect(isGeminiRedirect(USER_A)).toBe(true);
-    expect(isGeminiRedirect(`${RELAY}a_B9-mcp_example_test`)).toBe(true);
+    expect(isGeminiRedirect(`${RELAY}${'a1'.repeat(8)}`)).toBe(true);
+    expect(isGeminiRedirect(`${RELAY}${'a1'.repeat(20)}`)).toBe(true);
   });
 
   it.each([
@@ -138,23 +140,29 @@ describe('US-32 AC59: isGeminiRedirect accepts one shape, naming this server', (
     ['userinfo', USER_A.replace('https://', 'https://u@')],
     ['an /a/ path', USER_A.replace('/r/', '/a/')],
     ['another path prefix', USER_A.replace('user_bound_custom-mcp-', 'user_bound_other-')],
-    ['another server slug', USER_A.replace('mcp_example_test', 'mcp_evil_test')],
+    ['the old slug form naming this server', `${USER_A}-mcp_example_test`],
+    ['the old slug form with a word id', `${RELAY}a_B9-mcp_example_test`],
+    ['a 15-character id', `${RELAY}${'a'.repeat(15)}`],
+    ['a 41-character id', `${RELAY}${'a'.repeat(41)}`],
+    ['an uppercase id', `${RELAY}ABCDEFABCDEF012345012345`],
+    ['one uppercase letter in the id', `${RELAY}Abcdefabcdef012345012345`],
+    ['an underscore in the id', `${RELAY}abcdefabcdef_12345012345`],
+    ['an extra path', `${USER_A}/extra/path`],
     ['a trailing segment', `${USER_A}/x`],
     ['a trailing slash', `${USER_A}/`],
     ['a query', `${USER_A}?x=1`],
     ['a fragment', `${USER_A}#x`],
-    ['an encoded slash', `${RELAY}1%2F2-mcp_example_test`],
-    ['an encoded dot', `${RELAY}1%2E2-mcp_example_test`],
-    ['a dot segment', `${RELAY}../1-mcp_example_test`],
-    ['an empty id', `${RELAY}-mcp_example_test`],
-    ['an over-long id', `${RELAY}${'1'.repeat(65)}-mcp_example_test`],
-    ['an @ in the id', `${RELAY}1@2-mcp_example_test`],
-    ['a backslash in the id', `${RELAY}1\\2-mcp_example_test`],
-    ['a tab in the id', `${RELAY}1\t2-mcp_example_test`],
-    ['a newline in the id', `${RELAY}1\n2-mcp_example_test`],
-    ['a non-ASCII digit in the id', `${RELAY}1٣2-mcp_example_test`],
-    ['a hyphen in the id', `${RELAY}1-2-mcp_example_test`],
-    ['%2F in the id', `${RELAY}1%2F2-mcp_example_test`],
+    ['a trailing newline', `${USER_A}\n`],
+    ['an encoded slash', `${RELAY}abcdefabcd%2F012345012345`],
+    ['an encoded dot', `${RELAY}abcdefabcd%2E012345012345`],
+    ['a dot segment', `${RELAY}../abcdefabcdef012345012345`],
+    ['an empty id', RELAY],
+    ['an @ in the id', `${RELAY}abcdefabcdef@12345012345`],
+    ['a backslash in the id', `${RELAY}abcdefabcdef\\12345012345`],
+    ['a tab in the id', `${RELAY}abcdefabcdef\t12345012345`],
+    ['a newline in the id', `${RELAY}abcdefabcdef\n12345012345`],
+    ['a non-ASCII digit in the id', `${RELAY}abcdefabcdef٣12345012345`],
+    ['a hyphen in the id', `${RELAY}abcdefabcdef-12345012345`],
     ['a claude callback', 'https://claude.ai/api/mcp/auth_callback'],
     ['loopback', 'http://localhost/callback'],
   ])('refuses %s', (_, uri) => {
@@ -164,7 +172,7 @@ describe('US-32 AC59: isGeminiRedirect accepts one shape, naming this server', (
 
 describe('US-32 AC60: registration answers Gemini with one pinned client', () => {
   it('six Gemini redirects register as the pinned Gemini client', async () => {
-    const six = [1, 2, 3, 4, 5, 6].map((n) => `${RELAY}${n}0000000000-mcp_example_test`);
+    const six = [1, 2, 3, 4, 5, 6].map((n) => `${RELAY}abcdefabcdef01234501234${n}`);
     const res = await register(six);
     expect(res.status).toBe(201);
     const body = await res.json();
@@ -188,8 +196,14 @@ describe('US-32 AC60: registration answers Gemini with one pinned client', () =>
     expect(JSON.stringify(calls)).not.toContain('evil');
   });
 
-  it('a Gemini redirect for another server is refused', async () => {
-    expect((await register([USER_A.replace('mcp_example_test', 'mcp_evil_test')])).status).toBe(400);
+  it('the old slug form is refused, and its refusal still counts as gemini-like', async () => {
+    expect((await register([`${USER_A}-mcp_example_test`])).status).toBe(400);
+    expect(recordServerEvent).toHaveBeenCalledWith('mcp_authorize_refused', { reason: 'register-redirect', detail: 'gemini-like' });
+  });
+
+  it('authorize accepts the real shape and refuses the old slug form', async () => {
+    expect((await authorize(USER_A, 'x')).status).toBe(200);
+    expect((await authorize(`${USER_A}-mcp_example_test`, 'x')).status).toBe(400);
   });
 });
 
@@ -220,7 +234,7 @@ describe('US-32 AC61: authorize and token for the pinned Gemini client', () => {
   });
 
   it(`the state cap: ${GEMINI_MAX_STATE_LENGTH} fits with the longest id, one more is refused`, async () => {
-    const longest = `${RELAY}${'9'.repeat(64)}-mcp_example_test`;
+    const longest = `${RELAY}${'9'.repeat(40)}`;
     expect((await authorize(longest, 's'.repeat(GEMINI_MAX_STATE_LENGTH))).status).toBe(200);
     const over = await authorize(longest, 's'.repeat(GEMINI_MAX_STATE_LENGTH + 1));
     expect(over.status).toBe(302);
