@@ -30,6 +30,7 @@ import {
   MEDICATION_REVIEW_STALE_MONTHS,
   countsForMedicationReview,
   getCategoryGroup,
+  isDeclinedMedicine,
 } from './reminders';
 import { knownMinorOf } from './calculations';
 import { dayOf, localDay } from './merge';
@@ -239,21 +240,24 @@ function bloodTestSchedule(measurementDates: MeasurementDates, items: ReminderSc
   }
 }
 
-function medicationSchedule(medications: MedicationRecord[], items: ReminderScheduleItem[]): void {
-  const counted = medications.filter(countsForMedicationReview);
-  if (counted.length === 0) return;
-  // One review, due 12 months after the oldest usable day among the drugs taken
-  // and declined (US-23 AC17): the earliest answer is the one a year stale first,
-  // and a later decline never pushes a taker's review back.
-  // Unknown dates contribute no candidate; never infer or persist a review.
-  const oldest = counted.map((m) => typeof m.updatedAt === 'string' ? dayOf(m.updatedAt) : '')
-    .filter(isCalendarDay).sort()[0];
-  if (!oldest) return;
+/** One review, the earliest candidate: a drug taken is due 12 months after its
+ *  day (it may be overdue); a decline on the first anniversary of its day not
+ *  before `today`, so it is never in the past (US-23 AC17). Unknown dates
+ *  contribute no candidate; never infer or persist a review. */
+function medicationSchedule(medications: MedicationRecord[], items: ReminderScheduleItem[], today: string): void {
+  const dues = medications.filter(countsForMedicationReview).flatMap((m) => {
+    const day = typeof m.updatedAt === 'string' ? dayOf(m.updatedAt) : '';
+    if (!isCalendarDay(day)) return [];
+    let years = 1;
+    while (isDeclinedMedicine(m) && addMonths(day, MEDICATION_REVIEW_STALE_MONTHS * years) < today) years++;
+    return [addMonths(day, MEDICATION_REVIEW_STALE_MONTHS * years)];
+  }).sort();
+  if (!dues[0]) return;
   items.push({
     category: 'medication_review',
     group: 'medication_review',
     label: 'Medication review',
-    dueAt: addMonths(oldest, MEDICATION_REVIEW_STALE_MONTHS),
+    dueAt: dues[0],
   });
 }
 
@@ -271,11 +275,13 @@ export function computeNextDueDates(
   screenings: ScreeningInputs | undefined,
   measurementDates: MeasurementDates,
   medications: MedicationRecord[],
+  /** The schedule's UTC day (YYYY-MM-DD); a decline's review is never before it. */
+  today = '',
 ): ReminderScheduleItem[] {
   const items: ReminderScheduleItem[] = [];
   screeningSchedule(profile, screenings, items);
   bloodTestSchedule(measurementDates, items);
-  medicationSchedule(medications, items);
+  medicationSchedule(medications, items, today);
   return items;
 }
 
@@ -354,7 +360,7 @@ function computeItemsFromFile(file: RoadmapFile, now: Date): ReminderScheduleIte
   // The screenings the plan reads (US-06/US-15 AC11): a date that is not a
   // real calendar date, or a "last done" date after this month, is dropped.
   // The PSA reminder dates from the newest saved PSA, as the plan's card does (US-06 AC14).
-  return computeNextDueDates({ sex, age }, fileScreenings(file, now), measurementDates, medications);
+  return computeNextDueDates({ sex, age }, fileScreenings(file, now), measurementDates, medications, dayOf(now.toISOString()));
 }
 
 function fileScreenings(file: RoadmapFile, now: Date): ScreeningInputs {

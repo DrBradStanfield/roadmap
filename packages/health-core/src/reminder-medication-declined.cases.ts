@@ -28,13 +28,39 @@ function fileWith(meds: Med[], optOut = false): RoadmapFile {
 const schedule = (meds: Med[], optOut = false) => computeReminderSchedule(fileWith(meds, optOut), NOW);
 
 export function declinedMedicationReviewCases(zone: string): void {
-  describe(`US-23 AC17: a declined medicine is reviewed 12 months after the answer (${zone})`, () => {
-    it('"No" on metformin answered 13 months ago: a Medication review due at the answer + 12 months', () => {
-      expect(schedule([['metformin', 'no', '2025-10-23T12:00:00Z']])).toEqual([review('2026-10-23')]);
+  describe(`US-23 AC17: a declined medicine is reviewed on each anniversary of the decision (${zone})`, () => {
+    it('"No" on metformin answered 13 months ago: due on the next anniversary, in 11 months, never in the past', () => {
+      expect(schedule([['metformin', 'no', '2025-10-23T12:00:00Z']])).toEqual([review('2027-10-23')]);
     });
 
     it('"No" on metformin answered 2 months ago: due in 10 months', () => {
       expect(schedule([['metformin', 'no', '2026-09-23T12:00:00Z']])).toEqual([review('2027-09-23')]);
+    });
+
+    it('a decline exactly 12 months ago today: due today', () => {
+      expect(schedule([['metformin', 'no', '2025-11-23T12:00:00Z']])).toEqual([review('2026-11-23')]);
+    });
+
+    it('a decline 2 years and 1 day ago: due on the next anniversary, within the coming 12 months', () => {
+      expect(schedule([['metformin', 'no', '2024-11-22T12:00:00Z']])).toEqual([review('2027-11-22')]);
+    });
+
+    it('a decline on 29 February: its anniversaries are the schedule\'s month arithmetic (1 March in a common year)', () => {
+      expect(schedule([['metformin', 'no', '2024-02-29T12:00:00Z']])).toEqual([review('2027-03-01')]);
+    });
+
+    it('only declines: the review is never in the past and always within 12 months, at any age of the decision', () => {
+      for (let days = 0; days <= 3650; days += 37) {
+        const answered = new Date(NOW.getTime() - days * 86_400_000).toISOString();
+        const [item] = schedule([['metformin', 'no', answered]]);
+        expect(item.category).toBe('medication_review');
+        expect(item.dueAt >= '2026-11-23' && item.dueAt <= '2027-11-23').toBe(true);
+      }
+    });
+
+    it('a taker overdue plus an older decline: the taker\'s overdue date, as on main', () => {
+      const taker: Med = ['statin', 'atorvastatin', '2025-06-01T12:00:00Z'];
+      expect(schedule([taker, ['metformin', 'no', '2024-01-01T12:00:00Z']])).toEqual([review('2026-06-01')]);
     });
 
     it.each([['metformin', 'none'], ['glp1', 'none'], ['ezetimibe', 'not_yet'], ['pcsk9i', 'not_yet'], ['bempedoic_acid', 'not_yet']])(
@@ -48,7 +74,7 @@ export function declinedMedicationReviewCases(zone: string): void {
       ['glp1', 'not_tolerated'], ['sglt2i', 'not_tolerated'], ['metformin', 'not_tolerated'],
       ['bempedoic_acid', 'none'], // its 'none' is labelled "Not taking", a decision (types.ts BEMPEDOIC_ACID_OPTIONS)
     ])('%s "%s" behaves as metformin "No"', (key, value) => {
-      expect(schedule([[key, value, '2025-10-23T12:00:00Z']])).toEqual([review('2026-10-23')]);
+      expect(schedule([[key, value, '2025-10-23T12:00:00Z']])).toEqual([review('2027-10-23')]);
     });
 
     it('a taker plus a later decline: the existing review date is unchanged', () => {
@@ -57,9 +83,9 @@ export function declinedMedicationReviewCases(zone: string): void {
       expect(schedule([taker, ['metformin', 'no', '2026-01-10T12:00:00Z']])).toEqual([review('2026-06-01')]);
     });
 
-    it('several declines give ONE review, 12 months after the oldest answer', () => {
+    it('several declines give ONE review, on the earliest coming anniversary', () => {
       expect(schedule([['metformin', 'no', '2026-01-10T12:00:00Z'], ['ezetimibe', 'no', '2025-03-05T12:00:00Z']]))
-        .toEqual([review('2026-03-05')]);
+        .toEqual([review('2027-01-10')]);
     });
 
     it('"Medication review reminders" turned off: no review item', () => {
@@ -71,8 +97,8 @@ export function declinedMedicationReviewCases(zone: string): void {
     });
 
     it('privacy: the stored row is a taker\'s in shape: the same four keys, the one allow-listed label', () => {
-      const [declined] = schedule([['metformin', 'no', '2025-10-23T12:00:00Z']]);
-      const [taken] = schedule([['metformin', 'xr_1000', '2025-10-23T12:00:00Z']]);
+      const [declined] = schedule([['metformin', 'no', '2026-09-23T12:00:00Z']]);
+      const [taken] = schedule([['metformin', 'xr_1000', '2026-09-23T12:00:00Z']]);
       expect(declined).toEqual(taken);
       expect(Object.keys(declined).sort()).toEqual(['category', 'dueAt', 'group', 'label']);
       expect(SCHEDULE_LABELS.medication_review).toEqual([declined.label]);
