@@ -321,6 +321,7 @@ async function handleMessage(message: GuildMessage): Promise<void> {
     const result = await platformChatCompletion({
       message: truncatedInput,
       history,
+      purpose: 'DISCORD',
     });
     const tAfterLlm = Date.now();
     stage = 'send';

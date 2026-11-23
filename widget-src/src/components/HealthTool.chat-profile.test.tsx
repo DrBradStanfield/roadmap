@@ -22,7 +22,7 @@ import { rowRootIds } from '@roadmap/health-core/merge';
 import { ERASE_UNREACHABLE, REMOTE_CHANGED_EVENT, RoadmapStore } from '../storage/roadmap-store';
 import { BACKEND_KEY } from '../storage/web-record-host';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
-import { addMeasurement, bulkSaveDocuments, bulkSaveLabValues, deleteUserData, flushRoadmapStore, initRoadmapStore, loadLatestMeasurements, saveChangedMeasurements, saveMedication, saveSupplement } from '../lib/roadmap-data';
+import { addMeasurement, bulkSaveDocuments, bulkSaveLabValues, deleteUserData, flushRoadmapStore, initRoadmapStore, loadLatestMeasurements, recordFileSync, saveChangedMeasurements, saveMedication, saveSupplement } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 import { openAboutYou, recordOnDisk } from '../testing/health-tool-harness';
 import { BT_TIMELINE_DRAFT_KEY, MIRROR_CHANGED_EVENT, MIRROR_KEY } from '../lib/storage';
@@ -31,12 +31,12 @@ const chat = vi.hoisted(() => ({
   proposeEdit: null as null | ((edits: ProposedEdit[]) => void),
   context: null as null | (() => unknown),
 }));
-/** What the upload modal is handed: its completion (the page's re-read) and
- *  the history it shows. */
+/** What the upload modal is handed: its completion (the page's re-read). */
 const reload = vi.hoisted(() => ({
   complete: null as null | (() => Promise<void>),
-  history: null as unknown,
 }));
+/** What the upload list reads (mount 3b): the record as the store holds it now, its live lab rows and documents. */
+const uploadSees = () => { const f = recordFileSync(); return { labValues: (f?.labValues ?? []).filter((r) => r.status === 'active'), documents: (f?.documents ?? []).filter((d) => !d.deleted) }; };
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../lib/server-api', async (importOriginal) => ({
@@ -54,9 +54,8 @@ vi.mock('./ChatEmbed', () => ({
   },
 }));
 vi.mock('./ChatSection', () => ({ ChatSection: () => null }));
-vi.mock('./UploadModal', () => ({ UploadModal: ({ onComplete, history }: { onComplete: () => Promise<void>; history: unknown }) => {
+vi.mock('./UploadModal', () => ({ UploadModal: ({ onComplete }: { onComplete: () => Promise<void> }) => {
   reload.complete = onComplete;
-  reload.history = history;
   return null;
 } }));
 
@@ -654,13 +653,13 @@ describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its ro
       }]);
       await reload.complete!();
     });
-    expect(JSON.stringify(reload.history)).toContain('Synthetic prior report');
-    expect(JSON.stringify(reload.history)).toContain('Ferritin');
+    expect(JSON.stringify(uploadSees())).toContain('Synthetic prior report');
+    expect(JSON.stringify(uploadSees())).toContain('Ferritin');
     vi.stubGlobal('confirm', () => true);
     vi.stubGlobal('alert', () => {});
     fireEvent.click(await waitFor(() => deleteButton()));
     await wait(1500);
-    expect(reload.history).toEqual({ measurements: [], labValues: [], documents: [] });
+    expect(uploadSees()).toEqual({ labValues: [], documents: [] });
   });
 
   // Review R1/R3 (2026-10-21): while the store holds an erase the screen does

@@ -74,6 +74,22 @@ export class StorageError extends Error {
   }
 }
 
+/** A document write the provider refused as busy (Dropbox: another write held the folder's lock, or too many
+ *  requests): nothing was written, and a later try may land (US-14 AC5). `retryAfterMs`: the wait the provider named, 0 for none. */
+export class BusyError extends StorageError {
+  constructor(message: string, readonly retryAfterMs: number, status: number) {
+    super(message, undefined, undefined, status);
+    this.name = 'BusyError';
+  }
+}
+
+/** The wait the provider named (0 for none) when `error` is a busy refusal; else null. By name, not `instanceof`: the web's
+ *  upload engine is its own bundle, with its own copy of this class. */
+export function busyWait(error: unknown): number | null {
+  const wait = error instanceof Error && error.name === 'BusyError' ? (error as Partial<BusyError>).retryAfterMs : undefined;
+  return typeof wait === 'number' ? wait : null;
+}
+
 /**
  * The next move when a provider simply did not answer. One string: the adapter
  * raises it here, and `describeStorageFailure` prints the same words when it

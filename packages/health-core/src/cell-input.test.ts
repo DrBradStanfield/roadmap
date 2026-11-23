@@ -29,6 +29,11 @@ describe('shownValue: a read value in the person\'s unit', () => {
     expect(shownValue(at(limit, 'v0'), 2.7, 'si')).toMatchObject({ text: '2.7', number: '2.7', current: 2.7 });
   });
 
+  it('a limit shown in the other unit rounds away from its band: HDL "> 60 mg/dL" reads "> 1.55" mmol/L, never "> 1.6" (US-12 AC20)', () => {
+    const hdl = x({ values: [core({ metric: 'hdl', valueSI: 60 / 38.67, displayValue: 60, displayUnit: 'mg/dL', displaySystem: 'conventional', comparator: '>' })] });
+    expect(shownValue(at(hdl, 'v0'), undefined, 'si')).toMatchObject({ text: '> 1.55', number: '1.55' });
+  });
+
   it('a lab as printed, in its own unit, whatever the person\'s', () => {
     const ferritin = x({ additionalValues: [extra({ value: 80 })] });
     expect(shownValue(at(ferritin, 'a0'), undefined, 'conventional')).toEqual({ text: '80', number: '80', unit: 'µg/L', current: 80, cell: null });

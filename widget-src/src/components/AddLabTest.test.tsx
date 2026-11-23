@@ -224,7 +224,7 @@ describe('US-21 phase 2 — AddLabTest', () => {
   // sees the assistant's copy of it.
   describe('US-21 AC15 — a refused unit under "Other" shows the person’s wording', () => {
     async function saveOther(name: string, unit: string, value: string, refused: { key: string; unit: string; message: string; fault?: 'decimal' | 'scale' }) {
-      // The refusal the record would give, in health-core's words (labUnitRefusalLine, tested in lab-value-labels.test.ts).
+      // The refusal the record would give, in health-core's words (labUnitRefusalLine, tested in lab-series-labels.test.ts).
       addLabValue.mockResolvedValue({ ok: false, reason: 'unknown-unit', message: labUnitRefusalLine(refused.key, refused.unit, refused.fault), refused });
       const utils = openForm();
       fireEvent.change(utils.getByLabelText('Test'), { target: { value: 'custom' } });

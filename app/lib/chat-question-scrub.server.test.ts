@@ -142,7 +142,8 @@ describe('scrubQuestion — US-15 AC44 the model pass', () => {
     const { call, out } = scrubWith(toolAnswer(SCRUBBED));
     await out;
     expect(call).toHaveBeenCalledTimes(1);
-    const [body, timeoutMs, attempts] = call.mock.calls[0] as unknown as [Record<string, any>, number, number];
+    const [body, purpose, timeoutMs, attempts] = call.mock.calls[0] as unknown as [Record<string, any>, string, number, number];
+    expect(purpose).toBe('PURGE');
     expect(body.model).toBe('claude-haiku-5-5');
     expect(body.tool_choice).toMatchObject({ type: 'tool', name: 'save_scrubbed_question' });
     expect(body.messages).toEqual([{ role: 'user', content: `<question>\n${QUESTION}\n</question>` }]);

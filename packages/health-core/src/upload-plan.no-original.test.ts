@@ -33,7 +33,7 @@ const view = (s: UploadState, record: RoadmapFile = EMPTY) => uploadView(s, reco
 const cloud = (): UploadSaveIO<string> & { stored: string[] } => {
   const stored: string[] = [];
   let n = 0;
-  return { stored, holds: () => true, original: (id) => `bytes of ${id}`, mimeType: () => 'image/jpeg', write: async (ref) => void stored.push(ref), now: () => NOW, newId: () => `id-${n++}` };
+  return { stored, stopped: () => false, holds: () => true, original: (id) => `bytes of ${id}`, mimeType: () => 'image/jpeg', write: async (ref) => void stored.push(ref), now: () => NOW, newId: () => `id-${n++}` };
 };
 
 describe('a pick with no original (US-52 AC13e, owner ruling D1)', () => {

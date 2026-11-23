@@ -11,6 +11,7 @@
  * the lab read, the upload bundle) and the chat's own UI are stubbed.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { UPLOAD_ENGINE } from '../testing/upload-engine';
 import { render, fireEvent, waitFor, act, screen } from '@testing-library/react';
 import { REMOTE_CHANGED_EVENT, RoadmapStore } from '../storage/roadmap-store';
 import { addMeasurement, deleteUserData, loadAllHistorySync } from '../lib/roadmap-data';
@@ -46,9 +47,9 @@ async function reviewReadThenHidden() {
   await seedGuest({ birthYear: 1974, birthMonth: 1, sex: 'male', heightCm: 178 }, [['weight', 82]]);
   render(<HealthTool />);
   await wait(600);
-  fireEvent.click(await screen.findByRole('button', { name: 'Upload lab results' }));
+  fireEvent.click((await screen.findAllByRole('button', { name: 'Upload labs' }))[0]);
   // A guest on this device is first offered a place to keep originals.
-  fireEvent.click(screen.getByRole('button', { name: /Continue without keeping my files/ }));
+  fireEvent.click(screen.getByRole('button', { name: /Continue without keeping the files/ }));
   fireEvent.change(document.querySelector('input[type=file]')!, { target: { files: [new File(['synthetic'], 'synthetic.pdf', { type: 'application/pdf' })] } });
   await findReviewValue('3.9');
   fireEvent.click(screen.getByRole('button', { name: 'Close' }));
@@ -61,7 +62,7 @@ beforeEach(() => {
   vi.spyOn(RoadmapStore.prototype, 'startLiveRefresh').mockImplementation(() => () => {});
   vi.mocked(checkLabImportQuota).mockResolvedValue({ allowed: true, remaining: 60 });
   vi.mocked(labImport).mockResolvedValue(extraction as Awaited<ReturnType<typeof labImport>>);
-  vi.stubGlobal('HealthUpload', {
+  vi.stubGlobal('HealthUpload', { ...UPLOAD_ENGINE,
     extractFromPdf: vi.fn(async () => ({ pages: [{ type: 'text', content: 'synthetic' }], truncated: false })),
     isPdf: () => true, isZip: () => false, isImage: () => false,
   });

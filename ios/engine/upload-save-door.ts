@@ -4,6 +4,7 @@
 // engine writes each original the plan stores, reading its bytes from Swift by file id as it writes
 // it, then commits every row on the session's record as it stands then (an edit that landed
 // meanwhile is kept). Nothing is logged; a refusal's words never carry a value, a name or a hash.
+import { writeMakesFolders } from '../../packages/health-core/src/document-save';
 import { uploadSave, type UploadSaveIO } from '../../packages/health-core/src/upload-save';
 import { UPLOAD_LIMITS } from '../../packages/health-core/src/upload-rules';
 import * as z from '../../packages/health-core/src/zod';
@@ -43,6 +44,8 @@ async function save(
   try { mimeTypes = ORIGINALS.parse(JSON.parse(originalsJson)); } catch { return refusal('invalid-originals'); }
   if (erase && (!at || open !== at)) return refusal('not-open');
   const cap = UPLOAD_LIMITS[state.platform].fileBytes;
+  /** The session this Save began on is still open, at the erase the screen showed. */
+  const gone = () => (open !== at ? refusal('not-open') : at!.session.refuses(erase) ? refusal('erased') : null);
   const io: UploadSaveIO<ArrayBuffer> = {
     holds: (fileId) => Object.hasOwn(mimeTypes, fileId),
     // Anything but an ArrayBuffer under the per-file cap is no original: never held (its row keeps the hash).
@@ -51,6 +54,10 @@ async function save(
       return isArrayBuffer(bytes) && bytes.byteLength > 0 && bytes.byteLength <= cap ? bytes : null;
     },
     mimeType: (fileId) => mimeTypes[fileId] ?? '',
+    makesFolders: !!at && writeMakesFolders(at.host.store.id),
+    // The engine asks it right before every write attempt (US-11 AC1a): once the erase moves or the session
+    // closes, no further original is written, and the check after the originals answers it.
+    stopped: () => gone() !== null,
     write: (ref, bytes, fileId) => at!.host.store.writeDocument(ref, new Blob([bytes], { type: io.mimeType(fileId) })),
   };
   if (!at) {
@@ -60,8 +67,6 @@ async function save(
     const { file, outcome } = out.commit(phone);
     return { ok: true, record: JSON.stringify(file), outcome };
   }
-  /** The session this Save began on is still open, at the erase the screen showed. */
-  const gone = () => (open !== at ? refusal('not-open') : at.session.refuses(erase) ? refusal('erased') : null);
   const refusedBefore = gone();
   if (refusedBefore) return refusedBefore;
   const out = await uploadSave(state, at.session.file, nowIso, true, io);

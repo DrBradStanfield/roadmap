@@ -6,13 +6,13 @@
  */
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, fireEvent, cleanup } from '@testing-library/react';
+import { UPLOAD_EXPLAINER_TEXT } from '@roadmap/health-core/upload-text';
 import {
   OPEN_PICKER_EVENT,
   PICKER_TITLE,
   PLAN_STORAGE_CTA,
   PLAN_STORAGE_NOTICE,
   StorageSentence,
-  UPLOAD_STORAGE_NOTICE,
 } from './storage-notice';
 
 afterEach(cleanup);
@@ -35,18 +35,20 @@ describe('US-09 AC5 — every mention opens the picker', () => {
 
 describe('US-09 AC5 — locked copy', () => {
   it('says our server, never Dr Brad’s servers, and carries no em dash', () => {
-    for (const copy of [PLAN_STORAGE_NOTICE, PLAN_STORAGE_CTA, UPLOAD_STORAGE_NOTICE]) {
+    // The upload window's reader sentences and connect text show on both stores (US-12 AC32).
+    const upload = [...Object.values(UPLOAD_EXPLAINER_TEXT.reader), UPLOAD_EXPLAINER_TEXT.connectText];
+    for (const copy of [PLAN_STORAGE_NOTICE, PLAN_STORAGE_CTA, ...upload]) {
       expect(copy).not.toMatch(/—/);
       expect(copy).not.toMatch(/Dr Brad/);
     }
+    expect(UPLOAD_EXPLAINER_TEXT.reader.server).toContain('our server');
     // 2026-10-30: "Nothing is stored on our server" was false beside a chat that
     // keeps question rows; the claim is now about the record and the files only.
     // It names the record outright, so it stays true beside a bubble reply
     // that quotes a value (US-15 AC8).
-    for (const copy of [PLAN_STORAGE_NOTICE, UPLOAD_STORAGE_NOTICE]) expect(copy).not.toContain('Nothing is stored');
+    for (const copy of [PLAN_STORAGE_NOTICE, ...upload]) expect(copy).not.toContain('Nothing is stored');
     expect(PLAN_STORAGE_NOTICE).toContain('Our server never stores your health record.');
     expect(PLAN_STORAGE_NOTICE).not.toMatch(/never stores it\b/);
-    expect(UPLOAD_STORAGE_NOTICE).toContain('Our server never stores them.');
     // US-62 AC34 (Brad 2026-11-09): the button names where the record goes; the picker keeps the question.
     expect(PLAN_STORAGE_CTA).toBe('Keep my record in Dropbox or Google Drive');
     expect(PICKER_TITLE).toBe('Where do you want to keep your health record?');

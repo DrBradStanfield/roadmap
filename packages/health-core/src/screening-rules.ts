@@ -26,8 +26,7 @@
  * "Data present, so ask" (lungGroupShown and lungScreeningAsked show a lung
  * question past 80 or below 20 pack-years once it has an answer) stays lung's own
  * named branch in input-form.ts: as one rule for every row it would open colorectal
- * past 75, which the golden forbids. The cancer section's own gate is a named
- * carve-out too, CANCER_SECTION_MIN_AGE below.
+ * past 75, which the golden forbids.
  *
  * The three-file check, by row (evidenceKey -> roadmap_text.html section):
  *   colorectal  screening-colorectal  #cancer-screening, "Colorectal Cancer"
@@ -341,12 +340,6 @@ export const SCREENING_REFS: { readonly [K in GateName]: (s: ScreeningInputs) =>
     ? { ...card, description: `${card.description} From 55, Dr Brad suggests moving to a colonoscopy every 10 years. A yearly FIT test is also a good option (American Cancer Society). Discuss with your doctor.` }
     : card,
 };
-
-/** The cancer section opens from 35 for anyone, with no upper bound (input-form.ts
- *  anyScreeningEligible). The union of groupAges cannot build it: colorectal's group stops
- *  at 85, so past 85 with no sex the section shows its intro and no group. Today's behaviour,
- *  kept by name. */
-export const CANCER_SECTION_MIN_AGE = 35;
 
 /** The row with this id. */
 export const ruleOf = (id: ScreeningId): ScreeningRule => SCREENING_RULES.find((r) => r.id === id)!;
