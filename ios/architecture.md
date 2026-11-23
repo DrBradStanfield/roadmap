@@ -2164,6 +2164,13 @@ goes, and `DocumentPage.sweep` clears leftovers when a page opens. Only the web'
 completes legacy rows with the web's defaults and Swift decodes the list row by row (review R1). No delete on the phone yet: the engine has no
 document delete door, and the web's delete is its store's own tombstone (Brad's call).
 
+### D17 · Home screen name: "Dr Brad" (Brad, 2026-11-23, US-25 AC29)
+
+The name under the icon (`INFOPLIST_KEY_CFBundleDisplayName`, Debug and Release) is "Dr Brad". About
+11 to 12 characters fit under an icon, so "Health Roadmap" showed as "Health Roadma...", and Apple
+wants it a recognisable short form of the App Store name, "Health by Dr Brad". The store name, bundle
+id, target, scheme and CFBundleName stay. Pinned by `ios/engine/home-screen-name.test.ts`.
+
 ## Phases
 
 0. **Readiness (Brad, in progress 2026-10-21):** macOS upgrade, Xcode 26, Apple Developer
