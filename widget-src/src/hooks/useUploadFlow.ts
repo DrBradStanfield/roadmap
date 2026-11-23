@@ -6,6 +6,7 @@ import type { ScreeningPerson } from '@roadmap/health-core/upload-screening';
 import { uploadUsageCounts } from '@roadmap/health-core/upload-usage';
 import { UNDATED_PREVIOUS, uploadLimitSignal } from '@roadmap/health-core/lab-extraction';
 import type { UnitSystem } from '@roadmap/health-core/units';
+import type { UploadReader } from '@roadmap/health-core/upload-rules';
 import { UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, type UploadOutcomeKey } from '@roadmap/health-core/product-events';
 import { SHOPIFY_SURFACE } from '../lib/build-flags';
 import { trackProductEvent, type ProductEventMetadata } from '../lib/server-api';
@@ -80,7 +81,8 @@ export interface UploadFlowOptions {
 
 export function useUploadFlow({ unitSystem, onComplete, onStart, onClose, person }: UploadFlowOptions) {
   // The Shopify build's files are read by our server; the Pages build's by the person's own key (US-12 AC9).
-  const [upload, setUpload] = useState<UploadState>(() => initialUpload('web', SHOPIFY_SURFACE ? 'server' : 'ownKey'));
+  const reader: UploadReader = SHOPIFY_SURFACE ? 'server' : 'ownKey';
+  const [upload, setUpload] = useState<UploadState>(() => initialUpload('web', reader));
   // The state read synchronously: a second pick or Save in the same render sees the first.
   const live = useRef(upload);
   // What the web holds beside the state: bytes, pages and the server's words, by file id; one per pick.
@@ -268,7 +270,7 @@ export function useUploadFlow({ unitSystem, onComplete, onStart, onClose, person
     phase, files: phase === 'readFailed' ? pickedFiles(upload) : [], notices, progress: progressOf(upload),
     // What only the web knows of the pick, said beside the list: the shared state never saw it (US-12 AC9, AC13).
     heldNotices: heldNotices(upload, pickHeld),
-    readError: readErrorOf(upload),
+    readError: readErrorOf(upload), reader,
     skipArchive, skipConnect: () => setSkipArchive(true),
     pick, cancel, close, discard, save, endReview: endReview.current,
     // The list's adapter: `send` sets `live.current` before it returns, so a read right after a choice holds it.
