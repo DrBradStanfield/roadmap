@@ -394,7 +394,7 @@ export function HistoryPanel({ initialMetric }: HistoryPanelProps) {
 
           {labMetricNames.length > 0 && (
             <>
-              <h2 className="history-section-title">Additional Lab Results</h2>
+              <h2 className="history-section-title">Additional Blood Tests</h2>
 
               <div className="metric-selector">
                 {labMetricNames.map((name) => (
