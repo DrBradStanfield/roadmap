@@ -2,7 +2,7 @@
  * Who is allowed to ask: pinned vendor clients, CIMD, and DCR as the fallback
  * (US-32, design §2/§4).
  *
- * NOTHING HERE MAY LOG A URL.
+ * Nothing here may log a URL; `redirectShapes` logs allow-listed words and lengths only.
  */
 import crypto from 'node:crypto';
 import { sameBytes } from './crypto-compare.server';
@@ -14,7 +14,7 @@ import zlib from 'node:zlib';
 import type { McpOAuthDetail } from '../../packages/health-core/src/product-events';
 import { clientHmacKey } from './mcp-config.server';
 import { GEMINI_CLIENT_ID, geminiEnabled, registerGemini } from './mcp-gemini.server';
-export { registrationMiss } from './mcp-gemini.server';
+export { registrationRefused } from './mcp-gemini.server';
 import { b64url } from './mcp-seal.server';
 import { readCapped } from './capped-body.server';
 import { parseIpv6 } from './ip-groups.server';

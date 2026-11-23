@@ -1,5 +1,5 @@
 /**
- * US-32 AC59-AC62 (Brad 2026-11-23) · Gemini as an accepted connector client.
+ * US-32 AC59-AC66 (Brad 2026-11-23) · Gemini as an accepted connector client.
  *
  * Gemini's custom connector registers several per-user relay redirects on
  * Google's own host. The server answers that registration with one pinned
@@ -26,7 +26,7 @@ vi.mock('../lib/product-events.server', async (importOriginal) => {
 import { recordServerEvent } from '../lib/product-events.server';
 import { resetMcpMemory } from '../lib/mcp-grants.server';
 import { KNOWN_CLIENTS } from '../lib/mcp-clients.server';
-import { GEMINI_CLIENT_ID, GEMINI_MAX_STATE_LENGTH, isGeminiRedirect } from '../lib/mcp-gemini.server';
+import { GEMINI_CLIENT_ID, GEMINI_MAX_STATE_LENGTH, isGeminiRedirect, redirectShapes } from '../lib/mcp-gemini.server';
 import { action, loader } from './mcp.$';
 
 const ISSUER = 'https://mcp.example.test';
@@ -304,5 +304,118 @@ describe('US-32 AC65: any Gemini redirect beside any other is refused before tru
   it('the pin keeps no redirect list, and authorize judges gemini by shape alone', async () => {
     expect(KNOWN_CLIENTS.get(GEMINI_CLIENT_ID)!.redirectUris).toEqual([]);
     expect((await authorize('https://claude.ai/api/mcp/auth_callback', 'x')).status).toBe(400);
+  });
+});
+
+describe('US-32 AC66: a refused Gemini-like registration logs allow-listed words and lengths only', () => {
+  const PREFIX = '[mcp] gemini-like registration refused:';
+  const shape = (uri: unknown) => redirectShapes({ redirect_uris: [uri] }, true).replace(/^.*? count=1 /, '');
+  const shapeLines = (spy: { mock: { calls: unknown[][] } }) =>
+    spy.mock.calls.map((c) => String(c[0])).filter((l) => l.startsWith(PREFIX));
+
+  it('a real-shaped redirect keeps its relay host and words, the id masked', () => {
+    expect(shape(USER_A)).toBe('oauth-redirect.googleusercontent.com/r/user_bound_custom-mcp-<id:24>');
+    expect(shape(`${RELAY}abcdefghijklmnopqrstuvwx`)).toBe('oauth-redirect.googleusercontent.com/r/user_bound_custom-mcp-<w:24>');
+    expect(shape(`${USER_A}-abc_defghijklm_xyz`)).toBe('oauth-redirect.googleusercontent.com/r/user_bound_custom-mcp-<id:24>-<w:3>_<w:10>_<w:3>');
+    expect(shape(USER_A.replace('oauth-redirect.', 'oauth-redirect-sandbox.'))).toBe('oauth-redirect-sandbox.googleusercontent.com/r/user_bound_custom-mcp-<id:24>');
+    expect(shape(USER_A.replace('oauth-redirect.', 'oauth-redirect-test.'))).toBe('oauth-redirect-test.googleusercontent.com/r/user_bound_custom-mcp-<id:24>');
+  });
+
+  it('a non-relay host logs no host text and no path, only its segment count and length', () => {
+    const other = shape('https://example.test/ldl/3.2/weight/81/kg');
+    expect(other).toBe('other-host[segments=5,len=21]');
+    for (const leak of ['ldl', '3.2', '81', 'weight', 'kg', 'example']) expect(other).not.toContain(leak);
+    const google = shape('https://jane-doe-hiv.googleusercontent.com/r/x');
+    expect(google).toBe('other-google-host[segments=2,len=4]');
+    for (const leak of ['jane', 'doe', 'hiv']) expect(google).not.toContain(leak);
+  });
+
+  it('a relay-host path keeps only allow-listed words, and other separators become "?"', () => {
+    const line = shape('https://oauth-redirect.googleusercontent.com/r/jane.doe@gmail.com');
+    expect(line).toBe('oauth-redirect.googleusercontent.com/r/<w:4>?<w:3>?<w:5>?<w:3>');
+    for (const leak of ['jane', 'doe', 'gmail']) expect(line).not.toContain(leak);
+    expect(shape(`${RELAY}a%20b~c+d:e`)).toBe('oauth-redirect.googleusercontent.com/r/user_bound_custom-mcp-<w:1>?<id:3>?<w:1>?<w:1>?<w:1>');
+  });
+
+  it('port, userinfo, query and fragment are literals; a non-string and junk are named', () => {
+    expect(shape('https://someone:pw@oauth-redirect.googleusercontent.com:8443/r/x?token=secretvalue#fragvalue'))
+      .toBe('userinfo@oauth-redirect.googleusercontent.com:port/r/<w:1>?query#fragment');
+    expect(shape('https://someone@evil.test:8443/cb?a=b')).toBe('userinfo@other-host:port[segments=1,len=3]?query');
+    expect(shape(7)).toBe('non-string');
+    expect(shape('not a url')).toBe('unparseable');
+  });
+
+  it('the port is read from the raw string, and a redirect the parser rewrites ends "~normalized"', () => {
+    expect(shape(USER_A.replace('.com/', '.com:443/'))).toBe('oauth-redirect.googleusercontent.com:port/r/user_bound_custom-mcp-<id:24>~normalized');
+    expect(shape(USER_A.replace('.com/', '.com:8443/'))).toBe('oauth-redirect.googleusercontent.com:port/r/user_bound_custom-mcp-<id:24>');
+    expect(shape(USER_A.replace('oauth-redirect.', 'OAUTH-redirect.'))).toBe('oauth-redirect.googleusercontent.com/r/user_bound_custom-mcp-<id:24>~normalized');
+    expect(shape(USER_A.replace('/r/', '/r/./'))).toBe('oauth-redirect.googleusercontent.com/r/user_bound_custom-mcp-<id:24>~normalized');
+    expect(redirectShapes({ redirect_uris: [USER_A, USER_A.replace('.com/', '.com:443/')] }, true))
+      .toBe(`${PREFIX} reason=mixed count=2 oauth-redirect.googleusercontent.com/r/user_bound_custom-mcp-<id:24> oauth-redirect.googleusercontent.com:port/r/user_bound_custom-mcp-<id:24>~normalized`);
+  });
+
+  it('the four reasons: no match, switch off, over the cap, mixed', () => {
+    const otherGoogle = 'https://jane-doe-hiv.googleusercontent.com/r/x';
+    expect(redirectShapes({ redirect_uris: [otherGoogle] }, true)).toBe(`${PREFIX} reason=no-match count=1 other-google-host[segments=2,len=4]`);
+    expect(redirectShapes({ redirect_uris: [otherGoogle] }, false)).toBe(`${PREFIX} reason=no-match count=1 other-google-host[segments=2,len=4]`);
+    expect(redirectShapes({ redirect_uris: [USER_A] }, false)).toBe(`${PREFIX} reason=switch-off count=1 oauth-redirect.googleusercontent.com/r/user_bound_custom-mcp-<id:24>`);
+    expect(redirectShapes({ redirect_uris: Array.from({ length: 9 }, () => USER_A) }, true)).toContain(`${PREFIX} reason=over-cap count=9 `);
+    expect(redirectShapes({ redirect_uris: [USER_A, 'https://evil.test/cb'] }, true)).toBe(`${PREFIX} reason=mixed count=2 oauth-redirect.googleusercontent.com/r/user_bound_custom-mcp-<id:24> other-host[segments=1,len=3]`);
+    expect(redirectShapes({ redirect_uris: 'nope' }, true)).toBe(`${PREFIX} reason=no-match count=0`);
+  });
+
+  it('lists 8 redirects then "+N more", and cuts at a whole entry within 600 characters', () => {
+    const many = redirectShapes({ redirect_uris: Array.from({ length: 11 }, () => 'https://evil.test/cb') }, true);
+    expect(many).toBe(`${PREFIX} reason=no-match count=11 ${'other-host[segments=1,len=3] '.repeat(8)}+3 more`);
+    const huge = redirectShapes({ redirect_uris: [`${RELAY}${'a/'.repeat(1000)}`, USER_A] }, true);
+    expect(huge).toBe(`${PREFIX} reason=mixed count=2`);
+  });
+
+  it('property: over 200 seeded random lists, every 2+ letter-or-digit run is an allow-listed word or a number', () => {
+    const ALLOWED = new Set(['oauth', 'redirect', 'sandbox', 'test', 'googleusercontent', 'com', 'other', 'google', 'host',
+      'segments', 'len', 'non', 'string', 'unparseable', 'query', 'fragment', 'port', 'userinfo', 'id', 'more', 'mcp', 'gemini',
+      'like', 'registration', 'refused', 'reason', 'count', 'switch', 'off', 'over', 'cap', 'mixed', 'no', 'match', 'user',
+      'bound', 'custom', 'normalized']);
+    let seed = 20261123;
+    const rand = (n: number) => { seed = (seed * 48271) % 2147483647; return seed % n; };
+    const CHARS = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/-_.@%:~+?#=&;!$ ';
+    const junk = (max: number) => Array.from({ length: rand(max) }, () => CHARS[rand(CHARS.length)]).join('');
+    const word = () => Array.from({ length: 1 + rand(12) }, () => CHARS[rand(62)]).join('');
+    const RELAYS = ['oauth-redirect', 'oauth-redirect-sandbox', 'oauth-redirect-test'];
+    const entry = (): unknown => {
+      const kind = rand(6);
+      if (kind === 0) return junk(60);
+      if (kind === 1) return rand(1000);
+      const host = rand(2) ? `${RELAYS[rand(3)]}.googleusercontent.com` : `${word().toLowerCase()}${rand(2) ? '.googleusercontent.com' : '.test'}`;
+      const user = rand(4) ? '' : `${word()}@`;
+      const port = rand(4) ? '' : `:${1 + rand(9999)}`;
+      const path = rand(2) ? `/r/user_bound_custom-mcp-${word()}${junk(20)}` : `/${junk(80)}`;
+      return `${rand(2) ? 'https' : 'http'}://${user}${host}${port}${path}`;
+    };
+    const runs: string[] = [];
+    for (let i = 0; i < 200; i++) {
+      const line = redirectShapes({ redirect_uris: Array.from({ length: rand(12) }, entry) }, rand(2) === 1);
+      expect(line.length).toBeLessThanOrEqual(600);
+      runs.push(...(line.match(/[A-Za-z0-9]{2,}/g) ?? []));
+    }
+    expect(runs.filter((r) => !ALLOWED.has(r) && !/^\d+$/.test(r))).toEqual([]);
+    expect(runs.length).toBeGreaterThan(1000);
+  });
+
+  it('the route writes one line per refusal allowance, only when gemini-like, never on success', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      for (let i = 0; i < 10; i++) await register([USER_A, 'https://evil.test/cb?id=secretvalue']);
+      expect(shapeLines(warn)).toEqual([
+        `${PREFIX} reason=mixed count=2 oauth-redirect.googleusercontent.com/r/user_bound_custom-mcp-<id:24> other-host[segments=1,len=3]?query`,
+      ]);
+      resetMcpMemory();
+      warn.mockClear();
+      await register(['https://evil.test/cb']);
+      await register([USER_A]);
+      expect(shapeLines(warn)).toEqual([]);
+    } finally {
+      warn.mockRestore();
+    }
   });
 });

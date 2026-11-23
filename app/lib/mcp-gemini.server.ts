@@ -15,7 +15,7 @@
  * and `-test` relay hosts some reports list are NOT accepted: nothing shows
  * the consumer app using them.
  *
- * NOTHING HERE MAY LOG A URL.
+ * Nothing here may log a URL; `redirectShapes` logs allow-listed words and lengths only.
  */
 import type { McpOAuthDetail } from '../../packages/health-core/src/product-events';
 import type { McpClient } from './mcp-clients.server';
@@ -89,8 +89,62 @@ export function registerGemini(input: unknown): McpClient | 'refused' | null {
 }
 
 /** A refused registration's closed category for the counter: never a URI or host. */
-export function registrationMiss(input: unknown): McpOAuthDetail<'register-redirect'> {
+function registrationMiss(input: unknown): McpOAuthDetail<'register-redirect'> {
   const uris = (input as { redirect_uris?: unknown } | null)?.redirect_uris;
   const googleRelay = (u: unknown) => typeof u === 'string' && URL.canParse(u) && new URL(u).hostname.endsWith('.googleusercontent.com');
   return Array.isArray(uris) && uris.some(googleRelay) ? 'gemini-like' : 'other';
+}
+
+/** The only hosts a shape names; any other host is `other-google-host` or `other-host`. */
+const RELAY_HOSTS = ['oauth-redirect', 'oauth-redirect-sandbox', 'oauth-redirect-test'].map((h) => `${h}.googleusercontent.com`);
+/** The only path words a shape keeps; every other run is `<w:LEN>` or `<id:LEN>`. */
+const PATH_WORDS = new Set(['r', 'user', 'bound', 'custom', 'mcp']);
+
+/** A relay path in allow-listed words: other runs masked to their length, separators other than / - _ as `?`. */
+const maskPath = (path: string) =>
+  path.replace(/[A-Za-z0-9]+|[^A-Za-z0-9]/g, (t) =>
+    /^[A-Za-z0-9]/.test(t) ? (PATH_WORDS.has(t) ? t : `<${/\d/.test(t) ? 'id' : 'w'}:${t.length}>`) : '/-_'.includes(t) ? t : '?');
+
+/**
+ * One redirect's shape, built from allow-listed words and numbers only: a relay
+ * host with its masked path, or `other-google-host` / `other-host` with just the
+ * path's segment count and length; port, userinfo, query and fragment as literals.
+ */
+function redirectShape(uri: unknown): string {
+  if (typeof uri !== 'string') return 'non-string';
+  if (!URL.canParse(uri)) return 'unparseable';
+  const url = new URL(uri);
+  const relay = RELAY_HOSTS.includes(url.hostname);
+  const host = relay ? url.hostname : url.hostname.endsWith('.googleusercontent.com') ? 'other-google-host' : 'other-host';
+  const path = relay ? maskPath(url.pathname) : `[segments=${url.pathname.split('/').filter(Boolean).length},len=${url.pathname.length}]`;
+  // The port comes from the raw authority, since the parser drops a default one.
+  const authority = uri.split('://')[1]?.split(/[/?#]/)[0] ?? '';
+  const port = /:\d/.test(authority.slice(authority.lastIndexOf('@') + 1)) ? ':port' : '';
+  return `${url.username || url.password ? 'userinfo@' : ''}${host}${port}${path}${url.search ? '?query' : ''}${url.hash ? '#fragment' : ''}${url.href !== uri ? '~normalized' : ''}`;
+}
+
+/**
+ * The one log line for a refused Gemini-like registration (US-32 AC66): why it
+ * was refused, how many redirects, and each one's shape (8 listed, then "+N
+ * more"). Capped at 600 characters, cut at a whole entry.
+ */
+export function redirectShapes(input: unknown, switchOn: boolean): string {
+  const raw = (input as { redirect_uris?: unknown } | null)?.redirect_uris;
+  const uris: unknown[] = Array.isArray(raw) ? raw : [];
+  const matched = uris.some((u) => typeof u === 'string' && isGeminiRedirect(u));
+  const reason = !matched ? 'no-match' : !switchOn ? 'switch-off' : uris.length > GEMINI_MAX_REDIRECTS ? 'over-cap' : 'mixed';
+  const shapes = uris.slice(0, GEMINI_MAX_REDIRECTS).map(redirectShape);
+  if (uris.length > GEMINI_MAX_REDIRECTS) shapes.push(`+${uris.length - GEMINI_MAX_REDIRECTS} more`);
+  const line = [`[mcp] gemini-like registration refused: reason=${reason} count=${uris.length}`, ...shapes].join(' ');
+  return line.length <= 600 ? line : line.slice(0, line.lastIndexOf(' ', 600));
+}
+
+/**
+ * Called only inside the route's per-IP refusal allowance (US-32 AC64): the
+ * counter's closed category, plus the one shape line when it is `gemini-like`.
+ */
+export function registrationRefused(input: unknown): McpOAuthDetail<'register-redirect'> {
+  const detail = registrationMiss(input);
+  if (detail === 'gemini-like') console.warn(redirectShapes(input, geminiEnabled()));
+  return detail;
 }
