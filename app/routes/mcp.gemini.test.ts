@@ -345,6 +345,15 @@ describe('US-32 AC66: a refused Gemini-like registration logs allow-listed words
     expect(shape('not a url')).toBe('unparseable');
   });
 
+  it('the port is read from the raw string, and a redirect the parser rewrites ends "~normalized"', () => {
+    expect(shape(USER_A.replace('.com/', '.com:443/'))).toBe('oauth-redirect.googleusercontent.com:port/r/user_bound_custom-mcp-<id:24>~normalized');
+    expect(shape(USER_A.replace('.com/', '.com:8443/'))).toBe('oauth-redirect.googleusercontent.com:port/r/user_bound_custom-mcp-<id:24>');
+    expect(shape(USER_A.replace('oauth-redirect.', 'OAUTH-redirect.'))).toBe('oauth-redirect.googleusercontent.com/r/user_bound_custom-mcp-<id:24>~normalized');
+    expect(shape(USER_A.replace('/r/', '/r/./'))).toBe('oauth-redirect.googleusercontent.com/r/user_bound_custom-mcp-<id:24>~normalized');
+    expect(redirectShapes({ redirect_uris: [USER_A, USER_A.replace('.com/', '.com:443/')] }, true))
+      .toBe(`${PREFIX} reason=mixed count=2 oauth-redirect.googleusercontent.com/r/user_bound_custom-mcp-<id:24> oauth-redirect.googleusercontent.com:port/r/user_bound_custom-mcp-<id:24>~normalized`);
+  });
+
   it('the four reasons: no match, switch off, over the cap, mixed', () => {
     const otherGoogle = 'https://jane-doe-hiv.googleusercontent.com/r/x';
     expect(redirectShapes({ redirect_uris: [otherGoogle] }, true)).toBe(`${PREFIX} reason=no-match count=1 other-google-host[segments=2,len=4]`);
@@ -366,7 +375,7 @@ describe('US-32 AC66: a refused Gemini-like registration logs allow-listed words
     const ALLOWED = new Set(['oauth', 'redirect', 'sandbox', 'test', 'googleusercontent', 'com', 'other', 'google', 'host',
       'segments', 'len', 'non', 'string', 'unparseable', 'query', 'fragment', 'port', 'userinfo', 'id', 'more', 'mcp', 'gemini',
       'like', 'registration', 'refused', 'reason', 'count', 'switch', 'off', 'over', 'cap', 'mixed', 'no', 'match', 'user',
-      'bound', 'custom']);
+      'bound', 'custom', 'normalized']);
     let seed = 20261123;
     const rand = (n: number) => { seed = (seed * 48271) % 2147483647; return seed % n; };
     const CHARS = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/-_.@%:~+?#=&;!$ ';

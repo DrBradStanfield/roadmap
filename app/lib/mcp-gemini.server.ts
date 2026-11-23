@@ -117,7 +117,10 @@ function redirectShape(uri: unknown): string {
   const relay = RELAY_HOSTS.includes(url.hostname);
   const host = relay ? url.hostname : url.hostname.endsWith('.googleusercontent.com') ? 'other-google-host' : 'other-host';
   const path = relay ? maskPath(url.pathname) : `[segments=${url.pathname.split('/').filter(Boolean).length},len=${url.pathname.length}]`;
-  return `${url.username || url.password ? 'userinfo@' : ''}${host}${url.port ? ':port' : ''}${path}${url.search ? '?query' : ''}${url.hash ? '#fragment' : ''}`;
+  // The port comes from the raw authority, since the parser drops a default one.
+  const authority = uri.split('://')[1]?.split(/[/?#]/)[0] ?? '';
+  const port = /:\d/.test(authority.slice(authority.lastIndexOf('@') + 1)) ? ':port' : '';
+  return `${url.username || url.password ? 'userinfo@' : ''}${host}${port}${path}${url.search ? '?query' : ''}${url.hash ? '#fragment' : ''}${url.href !== uri ? '~normalized' : ''}`;
 }
 
 /**
