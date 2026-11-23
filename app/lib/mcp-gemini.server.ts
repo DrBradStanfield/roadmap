@@ -93,7 +93,7 @@ export function registerGemini(input: unknown): McpClient | 'refused' | null {
 }
 
 /** A refused registration's closed category for the counter: never a URI or host. */
-export function registrationMiss(input: unknown): McpOAuthDetail<'register-redirect'> {
+function registrationMiss(input: unknown): McpOAuthDetail<'register-redirect'> {
   const uris = (input as { redirect_uris?: unknown } | null)?.redirect_uris;
   const googleRelay = (u: unknown) => typeof u === 'string' && URL.canParse(u) && new URL(u).hostname.endsWith('.googleusercontent.com');
   return Array.isArray(uris) && uris.some(googleRelay) ? 'gemini-like' : 'other';
@@ -123,4 +123,14 @@ export function redirectShapes(input: unknown, switchOn: boolean): string {
   const shapes = uris.slice(0, GEMINI_MAX_REDIRECTS).map(redirectShape);
   if (uris.length > GEMINI_MAX_REDIRECTS) shapes.push(`+${uris.length - GEMINI_MAX_REDIRECTS} more`);
   return [`[mcp] gemini-like registration refused: reason=${reason} count=${uris.length}`, ...shapes].join(' ').slice(0, 600);
+}
+
+/**
+ * Called only inside the route's per-IP refusal allowance (US-32 AC64): the
+ * counter's closed category, plus the one shape line when it is `gemini-like`.
+ */
+export function registrationRefused(input: unknown): McpOAuthDetail<'register-redirect'> {
+  const detail = registrationMiss(input);
+  if (detail === 'gemini-like') console.warn(redirectShapes(input, geminiEnabled()));
+  return detail;
 }

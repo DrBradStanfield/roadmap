@@ -14,7 +14,7 @@ import zlib from 'node:zlib';
 import type { McpOAuthDetail } from '../../packages/health-core/src/product-events';
 import { clientHmacKey } from './mcp-config.server';
 import { GEMINI_CLIENT_ID, geminiEnabled, registerGemini } from './mcp-gemini.server';
-export { registrationMiss } from './mcp-gemini.server';
+export { registrationRefused } from './mcp-gemini.server';
 import { b64url } from './mcp-seal.server';
 import { readCapped } from './capped-body.server';
 import { parseIpv6 } from './ip-groups.server';
