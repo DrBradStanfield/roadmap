@@ -170,6 +170,10 @@ function canonical(value: unknown): string {
   });
 }
 
+/** The Save label as main's rule gave it, in every phase. */
+const mainLabel = ({ values, documents, originals }: UploadSavePlan['counts']) =>
+  (values || documents || !originals ? UPLOAD_TEXT.saveBoth(values, documents) : UPLOAD_TEXT.saveOriginals(originals));
+
 /** Main's answer for a case: the new fields checked (no column waits), then left out. `days` is the review's
  *  own record of each value's day, which main kept inside the review; its effect is in the plan and view. */
 function parts(c: Case, previewEdits = true) {
@@ -177,7 +181,11 @@ function parts(c: Case, previewEdits = true) {
   // which turns the edit's preview on for the web only; the review reads the platform for nothing else).
   const review = uploadReview(previewEdits ? c.state : { ...c.state, platform: 'phone' }, c.record, NOW);
   const plan = uploadSavePlan(c.state, c.record, NOW, review, c.cloud);
-  const view = uploadView(c.state, c.record, NOW, review, c.cloud);
+  const drawn = uploadView(c.state, c.record, NOW, review, c.cloud);
+  // US-12 AC6 (2026-11-23): Save says "Saving..." while it saves, on both platforms, on purpose. Undone here for every
+  // saving seed, after checking it: the label main drew then, the plan's words.
+  if (c.state.phase === 'saving') expect(drawn.save.label).toBe(UPLOAD_TEXT.saving);
+  const view = c.state.phase === 'saving' ? { ...drawn, save: { ...drawn.save, label: mainLabel(plan.counts) } } : drawn;
   const labFiles = review.labFiles.map((l) => {
     const { needsColumnDay, waits, days: _days, ...old } = l as typeof l & { needsColumnDay?: boolean; waits?: readonly string[]; days?: unknown };
     expect(needsColumnDay ?? false).toBe(false);
@@ -228,8 +236,7 @@ function asMain(c: Case, kept: ReturnType<typeof keptAlone>): string {
   const { review, plan, view } = parts(c);
   const ids = new Set(kept.map((k) => k.fileId));
   const main: UploadSavePlan = { ...plan, labArchives: plan.labArchives.filter((a) => !ids.has(a.fileId)), counts: { ...plan.counts, originals: plan.counts.originals - kept.length } };
-  const { values, documents, originals } = main.counts;
-  const label = values || documents || !originals ? UPLOAD_TEXT.saveBoth(values, documents) : UPLOAD_TEXT.saveOriginals(originals);
+  const label = mainLabel(main.counts);
   // Only an open page asks the plan whether Save has anything to do; nothing else in the view reads these fields.
   const empty = c.state.phase === 'open' && view.save.why === null && planIsEmpty(main);
   const save = { ...view.save, label, ...(empty ? { enabled: false, why: UPLOAD_TEXT.saveNothing } : {}) };

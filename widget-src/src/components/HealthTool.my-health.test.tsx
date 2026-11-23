@@ -21,6 +21,7 @@ import {
 import { seedGuest, useHealthToolLifecycle } from '../testing/health-tool-harness';
 import { deleteButton, openSettings } from '../testing/settings';
 import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
+import { trackProductEvent } from '../lib/server-api';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../lib/server-api', async (importOriginal) => ({
@@ -32,7 +33,11 @@ vi.mock('../lib/server-api', async (importOriginal) => ({
 vi.mock('../lib/chat-api', () => ({ listConversations: () => Promise.resolve(null), getChatGate: () => null }));
 vi.mock('./ChatEmbed', () => ({ ChatEmbed: () => null }));
 vi.mock('./ChatSection', () => ({ ChatSection: () => null }));
-vi.mock('./UploadModal', () => ({ UploadModal: () => null }));
+// The upload as the page opens it: a dialog while `open`, with a way out (US-73 AC14).
+vi.mock('./UploadModal', () => ({
+  UploadModal: ({ open, onClose }: { open: boolean; onClose: () => void }) =>
+    open ? <div role="dialog" aria-label="Lab upload"><button type="button" onClick={onClose}>Close upload</button></div> : null,
+}));
 // The plan's suggestions, as usePlanView is handed them: what the page must draw.
 const planSeen = vi.hoisted(() => ({ suggestions: [] as Suggestion[] }));
 vi.mock('./ResultsPanel', async (importOriginal) => {
@@ -134,11 +139,8 @@ describe('US-62 AC17: the sections, in the iPhone\'s order', () => {
 
   const DOCTOR_LINE = 'For education, not medical advice. Always talk to your doctor.';
   const lines = (view: RenderResult) => [...view.container.querySelectorAll('p.mh-education')];
-  it.each([
-    ['a phone', (q: string) => q.includes('max-width')],
-    ['a desktop under 1200px, with no chat column', (q: string) => q.includes('min-width') && !q.includes('1200px')],
-  ])('US-73 AC13 (App Review 1.4.1): on %s the doctor line sits right under the title, before the pills', async (_name, matches) => {
-    vi.stubGlobal('matchMedia', (q: string) => ({ matches: matches(q), media: q, addEventListener() {}, removeEventListener() {} }));
+  it('US-73 AC13 (App Review 1.4.1): on a phone the doctor line sits right under the (hidden) title, before the pills', async () => {
+    vi.stubGlobal('matchMedia', (q: string) => ({ matches: q.includes('max-width'), media: q, addEventListener() {}, removeEventListener() {} }));
     const view = await show(RECORDS['urgent results, both cascades, a supplement']);
     expect(lines(view)).toHaveLength(1);
     const line = view.container.querySelector('.mh-header + p.mh-education');
@@ -147,16 +149,21 @@ describe('US-62 AC17: the sections, in the iPhone\'s order', () => {
     expect(line!.compareDocumentPosition(pills) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  // Beside the chat column the line spans both columns, so it pushes neither down alone and the chat
-  // card's top stays on the line of My health's first card (design review 2026-11-06, webkit-verify).
-  it('US-73 AC13: beside the chat column the doctor line spans both columns, once, before them', async () => {
+  // Desktop, with the chat column or without: the line is on My health's title row, after the title and
+  // before Sign in, never above the columns (Brad 2026-11-23).
+  it.each([
+    ['a desktop under 1200px, with no chat column', (q: string) => q.includes('min-width') && !q.includes('1200px')],
+    ['a desktop beside the chat column', (q: string) => q.includes('min-width')],
+  ])('US-73 AC13: on %s the doctor line sits on the title row, right after "My health"', async (name, matches) => {
+    vi.stubGlobal('matchMedia', (q: string) => ({ matches: matches(q), media: q, addEventListener() {}, removeEventListener() {} }));
     const view = await show(RECORDS['urgent results, both cascades, a supplement']);
+    expect(view.container.querySelector('.health-tool-chat') !== null).toBe(name.includes('beside'));
     expect(lines(view)).toHaveLength(1);
-    const content = view.container.querySelector('.health-tool-content')!;
-    expect(content.querySelector('.health-tool-chat')).not.toBeNull();
-    expect(content.firstElementChild?.matches('p.mh-education.mh-education--above')).toBe(true);
-    expect(content.firstElementChild?.textContent).toBe(DOCTOR_LINE);
-    expect(view.container.querySelector('.mh-page .mh-education')).toBeNull();
+    const line = view.container.querySelector('.mh-header .mh-title + p.mh-education');
+    expect(line?.textContent).toBe(DOCTOR_LINE);
+    const actions = view.container.querySelector('.mh-header-actions');
+    if (actions) expect(line!.compareDocumentPosition(actions) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(view.container.querySelector('.health-tool-content > p')).toBeNull();
   });
 
   it('a 25-year-old, too young for any screening, has no Cancer screening section', async () => {
@@ -347,10 +354,25 @@ describe('US-62 AC21: the rows', () => {
 });
 
 describe('US-62 AC22, AC23: Blood tests and Supplements', () => {
-  it('"+" uploads on the Blood tests heading; "Add blood test" and "All results as a table" end its rows', async () => {
+  it('US-73 AC14: "Upload labs" sits on the Weight & diabetes, Cholesterol and Blood tests headings only; each opens the upload and names its heading', async () => {
+    const view = await show(RECORDS['urgent results, both cascades, a supplement']);
+    const heads = [...view.container.querySelectorAll<HTMLElement>('.mh-topic')]
+      .filter(t => within(t.querySelector<HTMLElement>('.mh-topic-head')!).queryByRole('button', { name: 'Upload labs' }));
+    expect(heads.map(t => t.dataset.topic)).toEqual(['weight', 'cholesterol', 'bloodTests']);
+    expect(view.queryByRole('button', { name: 'Upload lab results' })).toBeNull(); // the bare "+" is gone
+    for (const head of heads) {
+      vi.mocked(trackProductEvent).mockClear();
+      expect(view.queryByRole('dialog', { name: 'Lab upload' })).toBeNull();
+      fireEvent.click(within(head.querySelector<HTMLElement>('.mh-topic-head')!).getByRole('button', { name: 'Upload labs' }));
+      expect(view.getByRole('dialog', { name: 'Lab upload' })).toBeTruthy();
+      expect(vi.mocked(trackProductEvent).mock.calls).toEqual([['upload_labs_opened', { placement: head.dataset.topic }]]);
+      fireEvent.click(view.getByRole('button', { name: 'Close upload' }));
+    }
+  });
+
+  it('"Add blood test" and "All results as a table" end Blood tests\' rows', async () => {
     const view = await show(RECORDS['urgent results, both cascades, a supplement']);
     const section = view.container.querySelector<HTMLElement>('[data-topic="bloodTests"]')!;
-    expect(within(section.querySelector<HTMLElement>('.mh-topic-head')!).getByRole('button', { name: 'Upload lab results' })).toBeTruthy();
     const add = within(section).getByRole('button', { name: '+ Add a blood test' });
     const table = within(section).getByRole('button', { name: 'All results as a table' });
     expect(add.compareDocumentPosition(table) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();

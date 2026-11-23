@@ -465,7 +465,7 @@ A spelling this table does not carry for that test is **refused** — never resc
 
 A plain "calcium" is total calcium (`calcium_total`), never corrected calcium (US-21 AC12, fixed 2026-10-18; it used to land on `calcium_corrected`). Rows already stored under the key `calcium_corrected` stay there: no migration. A row stored as a plain calcium (the website upload's snake_case `calcium`, or the assistant's printed "Calcium") now reads as total calcium.
 
-Nineteen catalogued tests take only their canonical unit, so they have no row above: `cystatin_c` (mg/L), `mcv` (fL), `mch` (pg), `rdw` (%), `rdw_sd` (fL), `mpv` (fL), `t3_uptake` (%), `trab` (IU/L), `shbg` (nmol/L), `psa_free_percent` (%), `b12_active` (pmol/L), `transferrin_sat` (%), `stfr` (mg/L), `omega3_index` (%), `vitamin_b1` (nmol/L), `anti_ccp` (U/mL), `ttg_iga` (U/mL), `homocysteine` (µmol/L) and `fructosamine` (µmol/L). Since US-21 AC28 (2026-11-15) seven more take only %: `neutrophils_pct`, `lymphocytes_pct`, `monocytes_pct`, `eosinophils_pct`, `basophils_pct`, `immature_granulocytes_pct` and `reticulocytes_pct`. Any other spelling is refused. (Until 2026-10-20 this sentence named three; five more already took only their canonical unit.)
+Nineteen catalogued tests take only their canonical unit, so they have no row above: `cystatin_c` (mg/L), `mcv` (fL), `mch` (pg), `rdw` (%), `rdw_sd` (fL), `mpv` (fL), `t3_uptake` (%), `trab` (IU/L), `shbg` (nmol/L), `psa_free_percent` (%), `b12_active` (pmol/L), `transferrin_sat` (%), `stfr` (mg/L), `omega3_index` (%), `vitamin_b1` (nmol/L), `anti_ccp` (U/mL), `ttg_iga` (U/mL), `homocysteine` (µmol/L) and `fructosamine` (µmol/L). Since US-21 AC28 (2026-11-15) seven more take only %: `neutrophils_pct`, `lymphocytes_pct`, `monocytes_pct`, `eosinophils_pct`, `basophils_pct`, `immature_granulocytes_pct` and `reticulocytes_pct`. Since US-21 AC29 (2026-11-23) one more, `cholesterol_hdl_ratio`, takes only "ratio", or no unit at all, since a ratio prints with none. Any other spelling is refused. (Until 2026-10-20 this sentence named three; five more already took only their canonical unit.)
 
 Non-HDL cholesterol is deliberately not catalogued. The app derives it from total cholesterol and HDL, so a stored lab row would duplicate it; a printed one is kept as an uncatalogued row with its printed unit.
 
@@ -476,7 +476,7 @@ Non-HDL cholesterol is deliberately not catalogued. The app derives it from tota
 - **Osmolality** resolves only under a serum or plasma name: a bare "osmolality" is as often the urine test. It takes mOsm/kg, mOsmol/kg and mmol/kg, the same number.
 - **Immature granulocytes in %, reticulocytes in %, and NRBC in % or per 100 WBC** were refused with a note pointing at the absolute count until 2026-11-15; since US-21 AC28 each is a test of its own, as a differential in % is.
 - **AMH** converts at the 140 kDa dimer convention (7.14 pmol/L per ng/mL), as insulin's 6.00 is one. Growth hormone in mIU/L and soluble transferrin receptor in nmol/L are assay-dependent and refused.
-- **Left out:** the free thyroxine index (two scales share the name), every unitless ratio and index (TC/HDL, INR, free androgen index, HOMA-IR, A/G, BUN/creatinine), PT and APTT in seconds, base excess, and a bare "T4", "T3" or "troponin", which can mean either test. A printed one stays an uncatalogued row with its printed unit.
+- **Left out:** the free thyroxine index (two scales share the name), every other unitless ratio and index (INR, free androgen index, HOMA-IR, A/G, BUN/creatinine), PT and APTT in seconds, base excess, and a bare "T4", "T3" or "troponin", which can mean either test. A printed one stays an uncatalogued row with its printed unit. The TC/HDL ratio is catalogued since US-21 AC29 (Brad 2026-11-23) as `cholesterol_hdl_ratio`, in "ratio" or no unit, with both earlier stored spellings (`cholesterol_total_hdl_ratio`, `total_cholesterol_hdl_ratio`) as aliases. It is record-keeping only: no suggestion reads it.
 
 AC20 adds the comma, bracket and "absolute" spellings US, AU and NZ reports print for tests already catalogued ("Bilirubin, Total", "ALT (SGPT)", "Neutrophils (Absolute)"). Each of these spellings is listed. Since US-07 AC10 (Brad 2026-11-02), a name no listed spelling matches is tried once more without its punctuation: "A.M." and "P.M." lose their dots, and hyphens, dashes, brackets, commas, colons and slashes become spaces. That second try never changes how a name that already resolves resolves; a form two tests share resolves to nothing; a name that stays uncatalogued keeps its own slot, and since US-66 a core blood-test name gets the same second try, after the catalogue and never for a ratio ("/" or a colon before more words) or for "Cr", so "LDL - Cholesterol" files as LDL. "Urea Nitrogen (BUN)" takes BUN's mg/dL factor; "Urea (BUN)" does not (see the `urea` row). The extraction prompt offers every catalogue name (US-07 AC10, Brad 2026-11-02: "release now"); it still does not suggest the new core names or `bun`, which the resolver alone knows. What a US BUN in mg/dL does today depends on the name it arrives under. Under a printed nitrogen name ("BUN", "Urea Nitrogen", "Blood Urea Nitrogen (BUN)", or the extractor's `blood_urea_nitrogen`) it converts at ×0.357. Under "Urea (BUN)" or the bare `urea` it is refused. The assistant routes (`file_results`, `add_lab_values`) store the printed name, so they convert. The website now files a row by the name the report printed when it resolves (US-07 AC10), so a website "BUN" in mg/dL converts too; a row the model names only `urea` is still refused in mg/dL. The core resolver (not the prompt) gained the printed names on Brad's own reports ("Cholesterol (HDL)", "Cholesterol (LDL) (calculated)") and six more ("HDL-Cholesterol", "LDL-Cholesterol", "LDL Chol Calc (NIH)", "Glycated haemoglobin (HbA1c)", "PSA, Total", "Prostate Specific Ag"). A direct LDL is not yet a core alias: which LDL wins a day with both is open (US-21 AC19 notes).
 
@@ -788,7 +788,8 @@ Three-file sync: `evidence.ts` changes one sentence, `trig-nutrition`'s reason (
 |----|-----------|----------|
 | `hba1c-diabetic` | >= 47.5 mmol/mol (>= 6.5%) | urgent |
 | `hba1c-prediabetic` | >= 38.8 mmol/mol (>= 5.7%) | attention |
-| `hba1c-normal` | < 38.8 mmol/mol | info |
+
+Below 38.8 mmol/mol there is no card: the HbA1c result row and tile already say Normal (Brad 2026-11-23, US-07 AC18; the `hba1c-normal` card, "Your HbA1c of {value} is in the normal range. Continue healthy habits to maintain this.", is gone).
 
 ### Atherogenic Lipid Hierarchy
 
@@ -812,7 +813,8 @@ Each marker has three tiers (borderline/high/very high) using the thresholds in 
 |----|-----------|----------|
 | `lpa-elevated` | >= 125 nmol/L | attention |
 | `lpa-borderline` | 75-125 nmol/L | info |
-| `lpa-normal` | < 75 nmol/L | info |
+
+Below 75 nmol/L (in any unit it was typed in) there is no card: the Lp(a) result row and tile already say Normal (Brad 2026-11-23, US-07 AC18; the `lpa-normal` card, "Your Lp(a) is in the normal range (<75 nmol/L). This is a one-time test…", is gone). Nothing in the plan asks for Lp(a) to be tested again: no card, reminder or prompt ever did.
 
 **Elevated Lp(a) checklist** (modifiable risk factors):
 - Lipids (ApoB > non-HDL > LDL, on-treatment targets; ⚠️ at or above the target, shown as "target <X")
@@ -1038,9 +1040,11 @@ The same trigger drives the cascade (medications tracked), the standalone `weigh
 
 **Text:** "With a BMI of {bmi}{ and {reasons}}, consider discussing Tirzepatide (listed first) or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health." The reasons join as "a, b and c".
 
+**"No" (US-06 AC22, Brad 2026-11-23):** the GLP-1, SGLT2 inhibitor and metformin pickers each offer "No" (`'no'`), just before "Not tolerated". It means the person is not taking the medicine and has decided, perhaps with their doctor: that medicine's card stops showing and the cascade moves on to the next step, exactly as "Not tolerated" does. GLP-1 "No" asks no dose question and no new step-up question (a step-up answer already recorded still shows, as it does for "Not tolerated") and goes to the SGLT2 inhibitor; SGLT2 inhibitor "No" goes to metformin; metformin "No" ends the cascade. "No" records no medicine as started. The picker stays on the form, so choosing "Haven't tried yet" again brings the card back. Same word and value, different effect: on a tolerated statin, ezetimibe or PCSK9 inhibitor "No" keeps that card showing (with the statin not tolerated it moves on, US-06 AC20). The weight sequence has a next step to move to, and Brad (2026-11-23) chose "stop suggesting it" for these three; the lipid behaviour is unchanged while Brad decides whether to align them.
+
 ### Step 2: GLP-1 Escalation (`weight-med-glp1-increase` or `weight-med-glp1-switch`)
 
-**Condition:** On a GLP-1 (or on 'other') AND escalation gate `glp1Escalation` is `undefined` or `'not_yet'`.
+**Condition:** On a GLP-1 (or on 'other'; not `'no'` or `'not_tolerated'`) AND escalation gate `glp1Escalation` is `undefined` or `'not_yet'`.
 
 - `canIncreaseGlp1Dose(drug, dose)`: Higher dose available for current drug
 - `shouldSuggestGlp1Switch(drug, dose)`: On `'other'`, OR on max dose of non-tirzepatide GLP-1
@@ -1056,7 +1060,7 @@ The same trigger drives the cascade (medications tracked), the standalone `weigh
 
 ### Step 4: Metformin (`weight-med-metformin`)
 
-**Condition:** SGLT2i handled (on one or not tolerated) AND metformin is `undefined` or `'none'`.
+**Condition:** SGLT2i handled (on one, `'no'` or not tolerated) AND metformin is `undefined` or `'none'`.
 
 ### Standalone GLP-1 Suggestion (`weight-glp1`)
 
@@ -1097,7 +1101,7 @@ Options: `'not_yet'`, `'yes'`, `'no'`, `'not_tolerated'`.
 | semaglutide_oral | 3, 7, 14 |
 | dulaglutide | 0.75, 1.5, 3, 4.5 |
 
-Additional options: `'none'`, `'other'`, `'not_tolerated'`.
+Additional options: `'none'`, `'other'`, `'no'`, `'not_tolerated'`.
 
 **Max potency drug:** tirzepatide (switch target in escalation).
 
@@ -1109,11 +1113,11 @@ Additional options: `'none'`, `'other'`, `'not_tolerated'`.
 | dapagliflozin | 5, 10 |
 | canagliflozin | 100, 300 |
 
-Status options: `'none'`, actual drug name, `'not_tolerated'`.
+Status options: `'none'`, actual drug name, `'no'`, `'not_tolerated'`.
 
 ### Metformin
 
-Options: `'none'`, `'ir_500'` through `'ir_2000'`, `'xr_500'` through `'xr_2000'`, `'not_tolerated'`. IR = Immediate Release, XR = Extended Release.
+Options: `'none'`, `'ir_500'` through `'ir_2000'`, `'xr_500'` through `'xr_2000'`, `'no'`, `'not_tolerated'`. IR = Immediate Release, XR = Extended Release.
 
 ---
 
@@ -1327,7 +1331,7 @@ Threshold: **12 months**. Only for metrics the user has previously tracked.
 
 ### Medication Review
 
-Triggers when ANY active medication (drug name not in `['none', 'not_yet', 'not_tolerated', 'no']`) has `updatedAt` older than 12 months. Returns a single aggregate reminder (not per-medication).
+One aggregate reminder (not per-medication), with the same label and opt-out whichever rows count, due on the earliest candidate among the medications it counts (`countsForMedicationReview`). A drug taken (drug name not in `['none', 'not_yet', 'not_tolerated', 'no']`) is due 12 months after its `updatedAt`, and may be overdue. A decision against one (`isDeclinedMedicine`): "No" (`'no'`), "Not tolerated" (`'not_tolerated'`), or bempedoic acid's "Not taking" (`'none'`; on every other picker `none` is "Haven't tried yet") is reviewed once a year, on the anniversary of the decision: its candidate is the first of `updatedAt` + 12, 24, … months that is not before today's UTC day (US-23 AC17, Brad 2026-11-23). So the reminder for a decline is never overdue, and nobody is emailed about an old decision the moment this ships. A decline can bring the review earlier than a taker's date only to today or later; a taker's overdue review stays as it was. While a decline exists the review is always within 12 months, so the annual check-in floor does not also fire: the review takes its place. There is no "reviewed" action, so the review never clears (a lead, not built; a taker's review has none either). "Haven't tried yet" decides nothing and counts for nothing; an escalation answer is not a medication. The iPhone follows this rule once the engine release that carries it is signed.
 
 ### Screening Reminders
 

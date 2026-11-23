@@ -89,7 +89,7 @@ export function scrubEvent(event: Sentry.ErrorEvent): Sentry.ErrorEvent | null {
     const { area, op, backend, branch, uploadErrorCode, cause, errorClass, httpStatus, causeClass } = event.tags!;
     event.tags = {
       ...(strictArea ? { area } : { feature: strictFeature }),
-      ...(['write-document', 'read-document', 'persist', 'log-off', 'copy-down', 'migrate-up', 'load', 'delete-all', 'mirror-write'].includes(String(op)) ? { op } : {}),
+      ...(['write-document', 'write-document-busy', 'read-document', 'persist', 'log-off', 'copy-down', 'migrate-up', 'load', 'delete-all', 'mirror-write'].includes(String(op)) ? { op } : {}),
       ...(['google-drive', 'dropbox', 'github', 'self-host', 'local', 'file', 'memory'].includes(String(backend)) ? { backend } : {}),
       ...(['measurements', 'documents', 'labValues'].includes(String(branch)) ? { branch } : {}),
       ...(['rate_limit', 'busy', 'no_files', 'server_error', 'network', 'unknown'].includes(String(uploadErrorCode)) ? { uploadErrorCode } : {}),

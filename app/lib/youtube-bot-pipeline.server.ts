@@ -254,7 +254,7 @@ export async function runPipeline(
   const sanitized = sanitizeForRouter(thread.text);
   const isFollowUp = history.length > 0;
 
-  const classifierResult = await classifyMessage(sanitized);
+  const classifierResult = await classifyMessage(sanitized, undefined, undefined, 'YOUTUBE');
   const { classification } = classifierResult;
   const unreadable = isUnreadableAnswer(classifierResult);
   if (SILENT_ON_YOUTUBE.has(classification) || unreadable) {
@@ -273,7 +273,7 @@ export async function runPipeline(
   let routerResult: RouterResult | null = null;
   const routerSkipped = !shouldFireRouter(classifierResult);
   if (!routerSkipped) {
-    routerResult = await routeQuery(sanitized);
+    routerResult = await routeQuery(sanitized, undefined, undefined, 'YOUTUBE');
     routerHandles = routerResult.handles;
   }
 
@@ -290,7 +290,7 @@ export async function runPipeline(
   const conversationMessages = buildConversationMessages(history, thread.text);
   const tBeforeLlm = Date.now();
   // No form here to apply an edit to, so no tools (US-15 AC19).
-  const completion = await getChatCompletion(systemBlocks, conversationMessages, false);
+  const completion = await getChatCompletion(systemBlocks, conversationMessages, false, undefined, { purpose: 'YOUTUBE' });
 
   return {
     classification: classifierResult.classification,

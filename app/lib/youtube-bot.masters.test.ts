@@ -465,7 +465,7 @@ describe('runPipeline: the reply-or-skip input (US-50 AC6)', () => {
   it('Discord: an older post the router picks is replaced by its master, and the result says so (US-50 AC14)', async () => {
     fakeFiles();
     pick(['tm-collagen-video']);
-    const result = await platformChatCompletion({ message: 'Is collagen worth it?', history: [] });
+    const result = await platformChatCompletion({ message: 'Is collagen worth it?', history: [], purpose: 'DISCORD' });
     const articles = systemOf().find(t => t.startsWith('## Referenced Blog Articles'))!;
     expect(articles).toContain('Collagen peptides');
     expect(articles).not.toContain("The old collagen video's text.");
@@ -498,7 +498,7 @@ describe('omega-3 affiliate disclosure in the assembled platform prompts (US-50 
   });
 
   it('Discord: the doctor posture and system prompt carry the disclosure', async () => {
-    await platformChatCompletion({ message: 'Which fish oil does Brad take?', history: [] });
+    await platformChatCompletion({ message: 'Which fish oil does Brad take?', history: [], purpose: 'DISCORD' });
     const prompt = lastSystem();
     expect(prompt).toContain('Platform: Discord');
     expect(prompt).toContain(`- **One exception, omega-3:**`);

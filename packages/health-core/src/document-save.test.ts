@@ -25,7 +25,7 @@ function io(opts: { fail?: boolean } = {}) {
   const errors: unknown[] = [];
   let n = 0;
   const value: DocumentSaveIO<Uint8Array> = {
-    hash: async (b) => hashOf(b),
+    stopped: () => false, hash: async (b) => hashOf(b),
     write: async (ref, b) => {
       if (opts.fail) throw new Error('synthetic quota refusal');
       written.set(ref, b);

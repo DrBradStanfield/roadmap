@@ -31,6 +31,7 @@ import {
   KNOWN_CLIENTS,
   redirectMatches,
   registerClient,
+  registrationMiss,
   resolveClient,
   type ClientMiss,
   type McpClient,
@@ -94,8 +95,6 @@ function connectFailed(reason: McpOAuthReason, grant?: { clientId: string; provi
 
 /** Why a sealed blob did not open, as the counter's word: nothing sent, or it would not unseal (US-32 AC48). */
 const sealMiss = (sent: string | null | undefined) => (sent ? 'unseal-failed' : 'missing') satisfies McpOAuthDetail;
-
-
 
 function notFound(): Response {
   return new Response('Not found', { status: 404 });
@@ -482,6 +481,7 @@ async function registerEndpoint(request: Request): Promise<Response> {
   }
   const client = registerClient(body);
   if (!client) {
+    if (allowRateLimitEvent(`register:${getClientIp(request, 'fly')}`)) void recordServerEvent('mcp_authorize_refused', { reason: 'register-redirect', detail: registrationMiss(body) });
     return oauthError('invalid_redirect_uri', 'This server registers only known assistant redirect URIs');
   }
   return Response.json(

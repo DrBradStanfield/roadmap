@@ -90,7 +90,7 @@ const EXTRACT_CONCURRENCY = 3;
 const EXTRACT_TIMEOUT_MS = 20_000;
 
 /** The model call. Tests pass their own through `HostedImporterOptions`; production passes none. */
-export type Extractor = (pages: PageContent[], opts: { timeoutMs: number; httpAttempts: number; documentMode: DocumentPromptMode }) => Promise<UnifiedExtractionResult>;
+export type Extractor = (pages: PageContent[], opts: { purpose: 'CONNECTOR'; timeoutMs: number; httpAttempts: number; documentMode: DocumentPromptMode }) => Promise<UnifiedExtractionResult>;
 
 // ---------------------------------------------------------------------------
 // Bytes: what kind, and what is inside
@@ -391,7 +391,7 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
         try {
           // One HTTP attempt per call, inside what is left: a malformed answer's one re-send shares the deadline.
           // Metadata only for a letter: the connector files no text, so none is asked for.
-          return { ...base, status: 'extracted', result: await extract(pages, { timeoutMs: Math.min(EXTRACT_TIMEOUT_MS, left), httpAttempts: 1, documentMode: 'metadata' }) };
+          return { ...base, status: 'extracted', result: await extract(pages, { purpose: 'CONNECTOR', timeoutMs: Math.min(EXTRACT_TIMEOUT_MS, left), httpAttempts: 1, documentMode: 'metadata' }) };
         } catch (error) {
           const reason = failureReason(error);
           if (reason === 'time') {

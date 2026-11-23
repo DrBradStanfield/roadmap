@@ -13,6 +13,8 @@ import { pipeline, type Transform } from 'node:stream';
 import zlib from 'node:zlib';
 import type { McpOAuthDetail } from '../../packages/health-core/src/product-events';
 import { clientHmacKey } from './mcp-config.server';
+import { GEMINI_CLIENT_ID, geminiEnabled, registerGemini } from './mcp-gemini.server';
+export { registrationMiss } from './mcp-gemini.server';
 import { b64url } from './mcp-seal.server';
 import { readCapped } from './capped-body.server';
 import { parseIpv6 } from './ip-groups.server';
@@ -22,7 +24,7 @@ import { parseIpv6 } from './ip-groups.server';
  * a counter becomes a log, and a DCR client's name is attacker-chosen text —
  * so only a pinned client gets a label, and everything else is 'other'.
  */
-export const MCP_CLIENT_LABELS = ['claude', 'claude_code', 'chatgpt', 'codex', 'other'] as const;
+export const MCP_CLIENT_LABELS = ['claude', 'claude_code', 'chatgpt', 'codex', 'gemini', 'other'] as const;
 
 export type McpClientLabel = (typeof MCP_CLIENT_LABELS)[number];
 
@@ -190,6 +192,8 @@ export const KNOWN_CLIENTS: ReadonlyMap<string, Readonly<KnownClient>> = new Map
       redirectUris: Object.freeze(['http://127.0.0.1/callback', 'http://localhost/callback']),
     },
   ],
+  // No list: its redirects are per user, judged by `isGeminiRedirect` (mcp-gemini.server.ts).
+  [GEMINI_CLIENT_ID, { clientId: GEMINI_CLIENT_ID, name: 'Gemini', label: 'gemini', redirectUris: Object.freeze([]) }],
 ]);
 
 interface ClientMetadata {
@@ -210,6 +214,8 @@ function canonicalMetadata(input: unknown): ClientMetadata | null {
 }
 
 export function registerClient(input: unknown): McpClient | null {
+  const gemini = registerGemini(input);
+  if (gemini) return gemini === 'refused' ? null : gemini;
   const metadata = canonicalMetadata(input);
   if (!metadata) return null;
   const body = Buffer.from(JSON.stringify(metadata), 'utf8');
@@ -451,7 +457,8 @@ export async function resolveClient(clientId: string, nowMs = Date.now(), miss: 
   }
   // Exact string only: a lookalike id falls through to the fetch path below.
   const known = KNOWN_CLIENTS.get(clientId);
-  if (known) return known;
+  // Switched off, the Gemini pin is no client (US-32 AC63).
+  if (known) return clientId === GEMINI_CLIENT_ID && !geminiEnabled() ? null : known;
   if (clientId.startsWith('https://')) return fetchClientMetadata(clientId, nowMs, miss);
   return null;
 }

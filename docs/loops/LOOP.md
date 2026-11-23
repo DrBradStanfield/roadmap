@@ -119,8 +119,8 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   gotcha archiving, plus the essentials restated below.
 - **First git act:** `git fetch origin main && git checkout main && git merge --ff-only origin/main` (cloud copies arrive
   on a detached HEAD since 2026-10-01, where pull and push fail).
-- Commit everything to main and push (no branches, no PRs; the cloud copy holds only this run's work, so local
-  sessions' worktree + PR rule doesn't apply — EXCEPT Tier 3 code changes, which go via `claude/` branch + PR).
+- Commit everything to main and push, by Brad's standing permission for every run (2026-11-22). No branches, no PRs:
+  the cloud copy holds only this run's work, so the local worktree + PR rule doesn't apply — EXCEPT Tier 3 code changes.
   `docs/products.md` must be a REAL file (mode 100644), never a symlink
   (inverted 2026-08-10; `scripts/check-symlinks.mjs` enforces).
 - **Landing check — the run's LAST git act**: `git rev-list --count

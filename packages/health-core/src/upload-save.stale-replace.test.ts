@@ -18,7 +18,7 @@ import { UPLOAD_TEXT } from './upload-text';
 import { uploadView } from './upload-view';
 
 const report: UnifiedExtractionResult = { classification: 'lab_report', reportDate: DAY, values: [core({ valueSI: 3.1, displayValue: 3.1 })], additionalValues: [], unrecognized: [], document: null };
-const off = { holds: () => false, original: () => null, mimeType: () => '', write: async () => {}, now: () => NOW };
+const off = { stopped: () => false, holds: () => false, original: () => null, mimeType: () => '', write: async () => {}, now: () => NOW };
 const reviewed = recordWith([{ kind: 'measurement', metricType: 'ldl', value: 4.2 }]);
 const ldl = (f: RoadmapFile) => f.labValues.filter((l) => l.metricName === 'ldl');
 const held = ldl(reviewed)[0];

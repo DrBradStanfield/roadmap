@@ -24,7 +24,7 @@
  * the last call win.
  */
 import { LAB_ARCHIVE_ROWS, labRowsByFile, listedRows, writtenLabRows } from './document-rows';
-import { committedFile, labArchivePayload, saveDocuments, type DocumentPayload } from './document-save';
+import { committedFile, labArchivePayload, saveDocuments, type DocumentPayload, type DocumentSaveIO } from './document-save';
 import { bulkAppendValues, type BulkAppendResult } from './record-edits';
 import { labReason } from './import-review';
 import { labTestLabel, labUnitTaken, resolveLabCatalogEntry } from './lab-catalog';
@@ -53,6 +53,10 @@ export interface UploadSaveIO<F> {
   mimeType(fileId: string): string;
   /** Write file `fileId`'s bytes at `ref` in the person's cloud; reject on failure. */
   write(ref: string, bytes: F, fileId: string): Promise<void>;
+  stopped: DocumentSaveIO<F>['stopped'];
+  makesFolders?: DocumentSaveIO<F>['makesFolders'];
+  onWriteError?: DocumentSaveIO<F>['onWriteError'];
+  settled?: DocumentSaveIO<F>['settled'];
   now?(): string;
   newId?(): string;
 }
@@ -133,7 +137,7 @@ export async function uploadSave<F>(s: UploadState, record: RoadmapFile, now: st
       await io.write(ref, bytes, f.fileId);
       wrote.add(ref);
     },
-    mimeType: (f) => io.mimeType(f.fileId), now: io.now, newId: io.newId,
+    mimeType: (f) => io.mimeType(f.fileId), stopped: () => io.stopped(), makesFolders: io.makesFolders, onWriteError: io.onWriteError, settled: io.settled, now: io.now, newId: io.newId,
   });
   // `documents`: the letters and documents the list showed to be saved, as the Save label counts them (owner ruling
   // 2026-11-20), never a lab report's hidden archive row nor an original filed behind a held row.
