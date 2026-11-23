@@ -1,7 +1,7 @@
 // US-25 AC29: the name under the app's icon is "Dr Brad". About 11 to 12
 // characters fit under a home screen icon before iOS cuts the name short
 // ("Health Roadma..."), and Apple wants it a recognisable short form of the
-// App Store name, "Health by Dr Brad" (Brad 2026-11-23, ios/architecture.md D17).
+// App Store name, "Health Roadmap by Dr Brad" (Brad 2026-11-23, ios/architecture.md D17).
 // Read from the project source, as lab-consent-wording.test.ts reads Swift.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
