@@ -22,7 +22,7 @@ Some files will not read. An old Word .doc file cannot be opened, so save it as 
 
 3. Press the + button beside the Blood tests heading. It is labelled Upload lab results. If you have the full table open (All results as a table), its Upload your lab results button does the same.
 
-4. The window first shows what the upload does. If you have not connected a cloud folder yet, it also asks whether to keep the original files. Press Choose where to keep it to connect Dropbox or Google Drive. Or press Continue without keeping the files. Your values are still saved that way, but the file itself is not kept.
+4. The window first shows what the upload does. If you have not connected a cloud folder yet, it also asks whether to keep the original files. Press Choose where to keep it to connect Dropbox or Google Drive. Or press Continue without keeping the files. What we read from each file is still saved that way, but the file itself is not kept.
 
 5. Drop your files in, or click to choose them. Reading starts straight away.
 

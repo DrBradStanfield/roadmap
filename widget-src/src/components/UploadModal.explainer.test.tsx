@@ -93,6 +93,37 @@ describe('US-12 AC32: a cloud connected, the drop zone', () => {
     expect(drawing()).toBeNull();
     expect(screen.queryByText(UPLOAD_EXPLAINER_TEXT.what)).toBeNull();
   });
+
+  // The web refuses only an over-limit file at the pick (fileVerdict); an unsupported one is tried and fails to read.
+  it.each([
+    ['one over-limit file', ['huge.pdf']],
+    ['one over-limit file and one unsupported file', ['huge.pdf', 'notes.txt']],
+  ])('stays gone after a pick of %s, so the notices sit under the drop zone', async (_, names) => {
+    Object.assign((window as unknown as { HealthUpload: object }).HealthUpload, { isPdf: (f: File) => f.name.endsWith('.pdf') });
+    show();
+    const files = names.map(name => {
+      const f = new File(['x'], name, { type: name.endsWith('.pdf') ? 'application/pdf' : 'text/plain' });
+      if (name === 'huge.pdf') Object.defineProperty(f, 'size', { value: 11 * 1024 * 1024 });
+      return f;
+    });
+    fireEvent.change(document.querySelector('input[type=file]')!, { target: { files } });
+    for (const name of names) await screen.findAllByText(new RegExp(name.replace('.', '\\.')));
+    expect(screen.getByText('Drop health records here, or click to browse')).toBeTruthy();
+    expect(drawing()).toBeNull();
+    expect(screen.queryByText(UPLOAD_EXPLAINER_TEXT.what)).toBeNull();
+  });
+
+  it('is back on a fresh open, and on the next open after a discarded review', async () => {
+    const { rerender } = show();
+    expect(drawing()).toBeTruthy();
+    pick();
+    await findReviewValue('3.9');
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    rerender(<UploadModal open={false} onOpen={() => {}} onClose={onClose} unitSystem="si" onComplete={() => {}} />);
+    rerender(<UploadModal open onOpen={() => {}} onClose={onClose} unitSystem="si" onComplete={() => {}} />);
+    expect(drawing()).toBeTruthy();
+    expect(screen.getByText(UPLOAD_EXPLAINER_TEXT.what)).toBeTruthy();
+  });
 });
 
 describe('US-12 AC32: the reader sentence follows the build', () => {

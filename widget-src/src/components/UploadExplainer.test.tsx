@@ -37,9 +37,9 @@ describe('US-12 AC32: the upload explainer', () => {
     expect(what.closest('[aria-hidden="true"]')).toBeNull();
   });
 
-  it("names Dr Brad's server when the server reads the files", () => {
+  it('names our server when the server reads the files (the US-09 AC5 "our server" rule)', () => {
     render(<UploadExplainer reader="server" />);
-    expect(screen.getByText("Claude reads them through Dr Brad's server, which keeps no copy.")).toBeTruthy();
+    expect(screen.getByText('Claude reads them through our server, which keeps no copy.')).toBeTruthy();
     expect(screen.queryByText(UPLOAD_EXPLAINER_TEXT.reader.ownKey)).toBeNull();
   });
 
@@ -49,13 +49,15 @@ describe('US-12 AC32: the upload explainer', () => {
     expect(screen.queryByText(UPLOAD_EXPLAINER_TEXT.reader.server)).toBeNull();
   });
 
-  it('pins the draft words, with no em dash', () => {
+  it('pins the approved words, with no em dash', () => {
+    // "You review them": sure values sit behind Show all (US-13 AC13), so not each one is checked.
     expect(UPLOAD_EXPLAINER_TEXT.what).toBe(
-      "Add your medical records: a ZIP, PDFs or photos. We read the test results in your lab reports and clinic letters. You check each one before it's saved.",
+      'Add your medical records: a ZIP, PDFs or photos. We read the test results in your lab reports and clinic letters. You review them before anything is saved.',
     );
     expect(UPLOAD_EXPLAINER_TEXT.connectTitle).toBe('Keep the original files too?');
+    // With no cloud a letter's read text is still saved, as a text-only row (US-52 AC13d).
     expect(UPLOAD_EXPLAINER_TEXT.connectText).toBe(
-      'Connect your own Dropbox or Google Drive and each file is kept there, sorted into Lab results, Clinic letters and Scans. Without it, only the values you confirm are saved.',
+      'Connect your own Dropbox or Google Drive and your original files are kept there, in folders such as Lab results, Clinic letters and Scans. Without it, what we read from each file is saved, but the file itself is not kept.',
     );
     expect(UPLOAD_EXPLAINER_TEXT.connectSkip).toBe('Continue without keeping the files ›');
     for (const words of Object.values(UPLOAD_EXPLAINER_TEXT).flat()) {

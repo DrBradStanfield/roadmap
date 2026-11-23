@@ -74,12 +74,13 @@ export const UPLOAD_TEXT = {
 /**
  * What the upload is, said before anything is picked (US-12 AC32, US-52 AC13b): the web's sentences, the
  * drawing's words, which LabUploadExplainer.swift also draws (pinned by ios/engine/upload-explainer-wording.test.ts),
- * and the web's connect panel. Drafts for Brad, 2026-11-23.
+ * and the web's connect panel. Brad approved the words 2026-11-23 ('Do it'); three sentences corrected for truth
+ * after review the same day. The reader sentences follow the "our server" copy rule (storage-notice.test.tsx).
  */
 export const UPLOAD_EXPLAINER_TEXT = {
-  what: "Add your medical records: a ZIP, PDFs or photos. We read the test results in your lab reports and clinic letters. You check each one before it's saved.",
+  what: 'Add your medical records: a ZIP, PDFs or photos. We read the test results in your lab reports and clinic letters. You review them before anything is saved.',
   reader: {
-    server: "Claude reads them through Dr Brad's server, which keeps no copy.",
+    server: 'Claude reads them through our server, which keeps no copy.',
     ownKey: 'Claude reads them with your own Anthropic key. No server of ours sees them.',
   } satisfies Record<UploadReader, string>,
   letter: 'Letter',
@@ -88,7 +89,7 @@ export const UPLOAD_EXPLAINER_TEXT = {
   /** Names only, never a value. */
   results: ['LDL', 'HbA1c', 'ApoB'],
   connectTitle: 'Keep the original files too?',
-  connectText: 'Connect your own Dropbox or Google Drive and each file is kept there, sorted into Lab results, Clinic letters and Scans. Without it, only the values you confirm are saved.',
+  connectText: 'Connect your own Dropbox or Google Drive and your original files are kept there, in folders such as Lab results, Clinic letters and Scans. Without it, what we read from each file is saved, but the file itself is not kept.',
   connectButton: 'Choose where to keep it',
   connectSkip: 'Continue without keeping the files ›',
 } as const;

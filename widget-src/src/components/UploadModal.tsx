@@ -82,8 +82,9 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onSetFieldUnit, o
         </div>
 
         <div className="upload-modal-body">
-          {/* What the upload is, before anything is picked (US-12 AC32); the Shopify build reads through our server. */}
-          {picking && files.length === 0 && <UploadExplainer reader={flow.upload.reader ?? 'server'} />}
+          {/* What the upload is, before anything is picked (US-12 AC32): 'picking' has no read error, and a pick
+              whose every file was refused leaves its notices, which take the explainer's place. */}
+          {phase === 'picking' && notices.length === 0 && <UploadExplainer reader={flow.reader} />}
           {picking && archiveMode === 'device-only' && !skipArchive && (
             <div className="upload-select upload-connect-first">
               <h3 className="upload-connect-title">{UPLOAD_EXPLAINER_TEXT.connectTitle}</h3>
