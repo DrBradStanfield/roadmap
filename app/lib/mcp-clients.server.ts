@@ -2,7 +2,7 @@
  * Who is allowed to ask: pinned vendor clients, CIMD, and DCR as the fallback
  * (US-32, design §2/§4).
  *
- * NOTHING HERE MAY LOG A URL.
+ * Nothing here may log a URL; `redirectShapes` logs allow-listed words and lengths only.
  */
 import crypto from 'node:crypto';
 import { sameBytes } from './crypto-compare.server';

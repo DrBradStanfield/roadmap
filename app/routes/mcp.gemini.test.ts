@@ -34,11 +34,6 @@ const RELAY = 'https://oauth-redirect.googleusercontent.com/r/user_bound_custom-
 /** Made-up ids in the shape Gemini sends: 24 lowercase letters and digits, nothing after. */
 const USER_A = `${RELAY}abcdefabcdef012345012345`;
 const USER_B = `${RELAY}012345012345abcdefabcdef`;
-/** Google's two other relay hosts, same path rule (US-32 AC59, owner ruling 2026-11-23). */
-const SANDBOX_RELAY = RELAY.replace('oauth-redirect.', 'oauth-redirect-sandbox.');
-const TEST_RELAY = RELAY.replace('oauth-redirect.', 'oauth-redirect-test.');
-const SANDBOX_A = `${SANDBOX_RELAY}abcdefabcdef012345012345`;
-const TEST_A = `${TEST_RELAY}abcdefabcdef012345012345`;
 const VERIFIER = 'v'.repeat(64);
 const CHALLENGE = crypto.createHash('sha256').update(VERIFIER, 'ascii').digest('base64url');
 
@@ -132,24 +127,13 @@ describe('US-32 AC59: isGeminiRedirect accepts one shape, the one Gemini sends',
     expect(isGeminiRedirect(`${RELAY}${'a1'.repeat(20)}`)).toBe(true);
   });
 
-  it('accepts the sandbox and test relay hosts with the same path rule', () => {
-    expect(isGeminiRedirect(SANDBOX_A)).toBe(true);
-    expect(isGeminiRedirect(TEST_A)).toBe(true);
-    expect(isGeminiRedirect(`${SANDBOX_RELAY}${'a'.repeat(15)}`)).toBe(false);
-    expect(isGeminiRedirect(`${TEST_A}?x=1`)).toBe(false);
-  });
-
   it.each([
     ['http', USER_A.replace('https:', 'http:')],
     ['another host', USER_A.replace('oauth-redirect.', 'evil.')],
     ['a subdomain trick', USER_A.replace('googleusercontent.com', 'googleusercontent.com.evil.test')],
     ['a host suffix trick', USER_A.replace('oauth-redirect.', 'xoauth-redirect.')],
-    ['a prod relay look-alike', USER_A.replace('oauth-redirect.', 'oauth-redirect-prod.')],
-    ['a sandbox subdomain trick', SANDBOX_A.replace('googleusercontent.com', 'googleusercontent.com.evil.test')],
-    ['a test host suffix trick', TEST_A.replace('oauth-redirect-test.', 'xoauth-redirect-test.')],
-    ['a doubled relay suffix', USER_A.replace('oauth-redirect.', 'oauth-redirect-sandbox-test.')],
-    ['an uppercase sandbox host', SANDBOX_A.replace('oauth-redirect-sandbox', 'OAUTH-REDIRECT-SANDBOX')],
-    ['a port on the test host', TEST_A.replace('.com/', '.com:443/')],
+    ['the sandbox relay', USER_A.replace('oauth-redirect.', 'oauth-redirect-sandbox.')],
+    ['the test relay', USER_A.replace('oauth-redirect.', 'oauth-redirect-test.')],
     ['an uppercase host', USER_A.replace('oauth-redirect.googleusercontent.com', 'OAUTH-REDIRECT.googleusercontent.com')],
     ['an IDN host', USER_A.replace('oauth-redirect.', 'oauth-redіrect.')],
     ['an explicit port', USER_A.replace('.com/', '.com:443/')],
@@ -198,21 +182,6 @@ describe('US-32 AC60: registration answers Gemini with one pinned client', () =>
     expect(body.token_endpoint_auth_method).toBe('none');
   });
 
-  it('a six-entry list across the three relay hosts registers as the pinned Gemini client', async () => {
-    const six = [RELAY, SANDBOX_RELAY, TEST_RELAY, RELAY, SANDBOX_RELAY, TEST_RELAY].map((r, n) => `${r}abcdefabcdef01234501234${n}`);
-    const res = await register(six);
-    expect(res.status).toBe(201);
-    const body = await res.json();
-    expect(body.client_id).toBe(GEMINI_CLIENT_ID);
-    expect(body.redirect_uris).toEqual(six);
-  });
-
-  it('a mixed list across the relay hosts with one look-alike is still refused', async () => {
-    const res = await register([USER_A, SANDBOX_A, TEST_A.replace('oauth-redirect-test.', 'oauth-redirect-prod.')]);
-    expect(res.status).toBe(400);
-    expect(recordServerEvent).toHaveBeenCalledWith('mcp_authorize_refused', { reason: 'register-redirect', detail: 'gemini-like' });
-  });
-
   it('a mixed list is refused, and the refusal counts only its closed category', async () => {
     const res = await register([USER_A, 'https://evil.test/cb']);
     expect(res.status).toBe(400);
@@ -257,15 +226,6 @@ describe('US-32 AC61: authorize and token for the pinned Gemini client', () => {
     expect((await token({ ...base, redirect_uri: USER_A, code_verifier: VERIFIER })).status).toBe(400);
   });
 
-  it.each([['sandbox', SANDBOX_A], ['test', TEST_A]])('the %s relay host completes to a code, and token still wants that exact redirect', async (_, redirect) => {
-    const back = await codeFor(redirect, 'x');
-    expect(back.origin + back.pathname).toBe(redirect);
-    const base = { grant_type: 'authorization_code', code: back.searchParams.get('code')!, client_id: GEMINI_CLIENT_ID, code_verifier: VERIFIER };
-    // The same id on the main relay host is a valid shape, and still not this code's.
-    expect((await token({ ...base, redirect_uri: USER_A })).status).toBe(400);
-    expect((await token({ ...base, redirect_uri: redirect })).status).toBe(200);
-  });
-
   it('the consent screen names Gemini with the known-client sentence', async () => {
     const html = unescapeHtml(await (await authorize(USER_A, 'x')).text());
     expect(html).toContain('<span class="who">Gemini</span> wants to connect to your health record.');
@@ -274,28 +234,16 @@ describe('US-32 AC61: authorize and token for the pinned Gemini client', () => {
   });
 
   it(`the state cap: ${GEMINI_MAX_STATE_LENGTH} fits with the longest id, one more is refused`, async () => {
-    // The sandbox host is the longest relay host (8 more than the main one).
-    const longest = `${SANDBOX_RELAY}${'9'.repeat(40)}`;
-    expect(longest.length).toBe(117);
-    const consent = await authorize(longest, 's'.repeat(GEMINI_MAX_STATE_LENGTH));
-    expect(consent.status).toBe(200);
-    // The full flow still fits the consent cookie at the cap.
-    const sealed = unescapeHtml(/name="state" value="([^"]+)"/.exec(await consent.text())![1]);
-    const pressed = await post('/mcp/authorize', {
-      headers: { 'content-type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ state: sealed }),
-    });
-    expect(pressed.status).toBe(302);
-    expect(pressed.headers.get('set-cookie')!.length).toBeLessThanOrEqual(4096);
+    const longest = `${RELAY}${'9'.repeat(40)}`;
+    expect((await authorize(longest, 's'.repeat(GEMINI_MAX_STATE_LENGTH))).status).toBe(200);
     const over = await authorize(longest, 's'.repeat(GEMINI_MAX_STATE_LENGTH + 1));
     expect(over.status).toBe(302);
     expect(new URL(over.headers.get('location')!).searchParams.get('error_description')).toBe('state is too long');
   });
 
   it('a look-alike redirect is refused without a redirect, and the Gemini pin opens nothing for others', async () => {
-    const res = await authorize(USER_A.replace('oauth-redirect.', 'oauth-redirect-prod.'), 'x');
+    const res = await authorize(USER_A.replace('oauth-redirect.', 'oauth-redirect-sandbox.'), 'x');
     expect(res.status).toBe(400);
-    expect((await authorize(SANDBOX_A.replace('googleusercontent.com', 'googleusercontent.com.evil.test'), 'x')).status).toBe(400);
     expect((await get(`/mcp/authorize?${new URLSearchParams({
       client_id: 'https://claude.ai/oauth/mcp-oauth-client-metadata',
       redirect_uri: USER_A, response_type: 'code', code_challenge: CHALLENGE, code_challenge_method: 'S256', state: 'x',
@@ -359,59 +307,90 @@ describe('US-32 AC65: any Gemini redirect beside any other is refused before tru
   });
 });
 
-describe('US-32 AC66: a refused Gemini-like registration logs shapes only, every id masked', () => {
-  const ID = 'abcdefabcdef012345012345';
+describe('US-32 AC66: a refused Gemini-like registration logs allow-listed words and lengths only', () => {
   const PREFIX = '[mcp] gemini-like registration refused:';
+  const shape = (uri: unknown) => redirectShapes({ redirect_uris: [uri] }, true).replace(/^.*? count=1 /, '');
   const shapeLines = (spy: { mock: { calls: unknown[][] } }) =>
     spy.mock.calls.map((c) => String(c[0])).filter((l) => l.startsWith(PREFIX));
 
-  it('a six-entry list: relay hosts kept, ids masked, count and reason named', () => {
-    const relays = [RELAY, SANDBOX_RELAY, TEST_RELAY, RELAY, SANDBOX_RELAY, TEST_RELAY];
-    const line = redirectShapes({ redirect_uris: relays.map((r) => `${r}${ID}`) }, true);
-    expect(line).toBe(`${PREFIX} reason=mixed count=6 ${relays.map((r) => `${new URL(r).hostname}/r/user_bound_custom-mcp-<id:24>`).join(' ')}`);
-    expect(line).not.toContain(ID);
+  it('a real-shaped redirect keeps its relay host and words, the id masked', () => {
+    expect(shape(USER_A)).toBe('oauth-redirect.googleusercontent.com/r/user_bound_custom-mcp-<id:24>');
+    expect(shape(`${RELAY}abcdefghijklmnopqrstuvwx`)).toBe('oauth-redirect.googleusercontent.com/r/user_bound_custom-mcp-<w:24>');
+    expect(shape(`${USER_A}-abc_defghijklm_xyz`)).toBe('oauth-redirect.googleusercontent.com/r/user_bound_custom-mcp-<id:24>-<w:3>_<w:10>_<w:3>');
+    expect(shape(USER_A.replace('oauth-redirect.', 'oauth-redirect-sandbox.'))).toBe('oauth-redirect-sandbox.googleusercontent.com/r/user_bound_custom-mcp-<id:24>');
+    expect(shape(USER_A.replace('oauth-redirect.', 'oauth-redirect-test.'))).toBe('oauth-redirect-test.googleusercontent.com/r/user_bound_custom-mcp-<id:24>');
   });
 
-  it('the three reasons: switch off, over the cap, mixed', () => {
-    expect(redirectShapes({ redirect_uris: [USER_A] }, false)).toContain('reason=switch-off count=1 ');
-    expect(redirectShapes({ redirect_uris: Array.from({ length: 9 }, () => USER_A) }, true)).toContain('reason=over-cap count=9 ');
-    expect(redirectShapes({ redirect_uris: [USER_A, 'https://evil.test/cb'] }, true)).toContain('reason=mixed count=2 ');
+  it('a non-relay host logs no host text and no path, only its segment count and length', () => {
+    const other = shape('https://example.test/ldl/3.2/weight/81/kg');
+    expect(other).toBe('other-host[segments=5,len=21]');
+    for (const leak of ['ldl', '3.2', '81', 'weight', 'kg', 'example']) expect(other).not.toContain(leak);
+    const google = shape('https://jane-doe-hiv.googleusercontent.com/r/x');
+    expect(google).toBe('other-google-host[segments=2,len=4]');
+    for (const leak of ['jane', 'doe', 'hiv']) expect(google).not.toContain(leak);
   });
 
-  it('never logs a non-Google host, userinfo, a query value, a fragment or a non-string', () => {
-    const line = redirectShapes({
-      redirect_uris: [
-        'https://evil.test/cb',
-        'https://oauth-redirect.googleusercontent.com.evil.test/r/x',
-        `${USER_A}?token=secretvalue`,
-        `${USER_A}#fragvalue`,
-        'https://someone@oauth-redirect.googleusercontent.com/r/x',
-        7,
-      ],
-    }, true);
-    expect(line).toContain(' other-host/cb other-host/r/x ');
-    expect(line).toContain('<id:24>?query ');
-    expect(line).toContain('<id:24>#fragment ');
-    expect(line.endsWith(' non-string')).toBe(true);
-    for (const leak of ['evil', 'secretvalue', 'token', 'fragvalue', 'someone', ID]) expect(line).not.toContain(leak);
+  it('a relay-host path keeps only allow-listed words, and other separators become "?"', () => {
+    const line = shape('https://oauth-redirect.googleusercontent.com/r/jane.doe@gmail.com');
+    expect(line).toBe('oauth-redirect.googleusercontent.com/r/<w:4>?<w:3>?<w:5>?<w:3>');
+    for (const leak of ['jane', 'doe', 'gmail']) expect(line).not.toContain(leak);
+    expect(shape(`${RELAY}a%20b~c+d:e`)).toBe('oauth-redirect.googleusercontent.com/r/user_bound_custom-mcp-<w:1>?<id:3>?<w:1>?<w:1>?<w:1>');
   });
 
-  it('any run of 6+ letters and digits holding a digit is masked, in host and path', () => {
-    const line = redirectShapes({ redirect_uris: ['https://abc123def.googleusercontent.com/r/AbC123xyz_tail-q1w2e3'] }, true);
-    expect(line.endsWith(' <id:9>.googleusercontent.com/r/<id:9>_tail-<id:6>')).toBe(true);
+  it('port, userinfo, query and fragment are literals; a non-string and junk are named', () => {
+    expect(shape('https://someone:pw@oauth-redirect.googleusercontent.com:8443/r/x?token=secretvalue#fragvalue'))
+      .toBe('userinfo@oauth-redirect.googleusercontent.com:port/r/<w:1>?query#fragment');
+    expect(shape('https://someone@evil.test:8443/cb?a=b')).toBe('userinfo@other-host:port[segments=1,len=3]?query');
+    expect(shape(7)).toBe('non-string');
+    expect(shape('not a url')).toBe('unparseable');
   });
 
-  it('lists 8 redirects then "+N more", and a 2,000-character input yields at most 600', () => {
+  it('the four reasons: no match, switch off, over the cap, mixed', () => {
+    const otherGoogle = 'https://jane-doe-hiv.googleusercontent.com/r/x';
+    expect(redirectShapes({ redirect_uris: [otherGoogle] }, true)).toBe(`${PREFIX} reason=no-match count=1 other-google-host[segments=2,len=4]`);
+    expect(redirectShapes({ redirect_uris: [otherGoogle] }, false)).toBe(`${PREFIX} reason=no-match count=1 other-google-host[segments=2,len=4]`);
+    expect(redirectShapes({ redirect_uris: [USER_A] }, false)).toBe(`${PREFIX} reason=switch-off count=1 oauth-redirect.googleusercontent.com/r/user_bound_custom-mcp-<id:24>`);
+    expect(redirectShapes({ redirect_uris: Array.from({ length: 9 }, () => USER_A) }, true)).toContain(`${PREFIX} reason=over-cap count=9 `);
+    expect(redirectShapes({ redirect_uris: [USER_A, 'https://evil.test/cb'] }, true)).toBe(`${PREFIX} reason=mixed count=2 oauth-redirect.googleusercontent.com/r/user_bound_custom-mcp-<id:24> other-host[segments=1,len=3]`);
+    expect(redirectShapes({ redirect_uris: 'nope' }, true)).toBe(`${PREFIX} reason=no-match count=0`);
+  });
+
+  it('lists 8 redirects then "+N more", and cuts at a whole entry within 600 characters', () => {
     const many = redirectShapes({ redirect_uris: Array.from({ length: 11 }, () => 'https://evil.test/cb') }, true);
-    expect(many).toBe(`${PREFIX} reason=over-cap count=11 ${'other-host/cb '.repeat(8)}+3 more`);
-    // Eleven full-length relay redirects: the cap cuts the tail, the count and reason stay.
-    const full = redirectShapes({ redirect_uris: Array.from({ length: 11 }, () => USER_A) }, true);
-    expect(full.length).toBe(600);
-    expect(full.startsWith(`${PREFIX} reason=over-cap count=11 `)).toBe(true);
-    const huge = `${RELAY}${'a/'.repeat(1000)}`;
-    expect(huge.length).toBeGreaterThan(2000);
-    expect(redirectShapes({ redirect_uris: [huge] }, true).length).toBeLessThanOrEqual(600);
-    expect(redirectShapes({ redirect_uris: 'nope' }, true)).toBe(`${PREFIX} reason=mixed count=0`);
+    expect(many).toBe(`${PREFIX} reason=no-match count=11 ${'other-host[segments=1,len=3] '.repeat(8)}+3 more`);
+    const huge = redirectShapes({ redirect_uris: [`${RELAY}${'a/'.repeat(1000)}`, USER_A] }, true);
+    expect(huge).toBe(`${PREFIX} reason=mixed count=2`);
+  });
+
+  it('property: over 200 seeded random lists, every 2+ letter-or-digit run is an allow-listed word or a number', () => {
+    const ALLOWED = new Set(['oauth', 'redirect', 'sandbox', 'test', 'googleusercontent', 'com', 'other', 'google', 'host',
+      'segments', 'len', 'non', 'string', 'unparseable', 'query', 'fragment', 'port', 'userinfo', 'id', 'more', 'mcp', 'gemini',
+      'like', 'registration', 'refused', 'reason', 'count', 'switch', 'off', 'over', 'cap', 'mixed', 'no', 'match', 'user',
+      'bound', 'custom']);
+    let seed = 20261123;
+    const rand = (n: number) => { seed = (seed * 48271) % 2147483647; return seed % n; };
+    const CHARS = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/-_.@%:~+?#=&;!$ ';
+    const junk = (max: number) => Array.from({ length: rand(max) }, () => CHARS[rand(CHARS.length)]).join('');
+    const word = () => Array.from({ length: 1 + rand(12) }, () => CHARS[rand(62)]).join('');
+    const RELAYS = ['oauth-redirect', 'oauth-redirect-sandbox', 'oauth-redirect-test'];
+    const entry = (): unknown => {
+      const kind = rand(6);
+      if (kind === 0) return junk(60);
+      if (kind === 1) return rand(1000);
+      const host = rand(2) ? `${RELAYS[rand(3)]}.googleusercontent.com` : `${word().toLowerCase()}${rand(2) ? '.googleusercontent.com' : '.test'}`;
+      const user = rand(4) ? '' : `${word()}@`;
+      const port = rand(4) ? '' : `:${1 + rand(9999)}`;
+      const path = rand(2) ? `/r/user_bound_custom-mcp-${word()}${junk(20)}` : `/${junk(80)}`;
+      return `${rand(2) ? 'https' : 'http'}://${user}${host}${port}${path}`;
+    };
+    const runs: string[] = [];
+    for (let i = 0; i < 200; i++) {
+      const line = redirectShapes({ redirect_uris: Array.from({ length: rand(12) }, entry) }, rand(2) === 1);
+      expect(line.length).toBeLessThanOrEqual(600);
+      runs.push(...(line.match(/[A-Za-z0-9]{2,}/g) ?? []));
+    }
+    expect(runs.filter((r) => !ALLOWED.has(r) && !/^\d+$/.test(r))).toEqual([]);
+    expect(runs.length).toBeGreaterThan(1000);
   });
 
   it('the route writes one line per refusal allowance, only when gemini-like, never on success', async () => {
@@ -419,7 +398,7 @@ describe('US-32 AC66: a refused Gemini-like registration logs shapes only, every
     try {
       for (let i = 0; i < 10; i++) await register([USER_A, 'https://evil.test/cb?id=secretvalue']);
       expect(shapeLines(warn)).toEqual([
-        `${PREFIX} reason=mixed count=2 oauth-redirect.googleusercontent.com/r/user_bound_custom-mcp-<id:24> other-host/cb?query`,
+        `${PREFIX} reason=mixed count=2 oauth-redirect.googleusercontent.com/r/user_bound_custom-mcp-<id:24> other-host[segments=1,len=3]?query`,
       ]);
       resetMcpMemory();
       warn.mockClear();

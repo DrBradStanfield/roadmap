@@ -363,6 +363,11 @@ To verify the rest, a US tester connects once while someone watches
 `authorize refused` line (host only), and counts `mcp_authorize_shown`, `mcp_connect` and
 `mcp_connect_failed` rows with `client = gemini`, plus `mcp_authorize_refused` rows with
 `reason = register-redirect` (`detail` `gemini-like` means Gemini sent a shape we do not accept).
+Each such refusal also writes one `[mcp] gemini-like registration refused:` line, read with
+`fly logs -a health-tool-edu`: the reason, the redirect count, and each redirect's shape in
+allow-listed words and lengths only (US-32 AC66). It shares the refusal allowance: one line per
+caller address per minute, so a refusal of another kind from the same address in that minute
+can use the allowance up and the line never appears.
 `file_results` is the chat route: you drop a file into ChatGPT or Claude, on any device
 and on either cloud, and your assistant reads it itself; the file never reaches our
 server. Only the values it read do, in memory for one request, and they are written to
