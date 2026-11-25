@@ -210,6 +210,9 @@ issue, and nothing private.
   trying it a second time.", or "Nothing was written."; "<provider> returned an answer that could not be used.";
   "<provider> needs to be reconnected. Nothing was written."; after a save's own read, an access refusal says only
   "Nothing was written."
+- A YouTube follow-up's classifier and router see the parent comment and the author's own earlier replies, by the
+  same rule as web and Discord (H415, US-15 AC75): "the router should see the earlier comments. youtube, web, and discord should behave the same here, and so
+  probably use the same code". No new words.
 
 2026-11-23, Brad's words in quotes:
 - Original files are stored in the background after Save, with no action from the person at Save and at every
