@@ -13,6 +13,7 @@ import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import { BloodTestTimeline, ValueCell } from './BloodTestTimeline';
 import { hidePage, pickDraftDate, press, pressMouse, pressWithoutFocus, releaseMouse, showPage, turnFrom, typeInto, typeWithoutTap } from '../testing/matrix-gestures';
 import { slotOf, type Refused, type SaveTask } from '../lib/matrix-save';
+import { getShownErase } from '../lib/roadmap-data';
 import { noteDevicePage } from '../lib/storage';
 
 // This page's record is open, on this device: the drafts it keeps are its own (US-11 AC6).
@@ -91,7 +92,7 @@ describe('US-04 — the saved-value editor', () => {
     fireEvent.change(input, { target: { value: '3.24' } });
     fireEvent.keyDown(input, { key: 'Enter' });
     await wait(0);
-    expect(onCorrect).toHaveBeenCalledWith('r1', 3.24);
+    expect(onCorrect).toHaveBeenCalledWith('r1', 3.24, getShownErase());
   });
 
   it('US-03 AC3: a lab value re-entered as displayed (1.17 over a stored 1.1655) writes nothing', async () => {
@@ -108,7 +109,7 @@ describe('US-04 — the saved-value editor', () => {
     fireEvent.change(input, { target: { value: '100' } });
     fireEvent.keyDown(input, { key: 'Enter' });
     await wait(0);
-    expect(onCorrect).toHaveBeenCalledWith('r1', toCanonicalValue('ldl', 100, 'conventional'));
+    expect(onCorrect).toHaveBeenCalledWith('r1', toCanonicalValue('ldl', 100, 'conventional'), getShownErase());
   });
 
   // US-02 AC7: "1,234" is read in the editor's unit, or asked about.
@@ -133,7 +134,7 @@ describe('US-04 — the saved-value editor', () => {
     fireEvent.change(cr.input, { target: { value: '1,234' } });
     fireEvent.keyDown(cr.input, { key: 'Enter' });
     await wait(0);
-    expect(cr.onCorrect).toHaveBeenCalledWith('r1', 1234);
+    expect(cr.onCorrect).toHaveBeenCalledWith('r1', 1234, getShownErase());
   });
 
   it('US-02 AC7: a lab value has no range, so "1,050" asks and writes nothing', async () => {
@@ -161,7 +162,7 @@ describe('US-04 — the saved-value editor', () => {
     fireEvent.change(input, { target: { value: '54' } });
     fireEvent.keyDown(input, { key: 'Enter' });
     await wait(0);
-    expect(onCorrect).toHaveBeenCalledWith('r1', 54);
+    expect(onCorrect).toHaveBeenCalledWith('r1', 54, getShownErase());
   });
 
   // US-05 AC2: the page's unit switch never changes a lab value's unit, so a
@@ -181,7 +182,7 @@ describe('US-04 — the saved-value editor', () => {
     await wait(1200);
     releaseMouse(pill);
     await wait(0);
-    expect(onCorrect).toHaveBeenCalledWith('r1', 54);
+    expect(onCorrect).toHaveBeenCalledWith('r1', 54, getShownErase());
     expect(view.queryByText('Not saved: choose the unit first, then type the value.')).toBeNull();
   });
 
@@ -219,7 +220,7 @@ describe('US-04 — the saved-value editor', () => {
     fireEvent.change(input, { target: { value: '3.3' } });
     fireEvent.keyDown(input, { key: 'Enter' });
     await wait(0);
-    expect(onCorrect).toHaveBeenCalledWith('r1', 3.3);
+    expect(onCorrect).toHaveBeenCalledWith('r1', 3.3, getShownErase());
   });
 
   it('a value replaced elsewhere closes the editor, and the cell says the edit was not saved', async () => {
@@ -438,7 +439,7 @@ describe('US-04 / US-05 AC2 — a unit switch while correcting LDL', () => {
     expect(p.onCorrectValue).not.toHaveBeenCalled();
     await wait(100);
     expect(p.onCorrectValue).toHaveBeenCalledTimes(1);
-    expect(p.onCorrectValue).toHaveBeenCalledWith('row0', 3.5);
+    expect(p.onCorrectValue).toHaveBeenCalledWith('row0', 3.5, getShownErase());
     expect(within(p.ldl()).queryByText(UNIT_CHANGED)).toBeNull();
     expect(within(p.ldl()).queryByText(UNIT_FIRST)).toBeNull();
   });
@@ -449,7 +450,7 @@ describe('US-04 / US-05 AC2 — a unit switch while correcting LDL', () => {
     await p.clickNoFocus(p.hdlChip, 1200);
     await wait(0);
     expect(p.onCorrectValue).toHaveBeenCalledTimes(1);
-    expect(p.onCorrectValue).toHaveBeenCalledWith('row0', 3.5);
+    expect(p.onCorrectValue).toHaveBeenCalledWith('row0', 3.5, getShownErase());
     expect(p.chip().textContent).toBe('mmol/L');
     expect(within(p.ldl()).queryByText(UNIT_FIRST)).toBeNull();
   });
@@ -460,7 +461,7 @@ describe('US-04 / US-05 AC2 — a unit switch while correcting LDL', () => {
     await p.click(p.hdlChip, 200);
     expect(p.onCorrectValue).not.toHaveBeenCalled(); // the click had not run when the save was due
     await wait(0);
-    expect(p.onCorrectValue).toHaveBeenCalledWith('row0', 3.5);
+    expect(p.onCorrectValue).toHaveBeenCalledWith('row0', 3.5, getShownErase());
   });
 
   it('Tab from the editor to its own chip writes nothing, says to choose the unit first, and leaves the focus on the chip', async () => {
@@ -479,7 +480,7 @@ describe('US-04 / US-05 AC2 — a unit switch while correcting LDL', () => {
     fireEvent.change(p.input, { target: { value: '3.5' } });
     act(() => p.hdlChip().focus());
     await wait(200);
-    expect(p.onCorrectValue).toHaveBeenCalledWith('row0', 3.5);
+    expect(p.onCorrectValue).toHaveBeenCalledWith('row0', 3.5, getShownErase());
   });
 
   it('a click anywhere else still saves after 150 ms', async () => {
@@ -489,7 +490,7 @@ describe('US-04 / US-05 AC2 — a unit switch while correcting LDL', () => {
     await wait(100);
     expect(p.onCorrectValue).not.toHaveBeenCalled();
     await wait(100);
-    expect(p.onCorrectValue).toHaveBeenCalledWith('row0', 3.5);
+    expect(p.onCorrectValue).toHaveBeenCalledWith('row0', 3.5, getShownErase());
   });
 
   // Adversary R5: a click-away save pending when another device's switch lands.
@@ -568,7 +569,7 @@ describe('US-04 / US-05 AC2 — a unit switch while correcting LDL', () => {
     expect(p.onCorrectValue).not.toHaveBeenCalled();
     await wait(100);
     expect(p.onCorrectValue).toHaveBeenCalledTimes(1);
-    expect(p.onCorrectValue).toHaveBeenCalledWith('row0', 3.5);
+    expect(p.onCorrectValue).toHaveBeenCalledWith('row0', 3.5, getShownErase());
     expect(within(p.ldl()).queryByText(UNIT_CHANGED)).toBeNull();
   });
 
@@ -592,7 +593,7 @@ describe('US-04 / US-05 AC2 — a unit switch while correcting LDL', () => {
     hidePage();
     await wait(0);
     expect(p.onCorrectValue).toHaveBeenCalledTimes(1);
-    expect(p.onCorrectValue).toHaveBeenCalledWith('row0', 3.5);
+    expect(p.onCorrectValue).toHaveBeenCalledWith('row0', 3.5, getShownErase());
     await wait(1500);
     expect(p.onCorrectValue).toHaveBeenCalledTimes(1);
   });
@@ -604,7 +605,7 @@ describe('US-04 / US-05 AC2 — a unit switch while correcting LDL', () => {
     await wait(200);
     act(() => { window.dispatchEvent(new Event('pagehide')); });
     await wait(0);
-    expect(p.onCorrectValue).toHaveBeenCalledWith('row0', 3.5);
+    expect(p.onCorrectValue).toHaveBeenCalledWith('row0', 3.5, getShownErase());
   });
 
   // Codex R2 / adversary R3: a live region set to the text it already holds

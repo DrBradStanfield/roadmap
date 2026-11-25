@@ -8,6 +8,7 @@ import { formatShortDate } from '../lib/constants';
 import type { CorrectFn } from '../lib/matrix-save';
 import { LPA_CHECK_COOL_MS, LPA_CHECK_START, transition } from '../lib/lpa-check-machine';
 import { keepLpaAsIs, lpaRowsToCheck, type LpaCheck } from '../lib/lpa-unit';
+import { getShownErase } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 import { useLiveRegion } from './MatrixSavedCells';
 
@@ -80,7 +81,7 @@ function LpaChecks({ rows, unitSystem, onCorrect, waiting }: {
     } else {
       dispatch({ type: 'correcting', rowId: row.id });
       // A throw is a failed save, never a check stuck saving (US-05 AC3a).
-      const status = await onCorrect(row.id, saves(typed, unit)).catch(() => 'error' as const);
+      const status = await onCorrect(row.id, saves(typed, unit), getShownErase()).catch(() => 'error' as const);
       if (status === 'changed') {
         // Replaced on another device: the page re-reads the record and the
         // notice goes, so the reason is said where it outlives it (adversary

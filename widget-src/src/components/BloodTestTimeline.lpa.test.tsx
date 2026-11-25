@@ -15,6 +15,7 @@ import { BloodTestTimeline, ValueCell, type BloodTestPrefillFn } from './BloodTe
 import { press, pressMouse, pressWithoutFocus, releaseMouse, showPage, typeInto } from '../testing/matrix-gestures';
 import { BT_TIMELINE_DRAFT_KEY, noteDevicePage } from '../lib/storage';
 import type { SaveTask } from '../lib/matrix-save';
+import { getShownErase } from '../lib/roadmap-data';
 import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
 
 // This page's record is open, on this device: the drafts it keeps are its own (US-11 AC6).
@@ -367,14 +368,14 @@ describe('US-05 AC2 — the click-to-correct cell compares in the unit it shows'
     expect(e.onCorrect).not.toHaveBeenCalled();
     const again = editor('mg/L', 390);
     await again.enter('1600');
-    expect(again.onCorrect).toHaveBeenCalledWith('r1', expect.closeTo(400, 9));
+    expect(again.onCorrect).toHaveBeenCalledWith('r1', expect.closeTo(400, 9), getShownErase());
   });
 
   it('310 mg/L over a shown 308 is a correction, though both read 31 in mg/dL', async () => {
     const e = editor('mg/L', 77);
     expect(e.input.value).toBe('308');
     await e.enter('310');
-    expect(e.onCorrect).toHaveBeenCalledWith('r1', expect.closeTo(77.5, 9));
+    expect(e.onCorrect).toHaveBeenCalledWith('r1', expect.closeTo(77.5, 9), getShownErase());
   });
 
   // A unit switch while the editor is open (US-05 AC2, US-04 AC1) never saves
@@ -547,7 +548,7 @@ describe('US-05 AC2 — the click-to-correct cell compares in the unit it shows'
     fireEvent.keyDown(input, { key: 'Enter' });
     await wait(0);
     expect(m.onCorrectValue).toHaveBeenCalledTimes(1);
-    expect(m.onCorrectValue).toHaveBeenCalledWith('row0', 130);
+    expect(m.onCorrectValue).toHaveBeenCalledWith('row0', 130, getShownErase());
   });
 
   // US-04 AC1: a click-away save that fails leaves the editor open for a
@@ -698,7 +699,7 @@ describe('US-05 AC2 — Lp(a) in mg/dL shows one decimal place', () => {
     fireEvent.change(input, { target: { value: '50' } });
     fireEvent.keyDown(input, { key: 'Enter' });
     await wait(0);
-    expect(onCorrect).toHaveBeenCalledWith('r1', 125);
+    expect(onCorrect).toHaveBeenCalledWith('r1', 125, getShownErase());
   });
 
   it('mg/L stays whole: a stored 124 shows 496', () => {

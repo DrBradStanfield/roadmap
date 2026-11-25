@@ -1285,6 +1285,29 @@ describe('US-10 AC4a: a 401 or 403 after the upload is not "nothing was written"
       );
     });
   }
+
+  // US-10 AC11: the typed mark decides, never the hint's words. A Drive-style
+  // adapter marks a 401 after its upload with a hint that never says "landed".
+  for (const status of [401, 403] as const) {
+    it(`a marked ${status} with reworded hint text still says the change may have landed (US-10 AC11)`, async () => {
+      seedRecord();
+      const { access } = await connect();
+      makeAdapter = () => {
+        const adapter = new MemoryAdapter(cloud);
+        adapter.write = async () => {
+          throw uncertainWrite(new StorageError(`Dropbox record update failed (${status})`, 'Check the record before you try again.', undefined, status));
+        };
+        return adapter;
+      };
+      const answer = await callTool(access, 'add_measurement', { metricType: 'ldl', value: 3.2, recordedAt: TODAY });
+      expect(answer.isError).toBe(true);
+      expect(answer.text).not.toMatch(/nothing was written/i);
+      expect(answer.text).toBe(
+        'The record in Dropbox refused this connection’s access after a change was sent. ' +
+          'Reconnect the provider, which grants access again. The change may have landed: read the record again before retrying.',
+      );
+    });
+  }
 });
 
 describe('bodies and floods are bounded (US-32)', () => {
@@ -1427,6 +1450,7 @@ import JSZip from 'jszip';
 import { IMPORT_FILES_PER_DAY } from '../lib/mcp-grants.server';
 import { machineFiles } from '../lib/rate-limiter';
 import { StorageError } from '../../packages/health-core/src/adapter';
+import { uncertainWrite } from '../../packages/health-core/src/write-refusal';
 import { recordServerEvent } from '../lib/product-events.server';
 import type { UnifiedExtractionResult } from '../../packages/health-core/src/lab-extraction';
 

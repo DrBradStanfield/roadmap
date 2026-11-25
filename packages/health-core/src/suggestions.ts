@@ -1,6 +1,7 @@
 import type { HealthInputs, HealthResults, SuggestionInputs, Suggestion, MedicationInputs, ScreeningInputs, UsProductCardId } from './types';
 import { SUGGESTION_EVIDENCE } from './evidence';
 import { BP_TIER_LABEL, bpTier, isBpRaised } from './bp-tier';
+import { BMI_THRESHOLDS, BMI_WEIGHT_MEDICINE_ALONE } from './bmi-thresholds';
 import { getPostFollowupDueDate, getScreeningNextDueDate, MAX_GLP1_DRUG, STATIN_DRUGS, shouldSuggestSwitch } from './types';
 import { SCREENING_REFS, inAges, opensFollowup, ruleOf, ruleTakes, screeningFollowupInfo, type CardText, type FollowupInfo, type ScreeningRule } from './screening-rules';
 import { colonoscopyCard, monthLabel } from './colonoscopy-schedule';
@@ -174,7 +175,7 @@ export interface WeightMedicationTrigger {
  */
 export function weightMedicationTrigger(inputs: HealthInputs, results: HealthResults): WeightMedicationTrigger {
   const { bmi, waistToHeightRatio: whr } = results;
-  if (bmi === undefined || bmi < 25) return { on: false, reasons: [] };
+  if (bmi === undefined || bmi < BMI_THRESHOLDS.overweight) return { on: false, reasons: [] };
   const reasons: string[] = [];
   // A diabetic-range HbA1c is named as such, matching its urgent card (Brad 2026-11-06, US-06 AC6).
   if (inputs.hba1c !== undefined && inputs.hba1c >= HBA1C_THRESHOLDS.prediabetes) {
@@ -185,7 +186,7 @@ export function weightMedicationTrigger(inputs: HealthInputs, results: HealthRes
   const lipid = lipidMarkerFor(inputs, results);
   if (lipid && lipid.value >= LIPID_RISK_ENHANCING[lipid.kind].line) reasons.push(LIPID_RISK_ENHANCING[lipid.kind].reason);
   if (whr !== undefined && isWaistToHeightElevated(whr)) reasons.push('elevated waist-to-height ratio');
-  return { on: reasons.length > 0 || (isBmiElevated(results.bmiCategory) && bmi > 28), reasons };
+  return { on: reasons.length > 0 || (isBmiElevated(results.bmiCategory) && bmi > BMI_WEIGHT_MEDICINE_ALONE), reasons };
 }
 
 /** The GLP-1 card's text, shared by the cascade's first step and the standalone card. */
@@ -376,8 +377,7 @@ export function generateSuggestions(
   // unless the person has said they don't drink (US-60)
   const whrForAlcohol = results.waistToHeightRatio;
   if (inputs.alcohol !== 'none' && (
-    (results.bmi !== undefined && results.bmi >= 30) ||
-    (results.bmi !== undefined && results.bmi >= 25 && whrForAlcohol !== undefined && isWaistToHeightElevated(whrForAlcohol)) ||
+    (results.bmi !== undefined && (results.bmi >= BMI_THRESHOLDS.obese || (results.bmi >= BMI_THRESHOLDS.overweight && whrForAlcohol !== undefined && isWaistToHeightElevated(whrForAlcohol)))) ||
     (inputs.triglycerides !== undefined && inputs.triglycerides >= TRIGLYCERIDES_THRESHOLDS.borderline)
   )) {
     suggestions.push({
@@ -606,8 +606,8 @@ export function generateSuggestions(
       // BMI — consider healthy if <25 or if 25-29.9 with healthy waist-to-height ratio
       if (results.bmi !== undefined) {
         const lpaWhr = results.waistToHeightRatio;
-        const onTarget = results.bmi < 25 || (results.bmi < 30 && lpaWhr !== undefined && !isWaistToHeightElevated(lpaWhr));
-        checklist.push(`${onTarget ? '\u2705' : '\u26A0\uFE0F'} BMI: ${results.bmi} \u2014 target <25, or <30 with a healthy waist-to-height ratio`);
+        const onTarget = results.bmi < BMI_THRESHOLDS.overweight || (results.bmi < BMI_THRESHOLDS.obese && lpaWhr !== undefined && !isWaistToHeightElevated(lpaWhr));
+        checklist.push(`${onTarget ? '\u2705' : '\u26A0\uFE0F'} BMI: ${results.bmi} \u2014 target <${BMI_THRESHOLDS.overweight}, or <${BMI_THRESHOLDS.obese} with a healthy waist-to-height ratio`);
       }
 
       // HbA1c
