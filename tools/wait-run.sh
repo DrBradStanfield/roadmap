@@ -13,9 +13,10 @@
 # Right after a push a PR may show no checks yet, or only quick ones with no `test` check yet: that waits up to
 # WAIT_RUN_NO_CHECKS_MIN minutes from the start (default 5, a whole number up to 1440) for them to appear, then is
 # untested (US-64 AC41). A `test` check that is there but SKIPPED (a draft) is untested at once, as before. A check
-# GitHub still reads in progress though its conclusion is in does not hang the wait: once every other check is
-# finished, the script reads that check's Actions run, and when the run has completed it concludes from the run's
-# conclusion and says so in detail.
+# GitHub still reads in progress though its conclusion (SUCCESS) is in does not hang the wait: once every other
+# check is SUCCESS, SKIPPED or NEUTRAL, the script reads that check's Actions run, and when the run has completed it
+# concludes from the run's conclusion and says so in detail. Beside any red check it waits as before. An empty check
+# list after the wait above now ends untested (exit 1); before AC41 it polled to the time limit (timeout, exit 3).
 #
 # Exit: 0 success; 1 the run or a check failed, no `test` check passed, a final read failed, or healthz is not
 # 200; 2 usage; 3 gave up
@@ -166,18 +167,19 @@ run_state() { gh api "repos/{owner}/{repo}/actions/runs/$id" --jq 'if .status ==
 # moved since; unfinished checks on a PR in conflict with main get no new CI run, so waiting on them never ends.
 # The advisory check ios-compile (exact name) is left out, so it is never waited on.
 # No checks at all prints "nochecks", which poll waits on for WAIT_RUN_NO_CHECKS_MIN. A check run whose status is
-# not COMPLETED though its conclusion is a finished one is stuck: when every check is finished or stuck, and each
-# stuck one links its Actions run, it prints "stuck <tested yes|no> <run ids>". The function then reads each run
+# not COMPLETED though its conclusion is a finished one is stuck: only when every other check is SUCCESS, SKIPPED or
+# NEUTRAL, every stuck one's own conclusion is SUCCESS and each links its Actions run, it prints "stuck <tested
+# yes|no> <run ids>"; any red check falls through to the counting main has. The function then reads each run
 # (one REST call, only in that state) and prints "runs <tested> <conclusion> <run ids>" once all have completed.
 pr_state() {
-  s=$(gh pr view "$id" --json statusCheckRollup,mergeable,mergeStateStatus --jq 'def fin: IN("SUCCESS", "SKIPPED", "NEUTRAL", "ERROR", "FAILURE", "TIMED_OUT", "ACTION_REQUIRED", "CANCELLED");
+  s=$(gh pr view "$id" --json statusCheckRollup,mergeable,mergeStateStatus --jq 'def fin: IN("SUCCESS", "SKIPPED", "NEUTRAL", "ERROR", "FAILURE", "TIMED_OUT", "ACTION_REQUIRED", "CANCELLED"); def ok: IN("SUCCESS", "SKIPPED", "NEUTRAL");
     (.mergeable == "CONFLICTING" or .mergeStateStatus == "DIRTY") as $c
     | [.statusCheckRollup // [] | .[] | select((.name // .context) != "ios-compile")] | [group_by(.context // "\(.name)/\(.workflowName)") | .[] | max_by(.startedAt)]
     | [.[] | select((.state // "") == "" and .status != "COMPLETED")] as $open
     | [$open[] | select((.conclusion // "") | fin) | (.detailsUrl // "") | split("/actions/runs/") | select(length > 1) | .[1] | split("/")[0] | select(test("^[0-9]+$"))] as $runs
     | [.[] | if (.state // "") != "" then .state elif .status == "COMPLETED" then .conclusion else .status end] as $s
     | if ($s | length) > 0 and ($s | all(fin)) then "done"
-      elif ($open | length) > 0 and ($runs | length) == ($open | length) and ([$s[] | select(fin | not)] | length) == ($open | length)
+      elif ($open | length) > 0 and ($runs | length) == ($open | length) and ($open | all(.conclusion == "SUCCESS")) and ([$s[] | select(ok | not)] | length) == ($open | length)
       then "stuck \(if any(.[]; .name == "test" and .conclusion == "SUCCESS") then "yes" else "no" end) \($runs | unique | join(" "))"
       elif $c then "conflict" elif ($s | length) == 0 then "nochecks" else "pending" end') || return 1
   case "$s" in "stuck "*) ;; *) echo "$s"; return 0 ;; esac

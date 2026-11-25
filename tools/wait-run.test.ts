@@ -416,6 +416,20 @@ describe('wait-run.sh (US-64 AC26)', () => {
       expect(r.status).toBe(1);
       expect(status(r.stdout).wait_run).toBe('untested');
     });
+    const done = (name: string, conclusion: string) => ({ __typename: 'CheckRun', name, workflowName: 'CI', status: 'COMPLETED', conclusion });
+    it('beside SKIPPED and NEUTRAL siblings, a green stuck check still ends success', () => {
+      const r = run(['pr', '42'], { MERGE: M, ROLLUP: R(stuck(), done('review', 'SKIPPED'), done('lint', 'NEUTRAL')) });
+      expect(r.status).toBe(0);
+      expect(status(r.stdout).wait_run).toBe('success');
+    });
+    it('beside a FAILURE, ERROR or CANCELLED sibling, or with its own conclusion FAILURE, it never ends success: it waits as main does and reads no run', () => {
+      for (const ROLLUP of [R(stuck(), done('unit', 'FAILURE')), R(stuck(), done('unit', 'ERROR')),
+        R(stuck(), done('unit', 'CANCELLED')), R(stuck({ conclusion: 'FAILURE' }))]) {
+        const r = run(['pr', '42'], { MERGE: M, ROLLUP, WAIT_RUN_MAX_MIN: '2' });
+        expect({ ROLLUP, code: r.status, outcome: status(r.stdout).wait_run }).toEqual({ ROLLUP, code: 3, outcome: 'timeout' });
+        expect(runReads(r.calls)).toBe(0);
+      }
+    });
     it('beside a check still queued, or with no run link, it waits as before and reads no run', () => {
       const queued = { __typename: 'CheckRun', name: 'unit', workflowName: 'CI', status: 'QUEUED', conclusion: '' };
       for (const ROLLUP of [R(stuck(), queued), R(stuck({ detailsUrl: 'https://example.test/x' }))]) {

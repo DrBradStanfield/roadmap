@@ -5,7 +5,12 @@
  * Workers that run at once each picked "the next free id" from their own base, so four PRs took the same id on
  * 2026-11-25 and each clash cost a rebase and a CI run. This reads the story on origin/main AND on every open
  * PR's head (one `git fetch` of main and each PR's `pull/<n>/head`, so a fork's PR counts too), so an id another
- * open PR already took is not offered again. A head it cannot read is skipped and named on stderr.
+ * open PR already took is not offered again. A head it cannot read is named on stderr and no id is printed (exit
+ * 1), unless `--allow-unread` is passed: then the id prints with a warning. A PR listing that reached its limit
+ * may be cut short, so that exits 1 too. The refs it fetches are deleted before it exits.
+ *
+ * It sees only PRs already pushed: two workers that both run it before either opens a PR can still get the same
+ * id. Run it again right before you push, after `git fetch`, and renumber if it changed.
  *
  * An AC id counts where it leads a list item (`- AC12 ...`, `  - **AC12a** ...`); a mention inside prose does
  * not. The next id is one above the highest number any version holds, whatever its letter suffix.
@@ -84,45 +89,59 @@ export function nextAcId(texts, story) {
 
 /** Where the fetch puts open PR `n`'s head: a private ref, so no remote branch is ever overwritten. */
 export const prRef = (n) => `refs/next-ac/pr/${n}`;
+/** The most open PRs one listing returns; a listing this long may be cut short. */
+export const PR_LIMIT = 200;
 
 /**
  * The real git and gh calls, behind one object the test fakes.
  * @param {string} root
  */
 export function liveSource(root) {
-  const run = (cmd, args) => execFileSync(cmd, args, { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 1 << 30 });
+  const run = (cmd, args, input) => execFileSync(cmd, args, { cwd: root, encoding: 'utf8', input, stdio: [input === undefined ? 'ignore' : 'pipe', 'pipe', 'pipe'], maxBuffer: 1 << 30 });
   return {
     /** @returns {{ number: number, headRefName: string }[]} */
-    openPrs: () => JSON.parse(run('gh', ['pr', 'list', '--state', 'open', '--limit', '200', '--json', 'number,headRefName'])),
+    openPrs: () => JSON.parse(run('gh', ['pr', 'list', '--state', 'open', '--limit', String(PR_LIMIT), '--json', 'number,headRefName'])),
     // One fetch: main, and each PR's head from GitHub's own pull/<n>/head ref, which a fork's PR has too.
     /** @param {number[]} numbers */
     fetch: (numbers) => run('git', ['fetch', '-q', 'origin', '+refs/heads/main:refs/remotes/origin/main',
       ...numbers.map((n) => `+refs/pull/${n}/head:${prRef(n)}`)]),
     /** @param {string} ref */
     storiesAt: (ref) => loadStories(root, { ref }),
+    /** Deletes every ref under refs/next-ac/, in one transaction. */
+    cleanup: () => {
+      const refs = run('git', ['for-each-ref', '--format=%(refname)', 'refs/next-ac/']).split('\n').filter(Boolean);
+      if (refs.length) run('git', ['update-ref', '--stdin'], refs.map((r) => `delete ${r}\n`).join(''));
+    },
   };
 }
 
 /**
- * Reads origin/main and each open PR's stories text. A version that cannot be read is skipped and named.
+ * Reads origin/main and each open PR's stories text. A version that cannot be read is skipped and named. A PR
+ * listing that reached PR_LIMIT may be cut short, so it fetches nothing and says so.
  * @param {ReturnType<typeof liveSource>} source
- * @returns {{ texts: string[], read: string[], skipped: string[] }}
+ * @returns {{ texts: string[], read: string[], skipped: string[], truncated: boolean }}
  */
 export function collectVersions(source) {
-  const prs = source.openPrs().filter((pr) => Number.isSafeInteger(pr.number) && pr.number > 0);
-  source.fetch(prs.map((pr) => pr.number));
-  const texts = [source.storiesAt('origin/main')];
-  const read = ['origin/main'];
-  const skipped = [];
-  for (const pr of prs) {
-    try {
-      texts.push(source.storiesAt(prRef(pr.number)));
-      read.push(`#${pr.number}`);
-    } catch {
-      skipped.push(`#${pr.number} (${pr.headRefName})`);
+  const listed = source.openPrs();
+  if (listed.length >= PR_LIMIT) return { texts: [], read: [], skipped: [], truncated: true };
+  const prs = listed.filter((pr) => Number.isSafeInteger(pr.number) && pr.number > 0);
+  try {
+    source.fetch(prs.map((pr) => pr.number));
+    const texts = [source.storiesAt('origin/main')];
+    const read = ['origin/main'];
+    const skipped = [];
+    for (const pr of prs) {
+      try {
+        texts.push(source.storiesAt(prRef(pr.number)));
+        read.push(`#${pr.number}`);
+      } catch {
+        skipped.push(`#${pr.number} (${pr.headRefName})`);
+      }
     }
+    return { texts, read, skipped, truncated: false };
+  } finally {
+    source.cleanup();
   }
-  return { texts, read, skipped };
 }
 
 /**
@@ -131,13 +150,18 @@ export function collectVersions(source) {
  * @returns {{ code: number, out: string, err: string }}
  */
 export function main(argv, source) {
-  const story = argv[0];
-  if (argv.length !== 1 || !/^US-\d+$/.test(story)) return { code: 2, out: '', err: 'usage: node tools/next-ac.mjs <US-id>, for example US-64\n' };
-  const { texts, read, skipped } = collectVersions(source);
+  const allowUnread = argv.includes('--allow-unread');
+  const args = argv.filter((a) => a !== '--allow-unread');
+  const story = args[0];
+  if (args.length !== 1 || !/^US-\d+$/.test(story)) return { code: 2, out: '', err: 'usage: node tools/next-ac.mjs [--allow-unread] <US-id>, for example US-64\n' };
+  const { texts, read, skipped, truncated } = collectVersions(source);
+  if (truncated) return { code: 1, out: '', err: `the open PR list reached its limit of ${PR_LIMIT} and may be cut short; no id printed\n` };
   const next = nextAcId(texts, story);
-  const note = `read ${read.length} versions (origin/main and ${read.length - 1} open PRs)${skipped.length ? `; skipped ${skipped.join(', ')}` : ''}\n`;
-  if (!next) return { code: 1, out: '', err: `${story} is in no version read; ${note}` };
-  return { code: 0, out: `${story} ${next}\n`, err: note };
+  const note = `read ${read.length} versions (origin/main and ${read.length - 1} open PRs)`;
+  if (!next) return { code: 1, out: '', err: `${story} is in no version read; ${note}${skipped.length ? `; could not read ${skipped.join(', ')}` : ''}\n` };
+  if (!skipped.length) return { code: 0, out: `${story} ${next}\n`, err: `${note}\n` };
+  if (!allowUnread) return { code: 1, out: '', err: `${note}; could not read ${skipped.join(', ')}, so the id is not certain (pass --allow-unread to print it anyway)\n` };
+  return { code: 0, out: `${story} ${next}\n`, err: `${note}; warning: could not read ${skipped.join(', ')}, which may already hold a higher id\n` };
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
