@@ -37,6 +37,18 @@ describe('US-62 AC28 (H108): a value with its previous one fits the fixed value 
     }
   });
 
+  it('does not apply where there is no previous value, nor to the name beside it', () => {
+    const alone: RowModel = { ...bp, previous: null, trend: [142] };
+    const { container } = render(<MetricRows rows={[alone]} onOpen={() => {}}/>);
+    const value = container.querySelector('.md-row-value')!;
+    expect(value.textContent).toBe('142/100'); // no trailing space, no empty bracket
+    expect(value.querySelector('.md-row-prev')).toBeNull();
+    const label = container.querySelector('.md-row-label')!;
+    for (const width of [375, 390, 1440]) {
+      expect(cascaded(label, 'white-space', width)).toBeUndefined(); // the name still wraps
+    }
+  });
+
   it('keeps the value track fixed at 104px (AC28)', () => {
     const { container } = render(<MetricRows rows={[bp]} onOpen={() => {}}/>);
     const row = container.querySelector('.md-row')!;
