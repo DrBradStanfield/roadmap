@@ -80,7 +80,8 @@ function LpaChecks({ rows, unitSystem, onCorrect, waiting }: {
       dispatch({ type: 'kept' });
     } else {
       dispatch({ type: 'correcting', rowId: row.id });
-      const status = await onCorrect(row.id, saves(typed, unit), getShownErase());
+      // A throw is a failed save, never a check stuck saving (US-05 AC3a).
+      const status = await onCorrect(row.id, saves(typed, unit), getShownErase()).catch(() => 'error' as const);
       if (status === 'changed') {
         // Replaced on another device: the page re-reads the record and the
         // notice goes, so the reason is said where it outlives it (adversary

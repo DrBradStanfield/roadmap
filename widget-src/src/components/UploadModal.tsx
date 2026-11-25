@@ -12,7 +12,7 @@ import { getDocumentArchiveMode } from '../lib/roadmap-data';
 import { useIsMobile } from '../lib/useIsMobile';
 import { openBackendPicker } from '../lib/storage-notice';
 import type { ProductEventMetadata } from '../lib/server-api';
-import { opensRow } from './ChatThreadList';
+import { opensRow } from '../lib/opens-row';
 
 interface UploadModalProps {
   unitSystem: UnitSystem;

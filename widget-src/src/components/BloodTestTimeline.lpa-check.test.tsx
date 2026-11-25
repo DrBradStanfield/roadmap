@@ -300,6 +300,26 @@ describe('US-05 AC3 — the Lp(a) check: a number with its unit', () => {
     expect(m.view.container.querySelector('.lpa-check-status')?.textContent).toBe(NBSP);
   });
 
+  // US-05 AC3a (lead H300): a correction that throws ends as an error, never stuck saving.
+  it('a correction that rejects frees the buttons, says the error words, and lets no rejection escape', async () => {
+    const escaped = vi.fn();
+    process.on('unhandledRejection', escaped);
+    try {
+      const m = matrix();
+      m.onCorrectValue.mockRejectedValue(new Error('store threw'));
+      await m.answer(/mg\/dL/);
+      expect(within(m.notices()[0]).getByText(SAVE_ERRORS.error)).toBeTruthy();
+      await wait(REST);
+      expect(m.buttons().every((b) => !b.disabled)).toBe(true);
+      expect(m.answers()).toEqual([]);
+      vi.useRealTimers(); // node reports an unhandled rejection a macrotask later
+      await act(async () => { await new Promise((resolve) => setTimeout(resolve, 10)); });
+      expect(escaped).not.toHaveBeenCalled();
+    } finally {
+      process.off('unhandledRejection', escaped);
+    }
+  });
+
   it('asks nothing, and holds no region, when no row needs checking', () => {
     expect(matrix([typedRow()], 'si').view.container.querySelector('.lpa-check-status')).toBeNull();
   });
