@@ -56,17 +56,10 @@ issue, and nothing private.
   upload; the iPhone saves the rest and refuses that row. Options: the web refuses per row, like the iPhone; the
   iPhone blocks like the web; leave. Recommendation: per-row refusal in the shared engine for both, with the refused
   row shown.
-- **"Sync now" inside the five-second pause.** Issue: pressed within five seconds of the last read, Sync now reads
-  nothing and still says "Synced". Options: Sync now skips the pause; it says nothing new; leave. Recommendation:
-  skip the pause; no new words.
 - **One copy of the plan-page wording.** Issue: the iPhone's alcohol question adds a sentence the web does not, and
   the plan page's order, colours and urgent banner are hand copies on each app. Options: one wording in the shared
   engine, chosen by you; leave two copies. Recommendation: one wording, with you choosing it; the display rules move
   only after your yes.
-- **The pause before an agent files feedback.** Issue: report_feedback, the agent tool that files feedback, makes
-  the agent wait 10 seconds before the second, confirming call. The one session last week that tried it filed nothing
-  after four tries. Options: keep the pause; say how many seconds are left; reword the line when the time runs out.
-  Recommendation: keep the pause and say the seconds left.
 - **A "Not saved" marker on chat replies with edits.** Issue: a reply that lands after the person left its thread
   saves nothing, but reads as saved when they reopen the thread (design: [drafts/c22-c26-design.md](drafts/c22-c26-design.md)).
   Options: (A) store a "Not saved" marker on every such reply (new words, a new stored field, iPhone too); (B) only on
@@ -79,17 +72,6 @@ issue, and nothing private.
 
 ### Product and code decisions (raised 2026-11-25)
 
-- **Chat wording and counting differ between the chat panel and the pop-up.** Issue: PR 2093 (on main) found that
-  the pop-up chat picks doctor or brand wording by store, but the panel beside the tool always uses the doctor
-  wording ("Health by Dr Brad Chat"). Also, "chat opened" is counted for the pop-up only, so the count misses the
-  panel, the phone's Chat tab and the storefront embed. Options: give the panel the pop-up's wording rule, or keep
-  it; count a panel shown, or keep counting the pop-up only. Recommendation: the same wording rule for both, so one
-  store reads one way; count a panel shown under its own event name, so the pop-up's trend stays comparable.
-- **The storefront chat embed's one event.** Issue: PR 2079 (held) turns on product events for the chat embed
-  block on the storefronts. Its only event is "thinking opened", sent when someone opens a reply's reasoning. Today
-  the embed sends nothing; an older test comment called counting it an open product decision. Options: merge, so the
-  embed's use is counted like the tool's; close, and the embed stays uncounted. Recommendation: merge: it runs only
-  on your stores, and the event carries its name alone.
 - **Message packs that nothing reads.** Issue: a paid order still adds chat message credits to an account, but
   nothing reads those credits any more. Options: remove the step and its order webhook (a deploy of the app's
   settings); keep it. Recommendation: remove it, once you confirm no message pack is still on sale.
@@ -148,6 +130,12 @@ issue, and nothing private.
 ## Decided
 
 2026-11-26, Brad's words in quotes:
+- The storefront chat embed's events: merged (PR 2079), as recommended, so the embed's use is counted like the
+  tool's. It sends "thinking opened", and since US-15 AC77 also `chat_panel_shown` when the panel comes into view;
+  both carry their names alone.
+- "Sync now" inside the five-second pause: Sync now skips the pause, with no new words; the pause stays for
+  automatic re-reads (option (a): shared engine rule plus the iPhone engine's Sync now door, which reaches phones
+  with the next engine release).
 - Screen-reader names for the medicine dose boxes end in a lower-case "dose", as the supplement rows do (PR 1796),
   so the whole form uses one casing: "this" (option 2). PR 1888 now names them "Statin dose", "GLP-1 Medication
   dose" and "SGLT2 Inhibitor dose", through labelled-by references (US-09 AC7l). "Email for your PDF" is approved for PR 1800.
@@ -161,6 +149,9 @@ issue, and nothing private.
 - A YouTube follow-up's classifier and router see the parent comment and the author's own earlier replies, by the
   same rule as web and Discord (H415, US-15 AC75): "the router should see the earlier comments. youtube, web, and discord should behave the same here, and so
   probably use the same code". No new words.
+- The pause before an agent files feedback stays, and an early confirm now says the seconds left ("go with your
+  recommendations"): "That confirm receipt is not valid yet: it can be used in 7 seconds (from <time>), after the user
+  has answered. Do not retry before then; end your turn. Nothing was written." (US-36 AC14).
 - "Two server items to close" are closed with no change ("go with your recommendations"): slow lab-import warnings stay
   without a deploy tag, and no deploy gate is added for the chat prompt file, since chat already refuses and alerts
   when it is missing (leads C8, H67).
@@ -186,6 +177,9 @@ issue, and nothing private.
   below); before the form is complete the web still shows no card. The note's words, one shared copy: "Screening questions appear once your sex,
   birth year and height are in About you.", "Some screening questions depend on your sex. Add it in About you.", "No
   screening questions apply at your age and sex yet." (US-62 AC41).
+- Chat wording and counting differ between the chat panel and the pop-up: the recommendation. The panel takes the
+  pop-up's words by the same rule, from one table; a panel shown is counted as `chat_panel_shown`, and the pop-up's
+  `chat_opened` is unchanged. No new sentences (US-15 AC77).
 - An erase message says what each step did, from one table in the shared engine (US-11 AC13): "this. and use your
   judement for the sentences. must be succinct, and I approve whatever sentences you suggest". The web uses it now; the
   iPhone with its next engine release. A record not erased: "Your health record was not deleted: the erase could not be
