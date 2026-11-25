@@ -8,6 +8,7 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { REDUCE_ALCOHOL_ID } from '@roadmap/health-core/suggestions';
+import { alcoholQuestionMessage, alcoholQuestionTitle, stillDrinkLine } from '@roadmap/health-core/alcohol-question-words';
 import type { AlcoholAnswer, Suggestion } from '@roadmap/health-core/types';
 
 /** The two answers, for About you's row and the card's first question. */
@@ -20,10 +21,6 @@ export const ALCOHOL_OPTIONS: ReadonlyArray<{ value: AlcoholAnswer; label: strin
  *  whether About you's rows hold the Alcohol row (once About you sits low,
  *  US-62 AC12); none while onboarding, when no row shows. */
 export type AlcoholQuestion = { answer?: AlcoholAnswer; onAnswer: (answer: AlcoholAnswer) => void; aboutYouRow?: boolean };
-
-/** Shown in the dialog's place after "I still drink", which saves nothing. It
- *  points to the Alcohol row only where one shows (US-60 AC4). */
-export const stillDrinkLine = (aboutYouRow?: boolean) => `This stays on your plan because the advice applies to anyone who drinks.${aboutYouRow ? ' You can change your answer in About you.' : ''}`;
 
 /**
  * The Dismiss for `reduce-alcohol` (US-60 AC3), or null. Unanswered, it asks
@@ -94,7 +91,8 @@ function AlcoholDismiss({ drinks, onChoose, aboutYouRow }: { drinks: boolean; on
       {open && createPortal(
         <div className="upload-modal-backdrop no-print" data-clarity-mask="true"
           onClick={(e) => { if (e.target === e.currentTarget) setOpen(false); }}>
-          <div ref={dialogRef} className="upload-modal alcohol-dialog" role="dialog" aria-modal="true" aria-labelledby="alcohol-dialog-title">
+          <div ref={dialogRef} className="upload-modal alcohol-dialog" role="dialog" aria-modal="true" aria-labelledby="alcohol-dialog-title"
+            aria-describedby={open === 'ask' ? 'alcohol-dialog-message' : undefined}>
             {open === 'stays' ? (
               <>
                 <p id="alcohol-dialog-title" className="alcohol-dialog-note">{stillDrinkLine(aboutYouRow)}</p>
@@ -102,7 +100,8 @@ function AlcoholDismiss({ drinks, onChoose, aboutYouRow }: { drinks: boolean; on
               </>
             ) : (
               <>
-                <h3 id="alcohol-dialog-title" className="alcohol-dialog-title">{drinks ? 'Do you still drink alcohol?' : 'Do you drink alcohol?'}</h3>
+                <h3 id="alcohol-dialog-title" className="alcohol-dialog-title">{alcoholQuestionTitle(drinks)}</h3>
+                <p id="alcohol-dialog-message" className="alcohol-dialog-note">{alcoholQuestionMessage(drinks, aboutYouRow)}</p>
                 <div className="alcohol-dialog-actions">
                   {choices.map(({ label, answer }, i) => (
                     <button key={label} ref={i === 0 ? firstRef : undefined} type="button" className="upload-btn-primary"

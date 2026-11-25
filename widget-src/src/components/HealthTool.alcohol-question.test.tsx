@@ -64,11 +64,20 @@ const dismiss = async (root: HTMLElement, prompt = 'Do you drink alcohol?') => {
   expect(dialog()).not.toBeNull();
   expect(within(dialog()!).getByRole('heading').textContent).toBe(prompt);
 };
+// The line under the question (one shared copy, alcohol-question-words.ts), named as the dialog's description.
+const message = () => {
+  const id = dialog()!.getAttribute('aria-describedby');
+  expect(id).toBe('alcohol-dialog-message');
+  return dialog()!.querySelector(`#${id}`)!.textContent;
+};
+const KEPT = 'Your answer is kept in your record, so your plan follows it on every device.';
 const still = (section: string) => `This stays on your plan because the advice applies to anyone who drinks. You can change your answer in ${section}.`;
 
 it('US-60 AC3: "I don\'t drink" takes the card off the plan and saves the answer; the event carries no answer', async () => {
   const view = render(<HealthTool />);
   await dismiss(view.container);
+  // A complete record shows About you's rows, so the line under the question names it (US-60 AC4).
+  expect(message()).toBe(`${KEPT} You can change it in About you.`);
   // Only this card has a Dismiss.
   expect(view.container.querySelectorAll('.suggestion-dismiss')).toHaveLength(1);
   fireEvent.click(within(dialog()!).getByText("I don't drink"));
@@ -106,6 +115,7 @@ it('US-60 AC3 (Brad 2026-11-01): a drinker\'s Dismiss asks "Do you still drink a
   const view = render(<HealthTool />);
   expect(view.container.querySelectorAll('.suggestion-dismiss')).toHaveLength(1);
   await dismiss(view.container, 'Do you still drink alcohol?');
+  expect(message()).toBe('Tell us if this has changed.');
   expect([...dialog()!.querySelectorAll('button')].map((b) => b.textContent)).toEqual(["I've stopped", 'I still drink', 'Cancel']);
   const alert = vi.spyOn(window, 'alert').mockImplementation(() => {});
   // The saved file, stamps and all, before the tap: "I still drink" writes nothing.
@@ -179,9 +189,26 @@ it('US-60 AC4 (Brad 2026-11-02): mid-onboarding there is no Alcohol row, and "I 
     expect(view.container.querySelector('#alcohol')).toBeNull();
     expect(within(view.container.querySelector<HTMLElement>('.about-card')!).queryByText(/alcohol/i)).toBeNull(); // Starting Info asks nothing of it
     await dismiss(view.container, 'Do you still drink alcohol?');
+    expect(message()).toBe('Tell us if this has changed.');
     fireEvent.click(within(dialog()!).getByText('I still drink'));
     expect(dialog()!.textContent).toBe('This stays on your plan because the advice applies to anyone who drinks.OK');
+    expect(dialog()!.hasAttribute('aria-describedby')).toBe(false);
     fireEvent.click(within(dialog()!).getByText('OK'));
+    view.unmount();
+  }
+});
+
+it('US-60 AC4 (lead M10): mid-onboarding, unanswered, the line under the question names no section, on desktop and a phone', async () => {
+  localStorage.clear();
+  await initRoadmapStore(new LocalStorageAdapter());
+  await saveChangedMeasurements({ sex: 'male', heightCm: 178, unitSystem: 'si', weightKg: 100, hba1c: 35 }, {}, getShownErase());
+  await flushRoadmapStore();
+  for (const phone of [false, true]) {
+    stub(phone);
+    const view = render(<HealthTool />);
+    await dismiss(view.container);
+    expect(message()).toBe(KEPT);
+    fireEvent.click(within(dialog()!).getByText('Cancel'));
     view.unmount();
   }
 });
