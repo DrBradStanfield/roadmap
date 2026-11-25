@@ -82,6 +82,8 @@ describe('.dockerignore covers the .gitignore data patterns', () => {
     const needed = [
       'app/lib/chat.server.ts',
       'app/lib/chat-system-prompt.md', // US-15 AC65: chat refuses without it
+      'app/lib/chat-posture-doctor.md', // US-15 AC72: and without these two
+      'app/lib/chat-posture-brand.md',
       'packages/health-core/src/merge.ts',
       'docs/products.md',
       'docs/writing-style.md',
@@ -141,9 +143,14 @@ describe('secret files are ignored by git and Docker (US-64 AC14)', () => {
     }
   });
 
-  // US-15 AC65: CI builds the image from the checkout, so a tracked, non-ignored,
-  // non-blank prompt file is in the build context.
-  it('app/lib/chat-system-prompt.md exists in the repo and is not blank (US-15 AC65)', () => {
-    expect(readFileSync(join(ROOT, 'app/lib/chat-system-prompt.md'), 'utf-8').trim().length).toBeGreaterThan(0);
+  // US-15 AC65, AC72: CI builds the image from the checkout, so a tracked,
+  // non-ignored, non-blank chat doc is in the build context. Chat refuses
+  // without any one of them.
+  it.each([
+    'app/lib/chat-system-prompt.md', 'health_roadmap_algorithm.md', 'docs/products.md',
+    'app/lib/chat-posture-doctor.md', 'app/lib/chat-posture-brand.md',
+  ])('%s exists in the repo, is not blank and stays in the build context (US-15 AC65, AC72)', (path) => {
+    expect(readFileSync(join(ROOT, path), 'utf-8').trim().length).toBeGreaterThan(0);
+    expect(dockerIgnores(path), path).toBe(false);
   });
 });
