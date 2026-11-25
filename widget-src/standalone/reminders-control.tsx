@@ -21,7 +21,7 @@ import { getReminderOptIn } from '../src/lib/roadmap-data';
 import { EMAIL_REGEX } from '../src/lib/email';
 import { REMOTE_CHANGED_EVENT } from '../src/storage/roadmap-store';
 import { cancelReminders, ENROL_NOTICE_KEY, optInToReminders, ReminderEmailNeeded, remindersSupported } from './reminders';
-import { busy as isBusy, INITIAL_STEP, shown, transition, type ToggleForm } from './reminders-toggle-machine';
+import { busy as isBusy, INITIAL_STEP, shown, transition, type FormEdit, type ToggleForm } from './reminders-toggle-machine';
 import type { Backend } from './connect';
 
 const failure = (e: unknown): string => (e instanceof Error ? e.message : 'Something went wrong — please retry.');
@@ -51,7 +51,7 @@ export function RemindersControl({ backend }: { backend: Backend }) {
 
   const busy = isBusy(step);
   const view = shown(step);
-  const edit = (change: Partial<Omit<ToggleForm, 'needsEmail'>>) => send({ type: 'edit', edit: change });
+  const edit = (change: FormEdit) => send({ type: 'edit', edit: change });
 
   const turnOn = async (form: ToggleForm): Promise<void> => {
     send({ type: 'submit' });

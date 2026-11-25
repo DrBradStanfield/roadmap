@@ -21,6 +21,8 @@ export interface ToggleForm {
   needsEmail: boolean;
   reminderEmail: string;
 }
+/** What typing changes; only a failure asks for the reminder field. */
+export type FormEdit = Partial<Omit<ToggleForm, 'needsEmail'>>;
 
 /** The words of the last failure, or none. */
 type Failure = string | null;
@@ -35,7 +37,7 @@ export type ToggleStep =
 
 export type ToggleEvent =
   | { type: 'open' }
-  | { type: 'edit'; edit: Partial<Omit<ToggleForm, 'needsEmail'>> }
+  | { type: 'edit'; edit: FormEdit }
   | { type: 'submit' }
   | { type: 'dismiss' }
   | { type: 'onDone' }
@@ -57,7 +59,7 @@ export function shown(state: ToggleStep): Resting {
 export const busy = (state: ToggleStep): boolean => state.phase === 'turningOn' || state.phase === 'turningOff';
 
 /** Typing lands on the form wherever it shows, a running step included. */
-function edited(state: ToggleStep, edit: Partial<ToggleForm>): ToggleStep {
+function edited(state: ToggleStep, edit: FormEdit): ToggleStep {
   switch (state.phase) {
     case 'asking':
     case 'turningOn':
