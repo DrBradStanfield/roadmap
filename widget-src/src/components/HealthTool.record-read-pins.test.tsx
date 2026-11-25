@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 /**
  * Pins of today's record-read path in HealthTool, written before it moves into
- * a hook: the A/B conversion on a first save, the chat mirror kept in step by a
+ * a hook: the chat mirror kept in step by a
  * lab row added by hand and by another writer's change, and a change held
  * behind an unsaved profile edit when a write is refused (US-07 AC7, US-15
  * AC10, US-34 AC4). Each test reads what the person sees, the chat mirror or
@@ -26,7 +26,6 @@ import { addMeasurement, flushRoadmapStore, initRoadmapStore, loadLatestMeasurem
 import { BT_TIMELINE_DRAFT_KEY, MIRROR_CHANGED_EVENT, VITALS_DRAFT_KEY, loadFromLocalStorage, loadGuestInputs } from '../lib/storage';
 import { parseProposedEdit } from '@roadmap/health-core/chat-edits';
 import type { ChatEditTarget } from '../hooks/useChatState';
-import { trackABConversion } from '../lib/server-api';
 import { openAboutYou, showTables, trackLiveRefresh, stopLiveRefresh, recordOnDisk, useHealthToolLifecycle, wait } from '../testing/health-tool-harness';
 import { WRITE_REFUSED } from '../lib/erase-copy';
 import { press, pressMouse, pressWithoutFocus, releaseMouse, typeInto } from '../testing/matrix-gestures';
@@ -42,13 +41,12 @@ const { scrubEvent: realScrubEvent } = await vi.importActual<typeof import('../l
 
 vi.mock('../lib/build-flags', () => ({ LOCAL_FIRST: true, SHOPIFY_SURFACE: true }));
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
-// Every trackProductEvent call, recorded; the A/B calls are stubs this file reads.
+// Every trackProductEvent call, recorded.
 const tracked = vi.hoisted(() => ({ calls: [] as Array<[string, Record<string, unknown> | undefined]> }));
 vi.mock('../lib/server-api', async original => {
   const real = await original<typeof import('../lib/server-api')>();
   return {
     ...real,
-    trackABImpression: vi.fn(), trackABConversion: vi.fn(),
     trackProductEvent: (...args: Parameters<typeof real.trackProductEvent>) => {
       tracked.calls.push([args[0], args[1] as Record<string, unknown> | undefined]);
     },
@@ -141,12 +139,10 @@ vi.mock('./UploadModal', async () => {
   };
 });
 import { HealthTool } from './HealthTool';
-import { deleteButton } from '../testing/settings';
 
 // Read at assertion time, not module load: a run that crosses local midnight stamps rows with the new day.
 const localToday = () => localDay(new Date());
 const calls = (name: string) => tracked.calls.filter(([n]) => n === name).map(([, m]) => m);
-const conversions = () => vi.mocked(trackABConversion).mock.calls.length;
 const unmounts: Array<() => void> = [];
 /** The window's width as the page's media queries read it: a desktop, until a test turns it into a phone. */
 const viewport = { mobile: false, listeners: new Set<(e: { matches: boolean }) => void>() };
@@ -167,7 +163,6 @@ beforeEach(async () => {
   Object.assign(atMount, { run: null, effectsRan: false, inGap: false });
   upload.complete = null;
   Object.assign(chat, { target: null, context: null });
-  vi.mocked(trackABConversion).mockClear();
   vi.mocked(Sentry.captureException).mockClear();
   viewport.mobile = false;
   viewport.listeners.clear();
@@ -204,14 +199,6 @@ function type(input: Element | null, value: string) {
 }
 const leave = (input: Element | null) => act(() => { (input as HTMLElement).blur(); });
 const settle = (ms: number) => wait(ms);
-/** A weight typed in its field and left: its save runs 500 ms later. */
-async function saveWeight(view: RenderResult, weight: string) {
-  type(q(view, '#weightKg'), weight);
-  leave(q(view, '#weightKg'));
-  await wait(500); // the save's debounce
-  await waitFor(async () => expect(await activeWeights()).toContainEqual([Number(weight), localToday()]), { timeout: 2000 });
-  await settle(50);
-}
 /** Another writer changes the record, and the page is told (US-34). */
 async function anotherWriter(write: () => Promise<unknown>) {
   await write();
@@ -303,46 +290,6 @@ describe('US-34 AC4: a change announced before the page has shown its first read
   it('US-34 AC4, US-15 AC10: an empty record an assistant writes into in the gap: the mirror is not wiped, and holds the weight', async () => {
     announceWeight();
     await endsOn82(await openUnacted());
-  });
-});
-
-describe('US-01 AC7: the measurement-save conversion counts a new visitor\'s first measurement save', () => {
-  it('US-01 AC7: a new visitor\'s profile save sends none; the first saved weight sends trackABConversion once; a second save sends none', async () => {
-    const view = await open();
-    type(q(view, '#heightCm'), '178');
-    leave(q(view, '#heightCm'));
-    await settle(700); // the height's profile save has run
-    expect(conversions()).toBe(0);
-    await saveWeight(view, '80');
-    expect(conversions()).toBe(1);
-    await saveWeight(view, '81');
-    expect(conversions()).toBe(1);
-  });
-
-  it('US-01 AC7: a returning user whose record holds a measurement at mount sends no conversion on a save', async () => {
-    await saveChangedMeasurements({ heightCm: 170 }, {}, getShownErase());
-    await addMeasurement('weight', 70, '2026-09-01', getShownErase());
-    await flushRoadmapStore();
-    const view = await open();
-    await saveWeight(view, '72');
-    expect(conversions()).toBe(0);
-  });
-
-  it('US-01 AC7: an erase in the tab does not start it again: the new record\'s first weight sends none', async () => {
-    vi.stubGlobal('confirm', () => true);
-    vi.stubGlobal('alert', () => {});
-    const view = await open();
-    type(q(view, '#heightCm'), '178');
-    leave(q(view, '#heightCm'));
-    await saveWeight(view, '80');
-    expect(conversions()).toBe(1);
-    fireEvent.click(deleteButton());
-    await waitFor(async () => expect(await activeWeights()).toEqual([]), { timeout: 3000 });
-    await waitFor(() => expect(q(view, '#heightCm')).toBeTruthy());
-    type(q(view, '#heightCm'), '178');
-    leave(q(view, '#heightCm'));
-    await saveWeight(view, '81');
-    expect(conversions()).toBe(1);
   });
 });
 
