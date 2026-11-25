@@ -9,60 +9,31 @@ Each open item says:
 - the options, with the consequences of each;
 - the recommendation, and why.
 
-When Brad settles an item, move it to "Decided" with the date and his words. Keep the last 20 there.
+When Brad settles an item, move it to "Decided" with the date and his words. Keep the last 20 there; older dated
+blocks move to [decisions-archive.md](decisions-archive.md).
 
 The repo is public. This page holds no tester names, no health values, no security detail of an unfixed
 issue, and nothing private.
 
 ## Open
 
+### Words that need your yes
 
-### Words that need your yes (raised 2026-11-25)
-
-- **Two chat history lines.** Issue: PR 2078 (on main) makes a failed open of the chat history file retry on the
-  next turn, but adds no words. Two places say nothing today: the History list after the file could not be opened
-  (it shows old titles, or "No conversations yet"), and a turn that was not saved to the file (nothing on screen).
-  The owner proposed "Chat history unavailable" for the first; no line exists for the second. Options: (1) approve
-  "Chat history unavailable", and have a line drafted for an unsaved turn; (2) leave both silent. Recommendation:
-  option 1, because a person who returns to a conversation that was never saved has no way to know why it is missing.
-- **Three failure lines.** Issue: three failures say nothing. Drafts: "Your value could not be saved. Try again." (a
-  value page's Add that fails); "Your history could not be shown. Reload the page to try again." (a failed history
-  read); and a "cannot reach your record" line for a second refused save that now loses the typed text silently.
-  Options: approve all three; some; none. Recommendation: all three.
-- **One bad value blocks the whole web upload.** Issue: on the web, one out-of-range value blocks Save for the whole
-  upload; the iPhone saves the rest and refuses that row. Options: the web refuses per row, like the iPhone; the
-  iPhone blocks like the web; leave. Recommendation: per-row refusal in the shared engine for both, with the refused
-  row shown.
 - **One copy of the plan-page wording.** Issue: the iPhone's alcohol question adds a sentence the web does not, and
   the plan page's order, colours and urgent banner are hand copies on each app. Options: one wording in the shared
-  engine, chosen by you; leave two copies. Recommendation: one wording, with you choosing it; the display rules move
-  only after your yes.
-- **A "Not saved" marker on chat replies with edits.** Issue: a reply that lands after the person left its thread
-  saves nothing, but reads as saved when they reopen the thread (design: [drafts/c22-c26-design.md](drafts/c22-c26-design.md)).
-  Options: (A) store a "Not saved" marker on every such reply (new words, a new stored field, iPhone too); (B) only on
-  replies that carried edits; (C) wait for the iPhone chat work. Recommendation: B, reusing the existing banner
-  words, since a reply with no edits had nothing to lose.
-- **Restore " It will upload automatically."** Issue: Settings' waiting line on the web ("Some data in this browser
-  is still waiting to sync…") dropped this clause on 14 Nov until you approve it. The retry it describes already
-  runs. Options: approve it; leave it out. Recommendation: approve: it is true, and tells the person they need do
-  nothing.
+  engine, with you choosing the sentence; leave two copies. Recommendation: one wording, once you choose the
+  sentence; the display rules move only after your yes.
+- **The algorithm document's sentence about the cancer section from 86.** Issue: health_roadmap_algorithm.md says
+  that from 86 the cancer section shows only when one of its groups does. Both apps now show the section with a
+  short note when sex is missing (US-62 AC41). Options: reword that sentence to match the apps (a clinical file, so
+  your yes is needed, with the three-file check); leave it. Recommendation: reword, so the document says what the
+  apps do.
 
-### Product and code decisions (raised 2026-11-25)
+### Product and code decisions
 
 - **Message packs that nothing reads.** Issue: a paid order still adds chat message credits to an account, but
   nothing reads those credits any more. Options: remove the step and its order webhook (a deploy of the app's
   settings); keep it. Recommendation: remove it, once you confirm no message pack is still on sale.
-- **Built storefront bundles in git.** Issue: the built widget files are tracked in git, though the deploy builds
-  them anyway. Options: stop tracking them (smaller diffs, fewer merge conflicts; a hand deploy must build first);
-  keep them. Recommendation: stop tracking them.
-- **One workflow PR for CI tidying.** Issue: CI and deploy list the same typecheck steps; the Pages smoke check is a
-  script written inline in the deploy workflow; and the test shard split could be weighted. Workflow files are yours
-  to change. Options: one PR with a shared typecheck script, the smoke check moved into tools, and the shard weights;
-  leave. Recommendation: one PR, so you review one workflow change.
-- **The story file every PR edits.** Issue: docs/user-stories.md is one file every PR appends to. PRs that add to
-  the same story conflict, and a conflicting PR gets no CI run; on 25 Nov six PRs needed a rebase for this alone.
-  Options: one file per story section, built into the page by the existing Pages step; keep one file.
-  Recommendation: split it: the tools that read the file change once, and the conflicts stop.
 - **An Apple Health lab result with a malformed date.** Issue: a result imported from Apple Health Records whose
   drawn date cannot be read is dated by the day the report was issued instead
   ([drafts/h35-malformed-observation-dates-design.md](drafts/h35-malformed-observation-dates-design.md)). Options:
@@ -70,106 +41,98 @@ issue, and nothing private.
   (B) keep today's fall-back: every result lands, some on the issue day rather than the draw day; (C) hold A until a
   "some results could not be read" line is approved for the iPhone. Recommendation: none; the note leaves the choice
   open, since it turns on which harm you would rather risk.
+- **Should a brand store's tool page and chat embed read the brand words?** Issue: PR 2163 gave the chat panel the
+  pop-up's words by one rule, but kept the doctor words on the tool page and the chat embed on both stores, because
+  the brand words were written for pages with no plan. Options: keep the doctor words there; write brand words that
+  fit a page with a plan. Recommendation: keep them until such words are written.
+- **A place label on the chat panel count.** Issue: `chat_panel_shown` counts the panel coming into view, with no
+  word for where it was placed. Options: add a closed placement key; leave it. Recommendation: leave it until the
+  count is used, since a key nobody reads is surplus.
 
 ### Waiting on your own yes
 
 - **Two contributor workflow PRs, 1805 and 1806.** 1805 rewords the review prompt that still calls its verdict
   advisory; 1806 pins two GitHub actions by commit in the deploy and review workflows. The pinned commits match the
   upstream tags. Workflow files merge only on your word.
-- **The glossary (PR 1956).** One word per concept for copy, docs and code names; this PR and the 16 wording PRs
-  that follow it wait on it. Eight entries need your answer; option A is recommended for each:
-  (1) the product's name: "Health by Dr Brad" in everything people read, "Health Roadmap" only where iOS shows the
-  app's name, cloud folders keep "Health Plan by Dr Brad"; (2) a blood test and its result: "blood test" for the
-  test, "result" for its number; (3) the plan and its parts: "plan" for the whole, "suggestion" for one item,
-  "recommendation" only for what a guideline or you recommend; (4) your name: "Dr Brad" with no full stop, "Dr Brad
-  Stanfield" on a formal first mention; (5) the basic-facts section: "About you" at both stages (this changes your
-  onboarding design); (6) medicines: "medicine" in sentences, "Medications" in form titles, "drug" only for drug
-  names and classes in clinical text; (7) test names: one display name per test (ApoB, Lp(a), HbA1c), with the full
-  name beside it on first mention, through the three-file clinical sync; (8) house spelling: US spelling in
-  everything people read. Options B and C for each are in the PR.
 - **Prostate text, three held PRs.** PR 1610 is a draft of the exact sentences for the directions you chose on
   13 Nov (no rectal exam; the American Cancer Society's November 2026 position on ages 45 to 49, in the words only):
   answer (a) or (b) for each row, or edit a row. PR 1607 is a design note for a stop age of 75 and a PSA flag line of
   3.0 under 70 and 6.5 from 70: it asks nine clinical questions and needs your words before anything is built.
   PR 1604 builds the old-PSA-answer rules you decided on 13 Nov; it proposes six sentences for the algorithm
   document and wrote none: each needs your yes.
-- **Per-address limits (PR 2082).** Every per-address limit now builds its key one way, so devices on one IPv6 home
-  or office network share a count, as IPv4 networks already do. Its design note
-  ([drafts/s-21-ip-key-design.md](drafts/s-21-ip-key-design.md)) asks one question: keep every limit as it is (such
-  networks would share feedback at 3 an hour, email capture at 20 an hour, new guest chats at 10 an hour and lab
-  files at 200 a day), or raise the feedback limit (say to 10 an hour). The note recommends keeping them.
+- **Per-address limits (PR 2082).** Every per-address limit builds its key one way, so devices on one IPv6 network
+  share a count, as IPv4 networks already do ([drafts/s-21-ip-key-design.md](drafts/s-21-ip-key-design.md)). The
+  review of 26 Nov asked two more questions before it merges: whether networks that share one IPv6 /64 beyond homes
+  and offices (carrier and relay egress) should share the feedback limit (3 an hour) and the new-guest-chat limit
+  (10 an hour); and it noted that the one helper's guard also covers the MCP log brake. Options: merge with the
+  limits unchanged; raise those two limits for IPv6 buckets; leave the keys as they are. Recommendation: raise the
+  two limits for IPv6 buckets before merging, so people behind one shared address are not held to one person's
+  allowance.
 - **An iPhone engine release waits at its signing step.** Today's deploy started it. It was left unsigned on purpose
   while the App Store review is open.
 
 ## Decided
 
 2026-11-26, Brad's words in quotes:
-- The storefront chat embed's events: merged (PR 2079), as recommended, so the embed's use is counted like the
-  tool's. It sends "thinking opened", and since US-15 AC77 also `chat_panel_shown` when the panel comes into view;
-  both carry their names alone.
-- "Sync now" inside the five-second pause: Sync now skips the pause, with no new words; the pause stays for
-  automatic re-reads (option (a): shared engine rule plus the iPhone engine's Sync now door, which reaches phones
-  with the next engine release).
-- Screen-reader names for the medicine dose boxes end in a lower-case "dose", as the supplement rows do (PR 1796),
-  so the whole form uses one casing: "this" (option 2). PR 1888 now names them "Statin dose", "GLP-1 Medication
-  dose" and "SGLT2 Inhibitor dose", through labelled-by references (US-09 AC7l). "Email for your PDF" is approved for PR 1800.
-- When a cloud save fails after it may have landed: "do it, and use your judement for the sentences. must be succinct,
-  and I approve whatever sentences you suggest". One table words every storage failure that has no words of its own
-  (US-10 AC20): "<provider> refused the change. Nothing was written." (or "refused the request" for a call that is not
-  the save's write), "<provider> returned an error." then "The change may have landed. Read the record again before
-  trying it a second time.", or "Nothing was written."; "<provider> returned an answer that could not be used.";
-  "<provider> needs to be reconnected. Nothing was written."; after a save's own read, an access refusal says only
-  "Nothing was written."
-- A YouTube follow-up's classifier and router see the parent comment and the author's own earlier replies, by the
-  same rule as web and Discord (H415, US-15 AC75): "the router should see the earlier comments. youtube, web, and discord should behave the same here, and so
-  probably use the same code". No new words.
-- The pause before an agent files feedback stays, and an early confirm now says the seconds left ("go with your
-  recommendations"): "That confirm receipt is not valid yet: it can be used in 7 seconds (from <time>), after the user
-  has answered. Do not retry before then; end your turn. Nothing was written." (US-36 AC14).
-- "Two server items to close" are closed with no change ("go with your recommendations"): slow lab-import warnings stay
-  without a deploy tag, and no deploy gate is added for the chat prompt file, since chat already refuses and alerts
-  when it is missing (leads C8, H67).
-- "Files lost when a lab batch times out (self-hosted build)" is closed with no change ("go with your
-  recommendations"): it touches only the GitHub Pages build and is rare (lead H132).
-- The erase confirm does not mention files saved offline on another device: "do this for now. it's simpler". The
-  confirm stays as it is.
+- Screen-reader names on the web upload list: option 1, on (PR 2161, US-13 AC28). "LDL Cholesterol value from
+  report.pdf, 1 Nov 2026", with ", another reading" for a second reading there. Brad asked why two reports with the
+  same result on the same day are both drawn: the second saves nothing ("another reading of this test is on the same
+  day", or "Already in your record"); the names only let a screen-reader user tell the boxes apart.
+- Two chat history lines and the "Not saved" marker (option B, on replies that carried edits): decided; built in
+  PR 2151, open and held. "Chat history unavailable", "This reply was not saved to your chat history.", "Not saved:
+  you opened another conversation before this reply arrived."
+- Three failure lines, all three: decided; built in PR 2146, open and held. "Your value could not be saved. Try
+  again."; "Your history could not be shown. Reload the page to try again."; "Your record could not be shown. Your
+  value was not saved."
+- One bad value in a web upload: "per-row refusal in the shared engine for both, with the refused row shown";
+  built in PR 2152, open and held. Before it both clients blocked the whole Save; a blood pressure is refused whole.
+- Restore " It will upload automatically.": decided; built in PR 2155, open and held. The clause shows only when a
+  retry can mend the failure.
+- Cues for a value not yet saved, "the second, which needs no new words" (PR 2150): the Waist row's "Add" and the
+  "Unsaved values: review" cue stay; the PDF box's blocked-window note shows only beside the Save as PDF it names.
+- Old A/B tracking calls are deleted ("go with your recommendations", PR 2153): the web sends no A/B event and the
+  `/api/ab` route is gone; the admin dashboard and the tables stay (US-09 AC62).
+- Web sync lines (PR 2154) and the switch stop (PR 2122): "use your judgement for the sentences. must be succinct,
+  and I approve whatever sentences you suggest". Now said: "This browser was logged off in another tab. Reload this
+  page to carry on. Changes not yet saved will be lost."; "Sign-in did not finish because this browser was logged
+  off. Please try again."; "This browser was logged off in another tab. Your latest changes show here but are not
+  saved."; "Your record in <provider> stays there as it is." (for a self-hosted record, "on your own server").
+- Erase messages say what each step did, from one table in the shared engine (PR 2148); the sentences: US-11 AC13.
+  The iPhone follows with its next engine release.
+- The web crash screen keeps "Delete all my data" and "Log off this device" (PR 2158, Brad: "yes"); the sentences:
+  US-11 AC14. The iPhone's cannot-start screen follows after App Store review.
+- Storage failures with no words of their own read from one table (PR 2149, US-10 AC20): "do it, and use your
+  judement for the sentences. must be succinct, and I approve whatever sentences you suggest".
+- My health on the web shows Cancer screening with the iPhone's note where no screening question applies ("go with
+  the recommendations", PR 2147, US-62 AC41).
+- Chat panel wording and count: the panel takes the pop-up's words by one rule and is counted as `chat_panel_shown`
+  (PR 2163, US-15 AC77). The tool page and the chat embed keep the doctor words on both stores.
+- "Sync now" inside the five-second pause skips the pause, with no new words (option (a), PR 2160); the iPhone
+  engine's Sync now door reaches phones with the next engine release.
+- An agent's early feedback confirm says the seconds left ("go with your recommendations", PR 2144, US-36 AC14).
+- The server scrubber's parity test is retired; its shape checks move to `sentry-scrub-shape.test.ts` ("go with
+  your recommendations", PR 2157).
+- A YouTube follow-up's router and classifier read the parent comment and the author's own earlier comments, by the
+  web and Discord rule (PR 2145, US-15 AC75): "that's not intended. the router should see the earlier comments.
+  youtube, web, and discord should behave the same here".
+- Medicine dose boxes' screen-reader names end in a lower-case "dose", as the supplement rows do (PRs 1888, 1796):
+  "this" (option 2). "Email for your PDF" is approved (PR 1800).
+- A stated age near New Year is accepted as it is ("go with your recommendations", PR 1899).
+- The glossary: all eight entries settled as option A (Brad: "for all of the 'decisions-for-brad' that I haven't
+  answered, go with your recommendations"). PR 1956 and the 16 wording PRs wait on the contributor to bring them up
+  to main.
+- Built storefront bundles in git: stop tracking them. Not started.
+- The story file every PR edits: split it, one file per story section. Not started.
+- One workflow PR for CI tidying: decided in principle; workflow files are Brad's to change. Not started.
+- The storefront chat embed's events: merged (PR 2079), so the embed's use is counted like the tool's; each event
+  carries its name alone.
+- "Two server items to close" and "Files lost when a lab batch times out (self-hosted build)" are closed with no
+  change ("go with your recommendations"; leads C8, H67, H132).
+- The erase confirm does not mention files saved offline on another device: "do this for now. it's simpler".
 - Older app versions and background storing: option (a), "the existing iOS app, virtually no one is using". The
   reader ships one app version before the writer.
-- A stated age near New Year is accepted as it is ("go with your recommendations"): a few hours a year, only for a
-  stated age.
 - The reminders switch when iPhone permission was already decided shows the existing Settings row, with no new words
   ("go with your recommendations"). It waits for the next iPhone build (lead S33).
-- Web sync lines, all three: "use your judgement for the sentences. must be succinct, and I approve whatever sentences
-  you suggest". Now said: "Sign-in did not finish because this browser was logged off. Please try again." (a sign-in a log-off cut short);
-  "This browser was logged off in another tab. Your latest changes show here but are not saved." (a cloud page whose
-  save failed after that log-off); "Your record in <provider> stays there as it is." and, for a self-hosted record, "Your record on your own server stays there as it is." (the picker, from a cloud).
-- The server scrubber's parity test is retired ("go with your recommendations"): its output-parity comparison is
-  deleted, since the copy is generated and the test that it is up to date stays; its four shape checks (imports, the
-  export list, the request-header allow-list) move to `sentry-scrub-shape.test.ts`. No new words.
-- The web's My health and the iPhone, three differences: "go with the recommendations". Where no screening question
-  applies, the web shows Cancer screening with the iPhone's note, in the iPhone's place (urgent cards above it, others
-  below); before the form is complete the web still shows no card. The note's words, one shared copy: "Screening questions appear once your sex,
-  birth year and height are in About you.", "Some screening questions depend on your sex. Add it in About you.", "No
-  screening questions apply at your age and sex yet." (US-62 AC41).
-- Chat wording and counting differ between the chat panel and the pop-up: the recommendation. The panel takes the
-  pop-up's words by the same rule, from one table; a panel shown is counted as `chat_panel_shown`, and the pop-up's
-  `chat_opened` is unchanged. No new sentences (US-15 AC77).
-- An erase message says what each step did, from one table in the shared engine (US-11 AC13): "this. and use your
-  judement for the sentences. must be succinct, and I approve whatever sentences you suggest". The web uses it now; the
-  iPhone with its next engine release. A record not erased: "Your health record was not deleted: the erase could not be
-  saved.", then "Your chat history was deleted." or "Your chat history could not be reached just now.", then "Try again."
-- After a web page crash, the fallback keeps "Delete all my data" and "Log off this device" (US-11 AC14; Brad
-  took the recommendation: "yes"), above them: "Something went wrong. Reload the page to try again. You can still delete your
-  data or log off." Where the picker offers no log-off (a guest, or a sign-in that ended), the sentence ends "You can still delete your data."
-  The iPhone's cannot-start screen follows after App Store review.
-- What a screen reader calls each value on the web's upload list: option 1, chosen 2026-11-23; the owner's check is
-  done and the names are on (US-13 AC28). "LDL Cholesterol value from report.pdf, 1 Nov 2026", with ", another
-  reading" for a second reading there; a day control says its label, a column's printed day, then the file's name.
-  Built from references to text on screen only. No new sentences.
-- Old A/B tracking calls are deleted ("go with your recommendations"): the web sends no A/B event, and the `/api/ab`
-  route, which nothing else called, is gone. The admin dashboard and the tables stay (US-09 AC62). No new words.
-- Cues for a value not yet saved, "the second, which needs no new words": the Waist row's "Add" and the "Unsaved
-  values: review" cue stay as they are; the PDF box's blocked-window note shows only beside the Save as PDF it names.
 
 2026-11-23, Brad's words in quotes:
 - Original files are stored in the background after Save, with no action from the person at Save and at every
@@ -198,30 +161,3 @@ issue, and nothing private.
   date the record holds when the Save commits; among letters in one upload the latest wins. Across devices the record
   still merges last-writer-wins. An earlier date can still be set by hand in the form: "this" (option 2).
 - Erase leaves original files in the person's cloud folder, and the confirm text keeps saying so: "this".
-
-2026-11-21, Brad's words in quotes:
-- The web upload review page is the iPhone's list: "do this".
-- The very high apoB card wording stays as it is.
-- A letter that prints values: the letter is filed alone, and no values are taken from it.
-- A lab report with nothing ticked: "the original letters should still be kept in the cloud storage".
-- The not-stored count counts every failed original, using the same layout elements as the original save
-  confirmation.
-- Screen-reader name for a second reading: "<test> value from <column>, another reading" ("sure").
-- The web upload list shows every value the reader offered as a row, in every state; a row never disappears, only
-  its caption changes; untouched rows that need nothing sit behind "Show all" (US-13 AC26).
-- The caption for a value the record already holds: "Already in your record".
-- Two readings of one test on one day (the owner thread's ruling): both rows are drawn; the one that loses stays ticked
-  and editable, says "another reading of this test is on the same day" and saves nothing.
-- The GLP-1 hint sentence "GLP-1 medications reduce appetite and improve blood sugar control." is approved.
-
-2026-11-21, Brad's words in quotes ("do all of your recommendations"):
-- After a Save that only kept originals, the iPhone shows "1 original file kept in your cloud." on its own,
-  without "Saved 0 values." above it.
-- The web stops counting a lab report's kept original as a document, and shows the same kept line as the
-  iPhone. This lands with the web upload list, when the web draws the shared done screen.
-
-2026-11-21, the owner's calls (Fable, not Brad):
-- Invalid text stays in its row, shows the existing guidance and blocks Save (US-13 AC5, AC12); an earlier owner call to
-  revert it was withdrawn on 2026-11-21 after review.
-- An emptied input unticks its row.
-- A dated previous column's day stays editable.
