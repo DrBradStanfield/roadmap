@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H408,tests,A test pins that the algorithm text and the products block appear in the system blocks sent to the model,lead,not started,Filed 2026-11-26 from the day's reviews: buildSystemBlocks (app/lib/chat.server.ts). Build: one test that finds both blocks in its output. (H408),,no

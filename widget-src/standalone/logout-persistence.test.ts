@@ -401,7 +401,7 @@ describe('US-09 AC2c: log-off closes the barrier in every cloud-mode tab on the 
     localStorage.setItem('health_roadmap_backend', 'memory');
     const other = await otherTab();
     const otherConnect = await import('./connect');
-    const mirror = await import('../src/lib/storage');
+    const mirror = { ...(await import('../src/lib/storage')), ...(await import('../src/lib/chat-mirror')) };
     // That tab's own StorageError: a class from another module graph is not one to its catch.
     const { StorageError } = await import('@roadmap/health-core/adapter');
     const outage = new StorageError('synthetic outage', undefined, undefined, 503, undefined, 'no-answer');
@@ -414,7 +414,7 @@ describe('US-09 AC2c: log-off closes the barrier in every cloud-mode tab on the 
   }
   function expectFallbackWroteNothing(tab: Awaited<ReturnType<typeof fallbackTab>>) {
     tab.storage.markSyncPending();
-    tab.mirror.patchMirror({ medications: [] });
+    tab.mirror.writeMirror({ medications: [] });
     expect(localStorage.getItem(FILE_KEY)).toBeNull();
     expect(localStorage.getItem(PENDING_KEY)).toBeNull();
     expect(localStorage.getItem('health_roadmap_data')).toBeNull();

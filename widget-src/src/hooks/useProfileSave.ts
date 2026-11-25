@@ -4,7 +4,8 @@ import type { UnitSystem } from '@roadmap/health-core/units';
 import { PREFILL_FIELDS, hasUnsavedProfileEdits } from '@roadmap/health-core/mappings';
 import { birthRefusedMessage } from '@roadmap/health-core/validation';
 import { getBackendKind, getShownErase, saveChangedMeasurements } from '../lib/roadmap-data';
-import { healthWritesAllowed, patchMirror } from '../lib/storage';
+import { healthWritesAllowed } from '../lib/storage';
+import { writeMirror } from '../lib/chat-mirror';
 import { useDebouncedSave } from '../lib/useDebouncedSave';
 
 /** The profile fields a save carries: height, sex, the birth date and the unit system. */
@@ -110,9 +111,9 @@ export function useProfileSave(args: {
         : prev));
       setBirthRefused(birthRefusedMessage(refused.birthYear, refused.birthMonth));
     }
-    // The chat copy holds the saved profile beside the saved values it
-    // already has (US-15 AC10).
-    patchMirror({ profile: { ...saved.current } });
+    // The chat copy holds the saved profile beside the record's saved values
+    // (US-15 AC10, US-34 AC11).
+    writeMirror({ profile: { ...saved.current } });
     // Settled, landed or refused (AC8): release a held remote change (see the header).
     if (!PROFILE_FIELDS.some(f => inputsRef.current[f] !== inputs[f])) onSettled();
     return true;
