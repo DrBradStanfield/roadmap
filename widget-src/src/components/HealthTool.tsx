@@ -12,6 +12,7 @@ import { chatContextOf, type ChatContextPayload } from '@roadmap/health-core/cha
 import { statTiles } from '@roadmap/health-core/stat-tiles';
 import { localDay, dayOf } from '@roadmap/health-core/merge';
 import { planPsa } from '@roadmap/health-core/measurement-history';
+import { screeningAge } from '@roadmap/health-core/screening-rules';
 import type { BloodTestPrefillFn } from './BloodTestTimeline';
 import type { MoveTestApi } from './MoveTestPanel';
 import type { VitalsPrefillFn } from './StartingInfoVitals';
@@ -357,22 +358,21 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
       return { results: null, isValid: false, validationErrors: errors, planBasis: null };
     }
 
+    const now = new Date(); // one instant for the plan's cards and the screening questions (US-23 AC6c)
     const healthResults = calculateHealthResults(
       calcInputs,
       unitSystem,
       medicationsToInputs(medications),
       // US-06 AC14: the prostate cards read the newest usable saved PSA, as computePlan does.
-      withPsaMeasurement(screeningsToInputs(screenings), planPsa(history, new Date(), screeningsToInputs(screenings))),
-      metricUnitOverrides,
+      withPsaMeasurement(screeningsToInputs(screenings), planPsa(history, now, screeningsToInputs(screenings))),
+      metricUnitOverrides, now,
     );
-    // The form follows the plan: its recommendations, targets and cascade
-    // steps read what the plan was computed from (US-06 AC5): its age, BMI,
-    // weight target and validated height, its trigger and its lipid marker.
-    // The plan's medicine cards need a known age of 18 or over (US-07 AC6),
-    // so without one the form's medication sections are plain fields.
+    // The form follows the plan (US-06 AC5): its age, BMI, weight target, validated height, trigger and
+    // lipid marker; the screening questions and the upload gate read the cards' age (US-23 AC6c).
+    // The plan's medicine cards need a known age of 18 or over (US-07 AC6), so without one the form's medication sections are plain fields.
     const medicines = medicinesShown(healthResults);
     const planBasis: PlanBasis = {
-      ...healthResults,
+      ...healthResults, screeningAge: screeningAge(calcInputs, now),
       weightMedTrigger: medicines ? weightMedicationTrigger(calcInputs, healthResults) : { on: false, reasons: [] },
       lipidMarker: medicines ? lipidMarkerFor(calcInputs, healthResults) : null,
     };
@@ -689,7 +689,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
         onComplete={() => { const read = rereadRecord('upload'); answered(null); return read; }} // an upload is an answer, after a held change is taken in
         onStart={handleUploadStart}
         onClose={() => setShowUploadModal(false)}
-        age={planBasis?.age}
+        age={planBasis?.screeningAge}
         sex={sex}
       />
 
