@@ -2,6 +2,7 @@ import { useCallback, useLayoutEffect, useRef, useState, type Dispatch, type Set
 import type { HealthInputs } from '@roadmap/health-core/types';
 import { LONGITUDINAL_FIELDS } from '@roadmap/health-core/mappings';
 import { inputRangeFault } from '@roadmap/health-core/validation';
+import { eraseLater } from '@roadmap/health-core/erase-identity';
 import { VITALS_INPUT_FIELDS } from '@roadmap/health-core/chat-edits';
 import type { LatestMeasurementsResult } from '../lib/api-types';
 import { getBackendKind, getEraseIdentity } from '../lib/roadmap-data';
@@ -11,7 +12,7 @@ import { createRemoteChangeRelay } from '../lib/remote-replay';
 import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
 import type { RemoteChange } from '@roadmap/health-core/record-host';
 import type { useRecordState } from './useRecordState';
-import type { ShownProfile } from './useRecordReads';
+import type { ShownCopy } from './useRecordReads';
 import type { useUnits } from './useUnits';
 import type { EraseStore } from '../lib/erase-machine';
 
@@ -100,8 +101,10 @@ const reportReadFailure = (error: unknown) => { Sentry.captureException(error, {
 
 export function useRecordApply(args: {
   setInputs: Dispatch<SetStateAction<Partial<HealthInputs>>>;
-  reloadValues: (shown?: ShownProfile) => Promise<LatestMeasurementsResult | null>;
+  reloadValues: (shown?: ShownCopy) => Promise<LatestMeasurementsResult | null>;
   applyLists: ReturnType<typeof useRecordState>['applyLists'];
+  /** The medications and screenings the page shows. */
+  lists: Pick<LatestMeasurementsResult, 'medications' | 'screenings'>;
   units: ReturnType<typeof useUnits>['record'];
   /** The erase machine (hooks/useErase): each whole re-read dispatches `read` to it. */
   erase: Pick<EraseStore, 'getSnapshot' | 'dispatch'>;
@@ -184,8 +187,18 @@ export function useRecordApply(args: {
     const { later } = latest.current;
     const policy = READ_POLICY[reason];
     // The page's own save: the values, lab rows, both matrices and the chat mirror, nothing else (US-34 AC4a).
-    // While a change is held, the mirror keeps the profile the page shows, asked as it is written (AC9, H15).
-    if (policy.read === 'values') return latest.current.reloadValues(() => (relay.holding() ? later().savedProfile() : undefined)).then(() => {});
+    // Asked as each is written. The store moved during the read, or it read an erase older than the one shown:
+    // nothing. It read a later erase than the one shown (its read failed, L1): the record read, never the earlier
+    // copy (H16). While a change is held, the mirror keeps the profile and lists on screen (AC9, AC10).
+    if (policy.read === 'values') {
+      const erase = getEraseIdentity(); // read with the record, in one turn
+      return latest.current.reloadValues(() => {
+        const shown = latest.current.erase.getSnapshot().shown;
+        if (getEraseIdentity() !== erase) return null;
+        if (erase !== shown) return eraseLater(erase, shown) ? undefined : null;
+        return relay.holding() ? { inputs: later().savedProfile(), ...latest.current.lists } : undefined;
+      }).then(() => {});
+    }
     // Not while the user is mid-typing: the re-read replaces the form's
     // inputs, and a remote change landing on a half-entered height would take
     // those keystrokes with it. The relay HOLDS it: the next profile save to

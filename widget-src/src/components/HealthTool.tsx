@@ -148,7 +148,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   });
   // The record shown, at load and on every whole re-read, and another writer's change held behind an edit (hooks/useRecordApply).
   const { showRecord, signal: rereadRecord, ownSave, shows: showErase, settled: profileSettled, firstReadShown, firstReadFailed } = useRecordApply({
-    setInputs, reloadValues, applyLists, units, erase: eraseStore,
+    setInputs, reloadValues, applyLists, lists: { medications, screenings }, units, erase: eraseStore,
     later: () => ({ markSaved, flushPendingSave, flushListSaves, profileDirty, clearAnswered, savedProfile }), // declared below
   });
   // The medication, screening and supplement saves (hooks/useListSaves).

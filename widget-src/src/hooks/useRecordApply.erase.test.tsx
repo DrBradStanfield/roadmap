@@ -13,6 +13,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, cleanup, renderHook } from '@testing-library/react';
 import type { LatestMeasurementsResult } from '../lib/api-types';
+import type { ShownCopy } from './useRecordReads';
 
 const id = (epoch: number) => JSON.stringify([epoch, epoch === 0 ? null : `2026-11-0${epoch}T10:00:00.000Z`]);
 const A = id(0); // the record shown at load
@@ -81,7 +82,7 @@ function setup(loaded = true) {
       spend: () => fx.later.clearAnswered(true),
     } as Parameters<typeof useErase>[0]);
     const page = useRecordApply({
-      setInputs: fx.setInputs, reloadValues: fx.reloadValues, applyLists: fx.applyLists,
+      setInputs: fx.setInputs, reloadValues: fx.reloadValues, applyLists: fx.applyLists, lists: { medications: [], screenings: [] },
       units: fx.units as unknown as Parameters<typeof useRecordApply>[0]['units'],
       erase: erase.store, later: () => fx.later,
     });
@@ -278,6 +279,26 @@ describe('fix 4 (2b-3), Fable: L1, a heard erase whose read fails, is never left
     expect(page.now().erase.unreachable).toBe(false); // the read landed
     // Q4: one alert per erase a save was asked under; A was said already.
     expect(alerts()).toBe(1);
+  });
+
+  it('US-34 AC10 (H16): B heard, its read fails, then a refused weight save re-reads its values: that read writes the record read (B\'s), never A\'s copy', async () => {
+    const page = setup();
+    page.fx.fail = true;
+    await announced(B);
+    expect(page.now().erase.shownErase).toBe(A); // B's read failed: the page still shows A
+    page.fx.fail = false;
+    page.fx.later.profileDirty.mockReturnValue(true);
+    await announced(null); // a change held behind a dirty profile: the page's copy would be A's
+    // useLongitudinalSave's finish re-reads after a refused save too.
+    await act(async () => { await page.now().page.ownSave(); });
+    const [shown] = page.fx.reloadValues.mock.calls.at(-1) as unknown as [ShownCopy];
+    expect(shown()).toBeUndefined(); // the record read: B's, as before AC10
+    // A read under an earlier erase than the page shows writes nothing.
+    rec.identity = A;
+    act(() => { page.now().erase.store.dispatch({ type: 'read', identity: B }); }); // the page now shows B
+    await act(async () => { await page.now().page.ownSave(); });
+    const [older] = page.fx.reloadValues.mock.calls.at(-1) as unknown as [ShownCopy];
+    expect(older()).toBeNull();
   });
 });
 
