@@ -9,7 +9,7 @@ import { groupLabValues, type LabRowsIcon, type LabValueGroup } from '@roadmap/h
 import { countLabValuePoints, labGroupMatrix } from '../lib/lab-rows';
 import { AddLabTest } from './AddLabTest';
 import { UnitChip } from './UnitChip';
-import { BatchDateCell, ValueCell, useLiveRegion } from './BloodTestTimeline';
+import { BatchDateCell, ValueCell, useLiveRegion } from './MatrixSavedCells';
 import type { MoveHeaders } from './MoveTestPanel';
 import { useScrollToRightOnMount } from '../lib/useScrollToRightOnMount';
 import { trackProductEvent } from '../lib/server-api';

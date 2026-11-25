@@ -18,7 +18,7 @@
  * Brad supplies the app key (client id) via DropboxConfig; there is no secret.
  */
 import { dropboxDownload, dropboxListFolder, dropboxRead, dropboxReplyAccount, dropboxUploadDocument, dropboxWrite, DROPBOX_TOKEN_URL } from '@roadmap/health-core/dropbox-rest';
-import { fetchOrFail, ROADMAP_FILE_NAME, sleepUntilAborted, catchUpAfterFailure, StorageError, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
+import { answerOutcome, fetchOrFail, ROADMAP_FILE_NAME, sleepUntilAborted, catchUpAfterFailure, StorageError, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
 import { TRANSFER_DEADLINE_MS, timeoutDeadline } from '@roadmap/health-core/transfer-deadline';
 import { BACKEND_KEY, getSignIn, logOffId, safeGetItem, setSignIn, safeRemoveItem, type LogOffId } from '../lib/storage';
 import { claimRedirectCancel, claimRedirectCode, deriveCodeChallenge, generateCodeVerifier, generateState, pkceEntry } from './pkce';
@@ -81,7 +81,7 @@ function tokenReply(json: unknown, needsRefresh: boolean): { access_token: strin
   const t = (json ?? {}) as { access_token?: unknown; refresh_token?: unknown; expires_in?: unknown };
   const ok = (v: unknown) => typeof v === 'string' && v !== '';
   if (!ok(t.access_token) || !Number.isFinite(t.expires_in) || (needsRefresh && !ok(t.refresh_token))) {
-    throw new StorageError('Dropbox sent an incomplete sign-in reply. Please reconnect.');
+    throw new StorageError('Dropbox sent an incomplete sign-in reply. Please reconnect.', undefined, undefined, undefined, undefined, 'no-answer');
   }
   return t as { access_token: string; refresh_token: string; expires_in: number };
 }
@@ -115,7 +115,7 @@ export class DropboxAdapter implements StorageAdapter {
     try {
       sessionStorage.setItem(PKCE_KEY, pkceEntry(verifier, state, this.gen));
     } catch {
-      throw new StorageError('Cannot start Dropbox sign-in: session storage is blocked.');
+      throw new StorageError('Cannot start Dropbox sign-in: session storage is blocked.', undefined, undefined, undefined, undefined, 'refused');
     }
     const url = new URL(AUTHORIZE_URL);
     url.searchParams.set('client_id', this.config.clientId);
@@ -163,7 +163,7 @@ export class DropboxAdapter implements StorageAdapter {
       timeoutMs: 10_000,
     });
     if (!res.ok) {
-      throw new StorageError(`Dropbox token exchange failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status);
+      throw new StorageError(`Dropbox token exchange failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status, undefined, answerOutcome(res.status));
     }
     // A body that is not JSON (a wifi sign-in page) is an incomplete reply too.
     const reply: unknown = await res.json().catch(() => null);
@@ -278,7 +278,7 @@ export class DropboxAdapter implements StorageAdapter {
 
   private async cursorOf(res: Response): Promise<string> {
     const json = (await res.json()) as { cursor?: string };
-    if (!json.cursor) throw new StorageError('Dropbox returned no cursor.');
+    if (!json.cursor) throw new StorageError('Dropbox returned no cursor.', undefined, undefined, undefined, undefined, 'no-answer');
     return json.cursor;
   }
 
@@ -296,7 +296,7 @@ export class DropboxAdapter implements StorageAdapter {
       signal,
       timeoutMs,
     });
-    if (!res.ok) this.refused(new StorageError(`Dropbox call failed (${res.status}).`, undefined, undefined, res.status));
+    if (!res.ok) this.refused(new StorageError(`Dropbox call failed (${res.status}).`, undefined, undefined, res.status, undefined, answerOutcome(res.status)));
     return res;
   }
 
@@ -317,7 +317,7 @@ export class DropboxAdapter implements StorageAdapter {
     } finally {
       deadline.clear();
     }
-    if (!account.email || account.email_verified !== true) throw new StorageError('Dropbox has not verified this account\'s email.');
+    if (!account.email || account.email_verified !== true) throw new StorageError('Dropbox has not verified this account\'s email.', undefined, undefined, undefined, undefined, 'refused');
     return account.email.toLowerCase();
   }
 
@@ -329,7 +329,7 @@ export class DropboxAdapter implements StorageAdapter {
   };
 
   private async accessToken(): Promise<string> {
-    if (!this.tokens) throw new StorageError('Dropbox is not connected.', undefined, undefined, undefined, 'reconnect'); // a forgotten sign-in
+    if (!this.tokens) throw new StorageError('Dropbox is not connected.', undefined, undefined, undefined, 'reconnect', 'refused'); // a forgotten sign-in
     // Refresh a minute before expiry. A page signed out sends a cached token to the refresh too, which
     // refuses it: no adapter goes on using a sign-in this page knows has ended (US-09 AC48, Codex R2).
     if (Date.now() >= this.tokens.expiresAt - 60_000 || isSignedOut(this.id)) await this.refresh();
@@ -338,7 +338,7 @@ export class DropboxAdapter implements StorageAdapter {
 
   private async refresh(): Promise<void> {
     // No grant, or one this page knows is dead: only a new sign-in mends it, so nothing is posted (US-09 AC48).
-    if (!this.tokens?.refreshToken || isSignedOut(this.id)) throw new StorageError('Dropbox session expired — please reconnect.', undefined, undefined, undefined, 'reconnect');
+    if (!this.tokens?.refreshToken || isSignedOut(this.id)) throw new StorageError('Dropbox session expired — please reconnect.', undefined, undefined, undefined, 'reconnect', 'refused');
     const startedFrom = this.tokens.refreshToken;
     const body = new URLSearchParams({
       grant_type: 'refresh_token',
@@ -367,7 +367,7 @@ export class DropboxAdapter implements StorageAdapter {
         safeRemoveItem(TOKEN_KEY);
       }
       if (refused) signInEnded(this.id, this.gen);
-      throw new StorageError(`Dropbox token refresh failed (${res.status}) — please reconnect.`, undefined, undefined, res.status, refused ? 'reconnect' : undefined);
+      throw new StorageError(`Dropbox token refresh failed (${res.status}) — please reconnect.`, undefined, undefined, res.status, refused ? 'reconnect' : undefined, answerOutcome(res.status));
     }
     const reply: unknown = await res.json().catch(() => null);
     this.dropIfGrantMoved(startedFrom);
@@ -394,6 +394,6 @@ export class DropboxAdapter implements StorageAdapter {
     this.tokens = null;
     const ended = !stored && getSignIn(CONFIG_KEY) !== null;
     if (ended) signInEnded(this.id, this.gen);
-    throw new StorageError('Dropbox was disconnected — please reconnect.', undefined, undefined, undefined, ended ? 'reconnect' : undefined);
+    throw new StorageError('Dropbox was disconnected — please reconnect.', undefined, undefined, undefined, ended ? 'reconnect' : undefined, 'refused');
   }
 }

@@ -20,7 +20,8 @@ const SKIP_DIRS = new Set(['node_modules', 'dist', 'build']);
 const SOURCE = /\.(?:[cm]?[jt]s|tsx|jsx)$/;
 const OWN = /^packages\/health-core\/src\/record-session[^/]*\.ts$/;
 /** Names no other code uses: a read off any receiver fails. */
-const DISTINCT = ['revisionSeen', 'saveWarning', 'clearedFor', 'tryClear', 'replaceUnreadable', 'saveMode',
+/** `tryClear` left it: the store's door for the page's clear (R4 PR 1, docs/drafts/r4-leftover-stamps-design.md). */
+const DISTINCT = ['revisionSeen', 'saveWarning', 'clearedFor', 'replaceUnreadable', 'saveMode',
   // The mirror split (record-session-mirror.ts) gave these up the same way.
   'deviceCopySeen', 'mirrorOurs', 'coveredCopy'];
 /** Names other code uses on its own objects (React refs' `current`, a store's `host`, a reducer's `dispatch`, a
@@ -164,7 +165,7 @@ describe('record-session erase split', () => {
   });
 
   const caught = (code: string) => internalReads(code).lines.length > 0;
-  it.each(['store.saveMode', "x['tryClear']", 'this.session.current', "mySession?.['host']",
+  it.each(['store.saveMode', "x['clearedFor']", 'this.session.current', "mySession?.['host']",
     'const { saveMode } = store;', 'const {\n  revisionSeen,\n} = s;', 'const { clearedFor: c } = await open();',
     'const { current } = this.session;', 'const { sync, ctx } = session;', 'session.cloudUnreachable',
     'const { cloudUnreachable } = await this.session;',
@@ -201,7 +202,7 @@ describe('record-session erase split', () => {
     const cls = outputText.slice(outputText.indexOf('export declare class RecordSession'));
     for (const name of INTERNAL) expect(cls, name).not.toMatch(new RegExp(`^ {4}(?:readonly |get )?${name}\\b`, 'm'));
     expect(cls).toMatch(/^ {4}private mode;/m);
-    for (const name of ['erase', 'deleteAllData', 'clearOffFileData', 'flush']) expect(cls, name).toMatch(new RegExp(`^ {4}${name}\\(`, 'm'));
+    for (const name of ['erase', 'deleteAllData', 'clearOffFileData', 'tryClear', 'flush']) expect(cls, name).toMatch(new RegExp(`^ {4}${name}\\(`, 'm'));
   });
 
   it('the erase names still come from ./record-session (ios/engine/cloud.ts, roadmap-store.ts)', () => {

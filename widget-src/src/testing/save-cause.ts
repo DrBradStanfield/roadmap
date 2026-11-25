@@ -30,7 +30,7 @@ export async function saveCauseOf(error: unknown): Promise<'auth' | 'other'> {
   };
   const session = await RecordSession.open(host);
   store.armed = true;
-  if (!session.edit(() => {})) throw new Error('edit refused');
+  if (!session.edit(() => {}, session.shownErase)) throw new Error('edit refused');
   await session.flush().then(() => { throw new Error('the save landed'); }, () => {});
   return session.retryDue ? 'other' : 'auth';
 }

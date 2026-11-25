@@ -207,7 +207,7 @@ async function seedGuest() {
   const { RoadmapStore } = await import('../src/storage/roadmap-store');
   const { LocalStorageAdapter } = await import('../src/storage/local-storage-adapter');
   const guest = await RoadmapStore.create(new LocalStorageAdapter());
-  guest.addMeasurement('weight', 80, '2026-01-01');
+  guest.addMeasurement('weight', 80, '2026-01-01', guest.shownErase);
   await guest.flush();
 }
 
@@ -258,7 +258,7 @@ describe('US-09 AC45: an OAuth return across a log-off in another tab', () => {
     const { RoadmapStore } = await import('../src/storage/roadmap-store');
     const { LocalStorageAdapter } = await import('../src/storage/local-storage-adapter');
     const guest = await RoadmapStore.create(new LocalStorageAdapter());
-    guest.addMeasurement('weight', 80, '2026-01-01');
+    guest.addMeasurement('weight', 80, '2026-01-01', guest.shownErase);
     await guest.flush();
 
     exchange.resolve();
@@ -273,7 +273,7 @@ describe('US-09 AC45: an OAuth return across a log-off in another tab', () => {
     const { RoadmapStore } = await import('../src/storage/roadmap-store');
     const { LocalStorageAdapter } = await import('../src/storage/local-storage-adapter');
     const guest = await RoadmapStore.create(new LocalStorageAdapter());
-    guest.addMeasurement('weight', 80, '2026-01-01');
+    guest.addMeasurement('weight', 80, '2026-01-01', guest.shownErase);
     await guest.flush();
     await startSignIn('dropbox');
 
@@ -290,7 +290,7 @@ describe('US-09 AC45: a return page that stops while it lifts the device copy', 
     vi.resetModules();
     const guest = await (await import('../src/storage/roadmap-store')).RoadmapStore.create(
       new (await import('../src/storage/local-storage-adapter')).LocalStorageAdapter());
-    guest.addMeasurement('weight', 80, '2026-01-01');
+    guest.addMeasurement('weight', 80, '2026-01-01', guest.shownErase);
     await guest.flush();
     await startSignIn('dropbox');
     holdDownload = new Promise(() => {}); // the tab closes during the lift's cloud read

@@ -30,7 +30,6 @@ import { counterOf, MAX_COUNTER, RecordShapeError, SchemaTooNewError } from './m
 import { ROADMAP_DOC } from './roadmap-doc';
 import { CURRENT_SCHEMA_VERSION, type RoadmapFile } from './roadmap-file';
 import { verifyPersistedFile } from './sync-manager';
-import { isDefiniteRefusal, uncertainWrite } from './write-refusal';
 
 // --- The health record (US-10 AC4a) -------------------------------------------
 // Drive allows two files with one name, and two first saves can race to make
@@ -46,15 +45,33 @@ const DAMAGED_HINT = 'Your plan loaded from the other copies. Nothing was writte
 
 /** A write that may have landed: keep the provider status, so a 401 still
  *  refreshes the token (iOS) and still reads as "reconnect" (the page), and
- *  mark it, so no status on it reads as a refusal (write-refusal.ts). */
-const uncertain = (message: string, error: unknown): StorageError => uncertainWrite(new StorageError(message, LANDED_HINT, error, error instanceof StorageError ? error.status : undefined));
+ *  its reason; its outcome is may-have-landed whatever the status. */
+const uncertain = (message: string, error: unknown): StorageError =>
+  new StorageError(message, LANDED_HINT, error, error instanceof StorageError ? error.status : undefined, error instanceof StorageError ? error.reason : undefined, 'may-have-landed');
 
-/** A failure of the record's create POST (lead S62b). Drive's answer with a
- *  status write-refusal.ts calls a refusal stored nothing, so it stays a
- *  refusal; anything else (a 5xx, a 408 or 429, a timeout, no answer) may have landed. */
+/** The record lookup's answer arrived but cannot be used: it sent no write, so nothing landed (US-10 AC16). */
+const unusable = (message: string): StorageError => new StorageError(message, undefined, undefined, undefined, undefined, 'no-answer');
+
+/** A refusal of one of the record's uploads: nothing stored, status and reason kept. */
+const refused = (message: string, error: StorageError): StorageError =>
+  new StorageError(message, UNREACHABLE_HINT, error, error.status, error.reason, 'refused');
+
+/** A failure of the record's create POST (lead S62b). Drive's answer raised
+ *  refused stored nothing, so it stays a refusal; anything else (a 5xx, a 408
+ *  or 429, a timeout, no answer) may have landed. */
 const createFailed = (message: string, error: unknown): StorageError =>
-  error instanceof StorageError && error.status !== undefined && isDefiniteRefusal(error)
-    ? new StorageError(message, UNREACHABLE_HINT, error, error.status)
+  error instanceof StorageError && error.outcome === 'refused' ? refused(message, error) : uncertain(message, error);
+
+/** The PATCH statuses that stored nothing (owner, 2026-11-25): a malformed
+ *  request, access refused (not a limit), a file id that is not there. A 401
+ *  may have landed (its retry after a token refresh is lead S57c), and so may
+ *  any other answer or none. */
+const PATCH_REFUSED: ReadonlySet<number> = new Set([400, 403, 404]);
+
+/** A failure of the record's update PATCH: refused only for PATCH_REFUSED. */
+const updateFailed = (message: string, error: unknown): StorageError =>
+  error instanceof StorageError && error.status !== undefined && PATCH_REFUSED.has(error.status) && error.reason !== 'rate-limited'
+    ? refused(message, error)
     : uncertain(message, error);
 
 /**
@@ -73,24 +90,24 @@ async function discoverRecord(token: string, known: Set<string>, signal?: AbortS
       + '&spaces=drive&fields=files(id%2CcreatedTime)%2CnextPageToken%2CincompleteSearch&pageSize=1000'
       + (page ? `&pageToken=${encodeURIComponent(page)}` : '');
     const res = await request(`${DRIVE_API}/files?${query}`, { headers: auth(token), signal });
-    if (!res.ok) throw new StorageError(`${PROVIDER} record lookup failed (${res.status}).`, undefined, undefined, res.status);
+    if (!res.ok) await fail('record lookup', res); // sends no write: refused, or no answer (US-10 AC16)
     const result = await jsonBody<{ files?: RecordCopy[]; nextPageToken?: string; incompleteSearch?: boolean }>(res);
     signal?.throwIfAborted();
-    if (result.incompleteSearch || !Array.isArray(result.files)) throw new StorageError(`${PROVIDER} record enumeration is incomplete.`);
+    if (result.incompleteSearch || !Array.isArray(result.files)) throw unusable(`${PROVIDER} record enumeration is incomplete.`);
     for (const copy of result.files) {
       if (!copy.id || typeof copy.id !== 'string' || (copy.createdTime !== undefined && (typeof copy.createdTime !== 'string' || !Number.isFinite(Date.parse(copy.createdTime))))) {
-        throw new StorageError(`${PROVIDER} record metadata is invalid.`);
+        throw unusable(`${PROVIDER} record metadata is invalid.`);
       }
       const prior = copies.get(copy.id);
-      if (prior && prior.createdTime !== copy.createdTime) throw new StorageError(`${PROVIDER} record metadata changed during enumeration.`);
+      if (prior && prior.createdTime !== copy.createdTime) throw unusable(`${PROVIDER} record metadata changed during enumeration.`);
       copies.set(copy.id, copy);
     }
     if (result.nextPageToken !== undefined && (typeof result.nextPageToken !== 'string' || !result.nextPageToken)) {
-      throw new StorageError(`${PROVIDER} record continuation token is invalid.`);
+      throw unusable(`${PROVIDER} record continuation token is invalid.`);
     }
     page = result.nextPageToken;
     if (page) {
-      if (seen.has(page)) throw new StorageError(`${PROVIDER} record enumeration repeated a page token.`);
+      if (seen.has(page)) throw unusable(`${PROVIDER} record enumeration repeated a page token.`);
       seen.add(page);
     }
   } while (page);
@@ -144,7 +161,7 @@ function holdOf(expected: string | null): (Hold & { error: Error }) | null {
   if (hold.refuse === undefined) return null;
   const error = typeof hold.refuse === 'number'
     ? new SchemaTooNewError(hold.refuse, CURRENT_SCHEMA_VERSION)
-    : new StorageError(`A copy of the record in ${PROVIDER} could not be read, so saving is paused.`, DAMAGED_HINT);
+    : new StorageError(`A copy of the record in ${PROVIDER} could not be read, so saving is paused.`, DAMAGED_HINT, undefined, undefined, undefined, 'refused'); // raised before any call
   return { ...(hold as Hold), error };
 }
 
@@ -165,7 +182,7 @@ async function downloadCopy(token: string, id: string, signal?: AbortSignal): Pr
   try {
     body = JSON.parse(text);
   } catch { /* refused below */ }
-  if (body === null) throw new StorageError(`${PROVIDER} read failed: a copy of the record is empty or not valid JSON.`, undefined, new SyntaxError('empty or invalid JSON'));
+  if (body === null) throw new StorageError(`${PROVIDER} read failed: a copy of the record is empty or not valid JSON.`, undefined, new SyntaxError('empty or invalid JSON'), undefined, undefined, 'no-answer');
   return body;
 }
 
@@ -240,7 +257,7 @@ export async function writeDriveRecord(token: string, body: object, expected: st
     let res: Response;
     try {
       res = await driveCreateFile(token, ROADMAP_FILE_NAME, 'application/json', json, parent, signal);
-      if (!res.ok) throw new StorageError(`${PROVIDER} record create failed (${res.status}).`, undefined, undefined, res.status);
+      if (!res.ok) await fail('record create', res, true);
     } catch (error) {
       throw createFailed(`${PROVIDER} record create failed.`, error);
     }
@@ -271,9 +288,9 @@ export async function writeDriveRecord(token: string, body: object, expected: st
     try {
       version = await driveUpdateFile(token, id, json, signal);
     } catch (error) {
-      // Any failure of the PATCH may be a lost PATCH response: do not claim
-      // nothing was written (a 401 or 403 answer included, US-10 AC4a).
-      throw uncertain(`${PROVIDER} record update failed.`, error);
+      // A failure of the PATCH may be a lost PATCH response: only Drive's
+      // 400, 403 (not a limit) and 404 stored nothing (US-10 AC4a, AC16).
+      throw updateFailed(`${PROVIDER} record update failed.`, error);
     }
   }
   try {

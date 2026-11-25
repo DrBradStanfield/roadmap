@@ -25,7 +25,7 @@ export function notConnected(label: string): string {
 /** A sign-in that is not this browser's account, or whose account could not be read (`unread`: a fault to report). */
 export class AccountRefusedError extends StorageError {
   constructor(readonly provider: string, label: string, readonly unread = false) {
-    super(notConnected(label));
+    super(notConnected(label), undefined, undefined, undefined, undefined, 'refused');
     this.name = 'AccountRefusedError';
   }
 }

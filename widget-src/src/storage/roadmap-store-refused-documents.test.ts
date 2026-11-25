@@ -13,7 +13,8 @@ import { LocalStorageAdapter } from './local-storage-adapter';
 import { Sentry } from '../lib/sentry';
 import { WritesStoppedError } from '../lib/error-diagnostics';
 import { StorageError } from '@roadmap/health-core/adapter';
-import { ENGINE, pickOf, uploadThrough } from '../testing/upload-save-kit';
+import { ENGINE, pickOf, stamped, uploadThrough } from '../testing/upload-save-kit';
+import { WRITES_STOPPED_CASES } from '../testing/writes-stopped-cases';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 
@@ -57,7 +58,7 @@ afterEach(() => {
 /** Two tabs on the device tier with a record; `page` uploads through a held adapter. */
 async function twoTabs() {
   const other = await RoadmapStore.create(new LocalStorageAdapter());
-  other.addMeasurement('weight', 80, '2024-01-01T00:00:00.000Z');
+  other.addMeasurement('weight', 80, '2024-01-01T00:00:00.000Z', other.shownErase);
   await other.flush();
   const adapter = new HeldBlobs();
   const page = await RoadmapStore.create(adapter);
@@ -82,7 +83,7 @@ it('a document save whose erase has already moved writes no copy on the device (
   const engine: typeof ENGINE = { ...ENGINE, uploadSave: async (...args) => { reached(); await gate; return ENGINE.uploadSave(...args); } };
   const now = new Date().toISOString();
   const { s, io } = await pickOf(page.file, [doc('Lipids')], { now });
-  const pending = page.saveUpload(engine, s, now, true, io);
+  const pending = page.saveUpload(engine, stamped(s, page.shownErase), now, true, io);
   await began;
   await eraseLands(other, page);
   release();
@@ -134,8 +135,14 @@ it('A15: a document write the device refuses after log-off is not reported', asy
   expect(Sentry.captureException).not.toHaveBeenCalled();
 });
 
+it.each(WRITES_STOPPED_CASES)('US-09 AC59: a document write refused with $name reports $reports time(s)', async ({ error, reports }) => {
+  const page = await RoadmapStore.create(new RefusingBlobs(error()));
+  expect(await uploadThrough(page, [doc('Lipids')])).toMatchObject({ ok: true, outcome: { documents: 1, unstored: 1 } });
+  expect(Sentry.captureException).toHaveBeenCalledTimes(reports);
+});
+
 it('A15: a real document write failure (storage full) is still reported once', async () => {
-  const page = await RoadmapStore.create(new RefusingBlobs(new StorageError('Synthetic storage full')));
+  const page = await RoadmapStore.create(new RefusingBlobs(new StorageError('Synthetic storage full', undefined, undefined, undefined, undefined, 'refused')));
   await uploadThrough(page, [doc('Lipids')]);
   expect(Sentry.captureException).toHaveBeenCalledOnce();
   expect(vi.mocked(Sentry.captureException).mock.calls[0][0]).toMatchObject({ message: 'Document file not stored' });

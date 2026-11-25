@@ -247,7 +247,7 @@ describe('US-09 AC2g: what the page saved between the two tries reaches the new 
     connect = await import('./connect');
     // The page is on Dropbox: its live store saves through its own adapter.
     await data.initRoadmapStore(connect.adapterFor('dropbox')!);
-    expect((await data.addMeasurement('weight', 80, '2026-01-01')).status).toBe('inserted');
+    expect((await data.addMeasurement('weight', 80, '2026-01-01', data.getShownErase())).status).toBe('inserted');
     await data.flushRoadmapStore();
     expect(weightsIn(dropboxBody())).toEqual({ '2026-01-01': 80 });
   }, 30_000);
@@ -267,7 +267,7 @@ describe('US-09 AC2g: what the page saved between the two tries reaches the new 
 
     // The person logs another weight. The page's live Dropbox adapter still
     // holds its token in memory, so the save lands in Dropbox, not on the device.
-    expect((await data.addMeasurement('weight', 79, '2026-01-02')).status).toBe('inserted');
+    expect((await data.addMeasurement('weight', 79, '2026-01-02', data.getShownErase())).status).toBe('inserted');
     await data.flushRoadmapStore();
     expect(weightsIn(dropboxBody())).toEqual({ '2026-01-01': 80, '2026-01-02': 79 });
 
@@ -291,7 +291,7 @@ describe('US-09 AC2g: what the page saved between the two tries reaches the new 
     await vi.waitFor(() => expect(document.querySelector('.hr-sync-error')).not.toBeNull(), { timeout: 10_000 });
 
     // Still on the save's debounce when the person presses Connect again.
-    expect((await data.addMeasurement('weight', 78, '2026-01-03')).status).toBe('inserted');
+    expect((await data.addMeasurement('weight', 78, '2026-01-03', data.getShownErase())).status).toBe('inserted');
     await connectGitHub(view, GOOD_TOKEN);
     await vi.waitFor(() => expect(reload).toHaveBeenCalledTimes(1), { timeout: 10_000 });
     expect(weightsIn(githubBody())).toMatchObject({ '2026-01-01': 80, '2026-01-03': 78 });
@@ -323,7 +323,7 @@ describe('US-09 AC2g: what the page saved between the two tries reaches the new 
     fireEvent.click(view.getByRole('button', { name: /^GitHub/ }));
     await connectGitHub(view, TYPO_TOKEN);
     await vi.waitFor(() => expect(document.querySelector('.hr-sync-error')).not.toBeNull(), { timeout: 10_000 });
-    expect((await data.addMeasurement('weight', 79, '2026-01-02')).status).toBe('inserted');
+    expect((await data.addMeasurement('weight', 79, '2026-01-02', data.getShownErase())).status).toBe('inserted');
     await data.flushRoadmapStore();
 
     // This browser's storage is full now: the record cannot be copied onto it.

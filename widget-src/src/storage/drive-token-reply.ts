@@ -8,7 +8,7 @@
  * here too.
  */
 import * as z from '@roadmap/health-core/zod';
-import { StorageError } from '@roadmap/health-core/adapter';
+import { answerOutcome, StorageError } from '@roadmap/health-core/adapter';
 import { TRANSFER_DEADLINE_MS, timeoutDeadline } from '@roadmap/health-core/transfer-deadline';
 
 const codeGrantSchema = z.object({
@@ -20,10 +20,10 @@ const codeGrantSchema = z.object({
 
 export async function codeGrantReply(res: Response): Promise<z.infer<typeof codeGrantSchema>> {
   if (!res.ok) {
-    throw new StorageError(`Google Drive connect failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status);
+    throw new StorageError(`Google Drive connect failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status, undefined, answerOutcome(res.status));
   }
   const reply = codeGrantSchema.safeParse(await res.json().catch(() => null));
-  if (!reply.success) throw new StorageError('Google Drive sent an incomplete sign-in reply. Please reconnect.');
+  if (!reply.success) throw new StorageError('Google Drive sent an incomplete sign-in reply. Please reconnect.', undefined, undefined, undefined, undefined, 'no-answer');
   return reply.data;
 }
 

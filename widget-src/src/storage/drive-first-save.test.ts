@@ -336,7 +336,8 @@ describe('US-10 AC4 — ambiguous first-save discovery', () => {
   });
 
   it.each<Kind>(['hosted', 'browser'])('%s keeps the provider status on an auth-refused record write or create (US-10 AC4a)', async (kind) => {
-    for (const [status, existing] of [[401, true], [403, true]] as const) {
+    // A 403 to the PATCH stored nothing (US-10 AC16, owner 2026-11-25): drive-record-refusal.test.ts.
+    for (const [status, existing] of [[401, true]] as const) {
       const drive = new Drive();
       if (existing) {
         drive.files = [{ id: 'one', name: ROADMAP_FILE_NAME, content: JSON.stringify(record('A')), version: 1 }];

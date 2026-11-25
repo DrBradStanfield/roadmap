@@ -63,9 +63,10 @@ async function typeWeight(value: string) {
 describe('US-09 AC2c: a cloud page loaded before a log-off writes no health data to this device after it', () => {
   it('a profile save writes no saved-record mirror', async () => {
     await cloudPage();
-    const { patchMirror, saveToLocalStorage } = await import('./storage');
+    const { saveToLocalStorage } = await import('./storage');
+    const { writeMirror } = await import('./chat-mirror');
     logOffElsewhere();
-    patchMirror({ profile: { heightCm: 175, sex: 'female' } as never });
+    writeMirror({ profile: { heightCm: 175, sex: 'female' } as never });
     saveToLocalStorage({ heightCm: 175 } as never, [], [med], []);
     expect(localStorage.getItem(MIRROR_KEY)).toBeNull();
   });
@@ -96,7 +97,7 @@ describe('US-09 AC2c: a cloud page loaded before a log-off writes no health data
 
   it("a switch's copy to this device writes no record", async () => {
     const store = await cloudPage();
-    store.addMeasurement('weight', 80, '2026-10-01T00:00:00.000Z');
+    store.addMeasurement('weight', 80, '2026-10-01T00:00:00.000Z', store.shownErase);
     await store.flush();
     logOffElsewhere();
     await store.copyToDevice().catch(() => {});
@@ -120,10 +121,11 @@ describe('US-09 AC2c controls', () => {
     window.dispatchEvent(Object.assign(new Event('storage'), { key: 'health_roadmap_log_off_signal' }));
     const { RoadmapStore } = await import('../storage/roadmap-store');
     await RoadmapStore.create(new LocalStorageAdapter());
-    const { healthWritesAllowed, patchMirror } = await import('./storage');
+    const { healthWritesAllowed } = await import('./storage');
+    const { writeMirror } = await import('./chat-mirror');
     expect(localStorage.getItem(LOG_OFF_ID_KEY)).toBe('id-at-load');
     expect(healthWritesAllowed()).toBe(false);
-    patchMirror({ medications: [med] });
+    writeMirror({ medications: [med] });
     expect(localStorage.getItem(MIRROR_KEY)).toBeNull();
   });
 
@@ -145,13 +147,13 @@ describe('US-09 AC2c controls', () => {
     const { RoadmapStore } = await import('../storage/roadmap-store');
     const { LocalStorageAdapter } = await import('../storage/local-storage-adapter');
     const store = await RoadmapStore.create(new LocalStorageAdapter());
-    const { patchMirror } = await import('./storage');
+    const { writeMirror } = await import('./chat-mirror');
     const { keepLpaAsIs } = await import('./lpa-unit');
     logOffElsewhere();
-    patchMirror({ medications: [med] });
+    writeMirror({ medications: [med] });
     keepLpaAsIs('lpa-row-1');
     await typeWeight('80');
-    store.addMeasurement('weight', 80, '2026-10-01T00:00:00.000Z');
+    store.addMeasurement('weight', 80, '2026-10-01T00:00:00.000Z', store.shownErase);
     await store.flush();
     expect(localStorage.getItem(MIRROR_KEY)).not.toBeNull();
     // A page whose log-off id changed since load is off the chosen record, so it writes no draft and no
@@ -164,9 +166,9 @@ describe('US-09 AC2c controls', () => {
   it('a cloud page loaded after the log-off writes normally', async () => {
     logOffElsewhere();
     const store = await cloudPage();
-    const { patchMirror } = await import('./storage');
+    const { writeMirror } = await import('./chat-mirror');
     const { keepLpaAsIs } = await import('./lpa-unit');
-    patchMirror({ medications: [med] });
+    writeMirror({ medications: [med] });
     keepLpaAsIs('lpa-row-1');
     await typeWeight('80');
     await store.copyToDevice();
@@ -206,28 +208,29 @@ describe('US-09 AC2c: document originals on a page that runs on its device copy'
 
 describe('US-09 AC2h: a page whose record is still opening', () => {
   it('writes no health data after a log-off elsewhere, before it knows it is a device page', async () => {
-    const { patchMirror } = await import('./storage');
+    const { writeMirror } = await import('./chat-mirror');
     const { keepLpaAsIs } = await import('./lpa-unit');
     logOffElsewhere();
-    patchMirror({ medications: [med] });
+    writeMirror({ medications: [med] });
     keepLpaAsIs('lpa-row-1');
     expect(localStorage.getItem(MIRROR_KEY)).toBeNull();
     expect(localStorage.getItem(LPA_KEPT_KEY)).toBeNull();
   });
 
   it('control: writes while the id is the one it loaded with', async () => {
-    const { patchMirror } = await import('./storage');
-    patchMirror({ medications: [med] });
+    const { writeMirror } = await import('./chat-mirror');
+    writeMirror({ medications: [med] });
     expect(localStorage.getItem(MIRROR_KEY)).not.toBeNull();
   });
 
   it('a page that never opens a record (the chat embed, the blog bubble) writes only while the id is the one it loaded with', async () => {
-    const { patchMirror, healthWritesAllowed } = await import('./storage');
-    patchMirror({ medications: [med] });
+    const { healthWritesAllowed } = await import('./storage');
+    const { writeMirror } = await import('./chat-mirror');
+    writeMirror({ medications: [med] });
     expect(localStorage.getItem(MIRROR_KEY)).not.toBeNull();
     localStorage.removeItem(MIRROR_KEY);
     logOffElsewhere();
-    patchMirror({ medications: [med] });
+    writeMirror({ medications: [med] });
     expect(localStorage.getItem(MIRROR_KEY)).toBeNull();
     expect(healthWritesAllowed()).toBe(false);
   });
@@ -236,11 +239,12 @@ describe('US-09 AC2h: a page whose record is still opening', () => {
 describe('US-09 AC2c: a cloud page restored from the back-forward cache', () => {
   it('still writes nothing after a log-off elsewhere while it was away', async () => {
     await cloudPage();
-    const { patchMirror, healthWritesAllowed } = await import('./storage');
+    const { healthWritesAllowed } = await import('./storage');
+    const { writeMirror } = await import('./chat-mirror');
     logOffElsewhere();
     window.dispatchEvent(Object.assign(new Event('pageshow'), { persisted: true }));
     expect(healthWritesAllowed()).toBe(false);
-    patchMirror({ medications: [med] });
+    writeMirror({ medications: [med] });
     expect(localStorage.getItem(MIRROR_KEY)).toBeNull();
   });
 });

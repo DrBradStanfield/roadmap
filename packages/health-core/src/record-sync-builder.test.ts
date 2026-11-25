@@ -73,7 +73,7 @@ describe('the record sync is built one way (lead A1-4)', () => {
     const [adapter, deviceId, clock] = built.mock.calls[0];
     expect([adapter, deviceId, typeof clock]).toEqual([cloud, 'phone', 'function']);
     now = T0 + 60_000;
-    session.edit((file) => { file.measurements.push(record('later').measurements[0]); });
+    session.edit((file) => { file.measurements.push(record('later').measurements[0]); }, session.shownErase);
     await session.flush();
     expect(get(cloud).meta.updatedAt).toBe(iso(T0 + 60_000));
   });

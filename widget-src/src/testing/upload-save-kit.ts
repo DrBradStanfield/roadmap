@@ -13,7 +13,7 @@ import { sha256Blob } from '../lib/archive-payloads';
 import { emptyHeld } from '../lib/upload-read';
 import { webUploadIO } from '../lib/upload-save-io';
 import type { RoadmapStore } from '../storage/roadmap-store';
-import type { UploadSaveAnswer, WebUploadIO } from '../storage/upload-save-store';
+import type { UploadSaveAnswer, WebSaving, WebUploadIO } from '../storage/upload-save-store';
 
 export const ENGINE = { uploadSave, uploadReview };
 
@@ -33,7 +33,8 @@ export type Picked = PickedDocument | PickedReport;
 
 export interface PickOptions {
   now?: string;
-  /** The erase the page showed at the press on Save, which the saving state carries (absent: the session's mark). */
+  /** The erase the page showed at the press on Save, which the saving state carries (absent: `stamped` adds the erase
+   *  the store shows as the Save runs). */
   erase?: string;
 }
 
@@ -59,6 +60,13 @@ export async function pickOf(record: RoadmapFile, picked: Picked[], { now = new 
   return { s, io: webUploadIO(held) };
 }
 
+/** The saving state as the web's Save takes it, its erase required (R5): the one it carries, else `shown`, the erase
+ *  the store shows as the Save runs, which the store's own mark answered before R5. */
+export function stamped(s: UploadState, shown: string): WebSaving {
+  if (s.phase !== 'saving') throw new Error(`not a saving state: ${s.phase}`);
+  return { ...s, erase: s.erase ?? shown };
+}
+
 /** Each lab the review shows as not saved for its unit or number, the list the data layer's Save counts (roadmap-data.ts
  *  saveUpload `refused`). */
 export async function refusedLabs(record: RoadmapFile, picked: Picked[], now = new Date().toISOString()) {
@@ -71,15 +79,15 @@ export async function refusedLabs(record: RoadmapFile, picked: Picked[], now = n
 export async function uploadThrough(store: RoadmapStore, picked: Picked[], opts: PickOptions & { cloud?: boolean } = {}): Promise<UploadSaveAnswer> {
   const now = opts.now ?? new Date().toISOString();
   const { s, io } = await pickOf(store.file, picked, { ...opts, now });
-  return store.saveUpload(ENGINE, s, now, opts.cloud ?? true, io);
+  return store.saveUpload(ENGINE, stamped(s, store.shownErase), now, opts.cloud ?? true, io);
 }
 
 /** Save `picked` through the data layer's upload Save, on the record it holds open. */
 export async function uploadOpen(picked: Picked[], opts: PickOptions = {}): Promise<UploadSaveAnswer> {
-  const { recordFileSync, saveUpload } = await import('../lib/roadmap-data');
+  const { getShownErase, recordFileSync, saveUpload } = await import('../lib/roadmap-data');
   const record = recordFileSync();
   if (!record) throw new Error('no record open');
   const now = opts.now ?? new Date().toISOString();
   const { s, io } = await pickOf(record, picked, { ...opts, now });
-  return saveUpload(ENGINE, s, now, io);
+  return saveUpload(ENGINE, stamped(s, getShownErase()), now, io);
 }

@@ -207,15 +207,17 @@ describe('wait-run.sh (US-64 AC26)', () => {
   it('a failed check named like a verdict cannot turn it into success (Codex re-check R2)', () => {
     expect(run(['pr', '42'], { FAILS: '1', FAILNAME: 'x fail=0 skipped=0 pending=0' }).status).toBe(1);
   });
+  // Three gh calls cut at 1 s take about 3 s; one left to run takes the stub's 30 s, or never ends. The 20 s bound
+  // leaves a loaded machine room (lead TA-3).
   it('cuts off a gh call that hangs, so the time limit still holds', () => {
     const t = Date.now();
     expect(run(['deploy', '123'], { GH_SLEEP: '30', WAIT_RUN_GH_TIMEOUT: '1', WAIT_RUN_MAX_MIN: '0' }).status).toBe(3);
-    expect(Date.now() - t).toBeLessThan(10_000);
+    expect(Date.now() - t).toBeLessThan(20_000);
   });
   it('US-64 AC26: kills a hung gh that ignores ALRM and TERM (as Go does), so the time limit still holds', () => {
     const t = Date.now();
     expect(run(['deploy', '123'], { GH_HANG: '1', WAIT_RUN_GH_TIMEOUT: '1', WAIT_RUN_MAX_MIN: '0' }).status).toBe(3);
-    expect(Date.now() - t).toBeLessThan(10_000);
+    expect(Date.now() - t).toBeLessThan(20_000);
   });
   it('gives up with exit 3 at the time limit', () => {
     expect(run(['deploy', '123'], { WAIT_RUN_MAX_MIN: '0' }).status).toBe(3);

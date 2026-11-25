@@ -3,6 +3,7 @@
 // each surface does today, differences included, so a later shared persist
 // function (lead S-1) cannot widen what is stored, drop a cut or change a
 // failure path without a red test. The web turn's writes: api.chat-persist-pins.test.ts.
+// US-15 AC73 (lead S-1): each surface's event row is the one matchEventRow builds.
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 type Write =
@@ -24,6 +25,11 @@ const db = vi.hoisted(() => {
   };
 });
 
+// The real builder, watched, so a surface that builds its own event row fails AC73's tests.
+vi.mock('./chat-persist.server', async (original) => {
+  const real = await original<typeof import('./chat-persist.server')>();
+  return { ...real, matchEventRow: vi.fn(real.matchEventRow) };
+});
 vi.mock('@sentry/react-router', () => ({ captureException: vi.fn(), captureMessage: vi.fn() }));
 vi.mock('./supabase-client.server', () => ({
   supabaseAdmin: {
@@ -56,9 +62,12 @@ vi.mock('./supabase-client.server', () => ({
 import { persistConversation } from './discord-bot-persist.server';
 import { persistYouTubeTurn } from './youtube-bot-store.server';
 import { CHAT_MODEL } from './chat.server';
+import { matchEventRow } from './chat-persist.server';
+import type { RouterResult } from './chat-router.server';
 import type { ChatCompletionResult } from './chat.server';
 
 beforeEach(() => {
+  vi.mocked(matchEventRow).mockClear();
   db.writes = [];
   db.fail = new Set();
   db.existing = null;
@@ -115,7 +124,15 @@ describe('US-15 AC70: every write a Discord turn makes', () => {
     await expect(persistConversation({ ...turn, ...over })).resolves.toBeUndefined();
     expect(db.writes).toEqual(expected());
   });
+
+  it('AC73: the event row written is the one matchEventRow built, never a copy of its own', async () => {
+    await persistConversation(turn);
+    expect(matchEventRow).toHaveBeenCalledTimes(1);
+    expect(eventWrite()).toBe(vi.mocked(matchEventRow).mock.results[0].value);
+  });
 });
+
+const eventWrite = () => (db.writes.find((w) => w.op === 'insert' && w.table === 'chat_match_events') as { row: unknown } | undefined)?.row;
 
 describe('US-15 AC70: every write a YouTube turn makes', () => {
   const thread = { topLevelCommentId: 'c1', videoId: 'v1', authorDisplayName: 'Viewer', authorChannelId: 'UC_v', text: 'Is ApoB better than LDL?', publishedAt: '2026-11-01T00:00:00Z' };
@@ -175,5 +192,31 @@ describe('US-15 AC70: every write a YouTube turn makes', () => {
     db.throws = true;
     await expect(persistYouTubeTurn({ thread, outcome: answered, postedYoutubeId: 'yt-9' })).resolves.toBeUndefined();
     expect(db.writes).toEqual([]);
+  });
+
+  it('AC73: the event row written is the one matchEventRow built, never a copy of its own', async () => {
+    await persistYouTubeTurn({ thread, outcome: answered, postedYoutubeId: 'yt-9' });
+    expect(matchEventRow).toHaveBeenCalledTimes(1);
+    expect(eventWrite()).toBe(vi.mocked(matchEventRow).mock.results[0].value);
+  });
+});
+
+describe('US-15 AC73: matchEventRow, the one chat_match_events row', () => {
+  const router: RouterResult = { handles: ['apob'], rawJson: null, usage: { inputTokens: 3, outputTokens: 4, cacheCreationTokens: 0, cacheReadTokens: 5 }, latencyMs: 15, cacheHit: true, error: null };
+  const base = {
+    messageId: 'a1', conversationId: 'c1', userId: 'u1', question: 'Is\u0000ApoB ' + 'x'.repeat(600), platform: 'discord',
+    context: { first: null, recent: [] }, routerResult: router, classification: 'ROUTE', routerSkipped: false, isFallback: false,
+  };
+
+  it('router_context: platform, then the surface fields, then replaced and reduced when non-empty, in that order', () => {
+    expect(Object.keys(matchEventRow({ ...base, replaced: ['old'], reduced: ['tm'] }).router_context)).toEqual(['platform', 'first', 'recent', 'replaced', 'reduced']);
+    expect(matchEventRow({ ...base, replaced: [], reduced: undefined }).router_context).toEqual({ platform: 'discord', first: null, recent: [] });
+  });
+
+  it('the question is cut as matchEventText cuts it; handles and router columns come from the router result', () => {
+    const row = matchEventRow(base);
+    expect(row.message).toBe('Is ApoB ' + 'x'.repeat(492));
+    expect(row).toMatchObject({ matched_handles: ['apob'], router_latency_ms: 15, router_cache_hit: true, router_cache_read_tokens: 5, failure_mode: null });
+    expect(matchEventRow({ ...base, routerResult: null })).toMatchObject(NOT_RUN);
   });
 });

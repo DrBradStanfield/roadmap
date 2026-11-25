@@ -14,7 +14,7 @@
  * browser refreshes with PKCE and the server refreshes as a confidential
  * client.
  */
-import { BusyError, ConflictError, fetchOrFail, jsonBody, StorageError, type DocumentAccess, type ReadResult, type StorageAdapter, type StoredFile, type WriteResult } from './adapter';
+import { answerOutcome, BusyError, ConflictError, fetchOrFail, jsonBody, StorageError, type DocumentAccess, type ReadResult, type StorageAdapter, type StoredFile, type WriteResult } from './adapter';
 import { TRANSFER_DEADLINE_MS } from './transfer-deadline';
 
 export const DROPBOX_TOKEN_URL = 'https://api.dropboxapi.com/oauth2/token';
@@ -36,7 +36,7 @@ const request = (url: string | URL, init?: Parameters<typeof fetchOrFail>[2]): P
  *  An opaque id, never the email; its failure text carries none. */
 export function dropboxReplyAccount(reply: unknown): string {
   const id = (reply as { account_id?: unknown } | null)?.account_id;
-  if (typeof id !== 'string' || !id) throw new StorageError(`${PROVIDER} did not say which account signed in.`);
+  if (typeof id !== 'string' || !id) throw new StorageError(`${PROVIDER} did not say which account signed in.`, undefined, undefined, undefined, undefined, 'no-answer');
   return id;
 }
 
@@ -87,9 +87,9 @@ function uploadRefusal(text: string): Error {
   }
   if (summary.startsWith('path/insufficient_space')) {
     // "Nothing was written" goes in the hint: SyncManager swaps the hint when an earlier attempt may have landed.
-    return new StorageError(`${PROVIDER} is full`, 'Nothing was written. Free up space in Dropbox, then try again.', undefined, 409, 'storage-full');
+    return new StorageError(`${PROVIDER} is full`, 'Nothing was written. Free up space in Dropbox, then try again.', undefined, 409, 'storage-full', 'refused');
   }
-  return new StorageError(`${PROVIDER} write failed (409): ${text}`, undefined, undefined, 409);
+  return new StorageError(`${PROVIDER} write failed (409): ${text}`, undefined, undefined, 409, undefined, 'refused');
 }
 
 /** Return quietly when a 409 means "nothing at this path", else throw. Dropbox
@@ -100,7 +100,7 @@ function uploadRefusal(text: string): Error {
 async function expectNotFound(res: Response, what: string): Promise<void> {
   const summary = errorSummary(await res.text());
   if (summary !== null && /^path(_lookup)?\/not_found\b/.test(summary)) return;
-  throw new StorageError(`${PROVIDER} ${what} failed (409): ${summary ?? 'unreadable reply'}`, undefined, undefined, 409);
+  throw new StorageError(`${PROVIDER} ${what} failed (409): ${summary ?? 'unreadable reply'}`, undefined, undefined, 409, undefined, 'refused');
 }
 
 /** A Dropbox `path` argument: an `id:…` from a listing as is, else a folder-relative name. */
@@ -133,14 +133,14 @@ export async function dropboxRead(accessToken: string, fileName: string, signal?
     await expectNotFound(res, 'read');
     return { body: null, version: null };
   }
-  if (!res.ok) throw new StorageError(`${PROVIDER} read failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status);
+  if (!res.ok) throw new StorageError(`${PROVIDER} read failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status, undefined, answerOutcome(res.status));
   const meta = parseApiResult(res);
   const text = await res.text();
   let body: unknown;
   try {
     body = text ? JSON.parse(text) : null;
   } catch (error) {
-    throw new StorageError(`${PROVIDER} read failed: file is not valid JSON (possible corruption).`, undefined, error);
+    throw new StorageError(`${PROVIDER} read failed: file is not valid JSON (possible corruption).`, undefined, error, undefined, undefined, 'no-answer');
   }
   return { body, version: (meta?.rev as string) ?? null };
 }
@@ -153,7 +153,7 @@ export async function dropboxRead(accessToken: string, fileName: string, signal?
  */
 export async function dropboxDownload(accessToken: string, ref: string, signal?: AbortSignal): Promise<Uint8Array<ArrayBuffer>> {
   const res = await download(accessToken, ref, signal, TRANSFER_DEADLINE_MS.document);
-  if (!res.ok) throw new StorageError(`${PROVIDER} download failed (${res.status})`, undefined, undefined, res.status);
+  if (!res.ok) throw new StorageError(`${PROVIDER} download failed (${res.status})`, undefined, undefined, res.status, undefined, answerOutcome(res.status));
   return new Uint8Array(await res.arrayBuffer());
 }
 
@@ -180,7 +180,7 @@ export async function dropboxUploadDocument(accessToken: string, ref: string, by
   if (!res.ok) {
     const busy = res.status === 429 || (res.status === 409 && /^path\/too_many_write_operations\b/.test(errorSummary(await res.text()) ?? ''));
     if (busy) throw new BusyError(`${PROVIDER} document write refused as busy (${res.status}).`, retryAfterMs(res.headers.get('Retry-After')), res.status);
-    throw new StorageError(`${PROVIDER} document write failed (${res.status}).`, undefined, undefined, res.status);
+    throw new StorageError(`${PROVIDER} document write failed (${res.status}).`, undefined, undefined, res.status, undefined, answerOutcome(res.status, true));
   }
 }
 
@@ -226,7 +226,7 @@ export async function dropboxListFolder(accessToken: string, folder: string, sig
       await expectNotFound(res, 'list');
       return [];
     }
-    if (!res.ok) throw new StorageError(`${PROVIDER} list failed (${res.status})`, undefined, undefined, res.status);
+    if (!res.ok) throw new StorageError(`${PROVIDER} list failed (${res.status})`, undefined, undefined, res.status, undefined, answerOutcome(res.status));
     const page = await jsonBody<{ entries?: Array<Record<string, unknown>>; cursor?: string; has_more?: boolean }>(res);
     for (const entry of page.entries ?? []) {
       if (entry['.tag'] !== 'file' || typeof entry.id !== 'string' || typeof entry.name !== 'string') continue;
@@ -252,7 +252,7 @@ async function dropboxDelete(accessToken: string, fileName: string, signal?: Abo
     signal,
   });
   if (res.status === 409) return expectNotFound(res, 'delete');
-  if (!res.ok) throw new StorageError(`${PROVIDER} delete failed (${res.status})`, undefined, undefined, res.status);
+  if (!res.ok) throw new StorageError(`${PROVIDER} delete failed (${res.status})`, undefined, undefined, res.status, undefined, answerOutcome(res.status, true));
 }
 
 /**
@@ -293,9 +293,9 @@ export async function dropboxWrite(
     mayHaveWritten: true,
   });
   if (res.status === 409) throw uploadRefusal(await res.text());
-  if (!res.ok) throw new StorageError(`${PROVIDER} write failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status);
+  if (!res.ok) throw new StorageError(`${PROVIDER} write failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status, undefined, answerOutcome(res.status, true));
   const meta = await jsonBody<{ rev?: string }>(res);
-  if (!meta.rev) throw new StorageError(`${PROVIDER} write returned no rev.`);
+  if (!meta.rev) throw new StorageError(`${PROVIDER} write returned no rev.`, undefined, undefined, undefined, undefined, 'may-have-landed');
   return { version: meta.rev };
 }
 
@@ -340,7 +340,7 @@ export class DropboxAdapter implements StorageAdapter {
   }
 
   async writeDocument(ref: string, bytes: Blob): Promise<void> {
-    if (this.options.documents !== 'write') throw new StorageError('The hosted server does not write uploaded documents.');
+    if (this.options.documents !== 'write') throw new StorageError('The hosted server does not write uploaded documents.', undefined, undefined, undefined, undefined, 'refused');
     return dropboxUploadDocument(this.accessToken, ref, bytes);
   }
 

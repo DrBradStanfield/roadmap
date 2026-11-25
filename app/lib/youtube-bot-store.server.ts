@@ -6,7 +6,7 @@
  */
 import * as Sentry from '@sentry/react-router';
 import { supabaseAdmin } from './supabase-client.server';
-import { routerColumns, matchEventText, answerColumns } from './chat-persist.server';
+import { matchEventRow, answerColumns } from './chat-persist.server';
 import { generateTitle } from './chat.server';
 import { COMMENT_MAX_AGE_DAYS, PLATFORM_YOUTUBE, BOT_PROFILE_ID } from './youtube-bot-config.server';
 import type { YouTubeThread } from './youtube-bot-api.server';
@@ -371,30 +371,29 @@ export async function persistYouTubeTurn(p: {
       }
     }
 
-    const r = outcome.routerResult;
-    const { error: evtErr } = await supabaseAdmin.from('chat_match_events').insert({
-      message_id: assistantMessageId,
-      conversation_id: conversationId,
-      user_id: BOT_PROFILE_ID,
-      message: matchEventText(thread.text),
-      router_context: {
-        platform: PLATFORM_YOUTUBE,
+    // matched_handles come from routerResult, which runPipeline also copies to routerHandles.
+    const { error: evtErr } = await supabaseAdmin.from('chat_match_events').insert(matchEventRow({
+      messageId: assistantMessageId,
+      conversationId,
+      userId: BOT_PROFILE_ID,
+      question: thread.text,
+      platform: PLATFORM_YOUTUBE,
+      context: {
         videoId: thread.videoId,
         commentId: thread.topLevelCommentId,
         followUpCommentId: p.followUpCommentId ?? null,
         postedYoutubeId: p.postedYoutubeId,
         posted: outcome.posted,
         skipReason: outcome.skipReason ?? null,
-        ...(outcome.replaced?.length ? { replaced: outcome.replaced } : {}),
-        ...(outcome.reduced?.length ? { reduced: outcome.reduced } : {}),
       },
-      matched_handles: outcome.routerHandles ?? [],
-      ...routerColumns(r),
+      replaced: outcome.replaced,
+      reduced: outcome.reduced,
+      routerResult: outcome.routerResult,
       classification: outcome.classification ?? 'ERROR',
-      router_skipped: outcome.routerSkipped ?? false,
-      is_fallback: outcome.isFallback ?? false,
-      failure_mode: outcome.failureMode ?? null,
-    });
+      routerSkipped: outcome.routerSkipped ?? false,
+      isFallback: outcome.isFallback ?? false,
+      failureMode: outcome.failureMode,
+    }));
     if (evtErr) {
       Sentry.captureException(new Error('YouTube: match-event insert failed'), {
         tags: { feature: 'youtube-bot', subsystem: 'persist-chat' },

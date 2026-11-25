@@ -29,3 +29,11 @@ Before you hand back (Brad 2026-11-25, US-64 AC40):
 - Never read Fly or server logs, and never run anything against a live service, unless the brief says so.
 - Paste `git status --short` and `git show --stat HEAD`.
 - Say net production LOC as code lines, comments and blank lines left out.
+- Your AC claims only what your tests prove; state its limits.
+- When the brief orders its steps and one cannot be met, stop and report. Do not widen the change.
+- Keep scripts and logs in your own subfolder of the scratchpad, never its root.
+- Never run the repo's generator scripts with `--help`, or without `--check`, in the main checkout: one rewrote a generated file (2026-11-25).
+- The commit message, not only the PR body, ends with "Net production code: +N/-M lines (comments and blank lines left out). Deleted: <what>, or nothing deletable." Every review flags its absence (2026-11-26).
+- Guard and pin tests live outside your touched files. Before you push, grep the test tree for tests that scan or name your files, types or functions (source scanners, boundary pins, "three pipelines" pins, declaration checks) and run them. Three PRs went red in CI on 26 Nov for this.
+- Give the PR's head sha by reading it (`gh pr view <n> --json headRefOid`), never by typing it (2026-11-26).
+- A lead can be stale. Before you build, check the code it names still exists on main. If it is gone, close the lead with the evidence and stop (2026-11-26).

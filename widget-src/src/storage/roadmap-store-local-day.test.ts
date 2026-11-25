@@ -25,7 +25,7 @@ describe('RoadmapStore — local calendar day', () => {
     vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-09-01T23:00:00.000Z') });
     const store = await RoadmapStore.create(new MemoryAdapter());
 
-    const result = store.addMeasurement('weight', 80);
+    const result = store.addMeasurement('weight', 80, undefined, store.shownErase);
     expect(result.status).toBe('inserted');
     if (result.status === 'inserted') expect(result.row.recordedAt).toBe('2026-09-02T00:00:00.000Z');
   });

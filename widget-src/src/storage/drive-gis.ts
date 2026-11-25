@@ -64,7 +64,7 @@ export function loadGis(): Promise<void> {
         resolve();
       } else if (Date.now() - startedAt > 10_000) {
         clearInterval(iv);
-        reject(new StorageError('Google sign-in failed to load (check the network / origin allow-list).'));
+        reject(new StorageError('Google sign-in failed to load (check the network / origin allow-list).', undefined, undefined, undefined, undefined, 'no-answer'));
       }
     }, 50);
   });

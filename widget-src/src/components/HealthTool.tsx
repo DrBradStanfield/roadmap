@@ -32,10 +32,8 @@ import { useIsMobile, useIsWideDesktop } from '../lib/useIsMobile';
 import { BottomTabBar, panelDomId, tabDomId, type TabId } from './BottomTabBar';
 import { activeCellIn } from './NumericInputCell';
 import { inPsaRow } from './ScreeningQuestions';
-import {
-  saveToLocalStorage,
-  clearLocalStorage,
-} from '../lib/storage';
+import { clearLocalStorage } from '../lib/storage';
+import { NO_RECORD, writeMirror } from '../lib/chat-mirror';
 import {
   loadLatestMeasurements,
   hasSavedRecord,
@@ -147,9 +145,9 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     shows: id => showErase(id), spend: () => clearAnswered(true),
   });
   // The record shown, at load and on every whole re-read, and another writer's change held behind an edit (hooks/useRecordApply).
-  const { showRecord, signal: rereadRecord, ownSave, shows: showErase, saved: profileClean, firstReadShown, firstReadFailed } = useRecordApply({
+  const { showRecord, signal: rereadRecord, ownSave, shows: showErase, settled: profileSettled, firstReadShown, firstReadFailed } = useRecordApply({
     setInputs, reloadValues, applyLists, units, erase: eraseStore,
-    later: () => ({ markSaved, flushPendingSave, flushListSaves, profileDirty, clearAnswered }), // declared below
+    later: () => ({ markSaved, flushPendingSave, flushListSaves, profileDirty, clearAnswered, savedProfile }), // declared below
   });
   // The medication, screening and supplement saves (hooks/useListSaves).
   const {
@@ -176,7 +174,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
       } else {
         // Nothing on record: a new visitor, or another device erased it. The
         // bubble and the embed must not keep sending the old copy (US-11).
-        saveToLocalStorage({}, [], [], []);
+        writeMirror(NO_RECORD);
       }
       firstReadShown(); // the saves open (the erase machine's `read`, ledger H37)
     }
@@ -270,8 +268,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   }, [reached, epoch, chatPrefetch]);
 
   // The profile's save: height, sex, the birth date, the unit system (hooks/useProfileSave).
-  const { flushProfile, profileTimer, markSaved, profileDirty, birthRefused, clearBirthRefused } = useProfileSave({
-    inputs, inputsRef, setInputs, loaded, onClean: profileClean, writeRefused, units,
+  const { flushProfile, profileTimer, markSaved, savedProfile, profileDirty, birthRefused, clearBirthRefused } = useProfileSave({
+    inputs, inputsRef, setInputs, loaded, onSettled: profileSettled, writeRefused, units,
   });
 
   // The saved-value editor's correction, core or lab (US-04, US-21 AC5),

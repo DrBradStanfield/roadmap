@@ -224,7 +224,7 @@ const DEBOUNCED_EDIT = { day: '2026-06-02', value: 82 };
 const BOTH = { [PANEL_EDIT.day]: PANEL_EDIT.value, [DEBOUNCED_EDIT.day]: DEBOUNCED_EDIT.value };
 
 async function edit({ day, value }: { day: string; value: number }): Promise<void> {
-  await act(async () => { expect((await page!.data.addMeasurement('weight', value, day)).status).toBe('inserted'); });
+  await act(async () => { expect((await page!.data.addMeasurement('weight', value, day, page!.data.getShownErase())).status).toBe('inserted'); });
 }
 
 const status = () => document.querySelector('.hr-sync-status')?.textContent;

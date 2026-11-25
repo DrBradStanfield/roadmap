@@ -99,3 +99,13 @@ PR 1 lands first; PR 2's pins land before the moves in PRs 3 and 4.
   token on any 401 (drive.ts:437), so the retry refreshes first; a failed refresh is a definite `reconnect` and the
   retry stops.
 - Status: PRs 1 and 2 in flight.
+- PR 3 (PR 2108) claims only what it migrated: it names the outcome on the record write paths of Dropbox, Drive,
+  GitHub and WebDAV, Drive's record lookup and version check, document uploads' status classification and
+  localStorage's full store. Raise sites it did not reach keep main's default, read as "may have landed".
+- PR 3b: `outcome` becomes a required constructor argument on `StorageError`, with no default from a status table,
+  so a raise site that forgets it does not compile. The status table becomes a helper (`answerOutcome`) the raise
+  site calls on purpose. Its list of known sites is in US-10 AC16's Limit sentence.
+- Waiting on Brad (wording, raised by PR 3): (1) a full Drive on the hosted MCP keeps the access-refusal text
+  ("reconnect") until it has words of its own; what should it say? (2) a failure that may have landed with no words
+  of its own reads "{provider} did not answer", though for a 408, 429 or 5xx the provider did answer, with an error;
+  keep it, or word it as an error answer?
