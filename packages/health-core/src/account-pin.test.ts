@@ -1,9 +1,10 @@
 /**
- * US-09 AC55: a cloud sign-in stays with the account this browser connected;
- * another account is refused. The pure rules as tables.
+ * US-09 AC55: a cloud sign-in stays with the account this browser connected.
+ * The pure rules as tables.
  */
 import { describe, expect, it } from 'vitest';
-import { deviceCopyEmpty, parsePin, pinVerdict, proofVerdict, reconnectVerdict, recordRowIds, type AccountPin, type OwnerProof, type PinVerdict } from './account-pin';
+import { checkRefuses, deviceCopyEmpty, parsePin, pinVerdict, proofVerdict, reconnectOutcome, recordRowIds, type AccountCheckMode, type AccountPin, type OwnerProof, type PinVerdict } from './account-pin';
+import { CLOUD_CHECK_OUTCOMES, type CloudCheckOutcome } from './product-events';
 import { buildErasedFile } from './erase';
 import { createEmptyFile, ROW_ARRAYS, type RoadmapFile } from './roadmap-file';
 
@@ -46,16 +47,32 @@ describe('US-09 AC55: proofVerdict, positive proof only', () => {
   });
 });
 
-describe('US-09 AC55: reconnectVerdict', () => {
-  const table: Array<[string, AccountPin | null, boolean, OwnerProof, 'keep' | 'refuse']> = [
-    ['pinned: the same account', A, false, {}, 'keep'],
-    ['pinned: another account, even over an empty copy with a shared row', B, true, { sharesRow: true }, 'refuse'],
-    ['no pin, an empty device copy', null, true, {}, 'keep'],
-    ['no pin, a copy and a proof', null, false, { sharesRow: true }, 'keep'],
-    ['no pin, a copy and no proof', null, false, {}, 'refuse'],
+describe('US-09 AC55: reconnectOutcome', () => {
+  const table: Array<[string, AccountPin | null, AccountPin | null, boolean, OwnerProof, CloudCheckOutcome]> = [
+    ['pinned: the same account', A, A, false, {}, 'same_account'],
+    ['pinned: another account, even over an empty copy with a shared row', B, A, true, { sharesRow: true }, 'other_account'],
+    ['no pin, an empty device copy', null, A, true, {}, 'no_pin_empty_copy'],
+    ['no pin, a copy and a proof', null, A, false, { sharesRow: true }, 'no_pin_same_record'],
+    ['no pin, a copy and no proof', null, A, false, {}, 'no_pin_unproven'],
+    ['no pin, a copy and an earlier account that differs', null, A, false, { earlierAccount: 'id-b', sharesRow: true }, 'no_pin_unproven'],
+    ['the provider did not name the account, pinned or not', A, null, true, { sharesRow: true }, 'account_not_named'],
   ];
-  it.each(table)('%s', (_name, pinned, empty, proof, verdict) => {
-    expect(reconnectVerdict(pinned, A, empty, proof)).toBe(verdict);
+  it.each(table)('%s', (_name, pinned, signedIn, empty, proof, outcome) => {
+    expect(reconnectOutcome(pinned, signedIn, empty, proof)).toBe(outcome);
+  });
+  it('names every outcome the event may carry', () => {
+    expect(new Set(table.map((row) => row[5]))).toEqual(new Set(CLOUD_CHECK_OUTCOMES));
+  });
+});
+
+describe('US-09 AC55: checkRefuses, outcome by mode', () => {
+  const keeps: Record<CloudCheckOutcome, boolean> = {
+    same_account: true, no_pin_empty_copy: true, no_pin_same_record: true,
+    other_account: false, no_pin_unproven: false, account_not_named: false,
+  };
+  const rows = CLOUD_CHECK_OUTCOMES.flatMap((outcome) => (['observe', 'enforce'] as AccountCheckMode[]).map((mode) => [mode, outcome] as const));
+  it.each(rows)('%s, %s', (mode, outcome) => {
+    expect(checkRefuses(mode, outcome)).toBe(mode === 'enforce' && !keeps[outcome]);
   });
 });
 

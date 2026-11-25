@@ -1,12 +1,14 @@
 /**
- * A cloud sign-in stays with the account this browser connected; another
- * account is refused (US-09 AC55). The pin names the owner of this device's
- * copy of the record: the provider and an opaque account id the provider names
+ * A cloud sign-in stays with the account this browser connected (US-09 AC55).
+ * The check runs in one of two modes: 'observe' decides and counts while the
+ * sign-in proceeds; 'enforce' refuses another account. The pin names the
+ * owner of this device's copy of the record: the provider and an opaque account id the provider names
  * at sign-in, never an email. The host keeps it on the device only; it is
  * never logged, sent in an event or put in a URL. The iPhone keeps the same
  * rule in Swift (CloudSync.swift); this is the engine's copy.
  */
 import { rowRootIds } from './merge';
+import type { CloudCheckOutcome } from './product-events';
 import { ROW_ARRAYS, type RoadmapFile } from './roadmap-file';
 
 /** Which account of which provider owns this device's copy. */
@@ -87,12 +89,24 @@ export function proofVerdict(account: string, proof: OwnerProof): 'keep' | 'refu
 }
 
 /**
- * A sign-in coming back to the backend this browser still remembers. With a
- * pin: only the pinned account keeps it. With none (a browser that connected
- * before the pin existed): an empty device copy keeps it; otherwise the proof
- * decides.
+ * What the check of a sign-in coming back to the backend this browser still
+ * remembers finds. `signedIn` null: the provider did not name the account.
+ * With a pin: the pinned account or another. With none (a browser that
+ * connected before the pin existed): an empty device copy, or the proof.
  */
-export function reconnectVerdict(pinned: AccountPin | null, signedIn: AccountPin, deviceEmpty: boolean, proof: OwnerProof): 'keep' | 'refuse' {
-  if (pinned) return pinVerdict(pinned, signedIn) === 'same' ? 'keep' : 'refuse';
-  return deviceEmpty ? 'keep' : proofVerdict(signedIn.account, proof);
+export function reconnectOutcome(pinned: AccountPin | null, signedIn: AccountPin | null, deviceEmpty: boolean, proof: OwnerProof): CloudCheckOutcome {
+  if (!signedIn) return 'account_not_named';
+  if (pinned) return pinVerdict(pinned, signedIn) === 'same' ? 'same_account' : 'other_account';
+  if (deviceEmpty) return 'no_pin_empty_copy';
+  return proofVerdict(signedIn.account, proof) === 'keep' ? 'no_pin_same_record' : 'no_pin_unproven';
+}
+
+/** 'observe': the check decides and counts, and every sign-in proceeds. 'enforce': an outcome that does not keep it refuses. */
+export type AccountCheckMode = 'observe' | 'enforce';
+
+const KEEPS: readonly CloudCheckOutcome[] = ['same_account', 'no_pin_empty_copy', 'no_pin_same_record'];
+
+/** Whether a check's outcome refuses the sign-in: only when the check enforces. */
+export function checkRefuses(mode: AccountCheckMode, outcome: CloudCheckOutcome): boolean {
+  return mode === 'enforce' && !KEEPS.includes(outcome);
 }

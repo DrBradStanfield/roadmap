@@ -28,7 +28,7 @@ import { openBackendPicker, openSignin, OPEN_PICKER_EVENT, PLAN_STORAGE_CTA, Sto
 import { healthWritesAllowed, onHealthWritesChange, ownLogOffHasBegun, safeGetItem, safeSetItem } from '../src/lib/storage';
 import { useIsMobile } from '../src/lib/useIsMobile';
 import { LOCAL_SAVE_EVENT, localSaveRefused } from '../src/storage/local-storage-adapter';
-import { AccountRefusedError, releasePin, storedCopyEmpty } from '../src/storage/account-gate';
+import { releasePin, storedCopyEmpty } from '../src/storage/account-gate';
 
 /** US-09 AC19: the picker was opened once in this browser (a side key, never the record). */
 const STORAGE_CTA_SEEN_KEY = 'hr_storage_cta_seen';
@@ -184,12 +184,11 @@ function useReconnect(lost?: LostSignIn) {
         dispatch({ type: 'saved', run }); // from here it runs to the reload: Stop is gone
         markSyncPending();
         await flushBeforeExit();
-        // Kept because the copy was empty, which another writer may have filled since: that needs proof, so refused, the earlier sign-in put back
-        if (grant?.onEmpty && !(await storedCopyEmpty())) {
-          grant.takeBack();
-          const refused = new AccountRefusedError('google-drive', PROVIDERS['google-drive'].label);
-          connectRefusal(refused);
-          throw refused;
+        // Kept because the copy was empty, which another writer may have filled since: counted once read again; that
+        // needs proof, so when the check enforces it is refused and the earlier sign-in put back
+        if (grant?.onEmpty) {
+          const stillEmpty = await storedCopyEmpty();
+          try { grant.settle(stillEmpty); } catch (refused) { grant.takeBack(); connectRefusal(refused); throw refused; }
         }
         await liftLocalInto(new GoogleDriveAdapter(googleDriveConfig(), gen), 'google-drive');
       }

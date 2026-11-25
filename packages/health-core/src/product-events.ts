@@ -20,6 +20,9 @@ export const PRODUCT_EVENT_NAMES = [
   'cloud_connect_started',
   'cloud_connect_success',
   'cloud_connect_refused',
+  // US-09 AC55: one per account check of a cloud sign-in coming back to this
+  // browser's backend. Metadata `{ provider, outcome }` (CLOUD_CHECK_OUTCOMES) only.
+  'cloud_connect_checked',
   // US-09 AC22: Cancel or Deny at Google or Dropbox (`error=access_denied`).
   // Metadata `{ provider }` only.
   'cloud_connect_cancelled',
@@ -157,6 +160,10 @@ export const PRODUCT_EVENT_NAMES = [
   'upload_labs_opened', // US-73 AC14: an "Upload labs" heading button pressed; metadata { placement } (UPLOAD_LABS_PLACEMENTS) only
 ] as const;
 
+/** The `cloud_connect_checked` counter's words (US-09 AC55): what the account check found, never the account. */
+export const CLOUD_CHECK_OUTCOMES = ['same_account', 'no_pin_empty_copy', 'no_pin_same_record', 'other_account', 'no_pin_unproven', 'account_not_named'] as const;
+export type CloudCheckOutcome = (typeof CLOUD_CHECK_OUTCOMES)[number];
+
 /** The `measurement_added` counter's words (US-07 AC11): which prompted measure was saved. */
 export const MEASURES = ['waist', 'blood_pressure'] as const;
 
@@ -211,7 +218,7 @@ export const SERVER_ONLY_EVENT_NAMES = [
  * a distinct user action whose count is the signal (US-12 AC10, one per upload
  * run). The events route's per-visitor and per-IP limits still bound them.
  */
-export const PER_ACTION_EVENT_NAMES = ['upload_outcome', 'upload_review', 'save_retry', 'waist_widget_viewed', 'waist_widget_saved', 'bp_widget_viewed', 'bp_widget_saved'] as const satisfies readonly ProductEventName[]; // US-74: once per page view, which the widget itself ensures
+export const PER_ACTION_EVENT_NAMES = ['upload_outcome', 'upload_review', 'save_retry', 'cloud_connect_checked', 'waist_widget_viewed', 'waist_widget_saved', 'bp_widget_viewed', 'bp_widget_saved'] as const satisfies readonly ProductEventName[]; // US-74: once per page view, which the widget itself ensures
 
 /**
  * The hosted connector's tool names, as a counter may name them. They live in

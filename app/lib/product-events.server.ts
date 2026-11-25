@@ -3,7 +3,7 @@ import * as z from '../../packages/health-core/src/zod';
 // Deep relative import (not '@roadmap/health-core'): the Docker build runs
 // `npm ci` before COPY, so the workspace symlink never exists in the image —
 // same reason chat.server.ts / email.server.ts import health-core this way.
-import { CHAT_PROFILE_CHOICES, CHAT_PROFILE_FIELDS, EVENT_REASONS, GUIDE_PLACEMENTS, isLabKeyWord, LPA_CHECK_ANSWERS, isLabUnitWord, MEASURES, LAB_UNIT_BLANK, MCP_IMPORT_FILE_BUCKETS, MCP_OAUTH_DETAILS, MEASUREMENT_REFUSAL_REASONS, MEASUREMENT_REFUSALS_WITH_METRIC, MCP_IMPORT_PHASES, MCP_IMPORT_ROUTES, MCP_KNOWLEDGE_TOOL_NAMES, MCP_TOOL_NAMES, ONBOARDING_STEPS, PRODUCT_EVENT_NAMES, REMOTE_CHANGE_BACKENDS, SERVER_ONLY_EVENT_NAMES, SIGNIN_PLACEMENTS, TOOL_DEVICES, UPLOAD_LABS_PLACEMENTS, UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, UPLOAD_REVIEW_FLAGS, UPLOAD_REVIEW_KEYS, type McpOAuthDetail, type McpOAuthReason, type McpRefusalReason, type ProductEventName, type UploadOutcomeKey, type UploadReviewKey } from '../../packages/health-core/src/product-events';
+import { CHAT_PROFILE_CHOICES, CHAT_PROFILE_FIELDS, CLOUD_CHECK_OUTCOMES, EVENT_REASONS, GUIDE_PLACEMENTS, isLabKeyWord, LPA_CHECK_ANSWERS, isLabUnitWord, MEASURES, LAB_UNIT_BLANK, MCP_IMPORT_FILE_BUCKETS, MCP_OAUTH_DETAILS, MEASUREMENT_REFUSAL_REASONS, MEASUREMENT_REFUSALS_WITH_METRIC, MCP_IMPORT_PHASES, MCP_IMPORT_ROUTES, MCP_KNOWLEDGE_TOOL_NAMES, MCP_TOOL_NAMES, ONBOARDING_STEPS, PRODUCT_EVENT_NAMES, REMOTE_CHANGE_BACKENDS, SERVER_ONLY_EVENT_NAMES, SIGNIN_PLACEMENTS, TOOL_DEVICES, UPLOAD_LABS_PLACEMENTS, UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, UPLOAD_REVIEW_FLAGS, UPLOAD_REVIEW_KEYS, type McpOAuthDetail, type McpOAuthReason, type McpRefusalReason, type ProductEventName, type UploadOutcomeKey, type UploadReviewKey } from '../../packages/health-core/src/product-events';
 import { LPA_UNITS } from '../../packages/health-core/src/units';
 import { SAVE_RETRY_OUTCOMES, SAVE_RETRY_TRIGGERS } from '../../packages/health-core/src/save-retry-words';
 import { US_PRODUCTS, type UsProduct } from '../../packages/health-core/src/us-products';
@@ -31,8 +31,8 @@ const metadataSchema = z
     count: z.number().int().min(0).max(1000).optional(),
     tool: z.enum([...MCP_TOOL_NAMES, ...MCP_KNOWLEDGE_TOOL_NAMES]).optional(),
     client: z.enum(MCP_CLIENT_LABELS).optional(),
-    /** mcp_tool_call's words, or save_retry's (US-09 AC30): judged against the event in checkEventKeys. */
-    outcome: z.enum([...MCP_TOOL_OUTCOMES, ...SAVE_RETRY_OUTCOMES]).optional(),
+    /** mcp_tool_call's words, save_retry's (US-09 AC30) or cloud_connect_checked's (AC55): judged against the event in checkEventKeys. */
+    outcome: z.enum([...MCP_TOOL_OUTCOMES, ...SAVE_RETRY_OUTCOMES, ...CLOUD_CHECK_OUTCOMES]).optional(),
     /** US-09 AC30: what started a retry of a failed cloud save. Owned by `save_retry`. */
     trigger: z.enum(SAVE_RETRY_TRIGGERS).optional(),
     route: z.enum(MCP_IMPORT_ROUTES).optional(),
@@ -160,7 +160,7 @@ const EVENT_KEY_OWNERS: Record<string, readonly string[]> = {
 const EVENT_WORDS: Record<string, Partial<Record<string, readonly string[]>>> = {
   placement: { guide_opened: GUIDE_PLACEMENTS, signin_opened: SIGNIN_PLACEMENTS, upload_labs_opened: UPLOAD_LABS_PLACEMENTS },
   step: { mcp_tool_call: MCP_TOOL_STEPS, onboarding_step: ONBOARDING_STEPS },
-  outcome: { mcp_tool_call: MCP_TOOL_OUTCOMES, save_retry: SAVE_RETRY_OUTCOMES },
+  outcome: { mcp_tool_call: MCP_TOOL_OUTCOMES, save_retry: SAVE_RETRY_OUTCOMES, cloud_connect_checked: CLOUD_CHECK_OUTCOMES },
 };
 
 /** Events that mean nothing without their key: a tool tab with no device, or
@@ -174,6 +174,7 @@ const EVENT_REQUIRED_KEY: Partial<Record<string, string | readonly string[]>> = 
   us_product_link_clicked: 'product',
   measurement_added: 'measure', // US-07 AC11
   save_retry: ['trigger', 'outcome'], // US-09 AC30: how it started and how it ended
+  cloud_connect_checked: ['provider', 'outcome'], // US-09 AC55
   upload_review: 'saved', // US-13 AC13: a review that ended neither way counts nothing
 };
 
@@ -189,6 +190,7 @@ const EVENT_ONLY_KEYS: Partial<Record<string, readonly string[]>> = {
   chat_question_archived: ['eligible', 'kept', 'skipped'],
   chat_profile_edit: ['field', 'choice'],
   cloud_connect_cancelled: ['provider'],
+  cloud_connect_checked: ['provider', 'outcome'], // US-09 AC55: never the account
   blood_test_moved: [], // US-04 AC5: the name alone
   alcohol_question_answered: [], // US-60: the name alone, never the answer
   us_product_shown: ['product'], // US-61 AC8: the product alone, never the card

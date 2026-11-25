@@ -1,5 +1,5 @@
 /** Shopify services only. Health records are read and written by roadmap-data. */
-import { type GUIDE_PLACEMENTS, type LPA_CHECK_ANSWERS, type ProductEventName, type REMOTE_CHANGE_BACKENDS, PER_ACTION_EVENT_NAMES, type CHAT_PROFILE_CHOICES, type MEASURES, type ONBOARDING_STEPS, type SIGNIN_PLACEMENTS, type CHAT_PROFILE_FIELDS, type TOOL_DEVICES, type UPLOAD_LABS_PLACEMENTS, type UploadOutcomeKey, type UploadReviewKey } from '@roadmap/health-core/product-events';
+import { type CloudCheckOutcome, type GUIDE_PLACEMENTS, type LPA_CHECK_ANSWERS, type ProductEventName, type REMOTE_CHANGE_BACKENDS, PER_ACTION_EVENT_NAMES, type CHAT_PROFILE_CHOICES, type MEASURES, type ONBOARDING_STEPS, type SIGNIN_PLACEMENTS, type CHAT_PROFILE_FIELDS, type TOOL_DEVICES, type UPLOAD_LABS_PLACEMENTS, type UploadOutcomeKey, type UploadReviewKey } from '@roadmap/health-core/product-events';
 import type { LpaUnit, MetricType } from '@roadmap/health-core/units';
 import type { MeasurementRefusal } from '@roadmap/health-core/record-edits';
 import type { UsProduct } from '@roadmap/health-core/us-products';
@@ -138,9 +138,9 @@ export interface ProductEventMetadata extends Partial<Record<UploadOutcomeKey | 
   /** `onboarding_step` (US-62 AC1): the question's name, never its answer. */
   step?: (typeof ONBOARDING_STEPS)[number];
   backend?: (typeof REMOTE_CHANGE_BACKENDS)[number];
-  /** `save_retry` (US-09 AC30): what started a retry of a failed save, and how it ended. */
+  /** `save_retry` (US-09 AC30): what started a retry of a failed save, and how it ended; `cloud_connect_checked` (AC55): what the account check found. */
   trigger?: SaveRetry['trigger'];
-  outcome?: SaveRetry['outcome'];
+  outcome?: SaveRetry['outcome'] | CloudCheckOutcome;
   /** `lab_unit_refused` (US-21 phase 3): the catalogue key of the test and the
    *  unit spelling the record would not take. Never a value. */
   key?: string;

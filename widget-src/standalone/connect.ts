@@ -19,7 +19,7 @@ import {
   type WebDavAdapter,
 } from '../src/storage';
 import { beginRoadmapLogOff } from '../src/storage/roadmap-store';
-import { AccountRefusedError, adoptPinAtLoad, notConnected, releasePin } from '../src/storage/account-gate';
+import { AccountRefusedError, adoptPinAtLoad, notConnected, releasePin, reportUnnamed } from '../src/storage/account-gate';
 import { currentSignIn, lostSignIn, type LostSignIn, type SignIn } from '../src/storage/sign-in-state';
 import { BACKEND_KEY, webRecordHost } from '../src/storage/web-record-host';
 import { clearAutoEnrolBlock } from './reminders';
@@ -74,9 +74,7 @@ export function connectRefusal(error: unknown): string | null {
   const provider = error instanceof DriveGrantRefusedError ? 'google-drive' : error instanceof AccountRefusedError ? providerOf(error.provider)?.event : undefined;
   if (!provider) return null;
   trackProductEvent('cloud_connect_refused', { provider });
-  if (error instanceof AccountRefusedError && error.unread) {
-    Sentry.captureException(recordFailure(error, 'Cloud connect failed'), { tags: { area: 'cloud-connect', backend: error.provider } });
-  }
+  if (error instanceof AccountRefusedError && error.unread) reportUnnamed(error);
   return (error as Error).message;
 }
 

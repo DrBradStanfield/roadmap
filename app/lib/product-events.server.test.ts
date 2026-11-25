@@ -39,6 +39,7 @@ describe('parseProductEvent', () => {
       const metadata = eventName.startsWith('us_product_') ? { metadata: { product: 'sleep' } }
         : eventName === 'measurement_added' ? { metadata: { measure: 'waist' } }
         : eventName === 'save_retry' ? { metadata: { trigger: 'online', outcome: 'landed' } } // US-09 AC30: needs its trigger
+        : eventName === 'cloud_connect_checked' ? { metadata: { provider: 'dropbox', outcome: 'same_account' } } // US-09 AC55: needs both
         : eventName === 'upload_review' ? { metadata: { saved: 1 } } : {}; // US-13 AC13: needs how it ended
       expect(parseProductEvent({ eventName, visitorId: VISITOR, ...metadata })).toEqual({
         eventName,

@@ -1,9 +1,11 @@
 // @vitest-environment jsdom
 /**
- * US-09 AC55: a cloud sign-in stays with the account this browser connected;
- * another account is refused. Checked where a sign-in comes back to the
- * backend this browser still remembers: the Drive popup reconnect and the
- * Dropbox reconnect return.
+ * US-09 AC55: a cloud sign-in stays with the account this browser connected.
+ * Checked where a sign-in comes back to the backend this browser still
+ * remembers: the Drive popup reconnect and the Dropbox reconnect return. The
+ * check runs in ACCOUNT_CHECK_MODE: 'observe' counts each outcome and lets
+ * every sign-in proceed; 'enforce' refuses another account. The blocks before
+ * the outcome table run in 'enforce'; the table runs every outcome in both.
  *
  * Real SyncControl, switch-flow, connect.ts, resolve-backend.ts, adapters,
  * account gate and sign-in storage. Fakes: fetch (each provider names the
@@ -19,6 +21,8 @@ const capture = vi.hoisted(() => vi.fn());
 const track = vi.hoisted(() => vi.fn());
 /** The working record open on the page (null: none), and what a failed save of it does: mirror it to this device. */
 const session = vi.hoisted(() => ({ live: null as object | null, otherWriter: null as string | null }));
+const mode = vi.hoisted(() => ({ current: 'enforce' as 'observe' | 'enforce' }));
+vi.mock('../src/storage/account-check-mode', () => ({ get ACCOUNT_CHECK_MODE() { return mode.current; } }));
 vi.mock('../src/lib/sentry', () => ({ Sentry: { captureException: capture } }));
 vi.mock('../src/lib/server-api', () => ({ trackProductEvent: track }));
 vi.mock('../src/lib/roadmap-data', () => ({
@@ -112,6 +116,7 @@ beforeEach(() => {
   meanwhile = null;
   session.live = null;
   session.otherWriter = null;
+  mode.current = 'enforce';
   gisAnswer = null;
   gisOverrides = [];
   lift.mockClear();
@@ -430,5 +435,116 @@ describe('US-09 AC55: the pin\'s life', () => {
     const { connect } = await page();
     await connect.startOnBackend(await connect.resolveRemembered(), async () => undefined);
     await vi.waitFor(() => expect(pinned()).toEqual({ provider: 'google-drive', account: ID.driveA }));
+  });
+});
+
+/**
+ * Every outcome of the check, in each mode, as the caller sees it. 'enforce'
+ * rows are the refusals above; 'observe' rows keep the sign-in, lift and
+ * reload as before the check, with the pin following the account that signed
+ * in (none when unnamed). Each check is counted once as `cloud_connect_checked`.
+ */
+type Outcome = 'same_account' | 'no_pin_empty_copy' | 'no_pin_same_record' | 'other_account' | 'no_pin_unproven' | 'account_not_named';
+const REFUSES: readonly Outcome[] = ['other_account', 'no_pin_unproven', 'account_not_named'];
+const MODES = ['observe', 'enforce'] as const;
+const checked = () => track.mock.calls.filter(([name]) => name === 'cloud_connect_checked');
+const refusedEvents = () => track.mock.calls.filter(([name]) => name === 'cloud_connect_refused');
+
+/** Each row: its name, the setup, who signs in, and the outcome counted. */
+const DRIVE_CASES: Array<[string, () => void, string, Outcome]> = [
+  ['same_account', () => pin('google-drive', ID.driveA), ID.driveA, 'same_account'],
+  ['other_account', () => pin('google-drive', ID.driveA), ID.driveB, 'other_account'],
+  ['no_pin_empty_copy', () => { localStorage.removeItem(DEVICE_KEY); cloud.driveFiles = { 'file-b': record('row-b1') }; }, ID.driveB, 'no_pin_empty_copy'],
+  ['no_pin_empty_copy, filled before the lift', () => { localStorage.removeItem(DEVICE_KEY); cloud.driveFiles = { 'file-b': record('row-b1') }; session.otherWriter = DEVICE_COPY; }, ID.driveB, 'no_pin_unproven'],
+  ['no_pin_same_record', () => { cloud.driveFiles = { 'file-b': record('row-a1', 'row-b9') }; }, ID.driveB, 'no_pin_same_record'],
+  ['no_pin_unproven', () => { cloud.driveFiles = { 'file-b': record('row-b1') }; }, ID.driveB, 'no_pin_unproven'],
+  ['account_not_named', () => pin('google-drive', ID.driveA), '', 'account_not_named'],
+];
+
+describe('US-09 AC55: the Drive popup reconnect, each outcome in each mode', () => {
+  it.each(MODES.flatMap((m) => DRIVE_CASES.map(([name, setup, account, outcome]) => [m, name, setup, account, outcome] as const)))(
+    '%s: %s', async (m, _name, setup, account, outcome) => {
+      mode.current = m;
+      setup();
+      const before = pinned();
+      await popupReconnectAs(account);
+      const refuses = m === 'enforce' && REFUSES.includes(outcome);
+      expect(checked()).toEqual([['cloud_connect_checked', { provider: 'google-drive', outcome }]]);
+      expect(refusedEvents()).toEqual(refuses ? [['cloud_connect_refused', { provider: 'google-drive' }]] : []);
+      expect(capture).toHaveBeenCalledTimes(outcome === 'account_not_named' ? 1 : 0);
+      if (refuses) {
+        expect(lift).not.toHaveBeenCalled();
+        expect(reload).not.toHaveBeenCalled();
+        expect(localStorage.getItem(DRIVE_TOKENS)).toBeNull();
+        expect(pinned()).toEqual(before);
+        expect(document.querySelector('.hr-sync-error')?.textContent).toBe(REFUSED('Google Drive'));
+      } else {
+        expect(localStorage.getItem(DRIVE_TOKENS)).toContain('test-token-popup');
+        expect(lift).toHaveBeenCalledTimes(1);
+        expect(reload).toHaveBeenCalledTimes(1);
+        expect(pinned()).toEqual(account ? { provider: 'google-drive', account } : null);
+        expect(document.querySelector('.hr-sync-error')).toBeNull();
+      }
+      expect(cloudWrites()).toEqual([]);
+    });
+});
+
+const DROPBOX_CASES: Array<[Outcome, () => void, string]> = [
+  ['same_account', () => pin('dropbox', ID.dropboxA), ID.dropboxA],
+  ['other_account', () => pin('dropbox', ID.dropboxA), ID.dropboxB],
+  ['no_pin_empty_copy', () => localStorage.removeItem(DEVICE_KEY), ID.dropboxB],
+  ['no_pin_same_record', () => { cloud.dropbox = record('row-a2'); }, ID.dropboxB],
+  ['no_pin_unproven', () => { cloud.dropbox = record('row-b1'); }, ID.dropboxB],
+  ['account_not_named', () => pin('dropbox', ID.dropboxA), ''],
+];
+
+describe('US-09 AC55: the Dropbox reconnect return, each outcome in each mode', () => {
+  it.each(MODES.flatMap((m) => DROPBOX_CASES.map(([outcome, setup, account]) => [m, outcome, setup, account] as const)))(
+    '%s: %s', async (m, outcome, setup, account) => {
+      mode.current = m;
+      localStorage.setItem(BACKEND_KEY, 'dropbox');
+      localStorage.setItem(DROPBOX_CONFIG, JSON.stringify({ gen: null }));
+      setup();
+      const before = pinned();
+      const device = localStorage.getItem(DEVICE_KEY);
+      signedInAs.dropbox = account;
+      returnedFrom('dropbox');
+      const { resolved, refused } = await (await page()).resolve.resolveBackend();
+      const refuses = m === 'enforce' && REFUSES.includes(outcome);
+      expect(checked()).toEqual([['cloud_connect_checked', { provider: 'dropbox', outcome }]]);
+      expect(refusedEvents()).toEqual(refuses ? [['cloud_connect_refused', { provider: 'dropbox' }]] : []);
+      expect(capture).toHaveBeenCalledTimes(outcome === 'account_not_named' ? 1 : 0);
+      expect(resolved.backend).toBe('dropbox');
+      expect(window.location.search).toBe('');
+      if (refuses) {
+        expect(refused).toBe(REFUSED('Dropbox'));
+        expect(localStorage.getItem(DROPBOX_TOKENS)).toBeNull();
+        expect(lift).not.toHaveBeenCalled();
+        expect(pinned()).toEqual(before);
+      } else {
+        expect(refused).toBeUndefined();
+        expect(localStorage.getItem(DROPBOX_TOKENS)).toContain('test-token-new');
+        expect(lift).toHaveBeenCalledTimes(1);
+        expect(pinned()).toEqual(account ? { provider: 'dropbox', account } : null);
+      }
+      expect(localStorage.getItem(DEVICE_KEY)).toBe(device);
+      expect(cloudWrites()).toEqual([]);
+    });
+});
+
+describe('US-09 AC55: a fresh connect whose account the provider cannot name, in observe mode', () => {
+  it('a Dropbox first connect is kept with no pin, reported once, and counts no check or refusal', async () => {
+    mode.current = 'observe';
+    signedInAs.dropbox = '';
+    returnedFrom('dropbox');
+    const { resolved, refused } = await (await page()).resolve.resolveBackend();
+    expect(refused).toBeUndefined();
+    expect(resolved.backend).toBe('dropbox');
+    expect(lift).toHaveBeenCalledTimes(1);
+    expect(pinned()).toBeNull();
+    expect(capture).toHaveBeenCalledTimes(1);
+    expect(capture.mock.calls[0][1]).toEqual({ tags: { area: 'cloud-connect', backend: 'dropbox' } });
+    expect(checked()).toEqual([]);
+    expect(refusedEvents()).toEqual([]);
   });
 });
