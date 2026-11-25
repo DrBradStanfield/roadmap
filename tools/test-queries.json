@@ -9486,7 +9486,7 @@
     "history": [
       {
         "role": "user",
-        "content": "Viewer: Does magnesium actually help with sleep? I wake up at 3am most nights."
+        "content": "Does magnesium actually help with sleep? I wake up at 3am most nights."
       },
       {
         "role": "assistant",

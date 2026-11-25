@@ -21,7 +21,8 @@ export interface RouterTurn {
  * conversation's first user turn and its last three user turns, each through
  * sanitizeForRouter. Assistant turns are left out. `history` is oldest first
  * and excludes the question: the web's turns, Discord's channel messages, or
- * the YouTube thread before the follow-up (buildThreadHistory).
+ * the YouTube parent comment and the follow-up author's earlier replies
+ * (buildRouterThreadHistory).
  */
 export function routerTurn(message: string, history: ReadonlyArray<{ role: 'user' | 'assistant'; content: string }>): RouterTurn {
   const user = history.filter(m => m.role === 'user').map(m => sanitizeForRouter(m.content));
