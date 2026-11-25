@@ -10,7 +10,7 @@ const sentry = vi.hoisted(() => ({ captureException: vi.fn(), captureMessage: vi
 vi.mock('@sentry/react', () => sentry);
 vi.mock('./sentry', () => ({ Sentry: sentry }));
 const store = vi.hoisted(() => ({
-  recordExchange: vi.fn(async (_opts: unknown) => {}),
+  recordExchange: vi.fn(async (_opts: unknown): Promise<string> => 'written'),
   eraseMarks: vi.fn(() => []),
   getMessages: vi.fn(() => []),
   listConversations: vi.fn(() => []),
@@ -67,6 +67,16 @@ describe.each([
   it('a history file that could not be opened answers unsaved in no session: the turn is never written', async () => {
     access.store = false;
     expect(await (await send('hello', null, null)).saved).toEqual({ outcome: 'unsaved', session: null });
+  });
+
+  it('a turn the store did not write (its conversation tombstoned) answers unsaved in no session, so no later save clears it', async () => {
+    store.recordExchange.mockResolvedValueOnce('not-written');
+    expect(await (await send('hello', 'c1', null)).saved).toEqual({ outcome: 'unsaved', session: null });
+  });
+
+  it('a page that may not write this device answers skipped, as before', async () => {
+    store.recordExchange.mockResolvedValueOnce('closed');
+    expect(await (await send('hello', null, null)).saved).toEqual({ outcome: 'skipped' });
   });
 
   it('no history layer answers skipped: nothing to say', async () => {

@@ -10,7 +10,7 @@ const sentry = vi.hoisted(() => ({ captureException: vi.fn(), captureMessage: vi
 vi.mock('@sentry/react', () => sentry);
 vi.mock('./sentry', () => ({ Sentry: sentry }));
 const store = vi.hoisted(() => ({
-  recordExchange: vi.fn(async () => {}),
+  recordExchange: vi.fn(async (..._args: unknown[]): Promise<string> => 'written'),
   eraseMarks: vi.fn(() => []),
   getMessages: vi.fn(() => []),
   listConversations: vi.fn(() => []),

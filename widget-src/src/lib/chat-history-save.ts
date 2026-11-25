@@ -38,7 +38,9 @@ export function saveExchange(opened: ReturnType<typeof askChatHistory>, asked: s
       if (!store) return hasChatHistoryLayer() ? { outcome: 'unsaved', session: null } : { outcome: 'skipped' };
       const session = sessionOf(store);
       return store.recordExchange({ ...exchange, askedMarks, askedUnder: recordEraseIn(asked) }).then(
-        (): ExchangeSave => ({ outcome: 'saved', session }),
+        // Not written: no copy holds the turn, so no later save writes it, and other marks stand.
+        (result): ExchangeSave => (result === 'written' ? { outcome: 'saved', session }
+          : result === 'closed' ? { outcome: 'skipped' } : { outcome: 'unsaved', session: null }),
         (error: unknown): ExchangeSave => {
           Sentry.captureException(recordFailure(error, 'Chat-history save failed'), { tags: { area: 'chat-history', op: 'save' } });
           return { outcome: 'unsaved', session };

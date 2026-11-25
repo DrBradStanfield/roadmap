@@ -94,7 +94,7 @@ describe('US-09 AC2c: a page that may not write this device\'s chat file does no
     state.open = false;
     sync.readSync.mockClear();
     sync.writeSync.mockClear();
-    await expect(exchange(page, 'now', 'synthetic follow-up')).resolves.toBeUndefined();
+    await expect(exchange(page, 'now', 'synthetic follow-up')).resolves.toBe('closed'); // nothing written: it says so (US-15 AC76)
     expect(ids(page)).toEqual(['now']);
     expect(page.getMessages('now').map((m) => m.role)).toEqual(['user', 'assistant']);
     await expect(page.deleteConversation('now')).resolves.toBeUndefined();

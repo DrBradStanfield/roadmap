@@ -49,7 +49,7 @@ const marksIn = (file: Stored) => file.conversations.filter((c) => c.id.startsWi
 const liveIn = (file: Stored) => file.conversations.filter((c) => !c.deleted).map((c) => c.id);
 const open = (cloud: MemoryCloud) => ChatSession.open(cloudHost(new MemoryAdapter(cloud)));
 const ask = (s: ChatSession, id: string, askedMarks?: readonly string[], isNew = true) =>
-  s.recordExchange({ conversationId: id, isNew, userText: `question ${id}`, assistantText: 'ok', askedMarks });
+  s.recordExchange({ conversationId: id, isNew, userText: `question ${id}`, assistantText: 'ok', askedMarks }).then(() => undefined);
 
 describe('US-11 AC2h: an erase writes a marker in its verified save', () => {
   it('adds one content-free, deleted marker beside the tombstones', async () => {

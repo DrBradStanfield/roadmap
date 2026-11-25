@@ -108,6 +108,36 @@ describe('US-15 AC76: the stored marker', () => {
     expect(((await new MemoryAdapter(cloud).read('chat-history.json')).body as { schemaVersion: number }).schemaVersion).toBe(1);
   });
 
+  it('recordExchange answers written only when the file written holds the turn', async () => {
+    const s = await ChatSession.open(cloudHost(new MemoryAdapter(new MemoryCloud())));
+    expect(await s.recordExchange({ conversationId: 'c1', isNew: true, userText: 'q1', assistantText: 'a1' })).toBe('written');
+  });
+
+  it('a conversation tombstoned by a delete whose own save failed: the reply is not written, and says so', async () => {
+    class FailingOnce extends MemoryAdapter {
+      fail = false;
+      override async write(...args: Parameters<MemoryAdapter['write']>) {
+        if (this.fail) { this.fail = false; throw new Error('synthetic write refused'); }
+        return super.write(...args);
+      }
+    }
+    const store = new FailingOnce(new MemoryCloud());
+    const s = await ChatSession.open(cloudHost(store));
+    await s.recordExchange({ conversationId: 'c1', isNew: true, userText: 'q1', assistantText: 'a1' });
+    store.fail = true;
+    await expect(s.deleteConversation('c1')).rejects.toThrow();
+    expect(await s.recordExchange({ conversationId: 'c1', isNew: false, userText: 'q2', assistantText: 'a2' })).toBe('not-written');
+    const stored = await ChatSession.open(cloudHost(new MemoryAdapter(store.cloud)));
+    expect(stored.getMessages('c1').map((m) => m.content)).toEqual(['q1', 'a1']); // the second turn is nowhere
+  });
+
+  it('a page that may not write this device answers closed, and writes nothing', async () => {
+    const device = { readSync: () => ({ body: null, version: null }), writeSync: () => { throw new Error('never'); } };
+    const host = { ...cloudHost(new MemoryAdapter()), tier: 'device', sync: device, clearNamedFiles: () => {}, eraseFence: () => null, deviceFilesOpen: () => false } as unknown as RecordHost;
+    const s = await ChatSession.open(host);
+    expect(await s.recordExchange({ conversationId: 'c1', isNew: true, userText: 'q1', assistantText: 'a1' })).toBe('closed');
+  });
+
   it('survives a read and a merge, as every turn is kept whole', () => {
     const ctx = { deviceId: 'd', now: T0 };
     const marked = { id: 'a-1', role: 'assistant', content: 'a1', createdAt: T0, notSaved: 'left' };
