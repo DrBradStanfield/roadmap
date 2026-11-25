@@ -5164,6 +5164,13 @@
   line-height: 1.35;
   color: var(--color-text-secondary);
 }
+/* US-62 AC41: Cancer screening's note where no question applies, under its cards; the iPhone's quiet line. */
+.mh-screening-note {
+  margin: 8px 0 0;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--color-text-secondary);
+}
 .mh-header-actions {
   display: flex;
   align-items: center;

@@ -130,15 +130,6 @@ issue, and nothing private.
 
 ### Product and code decisions (raised 2026-11-25)
 
-- **Three places the web's My health page differs from the iPhone.** Issue: PR 2092 (on main) made the web page draw
-  from the same shared rule as the iPhone. Three differences are held off, so the web looks as it did:
-  (1) when no screening question applies yet (no age, or nothing eligible) and there is no screening card, the
-  iPhone shows a Cancer screening section with a short note; the web shows no section. (2) In the same case with a
-  screening card, the iPhone puts the note under the card; the web has no words for it. (3) Before the form is
-  complete, the rule hands the web every card in one list, urgent first; the web shows no card until then
-  (onboarding hides them). Options for each: adopt the iPhone's behaviour, or keep the web's. Recommendation (the
-  PR's): (1) yes, once the note's words are on the web, since a heading alone would look broken; (2) yes, with the
-  iPhone's approved words; (3) keep the web's: the onboarding is short and the cards come at its end.
 - **Chat wording and counting differ between the chat panel and the pop-up.** Issue: PR 2093 (on main) found that
   the pop-up chat picks doctor or brand wording by store, but the panel beside the tool always uses the doctor
   wording ("Health by Dr Brad Chat"). Also, "chat opened" is counted for the pop-up only, so the count misses the
@@ -216,6 +207,13 @@ issue, and nothing private.
   while the App Store review is open.
 
 ## Decided
+
+2026-11-26, Brad's words in quotes:
+- The web's My health and the iPhone, three differences: "go with the recommendations". Where no screening question
+  applies, the web shows Cancer screening with the iPhone's note, alone or under the screening cards; before the form is
+  complete the web still shows no card. The note's words, one shared copy: "Screening questions appear once your sex,
+  birth year and height are in About you.", "Some screening questions depend on your sex. Add it in About you.", "No
+  screening questions apply at your age and sex yet." (US-62 AC41).
 
 2026-11-23, Brad's words in quotes:
 - Original files are stored in the background after Save, with no action from the person at Save and at every

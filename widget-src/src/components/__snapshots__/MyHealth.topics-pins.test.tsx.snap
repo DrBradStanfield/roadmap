@@ -240,6 +240,7 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
     "screening: Cancer screening",
     "card mh-card-8: screening-breast-due",
     "card mh-card-9: screening-lung-overdue",
+    "p.mh-screening-note: No screening questions apply at your age and sex yet.",
   ],
   [
     "bloodTests: Blood tests",
@@ -286,6 +287,7 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
     "screening: Cancer screening",
     "card mh-card-7: screening-lung-overdue",
     "card mh-card-8: screening-cervical-due",
+    "p.mh-screening-note: No screening questions apply at your age and sex yet.",
   ],
   [
     "bloodTests: Blood tests",
@@ -680,6 +682,10 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
     "card mh-card-7: hdl-low",
   ],
   [
+    "screening: Cancer screening",
+    "p.mh-screening-note: No screening questions apply at your age and sex yet.",
+  ],
+  [
     "skin: Skin",
     "card mh-card-8: skin-sunscreen",
   ],
@@ -769,6 +775,7 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
   [
     "screening: Cancer screening",
     "card mh-card-8: screening-colorectal-due",
+    "p.mh-screening-note: No screening questions apply at your age and sex yet.",
   ],
   [
     "bloodTests: Blood tests",
@@ -978,6 +985,7 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
   [
     "screening: Cancer screening",
     "card mh-card-7: screening-cervical-due",
+    "p.mh-screening-note: No screening questions apply at your age and sex yet.",
   ],
   [
     "skin: Skin",
@@ -1726,6 +1734,7 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
   [
     "screening: Cancer screening",
     "card mh-card-9: screening-breast-due",
+    "p.mh-screening-note: No screening questions apply at your age and sex yet.",
   ],
   [
     "bloodTests: Blood tests",
@@ -1901,6 +1910,7 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
     "screening: Cancer screening",
     "card mh-card-10: screening-lung-overdue",
     "card mh-card-11: screening-breast-due",
+    "p.mh-screening-note: No screening questions apply at your age and sex yet.",
   ],
   [
     "bloodTests: Blood tests",
@@ -1943,6 +1953,7 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
   [
     "screening: Cancer screening",
     "card mh-card-6: screening-breast-due",
+    "p.mh-screening-note: No screening questions apply at your age and sex yet.",
   ],
   [
     "bloodTests: Blood tests",
@@ -2107,6 +2118,8 @@ rows: Blood Pressure Add | Creatinine Add",
   "cholesterol: Cholesterol
 rows: ApoB Add | LDL Cholesterol Add | Total Cholesterol Add | HDL Cholesterol Add | Triglycerides Add | Lp(a) Add
 card mh-card-12: apob-high",
+  "screening: Cancer screening
+p.mh-screening-note: No screening questions apply at your age and sex yet.",
   "skin: Skin
 card mh-card-13: skin-sunscreen
 card mh-card-14: skin-sunscreen",
@@ -2407,7 +2420,8 @@ rows: ApoBOptimal <50 · Jan 2026100 (110)100, high, previous 110mg/dL | LDL Cho
 card mh-card-7: med-statin-dose",
   "screening: Cancer screening
 card mh-card-8: screening-lung-overdue
-card mh-card-9: screening-cervical-due",
+card mh-card-9: screening-cervical-due
+p.mh-screening-note: No screening questions apply at your age and sex yet.",
   "skin: Skin
 card mh-card-10: skin-sunscreen",
   "bloodTests: Blood tests
@@ -7295,6 +7309,8 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
               <h4 class="suggestion-title">
                 "screening-lung-overdue"
               <p class="suggestion-desc">
+        <p class="mh-screening-note">
+          "No screening questions apply at your age and sex yet."
       <section class="mh-topic" data-topic="bloodTests" aria-labelledby="mh-topic-bloodTests">
         <div class="md-section-head mh-topic-head">
           <h3 class="health-section-title md-section-title" id="mh-topic-bloodTests" tabindex="-1">
@@ -7462,6 +7478,10 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
             <span class="mh-nav-dot">
               <span class="hr-sr-only">
                 ", needs attention"
+        <li>
+          <a href="#mh-topic-screening" class="mh-nav-link">
+            <span class="mh-nav-title">
+              "Cancer screening"
         <li>
           <a href="#mh-topic-skin" class="mh-nav-link">
             <span class="mh-nav-title">
@@ -7702,6 +7722,18 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
               <h4 class="suggestion-title">
                 "hdl-low"
               <p class="suggestion-desc">
+      <section class="mh-topic" data-topic="screening" aria-labelledby="mh-topic-screening">
+        <div class="md-section-head mh-topic-head">
+          <h3 class="health-section-title md-section-title" id="mh-topic-screening" tabindex="-1">
+            <span class="section-icon" data-icon="stethoscope" aria-hidden="true" style="color: rgb(88, 86, 214);">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true" focusable="false">
+                <g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M5 3v5a4 4 0 0 0 8 0V3">
+                  <path d="M9 12v2.5a5 5 0 0 0 10 0V12">
+                  <circle cx="19" cy="10" r="2">
+            "Cancer screening"
+        <p class="mh-screening-note">
+          "No screening questions apply at your age and sex yet."
       <section class="mh-topic" data-topic="skin" aria-labelledby="mh-topic-skin">
         <div class="md-section-head mh-topic-head">
           <h3 class="health-section-title md-section-title" id="mh-topic-skin" tabindex="-1">
@@ -11032,6 +11064,8 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
               <h4 class="suggestion-title">
                 "screening-breast-due"
               <p class="suggestion-desc">
+        <p class="mh-screening-note">
+          "No screening questions apply at your age and sex yet."
       <section class="mh-topic" data-topic="bloodTests" aria-labelledby="mh-topic-bloodTests">
         <div class="md-section-head mh-topic-head">
           <h3 class="health-section-title md-section-title" id="mh-topic-bloodTests" tabindex="-1">

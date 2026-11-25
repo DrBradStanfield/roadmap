@@ -4,12 +4,10 @@
  * transcribed when planTopics was written) against planTopics after the owner's rulings (2026-11-25).
  * The oracle runs the web's own selector (`topicSections` on the web's forms, split as usePlanView
  * splits it), never planTopics. Each remaining difference is named and expected; any other difference
- * fails. Then examples of each ruling. Since US-62 AC40 the web draws planTopics, and keeps today's
- * screen at each difference behind a constant in widget-src/src/components/MyHealth.tsx, pinned by
- * MyHealth.topics-pins.test.tsx: D3 (a topic with only the note) `WEB_DRAWS_NOTE_ONLY_SCREENING_TOPIC`,
- * D9 `WEB_DRAWS_WAITING_OTHER`. Each is false until the owner rules; turning one true makes that
- * difference visible. D3 (the note as questions under cards) needs no constant: the web has no note
- * words yet, and where the screening form is empty its renderers draw nothing.
+ * fails. Then examples of each ruling. Since US-62 AC40 the web draws planTopics (pinned by
+ * MyHealth.topics-pins.test.tsx). The owner ruled on the differences on 2026-11-26 (US-62 AC41): the
+ * web now draws D3, Cancer screening with the shared note (screening-note.ts), alone or under its
+ * cards; D9 stays: before the form is full the web shows no card (US-07 AC3).
  */
 import { describe, expect, it } from 'vitest';
 import { BLOOD_TEST_METRICS, METRIC_TO_FIELD } from './mappings';
@@ -85,7 +83,7 @@ const asWeb = (w: World): World => ({ ...w, facts: { ...w.facts, deviceHealth: f
 
 /** D3: where the web draws no screening form, the rule draws the note as Cancer screening's questions:
  *  on the web's topic when a card draws it (where the web's renderers draw nothing), else on a
- *  topic of its own with nothing else (held back by `WEB_DRAWS_NOTE_ONLY_SCREENING_TOPIC`). */
+ *  topic of its own with nothing else (drawn on the web since US-62 AC41). */
 const D3 = (web: Drawn | undefined): Drawn => ({ ...(web ?? { topic: 'screening', rows: [], urgent: [], cards: [], medicines: [], screenings: [] }), questions: 'cancer-screening' });
 
 describe("the web's screen against planTopics: the expected differences (US-62 AC39)", () => {
@@ -96,7 +94,7 @@ describe("the web's screen against planTopics: the expected differences (US-62 A
       const w = asWeb(genWorld(seed));
       const layout = layoutOf(w);
       if (!w.facts.formFull) {
-        // D9: the web draws nothing here (MyHealth's `WEB_DRAWS_WAITING_OTHER`); the rule's Other holds every suggestion.
+        // D9: the web draws nothing here (kept, Brad 2026-11-26); the rule's Other holds every suggestion.
         expect(layout.kind, `seed ${seed}`).toBe('waiting');
         if (layout.kind === 'waiting') expect([...layout.urgent, ...layout.other].flatMap((c) => c.suggestions.map((x) => x.id)).sort(), `seed ${seed}`).toEqual(w.suggestions.map((x) => x.id).sort());
         waiting++;
