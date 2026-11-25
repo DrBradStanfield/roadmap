@@ -3,6 +3,7 @@
 // app/lib/chat-persist-pins.test.ts. The web writes the conversation and the
 // question before the model call and fails the turn when either fails; it writes
 // the answer, the event and the timestamp after, fire-and-forget.
+// US-15 AC73 (lead S-1): its event row is the one matchEventRow builds.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 type Write =
@@ -33,11 +34,17 @@ vi.mock('../lib/chat.server', async (original) => (await import('../lib/chat-ser
 vi.mock('../lib/chat-router.server', async (original) => ({
   ...await original<typeof import('../lib/chat-router.server')>(), routeQuery: vi.fn(), reportRouterFailure: vi.fn(),
 }));
+// The real builder, watched, so a web turn that builds its own event row fails AC73's tests.
+vi.mock('../lib/chat-persist.server', async (original) => {
+  const real = await original<typeof import('../lib/chat-persist.server')>();
+  return { ...real, matchEventRow: vi.fn(real.matchEventRow) };
+});
 vi.mock('../lib/chat-classifier.server', () => ({
   classifyMessage: async () => ({ routerSkipped: true, classification: 'SKIP', latencyMs: 0 }), shouldFireRouter: () => false,
 }));
 
 import { action } from './api.chat';
+import { matchEventRow } from '../lib/chat-persist.server';
 
 const id = '12345678-1234-4234-8234-123456789abc';
 const guest = '87654321-4321-4321-8321-cba987654321';
@@ -141,5 +148,16 @@ describe('US-15 AC70: every write a web chat turn makes', () => {
     mocks.fail = new Set(['chat_match_events']);
     expect((await post({ message: 'hello' })).status).toBe(200);
     expect(sorted(mocks.writes)).toEqual(sorted([conv, user, asst(), event(), touch]));
+  });
+
+  it('AC73: the stored event row is the one matchEventRow built; the widget redacts that same row', async () => {
+    await post({ message: 'hello' });
+    expect(matchEventRow).toHaveBeenCalledTimes(1);
+    const written = mocks.writes.find((w) => w.op === 'insert' && w.table === 'chat_match_events') as { row: unknown };
+    expect(written.row).toBe(vi.mocked(matchEventRow).mock.results[0].value);
+    vi.mocked(matchEventRow).mockClear();
+    await post({ message: 'hello', localFirst: true });
+    expect(matchEventRow).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(matchEventRow).mock.calls[0][0]).toMatchObject({ platform: 'shopify', messageId: null, question: 'hello' });
   });
 });

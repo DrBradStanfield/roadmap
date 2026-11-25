@@ -30,6 +30,45 @@ export function matchEventText(s: string): string {
   return cutText(sanitizeForRouter(s), 500);
 }
 
+// One chat_match_events row, the shape every surface writes (US-15 AC73, lead
+// S-1). `context` holds the surface's own router_context fields, placed after
+// `platform`; `replaced` and `reduced` (US-50 AC14) follow when non-empty.
+// matched_handles are the router's picks, [] when the router did not run.
+export function matchEventRow<C extends Record<string, unknown>>(e: {
+  messageId: string | null;
+  conversationId: string | null;
+  userId: string;
+  question: string;
+  platform: string;
+  context: C;
+  replaced?: string[];
+  reduced?: string[];
+  routerResult: RouterResult | null | undefined;
+  classification: string;
+  routerSkipped: boolean;
+  isFallback: boolean;
+  failureMode?: string | null;
+}) {
+  return {
+    message_id: e.messageId,
+    conversation_id: e.conversationId,
+    user_id: e.userId,
+    message: matchEventText(e.question),
+    router_context: {
+      platform: e.platform,
+      ...e.context,
+      ...(e.replaced?.length ? { replaced: e.replaced } : {}),
+      ...(e.reduced?.length ? { reduced: e.reduced } : {}),
+    },
+    matched_handles: e.routerResult?.handles ?? [],
+    ...routerColumns(e.routerResult),
+    classification: e.classification,
+    router_skipped: e.routerSkipped,
+    is_fallback: e.isFallback,
+    failure_mode: e.failureMode ?? null,
+  };
+}
+
 // The answer columns of an assistant chat_messages row, on success and on a
 // failed turn alike (US-15 AC52). failure_mode and error_detail carry the cause
 // of a fallback or refusal so the daily audit is self-diagnosing; both null on
