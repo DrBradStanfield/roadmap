@@ -7,6 +7,7 @@
  */
 import React, { useState, useEffect, useRef, useCallback, useReducer } from 'react';
 import { getChatGate } from '../lib/chat-api';
+import { trackProductEvent } from '../lib/server-api';
 import { observeVisibility } from '../lib/observe-visibility';
 import { useChatState, type ChatContextSource, type ChatEditTarget } from '../hooks/useChatState';
 import { useFollowLatest } from '../hooks/useFollowLatest';
@@ -16,6 +17,7 @@ import { ChatThreadList } from './ChatThreadList';
 import { MUTED_CHAT } from './chat-muted';
 import { ColumnHeader } from './ColumnHeader';
 import { ChatHeaderTitle } from './ChatHeaderTitle';
+import { chatCopy } from './chat-copy';
 
 interface ChatEmbedProps {
   isLoggedIn: boolean;
@@ -30,6 +32,7 @@ export function ChatEmbed({ isLoggedIn, guestInputs, muted, onProposeEdit, cardR
   // BYOK gate (standalone build only — null on the Shopify widget).
   const [, refreshGate] = useReducer((x: number) => x + 1, 0);
   const gate = getChatGate();
+  const copy = chatCopy();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
   const chat = useChatState({
@@ -44,12 +47,15 @@ export function ChatEmbed({ isLoggedIn, guestInputs, muted, onProposeEdit, cardR
   // Lazy-load conversations: fire only when this panel enters the viewport
   // (loadConversationsIfNeeded is idempotent, so repeat enters are no-ops).
   // Since the embed is placed below the health widget, the widget's API calls
-  // win network priority naturally.
+  // win network priority naturally. A panel shown is counted under its own
+  // name, apart from the pop-up's chat_opened (US-15 AC77; once per tab session).
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
     return observeVisibility(root, visible => {
-      if (visible) actions.loadConversationsIfNeeded();
+      if (!visible) return;
+      trackProductEvent('chat_panel_shown');
+      actions.loadConversationsIfNeeded();
     }, { threshold: 0.1 });
   }, [actions.loadConversationsIfNeeded]);
 
@@ -79,8 +85,8 @@ export function ChatEmbed({ isLoggedIn, guestInputs, muted, onProposeEdit, cardR
 
   return (
     <div className="chat-embed-root no-print" data-clarity-mask="true" ref={rootRef}>
-      <ColumnHeader title="Ask about your plan" muted={muted} />
-      <div ref={cardRef} className="chat-embed" role="region" aria-label="Health by Dr Brad Chat">
+      <ColumnHeader title={copy.heading} muted={muted} />
+      <div ref={cardRef} className="chat-embed" role="region" aria-label={copy.label}>
 
       {drawerOpen && (
         <div className="chat-embed-drawer-overlay" onClick={() => setDrawerOpen(false)} />
@@ -106,7 +112,7 @@ export function ChatEmbed({ isLoggedIn, guestInputs, muted, onProposeEdit, cardR
             </svg>
             History
           </button>
-          <ChatHeaderTitle subtitle={muted ? MUTED_CHAT.subtitle : "Answers cite your plan & the guidelines above"} />
+          <ChatHeaderTitle title={copy.title} subtitle={muted ? MUTED_CHAT.subtitle : copy.subtitle} />
         </div>
 
         {gate?.needsKey ? (
@@ -116,7 +122,7 @@ export function ChatEmbed({ isLoggedIn, guestInputs, muted, onProposeEdit, cardR
         <ChatMessageList
           chat={chat}
           className="chat-messages chat-embed-messages"
-          emptyText={muted ? MUTED_CHAT.empty : "Ask about your personalized suggestions based on your health data, clinical research, and the preventative care algorithm."}
+          emptyText={muted ? MUTED_CHAT.empty : copy.empty}
           onNew={handleStartNewChat}
           follow={follow}
         />

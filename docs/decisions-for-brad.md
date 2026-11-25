@@ -79,17 +79,6 @@ issue, and nothing private.
 
 ### Product and code decisions (raised 2026-11-25)
 
-- **Chat wording and counting differ between the chat panel and the pop-up.** Issue: PR 2093 (on main) found that
-  the pop-up chat picks doctor or brand wording by store, but the panel beside the tool always uses the doctor
-  wording ("Health by Dr Brad Chat"). Also, "chat opened" is counted for the pop-up only, so the count misses the
-  panel, the phone's Chat tab and the storefront embed. Options: give the panel the pop-up's wording rule, or keep
-  it; count a panel shown, or keep counting the pop-up only. Recommendation: the same wording rule for both, so one
-  store reads one way; count a panel shown under its own event name, so the pop-up's trend stays comparable.
-- **The storefront chat embed's one event.** Issue: PR 2079 (held) turns on product events for the chat embed
-  block on the storefronts. Its only event is "thinking opened", sent when someone opens a reply's reasoning. Today
-  the embed sends nothing; an older test comment called counting it an open product decision. Options: merge, so the
-  embed's use is counted like the tool's; close, and the embed stays uncounted. Recommendation: merge: it runs only
-  on your stores, and the event carries its name alone.
 - **Message packs that nothing reads.** Issue: a paid order still adds chat message credits to an account, but
   nothing reads those credits any more. Options: remove the step and its order webhook (a deploy of the app's
   settings); keep it. Recommendation: remove it, once you confirm no message pack is still on sale.
@@ -148,6 +137,9 @@ issue, and nothing private.
 ## Decided
 
 2026-11-26, Brad's words in quotes:
+- The storefront chat embed's events: merged (PR 2079), as recommended, so the embed's use is counted like the
+  tool's. It sends "thinking opened", and since US-15 AC77 also `chat_panel_shown` when the panel comes into view;
+  both carry their names alone.
 - Screen-reader names for the medicine dose boxes end in a lower-case "dose", as the supplement rows do (PR 1796),
   so the whole form uses one casing: "this" (option 2). PR 1888 now names them "Statin dose", "GLP-1 Medication
   dose" and "SGLT2 Inhibitor dose", through labelled-by references (US-09 AC7l). "Email for your PDF" is approved for PR 1800.
@@ -189,6 +181,9 @@ issue, and nothing private.
   below); before the form is complete the web still shows no card. The note's words, one shared copy: "Screening questions appear once your sex,
   birth year and height are in About you.", "Some screening questions depend on your sex. Add it in About you.", "No
   screening questions apply at your age and sex yet." (US-62 AC41).
+- Chat wording and counting differ between the chat panel and the pop-up: the recommendation. The panel takes the
+  pop-up's words by the same rule, from one table; a panel shown is counted as `chat_panel_shown`, and the pop-up's
+  `chat_opened` is unchanged. No new sentences (US-15 AC77).
 
 2026-11-23, Brad's words in quotes:
 - Original files are stored in the background after Save, with no action from the person at Save and at every
