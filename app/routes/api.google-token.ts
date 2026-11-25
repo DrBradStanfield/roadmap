@@ -1,7 +1,8 @@
 import { type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
 import * as z from '../../packages/health-core/src/zod';
 import { createRateLimiter } from '../lib/rate-limiter';
-import { ALLOWED_ORIGINS, BODY_TOO_LARGE, corsHeaders, getClientIp, parseSimpleRequestJson } from '../lib/local-first-route.server';
+import { ALLOWED_ORIGINS, BODY_TOO_LARGE, corsHeaders, parseSimpleRequestJson } from '../lib/local-first-route.server';
+import { clientKey, type IpKey } from '../lib/ip-key.server';
 
 /**
  * Stateless Google OAuth token exchange for the local-first Drive backend
@@ -27,7 +28,7 @@ const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 export const GOOGLE_TIMEOUT_MS = 10_000;
 
 // Generous: a real user exchanges ~once an hour; connects are rare.
-const allowRequest = createRateLimiter(30, 60_000, 10 * 60_000, { name: 'google token per IP' });
+const allowRequest = createRateLimiter<IpKey>(30, 60_000, 10 * 60_000, { name: 'google token per IP' });
 
 const bodySchema = z.union([
   z.object({
@@ -73,7 +74,7 @@ export async function action({ request }: ActionFunctionArgs) {
     return Response.json({ error: 'Origin not allowed' }, { status: 403, headers });
   }
 
-  if (!allowRequest(getClientIp(request, 'fly'))) {
+  if (!allowRequest(clientKey(request, 'fly'))) {
     return Response.json({ error: 'Too many requests' }, { status: 429, headers });
   }
 

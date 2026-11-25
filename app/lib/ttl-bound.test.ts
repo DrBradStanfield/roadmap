@@ -154,7 +154,7 @@ describe('US-52 AC4f: one policy, and a named list of unbounded maps', () => {
     const sites: string[] = [];
     for (const file of prod) {
       const text = readFileSync(file, 'utf8');
-      for (const call of text.matchAll(/(?<!function )create(RateLimiter|QuotaCounter)\(/g)) {
+      for (const call of text.matchAll(/(?<!function )create(RateLimiter|QuotaCounter)(?:<\w+>)?\(/g)) {
         // The call through its options object, which closes with `})`.
         const site = text.slice(call.index, text.indexOf('})', call.index) + 2);
         const name = /name: '([^']+)'/.exec(site)?.[1] ?? `UNNAMED in ${file}`;
