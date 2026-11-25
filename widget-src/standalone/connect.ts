@@ -13,7 +13,6 @@ import {
   LocalStorageAdapter,
   markSyncPending,
   signalLogOff,
-  StorageError,
   type GitHubAdapter,
   type StorageAdapter,
   type WebDavAdapter,
@@ -22,6 +21,7 @@ import { beginRoadmapLogOff } from '../src/storage/roadmap-store';
 import { currentSignIn, lostSignIn, type LostSignIn, type SignIn } from '../src/storage/sign-in-state';
 import { BACKEND_KEY, webRecordHost } from '../src/storage/web-record-host';
 import { clearAutoEnrolBlock } from './reminders';
+import { signInRefused } from './switch-stop';
 import { PROVIDERS, SIGN_IN_KEYS, providerOf, type CloudBackend } from './providers';
 import { clearLocalStorage, clearOffFileHealthData, healthWritesAllowed, safeGetItem, safeRemoveItem, setSignIn, type LogOffId } from '../src/lib/storage';
 import { CLEARED_ERASE_KEY } from '../src/lib/cleared-erase';
@@ -58,8 +58,7 @@ export function signInAtBoot({ backend, reconnect }: ResolvedBackend): SignIn {
  *  typed reason (`auth`, a refused token; `reconnect`, a sign-in only a new one mends; US-10 AC18). Any
  *  other failure, and every GitHub and WebDAV one, is retried by a reload (AC13). */
 function lostAtLoad(provider: CloudBackend, error?: unknown): LostSignIn {
-  const refused = error instanceof StorageError && (error.reason === 'auth' || error.reason === 'reconnect');
-  if (provider === 'google-drive' || (provider === 'dropbox' && refused)) return { kind: 'signedOut', provider };
+  if (provider === 'google-drive' || (provider === 'dropbox' && signInRefused(error))) return { kind: 'signedOut', provider };
   return { kind: 'unreachable', provider };
 }
 
