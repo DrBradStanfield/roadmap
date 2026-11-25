@@ -11,7 +11,7 @@ import { bloodTestRows, createCoreRow } from '@roadmap/health-core/blood-tests';
 import { createEmptyFile, type RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { planBloodTestMove } from '@roadmap/health-core/record-edits';
 import type { ApiMeasurement } from '@roadmap/health-core/mappings';
-import { BatchDateCell, BloodTestTimeline } from './BloodTestTimeline';
+import { BatchDateCell, BloodTestTimeline, SAVE_ERRORS } from './BloodTestTimeline';
 import { AdditionalLabRows } from './AdditionalLabRows';
 import { MOVE_CHANGED, MOVE_LPA, MOVE_TYPED, useMoveTest } from './MoveTestPanel';
 import type { ApiLabValue } from '../lib/api-types';
@@ -190,6 +190,27 @@ describe('US-04 AC5: the panel', () => {
     fireEvent.click(moveButton());
     await wait(0);
     expect(panel()!.textContent).toContain('That day has not happened yet.');
+  });
+
+  // US-04 AC5c (lead H400): a move whose save throws ends as a failed save, never stuck saving.
+  it('a move that throws gives Move and Cancel back, says the error words, and lets no rejection escape', async () => {
+    const escaped = vi.fn();
+    process.on('unhandledRejection', escaped);
+    try {
+      const { pick, moveButton, panel, onMove } = matrix(vi.fn().mockRejectedValue(new Error('store threw')));
+      pick(FROM, TO);
+      fireEvent.click(moveButton());
+      await wait(0);
+      expect(onMove).toHaveBeenCalledTimes(1);
+      expect(moveButton().disabled).toBe(false);
+      expect(within(panel()!).getByRole('button', { name: 'Cancel' }).hasAttribute('disabled')).toBe(false);
+      expect(panel()!.querySelector('.alr-add-notice')?.textContent).toBe(SAVE_ERRORS.error);
+      vi.useRealTimers(); // node reports an unhandled rejection a macrotask later
+      await act(async () => { await new Promise((resolve) => setTimeout(resolve, 10)); });
+      expect(escaped).not.toHaveBeenCalled();
+    } finally {
+      process.off('unhandledRejection', escaped);
+    }
   });
 
   it('a day holding two values for one test is refused before Move is offered', () => {
