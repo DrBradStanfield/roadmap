@@ -119,14 +119,21 @@ export function retryOwed(s: SaveState): boolean {
   return s.mode === 'failed' && s.cause === 'other';
 }
 
-/** Why a pass failed, from its error's typed reason alone: 'auth' for a refused
- *  grant (`auth`, a provider's 401, or a revoked grant the adapter names
- *  `reconnect`), 'other' for anything else. A 403 (`forbidden`, `rate-limited`)
- *  is 'other': a rate or daily limit passes, so it is retried, a true refusal
- *  included (owner, 2026-11-13). Never the status or the message. */
+/** Why a pass failed, from its error's typed reason and outcome alone: 'auth'
+ *  for a refused grant (`reconnect`, a revoked grant the adapter names; `auth`,
+ *  a provider's 401), 'other' for anything else. An `auth` whose outcome is
+ *  `may-have-landed` is 'other': any 401 met after a write, on any provider,
+ *  comes so (SyncManager's rewrap; Drive's update PATCH too). No fresh token
+ *  was tried, so one retry is owed. An adapter that drops a refused token
+ *  (Drive and Dropbox on the web) asks for a fresh one first, and a grant the
+ *  refresh refuses is `reconnect`; one that does not refresh meets a refusal
+ *  at the retry's first read. Either way the retries end (US-10 AC19). A 403 (`forbidden`,
+ *  `rate-limited`) is 'other': a rate or daily limit passes, so it is retried,
+ *  a true refusal included (owner, 2026-11-13). Never the status or the message. */
 export function saveFailureCause(error: unknown): SaveCause {
   if (!(error instanceof StorageError)) return 'other';
-  return error.reason === 'auth' || error.reason === 'reconnect' ? 'auth' : 'other';
+  if (error.reason === 'reconnect') return 'auth';
+  return error.reason === 'auth' && error.outcome !== 'may-have-landed' ? 'auth' : 'other';
 }
 
 /** not-saved-on-device: not saved, and the device copy holds the changes. */
