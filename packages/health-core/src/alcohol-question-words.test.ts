@@ -28,10 +28,12 @@ describe('US-60 AC3, AC4: the alcohol question\'s words', () => {
     }
   });
 
-  it("the iPhone app's Swift copy holds the same titles and drinker line (lead M10b: until it reads this one)", () => {
-    const swift = readFileSync(new URL('../../../ios/HealthRoadmap/Plan/PlanCardView.swift', import.meta.url), 'utf8');
-    for (const words of [alcoholQuestionTitle(false), alcoholQuestionTitle(true), alcoholQuestionMessage(true, { inCloud: true })]) {
-      expect(swift).toContain(`"${words}"`);
-    }
+  it("the iPhone app's Swift code holds the same titles, drinker line and still-drinks line (lead M10b: until it reads this one)", () => {
+    // Code only: a doc comment quoting the words must not satisfy the pin.
+    const swift = readFileSync(new URL('../../../ios/HealthRoadmap/Plan/PlanCardView.swift', import.meta.url), 'utf8')
+      .split('\n').filter((line) => !line.trim().startsWith('//')).join('\n');
+    expect(swift).toContain(`var title: String { drinks ? "${alcoholQuestionTitle(true)}" : "${alcoholQuestionTitle(false)}" }`);
+    expect(swift).toContain(`drinks ? "${alcoholQuestionMessage(true, { inCloud: true })}"`);
+    expect(swift).toContain(`static let stillDrinks = "${stillDrinkLine(true)}"`);
   });
 });
