@@ -76,7 +76,7 @@ describe('US-21: the lab rows', () => {
     act(() => { read = view.result.current.refreshLabValues(); });
     await act(async () => { data.labReads[0].resolve([egfrRow(40)]); await read; });
     expect(mirror.saved).toHaveLength(1);
-    const [inputs, , , kept, , labEgfr, psa] = mirror.saved[0];
+    const [inputs, , , kept, labEgfr, psa] = mirror.saved[0];
     expect([inputs, kept]).toEqual([{ birthYear: 1962 }, screenings]); // the mirror's own profile and lists
     expect(labEgfr).toMatchObject({ labEgfr: 40 });
     expect(psa).toMatchObject({ id: 'vague', raisedBefore: true });
@@ -104,8 +104,8 @@ describe('US-15 AC10: reloadValues', () => {
     expect(mirror.saved).toHaveLength(1);
     expect(mirror.saved[0].slice(0, 4)).toEqual([latest.inputs, latest.previousMeasurements, [], []]);
     // The lab eGFR and the newest usable PSA ride in the mirror too (US-07 AC7).
-    expect(mirror.saved[0][5]).toMatchObject({ labEgfr: 40 });
-    expect(mirror.saved[0][6]).toMatchObject({ id: 'p1', value: 1.2 });
+    expect(mirror.saved[0][4]).toMatchObject({ labEgfr: 40 });
+    expect(mirror.saved[0][5]).toMatchObject({ id: 'p1', value: 1.2 });
     expect(setters.setHistory).toHaveBeenCalledWith(data.history);
     expect(setters.setLabValueHistory).toHaveBeenCalledWith([egfrRow(40)]);
   });

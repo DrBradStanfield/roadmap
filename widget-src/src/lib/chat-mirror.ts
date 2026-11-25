@@ -41,16 +41,20 @@ export function mirrorOf(saved: MirrorSources, now: Date) {
  *  it stands now: the profile and the lists from the mirror (the page's saved
  *  ones, which a held change does not reach, US-34 AC9, AC10), the measurements
  *  and lab rows from the store (none before it opens). Every derived field is
- *  worked out again. */
+ *  worked out again. It never throws: the save that writes it still settles. */
 export function writeMirror(saved: Partial<MirrorSources>): void {
-  const cached = loadFromLocalStorage();
-  const m = mirrorOf({
-    profile: saved.profile ?? cached?.inputs ?? {},
-    medications: saved.medications ?? cached?.medications ?? [],
-    screenings: saved.screenings ?? cached?.screenings ?? [],
-    latest: saved.latest ?? loadLatestMeasurementsSync()?.previousMeasurements ?? [],
-    labRows: saved.labRows ?? loadLabValuesSync() ?? [],
-    history: saved.history ?? loadAllHistorySync(),
-  }, new Date());
-  saveToLocalStorage(m.inputs, m.previousMeasurements, m.medications, m.screenings, undefined, m.labEgfr, m.psa);
+  try {
+    const cached = loadFromLocalStorage();
+    const m = mirrorOf({
+      profile: saved.profile ?? cached?.inputs ?? {},
+      medications: saved.medications ?? cached?.medications ?? [],
+      screenings: saved.screenings ?? cached?.screenings ?? [],
+      latest: saved.latest ?? loadLatestMeasurementsSync()?.previousMeasurements ?? [],
+      labRows: saved.labRows ?? loadLabValuesSync() ?? [],
+      history: saved.history ?? loadAllHistorySync(),
+    }, new Date());
+    saveToLocalStorage(m.inputs, m.previousMeasurements, m.medications, m.screenings, m.labEgfr, m.psa);
+  } catch (error) {
+    console.warn('Failed to write the chat mirror:', error);
+  }
 }

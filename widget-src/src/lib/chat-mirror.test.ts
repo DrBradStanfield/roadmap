@@ -16,7 +16,7 @@ vi.mock('./roadmap-data', () => ({
 }));
 
 import { mirrorOf, NO_RECORD, writeMirror, type MirrorSources } from './chat-mirror';
-import { loadFromLocalStorage, saveToLocalStorage } from './storage';
+import { loadFromLocalStorage, MIRROR_KEY, saveToLocalStorage } from './storage';
 
 const NOW = new Date('2026-11-12T12:00:00Z');
 const psa = (id: string, value: number, day: string, comparator?: '<'): ApiMeasurement =>
@@ -69,8 +69,14 @@ describe('writeMirror: what a writer leaves out (US-34 AC11)', () => {
     expect(m.labEgfr).toMatchObject({ labEgfr: 55 });
   });
 
+  it('a malformed stored mirror (screenings [null]) never makes a write throw: the save that writes it goes on (US-34 AC11)', () => {
+    localStorage.setItem(MIRROR_KEY, JSON.stringify({ inputs: { sex: 'male' }, medications: [], screenings: [null] }));
+    expect(() => writeMirror({ profile: { sex: 'female' } })).not.toThrow();
+    expect(() => writeMirror({ medications: [] })).not.toThrow();
+  });
+
   it('NO_RECORD empties every field, whatever the store holds', () => {
-    saveToLocalStorage({ sex: 'male' }, [VAGUE], [], RAISED_ANSWERS, undefined, null, { ...VAGUE, raisedBefore: true });
+    saveToLocalStorage({ sex: 'male' }, [VAGUE], [], RAISED_ANSWERS, null, { ...VAGUE, raisedBefore: true });
     store.history = [VAGUE];
     store.labRows = [egfr(55, '2026-11-01')];
     writeMirror(NO_RECORD);

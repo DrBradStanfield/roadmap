@@ -30,7 +30,7 @@ vi.mock('../lib/roadmap-data', () => {
 });
 
 import { useListSaves } from './useListSaves';
-import { loadFromLocalStorage, saveToLocalStorage } from '../lib/storage';
+import { loadFromLocalStorage, MIRROR_KEY, saveToLocalStorage } from '../lib/storage';
 
 const NOW = new Date('2026-11-12T12:00:00Z');
 function setup() {
@@ -43,7 +43,7 @@ beforeEach(() => {
   vi.setSystemTime(NOW);
   store.screenings = [answer('prostate_psa_value', '6.5')];
   // The mirror as a read wrote it: the page's saved profile, no PSA answers yet, so no flag.
-  saveToLocalStorage({ sex: 'male', birthYear: 1962 }, [VAGUE], [], [], undefined, null, VAGUE);
+  saveToLocalStorage({ sex: 'male', birthYear: 1962 }, [VAGUE], [], [], null, VAGUE);
 });
 afterEach(() => { vi.useRealTimers(); localStorage.clear(); });
 
@@ -57,5 +57,20 @@ describe('US-34 AC11 (H406): a screening save that lands refreshes the mirror\'s
     expect(m.screenings.map((s) => s.screeningKey)).toEqual(['prostate_psa_value', 'prostate_last_date']);
     expect(m.psa).toMatchObject({ id: 'vague', raisedBefore: true }); // was the flag of the read before (H406)
     expect(m.inputs).toEqual({ sex: 'male', birthYear: 1962 }); // not the store's 1963 (US-34 AC9)
+  });
+
+  it('a malformed stored mirror (screenings [null]): the landed save\'s write does not throw, so nothing rejects unhandled', async () => {
+    localStorage.setItem(MIRROR_KEY, JSON.stringify({ inputs: { sex: 'male' }, medications: [], screenings: [null] }));
+    const rejected = vi.fn();
+    window.addEventListener('unhandledrejection', rejected);
+    try {
+      const view = setup();
+      act(() => view.result.current.handleScreeningChange('prostate_last_date', '2026-03'));
+      await act(async () => { await vi.advanceTimersByTimeAsync(300); });
+      await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+      expect(rejected).not.toHaveBeenCalled();
+    } finally {
+      window.removeEventListener('unhandledrejection', rejected);
+    }
   });
 });

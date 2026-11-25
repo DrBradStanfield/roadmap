@@ -7,7 +7,6 @@ import { sanitizeInputs } from '@roadmap/health-core/validation';
 import { dayOf, localDay } from '@roadmap/health-core/merge';
 import { isComparator } from '@roadmap/health-core/lab-limits';
 import { isClinicalDay } from '@roadmap/health-core/measurement-history';
-import type { ApiReminderPreference } from './api-types';
 import { randomId } from './random-id';
 
 /** The mirror: HealthTool's copy of the saved record, which the chatbot embed
@@ -135,7 +134,6 @@ interface StoredData {
   previousMeasurements?: ApiMeasurement[];
   medications?: ApiMedication[];
   screenings?: ApiScreening[];
-  reminderPreferences?: ApiReminderPreference[];
   /** The saved lab eGFR candidate (US-07 AC7): the other chats hold no lab rows. */
   labEgfr?: LabEgfr | null;
   /** The newest usable saved PSA (US-06 AC14): the newest row per metric may be one the plan cannot use.
@@ -149,7 +147,6 @@ export interface LoadedData {
   previousMeasurements: ApiMeasurement[];
   medications: ApiMedication[];
   screenings: ApiScreening[];
-  reminderPreferences: ApiReminderPreference[];
   labEgfr: LabEgfr | null;
   psa: MirrorPsa | null;
 }
@@ -161,7 +158,7 @@ type MirrorPsa = ApiMeasurement & { raisedBefore?: true };
  * metric, the medications and screenings on record, and the saved lab eGFR
  * (labEgfrOf over the record's lab rows). Tells the page.
  */
-export function saveToLocalStorage(inputs: Partial<HealthInputs>, previousMeasurements?: ApiMeasurement[], medications?: ApiMedication[], screenings?: ApiScreening[], reminderPreferences?: ApiReminderPreference[], labEgfr?: LabEgfr | null, psa?: MirrorPsa | null): void {
+export function saveToLocalStorage(inputs: Partial<HealthInputs>, previousMeasurements?: ApiMeasurement[], medications?: ApiMedication[], screenings?: ApiScreening[], labEgfr?: LabEgfr | null, psa?: MirrorPsa | null): void {
   // After log-off the mirror stays gone: a cloud tab's later saves end here
   // (writeMirror too) and would put the health copy back (US-09 AC2e).
   if (!healthWritesAllowed()) return;
@@ -171,7 +168,6 @@ export function saveToLocalStorage(inputs: Partial<HealthInputs>, previousMeasur
       previousMeasurements,
       medications,
       screenings,
-      reminderPreferences,
       // A lab eGFR printed as a limit keeps its limit and drops the plan's
       // representative, which an older embed would read as exact (US-12 AC20).
       labEgfr: labEgfr?.labEgfrLimit ? { labEgfrDate: labEgfr.labEgfrDate, labEgfrLimit: labEgfr.labEgfrLimit } : labEgfr,
@@ -224,7 +220,6 @@ export function loadFromLocalStorage(): LoadedData | null {
         .map(m => ({ ...m, value: Number(m.value) })),
       medications: data.medications ?? [],
       screenings: data.screenings ?? [],
-      reminderPreferences: data.reminderPreferences ?? [],
       labEgfr: lab.labEgfrDate === undefined ? null
         : limit ? labEgfrFrom(limit.bound, lab.labEgfrDate, limit.comparator)
         : lab.labEgfr !== undefined ? labEgfrFrom(lab.labEgfr, lab.labEgfrDate) : null,

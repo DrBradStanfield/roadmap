@@ -243,7 +243,7 @@ describe('US-15 AC10: the mirror has one meaning and one signal', () => {
 describe('US-07 AC7: every chat reads the saved lab eGFR the plan reads', () => {
   const LAB = { labEgfr: 40, labEgfrDate: '2026-09-01' };
   /** Ruth-shaped: a misread creatinine (a urine ratio) saved on the lab eGFR's day. */
-  const seedRuth = () => saveToLocalStorage(PROFILE, [...SAVED, row('creatinine', 15)], [], [], undefined, LAB);
+  const seedRuth = () => saveToLocalStorage(PROFILE, [...SAVED, row('creatinine', 15)], [], [], LAB);
   const eGFR = (payload: ChatContextPayload | null) => JSON.parse(buildChatContextJson(payload!)!).derivedValues.eGFR;
 
   it('US-07 AC7: loadGuestInputs reads the lab eGFR on the creatinine\'s day', () => {
@@ -253,7 +253,7 @@ describe('US-07 AC7: every chat reads the saved lab eGFR the plan reads', () => 
   });
 
   it('US-07 AC7: a saved creatinine from a later day outdates the lab eGFR', () => {
-    saveToLocalStorage(PROFILE, [...SAVED, row('creatinine', 80)], [], [], undefined, { labEgfr: 40, labEgfrDate: '2026-07-01' });
+    saveToLocalStorage(PROFILE, [...SAVED, row('creatinine', 80)], [], [], { labEgfr: 40, labEgfrDate: '2026-07-01' });
     expect(loadGuestInputs()).not.toHaveProperty('labEgfr');
     expect(eGFR(loadGuestInputs())).toBeGreaterThan(80);
   });
@@ -271,9 +271,9 @@ describe('US-07 AC7: every chat reads the saved lab eGFR the plan reads', () => 
   it('US-07 AC7: the mirror keeps the lab eGFR, and drops one the schema refuses', () => {
     seedRuth();
     expect(loadFromLocalStorage()?.labEgfr).toEqual(LAB);
-    saveToLocalStorage(PROFILE, SAVED, [], [], undefined, { labEgfr: 5000, labEgfrDate: '2026-09-01' });
+    saveToLocalStorage(PROFILE, SAVED, [], [], { labEgfr:5000, labEgfrDate: '2026-09-01' });
     expect(loadFromLocalStorage()?.labEgfr).toBeNull();
-    saveToLocalStorage(PROFILE, SAVED, [], [], undefined, { labEgfr: 40, labEgfrDate: 'soon' });
+    saveToLocalStorage(PROFILE, SAVED, [], [], { labEgfr:40, labEgfrDate: 'soon' });
     expect(loadFromLocalStorage()?.labEgfr).toBeNull();
   });
 });
