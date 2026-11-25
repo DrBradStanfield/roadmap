@@ -15,7 +15,7 @@
     "packages/health-core/src/merge.ts": 766,
     "widget-src/src/components/HealthTool.tsx": 729,
     "packages/health-core/src/validation.ts": 700,
-    "app/routes/api.chat.ts": 694,
+    "app/routes/api.chat.ts": 693,
     "packages/health-core/src/types.ts": 656,
     "widget-src/src/storage/drive.ts": 631,
     "app/lib/chat.server.ts": 610,
