@@ -18,6 +18,7 @@ import {
   type Grading,
   blockBadNumericKeys,
   numericCellText,
+  lineBreaksAsSpaces,
   hasNumericSyntax,
   mayStillFit,
   readNumericCell,
@@ -31,6 +32,18 @@ import {
 export const ACTIVE_CELL = 'bt-input-active';
 /** The first highlighted cell in `root`: a phone's chat hand-off scrolls to it and focuses it (US-16 AC2). */
 export const activeCellIn = (root: ParentNode | null | undefined) => root?.querySelector<HTMLElement>(`.${ACTIVE_CELL}`) ?? null;
+
+/** Paste and drop write their text in place of the selection, read before a text input removes spreadsheet line
+ *  separators, which become visible spaces, so "1\n2" never joins into 12 (US-02 AC4). Shared by every numeric input. */
+export function insertedText(value: string, onText: (text: string) => void) {
+  const insert = (input: HTMLInputElement, text: string) =>
+    onText(lineBreaksAsSpaces(value.slice(0, input.selectionStart ?? value.length) + text + value.slice(input.selectionEnd ?? value.length)));
+  return {
+    onPaste: (e: React.ClipboardEvent<HTMLInputElement>) => { e.preventDefault(); insert(e.currentTarget, e.clipboardData.getData('text')); },
+    onDragOver: (e: React.DragEvent<HTMLInputElement>) => e.preventDefault(),
+    onDrop: (e: React.DragEvent<HTMLInputElement>) => { e.preventDefault(); insert(e.currentTarget, e.dataTransfer.getData('text')); },
+  };
+}
 
 export interface NumericInputCellProps {
   /** Omit for free-form rows (lab values not in the algorithm). Without a
@@ -101,10 +114,6 @@ export function NumericInputCell({
     : valueSI !== undefined ? savedStatus(metric, valueSI, comparator, grading)
     : comparator ? null : previewStatus(metric, value, display, grading);
   const ungraded = !!metric && valueSI !== undefined && limitUngraded(metric, status, { grading: grading ?? null, plan: null }, { value: valueSI, comparator });
-  const insertText = (input: HTMLInputElement, text: string) => {
-    onChange(numericCellText(value.slice(0, input.selectionStart ?? value.length)
-      + text + value.slice(input.selectionEnd ?? value.length)));
-  };
   const input = (
     <input
       ref={inputRef}
@@ -125,16 +134,7 @@ export function NumericInputCell({
         rangeWait.typed('cell', text, !!checked && mayStillFit(text, checked.range.min, checked.range.max));
         onChange(text);
       }}
-      // Read before a text input removes spreadsheet line separators.
-      onPaste={e => {
-        e.preventDefault();
-        insertText(e.currentTarget, e.clipboardData.getData('text'));
-      }}
-      onDragOver={e => e.preventDefault()}
-      onDrop={e => {
-        e.preventDefault();
-        insertText(e.currentTarget, e.dataTransfer.getData('text'));
-      }}
+      {...insertedText(value, text => onChange(numericCellText(text)))}
       onKeyDown={e => { if (e.key === 'Enter') rangeWait.settle(); onKeyDown(e); }}
       onFocus={onFocus}
       onBlur={e => { rangeWait.settle(); onBlur?.(e); }}

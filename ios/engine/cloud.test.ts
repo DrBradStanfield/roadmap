@@ -1211,11 +1211,11 @@ describe('documents from "Add medical records" (US-52 AC13d)', () => {
     });
   });
 
-  it('in the cloud: an original the provider refuses still files the row, metadata-only with its hash', async () => {
+  it('in the cloud: an original the provider refuses still files the row, metadata-only with its hash, counted unstored (US-14 AC12)', async () => {
     const dropbox = new FakeDropbox();
     dropbox.documentsWork = false;
     const { engine, erase } = await opened(dropbox);
-    expect(JSON.parse(await engine.documentSave('', letter, choice(), bytes('%PDF letter'), erase, NOW, 'ios-1'))).toMatchObject({ ok: true, saved: 1, stored: false, stale: false });
+    expect(JSON.parse(await engine.documentSave('', letter, choice(), bytes('%PDF letter'), erase, NOW, 'ios-1'))).toMatchObject({ ok: true, saved: 1, unstored: 1, stored: false, stale: false });
     await engine.cloudFlush();
     expect(dropbox.record.documents[0]).toMatchObject({ fileRef: '', mimeType: '', contentHash: hashOf('%PDF letter'), extractedText: '# Letter text' });
   });
@@ -1223,7 +1223,7 @@ describe('documents from "Add medical records" (US-52 AC13d)', () => {
   it('in the cloud: an original that changed or could not be read since the review is not uploaded; the row keeps the reviewed hash', async () => {
     const { dropbox, engine, erase } = await opened();
     const answer = JSON.parse(await engine.documentSave('', letter, choice(), null, erase, NOW, 'ios-1')) as Answer;
-    expect(answer).toMatchObject({ ok: true, saved: 1, stored: false, stale: true });
+    expect(answer).toMatchObject({ ok: true, saved: 1, unstored: 1, stored: false, stale: true });
     expect(dropbox.documents.size).toBe(0);
     await engine.cloudFlush();
     expect(dropbox.record.documents[0]).toMatchObject({ fileRef: '', contentHash: hashOf('%PDF letter'), extractedText: '# Letter text' });

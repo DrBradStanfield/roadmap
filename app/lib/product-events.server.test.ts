@@ -33,8 +33,8 @@ describe('parseProductEvent', () => {
   it('accepts every client-emittable event name', () => {
     for (const eventName of PRODUCT_EVENT_NAMES) {
       if (SERVER_ONLY.has(eventName)) continue;
-      // US-62 AC1: these three need their key, tested with it below.
-      if (['tool_opened', 'onboarding_step', 'signin_opened'].includes(eventName)) continue;
+      // US-62 AC1: these three need their key, tested with it below; US-73 AC14's in its own file.
+      if (['tool_opened', 'onboarding_step', 'signin_opened', 'upload_labs_opened'].includes(eventName)) continue;
       // US-61 AC8: the two US product events need their product; US-07 AC11: measurement_added its measure.
       const metadata = eventName.startsWith('us_product_') ? { metadata: { product: 'sleep' } }
         : eventName === 'measurement_added' ? { metadata: { measure: 'waist' } }
@@ -263,11 +263,11 @@ describe('the email-arrival counters', () => {
     }
   });
 
-  it('US-74 AC5: takes waist_widget_viewed and waist_widget_saved from a browser by name alone', () => {
-    for (const eventName of ['waist_widget_viewed', 'waist_widget_saved']) {
+  it('US-74 AC5, US-75: takes the widgets\' viewed and saved events from a browser by name alone', () => {
+    for (const eventName of ['waist_widget_viewed', 'waist_widget_saved', 'bp_widget_viewed', 'bp_widget_saved']) {
       expect(PRODUCT_EVENT_NAMES).toContain(eventName);
       expect(parseProductEvent({ eventName, visitorId: VISITOR })).toEqual({ eventName, visitorId: VISITOR });
-      for (const metadata of [{ measure: 'waist' }, { count: 1 }, { unit: 'cm' }, { value: 88 }]) {
+      for (const metadata of [{ measure: 'waist' }, { count: 1 }, { unit: 'cm' }, { value: 88 }, { stage: 'stage1' }]) {
         expect(parseProductEvent({ eventName, visitorId: VISITOR, metadata })).toBeNull();
       }
     }

@@ -100,7 +100,8 @@ const QUESTION_KEYS = ['first', 'recent'];
  * ends, the rest of the run goes on, and the count is reported (US-15 AC61).
  */
 export async function purgeOldChatText(now: Date = new Date()): Promise<PurgeCounts> {
-  if (!supabaseAdmin) return { matchEvents: 0, messages: 0, conversations: 0, archive: null, didNotBlank: 0 };
+  const admin = supabaseAdmin;
+  if (!admin) return { matchEvents: 0, messages: 0, conversations: 0, archive: null, didNotBlank: 0 };
   const cutoff = new Date(now.getTime() - PURGE_AFTER_DAYS * 86400_000).toISOString();
   // US-15 AC44 ships off: no question text is even selected until Brad switches it on.
   const held: Held | null = process.env.CHAT_QUESTION_ARCHIVE === 'on' ? { questions: [], eligible: 0, ids: new Set() } : null;
@@ -110,7 +111,7 @@ export async function purgeOldChatText(now: Date = new Date()): Promise<PurgeCou
   let counts;
   try {
     counts = {
-      matchEvents: await purgeMatchEvents(cutoff, held, end),
+      matchEvents: await purgeMatchEvents(admin, cutoff, held, end),
       // `!inner` makes the join a filter: a message qualifies only if its own
       // conversation is on a purged platform. Without it PostgREST would return
       // every message and merely null the embed.
@@ -118,7 +119,7 @@ export async function purgeOldChatText(now: Date = new Date()): Promise<PurgeCou
         'chat message',
         (skip) =>
           skipping(
-            supabaseAdmin!
+            admin
               .from('chat_messages')
               .select('id, chat_conversations!inner(platform)')
               .in('chat_conversations.platform', PURGED_PLATFORMS)
@@ -126,7 +127,7 @@ export async function purgeOldChatText(now: Date = new Date()): Promise<PurgeCou
               .not('content', 'is', null),
             skip,
           ).limit(BATCH_SIZE),
-        (rows) => supabaseAdmin!.from('chat_messages').update({ content: null }).in('id', rows.map((r) => r.id)),
+        (rows) => admin.from('chat_messages').update({ content: null }).in('id', rows.map((r) => r.id)),
         end,
       ),
       // The title is the first words of the question, so it is question text.
@@ -136,7 +137,7 @@ export async function purgeOldChatText(now: Date = new Date()): Promise<PurgeCou
         'chat title',
         (skip) =>
           skipping(
-            supabaseAdmin!
+            admin
               .from('chat_conversations')
               .select('id')
               .in('platform', PURGED_PLATFORMS)
@@ -144,7 +145,7 @@ export async function purgeOldChatText(now: Date = new Date()): Promise<PurgeCou
               .not('title', 'is', null),
             skip,
           ).limit(BATCH_SIZE),
-        (rows) => supabaseAdmin!.from('chat_conversations').update({ title: null }).in('id', rows.map((r) => r.id)),
+        (rows) => admin.from('chat_conversations').update({ title: null }).in('id', rows.map((r) => r.id)),
         end,
       ),
     };
@@ -247,11 +248,11 @@ interface MatchEventRow {
  * field goes in the same statement, so a row can never be left half-cleared,
  * which is what makes the HOLDS_TEXT filter complete.
  */
-async function clearMatchEventRows(rows: MatchEventRow[]): Promise<Fallible> {
+async function clearMatchEventRows(admin: NonNullable<typeof supabaseAdmin>, rows: MatchEventRow[]): Promise<Fallible> {
   for (const row of rows) {
     const context = { ...row.router_context };
     for (const key of QUESTION_KEYS) delete context[key];
-    const { error } = await supabaseAdmin!
+    const { error } = await admin
       .from('chat_match_events')
       .update({
         message: null,
@@ -268,12 +269,12 @@ async function clearMatchEventRows(rows: MatchEventRow[]): Promise<Fallible> {
 /** With the archive on, the question and what decides whether it is copied. */
 const HELD_COLUMNS = 'id, router_context, created_at, message, classification, conversation_id';
 
-function purgeMatchEvents(cutoff: string, held: Held | null, mode: OnNoProgress): Promise<number> {
+function purgeMatchEvents(admin: NonNullable<typeof supabaseAdmin>, cutoff: string, held: Held | null, mode: OnNoProgress): Promise<number> {
   return purgeInBatches(
     'chat text',
     (skip) =>
       skipping(
-        supabaseAdmin!
+        admin
           .from('chat_match_events')
           .select(held ? HELD_COLUMNS : 'id, router_context')
           .lt('created_at', cutoff)
@@ -283,8 +284,8 @@ function purgeMatchEvents(cutoff: string, held: Held | null, mode: OnNoProgress)
         .returns<MatchEventRow[]>()
         .limit(BATCH_SIZE),
     async (rows: MatchEventRow[]) => {
-      const cleared = await clearMatchEventRows(rows);
-      return held && !cleared.error ? holdBlanked(rows, held) : cleared;
+      const cleared = await clearMatchEventRows(admin, rows);
+      return held && !cleared.error ? holdBlanked(admin, rows, held) : cleared;
     },
     mode,
   );
@@ -297,8 +298,8 @@ function purgeMatchEvents(cutoff: string, held: Held | null, mode: OnNoProgress)
  * still holding text is held on the day it finally blanks; a row another
  * writer deleted is never held. Only with the archive on, so an off run pays nothing.
  */
-async function holdBlanked(rows: MatchEventRow[], held: Held): Promise<Fallible> {
-  const { data, error } = await supabaseAdmin!
+async function holdBlanked(admin: NonNullable<typeof supabaseAdmin>, rows: MatchEventRow[], held: Held): Promise<Fallible> {
+  const { data, error } = await admin
     .from('chat_match_events')
     .select('id')
     .in('id', rows.map((r) => r.id))
@@ -341,18 +342,19 @@ function holdQuestions(rows: MatchEventRow[], held: Held): void {
  * Returns how many rows it cleared. Throws on a database error.
  */
 export function clearConversationMatchEvents(conversationId: string, userId: string): Promise<number> {
-  if (!supabaseAdmin) return Promise.resolve(0);
+  const admin = supabaseAdmin;
+  if (!admin) return Promise.resolve(0);
   return purgeInBatches(
     'deleted chat text',
     () =>
-      supabaseAdmin!
+      admin
         .from('chat_match_events')
         .select('id, router_context')
         .eq('conversation_id', conversationId)
         .eq('user_id', userId)
         .or(HOLDS_TEXT)
         .limit(BATCH_SIZE),
-    clearMatchEventRows,
+    (rows) => clearMatchEventRows(admin, rows),
     { onNoProgress: 'throw' },
   );
 }

@@ -76,8 +76,12 @@ beforeAll(() => {
   template = mkdtempSync(join(tmpdir(), 'merge-batch-tmpl-'));
   const origin = join(template, 'origin.git');
   git(template, 'init', '-q', '--bare', '-b', 'main', origin);
+  // Detached auto-maintenance (after a commit, or a push into origin) can remove .git/objects/maintenance.lock
+  // mid-cpSync (CI run 44860674548), so neither repo that changes here runs it.
+  git(origin, 'config', 'maintenance.auto', 'false');
   const seed = join(template, 'work');
   git(template, 'clone', '-q', origin, seed);
+  git(seed, 'config', 'maintenance.auto', 'false');
   git(seed, 'config', 'remote.origin.url', '../origin.git');
   git(seed, 'checkout', '-q', '-b', 'main');
   write(seed, 'docs/user-stories.md', STORIES);

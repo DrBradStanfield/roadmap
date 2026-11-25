@@ -17,7 +17,7 @@
  *
  * why: mcp-architecture.md §7
  */
-import { chmodSync, closeSync, existsSync, fchmodSync, fstatSync, fsyncSync, lstatSync, openSync, readFileSync, readdirSync, realpathSync, renameSync, rmSync, statSync, writeSync } from 'node:fs';
+import { chmodSync, closeSync, constants, existsSync, fchmodSync, fstatSync, fsyncSync, lstatSync, openSync, readFileSync, readdirSync, realpathSync, renameSync, rmSync, statSync, writeSync } from 'node:fs';
 import { createHash, randomBytes } from 'node:crypto';
 import { basename, dirname, join } from 'node:path';
 import { ConflictError, ROADMAP_FILE_NAME, StorageError, type ReadResult, type StorageAdapter, type WriteResult } from './adapter';
@@ -66,6 +66,21 @@ function create(dest: string, text: string, mode: number): void {
     }
     fchmodSync(fd, mode); // the open mode is filtered by the umask
     fsyncSync(fd);
+  } finally {
+    closeSync(fd);
+  }
+}
+
+/**
+ * The text of `file` if it is a regular file, else null. Opening a pipe waits
+ * for a writer and a device can be read forever, so the open does not wait
+ * (`O_NONBLOCK`) and the check and the read use that one descriptor: what is
+ * put at the name between them is never read.
+ */
+function regularText(file: string): string | null {
+  const fd = openSync(file, constants.O_RDONLY | constants.O_NONBLOCK);
+  try {
+    return fstatSync(fd).isFile() ? readFileSync(fd, 'utf8') : null;
   } finally {
     closeSync(fd);
   }
@@ -390,7 +405,11 @@ export class FileAdapter implements StorageAdapter {
     // newest and prunes a newer one instead. Compare on a normalised key.
     const key = (name: string) => name.replace(/:/g, '-');
     const order = (a: string, b: string) => (key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : 0);
-    for (const name of this.siblings().sort(order).slice(0, -BACKUPS_KEPT)) {
+    // Only names ending the way `backupPath` names do (either separator,
+    // optional `-n`). Any other `.bak-` sibling is the person's own copy:
+    // rotating it pushed this write's backup out while `lastBackup` named it.
+    const ours = /\.bak-\d{4}-\d{2}-\d{2}T\d{2}[-:]\d{2}[-:]\d{2}\.\d{3}Z(-\d+)?$/;
+    for (const name of this.siblings().filter((n) => ours.test(n)).sort(order).slice(0, -BACKUPS_KEPT)) {
       rmSync(join(dirname(this.path), name), { force: true });
     }
   }
@@ -415,7 +434,9 @@ export class FileAdapter implements StorageAdapter {
       const file = join(dirname(this.path), name);
       let meta: unknown;
       try {
-        meta = (JSON.parse(readFileSync(file, 'utf8')) as { meta?: unknown } | null)?.meta;
+        const text = regularText(file);
+        if (text === null) continue;
+        meta = (JSON.parse(text) as { meta?: unknown } | null)?.meta;
       } catch {
         continue;
       }

@@ -32,3 +32,6 @@ export const UPLOAD_REVIEW_KEYS = ['sure', 'unsure', 'notSaved', 'showAll', 'not
 export type UploadReviewKey = (typeof UPLOAD_REVIEW_KEYS)[number];
 /** The `upload_review` keys that are 0 or 1. */
 export const UPLOAD_REVIEW_FLAGS = ['showAll', 'notSavedOpened', 'saved'] as const satisfies readonly UploadReviewKey[];
+/** The `upload_labs_opened` counter's placements (US-73 AC14): which heading's "Upload labs"
+ *  was pressed, as the topic ids name them (plan-sections.ts). Never a value or a count. */
+export const UPLOAD_LABS_PLACEMENTS = ['weight', 'cholesterol', 'bloodTests'] as const;

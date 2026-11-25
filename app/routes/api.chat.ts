@@ -12,8 +12,8 @@ import { getClientIp } from '../lib/local-first-route.server';
 import { cappedBody } from '../lib/capped-body.server';
 import { takeWebChatTurn } from '../lib/rate-limiter';
 import { ipBucket } from '../lib/app-gate.server';
-import { authenticate } from '../shopify.server';
-import { createUserClient } from '../lib/supabase-client.server';
+import { authenticate, type AdminApiContext } from '../shopify.server';
+import { createUserClient, type SupabaseClient } from '../lib/supabase-client.server';
 import { logAudit } from '../lib/supabase-identity.server';
 import { getOrCreateGuestSession, GuestRateLimitError } from '../lib/supabase-guest.server';
 import { getProfile } from '../lib/supabase-account.server';
@@ -48,10 +48,10 @@ import { CHAT_PROMPT } from '../lib/chat-system-prompt.server';
 // ---------------------------------------------------------------------------
 
 interface AuthResult {
-  client: any;
+  client: SupabaseClient | null;
   userId: string;
   customerId: string | null;
-  admin: any;
+  admin: AdminApiContext | null | undefined;
   isGuest: boolean;
   sessionToken?: string;
 }
@@ -97,7 +97,7 @@ const conversationNotFound = (auth?: AuthResult) => Response.json({
 }, { status: 404 });
 
 async function checkConversationParent(auth: AuthResult, conversationId: string): Promise<Response | null> {
-  const { data: parent, error } = await auth.client
+  const { data: parent, error } = await auth.client!
     .from('chat_conversations')
     .select('id')
     .eq('id', conversationId)
@@ -143,7 +143,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     if (conversationId) {
       const parentFailure = await checkConversationParent(auth, conversationId);
       if (parentFailure) return parentFailure;
-      const { data, error } = await auth.client
+      const { data, error } = await auth.client!
         .from('chat_messages')
         .select('id, role, content, created_at')
         .eq('conversation_id', conversationId)
@@ -168,7 +168,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       });
     }
 
-    const { data: convData, error: convError } = await auth.client
+    const { data: convData, error: convError } = await auth.client!
       .from('chat_conversations')
       .select('id, title, created_at, updated_at')
       .order('updated_at', { ascending: false })
@@ -184,7 +184,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     if (!auth.isGuest && auth.customerId) {
       const customerId = auth.customerId;
       (async () => {
-        const profile = await getProfile(auth.client);
+        const profile = await getProfile(auth.client!);
         if (!profile) return;
         await refreshSubscriptionIfStale(
           { admin: auth.admin, customerId, userId: auth.userId },
@@ -299,7 +299,7 @@ async function chatAction(request: Request, app: boolean) {
       const { conversationId } = body;
       const parentFailure = await checkConversationParent(auth, conversationId);
       if (parentFailure) return parentFailure;
-      const { error } = await auth.client
+      const { error } = await auth.client!
         .from('chat_conversations')
         .delete()
         .eq('id', conversationId)
@@ -344,7 +344,7 @@ async function chatAction(request: Request, app: boolean) {
     let history: Turn[] = retention !== 'transcript' ? readClientHistory(body.history) : [];
     let storedHistory: DedupHistoryItem[] = [];
     if (conversationId && retention === 'transcript') {
-      const { data: historyRows, error: historyError } = await auth.client
+      const { data: historyRows, error: historyError } = await auth.client!
         .from('chat_messages')
         .select('role, content, created_at, is_fallback, failure_mode')
         .eq('conversation_id', conversationId)
@@ -416,7 +416,7 @@ async function chatAction(request: Request, app: boolean) {
       const subscriptionsPromise = subscriptionsOn && !auth.isGuest && auth.customerId
         ? getCachedSubscriptions(request, auth.customerId)
         : Promise.resolve(null);
-      const classifierPromise = classifyMessage(sanitizedCurrent, sanitizedFirst, sanitizedRecent);
+      const classifierPromise = classifyMessage(sanitizedCurrent, sanitizedFirst, sanitizedRecent, 'CHAT');
       const context = resolveChatContext(body.guestInputs);
       const [orderSummary, classifierResult, subscriptions] = await Promise.all([ordersPromise, classifierPromise, subscriptionsPromise]);
 
@@ -427,7 +427,7 @@ async function chatAction(request: Request, app: boolean) {
       const fireRouter = shouldFireRouter(classifierResult);
       if (fireRouter) write({ type: 'status', text: 'Finding relevant articles' });
       const routerResult = fireRouter
-        ? await routeQuery(sanitizedCurrent, sanitizedFirst, sanitizedRecent)
+        ? await routeQuery(sanitizedCurrent, sanitizedFirst, sanitizedRecent, 'CHAT')
         : null;
 
       const tAfterContext = Date.now();
@@ -451,7 +451,7 @@ async function chatAction(request: Request, app: boolean) {
       if (!activeConversationId && retention !== 'transcript') activeConversationId = crypto.randomUUID();
       if (!activeConversationId) {
         const title = generateTitle(message);
-        const { data: conv, error: convError } = await auth.client
+        const { data: conv, error: convError } = await auth.client!
           .from('chat_conversations')
           .insert({ user_id: auth.userId, title })
           .select('id')
@@ -466,7 +466,7 @@ async function chatAction(request: Request, app: boolean) {
 
       // Insert user message (history already loaded above for existing convs)
       if (retention === 'transcript') {
-        const { error: userMsgError } = await auth.client
+        const { error: userMsgError } = await auth.client!
           .from('chat_messages')
           .insert({
             conversation_id: activeConversationId,
@@ -511,7 +511,7 @@ async function chatAction(request: Request, app: boolean) {
       // replacing a health answer. run_roadmap reads the widget's own record (US-15 AC33).
       const subscriptionTool = subscriptionsOn && !appOrToolPage;
       const completion = await getChatCompletion(systemBlocks, conversationMessages, canApplyEdits, onEvent,
-        subscriptionTool || canApplyEdits ? { subscriptionTool, guestInputs: body.guestInputs, ...(canApplyProfileEdits ? { profileEdits: true } : {}), ...(appEdits ? { app: true } : {}) } : undefined);
+        { purpose: 'CHAT', ...(subscriptionTool || canApplyEdits ? { subscriptionTool, guestInputs: body.guestInputs, ...(canApplyProfileEdits ? { profileEdits: true } : {}), ...(appEdits ? { app: true } : {}) } : {}) });
       const tAfterLlm = Date.now();
       // US-15 AC33 usage signal: one counter per run_roadmap round, the numbers of
       // stated values used and rejected and nothing else. Fire-and-forget. It is a
@@ -565,14 +565,14 @@ async function chatAction(request: Request, app: boolean) {
         is_fallback: completion.isFallback,
         failure_mode: completion.failureMode ?? null,
       };
-      const logMatchEvent = () => auth.client
+      const logMatchEvent = () => Promise.resolve(auth.client!
         .from('chat_match_events')
         .insert(retention !== 'transcript' ? redactForWidget(matchEvent) : matchEvent)
         .then(({ error: matchError }: { error: { message: string } | null }) => {
           if (matchError) {
             reportChatError('Chat: Match-event insert failed');
           }
-        }).catch(() => reportChatError('Chat: Match-event insert failed'));
+        })).catch(() => reportChatError('Chat: Match-event insert failed'));
 
       if (retention === 'none') {
         // D9: the app's turn leaves no row on the server.
@@ -581,7 +581,7 @@ async function chatAction(request: Request, app: boolean) {
       } else {
         // Fire-and-forget: save the assistant message, then log the match event
         // once its message_id names a row that exists.
-        auth.client
+        Promise.resolve(auth.client!
           .from('chat_messages')
           .insert({
             id: assistantMessageId,
@@ -597,9 +597,9 @@ async function chatAction(request: Request, app: boolean) {
               return;
             }
             logMatchEvent();
-          }).catch(() => reportChatError('Chat: Failed to save assistant message'));
+          })).catch(() => reportChatError('Chat: Failed to save assistant message'));
 
-        auth.client
+        Promise.resolve(auth.client!
           .from('chat_conversations')
           .update({ updated_at: new Date().toISOString() })
           .eq('id', activeConversationId)
@@ -607,7 +607,7 @@ async function chatAction(request: Request, app: boolean) {
             if (tsError) {
               reportChatError('Chat: Failed to update conversation timestamp');
             }
-          }).catch(() => reportChatError('Chat: Failed to update conversation timestamp'));
+          })).catch(() => reportChatError('Chat: Failed to update conversation timestamp'));
       }
 
       if (retention !== 'none') logAudit(auth.userId, 'CHAT_MESSAGE', 'chat', activeConversationId, {

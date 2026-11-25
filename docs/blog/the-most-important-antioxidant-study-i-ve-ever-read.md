@@ -90,7 +90,7 @@ As we age, free radical production increases. In early stages, this may help the
 
 But in **older adults**, who are overwhelmed by free radicals, it’s a different story.
 
-A **2022 study** explored this idea further. Researchers looked at the effects of **Glycine and N-Acetylcysteine (GlyNAC)** in young and older adults. GlyNAC isn’t an antioxidant itself, but a **precursor** to glutathione—your body’s master antioxidant \[10\].
+A **2022 study** explored this idea further. Researchers looked at the effects of **[Glycine](/blogs/articles/glycine-benefits-forms-dosing-and-side-effects) and N-Acetylcysteine (GlyNAC)** in young and older adults. GlyNAC isn’t an antioxidant itself, but a **precursor** to glutathione—your body’s master antioxidant \[10\].
 
 Their earlier research in animals had shown promising results, and this study aimed to test whether GlyNAC could improve glutathione levels and reduce markers of oxidative stress, mitochondrial dysfunction, inflammation, and more.
 

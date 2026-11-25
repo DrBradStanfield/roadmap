@@ -19,6 +19,7 @@ import {
   shouldSuggestGlp1Switch,
   type MedicationInputs,
 } from './types';
+import { isTakingDrug } from './history-change';
 
 /** A drug on the form's list, so a dose can be recorded for it. hasOwnProperty.call,
  *  not Object.hasOwn: the widget must run on iOS WebKit < 15.4, which lacks the
@@ -52,7 +53,7 @@ export function weightCascade(meds: MedicationInputs): WeightCascade {
   const glp1Drug = glp1?.drug;
   const glp1Answered = !!glp1Drug && glp1Drug !== 'none';
   const onOther = glp1Drug === 'other';
-  const onGlp1 = glp1Answered && glp1Drug !== 'not_tolerated' && !onOther;
+  const onGlp1 = isTakingDrug(glp1Drug) && !onOther;
   const dose = glp1?.dose ?? null;
   // A listed GLP-1 with no dose: ask for it. An unlisted name has no dose to
   // give, so it moves on.

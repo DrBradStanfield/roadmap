@@ -153,6 +153,19 @@ Compact inventory. Tests sit beside their file (`*.test.ts`) and are not listed.
 
 **Infrastructure:** `supabase/rls-policies.sql` (operational schema + RLS; the v1 health schema left it 2026-11-02, US-09 AC33) · `.github/workflows/`: `ci.yml` (PRs: the suite in UTC on 6 runners, a newer push cancels the older run; pushes to main and the 03:00 nightly: UTC and Los Angeles, 12 runners; manual runs and the 12:00 nightly add Auckland, 18 runners), `ci-shuffle.yml` (06:30 nightly: the whole suite in a shuffled order, seed printed; its own file so a red run never stops the line), `deploy.yml` (gate, Pages WebKit smoke, full suite in Los Angeles, `tsc --noEmit` for widget-src + health-core, builds, Sentry maps, Shopify ×2, Fly ×2 canary, health gates, live WebKit verify), `pages.yml`, `claude-review.yml` (skipped while a PR carries `hold`) + `auto-ship.yml` (Tier 3 loop pipeline), `loop-issue-notify.yml`, `stranded-branch-watch.yml`, `stale-pr-watch.yml` (open PRs idle >48h, one refreshed issue), `workflow-integrity.yml` · `fly.toml` / `fly.edu.toml`, `shopify.app.toml` / `shopify.app.edu.toml`.
 
+## Shared Data with claude_business
+
+(`~/Documents/claude_business.nosync/`)
+
+- **`docs/products.md` is the MASTER here — a real tracked file** (inverted 2026-08-10; claude_business
+  holds the symlink). Edit it in a worktree; claude_business edits land uncommitted here: own PR (docs/git-workflow.md).
+- **`docs/chatbot/` is GENERATED (claude_business `tools/sync-shared-docs.mjs`), never edit.** `scripts/check-symlinks.mjs` keeps it, products.md and writing-style.md REAL files (mode 100644) and checks the synced hashes.
+- `docs/blog/*.md` — chatbot blog cache from claude_business `/blog-post`; after a frontmatter edit, `npm run rebuild-index` rebuilds `docs/blog/index.json` (CI checks it is in sync).
+- **Customer-service gateway (live):** its OWN Fly app; code only in private claude_business `customer-service-gateway/`. Spec: its `docs/customer-service.md`.
+  **Replying to mail sent to brad@microvitamin.com** (the Gmail connector reaches only drstanfield.com): find it with claude_business `node tools/gmail.js search --account microvitamin`, send Brad's approved text in that thread via the gateway's `POST /send-reply` — never a new email from drstanfield.com (Brad 2026-10-16).
+  **An email with a URL the reader must copy or type** goes out as `htmlBody`, never plain-text `body` (it rewrites bare URLs into `google.com/url` wrappers): draft, read back, check the visible URL, then send (docs/gotchas.md, 2026-11-24).
+- **Chatbot docs are private (Brad 2026-10-22):** start at claude_business `docs/chat-start-here.md`; knowledge-pipeline docs in its `docs/roadmap-chat/`. No licensed third-party clinical text, and no account of how the private pipeline uses it, in this public repo.
+
 ## Data Model
 
 ### Local-first file collections (`health-roadmap.json`)

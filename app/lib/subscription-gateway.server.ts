@@ -88,7 +88,10 @@ export function signGatewayRequest(
   return { 'x-gateway-timestamp': ts, 'x-gateway-nonce': nonce, 'x-gateway-signature': signature };
 }
 
-async function callGateway(path: string, payload: object, timeoutMs: number): Promise<any | null> {
+/** The summary reply's fields getCachedSubscriptions reads. It describes them; nothing checks the entries. */
+interface GatewaySummaryReply { ok?: unknown; enabled?: unknown; subscriptions?: SubscriptionEntry[]; note?: unknown; error?: unknown }
+
+async function callGateway(path: string, payload: object, timeoutMs: number): Promise<GatewaySummaryReply | null> {
   const body = JSON.stringify(payload);
   const base = String(process.env.CS_GATEWAY_CHAT_URL).replace(/\/+$/, '');
   try {
@@ -285,7 +288,7 @@ export async function postSubscriptionAction(
   }
   if (res.status >= 500) { reportGatewayError(`Subscription gateway: HTTP ${res.status}`); return { status: 'unconfirmed' }; }
   if (!res.ok) { reportGatewayError(`Subscription gateway: HTTP ${res.status}`); return { status: 'refused', code: 'unavailable' }; }
-  let data: any = null;
+  let data: { ok?: unknown; status?: unknown; code?: unknown; newDate?: unknown } | null = null;
   try { data = await res.json(); } catch { return { status: 'unconfirmed' }; }
   if (!data || data.ok !== true || typeof data.status !== 'string') return { status: 'unconfirmed' };
   return {

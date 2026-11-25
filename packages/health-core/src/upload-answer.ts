@@ -5,17 +5,18 @@
  * `{status, body}`, carrying the status and body the plain route would answer (app-lab-read.server.ts).
  */
 import type { UnifiedExtractionResult } from './lab-extraction';
-import { uploadFailure, type UploadFailure } from './upload-failure';
+import { boundedWords, uploadFailure, type FailDetail, type UploadFailure } from './upload-failure';
 import { UPLOAD_EXTRACTION } from './upload-schema';
 import * as z from './zod';
 
-export type LabAnswer = { extraction: UnifiedExtractionResult } | { failure: UploadFailure };
+export type LabAnswer = { extraction: UnifiedExtractionResult } | { failure: UploadFailure; detail?: FailDetail };
 
 const read = z.object({ success: z.literal(true), data: z.unknown() });
 
 /**
  * `status` and `body` as uploadFailure takes them. A 2xx whose `data` is not a read the engine can
  * check (UPLOAD_EXTRACTION) is the server's error, never a read: nothing malformed reaches a save.
+ * A 5xx keeps the server's own `error` words, bounded, as today's iPhone shows them (US-52 AC7c).
  */
 export function labAnswer(status: number | null, body: unknown): LabAnswer {
   const ok = status !== null && status >= 200 && status < 300 ? read.safeParse(body) : null;
@@ -23,7 +24,9 @@ export function labAnswer(status: number | null, body: unknown): LabAnswer {
     const extraction = UPLOAD_EXTRACTION.safeParse(ok.data.data);
     return extraction.success ? { extraction: extraction.data } : { failure: 'server_error' };
   }
-  return { failure: uploadFailure(status, body) };
+  const failure = uploadFailure(status, body);
+  const message = status !== null && status >= 500 ? boundedWords((body as { error?: unknown } | null)?.error) : null;
+  return message ? { failure, detail: { message } } : { failure };
 }
 
 const lastLine = z.object({ status: z.number().int(), body: z.unknown() });

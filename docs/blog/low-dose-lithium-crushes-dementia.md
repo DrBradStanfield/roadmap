@@ -82,7 +82,7 @@ A meta-analysis comparing lithium and the Alzheimer’s drug aducanumab found th
 
 All of this naturally raises the question: should we supplement with low-dose lithium? What are the risks, the benefits—and what form of lithium is best?
 
-The original study offers some clues. Researchers noticed lithium becomes bound to amyloid plaques, limiting its availability to the brain. So they looked at whether **lithium orotate**, a different form than the clinically-used **lithium carbonate**, might avoid being trapped in plaques.
+The original study offers some clues. Researchers noticed lithium becomes bound to amyloid plaques, limiting its availability to the brain. So they looked at whether **[lithium orotate](/blogs/articles/lithium-benefits-forms-dosing-and-side-effects)**, a different form than the clinically-used **lithium carbonate**, might avoid being trapped in plaques.
 
 They tested both forms in mice. Both forms raised blood lithium levels similarly. But in the brain, lithium carbonate led to high lithium levels within plaques, while lithium orotate increased lithium in healthy brain regions \[4\].
 

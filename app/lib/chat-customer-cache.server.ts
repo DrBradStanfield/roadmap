@@ -3,6 +3,7 @@
  * the 10-minute order summary cache and the 24-hour subscription plan
  * refresh. Moved unchanged from api.chat.ts.
  */
+import type { AdminApiContext } from '../shopify.server';
 import { checkSubscriptionFromTags, getCustomerOrders } from './route-helpers.server';
 import { updateSubscriptionPlan, type DbProfile } from './supabase-account.server';
 import { reportChatError } from './chat-turn-io.server';
@@ -18,7 +19,7 @@ setInterval(() => {
   }
 }, 5 * 60_000);
 
-export async function getCachedOrders(admin: any, customerId: string): Promise<string> {
+export async function getCachedOrders(admin: AdminApiContext, customerId: string): Promise<string> {
   const cached = orderCache.get(customerId);
   if (cached && Date.now() < cached.expiresAt) return cached.summary;
 
@@ -31,7 +32,7 @@ export async function getCachedOrders(admin: any, customerId: string): Promise<s
 
 // Lazy subscription check — at most once per 24 hours
 export async function refreshSubscriptionIfStale(
-  auth: { admin: any; customerId: string; userId: string },
+  auth: { admin: AdminApiContext | null | undefined; customerId: string; userId: string },
   profile: Pick<DbProfile, 'subscription_plan' | 'subscription_checked_at'>,
 ): Promise<string> {
   const checkedAt = profile.subscription_checked_at

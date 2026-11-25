@@ -248,7 +248,8 @@ describe('free-text scrub parity', () => {
           `no scrub word for lab "${entry.label}"`).toBe(true);
       }
       const units = new Set(impl.SCRUB_UNITS.map((u: string) => u.toLowerCase()));
-      for (const entry of LAB_CATALOG) {
+      // "ratio" is English before it is a unit (AC7e below); the ratio's name words catch its value (US-21 AC29).
+      for (const entry of LAB_CATALOG.filter((e) => e.unit !== 'ratio')) {
         expect(units, `unit "${entry.unit}" (${entry.key}) missing`).toContain(entry.unit.toLowerCase());
       }
     }

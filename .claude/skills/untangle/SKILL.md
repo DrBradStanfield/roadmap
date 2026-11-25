@@ -39,7 +39,16 @@ needs, then fix the design so most of them go.
 - Brad's yes first on clinical items and on workflow changes.
 - Announce a section lock in the agent channel (docs/agent-channel.md) before
   work starts there. No repo-wide freeze.
-- Low-risk PRs merge in batches of 8-10. High-risk ones merge one at a time.
+- A PR may be batched (reviewed together, released together) only if BOTH
+  hold: (1) it touches no guarded path: packages/health-core, ios/engine,
+  ios/scripts, the clinical files (health_roadmap_algorithm.md, evidence*.ts,
+  roadmap_text.html), merge and record-edit code, auth and server routes
+  (app/), .github/workflows, tools/merge-gated.sh; (2) it provably changes
+  nothing a person sees: docs or tests only, or a pure move or type-only
+  change whose built output is byte-identical before and after (the PR body
+  shows the check). Anything else passes its own gate, however small.
+  Batching never skips a PR's own CI and review (docs/git-workflow.md).
+  (Brad 2026-11-23)
 
 ## Per area: the steps
 
@@ -112,6 +121,19 @@ writes one sets the pattern; keep it small.
 Hooks talk to each other: one hook's event drives another's transition. Survey
 that protocol too. Write it as a table of events x machines (who sends, who
 reacts, in what order) and test the pairs that can race.
+
+## Properties before the screen
+
+Brad 2026-11-21. A screen that saves health data is built in two PRs, in order:
+
+1. The engine rule and its generated (property) test land first, in their own PR.
+2. The screen PR then only draws what the engine exposes. It adds no rule of its own.
+
+Each property has an oracle that does not read the value under test. Show each
+property failing against a named mutation: the PR body says what you broke and
+how the property failed.
+
+Why: the web upload grid failed ten reviews because the UI was built first.
 
 ## Split by what changes together
 

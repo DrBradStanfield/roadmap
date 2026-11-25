@@ -241,13 +241,13 @@ describe('US-74 AC3: the results are the plan\'s own', () => {
 
   it.each([
     // BMI 27 (170 cm, 78.03 kg): a healthy ratio reads Normal, a raised one Overweight (Composite Assessment).
-    [0.48, 'Normal'],
-    [0.52, 'Overweight'],
-  ])('BMI 27 with ratio %s reads %s, as the plan reads it', (ratio, label) => {
+    [0.48, 'Normal', 'Normal'],
+    [0.52, 'Overweight', 'Overweight range'], // the tile's word for the grade (US-07 AC17)
+  ])('BMI 27 with ratio %s reads %s, as the plan reads it', (ratio, label, tileWord) => {
     const results = resultsFor({ heightCm: 170, weightKg: 78.03, waistCm: ratio * 170 }, 'si')!;
     expect(results.bmi).toEqual(planTiles(170, 78.03, ratio * 170).find((t) => t.key === 'bmi'));
     expect(results.bmi!.value).toBe('27');
-    expect(results.bmi!.status!.label).toBe(label);
+    expect(results.bmi!.status!.label).toBe(tileWord);
     expect(getBMICategory(27, ratio)).toBe(label);
   });
 

@@ -38,11 +38,11 @@ function cloud(): UploadSaveIO<string> & { stored: Map<string, string> } {
   const stored = new Map<string, string>();
   let n = 0;
   return {
-    stored, holds: () => true, original: (fileId) => `bytes of ${fileId}`, mimeType: () => 'application/pdf',
+    stored, stopped: () => false, holds: () => true, original: (fileId) => `bytes of ${fileId}`, mimeType: () => 'application/pdf',
     write: async (ref, bytes) => void stored.set(ref, bytes), now: () => NOW, newId: () => `id-${n++}`,
   };
 }
-const offCloud = (): UploadSaveIO<string> => { let n = 0; return { holds: () => false, original: () => null, mimeType: () => '', write: async () => { throw new Error('no cloud'); }, now: () => NOW, newId: () => `id-${n++}` }; };
+const offCloud = (): UploadSaveIO<string> => { let n = 0; return { stopped: () => false, holds: () => false, original: () => null, mimeType: () => '', write: async () => { throw new Error('no cloud'); }, now: () => NOW, newId: () => `id-${n++}` }; };
 
 /** One Save as a caller runs it: the originals, then the commit on the same record. */
 async function saveOn(s: UploadState, record: RoadmapFile, cloudOn: boolean, io: UploadSaveIO<string>) {
@@ -60,16 +60,16 @@ const MIXED = saving([
 ]);
 
 describe('uploadSave: one step for values and rows (US-52 AC8c)', () => {
-  it('a mixed pick saves once: its values are the plan\'s the view showed, its documents counted as the web counts them', async () => {
+  it('a mixed pick saves once: its values are the plan\'s the view showed, its documents the ones the list showed (owner ruling 2026-11-20)', async () => {
     const record = withDocs([heldDoc({})]);
     const plan = uploadSavePlan(MIXED, record, NOW, uploadReview(MIXED, record, NOW), true);
     const io = cloud();
     const out = await saveOn(MIXED, record, true, io);
     expect(out.unstored).toBe(0);
-    // The web's done count (useUploadFlow.ts): every distinct row saved, the letter, the lab report's
-    // archive row and the original filed behind the held row; `archived` is the last alone.
-    expect(out.outcome).toEqual({ values: plan.counts.values, documents: plan.counts.documents + plan.labArchives.length + plan.counts.archived, archived: plan.counts.archived, unstored: 0 });
-    expect(out.outcome).toEqual({ values: 2, documents: 3, archived: 1, unstored: 0 });
+    // The Save label's count: the letter the list showed. The lab report's hidden archive row and the
+    // original filed behind the held row are not counted as documents; `archived` is the last, with its own line.
+    expect(out.outcome).toEqual({ values: plan.counts.values, documents: plan.counts.documents, archived: plan.counts.archived, unstored: 0 });
+    expect(out.outcome).toEqual({ values: 2, documents: 1, archived: 1, unstored: 0 });
     const live = out.file.documents.filter((d) => !d.deleted);
     const archive = live.find((d) => d.metadata?.[LAB_ARCHIVE_FLAG] === true)!;
     // The archive row lists exactly the lab rows its values wrote, and holds its original.
@@ -190,7 +190,7 @@ async function webSave(s: UploadState, record: RoadmapFile, cloudOn: boolean, io
     ...plan.archiveOnly.map((d) => ({ ...d.fields, file: file(d.fileId), contentHash: hash(d.fileId) })),
   ];
   const hashOf = new Map(payloads.flatMap((p) => (p.file ? [[p.file, p.contentHash!]] : [])));
-  const docs = await saveDocuments(written.file, payloads, { hash: async (f) => hashOf.get(f)!, write: (ref, f) => io.write(ref, f, ''), mimeType: () => io.mimeType(''), now: io.now, newId: io.newId });
+  const docs = await saveDocuments(written.file, payloads, { stopped: () => false, hash: async (f) => hashOf.get(f)!, write: (ref, f) => io.write(ref, f, ''), mimeType: () => io.mimeType(''), now: io.now, newId: io.newId });
   const next = { ...written.file, documents: written.file.documents.map((d) => ({ ...d })) };
   docs.commit(next);
   return next;

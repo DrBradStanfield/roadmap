@@ -122,6 +122,9 @@ unacted for a quarter, say so in the retro and propose the fleet review.
 - **GitHub** (MCP, repo-scoped): issues labelled `from-connector` — the
   connector files a user's bug report as a public issue (US-32 AC9, live
   2026-09-03); organic ones are feedback, Brad's own path tests are not.
+- **PR cycle time** (read-only `gh`; a cloud run feeds `--file` a JSON of merged PRs):
+  `node tools/pr-cycle-time.mjs` prints this week's `prs_merged`, `pr_cycle_time_median_h`
+  and `_p90_h` rows (PR opened to merged); append them to metrics.csv every week.
 - **External inbound** (US-39; Brad 2026-10-14, in place of a scheduled
   repo-health loop): once per run, do repo-health's triage pass exactly as
   `docs/loops/repo-health/LOOP.md` defines it: origins, classes, its Public

@@ -89,7 +89,7 @@ describe('single-topic widget entry (US-74)', () => {
   });
 
   it('a page with no known topic opens nothing', async () => {
-    document.body.innerHTML = block('blood-pressure');
+    document.body.innerHTML = block('not-a-topic');
     await act(async () => { await startWidgets(); });
     expect(boot).not.toHaveBeenCalled();
     expect(blocks()[0].innerHTML).toBe('&nbsp;');

@@ -58,7 +58,8 @@ final class AppAttestReinstallTests: XCTestCase {
         Keychain.delete()
     }
 
-    private let report = LabFileReader.Document(name: "Report", pages: [], truncated: false)
+    /// One upload send of an empty report (LabReadSender, the shared upload's `send` effect).
+    private let report = Data(#"{"pages":[],"unitSystem":"si"}"#.utf8)
 
     /// Possible codes for a stale key, not only `invalidKey`. Which one a reinstalled
     /// phone gives is not known yet; the on-screen suffix will tell.
@@ -66,47 +67,37 @@ final class AppAttestReinstallTests: XCTestCase {
         for code in [DCError.Code.invalidKey, .invalidInput, .unknownSystemFailure] {
             reset()
             let fake = FakeAttest(staleCode: code)
-            let client = LabUploadClient(attest: AppAttestClient(session: StubHTTP.session(), service: fake))
-            _ = try await client.extract(report, unitSystem: "si")
-            XCTAssertEqual(paths, ["/api/app/v1/attest/challenge", "/api/app/v1/attest/register", "/api/app/v1/lab-import"], "code \(code.rawValue)")
+            let sender = LabReadSender(attest: AppAttestClient(session: StubHTTP.session(), service: fake))
+            _ = try await sender.send(report)
+            XCTAssertEqual(paths, ["/api/app/v1/attest/challenge", "/api/app/v1/attest/register", LabReadSender.path], "code \(code.rawValue)")
             XCTAssertEqual(labKey, "fresh-key-1", "the report is signed with the new key")
             XCTAssertEqual(Keychain.read(), "fresh-key-1", "the stale id is replaced")
             XCTAssertEqual(fake.made, 1)
         }
     }
 
-    /// A new key that cannot sign either is not retried again, and the words name App Attest.
-    @MainActor func testAKeyThatStillCannotSignStopsAfterOneNewKeyAndSaysWhere_US52_AC1c() async {
+    /// A new key that cannot sign either is not retried again, and the failure names App Attest's
+    /// step and code. The upload's words and its Try again for it are the engine's
+    /// (UploadRefusalTests.testAFailedAssertionShowsItsStepAndCodeWithTryAgain); chat's are here.
+    @MainActor func testAKeyThatStillCannotSignStopsAfterOneNewKeyAndSaysWhere_US52_AC1c() async throws {
         let fake = FakeAttest(staleCode: .invalidInput, freshKeysFail: true)
-        let client = LabUploadClient(attest: AppAttestClient(session: StubHTTP.session(), service: fake))
-        do {
-            _ = try await client.extract(report, unitSystem: "si")
-            XCTFail("the assertion fails")
-        } catch {
-            XCTAssertEqual(fake.made, 1, "one new key, no loop")
-            XCTAssertFalse(paths.contains("/api/app/v1/lab-import"), "nothing was sent")
-            let words = "This iPhone could not prove the app is genuine, so nothing was sent. Please try again. (App Attest assert 3)"
-            XCTAssertEqual(LabUploadSheet.words(for: error), words)
-            XCTAssertEqual(ChatTranscript.words(for: error), words, "chat uses the same client")
-        }
-        // The words say "Please try again", so the review offers Try again.
-        let failed = await LabUploadSheet.extractEach([report], extract: { _ in throw AppAttestClient.Failure.device(stage: "assert", code: "3") }, progress: { _, _ in })
-        XCTAssertEqual(failed?.first?.failure, "This iPhone could not prove the app is genuine, so nothing was sent. Please try again. (App Attest assert 3)")
-        XCTAssertNotNil(failed?.first?.retry, "an App Attest failure may mend, so Try again shows")
+        let sender = LabReadSender(attest: AppAttestClient(session: StubHTTP.session(), service: fake))
+        let outcome = try await sender.send(report)
+        XCTAssertEqual(outcome, .local(.attestFailed(stage: "assert", code: "3")))
+        XCTAssertEqual(fake.made, 1, "one new key, no loop")
+        XCTAssertFalse(paths.contains(LabReadSender.path), "nothing was sent")
+        let words = "This iPhone could not prove the app is genuine, so nothing was sent. Please try again. (App Attest assert 3)"
+        XCTAssertEqual(ChatTranscript.words(for: AppAttestClient.Failure.device(stage: "assert", code: "3")), words)
     }
 
     /// Once a launch, not once a request: the key this launch registered is never
     /// replaced, so a many-report ZIP spends one registration (adversary R1, AC1b's cap).
-    func testAKeyThisLaunchRegisteredIsNotReplacedOnTheNextRequest_US52_AC1c() async {
+    func testAKeyThisLaunchRegisteredIsNotReplacedOnTheNextRequest_US52_AC1c() async throws {
         let fake = FakeAttest(staleCode: .invalidInput, freshKeysFail: true)
-        let client = LabUploadClient(attest: AppAttestClient(session: StubHTTP.session(), service: fake))
+        let sender = LabReadSender(attest: AppAttestClient(session: StubHTTP.session(), service: fake))
         for _ in 0..<2 {
-            do {
-                _ = try await client.extract(report, unitSystem: "si")
-                XCTFail("the assertion fails")
-            } catch {
-                guard case AppAttestClient.Failure.device(stage: "assert", code: "3") = error else { return XCTFail("\(error)") }
-            }
+            let outcome = try await sender.send(report)
+            XCTAssertEqual(outcome, .local(.attestFailed(stage: "assert", code: "3")))
         }
         XCTAssertEqual(fake.made, 1, "one key for the launch")
         XCTAssertEqual(paths.filter { $0 == "/api/app/v1/attest/register" }.count, 1)
@@ -118,11 +109,11 @@ final class AppAttestReinstallTests: XCTestCase {
     func testAKeyTheKeychainDidNotKeepIsStillUsedForTheLaunch_US52_AC1c() async throws {
         let fake = FakeAttest(staleCode: .invalidInput)
         let keys = KeyStore(read: Keychain.read, save: { _ in }, delete: Keychain.delete)
-        let client = LabUploadClient(attest: AppAttestClient(session: StubHTTP.session(), service: fake, keys: keys))
-        for _ in 0..<2 { _ = try await client.extract(report, unitSystem: "si") }
+        let sender = LabReadSender(attest: AppAttestClient(session: StubHTTP.session(), service: fake, keys: keys))
+        for _ in 0..<2 { _ = try await sender.send(report) }
         XCTAssertEqual(fake.made, 1, "one key for the launch")
         XCTAssertEqual(paths.filter { $0 == "/api/app/v1/attest/register" }.count, 1)
-        XCTAssertEqual(paths.filter { $0 == "/api/app/v1/lab-import" }.count, 2, "both reports went")
+        XCTAssertEqual(paths.filter { $0 == LabReadSender.path }.count, 2, "both reports went")
         XCTAssertEqual(labKey, "fresh-key-1")
         XCTAssertNil(Keychain.read(), "the write failed, as the test meant")
     }

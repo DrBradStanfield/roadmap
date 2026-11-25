@@ -18,6 +18,7 @@
  * Whole widget over a REAL RoadmapStore on jsdom's localStorage. Synthetic data only.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { UPLOAD_ENGINE } from '../testing/upload-engine';
 import { flushSync } from 'react-dom';
 import { render, fireEvent, waitFor, act, screen, within, type RenderResult } from '@testing-library/react';
 import { CURRENT_SCHEMA_VERSION, type RoadmapFile } from '@roadmap/health-core/roadmap-file';
@@ -120,7 +121,7 @@ beforeEach(() => {
   vi.mocked(labImport).mockResolvedValue(extraction as Awaited<ReturnType<typeof labImport>>);
   vi.mocked(sendGuestReport).mockResolvedValue({ success: true });
   vi.spyOn(window, 'open').mockReturnValue(null);
-  vi.stubGlobal('HealthUpload', {
+  vi.stubGlobal('HealthUpload', { ...UPLOAD_ENGINE,
     extractFromPdf: vi.fn(async () => ({ pages: [{ type: 'text', content: 'synthetic' }], truncated: false })),
     isPdf: () => true, isZip: () => false, isImage: () => false,
   });
@@ -172,8 +173,8 @@ const writers: Record<string, Writer> = {
   'the upload review\'s Save': {
     seed: seedProfile,
     open: async () => {
-      fireEvent.click(await screen.findByRole('button', { name: 'Upload lab results' }));
-      fireEvent.click(screen.getByRole('button', { name: /Continue without keeping my files/ }));
+      fireEvent.click((await screen.findAllByRole('button', { name: 'Upload labs' }))[0]);
+      fireEvent.click(screen.getByRole('button', { name: /Continue without keeping the files/ }));
       fireEvent.change(document.querySelector('input[type=file]')!, { target: { files: [new File(['synthetic'], 'synthetic.pdf', { type: 'application/pdf' })] } });
       await findReviewValue('3.9'); // opens "Show all": the sure value sits behind it (US-13 AC13)
       // findBy waits with act() off, so React may leave a render in the Scheduler. Run it out

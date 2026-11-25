@@ -1,0 +1,156 @@
+/* The field controls: their geometry, the box look, the height field's feet
+   and inches pair and the unit pill. One file for the full app (styles.css
+   imports it first) and the single-topic widgets (US-74), whose bundle scopes
+   every rule here to the widget's root on the way in (vite.config.widgets.ts),
+   so none of it reaches the store's own page. Moved verbatim from styles.css
+   (2026-11-18): edit the rules here. */
+
+:root {
+  /* Form controls — one shared geometry for every single-line control
+     (text/number inputs, selects, the sex toggle + its buttons) so they
+     line up exactly when sitting on the same row (e.g. Height vs sex
+     toggle). Height is FIXED rather than derived from padding + line-height,
+     because native <select> chrome and the flex-parent `content-box`
+     default (iOS WebKit) otherwise render the same padding at different
+     heights. Pair every control rule with `box-sizing: border-box`. */
+  --control-height: 42px;
+  --control-padding-x: 12px;
+  --control-radius: 8px;
+  --control-border: 1px solid var(--color-gray-border);
+  --control-font-size: 16px;
+}
+
+/* Hide native number input spinners */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Per-field unit toggle pill */
+.unit-toggle-pill {
+  display: inline;
+  background: none;
+  border: 1px solid var(--color-gray-border);
+  border-radius: 12px;
+  padding: 1px 8px;
+  font-size: 0.85em;
+  color: var(--color-brand-text);
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+.unit-toggle-pill:hover {
+  background-color: rgba(0, 163, 139, 0.08);
+  border-color: var(--color-brand-text);
+}
+
+/* Form Fields */
+.health-field {
+  margin-bottom: 16px;
+}
+
+.health-field:last-child {
+  margin-bottom: 0;
+}
+
+.health-field label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 6px;
+  color: var(--color-gray-dark);
+}
+
+/* Coherence controls — HARDENED against theme leak (see CLAUDE.md "Storefront
+   theme leak" gotcha + memory `feedback_horizon_theme_input_leak`). Every
+   selector is scoped under the `.health-tool` root (specificity 0,2,1) so it
+   out-weighs BOTH (a) the stale `health-site-chat.css` copy of this file that
+   also loads on the storefront with the same UNscoped 0,1,1 rule but later in
+   document order, and (b) any Horizon `base.css` `input:not(...)` leak (0,1,1).
+   `box-sizing: border-box` + a FIXED `height` + an explicit `min-height` +
+   `line-height: normal` together neutralize Horizon's inherited `line-height:
+   1.6` and any min-height the theme injects — without these the deployed input
+   ballooned to 47.6px on live while selects sat at 43px (verified on
+   drstanfield.com). Keep the boxed look (border + radius + white bg) — unlike
+   the flush `.bt-input` matrix cells, these controls SHOULD render as boxes. */
+.health-tool .health-field input,
+.health-tool .health-field select,
+.health-tool .sex-toggle {
+  box-sizing: border-box;
+  height: var(--control-height);
+  min-height: var(--control-height);
+  border: var(--control-border);
+  border-radius: var(--control-radius);
+  background-color: #fff;
+}
+
+.health-tool .health-field input,
+.health-tool .health-field select {
+  width: 100%;
+  padding: 0 var(--control-padding-x);
+  font-size: var(--control-font-size);
+  line-height: normal;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.health-tool .health-field input:focus,
+.health-tool .health-field select:focus {
+  outline: none;
+  border-color: var(--color-brand);
+  box-shadow: 0 0 0 3px rgba(0, 163, 139, 0.1);
+}
+
+.health-tool .health-field input.error,
+.health-tool .health-field select.error {
+  border-color: var(--color-error);
+}
+
+.health-field input::placeholder {
+  color: #aaa;
+}
+
+.error-message {
+  display: block;
+  font-size: 13px;
+  color: var(--color-error);
+  margin-top: 4px;
+}
+
+/* Height feet/inches compound input */
+.height-fieldset {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.height-fieldset input {
+  width: 60px;
+  text-align: center;
+}
+
+.height-unit {
+  font-size: 14px;
+  color: var(--color-gray-medium);
+  font-weight: 500;
+}
+
+/* A phone: every control a 44px target (Brad 2026-11-06). */
+@media (max-width: 768px) {
+  /* A unit pill is small to read but 44px to press; on a phone it names the system alone,
+     so "Starting info" never wraps beside it. */
+  .health-tool .unit-toggle-pill {
+    position: relative;
+  }
+  .unit-pill-detail {
+    display: none;
+  }
+  .health-tool .unit-toggle-pill::after {
+    content: '';
+    position: absolute;
+    inset: -13px -6px;
+  }
+}

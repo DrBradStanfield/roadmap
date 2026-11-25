@@ -113,14 +113,14 @@ it.each([false, true])('passes the newest 20 of 24 stored turns in chronological
   // Storage order is not chronological; the query must sort before limiting.
   edge.tables.chat_messages = [...history].reverse();
   await send(message(reply));
-  expect(edge.complete).toHaveBeenCalledExactlyOnceWith({ message: 'New synthetic question', history: modelTurns(history.slice(-20)) });
+  expect(edge.complete).toHaveBeenCalledExactlyOnceWith({ purpose: 'DISCORD', message: 'New synthetic question', history: modelTurns(history.slice(-20)) });
 });
 
 it.each([0, 6, 20])('keeps all %s turns at or below the exact cap', async count => {
   const history = turns(count);
   edge.tables.chat_messages = [...history].reverse();
   await send(message());
-  expect(edge.complete).toHaveBeenCalledExactlyOnceWith({ message: 'New synthetic question', history: modelTurns(history) });
+  expect(edge.complete).toHaveBeenCalledExactlyOnceWith({ purpose: 'DISCORD', message: 'New synthetic question', history: modelTurns(history) });
   expect(edge.queries.find(query => query.table === 'chat_messages' && query.selection?.startsWith('role,')))
     .toMatchObject({ cap: 20, ordering: { column: 'created_at', ascending: false },
       filters: [{ column: 'conversation_id', op: 'eq', value: 'owned' }] });
@@ -133,7 +133,7 @@ it('omits purged user and assistant text without modifying the stored null rows'
   history[11].content = null;
   edge.tables.chat_messages = [...history].reverse();
   await send(message());
-  expect(edge.complete).toHaveBeenCalledExactlyOnceWith({ message: 'New synthetic question',
+  expect(edge.complete).toHaveBeenCalledExactlyOnceWith({ purpose: 'DISCORD', message: 'New synthetic question',
     history: modelTurns(history.slice(-20).filter(row => row.content !== null)) });
   expect(history.filter(row => row.content === null).map(row => row.id))
     .toEqual(['turn-owned-0', 'turn-owned-10', 'turn-owned-11']);
@@ -142,7 +142,7 @@ it('omits purged user and assistant text without modifying the stored null rows'
 it('uses empty context when all stored text is purged', async () => {
   edge.tables.chat_messages = turns(24).map(row => ({ ...row, content: null }));
   await send(message());
-  expect(edge.complete).toHaveBeenCalledExactlyOnceWith({ message: 'New synthetic question', history: [] });
+  expect(edge.complete).toHaveBeenCalledExactlyOnceWith({ purpose: 'DISCORD', message: 'New synthetic question', history: [] });
 });
 
 it.each([false, true])('re-serves the latest recent duplicate after more than 20 turns (reply=%s)', async reply => {
@@ -168,7 +168,7 @@ it.each(['fallback', 'refusal', 'expired', 'purged-assistant', 'purged-user', 'n
   if (condition === 'nonconsecutive') { history[20].content = repeated; history[22].content = 'Different latest question'; }
   edge.tables.chat_messages = history;
   await send(message(false, repeated));
-  expect(edge.complete).toHaveBeenCalledExactlyOnceWith({ message: repeated,
+  expect(edge.complete).toHaveBeenCalledExactlyOnceWith({ purpose: 'DISCORD', message: repeated,
     history: modelTurns(history.slice(-20).filter(row => row.content !== null)) });
 });
 
@@ -179,7 +179,7 @@ it('keeps recent continuity scoped to this Discord author and platform', async (
     { id: 'shopify', platform: 'shopify', external_id: 'author', updated_at: '2026-10-21T12:00:02.000Z' });
   edge.tables.chat_messages = [...history, ...turns(24, 'foreign'), ...turns(24, 'shopify')];
   await send(message());
-  expect(edge.complete).toHaveBeenCalledExactlyOnceWith({ message: 'New synthetic question', history: modelTurns(history.slice(-20)) });
+  expect(edge.complete).toHaveBeenCalledExactlyOnceWith({ purpose: 'DISCORD', message: 'New synthetic question', history: modelTurns(history.slice(-20)) });
   expect(edge.queries.find(query => query.table === 'chat_conversations' && query.selection === 'id'))
     .toMatchObject({ cap: 1, ordering: { column: 'updated_at', ascending: false }, filters: [
       { column: 'platform', op: 'eq', value: 'discord' },
@@ -194,7 +194,7 @@ it.each(['other-author', 'other-platform'])('rejects reply history belonging to 
   if (mismatch === 'other-author') conversation.external_id = 'someone-else';
   else conversation.platform = 'shopify';
   await send(message(true));
-  expect(edge.complete).toHaveBeenCalledExactlyOnceWith({ message: 'New synthetic question', history: [] });
+  expect(edge.complete).toHaveBeenCalledExactlyOnceWith({ purpose: 'DISCORD', message: 'New synthetic question', history: [] });
   expect(edge.queries.find(query => query.table === 'chat_conversations' && query.selection === 'platform, external_id'))
     .toMatchObject({ filters: [{ column: 'id', op: 'eq', value: 'owned' }] });
 });

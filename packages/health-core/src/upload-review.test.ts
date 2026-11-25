@@ -1,5 +1,5 @@
 /**
- * An undated previous column (US-12 AC14) as the web takes it today, pinned from ReviewTable.tsx:
+ * An undated previous column (US-12 AC14) as the web's old review took it, pinned from ReviewTable.tsx:
  * a column's day is a real past day and, when the report's own day is known, before it
  * (`datedColumns`; a later pick is refused, `handleColumnDateChange`); Save waits while a kept
  * value sits in a column with no day (`allDatesSet`). The upload's review, plan and view honour
@@ -40,7 +40,7 @@ describe('the upload honours it (US-12 AC14)', () => {
   it('with no day picked, the whole report waits and the view asks for the column\'s day', () => {
     const s = state(REPORT);
     expect(rowsOf(s)).toEqual([]);
-    expect(uploadView(s, EMPTY, NOW, uploadReview(s, EMPTY, NOW), true).sections).toContainEqual({ kind: 'undatedPrevious', fileId: 'a', name: 'a.pdf', month: '2026-06', before: REPORT });
+    expect(uploadView(s, EMPTY, NOW, uploadReview(s, EMPTY, NOW), true).sections).toContainEqual({ kind: 'undatedPrevious', key: 'a|previous', fileId: 'a', name: 'a.pdf', month: '2026-06', before: REPORT });
   });
 
   it('a day picked before the report\'s files the column\'s values on it, the rest on the report\'s', () => {

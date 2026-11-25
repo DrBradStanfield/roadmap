@@ -13,7 +13,7 @@ import type { ApiLabValue, ApiSupplement } from '../lib/api-types';
 import type { FieldUnitToggle, UnitSwitchSource } from '../lib/useBloodDraftUnits';
 import { useLeaveField, type PanelOnboarding } from '../hooks/useOnboarding';
 
-import { FIELD_METRIC_MAP, type ApiMeasurement, type ApiMedication, type ApiScreening, METRIC_TO_FIELD } from '@roadmap/health-core/mappings';
+import { FIELD_METRIC_MAP, type ApiMeasurement, type ApiMedication, type ApiScreening, METRIC_TO_FIELD, screeningsToInputs } from '@roadmap/health-core/mappings';
 import { type WeightMedicationTrigger, type LipidMarker } from '@roadmap/health-core/suggestions';
 import { type UnitSystem, fromCanonicalValue, toCanonicalValue, getDisplayLabel, getDisplayRange, UNIT_DEFS, hasUnitChoice } from '@roadmap/health-core/units';
 import { identityFieldRange } from '@roadmap/health-core/validation';
@@ -36,12 +36,13 @@ import { previousReference, WEIGHT_STILL_COUNTS_ID, WeightStillCounts } from './
 import { AddLabTest } from './AddLabTest';
 import { SupplementsSection } from './SupplementsSection';
 import type { FormSlots, Placement } from './MyHealth';
-import { type FormKit } from './form-kit';
+import { errorAria, type FormKit } from './form-kit';
 import { ScreeningQuestions } from './ScreeningQuestions';
 import { LipidMedications } from './LipidMedications';
 import { WeightMedications } from './WeightMedications';
 import { BoneDensity } from './BoneDensity';
-import { AboutRows, AlcoholField, BirthFields, HeightField, SexField, useHeightPair } from './AboutYou';
+import { AboutRows, AlcoholField, BirthFields, SexField } from './AboutYou';
+import { HeightField, useHeightPair } from './HeightField';
 
 interface FieldConfig {
   field: keyof HealthInputs;
@@ -177,12 +178,11 @@ export function InputPanel({
   // Shared blur/Enter auto-save handlers for every longitudinal input. Each
   // site does its own pre-work (raw-input cleanup) inline, then calls
   // autoSaveOnBlur(); onKeyDown is uniform. Enter also shows a held range error.
-  const autoSaveGate = hasApiResponse;
-  const autoSaveOnBlur = () => { if (autoSaveGate) scheduleLongitudinalSave(); };
+  const autoSaveOnBlur = () => { if (hasApiResponse) scheduleLongitudinalSave(); };
   const autoSaveOnEnterKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key !== 'Enter') return;
     e.preventDefault();
-    if (autoSaveGate) flushLongitudinalSave();
+    if (hasApiResponse) flushLongitudinalSave();
   };
 
   /** Get effective unit system for a field (override or global default). */
@@ -207,6 +207,8 @@ export function InputPanel({
   // My data's view state: the open value page, its history entry and the table (lib/useValuePage).
   const panelRef = useRef<HTMLDivElement>(null);
   const { pageShown, tableShown, openPage, switchPage, closePage, showTable, pageDirty, panelMessages } = useValuePage(revealCell, panelRef);
+  // The value page's history, one array until the vitals or blood test lists change, so its chart is not drawn again (US-62 AC10c).
+  const pageHistory = useMemo(() => [...vitalsHistory, ...bloodTestHistory], [vitalsHistory, bloodTestHistory]);
   // A grid's typed text not yet saved, valid or not (the plan and the chat
   // read none of it, and an upload saves it first): where the grids sit
   // hidden under the rows, each card says so and opens the table
@@ -331,7 +333,7 @@ export function InputPanel({
   const writeMedication = (meds: MedicationInputs, cascadeMode: boolean, field: string, value: string) => {
     for (const w of medicationWrites(meds, cascadeMode, field, value)) onMedicationChange(w.medicationKey, w.drugName, w.doseValue, w.doseUnit);
   };
-  const form: FormKit = { inputs, rawInputs, setRawInputs, errors, updateField, readable, unreadable, range, typeIn, blurOnWheel, settleOnEnter, autoSaveGate, rangeWait };
+  const form: FormKit = { inputs, rawInputs, setRawInputs, errors, updateField, readable, unreadable, range, typeIn, blurOnWheel, settleOnEnter, autoSaveGate: hasApiResponse, rangeWait };
 
   /** A saved value as shown, a printed limit with its symbol (US-12 AC20). */
   const savedText = (field: string, m: ApiMeasurement): string => {
@@ -399,7 +401,7 @@ export function InputPanel({
           <input
             type="number"
             id={field} ref={field === 'weightKg' ? weightRef : undefined}
-            onWheel={blurOnWheel} aria-describedby={previous && rawInputs[field] === '' ? WEIGHT_STILL_COUNTS_ID : undefined}
+            onWheel={blurOnWheel} {...errorAria(`${field}-error`, [unreadable[field], errors[field]], previous && rawInputs[field] === '' ? WEIGHT_STILL_COUNTS_ID : undefined)}
             value={rawInputs[field] !== undefined ? rawInputs[field] : toDisplay(field, (inputs[field] as number | undefined) ?? previous?.value)}
             onChange={(e) => {
               const raw = e.target.value;
@@ -430,7 +432,7 @@ export function InputPanel({
             max={r.max}
             className={errors[field] ? 'error' : ''}
           />
-          {autoSaveGate && inputs[field] !== undefined && (
+          {hasApiResponse && inputs[field] !== undefined && (
             <CommitTickButton ariaLabel={`Save ${field}`} onClick={flushLongitudinalSave}/>
           )}
         </div>
@@ -442,7 +444,7 @@ export function InputPanel({
           <span className="previous-reference">Saved {formatShortDate(previous.recordedAt)}</span>
         )}
         {(unreadable[field] || errors[field]) && (
-          <span className="error-message">{unreadable[field] ? 'Enter a number' : errors[field]}</span>
+          <span className="error-message" id={`${field}-error`}>{unreadable[field] ? 'Enter a number' : errors[field]}</span>
         )}
       </div>
     );
@@ -612,7 +614,7 @@ export function InputPanel({
   // Null, not an empty element, when no screening applies: My health draws a topic for any element (US-62 AC17).
   const renderScreening = (place: Placement) => {
     const age = planBasis?.age;
-    if (age === undefined || !anyScreeningEligible(age, inputs.sex)) return null;
+    if (age === undefined || !anyScreeningEligible(age, inputs.sex, screeningsToInputs(screenings))) return null;
     return <ScreeningQuestions place={place} form={form} screenings={screenings} onScreeningChange={onScreeningChange}
                                psaDate={psaDate} onPsaDateChange={onPsaDateChange} onPsaCommit={onPsaCommit} bloodTestHistory={bloodTestHistory}
                                age={age} writeScreening={writeScreening} renderScreeningDateInput={renderScreeningDateInput}/>;
@@ -642,10 +644,8 @@ export function InputPanel({
   return children({
     panelRef, messages: panelMessages, aboutCard, aboutYouLow, unitPill, fullForm, planReady: !!planBasis,
     pageOpen: !!pageShown,
-    renderPage: tiles => pageShown && (
-      <ValuePage key={JSON.stringify(pageShown)} subject={pageShown} history={[...vitalsHistory, ...bloodTestHistory]} labValues={labValues}
-                 ctx={rowCtx} tiles={tiles} onSave={onSaveBloodTestBatch} onCorrect={onCorrectValue} onLabAdded={onLabValueAdded} onClose={closePage} onOpen={switchPage} dirtyRef={pageDirty} onWeightAnswered={answered && (() => answered(null))}/>
-    ),
+    renderPage: tiles => pageShown && <ValuePage key={JSON.stringify(pageShown)} subject={pageShown} history={pageHistory} labValues={labValues}
+                 ctx={rowCtx} tiles={tiles} onSave={onSaveBloodTestBatch} onCorrect={onCorrectValue} onLabAdded={onLabValueAdded} onClose={closePage} onOpen={switchPage} dirtyRef={pageDirty} onWeightAnswered={answered && (() => answered(null))}/>,
     rows: { ctx: rowCtx, open: openPage, vitals: vitalsHistory, blood: bloodTestHistory, labs: labValues, withoutWeight: weightInProfile },
     vitalsCue: unsavedCue(draftedVitals),
     bloodCue: unsavedCue(draftedBlood),

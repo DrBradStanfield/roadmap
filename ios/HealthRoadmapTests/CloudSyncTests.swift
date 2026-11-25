@@ -226,6 +226,8 @@ final class CloudSyncTests: XCTestCase, CloudFixtures {
         dropbox.put(try record(days: [], device: "web"))
         let (store, sync, engine) = try app()
         await sync.start()
+        // The upload's page, read and saving on the record as it opened (the shared upload's one Save).
+        var drive = try UploadPageTests.Drive(record: store.recordJSON)
         // Another device fills the report's LDL slot.
         let web = dropbox.file!.text
         let filled = try XCTUnwrap(engine.blocking { try $0.apply(.add(metric: "ldl", value: 2.5, day: "2026-10-01"), to: web, now: .now, deviceId: "web") }.record)
@@ -234,19 +236,25 @@ final class CloudSyncTests: XCTestCase, CloudFixtures {
         {"classification":"lab_report","reportDate":"2026-10-01",
          "values":[{"metric":"ldl","valueSI":3.1,"displayValue":3.1,"displayUnit":"mmol/L","displaySystem":"si","confidence":"high"},
                    {"metric":"hba1c","valueSI":40,"displayValue":40,"displayUnit":"mmol/mol","displaySystem":"si","confidence":"medium","recordedAt":"2025-04-02"}],
-         "additionalValues":[{"name":"Ferritin","value":85,"unit":"µg/L"}], "refusedValues":[]}
+         "additionalValues":[{"name":"Ferritin","value":85,"unit":"µg/L"}], "refusedValues":[], "document":null}
         """#
-        // The re-read and the import race; whichever lands first, the summary must match.
+        drive.pick(["lab"])
+        drive.read("lab", extraction)
+        let reviewed = try XCTUnwrap(try drive.page().reviewed)
+        XCTAssertEqual(reviewed.count, 3, "the report's three values are offered")
+        XCTAssertEqual(Set(reviewed.map(\.ref)), ["v0", "v1", "a0"])
+        drive.step(UploadAction.saveEvent(promised: reviewed))
+        // The re-read and the save race; whichever lands first, the count must match.
         let reread = Task { await sync.syncNow() }
-        let result = await store.importLabs(extractionJSON: extraction, refs: ["v0", "v1", "a0"], reportDay: "2026-10-01")
+        let result = await store.saveUpload(state: drive.state, originals: [:], read: { _ in nil }, as: store.screen)
         await reread.value
         await sync.background()
-        let summary = try result.get()
+        let outcome = try result.get()
         let file = dropbox.record
         let imported = ((file["measurements"] as? [[String: Any]]) ?? []).filter { $0["source"] as? String == "lab_import" }.count
             + ((file["labValues"] as? [[String: Any]]) ?? []).filter { $0["source"] as? String == "lab_import" }.count
-        XCTAssertEqual(summary.saved, imported, "the summary counts what was saved, no more")
-        XCTAssertEqual(summary.saved + summary.skipped, 3)
+        XCTAssertEqual(outcome.values, imported, "the outcome counts what was saved, no more")
+        XCTAssertEqual(outcome.values + (outcome.skippedValues ?? 0) + (outcome.skippedLabValues ?? 0), reviewed.count)
     }
 
     /// US-25 AC21 (adversary R2): an import asked for after the open resolved, while the
@@ -1173,62 +1181,20 @@ final class CloudSyncTests: XCTestCase, CloudFixtures {
         XCTAssertEqual(activeDays(dropbox.record), ["2026-10-06"])
     }
 
-    /// US-52 AC13d: a clinic letter from "Add medical records", with a cloud open: the
-    /// original lands in Dropbox under the web's folder, then the row goes up through the
-    /// session, its contentHash the web's sha256Blob of the same bytes (CryptoKit here).
-    func testALetterIsFiledInTheCloudWithItsOriginalAndTheWebsHash() async throws {
-        dropbox.put(try record(days: [], device: "web"))
-        let (store, sync, _) = try app()
-        await sync.start()
-        let letter = ##"{"classification":"clinic_letter","reportDate":null,"values":[],"additionalValues":[],"document":{"classification":"clinic_letter","title":"Cardiology follow-up","documentDate":"2026-09-14","contentMarkdown":"# Letter","metadata":{}}}"##
-        let bytes = Data("%PDF-1.7 synthetic letter".utf8)
-        let original = LabFileReader.Original(bytes, mimeType: "application/pdf")
-        let choice = DocumentChoice(kind: .document, sourceFileName: "Letter.pdf", title: "Heart clinic", documentDate: "2026-09-14", mimeType: "application/pdf", contentHash: original.contentHash)
-        let result = await store.saveDocument(extractionJSON: letter, choice: choice, original: original)
-        XCTAssertEqual(result, .saved(count: 1, stored: true, unstored: 0, stale: false))
-        XCTAssertEqual(dropbox.documents, ["/Clinic letters/2026-09-14 Heart clinic.pdf": bytes])
-        await sync.background()
-        let row = try XCTUnwrap((dropbox.record["documents"] as? [[String: Any]])?.first)
-        let hex = SHA256.hash(data: bytes).map { String(format: "%02x", $0) }.joined()
-        XCTAssertEqual(row["contentHash"] as? String, "sha256-\(hex)")
-        XCTAssertEqual(row["fileRef"] as? String, "Clinic letters/2026-09-14 Heart clinic.pdf")
-        XCTAssertEqual(row["mimeType"] as? String, "application/pdf")
-        XCTAssertEqual(row["title"] as? String, "Heart clinic")
-        XCTAssertTrue(store.recordJSON.contains("Heart clinic"), "the screen shows the record the session holds")
-    }
-
-    private let cloudLetter = ##"{"classification":"clinic_letter","reportDate":null,"values":[],"additionalValues":[],"document":{"classification":"clinic_letter","title":"Cardiology follow-up","documentDate":"2026-09-14","contentMarkdown":"# Letter","metadata":{}}}"##
-
-    /// US-52 AC13d (Codex R2): a picked file that is gone by Save is not uploaded; the row
-    /// is filed with the reviewed bytes' hash, metadata-only, and the result says so.
-    func testAnOriginalGoneBeforeSaveFilesOnlyTheText() async throws {
-        dropbox.put(try record(days: [], device: "web"))
-        let (store, sync, _) = try app()
-        await sync.start()
-        let picked = folder.appending(path: "Letter.pdf")
-        try UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: 200, height: 200)).pdfData { $0.beginPage() }.write(to: picked)
-        let read = try await LabFileReader.documents(picked: picked, ask: LabFileReader.swiftRules)
-        let original = try XCTUnwrap(read.first?.original)
-        try FileManager.default.removeItem(at: picked)
-        let choice = DocumentChoice(kind: .document, sourceFileName: "Letter.pdf", title: "Heart clinic", documentDate: nil, mimeType: "application/pdf", contentHash: original.contentHash)
-        let result = await store.saveDocument(extractionJSON: cloudLetter, choice: choice, original: original)
-        XCTAssertEqual(result, .saved(count: 1, stored: false, unstored: 0, stale: true))
-        XCTAssertEqual(dropbox.documents, [:], "nothing uploaded")
-        await sync.background()
-        let row = try XCTUnwrap((dropbox.record["documents"] as? [[String: Any]])?.first)
-        XCTAssertEqual(row["contentHash"] as? String, original.contentHash)
-        XCTAssertEqual(row["fileRef"] as? String, "")
-    }
-
-    /// US-52 AC13d (Codex R1): the review pins the record it opened on. An erase from
+    /// US-52 AC13d (Codex R1): the upload pins the record it opened on. An erase from
     /// another device that arrives before Save refuses both the values and the document.
     func testAnEraseAfterTheReviewOpensRefusesItsSave() async throws {
         let before = try record(days: ["2026-10-01"], device: "web")
         dropbox.put(before)
         let (store, sync, _) = try app()
         await sync.start()
-        store.pinScreen() // LabReviewView, as it appears
+        store.pinScreen() // the upload's page, as it appears
         defer { store.unpinScreen() }
+        let opened = store.pinned ?? store.screen
+        var drive = try UploadPageTests.Drive(record: store.recordJSON)
+        drive.pick(["letter"])
+        drive.read("letter", UploadPageTests.letter())
+        drive.step(UploadAction.saveEvent(promised: try drive.page().reviewed))
         var erased = before
         erased["measurements"] = []
         erased["erasedRows"] = ["fromEpoch": 1, "ids": ((before["measurements"] as? [[String: Any]]) ?? []).compactMap { $0["id"] as? String }]
@@ -1240,9 +1206,10 @@ final class CloudSyncTests: XCTestCase, CloudFixtures {
         erased["meta"] = meta
         dropbox.put(erased)
         await sync.syncNow()
-        let original = LabFileReader.Original(Data("%PDF".utf8), mimeType: "application/pdf")
-        let choice = DocumentChoice(kind: .document, sourceFileName: "Letter.pdf", title: "Letter", documentDate: nil, mimeType: "application/pdf", contentHash: original.contentHash)
-        guard case .refused = await store.saveDocument(extractionJSON: cloudLetter, choice: choice, original: original) else { return XCTFail("a pre-erase document was saved") }
+        // A real original offered, so a Save that wrote it before refusing would leave it in Dropbox.
+        let bytes = Data("%PDF-1.7 synthetic letter".utf8)
+        let refused = await store.saveUpload(state: drive.state, originals: ["letter": "application/pdf"], read: { _ in bytes }, as: opened)
+        XCTAssertEqual(refused, .failure(LabRefusal(message: RecordStore.recordChanged)), "a pre-erase document was refused by the store's guard")
         guard case .refused = await store.apply(.add(metric: "weight", value: 80, day: "2026-10-02")) else { return XCTFail("a pre-erase value was saved") }
         XCTAssertEqual(dropbox.documents, [:])
     }

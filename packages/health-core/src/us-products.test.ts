@@ -45,7 +45,7 @@ describe('US-61 AC1: the two new supplement cards, in every market', () => {
     expect(suggestions.filter((s) => s.category === 'supplements').map((s) => s.id)).toEqual(SUPPLEMENT_IDS);
     const lutein = suggestions.find((s) => s.id === 'supplement-lutein-zeaxanthin')!;
     expect(lutein).toMatchObject({ category: 'supplements', priority: 'info', title: 'Lutein and zeaxanthin' });
-    expect(lutein.description).toBe('Lutein and zeaxanthin are the pigments of the macula, the part of the eye that sees fine detail. Trials show supplements raise macular pigment density. In the AREDS trial, a formula containing beta-carotene slowed the progression of macular degeneration. In AREDS2, lutein and zeaxanthin worked as well as beta-carotene, without beta-carotene\'s lung cancer signal in former smokers.');
+    expect(lutein.description).toBe('Lutein and zeaxanthin are the pigments of the macula, the part of the eye that sees fine detail. Trials show supplements raise macular pigment density. In the AREDS trial, a formula containing beta-carotene slowed the progression of macular degeneration. In AREDS2, lutein and zeaxanthin worked as well as beta-carotene, without beta-carotene\'s lung cancer signal in former smokers. Whether it suits you is worth discussing with your doctor or pharmacist.');
     expect(lutein.references!.map((r) => r.url)).toEqual([
       'https://doi.org/10.1093/advances/nmab071',
       'https://doi.org/10.1001/archopht.119.10.1417',
@@ -54,7 +54,7 @@ describe('US-61 AC1: the two new supplement cards, in every market', () => {
     ]);
     const tmg = suggestions.find((s) => s.id === 'supplement-tmg')!;
     expect(tmg).toMatchObject({ category: 'supplements', priority: 'info', title: 'TMG (trimethylglycine)' });
-    expect(tmg.description).toBe('TMG lowers blood homocysteine, according to a meta-analysis of randomized trials. Small trials suggest it may improve strength and power.');
+    expect(tmg.description).toBe('TMG lowers blood homocysteine, according to a meta-analysis of randomized trials. Small trials suggest it may improve strength and power. Whether it suits you is worth discussing with your doctor or pharmacist.');
     expect(tmg.references!.map((r) => r.label.split(' ')[0])).toEqual(['McRae', 'Lee', 'Pryor', 'Nobari']);
     expect(tmg.references!.at(-1)!.url).toBe('https://doi.org/10.1186/s12970-021-00464-y');
   });
@@ -125,8 +125,8 @@ describe('US-61 AC2-AC3: engine output never carries a product or a US variant, 
     expect(base).toContain('COSMOS');
     expect(base).toContain('warfarin');
     expect(card('supplement-micronutrient-base').description.startsWith(base.split(' If you take')[0])).toBe(true);
-    expect(US_SUPPLEMENT_DESCRIPTIONS['supplement-creatine']!).toBe('One of the most-studied supplements: a meta-analysis found creatine (3–5 g/day) significantly increases muscle strength and lean mass with resistance training.');
-    expect(US_SUPPLEMENT_DESCRIPTIONS['supplement-lutein-zeaxanthin']!).toBe('Lutein and zeaxanthin are the pigments of the macula, the part of the eye that sees fine detail. Trials show supplements raise macular pigment density.');
+    expect(US_SUPPLEMENT_DESCRIPTIONS['supplement-creatine']!).toBe('One of the most-studied supplements: a meta-analysis found creatine (3–5 g/day) significantly increases muscle strength and lean mass with resistance training. Whether it suits you is worth discussing with your doctor or pharmacist.');
+    expect(US_SUPPLEMENT_DESCRIPTIONS['supplement-lutein-zeaxanthin']!).toBe('Lutein and zeaxanthin are the pigments of the macula, the part of the eye that sees fine detail. Trials show supplements raise macular pigment density. Whether it suits you is worth discussing with your doctor or pharmacist.');
     expect(Object.values(US_SUPPLEMENT_DESCRIPTIONS).join(' ')).not.toMatch(PRODUCT_TEXT);
     expect(US_SUPPLEMENT_REFERENCES['supplement-micronutrient-base']!.map((r) => r.label)).not.toContainEqual(expect.stringMatching(/WHO/));
     expect(US_SUPPLEMENT_REFERENCES['supplement-creatine']!.map((r) => r.label.split(' ')[0])).toEqual(['Kreider']);

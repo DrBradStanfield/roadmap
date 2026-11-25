@@ -25,7 +25,7 @@ function io(opts: { fail?: boolean } = {}) {
   const errors: unknown[] = [];
   let n = 0;
   const value: DocumentSaveIO<Uint8Array> = {
-    hash: async (b) => hashOf(b),
+    stopped: () => false, hash: async (b) => hashOf(b),
     write: async (ref, b) => {
       if (opts.fail) throw new Error('synthetic quota refusal');
       written.set(ref, b);
@@ -148,11 +148,11 @@ describe('saveDocuments: a held metadata-only row (US-14 AC4, US-35 AC8)', () =>
 });
 
 describe('saveDocuments: a failed blob write without a held row', () => {
-  it('degrades to a metadata-only row that keeps the hash, and reports the error', async () => {
+  it('degrades to a metadata-only row that keeps the hash, reports the error and counts it unstored (US-14 AC12)', async () => {
     const file = fresh();
     const { plan, errors } = await save(file, [letter()], { fail: true });
     expect(errors).toHaveLength(1);
-    expect(plan.unstored).toBe(0);
+    expect(plan.unstored).toBe(1);
     expect(plan.saved).toEqual([expect.objectContaining({ fileRef: '', mimeType: '', contentHash: hashOf(bytes('letter bytes')) })]);
     expect(file.documents).toHaveLength(1);
   });
