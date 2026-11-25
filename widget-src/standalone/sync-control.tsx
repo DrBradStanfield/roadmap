@@ -77,18 +77,30 @@ function useLocalSaveRefused(backend: Backend): boolean {
 }
 
 /** US-09 AC2i (lead C31): said while a device page's writes have stopped after another page's log-off.
- *  A cloud page's stop refuses only its device mirror, and its saves reach its cloud while its sign-in
- *  still holds, so it says nothing (lead C32). A page whose own log-off has begun reloads at once. */
+ *  A page whose own log-off has begun reloads at once. */
 const WRITES_STOPPED = 'This page has stopped saving. Reload it to carry on.';
+/** US-09 AC2i (lead C32; words Brad 2026-11-26): a cloud page's stop refuses only its device mirror, and
+ *  its saves reach its cloud while its sign-in holds, so it is said once a save fails. No reload is asked:
+ *  a reload opens this browser logged off, and the unsaved changes on this page are gone. */
+const CLOUD_STOPPED = 'This browser was logged off in another tab. Your latest changes show here but are not saved.';
 const writesStoppedHere = (): boolean => !healthWritesAllowed() && !ownLogOffHasBegun();
+
+/** What the save alert says: one state, read from the page (US-01 AC5, US-09 AC2i). */
+export type SaveAlert = 'none' | 'deviceRefused' | 'deviceStopped' | 'cloudStopped';
+export function saveAlert(backend: Backend, stopped: boolean, localRefused: boolean, status: SaveStatus): SaveAlert {
+  if (backend !== 'local') return stopped && (status === 'not-saved' || status === 'not-saved-on-device') ? 'cloudStopped' : 'none';
+  if (stopped) return 'deviceStopped';
+  return localRefused ? 'deviceRefused' : 'none';
+}
+const SAVE_ALERT_WORDS = { deviceRefused: LOCAL_SAVE_REFUSED, deviceStopped: WRITES_STOPPED, cloudStopped: CLOUD_STOPPED } as const;
 
 /** US-01 AC5: said while this device refuses the record's saves; US-09 AC2i: or will take none. Beside
  *  the storage button, and on a phone also atop My health and Chat, since the button sits in the Account tab (US-62 AC34). */
 export function LocalSaveAlert({ backend }: { backend: Backend }) {
   const localRefused = useLocalSaveRefused(backend);
   const stopped = useSyncExternalStore(onHealthWritesChange, writesStoppedHere, writesStoppedHere);
-  if (backend === 'local' && stopped) return <span className="hr-sync-error" role="alert">{WRITES_STOPPED}</span>;
-  return localRefused ? <span className="hr-sync-error" role="alert">{LOCAL_SAVE_REFUSED}</span> : null;
+  const alert = saveAlert(backend, stopped, localRefused, useSaveFacts(backend).status);
+  return alert === 'none' ? null : <span className="hr-sync-error" role="alert">{SAVE_ALERT_WORDS[alert]}</span>;
 }
 
 /** US-09 AC30: a connected record's save words (lead A1 step d, owner 2026-11-12),
@@ -107,7 +119,7 @@ const deviceHolds = ({ status, pendingSync }: SaveFacts): boolean =>
   pendingSync && status === 'not-saved-on-device';
 
 /** The page's one sign-in state (US-09 AC48), seeded at boot and raised when a sign-in ends. */
-const useSignIn = (): SignIn => useSyncExternalStore(subscribeSignIn, currentSignIn, currentSignIn);
+export const useSignIn = (): SignIn => useSyncExternalStore(subscribeSignIn, currentSignIn, currentSignIn);
 
 /** US-09 AC48: the bar's words for a Drive or Dropbox sign-in that ended. */
 const SIGN_IN_AGAIN = { 'google-drive': 'Sign in to Google again', dropbox: 'Sign in to Dropbox again' } as const;

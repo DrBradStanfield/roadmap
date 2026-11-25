@@ -192,6 +192,7 @@ const EVENT_ONLY_KEYS: Partial<Record<string, readonly string[]>> = {
   cloud_connect_cancelled: ['provider'],
   cloud_connect_checked: ['provider', 'outcome'], // US-09 AC55: never the account
   blood_test_moved: [], // US-04 AC5: the name alone
+  chat_panel_shown: [], // US-15 AC77: the name alone
   alcohol_question_answered: [], // US-60: the name alone, never the answer
   us_product_shown: ['product'], // US-61 AC8: the product alone, never the card
   us_product_link_clicked: ['product'],

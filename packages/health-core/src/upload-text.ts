@@ -110,8 +110,11 @@ export const REVIEW_CELL_TEXT = {
   alreadyInRecord: 'Already in your record',
   /** A row's accessible name (the pattern Brad approved 2026-11-21): the Replace label's "<test> value from", then where it
    *  was read; a later reading of the test there adds "another reading" (NOT_SAVED_TEXT.sameDay's words). */
-  rowName: (test: string, from: string, again: boolean) => `${test} value from ${from}${again ? ', another reading' : ''}`,
+  rowName: (test: string, from: string, again: boolean) => `${test} ${ROW_NAME_PARTS.valueFrom} ${from}${again ? `, ${ROW_NAME_PARTS.again}` : ''}`,
 } as const;
+
+/** `rowName`'s own words, which the web's list names each value with beside the test, file and day it shows (US-13 AC10). */
+export const ROW_NAME_PARTS = { valueFrom: 'value from', again: 'another reading' } as const;
 
 /** A previous column's day control, moved from the web's old grid byte for byte: its names (ReviewMatrix.tsx aria-label) and,
  *  while an undated one has no day, its limits: a day in its printed month, before its report's day (ReviewTable.tsx). */

@@ -234,6 +234,15 @@ describe('the email-arrival counters', () => {
     expect(parseProductEvent({ eventName: 'pdf_window_blocked', visitorId: VISITOR, metadata: { key: 'x' } })).toBeNull();
   });
 
+  it('US-15 AC77: takes chat_panel_shown from a browser by name alone, never with metadata', () => {
+    expect(PRODUCT_EVENT_NAMES).toContain('chat_panel_shown');
+    expect(parseProductEvent({ eventName: 'chat_panel_shown', visitorId: VISITOR })).toEqual({ eventName: 'chat_panel_shown', visitorId: VISITOR });
+    for (const metadata of [{ key: 'x' }, { placement: 'header' }, { surface: 'brand' }, { count: 1 }]) {
+      expect(parseProductEvent({ eventName: 'chat_panel_shown', visitorId: VISITOR, metadata })).toBeNull();
+    }
+    expect(parseProductEvent({ eventName: 'chat_panel_shown', visitorId: SERVER_VISITOR_ID })).toBeNull(); // a browser event
+  });
+
   it('takes blood_test_moved from a browser, with no metadata (US-04 AC5)', () => {
     expect(parseProductEvent({ eventName: 'blood_test_moved', visitorId: VISITOR })).toEqual({
       eventName: 'blood_test_moved',

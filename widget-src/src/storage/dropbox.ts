@@ -21,7 +21,7 @@ import { dropboxDownload, dropboxListFolder, dropboxRead, dropboxReplyAccount, d
 import { answerOutcome, fetchOrFail, ROADMAP_FILE_NAME, sleepUntilAborted, catchUpAfterFailure, StorageError, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
 import { TRANSFER_DEADLINE_MS, timeoutDeadline } from '@roadmap/health-core/transfer-deadline';
 import { BACKEND_KEY, getSignIn, logOffId, safeGetItem, setSignIn, safeRemoveItem, type LogOffId } from '../lib/storage';
-import { claimRedirectCancel, claimRedirectCode, deriveCodeChallenge, generateCodeVerifier, generateState, pkceEntry } from './pkce';
+import { claimRedirectCancel, claimRedirectCode, deriveCodeChallenge, generateCodeVerifier, generateState, pkceEntry, signInUnfinished } from './pkce';
 import { refreshOnce } from './token-flight';
 import { isSignedOut, signInEnded } from './sign-in-state';
 import { freshDecision, keepWithPin, reconnectDecision } from './account-gate';
@@ -177,7 +177,7 @@ export class DropboxAdapter implements StorageAdapter {
       [TOKEN_KEY]: { accessToken: json.access_token, refreshToken: json.refresh_token, expiresAt: Date.now() + json.expires_in * 1000 } satisfies DropboxTokens,
       [CONFIG_KEY]: {},
     }, decision, claimed.gen);
-    return saved ? new DropboxAdapter(config, claimed.gen) : null;
+    return saved ? new DropboxAdapter(config, claimed.gen) : claimed.gen !== logOffId() ? signInUnfinished() : null; // a log-off during the exchange; else as before
   }
 
   async disconnect(): Promise<void> {
