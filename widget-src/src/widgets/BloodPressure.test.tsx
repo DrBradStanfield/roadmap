@@ -13,7 +13,7 @@ import type { SuggestionInputs } from '@roadmap/health-core/types';
 import { computePlan } from '@roadmap/health-core/plan';
 import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { PRESSURE_ORDER } from '@roadmap/health-core/validation';
-import { RoadmapStore } from '../storage/roadmap-store';
+import { REMOTE_CHANGED_EVENT, RoadmapStore } from '../storage/roadmap-store';
 import * as data from '../lib/roadmap-data';
 import { formatShortDate } from '../lib/constants';
 import { trackProductEvent } from '../lib/server-api';
@@ -560,7 +560,8 @@ describe('US-16 AC2a: the blood pressure save writes under the erase it was aske
 // US-75 AC8 (lead H404): a reading belongs to the erase the page showed as its first digit was typed, as the full
 // app's fields; a save that runs under a newer erase writes nothing, as a changed row (AC5).
 describe('US-75 AC8: a reading is saved under the erase shown as it was typed', () => {
-  /** Another tab erased the record; this page now shows the erased one. */
+  /** Another tab erased the record; the page's mark shows the erased one (as another block's root moves it), and
+   *  this widget's tree has not yet followed. */
   async function erasedElsewhere() {
     expect((await data.deleteUserData()).success).toBe(true);
     data.markEraseShown(data.getEraseIdentity());
@@ -594,12 +595,15 @@ describe('US-75 AC8: a reading is saved under the erase shown as it was typed', 
     expect(navigate).toHaveBeenCalledWith('/next');
   });
 
-  it('typed again after the refused save, under the erase shown now: kept', async () => {
+  it('typed again after the refused save, once the widget has followed the erase: kept', async () => {
     render(<BloodPressureWidget />);
     enterPair(1, '128', '82');
     await erasedElsewhere();
     await leave();
     expect(active('systolic_bp')).toEqual([]);
+    // The re-read's news reaches the widget: it starts over under the erase shown now (FollowErase).
+    act(() => { window.dispatchEvent(new CustomEvent(REMOTE_CHANGED_EVENT, { detail: { erase: data.getEraseIdentity() } })); });
+    expect(box(1, 'top').value).toBe('');
     enterPair(1, '130', '84');
     await leave();
     expect(active('systolic_bp')).toEqual([130]);

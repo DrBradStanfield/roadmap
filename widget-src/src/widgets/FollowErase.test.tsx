@@ -15,7 +15,8 @@ import { RoadmapStore } from '../storage/roadmap-store';
 import * as data from '../lib/roadmap-data';
 import { BloodPressureWidget } from './BloodPressure';
 import { WaistToHeightWidget } from './WaistToHeight';
-import { FollowErase } from './FollowErase';
+import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
+import { useTreeErase } from './FollowErase';
 
 /** While `gate` is set, the widgets' wait for the store's flush is held: a save stays in flight, the next one queued. */
 const flush = vi.hoisted(() => ({ gate: null as null | Promise<void> }));
@@ -64,6 +65,9 @@ async function anotherDeviceErases() {
   erased.meta.erasedAt = now;
   await adapter.write(ROADMAP_FILE_NAME, erased, version);
 }
+/** The page has not heard a re-read's news yet: the announcement reaches no widget (removed in afterEach). */
+const stop = (event: Event) => event.stopImmediatePropagation();
+const unheard = () => window.addEventListener(REMOTE_CHANGED_EVENT, stop, true);
 /** The live refresh's re-read (RoadmapStore.startLiveRefresh's `reread`), as it runs on the page. */
 const reread = async () => { await act(async () => { await store.refreshFromRemote(); }); await pause(0); };
 
@@ -79,6 +83,7 @@ beforeEach(async () => {
   await data.addMeasurement('weight', 70, undefined, data.getShownErase()); // the record has something to erase
 });
 afterEach(async () => {
+  window.removeEventListener(REMOTE_CHANGED_EVENT, stop, true);
   cleanup();
   vi.restoreAllMocks();
   await data.flushRoadmapStore();
@@ -88,7 +93,7 @@ afterEach(async () => {
 describe('US-75 AC8: the widgets page follows a newer erase by starting over', () => {
   it('a re-read brings an erase: the readings on screen go; one typed afterwards is kept and the next step follows', async () => {
     const navigate = vi.fn();
-    render(<FollowErase><BloodPressureWidget nextUrl="/next" navigate={navigate} /></FollowErase>);
+    render(<BloodPressureWidget nextUrl="/next" navigate={navigate} />);
     enterPair(1, '128', '82');
     const before = data.getEraseIdentity();
     await anotherDeviceErases();
@@ -104,7 +109,7 @@ describe('US-75 AC8: the widgets page follows a newer erase by starting over', (
   });
 
   it('a reading typed before an erase never lands in the erased record, a second reading typed after it included', async () => {
-    render(<FollowErase><BloodPressureWidget /></FollowErase>);
+    render(<BloodPressureWidget />);
     enterPair(1, '128', '82');
     await anotherDeviceErases();
     await reread();
@@ -115,7 +120,8 @@ describe('US-75 AC8: the widgets page follows a newer erase by starting over', (
   });
 
   it('a save asked after the store took the erase in, before the page shows it, writes nothing', async () => {
-    render(<BloodPressureWidget />); // no FollowErase: the shown erase stays the one the reading was typed under
+    unheard(); // the store re-reads, and the page has not yet heard: the tree still shows the old erase
+    render(<BloodPressureWidget />);
     enterPair(1, '128', '82');
     await anotherDeviceErases();
     await reread();
@@ -126,8 +132,8 @@ describe('US-75 AC8: the widgets page follows a newer erase by starting over', (
 
   it('the waist widget on the same page starts over too: its typed values go', async () => {
     render(<>
-      <FollowErase><WaistToHeightWidget /></FollowErase>
-      <FollowErase><BloodPressureWidget /></FollowErase>
+      <WaistToHeightWidget />
+      <BloodPressureWidget />
     </>);
     const waist = screen.getByLabelText(/^Waist/, { selector: 'input' }) as HTMLInputElement;
     fireEvent.input(waist, { target: { value: '88' } });
@@ -139,7 +145,7 @@ describe('US-75 AC8: the widgets page follows a newer erase by starting over', (
   });
 
   it('a waist save asked under the old erase, still queued when the page follows a newer one, writes nothing', async () => {
-    render(<FollowErase><WaistToHeightWidget /></FollowErase>);
+    render(<WaistToHeightWidget />);
     const box = (label: RegExp) => screen.getByLabelText(label, { selector: 'input' }) as HTMLInputElement;
     const enter = () => fireEvent.keyDown(box(/^Waist/), { key: 'Enter' });
     fireEvent.input(box(/^Height/), { target: { value: '178' } });
@@ -162,5 +168,40 @@ describe('US-75 AC8: the widgets page follows a newer erase by starting over', (
     await pause(50);
     await act(() => data.flushRoadmapStore());
     expect(active('waist')).not.toContain(91);
+  });
+
+  it('a save\'s erase is read only under FollowErase: outside it, the tree throws rather than read the page\'s mark', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const Reads = () => <>{useTreeErase()}</>;
+    expect(() => render(<Reads />)).toThrow('useTreeErase outside FollowErase');
+  });
+
+  // Each block is its own React root (standalone/widgets.tsx). One that mounts after the store took the erase in
+  // follows it at once and moves the page's mark, while a root mounted before, its news not yet heard, still shows
+  // the old tree. That tree's saves keep the old erase.
+  it('two roots: the waist root\'s height timer fires after the other root followed, before it did: nothing written', async () => {
+    unheard();
+    render(<WaistToHeightWidget />);
+    fireEvent.input(screen.getByLabelText(/^Height/, { selector: 'input' }), { target: { value: '178' } }); // the 500 ms timer
+    await anotherDeviceErases();
+    await reread();
+    render(<BloodPressureWidget />); // a second root: it follows the erase as it mounts
+    expect(data.getShownErase()).toBe(data.getEraseIdentity());
+    expect((screen.getByLabelText(/^Height/, { selector: 'input' }) as HTMLInputElement).value).toBe('178'); // not followed
+    await pause(600);
+    await act(() => data.flushRoadmapStore());
+    expect(persisted().profile.heightCm).toBeUndefined();
+  });
+
+  it('two roots: a reading typed in a root not yet followed, after the other root followed, is never written', async () => {
+    unheard();
+    render(<BloodPressureWidget />);
+    await anotherDeviceErases();
+    await reread();
+    render(<WaistToHeightWidget />); // a second root: it follows the erase as it mounts
+    expect(data.getShownErase()).toBe(data.getEraseIdentity());
+    enterPair(1, '128', '82'); // typed in the root that has not followed
+    await leave();
+    expect(active('systolic_bp')).toEqual([]);
   });
 });

@@ -8,10 +8,10 @@
 // a save resolves true only once every pending entry is kept, which the next-step link waits for.
 import { useRef, type Dispatch, type MutableRefObject, type SetStateAction } from 'react';
 import type { UnitSystem } from '@roadmap/health-core/units';
-import { getShownErase } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 import { recordDays, recordMeasured, resultsFor, saveMeasured, seenAfterFailure, seenNow, seenWith, type Seen } from './body-measures';
 import { INPUT_OF, readBoxes, settle, type Boxes, type Field } from './boxes';
+import { useTreeErase } from './FollowErase';
 
 type Days = ReturnType<typeof recordDays>;
 
@@ -25,6 +25,8 @@ export function useWidgetSave(args: {
   setDays: Dispatch<SetStateAction<Days>>;
 }): (fields: readonly Field[]) => Promise<boolean> {
   const { now, setBoxes, setDays } = args;
+  // The erase this tree was mounted under: every save it asks, queued or not, writes under it or not at all (US-75 AC8).
+  const erase = useTreeErase();
   // What the person has seen of the record: all a save may replace (review A4, R5).
   const seen = useRef<Seen | null>(null);
   seen.current ??= seenNow();
@@ -47,7 +49,6 @@ export function useWidgetSave(args: {
     if (chosen.size === 0) return queue.current.then(() => unsaved.current.size === 0);
     const number = ++asked.current;
     const baseline = seen.current!;
-    const erase = getShownErase(); // as the save is asked: a queued save keeps it, however late it runs (US-75 AC8)
     const run = async (): Promise<boolean> => {
       // A field a conflict refilled after this was asked is not this save's to write.
       for (const f of [...chosen]) if ((conflictAfter.current[f] ?? 0) > number) chosen.delete(f);

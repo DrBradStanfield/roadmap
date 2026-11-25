@@ -9,12 +9,12 @@ import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 're
 import { BP_TIER_SHORT, type BpTier } from '@roadmap/health-core/bp-tier';
 import { localDay } from '@roadmap/health-core/merge';
 import { formatShortDate } from '../lib/constants';
-import { getShownErase } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 import { useBpPair } from '../lib/useBpPair';
 import { useSaveOnLeave } from '../lib/useSaveOnLeave';
 import { NO_SAVES, averageOf, bpPageView, readReading, recordPair, resultFor, rowsOn, savePair, transition, type Ids, type Result, type SaveOutcome, type Saves, type Typed } from './blood-pressure';
 import { safeHref } from './body-measures';
+import { FollowErase, useTreeErase } from './FollowErase';
 import { NEXT_STEP_DEFAULT, type WidgetProps } from './WaistToHeight';
 import { PILL, canvasDraws, drawPill, fixed } from './WidgetResults';
 
@@ -101,7 +101,19 @@ function BpResults({ result }: { result: Result | null }) {
   );
 }
 
-export function BloodPressureWidget({ nextUrl, nextLabel, navigate = (href) => window.location.assign(href) }: WidgetProps) {
+export function BloodPressureWidget(props: WidgetProps) {
+  // One view event per page view, however many blood pressure blocks the page holds (AC1, as US-74). Counted
+  // above FollowErase: starting over after a newer erase is the same page view (AC8).
+  useEffect(() => {
+    if (bpPageView.mounted++ === 0) { bpPageView.savedCounted = false; trackProductEvent('bp_widget_viewed'); }
+    return () => { bpPageView.mounted--; };
+  }, []);
+  return <FollowErase><BloodPressureForm {...props} /></FollowErase>;
+}
+
+function BloodPressureForm({ nextUrl, nextLabel, navigate = (href) => window.location.assign(href) }: WidgetProps) {
+  // The erase this tree was mounted under: every save of its typing writes under it or not at all (AC8).
+  const erase = useTreeErase();
   // The record's latest pair, shown until the person types (AC3): never averaged in, never saved.
   const [start] = useState(recordPair);
   const [prefilled, setPrefilled] = useState(!!start);
@@ -117,12 +129,6 @@ export function BloodPressureWidget({ nextUrl, nextLabel, navigate = (href) => w
   const saves = useRef<Saves>(NO_SAVES);
   const shown = useRef({ day: localDay(new Date()), ids: start?.day === localDay(new Date()) ? start.ids : NONE, asOf: 0 });
   const queue = useRef<Promise<unknown>>(Promise.resolve());
-
-  // One view event per page view, however many blood pressure blocks the page holds (AC1, as US-74).
-  useEffect(() => {
-    if (bpPageView.mounted++ === 0) { bpPageView.savedCounted = false; trackProductEvent('bp_widget_viewed'); }
-    return () => { bpPageView.mounted--; };
-  }, []);
 
   // Only readings typed today count, and the record's while it shows: one typed before midnight is never
   // averaged into a new day's result or save (Codex 1876b R5); a save already asked keeps its own day.
@@ -169,7 +175,7 @@ export function BloodPressureWidget({ nextUrl, nextLabel, navigate = (href) => w
 
   // The first edit clears the record's reading: a half from another day is never kept beside a typed one (AC3).
   const change = (i: 0 | 1) => (typed: Typed) => {
-    saves.current = transition(saves.current, { type: 'typed', erase: getShownErase() });
+    saves.current = transition(saves.current, { type: 'typed', erase });
     // The load reserve for a returning visitor (the block's inline script) has done its job once they type:
     // from then on the card fits what it holds (Brad 2026-11-19).
     form.current?.closest('.hr-widget')?.classList.remove('hr-widget--saved');
