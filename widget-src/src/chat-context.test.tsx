@@ -14,9 +14,10 @@ import { renderHook } from '@testing-library/react';
 import { buildChatContextJson, type ChatContextPayload } from '@roadmap/health-core/chat-context';
 import type { ApiMeasurement, ApiMedication, ApiScreening } from '@roadmap/health-core/mappings';
 import {
-  clearLocalStorage, loadFromLocalStorage, loadGuestInputs, patchMirror, saveToLocalStorage, saveUnitPreference,
+  clearLocalStorage, loadFromLocalStorage, loadGuestInputs, saveToLocalStorage, saveUnitPreference,
   MIRROR_CHANGED_EVENT, MIRROR_KEY,
 } from './lib/storage';
+import { writeMirror } from './lib/chat-mirror';
 import { sendMessage } from './lib/chat-api';
 import { useChatState } from './hooks/useChatState';
 
@@ -179,19 +180,20 @@ describe('US-15 AC10: the mirror has one meaning and one signal', () => {
     window.addEventListener(MIRROR_CHANGED_EVENT, seen);
     try {
       saveToLocalStorage(PROFILE, SAVED, [], []);
-      patchMirror({ medications: [STATIN] });
+      writeMirror({ medications: [STATIN] });
       expect(seen).toHaveBeenCalledTimes(2);
     } finally {
       window.removeEventListener(MIRROR_CHANGED_EVENT, seen);
     }
   });
 
-  it('US-15 AC10: a medication or screening write replaces its own list and keeps the saved profile and values', () => {
+  // The values and their derived fields come from the store at each write (US-34 AC11, lib/chat-mirror.test.ts).
+  it('US-15 AC10: a medication or screening write replaces its own list and keeps the saved profile', () => {
     seedReturningUser();
-    patchMirror({ medications: [STATIN] });
-    patchMirror({ screenings: [COLONOSCOPY] });
+    writeMirror({ medications: [STATIN] });
+    writeMirror({ screenings: [COLONOSCOPY] });
     expect(loadFromLocalStorage()).toMatchObject({
-      inputs: PROFILE, previousMeasurements: SAVED, medications: [STATIN], screenings: [COLONOSCOPY],
+      inputs: PROFILE, medications: [STATIN], screenings: [COLONOSCOPY],
     });
   });
 
@@ -265,9 +267,9 @@ describe('US-07 AC7: every chat reads the saved lab eGFR the plan reads', () => 
     expect(eGFR(contextNow(captured.section?.guestInputs) as ChatContextPayload)).toBe(40);
   });
 
-  it('US-07 AC7: the mirror keeps the lab eGFR through a patch, and drops one the schema refuses', () => {
+  // Every write works the lab eGFR out again from the store's lab rows (US-34 AC11, lib/chat-mirror.test.ts).
+  it('US-07 AC7: the mirror keeps the lab eGFR, and drops one the schema refuses', () => {
     seedRuth();
-    patchMirror({ medications: [] });
     expect(loadFromLocalStorage()?.labEgfr).toEqual(LAB);
     saveToLocalStorage(PROFILE, SAVED, [], [], undefined, { labEgfr: 5000, labEgfrDate: '2026-09-01' });
     expect(loadFromLocalStorage()?.labEgfr).toBeNull();

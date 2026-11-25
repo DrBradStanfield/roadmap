@@ -163,7 +163,7 @@ type MirrorPsa = ApiMeasurement & { raisedBefore?: true };
  */
 export function saveToLocalStorage(inputs: Partial<HealthInputs>, previousMeasurements?: ApiMeasurement[], medications?: ApiMedication[], screenings?: ApiScreening[], reminderPreferences?: ApiReminderPreference[], labEgfr?: LabEgfr | null, psa?: MirrorPsa | null): void {
   // After log-off the mirror stays gone: a cloud tab's later saves end here
-  // (patchMirror too) and would put the health copy back (US-09 AC2e).
+  // (writeMirror too) and would put the health copy back (US-09 AC2e).
   if (!healthWritesAllowed()) return;
   try {
     const data: StoredData = {
@@ -183,23 +183,6 @@ export function saveToLocalStorage(inputs: Partial<HealthInputs>, previousMeasur
   } catch (error) {
     console.warn('Failed to save to localStorage:', error);
   }
-}
-
-/**
- * Replace one part of the mirror (the saved profile, the medications or the
- * screenings) and keep the rest, so no saver can write form inputs into it.
- */
-export function patchMirror(patch: { profile?: Partial<HealthInputs> } & Partial<Pick<LoadedData, 'medications' | 'screenings' | 'labEgfr'>>): void {
-  const cached = loadFromLocalStorage();
-  saveToLocalStorage(
-    patch.profile ?? cached?.inputs ?? {},
-    cached?.previousMeasurements ?? [],
-    patch.medications ?? cached?.medications ?? [],
-    patch.screenings ?? cached?.screenings ?? [],
-    cached?.reminderPreferences ?? [],
-    patch.labEgfr !== undefined ? patch.labEgfr : cached?.labEgfr ?? null,
-    cached?.psa ?? null,
-  );
 }
 
 /**
