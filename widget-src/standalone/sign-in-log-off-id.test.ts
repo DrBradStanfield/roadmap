@@ -33,6 +33,7 @@ function makeStorage(onChange: (key: string) => void): Storage {
     key: (i: number) => [...values.keys()][i] ?? null,
     getItem: (key: string) => values.get(key) ?? null,
     setItem: (key: string, value: string) => {
+      if (key === refusedKey) throw new DOMException('full', 'QuotaExceededError');
       const changed = values.get(key) !== String(value);
       values.set(key, String(value));
       if (changed) onChange(key);
@@ -50,6 +51,8 @@ const idToken = () => `h.${btoa(JSON.stringify({ email: EMAIL, email_verified: t
 let calls: string[];
 /** Set to log off in the other tab while the code exchange is out. */
 let logOffDuringExchange = false;
+/** A key this browser refuses to store, as a full device store does. */
+let refusedKey: string | null = null;
 async function fakeFetch(input: RequestInfo | URL): Promise<Response> {
   const url = String(input);
   calls.push(url);
@@ -86,6 +89,7 @@ beforeEach(async () => {
   vi.stubGlobal('document', document);
   calls = [];
   logOffDuringExchange = false;
+  refusedKey = null;
   capture.mockClear();
   vi.stubGlobal('fetch', vi.fn(fakeFetch));
   vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -143,6 +147,17 @@ describe.each(['dropbox', 'google-drive'] as const)('US-09 AC45: a %s sign-in ac
     expect(calls.some((url) => url.endsWith(PROVIDER[cloud].exchange))).toBe(true);
     expect(saved(cloud)).toEqual(saved(cloud).map(() => null));
     expect(capture).not.toHaveBeenCalled();
+  });
+
+  it('US-09 AC60: a sign-in this browser cannot store, with no log-off, ends as before, without the log-off line', async () => {
+    await startSignIn(cloud);
+    refusedKey = PROVIDER[cloud].saved[0];
+
+    const booted = await returningTab(cloud);
+    expect(booted.backend).toBe('local');
+    expect(booted.refused).toBeUndefined();
+    expect(calls.some((url) => url.endsWith(PROVIDER[cloud].exchange))).toBe(true);
+    expect(saved(cloud)).toEqual(saved(cloud).map(() => null));
   });
 
   it('control: a return with no log-off in between signs in', async () => {

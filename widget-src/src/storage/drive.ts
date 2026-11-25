@@ -237,7 +237,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
     }, claimed.gen);
     // Strip ?code/&state so a refresh doesn't re-trigger.
     window.history.replaceState({}, '', config.redirectUri);
-    return saved ? new GoogleDriveAdapter(config, claimed.gen) : signInUnfinished(); // a log-off during the exchange
+    return saved ? new GoogleDriveAdapter(config, claimed.gen) : claimed.gen !== logOffId() ? signInUnfinished() : null; // a log-off during the exchange; else as before
   }
 
   /**
