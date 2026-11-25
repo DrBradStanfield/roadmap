@@ -6,6 +6,7 @@
 // visibilitychange, so both are heard; the listeners stay on while anything
 // is registered. A flush with nothing unsaved writes nothing.
 
+import { recordFailure } from './error-diagnostics';
 import { flushRoadmapStoreSync } from './roadmap-data';
 import { Sentry } from './sentry';
 
@@ -18,7 +19,7 @@ const afters = new Set<{ after: () => void }>();
 function run(closing: boolean): void {
   for (const { stage } of [...stages]) {
     try { stage(closing); }
-    catch (error) { Sentry.captureException(error, { tags: { area: 'page-hide' } }); }
+    catch (error) { Sentry.captureException(recordFailure(error, 'Page-hide save failed'), { tags: { area: 'page-hide' } }); }
   }
   flushRoadmapStoreSync();
   if (!closing) for (const { after } of [...afters]) after();

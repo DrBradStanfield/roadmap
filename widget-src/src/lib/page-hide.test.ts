@@ -61,7 +61,22 @@ describe('US-10 AC14 (H92): one page-hide path', () => {
     expect(later).toHaveBeenCalledWith(true);
     expect(flush).toHaveBeenCalledTimes(1);
     expect(later.mock.invocationCallOrder[0]).toBeLessThan(flush.mock.invocationCallOrder[0]);
-    expect(captured).toHaveBeenCalledWith(error, { tags: { area: 'page-hide' } });
+    expect(captured).toHaveBeenCalledTimes(1);
+  });
+
+  it('a throw quoting a document name and a value reaches the report with neither', async () => {
+    const { scrubEvent } = await vi.importActual<typeof import('./sentry')>('./sentry');
+    on(onPageHide(() => { throw new Error('Synthetic test: zinc-report-weird.pdf held 41.7 weird'); }));
+    pagehide();
+    const [error, hint] = captured.mock.calls[0] as [Error, { tags: Record<string, string> }];
+    // The event the SDK builds from the capture, put through the real scrub.
+    const event = scrubEvent({
+      type: undefined,
+      tags: hint.tags,
+      exception: { values: [{ type: error.name, value: error.message, mechanism: { type: 'generic', handled: true } }] },
+    } as Parameters<typeof scrubEvent>[0]);
+    expect(event?.tags).toEqual({ area: 'page-hide' });
+    expect(JSON.stringify(event)).not.toMatch(/zinc-report-weird|41\.7/);
   });
 
   it('tells a stage whether the page is closing (beforeunload, pagehide) or only hidden', () => {
