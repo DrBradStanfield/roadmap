@@ -28,6 +28,7 @@ type RecordFailure =
   | 'Cloud record could not be loaded'
   | 'Upload processing failed'
   | 'Upload save failed'
+  | 'Page-hide save failed'
   | 'Chat load failed'
   | 'Chat list failed';
 
