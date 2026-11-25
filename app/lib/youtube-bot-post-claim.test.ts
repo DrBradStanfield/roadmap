@@ -56,10 +56,12 @@ const ctl = vi.hoisted(() => ({
   hold: null as null | Array<() => void>,
   /** The model declines (SKIP_NO_REPLY) instead of answering. */
   skip: false,
+  /** The video has no readable companion article. */
+  noVideo: false,
 }));
 vi.mock('./youtube-bot-pipeline.server', async (orig) => ({
   ...(await orig<typeof import('./youtube-bot-pipeline.server')>()),
-  loadVideoBody: () => ({ entry: { title: 'T', handle: 'h', url: 'https://example.test/h', tags: [], publishedAt: '2026-09-01' }, body: 'body' }),
+  loadVideoBody: () => ctl.noVideo ? null : ({ entry: { title: 'T', handle: 'h', url: 'https://example.test/h', tags: [], publishedAt: '2026-09-01' }, body: 'body' }),
   runPipeline: async (thread: { topLevelCommentId: string; text: string }) => {
     ctl.pipelineCalls.push(thread.topLevelCommentId);
     ctl.pipelineTexts.push(thread.text);
@@ -288,7 +290,7 @@ beforeEach(() => {
   process.env.YOUTUBE_BOT_FORCE_START = 'true';
   Object.assign(db, { table: [], nextId: 1, claimsBornOld: false, requests: [], fail: null });
   Object.assign(g, { threads: [], replies: new Map(), posts: [], plan: [], calls: [] });
-  Object.assign(ctl, { pipelineCalls: [], pipelineTexts: [], hold: null, skip: false });
+  Object.assign(ctl, { pipelineCalls: [], pipelineTexts: [], hold: null, skip: false, noVideo: false });
   persisted.length = 0;
   spy.captureException.mockReset();
   spy.captureMessage.mockReset();
@@ -915,6 +917,68 @@ describe('US-15 AC66: a YouTube comment or follow-up is handled once, whatever t
 
     expect(ctl.pipelineCalls).toHaveLength(0);
     expect(row('T1.r3')).toBeUndefined();
+  });
+
+  it('cost bound: the 4th addressed follow-up in a thread makes no model call; a different thread is unaffected', async () => {
+    const R5 = 'and does the dose change with age';
+    const T2_TEXT = 'is this safe for my kidneys too';
+    seedPosted('T1', { posted_youtube_id: 'bot-1' });
+    g.replies.set('T1', [
+      BOT_1,
+      viewerReply(2, R2, '2026-11-12T09:20:00.000Z'),
+      viewerReply(3, R3, '2026-11-12T09:30:00.000Z'),
+      viewerReply(4, R4, '2026-11-12T09:40:00.000Z'),
+      viewerReply(5, R5, '2026-11-12T09:50:00.000Z'),
+    ]);
+    ctl.skip = true;
+    await bootMachine();
+    await tickTo(FIRST_TICK_MS, 1);
+    await tickTo(TICK_MS, 2);
+    await tickTo(TICK_MS, 3);
+    expect(ctl.pipelineTexts).toEqual([R2, R3, R4]);
+
+    seedPosted('T2', { posted_youtube_id: 'bot-2' });
+    g.replies.set('T2', [
+      { id: 'bot-2', author: 'Dr Brad', channel: 'UC_brad', text: 'first answer', publishedAt: '2026-11-12T09:10:00.000Z' },
+      { id: 'T2.r2', author: 'Viewer', channel: 'UC_viewer', text: T2_TEXT, publishedAt: '2026-11-12T09:50:00.000Z' },
+    ]);
+    await tickTo(TICK_MS, 4);
+    await tickTo(TICK_MS, 5);
+    expect(ctl.pipelineTexts).toEqual([R2, R3, R4, T2_TEXT]);
+    expect(row('T1.r5')).toBeUndefined();
+    expect(tickLogs()[4].followUpGates).toMatchObject({ 'thread-evaluations-cap': 1 });
+  });
+
+  it('a follow-up on a video with no article is done: it does not hold its thread', async () => {
+    seedPosted('T1', { posted_youtube_id: 'bot-1' });
+    const thread = [BOT_1, viewerReply(2, R2, '2026-11-12T09:50:00.000Z')];
+    g.replies.set('T1', thread);
+    ctl.noVideo = true;
+    await bootMachine();
+    await tickTo(FIRST_TICK_MS, 1);
+    expect(ctl.pipelineCalls).toHaveLength(0);
+    expect(row('T1.r2')?.classification).toEqual(expect.any(String));
+
+    ctl.noVideo = false;
+    thread.push(viewerReply(3, R3, '2026-11-12T10:20:00.000Z'));
+    await tickTo(TICK_MS, 2);
+    expect(ctl.pipelineTexts).toEqual([R3]);
+    expect(g.posts).toHaveLength(1);
+  });
+
+  it('a follow-up whose post YouTube refused is done: it does not hold its thread', async () => {
+    seedPosted('T1', { posted_youtube_id: 'bot-1' });
+    const thread = [BOT_1, viewerReply(2, R2, '2026-11-12T09:50:00.000Z')];
+    g.replies.set('T1', thread);
+    g.plan = [{ status: 403, reason: 'forbidden' }];
+    await bootMachine();
+    await tickTo(FIRST_TICK_MS, 1);
+    expect(row('T1.r2')).toMatchObject({ posted: false, classification: expect.any(String) });
+
+    thread.push(viewerReply(3, R3, '2026-11-12T10:20:00.000Z'));
+    await tickTo(TICK_MS, 2);
+    expect(ctl.pipelineTexts).toEqual([R2, R3]);
+    expect(row('T1.r3')).toMatchObject({ posted: true });
   });
 });
 

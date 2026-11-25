@@ -30,6 +30,7 @@ import {
   FOLLOWUP_MIN_WORDS,
   CRISIS,
   MAX_CHANNEL_REPLIES_PER_THREAD,
+  MAX_FOLLOWUP_EVALUATIONS_PER_THREAD,
 } from './youtube-bot-config.server';
 import type { YouTubeThread, YouTubeReply } from './youtube-bot-api.server';
 import type { FollowUpClaim } from './youtube-bot-store.server';
@@ -127,6 +128,8 @@ export function assessThreadFollowUp(p: {
   // A follow-up the bot answered counts toward the cap even before its reply shows in the list.
   const answered = p.replies.filter(r => p.claims.get(r.id) === 'posted').length;
   if (Math.max(channelReplies.length, 1 + answered) >= MAX_CHANNEL_REPLIES_PER_THREAD) return { skip: 'thread-cap' };
+  // Every claim on a reply is one model run, finished or running, so one viewer cannot buy unlimited runs.
+  if (p.claims.size >= MAX_FOLLOWUP_EVALUATIONS_PER_THREAD) return { skip: 'thread-evaluations-cap' };
 
   const lastBotTime = channelReplies[channelReplies.length - 1].publishedAt;
   const handle = p.channelHandle?.toLowerCase();

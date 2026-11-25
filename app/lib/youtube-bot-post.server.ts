@@ -18,7 +18,7 @@
 import * as Sentry from '@sentry/react-router';
 import { postReply, type YouTubeThread } from './youtube-bot-api.server';
 import { isAccountWide, type Sent } from './youtube-bot-post-result';
-import { markPosting, releasePostingMark, unclaimComment, markPosted, persistYouTubeTurn } from './youtube-bot-store.server';
+import { markPosting, releasePostingMark, unclaimComment, markPosted, persistYouTubeTurn, finishClaim } from './youtube-bot-store.server';
 import type { PipelineOutcome } from './youtube-bot-pipeline.server';
 
 /** Posts `replyText` under `thread` for the claimed comment: `claim.id` is the thread id or a follow-up's
@@ -78,6 +78,8 @@ export async function postClaimed(
   }
   const halt = isAccountWide(result);
   await releasePostingMark(claimId, claim.rowId, mark.token, halt ? 'delete' : 'revert');
+  // A reverted claim is done (internal marker), so a refused follow-up does not hold its thread (US-15 AC66).
+  if (!halt) await finishClaim(claimId, claim.rowId, 'POST_REFUSED');
   if (result.reason !== 'notReplyable') {
     Sentry.captureMessage('YouTube bot: post refused', {
       level: halt ? 'error' : 'warning',

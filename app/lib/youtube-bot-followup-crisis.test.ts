@@ -47,6 +47,8 @@ describe('US-15 AC56: a short crisis follow-up reaches the pipeline', () => {
     expect(at(new Map([['r1', 'running']]))).toEqual({ skip: 'claim-running' });
     expect(at(new Map([['r1', 'posted']]))).toEqual({ skip: 'thread-cap' }); // its answer is not listed yet
     expect(at(new Map([['r1', 'done'], ['r2', 'done']]))).toEqual({ skip: 'followups-handled' });
+    // Cost bound: three evaluations on the thread, of any outcome, and the next addressed reply is not run.
+    expect(at(new Map([['r0', 'done'], ['r1', 'done'], ['rx', 'done']]))).toEqual({ skip: 'thread-evaluations-cap' });
   });
 
   it('a short follow-up that is not a crisis is skipped as too short', () => {

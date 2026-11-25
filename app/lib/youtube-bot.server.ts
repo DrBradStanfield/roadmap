@@ -255,6 +255,7 @@ async function processFollowUps(
 
     const video = loadVideoBody(meta.videoId);
     if (!video) {
+      await finishClaim(reply.id, claimRowId, 'NO_VIDEO'); // internal marker: done, so it does not hold the thread
       tally.skipped++;
       continue;
     }
