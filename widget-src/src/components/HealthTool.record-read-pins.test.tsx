@@ -58,6 +58,8 @@ vi.mock('../lib/server-api', async original => {
 const refuse = vi.hoisted(() => ({ next: false, gate: null as null | Promise<void> }));
 // How many times the page re-reads the record (survey R8: a held change applied twice).
 const reads = vi.hoisted(() => ({ count: 0 }));
+// The next medication save waits on this when asked: true lands it, false refuses it (US-15 AC10).
+const listSave = vi.hoisted(() => ({ gate: null as null | Promise<boolean> }));
 vi.mock('../lib/roadmap-data', async original => {
   const real = await original<typeof import('../lib/roadmap-data')>();
   return {
@@ -72,6 +74,11 @@ vi.mock('../lib/roadmap-data', async original => {
       refuse.gate = null;
       const saved = real.saveChangedMeasurements(...args);
       return gate ? gate.then(() => saved) : saved;
+    },
+    saveMedication: (...args: Parameters<typeof real.saveMedication>) => {
+      const gate = listSave.gate;
+      listSave.gate = null;
+      return gate ? gate.then((lands) => lands && real.saveMedication(...args)) : real.saveMedication(...args);
     },
   };
 });
@@ -149,6 +156,7 @@ beforeEach(async () => {
   tracked.calls = [];
   refuse.next = false;
   refuse.gate = null;
+  listSave.gate = null;
   Object.assign(failMirror, { next: false, threw: false, always: false });
   Object.assign(atMount, { run: null, effectsRan: false, inGap: false });
   upload.complete = null;
@@ -1174,6 +1182,63 @@ describe('US-34 AC4a: the page\'s own save re-reads the values, and a held chang
     expect(mirror()?.medications.map((m) => m.medicationKey)).toEqual(['statin']);
     expect(mirror()?.screenings.map((s) => s.screeningKey)).toEqual(['colorectal_method']);
     expect(calls('remote_change_applied')).toHaveLength(1);
+  });
+
+  // US-15 AC10: the mirror holds saved values only. Under a hold, a list edit whose save has not landed never reaches it.
+  /** A statin on record at 20 mg; the page open with a dirty profile and another writer's birth year held. */
+  async function heldWithStatin() {
+    await recordWithLdl();
+    await saveMedication('statin', 'atorvastatin', 20, 'mg', getShownErase());
+    await flushRoadmapStore();
+    const view = await open();
+    await heightOutOfRange(view);
+    await heldBirthYear(view);
+    return view;
+  }
+  const mirrorStatin = () => mirror()?.medications.find((m) => m.medicationKey === 'statin')?.doseValue;
+  /** The mirror's statin dose at each write from now on. */
+  function statinWrites() {
+    const doses: Array<number | null | undefined> = [];
+    const onWrite = () => { doses.push(mirrorStatin()); };
+    window.addEventListener(MIRROR_CHANGED_EVENT, onWrite);
+    unmounts.push(() => window.removeEventListener(MIRROR_CHANGED_EVENT, onWrite));
+    return doses;
+  }
+  /** The dose changed to 40, its save held on its way; then a correction's own save read, under the hold. */
+  async function doseThenOwnSave(view: RenderResult) {
+    let land!: (lands: boolean) => void;
+    listSave.gate = new Promise<boolean>((r) => { land = r; });
+    fireEvent.change(q(view, '#statin-dose')!, { target: { value: '40' } });
+    await OWN_SAVES[1][1](view);
+    await settle(50);
+    expect(field(view, 'birthYear')).toBe('1980'); // still held
+    return land;
+  }
+
+  it('US-15 AC10, US-34 AC10 (H16b): under a hold, a dose changed and an own save read before its save lands: the mirror and the chats\' context keep the saved dose; the landed save then writes it', async () => {
+    const view = await heldWithStatin();
+    const shown = mirrorContext();
+    const doses = statinWrites();
+    const land = await doseThenOwnSave(view);
+    expect(doses.length).toBeGreaterThan(0); // the own save's read wrote the mirror
+    expect(doses).not.toContain(40);
+    expect(mirrorStatin()).toBe(20);
+    expect(differ(shown, mirrorContext())).toEqual(['ldlC', 'measurementHistory']); // no unsaved dose sent
+    await act(async () => { land(true); });
+    await settle(50);
+    await act(async () => { await flushRoadmapStore(); });
+    await waitFor(() => expect(mirrorStatin()).toBe(40)); // saved now: the list save's own copy writes it
+  });
+
+  it('US-15 AC10, US-34 AC10 (H16b): under a hold, a dose change whose save is refused never reaches the mirror', async () => {
+    const view = await heldWithStatin();
+    const doses = statinWrites();
+    const land = await doseThenOwnSave(view);
+    await act(async () => { land(false); });
+    await settle(800);
+    expect(doses.length).toBeGreaterThan(1); // the own save's read, and the refusal's copy of the saved lists
+    expect(doses).not.toContain(40);
+    expect(mirrorStatin()).toBe(20);
   });
 
   // New in AC9: the mirror's sex. Pinned, unchanged: the page's own chat context (planInputs) and the banner (the form).

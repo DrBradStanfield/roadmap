@@ -135,7 +135,7 @@ describe('US-15 AC10: reloadValues', () => {
     expect(mirror.saved.map((args) => args.slice(0, 4))).toEqual([[page.inputs, [{ metricType: 'ldl', value: 1.9 }], [], []]]);
   });
 
-  it('US-34 AC10 (H16): a read the page does not show (null) replaces and writes nothing; one that stops being shown while its lab read waits writes no mirror', async () => {
+  it('US-34 AC10 (H16): a read the page does not show (null) replaces and writes nothing; one that stops being shown while its lab read waits writes nothing from then on', async () => {
     data.latest = { inputs: { heightCm: 170 }, previousMeasurements: [{ metricType: 'weight', value: 70 }], medications: [], screenings: [] };
     data.hold = false;
     const { view, setters } = setup();
@@ -146,16 +146,22 @@ describe('US-15 AC10: reloadValues', () => {
     expect(setters.setHistory).not.toHaveBeenCalled();
     expect(setters.setLabValueHistory).not.toHaveBeenCalled();
     expect(mirror.saved).toEqual([]);
-    // Shown when read, not when the mirror is written.
+    // Shown when read, not when the mirror is written: from the move on, no mirror, lab rows, matrices or lab eGFR patch.
     data.hold = true;
+    data.history = [{ metricType: 'weight', value: 70 }];
+    mirror.cached = { labEgfr: null }; // a changed lab eGFR would be patched in
     let shown: () => null | undefined = () => undefined;
     let read!: Promise<unknown>;
     act(() => { read = view.result.current.reloadValues(() => shown()); });
     await act(async () => { await Promise.resolve(); });
+    expect(setters.setPreviousMeasurements).toHaveBeenCalledTimes(1); // written before the store moved
     shown = () => null;
-    await act(async () => { data.labReads[0].resolve([]); await Promise.resolve(); });
-    await act(async () => { data.labReads[1].resolve([]); await read; });
+    await act(async () => { data.labReads[0].resolve([egfrRow(40)]); await Promise.resolve(); });
+    await act(async () => { data.labReads[1].resolve([egfrRow(40)]); await read; });
     expect(mirror.saved).toEqual([]);
+    expect(mirror.patches).toEqual([]);
+    expect(setters.setLabValueHistory).not.toHaveBeenCalled();
+    expect(setters.setHistory).not.toHaveBeenCalled();
   });
 
   it('nothing on record: no values replaced and no mirror written, but labs and history are still read', async () => {
