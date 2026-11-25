@@ -1,4 +1,4 @@
-// Explicit-any ratchet (US-64 AC39). App and test TypeScript add no explicit `any`; a file's count can only fall.
+// Explicit-any ratchet (US-64 AC42). App and test TypeScript add no explicit `any`; a file's count can only fall.
 // `node scripts/explicit-any-baseline.mjs --write` lowers or removes entries in explicit-any-baseline.json.
 // It refuses to raise one, and adds none unless `--allow-new` is passed.
 import { execFileSync } from 'node:child_process';
