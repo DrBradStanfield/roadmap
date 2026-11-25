@@ -16,7 +16,7 @@
  */
 import type { ScreeningInputs } from './types';
 import { getPostFollowupDueDate, getScreeningNextDueDate, isSex, SCREENING_FOLLOWUP_INFO } from './types';
-import { SCREENING_REFS, inAges, opensFollowup, ruleOf, ruleTakes, screeningScheduleLabels, type ScreeningId, type ScreeningRule } from './screening-rules';
+import { SCREENING_REFS, inAges, opensFollowup, ruleOf, ruleTakes, screeningAge, screeningScheduleLabels, type ScreeningId, type ScreeningRule } from './screening-rules';
 import type {
   MeasurementDates,
   MedicationRecord,
@@ -323,12 +323,10 @@ export function computeReminderSchedule(file: RoadmapFile, now: Date): ReminderS
 
 /** The age and sex the reminder gates read; none without a birth year. */
 function ageSexOf(file: RoadmapFile, now: Date): { age: number; sex: 'male' | 'female' | undefined } | null {
-  const { birthYear, birthMonth } = file.profile;
-  if (!birthYear) return null; // no age → no eligibility rules can run
+  const age = screeningAge(file.profile, now);
+  if (age === undefined) return null; // no age → no eligibility rules can run
   // No sex (or one that is not male or female) drops only the sexed screenings (US-07 AC8).
   const sex = isSex(file.profile.sex) ? file.profile.sex : undefined;
-  let age = now.getUTCFullYear() - birthYear;
-  if (birthMonth && now.getUTCMonth() + 1 < birthMonth) age -= 1;
   return { age, sex };
 }
 
