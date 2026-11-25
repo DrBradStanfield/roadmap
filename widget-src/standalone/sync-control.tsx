@@ -337,11 +337,10 @@ export function SyncControl({ backend, hasData = true, attention = false }: {
           </button>
         </span>
         {deviceHolds(facts) && (
-          // " It will upload automatically." between the two sentences while facts.retry is held out
-          // pending Brad's approval of the wording (US-09 AC30, 2026-11-14); the retry itself is unchanged.
           <span className="hr-sync-detail">
             Some data in this browser is still waiting to sync to your {provider}.
-            Your data is safe in this browser meanwhile.
+            {/* Only while a retry will come: never after a refused sign-in (US-09 AC30; Brad 2026-11-26). */}
+            {facts.retry && ' It will upload automatically.'} Your data is safe in this browser meanwhile.
           </span>
         )}
       </div>
