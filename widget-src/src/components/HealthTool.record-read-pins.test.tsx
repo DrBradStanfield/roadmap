@@ -1120,8 +1120,9 @@ describe('US-34 AC4a: the page\'s own save re-reads the values, and a held chang
     const view = await open();
     await heightOutOfRange(view);
     await heldBirthYear(view);
-    await OWN_SAVES[1][1](view);
+    await OWN_SAVES[1][1](view); // its values read lands under the hold
     await settle(50);
+    expect(mirror()?.inputs.birthYear).toBe(1980); // the page's, not the held 1981
     const written: Array<number | undefined> = []; // the mirror's birth year at each write
     const onWrite = () => { written.push(mirror()?.inputs.birthYear); };
     window.addEventListener(MIRROR_CHANGED_EVENT, onWrite);
@@ -1145,7 +1146,8 @@ describe('US-34 AC4a: the page\'s own save re-reads the values, and a held chang
     }
   });
 
-  it('US-34 AC9 (H15), US-16 AC2: under a hold, a sex and height the chat proposes are checked against, and saved to, the profile the page shows', async () => {
+  // New in AC9: the mirror's sex. Pinned, unchanged: the page's own chat context (planInputs) and the banner (the form).
+  it('US-34 AC9 (H15), US-16 AC2: under a hold, the mirror sends the sex the page shows; the proposal is checked against, and saved to, the profile on screen, as before', async () => {
     await recordWithLdl(); // female, 170 cm
     const view = await open();
     await heightOutOfRange(view);
