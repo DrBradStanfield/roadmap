@@ -24,7 +24,7 @@ vi.mock('../lib/roadmap-data', () => ({
   markReportEmailCaptured: mocks.markReportEmailCaptured,
   getShownErase: () => 'erase-1',
 }));
-vi.mock('../lib/server-api', () => ({ trackABConversion: vi.fn(), trackProductEvent: vi.fn() }));
+vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
 vi.mock('../lib/build-flags', () => ({ SHOPIFY_SURFACE: true }));
 vi.mock('../lib/assistant-config', () => ({ getSkipEmailGate: () => false }));
 vi.mock('./FeedbackForm', () => ({ FeedbackForm: () => null }));

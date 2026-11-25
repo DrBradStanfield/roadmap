@@ -35,7 +35,7 @@ import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 vi.mock('../src/lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../src/lib/server-api', async (original) => ({
   ...(await original<typeof import('../src/lib/server-api')>()),
-  trackProductEvent: vi.fn(), trackABImpression: vi.fn(), trackABConversion: vi.fn(),
+  trackProductEvent: vi.fn(),
 }));
 vi.mock('./reminders', () => ({ remindersSupported: () => false, clearAutoEnrolBlock: vi.fn() }));
 vi.mock('./reminders-control', () => ({ RemindersControl: () => null }));

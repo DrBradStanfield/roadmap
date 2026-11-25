@@ -21,7 +21,7 @@ import { useHealthToolLifecycle } from '../testing/health-tool-harness';
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../lib/server-api', async importOriginal => ({
   ...(await importOriginal<typeof import('../lib/server-api')>()),
-  trackProductEvent: vi.fn(), trackABImpression: vi.fn(), trackABConversion: vi.fn(),
+  trackProductEvent: vi.fn(),
 }));
 vi.mock('../lib/chat-api', () => ({ listConversations: () => Promise.resolve(null), getChatGate: () => null }));
 vi.mock('./ChatEmbed', () => ({ ChatEmbed: () => null }));

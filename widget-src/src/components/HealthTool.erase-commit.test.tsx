@@ -39,8 +39,6 @@ vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn(), captureMe
 vi.mock('../lib/server-api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../lib/server-api')>()),
   trackProductEvent: vi.fn(),
-  trackABImpression: vi.fn(),
-  trackABConversion: vi.fn(),
 }));
 vi.mock('../lib/roadmap-data', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../lib/roadmap-data')>()),

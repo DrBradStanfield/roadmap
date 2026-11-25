@@ -30,7 +30,10 @@
  *   K3k each row's input and tick, and each day control's button, is named the engine's `name` (US-13 AC28), read from the
  *       accessibility tree, each comma after a space as the name algorithm joins references. Mutations: a row's day
  *       referred to while it has none fails it on the first undated report; a day named on a row under no day control (a
- *       column printed on a day still to come) fails it on seed 1.
+ *       column printed on a day still to come) fails it on seed 1. Within budget (PR 2161 timed out in CI): a control is
+ *       read from the tree only when its name could have changed since it was last read, that is when the engine's name,
+ *       its own name attribute, or the id or text of any element its name refers to changed; every step still checks
+ *       that, so nothing a step changes goes unchecked.
  * Mutations it was shown failing on (PR body): M1 commit skipped on focus moving to another row; M2 the input's value
  * read from a stale local copy; M3 day groups keyed by index; M4 a letter's title draft never sent; M5 the draft's unit
  * re-read from the row at commit; M6 a row hidden whatever its draft or focus; M7 held text labelled by the row's unit now;
@@ -134,6 +137,16 @@ export function runSequence(seed: number, steps: number) {
   let draft = null as Draft;
   let held = null as Held | null;
   const nodes = new Map<string, { li: Element; input: HTMLInputElement | null }>();
+  // K3k: each control's name as last checked, keyed by the engine's name and the text of every element it refers to.
+  const namedAs = new WeakMap<Element, string>();
+  /** True when `el`'s name inputs changed since it was last checked, and notes them as checked. */
+  const renamed = (el: Element, name: string) => {
+    const refs = (el.getAttribute('aria-labelledby') ?? '').split(' ').map((id) => `${id}=${id && document.getElementById(id)?.textContent}`);
+    const key = [name, el.getAttribute('aria-label'), ...refs].join('\u0000');
+    if (namedAs.get(el) === key) return false;
+    namedAs.set(el, key);
+    return true;
+  };
   const fail = (prop: string, msg: string) => { throw new Error(`${prop} seed ${seed}: ${msg}\n  steps: ${trace.join(' > ')}`); };
 
   const see = (s: UploadState, record: RoadmapFile) => engineSee(s, record, NOW, h.units());
@@ -466,13 +479,14 @@ export function runSequence(seed: number, steps: number) {
       nodes.set(row.key, { li, input });
       // K3k
       for (const role of [...(input ? ['textbox'] : []), 'checkbox']) {
-        const named = within(li).queryAllByRole(role, { hidden: true, name: spokenAs(row.name) });
-        if (!named.includes(role === 'textbox' ? input! : li.querySelector<HTMLElement>('.upload-list-tick')!)) fail('K3k', `${row.key}'s ${role} is not named "${row.name}"`);
+        const el = role === 'textbox' ? input! : li.querySelector<HTMLElement>('.upload-list-tick')!;
+        if (!renamed(el, row.name)) continue;
+        if (!within(li).queryAllByRole(role, { hidden: true, name: spokenAs(row.name) }).includes(el)) fail('K3k', `${row.key}'s ${role} is not named "${row.name}"`);
       }
     }
     for (const d of after.view.done ? [] : after.list.days) {
       const button = document.querySelector<HTMLElement>(`[data-at="${d.key}"] .upload-list-picker-button`)!;
-      if (!within(button.parentElement!).queryAllByRole('button', { hidden: true, name: spokenAs(d.name) }).includes(button)) fail('K3k', `day ${d.key} is not named "${d.name}"`);
+      if (renamed(button, d.name) && !within(button.parentElement!).queryAllByRole('button', { hidden: true, name: spokenAs(d.name) }).includes(button)) fail('K3k', `day ${d.key} is not named "${d.name}"`);
     }
   }
   cleanup();

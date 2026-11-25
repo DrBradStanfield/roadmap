@@ -9,7 +9,7 @@ import { seedGuest } from '../testing/health-tool-harness';
 
 vi.mock('./server-api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('./server-api')>()),
-  trackProductEvent: vi.fn(), trackABImpression: vi.fn(), trackABConversion: vi.fn(),
+  trackProductEvent: vi.fn(),
 }));
 vi.mock('./chat-api', () => ({ listConversations: () => Promise.resolve(null), getChatGate: () => null }));
 vi.mock('../components/ChatEmbed', () => ({ ChatEmbed: () => null }));

@@ -1,5 +1,5 @@
 // In-memory rate limiter factory
-// Shared across routes (api.measurements, api.ab, etc.)
+// Shared across routes (api.measurements, api.events, etc.)
 import * as Sentry from '@sentry/react-router';
 
 export const DAY_MS = 24 * 60 * 60_000;

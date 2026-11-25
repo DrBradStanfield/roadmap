@@ -1,2 +1,2 @@
 id,area,title,kind,status,evidence,pr,needs_brad
-P8,plan view,Nothing says a send is running after a refused window,minor,done,"PlanPdf.tsx GuestEmailCapture's PdfNote shows while the send runs too (pdfBlocked && (emailError || state === 'sending')), with the existing PDF_WINDOW_BLOCKED words; the print flags become one PrintState (lib/plan-print-machine.ts). Pinned by PlanPdf.print.test.tsx (lead P8)",1740,no
+P8,plan view,Nothing says a send is running after a refused window,minor,closed,"Closed 2026-11-26, superseded by P10 (Brad: hide the note until its button shows): the capture box no longer shows the refused-window note while a send runs, since it names Save as PDF, which is not on screen then (US-18 AC8). Was: done in PR 1740.",1740,no
