@@ -54,7 +54,6 @@
     "app/lib/instrument-server-self-report.test.ts": 1,
     "app/lib/subscription-gateway.server.test.ts": 1,
     "app/routes/api.chat.test.ts": 1,
-    "app/routes/webhooks.orders-paid.test.ts": 1,
     "ios/scripts/engine-release-workflow.test.ts": 1,
     "packages/health-core/src/dropbox-rest.test.ts": 1,
     "packages/health-core/src/mappings.test.ts": 1,

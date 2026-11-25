@@ -50,7 +50,6 @@ const SITES = [
   'app/lib/chat-question-archive.server.ts',
   'app/lib/discord-bot.server.ts',
   'app/lib/youtube-bot.server.ts',
-  'app/routes/webhooks.orders-paid.ts',
   'app/routes/api.feedback.ts',
   'app/lib/supabase-dashboard.server.ts',
   'app/routes/api.measurements.ts',
