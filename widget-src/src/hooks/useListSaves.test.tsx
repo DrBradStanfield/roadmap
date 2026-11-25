@@ -23,7 +23,7 @@ vi.mock('../lib/roadmap-data', () => ({
   loadLatestMeasurements: async () => ({ medications: [{ medicationKey: 'statin' }], screenings: [] }),
 }));
 const mirror = vi.hoisted(() => ({ patches: [] as unknown[] }));
-vi.mock('../lib/storage', () => ({ patchMirror: (p: unknown) => { mirror.patches.push(p); } }));
+vi.mock('../lib/chat-mirror', () => ({ writeMirror: (p: unknown) => { mirror.patches.push(p); } }));
 
 import { useListSaves } from './useListSaves';
 
