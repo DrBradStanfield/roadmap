@@ -29,6 +29,7 @@ import { driveAccountOf, driveCreateFile, driveCreateFolder, driveDownloadDocume
 import { splitDocumentRef } from '@roadmap/health-core/document-path';
 import { codeGrantReply, decodeIdTokenEmail, postRefreshGrant } from './drive-token-reply';
 import { admitAccount } from './account-gate';
+import { driveCheck } from './drive-popup-grant';
 import { refreshOnce } from './token-flight';
 import { isSignedOut, signInEnded } from './sign-in-state';
 import { driveWatchLoop } from './drive-watch';
@@ -197,10 +198,8 @@ export class GoogleDriveAdapter implements StorageAdapter {
   static async completeRedirect(config: GoogleDriveConfig): Promise<GoogleDriveAdapter | null> {
     const claimed = claimRedirectCode(PKCE_KEY); // null when the ?code isn't ours
     if (!claimed) return null;
-    if (!grantsDrive(claimed.scope)) {
-      window.history.replaceState({}, '', config.redirectUri);
-      throw new DriveGrantRefusedError();
-    }
+    window.history.replaceState({}, '', config.redirectUri); // strip ?code&state, whatever follows (US-09 AC54)
+    if (!grantsDrive(claimed.scope)) throw new DriveGrantRefusedError();
 
     // No Content-Type header: a string body defaults to text/plain, keeping the
     // POST a CORS "simple request" (no preflight — remix-serve can't answer
@@ -217,14 +216,13 @@ export class GoogleDriveAdapter implements StorageAdapter {
       timeoutMs: 15_000, // past the server's 10 s for Google (issue #977)
     });
     const json = await codeGrantReply(res);
-    await admitAccount('google-drive', 'Google Drive', () => driveAccountOf(json.accessToken), claimed.gen); // before anything is kept (US-09 AC54)
+    const pin = await admitAccount(driveCheck(json.accessToken, config, claimed.gen), claimed.gen); // before anything is kept (US-09 AC54)
     const accountEmail = json.idToken ? decodeIdTokenEmail(json.idToken) : null;
     const saved = setSignIns({
       [TOKENS_KEY]: { accessToken: json.accessToken, refreshToken: json.refreshToken, expiresAt: expiry(json.expiresIn) } satisfies DriveTokens,
       [CONFIG_KEY]: { ...(accountEmail ? { accountEmail } : {}) } satisfies Stored,
+      ...pin,
     }, claimed.gen);
-    // Strip ?code/&state so a refresh doesn't re-trigger.
-    window.history.replaceState({}, '', config.redirectUri);
     return saved ? new GoogleDriveAdapter(config, claimed.gen) : null;
   }
 

@@ -95,6 +95,10 @@ async function driveFetch(url: URL, init?: RequestInit): Promise<Response> {
 
 function fakeFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const url = String(input instanceof Request ? input.url : input);
+  // Each provider names one synthetic account (US-09 AC54).
+  if (url === 'https://www.googleapis.com/drive/v3/about?fields=user(permissionId)') return Promise.resolve(Response.json({ user: { permissionId: 'perm-test' } }));
+  if (url === 'https://api.dropboxapi.com/2/users/get_current_account') return Promise.resolve(Response.json({ account_id: 'dbid:test' }));
+  if (url === 'https://api.github.com/user') return Promise.resolve(Response.json({ id: 7001 }));
   if (url.startsWith('https://content.dropboxapi.com/')) {
     if (dropboxDown) return refuse();
     if (url === 'https://content.dropboxapi.com/2/files/download') {

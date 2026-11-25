@@ -38,7 +38,7 @@ function endpoint(answer: 'stall' | 'offline' | 'ok' | { body: string }) {
   const fetchMock = vi.fn((_url: string, init: RequestInit = {}) => {
     if (answer === 'offline') return Promise.reject(new TypeError('Failed to fetch'));
     if (answer === 'ok') {
-      return Promise.resolve(new Response(JSON.stringify({ accessToken: 'a', refreshToken: 'r', expiresIn: 3600 }), { status: 200 }));
+      return Promise.resolve(new Response(JSON.stringify({ accessToken: 'a', refreshToken: 'r', expiresIn: 3600, user: { permissionId: 'perm-test' } }), { status: 200 }) /* the exchange, and the account read (US-09 AC54) */);
     }
     if (typeof answer === 'object') return Promise.resolve(new Response(answer.body, { status: 200 }));
     return new Promise<Response>((_resolve, reject) => {
@@ -141,7 +141,7 @@ describe('US-09 AC37: the Google Drive code exchange reply is checked (issue #92
   });
 
   it('control: a reply without a refresh token or ID token still connects', async () => {
-    endpoint({ body: JSON.stringify({ accessToken: 'a', expiresIn: 3600 }) });
+    endpoint({ body: JSON.stringify({ accessToken: 'a', expiresIn: 3600, user: { permissionId: 'perm-test' } }) }); // also the account read (US-09 AC54)
     const adapter = await GoogleDriveAdapter.completeRedirect(CONFIG);
     expect(adapter?.isConnected()).toBe(true);
     expect(JSON.parse(local.get(TOKENS_KEY) ?? '{}')).toMatchObject({ accessToken: 'a' });

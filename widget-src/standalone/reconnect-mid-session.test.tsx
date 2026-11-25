@@ -102,6 +102,10 @@ async function driveFetch(url: URL, init?: RequestInit): Promise<Response> {
 
 async function fakeFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const url = String(input instanceof Request ? input.url : input);
+  // Each provider names one synthetic account (US-09 AC54).
+  if (url === 'https://www.googleapis.com/drive/v3/about?fields=user(permissionId)') return Promise.resolve(Response.json({ user: { permissionId: 'perm-test' } }));
+  if (url === 'https://api.dropboxapi.com/2/users/get_current_account') return Promise.resolve(Response.json({ account_id: 'dbid:test' }));
+  if (url === 'https://api.github.com/user') return Promise.resolve(Response.json({ id: 7001 }));
   if (url.endsWith('/api/google-token')) {
     const body = JSON.parse(String(init?.body)) as { grantType: string };
     if (body.grantType === 'code') return json({ accessToken: GOOD_TOKEN, refreshToken: 'test-refresh-new', expiresIn: 3600 });
@@ -110,7 +114,7 @@ async function fakeFetch(input: RequestInfo | URL, init?: RequestInit): Promise<
   if (url === 'https://api.dropboxapi.com/oauth2/token') {
     if (dropboxDown) return refuse();
     const body = new URLSearchParams(String(init?.body));
-    if (body.get('grant_type') === 'authorization_code') return json({ access_token: GOOD_TOKEN, refresh_token: 'test-refresh-new', expires_in: 14_400 });
+    if (body.get('grant_type') === 'authorization_code') return json({ access_token: GOOD_TOKEN, refresh_token: 'test-refresh-new', expires_in: 14_400, account_id: 'dbid:test' });
     return revoked.dropbox ? json({ error: 'invalid_grant' }, 400) : json({ access_token: GOOD_TOKEN, expires_in: 14_400 });
   }
   if (url.startsWith('https://content.dropboxapi.com/') || url.startsWith('https://api.dropboxapi.com/')) {

@@ -34,8 +34,9 @@ function makeStorage(): Storage {
   } as unknown as Storage;
 }
 
+// One answer for every call: the exchange, and the account read (US-09 AC54).
 const exchange = vi.fn(async (_url?: RequestInfo | URL) =>
-  new Response(JSON.stringify({ accessToken: 'a', refreshToken: 'r', expiresIn: 3600 }), { status: 200 }),
+  new Response(JSON.stringify({ accessToken: 'a', refreshToken: 'r', expiresIn: 3600, user: { permissionId: 'perm-test' } }), { status: 200 }),
 );
 const replaceState = vi.fn();
 /** requestAccessToken hands the captured GIS config this token response. */
@@ -108,7 +109,7 @@ describe('GoogleDriveAdapter — a grant without drive.file is refused at connec
     expect(localStorage.getItem(TOKENS_KEY)).toBeNull(); // the acquire step writes nothing (US-09 AC45)
     expect(localStorage.getItem(CONFIG_KEY)).toBeNull();
     localStorage.setItem(BACKEND_KEY, 'google-drive'); // the reconnect session's chosen home
-    expect(await savePopupGrant(token, null, () => true)).toBe(true);
+    expect(await savePopupGrant(token, CONFIG, null, () => true)).toBe(true);
     const adapter = new GoogleDriveAdapter(CONFIG);
     expect(adapter.isConnected()).toBe(true);
     expect(adapter.hasValidToken()).toBe(true);
@@ -117,15 +118,15 @@ describe('GoogleDriveAdapter — a grant without drive.file is refused at connec
   it('popup: the save keeps the stored account', async () => {
     localStorage.setItem(BACKEND_KEY, 'google-drive');
     localStorage.setItem(CONFIG_KEY, JSON.stringify({ accountEmail: 'person@example.test' }));
-    expect(await savePopupGrant({ accessToken: 't', expiresAt: Date.now() + 3_600_000 }, null, () => true)).toBe(true);
+    expect(await savePopupGrant({ accessToken: 't', expiresAt: Date.now() + 3_600_000 }, CONFIG, null, () => true)).toBe(true);
     expect(JSON.parse(localStorage.getItem(CONFIG_KEY)!)).toMatchObject({ accountEmail: 'person@example.test' });
   });
 
   it('popup: once this device is no longer on Google Drive (another tab moved it), the save keeps nothing (US-09 AC45)', async () => {
     localStorage.setItem(BACKEND_KEY, 'dropbox');
-    expect(await savePopupGrant({ accessToken: 't', expiresAt: Date.now() + 3_600_000 }, null, () => true)).toBe(false);
+    expect(await savePopupGrant({ accessToken: 't', expiresAt: Date.now() + 3_600_000 }, CONFIG, null, () => true)).toBe(false);
     localStorage.removeItem(BACKEND_KEY);
-    expect(await savePopupGrant({ accessToken: 't', expiresAt: Date.now() + 3_600_000 }, null, () => true)).toBe(false);
+    expect(await savePopupGrant({ accessToken: 't', expiresAt: Date.now() + 3_600_000 }, CONFIG, null, () => true)).toBe(false);
     expect(localStorage.getItem(TOKENS_KEY)).toBeNull();
     expect(localStorage.getItem(CONFIG_KEY)).toBeNull();
   });

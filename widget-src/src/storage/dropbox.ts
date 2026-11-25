@@ -144,6 +144,8 @@ export class DropboxAdapter implements StorageAdapter {
   static async completeRedirect(config: DropboxConfig): Promise<DropboxAdapter | null> {
     const claimed = claimRedirectCode(PKCE_KEY); // null when the ?code isn't ours
     if (!claimed) return null;
+    // Strip ?code/&state from the URL so a refresh doesn't re-trigger, whatever follows (US-09 AC54).
+    window.history.replaceState({}, '', config.redirectUri);
 
     const body = new URLSearchParams({
       code: claimed.code,
@@ -167,13 +169,18 @@ export class DropboxAdapter implements StorageAdapter {
     const reply: unknown = await res.json().catch(() => null);
     const json = tokenReply(reply, true);
     // Another account than this browser's is refused before anything is kept (US-09 AC54).
-    await admitAccount('dropbox', 'Dropbox', async () => dropboxReplyAccount(reply), claimed.gen);
+    const pin = await admitAccount({
+      provider: 'dropbox',
+      label: 'Dropbox',
+      account: async () => dropboxReplyAccount(reply),
+      readRecord: async () => (await dropboxRead(json.access_token, ROADMAP_FILE_NAME)).body,
+      earlierAccount: loadTokens() ? () => new DropboxAdapter(config, claimed.gen).account() : undefined,
+    }, claimed.gen);
     const saved = setSignIns({
       [TOKEN_KEY]: { accessToken: json.access_token, refreshToken: json.refresh_token, expiresAt: Date.now() + json.expires_in * 1000 } satisfies DropboxTokens,
       [CONFIG_KEY]: {},
+      ...pin,
     }, claimed.gen);
-    // Strip ?code/&state from the URL so a refresh doesn't re-trigger.
-    window.history.replaceState({}, '', config.redirectUri);
     return saved ? new DropboxAdapter(config, claimed.gen) : null;
   }
 

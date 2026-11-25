@@ -63,8 +63,8 @@ async function fakeFetch(input: RequestInfo | URL, init?: RequestInit): Promise<
   if (url === 'https://api.github.com/repos/someone/health') return json({ private: true });
   throw new TypeError('Failed to fetch');
 }
-/** The calls that name the account or mint the sign-in: the only calls a refused sign-in may make. */
-const SIGN_IN_CALLS = [/\/about\?fields=user\(permissionId\)$/, /\/api\/google-token$/, /\/oauth2\/token$/, /\/users\/get_current_account$/, /api\.github\.com\/user$/];
+/** The calls that mint or validate the sign-in or name its account: the only calls a refused sign-in may make. */
+const SIGN_IN_CALLS = [/\/about\?fields=user\(permissionId\)$/, /\/api\/google-token$/, /\/oauth2\/token$/, /\/users\/get_current_account$/, /api\.github\.com\/user$/, /api\.github\.com\/repos\/someone\/health$/];
 const cloudCalls = () => calls.filter(({ url }) => !SIGN_IN_CALLS.some((r) => r.test(url)));
 
 const pin = (provider: string, account: string) => localStorage.setItem(PIN_KEY, JSON.stringify({ provider, account, gen: null }));
@@ -283,12 +283,12 @@ describe('US-09 AC54: what ends a pin', () => {
     expect(pinned()).toEqual({ provider: 'google-drive', account: ID.driveB });
   });
 
-  it('a deliberate switch that completes clears it, and the new connect pins its own account', async () => {
+  it('a deliberate switch keeps it until the new sign-in is kept, which then replaces it', async () => {
     localStorage.setItem(BACKEND_KEY, 'dropbox');
     localStorage.setItem(DROPBOX_TOKENS, JSON.stringify({ accessToken: 'test-token-old', refreshToken: 'test-refresh-old', expiresAt: Date.now() + 3_600_000, gen: null }));
     pin('dropbox', ID.dropboxA);
-    await (await page()).connect.prepareSwitch('dropbox');
-    expect(localStorage.getItem(PIN_KEY)).toBeNull();
+    await (await page()).connect.prepareSwitch('dropbox', 'google-drive');
+    expect(pinned()).toEqual({ provider: 'dropbox', account: ID.dropboxA });
 
     signedInAs.drive = ID.driveB;
     returnedFrom('google-drive');

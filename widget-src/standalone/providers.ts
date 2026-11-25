@@ -14,7 +14,7 @@ import { CONFIG_KEY as DRIVE_CONFIG_KEY, TOKENS_KEY as DRIVE_TOKENS_KEY } from '
 import { CONFIG_KEY as DROPBOX_CONFIG_KEY, TOKEN_KEY as DROPBOX_TOKEN_KEY } from '../src/storage/dropbox';
 import { CONFIG_KEY as GITHUB_CONFIG_KEY } from '../src/storage/github';
 import { CONFIG_KEY as WEBDAV_CONFIG_KEY } from '../src/storage/webdav';
-import { ACCOUNT_PIN_KEY } from '../src/storage/account-gate';
+import { ACCOUNT_PIN_KEY, CLOUD_COPY_KEY } from '../src/storage/account-gate';
 
 export type CloudBackend = Exclude<Backend, 'local'>;
 
@@ -53,8 +53,8 @@ export function staleCopyQuestion(backend: CloudBackend): string {
 }
 
 /** Every provider's stored sign-in entries, for the page-load sweep and log-off (US-09 AC45), and the
- *  account pin, which only those two remove (AC54). */
-export const SIGN_IN_KEYS = [DRIVE_CONFIG_KEY, DRIVE_TOKENS_KEY, DROPBOX_CONFIG_KEY, DROPBOX_TOKEN_KEY, GITHUB_CONFIG_KEY, WEBDAV_CONFIG_KEY, ACCOUNT_PIN_KEY] as const;
+ *  account pin with its earlier-cloud mark (AC54). */
+export const SIGN_IN_KEYS = [DRIVE_CONFIG_KEY, DRIVE_TOKENS_KEY, DROPBOX_CONFIG_KEY, DROPBOX_TOKEN_KEY, GITHUB_CONFIG_KEY, WEBDAV_CONFIG_KEY, ACCOUNT_PIN_KEY, CLOUD_COPY_KEY] as const;
 
 /** A backend's entry; undefined for 'local' or a name with none. The
  *  remembered choice is unchecked storage text, so it may name anything. */

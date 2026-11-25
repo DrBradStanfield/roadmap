@@ -19,7 +19,7 @@
  */
 import { ConflictError, StorageError, fetchOrFail, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
 import { TRANSFER_DEADLINE_MS } from '@roadmap/health-core/transfer-deadline';
-import { getSignIn, logOffId, setSignIn, safeRemoveItem, type LogOffId } from '../lib/storage';
+import { getSignIn, logOffId, setSignIns, safeRemoveItem, type LogOffId } from '../lib/storage';
 import { encodeStoragePath, legacyDocumentUrl } from './storage-path';
 import { bytesToBase64 } from '../lib/base64';
 
@@ -69,8 +69,9 @@ export class WebDavAdapter implements StorageAdapter {
     await this.signIn();
   }
 
-  /** `connect`, returning true when this adapter saved its own sign-in (US-09 AC45). */
-  async signIn(): Promise<boolean> {
+  /** `connect`, returning true when this adapter saved its own sign-in (US-09 AC45). `admit`
+   *  runs once the credentials are validated; its entries (the account pin) are saved with them (AC54). */
+  async signIn(admit: () => Promise<Record<string, object>> = async () => ({})): Promise<boolean> {
     if (!this.config?.url || !this.config.username) {
       throw new StorageError('Self-host needs a URL, username, and password.');
     }
@@ -83,7 +84,7 @@ export class WebDavAdapter implements StorageAdapter {
     if (!res.ok && res.status !== 207) {
       throw new StorageError(`Self-host connect failed (${res.status}). Check the URL and the server's CORS settings.`, undefined, undefined, res.status);
     }
-    return setSignIn(CONFIG_KEY, this.config, this.gen);
+    return setSignIns({ [CONFIG_KEY]: this.config, ...(await admit()) }, this.gen);
   }
 
   async disconnect(): Promise<void> {

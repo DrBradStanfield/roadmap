@@ -18,7 +18,7 @@
  */
 import { ConflictError, StorageError, fetchOrFail, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
 import { TRANSFER_DEADLINE_MS, timeoutDeadline } from '@roadmap/health-core/transfer-deadline';
-import { getSignIn, logOffId, setSignIn, safeRemoveItem, type LogOffId } from '../lib/storage';
+import { getSignIn, logOffId, setSignIns, safeRemoveItem, type LogOffId } from '../lib/storage';
 import { encodeStoragePath, legacyDocumentUrl } from './storage-path';
 import { bytesToBase64, base64ToBytes } from '../lib/base64';
 
@@ -95,13 +95,14 @@ export class GitHubAdapter implements StorageAdapter {
     await this.signIn();
   }
 
-  /** `connect`, returning true when this adapter saved its own sign-in (US-09 AC45). */
-  async signIn(): Promise<boolean> {
+  /** `connect`, returning true when this adapter saved its own sign-in (US-09 AC45). `admit`
+   *  runs once the credentials are validated; its entries (the account pin) are saved with them (AC54). */
+  async signIn(admit: () => Promise<Record<string, object>> = async () => ({})): Promise<boolean> {
     if (!this.config?.token || !this.config.owner || !this.config.repo) {
       throw new StorageError('GitHub needs a token, owner, and repo.');
     }
     await this.ensurePrivate();
-    return setSignIn(CONFIG_KEY, this.config, this.gen);
+    return setSignIns({ [CONFIG_KEY]: this.config, ...(await admit()) }, this.gen);
   }
 
   async disconnect(): Promise<void> {

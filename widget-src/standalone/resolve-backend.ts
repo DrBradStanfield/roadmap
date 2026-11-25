@@ -16,6 +16,7 @@ import {
 } from './connect';
 import { trackProductEvent } from '../src/lib/server-api';
 import { sweepStaleSignIns } from '../src/lib/storage';
+import { claimSwitch, endSwitch } from '../src/storage/account-gate';
 import { SIGN_IN_KEYS } from './providers';
 
 /** The backend this load runs on, and the connect it refused on the way, if
@@ -23,6 +24,7 @@ import { SIGN_IN_KEYS } from './providers';
  *  cannot drop it. */
 export async function resolveBackend(): Promise<{ resolved: ResolvedBackend; refused?: string }> {
   sweepStaleSignIns(SIGN_IN_KEYS); // every page load: sign-ins from before the latest log-off (US-09 AC45)
+  claimSwitch(); // a switch this load's redirect return completes replaces the account pin (US-09 AC54)
   // Cancel or Deny at the provider (US-09 AC22; browser Back never returns here): counted once, nothing connected.
   if (DropboxAdapter.claimCancelledRedirect()) trackProductEvent('cloud_connect_cancelled', { provider: 'dropbox' });
   if (GoogleDriveAdapter.claimCancelledRedirect()) trackProductEvent('cloud_connect_cancelled', { provider: 'google-drive' });
@@ -59,5 +61,6 @@ export async function resolveBackend(): Promise<{ resolved: ResolvedBackend; ref
     return { resolved: { adapter: gdResumed, backend: 'google-drive' } };
   }
 
+  endSwitch(); // no return completed it: the pin stays
   return { resolved: await resolveRemembered(), refused };
 }

@@ -64,9 +64,13 @@ let driveAccess: string;
 async function fakeFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const url = String(input);
   calls.push(url);
+  // Each provider names one synthetic account (US-09 AC54).
+  if (url === 'https://www.googleapis.com/drive/v3/about?fields=user(permissionId)') return json({ user: { permissionId: 'perm-test' } });
+  if (url === 'https://api.dropboxapi.com/2/users/get_current_account') return json({ account_id: 'dbid:test' });
+  if (url === 'https://api.github.com/user') return json({ id: 7001 });
   if (url === DROPBOX_EXCHANGE) {
     if (holdExchange) await holdExchange;
-    return json({ access_token: 'at-new', refresh_token: 'rt-new', expires_in: 14400 });
+    return json({ access_token: 'at-new', refresh_token: 'rt-new', expires_in: 14400, account_id: 'dbid:test' });
   }
   if (url.endsWith('/api/google-token')) {
     const body = JSON.parse(String(init?.body ?? '{}')) as { grantType?: string };
@@ -385,6 +389,8 @@ describe('US-09 AC45: a form connect is remembered only when it saved its own si
   /** The storage bar's Drive reconnect, clicked in a reconnect session (Drive is still the chosen home): the GIS popup grants a token. */
   async function reconnectDrive(drop?: string) {
     vi.resetModules(); localStorage.setItem(BACKEND_KEY, 'google-drive');
+    // The account this browser syncs with (US-09 AC54).
+    localStorage.setItem('health_roadmap_account_pin', JSON.stringify({ provider: 'google-drive', account: 'perm-test', gen: localStorage.getItem(LOG_OFF_ID_KEY) }));
     vi.doMock('react', async (importOriginal) => {
       const react = await importOriginal<typeof import('react')>();
       const hooks = { useState: (init: unknown) => [typeof init === 'function' ? init() : init, () => {}], useEffect: () => {}, useSyncExternalStore: (_s: unknown, get: () => unknown) => get() };

@@ -53,6 +53,7 @@ beforeEach(() => {
   lift.mockClear();
   vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
     fetchCalls.push(String(input));
+    if (String(input).endsWith('/about?fields=user(permissionId)')) return Response.json({ user: { permissionId: 'perm-test' } }); // the account (US-09 AC54)
     throw new TypeError('Failed to fetch');
   }));
   Object.assign(window, { google: { accounts: { oauth2: { initTokenClient: (options: { callback: (r: object) => void }) => ({

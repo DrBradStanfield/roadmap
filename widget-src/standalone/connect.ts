@@ -9,17 +9,18 @@ import { copyCloudDown, liftDeviceCopy } from '@roadmap/health-core/record-trans
 import { isStorageFailure } from '@roadmap/health-core/sync-manager';
 import {
   DriveGrantRefusedError,
+  GitHubAdapter,
   GoogleDriveAdapter,
   LocalStorageAdapter,
   markSyncPending,
   signalLogOff,
   StorageError,
-  type GitHubAdapter,
   type StorageAdapter,
-  type WebDavAdapter,
+  WebDavAdapter,
 } from '../src/storage';
 import { beginRoadmapLogOff } from '../src/storage/roadmap-store';
-import { accountPinStore, AccountRefusedError, admitAccount, adoptPinAtLoad, notConnected } from '../src/storage/account-gate';
+import { AccountRefusedError, admitAccount, adoptPinAtLoad, beginSwitch, forgetAccountPin, notConnected, noteCloudCopy } from '../src/storage/account-gate';
+import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import { currentSignIn, lostSignIn, type LostSignIn, type SignIn } from '../src/storage/sign-in-state';
 import { BACKEND_KEY, webRecordHost } from '../src/storage/web-record-host';
 import { clearAutoEnrolBlock } from './reminders';
@@ -176,21 +177,31 @@ export function reportConnectFailure(error: unknown, backend: 'dropbox' | 'googl
 
 /**
  * Form-based connect (GitHub, self-host): validate the pasted credentials via
- * adapter.connect() (throws on failure — the caller surfaces the message), remember
+ * adapter.signIn() (throws on failure — the caller surfaces the message), remember
  * the choice, lift on-device data up, then reload so app.tsx re-initialises
  * on the new backend. Dropbox/Google use an OAuth redirect instead (handled in
  * resolve-backend.ts on return), so they don't go through here. `gen` is the
- * log-off id the move began under; the adapter was built with it too. Another
- * account than this browser's is refused before the sign-in is kept (US-09 AC54).
+ * log-off id the move began under; the adapter was built with it too. Once the
+ * credentials are valid, another account than this browser's is refused, and
+ * the account pin is saved with the sign-in, never before it (US-09 AC54).
  */
 export async function finishFormConnect(adapter: GitHubAdapter | WebDavAdapter, backend: CloudBackend, gen: LogOffId): Promise<void> {
+  const earlier = adapter instanceof GitHubAdapter ? new GitHubAdapter(undefined, gen) : new WebDavAdapter(undefined, gen);
+  const admit = () => admitAccount({
+    provider: adapter.id,
+    label: PROVIDERS[backend].label,
+    account: () => adapter.account(),
+    readRecord: async () => (await adapter.read(ROADMAP_FILE_NAME)).body,
+    earlierAccount: earlier.isConnected() ? () => earlier.account() : undefined,
+  }, gen);
+  let saved: boolean;
   try {
-    await admitAccount(adapter.id, PROVIDERS[backend].label, () => adapter.account(), gen);
+    saved = await adapter.signIn(admit);
   } catch (error) {
     connectRefusal(error);
     throw error;
   }
-  if (rememberSignIn(await adapter.signIn(), backend, gen)) {
+  if (rememberSignIn(saved, backend, gen)) {
     markSyncPending();
     await liftLocalInto(adapter, backend);
     trackProductEvent('cloud_connect_success', { provider: PROVIDERS[backend].event });
@@ -244,7 +255,10 @@ export async function resolveRemembered(): Promise<ResolvedBackend> {
     // page load: run on-device, offer Reconnect, KEEP the remembered choice.
     return onDeviceFallback({ kind: 'signedOut', provider: 'google-drive' });
   }
-  if (remembered) forgetBackend(); // creds gone → fall back, will re-prompt
+  if (remembered) { // creds gone → fall back, will re-prompt; with no pin, the device copy is still that cloud's (US-09 AC54)
+    noteCloudCopy(remembered);
+    forgetBackend();
+  }
 
   return { adapter: new LocalStorageAdapter(), backend: 'local' };
 }
@@ -313,7 +327,7 @@ export async function logOff(backend: Backend): Promise<void> {
  * unreachable exactly when the user is most tempted to pick another one). The
  * cloud file itself is never touched.
  */
-export async function prepareSwitch(current: Backend): Promise<void> {
+export async function prepareSwitch(current: Backend, to?: Backend): Promise<void> {
   await flushBeforeExit(); // a guest's too: its connect lifts the device copy (US-09 AC48, owner order 1)
   if (current === 'local') return;
   const adapter = adapterFor(current);
@@ -332,7 +346,10 @@ export async function prepareSwitch(current: Backend): Promise<void> {
     );
   }
   await adapter.disconnect();
-  accountPinStore().clear(); // a move of this record: the next connect pins its own account (US-09 AC54)
+  // A move of this record: the account pin stays until the new sign-in is kept, which replaces it; a move to
+  // this browser makes the record this browser's alone (US-09 AC54).
+  if (to === 'local') forgetAccountPin();
+  else if (to) beginSwitch(to);
   preparedFrom = current;
 }
 

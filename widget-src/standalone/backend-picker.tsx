@@ -156,7 +156,7 @@ export function BackendPickerModal({ current, unreachable = false, onClose }: {
       return;
     }
     void runMove({ type: 'start', to: id, step: 'list' }, async ({ gen, navigating }) => {
-      await prepareSwitch(current);
+      await prepareSwitch(current, id);
       if (id === 'local') {
         forgetBackend();
         location.reload();
@@ -171,7 +171,7 @@ export function BackendPickerModal({ current, unreachable = false, onClose }: {
 
   const submitForm = (id: 'github' | 'self-host'): void => {
     void runMove({ type: 'start', to: id, step: id }, async ({ gen }) => {
-      await prepareSwitch(current);
+      await prepareSwitch(current, id);
       trackProductEvent('cloud_connect_started', { provider: PROVIDERS[id].event });
       const adapter =
         id === 'github'

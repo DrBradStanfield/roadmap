@@ -22,6 +22,7 @@ import { askBeforeExit, currentSignIn, exitAnswered, lostSignIn, subscribeSignIn
 import { dispatch, getSwitchFlow, isCurrentRun, runMove, useSwitchFlow, type Move, type SwitchEvent } from './switch-flow';
 import { noCopyQuestion, PROVIDERS, safeWhere, staleCopyQuestion } from './providers';
 import { BackendPickerModal } from './backend-picker';
+import { forgetAccountPin } from '../src/storage/account-gate';
 import { RemindersControl } from './reminders-control';
 import { remindersSupported } from './reminders';
 import { openBackendPicker, openSignin, OPEN_PICKER_EVENT, PLAN_STORAGE_CTA, StorageSentence } from '../src/lib/storage-notice';
@@ -176,7 +177,7 @@ function useReconnect(lost?: LostSignIn) {
       const token = await new GoogleDriveAdapter(googleDriveConfig(), gen).acquireViaPopup()
         .catch((error: unknown) => { if (isCurrentRun(run)) connectRefusal(error); throw error; });
       if (!isCurrentRun(run)) return; // a popup answer after the reconnect stopped saves nothing
-      const saved = await savePopupGrant(token, gen, () => isCurrentRun(run))
+      const saved = await savePopupGrant(token, googleDriveConfig(), gen, () => isCurrentRun(run))
         .catch((error: unknown) => { if (isCurrentRun(run)) connectRefusal(error); throw error; }); // another account keeps nothing (US-09 AC54)
       if (rememberSignIn(saved, 'google-drive', gen)) {
         dispatch({ type: 'saved', run }); // from here it runs to the reload: Stop is gone
@@ -265,6 +266,7 @@ export function SyncControl({ backend, hasData = true, attention = false }: {
       await copySessionToDevice(provider);
       await adapterFor(provider)?.disconnect();
       forgetBackend();
+      forgetAccountPin(); // the record is this browser's alone now, like a guest's (US-09 AC54)
       location.reload();
     });
   // A page that never read its cloud asks first (US-09 AC49, AC50). Decided again on a yes, so the words a
