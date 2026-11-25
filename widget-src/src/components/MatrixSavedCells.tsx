@@ -9,7 +9,7 @@ import { formatLabValue, savedLabText } from '@roadmap/health-core/lab-series';
 import { type GradeStatus, limitUngraded } from '@roadmap/health-core/row-grade';
 import { MONTHS_SHORT } from '../lib/constants';
 import type { CorrectFn } from '../lib/matrix-save';
-import { flushRoadmapStoreSync } from '../lib/roadmap-data';
+import { flushRoadmapStoreSync, getShownErase } from '../lib/roadmap-data';
 import { CLOSED, WAIT_MS, type ValueCellEvent, type ValueCellState, type Verdict, isOpen, messageOf, transition } from '../lib/value-cell-state';
 import {
   type CellUnit,
@@ -151,7 +151,7 @@ export function ValueCell({
       if (next.kind === 'blurPending') timer.current = window.setTimeout(() => sendLeave(next.wait), WAIT_MS[next.wait]);
     }
     for (const { row, value: corrected } of effects) {
-      void latest.current?.onCorrect?.(row, corrected).then(result => send({ type: 'result', status: result }));
+      void latest.current?.onCorrect?.(row, corrected, getShownErase()).then(result => send({ type: 'result', status: result }));
     }
   }, []);
   /** A click-away wait ran out, or the page is going away: sent with what the text would save now. */

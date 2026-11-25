@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react';
-import { saveMedication, saveScreening, saveSupplement, deleteSupplementApi, loadLatestMeasurements } from '../lib/roadmap-data';
+import { saveMedication, saveScreening, saveSupplement, deleteSupplementApi, getShownErase, loadLatestMeasurements } from '../lib/roadmap-data';
 import { patchMirror } from '../lib/storage';
 import * as listSaves from '../lib/list-saves';
 import type { ListSaves } from '../lib/list-saves';
@@ -110,7 +110,7 @@ export function useListSaves(record: RecordPatches, writeRefused: (erase?: strin
     // A dose save still waiting would land after the stop and restart the row.
     listSaves.cancelListSave(supplementSaves.current, supplementKey);
     stopSupplement(supplementKey);
-    void deleteSupplementApi(supplementKey).then(saved => { if (!saved) writeRefused(); });
+    void deleteSupplementApi(supplementKey, getShownErase()).then(saved => { if (!saved) writeRefused(); });
   }, [writeRefused, stopSupplement]);
 
   return {

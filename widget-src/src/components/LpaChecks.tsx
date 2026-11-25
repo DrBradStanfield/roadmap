@@ -8,6 +8,7 @@ import { formatShortDate } from '../lib/constants';
 import type { CorrectFn } from '../lib/matrix-save';
 import { LPA_CHECK_COOL_MS, LPA_CHECK_START, transition } from '../lib/lpa-check-machine';
 import { keepLpaAsIs, lpaRowsToCheck, type LpaCheck } from '../lib/lpa-unit';
+import { getShownErase } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 import { useLiveRegion } from './MatrixSavedCells';
 
@@ -79,7 +80,7 @@ function LpaChecks({ rows, unitSystem, onCorrect, waiting }: {
       dispatch({ type: 'kept' });
     } else {
       dispatch({ type: 'correcting', rowId: row.id });
-      const status = await onCorrect(row.id, saves(typed, unit));
+      const status = await onCorrect(row.id, saves(typed, unit), getShownErase());
       if (status === 'changed') {
         // Replaced on another device: the page re-reads the record and the
         // notice goes, so the reason is said where it outlives it (adversary
