@@ -188,7 +188,7 @@ export async function driveDownloadDocument(accessToken: string, name: string, p
 }
 
 /** Overwrite a file's bytes. Unconditional — Drive offers no precondition. */
-async function driveUpdateFile(accessToken: string, fileId: string, json: string, signal?: AbortSignal): Promise<string> {
+export async function driveUpdateFile(accessToken: string, fileId: string, json: string, signal?: AbortSignal): Promise<string> {
   const res = await request(`${UPLOAD}/files/${fileId}?uploadType=media&fields=id,version`, {
     method: 'PATCH',
     headers: { ...auth(accessToken), 'Content-Type': 'application/json' },
@@ -246,13 +246,16 @@ export async function driveUpdateIfVersion(
   expectedVersion: string | null,
   signal?: AbortSignal,
 ): Promise<string> {
-  const current = await driveFileVersion(accessToken, fileId, signal);
-  if (current !== expectedVersion) {
-    throw new ConflictError(
-      `${PROVIDER} file identity or version changed since it was read`,
-    );
-  }
+  await driveCheckVersion(accessToken, fileId, expectedVersion, signal);
   return driveUpdateFile(accessToken, fileId, json, signal);
+}
+
+/** `driveUpdateIfVersion`'s check alone. It sends no upload, so any failure
+ *  here stored nothing (the record's save keeps it apart, lead S62b). */
+export async function driveCheckVersion(accessToken: string, fileId: string, expectedVersion: string | null, signal?: AbortSignal): Promise<void> {
+  if (await driveFileVersion(accessToken, fileId, signal) !== expectedVersion) {
+    throw new ConflictError(`${PROVIDER} file identity or version changed since it was read`);
+  }
 }
 
 /** Download a file's bytes as JSON. Null = the file is gone. */

@@ -46,9 +46,11 @@ export function mayHaveLanded(error: unknown): boolean {
  * - 5xx (507 included): the server failed partway, or a gateway gave up waiting.
  * Google Drive: it offers no precondition; its adapter checks every copy's
  * version itself before the upload (a ConflictError) and marks every failure
- * after it sent the upload (drive-rest.ts `uncertain`), so only that check and
- * failures before the upload are refusals. The iPhone's token retry
- * (ios/engine/cloud-adapters.ts refreshOn401) never retries a marked failure;
+ * after it sent the upload but Drive's own refusal of a create
+ * (drive-rest-record.ts `uncertain`, `createFailed`), so the check, failures
+ * before the upload and a refused create are refusals (lead S62b). Any failure
+ * of an update PATCH is marked, a 401 or 403 answer included (US-10 AC4a).
+ * The iPhone's token retry (ios/engine/cloud-adapters.ts refreshOn401) never retries a marked failure;
  * the next call asks for a fresh token first (lead S57b).
  */
 const REFUSED_STATUSES: ReadonlySet<number> = new Set([400, 401, 403, 404, 409, 412, 413, 422]);
