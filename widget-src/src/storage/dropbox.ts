@@ -21,7 +21,7 @@ import { dropboxDownload, dropboxListFolder, dropboxRead, dropboxUploadDocument,
 import { answerOutcome, fetchOrFail, ROADMAP_FILE_NAME, sleepUntilAborted, catchUpAfterFailure, StorageError, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
 import { TRANSFER_DEADLINE_MS, timeoutDeadline } from '@roadmap/health-core/transfer-deadline';
 import { getSignIn, logOffId, setSignIn, setSignIns, safeRemoveItem, type LogOffId } from '../lib/storage';
-import { claimRedirectCancel, claimRedirectCode, deriveCodeChallenge, generateCodeVerifier, generateState, pkceEntry } from './pkce';
+import { claimRedirectCancel, claimRedirectCode, deriveCodeChallenge, generateCodeVerifier, generateState, pkceEntry, signInUnfinished } from './pkce';
 import { refreshOnce } from './token-flight';
 import { isSignedOut, signInEnded } from './sign-in-state';
 
@@ -170,7 +170,7 @@ export class DropboxAdapter implements StorageAdapter {
     }, claimed.gen);
     // Strip ?code/&state from the URL so a refresh doesn't re-trigger.
     window.history.replaceState({}, '', config.redirectUri);
-    return saved ? new DropboxAdapter(config, claimed.gen) : null;
+    return saved ? new DropboxAdapter(config, claimed.gen) : claimed.gen !== logOffId() ? signInUnfinished() : null; // a log-off during the exchange; else as before
   }
 
   async disconnect(): Promise<void> {
