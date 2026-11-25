@@ -16,8 +16,8 @@ import {
 } from './chat.server';
 import type { ChatFailureMode } from './chat.server';
 import { DISCORD_SAVED_CHAT, savedChatBlock } from './chat-save-answers';
-import { reportRouterFailure, sanitizeForRouter, type RouterResult } from './chat-router.server';
-import { runRouter } from './chat-router-stage.server';
+import { reportRouterFailure, type RouterResult } from './chat-router.server';
+import { routerTurn, runRouter } from './chat-router-stage.server';
 import { classifyMessage, shouldFireRouter } from './chat-classifier.server';
 import { loadBlogIndex } from './blog-index.server';
 import { preferMasters } from './router-view';
@@ -80,14 +80,10 @@ export async function platformChatCompletion(params: {
 }): Promise<PlatformCompletionResult> {
   const { message, history, purpose } = params;
 
-  const sanitizedCurrent = sanitizeForRouter(message);
-  const firstUserMsg = history.find(m => m.role === 'user')?.content;
-  const recentUserMsgs = history.filter(m => m.role === 'user').slice(-3).map(m => m.content);
-  const sanitizedFirst = firstUserMsg ? sanitizeForRouter(firstUserMsg) : undefined;
-  const sanitizedRecent = recentUserMsgs.map(sanitizeForRouter);
+  const routerInput = routerTurn(message, history);
 
   // Stage 1: classifier (Discord has no per-user data fetch to parallelize with).
-  const classifierResult = await classifyMessage(sanitizedCurrent, sanitizedFirst, sanitizedRecent, purpose);
+  const classifierResult = await classifyMessage(routerInput.current, routerInput.first, routerInput.recent, purpose);
   const classifier = {
     classification: classifierResult.classification,
     routerSkipped: classifierResult.routerSkipped,
@@ -102,7 +98,7 @@ export async function platformChatCompletion(params: {
 
   // Stage 2: router fires only when the classifier didn't bypass it (ROUTE/ERROR → fire).
   const routerResult: RouterResult | null = shouldFireRouter(classifierResult)
-    ? await runRouter(sanitizedCurrent, sanitizedFirst, sanitizedRecent, purpose, (r) => reportRouterFailure(r, 'discord'))
+    ? await runRouter(routerInput, purpose, (r) => reportRouterFailure(r, 'discord'))
     : null;
 
   // US-50 AC14: an older post gives way to its topic masters unless the message gives its URL or handle.
