@@ -6,7 +6,10 @@
  * never saved by the page going away: that would save an unfinished value.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, cleanup, fireEvent, act } from '@testing-library/react';
+import { render, cleanup, fireEvent, act, waitFor } from '@testing-library/react';
+import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
+import { RoadmapStore } from '../storage/roadmap-store';
+import { BACKEND_KEY } from '../storage/web-record-host';
 import { ValueCell } from './MatrixSavedCells';
 import { hidePage, showPage } from '../testing/matrix-gestures';
 
@@ -50,6 +53,32 @@ describe('US-04 AC1 — the page going away during a click-away save', () => {
     await wait(50);
     hidePage();
     expect(onCorrect).toHaveBeenCalledWith('r1', 3.4, 'erase-shown');
+  });
+
+  // US-16 AC2a (PR 2081 review, R2): a correction refused for the erase it opened under is a value changed elsewhere:
+  // the editor closes with those words, never "Could not save" kept open for a retry that can never land.
+  it('an editor opened before an erase and saved after it closes with the changed words, and writes nothing', async () => {
+    vi.useRealTimers();
+    localStorage.clear();
+    localStorage.setItem(BACKEND_KEY, 'memory');
+    const store = await RoadmapStore.create(new MemoryAdapter(new MemoryCloud()));
+    store.showErase(store.eraseIdentity);
+    const ldl = store.addMeasurement('ldl', 3.2, '2026-08-15');
+    if (ldl.status !== 'inserted') throw new Error('setup failed');
+    shown.erase = store.shownErase;
+    const view = render(<ValueCell metric="ldl" display="si" value={3.2} rowId={ldl.row.id} status="ok" pinned={false}
+      onCorrect={(id, value, erase) => Promise.resolve(store.correctValue(id, value, erase))}/>);
+    fireEvent.click(view.getByRole('button'));
+    expect((await store.deleteAllData()).success).toBe(true);
+    store.showErase(store.eraseIdentity);
+    const before = JSON.stringify(store.file);
+    const input = view.container.querySelector('.bt-cell-correcting input') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: '3.4' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    await waitFor(() => expect(view.container.querySelector('.bt-cell-correcting input')).toBeNull());
+    expect(view.container.textContent).toContain('This value changed on another device, so your edit was not saved.');
+    expect(view.container.textContent).not.toContain('Could not save');
+    expect(JSON.stringify(store.file)).toBe(before);
   });
 
   // Codex R1: the page's own flush listener ran before the cell's, so the

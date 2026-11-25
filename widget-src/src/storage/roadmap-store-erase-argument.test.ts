@@ -43,7 +43,7 @@ const WRITERS: Array<[string, (s: RoadmapStore, ids: Ids, erase: string) => unkn
   ['deleteDocument (H20)', (s, ids, erase) => s.deleteDocument(ids.documentId, erase), false, (f) => f.documents.filter((d) => d.deleted)],
   ['setLpaUnit (H21)', (s, _ids, erase) => s.setLpaUnit('nmol/L', erase), false, (f) => f.profile.lpaUnit ?? null],
   ['deleteSupplementApi (H22)', (s, _ids, erase) => s.deleteSupplementApi('omega3', erase), false, (f) => f.supplements.filter((x) => x.status === 'stopped')],
-  ['correctValue (H23)', (s, ids, erase) => s.correctValue(ids.ldlId, 1.9, erase), 'error', (f) => [...f.measurements, ...f.labValues].filter((v) => v.correctsId)],
+  ['correctValue (H23)', (s, ids, erase) => s.correctValue(ids.ldlId, 1.9, erase), 'changed', (f) => [...f.measurements, ...f.labValues].filter((v) => v.correctsId)],
   ['bulkSaveMeasurements (H18, the blood pressure widget)', (s, _ids, erase) => s.bulkSaveMeasurements([{ metricType: 'waist', value: 90, recordedAt: '2026-09-02', source: 'manual' }], erase),
     { saved: [], skippedDuplicates: 0, errorCount: 1, refused: [] }, (f) => f.measurements.filter((m) => m.metricType === 'waist')],
   ['moveBloodTest (H24)', (s, ids, erase) => s.moveBloodTest('2026-08-15', '2025-12-01', [ids.ldlId], {}, erase), { status: 'error' },

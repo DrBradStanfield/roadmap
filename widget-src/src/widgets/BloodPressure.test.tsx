@@ -555,4 +555,48 @@ describe('US-16 AC2a: the blood pressure save writes under the erase it was aske
     expect(await savePair({ sys: 128, dia: 82 }, day, NONE, data.getShownErase())).toMatchObject({ kind: 'kept' });
     expect(active('systolic_bp')).toEqual([128]);
   });
+
+  // PR 2081 review, R3: the erase is the one shown at the reading's first keystroke, carried with it, never the one
+  // shown when a save-on-leave runs it, however late.
+  it('a reading typed before an erase, saved on leave after the page shows it: nothing written, the next step stays', async () => {
+    const navigate = vi.fn();
+    data.markEraseShown(data.getEraseIdentity());
+    render(<BloodPressureWidget nextUrl="/next" navigate={navigate} />);
+    enterPair(1, '128', '82');
+    expect((await data.deleteUserData()).success).toBe(true);
+    data.markEraseShown(data.getEraseIdentity()); // another tab erased; this page now shows the erased record
+    await data.flushRoadmapStore();
+    const before = JSON.stringify(data.recordFileSync());
+    await leave();
+    expect(JSON.stringify(data.recordFileSync())).toBe(before);
+    expect(active('systolic_bp')).toEqual([]);
+    fireEvent.click(screen.getByRole('link'));
+    await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('a second reading typed after the erase is shown never carries the first, typed before it, into the erased record', async () => {
+    data.markEraseShown(data.getEraseIdentity());
+    render(<BloodPressureWidget />);
+    enterPair(1, '128', '82');
+    await leave();
+    expect(active('systolic_bp')).toEqual([128]);
+    expect((await data.deleteUserData()).success).toBe(true);
+    data.markEraseShown(data.getEraseIdentity());
+    enterPair(2, '140', '90'); // averaged with reading 1, typed under the erased record
+    await leave();
+    expect(active('systolic_bp')).toEqual([]);
+  });
+
+  it('control: a reading typed again after the erase is shown is kept', async () => {
+    data.markEraseShown(data.getEraseIdentity());
+    render(<BloodPressureWidget />);
+    enterPair(1, '128', '82');
+    expect((await data.deleteUserData()).success).toBe(true);
+    data.markEraseShown(data.getEraseIdentity());
+    await leave(); // refused: typed before the erase
+    enterPair(1, '130', '84'); // typed again, after the change, under the erase shown now
+    await leave();
+    expect(active('systolic_bp')).toEqual([130]);
+  });
 });

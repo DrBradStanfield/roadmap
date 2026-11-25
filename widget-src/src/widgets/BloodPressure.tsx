@@ -31,6 +31,8 @@ const TONE: Record<BpTier, keyof typeof PILL> = { normal: 'green', elevated: 'am
 const EMPTY: Typed = { sys: '', dia: '' };
 const NONE: Ids = { sys: null, dia: null };
 const LABEL = { sys: 'Systolic', dia: 'Diastolic' } as const; // Brad 2026-11-19
+/** A reading's typing: the day it was typed on and the erase the page showed as it began. */
+type Typing = { day: string; erase: string };
 
 /** One reading's two boxes: the full app's blood pressure pair (useBpPair, US-75 AC2). */
 function ReadingBoxes({ index, typed, note, onChange, onEnter, next, sysRef }: {
@@ -105,8 +107,9 @@ export function BloodPressureWidget({ nextUrl, nextLabel, navigate = (href) => w
   // The record's latest pair, shown until the person types (AC3): never averaged in, never saved.
   const [start] = useState(recordPair);
   const [prefilled, setPrefilled] = useState(!!start);
-  // The day each reading was last typed on (null: not typed).
-  const [typedOn, setTypedOn] = useState<[string | null, string | null]>([null, null]);
+  // The day each reading was last typed on (null: not typed), and the erase the page showed at the first keystroke of
+  // its unsaved typing: its save writes under that erase, however late it runs (US-16 AC2a).
+  const [typedOn, setTypedOn] = useState<[Typing | null, Typing | null]>([null, null]);
   const [readings, setReadings] = useState<[Typed, Typed]>(() => [start ? { sys: String(start.pair.sys), dia: String(start.pair.dia) } : EMPTY, EMPTY]);
   const sysRefs = [useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null)] as const;
   const form = useRef<HTMLFormElement>(null);
@@ -130,7 +133,7 @@ export function BloodPressureWidget({ nextUrl, nextLabel, navigate = (href) => w
   // Only readings typed today count, and the record's while it shows: one typed before midnight is never
   // averaged into a new day's result or save (Codex 1876b R5); a save already asked keeps its own day.
   const today = localDay(new Date());
-  const read = useMemo(() => readings.map((typed, i) => (prefilled || typedOn[i] === today ? readReading(typed) : { kind: 'blank' as const })), [readings, typedOn, prefilled, today]);
+  const read = useMemo(() => readings.map((typed, i) => (prefilled || typedOn[i]?.day === today ? readReading(typed) : { kind: 'blank' as const })), [readings, typedOn, prefilled, today]);
   const pairs = read.flatMap((r) => (r.kind === 'pair' ? [r.pair] : []));
   // Worked out once per set of readings, not per keystroke: the plan engine reads the whole record.
   const key = pairs.map((p) => `${p.sys}/${p.dia}`).join(' ');
@@ -142,8 +145,12 @@ export function BloodPressureWidget({ nextUrl, nextLabel, navigate = (href) => w
     if (!pending || pairs.length === 0) return queue.current.then(() => true, () => true);
     // A complete reading held back by another reading's error: blocked, so the next step stays (Codex 1876b R7).
     if (read.some((r) => r.kind === 'error')) return Promise.resolve(false);
-    // The erase the page shows as the save is asked: the queued write lands under it or not at all (US-16 AC2a).
-    const seq = edits.current, pair = averageOf(pairs), day = localDay(new Date()), erase = getShownErase();
+    // The erase its readings were typed under: the queued write lands under it or not at all (US-16 AC2a). Readings
+    // typed under two erases hold one typed before an erase: never written, and dropped as a changed row is, so the
+    // next keystroke starts its reading again.
+    const erases = [...new Set(typedOn.flatMap((t, i) => (t && read[i].kind === 'pair' ? [t.erase] : [])))];
+    if (erases.length !== 1) { conflict.current = edits.current; return Promise.resolve(false); }
+    const seq = edits.current, pair = averageOf(pairs), day = localDay(new Date()), erase = erases[0];
     const run = async (): Promise<boolean> => {
       if (seq <= conflict.current) return false;
       if (conflict.current > shown.current.asOf) shown.current = { day, ids: rowsOn(day), asOf: seq };
@@ -170,12 +177,15 @@ export function BloodPressureWidget({ nextUrl, nextLabel, navigate = (href) => w
 
   // The first edit clears the record's reading: a half from another day is never kept beside a typed one (AC3).
   const change = (i: 0 | 1) => (typed: Typed) => {
+    // No edit waits on a save (each kept or dropped): this keystroke starts the reading's unsaved typing.
+    const fresh = edits.current <= Math.max(kept.current, conflict.current);
     edits.current++;
     // The load reserve for a returning visitor (the block's inline script) has done its job once they type:
     // from then on the card fits what it holds (Brad 2026-11-19).
     form.current?.closest('.hr-widget')?.classList.remove('hr-widget--saved');
-    const day = localDay(new Date());
-    setTypedOn((prev) => (prefilled ? (i === 0 ? [day, null] : [null, day]) : i === 0 ? [day, prev[1]] : [prev[0], day]));
+    const day = localDay(new Date()), erase = getShownErase();
+    const on = (prev: Typing | null): Typing => (prev && prev.day === day && !fresh ? prev : { day, erase });
+    setTypedOn((prev) => (prefilled ? (i === 0 ? [on(null), null] : [null, on(null)]) : i === 0 ? [on(prev[0]), prev[1]] : [prev[0], on(prev[1])]));
     setReadings((prev) => {
       if (!prefilled) return i === 0 ? [typed, prev[1]] : [prev[0], typed];
       if (i === 1) return [EMPTY, typed];
