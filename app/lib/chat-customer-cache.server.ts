@@ -7,25 +7,27 @@ import type { AdminApiContext } from '../shopify.server';
 import { checkSubscriptionFromTags, getCustomerOrders } from './route-helpers.server';
 import { updateSubscriptionPlan, type DbProfile } from './supabase-account.server';
 import { reportChatError } from './chat-turn-io.server';
+import { boundedMap, isLive, sweepExpired } from './rate-limiter';
 
 // Order cache — orders change infrequently, no need to re-fetch every message
 const ORDER_CACHE_TTL = 10 * 60_000; // 10 minutes
+// Customers held (US-15 AC67): as the subscription summaries, read only inside a web chat turn,
+// which a machine allows 10,000 a day. When full the oldest goes and is fetched again. Two TTLs, so
+// an expired empty entry can sit behind a live one until the sweep: that only evicts a live entry early.
+const ORDER_CACHE_MAX_KEYS = 10_000;
 const orderCache = new Map<string, { summary: string; expiresAt: number }>();
-
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, entry] of orderCache) {
-    if (now > entry.expiresAt) orderCache.delete(key);
-  }
-}, 5 * 60_000);
+const expiresAtOf = (entry: { expiresAt: number }) => entry.expiresAt;
+sweepExpired(orderCache, expiresAtOf, 5 * 60_000);
+const orderRoom = boundedMap(orderCache, expiresAtOf, { name: 'order summaries', maxKeys: ORDER_CACHE_MAX_KEYS });
 
 export async function getCachedOrders(admin: AdminApiContext, customerId: string): Promise<string> {
   const cached = orderCache.get(customerId);
-  if (cached && Date.now() < cached.expiresAt) return cached.summary;
+  if (cached && isLive(cached.expiresAt, Date.now())) return cached.summary;
 
   const summary = await getCustomerOrders(admin, customerId);
   // Cache both successful and empty results (shorter TTL for empty to retry sooner)
   const ttl = summary ? ORDER_CACHE_TTL : 2 * 60_000;
+  orderRoom(customerId, Date.now());
   orderCache.set(customerId, { summary, expiresAt: Date.now() + ttl });
   return summary;
 }

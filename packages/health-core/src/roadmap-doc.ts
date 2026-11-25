@@ -12,13 +12,9 @@
  */
 import { fieldsBehind, mergeFiles, rootIdOf, rowRootIds } from './merge';
 import { isObject, migrateFile, RecordShapeError } from './migrate';
-import type { RoadmapFile } from './roadmap-file';
+import { APPEND_ONLY_ARRAYS, ROW_ARRAYS, type RoadmapFile } from './roadmap-file';
 import { ROADMAP_FILE_NAME, type StorageAdapter } from './adapter';
 import { SyncManager, type DocumentSpec, type SyncContext } from './sync-manager';
-
-/** The arrays a record keeps its rows in. Junk in any of them migrates to a
- *  blank record, so a write would replace real values with an empty file. */
-const ROW_ARRAYS = ['measurements', 'labValues', 'medications', 'supplements', 'documents', 'medicationHistory', 'supplementHistory'] as const;
 
 /**
  * Refuse bytes that are not this record. An ABSENT file (null) is not a
@@ -31,6 +27,8 @@ function assertRecordShape(raw: unknown): void {
   if (!isObject(raw) || !('schemaVersion' in raw)) {
     throw new RecordShapeError('it holds something else entirely');
   }
+  // Junk in any row array migrates to a blank record, so a write would
+  // replace real values with an empty file.
   for (const key of ROW_ARRAYS) {
     // A missing or null array holds no rows, so normalising it to [] loses
     // nothing and a sloppy writer's file still opens. A string or a number
@@ -54,10 +52,7 @@ export const ROADMAP_DOC: DocumentSpec<RoadmapFile> = {
   // rewritten, so their ids are exactly what a write can be checked against
   // afterwards. (`recommendationSnapshots` are keyed by date, not id, and are
   // regenerated rather than appended — nothing to lose.)
-  rowIds: (file) => [
-    ...file.measurements, ...file.labValues, ...file.documents,
-    ...file.medicationHistory, ...file.supplementHistory,
-  ].map((row) => row.id),
+  rowIds: (file) => APPEND_ONLY_ARRAYS.flatMap((key) => file[key].map((row) => row.id)),
   // An erase and a profile or screening edit add no row, so `rowIds` cannot
   // see another writer replace them (US-10 AC6a, US-11 AC7). Compared after
   // the same migration the re-read went through, so its clock clamps match.
@@ -82,7 +77,9 @@ export const ROADMAP_DOC: DocumentSpec<RoadmapFile> = {
   },
 };
 
-/** The one write path over the user's record, whichever adapter holds it. */
-export function recordSync(adapter: StorageAdapter, deviceId: string, now: string): SyncManager<RoadmapFile> {
-  return new SyncManager<RoadmapFile>(adapter, deviceId, ROADMAP_DOC, { now: () => now });
+/** The one write path over the user's record, whichever adapter holds it
+ *  (lead A1-4). `now` is the instant a one-shot writer stamps every write
+ *  with, or the clock a long-lived session reads at each write. */
+export function recordSync(adapter: StorageAdapter, deviceId: string, now: string | (() => string)): SyncManager<RoadmapFile> {
+  return new SyncManager<RoadmapFile>(adapter, deviceId, ROADMAP_DOC, { now: typeof now === 'string' ? () => now : now });
 }
