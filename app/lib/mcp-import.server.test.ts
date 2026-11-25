@@ -16,12 +16,12 @@ vi.mock('@sentry/react-router', () => ({ captureException: vi.fn(), captureMessa
 import * as Sentry from '@sentry/react-router';
 import { recordServerEvent } from './product-events.server';
 import {
+  type Extractor,
   hostedImporter,
   MAX_IMPORT_FILE_BYTES,
   MAX_IMPORT_ZIP_BYTES,
   MAX_ZIP_ENTRIES,
   MCP_IMPORT_BUDGET_MS,
-  setImportSeams,
   sniff,
   unzip,
   zipRefusal,
@@ -31,7 +31,9 @@ import { resourceUrl } from './mcp-config.server';
 import { chargeWrites, connectionKey, IMPORT_FILES_PER_DAY, importFiles, resetMcpMemory, WRITES_PER_HOUR } from './mcp-grants.server';
 import { seal } from './mcp-seal.server';
 import { machineFiles } from './rate-limiter';
-import { type ImportPayload, MAX_IMPORT_FILES_PER_CALL, MAX_RECEIPT_LENGTH, OUTPUTS, runToolOverSync } from '../../packages/health-core/src/mcp-tools';
+import { OUTPUTS, runToolOverSync } from '../../packages/health-core/src/mcp-tools';
+import { MAX_IMPORT_FILES_PER_CALL, MAX_RECEIPT_LENGTH } from '../../packages/health-core/src/mcp-tool-contract';
+import { type ImportPayload } from '../../packages/health-core/src/mcp-import';
 import { recordSync } from '../../packages/health-core/src/roadmap-doc';
 import { IMPORT_REFUSALS } from '../../packages/health-core/src/import-hints';
 import { ROADMAP_FILE_NAME, StorageError } from '../../packages/health-core/src/adapter';
@@ -41,6 +43,10 @@ import { MAX_FILE_NAME_LENGTH, zipMemberName } from '../../packages/health-core/
 
 /** The user's own words, quoted in every commit (US-35 AC7, 2026-10-07). */
 const APPROVED = 'Yes, file them';
+/** Eleven seconds after every block's NOW: past a receipt's pause (US-35 AC19). */
+const AFTER_PAUSE = '2026-09-02T10:00:11.000Z';
+/** The clock a receipt is signed by: every block's NOW (US-35 AC19). */
+const CLOCK = () => Date.parse('2026-09-02T10:00:00.000Z');
 const PDF = new TextEncoder().encode('%PDF-1.4\n1 0 obj\nendobj\n');
 const JPEG = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 0]);
 const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a]);
@@ -170,7 +176,7 @@ describe('US-35 AC7 — the receipt is the pending file’s own UUID, and the MA
 
   /** The surface for one connection over one in-memory folder — the receipt is minted and opened here and nowhere else. */
   function surfaceFor(rt: string, cloud = new MemoryCloud(), clientId = 'c.test') {
-    return hostedImporter({ token: { clientId, provider: 'dropbox', rt, exp: 0 }, adapter: new MemoryAdapter(cloud), client: 'claude', maxCorrectionAgeDays: 90 });
+    return hostedImporter({ token: { clientId, provider: 'dropbox', rt, exp: 0 }, adapter: new MemoryAdapter(cloud), client: 'claude', maxCorrectionAgeDays: 90, clock: CLOCK });
   }
   const deadline = () => Date.now() + MCP_IMPORT_BUDGET_MS;
   async function stashed(surface: ReturnType<typeof surfaceFor>) {
@@ -200,7 +206,7 @@ describe('US-35 AC7 — the receipt is the pending file’s own UUID, and the MA
     expect(receipt.length).toBeLessThanOrEqual(MAX_RECEIPT_LENGTH);
     expect(expiresAt).toBe('2026-09-02T11:00:00.000Z');
     expect(pendingOf(cloud)).toEqual({ v: 2, payload: PAYLOAD, issued: Date.parse(NOW) / 1000, mac: expect.stringMatching(/^[0-9a-f]{32}$/) });
-    expect(await surface.open({ receipt, accept: [], replace: [], approval: APPROVED }, file, NOW, deadline())).toEqual(PAYLOAD);
+    expect(await surface.open({ receipt, accept: [], replace: [], approval: APPROVED }, file, AFTER_PAUSE, deadline())).toEqual(PAYLOAD);
     // Still good at the last second of its hour.
     expect(await surface.open({ receipt, accept: [], replace: [], approval: APPROVED }, file, '2026-09-02T11:00:00.000Z', deadline())).toEqual(PAYLOAD);
   });
@@ -218,7 +224,7 @@ describe('US-35 AC7 — the receipt is the pending file’s own UUID, and the MA
     const cloud = new MemoryCloud();
     const adapter = new MemoryAdapter(cloud);
     const read = vi.spyOn(adapter, 'read');
-    const surface = hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'connection-a', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90 });
+    const surface = hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'connection-a', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90, clock: CLOCK });
     await stashed(surface);
     // This replaces the forged seal('import') case, retired 2026-10-07 with the sealed import blob itself: a path
     // never passes the UUID check, and an old blob's wire form is refused here even past the schema.
@@ -253,7 +259,7 @@ describe('US-35 AC7 — the receipt is the pending file’s own UUID, and the MA
     unchargedOn('connection-a');
     unchargedOn('connection-b');
     resetMcpMemory();
-    expect(await surface.open({ receipt, accept: [], replace: [], approval: APPROVED }, file, NOW, deadline())).toEqual(PAYLOAD);
+    expect(await surface.open({ receipt, accept: [], replace: [], approval: APPROVED }, file, AFTER_PAUSE, deadline())).toEqual(PAYLOAD);
   });
 
   it('an hour and a second after the extract it has expired, in its own words', async () => {
@@ -261,6 +267,20 @@ describe('US-35 AC7 — the receipt is the pending file’s own UUID, and the MA
     const { receipt } = await stashed(surface);
     expect(await refusalOf(surface, receipt, '2026-09-02T11:00:01.000Z')).toMatch(/has expired/);
     unchargedOn('connection-a');
+  });
+
+  it('US-35 AC19: a commit inside the pause gets the refusal every permanent write gives, charges nothing and keeps the file', async () => {
+    const cloud = new MemoryCloud();
+    const surface = surfaceFor('connection-a', cloud);
+    const { receipt } = await stashed(surface);
+    const early = (left: string) => `That confirm receipt is not valid yet: it can be used in ${left} (from 2026-09-02T10:00:10.000Z), after the user has answered. Do not retry before then; end your turn. Nothing was written.`;
+    expect(await refusalOf(surface, receipt, NOW)).toBe(early('10 seconds'));
+    // US-36 AC14: the seconds left are whole and rounded up, so a thousandth of a second left reads as one.
+    expect(await refusalOf(surface, receipt, '2026-09-02T10:00:09.999Z')).toBe(early('1 second'));
+    expect(cloud.files.has(PENDING)).toBe(true);
+    unchargedOn('connection-a');
+    resetMcpMemory();
+    expect(await surface.open({ receipt, accept: [], replace: [], approval: APPROVED }, file, '2026-09-02T10:00:10.000Z', deadline())).toEqual(PAYLOAD);
   });
 
   it('a pending file from before 2026-10-07 (no `v`) is not readable; the name-based sweep below takes it', async () => {
@@ -303,7 +323,7 @@ describe('US-35 AC7 — the receipt is the pending file’s own UUID, and the MA
     const surface = surfaceFor('connection-a');
     const { receipt } = await stashed(surface);
     const bogus = Array.from({ length: 300 }, (_, i) => `x${i}`);
-    const answer = await surface.open({ receipt, accept: [], replace: bogus, approval: APPROVED }, file, NOW, deadline());
+    const answer = await surface.open({ receipt, accept: [], replace: bogus, approval: APPROVED }, file, AFTER_PAUSE, deadline());
     expect('refusal' in answer && answer.refusal).toMatch(/not a candidate/);
     unchargedOn('connection-a');
   });
@@ -312,7 +332,7 @@ describe('US-35 AC7 — the receipt is the pending file’s own UUID, and the MA
     const surface = surfaceFor('connection-a');
     const { receipt } = await stashed(surface);
     process.env.MCP_SEAL_KEYS = `${Buffer.alloc(32, 8).toString('base64')},${Buffer.alloc(32, 7).toString('base64')}`;
-    expect(await surface.open({ receipt, accept: [], replace: [], approval: APPROVED }, file, NOW, deadline())).toEqual(PAYLOAD);
+    expect(await surface.open({ receipt, accept: [], replace: [], approval: APPROVED }, file, AFTER_PAUSE, deadline())).toEqual(PAYLOAD);
     process.env.MCP_SEAL_KEYS = Buffer.alloc(32, 8).toString('base64');
     expect(await refusalOf(surface, receipt)).toMatch(/not valid/);
   });
@@ -331,7 +351,7 @@ describe('US-35 AC7 / US-36 AC9 — a commit quotes the user’s approval, check
   it('refuses a commit with no approval, or a blank one, before it reads the pending file or charges; the same receipt then commits with one', async () => {
     const cloud = new MemoryCloud();
     const adapter = new MemoryAdapter(cloud);
-    const surface = hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'connection-a', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90 });
+    const surface = hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'connection-a', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90, clock: CLOCK });
     const stashed = await surface.stash(PAYLOAD, deadline());
     if ('refusal' in stashed) throw new Error(stashed.refusal);
     const read = vi.spyOn(adapter, 'read');
@@ -343,17 +363,17 @@ describe('US-35 AC7 / US-36 AC9 — a commit quotes the user’s approval, check
     expect(cloud.files.has(PENDING)).toBe(true);
     expect(chargeWrites(connectionKey({ rt: 'connection-a' }), WRITES_PER_HOUR)).toBeNull();
     resetMcpMemory();
-    expect(await surface.open({ receipt: stashed.receipt, accept: [], replace: [], approval: APPROVED }, file, NOW, deadline())).toEqual(PAYLOAD);
+    expect(await surface.open({ receipt: stashed.receipt, accept: [], replace: [], approval: APPROVED }, file, AFTER_PAUSE, deadline())).toEqual(PAYLOAD);
   });
 
   it('through the tool: no approval is refused in words, a 201-character one by the schema, and neither writes or spends the pending file', async () => {
     const cloud = new MemoryCloud();
     const adapter = new MemoryAdapter(cloud);
     await adapter.write(ROADMAP_FILE_NAME, createEmptyFile({ deviceId: 'test', now: NOW }), null);
-    const importer = hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'connection-a', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90 });
+    const importer = hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'connection-a', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90, clock: CLOCK });
     const stashed = await importer.stash(PAYLOAD, deadline());
     if ('refusal' in stashed) throw new Error(stashed.refusal);
-    const call = (commit: Record<string, unknown>) => runToolOverSync(recordSync(adapter, 'mcp', NOW), 'file_results', { commit }, NOW, { importer });
+    const call = (commit: Record<string, unknown>) => runToolOverSync(recordSync(adapter, 'mcp', NOW), 'file_results', { commit }, AFTER_PAUSE, { importer });
     const before = cloud.files.get(ROADMAP_FILE_NAME);
 
     const bare = await call({ receipt: stashed.receipt, accept: [], replace: [] });
@@ -374,8 +394,8 @@ describe('US-35 AC7 / US-36 AC9 — a commit quotes the user’s approval, check
     const cloud = new MemoryCloud();
     const adapter = new MemoryAdapter(cloud);
     await adapter.write(ROADMAP_FILE_NAME, createEmptyFile({ deviceId: 'test', now: NOW }), null);
-    const importer = hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'connection-a', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90 });
-    const call = (args: unknown) => runToolOverSync(recordSync(adapter, 'mcp', NOW), 'file_results', args, NOW, { importer, latestDay: '2026-09-02' });
+    const importer = hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'connection-a', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90, clock: CLOCK });
+    const call = (args: unknown, now = NOW) => runToolOverSync(recordSync(adapter, 'mcp', NOW), 'file_results', args, now, { importer, latestDay: '2026-09-02' });
     const proposed = await call({
       sourceFileName: 'labs.pdf', classification: 'lab_report', collectedOn: '2026-08-20',
       values: [{ metric: 'ldl', printedName: 'LDL Cholesterol', value: 2.8, unit: 'mmol/L' }],
@@ -384,10 +404,10 @@ describe('US-35 AC7 / US-36 AC9 — a commit quotes the user’s approval, check
     const { receipt, candidates } = OUTPUTS.file_results.parse(proposed.structured);
     const marker = 'Yes file it qx9-approval-marker';
     // Refused after the words were read (an id not in the receipt): the pending file stays, without them.
-    expect((await call({ commit: { receipt, accept: ['nope'], replace: [], approval: marker } })).isError).toBe(true);
+    expect((await call({ commit: { receipt, accept: ['nope'], replace: [], approval: marker } }, AFTER_PAUSE)).isError).toBe(true);
     const pending = `imports/pending-${receipt}.json`;
     expect(cloud.files.get(pending)!.json).not.toContain('qx9-approval-marker');
-    const filed = await call({ commit: { receipt, accept: candidates.map((c) => c.id), replace: [], approval: marker } });
+    const filed = await call({ commit: { receipt, accept: candidates.map((c) => c.id), replace: [], approval: marker } }, AFTER_PAUSE);
     expect(filed.isError).toBe(false);
     expect(filed.text).not.toContain('qx9-approval-marker');
     expect((await adapter.read(ROADMAP_FILE_NAME)).body).toMatchObject({ measurements: [], labValues: [expect.objectContaining({ metricName: 'ldl', core: true })] });
@@ -404,16 +424,15 @@ describe('US-35 AC7 — extract then commit, end to end through hostedImporter',
   };
 
   beforeEach(() => resetMcpMemory());
-  afterEach(() => setImportSeams(null));
 
   it('the extract answers a UUID receipt, the commit files the accepted value and spends the pending file; a second commit finds nothing', async () => {
     const cloud = new MemoryCloud();
     cloud.docs.set('labs.pdf', new Blob([PDF]));
     const adapter = new MemoryAdapter(cloud);
     await adapter.write(ROADMAP_FILE_NAME, createEmptyFile({ deviceId: 'test', now: NOW }), null);
-    setImportSeams({ extract: async () => report });
-    const call = (args: unknown) => runToolOverSync(recordSync(adapter, 'mcp', NOW), 'import_documents', args, NOW, {
-      importer: hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'connection-a', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90 }),
+    const model: Extractor = async () => report;
+    const call = (args: unknown, now = NOW) => runToolOverSync(recordSync(adapter, 'mcp', NOW), 'import_documents', args, now, {
+      importer: hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'connection-a', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90, clock: CLOCK, extract: model }),
     });
 
     const extract = await call({});
@@ -422,7 +441,7 @@ describe('US-35 AC7 — extract then commit, end to end through hostedImporter',
     expect(data.receipt).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
     expect(cloud.files.has(`imports/pending-${data.receipt}.json`)).toBe(true);
 
-    const commit = await call({ commit: { receipt: data.receipt, accept: ['c1'], replace: [], approval: APPROVED } });
+    const commit = await call({ commit: { receipt: data.receipt, accept: ['c1'], replace: [], approval: APPROVED } }, AFTER_PAUSE);
     expect(commit.isError).toBe(false);
     const stored = (await adapter.read(ROADMAP_FILE_NAME)).body as ReturnType<typeof createEmptyFile>;
     // US-66 AC6: the core value is a core row in labValues.
@@ -430,7 +449,7 @@ describe('US-35 AC7 — extract then commit, end to end through hostedImporter',
     expect(stored.labValues).toEqual([expect.objectContaining({ metricName: 'ldl', unit: 'mmol/L', core: true, value: 2.8, source: 'lab_import' })]);
     expect(cloud.files.has(`imports/pending-${data.receipt}.json`)).toBe(false);
 
-    const again = await call({ commit: { receipt: data.receipt, accept: ['c1'], replace: [], approval: APPROVED } });
+    const again = await call({ commit: { receipt: data.receipt, accept: ['c1'], replace: [], approval: APPROVED } }, AFTER_PAUSE);
     expect(again.isError).toBe(true);
     expect(again.text).toContain('names no pending import');
   });
@@ -442,9 +461,9 @@ describe('US-35 AC7 — extract then commit, end to end through hostedImporter',
     cloud.docs.set('labs.pdf', new Blob([PDF]));
     const adapter = new MemoryAdapter(cloud);
     await adapter.write(ROADMAP_FILE_NAME, createEmptyFile({ deviceId: 'test', now: NOW }), null);
-    setImportSeams({ extract: async () => ({ ...report, droppedValueCount: 3 }) });
+    const model: Extractor = async () => ({ ...report, droppedValueCount: 3 });
     const extract = await runToolOverSync(recordSync(adapter, 'mcp', NOW), 'import_documents', {}, NOW, {
-      importer: hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'connection-a', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90 }),
+      importer: hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'connection-a', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90, clock: CLOCK, extract: model }),
     });
     const data = OUTPUTS.import_documents.parse(extract.structured);
     expect(data.files).toEqual([expect.objectContaining({ name: 'labs.pdf', status: 'extracted', droppedValues: 3, hint: expect.stringMatching(/^3 values on this report could not be read/) })]);
@@ -467,16 +486,16 @@ describe('US-35 AC7 — extract then commit, end to end through hostedImporter',
       additionalValues: Array.from({ length: n }, (_, i) => ({ name: `${prefix} test ${i}`, value: i + 1, unit: 'U/L' })),
     });
     const pdfB = Buffer.from([...PDF, 1]).toString('base64');
-    setImportSeams({ extract: async (pages) => (pages[0].content === pdfB ? panel('b', 150) : panel('a', 200)) });
-    const call = (args: unknown) => runToolOverSync(recordSync(adapter, 'mcp', NOW), 'import_documents', args, NOW, {
-      importer: hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'connection-a', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90 }),
+    const model: Extractor = async (pages) => (pages[0].content === pdfB ? panel('b', 150) : panel('a', 200));
+    const call = (args: unknown, now = NOW) => runToolOverSync(recordSync(adapter, 'mcp', NOW), 'import_documents', args, now, {
+      importer: hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'connection-a', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90, clock: CLOCK, extract: model }),
     });
 
     const first = OUTPUTS.import_documents.parse((await call({})).structured);
     expect(first.candidates).toHaveLength(200);
     // b.pdf and the skipped inner.zip after it wait under the ZIP's own name, once.
     expect(first.remaining).toEqual(['labs.zip']);
-    const commit = await call({ commit: { receipt: first.receipt, accept: first.candidates.map((c) => c.id), replace: [], approval: APPROVED } });
+    const commit = await call({ commit: { receipt: first.receipt, accept: first.candidates.map((c) => c.id), replace: [], approval: APPROVED } }, AFTER_PAUSE);
     expect(commit.isError).toBe(false);
 
     const again = await call({ fileNames: first.remaining });
@@ -508,20 +527,18 @@ describe('US-35 AC7 — extract then commit, end to end through hostedImporter',
     });
     const pdfB = Buffer.from([...PDF, 1]).toString('base64');
     const pdfC = Buffer.from([...PDF, 2]).toString('base64');
-    setImportSeams({
-      extract: async (pages) => {
-        if (pages[0].content === pdfC) throw new Error('damaged PDF');
-        return pages[0].content === pdfB ? panel('b', 150) : panel('a', 200);
-      },
-    });
-    const call = (args: unknown) => runToolOverSync(recordSync(adapter, 'mcp', NOW), 'import_documents', args, NOW, {
-      importer: hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'connection-a', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90 }),
+    const model: Extractor = async (pages) => {
+      if (pages[0].content === pdfC) throw new Error('damaged PDF');
+      return pages[0].content === pdfB ? panel('b', 150) : panel('a', 200);
+    };
+    const call = (args: unknown, now = NOW) => runToolOverSync(recordSync(adapter, 'mcp', NOW), 'import_documents', args, now, {
+      importer: hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'connection-a', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90, clock: CLOCK, extract: model }),
     });
 
     const first = OUTPUTS.import_documents.parse((await call({})).structured);
     expect(first.candidates).toHaveLength(200);
     expect(first.remaining).toEqual(['labs.zip']);
-    const commit = await call({ commit: { receipt: first.receipt, accept: first.candidates.map((c) => c.id), replace: [], approval: APPROVED } });
+    const commit = await call({ commit: { receipt: first.receipt, accept: first.candidates.map((c) => c.id), replace: [], approval: APPROVED } }, AFTER_PAUSE);
     expect(commit.isError).toBe(false);
 
     const again = await call({ fileNames: first.remaining });
@@ -549,7 +566,7 @@ describe('US-35 AC7 — a consumed pending file is deleted at once, and a delete
     const removed: string[] = [];
     const remove = adapter.remove!.bind(adapter);
     adapter.remove = async (name, signal) => { removed.push(name); return remove(name, signal); };
-    const surface = hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'rt', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90 });
+    const surface = hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'rt', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90, clock: CLOCK });
 
     const stashed = await surface.stash(PAYLOAD, deadline());
     if ('refusal' in stashed) throw new Error(stashed.refusal);
@@ -571,7 +588,7 @@ describe('US-35 AC7 — a consumed pending file is deleted at once, and a delete
       cloud.files.set('imports/pending-abandoned.json', old);
       cloud.files.set('imports/pending-recent.json', { ...old, modified: '2026-09-02T09:30:00.000Z' }); // 30 min: its receipt may still be live
       cloud.files.set('imports/notes.json', old); // the user's own file, however old, is never ours to take
-      const surface = hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'rt', exp: 0 }, adapter: new MemoryAdapter(cloud), client: 'claude', maxCorrectionAgeDays: 90 });
+      const surface = hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'rt', exp: 0 }, adapter: new MemoryAdapter(cloud), client: 'claude', maxCorrectionAgeDays: 90, clock: CLOCK });
 
       const stashed = await surface.stash({ ...PAYLOAD, route }, deadline());
       if ('refusal' in stashed) throw new Error(stashed.refusal);
@@ -600,10 +617,10 @@ describe('US-35 AC7 — a consumed pending file is deleted at once, and a delete
     adapter.write = async (...args) => {
       order.push('write');
       await tick(5);
-      if (deleting > 0) throw new StorageError(`Dropbox write failed (429): ${args[0]}`, undefined, undefined, 429);
+      if (deleting > 0) throw new StorageError(`Dropbox write failed (429): ${args[0]}`, undefined, undefined, 429, undefined, 'may-have-landed');
       return write(...args);
     };
-    const surface = hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'rt', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90 });
+    const surface = hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'rt', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90, clock: CLOCK });
 
     const stashed = await surface.stash(PAYLOAD, deadline());
     expect(stashed).toHaveProperty('receipt', PAYLOAD.id);
@@ -612,7 +629,7 @@ describe('US-35 AC7 — a consumed pending file is deleted at once, and a delete
 
     // A park the provider refuses: the refusal stands, and Sentry hears status and class only.
     vi.mocked(Sentry.captureMessage).mockClear();
-    adapter.write = async (...args) => { throw new StorageError(`Dropbox write failed (429): ${args[0]}`, undefined, undefined, 429); };
+    adapter.write = async (...args) => { throw new StorageError(`Dropbox write failed (429): ${args[0]}`, undefined, undefined, 429, undefined, 'may-have-landed'); };
     order.length = 0;
     expect(await surface.stash(PAYLOAD, deadline())).toEqual({ refusal: expect.stringMatching(/could not be parked/) });
     expect(order).toEqual([]); // no sweep after a refused park
@@ -625,7 +642,7 @@ describe('US-35 AC7 — a consumed pending file is deleted at once, and a delete
   it('a delete that fails does not fail the call — it is one count, naming no file', async () => {
     const adapter = new MemoryAdapter(new MemoryCloud());
     adapter.remove = async () => { throw new Error('dropbox said no'); };
-    const surface = hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'rt', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90 });
+    const surface = hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'rt', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90, clock: CLOCK });
 
     await expect(surface.discard(PAYLOAD, deadline())).resolves.toBeUndefined();
     expect(Sentry.captureMessage).toHaveBeenCalledTimes(1);
@@ -650,8 +667,8 @@ describe('US-35 AC5 — every I/O in the call is aborted at the deadline, not ab
       signal.addEventListener('abort', () => reject(signal.reason));
     });
   }
-  function surfaceOver(adapter: MemoryAdapter) {
-    return hostedImporter({ token, adapter, client: 'claude', maxCorrectionAgeDays: 90 });
+  function surfaceOver(adapter: MemoryAdapter, extract?: Extractor) {
+    return hostedImporter({ token, adapter, client: 'claude', maxCorrectionAgeDays: 90, clock: CLOCK, extract });
   }
   /** The call, with the clock run to the deadline while it waits. */
   async function atDeadline<T>(pending: Promise<T>): Promise<T> {
@@ -666,15 +683,14 @@ describe('US-35 AC5 — every I/O in the call is aborted at the deadline, not ab
   }
 
   beforeEach(() => { resetMcpMemory(); vi.useFakeTimers(); vi.setSystemTime(new Date(NOW)); });
-  afterEach(() => { vi.useRealTimers(); setImportSeams(null); });
+  afterEach(() => vi.useRealTimers());
 
   it('a listing that never answers: refused at the deadline, the list call aborted, no model call', async () => {
     const seen: AbortSignal[] = [];
     const adapter = new MemoryAdapter(new MemoryCloud());
     adapter.list = hang(seen);
     const seam = vi.fn();
-    setImportSeams({ extract: seam });
-    const bundle = await atDeadline(surfaceOver(adapter).extract({}, file, NOW, deadline()));
+    const bundle = await atDeadline(surfaceOver(adapter, seam).extract({}, file, NOW, deadline()));
     expect(bundle).toEqual({ refusal: expect.stringMatching(/did not list in time/) });
     abortedOnce(seen);
     expect(seam).not.toHaveBeenCalled();
@@ -687,8 +703,7 @@ describe('US-35 AC5 — every I/O in the call is aborted at the deadline, not ab
     const adapter = new MemoryAdapter(cloud);
     adapter.readDocument = hang(seen);
     const seam = vi.fn();
-    setImportSeams({ extract: seam });
-    const bundle = await atDeadline(surfaceOver(adapter).extract({}, file, NOW, deadline()));
+    const bundle = await atDeadline(surfaceOver(adapter, seam).extract({}, file, NOW, deadline()));
     expect('files' in bundle && bundle.files).toEqual([{ name: 'labs.pdf', status: 'skipped', reason: 'time' }]);
     // What time cut off is `remaining`, so the assistant is told to ask again for it (AC2).
     expect('remaining' in bundle && bundle.remaining).toEqual(['labs.pdf']);
@@ -698,8 +713,7 @@ describe('US-35 AC5 — every I/O in the call is aborted at the deadline, not ab
 
   it('a deadline already passed starts nothing and refuses', async () => {
     const seam = vi.fn();
-    setImportSeams({ extract: seam });
-    const bundle = await surfaceOver(new MemoryAdapter(new MemoryCloud())).extract({}, file, NOW, Date.now());
+    const bundle = await surfaceOver(new MemoryAdapter(new MemoryCloud()), seam).extract({}, file, NOW, Date.now());
     expect(bundle).toEqual({ refusal: expect.stringMatching(/did not list in time/) });
     expect(seam).not.toHaveBeenCalled();
   });
@@ -738,12 +752,11 @@ describe('US-35 AC5 — every I/O in the call is aborted at the deadline, not ab
   it('hands the model call what is left of the budget and no transport retry', async () => {
     const cloud = new MemoryCloud();
     cloud.docs.set('labs.pdf', new Blob([PDF]));
-    const surface = surfaceOver(new MemoryAdapter(cloud));
     const seen: Array<{ timeoutMs: number; httpAttempts: number }> = [];
-    setImportSeams({ extract: async (_pages, opts) => {
+    const surface = surfaceOver(new MemoryAdapter(cloud), async (_pages, opts) => {
       seen.push(opts);
       return { classification: 'other', reportDate: null, values: [], additionalValues: [], unrecognized: [], document: null };
-    } });
+    });
     await surface.extract({}, file, NOW, deadline());
     expect(seen).toHaveLength(1);
     // Metadata only for a letter: the connector files no text, so it asks for none (AC5).
@@ -755,28 +768,25 @@ describe('US-35 AC5 — every I/O in the call is aborted at the deadline, not ab
   it('a model call that timed out hands the file’s day charge back — machine and connection counters both (AC10)', async () => {
     const cloud = new MemoryCloud();
     cloud.docs.set('labs.pdf', new Blob([PDF]));
-    const surface = surfaceOver(new MemoryAdapter(cloud));
+    const adapter = new MemoryAdapter(cloud);
     const key = connectionKey({ rt: 'rt' });
     machineFiles.reset();
-    setImportSeams({ extract: async () => { throw new DOMException('signal timed out', 'TimeoutError'); } });
-    const bundle = await surface.extract({}, file, NOW, deadline());
+    const bundle = await surfaceOver(adapter, async () => { throw new DOMException('signal timed out', 'TimeoutError'); }).extract({}, file, NOW, deadline());
     expect('files' in bundle && bundle.files[0]).toMatchObject({ status: 'failed', reason: 'time' });
     expect(importFiles.remaining(key)).toBe(IMPORT_FILES_PER_DAY);
     expect(machineFiles.remaining('machine')).toBe(machineFiles.remaining('never-spent'));
     // A read that failed for any other reason stays charged: the model did the work.
-    setImportSeams({ extract: async () => { throw new Error('boom'); } });
-    await surface.extract({}, file, NOW, deadline());
+    await surfaceOver(adapter, async () => { throw new Error('boom'); }).extract({}, file, NOW, deadline());
     expect(importFiles.remaining(key)).toBe(IMPORT_FILES_PER_DAY - 1);
   });
 
   it('a file refused for quota or allowance is charged on no counter: no model call was made (AC10)', async () => {
     const cloud = new MemoryCloud();
     cloud.docs.set('labs.pdf', new Blob([PDF]));
-    const surface = surfaceOver(new MemoryAdapter(cloud));
+    const seam = vi.fn();
+    const surface = surfaceOver(new MemoryAdapter(cloud), seam);
     const key = connectionKey({ rt: 'rt' });
     machineFiles.reset();
-    const seam = vi.fn();
-    setImportSeams({ extract: seam });
     const machineBefore = machineFiles.remaining('machine');
     // The hourly write allowance is spent: the file's day charge must not stand on either counter.
     expect(chargeWrites(key, WRITES_PER_HOUR)).toBeNull();
@@ -804,10 +814,10 @@ describe('US-35 AC5 — every I/O in the call is aborted at the deadline, not ab
     zip.file('labs/c.pdf', new Uint8Array([...PDF, 2]));
     const cloud = new MemoryCloud();
     cloud.docs.set('bundle.zip', new Blob([new Uint8Array(await zip.generateAsync({ type: 'uint8array' }))]));
-    const surface = surfaceOver(new MemoryAdapter(cloud));
+    const adapter = new MemoryAdapter(cloud);
     // The first entry's model call runs the clock out; the entries behind it are skipped for time.
-    setImportSeams({ extract: async () => { await vi.advanceTimersByTimeAsync(MCP_IMPORT_BUDGET_MS); throw new DOMException('signal timed out', 'TimeoutError'); } });
-    const cut = await surface.extract({}, file, NOW, deadline());
+    const cut = await surfaceOver(adapter, async () => { await vi.advanceTimersByTimeAsync(MCP_IMPORT_BUDGET_MS); throw new DOMException('signal timed out', 'TimeoutError'); })
+      .extract({}, file, NOW, deadline());
     if (!('files' in cut)) throw new Error(cut.refusal);
     expect(cut.files.map((f) => [f.name, f.status, f.reason])).toEqual([
       ['bundle.zip/labs/a.pdf', 'failed', 'time'], ['bundle.zip/labs/b.pdf', 'skipped', 'time'], ['bundle.zip/labs/c.pdf', 'skipped', 'time'],
@@ -815,8 +825,7 @@ describe('US-35 AC5 — every I/O in the call is aborted at the deadline, not ab
     // An entry's inner path is not a file in the folder root: naming it would make the next call refuse whole.
     expect(cut.remaining).toEqual(['bundle.zip']);
     const letter = { classification: 'clinic_letter', reportDate: null, values: [], additionalValues: [], unrecognized: [], document: null };
-    setImportSeams({ extract: async () => letter });
-    const again = await surface.extract({ fileNames: cut.remaining }, file, NOW, deadline());
+    const again = await surfaceOver(adapter, async () => letter).extract({ fileNames: cut.remaining }, file, NOW, deadline());
     if (!('files' in again)) throw new Error(again.refusal);
     expect(again.files.map((f) => [f.name, f.status])).toEqual([['bundle.zip/labs/a.pdf', 'extracted'], ['bundle.zip/labs/b.pdf', 'extracted'], ['bundle.zip/labs/c.pdf', 'extracted']]);
   });
@@ -827,19 +836,18 @@ describe('US-35 AC13 / AC9 — what the surface answers when a file cannot be re
   const file = createEmptyFile({ deviceId: 'test', now: NOW });
   const token = { clientId: 'c.test', provider: 'dropbox' as const, rt: 'rt', exp: 0 };
   const deadline = () => Date.now() + MCP_IMPORT_BUDGET_MS;
-  function surfaceOver(adapter: MemoryAdapter) {
-    return hostedImporter({ token, adapter, client: 'chatgpt', maxCorrectionAgeDays: 90 });
+  function surfaceOver(adapter: MemoryAdapter, extract?: Extractor) {
+    return hostedImporter({ token, adapter, client: 'chatgpt', maxCorrectionAgeDays: 90, clock: CLOCK, extract });
   }
   const letter = { classification: 'clinic_letter', reportDate: null, values: [], additionalValues: [], unrecognized: [], document: null };
   beforeEach(() => { resetMcpMemory(); vi.clearAllMocks(); });
-  afterEach(() => setImportSeams(null));
 
   it('a folder with nothing it reads refuses in words naming the folder and the four types, before any model call', async () => {
     const cloud = new MemoryCloud();
     cloud.docs.set('notes.txt', new Blob([new Uint8Array(3)]));
     const seam = vi.fn();
-    setImportSeams({ extract: seam });
-    expect(await surfaceOver(new MemoryAdapter(cloud)).extract({}, file, NOW, deadline())).toEqual({ refusal: IMPORT_REFUSALS.emptyFolder });
+    const extract: Extractor = seam;
+    expect(await surfaceOver(new MemoryAdapter(cloud), extract).extract({}, file, NOW, deadline())).toEqual({ refusal: IMPORT_REFUSALS.emptyFolder });
     expect(seam).not.toHaveBeenCalled();
   });
 
@@ -847,7 +855,7 @@ describe('US-35 AC13 / AC9 — what the surface answers when a file cannot be re
     const cloud = new MemoryCloud();
     cloud.docs.set('labs.pdf', new Blob([PDF]));
     const adapter = new MemoryAdapter(cloud);
-    adapter.readDocument = async () => { throw new StorageError('Dropbox download failed (401)', undefined, undefined, 401); };
+    adapter.readDocument = async () => { throw new StorageError('Dropbox download failed (401)', undefined, undefined, 401, undefined, 'refused'); };
     await expect(surfaceOver(adapter).extract({}, file, NOW, deadline())).rejects.toMatchObject({ name: 'StorageError', status: 401 });
     // Any other download failure is that file's own problem, not the connection's.
     adapter.readDocument = async () => { throw new Error('socket hang up'); };
@@ -859,8 +867,8 @@ describe('US-35 AC13 / AC9 — what the surface answers when a file cannot be re
     const cloud = new MemoryCloud();
     cloud.docs.set('labs.pdf', new Blob([PDF]));
     const zodLike = Object.assign(new Error("Invalid enum value. Received 'ldl 3.4 mmol/L SECRET-PATIENT'"), { name: 'ZodError' });
-    setImportSeams({ extract: async () => { throw zodLike; } });
-    const bundle = await surfaceOver(new MemoryAdapter(cloud)).extract({}, file, NOW, deadline());
+    const extract: Extractor = async () => { throw zodLike; };
+    const bundle = await surfaceOver(new MemoryAdapter(cloud), extract).extract({}, file, NOW, deadline());
     expect('files' in bundle && bundle.files[0]).toMatchObject({ status: 'failed', reason: 'unreadable' });
     const calls = (Sentry.captureException as unknown as { mock: { calls: unknown[][] } }).mock.calls;
     expect(calls).toHaveLength(1);
@@ -878,8 +886,8 @@ describe('US-35 AC13 / AC9 — what the surface answers when a file cannot be re
   it('a refused file sends the stop signal with its category, not an exception, and fails as refused', async () => {
     const cloud = new MemoryCloud();
     cloud.docs.set('labs.pdf', new Blob([PDF]));
-    setImportSeams({ extract: async () => { throw new ExtractionStopError('refused', 'bio'); } });
-    const bundle = await surfaceOver(new MemoryAdapter(cloud)).extract({}, file, NOW, deadline());
+    const extract: Extractor = async () => { throw new ExtractionStopError('refused', 'bio'); };
+    const bundle = await surfaceOver(new MemoryAdapter(cloud), extract).extract({}, file, NOW, deadline());
     expect('files' in bundle && bundle.files[0]).toMatchObject({ status: 'failed', reason: 'refused' });
     expect(Sentry.captureException).not.toHaveBeenCalled();
     expect(Sentry.captureMessage).toHaveBeenCalledWith('Lab import: extraction refused', expect.objectContaining({
@@ -893,8 +901,8 @@ describe('US-35 AC13 / AC9 — what the surface answers when a file cannot be re
     cloud.docs.set('b-declined.pdf', new Blob([PDF.map((b, i) => (i === PDF.length - 1 ? b ^ 1 : b))]));
     // By the bytes, not the call order: two runners read the files side by side.
     const long = Buffer.from(PDF).toString('base64');
-    setImportSeams({ extract: async (pages) => { throw new ExtractionStopError(pages[0].content === long ? 'too_long' : 'refused'); } });
-    const bundle = await surfaceOver(new MemoryAdapter(cloud)).extract({}, file, NOW, deadline());
+    const extract: Extractor = async (pages) => { throw new ExtractionStopError(pages[0].content === long ? 'too_long' : 'refused'); };
+    const bundle = await surfaceOver(new MemoryAdapter(cloud), extract).extract({}, file, NOW, deadline());
     expect('files' in bundle && bundle.files.map((f) => [f.name, f.status, f.reason])).toEqual([
       ['a-long.pdf', 'failed', 'too_long'],
       ['b-declined.pdf', 'failed', 'refused'],
@@ -920,9 +928,9 @@ describe('US-35 AC13 / AC9 — what the surface answers when a file cannot be re
     cloud.docs.set('bundle.zip', new Blob([bytes]));
     cloud.docs.set('a.pdf', new Blob([PDF]));
     const kinds: string[] = [];
-    setImportSeams({ extract: async (pages) => { kinds.push(pages[0].type); return letter; } });
+    const extract: Extractor = async (pages) => { kinds.push(pages[0].type); return letter; };
     const key = connectionKey({ rt: 'rt' });
-    const bundle = await surfaceOver(new MemoryAdapter(cloud)).extract({}, file, NOW, deadline());
+    const bundle = await surfaceOver(new MemoryAdapter(cloud), extract).extract({}, file, NOW, deadline());
     if (!('files' in bundle)) throw new Error(bundle.refusal);
     // The listing's order: a.pdf, then the ZIP's entries flattened in the archive's order, then what it skipped.
     // Each entry is named `zip/member`, as the website's upload names it (US-12 AC9).
@@ -949,8 +957,8 @@ describe('US-35 AC13 / AC9 — what the surface answers when a file cannot be re
     const cloud = new MemoryCloud();
     for (const name of ['a.zip', 'b.zip', 'c.zip']) cloud.docs.set(name, new Blob([bytes]));
     const seam = vi.fn();
-    setImportSeams({ extract: seam });
-    const bundle = await surfaceOver(new MemoryAdapter(cloud)).extract({}, file, NOW, deadline());
+    const extract: Extractor = seam;
+    const bundle = await surfaceOver(new MemoryAdapter(cloud), extract).extract({}, file, NOW, deadline());
     if (!('files' in bundle)) throw new Error(bundle.refusal);
     expect(bundle.files.filter((f) => f.reason === 'too_large')).toHaveLength(MAX_IMPORT_FILES_PER_CALL);
     // Two ZIPs take ten each; the third reaches its turn with nothing left and is one row, unparsed.
@@ -968,15 +976,15 @@ describe('US-35 AC13 / AC9 — what the surface answers when a file cannot be re
       for (let i = 0; i < 12; i++) zip.file(`m${String(i).padStart(2, '0')}.pdf`, new Uint8Array([...PDF, zipName.charCodeAt(0), i]));
       cloud.docs.set(zipName, new Blob([new Uint8Array(await zip.generateAsync({ type: 'uint8array' }))]));
     }
-    setImportSeams({ extract: async () => letter });
-    const first = await surfaceOver(new MemoryAdapter(cloud)).extract({}, file, NOW, deadline());
+    const extract: Extractor = async () => letter;
+    const first = await surfaceOver(new MemoryAdapter(cloud), extract).extract({}, file, NOW, deadline());
     if (!('files' in first)) throw new Error(first.refusal);
     // One ZIP whole, the other cut at eight: never ten and ten, which would defer both.
     const perZip = (bundle: typeof first, zipName: string) => bundle.files.filter((f) => f.status === 'extracted' && f.name.startsWith(`${zipName}/`)).length;
     expect([perZip(first, 'a.zip'), perZip(first, 'b.zip')].sort((x, y) => y - x)).toEqual([12, 8]);
     expect(first.remaining).toHaveLength(1);
     resetMcpMemory();
-    const again = await surfaceOver(new MemoryAdapter(cloud)).extract({ fileNames: first.remaining }, file, NOW, deadline());
+    const again = await surfaceOver(new MemoryAdapter(cloud), extract).extract({ fileNames: first.remaining }, file, NOW, deadline());
     if (!('files' in again)) throw new Error(again.refusal);
     expect(perZip(again, first.remaining[0])).toBe(12);
     expect(again.remaining).toEqual([]);
@@ -989,8 +997,8 @@ describe('US-35 AC13 / AC9 — what the surface answers when a file cannot be re
       for (let i = 0; i < MAX_IMPORT_FILES_PER_CALL; i++) zip.file(`m${String(i).padStart(2, '0')}.pdf`, new Uint8Array([...PDF, zipName.charCodeAt(0), i]));
       cloud.docs.set(zipName, new Blob([new Uint8Array(await zip.generateAsync({ type: 'uint8array' }))]));
     }
-    setImportSeams({ extract: async () => letter });
-    const bundle = await surfaceOver(new MemoryAdapter(cloud)).extract({}, file, NOW, deadline());
+    const extract: Extractor = async () => letter;
+    const bundle = await surfaceOver(new MemoryAdapter(cloud), extract).extract({}, file, NOW, deadline());
     if (!('files' in bundle)) throw new Error(bundle.refusal);
     expect(bundle.files.filter((f) => f.status === 'extracted')).toHaveLength(MAX_IMPORT_FILES_PER_CALL);
     const waited = bundle.files.filter((f) => f.status === 'skipped');
@@ -1043,8 +1051,8 @@ describe('US-35 AC13 / AC9 — what the surface answers when a file cannot be re
     for (let i = 0; i < 900; i++) zip.file(`m${String(i).padStart(4, '0')}.pdf`, new Uint8Array([...PDF, i & 0xff, i >> 8]));
     const cloud = new MemoryCloud();
     cloud.docs.set('many.zip', new Blob([new Uint8Array(await zip.generateAsync({ type: 'uint8array' }))]));
-    setImportSeams({ extract: async () => letter });
-    const bundle = await surfaceOver(new MemoryAdapter(cloud)).extract({}, file, NOW, deadline());
+    const extract: Extractor = async () => letter;
+    const bundle = await surfaceOver(new MemoryAdapter(cloud), extract).extract({}, file, NOW, deadline());
     if (!('files' in bundle)) throw new Error(bundle.refusal);
     const skipped = bundle.files.filter((f) => f.status === 'skipped');
     expect(skipped).toHaveLength(21);
@@ -1066,8 +1074,8 @@ describe('US-35 AC13 / AC9 — what the surface answers when a file cannot be re
       zip.file(longPath, bytes);
       cloud.docs.set(zipName, new Blob([new Uint8Array(await zip.generateAsync({ type: 'uint8array' }))]));
     }
-    setImportSeams({ extract: async () => letter });
-    const bundle = await surfaceOver(new MemoryAdapter(cloud)).extract({}, file, NOW, deadline());
+    const extract: Extractor = async () => letter;
+    const bundle = await surfaceOver(new MemoryAdapter(cloud), extract).extract({}, file, NOW, deadline());
     if (!('files' in bundle)) throw new Error(bundle.refusal);
     const names = bundle.files.map((f) => f.name);
     expect(names).toEqual([zipMemberName('a.zip', longPath), zipMemberName('b.zip', longPath)]);

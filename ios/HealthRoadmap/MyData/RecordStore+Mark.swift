@@ -16,9 +16,15 @@ extension RecordStore {
         func holds(at now: Mark) -> Bool {
             epoch == now.epoch && erasures == now.erasures && (erase == nil || now.erase == nil || erase == now.erase)
         }
+
+        /// An erase since this mark, on evidence: both sides know it and it moved. An undrawn record (nil epoch) or a
+        /// connect (one cloud erase nil) is no evidence, unlike `holds`, so a failed draw ends no reminders (S63, S70).
+        func erased(by now: Mark) -> Bool {
+            erasures != now.erasures || (epoch != nil && now.epoch != nil && epoch != now.epoch) || (erase != nil && now.erase != nil && erase != now.erase)
+        }
     }
 
-    var mark: Mark { Mark(erase: cloudErase, epoch: myData?.eraseEpoch, erasures: erasures) }
+    var mark: Mark { Mark(erase: cloudErase, epoch: heldData?.eraseEpoch, erasures: erasures) }
 
     /// `applyNow` for an Apple Health batch (US-72 AC10), on `mark`, the record it was read
     /// from. Nil when an erase since moved the mark, or the mark was taken on the other side

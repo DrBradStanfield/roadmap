@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H419,chat history,"mergeConversation breaks an updatedAt tie by a fixed order, so the title and unknown fields do not depend on merge order",lead,not started,"Filed 2026-11-26 from the day's reviews: packages/health-core/src/chat-history.ts. Build: a fixed tie-break, with a test that merges both ways round. (H419)",,no

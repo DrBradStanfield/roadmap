@@ -1,7 +1,10 @@
 // US-20: exercise real WebKit against the storefront, using disposable synthetic data.
+// A new probe is advisory until it has passed on one production deploy.
 import assert from 'node:assert/strict';
 import { pathToFileURL } from 'node:url';
 import { webkit, devices } from 'playwright';
+import { probeDateCellRing, probeFocusRing, probeLabFocusRing } from './webkit-focus-probes.mjs';
+export { assertFocusRing, collectFocus, probeDateCellRing, probeFocusRing, probeLabFocusRing } from './webkit-focus-probes.mjs';
 
 export function assertMatrixLayout(data) {
   assert(!data.error, data.error);
@@ -14,6 +17,9 @@ export function assertMatrixLayout(data) {
     assert.equal(value.boxSizing, 'border-box', 'WebKit result cell box sizing regressed');
   }
 }
+
+// The blood table behind "All results as a table". The vitals rows (H71) and the additional labs (.alr-matrix, H89) are .bt-timelines too.
+export const BLOOD_TABLE = '.bt-timeline:not(.bt-vitals-card):not(.alr-matrix)';
 
 // Passed directly to Playwright's evaluate; keep this function self-contained.
 export function collectMatrixLayout(root) {
@@ -91,6 +97,9 @@ export function assertTabBar(data) {
   assert.equal(data.accountFirstPart, 'storage', `a guest's Account does not open with the storage card (${data.accountFirstPart})`);
   // Live test 2026-11-06: the chat card ran 3-5px under the bar.
   assert(data.chatCardBottom <= data.barTopOnChat + 0.5, `chat card ends under the tab bar (${data.chatCardBottom} > ${data.barTopOnChat})`);
+  // US-62 AC29 (Fable 2026-11-13): at 390 wide the card ends 12px above the bar, on purpose.
+  const chatGap = data.barTopOnChat - data.chatCardBottom;
+  assert(data.chatViewportWidth !== 390 || (chatGap >= 11 && chatGap <= 13), `chat card does not end 12px above the tab bar (gap ${chatGap})`);
 }
 
 // Design re-check 2026-11-06: a value page's top clears the theme's header, its tile words are
@@ -324,8 +333,10 @@ async function inspect(browser, deviceName, viewport) {
           ['hba1c', 35, 'mmol/mol', '2025-01-01T00:00:00.000Z'],
           ['hba1c', 36, 'mmol/mol', '2025-07-01T00:00:00.000Z'],
           ['ldl', 2.4, 'mmol/L', '2025-01-01T00:00:00.000Z'],
-        ].map(([metricName, value, unit, recordedAt], i) => ({
-          id: `webkit-${i}`, metricName, value, unit, referenceLow: null, referenceHigh: null, core: true,
+          // H89: one test outside the core set, for a lab test's page.
+          ['ferritin', 120, 'ug/L', '2025-01-01T00:00:00.000Z', false],
+        ].map(([metricName, value, unit, recordedAt, core = true], i) => ({
+          id: `webkit-${i}`, metricName, value, unit, referenceLow: null, referenceHigh: null, core,
           recordedAt, createdAt: recordedAt, source: 'manual', status: 'active', correctsId: null, externalId: null,
         })),
         screenings: { updatedAt: now, lamport: 0 }, documents: [],
@@ -374,17 +385,22 @@ async function inspect(browser, deviceName, viewport) {
     const valuePage = await page.evaluate(collectValuePage);
     assertValuePage(valuePage);
     console.log(`${deviceName ?? `desktop ${viewport.width}`}: value page verified`, JSON.stringify(valuePage));
+    await probeFocusRing(page, deviceName ?? `desktop ${viewport.width}`);
     const back = page.locator('.md-page .md-back').first();
     await (deviceName ? back.tap() : back.click());
     await page.locator('.md-page:not(.mh-settings)').waitFor({ state: 'detached' });
+    // TODO(H110): advisory; make it enforcing after one green production deploy.
+    await probeLabFocusRing(page, deviceName ?? `desktop ${viewport.width}`, console.log, (l) => (deviceName ? l.tap() : l.click()));
     const tableButton = page.getByRole('button', { name: 'All results as a table' });
     await (deviceName ? tableButton.tap() : tableButton.click());
-    const matrix = page.locator('.bt-timeline').first();
+    const matrix = page.locator(BLOOD_TABLE).first();
     await matrix.waitFor({ state: 'visible', timeout: 30000 });
     await matrix.scrollIntoViewIfNeeded();
     const data = await matrix.evaluate(collectMatrixLayout);
     assertMatrixLayout(data);
     console.log(`${deviceName ?? 'desktop'}: matrix verified`, JSON.stringify(data));
+    // TODO(H110): advisory; make it enforcing after one green production deploy.
+    await probeDateCellRing(matrix, deviceName ?? `desktop ${viewport.width}`);
     await page.screenshot({ path: `/tmp/webkit-${deviceName ?? `desktop-${viewport.width}`}.png` });
     if (deviceName) {
       const bar = page.locator('.hr-tabbar');
@@ -395,6 +411,7 @@ async function inspect(browser, deviceName, viewport) {
       Object.assign(tabBar, await page.evaluate(() => ({
         chatCardBottom: document.querySelector('.hr-tabpanel:not([hidden]) .chat-embed').getBoundingClientRect().bottom,
         barTopOnChat: document.querySelector('.hr-tabbar').getBoundingClientRect().top,
+        chatViewportWidth: window.innerWidth,
       })));
       await bar.getByRole('tab', { name: 'Account' }).tap();
       tabBar.shownAfterAccountTap = await bar.evaluate(shownPanels);

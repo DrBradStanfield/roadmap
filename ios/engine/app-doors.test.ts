@@ -5,11 +5,13 @@ import {
   chatContextJson, chatDeleteJson, chatListJson, chatMessagesJson, chatRecordExchangeJson,
   labReviewJson, labSaveSummaryJson, settledJson,
 } from './app-doors';
+import { labReviewGroupsJson } from './entry';
 import { applyEdit, newRecord } from './my-data';
 import { erasePhoneJson } from './erase';
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { chatContextOf } from '../../packages/health-core/src/chat-context';
 import { currentValueRows } from '../../packages/health-core/src/blood-tests';
+import { labUnitRefusalLine } from '../../packages/health-core/src/lab-series';
 
 const NOW = '2026-10-21T08:00:00.000Z';
 const DEVICE = 'ios-test';
@@ -173,6 +175,26 @@ describe('US-52 AC8: the lab review and the write', () => {
     expect(out.file.labValues.map((l) => l.metricName)).toEqual(['Ferritin']);
   });
 
+  // US-52 AC8 (H400): a refused unit printed the raw key and the assistant's refusal
+  // ("immature_granulocytes: ..."). Since US-21 AC28 a % is stored, so this uses mg/L.
+  it('US-52 AC8: a refused unit reads as the web\'s line, never the raw key or the assistant\'s words', () => {
+    const percent = { ...extraction, additionalValues: [
+      // A unit neither test takes (a differential in % is stored since US-21 AC28).
+      { name: 'rdw_sd', value: 42, unit: 'mg/L' }, { name: 'immature_granulocytes', value: 0.4, unit: 'mg/L' },
+    ] };
+    const summary = JSON.parse(labSaveSummaryJson(JSON.stringify(record()), JSON.stringify(percent), JSON.stringify(['a0', 'a1']), '2026-10-01', NOW, DEVICE));
+    const refused = summary.summary.refused as Array<{ label: string; message: string; line?: string }>;
+    expect(refused.map((r) => r.label)).toEqual(['RDW-SD', 'Immature granulocytes']);
+    expect(refused.map((r) => r.line)).toEqual([
+      labUnitRefusalLine('rdw_sd', 'mg/L'), labUnitRefusalLine('immature_granulocytes', 'mg/L'),
+    ]);
+    for (const r of refused) {
+      const shown = r.line ?? `Not saved, ${r.label}: ${r.message}`; // LabReportSave.line
+      expect(shown).not.toContain('_');
+      expect(shown).not.toContain('Do not');
+    }
+  });
+
   it('refuses a future or missing report day, and a ref not in the report', () => {
     const file = JSON.stringify(record());
     const refuse = (refs: string[], day: string) => JSON.parse(labSaveSummaryJson(file, JSON.stringify(extraction), JSON.stringify(refs), day, NOW, DEVICE));
@@ -181,6 +203,181 @@ describe('US-52 AC8: the lab review and the write', () => {
     expect(refuse(['v9'], '2026-10-01')).toMatchObject({ ok: false, reason: 'not-found' });
     // A value with its own day does not need the report's.
     expect(refuse(['v1'], '')).toMatchObject({ ok: true });
+  });
+});
+
+/** The groups door as Swift calls it: the record, the ticks and the test day it holds now. */
+const groupsOf = (x: object, refs: string[], file: RoadmapFile = record(), day = '2026-10-01') =>
+  JSON.parse(labReviewGroupsJson(JSON.stringify(file), JSON.stringify(x), JSON.stringify(refs), day, NOW, DEVICE));
+const ldlHigh = { metric: 'ldl', valueSI: 3.1, displayValue: 3.1, displayUnit: 'mmol/L', displaySystem: 'si', confidence: 'high' };
+const lab = (values: object[], additionalValues: object[] = [], more: object = {}) => ({ classification: 'lab_report', reportDate: '2026-10-01', values, additionalValues, ...more });
+
+describe('US-13 AC13 / US-52 AC8: the review leads with a summary and rows only for unsure values (D3)', () => {
+  it('zero unsure: a summary, "N values will be saved" behind Show all, and Save sends every ticked value', () => {
+    const g = groupsOf(lab([ldlHigh], [{ name: 'Ferritin', value: 85, unit: 'µg/L' }]), ['v0', 'a0']);
+    expect(g.summary).toBe('Found 2 blood test values');
+    expect(g.items).toEqual([{ ref: 'v0', group: 'sure' }, { ref: 'a0', group: 'sure' }]);
+    expect(g.check).toBeNull();
+    expect(g.sure).toEqual({ willSave: '2 values will be saved', showAll: 'Show all 2', hide: 'Hide' });
+    expect(g.alreadySaved).toBeNull();
+    expect(g.notSaved).toBeNull();
+    expect(g).toMatchObject({ saveRefs: ['v0', 'a0'], save: 'Save 2 values' });
+  });
+
+  it('a hidden sure value keeps its tick and is saved; unticked after Show all, it is not', () => {
+    const x = lab([ldlHigh], [{ name: 'Ferritin', value: 85, unit: 'µg/L' }]);
+    expect(groupsOf(x, ['v0', 'a0']).saveRefs).toContain('a0');
+    const unticked = groupsOf(x, ['v0']);
+    expect(unticked).toMatchObject({ saveRefs: ['v0'], save: 'Save 1 value', sure: { willSave: '1 value will be saved', showAll: 'Show all 2' } });
+  });
+
+  it('only unsure: the rows, no Show all, singular words', () => {
+    const g = groupsOf(lab([{ ...ldlHigh, confidence: 'medium' }]), ['v0']);
+    expect(g.items).toEqual([{ ref: 'v0', group: 'unsure', reasons: ['confidence'] }]);
+    expect(g.check).toEqual({ title: 'Check this value', footer: 'We were not sure about these. Check each against the report.' });
+    expect(g.sure).toBeNull();
+    expect(g).toMatchObject({ saveRefs: ['v0'], save: 'Save 1 value' });
+  });
+
+  // US-21 AC28: the iPhone review's own door saves a white-cell % as its share, beside the count.
+  it('US-21 AC28: neutrophils and immature granulocytes in % are saved, none refused', () => {
+    const x = lab([], [{ name: 'neutrophils', value: 60, unit: '%' }, { name: 'immature_granulocytes', value: 0.4, unit: '%' }, { name: 'neutrophils', value: 3.1, unit: '×10⁹/L' }]);
+    const g = groupsOf(x, ['a0', 'a1', 'a2']);
+    expect(g.saveRefs).toEqual(['a0', 'a1', 'a2']);
+    expect(g.notSaved).toBeNull();
+    const out = applyEdit(record(), { kind: 'labImport', extractionJson: JSON.stringify(x), refs: ['a0', 'a1', 'a2'], reportDay: '2026-10-01' }, NOW);
+    if (!out.ok) throw new Error(out.message);
+    expect(out.file.labValues.filter((l) => !l.core).map((l) => [l.metricName, l.unit]).sort()).toEqual([
+      ['immature_granulocytes_pct', '%'], ['neutrophils', '×10⁹/L'], ['neutrophils_pct', '%'],
+    ]);
+  });
+
+  it('nothing to save: the summary and the not-saved line in the person\'s words, no key and no assistant text', () => {
+    // A unit the test does not take (a % is stored since US-21 AC28, so mg/L stands in).
+    const x = lab([], [{ name: 'Ferritin', value: 85, unit: 'furlongs' }, { name: 'immature_granulocytes', value: 0.4, unit: 'mg/L' }],
+      { refusedValues: [{ metric: 'creatinine', value: 80, unit: '', reason: 'unit unknown' }], droppedValueCount: 1 });
+    const g = groupsOf(x, ['a0', 'a1']);
+    expect(g.summary).toBe('Found 2 blood test values');
+    expect(g.saveRefs).toEqual([]);
+    expect(g.save).toBeNull(); // no Save offered
+    // Every value unticked where one could save: Save stays, with no value to send.
+    expect(groupsOf(lab([ldlHigh]), [])).toMatchObject({ saveRefs: [], save: 'Save 0 values' });
+    expect(g.notSaved).toEqual({
+      title: '4 values not saved',
+      lines: ['Ferritin, Immature granulocytes: this unit is not one we know for this test', 'Creatinine: no unit was printed', '1 other value could not be read'],
+      footer: 'To add one, use + Add a blood test after saving.',
+    });
+    for (const line of g.notSaved.lines) {
+      expect(line).not.toContain('_');
+      expect(line).not.toContain('Do not');
+    }
+    // The save's own dry run refuses the same values: nothing Save sends is refused.
+    const dry = JSON.parse(labSaveSummaryJson(JSON.stringify(record()), JSON.stringify(x), JSON.stringify(['a0', 'a1']), '2026-10-01', NOW, DEVICE));
+    expect(dry.summary.refused).toHaveLength(2);
+  });
+
+  it('already saved: one count line, not a row and not sent; a different value is a row that is never written (Q2a)', () => {
+    const same = groupsOf(lab([ldlHigh]), ['v0'], record({ kind: 'add', metric: 'ldl', value: 3.1, day: '2026-10-01' }));
+    expect(same).toMatchObject({ items: [{ ref: 'v0', group: 'saved' }], alreadySaved: '1 already in your record', check: null, sure: null, saveRefs: [], save: null });
+    const other = groupsOf(lab([ldlHigh]), ['v0'], record({ kind: 'add', metric: 'ldl', value: 2.5, day: '2026-10-01' }));
+    expect(other.items).toEqual([{ ref: 'v0', group: 'unsure', reasons: ['conflict'], conflict: 'Your record already has a different value for this day. It stays as it is.' }]);
+    expect(other.saveRefs).toEqual([]);
+    // Another day frees the slot: the groups follow the test day the screen holds.
+    expect(groupsOf(lab([ldlHigh]), ['v0'], record({ kind: 'add', metric: 'ldl', value: 2.5, day: '2026-10-01' }), '2026-09-30').saveRefs).toEqual(['v0']);
+  });
+
+  it('a refused test, an unread one and unnamed drops read as the person\'s lines, labels never keys (LabSaveAllTests\' notes)', () => {
+    const x = lab([ldlHigh], [], { refusedValues: [{ metric: 'widget_marker', value: 9, unit: '', reason: 'Unit not recognised.' }],
+      unreadValues: [{ name: 'gadget_marker', reason: 'unreadable' }], droppedValueCount: 3 });
+    expect(groupsOf(x, ['v0']).notSaved.lines).toEqual(['Widget Marker: no unit was printed', 'Gadget Marker: could not be read', '2 other values could not be read']);
+    const slip = lab([], [{ name: 'Glucose', value: 3000, unit: 'mg/dL' }, { name: 'Ferritin', value: 85, unit: 'µg/L' }]);
+    expect(groupsOf(slip, ['a0', 'a1'])).toMatchObject({ saveRefs: ['a1'], notSaved: { lines: ['Glucose: the number looks misread. Check the report'] } });
+  });
+
+  it('a value with no day yet waits behind the date question: never "will be saved", never sent, Save still offered', () => {
+    const g = groupsOf({ ...lab([ldlHigh]), reportDate: null }, ['v0'], record(), '');
+    expect(g).toMatchObject({ items: [{ ref: 'v0', group: 'waiting' }], sure: null, check: null, saveRefs: [], save: 'Save 0 values' });
+    expect(groupsOf({ ...lab([ldlHigh]), reportDate: null }, ['v0'], record(), '2026-10-01')).toMatchObject({ saveRefs: ['v0'] });
+  });
+
+  it('a core value outside its range shows the save\'s own refusal on its row, and the receipt still names it (US-52 AC8)', () => {
+    const x = lab([{ ...ldlHigh, valueSI: 500, displayValue: 500 }], [{ name: 'Ferritin', value: 85, unit: 'µg/L' }]);
+    const g = groupsOf(x, ['v0', 'a0']);
+    const dry = JSON.parse(labSaveSummaryJson(JSON.stringify(record()), JSON.stringify(x), JSON.stringify(['v0', 'a0']), '2026-10-01', NOW, DEVICE));
+    expect(dry.summary.saved).toBe(1);
+    expect(dry.summary.refused).toHaveLength(1);
+    const [r] = dry.summary.refused;
+    expect(g.items[0]).toMatchObject({ ref: 'v0', group: 'unsure', refusal: r.line ?? `Not saved, ${r.label}: ${r.message}` });
+    expect(g.items[0].refusal).toContain('LDL');
+    expect(g.saveRefs).toEqual(['a0']);
+    // Alone, the row still says why; no extraction rows are omitted.
+    expect(groupsOf(lab([{ ...ldlHigh, valueSI: 500, displayValue: 500 }]), ['v0'])).toMatchObject({ saveRefs: [], omitted: [], items: [{ refusal: g.items[0].refusal }] });
+  });
+
+  it('omitted names only the extraction\'s own refused and unread rows, for save all\'s notes', () => {
+    const x = lab([], [{ name: 'Ferritin', value: 85, unit: 'furlongs' }], { refusedValues: [{ metric: 'creatinine', value: 80, unit: '', reason: 'unit unknown' }], droppedValueCount: 1 });
+    expect(groupsOf(x, ['a0']).omitted).toEqual(['Creatinine: no unit was printed', '1 other value could not be read']);
+  });
+
+  // Codex re-check of PR 1824: the receipt dry-ran the ticked rows in their own order, where
+  // 140/110 passed, while the write ranked the current 100 first and refused 100/110.
+  describe('the receipt is the write\'s own answer: its saved count is what the writer wrote', () => {
+    const bp = (metric: string, v: number, own?: string) => ({ metric, valueSI: v, displayValue: v, displayUnit: 'mmHg', displaySystem: 'si', confidence: 'high', ...(own ? { recordedAt: own } : null) });
+    const cases: Array<[string, object, string[], RoadmapFile, number]> = [
+      ['a previous systolic, an inverted current pair and LDL, the day moved to the previous one',
+        lab([bp('systolic_bp', 140, '2026-09-01'), bp('systolic_bp', 100), bp('diastolic_bp', 110), ldlHigh]), ['v0', 'v1', 'v2', 'v3'], record(), 1],
+      ['LDL out of range beside Ferritin', lab([{ ...ldlHigh, valueSI: 500, displayValue: 500 }], [{ name: 'Ferritin', value: 85, unit: 'µg/L' }]), ['v0', 'a0'], record(), 1],
+      ['only a value the record holds differently', lab([ldlHigh]), ['v0'], record({ kind: 'add', metric: 'ldl', value: 2.5, day: '2026-09-01' }), 0],
+      ['every value already saved', lab([ldlHigh]), ['v0'], record({ kind: 'add', metric: 'ldl', value: 3.1, day: '2026-09-01' }), 0],
+    ];
+    for (const [name, x, refs, file, written] of cases) {
+      it(name, () => {
+        const json = JSON.stringify(x);
+        const summary = JSON.parse(labSaveSummaryJson(JSON.stringify(file), json, JSON.stringify(refs), '2026-09-01', NOW, DEVICE)).summary;
+        const out = applyEdit(file, { kind: 'labImport', extractionJson: json, refs, reportDay: '2026-09-01' }, NOW);
+        if (!out.ok) throw new Error(out.message);
+        const wrote = [...out.file.measurements, ...out.file.labValues].filter((r) => r.source === 'lab_import').length;
+        expect(wrote).toBe(written);
+        expect(summary.saved).toBe(wrote);
+        expect(summary.saved + summary.skipped + summary.refused.length + summary.sameDay.length).toBe(refs.length); // one sameDay line per test here
+      });
+    }
+  });
+
+  // Codex after PR 1824: an equal copy of a refused reading was counted "left as they were"
+  // though the record held nothing.
+  it('an upload\'s equal copy of a refused reading is not counted as left as it was', () => {
+    const bp = (metric: string, v: number, own?: string) => ({ metric, valueSI: v, displayValue: v, displayUnit: 'mmHg', displaySystem: 'si', confidence: 'high', ...(own ? { recordedAt: own } : null) });
+    const x = lab([bp('systolic_bp', 100), bp('systolic_bp', 100, '2026-09-01'), bp('diastolic_bp', 110)]);
+    const summary = JSON.parse(labSaveSummaryJson(JSON.stringify(record()), JSON.stringify(x), JSON.stringify(['v0', 'v1', 'v2']), '2026-09-01', NOW, DEVICE)).summary;
+    expect(summary.saved).toBe(0);
+    expect(summary.skipped).toBe(0);
+    expect(summary.refused.length).toBeGreaterThan(0);
+  });
+
+  // Codex after PR 1824: save all gave the displaced reading no note and no row to reopen (US-52 AC8b).
+  it('a ticked reading displaced by another of the same test that day is named in the summary, in the review\'s words', () => {
+    const x = lab([ldlHigh, { ...ldlHigh, valueSI: 2.8, displayValue: 2.8, recordedAt: '2026-09-01' }]);
+    const summary = JSON.parse(labSaveSummaryJson(JSON.stringify(record()), JSON.stringify(x), JSON.stringify(['v0', 'v1']), '2026-09-01', NOW, DEVICE)).summary;
+    expect(summary).toEqual({ saved: 1, skipped: 0, refused: [], sameDay: ['LDL Cholesterol: another reading of this test is on the same day'] });
+    // An equal reading of a written value is left as it was, not named again.
+    const equal = lab([ldlHigh, { ...ldlHigh, recordedAt: '2026-09-01' }]);
+    expect(JSON.parse(labSaveSummaryJson(JSON.stringify(record()), JSON.stringify(equal), JSON.stringify(['v0', 'v1']), '2026-09-01', NOW, DEVICE)).summary)
+      .toMatchObject({ saved: 1, sameDay: [] });
+  });
+
+  it('a letter\'s review leads with the shared summary line (Codex R2)', () => {
+    expect(groupsOf(letter, [], record(), '').summary).toBe('Found 1 clinic letter');
+  });
+
+  it('what Save sends is what the save writes: the dry run saves every sent ref and refuses or skips none', () => {
+    const file = record({ kind: 'add', metric: 'ldl', value: 2.5, day: '2026-10-01' });
+    const g = groupsOf(extraction, ['v0', 'v1', 'a0', 'a1'], file);
+    expect(g.saveRefs).toEqual(['a0', 'v1']); // send order: the report's own day before a value's printed one (readingRank)
+    const dry = JSON.parse(labSaveSummaryJson(JSON.stringify(file), JSON.stringify(extraction), JSON.stringify(g.saveRefs), '2026-10-01', NOW, DEVICE));
+    expect(dry.summary).toEqual({ saved: 2, skipped: 0, refused: [], sameDay: [] });
+    // AppChatLabTests' plan: the report's own day first, then the value's printed day.
+    expect(groupsOf(extraction, ['v0', 'v1', 'a0', 'a1']).saveRefs).toEqual(['v0', 'a0', 'v1']);
   });
 });
 

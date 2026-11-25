@@ -191,7 +191,7 @@ For strength: 81% of strength gains come from just 1-4 sets per exercise per wee
 
 **Evidence (Jansson 2022):** Resistance training reduces HbA1c by a weighted mean of **-0.39%** (20 RCTs, n=1,172), comparable to aerobic training. Greater strength gains predict greater HbA1c reductions. RT and aerobic exercise are equally effective — the best exercise for diabetes is whichever the patient will do consistently.
 
-**Brad's position:** Aligns. The algorithm's HbA1c suggestions (`hba1c-prediabetic`, `hba1c-normal`) mention lifestyle changes but don't specifically recommend resistance training for glycaemic control. This evidence supports adding RT as a specific recommendation for patients with prediabetes or diabetes.
+**Brad's position:** Aligns. The algorithm's HbA1c suggestions (`hba1c-prediabetic`) mention lifestyle changes but don't specifically recommend resistance training for glycaemic control. This evidence supports adding RT as a specific recommendation for patients with prediabetes or diabetes.
 
 **Algorithm link:** `hba1c-prediabetic`, `hba1c-diabetic`. Candidate for adding specific RT recommendation.
 

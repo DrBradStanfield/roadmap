@@ -1,3 +1,4 @@
+import CryptoKit
 import SwiftUI
 import XCTest
 @testable import HealthRoadmap
@@ -14,6 +15,8 @@ final class RecordStoreTests: XCTestCase {
         // a percent-encoded path once made the app miss its own file and start a new one.
         folder = FileManager.default.temporaryDirectory.appending(path: "Record Store \(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        // A run killed before its tearDown can leave a per-test unit saved on the simulator.
+        UnitChoices().save()
     }
 
     override func tearDown() async throws {
@@ -80,13 +83,7 @@ final class RecordStoreTests: XCTestCase {
         XCTAssertEqual(store.ownSaves, 1, "an edit no sheet opened (Apple Health) does not")
         await XCTAssertSaved(await store.apply(.units("conventional")))
         XCTAssertEqual(store.ownSaves, 1, "a units choice does not")
-        let extraction = #"""
-        {"classification":"lab_report","reportDate":"2026-10-01",
-         "values":[{"metric":"ldl","valueSI":3.1,"displayValue":3.1,"displayUnit":"mmol/L","displaySystem":"si","confidence":"high"}],
-         "additionalValues":[], "refusedValues":[]}
-        """#
-        _ = try (await store.importLabs(extractionJSON: extraction, refs: ["v0"], reportDay: "2026-10-01")).get()
-        XCTAssertEqual(store.ownSaves, 2, "a saved lab report counts once")
+        // A lab report's Save: UploadSessionGuardsTests (the shared upload's one Save).
     }
 
     /// Review R5: an edit the engine finds changes nothing is not a save.
@@ -208,18 +205,26 @@ final class RecordStoreTests: XCTestCase {
         XCTAssertEqual(MetricDetailView.screenHasReading(waist, in: store), false)
         // An erased cloud view handed over before the screen shown: its draw fails, the erase counts.
         await store.showErased(HealthEngine.CloudView(record: store.recordJSON, erase: "e1", session: 1, order: 0)).value
-        XCTAssertNotNil(store.myData, "the old screen still draws")
+        // S52: a record from before the erase reads as no record, so My data says "Your record did not load".
+        XCTAssertTrue(store.predatesErase)
+        XCTAssertNil(store.readable, "nothing from before the erase is readable")
+        XCTAssertNil(store.myData, "My data shows its record-did-not-load state")
+        XCTAssertNil(store.problem, "the fallback heading, Your record did not load")
+        XCTAssertNil(store.plan)
         XCTAssertNil(MetricDetailView.screenHasReading(weight, in: store), "it predates the erase")
         // The app comes back to the front, or midnight passes: the same pre-erase record drawn again
         // is still from before the erase (checkpoint 1 review, lead 1).
         await store.redraw().value
+        XCTAssertNil(store.readable, "a redraw of the erased record is still unreadable")
+        XCTAssertNil(store.myData)
         XCTAssertNil(MetricDetailView.screenHasReading(weight, in: store), "a redraw of the erased record never catches up")
         XCTAssertNil(MetricDetailView.screenHasReading(waist, in: store))
     }
 
     /// Owner's ruling (b) on PR 1595: an erase view refused only because a newer record from the
-    /// engine, stamped after the erase, is already drawn leaves nothing predating the erase. A draw
-    /// refused for any other reason (the engine threw, or the newer record's own draw failed) does.
+    /// engine, stamped after the erase, is already drawn leaves nothing predating the erase. An erase
+    /// the engine cannot draw is held undrawn, and a newer record whose own draw failed never makes
+    /// it stale (US-25 AC16f): neither leaves anything predating it either.
     func testOnlyAStaleEraseViewUnderANewerDrawnRecordCatchesTheScreenUp_US58() async throws {
         let engine = try HealthEngine()
         let cloud = try engine.blocking { try $0.newRecord(now: .now, deviceId: "web") }
@@ -230,18 +235,33 @@ final class RecordStoreTests: XCTestCase {
         await stale.showErased(HealthEngine.CloudView(record: cloud, erase: "e2", session: 1, order: 1)).value
         XCTAssertFalse(stale.predatesErase, "the record shown was stamped after the erase")
 
-        // The engine cannot draw the erase view.
+        // The engine cannot draw the erase view: it is held all the same, with no drawing (AC16f).
         let threw = try RecordStore(folder: folder, engine: engine, deviceId: "test")
         await threw.showErased(HealthEngine.CloudView(record: "not a record", erase: "e2", session: 1, order: 3)).value
-        XCTAssertTrue(threw.predatesErase, "nothing drew the erase")
+        XCTAssertEqual(threw.recordJSON, "not a record", "the erase view is the record held")
+        XCTAssertNil(threw.myData)
+        XCTAssertFalse(threw.predatesErase, "nothing from before the erase is shown")
 
-        // An older cloud record is drawn; a newer one was handed over but never drawn: the screen still
-        // shows the older one, which predates the erase view between them.
+        // An older cloud record is drawn; a newer one at the same erase was handed over but never drawn: it
+        // never moved the stamp, so the erase view between them is not stale and lands (Codex R1 on PR 1599).
         let undrawn = try RecordStore(folder: folder, engine: engine, deviceId: "test")
         await undrawn.showCloud(HealthEngine.CloudView(record: cloud, erase: "e1", session: 1, order: 3)).value
-        await undrawn.showCloud(HealthEngine.CloudView(record: "not a record", erase: "e2", session: 1, order: 5)).value
-        await undrawn.showErased(HealthEngine.CloudView(record: cloud, erase: "e2", session: 1, order: 4)).value
-        XCTAssertTrue(undrawn.predatesErase, "stale only against the record drawn, never one only handed over")
+        await undrawn.showCloud(HealthEngine.CloudView(record: "not a record", erase: "e1", session: 1, order: 5)).value
+        let erased = try engine.blocking { try $0.eraseOnPhone(recordJSON: cloud, historyJSON: nil, now: .now, deviceId: "test") }.record
+        await undrawn.showErased(HealthEngine.CloudView(record: erased, erase: "e2", session: 1, order: 4)).value
+        XCTAssertEqual(undrawn.recordJSON, erased, "the erase landed")
+        XCTAssertFalse(undrawn.predatesErase, "a record only handed over never makes an erase stale")
+
+        // The newer one is the session's next erase and cannot be drawn: it is held undrawn and holds the
+        // erase (AC16f's rule, lead S63), so the stamp moves to it and the older erase view behind it is
+        // stale. Nothing older lands over it (PR 1599's scenario re-derived: RemoteEraseTakenInTests).
+        let heldNewer = try RecordStore(folder: folder, engine: engine, deviceId: "test")
+        await heldNewer.showCloud(HealthEngine.CloudView(record: cloud, erase: "e1", session: 1, order: 3)).value
+        await heldNewer.showCloud(HealthEngine.CloudView(record: "not a record", erase: "e2", session: 1, order: 5)).value
+        XCTAssertEqual(heldNewer.hold, .heldUndrawn, "the newer erased record is held")
+        await heldNewer.showErased(HealthEngine.CloudView(record: erased, erase: "e2", session: 1, order: 4)).value
+        XCTAssertEqual(heldNewer.recordJSON, "not a record", "the newer held record stays: it holds the erase")
+        XCTAssertFalse(heldNewer.predatesErase, "nothing from before the erase is shown")
 
         // A cloud record was drawn, then the phone's file: no cloud stamp stands for the screen.
         let phone = try RecordStore(folder: folder, engine: engine, deviceId: "test")
@@ -259,10 +279,16 @@ final class RecordStoreTests: XCTestCase {
         await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 80, day: "2026-10-20")))
         _ = await store.chart(for: "weight")
         XCTAssertNotNil(store.shownChart(for: "weight"), "kept before the erase")
+        let weight = try XCTUnwrap(store.myData?.vitals.first { $0.metric == "weight" }, "the page's row, taken before the erase")
         await store.showErased(HealthEngine.CloudView(record: store.recordJSON, erase: "e1", session: 1, order: 0)).value
-        XCTAssertNotNil(store.myData, "the old screen still draws")
+        // S52: a record from before the erase reads as no record, so My data says "Your record did not load".
+        XCTAssertNil(store.readable, "nothing from before the erase is readable")
+        XCTAssertNil(store.myData, "My data shows its record-did-not-load state")
+        XCTAssertNil(store.problem, "the fallback heading, Your record did not load")
         XCTAssertNil(store.shownChart(for: "weight"), "the erase dropped it")
         await store.redraw().value
+        XCTAssertNil(store.readable, "a redraw of the erased record is still unreadable")
+        XCTAssertNil(store.myData)
         let read = await store.chart(for: "weight")
         XCTAssertNil(read, "a page opened now reads nothing from the erased record")
         XCTAssertNil(store.shownChart(for: "weight"), "and nothing is kept for the next page")
@@ -271,11 +297,13 @@ final class RecordStoreTests: XCTestCase {
         store.histories["weight"] = RecordStore.KeptHistory(stamp: RecordStore.Stamp(revision: store.revision, draws: nil), chart: stale)
         XCTAssertNil(store.shownChart(for: "weight"), "never drawn from the erased record")
         XCTAssertNil(store.shownHistory(for: "weight"), "never opens a correction on it")
-        let weight = try XCTUnwrap(store.myData?.vitals.first { $0.metric == "weight" })
+        XCTAssertNil(MetricDetailView.screenHasReading(weight, in: store), "no screen to claim from")
         let page = MetricRead.page(MetricRead.transition(.reading(revision: store.revision), .landed(revision: store.revision, read)),
                                    revision: store.revision, problem: store.problem, kept: store.shownChart(for: "weight"),
                                    hasReadings: true, screenHasReading: MetricDetailView.screenHasReading(weight, in: store))
         XCTAssertEqual(MetricReadTests.named(page), "failed: unknown", "no claim either way, and Try again")
+        // The page's words for failed(.unknown): the first sentence alone, never "still in your record".
+        XCTAssertEqual(MetricRead.couldNotRead(weight.label, stillInRecord: false), "Your \(weight.label) values could not be read.")
     }
 
     /// Adversary R2, Codex (US-25 AC9, AC20): a history read for an older record or unit is
@@ -504,7 +532,7 @@ final class RecordStoreTests: XCTestCase {
         XCTAssertTrue(notRecord.hasSuffix("nothing will be saved over it. This file is not a health record."), notRecord)
         try Data("{\"schemaVersion\": 999, \"measurements\": []}".utf8).write(to: file)
         let tooNew = try XCTUnwrap(try store().problem?.words)
-        XCTAssertTrue(tooNew.hasSuffix("A newer version of Health Roadmap wrote this record. Update the app to open it."), tooNew)
+        XCTAssertTrue(tooNew.hasSuffix("A newer version of this app wrote this record. Update the app to open it."), tooNew)
         let engine = try HealthEngine()
         XCTAssertThrowsError(try engine.blocking { try $0.eraseOnPhone(recordJSON: "[]", historyJSON: nil, now: .now, deviceId: "test") }) {
             XCTAssertEqual($0.localizedDescription, "This file is not a health record.")
@@ -610,43 +638,28 @@ final class RecordStoreTests: XCTestCase {
         await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 81, day: "2026-10-02")), "a sheet opened after the erase saves")
     }
 
-    /// US-25 AC11g, the document path: a lab review pinned before an erase of the phone's file
-    /// files no document text into the erased record. Both cloud erases are nil, so only the
-    /// pin's eraseEpoch and erase count (Mark.holds) tell the erase apart.
-    func testADocumentFromAReviewOpenedBeforeAPhoneEraseIsRefused_US25_AC11g() async throws {
+    /// US-25 AC11g: an upload opened before an erase of the phone's file is refused as a whole,
+    /// with applyInTurn's words, and nothing is written. Both cloud erases are nil, so only the
+    /// pin's eraseEpoch and erase count (Mark.holds) tell the erase apart. A real saving state, so
+    /// only the store's guard can refuse it.
+    func testAnUploadOpenedBeforeAPhoneEraseIsRefused_US25_AC11g() async throws {
         let store = try store()
-        store.pinScreen() // the review opens on the pre-erase record
+        store.pinScreen() // the upload opens on the pre-erase record
+        defer { store.unpinScreen() }
+        let opened = store.pinned ?? store.screen
+        var drive = try UploadPageTests.Drive(record: store.recordJSON)
+        drive.pick(["lab", "letter"])
+        drive.read("lab", UploadPageTests.lab(values: UploadPageTests.ldl))
+        drive.read("letter", UploadPageTests.letter())
+        drive.step(UploadAction.saveEvent(promised: try drive.page().reviewed))
         guard case .erased = await store.erasePhone(historyJSON: nil, keepChat: { _, _ in true }) else { return XCTFail("not erased") }
         let erased = try String(contentsOf: file, encoding: .utf8)
-        let letter = ##"{"classification":"clinic_letter","reportDate":null,"values":[],"additionalValues":[],"document":{"classification":"clinic_letter","title":"Cardiology follow-up","documentDate":null,"contentMarkdown":"# Letter","metadata":{}}}"##
-        let choice = DocumentChoice(kind: .document, sourceFileName: "Letter.pdf", title: "Cardiology follow-up", documentDate: nil, mimeType: "application/pdf", contentHash: "")
-        guard case .refused = await store.saveDocument(extractionJSON: letter, choice: choice, original: nil) else {
-            return XCTFail("the old review's document must not land in the erased record")
-        }
-        XCTAssertEqual(try String(contentsOf: file, encoding: .utf8), erased, "nothing written")
-        XCTAssertFalse(store.recordJSON.contains("# Letter"))
-        store.unpinScreen()
-    }
-
-    /// US-25 AC11g, the lab path: a lab review pinned before an erase of the phone's file is
-    /// refused as a whole, with applyInTurn's words, and nothing is written. A behaviour pin:
-    /// applyInTurn already refused the values; the guard now refuses before the summary is read.
-    func testALabImportFromAReviewOpenedBeforeAPhoneEraseIsRefused_US25_AC11g() async throws {
-        let store = try store()
-        store.pinScreen() // the review opens on the pre-erase record
-        guard case .erased = await store.erasePhone(historyJSON: nil, keepChat: { _, _ in true }) else { return XCTFail("not erased") }
-        let erased = try String(contentsOf: file, encoding: .utf8)
-        let extraction = #"""
-        {"classification":"lab_report","reportDate":"2026-10-01",
-         "values":[{"metric":"ldl","valueSI":3.1,"displayValue":3.1,"displayUnit":"mmol/L","displaySystem":"si","confidence":"high"}],
-         "additionalValues":[], "refusedValues":[]}
-        """#
-        guard case .failure(let refusal) = await store.importLabs(extractionJSON: extraction, refs: ["v0"], reportDay: "2026-10-01") else {
-            return XCTFail("the old review's values must not land in the erased record")
+        guard case .failure(let refusal) = await store.saveUpload(state: drive.state, originals: [:], read: { _ in nil }, as: opened) else {
+            return XCTFail("the old upload's values must not land in the erased record")
         }
         XCTAssertEqual(refusal.message, RecordStore.recordChanged)
         XCTAssertEqual(try String(contentsOf: file, encoding: .utf8), erased, "nothing written")
-        store.unpinScreen()
+        XCTAssertFalse(store.recordJSON.contains("Walk daily"))
     }
 
     func testTheMasterSwitchClearsEveryChoice() async throws {
@@ -797,29 +810,6 @@ final class RecordStoreTests: XCTestCase {
         await XCTAssertSaved(await store.apply(.add(metric: "weight", value: 80, day: "2026-10-20"), as: seen))
         let refused = await store.chooseLpaUnit("g/L").value
         XCTAssertEqual(refused, "Lp(a) is in nmol/L, mg/dL or mg/L.")
-    }
-
-    /// US-52 AC13d: with no cloud, a letter is a text-only row, as the web saves one
-    /// off-cloud: no original, no hash, its text kept. On disk before the screen.
-    func testALetterOnThePhoneAloneIsATextOnlyRow() async throws {
-        let store = try store()
-        let letter = ##"{"classification":"clinic_letter","reportDate":null,"values":[],"additionalValues":[],"document":{"classification":"clinic_letter","title":"Cardiology follow-up","documentDate":null,"contentMarkdown":"# Letter","metadata":{}}}"##
-        let original = LabFileReader.Original(Data("%PDF".utf8), mimeType: "application/pdf")
-        let choice = DocumentChoice(kind: .document, sourceFileName: "Letter.pdf", title: "Cardiology follow-up", documentDate: nil, mimeType: "application/pdf", contentHash: original.contentHash)
-        let result = await store.saveDocument(extractionJSON: letter, choice: choice, original: original)
-        XCTAssertEqual(result, .saved(count: 1, stored: nil, unstored: 0, stale: false))
-        let onDisk = try JSONSerialization.jsonObject(with: Data(contentsOf: file)) as? [String: Any]
-        let row = try XCTUnwrap((onDisk?["documents"] as? [[String: Any]])?.first)
-        XCTAssertEqual(row["fileRef"] as? String, "")
-        XCTAssertEqual(row["contentHash"] as? String, "")
-        XCTAssertEqual(row["mimeType"] as? String, "")
-        XCTAssertEqual(row["extractedText"] as? String, "# Letter")
-        XCTAssertTrue(row["date"] is NSNull)
-        XCTAssertEqual(try String(contentsOf: file, encoding: .utf8), store.recordJSON)
-        // The review of the same file now says it is already saved (the web's sourceFileName dedup).
-        let engine = try HealthEngine()
-        let shown = store.recordJSON
-        XCTAssertEqual(try engine.blocking { try $0.labReview(extractionJSON: letter, now: .now, recordJSON: shown, sourceFileName: "Letter.pdf", deviceId: "test") }.document?.alreadySaved, true)
     }
 
     /// US-52 AC13d (R5): a document save's record lands on the phone's file only over the

@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+S67,iPhone state,"""Held"" (an erase held undrawn) is derived in two places with different checks",lead,done,"Done: PR 1684 merged; ios/HealthRoadmap/MyData/RecordStore+Readable.swift:24 and :40 derive heldUndrawn once, read at RecordStore.swift:271 and :400.",1681; 1684,no

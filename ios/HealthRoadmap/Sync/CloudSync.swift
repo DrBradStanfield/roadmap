@@ -1,6 +1,7 @@
 import Foundation
 import Network
 import Observation
+import os
 
 /// Keeps the record in the user's Dropbox or Google Drive (US-25 AC11). It signs
 /// in, opens the engine's cloud session, tells it when the app shows and hides,
@@ -34,6 +35,9 @@ final class CloudSync: CloudPort {
         /// A switch's copy-down could not reach the cloud with a session open, or the engine
         /// threw: still connected, nothing removed (US-25 AC11n). A plain Disconnect never stops.
         case unreachable
+        /// An erase made here is unsent over a failure that may pass: still open, nothing
+        /// closed or removed (US-25 AC16i). The next Disconnect asks again.
+        case eraseUnsent
     }
 
     /// What a switch did (US-25 AC11n).
@@ -185,18 +189,30 @@ final class CloudSync: CloudPort {
     func erase(chatHistory: String?, keepChat: @escaping @Sendable (String) -> Bool) async throws -> HealthEngine.CloudErase? {
         guard let session = connection.shownSession else { return nil }
         send(.syncStarted)
-        let result: HealthEngine.CloudErase
+        // keepChat's own answer, nil when the engine never asked (AC16h).
+        let kept = OSAllocatedUnfairLock<Bool?>(initialState: nil)
+        var result: HealthEngine.CloudErase
         do {
-            result = try await engine.cloudErase(historyJSON: chatHistory, now: .now, keepChat: keepChat)
+            result = try await engine.cloudErase(historyJSON: chatHistory, now: .now) { json in
+                let ok = keepChat(json)
+                kept.withLock { $0 = ok }
+                return ok
+            }
         } catch {
             send(.eraseEnded(session: session, .failed(SyncProblem(error)), at: .now))
             throw error
         }
+        // The phone's chat outcome from this side, not from a reply field that may have fallen
+        // back (AC16h). An erase that landed ran the chat step: with no chat text (or an empty
+        // file) the engine had nothing to tombstone and asked nothing; with text and no ask, its
+        // read failed.
+        if result.erased { result.chatErased = kept.withLock { $0 } ?? (chatHistory ?? "").isEmpty }
         // "Delete all my data" takes the account's email too; the connection stays.
         if result.erased { forgetEmail() }
-        // A Disconnect or reopen during the await owns the screen now (review F7).
-        guard connection.shownSession == session else { return result }
-        let shown = result.erased ? result.view.map { store.showErased($0) } : nil
+        // Always reaches the store (AC16g). A Disconnect or reopen during the await owns the
+        // screen now (review F7): the store then lands it only on this session's record, and
+        // `eraseEnded` changes nothing for a session no longer shown.
+        let shown = result.erased ? store.showErased(result.view) { [weak self] in self?.connection.shownSession == session } : nil
         send(.eraseEnded(session: session, result.success ? .done : .failed(SyncProblem(kind: .unreachable)), at: .now))
         // Done once the screen shows the erased record.
         await shown?.value
@@ -222,6 +238,9 @@ final class CloudSync: CloudPort {
     /// with no await between them.
     func disconnectOutcome(forSwitch: Bool = false) async -> DisconnectOutcome {
         guard provider != nil else { return .done(copied: true) }
+        guard !eraseRunning() else { return .refused }
+        // Asked before anything closes; it flushes, so a cloud that answers now takes the erase.
+        if (try? await engine.eraseHeldOverAPassingFailure()) == true { return .eraseUnsent }
         guard !eraseRunning(), send(.disconnectStarted).isEmpty, case .closing(let closing) = connection else { return .refused }
         let closed = try? await engine.cloudClose(copyDown: true)
         // Each step after an await checks this Disconnect still owns the connection (Codex C1).
@@ -449,5 +468,5 @@ final class NetworkReturn {
 extension HealthEngine {
     /// The network came back: retry a failed save (US-09 AC30). An optional door: nil from an
     /// engine without it, and nothing is retried on this trigger.
-    func cloudOnline() throws -> String? { try optionalCall("cloudOnline", []) }
+    func cloudOnline() throws -> String? { try doorCloudOnline() }
 }

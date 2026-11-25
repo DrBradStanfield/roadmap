@@ -13,7 +13,7 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { MCP_TOOLS } from '../../packages/health-core/src/mcp-tools';
+import { MCP_TOOLS } from '../../packages/health-core/src/mcp-tool-catalogue';
 import { MCP_TOOL_NAMES } from '../../packages/health-core/src/product-events';
 
 const HERE = dirname(fileURLToPath(import.meta.url));

@@ -12,13 +12,16 @@ import JSZip from 'jszip';
 import table from '../../../packages/health-core/src/__fixtures__/upload-decisions.json';
 import { IMPORT_LIMITS } from '@roadmap/health-core/import-hints';
 import { zipMemberName } from '@roadmap/health-core/lab-extraction';
-import { BATCH_THRESHOLD, MAX_FILE_SIZE, processPipeline, type FileNotice, type ReadInput } from './upload-pipeline';
-import { getZipEntries, isZip } from './zip-extract';
+import { inFlight } from '@roadmap/health-core/upload-flow';
+import { MAX_FILE_SIZE, type FileNotice } from './upload-pipeline';
+import { getZipEntries } from './zip-extract';
+import { isZip } from './file-kinds';
 import { isPdf } from './pdf-extract';
 import { isImage } from './image-resize';
 import { MAX_FILES } from '../hooks/useUploadFlow';
 import { FileNotices } from '../components/UploadNotices';
 import type { HealthUploadAPI } from '../upload-entry';
+import { drive } from '../testing/upload-driver';
 
 // The Shopify build's words: the per-file notices the server path shows.
 vi.mock('./build-flags', () => ({ SHOPIFY_SURFACE: true, LOCAL_FIRST: true }));
@@ -41,13 +44,12 @@ function fakeUpload(): HealthUploadAPI {
   } as unknown as HealthUploadAPI;
 }
 
-/** One file through the real pipeline and the real labImport, the server answering `reply`. */
-async function readOne(input: ReadInput, reply: () => Promise<Response>) {
+/** Files through the shared upload state, the web's real effects and the real labImport, the server answering `reply`. */
+async function read(files: File[], reply: () => Promise<Response>, upload = fakeUpload()) {
   vi.stubGlobal('fetch', vi.fn(reply));
-  const notices: FileNotice[] = [];
-  const upload = fakeUpload();
-  const results = await processPipeline(upload, [input], new AbortController(), () => {}, 'si', notices).catch(() => []);
-  return { results, notices, upload };
+  const run = drive(upload, files);
+  await vi.waitFor(() => expect(inFlight(run.state())).toBe(0));
+  return { ...run.outcome(), upload };
 }
 
 const json = (body: unknown, status: number) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
@@ -68,7 +70,6 @@ describe('upload decisions: web limits (D8)', () => {
     expect(IMPORT_LIMITS.websiteFiles).toBe(web.zipMembers);
     expect(IMPORT_LIMITS.websitePdfPages).toBe(web.pdfPages);
     expect(IMPORT_LIMITS.websiteTextPageChars).toBe(web.textPageChars);
-    expect(BATCH_THRESHOLD).toBe(web.batchFrom);
   });
 });
 
@@ -95,7 +96,7 @@ describe('upload decisions: a file read or not by its size (D8)', () => {
   it.each(table.fileSizes.rows.filter(r => r.name.endsWith('.pdf')))('$name of $bytes bytes → $web', async ({ name, bytes, web }) => {
     const file = new File(['x'], name, { type: 'application/pdf' });
     Object.defineProperty(file, 'size', { value: bytes });
-    const { notices, upload } = await readOne({ fileName: name, getFile: async () => file }, ok);
+    const { notices, upload } = await read([file], ok);
     expect(notices.some(n => n.reason === 'tooLarge') ? 'tooLarge' : 'read').toBe(web);
     expect(vi.mocked(upload.extractFromPdf).mock.calls.length).toBe(web === 'read' ? 1 : 0);
   });
@@ -104,15 +105,13 @@ describe('upload decisions: a file read or not by its size (D8)', () => {
     const row = table.fileSizes.zipMemberOverCap;
     const big = new File(['x'], 'big.pdf', { type: 'application/pdf' });
     Object.defineProperty(big, 'size', { value: row.bytes });
-    vi.stubGlobal('fetch', vi.fn(ok));
-    const notices: FileNotice[] = [];
-    const inputs: ReadInput[] = [
-      { fileName: 'labs.zip/big.pdf', getFile: async () => big },
-      { fileName: 'labs.zip/small.pdf', getFile: async () => new File(['x'], 'small.pdf', { type: 'application/pdf' }) },
-    ];
-    const results = await processPipeline(fakeUpload(), inputs, new AbortController(), () => {}, 'si', notices);
+    // A member whose listing gives no size is checked once inflated, as before.
+    const members = [['big.pdf', big], ['small.pdf', new File(['x'], 'small.pdf', { type: 'application/pdf' })]] as const;
+    const upload = { ...fakeUpload(), getZipEntries: async () => members.map(([name, f]) => ({ name, entry: { async: async () => f } })) } as unknown as HealthUploadAPI;
+    const { results, notices } = await read([new File(['x'], 'labs.zip', { type: 'application/zip' })], ok, upload);
     expect(row.web).toBe('memberNoticed');
-    expect(notices).toEqual([{ name: 'labs.zip/big.pdf', reason: 'tooLarge' }]);
+    // The small member read, with no values: its own notice says so (noValues), as on any read file.
+    expect(notices.filter(n => n.reason !== 'noValues')).toEqual([{ name: 'labs.zip/big.pdf', reason: 'tooLarge' }]);
     expect(results.map(r => r.fileName)).toEqual(['labs.zip/small.pdf']);
   });
 });
@@ -129,7 +128,7 @@ describe('upload decisions: failure → words, Shopify build (D14)', () => {
       : Promise.resolve(json(row.errorCode ? { errorCode: row.errorCode } : { error: 'x' }, row.status!));
 
   it.each(table.failures.rows.filter(r => r.web))('$case → its notice', async (row) => {
-    const { results, notices } = await readOne({ fileName: 'labs.pdf', getFile: async () => new File(['x'], 'labs.pdf', { type: 'application/pdf' }) }, reply(row));
+    const { results, notices } = await read([new File(['x'], 'labs.pdf', { type: 'application/pdf' })], reply(row));
     expect(results.map(r => !!r.error)).toEqual([true]);
     expect(notices).toHaveLength(1);
     expect(words(notices[0])).toBe(row.web!.words);

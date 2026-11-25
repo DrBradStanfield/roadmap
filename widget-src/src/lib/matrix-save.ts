@@ -35,7 +35,7 @@ export interface SaveTask {
 }
 
 /** Correct one saved value, core or lab; `newValue` is in the unit it is stored in. */
-export type CorrectFn = (id: string, newValue: number, erase?: string) => Promise<CorrectStatus>;
+export type CorrectFn = (id: string, newValue: number, erase: string) => Promise<CorrectStatus>;
 
 /** The values a save refused, by slot (`slotOf`), and why. Empty: every
  *  value landed or changed nothing. */
@@ -64,7 +64,7 @@ export async function routeTasksToSaves(
   tasks: SaveTask[],
   history: ApiMeasurement[],
   onInsert: (date: string, metric: string, value: number) => Promise<CorrectStatus>,
-  onCorrect: CorrectFn,
+  onCorrect: (id: string, newValue: number) => Promise<CorrectStatus>,
 ): Promise<Refused> {
   const index = activeRowIndex(history);
   const slots = new Map<string, { task: SaveTask; metric: MetricType } | 'changed' | 'invalid'>();

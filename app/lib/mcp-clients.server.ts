@@ -2,7 +2,7 @@
  * Who is allowed to ask: pinned vendor clients, CIMD, and DCR as the fallback
  * (US-32, design §2/§4).
  *
- * NOTHING HERE MAY LOG A URL.
+ * Nothing here may log a URL; `redirectShapes` logs allow-listed words and lengths only.
  */
 import crypto from 'node:crypto';
 import { sameBytes } from './crypto-compare.server';
@@ -13,15 +13,18 @@ import { pipeline, type Transform } from 'node:stream';
 import zlib from 'node:zlib';
 import type { McpOAuthDetail } from '../../packages/health-core/src/product-events';
 import { clientHmacKey } from './mcp-config.server';
+import { GEMINI_CLIENT_ID, geminiEnabled, registerGemini } from './mcp-gemini.server';
+export { registrationRefused } from './mcp-gemini.server';
 import { b64url } from './mcp-seal.server';
 import { readCapped } from './capped-body.server';
+import { parseIpv6 } from './ip-groups.server';
 
 /**
  * Which assistant is calling, as a closed enum. Free text in a counter is how
  * a counter becomes a log, and a DCR client's name is attacker-chosen text —
  * so only a pinned client gets a label, and everything else is 'other'.
  */
-export const MCP_CLIENT_LABELS = ['claude', 'claude_code', 'chatgpt', 'codex', 'other'] as const;
+export const MCP_CLIENT_LABELS = ['claude', 'claude_code', 'chatgpt', 'codex', 'gemini', 'other'] as const;
 
 export type McpClientLabel = (typeof MCP_CLIENT_LABELS)[number];
 
@@ -189,6 +192,8 @@ export const KNOWN_CLIENTS: ReadonlyMap<string, Readonly<KnownClient>> = new Map
       redirectUris: Object.freeze(['http://127.0.0.1/callback', 'http://localhost/callback']),
     },
   ],
+  // No list: its redirects are per user, judged by `isGeminiRedirect` (mcp-gemini.server.ts).
+  [GEMINI_CLIENT_ID, { clientId: GEMINI_CLIENT_ID, name: 'Gemini', label: 'gemini', redirectUris: Object.freeze([]) }],
 ]);
 
 interface ClientMetadata {
@@ -209,6 +214,8 @@ function canonicalMetadata(input: unknown): ClientMetadata | null {
 }
 
 export function registerClient(input: unknown): McpClient | null {
+  const gemini = registerGemini(input);
+  if (gemini) return gemini === 'refused' ? null : gemini;
   const metadata = canonicalMetadata(input);
   if (!metadata) return null;
   const body = Buffer.from(JSON.stringify(metadata), 'utf8');
@@ -325,48 +332,6 @@ export function isPublicAddress(address: string, family: number): boolean {
 
 function isPublicIpv4(address: string): boolean {
   return isPublicAddress(address, 4);
-}
-
-function ipv4Groups(dotted: string): [number, number] | null {
-  const parts = dotted.split('.');
-  if (parts.length !== 4) return null;
-  const nums = parts.map(Number);
-  if (nums.some((n) => !Number.isInteger(n) || n < 0 || n > 255)) return null;
-  return [(nums[0] << 8) | nums[1], (nums[2] << 8) | nums[3]];
-}
-
-function parseIpv6(address: string): number[] | null {
-  const ip = address.toLowerCase();
-  if (ip.includes('%') || ip.includes('/')) return null;
-  const halves = ip.split('::');
-  if (halves.length > 2) return null;
-  const parseSide = (side: string): number[] | null => {
-    if (side === '') return [];
-    const bits = side.split(':');
-    const groups: number[] = [];
-    for (let i = 0; i < bits.length; i++) {
-      const bit = bits[i];
-      if (bit.includes('.')) {
-        if (i !== bits.length - 1) return null;
-        const pair = ipv4Groups(bit);
-        if (!pair) return null;
-        groups.push(pair[0], pair[1]);
-      } else if (!/^[0-9a-f]{1,4}$/.test(bit)) {
-        return null;
-      } else {
-        groups.push(parseInt(bit, 16));
-      }
-    }
-    return groups;
-  };
-  const head = parseSide(halves[0]);
-  if (!head) return null;
-  if (halves.length === 1) return head.length === 8 ? head : null;
-  const tail = parseSide(halves[1]);
-  if (!tail) return null;
-  const missing = 8 - head.length - tail.length;
-  if (missing < 1) return null;
-  return [...head, ...Array(missing).fill(0), ...tail];
 }
 
 function isPublicIpv6(address: string): boolean {
@@ -492,7 +457,8 @@ export async function resolveClient(clientId: string, nowMs = Date.now(), miss: 
   }
   // Exact string only: a lookalike id falls through to the fetch path below.
   const known = KNOWN_CLIENTS.get(clientId);
-  if (known) return known;
+  // Switched off, the Gemini pin is no client (US-32 AC63).
+  if (known) return clientId === GEMINI_CLIENT_ID && !geminiEnabled() ? null : known;
   if (clientId.startsWith('https://')) return fetchClientMetadata(clientId, nowMs, miss);
   return null;
 }

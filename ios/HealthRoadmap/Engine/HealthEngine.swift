@@ -116,7 +116,7 @@ actor HealthEngine {
     /// the plan. My data the engine cannot draw throws the whole call.
     /// `units`: the phone's per-test units as JSON (UnitChoices, US-25 AC17e); "{}" for none.
     func screen(recordJSON: String, now: Date, deviceId: String, units: String = "{}") throws -> Drawn {
-        let json = try call("screenJson", [recordJSON, now.formatted(Self.iso), deviceId, units, storefrontIsUS])
+        let json = try doorScreenJson(recordJson: recordJSON, nowIso: now.formatted(Self.iso), deviceId: deviceId, unitsJson: units, isUS: storefrontIsUS)
         let answer = try JSONDecoder().decode(Drawn.Answer.self, from: Data(json.utf8))
         return Drawn(myData: answer.myData, plan: answer.plan.state, topics: answer.plan.topics, movedRecord: answer.movedRecord)
     }
@@ -178,17 +178,17 @@ actor HealthEngine {
     /// The plan for a record, as the engine's JSON.
     /// `units`: the phone's per-test units as JSON (UnitChoices, US-25 AC17e); "{}" for none.
     func plan(recordJSON: String, now: Date, deviceId: String, units: String = "{}") throws -> String {
-        try call("planJson", [recordJSON, now.formatted(Self.iso), deviceId, units])
+        try doorPlanJson(recordJson: recordJSON, nowIso: now.formatted(Self.iso), deviceId: deviceId, unitsJson: units)
     }
 
     /// The layout as the engine's JSON, for the parity test to compare byte for byte.
     func sectionsJSON(planJSON: String) throws -> String {
-        try call("sectionsJson", [planJSON])
+        try doorSectionsJson(planJson: planJSON)
     }
 
     /// A first-launch record, as JSON. Units follow the phone's region.
     func newRecord(now: Date, deviceId: String, locale: Locale = .current, timeZone: TimeZone = .current) throws -> String {
-        try call("newRecordJson", [now.formatted(Self.iso), deviceId, Self.languageAndRegion(locale), timeZone.identifier])
+        try doorNewRecordJson(nowIso: now.formatted(Self.iso), deviceId: deviceId, locale: Self.languageAndRegion(locale), timeZone: timeZone.identifier)
     }
 
     /// The units health-core's `detectUnitSystem` gives a region and time zone ("si" or
@@ -202,27 +202,26 @@ actor HealthEngine {
     /// Applies one edit with health-core's own write rules. The record passed in is not changed.
     func apply(_ edit: RecordEdit, to recordJSON: String, now: Date, deviceId: String, units: String = "{}") throws -> EditOutcome {
         let editJSON = String(decoding: try JSONEncoder().encode(edit), as: UTF8.self)
-        let json = try call("applyEditJson", [recordJSON, editJSON, now.formatted(Self.iso), deviceId, units])
-        return try JSONDecoder().decode(EditOutcome.self, from: Data(json.utf8))
+        return try doorApplyEditJson(recordJson: recordJSON, editJson: editJSON, nowIso: now.formatted(Self.iso), deviceId: deviceId, unitsJson: units)
     }
 
     /// The values a person entered that belong in Apple Health (US-25 AC14, device-export.ts).
     func healthWrites(recordJSON: String, now: Date, deviceId: String) throws -> [HealthWrite] {
-        let json = try call("healthWritesJson", [recordJSON, now.formatted(Self.iso), deviceId])
+        let json = try doorHealthWritesJson(recordJson: recordJSON, nowIso: now.formatted(Self.iso), deviceId: deviceId)
         return try JSONDecoder().decode([HealthWrite].self, from: Data(json.utf8))
     }
 
     /// Every value recorded for one metric, newest first, corrections included (US-25 AC9).
     /// `series` "lab": `metric` is a lab test's series key, its page's history (US-25 AC25).
     func history(recordJSON: String, metric: String, now: Date, deviceId: String, units: String = "{}", series: String? = nil) throws -> MetricHistory {
-        let json = try call("historyJson", [recordJSON, metric, now.formatted(Self.iso), deviceId, units] + (series.map { [$0] } ?? []))
+        let json = try doorHistoryJson(recordJson: recordJSON, metric: metric, nowIso: now.formatted(Self.iso), deviceId: deviceId, unitsJson: units, series: series)
         return try JSONDecoder().decode(MetricHistory.self, from: Data(json.utf8))
     }
 
     /// The core and catalogue blood tests a typed name finds, best first (US-73 AC8,
     /// `labSearchJson`); nil from an engine without that door: no search.
     func labSearch(_ text: String) throws -> [LabSearchMatch]? {
-        guard let json = try optionalCall("labSearchJson", [text]) else { return nil }
+        guard let json = try doorLabSearchJson(text: text) else { return nil }
         return try JSONDecoder().decode([LabSearchMatch].self, from: Data(json.utf8))
     }
 
@@ -230,7 +229,7 @@ actor HealthEngine {
     /// `documentOriginal`); nil from an engine without that door. Throws when no cloud is open,
     /// the record names no original, or the cloud cannot give it.
     func documentOriginal(id: String) async throws -> Data? {
-        try await optionalCall("documentOriginal", [id]) { EngineNatives.data($0) ?? Data() }
+        try await doorDocumentOriginal(id: id) { EngineNatives.data($0) ?? Data() }
     }
 
     /// Calls an optional door (bridge-optional.json `optionalDoors`, D3): one the hashed contract
@@ -253,16 +252,9 @@ actor HealthEngine {
 
     /// A typed value in the other units, by health-core's factors (`convertJson`): onboarding's
     /// unit switches are for entry only (US-54 AC6). `from`, `to`: "si" or "conventional".
-    func convert(_ value: Double, metric: String, from: String, to: String) throws -> Conversion {
-        let json = try call("convertJson", [metric, value, from, to])
-        return try JSONDecoder().decode(Conversion.self, from: Data(json.utf8))
-    }
-
-    /// `value` unrounded, for an edit; `text` as the record shows it; `feetInches` for a height.
-    struct Conversion: Decodable {
-        let value: Double
-        let text: String
-        let feetInches: MyData.FeetInches?
+    /// The answer: `value` unrounded, for an edit; `text` as the record shows it; `feetInches` for a height.
+    func convert(_ value: Double, metric: String, from: String, to: String) throws -> UnitConversion {
+        try doorConvertJson(metric: metric, value: value, from: from, to: to)
     }
 
     /// Calls an engine function that returns text, turning a JavaScript exception into a Swift error.
@@ -279,7 +271,7 @@ actor HealthEngine {
     /// call returns, so the answer is there; "pending" would mean it was not.
     func settled<T: Decodable>(_ type: T.Type, _ name: String, _ arguments: [Any]) throws -> T {
         _ = try call(name, arguments)
-        let answer = try JSONDecoder().decode(Settled<T>.self, from: Data(call("settledJson", []).utf8))
+        let answer = try JSONDecoder().decode(Settled<T>.self, from: Data(doorSettledJson().utf8))
         guard answer.ok, let value = answer.value else {
             if answer.refused == true, let words = answer.message { throw EngineError.refused(words) }
             throw EngineError.callFailed(answer.message ?? "no answer")

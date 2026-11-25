@@ -232,6 +232,17 @@ final class TextSizeLayoutTests: XCTestCase {
         }
     }
 
+    /// US-73 AC13 (App Review 1.4.1): the education line under My health's title stays one line at
+    /// the default size on an SE and a 17e: its footnote width, shrunk at most to 0.85 as drawn,
+    /// fits the title's row (the inset list's margins and the row's own insets).
+    func testMyHealthsEducationLineIsOneLineAtTheDefaultSize_US73_AC13() throws {
+        let width = try measure(Text(EducationNote.myHealth).font(.footnote).fixedSize(), at: .large).width
+        XCTAssertGreaterThan(width, 100, "the line was measured")
+        for screen in screens {
+            XCTAssertLessThanOrEqual(width * 0.85, screen.size.width - 2 * 20 - 8, "\(screen.name): one line")
+        }
+    }
+
     /// US-62 AC8a (Brad 2026-11-09): a My health row's trend is drawn over its label block's ink,
     /// the title's cap height to the date line's baseline, its end dot never past either; at the
     /// largest size before the row stacks, where the title wraps, it is capped at 0.8 x its width

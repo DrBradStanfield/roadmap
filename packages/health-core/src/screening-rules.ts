@@ -26,8 +26,7 @@
  * "Data present, so ask" (lungGroupShown and lungScreeningAsked show a lung
  * question past 80 or below 20 pack-years once it has an answer) stays lung's own
  * named branch in input-form.ts: as one rule for every row it would open colorectal
- * past 75, which the golden forbids. The cancer section's own gate is a named
- * carve-out too, CANCER_SECTION_MIN_AGE below.
+ * past 75, which the golden forbids.
  *
  * The three-file check, by row (evidenceKey -> roadmap_text.html section):
  *   colorectal  screening-colorectal  #cancer-screening, "Colorectal Cancer"
@@ -53,8 +52,8 @@ export type ScreeningId = 'colorectal' | 'breast' | 'cervical' | 'lung' | 'prost
 export type AgeRange = readonly [min: number, max?: number];
 export type Ages = AgeRange | { readonly female: AgeRange; readonly male: AgeRange };
 
-/** A follow-up's name and what the abnormal result means, as the follow-up card says them. */
-export interface Followup { readonly name: string; readonly abnormalMeans: string }
+/** A follow-up's name and what the abnormal result means, as the follow-up card says them; `opening` replaces the card's first sentence. */
+export interface Followup { readonly name: string; readonly abnormalMeans: string; readonly opening?: string }
 
 interface Option { readonly value: string; readonly label: string }
 /** A choice option (a method). `months` is its screening interval. */
@@ -277,7 +276,7 @@ export const SCREENING_RULES: readonly ScreeningRule[] = [
       { value: 'normal', label: 'Normal', months: 60 },
       { value: 'osteopenia', label: 'Osteopenia', months: 24 },
       { value: 'osteoporosis', label: 'Osteoporosis', postMonths: 12,
-        followup: { name: 'treatment review', abnormalMeans: 'osteoporosis diagnosed — treatment and monitoring required' } },
+        followup: { name: 'treatment review', abnormalMeans: 'recorded result of osteoporosis', opening: 'You recorded a result of osteoporosis, which is usually treated and monitored.' } },
       { value: 'awaiting', label: 'Awaiting results' },
     ] },
     followupIgnoresUpperAge: false,
@@ -342,12 +341,6 @@ export const SCREENING_REFS: { readonly [K in GateName]: (s: ScreeningInputs) =>
     : card,
 };
 
-/** The cancer section opens from 35 for anyone, with no upper bound (input-form.ts
- *  anyScreeningEligible). The union of groupAges cannot build it: colorectal's group stops
- *  at 85, so past 85 with no sex the section shows its intro and no group. Today's behaviour,
- *  kept by name. */
-export const CANCER_SECTION_MIN_AGE = 35;
-
 /** The row with this id. */
 export const ruleOf = (id: ScreeningId): ScreeningRule => SCREENING_RULES.find((r) => r.id === id)!;
 
@@ -358,6 +351,19 @@ export function inAges(ages: Ages, age: number, sex: string | undefined, ignoreU
   if (!range) return false;
   const [min, max] = range;
   return age >= min && (ignoreUpper || max === undefined || age <= max);
+}
+
+type BirthYearMonth = { birthYear?: number; birthMonth?: number };
+
+/** The age every screening gate reads (US-23 AC6b, AC6c): the plan's cards and the reminders (cardAges),
+ *  the questions (askAges, groupAges, through their callers) and the upload gate (uploadMinAge). Whole
+ *  years at the UTC month, so one record at one instant gets one answer in every zone. A missing
+ *  birth month is January. The age the plan shows (calculateAge) keeps the local month. With no
+ *  birth year, `given`: a caller that passes the age itself (generateSuggestions with results only). */
+export function screeningAge(born: BirthYearMonth, now: Date): number | undefined;
+export function screeningAge(born: BirthYearMonth, now: Date, given: number): number;
+export function screeningAge({ birthYear, birthMonth }: BirthYearMonth, now: Date, given?: number): number | undefined {
+  return birthYear ? now.getUTCFullYear() - birthYear - (now.getUTCMonth() + 1 < (birthMonth ?? 1) ? 1 : 0) : given;
 }
 
 /** Whether a row's ages, with the row's own sex, take this person. */
@@ -444,9 +450,11 @@ export function postFollowupIntervals(rules: readonly ScreeningRule[] = SCREENIN
   return Object.fromEntries(rules.flatMap(followups).map(([key, f]) => [key, f.postMonths]));
 }
 
+/** A follow-up card's words: its name, what the result means, and an `opening` that replaces its first sentence. */
+export interface FollowupInfo { followupName: string; abnormalMeans: string; opening?: string }
 /** SCREENING_FOLLOWUP_INFO, keyed `${id}_${method}`, in row order. */
-export function screeningFollowupInfo(rules: readonly ScreeningRule[] = SCREENING_RULES): Record<string, { followupName: string; abnormalMeans: string }> {
-  return Object.fromEntries(rules.flatMap(followups).map(([key, f]) => [key, { followupName: f.followup.name, abnormalMeans: f.followup.abnormalMeans }]));
+export function screeningFollowupInfo(rules: readonly ScreeningRule[] = SCREENING_RULES): Record<string, FollowupInfo> {
+  return Object.fromEntries(rules.flatMap(followups).map(([key, f]) => [key, { followupName: f.followup.name, abnormalMeans: f.followup.abnormalMeans, ...(f.followup.opening ? { opening: f.followup.opening } : {}) }]));
 }
 
 /** SCREENING_MIN_AGE: the rows with an upload gate. */

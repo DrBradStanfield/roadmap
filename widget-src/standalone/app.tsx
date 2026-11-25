@@ -13,7 +13,7 @@ import { registerPageDeparture } from './page-departure';
 import { createRoot } from 'react-dom/client';
 import { HealthTool } from '../src/components/HealthTool';
 import { GuestContext } from '../src/lib/storage-notice';
-import { ErrorBoundary } from '../src/components/ErrorBoundary';
+import { CrashBoundary } from './crash-screen';
 import { initRoadmapStore, setPreEraseHook } from '../src/lib/roadmap-data';
 import { resolveAssistantName, setAssistantName, resolveSkipEmailGate, setSkipEmailGate } from '../src/lib/assistant-config';
 import { resolveMarketCountry, setMarketCountry } from '../src/lib/market-country';
@@ -33,8 +33,9 @@ async function main() {
   const { backend, refused, fromEmail } = await boot(resolveBackend, initRoadmapStore);
   const state = storageState(backend);
   const emailLanding = await emailLandingApplies(fromEmail, state);
-  // "Delete all my data" must also delete the reminder row on Brad's server,
-  // and the token that authorises it dies with the file — so it runs first.
+  // "Delete all my data" must also delete the reminder row on Brad's server.
+  // The token dies with the file, so it is read inside the erase; the cancel
+  // follows only an erase that stands (US-11 AC4c).
   setPreEraseHook(cancelRemindersForErase);
 
   const container = document.getElementById('health-tool-root');
@@ -52,7 +53,7 @@ async function main() {
   // synced" line was) via the syncControl prop — not as a separate top banner.
   createRoot(container).render(
     <React.StrictMode>
-      <ErrorBoundary>
+      <CrashBoundary backend={backend}>
         {/* US-17: the default-on enrolment notice sits ABOVE the widget, not in
             the plan panel — the plan is slide 2 of the mobile tab layout and
             every connect path reloads onto slide 1, so a notice inside it would
@@ -70,7 +71,7 @@ async function main() {
           />
         </GuestContext.Provider>
         <HistoryLightboxHost />
-      </ErrorBoundary>
+      </CrashBoundary>
     </React.StrictMode>,
   );
 

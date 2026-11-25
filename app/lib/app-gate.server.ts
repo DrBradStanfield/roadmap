@@ -5,7 +5,9 @@
  * the body is read, so a script with no key never makes us buffer its upload.
  * Fails closed: no config or no key store is a 503, never a pass.
  */
+import { isIP } from 'node:net';
 import { readCappedBytes } from './capped-body.server';
+import { parseIpv6 } from './ip-groups.server';
 import { getClientIp } from './local-first-route.server';
 import { createQuotaCounter, dailyFileCap, DAY_MS, envCap, machineFiles } from './rate-limiter';
 import { supabaseAdmin } from './supabase-client.server';
@@ -60,18 +62,33 @@ export const supabaseKeyStore: KeyStore = {
  * The per-IP bucket. IPv6 is keyed on its /64, which one subscriber holds
  * whole (adversary R4); IPv4 on the address, so many phones behind one
  * carrier NAT share a bucket, the price of having one at all.
+ *
+ * Total (US-52 AC4g): every spelling of one address is one key. Brackets, a
+ * port and an IPv6 zone are dropped; IPv4-mapped IPv6, dotted or hex, is its
+ * IPv4 address. Anything `isIP` does not take (IPv4 with leading zeros
+ * included) is the one key `unknown`, `getClientIp`'s own fallback, so no
+ * value becomes its own key. Never through `new URL`: it rewrites the dotted
+ * mapped form to hex.
  */
-export function ipBucket(ip: string): string {
-  const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/i.exec(ip);
-  if (mapped) return mapped[1];
-  if (!ip.includes(':')) return ip;
-  const [head] = ip.split('%');
-  const halves = head.split('::');
-  const left = halves[0] ? halves[0].split(':') : [];
-  const right = halves.length > 1 && halves[1] ? halves[1].split(':') : [];
-  const groups = halves.length > 1 ? [...left, ...Array(8 - left.length - right.length).fill('0'), ...right] : left;
-  return groups.slice(0, 4).map((g) => g.toLowerCase().replace(/^0+(?=.)/, '')).join(':') + '::/64';
+export function ipBucket(raw: string | undefined): string {
+  let ip = (raw ?? '').trim();
+  if (ip.length > 64) return UNKNOWN_IP;
+  const hostPort = /^\[([^\]]+)\](?::(\d{1,5}))?$/.exec(ip) ?? /^(\d+\.\d+\.\d+\.\d+):(\d{1,5})$/.exec(ip);
+  if (hostPort && Number(hostPort[2] ?? 0) > 65535) return UNKNOWN_IP;
+  if (hostPort) ip = hostPort[1];
+  const zone = ip.indexOf('%');
+  if (zone >= 0 && isIP(ip.slice(0, zone)) === 6) ip = ip.slice(0, zone);
+  const family = isIP(ip);
+  if (family === 4) return hostPort?.[0].startsWith('[') ? UNKNOWN_IP : ip;
+  const g = family === 6 ? parseIpv6(ip) : null;
+  if (!g) return UNKNOWN_IP;
+  if (g.slice(0, 5).every((x) => x === 0) && g[5] === 0xffff) {
+    return [g[6] >> 8, g[6] & 255, g[7] >> 8, g[7] & 255].join('.');
+  }
+  return g.slice(0, 4).map((x) => x.toString(16)).join(':') + '::/64';
 }
+
+const UNKNOWN_IP = 'unknown';
 
 /** The app's routes run on the education app only: on the brand surface they answer 503 (AC2, adversary R13). */
 export function appRoutesOff(env: NodeJS.ProcessEnv = process.env): boolean {
@@ -80,24 +97,26 @@ export function appRoutesOff(env: NodeJS.ProcessEnv = process.env): boolean {
 
 /** Per IP per day, and per machine per day: in memory (D8 says why). */
 export const appLimits = {
-  ip: { chat: createQuotaCounter(200, DAY_MS, 30 * 60_000), lab: createQuotaCounter(200, DAY_MS, 30 * 60_000) },
+  ip: { chat: createQuotaCounter(200, DAY_MS, 30 * 60_000, { name: 'app chat per IP' }), lab: createQuotaCounter(200, DAY_MS, 30 * 60_000, { name: 'app lab per IP' }) },
   machine: {
-    chat: createQuotaCounter(envCap('APP_CHAT_DAILY_CAP', process.env.APP_CHAT_DAILY_CAP, 500), DAY_MS, 30 * 60_000),
+    chat: createQuotaCounter(envCap('APP_CHAT_DAILY_CAP', process.env.APP_CHAT_DAILY_CAP, 500), DAY_MS, 30 * 60_000, { name: 'app chat per machine' }),
     // Never more than 15% of the web's shared file cap, whatever the env says (AC4, Codex R7).
-    lab: createQuotaCounter(Math.min(envCap('APP_LAB_DAILY_CAP', process.env.APP_LAB_DAILY_CAP, 300), Math.floor(0.15 * dailyFileCap(process.env.AI_DAILY_FILE_CAP))), DAY_MS, 30 * 60_000),
+    lab: createQuotaCounter(Math.min(envCap('APP_LAB_DAILY_CAP', process.env.APP_LAB_DAILY_CAP, 300), Math.floor(0.15 * dailyFileCap(process.env.AI_DAILY_FILE_CAP))), DAY_MS, 30 * 60_000, { name: 'app lab per machine' }),
   },
   /** Signed requests refused before their signature verified, per IP per day; past it, no key lookup or body read (adversary code R3). A backstop: a verified key's failures are its own (AC4c). */
-  failures: createQuotaCounter(200, DAY_MS, 30 * 60_000),
+  failures: createQuotaCounter(200, DAY_MS, 30 * 60_000, { name: 'app failures per IP' }),
   /** A verified key's refused requests (stale counter, key gone) per day, so one broken device stops only itself (US-52 AC4c). */
-  keyFailures: createQuotaCounter(20, DAY_MS, 30 * 60_000),
+  keyFailures: createQuotaCounter(20, DAY_MS, 30 * 60_000, { name: 'app failures per key' }),
   /** Registration attempts per IP per day, counted before verifying (R11); a success hands its attempt back (AC1b). */
-  register: createQuotaCounter(10, DAY_MS, 30 * 60_000),
+  register: createQuotaCounter(10, DAY_MS, 30 * 60_000, { name: 'app registration attempts per IP' }),
   /** Successful registrations per IP per day (US-52 AC1b). */
-  registered: createQuotaCounter(50, DAY_MS, 30 * 60_000),
-  /** Challenges used, each once, success or failure (US-52 AC1a). A minute longer than a challenge lives, for clock skew between machines. */
-  challenges: createQuotaCounter(1, CHALLENGE_TTL_MS + 60_000, 60_000),
+  registered: createQuotaCounter(50, DAY_MS, 30 * 60_000, { name: 'app registrations per IP' }),
+  /** Challenges used, each once, success or failure (US-52 AC1a). A minute longer than a challenge lives, for clock skew between machines.
+   *  The set is per machine: the minute covers a challenge minted by a machine whose clock runs up to a minute ahead, which stays
+   *  valid here that much longer. Bounded at the default; at the bound it forgets its oldest entry, as the other maps do (US-52 AC16). */
+  challenges: createQuotaCounter(1, CHALLENGE_TTL_MS + 60_000, 60_000, { name: 'app spent challenges' }),
   /** The dev bypass's per-key count, since no key row exists for it. */
-  dev: { chat: createQuotaCounter(PER_KEY_DAILY.chat, DAY_MS, 30 * 60_000), lab: createQuotaCounter(PER_KEY_DAILY.lab, DAY_MS, 30 * 60_000) },
+  dev: { chat: createQuotaCounter(PER_KEY_DAILY.chat, DAY_MS, 30 * 60_000, { name: 'app dev chat per key' }), lab: createQuotaCounter(PER_KEY_DAILY.lab, DAY_MS, 30 * 60_000, { name: 'app dev lab per key' }) },
 };
 
 const refuse = (status: number, reason: string, error: string) =>
@@ -112,13 +131,26 @@ function logRefusal(kind: AppUseKind, reason: string): void {
   console.log(JSON.stringify({ evt: 'app_gate_refused', kind, reason }));
 }
 
-export interface GateOptions { kind: AppUseKind; bodyCap: number; store?: KeyStore; env?: NodeJS.ProcessEnv }
+export interface GateOptions {
+  kind: AppUseKind; bodyCap: number; store?: KeyStore; env?: NodeJS.ProcessEnv;
+  /**
+   * Capacity admission (US-52 AC7e, the lab read only). `full` is a read-only
+   * peek on the claimed key id, before the body is read: it holds nothing, so it
+   * can only refuse when that key or the machine truly has reads in flight.
+   * `take` is called once, after the signature verifies and before anything is
+   * charged or the counter spent. Either refusal is a 503 that spends nothing;
+   * take's release is handed to the caller on success, and the gate calls it
+   * itself on any later refusal.
+   */
+  admit?: { full(keyId: string): boolean; take(keyId: string): (() => void) | null };
+}
 
 /**
- * Checks the request and returns its raw body, or the refusal to send.
+ * Checks the request and returns its raw body (and the admission's release,
+ * when `admit` was given), or the refusal to send.
  * The caller parses the body it is given; the request's own body is spent.
  */
-export async function appGate(request: Request, opts: GateOptions): Promise<{ body: Buffer } | Response> {
+export async function appGate(request: Request, opts: GateOptions): Promise<{ body: Buffer; release?: () => void } | Response> {
   const { kind } = opts;
   const env = opts.env ?? process.env;
   const store = opts.store ?? supabaseKeyStore;
@@ -130,10 +162,14 @@ export async function appGate(request: Request, opts: GateOptions): Promise<{ bo
   if (dev !== null) {
     // AC3: the simulator's header, only where the bypass is allowed. Anywhere else it is a 401.
     if (!devBypassAllowed(env) || !/^[A-Za-z0-9-]{1,64}$/.test(dev)) { logRefusal(kind, 'dev_bypass_refused'); return unauthorized('dev_bypass_refused'); }
+    if (opts.admit?.full(`dev:${dev}`)) { logRefusal(kind, 'capacity'); return unavailable(); }
     const body = await readBody(request, opts.bodyCap);
     if (!body || body === 'too_large') return refuse(413, 'too_large', 'Request too large');
-    if (!appLimits.dev[kind].take(dev, 1)) return overLimit();
-    return reserveShared(kind, ip) ? { body } : overLimit();
+    const release = opts.admit?.take(`dev:${dev}`);
+    if (release === null) { logRefusal(kind, 'capacity'); return unavailable(); }
+    if (appLimits.dev[kind].take(dev, 1) && reserveShared(kind, ip)) return release ? { body, release } : { body };
+    release?.();
+    return overLimit();
   }
 
   const config = attestConfig(env);
@@ -149,6 +185,8 @@ export async function appGate(request: Request, opts: GateOptions): Promise<{ bo
   const refund = appLimits.failures.reserve(ip, 1);
   if (!refund) { logRefusal(kind, 'failure_limit'); return overLimit(); }
   let charged = false;
+  let release: (() => void) | undefined;
+  let accepted = false;
   const failed = (reason: string) => { charged = true; logRefusal(kind, reason); return unauthorized(reason); };
   /** A refusal after the signature verified: the key's own budget holds it, so the IP's unit goes back (AC4c). */
   const keyFailed = (reason: string) => { logRefusal(kind, reason); return unauthorized(reason); };
@@ -173,6 +211,7 @@ export async function appGate(request: Request, opts: GateOptions): Promise<{ bo
     if (!key) return failed('unknown_key');
     // A development key stops working the day the flag goes off (R10).
     if (!config.environments.includes(key.environment)) { charged = true; logRefusal(kind, 'environment_refused'); return unauthorized('unknown_key'); }
+    if (opts.admit?.full(keyId)) { logRefusal(kind, 'capacity'); return unavailable(); }
 
     const body = await readBody(request, opts.bodyCap);
     if (body === 'too_large') {
@@ -184,6 +223,11 @@ export async function appGate(request: Request, opts: GateOptions): Promise<{ bo
     // A dropped upload is the network's fault, not abuse: refused, not charged.
     if (!body) { logRefusal(kind, 'body_read_failed'); return refuse(400, 'body_read_failed', 'The request did not arrive whole. Please try again.'); }
     if (!assertionSignatureValid(assertion, requestClientData(request.method, path, body), key.publicKey)) return failed('bad_signature');
+    if (opts.admit) {
+      const admitted = opts.admit.take(keyId);
+      if (!admitted) { logRefusal(kind, 'capacity'); return unavailable(); }
+      release = admitted;
+    }
 
     // The signature is the key's own from here, so its refusals charge the key, not
     // the IP: one broken device stops only itself. Reserved before the key's step, so
@@ -200,9 +244,11 @@ export async function appGate(request: Request, opts: GateOptions): Promise<{ bo
     keyRefund();
     if (!outcome) { logRefusal(kind, 'store_unavailable'); return unavailable(); }
     if (outcome === 'limit') { if (shared) logRefusal(kind, 'key_limit'); return overLimit(); }
-    return { body };
+    accepted = true;
+    return release ? { body, release } : { body };
   } finally {
     if (!charged) refund();
+    if (!accepted) release?.();
   }
 }
 

@@ -20,8 +20,7 @@ import {
 } from './roadmap-file';
 import { type ReadResult, type StorageAdapter, type WriteResult } from './adapter';
 import { MemoryAdapter, MemoryCloud } from './memory-adapter';
-import { SyncManager } from './sync-manager';
-import { ROADMAP_DOC } from './roadmap-doc';
+import { recordSync } from './roadmap-doc';
 
 export interface SelfTestResult {
   name: string;
@@ -95,8 +94,8 @@ export async function runStorageSelfTest(): Promise<SelfTestResult[]> {
   // --- Test 1: two devices converge with no dup/loss ------------------------
   try {
     const cloud = new MemoryCloud();
-    const dev1 = new SyncManager(new MemoryAdapter(cloud), 'dev1', ROADMAP_DOC, { now: tick });
-    const dev2 = new SyncManager(new MemoryAdapter(cloud), 'dev2', ROADMAP_DOC, { now: tick });
+    const dev1 = recordSync(new MemoryAdapter(cloud), 'dev1', tick);
+    const dev2 = recordSync(new MemoryAdapter(cloud), 'dev2', tick);
 
     const d1Local = emptyFor('dev1');
     d1Local.labValues = [bloodTest('d1_ldl', 'ldl', 2.2, '2026-05-01')];
@@ -122,10 +121,10 @@ export async function runStorageSelfTest(): Promise<SelfTestResult[]> {
   try {
     const cloud = new MemoryCloud();
     // Seed the cloud with an existing record.
-    await new SyncManager(new MemoryAdapter(cloud), 'seed', ROADMAP_DOC, { now: tick }).save(emptyFor('seed'));
+    await recordSync(new MemoryAdapter(cloud), 'seed', tick).save(emptyFor('seed'));
 
     const intruderAdapter = new MemoryAdapter(cloud);
-    const intruder = new SyncManager(intruderAdapter, 'intruder', ROADMAP_DOC, { now: tick });
+    const intruder = recordSync(intruderAdapter, 'intruder', tick);
     const intrude = async () => {
       const local = emptyFor('intruder');
       local.labValues = [bloodTest('intruder_psa', 'psa', 1.1, '2026-05-05')];
@@ -133,12 +132,12 @@ export async function runStorageSelfTest(): Promise<SelfTestResult[]> {
     };
 
     const racy = new ConflictOnceAdapter(new MemoryAdapter(cloud), intrude);
-    const dev = new SyncManager(racy, 'devA', ROADMAP_DOC, { now: tick });
+    const dev = recordSync(racy, 'devA', tick);
     const local = emptyFor('devA');
     local.measurements = [measurement('devA_weight', 'weight', 80, '2026-05-06')];
     const saved = await dev.save(local);
 
-    const final = await new SyncManager(new MemoryAdapter(cloud), 'reader', ROADMAP_DOC, { now: tick }).load();
+    const final = await recordSync(new MemoryAdapter(cloud), 'reader', tick).load();
     const ids = activeRows(final).map((m) => m.id).sort();
     const pass = saved.attempts >= 1 && ids.includes('devA_weight') && ids.includes('intruder_psa');
     check('Conflict retried & resolved (no loss)', pass, `retries=${saved.attempts}, final active=[${ids}]`);
@@ -149,8 +148,8 @@ export async function runStorageSelfTest(): Promise<SelfTestResult[]> {
   // --- Test 3: same-day double entry → one active, older preserved -----------
   try {
     const cloud = new MemoryCloud();
-    const a = new SyncManager(new MemoryAdapter(cloud), 'devX', ROADMAP_DOC, { now: tick });
-    const b = new SyncManager(new MemoryAdapter(cloud), 'devY', ROADMAP_DOC, { now: tick });
+    const a = recordSync(new MemoryAdapter(cloud), 'devX', tick);
+    const b = recordSync(new MemoryAdapter(cloud), 'devY', tick);
 
     const la = emptyFor('devX');
     la.labValues = [{ ...bloodTest('x_ldl', 'ldl', 2.1, '2026-05-01'), createdAt: '2026-05-01T08:00:00Z' }];

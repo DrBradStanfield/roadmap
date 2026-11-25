@@ -34,11 +34,11 @@ function panel(screenings: Record<string, string>) {
     ...MY_HEALTH_PROPS,
     inputs, effectiveInputs: inputs, onChange: vi.fn(), errors: {}, unitSystem: 'si',
     unitOverrides: {}, onToggleFieldUnit: vi.fn(), previousMeasurements: [], bloodTestHistory: [], vitalsHistory: [],
-    labValues: [], onSaveBloodTestBatch: vi.fn(async () => new Map()), onDraftValue: vi.fn(),
+    labValues: [], onSaveBloodTestBatch: vi.fn(async () => new Map()),
     medications: [], onMedicationChange: vi.fn(), screenings: rows(screenings), onScreeningChange,
     supplements: [], onSupplementChange: vi.fn(), onSupplementDelete: vi.fn(),
     scheduleLongitudinalSave: vi.fn(), flushLongitudinalSave: vi.fn(), isSavingLongitudinal: false,
-    hasApiResponse: false, onboarding: { stage: 4 as const, reached: 4 as const, fullForm: true, aboutYouLow: true }, planBasis: { age: 60 }, grading: {},
+    hasApiResponse: false, onboarding: { stage: 4 as const, reached: 4 as const, fullForm: true, aboutYouLow: true }, planBasis: { age: 60, screeningAge: 60 }, grading: {},
   };
   const view = (s: Record<string, string>) => <InputPanel {...({ ...props, screenings: rows(s) } as unknown as Parameters<typeof InputPanel>[0])} />;
   const { container, rerender } = render(view(screenings));

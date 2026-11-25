@@ -7,7 +7,8 @@
  * here too.
  */
 import * as z from '@roadmap/health-core/zod';
-import { StorageError, timeoutDeadline } from '@roadmap/health-core/adapter';
+import { answerOutcome, StorageError } from '@roadmap/health-core/adapter';
+import { TRANSFER_DEADLINE_MS, timeoutDeadline } from '@roadmap/health-core/transfer-deadline';
 
 const codeGrantSchema = z.object({
   accessToken: z.string().min(1),
@@ -18,10 +19,10 @@ const codeGrantSchema = z.object({
 
 export async function codeGrantReply(res: Response): Promise<z.infer<typeof codeGrantSchema>> {
   if (!res.ok) {
-    throw new StorageError(`Google Drive connect failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status);
+    throw new StorageError(`Google Drive connect failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status, undefined, answerOutcome(res.status));
   }
   const reply = codeGrantSchema.safeParse(await res.json().catch(() => null));
-  if (!reply.success) throw new StorageError('Google Drive sent an incomplete sign-in reply. Please reconnect.');
+  if (!reply.success) throw new StorageError('Google Drive sent an incomplete sign-in reply. Please reconnect.', undefined, undefined, undefined, undefined, 'no-answer');
   return reply.data;
 }
 
@@ -39,7 +40,7 @@ type RefreshGrant = { accessToken: string; expiresIn: number; idToken?: string }
  * are not read; a 2xx whose body is JSON `null` comes back with `json: null`.
  */
 export async function postRefreshGrant(url: string, refreshToken: string): Promise<{ status: number; json?: RefreshGrant | null; error?: unknown } | null> {
-  const deadline = timeoutDeadline(5000);
+  const deadline = timeoutDeadline(TRANSFER_DEADLINE_MS.tokenRefresh);
   try {
     const res = await fetch(url, {
       method: 'POST',

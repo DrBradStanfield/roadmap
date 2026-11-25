@@ -38,9 +38,9 @@ import { createCoreRow } from '../../packages/health-core/src/blood-tests';
 import { createEmptyFile, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { resetMcpMemory } from '../lib/mcp-grants.server';
 import { resetClaimsState } from '../lib/single-use-claims.test-helpers';
-import { MAX_LAB_ROWS_PER_CALL } from '../../packages/health-core/src/mcp-tools';
+import { MAX_LAB_ROWS_PER_CALL } from '../../packages/health-core/src/mcp-tool-contract';
 import { REPO_PUBLIC } from '../../packages/health-core/src/plan';
-import { mcpEndpoint, setAdapterFactory } from '../lib/mcp.server';
+import { type AdapterFactory, mcpEndpoint } from '../lib/mcp.server';
 import { action, loader } from './mcp.$';
 
 const ISSUER = 'https://mcp.example.test';
@@ -61,6 +61,8 @@ const NINE_TOOLS = [
 
 let cloud: MemoryCloud;
 let connections = 0;
+/** The folder every call opens: this case's in-memory cloud. */
+const makeAdapter: AdapterFactory = () => new MemoryAdapter(cloud);
 
 beforeEach(() => {
   // A client id that is a URL means a CIMD fetch: answered here, so no DNS or socket leaves the machine.
@@ -74,7 +76,6 @@ beforeEach(() => {
   resetClaimsState(claims.state!);
   claims.noClient = false;
   cloud = new MemoryCloud();
-  setAdapterFactory(() => new MemoryAdapter(cloud));
   vi.stubGlobal('fetch', vi.fn(async () => Response.json({
     refresh_token: `dropbox-refresh-token-${++connections}`,
     access_token: 'dropbox-access-token',
@@ -83,7 +84,6 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  setAdapterFactory(null);
   vi.unstubAllGlobals();
   delete process.env.MCP_SEAL_KEYS;
 });
@@ -146,7 +146,7 @@ async function rpc(access: string, method: string, params: unknown = {}) {
     method: 'POST',
     headers: { Authorization: `Bearer ${access}`, 'content-type': 'application/json' },
     body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
-  }), NOW);
+  }), NOW, { makeAdapter, clock: () => Date.parse(NOW) });
   expect(res.status).toBe(200);
   return (await res.json()) as { result?: { content?: Array<{ text: string }>; isError?: boolean; tools?: Array<{ name: string }> } };
 }
@@ -285,7 +285,7 @@ async function callToolAt(access: string, name: string, args: unknown, now: stri
     method: 'POST',
     headers: { Authorization: `Bearer ${access}`, 'content-type': 'application/json' },
     body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name, arguments: args } }),
-  }), now);
+  }), now, { makeAdapter, clock: () => Date.parse(now) });
   expect(res.status).toBe(200);
   const answer = (await res.json()) as { result: { content: Array<{ text: string }>; structuredContent?: Record<string, unknown>; isError?: boolean } };
   return { text: answer.result.content[0].text, structured: answer.result.structuredContent, isError: answer.result.isError === true };
@@ -305,7 +305,7 @@ describe('US-36 AC9 — a permanent write takes two calls, identical arguments, 
         method: 'POST',
         headers: { Authorization: `Bearer ${access}`, 'content-type': 'application/json' },
         body: `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"correct_value","arguments":${args}}}`,
-      }), at(11));
+      }), at(11), { makeAdapter });
       const answer = (await res.json()) as { result?: { content: Array<{ text: string }>; isError?: boolean }; error?: unknown };
       expect(answer.error, confirm).toBeUndefined();
       expect(answer.result!.isError, confirm).toBe(true);
@@ -343,7 +343,7 @@ describe('US-36 AC9 — a permanent write takes two calls, identical arguments, 
     // 2. Chained straight after: not yet, and told not to spin.
     const early = await callToolAt(access, 'correct_value', { ...FIX, confirm: receipt, approval: APPROVED }, at(2));
     expect(early.isError).toBe(true);
-    expect(early.text).toContain(`can be used from ${at(PROPOSAL_NBF_SECONDS)}`);
+    expect(early.text).toContain(`(from ${at(PROPOSAL_NBF_SECONDS)})`);
     expect(early.text).toContain('end your turn');
 
     // 3. After the pause, but with the number changed under the user's yes.
@@ -411,7 +411,7 @@ describe('US-36 AC9 — a permanent write takes two calls, identical arguments, 
     expect(notText.text).toBe(QUOTE_APPROVAL('correct_value'));
     // "Not valid yet", not "not ours": the MAC matched with these words, so they are outside the identity.
     const early = await callToolAt(access, 'correct_value', { ...FIX, confirm: receipt, approval: 'OK do it' }, at(2));
-    expect(early.text).toContain(`can be used from ${at(PROPOSAL_NBF_SECONDS)}`);
+    expect(early.text).toContain(`(from ${at(PROPOSAL_NBF_SECONDS)})`);
     expect(storedRecord().labValues).toHaveLength(1);
     // Different words again, and the same receipt writes: none of the refusals above spent it.
     const words = 'Yes, correct it zq7-approval-marker';
@@ -430,7 +430,7 @@ describe('US-36 AC9 — a permanent write takes two calls, identical arguments, 
     // The window is checked before the words: an assistant chaining the second call is sent back to the user.
     const chained = await callToolAt(access, 'correct_value', { ...FIX, confirm: receipt }, at(2));
     expect(chained.isError).toBe(true);
-    expect(chained.text).toBe(`That confirm receipt is not valid yet: it can be used from ${at(PROPOSAL_NBF_SECONDS)}, after the user has answered. Do not retry before then; end your turn. Nothing was written.`);
+    expect(chained.text).toBe(`That confirm receipt is not valid yet: it can be used in ${PROPOSAL_NBF_SECONDS - 2} seconds (from ${at(PROPOSAL_NBF_SECONDS)}), after the user has answered. Do not retry before then; end your turn. Nothing was written.`);
     expect(storedRecord().labValues).toHaveLength(1);
     const written = await callToolAt(access, 'correct_value', { ...FIX, confirm: receipt, approval: APPROVED }, at(11));
     expect(written.isError).toBe(false);
@@ -616,20 +616,15 @@ describe('US-36 AC9 — a confirm works once across restarts', () => {
     expect((await callToolAt(access, 'correct_value', { ...FIX, confirm: receipt, approval: APPROVED }, at(11))).isError).toBe(false);
     vi.resetModules();
     const second = await import('../lib/mcp.server');
-    second.setAdapterFactory(() => new MemoryAdapter(cloud));
-    try {
-      const res = await second.mcpEndpoint(new Request(`${ISSUER}/mcp`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${access}`, 'content-type': 'application/json' },
-        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'correct_value', arguments: { ...FIX, confirm: receipt, approval: APPROVED } } }),
-      }), at(12));
-      const answer = (await res.json()) as { result: { content: Array<{ text: string }>; isError?: boolean } };
-      expect(answer.result.isError).toBe(true);
-      expect(answer.result.content[0].text).toContain('already been used');
-      expect(storedRecord().labValues).toHaveLength(2);
-    } finally {
-      second.setAdapterFactory(null);
-    }
+    const res = await second.mcpEndpoint(new Request(`${ISSUER}/mcp`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${access}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'correct_value', arguments: { ...FIX, confirm: receipt, approval: APPROVED } } }),
+    }), at(12), { makeAdapter });
+    const answer = (await res.json()) as { result: { content: Array<{ text: string }>; isError?: boolean } };
+    expect(answer.result.isError).toBe(true);
+    expect(answer.result.content[0].text).toContain('already been used');
+    expect(storedRecord().labValues).toHaveLength(2);
   });
 
   it('while the claim store cannot be reached a confirm is refused in words, writes nothing and charges nothing', async () => {
@@ -728,7 +723,7 @@ describe('US-36 AC9 (H59) — a refused confirm names its kind on the counter ro
     const confirm = (args: Record<string, unknown>, now: string) => callToolAt(access, 'correct_value', { ...FIX, confirm: receipt, ...args }, now);
 
     const early = await confirm({ approval: APPROVED }, at(2));
-    expect(early.text).toBe(`That confirm receipt is not valid yet: it can be used from ${at(PROPOSAL_NBF_SECONDS)}, after the user has answered. Do not retry before then; end your turn. Nothing was written.`);
+    expect(early.text).toBe(`That confirm receipt is not valid yet: it can be used in ${PROPOSAL_NBF_SECONDS - 2} seconds (from ${at(PROPOSAL_NBF_SECONDS)}), after the user has answered. Do not retry before then; end your turn. Nothing was written.`);
     const invalid = await confirm({ newValue: 0.8, approval: APPROVED }, at(11));
     expect(invalid.text).toBe('That confirm receipt does not match these arguments on this connection, or is not ours. Nothing was written. Call correct_value again without confirm, with exactly what the user approved, to propose afresh.');
     expect((await confirm({}, at(11))).text).toBe(QUOTE_APPROVAL('correct_value'));

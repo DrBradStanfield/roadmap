@@ -3,7 +3,8 @@
  * AC2a). The widget's live-refresh tests pin the same rules through the store.
  */
 import { describe, expect, it } from 'vitest';
-import { contentOf, eraseIdentityOf, visibleContentOf } from './record-session';
+import { eraseIdentityOf } from './record-session';
+import { contentOf, visibleContentOf } from './record-session-content';
 import { mergeFiles } from './merge';
 import { CURRENT_SCHEMA_VERSION, createEmptyFile, createMeasurement, type RoadmapFile } from './roadmap-file';
 

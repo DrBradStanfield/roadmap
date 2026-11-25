@@ -64,7 +64,7 @@ function page(rows: ApiMeasurement[] = [], start?: UnitSystem, mountedIn: UnitSy
       <>
         <BloodTestTimeline bloodTestHistory={rows} unitSystem={system} unitOverrides={overrides} onToggleFieldUnit={toggle}
           startUnitOf={start && (() => start)} onUnitSwitch={onUnitSwitch}
-          onSaveBatch={onSaveBatch} onDraftValue={() => {}} isSaving={false} grading={{}} hasApiResponse prefillRef={prefillRef}/>
+          onSaveBatch={onSaveBatch} isSaving={false} grading={{}} hasApiResponse prefillRef={prefillRef}/>
         <button type="button" data-unit-control="all" onClick={() => {
           for (const listener of switches) listener(system, other(system));
           setSystem(other(system)); setOverrides({});
@@ -291,7 +291,7 @@ describe('US-34 AC7a, US-05 AC2: a chip pressed while the record\'s units arrive
         <div ref={rootRef}>
           <BloodTestTimeline bloodTestHistory={[]} unitSystem={units.unitSystem} unitOverrides={units.unitOverrides}
             onToggleFieldUnit={units.handleToggleFieldUnit} onUnitSwitch={units.onSwitch}
-            onSaveBatch={onSaveBatch} onDraftValue={() => {}} isSaving={false} grading={{}} hasApiResponse prefillRef={{ current: null }}/>
+            onSaveBatch={onSaveBatch} isSaving={false} grading={{}} hasApiResponse prefillRef={{ current: null }}/>
           <button type="button">Elsewhere</button>
         </div>
       );

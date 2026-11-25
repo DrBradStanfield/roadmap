@@ -7,7 +7,7 @@
  */
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, fireEvent, cleanup, waitFor } from '@testing-library/react';
-import { addLabValue as addRecordLabValue } from '@roadmap/health-core/record-edits';
+import { addLabValue as addRecordLabValue, correctValue } from '@roadmap/health-core/record-edits';
 import { createEmptyFile, type FileLabValue } from '@roadmap/health-core/roadmap-file';
 import { labUnitRefusalLine } from '@roadmap/health-core/lab-series';
 
@@ -30,7 +30,7 @@ vi.mock('../lib/server-api', () => ({
   trackProductEvent: (...args: unknown[]) => trackProductEvent(...args),
 }));
 
-import { AddLabTest } from './AddLabTest';
+import { AddLabTest, addTransition, RECORD_CHANGED, type AddEvent, type AddMode } from './AddLabTest';
 import { AdditionalLabRows } from './AdditionalLabRows';
 import { reportedToCanonical } from '@roadmap/health-core/units';
 import type { ApiMeasurement } from '@roadmap/health-core/mappings';
@@ -224,7 +224,7 @@ describe('US-21 phase 2 — AddLabTest', () => {
   // sees the assistant's copy of it.
   describe('US-21 AC15 — a refused unit under "Other" shows the person’s wording', () => {
     async function saveOther(name: string, unit: string, value: string, refused: { key: string; unit: string; message: string; fault?: 'decimal' | 'scale' }) {
-      // The refusal the record would give, in health-core's words (labUnitRefusalLine, tested in lab-value-labels.test.ts).
+      // The refusal the record would give, in health-core's words (labUnitRefusalLine, tested in lab-series-labels.test.ts).
       addLabValue.mockResolvedValue({ ok: false, reason: 'unknown-unit', message: labUnitRefusalLine(refused.key, refused.unit, refused.fault), refused });
       const utils = openForm();
       fireEvent.change(utils.getByLabelText('Test'), { target: { value: 'custom' } });
@@ -235,14 +235,26 @@ describe('US-21 phase 2 — AddLabTest', () => {
       return utils;
     }
 
-    it('US-21 AC15 — Lymphocytes in % shows the % note, never the assistant’s instruction', async () => {
-      const { findByText } = await saveOther('Lymphocytes', '%', '30', {
-        key: 'lymphocytes', unit: '%',
-        message: 'Lymphocytes is stored in ×10⁹/L; this record takes ×10⁹/L, not "%". A percentage is a share of the white count, not a count: this record keeps the absolute count (×10⁹/L or cells/µL), so look for that line on the same report. Do not work the count out from the percentage',
-      });
-      const notice = await findByText(/^Lymphocytes: unit not recognised \(%\)\. It was not saved\. This test takes ×10⁹\/L\. A percentage is a share/);
-      expect(notice.textContent).toContain('A percentage is a share of the white count, not a count: this record keeps the absolute count (×10⁹/L or cells/µL), so look for that line on the same report.');
-      expect(notice.textContent).not.toContain('Do not work the count out');
+    // US-21 AC28 (Brad 2026-11-15): Lymphocytes in % is its own test, saved through the real rule.
+    it('US-21 AC28 — Lymphocytes in % under "Other" saves as Lymphocytes (%), not refused', async () => {
+      const utils = openForm();
+      fireEvent.change(utils.getByLabelText('Test'), { target: { value: 'custom' } });
+      fireEvent.change(utils.getByLabelText('Test name'), { target: { value: 'Lymphocytes' } });
+      fireEvent.change(utils.getByLabelText('Unit'), { target: { value: '%' } });
+      fireEvent.change(utils.getByLabelText('Value'), { target: { value: '30' } });
+      fireEvent.click(utils.getByRole('button', { name: /^save$/i }));
+      await waitFor(() => expect(utils.onAdded).toHaveBeenCalled());
+      const saved = await addLabValue.mock.results[0].value;
+      expect(saved).toMatchObject({ ok: true, row: { metricName: 'lymphocytes_pct', value: 30, unit: '%' } });
+      expect(utils.queryByText(/unit not recognised/)).toBeNull();
+    });
+
+    it('US-21 AC28 — the test picker lists the eight shares from the catalogue', () => {
+      const utils = openForm();
+      const labels = [...(utils.getByLabelText('Test') as HTMLSelectElement).options].map((o) => o.textContent);
+      for (const label of ['Neutrophils (%)', 'Lymphocytes (%)', 'Monocytes (%)', 'Eosinophils (%)', 'Basophils (%)', 'Immature granulocytes (%)', 'Reticulocytes (%)', 'NRBC (per 100 WBC)']) {
+        expect(labels, label).toContain(label);
+      }
     });
 
     it('US-21 AC15 — a unit the test does not take names the units it does, with no em dash', async () => {
@@ -471,5 +483,143 @@ describe('US-66 AC5: a value page for a kept-apart core-named row', () => {
     fireEvent.click(getByText(/^save$/i));
     expect(await findByText('Add this test from its row in Blood tests.')).toBeTruthy();
     expect(addLabValue).not.toHaveBeenCalled();
+  });
+});
+
+// US-21 AC27 (A7): the form's mode is one named state. A Replace whose correction throws gives the
+// button back, and a save's answer that lands after Cancel, or in a form opened since, changes nothing.
+describe('US-21 AC27: a save never leaves the form stuck, and a late answer changes nothing', () => {
+  const deferred = <T,>() => {
+    let resolve!: (v: T) => void;
+    const promise = new Promise<T>((r) => { resolve = r; });
+    return { promise, resolve };
+  };
+  const typeGgt = (utils: ReturnType<typeof openForm>, value = '30') => {
+    fireEvent.change(utils.getByLabelText('Test'), { target: { value: 'ggt' } });
+    fireEvent.change(utils.getByLabelText('Value'), { target: { value } });
+  };
+  const settle = () => new Promise((r) => setTimeout(r, 0));
+
+  it('the transition table: each state x event names the state that follows', () => {
+    const form = Symbol('this'), other = Symbol('other');
+    const held = { id: 'h', slot: 's', value: 45, unit: 'µg/L', stored: 45 };
+    const closed = (notice: string | null = null): AddMode => ({ kind: 'closed', notice });
+    const open = (notice: string | null = null, h: typeof held | null = null): AddMode => ({ kind: 'open', form, openAt: 'e1', notice, held: h });
+    const saving = (notice: string | null = null, h: typeof held | null = null): AddMode => ({ kind: 'saving', form, openAt: 'e1', notice, held: h });
+    const rows: Array<[AddMode, AddEvent, AddMode]> = [
+      [closed('old'), { type: 'open', form, openAt: 'e1' }, open()],
+      [open('n'), { type: 'open', form: other, openAt: 'e2' }, open('n')],
+      [open('n', held), { type: 'edit' }, open()],
+      [saving('n', held), { type: 'edit' }, saving()],
+      [closed('n'), { type: 'edit' }, closed('n')],
+      [open(), { type: 'refuse', notice: 'r' }, open('r')],
+      [saving(), { type: 'refuse', notice: 'r' }, saving()],
+      [open('n', held), { type: 'save' }, saving()],
+      [open('n', held), { type: 'replace' }, saving('n', held)],
+      [saving(), { type: 'save' }, saving()],
+      [closed(), { type: 'save' }, closed()],
+      [saving(), { type: 'saved', form }, closed()],
+      [saving(), { type: 'recordChanged', form }, closed(RECORD_CHANGED)],
+      [saving(), { type: 'failed', form, notice: 'f', held }, open('f', held)],
+      [saving('n', held), { type: 'failed', form, notice: 'f' }, open('f', held)], // a refused Replace keeps its offer
+      [saving(), { type: 'failed', form: other, notice: 'f' }, saving()], // another opening's answer
+      [saving(), { type: 'saved', form: other }, saving()],
+      [open(), { type: 'saved', form }, open()],
+      [closed(), { type: 'saved', form }, closed()], // after Cancel
+      [closed(), { type: 'failed', form, notice: 'f' }, closed()],
+      [closed(), { type: 'recordChanged', form }, closed()],
+      [open('n'), { type: 'cancel' }, closed()],
+      [saving('n'), { type: 'cancel' }, closed()],
+      [closed('n'), { type: 'cancel' }, closed('n')],
+    ];
+    for (const [state, event, next] of rows) expect(addTransition(state, event)).toEqual(next);
+  });
+
+  it('a Replace whose correction throws says to try again and gives the button back', async () => {
+    const there = {
+      id: 'held1', metricName: 'ferritin', value: 45, unit: 'µg/L', referenceLow: null, referenceHigh: null,
+      recordedAt: `${todayIso()}T00:00:00.000Z`, source: 'manual', createdAt: `${todayIso()}T08:00:00.000Z`,
+    };
+    holding(there);
+    const onCorrect = vi.fn().mockRejectedValue(new Error('read failed'));
+    const utils = render(<AddLabTest onAdded={vi.fn()} labValues={[there]} onCorrect={onCorrect} />);
+    fireEvent.click(utils.getByRole('button', { name: /add a blood test/i }));
+    fireEvent.change(utils.getByLabelText('Test'), { target: { value: 'ferritin' } });
+    fireEvent.change(utils.getByLabelText('Value'), { target: { value: '54' } });
+    fireEvent.click(utils.getByRole('button', { name: /^save$/i }));
+    fireEvent.click(await utils.findByRole('button', { name: 'Replace 45 µg/L with 54' }));
+    expect(await utils.findByText('Could not save — please try again.')).toBeTruthy();
+    expect((utils.getByRole('button', { name: /^(Replace|Save)/ }) as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('a save that fails after Cancel puts no notice under the closed form', async () => {
+    const answer = deferred<null>();
+    addLabValue.mockReturnValue(answer.promise);
+    const utils = openForm();
+    typeGgt(utils);
+    fireEvent.click(utils.getByRole('button', { name: /^save$/i }));
+    fireEvent.click(utils.getByRole('button', { name: 'Cancel' }));
+    answer.resolve(null);
+    await settle();
+    expect(utils.queryByText('Could not save — please try again.')).toBeNull();
+    expect(utils.container.querySelector('.alr-add-notice')).toBeNull();
+  });
+
+  it('a save that lands after Cancel and a reopen leaves the reopened form and its typing alone', async () => {
+    const answer = deferred<ReturnType<typeof realAdd>>();
+    addLabValue.mockReturnValueOnce(answer.promise);
+    const utils = openForm();
+    typeGgt(utils);
+    fireEvent.click(utils.getByRole('button', { name: /^save$/i }));
+    fireEvent.click(utils.getByRole('button', { name: 'Cancel' }));
+    fireEvent.click(utils.getByRole('button', { name: /add a blood test/i }));
+    typeGgt(utils, '31');
+    answer.resolve(realAdd({ metricName: 'ggt', unit: 'U/L', value: 30, day: todayIso() }));
+    await waitFor(() => expect(utils.onAdded).toHaveBeenCalledTimes(1)); // the first value did save: the page re-reads
+    await settle();
+    expect((utils.getByLabelText('Value') as HTMLInputElement).value).toBe('31');
+    expect((utils.getByRole('button', { name: /^save$/i }) as HTMLButtonElement).disabled).toBe(false);
+  });
+});
+
+// US-21 AC28 (review round 3): the web form is a door too. It keys a % by the share's test,
+// as the record files it, both on a value page and under "Other test".
+describe('US-21 AC28: the add form routes a % to its share', () => {
+  const day = () => `${todayIso()}T00:00:00.000Z`;
+  const row = (r: Record<string, unknown>) => ({ referenceLow: null, referenceHigh: null, source: 'lab_import', createdAt: '2026-01-01T00:00:00.000Z', ...r });
+
+  it('"+ Add a value" on a legacy count series in % (lowercase canonical name) writes the share, never a count', async () => {
+    holding(row({ id: 'n1', metricName: 'neutrophils', value: 54, unit: '%', recordedAt: '2026-01-01T00:00:00.000Z' }));
+    const onAdded = vi.fn();
+    const { getByText, getByLabelText } = render(<AddLabTest onAdded={onAdded} labValues={[]} coreValues={[]} preset={{ metricName: 'neutrophils', unit: '%' }} />);
+    fireEvent.click(getByText('+ Add a value'));
+    fireEvent.change(getByLabelText(/value/i), { target: { value: '56' } });
+    fireEvent.click(getByText(/^save$/i));
+    await waitFor(() => expect(onAdded).toHaveBeenCalled());
+    expect(addLabValue).toHaveBeenCalledWith({ metricName: 'neutrophils', unit: '%', value: 56, day: todayIso(), existingSeries: true }, 'erase-1');
+    expect(await addLabValue.mock.results[0].value).toMatchObject({ ok: true, row: { metricName: 'neutrophils_pct', value: 56, unit: '%' } });
+  });
+
+  it('Replace under "Other test" (NRBC in % over a held 0.4 /100 WBC) writes the correction', async () => {
+    const there = row({ id: 'r1', metricName: 'nrbc_per_100_wbc', value: 0.4, unit: '/100 WBC', recordedAt: day() });
+    holding(there);
+    // The record the correction lands in: the real correctValue, as the cell editor's would.
+    let corrected: ReturnType<typeof correctValue> | undefined;
+    const onCorrect = vi.fn(async (id: string, value: number) => {
+      corrected = correctValue({ ...createEmptyFile({ deviceId: 'test', now: new Date().toISOString() }), labValues: held }, { id, newValue: value, now: new Date().toISOString() });
+      return corrected.ok ? 'ok' as const : 'error' as const;
+    });
+    const utils = render(<AddLabTest onAdded={vi.fn()} labValues={held} onCorrect={onCorrect} />);
+    fireEvent.click(utils.getByRole('button', { name: /add a blood test/i }));
+    fireEvent.change(utils.getByLabelText('Test'), { target: { value: 'custom' } });
+    fireEvent.change(utils.getByLabelText('Test name'), { target: { value: 'NRBC' } });
+    fireEvent.change(utils.getByLabelText('Unit'), { target: { value: '%' } });
+    fireEvent.change(utils.getByLabelText('Value'), { target: { value: '0.5' } });
+    fireEvent.click(utils.getByRole('button', { name: /^save$/i }));
+    fireEvent.click(await utils.findByRole('button', { name: /^Replace 0\.4/ }));
+    await waitFor(() => expect(onCorrect).toHaveBeenCalledWith('r1', 0.5, 'erase-1'));
+    expect(corrected).toMatchObject({ ok: true, row: { metricName: 'nrbc_per_100_wbc', value: 0.5, correctsId: 'r1' } });
+    const file = (corrected as { file: { labValues: Array<{ id: string; status: string }> } }).file;
+    expect(file.labValues.find((l) => l.id === 'r1')?.status).toBe('entered-in-error');
   });
 });

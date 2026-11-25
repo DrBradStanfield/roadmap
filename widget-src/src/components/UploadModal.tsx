@@ -1,54 +1,68 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useId, useMemo, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import type { UnitSystem, MetricType } from '@roadmap/health-core/units';
-import type { UploadHistory } from '../lib/api-types';
-import { measurementRefusalLine } from '../lib/lab-value-labels';
-import { labUnitRefusalLine } from '@roadmap/health-core/lab-series';
-import { useLpaUnit } from '../lib/lpa-unit';
-import type { Grading } from '../lib/blood-test-cell';
-import { ReviewTable } from './ReviewTable';
-import { FileNotices, NotSaved } from './UploadNotices';
+import { UPLOAD_EXPLAINER_TEXT, UPLOAD_TEXT } from '@roadmap/health-core/upload-text';
+import { FileNotices } from './UploadNotices';
+import { UploadExplainer } from './UploadExplainer';
 import { ErrorBoundary } from './ErrorBoundary';
 import { FloatingUploadIndicator } from './FloatingUploadIndicator';
+import { UploadReviewList } from './UploadReviewList';
 import { useUploadFlow, MAX_FILES } from '../hooks/useUploadFlow';
 import { getDocumentArchiveMode } from '../lib/roadmap-data';
 import { useIsMobile } from '../lib/useIsMobile';
-import { openBackendPicker, UPLOAD_STORAGE_NOTICE } from '../lib/storage-notice';
+import { openBackendPicker } from '../lib/storage-notice';
+import type { ProductEventMetadata } from '../lib/server-api';
+import { opensRow } from '../lib/opens-row';
 
 interface UploadModalProps {
   unitSystem: UnitSystem;
   metricUnitOverrides?: Partial<Record<MetricType, UnitSystem>>;
-  onToggleFieldUnit?: (field: string) => void;
-  history: UploadHistory;
-  /** The page's re-read; a partial save waits for it before a retry (US-12 AC6c). */
+  /** useUnits' `setFieldUnit`: a row's unit press sets the unit its chip names (US-34 AC7a). */
+  onSetFieldUnit?: (field: string, to: UnitSystem) => void;
+  /** The page's re-read, after a Save's commit landed. */
   onComplete: () => void | Promise<void>;
   onStart?: () => Promise<void>;
   onClose: () => void;
-  /** `erase`: the erase the page showed as the save began (US-16 AC2a). */
-  onScreeningUpdate?: (screeningKey: string, value: string, erase: string) => void;
-  /** The plan's age, for the review's screening eligibility (US-06 AC5). */
+  /** The cards' screening age, for a letter's screening box (US-06 AC5, US-13 AC6, US-23 AC6c). */
   age?: number;
   sex?: 'male' | 'female';
-  /** Whom the review's hints and colours grade for; null for a known minor (US-07 AC6). */
-  grading: Grading;
   /** Visibility does not end the session or discard review drafts. */
   open: boolean;
   onOpen: () => void;
 }
 
-export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit, history, onComplete, onStart, onClose, onScreeningUpdate, age, sex, grading, open, onOpen }: UploadModalProps) {
-  const flow = useUploadFlow({ unitSystem, history, onComplete, onStart, onClose, onScreeningUpdate });
-  const { phase, files, notices, progress, results, readError, saveError, skipArchive, close: handleClose, discard: handleDiscard } = flow;
+/** Enter or Space on the drop zone opens the file chooser, as a click does (US-12 AC1b). */
+function browseOnKey(e: React.KeyboardEvent, input: HTMLInputElement | null): void {
+  if (!opensRow(e)) return;
+  e.preventDefault();
+  input?.click();
+}
+
+export function UploadModal({ unitSystem, metricUnitOverrides, onSetFieldUnit, onComplete, onStart, onClose, age, sex, open, onOpen }: UploadModalProps) {
+  const person = useMemo(() => (age === undefined && sex === undefined ? undefined : { age, sex }), [age, sex]);
+  const flow = useUploadFlow({ unitSystem, onComplete, onStart, onClose, person });
+  const { phase, files, notices, progress, readError, skipArchive, engine } = flow;
   const picking = phase === 'picking' || phase === 'readFailed';
-  const reviewing = phase === 'reviewing' || phase === 'saving' || phase === 'saveFailed';
+  // The list shows the files as each is read, the review, the Save and its done screen (US-12 AC26), once the upload
+  // bundle has loaded the engine it draws with; before that, the reading screen's progress.
+  const listed = !!engine && (phase === 'reading' || phase === 'reviewing' || phase === 'saving' || phase === 'saveFailed' || phase === 'done');
+  const handleClose = flow.close;
+  // A review that Cancel discards sends its counts; × and Escape only hide it, to
+  // resume (US-12 AC4). The flow sends one per review, none while a Save runs (US-13 AC13).
+  const handleDiscard = (counts?: ProductEventMetadata) => {
+    if (phase === 'reviewing' || phase === 'saveFailed') flow.endReview(counts);
+    flow.discard();
+  };
   // Connect-first gate (decision record: encourage, don't block). 'device-only'
   // + not skipped → show the connect panel instead of the dropzone.
   const archiveMode = getDocumentArchiveMode();
-  const { values: savedCount, labValues: savedLabCount, documents: { length: savedDocCount }, skippedValues: skippedMeasurements, skippedLabValues, unstored: unstoredCount, refusedLabUnits, refusedMeasurements } = flow.outcome;
-  // Lp(a)'s refusal names its range in the unit its field shows (US-05 AC2).
-  const [lpaUnit] = useLpaUnit(unitSystem);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isMobile = useIsMobile(768);
+  const titleId = useId();
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const indicatorRef = useRef<HTMLDivElement>(null);
+  useDialogFocus(open, dialogRef, titleRef, indicatorRef);
 
   useEffect(() => {
     if (!open) return;
@@ -62,38 +76,27 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
     flow.pick(e.dataTransfer.files);
   };
 
-  // One report can refuse the same test on several dates; the user needs it
-  // named once. A note says what to look for instead, where there is one, and
-  // a unit the test takes was refused for its number, not its unit (US-21
-  // AC15). Shown on the done screen and, beside the retry message, in review
-  // (US-12 AC6): a refusal is settled the moment the save answers.
-  const refusalLines = <>
-    {[...new Map(refusedLabUnits.map(r => [`${r.key}|${r.unit}|${r.bound ?? ''}`, r])).values()].map(r => (
-      <p key={`${r.key}|${r.unit}|${r.bound ?? ''}`} className="upload-done-skipped">{labUnitRefusalLine(r.key, r.unit, r.fault, r.bound)}</p>
-    ))}
-    {[...new Set(refusedMeasurements.map(r => measurementRefusalLine(r, r.metricType === 'lpa' ? lpaUnit : metricUnitOverrides?.[r.metricType as MetricType] ?? unitSystem)))].map(line => (
-      <p key={line} className="upload-done-skipped">{line}</p>
-    ))}
-  </>;
-
   // Portal to body so position:fixed resolves against the viewport — the
   // .health-tool container has a transform/contain that would otherwise pin
   // the modal inside the (very tall) widget root instead of the viewport.
   return <>
-    {!open && phase !== 'picking' && <FloatingUploadIndicator progress={progress} phase={phase} onClick={onOpen} />}
+    {!open && phase !== 'picking' && <FloatingUploadIndicator progress={progress} phase={phase} onClick={onOpen} buttonRef={indicatorRef} />}
     {createPortal((
     <div className="upload-modal-backdrop" data-clarity-mask="true" style={!open ? { display: 'none' } : undefined} onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}>
-      <div className={`upload-modal${isMobile ? ' upload-modal--mobile' : ''}`}>
+      <div ref={dialogRef} className={`upload-modal${isMobile ? ' upload-modal--mobile' : ''}`} role="dialog" aria-modal={open} aria-labelledby={titleId}>
         <div className="upload-modal-header">
-          <h3>Upload Health Records</h3>
+          <h3 id={titleId} ref={titleRef} tabIndex={-1}>Upload Health Records</h3>
           <button className="upload-modal-close" onClick={handleClose} aria-label="Close">&times;</button>
         </div>
 
         <div className="upload-modal-body">
+          {/* What the upload is, before anything is picked (US-12 AC32): 'picking' has no read error, and a pick
+              whose every file was refused leaves its notices, which take the explainer's place. */}
+          {phase === 'picking' && notices.length === 0 && <UploadExplainer reader={flow.reader} />}
           {picking && archiveMode === 'device-only' && !skipArchive && (
             <div className="upload-select upload-connect-first">
-              <h3 className="upload-connect-title">Keep your original documents</h3>
-              <p className="upload-connect-text">{UPLOAD_STORAGE_NOTICE}</p>
+              <h3 className="upload-connect-title">{UPLOAD_EXPLAINER_TEXT.connectTitle}</h3>
+              <p className="upload-connect-text">{UPLOAD_EXPLAINER_TEXT.connectText}</p>
               <button
                 type="button"
                 className="upload-btn-primary"
@@ -102,10 +105,10 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
                   openBackendPicker();
                 }}
               >
-                Choose where to keep it
+                {UPLOAD_EXPLAINER_TEXT.connectButton}
               </button>
               <button type="button" className="upload-connect-skip" onClick={flow.skipConnect}>
-                Continue without keeping my files ›
+                {UPLOAD_EXPLAINER_TEXT.connectSkip}
               </button>
             </div>
           )}
@@ -113,11 +116,14 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
             <div className="upload-select">
               <div
                 className="upload-dropzone"
+                role="button"
+                tabIndex={0}
                 onDrop={handleDrop}
                 onDragOver={(e) => e.preventDefault()}
                 onClick={() => fileInputRef.current?.click()}
+                onKeyDown={(e) => browseOnKey(e, fileInputRef.current)}
               >
-                <div className="upload-dropzone-icon">&#128196;</div>
+                <div className="upload-dropzone-icon" aria-hidden="true">&#128196;</div>
                 <p className="upload-dropzone-text">Drop health records here, or click to browse</p>
                 <p className="upload-dropzone-hint">PDF, JPG, PNG, DOCX, or ZIP &mdash; up to {MAX_FILES} files</p>
               </div>
@@ -144,7 +150,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
             </div>
           )}
 
-          {phase === 'reading' && (
+          {phase === 'reading' && !listed && (
             <div className="upload-processing">
               <div className="upload-progress-bar">
                 <div
@@ -154,73 +160,47 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
               </div>
               <p className="upload-progress-file">{progress.fileName}</p>
               <button className="btn-primary upload-cancel-btn" onClick={flow.cancel}>
-                Cancel
+                {UPLOAD_TEXT.cancel}
               </button>
             </div>
           )}
 
-          {reviewing && <><FileNotices notices={notices} /><NotSaved results={results} /></>}
-          {reviewing && (
+          {listed && <FileNotices notices={flow.heldNotices} />}
+          {listed && engine && (
             // A review that throws while rendering is never a dead widget (US-13 AC9).
             <ErrorBoundary feature="upload_review" fallback={
               <div className="upload-review-error" role="alert">
                 <p>Something went wrong showing these results. Your file was read; please try again.</p>
-                <button type="button" className="btn-primary" onClick={handleDiscard}>Cancel</button>
+                <button type="button" className="btn-primary" onClick={() => handleDiscard()}>Cancel</button>
               </div>
             }>
-            <ReviewTable
-              results={results}
-              history={history}
-              unitSystem={unitSystem}
-              metricUnitOverrides={metricUnitOverrides}
-              onToggleFieldUnit={onToggleFieldUnit}
-              age={age}
-              sex={sex}
-              grading={grading}
-              onSave={flow.save}
-              onCancel={handleDiscard}
-              isSaving={phase === 'saving'}
-              error={saveError}
-              refusals={refusedLabUnits.length + refusedMeasurements.length > 0 ? refusalLines : undefined}
+            <UploadReviewList
+              flow={flow} engine={engine} unitSystem={unitSystem} metricUnitOverrides={metricUnitOverrides}
+              setFieldUnit={onSetFieldUnit} person={person} discard={handleDiscard}
             />
             </ErrorBoundary>
-          )}
-
-          {phase === 'done' && (
-            <div className="upload-done">
-              <div className="upload-done-icon">&#10003;</div>
-              <p className="upload-done-text">
-                {savedCount > 0 && `Saved ${savedCount} blood test value${savedCount !== 1 ? 's' : ''}`}
-                {savedCount > 0 && (savedLabCount > 0 || savedDocCount > 0) && ', '}
-                {savedLabCount > 0 && `${savedLabCount} additional lab value${savedLabCount !== 1 ? 's' : ''}`}
-                {savedLabCount > 0 && savedDocCount > 0 && ', '}
-                {savedDocCount > 0 && `${savedDocCount} document${savedDocCount !== 1 ? 's' : ''}`}
-                {savedCount === 0 && savedLabCount === 0 && savedDocCount === 0
-                  && skippedMeasurements === 0 && skippedLabValues === 0
-                  && unstoredCount === 0 && refusedLabUnits.length === 0 && refusedMeasurements.length === 0 && 'No items saved'}
-              </p>
-              {skippedMeasurements > 0 && (
-                <p className="upload-done-skipped">
-                  {skippedMeasurements} blood test value{skippedMeasurements !== 1 ? 's were' : ' was'} not added. Check your blood test table: a value was already recorded for that date, or changed during review.
-                </p>
-              )}
-              {skippedLabValues > 0 && (
-                <p className="upload-done-skipped">
-                  {skippedLabValues} additional lab value{skippedLabValues !== 1 ? 's were' : ' was'} not added. Check your blood test table: a value was already recorded for that date, or changed during review.
-                </p>
-              )}
-              {refusalLines}
-              {unstoredCount > 0 && <p className="upload-done-skipped">The original file couldn't be stored; its details are saved.</p>}
-              <FileNotices notices={notices} />
-              <NotSaved results={results} />
-              <button className="btn-primary upload-done-btn" onClick={handleClose}>
-                Done
-              </button>
-            </div>
           )}
         </div>
       </div>
     </div>
   ), document.body)}
   </>;
+}
+
+/** US-12 AC4a: opening the window moves the focus to its title. Hiding or removing it gives
+ *  the focus back to what held it on opening, unless the focus has since gone somewhere
+ *  outside the window (another dialog it opened). When that holder has left the page or was
+ *  the page itself (the floating indicator leaves as the window shows), the focus goes to the
+ *  floating indicator if hiding shows it. */
+function useDialogFocus(open: boolean, dialogRef: RefObject<HTMLElement>, titleRef: RefObject<HTMLElement>, indicatorRef: RefObject<HTMLElement>) {
+  useEffect(() => {
+    if (!open) return;
+    const opener = document.activeElement as HTMLElement; // never null: the page has a body
+    titleRef.current?.focus();
+    return () => {
+      const now = document.activeElement;
+      const back = opener.isConnected && opener !== document.body ? opener : indicatorRef.current;
+      if (now === document.body || dialogRef.current?.contains(now)) back?.focus();
+    };
+  }, [open]);
 }

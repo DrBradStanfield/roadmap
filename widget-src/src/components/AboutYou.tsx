@@ -1,62 +1,18 @@
-// About you's fields, height, sex, birth date and alcohol, and its rows (moved out of InputPanel).
+// About you's fields, sex, birth date and alcohol, and its rows (moved out of InputPanel); the height is HeightField.tsx.
 import { flushSync } from 'react-dom';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { focusById, type FormKit } from './form-kit';
+import { useRef, useState, type ReactNode } from 'react';
+import { errorAria, focusById, type FormKit } from './form-kit';
 import { ALCOHOL_OPTIONS } from './AlcoholQuestion';
 import { MONTHS_FULL } from '../lib/constants';
-import { blockBadNumericKeys, blockNonIntegerKeys } from '../lib/blood-test-cell';
-import type { useAutoAdvance } from '../lib/useAutoAdvance';
+import { blockNonIntegerKeys } from '../lib/blood-test-cell';
 import { SEXES } from '@roadmap/health-core/types';
-import { FIELD_METRIC_MAP } from '@roadmap/health-core/mappings';
-import { type UnitSystem, getDisplayRange, cmToFeetInches, feetInchesToCm, formatHeightDisplay } from '@roadmap/health-core/units';
+import { type UnitSystem, formatHeightDisplay } from '@roadmap/health-core/units';
 import { identityFieldRange, isBirthYearClearlyInvalid } from '@roadmap/health-core/validation';
 import { parseLocalisedNumber } from '@roadmap/health-core/parseNumber';
 import { useLeaveField } from '../hooks/useOnboarding';
 
 /** About you's rows (US-62 AC12). */
 type AboutKey = 'height' | 'sex' | 'birth' | 'alcohol';
-
-/** A height for the feet and inches boxes to show: one there is, and not the
- *  one they just wrote themselves (US-02 AC11). */
-function showsOtherHeight(heightCm: number | undefined, typed: number | undefined): heightCm is number {
-  return heightCm !== undefined && heightCm !== typed;
-}
-
-/** Feet/inches state for US height input. InputPanel owns it, so what was
- *  typed outlives the Height row closing and the onboarding's boxes turning
- *  into rows (US-02 AC11). */
-export function useHeightPair(heightCm: number | undefined, unitSystem: UnitSystem) {
-  const [heightFeet, setHeightFeet] = useState<string>('');
-  const [heightInches, setHeightInches] = useState<string>('');
-  // The height the feet and inches boxes last wrote (US-02 AC11).
-  const typedHeightCm = useRef<number | undefined>(undefined);
-
-  // Sync heightCm → feet/inches display when loading data or switching units,
-  // never from the boxes' own edit, which keeps what was typed (US-02 AC11).
-  useEffect(() => {
-    if (unitSystem === 'conventional' && showsOtherHeight(heightCm, typedHeightCm.current)) {
-      const { feet, inches } = cmToFeetInches(heightCm);
-      setHeightFeet(String(feet));
-      setHeightInches(String(inches));
-    } else if (unitSystem === 'si') {
-      // Clear feet/inches when switching to SI
-      typedHeightCm.current = undefined;
-      setHeightFeet('');
-      setHeightInches('');
-    }
-  }, [heightCm, unitSystem]);
-
-  return { heightFeet, setHeightFeet, heightInches, setHeightInches, typedHeightCm };
-}
-
-type HeightPair = ReturnType<typeof useHeightPair>;
-
-// Imperial height, feet then inches: could some inches still bring it in range ("1" may be 10 or 11)?
-const heightMayFit = (feet: string, inches: string, inFeet: boolean) => {
-  const { min, max } = getDisplayRange(FIELD_METRIC_MAP.heightCm!, 'si');
-  const choices = inFeet || inches === '' ? [...Array(12).keys()] : inches === '1' ? [1, 10, 11] : [parseInt(inches, 10) || 0];
-  return choices.some(i => { const cm = feetInchesToCm(parseInt(feet, 10) || 0, i); return cm >= min && cm <= max; });
-};
 
 export function SexField(props: { form: FormKit; aboutYouLow: boolean }) {
   const { form: { inputs, updateField, errors }, aboutYouLow } = props;
@@ -81,142 +37,6 @@ export function SexField(props: { form: FormKit; aboutYouLow: boolean }) {
           Sex row keeps it: someone opening it is reconsidering. */}
       {(!inputs.sex || aboutYouLow) && <p className="field-why">Used to calculate ideal body weight, kidney function, and screening programs.</p>}
       {errors.sex && <span className="error-message">{errors.sex}</span>}
-    </div>
-  );
-}
-
-interface HeightFieldProps {
-  form: FormKit;
-  pair: HeightPair;
-  unitSystem: UnitSystem;
-  toDisplay: (field: string, siValue: number | undefined) => string;
-  parseAndConvert: (field: string, value: string) => number | undefined;
-  /** No weight typed or saved yet: a complete height moves on to the weight. */
-  mayAdvanceToWeight: boolean;
-  advanceToWeight: ReturnType<typeof useAutoAdvance>;
-}
-
-export function HeightField(props: HeightFieldProps) {
-  const { form, pair, unitSystem, toDisplay, parseAndConvert, mayAdvanceToWeight, advanceToWeight } = props;
-  const { inputs, rawInputs, setRawInputs, errors, updateField, readable, unreadable, range, typeIn, blurOnWheel, settleOnEnter, rangeWait } = form;
-  const { heightFeet, setHeightFeet, heightInches, setHeightInches, typedHeightCm } = pair;
-  // The feet box hands on to the inches box: only leaving the pair shows the error (Codex R2).
-  const leaveHeightPair = (e: React.FocusEvent<HTMLInputElement>) => {
-    if (!['heightFeet', 'heightInches'].includes((e.relatedTarget as HTMLElement | null)?.id ?? '')) rangeWait.settle();
-  };
-  return (
-    <div className={`health-field${!inputs.heightCm ? ' field-attention' : ''}`}>
-      <label htmlFor="heightCm">
-        Height{' '}
-        <button
-          type="button"
-          className="unit-toggle-pill"
-          data-unit-control="all"
-          onClick={(e) => e.preventDefault()} // the label's own click would focus the box; the switch is hooks/useUnits'
-          title={`Switch to ${unitSystem === 'si' ? 'US (in, lbs, mg/dL)' : 'Metric (cm, kg, mmol/L)'}`}
-        >
-          {unitSystem === 'si' ? 'cm' : 'ft/in'}
-        </button>
-      </label>
-      {unitSystem === 'si' ? (
-        <input
-          type="number"
-          id="heightCm"
-          onKeyDown={e => { blockBadNumericKeys(e); settleOnEnter(e); }}
-          onWheel={blurOnWheel}
-          value={rawInputs['heightCm'] !== undefined ? rawInputs['heightCm'] : toDisplay('heightCm', inputs.heightCm)}
-          onChange={(e) => {
-            const raw = e.target.value;
-            setRawInputs(prev => ({ ...prev, heightCm: raw }));
-            if (!readable('heightCm', e)) return;
-            typeIn('heightCm', raw);
-            updateField('heightCm', parseAndConvert('heightCm', raw));
-            const heightNum = parseLocalisedNumber(raw);
-            const heightRange = range('heightCm');
-            // Plausible height → move on to weight.
-            if (heightNum !== undefined && /^\d{2,3}$/.test(raw) && heightNum >= heightRange.min && heightNum <= heightRange.max && mayAdvanceToWeight) {
-              advanceToWeight({
-                ambiguous: /^\d{2}$/.test(raw) && heightNum * 10 <= heightRange.max,
-                advance: () => focusById('weightKg'),
-              });
-            }
-          }}
-          onBlur={() => { rangeWait.settle(); if (!unreadable.heightCm) setRawInputs(prev => { const next = { ...prev }; delete next['heightCm']; return next; }); }}
-          placeholder=""
-          min={range('heightCm').min}
-          max={range('heightCm').max}
-          className={errors.heightCm ? 'error' : ''}
-        />
-      ) : (
-        <div className="height-fieldset">
-          <input
-            type="text"
-            id="heightFeet"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            value={heightFeet}
-            onChange={(e) => {
-              const val = e.target.value.replace(/[^0-9]/g, '');
-              setHeightFeet(val);
-              rangeWait.typed('heightCm', `${val}/${heightInches}`, heightMayFit(val, heightInches, true));
-              const feet = parseInt(val, 10) || 0;
-              const inches = parseInt(heightInches, 10) || 0;
-              if (val !== '' || heightInches !== '') {
-                typedHeightCm.current = feetInchesToCm(feet, inches);
-                updateField('heightCm', typedHeightCm.current);
-              } else {
-                updateField('heightCm', undefined);
-              }
-              advanceToWeight(null); // a feet edit cancels the inches wait (US-02 AC6c)
-              if (val.length === 1) {
-                focusById('heightInches');
-              }
-            }}
-            placeholder=""
-            maxLength={1}
-            onBlur={leaveHeightPair}
-            onKeyDown={settleOnEnter}
-            className={errors.heightCm ? 'error' : ''}
-          />
-          <span className="height-unit">ft</span>
-          <input
-            type="text"
-            id="heightInches"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            value={heightInches}
-            onChange={(e) => {
-              const val = e.target.value.replace(/[^0-9]/g, '');
-              setHeightInches(val);
-              rangeWait.typed('heightCm', `${heightFeet}/${val}`, heightMayFit(heightFeet, val, false));
-              const feet = parseInt(heightFeet, 10) || 0;
-              const inches = parseInt(val, 10) || 0;
-              if (heightFeet !== '' || val !== '') {
-                typedHeightCm.current = feetInchesToCm(feet, inches);
-                updateField('heightCm', typedHeightCm.current);
-              } else {
-                updateField('heightCm', undefined);
-              }
-              // Height complete → move on to weight (mirrors the cm
-              // path). A lone '1' might still become 10/11, so wait it out;
-              // anything else cancels the wait (US-02 AC6c).
-              advanceToWeight(heightFeet !== '' && val !== '' && inches <= 11 && mayAdvanceToWeight ? {
-                ambiguous: val === '1',
-                advance: () => focusById('weightKg'),
-              } : null);
-            }}
-            placeholder=""
-            maxLength={2}
-            onBlur={leaveHeightPair}
-            onKeyDown={settleOnEnter}
-            className={errors.heightCm ? 'error' : ''}
-          />
-          <span className="height-unit">in</span>
-        </div>
-      )}
-      {((unreadable.heightCm && unitSystem === 'si') || errors.heightCm) && (
-        <span className="error-message">{unreadable.heightCm && unitSystem === 'si' ? 'Enter a number' : errors.heightCm}</span>
-      )}
     </div>
   );
 }
@@ -264,6 +84,7 @@ export function BirthFields(props: BirthFieldsProps) {
   /** The birth month was last pressed by a pointer, not a key (US-01 AC6). Set fresh by every gesture. */
   const monthByPointer = useRef(false);
   const { inputs, errors, updateField, typeIn, blurOnWheel, settleOnEnter, rangeWait } = form;
+  const sharedBirthError = !!errors.birthMonth && errors.birthMonth === errors.birthYear;
   return (
     <>
       <div className="health-field-group">
@@ -272,6 +93,7 @@ export function BirthFields(props: BirthFieldsProps) {
           <select
             id="birthMonth"
             value={inputs.birthMonth || ''}
+            {...errorAria('birthMonth-error', [errors.birthMonth])}
             // A pick by touch or mouse moves on; a key never does. Arrowing a closed select fires
             // change on Windows browsers, and the focus must not leave under the keys (WCAG 3.2.2).
             onPointerDown={() => { monthByPointer.current = true; }}
@@ -291,9 +113,9 @@ export function BirthFields(props: BirthFieldsProps) {
             ))}
           </select>
           {/* US-54 AC5b: a birth month in the future, left out of the plan. */}
-          {errors.birthMonth && <span className="error-message">{errors.birthMonth}</span>}
+          {errors.birthMonth && <span className="error-message" id="birthMonth-error">{errors.birthMonth}</span>}
           {/* US-02 AC5: a year out of range stays, saying why; the store refuses it. */}
-          {errors.birthYear && errors.birthYear !== errors.birthMonth && <span className="error-message">{errors.birthYear}</span>}
+          {errors.birthYear && !sharedBirthError && <span className="error-message" id="birthYear-error">{errors.birthYear}</span>}
         </div>
 
         {/* Once shown on this record it stays, so clearing a year to retype keeps the field (US-62 AC13). */}
@@ -304,6 +126,7 @@ export function BirthFields(props: BirthFieldsProps) {
               type="number"
               id="birthYear"
               ref={yearRef}
+              {...errorAria(sharedBirthError ? 'birthMonth-error' : 'birthYear-error', [errors.birthYear])}
               onKeyDown={e => { blockNonIntegerKeys(e); settleOnEnter(e); }}
               onWheel={blurOnWheel}
               value={inputs.birthYear || ''}

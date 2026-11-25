@@ -12,6 +12,7 @@ import type { SyncStorage } from './record-host';
 import type { RecordSession } from './record-session';
 import { ROADMAP_DOC } from './roadmap-doc';
 import { CURRENT_SCHEMA_VERSION, stableStringify, type RoadmapFile } from './roadmap-file';
+import { afterWrite, mayHaveLanded } from './write-refusal';
 
 /** What an erase that cannot read the cloud record says. It cannot list what
  *  it removes, so it removes nothing (US-09 AC23). */
@@ -63,6 +64,8 @@ export async function eraseSession(s: RecordSession, beforeErase?: () => Promise
   // replaced only at it, so another tab's repair is never written over (AC9).
   const revision = host.sync?.revision(ROADMAP_FILE_NAME) ?? null;
   let readError: unknown = null;
+  // What a write that lands nowhere puts back (lead S57).
+  const before = { file: s.current, clearedFor: s.clearedFor, saveWarning: s.saveWarning };
   // From the confirm on every write is refused, or it would answer "saved"
   // for a change the erase removes (lead A6). The debounce is put aside.
   s.dispatch({ type: 'eraseBegan' });
@@ -150,7 +153,22 @@ export async function eraseSession(s: RecordSession, beforeErase?: () => Promise
     return { success: true, ...(s.saveWarning ? { warning: s.saveWarning } : {}) };
   } catch (e) {
     const message = (e as Error).message;
-    return erased ? { success: true, warning: message } : { success: false, error: message };
+    if (erased) return { success: true, warning: message };
+    // Neither the cloud nor the device copy took the erase: the cloud refused
+    // the write outright (write-refusal.ts) and the failure mirror did not
+    // land. It would live only in memory, and a reload would bring every
+    // value back. Put this copy back as it was, so the page says the record
+    // was not erased and keeps showing it (lead S57). A write that may have
+    // landed keeps the erased copy, as before. The pending marker stays: it
+    // lifts only the pre-erase copy, into a pre-erase cloud.
+    // On this device too (S69): its page has no mirror, so writtenNowhere is
+    // the write alone. The thrown failure must not be one that may have stored:
+    // an unreadable record's replace throws the adapter's own error.
+    if (s.writtenNowhere && !mayHaveLanded(e)) {
+      ({ file: s.current, clearedFor: s.clearedFor, saveWarning: s.saveWarning } = before);
+      return { success: false };
+    }
+    return { success: false, error: message };
   }
 }
 
@@ -192,7 +210,8 @@ export async function replaceUnreadableSession(s: RecordSession, store: SyncStor
     s.revisionSeen = store.writeSync(ROADMAP_FILE_NAME, s.current, revision).version;
     s.dispatch({ type: 'synced' });
   } catch (error) {
-    if (!(error instanceof ConflictError)) throw error;
+    // Read as SyncManager reads a write that threw: its outcome, or may have landed when unnamed (S69).
+    if (!(error instanceof ConflictError)) throw afterWrite(error);
     await s.flush();
   }
 }

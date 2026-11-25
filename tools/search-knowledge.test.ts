@@ -11,18 +11,10 @@ import { spawn } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadBlogIndex } from '../app/lib/blog-index.server';
-import ABBREVIATIONS from './search-knowledge-abbreviations.json';
+import ABBREVIATIONS from '../app/lib/search-knowledge-abbreviations.json';
 import * as tool from './search-knowledge';
-import {
-  bestSection,
-  buildIndex,
-  DEFAULT_EXCERPT_CHARS,
-  MAX_K,
-  POSTURE,
-  run,
-  search,
-  tokenize,
-} from './search-knowledge';
+import { DEFAULT_EXCERPT_CHARS, POSTURE, run } from './search-knowledge';
+import { bestSection, buildIndex, MAX_K, search, tokenize } from '../app/lib/search-knowledge';
 import { REPO_ROOT, tsxSpawn } from './test-helpers';
 
 /** Run the CLI with stdio captured; the spies are always restored. */
@@ -138,14 +130,18 @@ describe('US-41 AC1 — a lexical ranker, no model', () => {
     expect(buildIndex(entries).docs).toHaveLength(entries.length);
   });
 
-  it('imports no network module and no model client', () => {
-    const source = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'search-knowledge.ts'), 'utf8');
-    const specifiers = [...source.matchAll(/\bfrom\s+'([^']+)'/g)].map((m) => m[1]);
-    expect(specifiers.length).toBeGreaterThan(0);
-    for (const spec of specifiers) {
-      expect(spec).toMatch(/^(node:(url)|\.\.\/app\/lib\/(blog-index\.server|matched-content)|\.\/search-knowledge-abbreviations\.json)$/);
+  it('imports no network module and no model client (the CLI and the core it ranks with)', () => {
+    const allowed = {
+      'search-knowledge.ts': /^(node:(url)|\.\.\/app\/lib\/(blog-index\.server|matched-content|search-knowledge))$/,
+      '../app/lib/search-knowledge.ts': /^\.\/search-knowledge-abbreviations\.json$/,
+    };
+    for (const [file, pattern] of Object.entries(allowed)) {
+      const source = readFileSync(join(dirname(fileURLToPath(import.meta.url)), file), 'utf8');
+      const specifiers = [...source.matchAll(/\bfrom\s+'([^']+)'/g)].map((m) => m[1]);
+      expect(specifiers.length).toBeGreaterThan(0);
+      for (const spec of specifiers) expect(spec).toMatch(pattern);
+      expect(source).not.toMatch(/\b(fetch|XMLHttpRequest|WebSocket|anthropic)\b/i);
     }
-    expect(source).not.toMatch(/\b(fetch|XMLHttpRequest|WebSocket|anthropic)\b/i);
   });
 });
 
@@ -174,9 +170,11 @@ describe('US-41 AC2 — the query is never persisted', () => {
     expect(result.stderr).not.toContain('zebra-canary-7731');
   });
 
-  it('writes nothing in the source: no file write, no log call', () => {
-    const source = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'search-knowledge.ts'), 'utf8');
-    expect(source).not.toMatch(/\b(writeFile|appendFile|createWriteStream|console\.(log|warn|error|info))\b/);
+  it('writes nothing in the source: no file write, no log call (the CLI and the core)', () => {
+    for (const file of ['search-knowledge.ts', '../app/lib/search-knowledge.ts']) {
+      const source = readFileSync(join(dirname(fileURLToPath(import.meta.url)), file), 'utf8');
+      expect(source).not.toMatch(/\b(writeFile|appendFile|createWriteStream|console\.(log|warn|error|info))\b/);
+    }
   });
 });
 

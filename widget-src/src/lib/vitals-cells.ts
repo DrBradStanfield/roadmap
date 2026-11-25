@@ -8,11 +8,9 @@ import { readTypedValue, validateTypedValue } from './blood-test-cell';
 
 // ── Blood-pressure helpers (atomic sys+dia pair) ─────────────────────────
 // BP is a two-field value: a save must commit systolic AND diastolic together
-// or neither. These ranges gate both what each half lends the plan and the
-// chat (useDraftMirror) and the commit, so a mid-typed half (the "8" of
-// "120 / 80") never stands in, and a half-entered pair never lands.
-export const BP_SYS_MIN = 60, BP_SYS_MAX = 250;
-export const BP_DIA_MIN = 40, BP_DIA_MAX = 150;
+// or neither. These ranges gate the commit, so a half-entered pair never lands.
+const BP_SYS_MIN = 60, BP_SYS_MAX = 250;
+const BP_DIA_MIN = 40, BP_DIA_MAX = 150;
 
 /** True only when both fields hold a valid, in-physiological-range number,
  *  the right way up (US-02 AC8) — the gate that stops a commit from saving a
@@ -29,7 +27,7 @@ export function bpPairReady(sys: string, dia: string): boolean {
 /** What is typed in a vitals cell: a weight, a waist, or one half of a
  *  blood pressure (sys and dia share one cell). */
 export type VitalsKey = 'weight' | 'waist' | 'sys' | 'dia';
-/** The field each one lends (useDraftMirror). */
+/** The field each one is: a weight's or waist's unit is kept under it. */
 export const FIELD_OF = { weight: 'weightKg', waist: 'waistCm', sys: 'systolicBp', dia: 'diastolicBp' } as const;
 
 /** One column's typed vitals (the draft's, or a saved column's empty cells)

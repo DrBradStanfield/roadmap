@@ -13,7 +13,8 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   ~150 chars optimal; blanket rewrites regress, targeted fixes
   win; uniform style). Detail the charter omits: stripping the boilerplate from
   ALL 709 pathways scored the same 96.3%, and truncating a 269-char body-derived
-  summary at 150 beats purpose-writing 150 chars (pruned 2026-10-03).
+  summary at 150 beats purpose-writing 150 chars (pruned 2026-10-03). W46, Sonnet 5.5 router: 36
+  mixed summary changes (21 masters, 8 re-sourced, 7 guides) tied the old ones, 298/322 each on a paired arm.
 - **2026-08-07 [retrieval]** The router systematically emits `guideline-diet`
   for the handle `diet` — concatenating the bracketed TYPE label onto handles
   that are single generic words. The allowlist silently dropped these, so
@@ -71,7 +72,7 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   14, three replies); SPAM label from 10-29T22:01Z (AC41). Check commit times
   before reading a label count: W44's book-promo trio came 10 h before it. From
   11-02 a company speaking as itself is SPAM too. W45: empties tripled (19 → 55) when
-  the per-video cap rose 10 → 30 at an unchanged 24% YouTube empty rate: read the rate.
+  the per-video cap rose 10 → 30 at an unchanged 24% YouTube empty rate: read the rate. Dedupe YouTube turns on `followUpCommentId || commentId`: `commentId` is the thread's (W47: 22 false repeats).
 - **2026-08-10 [retrieval]** Term presence in the visible summary is necessary
   but NOT sufficient: before any summary edit, check what the router picked
   INSTEAD. On the Haiku router, steals (a theme neighbour beating the named
@@ -84,7 +85,7 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   Lp(a)-diet on one arm (never stolen), D3-in-product ∅ on both, a
   child-anxiety population hit on one, own-data asks ∅ 6/6. Model, rule 7,
   12 fixtures and the harness changed together: not attributable.
-  W42: index growth makes fixtures stale. 40 refresh entries won 4 fixtures
+  W42: index growth makes fixtures stale (W46: cancer-screening took a FIT ask and 2 sex-bleeding symptoms). 40 refresh entries won 4 fixtures
   whose `expected` predates them (anxiety, GORD, dysphagia); an arm on the
   pre-change index (`git show 2abe071^:docs/blog/index.json`) attributes it.
   History: [notes/router-steals-and-shapes-2026.md](notes/router-steals-and-shapes-2026.md).
@@ -156,11 +157,9 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   rows drop `first`/`recent`, but a conversation_id join recovers the turns
   and `router_input_tokens` shows the router had them; replay through the
   real `routeQuery` with the test key passed as ANTHROPIC_API_KEY (scratch).
-- **2026-10-18 [loop]** The own-data X3 fixture ("can you analyze my data", no
-  sex) failed upstream until US-15 AC36: production sent '{}' without sex or
-  height. It now sends the saved values and `missingInputs`, so a miss is a real
-  regression; partner fixture `us-15-ac36-2026-10-18` checks the answer asks for
-  height. Neither measured yet (answer-check arm).
+- **2026-10-18 [loop]** Own-data X3 ("can you analyze my data") failed upstream until US-15 AC36
+  (production sent '{}'); it now sends saved values and `missingInputs`, so a miss is real. Partner
+  fixture `us-15-ac36-2026-10-18` checks the answer asks for height; neither measured yet.
 - **2026-10-18 [classifier]** A classifier model swap moves labels with no
   prompt change. Replayed with thread context, Haiku 5.5 labelled six
   mid-thread value corrections ROUTE 30/30; Haiku 4.5 said MEASUREMENT 12/12.

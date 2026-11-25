@@ -10,7 +10,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, render, waitFor } from '@testing-library/react';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
-import { addMeasurement, flushRoadmapStore, initRoadmapStore, openHistoryLightbox, saveMedication } from '../lib/roadmap-data';
+import { addMeasurement, flushRoadmapStore, initRoadmapStore, openHistoryLightbox, saveMedication, getShownErase } from '../lib/roadmap-data';
 
 vi.mock('../lib/build-flags', () => ({ LOCAL_FIRST: true, SHOPIFY_SURFACE: true }));
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
@@ -53,8 +53,8 @@ function openHistory(metric: string) {
 
 describe('US-06 AC4: medication_history_viewed on a real store', () => {
   it('fires once, with no metadata, when the LDL history opens on a record with a recorded statin start', async () => {
-    expect(await addMeasurement('ldl', 3.4, '2026-08-01T00:00:00.000Z')).toMatchObject({ status: 'inserted' });
-    expect(await saveMedication('statin', 'atorvastatin', 20, 'mg')).toBe(true);
+    expect(await addMeasurement('ldl', 3.4, '2026-08-01T00:00:00.000Z', getShownErase())).toMatchObject({ status: 'inserted' });
+    expect(await saveMedication('statin', 'atorvastatin', 20, 'mg', getShownErase())).toBe(true);
     await flushRoadmapStore();
 
     const view = render(<HistoryLightboxHost />);
@@ -73,8 +73,8 @@ describe('US-06 AC4: medication_history_viewed on a real store', () => {
   });
 
   it('stays silent when the opened chart carries no marker (weight with only a statin)', async () => {
-    await addMeasurement('weight', 70, '2026-08-01T00:00:00.000Z');
-    await saveMedication('statin', 'atorvastatin', 20, 'mg');
+    await addMeasurement('weight', 70, '2026-08-01T00:00:00.000Z', getShownErase());
+    await saveMedication('statin', 'atorvastatin', 20, 'mg', getShownErase());
     await flushRoadmapStore();
 
     const view = render(<HistoryLightboxHost />);

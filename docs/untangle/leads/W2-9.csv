@@ -1,2 +1,2 @@
 id,section,title,status,evidence,pr,durability_check,needs_brad
-W2-9,"S7 web data layer, upload, standalone",Remove dead A/B client tracking,not started,"server-api.ts:96-128; calls at HealthTool.tsx:197, PlanPdf.tsx:240, useLongitudinalSave.ts:151",,,yes
+W2-9,"S7 web data layer, upload, standalone",Remove dead A/B client tracking,done,"Brad 2026-11-26 (US-09 AC62): trackABImpression, trackABConversion, getABAssignments and their calls (HealthTool, PlanPdf, useLongitudinalSave) are deleted, with the /api/ab route and recordABEvent, which nothing else called. Product events (getVisitorId, /api/events) stay.",,"widget-src/src/lib/server-api.pages-gate.test.ts 'A/B tracking, retired (US-09 AC62)'",yes

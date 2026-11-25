@@ -199,7 +199,7 @@ No cloud sign-up in the tour. One prompt after the person's third own save (a My
 edit or a saved lab report, not onboarding's answers, Apple Health or a merge) offers a
 copy in their own Dropbox or Google Drive. It shows once, waits for no sheet or tip to
 be up, and opens the Sync sheet once it has gone. Onboarding's last answer lands in the
-same turn as onboarding ends, so `finishOnboarding` passes over it (review R1).
+same turn as onboarding ends, so `RootView.finished` passes over it (review R1).
 
 ### Code
 
@@ -213,8 +213,8 @@ same turn as onboarding ends, so `finishOnboarding` passes over it (review R1).
   tips, `--ui-testing --show-tips` starts them fresh).
 - Anchors: `SummaryTiles` (the grid, tip 1), `PlanView` (the first Foundation card,
   tip 2; its Next calls `showMyData`), `MyDataView` (the Blood tests header, tip 3; it
-  scrolls the header into view once tip 3 is due). `RootView.finishOnboarding`
-  starts the tour.
+  scrolls the header into view once tip 3 is due). `RootView.finished` (the cover's
+  `finish` effect, App/FirstRun.swift) starts the tour.
 - `Plan/TileExplainerSheet.swift`: a tile's line above its existing evidence. It
   replaced `SummaryTiles`' `TileEvidenceSheet`.
 - `Onboarding/CloudPrompt.swift`: the third-save rule and `CloudPromptView`. Not named

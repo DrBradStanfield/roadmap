@@ -20,9 +20,9 @@ struct RootView: View {
     @State private var analytics = Analytics()
     /// The backup offer after the person's third save (US-57 AC8).
     @State private var cloudPrompt = CloudPrompt()
-    @State private var offeringCloud = false
-    @State private var backingUp = false
-    @State private var showSync = false
+    @State private var offer = Offer.idle
+    /// Each ask for the backup offer bumps it: one wait, which a newer ask restarts (S16).
+    @State private var offerAsks = 0
     /// The app's window: the cloud prompt waits while any sheet is up in it.
     @State private var window: UIWindow?
     @Environment(\.requestReview) private var requestReview
@@ -32,32 +32,16 @@ struct RootView: View {
     @Environment(AppleHealthSync.self) private var health: AppleHealthSync?
     @Environment(LiveHealth.self) private var live: LiveHealth?
     @Environment(DataEraser.self) private var eraser
-    /// Set once the welcome screen is done; a setting, not health data.
-    @AppStorage("welcomed") private var welcomed = false
-    /// Set once the new-user questions are done (US-54); never shown again after.
-    @AppStorage("onboarded") private var onboarded = false
-    /// Set when the first question screen is reached (OnboardingView).
-    @AppStorage("onboardingHealthAsked") private var onboardingStarted = false
-    /// Which questions Apple Health answered, by name (US-54 AC3b); forgotten with the run.
-    @AppStorage("onboardingFromHealth") private var onboardingFromHealth = ""
-    /// The questions began after "I already use Health Roadmap": a relaunch keeps asking
-    /// only what the cloud record lacks (Codex re-check R1).
-    @AppStorage("onboardingOnlyMissing") private var onlyMissingRun = false
-    /// The questions restarted after "Delete all my data": the record keeps the units the
-    /// erase kept, so the phone's region never overrides them (Codex R1).
-    @AppStorage("onboardingAfterErase") private var afterErase = false
+    /// The first run's keys, written only through `send` (FirstRun.swift).
+    private let keys = FirstRunKeys()
     /// The record's erase count when the questions were last finished: an erase made on
     /// another device raises it through the cloud, and the questions come back (US-54 AC7).
     @AppStorage("onboardedEpoch") private var onboardedEpoch = 0
     /// Whose record that count belongs to: "" for the phone's own, else the cloud provider.
     /// Counts from different records never compare (adversary re-check N1).
     @AppStorage("onboardedSource") private var onboardedSource = ""
-    /// What covers the tabs on a first run, decided once at launch, so the cover
-    /// stays until the person finishes even as answers fill the record.
-    @State private var firstRun: FirstRun?
-    @State private var decided = false
-
-    enum FirstRun: Equatable { case welcome, questions(onlyMissing: Bool) }
+    /// What covers the tabs on a first run (FirstRun.swift).
+    @State private var cover = Cover.deciding
 
     var body: some View {
         TabView(selection: $tab) {
@@ -84,35 +68,45 @@ struct RootView: View {
         .environment(store)
         .environment(\.analytics, analytics)
         .onAppear {
-            Tour.finished = { Task { await offerCloudSoon() } }
+            Tour.finished = { offerAsks += 1 }
             health?.analytics = analytics
         }
-        .sheet(isPresented: $offeringCloud, onDismiss: cloudPromptClosed) {
-            CloudPromptView { backingUp = true }
+        // Back up closes the prompt by leaving `prompting`; Sync opens once it has gone (onDismiss).
+        // Each sheet's onDismiss looks at the record again: an erase that closed it (S48).
+        .sheet(isPresented: Binding(get: { offer.prompting }, set: { if !$0 { send(.promptClosed) } }), onDismiss: { send(.promptClosed); recordChanged() }) {
+            CloudPromptView { send(.backUpTapped) }
                 .onAppear {
                     // Shown, so never again (AC8); marked only once it is on screen.
                     cloudPrompt.shown()
                     analytics.event(.cloudPromptShown)
                 }
         }
-        .sheet(isPresented: $showSync) { SyncView(sync: sync) }
+        .sheet(isPresented: Binding(get: { offer == .sync }, set: { if !$0 { send(.syncClosed) } }), onDismiss: recordChanged) { SyncView(sync: sync) }
         .task(id: store.ownSaves) {
             // The person's own saves after onboarding (AC9). Onboarding's answers are made
-            // under its cover; finishOnboarding passes over its last one (review R1).
-            guard onboarded, firstRun == nil else { return cloudPrompt.ignoreSaves(upTo: store.ownSaves) }
+            // under its cover; finishing passes over its last one (review R1).
+            guard keys.onboarded, !cover.shown else { return cloudPrompt.ignoreSaves(upTo: store.ownSaves) }
             cloudPrompt.ownSaves(store.ownSaves)
             // The third own save ends a tour still running, so it never blocks the prompt (R2b).
             if cloudPrompt.endsTour { _ = Tour.end() }
-            await offerCloudSoon()
+            offerAsks += 1
         }
-        .fullScreenCover(isPresented: Binding(get: { firstRun != nil }, set: { if !$0 { firstRun = nil } })) {
+        // The one wait before the offer, so the sheet that saved, or the tip that closed, has
+        // gone. A newer ask restarts it; nothing waits once the prompt is spent.
+        .task(id: offerAsks) {
+            guard offerAsks > 0, !cloudPrompt.isSpent else { return }
+            try? await Task.sleep(for: .seconds(1))
+            if !Task.isCancelled { offerCloud() }
+        }
+        // Nothing inside the cover dismisses it: only `send` moves it.
+        .fullScreenCover(isPresented: Binding(get: { cover.shown }, set: { _ in })) {
             firstRunCover
                 // The launch screen's colour, so the opening and a relaunch mid-questions never flash (US-25 AC21b).
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(Color(.systemGroupedBackground), ignoresSafeAreaEdges: .all)
         }
         .onAppear(perform: decideFirstRun)
-        .onChange(of: eraser.startsOver) { startOver() }
+        .onChange(of: eraser.startsOver) { send(.erased) }
         // An erase from elsewhere that landed while this phone's own held it (US-25 AC16d).
         .onChange(of: eraser.holdLifts) { recordChanged() }
         // Erase words the Settings sheet closed on before they were seen (US-25 AC16d).
@@ -122,10 +116,12 @@ struct RootView: View {
             Text(eraser.held?.words ?? "")
         }
         // An erase from elsewhere; this phone's own waits for its words to be dismissed.
-        .onChange(of: shownRecord) { recordChanged() }
-        .onChange(of: store.recordJSON) { reviewPrompt.recordChanged() }
+        // Another record's erase epoch never stands in for this one's (S41): any change to
+        // ShownRecord, the drawn epoch included, is a switch for the reminders.
+        .onChange(of: shownRecord) { reminders.recordSourceChanged(); recordChanged() }
+        .onChange(of: store.readable?.json) { reviewPrompt.recordChanged() }
         // Reminders refill on launch, on every record change and on return (US-25 AC9).
-        .task(id: store.recordJSON) { await reminders.refresh() }
+        .task(id: store.readable?.json) { await reminders.refresh() }
         .onChange(of: scenePhase) {
             guard scenePhase == .active else { return }
             Task { await reminders.refresh() }
@@ -143,7 +139,7 @@ struct RootView: View {
             try? await Task.sleep(for: .seconds(2))
             // Never over the cloud prompt, a tour tip or any sheet (review R7): a later
             // visit asks instead, since planOpened is not used up here.
-            guard !Task.isCancelled, !offeringCloud, quiet else { return }
+            guard !Task.isCancelled, offer == .idle, quiet else { return }
             if reviewPrompt.planOpened() { requestReview() }
         }
     }
@@ -152,50 +148,42 @@ struct RootView: View {
 
     /// The welcome screen, then the new-user questions, in one cover.
     @ViewBuilder private var firstRunCover: some View {
-        switch firstRun {
+        switch cover {
         case .welcome:
             WelcomeView(sync: sync) {
-                welcomed = true
-                firstRun = needsQuestions ? .questions(onlyMissing: false) : nil
+                send(.started(needs: needsQuestions))
             } connected: {
-                welcomed = true
-                onlyMissingRun = true
-                if needsQuestions { firstRun = .questions(onlyMissing: true) } else { finishOnboarding() }
+                send(.connected(needs: needsQuestions))
             }
-        case .questions(let onlyMissing):
+        case .questions(let run):
             if let health {
-                OnboardingView(store: store, health: health, onlyMissing: onlyMissing, keepUnits: afterErase, finish: finishOnboarding)
+                OnboardingView(store: store, health: health, onlyMissing: run == .onlyMissing, keepUnits: run == .afterErase) { send(.finished) }
             } else {
                 // Never strand a cover with nothing on it (review R13).
-                Color.clear.onAppear(perform: finishOnboarding)
+                Color.clear.onAppear { send(.finished) }
             }
-        case nil:
+        case .deciding, .none:
             EmptyView()
         }
     }
 
-    /// A phone that has not finished the questions, with a record that lacks sex, birth year
-    /// or height, or one that started them (quit at weight resumes there; review R2, AC7).
-    private var needsQuestions: Bool {
-        !onboarded && (onboardingStarted || (store.myData.map { OnboardingSteps.needsFlow($0.profile) } ?? false))
-    }
+    /// nil while the record is unread: the cover closes unfinished, so the next launch decides (S42).
+    private var needsQuestions: Bool? { keys.needsQuestions(needsFlow: needsFlow) }
+
+    private var needsFlow: Bool? { store.myData.map { OnboardingSteps.needsFlow($0.profile) } }
 
     /// Clarity's screen name, in fixed words (US-25 AC19).
     private var screenName: Analytics.Screen {
-        switch firstRun {
+        switch cover {
         case .welcome: .welcome
         case .questions: .onboarding
         // A US-56 page names only the screen, never the metric (its usage signal). D9's words (Brad 2026-11-05).
-        case nil: switch tab { case .health: (live?.pagesOpen ?? 0) > 0 ? .appleHealthMetric : .myHealth; case .chat: .chat }
+        case .deciding, .none: switch tab { case .health: (live?.pagesOpen ?? 0) > 0 ? .appleHealthMetric : .myHealth; case .chat: .chat }
         }
     }
 
-    /// Which record is on screen and its erase count. The phone's copy shows until a
-    /// connected cloud opens, so "open" is part of it.
-    private struct ShownRecord: Equatable { var source: String; var open: Bool; var epoch: Int? }
-
     private var shownRecord: ShownRecord {
-        ShownRecord(source: source, open: sync.recordOpen, epoch: store.myData?.eraseEpoch)
+        ShownRecord(source: source, shownSession: sync.connection.shownSession, store: store)
     }
 
     private var source: String { sync.provider?.rawValue ?? "" }
@@ -208,52 +196,53 @@ struct RootView: View {
     }
 
     /// The count for a record the phone has not counted yet (a cloud just connected or
-    /// switched; the questions' own state) is taken, not compared. The phone's copy of a
-    /// connected cloud never sets it: only the opened cloud record does.
+    /// switched; the questions' own state) is taken, not compared. Only an open record sets it
+    /// (ShownRecord.open): never the phone's copy of a connected cloud, only the cloud record once
+    /// drawn (S72); never the cloud's record a Disconnect still draws, only the phone's once it lands (S73).
+    /// An erase from elsewhere closes the backup prompt or Sync sheet first (S48): their onDismiss
+    /// calls this again, and the questions rise once the sheet has gone.
     private func recordChanged() {
-        guard decided, firstRun == nil, !eraser.holdsRemoteErases else { return }
-        if erasedElsewhere { startOver(); return }
-        if source != onboardedSource, source.isEmpty || sync.recordOpen { takeCount() }
-    }
-
-    private func takeCount() {
-        onboardedEpoch = store.myData?.eraseEpoch ?? 0
-        onboardedSource = source
-    }
-
-    private func decideFirstRun() {
-        guard !decided else { return }
-        decided = true
-        // At launch the cover is simply there, never sliding up over an empty My health
-        // (US-25 AC21b, Brad 2026-10-26).
-        var now = Transaction()
-        now.disablesAnimations = true
-        withTransaction(now) {
-            // A launch mid-questions resumes them instead (AC7); a skipped user lands in needsQuestions.
-            if welcomed, onboarded, erasedElsewhere { startOver(); return }
-            firstRun = !welcomed ? .welcome : needsQuestions ? .questions(onlyMissing: onlyMissingRun) : nil
+        let uncounted = source != onboardedSource && countable
+        switch Cover.onRecordChange(cover: cover, offer: offer, holding: eraser.holdsRemoteErases, erasedElsewhere: erasedElsewhere, uncounted: uncounted) {
+        case .erase?: send(.erased)
+        // From any offer, these two land idle: the prompt closes (to Sync after Back up), then Sync.
+        case .closeOffer?: send(.promptClosed); send(.syncClosed)
+        case .takeCount?: takeCount()
+        case nil: break
         }
     }
 
-    /// "Delete all my data" empties the record, so the questions come back (US-54 AC7,
-    /// Brad 2026-10-22). Not the welcome screen: the person is already in, and a
-    /// connected cloud stays connected.
-    private func startOver() {
-        onboarded = false
-        onboardingStarted = false
-        onboardingFromHealth = ""
-        onlyMissingRun = false
-        afterErase = true
-        firstRun = .questions(onlyMissing: false)
+    /// The record shown is its source's own, drawn: only it sets the erase count (S43, S72, S73).
+    private var countable: Bool { shownRecord.open }
+
+    /// finished() calls it too: a finish before the source's own record is drawn takes nothing (S43, S72, S73).
+    private func takeCount() {
+        guard countable, let data = store.myData else { return }
+        (onboardedEpoch, onboardedSource) = (data.eraseEpoch ?? 0, source)
     }
 
-    private func finishOnboarding() {
-        onboarded = true
-        onboardingFromHealth = ""
-        afterErase = false
+    private func decideFirstRun() {
+        // At launch the cover is simply there, never sliding up over an empty My health
+        // (US-25 AC21b, Brad 2026-10-26). Only the first launched event decides.
+        var now = Transaction()
+        now.disablesAnimations = true
+        withTransaction(now) { send(.launched(keys.launch(needsFlow: needsFlow, erasedElsewhere: erasedElsewhere))) }
+    }
+
+    /// Moves the cover by `event`, writes its keys, and runs the effect it names. "Delete all my
+    /// data" empties the record, so the questions come back (US-54 AC7, Brad 2026-10-22): the
+    /// keys say so (startOver), nothing more.
+    private func send(_ event: Cover.Event) {
+        let (next, effect) = Cover.transition(cover, event)
+        keys.persist(next, effect)
+        cover = next
+        if effect == .finish { finished() }
+    }
+
+    /// The questions are done, once (S9).
+    private func finished() {
         takeCount()
         tab = .health
-        firstRun = nil
         // Onboarding's answers, the last one included, are not the person's own saves (R1).
         cloudPrompt.ignoreSaves(upTo: store.ownSaves)
         // The tour continues on My health, once ever (US-57 AC1).
@@ -268,31 +257,24 @@ struct RootView: View {
     /// No sheet, popover or alert is up in the window.
     private var quiet: Bool { window?.rootViewController?.presentedViewController == nil }
 
-    /// Offers the backup when it is due, at a quiet moment: no cover, no sheet up. A pause
-    /// first, so the sheet that saved, or the tip that closed, has gone. Nothing waits once
-    /// the prompt is spent.
     /// Settings closed: any erase words left unseen show here, then a due backup offer (US-57 AC8).
     private func settingsClosed() {
         eraser.settingsClosed()
-        Task { await offerCloudSoon() }
+        offerAsks += 1
     }
 
-    private func offerCloudSoon() async {
-        guard !cloudPrompt.isSpent else { return }
-        try? await Task.sleep(for: .seconds(1))
-        if !Task.isCancelled { offerCloud() }
-    }
-
+    /// Offers the backup when it is due, at a quiet moment: no cover, no sheet up.
     private func offerCloud() {
-        guard firstRun == nil, quiet, cloudPrompt.isDue(connected: sync.provider != nil) else { return }
-        offeringCloud = true
+        guard !cover.shown, quiet, cloudPrompt.isDue(connected: sync.provider != nil) else { return }
+        send(.due)
     }
 
-    /// "Back up" opens Sync once the prompt has gone, so two sheets never overlap.
-    private func cloudPromptClosed() {
-        analytics.event(backingUp ? .cloudPromptBackUp : .cloudPromptNotNow)
-        if backingUp { showSync = true }
-        backingUp = false
+    /// Moves the offer by `event`; the prompt's closing is counted once, by its answer.
+    private func send(_ event: Offer.Event) {
+        if event == .promptClosed, case .offering(let backUp) = offer {
+            analytics.event(backUp ? .cloudPromptBackUp : .cloudPromptNotNow)
+        }
+        offer = Offer.transition(offer, event)
     }
 }
 

@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+S-22,S2 server,Email capture: check the IP limit first,done,"api.measurements handleKlaviyoCapture and the api.reminders-v2 address-lane opt-in now check the per-IP limiter before the per-email limiter, so a request the IP limit refuses never touches the email map. The 429 and its text are the same for either limit. From the PR 1613 review",1613,"app/routes/api.measurements.ip-first.test.ts, app/routes/api.reminders-v2.ip-first.test.ts (US-23 AC8, US-17 AC7, US-52 AC4f)",no

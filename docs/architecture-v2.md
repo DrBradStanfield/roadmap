@@ -6,7 +6,7 @@ artifact: https://claude.ai/artifact/BvxuSfA86Lw95E5hMTow24
 <a id="intro"></a>
 # Health by Dr Brad — Architecture (v2, local-first)
 
-Last updated 2026-09-29. **Status: Live in production** — drstanfield.com serves the v2 local-first build on `/pages/roadmap`; microvitamin.com has no roadmap page (`/pages/roadmap` answered 404 on 2026-09-29) and runs the chat bubble alone, in brand posture. Whether microvitamin.com gets a roadmap page is Brad's open decision. The thin server runs React Router 7 on Fly (`v361+`). As of the **§12 split (2026-06-24)** the tool runs on **two domains / two Shopify apps / two Fly apps from one codebase & one widget bundle**: `drstanfield.com` is the **education** store (app `shopify.app.edu.toml`, Fly `health-tool-edu`) and `microvitamin.com` is the **commerce** store (app `shopify.app.toml`, Fly `health-tool-app`). This page and its parts are the single source of truth for v2 architecture. The legacy v1 shape and migration log live in **git history**. See [the reference](reference.md#document-import-decisions) for retained rationale and how to retrieve retired designs.
+Last updated 2026-09-29. **Status: Live in production** — drstanfield.com serves the v2 local-first build on `/pages/roadmap`; microvitamin.com serves the same tool on `/pages/health-plan` in brand posture, the hero photo hidden by CSS (Brad, 2026-11-18; `/pages/roadmap` still 404s there). The thin server runs React Router 7 on Fly (`v361+`). As of the **§12 split (2026-06-24)** the tool runs on **two domains / two Shopify apps / two Fly apps from one codebase & one widget bundle**: `drstanfield.com` is the **education** store (app `shopify.app.edu.toml`, Fly `health-tool-edu`) and `microvitamin.com` is the **commerce** store (app `shopify.app.toml`, Fly `health-tool-app`). This page and its parts are the single source of truth for v2 architecture. The legacy v1 shape and migration log live in **git history**. See [the reference](reference.md#document-import-decisions) for retained rationale and how to retrieve retired designs.
 
 **What changed in one sentence:** the user's health data moved out of Brad's Supabase and into the *user's own cloud* (Google Drive / Dropbox / GitHub / self-host) as plain JSON files — Brad now stores no health record and can't read the user's cloud (what the server does keep, such as chat text for 30 days and a scrubbed copy of each health question with no end date: [privacy-and-data-path.md](architecture-v2/privacy-and-data-path.md#thin-server)).
 
@@ -61,7 +61,7 @@ flowchart TB
   %% Two front doors
   subgraph FD["Front doors (delivery)"]
     direction TB
-    FD1["2 Shopify stores<br/>drstanfield.com/pages/roadmap + microvitamin.com (chat only)<br/>SAME health-plan-v2.js bundle<br/>(LOCAL_FIRST + SHOPIFY_SURFACE)"]
+    FD1["2 Shopify stores<br/>drstanfield.com/pages/roadmap + microvitamin.com/pages/health-plan<br/>SAME health-plan-v2.js bundle<br/>(LOCAL_FIRST + SHOPIFY_SURFACE)"]
     FD2["GitHub Pages / self-host<br/>standalone build (LOCAL_FIRST only)<br/>BYOK chat + upload"]
   end
   %% The App
@@ -87,7 +87,7 @@ flowchart TB
     S3["/api/reminders-v2<br/>dumb scheduler"]
     S4["/api/google-token<br/>stateless exchange"]
     S5["/api/measurements<br/>Klaviyo capture only"]
-    S6["/api/ab · /api/feedback<br/>events · feedback"]
+    S6["/api/events · /api/feedback<br/>events · feedback"]
     S7["Crons (reminder-v2 · trending · youtube-bot) · Discord bot (WS) · Admin app (Polaris)"]
   end
   %% External
@@ -178,7 +178,7 @@ The single most clarifying idea in v2: **where the app is served** and **where t
 
 ### Delivery (front door)
 
-- **Two Shopify stores** — the same theme extension on both: the tool on `drstanfield.com/pages/roadmap` (education); only the chat bubble on **microvitamin.com** (commerce, no roadmap page, Brad's open decision). The mainstream door; AI runs on Brad's server (free to the user). Each store is a separate Shopify app + Fly app but serves the *identical* widget bundle — see [deployment topology](architecture-v2/ops-deployment.md#deployment-topology).
+- **Two Shopify stores** — the same theme extension on both: the tool on `drstanfield.com/pages/roadmap` (education); and on **microvitamin.com** `/pages/health-plan` (commerce, brand posture, hero photo hidden by CSS; Brad 2026-11-18). The mainstream door; AI runs on Brad's server (free to the user). Each store is a separate Shopify app + Fly app but serves the *identical* widget bundle — see [deployment topology](architecture-v2/ops-deployment.md#deployment-topology).
 - **GitHub Pages / self-host** — the same app, statically hosted. The "works if Brad goes dark" door; AI is bring-your-own-key. Also the primary dev/test surface.
 
 ### Storage (where the file lives)

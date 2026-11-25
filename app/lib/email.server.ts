@@ -90,13 +90,15 @@ import { formatReminderDate } from '../../packages/health-core/src/reminders';
 
 
 /**
- * Send a reminder email via Resend. Returns true on success.
+ * Send a reminder email via Resend. Returns true on success. `signal` aborts
+ * the request; the SDK reports the abort as an error, so it returns false.
  */
 export async function sendReminderEmail(
   to: string,
   html: string,
   preferencesUrl: string,
   subject = 'Health Reminders', // v1 default; v2 passes its own (Brad, 2026-06-10)
+  signal?: AbortSignal,
 ): Promise<boolean> {
   if (!resend) {
     // Production silent-fail trap: if RESEND_API_KEY is somehow unset on Fly,
@@ -120,7 +122,7 @@ export async function sendReminderEmail(
         'List-Unsubscribe': `<${preferencesUrl}>`,
         'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
       },
-    });
+    }, { signal });
     if (error) {
       throw new Error(`Resend rejected a reminder: ${resendErrorText(error)}`);
     }

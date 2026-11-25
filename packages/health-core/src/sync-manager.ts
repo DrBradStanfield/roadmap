@@ -21,6 +21,7 @@
  */
 import {
   ConflictError,
+  LANDED_HINT,
   LostUpdateError,
   StorageError,
   UNREACHABLE_HINT,
@@ -28,6 +29,7 @@ import {
   type StorageBackendId,
 } from './adapter';
 import { RecordShapeError, SchemaTooNewError } from './migrate';
+import { afterWrite, mayHaveLanded } from './write-refusal';
 
 const MAX_SAVE_ATTEMPTS = 5;
 
@@ -137,7 +139,12 @@ export class SyncManager<T extends SyncedFile> {
         } catch (error) {
           lastError = error;
           if (error instanceof LostUpdateError) mayHaveWritten = true;
+          // A write that threw may still have landed (a lost answer, a 5xx): its adapter says so in
+          // its outcome; one it did not name is marked, never rewrapped, so its words stay (lead S57).
+          else afterWrite(error);
           if (error instanceof ConflictError) continue; // remote moved — re-read & re-merge
+          // This save's read answered before its write failed, so its words cannot say nothing was read (US-10 AC20).
+          if (!mayHaveWritten && error instanceof StorageError) error.afterRead = true;
           throw error;
         }
       } catch (error) {
@@ -153,14 +160,17 @@ export class SyncManager<T extends SyncedFile> {
         if (!mayHaveWritten) throw error;
         // The status stays, so a 401 still refreshes the token (iOS).
         const status = error instanceof StorageError ? error.status : undefined;
-        const hint = !landedWarning ? VERIFY_HINT : afterLanded(landedWarning, status === 401 || status === 403
+        const reason = error instanceof StorageError ? error.reason : undefined;
+        const hint = !landedWarning ? VERIFY_HINT : afterLanded(landedWarning, accessRefused(reason)
           ? 'the provider refused this connection’s access. Reconnect the provider, which grants access again, then read the record again to check what landed before retrying.'
           : 'a later step failed, so check what landed: read the record again before trying it a second time.');
         // The reason stays too, so a revoked grant met after the write is still a reconnect (US-09 AC30).
-        throw new StorageError(error instanceof Error ? error.message : 'Save failed after a write.', hint, error, status, error instanceof StorageError ? error.reason : undefined);
+        const wrapped = new StorageError(error instanceof Error ? error.message : 'Save failed after a write.', hint, error, status, reason, 'may-have-landed');
+        if (landedWarning) wrapped.earlierLanded = true;
+        throw wrapped;
       }
     }
-    throw new StorageError(
+    const storm = new StorageError(
       `Save failed after ${MAX_SAVE_ATTEMPTS} attempts — a sync conflict storm`,
       // Any earlier attempt may have written, even if the final conflict
       // refused its upload. Track the whole save, not just the last error.
@@ -170,7 +180,12 @@ export class SyncManager<T extends SyncedFile> {
           ? 'Some of it may have landed. Read the record again before retrying.'
           : 'Your data is unharmed and nothing was written. Try again.',
       lastError,
+      undefined,
+      undefined,
+      // Every attempt's write was refused as a conflict, unless one went out first.
+      mayHaveWritten ? 'may-have-landed' : 'refused',
     );
+    throw storm;
   }
 
   /**
@@ -184,13 +199,17 @@ export class SyncManager<T extends SyncedFile> {
       throw new StorageError(
         'Verify-after-write failed: the file is missing after a successful write',
         VERIFY_HINT,
+        undefined,
+        undefined,
+        undefined,
+        'may-have-landed',
       );
     }
     let parsed: T;
     try {
       parsed = this.doc.migrate(body, this.ctx());
     } catch (error) {
-      throw new StorageError('Verify-after-write failed: the written file did not parse', VERIFY_HINT, error);
+      throw new StorageError('Verify-after-write failed: the written file did not parse', VERIFY_HINT, error, undefined, undefined, 'may-have-landed');
     }
     verifyPersistedFile(this.doc, expected, parsed, this.ctx());
   }
@@ -209,6 +228,11 @@ export interface StorageFailure {
   message: string;
   /** What to do about it. */
   hint: string;
+}
+
+/** A token or a grant the provider refused (a 401 or a 403 that is not a limit). */
+export function accessRefused(reason: StorageError['reason']): boolean {
+  return reason === 'auth' || reason === 'forbidden';
 }
 
 export function describeStorageFailure(error: unknown, provider: string): StorageFailure {
@@ -246,28 +270,59 @@ export function describeStorageFailure(error: unknown, provider: string): Storag
   // A rejected token is not an unreachable folder: the connection is alive but
   // buys nothing — a scope change, or the folder removed. Sending the user to
   // check a folder that is fine never gets them anywhere; reconnecting does.
-  if (error instanceof StorageError && (error.status === 401 || error.status === 403)) {
+  if (error instanceof StorageError && accessRefused(error.reason)) {
     // A refusal after a write went out cannot say nothing was written: say both.
-    if (error.hint?.includes('landed')) {
+    if (mayHaveLanded(error)) {
       return {
         message: `${provider} refused this connection’s access after a change was sent`,
-        hint: error.hint.startsWith(EARLIER)
+        hint: error.earlierLanded && error.hint
           ? error.hint
-          : 'Reconnect the provider, which grants access again. The change may have landed: read the record again before retrying.',
+          : `${RECONNECT_HINT} The change may have landed: read the record again before retrying.`,
       };
     }
     return {
-      message: `${provider} refused this connection’s access. Nothing was read and nothing was written`,
-      hint: 'Reconnect the provider, which grants access again.',
+      message: `${provider} refused this connection’s access. ${untouched(error)}`,
+      hint: RECONNECT_HINT,
     };
   }
   if (error instanceof StorageError && error.hint) {
     return { message: error.message, hint: error.hint };
   }
+  if (error instanceof StorageError) return unworded(error, provider);
+  // A failure after a write went out, with no words of its own: it may have landed.
+  if (typeof error === 'object' && error !== null && mayHaveLanded(error)) {
+    return { message: `${provider} did not answer`, hint: LANDED_HINT };
+  }
   return {
     message: `${provider} did not answer. Nothing was written`,
     hint: UNREACHABLE_HINT,
   };
+}
+
+const RECONNECT_HINT = 'Reconnect the provider, which grants access again.';
+
+/** What a refusal that stored nothing left alone: a save's write fails after its own read answered (US-10 AC20). */
+export function untouched(error: StorageError): string {
+  return error.afterRead ? 'Nothing was written' : 'Nothing was read and nothing was written';
+}
+
+/**
+ * The one table for a storage failure with no words of its own (US-10 AC20, lead A34), keyed by
+ * its outcome and, where the words differ, its reason. A failure with a status got an answer: an
+ * error. One that is not a refusal and has no status came with an answer that could not be used:
+ * `fetchOrFail`'s no-answer always carries words of its own.
+ */
+function unworded(error: StorageError, provider: string): StorageFailure {
+  if (error.outcome === 'refused') {
+    if (error.reason === 'writes-stopped') return { message: 'Saving has stopped here. Nothing was written', hint: 'Sign in again to save here.' };
+    // A revoked grant is only mended by a new sign-in, so "try once more" would not help (US-09 AC30).
+    if (error.reason === 'reconnect') return { message: `${provider} needs to be reconnected. Nothing was written`, hint: RECONNECT_HINT };
+    return { message: `${provider} refused the ${error.afterRead ? 'change' : 'request'}. Nothing was written`, hint: UNREACHABLE_HINT };
+  }
+  const answer = error.status !== undefined ? `${provider} returned an error` : `${provider} returned an answer that could not be used`;
+  return error.outcome === 'may-have-landed'
+    ? { message: answer, hint: LANDED_HINT }
+    : { message: `${answer}. Nothing was written`, hint: UNREACHABLE_HINT };
 }
 
 /** The failures storage is allowed to have. Anything else is a bug in us, and

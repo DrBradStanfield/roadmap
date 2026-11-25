@@ -67,21 +67,21 @@ const CONTENT_DIRS = [
 ];
 
 /** One index entry from a file's frontmatter. Exported for tests. */
-export function indexEntry(handle: string, fm: Record<string, any>): IndexEntry {
+export function indexEntry(handle: string, fm: Record<string, unknown>): IndexEntry {
   const entry: IndexEntry = {
-    title: fm.title,
+    title: fm.title as string,
     handle,
-    url: fm.url || `https://drstanfield.com/blogs/articles/${handle}`,
+    url: (fm.url as string) || `https://drstanfield.com/blogs/articles/${handle}`,
     tags: Array.isArray(fm.tags) ? fm.tags : [],
     keywords: Array.isArray(fm.keywords) ? fm.keywords : [],
-    publishedAt: fm.publishedAt || '',
+    publishedAt: (fm.publishedAt as string) || '',
   };
 
-  if (fm.commerceUrl) entry.commerceUrl = fm.commerceUrl;
-  if (fm.type) entry.type = fm.type;
-  if (fm.youtube) entry.youtube = fm.youtube;
-  if (fm.product) entry.product = fm.product;
-  if (fm.summary) entry.summary = fm.summary;
+  if (fm.commerceUrl) entry.commerceUrl = fm.commerceUrl as string;
+  if (fm.type) entry.type = fm.type as IndexEntry['type'];
+  if (fm.youtube) entry.youtube = fm.youtube as string;
+  if (fm.product) entry.product = fm.product as IndexEntry['product'];
+  if (fm.summary) entry.summary = fm.summary as string;
   // Topic masters (US-50 AC2). A malformed value is left out, so it hides nothing.
   if (Array.isArray(fm.topics) && fm.topics.every((t: unknown) => typeof t === 'string')) entry.topics = fm.topics;
   // Only an article may leave the router's view; a master or guideline never does.

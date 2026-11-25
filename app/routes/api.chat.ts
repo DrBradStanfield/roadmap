@@ -7,14 +7,16 @@
  * DELETE /api/chat { conversationId }    — Delete conversation
  */
 import { type LoaderFunctionArgs, type ActionFunctionArgs } from "react-router";
-import * as Sentry from '@sentry/react-router';
-import { getAuthenticatedUser, getCustomerId, checkSubscriptionFromTags, getCustomerOrders, isValidUuid } from '../lib/route-helpers.server';
+import { getAuthenticatedUser, getCustomerId } from '../lib/route-helpers.server';
 import { getClientIp } from '../lib/local-first-route.server';
 import { cappedBody } from '../lib/capped-body.server';
 import { takeWebChatTurn } from '../lib/rate-limiter';
 import { ipBucket } from '../lib/app-gate.server';
-import { authenticate } from '../shopify.server';
-import { logAudit, getProfile, updateSubscriptionPlan, createUserClient, getOrCreateGuestSession, GuestRateLimitError, type DbProfile } from '../lib/supabase.server';
+import { authenticate, type AdminApiContext } from '../shopify.server';
+import { createUserClient, type SupabaseClient } from '../lib/supabase-client.server';
+import { logAudit } from '../lib/supabase-identity.server';
+import { getOrCreateGuestSession, GuestRateLimitError } from '../lib/supabase-guest.server';
+import { getProfile } from '../lib/supabase-account.server';
 import {
   resolveChatContext,
   buildSystemBlocks,
@@ -27,11 +29,13 @@ import {
   generateTitle,
   MAX_MESSAGE_LENGTH,
 } from '../lib/chat.server';
-import { routeQuery, reportRouterFailure, sanitizeForRouter, redactForWidget } from '../lib/chat-router.server';
-import { routerColumns, matchEventText, answerColumns } from '../lib/chat-persist.server';
+import { reportRouterFailure, redactForWidget } from '../lib/chat-router.server';
+import { routerTurn, runRouter } from '../lib/chat-router-stage.server';
+import { matchEventRow, matchEventText, answerColumns } from '../lib/chat-persist.server';
 import { loadBlogIndex } from '../lib/blog-index.server';
 import { openArticle, preferMasters } from '../lib/router-view';
-import { MAX_HISTORY_MESSAGES, MAX_HISTORY_TURN_CHARS, cutText } from '../../packages/health-core/src/chat-history';
+import { reportChatError, validConversationId, readClientHistory, streamTurn, type Turn } from '../lib/chat-turn-io.server';
+import { getCachedOrders, refreshSubscriptionIfStale } from '../lib/chat-customer-cache.server';
 import { classifyMessage, shouldFireRouter } from '../lib/chat-classifier.server';
 import { claimChatTurn, CHAT_BUSY_REPLY, type DedupHistoryItem } from '../lib/chat-dedup.server';
 import { PURGED_TEXT, clearConversationMatchEvents } from '../lib/chat-purge-cron.server';
@@ -40,71 +44,15 @@ import { recordServerEvent } from '../lib/product-events.server';
 import { subscriptionActionsEnabled, getCachedSubscriptions, formatSubscriptionBlock, subscriptionCard, SUBSCRIPTION_HELP_LINE } from '../lib/subscription-gateway.server';
 import { CHAT_PROMPT } from '../lib/chat-system-prompt.server';
 
-// Only fixed operation descriptions enter diagnostics. Database errors can echo
-// conversation contents even when every identifier passed validation.
-function reportChatError(message: string): void {
-  console.error(message);
-  Sentry.captureException(new Error(message), { tags: { feature: 'chat' } });
-}
-
-function validConversationId(value: unknown): value is string {
-  return typeof value === 'string' && isValidUuid(value.toLowerCase());
-}
-
-type Turn = { role: 'user' | 'assistant'; content: string };
-
-/**
- * The widget's earlier turns, sent from its own chat-history.json (US-15 AC7:
- * the server stores none). Whitelisted roles, non-empty strings, the same
- * bound the BYOK transport uses, each turn cut at MAX_HISTORY_TURN_CHARS (no
- * shorter than a question may be), and never starting on an assistant turn — the Messages API 400s on that,
- * which would surface as a fallback.
- */
-function readClientHistory(value: unknown): Turn[] {
-  if (!Array.isArray(value)) return [];
-  const turns = value.slice(-MAX_HISTORY_MESSAGES).filter((t): t is Turn =>
-    !!t && typeof t === 'object' && (t.role === 'user' || t.role === 'assistant')
-    && typeof t.content === 'string' && t.content.length > 0)
-    .map((t) => ({ role: t.role, content: cutText(t.content, MAX_HISTORY_TURN_CHARS) }));
-  return turns.slice(Math.max(0, turns.findIndex((t) => t.role === 'user')));
-}
-
-/**
- * An NDJSON reply (US-15 AC16): one JSON object per line, written as `run`
- * produces them. The status is sent before the answer exists, so a failure
- * inside `run` ends the stream with an error `done` line instead. A reader
- * that went away does not stop the turn: `run` still finishes and persists.
- * `no-transform` keeps proxies from buffering the stream to compress it.
- */
-function streamTurn(run: (write: (line: object) => void) => Promise<void>): Response {
-  const encoder = new TextEncoder();
-  const body = new ReadableStream<Uint8Array>({
-    start(controller) {
-      const write = (line: object) => {
-        try { controller.enqueue(encoder.encode(JSON.stringify(line) + '\n')); } catch { /* reader gone */ }
-      };
-      void run(write)
-        .catch(() => {
-          reportChatError('Chat: Action failed');
-          write({ type: 'done', success: false, error: 'Failed to process message' });
-        })
-        .finally(() => { try { controller.close(); } catch { /* reader gone */ } });
-    },
-  });
-  return new Response(body, {
-    headers: { 'Content-Type': 'application/x-ndjson', 'Cache-Control': 'no-store, no-transform', 'X-Accel-Buffering': 'no' },
-  });
-}
-
 // ---------------------------------------------------------------------------
 // Unified auth: handles both authenticated users and guests
 // ---------------------------------------------------------------------------
 
 interface AuthResult {
-  client: any;
+  client: SupabaseClient | null;
   userId: string;
   customerId: string | null;
-  admin: any;
+  admin: AdminApiContext | null | undefined;
   isGuest: boolean;
   sessionToken?: string;
 }
@@ -142,53 +90,6 @@ async function getAuthOrGuest(
   };
 }
 
-// Order cache — orders change infrequently, no need to re-fetch every message
-const ORDER_CACHE_TTL = 10 * 60_000; // 10 minutes
-const orderCache = new Map<string, { summary: string; expiresAt: number }>();
-
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, entry] of orderCache) {
-    if (now > entry.expiresAt) orderCache.delete(key);
-  }
-}, 5 * 60_000);
-
-async function getCachedOrders(admin: any, customerId: string): Promise<string> {
-  const cached = orderCache.get(customerId);
-  if (cached && Date.now() < cached.expiresAt) return cached.summary;
-
-  const summary = await getCustomerOrders(admin, customerId);
-  // Cache both successful and empty results (shorter TTL for empty to retry sooner)
-  const ttl = summary ? ORDER_CACHE_TTL : 2 * 60_000;
-  orderCache.set(customerId, { summary, expiresAt: Date.now() + ttl });
-  return summary;
-}
-
-// Lazy subscription check — at most once per 24 hours
-async function refreshSubscriptionIfStale(
-  auth: { admin: any; customerId: string; userId: string },
-  profile: Pick<DbProfile, 'subscription_plan' | 'subscription_checked_at'>,
-): Promise<string> {
-  const checkedAt = profile.subscription_checked_at
-    ? new Date(profile.subscription_checked_at).getTime()
-    : 0;
-  const staleThreshold = Date.now() - 24 * 60 * 60_000;
-
-  if (checkedAt > staleThreshold) {
-    return profile.subscription_plan ?? 'free';
-  }
-
-  // Refresh from Shopify tags
-  if (!auth.admin) return profile.subscription_plan ?? 'free';
-
-  const plan = await checkSubscriptionFromTags(auth.admin, auth.customerId);
-  // Fire-and-forget update
-  updateSubscriptionPlan(auth.userId, plan).catch(() => {
-    reportChatError('Chat: Failed to update subscription plan');
-  });
-  return plan;
-}
-
 // A guest's 404 hands back its session, which a changed IP may just have
 // minted, so the client's one resend reuses it (US-15 AC6a).
 const conversationNotFound = (auth?: AuthResult) => Response.json({
@@ -197,7 +98,7 @@ const conversationNotFound = (auth?: AuthResult) => Response.json({
 }, { status: 404 });
 
 async function checkConversationParent(auth: AuthResult, conversationId: string): Promise<Response | null> {
-  const { data: parent, error } = await auth.client
+  const { data: parent, error } = await auth.client!
     .from('chat_conversations')
     .select('id')
     .eq('id', conversationId)
@@ -243,7 +144,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     if (conversationId) {
       const parentFailure = await checkConversationParent(auth, conversationId);
       if (parentFailure) return parentFailure;
-      const { data, error } = await auth.client
+      const { data, error } = await auth.client!
         .from('chat_messages')
         .select('id, role, content, created_at')
         .eq('conversation_id', conversationId)
@@ -268,7 +169,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       });
     }
 
-    const { data: convData, error: convError } = await auth.client
+    const { data: convData, error: convError } = await auth.client!
       .from('chat_conversations')
       .select('id, title, created_at, updated_at')
       .order('updated_at', { ascending: false })
@@ -284,7 +185,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     if (!auth.isGuest && auth.customerId) {
       const customerId = auth.customerId;
       (async () => {
-        const profile = await getProfile(auth.client);
+        const profile = await getProfile(auth.client!);
         if (!profile) return;
         await refreshSubscriptionIfStale(
           { admin: auth.admin, customerId, userId: auth.userId },
@@ -399,7 +300,7 @@ async function chatAction(request: Request, app: boolean) {
       const { conversationId } = body;
       const parentFailure = await checkConversationParent(auth, conversationId);
       if (parentFailure) return parentFailure;
-      const { error } = await auth.client
+      const { error } = await auth.client!
         .from('chat_conversations')
         .delete()
         .eq('id', conversationId)
@@ -429,9 +330,6 @@ async function chatAction(request: Request, app: boolean) {
     const refused = refuseTurn(message, request, app);
     if (refused) return refused;
 
-    // Sanitize message for router (strips control chars, caps at 2000 chars)
-    const sanitizedCurrent = sanitizeForRouter(message);
-
     // What this turn leaves on our server (chat-retention.ts); every storage branch reads it. The app and
     // the widget send their history in the body (US-15 AC7); the transcript surfaces load theirs here.
     const retention = retentionOf({ app, widget: body.localFirst === true });
@@ -444,7 +342,7 @@ async function chatAction(request: Request, app: boolean) {
     let history: Turn[] = retention !== 'transcript' ? readClientHistory(body.history) : [];
     let storedHistory: DedupHistoryItem[] = [];
     if (conversationId && retention === 'transcript') {
-      const { data: historyRows, error: historyError } = await auth.client
+      const { data: historyRows, error: historyError } = await auth.client!
         .from('chat_messages')
         .select('role, content, created_at, is_fallback, failure_mode')
         .eq('conversation_id', conversationId)
@@ -495,10 +393,7 @@ async function chatAction(request: Request, app: boolean) {
     const runTurn = async (write: (line: object) => void): Promise<{ status?: number; reply: object }> => {
       write({ type: 'status', text: 'Reading your question' });
 
-      const firstUserMsg = history.find(m => m.role === 'user')?.content;
-      const recentUserMsgs = history.filter(m => m.role === 'user').slice(-3).map(m => m.content);
-      const sanitizedFirst = firstUserMsg ? sanitizeForRouter(firstUserMsg) : undefined;
-      const sanitizedRecent = recentUserMsgs.map(sanitizeForRouter);
+      const routerInput = routerTurn(message, history);
 
       // Stage 1: classifier + (logged-in) orders fetch dispatch first so their
       // network round-trips overlap the synchronous context assembly below.
@@ -516,7 +411,7 @@ async function chatAction(request: Request, app: boolean) {
       const subscriptionsPromise = subscriptionsOn && !auth.isGuest && auth.customerId
         ? getCachedSubscriptions(request, auth.customerId)
         : Promise.resolve(null);
-      const classifierPromise = classifyMessage(sanitizedCurrent, sanitizedFirst, sanitizedRecent);
+      const classifierPromise = classifyMessage(routerInput.current, routerInput.first, routerInput.recent, 'CHAT');
       const context = resolveChatContext(body.guestInputs);
       const [orderSummary, classifierResult, subscriptions] = await Promise.all([ordersPromise, classifierPromise, subscriptionsPromise]);
 
@@ -527,7 +422,7 @@ async function chatAction(request: Request, app: boolean) {
       const fireRouter = shouldFireRouter(classifierResult);
       if (fireRouter) write({ type: 'status', text: 'Finding relevant articles' });
       const routerResult = fireRouter
-        ? await routeQuery(sanitizedCurrent, sanitizedFirst, sanitizedRecent)
+        ? await runRouter(routerInput, 'CHAT', (r) => reportRouterFailure(r, 'shopify'))
         : null;
 
       const tAfterContext = Date.now();
@@ -543,15 +438,13 @@ async function chatAction(request: Request, app: boolean) {
         ? preferMasters(effectiveHandles, index, message, { open: openArticle(index, body.articleHandle) })
         : { handles: [], replaced: [] };
 
-      reportRouterFailure(routerResult);
-
       // Create or validate conversation. A widget conversation exists only in the
       // user's file; the id here is a grouping key for its telemetry rows.
       let activeConversationId = conversationId;
       if (!activeConversationId && retention !== 'transcript') activeConversationId = crypto.randomUUID();
       if (!activeConversationId) {
         const title = generateTitle(message);
-        const { data: conv, error: convError } = await auth.client
+        const { data: conv, error: convError } = await auth.client!
           .from('chat_conversations')
           .insert({ user_id: auth.userId, title })
           .select('id')
@@ -566,7 +459,7 @@ async function chatAction(request: Request, app: boolean) {
 
       // Insert user message (history already loaded above for existing convs)
       if (retention === 'transcript') {
-        const { error: userMsgError } = await auth.client
+        const { error: userMsgError } = await auth.client!
           .from('chat_messages')
           .insert({
             conversation_id: activeConversationId,
@@ -611,7 +504,7 @@ async function chatAction(request: Request, app: boolean) {
       // replacing a health answer. run_roadmap reads the widget's own record (US-15 AC33).
       const subscriptionTool = subscriptionsOn && !appOrToolPage;
       const completion = await getChatCompletion(systemBlocks, conversationMessages, canApplyEdits, onEvent,
-        subscriptionTool || canApplyEdits ? { subscriptionTool, guestInputs: body.guestInputs, ...(canApplyProfileEdits ? { profileEdits: true } : {}), ...(appEdits ? { app: true } : {}) } : undefined);
+        { purpose: 'CHAT', ...(subscriptionTool || canApplyEdits ? { subscriptionTool, guestInputs: body.guestInputs, ...(canApplyProfileEdits ? { profileEdits: true } : {}), ...(appEdits ? { app: true } : {}) } : {}) });
       const tAfterLlm = Date.now();
       // US-15 AC33 usage signal: one counter per run_roadmap round, the numbers of
       // stated values used and rejected and nothing else. Fire-and-forget. It is a
@@ -645,34 +538,30 @@ async function chatAction(request: Request, app: boolean) {
       // row, trimmed to its whitelist in one place (redactForWidget).
       // The row holds question text, which may carry health details: at most its
       // first 500 chars (matchEventText), blanked by the 30-day purge (US-15 AC7/AC26).
-      const matchEvent = {
-        message_id: assistantMessageId,
-        conversation_id: activeConversationId,
-        user_id: auth.userId,
-        message: matchEventText(sanitizedCurrent),
-        router_context: {
-          platform: 'shopify',
-          first: sanitizedFirst ? matchEventText(sanitizedFirst) : null,
-          recent: sanitizedRecent.map(matchEventText),
-          // US-50 AC14 usage signal: index handles only, never user text.
-          ...(routed.replaced.length ? { replaced: routed.replaced } : {}),
-          ...(articles?.reduced.length ? { reduced: articles.reduced } : {}),
-        },
-        matched_handles: effectiveHandles,
-        ...routerColumns(routerResult),
+      // US-50 AC14 usage signal (replaced, reduced): index handles only, never user text.
+      const matchEvent = matchEventRow({
+        messageId: assistantMessageId,
+        conversationId: activeConversationId,
+        userId: auth.userId,
+        question: routerInput.current,
+        platform: 'shopify',
+        context: { first: routerInput.first ? matchEventText(routerInput.first) : null, recent: routerInput.recent.map(matchEventText) },
+        replaced: routed.replaced,
+        reduced: articles?.reduced,
+        routerResult,
         classification: classifierResult.classification,
-        router_skipped: routerSkipped,
-        is_fallback: completion.isFallback,
-        failure_mode: completion.failureMode ?? null,
-      };
-      const logMatchEvent = () => auth.client
+        routerSkipped,
+        isFallback: completion.isFallback,
+        failureMode: completion.failureMode,
+      });
+      const logMatchEvent = () => Promise.resolve(auth.client!
         .from('chat_match_events')
         .insert(retention !== 'transcript' ? redactForWidget(matchEvent) : matchEvent)
         .then(({ error: matchError }: { error: { message: string } | null }) => {
           if (matchError) {
             reportChatError('Chat: Match-event insert failed');
           }
-        }).catch(() => reportChatError('Chat: Match-event insert failed'));
+        })).catch(() => reportChatError('Chat: Match-event insert failed'));
 
       if (retention === 'none') {
         // D9: the app's turn leaves no row on the server.
@@ -681,7 +570,7 @@ async function chatAction(request: Request, app: boolean) {
       } else {
         // Fire-and-forget: save the assistant message, then log the match event
         // once its message_id names a row that exists.
-        auth.client
+        Promise.resolve(auth.client!
           .from('chat_messages')
           .insert({
             id: assistantMessageId,
@@ -697,9 +586,9 @@ async function chatAction(request: Request, app: boolean) {
               return;
             }
             logMatchEvent();
-          }).catch(() => reportChatError('Chat: Failed to save assistant message'));
+          })).catch(() => reportChatError('Chat: Failed to save assistant message'));
 
-        auth.client
+        Promise.resolve(auth.client!
           .from('chat_conversations')
           .update({ updated_at: new Date().toISOString() })
           .eq('id', activeConversationId)
@@ -707,7 +596,7 @@ async function chatAction(request: Request, app: boolean) {
             if (tsError) {
               reportChatError('Chat: Failed to update conversation timestamp');
             }
-          }).catch(() => reportChatError('Chat: Failed to update conversation timestamp'));
+          })).catch(() => reportChatError('Chat: Failed to update conversation timestamp'));
       }
 
       if (retention !== 'none') logAudit(auth.userId, 'CHAT_MESSAGE', 'chat', activeConversationId, {

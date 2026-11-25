@@ -1,6 +1,6 @@
 // US-25 AC22: the plan's summary tiles, one source for the web's Quick Stats and the phone's tiles.
 import { describe, expect, it } from 'vitest';
-import { STAT_TILE_ABOUT, STAT_TILE_ABOUT_MINOR_BMI, statTiles, statTileText, type StatTile, type StatTileKey, type StatTileOptions } from './stat-tiles';
+import { RANGE_NOT_DIAGNOSIS, STAT_TILE_ABOUT, STAT_TILE_ABOUT_MINOR_BMI, rangeShown, statTiles, statTileText, type StatTile, type StatTileKey, type StatTileOptions } from './stat-tiles';
 import { calculateHealthResults } from './calculations';
 import { STAT_CARD_EVIDENCE, getBmiEvidence, getIbwEvidence, getProteinEvidence } from './evidence';
 import type { HealthResults } from './types';
@@ -29,11 +29,11 @@ describe('statTiles order and selection', () => {
 
 describe('BMI tile', () => {
   it.each([
-    ['Underweight', 0.4, { label: 'Underweight', tone: 'attention' }],
+    ['Underweight', 0.4, { label: 'Underweight range', tone: 'attention' }],
     ['Normal', 0.45, { label: 'Normal', tone: 'normal' }],
-    ['Overweight', 0.55, { label: 'Overweight', tone: 'info' }],
-    ['Obese (Class I)', 0.6, { label: 'Obese', tone: 'attention' }],
-    ['Obese (Class III)', undefined, { label: 'Obese', tone: 'attention' }],
+    ['Overweight', 0.55, { label: 'Overweight range', tone: 'info' }],
+    ['Obese (Class I)', 0.6, { label: 'Obesity range', tone: 'attention' }],
+    ['Obese (Class III)', undefined, { label: 'Obesity range', tone: 'attention' }],
   ])('%s with WHtR %s', (bmiCategory, waistToHeightRatio, status) => {
     expect(tile({ bmi: 27, bmiCategory, waistToHeightRatio }, 'bmi').status).toEqual(status);
   });
@@ -102,7 +102,7 @@ describe('lipid tile', () => {
 describe('eGFR, Lp(a) and HbA1c tiles', () => {
   it.each([
     [75, 'Normal', 'normal'], [65, 'Low Normal', 'info'], [50, 'Mildly to Moderately Decreased', 'attention'],
-    [35, 'Moderately to Severely Decreased', 'attention'], [20, 'Severely Decreased', 'urgent'], [10, 'Kidney Failure', 'urgent'],
+    [35, 'Moderately to Severely Decreased', 'attention'], [20, 'Severely Decreased', 'urgent'], [10, 'eGFR below 15', 'urgent'],
   ])('eGFR %s is %s', (eGFR, label, tone) => {
     expect(tile({ eGFR }, 'egfr')).toMatchObject({ label: 'eGFR', value: String(eGFR), unit: 'mL/min/1.73m²', status: { label, tone } });
   });
@@ -113,7 +113,7 @@ describe('eGFR, Lp(a) and HbA1c tiles', () => {
     expect(t.evidence).toEqual(STAT_CARD_EVIDENCE['lpa']);
   });
 
-  it.each([[36, 'Normal', 'normal'], [42, 'Prediabetic', 'attention'], [50, 'Diabetic', 'urgent']])('HbA1c %s mmol/mol', (hba1c, label, tone) => {
+  it.each([[36, 'Normal', 'normal'], [42, 'Prediabetes range', 'attention'], [50, 'Diabetes range', 'urgent']])('HbA1c %s mmol/mol', (hba1c, label, tone) => {
     expect(tile({ hba1c }, 'hba1c')).toMatchObject({ label: 'HbA1c', value: String(hba1c), unit: 'mmol/mol', status: { label, tone } });
   });
 
@@ -168,7 +168,8 @@ describe('what each tile is (US-57 AC5, Brad 2026-10-25)', () => {
     const r = calculateHealthResults({
       heightCm: 175, weightKg: 80, waistCm: 90, sex: 'male', ldlC: 3, apoB: 0.8, creatinine: 80, lpa: 60, hba1c: 36, birthYear: 1980,
     });
-    for (const t of statTiles(r, SI)) expect(t.about, t.key).toBe(STAT_TILE_ABOUT[t.key]);
+    // A graded BMI, HbA1c or eGFR tile adds the range line (US-07 AC17).
+    for (const t of statTiles(r, SI)) expect(t.about, t.key).toBe(rangeShown(t) ? `${STAT_TILE_ABOUT[t.key]} ${RANGE_NOT_DIAGNOSIS}` : STAT_TILE_ABOUT[t.key]);
     const noApoB = byKey(statTiles(results({ nonHdlCholesterol: 4, ldlC: 3 }), SI));
     expect(noApoB.nonHdl.about).toBe(STAT_TILE_ABOUT.nonHdl);
   });

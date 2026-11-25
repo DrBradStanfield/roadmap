@@ -41,9 +41,8 @@ struct PhoneReminders: Decodable, Equatable {
 extension HealthEngine {
     /// The record's reminders, from the engine.
     func reminders(recordJSON: String, now: Date, deviceId: String, firstSeen: [String: String]? = nil) throws -> PhoneReminders {
-        var arguments: [Any] = [recordJSON, now.formatted(Self.iso), deviceId]
-        if let firstSeen, let kept = try? JSONEncoder().encode(firstSeen) { arguments.append(String(decoding: kept, as: UTF8.self)) }
-        let json = try call("remindersJson", arguments)
+        let firstSeenJSON = firstSeen.flatMap { try? JSONEncoder().encode($0) }.map { String(decoding: $0, as: UTF8.self) }
+        let json = try doorRemindersJson(recordJson: recordJSON, nowIso: now.formatted(Self.iso), deviceId: deviceId, firstSeenJson: firstSeenJSON)
         return try JSONDecoder().decode(PhoneReminders.self, from: Data(json.utf8))
     }
 }

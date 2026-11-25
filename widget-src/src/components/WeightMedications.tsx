@@ -1,12 +1,12 @@
 // Weight and diabetes medicine questions, one section of the form (moved out of InputPanel).
-import { optionElements } from './form-kit';
+import { recordedChoice } from './form-kit';
 import type { Placement } from './MyHealth';
 import type { PlanBasis } from './InputPanel';
 import { GLP1_NAMES, GLP1_DRUGS, SGLT2I_NAMES, SGLT2I_DRUGS, METFORMIN_OPTIONS, type MedicationInputs } from '@roadmap/health-core/types';
 import { medicationsToInputs, type ApiMedication } from '@roadmap/health-core/mappings';
 import { weightMedIntro } from '@roadmap/health-core/suggestions';
 import { weightCascade } from '@roadmap/health-core/medication-cascades';
-import { MEDICATION_TEXT, optionsShowing, escalationOptions, doseOptions } from '@roadmap/health-core/input-form';
+import { MEDICATION_TEXT, escalationOptions, doseOptions } from '@roadmap/health-core/input-form';
 
 interface WeightMedicationsProps {
   place: Placement;
@@ -41,24 +41,21 @@ export function WeightMedications(props: WeightMedicationsProps) {
 
   const glp1Dropdown = (
     <div className="health-field">
-      <label htmlFor="glp1-name">{MEDICATION_TEXT.glp1Label}</label>
+      <label htmlFor="glp1-name" id="glp1-label">{MEDICATION_TEXT.glp1Label}</label>
+      {/* The dose select is named by this label and the fixed word "dose" (US-06 AC7a) */}
+      <span hidden id="glp1-dose-word">dose</span>
       {weightCascadeMode && <p className="med-step-hint">{cascade.suggest.includes('glp1-dose') ? MEDICATION_TEXT.doseHint : MEDICATION_TEXT.glp1Hint}</p>}
       <div className="statin-selection-row">
         <select
           id="glp1-name"
-          value={glp1Drug}
-          onChange={(e) => writeMedication(medInputs, weightCascadeMode, 'glp1', e.target.value)}
-        >
-          {optionElements(optionsShowing(GLP1_NAMES, glp1Drug))}
-        </select>
+          {...recordedChoice(GLP1_NAMES, glp1Drug, (value) => writeMedication(medInputs, weightCascadeMode, 'glp1', value))}
+        />
         {availableGlp1Doses.length > 0 && (
           <select
             id="glp1-dose"
-            value={glp1Dose ?? ''}
-            onChange={(e) => writeMedication(medInputs, weightCascadeMode, 'glp1_dose', e.target.value)}
-          >
-            {optionElements(optionsShowing(doseOptions(availableGlp1Doses), glp1Dose === null ? '' : String(glp1Dose), 'Add dose'))}
-          </select>
+            aria-labelledby="glp1-label glp1-dose-word"
+            {...recordedChoice(doseOptions(availableGlp1Doses), glp1Dose === null ? '' : String(glp1Dose), (value) => writeMedication(medInputs, weightCascadeMode, 'glp1_dose', value), 'Add dose')}
+          />
         )}
       </div>
       {place.on('glp1', 'glp1_dose')}
@@ -67,24 +64,20 @@ export function WeightMedications(props: WeightMedicationsProps) {
 
   const sglt2iDropdown = (
     <div className="health-field">
-      <label htmlFor="sglt2i-name">{MEDICATION_TEXT.sglt2iLabel}</label>
+      <label htmlFor="sglt2i-name" id="sglt2i-label">{MEDICATION_TEXT.sglt2iLabel}</label>
+      <span hidden id="sglt2i-dose-word">dose</span>
       {weightCascadeMode && <p className="med-step-hint">{MEDICATION_TEXT.sglt2iHint}</p>}
       <div className="statin-selection-row">
         <select
           id="sglt2i-name"
-          value={sglt2iDrug}
-          onChange={(e) => writeMedication(medInputs, weightCascadeMode, 'sglt2i', e.target.value)}
-        >
-          {optionElements(optionsShowing(SGLT2I_NAMES, sglt2iDrug))}
-        </select>
+          {...recordedChoice(SGLT2I_NAMES, sglt2iDrug, (value) => writeMedication(medInputs, weightCascadeMode, 'sglt2i', value))}
+        />
         {availableSglt2iDoses.length > 0 && (
           <select
             id="sglt2i-dose"
-            value={sglt2iDose ?? ''}
-            onChange={(e) => writeMedication(medInputs, weightCascadeMode, 'sglt2i_dose', e.target.value)}
-          >
-            {optionElements(optionsShowing(doseOptions(availableSglt2iDoses), sglt2iDose === null ? '' : String(sglt2iDose), 'Add dose'))}
-          </select>
+            aria-labelledby="sglt2i-label sglt2i-dose-word"
+            {...recordedChoice(doseOptions(availableSglt2iDoses), sglt2iDose === null ? '' : String(sglt2iDose), (value) => writeMedication(medInputs, weightCascadeMode, 'sglt2i_dose', value), 'Add dose')}
+          />
         )}
       </div>
       {place.on('sglt2i', 'sglt2i_dose')}
@@ -97,11 +90,8 @@ export function WeightMedications(props: WeightMedicationsProps) {
       {weightCascadeMode && <p className="med-step-hint">{MEDICATION_TEXT.metforminHint}</p>}
       <select
         id="metformin"
-        value={medInputs.metformin || 'none'}
-        onChange={(e) => writeMedication(medInputs, weightCascadeMode, 'metformin', e.target.value)}
-      >
-        {optionElements(optionsShowing(METFORMIN_OPTIONS, medInputs.metformin || 'none'))}
-      </select>
+        {...recordedChoice(METFORMIN_OPTIONS, medInputs.metformin || 'none', (value) => writeMedication(medInputs, weightCascadeMode, 'metformin', value))}
+      />
       {place.on('metformin')}
     </div>
   );
@@ -153,11 +143,8 @@ export function WeightMedications(props: WeightMedicationsProps) {
           )}
           <select
             id="glp1-escalation"
-            value={medInputs.glp1Escalation || 'not_yet'}
-            onChange={e => writeMedication(medInputs, weightCascadeMode, 'glp1_escalation', e.target.value)}
-          >
-            {optionElements(optionsShowing(escalationOptions(step), medInputs.glp1Escalation || 'not_yet'))}
-          </select>
+            {...recordedChoice(escalationOptions(step), medInputs.glp1Escalation || 'not_yet', (value) => writeMedication(medInputs, weightCascadeMode, 'glp1_escalation', value))}
+          />
           {place.on('glp1_escalation')}
         </div>
       )}

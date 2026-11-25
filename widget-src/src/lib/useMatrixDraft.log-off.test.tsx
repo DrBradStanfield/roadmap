@@ -22,7 +22,7 @@ function weightInput() {
   }];
   const onSave = vi.fn<(tasks: SaveTask[]) => Promise<Refused>>().mockResolvedValue(new Map());
   const view = render(<StartingInfoVitals vitalsHistory={history} unitSystem="si"
-    onSave={onSave} onDraftValue={() => {}} formStage={3} plan={null}
+    onSave={onSave} formStage={3} plan={null}
     unitOverrides={{}} onToggleFieldUnit={() => {}}/>);
   const row = Array.from(view.container.querySelectorAll<HTMLElement>('.bt-row'))
     .find(r => r.querySelector('.bt-name-label')?.textContent === 'Weight')!;

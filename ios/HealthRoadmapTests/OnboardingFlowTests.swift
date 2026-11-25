@@ -128,7 +128,7 @@ final class OnboardingFlowTests: XCTestCase {
     }
 
     /// Bug E: a double tap on Continue saves once; a double tap on the summary's Continue
-    /// finishes once (RootView.finishOnboarding is not idempotent).
+    /// finishes once (Cover.transition also finishes once: FirstRunTests).
     func testADoubleTapSavesOnceAndFinishesOnce_BugE() {
         XCTAssertEqual(run(page(.height), [.tapped, .tapped]).1, [.save(.height)])
         XCTAssertEqual(run(page(.review), [.reviewAccepted, .reviewAccepted]).1, [.unpin, .finish])

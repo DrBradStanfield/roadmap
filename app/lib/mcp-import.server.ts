@@ -28,7 +28,7 @@ import { extractOrClassify, ExtractionStopError, isNetworkOrTimeoutError, report
 import { type McpClientLabel } from './mcp-clients.server';
 import { type AccessPayload, chargeWrites, connectionKey, importFiles, WRITE_COST } from './mcp-grants.server';
 import { audienceFor, hash } from './mcp-seal.server';
-import { openStep, signStep, UUID } from './mcp-step.server';
+import { earlyRefusal, openStep, signStep, UUID } from './mcp-step.server';
 import { recordServerEvent } from './product-events.server';
 import { machineFiles } from './rate-limiter';
 import { deadlineSignal, StorageError, type StorageAdapter, type StoredFile } from '../../packages/health-core/src/adapter';
@@ -42,21 +42,17 @@ import {
   fileNameLine,
   inflateCapped,
 } from '../../packages/health-core/src/lab-extraction';
+import { type ImportCommit, type ImportRequest, MAX_FILE_NAME_LENGTH, MAX_IMPORT_FILES_PER_CALL, RECEIPT_LIFETIME_SECONDS } from '../../packages/health-core/src/mcp-tool-contract';
 import {
   type ExtractedFile,
   type ImportBundle,
-  type ImportCommit,
   type ImportFileStatus,
   type ImportPayload,
   type ImportRefusal,
-  type ImportRequest,
   type ImportSurface,
   importableFileName,
   isAlreadyImported,
-  MAX_FILE_NAME_LENGTH,
-  MAX_IMPORT_FILES_PER_CALL,
-  RECEIPT_LIFETIME_SECONDS,
-} from '../../packages/health-core/src/mcp-tools';
+} from '../../packages/health-core/src/mcp-import';
 import { oneLine } from '../../packages/health-core/src/plan';
 import { importFilesBucket, type McpImportRoute } from '../../packages/health-core/src/product-events';
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
@@ -93,17 +89,8 @@ const EXTRACT_CONCURRENCY = 3;
 /** One model call, HTTP. Inside the budget by construction; a hung call fails, never waits. */
 const EXTRACT_TIMEOUT_MS = 20_000;
 
-// ---------------------------------------------------------------------------
-// Test seam — the model call
-// ---------------------------------------------------------------------------
-
-type Extractor = (pages: PageContent[], opts: { timeoutMs: number; httpAttempts: number; documentMode: DocumentPromptMode }) => Promise<UnifiedExtractionResult>;
-
-let extract: Extractor = extractOrClassify;
-
-export function setImportSeams(next: { extract?: Extractor } | null): void {
-  extract = next?.extract ?? extractOrClassify;
-}
+/** The model call. Tests pass their own through `HostedImporterOptions`; production passes none. */
+export type Extractor = (pages: PageContent[], opts: { purpose: 'CONNECTOR'; timeoutMs: number; httpAttempts: number; documentMode: DocumentPromptMode }) => Promise<UnifiedExtractionResult>;
 
 // ---------------------------------------------------------------------------
 // Bytes: what kind, and what is inside
@@ -306,11 +293,17 @@ export interface HostedImporterOptions {
   adapter: StorageAdapter;
   client: McpClientLabel;
   maxCorrectionAgeDays: number;
+  /** Server-side wiring only, never from a request; absent means the real model call. */
+  extract?: Extractor;
+  /** Read when the receipt is signed, at the hand-back, so a slow extract cannot use up the pause (US-35 AC19). */
+  clock: () => number;
 }
+/** What the endpoint passes down to the importer: test wiring only; the routes pass none. */
+export type HostedWiring = Pick<HostedImporterOptions, 'extract'>;
 
 /** The `ImportSurface` for one hosted call. Built per call, like the adapter; holds nothing after. */
 export function hostedImporter(options: HostedImporterOptions): ImportSurface {
-  const { token, adapter, client } = options;
+  const { token, adapter, client, clock, extract = extractOrClassify } = options;
   const connection = connectionKey(token);
   const audience = audienceFor(token.clientId);
   const conn = hash(connection);
@@ -400,7 +393,7 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
         try {
           // One HTTP attempt per call, inside what is left: a malformed answer's one re-send shares the deadline.
           // Metadata only for a letter: the connector files no text, so none is asked for.
-          return { ...base, status: 'extracted', result: await extract(pages, { timeoutMs: Math.min(EXTRACT_TIMEOUT_MS, left), httpAttempts: 1, documentMode: 'metadata' }) };
+          return { ...base, status: 'extracted', result: await extract(pages, { purpose: 'CONNECTOR', timeoutMs: Math.min(EXTRACT_TIMEOUT_MS, left), httpAttempts: 1, documentMode: 'metadata' }) };
         } catch (error) {
           const reason = failureReason(error);
           if (reason === 'time') {
@@ -533,7 +526,7 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
       // `extract`, which `file_results` and every Drive user never call, so
       // their abandoned pending files were never swept at all.
       // The receipt is the payload's own id; the MAC that makes it ours lives in the file it names (AC7).
-      const { mac, issued } = signStep('import', macFields(payload.id, payload), conn, audience, Date.parse(payload.createdAt));
+      const { mac, issued } = signStep('import', macFields(payload.id, payload), conn, audience, clock());
       const pending: PendingFile = { v: 2, payload, issued, mac };
       // Park first, sweep after: deletes racing the park drew a Dropbox 429 that refused it (AC18).
       // A refused park skips the sweep: the provider just pushed back, and the next stash sweeps.
@@ -579,11 +572,9 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
       } catch {
         return { refusal: PENDING_UNREADABLE };
       }
-      const { status } = openStep('import', fields, conn, pending.mac, pending.issued as number, audience, Date.parse(now));
-      if (status === 'expired') {
-        return { refusal: `That receipt has expired: a pending import waits ${RECEIPT_LIFETIME_SECONDS / 60} minutes. Nothing was written. Extract again and show the user the fresh candidates.` };
-      }
-      if (status !== 'ok') return { refusal: RECEIPT_INVALID };
+      const opened = openStep('import', fields, conn, pending.mac, pending.issued as number, audience, Date.parse(now));
+      if (opened.status === 'expired') return { refusal: `That receipt has expired: a pending import waits ${RECEIPT_LIFETIME_SECONDS / 60} minutes. Nothing was written. Extract again and show the user the fresh candidates.` };
+      if (opened.status !== 'ok') return { refusal: opened.status === 'early' ? earlyRefusal(opened.notBefore, Date.parse(now)) : RECEIPT_INVALID };
       const payload = pending.payload as ImportPayload;
       // Ids checked before the charge: a replace list of invented ids must not spend the hour.
       const ids = new Set(payload.candidates.map((c) => c.id));

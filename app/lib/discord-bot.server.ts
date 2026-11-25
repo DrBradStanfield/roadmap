@@ -22,6 +22,7 @@ import {
 } from 'discord.js';
 import * as Sentry from '@sentry/react-router';
 import { platformChatCompletion } from './platform-chat.server';
+import { routerTurn } from './chat-router-stage.server';
 import { claimChatTurn } from './chat-dedup.server';
 import { sleep } from './cron-helpers.server';
 import { reportChatFallback } from './chat.server';
@@ -79,10 +80,11 @@ const checkUserRateLimit = createRateLimiter(
   USER_RATE_LIMIT_MAX,
   USER_RATE_LIMIT_WINDOW_MS,
   USER_RATE_LIMIT_CLEANUP_MS,
+  { name: 'discord replies per user' },
 );
 // Per-user cooldown: at most 1 response per USER_COOLDOWN_MS. Reuses the
 // rate limiter factory so stale entries auto-evict — avoids an unbounded Map.
-const checkUserCooldown = createRateLimiter(1, USER_COOLDOWN_MS, 5 * 60_000);
+const checkUserCooldown = createRateLimiter(1, USER_COOLDOWN_MS, 5 * 60_000, { name: 'discord cooldown per user' });
 
 // ---------------------------------------------------------------------------
 // Startup / shutdown
@@ -100,7 +102,7 @@ export function startDiscordBot(): void {
   }
 
   if (CHAT_PROMPT.kind === 'missing') {
-    console.warn('Discord bot: chat system prompt missing — bot disabled');
+    console.warn(`Discord bot: chat docs missing (${CHAT_PROMPT.files.join(', ')}) — bot disabled`);
     return;
   }
 
@@ -320,6 +322,7 @@ async function handleMessage(message: GuildMessage): Promise<void> {
     const result = await platformChatCompletion({
       message: truncatedInput,
       history,
+      purpose: 'DISCORD',
     });
     const tAfterLlm = Date.now();
     stage = 'send';
@@ -359,6 +362,7 @@ async function handleMessage(message: GuildMessage): Promise<void> {
     // 'store' covers building the stored text (sentText, the history find and
     // filter) as well as the write.
     stage = 'store';
+    const routerInput = routerTurn(truncatedInput, history);
     persistConversation({
       conversationId,
       authorId,
@@ -378,8 +382,9 @@ async function handleMessage(message: GuildMessage): Promise<void> {
         classification: result.classifier.classification,
         routerSkipped: result.classifier.routerSkipped,
       },
-      contextFirst: history.find(m => m.role === 'user')?.content,
-      contextRecent: history.filter(m => m.role === 'user').slice(-3).map(m => m.content),
+      // The router's input, by the rule platformChatCompletion used (US-15 AC75).
+      contextFirst: routerInput.first,
+      contextRecent: routerInput.recent,
     }).catch((err) => {
       console.error('Discord: persistConversation failed:', safeErrorFields(err));
       Sentry.captureException(err, {

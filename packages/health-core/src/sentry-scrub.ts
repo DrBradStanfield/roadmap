@@ -122,6 +122,20 @@ export function scrubText(text: string): string {
     .replace(VALUE_THEN_METRIC_RE, '[value]$2$3');
 }
 
+/**
+ * The first match `scrubText` would turn into "[value]", by its own rules in
+ * its own order, or null when it would redact none. The feedback guard refuses
+ * what this finds, so a filed report holds nothing the scrub would hide (US-32 AC9b).
+ */
+export function firstScrubbedValue(text: string): string | null {
+  const unemailed = text.replace(EMAIL_RE, '[email]');
+  for (const rule of [UNIT_VALUE_RE, METRIC_THEN_VALUE_RE, VALUE_THEN_METRIC_RE]) {
+    const first = unemailed.matchAll(rule).next();
+    if (!first.done) return first.value[0];
+  }
+  return null;
+}
+
 /** Apply `scrubText` to every string anywhere in a value. */
 export function scrubStrings(input: unknown, maxDepth = 10, currentDepth = 0): unknown {
   if (typeof input === 'string') return scrubText(input);

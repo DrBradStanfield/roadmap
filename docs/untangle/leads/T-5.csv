@@ -1,2 +1,2 @@
 id,section,title,status,evidence,pr,durability_check,needs_brad
-T-5,"S1 tools, scripts, CI",Chat harness builds its system prompt only via buildSystemBlocks,not started,tools/test-chatbot-matching.ts:557-565 still hand-builds the system string when no user context is set (same as baseline),,,no
+T-5,"S1 tools, scripts, CI",Chat harness builds its system prompt only via buildSystemBlocks,done,"checkAnswer (tools/test-chatbot-matching-calls.ts) now always calls buildSystemBlocks, '{}' for no data; pin: tools/test-chatbot-matching.test.ts US-15 AC24a deep-equals buildSystemBlocks (failed on main: string, no evidence, no overview, no user block, extra --- rule)",1652,US-15 AC24a test,no

@@ -24,7 +24,7 @@
  */
 import crypto from 'crypto';
 import * as Sentry from '@sentry/react-router';
-import { sweepExpired } from './rate-limiter';
+import { boundedMap, isLive, sweepExpired } from './rate-limiter';
 
 export const SUBSCRIPTION_ACTIONS = ['pause', 'skip', 'cancel'] as const;
 export type SubscriptionActionName = (typeof SUBSCRIPTION_ACTIONS)[number];
@@ -88,7 +88,10 @@ export function signGatewayRequest(
   return { 'x-gateway-timestamp': ts, 'x-gateway-nonce': nonce, 'x-gateway-signature': signature };
 }
 
-async function callGateway(path: string, payload: object, timeoutMs: number): Promise<any | null> {
+/** The summary reply's fields getCachedSubscriptions reads. It describes them; nothing checks the entries. */
+interface GatewaySummaryReply { ok?: unknown; enabled?: unknown; subscriptions?: SubscriptionEntry[]; note?: unknown; error?: unknown }
+
+async function callGateway(path: string, payload: object, timeoutMs: number): Promise<GatewaySummaryReply | null> {
   const body = JSON.stringify(payload);
   const base = String(process.env.CS_GATEWAY_CHAT_URL).replace(/\/+$/, '');
   try {
@@ -122,14 +125,19 @@ function reportGatewayError(message: string): void {
 // is per machine: with several health-tool-app machines a customer may see a summary up to a minute old
 // on another one; the gateway's own checks (live Appstle read, token bound to the state) catch any change.
 const SUMMARY_TTL = 60_000;
+// Customers held (S-19): WEB_CHAT_DAILY_CAP's default, since a summary is read only inside a web chat
+// turn, which a machine allows 10,000 a day. When full the oldest goes and is fetched again.
+const SUMMARY_CACHE_MAX_KEYS = 10_000;
 const summaryCache = new Map<string, { summary: SubscriptionSummary; expiresAt: number }>();
-sweepExpired(summaryCache, (entry) => entry.expiresAt, 5 * 60_000);
+const expiresAtOf = (entry: { expiresAt: number }) => entry.expiresAt;
+sweepExpired(summaryCache, expiresAtOf, 5 * 60_000);
+const summaryRoom = boundedMap(summaryCache, expiresAtOf, { name: 'subscription summaries', maxKeys: SUMMARY_CACHE_MAX_KEYS });
 
 /** The logged-in customer's subscription summary, or null (off, logged out, or the gateway failed). Never throws. */
 export async function getCachedSubscriptions(request: Request, customerId: string): Promise<SubscriptionSummary | null> {
   if (!subscriptionActionsEnabled()) return null;
   const cached = summaryCache.get(customerId);
-  if (cached && Date.now() < cached.expiresAt) return cached.summary;
+  if (cached && isLive(cached.expiresAt, Date.now())) return cached.summary;
   const data = await callGateway('/chat/subscriptions', { proxy: proxyParams(request) }, 4000);
   if (!data || data.enabled !== true) return null;
   const summary: SubscriptionSummary = {
@@ -138,6 +146,7 @@ export async function getCachedSubscriptions(request: Request, customerId: strin
     ...(typeof data.note === 'string' ? { note: data.note } : {}),
     ...(typeof data.error === 'string' ? { error: data.error } : {}),
   };
+  summaryRoom(customerId, Date.now());
   summaryCache.set(customerId, { summary, expiresAt: Date.now() + SUMMARY_TTL });
   return summary;
 }
@@ -279,7 +288,7 @@ export async function postSubscriptionAction(
   }
   if (res.status >= 500) { reportGatewayError(`Subscription gateway: HTTP ${res.status}`); return { status: 'unconfirmed' }; }
   if (!res.ok) { reportGatewayError(`Subscription gateway: HTTP ${res.status}`); return { status: 'refused', code: 'unavailable' }; }
-  let data: any = null;
+  let data: { ok?: unknown; status?: unknown; code?: unknown; newDate?: unknown } | null = null;
   try { data = await res.json(); } catch { return { status: 'unconfirmed' }; }
   if (!data || data.ok !== true || typeof data.status !== 'string') return { status: 'unconfirmed' };
   return {

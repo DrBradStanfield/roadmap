@@ -39,7 +39,7 @@ describe('US-07 AC9: eGFR labels (issue 474)', () => {
     [70, 'Normal', 'normal'], [69, 'Low Normal', 'info'], [60, 'Low Normal', 'info'],
     [59, 'Mildly to Moderately Decreased', 'attention'], [45, 'Mildly to Moderately Decreased', 'attention'],
     [44, 'Moderately to Severely Decreased', 'attention'], [30, 'Moderately to Severely Decreased', 'attention'],
-    [29, 'Severely Decreased', 'urgent'], [14, 'Kidney Failure', 'urgent'],
+    [29, 'Severely Decreased', 'urgent'], [14, 'eGFR below 15', 'urgent'], // tile word, US-07 AC17
   ] as const)('eGFR %i reads "%s" on the tile, in its colour', (egfr, label, tone) => {
     expect(tile(egfr)?.status).toEqual({ label, tone });
   });

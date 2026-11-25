@@ -139,7 +139,7 @@ Nuclear accidents can release radioactive iodine (I-131) into the environment, i
 
 Kelp supplements are sometimes sold to boost energy or help weight loss. The human evidence is limited to small trials of seaweed fibre, seaweed-enriched bread and kelp powder [40][41][42][43].
 
-**Alginate and appetite:** Alginate is a gel-forming fibre made from seaweed. In a 7-day crossover trial in 68 adults, a strong-gelling sodium alginate formulation taken before meals cut daily energy intake by 134.8 kcal (7%) [40]. In a small imaging study, a strong-gelling alginate meal increased fullness and reduced hunger [41]. These trials used purified sodium alginate, not dried kelp [40][41].
+**Alginate and appetite:** [Alginate](/blogs/articles/alginates-benefits-forms-dosing-and-side-effects) is a gel-forming fibre made from seaweed. In a 7-day crossover trial in 68 adults, a strong-gelling sodium alginate formulation taken before meals cut daily energy intake by 134.8 kcal (7%) [40]. In a small imaging study, a strong-gelling alginate meal increased fullness and reduced hunger [41]. These trials used purified sodium alginate, not dried kelp [40][41].
 
 **Bread enrichment study:** In a pilot crossover trial in 12 healthy overweight men, a breakfast with bread containing 4% *Ascophyllum nodosum* cut how much the men ate at a test meal 4 hours later by 16.4%, against control bread. Blood glucose and cholesterol responses did not differ significantly [42].
 

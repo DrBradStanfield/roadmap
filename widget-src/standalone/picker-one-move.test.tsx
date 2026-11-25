@@ -3,7 +3,8 @@
  * US-09 AC45: the cloud picker runs one move at a time. While a connect, a
  * move or a log-off runs, closing and reopening the picker shows it busy, and
  * no second one can start. A move that handed off to a sign-in page and did
- * not leave ends when the picker is reopened or the page is shown again.
+ * not leave ends when the picker is reopened, the page is shown again, or
+ * the hand-off wait passes (AC45a).
  *
  * Real picker, connect.ts, the store and the storage adapters; only fetch,
  * Sentry, product events, location.reload and location.assign are fakes. The picker is mounted
@@ -399,18 +400,51 @@ describe('US-09 AC45: a move whose page did not leave ends when the picker is re
   });
 
   it('control: a reopen while the copy-down still waits keeps the picker locked', async () => {
-    holdDav = deferred().promise;
-    localStorage.setItem(BACKEND_KEY, 'self-host');
-    localStorage.setItem(SELF_HOST_CONFIG, JSON.stringify({ url: DAV_URL, username: 'someone', password: GOOD_PASSWORD }));
-    const view = render(<Host current="self-host" />);
-    open(view);
-    await act(async () => { fireEvent.click(view.getByRole('button', { name: /^Dropbox/ })); });
-    await vi.waitFor(() => expect(fetchCalls.some((u) => u.startsWith(DAV_URL))).toBe(true));
-    close(view);
+    await lockedWhileCopyDownWaits();
+  });
+});
 
-    open(view);
+/** From a self-hosted record, choose Dropbox while the copy-down never answers. */
+async function lockedWhileCopyDownWaits(): Promise<View> {
+  holdDav = deferred().promise;
+  localStorage.setItem(BACKEND_KEY, 'self-host');
+  localStorage.setItem(SELF_HOST_CONFIG, JSON.stringify({ url: DAV_URL, username: 'someone', password: GOOD_PASSWORD }));
+  const view = render(<Host current="self-host" />);
+  open(view);
+  await act(async () => { fireEvent.click(view.getByRole('button', { name: /^Dropbox/ })); });
+  await vi.waitFor(() => expect(fetchCalls.some((u) => u.startsWith(DAV_URL))).toBe(true));
+  close(view);
+  open(view);
+  expect(optionButtons().every((b) => b.disabled)).toBe(true);
+  expect(assign).not.toHaveBeenCalled();
+  return view;
+}
+
+describe('US-09 AC45a: a hand-off whose page never leaves frees the open picker', () => {
+  afterEach(() => { vi.useRealTimers(); });
+
+  it('a Dropbox sign-in page that never loads: after the wait, every choice works without closing the picker', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const { HAND_OFF_MS } = await import('./switch-flow');
+    const view = await dropboxHandOff();
+    act(() => { vi.advanceTimersByTime(HAND_OFF_MS); });
+
+    expect(optionButtons()).toHaveLength(5);
+    expect(optionButtons().every((b) => !b.disabled)).toBe(true);
+    expect(logOffLink()?.disabled).toBe(false);
+    expect(errorText()).toBe('');
+    await startGitHubConnect(view); // a new move starts from the same open picker
+    await vi.waitFor(() => expect(reload).toHaveBeenCalledTimes(1));
+    expect(localStorage.getItem(BACKEND_KEY)).toBe('github');
+  });
+
+  it('control: a move still waiting on its copy-down stays claimed however long it waits', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const { HAND_OFF_MS } = await import('./switch-flow');
+    await lockedWhileCopyDownWaits();
+    act(() => { vi.advanceTimersByTime(HAND_OFF_MS * 2); });
+
     expect(optionButtons().every((b) => b.disabled)).toBe(true);
-    expect(assign).not.toHaveBeenCalled();
   });
 });
 

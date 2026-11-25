@@ -5,9 +5,7 @@ import Foundation
 /// where releases live, which keys may sign them, and the bridge this binary serves.
 /// Release side: ios/scripts/release-engine.mjs; how to release: ios/engine-updates.md.
 enum EngineRelease {
-    /// The native bridge this binary serves: the first 16 hex digits of the SHA-256 of
-    /// ios/engine/bridge-contract.json. EngineBridgeContractTests fails if they drift.
-    static let bridge = "40fc97db4ca12547"
+    // `bridge`, `contractHash` and `doors`: Engine/Generated/EngineContract.swift (I-2).
 
     /// The signing keys this app trusts, by id: the daily key (Brad's login Keychain),
     /// the cold backup (the Passwords app) and the ci key (the GitHub `engine-signing`
@@ -17,15 +15,6 @@ enum EngineRelease {
         "daily": "rVHa1bJ5T6wGMKwNSTz+Vjmw7wkm4mzcJja3krs52kg=",
         "cold": "Rd9GxYU0sK2GmpuCLeHHpkJTlwg5ppmr1o6C11zZhzg=",
         "ci": "IRVIQw6gXNjk4+7TterhMNIzlUE8Pen2a6f70TU1cdc=",
-    ]
-
-    /// Every door the engine must have (the contract's `doors`), checked by the self-test.
-    static let doors = [
-        "applyEditJson", "chatContextJson", "chatDeleteJson", "chatEditsJson", "chatListJson", "chatMessagesJson",
-        "chatRecordExchangeJson", "cloudClose", "cloudEdit", "cloudErase", "cloudFlush", "cloudHidden", "cloudLabImport",
-        "cloudOpen", "cloudRefresh", "cloudVisible", "convertJson", "documentSave", "erasePhoneJson", "fileNamesJson", "healthWritesJson", "historyJson",
-        "labReviewJson", "labSaveSummaryJson", "mergeJson", "newRecordJson", "numberJson",
-        "planJson", "remindersJson", "screenJson", "sectionsJson", "settledJson",
     ]
 
     static let channel = "production"
