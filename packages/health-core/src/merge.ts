@@ -49,7 +49,7 @@ import {
   recordSchemaVersion,
   stableStringify,
   type ErasedRows,
-  type RoadmapFile,
+  type RoadmapFile, type RowArray,
   type FileMeasurement,
   type FileLabValue,
   type FileMedication,
@@ -594,7 +594,7 @@ const ROW_STAMPS = {
   medicationHistory: (r: FileMedication) => r.updatedAt,
   supplements: (r: FileSupplement) => r.updatedAt,
   supplementHistory: (r: FileSupplement) => r.updatedAt,
-} as const;
+} as const satisfies Record<RowArray, (r: never) => string>; // every row array, from roadmap-file.ts (lead A1-3)
 
 type StampedArray = keyof typeof ROW_STAMPS;
 

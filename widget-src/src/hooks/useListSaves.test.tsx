@@ -113,7 +113,7 @@ describe('US-06 AC13, US-16 AC2a: flushed, dropped, refused', () => {
     act(() => view.result.current.handleSupplementDelete('vitd'));
     await tick(1000);
     expect(record.stopSupplement).toHaveBeenCalledWith('vitd');
-    expect(store.calls).toEqual([['stop', 'vitd']]);
+    expect(store.calls).toEqual([['stop', 'vitd', 'e1']]);
   });
 
   it('a refused medication save is reported, and the chat copy still takes the stored lists', async () => {
