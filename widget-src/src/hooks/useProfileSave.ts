@@ -40,7 +40,7 @@ function copyField<K extends keyof HealthInputs>(to: Partial<HealthInputs>, from
  */
 export interface ProfileSave {
   /** Save any unsaved profile field now. True if saved or nothing to save; false if refused. */
-  flushProfile: (erase?: string) => Promise<boolean>;
+  flushProfile: (erase: string) => Promise<boolean>;
   /** The waiting save: run it now (a closing tab) or drop it (an erase). */
   profileTimer: { flush: () => void; cancel: () => void };
   /** The record's profile as last read or saved. */
@@ -67,7 +67,7 @@ export function useProfileSave(args: {
   const [birthRefused, setBirthRefused] = useState<string | null>(null);
 
   // A fresh function each render: the timer runs the one from the render that scheduled it.
-  async function flushProfile(erase?: string): Promise<boolean> {
+  async function flushProfile(erase: string): Promise<boolean> {
     // Writes stopped: nothing is saved, so this tab's switch ends, and a change the relay held during it applies (PR 1204).
     if (getBackendKind() === 'local' && !healthWritesAllowed()) { units.saved(units.pending()); onClean(); return true; }
     const current: Partial<HealthInputs> = {};
