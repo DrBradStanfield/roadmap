@@ -40,23 +40,10 @@ issue, and nothing private.
   The owner proposed "Chat history unavailable" for the first; no line exists for the second. Options: (1) approve
   "Chat history unavailable", and have a line drafted for an unsaved turn; (2) leave both silent. Recommendation:
   option 1, because a person who returns to a conversation that was never saved has no way to know why it is missing.
-- **When a cloud save fails after it may have landed.** Issue: PR 2108 (open) gives each storage failure a typed
-  outcome. For Dropbox, GitHub and WebDAV, a timeout, a "too many requests" or a server error now says the provider
-  "did not answer" and then "The change may have landed. Read the record again before trying it a second time.",
-  where today it says nothing was written, which may be untrue. Drive's wording also shifts for a few cases. Three
-  smaller gaps stay, with no words yet: (a) a plain refusal with no words of its own says "did not answer", which is
-  untrue for a refusal; (b) "Nothing was read" in the access sentence is untrue after a save's own read; (c) "did not
-  answer" is said for a server error, which is an answer. Options: (1) approve the new sentence, and let new lines be
-  drafted for the three gaps; (2) keep today's words. Recommendation: option 1, because today's sentence can tell a
-  person nothing was written when it was.
 - **An erase message needs a truer sentence.** Issue: when an erase partly fails, the iPhone can show an empty or
   wrong reason, and the web says nothing about the chat step. Draft lines exist for each case. Options: approve the
   drafts as one set; approve some; keep today's words. Recommendation: approve the set, because today's words can be
   wrong about what was deleted.
-- **Web sync lines.** Issue: three web cases say too little: a sign-in that did not finish opens as a guest with no
-  message; a cloud page whose sign-in ended after a log-off in another tab says only "Not synced yet." and loses edits
-  on reload; switching clouds does not say the old cloud keeps its copy, which the iPhone does say. Options: approve
-  lines for all three; for some; leave. Recommendation: the second first, since edits are lost there.
 - **A screen that still offers Delete and Log off after a crash.** Issue: when the web page crashes, or the iPhone
   app cannot start, the fallback screen hides "Delete all my data" and "Log off". A fallback with those two buttons
   needs one sentence. Options: approve a sentence and build it; leave. Recommendation: yes, because deleting your data
@@ -96,15 +83,6 @@ issue, and nothing private.
 
 ### Product and code decisions (raised 2026-11-25)
 
-- **Three places the web's My health page differs from the iPhone.** Issue: PR 2092 (on main) made the web page draw
-  from the same shared rule as the iPhone. Three differences are held off, so the web looks as it did:
-  (1) when no screening question applies yet (no age, or nothing eligible) and there is no screening card, the
-  iPhone shows a Cancer screening section with a short note; the web shows no section. (2) In the same case with a
-  screening card, the iPhone puts the note under the card; the web has no words for it. (3) Before the form is
-  complete, the rule hands the web every card in one list, urgent first; the web shows no card until then
-  (onboarding hides them). Options for each: adopt the iPhone's behaviour, or keep the web's. Recommendation (the
-  PR's): (1) yes, once the note's words are on the web, since a heading alone would look broken; (2) yes, with the
-  iPhone's approved words; (3) keep the web's: the onboarding is short and the cards come at its end.
 - **Chat wording and counting differ between the chat panel and the pop-up.** Issue: PR 2093 (on main) found that
   the pop-up chat picks doctor or brand wording by store, but the panel beside the tool always uses the doctor
   wording ("Health by Dr Brad Chat"). Also, "chat opened" is counted for the pop-up only, so the count misses the
@@ -129,9 +107,6 @@ issue, and nothing private.
   script written inline in the deploy workflow; and the test shard split could be weighted. Workflow files are yours
   to change. Options: one PR with a shared typecheck script, the smoke check moved into tools, and the shard weights;
   leave. Recommendation: one PR, so you review one workflow change.
-- **Retire one parity test.** Issue: a test checks that the server's error-report scrubber gives the same output as
-  its hand copy. That copy is now generated from the shared source, so the test checks one thing twice. Options:
-  retire it; keep it. Recommendation: retire it.
 - **The story file every PR edits.** Issue: docs/user-stories.md is one file every PR appends to. PRs that add to
   the same story conflict, and a conflicting PR gets no CI run; on 25 Nov six PRs needed a rebase for this alone.
   Options: one file per story section, built into the page by the existing Pages step; keep one file.
@@ -180,6 +155,13 @@ issue, and nothing private.
 - Screen-reader names for the medicine dose boxes end in a lower-case "dose", as the supplement rows do (PR 1796),
   so the whole form uses one casing: "this" (option 2). PR 1888 now names them "Statin dose", "GLP-1 Medication
   dose" and "SGLT2 Inhibitor dose", through labelled-by references (US-09 AC7l). "Email for your PDF" is approved for PR 1800.
+- When a cloud save fails after it may have landed: "do it, and use your judement for the sentences. must be succinct,
+  and I approve whatever sentences you suggest". One table words every storage failure that has no words of its own
+  (US-10 AC20): "<provider> refused the change. Nothing was written." (or "refused the request" for a call that is not
+  the save's write), "<provider> returned an error." then "The change may have landed. Read the record again before
+  trying it a second time.", or "Nothing was written."; "<provider> returned an answer that could not be used.";
+  "<provider> needs to be reconnected. Nothing was written."; after a save's own read, an access refusal says only
+  "Nothing was written."
 - A YouTube follow-up's classifier and router see the parent comment and the author's own earlier replies, by the
   same rule as web and Discord (H415, US-15 AC75): "the router should see the earlier comments. youtube, web, and discord should behave the same here, and so
   probably use the same code". No new words.
@@ -196,6 +178,18 @@ issue, and nothing private.
   stated age.
 - The reminders switch when iPhone permission was already decided shows the existing Settings row, with no new words
   ("go with your recommendations"). It waits for the next iPhone build (lead S33).
+- Web sync lines, all three: "use your judgement for the sentences. must be succinct, and I approve whatever sentences
+  you suggest". Now said: "Sign-in did not finish because this browser was logged off. Please try again." (a sign-in a log-off cut short);
+  "This browser was logged off in another tab. Your latest changes show here but are not saved." (a cloud page whose
+  save failed after that log-off); "Your record in <provider> stays there as it is." and, for a self-hosted record, "Your record on your own server stays there as it is." (the picker, from a cloud).
+- The server scrubber's parity test is retired ("go with your recommendations"): its output-parity comparison is
+  deleted, since the copy is generated and the test that it is up to date stays; its four shape checks (imports, the
+  export list, the request-header allow-list) move to `sentry-scrub-shape.test.ts`. No new words.
+- The web's My health and the iPhone, three differences: "go with the recommendations". Where no screening question
+  applies, the web shows Cancer screening with the iPhone's note, in the iPhone's place (urgent cards above it, others
+  below); before the form is complete the web still shows no card. The note's words, one shared copy: "Screening questions appear once your sex,
+  birth year and height are in About you.", "Some screening questions depend on your sex. Add it in About you.", "No
+  screening questions apply at your age and sex yet." (US-62 AC41).
 
 2026-11-23, Brad's words in quotes:
 - Original files are stored in the background after Save, with no action from the person at Save and at every
