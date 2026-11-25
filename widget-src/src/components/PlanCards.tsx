@@ -294,12 +294,16 @@ function RowSuggestion({ suggestion, describes, glow }: { suggestion: Suggestion
   const [open, setOpen] = useState(false);
   const [evidenceOpen, toggleEvidence] = useOpenEvidence(suggestion.id);
   const detailId = useId();
+  // A title can carry the person's own value: the button is named from text, never an attribute (US-09 AC7l).
+  const [aboutId, titleId] = [`${detailId}about`, `${detailId}title`];
   return (
     <div className={`mh-row-suggestion ${priorityColors[suggestion.priority]}${glow}`}>
       <div className="mh-row-suggestion-line">
-        <span className="mh-row-suggestion-text">{describes ? suggestion.description : suggestion.title}</span>
+        <span id={describes ? undefined : titleId} className="mh-row-suggestion-text">{describes ? suggestion.description : suggestion.title}</span>
+        <span id={aboutId} hidden>About:</span>
+        {describes && <span id={titleId} hidden>{suggestion.title}</span>}
         <button type="button" className="mh-info-btn" aria-expanded={open} aria-controls={detailId}
-                aria-label={`About: ${suggestion.title}`} onClick={() => setOpen(o => !o)}>
+                aria-labelledby={`${aboutId} ${titleId}`} onClick={() => setOpen(o => !o)}>
           <span aria-hidden="true">i</span>
         </button>
       </div>
