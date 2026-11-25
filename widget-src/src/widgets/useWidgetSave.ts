@@ -89,7 +89,8 @@ export function useWidgetSave(args: {
         pageView.savedCounted = true;
         trackProductEvent('waist_widget_saved');
       }
-      return unsaved.current.size === 0;
+      // A refused entry is not kept (one typed under an older erase among them): the next step stays (US-74 AC4).
+      return refused.size === 0 && unsaved.current.size === 0;
     };
     const next = queue.current.then(run);
     queue.current = next.catch(() => undefined);

@@ -193,6 +193,23 @@ describe('US-75 AC8: the widgets page follows a newer erase by starting over', (
     expect(persisted().profile.heightCm).toBeUndefined();
   });
 
+  it('two roots: the waist root\'s next step, pressed before it followed: nothing written, and the link stays (US-74 AC4)', async () => {
+    unheard();
+    await data.saveChangedMeasurements({ heightCm: 178 }, {}, data.getShownErase()); // shown from the record, so only the waist saves
+    const navigate = vi.fn();
+    render(<WaistToHeightWidget nextUrl="/next" navigate={navigate} />);
+    await anotherDeviceErases();
+    await reread();
+    render(<BloodPressureWidget />); // a second root: it follows the erase as it mounts
+    fireEvent.input(screen.getByLabelText(/^Waist/, { selector: 'input' }), { target: { value: '88' } });
+    fireEvent.click(screen.getByRole('link'));
+    await pause(50);
+    await act(() => data.flushRoadmapStore());
+    expect(persisted().profile.heightCm).toBeUndefined();
+    expect(active('waist')).toEqual([]);
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
   it('two roots: a reading typed in a root not yet followed, after the other root followed, is never written', async () => {
     unheard();
     render(<BloodPressureWidget />);

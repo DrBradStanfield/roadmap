@@ -610,22 +610,22 @@ describe('US-75 AC8: a reading is saved under the erase shown as it was typed', 
   });
 });
 
-describe('US-75 AC8: the saves state, event by event', () => {
-  const typing = (edits: number, kept: number, dropped: number, erase: string): Saves => ({ kind: 'typing', edits, kept, dropped, erase });
+describe('US-75 AC5: the saves state, event by event', () => {
+  const typing = (edits: number, kept: number, dropped: number): Saves => ({ kind: 'typing', edits, kept, dropped });
   const settled = (edits: number, kept: number, dropped: number): Saves => ({ kind: 'settled', edits, kept, dropped });
   const table: Array<[string, Saves, SaveEvent, Saves]> = [
-    ['the first keystroke claims the erase shown', NO_SAVES, { type: 'typed', erase: 'A' }, typing(1, 0, 0, 'A')],
-    ['a later keystroke keeps the claim, whatever is shown now', typing(1, 0, 0, 'A'), { type: 'typed', erase: 'B' }, typing(2, 0, 0, 'A')],
-    ['the newest edit kept: settled', typing(2, 0, 0, 'A'), { type: 'kept', seq: 2 }, settled(2, 2, 0)],
-    ['an older edit kept, a newer waiting: still typing under its claim', typing(3, 0, 0, 'A'), { type: 'kept', seq: 2 }, typing(3, 2, 0, 'A')],
-    ['the newest edit dropped: settled, nothing kept', typing(2, 0, 0, 'A'), { type: 'dropped', seq: 2 }, settled(2, 0, 2)],
-    ['an older edit dropped, a newer waiting: still typing', typing(3, 1, 0, 'A'), { type: 'dropped', seq: 2 }, typing(3, 1, 2, 'A')],
-    ['typing after a drop claims the erase shown now', settled(2, 0, 2), { type: 'typed', erase: 'B' }, typing(3, 0, 2, 'B')],
-    ['typing after a keep claims the erase shown now', settled(2, 2, 0), { type: 'typed', erase: 'B' }, typing(3, 2, 0, 'B')],
+    ['the first keystroke: typing', NO_SAVES, { type: 'typed' }, typing(1, 0, 0)],
+    ['a later keystroke: still typing', typing(1, 0, 0), { type: 'typed' }, typing(2, 0, 0)],
+    ['the newest edit kept: settled', typing(2, 0, 0), { type: 'kept', seq: 2 }, settled(2, 2, 0)],
+    ['an older edit kept, a newer waiting: still typing', typing(3, 0, 0), { type: 'kept', seq: 2 }, typing(3, 2, 0)],
+    ['the newest edit dropped: settled, nothing kept', typing(2, 0, 0), { type: 'dropped', seq: 2 }, settled(2, 0, 2)],
+    ['an older edit dropped, a newer waiting: still typing', typing(3, 1, 0), { type: 'dropped', seq: 2 }, typing(3, 1, 2)],
+    ['typing after a drop', settled(2, 0, 2), { type: 'typed' }, typing(3, 0, 2)],
+    ['typing after a keep', settled(2, 2, 0), { type: 'typed' }, typing(3, 2, 0)],
     ['a late answer never moves a count back', settled(4, 4, 3), { type: 'kept', seq: 2 }, settled(4, 4, 3)],
     ['a drop answered while settled stays settled', settled(3, 1, 0), { type: 'dropped', seq: 3 }, settled(3, 1, 3)],
-    ['an older edit kept once a newer one is dropped: settled', typing(3, 0, 3, 'A'), { type: 'kept', seq: 2 }, settled(3, 2, 3)],
-    ['typing after a drop, with an earlier edit kept, claims the erase shown now', settled(3, 1, 3), { type: 'typed', erase: 'B' }, typing(4, 1, 3, 'B')],
+    ['an older edit kept once a newer one is dropped: settled', settled(3, 0, 3), { type: 'kept', seq: 2 }, settled(3, 2, 3)],
+    ['typing after a drop, with an earlier edit kept', settled(3, 1, 3), { type: 'typed' }, typing(4, 1, 3)],
   ];
   it.each(table)('%s', (_, from, event, to) => {
     expect(transition(from, event)).toEqual(to);

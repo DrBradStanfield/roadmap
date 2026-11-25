@@ -122,8 +122,7 @@ function BloodPressureForm({ nextUrl, nextLabel, navigate = (href) => window.loc
   const [readings, setReadings] = useState<[Typed, Typed]>(() => [start ? { sys: String(start.pair.sys), dia: String(start.pair.dia) } : EMPTY, EMPTY]);
   const sysRefs = [useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null)] as const;
   const form = useRef<HTMLFormElement>(null);
-  // Saves (AC5), bound to what was asked: a save carries its edit's number, day, pair and the erase its typing
-  // began under (Saves, AC8). `shown`: the day's rows this page may replace, the rows it showed or wrote itself,
+  // Saves (AC5), bound to what was asked: a save carries its edit's number, day and pair (Saves). `shown`: the day's rows this page may replace, the rows it showed or wrote itself,
   // as of an edit; after a drop, a newer edit takes the record's rows as they are then (the person typed again
   // after the change, as US-74 AC4).
   const saves = useRef<Saves>(NO_SAVES);
@@ -146,8 +145,8 @@ function BloodPressureForm({ nextUrl, nextLabel, navigate = (href) => window.loc
     // A complete reading held back by another reading's error: blocked, so the next step stays (Codex 1876b R7).
     // Settled with an edit not kept: its typing was dropped, and nothing has been typed since.
     if (read.some((r) => r.kind === 'error') || s.kind === 'settled') return Promise.resolve(false);
-    // The erase its typing began under: the queued write lands under it or not at all (US-16 AC2a, AC8).
-    const seq = s.edits, pair = averageOf(pairs), day = localDay(new Date()), erase = s.erase;
+    // The queued write lands under the tree's erase or not at all (US-16 AC2a, AC8).
+    const seq = s.edits, pair = averageOf(pairs), day = localDay(new Date());
     const run = async (): Promise<boolean> => {
       const dropped = saves.current.dropped;
       if (seq <= dropped) return false;
@@ -175,7 +174,7 @@ function BloodPressureForm({ nextUrl, nextLabel, navigate = (href) => window.loc
 
   // The first edit clears the record's reading: a half from another day is never kept beside a typed one (AC3).
   const change = (i: 0 | 1) => (typed: Typed) => {
-    saves.current = transition(saves.current, { type: 'typed', erase });
+    saves.current = transition(saves.current, { type: 'typed' });
     // The load reserve for a returning visitor (the block's inline script) has done its job once they type:
     // from then on the card fits what it holds (Brad 2026-11-19).
     form.current?.closest('.hr-widget')?.classList.remove('hr-widget--saved');
