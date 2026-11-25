@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as Sentry from '@sentry/react-router';
 import { classifyChatError, getChatCompletion, reportChatFallback, type ChatErrorKind } from './chat.server';
-import { routeQuery, reportRouterFailure } from './chat-router.server';
+import { runRouter } from './chat-router-stage.server';
 import { classifyMessage } from './chat-classifier.server';
 import { extractOrClassify } from './anthropic.server';
 
@@ -81,9 +81,9 @@ describe('chat failure telemetry', () => {
       content: [{ type: 'text', text: secret }], usage: {},
     });
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(body)));
-    const result = await routeQuery(secret, undefined, undefined, 'CHAT');
+    // US-15 AC74: through the stage every surface runs, which reports the failure itself.
+    const result = await runRouter(secret, undefined, undefined, 'DISCORD');
     expect(result.error).toBeTruthy();
-    reportRouterFailure(result);
     await Sentry.flush();
     expect(eventEnvelopes()).toHaveLength(1);
     expect(JSON.stringify(envelopes)).not.toContain(marker);

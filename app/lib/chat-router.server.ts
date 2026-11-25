@@ -296,12 +296,12 @@ export async function routeQuery(
 }
 
 
-/** Web-route telemetry excludes the raw parsing error kept in the result. */
-export function reportRouterFailure(result: RouterResult | null): void {
+/** Telemetry excludes the raw parsing error kept in the result. Called through runRouter (chat-router-stage.server.ts). */
+export function reportRouterFailure(result: RouterResult | null, surface: ChatPurpose): void {
   if (!result?.error) return;
   Sentry.captureMessage('Router: request or output failure', {
     level: 'warning',
-    tags: { feature: 'chat', subsystem: 'router' },
+    tags: { feature: 'chat', subsystem: 'router', surface },
     extra: { latencyMs: result.latencyMs, cacheHit: result.cacheHit },
   });
 }

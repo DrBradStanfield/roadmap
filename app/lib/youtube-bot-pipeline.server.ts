@@ -6,7 +6,8 @@
  */
 import * as Sentry from '@sentry/react-router';
 import { classifyMessage, isUnreadableAnswer, shouldFireRouter } from './chat-classifier.server';
-import { routeQuery, sanitizeForRouter, type RouterResult } from './chat-router.server';
+import { sanitizeForRouter, type RouterResult } from './chat-router.server';
+import { runRouter } from './chat-router-stage.server';
 import { SILENT_ON_YOUTUBE } from '../../packages/health-core/src/models';
 import { findBlogByVideoId, loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
 import { preferMasters } from './router-view';
@@ -288,7 +289,7 @@ export async function runPipeline(
   let routerResult: RouterResult | null = null;
   const routerSkipped = !shouldFireRouter(classifierResult);
   if (!routerSkipped) {
-    routerResult = await routeQuery(sanitized, undefined, undefined, 'YOUTUBE');
+    routerResult = await runRouter(sanitized, undefined, undefined, 'YOUTUBE');
     routerHandles = routerResult.handles;
   }
 

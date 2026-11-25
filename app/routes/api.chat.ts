@@ -29,7 +29,8 @@ import {
   generateTitle,
   MAX_MESSAGE_LENGTH,
 } from '../lib/chat.server';
-import { routeQuery, reportRouterFailure, sanitizeForRouter, redactForWidget } from '../lib/chat-router.server';
+import { sanitizeForRouter, redactForWidget } from '../lib/chat-router.server';
+import { runRouter } from '../lib/chat-router-stage.server';
 import { matchEventRow, matchEventText, answerColumns } from '../lib/chat-persist.server';
 import { loadBlogIndex } from '../lib/blog-index.server';
 import { openArticle, preferMasters } from '../lib/router-view';
@@ -427,7 +428,7 @@ async function chatAction(request: Request, app: boolean) {
       const fireRouter = shouldFireRouter(classifierResult);
       if (fireRouter) write({ type: 'status', text: 'Finding relevant articles' });
       const routerResult = fireRouter
-        ? await routeQuery(sanitizedCurrent, sanitizedFirst, sanitizedRecent, 'CHAT')
+        ? await runRouter(sanitizedCurrent, sanitizedFirst, sanitizedRecent, 'CHAT')
         : null;
 
       const tAfterContext = Date.now();
@@ -442,8 +443,6 @@ async function chatAction(request: Request, app: boolean) {
       const routed = routerResult
         ? preferMasters(effectiveHandles, index, message, { open: openArticle(index, body.articleHandle) })
         : { handles: [], replaced: [] };
-
-      reportRouterFailure(routerResult);
 
       // Create or validate conversation. A widget conversation exists only in the
       // user's file; the id here is a grouping key for its telemetry rows.
