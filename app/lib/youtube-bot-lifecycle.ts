@@ -1,5 +1,5 @@
 /**
- * US-15 AC70 (lead H49): the YouTube bot's lifecycle, one named state.
+ * US-15 AC71 (lead H49): the YouTube bot's lifecycle, one named state.
  *
  * - stopped: no timer armed, no tick running;
  * - running: the first tick (until it fires) and the interval are armed; no tick runs;

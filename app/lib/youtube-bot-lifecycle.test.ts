@@ -1,5 +1,5 @@
 /**
- * US-15 AC70 (lead H49): the YouTube bot's lifecycle table, every state x event.
+ * US-15 AC71 (lead H49): the YouTube bot's lifecycle table, every state x event.
  * The bot posts public replies, so the rows that matter most: a tick runs only
  * from running, and nothing in stopped or stopping ever asks for one.
  */
@@ -27,7 +27,7 @@ const busy: Effect<string> = { kind: 'busy' };
 const clearOld: Effect<string> = { kind: 'clear', timers: armed, refused: false };
 const refuseNew: Effect<string> = { kind: 'clear', timers: fresh, refused: true };
 
-describe('US-15 AC70: the lifecycle table', () => {
+describe('US-15 AC71: the lifecycle table', () => {
   const rows: Array<[string, Lifecycle<string>, LifecycleEvent<string>, Lifecycle<string>, Effect<string>]> = [
     ['stopped + start arms the new timers', stopped, start, { kind: 'running', timers: fresh }, none],
     ['stopped + stop does nothing', stopped, stop, stopped, none],

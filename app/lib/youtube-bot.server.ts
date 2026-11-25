@@ -99,7 +99,7 @@ export {
 // ---------------------------------------------------------------------------
 
 type Handle = ReturnType<typeof setTimeout>;
-/** One tick at a time per machine: a tick reads the daily cap at its start (US-27 AC3; US-15 AC70). */
+/** One tick at a time per machine: a tick reads the daily cap at its start (US-27 AC3; US-15 AC71). */
 let lifecycle: Lifecycle<Handle> = { kind: 'stopped' };
 
 function send(event: LifecycleEvent<Handle>): Effect<Handle> {
@@ -170,8 +170,9 @@ async function runTick(first: boolean): Promise<void> {
   try {
     await tick();
   } finally {
-    reportTickFallbacks();
+    // done first: a throwing report must not leave the bot ticking, skipping every later tick as busy.
     send({ type: 'done' });
+    reportTickFallbacks();
   }
 }
 

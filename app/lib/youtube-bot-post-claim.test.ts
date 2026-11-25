@@ -677,7 +677,7 @@ describe('(c) the second unreadable 400 in one tick ends its posting', () => {
     expect(row('T1.r2')).toMatchObject({ posted: true, posted_youtube_id: expect.any(String) });
   });
 
-  // US-15 AC70 (lead H49): an account-wide refusal ends this tick's posting, follow-ups included; the next tick posts.
+  // US-15 AC71 (lead H49): an account-wide refusal ends this tick's posting, follow-ups included; the next tick posts.
   it('an account-wide refusal skips this tick\'s follow-ups only', async () => {
     seedFollowUp('T1');
     g.threads = ['c1'];
