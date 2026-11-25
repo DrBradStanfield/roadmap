@@ -16,21 +16,6 @@ issue, and nothing private.
 
 ## Open
 
-- **What a screen reader calls each value on the web's new upload list.** Issue: you approved the pattern
-  "<test> value from <column>, another reading" (2026-11-21). A list has no columns, so the engine (PR 1949)
-  fills that slot with the file's name and the day the value saves on: "LDL Cholesterol value from
-  report.pdf, 1 Nov 2026", and "LDL Cholesterol value from report.pdf, 1 Nov 2026, another reading" for a
-  second LDL from that report on that day. That filling is new composition from existing words, not yet
-  yours. The day controls are named the same way: their label, then the day a previous column printed when
-  it has one, then the file's name ("Choose the date of the previous results, 15 Sep 2026, report.pdf").
-  Options: (1) this composition: every value is told apart, but for a third reading of one test in one file
-  on one day, and two files with one name; (2) test and day only ("LDL Cholesterol value from 1 Nov 2026"):
-  shorter, but two reports from the same day read the same, so a screen-reader user cannot tell which file a
-  value came from. Recommendation (the owner's): option 1, because it is the only composition from existing
-  words that tells files apart. Brad chose option 1 on 2026-11-23 (US-13 AC10). It no longer waits on a privacy
-  check: PR 2072, now on main, made record text and values never go into an attribute (US-09 AC7l), so these names
-  are built from labelled-by references to the text on screen. What remains: the owner's check, then turning the
-  names on. Nothing draws them yet.
 - **Should the erase confirm mention files saved offline on another device?** Issue: originals are to be stored
   in the background after Save (design parked) ([drafts/background-originals.md](drafts/background-originals.md), section 6). An
   erase removes every document it saw, and the files waiting for it. A document saved on a device that was offline,
@@ -216,6 +201,12 @@ issue, and nothing private.
   while the App Store review is open.
 
 ## Decided
+
+2026-11-26, Brad's words in quotes:
+- What a screen reader calls each value on the web's upload list: option 1, chosen 2026-11-23; the owner's check is
+  done and the names are on (US-13 AC28). "LDL Cholesterol value from report.pdf, 1 Nov 2026", with ", another
+  reading" for a second reading there; a day control says its label, a column's printed day, then the file's name.
+  Built from references to text on screen only. No new sentences.
 
 2026-11-23, Brad's words in quotes:
 - Original files are stored in the background after Save, with no action from the person at Save and at every
