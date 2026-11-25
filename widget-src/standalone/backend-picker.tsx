@@ -18,7 +18,7 @@ import { createPortal } from 'react-dom';
 import { GitHubAdapter, WebDavAdapter } from '../src/storage';
 import { adapterFor, finishFormConnect, forgetBackend, logOff, prepareSwitch, type Backend } from './connect';
 import { dispatch, getSwitchFlow, runMove, stepOf, useSwitchFlow, type MoveStep } from './switch-flow';
-import { PROVIDERS } from './providers';
+import { PROVIDERS, recordStays } from './providers';
 import { trackProductEvent } from '../src/lib/server-api';
 import { useModalDialog } from './use-dialog';
 import { PICKER_TITLE, PLAN_STORAGE_NOTICE } from '../src/lib/storage-notice';
@@ -202,6 +202,7 @@ export function BackendPickerModal({ current, unreachable = false, onClose }: {
             <h2 tabIndex={-1} data-initial-focus>{PICKER_TITLE}</h2>
             {current === 'local' && <p className="hr-modal-sub">{PICKER_GUEST_LEAD}</p>}
             <p className="hr-modal-sub">{PLAN_STORAGE_NOTICE}</p>
+            {current !== 'local' && <p className="hr-modal-sub">{recordStays(current)}</p>}
             {/* The Drive reconnect is a move too (AC45): its moves wait, and Stop ends it with no
                 error until its popup answer is saved; from then it runs to its reload. */}
             {(flow.kind === 'reconnecting' || flow.kind === 'reconnected') && (
