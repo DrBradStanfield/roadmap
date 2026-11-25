@@ -131,12 +131,15 @@ describe('US-18 AC6 (leads P8, P10): the capture\'s send after a refused window'
     await waitFor(() => expect(mocks.sendGuestReport).toHaveBeenCalledOnce());
     const box = input.closest('.email-capture')!;
     expect(box.querySelector('button')!.textContent).toBe('Sending...');
-    expect(saveButton(view)).toBeNull(); // Save as PDF is not on screen, so the note naming it is not either (P10)
-    expect(note(view)).toHaveLength(0);
+    expect(saveButton(view)).toBeNull(); // Save as PDF is not on screen, so the note naming it says nothing (P10)
+    const region = note(view);
+    expect([...region].map((n) => n.textContent)).toEqual(['']); // mounted, empty: filling it is announced
+    expect(region[0].getAttribute('role')).toBe('status');
     settle({ success: true });
     await waitFor(() => expect(view.container.querySelector('#guestEmail')).toBeNull());
     expect(saveButton(view).textContent).toBe('Save as PDF');
     expect([...note(view)].map((n) => n.textContent)).toEqual([PDF_WINDOW_BLOCKED]);
+    expect(note(view)[0]).toBe(region[0]); // the same region, never remounted
   });
 
   it('a send after an opened window shows no note', async () => {
@@ -149,7 +152,7 @@ describe('US-18 AC6 (leads P8, P10): the capture\'s send after a refused window'
     await waitFor(() => expect(mocks.sendGuestReport).toHaveBeenCalledOnce());
     const box = input.closest('.email-capture')!;
     expect(box.querySelector('button')!.textContent).toBe('Sending...');
-    expect(note(view)).toHaveLength(0);
+    expect([...note(view)].map((n) => n.textContent)).toEqual(['']);
     settle({ success: true });
     await waitFor(() => expect(view.container.querySelector('#guestEmail')).toBeNull());
   });
@@ -203,7 +206,7 @@ describe('US-18 AC6: a throw while printing ends the try', () => {
     expect(mocks.markReportEmailCaptured).not.toHaveBeenCalled();
     const box = input.closest('.email-capture')!;
     expect(box.querySelector('button')!.textContent).toBe('Sending...');
-    expect(note(view)).toHaveLength(0); // no Save as PDF on screen, so no note naming it (P10)
+    expect([...note(view)].map((n) => n.textContent)).toEqual(['']); // no Save as PDF on screen: the region says nothing (P10)
     openWindow();
     fireEvent.keyDown(input, { key: 'Enter' });
     await waitFor(() => expect(view.container.querySelector('#guestEmail')).toBeNull());

@@ -208,6 +208,9 @@ issue, and nothing private.
 - Screen-reader names for the medicine dose boxes end in a lower-case "dose", as the supplement rows do (PR 1796),
   so the whole form uses one casing: "this" (option 2). PR 1888 now names them "Statin dose", "GLP-1 Medication
   dose" and "SGLT2 Inhibitor dose", through labelled-by references (US-09 AC7l). "Email for your PDF" is approved for PR 1800.
+- A YouTube follow-up's classifier and router see the parent comment and the author's own earlier replies, by the
+  same rule as web and Discord (H415, US-15 AC75): "the router should see the earlier comments. youtube, web, and discord should behave the same here, and so
+  probably use the same code". No new words.
 - Cues for a value not yet saved, "the second, which needs no new words": the Waist row's "Add" and the "Unsaved
   values: review" cue stay as they are; the PDF box's blocked-window note shows only beside the Save as PDF it names.
 

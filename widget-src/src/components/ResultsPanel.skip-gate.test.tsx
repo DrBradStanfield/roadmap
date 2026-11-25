@@ -212,7 +212,7 @@ describe('US-18 AC6 — a refused print window is never silent', () => {
     expect(view.container.querySelector('#guestEmail')).toBeNull();
     const note = view.getByText(BLOCKED);
     expect(note.getAttribute('role')).toBe('status');
-    expect(note.closest('.report-actions')).toBe(view.getByRole('button', { name: 'Save as PDF' }).closest('.report-actions'));
+    expect(note.closest('.mh-pdf')).toBe(view.getByRole('button', { name: 'Save as PDF' }).closest('.mh-pdf')); // the PDF box's one region (AC8)
     expect(blockedEvents()).toEqual([['pdf_window_blocked']]);
   });
 
@@ -314,7 +314,7 @@ describe('US-18 AC6 — a refused print window is never silent', () => {
     expect(buttons).toHaveLength(1);
     fireEvent.click(buttons[0]);
     await waitFor(() => expect(view.getByText(BLOCKED)).toBeTruthy());
-    expect(view.getByText(BLOCKED).closest('.report-actions')).toBe(buttons[0].closest('.report-actions'));
+    expect(view.getByText(BLOCKED).closest('.mh-pdf')).toBe(buttons[0].closest('.mh-pdf')); // the PDF box's one region (AC8)
   });
 
   it('a window that opens shows no message and fires no event', async () => {

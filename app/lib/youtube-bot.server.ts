@@ -72,6 +72,7 @@ import {
   filterThread,
   assessThreadFollowUp,
   buildThreadHistory,
+  buildRouterThreadHistory,
   shouldUnclaim,
   runPipeline,
   reportTickFallbacks,
@@ -273,7 +274,7 @@ async function processFollowUps(
 
     let outcome: PipelineOutcome;
     try {
-      outcome = await runPipeline(pseudoThread, video.entry, video.body, history);
+      outcome = await runPipeline(pseudoThread, video.entry, video.body, history, buildRouterThreadHistory(meta.originalComment, replies, reply));
     } catch (err) {
       logTickError(err);
       await unclaimComment(reply.id, claimRowId);
