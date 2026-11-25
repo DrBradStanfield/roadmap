@@ -3,7 +3,7 @@
  * Moved out of drive.ts unchanged (lead A3); the adapter passes a host that
  * exposes only what the loop reads.
  */
-import { ROADMAP_FILE_NAME, sleepUntilAborted, catchUpAfterFailure, StorageError, jsonBody } from '@roadmap/health-core/adapter';
+import { answerOutcome, ROADMAP_FILE_NAME, sleepUntilAborted, catchUpAfterFailure, StorageError, jsonBody, fetchOrFail } from '@roadmap/health-core/adapter';
 import { DRIVE_API } from '@roadmap/health-core/drive-rest';
 import { isSignedOut } from './sign-in-state';
 
@@ -69,12 +69,14 @@ export async function driveWatchLoop(host: DriveWatchHost, fileName: string, onC
 async function startPageToken(host: DriveWatchHost, signal: AbortSignal): Promise<string> {
   const res = await changesRequest(host, `${DRIVE_API}/changes/startPageToken`, signal);
   const json = await jsonBody<{ startPageToken?: string }>(res);
-  if (!json.startPageToken) throw new StorageError('Google Drive returned no start page token.');
+  if (!json.startPageToken) throw new StorageError('Google Drive returned no start page token.', undefined, undefined, undefined, undefined, 'no-answer');
   return json.startPageToken;
 }
 
+/** Bounded by the 30 s call deadline as well as the loop's signal: a read Drive
+ *  takes and never answers fails into the back-off (US-34 AC1c). */
 async function changesRequest(host: DriveWatchHost, url: string, signal: AbortSignal): Promise<Response> {
-  const res = await fetch(url, { headers: await host.authHeaders(), signal });
-  if (!res.ok) host.refused(new StorageError(`Google Drive watch failed (${res.status}).`, undefined, undefined, res.status));
+  const res = await fetchOrFail('Google Drive', url, { headers: await host.authHeaders(), signal });
+  if (!res.ok) host.refused(new StorageError(`Google Drive watch failed (${res.status}).`, undefined, undefined, res.status, undefined, answerOutcome(res.status)));
   return res;
 }

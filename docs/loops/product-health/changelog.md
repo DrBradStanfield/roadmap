@@ -4,6 +4,9 @@ History is NOT operative instruction (Brad 2026-08-11): charters never
 contain their own changelog. Dated entries newest first, keep ~10 (git is
 the archive). Exempt from the 200-line operative cap.
 
+- 2026-11-21 (Fable approved; idea from OpenClaw's CI write-up): PR cycle time joins the
+  weekly series via `tools/pr-cycle-time.mjs` (three metrics.csv rows, W43-W46 backfilled).
+  Net +3 lines (188 -> 191).
 - 2026-10-30 (Brad: "make it a loop check", after the ub-mode review and mutation trial): weekly
   clinical mutation check, one Gather line pointing at mutation-check.md (US-48 AC7). Net 0 lines
   (186 → 186; the history line was joined to make room).

@@ -32,7 +32,7 @@ vi.mock('./connect', () => ({
 }));
 
 import { StorageBar, SyncControl } from './sync-control';
-import { addMeasurement, flushRoadmapStore, initRoadmapStore } from '../src/lib/roadmap-data';
+import { addMeasurement, flushRoadmapStore, initRoadmapStore, getShownErase } from '../src/lib/roadmap-data';
 import { LocalStorageAdapter } from '../src/storage/local-storage-adapter';
 import { isSyncPending, markSyncPending, PENDING_MIRROR_KEY } from '../src/storage/web-record-host';
 
@@ -44,7 +44,7 @@ class TestCloud extends MemoryAdapter {
   async write(...args: Parameters<MemoryAdapter['write']>) {
     this.writes += 1;
     if (this.held) await this.held;
-    if (this.failing) throw new StorageError('The network is down.');
+    if (this.failing) throw new StorageError('The network is down.', undefined, undefined, undefined, undefined, 'may-have-landed');
     return super.write(...args);
   }
 }
@@ -57,7 +57,7 @@ const settingsDetail = () => {
   return document.querySelector('.hr-sync-detail')?.textContent ?? null;
 };
 const advance = (ms: number) => act(async () => { await vi.advanceTimersByTimeAsync(ms); });
-const add = (value: number, day: string) => act(async () => { await addMeasurement('weight', value, day); });
+const add = (value: number, day: string) => act(async () => { await addMeasurement('weight', value, day, getShownErase()); });
 
 beforeEach(() => {
   localStorage.clear();

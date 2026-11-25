@@ -1,14 +1,14 @@
 /**
- * The iPhone app's four routes (US-52, ios/architecture.md D8), as plain
+ * The iPhone app's routes (US-52, ios/architecture.md D8), as plain
  * handlers. The route files under app/routes/api.app.v1.* only call these: a
  * route module's extra exports would pull server code into the client build.
  */
-import * as Sentry from '@sentry/react-router';
-import { labImportRequestSchema } from '../../packages/health-core/src/validation';
+import { labImportRequestSchema, type LabImportRequest } from '../../packages/health-core/src/validation';
 import { action as webChatAction } from '../routes/api.chat';
 import { attestConfig, AttestError, challengeValid, newChallenge, validKeyId, verifyAttestation } from './app-attest.server';
-import { appGate, appLimits, appRoutesOff, ipBucket, supabaseKeyStore, type KeyStore } from './app-gate.server';
+import { appGate, appLimits, appRoutesOff, ipBucket, supabaseKeyStore, type GateOptions, type KeyStore } from './app-gate.server';
 import { SMALL_BODY_CAP } from './capped-body.server';
+import { captureAllowListedWarning } from './sentry-allow-listed.server';
 import { extractOneFile, TOO_SLOW } from './lab-extract-one.server';
 import { BODY_TOO_LARGE, getClientIp, parseSimpleRequestJson } from './local-first-route.server';
 import { CHAT_PROMPT } from './chat-system-prompt.server';
@@ -91,32 +91,54 @@ export async function appChat(request: Request, store?: KeyStore): Promise<Respo
 
 /** POST lab-import: the gate (which also spends the web's file cap, AC4d), then the web's single-file extraction; proposed values back, nothing stored (AC7). */
 export async function appLabImport(request: Request, store?: KeyStore): Promise<Response> {
+  const gate = await labGate(request, store);
+  return gate instanceof Response ? gate : labRead(gate);
+}
+
+/**
+ * A lab request the gate accepted: its counter is spent and its body valid, and
+ * `release` frees its capacity admission, when it had one. It holds the parsed
+ * request only: the raw body and its text are dropped when `labGate` returns (AC7e).
+ */
+export interface AcceptedLab { data: LabImportRequest; start: number; release?: () => void }
+
+/**
+ * The lab routes' gate and validation, in order (AC7, AC7e). A Response is the
+ * refusal, to answer as it is; anything else means the counter is spent and the
+ * read may start. `admit` is the lab read's capacity check (appGate); /lab-import passes none.
+ */
+export async function labGate(request: Request, store?: KeyStore, admit?: GateOptions['admit']): Promise<Response | AcceptedLab> {
   if (appRoutesOff()) return unavailable();
   // From the request's arrival, so a slow upload read by the gate counts too (US-52 AC7d).
   const start = Date.now();
-  const gate = await appGate(request, { kind: 'lab', bodyCap: APP_LAB_BODY_CAP, store });
+  const gate = await appGate(request, { kind: 'lab', bodyCap: APP_LAB_BODY_CAP, store, admit });
   if (gate instanceof Response) return gate;
   let parsed: unknown;
   try {
     parsed = JSON.parse(gate.body.toString('utf8'));
   } catch {
+    gate.release?.();
     return json(400, { success: false, error: 'Invalid request' });
   }
   const validation = labImportRequestSchema.safeParse(parsed);
-  if (!validation.success) return json(400, { success: false, error: 'Invalid request' });
+  if (!validation.success) { gate.release?.(); return json(400, { success: false, error: 'Invalid request' }); }
+  return { data: validation.data, start, release: gate.release };
+}
+
+/** One accepted file's read, on one 90 s budget, and its slow-import report (AC7c, AC7d). */
+export async function labRead({ data, start }: AcceptedLab): Promise<Response> {
   let retried = false;
-  const res = await extractOneFile(validation.data, undefined, { timeoutMs: 90_000, oneDeadline: true, onRetry: () => { retried = true; } });
+  const res = await extractOneFile(data, undefined, { timeoutMs: 90_000, oneDeadline: true, onRetry: () => { retried = true; } });
   await reportSlowImport(res, Date.now() - start, retried);
   return res;
 }
 
 /**
  * A timed-out or slow (over 60 s) phone import reports one Sentry warning of four
- * fixed tags (US-52 AC7d). The event is rebuilt from an allow-list after the SDK's
- * own processors, so nothing they or the request scope add (headers naming the key
- * and the upload's size, extra, contexts, modules, server name) is sent. It runs in
- * a trace of its own, so no trace id links it to the request's transaction or its
- * `lab_import_v2` exception; their timestamps can still put them side by side, and
+ * fixed tags (US-52 AC7d), through `captureAllowListedWarning`: nothing the SDK or
+ * the request scope adds (headers naming the key and the upload's size, extra,
+ * contexts, modules, server name) is sent. It runs in a trace of its own, so no
+ * trace id links it to the request's transaction or its `lab_import_v2` exception; their timestamps can still put them side by side, and
  * together they hold only the error and a time band. A failure here never changes
  * the answer.
  */
@@ -127,29 +149,7 @@ async function reportSlowImport(res: Response, ms: number, retried: boolean): Pr
     const outcome = timedOut ? 'timeout' : res.ok ? 'slow-success' : 'slow-failure';
     const duration = ms <= 60_000 ? '0-60' : ms < 75_000 ? '60-75' : ms < 90_000 ? '75-90' : '90+';
     const tags = { feature: 'app-lab-import', outcome, duration, retry: retried ? 'yes' : 'no' };
-    Sentry.startNewTrace(() => Sentry.withScope((scope) => {
-      // A throw here must never reach the SDK's own error report: the same rule and
-      // line as failClosed in instrument.server.mjs, which cannot be imported (US-09 AC7i).
-      scope.addEventProcessor((e) => {
-        try {
-          return {
-            event_id: e.event_id, timestamp: e.timestamp, level: e.level, message: e.message, fingerprint: e.fingerprint,
-            platform: e.platform, sdk: e.sdk, environment: e.environment, contexts: { trace: e.contexts?.trace }, tags,
-          };
-        } catch (err) {
-          let name = 'unknown';
-          try {
-            const n = err instanceof Error ? err.name : typeof err;
-            if (typeof n === 'string' && /^[A-Za-z][A-Za-z0-9_]{0,40}$/.test(n)) name = n;
-          } catch { /* keep 'unknown' */ }
-          try {
-            console.error('Sentry scrub failed (' + name + '); event dropped');
-          } catch { /* the null still comes back */ }
-          return null;
-        }
-      });
-      Sentry.captureMessage('App lab import slow', { level: 'warning', fingerprint: ['app-lab-import', outcome] });
-    }));
+    captureAllowListedWarning('App lab import slow', ['app-lab-import', outcome], { tags });
   } catch {
     // Telemetry only: the phone's answer stands.
   }

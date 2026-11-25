@@ -10,7 +10,7 @@
 import { useEffect, useReducer, useState, type MutableRefObject } from 'react';
 import { canonicalToReported } from '@roadmap/health-core/units';
 import { commaQuestion, parseLocalisedNumber } from '@roadmap/health-core/parseNumber';
-import { displayLabUnit, LAB_CATALOG, LAB_GROUPS, resolveLabCatalogEntry } from '@roadmap/health-core/lab-catalog';
+import { displayLabUnit, LAB_CATALOG, LAB_GROUPS, labNameForUnit, resolveLabCatalogEntry } from '@roadmap/health-core/lab-catalog';
 import { labRangeMessage } from '@roadmap/health-core/cell-unit';
 import { localDay } from '@roadmap/health-core/merge';
 import { savedLabText } from '@roadmap/health-core/lab-series';
@@ -19,7 +19,7 @@ import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import type { Comparator } from '@roadmap/health-core/lab-limits';
 import { bloodTestKeyOf, coreStored } from '@roadmap/health-core/blood-tests';
 import { UnitChip } from './UnitChip';
-import { SAVE_ERRORS, saveErrorText } from './BloodTestTimeline';
+import { SAVE_ERRORS, saveErrorText } from './MatrixSavedCells';
 import { addLabValue, getEraseIdentity, getShownErase } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 import type { CorrectFn } from '../lib/matrix-save';
@@ -91,7 +91,9 @@ export function AddLabTest({ onAdded, labValues = [], coreValues = [], onCorrect
   /** Set while the form holds a typed value not yet saved (a value page asks before leaving it). */
   dirtyRef?: MutableRefObject<boolean>;
 }) {
-  const presetKey = preset && (LAB_CATALOG.some(e => e.key === preset.metricName) ? preset.metricName : 'custom');
+  // A count page whose rows are in % adds to the share's test (US-21 AC28): the form shows and keys that test.
+  const presetName = preset && labNameForUnit(preset.metricName, preset.unit);
+  const presetKey = presetName && (LAB_CATALOG.some(e => e.key === presetName) ? presetName : 'custom');
   const [mode, send] = useReducer(addTransition, { kind: 'closed', notice: null });
   const [testKey, setTestKey] = useState(presetKey ?? ''); // catalogue key | 'custom' | ''
   const [customName, setCustomName] = useState(presetKey === 'custom' ? preset!.metricName : '');
@@ -126,7 +128,8 @@ export function AddLabTest({ onAdded, labValues = [], coreValues = [], onCorrect
   // (US-21 AC26), so "1,050" is always asked about (US-02 AC7).
   const value = parseLocalisedNumber(valueStr);
   const question = commaQuestion(valueStr);
-  const metricName = entry ? entry.key : otherName(testKey, customName);
+  // An "Other test" typed as a count's name in % is the share's test, as the record files it (US-21 AC28).
+  const metricName = entry ? entry.key : labNameForUnit(otherName(testKey, customName), customUnit.trim());
   const unit = entry ? entry.unit : customUnit.trim();
   // As health-core's writer reads the name: a core test's is its core slot, the value converted (US-66 AC6).
   const core = bloodTestKeyOf(metricName);
@@ -185,7 +188,8 @@ export function AddLabTest({ onAdded, labValues = [], coreValues = [], onCorrect
       // health-core's one lab add (US-25 AC25): it files the test, refuses a unit the catalogue does
       // not take in the upload summary's words (US-21 AC15), and names a held value on that day.
       // A value page adds to its own series, whatever its name or unit (US-25 AC25).
-      const result = await addLabValue({ metricName, unit, value: value!, day: date, ...(preset ? { existingSeries: true } : null) }, openAt);
+      // The page's own name, so the record finds its series (a legacy count series in % adds under the share).
+      const result = await addLabValue({ metricName: preset ? preset.metricName : metricName, unit, value: value!, day: date, ...(preset ? { existingSeries: true } : null) }, openAt);
       if (!result && openAt !== getEraseIdentity()) { // the record moved to another erase since the form opened
         send({ type: 'recordChanged', form });
       } else if (!result) {

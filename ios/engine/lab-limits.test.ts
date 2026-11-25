@@ -53,7 +53,7 @@ describe('US-12 AC20 — lab limits on the phone', () => {
   });
 
   it('the ticked rows carry the code, and only on a limit', () => {
-    const rows = labRows(extraction as never, ['v0', 'v1', 'a0', 'a1'], '2026-10-01', NOW);
+    const rows = labRows(extraction as never, ['v0', 'v1', 'a0', 'a1'], '2026-10-01', NOW, newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'));
     expect(rows.ok && rows.rows.map((row) => row.comparator)).toEqual(['<', undefined, '>', undefined]);
     expect(rows.ok && rows.rows.map((row) => 'comparator' in row)).toEqual([true, false, true, false]);
   });

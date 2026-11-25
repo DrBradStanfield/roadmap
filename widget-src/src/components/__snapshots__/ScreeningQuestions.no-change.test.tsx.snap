@@ -3786,14 +3786,7 @@ exports[`US-06 A2-1 step 7 — the cancer screening card does not change > no an
     ],
     "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.ColorectalScreening is individualized at your age. Discuss with your doctor whether continued screening is appropriate.",
   },
-  "86": {
-    "controls": [],
-    "groups": [],
-    "hints": [],
-    "labels": [],
-    "notes": [],
-    "text": "Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.",
-  },
+  "86": null,
 }
 `;
 

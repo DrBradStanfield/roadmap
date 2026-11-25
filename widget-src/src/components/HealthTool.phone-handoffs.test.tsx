@@ -11,7 +11,7 @@ import { act, cleanup, fireEvent, render, waitFor, within } from '@testing-libra
 import type { ProposedEdit } from '@roadmap/health-core/chat-edits';
 import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
-import { addMeasurement, flushRoadmapStore, initRoadmapStore, loadAllHistory, saveChangedMeasurements } from '../lib/roadmap-data';
+import { addMeasurement, flushRoadmapStore, initRoadmapStore, loadAllHistory, saveChangedMeasurements, getShownErase } from '../lib/roadmap-data';
 
 const chat = vi.hoisted(() => ({ proposeEdit: null as null | ((edits: ProposedEdit[]) => void) }));
 vi.mock('../lib/build-flags', () => ({ LOCAL_FIRST: true, SHOPIFY_SURFACE: true }));
@@ -59,14 +59,14 @@ const tab = (view: ReturnType<typeof render>, name: string) => within(view.getBy
  *  (US-62 AC12, D6). The box is the one plain vitals field left since H71. */
 async function weightBoxWithWholeForm() {
   const before = { sex: 'male' as const, heightCm: 178, unitSystem: 'si' as const };
-  await saveChangedMeasurements(before, {});
+  await saveChangedMeasurements(before, {}, getShownErase());
   await flushRoadmapStore();
   const view = render(<HealthTool />);
   await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
   const box = await waitFor(() => { const b = view.container.querySelector<HTMLInputElement>('#weightKg'); expect(b).not.toBeNull(); return b!; });
   fireEvent.change(box, { target: { value: '80' } });
   fireEvent.blur(box); // left: the box shows the number, not the text typed
-  await saveChangedMeasurements({ ...before, birthYear: 1975, birthMonth: 5 }, before); // the other device
+  await saveChangedMeasurements({ ...before, birthYear: 1975, birthMonth: 5 }, before, getShownErase()); // the other device
   await flushRoadmapStore();
   await act(async () => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
   await waitFor(() => expect(view.container.querySelector('.md-row')).not.toBeNull());
@@ -76,9 +76,9 @@ const weightBox = (view: ReturnType<typeof render>) => view.container.querySelec
 
 describe('US-16 AC2 on a phone: a chat edit lands on My health, on the cell it filled', () => {
   it('a chat edit closes an open value page that held typed input, and says it was not saved (US-62 AC11)', async () => {
-    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {});
-    await addMeasurement('weight', 82, '2026-09-01');
-    await addMeasurement('ldl', 3.0, '2026-09-01');
+    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {}, getShownErase());
+    await addMeasurement('weight', 82, '2026-09-01', getShownErase());
+    await addMeasurement('ldl', 3.0, '2026-09-01', getShownErase());
     await flushRoadmapStore();
     const view = render(<HealthTool />);
     await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
@@ -133,8 +133,8 @@ describe('US-16 AC2 on a phone: a chat edit lands on My health, on the cell it f
   });
 
   it('a blood test: My health shows, and the matrix cell holding the value is in view and focused', async () => {
-    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {});
-    await addMeasurement('weight', 82, '2026-09-01');
+    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {}, getShownErase());
+    await addMeasurement('weight', 82, '2026-09-01', getShownErase());
     await flushRoadmapStore();
     const view = render(<HealthTool />);
     await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
@@ -158,8 +158,8 @@ describe('US-16 AC2 on a phone: a chat edit lands on My health, on the cell it f
     vi.stubGlobal('matchMedia', (q: string) => ({
       matches: !q.includes('max-width'), media: q, addEventListener() {}, removeEventListener() {},
     }));
-    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {});
-    await addMeasurement('weight', 82, '2026-09-01');
+    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {}, getShownErase());
+    await addMeasurement('weight', 82, '2026-09-01', getShownErase());
     await flushRoadmapStore();
     const view = render(<HealthTool />);
     await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
@@ -188,7 +188,7 @@ describe('US-16 AC2 on a phone: a chat edit lands on My health, on the cell it f
   });
 
   it('a plain field (no vitals matrix yet): the field is in view and focused', async () => {
-    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {});
+    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {}, getShownErase());
     await flushRoadmapStore();
     const view = render(<HealthTool />);
     await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
@@ -202,7 +202,7 @@ describe('US-16 AC2 on a phone: a chat edit lands on My health, on the cell it f
   });
 
   it('a medication-only edit stays on Chat', async () => {
-    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {});
+    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {}, getShownErase());
     await flushRoadmapStore();
     const view = render(<HealthTool />);
     await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
@@ -223,8 +223,8 @@ describe('US-16 AC1a on a phone: a chat weight revealed in the vitals matrix wai
   };
   const settle = async () => { await act(async () => { await new Promise((r) => setTimeout(r, 400)); }); await flushRoadmapStore(); };
   async function revealChatWeight() {
-    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {});
-    await addMeasurement('weight', 82, '2026-09-01');
+    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {}, getShownErase());
+    await addMeasurement('weight', 82, '2026-09-01', getShownErase());
     await flushRoadmapStore();
     const view = render(<HealthTool />);
     await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
@@ -286,7 +286,7 @@ describe('US-22 on a phone: a typed weight, the last answer, lands at the top of
   it('My health shows, its title takes the focus and is scrolled to; the email box sits above the pills', async () => {
     // A browser that already pressed "Your plan is ready."'s Got it (US-62 AC31): no card, so the title landing.
     localStorage.setItem('hr_plan_ready_seen', '1');
-    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {});
+    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {}, getShownErase());
     await flushRoadmapStore();
     const view = render(<HealthTool />);
     const weight = await waitFor(() => {

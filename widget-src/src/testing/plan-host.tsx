@@ -6,6 +6,7 @@
 import { useState, type ReactNode } from 'react';
 import type { HealthResults } from '@roadmap/health-core/types';
 import type { StatTile } from '@roadmap/health-core/stat-tiles';
+import { topicSections } from '@roadmap/health-core/plan-sections';
 import { OpenEvidenceContext, PlanCardList, QuickStats } from '../components/PlanCards';
 import { usePlanView } from '../components/ResultsPanel';
 import type { AlcoholQuestion } from '../components/AlcoholQuestion';
@@ -38,10 +39,10 @@ export function PlanHost({ results, isValid, tiles = [], showEmailCapture, formS
     <OpenEvidenceContext.Provider value={plan.evidence}>
       <div className="mh-page">
         {tiles.length > 0 && <QuickStats tiles={tiles}/>}
-        {plan.layout.sections.map(section => (
+        {topicSections(plan.sections, plan.forms).sections.map(section => (
           <section key={section.topic} data-topic={section.topic} ref={section.topic === 'supplements' ? plan.supplementsRef : undefined}>
             <h3>{section.title}</h3>
-            <PlanCardList cards={section.cards} plan={plan}/>
+            <PlanCardList cards={section.cards} ids={section.cards.map((_, i) => `mh-card-${section.topic}-${i}`)} plan={plan}/>
             {section.ownershipLine && <p className="us-ownership no-print">{section.ownershipLine}</p>}
           </section>
         ))}

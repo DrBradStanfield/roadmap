@@ -39,7 +39,7 @@ async function openRecord(p: Page) {
 
 const addWeight = (session: Session, id: string) => session.edit((f) => {
   f.measurements.push(createMeasurement({ id, metricType: 'weight', value: 80, recordedAt: '2026-11-12', createdAt: '2026-11-13T09:00:00.000Z' }));
-});
+}, session.shownErase);
 const ids = (session: Session) => session.file.measurements.map((m) => m.id).sort();
 
 /** A log-off on another page: a new log-off id, the named files cleared (the

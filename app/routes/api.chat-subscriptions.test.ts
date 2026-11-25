@@ -94,7 +94,7 @@ describe('US-59 AC6 — the chat turn', () => {
     const block = mocks.blocksOpts[0].subscriptionBlock as string;
     expect(block).toContain('S1: MicroVitamin, every 3 months');
     expect(block).not.toContain('tok-');
-    expect(mocks.completionArgs[0][4]).toEqual({ subscriptionTool: true });
+    expect(mocks.completionArgs[0][4]).toEqual({ purpose: 'CHAT', subscriptionTool: true });
     expect(reply.subscriptionCard).toEqual({ token: 'tok-cancel-S1-xxxxxxxxxxxxxxx', action: 'cancel', product: 'MicroVitamin', every: '3 months', nextDate: '6 January 2027', newDate: null, reason: null, status: 'active' });
     expect(reply.content).toBe('Press Confirm below to cancel it.');
   });
@@ -133,7 +133,7 @@ describe('US-59 AC6 — the chat turn', () => {
     const reply = await post('Please cancel my subscription');
     expect(fetchMock).not.toHaveBeenCalled();
     expect(mocks.blocksOpts[0].subscriptionBlock).toBeNull();
-    expect(mocks.completionArgs[0][4]).toBeUndefined();
+    expect(mocks.completionArgs[0][4]).toEqual({ purpose: 'CHAT' });
     expect(reply).not.toHaveProperty('subscriptionCard');
   });
 
@@ -142,7 +142,7 @@ describe('US-59 AC6 — the chat turn', () => {
     const reply = await post('Please cancel my subscription');
     expect(fetchMock).not.toHaveBeenCalled();
     expect(mocks.blocksOpts[0].subscriptionBlock).toBeNull();
-    expect(mocks.completionArgs[0][4]).toEqual({ subscriptionTool: true });
+    expect(mocks.completionArgs[0][4]).toEqual({ purpose: 'CHAT', subscriptionTool: true });
     expect(reply).not.toHaveProperty('subscriptionCard');
     expect(reply.content).toContain(SUBSCRIPTION_HELP_LINE);
   });

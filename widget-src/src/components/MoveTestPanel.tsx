@@ -7,21 +7,22 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { METRIC_LABELS, METRIC_TO_FIELD } from '@roadmap/health-core/mappings';
 import { isCoreRow } from '@roadmap/health-core/blood-tests';
-import { labValueLabel, savedLabText } from '@roadmap/health-core/lab-series';
+import { DAY_NOT_HAPPENED, labValueLabel, savedLabText } from '@roadmap/health-core/lab-series';
 import type { FileLabValue, FileMeasurement } from '@roadmap/health-core/roadmap-file';
 import type { MetricType, UnitSystem } from '@roadmap/health-core/units';
 import type { MoveKeep, MovePlan, MoveRejection } from '@roadmap/health-core/record-edits';
 import { cellLabel, savedCellText, type CellUnit } from '../lib/blood-test-cell';
 import { lpaRowsToCheck, useLpaKept, useLpaUnit } from '../lib/lpa-unit';
 import type { MoveOutcome } from '../storage/roadmap-store';
-import { SAVE_ERRORS, headerDay, useLiveRegion } from './BloodTestTimeline';
+import { getShownErase } from '../lib/roadmap-data';
+import { SAVE_ERRORS, headerDay, useLiveRegion } from './MatrixSavedCells';
 
 type Row = FileMeasurement | FileLabValue;
 
 /** The record's side of a move: HealthTool's, which re-reads the record after one. */
 export interface MoveTestApi {
   preview: (from: string, to: string) => MovePlan | MoveRejection | null;
-  move: (from: string, to: string, expectedIds: string[], keep: MoveKeep) => Promise<MoveOutcome>;
+  move: (from: string, to: string, expectedIds: string[], keep: MoveKeep, erase: string) => Promise<MoveOutcome>;
 }
 
 /** What a matrix's saved headers take from the page's one move. A matrix
@@ -64,7 +65,7 @@ const nameOf = (row: Row) => {
 function refusalText(refusal: MoveRejection): string {
   switch (refusal.reason) {
     case 'same-day': return 'The test is already on that day.';
-    case 'future-date': return 'That day has not happened yet.';
+    case 'future-date': return DAY_NOT_HAPPENED;
     case 'invalid-date': return 'That is not a date.';
     case 'empty-day': return 'No blood test is saved on that day.';
     case 'duplicate-slot': {
@@ -177,7 +178,8 @@ function MoveTestPanel({ from, to, api, unitSystem, unitOverrides, bloodTestHist
     setSaving(true);
     setError(null);
     const keep = Object.fromEntries(plan.clashes.map(c => [c.held.id, answers[c.held.id]]));
-    const outcome = await api.move(from, plan.to, plan.rows.map(r => r.id), keep);
+    // A throw is a failed save, never a panel stuck saving (US-04 AC5c). The erase is the one shown at the press.
+    const outcome = await api.move(from, plan.to, plan.rows.map(r => r.id), keep, getShownErase()).catch(() => ({ status: 'error' as const }));
     setSaving(false);
     if (outcome.status === 'ok') { say(`Moved to ${shortDay(plan.to)}.`); onClose(); }
     else if (outcome.status === 'changed') { say(MOVE_CHANGED); onClose(); }

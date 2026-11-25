@@ -215,7 +215,7 @@ const PANEL_EDIT = { day: '2026-06-01', value: 81 };
 const DEBOUNCED_EDIT = { day: '2026-06-02', value: 82 };
 
 async function edit({ day, value }: { day: string; value: number }): Promise<void> {
-  await act(async () => { expect((await page!.data.addMeasurement('weight', value, day)).status).toBe('inserted'); });
+  await act(async () => { expect((await page!.data.addMeasurement('weight', value, day, page!.data.getShownErase())).status).toBe('inserted'); });
 }
 
 /** Pin 2: one edit while the reconnect panel shows, landed on this browser before the exit. */

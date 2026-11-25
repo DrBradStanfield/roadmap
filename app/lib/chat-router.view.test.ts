@@ -33,7 +33,7 @@ describe('router view in the router call (US-50 AC3)', () => {
   });
 
   it('the index block and entry count match the view, and a hidden handle is dropped from the reply', async () => {
-    const r = await routeQuery('does collagen help skin');
+    const r = await routeQuery('does collagen help skin', undefined, undefined, 'CHAT');
     const body = vi.mocked(callAnthropicWithUsage).mock.calls[0][0] as { system: Array<{ text: string }> };
     const [prompt, index] = body.system.map(b => b.text);
     expect(prompt).toContain('a 2-entry index');

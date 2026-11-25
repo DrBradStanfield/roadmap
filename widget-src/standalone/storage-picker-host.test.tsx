@@ -31,7 +31,7 @@ vi.mock('./reminders-control', () => ({ RemindersControl: () => null }));
 import { HealthTool } from '../src/components/HealthTool';
 import { StorageBar, SyncControl } from './sync-control';
 import { LocalStorageAdapter } from '../src/storage/local-storage-adapter';
-import { flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../src/lib/roadmap-data';
+import { flushRoadmapStore, initRoadmapStore, saveChangedMeasurements, getShownErase } from '../src/lib/roadmap-data';
 import { openSettings } from '../src/testing/settings';
 import { openBackendPicker } from '../src/lib/storage-notice';
 
@@ -43,7 +43,7 @@ beforeEach(async () => {
   HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) { this.open = true; };
   HTMLDialogElement.prototype.close ??= function (this: HTMLDialogElement) { this.open = false; };
   await initRoadmapStore(new LocalStorageAdapter());
-  await saveChangedMeasurements({ sex: 'female', heightCm: 165, birthYear: 1975, birthMonth: 5, unitSystem: 'si', weightKg: 64 }, {});
+  await saveChangedMeasurements({ sex: 'female', heightCm: 165, birthYear: 1975, birthMonth: 5, unitSystem: 'si', weightKg: 64 }, {}, getShownErase());
   await flushRoadmapStore();
 });
 afterEach(async () => {

@@ -1,6 +1,6 @@
 // Unit pill: <button> when `onToggle` is given, <span> otherwise.
 
-export function UnitChip({ label, onToggle, title }: { label: string; onToggle?: () => void; title?: string }) {
+export function UnitChip({ label, onToggle, title, disabled }: { label: string; onToggle?: () => void; title?: string; disabled?: boolean }) {
   if (!onToggle) {
     // Users learn "unit chips toggle" from the weight/waist buttons and then tap
     // fixed-unit chips like mmHg (dead clicks in the 2026-08 audit). The title
@@ -9,7 +9,7 @@ export function UnitChip({ label, onToggle, title }: { label: string; onToggle?:
   }
   // ValueCell knows its row's unit control by `data-unit-control` (US-05 AC2).
   return (
-    <button type="button" className="bt-unit-chip" title="Click to switch units" data-unit-control onClick={onToggle}>
+    <button type="button" className="bt-unit-chip" title="Click to switch units" data-unit-control disabled={disabled} onClick={onToggle}>
       {label}
     </button>
   );

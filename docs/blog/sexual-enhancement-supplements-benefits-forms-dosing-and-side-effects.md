@@ -183,7 +183,7 @@ Maca has some evidence for increasing sexual desire, but the trials are few and 
 
 ### Vascular Health and Erectile Function — Cocoa Flavanols
 
-Cocoa flavanols are promoted for blood flow, but the largest study of flavonoids and erectile dysfunction found its links with other flavonoid groups, mainly from fruit [4].
+[Cocoa flavanols](/blogs/articles/cocoa-flavanols-benefits-forms-dosing-and-side-effects) are promoted for blood flow, but the largest study of flavonoids and erectile dysfunction found its links with other flavonoid groups, mainly from fruit [4].
 
 **Epidemiological evidence:** In a prospective study of 25,096 men followed for 10 years, higher intakes of flavones, flavanones and anthocyanins were linked to less erectile dysfunction (for flavanones, RR = 0.89; 95% CI: 0.83, 0.95), and higher fruit intake to a 14% lower risk [4].
 

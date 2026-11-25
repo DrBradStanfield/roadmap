@@ -7,18 +7,18 @@
  * a RecordHost.
  * No DOM and no Node: engine-portability.test.ts checks.
  */
-import { ROADMAP_FILE_NAME, type StorageAdapter } from './adapter';
+import { ROADMAP_FILE_NAME, StorageError, type StorageAdapter } from './adapter';
 import { clearOwed, eraseIdentityOf } from './erase-identity';
 import { mergeFiles } from './merge';
 import { SchemaTooNewError } from './migrate';
-import { announce, clearedAtOpen, clearOffFile, keepCleared, laterChange, liftMissed, reportSaveFailure, tellSaveStatus, type DeviceMirror, type RecordHost, type RemoteChange, type SaveTold, type SyncStorage } from './record-host';
+import { announce, clearedAtOpen, clearOffFile, keepCleared, laterChange, liftMissed, reportSaveFailure, tellSaveStatus, type DeviceMirror, type SaveReportKey, type RecordHost, type RemoteChange, type SaveTold, type SyncStorage } from './record-host';
 import { contentOf, visibleContentOf } from './record-session-content';
 import { deleteAllDataSession, eraseSession, replaceUnreadableSession, type EraseResult, type EraseSteps } from './record-session-erase';
 import { coveredCopySession, deviceCopyHoldsErase, deviceCopyRevision, mirrorNowSession, releaseErasedCopySession, releaseMarkerSession } from './record-session-mirror';
-import { ROADMAP_DOC } from './roadmap-doc';
+import { recordSync, ROADMAP_DOC } from './roadmap-doc';
 import { changesOf, retryOwed, SAVE_START, saveFailureCause, saveStatus, transition, unsaved, writePending, writtenNowhere, type SaveEvent, type SaveState, type SaveStatus } from './save-state';
 import type { RoadmapFile } from './roadmap-file';
-import { SyncManager, type SyncContext } from './sync-manager';
+import type { SyncContext, SyncManager } from './sync-manager';
 import { mayHaveLanded } from './write-refusal';
 
 export { eraseIdentityOf } from './erase-identity';
@@ -49,7 +49,7 @@ const SAVE_FAILED = 'Cloud sync failed — your latest changes are still on this
  * pre-switch copy-down all go through it.
  */
 export async function saveRecordInto(target: StorageAdapter, body: unknown, ctx: SyncContext): Promise<void> {
-  await new SyncManager(target, ctx.deviceId, ROADMAP_DOC, { now: () => ctx.now }).save(ROADMAP_DOC.migrate(body, ctx));
+  await recordSync(target, ctx.deviceId, ctx.now).save(ROADMAP_DOC.migrate(body, ctx));
 }
 
 /**
@@ -72,9 +72,8 @@ export class RecordSession {
   private mirrorSkipped = false;
   /** Leading-edge throttle for refreshFromRemote(), in epoch millis. */
   private lastRefresh = 0;
-  /** The kinds of device refusal reported this session: every hide retries
-   *  a refused save, and meets the same refusal (US-10 AC5). */
-  private readonly refusalsReported = new Set<string>();
+  private lastReport: SaveReportKey | null = null; // the last failed save's report key, until a save lands (US-09 AC58)
+  private saveLanded(): void { this.lastReport = null; } // both landing paths: a failure that returns reports again
   /** Device tier: the stored revision this session last took in, by a load,
    *  a re-read or its own write. Never a read it did not merge in, such as a
    *  save's verify-after-write (US-34 AC6). */
@@ -105,7 +104,7 @@ export class RecordSession {
   /** Load the record from the host's store and return a ready session. */
   static async open(host: RecordHost, { cloudUnreachable = false } = {}): Promise<RecordSession> {
     const deviceId = host.deviceId();
-    const sync = new SyncManager(host.store, deviceId, ROADMAP_DOC, { now: () => new Date(host.clock.now()).toISOString() });
+    const sync = recordSync(host.store, deviceId, () => new Date(host.clock.now()).toISOString()); // a clock: the session lives across many writes
     const session = new RecordSession(host, deviceId, sync, cloudUnreachable);
     session.revisionSeen = host.sync?.revision(ROADMAP_FILE_NAME) ?? null; // both before the read
     session.deviceCopySeen = deviceCopyRevision(host);
@@ -204,8 +203,8 @@ export class RecordSession {
    *  asked for (a keystroke, a chat reply, a timer armed), and is refused when
    *  this copy is at another one, or while its own erase runs, from its confirm:
    *  the write would carry a pre-erase screen into the erased record (US-16
-   *  AC2a). A refusal is the caller's error answer, never a throw. */
-  refuses(erase = this.shownErase): boolean {
+   *  AC2a). A refusal is the caller's error answer, never a throw. Required (R5). */
+  refuses(erase: string): boolean {
     return this.mode.mode === 'erasing' || erase !== this.eraseIdentity;
   }
 
@@ -214,7 +213,7 @@ export class RecordSession {
    * given, or returns the file that replaces it, and a save is scheduled.
    * False, and nothing changed, when `refuses(erase)`.
    */
-  edit(change: (file: RoadmapFile) => RoadmapFile | void, erase?: string): boolean {
+  edit(change: (file: RoadmapFile) => RoadmapFile | void, erase: string): boolean {
     if (this.refuses(erase)) return false;
     const next = change(this.current);
     if (next) this.current = next;
@@ -298,12 +297,12 @@ export class RecordSession {
         const merged = ROADMAP_DOC.merge(this.current, ROADMAP_DOC.migrate(body, ctx), ctx);
         this.revisionSeen = store.writeSync(ROADMAP_DOC.fileName, merged, version).version;
         this.dispatch({ type: 'synced' });
+        this.saveLanded();
         announce(this.host, this.adopt(merged));
         return;
       } catch {
-        // Another page's write in between: the async save re-reads, merges
-        // and lands it. A newer app's record, unreadable bytes or a full disk:
-        // it meets the same refusal, and reports it (US-10 AC5).
+        // Another page's write in between: the async save re-reads, merges and lands it. A newer app's
+        // record, unreadable bytes or a full disk: it meets the same refusal, and reports it (US-10 AC5).
       }
     } else if (this.host.tier === 'cloud') {
       this.mirrorNow(this.host.mirror);
@@ -327,7 +326,7 @@ export class RecordSession {
     if (clearOwed(this.eraseIdentity, this.clearedFor)) this.tryClear();
   }
   /** Clear, reporting a failure once per erase per session; the kept erase then stays, so the next load clears again. */
-  /** @internal */ tryClear(): void {
+  tryClear(): void {
     try { this.clearOffFileData(); } catch (error) {
       this.host.report(error, { op: 'clear-off-file', repeat: this.clearReportedFor === this.eraseIdentity });
       this.clearReportedFor = this.eraseIdentity;
@@ -430,13 +429,14 @@ export class RecordSession {
     try {
       while (pass !== null) {
         // A closed device page fails the pass before its read, once awaited: the claim is set by then.
-        const result = await (this.deviceClosed() ? Promise.reject(new Error('Device files closed')) : this.sync.save(this.current));
+        const result = await (this.deviceClosed() ? Promise.reject(new StorageError('Device files closed', undefined, undefined, undefined, 'writes-stopped', 'refused')) : this.sync.save(this.current));
         this.revisionSeen = result.version; // what it wrote, never what its verify read
         if (result.warning) this.saveWarning = result.warning;
         const next = this.dispatch({ type: 'passLanded', from: pass });
         // The pass and its claim end together, before adopt() or a listener
         // can ask for a save: that save starts its own pass, never joins this one.
         if (next === null && owns()) this.running = null;
+        if (next === null) this.saveLanded(); // the final pass landed: before adopt() or a listener can throw
         // Fold remote changes back in without dropping edits made during the
         // await; merge is the source of truth for combining the two.
         remoteFolded = laterChange(remoteFolded, this.adopt(mergeFiles(this.current, result.file, this.ctx())));
@@ -460,7 +460,7 @@ export class RecordSession {
       // A pass that landed before this one failed may have folded a remote
       // change in: the page must still hear of it (adversary R3).
       announce(this.host, remoteFolded);
-      if (this.deviceClosed()) return false; // nothing to report: the page may not save here
+      if (this.deviceClosed() && error instanceof StorageError && error.reason === 'writes-stopped') return false; // expected: a real cause reports
       // The background cloud save failed — this MUST be observable (unreported, it's silent data-at-risk),
       // and the changes must NOT stay memory-only: mirror the working copy on-device so a page close can't
       // lose it, and leave the marker so the next cloud session merges it back up (US-09 AC4; Sentry
@@ -492,7 +492,7 @@ export class RecordSession {
           if (this.mode.mode === 'erasing' && this.mode.phase === 'writing' && deviceCopyHoldsErase(this)) this.dispatch({ type: 'mirrored', changes: held });
         }
       }
-      reportSaveFailure(this.host, error, this.refusalsReported);
+      this.lastReport = reportSaveFailure(this.host, error, this.lastReport, this.host.store.id);
       return false;
     }
   }

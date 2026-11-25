@@ -70,14 +70,14 @@ describe('US-01 AC5: a guest save refused by a full browser storage is said on s
   it('says the change was not saved, keeps it on screen, and stores nothing', async () => {
     const storage = fullStorage();
     const store = await RoadmapStore.create(new LocalStorageAdapter());
-    expect(store.addMeasurement('weight', 78, '2026-01-10T00:00:00.000Z').status).toBe('inserted');
+    expect(store.addMeasurement('weight', 78, '2026-01-10T00:00:00.000Z', store.shownErase).status).toBe('inserted');
     await store.flush();
     bar();
     expect(alertText()).toBeNull();
 
     const before = storage.getItem(BODY);
     storage.limit = storage.used; // full: nothing more fits
-    expect(store.addMeasurement('weight', 93, '2026-02-10T00:00:00.000Z').status).toBe('inserted');
+    expect(store.addMeasurement('weight', 93, '2026-02-10T00:00:00.000Z', store.shownErase).status).toBe('inserted');
     await act(async () => { await expect(store.flush()).rejects.toThrow(); });
 
     expect(storage.getItem(BODY)).toBe(before);
@@ -92,10 +92,10 @@ describe('US-01 AC5: a guest save refused by a full browser storage is said on s
   it('the message goes once a later save lands', async () => {
     const storage = fullStorage();
     const store = await RoadmapStore.create(new LocalStorageAdapter());
-    store.addMeasurement('weight', 78, '2026-01-10T00:00:00.000Z');
+    store.addMeasurement('weight', 78, '2026-01-10T00:00:00.000Z', store.shownErase);
     await store.flush();
     storage.limit = storage.used;
-    store.addMeasurement('weight', 93, '2026-02-10T00:00:00.000Z');
+    store.addMeasurement('weight', 93, '2026-02-10T00:00:00.000Z', store.shownErase);
     await expect(store.flush()).rejects.toThrow();
     bar();
     expect(alertText()).toContain(FULL_LINE);
@@ -110,7 +110,7 @@ describe('US-01 AC5: a guest save refused by a full browser storage is said on s
     const storage = fullStorage();
     const store = await RoadmapStore.create(new LocalStorageAdapter());
     storage.limit = storage.used;
-    store.addMeasurement('weight', 93, '2026-02-10T00:00:00.000Z');
+    store.addMeasurement('weight', 93, '2026-02-10T00:00:00.000Z', store.shownErase);
     await expect(store.flush()).rejects.toThrow();
     bar();
     expect(alertText()).toContain(FULL_LINE);

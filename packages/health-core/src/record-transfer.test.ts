@@ -50,7 +50,7 @@ describe('liftDeviceCopy (US-09 AC3, AC4)', () => {
     const cloud = new MemoryAdapter(new MemoryCloud());
     expect(await liftDeviceCopy(host(cloud, new MemoryAdapter(new MemoryCloud())).host)).toBe('empty');
     class Unreadable extends MemoryAdapter {
-      async read(): Promise<never> { throw new StorageError('corrupt'); }
+      async read(): Promise<never> { throw new StorageError('corrupt', undefined, undefined, undefined, undefined, 'no-answer'); }
     }
     expect(await liftDeviceCopy(host(cloud, new Unreadable()).host)).toBe('unreadable');
     expect(cloud.cloud.files.size).toBe(0);
@@ -58,7 +58,7 @@ describe('liftDeviceCopy (US-09 AC3, AC4)', () => {
 
   it('marks the device copy pending when the cloud refuses, and throws for the caller to report', async () => {
     class Refusing extends MemoryAdapter {
-      async write(): Promise<never> { throw new StorageError('refused'); }
+      async write(): Promise<never> { throw new StorageError('refused', undefined, undefined, undefined, undefined, 'refused'); }
     }
     const device = new MemoryAdapter(new MemoryCloud());
     put(device, record(['d']));
@@ -98,7 +98,7 @@ describe('copyCloudDown (US-09 AC2)', () => {
     await copyCloudDown(host(new MemoryAdapter(new MemoryCloud()), device).host);
     expect(device.cloud.files.size).toBe(0);
     class Unreachable extends MemoryAdapter {
-      async read(): Promise<never> { throw new StorageError('unreachable'); }
+      async read(): Promise<never> { throw new StorageError('unreachable', undefined, undefined, undefined, undefined, 'no-answer'); }
     }
     await expect(copyCloudDown(host(new Unreachable(), device).host)).rejects.toThrow('unreachable');
   });

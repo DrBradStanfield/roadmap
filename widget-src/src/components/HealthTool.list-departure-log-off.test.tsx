@@ -12,7 +12,7 @@ import { act, fireEvent, render, waitFor } from '@testing-library/react';
 import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
 import type { WriteResult } from '@roadmap/health-core/adapter';
 import {
-  addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements, saveMedication,
+  addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements, saveMedication, getShownErase,
 } from '../lib/roadmap-data';
 import { isSyncPending } from '../storage';
 import { BACKEND_KEY } from '../storage/web-record-host';
@@ -49,9 +49,9 @@ it('US-06 AC13: after another tab logs off, leaving writes nothing to the device
   const cloud = new MemoryCloud();
   // The GLP-1 user, saved in a cloud; the page then runs on a cloud whose saves hang.
   await initRoadmapStore(new MemoryAdapter(cloud));
-  await saveChangedMeasurements({ sex: 'female', heightCm: 178, birthYear: 1960, birthMonth: 1 }, {});
-  await addMeasurement('weight', 101.4, '2026-09-01');
-  await saveMedication('glp1', 'semaglutide_injection', 1, 'mg');
+  await saveChangedMeasurements({ sex: 'female', heightCm: 178, birthYear: 1960, birthMonth: 1 }, {}, getShownErase());
+  await addMeasurement('weight', 101.4, '2026-09-01', getShownErase());
+  await saveMedication('glp1', 'semaglutide_injection', 1, 'mg', getShownErase());
   await flushRoadmapStore();
   const page = new StalledCloud(cloud);
   localStorage.setItem(BACKEND_KEY, page.id); // the page's cloud, as connect.ts remembers it

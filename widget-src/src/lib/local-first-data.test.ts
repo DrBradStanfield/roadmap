@@ -7,6 +7,10 @@ import { initRoadmapStore, flushRoadmapStore } from './roadmap-data';
 import * as data from './roadmap-data';
 import { getChatHistory } from './chat-history-access';
 import { trackProductEvent } from './server-api';
+import { refusedLabs, uploadOpen, type PickedReport } from '../testing/upload-save-kit';
+
+/** A lab report's values on one day, saved through the upload's one Save (roadmap-data.ts saveUpload), which counts them. */
+const report = (...values: PickedReport['values']): PickedReport => ({ report: 'labs.pdf', reportDate: '2024-06-01', values });
 
 vi.mock('./sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('./server-api', async importOriginal => ({
@@ -45,7 +49,7 @@ describe('explicit local-first data path', () => {
     const result = await data.bulkSaveMeasurements([
       { metricType: 'weight', value: -1, recordedAt: '2026-08-01', source: 'lab_import' },
       { metricType: 'weight', value: 70, recordedAt: '2026-08-01', source: 'lab_import' },
-    ]);
+    ], data.getShownErase());
     expect(result.refused).toMatchObject([{ index: 0, metricType: 'weight', reason: 'out-of-range' }]);
     expect(result.errorCount).toBe(0);
     expect(result.skippedDuplicates).toBe(0);
@@ -68,7 +72,7 @@ describe('explicit local-first data path', () => {
       { metricType: 'psa', value: 10001, recordedAt: '2026-08-01', source: 'lab_import' },
       { metricType: 'ldl', value: NaN, recordedAt: '2026-08-01', source: 'lab_import' },
       { metricType: 'LDL 4.2', value: 4.2, recordedAt: '2026-08-01', source: 'lab_import' },
-    ]);
+    ], data.getShownErase());
     // An out-of-range metric is the tab's throttle key (third argument), never metadata (Codex R1).
     expect(vi.mocked(trackProductEvent).mock.calls).toEqual([
       ['measurement_refused', { refusal: 'out-of-range' }, 'weight'],
@@ -80,10 +84,10 @@ describe('explicit local-first data path', () => {
   });
 
   it('saves and corrects a dated measurement through the imported API', async () => {
-    const added = await data.addMeasurement('ldl', 4.2, '2026-08-01');
+    const added = await data.addMeasurement('ldl', 4.2, '2026-08-01', data.getShownErase());
     expect(added.status).toBe('inserted');
     if (added.status !== 'inserted') throw new Error('measurement was not saved');
-    expect(await data.correctValue(added.row.id, 3.1)).toBe('ok');
+    expect(await data.correctValue(added.row.id, 3.1, data.getShownErase())).toBe('ok');
     await flushRoadmapStore();
     const persisted = JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json);
     expect(persisted.labValues).toHaveLength(2); // a blood test is a core lab row (US-66)
@@ -93,8 +97,8 @@ describe('explicit local-first data path', () => {
   });
 
   it('persists profile and screening changes without a retired server endpoint', async () => {
-    await data.saveChangedMeasurements({ sex: 'female', heightCm: 170 }, {});
-    await data.saveScreening('breast_last_date', '2026-07-01');
+    await data.saveChangedMeasurements({ sex: 'female', heightCm: 170 }, {}, data.getShownErase());
+    await data.saveScreening('breast_last_date', '2026-07-01', data.getShownErase());
     await flushRoadmapStore();
     const persisted = JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json);
     expect(persisted.profile).toMatchObject({ sex: 'female', heightCm: 170 });
@@ -169,12 +173,12 @@ describe('explicit local-first data path', () => {
   it('counts a refused lab unit with the catalogue key and the spelling, never the value', async () => {
     vi.mocked(trackProductEvent).mockClear();
 
-    const result = await data.bulkSaveLabValues([
-      { metricName: 'ferritin', value: 80, unit: 'mg/dL', recordedAt: '2024-06-01T09:00:00.000Z' },
-      { metricName: 'sodium', value: 140, unit: 'mEq/L', recordedAt: '2024-06-01T09:00:00.000Z' },
-    ]);
+    const result = await uploadOpen([report(
+      { name: 'ferritin', value: 80, unit: 'mg/dL' },
+      { name: 'sodium', value: 140, unit: 'mEq/L' },
+    )]);
 
-    expect(result.saved).toHaveLength(1);
+    expect(result).toMatchObject({ ok: true, outcome: { values: 1 } });
     expect(trackProductEvent).toHaveBeenCalledTimes(1);
     expect(trackProductEvent).toHaveBeenCalledWith('lab_unit_refused', { key: 'ferritin', unit: 'mg/dL' });
   });
@@ -182,7 +186,7 @@ describe('explicit local-first data path', () => {
   // Review N2 on PR 641: the one lab add counts a refused spelling as the bulk save does.
   it('counts a refused lab unit from the one lab add too, key and spelling only', async () => {
     vi.mocked(trackProductEvent).mockClear();
-    const result = await data.addLabValue({ metricName: 'ferritin', unit: 'mg/dL', value: 80, day: '2024-06-01' });
+    const result = await data.addLabValue({ metricName: 'ferritin', unit: 'mg/dL', value: 80, day: '2024-06-01' }, data.getShownErase());
     expect(result).toMatchObject({ ok: false, reason: 'unknown-unit' });
     expect(trackProductEvent).toHaveBeenCalledTimes(1);
     expect(trackProductEvent).toHaveBeenCalledWith('lab_unit_refused', { key: 'ferritin', unit: 'mg/dL' });
@@ -193,15 +197,18 @@ describe('explicit local-first data path', () => {
   it('US-21 AC15 — does not count a refusal under a spelling the test takes', async () => {
     vi.mocked(trackProductEvent).mockClear();
 
-    const result = await data.bulkSaveLabValues([
-      { metricName: 'Neutrophils', value: 2.4, unit: 'cells/uL', recordedAt: '2024-06-01T09:00:00.000Z' },
-      { metricName: 'Platelets', value: 250000, unit: 'cells/µL', referenceLow: 150, referenceHigh: 400, recordedAt: '2024-06-01T09:00:00.000Z' },
-      { metricName: 'Lymphocytes', value: 30, unit: '%', recordedAt: '2024-06-01T09:00:00.000Z' },
-    ]);
+    const picked = [report(
+      { name: 'Neutrophils', value: 2.4, unit: 'cells/uL' },
+      { name: 'Platelets', value: 250000, unit: 'cells/µL', referenceLow: 150, referenceHigh: 400 },
+      // A spelling the test does not take is counted (Lymphocytes in % was this example until US-21 AC28 stored it).
+      { name: 'Ferritin', value: 180, unit: 'pmol/L' },
+    )];
+    const refused = await refusedLabs(data.recordFileSync()!, picked);
+    await uploadOpen(picked);
 
-    expect(result.refused.map((r) => r.key)).toEqual(['neutrophils', 'platelets', 'lymphocytes']);
+    expect(refused.map((r) => r.key)).toEqual(['neutrophils', 'platelets', 'ferritin']);
     expect(trackProductEvent).toHaveBeenCalledTimes(1);
-    expect(trackProductEvent).toHaveBeenCalledWith('lab_unit_refused', { key: 'lymphocytes', unit: '%' });
+    expect(trackProductEvent).toHaveBeenCalledWith('lab_unit_refused', { key: 'ferritin', unit: 'pmol/L' });
   });
 
   // US-21 AC11, AC22 · product-health W43: a blank unit and an untrusted
@@ -211,12 +218,12 @@ describe('explicit local-first data path', () => {
   it('US-21 AC22 — counts a blank unit as (blank) and keeps a bracketed power of ten', async () => {
     vi.mocked(trackProductEvent).mockClear();
 
-    await data.bulkSaveLabValues([
-      { metricName: 'WBC', value: 6.2, unit: '', recordedAt: '2024-06-01T09:00:00.000Z' },
-      { metricName: 'Platelets', value: 250, unit: '  ', recordedAt: '2024-06-01T09:00:00.000Z' },
-      { metricName: 'RBC', value: 4.8, unit: 'x10(3)/uL', recordedAt: '2024-06-01T09:00:00.000Z' },
-      { metricName: 'Neutrophils', value: 3.1, unit: '-', recordedAt: '2024-06-01T09:00:00.000Z' },
-    ]);
+    await uploadOpen([report(
+      { name: 'WBC', value: 6.2, unit: '' },
+      { name: 'Platelets', value: 250, unit: '  ' },
+      { name: 'RBC', value: 4.8, unit: 'x10(3)/uL' },
+      { name: 'Neutrophils', value: 3.1, unit: '-' },
+    )]);
 
     expect(vi.mocked(trackProductEvent).mock.calls.map((call) => call[1])).toEqual([
       { key: 'wbc', unit: '(blank)' },
@@ -232,9 +239,7 @@ describe('explicit local-first data path', () => {
   it('does not send a refused unit that holds a value', async () => {
     vi.mocked(trackProductEvent).mockClear();
 
-    await data.bulkSaveLabValues([
-      { metricName: 'ferritin', value: 80, unit: '80 mg/dL', recordedAt: '2024-06-01T09:00:00.000Z' },
-    ]);
+    await uploadOpen([report({ name: 'ferritin', value: 80, unit: '80 mg/dL' })]);
 
     expect(trackProductEvent).toHaveBeenCalledTimes(1);
     expect(trackProductEvent).toHaveBeenCalledWith('lab_unit_refused', { key: 'ferritin' });
@@ -248,43 +253,43 @@ describe('explicit local-first data path', () => {
     beforeEach(() => vi.mocked(trackProductEvent).mockClear());
 
     it('one row at a time: a waist; a blood pressure once its second half lands', async () => {
-      await data.addMeasurement('weight', 80, '2026-08-01');
+      await data.addMeasurement('weight', 80, '2026-08-01', data.getShownErase());
       expect(added()).toEqual([]);
-      await data.addMeasurement('waist', 90, '2026-08-01');
+      await data.addMeasurement('waist', 90, '2026-08-01', data.getShownErase());
       expect(added()).toEqual([['measurement_added', { measure: 'waist' }]]);
       vi.mocked(trackProductEvent).mockClear();
-      await data.addMeasurement('systolic_bp', 120, '2026-08-01');
+      await data.addMeasurement('systolic_bp', 120, '2026-08-01', data.getShownErase());
       expect(added()).toEqual([]);
-      await data.addMeasurement('diastolic_bp', 80, '2026-08-01');
+      await data.addMeasurement('diastolic_bp', 80, '2026-08-01', data.getShownErase());
       expect(added()).toEqual([['measurement_added', { measure: 'blood_pressure' }]]);
       vi.mocked(trackProductEvent).mockClear();
-      await data.addMeasurement('waist', 91, '2026-08-01'); // the slot is taken: nothing added
+      await data.addMeasurement('waist', 91, '2026-08-01', data.getShownErase()); // the slot is taken: nothing added
       expect(added()).toEqual([]);
     });
 
     it('an upload: a pair counts, a lone systolic and a correction do not', async () => {
-      const [waist] = (await data.bulkSaveMeasurements([{ metricType: 'waist', value: 90, recordedAt: '2026-08-01', source: 'lab_import' }])).saved;
+      const [waist] = (await data.bulkSaveMeasurements([{ metricType: 'waist', value: 90, recordedAt: '2026-08-01', source: 'lab_import' }], data.getShownErase())).saved;
       vi.mocked(trackProductEvent).mockClear();
       await data.bulkSaveMeasurements([
         { metricType: 'systolic_bp', value: 125, recordedAt: '2026-08-02', source: 'lab_import' },
         { metricType: 'waist', value: 92, recordedAt: '2026-08-01', source: 'lab_import', correctsId: waist.id },
-      ]);
+      ], data.getShownErase());
       expect(added()).toEqual([]);
       await data.bulkSaveMeasurements([
         { metricType: 'systolic_bp', value: 120, recordedAt: '2026-08-03', source: 'lab_import' },
         { metricType: 'diastolic_bp', value: 80, recordedAt: '2026-08-03', source: 'lab_import' },
         { metricType: 'ldl', value: 3, recordedAt: '2026-08-03', source: 'lab_import' },
-      ]);
+      ], data.getShownErase());
       expect(added()).toEqual([['measurement_added', { measure: 'blood_pressure' }]]);
     });
 
     it('the first-time fields: a refused half or a taken waist counts nothing; a new pair counts once', async () => {
-      await data.saveChangedMeasurements({ heightCm: 178, systolicBp: 80, diastolicBp: 120 }, { heightCm: 178 }); // the bottom half is refused
+      await data.saveChangedMeasurements({ heightCm: 178, systolicBp: 80, diastolicBp: 120 }, { heightCm: 178 }, data.getShownErase()); // the bottom half is refused
       expect(added()).toEqual([]);
-      await data.addMeasurement('waist', 90); // today
+      await data.addMeasurement('waist', 90, undefined, data.getShownErase()); // today
       vi.mocked(trackProductEvent).mockClear();
       // The waist slot is taken, so no waist; the diastolic completes the day's pair with the saved 80.
-      await data.saveChangedMeasurements({ heightCm: 178, waistCm: 91, diastolicBp: 70 }, { heightCm: 178 });
+      await data.saveChangedMeasurements({ heightCm: 178, waistCm: 91, diastolicBp: 70 }, { heightCm: 178 }, data.getShownErase());
       expect(added()).toEqual([['measurement_added', { measure: 'blood_pressure' }]]);
     });
   });

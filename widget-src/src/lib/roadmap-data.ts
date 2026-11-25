@@ -1,28 +1,31 @@
 /** Local-first health records and client-side reports, on every widget surface. */
-import type { AddLabValueRequest, AddLabValueResult, LabUnitRefusal, MoveKeep, MoveRejection, MovePlan } from '@roadmap/health-core/record-edits';
+import type { AddLabValueRequest, AddLabValueResult, MeasurementRefusal, MoveKeep, MoveRejection, MovePlan } from '@roadmap/health-core/record-edits';
 import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import { dayOf } from '@roadmap/health-core/merge';
-import type { FileReminderOptIn } from '@roadmap/health-core/roadmap-file';
+import type { FileReminderOptIn, RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import type { HealthInputs } from '@roadmap/health-core/types';
 import type { LpaUnit, MetricType } from '@roadmap/health-core/units';
-import { labUnitForEvent, MEASUREMENT_REFUSALS_WITH_METRIC, type MEASURES } from '@roadmap/health-core/product-events';
-import { labUnitTaken, resolveLabCatalogEntry } from '@roadmap/health-core/lab-catalog';
+import { MEASUREMENT_REFUSALS_WITH_METRIC, type MEASURES } from '@roadmap/health-core/product-events';
 import type { ReminderScheduleItem } from '@roadmap/health-core/reminder-schedule';
 import type { SaveStatus } from '@roadmap/health-core/save-state';
 import { knownMinorOf } from '@roadmap/health-core/calculations';
-import { RoadmapStore, type DerivedSeries, type BulkLabValueInput, type BulkMeasurementInput, type CorrectStatus, type MoveOutcome, type ProfileSave } from '../storage/roadmap-store';
+import { readableView } from '@roadmap/health-core/readable-rows';
+import { knownIndex, readIsLegacy, type KnownIndex } from '@roadmap/health-core/upload-known';
+import type { UnifiedExtractionResult } from '@roadmap/health-core/lab-extraction';
+import { RoadmapStore, type DerivedSeries, type BulkMeasurementInput, type CorrectStatus, type MoveOutcome, type ProfileSave } from '../storage/roadmap-store';
 import { ChatHistoryStore } from '../storage/chat-history-store';
 import { getChatHistory, openChatHistory, setChatHistoryFactory } from './chat-history-access';
 import { eraseBegan, setChatEraseReader } from './chat-erase';
 import { PROXY_PATH, parseJsonResponse, trackProductEvent } from './server-api';
+import { countRefusedSpellings } from './refused-spellings';
 import { SHOPIFY_SURFACE } from './build-flags';
 import type { StorageAdapter } from '@roadmap/health-core/adapter';
+import type { ScreeningPerson } from '@roadmap/health-core/upload-screening';
+import { SAVE_FAILED, type UploadEngine, type UploadSaveAnswer, type WebSaving, type WebUploadIO } from '../storage/upload-save-store';
 import type {
   AddMeasurementResult,
-  ApiDocument,
   ApiLabValue,
   ApiMedicationHistory,
-  BulkLabValuesResult,
   BulkSaveResult,
   LatestMeasurementsResult,
 } from './api-types';
@@ -74,6 +77,17 @@ export function getDocumentArchiveMode(): 'no-prompt' | 'cloud' | 'device-only' 
   return getBackendKind() === 'cloud' ? 'cloud' : 'device-only';
 }
 
+/** The record's files by content, as it is now (US-12 AC27): the upload reads it once per pick. Never
+ *  cached across picks: a delete or save edits the record in place, and the next pick must see it. */
+export function uploadKnownIndex(): KnownIndex {
+  return store ? knownIndex(store.file) : new Map();
+}
+
+/** After a read: the record holds this document from before hashing, by name and date (upload-known.ts). */
+export function isLegacyUpload(name: string, read: UnifiedExtractionResult): boolean {
+  return !!store && readIsLegacy(store.file, name, read);
+}
+
 /** Which erase the record is at; it moves with every erase, this tab's or
  *  another device's once re-read (US-16 AC2a). */
 export function getEraseIdentity(): string {
@@ -102,11 +116,7 @@ export function eraseRunsHere(): boolean {
  *  session's one rule, which spares the originals of documents that outlive
  *  the erase (US-11 AC6). The page never clears stored originals itself. */
 export function clearOffFileAfterErase(): void {
-  try {
-    store?.clearOffFileData();
-  } catch {
-    /* owed: the erase kept is not moved, and the next load clears again (US-11 AC6) */
-  }
+  store?.clearOffFileData(); // a failed clear stays owed: the next load clears again (US-11 AC6)
 }
 export function markEraseShown(identity: string): void {
   store?.showErase(identity);
@@ -139,6 +149,15 @@ export function getInitialInputsSync(): Partial<HealthInputs> {
   return store ? store.getPrefillInputs() : {};
 }
 
+/** The record as the store holds it now, unreadable rows included: what a write is checked against (US-75 AC5). Null while none is open. */
+export function recordFileSync(): RoadmapFile | null {
+  return store?.file ?? null;
+}
+/** The record as screens and the plan read it (US-65 readableView), for a plan the page works out itself (US-75 AC4). */
+export function readableRecordSync(): RoadmapFile | null {
+  return store ? readableView(store.file).file : null;
+}
+
 /** US-65: how many record entries this build could not read (kept unchanged, not shown). */
 export function getUnreadableCount(): number {
   return store?.unreadableCount ?? 0;
@@ -153,7 +172,7 @@ export function holdsUnreadableMedication(key: string, answered = false): boolea
 export function getReportEmailCaptured(): boolean {
   return store?.getReportEmailCaptured() ?? false;
 }
-export function markReportEmailCaptured(erase?: string): boolean {
+export function markReportEmailCaptured(erase: string): boolean {
   return store?.markReportEmailCaptured(erase) ?? false;
 }
 
@@ -161,15 +180,15 @@ export function markReportEmailCaptured(erase?: string): boolean {
 export function getLpaUnit(): unknown {
   return store?.getLpaUnit();
 }
-export function setLpaUnit(unit: LpaUnit): boolean {
-  return store?.setLpaUnit(unit) ?? false;
+export function setLpaUnit(unit: LpaUnit, erase: string): boolean {
+  return store?.setLpaUnit(unit, erase) ?? false;
 }
 
 // --- email reminders (§10) — used by the standalone RemindersControl ---
 export function getReminderOptIn(): FileReminderOptIn | undefined {
   return store?.getReminderOptIn();
 }
-export function setReminderOptIn(fields: Omit<FileReminderOptIn, 'updatedAt' | 'lamport'>, erase?: string): boolean {
+export function setReminderOptIn(fields: Omit<FileReminderOptIn, 'updatedAt' | 'lamport'>, erase: string): boolean {
   return store?.setReminderOptIn(fields, erase) ?? false;
 }
 export function computeCurrentReminderSchedule(): ReminderScheduleItem[] {
@@ -218,13 +237,12 @@ export function loadDerivedSeries(shown: Parameters<RoadmapStore['loadDerivedSer
 }
 
 // --- writes ---
-// `erase`: the erase the page showed when the write was asked for (US-16
-// AC2a); without it, the one it shows now.
+// `erase`, required: the erase the page showed when the write was asked for (US-16 AC2a).
 /** US-07 AC11's usage signal: each prompted measure the rows just ADDED, once, by name
  *  alone. A blood pressure counts only once both halves of its day are on record. */
 const MEASURE_OF: Partial<Record<MetricType, (typeof MEASURES)[number]>> = { waist: 'waist', systolic_bp: 'blood_pressure', diastolic_bp: 'blood_pressure' };
 const OTHER_HALF: Partial<Record<MetricType, MetricType>> = { systolic_bp: 'diastolic_bp', diastolic_bp: 'systolic_bp' };
-function countMeasuresAdded(added: ApiMeasurement[]): void {
+export function countMeasuresAdded(added: ApiMeasurement[]): void {
   if (!store || added.length === 0) return;
   const active = store.loadAllHistory();
   const complete = (row: ApiMeasurement) => {
@@ -234,13 +252,14 @@ function countMeasuresAdded(added: ApiMeasurement[]): void {
   const measures = new Set(added.filter(complete).map((row) => MEASURE_OF[row.metricType as MetricType]).filter((m) => m !== undefined));
   for (const measure of measures) trackProductEvent('measurement_added', { measure });
 }
-export async function addMeasurement(metricType: string, value: number, recordedAt?: string, erase?: string): Promise<AddMeasurementResult> {
+/** `counted` false: the caller counts the row itself once the store has kept it (US-74 review C8). */
+export async function addMeasurement(metricType: string, value: number, recordedAt: string | undefined, erase: string, counted = true): Promise<AddMeasurementResult> {
   const result: AddMeasurementResult = store ? await store.addMeasurement(metricType, value, recordedAt, erase) : { status: 'error' };
-  if (result.status === 'inserted') countMeasuresAdded([result.row]);
+  if (counted && result.status === 'inserted') countMeasuresAdded([result.row]);
   return result;
 }
 /** Correct a saved core or lab value; `newValue` is in the unit it is stored in. */
-export async function correctValue(id: string, newValue: number, erase?: string): Promise<CorrectStatus> {
+export async function correctValue(id: string, newValue: number, erase: string): Promise<CorrectStatus> {
   return store ? store.correctValue(id, newValue, erase) : 'error';
 }
 /** What moving a saved blood test would do (US-04 AC5); null with no record open. */
@@ -248,72 +267,72 @@ export function previewMove(from: string, to: string): MovePlan | MoveRejection 
   return store ? store.previewMove(from, to) : null;
 }
 /** Move a saved blood test to the day it was drawn, as previewed (US-04 AC5). */
-export async function moveBloodTest(from: string, to: string, expectedIds: string[], keep: MoveKeep, erase?: string): Promise<MoveOutcome> {
+export async function moveBloodTest(from: string, to: string, expectedIds: string[], keep: MoveKeep, erase: string): Promise<MoveOutcome> {
   return store ? store.moveBloodTest(from, to, expectedIds, keep, erase) : { status: 'error' };
 }
-export async function saveChangedMeasurements(current: Partial<HealthInputs>, previous: Partial<HealthInputs>, erase?: string): Promise<ProfileSave> {
+export async function saveChangedMeasurements(current: Partial<HealthInputs>, previous: Partial<HealthInputs>, erase: string): Promise<ProfileSave> {
   const result: ProfileSave = store ? await store.saveChangedMeasurements(current, previous, erase) : { ok: false };
   if (result.ok) countMeasuresAdded(result.added);
   return result;
 }
-export async function saveMedication(medicationKey: string, drugName: string, doseValue: number | null = null, doseUnit: string | null = null, erase?: string): Promise<boolean> {
+export async function saveMedication(medicationKey: string, drugName: string, doseValue: number | null = null, doseUnit: string | null = null, erase: string): Promise<boolean> {
   return store ? store.saveMedication(medicationKey, drugName, doseValue, doseUnit, erase) : false;
 }
-export async function saveSupplement(supplementKey: string, supplementName: string, doseValue: number | null = null, doseUnit: string | null = null, status = 'active', startedAt?: string, erase?: string): Promise<boolean> {
+export async function saveSupplement(supplementKey: string, supplementName: string, doseValue: number | null = null, doseUnit: string | null = null, status = 'active', startedAt: string | undefined, erase: string): Promise<boolean> {
   return store ? store.saveSupplement(supplementKey, supplementName, doseValue, doseUnit, status, startedAt, erase) : false;
 }
-export async function deleteSupplementApi(supplementKey: string): Promise<boolean> {
-  return store ? store.deleteSupplementApi(supplementKey) : false;
+export async function deleteSupplementApi(supplementKey: string, erase: string): Promise<boolean> {
+  return store ? store.deleteSupplementApi(supplementKey, erase) : false;
 }
-export async function saveScreening(screeningKey: string, value: string, erase?: string): Promise<boolean> {
+export async function saveScreening(screeningKey: string, value: string, erase: string): Promise<boolean> {
   return store ? store.saveScreening(screeningKey, value, erase) : false;
 }
-export async function bulkSaveMeasurements(measurements: BulkMeasurementInput[]): Promise<BulkSaveResult> {
+/** One refused core value, counted like a refused lab unit, in closed words only (US-35 AC17). The
+ *  metric rides only on an invalid value: an out-of-range one would say this
+ *  visitor's value is past a bound, and an unknown metric is free text. An
+ *  out-of-range metric still keys the tab's throttle, locally, so two tests
+ *  past their bounds count twice. */
+function countMeasurementRefused(reason: MeasurementRefusal['reason'], metricType: string | undefined): void {
+  if (MEASUREMENT_REFUSALS_WITH_METRIC.includes(reason)) trackProductEvent('measurement_refused', { metric: metricType as MetricType, refusal: reason });
+  else if (reason === 'out-of-range') trackProductEvent('measurement_refused', { refusal: reason }, metricType);
+  else trackProductEvent('measurement_refused', { refusal: reason });
+}
+export async function bulkSaveMeasurements(measurements: BulkMeasurementInput[], erase: string): Promise<BulkSaveResult> {
   if (!store) return { saved: [], skippedDuplicates: 0, errorCount: measurements.length, refused: [] };
-  const result = store.bulkSaveMeasurements(measurements);
-  // Counted like a refused lab unit, in closed words only (US-35 AC17). The
-  // metric rides only on an invalid value: an out-of-range one would say this
-  // visitor's value is past a bound, and an unknown metric is free text. An
-  // out-of-range metric still keys the tab's throttle, locally, so two tests
-  // past their bounds count twice.
-  for (const row of result.refused) {
-    if (MEASUREMENT_REFUSALS_WITH_METRIC.includes(row.reason)) trackProductEvent('measurement_refused', { metric: row.metricType as MetricType, refusal: row.reason });
-    else if (row.reason === 'out-of-range') trackProductEvent('measurement_refused', { refusal: row.reason }, row.metricType);
-    else trackProductEvent('measurement_refused', { refusal: row.reason });
-  }
+  const result = store.bulkSaveMeasurements(measurements, erase);
+  for (const row of result.refused) countMeasurementRefused(row.reason, row.metricType);
   countMeasuresAdded(result.saved.filter((row) => !row.correctsId));
   return result;
 }
-export async function bulkSaveLabValues(values: BulkLabValueInput[]): Promise<BulkLabValuesResult> {
-  if (!store) return { saved: [], skippedDuplicates: 0, errorCount: values.length, refused: [] };
-  const result = store.bulkSaveLabValues(values);
-  countRefusedSpellings(result.refused);
-  return result;
-}
 /** A lab value a person adds (US-21 AC2, US-25 AC25), by health-core's one lab add; null when nothing could be written. */
-export async function addLabValue(input: AddLabValueRequest, erase?: string): Promise<AddLabValueResult | null> {
+export async function addLabValue(input: AddLabValueRequest, erase: string): Promise<AddLabValueResult | null> {
   const result = store ? store.addLabValue(input, erase) : null;
   if (result && !result.ok && result.refused) countRefusedSpellings([result.refused]);
   return result;
 }
-/** Every lab writer passes here, so each refused row is counted once: only a spelling the test
- *  does not take, the signal for the next one to teach it (US-21 AC15). A unit that is not a unit
- *  word is counted without it (US-21 AC11); a blank one as `(blank)` (AC22). */
-function countRefusedSpellings(refused: LabUnitRefusal[]): void {
-  for (const row of refused) {
-    if (!labUnitTaken(resolveLabCatalogEntry(row.key), row.unit)) {
-      const unit = labUnitForEvent(row.unit);
-      trackProductEvent('lab_unit_refused', unit ? { key: row.key, unit } : { key: row.key });
-    }
+/** The shared upload's one Save (storage/upload-save-store.ts), and the counts today's writers send for it: each lab
+ *  the review did not send for its unit or number, by its own refusal (`lab_unit_refused`, US-21 AC15, as the grid's
+ *  Save counts them), and the vitals the commit added. A core value the write refuses never reaches Save: the review
+ *  holds it as unsure until it is cleared. With no record open, the Save fails. The flow's Save (lib/upload-shared-save.ts) calls it. */
+export async function saveUpload(engine: UploadEngine, s: WebSaving, now: string, io: WebUploadIO, person?: ScreeningPerson): Promise<UploadSaveAnswer> {
+  if (!store) return { ok: false, reason: 'no-record', message: SAVE_FAILED };
+  // The review uploadSave judges, on the record it starts from (uploadSave builds its own; it takes none).
+  const refused = engine.uploadReview(s, store.file, now).classification.values.flatMap((v) => (v.group === 'notSaved' && v.refusal && 'lab' in v.refusal ? [v.refusal.lab] : []));
+  const answer = await store.saveUpload(engine, s, now, getDocumentArchiveMode() === 'cloud', io, person);
+  if (!answer.ok) return answer;
+  countRefusedSpellings(refused);
+  // The rows the commit refused, the record having changed since the review (US-12 AC6): each core value as the
+  // store's writer counts it, each lab unit refusal as `countRefusedSpellings` words it (the code is made only for a
+  // unit the test does not take). A lab `value` code sends nothing: no event counts a refused lab number today.
+  for (const code of answer.outcome.refusedCodes ?? []) {
+    if (code.kind === 'measurement') countMeasurementRefused(code.reason, code.metricType);
+    else if (code.reason === 'unit') trackProductEvent('lab_unit_refused', code.unit !== undefined ? { key: code.key, unit: code.unit } : { key: code.key });
   }
+  countMeasuresAdded(answer.added);
+  return answer;
 }
-export async function bulkSaveDocuments(
-  documents: Array<{ documentType: string; title: string; documentDate: string | null; contentMd: string; metadata: Record<string, unknown>; sourceFileName: string | null; file?: Blob }>,
-): Promise<{ saved: ApiDocument[]; errorCount: number; unstored?: number }> {
-  return store ? store.bulkSaveDocuments(documents) : { saved: [], errorCount: documents.length };
-}
-export async function deleteDocument(documentId: string): Promise<boolean> {
-  return store ? store.deleteDocument(documentId) : false;
+export async function deleteDocument(documentId: string, erase: string): Promise<boolean> {
+  return store ? store.deleteDocument(documentId, erase) : false;
 }
 /** Standalone: history opens as a lightbox (host listens in standalone/app.tsx). */
 export function openHistoryLightbox(metric: string | null): boolean {

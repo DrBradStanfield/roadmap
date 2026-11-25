@@ -72,7 +72,7 @@ afterEach(() => {
 describe('US-10 AC5 — a tab-close write never drops another tab\'s save', () => {
   it('a tab with nothing unsaved writes nothing', async () => {
     const [a, b] = await twoTabs();
-    b.addMeasurement('weight', 83, TODAY);
+    b.addMeasurement('weight', 83, TODAY, b.shownErase);
     await b.flush();
     const before = rev();
 
@@ -84,8 +84,8 @@ describe('US-10 AC5 — a tab-close write never drops another tab\'s save', () =
 
   it('a tab with an unsaved edit writes the merge: both tabs\' rows kept, and the version moves on', async () => {
     const [a, b] = await twoTabs();
-    a.addMeasurement('hdl', 1.4, TODAY); // still on the debounce
-    b.addMeasurement('weight', 83, TODAY);
+    a.addMeasurement('hdl', 1.4, TODAY, a.shownErase); // still on the debounce
+    b.addMeasurement('weight', 83, TODAY, b.shownErase);
     await b.flush();
     const before = rev();
 
@@ -97,10 +97,10 @@ describe('US-10 AC5 — a tab-close write never drops another tab\'s save', () =
 
   it('two tabs that fill the same slot keep both rows, and one stays active', async () => {
     const [a, b] = await twoTabs();
-    b.addMeasurement('weight', 83, TODAY);
+    b.addMeasurement('weight', 83, TODAY, b.shownErase);
     await b.flush();
     vi.setSystemTime(new Date('2026-09-25T10:00:01.000Z')); // A types a second later
-    a.addMeasurement('weight', 84, TODAY);
+    a.addMeasurement('weight', 84, TODAY, a.shownErase);
 
     a.flushSync();
 
@@ -122,7 +122,7 @@ describe('US-10 AC5 — a tab-close write never drops another tab\'s save', () =
     const [a, b] = await twoTabs();
     expect((await b.deleteAllData()).success).toBe(true);
     vi.setSystemTime(new Date('2026-09-25T10:01:00.000Z'));
-    a.addMeasurement('hdl', 1.4, TODAY); // typed in A, which has not heard of the erase
+    a.addMeasurement('hdl', 1.4, TODAY, a.shownErase); // typed in A, which has not heard of the erase
 
     a.flushSync();
 
@@ -138,17 +138,17 @@ describe('US-10 AC5 — a tab-close write never drops another tab\'s save', () =
     localStorage.setItem('health_roadmap_backend', 'memory'); // the page's cloud, as connect.ts remembers it (US-06 AC13)
     const cloud = new MemoryCloud();
     const seeded = await RoadmapStore.create(new MemoryAdapter(cloud));
-    seeded.addMeasurement('weight', 82, '2026-09-18T00:00:00.000Z');
+    seeded.addMeasurement('weight', 82, '2026-09-18T00:00:00.000Z', seeded.shownErase);
     await seeded.flush();
     class SaveFails extends MemoryAdapter {
       async write(): Promise<never> {
-        throw new StorageError('cloud down');
+        throw new StorageError('cloud down', undefined, undefined, undefined, undefined, 'may-have-landed');
       }
     }
     const a = await RoadmapStore.create(new SaveFails(cloud)); // holds the weight
     const b = await RoadmapStore.create(new MemoryAdapter(cloud));
     expect((await b.deleteAllData()).success).toBe(true);
-    a.addMeasurement('hdl', 1.4, TODAY); // after B's erase, which never saw it
+    a.addMeasurement('hdl', 1.4, TODAY, a.shownErase); // after B's erase, which never saw it
     await expect(a.flush()).rejects.toThrow(); // mirrors the weight AND the hdl on this device
 
     const next = await RoadmapStore.create(new MemoryAdapter(cloud)); // the next load lifts the mirror
@@ -160,7 +160,7 @@ describe('US-10 AC5 — a tab-close write never drops another tab\'s save', () =
 
   it('never writes over a record a newer app saved, and the refusal is reported', async () => {
     const [a] = await twoTabs();
-    a.addMeasurement('hdl', 1.4, TODAY);
+    a.addMeasurement('hdl', 1.4, TODAY, a.shownErase);
     // Another tab, reloaded onto a newer bundle, saved a newer schema.
     const newer = JSON.stringify({ ...stored(), schemaVersion: 9999 });
     localStorage.setItem(FILE_KEY, newer);
@@ -183,7 +183,7 @@ describe('US-10 AC5 — a tab-close write never drops another tab\'s save', () =
       if (full && key === FILE_KEY) throw new DOMException('The quota has been exceeded.', 'QuotaExceededError');
       setItem.call(this, key, value);
     });
-    a.addMeasurement('hdl', 1.4, TODAY);
+    a.addMeasurement('hdl', 1.4, TODAY, a.shownErase);
     await vi.advanceTimersByTimeAsync(1_000); // the debounced save fails
     expect(rows()).toEqual(['weight 82 active']);
 
@@ -197,7 +197,7 @@ describe('US-10 AC5 — a tab-close write never drops another tab\'s save', () =
   // unsaved hdl, so it did not list it (residual b).
   it('a hide that merges the other tab\'s erase takes it in: the drafts go, the page is told, the unsaved edit and a later one survive', async () => {
     const [a, b] = await twoTabs();
-    a.addMeasurement('hdl', 1.4, TODAY); // unsaved when B erases
+    a.addMeasurement('hdl', 1.4, TODAY, a.shownErase); // unsaved when B erases
     vi.setSystemTime(new Date('2026-09-25T10:01:00.000Z'));
     expect((await b.deleteAllData()).success).toBe(true);
     // A's matrix, still open on the old record, typed on after B's erase.
@@ -216,7 +216,7 @@ describe('US-10 AC5 — a tab-close write never drops another tab\'s save', () =
     expect(changed).toHaveBeenCalledTimes(1);
     expect(a.loadAllHistory().map((m) => m.metricType)).toEqual(['hdl']); // the seeded weight was listed
     // A now works at the erase's epoch, so its next edit is kept.
-    a.addMeasurement('ldl', 3.1, TODAY);
+    a.addMeasurement('ldl', 3.1, TODAY, a.shownErase);
     await a.flush();
     expect(rows()).toEqual(['hdl 1.4 active', 'ldl 3.1 active']);
     window.removeEventListener(DRAFTS_CLEARED_EVENT, cleared);
@@ -241,10 +241,10 @@ describe('US-10 AC5 — a tab-close write never drops another tab\'s save', () =
 
   it('after that hide, an erase in this tab removes what the other tab saved since', async () => {
     const [a, b] = await twoTabs();
-    a.addMeasurement('hdl', 1.4, TODAY);
+    a.addMeasurement('hdl', 1.4, TODAY, a.shownErase);
     expect((await b.deleteAllData()).success).toBe(true);
     a.flushSync(); // A hides, and takes B's erase in
-    b.addMeasurement('weight', 83, TODAY); // B starts again
+    b.addMeasurement('weight', 83, TODAY, b.shownErase); // B starts again
     await b.flush();
     vi.setSystemTime(new Date('2026-09-25T10:01:00.000Z'));
 
@@ -257,11 +257,11 @@ describe('US-10 AC5 — a tab-close write never drops another tab\'s save', () =
   it('after a hide the tab shows what the other tab saved, and its next save runs clean and takes in what came after', async () => {
     const adapterA = new LocalStorageAdapter();
     const [a, b] = await twoTabs(adapterA);
-    b.addMeasurement('weight', 83, TODAY);
+    b.addMeasurement('weight', 83, TODAY, b.shownErase);
     await b.flush();
     const heard = vi.fn();
     window.addEventListener(REMOTE_CHANGED_EVENT, heard);
-    a.addMeasurement('hdl', 1.4, TODAY);
+    a.addMeasurement('hdl', 1.4, TODAY, a.shownErase);
 
     a.flushSync(); // A is hidden; the page lives on
 
@@ -271,11 +271,11 @@ describe('US-10 AC5 — a tab-close write never drops another tab\'s save', () =
 
     // jsdom has one window for both tabs: B's own save announces A's row there.
     window.removeEventListener(REMOTE_CHANGED_EVENT, heard);
-    b.addMeasurement('ldl', 3.1, TODAY); // B saves again after A's hide
+    b.addMeasurement('ldl', 3.1, TODAY, b.shownErase); // B saves again after A's hide
     await b.flush();
     window.addEventListener(REMOTE_CHANGED_EVENT, heard);
     const write = vi.spyOn(adapterA, 'write');
-    a.addMeasurement('waist', 90, TODAY);
+    a.addMeasurement('waist', 90, TODAY, a.shownErase);
     await vi.advanceTimersByTimeAsync(1_000);
 
     expect(write).toHaveBeenCalledTimes(1); // no conflict retry
@@ -287,7 +287,7 @@ describe('US-10 AC5 — a tab-close write never drops another tab\'s save', () =
 
   it('a second hide with nothing new writes nothing', async () => {
     const [a] = await twoTabs();
-    a.addMeasurement('hdl', 1.4, TODAY);
+    a.addMeasurement('hdl', 1.4, TODAY, a.shownErase);
     a.flushSync();
     const after = rev();
 
@@ -299,7 +299,7 @@ describe('US-10 AC5 — a tab-close write never drops another tab\'s save', () =
 
   it('a device that refuses every write reports each kind of refusal once per page load, not on every hide', async () => {
     const [a] = await twoTabs();
-    a.addMeasurement('hdl', 1.4, TODAY);
+    a.addMeasurement('hdl', 1.4, TODAY, a.shownErase);
     let full = true;
     const setItem = Storage.prototype.setItem;
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key: string, value: string) {
@@ -328,7 +328,7 @@ describe('US-10 AC5 — a tab-close write never drops another tab\'s save', () =
     const good = localStorage.getItem(FILE_KEY)!;
     // Unreadable bytes: a StorageError wrapping a SyntaxError, cause=other.
     localStorage.setItem(FILE_KEY, '{');
-    a.addMeasurement('hdl', 1.4, TODAY);
+    a.addMeasurement('hdl', 1.4, TODAY, a.shownErase);
     await a.flush().catch(() => {});
     expect(Sentry.captureException).toHaveBeenCalledTimes(1);
 
@@ -366,11 +366,11 @@ describe('US-10 AC5 — a tab-close write never drops another tab\'s save', () =
       return read;
     });
 
-    a.addMeasurement('hdl', 1.4, TODAY);
+    a.addMeasurement('hdl', 1.4, TODAY, a.shownErase);
     armed = true;
     a.flushSync(); // refused: the version moved; the async save retries and lands
     await vi.advanceTimersByTimeAsync(0);
-    a.addMeasurement('ldl', 3.1, TODAY);
+    a.addMeasurement('ldl', 3.1, TODAY, a.shownErase);
     armed = true;
     a.flushSync(); // refused again
     await vi.advanceTimersByTimeAsync(0);
@@ -394,13 +394,13 @@ async function slowCloudWithEdit(): Promise<{ cloud: MemoryCloud; adapter: SlowA
   const cloud = new MemoryCloud();
   localStorage.setItem('health_roadmap_backend', 'memory'); // the page's cloud, as connect.ts remembers it (US-11 AC6)
   const seeded = await RoadmapStore.create(new MemoryAdapter(cloud));
-  seeded.addMeasurement('weight', 82, '2026-09-18T00:00:00.000Z');
+  seeded.addMeasurement('weight', 82, '2026-09-18T00:00:00.000Z', seeded.shownErase);
   await seeded.flush();
   const adapter = new SlowAdapter(cloud);
   const opening = RoadmapStore.create(adapter);
   await vi.advanceTimersByTimeAsync(400);
   const store = await opening;
-  store.addMeasurement('weight', 83, TODAY); // on the 800 ms debounce
+  store.addMeasurement('weight', 83, TODAY, store.shownErase); // on the 800 ms debounce
   return { cloud, adapter, store };
 }
 
@@ -419,7 +419,7 @@ describe('US-11 AC7 — an erase beats what it has not seen, and says so only on
   it('a tab that never hid still erases over the other tab\'s erase and fresh start', async () => {
     const [a, b] = await twoTabs();
     expect((await b.deleteAllData()).success).toBe(true);
-    b.addMeasurement('weight', 83, TODAY); // B starts again
+    b.addMeasurement('weight', 83, TODAY, b.shownErase); // B starts again
     await b.flush();
     vi.setSystemTime(new Date('2026-09-25T10:01:00.000Z'));
 
@@ -434,11 +434,11 @@ describe('US-11 AC7 — an erase beats what it has not seen, and says so only on
     const cloud = new MemoryCloud();
     localStorage.setItem('health_roadmap_backend', 'memory'); // the page's cloud, as connect.ts remembers it (US-11 AC6)
     const phone = await RoadmapStore.create(new MemoryAdapter(cloud));
-    phone.addMeasurement('weight', 82, '2026-09-18T00:00:00.000Z');
+    phone.addMeasurement('weight', 82, '2026-09-18T00:00:00.000Z', phone.shownErase);
     await phone.flush();
     const laptop = await RoadmapStore.create(new MemoryAdapter(cloud));
     expect((await phone.deleteAllData()).success).toBe(true);
-    phone.addMeasurement('weight', 83, TODAY); // the phone starts again
+    phone.addMeasurement('weight', 83, TODAY, phone.shownErase); // the phone starts again
     await phone.flush();
     vi.setSystemTime(new Date('2026-09-25T10:01:00.000Z'));
 
@@ -474,16 +474,16 @@ describe('US-11 AC7 — an erase beats what it has not seen, and says so only on
 
   it('a flush made by a listener to a save that just ended starts a new save', async () => {
     const [a, b] = await twoTabs();
-    b.addMeasurement('weight', 83, TODAY);
+    b.addMeasurement('weight', 83, TODAY, b.shownErase);
     await b.flush();
     let flushed: Promise<void> | null = null;
     const listener = () => {
       window.removeEventListener(REMOTE_CHANGED_EVENT, listener);
-      a.addMeasurement('ldl', 3.1, TODAY);
+      a.addMeasurement('ldl', 3.1, TODAY, a.shownErase);
       flushed = a.flush();
     };
     window.addEventListener(REMOTE_CHANGED_EVENT, listener);
-    a.addMeasurement('hdl', 1.4, TODAY);
+    a.addMeasurement('hdl', 1.4, TODAY, a.shownErase);
 
     await a.flush(); // folds B's row in, and announces it
     await flushed;
@@ -544,7 +544,7 @@ function setVisibility(state: 'hidden' | 'visible'): void {
 
 /** Another tab saves a row, and the browser tells tab A. */
 async function otherTabSaves(b: RoadmapStore, metric: string, value: number): Promise<void> {
-  b.addMeasurement(metric, value, TODAY);
+  b.addMeasurement(metric, value, TODAY, b.shownErase);
   await b.flush();
   storageEvent();
 }
@@ -598,7 +598,7 @@ describe('US-34 AC6 — another tab\'s save reaches this tab as it lands', () =>
 
     // A lab import, say: ten saves, one every 100 ms.
     for (let day = 1; day <= 10; day++) {
-      b.addMeasurement('ldl', 3 + day / 10, `2026-09-${String(day).padStart(2, '0')}T00:00:00.000Z`);
+      b.addMeasurement('ldl', 3 + day / 10, `2026-09-${String(day).padStart(2, '0')}T00:00:00.000Z`, b.shownErase);
       await b.flush();
       storageEvent();
       await vi.advanceTimersByTimeAsync(100);
@@ -691,7 +691,7 @@ describe('US-34 AC6 — another tab\'s save reaches this tab as it lands', () =>
 
   it('an edit waiting to be saved here is never merged over: its save takes the row in, and says so once', async () => {
     const { a, b, adapterA } = await listeningTabs();
-    a.addMeasurement('hdl', 1.4, TODAY); // on the 800 ms debounce
+    a.addMeasurement('hdl', 1.4, TODAY, a.shownErase); // on the 800 ms debounce
     const read = vi.spyOn(adapterA, 'read');
 
     await otherTabSaves(b, 'weight', 83);
@@ -707,7 +707,7 @@ describe('US-34 AC6 — another tab\'s save reaches this tab as it lands', () =>
 
   it('the other tab\'s profile edit shows here before this tab saves, and this tab\'s next edit keeps it (US-10 AC5\'s commonest loss)', async () => {
     const { a, b } = await listeningTabs();
-    b.saveChangedMeasurements({ sex: 'male', heightCm: 180 }, {});
+    b.saveChangedMeasurements({ sex: 'male', heightCm: 180 }, {}, b.shownErase);
     await b.flush();
     storageEvent();
     await vi.advanceTimersByTimeAsync(0);
@@ -719,7 +719,7 @@ describe('US-34 AC6 — another tab\'s save reaches this tab as it lands', () =>
 
     // A second later, the user sets a birth year in tab A.
     vi.setSystemTime(new Date('2026-09-25T10:00:01.000Z'));
-    a.saveChangedMeasurements({ birthYear: 1970 }, {});
+    a.saveChangedMeasurements({ birthYear: 1970 }, {}, a.shownErase);
     await a.flush();
 
     expect(stored().profile).toMatchObject({ sex: 'male', heightCm: 180, birthYear: 1970 });
@@ -764,7 +764,7 @@ describe('US-34 AC6 — another tab\'s save reaches this tab as it lands', () =>
   it('a save the tab never heard of (a page back from the back-forward cache) is read on the return', async () => {
     const { a, b } = await listeningTabs();
     setVisibility('hidden');
-    b.addMeasurement('weight', 83, TODAY);
+    b.addMeasurement('weight', 83, TODAY, b.shownErase);
     await b.flush(); // no storage event reaches tab A
     await vi.advanceTimersByTimeAsync(10_000);
 
@@ -776,7 +776,7 @@ describe('US-34 AC6 — another tab\'s save reaches this tab as it lands', () =>
   it('a return with the revision where this tab left it reads nothing, this tab\'s own save and a heard one included', async () => {
     const { a, b, adapterA } = await listeningTabs();
     await otherTabSaves(b, 'weight', 83); // heard and read
-    a.addMeasurement('hdl', 1.4, TODAY);
+    a.addMeasurement('hdl', 1.4, TODAY, a.shownErase);
     await a.flush();
     await vi.advanceTimersByTimeAsync(10_000);
     const read = vi.spyOn(adapterA, 'read');
@@ -809,7 +809,7 @@ describe('US-34 AC6 — another tab\'s save reaches this tab as it lands', () =>
       other.writeSync(ROADMAP_FILE_NAME, file, version);
       return written;
     });
-    a.addMeasurement('ldl', 3.1, TODAY);
+    a.addMeasurement('ldl', 3.1, TODAY, a.shownErase);
     await a.flush();
     storageEvent(); // B's event: held for the end of the window
     expect(values(a)).toEqual([3.1, 82, 83]);
@@ -844,7 +844,7 @@ describe('US-34 AC6 — another tab\'s save reaches this tab as it lands', () =>
 
   it('a hide that writes this tab\'s unsaved edit reads nothing on the return', async () => {
     const { a, adapterA } = await listeningTabs();
-    a.addMeasurement('hdl', 1.4, TODAY); // on the debounce
+    a.addMeasurement('hdl', 1.4, TODAY, a.shownErase); // on the debounce
     const read = vi.spyOn(adapterA, 'read');
     const readSync = vi.spyOn(adapterA, 'readSync');
     setVisibility('hidden');
@@ -922,7 +922,7 @@ describe('US-34 AC6 — another tab\'s save reaches this tab as it lands', () =>
     expect(heard).toHaveBeenCalledTimes(1);
     expect(write).not.toHaveBeenCalled();
     // A now works at the erase's epoch, so its next edit is kept.
-    a.addMeasurement('ldl', 3.1, TODAY);
+    a.addMeasurement('ldl', 3.1, TODAY, a.shownErase);
     await a.flush();
     expect(stored().meta.eraseEpoch).toBe(1);
     expect(rows()).toEqual(['ldl 3.1 active']);
@@ -986,7 +986,7 @@ describe('US-34 AC6 — another tab\'s save reaches this tab as it lands', () =>
       if (full && key === FILE_KEY) throw new DOMException('The quota has been exceeded.', 'QuotaExceededError');
       setItem.call(this, key, value);
     });
-    a.addMeasurement('hdl', 1.4, TODAY);
+    a.addMeasurement('hdl', 1.4, TODAY, a.shownErase);
     await vi.advanceTimersByTimeAsync(1_000); // the debounced save fails
     full = false;
 

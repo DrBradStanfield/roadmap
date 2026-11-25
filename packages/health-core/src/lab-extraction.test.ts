@@ -893,12 +893,12 @@ describe('US-21 AC4: the prompt suggests the lab catalogue keys, and only those'
       expect(block(prompt)).toEqual([
         '  Renal & electrolytes: sodium, potassium, chloride, bicarbonate, urea, urate, urine_acr, urine_creatinine, urine_pcr, cystatin_c, egfr, egfr_cystatin, egfr_combined, anion_gap, osmolality_serum',
         '  Liver: alt, ast, ggt, alp, bilirubin_total, bilirubin_direct, ldh, albumin, total_protein, globulin, bilirubin_indirect, lipase, amylase',
-        '  Blood count: haemoglobin, haematocrit, rbc, wbc, platelets, neutrophils, lymphocytes, monocytes, eosinophils, basophils, mcv, mch, mchc, rdw, rdw_sd, mpv, immature_granulocytes, reticulocytes, nrbc, d_dimer, fibrinogen',
+        '  Blood count: haemoglobin, haematocrit, rbc, wbc, platelets, neutrophils, lymphocytes, monocytes, eosinophils, basophils, mcv, mch, mchc, rdw, rdw_sd, mpv, immature_granulocytes, reticulocytes, nrbc, neutrophils_pct, lymphocytes_pct, monocytes_pct, eosinophils_pct, basophils_pct, immature_granulocytes_pct, reticulocytes_pct, nrbc_per_100_wbc, d_dimer, fibrinogen',
         '  Thyroid: tsh, ft4, ft3, anti_tpo, total_t4, total_t3, reverse_t3, t3_uptake, thyroglobulin, anti_tg, trab',
         '  Hormones: testosterone_total, free_testosterone, free_testosterone_calculated, shbg, estradiol, prolactin, cortisol_am, cortisol_random, cortisol_pm, psa_free, lh, fsh, progesterone, dhea_s, igf1, pth, amh, bioavailable_testosterone, psa_free_percent, estrone, androstenedione, oh_progesterone_17, dht, acth, gh, hcg',
         '  Vitamins & minerals: vitamin_d, vitamin_b12, b12_active, folate, ferritin, iron, tibc, transferrin, transferrin_sat, magnesium, calcium_corrected, calcium_total, phosphate, zinc, red_cell_folate, calcium_ionised, uibc, stfr, copper, caeruloplasmin, selenium, omega3_index, vitamin_a, vitamin_e, vitamin_c, vitamin_b6, vitamin_b1, mma',
         '  Inflammation: crp, esr, procalcitonin, ige, rf, anti_ccp, total_iga, ttg_iga',
-        '  Metabolic: glucose, glucose_random, insulin, apoa1, homocysteine, ck, nt_probnp, bnp, troponin_t, troponin_i, c_peptide, eag, vldl, lactate, fructosamine',
+        '  Metabolic: glucose, glucose_random, insulin, apoa1, homocysteine, ck, nt_probnp, bnp, troponin_t, troponin_i, c_peptide, eag, cholesterol_hdl_ratio, vldl, lactate, fructosamine',
         '  Any other test: use the best descriptive snake_case name.',
       ]);
     });
