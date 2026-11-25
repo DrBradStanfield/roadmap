@@ -13,8 +13,8 @@
  *  A. every age edge × sex × a probe per screening state that gates a card;
  *  B. every answer fixture at one or two ages where its screening applies;
  *  C. a last date at, one month before and one month after every interval;
- *  D. birthday-month and clock-edge cases (the plan's age is local, the
- *     schedule's UTC).
+ *  D. birthday-month and clock-edge cases (the plan's shown age is local; its
+ *     screening cards, its questions and the schedule read the UTC month, US-23 AC6c).
  */
 import { migrateFile } from './migrate';
 import { computePlan } from './plan';
@@ -26,6 +26,7 @@ import {
   SCREENING_MIN_AGE, type ScreeningInputs,
 } from './types';
 import { SCREENING_LABELS, SCREENING_OPTIONS, screeningForm, screeningWrites, type FormField, type FormSection } from './input-form';
+import { screeningAge } from './screening-rules';
 
 /** The clock every golden run uses (the blood table's). In Pacific/Auckland it is 2 Oct 2026, 01:00. */
 export const GOLDEN_NOW = new Date('2026-10-01T12:00:00Z');
@@ -369,7 +370,7 @@ export function screeningGolden(setNow: (d: Date) => void) {
     const due = computeReminderSchedule(file, now).map((i) => `${i.category} (${i.group}) ${i.label} ${i.dueAt}`);
     const kinds = Object.entries(followupKinds(file, now)).map(([c, k]) => `${c} ${k!.kind} ${k!.name}`);
     const age = plan.results.age ?? null;
-    return { age, cards, due, ...(kinds.length ? { followups: kinds } : {}), form: formTable.ref(formLines(screeningForm(plan.results.age, p.sex, f.s), groupTable.ref)) };
+    return { age, cards, due, ...(kinds.length ? { followups: kinds } : {}), form: formTable.ref(formLines(screeningForm(screeningAge(plan.inputs, now), p.sex, f.s), groupTable.ref)) };
   };
 
   const cases: Record<string, CaseOut> = {};
@@ -387,7 +388,7 @@ export function screeningGolden(setNow: (d: Date) => void) {
   }
   // C. Interval boundaries.
   for (const [name, code, f] of boundaryCases()) add(name, profileOf(code), f);
-  // D. The birthday month, at both clocks: the plan counts age in local time, the schedule in UTC.
+  // D. The birthday month, at both clocks: the plan shows age in local time; its cards, form and the schedule read UTC (US-23 AC6c).
   for (const [c] of SEXES.slice(0, 2)) {
     for (const age of [25, 35, 40, 45, 50, 66, 70, 76, 81]) {
       for (const birthMonth of [9, 10, 11]) {

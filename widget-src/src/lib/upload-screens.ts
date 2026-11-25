@@ -3,7 +3,7 @@
  * the list, the view and the page. `engine`: the loaded upload bundle's `uploadReview` (owner ruling 4), so the page
  * and the Save judge with the same code and the main bundle carries no second copy. `cloud`: the record lives in the
  * person's cloud (`getDocumentArchiveMode()`). `person`: the age and sex of the form's plan basis (HealthTool
- * `planBasis?.age`, `sex`), for a letter's screening box (US-13 AC6); the same `person` goes to the Save
+ * `planBasis?.screeningAge`, `sex`; US-23 AC6c), for a letter's screening box (US-13 AC6); the same `person` goes to the Save
  * (lib/roadmap-data.ts `saveUpload`). Drawn by components/UploadReviewList.tsx and testing/upload-list-host.tsx.
  */
 import type { CellUnit } from '@roadmap/health-core/cell-unit';
