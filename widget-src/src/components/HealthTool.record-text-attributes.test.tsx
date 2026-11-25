@@ -18,6 +18,7 @@ import {
   setReminderOptIn,
 } from '../lib/roadmap-data';
 import { formatShortDate } from '../lib/constants';
+import { formatDisplayValue, type MetricType } from '@roadmap/health-core/units';
 import { recordTextInAttributes } from '../testing/no-record-text-in-attributes';
 import { UPLOAD_ENGINE } from '../testing/upload-engine';
 
@@ -39,15 +40,32 @@ const SENTINEL = {
 } as const;
 const WORDS = Object.values(SENTINEL);
 
-/** The day of the pressure readings, an unusual one: its shown form is looked for too. */
+/**
+ * The day of the pressure readings. Not a sentinel: a date alone names no condition or result, so
+ * a day may sit in an attribute (US-09 AC7l exemption). It is used only to find the Correct control.
+ */
 const BP_DAY = '2025-02-17T00:00:00.000Z';
-/** Each core metric's typed value, unusual but in range, by the text the screens show for it (SI). */
-const CORE: ReadonlyArray<[metric: string, value: number, shown: string]> = [
-  ['weight', 138.6, '138.6'], ['waist', 163, '163'], ['hba1c', 109, '109'], ['ldl', 11.8, '11.8'],
-  ['hdl', 4.87, '4.87'], ['total_cholesterol', 13.6, '13.6'], ['triglycerides', 17.3, '17.3'],
-  ['apob', 1.83, '1.83'], ['creatinine', 1234, '1234'], ['psa', 836.4, '836.4'], ['lpa', 613, '613'],
+/**
+ * Each core metric's two readings (latest, earlier), unusual but in range, in SI. Each raw value
+ * carries more digits than the screens show, so both forms are looked for: the shown one and the
+ * raw stored one. A numeric sentinel matches only as a whole number, so the shown "5.4" would miss
+ * a raw "5.43" in an attribute; the raw sentinel catches it. HDL shows one decimal, so its readings
+ * are picked to show as numbers no icon drawing on these screens uses (5.1, 2.7).
+ */
+const CORE: ReadonlyArray<[metric: MetricType, latest: number, earlier: number]> = [
+  ['weight', 138.64, 124.77], ['waist', 163.3, 146.6], ['hba1c', 109.4, 98.3], ['ldl', 11.83, 10.24],
+  ['hdl', 5.137, 2.734], ['total_cholesterol', 13.62, 12.27], ['triglycerides', 17.34, 15.53],
+  ['apob', 1.834, 1.648], ['creatinine', 1234.4, 1110.7], ['psa', 836.43, 752.71], ['lpa', 613.4, 551.6],
 ];
-const VALUES = [...CORE.map(([, , shown]) => shown), '187', '117', '191', formatShortDate(BP_DAY)];
+const shownSI = (metric: MetricType, value: number) => formatDisplayValue(metric, value, 'si');
+const VALUES = [
+  ...CORE.flatMap(([metric, latest, earlier]) => [latest, earlier].flatMap(v => [String(v), shownSI(metric, v)])),
+  '187', '117', '191',
+];
+// Names, free text and values only. Not looked for (US-09 AC7l exemptions): a reading's day (a date
+// alone names no condition or result), keys from fixed lists and the catalogue (the same for
+// everyone), a form field's own value (the field is the field; the helper skips it) and a link in a
+// document's own text (the link is the person's own; DOCUMENT_LINKS below).
 const LOOKED_FOR = [...WORDS, ...VALUES];
 
 vi.mock('chart.js', () => {
@@ -112,9 +130,9 @@ afterEach(async () => {
 /** Every free-text field of the record holds its own sentinel, every core metric an unusual value. */
 async function seed() {
   await saveChangedMeasurements({ sex: 'male', heightCm: 191, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {});
-  for (const [metric, value] of CORE) {
-    await addMeasurement(metric, value, '2026-10-12T00:00:00.000Z');
-    await addMeasurement(metric, value * 0.9, '2026-04-02T00:00:00.000Z');
+  for (const [metric, latest, earlier] of CORE) {
+    await addMeasurement(metric, latest, '2026-10-12T00:00:00.000Z');
+    await addMeasurement(metric, earlier, '2026-04-02T00:00:00.000Z');
   }
   await addMeasurement('systolic_bp', 187, BP_DAY);
   await addMeasurement('diastolic_bp', 117, BP_DAY);
@@ -148,7 +166,7 @@ describe('US-09 AC7l: the record\'s own text sits in no attribute on any main sc
     await waitFor(() => expect(document.querySelector('.md-row')).not.toBeNull());
     await waitFor(() => shown(SENTINEL.supplement));
     shown(SENTINEL.lab);
-    shown('138.6');
+    shown(shownSI('weight', 138.64));
     expect(leaks()).toEqual([]);
 
     // Each row's own page: its chart, latest value and history (a test the catalogue does not know among them).
@@ -233,7 +251,7 @@ describe('US-09 AC7l: the record\'s own text sits in no attribute on any main sc
     vi.mocked(checkLabImportQuota).mockResolvedValue({ allowed: true, remaining: 60 });
     vi.mocked(labImport).mockResolvedValue({ result: {
       classification: 'lab_report', document: null, reportDate: '2026-11-03',
-      values: [{ metric: 'lpa', valueSI: 613, displayValue: 613, displayUnit: 'nmol/L', confidence: 'high' }],
+      values: [{ metric: 'lpa', valueSI: 613.4, displayValue: 613.4, displayUnit: 'nmol/L', confidence: 'high' }],
       additionalValues: [{ name: SENTINEL.uploadLab, value: 4.4, unit: SENTINEL.uploadUnit }],
     } } as Awaited<ReturnType<typeof labImport>>);
     vi.stubGlobal('HealthUpload', { ...UPLOAD_ENGINE,

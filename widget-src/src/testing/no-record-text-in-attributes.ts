@@ -3,10 +3,18 @@
  * Walks every attribute of every element under `root` (the root too) and returns each one whose
  * value holds a sentinel, as `selector[attribute]="value"`, so a failing test names the place.
  *
- * Exempt: a form field's own `value` on a text-like input or a textarea (React mirrors a
- * controlled field's value into the attribute; that is the field itself). A checkbox, radio or
- * option carries its `value` as a fixed key, so theirs is checked. Also exempt: any element
- * matching one of `exempt`'s selectors (each with a comment where it is passed, saying why).
+ * Sentinels are the two kinds AC7l covers: text the person typed or that was read from their
+ * documents (names, file names, chat text, an email address), and their health values (raw and as
+ * shown). AC7l's four exemptions, and how each is kept out:
+ * - A reading's or screening's day: a date alone names no condition or result. Callers pass no
+ *   date sentinels.
+ * - Keys from fixed lists and the catalogue: a fixed key is the same for everyone. Callers pass
+ *   no keys as sentinels.
+ * - A form field's own `value` on a text-like input or a textarea: the field is the field (React
+ *   mirrors a controlled field's value into the attribute). Skipped below. A checkbox, radio or
+ *   option carries its `value` as a fixed key, so theirs is checked.
+ * - A link inside a document's own text: the link is the person's own. The caller passes its
+ *   selector in `exempt`, with a comment saying why; any element matching `exempt` is skipped.
  *
  * A sentinel of digits and dots (a value as shown) matches only as a whole number, so "613"
  * finds "Lp(a): 613 nmol/L" and not a drawing's coordinate "2.46131".

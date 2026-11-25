@@ -38,7 +38,8 @@ describe('US-09 AC7l: the helper exempts only a form field\'s own value', () => 
       <select defaultValue={TEST}><option value={TEST}>{TEST}</option></select>
       <input type="checkbox" value={TEST}/><input type="radio" value={TEST}/>
     </form>);
-    expect(recordTextInAttributes(container, [TEST, '613', '2025-02-17'])).toEqual([
+    // Names and values only: a date is no sentinel, since a day alone names no condition or result (AC7l).
+    expect(recordTextInAttributes(container, [TEST, '613'])).toEqual([
       `option[value]="${TEST}"`, `input[value]="${TEST}"`, `input[value]="${TEST}"`,
     ]);
   });
