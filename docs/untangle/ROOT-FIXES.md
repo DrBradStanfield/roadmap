@@ -109,4 +109,4 @@ Checked against `main` at `b2548fe3d` and each PR's state.
 - **S-1** step 1 merged (PR 2135).
 - **H406** chat mirror with one writer: open (PR 2132).
 - **H404** widgets follow an erase: open (PR 2127).
-- **R18** the cause state is built in PR 2122 (open); its wording awaits Brad.
+- **R18** the switch stop names its cause in its own words (PR 2122).
