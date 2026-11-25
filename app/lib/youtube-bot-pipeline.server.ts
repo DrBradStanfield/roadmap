@@ -237,15 +237,28 @@ export function completionOutcome(completion: ChatCompletionResult, latencyMs: n
 
 /** Main-LLM fallbacks this tick, by failure mode (US-15 AC58). Ticks never overlap within a process (runTick). */
 const tickFallbacks = new Map<string, number>();
+/** Failed router calls this tick (US-15 AC74): runRouter's report policy for YouTube. */
+let tickRouterFailures = 0;
+
+function countTickRouterFailure(result: RouterResult): void {
+  if (result.error) tickRouterFailures += 1;
+}
 
 /**
- * One bounded Sentry warning for the tick's main-LLM fallbacks, then a fresh
- * count (US-15 AC58). A fallback is unclaimed and retried every tick, so an
- * alert per comment, as the web chat sends per question, would repeat for each
- * failing comment every 30 minutes; one per tick is at most 48 a day per machine. Counts
- * and failure modes only, never a comment or a reply.
+ * One bounded Sentry warning for the tick's main-LLM fallbacks, and one for
+ * its router failures, then fresh counts (US-15 AC58, AC74). A failed comment
+ * is retried every tick, so an alert per comment, as the web chat sends per
+ * question, would repeat for each failing comment every 30 minutes; one per
+ * tick is at most 48 a day per machine. Counts and failure modes only, never a
+ * comment, a reply or an error text.
  */
 export function reportTickFallbacks(): void {
+  if (tickRouterFailures > 0) {
+    Sentry.captureMessage('Router: request or output failure', {
+      level: 'warning', tags: { feature: 'chat', subsystem: 'router', platform: 'youtube' }, extra: { count: tickRouterFailures },
+    });
+    tickRouterFailures = 0;
+  }
   if (tickFallbacks.size === 0) return;
   const byMode = Object.fromEntries(tickFallbacks);
   tickFallbacks.clear();
@@ -289,7 +302,7 @@ export async function runPipeline(
   let routerResult: RouterResult | null = null;
   const routerSkipped = !shouldFireRouter(classifierResult);
   if (!routerSkipped) {
-    routerResult = await runRouter(sanitized, undefined, undefined, 'YOUTUBE');
+    routerResult = await runRouter(sanitized, undefined, undefined, 'YOUTUBE', countTickRouterFailure);
     routerHandles = routerResult.handles;
   }
 

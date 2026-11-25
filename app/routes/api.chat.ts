@@ -29,7 +29,7 @@ import {
   generateTitle,
   MAX_MESSAGE_LENGTH,
 } from '../lib/chat.server';
-import { sanitizeForRouter, redactForWidget } from '../lib/chat-router.server';
+import { reportRouterFailure, sanitizeForRouter, redactForWidget } from '../lib/chat-router.server';
 import { runRouter } from '../lib/chat-router-stage.server';
 import { matchEventRow, matchEventText, answerColumns } from '../lib/chat-persist.server';
 import { loadBlogIndex } from '../lib/blog-index.server';
@@ -428,7 +428,7 @@ async function chatAction(request: Request, app: boolean) {
       const fireRouter = shouldFireRouter(classifierResult);
       if (fireRouter) write({ type: 'status', text: 'Finding relevant articles' });
       const routerResult = fireRouter
-        ? await runRouter(sanitizedCurrent, sanitizedFirst, sanitizedRecent, 'CHAT')
+        ? await runRouter(sanitizedCurrent, sanitizedFirst, sanitizedRecent, 'CHAT', (r) => reportRouterFailure(r, 'shopify'))
         : null;
 
       const tAfterContext = Date.now();

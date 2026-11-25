@@ -150,11 +150,11 @@ describe('US-15 AC74: the web chat reports a router failure once', () => {
   const routerReports = () => mocks.sentry.mock.calls.filter(([msg]) => msg === 'Router: request or output failure');
   beforeEach(() => { mocks.sentry.mockClear(); });
 
-  it('a failed router call: one report, the same words, level and extra, tagged with the surface', async () => {
+  it('a failed router call: one report, right after the router call, the same words, level and extra, with the platform tag', async () => {
     mocks.route.mockResolvedValueOnce({ handles: [], rawJson: 'not json', usage: { inputTokens: 0, outputTokens: 0, cacheCreationTokens: 0, cacheReadTokens: 0 }, latencyMs: 9, cacheHit: false, error: 'Unexpected token in vitamin D' });
     expect((await post({ message: 'Is vitamin D worth taking?' })).status).toBe(200);
     expect(routerReports()).toEqual([['Router: request or output failure', {
-      level: 'warning', tags: { feature: 'chat', subsystem: 'router', surface: 'CHAT' }, extra: { latencyMs: 9, cacheHit: false },
+      level: 'warning', tags: { feature: 'chat', subsystem: 'router', platform: 'shopify' }, extra: { latencyMs: 9, cacheHit: false },
     }]]);
     expect(JSON.stringify(routerReports())).not.toMatch(/vitamin|Unexpected|not json/);
   });
