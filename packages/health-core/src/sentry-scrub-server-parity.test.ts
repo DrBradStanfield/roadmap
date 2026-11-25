@@ -120,7 +120,8 @@ describe('US-09 AC7, A2-6/A3-1 — the server scrub in health-core matches instr
   it('sentry-scrub.ts still exports what it did before the vocabulary moved', () => {
     expect(Object.keys(browser).sort()).toEqual([
       'EMAIL_SOURCE', 'SCRUB_METRIC_WORDS', 'SCRUB_UNITS', 'SCRUB_UNIT_PATTERN', 'SENSITIVE_EXACT_KEYS',
-      'dropLongStrings', 'scrubBreadcrumbData', 'scrubEventText', 'scrubSensitiveData', 'scrubStrings', 'scrubText', 'scrubUrl',
+      // firstScrubbedValue: the feedback guard reads the scrub through it (US-32 AC9b).
+      'dropLongStrings', 'firstScrubbedValue', 'scrubBreadcrumbData', 'scrubEventText', 'scrubSensitiveData', 'scrubStrings', 'scrubText', 'scrubUrl',
     ]);
   });
 
