@@ -11,7 +11,7 @@ import { ValueCell } from './MatrixSavedCells';
 import { hidePage, showPage } from '../testing/matrix-gestures';
 
 const flush = vi.hoisted(() => vi.fn());
-vi.mock('../lib/roadmap-data', () => ({ flushRoadmapStoreSync: flush }));
+vi.mock('../lib/roadmap-data', () => ({ flushRoadmapStoreSync: flush, getShownErase: () => 'erase-shown' }));
 
 beforeEach(() => { vi.useFakeTimers(); });
 afterEach(() => { showPage(); cleanup(); vi.useRealTimers(); });
@@ -34,7 +34,7 @@ describe('US-04 AC1 — the page going away during a click-away save', () => {
     await wait(50);
     hidePage();
     expect(onCorrect).toHaveBeenCalledTimes(1); // before the 150 ms would have run out
-    expect(onCorrect).toHaveBeenCalledWith('r1', 3.4);
+    expect(onCorrect).toHaveBeenCalledWith('r1', 3.4, 'erase-shown');
     await wait(2000);
     expect(onCorrect).toHaveBeenCalledTimes(1);
   });
@@ -49,7 +49,7 @@ describe('US-04 AC1 — the page going away during a click-away save', () => {
     await wait(50);
     Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' });
     act(() => { document.dispatchEvent(new Event('visibilitychange')); });
-    expect(onCorrect).toHaveBeenCalledWith('r1', 3.4);
+    expect(onCorrect).toHaveBeenCalledWith('r1', 3.4, 'erase-shown');
     expect(flush).toHaveBeenCalled();
     expect(onCorrect.mock.invocationCallOrder[0]).toBeLessThan(flush.mock.invocationCallOrder[0]);
   });
@@ -62,7 +62,7 @@ describe('US-04 AC1 — the page going away during a click-away save', () => {
     fireEvent.blur(input);
     hidePage();
     expect(onCorrect).toHaveBeenCalledTimes(1);
-    expect(onCorrect).toHaveBeenCalledWith('r1', 3.4);
+    expect(onCorrect).toHaveBeenCalledWith('r1', 3.4, 'erase-shown');
     await wait(2000);
     expect(onCorrect).toHaveBeenCalledTimes(1);
     expect(view.container.querySelector('.bt-cell-correcting input')).toBeNull();
