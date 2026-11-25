@@ -45,7 +45,7 @@ export function valueView(row: FileMeasurement | FileLabValue): ApiMeasurement {
 }
 
 /** RoadmapStore.applyProfileChanges, which forwards here with its session. */
-export function applyProfileChanges(session: RecordSession, current: Partial<HealthInputs>, previous: Partial<HealthInputs>, erase?: string, outOfRange: ProfileRangeRefusal = {}): BirthRefusal | null {
+export function applyProfileChanges(session: RecordSession, current: Partial<HealthInputs>, previous: Partial<HealthInputs>, erase: string, outOfRange: ProfileRangeRefusal = {}): BirthRefusal | null {
     const changes: Record<string, unknown> = {};
     for (const field of [...PREFILL_FIELDS, 'unitSystem'] as const) {
       // A cleared form field is absent from current, but is still a write.

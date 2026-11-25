@@ -188,8 +188,11 @@ export function useUploadFlow({ unitSystem, onComplete, onStart, onClose, person
         if (s.phase !== 'saving' || s.run !== run || s.attempt !== attempt) return;
         const { onComplete: complete, person: shown } = props.current;
         const counts = reviewCounts.current;
+        const failed = { type: 'saveFailed' as const, run, attempt, message: SAVE_FAILED };
+        // The web's Save always carries the erase read at its press (`save` below): one without is refused, never
+        // written under another erase (US-16 AC2a).
         void loadUploadBundle()
-          .then((upload) => sharedSave(upload, s, held.current, shown, complete), () => ({ type: 'saveFailed' as const, run, attempt, message: SAVE_FAILED }))
+          .then((upload) => (s.erase === undefined ? failed : sharedSave(upload, { ...s, erase: s.erase }, held.current, shown, complete)), () => failed)
           .then((event) => {
             // One per review: a finished Save, never a failed one (US-13 AC13).
             if (event.type === 'saved') endReview.current(counts);
