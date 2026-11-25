@@ -139,6 +139,9 @@ orphans (it dies in the same PR, CLAUDE.md); the rest become leads in the untang
 ledger (`docs/untangle/`). A fix for such a finding gets at most ONE re-check scoped to the fix diff and the
 findings it answers (Brad, 2026-10-19). Anything still unresolved after the re-check goes to `helper`, then to
 Brad with both positions; never a third round or a fresh full re-review, with the evidence.
+The adversary and Codex find different defects. On privacy, record-save, merge and security PRs, run Codex again
+on the FINAL head after the last fix: a fix-scoped re-check by one reviewer does not cover the other's ground
+(2026-11-26).
 
 **Value-interpretation paths** (Brad 2026-11-10): code that decides what a typed or stored number means (its
 unit, conversion, rounding, or which row and day it lands on). There, review rounds continue while each round
