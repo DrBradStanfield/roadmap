@@ -163,9 +163,6 @@ issue, and nothing private.
   script written inline in the deploy workflow; and the test shard split could be weighted. Workflow files are yours
   to change. Options: one PR with a shared typecheck script, the smoke check moved into tools, and the shard weights;
   leave. Recommendation: one PR, so you review one workflow change.
-- **Retire one parity test.** Issue: a test checks that the server's error-report scrubber gives the same output as
-  its hand copy. That copy is now generated from the shared source, so the test checks one thing twice. Options:
-  retire it; keep it. Recommendation: retire it.
 - **A stated age near New Year.** Issue: contributor PR 1899 makes every screening gate read age at the UTC month.
   A person who states an age (not a birth date) to the command-line plan tool or the self-hosted chat gets a January
   birth year from the local year, so in the hours between the local and the UTC New Year the screening cards read
@@ -216,6 +213,10 @@ issue, and nothing private.
   while the App Store review is open.
 
 ## Decided
+
+2026-11-26, Brad's words in quotes:
+- The server scrubber's parity test is retired ("go with your recommendations"): its copy is generated, and the test
+  that the generated copy is up to date stays. No new words.
 
 2026-11-23, Brad's words in quotes:
 - Original files are stored in the background after Save, with no action from the person at Save and at every
