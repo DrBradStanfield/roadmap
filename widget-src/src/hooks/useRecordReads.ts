@@ -2,6 +2,7 @@ import { useCallback, useRef } from 'react';
 import { labEgfrOf } from '@roadmap/health-core/plan';
 import { planPsa } from '@roadmap/health-core/measurement-history';
 import { screeningsToInputs } from '@roadmap/health-core/mappings';
+import type { HealthInputs } from '@roadmap/health-core/types';
 import type { LatestMeasurementsResult } from '../lib/api-types';
 import { loadAllHistory, loadAllHistorySync, loadLabValues, loadLatestMeasurements } from '../lib/roadmap-data';
 import { loadFromLocalStorage, patchMirror, saveToLocalStorage } from '../lib/storage';
@@ -11,11 +12,17 @@ type RecordSetters = Pick<ReturnType<typeof useRecordState>, 'setPreviousMeasure
 
 /** The chat mirror (US-15 AC10): the record as read, for the storefront chat
  *  embed and the bubble, with the lab eGFR and the newest usable PSA, its
- *  `raisedBefore` worked out here from the full record (US-06 AC21 item 6). */
-export async function mirrorRecord(result: LatestMeasurementsResult): Promise<void> {
-  saveToLocalStorage(result.inputs, result.previousMeasurements, result.medications, result.screenings, undefined,
-    labEgfrOf(await loadLabValues() ?? []), planPsa(loadAllHistorySync(), new Date(), screeningsToInputs(result.screenings)));
+ *  `raisedBefore` worked out here from the full record (US-06 AC21 item 6).
+ *  `shown`: the profile the page shows while another writer's change is held,
+ *  asked as the mirror is written, after the lab read; none, the record's (US-34 AC9). */
+export async function mirrorRecord(result: LatestMeasurementsResult, shown?: ShownProfile): Promise<void> {
+  const labEgfr = labEgfrOf(await loadLabValues() ?? []);
+  saveToLocalStorage(shown?.() ?? result.inputs, result.previousMeasurements, result.medications, result.screenings, undefined,
+    labEgfr, planPsa(loadAllHistorySync(), new Date(), screeningsToInputs(result.screenings)));
 }
+
+/** The profile the page shows, while it differs from the record read (a held change); else undefined. */
+export type ShownProfile = () => Partial<HealthInputs> | undefined;
 
 /**
  * The page's reads of the record (US-21, US-34, US-15 AC10): the values the
@@ -44,12 +51,12 @@ export function useRecordReads({ setPreviousMeasurements, setHistory, setLabValu
   /** Every measurement, for both matrices. */
   const loadHistory = useCallback(() => loadAllHistory().then(setHistory), [setHistory]);
 
-  /** Re-read every value the page shows. Hands back what it read. */
-  const reloadValues = useCallback(async () => {
+  /** Re-read every value the page shows. Hands back what it read. `shown`: see mirrorRecord. */
+  const reloadValues = useCallback(async (shown?: ShownProfile) => {
     const result = await loadLatestMeasurements();
     if (result) {
       setPreviousMeasurements(result.previousMeasurements);
-      await mirrorRecord(result);
+      await mirrorRecord(result, shown);
     }
     await Promise.all([refreshLabValues(), loadHistory()]);
     return result;

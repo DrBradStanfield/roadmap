@@ -11,6 +11,7 @@ import { createRemoteChangeRelay } from '../lib/remote-replay';
 import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
 import type { RemoteChange } from '@roadmap/health-core/record-host';
 import type { useRecordState } from './useRecordState';
+import type { ShownProfile } from './useRecordReads';
 import type { useUnits } from './useUnits';
 import type { EraseStore } from '../lib/erase-machine';
 
@@ -68,6 +69,7 @@ interface Later {
   flushListSaves: () => void;
   profileDirty: () => boolean;
   clearAnswered: (spend?: boolean) => void;
+  savedProfile: () => Partial<HealthInputs>;
 }
 
 /**
@@ -98,7 +100,7 @@ const reportReadFailure = (error: unknown) => { Sentry.captureException(error, {
 
 export function useRecordApply(args: {
   setInputs: Dispatch<SetStateAction<Partial<HealthInputs>>>;
-  reloadValues: () => Promise<LatestMeasurementsResult | null>;
+  reloadValues: (shown?: ShownProfile) => Promise<LatestMeasurementsResult | null>;
   applyLists: ReturnType<typeof useRecordState>['applyLists'];
   units: ReturnType<typeof useUnits>['record'];
   /** The erase machine (hooks/useErase): each whole re-read dispatches `read` to it. */
@@ -182,7 +184,8 @@ export function useRecordApply(args: {
     const { later } = latest.current;
     const policy = READ_POLICY[reason];
     // The page's own save: the values, lab rows, both matrices and the chat mirror, nothing else (US-34 AC4a).
-    if (policy.read === 'values') return latest.current.reloadValues().then(() => {});
+    // While a change is held, the mirror keeps the profile the page shows, asked as it is written (AC9, H15).
+    if (policy.read === 'values') return latest.current.reloadValues(() => (relay.holding() ? later().savedProfile() : undefined)).then(() => {});
     // Not while the user is mid-typing: the re-read replaces the form's
     // inputs, and a remote change landing on a half-entered height would take
     // those keystrokes with it. The relay HOLDS it: the next profile save to
