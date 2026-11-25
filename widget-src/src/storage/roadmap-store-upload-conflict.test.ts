@@ -4,6 +4,9 @@ import { RoadmapStore } from './roadmap-store';
 import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
 import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import { toOldShape } from '@roadmap/health-core/blood-tests';
+import { bulkAppendValues } from '@roadmap/health-core/record-edits';
+import { uploadReview } from '@roadmap/health-core/upload-review';
+import { pickOf, uploadThrough, type PickedReport } from '../testing/upload-save-kit';
 
 function readCloudFile(cloud: MemoryCloud): RoadmapFile {
   return JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json) as RoadmapFile;
@@ -79,16 +82,14 @@ describe('RoadmapStore.bulkSaveLabValues with correctsId (US-32)', () => {
   it('flips the occupied lab row and appends the upload value with correctsId', async () => {
     const cloud = new MemoryCloud();
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
-    const first = store.bulkSaveLabValues([
-      { metricName: 'Ferritin', value: 120, unit: 'ug/L', recordedAt: '2024-06-01T00:00:00.000Z' },
-    ]);
-    const oldId = first.saved[0].id;
+    const first = await uploadThrough(store, [{ report: 'first.pdf', reportDate: '2024-06-01', values: [{ name: 'Ferritin', value: 120, unit: 'ug/L' }] }]);
+    expect(first).toMatchObject({ ok: true, outcome: { values: 1 } });
+    const oldId = store.file.labValues[0].id;
 
-    const result = store.bulkSaveLabValues([
-      { metricName: 'Ferritin', value: 95, unit: 'ug/L', recordedAt: '2024-06-01T00:00:00.000Z', correctsId: oldId },
-    ]);
-    expect(result.saved).toHaveLength(1);
-    expect(result.skippedDuplicates).toBe(0);
+    // The upload's Replace, as the review offers it for a held row on the same day.
+    const result = await uploadThrough(store, [{ report: 'second.pdf', reportDate: '2024-06-01', values: [{ name: 'Ferritin', value: 95, unit: 'ug/L' }], choices: { replace: { a0: oldId } } }]);
+    expect(result).toMatchObject({ ok: true, outcome: { values: 1 } });
+    expect(result.ok && result.outcome.skippedLabValues).toBeFalsy();
     await store.flush();
 
     const file = readCloudFile(cloud);
@@ -97,21 +98,19 @@ describe('RoadmapStore.bulkSaveLabValues with correctsId (US-32)', () => {
     expect(newRow.correctsId).toBe(oldId);
     expect(newRow.source).toBe('lab_import');
     expect(newRow.value).toBe(95);
-    expect(newRow.recordedAt).toBe('2024-06-01T00:00:00.000Z');
+    expect(newRow.recordedAt).toBe(file.labValues.find((l) => l.id === oldId)!.recordedAt); // the held row's day
     expect(file.labValues.filter((l) => l.status === 'active')).toHaveLength(1);
   });
 
   it('two batch rows naming the same lab correctsId leave ONE active row (US-32)', async () => {
     const store = await RoadmapStore.create(new MemoryAdapter(new MemoryCloud()));
-    const oldId = store.bulkSaveLabValues([
-      { metricName: 'Ferritin', value: 120, unit: 'ug/L', recordedAt: '2024-06-01T00:00:00.000Z' },
-    ]).saved[0].id;
-    const result = store.bulkSaveLabValues([
-      { metricName: 'Ferritin', value: 95, unit: 'ug/L', recordedAt: '2024-06-01T00:00:00.000Z', correctsId: oldId },
-      { metricName: 'Ferritin', value: 96, unit: 'ug/L', recordedAt: '2024-06-01T00:00:00.000Z', correctsId: oldId },
-    ]);
-    expect(result.saved).toHaveLength(1);
-    expect(result.skippedDuplicates).toBe(1);
+    await uploadThrough(store, [{ report: 'first.pdf', reportDate: '2024-06-01', values: [{ name: 'Ferritin', value: 120, unit: 'ug/L' }] }]);
+    const oldId = store.file.labValues[0].id;
+    const result = await uploadThrough(store, [{ report: 'second.pdf', reportDate: '2024-06-01', values: [
+      { name: 'Ferritin', value: 95, unit: 'ug/L' },
+      { name: 'Ferritin', value: 96, unit: 'ug/L' },
+    ], choices: { replace: { a0: oldId, a1: oldId } } }]);
+    expect(result).toMatchObject({ ok: true, outcome: { values: 1 } });
     expect(store.loadLabValues()).toHaveLength(1); // loadLabValues() is already active-only
   });
 });
@@ -121,10 +120,17 @@ describe('RoadmapStore.bulkSaveLabValues with correctsId (US-32)', () => {
 describe('RoadmapStore.bulkSaveLabValues with a core name (US-66 AC6)', () => {
   it('hands back an out-of-range core value as a measurement refusal', async () => {
     const store = await RoadmapStore.create(new MemoryAdapter(new MemoryCloud()));
-    const result = store.bulkSaveLabValues([
-      { metricName: 'LDL-C', value: 99999, unit: 'mg/dL', recordedAt: '2024-06-01T00:00:00.000Z', source: 'manual' },
-    ]);
-    expect(result.saved).toHaveLength(0);
-    expect(result.measurementRefusals).toEqual([expect.objectContaining({ metricType: 'ldl', reason: 'out-of-range', bound: 'above' })]);
+    const picked: PickedReport[] = [{ report: 'labs.pdf', reportDate: '2024-06-01', values: [{ name: 'LDL-C', value: 99999, unit: 'mg/dL' }] }];
+    const { s } = await pickOf(store.file, picked);
+    const review = uploadReview(s, store.file, new Date().toISOString());
+    const result = await uploadThrough(store, picked);
+    // The upload's review holds it as unsure, for the person to clear, and Save writes none of it (roadmap-data.ts saveUpload).
+    expect(review.classification.values.map((v) => v.group)).toEqual(['unsure']);
+    expect(result).toMatchObject({ ok: true, outcome: { values: 0 } });
+    // The record's one bulk rule, which the Save's commit runs, hands it back as a measurement refusal.
+    const rule = bulkAppendValues(store.file, [{ kind: 'lab', metricName: 'LDL-C', value: 99999, unit: 'mg/dL', recordedAt: '2024-06-01T00:00:00.000Z', source: 'manual' }], new Date().toISOString());
+    expect(rule.saved).toHaveLength(0);
+    expect(rule.measurementRefusals).toEqual([expect.objectContaining({ metricType: 'ldl', reason: 'out-of-range', bound: 'above' })]);
+    expect([...store.file.labValues, ...store.file.measurements]).toEqual([]);
   });
 });

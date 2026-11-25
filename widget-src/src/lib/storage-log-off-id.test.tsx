@@ -13,6 +13,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
 import type { ApiMeasurement } from '@roadmap/health-core/mappings';
+import { uploadThrough } from '../testing/upload-save-kit';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 
@@ -190,15 +191,15 @@ describe('US-09 AC2c: document originals on a page that runs on its device copy'
   it('a fallback page that saves a document after a log-off elsewhere stores no original, and the save still answers', async () => {
     const store = await devicePage(); // the chosen cloud ('memory') could not be read
     logOffElsewhere();
-    const result = await store.bulkSaveDocuments(scan());
+    const result = await uploadThrough(store, scan());
     expect(storedOriginals()).toEqual([]);
-    expect(result.errorCount).toBe(0); // the details stand on the page; the record write is refused
+    expect(result).toMatchObject({ ok: true, outcome: { documents: 1, unstored: 1 } }); // the details stand on the page; the record write is refused
   });
 
   it('control: a guest page still stores the original', async () => {
     localStorage.removeItem(BACKEND_KEY);
     const store = await devicePage();
-    await store.bulkSaveDocuments(scan());
+    expect(await uploadThrough(store, scan())).toMatchObject({ ok: true, outcome: { unstored: 0 } });
     expect(storedOriginals()).toHaveLength(1);
   });
 });

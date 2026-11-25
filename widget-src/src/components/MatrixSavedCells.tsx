@@ -150,8 +150,8 @@ export function ValueCell({
       window.clearTimeout(timer.current);
       if (next.kind === 'blurPending') timer.current = window.setTimeout(() => sendLeave(next.wait), WAIT_MS[next.wait]);
     }
-    for (const { row, value: corrected } of effects) {
-      void latest.current?.onCorrect?.(row, corrected, getShownErase()).then(result => send({ type: 'result', status: result }));
+    for (const { row, value: corrected, erase } of effects) {
+      void latest.current?.onCorrect?.(row, corrected, erase).then(result => send({ type: 'result', status: result }));
     }
   }, []);
   /** A click-away wait ran out, or the page is going away: sent with what the text would save now. */
@@ -324,7 +324,7 @@ export function ValueCell({
         if (el && state.kind === 'closed' && state.refocus) { el.focus(); send({ type: 'refocused' }); }
       }}
       className={`bt-cell-value bt-cell-clickable${pinned ? ' bt-cell-pinned' : ''}`}
-      onClick={() => send({ type: 'opened', row: rowId!, unit: display, text: initialDisplay })}
+      onClick={() => send({ type: 'opened', row: rowId!, unit: display, openAt: getShownErase(), text: initialDisplay })}
       title={ungraded ? `${LIMIT_NOT_GRADED} Click to correct this value` : 'Click to correct this value'}
     >
       {shown}

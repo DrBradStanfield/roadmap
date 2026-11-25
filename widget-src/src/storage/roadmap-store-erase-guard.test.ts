@@ -17,6 +17,8 @@ import { sha256Blob } from '../lib/archive-payloads';
 import { BT_TIMELINE_DRAFT_KEY } from '../lib/storage';
 import { REMOTE_CHANGED_EVENT, RoadmapStore } from './roadmap-store';
 import { BACKEND_KEY } from './web-record-host';
+import { seedDocuments } from '../testing/seed-record';
+import { uploadThrough } from '../testing/upload-save-kit';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 
@@ -49,7 +51,7 @@ async function seeded(adapter: MemoryAdapter) {
   const weight = store.addMeasurement('weight', 82, '2026-09-01');
   store.saveMedication('statin', 'rosuvastatin', 10, 'mg');
   store.saveSupplement('omega3', 'Omega-3', 1, 'g');
-  const { saved } = await store.bulkSaveDocuments([{
+  const saved = await seedDocuments(store, [{
     documentType: 'lab_report', title: 'Synthetic report', documentDate: '2026-09-01',
     contentMd: 'Synthetic fixture', metadata: {}, sourceFileName: 'synthetic.pdf',
   }]);
@@ -58,6 +60,7 @@ async function seeded(adapter: MemoryAdapter) {
   return { store, weightId: weight.row.id, documentId: saved[0].id };
 }
 
+const ERASED = { ok: false, reason: 'erased', message: 'Failed to save. Please try again.' };
 /** Every write the page reaches, each with the answer a refusal gives. */
 const WRITES: Array<[string, (s: RoadmapStore, ids: { weightId: string; documentId: string }) => unknown | Promise<unknown>, unknown]> = [
   ['addMeasurement', (s) => s.addMeasurement('waist', 90, '2026-09-02'), { status: 'error' }],
@@ -69,11 +72,12 @@ const WRITES: Array<[string, (s: RoadmapStore, ids: { weightId: string; document
   ['deleteSupplementApi', (s) => s.deleteSupplementApi('omega3'), false],
   ['saveScreening', (s) => s.saveScreening('colorectal_method', 'fit'), false],
   ['bulkSaveMeasurements', (s) => s.bulkSaveMeasurements([{ metricType: 'waist', value: 90, recordedAt: '2026-09-02', source: 'manual' }]), { saved: [], skippedDuplicates: 0, errorCount: 1, refused: [] }],
-  ['bulkSaveLabValues', (s) => s.bulkSaveLabValues([{ metricName: 'Ferritin', value: 75, unit: 'µg/L', recordedAt: '2026-09-01' }]), { saved: [], skippedDuplicates: 0, errorCount: 1, refused: [] }],
-  ['bulkSaveDocuments', (s) => s.bulkSaveDocuments([{
-    documentType: 'lab_report', title: 'Another report', documentDate: '2026-09-02',
+  // The two upload writers, now the upload's one Save (storage/upload-save-store.ts): its values, then its document.
+  ['bulkSaveLabValues (the upload Save)', (s) => uploadThrough(s, [{ report: 'ferritin.pdf', reportDate: '2026-09-01', values: [{ name: 'Ferritin', value: 75, unit: 'µg/L' }] }]), ERASED],
+  ['bulkSaveDocuments (the upload Save)', (s) => uploadThrough(s, [{
+    documentType: 'clinic_letter', title: 'Another letter', documentDate: '2026-09-02',
     contentMd: 'Synthetic fixture', metadata: {}, sourceFileName: 'another.pdf',
-  }]), { saved: [], errorCount: 1 }],
+  }]), ERASED],
   ['deleteDocument', (s, ids) => s.deleteDocument(ids.documentId), false],
   ['setLpaUnit', (s) => s.setLpaUnit('mg/dL'), false],
   ['markReportEmailCaptured', (s) => s.markReportEmailCaptured(), false],
@@ -176,7 +180,7 @@ describe('US-16 AC2a: a document upload refused at its commit', () => {
     }
   }
   const upload = (bytes: Blob) => [{
-    documentType: 'lab_report', title: 'Held report', documentDate: '2026-09-03',
+    documentType: 'pathology_report', title: 'Held report', documentDate: '2026-09-03',
     contentMd: 'Synthetic fixture', metadata: {}, sourceFileName: 'held.pdf', file: bytes,
   }];
 
@@ -185,11 +189,11 @@ describe('US-16 AC2a: a document upload refused at its commit', () => {
     const adapter = new HeldBlobs(cloud);
     const { store } = await seeded(adapter);
     const held = adapter.hold();
-    const pending = store.bulkSaveDocuments(upload(new Blob(['held bytes'], { type: 'application/pdf' })));
+    const pending = uploadThrough(store, upload(new Blob(['held bytes'], { type: 'application/pdf' })));
     await held.reached;
     expect((await store.deleteAllData()).success).toBe(true);
     held.release();
-    expect(await pending).toEqual({ saved: [], errorCount: 1 });
+    expect(await pending).toEqual(ERASED);
     expect(fileOf(store).documents).toEqual([]);
     await store.flush();
     expect(cloudFile(cloud).documents).toEqual([]);
@@ -207,12 +211,12 @@ describe('US-16 AC2a: a document upload refused at its commit', () => {
     };
     fileOf(store).documents.push(row); // never seen by the other device, so its erase does not list it
     const held = adapter.hold();
-    const pending = store.bulkSaveDocuments(upload(bytes));
+    const pending = uploadThrough(store, upload(bytes));
     await held.reached;
     await otherDeviceErases(cloud);
     expect(await store.refreshFromRemote()).toBe(true);
     held.release();
-    expect(await pending).toEqual({ saved: [], errorCount: 1 });
+    expect(await pending).toEqual(ERASED);
     const kept = fileOf(store).documents.filter((d) => d.id === 'connector-row');
     expect(kept).toHaveLength(1);
     expect(kept[0].deleted).toBeFalsy();

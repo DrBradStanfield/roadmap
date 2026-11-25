@@ -125,6 +125,36 @@ describe('US-52 AC8c, US-16 AC2a: one Save, one edit', () => {
   });
 });
 
+// US-16 AC2a (lead H18, H19): the Save stands for the erase its saving state carries, the one the page showed at the
+// press on Save (hooks/useUploadFlow.ts `save`), not the one the page shows when the Save runs.
+describe('US-16 AC2a: the Save writes under the erase its state carries', () => {
+  async function erasedAfterThePress() {
+    const { adapter, store } = await opened();
+    const pressed = store.shownErase;
+    const s = { ...saving(store, [read('lab', labX), read('letter', letterX)]), erase: pressed } as UploadState;
+    expect((await store.deleteAllData()).success).toBe(true);
+    store.showErase(store.eraseIdentity); // the page has drawn the erased record since the press
+    await store.flush();
+    return { adapter, store, s };
+  }
+  const io = () => webUploadIO(held({ lab: pdf('lab'), letter: pdf('letter') }));
+
+  it('pressed before an erase the page now shows: refused, no original written, the record unchanged', async () => {
+    const { adapter, store, s } = await erasedAfterThePress();
+    const before = JSON.stringify(store.file);
+    expect(await store.saveUpload(ENGINE, s, NOW, true, io(), PERSON)).toEqual({ ok: false, reason: 'erased', message: 'Failed to save. Please try again.' });
+    expect(adapter.writes).toEqual([]);
+    expect(JSON.stringify(store.file)).toBe(before);
+  });
+
+  it('control: pressed under the erase shown, the same Save lands', async () => {
+    const { store, s } = await erasedAfterThePress();
+    const answer = await store.saveUpload(ENGINE, { ...s, erase: store.shownErase } as UploadState, NOW, true, io(), PERSON);
+    expect(answer).toMatchObject({ ok: true, outcome: { values: 2, documents: 1 } });
+    expect(rowsOf(store)).toMatchObject({ labs: 2, documents: 2 });
+  });
+});
+
 describe('US-14 AC12: a failed original is reported, tags only, and counted unstored', () => {
   it('each failed original is reported as the store reports one, and its row keeps the hash alone', async () => {
     const { adapter, store } = await opened();

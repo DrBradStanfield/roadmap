@@ -21,7 +21,7 @@ import { migrateFile } from '@roadmap/health-core/migrate';
 import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
-import { addMeasurement, bulkSaveDocuments, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements, saveMedication, saveSupplement } from '../lib/roadmap-data';
+import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements, saveMedication, saveSupplement } from '../lib/roadmap-data';
 import { MIRROR_KEY } from '../lib/storage';
 import { openAboutYou, showTables, trackLiveRefresh, stopLiveRefresh, recordOnDisk, useHealthToolLifecycle, wait } from '../testing/health-tool-harness';
 import { formatShortDate } from '../lib/constants';
@@ -48,6 +48,7 @@ vi.mock('./ChatSection', () => ({
 }));
 import { HealthTool } from './HealthTool';
 import { closeSettings, deleteButton, openSettings } from '../testing/settings';
+import { seedOpenDocuments } from '../testing/seed-record';
 
 // Read at assertion time, not module load: a run that crosses local midnight stamps rows with the new day.
 const localToday = () => localDay(new Date());
@@ -649,7 +650,7 @@ describe('US-62 AC13 review fixes, round 2 (PR 421)', () => {
 });
 
 /** A clinic letter on record: a document the Health Records list shows. */
-const saveLetter = () => bulkSaveDocuments([{
+const saveLetter = () => seedOpenDocuments([{
   documentType: 'clinic_letter', title: 'Clinic letter', documentDate: '2026-09-01', contentMd: 'A letter.', metadata: {}, sourceFileName: 'letter.pdf',
 }]);
 

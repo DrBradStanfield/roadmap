@@ -23,12 +23,11 @@
  *    build hides them.
  *  - Medication-history chart annotations use explicit change types saved at write time.
  */
-import { sha256Blob } from '../lib/archive-payloads';
-import { type AddLabValueRequest, type AddLabValueResult, type BulkRow, addLabValue as addRecordLabValue, bulkAppendValues, placeMeasurement, type MoveKeep, type MoveRejection, type MovePlan, correctValue as correctRecordValue, moveBloodTest as moveRecordBloodTest, planBloodTestMove } from '@roadmap/health-core/record-edits';
+import { type AddLabValueRequest, type AddLabValueResult, addLabValue as addRecordLabValue, bulkAppendValues, placeMeasurement, type MoveKeep, type MoveRejection, type MovePlan, correctValue as correctRecordValue, moveBloodTest as moveRecordBloodTest, planBloodTestMove } from '@roadmap/health-core/record-edits';
 import { LiveRefresh } from '@roadmap/health-core/live-refresh';
 import { RecordSession, saveRecordInto, type EraseResult, type EraseSteps } from '@roadmap/health-core/record-session';
 import { birthInFuture, type MeasurementSource, inputRangeFault } from '@roadmap/health-core/validation';
-import { saveDocuments, documentView, writtenLabRows, type DocumentPayload } from '@roadmap/health-core/document-save';
+import { documentView, writtenLabRows } from '@roadmap/health-core/document-save';
 import { setReminderOptIn, setScreening, stampProfile, upsertMedication, upsertSupplement } from '@roadmap/health-core/state-edits';
 import { medicationChanges } from '@roadmap/health-core/medication-annotations';
 import { computeReminderSchedule, type ReminderScheduleItem } from '@roadmap/health-core/reminder-schedule';
@@ -51,7 +50,7 @@ export interface DerivedSeries { whtr: WhtrPoint[]; egfr: EgfrPoint[] }
 import type { RecordHost } from '@roadmap/health-core/record-host';
 import { ensureIsoDatetime } from '../lib/recordedAt';
 import { webRecordHost } from './web-record-host';
-import { reportUnstored, saveUploadThrough, type UploadEngine, type UploadSaveAnswer, type WebUploadIO } from './upload-save-store';
+import { saveUploadThrough, type UploadEngine, type UploadSaveAnswer, type WebUploadIO } from './upload-save-store';
 import type { UploadState } from '@roadmap/health-core/upload-flow';
 import type { ScreeningPerson } from '@roadmap/health-core/upload-screening';
 
@@ -67,7 +66,7 @@ export { PENDING_MIRROR_KEY, SYNC_PENDING_EVENT, SAVE_STATUS_EVENT, REMOTE_CHANG
 export { ERASE_UNREACHABLE } from '@roadmap/health-core/record-session';
 
 // App-facing view shapes: one home, lib/api-types.ts (untangle W2-4).
-import type { AddMeasurementResult, ApiDocument, ApiLabValue, ApiMedicationHistory, ApiSupplement, BulkLabValuesResult, BulkSaveResult, LatestMeasurementsResult } from '../lib/api-types';
+import type { AddMeasurementResult, ApiLabValue, ApiMedicationHistory, ApiSupplement, BulkSaveResult, LatestMeasurementsResult } from '../lib/api-types';
 /** How a correction ended. `changed`: the value named is not there any
  *  more, or another row has replaced it (another device, a connector).
  *  `invalid`: the record does not take that number (outside the metric's
@@ -92,11 +91,6 @@ export type ProfileSave = { ok: false } | { ok: true; birthRefused: BirthRefusal
 /** `comparator`: a result printed as a limit, saved as printed (US-12 AC20). */
 export interface BulkMeasurementInput {
   metricType: string; value: number; recordedAt: string; source: MeasurementSource; correctsId?: string; comparator?: Comparator;
-}
-export interface BulkLabValueInput {
-  metricName: string; value: number; unit: string;
-  referenceLow?: number | null; referenceHigh?: number | null;
-  recordedAt: string; source?: string; correctsId?: string; comparator?: Comparator;
 }
 
 /** What first opening a record in the old shape moved, for `blood_tests_unified` (US-66 AC13): counts only. */
@@ -175,7 +169,8 @@ export class RoadmapStore {
     const body = stored as Record<string, unknown>;
     const report = bloodTableReport({ measurements: storedRows(body, 'measurements'), labValues: storedRows(body, 'labValues') }, this.file);
     if (!report.moved && !report.folded) return Promise.resolve(null);
-    this.session.edit(() => {});
+    // Under the erase the open read, as the engine's move (ios/engine/cloud.ts): no press starts it.
+    this.session.edit(() => {}, this.session.eraseIdentity);
     return this.session.flush().then(() => report, () => null);
   }
 
@@ -384,18 +379,14 @@ export class RoadmapStore {
   /** The reviewed batch, written by health-core's one bulk rule (shared with
    *  the connector's import, US-35 AC8): replace-on-`correctsId` only while
    *  that row still holds the slot, skip a taken slot, never two actives. */
-  bulkSaveMeasurements(measurements: BulkMeasurementInput[]): BulkSaveResult {
-    if (this.refuses()) return { saved: [], skippedDuplicates: 0, errorCount: measurements.length, refused: [] };
-    const result = this.bulkSave(measurements.map((m) => ({ kind: 'measurement' as const, ...m })));
+  bulkSaveMeasurements(measurements: BulkMeasurementInput[], erase?: string): BulkSaveResult {
+    if (this.refuses(erase)) return { saved: [], skippedDuplicates: 0, errorCount: measurements.length, refused: [] };
+    const result = bulkAppendValues(this.file, measurements.map((m) => ({ kind: 'measurement' as const, ...m })), new Date().toISOString());
+    // Nothing saved hands back the same file: no change, no save.
+    if (result.saved.length) this.session.edit(() => result.file, erase);
     // A refused number is the caller's to SHOW, like a refused lab unit: no
     // retry can change it, so it is not an error (US-12 AC6, US-35 AC17).
     return { saved: result.saved.map(valueView), skippedDuplicates: result.skippedDuplicates, errorCount: 0, refused: result.measurementRefusals, labRows: writtenLabRows(result) };
-  }
-
-  bulkSaveLabValues(values: BulkLabValueInput[]): BulkLabValuesResult {
-    if (this.refuses()) return { saved: [], skippedDuplicates: 0, errorCount: values.length, refused: [] };
-    const result = this.bulkSave(values.map((v) => ({ kind: 'lab' as const, ...v, source: (v.source as MeasurementSource) ?? 'lab_import' })));
-    return { saved: result.saved as ApiLabValue[], skippedDuplicates: result.skippedDuplicates, errorCount: 0, refused: result.refused, measurementRefusals: result.measurementRefusals, labRows: writtenLabRows(result) };
   }
 
   /** One lab value a person adds, by health-core's one lab add (`addLabValue`, the iPhone's too):
@@ -405,37 +396,6 @@ export class RoadmapStore {
     const result = addRecordLabValue(this.file, input, new Date().toISOString());
     if (result.ok) this.session.edit(() => result.file, erase);
     return result;
-  }
-
-  private bulkSave(rows: BulkRow[]): ReturnType<typeof bulkAppendValues> {
-    const result = bulkAppendValues(this.file, rows, new Date().toISOString());
-    // Nothing saved hands back the same file: no change, no save.
-    if (result.saved.length) this.session.edit(() => result.file);
-    return result;
-  }
-
-  /**
-   * Save reviewed documents through health-core's one rule (saveDocuments,
-   * shared with the iPhone app): blob first, then the rows; hash dedup; a
-   * failed blob degrades to metadata-only; held metadata-only rows of the
-   * same kind are tombstoned once the original lands (US-13 AC1, US-14 AC4).
-   */
-  async bulkSaveDocuments(
-    documents: Array<DocumentPayload<Blob>>,
-  ): Promise<{ saved: ApiDocument[]; errorCount: number; unstored?: number }> {
-    // The batch stands for the erase the page showed as it started: refused
-    // before any upload if that is not this copy's, before each file write and
-    // at the commit, since an erase can land while the uploads run (US-11 AC1a).
-    const erase = this.shownErase;
-    if (this.refuses(erase)) return { saved: [], errorCount: documents.length };
-    const { saved, unstored, commit } = await saveDocuments(this.file, documents, {
-      hash: sha256Blob, stopped: () => this.refuses(erase), // asked before every write attempt (US-11 AC1a)
-      write: (ref, file) => this.host.store.writeDocument(ref, file),
-      mimeType: (file) => file.type || '',
-      onWriteError: (error) => { if (!this.refuses(erase)) reportUnstored(error, this.host.store.id); }, // a refusal (A15): not reported, still counted unstored (US-14 AC12)
-    });
-    if (!this.session.edit(commit, erase)) return { saved: [], errorCount: documents.length };
-    return { saved: saved.map(documentView), errorCount: 0, ...(unstored ? { unstored } : {}) };
   }
 
   /** The shared upload's one Save, its rows in one edit (upload-save-store.ts). */

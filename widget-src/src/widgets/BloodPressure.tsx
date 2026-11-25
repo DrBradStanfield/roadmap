@@ -9,6 +9,7 @@ import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 're
 import { BP_TIER_SHORT, type BpTier } from '@roadmap/health-core/bp-tier';
 import { localDay } from '@roadmap/health-core/merge';
 import { formatShortDate } from '../lib/constants';
+import { getShownErase } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 import { useBpPair } from '../lib/useBpPair';
 import { useSaveOnLeave } from '../lib/useSaveOnLeave';
@@ -141,12 +142,13 @@ export function BloodPressureWidget({ nextUrl, nextLabel, navigate = (href) => w
     if (!pending || pairs.length === 0) return queue.current.then(() => true, () => true);
     // A complete reading held back by another reading's error: blocked, so the next step stays (Codex 1876b R7).
     if (read.some((r) => r.kind === 'error')) return Promise.resolve(false);
-    const seq = edits.current, pair = averageOf(pairs), day = localDay(new Date());
+    // The erase the page shows as the save is asked: the queued write lands under it or not at all (US-16 AC2a).
+    const seq = edits.current, pair = averageOf(pairs), day = localDay(new Date()), erase = getShownErase();
     const run = async (): Promise<boolean> => {
       if (seq <= conflict.current) return false;
       if (conflict.current > shown.current.asOf) shown.current = { day, ids: rowsOn(day), asOf: seq };
       const expected = shown.current.day === day ? shown.current.ids : NONE;
-      const out = await savePair(pair, day, expected).catch((): SaveOutcome => ({ kind: 'failed' }));
+      const out = await savePair(pair, day, expected, erase).catch((): SaveOutcome => ({ kind: 'failed' }));
       if (out.kind === 'changed') { conflict.current = seq; return false; }
       if (out.kind === 'failed') { if (out.ids) shown.current = { day, ids: out.ids, asOf: seq }; return false; }
       shown.current = { day, ids: out.ids, asOf: seq };

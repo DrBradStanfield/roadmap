@@ -98,7 +98,9 @@ export type UploadState =
   | { phase: 'choosing'; platform: UploadPlatform; reader?: UploadReader; run: number } // run: the last one, so the next is run + 1
   | (Pick & { phase: 'consent' })                                   // phone only (AC13e): nothing runs yet
   | (Pick & { phase: 'open' })                                      // reading and review at once (R5)
-  | (Pick & { phase: 'saving'; attempt: number; reviewed?: ReviewedValue[] }) // reviewed: what the page would write when Save was pressed
+  // reviewed: what the page would write when Save was pressed; erase: the erase the page showed at that press, the web's
+  // only (the phone's Save reads its session's), which its Save writes under (US-16 AC2a)
+  | (Pick & { phase: 'saving'; attempt: number; reviewed?: ReviewedValue[]; erase?: string })
   | (Pick & { phase: 'saveFailed'; attempt: number; message: string })
   | (Pick & { phase: 'done'; outcome: SaveOutcome })
   | (Pick & { phase: 'failed'; refused: RunRefusal | null });      // refused: the run as a whole (runRefused); null: only ZIPs that would not open
@@ -125,7 +127,7 @@ export type UploadEvent =
   | { type: 'stop' }
   | { type: 'chose'; id: string; change: ChoiceChange; now: string } // now: to refuse a document date in the future
   | { type: 'replacesLost'; lost: Array<{ id: string; ref: string }> } // upload-review `lostReplaces`: each dropped, its value unticked
-  | { type: 'saveStarted'; reviewed?: ReviewedValue[] } // reviewed: upload-review `reviewedWrites`, so Save names what it did not write
+  | { type: 'saveStarted'; reviewed?: ReviewedValue[]; erase?: string } // reviewed: upload-review `reviewedWrites`, so Save names what it did not write
   | { type: 'saved'; run: number; attempt: number; outcome: SaveOutcome }
   | { type: 'saveFailed'; run: number; attempt: number; message: string }
   | { type: 'close' }    // leaves only when nothing read would be lost
@@ -332,8 +334,8 @@ function leave(s: Exclude<UploadState, { phase: 'choosing' }>): UploadStep {
   return { state: choosing, effects: [...abort(s.run, idsIn(s.files, ['sending'])), ...forget(s.run, s.files.map((f) => f.id))] };
 }
 
-function save(s: Pick, attempt: number, reviewed: ReviewedValue[] | undefined): UploadStep {
-  return { state: { ...pickOf(s), phase: 'saving', attempt, ...(reviewed ? { reviewed } : {}) }, effects: [{ type: 'save', run: s.run, attempt }] };
+function save(s: Pick, attempt: number, { reviewed, erase }: Extract<UploadEvent, { type: 'saveStarted' }>): UploadStep {
+  return { state: { ...pickOf(s), phase: 'saving', attempt, ...(reviewed ? { reviewed } : {}), ...(erase !== undefined ? { erase } : {}) }, effects: [{ type: 'save', run: s.run, attempt }] };
 }
 
 const retries = (f: UploadFile, id: string) => f.status.s === 'failed' && RETRYABLE[f.status.reason] && (id === 'all' || f.id === id);
@@ -401,8 +403,8 @@ export function transition(s: UploadState, e: UploadEvent): UploadStep {
       return changed ? same({ ...pickOf(s), phase: 'open', files }) : same(s);
     }
     case 'saveStarted':
-      if (s.phase === 'saveFailed') return save(s, s.attempt + 1, e.reviewed);
-      return s.phase === 'open' && saveEnabled(s) ? save(s, 1, e.reviewed) : same(s);
+      if (s.phase === 'saveFailed') return save(s, s.attempt + 1, e);
+      return s.phase === 'open' && saveEnabled(s) ? save(s, 1, e) : same(s);
     case 'saved':
       if (s.phase !== 'saving' || s.attempt !== e.attempt) return same(s);
       return { state: { ...pickOf(s), phase: 'done', outcome: e.outcome }, effects: forget(s.run, s.files.map((f) => f.id)) };

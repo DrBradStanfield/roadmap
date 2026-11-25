@@ -18,6 +18,7 @@ import { isDocx, isZip } from '../lib/file-kinds';
 import { runEffect, type UploadPort } from '../lib/upload-effects';
 import { emptyHeld, hasResults, heldNotices, MAX_FILES, NO_FILES_TEXT, phaseOf, pickedFiles, pickNotices, progressOf, readErrorOf, readOutcome, refusedForKey, type Held } from '../lib/upload-read';
 import { sharedSave } from '../lib/upload-shared-save';
+import { getShownErase } from '../lib/roadmap-data';
 import { SAVE_FAILED, type UploadEngine } from '../storage/upload-save-store';
 // Type only: a value import would pull the lazy upload bundle into the main one.
 import type { HealthUploadAPI } from '../upload-entry';
@@ -263,7 +264,8 @@ export function useUploadFlow({ unitSystem, onComplete, onStart, onClose, person
     const s = live.current;
     if (s.phase !== 'open' && s.phase !== 'saveFailed') return;
     reviewCounts.current = counts;
-    send({ type: 'saveStarted', reviewed });
+    // The erase the page shows at this press: the Save writes under it, whatever lands while it runs (US-16 AC2a).
+    send({ type: 'saveStarted', reviewed, erase: getShownErase() });
   }, [send]);
 
   return {

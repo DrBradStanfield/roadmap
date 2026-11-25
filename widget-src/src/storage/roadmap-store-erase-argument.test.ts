@@ -12,6 +12,7 @@ import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter'
 import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { RoadmapStore } from './roadmap-store';
 import { BACKEND_KEY } from './web-record-host';
+import { seedDocuments } from '../testing/seed-record';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 
@@ -27,7 +28,7 @@ async function erasedAndRefilled() {
   expect(store.shownErase).not.toBe(asked);
   store.saveSupplement('omega3', 'Omega-3', 1, 'g');
   const ldl = store.addMeasurement('ldl', 2.1, '2026-08-15');
-  const { saved } = await store.bulkSaveDocuments([{
+  const saved = await seedDocuments(store, [{
     documentType: 'lab_report', title: 'Synthetic report', documentDate: '2026-09-01',
     contentMd: 'Synthetic fixture', metadata: {}, sourceFileName: 'synthetic.pdf',
   }]);
@@ -43,6 +44,8 @@ const WRITERS: Array<[string, (s: RoadmapStore, ids: Ids, erase: string) => unkn
   ['setLpaUnit (H21)', (s, _ids, erase) => s.setLpaUnit('nmol/L', erase), false, (f) => f.profile.lpaUnit ?? null],
   ['deleteSupplementApi (H22)', (s, _ids, erase) => s.deleteSupplementApi('omega3', erase), false, (f) => f.supplements.filter((x) => x.status === 'stopped')],
   ['correctValue (H23)', (s, ids, erase) => s.correctValue(ids.ldlId, 1.9, erase), 'error', (f) => [...f.measurements, ...f.labValues].filter((v) => v.correctsId)],
+  ['bulkSaveMeasurements (H18, the blood pressure widget)', (s, _ids, erase) => s.bulkSaveMeasurements([{ metricType: 'waist', value: 90, recordedAt: '2026-09-02', source: 'manual' }], erase),
+    { saved: [], skippedDuplicates: 0, errorCount: 1, refused: [] }, (f) => f.measurements.filter((m) => m.metricType === 'waist')],
   ['moveBloodTest (H24)', (s, ids, erase) => s.moveBloodTest('2026-08-15', '2025-12-01', [ids.ldlId], {}, erase), { status: 'error' },
     (f) => [...f.measurements, ...f.labValues].filter((v) => v.recordedAt.startsWith('2025-12-01'))],
 ];

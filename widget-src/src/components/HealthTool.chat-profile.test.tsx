@@ -22,7 +22,7 @@ import { rowRootIds } from '@roadmap/health-core/merge';
 import { ERASE_UNREACHABLE, REMOTE_CHANGED_EVENT, RoadmapStore } from '../storage/roadmap-store';
 import { BACKEND_KEY } from '../storage/web-record-host';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
-import { addMeasurement, bulkSaveDocuments, bulkSaveLabValues, deleteUserData, flushRoadmapStore, initRoadmapStore, loadLatestMeasurements, recordFileSync, saveChangedMeasurements, saveMedication, saveSupplement } from '../lib/roadmap-data';
+import { addMeasurement, deleteUserData, flushRoadmapStore, initRoadmapStore, loadLatestMeasurements, recordFileSync, saveChangedMeasurements, saveMedication, saveSupplement } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 import { openAboutYou, recordOnDisk } from '../testing/health-tool-harness';
 import { BT_TIMELINE_DRAFT_KEY, MIRROR_CHANGED_EVENT, MIRROR_KEY } from '../lib/storage';
@@ -62,6 +62,7 @@ vi.mock('./UploadModal', () => ({ UploadModal: ({ onComplete }: { onComplete: ()
 import { HealthTool } from './HealthTool';
 import { ERASE_DONE_CHAT_UNREAD, WRITE_REFUSED } from '../lib/erase-copy';
 import { deleteButton } from '../testing/settings';
+import { seedOpenDocuments, seedOpenLabValues } from '../testing/seed-record';
 
 /** The guest's record as this browser holds it, after every pending save. */
 const wait = (ms: number) => act(async () => { await vi.advanceTimersByTimeAsync(ms); });
@@ -646,8 +647,8 @@ describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its ro
   it('US-11: a successful erase clears the lab rows and documents the upload view holds', async () => {
     await guestWithoutProfile({ sex: 'male', heightCm: 175 });
     await act(async () => {
-      await bulkSaveLabValues([{ metricName: 'Ferritin', value: 75, unit: 'µg/L', recordedAt: '2026-09-01' }]);
-      await bulkSaveDocuments([{
+      await seedOpenLabValues([{ metricName: 'Ferritin', value: 75, unit: 'µg/L', recordedAt: '2026-09-01' }]);
+      await seedOpenDocuments([{
         documentType: 'lab_report', title: 'Synthetic prior report', documentDate: '2026-09-01',
         contentMd: 'Synthetic fixture', metadata: {}, sourceFileName: 'synthetic-prior.pdf',
       }]);

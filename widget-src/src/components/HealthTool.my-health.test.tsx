@@ -9,8 +9,6 @@ import { act, render, waitFor, fireEvent, within, type RenderResult } from '@tes
 import type { Suggestion } from '@roadmap/health-core/types';
 import {
   addMeasurement,
-  bulkSaveDocuments,
-  bulkSaveLabValues,
   deleteUserData,
   flushRoadmapStore,
   saveChangedMeasurements,
@@ -47,6 +45,7 @@ vi.mock('./ResultsPanel', async (importOriginal) => {
 });
 
 import { HealthTool } from './HealthTool';
+import { seedOpenDocuments, seedOpenLabValues } from '../testing/seed-record';
 
 useHealthToolLifecycle();
 
@@ -89,7 +88,7 @@ const RECORDS: Record<string, () => Promise<void>> = {
   },
   'a low lab eGFR': async () => {
     await seedGuest({ sex: 'female', heightCm: 165, birthYear: 1950, birthMonth: 1, unitSystem: 'si' }, [['weight', 70], ['creatinine', 140]], [], DAY);
-    await bulkSaveLabValues([{ metricName: 'eGFR', value: 38, unit: 'mL/min/1.73m²', recordedAt: `${DAY}T00:00:00.000Z` }]);
+    await seedOpenLabValues([{ metricName: 'eGFR', value: 38, unit: 'mL/min/1.73m²', recordedAt: `${DAY}T00:00:00.000Z` }]);
   },
 };
 
@@ -807,7 +806,7 @@ describe('US-62 AC27: the desktop section list', () => {
   // US-62 AC33 (Brad 2026-11-09): Documents in the desktop list, only when the area shows; never on a phone.
   const withLetter = async () => {
     await RECORDS['urgent results, both cascades, a supplement']();
-    await bulkSaveDocuments([{ documentType: 'clinic_letter', title: 'Clinic letter', documentDate: '2026-09-01', contentMd: 'A letter.', metadata: {}, sourceFileName: 'letter.pdf' }]);
+    await seedOpenDocuments([{ documentType: 'clinic_letter', title: 'Clinic letter', documentDate: '2026-09-01', contentMd: 'A letter.', metadata: {}, sourceFileName: 'letter.pdf' }]);
   };
   const navTitles = (view: RenderResult) => [...view.container.querySelectorAll('.mh-nav .mh-nav-title')].map(t => t.textContent);
 
@@ -830,7 +829,7 @@ describe('US-62 AC27: the desktop section list', () => {
   it('AC33: with no documents (a blood-test report alone is not one), no entry and no area', async () => {
     const view = await show(async () => {
       await RECORDS['urgent results, both cascades, a supplement']();
-      await bulkSaveDocuments([{ documentType: 'pathology_report', title: 'Labs', documentDate: '2026-09-01', contentMd: '', metadata: { labArchive: true }, sourceFileName: 'labs.pdf' }]);
+      await seedOpenDocuments([{ documentType: 'pathology_report', title: 'Labs', documentDate: '2026-09-01', contentMd: '', metadata: { labArchive: true }, sourceFileName: 'labs.pdf' }]);
     });
     expect(navTitles(view).length).toBeGreaterThan(0);
     expect(navTitles(view)).not.toContain('Documents');

@@ -18,6 +18,7 @@ import * as data from '../lib/roadmap-data';
 import { formatShortDate } from '../lib/constants';
 import { trackProductEvent } from '../lib/server-api';
 import { BloodPressureWidget, WIDTH, spelledOut } from './BloodPressure';
+import { savePair } from './blood-pressure';
 import { bpTier } from '@roadmap/health-core/bp-tier';
 /** Whether a pair's tier has a plan card (Stage 1 and above). */
 const bpTierOf = (sys: number, dia: number) => !['normal', 'elevated'].includes(bpTier(sys, dia));
@@ -525,5 +526,33 @@ describe('US-75 AC7 privacy', () => {
     for (const card of cards) expect(card.description.length).toBeLessThanOrEqual(WIDTH.advice);
     expect('250/150'.length).toBe(WIDTH.value);
     expect('Stage 2 range'.length).toBe(WIDTH.tier);
+  });
+});
+
+// US-16 AC2a (lead H18): the widget's save carries the erase the page showed when the save was asked (BloodPressure.tsx
+// `save`); a record at another erase by the time it runs takes nothing.
+describe('US-16 AC2a: the blood pressure save writes under the erase it was asked under', () => {
+  const day = '2026-09-02';
+  const NONE = { sys: null, dia: null };
+  async function erasedSinceAsked() {
+    data.markEraseShown(data.getEraseIdentity());
+    const asked = data.getShownErase();
+    expect((await data.deleteUserData()).success).toBe(true);
+    data.markEraseShown(data.getEraseIdentity());
+    await data.flushRoadmapStore();
+    return asked;
+  }
+
+  it('asked before an erase the page now shows: nothing written, the record unchanged', async () => {
+    const asked = await erasedSinceAsked();
+    const before = JSON.stringify(data.recordFileSync());
+    expect(await savePair({ sys: 128, dia: 82 }, day, NONE, asked)).toEqual({ kind: 'changed' });
+    expect(JSON.stringify(data.recordFileSync())).toBe(before);
+  });
+
+  it('control: asked under the erase shown, the pair is kept', async () => {
+    await erasedSinceAsked();
+    expect(await savePair({ sys: 128, dia: 82 }, day, NONE, data.getShownErase())).toMatchObject({ kind: 'kept' });
+    expect(active('systolic_bp')).toEqual([128]);
   });
 });
