@@ -13,6 +13,7 @@ import { clearOffFileAfterErase } from '../src/lib/roadmap-data';
 import { LogOffConfirm } from './backend-picker';
 import { logOff, storageState, type Backend } from './connect';
 import { getSwitchFlow, runMove } from './switch-flow';
+import { useSignIn } from './sync-control';
 
 /** The screen's one mode: the erase and the log-off each lock the other out while it runs. */
 export type CrashState =
@@ -51,7 +52,9 @@ const NOOP = (): void => {};
 const IDLE: CrashState = { kind: 'idle', focusTrigger: false };
 
 export function CrashScreen({ backend }: { backend: Backend }) {
-  const cloud = backend !== 'local' && storageState(backend) === 'cloud' ? backend : null;
+  // The picker's rule, followed live: a sign-in that ends while the confirm is open takes the log-off away.
+  const signIn = useSignIn();
+  const cloud = backend !== 'local' && storageState(backend, signIn) === 'cloud' ? backend : null;
   const [state, dispatch] = useReducer(transition, IDLE);
   const trigger = useRef<HTMLButtonElement>(null);
   useLayoutEffect(() => { if (state.kind === 'idle' && state.focusTrigger) trigger.current?.focus(); }, [state]);
@@ -65,6 +68,8 @@ export function CrashScreen({ backend }: { backend: Backend }) {
     else dispatch({ type: 'erase-ended' });
   };
   const logOffHere = async (cloudBackend: Exclude<Backend, 'local'>): Promise<void> => {
+    // Read again at the press: once the sign-in has ended, edits kept only on this device would go with a log-off.
+    if (storageState(cloudBackend) !== 'cloud') return void dispatch({ type: 'back' });
     dispatch({ type: 'log-off-began' });
     await runMove({ type: 'logOff' }, () => logOff(cloudBackend));
     const flow = getSwitchFlow(); // a log-off that worked is reloading the page

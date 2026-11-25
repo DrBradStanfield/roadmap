@@ -25,11 +25,10 @@ vi.mock('../src/lib/roadmap-data', () => ({
   deleteUserData: vi.fn(async () => { data.identity = 'e2'; return data.result; }),
   clearOffFileAfterErase: vi.fn(),
 }));
-vi.mock('./connect', async (importOriginal) => ({
-  ...await importOriginal<typeof import('./connect')>(),
-  storageState: vi.fn(() => 'cloud'),
-  logOff: vi.fn(async () => {}),
-}));
+vi.mock('./connect', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./connect')>();
+  return { ...actual, storageState: vi.fn(actual.storageState), logOff: vi.fn(async () => {}) };
+});
 vi.mock('../src/lib/server-api', () => ({ trackProductEvent: vi.fn() }));
 vi.mock('../src/lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 
@@ -38,6 +37,7 @@ import { clearOffFileAfterErase, deleteUserData } from '../src/lib/roadmap-data'
 import { ERASE_CONFIRM } from '../src/lib/erase-copy';
 import { logOff, storageState, type Backend } from './connect';
 import { resetSwitchFlow, runMove } from './switch-flow';
+import { bootSignIn, resetSignIn, signInEnded } from '../src/storage/sign-in-state';
 
 function Crash(): never {
   throw new Error('render crash (test)');
@@ -57,7 +57,12 @@ function held<T>(): { promise: Promise<T>; resolve: (v: T) => void; reject: (e: 
 const button = (name: string | RegExp) => screen.getByRole('button', { name }) as HTMLButtonElement;
 
 let reload: ReturnType<typeof vi.fn>;
-beforeEach(() => {
+beforeEach(async () => {
+  // A page signed in to Dropbox, as boot leaves it: the picker's rule offers the log-off (real sign-in state).
+  vi.mocked(storageState).mockImplementation((await vi.importActual<typeof import('./connect')>('./connect')).storageState);
+  resetSignIn();
+  localStorage.setItem('health_roadmap_backend', 'dropbox');
+  bootSignIn({ kind: 'signedIn', provider: 'dropbox' });
   data.identity = 'e1'; data.shown = 'e1';
   data.result = { success: true, chatErased: true, chat: 'erased' };
   resetSwitchFlow();
@@ -66,10 +71,10 @@ beforeEach(() => {
   vi.stubGlobal('location', { ...window.location, reload });
   vi.stubGlobal('alert', vi.fn());
   vi.stubGlobal('confirm', vi.fn(() => true));
-  vi.mocked(storageState).mockReturnValue('cloud');
 });
 afterEach(() => {
   cleanup();
+  localStorage.clear();
   vi.clearAllMocks();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
@@ -180,6 +185,25 @@ describe('US-11 AC14: the crash screen keeps delete and log off within reach', (
     await waitFor(() => expect(screen.getByText('Dropbox could not be reached.')).toBeTruthy());
     expect(button('Log off').disabled).toBe(false);
     expect(button('Delete all my data').disabled).toBe(false);
+  });
+
+  it('a sign-in that ends while the confirm is open takes the log-off away: nothing is logged off, and Delete stays', () => {
+    crashed('dropbox');
+    fireEvent.click(button('Log off this device'));
+    act(() => signInEnded('dropbox', null));
+    expect(screen.queryByRole('button', { name: /log off/i })).toBeNull();
+    expect(screen.getByText('Something went wrong. Reload the page to try again. You can still delete your data.')).toBeTruthy();
+    expect(button('Delete all my data').disabled).toBe(false);
+    expect(logOff).not.toHaveBeenCalled();
+  });
+
+  it('the press itself reads the sign-in again: ended under it, the press logs off nothing', async () => {
+    crashed('dropbox');
+    fireEvent.click(button('Log off this device'));
+    vi.mocked(storageState).mockReturnValue('reconnect'); // the press's own read sees the ended sign-in
+    fireEvent.click(button('Log off'));
+    await act(async () => {});
+    expect(logOff).not.toHaveBeenCalled();
   });
 
   it('"Logging off…" is this screen\'s own: with another move running, the button says Log off, and pressing it runs nothing', async () => {
