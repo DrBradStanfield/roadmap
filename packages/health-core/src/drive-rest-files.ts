@@ -51,6 +51,15 @@ export async function fail(what: string, res: Response): Promise<never> {
   throw new StorageError(`${PROVIDER} ${what} failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status);
 }
 
+/** The signed-in account's stable id, `about.user.permissionId` (US-09 AC55): `drive.file`
+ *  gives no email. An opaque id; its failure text carries none. */
+export async function driveAccountOf(accessToken: string): Promise<string> {
+  const res = await request(`${DRIVE_API}/about?fields=user(permissionId)`, { headers: auth(accessToken) });
+  const id = res.ok ? (await jsonBody<{ user?: { permissionId?: unknown } }>(res)).user?.permissionId : undefined;
+  if (typeof id !== 'string' || !id) throw new StorageError(`${PROVIDER} did not say which account signed in.`, undefined, undefined, res.status);
+  return id;
+}
+
 /** Find one file by name, optionally inside one parent. Undefined = not there.
  *  First match: named files (chat history, documents) keep it on purpose. The
  *  record has its own every-copy discovery below (US-10 AC4a). `oldestFirst`

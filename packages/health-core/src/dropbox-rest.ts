@@ -32,6 +32,14 @@ const PROVIDER = 'Dropbox';
  *  hand `fetchOrFail` the wrong one. Reach for this, never the bare global. */
 const request = (url: string | URL, init?: Parameters<typeof fetchOrFail>[2]): Promise<Response> => fetchOrFail(PROVIDER, url, init);
 
+/** The account a sign-in names, the token reply's stable `account_id` (US-09 AC55).
+ *  An opaque id, never the email; its failure text carries none. */
+export function dropboxReplyAccount(reply: unknown): string {
+  const id = (reply as { account_id?: unknown } | null)?.account_id;
+  if (typeof id !== 'string' || !id) throw new StorageError(`${PROVIDER} did not say which account signed in.`);
+  return id;
+}
+
 /** Parse the `dropbox-api-result` response header (file metadata incl. rev). */
 function parseApiResult(res: Response): Record<string, unknown> | null {
   const header = res.headers.get('dropbox-api-result');

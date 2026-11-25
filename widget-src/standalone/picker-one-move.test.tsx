@@ -58,6 +58,7 @@ async function fakeFetch(input: RequestInfo | URL, init?: RequestInit): Promise<
     }
     return new Response('{"message":"Not Found"}', { status: 404 });
   }
+  if (url === 'https://api.github.com/user') return new Response(JSON.stringify({ id: 7001 }), { status: 200 }); // the account (US-09 AC55)
   if (url.startsWith(DAV_URL)) {
     if (holdDav) await holdDav;
     return new Response('', { status: init?.method === 'PROPFIND' ? 207 : 404 });

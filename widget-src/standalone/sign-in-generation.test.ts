@@ -64,9 +64,12 @@ let driveAccess: string;
 async function fakeFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const url = String(input);
   calls.push(url);
+  // Each provider names one synthetic account (US-09 AC55).
+  if (url === 'https://www.googleapis.com/drive/v3/about?fields=user(permissionId)') return json({ user: { permissionId: 'perm-test' } });
+  if (url === 'https://api.github.com/user') return json({ id: 7001 });
   if (url === DROPBOX_EXCHANGE) {
     if (holdExchange) await holdExchange;
-    return json({ access_token: 'at-new', refresh_token: 'rt-new', expires_in: 14400 });
+    return json({ access_token: 'at-new', refresh_token: 'rt-new', expires_in: 14400, account_id: 'dbid:test' });
   }
   if (url.endsWith('/api/google-token')) {
     const body = JSON.parse(String(init?.body ?? '{}')) as { grantType?: string };
@@ -350,7 +353,7 @@ describe('US-09 AC45: once a log-off has begun on this page', () => {
     const github = await import('../src/storage/github');
     (await import('../src/storage/web-record-host')).beginRoadmapLogOff(); // log-off's first step
     vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => (String(input).startsWith('https://api.github.com/')
-      ? json({ private: true })
+      ? json(String(input) === 'https://api.github.com/user' ? { id: 7001 } : { private: true })
       : fakeFetch(input, init))));
 
     await new github.GitHubAdapter({ token: 'test-token-good', owner: 'someone', repo: 'health' }).connect();
@@ -385,6 +388,8 @@ describe('US-09 AC45: a form connect is remembered only when it saved its own si
   /** The storage bar's Drive reconnect, clicked in a reconnect session (Drive is still the chosen home): the GIS popup grants a token. */
   async function reconnectDrive(drop?: string) {
     vi.resetModules(); localStorage.setItem(BACKEND_KEY, 'google-drive');
+    // The account this browser connected (US-09 AC55).
+    localStorage.setItem('health_roadmap_account_pin', JSON.stringify({ provider: 'google-drive', account: 'perm-test', gen: localStorage.getItem(LOG_OFF_ID_KEY) }));
     vi.doMock('react', async (importOriginal) => {
       const react = await importOriginal<typeof import('react')>();
       const hooks = { useState: (init: unknown) => [typeof init === 'function' ? init() : init, () => {}], useEffect: () => {}, useSyncExternalStore: (_s: unknown, get: () => unknown) => get() };
@@ -445,8 +450,8 @@ describe('US-09 AC45: a form connect is remembered only when it saved its own si
     [DRIVE_TOKENS]: { accessToken: 'at-other', refreshToken: 'rt-other', expiresAt: later() },
     [DRIVE_CONFIG]: { accountEmail: 'other@example.test' },
   });
-  /** Every write a connect could make to a cloud: Dropbox, self-host or any Drive call. */
-  const cloudWrites = () => [...uploads, ...davPuts, ...calls.filter((url) => url.includes('googleapis.com'))];
+  /** Every write a connect could make to a cloud: Dropbox, self-host or any Drive call but the account read, which writes nothing (US-09 AC55). */
+  const cloudWrites = () => [...uploads, ...davPuts, ...calls.filter((url) => url.includes('googleapis.com') && !url.includes('/drive/v3/about?'))];
 
   it.each([
     ['a self-host form connect', SELFHOST_CONFIG, connectWebDav],

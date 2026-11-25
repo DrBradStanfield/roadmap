@@ -18,7 +18,8 @@
  */
 import { ConflictError, StorageError, fetchOrFail, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
 import { TRANSFER_DEADLINE_MS, timeoutDeadline } from '@roadmap/health-core/transfer-deadline';
-import { getSignIn, logOffId, setSignIn, safeRemoveItem, type LogOffId } from '../lib/storage';
+import { getSignIn, logOffId, safeRemoveItem, type LogOffId } from '../lib/storage';
+import { freshDecision, keepWithPin } from './account-gate';
 import { encodeStoragePath, legacyDocumentUrl } from './storage-path';
 import { bytesToBase64, base64ToBytes } from '../lib/base64';
 
@@ -85,13 +86,24 @@ export class GitHubAdapter implements StorageAdapter {
     await this.signIn();
   }
 
-  /** `connect`, returning true when this adapter saved its own sign-in (US-09 AC45). */
+  /** `connect`, returning true when this adapter saved its own sign-in (US-09 AC45), with
+   *  the account pin, read once the credentials are validated (AC55). */
   async signIn(): Promise<boolean> {
     if (!this.config?.token || !this.config.owner || !this.config.repo) {
       throw new StorageError('GitHub needs a token, owner, and repo.');
     }
     await this.ensurePrivate();
-    return setSignIn(CONFIG_KEY, this.config, this.gen);
+    const decision = await freshDecision(this.id, this.label, () => this.account());
+    return keepWithPin({ [CONFIG_KEY]: this.config }, decision, this.gen);
+  }
+
+  /** The token's user id with the repository, opaque, never the email (US-09 AC55). */
+  async account(): Promise<string> {
+    if (!this.config?.token) throw new StorageError('GitHub is not connected.');
+    const res = await fetchOrFail('GitHub', `${API}/user`, { headers: this.headers() });
+    const id = res.ok ? ((await res.json().catch(() => null)) as { id?: unknown } | null)?.id : undefined;
+    if (typeof id !== 'number') throw new StorageError('GitHub did not say which account signed in.', undefined, undefined, res.status);
+    return `${id}:${this.config.owner}/${this.config.repo}`.toLowerCase();
   }
 
   async disconnect(): Promise<void> {

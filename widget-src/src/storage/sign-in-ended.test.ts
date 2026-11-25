@@ -266,7 +266,7 @@ describe('US-09 AC48 (R6): the Dropbox config, an empty object whose presence sa
     sessionStorage.setItem('health_roadmap_dropbox_pkce', pkceEntry('test-verifier', 'test-state', gen));
     Object.defineProperty(window, 'location', { value: { ...page, search: '?code=test-code&state=test-state' }, writable: true, configurable: true });
     vi.spyOn(window.history, 'replaceState').mockImplementation(() => undefined);
-    answer = () => reply(200, { access_token: 'test-token-live', refresh_token: 'test-refresh-new', expires_in: 14_400 });
+    answer = () => reply(200, { access_token: 'test-token-live', refresh_token: 'test-refresh-new', expires_in: 14_400, account_id: 'dbid:test' });
     return DropboxAdapter.completeRedirect(DROPBOX);
   }
 

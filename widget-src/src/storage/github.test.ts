@@ -52,7 +52,8 @@ describe('GitHubAdapter.connect — refuses a public repo', () => {
 
   it('saves the config when the repo is private', async () => {
     vi.stubGlobal('localStorage', makeStorage());
-    vi.stubGlobal('fetch', vi.fn(async () => repoResponse(true)));
+    // The repository, then the account a kept sign-in is pinned to (US-09 AC55).
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => (url.endsWith('/user') ? Response.json({ id: 7001 }) : repoResponse(true))));
 
     const adapter = new GitHubAdapter(CONFIG);
     await adapter.connect();

@@ -17,13 +17,14 @@
  *
  * Brad supplies the app key (client id) via DropboxConfig; there is no secret.
  */
-import { dropboxDownload, dropboxListFolder, dropboxRead, dropboxUploadDocument, dropboxWrite, DROPBOX_TOKEN_URL } from '@roadmap/health-core/dropbox-rest';
+import { dropboxDownload, dropboxListFolder, dropboxRead, dropboxReplyAccount, dropboxUploadDocument, dropboxWrite, DROPBOX_TOKEN_URL } from '@roadmap/health-core/dropbox-rest';
 import { fetchOrFail, ROADMAP_FILE_NAME, sleepUntilAborted, catchUpAfterFailure, StorageError, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
 import { TRANSFER_DEADLINE_MS, timeoutDeadline } from '@roadmap/health-core/transfer-deadline';
-import { getSignIn, logOffId, setSignIn, setSignIns, safeRemoveItem, type LogOffId } from '../lib/storage';
+import { BACKEND_KEY, getSignIn, logOffId, safeGetItem, setSignIn, safeRemoveItem, type LogOffId } from '../lib/storage';
 import { claimRedirectCancel, claimRedirectCode, deriveCodeChallenge, generateCodeVerifier, generateState, pkceEntry } from './pkce';
 import { refreshOnce } from './token-flight';
 import { isSignedOut, signInEnded } from './sign-in-state';
+import { freshDecision, keepWithPin, reconnectDecision } from './account-gate';
 
 export const TOKEN_KEY = 'health_roadmap_dropbox_tokens';
 /** Dropbox was chosen and signed in to, as Drive's config says it (US-09 AC48): an empty object, kept
@@ -143,6 +144,8 @@ export class DropboxAdapter implements StorageAdapter {
   static async completeRedirect(config: DropboxConfig): Promise<DropboxAdapter | null> {
     const claimed = claimRedirectCode(PKCE_KEY); // null when the ?code isn't ours
     if (!claimed) return null;
+    // Strip ?code/&state from the URL so a refresh doesn't re-trigger, whatever follows.
+    window.history.replaceState({}, '', config.redirectUri);
 
     const body = new URLSearchParams({
       code: claimed.code,
@@ -163,13 +166,17 @@ export class DropboxAdapter implements StorageAdapter {
       throw new StorageError(`Dropbox token exchange failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status);
     }
     // A body that is not JSON (a wifi sign-in page) is an incomplete reply too.
-    const json = tokenReply(await res.json().catch(() => null), true);
-    const saved = setSignIns({
+    const reply: unknown = await res.json().catch(() => null);
+    const json = tokenReply(reply, true);
+    // The account is read before anything is kept, and checked against this browser's while Dropbox is still its home (US-09 AC55).
+    const account = async () => dropboxReplyAccount(reply);
+    const decision = safeGetItem(BACKEND_KEY) === 'dropbox'
+      ? await reconnectDecision({ provider: 'dropbox', label: 'Dropbox', account, cloudRecord: async () => (await dropboxRead(json.access_token, ROADMAP_FILE_NAME)).body })
+      : await freshDecision('dropbox', 'Dropbox', account);
+    const saved = keepWithPin({
       [TOKEN_KEY]: { accessToken: json.access_token, refreshToken: json.refresh_token, expiresAt: Date.now() + json.expires_in * 1000 } satisfies DropboxTokens,
       [CONFIG_KEY]: {},
-    }, claimed.gen);
-    // Strip ?code/&state from the URL so a refresh doesn't re-trigger.
-    window.history.replaceState({}, '', config.redirectUri);
+    }, decision, claimed.gen);
     return saved ? new DropboxAdapter(config, claimed.gen) : null;
   }
 

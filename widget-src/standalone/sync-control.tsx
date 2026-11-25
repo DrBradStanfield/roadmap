@@ -28,6 +28,7 @@ import { openBackendPicker, openSignin, OPEN_PICKER_EVENT, PLAN_STORAGE_CTA, Sto
 import { healthWritesAllowed, onHealthWritesChange, ownLogOffHasBegun, safeGetItem, safeSetItem } from '../src/lib/storage';
 import { useIsMobile } from '../src/lib/useIsMobile';
 import { LOCAL_SAVE_EVENT, localSaveRefused } from '../src/storage/local-storage-adapter';
+import { releasePin } from '../src/storage/account-gate';
 
 /** US-09 AC19: the picker was opened once in this browser (a side key, never the record). */
 const STORAGE_CTA_SEEN_KEY = 'hr_storage_cta_seen';
@@ -176,7 +177,9 @@ function useReconnect(lost?: LostSignIn) {
       const token = await new GoogleDriveAdapter(googleDriveConfig(), gen).acquireViaPopup()
         .catch((error: unknown) => { if (isCurrentRun(run)) connectRefusal(error); throw error; });
       if (!isCurrentRun(run)) return; // a popup answer after the reconnect stopped saves nothing
-      if (rememberSignIn(savePopupGrant(token, gen), 'google-drive', gen)) {
+      const saved = await savePopupGrant(token, gen, () => isCurrentRun(run)) // another account keeps nothing (US-09 AC55)
+        .catch((error: unknown) => { if (isCurrentRun(run)) connectRefusal(error); throw error; });
+      if (rememberSignIn(saved, 'google-drive', gen)) {
         dispatch({ type: 'saved', run }); // from here it runs to the reload: Stop is gone
         markSyncPending();
         await flushBeforeExit();
@@ -263,6 +266,7 @@ export function SyncControl({ backend, hasData = true, attention = false }: {
       await copySessionToDevice(provider);
       await adapterFor(provider)?.disconnect();
       forgetBackend();
+      releasePin(); // this browser's copy has no cloud owner now (US-09 AC55)
       location.reload();
     });
   // A page that never read its cloud asks first (US-09 AC49, AC50). Decided again on a yes, so the words a

@@ -95,6 +95,8 @@ async function driveFetch(url: URL, init?: RequestInit): Promise<Response> {
 
 function fakeFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const url = String(input instanceof Request ? input.url : input);
+  // Each provider names one synthetic account (US-09 AC55).
+  if (url === 'https://www.googleapis.com/drive/v3/about?fields=user(permissionId)') return Promise.resolve(Response.json({ user: { permissionId: 'perm-test' } }));
   if (url.startsWith('https://content.dropboxapi.com/')) {
     if (dropboxDown) return refuse();
     if (url === 'https://content.dropboxapi.com/2/files/download') {
@@ -115,6 +117,7 @@ function fakeFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Respon
   if (url.startsWith('https://www.googleapis.com/drive/') || url.startsWith('https://www.googleapis.com/upload/drive/')) {
     return driveDown ? refuse() : driveFetch(new URL(url), init);
   }
+  if (url === 'https://api.github.com/user') return Promise.resolve(Response.json({ id: 7001 }));
   if (url.startsWith('https://api.github.com/repos/someone/health')) {
     const auth = new Headers(init?.headers).get('Authorization') ?? '';
     if (!auth.includes(GOOD_TOKEN)) return Promise.resolve(new Response('{"message":"Bad credentials"}', { status: 401 }));
@@ -244,6 +247,8 @@ async function openReconnectPanel(cloud: Cloud): Promise<Page> {
     // A grant whose access token expired and whose refresh cannot be reached.
     localStorage.setItem(DRIVE_CONFIG, JSON.stringify({}));
     localStorage.setItem(DRIVE_TOKENS, JSON.stringify({ accessToken: 'test-token-old', refreshToken: 'test-refresh-old', expiresAt: Date.now() - 1_000 }));
+    // The account this browser connected (US-09 AC55); the reconnect signs in to it again.
+    localStorage.setItem('health_roadmap_account_pin', JSON.stringify({ provider: 'google-drive', account: 'perm-test' }));
   }
   const p = await loadPage();
   expect(p.backend).toBe('local');

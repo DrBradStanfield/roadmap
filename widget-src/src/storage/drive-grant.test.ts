@@ -34,8 +34,9 @@ function makeStorage(): Storage {
   } as unknown as Storage;
 }
 
-const exchange = vi.fn(async () =>
-  new Response(JSON.stringify({ accessToken: 'a', refreshToken: 'r', expiresIn: 3600 }), { status: 200 }),
+const exchange = vi.fn(async (url: string) => url.includes('/about?')
+  ? Response.json({ user: { permissionId: 'perm-test' } }) // the account a kept sign-in is pinned to (US-09 AC55)
+  : new Response(JSON.stringify({ accessToken: 'a', refreshToken: 'r', expiresIn: 3600 }), { status: 200 }),
 );
 const replaceState = vi.fn();
 /** requestAccessToken hands the captured GIS config this token response. */
@@ -81,7 +82,7 @@ describe('GoogleDriveAdapter — a grant without drive.file is refused at connec
     returnedFromGoogle(`?code=c&state=s&scope=${encodeURIComponent(`email openid ${DRIVE_FILE_SCOPE}`)}`);
 
     const adapter = await GoogleDriveAdapter.completeRedirect(CONFIG);
-    expect(exchange).toHaveBeenCalledTimes(1);
+    expect(exchange.mock.calls.filter(([url]) => url === CONFIG.exchangeUrl)).toHaveLength(1);
     expect(adapter!.isConnected()).toBe(true);
     expect(adapter!.hasValidToken()).toBe(true);
   });
@@ -108,24 +109,24 @@ describe('GoogleDriveAdapter — a grant without drive.file is refused at connec
     expect(localStorage.getItem(TOKENS_KEY)).toBeNull(); // the acquire step writes nothing (US-09 AC45)
     expect(localStorage.getItem(CONFIG_KEY)).toBeNull();
     localStorage.setItem(BACKEND_KEY, 'google-drive'); // the reconnect session's chosen home
-    expect(savePopupGrant(token, null)).toBe(true);
+    expect(await savePopupGrant(token, null)).toBe(true);
     const adapter = new GoogleDriveAdapter(CONFIG);
     expect(adapter.isConnected()).toBe(true);
     expect(adapter.hasValidToken()).toBe(true);
   });
 
-  it('popup: the save keeps the stored account', () => {
+  it('popup: the save keeps the stored account', async () => {
     localStorage.setItem(BACKEND_KEY, 'google-drive');
     localStorage.setItem(CONFIG_KEY, JSON.stringify({ accountEmail: 'person@example.test' }));
-    expect(savePopupGrant({ accessToken: 't', expiresAt: Date.now() + 3_600_000 }, null)).toBe(true);
+    expect(await savePopupGrant({ accessToken: 't', expiresAt: Date.now() + 3_600_000 }, null)).toBe(true);
     expect(JSON.parse(localStorage.getItem(CONFIG_KEY)!)).toMatchObject({ accountEmail: 'person@example.test' });
   });
 
-  it('popup: once this device is no longer on Google Drive (another tab moved it), the save keeps nothing (US-09 AC45)', () => {
+  it('popup: once this device is no longer on Google Drive (another tab moved it), the save keeps nothing (US-09 AC45)', async () => {
     localStorage.setItem(BACKEND_KEY, 'dropbox');
-    expect(savePopupGrant({ accessToken: 't', expiresAt: Date.now() + 3_600_000 }, null)).toBe(false);
+    expect(await savePopupGrant({ accessToken: 't', expiresAt: Date.now() + 3_600_000 }, null)).toBe(false);
     localStorage.removeItem(BACKEND_KEY);
-    expect(savePopupGrant({ accessToken: 't', expiresAt: Date.now() + 3_600_000 }, null)).toBe(false);
+    expect(await savePopupGrant({ accessToken: 't', expiresAt: Date.now() + 3_600_000 }, null)).toBe(false);
     expect(localStorage.getItem(TOKENS_KEY)).toBeNull();
     expect(localStorage.getItem(CONFIG_KEY)).toBeNull();
   });

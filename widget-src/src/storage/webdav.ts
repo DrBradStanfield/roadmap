@@ -19,7 +19,8 @@
  */
 import { ConflictError, StorageError, fetchOrFail, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
 import { TRANSFER_DEADLINE_MS } from '@roadmap/health-core/transfer-deadline';
-import { getSignIn, logOffId, setSignIn, safeRemoveItem, type LogOffId } from '../lib/storage';
+import { getSignIn, logOffId, safeRemoveItem, type LogOffId } from '../lib/storage';
+import { freshDecision, keepWithPin } from './account-gate';
 import { encodeStoragePath, legacyDocumentUrl } from './storage-path';
 import { bytesToBase64 } from '../lib/base64';
 
@@ -75,7 +76,16 @@ export class WebDavAdapter implements StorageAdapter {
     if (!res.ok && res.status !== 207) {
       throw new StorageError(`Self-host connect failed (${res.status}). Check the URL and the server's CORS settings.`, undefined, undefined, res.status);
     }
-    return setSignIn(CONFIG_KEY, this.config, this.gen);
+    const decision = await freshDecision(this.id, this.label, () => this.account()); // once the credentials are valid (US-09 AC55)
+    return keepWithPin({ [CONFIG_KEY]: this.config }, decision, this.gen);
+  }
+
+  /** The server folder and user this sign-in names, as an opaque digest, so the pin holds
+   *  neither (US-09 AC55). The server names no account of its own. */
+  async account(): Promise<string> {
+    if (!this.config?.url || !this.config.username) throw new StorageError('Self-host is not connected.');
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`${this.urlFor('')}\n${this.config.username}`));
+    return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
   }
 
   async disconnect(): Promise<void> {

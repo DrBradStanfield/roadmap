@@ -35,7 +35,9 @@ const replaceState = vi.fn();
  *  signal aborts, as a browser fetch does; with no signal it hangs for good.
  *  'offline' rejects as a dead network does. 'ok' is a good exchange. */
 function endpoint(answer: 'stall' | 'offline' | 'ok' | { body: string }) {
-  const fetchMock = vi.fn((_url: string, init: RequestInit = {}) => {
+  const fetchMock = vi.fn((url: string, init: RequestInit = {}) => {
+    // The account a kept sign-in is pinned to (US-09 AC55).
+    if (url.includes('/about?')) return Promise.resolve(Response.json({ user: { permissionId: 'perm-test' } }));
     if (answer === 'offline') return Promise.reject(new TypeError('Failed to fetch'));
     if (answer === 'ok') {
       return Promise.resolve(new Response(JSON.stringify({ accessToken: 'a', refreshToken: 'r', expiresIn: 3600 }), { status: 200 }));

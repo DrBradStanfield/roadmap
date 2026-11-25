@@ -32,7 +32,7 @@ beforeEach(() => {
 });
 afterEach(() => { vi.unstubAllGlobals(); });
 
-const GOOD = { access_token: 'at-new', refresh_token: 'rt-new', expires_in: 14400 };
+const GOOD = { access_token: 'at-new', refresh_token: 'rt-new', expires_in: 14400, account_id: 'dbid:test' };
 
 describe('US-09 AC1a: connect refuses an incomplete token reply', () => {
   beforeEach(() => {

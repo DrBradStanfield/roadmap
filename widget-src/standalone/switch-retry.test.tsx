@@ -41,6 +41,7 @@ function fakeFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Respon
   if (url.startsWith('https://content.dropboxapi.com/2/files/download')) {
     return Promise.resolve(new Response(JSON.stringify({ error_summary: 'path/not_found/..' }), { status: 409 }));
   }
+  if (url === 'https://api.github.com/user') return Promise.resolve(new Response(JSON.stringify({ id: 7001 }), { status: 200 })); // the account (US-09 AC55)
   if (url.startsWith('https://api.github.com/repos/someone/health')) {
     const auth = new Headers(init?.headers).get('Authorization') ?? '';
     if (!auth.includes(GOOD_TOKEN)) return Promise.resolve(new Response('{"message":"Bad credentials"}', { status: 401 }));
@@ -200,6 +201,7 @@ function fakeClouds(input: RequestInfo | URL, init?: RequestInit): Promise<Respo
   if (url.startsWith('https://api.dropboxapi.com/') || url.startsWith('https://notify.dropboxapi.com/')) {
     return new Promise<Response>(() => undefined);
   }
+  if (url === 'https://api.github.com/user') return Promise.resolve(new Response(JSON.stringify({ id: 7001 }), { status: 200 })); // the account (US-09 AC55)
   if (url.startsWith('https://api.github.com/repos/someone/health')) {
     const auth = new Headers(init?.headers).get('Authorization') ?? '';
     if (!auth.includes(GOOD_TOKEN)) return Promise.resolve(new Response('{"message":"Bad credentials"}', { status: 401 }));

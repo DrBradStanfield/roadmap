@@ -25,15 +25,16 @@
  * catches a writer who lands inside it.
  */
 import { ConflictError, fetchOrFail, ROADMAP_FILE_NAME, StorageError, jsonBody, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
-import { driveCreateFile, driveCreateFolder, driveDownloadDocument, driveDownloadJson, driveEnsureSubfolder, driveFileIsLive, driveFileVersion, driveFindFileId, driveFindFolder, driveUpdateIfVersion, driveUploadDocument, readDriveRecord, DRIVE_API, DRIVE_FOLDER_NAME, writeDriveRecord } from '@roadmap/health-core/drive-rest';
+import { driveAccountOf, driveCreateFile, driveCreateFolder, driveDownloadDocument, driveDownloadJson, driveEnsureSubfolder, driveFileIsLive, driveFileVersion, driveFindFileId, driveFindFolder, driveUpdateIfVersion, driveUploadDocument, readDriveRecord, DRIVE_API, DRIVE_FOLDER_NAME, writeDriveRecord } from '@roadmap/health-core/drive-rest';
 import { splitDocumentRef } from '@roadmap/health-core/document-path';
-import { codeGrantReply, postRefreshGrant } from './drive-token-reply';
+import { codeGrantReply, decodeIdTokenEmail, postRefreshGrant } from './drive-token-reply';
+import { freshDecision, keepWithPin } from './account-gate';
 import { refreshOnce } from './token-flight';
 import { isSignedOut, signInEnded } from './sign-in-state';
 import { driveWatchLoop } from './drive-watch';
 import { gis, gisReady, loadGis } from './drive-gis';
 export { gisReady, preloadGis } from './drive-gis';
-import { getSignIn, logOffId, setSignIn, setSignIns, safeRemoveItem, type LogOffId } from '../lib/storage';
+import { getSignIn, logOffId, setSignIn, safeRemoveItem, type LogOffId } from '../lib/storage';
 import { claimRedirectCancel, claimRedirectCode, deriveCodeChallenge, generateCodeVerifier, generateState, pkceEntry } from './pkce';
 
 export interface GoogleDriveConfig {
@@ -73,22 +74,6 @@ interface Stored {
    *  refresh — the reminders control prefills it. Never sent as proof: the
    *  signed ID token itself is (US-17 AC7). */
   accountEmail?: string;
-}
-
-/**
- * The verified email inside a Google ID token, or null. No signature check:
- * this runs in the user's own browser on a token Google just handed it, and
- * the only consumer is a prefill. The server verifies the token itself.
- */
-export function decodeIdTokenEmail(idToken: string): string | null {
-  try {
-    const payload = idToken.split('.')[1] ?? '';
-    const bytes = Uint8Array.from(atob(payload.replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0));
-    const claims = JSON.parse(new TextDecoder().decode(bytes)) as { email?: string; email_verified?: boolean };
-    return claims.email_verified === true && claims.email ? claims.email.toLowerCase() : null;
-  } catch {
-    return null;
-  }
 }
 
 interface DriveTokens {
@@ -210,10 +195,8 @@ export class GoogleDriveAdapter implements StorageAdapter {
   static async completeRedirect(config: GoogleDriveConfig): Promise<GoogleDriveAdapter | null> {
     const claimed = claimRedirectCode(PKCE_KEY); // null when the ?code isn't ours
     if (!claimed) return null;
-    if (!grantsDrive(claimed.scope)) {
-      window.history.replaceState({}, '', config.redirectUri);
-      throw new DriveGrantRefusedError();
-    }
+    window.history.replaceState({}, '', config.redirectUri); // strip ?code&state so a refresh doesn't re-trigger, whatever follows
+    if (!grantsDrive(claimed.scope)) throw new DriveGrantRefusedError();
 
     // No Content-Type header: a string body defaults to text/plain, keeping the
     // POST a CORS "simple request" (no preflight — remix-serve can't answer
@@ -230,13 +213,12 @@ export class GoogleDriveAdapter implements StorageAdapter {
       timeoutMs: 15_000, // past the server's 10 s for Google (issue #977)
     });
     const json = await codeGrantReply(res);
+    const decision = await freshDecision('google-drive', 'Google Drive', () => driveAccountOf(json.accessToken)); // US-09 AC55
     const accountEmail = json.idToken ? decodeIdTokenEmail(json.idToken) : null;
-    const saved = setSignIns({
+    const saved = keepWithPin({
       [TOKENS_KEY]: { accessToken: json.accessToken, refreshToken: json.refreshToken, expiresAt: expiry(json.expiresIn) } satisfies DriveTokens,
       [CONFIG_KEY]: { ...(accountEmail ? { accountEmail } : {}) } satisfies Stored,
-    }, claimed.gen);
-    // Strip ?code/&state so a refresh doesn't re-trigger.
-    window.history.replaceState({}, '', config.redirectUri);
+    }, decision, claimed.gen);
     return saved ? new GoogleDriveAdapter(config, claimed.gen) : null;
   }
 
@@ -329,6 +311,11 @@ export class GoogleDriveAdapter implements StorageAdapter {
     const outcome = await this.refresh();
     if (outcome === 'transient') throw new StorageError('Google token refresh unavailable — retry later.');
     return outcome === 'ok' ? this.lastIdToken : null;
+  }
+
+  /** The signed-in account's opaque id, for the pin a good load adopts (US-09 AC55). */
+  async account(): Promise<string> {
+    return driveAccountOf(await this.getToken());
   }
 
   /** The verified account email captured at connect/refresh, or null (pre-openid grants, popup sessions). */
@@ -625,7 +612,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
         },
         error_callback: () => reject(new StorageError('Google Drive sign-in was cancelled or blocked.')),
       });
-      client.requestAccessToken({ prompt: '' });
+      client.requestAccessToken({ prompt: '', ...(this.stored?.accountEmail ? { login_hint: this.stored.accountEmail } : {}) }); // this browser's account first
     });
   }
 }

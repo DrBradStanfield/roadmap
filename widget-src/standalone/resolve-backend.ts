@@ -33,7 +33,7 @@ export async function resolveBackend(): Promise<{ resolved: ResolvedBackend; ref
   try {
     resumed = await DropboxAdapter.completeRedirect(dropboxConfig());
   } catch (error) {
-    refused = reportConnectFailure(error, 'dropbox');
+    refused = connectRefusal(error) ?? reportConnectFailure(error, 'dropbox');
   }
   // A returned adapter saved its own sign-in under the log-off id it began
   // under (US-09 AC45); otherwise the page opens as if nothing was tried.

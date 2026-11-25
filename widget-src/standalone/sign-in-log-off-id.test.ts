@@ -50,7 +50,8 @@ let calls: string[];
 async function fakeFetch(input: RequestInfo | URL): Promise<Response> {
   const url = String(input);
   calls.push(url);
-  if (url === PROVIDER.dropbox.exchange) return json({ access_token: 'at-new', refresh_token: 'rt-new', expires_in: 14400 });
+  if (url.endsWith('/about?fields=user(permissionId)')) return json({ user: { permissionId: 'perm-test' } }); // the account it names (US-09 AC55)
+  if (url === PROVIDER.dropbox.exchange) return json({ access_token: 'at-new', refresh_token: 'rt-new', expires_in: 14400, account_id: 'dbid:test' });
   if (url.endsWith(PROVIDER['google-drive'].exchange)) return json({ accessToken: 'at-new', refreshToken: 'rt-new', expiresIn: 3600, idToken: idToken() });
   return json({ error_summary: 'path/not_found/..' }, 409);
 }

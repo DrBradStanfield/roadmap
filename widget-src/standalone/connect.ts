@@ -19,6 +19,7 @@ import {
   type WebDavAdapter,
 } from '../src/storage';
 import { beginRoadmapLogOff } from '../src/storage/roadmap-store';
+import { AccountRefusedError, adoptPinAtLoad, notConnected, releasePin } from '../src/storage/account-gate';
 import { currentSignIn, lostSignIn, type LostSignIn, type SignIn } from '../src/storage/sign-in-state';
 import { BACKEND_KEY, webRecordHost } from '../src/storage/web-record-host';
 import { clearAutoEnrolBlock } from './reminders';
@@ -63,13 +64,15 @@ function lostAtLoad(provider: CloudBackend, error?: unknown): LostSignIn {
   return { kind: 'unreachable', provider };
 }
 
-/** A Google grant refused at connect (US-09 AC15) is the user's move, not a
- *  defect: counted here, once, wherever it is caught, and never sent to
+/** A Google grant refused at connect (US-09 AC15), or a sign-in that is not
+ *  this browser's account (AC55), is the user's move, not a defect: counted
+ *  here, once, wherever it is caught, with the provider only, and never sent to
  *  Sentry. The message is what to show; null for any other error. */
 export function connectRefusal(error: unknown): string | null {
-  if (!(error instanceof DriveGrantRefusedError)) return null;
-  trackProductEvent('cloud_connect_refused', { provider: 'google-drive' });
-  return error.message;
+  const provider = error instanceof DriveGrantRefusedError ? 'google-drive' : error instanceof AccountRefusedError ? providerOf(error.provider)?.event : undefined;
+  if (!provider) return null;
+  trackProductEvent('cloud_connect_refused', { provider });
+  return (error as Error).message;
 }
 
 /** The on-device session a cloud backend falls back to. The marker makes the
@@ -94,6 +97,9 @@ export async function startOnBackend(
 ): Promise<ResolvedBackend> {
   try {
     await init(resolved.adapter, resolved.reconnect !== undefined);
+    // A browser with no account pin adopts this load's account (US-09 AC55); a failed read waits for the next load.
+    const backend = resolved.backend;
+    if (backend !== 'local') void adoptPinAtLoad(resolved.adapter, () => rememberedBackend() === backend && !!adapterFor(backend)?.isConnected()).catch(() => undefined);
     return resolved;
   } catch (error) {
     if (resolved.backend === 'local' || !isStorageFailure(error)) throw error;
@@ -166,7 +172,7 @@ export function reportConnectFailure(error: unknown, backend: 'dropbox' | 'googl
   Sentry.captureException(recordFailure(error, 'Cloud connect failed'), {
     tags: { area: 'cloud-connect', backend, ...failureTags(error) },
   });
-  return `${PROVIDERS[backend].label} did not connect, so nothing changed. Please try again.`;
+  return notConnected(PROVIDERS[backend].label);
 }
 
 /**
@@ -319,6 +325,7 @@ export async function prepareSwitch(current: Backend): Promise<void> {
       `${PROVIDERS[current].label} could not be reached, so your record there could not be copied to this browser. Try again once it answers.`,
     );
   }
+  releasePin(); // the copy is down: whichever connect follows owns it (US-09 AC55)
   await adapter.disconnect();
   preparedFrom = current;
 }

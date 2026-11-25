@@ -14,7 +14,7 @@ interface TokenResponse {
   error?: string;
 }
 interface TokenClient {
-  requestAccessToken: (overrides?: { prompt?: string }) => void;
+  requestAccessToken: (overrides?: { prompt?: string; login_hint?: string }) => void;
 }
 type Gis = {
   accounts: {
