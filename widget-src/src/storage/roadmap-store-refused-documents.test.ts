@@ -13,7 +13,7 @@ import { LocalStorageAdapter } from './local-storage-adapter';
 import { Sentry } from '../lib/sentry';
 import { WritesStoppedError } from '../lib/error-diagnostics';
 import { StorageError } from '@roadmap/health-core/adapter';
-import { uploadThrough } from '../testing/upload-save-kit';
+import { ENGINE, pickOf, uploadThrough } from '../testing/upload-save-kit';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 
@@ -73,9 +73,20 @@ async function eraseLands(other: RoadmapStore, page: RoadmapStore) {
 
 it('a document save whose erase has already moved writes no copy on the device (US-11 AC1a)', async () => {
   const { other, page } = await twoTabs();
-  const asked = page.shownErase; // the press on Save
+  // The Save begins before the erase, which lands once it runs, before its first file write: the check before
+  // each write refuses it.
+  let reached!: () => void;
+  const began = new Promise<void>((r) => { reached = r; });
+  let release!: () => void;
+  const gate = new Promise<void>((r) => { release = r; });
+  const engine: typeof ENGINE = { ...ENGINE, uploadSave: async (...args) => { reached(); await gate; return ENGINE.uploadSave(...args); } };
+  const now = new Date().toISOString();
+  const { s, io } = await pickOf(page.file, [doc('Lipids')], { now });
+  const pending = page.saveUpload(engine, s, now, true, io);
+  await began;
   await eraseLands(other, page);
-  expect(await uploadThrough(page, [doc('Lipids')], { erase: asked })).toMatchObject({ ok: false, reason: 'erased' });
+  release();
+  expect(await pending).toMatchObject({ ok: false, reason: 'erased' });
   expect(blobKeys()).toEqual([]);
   expect(Sentry.captureException).not.toHaveBeenCalled();
 });

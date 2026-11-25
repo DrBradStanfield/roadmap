@@ -14,12 +14,13 @@ import { act, cleanup, configure, fireEvent, render, screen, waitFor } from '@te
 import { customSupplementAdd } from '@roadmap/health-core/input-form';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import {
-  addMeasurement, bulkSaveDocuments, bulkSaveLabValues, flushRoadmapStore, initRoadmapStore, openHistoryLightbox, saveChangedMeasurements, saveMedication, saveSupplement,
+  addMeasurement, flushRoadmapStore, initRoadmapStore, openHistoryLightbox, saveChangedMeasurements, saveMedication, saveSupplement,
   setReminderOptIn,
 } from '../lib/roadmap-data';
 import { formatShortDate } from '../lib/constants';
 import { formatDisplayValue, type MetricType } from '@roadmap/health-core/units';
 import { recordTextInAttributes } from '../testing/no-record-text-in-attributes';
+import { seedOpenDocuments, seedOpenLabValues } from '../testing/seed-record';
 import { UPLOAD_ENGINE } from '../testing/upload-engine';
 
 const SENTINEL = {
@@ -136,14 +137,14 @@ async function seed() {
   }
   await addMeasurement('systolic_bp', 187, BP_DAY);
   await addMeasurement('diastolic_bp', 117, BP_DAY);
-  await bulkSaveLabValues([
+  seedOpenLabValues([
     { metricName: SENTINEL.lab, value: 4.2, unit: SENTINEL.labUnit, recordedAt: '2026-10-12T00:00:00.000Z', source: 'manual' },
     { metricName: SENTINEL.lab, value: 3.9, unit: SENTINEL.labUnit, recordedAt: '2026-04-02T00:00:00.000Z', source: 'manual' },
   ]);
   const custom = customSupplementAdd(SENTINEL.supplement, []);
   await saveSupplement(custom.supplementKey, custom.supplementName, 5, 'mg');
   await saveMedication('statin', SENTINEL.medication, 20, 'mg');
-  await bulkSaveDocuments([{
+  await seedOpenDocuments([{
     documentType: 'clinic_letter', title: SENTINEL.documentTitle, documentDate: '2026-10-01',
     // The letter's own link: its href is the person's own text, in their own document (exempt below).
     contentMd: `## ${SENTINEL.documentText}\n\nSee [the ${SENTINEL.documentText} notes](https://example.org/${SENTINEL.documentText}).`,

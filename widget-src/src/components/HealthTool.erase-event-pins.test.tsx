@@ -523,7 +523,7 @@ describe('Fix 4 D2 (US-16 AC2a, US-34 AC1): the two-pass fold\'s window, between
       const valueReads = reads.values;
       reads.corrections.length = 0;
       await act(async () => { fireEvent.keyDown(ldlRow(view)!.querySelector('.bt-cell-correcting input')!, { key: 'Enter' }); await drain(); });
-      expect(reads.corrections).toEqual(['changed']); // asked, and refused by the store as changed (PR 2081 review, R2)
+      expect(reads.corrections).toEqual(['error']); // asked, and refused by the store
       expect(reads.values).toBe(valueReads);
       expect(getShownErase()).toBe(before);
       expect(heard).toEqual([]);

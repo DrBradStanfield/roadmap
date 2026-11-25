@@ -64,7 +64,7 @@ const ERASED = { ok: false, reason: 'erased', message: 'Failed to save. Please t
 /** Every write the page reaches, each with the answer a refusal gives. */
 const WRITES: Array<[string, (s: RoadmapStore, ids: { weightId: string; documentId: string }) => unknown | Promise<unknown>, unknown]> = [
   ['addMeasurement', (s) => s.addMeasurement('waist', 90, '2026-09-02'), { status: 'error' }],
-  ['correctValue', (s, ids) => s.correctValue(ids.weightId, 81), 'changed'],
+  ['correctValue', (s, ids) => s.correctValue(ids.weightId, 81), 'error'],
   ['moveBloodTest', (s) => s.moveBloodTest('2026-09-01', '2026-08-30', [], {}), { status: 'error' }],
   ['saveChangedMeasurements', (s) => s.saveChangedMeasurements({ heightCm: 181 }, { heightCm: 178 }), { ok: false }],
   ['saveMedication', (s) => s.saveMedication('statin', 'atorvastatin', 20, 'mg'), false],
