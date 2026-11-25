@@ -29,14 +29,14 @@ const SHOPIFY_SURFACE_BUNDLES = {
   'vite.config.shopify-dev.ts': shopifyDev,
   // US-74 AC5/AC8: the single-topic widgets, whose usage events need the flag.
   'vite.config.widgets.ts': widgets,
+  // US-15 AC2a (leads B-3, W2-1): the embedded chatbot, a theme-extension block on
+  // both storefronts, so its one event (chat_thinking_opened) needs the flag.
+  'vite.config.chatbot.ts': chatbot,
 };
 
 // Bundles that must NEVER declare the flag. Every vite.config.*.ts must
 // appear in exactly one of the two lists, so a new bundle cannot skip triage.
 const NON_SURFACE_BUNDLES = {
-  // microvitamin embed — no trackProductEvent call sites today; whether it
-  // should count toward chat_opened is an open product decision (2026-W32).
-  'vite.config.chatbot.ts': chatbot,
   // GitHub Pages self-host build — "no Brad server": must never be a
   // Shopify surface, or events would post the user's traffic to the one
   // backend that build promises to avoid.
