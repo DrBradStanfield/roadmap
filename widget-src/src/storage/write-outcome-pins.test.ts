@@ -17,6 +17,7 @@
  * field itself, per adapter: storage-outcome-field.test.ts. Rows marked AC17
  * (R6 PR 3b): a sync conflict storm is now raised `refused`, every attempt's
  * write refused as a conflict. Failures before the upload: pre-write-outcome-pins.test.ts.
+ * The row marked AC19 (R6 PR 5): a 401 that may have landed owes a retry (drive-auth-retry.test.ts).
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ConflictError, LostUpdateError, StorageError, type StorageAdapter } from '@roadmap/health-core/adapter';
@@ -212,7 +213,7 @@ const ROWS: Row[] = [
   ['drive-create', 'timeout', true, false, 'other', OWN],
   // Google Drive, update (PATCH): every failure may have landed (US-10 AC4a) but its 400, 403 and 404 (AC16).
   ['drive-update', '400', false, true, 'other', OWN], // AC16: was landed
-  ['drive-update', '401', true, false, 'auth', MAYBE],
+  ['drive-update', '401', true, false, 'other', MAYBE], // AC19: was auth (a 401 that may have landed owes a retry)
   ['drive-update', '403', false, true, 'other', NOTHING], // AC16: was landed, MAYBE
   ['drive-update', '404', false, true, 'other', OWN], // AC16: was landed
   ['drive-update', '409', true, false, 'other', OWN],
