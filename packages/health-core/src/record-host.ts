@@ -32,7 +32,7 @@ export function announce(host: RecordHost, change: RemoteChange | null): void {
 }
 
 /** What a status line shows of the save: its status, and whether a retry of a
- *  failed save will come (`RecordSession.retryDue`, US-09 AC30). */
+ *  failed save will come and may land (`RecordSession.uploadPromised`, US-09 AC30, AC61). */
 export interface SaveTold { status: SaveStatus; retry: boolean }
 
 /** Tell the host a save status, or a retry owed, it was not told last (US-09

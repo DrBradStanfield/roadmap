@@ -29,7 +29,9 @@
  *   only a new sign-in mends, so no retry is owed; 'other' for the rest, an
  *   erase's failed write included. `landed`: the pass may have written before
  *   it failed (write-refusal.ts `mayHaveLanded`: the failure's outcome says
- *   so), so the stored copy may hold its changes.
+ *   so), so the stored copy may hold its changes. `refused`: the provider
+ *   answered and stored nothing (`refusedWrite`), such as a full or forbidden
+ *   account; a retry is still owed, but no upload is promised (`uploadPromised`).
  * - erasing: an erase, from its confirm to the end of its write, over the save
  *   state `under` it (lead A6). An edit is refused throughout;
  *   RecordSession.refuses() gives the caller that answer. `reading`: the erase
@@ -65,14 +67,14 @@ export type SaveBase =
   | { mode: 'clean'; changes: number }
   | { mode: 'waiting'; changes: number; saved: number }
   | { mode: 'saving'; changes: number; saved: number; from: number; armed: boolean }
-  | { mode: 'failed'; changes: number; saved: number; mirrored: boolean; cause: SaveCause; landed?: true };
+  | { mode: 'failed'; changes: number; saved: number; mirrored: boolean; cause: SaveCause; landed?: true; refused?: true };
 export type SaveState = SaveBase | { mode: 'erasing'; phase: 'reading' | 'writing'; under: SaveBase };
 
 export type SaveEvent =
   | { type: 'edited' } // touch(): one more change
   | { type: 'save' } // the debounce fired, flush(), or a page hide's fallback; joins a pass that runs
   | { type: 'passLanded'; from: number } // the pass that started from change `from` wrote
-  | { type: 'passFailed'; cause: SaveCause; landed?: true }
+  | { type: 'passFailed'; cause: SaveCause; landed?: true; refused?: true }
   | { type: 'synced' } // a synchronous write landed the whole working copy
   | { type: 'eraseBegan' } // the erase's first line: every write is refused from here
   | { type: 'eraseSwapped' } // the erased copy swapped in: one more change
@@ -117,6 +119,12 @@ export function writePending(s: SaveState): boolean {
  *  a refused grant, and not under an erase, which owns the mode. */
 export function retryOwed(s: SaveState): boolean {
   return s.mode === 'failed' && s.cause === 'other';
+}
+
+/** Settings may say "It will upload automatically." (US-09 AC61): a retry is owed and the last
+ *  failure was not a refusal, which retrying does not mend. */
+export function uploadPromised(s: SaveState): boolean {
+  return retryOwed(s) && s.mode === 'failed' && !s.refused;
 }
 
 /** Why a pass failed, from its error's typed reason and outcome alone: 'auth'
@@ -183,7 +191,8 @@ function base(s: SaveBase, e: BaseEvent): { state: SaveBase; effects: SaveEffect
     case 'passFailed': {
       if (s.mode !== 'saving') return same;
       const failed = settle(s.changes, s.saved, s.armed, e.cause);
-      return { state: failed.mode === 'failed' && e.landed ? { ...failed, landed: true } : failed, effects: [] };
+      const outcome = { ...(e.landed ? { landed: true as const } : {}), ...(e.refused ? { refused: true as const } : {}) };
+      return { state: failed.mode === 'failed' ? { ...failed, ...outcome } : failed, effects: [] };
     }
     case 'synced':
       return { state: s.mode === 'saving' ? { ...s, saved: s.changes, armed: false } : { mode: 'clean', changes: s.changes }, effects: cancel };

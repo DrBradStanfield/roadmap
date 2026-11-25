@@ -4,7 +4,7 @@
 // every sample state x event pair.
 import { describe, expect, it } from 'vitest';
 import {
-  debounceArmed, saveStatus, transition, unsaved, writePending,
+  debounceArmed, retryOwed, saveStatus, transition, unsaved, uploadPromised, writePending,
   type SaveBase, type SaveEffect, type SaveEvent, type SaveState,
 } from './save-state';
 
@@ -330,5 +330,29 @@ describe('any order is safe where two events race', () => {
     expect(b.effects.filter((e) => e.type === 'pass')).toEqual([pass(7)]);
     expect(a.state).toEqual(saving(7, 6, 7));
     expect(b.state).toEqual(saving(7, 6, 7));
+  });
+});
+
+// US-09 AC61 (owner ruling 2026-11-26): Settings says "It will upload automatically." only while a retry is owed
+// and the last failure was not a refusal: a full or forbidden account does not mend by retrying.
+describe('uploadPromised (US-09 AC61): a retry owed, and the last failure not a refusal', () => {
+  it.each<[string, SaveEvent, boolean, boolean]>([
+    ['no answer', { type: 'passFailed', cause: 'other' }, true, true],
+    ['may have landed', { type: 'passFailed', cause: 'other', landed: true }, true, true],
+    ['refused (a full or forbidden account)', { type: 'passFailed', cause: 'other', refused: true }, true, false],
+    ['a refused sign-in', { type: 'passFailed', cause: 'auth', refused: true }, false, false],
+  ])('%s: retry owed %s, upload promised %s', (_name, event, owed, promised) => {
+    const state = transition(saving(6, 4, 6), event).state;
+    expect(retryOwed(state)).toBe(owed);
+    expect(uploadPromised(state)).toBe(promised);
+  });
+
+  it('a refused failure keeps its mark, and a later no-answer failure clears it', () => {
+    const refused = transition(saving(6, 4, 6), { type: 'passFailed', cause: 'other', refused: true }).state;
+    expect(refused).toEqual({ ...failed(6, 4), refused: true });
+    const again = run(refused, [EVENTS.save, EVENTS.failed]).state;
+    expect(again).toEqual(failed(6, 4));
+    expect(uploadPromised(again)).toBe(true);
+    expect(uploadPromised(clean(5))).toBe(false);
   });
 });

@@ -133,10 +133,10 @@ export function currentSaveStatus(): SaveStatus {
   return store?.saveStatus ?? 'saved';
 }
 
-/** True while a failed save will be retried (US-09 AC30), for Settings' waiting line; it
- *  follows SAVE_STATUS_EVENT too. False while no record is open. */
-export function currentRetryDue(): boolean {
-  return store?.retryDue ?? false;
+/** A failed save will be retried (US-09 AC30) and the last failure was not a refusal: Settings says it
+ *  will upload (AC61). It follows SAVE_STATUS_EVENT too. False while no record is open. */
+export function currentUploadPromised(): boolean {
+  return store?.uploadPromised ?? false;
 }
 
 // --- synchronous prefill seed for HealthTool's initial inputs state ---

@@ -35,7 +35,7 @@ vi.mock('./connect', () => ({
 }));
 
 import { StorageBar, SyncControl } from './sync-control';
-import { addMeasurement, currentRetryDue, flushRoadmapStore, initRoadmapStore, getShownErase } from '../src/lib/roadmap-data';
+import { addMeasurement, currentUploadPromised, flushRoadmapStore, initRoadmapStore, getShownErase } from '../src/lib/roadmap-data';
 import { trackProductEvent } from '../src/lib/server-api';
 import { GitHubAdapter } from '../src/storage/github';
 
@@ -154,8 +154,23 @@ describe('US-09 AC30: Settings says a retry will come only when one will (lead A
   // Brad approved the clause on 2026-11-26 (lead W2-17).
   it('after a failed save (offline), the waiting line says it will upload automatically', async () => {
     await failedSave(OFFLINE());
-    expect(currentRetryDue()).toBe(true);
+    expect(currentUploadPromised()).toBe(true);
     expect(settingsDetail()).toBe(`${WAITING} ${RETRY_CLAUSE} ${SAFE}`);
+  });
+
+  // US-09 AC61 (owner ruling 2026-11-26): only while the last failure was not a refusal.
+  it('after a save the provider did not answer, the waiting line says it will upload automatically', async () => {
+    await failedSave(new StorageError('Dropbox did not answer', undefined, undefined, undefined, undefined, 'no-answer'));
+    expect(settingsDetail()).toBe(`${WAITING} ${RETRY_CLAUSE} ${SAFE}`);
+  });
+
+  it('after a save the provider refused (a full or forbidden account), a retry is still owed but the line promises no upload', async () => {
+    const cloud = await failedSave(new StorageError('Dropbox call failed (403).', undefined, undefined, 403, 'forbidden', 'refused'));
+    expect(currentUploadPromised()).toBe(false);
+    expect(settingsDetail()).toBe(`${WAITING} ${SAFE}`);
+    cloud.fail = null;
+    await online(); // the retry is still owed, and runs
+    expect(cloud.writes).toBe(2);
   });
 
   it('after a refused grant, the waiting line never promises an upload', async () => {
@@ -172,13 +187,13 @@ describe('US-09 AC30: Settings says a retry will come only when one will (lead A
     cleanup();
     render(<SyncControl backend="dropbox" />);
     const detail = () => document.querySelector('.hr-sync-detail')?.textContent ?? null;
-    expect(currentRetryDue()).toBe(true);
+    expect(currentUploadPromised()).toBe(true);
     expect(detail()).toBe(`${WAITING} ${RETRY_CLAUSE} ${SAFE}`);
     act(() => {
       localStorage.setItem(LOG_OFF_ID_KEY, 'logged-off-elsewhere');
       window.dispatchEvent(new StorageEvent('storage', { key: LOG_OFF_ID_KEY }));
     });
-    expect(currentRetryDue()).toBe(false);
+    expect(currentUploadPromised()).toBe(false);
     expect(detail()).toBe(`${WAITING} ${SAFE}`);
   });
 

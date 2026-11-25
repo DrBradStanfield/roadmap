@@ -31,6 +31,11 @@ export function mayHaveLanded(error: unknown): boolean {
   return typeof error !== 'object' || error === null || outcomeOf(error) === 'may-have-landed';
 }
 
+/** True for a failure whose outcome is refused: the provider answered and stored nothing. */
+export function refusedWrite(error: unknown): boolean {
+  return typeof error === 'object' && error !== null && outcomeOf(error) === 'refused';
+}
+
 /**
  * A write that threw. A conflict is the adapter's own answer; any other failure
  * that carries no outcome may have landed, so it is marked so (lead S57). Every
