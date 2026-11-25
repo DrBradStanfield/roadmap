@@ -48,13 +48,13 @@ describe('US-07 — complete local history', () => {
 // US-21 AC3b: a history read that fails ends the wait and claims nothing. Before,
 // the load had no catch, so a rejected read left "Loading history..." on screen for good.
 describe('US-21 AC3b — a failed history read', () => {
-  it('ends Loading history, never says there are no measurements, and reports tags only', async () => {
+  it('ends Loading history, says the history could not be shown (H117), never that there are no measurements, and reports tags only', async () => {
     const error = new Error('read failed');
     mocks.loadAllHistory.mockRejectedValue(error);
     const view = render(<HistoryPanel />);
     await waitFor(() => expect(view.queryByText('Loading history...')).toBeNull());
     expect(view.queryByText('No measurements recorded yet.')).toBeNull();
-    expect(view.container.querySelector('.history-panel')!.textContent).toBe('Health History');
+    expect(view.container.querySelector('.history-panel')!.textContent).toBe('Health HistoryYour history could not be shown. Reload the page to try again.');
     expect(mocks.captureException).toHaveBeenCalledOnce();
     expect(mocks.captureException).toHaveBeenCalledWith(error, { tags: { area: 'cloud-sync', op: 'load' } });
   });

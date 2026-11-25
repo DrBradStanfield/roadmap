@@ -86,10 +86,6 @@ issue, and nothing private.
   app cannot start, the fallback screen hides "Delete all my data" and "Log off". A fallback with those two buttons
   needs one sentence. Options: approve a sentence and build it; leave. Recommendation: yes, because deleting your data
   should always be within reach.
-- **Three failure lines.** Issue: three failures say nothing. Drafts: "Your value could not be saved. Try again." (a
-  value page's Add that fails); "Your history could not be shown. Reload the page to try again." (a failed history
-  read); and a "cannot reach your record" line for a second refused save that now loses the typed text silently.
-  Options: approve all three; some; none. Recommendation: all three.
 - **Cues for a value not yet saved.** Issue: the Waist row says "Add" while a typed value waits in the grid; the
   "Unsaved values: review" cue does not name the value; and the PDF box's note about a blocked window names a button
   not on screen. Options: new words for each; or close the first two and hide the note until its button shows.
@@ -216,6 +212,12 @@ issue, and nothing private.
   while the App Store review is open.
 
 ## Decided
+
+2026-11-26, Brad's words in quotes:
+- Three failure lines, "approve all": a value page's Add that fails says "Your value could not be saved. Try again.";
+  a failed history read says "Your history could not be shown. Reload the page to try again."; a repeat refused save
+  while the record cannot be read keeps the typed value and says "Your record cannot be reached. Your value was not
+  saved."
 
 2026-11-23, Brad's words in quotes:
 - Original files are stored in the background after Save, with no action from the person at Save and at every

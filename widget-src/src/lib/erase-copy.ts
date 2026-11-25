@@ -80,3 +80,6 @@ export const ERASE_FAILED = 'Failed to delete data. Please try again.';
 
 /** A save the record refused, since it was erased under the page (US-16 AC2a). */
 export const WRITE_REFUSED = 'That change was not saved: your data was just deleted, here or on another device. The page now shows your record as it is.';
+
+/** A repeat refusal under that erase, while the record cannot be read (lead H39, Brad 2026-11-26). The typed value stays. */
+export const RECORD_UNREACHABLE = 'Your record cannot be reached. Your value was not saved.';

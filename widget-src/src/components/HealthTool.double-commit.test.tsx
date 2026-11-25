@@ -245,9 +245,9 @@ describe('US-03 AC2, AC2a (double commit): the value page\'s Add pressed twice i
     noRefusal(page);
   });
 
-  // A save that throws (the store's write failing) still hands the button back and frees the
-  // claim. What the page says then is not settled (lead H128).
-  it('a save that throws: the Add button comes back enabled, and the next Add saves', () => catchingRejections(async (caught) => {
+  // A save that throws (the store's write failing) hands the button back, frees the claim and
+  // says the value was not saved, keeping the typed value (lead H128, Brad 2026-11-26).
+  it('a save that throws: the Add button comes back enabled with its line, and the next Add saves', () => catchingRejections(async (caught) => {
     const { inserts, value, form, page, said } = await weightPage(SAVED_DAY);
     inserts.mockImplementationOnce(writeFails);
     const add = within(page).getByRole('button', { name: 'Add' }) as HTMLButtonElement;
@@ -258,6 +258,8 @@ describe('US-03 AC2, AC2a (double commit): the value page\'s Add pressed twice i
     expect(caught).toHaveLength(1);
     expect(add.disabled).toBe(false);
     expect(said).toEqual([]);
+    expect(within(page).getByRole('alert').textContent).toBe('Your value could not be saved. Try again.');
+    expect(value.value).toBe('84');
     fireEvent.submit(form);
     await settled();
     expect(inserts).toHaveBeenCalledTimes(2);

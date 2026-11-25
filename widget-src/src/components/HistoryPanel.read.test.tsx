@@ -110,11 +110,11 @@ describe('US-06 AC4: the history lightbox once its reads land together (pins)', 
     expect(view.getByText('No measurements recorded yet.')).toBeTruthy();
   });
 
-  it('US-21 AC3b failed: a failed vitals read shows the heading only, even when labs land, and reports tags only', async () => {
+  it('US-21 AC3b failed: a failed vitals read shows the heading and its line only, even when labs land, and reports tags only', async () => {
     const error = new Error('read failed');
     const view = render(<HistoryPanel />);
     await act(async () => { reads.vitals.reject(error); reads.labs.resolve(LABS); reads.meds.resolve(STATIN); });
-    expect(view.container.querySelector('.history-panel')!.textContent).toBe('Health History');
+    expect(view.container.querySelector('.history-panel')!.textContent).toBe('Health HistoryYour history could not be shown. Reload the page to try again.');
     expect(mocks.captureException).toHaveBeenCalledOnce();
     expect(mocks.captureException).toHaveBeenCalledWith(error, { tags: { area: 'cloud-sync', op: 'load' } });
   });

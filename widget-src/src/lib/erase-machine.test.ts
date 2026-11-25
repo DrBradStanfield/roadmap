@@ -8,7 +8,7 @@
  */
 import { describe, it, expect, vi } from 'vitest';
 import {
-  createEraseStore, initialEraseState, refusal, transition, unreachable,
+  createEraseStore, initialEraseState, refusal, saveLost, transition, unreachable,
   type EraseDoors, type EraseEffect, type EraseEvent, type EraseState, type FirstRead,
 } from './erase-machine';
 import { epochOf } from '@roadmap/health-core/erase-identity';
@@ -24,11 +24,11 @@ const O = id(3, '2026-11-01T10:00:12.000Z'); // this tab's own erase, ending abo
 
 const set = (...ids: string[]) => new Set(ids);
 /** `read`: the page's first read, 'shown' unless given (ledger H37). `reads`: the last read id minted, 0 unless given.
- *  `reach`: the heard erase's latest read id, `reads` unless given, or 'failed' (H39). */
-type Extra = { heard?: string; reach?: number | 'failed'; reads?: number; said?: Set<string>; counted?: Set<string>; pending?: string; shownBy?: EraseState['shownBy']; refused?: string; read?: FirstRead };
+ *  `reach`: the heard erase's latest read id, `reads` unless given, or 'failed' (H39). `lost`: a repeat refusal under it (H39 PR 2). */
+type Extra = { heard?: string; reach?: number | 'failed'; lost?: true; reads?: number; said?: Set<string>; counted?: Set<string>; pending?: string; shownBy?: EraseState['shownBy']; refused?: string; read?: FirstRead };
 const reachOf = (x: Extra) => (x.reach === 'failed' ? { kind: 'failed' as const } : { kind: 'reading' as const, read: x.reach ?? x.reads ?? 0 });
 const common = (shown: string, x: Extra) =>
-  ({ read: x.read ?? 'shown', shown, shownBy: x.shownBy ?? 'own', heard: x.heard === undefined ? null : { identity: x.heard, reach: reachOf(x) }, reads: x.reads ?? 0, said: x.said ?? set(), counted: x.counted ?? set(), pending: x.pending ?? null });
+  ({ read: x.read ?? 'shown', shown, shownBy: x.shownBy ?? 'own', heard: x.heard === undefined ? null : { identity: x.heard, reach: reachOf(x), ...(x.lost ? { lost: x.lost } : {}) }, reads: x.reads ?? 0, said: x.said ?? set(), counted: x.counted ?? set(), pending: x.pending ?? null });
 /** Idle, the first read not yet shown: the old `loading` phase (ledger H37). */
 const loading = (shown: string, heard: string | null = null, x: Extra = {}): EraseState => ({ phase: 'idle', ...common(shown, { read: 'pending', ...x, heard: heard ?? undefined }) });
 const idle = (shown: string, x: Extra = {}): EraseState => ({ phase: 'idle', ...common(shown, x) });
@@ -147,7 +147,7 @@ const rows: Array<[string, string, EraseState, EraseEvent, EraseState | 'same', 
   ['2b-1 R2', 'idle: a read of the heard erase itself: shown, heard cleared', idle(W, { heard: X }), { type: 'read', identity: X }, idle(X, { pending: X, shownBy: 'remote' }), [CLEAR]],
   ['2b-1 R2', 'idle: a read ABOVE the heard erase\'s epoch: shown, heard cleared', idle(W, { heard: X }), { type: 'read', identity: Z }, idle(Z, { pending: Z, shownBy: 'remote' }), [CLEAR]],
   // 2b-1 Q3: a refused save while an erase is heard asks for the read (L1's end); it alerts only when news.
-  ['2b-1 Q3', 'idle: refused under A, C heard, A already said: no alert, one read', idle(X, { heard: Z, said: set(X) }), { type: 'refused', askedUnder: X }, idle(X, { heard: Z, said: set(X), reads: 1 }), [READ(1)]],
+  ['2b-1 Q3', 'idle: refused under A, C heard, A already said: no alert, one read', idle(X, { heard: Z, said: set(X) }), { type: 'refused', askedUnder: X }, idle(X, { heard: Z, lost: true, said: set(X), reads: 1 }), [READ(1)]],
   ['2b-1 Q3', 'idle: refused under A, C heard, news: alerted, one read', idle(X, { heard: Z }), { type: 'refused', askedUnder: X }, idle(X, { heard: Z, said: set(X), reads: 1 }), [ALERT, READ(1)]],
   ['2b-1 Q3', 'idle: refused under A, nothing heard, A already said: nothing', idle(X, { said: set(X) }), { type: 'refused', askedUnder: X }, 'same', []],
   ['2b-1 Q3', 'loading: refused, an erase held: alerted, one read', loading(W, X), { type: 'refused', askedUnder: W }, loading(W, X, { said: set(W), reads: 1 }), [ALERT, READ(1)]],
@@ -172,7 +172,13 @@ const rows: Array<[string, string, EraseState, EraseEvent, EraseState | 'same', 
   ['H39', 'erasing: the heard erase\'s latest read, begun before, fails: failed (own-end or own-failed reads it again or drops it)', erasing(W, X, { reads: 1 }), failed(1), erasing(W, X, { reach: 'failed', reads: 1 }), []],
   ['H39', 'loading: the heard erase\'s latest read fails: failed (loaded reads it again)', loading(W, X, { reads: 1 }), failed(1), loading(W, X, { reach: 'failed', reads: 1 }), []],
   // Every step that asks for a read while failed mints the next id and is reading again.
-  ['H39 Q4', 'idle, failed: refused under an erase already said: reading read 2, no alert', idle(W, { heard: X, reach: 'failed', reads: 1, said: set(W) }), { type: 'refused', askedUnder: W }, idle(W, { heard: X, reads: 2, said: set(W) }), [READ(2)]],
+  ['H39 Q4', 'idle, failed: refused under an erase already said: reading read 2, no alert', idle(W, { heard: X, reach: 'failed', reads: 1, said: set(W) }), { type: 'refused', askedUnder: W }, idle(W, { heard: X, lost: true, reads: 2, said: set(W) }), [READ(2)]],
+  // H39 PR 2 (Brad 2026-11-26): a repeat refusal is marked lost; its read failing shows the line, one landing clears it.
+  ['H39 PR 2', 'idle, lost, reading: its read fails: failed, still lost', idle(W, { heard: X, lost: true, reads: 2, said: set(W) }), failed(2), idle(W, { heard: X, reach: 'failed', lost: true, reads: 2, said: set(W) }), []],
+  ['H39 PR 2', 'idle, lost and failed: another refusal: reading again, still lost, no alert', idle(W, { heard: X, reach: 'failed', lost: true, reads: 2, said: set(W) }), { type: 'refused', askedUnder: W }, idle(W, { heard: X, lost: true, reads: 3, said: set(W) }), [READ(3)]],
+  ['H39 PR 2', 'idle, lost and failed: the same erase arrives again: kept, still lost', idle(W, { heard: X, reach: 'failed', lost: true, reads: 2, said: set(W) }), { type: 'arrived', identity: X }, idle(W, { heard: X, lost: true, reads: 3, said: set(W) }), [READ(3)]],
+  ['H39 PR 2', 'idle, lost and failed: a higher erase arrives: the value is still unsaved, so still lost', idle(W, { heard: X, reach: 'failed', lost: true, reads: 2, said: set(W) }), { type: 'arrived', identity: Z }, idle(W, { heard: Z, lost: true, reads: 3, said: set(W) }), [READ(3)]],
+  ['H39 PR 2', 'idle, lost and failed: a read lands: heard and lost cleared', idle(W, { heard: X, reach: 'failed', lost: true, reads: 2, said: set(W) }), { type: 'read', identity: X }, idle(X, { reads: 2, said: set(W), pending: X, shownBy: 'remote' }), [CLEAR]],
   ['H39 Q3', 'idle, failed: refused, news: reading read 2, alerted first', idle(W, { heard: X, reach: 'failed', reads: 1 }), { type: 'refused', askedUnder: W }, idle(W, { heard: X, reads: 2, said: set(W) }), [ALERT, READ(2)]],
   ['H39', 'idle, failed: the same erase arrives again: reading read 2', idle(W, { heard: X, reach: 'failed', reads: 1 }), { type: 'arrived', identity: X }, idle(W, { heard: X, reads: 2 }), [READ(2)]],
   ['H39', 'idle, failed: a newer erase arrives: heard, reading read 2', idle(W, { heard: X, reach: 'failed', reads: 1 }), { type: 'arrived', identity: Z }, idle(W, { heard: Z, reads: 2 }), [READ(2)]],
@@ -196,6 +202,18 @@ describe('erase machine: unreachable (H39, US-16 AC2g)', () => {
     ['loading, heard and failed', loading(W, X, { reach: 'failed', reads: 1 }), false],
   ])('%s: %s', (_row, state, expected) => {
     expect(unreachable(state)).toBe(expected);
+  });
+});
+
+describe('erase machine: saveLost (H39 PR 2, US-16): a repeat refused save whose read failed', () => {
+  it.each<[string, EraseState, boolean]>([
+    ['unreachable, no repeat refusal: the first refusal was alerted', idle(W, { heard: X, reach: 'failed', reads: 1, said: set(W) }), false],
+    ['unreachable, a repeat refusal', idle(W, { heard: X, reach: 'failed', lost: true, reads: 2, said: set(W) }), true],
+    ['a repeat refusal whose read is in flight', idle(W, { heard: X, lost: true, reads: 2, said: set(W) }), false],
+    ['erasing, lost and failed', erasing(W, X, { reach: 'failed', lost: true, reads: 2 }), false],
+    ['first read failed (L2), lost and failed: its own note, not this', idle(W, { heard: X, reach: 'failed', lost: true, reads: 2, read: 'failed' }), false],
+  ])('%s', (_row, state, expected) => {
+    expect(saveLost(state)).toBe(expected);
   });
 });
 
@@ -365,7 +383,7 @@ describe('erase machine: a refused save while an erase is heard cannot loop by i
     const start = idle(X, { heard: Z, said: set(X) });
     const result = run(start, [{ type: 'refused', askedUnder: X }, failed(1), { type: 'refused', askedUnder: X }, failed(2)]);
     expect(result.effects).toEqual([READ(1), READ(2)]);
-    expect(result.state).toEqual(idle(X, { heard: Z, reach: 'failed', reads: 2, said: set(X) }));
+    expect(result.state).toEqual(idle(X, { heard: Z, reach: 'failed', lost: true, reads: 2, said: set(X) })); // repeats: lost (H39 PR 2)
   });
   it('through the store: the read door fails and dispatches nothing; the refusal ran exactly one read', () => {
     const d = doors();
@@ -376,7 +394,7 @@ describe('erase machine: a refused save while an erase is heard cannot loop by i
     expect(refusal(store, X)).toEqual({ news: true, reads: true });
     expect(refusal(store, X)).toEqual({ news: false, reads: true });
     expect(d.calls).toEqual(['read 1', 'alert-refused', 'read 2', 'read 3']); // the arrival's, then one per refusal; the first said (2b-3); the door gets the id
-    expect(store.getSnapshot()).toEqual(idle(X, { heard: Z, said: set(X), reads: 3 }));
+    expect(store.getSnapshot()).toEqual(idle(X, { heard: Z, lost: true, said: set(X), reads: 3 })); // the second was a repeat (H39 PR 2)
   });
   it('then the read that shows the heard erase ends it: a later refusal reads nothing', () => {
     const result = run(idle(X, { heard: Z, said: set(X) }), [{ type: 'read', identity: Z }, { type: 'refused', askedUnder: X }]);

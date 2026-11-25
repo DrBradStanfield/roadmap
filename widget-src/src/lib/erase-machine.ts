@@ -48,8 +48,11 @@
  * older read's failure, X-Y-X at one epoch included, changes nothing. An
  * arrival of another identity outside settled has no read yet (its first
  * comes at loaded or the end), so it waits on the last id minted.
- * `unreachable` (idle, the first read shown, failed) is what the page will
- * tell the person (H39 PR 2); a failed first read (L2) keeps its own note.
+ * `unreachable`: idle, the first read shown, failed. `heard.lost` (H39 PR 2): a
+ * save refused under the heard erase after its alert was said, so nothing said
+ * it; it rides with the heard erase, to a newer one too, until a read lands.
+ * `saveLost` (unreachable and lost) is the page's line, RECORD_UNREACHABLE; the
+ * typed value stays where it was typed. A failed first read (L2) keeps its own note.
  * Assumed: the machine's read is in memory. `shows` -> relay.shows() ->
  * apply -> reloadValues awaits only async wrappers over the store's
  * synchronous view (roadmap-data.ts, roadmap-store.ts), so a failure is a
@@ -129,9 +132,8 @@
  *   refused. The first refusal under each erase says WRITE_REFUSED, and
  *   every refused save while the erase is heard re-reads (Q3). Ends with: that re-read, the next arrival, own-start, any
  *   whole re-read (upload, refused, left), or a reload. While its latest
- *   read has failed the machine holds `unreachable` (H39). Residual until
- *   H39 PR 2 shows it: a second refused save under the same erase loses its
- *   typed value with no words.
+ *   read has failed the machine holds `unreachable` (H39), and a second
+ *   refused save under the same erase shows the page's line (`saveLost`).
  * - L2, a first read that fails. The page stays as it was mounted, its saves
  *   off (`read` failed), as before the machine. A held erase IS read then:
  *   firstReadFailed dispatches `loaded` (shown false), as it calls the
@@ -158,8 +160,8 @@ interface EraseCommon {
   /** Who moved `shown` there: a read (another writer's) or this tab's erase ending (own, unless another's overtook it).
    *  Its own field, set wherever `shown` moves; never read off `pending`, which a counted erase leaves null (PR 1359 R5). */
   shownBy: 'own' | 'remote';
-  /** Another writer's erase not yet shown, and its latest read (H39). */
-  heard: null | { identity: EraseIdentity; reach: Reach };
+  /** Another writer's erase not yet shown, its latest read, and `lost`: a refused save nothing said (H39). */
+  heard: null | { identity: EraseIdentity; reach: Reach; lost?: true };
   /** The last read id minted: the id source for `read` effects, not a mode (H39). */
   reads: number;
   said: ReadonlySet<EraseIdentity>;
@@ -223,10 +225,12 @@ const ended = ({ refused: _refused, ...common }: Erasing): EraseState => ({ ...c
 const settled = (state: EraseState): boolean => state.phase === 'idle' && state.read !== 'pending';
 /** Idle, the first read shown, and the heard erase's latest read failed (H39). Not after a failed first read (L2). */
 export const unreachable = (state: EraseState): boolean => state.phase === 'idle' && state.read === 'shown' && state.heard?.reach.kind === 'failed';
+/** Unreachable, and a refused save under the heard erase went unsaid (H39 PR 2): the page says RECORD_UNREACHABLE. */
+export const saveLost = (state: EraseState): boolean => unreachable(state) && state.heard?.lost === true;
 /** A read asked for: the next id minted, and the heard erase, if any, waits on that read alone (H39). */
 function asked(state: EraseState): { state: EraseState; read: EraseEffect } {
   const id = state.reads + 1;
-  const heard = state.heard && { identity: state.heard.identity, reach: { kind: 'reading', read: id } as const };
+  const heard = state.heard && { ...state.heard, reach: { kind: 'reading', read: id } as const };
   return { state: { ...state, reads: id, heard }, read: { type: 'read', id } };
 }
 
@@ -281,7 +285,9 @@ export function transition(state: EraseState, event: EraseEvent): Step {
       // Heard until something shows it. Settled, read at once, even when shown: the change can carry another writer's rows.
       const identity = keep(state.heard?.identity ?? null, event.identity);
       // The same erase keeps its reach; another has no read yet (outside settled its first comes at loaded or the end).
-      const heard = state.heard?.identity === identity ? state.heard : { identity, reach: { kind: 'reading', read: state.reads } as const };
+      // A value refused under the older one is still unsaved: `lost` rides on (H39 PR 2).
+      const heard = state.heard?.identity === identity ? state.heard
+        : { identity, reach: { kind: 'reading', read: state.reads } as const, ...(state.heard?.lost ? { lost: true as const } : {}) };
       const next = { ...state, heard };
       if (!settled(state)) return { state: next, effects: [] };
       const ask = asked(next);
@@ -316,17 +322,19 @@ export function transition(state: EraseState, event: EraseEvent): Step {
       if (state.phase === 'erasing') return state.refused !== null ? same : { state: { ...state, refused: event.askedUnder }, effects: [] };
       // A heard erase not yet shown (L1): every refused save asks for its read once, news or not (Q3).
       // No loop: a failed read's read-failed emits nothing, and only the next refused save or arrival reads again.
-      const ask = state.heard === null ? null : asked(state);
+      // A repeat refusal is not alerted (Q4), so it is marked lost: the page says so if its read fails (H39 PR 2).
+      const said = state.said.has(event.askedUnder);
+      const ask = state.heard === null ? null : asked(said ? { ...state, heard: { ...state.heard, lost: true } } : state);
       const reread = ask ? [ask.read] : [];
       const next = ask?.state ?? state;
-      if (state.said.has(event.askedUnder)) return { state: next, effects: reread };
+      if (said) return { state: next, effects: reread };
       return { state: { ...next, said: add(state.said, event.askedUnder) }, effects: [{ type: 'alert-refused' }, ...reread] };
     }
     case 'read-failed': {
       // In every phase, only the heard erase's latest read fails it; an older read, an unknown id or nothing heard is no-op.
       const reach = state.heard?.reach;
       if (state.heard === null || reach?.kind !== 'reading' || reach.read !== event.id) return same;
-      return { state: { ...state, heard: { identity: state.heard.identity, reach: { kind: 'failed' } } }, effects: [] };
+      return { state: { ...state, heard: { ...state.heard, reach: { kind: 'failed' } } }, effects: [] };
     }
   }
 }

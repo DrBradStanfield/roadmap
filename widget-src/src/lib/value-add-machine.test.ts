@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { ADD_READY, ADD_UNIT_CHANGED, transition, type AddEvent, type AddForm } from './value-add-machine';
+import { ADD_READY, ADD_SAVE_FAILED, ADD_UNIT_CHANGED, transition, type AddEvent, type AddForm } from './value-add-machine';
 import { SAVE_ERRORS } from './value-cell-state';
 
 // US-62 AC10, US-03 AC2a, US-05 AC2: every (state, event) pair names the state that follows.
@@ -41,7 +41,7 @@ const rows: [string, AddForm, AddEvent, AddForm | typeof SAME][] = [
   ['saving, settled invalid: ready, says so', saving, invalid, { kind: 'ready', message: SAVE_ERRORS.invalid }],
   ['saving, settled error: ready, says so', saving, error, { kind: 'ready', message: SAVE_ERRORS.error }],
   ['saving, settled with the engine\'s words: ready, in its words', saving, engine, { kind: 'ready', message: 'The engine says no.' }],
-  ['saving, threw: ready, no line (H128)', saving, threw, ready],
+  ['saving, threw: ready, says the value was not saved (H128)', saving, threw, { kind: 'ready', message: ADD_SAVE_FAILED }],
   ['saving, unitChanged: noted, the line waits for the result', saving, unitChanged, savingMoved],
 
   ['saving moved, edited: text typed since is in the new unit', savingMoved, edited, saving],
@@ -65,5 +65,9 @@ describe('value-add-machine transition', () => {
 
   it('the unit line is the value page\'s own words, not the grid editor\'s', () => {
     expect(ADD_UNIT_CHANGED).toBe('The unit changed, so your value was not saved. Type it again in the new unit.');
+  });
+
+  it('US-03: a save that threw says the value was not saved (Brad 2026-11-26, lead H128)', () => {
+    expect(ADD_SAVE_FAILED).toBe('Your value could not be saved. Try again.');
   });
 });

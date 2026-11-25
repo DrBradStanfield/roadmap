@@ -320,7 +320,7 @@ function AddValue({ metric, history, unit, start, onSave, say, onDone, dirtyRef,
       if (metric === 'weight') onWeightAnswered?.();
       refused = await onSave([{ date, values, expected, unit }], seen?.erase ?? getShownErase());
     } catch (e) {
-      // A throw anywhere gives the Add button back, says nothing (lead H128), and still escapes.
+      // A throw anywhere gives the Add button back, says the value was not saved (lead H128), and still escapes.
       send({ type: 'threw' });
       throw e;
     }
