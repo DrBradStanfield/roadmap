@@ -18,9 +18,9 @@ import { latestDayOnEarth } from '../../packages/health-core/src/merge';
 import { DropboxAdapter } from '../../packages/health-core/src/dropbox-rest';
 import { DriveAdapter } from '../../packages/health-core/src/drive-rest';
 import { recordSync } from '../../packages/health-core/src/roadmap-doc';
-
 import { StorageError, type StorageAdapter, type StoredFile } from '../../packages/health-core/src/adapter';
-import { describeStorageFailure, isStorageFailure } from '../../packages/health-core/src/sync-manager';
+import { accessRefused, describeStorageFailure, isStorageFailure, untouched } from '../../packages/health-core/src/sync-manager';
+import { mayHaveLanded } from '../../packages/health-core/src/write-refusal';
 import { type GuardRefusal, isToolName, RECORD_FREE_TOOLS, runToolOverSync, type ToolAnswer } from '../../packages/health-core/src/mcp-tools';
 import { DOCUMENT_TEXT_NOTE, MAX_APPROVAL_LENGTH, OPEN_SOURCE_NOTE, SI_NOTE } from '../../packages/health-core/src/mcp-tool-contract';
 import { folderNudge } from '../../packages/health-core/src/mcp-import';
@@ -29,7 +29,7 @@ import { dispatchRpc, INVALID_REQUEST, PROTOCOL_VERSION, rpcFailure, SERVER_INFO
 import { importFilesBucket, isRefusalReason, MCP_KNOWLEDGE_TOOL_NAMES, MCP_TOOL_NAMES, type McpRefusalReason, type McpToolName } from '../../packages/health-core/src/product-events';
 import { KNOWN_CLIENTS, type McpClientLabel } from './mcp-clients.server';
 import { cappedBody } from './capped-body.server';
-import { hostedImporter } from './mcp-import.server';
+import { hostedImporter, type HostedWiring } from './mcp-import.server';
 import { callKnowledgeTool, isKnowledgeTool, KNOWLEDGE_NOTE, KNOWLEDGE_TOOLS, knowledgeToolsEnabled, NOTICE } from './mcp-knowledge.server';
 import { type McpConfirmReason, recordServerEvent } from './product-events.server';
 import { type RoadmapFile, stableStringify } from '../../packages/health-core/src/roadmap-file';
@@ -39,7 +39,7 @@ import { type AccessPayload, allowKnowledgeCall, allowToolCall, chargeWrites, cl
 import { type McpProvider, providerAccessToken, providerLabel } from './mcp-providers.server';
 import { checkCorrection, checkProfileUpdate, MAX_CORRECTION_AGE_DAYS } from './mcp-corrections.server';
 import { audienceFor, hash, unpackSealed } from './mcp-seal.server';
-import { issueProposal, openProposal, STEP_WINDOWS, UUID } from './mcp-step.server';
+import { clockFrom, earlyRefusal, issueProposal, openProposal, STEP_WINDOWS, UUID } from './mcp-step.server';
 
 /** One JSON-RPC message. A lab panel of 50 rows is a few KB; this is slack. */
 const RPC_BODY_CAP = 1024 * 1024;
@@ -89,11 +89,9 @@ export type AdapterFactory = (provider: McpProvider, accessToken: string) => Sto
 const REAL_ADAPTER: AdapterFactory = (provider, token) =>
   provider === 'google' ? new DriveAdapter(token) : new DropboxAdapter(token);
 
-let makeAdapter: AdapterFactory = REAL_ADAPTER;
-
-export function setAdapterFactory(factory: AdapterFactory | null): void {
-  makeAdapter = factory ?? REAL_ADAPTER;
-}
+/** What the endpoint takes from tests: their own folder, model call and clock (the routes pass none). Inside a call the clock is always set. */
+type EndpointWiring = HostedWiring & { makeAdapter?: AdapterFactory; clock?: () => number };
+type CallWiring = EndpointWiring & { clock: () => number };
 
 // ---------------------------------------------------------------------------
 // One tool call
@@ -155,10 +153,7 @@ function chargeTool(token: AccessPayload, name: string): GuardRefusal | null {
  * resurrecting a record the user erased (design §7).
  */
 async function callHostedTool(
-  token: AccessPayload,
-  name: string,
-  args: unknown,
-  now: string,
+  token: AccessPayload, name: string, args: unknown, now: string, wiring: CallWiring,
 ): Promise<ToolAnswer & { confirmReason?: McpConfirmReason }> {
   if (!isToolName(name)) return refuse(`No tool named ${name}.`, 'malformed');
   /** The record as the loop opened it, kept for the nudge so the folder check costs no second read. */
@@ -197,7 +192,7 @@ async function callHostedTool(
     accessToken = minted;
   }
 
-  const adapter = makeAdapter(token.provider, accessToken);
+  const adapter = (wiring.makeAdapter ?? REAL_ADAPTER)(token.provider, accessToken);
   // The folder listing for the nudge (US-37) starts now and overlaps the record
   // read: it depends on nothing the tool produces. Only on Dropbox — Drive's
   // `drive.file` scope cannot see files the user dropped in (US-35 AC3).
@@ -222,9 +217,9 @@ async function callHostedTool(
       // The import reads files through the user's own folder and parks its
       // candidates there (US-35). Built per call and holding nothing, so it
       // is built for every call; which tool uses it is the tool's declaration.
-      importer: hostedImporter({ token, adapter, client: mcpClientLabel(token.clientId), maxCorrectionAgeDays: MAX_CORRECTION_AGE_DAYS }),
+      importer: hostedImporter({ token, adapter, client: mcpClientLabel(token.clientId), maxCorrectionAgeDays: MAX_CORRECTION_AGE_DAYS, extract: wiring.extract, clock: wiring.clock }),
     });
-    if (twoPhase && !confirmed) return withProposal(token, name, twoPhase.args, answer, now);
+    if (twoPhase && !confirmed) return withProposal(token, name, twoPhase.args, answer, wiring.clock());
     const listed = listing && !answer.isError ? await listing : null;
     return listed && opened ? withFolderNudge(answer, listed, opened) : answer;
   } catch (error) {
@@ -236,11 +231,11 @@ async function callHostedTool(
     // failure is counted there, as `outcome: 'error'`; nothing is logged,
     // because health data never enters a log.
     if (!isStorageFailure(error)) throw error;
-    // A rejected access token is not an unreachable folder: the refresh
-    // worked, so the grant is alive, but this token buys nothing — a scope
-    // change, or the app folder removed. Read off the status the adapter kept,
-    // never the message text.
-    if (error instanceof StorageError && (error.status === 401 || error.status === 403)) {
+    // A rejected access token is not an unreachable folder: the refresh worked,
+    // so the grant is alive, but this token buys nothing. Read off the typed
+    // reason, never the words: a rate limit passes, so it is not refused access.
+    // A full Drive (a 403) keeps this text until it has words of its own.
+    if (error instanceof StorageError && (accessRefused(error.reason) || (error.reason === 'storage-full' && error.status === 403))) {
       return refuse(accessRefusedText(error, provider), 'no-record');
     }
     const failed = describeStorageFailure(error, `The record in ${provider}`);
@@ -253,15 +248,15 @@ async function callHostedTool(
  * save's verify read comes after the upload stored the change, and SyncManager
  * marks it may-have-landed: the shared wording then says both, reconnect and
  * read the record before retrying (US-10 AC4a). Before any upload, nothing was
- * read or written.
+ * written, and nothing read unless the save's own read answered (US-10 AC20).
  */
 function accessRefusedText(error: StorageError, provider: string): string {
-  if (error.hint?.includes('landed')) {
+  if (mayHaveLanded(error)) {
     const failed = describeStorageFailure(error, `The record in ${provider}`);
     return `${failed.message}. ${failed.hint}`;
   }
   return (
-    `${provider} refused this connection’s access to the record. Nothing was read and nothing was written. ` +
+    `${provider} refused this connection’s access to the record. ${untouched(error)}. ` +
     'Ask the user to reconnect the connector, which grants it again.'
   );
 }
@@ -304,9 +299,9 @@ function callIdentity(name: string, args: Record<string, unknown>): string {
  * proposal in the transcript before the write, the client's approval prompt
  * twice, and a second call an injected model has to emit.
  */
-function withProposal(token: AccessPayload, name: string, args: Record<string, unknown>, answer: ToolAnswer, now: string): ToolAnswer {
+function withProposal(token: AccessPayload, name: string, args: Record<string, unknown>, answer: ToolAnswer, issuedMs: number): ToolAnswer {
   if (answer.isError || !answer.pendingWrite) return answer;
-  const { receipt: confirm, notBefore: confirmFrom } = issueProposal(callIdentity(name, args), hash(connectionKey(token)), audienceFor(token.clientId), Date.parse(now));
+  const { receipt: confirm, notBefore: confirmFrom } = issueProposal(callIdentity(name, args), hash(connectionKey(token)), audienceFor(token.clientId), issuedMs);
   const text =
     `PROPOSAL — nothing written yet. ${answer.text}\n\n` +
     `Show this to the user and WAIT for their own yes, in their own words; ask them to answer with a short sentence, not a bare “yes”, for example: Reply “Yes, apply this change” to go ahead (a client’s safety check may block a write approved by a bare “yes”); a client setting that skips its approval prompt is not their yes. ` +
@@ -339,12 +334,8 @@ async function checkConfirm(token: AccessPayload, name: string, args: Record<str
   }
   const opened = openProposal(confirm, subject, conn, audienceFor(token.clientId), nowMs);
   if (opened.status === 'invalid') return invalid;
-  if (opened.status === 'expired') {
-    return { confirmReason: 'confirm-expired', text: `That confirm receipt has expired (${ttlSeconds / 60} minutes). Nothing was written. Call ${name} again without confirm to propose afresh.` };
-  }
-  if (opened.status === 'early') {
-    return { confirmReason: 'confirm-early', text: `That confirm receipt is not valid yet: it can be used from ${opened.notBefore}, after the user has answered. Do not retry before then; end your turn. Nothing was written.` };
-  }
+  if (opened.status === 'expired') return { confirmReason: 'confirm-expired', text: `That confirm receipt has expired (${ttlSeconds / 60} minutes). Nothing was written. Call ${name} again without confirm to propose afresh.` };
+  if (opened.status === 'early') return { confirmReason: 'confirm-early', text: earlyRefusal(opened.notBefore, nowMs) };
   // ChatGPT's safety layer judges the call, not the chat (2026-10-07), so the call carries the user's words.
   // After the window checks, so a chained call is told to wait rather than to quote; before the claim, so a
   // missing quote spends no receipt and, like every refusal here, costs nothing.
@@ -428,7 +419,7 @@ function stepOf(name: string, args: unknown): 'propose' | 'confirm' | undefined 
  * switch, the envelopes, the error codes — is the same code the stdio server
  * runs, so the two cannot answer differently.
  */
-function hostedSurface(token: AccessPayload, now: string) {
+function hostedSurface(token: AccessPayload, now: string, wiring: CallWiring) {
   // Off, the surface is exactly what it was before the knowledge tools (US-41 AC6).
   const knowledge = knowledgeToolsEnabled();
   return {
@@ -453,7 +444,7 @@ function hostedSurface(token: AccessPayload, now: string) {
       // already words by here; what lands in this catch is ours.
       try {
         // The knowledge tools open no record and mint no provider token: bundled files only.
-        const answer = library ? callKnowledgeTool(name, args) : await callHostedTool(token, name, args, now);
+        const answer = library ? callKnowledgeTool(name, args) : await callHostedTool(token, name, args, now, wiring);
         countToolCall(token.clientId, name, answer.isError ? 'refused' : 'ok', answer, stepOf(name, args));
         return { answer };
       } catch {
@@ -503,9 +494,10 @@ function bearer(request: Request): string | null {
 /**
  * The whole `/mcp` endpoint. GET and DELETE are 405 — we have no event stream
  * and no session to delete — and `Mcp-Session-Id` is never minted; an incoming
- * one, like `Last-Event-ID`, is ignored.
+ * one, like `Last-Event-ID`, is ignored. `wiring` is for tests: the routes pass none.
  */
-export async function mcpEndpoint(request: Request, now = new Date().toISOString()): Promise<Response> {
+export async function mcpEndpoint(request: Request, now = new Date().toISOString(), wiring: EndpointWiring = {}): Promise<Response> {
+  const clock = wiring.clock ?? clockFrom(now);
   if (!isMcpEnabled()) return new Response('Not found', { status: 404 });
   if (originRejected(request)) return new Response('Forbidden', { status: 403 });
   if (request.method !== 'POST') {
@@ -532,7 +524,7 @@ export async function mcpEndpoint(request: Request, now = new Date().toISOString
     return Response.json(rpcFailure(null, INVALID_REQUEST, 'Not valid JSON'), { status: 400 });
   }
 
-  const answer = await dispatchRpc(body, hostedSurface(token, now));
+  const answer = await dispatchRpc(body, hostedSurface(token, now, { ...wiring, clock }));
   if (!answer) return new Response(null, { status: 202 });
   return Response.json(answer);
 }

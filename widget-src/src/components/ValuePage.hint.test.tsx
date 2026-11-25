@@ -2,7 +2,8 @@
 // US-62 AC10a (H82): "Tap a value to correct it." shows only when the history
 // holds a value to tap; with none, the page says "No values yet." alone.
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen } from '@testing-library/react';
+import { useState } from 'react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { ValuePage } from './ValuePage';
 
 vi.mock('../lib/roadmap-data', () => ({ getShownErase: () => '' }));
@@ -34,5 +35,26 @@ describe('US-62 AC10a (H82): the correct-it hint needs a value to tap', () => {
     expect(screen.getByText(HINT)).toBeDefined();
     view.rerender(page([]));
     expect(screen.queryByText(HINT)).toBeNull();
+  });
+
+  // H98: none then one, through the page's own Add form, its save, and the history the save hands back.
+  it('an empty history gains the hint once a value is added through the Add form', async () => {
+    function Host() {
+      const [history, setHistory] = useState<any[]>([]);
+      const onSave = async (tasks: any[]) => {
+        const [{ date, values }] = tasks;
+        setHistory([waist('w1', values.waist, date)]);
+        return new Map();
+      };
+      return <ValuePage tiles={[]} onOpen={() => {}} subject={{ kind: 'core', metric: 'waist' }} history={history} labValues={[]}
+        ctx={{ grading: { sex: 'male' }, plan: null, unitOf: () => 'si' }} onSave={onSave} onClose={() => {}} dirtyRef={{ current: false }}/>;
+    }
+    render(<Host/>);
+    expect(screen.getByText('No values yet.')).toBeDefined();
+    expect(screen.queryByText(HINT)).toBeNull();
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '90' } });
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Add' })); });
+    expect(screen.queryByText('No values yet.')).toBeNull();
+    expect(screen.getByText(HINT)).toBeDefined();
   });
 });

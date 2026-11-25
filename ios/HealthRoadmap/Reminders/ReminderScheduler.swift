@@ -11,8 +11,9 @@ import UserNotifications
 ///
 /// The opt-in is this phone's: a small file beside the record, in the folder backups
 /// leave out (D5), holding the record's erase epoch at the time. A restored phone
-/// starts a new record, so it starts with reminders off. An erase moves the epoch,
-/// which ends the opt-in and cancels every reminder, so an erased record never
+/// starts a new record, so it starts with reminders off. An erase moves the epoch, or the
+/// store's erase count, made here or taken in (`ReminderEvent.erased`, even when its record
+/// cannot be read, S52, S63), which ends the opt-in and cancels every reminder, so an erased record never
 /// notifies (US-11). It is not written to the
 /// record: the record's `reminderOptIn` is the web's email enrolment, with a server
 /// token and an address, and a phone's notification permission is not one (D7).
@@ -21,6 +22,10 @@ import UserNotifications
 final class ReminderScheduler {
     /// What the engine last said; nil when the record could not be read.
     private(set) var reminders: PhoneReminders?
+    /// The erase epoch of the last good read, kept through failed ones: the ask falls back to it.
+    private var lastEpoch: Int?
+    /// Bumped when another record shows or its drawn erase epoch moves: a read or an ask begun before it is stale (S41). A token, not a mode.
+    private var generation = 0
     /// What iOS allows; nil until first asked.
     private(set) var permission: NotificationPermission?
     /// Off, asking iOS, or on under the record's erase epoch at the time (AC12b). Stored, so
@@ -31,6 +36,10 @@ final class ReminderScheduler {
     var optedIn: Bool { if case .on = mode { true } else { false } }
     /// Mints each ask's attempt, so a late answer to an older one is known: a token, not a mode.
     private var attempts = 0
+    /// The store's erase count at the last refresh, or at a tap made while reminders are off,
+    /// taken afresh by the transition's resnapshotAndAsk effect: a move means an erase here, even
+    /// one held with no record to read (S52). A token, not a mode.
+    private var seenErasures: Int
 
     /// Our notifications, and only ours, start with this.
     nonisolated static let prefix = "reminder."
@@ -45,13 +54,18 @@ final class ReminderScheduler {
     /// Never sent anywhere; kept only while reminders are scheduled.
     private let firstSeenFile: URL
     private let compute: @MainActor (_ firstSeen: [String: String]) async throws -> PhoneReminders
+    /// The store's erase count (RecordStore.erasures).
+    private let erasures: @MainActor () -> Int
     /// Refreshes run one after another, so two never interleave their removes and adds.
     private var last: Task<Void, Never>?
 
     /// `folder` is the record's (RecordStore.appFolder), left out of backups.
-    init(center: NotificationScheduling, folder: URL, compute: @escaping @MainActor (_ firstSeen: [String: String]) async throws -> PhoneReminders) {
+    init(center: NotificationScheduling, folder: URL, erasures: @escaping @MainActor () -> Int,
+         compute: @escaping @MainActor (_ firstSeen: [String: String]) async throws -> PhoneReminders) {
         self.center = center
         self.compute = compute
+        self.erasures = erasures
+        seenErasures = erasures()
         optInFile = folder.appending(path: "reminders-opt-in")
         firstSeenFile = folder.appending(path: "reminders-first-seen")
         mode = (try? String(contentsOf: optInFile, encoding: .utf8)).flatMap { Int($0) }.map { .on(epoch: $0) } ?? .off
@@ -94,6 +108,14 @@ final class ReminderScheduler {
         await run(send(.tappedOff))
     }
 
+    /// The record on screen became another one (phone or cloud, opened or drawn) or its erase epoch
+    /// moved: the last good read was the old record's, so an ask whose own read fails has nothing
+    /// to fall back to until the next good read (S41).
+    func recordSourceChanged() {
+        generation += 1
+        lastEpoch = nil
+    }
+
     private func send(_ event: ReminderEvent) -> ReminderEffect? {
         let (next, effect) = ReminderMode.transition(mode, event)
         if next != mode { mode = next }
@@ -103,20 +125,32 @@ final class ReminderScheduler {
     private func run(_ effect: ReminderEffect?) async {
         switch effect {
         case .askPermission(let attempt):
+            let captured = generation
             let askedAt = (try? await compute(firstSeen()))?.eraseEpoch
+            let lastRead = lastEpoch
             let granted = (try? await center.requestPermission()) ?? false
             let epoch = granted ? (try? await compute(firstSeen()))?.eraseEpoch : nil
-            await run(send(.asked(attempt: attempt, granted: granted, epoch: epoch, askedAt: askedAt)))
+            // A switch during the ask: both reads before it were the old record's (S41).
+            let same = generation == captured
+            await run(send(.asked(attempt: attempt, granted: granted, epoch: epoch,
+                                  askedAt: same ? askedAt : nil, lastRead: same ? lastRead : nil)))
+        case .resnapshotAndAsk(let attempt): seenErasures = erasures(); await run(.askPermission(attempt: attempt))
         case .refresh: await refresh()
         case nil: break
         }
     }
 
     private func reschedule() async {
+        let started = generation
         let next = try? await compute(firstSeen())
         reminders = next
+        // A read begun before a switch is the old record's: it never becomes the fallback (S41).
+        if let next, generation == started { lastEpoch = next.eraseEpoch }
         // An erase since the opt-in ends it. A failed read is not an erase: it only
-        // cancels this round, and the next good read schedules again.
+        // cancels this round, and the next good read schedules again. An erase here ends it
+        // even when its record could not be read (S52).
+        let count = erasures()
+        if count != seenErasures { seenErasures = count; _ = send(.erased) }
         _ = send(.read(epoch: next?.eraseEpoch))
         permission = await center.permission()
         // Off, refused or erased: the first-seen days go whatever the engine answered (or if it
@@ -135,7 +169,7 @@ final class ReminderScheduler {
     /// the phone, so it says only that a check-up is due; which one is inside the app (D7).
     static func request(for notification: PhoneReminders.Notification) -> UNNotificationRequest {
         let content = UNMutableNotificationContent()
-        content.title = "Health Roadmap"
+        content.title = "Dr Brad"
         content.body = "A check-up is due. Open the app to see which."
         content.sound = .default
         let parts = notification.fireDay.split(separator: "-").compactMap { Int($0) }
@@ -150,4 +184,27 @@ final class ReminderScheduler {
         let trigger = UNCalendarNotificationTrigger(dateMatching: day, repeats: false)
         return UNNotificationRequest(identifier: notification.id, content: content, trigger: trigger)
     }
+}
+
+/// Which record is on screen (RootView) and its drawn erase count. The phone's copy shows until a
+/// connected cloud opens and its record is drawn, so "open" and the epoch are part of it. "Open"
+/// is the source's own record drawn: a connected cloud's once its shown session's record is drawn,
+/// not when the session opens (S72); the phone's once the store is on it, not while a Disconnect
+/// still draws the cloud's (S73). So each draw changes the key even at an equal epoch. RootView
+/// bumps the reminders' token on any change to it (S41), and only an open record is counted.
+struct ShownRecord: Equatable {
+    let source: String, open: Bool, epoch: Int?
+
+    /// RootView's key: the drawn record's erase epoch, nil while none is drawn. The only way to
+    /// build one, so no caller can leave the epoch out (as PR 1608's key did). `shownSession`:
+    /// CloudConnection's, nil while no cloud session is open.
+    @MainActor init(source: String, shownSession: Int?, store: RecordStore) {
+        (self.source, epoch) = (source, store.myData?.eraseEpoch)
+        open = Self.open(source: source, shown: shownSession, drawn: store.source.session, phoneDrawn: store.source.erase == nil)
+    }
+
+    /// The source's own record is drawn. Local (`source` empty): the store is on the phone's record
+    /// (`phoneDrawn`). Connected: the shown session's record is drawn; nil on both sides is a cloud
+    /// with no session open and the phone's copy drawn: not open.
+    static func open(source: String, shown: Int?, drawn: Int?, phoneDrawn: Bool) -> Bool { source.isEmpty ? phoneDrawn : shown != nil && shown == drawn }
 }

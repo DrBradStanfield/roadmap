@@ -344,6 +344,25 @@ describe('the fake reminder_optin_v2 table', () => {
     const { data } = await db.from('reminder_optin_v2').select('token').neq('schedule', '[]');
     expect(data).toEqual([]);
   });
+
+  it('lockstep rejects a round where a live caller is not waiting on the table (H45)', async () => {
+    // b awaits a timer before its query, so round 0 holds only a's: lockstep must say so, not run a alone.
+    let timerDone!: () => void;
+    const timerFired = new Promise<void>((resolve) => { timerDone = resolve; });
+    const late = lockstep({
+      a: async () => db.from('reminder_optin_v2').select('token'),
+      b: async () => {
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        timerDone();
+        return db.from('reminder_optin_v2').select('token');
+      },
+    });
+    await expect(late).rejects.toThrow(/round 0: waiting a, running a,b/);
+    // Let b's late query reach the table, then release it, so nothing is left held for the next test.
+    await timerFired;
+    await settle();
+    db.auto();
+  });
 });
 
 // ---------------------------------------------------------------------------

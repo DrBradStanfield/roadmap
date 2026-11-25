@@ -27,6 +27,7 @@
 
 import { METRIC_LABELS } from './mappings';
 import { rangeFault, UNIT_DEFS, type ValidationRange } from './units';
+import { shareEntries, shareRanges } from './lab-catalog-shares';
 
 export type LabGroupId =
   | 'renal'
@@ -68,10 +69,10 @@ export interface LabCatalogEntry {
    *  meaning, so mg/dL reaches urea only through the name "BUN". Read once, by
    *  `resolveLabCatalogEntry`, which returns the merged entry. */
   nameConversions?: Array<{ names: string[]; conversions: Record<string, number> }>;
-  /** What a refusal of this spelling adds, where the list of units the test
-   *  takes would not say what to do next (US-21 AC15: a differential in %):
-   *  `note` for everyone, `assistant` only in the copy an assistant reads. */
-  refusalNotes?: Record<string, { note: string; assistant?: string }>;
+  /** The count this test is a share of (US-21 AC28): a row printed under the
+   *  count's name, in a unit this entry takes ("Neutrophils" in %), is filed
+   *  here, never refused and never multiplied out from the white count. */
+  shareOf?: string;
   /** In `unit`: a value no human sample reaches, set only where a ×1000
    *  conversion leads here (US-21 AC21). A CONVERTED row whose value or printed
    *  high bound passes it was printed a prefix away, so it is refused, never
@@ -97,17 +98,6 @@ const NOT_ON_YOUR_OWN = 'do not re-send it in another unit on your own';
 /** Real counts of these sit near zero (an eosinophil count of 0, severe
  *  neutropenia), so only WBC and platelets get the low-side check. */
 const LOW_SIDE_COUNTS = new Set(['wbc', 'platelets']);
-/** A differential in % is a share of the white count, not a count, and is
- *  never multiplied out from the WBC (US-21 AC15). */
-const PERCENT_OF_WBC_NOTE = { '%': {
-  note: 'A percentage is a share of the white count, not a count: this record keeps the absolute count (×10⁹/L or cells/µL), so look for that line on the same report',
-  assistant: 'Do not work the count out from the percentage',
-} };
-/** NRBC in % or "/100 WBC" is a ratio to the white count (US-21 AC19). */
-const NRBC_PER_100_WBC = {
-  note: 'NRBC per 100 white cells is a ratio, not a count: this record keeps the absolute count (×10⁹/L), so look for that line on the same report',
-  assistant: 'Do not work the count out from the ratio',
-};
 /** An enzyme activity: international units and "units" are the same unit. */
 const ENZYME_ALIASES = ['iu/l'];
 /** An electrolyte with one charge: mEq/L and mmol/L are the same number. */
@@ -192,11 +182,11 @@ export const LAB_CATALOG: LabCatalogEntry[] = [
   { key: 'rbc', label: 'RBC', group: 'haematology', unit: '×10¹²/L', aliases: ['red blood cells', 'red blood cell count', 'red cell count', 'erythrocytes'], unitAliases: COUNT_ALIASES_12 },
   { key: 'wbc', label: 'WBC', group: 'haematology', unit: '×10⁹/L', aliases: ['white blood cells', 'white blood cell count', 'white cell count', 'total white cell count', 'leukocytes', 'leucocytes'], unitAliases: COUNT_ALIASES_9, conversions: COUNT_PER_UL },
   { key: 'platelets', label: 'Platelets', group: 'haematology', unit: '×10⁹/L', aliases: ['platelet count', 'plt'], unitAliases: COUNT_ALIASES_9, conversions: COUNT_PER_UL },
-  { key: 'neutrophils', label: 'Neutrophils', group: 'haematology', unit: '×10⁹/L', aliases: ['neutrophil count', 'neut', ...absolute('neutrophils')], unitAliases: COUNT_ALIASES_9, conversions: COUNT_PER_UL, refusalNotes: PERCENT_OF_WBC_NOTE },
-  { key: 'lymphocytes', label: 'Lymphocytes', group: 'haematology', unit: '×10⁹/L', aliases: ['lymphocyte count', ...absolute('lymphocytes'), 'lymphs (absolute)'], unitAliases: COUNT_ALIASES_9, conversions: COUNT_PER_UL, refusalNotes: PERCENT_OF_WBC_NOTE },
-  { key: 'monocytes', label: 'Monocytes', group: 'haematology', unit: '×10⁹/L', aliases: ['monocyte count', ...absolute('monocytes'), 'monocytes(absolute)'], unitAliases: COUNT_ALIASES_9, conversions: COUNT_PER_UL, refusalNotes: PERCENT_OF_WBC_NOTE },
-  { key: 'eosinophils', label: 'Eosinophils', group: 'haematology', unit: '×10⁹/L', aliases: ['eosinophil count', ...absolute('eosinophils'), 'eos (absolute)'], unitAliases: COUNT_ALIASES_9, conversions: COUNT_PER_UL, refusalNotes: PERCENT_OF_WBC_NOTE },
-  { key: 'basophils', label: 'Basophils', group: 'haematology', unit: '×10⁹/L', aliases: ['basophil count', ...absolute('basophils'), 'baso (absolute)'], unitAliases: COUNT_ALIASES_9, conversions: COUNT_PER_UL, refusalNotes: PERCENT_OF_WBC_NOTE },
+  { key: 'neutrophils', label: 'Neutrophils', group: 'haematology', unit: '×10⁹/L', aliases: ['neutrophil count', 'neut', ...absolute('neutrophils')], unitAliases: COUNT_ALIASES_9, conversions: COUNT_PER_UL },
+  { key: 'lymphocytes', label: 'Lymphocytes', group: 'haematology', unit: '×10⁹/L', aliases: ['lymphocyte count', ...absolute('lymphocytes'), 'lymphs (absolute)'], unitAliases: COUNT_ALIASES_9, conversions: COUNT_PER_UL },
+  { key: 'monocytes', label: 'Monocytes', group: 'haematology', unit: '×10⁹/L', aliases: ['monocyte count', ...absolute('monocytes'), 'monocytes(absolute)'], unitAliases: COUNT_ALIASES_9, conversions: COUNT_PER_UL },
+  { key: 'eosinophils', label: 'Eosinophils', group: 'haematology', unit: '×10⁹/L', aliases: ['eosinophil count', ...absolute('eosinophils'), 'eos (absolute)'], unitAliases: COUNT_ALIASES_9, conversions: COUNT_PER_UL },
+  { key: 'basophils', label: 'Basophils', group: 'haematology', unit: '×10⁹/L', aliases: ['basophil count', ...absolute('basophils'), 'baso (absolute)'], unitAliases: COUNT_ALIASES_9, conversions: COUNT_PER_UL },
   { key: 'mcv', label: 'MCV', group: 'haematology', unit: 'fL', aliases: ['mean cell volume', 'mean corpuscular volume'] },
   { key: 'mch', label: 'MCH', group: 'haematology', unit: 'pg', aliases: ['mean cell haemoglobin', 'mean corpuscular hemoglobin'] },
   { key: 'mchc', label: 'MCHC', group: 'haematology', unit: 'g/L', aliases: ['mean cell haemoglobin concentration', 'mean corpuscular hemoglobin concentration'], conversions: { 'g/dl': 10 } }, // a decilitre is a tenth of a litre
@@ -204,12 +194,10 @@ export const LAB_CATALOG: LabCatalogEntry[] = [
   // US-21 AC19. RDW-SD is the width in fL, a test of its own beside RDW-CV in %.
   { key: 'rdw_sd', label: 'RDW-SD', group: 'haematology', unit: 'fL', aliases: [] },
   { key: 'mpv', label: 'MPV', group: 'haematology', unit: 'fL', aliases: ['mean platelet volume'] },
-  { key: 'immature_granulocytes', label: 'Immature granulocytes', group: 'haematology', unit: '×10⁹/L', aliases: ['immature granulocyte count', 'immature grans (abs)'], unitAliases: COUNT_ALIASES_9, conversions: COUNT_PER_UL, refusalNotes: PERCENT_OF_WBC_NOTE },
-  { key: 'reticulocytes', label: 'Reticulocytes', group: 'haematology', unit: '×10⁹/L', aliases: ['reticulocyte count', 'retic count', 'absolute reticulocyte count'], unitAliases: COUNT_ALIASES_9, conversions: { '×10¹²/l': 1000 }, ceiling: 2000, refusalNotes: { '%': {
-    note: 'A percentage is a share of the red cells, not a count: this record keeps the absolute count (×10⁹/L), so look for that line on the same report',
-    assistant: 'Do not work the count out from the percentage',
-  } } }, // 10¹² is a thousand 10⁹
-  { key: 'nrbc', label: 'NRBC', group: 'haematology', unit: '×10⁹/L', aliases: ['nucleated red blood cells', 'nucleated rbc', 'nucleated red cells'], unitAliases: COUNT_ALIASES_9, refusalNotes: { '%': NRBC_PER_100_WBC, '/100 wbc': NRBC_PER_100_WBC } },
+  { key: 'immature_granulocytes', label: 'Immature granulocytes', group: 'haematology', unit: '×10⁹/L', aliases: ['immature granulocyte count', 'immature grans (abs)'], unitAliases: COUNT_ALIASES_9, conversions: COUNT_PER_UL },
+  { key: 'reticulocytes', label: 'Reticulocytes', group: 'haematology', unit: '×10⁹/L', aliases: ['reticulocyte count', 'retic count', 'absolute reticulocyte count'], unitAliases: COUNT_ALIASES_9, conversions: { '×10¹²/l': 1000 }, ceiling: 2000 }, // 10¹² is a thousand 10⁹
+  { key: 'nrbc', label: 'NRBC', group: 'haematology', unit: '×10⁹/L', aliases: ['nucleated red blood cells', 'nucleated rbc', 'nucleated red cells'], unitAliases: COUNT_ALIASES_9 },
+  ...shareEntries(), // US-21 AC28: a % of the white or red cells, its own test (lab-catalog-shares.ts)
   // D-dimer only in fibrinogen-equivalent units: a bare ng/mL is often D-dimer
   // units (DDU), about half the FEU number, so no spelling without FEU converts.
   { key: 'd_dimer', label: 'D-dimer', group: 'haematology', unit: 'mg/L FEU', aliases: [], unitAliases: ['mg/l (feu)', 'µg/ml feu', 'µg/ml (feu)'], conversions: { 'ng/ml feu': 0.001, 'ng/ml (feu)': 0.001, 'µg/l feu': 0.001, 'µg/l (feu)': 0.001 } }, // µg/mL is mg/L; ng/mL is µg/L, a thousandth of mg/L
@@ -325,6 +313,7 @@ export const LAB_CATALOG: LabCatalogEntry[] = [
   { key: 'c_peptide', label: 'C-peptide', group: 'metabolic', unit: 'pmol/L', aliases: [], conversions: { 'ng/ml': 331.1, 'µg/l': 331.1, 'nmol/l': 1000 }, ceiling: 50000 }, // C-peptide 3020.3 g/mol; a nanomole is a thousand picomoles
   // Derived values the app does not derive (eAG from HbA1c, VLDL from triglycerides): kept as printed tests.
   { key: 'eag', label: 'eAG', group: 'metabolic', unit: 'mmol/L', aliases: ['estimated average glucose'], conversions: GLUCOSE },
+  { key: 'cholesterol_hdl_ratio', label: 'Cholesterol/HDL ratio', group: 'metabolic', unit: 'ratio', aliases: ['cholesterol total hdl ratio', 'total cholesterol hdl ratio', 'chol/hdl ratio', 'tc/hdl', 'tc/hdl ratio'] }, // one test under both stored names (US-21 AC29); no range, no flag
   { key: 'vldl', label: 'VLDL cholesterol', group: 'metabolic', unit: 'mmol/L', aliases: ['vldl-c', 'vldl chol'], conversions: { 'mg/dl': 0.02586 } }, // cholesterol 386.65 g/mol
   { key: 'lactate', label: 'Lactate', group: 'metabolic', unit: 'mmol/L', aliases: ['lactic acid'], conversions: { 'mg/dl': 0.111 } }, // lactic acid 90.08 g/mol
   { key: 'fructosamine', label: 'Fructosamine', group: 'metabolic', unit: 'µmol/L', aliases: [] },
@@ -357,6 +346,7 @@ export const LAB_PLAUSIBLE_RANGES: Readonly<Record<string, ValidationRange>> = {
   folate: { min: 0, max: 1000 }, // supplemented serum folate rarely passes 100 nmol/L
   ferritin: { min: 0, max: 500000 }, // haemophagocytic syndromes can pass 100,000 µg/L
   iron: { min: 0, max: 1000 }, // iron poisoning can pass 180 µmol/L (1,000 µg/dL)
+  ...shareRanges(), // US-21 AC28
 };
 
 /** The end of its plausible range a value passes once stored in its test's canonical unit (US-21
@@ -434,7 +424,7 @@ export function displayLabUnit(reportedUnit: string, entry?: LabCatalogEntry): s
   const norm = normalizeLabUnit(reportedUnit);
   if (entry) {
     const lower = norm.toLowerCase();
-    if (lower === entry.unit.toLowerCase() || entry.unitAliases?.includes(lower)) return entry.unit;
+    if (lower === entry.unit.toLowerCase() || entry.unitAliases?.includes(lower) || (!lower && factorOf(entry, lower) === 1)) return entry.unit;
   }
   return norm;
 }
@@ -463,9 +453,7 @@ export function labUnitRefusal(entry: LabCatalogEntry, unit: string, fault?: Cou
   if (labUnitTaken(entry, unit)) {
     return `${entry.label} in "${unit}" was not stored. ${WHOLE_COUNT}: ask the person whether the report means thousands per µL (×10³/µL); ${NOT_ON_YOUR_OWN}`;
   }
-  const refusal = `${entry.label} is stored in ${entry.unit}; this record takes ${acceptedLabUnits(entry).join(', ')}, not "${unit}"`;
-  const extra = entry.refusalNotes?.[normalizeLabUnit(unit).toLowerCase()];
-  return extra ? [refusal, extra.note, ...(extra.assistant ? [extra.assistant] : [])].join('. ') : refusal;
+  return `${entry.label} is stored in ${entry.unit}; this record takes ${acceptedLabUnits(entry).join(', ')}, not "${unit}"`;
 }
 
 /** The part of a refusal that says what to do next, where there is one: the
@@ -473,7 +461,7 @@ export function labUnitRefusal(entry: LabCatalogEntry, unit: string, fault?: Cou
 export function labUnitRefusalNote(entry: LabCatalogEntry | undefined, unit: string, fault?: CountFault | null): string | undefined {
   if (fault === 'scale') return SCALE_NOTE;
   if (entry && fault === 'ceiling') return `${ceilingNote(entry, unit)}. Check the report, then add it in ${entry.unit} with + Add a blood test`;
-  return labUnitTaken(entry, unit) ? WHOLE_COUNT_NOTE : entry?.refusalNotes?.[normalizeLabUnit(unit).toLowerCase()]?.note;
+  return labUnitTaken(entry, unit) ? WHOLE_COUNT_NOTE : undefined;
 }
 
 /** Why a row above its test's ceiling was refused (US-21 AC21): the ceiling is the catalogue's, never the row's number. */
@@ -529,7 +517,7 @@ export function canonicalLabValue(
 
 /** The factor from a matched spelling to the entry's unit, or `undefined` when it takes no such spelling. */
 function factorOf(entry: LabCatalogEntry, spelling: string): number | undefined {
-  if (!spelling) return undefined;
+  if (!spelling) return entry.unit === 'ratio' ? 1 : undefined; // a ratio prints with no unit (US-21 AC29)
   return spelling === entry.unit.toLowerCase() || entry.unitAliases?.includes(spelling) ? 1 : entry.conversions?.[spelling];
 }
 
@@ -715,6 +703,7 @@ export function resolveLabCatalogEntry(reportedName: string): LabCatalogEntry | 
   return ENTRY_BY_NAME.get(foldName(reportedName)) ?? ENTRY_BY_LOOSE_NAME.get(looseFold(reportedName)) ?? undefined;
 }
 
+export { labNameForUnit } from './lab-catalog-shares';
 
 /** A test's plain label wherever a person reads it: a core metric's, else
  *  the catalogue's, else its name title-cased (US-12 AC19). */
@@ -762,6 +751,8 @@ const GENERIC_NAME_WORDS = new Set([
   'reverse', 'soluble', 'terminal', 'tissue', 'type', 'unconjugated', 'unsaturated', 'uptake',
   // Cortisol by timing (US-07 AC9): clock words, as 'morning' and 'random' above.
   'evening', 'midnight',
+  // A share of a count (US-21 AC28): "neutrophils_pct", "NRBC per 100 WBC".
+  'pct', 'per',
 ]);
 
 /**
@@ -807,5 +798,5 @@ export function metricNameWords(minLength: number): string[] {
  */
 export const CATALOG_UNITS: readonly string[] = [...new Set([
   ...Object.values(UNIT_DEFS).flatMap((def) => [def.canonical, def.label.si, def.label.conventional]),
-  ...LAB_CATALOG.map((entry) => entry.unit),
+  ...LAB_CATALOG.map((entry) => entry.unit).filter((unit) => unit !== 'ratio'),
 ])].sort();

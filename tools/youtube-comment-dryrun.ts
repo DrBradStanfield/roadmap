@@ -142,7 +142,10 @@ function fetchComments(videoId: string, count: number): YouTubeComment[] {
 // Pipeline: classifier → conditional router → main LLM
 // ---------------------------------------------------------------------------
 
-async function callAnthropic(body: object): Promise<{ ok: boolean; text: string; raw: any }> {
+/** What callAnthropic keeps: the reply, or the status and a clipped error body, or the refusal. */
+interface CallRaw { status?: number; error?: string; stop_reason?: string; content?: Array<{ type: string; text?: string }> }
+
+async function callAnthropic(body: object): Promise<{ ok: boolean; text: string; raw: CallRaw }> {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {

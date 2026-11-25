@@ -1,6 +1,6 @@
 /**
- * SERVER-TRANSPORT lab extraction for the v2 builds — the upload functions
- * that POST to Brad's stateless extraction endpoint (api.lab-import-v2):
+ * SERVER-TRANSPORT lab extraction for the v2 builds — the upload function
+ * that POSTs to Brad's stateless extraction endpoint (api.lab-import-v2):
  * same Claude pipeline as the v1 proxy path, §7 transit-never-store,
  * per-IP + per-day caps server-side.
  *
@@ -15,22 +15,21 @@
  *  - Pages/self-host build: vite.config.standalone.ts redirects this module
  *    → byok-upload.ts (the user's own Anthropic key, browser-direct).
  */
-import { EXTRACTION_STOP_CODES } from '@roadmap/health-core/models';
-import * as z from '@roadmap/health-core/zod';
+import { requestFlags, type RequestFlags } from '@roadmap/health-core/upload-rules';
+import { uploadFailure } from '@roadmap/health-core/upload-failure';
 import { parseJsonResponse, PROXY_PATH } from './server-api';
-import type { BatchPollResponse, LabImportResult, PageContent, QuotaCheck, UploadErrorCode } from './api-types';
+import type { LabImportResult, PageContent, QuotaCheck, UploadErrorCode } from './api-types';
 
 const LAB_IMPORT_V2_URL = `${PROXY_PATH}/api/lab-import-v2`;
 
-const tooManyAnswer = z.object({ code: z.enum(['daily_limit', 'busy']) });
-/** A 429, read once by its code (US-12 AC9): busy is not the daily limit. A missing or
- *  unknown code, or no readable body, is the daily limit, as an older server meant. */
-async function tooMany(response: Response): Promise<{ error: string; errorCode: UploadErrorCode }> {
-  const body = await parseJsonResponse<unknown>(response).catch(() => null);
-  return tooManyAnswer.safeParse(body).data?.code === 'busy'
-    ? { error: 'Server busy. Please try again later.', errorCode: 'busy' }
-    : { error: 'Daily upload limit reached. You can upload more tomorrow.', errorCode: 'rate_limit' };
-}
+/** What a failed read says, by its code (health-core upload-failure.ts reads the code). */
+const FAILURE_TEXT: Partial<Record<UploadErrorCode, string>> = {
+  rate_limit: 'Daily upload limit reached. You can upload more tomorrow.',
+  busy: 'Server busy. Please try again later.',
+  refused: 'Not read',
+  too_long: 'Not read',
+  network: 'Network error',
+};
 
 export async function checkLabImportQuota(): Promise<QuotaCheck> {
   try {
@@ -44,120 +43,33 @@ export async function checkLabImportQuota(): Promise<QuotaCheck> {
   }
 }
 
+/**
+ * One file's read. `signal`: the upload's Cancel or Stop aborts it (US-12 AC28). `flags`: the
+ * shared upload state's request flags (health-core `requestFlags`): `ownDates` files a value on its
+ * own day (US-12 AC12), `undatedPrev` asks the day of an undated previous column (AC14),
+ * `refusedRows` lists refused values under "Not saved" (AC15).
+ */
 export async function labImport(
   pages: PageContent[],
   unitSystem: 'si' | 'conventional',
+  { signal, flags = requestFlags('web') }: { signal?: AbortSignal; flags?: RequestFlags } = {},
 ): Promise<{ result: LabImportResult | null; remaining?: number; error?: string; errorCode?: UploadErrorCode }> {
   try {
     const response = await fetch(LAB_IMPORT_V2_URL, {
       method: 'POST',
       // No Content-Type header — the route parses JSON regardless of it
       // (parseSimpleRequestJson). Same-origin via the app proxy; no CORS here.
-      // `ownDates`: this widget files a value on its own day (US-12 AC12);
-      // `undatedPrev`: it asks the day of an undated previous column (AC14);
-      // `refusedRows`: it lists refused values under "Not saved" (AC15).
-      body: JSON.stringify({ pages, unitSystem, ownDates: true, undatedPrev: true, refusedRows: true }),
+      body: JSON.stringify({ pages, unitSystem, ...flags }),
+      signal,
     });
-    if (response.status === 429) return { result: null, ...(await tooMany(response)) };
-    if (response.status === 422) {
-      // A file Claude declined or stopped short on: the code says which (US-15 AC34).
-      const code = (await parseJsonResponse<{ errorCode?: string }>(response))?.errorCode;
-      const stop = EXTRACTION_STOP_CODES.find(c => c === code);
-      return { result: null, error: 'Not read', errorCode: stop ?? 'server_error' };
-    }
-    if (!response.ok) return { result: null, error: 'Extraction failed', errorCode: 'server_error' };
-    const data = await parseJsonResponse<{ success: boolean; data?: LabImportResult; remaining?: number; error?: string }>(response);
-    if (!data?.success || !data.data) return { result: null, error: data?.error || 'Extraction failed', errorCode: 'server_error' };
-    return { result: data.data, remaining: data.remaining };
+    // undefined: said JSON but would not parse (upload-failure.ts reads it as a network error).
+    const body = await parseJsonResponse<{ success?: boolean; data?: LabImportResult; remaining?: number; error?: string }>(response).catch(() => undefined);
+    if (response.ok && body?.success && body.data) return { result: body.data, remaining: body.remaining };
+    const errorCode = uploadFailure(response.status, body);
+    return { result: null, error: FAILURE_TEXT[errorCode] ?? ((response.ok && body?.error) || 'Extraction failed'), errorCode };
   } catch (error) {
+    // The error's kind only: a parse error can quote the body, lab text included.
     console.warn('Lab import error:', error instanceof Error ? error.name : typeof error);
     return { result: null, error: 'Network error', errorCode: 'network' };
   }
-}
-
-/**
- * The poll token the batch POST handed back, per batch id. A batch id alone
- * does not read results — the server wants this too — and keeping it here means
- * the callers pass a batch id around exactly as they always did. It is dropped
- * when the batch ends; the map only ever holds this tab's own batches.
- */
-const pollTokens = new Map<string, string>();
-
-export async function labImportBatch(
-  files: Array<{ pages: PageContent[] }>,
-  // Used by the Pages build's queue (byok-upload.ts, US-12 AC5a). Here the
-  // batch is one request, unchanged.
-  _signal?: AbortSignal,
-): Promise<{ batchId: string | null; error?: string; errorCode?: UploadErrorCode }> {
-  try {
-    const response = await fetch(LAB_IMPORT_V2_URL, {
-      method: 'POST',
-      // No real name: a file name can hold a patient's name. Results come back
-      // by request index, and the modal maps the index to its file. `fileName`
-      // is a compatibility label that names nothing: a server older than
-      // 2026-10-13 requires the field, and CI ships this widget before the
-      // server. Drop it once every live server strips it.
-      body: JSON.stringify({ batch: true, ownDates: true, undatedPrev: true, refusedRows: true, files: files.map(({ pages }, i) => ({ fileName: `file-${i + 1}`, pages })) }),
-    });
-    if (response.status === 429) return { batchId: null, ...(await tooMany(response)) };
-    if (!response.ok) return { batchId: null, error: 'Failed to start batch processing', errorCode: 'server_error' };
-    const data = await parseJsonResponse<{ success: boolean; batchId?: string; pollToken?: string; error?: string }>(response);
-    if (!data?.success || !data.batchId) return { batchId: null, error: data?.error || 'Batch creation failed', errorCode: 'server_error' };
-    if (data.pollToken) pollTokens.set(data.batchId, data.pollToken);
-    return { batchId: data.batchId };
-  } catch (error) {
-    // The error's kind only: a parse error can quote the body, lab text included.
-    console.warn('Batch import error:', error instanceof Error ? error.name : typeof error);
-    return { batchId: null, error: 'Network error', errorCode: 'network' };
-  }
-}
-
-const pollCount = z.number().int().nonnegative();
-/** A poll answer as the pipeline reads it, checked once where it enters (US-12 AC24): counts it can
- *  show, and an end that says what ended. A result's own fields are read by the review, not here. */
-export const batchPollAnswer = z.union([
-  z.object({ status: z.enum(['processing', 'error']), completed: pollCount, total: pollCount }),
-  z.looseObject({ status: z.literal('ended'), completed: pollCount, total: pollCount,
-    results: z.array(z.looseObject({})).optional(), error: z.string().min(1).optional(), errorCode: z.string().optional() })
-    // The loop finishes only on results and throws only on error text (upload-pipeline.ts:350-352).
-    .refine(p => p.results !== undefined || p.error !== undefined),
-]);
-
-/** A failed poll that can change (a 5xx, a network throw, a drop while the body streams) answers
- *  `error` and the caller polls on. One that cannot (404, 401, 403, an answer that is not a poll)
- *  ends the watch (US-12 AC24). */
-export async function pollBatchStatus(batchId: string): Promise<BatchPollResponse> {
-  const token = pollTokens.get(batchId) ?? '';
-  // A late answer to an old token never drops the newer one a join stored since (US-12 AC25).
-  const drop = () => { if (pollTokens.get(batchId) === token) pollTokens.delete(batchId); };
-  const ended = (error: string, errorCode: UploadErrorCode): BatchPollResponse => {
-    drop();
-    return { status: 'ended', completed: 0, total: 0, error, errorCode };
-  };
-  let response: Response;
-  let text = '';
-  try {
-    // A POST so the token travels in the body: the server logs request URLs
-    // (morgan) and a logged token reads the extracted lab text back.
-    response = await fetch(LAB_IMPORT_V2_URL, {
-      method: 'POST',
-      body: JSON.stringify({ batchId, pollToken: token }),
-    });
-    // The body is part of the call: a drop while it streams can change, as a fetch throw can.
-    if (response.ok) text = await response.text();
-  } catch {
-    return { status: 'error', completed: 0, total: 0 };
-  }
-  if (response.status === 404) return ended('Batch not found — server may have restarted.', 'server_restart');
-  if (response.status === 401 || response.status === 403) return ended('Batch poll refused', 'server_error');
-  if (!response.ok) return { status: 'error', completed: 0, total: 0 };
-  let body: unknown = null;
-  try {
-    if ((response.headers.get('content-type') ?? '').includes('application/json')) body = JSON.parse(text);
-  } catch { /* malformed: refused below */ }
-  const poll = batchPollAnswer.safeParse(body);
-  if (!poll.success) return ended('Batch poll answer unreadable', 'server_error');
-  if (poll.data.status === 'ended') drop();
-  // The schema checks what the loop reads; each result's own shape is the review's to read.
-  return poll.data as BatchPollResponse;
 }

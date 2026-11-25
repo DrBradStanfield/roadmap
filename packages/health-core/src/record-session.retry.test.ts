@@ -22,8 +22,8 @@ class TestCloud extends MemoryAdapter {
   }
 }
 
-const OFFLINE = () => new StorageError('Dropbox did not answer', undefined, new TypeError('Failed to fetch'));
-const REVOKED = () => new StorageError('Dropbox call failed (401).', undefined, undefined, 401);
+const OFFLINE = () => new StorageError('Dropbox did not answer', undefined, new TypeError('Failed to fetch'), undefined, undefined, 'may-have-landed');
+const REVOKED = () => new StorageError('Dropbox call failed (401).', undefined, undefined, 401, undefined, 'refused');
 const clock = Date.parse('2026-11-13T10:00:00.000Z');
 
 function cloudHost(store: TestCloud, stopped = { value: false }): RecordHost {
@@ -75,7 +75,7 @@ function deviceHost(store: DeviceStore, open: { value: boolean }): RecordHost {
 }
 
 const add = (session: RecordSession, id: string) =>
-  session.edit((file) => void file.measurements.push(createMeasurement({ id, metricType: 'weight', value: 80, recordedAt: '2026-11-01', createdAt: new Date(clock).toISOString() })));
+  session.edit((file) => void file.measurements.push(createMeasurement({ id, metricType: 'weight', value: 80, recordedAt: '2026-11-01', createdAt: new Date(clock).toISOString() })), session.shownErase);
 const stored = (store: TestCloud): RoadmapFile => JSON.parse(store.cloud.files.get(ROADMAP_FILE_NAME)!.json);
 
 /** A session whose one save has failed with `error`. */
@@ -154,7 +154,7 @@ describe('RecordSession.retry (US-09 AC30, lead A1 step e)', () => {
 
   // Owner F1 (a), the one ruled flip: a 403 is retried (it was answered null before).
   it('after a 403, starts one save, which lands once the provider takes it', async () => {
-    const { store, session } = await failedSession(new StorageError('Forbidden', undefined, undefined, 403));
+    const { store, session } = await failedSession(new StorageError('Forbidden', undefined, undefined, 403, undefined, 'refused'));
     store.fail = null;
     expect(await session.retry()).toBe(true);
     expect(store.writes).toBe(2);
@@ -206,7 +206,7 @@ describe('RecordSession.retry (US-09 AC30, lead A1 step e)', () => {
 it('RecordSession.retry: never due on the device tier, even with its files open', async () => {
   const store = new DeviceStore(new MemoryCloud());
   const session = await RecordSession.open(deviceHost(store, { value: true }));
-  store.fail = new StorageError('Storage full', undefined, new DOMException('full', 'QuotaExceededError'));
+  store.fail = new StorageError('Storage full', undefined, new DOMException('full', 'QuotaExceededError'), undefined, undefined, 'refused');
   add(session, 'a');
   await expect(session.flush()).rejects.toThrow();
   expect(session.saveStatus).toBe('not-saved');
@@ -244,5 +244,68 @@ describe('the session tells the host when a retry becomes owed or stops being ow
     await session.erase(async () => { during = calls.at(-1); });
     expect(during).toEqual(['not-saved-on-device', false]);
     expect(calls.at(-1)).toEqual(['saved', false]);
+  });
+});
+
+// US-09 AC58: the report key clears when a save lands, so a failure that
+// comes back after a recovery is reported again; one that repeats before is not.
+describe('US-09 AC58: once per cause until a save lands', () => {
+  it('fail, fail, land, fail: the second is a repeat, the third reports again', async () => {
+    const store = new TestCloud(new MemoryCloud());
+    const repeats: boolean[] = [];
+    const session = await RecordSession.open({ ...cloudHost(store), report: (_e, at) => void repeats.push(at.repeat) });
+    store.fail = OFFLINE();
+    add(session, 'a');
+    await expect(session.flush()).rejects.toThrow();
+    add(session, 'b');
+    await expect(session.flush()).rejects.toThrow();
+    store.fail = null;
+    await session.flush();
+    store.fail = OFFLINE();
+    add(session, 'c');
+    await expect(session.flush()).rejects.toThrow();
+    expect(repeats).toEqual([false, true, false]);
+  });
+
+  it('a save that lands while the host\'s remoteChanged throws still clears the key', async () => {
+    const cloud = new MemoryCloud();
+    const store = new TestCloud(cloud);
+    const repeats: boolean[] = [];
+    const host: RecordHost = {
+      ...cloudHost(store),
+      remoteChanged: () => { throw new Error('listener failed'); },
+      report: (_e, at) => { if (at.op === 'persist') repeats.push(at.repeat); },
+    };
+    const session = await RecordSession.open(host);
+    store.fail = OFFLINE();
+    add(session, 'a');
+    await expect(session.flush()).rejects.toThrow();
+    const other = await RecordSession.open({ ...cloudHost(new TestCloud(cloud)), deviceId: () => 'phone' });
+    add(other, 'phone-row');
+    await other.flush();
+    store.fail = null;
+    await session.flush(); // lands, folds the phone's row in, and the listener throws
+    expect(session.file.measurements.map((m) => m.id).sort()).toEqual(['a', 'phone-row']);
+    store.fail = OFFLINE();
+    add(session, 'c');
+    await expect(session.flush()).rejects.toThrow();
+    expect(repeats).toEqual([false, false]);
+  });
+
+  it('device tier: fail, a hide\'s synchronous write lands, the same failure: both report', async () => {
+    const store = new DeviceStore(new MemoryCloud());
+    const repeats: boolean[] = [];
+    const session = await RecordSession.open({ ...deviceHost(store, { value: true }), report: (_e, at) => void repeats.push(at.repeat) });
+    const full = () => new StorageError('full', undefined, undefined, undefined, undefined, 'refused');
+    store.fail = full();
+    add(session, 'a');
+    await expect(session.flush()).rejects.toThrow();
+    add(session, 'b');
+    session.flushSync(); // lands through writeSync
+    expect(session.saveStatus).toBe('saved');
+    store.fail = full();
+    add(session, 'c');
+    await expect(session.flush()).rejects.toThrow();
+    expect(repeats).toEqual([false, false]);
   });
 });

@@ -26,10 +26,10 @@ vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 
 import { useErase } from './useErase';
-import { ERASE_DONE, ERASE_FAILED, WRITE_REFUSED } from '../lib/erase-copy';
+import { eraseDone, ERASE_FAILED, WRITE_REFUSED } from '../lib/erase-copy';
 import { trackProductEvent } from '../lib/server-api';
 import { Sentry } from '../lib/sentry';
-import { WritesStoppedError } from '../lib/error-diagnostics';
+import { WRITES_STOPPED_CASES } from '../testing/writes-stopped-cases';
 
 const id = (epoch: number) => JSON.stringify([epoch, `2026-11-0${epoch}T10:00:00.000Z`]);
 
@@ -82,6 +82,30 @@ describe('US-16 AC2a: the erase the screen shows', () => {
     expect(result.current.eraseUnshown()).toBe(true);
   });
 
+  it('H37: `loaded`, the saves\' gate, opens only when the first read shows, never when it fails', () => {
+    const shown = setup();
+    expect(shown.result.current.loaded).toBe(false); // pending: saves off
+    act(() => { shown.result.current.store.dispatch({ type: 'loaded', shown: true }); });
+    expect(shown.result.current.loaded).toBe(true);
+    const failed = setup();
+    act(() => { failed.result.current.store.dispatch({ type: 'loaded', shown: false }); });
+    expect(failed.result.current.loaded).toBe(false); // L2: saves stay off
+    act(() => { failed.result.current.store.dispatch({ type: 'loaded', shown: true }); });
+    expect(failed.result.current.loaded).toBe(false); // the first read moves once
+  });
+
+  it('US-11 AC10 (H114): `firstReadFailed` holds only after the first read failed, never while pending or once shown', () => {
+    const shown = setup();
+    expect(shown.result.current.firstReadFailed).toBe(false); // pending
+    act(() => { shown.result.current.store.dispatch({ type: 'loaded', shown: true }); });
+    expect(shown.result.current.firstReadFailed).toBe(false);
+    const failed = setup();
+    act(() => { failed.result.current.store.dispatch({ type: 'loaded', shown: false }); });
+    expect(failed.result.current.firstReadFailed).toBe(true);
+    act(() => { failed.result.current.store.dispatch({ type: 'loaded', shown: true }); });
+    expect(failed.result.current.firstReadFailed).toBe(true); // the first read moves once
+  });
+
   it('a refused save is said once per erase it was asked under, and re-reads the record once', () => {
     const { doors, result } = setup();
     store.identity = 'e2'; // the store moved; the screen still shows e1
@@ -106,8 +130,8 @@ describe('US-16 AC2a: the erase the screen shows', () => {
 
   it('Q3: a news refusal while another writer\'s erase is heard re-reads exactly once, through the machine', () => {
     const { doors, result } = setup();
-    // The page wires these two (useRecordApply: its loaded effect, its REMOTE_CHANGED listener); dispatched here as it does.
-    act(() => { result.current.store.dispatch({ type: 'loaded' }); });
+    // The page wires these two (useRecordApply: its firstReadShown, its REMOTE_CHANGED listener); dispatched here as it does.
+    act(() => { result.current.store.dispatch({ type: 'loaded', shown: true }); });
     store.identity = 'e2';
     act(() => { result.current.store.dispatch({ type: 'arrived', identity: 'e2' }); }); // its read fails: no event follows
     expect(doors.shows).toHaveBeenCalledTimes(1);
@@ -115,11 +139,17 @@ describe('US-16 AC2a: the erase the screen shows', () => {
     expect(alerts).toEqual([WRITE_REFUSED]);
     expect(doors.shows).toHaveBeenCalledTimes(2); // one for the refusal: the machine's, not a second from the page
     expect(doors.reread).not.toHaveBeenCalled();
+    // US-16 AC2g (H39): each read carries its id; only the latest one's failure makes the heard erase unreachable.
+    expect(doors.shows.mock.calls).toEqual([[1], [2]]);
+    act(() => { result.current.store.dispatch({ type: 'read-failed', id: 1 }); });
+    expect(result.current.unreachable).toBe(false);
+    act(() => { result.current.store.dispatch({ type: 'read-failed', id: 2 }); });
+    expect(result.current.unreachable).toBe(true);
   });
 
   it('Fable Q3 (2b-3): a refusal says WRITE_REFUSED before its re-read starts, heard erase or not', () => {
     const { result } = setup();
-    act(() => { result.current.store.dispatch({ type: 'loaded' }); });
+    act(() => { result.current.store.dispatch({ type: 'loaded', shown: true }); });
     store.identity = 'e2';
     act(() => result.current.writeRefused('e1')); // nothing heard: the page's re-read
     expect(order).toEqual(['alert', 'reread refused']);
@@ -133,7 +163,7 @@ describe('US-16 AC2a: the erase the screen shows', () => {
 
   it('Fable Q2(b) (2b-3): the machine\'s re-read for a refusal spends the answer mark, as a \'refused\' re-read does; one for a record the screen left does not', () => {
     const { doors, result } = setup();
-    act(() => { result.current.store.dispatch({ type: 'loaded' }); });
+    act(() => { result.current.store.dispatch({ type: 'loaded', shown: true }); });
     store.identity = 'e2';
     act(() => { result.current.store.dispatch({ type: 'arrived', identity: 'e2' }); }); // its read fails
     order.length = 0;
@@ -146,7 +176,7 @@ describe('US-16 AC2a: the erase the screen shows', () => {
 
   it('2b-3 R2: a repeat refusal (no news) while an erase is heard re-reads but leaves the answer mark unspent', () => {
     const { doors, result } = setup();
-    act(() => { result.current.store.dispatch({ type: 'loaded' }); });
+    act(() => { result.current.store.dispatch({ type: 'loaded', shown: true }); });
     store.identity = 'e2';
     act(() => { result.current.store.dispatch({ type: 'arrived', identity: 'e2' }); }); // its read fails
     act(() => result.current.writeRefused('e1')); // news: said, read, spent
@@ -175,7 +205,7 @@ describe('US-16 AC2a: the erase the screen shows', () => {
       await waitFor(() => expect(commits).toEqual(['e1']));
       vi.mocked(trackProductEvent).mockClear();
       setTimeout(() => {
-        page.store.dispatch({ type: 'loaded' });
+        page.store.dispatch({ type: 'loaded', shown: true });
         page.store.dispatch({ type: 'read', identity: id(1) }); // B
         page.store.dispatch({ type: 'read', identity: id(2) }); // C overtakes it before React commits
       }, 0);
@@ -230,7 +260,7 @@ describe('US-16 AC2a: this tab\'s erase', () => {
   it('locks while it writes, refusals then are no news, and on success it forgets the record, shows the new erase and says it is done', async () => {
     const { doors, result } = setup();
     let finish!: () => void;
-    store.next = () => new Promise(r => { finish = () => { store.identity = 'e2'; r({ success: true, chatErased: true }); }; });
+    store.next = () => new Promise(r => { finish = () => { store.identity = 'e2'; r({ success: true, chat: 'erased' }); }; });
     let done!: Promise<boolean>;
     act(() => { done = result.current.eraseAll(); });
     expect(result.current.erasing).toBe(true);
@@ -242,10 +272,10 @@ describe('US-16 AC2a: this tab\'s erase', () => {
     expect(result.current.shownErase).toBe('e2');
     expect(store.shown).toBe('e2');
     expect(doors.clearDrafts).toHaveBeenCalledTimes(1);
-    expect(alerts).toEqual([ERASE_DONE]);
+    expect(alerts).toEqual([eraseDone('erased')]);
     // A refusal of a save asked before the erase is no news either.
     act(() => result.current.writeRefused('e1'));
-    expect(alerts).toEqual([ERASE_DONE]);
+    expect(alerts).toEqual([eraseDone('erased')]);
     expect(doors.reread).not.toHaveBeenCalled();
   });
 
@@ -255,7 +285,7 @@ describe('US-16 AC2a: this tab\'s erase', () => {
       store.identity = 'e2';
       result.current.store.dispatch({ type: 'read', identity: 'e2' }); // the read loses to this tab's erase
       expect(doors.clearDrafts).not.toHaveBeenCalled();
-      return { success: true, chatErased: true };
+      return { success: true, chat: 'erased' };
     };
     await act(async () => { await result.current.eraseAll(); });
     expect(doors.clearDrafts).toHaveBeenCalledTimes(1);
@@ -276,6 +306,40 @@ describe('US-16 AC2a: this tab\'s erase', () => {
     expect(alerts).toEqual([ERASE_FAILED, 'Not saved']);
   });
 
+  it.each([
+    ['erased', 'Your health record was not deleted: the erase could not be saved. Your chat history was deleted. Try again.'],
+    ['unreached', 'Your health record was not deleted: the erase could not be saved. Your chat history could not be reached just now. Try again.'],
+    ['unread', 'Your health record was not deleted: the erase could not be saved. Your chat history could not be read, so any chats you saved are still in your cloud folder, in chat-history.json. Try again.'],
+  ])('US-11 AC13 (leads S57a, S58): an erase put back after its chat step (%s) says the record was not deleted and what the chat step did', async (chat, words) => {
+    const { doors, result } = setup();
+    store.next = async () => ({ success: false, chat });
+    await act(async () => { expect(await result.current.eraseAll()).toBe(false); });
+    expect(doors.forget).not.toHaveBeenCalled();
+    expect(alerts).toEqual([words]);
+  });
+
+  it('US-11 AC13: an erase that stopped with its own words after the chat step adds what the chat step did; one refused before it says its words alone', async () => {
+    const { result } = setup();
+    store.next = async () => { store.identity = 'e2'; return { success: false, error: 'Not saved.', chat: 'erased' }; };
+    await act(async () => { await result.current.eraseAll(); });
+    store.next = async () => ({ success: false, error: 'Already deleting your data.', chat: null });
+    await act(async () => { await result.current.eraseAll(); });
+    expect(alerts).toEqual(['Not saved. Your chat history was deleted.', 'Already deleting your data.']);
+  });
+
+  it('US-11 AC13: an erase that stands says what its chat step did, from the shared table', async () => {
+    const { result } = setup();
+    for (const chat of ['erased', 'unreached', 'unread'] as const) {
+      store.next = async () => { store.identity = `e-${chat}`; return { success: true, chat }; };
+      await act(async () => { await result.current.eraseAll(); });
+    }
+    expect(alerts.map(a => a.split('\n')[0])).toEqual([
+      'Your health record and chat history are deleted.',
+      'Your health record is deleted. Your chat history could not be reached just now; it is erased on your next chat.',
+      'Your health record is deleted. Your chat history could not be read, so any chats you saved are still in your cloud folder, in chat-history.json.',
+    ]);
+  });
+
   it('US-16 AC2f: an erase whose write throws ends, unlocked, and says it failed', async () => {
     const { doors, result } = setup();
     const thrown = new Error('network');
@@ -291,9 +355,9 @@ describe('US-16 AC2a: this tab\'s erase', () => {
   });
 
   it.each([
-    { name: 'a log-off refusal', error: () => new WritesStoppedError(), reports: 0 },
+    ...WRITES_STOPPED_CASES,
     { name: 'any other throw', error: () => new Error('network'), reports: 1 },
-  ])('US-09 AC2c, lead A19: an erase whose write throws $name reports $reports time(s) and says the same', async ({ error, reports }) => {
+  ])('US-09 AC2c, AC59, lead A19: an erase whose write throws $name reports $reports time(s) and says the same', async ({ error, reports }) => {
     const { doors, result } = setup();
     store.next = () => Promise.reject(error());
     vi.mocked(Sentry.captureException).mockClear();
@@ -309,7 +373,7 @@ describe('US-16 AC2a: this tab\'s erase', () => {
     const confirm = vi.fn(() => true);
     vi.stubGlobal('confirm', confirm);
     let finish!: () => void;
-    const next = vi.fn(() => new Promise<Record<string, unknown>>(r => { finish = () => { store.identity = 'e2'; r({ success: true, chatErased: true }); }; }));
+    const next = vi.fn(() => new Promise<Record<string, unknown>>(r => { finish = () => { store.identity = 'e2'; r({ success: true, chat: 'erased' }); }; }));
     store.next = next;
     let first!: Promise<boolean>;
     let second!: Promise<boolean>;
@@ -321,7 +385,7 @@ describe('US-16 AC2a: this tab\'s erase', () => {
     expect(alerts).toEqual([]);
     await act(async () => { finish(); expect(await first).toBe(true); });
     expect(result.current.erasing).toBe(false);
-    expect(alerts).toEqual([ERASE_DONE]);
+    expect(alerts).toEqual([eraseDone('erased')]);
   });
 
   it('a cancelled confirm erases nothing', async () => {

@@ -6,7 +6,7 @@
 // store has taken its value. Shared by BloodTestTimeline and
 // StartingInfoVitals.
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { isLpaUnit } from '@roadmap/health-core/cell-unit';
 import { localDay } from '@roadmap/health-core/merge';
 import type { LpaUnit, UnitSystem } from '@roadmap/health-core/units';
@@ -18,8 +18,9 @@ type Typed<K extends string> = Partial<Record<K, string>>;
 /** The rows a cell expects under its slots (`SaveTask.expected`). */
 type Expected = SaveTask['expected'];
 
-/** This load of the page. A draft restored by the next load was not typed on
- *  it, and a matrix built again on this one (a phone turned) keeps it. */
+/** This load of the page. A unit chosen on it re-reads only the cells typed
+ *  by hand on it (`restamp`), never a draft restored by the next load; a
+ *  matrix built again on this one (a phone turned) keeps the mark. */
 const PAGE = Math.random().toString(36).slice(2);
 
 /** What a draft keeps about a typed cell beside its text: the unit it was
@@ -27,10 +28,10 @@ const PAGE = Math.random().toString(36).slice(2);
  *  AC1; an Lp(a) cell keeps its unit's label, US-05 AC2); the
  *  rows the page showed under its slots when the user began typing there,
  *  kept until the cell is emptied, never retaken by typing again (US-03 AC2);
- *  the load of the page it was typed on, by the user or the chat; the load
- *  the user last typed into it by hand, never the chat's (`restamp`); and why
- *  a commit refused its value, until it is typed into again. */
-interface CellMeta { unit?: CellUnit; expected?: Expected; typedOn?: string; byHand?: string; refused?: string }
+ *  the load the user last typed into it by hand, never the chat's
+ *  (`restamp`); and why a commit refused its value, until it is typed into
+ *  again. */
+interface CellMeta { unit?: CellUnit; expected?: Expected; byHand?: string; refused?: string }
 
 export interface MatrixDraft<K extends string> {
   /** `date` is kept only when the user picked it: an unpicked draft column is
@@ -94,10 +95,9 @@ function withCell<K extends string>(
  * there and its slot still empty; one filled elsewhere since (the draft
  * outlives the page) is not, and what was typed into it is left in the draft,
  * never committed. `rowsUnder(day, key)`: the rows the page shows under the
- * cell's slots on that day, by metric (null: empty). `latestDay(key)`: the
- * last day the page shows a value for it. `cellOf(key)`: the cell a key is
- * typed into, when one cell takes two (a blood pressure's halves); its keys
- * share one expectation. `legacyUnit(key)`: the unit a restored cell kept
+ * cell's slots on that day, by metric (null: empty). `cellOf(key)`: the
+ * cell a key is typed into, when one cell takes two (a blood pressure's
+ * halves); its keys share one expectation. `legacyUnit(key)`: the unit a restored cell kept
  * before cells carried their unit is stamped with as it is restored: this
  * device's units as the page started, before the record's applied
  * (useUnits' `startUnitOf`). A best guess: the units its last visit showed,
@@ -107,11 +107,10 @@ function withCell<K extends string>(
 export function useMatrixDraft<K extends string>(storageKey: string, record: {
   onScreen: (column: string, key: K) => boolean;
   rowsUnder: (day: string, key: K) => Expected;
-  latestDay: (key: K) => string | undefined;
   cellOf?: (key: K) => string;
   legacyUnit?: (key: K) => CellUnit | undefined;
 }) {
-  const { onScreen, rowsUnder, latestDay, cellOf = (key: K) => key, legacyUnit } = record;
+  const { onScreen, rowsUnder, cellOf = (key: K) => key, legacyUnit } = record;
   const idOf = ([column, key]: CellRef<K>) => `${column ?? 'new'}|${cellOf(key)}`;
   const [state, setState] = useState<MatrixDraft<K>>(() => {
     // Only a page on the chosen record restores its draft (US-11 AC6): any other may be showing another record.
@@ -131,13 +130,12 @@ export function useMatrixDraft<K extends string>(storageKey: string, record: {
   const { values } = state.draft;
   const metaOf = (cell: CellRef<K>): CellMeta | undefined => state.meta[idOf(cell)];
   /** A draft cell whose slots hold other rows on the page than it expects
-   *  (US-03 AC2): shown as the clash, and never standing in for the record.
-   *  The store refuses its write whatever the page shows. */
+   *  (US-03 AC2): shown as the clash. The store refuses its write whatever
+   *  the page shows. */
   const taken = (key: K) => {
     const expected = metaOf([null, key])?.expected;
     return !!values[key] && Object.entries(rowsUnder(date, key)).some(([metric, id]) => id !== (expected?.[metric] ?? null));
   };
-  const typedHere = (key: K) => metaOf([null, key])?.typedOn === PAGE;
 
   useEffect(() => {
     // After a log-off this page began, the device was wiped, so a stale draft
@@ -175,7 +173,7 @@ export function useMatrixDraft<K extends string>(storageKey: string, record: {
      *  a unit switch must keep the quantity. `byHand` false: the chat filled
      *  it, and the user has not typed into it since. */
     type: (cell: CellRef<K>, typed: string, unit?: CellUnit, byHand = true) => setState((s) => set(s, cell, typed, (was) => ({
-      unit, expected: was?.expected ?? rowsUnder(cell[0] ?? dayOf(s), cell[1]), typedOn: PAGE, byHand: byHand ? PAGE : undefined,
+      unit, expected: was?.expected ?? rowsUnder(cell[0] ?? dayOf(s), cell[1]), byHand: byHand ? PAGE : undefined,
     }))),
     /** The day the user picked. Anything else is never taken: iOS's Reset
      *  hands back '', and the column keeps its day. Another day is another
@@ -224,19 +222,6 @@ export function useMatrixDraft<K extends string>(storageKey: string, record: {
      *  cell of the saved column on the draft's day, both typed and shown. */
     clashes: (key: K) => !!values[key] && !!state.backfills[date]?.[key] && onScreen(date, key),
     taken,
-    /** Whether the draft's value for `key` may stand in for the record in
-     *  the plan and the chat (US-03 AC6): typed on this load of the page, its
-     *  slot still holding the row it expects, and not dated before the
-     *  record's own latest value. A draft restored from the device waits
-     *  until it is typed into. Each render judges the draft again against the
-     *  record it shows, so a remote change or an upload ends its standing in
-     *  only by filling its slot or saving a later value. Each matrix adds the
-     *  rest: a value it can save, clear of clashes. */
-    lends: (key: K) => {
-      if (!typedHere(key) || taken(key)) return false;
-      const latest = latestDay(key);
-      return !latest || date >= latest;
-    },
     /** A commit's answer (US-03 AC4), each cell sent with why it was
      *  refused, or undefined: the saved cells leave the draft, and each
      *  refused one stays, with why, until it is typed into again. An emptied
@@ -252,30 +237,3 @@ export function useMatrixDraft<K extends string>(storageKey: string, record: {
   };
 }
 
-/**
- * Keep what the draft lends the plan and the chat to the values that may
- * stand in for the record there (US-03 AC6): `values` maps each field to its
- * value, or to undefined to leave it to the record, and to the day the value
- * is dated (US-07 AC7). Only a field whose value or day changed is sent. The page keeps what is sent apart from the form, and nothing else
- * writes it, so what was sent is what the page holds. A matrix leaving the
- * page takes back what it sent, and one mounting sends it again: a phone
- * turned across 768 px builds the whole form again.
- */
-export function useDraftMirror<F extends string>(
-  values: Array<[F, number | undefined, string?]>, send: (field: F, value: number | undefined, day?: string) => void,
-): void {
-  const sent = useRef(new Map<F, [number | undefined, string | undefined]>());
-  useEffect(() => {
-    for (const [field, value, day] of values) {
-      const was = sent.current.get(field);
-      if (was ? was[0] === value && was[1] === day : value === undefined) continue;
-      sent.current.set(field, [value, day]);
-      if (day === undefined) send(field, value);
-      else send(field, value, day);
-    }
-  });
-  useEffect(() => () => {
-    for (const [field, [value]] of sent.current) if (value !== undefined) send(field, undefined);
-    sent.current.clear();
-  }, [send]);
-}

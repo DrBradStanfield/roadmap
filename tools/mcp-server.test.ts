@@ -14,7 +14,9 @@ import { fileURLToPath } from 'node:url';
 import { PassThrough } from 'node:stream';
 import { createEmptyFile, createMeasurement, type RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { localDay } from '@roadmap/health-core/merge';
-import { FEEDBACK_HIDDEN, MCP_TOOLS, OUTPUTS } from '../packages/health-core/src/mcp-tools';
+import { OUTPUTS } from '../packages/health-core/src/mcp-tools';
+import { FEEDBACK_HIDDEN } from '../packages/health-core/src/mcp-feedback';
+import { MCP_TOOLS } from '../packages/health-core/src/mcp-tool-catalogue';
 import { REPO_PUBLIC } from '../packages/health-core/src/plan';
 import { run as runCli } from './edit-record';
 import { handle, MAX_LINE_BYTES, serve } from './mcp-server';
@@ -397,7 +399,7 @@ describe('US-32 — nothing that could reach the network is imported', () => {
     join(here, '..', 'packages', 'health-core', 'src', 'file-adapter.ts'),
     join(here, '..', 'packages', 'health-core', 'src', 'mcp-tools.ts'),
     // Split out of mcp-tools.ts (issue #429): the same guarantee covers the moved code.
-    ...['mcp-tool-contract.ts', 'mcp-feedback.ts', 'mcp-import.ts', 'mcp-tool-catalogue.ts'].map((name) => join(here, '..', 'packages', 'health-core', 'src', name)),
+    ...['mcp-tool-contract.ts', 'mcp-feedback.ts', 'mcp-import.ts', 'mcp-tool-catalogue.ts', 'mcp-refusals.ts'].map((name) => join(here, '..', 'packages', 'health-core', 'src', name)),
     join(here, '..', 'packages', 'health-core', 'src', 'plan.ts'),
   ];
 

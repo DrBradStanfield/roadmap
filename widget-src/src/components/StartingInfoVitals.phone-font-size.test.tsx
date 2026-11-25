@@ -27,7 +27,7 @@ function fontSizeAt(el: Element, width: number): number {
 function renderVitals() {
   return render(
     <StartingInfoVitals vitalsHistory={[]} unitSystem="si"
-      onSave={vi.fn()} onCorrectValue={vi.fn()} onDraftValue={() => {}} formStage={3}
+      onSave={vi.fn()} onCorrectValue={vi.fn()} formStage={3}
       plan={{ age: 50, idealBodyWeight: 73, heightCm: 178 }} unitOverrides={{}} onToggleFieldUnit={() => {}}/>,
   );
 }

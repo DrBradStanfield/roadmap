@@ -61,9 +61,15 @@ enum EraseText {
         }
     }
 
+    /// The record erased here, not yet taken by the cloud: notSent's first words, and what a
+    /// Disconnect held over that erase says (US-25 AC16i).
+    static func unsent(_ provider: CloudProvider) -> String {
+        "Your record is erased on this iPhone, but \(provider.label) could not take the erase just now. The app sends it when \(provider.label) answers; until then the copy there is unchanged."
+    }
+
     /// Erased here, but the cloud has not taken it yet: the app sends it later.
     static func notSent(provider: CloudProvider, chatErased: Bool, cloudChat: CloudChat) -> String {
-        var text = "Your record is erased on this iPhone, but \(provider.label) could not take the erase just now. The app sends it when \(provider.label) answers; until then the copy there is unchanged."
+        var text = unsent(provider)
         text += chatErased ? " Your chat history and reminders are deleted." : " Your reminders are deleted. Your chat history could not be deleted, so it is still on this iPhone."
         text += websiteChat(provider, cloudChat)
         return text
@@ -90,7 +96,7 @@ enum EraseText {
     /// How a person deletes this app's samples themselves (US-72 AC16, Brad 2026-11-12): the
     /// Settings path the live cards name (`LiveFooter.healthPath`, "Apps ›" from iOS 18) and the
     /// system's own labels, seen on the iOS 27.2 simulator 2026-11-11.
-    private static let healthDeleteSteps = "open \(LiveFooter.healthPath), tap Data from “Health Roadmap”, then Delete All Data from “Health Roadmap”"
+    private static let healthDeleteSteps = "open \(LiveFooter.healthPath), tap Data from “Dr Brad”, then Delete All Data from “Dr Brad”"
 
     /// Apple Health refused to delete the app's samples: the record erase still stands.
     static let healthNotErased = " The readings this app wrote to Apple Health could not be deleted. To delete them yourself, \(healthDeleteSteps)."

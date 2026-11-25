@@ -18,6 +18,7 @@
  */
 import { asArray, isObject, SchemaTooNewError } from './migrate';
 import { cmpStr } from './merge';
+import { eraseLater } from './erase-identity';
 
 export const CHAT_HISTORY_SCHEMA_VERSION = 1;
 
@@ -55,6 +56,9 @@ export interface ChatFileConversation {
   updatedAt: string; // ISO — last message/edit; drives "newer side wins" fields
   /** Monotonic tombstone — once true on any device, true everywhere forever. */
   deleted?: boolean;
+  /** The record's erase identity (`eraseIdentityOf`) when the first question
+   *  was asked. Set once at creation; the merge keeps the earlier (US-11 AC11). */
+  under?: string;
   messages: ChatFileMessage[];
 }
 
@@ -104,8 +108,9 @@ export function migrateChatHistoryFile(
   const rawMeta = isObject(raw.meta) ? raw.meta : {};
   const conversations: ChatFileConversation[] = asArray<unknown>(raw.conversations)
     .filter((c): c is Record<string, unknown> => isObject(c) && typeof c.id === 'string' && c.id.length > 0)
-    .map((c) => ({
+    .map(({ under, ...c }) => ({
       ...c,
+      ...(typeof under === 'string' ? { under } : {}),
       id: c.id as string,
       title: typeof c.title === 'string' ? c.title : '',
       createdAt: typeof c.createdAt === 'string' ? c.createdAt : opts.now,
@@ -148,16 +153,28 @@ export function mergeMessages(a: ChatFileMessage[], b: ChatFileMessage[]): ChatF
   );
 }
 
+/** The earlier of two stamps by the erase order; a tie (equal, or neither
+ *  readable) by string, so the merge stays commutative (US-11 AC11). */
+function earlierStamp(a: string | undefined, b: string | undefined): string | undefined {
+  if (a === undefined || b === undefined) return a ?? b;
+  if (eraseLater(a, b)) return b;
+  if (eraseLater(b, a)) return a;
+  return cmpStr(a, b) <= 0 ? a : b;
+}
+
 function mergeConversation(
   a: ChatFileConversation,
   b: ChatFileConversation,
 ): ChatFileConversation {
   const newer = a.updatedAt >= b.updatedAt ? a : b;
   const deleted = a.deleted === true || b.deleted === true;
+  const under = earlierStamp(a.under, b.under);
   return {
     // Newer side wins title/updatedAt and unknown per-conversation fields (H7).
     ...newer,
     createdAt: a.createdAt <= b.createdAt ? a.createdAt : b.createdAt,
+    // The stamp is set once, so either side's is kept, a tombstone's too.
+    ...(under === undefined ? {} : { under }),
     // A tombstone carries no content at all: no messages, and no title. The
     // title is the user's own words (it is the first thing they typed), so an
     // erase that blanks it must not lose that blank to the "newer side wins"

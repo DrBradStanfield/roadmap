@@ -33,15 +33,19 @@ export type RowSubject = MetricType | 'blood_pressure' | { referenceLow?: number
 
 /** `full`: the grid's line, unit and all. `bare`: the row's target, with no
  *  unit (the row prints the unit under the value); null when there is
- *  nothing to print yet, so the row shows its date alone. */
-export type RowTarget = { full: string; bare: string | null };
+ *  nothing to print yet, so the row shows its date alone. `alone`: `bare` with
+ *  its unit, for a row with no value to print the unit under (H83). */
+export type RowTarget = { full: string; bare: string | null; alone: string | null };
 
 /** What the vitals grid says in place of a plan target, in the form's order
  *  (US-62 AC13): the plan needs a height, and the weight target needs sex. */
 export const TARGET_NEEDS_HEIGHT = 'Set height to see target';
 export const TARGET_NEEDS_SEX = 'Set sex to see target';
-const needsHeight: RowTarget = { full: TARGET_NEEDS_HEIGHT, bare: null };
-const needsSex: RowTarget = { full: TARGET_NEEDS_SEX, bare: null };
+const needsHeight: RowTarget = { full: TARGET_NEEDS_HEIGHT, bare: null, alone: null };
+const needsSex: RowTarget = { full: TARGET_NEEDS_SEX, bare: null, alone: null };
+
+/** A row's target, unitless and with `unit` after it, as `full` prints it: "Optimal <1.4 mmol/L", "Normal <5.7%". */
+const rowLine = (full: string, bare: string, unit: string): RowTarget => ({ full, bare, alone: unit === '%' ? `${bare}%` : `${bare} ${unit}` });
 
 /** The waist target's number, in the display unit: the first waist, at the
  *  unit's display step, that the plan grades elevated at this height. A waist
@@ -63,26 +67,26 @@ export function rowTarget(metric: RowSubject, unit: CellUnit, grading: Grading, 
   if (typeof metric === 'object') return printedRange(metric.referenceLow ?? null, metric.referenceHigh ?? null);
   if (metric === 'waist') {
     if (plan?.heightCm == null) return needsHeight;
-    const line = `<${healthyWaistBelow(plan.heightCm, unit as UnitSystem)}`;
-    return { full: `Target: ${line} ${getDisplayLabel('waist', unit as UnitSystem)}`, bare: `Target ${line}` };
+    const line = `<${healthyWaistBelow(plan.heightCm, unit as UnitSystem)}`, label = getDisplayLabel('waist', unit as UnitSystem);
+    return rowLine(`Target: ${line} ${label}`, `Target ${line}`, label);
   }
   if (!grading) return null;
   if (metric === 'blood_pressure') {
     if (!plan) return needsHeight;
     const line = `<${bpTargetFor(plan.age)}/80`;
-    return { full: `Target: ${line} mmHg`, bare: `Target ${line}` };
+    return rowLine(`Target: ${line} mmHg`, `Target ${line}`, 'mmHg');
   }
   if (metric === 'weight') {
     if (!plan) return needsHeight;
     if (plan.idealBodyWeight == null) return needsSex;
-    const line = formatDisplayValue('weight', plan.idealBodyWeight, unit as UnitSystem);
-    return { full: `Target: ${line} ${getDisplayLabel('weight', unit as UnitSystem)}`, bare: `Target ${line}` };
+    const line = formatDisplayValue('weight', plan.idealBodyWeight, unit as UnitSystem), label = getDisplayLabel('weight', unit as UnitSystem);
+    return rowLine(`Target: ${line} ${label}`, `Target ${line}`, label);
   }
-  if (isLpaUnit(unit)) return { full: lpaRefHint(unit), bare: `Normal ${lpaLine(unit)}` };
+  if (isLpaUnit(unit)) return rowLine(lpaRefHint(unit), `Normal ${lpaLine(unit)}`, unit);
   const hint = refHintVariant(metric, grading.sex);
   if (!hint) return null;
   const system = unit === 'si' ? 'si' : 'conv';
-  return { full: hint[system], bare: hint.bare[system] };
+  return rowLine(hint[system], hint.bare[system], getDisplayLabel(metric, unit as UnitSystem));
 }
 
 /** A lab's printed range: "Ref: 135–145" in the grid, as the upload review
@@ -91,5 +95,6 @@ export function rowTarget(metric: RowSubject, unit: CellUnit, grading: Grading, 
 function printedRange(low: number | null, high: number | null): RowTarget | null {
   if (low == null && high == null) return null;
   const bare = low != null && high != null ? `${low}–${high}` : high != null ? `<${high}` : `>${low}`;
-  return { full: `Ref: ${low ?? '–'}–${high ?? '–'}`, bare: `Ref ${bare}` };
+  // The range comes without its unit, and a lab test's row always has a value: `alone` is `bare`.
+  return { full: `Ref: ${low ?? '–'}–${high ?? '–'}`, bare: `Ref ${bare}`, alone: `Ref ${bare}` };
 }

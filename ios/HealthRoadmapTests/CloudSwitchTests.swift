@@ -155,6 +155,22 @@ final class CloudSwitchTests: XCTestCase, CloudFixtures {
         try assertStillOnDrive(sync)
     }
 
+    /// US-25 AC16i (S50b): an erase made here that Drive has not taken, over a passing failure,
+    /// stops a switch before anything closes: the session stays open, no sign-in starts.
+    func testASwitchWaitsWhileAnEraseIsUnsentOverAPassingFailure_US25_AC16i() async throws {
+        let (_, sync) = try await driveOpen()
+        // The erase reads the record, then Drive stops answering, as a dead network does.
+        drive.onMedia = { [drive] in drive?.online = false }
+        let erased = try await sync.erase(chatHistory: nil) { _ in true }
+        XCTAssertEqual(erased?.success, false)
+        XCTAssertEqual(erased?.erased, true, "made here, not sent")
+        let outcome = try await sync.switchTo(.dropbox, authenticate: noSignIn)
+        guard case .stopped(.eraseUnsent) = outcome else { return XCTFail("the switch waits on the erase: \(outcome)") }
+        XCTAssertEqual(SyncStatusText.switchEnded(outcome, from: .googleDrive, to: .dropbox, connected: sync.provider), EraseText.unsent(.googleDrive))
+        guard case .open = sync.connection else { return XCTFail("nothing closed: \(sync.connection)") }
+        try assertStillOnDrive(sync)
+    }
+
     /// Owner's ruling: an engine throw during a switch's copy-down is a stop too.
     func testASwitchStopsWhenTheEngineThrowsOnTheCopyDown_US25_AC11n() async throws {
         let (_, sync) = try await driveOpen(engine: try throwingEngine())

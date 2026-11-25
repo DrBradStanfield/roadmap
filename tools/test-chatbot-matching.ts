@@ -55,8 +55,8 @@
  *   user_context?: object      answer check only: the raw payload a widget sends as the chat's context
  *                             (chatContextOf's shape: form fields, unitSystem, medications, screenings).
  *                             It goes through production's resolveChatContext, and the answer call
- *                             gets production's buildSystemBlocks (so the evidence and knowledge-overview
- *                             blocks too) with the fixture's posture, which it must name: the widget's is
+ *                             gets it in production's buildSystemBlocks (as every answer call does,
+ *                             US-15 AC24a) with the fixture's posture, which it must name: the widget's is
  *                             'doctor'. An explicit {} is production's empty context ('{}', no data
  *                             entered). Any other payload that makes no plan undeclared, has a key the
  *                             widget never sends, or loses a field to its range exits the harness before
@@ -98,13 +98,14 @@
  *   npx tsx tools/test-chatbot-matching.ts <any flags above> --estimate   # price the run, make no API call
  *
  * Every live run costs money from the same credits as production. Brad 2026-11-10: no run without
- * his yes, and give him the --estimate figure first. A run prints SUMMARY lines with the actual
+ * his yes, and give him the --estimate figures first, the "up to ... if the cache never hits" one as
+ * the price he approves (US-15 AC24b). A run prints SUMMARY lines with the actual
  * cost: one for the router, one for the answer calls.
  *
  * --answer-check: for entries with must_mention/must_not_mention/max_length_chars,
- * also calls the main LLM (CHAT_MODEL; --answer-model overrides) with the full production context: blocks 1-3
- * (system prompt + algorithm + products knowledge) PLUS matched blog content
- * loaded from the handles the router returned, or from `answer_handles` (block 4). The check runs N times
+ * also calls the main LLM (CHAT_MODEL; --answer-model overrides) with the system production's buildSystemBlocks
+ * builds (US-15 AC24a): the cached base blocks, the posture, the user data ('{}' with no user_context) and the
+ * matched blog content loaded from the handles the router returned, or from `answer_handles`. The check runs N times
  * (matching --answer-check-runs, default = --runs) and requires majority pass so
  * a single stochastic blip doesn't flip the test. Loads user data only from a fixture's user_context.
  *

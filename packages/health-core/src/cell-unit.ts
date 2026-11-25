@@ -26,6 +26,13 @@ export function recordLpaUnit(saved: unknown, unitSystem: UnitSystem | undefined
 
 const isSystem = (unit: CellUnit): unit is UnitSystem => unit === 'si' || unit === 'conventional';
 
+/** A core metric the units table holds. A read value may name any other (the extraction's schema takes any text): it has
+ *  no range, unit or step here, and the write refuses it alone (`unknown-metric`). */
+export const isCellMetric = (metric: string): metric is MetricType => Object.prototype.hasOwnProperty.call(UNIT_DEFS, metric);
+
+/** A unit a value of `metric` is typed in: one of its two systems, or one of Lp(a)'s three for Lp(a) alone. */
+export const unitFits = (metric: MetricType, unit: CellUnit): boolean => isSystem(unit) || (metric === 'lpa' && isLpaUnit(unit));
+
 /** A number typed in `unit`, as the record stores it. */
 export function cellToSI(metric: MetricType, typed: number, unit: CellUnit): number {
   return isSystem(unit) ? toCanonicalValue(metric, typed, unit) : reportedToCanonical(metric, typed, unit)!.valueSI;

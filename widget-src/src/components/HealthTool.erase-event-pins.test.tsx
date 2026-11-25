@@ -43,7 +43,8 @@ import { BT_TIMELINE_DRAFT_KEY, DRAFTS_CLEARED_EVENT, MIRROR_CHANGED_EVENT } fro
 import { ERASE_STALE_TAB } from '@roadmap/health-core/record-session';
 import { BACKEND_KEY } from '../storage/web-record-host';
 import { trackProductEvent } from '../lib/server-api';
-import { ERASE_FAILED, WRITE_REFUSED } from '../lib/erase-copy';
+import { eraseDone, ERASE_FAILED, WRITE_REFUSED } from '../lib/erase-copy';
+import { Sentry } from '../lib/sentry';
 import { openAboutYou, seedGuest, showTables, useHealthToolLifecycle, trackLiveRefresh, stopLiveRefresh } from '../testing/health-tool-harness';
 import { deleteButton } from '../testing/settings';
 
@@ -62,8 +63,6 @@ vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn(), captureMe
 vi.mock('../lib/server-api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../lib/server-api')>()),
   trackProductEvent: vi.fn(),
-  trackABImpression: vi.fn(),
-  trackABConversion: vi.fn(),
 }));
 vi.mock('../lib/chat-api', () => ({ listConversations: () => Promise.resolve(null), getChatGate: () => null }));
 vi.mock('./ChatEmbed', () => ({
@@ -133,12 +132,12 @@ const statinChange: ProposedEdit = { kind: 'medication', medicationKey: 'statin'
 function chatMakesBanners() {
   act(() => chat.proposeEdit!([statinChange, parseProposedEdit('propose_profile_edit', { height: { value: 185, unit: 'cm' } })!]));
 }
-/** The blood-test matrix holds an unsaved LDL of 3.2 the chat filled in (US-16 AC2): on the device and lent to the plan. */
+/** The blood-test matrix holds an unsaved LDL of 3.2 the chat filled in (US-16 AC2), kept on the device. */
 async function matrixHoldsDraft(view: RenderResult) {
   act(() => chat.proposeEdit!([ldlDraft()]));
   await settle(50);
   expect(localStorage.getItem(BT_TIMELINE_DRAFT_KEY) ?? '').toContain('3.2');
-  expect(numberPaths(chat.context!(), 3.2)).not.toEqual([]);
+  expect(numberPaths(chat.context!(), 3.2)).toEqual([]); // unsaved: the chat never reads it (US-03 AC6)
   expect([...view.container.querySelectorAll<HTMLInputElement>('.bt-timeline input')].some(i => i.value === '3.2')).toBe(true);
 }
 const draftGone = (view: RenderResult) => {
@@ -269,9 +268,9 @@ class HeldCloud extends MemoryAdapter {
 async function cloudGuest(adapter: MemoryAdapter): Promise<RenderResult> {
   localStorage.setItem(BACKEND_KEY, 'memory'); // a cloud page runs with its backend remembered
   await initRoadmapStore(adapter);
-  await saveChangedMeasurements(PROFILE, {});
-  await addMeasurement('weight', 82, '2026-09-01');
-  await saveMedication('statin', 'rosuvastatin', 10, 'mg');
+  await saveChangedMeasurements(PROFILE, {}, getShownErase());
+  await addMeasurement('weight', 82, '2026-09-01', getShownErase());
+  await saveMedication('statin', 'rosuvastatin', 10, 'mg', getShownErase());
   await flushRoadmapStore();
   return openPage();
 }
@@ -369,7 +368,7 @@ describe('US-16 AC2a, US-11 AC6: this tab\'s erase whose write fails (useErase e
     await settle(50);
     expect(cleared).toHaveBeenCalledTimes(1);
     // record-session's flush error (SAVE_FAILED, not exported), as said today: not ERASE_FAILED, and no word that the erase is kept to retry.
-    expect(alerts).toEqual(['Cloud sync failed — your latest changes are still on this device.']);
+    expect(alerts).toEqual(['Cloud sync failed — your latest changes are still on this device. Your chat history was deleted.']); // US-11 AC13: and what the chat step did
     expect(getEraseIdentity()).not.toBe(before); // the store holds the erased copy and retries it
     expect(getShownErase()).toBe(getEraseIdentity());
     expect(banners()).toHaveLength(0);
@@ -418,6 +417,29 @@ describe('US-16 AC2a, US-11 AC6: this tab\'s erase whose write fails (useErase e
     }
     await initRoadmapStore(new MemoryAdapter(cloud)); // the next load
     expect(localStorage.getItem(BT_TIMELINE_DRAFT_KEY)).toBeNull();
+  });
+
+  it('US-11 AC12: the write lands and both clears fail (the session\'s, then the page\'s): one report, and the done message carries no warning', async () => {
+    const cloud = new MemoryCloud();
+    const view = await cloudGuest(new HeldCloud(cloud));
+    await matrixHoldsDraft(view);
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.mocked(Sentry.captureException).mockClear();
+    const remove = Storage.prototype.removeItem;
+    const refusing = vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(function (this: Storage, key: string) {
+      if (key === BT_TIMELINE_DRAFT_KEY) return; // refused, silently: each clear fails to read back
+      remove.call(this, key);
+    });
+    try {
+      fireEvent.click(await waitFor(() => deleteButton()));
+      await waitFor(() => expect(alerts).toHaveLength(1), { timeout: 3000 });
+      await settle(50);
+    } finally {
+      refusing.mockRestore();
+    }
+    const clearReports = vi.mocked(Sentry.captureException).mock.calls.filter(([, ctx]) => (ctx as { tags?: { op?: string } } | undefined)?.tags?.op === 'clear-off-file');
+    expect(clearReports).toHaveLength(1);
+    expect(alerts).toEqual([eraseDone('erased')]);
   });
 });
 
@@ -480,9 +502,9 @@ describe('Fix 4 D2 (US-16 AC2a, US-34 AC1): the two-pass fold\'s window, between
     const cloud = new MemoryCloud();
     const adapter = new TwoPassCloud(cloud);
     await initRoadmapStore(adapter);
-    await saveChangedMeasurements(PROFILE, {});
-    await addMeasurement('weight', 82, '2026-09-01');
-    await addMeasurement('ldl', 2.1, '2026-08-15');
+    await saveChangedMeasurements(PROFILE, {}, getShownErase());
+    await addMeasurement('weight', 82, '2026-09-01', getShownErase());
+    await addMeasurement('ldl', 2.1, '2026-08-15', getShownErase());
     await flushRoadmapStore();
     const view = await openPage();
     showTables(view.container);
@@ -504,9 +526,9 @@ describe('Fix 4 D2 (US-16 AC2a, US-34 AC1): the two-pass fold\'s window, between
       // Another device erases; this tab's next save folds it in, and an edit made while its first write is out
       // sends it round again. The second write waits: the window.
       await anotherWriterErases(new MemoryAdapter(cloud));
-      const loop = adapter.arm(() => { void addMeasurement('waist', 90, '2026-09-02'); });
+      const loop = adapter.arm(() => { void addMeasurement('waist', 90, '2026-09-02', getShownErase()); });
       releaseLoop = loop.release;
-      await addMeasurement('weight', 81, '2026-09-05');
+      await addMeasurement('weight', 81, '2026-09-05', getShownErase());
       let flushed: Promise<void> = Promise.resolve();
       await act(async () => { flushed = flushRoadmapStore().catch(() => {}); await loop.reached; await drain(); });
 
@@ -553,9 +575,9 @@ describe('Fix 4 D2 (US-16 AC2a, US-34 AC1): the two-pass fold\'s window, between
     const cloud = new MemoryCloud();
     const adapter = new TwoPassCloud(cloud);
     await initRoadmapStore(adapter);
-    await saveChangedMeasurements(PROFILE, {});
-    await addMeasurement('weight', 82, '2026-09-01');
-    await addMeasurement('ldl', 2.1, '2026-08-15');
+    await saveChangedMeasurements(PROFILE, {}, getShownErase());
+    await addMeasurement('weight', 82, '2026-09-01', getShownErase());
+    await addMeasurement('ldl', 2.1, '2026-08-15', getShownErase());
     await flushRoadmapStore();
     const view = await openPage();
     showTables(view.container);
@@ -572,9 +594,9 @@ describe('Fix 4 D2 (US-16 AC2a, US-34 AC1): the two-pass fold\'s window, between
     let releaseLoop = () => {};
     try {
       await anotherWriterErases(new MemoryAdapter(cloud));
-      const loop = adapter.arm(() => { void addMeasurement('waist', 90, '2026-09-02'); });
+      const loop = adapter.arm(() => { void addMeasurement('waist', 90, '2026-09-02', getShownErase()); });
       releaseLoop = loop.release;
-      await addMeasurement('weight', 81, '2026-09-05');
+      await addMeasurement('weight', 81, '2026-09-05', getShownErase());
       let flushed: Promise<void> = Promise.resolve();
       await act(async () => { flushed = flushRoadmapStore().catch(() => {}); await loop.reached; await drain(); });
       expect(getEraseIdentity()).not.toBe(before);
@@ -621,15 +643,15 @@ describe('Fix 4 D2 (US-16 AC2a, US-34 AC1): the two-pass fold\'s window, between
     const cloud = new MemoryCloud();
     const adapter = new TwoPassCloud(cloud);
     await initRoadmapStore(adapter);
-    await saveChangedMeasurements(PROFILE, {});
-    await addMeasurement('weight', 82, '2026-09-01');
+    await saveChangedMeasurements(PROFILE, {}, getShownErase());
+    await addMeasurement('weight', 82, '2026-09-01', getShownErase());
     await flushRoadmapStore();
     const view = await openPage();
     openAboutYou(view.container);
     const before = getEraseIdentity();
     await anotherWriterErases(new MemoryAdapter(cloud));
-    const loop = adapter.arm(() => { void addMeasurement('waist', 90, '2026-09-02'); });
-    await addMeasurement('weight', 81, '2026-09-05');
+    const loop = adapter.arm(() => { void addMeasurement('waist', 90, '2026-09-02', getShownErase()); });
+    await addMeasurement('weight', 81, '2026-09-05', getShownErase());
     let flushed: Promise<void> = Promise.resolve();
     await act(async () => { flushed = flushRoadmapStore().catch(() => {}); await loop.reached; await drain(); });
     expect(getShownErase()).toBe(before); // the window

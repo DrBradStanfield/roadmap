@@ -13,6 +13,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, cleanup, renderHook } from '@testing-library/react';
 import type { LatestMeasurementsResult } from '../lib/api-types';
+import type { ShownCopy } from './useRecordReads';
 
 const id = (epoch: number) => JSON.stringify([epoch, epoch === 0 ? null : `2026-11-0${epoch}T10:00:00.000Z`]);
 const A = id(0); // the record shown at load
@@ -33,7 +34,7 @@ vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../storage/roadmap-store', () => ({ REMOTE_CHANGED_EVENT: 'hr:remote-changed' }));
 
 import { trackProductEvent } from '../lib/server-api';
-import { ERASE_DONE, WRITE_REFUSED } from '../lib/erase-copy';
+import { eraseDone, WRITE_REFUSED } from '../lib/erase-copy';
 import { useErase } from './useErase';
 import { useRecordApply } from './useRecordApply';
 
@@ -63,7 +64,7 @@ function setup(loaded = true) {
     setInputs: vi.fn(),
     applyLists: vi.fn(),
     units: { shown: vi.fn(), offered: vi.fn(), pending: vi.fn((): undefined => undefined) },
-    later: { markSaved: vi.fn(), flushPendingSave: vi.fn(), profileDirty: vi.fn(() => false), clearAnswered: vi.fn() },
+    later: { markSaved: vi.fn(), flushPendingSave: vi.fn(), flushListSaves: vi.fn(), profileDirty: vi.fn(() => false), clearAnswered: vi.fn(), savedProfile: vi.fn(() => ({})) },
     reloadValues: vi.fn(async (): Promise<LatestMeasurementsResult | null> => {
       log.push('read');
       await Promise.resolve();
@@ -72,21 +73,22 @@ function setup(loaded = true) {
       return RESULT;
     }),
   };
-  const hook = renderHook(({ loaded }: { loaded: boolean }) => {
+  const hook = renderHook(() => {
     // The two hooks as HealthTool builds them; its reread door drops a failed read's rejection here.
     const erase = useErase({
       clearDrafts: () => {}, forget: () => {},
       reread: reason => { void Promise.resolve(page.signal(reason)).catch(() => {}); },
-      shows: () => page.shows(),
+      shows: id => page.shows(id),
       spend: () => fx.later.clearAnswered(true),
     } as Parameters<typeof useErase>[0]);
     const page = useRecordApply({
       setInputs: fx.setInputs, reloadValues: fx.reloadValues, applyLists: fx.applyLists,
       units: fx.units as unknown as Parameters<typeof useRecordApply>[0]['units'],
-      erase: erase.store, loaded, later: () => fx.later,
+      erase: erase.store, later: () => fx.later,
     });
     return { erase, page };
-  }, { initialProps: { loaded } });
+  });
+  if (loaded) act(() => { hook.result.current.page.firstReadShown(); }); // the page's load, as HealthTool's loadData ends
   const reads = () => fx.reloadValues.mock.calls.length;
   return { fx, hook, reads, now: () => hook.result.current };
 }
@@ -113,14 +115,27 @@ const PATHS: Path[] = [
   ['loading-held, then the page shows its first read', async (p) => {
     await announced(B);
     expect(p.reads()).toBe(0); // waits for the first read
-    p.hook.rerender({ loaded: true });
+    expect(p.now().erase.loaded).toBe(false);
+    act(() => { p.now().page.firstReadShown(); });
     await settle();
+    expect(p.now().erase.loaded).toBe(true); // the saves open (H37)
   }, { counted: 1, reads: 1 }, false],
   ['loading-held, then the first read fails', async (p) => {
     await announced(B);
     expect(p.reads()).toBe(0);
     act(() => { p.now().page.firstReadFailed(new Error('first read failed (test)')); });
     await settle();
+    expect(p.now().erase.loaded).toBe(false); // the saves stay off (L2, H37)
+  }, { counted: 1, reads: 1 }, false],
+  ['H37 (rule R2): this tab\'s erase ends before the first read shows; a later arrival waits for that read', async (p) => {
+    const erase = ownErase(p, { success: true, chat: 'erased' });
+    await erase.finish(B); // this tab's erase
+    expect(p.now().erase.loaded).toBe(false); // the saves stay off until the first read shows
+    await announced(C); // another writer's, above it
+    expect(p.reads()).toBe(0); // held, where before H37 it read at once
+    act(() => { p.now().page.firstReadShown(); });
+    await settle();
+    expect(p.now().erase.loaded).toBe(true);
   }, { counted: 1, reads: 1 }, false],
   ['another writer\'s change held behind a dirty profile, then the erase', async (p) => {
     p.fx.later.profileDirty.mockReturnValue(true);
@@ -129,14 +144,14 @@ const PATHS: Path[] = [
     await announced(B);
     // The erase's read showed the held change too: the save that cleans the profile reads nothing more.
     p.fx.later.profileDirty.mockReturnValue(false);
-    act(() => { p.now().page.saved(); });
+    act(() => { p.now().page.settled(); });
     await settle();
   }, { counted: 1, reads: 1 }],
   ['it arrives during this tab\'s erase, and wins (own-end at it)', async (p) => {
-    const erase = ownErase(p, { success: true, chatErased: true });
+    const erase = ownErase(p, { success: true, chat: 'erased' });
     await announced(B);
     await erase.finish();
-    expect(log).toContain(`say ${ERASE_DONE}`);
+    expect(log).toContain(`say ${eraseDone('erased')}`);
   }, { counted: 1, reads: 1 }],
   ['it arrives during this tab\'s erase, whose write moves nothing (own-failed)', async (p) => {
     // The store took B in before this erase began, and announces it a pass late (the two-pass fold, H25).
@@ -172,7 +187,7 @@ describe('fix 4 (2b-3): the count of another writer\'s erase', () => {
     const page = setup(false);
     await announced(null);
     await announced(B);
-    page.hook.rerender({ loaded: true });
+    act(() => { page.now().page.firstReadShown(); });
     await settle();
     expect({ counted: counted(), reads: page.reads() }).toEqual({ counted: 1, reads: 1 });
   });
@@ -217,7 +232,7 @@ describe('fix 4 (2b-3 R1, Fable): an arrival carrying the erase the machine show
     await announced(B);
     expect(page.reads()).toBe(0); // held: the typing stays
     page.fx.later.profileDirty.mockReturnValue(false);
-    act(() => { page.now().page.saved(); });
+    act(() => { page.now().page.settled(); });
     await settle();
     expect({ counted: counted(), reads: page.reads() }).toEqual({ counted: 0, reads: 1 });
   });
@@ -251,15 +266,116 @@ describe('fix 4 (2b-3), Fable: L1, a heard erase whose read fails, is never left
     act(() => { page.now().erase.writeRefused(A); });
     await settle();
     expect(alerts()).toBe(1);
+    expect(page.now().erase.unreachable).toBe(true); // H39: B's latest read failed
     await announced(C);
     const before = page.reads();
     expect(before).toBe(3); // B's read, the refusal's, C's: each failed
+    expect(page.now().erase.unreachable).toBe(true); // C's read failed too
     page.fx.fail = false;
     act(() => { page.now().erase.writeRefused(A); });
     await settle();
     expect(page.reads()).toBe(before + 1); // the re-read
     expect(page.now().erase.shownErase).toBe(C); // and it showed C
+    expect(page.now().erase.unreachable).toBe(false); // the read landed
     // Q4: one alert per erase a save was asked under; A was said already.
     expect(alerts()).toBe(1);
+  });
+
+  it('US-34 AC10 (H16): B heard, its read fails, then a refused weight save re-reads its values: that read writes the record read (B\'s), never A\'s copy', async () => {
+    const page = setup();
+    page.fx.fail = true;
+    await announced(B);
+    expect(page.now().erase.shownErase).toBe(A); // B's read failed: the page still shows A
+    page.fx.fail = false;
+    page.fx.later.profileDirty.mockReturnValue(true);
+    await announced(null); // a change held behind a dirty profile: the page's copy would be A's
+    // useLongitudinalSave's finish re-reads after a refused save too.
+    await act(async () => { await page.now().page.ownSave(); });
+    const [shown] = page.fx.reloadValues.mock.calls.at(-1) as unknown as [ShownCopy];
+    expect(shown()).toBeUndefined(); // the record read: B's, as before AC10
+    // A read under an earlier erase than the page shows writes nothing.
+    rec.identity = A;
+    act(() => { page.now().erase.store.dispatch({ type: 'read', identity: B }); }); // the page now shows B
+    await act(async () => { await page.now().page.ownSave(); });
+    const [older] = page.fx.reloadValues.mock.calls.at(-1) as unknown as [ShownCopy];
+    expect(older()).toBeNull();
+  });
+});
+
+describe('US-16 AC2g (H39): the machine tracks the latest read of a heard erase', () => {
+  /** The next read held until its release; it then lands, or fails when `fails`. */
+  function held(page: ReturnType<typeof setup>, fails: boolean) {
+    let release!: () => void;
+    const gate = new Promise<void>(r => { release = r; });
+    page.fx.reloadValues.mockImplementationOnce(async () => {
+      log.push('read');
+      await gate;
+      if (fails) throw new Error('read failed (test)');
+      return RESULT;
+    });
+    return async () => { await act(async () => { release(); }); await settle(); };
+  }
+
+  it('US-16 AC2g (H39): another writer\'s erase whose read fails: unreachable until a read lands; no new alert (Q4)', async () => {
+    const page = setup();
+    page.fx.fail = true;
+    await announced(B);
+    expect(page.reads()).toBe(1);
+    expect(page.now().erase.unreachable).toBe(true);
+    // A refusal under the old erase: said once, re-read (Q3); that read fails too, so it still holds.
+    act(() => { page.now().erase.writeRefused(A); });
+    await settle();
+    act(() => { page.now().erase.writeRefused(A); });
+    await settle();
+    expect(alerts()).toBe(1); // no new alert (Q4)
+    expect(page.reads()).toBe(3);
+    expect(page.now().erase.unreachable).toBe(true);
+    // The next refusal's read lands: B shown, reachable, still one alert.
+    page.fx.fail = false;
+    act(() => { page.now().erase.writeRefused(A); });
+    await settle();
+    expect(page.reads()).toBe(4);
+    expect(page.now().erase.shownErase).toBe(B);
+    expect(page.now().erase.unreachable).toBe(false);
+    expect(alerts()).toBe(1);
+  });
+
+  it('US-16 AC2g (H39, F1): an older erase\'s read failing after a newer erase arrived leaves the newer one reachable', async () => {
+    const page = setup();
+    const failB = held(page, true);
+    const failC = held(page, true);
+    await announced(B); // B's read, held open
+    await announced(C); // C's read, held open
+    await failB();
+    expect(page.now().erase.unreachable).toBe(false); // B's failure is not C's: C's read is still in flight
+    await failC();
+    expect(page.now().erase.unreachable).toBe(true); // C's own read failed
+    expect(page.reads()).toBe(2);
+  });
+
+  it('US-16 AC2g (H39, F2): an arrival\'s read dropped inside this tab\'s erase, then own-failed\'s read fails: unreachable', async () => {
+    const page = setup();
+    const landB = held(page, false);
+    await announced(B); // B's read, held open
+    const erase = ownErase(page, { success: false, error: 'not saved (test)' });
+    await landB(); // it lands inside the erase: dropped, B still heard
+    expect(page.now().erase.shownErase).toBe(A);
+    page.fx.fail = true;
+    await erase.finish(); // nothing moved: own-failed reads B again, and that read fails
+    expect(page.reads()).toBe(2);
+    expect(page.now().erase.unreachable).toBe(true);
+  });
+
+  it('US-16 AC2g (H39, F4): the stale echo of the shown erase lands its read: heard cleared, reachable', async () => {
+    const page = setup();
+    page.fx.fail = true;
+    await announced(B); // heard; its read fails
+    expect(page.now().erase.unreachable).toBe(true);
+    page.fx.fail = false;
+    rec.identity = A; // the store reports the erase the screen shows
+    await announced(A, false); // its late echo: a plain remote change, whose read lands at A
+    expect(page.now().erase.shownErase).toBe(A);
+    expect(page.now().erase.store.getSnapshot().heard).toBeNull();
+    expect(page.now().erase.unreachable).toBe(false);
   });
 });

@@ -17,38 +17,35 @@
 // the iPhone grades by the same lines. Everything else reuses the `.bt-*` CSS,
 // the matrix's `Sparkline`, `NumericInputCell`, `DraftDateCell`, and `UnitChip`.
 
-import { useEffect, useId, useMemo, useRef, useState, type MutableRefObject } from 'react';
+import { useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import type { ApiMeasurement, FormStage } from '@roadmap/health-core/mappings';
 import type { HealthInputs } from '@roadmap/health-core/types';
 import { type MetricType, type UnitSystem, toCanonicalValue, fromCanonicalValue, formatDisplayValue, getDisplayLabel, bpTargetFor } from '@roadmap/health-core/units';
 import { parseLocalisedNumber } from '@roadmap/health-core/parseNumber';
-import { bpStatus, limitUngraded, pressureStatus, valueStatus, type GradeContext, type PressureReading, type GradeStatus } from '@roadmap/health-core/row-grade';
-import { comparatorOf, limitText, LIMIT_NOT_GRADED, type Comparator } from '@roadmap/health-core/lab-limits';
+import { bpStatus, limitUngraded, pressureStatus, valueStatus, type GradeContext, type PressureReading } from '@roadmap/health-core/row-grade';
+import { limitText, LIMIT_NOT_GRADED, type Comparator } from '@roadmap/health-core/lab-limits';
 import { rowTarget } from '@roadmap/health-core/row-target';
-import { PRESSURE_ORDER, pressureInverted } from '@roadmap/health-core/validation';
 import type { PlanBasis } from './InputPanel';
 import { slotOf, type CorrectFn, type Refused, type SaveTask } from '../lib/matrix-save';
 import {
   blockBadNumericKeys,
-  blockNonIntegerKeys,
-  bpSysAdvance,
-  mayStillFit,
   readTypedValue,
   validateTypedValue,
 } from '../lib/blood-test-cell';
 import { VITALS_DRAFT_KEY } from '../lib/storage';
-import { BP_DIA_MAX, BP_DIA_MIN, BP_SYS_MAX, BP_SYS_MIN, FIELD_OF, vitalsCellsOf, type VitalsKey } from '../lib/vitals-cells';
-import { describedBy } from '../lib/aria';
-import { useDraftMirror, useMatrixDraft, type CellRef } from '../lib/useMatrixDraft';
+import { FIELD_OF, vitalsCellsOf, type VitalsKey } from '../lib/vitals-cells';
+import { buildColumns, type DateColumn } from '../lib/vitals-columns';
+import { useMatrixDraft, type CellRef } from '../lib/useMatrixDraft';
 import { useAutoAdvance } from '../lib/useAutoAdvance';
 import { useScrollToRightOnMount } from '../lib/useScrollToRightOnMount';
-import { useRangeWait } from '../lib/useRangeWait';
 import { useSaveOnLeave } from '../lib/useSaveOnLeave';
 import { usePrefillRef } from '../lib/usePrefillRef';
-import { Sparkline, ValueCell, BatchDateCell, saveErrorText, SAVE_FAILED, SAME_SLOT, useLiveRegion } from './BloodTestTimeline';
-import { BackfillCell } from './MatrixInputCells';
-import { NumericInputCell, ACTIVE_CELL } from './NumericInputCell';
+import { withClaim } from '../lib/sync-claim';
+import { Sparkline, ValueCell, BatchDateCell, saveErrorText, SAVE_FAILED, useLiveRegion } from './MatrixSavedCells';
+import { BackfillCell, SAME_SLOT } from './MatrixInputCells';
+import { NumericInputCell } from './NumericInputCell';
 import { DraftDateCell } from './DraftDateCell';
+import { BpInputCell } from './BpInputCell';
 import { UnitChip } from './UnitChip';
 
 interface StartingInfoVitalsProps {
@@ -67,11 +64,7 @@ interface StartingInfoVitalsProps {
    *  Same prop the blood-test matrix uses. BP cells stay display-only (a
    *  sys/dia cell is ambiguous to correct in place). */
   onCorrectValue?: CorrectFn;
-  /** The draft values the plan and the chat may read, in SI; undefined
-   *  leaves the field to the record. */
-  onDraftValue: (field: keyof HealthInputs, value: number | undefined) => void;
-  /** Used to pulse the weight draft cell at stage 1 (US-62 AC13: no weight
-   *  in what the plan reads, the draft's own included). */
+  /** At stage 1 the weight draft cell pulses until it holds a valid weight (US-62 AC13). */
   formStage: FormStage;
   /** What the plan was computed from (US-06 AC5): its age sets the
    *  blood-pressure target, its weight target (kg) the weight line and its
@@ -95,7 +88,7 @@ interface StartingInfoVitalsProps {
    *  fromUnit, date)` so the chatbot can inject a vitals value into the
    *  draft/backfill cell (highlighted, for the user to Save). Mirrors
    *  BloodTestTimeline's prefillRef seam — its presence also signals to the
-   *  parent that the vitals matrix (not the legacy form) is mounted, so chat
+   *  parent that the vitals matrix is mounted (the whole form shows), so chat
    *  edits should flash a cell here rather than silently set a plain field. */
   prefillRef?: MutableRefObject<VitalsPrefillFn | null>;
   /** Filled with the matrix's commit, so a lab upload commits the draft
@@ -133,57 +126,11 @@ const ROWS: RowConfig[] = [
   { kind: 'bp', label: 'Blood Pressure' },
 ];
 
-// ── Date helpers ─────────────────────────────────────────────────────────
-
-function isoOnly(s: string): string { return s.slice(0, 10); }
-
-// ── Per-date model ───────────────────────────────────────────────────────
-// One column per distinct date. Each column carries the SI value + row id for
-// every vital recorded that day (sparse — a date may hold only a weight).
-
-export interface DateColumn {
-  date: string;
-  weight?: number; weightId?: string;
-  waist?: number; waistId?: string;
-  sys?: number; sysId?: string;
-  dia?: number; diaId?: string;
-  /** Each value printed as a limit: its symbol's code, the value its bound (US-12 AC20, AC21). */
-  limits?: Partial<Record<'weight' | 'waist' | 'sys' | 'dia', Comparator>>;
-}
-
-// Exported for unit testing — folds the flat vitals history into one column
-// per distinct date (sparse: a date may carry only some vitals), sorted oldest
-// → newest. sys+dia sharing a date are paired into the same column.
-export function buildColumns(rows: ApiMeasurement[]): DateColumn[] {
-  const byDate = new Map<string, DateColumn>();
-  const ensure = (date: string) => {
-    let c = byDate.get(date);
-    if (!c) { c = { date }; byDate.set(date, c); }
-    return c;
-  };
-  const keyOf: Record<string, 'weight' | 'waist' | 'sys' | 'dia'> = { weight: 'weight', waist: 'waist', systolic_bp: 'sys', diastolic_bp: 'dia' };
-  for (const r of rows) {
-    const date = isoOnly(r.recordedAt);
-    const c = ensure(date);
-    if (r.metricType === 'weight') { c.weight = r.value; c.weightId = r.id; }
-    else if (r.metricType === 'waist') { c.waist = r.value; c.waistId = r.id; }
-    else if (r.metricType === 'systolic_bp') { c.sys = r.value; c.sysId = r.id; }
-    else if (r.metricType === 'diastolic_bp') { c.dia = r.value; c.diaId = r.id; }
-    const key = keyOf[r.metricType];
-    if (!key) continue;
-    // The value now in the slot carries its own limit, or none (a later exact row replaces a limit).
-    const { comparator } = comparatorOf(r);
-    const { [key]: _old, ...others } = c.limits ?? {};
-    c.limits = comparator ? { ...others, [key]: comparator } : others;
-  }
-  return Array.from(byDate.values()).sort((a, b) => a.date.localeCompare(b.date));
-}
-
 // ── Component ───────────────────────────────────────────────────────────
 
 export function StartingInfoVitals({
   vitalsHistory, unitSystem, onSave, onCorrectValue,
-  onDraftValue, formStage, plan, knownMinor, onWeightAnswered, weightRef, rested, withoutWeight, unitOverrides, onToggleFieldUnit, startUnitOf,
+  formStage, plan, knownMinor, onWeightAnswered, weightRef, rested, withoutWeight, unitOverrides, onToggleFieldUnit, startUnitOf,
   prefillRef, flushRef, onHoldsText,
 }: StartingInfoVitalsProps) {
   const rows = withoutWeight ? ROWS.filter(r => r.kind !== 'simple' || r.metric !== 'weight') : ROWS;
@@ -225,15 +172,14 @@ export function StartingInfoVitals({
     if (key === 'weight' || key === 'waist') return { [key]: col?.[`${key}Id` as const] ?? null };
     return { systolic_bp: col?.sysId ?? null, diastolic_bp: col?.diaId ?? null };
   };
-  const latestDay = (key: VitalsKey) => [...dateColumns].reverse().find(c => c[key] != null)?.date;
   const {
     holdsText,
-    draft, backfills, type, setDate, unitOf, expected, clashes, taken, lends, settle, refusal,
-  } = useMatrixDraft<VitalsKey>(VITALS_DRAFT_KEY, { onScreen, rowsUnder, latestDay, cellOf: key => (key === 'dia' ? 'sys' : key),
+    draft, backfills, type, setDate, unitOf, expected, clashes, taken, settle, refusal,
+  } = useMatrixDraft<VitalsKey>(VITALS_DRAFT_KEY, { onScreen, rowsUnder, cellOf: key => (key === 'dia' ? 'sys' : key),
     legacyUnit: key => (key === 'weight' || key === 'waist' ? startUnitOf?.(FIELD_OF[key]) : undefined) });
   // No weight typed here while its row is hidden (the weight shows beside the
-  // height): a restored or earlier draft goes, so nothing unseen is lent to
-  // the plan or saved (US-62 AC13).
+  // height): a restored or earlier draft goes, so nothing unseen is saved
+  // (US-62 AC13).
   useEffect(() => {
     if (!withoutWeight) return;
     if (draft.values.weight) type([null, 'weight'], '', unitFor('weight'));
@@ -268,8 +214,7 @@ export function StartingInfoVitals({
     return typed ? validateTypedValue(metric, typed, typedUnit(column, metric)).error ?? null : null;
   };
 
-  // A saved column's empty cell. Backfilling a PAST date deliberately does NOT
-  // stand in for the latest value in the plan (unlike the draft column).
+  // A saved column's empty cell.
   const setBackfill = (date: string, key: VitalsKey, typed: string) =>
     type([date, key], typed, key === 'weight' || key === 'waist' ? unitFor(key) : undefined);
 
@@ -369,25 +314,10 @@ export function StartingInfoVitals({
   const bpClashes = clashes('sys') || clashes('dia');
   const bpTaken = taken('sys') || taken('dia');
 
-  // What the plan and the chat read of the draft (US-03 AC6, `lends`): a
-  // value it could save, clear of clashes. Each half of a blood pressure
-  // counts on its own, in range; a pair the wrong way up lends neither (US-02 AC8).
-  const bpInverted = pressureInverted(parseLocalisedNumber(draft.values.sys ?? ''), parseLocalisedNumber(draft.values.dia ?? ''));
-  const standsIn = (key: VitalsKey): number | undefined => {
-    const text = draft.values[key];
-    if (!text || !lends(key) || clashes(key) || ((key === 'sys' || key === 'dia') && bpInverted)) return undefined;
-    const n = parseLocalisedNumber(text);
-    if (key === 'sys') return n != null && n >= BP_SYS_MIN && n <= BP_SYS_MAX ? n : undefined;
-    if (key === 'dia') return n != null && n >= BP_DIA_MIN && n <= BP_DIA_MAX ? n : undefined;
-    const unit = typedUnit(null, key);
-    return validateTypedValue(key, text, unit).error ? undefined : toCanonicalValue(key, readTypedValue(key, text, unit)!, unit);
-  };
-  useDraftMirror((Object.keys(FIELD_OF) as VitalsKey[]).map(key => [FIELD_OF[key], standsIn(key)]), onDraftValue);
-
   const [saving, setSaving] = useState(false);
-
-  const commit = async () => {
-    if (saving || ready.length === 0) return;
+  const claim = useRef(false); // seen by a second commit in the same render, as `saving` is not
+  const commit = () => withClaim(claim, async () => {
+    if (ready.length === 0) return;
     setSaving(true);
     try {
       // The cells that can be saved, each on its day with the rows it
@@ -405,10 +335,12 @@ export function StartingInfoVitals({
         return c.keys.map((key): [CellRef<VitalsKey>, string | undefined] => [[c.column, key], status && saveErrorText(status)]);
       }));
       if (refusedSlots.size === 0) setActiveCell(null);
+      // A New weight saved here is at rest: Enter lands now, a decimal too (US-62 AC25b, Codex R1).
+      if (ready.some(c => c.column === null && c.keys[0] === 'weight' && !refusedSlots.get(slotOf(c.date, 'weight')))) rested?.();
     } finally {
       setSaving(false);
     }
-  };
+  });
 
   // Committed as the blood-test matrix commits: on leaving the matrix or on
   // Enter; never while the user is still in it, and never because the page
@@ -416,7 +348,6 @@ export function StartingInfoVitals({
   const rootRef = useRef<HTMLDivElement>(null);
   useSaveOnLeave(rootRef, commit);
   usePrefillRef(commit, flushRef);
-  const saveNow = () => { void commit(); };
 
   return (
     <div ref={rootRef} className="bt-timeline bt-vitals-card">
@@ -478,12 +409,12 @@ export function StartingInfoVitals({
                             validationResult={typedError(null, row.metric)}
                             externalError={clashes(row.metric) || taken(row.metric) ? SAME_SLOT : refusal([null, row.metric])}
                             placeholder="—"
-                            wrapperClass={`bt-cell-input bt-cell-draft${formStage === 1 && row.metric === 'weight' ? ' field-attention' : ''}`}
+                            wrapperClass={`bt-cell-input bt-cell-draft${formStage === 1 && row.metric === 'weight' && (!draft.values.weight || typedError(null, 'weight')) ? ' field-attention' : ''}`}
                             active={activeCell === cellId}
                             onChange={v => setSimpleDraft(row.metric, v)}
                             onFocus={() => setActiveCell(cellId)}
                             onBlur={unmark(cellId)} inputRef={row.metric === 'weight' ? weightRef : undefined}
-                            onKeyDown={e => { blockBadNumericKeys(e); if (e.key === 'Enter') { e.preventDefault(); saveNow(); } }}
+                            onKeyDown={e => { blockBadNumericKeys(e); if (e.key === 'Enter') { e.preventDefault(); void commit(); } }}
                           />
                         );
                       }
@@ -508,7 +439,7 @@ export function StartingInfoVitals({
                             onChange={val => { setBackfill(c.col.date, row.metric, val); if (row.metric === 'weight') onWeightAnswered?.(true); }}
                             onFocus={() => setActiveCell(cellId)}
                             onBlur={unmark(cellId)}
-                            onEnter={saveNow}
+                            onEnter={commit}
                           />
                         );
                       }
@@ -560,7 +491,7 @@ export function StartingInfoVitals({
                           previewStatus={bpStatus(parseLocalisedNumber(sys), parseLocalisedNumber(dia), bpSysTarget)}
                           onSysChange={v => setBpDraft('sys', v)}
                           onDiaChange={v => setBpDraft('dia', v)}
-                          onEnter={saveNow}
+                          onEnter={commit}
                         />
                       );
                     }
@@ -584,7 +515,7 @@ export function StartingInfoVitals({
                           backfill
                           onSysChange={v => setBackfill(c.col.date, 'sys', v)}
                           onDiaChange={v => setBackfill(c.col.date, 'dia', v)}
-                          onEnter={saveNow}
+                          onEnter={commit}
                         />
                       );
                     }
@@ -618,117 +549,6 @@ export function StartingInfoVitals({
           <div className="bt-save-error" aria-live="polite">{SAVE_FAILED}</div>
         )}
         {cellMessages}
-      </div>
-    </div>
-  );
-}
-
-// ── BP input cell — dual sys/dia input in one column ─────────────────────
-// ONE guarded BP input shared by the draft column (today's reading) AND the
-// historical backfill cells (a past empty BP slot). Both commit only a
-// complete in-range pair (`bpPairReady`, applied by the caller's save fold);
-// moving systolic → diastolic never saves, because nothing inside the matrix
-// does. `backfill`/`pinned` only swap the wrapper classes so it matches the
-// surrounding empty-cell vs draft-cell styling.
-
-function BpInputCell({
-  sys, dia, clash, previewStatus, onSysChange, onDiaChange, onEnter, pinned, backfill, active,
-}: {
-  sys: string;
-  dia: string;
-  /** Why the pair cannot be saved as it stands (`SAME_SLOT`). */
-  clash?: string;
-  previewStatus: GradeStatus;
-  onSysChange: (v: string) => void;
-  onDiaChange: (v: string) => void;
-  onEnter: () => void;
-  /** 2nd-from-right column highlight (matches BatchDateCell pinning). */
-  pinned?: boolean;
-  /** Style as an empty-slot backfill cell rather than the draft column. */
-  backfill?: boolean;
-  /** Brand-underline highlight (the same `bt-input-active` cue a focused cell
-   *  gets) — used so a chatbot prefill flashes the filled BP cell. */
-  active?: boolean;
-}) {
-  const cellRef = useRef<HTMLDivElement>(null);
-  const diaRef = useRef<HTMLInputElement>(null);
-  const advanceToDia = useAutoAdvance();
-  // BP is integer-only (US-02 AC4) — block non-digit keystrokes; paste is
-  // sanitised in the change handlers below.
-  const onKey: React.KeyboardEventHandler<HTMLInputElement> = (e) => {
-    blockNonIntegerKeys(e);
-    if (e.key === 'Enter') { e.preventDefault(); rangeWait.settle(); onEnter(); }
-  };
-  // US-02 AC9: the half being typed keeps back a range error more digits
-  // could still fix ("6" on the way to 65); leaving it or Enter shows it.
-  const rangeWait = useRangeWait();
-  const check = (half: 'sys' | 'dia', text: string) => validateTypedValue(half === 'sys' ? 'systolic_bp' : 'diastolic_bp', text, 'si');
-  const typedHalf = (half: 'sys' | 'dia', text: string) => {
-    const { range } = check(half, text);
-    rangeWait.typed(half, text, mayStillFit(text, range.min, range.max));
-  };
-  const rangeError = (half: 'sys' | 'dia', text: string) => {
-    const { error } = check(half, text);
-    return error && !rangeWait.waits(half, text) ? error : undefined;
-  };
-  // Auto-advance systolic → diastolic (US-02 AC6): immediately for an
-  // unambiguous 3-digit value, after 800ms for a plausible 2-digit one.
-  // A pause moves only if systolic has the focus when it ends (AC6b, the hook's rule: leaving
-  // and coming back first still moves); never if dia had content when systolic last changed.
-  const handleSysChange = (raw: string) => {
-    const v = raw.replace(/[^0-9]/g, '');
-    typedHalf('sys', v);
-    onSysChange(v);
-    const adv = bpSysAdvance(v);
-    advanceToDia(dia === '' && adv !== 'stay' ? { ambiguous: adv === 'defer', advance: () => diaRef.current?.focus() } : null);
-  };
-  const handleDiaChange = (raw: string) => { const v = raw.replace(/[^0-9]/g, ''); typedHalf('dia', v); onDiaChange(v); };
-  // Visible range validation (US-02 AC5) — same inline-error pattern as
-  // NumericInputCell (this is the one cell that can't reuse it directly).
-  // A pair the wrong way up is the pair's error, as a clash is (US-02 AC8).
-  const pairError = clash ?? (pressureInverted(parseLocalisedNumber(sys), parseLocalisedNumber(dia)) ? PRESSURE_ORDER : undefined);
-  const sysError = rangeError('sys', sys) ?? pairError;
-  const diaError = rangeError('dia', dia) ?? pairError;
-  const error = sysError ?? diaError;
-  // Each half's visible error describes it; a title would be captured with
-  // the page (US-13 AC10). One error for the pair (a clash) shows once, and
-  // when it falls to the diastolic line it describes both halves.
-  const id = useId();
-  const [sysErrorId, diaErrorId] = [`${id}sys`, `${id}dia`];
-  const diaOwnError = diaError && diaError !== sysError;
-  // `bt-cell-value` carries the fixed column width (flex: 0 0 var(--bt-value-w)).
-  // The backfill branch was missing it, so an empty BP slot collapsed to its
-  // content width (~33px) and pushed every column to its right out of
-  // alignment with the weight/waist rows. The draft branch already had it.
-  const wrapperClass = backfill
-    ? `bt-cell-value bt-cell-backfill${pinned ? ' bt-cell-pinned' : ''}`
-    : 'bt-cell-value bt-cell-input bt-cell-draft';
-  // The two BP inputs are ~35px wide inside a 91px mobile column — near-misses
-  // land on cell padding, the "/" separator, or the tick footer, all inert
-  // (dead-click cluster, 2026-08 audit / US-02). Route any click on those
-  // non-input parts to the systolic input; clicks ON an input are untouched
-  // (so aiming at diastolic still works).
-  const focusSysFromShell: React.MouseEventHandler<HTMLDivElement> = (e) => {
-    if ((e.target as HTMLElement).tagName === 'INPUT') return;
-    cellRef.current?.querySelector('input')?.focus();
-  };
-  return (
-    <div ref={cellRef} className={wrapperClass} onClick={focusSysFromShell}>
-      <div className="bt-vitals-bp-inputs">
-        <input className={`bt-input${active ? ` ${ACTIVE_CELL}` : ''}${sysError ? ' bt-input-error' : ''}`}
-               inputMode="numeric" pattern="[0-9]*" placeholder="sys" size={1} aria-label="Systolic blood pressure"
-               aria-invalid={!!sysError} aria-describedby={describedBy(sysError && sysErrorId, diaOwnError && diaError === pairError && diaErrorId)}
-               value={sys} onChange={e => handleSysChange(e.target.value)} onKeyDown={onKey} onBlur={rangeWait.settle}/>
-        <span className="bt-vitals-bp-sep">/</span>
-        <input ref={diaRef} className={`bt-input${active ? ` ${ACTIVE_CELL}` : ''}${diaError ? ' bt-input-error' : ''}`}
-               inputMode="numeric" pattern="[0-9]*" placeholder="dia" size={1} aria-label="Diastolic blood pressure"
-               aria-invalid={!!diaError} aria-describedby={describedBy(diaError && (diaOwnError ? diaErrorId : sysErrorId))}
-               value={dia} onChange={e => handleDiaChange(e.target.value)} onKeyDown={onKey} onBlur={rangeWait.settle}/>
-      </div>
-      <div className="bt-cell-foot">
-        {sysError && <span id={sysErrorId} className="bt-input-error-text">{sysError}</span>}
-        {diaOwnError && <span id={diaErrorId} className="bt-input-error-text">{diaError}</span>}
-        {!error && <span className={`bt-status-tick bt-status-${previewStatus ?? 'none'}`}/>}
       </div>
     </div>
   );

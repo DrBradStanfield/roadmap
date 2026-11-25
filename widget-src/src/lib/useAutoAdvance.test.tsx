@@ -28,7 +28,7 @@ function Panel({ start, stage, us = false, rested }: { start: Partial<HealthInpu
     ...myHealth({ settingsOpen: false }),
     inputs, effectiveInputs: inputs, onChange: (f: keyof HealthInputs, v: unknown) => setInputs(p => ({ ...p, [f]: v })),
     errors: {}, unitSystem: us ? 'conventional' : 'si', unitOverrides: {}, onToggleFieldUnit: vi.fn(), previousMeasurements: [],
-    bloodTestHistory: [], vitalsHistory: [], labValues: [], onSaveBloodTestBatch: vi.fn(async () => new Map()), onDraftValue: vi.fn(),
+    bloodTestHistory: [], vitalsHistory: [], labValues: [], onSaveBloodTestBatch: vi.fn(async () => new Map()),
     medications: [], onMedicationChange: vi.fn(), onScreeningChange: vi.fn(), supplements: [], onSupplementChange: vi.fn(), screenings: [],
     onSupplementDelete: vi.fn(), scheduleLongitudinalSave: vi.fn(), flushLongitudinalSave: vi.fn(), isSavingLongitudinal: false,
     hasApiResponse: true, planBasis: { age: 66 }, grading: {},
@@ -37,7 +37,7 @@ function Panel({ start, stage, us = false, rested }: { start: Partial<HealthInpu
   return <InputPanel {...props}/>;
 }
 const vitals = (rested?: () => void) => render(<StartingInfoVitals vitalsHistory={[]} unitSystem="si" onSave={vi.fn()} onCorrectValue={vi.fn()}
-  onDraftValue={() => {}} formStage={4} plan={{ age: 50, idealBodyWeight: 73, heightCm: 178 }} unitOverrides={{}} onToggleFieldUnit={() => {}} rested={rested}/>);
+  formStage={4} plan={{ age: 50, idealBodyWeight: 73, heightCm: 178 }} unitOverrides={{}} onToggleFieldUnit={() => {}} rested={rested}/>);
 const $ = (s: string) => document.querySelector<HTMLInputElement>(s)!;
 const sys = () => $('input[aria-label="Systolic blood pressure"]');
 const dia = () => $('input[aria-label="Diastolic blood pressure"]');

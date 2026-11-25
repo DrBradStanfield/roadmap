@@ -36,7 +36,7 @@ import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 vi.mock('../src/lib/sentry', () => ({ Sentry: { captureException: vi.fn() }, initSentry: vi.fn() }));
 vi.mock('../src/lib/server-api', async (original) => ({
   ...(await original<typeof import('../src/lib/server-api')>()),
-  trackProductEvent: vi.fn(), trackABImpression: vi.fn(), trackABConversion: vi.fn(),
+  trackProductEvent: vi.fn(),
 }));
 vi.mock('./reminders', () => ({ remindersSupported: () => false, clearAutoEnrolBlock: vi.fn() }));
 vi.mock('./reminders-control', () => ({ RemindersControl: () => null }));
@@ -221,7 +221,7 @@ const DEBOUNCED_EDIT = { day: '2026-06-02', value: 82 };
 const BOTH = { [PANEL_EDIT.day]: PANEL_EDIT.value, [DEBOUNCED_EDIT.day]: DEBOUNCED_EDIT.value };
 
 async function edit({ day, value }: { day: string; value: number }): Promise<void> {
-  await act(async () => { expect((await page!.data.addMeasurement('weight', value, day)).status).toBe('inserted'); });
+  await act(async () => { expect((await page!.data.addMeasurement('weight', value, day, page!.data.getShownErase())).status).toBe('inserted'); });
 }
 
 const status = () => document.querySelector('.hr-sync-status')?.textContent;
@@ -340,7 +340,9 @@ describe('US-09 AC48 (R1, R2): exit (b) a picker move from a dead sign-in is ref
     fireEvent.change(document.querySelector('input[placeholder^="Repository name"]')!, { target: { value: 'health' } });
     fireEvent.click(button('Connect GitHub')!);
     await until(() => !!document.querySelector('dialog .hr-sync-error'), 'the refused move');
-    expect(document.querySelector('dialog .hr-sync-error')?.textContent).toMatch(/could not be reached/);
+    // The sign-in was refused, so the stop names that cause (US-09 AC56).
+    const label = cloud === 'dropbox' ? 'Dropbox' : 'Google Drive';
+    expect(document.querySelector('dialog .hr-sync-error')?.textContent).toBe(`${label} did not connect, so nothing changed. Please try again.`);
     expect(reload).not.toHaveBeenCalled();
     expect(githubFile).toBeNull();
     expect(localStorage.getItem(BACKEND_KEY)).toBe(cloud);
@@ -455,6 +457,17 @@ describe('US-09 AC48 (lead A3, Codex R1): every exit from a clean session keeps 
     const next = await loadPage();
     expect(next.backend).toBe('local');
     expect(await deviceWeights()).toMatchObject({ [SEEDED.day]: SEEDED.value });
+  });
+
+  it.each(['google-drive', 'dropbox'] as const)('%s: US-09 AC50: the page read its cloud, so an old copy stored here asks nothing', async (cloud) => {
+    await revokeCleanSession(cloud);
+    // A copy stored here by an earlier visit, as a connect's lift leaves one (lead A30).
+    localStorage.setItem('health_roadmap_file_v2', cloud === 'dropbox' ? dropboxFile!.body : driveFiles.find((f) => f.name === ROADMAP_FILE_NAME)!.content);
+    fireEvent.click(button('Use this browser only')!);
+    expect(document.body.textContent).not.toMatch(/may be out of date|has no copy/);
+    await until(() => reload.mock.calls.length > 0, 'the reload');
+    expect(localStorage.getItem(BACKEND_KEY)).toBeNull();
+    expect(await deviceWeights()).toMatchObject({ [SEEDED.day]: SEEDED.value }); // the page's current record, copied here
   });
 
   it('google-drive: a copy that fails for another reason (a full disk) stops "Use this browser only" and says so in the device-save words', async () => {

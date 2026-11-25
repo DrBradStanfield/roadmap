@@ -10,13 +10,13 @@ import { BODY_TOO_LARGE, getClientIp, parseSimpleRequestJson } from '../lib/loca
 import { createRateLimiter } from '../lib/rate-limiter';
 import { safeErrorFields } from '../lib/safe-error-fields.server';
 
-const checkGuestReportLimit = createRateLimiter(5, 24 * 60 * 60_000, 30 * 60_000); // 5/day per email
+const checkGuestReportLimit = createRateLimiter(5, 24 * 60 * 60_000, 30 * 60_000, { name: 'email capture per email' }); // 5/day per email
 // Per-IP as well as per-victim-email: the email limiter bounds harm to ONE
 // address but nothing stopped one client enrolling a whole address LIST
 // (N strangers' emails at rest + N sends from our domain). Best-effort — the
 // proxy's forwarded IP and a per-process Map — but it turns bulk abuse from
 // free into work (review 2026-08-14).
-const checkCaptureIpLimit = createRateLimiter(20, 60 * 60_000, 30 * 60_000); // 20/hour per IP
+const checkCaptureIpLimit = createRateLimiter(20, 60 * 60_000, 30 * 60_000, { name: 'email capture per IP' }); // 20/hour per IP
 
 // ---------------------------------------------------------------------------
 // Klaviyo capture (local-first v2) — the "Get Your Personalized Plan" button.
@@ -50,7 +50,9 @@ async function handleKlaviyoCapture(data: unknown, clientIp: string) {
       return Response.json({ success: false, error: 'Invalid request data' }, { status: 400 });
     }
     const { email, schedule } = parsed.data;
-    if (!checkGuestReportLimit(emailLimiterKey(email)) || !checkCaptureIpLimit(clientIp)) {
+    // IP first: a request the IP limit refuses never reaches the email map, so it cannot
+    // push another address's used-up day out of that bounded map (S-22).
+    if (!checkCaptureIpLimit(clientIp) || !checkGuestReportLimit(emailLimiterKey(email))) {
       return Response.json({ success: false, error: 'Email limit reached. Try again tomorrow.' }, { status: 429 });
     }
     // Email only: the address goes to the guest list and nothing else. Fire-and-

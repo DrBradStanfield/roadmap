@@ -13,8 +13,13 @@
 #      marker skips this step. The marker guards against accidents, not against someone who sets it on purpose:
 #      review of the diff is the real control. A PR that changes ci.yml also gets one stderr note: its own CI
 #      result came from the PR's workflow, so the reviewer must have read that diff (a note, not a refusal:
-#      workflow PRs are legitimate and Brad-reviewed). gh lists at most 100 files; a PR with more refuses (17)
-#      rather than judging part of the list.
+#      workflow PRs are legitimate and Brad-reviewed). Gate files are looked for twice: first in gh's file list,
+#      then in git's path list, which step 6 reuses (T-13: fetch main and the PR head, merge base, `git diff
+#      --name-only --no-renames`; a failure refuses 4). Git's list splits a rename, so a gate file renamed away
+#      shows under its old path, and it has no page limit. Each path matches only as a whole line. gh's list is
+#      the REST files endpoint read in full, 100 a page (2026-11-23: `gh pr view` stopped at 100 and refused a
+#      121-file PR), each rename with its previous path too; GitHub caps it at 3000. When its length still
+#      differs from the PR's changedFiles, the script refuses (17).
 #   4. CI's own workflow: the newest ci.yml run on the sha (by createdAt) exists (11), is completed (14) and ended
 #      success (15). So a job named `test` from another workflow cannot stand in for CI, and a draft PR's run
 #      (every job skipped, the run's conclusion `skipped`) never passes.
@@ -27,8 +32,8 @@
 #      list is a literal in the jq filter below, so nothing at call time can widen it.
 #   6. generated files (US-64 AC34; PR 954 went green against an older main, then main went red). Pure git: it runs
 #      nothing but gh, git, jq and perl, never a command from the manifest or the PR (a row's `script` is only a
-#      pathspec). It fetches main (explicit refspec, so origin/main is fresh in a narrow-refspec clone) and the PR
-#      head, takes their merge base, and lists the PR's paths with `git diff --name-only --no-renames`, so a rename
+#      pathspec). Step 3 fetched main (explicit refspec, so origin/main is fresh in a narrow-refspec clone) and the PR
+#      head, took their merge base, and listed the PR's paths with `git diff --name-only --no-renames`, so a rename
 #      shows its old path too (gh lists only the new one): every PR fetches, as moving an input away hides from gh.
 #      For each row of tools/generated-files.json (the copy beside this script; main's when the PR changes it,
 #      step 3) whose output or an input matches a PR path (globs: * matches any run of characters, slash included,
@@ -44,14 +49,17 @@
 #      Staleness (AC35, a note, never a refusal): when main has commits past the merge base, one stderr line says
 #      how many; a failed rev-list gives no note. The merge base is the CI base: what a --commit-checks run
 #      tested, and no newer than the main a pull_request run merged in, so the count may overstate, never understate.
-#   7. stop the line (US-64 AC35): among the newest 20 ci.yml runs on main (any status; any event but pull_request,
-#      which a fork's branch named main could add), by createdAt: when the newest is a re-run (attempt 2 or later)
-#      not yet completed, main is red (18). Otherwise the newest completed run that was not cancelled (a cancel
-#      cannot hide an older red run) must not have ended failure, timed_out or startup_failure (18, naming the
-#      run's URL and conclusion: main must be fixed first). success and skipped (tested nothing) pass. A PR
-#      labelled exactly fix-main (only the PR that fixes main) passes a red main with one stderr note, and just
-#      before the merge one PR comment of fixed text holding only the red run's numeric id; a failed post is a
-#      stderr note, not a refusal. No completed, not cancelled run refuses (4).
+#   7. stop the line (US-64 AC35): ci.yml runs on main (any status; any event but pull_request, which a fork's
+#      branch named main could add), read as the newest 20 of all plus the newest 20 of each of push, schedule and
+#      workflow_dispatch, so 20 newer fork runs cannot crowd main's own out (T-14). The judged run is the newest
+#      completed one that was not cancelled (a cancel cannot hide an older red run). A re-run (attempt 2 or later)
+#      not yet completed and created at or after the judged run is red (18): GitHub keeps a re-run's createdAt, so
+#      a re-run of an older run can sit under a newer first attempt (T-14). Otherwise the judged run must not have
+#      ended failure, timed_out or startup_failure (18, naming the run's URL and conclusion: main must be fixed
+#      first). success and skipped (tested nothing) pass. A PR labelled exactly fix-main (only the PR that fixes
+#      main) passes a red main with one stderr note, and just before the merge one PR comment of fixed text holding
+#      only the run's numeric id and whether it was red or re-running; a failed post is a stderr note, not a
+#      refusal. No completed, not cancelled run refuses (4), even beside a re-run still going.
 #   8. no Deploy run is unfinished (12). First one snapshot of the newest 100 runs, unfiltered: one call is atomic
 #      for the runs it lists, so no status change hides a run among them. Then, for an unfinished run older than
 #      that, one call per status in the order requested, waiting, pending, queued, in_progress, all twice: forward
@@ -60,8 +68,9 @@
 #      with both passes. --match-head-commit and Deploy's own concurrency group are the backstop.
 #   9. then `gh pr merge <pr> --merge --match-head-commit <sha>`, nothing else; its failure exits 13.
 # A gh error, timeout or an answer it cannot parse refuses with exit 4; usage errors exit 2. Every gh call,
-# the merge too, and the git fetch get MERGE_GATED_GH_TIMEOUT seconds (default 60; zero or not a number is 60). A
-# merge that times out exits 13 with its outcome unknown: check the PR.
+# the merge too, and the git fetch get MERGE_GATED_GH_TIMEOUT seconds (default 60; zero or not a number is 60). The
+# paginated file listing is one gh call, so one budget covers all its pages; a timeout there refuses (4), fail
+# closed. A merge that times out exits 13 with its outcome unknown: check the PR.
 # Ghost runs (GitHub queues a run that never gets jobs): one newer than the real CI run refuses (14) and is named
 # so it can be cancelled (`gh run cancel <id>`); an older one is ignored. It adds nothing to the rollup. A ghost
 # Deploy run blocks (12) the same way, by id.
@@ -100,14 +109,43 @@ case "$head" in
   *) die "unparsable PR answer: $head" 4 ;;
 esac
 
-files=$(gh pr view "$pr" --json changedFiles,files --jq '[.files // [] | .[].path] as $p
-  | "\(.changedFiles) \($p | length) \(any($p[]; . == "tools/merge-gated.sh" or . == "tools/generated-files.json")) \(any($p[]; . == ".github/workflows/ci.yml"))"') \
-  || die "gh pr view $pr --json files failed" 4
-case "$files" in
-  [0-9]*" "[0-9]*" "true" "*|[0-9]*" "[0-9]*" "false" "*) set -- $files ;;
-  *) die "unparsable files answer" 4 ;;
-esac
-if [ "${MERGE_GATED_FROM_MAIN:-}" != 1 ] && { [ "$3" = true ] || [ "$4" = true ]; }; then
+changed=$(gh pr view "$pr" --json changedFiles --jq .changedFiles) || die "gh pr view $pr --json changedFiles failed" 4
+case "$changed" in ''|*[!0-9]*) die "unparsable files answer" 4 ;; esac
+# One line a file: its path, then its previous path when renamed (@tsv escapes tabs and newlines in a name).
+files=$(gh api --paginate "repos/{owner}/{repo}/pulls/$pr/files?per_page=100" --jq '.[] | [.filename, (.previous_filename // "")] | @tsv') \
+  || die "gh api pulls/$pr/files failed" 4
+listed=0 names= gatefile=false ciyml=false
+[ -z "$files" ] || while IFS='	' read -r new old; do listed=$((listed + 1)) names="$names
+$new
+$old"; done <<EOF
+$files
+EOF
+# Sets gatefile and ciyml from a newline-separated path list. Whole lines only: a near name (a trailing space,
+# another folder, a suffix) never matches. Case is ignored (perl lc), failing closed: `Tools/Merge-Gated.sh`
+# counts as the gate file, since a case-insensitive disk collides the two. A path holding a non-ASCII byte is
+# judged by main's copy (gatefile=true); a failed check refuses 4.
+scan() {
+  printf '%s' "$1" | LC_ALL=C perl -ne 'exit 1 if /[^\x0a\x20-\x7e]/'
+  case $? in 0) ;; 1) gatefile=true ;; *) die "cannot check PR $pr's paths for non-ASCII bytes" 4 ;; esac
+  lower=$(printf '%s' "$1" | perl -pe '$_ = lc') || die "cannot lower-case PR $pr's paths" 4
+  set -- "$lower"
+  case "
+$1
+" in *"
+tools/merge-gated.sh
+"*|*"
+tools/generated-files.json
+"*) gatefile=true ;; esac
+  case "
+$1
+" in *"
+.github/workflows/ci.yml
+"*) ciyml=true ;; esac
+}
+scan "$names"
+# Runs main's copy and exits with its code when a gate file changed; returns otherwise, or in main's copy itself.
+to_main() {
+  [ "${MERGE_GATED_FROM_MAIN:-}" != 1 ] && { [ "$gatefile" = true ] || [ "$ciyml" = true ]; } || return 0
   tmp=$(mktemp -d "${TMPDIR:-/tmp}/merge-gated.XXXXXX") || die "cannot make a temp dir" 16
   trap 'rm -rf "$tmp"' EXIT
   bounded git fetch -q origin +refs/heads/main:refs/remotes/origin/main >&2 || die "PR $pr changes a gate file and the fetch of main failed, so main's copy cannot judge it: the owner merges this PR by hand" 16
@@ -116,9 +154,18 @@ if [ "${MERGE_GATED_FROM_MAIN:-}" != 1 ] && { [ "$3" = true ] || [ "$4" = true ]
   git show refs/remotes/origin/main:tools/generated-files.json > "$tmp/generated-files.json" 2>/dev/null || rm -f "$tmp/generated-files.json"
   echo "merge-gated: PR $pr changes a gate file; main's copy judges it" >&2
   MERGE_GATED_FROM_MAIN=1 sh "$tmp/merge-gated.sh" $args; exit $?
-fi
-[ "$4" = true ] && echo "merge-gated: note: PR $pr changes .github/workflows/ci.yml, so its own CI result came from the PR's workflow; the reviewer must have read that diff" >&2
-[ "$1" = "$2" ] || die "PR $pr changes $1 files and gh lists $2; cannot check them for gate files" 17
+}
+to_main
+# Git's path list, which step 6 reuses (T-13): renames split, and no page limit.
+bounded git fetch -q origin +refs/heads/main:refs/remotes/origin/main "refs/pull/$pr/head" >&2 && git cat-file -e "$sha^{commit}" \
+  || die "cannot fetch main and PR $pr's head $sha" 4
+base=$(git merge-base refs/remotes/origin/main "$sha") || die "PR $pr's head $sha has no merge base with main" 4
+behind=$(git rev-list --count "$base..refs/remotes/origin/main") || behind=0
+paths=$(git -c core.quotepath=false diff --name-only --no-renames --no-relative "$base" "$sha") || die "git diff on PR $pr failed" 4
+scan "$paths"
+to_main
+[ "$ciyml" = true ] && echo "merge-gated: note: PR $pr changes .github/workflows/ci.yml, so its own CI result came from the PR's workflow; the reviewer must have read that diff" >&2
+[ "$changed" = "$listed" ] || die "PR $pr changes $changed files and gh lists $listed; cannot check them for gate files" 17
 
 # Each filter prints one line: "ok", or "<code> <reason>". Check names are outside text: they go only into the
 # reason, never into the decision.
@@ -159,16 +206,12 @@ if [ "$mode" = rollup ]; then
   esac
 fi
 
-bounded git fetch -q origin +refs/heads/main:refs/remotes/origin/main "refs/pull/$pr/head" >&2 && git cat-file -e "$sha^{commit}" \
-  || die "cannot fetch main and PR $pr's head $sha" 4
-base=$(git merge-base refs/remotes/origin/main "$sha") || die "PR $pr's head $sha has no merge base with main" 4
-behind=$(git rev-list --count "$base..refs/remotes/origin/main") || behind=0
 case "$behind" in 0) ;; 1) w=commit ;; *) w=commits ;; esac
 [ "$behind" = 0 ] || echo "merge-gated: note: main has moved $behind $w since this PR's merge base; CI may have tested an older main" >&2
-paths=$(git -c core.quotepath=false diff --name-only --no-renames "$base" "$sha") || die "git diff on PR $pr failed" 4
 # The rows whose output or an input matches a PR path, one index a line. A glob becomes an anchored regex:
 # * any run of characters (slash too, as in a git pathspec), ? one character, everything else literal.
-manifest=${0%/*}/generated-files.json
+# The manifest sits beside this script. $0 has no slash when run as `sh merge-gated.sh` inside tools/ (T-12).
+case "$0" in */*) manifest=${0%/*}/generated-files.json ;; *) manifest=./generated-files.json ;; esac
 hits=$(jq -r --arg p "$paths" 'def re: "^" + gsub("(?<c>[.+^$(){}|\\[\\]\\\\])"; "\\\(.c)") + "$" | gsub("\\*"; ".*") | gsub("\\?"; ".");
   ($p | split("\n")) as $p | .rows | to_entries[]
   | select(any(.value.output, .value.inputs[]; re as $r | any($p[]; test($r)))) | .key' "$manifest") \
@@ -181,30 +224,40 @@ for i in $hits; do
   # One field a line (each non-empty, so none is dropped), unglobbed: output and script go to git as pathspecs.
   set -f; IFS='
 '; set -- $row; unset IFS; set +f
-  moved=$(git log -1 --format=%H "$base..refs/remotes/origin/main" -- "$1" "$2") || die "git log on $1 failed" 4
+  # :(top): the manifest's paths are from the repo root, whatever folder the script runs in (T-12).
+  moved=$(git log -1 --format=%H "$base..refs/remotes/origin/main" -- ":(top)$1" ":(top)$2") || die "git log on $1 failed" 4
   [ -z "$moved" ] || die "$1: main has changed it or its generator script ($2) since this PR's base; merge main first, then let CI run (its generator: \`$3\`)" 9
 done
 
-# Stop the line: one line, "ok", "none" or "red <run id> <run url> <what happened>".
-red=$(gh run list --workflow ci.yml --branch main --limit 20 --json databaseId,status,conclusion,event,createdAt,attempt,url --jq '
-  [.[] | select(.event != "pull_request")] | sort_by(.createdAt, .databaseId)
-  | if length > 0 and (last | .status != "completed" and (.attempt // 1) >= 2)
-    then last | "red \(.databaseId) \(.url // .databaseId) is a re-run (attempt \(.attempt)), still \(.status)"
-  else [.[] | select(.status == "completed" and .conclusion != "cancelled")] | if length == 0 then "none"
-  else last | if IN(.conclusion; "failure", "timed_out", "startup_failure") then "red \(.databaseId) \(.url // .databaseId) ended \(.conclusion)" else "ok" end end end') \
-  || die "gh run list --workflow ci.yml --branch main failed" 4
+# Stop the line: one line, "ok", "none", or "red|re-running <run id> <run url> <what happened>". The four lists are
+# read one after another and judged together, duplicates kept: a run that moved on between reads is judged in
+# both states, so a re-run seen still going stays red.
+mainruns=
+for ev in '' push schedule workflow_dispatch; do
+  page=$(gh run list --workflow ci.yml --branch main ${ev:+--event "$ev"} --limit 20 --json databaseId,status,conclusion,event,createdAt,attempt,url --jq tojson) \
+    || die "gh run list --workflow ci.yml --branch main failed" 4
+  mainruns="$mainruns$page
+"
+done
+red=$(printf '%s' "$mainruns" | jq -rs 'add | [.[] | select(.event != "pull_request")] | sort_by(.createdAt, .databaseId)
+  | ([.[] | select(.status == "completed" and .conclusion != "cancelled")] | last) as $j
+  | if $j == null then "none"
+  else ([.[] | select(.status != "completed" and (.attempt // 1) >= 2 and (.createdAt == null or .createdAt >= $j.createdAt))] | last) as $re
+  | if $re != null then "re-running \($re.databaseId) \($re.url // $re.databaseId) is a re-run (attempt \($re.attempt)), still \($re.status)"
+    elif IN($j.conclusion; "failure", "timed_out", "startup_failure") then "red \($j.databaseId) \($j.url // $j.databaseId) ended \($j.conclusion)"
+    else "ok" end end') || die "unparsable main CI runs answer" 4
 fixrun=
 case "$red" in
   ok) ;;
-  "red "*) red=${red#red }; run=${red%% *}; red=${red#* }
+  "red "*|"re-running "*) state=${red%% *}; red=${red#* }; run=${red%% *}; red=${red#* }
     case "$run" in ''|*[!0-9]*) die "unparsable main CI runs answer" 4 ;; esac
     fix=$(gh pr view "$pr" --json labels --jq 'any(.labels[]; .name == "fix-main")') || die "gh pr view $pr --json labels failed" 4
     case "$fix" in
-      true) fixrun=$run; echo "merge-gated: note: main is red (its CI run $red); PR $pr carries fix-main, so it may merge" >&2 ;;
+      true) fixrun="$state (run $run)"; echo "merge-gated: note: main is red (its CI run $red); PR $pr carries fix-main, so it may merge" >&2 ;;
       false) die "main is red: its CI run $red; main must be fixed first" 18 ;;
       *) die "unparsable labels answer" 4 ;;
     esac ;;
-  none) die "no completed, not cancelled CI (ci.yml) run on main among the newest 20" 4 ;;
+  none) die "no completed, not cancelled CI (ci.yml) run on main among the runs read" 4 ;;
   *) die "unparsable main CI runs answer" 4 ;;
 esac
 
@@ -224,7 +277,7 @@ for s in requested waiting pending queued in_progress requested waiting pending 
   no_deploy --status "$s" --limit 5
 done
 
-[ -z "$fixrun" ] || gh pr comment "$pr" --body "merge-gated: main's CI was red (run $fixrun) when this PR passed the gate; it carries fix-main, so it was let through." >/dev/null \
+[ -z "$fixrun" ] || gh pr comment "$pr" --body "merge-gated: main's CI was $fixrun when this PR passed the gate; it carries fix-main, so it was let through." >/dev/null \
   || echo "merge-gated: note: the fix-main comment on PR $pr failed to post; merging anyway" >&2
 gh pr merge "$pr" --merge --match-head-commit "$sha"; rc=$?
 [ "$rc" = 0 ] && exit 0

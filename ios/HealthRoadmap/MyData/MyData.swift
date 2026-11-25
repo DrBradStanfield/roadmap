@@ -26,11 +26,8 @@ struct MyData: Decodable {
         var label: String { self == .noDrinking ? "I don't drink" : "I drink" }
     }
 
-    struct FeetInches: Decodable, Equatable, Hashable {
-        let feet: Int
-        let inches: Int
-        var text: String { "\(feet) ft \(inches) in" }
-    }
+    /// A US height, whole feet and inches: generated (HeightFeetInches, Engine/Generated).
+    typealias FeetInches = HeightFeetInches
 
     /// A value's grade, as the engine words it (health-core's GradeStatus).
     enum Grade: String, Decodable, Sendable {
@@ -270,7 +267,7 @@ enum RecordEdit: Encodable, Equatable {
     case engineEdit(OpaqueJSON)
 
     /// Which part of a chat reply's edits an edit writes (US-67 AC3).
-    enum ChatEditPart: String, Encodable {
+    enum ChatEditPart: String {
         /// Saved at once, with Undo, as on the web.
         case medications
         /// Values, height and sex: saved only on Save.
@@ -285,103 +282,38 @@ enum RecordEdit: Encodable, Equatable {
         return .profile(birthYear: year, birthMonth: latest)
     }
 
-    private enum Key: String, CodingKey {
-        case kind, alcohol, sex, birthYear, birthMonth, height, heightFeet, heightInches, systolic, diastolic, replace, seenIds, unitSystem, unit, name, metric, value, day, id, extractionJson, refs, reportDay, samples, part, edits, today, seen, series, records
-    }
-
+    /// The wire edit (Engine/Generated/EngineContract.swift), generated from ios/engine/contract.ts.
     func encode(to encoder: Encoder) throws {
-        // The engine's own edit is its JSON exactly, so it is written before any key is.
-        if case .engineEdit(let edit) = self { return try edit.encode(to: encoder) }
-        var json = encoder.container(keyedBy: Key.self)
         switch self {
+        // The engine's own edit is its JSON exactly, passed back as it came.
+        case .engineEdit(let edit): try edit.encode(to: encoder)
         case .profile(let sex, let birthYear, let birthMonth, let height):
-            try json.encode("profile", forKey: .kind)
-            try json.encodeIfPresent(sex, forKey: .sex)
-            try json.encodeIfPresent(birthYear, forKey: .birthYear)
-            try json.encodeIfPresent(birthMonth, forKey: .birthMonth)
-            try json.encodeIfPresent(height, forKey: .height)
+            try EngineEdit.profile(sex: sex, birthYear: birthYear.map(Double.init), birthMonth: birthMonth.map(Double.init), height: height).encode(to: encoder)
         case .feetInches(let feet, let inches):
-            try json.encode("profile", forKey: .kind)
-            try json.encode(feet, forKey: .heightFeet)
-            try json.encode(inches, forKey: .heightInches)
+            try EngineEdit.profile(heightFeet: Double(feet), heightInches: Double(inches)).encode(to: encoder)
         case .bloodPressure(let systolic, let diastolic, let day, let replace, let seenIds):
-            try json.encode("bloodPressure", forKey: .kind)
-            try json.encode(systolic, forKey: .systolic)
-            try json.encode(diastolic, forKey: .diastolic)
-            try json.encode(day, forKey: .day)
-            try json.encode(replace, forKey: .replace)
-            if replace { try json.encode(seenIds, forKey: .seenIds) }
-        case .units(let unitSystem):
-            try json.encode("units", forKey: .kind)
-            try json.encode(unitSystem, forKey: .unitSystem)
-        case .alcohol(let answer):
-            try json.encode("alcohol", forKey: .kind)
-            try json.encode(answer?.rawValue, forKey: .alcohol)
-        case .lpaUnit(let unit):
-            try json.encode("lpaUnit", forKey: .kind)
-            try json.encode(unit, forKey: .unit)
-        case .add(let metric, let value, let day):
-            try json.encode("add", forKey: .kind)
-            try json.encode(metric, forKey: .metric)
-            try json.encode(value, forKey: .value)
-            try json.encode(day, forKey: .day)
-        case .correct(let id, let value), .labCorrect(let id, let value):
-            try json.encode("correct", forKey: .kind)
-            try json.encode(id, forKey: .id)
-            try json.encode(value, forKey: .value)
-        case .labAdd(let series, let value, let day, let unit):
-            try json.encode("labAdd", forKey: .kind)
-            try json.encode(series, forKey: .series)
-            try json.encode(value, forKey: .value)
-            try json.encode(day, forKey: .day)
-            try json.encode(unit, forKey: .unit)
-        case .labAddName(let name, let value, let day, let unit):
-            // The engine's labAddName. The one place that builds it.
-            try json.encode("labAddName", forKey: .kind)
-            try json.encode(name, forKey: .name)
-            try json.encode(value, forKey: .value)
-            try json.encode(day, forKey: .day)
-            try json.encode(unit, forKey: .unit)
-        case .appleHealth(let samples):
-            try json.encode("appleHealth", forKey: .kind)
-            try json.encode(samples, forKey: .samples)
-        case .healthRecords(let records):
-            try json.encode("healthRecords", forKey: .kind)
-            try json.encode(records, forKey: .records)
-        case .form(let edit):
-            try edit.encode(to: encoder)
+            try EngineEdit.bloodPressure(systolic: systolic, diastolic: diastolic, day: day, replace: replace, seenIds: replace ? seenIds : nil).encode(to: encoder)
+        case .units(let unitSystem): try EngineEdit.units(unitSystem: unitSystem).encode(to: encoder)
+        case .alcohol(let answer): try EngineEdit.alcohol(alcohol: answer?.rawValue).encode(to: encoder)
+        case .lpaUnit(let unit): try EngineEdit.lpaUnit(unit: unit).encode(to: encoder)
+        case .add(let metric, let value, let day): try EngineEdit.add(metric: metric, value: value, day: day).encode(to: encoder)
+        case .correct(let id, let value), .labCorrect(let id, let value): try EngineEdit.correct(id: id, value: value).encode(to: encoder)
+        case .labAdd(let series, let value, let day, let unit): try EngineEdit.labAdd(series: series, value: value, day: day, unit: unit).encode(to: encoder)
+        // The engine's labAddName. The one place that builds it.
+        case .labAddName(let name, let value, let day, let unit): try EngineEdit.labAddName(name: name, value: value, unit: unit, day: day).encode(to: encoder)
+        case .appleHealth(let samples): try EngineEdit.appleHealth(samples: samples).encode(to: encoder)
+        case .healthRecords(let records): try EngineEdit.healthRecords(records: records).encode(to: encoder)
+        case .form(let edit): try edit.wire.encode(to: encoder)
         case .labImport(let extractionJSON, let refs, let reportDay):
-            try json.encode("labImport", forKey: .kind)
-            try json.encode(extractionJSON, forKey: .extractionJson)
-            try json.encode(refs, forKey: .refs)
-            try json.encode(reportDay, forKey: .reportDay)
+            try EngineEdit.labImport(extractionJson: extractionJSON, refs: refs, reportDay: reportDay).encode(to: encoder)
         case .chatEdits(let part, let edits, let today, let seen):
-            try json.encode("chatEdits", forKey: .kind)
-            try json.encode(part, forKey: .part)
-            try json.encode(edits, forKey: .edits)
-            try json.encode(today, forKey: .today)
-            try json.encodeIfPresent(seen, forKey: .seen)
-        case .engineEdit:
-            break // written above
+            try EngineEdit.chatEdits(part: part.rawValue, edits: edits, today: today, seen: seen).encode(to: encoder)
         }
     }
 }
 
-/// The engine's answer to an edit: the new record, or why it refused.
-struct EditOutcome: Decodable {
-    let ok: Bool
-    /// The new record, as JSON text, when `ok`.
-    let record: String?
-    /// The engine's reason code, such as "out-of-range" or "slot-occupied".
-    let reason: String?
-    /// The engine's own words for a refusal.
-    let message: String?
-    /// On "slot-occupied": the row that already holds that day.
-    let existingId: String?
-    /// In the cloud (US-25 AC11): the erase the new record is at.
-    var erase: String? = nil
-    /// In the cloud: the engine's stamp, set in Swift (`HealthEngine.stamp`).
-    var order: Int? = nil
-    /// After a `healthRecords` edit (US-72): what the batch did.
-    var healthRecords: HealthRecordCounts? = nil
+extension HeightFeetInches {
+    var text: String { "\(feet) ft \(inches) in" }
 }
+
+// EditOutcome, the engine's answer to an edit, is generated (Engine/Generated/EngineContract.swift).

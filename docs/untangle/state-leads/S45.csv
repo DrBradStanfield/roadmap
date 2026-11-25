@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+S45,iPhone state,"An erase held with no drawing is not drawn again when the app comes to the front or at midnight; My data says the record did not load, and the record takes no edit, until the cloud sends another record",lead,done,"Done: PR 1681 (redraw draws the held erase) and commit 2daa607a3 (S66): ios/HealthRoadmap/Health/AppleHealthSync.swift:299 reads heldUndrawnEpoch (:308), closing the epoch-0 residual.",1599; 1681,no

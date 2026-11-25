@@ -16,6 +16,7 @@ import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import type { MetricType, UnitSystem } from '@roadmap/health-core/units';
 import { BloodTestTimeline, SAVE_ERRORS, type BloodTestPrefillFn } from './BloodTestTimeline';
 import { formatShortDate } from '../lib/constants';
+import { getShownErase } from '../lib/roadmap-data';
 import { slotOf } from '../lib/matrix-save';
 import { press, turnFrom } from '../testing/matrix-gestures';
 import { noteDevicePage } from '../lib/storage';
@@ -69,7 +70,7 @@ function matrix(rows: ApiMeasurement[] = [typedRow()], unitSystem: UnitSystem = 
   const prefillRef: MutableRefObject<BloodTestPrefillFn | null> = { current: null };
   const page = (recorded: ApiMeasurement[]) => (
     <BloodTestTimeline bloodTestHistory={recorded} unitSystem={unitSystem} unitOverrides={{}} onToggleFieldUnit={turnFrom(unitSystem)}
-      onSaveBatch={onSaveBatch} onCorrectValue={onCorrectValue} onDraftValue={() => {}}
+      onSaveBatch={onSaveBatch} onCorrectValue={onCorrectValue}
       isSaving={false} grading={{}} hasApiResponse prefillRef={prefillRef}/>
   );
   const view = render(page(rows));
@@ -106,7 +107,7 @@ describe('US-05 AC3 — the Lp(a) check: a number with its unit', () => {
     const m = matrix();
     await m.answer(mgL(156, 39));
     expect(m.onCorrectValue).toHaveBeenCalledTimes(1);
-    expect(m.onCorrectValue).toHaveBeenCalledWith('row0', 39);
+    expect(m.onCorrectValue).toHaveBeenCalledWith('row0', 39, getShownErase());
     expect(m.notices()).toHaveLength(0);
     expect(m.answers()).toEqual([{ answer: 'mg/L' }]);
   });
@@ -125,7 +126,7 @@ describe('US-05 AC3 — the Lp(a) check: a number with its unit', () => {
     const m = matrix();
     await m.answer(/^My report says 156 mg\/dL/);
     expect(m.onCorrectValue).toHaveBeenCalledTimes(1);
-    expect(m.onCorrectValue).toHaveBeenCalledWith('row0', 390);
+    expect(m.onCorrectValue).toHaveBeenCalledWith('row0', 390, getShownErase());
     expect(m.answers()).toEqual([{ answer: 'mg/dL' }]);
   });
 
@@ -133,7 +134,7 @@ describe('US-05 AC3 — the Lp(a) check: a number with its unit', () => {
     const m = matrix();
     await m.answer('My report says 156 nmol/L');
     expect(m.onCorrectValue).toHaveBeenCalledTimes(1);
-    expect(m.onCorrectValue).toHaveBeenCalledWith('row0', 156);
+    expect(m.onCorrectValue).toHaveBeenCalledWith('row0', 156, getShownErase());
     expect(m.answers()).toEqual([{ answer: 'nmol/L' }]);
   });
 
@@ -176,7 +177,7 @@ describe('US-05 AC3 — the Lp(a) check: a number with its unit', () => {
     const m = matrix([typedRow({ value: 180 })]);
     await m.answer(capped(750));
     expect(m.onCorrectValue).toHaveBeenCalledTimes(1);
-    expect(m.onCorrectValue).toHaveBeenCalledWith('row0', 750);
+    expect(m.onCorrectValue).toHaveBeenCalledWith('row0', 750, getShownErase());
     expect(m.answers()).toEqual([{ answer: 'mg/dL' }]);
   });
 
@@ -205,11 +206,11 @@ describe('US-05 AC3 — the Lp(a) check: a number with its unit', () => {
     expect(m.notices()[0].querySelector('p')?.textContent).toBe(copy(11));
     expect(m.labels()).toEqual(['My report says 45.5 mg/dL (saves 113.75 nmol/L)', 'My report says 45.5 nmol/L', mgL(45.5, 11.375), NEITHER]);
     await m.answer(/mg\/dL/);
-    expect(m.onCorrectValue).toHaveBeenCalledWith('row0', 113.75);
+    expect(m.onCorrectValue).toHaveBeenCalledWith('row0', 113.75, getShownErase());
     cleanup();
     const n = matrix([typedRow({ value: 10.92 })]);
     await n.answer('My report says 45.5 nmol/L');
-    expect(n.onCorrectValue).toHaveBeenCalledWith('row0', 45.5);
+    expect(n.onCorrectValue).toHaveBeenCalledWith('row0', 45.5, getShownErase());
   });
 
   it('asks nothing of a user whose field never showed mg/L', () => {
@@ -299,6 +300,26 @@ describe('US-05 AC3 — the Lp(a) check: a number with its unit', () => {
     expect(m.view.container.querySelector('.lpa-check-status')?.textContent).toBe(NBSP);
   });
 
+  // US-05 AC3a (lead H300): a correction that throws ends as an error, never stuck saving.
+  it('a correction that rejects frees the buttons, says the error words, and lets no rejection escape', async () => {
+    const escaped = vi.fn();
+    process.on('unhandledRejection', escaped);
+    try {
+      const m = matrix();
+      m.onCorrectValue.mockRejectedValue(new Error('store threw'));
+      await m.answer(/mg\/dL/);
+      expect(within(m.notices()[0]).getByText(SAVE_ERRORS.error)).toBeTruthy();
+      await wait(REST);
+      expect(m.buttons().every((b) => !b.disabled)).toBe(true);
+      expect(m.answers()).toEqual([]);
+      vi.useRealTimers(); // node reports an unhandled rejection a macrotask later
+      await act(async () => { await new Promise((resolve) => setTimeout(resolve, 10)); });
+      expect(escaped).not.toHaveBeenCalled();
+    } finally {
+      process.off('unhandledRejection', escaped);
+    }
+  });
+
   it('asks nothing, and holds no region, when no row needs checking', () => {
     expect(matrix([typedRow()], 'si').view.container.querySelector('.lpa-check-status')).toBeNull();
   });
@@ -308,7 +329,7 @@ describe('US-05 AC3 — the Lp(a) check: a number with its unit', () => {
     expect(m.notices()).toHaveLength(2);
     expect(m.labels(1)).toEqual(['My report says 50 mg/dL (saves 125 nmol/L)', 'My report says 50 nmol/L', mgL(50, 12.5), NEITHER]);
     await m.answer('My report says 50 nmol/L', 1);
-    expect(m.onCorrectValue).toHaveBeenCalledWith('row1', 50);
+    expect(m.onCorrectValue).toHaveBeenCalledWith('row1', 50, getShownErase());
   });
 });
 
@@ -445,7 +466,7 @@ describe('US-05 AC3 — a double click answers one question', () => {
     fireEvent.click(firstButton(m), { detail: 2 });
     await wait(0);
     expect(m.onCorrectValue).toHaveBeenCalledTimes(1);
-    expect(m.onCorrectValue).toHaveBeenCalledWith('row0', 390);
+    expect(m.onCorrectValue).toHaveBeenCalledWith('row0', 390, getShownErase());
     expect(m.notices()).toHaveLength(1);
   });
 
@@ -567,5 +588,115 @@ describe('US-05 AC3 — an answer refused because the result changed elsewhere',
     expect(document.activeElement).toBe(next);
     m.showHistory([typedRow({ id: 'other', value: 100, createdAt: '2026-10-13T05:00:00.000Z' }), typedRow({ id: 'row1', value: 12, recordedAt: '2026-09-25T00:00:00.000Z' })]);
     expect(document.activeElement).toBe(next);
+  });
+});
+
+// W1-6 pins: how long the answer buttons rest, and what a retry shows, around
+// a save that takes longer than the rest (US-05 AC3).
+describe('US-05 AC3 — the answer buttons around a slow save', () => {
+  const twoRows = () => matrix([typedRow(), typedRow({ id: 'row1', value: 12, recordedAt: '2026-09-25T00:00:00.000Z' })]);
+  /** The next correction waits until the returned function lands it with an outcome. */
+  const hold = (m: ReturnType<typeof matrix>) => {
+    let land!: (status: string) => void;
+    m.onCorrectValue.mockImplementationOnce(() => new Promise((resolve) => { land = resolve; }));
+    return (status: string) => act(async () => { land(status); });
+  };
+  const allDisabled = (m: ReturnType<typeof matrix>, i = 0) => m.buttons(i).every((b) => b.disabled);
+  const allFree = (m: ReturnType<typeof matrix>) => m.buttons(0).every((b) => !b.disabled);
+
+  it('P1: a save held past 600 ms keeps every button disabled until it lands, then 600 ms more after ok', async () => {
+    const m = twoRows();
+    const land = hold(m);
+    await m.answer(/mg\/dL/, 0);
+    await wait(REST + 400);
+    expect(allDisabled(m, 0)).toBe(true);
+    expect(allDisabled(m, 1)).toBe(true);
+    await land('ok');
+    expect(m.notices()).toHaveLength(1);
+    expect(allDisabled(m)).toBe(true);
+    await wait(REST - 50);
+    expect(allDisabled(m)).toBe(true);
+    await wait(50);
+    expect(allFree(m)).toBe(true);
+  });
+
+  it('P2: a save held past 600 ms, then refused: the buttons rest 600 ms more (D1)', async () => {
+    const m = matrix();
+    const land = hold(m);
+    await m.answer(/mg\/dL/);
+    await wait(REST + 400);
+    expect(allDisabled(m)).toBe(true);
+    await land('invalid');
+    expect(within(m.notices()[0]).getByText(SAVE_ERRORS.invalid)).toBeTruthy();
+    expect(allDisabled(m)).toBe(true);
+    await wait(REST - 50);
+    expect(allDisabled(m)).toBe(true);
+    await wait(50);
+    expect(allFree(m)).toBe(true);
+  });
+
+  it('P3: a refusal, then a held retry: the old reason clears when the retry starts (D2)', async () => {
+    const m = matrix();
+    m.onCorrectValue.mockResolvedValueOnce('invalid');
+    await m.answer(/mg\/dL/);
+    await wait(REST);
+    const reason = m.notices()[0].querySelector('[aria-live="polite"]')!;
+    expect(reason.textContent).toBe(SAVE_ERRORS.invalid);
+    const land = hold(m);
+    await m.answer('My report says 156 nmol/L');
+    expect(allDisabled(m)).toBe(true);
+    expect(reason.textContent).toBe(NBSP);
+    await land('ok');
+    expect(m.notices()).toHaveLength(0);
+  });
+
+  it('P4: changed after a 400 ms save: the buttons rest 600 ms from the outcome, not the click (D1)', async () => {
+    const m = matrix();
+    const land = hold(m);
+    await m.answer(/mg\/dL/);
+    await wait(400);
+    await land('changed');
+    await wait(0); // the region says it a task later
+    expect(m.status().textContent).toBe('This result changed on another device. Nothing was saved.');
+    await wait(REST - 400 + 50);
+    expect(allDisabled(m)).toBe(true);
+    await wait(400 - 50);
+    expect(allFree(m)).toBe(true);
+  });
+
+  // Codex R1 on PR 1772: the re-read that takes notice A can land in the same
+  // render as the outcome, so B is then first. The focus follows the row, not the place.
+  it('P6: changed, with the re-read that takes A in the same render: the focus goes to B, never C', async () => {
+    const b = typedRow({ id: 'row1', value: 12, recordedAt: '2026-09-25T00:00:00.000Z' });
+    const c = typedRow({ id: 'row2', value: 24, recordedAt: '2026-09-28T00:00:00.000Z' });
+    const m = matrix([typedRow(), b, c]);
+    const [, noticeB, noticeC] = m.notices();
+    let land!: (status: string) => void;
+    m.onCorrectValue.mockImplementationOnce(() => new Promise((resolve) => { land = resolve; }));
+    await m.answer(/mg\/dL/, 0);
+    await act(async () => {
+      land('changed');
+      await Promise.resolve();
+      await Promise.resolve();
+      m.showHistory([typedRow({ id: 'other', value: 100, createdAt: '2026-10-13T05:00:00.000Z' }), b, c]);
+    });
+    expect(m.notices()).toEqual([noticeB, noticeC]);
+    expect(document.activeElement).toBe(noticeB);
+  });
+
+  it('P5: unmounted while the buttons rest: no timer is left and nothing runs after', async () => {
+    const m = matrix();
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      await m.answer(NEITHER);
+      expect(m.notices()).toHaveLength(0);
+      expect(vi.getTimerCount()).toBeGreaterThan(0); // the rest
+      m.view.unmount();
+      expect(vi.getTimerCount()).toBe(0);
+      await wait(REST);
+      expect(errors).not.toHaveBeenCalled();
+    } finally {
+      errors.mockRestore();
+    }
   });
 });

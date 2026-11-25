@@ -21,7 +21,7 @@ function vitals() {
     recordedAt: '2026-09-01T00:00:00.000Z', createdAt: '2026-09-01T00:00:00.000Z', status: 'active',
   }];
   const onSave = vi.fn<(tasks: SaveTask[]) => Promise<Refused>>().mockResolvedValue(new Map());
-  const view = render(<StartingInfoVitals vitalsHistory={history} unitSystem="si" onSave={onSave} onDraftValue={() => {}}
+  const view = render(<StartingInfoVitals vitalsHistory={history} unitSystem="si" onSave={onSave}
     formStage={3} plan={null} unitOverrides={{}} onToggleFieldUnit={() => {}}/>);
   const cell = (label: string) => Array.from(view.container.querySelectorAll<HTMLElement>('.bt-row'))
     .find((r) => r.querySelector('.bt-name-label')?.textContent === label)!

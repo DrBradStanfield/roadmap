@@ -1,15 +1,11 @@
 /**
- * The poll client's half of the batch capability: the token the POST hands
- * back is kept here and presented on every poll. Without it the server answers
- * 404, so a client that forgets it never reads its own results.
- *
- * The poll is a POST with the token in the BODY. The server logs request URLs
- * to stdout, and a logged token reads the extracted lab text back.
+ * The upload's server transport: one file's read through the app proxy, its body and how a
+ * failed answer is read (health-core upload-failure.ts). Synthetic fixtures only.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as z from '../../../packages/health-core/src/zod';
-import { checkLabImportQuota, labImport, labImportBatch, pollBatchStatus } from './upload-api';
-import { batchImportRequestSchema, labImportPageSchema, labImportRequestSchema } from '../../../packages/health-core/src/validation';
+import { checkLabImportQuota, labImport } from './upload-api';
+import { labImportPageSchema, labImportRequestSchema } from '../../../packages/health-core/src/validation';
 
 const FILES = [{ fileName: 'a.pdf', pages: [{ type: 'image' as const, content: 'AAAA', mimeType: 'image/png' }] }];
 
@@ -32,132 +28,6 @@ function stubFetch(reply: (call: Call) => Response) {
 beforeEach(() => { calls = []; });
 afterEach(() => { vi.unstubAllGlobals(); });
 
-describe('the batch poll carries the token the upload was given', () => {
-  it('sends the pollToken in the body, never in the URL', async () => {
-    stubFetch((call) =>
-      call.body && 'batch' in call.body
-        ? jsonResponse({ success: true, batchId: 'batch_abc', pollToken: 'tok-123' })
-        : jsonResponse({ status: 'processing', completed: 0, total: 1 }));
-
-    const { batchId } = await labImportBatch(FILES);
-    expect(batchId).toBe('batch_abc');
-    await pollBatchStatus('batch_abc');
-    await pollBatchStatus('batch_abc');
-
-    expect(calls.slice(1).map((c) => c.body)).toEqual([
-      { batchId: 'batch_abc', pollToken: 'tok-123' },
-      { batchId: 'batch_abc', pollToken: 'tok-123' },
-    ]);
-    // The URL is the bare endpoint — no query string to end up in a log line.
-    for (const call of calls) {
-      expect(call.url).not.toContain('?');
-      expect(call.url).not.toContain('tok-123');
-    }
-  });
-
-  it('polls a batch it never created with an empty token, and takes the 404 as a restart', async () => {
-    stubFetch(() => jsonResponse({ error: 'Batch not found' }, 404));
-
-    const poll = await pollBatchStatus('batch_stranger');
-    expect(calls[0].body).toEqual({ batchId: 'batch_stranger', pollToken: '' });
-    expect(poll).toMatchObject({ status: 'ended', errorCode: 'server_restart' });
-  });
-
-  // US-12 AC25: a re-pick joins the same batch id with a new token. A cancelled
-  // poll that answers late must not erase the joiner's token.
-  it.each([
-    ['ended', () => jsonResponse({ status: 'ended', completed: 1, total: 1, results: [] })],
-    ['a 404', () => jsonResponse({ error: 'Batch not found' }, 404)],
-  ])('US-12 AC25: a late %s answer to the old token keeps the token a join stored since', async (_, late) => {
-    let release!: (response: Response) => void;
-    let joined = false;
-    stubFetch((call) => {
-      if (call.body && 'batch' in call.body) {
-        const pollToken = joined ? 'tok-join' : 'tok-first';
-        joined = true;
-        return jsonResponse({ success: true, batchId: 'batch_join', pollToken });
-      }
-      return jsonResponse({ status: 'processing', completed: 0, total: 1 });
-    });
-    const fetchMock = vi.mocked(fetch);
-    await labImportBatch(FILES);
-    fetchMock.mockImplementationOnce(async (url, init) => {
-      calls.push({ url: String(url), body: JSON.parse(String(init?.body)) });
-      return new Promise<Response>(resolve => { release = resolve; });
-    });
-    const cancelled = pollBatchStatus('batch_join');
-    await labImportBatch(FILES);
-    release(late());
-    await cancelled;
-    await pollBatchStatus('batch_join');
-    expect(calls.at(-1)?.body).toEqual({ batchId: 'batch_join', pollToken: 'tok-join' });
-  });
-});
-
-// US-12 AC24: a failed poll that can change answers `error`, and the caller
-// polls on to its deadline. One that cannot change ends the watch at once.
-describe('US-12 AC24: a failed batch poll, by whether it can change', () => {
-  it.each([
-    ['a 500 from our route', () => jsonResponse({ success: false }, 500)],
-    ['a network throw', () => { throw new TypeError('synthetic network failure'); }],
-  ])('%s answers error, never "processing 0"', async (_, reply) => {
-    stubFetch(reply);
-    expect(await pollBatchStatus('batch_abc')).toEqual({ status: 'error', completed: 0, total: 0 });
-  });
-
-  it.each([
-    ['a 401', () => jsonResponse({ error: 'Unauthorized' }, 401), 'server_error'],
-    ['a 403', () => jsonResponse({ success: false, error: 'Forbidden' }, 403), 'server_error'],
-    ['a 404', () => jsonResponse({ error: 'Batch not found' }, 404), 'server_restart'],
-    ['a page that is not JSON', () => new Response('<html>synthetic</html>', { headers: { 'content-type': 'text/html' } }), 'server_error'],
-    ['JSON that does not parse', () => new Response('{"status":', { headers: { 'content-type': 'application/json' } }), 'server_error'],
-    ['an answer with no known status', () => jsonResponse({ ok: true }), 'server_error'],
-  ] as const)('%s ends the watch with an error', async (_, reply, errorCode) => {
-    stubFetch(reply);
-    const poll = await pollBatchStatus('batch_abc');
-    expect(poll).toMatchObject({ status: 'ended', errorCode });
-    expect(poll.error).toBeTruthy();
-  });
-
-  it('a connection drop while the body streams answers error and keeps the poll token', async () => {
-    let n = 0;
-    stubFetch((call) => {
-      if (call.body && 'batch' in call.body) return jsonResponse({ success: true, batchId: 'batch_drop', pollToken: 'tok-drop' });
-      return n++ === 0
-        ? new Response(new ReadableStream({ start(c) { c.enqueue(new TextEncoder().encode('{"status":')); c.error(new TypeError('synthetic connection drop')); } }),
-          { headers: { 'content-type': 'application/json' } })
-        : jsonResponse({ status: 'processing', completed: 3, total: 20 });
-    });
-    await labImportBatch(FILES);
-    expect(await pollBatchStatus('batch_drop')).toEqual({ status: 'error', completed: 0, total: 0 });
-    expect(await pollBatchStatus('batch_drop')).toEqual({ status: 'processing', completed: 3, total: 20 });
-    expect(calls[2].body).toEqual({ batchId: 'batch_drop', pollToken: 'tok-drop' });
-  });
-
-  it.each([
-    ['no `completed`', { status: 'processing', total: 20 }],
-    ['a NaN count (JSON carries it as null)', { status: 'processing', completed: NaN, total: 20 }],
-    ['a negative count', { status: 'error', completed: -1, total: 20 }],
-    ['a fractional count', { status: 'processing', completed: 1.5, total: 20 }],
-    ['an `ended` with neither results nor an error', { status: 'ended', completed: 20, total: 20 }],
-    ['an `ended` with a code but no error text', { status: 'ended', completed: 20, total: 20, errorCode: 'server_error' }],
-    ['an `ended` with an empty error', { status: 'ended', completed: 20, total: 20, error: '' }],
-  ])('an answer with %s ends the watch with a server error', async (_, body) => {
-    stubFetch(() => jsonResponse(body));
-    const poll = await pollBatchStatus('batch_abc');
-    expect(poll).toMatchObject({ status: 'ended', errorCode: 'server_error' });
-    expect(poll.error).toBeTruthy(); // what the pipeline ends on
-  });
-
-  it('passes the server\'s own `error` answer through, its count kept', async () => {
-    stubFetch(() => jsonResponse({ status: 'error', completed: 3, total: 20 }));
-    expect(await pollBatchStatus('batch_abc')).toEqual({ status: 'error', completed: 3, total: 20 });
-  });
-});
-
-// Privacy: a file name can hold a patient's name ("Jane Citizen bloods.pdf").
-// The server never needs it: a batch result comes back by its request index,
-// and the browser maps the index to the file. So no name leaves the browser.
 describe('privacy: no file name in the request body', () => {
   const NAMED = [
     { fileName: 'Jane Citizen bloods.pdf', pages: [{ type: 'text' as const, content: 'one' }] },
@@ -168,40 +38,8 @@ describe('privacy: no file name in the request body', () => {
     raw = [];
     vi.stubGlobal('fetch', vi.fn(async (_url: string, init?: RequestInit) => {
       raw.push(String(init?.body ?? ''));
-      return jsonResponse({ success: true, batchId: 'batch_abc', pollToken: 't', data: { values: [] } });
+      return jsonResponse({ success: true, data: { values: [] } });
     }));
-  });
-
-  it('the batch sends each file\'s pages in order, and nothing that names it', async () => {
-    await labImportBatch(NAMED);
-    expect(raw).toHaveLength(1);
-    expect(raw[0]).not.toContain('Jane');
-    expect(raw[0]).not.toContain('.pdf');
-    expect(raw[0]).not.toContain('.zip');
-    expect(JSON.parse(raw[0])).toEqual({ batch: true, ownDates: true, undatedPrev: true, refusedRows: true, files: [
-      { fileName: 'file-1', pages: NAMED[0].pages },
-      { fileName: 'file-2', pages: NAMED[1].pages },
-    ] });
-  });
-
-  // US-12 AC9, deploy order: CI ships the widget BEFORE the Fly server, and a
-  // failed Fly step keeps the old server live. That server's schema (as of
-  // 32f7b9c5) requires a fileName string on every batch file, so the widget
-  // sends a placeholder label that names nothing. The new schema strips it.
-  it('the batch body still passes the old server\'s schema, and the new one drops the label', async () => {
-    const oldBatchSchema = z.object({
-      batch: z.literal(true),
-      files: z.array(z.object({
-        fileName: z.string(),
-        pages: z.array(labImportPageSchema).min(1).max(100),
-      })).min(1).max(200),
-    });
-    await labImportBatch(NAMED);
-    const body = JSON.parse(raw[0]);
-    expect(oldBatchSchema.safeParse(body).success).toBe(true);
-    const parsed = batchImportRequestSchema.parse(body);
-    expect(parsed.files).toEqual([{ pages: NAMED[0].pages }, { pages: NAMED[1].pages }]);
-    expect(parsed.ownDates).toBe(true); // US-12 AC12: this widget files a value on its own day
   });
 
   // US-12 AC14, deploy order: the widget ships before the Fly server. The live
@@ -213,23 +51,14 @@ describe('privacy: no file name in the request body', () => {
     unitSystem: z.enum(['si', 'conventional']).optional(),
     ownDates: z.literal(true).optional(),
   });
-  const liveBatchSchema = z.object({
-    batch: z.literal(true),
-    files: z.array(z.object({
-      pages: z.array(labImportPageSchema).min(1).max(100),
-    })).min(1).max(200),
-    ownDates: z.literal(true).optional(),
-  });
-
-  it('both bodies pass the LIVE server\'s schemas (6a4c8902), which strip the undated flag; the new ones keep it', async () => {
+  it('the body passes the LIVE server\'s schema (6a4c8902), which strips the undated flag; the new one keeps it', async () => {
     await labImport(NAMED[0].pages, 'si');
-    await labImportBatch(NAMED);
-    const [single, batch] = raw.map(r => JSON.parse(r));
-    const live = [liveSingleSchema.safeParse(single), liveBatchSchema.safeParse(batch)];
-    expect(live.map(r => r.success)).toEqual([true, true]);
-    expect(live.map(r => r.success && (r.data as Record<string, unknown>).undatedPrev)).toEqual([undefined, undefined]);
-    expect(live.map(r => r.success && r.data.ownDates)).toEqual([true, true]);
-    expect([labImportRequestSchema.parse(single).undatedPrev, batchImportRequestSchema.parse(batch).undatedPrev]).toEqual([true, true]);
+    const single = JSON.parse(raw[0]);
+    const live = liveSingleSchema.safeParse(single);
+    expect(live.success).toBe(true);
+    expect(live.success && (live.data as Record<string, unknown>).undatedPrev).toBeUndefined();
+    expect(live.success && live.data.ownDates).toBe(true);
+    expect(labImportRequestSchema.parse(single).undatedPrev).toBe(true);
   });
 
   // US-12 AC12: `ownDates` tells the server this widget files a value on its own day.
@@ -243,11 +72,10 @@ describe('privacy: no file name in the request body', () => {
 // Privacy: a JSON body that fails to parse can be quoted by the SyntaxError,
 // and the console must not carry it (the error's kind only, as BYOK logs).
 describe('privacy: a failed upload response logs no body text', () => {
-  it('logs neither the body nor the parse error message, on one file and on a batch', async () => {
+  it('logs neither the body nor the parse error message', async () => {
     stubFetch(() => new Response('{"data": SYNTHETIC sodium 141', { status: 200, headers: { 'content-type': 'application/json' } }));
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     await labImport(FILES[0].pages, 'si');
-    await labImportBatch(FILES);
     const logged = JSON.stringify(warn.mock.calls.map(c => c.map(a => (a instanceof Error ? `${a.name}: ${a.message}` : String(a)))));
     expect(logged).not.toContain('SYNTHETIC');
     expect(logged).not.toContain('141');
@@ -305,13 +133,25 @@ describe('US-12 AC9 H65: a 429 is read by its code', () => {
     ['a body that is not JSON', () => new Response('Too many', { status: 429, headers: { 'content-type': 'application/json' } }), DAILY],
   ];
 
-  it.each(cases)('a batch 429 with %s', async (_, reply, expected) => {
-    stubFetch(reply);
-    expect(await labImportBatch(FILES)).toEqual({ batchId: null, ...expected });
-  });
-
   it.each(cases)('a single-file 429 with %s', async (_, reply, expected) => {
     stubFetch(reply);
     expect(await labImport(FILES[0].pages, 'si')).toEqual({ result: null, ...expected });
+  });
+});
+
+// US-12 AC28: Cancel or Stop aborts a read in flight; the shared state ignores its late answer.
+describe('US-12 AC28: a read takes the upload\'s signal', () => {
+  it('hands fetch the signal, and an aborted read answers a network failure', async () => {
+    let seen: AbortSignal | undefined;
+    vi.stubGlobal('fetch', vi.fn((_url: string, init?: RequestInit) => new Promise<Response>((_resolve, reject) => {
+      seen = init?.signal ?? undefined;
+      seen?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')));
+    })));
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const cancel = new AbortController();
+    const read = labImport(FILES[0].pages, 'si', { signal: cancel.signal });
+    await vi.waitFor(() => expect(seen).toBe(cancel.signal));
+    cancel.abort();
+    expect(await read).toEqual({ result: null, error: 'Network error', errorCode: 'network' });
   });
 });

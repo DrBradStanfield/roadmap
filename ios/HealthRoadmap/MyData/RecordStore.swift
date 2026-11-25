@@ -22,13 +22,8 @@ final class RecordStore {
     private(set) var recordJSON: String { didSet { if recordJSON != oldValue { revision += 1 } } }
     /// My health's rows and the plan, from one engine call, so the two always show the same record
     /// (US-25 AC2); nil while the record cannot be read.
+    /// Read outside the store only through `readable` (RecordStore+Readable.swift).
     private(set) var drawn: HealthEngine.Drawn?
-    /// My health's rows and forms; nil while the record cannot be read.
-    var myData: MyData? { drawn?.myData }
-    /// My health's plan; nil while the record cannot be read.
-    var plan: PlanState? { drawn?.plan }
-    /// The plan's cards by topic, from the same call (US-73 AC3).
-    var topics: TopicLayout? { drawn?.topics }
     /// Why the record cannot be read, if it cannot. The app then writes nothing.
     private(set) var problem: RecordProblem?
     /// Which record is shown, the phone's file or a cloud's, and the connected cloud's link
@@ -39,8 +34,9 @@ final class RecordStore {
     /// Told after each edit: in the cloud, that a save is on its way; on the
     /// phone, that the file moved (CloudSync marks it for the cloud then).
     var onEdit: (() -> Void)?
-    /// Moves each time "Delete all my data" erases the record here (US-25 AC16),
-    /// so a view holding health data outside the record, the open chat, drops it.
+    /// Moves each time an erase reaches the record: "Delete all my data" here (US-25 AC16), or one
+    /// taken in from another device or a switch to a record at another erase (`land`, S70, S63).
+    /// A view holding health data outside the record, the open chat, drops it.
     private(set) var erasures = 0 { didSet { forgetCharts() } }
     /// The erase count the drawn screen shows: behind `erasures` when an erase's draw failed, so
     /// its rows predate the erase (a failed metric read's words, S25). Caught up only by a record
@@ -96,26 +92,19 @@ final class RecordStore {
     @ObservationIgnored private var shownOrder = 0
     /// The stamp on the record actually drawn; nil for one with none (the phone's file).
     @ObservationIgnored private var drawnOrder: Int?
+    @ObservationIgnored private var countedErases: Set<String?> = []  // each erase `land` counted (Codex R1)
 
-    /// What `draw` did. `stale`: refused only because a record the engine stamped later is drawn.
+    /// What `draw` did. `held`: landed with no drawing (an erase, `holdUndrawn`).
+    /// `stale`: refused only because a record the engine stamped later is drawn.
     /// showErased trusts that a record stamped after the erase holds it: every engine door that
     /// stamps builds its record when it resolves (HealthEngine+Cloud.swift `stamp`); keep it so.
-    enum DrawResult { case drawn, stale, failed }
+    enum DrawResult { case drawn, held, stale, failed }
 
     /// Unit switches asked for and not yet landed, per-test or the master one. While one
     /// is pending, a sheet would pin the old units and label itself from the new row:
     /// entry waits (AC17e).
     var unitSwitches = 0
 
-    struct Stamp: Equatable {
-        let revision: Int
-        let draws: Int?
-    }
-
-    struct KeptHistory {
-        let stamp: Stamp
-        let chart: ChartData
-    }
     var histories: [String: KeptHistory] = [:]
     /// A history the engine is reading, for the stamp it was asked at.
     @ObservationIgnored var reading: [String: (stamp: Stamp, task: Task<ChartData?, Never>)] = [:]
@@ -193,8 +182,10 @@ final class RecordStore {
 
     /// The one door to `source`: the event's transition, then what it shows, in one synchronous
     /// step. Assigns only on change, so CloudSync's link after every send moves nothing it need not.
+    /// `erased`: an erase the caller saw move (`draw(_ view:)`), counted once it shows.
     @discardableResult
-    private func land(_ event: Source.Event, record: String? = nil, drawn: HealthEngine.Drawn? = nil, problem: RecordProblem? = nil) -> Source.Effect {
+    private func land(_ event: Source.Event, record: String? = nil, drawn: HealthEngine.Drawn? = nil, problem: RecordProblem? = nil, erased: Bool = false) -> Source.Effect {
+        let before = mark
         let (next, effect) = Source.transition(source, event)
         if next != source { source = next }
         switch effect {
@@ -210,6 +201,10 @@ final class RecordStore {
             self.problem = problem
         case .none, .drop: break
         }
+        if before.erased(by: mark) || (erased && effect == .show) {  // landed, on evidence (S70, S63, H200)
+            (erasures, screenErasures) = (erasures + 1, erasures + 1)
+            countedErases.insert(cloudErase)
+        }
         return effect
     }
 
@@ -221,28 +216,32 @@ final class RecordStore {
 
     /// `choices`: the per-test units to draw it in, published with it (nil: those in force).
     /// Not drawn: nothing on screen moved, the units included.
+    /// `holdUndrawn`: one the engine cannot draw is held all the same, with no drawing (showErased), as is
+    /// the shown session's own record at another erase: never the pre-erase record shown (S63, AC16f). So is
+    /// another session's (handOver's) at another eraseEpoch than the one drawn, both known (H200): counted by `land`.
     @discardableResult
-    func draw(_ view: HealthEngine.CloudView, in choices: UnitChoices? = nil) async -> DrawResult {
-        await draw(view.record, order: view.order, as: .cloudShown(erase: view.erase, session: view.session), in: choices)
+    func draw(_ view: HealthEngine.CloudView, in choices: UnitChoices? = nil, holdUndrawn: Bool = false) async -> DrawResult {
+        let drawnEpoch = mark.epoch
+        let moved = view.session != source.session && view.eraseEpoch != nil && drawnEpoch != nil && view.eraseEpoch != drawnEpoch
+        return await draw(view.record, order: view.order, as: .cloudShown(erase: view.erase, session: view.session), in: choices,
+                          holdUndrawn: holdUndrawn || moved || (view.session == source.session && view.erase != source.erase), erased: moved)
     }
 
     /// A cloud record onto the screen: `event` says whether the session sent it or an edit made it.
+    /// `erased`: the caller saw the erase move, which a record held undrawn cannot show `land` (H200).
     @discardableResult
-    func draw(_ record: String, order: Int?, as event: Source.Event, in choices: UnitChoices? = nil) async -> DrawResult {
+    func draw(_ record: String, order: Int?, as event: Source.Event, in choices: UnitChoices? = nil, holdUndrawn: Bool = false, erased: Bool = false) async -> DrawResult {
         // One the engine handed over before the record now shown is stale: the screen
         // keeps the newer one (a re-read that crossed an edit). Stale against the record
-        // drawn, not one only handed over, whose own draw may have failed.
-        if let order {
-            guard order > shownOrder else { return drawnOrder.map { order <= $0 } == true ? .stale : .failed }
-            shownOrder = order
-        }
+        // drawn, not one only handed over, whose own draw may have failed. The stamp moves
+        // only with a record that lands, so a newer one that failed never makes an erase stale.
+        if let order, order <= shownOrder { return drawnOrder.map { order <= $0 } == true ? .stale : .failed }
         let choices = choices ?? unitChoices
-        guard let shown = try? await engine.screen(recordJSON: record, now: .now, deviceId: deviceId, units: choices.json),
-              land(event, record: record, drawn: shown) == .show
-        else { return .failed }
-        drawnOrder = order
+        let shown = try? await engine.screen(recordJSON: record, now: .now, deviceId: deviceId, units: choices.json)
+        guard shown != nil || holdUndrawn, land(event, record: record, drawn: shown, erased: erased) == .show else { return .failed }
+        if let order { (shownOrder, drawnOrder) = (order, order) }
         publish(choices)
-        return .drawn
+        return shown == nil ? .held : .drawn
     }
 
     /// Back to the phone's own file (Disconnect, or a cloud that could not open). While the file
@@ -264,23 +263,16 @@ final class RecordStore {
     /// screening due dates, and minor status, which turns at midday UTC, not local midnight,
     /// so no calendar-day check can stand in). Called each time the app becomes active and at
     /// midnight while it is; a draw takes about a millisecond. In line with every change
-    /// (`chain`); nothing when no record is drawn.
+    /// (`chain`); nothing when no record is drawn or held. An erase held with no drawing is drawn
+    /// here once the engine can (lead S45): it then reads and takes edits; one predating an erase is not.
     @discardableResult
     func redraw(now: Date = .now) -> Task<Void, Never> {
         chain {
-            guard self.drawn != nil,
+            guard self.drawn != nil || self.hold == .heldUndrawn,
                   let shown = try? await self.engine.screen(recordJSON: self.recordJSON, now: now, deviceId: self.deviceId, units: self.unitChoices.json)
             else { return }
             self.display(shown)
         }
-    }
-
-    /// The App Store storefront's country (US-61, `AppStoreCountry`): a change draws the
-    /// record again, so the plan's supplement cards gain or lose Dr Brad's products.
-    func follow(storefrontIsUS isUS: Bool) async {
-        guard await engine.storefrontIsUS != isUS else { return }
-        await engine.useStorefront(isUS: isUS)
-        await redraw().value
     }
 
     // MARK: Erase (US-25 AC16)
@@ -317,9 +309,10 @@ final class RecordStore {
                 // the pre-erase file opens again and merges the erase in, whose higher
                 // eraseEpoch wins (US-09 AC23).
                 let shown = try await self.engine.drawAndWrite(result.record, units: UnitChoices().json, to: self.file, marking: self.source.link?.pending, deviceId: self.deviceId)
+                let counted = self.erasures
                 let drawnErase = self.land(.phoneWritten, record: result.record, drawn: shown) == .show
                 self.publish(UnitChoices())
-                self.erasures += 1
+                if self.erasures == counted { self.erasures += 1 }  // once, if land has not counted it
                 if drawnErase { self.screenErasures = self.erasures }
                 self.onEdit?()
                 return .erased(chatErased: chatErased)
@@ -329,15 +322,19 @@ final class RecordStore {
         }.value
     }
 
-    /// The cloud record, erased by the engine's session: shown like any record it sends.
+    /// The cloud record, erased by the engine's session: shown like any record it sends. The store
+    /// holds it even when the engine cannot draw it, with no drawing, so nothing that reads the
+    /// store's record or rows reads the one it replaced. Only a stale one is dropped: a record
+    /// the engine stamped after it is drawn, which holds the erase (`DrawResult`). Always counted, once (AC16g).
     @discardableResult
-    func showErased(_ view: HealthEngine.CloudView) -> Task<Void, Never> {
+    func showErased(_ view: HealthEngine.CloudView?, stillShown: @escaping @MainActor () -> Bool = { true }) -> Task<Void, Never> {
         chain {
-            // A fresh start: no per-test choice, published only with the erase drawn (adversary R4).
-            // Stale: the record drawn was stamped after the erase, so it holds it (owner's ruling b).
-            let drawn = await self.draw(view, in: UnitChoices())
-            self.erasures += 1
-            if drawn != .failed { self.screenErasures = self.erasures }
+            // A fresh start: no per-test choice, published only with the erase held (adversary R4).
+            // Counted unless `land` counted its erase (`countedErases`): the record shown then holds it. No view still counts (AC16g).
+            let counted = self.erasures
+            let shown = await self.drawErased(view, stillShown: stillShown())
+            if self.erasures == counted, !(view.map { self.countedErases.contains($0.erase) } ?? false) { self.erasures += 1 }
+            if shown != .failed { self.screenErasures = self.erasures }
         }
     }
 
@@ -396,11 +393,18 @@ final class RecordStore {
         guard shows(seen) else {
             return .refused(message: Self.recordChanged, existingId: nil)
         }
+        // An erase held with no drawing (showErased) takes no edit until it is drawn: an Apple Health
+        // pass that cannot see the erase without a drawing adds nothing to it (US-25 AC16f).
+        // A record an erase replaced, its draw failed, takes none either (lead S52), nor one not yet loaded.
+        switch hold {
+        case .predatesErase, .heldUndrawn, .empty: return .refused(message: Self.recordChanged, existingId: nil)
+        case .readable, .unreadable: break
+        }
         if let erase = seen.erase { return await applyInCloud(edit, erase: erase, seen: seen) }
         if let problem { return .refused(message: problem.words, existingId: nil) }
         // A number read in units the record no longer has, as the cloud session refuses it
-        // (cloud.ts dependsOnUnits): the master switch landed while the sheet was open.
-        if Self.dependsOnUnits(edit), seen.units != (myData?.unitSystem ?? "si") {
+        // (guarded-edit.ts dependsOnUnits): the master switch landed while the sheet was open.
+        if Self.dependsOnUnits(edit), seen.units != (heldData?.unitSystem ?? "si") {
             return .refused(message: "Your units changed while this was open, so this was not saved. Close this and enter the value again.", existingId: nil)
         }
         // Lp(a)'s unit is the record's: a number typed in another is never saved in this one.
@@ -433,7 +437,8 @@ final class RecordStore {
     /// Through the engine's open session: the save loop sends it to the cloud.
     private func applyInCloud(_ edit: RecordEdit, erase: String, seen: Screen) async -> ApplyResult {
         do {
-            return await shown(try await engine.cloudEdit(edit, erase: erase, units: seen.units, now: .now, choices: seen.choices, lpaUnit: seen.lpaUnit), of: edit)
+            let (outcome, order) = try await engine.cloudEdit(edit, erase: erase, units: seen.units, now: .now, choices: seen.choices, lpaUnit: seen.lpaUnit)
+            return await shown(outcome, order: order, of: edit)
         } catch {
             return .refused(message: error.localizedDescription, existingId: nil)
         }
@@ -441,7 +446,7 @@ final class RecordStore {
 
     /// A document save's record, onto the phone's file: written only over the record the
     /// save began from (`before`), never over an edit made while it ran. False when refused.
-    /// Runs inside a chained change (saveDocument); never chain it, or it waits on itself.
+    /// Runs inside a chained change (saveUpload); never chain it, or it waits on itself.
     func commitPhoneDocument(_ next: String, over before: String) async throws -> Bool {
         guard cloudErase == nil, recordJSON == before else { return false }
         if next != recordJSON {
@@ -472,7 +477,7 @@ final class RecordStore {
         if case .units = edit { true } else { false }
     }
 
-    /// An edit whose number is read in the record's units, as cloud.ts `dependsOnUnits`.
+    /// An edit whose number is read in the record's units, as guarded-edit.ts `dependsOnUnits`.
     /// Not feet and inches: they mean the same height in either units.
     nonisolated static func dependsOnUnits(_ edit: RecordEdit) -> Bool {
         switch edit {

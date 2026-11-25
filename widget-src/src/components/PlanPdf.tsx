@@ -1,12 +1,14 @@
 // My health's PDF box (US-62 AC26, US-18, US-44): Save as PDF and the email capture
 // beside it, the print state (usePlanPrint), and the two rules that read the capture:
 // which box shows (pdfBox) and when the storage button pulses (storagePulse).
-import React, { useState, useRef } from 'react';
+import React, { useId, useState, useRef, useReducer } from 'react';
 import { flushSync } from 'react-dom';
 import { getReportHtml, sendGuestReport, getReportEmailCaptured, markReportEmailCaptured, getShownErase } from '../lib/roadmap-data';
-import { trackABConversion, trackProductEvent } from '../lib/server-api';
+import { trackProductEvent } from '../lib/server-api';
 import { EMAIL_REGEX } from '../lib/email';
+import { describedBy } from '../lib/aria';
 import { getSkipEmailGate } from '../lib/assistant-config';
+import { transition, PRINT_START, type PdfButton, type PrintState } from '../lib/plan-print-machine';
 
 // 'skipped' + 'reminded' are US-44's funnel-page states: the block skips the
 // email gate, so the box only offers reminders; only a successful sign-up persists.
@@ -34,9 +36,6 @@ export const REMINDER_SIGNUP_DONE = "You're signed up. We'll email you when a ch
  *  this plan. */
 export const PDF_WINDOW_BLOCKED = "The PDF window didn't open. Try Save as PDF again. Some apps' built-in browsers block it.";
 
-/** The button whose print window was refused: the note sits beside it. */
-type PdfButton = 'bottom' | 'capture';
-
 /** US-18 AC6: always mounted and emptied before each try, so every refusal is announced. */
 function PdfNote({ show }: { show: boolean }) {
   return <span className="hr-pdf-blocked no-print" role="status">{show ? PDF_WINDOW_BLOCKED : ''}</span>;
@@ -54,65 +53,45 @@ function openPrintWindow(html: string): boolean {
 }
 
 interface PlanPrint {
-  printStatus: 'idle' | 'loading';
-  pdfBlocked: PdfButton | null;
-  pdfOpened: boolean;
-  printing: boolean;
-  /** Build the report and open its window; the capture's print calls this directly. */
-  printReport: (at: PdfButton) => Promise<void>;
-  /** Save as PDF: starts the pending values' save without waiting for it, one press at a time. */
+  /** The print state (lib/plan-print-machine.ts). */
+  print: PrintState;
+  /** Build the report and open its window, one try at a time. At 'bottom' (Save as PDF) it
+   *  also starts the pending values' save without waiting for it. */
   handlePrint: (at: PdfButton) => Promise<void>;
   /** An erase forgets the window this record opened. */
   forget: () => void;
 }
 
-/**
- * Save as PDF's state (US-18 AC6, US-09 AC19). Its states, each its own flag because
- * they overlap:
- * - idle: nothing running (`printStatus` 'idle').
- * - Save as PDF running (`printStatus` 'loading'): it starts onSaveLongitudinal without
- *   waiting, then builds the report.
- * - building the report: the hidden copy drawn inside the click while getReportHtml
- *   copies it (`printing`, synchronous; still 'loading' under Save as PDF).
- * - the last window refused at a button (`pdfBlocked`): the last try's outcome, emptied
- *   before each try, and when the plan goes.
- * - a window opened in this record (`pdfOpened`): sticky until an erase calls `forget`;
- *   the plan also goes blank mid-edit.
- * The capture's print runs printReport alone, outside `printStatus`; the two buttons are
- * never on screen together.
- */
+/** Save as PDF's state (US-18 AC6, US-09 AC19): the machine's events, and the work each try runs. */
 export function usePlanPrint(hasPlan: boolean, hasUnsavedLongitudinal?: boolean, onSaveLongitudinal?: () => Promise<unknown>): PlanPrint {
-  const [printStatus, setPrintStatus] = useState<'idle' | 'loading'>('idle');
-  const [pdfBlocked, setPdfBlocked] = useState<PdfButton | null>(null);
-  if (!hasPlan && pdfBlocked) setPdfBlocked(null);
-  const [pdfOpened, setPdfOpened] = useState(false);
-  const [printing, setPrinting] = useState(false);
-  // Emptied first (inside the click) so a repeat refusal is announced again.
-  const printReport = async (at: PdfButton) => {
-    setPdfBlocked(null);
-    // Drawn synchronously, inside the click, so getReportHtml copies it before its first await.
-    flushSync(() => setPrinting(true));
-    const pending = getReportHtml();
-    setPrinting(false);
-    const report = await pending;
-    const opened = report.success && !!report.html && openPrintWindow(report.html);
-    setPdfBlocked(opened ? null : at);
-    if (opened) setPdfOpened(true);
-    else trackProductEvent('pdf_window_blocked');
-  };
+  const [print, send] = useReducer(transition, PRINT_START);
+  if (!hasPlan && transition(print, { type: 'planGone' }) !== print) send({ type: 'planGone' });
 
   const handlePrint = async (at: PdfButton) => {
-    if (printStatus === 'loading') return;
-    setPrintStatus('loading');
-    // US-03 AC3: the press saves what the fields hold, but never waits for it (Brad
+    const press = { type: 'press', at } as const;
+    if (transition(print, press) === print) return;
+    // US-03 AC3: Save as PDF saves what the fields hold, but never waits for it (Brad
     // 2026-11-10): the report copies the page as drawn, and the window must open
     // inside the click or a popup blocker refuses it.
-    if (hasUnsavedLongitudinal && onSaveLongitudinal) onSaveLongitudinal().catch(() => { /* a failed save never stops the PDF */ });
-    await printReport(at);
-    setPrintStatus('idle');
+    if (at === 'bottom' && hasUnsavedLongitudinal && onSaveLongitudinal) onSaveLongitudinal().catch(() => { /* a failed save never stops the PDF */ });
+    // Drawn synchronously, inside the click, so getReportHtml copies it before its first await.
+    // The note empties in the same render, so a repeat refusal is announced again.
+    flushSync(() => send(press));
+    let opened = false;
+    try {
+      const pending = getReportHtml();
+      send({ type: 'copied' });
+      const report = await pending;
+      opened = report.success && !!report.html && openPrintWindow(report.html);
+    } finally {
+      // A throw (a restricted window's document.write or print) still ends the try, as a
+      // refused window, so the next press runs; the throw itself still reaches the caller.
+      send({ type: 'built', opened });
+    }
+    if (!opened) trackProductEvent('pdf_window_blocked');
   };
 
-  return { printStatus, pdfBlocked, pdfOpened, printing, printReport, handlePrint, forget: () => setPdfOpened(false) };
+  return { print, handlePrint, forget: () => send({ type: 'forget' }) };
 }
 
 /** Which email box the PDF box holds: the gate (US-18), US-44's reminders, or none once captured. */
@@ -260,7 +239,6 @@ function useGuestEmailCapture(printReport: () => Promise<void>, { state, setStat
     const result = await sendGuestReport(trimmed);
 
     if (result.success) {
-      trackABConversion();
       // Local-first: the PDF window already opened (the delivery). Persist the
       // captured flag to the user's own cloud and switch to the "Save as PDF"
       // view — no email box on return, nothing extra (no articles screen).
@@ -316,14 +294,18 @@ function ReminderSignup({ hook }: { hook: GuestEmailHook }) {
   );
 }
 
-export function GuestEmailCapture({ hook, formStage, pdfBlocked }: {
+/** US-18 AC6a: the email box's helper line, then its error while one shows. */
+function emailDescription(ids: string, error: string): string | undefined {
+  return describedBy(`${ids}-helper`, error && `${ids}-error`);
+}
+
+export function GuestEmailCapture({ hook, formStage }: {
   hook: GuestEmailHook;
   formStage?: number;
-  /** US-18 AC6: this capture's print window was refused. */
-  pdfBlocked?: boolean;
 }) {
   const { email, setEmail, emailError, setEmailError, state, helperText, handleSubmit } = hook;
   const box = emailBox(state, !!hook.gateSkipped);
+  const ids = useId();
 
   // Already captured (this submit, or a prior visit via the persisted flag):
   // the email box is gone and nothing renders here. The ungated "Save as PDF"
@@ -334,11 +316,14 @@ export function GuestEmailCapture({ hook, formStage, pdfBlocked }: {
 
   return (
     <div className={`email-capture no-print${emailPulses(box, formStage) ? ' field-attention' : ''}`}>
-      <p className="email-guest-helper">{helperText}</p>
+      <p className="email-guest-helper" id={`${ids}-helper`}>{helperText}</p>
       <div className="email-capture-row">
         <input
           type="email"
           id={formStage !== undefined ? 'guestEmail' : undefined}
+          aria-label="Email for your PDF"
+          aria-describedby={emailDescription(ids, emailError)}
+          aria-invalid={!!emailError}
           placeholder="Email"
           value={email}
           onChange={(e) => { setEmail(e.target.value); setEmailError(''); }}
@@ -354,33 +339,36 @@ export function GuestEmailCapture({ hook, formStage, pdfBlocked }: {
           {state === 'sending' ? 'Sending...' : GUEST_CAPTURE_BUTTON_LABEL}
         </button>
       </div>
-      {emailError && <span className="email-capture-error">{emailError}</span>}
-      <PdfNote show={!!pdfBlocked && !!emailError} />
+      {emailError && <span className="email-capture-error" id={`${ids}-error`} role="alert">{emailError}</span>}
     </div>
   );
 }
 
 /** My health's PDF box (US-62 AC26): the email box, or Save as PDF. It owns the box's typing, so a
  *  keystroke re-renders the box alone. Null when neither shows. */
-export function PlanPdf({ mode, formStage, capture, printStatus, pdfBlocked, onPrint, onCapturePrint }: {
+export function PlanPdf({ mode, formStage, capture, print, onPrint, onCapturePrint }: {
   mode: ReturnType<typeof pdfBox>; formStage?: number; capture: EmailCaptureState;
-  printStatus: 'idle' | 'loading'; pdfBlocked: PdfButton | null; onPrint: (at: PdfButton) => void; onCapturePrint: () => Promise<void>;
+  print: PrintState; onPrint: (at: PdfButton) => void; onCapturePrint: () => Promise<void>;
 }) {
   const guestEmailHook = useGuestEmailCapture(onCapturePrint, capture);
-  const printLabel = printStatus === 'loading' ? 'Loading...' : 'Save as PDF';
-  const box = mode.email && <GuestEmailCapture hook={guestEmailHook} formStage={formStage} pdfBlocked={pdfBlocked === 'capture'} />;
+  const saving = print.phase !== 'idle' && print.at === 'bottom';
+  const pdfBlocked = print.phase === 'idle' ? print.blocked : null;
+  const printLabel = saving ? 'Loading...' : 'Save as PDF';
+  const box = mode.email && <GuestEmailCapture hook={guestEmailHook} formStage={formStage} />;
   if (!box && !mode.save) return null;
   return (
     <div className="mh-pdf">
       {box}
       {mode.save && (
         <div className="report-actions no-print">
-          <button type="button" className="action-btn" onClick={() => onPrint('bottom')} disabled={printStatus === 'loading'} title="Save your plan as a PDF">
+          <button type="button" className="action-btn" onClick={() => onPrint('bottom')} disabled={saving} title="Save your plan as a PDF">
             {printLabel}
           </button>
-          <PdfNote show={pdfBlocked === 'bottom' || pdfBlocked === 'capture'} />
         </div>
       )}
+      {/* Mounted from the start, empty, so filling it is announced. It names Save as PDF, so it says
+          anything only while that button shows, a refused capture's window too (lead P10). */}
+      <PdfNote show={mode.save && (pdfBlocked === 'bottom' || pdfBlocked === 'capture')} />
     </div>
   );
 }

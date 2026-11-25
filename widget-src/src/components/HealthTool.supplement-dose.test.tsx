@@ -10,7 +10,7 @@ import { migrateFile } from '@roadmap/health-core/migrate';
 import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import { rowRootIds } from '@roadmap/health-core/merge';
 import { upsertSupplement } from '@roadmap/health-core/state-edits';
-import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements, saveSupplement } from '../lib/roadmap-data';
+import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements, saveSupplement, getShownErase } from '../lib/roadmap-data';
 import { ERASE_UNREACHABLE, RoadmapStore } from '../storage/roadmap-store';
 import { BACKEND_KEY } from '../storage/web-record-host';
 import { DRAFTS_CLEARED_EVENT } from '../lib/storage';
@@ -20,7 +20,7 @@ import { seedGuest, useHealthToolLifecycle, wait } from '../testing/health-tool-
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../lib/server-api', async importOriginal => ({
   ...(await importOriginal<typeof import('../lib/server-api')>()),
-  trackProductEvent: vi.fn(), trackABImpression: vi.fn(), trackABConversion: vi.fn(),
+  trackProductEvent: vi.fn(),
 }));
 vi.mock('../lib/chat-api', () => ({ listConversations: () => Promise.resolve(null), getChatGate: () => null }));
 vi.mock('./ChatEmbed', () => ({ ChatEmbed: () => null }));
@@ -36,7 +36,7 @@ import { deleteButton } from '../testing/settings';
 
 async function page(initial: number | null = null) {
   await seedGuest({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 1 }, [['weight', 80]]);
-  await saveSupplement('custom_test_supplement', 'Test supplement', initial, null);
+  await saveSupplement('custom_test_supplement', 'Test supplement', initial, null, undefined, undefined, getShownErase());
   await flushRoadmapStore();
   const view = render(<HealthTool />);
   await waitFor(() => expect(view.container.querySelector('.supplement-dose')).not.toBeNull());
@@ -205,9 +205,9 @@ describe('US-11: supplement dose draft erase lifecycle', () => {
     localStorage.setItem(BACKEND_KEY, 'memory'); // a cloud page runs with its backend remembered (US-11 AC6)
     await initRoadmapStore(adapter);
     const store = await created.mock.results[0].value;
-    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 1 }, {});
-    await addMeasurement('weight', 80, '2026-09-01');
-    await saveSupplement('custom_test_supplement', 'Test supplement', 25, null);
+    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 1 }, {}, getShownErase());
+    await addMeasurement('weight', 80, '2026-09-01', getShownErase());
+    await saveSupplement('custom_test_supplement', 'Test supplement', 25, null, undefined, undefined, getShownErase());
     await flushRoadmapStore();
     const view = render(<HealthTool />);
     await waitFor(() => expect(dose(view.container)?.value).toBe('25'));

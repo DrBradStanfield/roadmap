@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+S50,iPhone state,"Privacy: an erase the cloud did not take, followed by a Disconnect before the retry, leaves the cloud copy as it was before the erase, with nothing left to send it",lead,done,"Done: S50a on main (ios/engine/cloud.ts:449 closeAt awaits flush at :452, pinned in ios/engine/cloud.test.ts); S50b hold in commits 83b5b5c5a and 3598b32e6 (PR 1751). The residual is tracked as H119-H121.",1751,no

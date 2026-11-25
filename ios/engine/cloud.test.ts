@@ -4,197 +4,14 @@
 // natives in place of Swift: an in-memory Dropbox behind the HTTP native, the
 // phone's record file as a string. Swift's own run of the same paths is
 // ios/HealthRoadmapTests/CloudSyncTests.swift.
-import { afterEach, describe, expect, it } from 'vitest';
-import vm from 'node:vm';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { build } from 'esbuild';
+import { describe, expect, it } from 'vitest';
 import { createHash } from 'node:crypto';
 import { buildErasedFile } from '../../packages/health-core/src/erase';
+import { stampCount, stampedRecord, stampsAheadOfMeta } from '../../packages/health-core/src/stamp-anchor.test-helpers';
+import { EDIT } from './contract';
+import { guardedEdit, refuse, type EditTarget } from './guarded-edit';
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
-
-const here = dirname(fileURLToPath(import.meta.url));
-const NOW = '2026-10-21T08:00:00.000Z';
-
-let bundle: string | null = null;
-async function engineSource(): Promise<string> {
-  bundle ??= (await build({
-    entryPoints: [join(here, 'entry.ts')], bundle: true, format: 'iife', globalName: 'HealthEngine',
-    target: 'safari17', platform: 'neutral', mainFields: ['module', 'main'], write: false, logLevel: 'silent',
-  })).outputFiles[0].text;
-  return bundle;
-}
-
-/** Dropbox's two content endpoints, in memory, with its rev rules: the record,
- *  and the chat history the website keeps beside it. */
-class FakeDropbox {
-  file: { text: string; rev: number } | null = null;
-  /** `/chat-history.json`, which only the website writes (US-25 AC16). */
-  chat: { text: string; rev: number } | null = null;
-  /** False: the chat file's endpoints answer 500, the record's still work. */
-  chatAnswers = true;
-  online = true;
-  delay = 0;
-  delayFor?: Server['delayFor'];
-  /** False: uploads fail with a 500; reads still work. */
-  uploadsWork = true;
-  uploads = 0;
-  /** Runs once, just before the next upload lands: another device writing first. */
-  beforeNextUpload: (() => void) | null = null;
-  /** Originals the app filed, by path (US-52 AC13d). */
-  documents = new Map<string, string>();
-  /** False: document uploads fail with a 500; the record's still work. */
-  documentsWork = true;
-
-  put(record: RoadmapFile): void {
-    this.file = { text: JSON.stringify(record), rev: (this.file?.rev ?? 0) + 1 };
-  }
-  get record(): RoadmapFile {
-    return JSON.parse(this.file!.text) as RoadmapFile;
-  }
-
-  answer(url: string, headers: Record<string, string>, body: string | null): { status: number; headers: Record<string, string>; body: string } {
-    if (headers.authorization !== 'Bearer token-1') return { status: 401, headers: {}, body: 'expired' };
-    const arg = JSON.parse(headers['dropbox-api-arg']) as { path: string; mode?: { '.tag': string; update?: string } };
-    if (url.endsWith('/files/upload') && !['/health-roadmap.json', '/chat-history.json'].includes(arg.path)) {
-      if (!this.documentsWork) return { status: 500, headers: {}, body: 'internal_error' };
-      expect(arg.mode).toEqual({ '.tag': 'overwrite' });
-      this.documents.set(arg.path, body!);
-      return { status: 200, headers: {}, body: '{}' };
-    }
-    // An original the app filed, read back for My health's document page (US-73 AC12).
-    if (url.endsWith('/files/download') && this.documents.has(arg.path)) return { status: 200, headers: {}, body: this.documents.get(arg.path)! };
-    expect(['/health-roadmap.json', '/chat-history.json']).toContain(arg.path);
-    const slot = arg.path === '/chat-history.json' ? 'chat' : 'file';
-    const now = this[slot];
-    if (slot === 'chat' && !this.chatAnswers) return { status: 500, headers: {}, body: 'internal_error' };
-    if (url.endsWith('/files/download')) {
-      if (!now) return { status: 409, headers: {}, body: '{"error_summary":"path/not_found/"}' };
-      return { status: 200, headers: { 'Dropbox-API-Result': JSON.stringify({ rev: `r${now.rev}` }) }, body: now.text };
-    }
-    if (!this.uploadsWork) return { status: 500, headers: {}, body: 'internal_error' };
-    if (slot === 'file') {
-      this.beforeNextUpload?.();
-      this.beforeNextUpload = null;
-    }
-    const expected = arg.mode?.['.tag'] === 'update' ? arg.mode.update : null;
-    const current = this[slot] ? `r${this[slot]!.rev}` : null;
-    if (expected !== current) return { status: 409, headers: {}, body: '{"error_summary":"path/conflict/file/"}' };
-    if (slot === 'file') this.uploads += 1;
-    this[slot] = { text: body!, rev: (this[slot]?.rev ?? 0) + 1 };
-    return { status: 200, headers: {}, body: JSON.stringify({ rev: `r${this[slot]!.rev}` }) };
-  }
-}
-
-interface Engine {
-  newRecordJson(now: string, device: string, locale: string, zone: string): string;
-  applyEditJson(record: string, edit: string, now: string, device: string): string;
-  historyJson(record: string, metric: string, now: string, device: string, unitsJson?: string): string;
-  cloudOpen(provider: string, device: string, first: boolean, mergePhone: boolean): Promise<string>;
-  cloudLabImport(extraction: string, refs: string, reportDay: string, erase: string, units: string, now: string, unitsJson: string): string;
-  labSaveSummaryJson(record: string, extraction: string, refs: string, reportDay: string, now: string, device: string): string;
-  cloudEdit(edit: string, erase: string, units: string, now: string, unitsJson?: string, shownLpaUnit?: string): string;
-  chatEditsJson(record: string, edits: string, now: string, device: string, today: string, unitsJson?: string): string;
-  cloudVisible(): string;
-  cloudHidden(): string;
-  /** US-09 AC30 (lead A1 step e): Swift calls it when NWPathMonitor says the path is satisfied. */
-  cloudOnline(): string;
-  cloudFlush(): Promise<string>;
-  cloudRefresh(): Promise<string>;
-  cloudClose(copyDown: boolean): Promise<string>;
-  cloudErase(historyText: string | null, now: string, keepChat?: (text: string) => string): Promise<string>;
-  documentSave(record: string, extraction: string, choice: string, original: ArrayBuffer | null, erase: string, now: string, device: string): Promise<string>;
-  documentOriginal(id: string): Promise<ArrayBuffer>;
-}
-
-const opened: Engine[] = [];
-afterEach(async () => {
-  for (const engine of opened.splice(0)) await engine.cloudClose(false);
-});
-
-/** The engine in an empty context, with the fake natives. */
-/** A provider behind the HTTP native: the fake Dropbox, or the fake Drive. */
-interface Server {
-  online: boolean;
-  answer(url: string, headers: Record<string, string>, body: string | null, method: string): { status: number; headers: Record<string, string>; body: string };
-  /** Milliseconds every answer waits (an open still in flight). */
-  delay?: number;
-  /** Milliseconds one request's answer waits, in place of `delay`. */
-  delayFor?(url: string, headers: Record<string, string>): number | undefined;
-}
-
-async function phone(dropbox: Server, phoneText: string | null = null) {
-  const state = { phoneText, pending: false, generation: 1, events: [] as Array<[string, string]>, tokenRefreshes: 0, signedOut: false, phoneWriteError: '', sessions: [] as number[] };
-  const encode = (text: string) => new Uint8Array(Buffer.from(text, 'utf8')).buffer;
-  const decode = (bytes: ArrayBuffer) => Buffer.from(new Uint8Array(bytes)).toString('utf8');
-  let next = 1;
-  const native = {
-    http(method: string, url: string, headers: string, body: ArrayBuffer | null, done: (s: number, t: string, h: string, b: ArrayBuffer | null, e: string | null) => void) {
-      const wait = dropbox.delayFor?.(url, JSON.parse(headers) as Record<string, string>) ?? dropbox.delay ?? 0;
-      setTimeout(() => {
-        if (!dropbox.online) return done(0, '', '{}', null, 'The Internet connection appears to be offline.');
-        const answer = dropbox.answer(url, JSON.parse(headers) as Record<string, string>, body ? decode(body) : null, method);
-        done(answer.status, '', JSON.stringify(answer.headers), encode(answer.body), null);
-      }, wait);
-      return next++;
-    },
-    cancelHttp() {},
-    // The save's 800 ms debounce runs at once; the minute poll and the 5 s
-    // throttle never fire, so each test decides when to re-read.
-    setTimer: (ms: number, run: () => void) => setTimeout(ms <= 1000 ? run : () => {}, ms <= 1000 ? 5 : 0) as unknown as number,
-    clearTimer: (id: number) => clearTimeout(id),
-    utf8Encode: encode,
-    utf8Decode: decode,
-    accessToken(_provider: string, force: boolean, done: (t: string | null, e: string | null, signIn: boolean) => void) {
-      if (force) state.tokenRefreshes += 1;
-      setImmediate(() => (state.signedOut ? done(null, 'Dropbox refused the sign-in.', true) : done('token-1', null, false)));
-    },
-    phoneRead: () => JSON.stringify({ text: state.phoneText }),
-    phoneWrite: (text: string) => {
-      if (state.phoneWriteError) return state.phoneWriteError;
-      state.phoneText = text;
-      return '';
-    },
-    phoneRemove: () => {
-      state.phoneText = null;
-    },
-    // The marker as Swift keeps it (PhoneFiles): a generation that rises at every set.
-    pending(op: string) {
-      if (op === 'set') {
-        state.pending = true;
-        state.generation += 1;
-      }
-      if (op === `clear-if:${state.generation}`) state.pending = false;
-      return state.pending ? state.generation : 0;
-    },
-    notify: (event: string, payload: string, session: number) => {
-      state.events.push([event, payload]);
-      state.sessions.push(session);
-    },
-  };
-  // crypto.randomUUID is HealthEngine.swift's, as in the app.
-  const ctx = vm.createContext({ __native: native, crypto: { randomUUID: () => crypto.randomUUID() } });
-  vm.runInContext(await engineSource(), ctx);
-  const engine = (ctx as unknown as { HealthEngine: Engine }).HealthEngine;
-  opened.push(engine);
-  return { engine, state };
-}
-
-/** A record with one weight row per day given, written by `device`. */
-async function recordWith(days: string[], device: string): Promise<RoadmapFile> {
-  const { engine } = await phone(new FakeDropbox());
-  let record = engine.newRecordJson(NOW, device, 'en-NZ', 'Pacific/Auckland');
-  for (const day of days) {
-    const outcome = JSON.parse(engine.applyEditJson(record, JSON.stringify({ kind: 'add', metric: 'weight', value: 80, day }), NOW, device)) as { record: string };
-    record = outcome.record;
-  }
-  return JSON.parse(record) as RoadmapFile;
-}
-
-const days = (file: RoadmapFile) => file.measurements.filter((m) => m.status === 'active').map((m) => m.recordedAt.slice(0, 10)).sort();
-const add = (day: string) => JSON.stringify({ kind: 'add', metric: 'weight', value: 81, day });
-/** A record's Lp(a) rows: core lab rows (US-66 AC1). */
-const lpaRows = (file: RoadmapFile) => file.labValues.filter((row) => row.core === true && row.metricName === 'lpa');
+import { add, days, FakeDrive, FakeDropbox, lpaRows, NOW, phone, recordWith } from './cloud.test-helpers';
 
 describe('cloud sync in the engine (US-25 AC11)', () => {
   it('AC11a: first connect merges the phone record and the cloud record, dropping neither', async () => {
@@ -300,6 +117,18 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     expect(await engine.cloudRefresh()).toBe('changed');
     const [, payload] = state.events.filter(([event]) => event === 'changed').at(-1)!;
     expect(days(JSON.parse((JSON.parse(payload) as { record: string }).record) as RoadmapFile)).toContain('2026-10-05');
+  });
+
+  it('H31 (Brad 2026-11-26): Sync now pressed inside the five-second pause still reads, and takes the change in', async () => {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith(['2026-10-01'], 'web'));
+    const { engine, state } = await phone(dropbox);
+    await engine.cloudOpen('dropbox', 'ios-1', false, false);
+    await engine.cloudRefresh(); // a read: the pause starts here
+    dropbox.put(await recordWith(['2026-10-01', '2026-10-07'], 'web'));
+    expect(await engine.cloudRefresh()).toBe('changed'); // milliseconds later, inside the pause
+    const [, payload] = state.events.filter(([event]) => event === 'changed').at(-1)!;
+    expect(days(JSON.parse((JSON.parse(payload) as { record: string }).record) as RoadmapFile)).toContain('2026-10-07');
   });
 
   it('AC11c: an erase made on another device is taken in, and a write made for the old screen is refused', async () => {
@@ -455,6 +284,23 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     // Every blood test is a lab row now (US-66 AC1): the web's typed LDL is one too, so count the import's own.
     const imported = [...record.measurements, ...record.labValues].filter((row) => row.source === 'lab_import').length;
     expect(imported).toBe(answer.summary.saved);
+  });
+
+  it('US-13 AC13: a cloud lab import\'s summary is the write\'s own: an inverted pair the ranked write refuses is not counted saved', async () => {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith([], 'web'));
+    const { engine } = await phone(dropbox);
+    const opened = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false, false)) as { erase: string };
+    const bp = (metric: string, v: number, own?: string) => ({ metric, valueSI: v, displayValue: v, displayUnit: 'mmHg', displaySystem: 'si', confidence: 'high', ...(own ? { recordedAt: own } : null) });
+    const extraction = JSON.stringify({ classification: 'lab_report', reportDate: '2026-10-01', additionalValues: [], refusedValues: [],
+      values: [bp('systolic_bp', 140, '2026-09-01'), bp('systolic_bp', 100), bp('diastolic_bp', 110),
+        { metric: 'ldl', valueSI: 3.1, displayValue: 3.1, displayUnit: 'mmol/L', displaySystem: 'si', confidence: 'high' }] });
+    const answer = JSON.parse(engine.cloudLabImport(extraction, JSON.stringify(['v0', 'v1', 'v2', 'v3']), '2026-09-01', opened.erase, 'si', NOW, '{}')) as { ok: boolean; record: string; summary: { saved: number } };
+    expect(answer.ok).toBe(true);
+    const record = JSON.parse(answer.record) as RoadmapFile;
+    const imported = [...record.measurements, ...record.labValues].filter((row) => row.source === 'lab_import').length;
+    expect(imported).toBe(1);
+    expect(answer.summary.saved).toBe(imported);
   });
 
   it('AC11e: Disconnect copies the cloud record down onto the phone, and never writes the cloud', async () => {
@@ -745,6 +591,51 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     const later = await recordWith(['2026-10-04'], 'web');
     drive.put({ ...drive.record, measurements: [...drive.record.measurements, ...later.measurements] });
     expect(await engine.cloudRefresh()).toBe('changed');
+  });
+
+  /** Google Drive with one record, opened, whose next record PATCH lands and then the token lapses:
+   *  the verify read answers 401, and a forced refresh would hand token-2 (lead S57b). */
+  async function driveTokenLapsesAfterPatch() {
+    const drive = new FakeDrive();
+    drive.put(await recordWith(['2026-10-01'], 'web'));
+    const { engine, state } = await phone(drive);
+    const { erase } = JSON.parse(await engine.cloudOpen('google-drive', 'ios-1', false, false)) as { erase: string };
+    drive.afterPatch = () => {
+      drive.bearer = 'token-2';
+      state.refreshedToken = 'token-2';
+      return true;
+    };
+    return { drive, engine, state, erase };
+  }
+  const lastFailure = (events: Array<[string, string]>) => JSON.parse(events.filter(([event]) => event === 'failed').at(-1)![1]) as { kind: string };
+
+  it('S57b (a, b): a Drive save whose token lapses after its PATCH is not sent again, says it could not reach Drive, and the next save asks for a fresh token first', async () => {
+    const { drive, engine, state, erase } = await driveTokenLapsesAfterPatch();
+    engine.cloudEdit(add('2026-10-02'), erase, 'si', NOW);
+    expect(await engine.cloudFlush()).toBe('failed');
+    expect(drive.patches).toBe(1); // the write that may have landed is never retried (S57)
+    expect(drive.unauthorized).toBe(1); // the verify read
+    expect(lastFailure(state.events)).toMatchObject({ kind: 'unreachable' }); // not "sign in again"
+    expect(state.tokenRefreshes).toBe(0);
+
+    expect(await engine.cloudFlush()).toBe('saved');
+    expect(state.tokenRefreshes).toBe(1);
+    expect(drive.unauthorized).toBe(1); // the next call went out on token-2: no second 401
+    expect(days(drive.record)).toEqual(['2026-10-01', '2026-10-02']);
+  });
+
+  it('S57b (d): after that 401, a next call whose forced refresh is refused says sign in, every time', async () => {
+    const { drive, engine, state, erase } = await driveTokenLapsesAfterPatch();
+    engine.cloudEdit(add('2026-10-02'), erase, 'si', NOW);
+    expect(await engine.cloudFlush()).toBe('failed');
+    expect(lastFailure(state.events)).toMatchObject({ kind: 'unreachable' });
+
+    state.refreshRefused = true;
+    expect(await engine.cloudFlush()).toBe('failed');
+    expect(lastFailure(state.events)).toMatchObject({ kind: 'sign-in' });
+    expect(await engine.cloudFlush()).toBe('failed');
+    expect(lastFailure(state.events)).toMatchObject({ kind: 'sign-in' });
+    expect(drive.patches).toBe(1);
   });
   it('F1: a re-read never says synced while an edit waits on the phone', async () => {
     const dropbox = new FakeDropbox();
@@ -1065,68 +956,202 @@ describe('cloudErase (US-25 AC16, US-11)', () => {
     expect(dropbox.record.meta.eraseEpoch).toBe(1);
     expect(days(dropbox.record)).toEqual([]);
   });
+
+  /** An erase the cloud refused: kept on the phone, still unsent (lead S50a). */
+  async function unsentErase() {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith(['2026-10-01'], 'web'));
+    const device = await phone(dropbox);
+    await device.engine.cloudOpen('dropbox', 'ios-1', false, false);
+    dropbox.uploadsWork = false;
+    expect((JSON.parse(await device.engine.cloudErase(chat, NOW)) as Erased).erased).toBe(true);
+    expect(days(dropbox.record)).toEqual(['2026-10-01']);
+    return { dropbox, ...device };
+  }
+
+  it('S50a: Disconnect sends an unsent erase before it copies the cloud down', async () => {
+    const { dropbox, engine } = await unsentErase();
+    dropbox.uploadsWork = true;
+    expect(await engine.cloudClose(true)).toBe('copied');
+    expect(dropbox.record.meta.eraseEpoch).toBe(1);
+    expect(days(dropbox.record)).toEqual([]);
+  });
+
+  it('S50a: an erase still unsent at Disconnect is sent by the next connect to that cloud (the lift)', async () => {
+    const { dropbox, engine, state } = await unsentErase();
+    expect(await engine.cloudClose(true)).toBe('copied');
+    expect(days(dropbox.record)).toEqual(['2026-10-01']);
+    expect((JSON.parse(state.phoneText!) as RoadmapFile).meta.eraseEpoch).toBe(1);
+    // Disconnect removes the pending marker (CloudSync.swift disconnectOutcome), so the lift alone sends it.
+    state.pending = false;
+
+    dropbox.uploadsWork = true;
+    await engine.cloudOpen('dropbox', 'ios-1', true, false);
+    expect(dropbox.record.meta.eraseEpoch).toBe(1);
+    expect(days(dropbox.record)).toEqual([]);
+  });
+
+  it('S50a: when that connect\'s lift fails once, the session merges the erased phone copy in and sends it', async () => {
+    const { dropbox, engine, state } = await unsentErase();
+    expect(await engine.cloudClose(true)).toBe('copied');
+    state.pending = false; // as Disconnect leaves it
+
+    dropbox.uploadsWork = true;
+    let failNext = true;
+    const answer = dropbox.answer.bind(dropbox);
+    dropbox.answer = (url, headers, body) => {
+      if (failNext && url.endsWith('/files/upload')) {
+        failNext = false;
+        return { status: 500, headers: {}, body: 'internal_error' };
+      }
+      return answer(url, headers, body);
+    };
+    await engine.cloudOpen('dropbox', 'ios-1', true, false);
+    expect(failNext).toBe(false);
+    expect(await engine.cloudFlush()).toBe('saved');
+    expect(dropbox.record.meta.eraseEpoch).toBe(1);
+    expect(days(dropbox.record)).toEqual([]);
+  });
+
+  it('an erase the cloud refused and the phone could not keep is not erased anywhere: nothing to show, and the phone file as it was (lead S57)', async () => {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith(['2026-10-01'], 'web'));
+    const { engine, state } = await phone(dropbox);
+    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false, false)) as { erase: string };
+    const phoneBefore = state.phoneText;
+    dropbox.full = true;
+    state.phoneWriteError = 'The disk is full.';
+
+    const result = JSON.parse(await engine.cloudErase(chat, NOW, () => '')) as Erased;
+    // The chat step ran (it is irreversible); the record erase did not happen, so DataEraser says so.
+    expect(result).toMatchObject({ success: false, erased: false, chatErased: true, view: null });
+    expect(result.error).toBeUndefined();
+    expect(state.phoneText).toBe(phoneBefore);
+    expect(days(dropbox.record)).toEqual(['2026-10-01']);
+
+    // The session is back at the erase the screen shows: an edit under it is taken, and the
+    // next good save sends the record as it was plus that edit, nothing erased.
+    dropbox.full = false;
+    state.phoneWriteError = '';
+    expect(JSON.parse(engine.cloudEdit(add('2026-10-02'), erase, 'si', NOW))).not.toMatchObject({ reason: 'erased' });
+    expect(await engine.cloudFlush()).toBe('saved');
+    expect(dropbox.record.meta.eraseEpoch ?? 0).toBe(0);
+    expect(days(dropbox.record)).toEqual(['2026-10-01', '2026-10-02']);
+  });
+
+  it('an erase that reached Google Drive, whose check then met an expired sign-in, is kept: the token retry never replaces the landed mark (lead S57)', async () => {
+    const drive = new FakeDrive();
+    drive.put(await recordWith(['2026-10-01'], 'web'));
+    const { engine, state } = await phone(drive);
+    await engine.cloudOpen('google-drive', 'ios-1', false, false);
+    // The PATCH lands the erase; then the sign-in lapses, so the verify read answers 401 and a forced refresh asks to sign in.
+    drive.afterPatch = (body) => {
+      if (!body.includes('"eraseEpoch":1')) return false;
+      drive.expired = true;
+      state.signedOut = true;
+      return true;
+    };
+    state.phoneWriteError = 'The disk is full.';
+    const result = JSON.parse(await engine.cloudErase(null, NOW, () => '')) as Erased;
+    expect(drive.record.meta.eraseEpoch).toBe(1);
+    expect(result).toMatchObject({ success: false, erased: true });
+  });
+
+  it('S57b (c): an erase whose Drive token lapses after its PATCH is kept, never put back, and the next save carries it on a fresh token', async () => {
+    const drive = new FakeDrive();
+    drive.put(await recordWith(['2026-10-01'], 'web'));
+    const { engine, state } = await phone(drive);
+    await engine.cloudOpen('google-drive', 'ios-1', false, false);
+    let erasePatch = 0;
+    drive.afterPatch = (body) => {
+      if (!body.includes('"eraseEpoch":1')) return false;
+      erasePatch = drive.patches;
+      drive.bearer = 'token-2';
+      state.refreshedToken = 'token-2';
+      return true;
+    };
+    state.phoneWriteError = 'The disk is full.';
+    const result = JSON.parse(await engine.cloudErase(null, NOW, () => '')) as Erased;
+    expect(result).toMatchObject({ success: false, erased: true });
+    expect((JSON.parse(result.view!.record) as RoadmapFile).meta.eraseEpoch).toBe(1);
+    expect(drive.record.meta.eraseEpoch).toBe(1);
+    expect(drive.patches).toBe(erasePatch); // the erase's write is never sent again
+
+    state.phoneWriteError = '';
+    expect(await engine.cloudFlush()).toBe('saved');
+    expect(drive.unauthorized).toBe(1); // the next call went out on a fresh token
+    expect(drive.record.meta.eraseEpoch).toBe(1);
+    expect(days(drive.record)).toEqual([]);
+  });
+
+  // Lead S54: the erase reached the cloud, so the session removed the phone's pre-erase
+  // file; the erased record then goes in its place. Each case counts the phone's failures.
+  async function erasedWithPhone(writeFailures: number, removeFailures: number) {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith(['2026-10-01'], 'web'));
+    const { engine, state } = await phone(dropbox);
+    await engine.cloudOpen('dropbox', 'ios-1', false, false);
+    await new Promise((resolve) => setTimeout(resolve, 20)); // the phone holds the pre-erase copy
+    const phoneBefore = state.phoneText;
+    expect(days(JSON.parse(phoneBefore!) as RoadmapFile)).toEqual(['2026-10-01']);
+    state.phoneWriteFailures = writeFailures;
+    state.phoneRemoveFails = removeFailures;
+    const result = JSON.parse(await engine.cloudErase(null, NOW, () => '')) as Erased;
+    expect(result).toMatchObject({ success: true, erased: true });
+    expect(dropbox.record.meta.eraseEpoch).toBe(1);
+    return { state, phoneBefore };
+  }
+
+  it('lead S54: a phone write that fails once is retried, and the phone holds the erased record', async () => {
+    const { state } = await erasedWithPhone(1, 0);
+    const onPhone = JSON.parse(state.phoneText!) as RoadmapFile;
+    expect(onPhone.meta.eraseEpoch).toBe(1);
+    expect(days(onPhone)).toEqual([]);
+  });
+
+  it('lead S54: two failed writes remove the phone file again, so a pre-erase copy a first remove left is gone', async () => {
+    const { state } = await erasedWithPhone(2, 1);
+    expect(state.phoneText).toBeNull(); // a relaunch opens empty, never on the pre-erase copy
+  });
+
+  it('lead S54 residual (words: lead S61): two failed writes and two failed removes leave the pre-erase copy, as before', async () => {
+    const { state, phoneBefore } = await erasedWithPhone(2, 2);
+    expect(state.phoneText).toBe(phoneBefore);
+  });
+
+  it('lead S54: an erase the cloud refused is kept on the phone when the phone write fails once, then works', async () => {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith(['2026-10-01'], 'web'));
+    const { engine, state } = await phone(dropbox);
+    await engine.cloudOpen('dropbox', 'ios-1', false, false);
+    dropbox.full = true;
+    state.phoneWriteFailures = 1;
+    const result = JSON.parse(await engine.cloudErase(null, NOW, () => '')) as Erased;
+    expect(result).toMatchObject({ success: false, erased: true });
+    expect(state.pending).toBe(true);
+    expect((JSON.parse(state.phoneText!) as RoadmapFile).meta.eraseEpoch).toBe(1);
+    expect(days(dropbox.record)).toEqual(['2026-10-01']);
+  });
+
+  it('an erase whose upload got a 500 may have landed, so it is kept, in memory only, when the phone cannot keep it (the stated S57 residual)', async () => {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith(['2026-10-01'], 'web'));
+    const { engine, state } = await phone(dropbox);
+    await engine.cloudOpen('dropbox', 'ios-1', false, false);
+    const phoneBefore = state.phoneText;
+    dropbox.uploadsWork = false;
+    state.phoneWriteError = 'The disk is full.';
+    const result = JSON.parse(await engine.cloudErase(chat, NOW, () => '')) as Erased;
+    expect(result).toMatchObject({ success: false, erased: true });
+    expect(state.phoneText).toBe(phoneBefore); // a relaunch before the retry lands reads this
+    dropbox.uploadsWork = true;
+    state.phoneWriteError = '';
+    expect(await engine.cloudFlush()).toBe('saved');
+    expect(dropbox.record.meta.eraseEpoch).toBe(1);
+  });
 });
 
 /** Google Drive v3's files endpoints, in memory: one folder, one record, a version counter. */
-class FakeDrive implements Server {
-  online = true;
-  folderMade = false;
-  /** A file name every search finds nothing for: a document deleted from Drive. */
-  missing: string | null = null;
-  file: { text: string; version: number } | null = null;
-  /** Runs at the version read that comes right before an upload. */
-  beforeVersionCheck: (() => void) | null = null;
-  private versionReads = 0;
-
-  put(record: RoadmapFile): void {
-    this.file = { text: JSON.stringify(record), version: (this.file?.version ?? 0) + 1 };
-  }
-  get record(): RoadmapFile {
-    return JSON.parse(this.file!.text) as RoadmapFile;
-  }
-
-  answer(url: string, headers: Record<string, string>, body: string | null, method: string) {
-    const ok = (json: unknown) => ({ status: 200, headers: {}, body: JSON.stringify(json) });
-    expect(headers.authorization).toBe('Bearer token-1');
-    const u = new URL(url);
-    const q = u.searchParams.get('q') ?? '';
-    // EngineHTTP.swift's allow-list for a Drive search: no orderBy (US-10 AC4a).
-    if (method === 'GET' && u.pathname === '/drive/v3/files') {
-      expect([...u.searchParams.keys()].filter((key) => !['q', 'spaces', 'fields', 'pageSize', 'pageToken'].includes(key))).toEqual([]);
-    }
-    if (method === 'GET' && u.pathname === '/drive/v3/files' && q.includes('application/vnd.google-apps.folder')) {
-      return ok({ files: this.folderMade ? [{ id: 'folder-1', name: 'Health Plan by Dr Brad' }] : [] });
-    }
-    if (method === 'GET' && u.pathname === '/drive/v3/files' && this.missing && q.includes(this.missing)) return ok({ files: [] });
-    if (method === 'GET' && u.pathname === '/drive/v3/files') return ok({ files: this.file ? [{ id: 'file-1' }] : [] });
-    if (method === 'POST' && u.pathname === '/drive/v3/files') {
-      this.folderMade = true;
-      return ok({ id: 'folder-1' });
-    }
-    if (method === 'GET' && u.pathname === '/drive/v3/files/file-1') {
-      if (u.searchParams.get('alt') !== 'media') {
-        // The save reads the version twice: with the bytes, then before the upload.
-        if (this.beforeVersionCheck && ++this.versionReads === 2) {
-          this.beforeVersionCheck();
-          this.beforeVersionCheck = null;
-          this.versionReads = 0;
-        }
-        return this.file ? ok({ version: String(this.file.version) }) : { status: 404, headers: {}, body: '' };
-      }
-      return this.file ? { status: 200, headers: {}, body: this.file.text } : { status: 404, headers: {}, body: '' };
-    }
-    if (method === 'POST' && u.pathname === '/upload/drive/v3/files') {
-      const json = body!.split('\r\n\r\n')[2].split('\r\n--')[0];
-      this.file = { text: json, version: 1 };
-      return ok({ id: 'file-1', version: '1' });
-    }
-    if (method === 'PATCH' && u.pathname === '/upload/drive/v3/files/file-1') {
-      this.file = { text: body!, version: (this.file?.version ?? 0) + 1 };
-      return ok({ id: 'file-1', version: String(this.file.version) });
-    }
-    throw new Error(`FakeDrive has no ${method} ${url}`);
-  }
-}
 
 // US-52 AC13d: a clinic letter, and a lab report's original, filed as the web
 // files them, through health-core's saveDocuments, from the engine bundle.
@@ -1198,11 +1223,11 @@ describe('documents from "Add medical records" (US-52 AC13d)', () => {
     });
   });
 
-  it('in the cloud: an original the provider refuses still files the row, metadata-only with its hash', async () => {
+  it('in the cloud: an original the provider refuses still files the row, metadata-only with its hash, counted unstored (US-14 AC12)', async () => {
     const dropbox = new FakeDropbox();
     dropbox.documentsWork = false;
     const { engine, erase } = await opened(dropbox);
-    expect(JSON.parse(await engine.documentSave('', letter, choice(), bytes('%PDF letter'), erase, NOW, 'ios-1'))).toMatchObject({ ok: true, saved: 1, stored: false, stale: false });
+    expect(JSON.parse(await engine.documentSave('', letter, choice(), bytes('%PDF letter'), erase, NOW, 'ios-1'))).toMatchObject({ ok: true, saved: 1, unstored: 1, stored: false, stale: false });
     await engine.cloudFlush();
     expect(dropbox.record.documents[0]).toMatchObject({ fileRef: '', mimeType: '', contentHash: hashOf('%PDF letter'), extractedText: '# Letter text' });
   });
@@ -1210,7 +1235,7 @@ describe('documents from "Add medical records" (US-52 AC13d)', () => {
   it('in the cloud: an original that changed or could not be read since the review is not uploaded; the row keeps the reviewed hash', async () => {
     const { dropbox, engine, erase } = await opened();
     const answer = JSON.parse(await engine.documentSave('', letter, choice(), null, erase, NOW, 'ios-1')) as Answer;
-    expect(answer).toMatchObject({ ok: true, saved: 1, stored: false, stale: true });
+    expect(answer).toMatchObject({ ok: true, saved: 1, unstored: 1, stored: false, stale: true });
     expect(dropbox.documents.size).toBe(0);
     await engine.cloudFlush();
     expect(dropbox.record.documents[0]).toMatchObject({ fileRef: '', contentHash: hashOf('%PDF letter'), extractedText: '# Letter text' });
@@ -1258,17 +1283,29 @@ describe('documents from "Add medical records" (US-52 AC13d)', () => {
     expect((JSON.parse(state.phoneText!) as RoadmapFile).documents).toEqual([]);
   });
 
-  it('on the phone alone: a text-only row (no original, no hash) added to the record Swift passed, as the web saves off-cloud', async () => {
+  it('on the phone alone (US-14 AC10): no original, but the row keeps the reviewed hash, metadata-only; the answer\'s shape is as before', async () => {
     const { engine } = await phone(new FakeDropbox());
     const record = engine.newRecordJson(NOW, 'ios-1', 'en-NZ', 'Pacific/Auckland');
     const answer = JSON.parse(await engine.documentSave(record, letter, choice({ documentDate: '2026-09-14' }), bytes('%PDF letter'), '', NOW, 'ios-1')) as Answer;
-    expect(answer).toMatchObject({ ok: true, saved: 1, stored: null, stale: false });
+    // Builds 12 and 13 read these keys: same keys, same meaning (stored null: none was offered to a cloud).
+    expect(Object.keys(answer).sort()).toEqual(['ok', 'record', 'saved', 'stale', 'stored', 'unstored']);
+    expect(answer).toMatchObject({ ok: true, saved: 1, unstored: 0, stored: null, stale: false });
     expect((JSON.parse(answer.record) as RoadmapFile).documents).toEqual([expect.objectContaining({
-      type: 'clinic_letter', title: 'Heart clinic', date: '2026-09-14', fileRef: '', contentHash: '', mimeType: '', extractedText: '# Letter text',
+      type: 'clinic_letter', title: 'Heart clinic', date: '2026-09-14', fileRef: '', contentHash: hashOf('%PDF letter'), mimeType: '', extractedText: '# Letter text',
     })]);
-    // A lab report's original is kept only in a cloud: off-cloud, nothing is filed.
+    // The same letter again, as reviewed: already held, nothing new.
+    const again = JSON.parse(await engine.documentSave(answer.record, letter, choice({ documentDate: '2026-09-14' }), null, '', NOW, 'ios-1')) as Answer;
+    expect(again).toMatchObject({ ok: true, saved: 0, stored: null, stale: false });
+    // A lab report: a metadata-only archive row with the hash, listing no rows (this door writes none).
     const archive = JSON.stringify({ kind: 'labArchive', sourceFileName: 'Bloods.pdf', reportDay: '2026-10-01', mimeType: 'application/pdf', contentHash: hashOf('x') });
-    expect(JSON.parse(await engine.documentSave(record, labs, archive, bytes('x'), '', NOW, 'ios-1'))).toMatchObject({ ok: true, saved: 0, record });
+    const lab = JSON.parse(await engine.documentSave(record, labs, archive, bytes('x'), '', NOW, 'ios-1')) as Answer;
+    expect(lab).toMatchObject({ ok: true, saved: 1, stored: null, stale: false });
+    expect((JSON.parse(lab.record) as RoadmapFile).documents).toEqual([expect.objectContaining({
+      type: 'pathology_report', title: 'Blood test results', date: '2026-10-01', fileRef: '', contentHash: hashOf('x'), metadata: { labArchive: true },
+    })]);
+    // A photo or a scan has no hash: a lab report files nothing.
+    const photo = JSON.stringify({ kind: 'labArchive', sourceFileName: 'Bloods.jpg', reportDay: '2026-10-01', mimeType: 'image/jpeg' });
+    expect(JSON.parse(await engine.documentSave(record, labs, photo, null, '', NOW, 'ios-1'))).toMatchObject({ ok: true, saved: 0, record });
     // An empty title keeps the model's, as the web's `docTitles[fi] || title`; a future day is unknown.
     const plain = JSON.parse(await engine.documentSave(record, letter, choice({ title: '', documentDate: '2099-01-01' }), null, '', NOW, 'ios-1')) as Answer;
     expect((JSON.parse(plain.record) as RoadmapFile).documents[0]).toMatchObject({ title: 'Cardiology follow-up', date: null });
@@ -1287,6 +1324,24 @@ describe('documents from "Add medical records" (US-52 AC13d)', () => {
     await expect(engine.documentOriginal(typed.id)).rejects.toThrow('no original');
     await engine.cloudClose(false);
     await expect(engine.documentOriginal(row.id)).rejects.toThrow('not open');
+  });
+
+  it('US-73 AC12: a Google Drive original reads back through the shim\'s Response, which has no blob()', async () => {
+    const { engine, erase } = await opened();
+    const answer = JSON.parse(await engine.documentSave('', letter, choice(), bytes('%PDF letter'), erase, NOW, 'ios-1')) as Answer;
+    const [row] = (JSON.parse(answer.record) as RoadmapFile).documents;
+    await engine.cloudClose(false);
+
+    const drive = new FakeDrive();
+    const withRow = await recordWith([], 'web');
+    withRow.documents = [row];
+    drive.put(withRow);
+    drive.folderMade = true;
+    drive.documents.set(row.fileRef.split('/').pop()!, '%PDF letter');
+    const onDrive = await phone(drive);
+    await onDrive.engine.cloudOpen('google-drive', 'ios-1', false, false);
+    const original = await onDrive.engine.documentOriginal(row.id);
+    expect(Buffer.from(new Uint8Array(original)).toString('utf8')).toBe('%PDF letter');
   });
 
   it('US-73 AC12 (PR 972 review R6): a refused original says why, as failure JSON Swift reads', async () => {
@@ -1446,4 +1501,148 @@ describe('a failed save is retried on return and on online (US-09 AC30, lead A1 
   // re-read, and the engine's re-read retries a failed save first (cloud.ts reread's flushSync),
   // one of the older save paths the owner left as they are (D2, lead A25). The web pins the rule:
   // widget-src/standalone/storage-bar-save-retry.test.tsx.
+});
+
+// I-2 step 4: the guards every edit passes, one table for every target (guarded-edit.ts). The cloud
+// session runs it through cloudEdit, as the app calls it; a target over a plain record runs it
+// through guardedEdit itself. I-1's phone door joins as a third target and must give the same answers.
+describe('the shared refusal table (I-2 step 4, US-25 AC11g, AC17e, AC25; US-05 AC2; US-66 AC6)', () => {
+  /** On another device since the sheet opened: US units, Lp(a) in mg/dL. A weight, a core LDL,
+   *  a ferritin (a lab row, not core) and a core Lp(a). */
+  async function changedRecord(): Promise<RoadmapFile> {
+    const web = await recordWith(['2026-10-01'], 'web');
+    const lab = (id: string, metricName: string, value: number, unit: string, core: boolean) => ({
+      id, metricName, ...(core ? { core: true } : null), value, unit, referenceLow: null, referenceHigh: null,
+      recordedAt: '2026-10-01T00:00:00.000Z', createdAt: NOW, source: 'manual', status: 'active', correctsId: null,
+    });
+    return {
+      ...web, profile: { ...web.profile, unitSystem: 'conventional', lpaUnit: 'mg/dL' },
+      labValues: [lab('ldl-1', 'ldl', 3.1, 'mmol/L', true), lab('ferritin-1', 'ferritin', 80, 'µg/L', false), lab('lpa-1', 'lpa', 50, 'nmol/L', true)],
+    } as RoadmapFile;
+  }
+  const metric = { units: 'si', lpaUnit: 'nmol/L' };
+  const us = { units: 'conventional', lpaUnit: 'nmol/L' };
+  // [row, the edit (given the record), what the sheet showed, shown before an erase since, the answer]
+  const ROWS: Array<[string, (file: RoadmapFile) => object, { units: string; lpaUnit: string }, boolean, string]> = [
+    ['a new value after a units change', () => ({ kind: 'add', metric: 'weight', value: 81, day: '2026-10-02' }), metric, false, 'units-changed'],
+    ['a measurement\'s correction after a units change', (file) => ({ kind: 'correct', id: file.measurements[0].id, value: 81 }), metric, false, 'units-changed'],
+    // D2 (owner, review R7): only a measurement or a core lab row depends on the record's units.
+    ['a core lab row\'s correction after a units change', () => ({ kind: 'correct', id: 'ldl-1', value: 3.0 }), metric, false, 'units-changed'],
+    ['a lab row\'s correction after a units change (its own unit)', () => ({ kind: 'correct', id: 'ferritin-1', value: 85 }), metric, false, 'ok'],
+    ['a height after a units change', () => ({ kind: 'profile', height: 170 }), metric, false, 'units-changed'],
+    ['a sex after a units change (no number)', () => ({ kind: 'profile', sex: 'female' }), metric, false, 'ok'],
+    ['a new Lp(a) after its unit changed', () => ({ kind: 'add', metric: 'lpa', value: 50, day: '2026-10-02' }), us, false, 'units-changed: Lp(a)'],
+    ['an Lp(a) correction after its unit changed', () => ({ kind: 'correct', id: 'lpa-1', value: 60 }), us, false, 'units-changed: Lp(a)'],
+    ['any edit after an erase since', () => ({ kind: 'profile', sex: 'female' }), us, true, 'erased'],
+    // Review (adversary 4 R2): the guards run in order; the units refusal comes before the erase's.
+    ['a new value after a units change and an erase since', () => ({ kind: 'add', metric: 'weight', value: 81, day: '2026-10-02' }), metric, true, 'units-changed'],
+    // An edit that changes nothing saves nothing (the US units the record already holds).
+    ['the units the record already holds', () => ({ kind: 'units', unitSystem: 'conventional' }), us, false, 'ok, unchanged'],
+  ];
+  /** The answer, telling the record's units from Lp(a)'s by their words. */
+  const answerOf = (out: { ok: boolean; reason?: string; message?: string }) =>
+    (out.ok ? 'ok' : out.reason === 'units-changed' && out.message?.includes('Lp(a)') ? 'units-changed: Lp(a)' : out.reason);
+
+  it.each(ROWS)('the cloud session: %s', async (_row, edit, shown, erased, expected) => {
+    const file = await changedRecord();
+    const dropbox = new FakeDropbox();
+    dropbox.put(file);
+    const { engine } = await phone(dropbox);
+    const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false, false)) as { erase: string };
+    const out = JSON.parse(engine.cloudEdit(JSON.stringify(edit(file)), erased ? 'an earlier erase' : erase, shown.units, NOW, '{}', shown.lpaUnit));
+    expect(answerOf(out)).toBe(expected.replace(', unchanged', ''));
+  });
+
+  it.each(ROWS)('a plain record: %s', async (_row, edit, shown, erased, expected) => {
+    const before = await changedRecord();
+    let file = before;
+    const target: EditTarget = {
+      get file() { return file; },
+      stale: () => (erased ? refuse('erased', 'erased since') : null),
+      commit: (next) => { file = next; return null; },
+      answer: () => ({ record: JSON.stringify(file) }),
+    };
+    const out = guardedEdit(target, EDIT.parse(edit(file)), { ...shown, choicesJson: '{}' }, NOW);
+    expect(answerOf(out)).toBe(expected.replace(', unchanged', ''));
+    // Review (adversary 4 R1): a save is committed and answered; a refusal or no change commits nothing.
+    if (expected === 'ok') {
+      expect(file).not.toBe(before);
+      expect(JSON.parse((out as { record: string }).record)).toEqual(JSON.parse(JSON.stringify(file)));
+    } else {
+      expect(file).toBe(before);
+    }
+  });
+});
+
+// Lead TA-2: the cloud doors save no last-write-wins stamp later than the saved
+// record's own meta.updatedAt (migrate.ts clamps one, and it can lose a tie,
+// US-10 AC8). The record sits in the future so the session's own save clock
+// (the real Date in this context) is behind it, and each edit's clock is an hour
+// ahead of the record or an hour behind it. Both the cloud's bytes and the
+// phone's copy are walked raw (stamp-anchor.test-helpers.ts); the phone file's
+// door and every Edit kind are in stamp-anchor.test.ts.
+describe('TA-2: cloudEdit, cloudFlush and cloudErase stamp nothing past meta.updatedAt', () => {
+  const T0 = '2030-01-01T09:00:00.000Z';
+  const clocks = { ahead: '2030-01-01T10:00:00.000Z', behind: '2030-01-01T08:00:00.000Z' } as const;
+  const clean = (text: string | null) => {
+    const written = JSON.parse(text!) as unknown;
+    expect(stampCount(written)).toBeGreaterThan(0);
+    expect(stampsAheadOfMeta(written)).toEqual([]);
+  };
+  const edits = [
+    { kind: 'profile', height: 181 },
+    { kind: 'units', unitSystem: 'conventional' },
+    { kind: 'medication', medicationKey: 'statin', drugName: 'rosuvastatin', doseValue: 10, doseUnit: 'mg' },
+    { kind: 'screening', key: 'colorectal_last_date', value: '2025-03' },
+  ];
+
+  for (const [clock, now] of Object.entries(clocks)) {
+    it(`four edits saved to the cloud, edit clock ${clock} of the record`, async () => {
+      const dropbox = new FakeDropbox();
+      dropbox.put(stampedRecord(T0));
+      const { engine, state } = await phone(dropbox);
+      const { erase } = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false, false)) as { erase: string };
+      for (const edit of edits) expect(JSON.parse(engine.cloudEdit(JSON.stringify(edit), erase, 'si', now)).ok).toBe(true);
+      expect(await engine.cloudFlush()).toBe('saved');
+      expect(dropbox.record.medications[0].drugName).toBe('rosuvastatin');
+      clean(dropbox.file!.text);
+      clean(state.phoneText);
+    });
+
+    it(`cloudErase, erase clock ${clock} of the record`, async () => {
+      const dropbox = new FakeDropbox();
+      dropbox.put(stampedRecord(T0));
+      const { engine, state } = await phone(dropbox);
+      await engine.cloudOpen('dropbox', 'ios-1', false, false);
+      expect(JSON.parse(await engine.cloudErase(null, now, () => ''))).toMatchObject({ success: true });
+      expect(dropbox.record.meta.eraseEpoch).toBe(1);
+      clean(dropbox.file!.text);
+      clean(state.phoneText);
+    });
+  }
+});
+
+// Lead H200 (US-25 AC16j): every view carries its record's eraseEpoch, so the app can hold a new
+// session's first record at another erase even when it cannot draw it (RecordStore draw(_ view:)).
+describe('the view carries eraseEpoch (H200)', () => {
+  it('cloudOpen, the changed news and cloudErase\'s view each carry the record\'s meta.eraseEpoch', async () => {
+    const dropbox = new FakeDropbox();
+    const before = await recordWith(['2026-10-01'], 'web');
+    dropbox.put(before);
+    const { engine, state } = await phone(dropbox);
+    const opened = JSON.parse(await engine.cloudOpen('dropbox', 'ios-1', false, false)) as { record: string; eraseEpoch: number };
+    expect(opened.eraseEpoch).toBe(0);
+    expect(Object.keys(opened)).toEqual(['record', 'erase', 'session', 'eraseEpoch']);
+
+    dropbox.put(buildErasedFile({ stored: before, own: before, device: null, ctx: { deviceId: 'web', now: '2026-10-21T09:00:00.000Z' } }));
+    expect(await engine.cloudRefresh()).toBe('changed');
+    const news = JSON.parse(state.events.filter(([event]) => event === 'changed').at(-1)![1]) as { record: string; eraseEpoch: number };
+    expect(news.eraseEpoch).toBe(1);
+    expect(news.eraseEpoch).toBe((JSON.parse(news.record) as RoadmapFile).meta.eraseEpoch);
+
+    const erased = JSON.parse(await engine.cloudErase(null, NOW, () => '')) as { erased: boolean; view: { record: string; eraseEpoch: number } };
+    expect(erased.erased).toBe(true);
+    expect(erased.view.eraseEpoch).toBe(2);
+    expect(erased.view.eraseEpoch).toBe((JSON.parse(erased.view.record) as RoadmapFile).meta.eraseEpoch);
+  });
 });

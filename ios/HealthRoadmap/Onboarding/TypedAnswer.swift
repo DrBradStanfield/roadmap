@@ -7,7 +7,7 @@ import Foundation
 /// Pure apart from that, so OnboardingStepsTests checks it.
 struct TypedAnswer: Equatable {
     /// (value, metric, from, to): a value in the other units, "si" or "conventional".
-    typealias Convert = (Double, String, String, String) async -> HealthEngine.Conversion?
+    typealias Convert = (Double, String, String, String) async -> UnitConversion?
 
     /// "height" or "weight".
     let metric: String
@@ -87,7 +87,7 @@ struct TypedAnswer: Equatable {
     /// Shows `recorded`, the record's value in `recordUnits`, in the box's own units;
     /// empty boxes when there is none.
     mutating func show(_ recorded: Double?, recordUnits: String, convert: Convert) async {
-        let shown: HealthEngine.Conversion? = if let recorded { await convert(recorded, metric, recordUnits, Self.system(us)) } else { nil }
+        let shown: UnitConversion? = if let recorded { await convert(recorded, metric, recordUnits, Self.system(us)) } else { nil }
         fill(shown)
     }
 
@@ -96,7 +96,7 @@ struct TypedAnswer: Equatable {
     mutating func switchUnits(toUS: Bool, recorded: Double?, recordUnits: String, convert: Convert) async {
         guard toUS != us else { return }
         let mine = answer
-        let shown: HealthEngine.Conversion? = if edited, mine.us != toUS, let value = number(mine) { await convert(value, metric, Self.system(mine.us), Self.system(toUS)) } else { nil }
+        let shown: UnitConversion? = if edited, mine.us != toUS, let value = number(mine) { await convert(value, metric, Self.system(mine.us), Self.system(toUS)) } else { nil }
         us = toUS
         if !edited {
             await show(recorded, recordUnits: recordUnits, convert: convert)
@@ -138,7 +138,7 @@ struct TypedAnswer: Equatable {
         return abs(typed - kg) < halfStep
     }
 
-    private mutating func fill(_ shown: HealthEngine.Conversion?) {
+    private mutating func fill(_ shown: UnitConversion?) {
         if isHeight, us {
             feet = shown?.feetInches.map { String($0.feet) } ?? ""
             inches = shown?.feetInches.map { String($0.inches) } ?? ""

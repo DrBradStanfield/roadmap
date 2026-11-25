@@ -28,7 +28,7 @@ import {
 } from '../lib/subscription-gateway.server';
 
 // The gateway has the real limits (3 changes a day); this only stops a loop hammering it.
-const checkRateLimit = createRateLimiter(10, 60 * 60_000, 10 * 60_000);
+const checkRateLimit = createRateLimiter(10, 60 * 60_000, 10 * 60_000, { name: 'subscription actions per customer' });
 
 const bodySchema = z.object({
   token: z.string().min(20).max(1300),

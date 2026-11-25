@@ -27,7 +27,7 @@ const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 export const GOOGLE_TIMEOUT_MS = 10_000;
 
 // Generous: a real user exchanges ~once an hour; connects are rare.
-const allowRequest = createRateLimiter(30, 60_000, 10 * 60_000);
+const allowRequest = createRateLimiter(30, 60_000, 10 * 60_000, { name: 'google token per IP' });
 
 const bodySchema = z.union([
   z.object({

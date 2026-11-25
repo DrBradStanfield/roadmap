@@ -8,11 +8,12 @@ import { CHAT_MODEL, ROUTER_MODEL as PRODUCTION_ROUTER_MODEL, getArg as getArgOf
 import { loadBlogArticle, loadMatchedContent } from '../app/lib/matched-content';
 import { routerView, routerIndexBlock, ROUTER_SUMMARY_MAX_CHARS } from '../app/lib/router-view';
 import type { BlogIndexEntry } from '../app/lib/blog-index.server';
-import { loadSurfaces } from './chatbot-surfaces';
+import { loadSurfaces, youtubeTurn } from './chatbot-surfaces';
+import { chatToolsFor } from '../packages/health-core/src/run-roadmap';
 import { estimateRunCost } from './harness-answers';
-import { EMPTY_CHAT_CONTEXT, resolveChatContext } from '../app/lib/chat.server';
+import { EMPTY_CHAT_CONTEXT, buildSystemBlocks, resolveChatContext } from '../app/lib/chat.server';
 import { healthInputSchema } from '../packages/health-core/src/validation';
-import { PRODUCTS_BLOCK_FILES, productsBlockText } from '../app/lib/chat-products-block';
+import { PRODUCTS_BLOCK_FILES } from '../app/lib/chat-products-block';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -39,9 +40,8 @@ export const verbose = args.includes('--verbose');
 const categoryFilter = args.includes('--category') ? getArg('--category', '') : null;
 const sourceFilter = args.includes('--source') ? getArg('--source', '') : null;
 // When set, entries with must_mention/must_not_mention/max_length_chars also call
-// the main LLM to verify generated content. Loads blocks 1-3 (system prompt +
-// algorithm + products) AND matched blog content (block 4) so the bot has
-// the same context production does. Runs --answer-check-runs times (default = --runs,
+// the main LLM to verify generated content, with the system production's
+// buildSystemBlocks builds, matched blog content included (US-15 AC24a). Runs --answer-check-runs times (default = --runs,
 // usually 3) and requires majority pass. Set --answer-check-runs 1 to cut API spend.
 export const fixedHandlesOnly = args.includes('--fixed-handles-only');
 const includePending = args.includes('--include-pending');
@@ -61,37 +61,20 @@ const usingTestKey = !!process.env.ANTHROPIC_TEST_API_KEY;
 if (!estimateOnly) console.log(`Using ${usingTestKey ? 'ANTHROPIC_TEST_API_KEY (test workspace)' : 'ANTHROPIC_API_KEY (production key — billing shared with prod)'}`);
 
 // ---------------------------------------------------------------------------
-// Answer-check context — loaded only when --answer-check is set
-// Static portion: prompt cache blocks 1 and 3 (system prompt + algorithm, then
-// products with writing-style.md and the answer bank, the block every surface gets,
-// US-15 AC29). Blocks 2 (evidence) and 4 (knowledge overview) are not sent, as before.
-// Dynamic portion (per-query, in checkAnswer): block 4 matched blog
-// content, loaded via loadMatchedContent() from the routing intersection
-// (or a fixture's answer_handles).
+// Answer-check context: production's buildSystemBlocks builds every answer call's system
+// (checkAnswer, US-15 AC24a), from the files it reads at import. Production answers with a
+// block missing; a paid run must not, so a missing file exits here.
 // User data comes only from a fixture's made-up user_context (see the header).
 // ---------------------------------------------------------------------------
 
 // --answer-model qualifies a candidate answer model; the body shape follows its family.
 export const ANSWER_MODEL = getArg('--answer-model', CHAT_MODEL);
-export let ANSWER_SYSTEM_CONTEXT = '';
 
-if (answerCheckMode) {
-  try {
-    const read = (file: string) => fs.readFileSync(path.join(REPO_ROOT, file), 'utf-8');
-    ANSWER_SYSTEM_CONTEXT =
-      read('app/lib/chat-system-prompt.md') +
-      '\n\n---\n\n' +
-      read('health_roadmap_algorithm.md') +
-      '\n\n---\n\n' +
-      productsBlockText({
-        products: read(PRODUCTS_BLOCK_FILES.products),
-        writingStyle: read(PRODUCTS_BLOCK_FILES.writingStyle),
-        answerBank: read(PRODUCTS_BLOCK_FILES.answerBank),
-      });
-  } catch {
-    console.error('Error: --answer-check requires app/lib/chat-system-prompt.md, health_roadmap_algorithm.md, docs/products.md, docs/writing-style.md and docs/chatbot/answer-bank.md');
-    process.exit(1);
-  }
+const ANSWER_FILES = ['app/lib/chat-system-prompt.md', 'health_roadmap_algorithm.md', ...Object.values(PRODUCTS_BLOCK_FILES)];
+const readable = (f: string) => { try { return fs.readFileSync(path.join(REPO_ROOT, f), 'utf-8').trim() !== ''; } catch { return false; } };
+if (answerCheckMode && !ANSWER_FILES.every(readable)) {
+  console.error(`Error: --answer-check requires ${ANSWER_FILES.join(', ')}`);
+  process.exit(1);
 }
 
 // ---------------------------------------------------------------------------
@@ -285,15 +268,36 @@ export function hasAnswerCheck(q: TestQuery): boolean {
     || q.must_not_match?.length || typeof q.max_length_chars === 'number' || q.expect_roadmap_run !== undefined || q.expect_profile_edit);
 }
 
+/** One answer call's system, messages and tools from these handles: what checkAnswer sends and --estimate prices. */
+export function answerRequest(q: TestQuery, handles: string[]) {
+  const video = YOUTUBE_VIDEOS.get(q);
+  const youtube = video && youtubeTurn(video, handles, q.query, q.history ?? [], FULL_INDEX);
+  const matchedContent = youtube ? youtube.matchedContent : loadMatchedContent(handles).content;
+  // Only production's builder makes the system (US-15 AC24a). The YouTube bot's platform context sits where the
+  // widget's user data does (runPipeline); a fixture with no user_context gets production's empty context.
+  const platformContext = youtube ? youtube.platformContext : USER_CONTEXTS.get(q) ?? EMPTY_CHAT_CONTEXT.userContextJson;
+  const system = buildSystemBlocks(platformContext,
+    { surfaceContext: q.surface && POSTURES.get(q.surface), savedChat: SAVED_CHATS.get(q) ?? '', blogArticles: matchedContent || null });
+  const messages = youtube ? youtube.messages : [...q.history ?? [], { role: 'user' as const, content: q.query }];
+  // As production: the tools change what the model writes. The YouTube bot has none (US-15 AC19).
+  return { system, messages, tools: video ? undefined : chatToolsFor(messages) };
+}
+
 if (estimateOnly) {
-  // Routed cases are priced as if routing passes and loads their expected handles.
-  const answerCallChars = suite.filter(hasAnswerCheck).flatMap(q => {
-    const chars = ANSWER_SYSTEM_CONTEXT.length + q.query.length
-      + (loadMatchedContent(Array.isArray(q.expected) ? q.expected : q.answer_handles!).content ?? '').length;
-    return Array<number>(answerCheckRuns).fill(chars);
+  // Routed cases are priced as if routing passes and loads their expected handles. Each call's cached prefix is
+  // its tools plus the cache_control blocks; each tool shape is its own cache entry (US-15 AC24b).
+  const answerCalls = suite.filter(hasAnswerCheck).flatMap(q => {
+    const { system, messages, tools } = answerRequest(q, Array.isArray(q.expected) ? q.expected : q.answer_handles!);
+    const size = (cached: boolean) => system.reduce((n, b) => n + (!!b.cache_control === cached ? b.text.length : 0), 0);
+    const call = { cacheKey: JSON.stringify(tools?.map(t => t.name) ?? []), cachedChars: JSON.stringify(tools ?? []).length + size(true),
+      chars: size(false) + JSON.stringify(messages).length };
+    return Array(answerCheckRuns).fill(call);
   });
   const routerCalls = filtered.length ? filtered.length * runs + 1 : 0;
-  const cost = estimateRunCost({ routerCalls, routerPromptChars: ROUTER_PROMPT.length + ROUTER_INDEX_BLOCK.length, answerCallChars });
-  console.log(`ESTIMATE router calls=${routerCalls} $${cost.router.toFixed(2)}; answer calls=${answerCallChars.length} up to $${cost.answer.toFixed(2)}; total up to $${cost.total.toFixed(2)}. No API call made.`);
+  const cost = estimateRunCost({ routerCalls, routerPromptChars: ROUTER_PROMPT.length + ROUTER_INDEX_BLOCK.length, answerCalls, concurrency });
+  // Brad approves a paid run on the "up to" figure (US-15 AC24b).
+  const both = (k: keyof typeof cost.upper) =>
+    `expected $${cost.expected[k].toFixed(2)} with prompt caching, up to $${cost.upper[k].toFixed(2)} if the cache never hits`;
+  console.log(`ESTIMATE router calls=${routerCalls} ${both('router')}; answer calls=${answerCalls.length} ${both('answer')}; total ${both('total')}. No API call made.`);
   process.exit(0);
 }

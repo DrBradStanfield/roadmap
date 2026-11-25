@@ -98,6 +98,88 @@ describe('US-27 AC5: stop cancels the pending first tick', () => {
   });
 });
 
+// US-15 AC71 (lead H49): the bot's lifecycle pins, through its public start and stop. A double tick
+// or a tick after stop would post twice or post after shutdown.
+describe('US-15 AC71: start, stop and the tick in flight', () => {
+  /** The module auto-starts on its first import; each pin starts from stopped. */
+  async function stoppedBot() {
+    const bot = await import('./youtube-bot.server');
+    bot.stopYouTubeBot();
+    return bot;
+  }
+  const skippedStarts = () => vi.mocked(console.log).mock.calls.filter(([m]) => m === 'YouTube bot already running — skip start').length;
+
+  it('a second start while running arms nothing more', async () => {
+    const bot = await stoppedBot();
+    bot.startYouTubeBot();
+    expect(vi.getTimerCount()).toBe(2); // the first tick and the interval
+    bot.startYouTubeBot();
+    expect(vi.getTimerCount()).toBe(2);
+    expect(skippedStarts()).toBe(1);
+
+    await vi.advanceTimersByTimeAsync(FIRST_TICK_MS);
+    expect(tokenCalls()).toBe(1);
+  });
+
+  it('a stop while a tick is in flight lets it finish and runs no tick after', async () => {
+    const bot = await stoppedBot();
+    bot.startYouTubeBot();
+    await vi.advanceTimersByTimeAsync(FIRST_TICK_MS);
+    expect(tokenCalls()).toBe(1);
+    bot.stopYouTubeBot();
+    expect(vi.getTimerCount()).toBe(0);
+
+    releases.forEach((release) => release());
+    await vi.advanceTimersByTimeAsync(0);
+    await vi.advanceTimersByTimeAsync(3 * TICK_MS);
+    expect(tokenCalls()).toBe(1);
+  });
+
+  it('a stop then a start gives one first tick and one interval', async () => {
+    const bot = await stoppedBot();
+    bot.startYouTubeBot();
+    bot.stopYouTubeBot();
+    bot.startYouTubeBot();
+    expect(vi.getTimerCount()).toBe(2);
+    await vi.advanceTimersByTimeAsync(FIRST_TICK_MS);
+    expect(tokenCalls()).toBe(1);
+    releases.forEach((release) => release());
+    await vi.advanceTimersByTimeAsync(0);
+    await vi.advanceTimersByTimeAsync(TICK_MS - FIRST_TICK_MS);
+    expect(tokenCalls()).toBe(2);
+  });
+
+  it('a start while the stopped tick still runs: its ticks wait for that one to end', async () => {
+    const bot = await stoppedBot();
+    bot.startYouTubeBot();
+    await vi.advanceTimersByTimeAsync(FIRST_TICK_MS);
+    bot.stopYouTubeBot();
+    bot.startYouTubeBot();
+    await vi.advanceTimersByTimeAsync(FIRST_TICK_MS); // the new first tick is due; the old one still waits
+    expect(tokenCalls()).toBe(1);
+
+    releases.forEach((release) => release());
+    await vi.advanceTimersByTimeAsync(0);
+    await vi.advanceTimersByTimeAsync(TICK_MS);
+    expect(tokenCalls()).toBe(2);
+  });
+
+  it('a tick whose fallback report throws still returns the bot to running', async () => {
+    const Sentry = await import('@sentry/react-router');
+    const { completionOutcome } = await import('./youtube-bot-pipeline.server');
+    completionOutcome({ content: '', isFallback: true, failureMode: 'empty-response' } as Parameters<typeof completionOutcome>[0], 1);
+    vi.mocked(Sentry.captureMessage).mockImplementationOnce(() => { throw new Error('synthetic report failure'); });
+    const bot = await stoppedBot();
+    bot.startYouTubeBot();
+    await vi.advanceTimersByTimeAsync(FIRST_TICK_MS);
+    releases.forEach((release) => release()); // the tick ends; its fallback report throws
+    await vi.advanceTimersByTimeAsync(0);
+    expect(Sentry.captureMessage).toHaveBeenCalledWith('YouTube bot: main-LLM fallbacks this tick', expect.anything());
+    await vi.advanceTimersByTimeAsync(TICK_MS - FIRST_TICK_MS);
+    expect(tokenCalls()).toBe(2);
+  });
+});
+
 // US-15 AC58: the tick's fallback count goes to Sentry as one warning when the tick ends.
 describe('US-15 AC58: the fallback warning goes out when the tick ends', () => {
   it('a counted fallback is reported once the tick finishes, not before', async () => {

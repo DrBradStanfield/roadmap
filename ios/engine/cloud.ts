@@ -12,15 +12,15 @@ import { ChatSession } from '../../packages/health-core/src/chat-session';
 import { LiveRefresh } from '../../packages/health-core/src/live-refresh';
 import { SchemaTooNewError } from '../../packages/health-core/src/migrate';
 import type { RecordHost } from '../../packages/health-core/src/record-host';
+import type { RefreshReason } from '../../packages/health-core/src/refresh-pause';
 import { ERASE_UNREACHABLE, RecordSession, saveRecordInto } from '../../packages/health-core/src/record-session';
 import { copyCloudDown, liftDeviceCopy } from '../../packages/health-core/src/record-transfer';
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
-import { isCoreRow } from '../../packages/health-core/src/blood-tests';
-import { failed, PhoneCloudAdapter, PhoneFileAdapter, type CloudNatives, type Provider } from './cloud-adapters';
+import { eraseFailure, failed, PhoneCloudAdapter, PhoneFileAdapter, type CloudNatives, type Provider } from './cloud-adapters';
 import { eraseChatText } from './app-doors';
-import { labRows, labSaveSummary, type Extraction } from './lab-review';
-import { applyEdit, movedBloodTests, parseEdit, type Edit, type EditOutcome } from './my-data';
-import { lpaUnitOf, readUnitChoices, unitsOf } from './unit-choices';
+import { labRows, type Extraction } from './lab-review';
+import { movedBloodTests, parseEdit, type Edit } from './my-data';
+import { guardedEdit, refuse, type EditTarget, type Refusal } from './guarded-edit';
 import { checkArgs } from './contract';
 
 declare const __native: CloudNatives;
@@ -50,6 +50,7 @@ function hostFor(provider: Provider, deviceId: string, phone: PhoneFileAdapter, 
         // verified: the one moment the record is in sync (re-check R3), and only
         // the generation it holds.
         clear: () => {
+          if (open?.id === id) open.held = null; // a verified save carries any erase made here (S50b)
           if (__native.pending(`clear-if:${held}`) === 0) __native.notify('synced', '', id);
         },
       },
@@ -74,7 +75,10 @@ function hostFor(provider: Provider, deviceId: string, phone: PhoneFileAdapter, 
     },
     failureCause: () => 'other',
     report(error, at) {
-      if (at.op === 'persist') __native.notify('failed', failed(provider, error), id);
+      if (at.op !== 'persist') return;
+      // session.flush throws a bare SAVE_FAILED: the kind is read here, from the real error.
+      if (open?.id === id && open.held) open.held.failure = eraseFailure(error);
+      __native.notify('failed', failed(provider, error), id);
     },
   };
 }
@@ -92,6 +96,10 @@ export interface Open {
    *  session's own save runs on its debounce, and its pending marker keeps
    *  anything unsaved for the next session. */
   unflushed: number;
+  /** Set while an erase made here waits for a verified save (S50b, US-25 AC16i): how the last
+   *  save of it failed, and `since`, the engine clock's time of its first failed send, which a
+   *  later failure never moves. Read by cloudEraseHeld. Null once any save lands (pending.clear). */
+  held: null | { failure?: 'transient' | 'definite' | 'unknown'; since: number };
 }
 
 export let open: Open | null = null; // read by entry.ts documentOriginal (US-73 AC12); written only here
@@ -100,9 +108,11 @@ export let open: Open | null = null; // read by entry.ts documentOriginal (US-73
  *  opens racing never leave one session orphaned and the other shown. */
 let latest = 0;
 
-/** The record, the erase it is at and the session, as Swift keeps them. */
+/** The record, the erase it is at and the session, as Swift keeps them; eraseEpoch is the
+ *  record's own, so the app can tell a new session's record at another erase (lead H200). */
 function view(at: { id: number; session: RecordSession }): string {
-  return JSON.stringify({ record: JSON.stringify(at.session.file), erase: at.session.eraseIdentity, session: at.id });
+  const file = at.session.file;
+  return JSON.stringify({ record: JSON.stringify(file), erase: at.session.eraseIdentity, session: at.id, eraseEpoch: file.meta.eraseEpoch ?? 0 });
 }
 
 /** A re-read or a save brought something in: Swift shows it, and the phone's
@@ -158,7 +168,7 @@ export async function cloudOpen(provider: Provider, deviceId: string, firstConne
     // Swift reads the kind from the message (CloudSync.swift).
     throw new Error(failed(provider, error));
   }
-  const at: Open = { id, provider, host, phone, session, live: null!, visible: true, unflushed: waiting ? 1 : 0 };
+  const at: Open = { id, provider, host, phone, session, live: null!, visible: true, unflushed: waiting ? 1 : 0, held: null };
   at.live = new LiveRefresh(session, host, { reread: () => reread(at), isVisible: () => at.visible });
   if (superseded()) {
     // A newer open or a close began while this one read: this one gives way.
@@ -174,30 +184,6 @@ export async function cloudOpen(provider: Provider, deviceId: string, firstConne
   if (movedBloodTests(host.store.lastRecord, session.file)) commit(at, session.file, session.eraseIdentity, new Date().toISOString());
   keepPhoneCopy(at);
   return view(at);
-}
-
-/** Only edits whose number is read in the user's units can be misread after a
- *  unit change: a value, a correction, a height. */
-export function dependsOnUnits(edit: Edit, file: RoadmapFile): boolean {
-  // A lab value's correction is in the unit its row is stored in, whatever the record's units (review R7);
-  // a core blood test's is read in the record's units, like a vital's, though it is a lab row (US-66 AC6).
-  if (edit.kind === 'correct') {
-    return file.measurements.some((row) => row.id === edit.id) || file.labValues.some((row) => row.id === edit.id && isCoreRow(row));
-  }
-  return edit.kind === 'add' || (edit.kind === 'profile' && edit.height !== undefined);
-}
-
-/** A value or correction of Lp(a), read in Lp(a)'s own unit, which the record holds (US-05 AC2). */
-function dependsOnLpaUnit(edit: Edit, file: RoadmapFile): boolean {
-  if (edit.kind === 'add') return edit.metric === 'lpa';
-  // Lp(a) is a core lab row (US-66 AC9).
-  return edit.kind === 'correct' && file.labValues.some((row) => row.id === edit.id && isCoreRow(row) && row.metricName === 'lpa');
-}
-
-export type Refusal = Extract<EditOutcome, { ok: false }>;
-
-export function refuse(reason: string, message: string): Refusal {
-  return { ok: false, reason, message };
 }
 
 export const NOT_OPEN = 'The cloud record is not open.';
@@ -233,35 +219,21 @@ export function cloudEdit(editJson: string, erase: string, shownUnits: string, n
   return JSON.stringify(read.ok ? editSession(read.edit, erase, shownUnits, nowIso, unitsJson, shownLpaUnit) : read);
 }
 
+/** The open session as an edit's target (guarded-edit.ts), at the erase the screen showed. */
+function cloudTarget(at: Open, erase: string, nowIso: string): EditTarget {
+  return {
+    get file() { return at.session.file; },
+    stale: () => (at.session.refuses(erase) ? refuse('erased', `${ERASED} Close this and enter the value again.`) : null),
+    commit: (next) => commit(at, next, erase, nowIso),
+    answer: () => ({ record: JSON.stringify(at.session.file), erase: at.session.eraseIdentity }),
+  };
+}
+
 /** cloudEdit's work, answering an object, so cloudLabImport adds its summary without a JSON round trip of the record. */
 function editSession(edit: Edit, erase: string, shownUnits: string, nowIso: string, unitsJson?: string, shownLpaUnit?: string) {
   const at = open;
   if (!at) return refuse('not-open', NOT_OPEN);
-  const { session } = at;
-  // A number is read in the units the screen showed. If another device has
-  // changed the units since, the same number would be stored in the wrong ones.
-  if (dependsOnUnits(edit, session.file) && shownUnits !== unitsOf(session.file)) {
-    return refuse('units-changed', 'Your units changed on another device, so this was not saved. Close this and enter the value again.');
-  }
-  // Lp(a)'s unit is the record's too (US-05 AC2): a number typed in the old one is never
-  // saved in the new one.
-  if (shownLpaUnit !== undefined && dependsOnLpaUnit(edit, session.file) && shownLpaUnit !== lpaUnitOf(session.file)) {
-    return refuse('units-changed', 'Your Lp(a) unit changed on another device, so this was not saved. Close this and enter the value again.');
-  }
-  if (session.refuses(erase)) {
-    return refuse('erased', `${ERASED} Close this and enter the value again.`);
-  }
-  // Read in the per-test units the sheet showed (AC17e), as the phone's own file is.
-  const outcome = applyEdit(session.file, edit, nowIso, readUnitChoices(unitsJson));
-  if (!outcome.ok) return outcome;
-  // An edit that changed nothing (an Apple Health batch already taken in) saves nothing.
-  // Any other goes on the phone first, marked for the cloud: only then is it taken.
-  if (outcome.file !== session.file) {
-    const refusal = commit(at, outcome.file, erase, nowIso);
-    if (refusal) return refusal;
-  }
-  const { file: _edited, ok, ...extra } = outcome;
-  return { ok, record: JSON.stringify(session.file), erase: session.eraseIdentity, ...extra };
+  return guardedEdit(cloudTarget(at, erase, nowIso), edit, { units: shownUnits, lpaUnit: shownLpaUnit, choicesJson: unitsJson }, nowIso);
 }
 
 /**
@@ -275,9 +247,9 @@ export function cloudLabImport(extractionJson: string, refsJson: string, reportD
   const at = open;
   if (!at) return JSON.stringify(refuse('not-open', NOT_OPEN));
   const refs = JSON.parse(refsJson) as string[];
-  const rows = labRows(JSON.parse(extractionJson) as Extraction, refs, reportDay, nowIso);
+  const rows = labRows(JSON.parse(extractionJson) as Extraction, refs, reportDay, nowIso, at.session.file);
   if (!rows.ok) return JSON.stringify(rows);
-  const summary = labSaveSummary(at.session.file, rows.rows, nowIso);
+  const summary = rows.summary;
   const outcome = editSession({ kind: 'labImport', extractionJson, refs, reportDay }, erase, shownUnits, nowIso, unitsJson);
   return JSON.stringify(outcome.ok ? { ...outcome, summary } : outcome);
 }
@@ -297,8 +269,11 @@ export function cloudLabImport(extractionJson: string, refsJson: string, reportD
  * `erased`: the working copy is now the erased record, written or not. When
  * the write failed, the session mirrored it onto the phone, marked pending,
  * and the next flush or open sends it: the screen shows it, and the app says
- * the cloud still has to take it. On success the session wiped the pre-erase
- * mirror; the erased record goes in its place, so an offline launch opens on it.
+ * the cloud still has to take it. When the cloud refused the write outright
+ * and that mirror write failed too, the session put its copy back: `erased` is false and nothing changed but the
+ * chat step (lead S57). On success the session wiped the pre-erase
+ * mirror; the erased record goes in its place, so an offline launch opens on it
+ * (keepErasedOnPhone: when that write fails, it tries again to remove this phone's copy).
  */
 export async function cloudErase(historyText: string | null, nowIso: string, keepChat?: (text: string) => string): Promise<string> {
   checkArgs('cloudErase', arguments);
@@ -331,12 +306,22 @@ export async function cloudErase(historyText: string | null, nowIso: string, kee
   });
   const erased = at.session.eraseIdentity !== before;
   if (result.success) {
-    await saveRecordInto(at.phone, at.session.file, { deviceId: at.host.deviceId(), now: nowIso }).catch(() => {});
+    await keepErasedOnPhone(at, nowIso);
     at.unflushed = 0;
   } else if (erased) {
     at.unflushed += 1; // the background flush retries it
+    at.held = { since: at.held?.since ?? at.host.clock.now() };
   }
   return JSON.stringify({ ...result, cloudChatErased, cloudChatProblem, chatHistory, erased, view: erased ? JSON.parse(view(at)) : null });
+}
+
+/** The erased record onto the phone, in place of the mirror the session removed
+ *  (lead S54). One retry; when both writes fail, remove the phone's file again,
+ *  so a relaunch never opens on a pre-erase copy a first remove left behind.
+ *  A copy that outlives both removes is the S54 residual (its words: lead S61). */
+async function keepErasedOnPhone(at: Open, now: string): Promise<void> {
+  const write = () => saveRecordInto(at.phone, at.session.file, { deviceId: at.host.deviceId(), now });
+  await write().catch(write).catch(() => __native.phoneRemove());
 }
 
 /** A file read but not understood: not JSON, or a newer schema than this engine's. */
@@ -363,23 +348,23 @@ export function cloudHidden(): string {
   return '';
 }
 
-/** Re-read now ("Sync now"): answers 'changed' or 'same'. A failure rejects
- *  with its kind, as an open does. */
+/** Re-read now ("Sync now"): answers 'changed' or 'same'. A pressed read skips the five-second
+ *  pause (lead H31). A failure rejects with its kind, as an open does. */
 export async function cloudRefresh(): Promise<string> {
   checkArgs('cloudRefresh', arguments);
   if (!open) return 'same';
-  return (await reread(open)) ? 'changed' : 'same';
+  return (await reread(open, 'pressed')) ? 'changed' : 'same';
 }
 
 /** Every re-read, asked for or on the minute, tells Swift how it went: a
  *  revoked grant must show "Sign in again" even when no save is waiting, and a
  *  re-read that works clears a passing failure. */
-async function reread(at: Open): Promise<boolean> {
+async function reread(at: Open, reason: RefreshReason = 'automatic'): Promise<boolean> {
   // A save that failed is retried first; while it waits the session does not
   // re-read (its working copy is ahead of the cloud).
   at.session.flushSync();
   try {
-    const changed = await at.session.refreshFromRemote();
+    const changed = await at.session.refreshFromRemote(reason); // Sync now skips the pause (H31)
     // "Synced" only when nothing waits on the phone: the session clears the
     // pending marker when a save lands, and never before (review F1).
     if (!__native.pending('get')) __native.notify('synced', '', at.id);
@@ -395,6 +380,41 @@ async function reread(at: Open): Promise<boolean> {
 export async function cloudFlush(): Promise<string> {
   checkArgs('cloudFlush', arguments);
   return open ? flush(open) : 'saved';
+}
+
+/**
+ * Is an erase made here still unsent over a failure that may pass (S50b, US-25 AC16i)? It
+ * flushes first, as a close does, so a retry that lands answers 'none'. Otherwise how the last
+ * save of it failed (eraseFailure), or 'unknown' when no report said why. The failure is
+ * cleared before the flush, so a stale one is never read. Unlike `flush`, it always waits on the
+ * session, so a save already in flight (a background flush, Sync now, a first Disconnect tap) is
+ * joined and its failure is the answer (review R1). A transient failure 24 hours or more after the
+ * first failed send answers 'expired' (holdsStill), and the Disconnect goes ahead as today.
+ */
+export async function eraseHeld(): Promise<'none' | 'transient' | 'definite' | 'unknown' | 'expired'> {
+  const at = open;
+  if (!at?.held) return 'none';
+  delete at.held.failure;
+  const edits = at.unflushed;
+  at.unflushed = 0;
+  try {
+    await at.session.flush();
+  } catch {
+    at.unflushed += edits; // still unflushed, as flush keeps it
+  }
+  const held: Open['held'] = at.held; // as the flush's report left it
+  if (!held) return 'none';
+  const failure = held.failure ?? 'unknown';
+  return failure === 'transient' && !holdsStill(held.since, at.host.clock.now()) ? 'expired' : failure;
+}
+
+/** How long an unsent erase holds Disconnect, from its first failed send (owner, 2026-11-14). */
+export const HOLD_MS = 24 * 60 * 60 * 1000;
+
+/** The bound, by time only: true while `now` is under 24 hours after `since`. Exactly 24 hours no
+ *  longer holds. A clock set backwards (a negative age) counts as within the bound. */
+export function holdsStill(since: number, now: number): boolean {
+  return now - since < HOLD_MS;
 }
 
 async function flush(at: Open): Promise<'saved' | 'failed'> {

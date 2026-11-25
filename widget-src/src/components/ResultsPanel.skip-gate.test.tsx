@@ -17,7 +17,6 @@ const mocks = vi.hoisted(() => ({
   sendGuestReport: vi.fn(),
   getReportEmailCaptured: vi.fn(),
   markReportEmailCaptured: vi.fn(),
-  trackABConversion: vi.fn(),
   trackProductEvent: vi.fn(),
   skip: { value: false },
   shopify: { value: true },
@@ -29,7 +28,7 @@ vi.mock('../lib/roadmap-data', () => ({
   markReportEmailCaptured: mocks.markReportEmailCaptured,
   getShownErase: () => 'erase-1',
 }));
-vi.mock('../lib/server-api', () => ({ trackABConversion: mocks.trackABConversion, trackProductEvent: mocks.trackProductEvent }));
+vi.mock('../lib/server-api', () => ({ trackProductEvent: mocks.trackProductEvent }));
 vi.mock('../lib/build-flags', () => ({ get SHOPIFY_SURFACE() { return mocks.shopify.value; } }));
 vi.mock('../lib/assistant-config', () => ({ getSkipEmailGate: () => mocks.skip.value }));
 vi.mock('./FeedbackForm', () => ({ FeedbackForm: () => null }));
@@ -117,7 +116,6 @@ describe('US-44 AC3/AC4 — the optional reminders line', () => {
     expect(mocks.sendGuestReport).toHaveBeenCalledWith('reader@example.com');
     expect(print).not.toHaveBeenCalled();
     expect(mocks.markReportEmailCaptured).toHaveBeenCalledOnce();
-    expect(mocks.trackABConversion).not.toHaveBeenCalled();
     expect(view.getByRole('button', { name: 'Save as PDF' })).toBeTruthy();
     expect(view.container.querySelector('input[type="email"]')).toBeNull();
   });
@@ -208,11 +206,10 @@ describe('US-18 AC6 — a refused print window is never silent', () => {
     expect(window.open).toHaveBeenCalledOnce();
     expect(mocks.sendGuestReport).toHaveBeenCalledWith('reader@example.com');
     expect(mocks.markReportEmailCaptured).toHaveBeenCalledOnce();
-    expect(mocks.trackABConversion).toHaveBeenCalledOnce();
     expect(view.container.querySelector('#guestEmail')).toBeNull();
     const note = view.getByText(BLOCKED);
     expect(note.getAttribute('role')).toBe('status');
-    expect(note.closest('.report-actions')).toBe(view.getByRole('button', { name: 'Save as PDF' }).closest('.report-actions'));
+    expect(note.closest('.mh-pdf')).toBe(view.getByRole('button', { name: 'Save as PDF' }).closest('.mh-pdf')); // the PDF box's one region (AC8)
     expect(blockedEvents()).toEqual([['pdf_window_blocked']]);
   });
 
@@ -256,7 +253,8 @@ describe('US-18 AC6 — a refused print window is never silent', () => {
     expect(blockedEvents()).toHaveLength(2); // trackProductEvent itself sends once per tab session
   });
 
-  it('a refusal on a capture that then fails to send shows beside that error', async () => {
+  // Lead P10 (Brad 2026-11-26): the note names Save as PDF, so it waits until that button is on screen.
+  it('a refusal on a capture that then fails to send: the send\'s error shows, the note waits for Save as PDF', async () => {
     mocks.skip.value = false;
     mocks.sendGuestReport.mockResolvedValue({ success: false, error: 'Please retry' });
     refuseWindow();
@@ -265,7 +263,9 @@ describe('US-18 AC6 — a refused print window is never silent', () => {
     fireEvent.click(view.getAllByRole('button', { name: GUEST_CAPTURE_BUTTON_LABEL })[0]);
     await waitFor(() => expect(view.getAllByText('Please retry').length).toBeGreaterThan(0));
     const box = view.getAllByText('Please retry')[0].closest('.email-capture')!;
-    expect(box.textContent).toContain(BLOCKED);
+    expect(view.queryByRole('button', { name: 'Save as PDF' })).toBeNull();
+    expect(view.queryByText(BLOCKED)).toBeNull();
+    expect(box.textContent).toContain('Please retry');
     expect(mocks.markReportEmailCaptured).not.toHaveBeenCalled();
     expect(blockedEvents()).toEqual([['pdf_window_blocked']]);
   });
@@ -311,7 +311,7 @@ describe('US-18 AC6 — a refused print window is never silent', () => {
     expect(buttons).toHaveLength(1);
     fireEvent.click(buttons[0]);
     await waitFor(() => expect(view.getByText(BLOCKED)).toBeTruthy());
-    expect(view.getByText(BLOCKED).closest('.report-actions')).toBe(buttons[0].closest('.report-actions'));
+    expect(view.getByText(BLOCKED).closest('.mh-pdf')).toBe(buttons[0].closest('.mh-pdf')); // the PDF box's one region (AC8)
   });
 
   it('a window that opens shows no message and fires no event', async () => {

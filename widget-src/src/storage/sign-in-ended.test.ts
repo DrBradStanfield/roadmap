@@ -13,7 +13,7 @@ import { ROADMAP_FILE_NAME, StorageError } from '@roadmap/health-core/adapter';
 import { GoogleDriveAdapter } from './drive';
 import { DropboxAdapter } from './dropbox';
 import { bootSignIn, currentSignIn, resetSignIn, subscribeSignIn } from './sign-in-state';
-import { pkceEntry } from './pkce';
+import { pkceEntry, SignInUnfinishedError } from './pkce';
 import { sweepStaleSignIns } from '../lib/storage';
 
 const BACKEND_KEY = 'health_roadmap_backend';
@@ -278,7 +278,7 @@ describe('US-09 AC48 (R6): the Dropbox config, an empty object whose presence sa
 
   it('is not written when a log-off came during the sign-in', async () => {
     localStorage.setItem(LOG_OFF_ID_KEY, 'gen-2');
-    expect(await connectDropbox('gen-1')).toBeNull();
+    await expect(connectDropbox('gen-1')).rejects.toBeInstanceOf(SignInUnfinishedError); // said at load (US-09 AC60)
     expect(localStorage.getItem(DROPBOX_CONFIG)).toBeNull();
     expect(localStorage.getItem(DROPBOX_TOKENS)).toBeNull();
   });

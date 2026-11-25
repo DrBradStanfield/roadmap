@@ -157,8 +157,9 @@ describe('the real script (US-71 AC1-AC3)', () => {
     fs.mkdirSync(path.join(proj, 'node_modules', '.bin'), { recursive: true });
     execFileSync('git', ['init', '-q'], { cwd: proj });
   });
-  // A failed waitFor skips the test's own kill: SIGKILL any wrapper still up and each fake vitest's
-  // group (it runs detached, so its pid is its group), or both run forever. Runs before base is removed.
+  // A failed waitFor skips the test's own kill: SIGKILL any wrapper still up and each fake vitest, or
+  // both run forever. Locally the fake runs detached, so its pid is its group: kill the group. In CI
+  // mode it shares the wrapper's group, so -pid answers ESRCH (T13): kill the pid too. Runs before base is removed.
   // Only after a failure: a passing test reaped its own, and a logged pid may since name another process.
   const spawned: ReturnType<typeof spawn>[] = [];
   const pids = () => path.join(base, 'vitest-pids.txt');
@@ -171,7 +172,7 @@ describe('the real script (US-71 AC1-AC3)', () => {
     // The fake notes its pid as it boots; the wrapper's owner.json names it from spawn, before that.
     const groups = fs.existsSync(pids()) ? fs.readFileSync(pids(), 'utf8').split('\n').filter(Boolean).map(Number) : [];
     const child = readHolder(path.join(proj, '.git', 'test-all.lock'))?.child;
-    for (const g of new Set(child ? [...groups, child] : groups)) kill(-g);
+    for (const g of new Set(child ? [...groups, child] : groups)) { kill(-g); kill(g); }
   });
   // The fake vitest logs start/end with the lock's presence, then behaves as MODE says.
   const fakeVitest = (body: string) => {

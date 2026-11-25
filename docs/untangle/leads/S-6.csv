@@ -1,2 +1,2 @@
 id,section,title,status,evidence,pr,durability_check,needs_brad
-S-6,S2 server,One shared test harness instead of repeated chat.server mocks,not started,17 test files under app/ still vi.mock chat.server by hand,,,no
+S-6,S2 server,One shared test harness instead of repeated chat.server mocks,done,"app/lib/chat-server.test-helpers.ts chatServerStub holds the route surface; the 13 route and app-route tests pass only their overrides. Left by design: 7 discord-bot mocks (three-export surface the stub would widen) and 3 spread-the-real-module mocks (platform-chat.server, youtube-bot.masters, youtube-bot.spam)",1620,none,no

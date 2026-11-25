@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H401,error-report scrub,"The error-report scrub compiles a 51k-character pattern on first use (about a third of a second), on the browser's main thread",lead,closed,"Closed 2026-11-26: measured that day, the pattern compiles on its first run (about 0.3 s), which already happens only on a page that sends a report. Warming it at idle would move that cost to every page view. PR 2125 closed. (H401)",,no

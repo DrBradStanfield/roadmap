@@ -2,9 +2,10 @@ import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { askedUnder, deleteUserData, getBackendKind, getEraseIdentity, getShownErase, markEraseShown } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 import { Sentry } from '../lib/sentry';
-import { recordFailure, WritesStoppedError } from '../lib/error-diagnostics';
-import { ERASE_CONFIRM, ERASE_DONE, ERASE_DONE_CHAT_PENDING, ERASE_DONE_CHAT_UNREAD, ERASE_FAILED, WRITE_REFUSED } from '../lib/erase-copy';
-import { createEraseStore, refusal, type EraseState, type EraseStore } from '../lib/erase-machine';
+import { recordFailure, writesStopped } from '../lib/error-diagnostics';
+import { eraseOutcomeWords } from '@roadmap/health-core/erase-outcome';
+import { ERASE_CONFIRM, ERASE_FAILED, WRITE_REFUSED, eraseDone } from '../lib/erase-copy';
+import { createEraseStore, refusal, unreachable, type EraseState, type EraseStore } from '../lib/erase-machine';
 import { tellChats } from './chatStore';
 
 /**
@@ -13,13 +14,14 @@ import { tellChats } from './chatStore';
  *
  * One EraseStore per page holds the state; every event reaches it from one of
  * its call sites: useRecordApply `apply` and the page's first read (`read`),
- * useRecordApply's REMOTE_CHANGED listener (`arrived`), its loaded effect and
- * `firstReadFailed` (`loaded`), `eraseAll` here (`own-start`, then `own-end`
+ * useRecordApply's REMOTE_CHANGED listener (`arrived`), its `firstReadShown`
+ * and `firstReadFailed` (`loaded`), `eraseAll` here (`own-start`, then `own-end`
  * or `own-failed`), and `writeRefused` here (`refused`). Its effects run
  * through the doors below, built from the latest committed props:
  * - clearDrafts, forget: the page's;
- * - read: the page's `shows` (useRecordApply: it ends a hold, clears the
- *   answer mark, and counts nothing);
+ * - read: the page's `shows`, with the read's id (useRecordApply: it ends a
+ *   hold, clears the answer mark, counts nothing, and dispatches
+ *   `read-failed` with that id when the read fails, H39);
  * - rereadRefused: the page's `reread('refused')`, the read writeRefused asks
  *   for (an erase that refused a save, then stopped short: A6 R1);
  * - countRemoteChange: remote_change_applied, the one count of another
@@ -48,8 +50,8 @@ export interface EraseDoorProps {
   forget: () => void;
   /** A whole re-read of the record, through the page's read policy: a refusal with no erase heard, or one made during an erase that stopped short. */
   reread: (reason: 'refused' | 'left') => void;
-  /** The machine's read: another writer's erase shows (useRecordApply `shows`). */
-  shows: () => void;
+  /** The machine's read `id`: another writer's erase shows (useRecordApply `shows`). */
+  shows: (id: number) => void;
   /** The machine read for a refusal of the record shown: the answer mark is spent, as a 'refused' re-read spends it (US-62 AC25b). */
   spend: () => void;
 }
@@ -58,8 +60,14 @@ export interface Erase {
   /** The machine: the page's first read and useRecordApply's re-reads dispatch `read` to it. */
   store: EraseStore;
   shownErase: string;
+  /** The page has shown its first read: the saves' gate (the machine's `read`, ledger H37). */
+  loaded: boolean;
+  /** The page's first read failed (L2): Delete all my data stays in Settings (US-11 AC10, H114). */
+  firstReadFailed: boolean;
   erasing: boolean;
   eraseUnshown: () => boolean;
+  /** Another writer's erase is heard and its latest read failed, the first read shown (H39). Never after a failed first read (L2). */
+  unreachable: boolean;
   /** A save the store refused, asked under `erase`: said once per erase, and the record re-read once. */
   writeRefused: (erase?: string) => void;
   /** Ask, erase, and say how it went; true on success. */
@@ -73,7 +81,7 @@ export function useErase(props: EraseDoorProps): Erase {
   const [store] = useState(() => createEraseStore(getShownErase(), {
     clearDrafts: () => doors.current.clearDrafts(),
     forget: () => doors.current.forget(),
-    read: () => doors.current.shows(),
+    read: id => doors.current.shows(id),
     rereadRefused: () => doors.current.reread('refused'),
     countRemoteChange: () => trackProductEvent('remote_change_applied', { backend: getBackendKind() }),
     alertRefused: () => window.alert(WRITE_REFUSED),
@@ -119,18 +127,25 @@ export function useErase(props: EraseDoorProps): Erase {
     // A throw is reported, then taken as a failed write: the erase still ends, or the lock sticks (US-16 AC2f).
     // A log-off refusal is not a failure, so it is not reported (US-09 AC2c, A19).
     const result: Awaited<ReturnType<typeof deleteUserData>> = await deleteUserData().catch((error: unknown) => {
-      if (!(error instanceof WritesStoppedError)) Sentry.captureException(recordFailure(error, 'Erase failed'), { tags: { area: 'erase', op: 'delete-all' } });
-      return { success: false, chatErased: false };
+      if (!writesStopped(error)) Sentry.captureException(recordFailure(error, 'Erase failed'), { tags: { area: 'erase', op: 'delete-all' } });
+      return { success: false, chat: null };
     });
     // Read in the turn it dispatches (2b-1 R1). An erase whose write failed
     // still leaves the erased copy in the store, which retries it: the screen
-    // shows that copy too (US-16 AC2a). A refused erase moved nothing.
+    // shows that copy too (US-16 AC2a). A refused erase moved nothing, and nor
+    // does one this browser could not hold either: the store puts its copy
+    // back and gives no reason, after the chat step (lead S57). The words say
+    // what each step did (US-11 AC13).
     const now = getEraseIdentity();
-    const done = result.chatErased ? ERASE_DONE : result.chatUnread ? ERASE_DONE_CHAT_UNREAD : ERASE_DONE_CHAT_PENDING;
-    const message = result.success ? (result.warning ? `${done}\n\n${result.warning}` : done) : result.error || ERASE_FAILED;
+    const message = result.success
+      // The chat step runs before every erase that stands (record-session-erase.ts); were it ever missing, never say the chat history is deleted.
+      ? eraseDone(result.chat ?? 'unreached', result.warning)
+      : eraseOutcomeWords(!result.error && result.chat
+        ? { record: 'not-saved', chat: result.chat }
+        : { record: 'failed', reason: result.error || ERASE_FAILED, chat: result.chat });
     store.dispatch(now !== before ? { type: 'own-end', identity: now, message } : { type: 'own-failed', message });
     return result.success;
   }, [store]);
 
-  return { store, shownErase: state.shown, erasing: state.phase === 'erasing', eraseUnshown, writeRefused, eraseAll };
+  return { store, shownErase: state.shown, loaded: state.read === 'shown', firstReadFailed: state.read === 'failed', erasing: state.phase === 'erasing', eraseUnshown, unreachable: unreachable(state), writeRefused, eraseAll };
 }

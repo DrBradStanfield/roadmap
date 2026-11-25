@@ -36,9 +36,8 @@ import { createCoreRow } from '../../packages/health-core/src/blood-tests';
 import { createEmptyFile, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { connectionKey, resetMcpMemory, type AccessPayload, type CodePayload, type RefreshPayload } from '../lib/mcp-grants.server';
 import { hash, unpackSealed } from '../lib/mcp-seal.server';
-import { mcpEndpoint, setAdapterFactory } from '../lib/mcp.server';
+import { type AdapterFactory, mcpEndpoint } from '../lib/mcp.server';
 import { recordServerEvent } from '../lib/product-events.server';
-import { setImportSeams } from '../lib/mcp-import.server';
 import { action, loader } from './mcp.$';
 
 const ISSUER = 'https://mcp.example.test';
@@ -98,6 +97,11 @@ function stubFetch(documents: Record<string, unknown> = {}) {
 
 /** Which Dropbox access token each adapter was built with. */
 let adapterTokens: string[];
+/** The folder every call opens: this case's in-memory cloud, noting the token it was built with. */
+const makeAdapter: AdapterFactory = (_provider, token) => {
+  adapterTokens.push(token);
+  return new MemoryAdapter(cloud);
+};
 
 beforeEach(() => {
   resetClaimsState(claims.state!);
@@ -112,17 +116,11 @@ beforeEach(() => {
   refreshed = [];
   adapterTokens = [];
   cloud = new MemoryCloud();
-  setAdapterFactory((_provider, token) => {
-    adapterTokens.push(token);
-    return new MemoryAdapter(cloud);
-  });
   stubFetch();
   vi.mocked(recordServerEvent).mockClear();
 });
 
 afterEach(() => {
-  setAdapterFactory(null);
-  setImportSeams(null);
   vi.unstubAllGlobals();
   vi.useRealTimers();
   vi.resetAllMocks();
@@ -269,7 +267,7 @@ async function rpcStatus(access: string, method: string, params: unknown = {}, n
     method: 'POST',
     headers: { Authorization: `Bearer ${access}`, 'content-type': 'application/json' },
     body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
-  }), now);
+  }), now, { makeAdapter });
 }
 
 async function callTool(access: string, name: string, args: unknown, now = NOW) {
@@ -620,7 +618,7 @@ describe('US-32 AC38 — the two-phase tools work on a reviewer bearer (one shar
     });
     expect(proposed.isError, proposed.text).toBe(false);
     const receipt = proposed.structured.receipt as string;
-    const committed = await callTool(access, 'file_results', { commit: { receipt, accept: ['c1'], replace: [], approval: APPROVED } });
+    const committed = await callTool(access, 'file_results', { commit: { receipt, accept: ['c1'], replace: [], approval: APPROVED } }, LATER);
     expect(committed.isError, committed.text).toBe(false);
     expect(storedRecord().labValues.some((row) => row.metricName === 'Ferritin')).toBe(true);
   });

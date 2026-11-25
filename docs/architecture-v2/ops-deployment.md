@@ -70,7 +70,7 @@ flowchart TB
   %% COMMERCE column
   subgraph COM["COMMERCE — microvitamin org"]
     direction TB
-    CA["Private app · shopify.app.toml<br/>client_id 94c365… · microvitamin.com (chat only)"]
+    CA["Private app · shopify.app.toml<br/>client_id 94c365… · microvitamin.com /pages/health-plan (tool + chat)"]
     CF["Fly app · health-tool-app · bots ON<br/>own SHOPIFY_API_KEY / _SECRET / APP_URL · microvitamin Klaviyo"]
     CA ~~~ CF
   end

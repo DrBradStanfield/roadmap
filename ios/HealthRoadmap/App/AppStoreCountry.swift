@@ -48,3 +48,13 @@ enum AppStoreCountry {
     }
     #endif
 }
+
+extension RecordStore {
+    /// The App Store storefront's country (US-61, `AppStoreCountry`): a change draws the
+    /// record again, so the plan's supplement cards gain or lose Dr Brad's products.
+    func follow(storefrontIsUS isUS: Bool) async {
+        guard await engine.storefrontIsUS != isUS else { return }
+        await engine.useStorefront(isUS: isUS)
+        await redraw().value
+    }
+}

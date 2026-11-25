@@ -90,34 +90,9 @@ describe('US-25 AC18c: doors parse their arguments (I-2 step 2)', () => {
   });
 });
 
-// The app's edits, each kind as RecordEdit.encode (MyData.swift, FormModels.swift) and the
-// engine's own chat Undo write them. All of them read; a malformed one is refused, not cast.
-const SWIFT_EDITS: unknown[] = [
-  { kind: 'profile', sex: 'female', birthYear: 1970, birthMonth: 6, height: 178 },
-  { kind: 'profile', heightFeet: 5, heightInches: 10 },
-  { kind: 'bloodPressure', systolic: 120, diastolic: 80, day: '2026-10-20', replace: false },
-  { kind: 'bloodPressure', systolic: 120, diastolic: 80, day: '2026-10-20', replace: true, seenIds: ['a', 'b'] },
-  { kind: 'units', unitSystem: 'conventional' },
-  { kind: 'alcohol', alcohol: null },
-  { kind: 'alcohol', alcohol: 'drinks' },
-  { kind: 'lpaUnit', unit: 'mg/dL' },
-  { kind: 'add', metric: 'weight', value: 80.5, day: '2026-10-20' },
-  { kind: 'correct', id: 'row-1', value: 81 },
-  { kind: 'labAdd', series: 'ferritin', value: 85, day: '2026-10-20', unit: 'µg/L' },
-  { kind: 'labAddName', name: 'Ferritin', value: 85, day: '2026-10-20', unit: 'µg/L' },
-  { kind: 'appleHealth', samples: [{ externalId: 'u-1', metricType: 'weight', value: 80, measuredAt: '2026-10-21T08:30:00+13:00' },
-    { externalId: 'u-2', metricType: 'systolic_bp', value: 120, measuredAt: '2026-10-21T08:30:00+13:00', pairId: 'p-1' }] },
-  { kind: 'healthRecords', records: [{ sourceId: 's', resourceType: 'Observation', fhirVersion: '4.0.1', json: '{}' }] },
-  { kind: 'medicationField', field: 'statin', value: 'none' },
-  { kind: 'screening', key: 'colorectalMethod', value: '' },
-  { kind: 'supplement', supplementKey: 'creatine', supplementName: 'Creatine', doseValue: null, doseUnit: null, status: 'active' },
-  { kind: 'customSupplement', name: 'Magnesium' },
-  { kind: 'labImport', extractionJson: '{}', refs: ['v0'], reportDay: '2026-10-20' },
-  { kind: 'chatEdits', part: 'review', edits: [{ kind: 'field', field: 'ldlC' }], today: '2026-10-21' },
-  { kind: 'chatEdits', part: 'review', edits: [], today: '2026-10-21', seen: [['ldlC', null]] },
-  { kind: 'chatUndo', medications: [{ medicationKey: 'statin', drugName: 'none', doseValue: null, doseUnit: null }] },
-  { kind: 'medication', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg' },
-];
+// The app's edits, each kind as RecordEdit.encode writes it and the engine's own chat Undo, from the
+// one fixture RecordEditTests.swift encodes against (I-2 step 3). All of them read; a malformed one is refused.
+const SWIFT_EDITS: unknown[] = Object.values((JSON.parse(file('__fixtures__/record-edits.json')) as { edits: Record<string, unknown> }).edits);
 
 describe('US-25 AC18c: the Edit the app sends (I-2 step 2)', () => {
   it('reads every kind the app and the engine write, unchanged', () => {

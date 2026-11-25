@@ -64,7 +64,7 @@ interface ChatEditsDeps {
   showForm: () => void;
   /** ...and shows the field the chat filled. */
   reveal: (cell: { field: string; grid: boolean }) => void;
-  /** The chat's weight, to the box or the grid: the onboarding's answer while the record's weight step is open (US-62 AC31a). */
+  /** The chat's weight, to the box or the grid: the onboarding's answer while the record's weight step is open and the box holds no plausible typed weight, or while the landing waits on a typed weight (US-62 AC31a, H53). */
   chatWeight: () => void;
   /** The whole form, with the vitals grid, is open (US-62 AC13). */
   fullForm: boolean;

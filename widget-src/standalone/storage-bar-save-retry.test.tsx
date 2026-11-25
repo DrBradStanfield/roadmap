@@ -17,7 +17,7 @@ import { ROADMAP_FILE_NAME, StorageError } from '@roadmap/health-core/adapter';
 vi.mock('./google-config', () => ({ googleDriveConfig: () => ({}) }));
 vi.mock('../src/lib/server-api', async (original) => ({
   ...(await original<typeof import('../src/lib/server-api')>()),
-  trackProductEvent: vi.fn(), trackABImpression: vi.fn(), trackABConversion: vi.fn(),
+  trackProductEvent: vi.fn(),
 }));
 vi.mock('./reminders', () => ({ remindersSupported: () => false }));
 vi.mock('./reminders-control', () => ({ RemindersControl: () => null }));
@@ -36,7 +36,7 @@ vi.mock('./connect', () => ({
 }));
 
 import { StorageBar, SyncControl } from './sync-control';
-import { addMeasurement, currentRetryDue, flushRoadmapStore, initRoadmapStore } from '../src/lib/roadmap-data';
+import { addMeasurement, currentRetryDue, flushRoadmapStore, initRoadmapStore, getShownErase } from '../src/lib/roadmap-data';
 import { trackProductEvent } from '../src/lib/server-api';
 import { GitHubAdapter } from '../src/storage/github';
 
@@ -60,8 +60,8 @@ class TestCloud extends MemoryAdapter {
   }
 }
 const LOG_OFF_ID_KEY = 'health_roadmap_log_off_id';
-const OFFLINE = () => new StorageError('Dropbox did not answer', undefined, new TypeError('Failed to fetch'));
-const REVOKED = () => new StorageError('Dropbox call failed (401).', undefined, undefined, 401);
+const OFFLINE = () => new StorageError('Dropbox did not answer', undefined, new TypeError('Failed to fetch'), undefined, undefined, 'may-have-landed');
+const REVOKED = () => new StorageError('Dropbox call failed (401).', undefined, undefined, 401, undefined, 'refused');
 
 const WAITING = 'Some data in this browser is still waiting to sync to your Dropbox.';
 const RETRY_CLAUSE = 'It will upload automatically.';
@@ -85,7 +85,7 @@ async function failedSave(error: Error) {
   vi.useFakeTimers();
   render(<StorageBar backend="dropbox" />);
   cloud.fail = error;
-  await act(async () => { await addMeasurement('weight', 80, '2026-06-01'); });
+  await act(async () => { await addMeasurement('weight', 80, '2026-06-01', getShownErase()); });
   await advance(PERSIST_DEBOUNCE_MS);
   expect(cloud.writes).toBe(1);
   expect(line()).toBe('Not synced yet. Your changes are on this device.');
@@ -192,8 +192,8 @@ describe('US-09 AC30: Settings says a retry will come only when one will (lead A
     await initRoadmapStore(cloud);
     vi.useFakeTimers();
     render(<StorageBar backend="dropbox" />);
-    cloud.failVerify = new StorageError('Google Drive needs to be reconnected.', undefined, undefined, undefined, 'reconnect');
-    await act(async () => { await addMeasurement('weight', 80, '2026-06-01'); });
+    cloud.failVerify = new StorageError('Google Drive needs to be reconnected.', undefined, undefined, undefined, 'reconnect', 'refused');
+    await act(async () => { await addMeasurement('weight', 80, '2026-06-01', getShownErase()); });
     await advance(PERSIST_DEBOUNCE_MS);
     expect(cloud.writes).toBe(1);
     expect(settingsDetail()).toBe(`${WAITING} ${SAFE}`);
@@ -202,7 +202,7 @@ describe('US-09 AC30: Settings says a retry will come only when one will (lead A
   it('once saved, there is no waiting line', async () => {
     const cloud = new TestCloud(new MemoryCloud());
     await initRoadmapStore(cloud);
-    await act(async () => { await addMeasurement('weight', 80, '2026-06-01'); await flushRoadmapStore(); });
+    await act(async () => { await addMeasurement('weight', 80, '2026-06-01', getShownErase()); await flushRoadmapStore(); });
     expect(cloud.writes).toBe(1);
     expect(settingsDetail()).toBeNull();
   });

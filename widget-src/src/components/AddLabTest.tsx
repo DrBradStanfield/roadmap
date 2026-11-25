@@ -7,10 +7,10 @@
 // core value (US-66 AC6), so a held day finds the core row and a refused
 // number reads as the matrix says it.
 
-import { useEffect, useState, type MutableRefObject } from 'react';
+import { useEffect, useReducer, useState, type MutableRefObject } from 'react';
 import { canonicalToReported } from '@roadmap/health-core/units';
 import { commaQuestion, parseLocalisedNumber } from '@roadmap/health-core/parseNumber';
-import { displayLabUnit, LAB_CATALOG, LAB_GROUPS, resolveLabCatalogEntry } from '@roadmap/health-core/lab-catalog';
+import { displayLabUnit, LAB_CATALOG, LAB_GROUPS, labNameForUnit, resolveLabCatalogEntry } from '@roadmap/health-core/lab-catalog';
 import { labRangeMessage } from '@roadmap/health-core/cell-unit';
 import { localDay } from '@roadmap/health-core/merge';
 import { savedLabText } from '@roadmap/health-core/lab-series';
@@ -19,7 +19,7 @@ import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import type { Comparator } from '@roadmap/health-core/lab-limits';
 import { bloodTestKeyOf, coreStored } from '@roadmap/health-core/blood-tests';
 import { UnitChip } from './UnitChip';
-import { SAVE_ERRORS, saveErrorText } from './BloodTestTimeline';
+import { SAVE_ERRORS, saveErrorText } from './MatrixSavedCells';
 import { addLabValue, getEraseIdentity, getShownErase } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 import type { CorrectFn } from '../lib/matrix-save';
@@ -37,6 +37,46 @@ export const RECORD_CHANGED = 'Not saved: your record changed since you opened t
 /** The name typed under "Other" counts only while Other is chosen: "Choose a test…" names no test, so nothing saves (US-21 AC2). */
 const otherName = (testKey: string, customName: string) => (testKey === 'custom' ? customName.trim() : '');
 
+const TRY_AGAIN = 'Could not save — please try again.';
+
+/**
+ * The form's mode (US-21 AC27). `form` names one opening of the form; `openAt` is the erase the
+ * screen showed as it opened, which the save carries, so an erase shown since refuses it
+ * (US-16 AC2d); `held` is the saved value a Replace would correct. A save's answer names the
+ * opening it belongs to, so one that lands after Cancel, or in a form opened since, changes nothing.
+ */
+interface Opened { form: symbol; openAt: string; notice: string | null; held: Held | null }
+export type AddMode =
+  | { kind: 'closed'; notice: string | null }
+  | ({ kind: 'open' } & Opened)
+  | ({ kind: 'saving' } & Opened);
+export type AddEvent =
+  | { type: 'open'; form: symbol; openAt: string }
+  | { type: 'edit' }                     // any change to the form withdraws the notice and the offer
+  | { type: 'refuse'; notice: string }   // refused before any write
+  | { type: 'save' }                     // a new value: the old notice goes
+  | { type: 'replace' }                  // a correction: the offer stays named while it writes
+  | { type: 'failed'; form: symbol; notice: string; held?: Held }
+  | { type: 'saved'; form: symbol }
+  | { type: 'recordChanged'; form: symbol }
+  | { type: 'cancel' };
+
+export function addTransition(state: AddMode, event: AddEvent): AddMode {
+  switch (event.type) {
+    case 'open': return state.kind === 'closed' ? { kind: 'open', form: event.form, openAt: event.openAt, notice: null, held: null } : state;
+    case 'cancel': return state.kind === 'closed' ? state : { kind: 'closed', notice: null };
+    case 'edit': return state.kind === 'closed' ? state : { ...state, notice: null, held: null };
+    case 'refuse': return state.kind === 'open' ? { ...state, notice: event.notice } : state;
+    case 'save': return state.kind === 'open' ? { ...state, kind: 'saving', notice: null, held: null } : state;
+    case 'replace': return state.kind === 'open' ? { ...state, kind: 'saving' } : state;
+  }
+  if (state.kind !== 'saving' || state.form !== event.form) return state;
+  if (event.type === 'saved') return { kind: 'closed', notice: null };
+  if (event.type === 'recordChanged') return { kind: 'closed', notice: RECORD_CHANGED };
+  // A refused add may name a value to replace; a refused Replace keeps the one it named.
+  return { ...state, kind: 'open', notice: event.notice, held: event.held ?? state.held };
+}
+
 export function AddLabTest({ onAdded, labValues = [], coreValues = [], onCorrect, preset, dirtyRef }: {
   onAdded: () => void;
   /** The saved values, to name the one a duplicate collides with. */
@@ -51,38 +91,45 @@ export function AddLabTest({ onAdded, labValues = [], coreValues = [], onCorrect
   /** Set while the form holds a typed value not yet saved (a value page asks before leaving it). */
   dirtyRef?: MutableRefObject<boolean>;
 }) {
-  const presetKey = preset && (LAB_CATALOG.some(e => e.key === preset.metricName) ? preset.metricName : 'custom');
-  // Open: the erase the screen showed as it opened, which the save carries, so an erase shown
-  // since refuses it (US-16 AC2d). Closed: null.
-  const [openAt, setOpenAt] = useState<string | null>(null);
-  const open = openAt !== null;
+  // A count page whose rows are in % adds to the share's test (US-21 AC28): the form shows and keys that test.
+  const presetName = preset && labNameForUnit(preset.metricName, preset.unit);
+  const presetKey = presetName && (LAB_CATALOG.some(e => e.key === presetName) ? presetName : 'custom');
+  const [mode, send] = useReducer(addTransition, { kind: 'closed', notice: null });
   const [testKey, setTestKey] = useState(presetKey ?? ''); // catalogue key | 'custom' | ''
   const [customName, setCustomName] = useState(presetKey === 'custom' ? preset!.metricName : '');
   const [customUnit, setCustomUnit] = useState(presetKey === 'custom' ? preset!.unit : '');
   const [valueStr, setValueStr] = useState('');
   const [date, setDate] = useState(() => localDay(new Date()));
-  const [saving, setSaving] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
-  // The saved value a Replace would correct.
-  const [held, setHeld] = useState<Held | null>(null);
-  if (dirtyRef) dirtyRef.current = open && valueStr.trim() !== '';
+  if (dirtyRef) dirtyRef.current = mode.kind !== 'closed' && valueStr.trim() !== '';
   useEffect(() => () => { if (dirtyRef) dirtyRef.current = false; }, []);
 
-  if (!open) {
+  // Every open starts from an empty form.
+  const open = () => {
+    setTestKey(presetKey ?? '');
+    setCustomName(presetKey === 'custom' ? preset!.metricName : '');
+    setCustomUnit(presetKey === 'custom' ? preset!.unit : '');
+    setValueStr('');
+    setDate(localDay(new Date()));
+    send({ type: 'open', form: Symbol('add-form'), openAt: getShownErase() });
+  };
+
+  if (mode.kind === 'closed') {
     return (<>
-      <button type="button" className="alr-add-btn" onClick={() => { setNotice(null); setOpenAt(getShownErase()); }}>
+      <button type="button" className="alr-add-btn" onClick={open}>
         {preset ? '+ Add a value' : '+ Add a blood test'}
       </button>
-      {notice && <div className="alr-add-notice">{notice}</div>}
+      {mode.notice && <div className="alr-add-notice">{mode.notice}</div>}
     </>);
   }
+  const { form, openAt, notice, held } = mode;
 
   const entry = LAB_CATALOG.find(e => e.key === testKey);
   // A catalogued test has no input range, only the record's typing-mistake bounds checked on save
   // (US-21 AC26), so "1,050" is always asked about (US-02 AC7).
   const value = parseLocalisedNumber(valueStr);
   const question = commaQuestion(valueStr);
-  const metricName = entry ? entry.key : otherName(testKey, customName);
+  // An "Other test" typed as a count's name in % is the share's test, as the record files it (US-21 AC28).
+  const metricName = entry ? entry.key : labNameForUnit(otherName(testKey, customName), customUnit.trim());
   const unit = entry ? entry.unit : customUnit.trim();
   // As health-core's writer reads the name: a core test's is its core slot, the value converted (US-66 AC6).
   const core = bloodTestKeyOf(metricName);
@@ -91,19 +138,10 @@ export function AddLabTest({ onAdded, labValues = [], coreValues = [], onCorrect
   // parseLocalisedNumber only returns finite numbers or undefined. The date
   // guard also blocks future dates typed past the input's max (ISO strings
   // compare lexicographically).
-  const canSave = !saving && !!metricName && !!date && date <= localDay(new Date()) &&
+  const canSave = mode.kind === 'open' && !!metricName && !!date && date <= localDay(new Date()) &&
     value !== undefined && value >= 0;
 
-  const clearNotice = () => { setNotice(null); setHeld(null); };
-  const recordChanged = () => { close(); setNotice(RECORD_CHANGED); };
-  const close = () => {
-    setOpenAt(null);
-    setTestKey(presetKey ?? '');
-    setCustomName(presetKey === 'custom' ? preset!.metricName : '');
-    setCustomUnit(presetKey === 'custom' ? preset!.unit : '');
-    setValueStr('');
-    setDate(localDay(new Date())); clearNotice();
-  };
+  const clearNotice = () => send({ type: 'edit' });
 
   // The typed test's catalogue entry, as the record's lab add resolves it (addLabValue): an "Other
   // test" the catalogue knows ("Ferritin" in ng/mL) is its catalogue test, in its units.
@@ -127,48 +165,49 @@ export function AddLabTest({ onAdded, labValues = [], coreValues = [], onCorrect
   // Any change to the form withdraws the offer (clearNotice); Replace still
   // checks, just before it writes, that the form describes the value it names.
   const replace = async (there: Held) => {
-    if (!describes(there) || openAt === null) { clearNotice(); return; }
-    setSaving(true);
-    const status = await onCorrect!(there.id, stored!, openAt);
-    setSaving(false);
-    if (status === 'ok') close();
-    else if (openAt !== getEraseIdentity()) recordChanged();
-    else setNotice(saveErrorText(status));
+    if (mode.kind !== 'open') return;
+    if (!describes(there)) { clearNotice(); return; }
+    send({ type: 'replace' });
+    try {
+      const status = await onCorrect!(there.id, stored!, openAt);
+      if (status === 'ok') send({ type: 'saved', form });
+      else if (openAt !== getEraseIdentity()) send({ type: 'recordChanged', form });
+      else send({ type: 'failed', form, notice: saveErrorText(status) });
+    } catch {
+      send({ type: 'failed', form, notice: TRY_AGAIN });
+    }
   };
 
   const save = async () => {
-    if (!canSave || openAt === null) return;
+    if (!canSave) return;
     // A value page for a kept-apart row named like a core test (an old "creatinine" may be urine,
     // US-12 AC11): the add would write the core value, which this page never shows (US-66 AC5).
-    if (preset && core) { setNotice(CORE_ON_LAB_PAGE); return; }
-    setSaving(true);
-    clearNotice();
+    if (preset && core) { send({ type: 'refuse', notice: CORE_ON_LAB_PAGE }); return; }
+    send({ type: 'save' });
     try {
       // health-core's one lab add (US-25 AC25): it files the test, refuses a unit the catalogue does
       // not take in the upload summary's words (US-21 AC15), and names a held value on that day.
       // A value page adds to its own series, whatever its name or unit (US-25 AC25).
-      const result = await addLabValue({ metricName, unit, value: value!, day: date, ...(preset ? { existingSeries: true } : null) }, openAt);
+      // The page's own name, so the record finds its series (a legacy count series in % adds under the share).
+      const result = await addLabValue({ metricName: preset ? preset.metricName : metricName, unit, value: value!, day: date, ...(preset ? { existingSeries: true } : null) }, openAt);
       if (!result && openAt !== getEraseIdentity()) { // the record moved to another erase since the form opened
-        recordChanged();
+        send({ type: 'recordChanged', form });
       } else if (!result) {
-        setNotice('Could not save — please try again.');
+        send({ type: 'failed', form, notice: TRY_AGAIN });
       } else if (result.ok) {
         trackProductEvent('lab_row_added');
-        close();
-        onAdded();
+        send({ type: 'saved', form });
+        onAdded(); // the value is saved even when the form closed meanwhile: the page re-reads
       } else if (result.bound) {
         // A core value out of range reads as the matrix says it, in the unit typed (US-66 AC6).
-        setNotice((core && labRangeMessage(core, unit, result.bound)) || SAVE_ERRORS.invalid);
+        send({ type: 'failed', form, notice: (core && labRangeMessage(core, unit, result.bound)) || SAVE_ERRORS.invalid });
       } else {
-        setNotice(result.message);
         // A held value in the same unit holding another number: offer to replace it (US-21 AC13).
         const there = result.existingId ? heldOf(result.existingId) : undefined;
-        if (onCorrect && there) setHeld(there);
+        send({ type: 'failed', form, notice: result.message, held: onCorrect ? there : undefined });
       }
     } catch {
-      setNotice('Could not save — please try again.');
-    } finally {
-      setSaving(false);
+      send({ type: 'failed', form, notice: TRY_AGAIN });
     }
   };
 
@@ -237,7 +276,7 @@ export function AddLabTest({ onAdded, labValues = [], coreValues = [], onCorrect
                 onClick={() => void (held ? replace(held) : save())}>
           {held ? `Replace ${labelOf(held)} with ${valueStr}` : 'Save'}
         </button>
-        <button type="button" className="alr-add-cancel" onClick={close}>
+        <button type="button" className="alr-add-cancel" onClick={() => send({ type: 'cancel' })}>
           Cancel
         </button>
       </div>

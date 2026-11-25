@@ -1,0 +1,34 @@
+{
+  "about": "Every Edit kind as the app writes it (RecordEditTests.swift encodes each RecordEdit case and compares) and as the engine reads it (contract.test.ts parses each). One fixture, both sides (I-2 step 3, US-25 AC18c). `engineOnly`: kinds the app never builds; the engine makes them and the app passes them back as they came.",
+  "engineOnly": ["medication"],
+  "edits": {
+    "profile": { "kind": "profile", "sex": "female", "birthYear": 1970, "birthMonth": 6, "height": 178 },
+    "feetInches": { "kind": "profile", "heightFeet": 5, "heightInches": 10 },
+    "bloodPressure": { "kind": "bloodPressure", "systolic": 120, "diastolic": 80, "day": "2026-10-20", "replace": false },
+    "bloodPressureReplace": { "kind": "bloodPressure", "systolic": 120, "diastolic": 80, "day": "2026-10-20", "replace": true, "seenIds": ["a", "b"] },
+    "units": { "kind": "units", "unitSystem": "conventional" },
+    "alcoholCleared": { "kind": "alcohol", "alcohol": null },
+    "alcohol": { "kind": "alcohol", "alcohol": "drinks" },
+    "lpaUnit": { "kind": "lpaUnit", "unit": "mg/dL" },
+    "add": { "kind": "add", "metric": "weight", "value": 80.5, "day": "2026-10-20" },
+    "correct": { "kind": "correct", "id": "row-1", "value": 81 },
+    "labCorrect": { "kind": "correct", "id": "lab-1", "value": 85 },
+    "labAdd": { "kind": "labAdd", "series": "ferritin", "value": 85, "day": "2026-10-20", "unit": "µg/L" },
+    "labAddName": { "kind": "labAddName", "name": "Ferritin", "value": 85, "day": "2026-10-20", "unit": "µg/L" },
+    "appleHealth": { "kind": "appleHealth", "samples": [
+      { "externalId": "u-1", "metricType": "weight", "value": 80, "measuredAt": "2026-10-21T08:30:00+13:00" },
+      { "externalId": "u-2", "metricType": "systolic_bp", "value": 120, "measuredAt": "2026-10-21T08:30:00+13:00", "pairId": "p-1" }
+    ] },
+    "healthRecords": { "kind": "healthRecords", "records": [{ "sourceId": "s", "resourceType": "Observation", "fhirVersion": "4.0.1", "json": "{}" }] },
+    "medicationField": { "kind": "medicationField", "field": "statin", "value": "none" },
+    "screening": { "kind": "screening", "key": "colorectalMethod", "value": "" },
+    "supplement": { "kind": "supplement", "supplementKey": "creatine", "supplementName": "Creatine", "doseValue": null, "doseUnit": null, "status": "active" },
+    "supplementStopped": { "kind": "supplement", "supplementKey": "creatine", "supplementName": "Creatine", "doseValue": 5, "doseUnit": "g", "status": "stopped" },
+    "customSupplement": { "kind": "customSupplement", "name": "Magnesium" },
+    "labImport": { "kind": "labImport", "extractionJson": "{}", "refs": ["v0"], "reportDay": "2026-10-20" },
+    "chatEdits": { "kind": "chatEdits", "part": "review", "edits": [{ "kind": "field", "field": "ldlC" }], "today": "2026-10-21" },
+    "chatEditsSeen": { "kind": "chatEdits", "part": "review", "edits": [], "today": "2026-10-21", "seen": [["ldlC", null]] },
+    "chatUndo": { "kind": "chatUndo", "medications": [{ "medicationKey": "statin", "drugName": "none", "doseValue": null, "doseUnit": null }] },
+    "medication": { "kind": "medication", "medicationKey": "statin", "drugName": "atorvastatin", "doseValue": 20, "doseUnit": "mg" }
+  }
+}

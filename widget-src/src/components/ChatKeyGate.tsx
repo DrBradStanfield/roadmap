@@ -4,16 +4,17 @@
  * the standalone build: the Shopify widget's gate is null, so this component
  * is dead code there (tree-shaken with the byok module it accompanies).
  */
-import { useState, useCallback } from 'react';
+import { useState, useCallback, type Ref } from 'react';
 import type { ChatGate } from '../lib/chat-api';
 
 interface ChatKeyGateProps {
   gate: ChatGate;
   /** Called after a key is saved so the parent re-renders past the gate. */
   onConnected: () => void;
+  inputRef?: Ref<HTMLInputElement>;
 }
 
-export function ChatKeyGate({ gate, onConnected }: ChatKeyGateProps) {
+export function ChatKeyGate({ gate, onConnected, inputRef }: ChatKeyGateProps) {
   const [key, setKey] = useState('');
   const [error, setError] = useState<string | null>(null);
 
@@ -38,6 +39,7 @@ export function ChatKeyGate({ gate, onConnected }: ChatKeyGateProps) {
       </p>
       <div className="chat-key-gate-form">
         <input
+          ref={inputRef}
           type="password"
           value={key}
           onChange={(e) => { setKey(e.target.value); setError(null); }}

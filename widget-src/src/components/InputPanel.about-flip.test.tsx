@@ -30,7 +30,7 @@ const props = (aboutYouLow: boolean, stage: 3 | 4, profileLeft: () => boolean) =
   ...myHealth({ settingsOpen: true }),
   inputs, effectiveInputs: inputs, onChange: vi.fn(), errors: {}, unitSystem: 'si' as const,
   unitOverrides: {}, onToggleFieldUnit: vi.fn(), previousMeasurements: [], bloodTestHistory: [], vitalsHistory: [],
-  labValues: [], onSaveBloodTestBatch: vi.fn(async () => new Map()), onDraftValue: vi.fn(), medications: [],
+  labValues: [], onSaveBloodTestBatch: vi.fn(async () => new Map()), medications: [],
   onMedicationChange: vi.fn(), onScreeningChange: vi.fn(), supplements: [], onSupplementChange: vi.fn(), screenings: [],
   onSupplementDelete: vi.fn(), scheduleLongitudinalSave: vi.fn(), flushLongitudinalSave: vi.fn(), isSavingLongitudinal: false,
   hasApiResponse: true, planBasis: { age: 66 }, grading: {},

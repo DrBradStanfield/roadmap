@@ -22,6 +22,25 @@ final class DemoRecordTests: XCTestCase {
         XCTAssertEqual(try DemoRecord.recordFolder(in: base).lastPathComponent, "Record")
     }
 
+    /// The demo's first-run flags stay in its own suite: an unrelated suite never reads them
+    /// (they were once registered process-wide, and FirstRunTests failed after this class).
+    func testDemoFirstRunFlagsNeverLeakToOtherSuites() {
+        XCTAssertTrue(DemoRecord.defaults.bool(forKey: "onboarded"))
+        let suite = "DemoRecordTests-\(UUID().uuidString)"
+        let other = UserDefaults(suiteName: suite)!
+        defer { UserDefaults.standard.removePersistentDomain(forName: suite) }
+        XCTAssertNil(other.object(forKey: "welcomed"))
+        XCTAssertNil(other.object(forKey: "onboarded"))
+    }
+
+    /// A demo launch opens on the tabs, never the welcome screen: FirstRunKeys reads `.app`,
+    /// which is the demo suite in demo mode (AppDefaults.swift).
+    func testADemoLaunchDecidesTheTabs() {
+        DemoRecord.isOn = true
+        let launch = FirstRunKeys().launch(needsFlow: true, erasedElsewhere: false)
+        XCTAssertEqual(Cover.transition(.deciding, .launched(launch)).0, .none)
+    }
+
     func testDemoPartsStartNoSyncHealthOrReminders() async throws {
         DemoRecord.isOn = true
         let parts = try await AppParts.build(reminderTaps: ReminderTaps(), health: NoHealth())

@@ -11,22 +11,22 @@ import { SchemaTooNewError } from '../../packages/health-core/src/migrate';
 import { parseLocalisedNumber } from '../../packages/health-core/src/parseNumber';
 import { addLabValue, appendMeasurement, bulkAppendValues, correctValue, validDay } from '../../packages/health-core/src/record-edits';
 import { labRows, type Extraction } from './lab-review';
-import { updateProfile } from '../../packages/health-core/src/mcp-tools';
+import { updateProfile } from '../../packages/health-core/src/profile-edits';
 import { stampProfile, upsertMedication, upsertSupplement } from '../../packages/health-core/src/state-edits';
-import { medicationSchema, supplementSchema, zod3Message } from '../../packages/health-core/src/validation';
+import { medicationSchema, zod3Message } from '../../packages/health-core/src/validation';
 import { customSupplementAdd, customSupplementMatch } from '../../packages/health-core/src/input-form';
 import { compareReadings, latestActivePerMetric } from '../../packages/health-core/src/measurement-history';
 import { bloodTableReport, bloodTestKeyOf, currentValueRows, isActive, isCoreRow } from '../../packages/health-core/src/blood-tests';
 import { importDeviceSamples } from '../../packages/health-core/src/device-import';
 import { importHealthRecords, type HealthRecordsCounts } from '../../packages/health-core/src/health-records-import';
-import { applyFormEdit, formsOf, gradeContextOf, planOf, rowText, ungradedLimit, type FormsView } from './my-data-forms';
+import { applyFormEdit, formsOf, gradeContextOf, planOf, rowText, supplementCheck, ungradedLimit, type FormsView } from './my-data-forms';
 import { BLOOD_TEST_METRICS, METRIC_LABELS, VITAL_METRICS } from '../../packages/health-core/src/mappings';
 import { METRIC_GUIDES, type MetricGuide } from '../../packages/health-core/src/metric-guides';
 import { APPLE_LOW_FROM_60, FRIEND_2022_TREADMILL, type Vo2MaxCutPoints } from '../../packages/health-core/src/vo2max-bands';
 import { calculateAge } from '../../packages/health-core/src/calculations';
-import { rowTarget } from '../../packages/health-core/src/row-target';
+import { type RowTarget, rowTarget } from '../../packages/health-core/src/row-target';
 import { gradeWords, limitUngraded, pressureStatus, valueStatus, type GradeContext, type GradeStatus, type PressureReading } from '../../packages/health-core/src/row-grade';
-import { labSeriesRows } from '../../packages/health-core/src/lab-series';
+import { labTestSeries } from '../../packages/health-core/src/lab-series';
 import { displayLabUnit, labSlotKey, resolveLabCatalogEntry } from '../../packages/health-core/src/lab-catalog';
 import { trendWindow } from '../../packages/health-core/src/recent-trend';
 import { isAlcoholAnswer, type AlcoholAnswer } from '../../packages/health-core/src/types';
@@ -56,7 +56,7 @@ export interface MyDataRow {
   /** Whether this test has its own Metric/US choice, as the web's unit chip (not Lp(a), height or blood pressure). */
   switchable: boolean;
   /** The target the value is read against, as the web's row prints it under the name (US-62 AC9):
-   *  health-core's `rowTarget(...).bare`, such as "Optimal <2.6" or "Target <130/80"; null when none. */
+   *  health-core's `rowTarget(...).bare`, such as "Optimal <2.6", or `.alone` with no value, "Optimal <2.6 mmol/L"; null when none. */
   target: string | null;
   /** The value before the latest, in the same units: the newest earlier day's active value, the
    *  web's "(74)" (US-62 AC8); null with fewer than two days. */
@@ -136,13 +136,13 @@ export type EditOutcome =
   | { ok: true; file: RoadmapFile; healthRecords?: HealthRecordsCounts }
   | { ok: false; reason: string; message: string; existingId?: string };
 
+/** A record a newer app wrote: readRecord refuses it in these words. */
+export const TOO_NEW_RECORD = 'A newer version of this app wrote this record. Update the app to open it.';
 /**
  * Words meant for the person. HealthEngine shows them as they are; any other
  * exception's text stays hidden (US-25 AC6b, review R8).
  */
-export class Refusal extends Error {
-  override name = 'Refusal';
-}
+export class Refusal extends Error { override name = 'Refusal'; }
 
 /**
  * The record on disk, read as every other writer reads it (ROADMAP_DOC: the
@@ -166,7 +166,7 @@ export function readRecord(text: string, now: string, deviceId: string): Roadmap
   try {
     file = ROADMAP_DOC.migrate(raw, { deviceId, now });
   } catch (error) {
-    if (error instanceof SchemaTooNewError) throw new Refusal('A newer version of Health Roadmap wrote this record. Update the app to open it.');
+    if (error instanceof SchemaTooNewError) throw new Refusal(TOO_NEW_RECORD);
     throw error;
   }
   kept = { text, deviceId, file: FREEZE_KEPT ? deepFreeze(file) : file, moved: movedBloodTests(raw, file) };
@@ -264,7 +264,7 @@ export function myData(file: RoadmapFile, now = new Date().toISOString(), choice
         : null,
       trend: trend.get(metric) ?? [],
       switchable: SWITCHABLE.has(metric),
-      target: rowTarget(metric as MetricType, shown, grading, basis)?.bare ?? null,
+      target: rowTarget(metric as MetricType, shown, grading, basis)?.[latest ? 'bare' : 'alone'] ?? null,
       previous: before ? rowText(metric as MetricType, days.get(metric)!.get(before)!, shown) : null,
       ...gradeOf(latest ? valueStatus(metric as MetricType, latest.value, graded, comparatorOf(latest).comparator) : null, metric),
       note: latest && ungradedLimit(metric as MetricType, latest, graded) ? LIMIT_NOT_GRADED : null,
@@ -287,7 +287,7 @@ export function myData(file: RoadmapFile, now = new Date().toISOString(), choice
       alcohol: isAlcoholAnswer(file.profile.alcohol) ? file.profile.alcohol : null,
     },
     // Blood pressure is one row, as the web's matrix shows it: the newest day's pair.
-    vitals: [...VITAL_METRICS.filter((metric) => metric !== 'systolic_bp' && metric !== 'diastolic_bp').map(row), pressureRow(file, trend, rowTarget('blood_pressure', 'si', grading, basis)?.bare ?? null, graded)],
+    vitals: [...VITAL_METRICS.filter((metric) => metric !== 'systolic_bp' && metric !== 'diastolic_bp').map(row), pressureRow(file, trend, rowTarget('blood_pressure', 'si', grading, basis), graded)],
     // PSA is asked for under prostate screening on the web, not with the blood tests.
     bloodTests: BLOOD_TEST_METRICS.filter((metric) => metric !== 'psa').map(row),
     // The web asks for PSA under screening and never colours it.
@@ -384,15 +384,15 @@ export function applyEdit(file: RoadmapFile, edit: Edit, now: string, choices: U
       return { ok: true, file: upsertMedication(file, { medicationKey, drugName, doseValue, doseUnit }, now).file };
     }
     case 'supplement': {
-      // A key the record holds passes as it is: older browser records hold
-      // custom keys over the 100 characters a new key may have (US-06 AC1a).
-      const held = file.supplements.some((row) => row.supplementKey === edit.supplementKey);
-      const checked = (held ? supplementSchema.omit({ supplementKey: true }) : supplementSchema).safeParse(edit, { error: zod3Message });
+      // A key the record holds passes as it is, and so does the name stored
+      // under it (supplementCheck in my-data-forms.ts; US-06 AC1a, AC1d).
+      const held = file.supplements.find((row) => row.supplementKey === edit.supplementKey);
+      const checked = supplementCheck(held, edit.supplementName).safeParse(edit, { error: zod3Message });
       if (!checked.success || !checked.data.status) {
         return { ok: false, reason: 'invalid-value', message: checked.success ? 'A supplement is active or stopped.' : checked.error.issues[0]?.message ?? 'Not a supplement.' };
       }
-      const { supplementKey } = edit;
-      const { supplementName, doseValue = null, doseUnit = null, status, startedAt } = checked.data;
+      const { supplementKey, supplementName } = edit;
+      const { doseValue = null, doseUnit = null, status, startedAt } = checked.data;
       // A start is a real day or instant that has happened (rule 9's check).
       if (startedAt !== undefined && (Number.isNaN(Date.parse(startedAt)) || validDay(startedAt, { now }) === null)) {
         return { ok: false, reason: 'invalid-date', message: 'A supplement starts on a real day, today or before.' };
@@ -420,9 +420,9 @@ export function applyEdit(file: RoadmapFile, edit: Edit, now: string, choices: U
     case 'screening':
       return applyFormEdit(file, edit, now, (next, save) => applyEdit(next, save, now));
     case 'labImport': {
-      const rows = labRows(JSON.parse(edit.extractionJson) as Extraction, edit.refs, edit.reportDay, now);
+      const rows = labRows(JSON.parse(edit.extractionJson) as Extraction, edit.refs, edit.reportDay, now, file);
       if (!rows.ok) return rows;
-      // A held day is skipped and a refused unit left out: labSaveSummary says which, beforehand.
+      // Only the rows the import review writes (classifyReport): none held, none refused.
       return { ok: true, file: bulkAppendValues(file, rows.rows, now).file };
     }
     case 'labAdd':
@@ -486,7 +486,7 @@ function typedRangeMessage(metric: string, typed: number, unit: CellUnit, refusa
 }
 
 /** The Vitals row for blood pressure: the newest day's pair, from the history's own pairing. */
-function pressureRow(file: RoadmapFile, trend: Map<string, number[]>, target: string | null, graded: GradeContext): MyDataRow {
+function pressureRow(file: RoadmapFile, trend: Map<string, number[]>, target: RowTarget | null, graded: GradeContext): MyDataRow {
   const shown = new Map<string, PressureReading>();
   const { label, unit, rows } = pressureHistory(file, [], shown);
   const active = rows.filter((row) => row.status === 'active');
@@ -504,7 +504,7 @@ function pressureRow(file: RoadmapFile, trend: Map<string, number[]>, target: st
     latest: newest ? { id: newest.id, value: newest.value, day: newest.day } : null,
     trend: trend.get('systolic_bp') ?? [],
     switchable: false,
-    target,
+    target: target?.[newest ? 'bare' : 'alone'] ?? null,
     previous: previous?.value ?? null,
     ...gradeOf(status, BLOOD_PRESSURE),
     note: reading && limitUngraded(BLOOD_PRESSURE, status, graded, reading) ? LIMIT_NOT_GRADED : null,
@@ -516,12 +516,10 @@ function gradeOf(status: GradeStatus, metric: string): Pick<MyDataRow, 'status' 
   return { status, gradeWords: gradeWords(status, metric) };
 }
 
-/** The lab tests beyond the core ones: health-core's rows (`labSeriesRows`), as the web's phone rows
- *  build them (MyDataRows.tsx labRows), in this row's shape; never graded. A limit reads with its
- *  symbol and, as on the core rows, is no point on the trend (US-12 AC20). */
+/** The lab tests beyond the core ones: health-core's `labTestSeries`, in this row's shape; never
+ *  graded. A limit reads with its symbol. */
 function labTestRows(file: RoadmapFile, now: string): MyDataRow[] {
-  // A core row is a blood test's own row above, never a lab test here (US-66 AC7).
-  return labSeriesRows(file.labValues.filter((row) => !isCoreRow(row)), new Date(now), true).map(({ seriesKey, label, unit, latest, previous, target, trend }) => ({
+  return labTestSeries(file.labValues, new Date(now)).map(({ seriesKey, label, unit, latest, previous, target, trend }) => ({
     metric: seriesKey, series: 'lab', label, unit, latest, trend, switchable: false, target, previous, ...gradeOf(null, seriesKey), note: null,
   }));
 }

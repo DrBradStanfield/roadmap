@@ -28,8 +28,11 @@ import { ROADMAP_FILE_NAME } from '../../packages/health-core/src/adapter';
 import { createEmptyFile, createMeasurement, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { AUTHORIZE_PER_WINDOW, resetMcpMemory, STATE_LIFETIME_SECONDS, WRITE_COST, WRITES_PER_HOUR } from '../lib/mcp-grants.server';
 import { ISSUES_PER_HOUR, REPORTS_PER_DAY } from '../lib/github-issues.server';
-import { MAX_RECEIPT_LENGTH, MCP_PROMPTS, MCP_TOOLS, OUTPUTS, SERVER_VERSION } from '../../packages/health-core/src/mcp-tools';
-import { mcpEndpoint, setAdapterFactory } from '../lib/mcp.server';
+import { OUTPUTS } from '../../packages/health-core/src/mcp-tools';
+import { MAX_RECEIPT_LENGTH, SERVER_VERSION } from '../../packages/health-core/src/mcp-tool-contract';
+import { MCP_PROMPTS, MCP_TOOLS } from '../../packages/health-core/src/mcp-tool-catalogue';
+import { type AdapterFactory, mcpEndpoint } from '../lib/mcp.server';
+import type { Extractor } from '../lib/mcp-import.server';
 import { MAX_CORRECTION_AGE_DAYS } from '../lib/mcp-corrections.server';
 import { MAX_STATE_LENGTH } from '../lib/mcp-authorize.server';
 import { action, loader } from './mcp.$';
@@ -59,7 +62,7 @@ beforeEach(() => {
   process.env.DROPBOX_APP_SECRET = 'app-secret';
   resetMcpMemory();
   cloud = new MemoryCloud();
-  setAdapterFactory(() => new MemoryAdapter(cloud));
+  makeAdapter = () => new MemoryAdapter(cloud);
   // Dropbox's token endpoint is the only network call the server makes here.
   vi.stubGlobal('fetch', vi.fn(async () => Response.json({
     refresh_token: `dropbox-refresh-token-${++connections}`,
@@ -69,7 +72,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  setAdapterFactory(null);
+  extractor = undefined;
   vi.unstubAllGlobals();
   delete process.env.MCP_SEAL_KEYS;
 });
@@ -170,6 +173,13 @@ async function redeem(form: Record<string, string>) {
   return (await res.json()) as { access_token: string; refresh_token: string; expires_in: number; scope: string };
 }
 
+/** The model call an import case passes to the endpoint; undefined is the real one (this file's own state, reset after each case). */
+let extractor: Extractor | undefined;
+/** The folder every case's endpoint opens: the in-memory cloud, set before each case (this file's own state). */
+let makeAdapter: AdapterFactory;
+/** True in the cases that run the endpoint's own clock under fake timers (this file's own state). */
+let ownClock = false;
+
 async function rpc(access: string, method: string, params: unknown = {}, now = NOW) {
   const res = await mcpEndpoint(
     new Request(`${ISSUER}/mcp`, {
@@ -178,6 +188,8 @@ async function rpc(access: string, method: string, params: unknown = {}, now = N
       body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
     }),
     now,
+    // A receipt is signed at `now` unless a case runs the endpoint's own clock (US-35 AC19).
+    { extract: extractor, makeAdapter, clock: ownClock ? undefined : () => Date.parse(now) },
   );
   expect(res.status).toBe(200);
   return (await res.json()) as {
@@ -541,6 +553,7 @@ describe('US-32 AC55: a message without an id gets an empty 202 over HTTP', () =
         body: JSON.stringify({ jsonrpc: '2.0', method, params }),
       }),
       NOW,
+      { makeAdapter },
     );
     return { status: res.status, body: await res.text() };
   }
@@ -895,6 +908,38 @@ describe('the four mandatory corrections mitigations (US-32, design §3)', () =>
     }));
   }
 
+  it('US-35 AC19 / US-36 AC9: a proposal receipt is issued when it is handed back, so a slow read cannot use up the pause', async () => {
+    const at = (s: number) => new Date(Date.parse(NOW) + s * 1000).toISOString();
+    vi.useFakeTimers({ toFake: ['Date', 'performance'] });
+    ownClock = true;
+    try {
+      vi.setSystemTime(Date.parse(NOW));
+      seedWithLdl('2026-08-30');
+      const { access } = await connect();
+      // The record read takes 15 s, longer than the pause.
+      makeAdapter = () => {
+        const adapter = new MemoryAdapter(cloud);
+        const read = adapter.read.bind(adapter);
+        adapter.read = async (...args) => {
+          vi.advanceTimersByTime(15_000);
+          return read(...args);
+        };
+        return adapter;
+      };
+      const args = { id: LDL_ID, newValue: 2.8, expectedValue: 3.2 };
+      const proposed = await callTool(access, 'correct_value', args, at(0));
+      const { confirm, confirmFrom } = proposed.structured as { confirm: string; confirmFrom: string };
+      expect(confirmFrom).toBe(at(25));
+      makeAdapter = () => new MemoryAdapter(cloud);
+      const early = await callTool(access, 'correct_value', { ...args, confirm, approval: APPROVED }, at(15));
+      expect(early.text).toBe(`That confirm receipt is not valid yet: it can be used in 10 seconds (from ${at(25)}), after the user has answered. Do not retry before then; end your turn. Nothing was written.`);
+      expect((await callTool(access, 'correct_value', { ...args, confirm, approval: APPROVED }, at(25))).isError).toBe(false);
+    } finally {
+      vi.useRealTimers();
+      ownClock = false;
+    }
+  });
+
   it('1 — refuses a correction that does not state expectedValue', async () => {
     seedWithLdl('2026-08-30');
     const { access } = await connect();
@@ -1221,7 +1266,7 @@ describe('Dropbox failing to answer is an error, not a crash (US-32, N-2)', () =
 describe('US-10 AC4a: a 401 or 403 after the upload is not "nothing was written"', () => {
   /** Dropbox stores the upload, then refuses the token on every later read: the save's own verify read. */
   function refuseReadsAfterUpload(status: 401 | 403): void {
-    setAdapterFactory(() => {
+    makeAdapter = () => {
       const adapter = new MemoryAdapter(cloud);
       const read = adapter.read.bind(adapter);
       const write = adapter.write.bind(adapter);
@@ -1232,11 +1277,11 @@ describe('US-10 AC4a: a 401 or 403 after the upload is not "nothing was written"
         return result;
       };
       adapter.read = async (...args: Parameters<MemoryAdapter['read']>) => {
-        if (uploaded) throw new StorageError(`Dropbox read failed (${status})`, undefined, undefined, status);
+        if (uploaded) throw new StorageError(`Dropbox read failed (${status})`, undefined, undefined, status, undefined, answerOutcome(status));
         return read(...args);
       };
       return adapter;
-    });
+    };
   }
 
   for (const status of [401, 403] as const) {
@@ -1261,17 +1306,91 @@ describe('US-10 AC4a: a 401 or 403 after the upload is not "nothing was written"
     it(`control: a ${status} before anything was sent still says nothing was read and nothing was written`, async () => {
       seedRecord();
       const { access } = await connect();
-      setAdapterFactory(() => {
+      makeAdapter = () => {
         const adapter = new MemoryAdapter(cloud);
-        adapter.read = async () => { throw new StorageError(`Dropbox read failed (${status})`, undefined, undefined, status); };
+        adapter.read = async () => { throw new StorageError(`Dropbox read failed (${status})`, undefined, undefined, status, undefined, answerOutcome(status)); };
         return adapter;
-      });
+      };
       const answer = await callTool(access, 'add_measurement', { metricType: 'ldl', value: 3.2, recordedAt: TODAY });
       expect(storedRecord().measurements).toEqual([]);
       expect(answer.isError).toBe(true);
       expect(answer.text).toBe(
         'Dropbox refused this connection’s access to the record. Nothing was read and nothing was written. ' +
           'Ask the user to reconnect the connector, which grants it again.',
+      );
+    });
+  }
+
+  // US-10 AC20: the save's own read answered before its upload was refused, so "nothing was read" would be untrue.
+  for (const status of [401, 403] as const) {
+    it(`a ${status} refusing the save's upload says nothing was written, not that nothing was read`, async () => {
+      seedRecord();
+      const { access } = await connect();
+      makeAdapter = () => {
+        const adapter = new MemoryAdapter(cloud);
+        adapter.write = async () => { throw new StorageError(`Dropbox write failed (${status})`, undefined, undefined, status, undefined, answerOutcome(status, true)); };
+        return adapter;
+      };
+      const answer = await callTool(access, 'add_measurement', { metricType: 'ldl', value: 3.2, recordedAt: TODAY });
+      expect(answer.isError).toBe(true);
+      expect(answer.text).toBe(
+        'Dropbox refused this connection’s access to the record. Nothing was written. ' +
+          'Ask the user to reconnect the connector, which grants it again.',
+      );
+    });
+  }
+
+  // US-10 AC16: chosen by the typed reason. A Drive rate limit (a 403) passes: it is never refused access.
+  it('a typed rate limit on a read is not told as refused access, nor "reconnect"', async () => {
+    seedRecord();
+    const { access } = await connect();
+    makeAdapter = () => {
+      const adapter = new MemoryAdapter(cloud);
+      adapter.read = async () => { throw new StorageError('Google Drive read failed (403)', undefined, undefined, 403, 'rate-limited', 'refused'); };
+      return adapter;
+    };
+    const answer = await callTool(access, 'read_record', {});
+    expect(answer.isError).toBe(true);
+    expect(answer.text).not.toMatch(/refused this connection|reconnect/i);
+    // A refusal is never worded "did not answer" (US-10 AC20).
+    expect(answer.text).toBe('The record in Dropbox refused the request. Nothing was written. Try once more; if it keeps failing, check that the record is reachable.');
+  });
+
+  // A full Drive (a 403) has no true sentence of its own yet: it keeps today's text (listed for the owner).
+  it('a typed full Drive on a read keeps today\'s access text', async () => {
+    seedRecord();
+    const { access } = await connect();
+    makeAdapter = () => {
+      const adapter = new MemoryAdapter(cloud);
+      adapter.read = async () => { throw new StorageError('Google Drive read failed (403)', undefined, undefined, 403, 'storage-full', 'refused'); };
+      return adapter;
+    };
+    const answer = await callTool(access, 'read_record', {});
+    expect(answer.text).toBe(
+      'Dropbox refused this connection’s access to the record. Nothing was read and nothing was written. ' +
+        'Ask the user to reconnect the connector, which grants it again.',
+    );
+  });
+
+  // US-10 AC11: the typed mark decides, never the hint's words. A Drive-style
+  // adapter marks a 401 after its upload with a hint that never says "landed".
+  for (const status of [401, 403] as const) {
+    it(`a marked ${status} with reworded hint text still says the change may have landed (US-10 AC11)`, async () => {
+      seedRecord();
+      const { access } = await connect();
+      makeAdapter = () => {
+        const adapter = new MemoryAdapter(cloud);
+        adapter.write = async () => {
+          throw uncertainWrite(new StorageError(`Dropbox record update failed (${status})`, 'Check the record before you try again.', undefined, status, undefined, 'may-have-landed'));
+        };
+        return adapter;
+      };
+      const answer = await callTool(access, 'add_measurement', { metricType: 'ldl', value: 3.2, recordedAt: TODAY });
+      expect(answer.isError).toBe(true);
+      expect(answer.text).not.toMatch(/nothing was written/i);
+      expect(answer.text).toBe(
+        'The record in Dropbox refused this connection’s access after a change was sent. ' +
+          'Reconnect the provider, which grants access again. The change may have landed: read the record again before retrying.',
       );
     });
   }
@@ -1414,10 +1533,10 @@ describe('OpenAI domain verification is gone (its review ended 2026-10-29; Brad 
 // US-35 — import_documents over a folder, end to end
 // ---------------------------------------------------------------------------
 import JSZip from 'jszip';
-import { setImportSeams } from '../lib/mcp-import.server';
 import { IMPORT_FILES_PER_DAY } from '../lib/mcp-grants.server';
 import { machineFiles } from '../lib/rate-limiter';
-import { StorageError } from '../../packages/health-core/src/adapter';
+import { answerOutcome, StorageError } from '../../packages/health-core/src/adapter';
+import { uncertainWrite } from '../../packages/health-core/src/write-refusal';
 import { recordServerEvent } from '../lib/product-events.server';
 import type { UnifiedExtractionResult } from '../../packages/health-core/src/lab-extraction';
 
@@ -1450,16 +1569,14 @@ function stubImport(files: Record<string, Uint8Array>, answer: (name: string) =>
   const extracted: string[] = [];
   const names = Object.keys(files);
   for (const name of names) cloud.docs.set(name, new Blob([files[name] as Uint8Array<ArrayBuffer>]));
-  setImportSeams({
-    extract: async (pages) => {
-      // The extractor sees base64 bytes; find which file they were.
-      const name = names.find((n) => Buffer.from(files[n]).toString('base64') === pages[0].content)!;
-      extracted.push(name);
-      const result = answer(name);
-      if (result instanceof Error) throw result;
-      return result;
-    },
-  });
+  extractor = async (pages) => {
+    // The extractor sees base64 bytes; find which file they were.
+    const name = names.find((n) => Buffer.from(files[n]).toString('base64') === pages[0].content)!;
+    extracted.push(name);
+    const result = answer(name);
+    if (result instanceof Error) throw result;
+    return result;
+  };
   return extracted;
 }
 
@@ -1468,8 +1585,6 @@ function pendingFiles(): string[] {
 }
 
 describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, AC9, AC10)', () => {
-  afterEach(() => setImportSeams(null));
-
   it('extracts without writing, then commits what was accepted', async () => {
     seedRecord();
     const { access } = await connect();
@@ -1494,7 +1609,7 @@ describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, A
 
     // A commit that declines every value still files the PDF itself as a
     // metadata-only document (AC8): the row records the file, not acceptance.
-    const declined = await callTool(access, 'import_documents', { commit: { receipt: data.receipt, accept: [], replace: [], approval: APPROVED } });
+    const declined = await callTool(access, 'import_documents', { commit: { receipt: data.receipt, accept: [], replace: [], approval: APPROVED } }, LATER);
     expect(declined.isError).toBe(false);
     expect((declined.structured as { written: unknown }).written).toEqual({ measurements: 0, labValues: 0, corrections: 0, documents: 1 });
     expect(storedRecord().measurements.filter((m) => m.source === 'lab_import')).toHaveLength(0);
@@ -1512,7 +1627,7 @@ describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, A
     // A second lab file: extract, then a real commit.
     stubImport({ 'labs-2.pdf': PDF_BYTES.map((b, i) => (i === PDF_BYTES.length - 1 ? b ^ 1 : b)) }, () => labReport({ reportDate: '2026-08-21' }));
     const again = OUTPUTS.import_documents.parse((await callTool(access, 'import_documents', { fileNames: ['labs-2.pdf'] })).structured);
-    const commit = await callTool(access, 'import_documents', { commit: { receipt: again.receipt, accept: ['c1', 'c2'], replace: [], approval: APPROVED } });
+    const commit = await callTool(access, 'import_documents', { commit: { receipt: again.receipt, accept: ['c1', 'c2'], replace: [], approval: APPROVED } }, LATER);
     expect(commit.isError).toBe(false);
     expect(commit.text).toContain('Saved to the user’s Dropbox');
     const stored = storedRecord();
@@ -1534,6 +1649,33 @@ describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, A
     expect(JSON.stringify(events)).not.toContain('labs.pdf');
   });
 
+  it('US-35 AC19: the pause runs from the hand-back, so an extract slower than the pause hands back a receipt that is still early', async () => {
+    const at = (s: number) => new Date(Date.parse(NOW) + s * 1000).toISOString();
+    vi.useFakeTimers({ toFake: ['Date', 'performance'] });
+    ownClock = true;
+    try {
+      vi.setSystemTime(Date.parse(NOW));
+      seedRecord();
+      const { access } = await connect();
+      // The model call takes 15 s, longer than the pause.
+      stubImport({ 'labs.pdf': PDF_BYTES }, () => {
+        vi.advanceTimersByTime(15_000);
+        return labReport();
+      });
+      const data = OUTPUTS.import_documents.parse((await callTool(access, 'import_documents', {}, at(0))).structured);
+      const commit = (s: number) => callTool(access, 'import_documents', { commit: { receipt: data.receipt, accept: ['c1'], replace: [], approval: APPROVED } }, at(s));
+      // Committed the moment the receipt came back: early, measured from the hand-back at 15 s.
+      const early = await commit(15);
+      expect(early.isError).toBe(true);
+      expect(early.text).toBe(`That confirm receipt is not valid yet: it can be used in 10 seconds (from ${at(25)}), after the user has answered. Do not retry before then; end your turn. Nothing was written.`);
+      expect(pendingFiles()).toHaveLength(1);
+      expect((await commit(25)).isError).toBe(false);
+    } finally {
+      vi.useRealTimers();
+      ownClock = false;
+    }
+  });
+
   it('a second commit of a spent receipt, a tampered one, and a name not in the folder all refuse and write nothing', async () => {
     seedRecord();
     const { access } = await connect();
@@ -1541,13 +1683,13 @@ describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, A
     const data = OUTPUTS.import_documents.parse((await callTool(access, 'import_documents', {})).structured);
 
     const tampered = `${data.receipt!.slice(0, -3)}AAA`;
-    const forged = await callTool(access, 'import_documents', { commit: { receipt: tampered, accept: ['c1'], replace: [], approval: APPROVED } });
+    const forged = await callTool(access, 'import_documents', { commit: { receipt: tampered, accept: ['c1'], replace: [], approval: APPROVED } }, LATER);
     expect(forged.isError).toBe(true);
     expect(forged.text).toContain('not valid');
 
-    const ok = await callTool(access, 'import_documents', { commit: { receipt: data.receipt, accept: ['c1'], replace: [], approval: APPROVED } });
+    const ok = await callTool(access, 'import_documents', { commit: { receipt: data.receipt, accept: ['c1'], replace: [], approval: APPROVED } }, LATER);
     expect(ok.isError).toBe(false);
-    const spent = await callTool(access, 'import_documents', { commit: { receipt: data.receipt, accept: ['c1'], replace: [], approval: APPROVED } });
+    const spent = await callTool(access, 'import_documents', { commit: { receipt: data.receipt, accept: ['c1'], replace: [], approval: APPROVED } }, LATER);
     expect(spent.isError).toBe(true);
     expect(spent.text).toContain('names no pending import'); // US-35 AC7: the spent receipt's file is gone
     expect(storedRecord().labValues.filter((l) => l.core && l.status === 'active')).toHaveLength(1);
@@ -1574,12 +1716,12 @@ describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, A
     expect(old.slot).toMatchObject({ state: 'held_different', existingRowId: 'old', replaceable: false });
     expect(recent.slot).toMatchObject({ state: 'held_different', existingRowId: 'recent', replaceable: true });
 
-    const refused = await callTool(access, 'import_documents', { commit: { receipt: data.receipt, accept: [], replace: [old.id], approval: APPROVED } });
+    const refused = await callTool(access, 'import_documents', { commit: { receipt: data.receipt, accept: [], replace: [old.id], approval: APPROVED } }, LATER);
     expect(refused.isError).toBe(true);
     expect(refused.text).toContain('too old');
     expect(MAX_CORRECTION_AGE_DAYS).toBe(90); // the rule `replaceable` was computed against
 
-    const corrected = await callTool(access, 'import_documents', { commit: { receipt: data.receipt, accept: [], replace: [recent.id], approval: APPROVED } });
+    const corrected = await callTool(access, 'import_documents', { commit: { receipt: data.receipt, accept: [], replace: [recent.id], approval: APPROVED } }, LATER);
     expect(corrected.isError).toBe(false);
     // The seeded rows moved to labValues as core rows (US-66 AC2); the replace corrects there.
     const rows = storedRecord().labValues;
@@ -1665,7 +1807,7 @@ describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, A
     stubImport({ 'us.pdf': PDF_BYTES }, () => labReport());
     const data = OUTPUTS.import_documents.parse((await callTool(access, 'import_documents', {})).structured);
     expect(data.candidates[0]).toMatchObject({ metric: 'ldl', value: 2.8, unit: 'mmol/L', displayValue: '108', displayUnit: 'mg/dL' });
-    const commit = await callTool(access, 'import_documents', { commit: { receipt: data.receipt, accept: ['c1'], replace: [], approval: APPROVED } });
+    const commit = await callTool(access, 'import_documents', { commit: { receipt: data.receipt, accept: ['c1'], replace: [], approval: APPROVED } }, LATER);
     expect(commit.isError).toBe(false);
     expect(storedRecord().labValues.find((l) => l.core && l.source === 'lab_import')).toMatchObject({ metricName: 'ldl', unit: 'mmol/L', value: 2.8 });
   });
@@ -1691,7 +1833,7 @@ describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, A
       for (const [path, bytes] of Object.entries(files)) zip.file(path, bytes);
       cloud.docs.set(zipName, new Blob([await zip.generateAsync({ type: 'uint8array' })]));
     }
-    setImportSeams({ extract: async (pages) => answer(members.find((m) => Buffer.from(m).toString('base64') === pages[0].content)!) });
+    extractor = async (pages) => answer(members.find((m) => Buffer.from(m).toString('base64') === pages[0].content)!);
   }
 
   it('US-35 AC2/AC6, US-12 AC9 — a ZIP member is named zip/member, as the website names it: two ZIPs holding one path are two files, the same bytes in a third are its twin, and the same ZIP again is already imported by hash', async () => {
@@ -1716,7 +1858,7 @@ describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, A
       ['b.zip/labs/results.pdf', '2026-08-21'], ['b.zip/labs/results.pdf', '2026-08-21'],
     ]);
 
-    const commit = await callTool(access, 'import_documents', { commit: { receipt: data.receipt, accept: [], replace: [], approval: APPROVED } });
+    const commit = await callTool(access, 'import_documents', { commit: { receipt: data.receipt, accept: [], replace: [], approval: APPROVED } }, LATER);
     expect(commit.isError).toBe(false);
     expect(storedRecord().documents.map((d) => d.sourceFileName).sort()).toEqual(['a.zip/labs/results.pdf', 'b.zip/labs/results.pdf']);
 
@@ -1744,11 +1886,11 @@ describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, A
     seedRecord();
     const { access } = await connect();
     stubImport({ 'labs.pdf': PDF_BYTES }, () => labReport());
-    setAdapterFactory(() => {
+    makeAdapter = () => {
       const adapter = new MemoryAdapter(cloud);
-      adapter.readDocument = async () => { throw new StorageError('Dropbox download failed (401)', undefined, undefined, 401); };
+      adapter.readDocument = async () => { throw new StorageError('Dropbox download failed (401)', undefined, undefined, 401, undefined, 'refused'); };
       return adapter;
-    });
+    };
     const answer = await callTool(access, 'import_documents', {});
     expect(answer.isError).toBe(true);
     expect(answer.text).toMatch(/refused this connection’s access to the record.*reconnect the connector/);
@@ -1776,7 +1918,7 @@ describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, A
 // US-37 — the folder nudge on a read
 // ---------------------------------------------------------------------------
 import { FOLDER_LIST_TIMEOUT_MS } from '../lib/mcp.server';
-import { FOLDER_NUDGE_HINT } from '../../packages/health-core/src/mcp-tools';
+import { FOLDER_NUDGE_HINT } from '../../packages/health-core/src/mcp-import';
 
 function importEvents(): unknown[] {
   return serverEvents((name) => name === 'mcp_import').map(([, meta]) => meta);
@@ -1797,7 +1939,6 @@ describe('US-07 AC6 — the hosted get_plan is built for adults', () => {
 });
 
 describe('US-37 — a Dropbox read lists folder files that are not in the record (AC1, AC2, AC3, usage signal)', () => {
-  afterEach(() => setImportSeams(null));
   /** A record `get_plan` can compute from; the nudge rides on a successful read. */
   const withProfile = (file: RoadmapFile): RoadmapFile => ({ ...file, profile: { ...file.profile, sex: 'male', birthYear: 1971, heightCm: 178 } });
 
@@ -1840,7 +1981,7 @@ describe('US-37 — a Dropbox read lists folder files that are not in the record
     const data = OUTPUTS.import_documents.parse((await callTool(access, 'import_documents', { fromNudge: true })).structured);
     expect(data.next).toContain('empty accept and replace');
     expect(importEvents()).toEqual([{ route: 'dropbox', phase: 'extract', files: '1', fromNudge: true }]);
-    const declined = await callTool(access, 'import_documents', { commit: { receipt: data.receipt, accept: [], replace: [], approval: APPROVED } });
+    const declined = await callTool(access, 'import_documents', { commit: { receipt: data.receipt, accept: [], replace: [], approval: APPROVED } }, LATER);
     expect(declined.isError).toBe(false);
     // The row the empty commit wrote carries a hash — exactly the row the nudge must honour (review 3.1).
     expect(storedRecord().documents[0].contentHash).toMatch(/^sha256-/);
@@ -1852,8 +1993,8 @@ describe('US-37 — a Dropbox read lists folder files that are not in the record
     seedRecord(withProfile);
     cloud.docs.set('labs.pdf', new Blob([PDF_BYTES as Uint8Array<ArrayBuffer>]));
     const broken = new MemoryAdapter(cloud);
-    broken.list = async () => { throw new StorageError('Dropbox list failed (500)', undefined, undefined, 500); };
-    setAdapterFactory(() => broken);
+    broken.list = async () => { throw new StorageError('Dropbox list failed (500)', undefined, undefined, 500, undefined, 'no-answer'); };
+    makeAdapter = () => broken;
     const { access } = await connect();
     const failed = await callTool(access, 'get_plan', {});
     expect(failed.isError).toBe(false);
@@ -1861,7 +2002,7 @@ describe('US-37 — a Dropbox read lists folder files that are not in the record
 
     const slow = new MemoryAdapter(cloud);
     slow.list = (_folder, signal) => new Promise((_, reject) => signal?.addEventListener('abort', () => reject(signal.reason)));
-    setAdapterFactory(() => slow);
+    makeAdapter = () => slow;
     const started = Date.now();
     const timedOut = await callTool(access, 'read_record', {});
     expect(Date.now() - started).toBeGreaterThanOrEqual(FOLDER_LIST_TIMEOUT_MS - 50);
@@ -1878,7 +2019,6 @@ import { type AccessPayload, connectionKey, spendWrites, WRITES_PER_HOUR as HOUR
 import { seal, unpackSealed } from '../lib/mcp-seal.server';
 
 describe('US-36 — file_results: propose parks a receipt and charges one, commit writes and spends it (AC5, AC6, usage signal)', () => {
-  afterEach(() => setImportSeams(null));
   const rows = (day = LAB_DAY) => ({
     sourceFileName: 'Results.pdf', classification: 'lab_report', collectedOn: day,
     values: [
@@ -1902,11 +2042,11 @@ describe('US-36 — file_results: propose parks a receipt and charges one, commi
     expect(oldBlob.length).toBeGreaterThan(MAX_RECEIPT_LENGTH);
 
     const refusals = [
-      [await callTool(access, 'file_results', { commit: { receipt: proposed.confirm, accept: ['c1'], replace: [], approval: APPROVED } }), 'names no pending import'],
-      [await callTool(access, 'import_documents', { commit: { receipt: proposed.confirm, accept: ['c1'], replace: [], approval: APPROVED } }), 'names no pending import'],
+      [await callTool(access, 'file_results', { commit: { receipt: proposed.confirm, accept: ['c1'], replace: [], approval: APPROVED } }, LATER), 'names no pending import'],
+      [await callTool(access, 'import_documents', { commit: { receipt: proposed.confirm, accept: ['c1'], replace: [], approval: APPROVED } }, LATER), 'names no pending import'],
       [await callTool(access, 'update_profile', { ...profile, confirm: filed.receipt, approval: APPROVED }, LATER), 'does not match these arguments on this connection, or is not ours'],
       [await callTool(access, 'update_profile', { ...profile, confirm: oldBlob, approval: APPROVED }, LATER), 'does not match these arguments on this connection, or is not ours'],
-      [await callTool(access, 'file_results', { commit: { receipt: oldBlob, accept: ['c1'], replace: [], approval: APPROVED } }), 'Pass the receipt exactly as the extract returned it'],
+      [await callTool(access, 'file_results', { commit: { receipt: oldBlob, accept: ['c1'], replace: [], approval: APPROVED } }, LATER), 'Pass the receipt exactly as the extract returned it'],
     ] as const;
     for (const [answer, words] of refusals) {
       expect(answer.isError, words).toBe(true);
@@ -1916,7 +2056,7 @@ describe('US-36 — file_results: propose parks a receipt and charges one, commi
     expect(cloud.files.get(ROADMAP_FILE_NAME)!.version).toBe(1);
 
     // The honest halves still work: the commit charges its add, the confirm is free.
-    expect((await callTool(access, 'file_results', { commit: { receipt: filed.receipt, accept: ['c1'], replace: [], approval: APPROVED } })).isError).toBe(false);
+    expect((await callTool(access, 'file_results', { commit: { receipt: filed.receipt, accept: ['c1'], replace: [], approval: APPROVED } }, LATER)).isError).toBe(false);
     expect((await callTool(access, 'update_profile', { ...profile, confirm: proposed.confirm, approval: APPROVED }, LATER)).isError).toBe(false);
     expect(storedRecord().profile.heightCm).toBe(178);
     // Spent: the propose's add, the proposal's correction, the commit's add. Not one refused call cost anything.
@@ -1942,7 +2082,7 @@ describe('US-36 — file_results: propose parks a receipt and charges one, commi
     expect(pendingFiles()).toHaveLength(1);
     expect(extracted).toEqual([]); // no model, so no file quota and no machine cap spent
 
-    const commit = await callTool(access, 'file_results', { commit: { receipt: data.receipt, accept: ['c1', 'c2'], replace: [], approval: APPROVED } });
+    const commit = await callTool(access, 'file_results', { commit: { receipt: data.receipt, accept: ['c1', 'c2'], replace: [], approval: APPROVED } }, LATER);
     expect(commit.isError).toBe(false);
     const stored = storedRecord();
     expect(stored.labValues.find((l) => l.core && l.metricName === 'ldl')).toMatchObject({ source: 'lab_import', recordedAt: LAB_DAY });
@@ -1951,7 +2091,7 @@ describe('US-36 — file_results: propose parks a receipt and charges one, commi
     // A DCR-registered test client is not a pinned one, so its label is `other` — which is also what tells the harness apart from a real ChatGPT (AC12).
     expect(stored.documents[0]).toMatchObject({ sourceFileName: 'Results.pdf', contentHash: '', metadata: { importedVia: 'assistant', client: 'other' } });
     expect(pendingFiles()).toHaveLength(0);
-    const spent = await callTool(access, 'file_results', { commit: { receipt: data.receipt, accept: ['c1'], replace: [], approval: APPROVED } });
+    const spent = await callTool(access, 'file_results', { commit: { receipt: data.receipt, accept: ['c1'], replace: [], approval: APPROVED } }, LATER);
     expect(spent.isError).toBe(true);
 
     // The same file re-sent is already_imported by name and date; another date files.
@@ -1976,7 +2116,7 @@ describe('US-36 — file_results: propose parks a receipt and charges one, commi
     const { access } = await connect();
     const data = OUTPUTS.file_results.parse((await callTool(access, 'file_results', rows())).structured);
     expect(data.candidates[0].slot).toMatchObject({ state: 'held_different', existingRowId: 'old', replaceable: true });
-    const commit = await callTool(access, 'file_results', { commit: { receipt: data.receipt, accept: ['c2'], replace: ['c1'], approval: APPROVED } });
+    const commit = await callTool(access, 'file_results', { commit: { receipt: data.receipt, accept: ['c2'], replace: ['c1'], approval: APPROVED } }, LATER);
     expect(commit.isError).toBe(false);
     expect(storedRecord().labValues.find((l) => l.id === 'old')!.status).toBe('entered-in-error');
     // 1 (propose) + 1 + 5 (commit with one replace) = 7 spent; 53 adds remain of the hour.
@@ -1994,14 +2134,14 @@ describe('US-36 — file_results: propose parks a receipt and charges one, commi
     const { access } = await connect();
     const data = OUTPUTS.file_results.parse((await callTool(access, 'file_results', rows('2026-01-10'))).structured);
     expect(data.candidates[0].slot.replaceable).toBe(false);
-    const refused = await callTool(access, 'file_results', { commit: { receipt: data.receipt, accept: [], replace: ['c1'], approval: APPROVED } });
+    const refused = await callTool(access, 'file_results', { commit: { receipt: data.receipt, accept: [], replace: ['c1'], approval: APPROVED } }, LATER);
     expect(refused.isError).toBe(true);
     expect(refused.text).toContain('too old to replace');
     expect(storedRecord().measurements.find((m) => m.id === 'old')!.status).toBe('active');
 
     const letter = OUTPUTS.file_results.parse((await callTool(access, 'file_results', { sourceFileName: 'letter.pdf', classification: 'clinic_letter', document: { title: 'Cardiology review', type: 'clinic_letter', date: '2026-08-01' } })).structured);
     expect(letter.documents).toEqual([{ sourceFileName: 'letter.pdf', title: 'Cardiology review', type: 'clinic_letter', date: '2026-08-01' }]);
-    const filed = await callTool(access, 'file_results', { commit: { receipt: letter.receipt, accept: [], replace: [], approval: APPROVED } });
+    const filed = await callTool(access, 'file_results', { commit: { receipt: letter.receipt, accept: [], replace: [], approval: APPROVED } }, LATER);
     expect(filed.isError).toBe(false);
     expect(storedRecord().documents.map((d) => d.title)).toEqual(['Cardiology review']);
   });
@@ -2024,7 +2164,7 @@ describe('US-36 — file_results: propose parks a receipt and charges one, commi
 // US-32 AC28/AC29 — the open-source note, and why a refusal was refused
 // ---------------------------------------------------------------------------
 import { INSTRUCTIONS } from '../lib/mcp.server';
-import { OPEN_SOURCE_NOTE, SI_NOTE } from '../../packages/health-core/src/mcp-tools';
+import { OPEN_SOURCE_NOTE, SI_NOTE } from '../../packages/health-core/src/mcp-tool-contract';
 import { REPO_PUBLIC, REPO_URL } from '../../packages/health-core/src/plan';
 import { MCP_REFUSAL_REASONS } from '../../packages/health-core/src/product-events';
 

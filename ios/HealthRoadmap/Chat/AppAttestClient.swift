@@ -48,7 +48,7 @@ actor AppAttestClient {
     /// The key this launch registered, if any, used before the Keychain (US-52 AC1c).
     private var registered: String?
     private var busy = false
-    private var waiters: [CheckedContinuation<Void, Never>] = []
+    private var waiters: [(ticket: UUID, waiter: CheckedContinuation<Void, Error>)] = []
 
     init(session: URLSession = URLSession(configuration: .ephemeral), service: any AttestService = AppleAttest(), keys: KeyStore = KeyStore()) {
         self.session = session
@@ -61,8 +61,30 @@ actor AppAttestClient {
     /// key or a fresh assertion. Any other non-2xx status throws with the server's words, or
     /// plain ones when it gave none (a gateway's HTML page; US-52 AC6d).
     func post(_ path: String, body: Data) async throws -> (URLSession.AsyncBytes, HTTPURLResponse) {
-        await acquire()
+        switch try await open(path, body: body) {
+        case .open(let bytes, let http): return (bytes, http)
+        case .refused(let http, let text):
+            let answer = (try? JSONDecoder().decode(ErrorAnswer.self, from: text)) ?? ErrorAnswer(error: nil, reason: nil)
+            throw Failure.server(status: http.statusCode, message: answer.error ?? "The server could not answer just now. Please try again later.")
+        }
+    }
+
+    /// A request's answer once its headers arrive: open (2xx), or refused with its status and the
+    /// first 16 KB of its body, as received, for a caller that reads a refusal itself (the upload
+    /// runner hands it to the engine, US-52 AC7e).
+    enum Opened: Sendable {
+        case open(URLSession.AsyncBytes, HTTPURLResponse)
+        case refused(HTTPURLResponse, Data)
+    }
+
+    /// As `post`, a refusal answered rather than thrown. The lock is held from signing until the
+    /// headers arrive, as the server spends the counter before any slow work (lab-read answers
+    /// its headers then), so reads that stream run side by side.
+    func open(_ path: String, body: Data) async throws -> Opened {
+        try await acquire()
         defer { release() }
+        // Handed the lock as it was cancelled: nothing is signed.
+        try Task.checkCancellation()
         for attempt in 0..<2 {
             var request = URLRequest(url: ServerConfig.baseURL.appending(path: path))
             request.httpMethod = "POST"
@@ -72,13 +94,14 @@ actor AppAttestClient {
             try await sign(&request, path: path, body: body)
             let (bytes, response) = try await session.bytes(for: request)
             guard let http = response as? HTTPURLResponse else { throw Failure.badResponse }
-            if (200..<300).contains(http.statusCode) { return (bytes, http) }
-            let answer = try await Self.errorAnswer(bytes)
-            if http.statusCode == 401, attempt == 0, ["unknown_key", "stale_counter"].contains(answer.reason) {
-                if answer.reason == "unknown_key" { keys.delete(); registered = nil }
+            if (200..<300).contains(http.statusCode) { return .open(bytes, http) }
+            let text = try await Self.errorText(bytes)
+            let answer = try? JSONDecoder().decode(ErrorAnswer.self, from: text)
+            if http.statusCode == 401, attempt == 0, let reason = answer?.reason, ["unknown_key", "stale_counter"].contains(reason) {
+                if reason == "unknown_key" { keys.delete(); registered = nil }
                 continue
             }
-            throw Failure.server(status: http.statusCode, message: answer.error ?? "The server could not answer just now. Please try again later.")
+            return .refused(http, text)
         }
         throw Failure.badResponse
     }
@@ -184,24 +207,40 @@ actor AppAttestClient {
         let reason: String?
     }
 
-    private static func errorAnswer(_ bytes: URLSession.AsyncBytes) async throws -> ErrorAnswer {
+    /// The first 16 KB of an answer's body.
+    static func errorText(_ bytes: URLSession.AsyncBytes) async throws -> Data {
         var data = Data()
         for try await byte in bytes {
             data.append(byte)
             if data.count > 16_384 { break }
         }
-        return (try? JSONDecoder().decode(ErrorAnswer.self, from: data)) ?? ErrorAnswer(error: nil, reason: nil)
+        return data
     }
 
     // MARK: The lock (actors are re-entrant across awaits, so this is explicit)
 
-    private func acquire() async {
+    /// Waits its turn. A waiter cancelled meanwhile leaves the queue and throws CancellationError:
+    /// it never takes the lock later, so it never signs or sends.
+    private func acquire() async throws {
+        try Task.checkCancellation()
         if !busy { busy = true; return }
-        await withCheckedContinuation { waiters.append($0) }
+        let ticket = UUID()
+        try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { (waiter: CheckedContinuation<Void, Error>) in
+                if Task.isCancelled { waiter.resume(throwing: CancellationError()) } else { waiters.append((ticket, waiter)) }
+            }
+        } onCancel: {
+            Task { await self.leave(ticket) }
+        }
+    }
+
+    private func leave(_ ticket: UUID) {
+        guard let at = waiters.firstIndex(where: { $0.ticket == ticket }) else { return }
+        waiters.remove(at: at).waiter.resume(throwing: CancellationError())
     }
 
     private func release() {
-        if waiters.isEmpty { busy = false } else { waiters.removeFirst().resume() }
+        if waiters.isEmpty { busy = false } else { waiters.removeFirst().waiter.resume() }
     }
 }
 

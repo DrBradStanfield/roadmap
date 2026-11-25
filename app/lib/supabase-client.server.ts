@@ -4,6 +4,7 @@
  */
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import jwt from 'jsonwebtoken';
+export type { SupabaseClient };
 
 // ---------------------------------------------------------------------------
 // Environment

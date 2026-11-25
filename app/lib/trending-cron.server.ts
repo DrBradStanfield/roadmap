@@ -13,12 +13,12 @@
  * Runs on the shared daily runner (daily-cron.server.ts): hourly tick, first
  * tick ≥ TARGET_HOUR_NZ, distributed lock via Supabase.
  */
-import { unauthenticated } from '../shopify.server';
+import { unauthenticated, type AdminApiContext } from '../shopify.server';
 import type { CronLockName } from './supabase-cron-lock.server';
 import { loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
 import { withTimeout, nzNowParts } from './cron-helpers.server';
 import { dailyCron, MACHINE_LABEL } from './daily-cron.server';
-import { SHOP_DOMAIN, STORE_KIND, storeKind } from './store.server';
+import { ownStore, storeKind } from './store.server';
 
 // 3am NZ. DST-aware via nzNowParts (Pacific/Auckland through Intl) and
 // lock_date is NZ-local so the day boundary matches NZ midnight, not UTC.
@@ -30,9 +30,12 @@ const TARGET_HOUR_NZ = 3;
 // trending lock, or only one store's metafield gets written per day (whichever
 // machine wins the shared lock). The lock name is selected by the store this
 // app serves (store.server.ts); the edu store's lock row is seeded in
-// supabase/rls-policies.sql.
-const TRENDING_LOCK_NAME: CronLockName =
-  STORE_KIND === 'edu' ? 'trending_cron_edu' : 'trending_cron';
+// supabase/rls-policies.sql. When the store identity check fails (S-17), this
+// app acts as no store: no cron, no lock, and the manual trigger refuses.
+const STORE = ownStore();
+// Null when the store is unknown, so no reader can name either store's lock.
+export const TRENDING_LOCK_NAME: CronLockName | null =
+  STORE && (STORE.kind === 'edu' ? 'trending_cron_edu' : 'trending_cron');
 
 // Articles younger than this are dropped — they don't have a clean baseline
 // window. Must be >= the leading edge of QUERY_PRIOR_BASELINE (-45d), otherwise
@@ -65,22 +68,22 @@ const QUERY_PRIOR_BASELINE =
 const METAFIELD_NAMESPACE = 'health_roadmap';
 const METAFIELD_KEY = 'trending_articles';
 
-const cron = dailyCron({
+const cron = STORE && TRENDING_LOCK_NAME && dailyCron({
   label: 'Trending cron',
   feature: 'trending_cron',
   lockName: TRENDING_LOCK_NAME,
   targetHour: TARGET_HOUR_NZ,
   // NZ-local date, so the day boundary matches NZ midnight.
   clock: nzNowParts,
-  startLog: `Trending cron started (will run on first tick ≥ ${TARGET_HOUR_NZ}:00 NZ daily, machine: ${MACHINE_LABEL}, shop: ${SHOP_DOMAIN}, lock: ${TRENDING_LOCK_NAME})`,
+  startLog: `Trending cron started (will run on first tick ≥ ${TARGET_HOUR_NZ}:00 NZ daily, machine: ${MACHINE_LABEL}, shop: ${STORE.shopDomain}, lock: ${TRENDING_LOCK_NAME})`,
   run: async () => {
     console.log(`Trending cron: starting daily processing (machine: ${MACHINE_LABEL})`);
     const ranked = await computeAndWriteTrending();
     return `Trending cron: completed, wrote ${ranked.length} entries`;
   },
 });
-export const startTrendingCron = cron.start;
-export const stopTrendingCron = cron.stop;
+export const startTrendingCron = (): void => cron?.start();
+export const stopTrendingCron = (): void => cron?.stop();
 
 interface UrlViewRow {
   url: string;
@@ -90,13 +93,13 @@ interface UrlViewRow {
 /** Throw if the Shopify admin GraphQL response carries top-level `errors`.
  *  Without this, response shapes like `{ errors: [...], data: null }` slip
  *  past userErrors checks and the cron silently no-ops. */
-function assertNoTopLevelErrors(body: any, context: string): void {
+function assertNoTopLevelErrors(body: { data?: unknown; errors?: unknown }, context: string): void {
   if (Array.isArray(body?.errors) && body.errors.length > 0) {
     throw new Error(`${context}: top-level GraphQL errors: ${JSON.stringify(body.errors)}`);
   }
 }
 
-async function runShopifyQL(admin: any, query: string): Promise<UrlViewRow[]> {
+async function runShopifyQL(admin: AdminApiContext, query: string): Promise<UrlViewRow[]> {
   const result = await admin.graphql(
     `query RunShopifyQL($query: String!) {
       shopifyqlQuery(query: $query) {
@@ -138,15 +141,15 @@ async function runShopifyQL(admin: any, query: string): Promise<UrlViewRow[]> {
   if (Array.isArray(rawRows)) {
     for (const row of rawRows) {
       if (!row || typeof row !== 'object') continue;
-      const url = String((row as any).landing_page_path ?? '');
-      const views = Number((row as any).sessions ?? 0);
+      const url = String((row as Record<string, unknown>).landing_page_path ?? '');
+      const views = Number((row as Record<string, unknown>).sessions ?? 0);
       if (url && Number.isFinite(views)) rows.push({ url, views });
     }
   }
   return rows;
 }
 
-async function getShopId(admin: any): Promise<string> {
+async function getShopId(admin: AdminApiContext): Promise<string> {
   const result = await admin.graphql(`query { shop { id } }`);
   const body = await result.json();
   assertNoTopLevelErrors(body, 'getShopId');
@@ -157,7 +160,7 @@ async function getShopId(admin: any): Promise<string> {
 
 /** Exported for unit tests. */
 export async function writeTrendingMetafield(
-  admin: any,
+  admin: AdminApiContext,
   shopId: string,
   entries: { handle: string; score: number }[],
 ): Promise<void> {
@@ -367,13 +370,15 @@ export function computeTrending(
 
 /** Run the full algorithm and write the metafield. Exported for the manual-trigger test route. */
 export async function computeAndWriteTrending(): Promise<TrendingEntry[]> {
+  if (!STORE) throw new Error('Store identity check failed: this app acts as no store (see its boot log)');
+  const { shopDomain } = STORE;
   const session = await withTimeout(
-    unauthenticated.admin(SHOP_DOMAIN),
+    unauthenticated.admin(shopDomain),
     15_000,
     'unauthenticated.admin',
   );
   if (!session?.admin) {
-    throw new Error(`unauthenticated.admin(${SHOP_DOMAIN}) returned no admin client`);
+    throw new Error(`unauthenticated.admin(${shopDomain}) returned no admin client`);
   }
   const { admin } = session;
 
@@ -390,7 +395,7 @@ export async function computeAndWriteTrending(): Promise<TrendingEntry[]> {
     `Trending: fetched ${current7dRows.length} 7d rows, ${priorBaselineRows.length} baseline rows, shop=${shopId}`,
   );
 
-  const handleMap = buildStoreHandleMap(loadBlogIndex(), SHOP_DOMAIN);
+  const handleMap = buildStoreHandleMap(loadBlogIndex(), shopDomain);
   const ranked = computeTrending(current7dRows, priorBaselineRows, handleMap);
   console.log(`Trending: ranked ${ranked.length} candidates (TOP_N=${TOP_N})`);
 

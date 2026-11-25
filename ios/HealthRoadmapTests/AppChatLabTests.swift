@@ -148,7 +148,7 @@ final class AppChatLabTests: XCTestCase {
         XCTAssertEqual(String(decoding: AppAttestClient.clientData(path: "/api/app/v1/chat", body: body), as: UTF8.self), "POST\n/api/app/v1/chat\n\(hash)")
     }
 
-    // MARK: AC7/AC8: lab review and the write
+    // MARK: AC8: the lab import, and originals
 
     private let extraction = #"""
     {"classification":"lab_report","reportDate":"2026-10-01",
@@ -158,18 +158,9 @@ final class AppChatLabTests: XCTestCase {
      "refusedValues":[{"metric":"creatinine","value":80,"unit":"","reason":"unit unknown"}]}
     """#
 
-    func testTheLabReviewAndSaveRunTheWebsBulkRule() throws {
+    func testTheLabImportRunsTheWebsBulkRule() throws {
         let engine = try HealthEngine()
-        let review = try engine.blocking { [now, extraction] in try $0.labReview(extractionJSON: extraction, now: now) }
-        XCTAssertEqual(review.reportDay, "2026-10-01")
-        XCTAssertEqual(review.items.map(\.ref), ["v0", "v1", "a0"])
-        XCTAssertEqual(review.items[1].day, "2025-04-02")
-        XCTAssertEqual(review.notSaved.first?.label, "Creatinine")
-
         let held = try record(engine, .add(metric: "ldl", value: 2.5, day: "2026-10-01"))
-        let summary = try engine.blocking { [now, extraction] in try $0.labSaveSummary(recordJSON: held, extractionJSON: extraction, refs: ["v0", "v1", "a0"], reportDay: "2026-10-01", now: now, deviceId: "test") }.get()
-        XCTAssertEqual(summary, LabSaveSummary(saved: 2, skipped: 1, refused: []))
-
         let outcome = try engine.blocking { [now, extraction] in try $0.apply(.labImport(extractionJSON: extraction, refs: ["v0", "v1", "a0"], reportDay: "2026-10-01"), to: held, now: now, deviceId: "test") }
         XCTAssertTrue(outcome.ok, outcome.message ?? "")
         let file = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(try XCTUnwrap(outcome.record).utf8)) as? [String: Any])
@@ -181,104 +172,63 @@ final class AppChatLabTests: XCTestCase {
         XCTAssertEqual(imported.filter { $0["core"] as? Bool == true }.count, 1)
         XCTAssertEqual(rows.count, 3)
         XCTAssertFalse((file["measurements"] as? [[String: Any]] ?? []).contains { $0["source"] as? String == "lab_import" })
-
-        XCTAssertThrowsError(try engine.blocking { [now, extraction] in try $0.labSaveSummary(recordJSON: held, extractionJSON: extraction, refs: ["v0"], reportDay: "2099-01-01", now: now, deviceId: "test") }.get())
     }
 
-    /// US-12 AC19 (break-it pass 2026-11-01): HDL printed "> 60" and Lp(a) "<5" said only
-    /// "2 values could not be read". The review now names them, with why.
-    func testEachValueNotReadIsNamedWithWhy() throws {
-        let engine = try HealthEngine()
-        let unread = #"""
-        {"classification":"lab_report","reportDate":"2026-10-01",
-         "values":[{"metric":"ldl","valueSI":3.1,"displayValue":3.1,"displayUnit":"mmol/L","displaySystem":"si","confidence":"high"}],
-         "additionalValues":[], "droppedValueCount":4,
-         "unreadValues":[{"name":"hdl","reason":"unreadable"},{"name":"lpa","reason":"unreadable"},{"name":"hdl","reason":"unreadable"}]}
-        """#
-        let review = try engine.blocking { [now] in try $0.labReview(extractionJSON: unread, now: now) }
-        // Each label once (review R1); tests with the same reason share a line. A limit is saved
-        // since US-12 AC20, so it is never here.
-        XCTAssertEqual(review.notSaved, [LabReview.NotSaved(label: "HDL Cholesterol, Lp(a)", reason: "could not be read")])
-        XCTAssertEqual(review.unreadCount, 1)
-        XCTAssertEqual(review.items.map(\.label), ["LDL Cholesterol"])
-    }
-
-    // MARK: AC13d: documents
-
-    func testALetterGetsTheWebsDocumentCard() throws {
-        let engine = try HealthEngine()
-        let letter = #"{"classification":"discharge_summary","reportDate":null,"values":[],"additionalValues":[],"document":{"classification":"discharge_summary","title":"Discharge","documentDate":"2026-09","contentMarkdown":"Short text","metadata":{}}}"#
-        let start = try record(engine)
-        let review = try engine.blocking { [now] in try $0.labReview(extractionJSON: letter, now: now, recordJSON: start, sourceFileName: "d.pdf", deviceId: "test") }
-        XCTAssertFalse(review.isLabReport)
-        XCTAssertEqual(review.document, LabReview.Document(classification: "discharge_summary", title: "Discharge", documentDate: nil, preview: "Short text", alreadySaved: false, held: false))
-        XCTAssertNil(try engine.blocking { [now, extraction] in try $0.labReview(extractionJSON: extraction, now: now) }.document)
-    }
-
-    func testAReadFileKeepsItsOriginalBytes() async throws {
-        let pdf = UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: 200, height: 200)).pdfData { $0.beginPage() }
-        let document = try XCTUnwrap(LabFileReader.documents(from: pdf, name: "a.pdf").first)
-        XCTAssertEqual(document.original?.verifiedData(), pdf)
-        XCTAssertEqual(document.original?.mimeType, "application/pdf")
-        let photo = try await LabFileReader.pictures([UIGraphicsImageRenderer(size: CGSize(width: 4, height: 4)).image { _ in }], name: "Photo")
-        XCTAssertNil(photo.original)
+    /// A photo, though it goes as a file ("Photo.jpg"), is never offered as an original (US-52
+    /// AC13e: the consent screen says only a report from Files is kept). A file's original: the
+    /// folder test below.
+    func testAPhotoIsNeverOfferedAsAnOriginal() async throws {
+        let image = UIGraphicsImageRenderer(size: CGSize(width: 4, height: 4)).image { _ in }
+        let photo = try await LabFileReader.picked(photo: try XCTUnwrap(image.jpegData(compressionQuality: 0.9)))
+        // Picked `original: false`; the engine then stores none (UploadSessionTests' cloud test).
+        XCTAssertFalse(photo.keepsOriginal)
     }
 
     /// A ZIP member's name is the web's zipMemberName, cap and hash included, so the
-    /// document dedup key (`sourceFileName`) is one on the phone and the web. One call per ZIP.
+    /// document dedup key (`sourceFileName`) is one on the phone and the web.
     @MainActor
     func testAZipMembersNameIsTheWebsZipMemberName() async throws {
         let engine = try HealthEngine()
-        let image = UIGraphicsImageRenderer(size: CGSize(width: 4, height: 4)).pngData { _ in }
         let long = String(repeating: "d", count: 260) + "/letter.png"
-        let zip = Self.zip([("a/b.png", image, false), (long, image, false)])
-        let names = await engine.named(try LabFileReader.documents(from: zip, name: "Records.zip")).map(\.name)
+        let names = try await engine.sourceFileNames([["zip": "Records.zip", "path": "a/b.png"], ["zip": "Records.zip", "path": long]])
         // What health-core's zipMemberName gives in Node for these (computed 2026-10-22):
         // the long one cut to 255 with the FNV-1a hash of the whole name, its end kept.
         XCTAssertEqual(names, ["Records.zip/a/b.png", "~635451cb/" + String(repeating: "d", count: 234) + "/letter.png"])
         // R7: any other file's name goes through the same cleanup (one line, capped), in the same call.
-        let plain = LabFileReader.Document(name: "Bad\u{7}\nname.pdf", pages: [], truncated: false)
-        let cleaned = await engine.named([plain]).map(\.name)
+        let cleaned = try await engine.sourceFileNames([["name": "Bad\u{7}\nname.pdf"]])
         XCTAssertEqual(cleaned, ["Bad name.pdf"])
     }
 
-    /// A folder's originals are the files themselves, read again when saved: no bytes
-    /// mapped from a picked folder outlive the picker's access (US-52 AC13d).
-    func testAFoldersOriginalsAreStillReadableAfterTheRead() async throws {
-        let folder = FileManager.default.temporaryDirectory.appending(path: "Picked \(UUID().uuidString)")
+    /// A folder's originals are the bytes read from it, held for Save (US-52 AC13d): a file
+    /// changed or gone after the read changes nothing, since Save stores what the review read.
+    /// The fingerprint is the web's sha256Blob format.
+    func testAFoldersOriginalsAreTheBytesTheReviewRead() async throws {
+        let folder = FileManager.default.temporaryDirectory.appending(path: "Picked \(UUID().uuidString)", directoryHint: .isDirectory)
         try FileManager.default.createDirectory(at: folder.appending(path: "sub"), withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: folder) }
         let pdf = UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: 200, height: 200)).pdfData { $0.beginPage() }
         let png = UIGraphicsImageRenderer(size: CGSize(width: 4, height: 4)).pngData { _ in }
         try pdf.write(to: folder.appending(path: "a.pdf"))
         try png.write(to: folder.appending(path: "sub/b.png"))
-        let documents = try await LabFileReader.documents(inFolder: folder)
-        XCTAssertEqual(documents.map { $0.original?.verifiedData() }, [pdf, png])
-        XCTAssertEqual(documents.map { $0.original?.mimeType }, ["application/pdf", "image/png"])
-        for document in documents {
-            guard case .file = document.original?.source else { return XCTFail("\(document.name) holds bytes, not its file") }
-        }
-        // Codex R2: changed since the review read it (same size, other bytes), or gone: no bytes.
-        var other = pdf
-        other[other.count - 1] ^= 0xFF
-        try other.write(to: folder.appending(path: "a.pdf"))
-        XCTAssertNil(documents[0].original?.verifiedData())
-        try FileManager.default.removeItem(at: folder.appending(path: "sub/b.png"))
-        XCTAssertNil(documents[1].original?.verifiedData())
-        // The fingerprint is the web's sha256Blob format.
-        XCTAssertEqual(documents[1].original?.contentHash, "sha256-" + SHA256.hash(data: png).map { String(format: "%02x", $0) }.joined())
+        let picked = try await LabFileReader.picked(folder, ask: LabSourceTests.rules)
+        let held = LabFileReader.Held()
+        for file in picked { held.hold(file.data, as: file.id, name: file.name) }
+        try FileManager.default.removeItem(at: folder)
+        XCTAssertEqual(picked.map { held.original($0.id) }, [pdf, png])
+        XCTAssertEqual(picked.map { held.originals()[$0.id] }, ["application/pdf", "image/png"])
+        XCTAssertEqual(try held.hash(picked[1].id), "sha256-" + SHA256.hash(data: png).map { String(format: "%02x", $0) }.joined())
     }
 
     // MARK: AC7: reading files
 
-    func testAPdfPageWithTextGoesAsText() throws {
+    func testAPdfPageWithTextGoesAsText() async throws {
         let pdf = UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: 612, height: 792)).pdfData { context in
             context.beginPage()
             ("Synthetic Lab Report. LDL Cholesterol 3.1 mmol/L. HbA1c 40 mmol/mol. Collected 2026-10-01." as NSString)
                 .draw(in: CGRect(x: 40, y: 40, width: 530, height: 700), withAttributes: [.font: UIFont.systemFont(ofSize: 14)])
             context.beginPage() // a blank page: a "scan", sent as a picture
         }
-        let documents = try LabFileReader.documents(from: pdf, name: "labs.pdf")
+        let documents = try await LabFileReader.documents(from: pdf, name: "labs.pdf")
         XCTAssertEqual(documents.count, 1)
         XCTAssertEqual(documents[0].pages.map(\.type), ["text", "image"])
         XCTAssertTrue(documents[0].pages[0].content.hasPrefix("[Page 1/2]\n"))
@@ -286,17 +236,17 @@ final class AppChatLabTests: XCTestCase {
         XCTAssertEqual(documents[0].pages[1].mimeType, "image/jpeg")
     }
 
-    func testAZipGivesItsReportsOneByOne() throws {
+    func testAZipGivesItsReportsOneByOne() async throws {
         let image = UIGraphicsImageRenderer(size: CGSize(width: 20, height: 20)).pngData { context in
             UIColor.gray.setFill(); context.fill(CGRect(x: 0, y: 0, width: 20, height: 20))
         }
         let zip = Self.zip([("bundle/a.png", image, false), ("bundle/b.png", image, true), ("notes.txt", Data("skip".utf8), false), ("__MACOSX/._a.png", Data("x".utf8), false)])
-        let documents = try LabFileReader.documents(from: zip, name: "labs.zip")
+        let documents = try await LabFileReader.documents(from: zip, name: "labs.zip")
         XCTAssertEqual(documents.map(\.name), ["labs.zip/bundle/a.png", "labs.zip/bundle/b.png"])
         XCTAssertEqual(documents.map { $0.pages.first?.type }, ["image", "image"])
-        XCTAssertThrowsError(try LabFileReader.documents(from: Data("not a zip".utf8), name: "x.zip"))
+        do { _ = try await LabFileReader.documents(from: Data("not a zip".utf8), name: "x.zip"); XCTFail("read") } catch {}
         // More members than the cap is refused before they pile up in memory.
-        XCTAssertThrowsError(try ZipReader.members(of: zip, maxMemberBytes: 1_000_000, maxMembers: 1) { _ in true })
+        XCTAssertThrowsError(try ZipReader.check(ZipReader.entries(of: zip), maxMemberBytes: 1_000_000, maxMembers: 1))
     }
 
     /// US-52 AC7, Codex re-check R1: a stored member that declares fewer bytes than it
@@ -306,15 +256,15 @@ final class AppChatLabTests: XCTestCase {
         let payload = Data(repeating: 0x41, count: 1000)
         // One stored member that says it is 1 byte but holds 1,000.
         let understated = Self.rawZip(payload: payload, method: 0, entries: [(name: "a.pdf", compressed: 1000, size: 1)])
-        XCTAssertThrowsError(try ZipReader.members(of: understated, maxMemberBytes: 10_000) { _ in true })
+        XCTAssertThrowsError(try ZipReader.check(ZipReader.entries(of: understated), maxMemberBytes: 10_000))
         // Honest stored entries, all pointing at the same payload: the kept bytes reach the cap.
         let reused = Self.rawZip(payload: payload, method: 0, entries: (0..<5).map { (name: "r\($0).pdf", compressed: 1000, size: 1000) })
-        XCTAssertEqual(try ZipReader.members(of: reused, maxMemberBytes: 10_000, maxTotalBytes: 5000) { _ in true }.count, 5)
-        XCTAssertThrowsError(try ZipReader.members(of: reused, maxMemberBytes: 10_000, maxTotalBytes: 4999) { _ in true })
+        XCTAssertNoThrow(try ZipReader.check(ZipReader.entries(of: reused), maxMemberBytes: 10_000, maxTotalBytes: 5000))
+        XCTAssertThrowsError(try ZipReader.check(ZipReader.entries(of: reused), maxMemberBytes: 10_000, maxTotalBytes: 4999))
         // The same through deflate: every entry inflates the one blob, and the cap still holds.
         let deflated = Self.deflate(payload)
         let overlapping = Self.rawZip(payload: deflated, method: 8, entries: (0..<5).map { (name: "d\($0).pdf", compressed: deflated.count, size: 1000) })
-        XCTAssertThrowsError(try ZipReader.members(of: overlapping, maxMemberBytes: 10_000, maxTotalBytes: 4999) { _ in true })
+        XCTAssertThrowsError(try ZipReader.check(ZipReader.entries(of: overlapping), maxMemberBytes: 10_000, maxTotalBytes: 4999))
     }
 
     /// One local payload, then central entries that each point at it, declaring what they like.

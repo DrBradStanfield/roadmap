@@ -1,5 +1,6 @@
 /**
- * A/B tests: CRUD, event recording and per-variant counts.
+ * A/B tests: CRUD and per-variant counts of the events recorded before the
+ * event endpoint was retired (2026-11-26, US-09 AC62).
  * Split out of supabase.server.ts (issue #429).
  */
 import { supabaseAdmin } from './supabase-client.server';
@@ -10,7 +11,7 @@ import { supabaseAdmin } from './supabase-client.server';
 
 export type ABTestStatus = 'draft' | 'active' | 'paused' | 'completed';
 export type ABTestTarget = 'heading' | 'subheading' | 'email-guest-helper';
-export type ABEventType = 'impression' | 'conversion';
+type ABEventType = 'impression' | 'conversion';
 
 export interface ABVariant {
   id: string;
@@ -91,26 +92,6 @@ export async function updateABTestStatus(testId: string, status: ABTestStatus): 
     .eq('id', testId);
   if (error) {
     console.error('Failed to update AB test status:', error.message);
-    return false;
-  }
-  return true;
-}
-
-export async function recordABEvent(
-  testId: string,
-  variantId: string,
-  visitorId: string,
-  eventType: ABEventType,
-): Promise<boolean> {
-  if (!supabaseAdmin) return false;
-  const { error } = await supabaseAdmin
-    .from('ab_events')
-    .upsert(
-      { test_id: testId, variant_id: variantId, visitor_id: visitorId, event_type: eventType },
-      { onConflict: 'test_id,visitor_id,event_type', ignoreDuplicates: true },
-    );
-  if (error) {
-    console.error('Failed to record AB event:', error.message);
     return false;
   }
   return true;

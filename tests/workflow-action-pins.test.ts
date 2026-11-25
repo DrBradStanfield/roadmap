@@ -29,3 +29,32 @@ describe("third-party actions are pinned to a commit (US-48 AC8)", () => {
     expect(u.m![3], u.line).toMatch(/^\s+#\s*v\d/);
   });
 });
+
+// US-48 AC8a: the two workflows that hold deploy and reviewer secrets pin GitHub's
+// own actions too, at the commits the newer workflows already use.
+describe("the secret-bearing workflows pin every action to a commit (US-48 AC8a)", () => {
+  const SECRET_BEARING = ["deploy.yml", "claude-review.yml"];
+  const inFile = (f: string) => uses.filter((u) => u.where.startsWith(`${f}:`));
+
+  it("finds every uses: line in both files (guards against a silently empty assertion)", () => {
+    expect(inFile("deploy.yml").length).toBe(7);
+    expect(inFile("claude-review.yml").length).toBe(2);
+    expect(SECRET_BEARING.flatMap(inFile).map((u) => u.m![1])).toEqual(expect.arrayContaining(["actions/checkout", "actions/setup-node"]));
+  });
+
+  it.each(SECRET_BEARING.flatMap(inFile))("$where uses a full commit SHA with a version comment", (u) => {
+    expect(u.m![2], u.line).toMatch(/^[0-9a-f]{40}$/);
+    expect(u.m![3], u.line).toMatch(/^\s+#\s*v\d/);
+  });
+
+  it("uses the same commit and version comment as the newer workflows for each GitHub action", () => {
+    const ref = (u: (typeof uses)[number]) => `${u.m![2]}${u.m![3]}`;
+    const NEWER = ["engine-release.yml", "ci-shuffle.yml", "ios-compile.yml"];
+    const newer = NEWER.flatMap(inFile);
+    for (const u of SECRET_BEARING.flatMap(inFile).filter((x) => x.m![1].startsWith("actions/"))) {
+      const same = newer.filter((n) => n.m![1] === u.m![1]).map(ref);
+      expect(same.length, `${u.m![1]} in the newer workflows`).toBeGreaterThan(0);
+      expect(same, u.where).toContain(ref(u));
+    }
+  });
+});
