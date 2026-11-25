@@ -31,7 +31,7 @@ import { HealthTool } from '../src/components/HealthTool';
 import { LocalSaveAlert, StorageBar, SyncControl } from './sync-control';
 import { bootSignIn } from '../src/storage/sign-in-state';
 import { LocalStorageAdapter } from '../src/storage/local-storage-adapter';
-import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../src/lib/roadmap-data';
+import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements, getShownErase } from '../src/lib/roadmap-data';
 import { trackLiveRefresh, stopLiveRefresh } from '../src/testing/health-tool-harness';
 
 const FULL_LINE = 'Could not save on this device (local storage may be full).';
@@ -69,7 +69,7 @@ beforeEach(async () => {
   Element.prototype.scrollIntoView ??= () => {};
   trackLiveRefresh();
   await initRoadmapStore(new LocalStorageAdapter());
-  await saveChangedMeasurements(PROFILE, {});
+  await saveChangedMeasurements(PROFILE, {}, getShownErase());
   await flushRoadmapStore();
 });
 afterEach(async () => {
@@ -99,7 +99,7 @@ describe('US-01 AC5 on a phone: the alert is atop My health and atop Chat, which
 
     storage.limit = storage.used; // full: nothing more fits
     await act(async () => {
-      expect((await addMeasurement('weight', 93, '2026-02-10T00:00:00.000Z')).status).toBe('inserted');
+      expect((await addMeasurement('weight', 93, '2026-02-10T00:00:00.000Z', getShownErase())).status).toBe('inserted');
       // The debounced save may already have run and been refused; either way the flush settles.
       await flushRoadmapStore().catch(() => {});
     });

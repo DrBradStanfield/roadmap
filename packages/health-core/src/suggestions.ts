@@ -1,6 +1,7 @@
 import type { HealthInputs, HealthResults, SuggestionInputs, Suggestion, MedicationInputs, ScreeningInputs, UsProductCardId } from './types';
 import { SUGGESTION_EVIDENCE } from './evidence';
 import { BP_TIER_LABEL, bpTier, isBpRaised } from './bp-tier';
+import { BMI_THRESHOLDS, BMI_WEIGHT_MEDICINE_ALONE } from './bmi-thresholds';
 import { getPostFollowupDueDate, getScreeningNextDueDate, MAX_GLP1_DRUG, STATIN_DRUGS, shouldSuggestSwitch } from './types';
 import { SCREENING_REFS, inAges, opensFollowup, ruleOf, ruleTakes, screeningAge, screeningFollowupInfo, type CardText, type FollowupInfo, type ScreeningRule } from './screening-rules';
 import { colonoscopyCard, monthLabel } from './colonoscopy-schedule';
@@ -174,7 +175,7 @@ export interface WeightMedicationTrigger {
  */
 export function weightMedicationTrigger(inputs: HealthInputs, results: HealthResults): WeightMedicationTrigger {
   const { bmi, waistToHeightRatio: whr } = results;
-  if (bmi === undefined || bmi < 25) return { on: false, reasons: [] };
+  if (bmi === undefined || bmi < BMI_THRESHOLDS.overweight) return { on: false, reasons: [] };
   const reasons: string[] = [];
   // A diabetic-range HbA1c is named as such, matching its urgent card (Brad 2026-11-06, US-06 AC6).
   if (inputs.hba1c !== undefined && inputs.hba1c >= HBA1C_THRESHOLDS.prediabetes) {
@@ -185,7 +186,7 @@ export function weightMedicationTrigger(inputs: HealthInputs, results: HealthRes
   const lipid = lipidMarkerFor(inputs, results);
   if (lipid && lipid.value >= LIPID_RISK_ENHANCING[lipid.kind].line) reasons.push(LIPID_RISK_ENHANCING[lipid.kind].reason);
   if (whr !== undefined && isWaistToHeightElevated(whr)) reasons.push('elevated waist-to-height ratio');
-  return { on: reasons.length > 0 || (isBmiElevated(results.bmiCategory) && bmi > 28), reasons };
+  return { on: reasons.length > 0 || (isBmiElevated(results.bmiCategory) && bmi > BMI_WEIGHT_MEDICINE_ALONE), reasons };
 }
 
 /** The GLP-1 card's text, shared by the cascade's first step and the standalone card. */
@@ -376,8 +377,7 @@ export function generateSuggestions(
   // unless the person has said they don't drink (US-60)
   const whrForAlcohol = results.waistToHeightRatio;
   if (inputs.alcohol !== 'none' && (
-    (results.bmi !== undefined && results.bmi >= 30) ||
-    (results.bmi !== undefined && results.bmi >= 25 && whrForAlcohol !== undefined && isWaistToHeightElevated(whrForAlcohol)) ||
+    (results.bmi !== undefined && (results.bmi >= BMI_THRESHOLDS.obese || (results.bmi >= BMI_THRESHOLDS.overweight && whrForAlcohol !== undefined && isWaistToHeightElevated(whrForAlcohol)))) ||
     (inputs.triglycerides !== undefined && inputs.triglycerides >= TRIGLYCERIDES_THRESHOLDS.borderline)
   )) {
     suggestions.push({
@@ -431,7 +431,8 @@ export function generateSuggestions(
     }
   }
 
-  // HbA1c suggestions (thresholds in mmol/mol IFCC)
+  // HbA1c suggestions (thresholds in mmol/mol IFCC). A normal HbA1c gets no
+  // card: its result row says so (Brad 2026-11-23, US-07 AC18).
   if (inputs.hba1c !== undefined) {
     if (inputs.hba1c >= HBA1C_THRESHOLDS.diabetes) {
       suggestions.push({
@@ -449,22 +450,14 @@ export function generateSuggestions(
         title: 'HbA1c in the prediabetes range',
         description: `Your HbA1c of ${shown('hba1c', 'hba1c', inputs.hba1c)} is in the range the ADA calls prediabetes. Consider discussing it with your doctor. Lifestyle changes now can prevent progression to diabetes.`,
       });
-    } else {
-      suggestions.push({
-        id: 'hba1c-normal',
-        category: 'bloodwork',
-        priority: 'info',
-        title: 'HbA1c in normal range',
-        description: `Your HbA1c of ${shown('hba1c', 'hba1c', inputs.hba1c)} is in the normal range. Continue healthy habits to maintain this.`,
-      });
     }
   }
 
   // === Atherogenic marker hierarchy: ApoB > non-HDL > LDL-c ===
   // Only show the best available marker. ApoB is the gold standard for
   // atherogenic particle burden; non-HDL is next best; LDL-c is fallback.
-  const hasApoBData = inputs.apoB !== undefined;
-  const hasNonHdlData = results.nonHdlCholesterol !== undefined;
+  const apoB = inputs.apoB, hasApoBData = apoB !== undefined; // locals, so the checks below narrow them
+  const nonHdl = results.nonHdlCholesterol, hasNonHdlData = nonHdl !== undefined;
   const lipidMarker = lipidMarkerFor(inputs, results);
 
   // Track whether medication cascade will absorb lipid context,
@@ -481,31 +474,31 @@ export function generateSuggestions(
   // With no birth year (US-07 AC6) the very-high cards suggest no medicine in
   // their own text; their "why" reasons explain the guideline and stay.
   if (hasApoBData && !lipidMedCascadeActive) {
-    if (inputs.apoB! >= APOB_THRESHOLDS.veryHigh) {
+    if (apoB >= APOB_THRESHOLDS.veryHigh) {
       hasElevatedAtherogenicSuggestion = true;
       suggestions.push({
         id: 'apob-very-high',
         category: 'bloodwork',
         priority: 'urgent',
         title: 'Very high ApoB',
-        description: `Your ApoB of ${shown('apoB', 'apob', inputs.apoB!)} is very high, indicating significantly elevated cardiovascular risk. ${medicinesShown(results) ? 'Statin therapy and lifestyle changes are typically recommended at this level. Discuss it with your doctor.' : 'Discuss treatment, including lifestyle changes, with your doctor.'}`,
+        description: `Your ApoB of ${shown('apoB', 'apob', apoB)} is very high, indicating significantly elevated cardiovascular risk. ${medicinesShown(results) ? 'Statin therapy and lifestyle changes are typically recommended at this level. Discuss it with your doctor.' : 'Discuss treatment, including lifestyle changes, with your doctor.'}`,
       });
-    } else if (inputs.apoB! >= APOB_THRESHOLDS.high) {
+    } else if (apoB >= APOB_THRESHOLDS.high) {
       hasElevatedAtherogenicSuggestion = true;
       suggestions.push({
         id: 'apob-high',
         category: 'bloodwork',
         priority: 'attention',
         title: 'High ApoB',
-        description: `Your ApoB of ${shown('apoB', 'apob', inputs.apoB!)} is elevated. Lifestyle changes and treatment options to reduce cardiovascular risk are typically discussed at this level. Discuss them with your doctor.`,
+        description: `Your ApoB of ${shown('apoB', 'apob', apoB)} is elevated. Lifestyle changes and treatment options to reduce cardiovascular risk are typically discussed at this level. Discuss them with your doctor.`,
       });
-    } else if (inputs.apoB! >= APOB_THRESHOLDS.borderline) {
+    } else if (apoB >= APOB_THRESHOLDS.borderline) {
       suggestions.push({
         id: 'apob-borderline',
         category: 'bloodwork',
         priority: 'info',
         title: 'Borderline high ApoB',
-        description: `Your ApoB of ${shown('apoB', 'apob', inputs.apoB!)} is borderline. Optimal is <${fmtLipidTarget('apob', APOB_THRESHOLDS.borderline, us('apob'))}.`,
+        description: `Your ApoB of ${shown('apoB', 'apob', apoB)} is borderline. Optimal is <${fmtLipidTarget('apob', APOB_THRESHOLDS.borderline, us('apob'))}.`,
       });
     }
   }
@@ -544,31 +537,31 @@ export function generateSuggestions(
   // Non-HDL cholesterol — only when ApoB is unavailable
   // Uses 'ldl' for formatDisplayValue/getDisplayLabel since non-HDL shares the same units (mmol/L / mg/dL)
   if (!hasApoBData && hasNonHdlData && !lipidMedCascadeActive) {
-    if (results.nonHdlCholesterol! >= NON_HDL_THRESHOLDS.veryHigh) {
+    if (nonHdl >= NON_HDL_THRESHOLDS.veryHigh) {
       hasElevatedAtherogenicSuggestion = true;
       suggestions.push({
         id: 'non-hdl-very-high',
         category: 'bloodwork',
         priority: 'urgent',
         title: 'Very high non-HDL cholesterol',
-        description: `Your non-HDL cholesterol of ${formatDisplayValue('ldl', results.nonHdlCholesterol!, us('ldl'))} ${getDisplayLabel('ldl', us('ldl'))} is very high. This reflects total atherogenic particle burden and indicates significantly elevated cardiovascular risk.`,
+        description: `Your non-HDL cholesterol of ${formatDisplayValue('ldl', nonHdl, us('ldl'))} ${getDisplayLabel('ldl', us('ldl'))} is very high. This reflects total atherogenic particle burden and indicates significantly elevated cardiovascular risk.`,
       });
-    } else if (results.nonHdlCholesterol! >= NON_HDL_THRESHOLDS.high) {
+    } else if (nonHdl >= NON_HDL_THRESHOLDS.high) {
       hasElevatedAtherogenicSuggestion = true;
       suggestions.push({
         id: 'non-hdl-high',
         category: 'bloodwork',
         priority: 'attention',
         title: 'High non-HDL cholesterol',
-        description: `Your non-HDL cholesterol of ${formatDisplayValue('ldl', results.nonHdlCholesterol!, us('ldl'))} ${getDisplayLabel('ldl', us('ldl'))} is high. Lifestyle changes to reduce cardiovascular risk are typically discussed at this level. Discuss them with your doctor.`,
+        description: `Your non-HDL cholesterol of ${formatDisplayValue('ldl', nonHdl, us('ldl'))} ${getDisplayLabel('ldl', us('ldl'))} is high. Lifestyle changes to reduce cardiovascular risk are typically discussed at this level. Discuss them with your doctor.`,
       });
-    } else if (results.nonHdlCholesterol! >= NON_HDL_THRESHOLDS.borderline) {
+    } else if (nonHdl >= NON_HDL_THRESHOLDS.borderline) {
       suggestions.push({
         id: 'non-hdl-borderline',
         category: 'bloodwork',
         priority: 'info',
         title: 'Borderline high non-HDL cholesterol',
-        description: `Your non-HDL cholesterol of ${formatDisplayValue('ldl', results.nonHdlCholesterol!, us('ldl'))} ${getDisplayLabel('ldl', us('ldl'))} is borderline. Optimal is <${fmtLipidTarget('ldl', LIPID_TREATMENT_TARGETS.nonHdlMmol, us('ldl'))}.`,
+        description: `Your non-HDL cholesterol of ${formatDisplayValue('ldl', nonHdl, us('ldl'))} ${getDisplayLabel('ldl', us('ldl'))} is borderline. Optimal is <${fmtLipidTarget('ldl', LIPID_TREATMENT_TARGETS.nonHdlMmol, us('ldl'))}.`,
       });
     }
   }
@@ -576,6 +569,7 @@ export function generateSuggestions(
   // === Lp(a) — personalized risk context card ===
   // Lp(a) is genetic and unmodifiable. When elevated, show a personalized
   // checklist of modifiable risk factors showing which are on/off target.
+  // A normal Lp(a) gets no card: its result row says so (Brad 2026-11-23, US-07 AC18).
   if (inputs.lpa !== undefined) {
     if (inputs.lpa >= LPA_THRESHOLDS.elevated) {
       const checklist: string[] = [];
@@ -612,8 +606,8 @@ export function generateSuggestions(
       // BMI — consider healthy if <25 or if 25-29.9 with healthy waist-to-height ratio
       if (results.bmi !== undefined) {
         const lpaWhr = results.waistToHeightRatio;
-        const onTarget = results.bmi < 25 || (results.bmi < 30 && lpaWhr !== undefined && !isWaistToHeightElevated(lpaWhr));
-        checklist.push(`${onTarget ? '\u2705' : '\u26A0\uFE0F'} BMI: ${results.bmi} \u2014 target <25, or <30 with a healthy waist-to-height ratio`);
+        const onTarget = results.bmi < BMI_THRESHOLDS.overweight || (results.bmi < BMI_THRESHOLDS.obese && lpaWhr !== undefined && !isWaistToHeightElevated(lpaWhr));
+        checklist.push(`${onTarget ? '\u2705' : '\u26A0\uFE0F'} BMI: ${results.bmi} \u2014 target <${BMI_THRESHOLDS.overweight}, or <${BMI_THRESHOLDS.obese} with a healthy waist-to-height ratio`);
       }
 
       // HbA1c
@@ -672,14 +666,6 @@ export function generateSuggestions(
         priority: 'info',
         title: `Borderline Lp(a): ${bare('lpa', inputs.lpa)} nmol/L`,
         description: 'Your Lp(a) is in the borderline range (75\u2013125 nmol/L). Lp(a) is genetically determined and does not change with lifestyle. Continue to optimize other cardiovascular risk factors.',
-      });
-    } else {
-      suggestions.push({
-        id: 'lpa-normal',
-        category: 'bloodwork',
-        priority: 'info',
-        title: `Lp(a): ${bare('lpa', inputs.lpa)} nmol/L`,
-        description: 'Your Lp(a) is in the normal range (<75 nmol/L). This is a one-time test \u2014 Lp(a) is genetically determined and does not change significantly over time.',
       });
     }
   }

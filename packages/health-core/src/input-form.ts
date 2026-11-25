@@ -267,7 +267,7 @@ function weightSection(meds: MedicationInputs, basis: MedicationBasis): FormSect
 
 /**
  * What one medication answer writes, in order (the web form's onChange rules).
- * A drug picks its first listed dose; a drug or dose change in a cascade
+ * A drug on the dose table picks its first dose, any other answer none; a drug or dose change in a cascade
  * resets that drug's own escalation answer and writes no other medication
  * (US-06 AC7); "yes" to ezetimibe or a PCSK9 inhibitor records the drug and
  * its standard dose. `field` is a key of `medicationForm`'s fields.
@@ -277,19 +277,19 @@ export function medicationWrites(meds: MedicationInputs, cascadeMode: boolean, f
     ({ medicationKey, drugName, doseValue, doseUnit });
   const reset = (key: 'statin_escalation' | 'glp1_escalation', recorded: string | undefined) =>
     cascadeMode && recorded ? [save(key, 'not_yet')] : [];
-  const pickDrug = (key: string, drugs: Record<string, { doses: number[] }>, plain: string[]) =>
-    plain.includes(value) ? save(key, value) : save(key, value, drugs[value]?.doses[0] ?? null, 'mg');
+  const pickDrug = (key: string, drugs: Record<string, { doses: number[] }>) =>
+    Object.prototype.hasOwnProperty.call(drugs, value) ? save(key, value, drugs[value].doses[0], 'mg') : save(key, value);
   switch (field) {
-    case 'statin': return [...reset('statin_escalation', meds.statinEscalation), pickDrug('statin', STATIN_DRUGS, ['none', 'not_tolerated'])];
+    case 'statin': return [...reset('statin_escalation', meds.statinEscalation), pickDrug('statin', STATIN_DRUGS)];
     case 'statin_dose': return [...reset('statin_escalation', meds.statinEscalation), save('statin', meds.statin?.drug ?? 'none', parseInt(value, 10), 'mg')];
     case 'ezetimibe': return [value === 'yes' ? save('ezetimibe', 'ezetimibe', 10, 'mg') : save('ezetimibe', value)];
     case 'pcsk9i': return [value === 'yes' ? save('pcsk9i', 'pcsk9i', 140, 'mg') : save('pcsk9i', value)];
     case 'bempedoic_acid':
       return [value === 'bempedoic_acid' || value === 'bempedoic_acid_ezetimibe' ? save('bempedoic_acid', value, 180, 'mg') : save('bempedoic_acid', value)];
     case 'statin_escalation': case 'glp1_escalation': return [save(field, value)];
-    case 'glp1': return [...reset('glp1_escalation', meds.glp1Escalation), pickDrug('glp1', GLP1_DRUGS, ['none', 'not_tolerated', 'other'])];
+    case 'glp1': return [...reset('glp1_escalation', meds.glp1Escalation), pickDrug('glp1', GLP1_DRUGS)];
     case 'glp1_dose': return [...reset('glp1_escalation', meds.glp1Escalation), save('glp1', meds.glp1?.drug ?? 'none', Number(value), 'mg')];
-    case 'sglt2i': return [pickDrug('sglt2i', SGLT2I_DRUGS, ['none', 'not_tolerated'])];
+    case 'sglt2i': return [pickDrug('sglt2i', SGLT2I_DRUGS)];
     case 'sglt2i_dose': return [save('sglt2i', meds.sglt2i?.drug ?? 'none', Number(value), 'mg')];
     case 'metformin': return [save('metformin', value)];
     default: return [];

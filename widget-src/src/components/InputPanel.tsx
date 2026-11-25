@@ -3,10 +3,10 @@
 // state. My health (MyHealth.tsx, US-62 phase 5) lays its parts out by topic,
 // through the slots this hands its `children`.
 import { SectionIcon } from './icons';
-import { useState, useEffect, useLayoutEffect, useMemo, useRef, type MutableRefObject, type ReactNode } from 'react';
+import { useState, useMemo, useRef, type MutableRefObject, type ReactNode } from 'react';
 import { type HealthInputs, type HealthResults, type ScreeningInputs, type MedicationInputs } from '@roadmap/health-core/types';
 import type { CorrectFn, Refused, SaveTask } from '../lib/matrix-save';
-import { blockBadNumericKeys, mayStillFit, type Grading } from '../lib/blood-test-cell';
+import { mayStillFit, type Grading } from '../lib/blood-test-cell';
 import { useRangeWait } from '../lib/useRangeWait';
 import { useAutoAdvance } from '../lib/useAutoAdvance';
 import type { ApiLabValue, ApiSupplement } from '../lib/api-types';
@@ -15,41 +15,34 @@ import { useLeaveField, type PanelOnboarding } from '../hooks/useOnboarding';
 
 import { FIELD_METRIC_MAP, type ApiMeasurement, type ApiMedication, type ApiScreening, METRIC_TO_FIELD, screeningsToInputs } from '@roadmap/health-core/mappings';
 import { type WeightMedicationTrigger, type LipidMarker } from '@roadmap/health-core/suggestions';
-import { type UnitSystem, fromCanonicalValue, toCanonicalValue, getDisplayLabel, getDisplayRange, UNIT_DEFS, hasUnitChoice } from '@roadmap/health-core/units';
+import { type UnitSystem, fromCanonicalValue, toCanonicalValue, getDisplayLabel, getDisplayRange, UNIT_DEFS } from '@roadmap/health-core/units';
 import { identityFieldRange } from '@roadmap/health-core/validation';
 import { formatValue } from '@roadmap/health-core/lab-limits';
 import { parseLocalisedNumber } from '@roadmap/health-core/parseNumber';
-import { dayOf, localDay } from '@roadmap/health-core/merge';
+import { localDay } from '@roadmap/health-core/merge';
 import { anyScreeningEligible, medicationWrites, screeningWrites, readScreening, dexaEligible } from '@roadmap/health-core/input-form';
-import { formatShortDate } from '../lib/constants';
 import { monthOptions } from '../lib/month-options';
-import { BloodTestTimeline, type BloodTestPrefillFn } from './BloodTestTimeline';
-import { AdditionalLabRows } from './AdditionalLabRows';
+import type { BloodTestPrefillFn } from './BloodTestTimeline';
 import { useMoveTest, type MoveTestApi } from './MoveTestPanel';
-import { StartingInfoVitals, type VitalsPrefillFn } from './StartingInfoVitals';
-import { CommitTickButton } from './CommitTickButton';
+import type { VitalsPrefillFn } from './StartingInfoVitals';
 import { useLpaUnit } from '../lib/lpa-unit';
 import { useValuePage, type RevealCell } from '../lib/useValuePage';
 import { type RowContext } from './MyDataRows';
 import { ValuePage } from './ValuePage';
-import { previousReference, WEIGHT_STILL_COUNTS_ID, WeightStillCounts } from './WeightStillCounts';
+import { WeightStillCounts } from './WeightStillCounts';
 import { AddLabTest } from './AddLabTest';
 import { SupplementsSection } from './SupplementsSection';
 import type { FormSlots, Placement } from './MyHealth';
-import { errorAria, type FormKit } from './form-kit';
+import type { FormKit } from './form-kit';
 import { ScreeningQuestions } from './ScreeningQuestions';
 import { LipidMedications } from './LipidMedications';
 import { WeightMedications } from './WeightMedications';
 import { BoneDensity } from './BoneDensity';
 import { AboutRows, AlcoholField, BirthFields, SexField } from './AboutYou';
 import { HeightField, useHeightPair } from './HeightField';
-
-interface FieldConfig {
-  field: keyof HealthInputs;
-  name: string;
-}
-
-const WEIGHT_FIELD: FieldConfig = { field: 'weightKg', name: 'Weight' };
+import { LongitudinalField, WEIGHT_FIELD } from './LongitudinalField';
+import { MyDataTable } from './MyDataTable';
+import { useAboutCardMove } from '../hooks/useAboutCardMove';
 
 /** What the form reads from the plan, so it never recommends, targets or
  *  steps through what the plan does not (US-06 AC5). HealthTool computes it
@@ -63,7 +56,9 @@ export type PlanBasis = Pick<HealthResults, 'age' | 'bmi' | 'idealBodyWeight' | 
   /** The age the screening cards read (screeningAge, UTC month): the screening questions read it too (US-23 AC6c). */
   screeningAge?: number;
 };
-interface InputPanelProps {
+
+
+export interface InputPanelProps {
   /** My health, laid out from the form's parts (US-62 phase 5). */
   children: (form: FormSlots) => ReactNode;
   inputs: Partial<HealthInputs>;
@@ -168,31 +163,13 @@ export function InputPanel({
   const advanceToWeight = useAutoAdvance();
   const advanceToMyHealth = useAutoAdvance(true);
   const weightRef = useLeaveField(left); // the weight's box or matrix cell (one shows): leaving it ends a landing (US-62 AC25b)
-  // Shared keydown combo: numeric-only guard (US-02 AC4) + Enter-to-save.
-  const onNumericEnter = (e: React.KeyboardEvent<HTMLInputElement>) => { blockBadNumericKeys(e); settleOnEnter(e); autoSaveOnEnterKey(e); };
   const settleOnEnter = (e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === 'Enter') rangeWait.settle(); };
 
   /** Prevent scroll wheel from changing number input values. */
   const blurOnWheel = (e: React.WheelEvent<HTMLInputElement>) => e.currentTarget.blur();
 
-  // Shared blur/Enter auto-save handlers for every longitudinal input. Each
-  // site does its own pre-work (raw-input cleanup) inline, then calls
-  // autoSaveOnBlur(); onKeyDown is uniform. Enter also shows a held range error.
-  const autoSaveOnBlur = () => { if (hasApiResponse) scheduleLongitudinalSave(); };
-  const autoSaveOnEnterKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key !== 'Enter') return;
-    e.preventDefault();
-    if (hasApiResponse) flushLongitudinalSave();
-  };
-
   /** Get effective unit system for a field (override or global default). */
   const fieldUnit = (field: string): UnitSystem => unitOverrides[field] ?? unitSystem;
-
-  /** Whether a field has different SI/conventional labels (i.e., a toggle is useful). */
-  const hasUnitToggle = (field: string): boolean => {
-    const metric = FIELD_METRIC_MAP[field];
-    return !!metric && hasUnitChoice(metric);
-  };
 
   // ── My data, phone and desktop (US-62 AC8-AC12) ──
   // Rows replace the grids, which stay mounted but hidden: their drafts, the
@@ -218,58 +195,7 @@ export function InputPanel({
   const unsavedCue = (shown: boolean) => !tableShown && shown && (
     <button type="button" className="md-unsaved" onClick={() => showTable(true)}>Unsaved values: review</button>
   );
-  // About you sits low, as on the iPhone, phone and desktop (US-62 AC12): for
-  // a record complete when first shown, and once the onboarding's four answers
-  // hold and the focus leaves its card, never mid-typing. The card travels to
-  // the foot (FLIP: each card measured before, then animated from there, by
-  // transform only) while its rows fade in; the cards below slide up, so the
-  // next card takes its place on screen. Reduced motion moves it at once.
-  const aboutRef = useRef<HTMLDivElement>(null);
-  const flipFrom = useRef<Map<Element, number> | null>(null);
-  // A press inside the card is not leaving it: Safari gives a focusout with
-  // no next target for a click on a button (Male, the unit pill) or on text.
-  // Such a press leaves nothing focused, so the next press or focus outside
-  // the card is the leaving (N4); focus back inside the card cancels it.
-  const pressedInside = useRef(false);
-  const leavePending = useRef(false);
-  const leaveCard = () => {
-    leavePending.current = false;
-    // Measured only for a move (HealthTool's call), still before it: React commits the move after this handler returns.
-    if (!onProfileLeft?.()) return;
-    flipFrom.current = new Map([...(panelRef.current?.children ?? [])].map(el => [el, el.getBoundingClientRect().top]));
-  };
-  const leaveProfile = (e: React.FocusEvent<HTMLDivElement>) => {
-    if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
-    if (!e.relatedTarget && pressedInside.current) { leavePending.current = true; return; }
-    leaveCard();
-  };
-  useEffect(() => {
-    if (aboutYouLow) return;
-    const outside = (e: Event) => {
-      if (leavePending.current && !aboutRef.current?.contains(e.target as Node)) leaveCard();
-    };
-    document.addEventListener('pointerdown', outside, true);
-    document.addEventListener('focusin', outside, true);
-    return () => {
-      document.removeEventListener('pointerdown', outside, true);
-      document.removeEventListener('focusin', outside, true);
-    };
-  });
-  useLayoutEffect(() => {
-    const from = flipFrom.current;
-    flipFrom.current = null;
-    if (!from || !aboutYouLow || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
-    // The cards below ease out as they rise; About you eases in too, so its
-    // first steps down are seen before it travels out of view.
-    const rise = { duration: 400, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' };
-    const travel = { duration: 450, easing: 'cubic-bezier(0.45, 0, 0.2, 1)' };
-    for (const el of panelRef.current?.children ?? []) {
-      const top = from.get(el);
-      const dy = top === undefined ? 0 : top - el.getBoundingClientRect().top;
-      if (Math.abs(dy) >= 1) el.animate?.([{ transform: `translateY(${dy}px)` }, { transform: 'none' }], el === aboutRef.current ? travel : rise);
-    }
-    aboutRef.current?.querySelector('.prefill-fields-wrapper')?.animate?.([{ opacity: 0 }, { opacity: 1 }], travel);
-  }, [aboutYouLow]);
+  const { aboutRef, pressedInside, leavePending, leaveProfile } = useAboutCardMove(aboutYouLow, onProfileLeft, panelRef);
   // Something is on record (height and weight, or more): the sex question and the storage notice (US-09 AC5).
   const valueShown = fullForm || reached >= 2;
   // The onboarding asks the weight beside the height (US-62 AC13). A weight
@@ -372,84 +298,6 @@ export function InputPanel({
     );
   };
 
-  /** The onboarding's weight (US-62 AC13), a plain box like the height's
-   *  beside it, holding the saved value; a number typed over it saves through
-   *  the same path (one active row per day, US-03 AC3). */
-  const renderLongitudinalField = (config: FieldConfig) => {
-    const { field, name } = config;
-    const r = range(field);
-    const { previous, shown } = savedOf(field);
-    const needsAttention = field === 'weightKg' && formStage === 1 && inputs.heightCm !== undefined && inputs.weightKg === undefined;
-    return (
-      <div className={`health-field${needsAttention ? ' field-attention' : ''}`} key={field}>
-        <label htmlFor={field}>
-          {name}{' '}
-          {hasUnitToggle(field) ? (
-            <button
-              type="button"
-              className="unit-toggle-pill" data-unit-control
-              onClick={(e) => { e.preventDefault(); onToggleFieldUnit(field); }}
-              title={`Switch to ${fieldUnit(field) === 'si' ? 'conventional' : 'metric'} units`}
-            >
-              {getDisplayLabel(FIELD_METRIC_MAP[field]!, fieldUnit(field))}
-            </button>
-          ) : (
-            FIELD_METRIC_MAP[field] ? <span>({getDisplayLabel(FIELD_METRIC_MAP[field]!, fieldUnit(field))})</span> : null
-          )}
-        </label>
-        <div className="longitudinal-input-row">
-          <input
-            type="number"
-            id={field} ref={field === 'weightKg' ? weightRef : undefined}
-            onWheel={blurOnWheel} {...errorAria(`${field}-error`, [unreadable[field], errors[field]], previous && rawInputs[field] === '' ? WEIGHT_STILL_COUNTS_ID : undefined)}
-            value={rawInputs[field] !== undefined ? rawInputs[field] : toDisplay(field, (inputs[field] as number | undefined) ?? previous?.value)}
-            onChange={(e) => {
-              const raw = e.target.value;
-              typeIn(field, raw);
-              setRawInputs(prev => ({ ...prev, [field]: raw }));
-              // The weight at rest once complete, for the landing (US-62 AC25b); anything else cancels the wait.
-              const n = parseLocalisedNumber(raw);
-              const complete = n !== undefined && /^\d{2,3}$/.test(raw) && n >= r.min && n <= r.max;
-              if (field === 'weightKg' && rested) advanceToMyHealth(complete ? { ambiguous: /^\d{2}$/.test(raw) && n * 10 <= r.max, advance: rested } : null);
-              if (!readable(field, e)) return;
-              // Ignore browser auto-fill of 0 for empty fields (spinner click on empty input)
-              if (raw === '0' && inputs[field] === undefined && rawInputs[field] === undefined) {
-                return;
-              }
-              updateField(field, parseAndConvert(field, raw), fieldUnit(field));
-              if (field === 'weightKg') answered?.('weightKg');
-            }}
-            onBlur={() => {
-              rangeWait.settle();
-              if (unreadable[field]) return;
-              // A saved weight cleared stays cleared when left (US-62 AC38).
-              if (!previous || rawInputs[field] !== '') setRawInputs(prev => { const next = { ...prev }; delete next[field]; return next; });
-              autoSaveOnBlur();
-            }}
-            onKeyDown={onNumericEnter}
-            placeholder=""
-            min={r.min}
-            max={r.max}
-            className={errors[field] ? 'error' : ''}
-          />
-          {hasApiResponse && inputs[field] !== undefined && (
-            <CommitTickButton ariaLabel={`Save ${field}`} onClick={flushLongitudinalSave}/>
-          )}
-        </div>
-        {previous && inputs[field] !== undefined && (
-          <span className="previous-reference">{previousReference(shown, previous.recordedAt)}</span>
-        )}
-        {/* The box shows a saved value of any age: say when it was saved, unless today. */}
-        {previous && inputs[field] === undefined && rawInputs[field] === undefined && dayOf(previous.recordedAt) !== localDay(new Date()) && (
-          <span className="previous-reference">Saved {formatShortDate(previous.recordedAt)}</span>
-        )}
-        {(unreadable[field] || errors[field]) && (
-          <span className="error-message" id={`${field}-error`}>{unreadable[field] ? 'Enter a number' : errors[field]}</span>
-        )}
-      </div>
-    );
-  };
-
   // About you's fields: the onboarding's boxes and, low, the rows' editors (AboutYou.tsx).
   const heightField = (
     <HeightField form={form} pair={heightPair} unitSystem={unitSystem}
@@ -506,7 +354,9 @@ export function InputPanel({
             <>
               <div className="sex-height-row">
                 {heightField}
-                {weightInProfile && renderLongitudinalField(WEIGHT_FIELD)}
+                {weightInProfile && <LongitudinalField config={WEIGHT_FIELD} form={form} savedOf={savedOf} formStage={formStage} onToggleFieldUnit={onToggleFieldUnit}
+                  fieldUnit={fieldUnit} weightRef={weightRef} toDisplay={toDisplay} parseAndConvert={parseAndConvert} rested={rested} answered={answered}
+                  advanceToMyHealth={advanceToMyHealth} hasApiResponse={hasApiResponse} scheduleLongitudinalSave={scheduleLongitudinalSave} flushLongitudinalSave={flushLongitudinalSave}/>}
                 {sexInRow && sexField}
               </div>
               {weightInProfile && rawInputs.weightKg === '' && <WeightStillCounts {...savedOf('weightKg')} onOpen={openPage}/>}
@@ -524,49 +374,8 @@ export function InputPanel({
     </>
   );
 
-  const knownMinor = grading === null;
-  const renderVitalsMatrix = () => (
-    <section className="health-section">
-      <StartingInfoVitals
-        vitalsHistory={vitalsHistory}
-        unitSystem={unitSystem}
-        onSave={onSaveBloodTestBatch}
-        onCorrectValue={onCorrectValue}
-        onHoldsText={setDraftedVitals}
-        formStage={formStage}
-        plan={planBasis}
-        knownMinor={knownMinor}
-        onWeightAnswered={answered && (past => answered(past ? null : 'weightKg'))} weightRef={weightRef} rested={rested}
-        withoutWeight={weightInProfile}
-        unitOverrides={unitOverrides}
-        onToggleFieldUnit={onToggleFieldUnit} startUnitOf={startUnitOf}
-        prefillRef={vitalsPrefillRef}
-        flushRef={vitalsFlushRef}
-      />
-    </section>
-  );
-
   // One move for both blood-test matrices: their headers pick it, the panel sits between them (US-04 AC5).
   const move = useMoveTest({ api: moveTest, unitSystem, unitOverrides, bloodTestHistory, labValues });
-
-  const renderBloodTests = () => (
-    <BloodTestTimeline
-      bloodTestHistory={bloodTestHistory}
-      unitSystem={unitSystem}
-      unitOverrides={unitOverrides}
-      onToggleFieldUnit={onToggleFieldUnit} startUnitOf={startUnitOf} onUnitSwitch={onUnitSwitch}
-      onSaveBatch={onSaveBloodTestBatch}
-      onCorrectValue={onCorrectValue}
-      move={move.headers}
-      onHoldsText={setDraftedBlood}
-      isSaving={isSavingLongitudinal}
-      grading={grading}
-      onUploadClick={() => setShowUploadModal?.(true)}
-      hasApiResponse={hasApiResponse}
-      flushRef={bloodTestFlushRef}
-      prefillRef={bloodTestPrefillRef}
-    />
-  );
 
   /** Send one screening answer and the clears it implies, in order (health-core's rules). */
   const writeScreening = (scr: ScreeningInputs, key: string, value: string) => {
@@ -654,13 +463,13 @@ export function InputPanel({
     // The grids stay mounted, hidden under the rows: their drafts, the chat's
     // prefill (US-16 AC2) and the save before an upload keep working (US-62 AC11).
     table: (
-      <div className="md-table" hidden={!tableShown}>
-        <button type="button" className="md-back md-table-back" onClick={() => showTable(false)}>‹ Show as rows</button>
-        {renderVitalsMatrix()}
-        {renderBloodTests()}
-        {move.panel}
-        <AdditionalLabRows labValues={labValues} coreValues={bloodTestHistory} onAdded={onLabValueAdded} onCorrect={onCorrectValue} move={move.headers}/>
-      </div>
+      <MyDataTable tableShown={tableShown} showTable={showTable} move={move} setDraftedVitals={setDraftedVitals} setDraftedBlood={setDraftedBlood}
+        formStage={formStage} answered={answered} rested={rested} weightRef={weightRef} weightInProfile={weightInProfile}
+        vitalsHistory={vitalsHistory} unitSystem={unitSystem} onSaveBloodTestBatch={onSaveBloodTestBatch} onCorrectValue={onCorrectValue}
+        planBasis={planBasis} unitOverrides={unitOverrides} onToggleFieldUnit={onToggleFieldUnit} startUnitOf={startUnitOf}
+        vitalsPrefillRef={vitalsPrefillRef} vitalsFlushRef={vitalsFlushRef} bloodTestHistory={bloodTestHistory} onUnitSwitch={onUnitSwitch}
+        isSavingLongitudinal={isSavingLongitudinal} grading={grading} setShowUploadModal={setShowUploadModal} hasApiResponse={hasApiResponse}
+        bloodTestFlushRef={bloodTestFlushRef} bloodTestPrefillRef={bloodTestPrefillRef} labValues={labValues} onLabValueAdded={onLabValueAdded}/>
     ),
     addTest: onLabValueAdded && <AddLabTest onAdded={onLabValueAdded} labValues={labValues} coreValues={bloodTestHistory} onCorrect={onCorrectValue}/>,
     weightMedications: renderWeightMedications,

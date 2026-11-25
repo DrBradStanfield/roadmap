@@ -269,9 +269,9 @@ class HeldCloud extends MemoryAdapter {
 async function cloudGuest(adapter: MemoryAdapter): Promise<RenderResult> {
   localStorage.setItem(BACKEND_KEY, 'memory'); // a cloud page runs with its backend remembered
   await initRoadmapStore(adapter);
-  await saveChangedMeasurements(PROFILE, {});
-  await addMeasurement('weight', 82, '2026-09-01');
-  await saveMedication('statin', 'rosuvastatin', 10, 'mg');
+  await saveChangedMeasurements(PROFILE, {}, getShownErase());
+  await addMeasurement('weight', 82, '2026-09-01', getShownErase());
+  await saveMedication('statin', 'rosuvastatin', 10, 'mg', getShownErase());
   await flushRoadmapStore();
   return openPage();
 }
@@ -480,9 +480,9 @@ describe('Fix 4 D2 (US-16 AC2a, US-34 AC1): the two-pass fold\'s window, between
     const cloud = new MemoryCloud();
     const adapter = new TwoPassCloud(cloud);
     await initRoadmapStore(adapter);
-    await saveChangedMeasurements(PROFILE, {});
-    await addMeasurement('weight', 82, '2026-09-01');
-    await addMeasurement('ldl', 2.1, '2026-08-15');
+    await saveChangedMeasurements(PROFILE, {}, getShownErase());
+    await addMeasurement('weight', 82, '2026-09-01', getShownErase());
+    await addMeasurement('ldl', 2.1, '2026-08-15', getShownErase());
     await flushRoadmapStore();
     const view = await openPage();
     showTables(view.container);
@@ -504,9 +504,9 @@ describe('Fix 4 D2 (US-16 AC2a, US-34 AC1): the two-pass fold\'s window, between
       // Another device erases; this tab's next save folds it in, and an edit made while its first write is out
       // sends it round again. The second write waits: the window.
       await anotherWriterErases(new MemoryAdapter(cloud));
-      const loop = adapter.arm(() => { void addMeasurement('waist', 90, '2026-09-02'); });
+      const loop = adapter.arm(() => { void addMeasurement('waist', 90, '2026-09-02', getShownErase()); });
       releaseLoop = loop.release;
-      await addMeasurement('weight', 81, '2026-09-05');
+      await addMeasurement('weight', 81, '2026-09-05', getShownErase());
       let flushed: Promise<void> = Promise.resolve();
       await act(async () => { flushed = flushRoadmapStore().catch(() => {}); await loop.reached; await drain(); });
 
@@ -553,9 +553,9 @@ describe('Fix 4 D2 (US-16 AC2a, US-34 AC1): the two-pass fold\'s window, between
     const cloud = new MemoryCloud();
     const adapter = new TwoPassCloud(cloud);
     await initRoadmapStore(adapter);
-    await saveChangedMeasurements(PROFILE, {});
-    await addMeasurement('weight', 82, '2026-09-01');
-    await addMeasurement('ldl', 2.1, '2026-08-15');
+    await saveChangedMeasurements(PROFILE, {}, getShownErase());
+    await addMeasurement('weight', 82, '2026-09-01', getShownErase());
+    await addMeasurement('ldl', 2.1, '2026-08-15', getShownErase());
     await flushRoadmapStore();
     const view = await openPage();
     showTables(view.container);
@@ -572,9 +572,9 @@ describe('Fix 4 D2 (US-16 AC2a, US-34 AC1): the two-pass fold\'s window, between
     let releaseLoop = () => {};
     try {
       await anotherWriterErases(new MemoryAdapter(cloud));
-      const loop = adapter.arm(() => { void addMeasurement('waist', 90, '2026-09-02'); });
+      const loop = adapter.arm(() => { void addMeasurement('waist', 90, '2026-09-02', getShownErase()); });
       releaseLoop = loop.release;
-      await addMeasurement('weight', 81, '2026-09-05');
+      await addMeasurement('weight', 81, '2026-09-05', getShownErase());
       let flushed: Promise<void> = Promise.resolve();
       await act(async () => { flushed = flushRoadmapStore().catch(() => {}); await loop.reached; await drain(); });
       expect(getEraseIdentity()).not.toBe(before);
@@ -621,15 +621,15 @@ describe('Fix 4 D2 (US-16 AC2a, US-34 AC1): the two-pass fold\'s window, between
     const cloud = new MemoryCloud();
     const adapter = new TwoPassCloud(cloud);
     await initRoadmapStore(adapter);
-    await saveChangedMeasurements(PROFILE, {});
-    await addMeasurement('weight', 82, '2026-09-01');
+    await saveChangedMeasurements(PROFILE, {}, getShownErase());
+    await addMeasurement('weight', 82, '2026-09-01', getShownErase());
     await flushRoadmapStore();
     const view = await openPage();
     openAboutYou(view.container);
     const before = getEraseIdentity();
     await anotherWriterErases(new MemoryAdapter(cloud));
-    const loop = adapter.arm(() => { void addMeasurement('waist', 90, '2026-09-02'); });
-    await addMeasurement('weight', 81, '2026-09-05');
+    const loop = adapter.arm(() => { void addMeasurement('waist', 90, '2026-09-02', getShownErase()); });
+    await addMeasurement('weight', 81, '2026-09-05', getShownErase());
     let flushed: Promise<void> = Promise.resolve();
     await act(async () => { flushed = flushRoadmapStore().catch(() => {}); await loop.reached; await drain(); });
     expect(getShownErase()).toBe(before); // the window

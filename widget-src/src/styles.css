@@ -3617,10 +3617,6 @@
     grid-template-columns: minmax(0, 1000px) minmax(340px, 420px);
     row-gap: 0;
   }
-  /* The doctor line above both columns (US-73 AC13): wrapped or not, both columns start under it. */
-  .health-tool-content > .mh-education--above {
-    grid-column: 1 / -1;
-  }
 }
 
 .health-tool-chat {
@@ -4877,7 +4873,7 @@
   line-height: 1.3;
   color: var(--color-text-secondary);
 }
-.md-row-date { white-space: nowrap; }
+.md-row-date, .md-row-latest, .md-row-prev { white-space: nowrap; }
 .md-row-trend {
   display: block;
   width: 56px;
@@ -4902,7 +4898,7 @@
   font-size: 15px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  white-space: nowrap;
+  white-space: normal;
 }
 .md-row-prev {
   font-size: 12px;
@@ -5238,7 +5234,7 @@
 .mh-pill:focus-visible,
 .mh-banner:focus-visible,
 .mh-info-btn:focus-visible,
-.mh-head-icon-btn:focus-visible,
+.mh-head-text-btn:focus-visible,
 .health-tool .mh-nav-link:focus-visible {
   outline: 2px solid var(--color-brand-text);
   outline-offset: 2px;
@@ -5338,6 +5334,7 @@
 }
 .mh-topic-head {
   margin: 8px 4px 0;
+  flex-wrap: wrap; /* an action that does not fit beside the title goes under it; the title never breaks for it (US-73 AC14) */
 }
 .mh-topic-head .health-section-title {
   font-size: 20px;
@@ -5360,20 +5357,19 @@
   padding-top: 4px !important;
   padding-bottom: 4px !important;
 }
-.mh-head-icon-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
+/* "Upload labs" (US-73 AC14): the accent's quiet text button. */
+.mh-head-text-btn,
+.mh-head-text-btn:hover {
+  min-height: 44px;
   padding: 0;
   border: 0;
-  border-radius: 50%;
+  border-radius: 6px;
   background: none;
   color: var(--color-brand-text);
   font: inherit;
-  font-size: 28px;
-  line-height: 1;
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
   cursor: pointer;
 }
 
@@ -5939,6 +5935,23 @@
 @media (min-width: 769px) {
   .mh-header {
     min-height: 28px;
+  }
+  /* The doctor line on the title's row (Brad 2026-11-23). Short of room it wraps its words
+     beside the title, its last line on the title's baseline, so two lines still fit the 44px
+     row and the cards line up with the chat column's. Under 180px beside it, it drops under
+     the title. The title never wraps. A Safari without last baseline keeps the first. */
+  .mh-heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    align-items: last baseline;
+    flex: 1 1 0;
+    column-gap: 16px;
+    min-width: 0;
+  }
+  .mh-heading > .mh-education {
+    flex: 1 1 180px;
+    margin: 0;
   }
   .mh-sections {
     display: grid;

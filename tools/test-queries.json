@@ -9454,5 +9454,23 @@
     "source": "chat-health-2026-W46",
     "expected_classification": "GREETING",
     "notes": "2026-W46 chat-health: storefront first turn, paraphrased as another made-up word. A lone non-word with no question; production ROUTE (router empty), and the bot replied in another language. KNOWN-FLAKY: replay ROUTE 2/3, GREETING 1/3 (Haiku 5.5, 2026-11-15); the classifier prompt has no clause for a lone non-word."
+  },
+  {
+    "query": "How is V9 different from V8?",
+    "category": "classifier-product",
+    "source": "chat-health-2026-W47",
+    "expected_classification": "PRODUCT",
+    "notes": "2026-W47 chat-health: storefront first turn, paraphrased. A bare question about two product versions (docs/products.md: MicroVitamin formula versions) with no product named. Production ROUTE, router empty (correct: no entry covers versions). Replay of the original 2026-11-22: classifier ROUTE 3/3, router empty 3/3. The classifier never sees the surface (W45 proposal 2, issue #961). KNOWN-FAIL until that is decided."
+  },
+  {
+    "query": "Great news on the new cancer drugs, but what about the side effects of these 'release the brakes' immune treatments, like autoimmune reactions? Are many patients dropping out?",
+    "expected": [
+      "ive-never-been-this-hopeful-about-cancer",
+      "this-vaccine-just-changed-cancer-forever",
+      "we-are-witnessing-cancers-downfall"
+    ],
+    "category": "medications",
+    "source": "chat-health-2026-W47",
+    "notes": "2026-W47 chat-health: YouTube comment on the cancer-treatment video, paraphrased. Production router error 2026-11-19: the reply opened with prose reasoning, then its JSON was cut at the output cap (third shape, W43). Replay of the original 2026-11-22: strict JSON 3/3, the video's post plus a cancer article each time. Regression case for the prose-before-JSON shape."
   }
 ]

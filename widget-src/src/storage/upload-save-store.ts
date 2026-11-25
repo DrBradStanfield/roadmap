@@ -5,6 +5,8 @@
  * screening dates land together or not at all; there is no second write path. As ios/engine/upload-save-door.ts does
  * for the phone. The web's upload flow calls it through lib/upload-shared-save.ts (mount 3b).
  */
+import { busyWait } from '@roadmap/health-core/adapter';
+import { writeMakesFolders } from '@roadmap/health-core/document-save';
 import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import type { RecordSession } from '@roadmap/health-core/record-session';
 import type { UploadState } from '@roadmap/health-core/upload-flow';
@@ -19,8 +21,11 @@ import type { HealthUploadAPI } from '../upload-entry';
 export type Original = () => Promise<Blob>;
 /** The shared engine's Save and review, from the upload bundle (upload-entry.ts). */
 export type UploadEngine = Pick<HealthUploadAPI, 'uploadSave' | 'uploadReview'>;
-/** What the page holds of the pick: the store adds the cloud write. */
-export type WebUploadIO = Omit<UploadSaveIO<Original>, 'write'>;
+/** What the page holds of the pick: the store adds the cloud write and the erase check. */
+export type WebUploadIO = Omit<UploadSaveIO<Original>, 'write' | 'stopped'>;
+/** The web's saving state, its erase required: read at the press on Save (useUploadFlow `save`). The phone's door
+ *  omits it and reads its own session's (ios/engine/upload-doors.ts), so health-core keeps it optional. */
+export type WebSaving = Extract<UploadState, { phase: 'saving' }> & { erase: string };
 
 /** The page's words for a Save that wrote nothing: an erase moved, or a throw. */
 export const SAVE_FAILED = 'Failed to save. Please try again.';
@@ -35,7 +40,7 @@ const ERASED = { ok: false, reason: 'erased', message: SAVE_FAILED } as const;
 
 /** A failed original write, reported as the store reports one: tags only, never a name, a value or the bytes. A
  *  log-off refusal is not reported (US-09 AC2c). */
-export function reportUnstored(error: unknown, backend: string): void {
+function reportUnstored(error: unknown, backend: string): void {
   if (error instanceof WritesStoppedError) return;
   console.warn('Document file not stored');
   Sentry.captureException(recordFailure(error, 'Document file not stored'), { tags: { area: 'cloud-sync', op: 'write-document', backend } });
@@ -45,33 +50,55 @@ export function reportUnstored(error: unknown, backend: string): void {
 export interface OriginalsCloud { write(ref: string, blob: Blob): Promise<void>; backend: string }
 
 export async function saveUploadThrough(
-  session: RecordSession, cloud: OriginalsCloud, engine: UploadEngine, s: UploadState, now: string, cloudConnected: boolean, io: WebUploadIO, person?: ScreeningPerson,
+  session: RecordSession, cloud: OriginalsCloud, engine: UploadEngine, s: WebSaving, now: string, cloudConnected: boolean, io: WebUploadIO, person?: ScreeningPerson,
 ): Promise<UploadSaveAnswer> {
-  // The Save stands for the erase the page showed as it began: refused before any write, before each original and at
-  // the commit, since an erase can land while the originals upload (US-16 AC2a, US-11 AC1a).
-  const erase = session.shownErase;
+  // The Save stands for the erase the page showed at the press on Save, which the flow's saving state carries (read by
+  // useUploadFlow's `save`, never after an await): refused before any write, before each original and at the commit,
+  // since an erase can land while the originals upload (US-16 AC2a, US-11 AC1a).
+  const { erase } = s;
   if (session.refuses(erase)) return ERASED;
+  /** An original a busy refusal will retry: its bytes kept, so a retry does not inflate them again, until it settles. */
+  const retrying = new Map<string, Blob>();
+  /** Originals already reported busy: once each, at the first refusal. */
+  const busy = new Set<string>();
   const out = await engine.uploadSave(s, session.file, now, cloudConnected, {
     ...io,
+    makesFolders: writeMakesFolders(cloud.backend),
+    // The engine asks it before every write attempt, retries included (US-11 AC1a).
+    stopped: () => session.refuses(erase),
     // A failed read or write is reported, then rethrown: the engine counts it `unstored` and its row keeps the hash
     // alone. The bytes go as the page holds them, a File with its own type, as the store's document save writes them.
     write: async (ref, original) => {
       let bytes: Blob;
       try {
-        bytes = await original();
+        bytes = retrying.get(ref) ?? await original();
       } catch (error) {
         // The page could not read its own bytes (a ZIP member that would not inflate): no cloud refused anything.
         Sentry.captureException(recordFailure(error, 'Upload save failed'), { tags: { area: 'upload-save', branch: 'original' } });
         throw error;
       }
-      // Checked once the bytes are in hand, right before the write: an erase during a member's inflate sends nothing.
+      // Checked again once the bytes are in hand: an erase during a member's inflate sends nothing.
       if (session.refuses(erase)) throw new Error('erase moved');
       try {
         await cloud.write(ref, bytes);
       } catch (error) {
-        if (!session.refuses(erase)) reportUnstored(error, cloud.backend);
+        // A busy refusal may still land on the engine's retry: counted on its own, once per original; `onWriteError`
+        // reports it if it never lands.
+        if (session.refuses(erase)) throw error;
+        if (busyWait(error) === null) reportUnstored(error, cloud.backend);
+        else {
+          retrying.set(ref, bytes);
+          if (!busy.has(ref)) Sentry.captureException(recordFailure(error, 'Document write busy'), { tags: { area: 'cloud-sync', op: 'write-document-busy', backend: cloud.backend } });
+          busy.add(ref);
+        }
         throw error;
       }
+    },
+    // Stored, failed or stopped, the original is done: its kept bytes go, so at most the lanes' bytes are held.
+    settled: (ref) => { retrying.delete(ref); },
+    // Once per original that never landed: only the busy ones, since every other failure was reported as it came.
+    onWriteError: (error) => {
+      if (busyWait(error) !== null && !session.refuses(erase)) reportUnstored(error, cloud.backend);
     },
   }, person);
   if (!out.ok) return out;

@@ -22,8 +22,8 @@ class TestCloud extends MemoryAdapter {
   }
 }
 
-const OFFLINE = () => new StorageError('Dropbox did not answer', undefined, new TypeError('Failed to fetch'));
-const REVOKED = () => new StorageError('Dropbox call failed (401).', undefined, undefined, 401);
+const OFFLINE = () => new StorageError('Dropbox did not answer', undefined, new TypeError('Failed to fetch'), undefined, undefined, 'may-have-landed');
+const REVOKED = () => new StorageError('Dropbox call failed (401).', undefined, undefined, 401, undefined, 'refused');
 const clock = Date.parse('2026-11-13T10:00:00.000Z');
 
 function cloudHost(store: TestCloud, stopped = { value: false }): RecordHost {
@@ -75,7 +75,7 @@ function deviceHost(store: DeviceStore, open: { value: boolean }): RecordHost {
 }
 
 const add = (session: RecordSession, id: string) =>
-  session.edit((file) => void file.measurements.push(createMeasurement({ id, metricType: 'weight', value: 80, recordedAt: '2026-11-01', createdAt: new Date(clock).toISOString() })));
+  session.edit((file) => void file.measurements.push(createMeasurement({ id, metricType: 'weight', value: 80, recordedAt: '2026-11-01', createdAt: new Date(clock).toISOString() })), session.shownErase);
 const stored = (store: TestCloud): RoadmapFile => JSON.parse(store.cloud.files.get(ROADMAP_FILE_NAME)!.json);
 
 /** A session whose one save has failed with `error`. */
@@ -154,7 +154,7 @@ describe('RecordSession.retry (US-09 AC30, lead A1 step e)', () => {
 
   // Owner F1 (a), the one ruled flip: a 403 is retried (it was answered null before).
   it('after a 403, starts one save, which lands once the provider takes it', async () => {
-    const { store, session } = await failedSession(new StorageError('Forbidden', undefined, undefined, 403));
+    const { store, session } = await failedSession(new StorageError('Forbidden', undefined, undefined, 403, undefined, 'refused'));
     store.fail = null;
     expect(await session.retry()).toBe(true);
     expect(store.writes).toBe(2);
@@ -206,7 +206,7 @@ describe('RecordSession.retry (US-09 AC30, lead A1 step e)', () => {
 it('RecordSession.retry: never due on the device tier, even with its files open', async () => {
   const store = new DeviceStore(new MemoryCloud());
   const session = await RecordSession.open(deviceHost(store, { value: true }));
-  store.fail = new StorageError('Storage full', undefined, new DOMException('full', 'QuotaExceededError'));
+  store.fail = new StorageError('Storage full', undefined, new DOMException('full', 'QuotaExceededError'), undefined, undefined, 'refused');
   add(session, 'a');
   await expect(session.flush()).rejects.toThrow();
   expect(session.saveStatus).toBe('not-saved');

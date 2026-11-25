@@ -6,6 +6,7 @@ import type { ScreeningPerson } from '@roadmap/health-core/upload-screening';
 import { uploadUsageCounts } from '@roadmap/health-core/upload-usage';
 import { UNDATED_PREVIOUS, uploadLimitSignal } from '@roadmap/health-core/lab-extraction';
 import type { UnitSystem } from '@roadmap/health-core/units';
+import type { UploadReader } from '@roadmap/health-core/upload-rules';
 import { UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, type UploadOutcomeKey } from '@roadmap/health-core/product-events';
 import { SHOPIFY_SURFACE } from '../lib/build-flags';
 import { trackProductEvent, type ProductEventMetadata } from '../lib/server-api';
@@ -17,6 +18,7 @@ import { isDocx, isZip } from '../lib/file-kinds';
 import { runEffect, type UploadPort } from '../lib/upload-effects';
 import { emptyHeld, hasResults, heldNotices, MAX_FILES, NO_FILES_TEXT, phaseOf, pickedFiles, pickNotices, progressOf, readErrorOf, readOutcome, refusedForKey, type Held } from '../lib/upload-read';
 import { sharedSave } from '../lib/upload-shared-save';
+import { getShownErase } from '../lib/roadmap-data';
 import { SAVE_FAILED, type UploadEngine } from '../storage/upload-save-store';
 // Type only: a value import would pull the lazy upload bundle into the main one.
 import type { HealthUploadAPI } from '../upload-entry';
@@ -80,7 +82,8 @@ export interface UploadFlowOptions {
 
 export function useUploadFlow({ unitSystem, onComplete, onStart, onClose, person }: UploadFlowOptions) {
   // The Shopify build's files are read by our server; the Pages build's by the person's own key (US-12 AC9).
-  const [upload, setUpload] = useState<UploadState>(() => initialUpload('web', SHOPIFY_SURFACE ? 'server' : 'ownKey'));
+  const reader: UploadReader = SHOPIFY_SURFACE ? 'server' : 'ownKey';
+  const [upload, setUpload] = useState<UploadState>(() => initialUpload('web', reader));
   // The state read synchronously: a second pick or Save in the same render sees the first.
   const live = useRef(upload);
   // What the web holds beside the state: bytes, pages and the server's words, by file id; one per pick.
@@ -185,8 +188,11 @@ export function useUploadFlow({ unitSystem, onComplete, onStart, onClose, person
         if (s.phase !== 'saving' || s.run !== run || s.attempt !== attempt) return;
         const { onComplete: complete, person: shown } = props.current;
         const counts = reviewCounts.current;
+        const failed = { type: 'saveFailed' as const, run, attempt, message: SAVE_FAILED };
+        // The web's Save always carries the erase read at its press (`save` below): one without is refused, never
+        // written under another erase (US-16 AC2a).
         void loadUploadBundle()
-          .then((upload) => sharedSave(upload, s, held.current, shown, complete), () => ({ type: 'saveFailed' as const, run, attempt, message: SAVE_FAILED }))
+          .then((upload) => (s.erase === undefined ? failed : sharedSave(upload, { ...s, erase: s.erase }, held.current, shown, complete)), () => failed)
           .then((event) => {
             // One per review: a finished Save, never a failed one (US-13 AC13).
             if (event.type === 'saved') endReview.current(counts);
@@ -261,14 +267,15 @@ export function useUploadFlow({ unitSystem, onComplete, onStart, onClose, person
     const s = live.current;
     if (s.phase !== 'open' && s.phase !== 'saveFailed') return;
     reviewCounts.current = counts;
-    send({ type: 'saveStarted', reviewed });
+    // The erase the page shows at this press: the Save writes under it, whatever lands while it runs (US-16 AC2a).
+    send({ type: 'saveStarted', reviewed, erase: getShownErase() });
   }, [send]);
 
   return {
     phase, files: phase === 'readFailed' ? pickedFiles(upload) : [], notices, progress: progressOf(upload),
     // What only the web knows of the pick, said beside the list: the shared state never saw it (US-12 AC9, AC13).
     heldNotices: heldNotices(upload, pickHeld),
-    readError: readErrorOf(upload),
+    readError: readErrorOf(upload), reader,
     skipArchive, skipConnect: () => setSkipArchive(true),
     pick, cancel, close, discard, save, endReview: endReview.current,
     // The list's adapter: `send` sets `live.current` before it returns, so a read right after a choice holds it.

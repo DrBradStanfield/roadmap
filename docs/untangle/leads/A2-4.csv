@@ -1,2 +1,2 @@
 id,section,title,status,evidence,pr,durability_check,needs_brad
-A2-4,S5 clinical rules,Zod bounds and creatinine factor derived from UNIT_DEFS,not started,validation.ts:36-125 literal min/max; calculations.ts:101 literal 88.4 (units.ts:69 already names CREATININE_FACTOR),,,yes
+A2-4,S5 clinical rules,Zod bounds and creatinine factor derived from UNIT_DEFS,partial,"Creatinine factor done: units.ts exports CREATININE_FACTOR and calculations.ts calculateEGFR reads it (its own 88.4 deleted); no prod 88.4 left (grep). Left: validation.ts:36-125 literal Zod min/max",2061,packages/health-core/src/calculations-rule-pins.test.ts (eGFR at kappa mg/dL through UNIT_DEFS lands on the kink; fails when the factors drift),no (owner ruled 2026-11-25)

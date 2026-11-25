@@ -53,7 +53,7 @@ Prediabetes means sugar is above normal but below the diabetes line. Risk rises 
 
 | HbA1c | What the plan calls it | Plan card |
 |---|---|---|
-| Under 38.8 mmol/mol (under 5.7%) | Normal | "HbA1c in normal range" |
+| Under 38.8 mmol/mol (under 5.7%) | Normal | No card; the result row shows Normal. |
 | 38.8 mmol/mol (5.7%) or more | Prediabetes range | "HbA1c in the prediabetes range" |
 | 47.5 mmol/mol (6.5%) or more | Diabetes range, urgent | "HbA1c in the diabetes range" |
 

@@ -67,7 +67,7 @@ Some products combine red yeast rice with coenzyme Q10 (CoQ10). In a trial in 10
 
 ### Red Yeast Rice + Nattokinase Combinations
 
-In a 6-month trial in 47 adults with high blood lipids, nattokinase combined with red yeast rice extract (two capsules twice daily, each with 300 mg of extract) lowered LDL cholesterol by 41% and total cholesterol by 25%, while nattokinase alone showed no effect until month six [14]. In a 90-day trial in 178 people with stable coronary artery disease, nattokinase plus red yeast rice (9.0 mg of monacolins a day) lowered triglycerides, total cholesterol and diastolic blood pressure, and raised HDL cholesterol, more than either one alone or placebo [15].
+In a 6-month trial in 47 adults with high blood lipids, [nattokinase](/blogs/articles/nattokinase-benefits-forms-dosing-and-side-effects) combined with red yeast rice extract (two capsules twice daily, each with 300 mg of extract) lowered LDL cholesterol by 41% and total cholesterol by 25%, while nattokinase alone showed no effect until month six [14]. In a 90-day trial in 178 people with stable coronary artery disease, nattokinase plus red yeast rice (9.0 mg of monacolins a day) lowered triglycerides, total cholesterol and diastolic blood pressure, and raised HDL cholesterol, more than either one alone or placebo [15].
 
 ### Key Bioavailability Considerations
 

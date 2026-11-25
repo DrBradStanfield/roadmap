@@ -33,8 +33,8 @@ describe('parseProductEvent', () => {
   it('accepts every client-emittable event name', () => {
     for (const eventName of PRODUCT_EVENT_NAMES) {
       if (SERVER_ONLY.has(eventName)) continue;
-      // US-62 AC1: these three need their key, tested with it below.
-      if (['tool_opened', 'onboarding_step', 'signin_opened'].includes(eventName)) continue;
+      // US-62 AC1: these three need their key, tested with it below; US-73 AC14's in its own file.
+      if (['tool_opened', 'onboarding_step', 'signin_opened', 'upload_labs_opened'].includes(eventName)) continue;
       // US-61 AC8: the two US product events need their product; US-07 AC11: measurement_added its measure.
       const metadata = eventName.startsWith('us_product_') ? { metadata: { product: 'sleep' } }
         : eventName === 'measurement_added' ? { metadata: { measure: 'waist' } }

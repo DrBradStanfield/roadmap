@@ -9,18 +9,18 @@ import { act, render, waitFor, fireEvent, within, type RenderResult } from '@tes
 import type { Suggestion } from '@roadmap/health-core/types';
 import {
   addMeasurement,
-  bulkSaveDocuments,
-  bulkSaveLabValues,
   deleteUserData,
   flushRoadmapStore,
   saveChangedMeasurements,
   saveMedication,
   saveScreening,
-  saveSupplement,
+  saveSupplement, getShownErase,
 } from '../lib/roadmap-data';
 import { seedGuest, useHealthToolLifecycle } from '../testing/health-tool-harness';
 import { deleteButton, openSettings } from '../testing/settings';
+import { rowTitle } from '../testing/plan-on-page';
 import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
+import { trackProductEvent } from '../lib/server-api';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../lib/server-api', async (importOriginal) => ({
@@ -32,7 +32,11 @@ vi.mock('../lib/server-api', async (importOriginal) => ({
 vi.mock('../lib/chat-api', () => ({ listConversations: () => Promise.resolve(null), getChatGate: () => null }));
 vi.mock('./ChatEmbed', () => ({ ChatEmbed: () => null }));
 vi.mock('./ChatSection', () => ({ ChatSection: () => null }));
-vi.mock('./UploadModal', () => ({ UploadModal: () => null }));
+// The upload as the page opens it: a dialog while `open`, with a way out (US-73 AC14).
+vi.mock('./UploadModal', () => ({
+  UploadModal: ({ open, onClose }: { open: boolean; onClose: () => void }) =>
+    open ? <div role="dialog" aria-label="Lab upload"><button type="button" onClick={onClose}>Close upload</button></div> : null,
+}));
 // The plan's suggestions, as usePlanView is handed them: what the page must draw.
 const planSeen = vi.hoisted(() => ({ suggestions: [] as Suggestion[] }));
 vi.mock('./ResultsPanel', async (importOriginal) => {
@@ -41,6 +45,7 @@ vi.mock('./ResultsPanel', async (importOriginal) => {
 });
 
 import { HealthTool } from './HealthTool';
+import { seedOpenDocuments, seedOpenLabValues } from '../testing/seed-record';
 
 useHealthToolLifecycle();
 
@@ -55,25 +60,25 @@ const RECORDS: Record<string, () => Promise<void>> = {
       [['weight', 95], ['waist', 104], ['systolic_bp', 158], ['diastolic_bp', 98], ['hba1c', 44], ['ldl', 4.1], ['creatinine', 92]], [], EARLIER);
     for (const [metric, value] of [['weight', 92], ['waist', 101], ['systolic_bp', 162], ['diastolic_bp', 101], ['hba1c', 50], ['ldl', 4.4],
       ['apob', 1.25], ['total_cholesterol', 6.6], ['hdl', 1.0], ['triglycerides', 2.3], ['lpa', 140], ['creatinine', 98]] as const) {
-      await addMeasurement(metric, value, DAY);
+      await addMeasurement(metric, value, DAY, getShownErase());
     }
-    await saveMedication('statin', 'atorvastatin', 20);
-    await saveSupplement('magnesium', 'Magnesium', 300, 'mg');
-    await saveScreening('colorectal_method', 'fit_annual');
-    await saveScreening('prostate_discussion', 'not_yet');
+    await saveMedication('statin', 'atorvastatin', 20, undefined, getShownErase());
+    await saveSupplement('magnesium', 'Magnesium', 300, 'mg', undefined, undefined, getShownErase());
+    await saveScreening('colorectal_method', 'fit_annual', getShownErase());
+    await saveScreening('prostate_discussion', 'not_yet', getShownErase());
   },
   'a woman of 52 with her screenings answered': async () => {
     await seedGuest({ sex: 'female', heightCm: 165, birthYear: 1974, birthMonth: 3, unitSystem: 'si' }, [['weight', 70], ['ldl', 2.8]], [], DAY);
-    await saveScreening('breast_frequency', 'biennial');
-    await saveScreening('cervical_method', 'hpv_every_5yr');
-    await saveScreening('colorectal_method', 'not_yet_started');
-    await saveScreening('endometrial_abnormal_bleeding', 'yes_need_to_report');
+    await saveScreening('breast_frequency', 'biennial', getShownErase());
+    await saveScreening('cervical_method', 'hpv_every_5yr', getShownErase());
+    await saveScreening('colorectal_method', 'not_yet_started', getShownErase());
+    await saveScreening('endometrial_abnormal_bleeding', 'yes_need_to_report', getShownErase());
   },
   'a man of 66 who will screen, PSA 6.5, a former smoker': async () => {
     await seedGuest({ sex: 'male', heightCm: 180, birthYear: 1960, birthMonth: 1, unitSystem: 'si' }, [['weight', 85], ['psa', 6.5]], [], DAY);
-    await saveScreening('prostate_discussion', 'will_screen');
-    await saveScreening('lung_smoking_history', 'former_smoker');
-    await saveScreening('lung_pack_years', '30');
+    await saveScreening('prostate_discussion', 'will_screen', getShownErase());
+    await saveScreening('lung_smoking_history', 'former_smoker', getShownErase());
+    await saveScreening('lung_pack_years', '30', getShownErase());
   },
   'a known minor': async () => {
     await seedGuest({ sex: 'female', heightCm: 150, birthYear: new Date().getFullYear() - 12, birthMonth: 1, unitSystem: 'si' }, [['weight', 45], ['ldl', 4.9]], [], DAY);
@@ -83,7 +88,7 @@ const RECORDS: Record<string, () => Promise<void>> = {
   },
   'a low lab eGFR': async () => {
     await seedGuest({ sex: 'female', heightCm: 165, birthYear: 1950, birthMonth: 1, unitSystem: 'si' }, [['weight', 70], ['creatinine', 140]], [], DAY);
-    await bulkSaveLabValues([{ metricName: 'eGFR', value: 38, unit: 'mL/min/1.73m²', recordedAt: `${DAY}T00:00:00.000Z` }]);
+    await seedOpenLabValues([{ metricName: 'eGFR', value: 38, unit: 'mL/min/1.73m²', recordedAt: `${DAY}T00:00:00.000Z` }]);
   },
 };
 
@@ -106,7 +111,7 @@ function titled(title: string) {
 /** The suggestions a card draws, by their titles. */
 const cardSuggestions = (card: Element) => [...card.querySelectorAll('.suggestion-title')].map(t => titled(t.textContent!));
 /** The suggestion a row draws, by its info button's name. */
-const rowSuggestion = (row: Element) => titled(row.querySelector('.mh-info-btn')!.getAttribute('aria-label')!.replace(/^About: /, ''));
+const rowSuggestion = (row: Element) => titled(rowTitle(row));
 /** Each suggestion id drawn as a card, and on a row. */
 function drawn(view: RenderResult) {
   const cards = [...view.container.querySelectorAll('.mh-sections .mh-card')].flatMap(c => cardSuggestions(c).map(s => s.id));
@@ -134,11 +139,8 @@ describe('US-62 AC17: the sections, in the iPhone\'s order', () => {
 
   const DOCTOR_LINE = 'For education, not medical advice. Always talk to your doctor.';
   const lines = (view: RenderResult) => [...view.container.querySelectorAll('p.mh-education')];
-  it.each([
-    ['a phone', (q: string) => q.includes('max-width')],
-    ['a desktop under 1200px, with no chat column', (q: string) => q.includes('min-width') && !q.includes('1200px')],
-  ])('US-73 AC13 (App Review 1.4.1): on %s the doctor line sits right under the title, before the pills', async (_name, matches) => {
-    vi.stubGlobal('matchMedia', (q: string) => ({ matches: matches(q), media: q, addEventListener() {}, removeEventListener() {} }));
+  it('US-73 AC13 (App Review 1.4.1): on a phone the doctor line sits right under the (hidden) title, before the pills', async () => {
+    vi.stubGlobal('matchMedia', (q: string) => ({ matches: q.includes('max-width'), media: q, addEventListener() {}, removeEventListener() {} }));
     const view = await show(RECORDS['urgent results, both cascades, a supplement']);
     expect(lines(view)).toHaveLength(1);
     const line = view.container.querySelector('.mh-header + p.mh-education');
@@ -147,16 +149,21 @@ describe('US-62 AC17: the sections, in the iPhone\'s order', () => {
     expect(line!.compareDocumentPosition(pills) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  // Beside the chat column the line spans both columns, so it pushes neither down alone and the chat
-  // card's top stays on the line of My health's first card (design review 2026-11-06, webkit-verify).
-  it('US-73 AC13: beside the chat column the doctor line spans both columns, once, before them', async () => {
+  // Desktop, with the chat column or without: the line is on My health's title row, after the title and
+  // before Sign in, never above the columns (Brad 2026-11-23).
+  it.each([
+    ['a desktop under 1200px, with no chat column', (q: string) => q.includes('min-width') && !q.includes('1200px')],
+    ['a desktop beside the chat column', (q: string) => q.includes('min-width')],
+  ])('US-73 AC13: on %s the doctor line sits on the title row, right after "My health"', async (name, matches) => {
+    vi.stubGlobal('matchMedia', (q: string) => ({ matches: matches(q), media: q, addEventListener() {}, removeEventListener() {} }));
     const view = await show(RECORDS['urgent results, both cascades, a supplement']);
+    expect(view.container.querySelector('.health-tool-chat') !== null).toBe(name.includes('beside'));
     expect(lines(view)).toHaveLength(1);
-    const content = view.container.querySelector('.health-tool-content')!;
-    expect(content.querySelector('.health-tool-chat')).not.toBeNull();
-    expect(content.firstElementChild?.matches('p.mh-education.mh-education--above')).toBe(true);
-    expect(content.firstElementChild?.textContent).toBe(DOCTOR_LINE);
-    expect(view.container.querySelector('.mh-page .mh-education')).toBeNull();
+    const line = view.container.querySelector('.mh-header .mh-title + p.mh-education');
+    expect(line?.textContent).toBe(DOCTOR_LINE);
+    const actions = view.container.querySelector('.mh-header-actions');
+    if (actions) expect(line!.compareDocumentPosition(actions) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(view.container.querySelector('.health-tool-content > p')).toBeNull();
   });
 
   it('a 25-year-old, too young for any screening, has no Cancer screening section', async () => {
@@ -347,10 +354,25 @@ describe('US-62 AC21: the rows', () => {
 });
 
 describe('US-62 AC22, AC23: Blood tests and Supplements', () => {
-  it('"+" uploads on the Blood tests heading; "Add blood test" and "All results as a table" end its rows', async () => {
+  it('US-73 AC14: "Upload labs" sits on the Weight & diabetes, Cholesterol and Blood tests headings only; each opens the upload and names its heading', async () => {
+    const view = await show(RECORDS['urgent results, both cascades, a supplement']);
+    const heads = [...view.container.querySelectorAll<HTMLElement>('.mh-topic')]
+      .filter(t => within(t.querySelector<HTMLElement>('.mh-topic-head')!).queryByRole('button', { name: 'Upload labs' }));
+    expect(heads.map(t => t.dataset.topic)).toEqual(['weight', 'cholesterol', 'bloodTests']);
+    expect(view.queryByRole('button', { name: 'Upload lab results' })).toBeNull(); // the bare "+" is gone
+    for (const head of heads) {
+      vi.mocked(trackProductEvent).mockClear();
+      expect(view.queryByRole('dialog', { name: 'Lab upload' })).toBeNull();
+      fireEvent.click(within(head.querySelector<HTMLElement>('.mh-topic-head')!).getByRole('button', { name: 'Upload labs' }));
+      expect(view.getByRole('dialog', { name: 'Lab upload' })).toBeTruthy();
+      expect(vi.mocked(trackProductEvent).mock.calls).toEqual([['upload_labs_opened', { placement: head.dataset.topic }]]);
+      fireEvent.click(view.getByRole('button', { name: 'Close upload' }));
+    }
+  });
+
+  it('"Add blood test" and "All results as a table" end Blood tests\' rows', async () => {
     const view = await show(RECORDS['urgent results, both cascades, a supplement']);
     const section = view.container.querySelector<HTMLElement>('[data-topic="bloodTests"]')!;
-    expect(within(section.querySelector<HTMLElement>('.mh-topic-head')!).getByRole('button', { name: 'Upload lab results' })).toBeTruthy();
     const add = within(section).getByRole('button', { name: '+ Add a blood test' });
     const table = within(section).getByRole('button', { name: 'All results as a table' });
     expect(add.compareDocumentPosition(table) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -634,8 +656,8 @@ describe('US-09 AC19, US-62 AC28: any erase the screen shows closes the reasons 
   /** The same record again, written after the erase and re-read as from another device. */
   async function refill(view: RenderResult) {
     await act(async () => {
-      await saveChangedMeasurements(record, {});
-      for (const [metric, value] of values) await addMeasurement(metric, value, DAY);
+      await saveChangedMeasurements(record, {}, getShownErase());
+      for (const [metric, value] of values) await addMeasurement(metric, value, DAY, getShownErase());
       await flushRoadmapStore();
       window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT));
     });
@@ -784,7 +806,7 @@ describe('US-62 AC27: the desktop section list', () => {
   // US-62 AC33 (Brad 2026-11-09): Documents in the desktop list, only when the area shows; never on a phone.
   const withLetter = async () => {
     await RECORDS['urgent results, both cascades, a supplement']();
-    await bulkSaveDocuments([{ documentType: 'clinic_letter', title: 'Clinic letter', documentDate: '2026-09-01', contentMd: 'A letter.', metadata: {}, sourceFileName: 'letter.pdf' }]);
+    await seedOpenDocuments([{ documentType: 'clinic_letter', title: 'Clinic letter', documentDate: '2026-09-01', contentMd: 'A letter.', metadata: {}, sourceFileName: 'letter.pdf' }]);
   };
   const navTitles = (view: RenderResult) => [...view.container.querySelectorAll('.mh-nav .mh-nav-title')].map(t => t.textContent);
 
@@ -807,7 +829,7 @@ describe('US-62 AC27: the desktop section list', () => {
   it('AC33: with no documents (a blood-test report alone is not one), no entry and no area', async () => {
     const view = await show(async () => {
       await RECORDS['urgent results, both cascades, a supplement']();
-      await bulkSaveDocuments([{ documentType: 'pathology_report', title: 'Labs', documentDate: '2026-09-01', contentMd: '', metadata: { labArchive: true }, sourceFileName: 'labs.pdf' }]);
+      await seedOpenDocuments([{ documentType: 'pathology_report', title: 'Labs', documentDate: '2026-09-01', contentMd: '', metadata: { labArchive: true }, sourceFileName: 'labs.pdf' }]);
     });
     expect(navTitles(view).length).toBeGreaterThan(0);
     expect(navTitles(view)).not.toContain('Documents');

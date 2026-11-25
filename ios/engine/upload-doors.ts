@@ -80,7 +80,8 @@ const WIRE_EVENT = z.discriminatedUnion('type', [
   E.sendFailed.omit({ failure: true, detail: true }).extend({ status: z.number().int().nullable(), body: maybeText, contentType: maybeText, local: LOCAL.optional() }),
   z.strictObject({ type: z.literal('streamEnded'), run: z.number().int().nonnegative(), id: z.string(), line: maybeText, now: z.string() }),
   // Only the changes the iPhone's page makes: the web's column day is refused here (US-13 AC24).
-  E.retry, E.stop, E.chose.extend({ change: PHONE_CHANGE }), E.saveStarted, E.saved, E.saveFailed, E.close, E.discard,
+  // A Save's erase is the web's: the phone's Save door reads its own session's.
+  E.retry, E.stop, E.chose.extend({ change: PHONE_CHANGE }), E.saveStarted.omit({ erase: true }), E.saved, E.saveFailed, E.close, E.discard,
 ]);
 type Wire = z.infer<typeof WIRE_EVENT>;
 

@@ -18,6 +18,7 @@ import * as data from '../lib/roadmap-data';
 import { formatShortDate } from '../lib/constants';
 import { trackProductEvent } from '../lib/server-api';
 import { BloodPressureWidget, WIDTH, spelledOut } from './BloodPressure';
+import { savePair } from './blood-pressure';
 import { bpTier } from '@roadmap/health-core/bp-tier';
 /** Whether a pair's tier has a plan card (Stage 1 and above). */
 const bpTierOf = (sys: number, dia: number) => !['normal', 'elevated'].includes(bpTier(sys, dia));
@@ -115,7 +116,7 @@ describe('US-75 blood pressure widget', () => {
   });
 
   it('AC4: the card is the plan\'s own text for the saved average, age target included', async () => {
-    await data.saveChangedMeasurements({ heightCm: 178, birthYear: 1955, birthMonth: 1, sex: 'male' }, {});
+    await data.saveChangedMeasurements({ heightCm: 178, birthYear: 1955, birthMonth: 1, sex: 'male' }, {}, data.getShownErase());
     render(<BloodPressureWidget />);
     enterPair(1, '135', '85');
     enterPair(2, '131', '81');
@@ -160,7 +161,7 @@ describe('US-75 blood pressure widget', () => {
   });
 
   it('AC4 (ruling C3): a known minor gets the average only: no adult stage, pill or card', async () => {
-    await data.saveChangedMeasurements({ birthYear: new Date().getFullYear() - 10, birthMonth: 1 }, {});
+    await data.saveChangedMeasurements({ birthYear: new Date().getFullYear() - 10, birthMonth: 1 }, {}, data.getShownErase());
     render(<BloodPressureWidget />);
     enterPair(1, '119', '79');
     expect(shown('.hr-widget-v')).toBe('119/79 mmHg');
@@ -171,7 +172,7 @@ describe('US-75 blood pressure widget', () => {
   });
 
   it('AC4 (Codex R4): the card is worked out from the readable record, so a row the full app cannot read never shapes it', async () => {
-    await data.saveChangedMeasurements({ heightCm: 178, birthYear: 1970, birthMonth: 1, sex: 'male' }, {});
+    await data.saveChangedMeasurements({ heightCm: 178, birthYear: 1970, birthMonth: 1, sex: 'male' }, {}, data.getShownErase());
     await data.flushRoadmapStore();
     render(<BloodPressureWidget />);
     enterPair(1, '135', '85');
@@ -187,7 +188,7 @@ describe('US-75 blood pressure widget', () => {
   });
 
   it('AC4: Normal and Elevated show no card with a plan; crisis shows the plan\'s crisis card', async () => {
-    await data.saveChangedMeasurements({ heightCm: 170 }, {});
+    await data.saveChangedMeasurements({ heightCm: 170 }, {}, data.getShownErase());
     render(<BloodPressureWidget />);
     enterPair(1, '118', '76');
     expect(advice()).toBe('');
@@ -198,7 +199,7 @@ describe('US-75 blood pressure widget', () => {
   });
 
   it('AC5: saves the average as today\'s pair; a later change the same day corrects today\'s rows', async () => {
-    await data.saveChangedMeasurements({ heightCm: 178 }, {});
+    await data.saveChangedMeasurements({ heightCm: 178 }, {}, data.getShownErase());
     render(<BloodPressureWidget />);
     enterPair(1, '135', '85');
     await leave();
@@ -239,8 +240,8 @@ describe('US-75 blood pressure widget', () => {
   });
 
   it('AC3: prefills Reading 1 from the record\'s latest pair, an older day\'s with "from <date>"; untouched, it is never saved', async () => {
-    await data.addMeasurement('systolic_bp', 128, OLD);
-    await data.addMeasurement('diastolic_bp', 82, OLD);
+    await data.addMeasurement('systolic_bp', 128, OLD, data.getShownErase());
+    await data.addMeasurement('diastolic_bp', 82, OLD, data.getShownErase());
     await data.flushRoadmapStore();
     render(<BloodPressureWidget />);
     expect([box(1, 'top').value, box(1, 'bottom').value]).toEqual(['128', '82']);
@@ -258,8 +259,8 @@ describe('US-75 blood pressure widget', () => {
   });
 
   it('AC3 (Codex R7): editing one half of the record\'s reading clears its other half, so no day\'s half is saved with today\'s', async () => {
-    await data.addMeasurement('systolic_bp', 165, OLD);
-    await data.addMeasurement('diastolic_bp', 98, OLD);
+    await data.addMeasurement('systolic_bp', 165, OLD, data.getShownErase());
+    await data.addMeasurement('diastolic_bp', 98, OLD, data.getShownErase());
     await data.flushRoadmapStore();
     render(<BloodPressureWidget />);
     type(1, 'top', '125');
@@ -270,8 +271,8 @@ describe('US-75 blood pressure widget', () => {
   });
 
   it('AC3 (adversary R7): today\'s saved reading prefills with no note and is not averaged in again', async () => {
-    await data.addMeasurement('systolic_bp', 130);
-    await data.addMeasurement('diastolic_bp', 80);
+    await data.addMeasurement('systolic_bp', 130, undefined, data.getShownErase());
+    await data.addMeasurement('diastolic_bp', 80, undefined, data.getShownErase());
     render(<BloodPressureWidget />);
     expect(screen.queryByText(/^from /)).toBeNull();
     enterPair(2, '140', '90');
@@ -282,9 +283,9 @@ describe('US-75 blood pressure widget', () => {
   });
 
   it('AC3 (Codex R6): a newer lone half does not hide the newest complete pair', async () => {
-    await data.addMeasurement('systolic_bp', 128, OLD);
-    await data.addMeasurement('diastolic_bp', 82, OLD);
-    await data.addMeasurement('systolic_bp', 150, '2026-02-01T00:00:00.000Z');
+    await data.addMeasurement('systolic_bp', 128, OLD, data.getShownErase());
+    await data.addMeasurement('diastolic_bp', 82, OLD, data.getShownErase());
+    await data.addMeasurement('systolic_bp', 150, '2026-02-01T00:00:00.000Z', data.getShownErase());
     render(<BloodPressureWidget />);
     expect([box(1, 'top').value, box(1, 'bottom').value]).toEqual(['128', '82']);
   });
@@ -292,7 +293,7 @@ describe('US-75 blood pressure widget', () => {
   it('AC5 (Codex R3): a slot holding a row the page did not show refuses both halves; nothing is half saved', async () => {
     render(<BloodPressureWidget />);
     // Another tab writes today's diastolic after the page opened: the page has not seen it.
-    await data.addMeasurement('diastolic_bp', 70);
+    await data.addMeasurement('diastolic_bp', 70, undefined, data.getShownErase());
     await data.flushRoadmapStore();
     enterPair(1, '150', '95');
     await leave();
@@ -314,8 +315,8 @@ describe('US-75 blood pressure widget', () => {
   });
 
   it('AC5 (Codex R11): an exact stored value is compared exactly, never by its display', async () => {
-    await data.addMeasurement('systolic_bp', 179.6);
-    await data.addMeasurement('diastolic_bp', 85);
+    await data.addMeasurement('systolic_bp', 179.6, undefined, data.getShownErase());
+    await data.addMeasurement('diastolic_bp', 85, undefined, data.getShownErase());
     render(<BloodPressureWidget />);
     enterPair(1, '180', '90');
     expect(shown('.hr-widget-sr, .hr-widget-status')).toBe('Crisis range');
@@ -344,7 +345,7 @@ describe('US-75 blood pressure widget', () => {
     await leave();
     // Another device corrects today's systolic.
     const sysRow = data.loadAllHistorySync().find((m) => m.metricType === 'systolic_bp')!;
-    await data.correctValue(sysRow.id, 120);
+    await data.correctValue(sysRow.id, 120, data.getShownErase());
     await data.flushRoadmapStore();
     enterPair(1, '150', '95');
     fireEvent.keyDown(box(1, 'bottom'), { key: 'Enter' }); // asked, queued
@@ -370,16 +371,16 @@ describe('US-75 blood pressure widget', () => {
   });
 
   it('AC4 (Codex 1876b R1): the card is always the typed pair\'s, whatever pair the record holds on a later day', async () => {
-    await data.saveChangedMeasurements({ heightCm: 178, birthYear: 1970, birthMonth: 1, sex: 'male' }, {});
+    await data.saveChangedMeasurements({ heightCm: 178, birthYear: 1970, birthMonth: 1, sex: 'male' }, {}, data.getShownErase());
     const tomorrow = new Date(Date.now() + 36 * 3600_000).toISOString().slice(0, 10) + 'T00:00:00.000Z';
-    await data.addMeasurement('systolic_bp', 118, tomorrow);
-    await data.addMeasurement('diastolic_bp', 76, tomorrow);
+    await data.addMeasurement('systolic_bp', 118, tomorrow, data.getShownErase());
+    await data.addMeasurement('diastolic_bp', 76, tomorrow, data.getShownErase());
     render(<BloodPressureWidget />);
     enterPair(1, '190', '125');
     expect(advice()).toMatch(/^Your blood pressure of 190\/125 mmHg is dangerously high\./);
     cleanup();
     const later = data.loadAllHistorySync().filter((m) => m.recordedAt === tomorrow);
-    for (const m of later) await data.correctValue(m.id, m.metricType === 'systolic_bp' ? 200 : 130);
+    for (const m of later) await data.correctValue(m.id, m.metricType === 'systolic_bp' ? 200 : 130, data.getShownErase());
     render(<BloodPressureWidget />);
     enterPair(1, '135', '85');
     expect(advice()).toMatch(/^Your blood pressure of 135\/85 mmHg is in the range the ACC\/AHA guideline calls stage 1/);
@@ -495,7 +496,7 @@ describe('US-75 AC7 privacy', () => {
   });
 
   it('every stage and value leaves the block\'s text identical as Clarity encodes it, and the same attributes (one canvas) but the advice\'s `hidden` with no card', async () => {
-    await data.saveChangedMeasurements({ heightCm: 178, birthYear: 1980, birthMonth: 1, sex: 'male' }, {});
+    await data.saveChangedMeasurements({ heightCm: 178, birthYear: 1980, birthMonth: 1, sex: 'male' }, {}, data.getShownErase());
     const seen = STAGES.map(([sys, dia]) => {
       const { container, unmount } = render(<BloodPressureWidget />);
       enterPair(1, sys, dia);
@@ -525,5 +526,33 @@ describe('US-75 AC7 privacy', () => {
     for (const card of cards) expect(card.description.length).toBeLessThanOrEqual(WIDTH.advice);
     expect('250/150'.length).toBe(WIDTH.value);
     expect('Stage 2 range'.length).toBe(WIDTH.tier);
+  });
+});
+
+// US-16 AC2a (lead H18): the widget's save carries the erase the page showed when the save was asked (BloodPressure.tsx
+// `save`); a record at another erase by the time it runs takes nothing.
+describe('US-16 AC2a: the blood pressure save writes under the erase it was asked under', () => {
+  const day = '2026-09-02';
+  const NONE = { sys: null, dia: null };
+  async function erasedSinceAsked() {
+    data.markEraseShown(data.getEraseIdentity());
+    const asked = data.getShownErase();
+    expect((await data.deleteUserData()).success).toBe(true);
+    data.markEraseShown(data.getEraseIdentity());
+    await data.flushRoadmapStore();
+    return asked;
+  }
+
+  it('asked before an erase the page now shows: nothing written, the record unchanged', async () => {
+    const asked = await erasedSinceAsked();
+    const before = JSON.stringify(data.recordFileSync());
+    expect(await savePair({ sys: 128, dia: 82 }, day, NONE, asked)).toEqual({ kind: 'changed' });
+    expect(JSON.stringify(data.recordFileSync())).toBe(before);
+  });
+
+  it('control: asked under the erase shown, the pair is kept', async () => {
+    await erasedSinceAsked();
+    expect(await savePair({ sys: 128, dia: 82 }, day, NONE, data.getShownErase())).toMatchObject({ kind: 'kept' });
+    expect(active('systolic_bp')).toEqual([128]);
   });
 });

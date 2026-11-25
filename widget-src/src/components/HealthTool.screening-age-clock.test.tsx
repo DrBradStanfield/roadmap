@@ -8,7 +8,7 @@ import { render, waitFor } from '@testing-library/react';
 import type { HealthInputs, Suggestion } from '@roadmap/health-core/types';
 import { isScreeningEligible } from '@roadmap/health-core/types';
 import { computeReminderSchedule } from '@roadmap/health-core/reminder-schedule';
-import { flushRoadmapStore, saveScreening } from '../lib/roadmap-data';
+import { flushRoadmapStore, getShownErase, saveScreening } from '../lib/roadmap-data';
 import { recordOnDisk, seedGuest, useHealthToolLifecycle } from '../testing/health-tool-harness';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
@@ -36,7 +36,7 @@ async function pageAt(tz: string, now: string, profile: Partial<HealthInputs>, a
   process.env.TZ = tz;
   vi.useFakeTimers({ toFake: ['Date'], now: new Date(now) });
   await seedGuest({ heightCm: 170, unitSystem: 'si', ...profile }, [['weight', 70]]);
-  for (const [k, v] of answers) await saveScreening(k, v);
+  for (const [k, v] of answers) await saveScreening(k, v, getShownErase());
   await flushRoadmapStore();
   const view = render(<HealthTool />);
   await waitFor(() => expect(view.container.querySelector('.mh-sections')).not.toBeNull());

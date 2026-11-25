@@ -1017,8 +1017,8 @@ final class LiveHealthTests: XCTestCase {
     func testTheRowSaysOpenSettingsWithThePathForThisIOS_AC5c() {
         XCTAssertEqual(LiveReconnectRow.title(turnOn: false), "Open Settings")
         XCTAssertEqual(LiveReconnectRow.title(turnOn: true), "Turn On", "before the sheet, Turn On is unchanged")
-        XCTAssertEqual(LiveFooter.healthPath(appsMenu: true), "Settings › Apps › Health › Data Access & Devices › Health Roadmap", "iOS 18 and later")
-        XCTAssertEqual(LiveFooter.healthPath(appsMenu: false), "Settings › Health › Data Access & Devices › Health Roadmap", "iOS 17")
+        XCTAssertEqual(LiveFooter.healthPath(appsMenu: true), "Settings › Apps › Health › Data Access & Devices › Dr Brad", "iOS 18 and later")
+        XCTAssertEqual(LiveFooter.healthPath(appsMenu: false), "Settings › Health › Data Access & Devices › Dr Brad", "iOS 17")
         let here: String
         if #available(iOS 18, *) { here = LiveFooter.healthPath(appsMenu: true) } else { here = LiveFooter.healthPath(appsMenu: false) }
         XCTAssertTrue(LiveFooter.healthSettings.hasSuffix(" \(here)."), "the path for the iOS this runs on")

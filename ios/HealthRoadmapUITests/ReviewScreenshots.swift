@@ -60,8 +60,8 @@ final class ReviewScreenshots: XCTestCase {
     @MainActor
     private func labUploadSheet() {
         scrollToTop()
-        let button = app.buttons["Add medical records"].firstMatch
-        guard button.waitForExistence(timeout: 5) else { return note("Add medical records not found") }
+        let button = app.buttons["Upload labs"].firstMatch
+        guard button.waitForExistence(timeout: 5) else { return note("Upload labs not found") }
         button.tap()
         guard app.buttons["labSource.files"].waitForExistence(timeout: 5) else {
             shoot("lab upload sheet (no sources)")

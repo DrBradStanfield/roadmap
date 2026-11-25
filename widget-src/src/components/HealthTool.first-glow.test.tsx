@@ -13,7 +13,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, waitFor, type RenderResult } from '@testing-library/react';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
-import { addMeasurement, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
+import { addMeasurement, initRoadmapStore, saveChangedMeasurements, getShownErase } from '../lib/roadmap-data';
 
 const flags = vi.hoisted(() => ({ shopify: true }));
 vi.mock('../lib/build-flags', () => ({ LOCAL_FIRST: true, get SHOPIFY_SURFACE() { return flags.shopify; } }));
@@ -115,8 +115,8 @@ describe('US-07 AC3 (P7): a new visitor\'s first cards glow', () => {
 
   it('Pages: a returning visitor whose record opens the whole form at mount sees no glow', async () => {
     flags.shopify = false;
-    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5 }, {});
-    await addMeasurement('weight', 80, '2026-09-01');
+    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5 }, {}, getShownErase());
+    await addMeasurement('weight', 80, '2026-09-01', getShownErase());
     const view = render(<HealthTool />);
     await waitFor(() => expect(cards(view)).toBeGreaterThan(0));
     for (let i = 0; i < 5; i++) { expect(lit(view)).toBe(0); await wait(1000); }
