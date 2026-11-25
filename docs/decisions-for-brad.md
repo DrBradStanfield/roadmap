@@ -50,6 +50,12 @@ issue, and nothing private.
 
 ### Words that need your yes (raised 2026-11-25)
 
+- **Two chat history lines.** Issue: PR 2078 (on main) makes a failed open of the chat history file retry on the
+  next turn, but adds no words. Two places say nothing today: the History list after the file could not be opened
+  (it shows old titles, or "No conversations yet"), and a turn that was not saved to the file (nothing on screen).
+  The owner proposed "Chat history unavailable" for the first; no line exists for the second. Options: (1) approve
+  "Chat history unavailable", and have a line drafted for an unsaved turn; (2) leave both silent. Recommendation:
+  option 1, because a person who returns to a conversation that was never saved has no way to know why it is missing.
 - **Screen-reader names for the medicine dose boxes and the PDF email box.** Issue: on the web, the dose box beside
   a statin, GLP-1 or SGLT2 inhibitor has no name, so a screen reader cannot say which medicine it belongs to; the
   PDF email box is named only by its "Email" placeholder. Contributor PRs 1888 and 1800 add the names "Statin Dose",
@@ -207,6 +213,12 @@ issue, and nothing private.
 ## Decided
 
 2026-11-26, Brad's words in quotes:
+- Screen-reader names for the medicine dose boxes end in a lower-case "dose", as the supplement rows do (PR 1796),
+  so the whole form uses one casing: "this" (option 2). PR 1888 now names them "Statin dose", "GLP-1 Medication
+  dose" and "SGLT2 Inhibitor dose", through labelled-by references (US-09 AC7l). "Email for your PDF" is approved for PR 1800.
+- A YouTube follow-up's classifier and router see the parent comment and the author's own earlier replies, by the
+  same rule as web and Discord (H415, US-15 AC75): "the router should see the earlier comments. youtube, web, and discord should behave the same here, and so
+  probably use the same code". No new words.
 - Two chat history lines: "this" (option 1). History after a failed read says "Chat history unavailable"; a reply
   the history file did not take says "This reply was not saved to your chat history." (web; US-15 AC76).
 - A "Not saved" marker on chat replies with edits: "go with the recommendation" (option B). Only a reply that carried
