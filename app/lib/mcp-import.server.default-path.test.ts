@@ -74,7 +74,7 @@ async function folder() {
 
 function call(adapter: MemoryAdapter, args: unknown) {
   return runToolOverSync(recordSync(adapter, 'mcp', NOW), 'import_documents', args, NOW, {
-    importer: hostedImporter({ token: TOKEN, adapter, client: 'claude', maxCorrectionAgeDays: 90 }),
+    importer: hostedImporter({ token: TOKEN, adapter, client: 'claude', maxCorrectionAgeDays: 90, clock: () => Date.parse(NOW) }),
   });
 }
 

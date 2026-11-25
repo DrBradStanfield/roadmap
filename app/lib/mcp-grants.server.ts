@@ -12,6 +12,7 @@ import { MCP_SCOPES, resetMcpWarnings } from './mcp-config.server';
 import { resetCimdCache } from './mcp-clients.server';
 import { resetGithubIssues } from './github-issues.server';
 import { hash, packSealed } from './mcp-seal.server';
+import { boundedMap, isLive, sweepExpired } from './rate-limiter';
 import { reviewerFailures, reviewerGeneration, reviewerRefreshToken } from './mcp-reviewer.server';
 import type { McpProvider } from './mcp-providers.server';
 import { IMPORT_LIMITS } from '../../packages/health-core/src/import-hints';
@@ -145,26 +146,28 @@ export function issueTokens(clientId: string, provider: McpProvider, from: Grant
  * Redemption still needs the PKCE `code_verifier`, which never leaves the
  * client, so a passive interceptor gains nothing. Documented in §4, not
  * papered over.
+ *
+ * Each code id is held for a code's lifetime from its redemption, which outlasts the code: its `exp`
+ * is at most that lifetime after it was issued. The set is bounded (US-52 AC16): room comes only from
+ * expired ids, so a set full of live ones refuses the redemption.
  */
-const spentCodes = new Map<string, number>();
+const spentCodes = createQuotaCounter(1, CODE_LIFETIME_SECONDS * 1000, 60_000, { name: 'mcp spent codes', oneUse: true });
 
 /**
  * Proposal receipts already confirmed on this machine (US-36 AC9): the fast
  * first check before the shared claim store in `claimProposal`. Keyed on the
  * whole receipt AND the connection hash, so a receipt seen elsewhere cannot
- * spend this connection's. Pruned at the receipt's own lifetime.
+ * spend this connection's. Each key is held until the receipt's own lifetime
+ * has passed since its claim. Bounded (US-52 AC16): room comes only from
+ * expired keys; at the bound a new claim is not held here, and the shared
+ * store alone decides it.
  */
 const spentProposals = new Map<string, number>();
+const untilOf = (until: number) => until;
+const roomForProposal = boundedMap(spentProposals, untilOf, { name: 'mcp spent confirm receipts', oneUse: true });
+sweepExpired(spentProposals, untilOf, 60_000);
 
-/** Spend one id once: prune what has outlived `lifetimeMs`, then refuse a repeat. */
-function claimOnce(spent: Map<string, number>, key: string, lifetimeMs: number, nowMs: number): boolean {
-  for (const [id, at] of spent) if (nowMs - at > lifetimeMs) spent.delete(id);
-  if (spent.has(key)) return false;
-  spent.set(key, nowMs);
-  return true;
-}
-
-export const claimCode = (jti: string, nowMs = Date.now()): boolean => claimOnce(spentCodes, jti, CODE_LIFETIME_SECONDS * 1000, nowMs);
+export const claimCode = (jti: string): boolean => spentCodes.take(jti, 1);
 
 /**
  * A confirm receipt works once, across machines and restarts (US-36 AC9): this
@@ -175,10 +178,13 @@ export const claimCode = (jti: string, nowMs = Date.now()): boolean => claimOnce
  */
 export async function claimProposal(receipt: string, conn: string, lifetimeMs: number, nowMs = Date.now()): Promise<ClaimOutcome> {
   const key = `${conn} ${receipt}`;
-  if (!claimOnce(spentProposals, key, lifetimeMs, nowMs)) return 'spent';
+  const until = spentProposals.get(key);
+  if (until !== undefined && isLive(until, nowMs)) return 'spent';
+  const held = roomForProposal(key, nowMs);
+  if (held) spentProposals.set(key, nowMs + lifetimeMs);
   const outcome = await claimSingleUse(crypto.createHash('sha256').update(key, 'utf8').digest('hex'), 'mcp-confirm');
   if (outcome === 'unavailable') {
-    spentProposals.delete(key);
+    if (held) spentProposals.delete(key);
     Sentry.captureMessage('mcp_confirm: claim store unavailable', { level: 'warning', tags: { feature: 'mcp_confirm' } });
   }
   return outcome;
@@ -190,6 +196,7 @@ export async function claimProposal(receipt: string, conn: string, lifetimeMs: n
  * second access token over the same connection lands on the same counter, so
  * extra tokens buy no extra writes. Best-effort across Fly machines, like the
  * code set — N machines multiply the allowance by N, and §4 says so.
+ * Not size-bounded: its keys are authenticated connections, and evicting one would reset its allowance.
  */
 const spentWrites = new Map<string, { used: number; at: number }>();
 
@@ -246,7 +253,7 @@ export const importFiles = createQuotaCounter(IMPORT_FILES_PER_DAY, DAY_MS, 30 *
 
 /** Test seam — the maps are process-global and would leak between cases. */
 export function resetMcpMemory(): void {
-  spentCodes.clear();
+  spentCodes.reset();
   spentProposals.clear();
   spentWrites.clear();
   importFiles.reset();

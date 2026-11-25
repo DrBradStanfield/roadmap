@@ -43,6 +43,10 @@ import { MAX_FILE_NAME_LENGTH, zipMemberName } from '../../packages/health-core/
 
 /** The user's own words, quoted in every commit (US-35 AC7, 2026-10-07). */
 const APPROVED = 'Yes, file them';
+/** Eleven seconds after every block's NOW: past a receipt's pause (US-35 AC19). */
+const AFTER_PAUSE = '2026-09-02T10:00:11.000Z';
+/** The clock a receipt is signed by: every block's NOW (US-35 AC19). */
+const CLOCK = () => Date.parse('2026-09-02T10:00:00.000Z');
 const PDF = new TextEncoder().encode('%PDF-1.4\n1 0 obj\nendobj\n');
 const JPEG = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 0]);
 const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a]);
@@ -172,7 +176,7 @@ describe('US-35 AC7 — the receipt is the pending file’s own UUID, and the MA
 
   /** The surface for one connection over one in-memory folder — the receipt is minted and opened here and nowhere else. */
   function surfaceFor(rt: string, cloud = new MemoryCloud(), clientId = 'c.test') {
-    return hostedImporter({ token: { clientId, provider: 'dropbox', rt, exp: 0 }, adapter: new MemoryAdapter(cloud), client: 'claude', maxCorrectionAgeDays: 90 });
+    return hostedImporter({ token: { clientId, provider: 'dropbox', rt, exp: 0 }, adapter: new MemoryAdapter(cloud), client: 'claude', maxCorrectionAgeDays: 90, clock: CLOCK });
   }
   const deadline = () => Date.now() + MCP_IMPORT_BUDGET_MS;
   async function stashed(surface: ReturnType<typeof surfaceFor>) {
@@ -202,7 +206,7 @@ describe('US-35 AC7 — the receipt is the pending file’s own UUID, and the MA
     expect(receipt.length).toBeLessThanOrEqual(MAX_RECEIPT_LENGTH);
     expect(expiresAt).toBe('2026-09-02T11:00:00.000Z');
     expect(pendingOf(cloud)).toEqual({ v: 2, payload: PAYLOAD, issued: Date.parse(NOW) / 1000, mac: expect.stringMatching(/^[0-9a-f]{32}$/) });
-    expect(await surface.open({ receipt, accept: [], replace: [], approval: APPROVED }, file, NOW, deadline())).toEqual(PAYLOAD);
+    expect(await surface.open({ receipt, accept: [], replace: [], approval: APPROVED }, file, AFTER_PAUSE, deadline())).toEqual(PAYLOAD);
     // Still good at the last second of its hour.
     expect(await surface.open({ receipt, accept: [], replace: [], approval: APPROVED }, file, '2026-09-02T11:00:00.000Z', deadline())).toEqual(PAYLOAD);
   });
@@ -220,7 +224,7 @@ describe('US-35 AC7 — the receipt is the pending file’s own UUID, and the MA
     const cloud = new MemoryCloud();
     const adapter = new MemoryAdapter(cloud);
     const read = vi.spyOn(adapter, 'read');
-    const surface = hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'connection-a', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90 });
+    const surface = hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'connection-a', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90, clock: CLOCK });
     await stashed(surface);
     // This replaces the forged seal('import') case, retired 2026-10-07 with the sealed import blob itself: a path
     // never passes the UUID check, and an old blob's wire form is refused here even past the schema.
@@ -255,7 +259,7 @@ describe('US-35 AC7 — the receipt is the pending file’s own UUID, and the MA
     unchargedOn('connection-a');
     unchargedOn('connection-b');
     resetMcpMemory();
-    expect(await surface.open({ receipt, accept: [], replace: [], approval: APPROVED }, file, NOW, deadline())).toEqual(PAYLOAD);
+    expect(await surface.open({ receipt, accept: [], replace: [], approval: APPROVED }, file, AFTER_PAUSE, deadline())).toEqual(PAYLOAD);
   });
 
   it('an hour and a second after the extract it has expired, in its own words', async () => {
@@ -263,6 +267,19 @@ describe('US-35 AC7 — the receipt is the pending file’s own UUID, and the MA
     const { receipt } = await stashed(surface);
     expect(await refusalOf(surface, receipt, '2026-09-02T11:00:01.000Z')).toMatch(/has expired/);
     unchargedOn('connection-a');
+  });
+
+  it('US-35 AC19: a commit inside the pause gets the refusal every permanent write gives, charges nothing and keeps the file', async () => {
+    const cloud = new MemoryCloud();
+    const surface = surfaceFor('connection-a', cloud);
+    const { receipt } = await stashed(surface);
+    const early = 'That confirm receipt is not valid yet: it can be used from 2026-09-02T10:00:10.000Z, after the user has answered. Do not retry before then; end your turn. Nothing was written.';
+    expect(await refusalOf(surface, receipt, NOW)).toBe(early);
+    expect(await refusalOf(surface, receipt, '2026-09-02T10:00:09.999Z')).toBe(early);
+    expect(cloud.files.has(PENDING)).toBe(true);
+    unchargedOn('connection-a');
+    resetMcpMemory();
+    expect(await surface.open({ receipt, accept: [], replace: [], approval: APPROVED }, file, '2026-09-02T10:00:10.000Z', deadline())).toEqual(PAYLOAD);
   });
 
   it('a pending file from before 2026-10-07 (no `v`) is not readable; the name-based sweep below takes it', async () => {
@@ -305,7 +322,7 @@ describe('US-35 AC7 — the receipt is the pending file’s own UUID, and the MA
     const surface = surfaceFor('connection-a');
     const { receipt } = await stashed(surface);
     const bogus = Array.from({ length: 300 }, (_, i) => `x${i}`);
-    const answer = await surface.open({ receipt, accept: [], replace: bogus, approval: APPROVED }, file, NOW, deadline());
+    const answer = await surface.open({ receipt, accept: [], replace: bogus, approval: APPROVED }, file, AFTER_PAUSE, deadline());
     expect('refusal' in answer && answer.refusal).toMatch(/not a candidate/);
     unchargedOn('connection-a');
   });
@@ -314,7 +331,7 @@ describe('US-35 AC7 — the receipt is the pending file’s own UUID, and the MA
     const surface = surfaceFor('connection-a');
     const { receipt } = await stashed(surface);
     process.env.MCP_SEAL_KEYS = `${Buffer.alloc(32, 8).toString('base64')},${Buffer.alloc(32, 7).toString('base64')}`;
-    expect(await surface.open({ receipt, accept: [], replace: [], approval: APPROVED }, file, NOW, deadline())).toEqual(PAYLOAD);
+    expect(await surface.open({ receipt, accept: [], replace: [], approval: APPROVED }, file, AFTER_PAUSE, deadline())).toEqual(PAYLOAD);
     process.env.MCP_SEAL_KEYS = Buffer.alloc(32, 8).toString('base64');
     expect(await refusalOf(surface, receipt)).toMatch(/not valid/);
   });
@@ -333,7 +350,7 @@ describe('US-35 AC7 / US-36 AC9 — a commit quotes the user’s approval, check
   it('refuses a commit with no approval, or a blank one, before it reads the pending file or charges; the same receipt then commits with one', async () => {
     const cloud = new MemoryCloud();
     const adapter = new MemoryAdapter(cloud);
-    const surface = hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'connection-a', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90 });
+    const surface = hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'connection-a', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90, clock: CLOCK });
     const stashed = await surface.stash(PAYLOAD, deadline());
     if ('refusal' in stashed) throw new Error(stashed.refusal);
     const read = vi.spyOn(adapter, 'read');
@@ -345,17 +362,17 @@ describe('US-35 AC7 / US-36 AC9 — a commit quotes the user’s approval, check
     expect(cloud.files.has(PENDING)).toBe(true);
     expect(chargeWrites(connectionKey({ rt: 'connection-a' }), WRITES_PER_HOUR)).toBeNull();
     resetMcpMemory();
-    expect(await surface.open({ receipt: stashed.receipt, accept: [], replace: [], approval: APPROVED }, file, NOW, deadline())).toEqual(PAYLOAD);
+    expect(await surface.open({ receipt: stashed.receipt, accept: [], replace: [], approval: APPROVED }, file, AFTER_PAUSE, deadline())).toEqual(PAYLOAD);
   });
 
   it('through the tool: no approval is refused in words, a 201-character one by the schema, and neither writes or spends the pending file', async () => {
     const cloud = new MemoryCloud();
     const adapter = new MemoryAdapter(cloud);
     await adapter.write(ROADMAP_FILE_NAME, createEmptyFile({ deviceId: 'test', now: NOW }), null);
-    const importer = hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'connection-a', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90 });
+    const importer = hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'connection-a', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90, clock: CLOCK });
     const stashed = await importer.stash(PAYLOAD, deadline());
     if ('refusal' in stashed) throw new Error(stashed.refusal);
-    const call = (commit: Record<string, unknown>) => runToolOverSync(recordSync(adapter, 'mcp', NOW), 'file_results', { commit }, NOW, { importer });
+    const call = (commit: Record<string, unknown>) => runToolOverSync(recordSync(adapter, 'mcp', NOW), 'file_results', { commit }, AFTER_PAUSE, { importer });
     const before = cloud.files.get(ROADMAP_FILE_NAME);
 
     const bare = await call({ receipt: stashed.receipt, accept: [], replace: [] });
@@ -376,8 +393,8 @@ describe('US-35 AC7 / US-36 AC9 — a commit quotes the user’s approval, check
     const cloud = new MemoryCloud();
     const adapter = new MemoryAdapter(cloud);
     await adapter.write(ROADMAP_FILE_NAME, createEmptyFile({ deviceId: 'test', now: NOW }), null);
-    const importer = hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'connection-a', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90 });
-    const call = (args: unknown) => runToolOverSync(recordSync(adapter, 'mcp', NOW), 'file_results', args, NOW, { importer, latestDay: '2026-09-02' });
+    const importer = hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'connection-a', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90, clock: CLOCK });
+    const call = (args: unknown, now = NOW) => runToolOverSync(recordSync(adapter, 'mcp', NOW), 'file_results', args, now, { importer, latestDay: '2026-09-02' });
     const proposed = await call({
       sourceFileName: 'labs.pdf', classification: 'lab_report', collectedOn: '2026-08-20',
       values: [{ metric: 'ldl', printedName: 'LDL Cholesterol', value: 2.8, unit: 'mmol/L' }],
@@ -386,10 +403,10 @@ describe('US-35 AC7 / US-36 AC9 — a commit quotes the user’s approval, check
     const { receipt, candidates } = OUTPUTS.file_results.parse(proposed.structured);
     const marker = 'Yes file it qx9-approval-marker';
     // Refused after the words were read (an id not in the receipt): the pending file stays, without them.
-    expect((await call({ commit: { receipt, accept: ['nope'], replace: [], approval: marker } })).isError).toBe(true);
+    expect((await call({ commit: { receipt, accept: ['nope'], replace: [], approval: marker } }, AFTER_PAUSE)).isError).toBe(true);
     const pending = `imports/pending-${receipt}.json`;
     expect(cloud.files.get(pending)!.json).not.toContain('qx9-approval-marker');
-    const filed = await call({ commit: { receipt, accept: candidates.map((c) => c.id), replace: [], approval: marker } });
+    const filed = await call({ commit: { receipt, accept: candidates.map((c) => c.id), replace: [], approval: marker } }, AFTER_PAUSE);
     expect(filed.isError).toBe(false);
     expect(filed.text).not.toContain('qx9-approval-marker');
     expect((await adapter.read(ROADMAP_FILE_NAME)).body).toMatchObject({ measurements: [], labValues: [expect.objectContaining({ metricName: 'ldl', core: true })] });
@@ -413,8 +430,8 @@ describe('US-35 AC7 — extract then commit, end to end through hostedImporter',
     const adapter = new MemoryAdapter(cloud);
     await adapter.write(ROADMAP_FILE_NAME, createEmptyFile({ deviceId: 'test', now: NOW }), null);
     const model: Extractor = async () => report;
-    const call = (args: unknown) => runToolOverSync(recordSync(adapter, 'mcp', NOW), 'import_documents', args, NOW, {
-      importer: hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'connection-a', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90, extract: model }),
+    const call = (args: unknown, now = NOW) => runToolOverSync(recordSync(adapter, 'mcp', NOW), 'import_documents', args, now, {
+      importer: hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'connection-a', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90, clock: CLOCK, extract: model }),
     });
 
     const extract = await call({});
@@ -423,7 +440,7 @@ describe('US-35 AC7 — extract then commit, end to end through hostedImporter',
     expect(data.receipt).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
     expect(cloud.files.has(`imports/pending-${data.receipt}.json`)).toBe(true);
 
-    const commit = await call({ commit: { receipt: data.receipt, accept: ['c1'], replace: [], approval: APPROVED } });
+    const commit = await call({ commit: { receipt: data.receipt, accept: ['c1'], replace: [], approval: APPROVED } }, AFTER_PAUSE);
     expect(commit.isError).toBe(false);
     const stored = (await adapter.read(ROADMAP_FILE_NAME)).body as ReturnType<typeof createEmptyFile>;
     // US-66 AC6: the core value is a core row in labValues.
@@ -431,7 +448,7 @@ describe('US-35 AC7 — extract then commit, end to end through hostedImporter',
     expect(stored.labValues).toEqual([expect.objectContaining({ metricName: 'ldl', unit: 'mmol/L', core: true, value: 2.8, source: 'lab_import' })]);
     expect(cloud.files.has(`imports/pending-${data.receipt}.json`)).toBe(false);
 
-    const again = await call({ commit: { receipt: data.receipt, accept: ['c1'], replace: [], approval: APPROVED } });
+    const again = await call({ commit: { receipt: data.receipt, accept: ['c1'], replace: [], approval: APPROVED } }, AFTER_PAUSE);
     expect(again.isError).toBe(true);
     expect(again.text).toContain('names no pending import');
   });
@@ -445,7 +462,7 @@ describe('US-35 AC7 — extract then commit, end to end through hostedImporter',
     await adapter.write(ROADMAP_FILE_NAME, createEmptyFile({ deviceId: 'test', now: NOW }), null);
     const model: Extractor = async () => ({ ...report, droppedValueCount: 3 });
     const extract = await runToolOverSync(recordSync(adapter, 'mcp', NOW), 'import_documents', {}, NOW, {
-      importer: hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'connection-a', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90, extract: model }),
+      importer: hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'connection-a', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90, clock: CLOCK, extract: model }),
     });
     const data = OUTPUTS.import_documents.parse(extract.structured);
     expect(data.files).toEqual([expect.objectContaining({ name: 'labs.pdf', status: 'extracted', droppedValues: 3, hint: expect.stringMatching(/^3 values on this report could not be read/) })]);
@@ -469,15 +486,15 @@ describe('US-35 AC7 — extract then commit, end to end through hostedImporter',
     });
     const pdfB = Buffer.from([...PDF, 1]).toString('base64');
     const model: Extractor = async (pages) => (pages[0].content === pdfB ? panel('b', 150) : panel('a', 200));
-    const call = (args: unknown) => runToolOverSync(recordSync(adapter, 'mcp', NOW), 'import_documents', args, NOW, {
-      importer: hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'connection-a', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90, extract: model }),
+    const call = (args: unknown, now = NOW) => runToolOverSync(recordSync(adapter, 'mcp', NOW), 'import_documents', args, now, {
+      importer: hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'connection-a', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90, clock: CLOCK, extract: model }),
     });
 
     const first = OUTPUTS.import_documents.parse((await call({})).structured);
     expect(first.candidates).toHaveLength(200);
     // b.pdf and the skipped inner.zip after it wait under the ZIP's own name, once.
     expect(first.remaining).toEqual(['labs.zip']);
-    const commit = await call({ commit: { receipt: first.receipt, accept: first.candidates.map((c) => c.id), replace: [], approval: APPROVED } });
+    const commit = await call({ commit: { receipt: first.receipt, accept: first.candidates.map((c) => c.id), replace: [], approval: APPROVED } }, AFTER_PAUSE);
     expect(commit.isError).toBe(false);
 
     const again = await call({ fileNames: first.remaining });
@@ -513,14 +530,14 @@ describe('US-35 AC7 — extract then commit, end to end through hostedImporter',
       if (pages[0].content === pdfC) throw new Error('damaged PDF');
       return pages[0].content === pdfB ? panel('b', 150) : panel('a', 200);
     };
-    const call = (args: unknown) => runToolOverSync(recordSync(adapter, 'mcp', NOW), 'import_documents', args, NOW, {
-      importer: hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'connection-a', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90, extract: model }),
+    const call = (args: unknown, now = NOW) => runToolOverSync(recordSync(adapter, 'mcp', NOW), 'import_documents', args, now, {
+      importer: hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'connection-a', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90, clock: CLOCK, extract: model }),
     });
 
     const first = OUTPUTS.import_documents.parse((await call({})).structured);
     expect(first.candidates).toHaveLength(200);
     expect(first.remaining).toEqual(['labs.zip']);
-    const commit = await call({ commit: { receipt: first.receipt, accept: first.candidates.map((c) => c.id), replace: [], approval: APPROVED } });
+    const commit = await call({ commit: { receipt: first.receipt, accept: first.candidates.map((c) => c.id), replace: [], approval: APPROVED } }, AFTER_PAUSE);
     expect(commit.isError).toBe(false);
 
     const again = await call({ fileNames: first.remaining });
@@ -548,7 +565,7 @@ describe('US-35 AC7 — a consumed pending file is deleted at once, and a delete
     const removed: string[] = [];
     const remove = adapter.remove!.bind(adapter);
     adapter.remove = async (name, signal) => { removed.push(name); return remove(name, signal); };
-    const surface = hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'rt', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90 });
+    const surface = hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'rt', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90, clock: CLOCK });
 
     const stashed = await surface.stash(PAYLOAD, deadline());
     if ('refusal' in stashed) throw new Error(stashed.refusal);
@@ -570,7 +587,7 @@ describe('US-35 AC7 — a consumed pending file is deleted at once, and a delete
       cloud.files.set('imports/pending-abandoned.json', old);
       cloud.files.set('imports/pending-recent.json', { ...old, modified: '2026-09-02T09:30:00.000Z' }); // 30 min: its receipt may still be live
       cloud.files.set('imports/notes.json', old); // the user's own file, however old, is never ours to take
-      const surface = hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'rt', exp: 0 }, adapter: new MemoryAdapter(cloud), client: 'claude', maxCorrectionAgeDays: 90 });
+      const surface = hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'rt', exp: 0 }, adapter: new MemoryAdapter(cloud), client: 'claude', maxCorrectionAgeDays: 90, clock: CLOCK });
 
       const stashed = await surface.stash({ ...PAYLOAD, route }, deadline());
       if ('refusal' in stashed) throw new Error(stashed.refusal);
@@ -602,7 +619,7 @@ describe('US-35 AC7 — a consumed pending file is deleted at once, and a delete
       if (deleting > 0) throw new StorageError(`Dropbox write failed (429): ${args[0]}`, undefined, undefined, 429, undefined, 'may-have-landed');
       return write(...args);
     };
-    const surface = hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'rt', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90 });
+    const surface = hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'rt', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90, clock: CLOCK });
 
     const stashed = await surface.stash(PAYLOAD, deadline());
     expect(stashed).toHaveProperty('receipt', PAYLOAD.id);
@@ -624,7 +641,7 @@ describe('US-35 AC7 — a consumed pending file is deleted at once, and a delete
   it('a delete that fails does not fail the call — it is one count, naming no file', async () => {
     const adapter = new MemoryAdapter(new MemoryCloud());
     adapter.remove = async () => { throw new Error('dropbox said no'); };
-    const surface = hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'rt', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90 });
+    const surface = hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'rt', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90, clock: CLOCK });
 
     await expect(surface.discard(PAYLOAD, deadline())).resolves.toBeUndefined();
     expect(Sentry.captureMessage).toHaveBeenCalledTimes(1);
@@ -650,7 +667,7 @@ describe('US-35 AC5 — every I/O in the call is aborted at the deadline, not ab
     });
   }
   function surfaceOver(adapter: MemoryAdapter, extract?: Extractor) {
-    return hostedImporter({ token, adapter, client: 'claude', maxCorrectionAgeDays: 90, extract });
+    return hostedImporter({ token, adapter, client: 'claude', maxCorrectionAgeDays: 90, clock: CLOCK, extract });
   }
   /** The call, with the clock run to the deadline while it waits. */
   async function atDeadline<T>(pending: Promise<T>): Promise<T> {
@@ -819,7 +836,7 @@ describe('US-35 AC13 / AC9 — what the surface answers when a file cannot be re
   const token = { clientId: 'c.test', provider: 'dropbox' as const, rt: 'rt', exp: 0 };
   const deadline = () => Date.now() + MCP_IMPORT_BUDGET_MS;
   function surfaceOver(adapter: MemoryAdapter, extract?: Extractor) {
-    return hostedImporter({ token, adapter, client: 'chatgpt', maxCorrectionAgeDays: 90, extract });
+    return hostedImporter({ token, adapter, client: 'chatgpt', maxCorrectionAgeDays: 90, clock: CLOCK, extract });
   }
   const letter = { classification: 'clinic_letter', reportDate: null, values: [], additionalValues: [], unrecognized: [], document: null };
   beforeEach(() => { resetMcpMemory(); vi.clearAllMocks(); });
