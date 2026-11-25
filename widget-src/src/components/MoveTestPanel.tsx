@@ -178,7 +178,8 @@ function MoveTestPanel({ from, to, api, unitSystem, unitOverrides, bloodTestHist
     setSaving(true);
     setError(null);
     const keep = Object.fromEntries(plan.clashes.map(c => [c.held.id, answers[c.held.id]]));
-    const outcome = await api.move(from, plan.to, plan.rows.map(r => r.id), keep, getShownErase()); // the erase shown at the press
+    // A throw is a failed save, never a panel stuck saving (US-04 AC5c). The erase is the one shown at the press.
+    const outcome = await api.move(from, plan.to, plan.rows.map(r => r.id), keep, getShownErase()).catch(() => ({ status: 'error' as const }));
     setSaving(false);
     if (outcome.status === 'ok') { say(`Moved to ${shortDay(plan.to)}.`); onClose(); }
     else if (outcome.status === 'changed') { say(MOVE_CHANGED); onClose(); }
