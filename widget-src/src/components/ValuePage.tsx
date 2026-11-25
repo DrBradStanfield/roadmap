@@ -322,17 +322,20 @@ function AddValue({ metric, history, unit, start, onSave, say, onDone, dirtyRef,
     onDone();
   });
 
+  // Read-only, not disabled, while the save runs: the focus and the keyboard stay, and the
+  // clear on ok wipes nothing typed after the press (H301, US-03 AC2b).
+  const saving = form.kind === 'saving';
   return (
     <form className="md-add" noValidate onSubmit={e => { e.preventDefault(); void add(); }}>
       <label className="md-add-field">
         <span>Date</span>
-        <input type="date" value={date} max={today} onChange={e => { setDate(e.target.value); freeze(e.target.value); send({ type: 'edited' }); }}/>
+        <input type="date" value={date} max={today} readOnly={saving} onChange={e => { setDate(e.target.value); freeze(e.target.value); send({ type: 'edited' }); }}/>
       </label>
       {metric ? (
         <label className="md-add-field">
           <span>Value</span>
           <span className="md-add-input">
-            <input type="text" inputMode="decimal" value={text} onKeyDown={blockBadNumericKeys} onChange={typed(setText)}/>
+            <input type="text" inputMode="decimal" value={text} readOnly={saving} onKeyDown={blockBadNumericKeys} onChange={typed(setText)}/>
             <span className="md-add-unit">{cellLabel(metric, unit)}</span>
           </span>
         </label>
@@ -340,14 +343,14 @@ function AddValue({ metric, history, unit, start, onSave, say, onDone, dirtyRef,
         <div className="md-add-field">
           <span>Reading</span>
           <span className="md-add-input">
-            <input ref={firstRef} type="text" inputMode="numeric" aria-label="Systolic (top number)" value={text} onKeyDown={blockNonIntegerKeys}
+            <input ref={firstRef} type="text" inputMode="numeric" aria-label="Systolic (top number)" value={text} readOnly={saving} onKeyDown={blockNonIntegerKeys}
                    onChange={e => {
                      typed(setText)(e);
                      const adv = bpSysAdvance(e.target.value);
                      advanceToDia(dia === '' && adv !== 'stay' ? { ambiguous: adv === 'defer', advance: () => diaRef.current?.focus() } : null);
                    }}/>
             <span aria-hidden="true">/</span>
-            <input ref={diaRef} type="text" inputMode="numeric" aria-label="Diastolic (bottom number)" value={dia} onKeyDown={blockNonIntegerKeys}
+            <input ref={diaRef} type="text" inputMode="numeric" aria-label="Diastolic (bottom number)" value={dia} readOnly={saving} onKeyDown={blockNonIntegerKeys}
                    onChange={typed(setDia)}/>
             <span className="md-add-unit">mmHg</span>
           </span>
@@ -355,7 +358,7 @@ function AddValue({ metric, history, unit, start, onSave, say, onDone, dirtyRef,
       )}
       {taken && <p className="md-add-note">This day has {takenText} already. Saving corrects it.</p>}
       {form.kind === 'ready' && form.message && <p className="error-message" role="alert">{form.message}</p>}
-      <button type="submit" className="md-add-save" disabled={form.kind === 'saving'}>{taken ? 'Save correction' : 'Add'}</button>
+      <button type="submit" className="md-add-save" disabled={saving}>{taken ? 'Save correction' : 'Add'}</button>
     </form>
   );
 }
