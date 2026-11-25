@@ -38,7 +38,7 @@ describe('US-15 AC56: a short crisis follow-up reaches the pipeline', () => {
     expect(d).toEqual({ candidate: expect.objectContaining({ id: 'r2' }) });
   });
 
-  it('US-15 AC66: a crisis after a reply the bot already handled is seen; one still running holds the thread', () => {
+  it('US-15 AC68: a crisis after a reply the bot already handled is seen; one still running holds the thread', () => {
     const replies = [bot, viewer('r1', 'thanks doc, really useful video', minutesAgo(90)), viewer('r2', 'now I have chest pain', minutesAgo(30))];
     const at = (claims: Map<string, 'running' | 'done' | 'posted'>) => assessThreadFollowUp({
       replies, botPostedIds: new Set(['bot1']), channelId: CHANNEL, originalAuthor: 'Viewer', channelHandle: null, claims,

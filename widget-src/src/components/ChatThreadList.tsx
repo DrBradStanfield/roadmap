@@ -1,5 +1,6 @@
 import React from 'react';
 import type { ChatConversation } from '../lib/chat-api';
+import { opensRow } from '../lib/opens-row';
 
 interface ChatThreadListProps {
   conversations: ChatConversation[];
@@ -8,11 +9,6 @@ interface ChatThreadListProps {
   onSelect: (id: string) => void;
   onNew: () => void;
   onDelete: (id: string, e: React.MouseEvent) => void;
-}
-
-/** Enter or Space on the row itself opens it; a key on its Delete button is left to the button. */
-export function opensRow(e: React.KeyboardEvent): boolean {
-  return e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ');
 }
 
 export function ChatThreadList({ conversations, activeConversationId, className, onSelect, onNew, onDelete }: ChatThreadListProps) {

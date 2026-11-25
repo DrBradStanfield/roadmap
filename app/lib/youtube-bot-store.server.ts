@@ -61,7 +61,7 @@ export async function unclaimComment(commentId: string, claimRowId: number): Pro
   }
 }
 
-/** A follow-up's claim as the scan sees it (US-15 AC66): `running` = claimed with no decision recorded yet
+/** A follow-up's claim as the scan sees it (US-15 AC68): `running` = claimed with no decision recorded yet
  *  (a machine may be running it now); `done` = ended without a post, its decision recorded by finishClaim;
  *  `posted` = marked posting or posted. */
 export type FollowUpClaim = 'running' | 'done' | 'posted';
@@ -82,7 +82,7 @@ export async function readFollowUpClaims(ids: string[]): Promise<Map<string, Fol
 }
 
 /** Records the decision on a kept claim that ended without a post, so the follow-up scan passes over it
- *  (US-15 AC66). Only this claim's row, and only while unposted. A failed write leaves it `running`, which
+ *  (US-15 AC68). Only this claim's row, and only while unposted. A failed write leaves it `running`, which
  *  holds the thread as before. */
 export async function finishClaim(commentId: string, claimRowId: number, classification: string): Promise<void> {
   if (!supabaseAdmin) return;
@@ -410,7 +410,7 @@ export async function persistYouTubeTurn(p: {
   }
 }
 
-/** Forgets a claim that ended without a post once no scan can bring its comment back (US-15 AC66): neither
+/** Forgets a claim that ended without a post once no scan can bring its comment back (US-15 AC68): neither
  *  scan runs a comment older than COMMENT_MAX_AGE_DAYS, and a claim is never older than its comment; the extra
  *  day absorbs clock skew. The youtube_bot_cleanup_skipped RPC kept only the newest 200 such rows, so on a busy
  *  day a skipped follow-up's claim fell out while its thread was still scanned, and it ran again (chat-health W46). */

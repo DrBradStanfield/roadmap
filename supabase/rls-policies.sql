@@ -579,8 +579,8 @@ NOTIFY pgrst, 'reload schema';
 -- ===== youtube_bot_log (YouTube comment auto-poster, 2026-05-20) =====
 -- One table holds both: (a) posted replies — full audit data, kept forever;
 -- (b) skipped comments — the comment_id for dedup (a finished follow-up also
---     its classification, US-15 AC66), deleted 8 days after the
---     claim (app/lib/youtube-bot-store.server.ts cleanupSkippedRows, US-15 AC66).
+--     its classification, US-15 AC68), deleted 8 days after the
+--     claim (app/lib/youtube-bot-store.server.ts cleanupSkippedRows, US-15 AC68).
 --
 -- Race-safe via UNIQUE on youtube_comment_id: the bot INSERTs a claim row
 -- (posted=FALSE) before running the LLM pipeline; if another Fly machine
@@ -612,7 +612,7 @@ ALTER TABLE youtube_bot_log ENABLE ROW LEVEL SECURITY;
 -- (No policies; service role bypasses RLS. No user-facing reads.)
 
 -- Cleanup function: keep all posted rows forever; keep only last 200 unposted
--- rows. No longer called since US-15 AC66 (2026-11-17): the tick deletes
+-- rows. No longer called since US-15 AC68 (2026-11-17): the tick deletes
 -- unposted rows by age instead. Left in place until it is dropped live.
 CREATE OR REPLACE FUNCTION youtube_bot_cleanup_skipped()
 RETURNS void

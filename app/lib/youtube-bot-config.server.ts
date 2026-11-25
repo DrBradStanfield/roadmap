@@ -19,7 +19,7 @@ export const CRISIS = /\b(die|suicid\w*|kill (myself|me)|chest pain|can'?t breat
 // Multi-turn (follow-up) config — see § Follow-up replies in youtube-bot-pipeline.server.ts.
 export const FOLLOWUP_MIN_WORDS = 3;             // follow-ups are naturally shorter ("does it cause blindness?")
 export const MAX_CHANNEL_REPLIES_PER_THREAD = 2; // hard cap: initial reply + at most ONE follow-up (screenshot-risk control)
-export const MAX_FOLLOWUP_EVALUATIONS_PER_THREAD = 3; // model runs on a thread's follow-ups, any outcome (cost bound, US-15 AC66)
+export const MAX_FOLLOWUP_EVALUATIONS_PER_THREAD = 3; // model runs on a thread's follow-ups, any outcome (cost bound, US-15 AC68)
 export const FOLLOWUP_THREADS_PER_TICK = 25;    // bound the per-tick comments.list calls
 export const YOUTUBE_TIMEOUT_MS = 15_000;        // per Google call; a stalled socket must not hold the tick (US-09 AC31)
 

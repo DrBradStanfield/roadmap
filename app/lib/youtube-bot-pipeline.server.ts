@@ -143,7 +143,7 @@ export function assessThreadFollowUp(p: {
 
   // The oldest not yet handled that passes the hygiene gates, one follow-up per thread per tick. A short or
   // stale reply is passed over, and so is one the bot already handled, whatever the outcome, so a later
-  // crisis reply in the thread is still seen (AC56, AC66). A claim with no decision yet holds the thread:
+  // crisis reply in the thread is still seen (AC56, AC68). A claim with no decision yet holds the thread:
   // the machine running it may be about to post there.
   const passing = candidates.filter(r => followUpHygiene(r) === null);
   if (passing.length === 0) return { skip: followUpHygiene(candidates[0])! };

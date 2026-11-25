@@ -15,6 +15,7 @@
  */
 import type { UsProductCardId } from './types';
 import { SCREENING_EVIDENCE } from './evidence-screening';
+import { BMI_THRESHOLDS } from './bmi-thresholds';
 
 export interface SuggestionReference {
   label: string;
@@ -769,7 +770,7 @@ export function getProteinEvidence(ibwKg: number, proteinRate: number, eGFR?: nu
 export function getBmiEvidence(bmi: number, sex: 'male' | 'female', waistToHeightRatio?: number): SuggestionEvidence {
   const range = sex === 'male' ? '23-26' : '20-23';
   // BMI 25–29.9 is the band a healthy waist reclassifies as Normal (getBMICategory)
-  const whtrNote = bmi >= 25 && bmi < 30 && waistToHeightRatio === undefined
+  const whtrNote = bmi >= BMI_THRESHOLDS.overweight && bmi < BMI_THRESHOLDS.obese && waistToHeightRatio === undefined
     ? '\n\nMeasuring your waist circumference would help refine this — a waist-to-height ratio <0.5 can reclassify Overweight BMI as Normal per AACE 2025.'
     : '';
   const guidelines = whtrNote ? ['AACE 2025'] : [];

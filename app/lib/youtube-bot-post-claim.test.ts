@@ -8,11 +8,11 @@
  * global fetch for Google, and a mocked runPipeline. Each "machine" is a fresh
  * module instance (vi.resetModules) on the one shared table.
  *
- * The cleanup is a plain DELETE of old posted=false rows (US-15 AC66); the fake stamps each claim's
+ * The cleanup is a plain DELETE of old posted=false rows (US-15 AC68); the fake stamps each claim's
  * processed_at as Postgres's default does. Tests that set claimsBornOld stand for "the claim is past
  * the cleanup window", so cleanup would remove it unless it is marked posted. The fake also keeps the
  * old youtube_bot_cleanup_skipped RPC as its SQL reads (keep the newest 200 posted=false rows), so the
- * AC66 regression test fails on code that still calls it.
+ * AC68 regression test fails on code that still calls it.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -257,7 +257,7 @@ async function tickTo(ms: number, n: number): Promise<void> {
 }
 
 const row = (id: string) => db.table.find((r) => r.youtube_comment_id === id);
-/** The end-of-tick cleanup (US-15 AC66), the only request filtered by processed_at. */
+/** The end-of-tick cleanup (US-15 AC68), the only request filtered by processed_at. */
 const isCleanup = (r: Req) => r.params.has('processed_at');
 /** Requests on the table, the cleanup left out: the claim lifecycle's own reads and writes. */
 const tableReqs = (method: string) => db.requests.filter((r) => r.path === '/rest/v1/youtube_bot_log' && r.method === method && !isCleanup(r));
@@ -809,7 +809,7 @@ describe('token collision: the mark is matched by the claim row, not only its to
   });
 });
 
-describe('US-15 AC66: a YouTube comment or follow-up is handled once, whatever the outcome', () => {
+describe('US-15 AC68: a YouTube comment or follow-up is handled once, whatever the outcome', () => {
   it('a follow-up the model skipped is not run again after 200 newer skips (chat-health W46)', async () => {
     seedPosted('T1', { posted_youtube_id: 'bot-1' });
     g.replies.set('T1', [
@@ -841,7 +841,7 @@ describe('US-15 AC66: a YouTube comment or follow-up is handled once, whatever t
     expect(db.table.map((r) => r.youtube_comment_id).sort()).toEqual(['old-post', 'week-skip']);
   });
 
-  // An earlier follow-up the bot handled no longer holds the thread; one still being handled does (AC56, AC66).
+  // An earlier follow-up the bot handled no longer holds the thread; one still being handled does (AC56, AC68).
   const BOT_1 = { id: 'bot-1', author: 'Dr Brad', channel: 'UC_brad', text: 'first answer', publishedAt: '2026-11-12T09:10:00.000Z' };
   const viewerReply = (n: number, text: string, publishedAt: string) =>
     ({ id: `T1.r${n}`, author: 'Viewer', channel: 'UC_viewer', text, publishedAt });

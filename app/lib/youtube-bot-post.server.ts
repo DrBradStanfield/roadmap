@@ -78,7 +78,7 @@ export async function postClaimed(
   }
   const halt = isAccountWide(result);
   await releasePostingMark(claimId, claim.rowId, mark.token, halt ? 'delete' : 'revert');
-  // A reverted claim is done (internal marker), so a refused follow-up does not hold its thread (US-15 AC66).
+  // A reverted claim is done (internal marker), so a refused follow-up does not hold its thread (US-15 AC68).
   if (!halt) await finishClaim(claimId, claim.rowId, 'POST_REFUSED');
   if (result.reason !== 'notReplyable') {
     Sentry.captureMessage('YouTube bot: post refused', {
