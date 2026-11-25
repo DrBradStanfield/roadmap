@@ -184,6 +184,7 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
         {showThreads && (
           <ChatThreadList
             conversations={state.conversations}
+            list={state.list}
             activeConversationId={state.activeConversationId}
             className="chat-thread-list"
             onSelect={handleSelectConversation}

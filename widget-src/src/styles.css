@@ -2938,6 +2938,14 @@
   overflow-wrap: anywhere;
 }
 
+/* By a reply that was not saved (US-15 AC76). */
+.chat-message-unsaved {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--color-text-secondary);
+}
+
 .chat-thinking-toggle .chat-sources {
   margin-top: 4px;
 }

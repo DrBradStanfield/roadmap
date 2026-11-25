@@ -34,12 +34,6 @@ issue, and nothing private.
 
 ### Words that need your yes (raised 2026-11-25)
 
-- **Two chat history lines.** Issue: PR 2078 (on main) makes a failed open of the chat history file retry on the
-  next turn, but adds no words. Two places say nothing today: the History list after the file could not be opened
-  (it shows old titles, or "No conversations yet"), and a turn that was not saved to the file (nothing on screen).
-  The owner proposed "Chat history unavailable" for the first; no line exists for the second. Options: (1) approve
-  "Chat history unavailable", and have a line drafted for an unsaved turn; (2) leave both silent. Recommendation:
-  option 1, because a person who returns to a conversation that was never saved has no way to know why it is missing.
 - **An erase message needs a truer sentence.** Issue: when an erase partly fails, the iPhone can show an empty or
   wrong reason, and the web says nothing about the chat step. Draft lines exist for each case. Options: approve the
   drafts as one set; approve some; keep today's words. Recommendation: approve the set, because today's words can be
@@ -71,11 +65,6 @@ issue, and nothing private.
   the agent wait 10 seconds before the second, confirming call. The one session last week that tried it filed nothing
   after four tries. Options: keep the pause; say how many seconds are left; reword the line when the time runs out.
   Recommendation: keep the pause and say the seconds left.
-- **A "Not saved" marker on chat replies with edits.** Issue: a reply that lands after the person left its thread
-  saves nothing, but reads as saved when they reopen the thread (design: [drafts/c22-c26-design.md](drafts/c22-c26-design.md)).
-  Options: (A) store a "Not saved" marker on every such reply (new words, a new stored field, iPhone too); (B) only on
-  replies that carried edits; (C) wait for the iPhone chat work. Recommendation: B, reusing the existing banner
-  words, since a reply with no edits had nothing to lose.
 - **Restore " It will upload automatically."** Issue: Settings' waiting line on the web ("Some data in this browser
   is still waiting to sync…") dropped this clause on 14 Nov until you approve it. The retry it describes already
   runs. Options: approve it; leave it out. Recommendation: approve: it is true, and tells the person they need do
@@ -190,6 +179,12 @@ issue, and nothing private.
   below); before the form is complete the web still shows no card. The note's words, one shared copy: "Screening questions appear once your sex,
   birth year and height are in About you.", "Some screening questions depend on your sex. Add it in About you.", "No
   screening questions apply at your age and sex yet." (US-62 AC41).
+- Two chat history lines: "this" (option 1). History after a failed read says "Chat history unavailable"; a reply
+  the history file did not take says "This reply was not saved to your chat history." (web; US-15 AC76).
+- A "Not saved" marker on chat replies with edits: "go with the recommendation" (option B). Only a reply that carried
+  edits and landed after the person left its thread is stored marked; its reopened thread says "Not saved: you
+  opened another conversation before this reply arrived." The banner's own sentence ("your record changed since you
+  asked") would be untrue here, so this one is new, under your 26 Nov approval of drafted sentences (web; US-15 AC76).
 
 2026-11-23, Brad's words in quotes:
 - Original files are stored in the background after Save, with no action from the person at Save and at every

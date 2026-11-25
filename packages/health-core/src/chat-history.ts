@@ -47,6 +47,10 @@ export interface ChatFileMessage {
   /** Assistant turns: a fallback or refusal line, never re-served. Optional and
    *  set once at write: messages are immutable per id, so merge needs no rule. */
   isFallback?: true;
+  /** Assistant turns: the reply carried edits and landed after the person left
+   *  its thread, so none applied (US-15 AC76). Set once at write, like
+   *  `isFallback`; an older client keeps it, as it keeps every turn whole. */
+  notSaved?: 'left';
 }
 
 export interface ChatFileConversation {
@@ -120,7 +124,9 @@ export function migrateChatHistoryFile(
       messages: asArray<unknown>(c.messages).filter((m): m is ChatFileMessage =>
         isObject(m) && typeof m.id === 'string' && m.id.length > 0 &&
         (m.role === 'user' || m.role === 'assistant') &&
-        typeof m.content === 'string' && typeof m.createdAt === 'string'),
+        typeof m.content === 'string' && typeof m.createdAt === 'string')
+        // A marker is read only as the word this build writes (US-15 AC76).
+        .map(({ notSaved, ...m }) => (notSaved === 'left' ? { ...m, notSaved } : m)),
     }));
 
   return {

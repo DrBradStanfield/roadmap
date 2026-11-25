@@ -54,7 +54,8 @@ The owner's ruling (C22 row): store the marker on that turn so reopening A shows
 3. The iPhone's parity (Swift chat view and the engine door, ios/engine/app-doors.ts:101).
 Saving A's edits instead would reverse the PR 1306 ruling, so it is not an option here.
 
-Decision: C22 is not built. Options for the owner: (A) as ruled: the words above, the stored field
+Built 2026-11-26 as option B on the web (US-15 AC76), with the sentence below; the iPhone half is lead C22a.
+The options as they stood: (A) as ruled: the words above, the stored field
 (`notSaved?: 'left'`, set once, immutable per id like `isFallback`), web and iPhone together; (B) the marker
 only when the reply carried edits (a reply with no edits saved nothing to lose), same words and field;
 (C) hold until the iPhone chat series.

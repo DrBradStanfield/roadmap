@@ -4,6 +4,11 @@ import { trackProductEvent } from '../lib/server-api';
 import { renderMarkdown } from '../lib/markdown';
 import { getAssistantName } from '../lib/assistant-config';
 
+/** By a reply the chat-history file did not take (US-15 AC76). */
+export const REPLY_NOT_SAVED = 'This reply was not saved to your chat history.';
+/** By a stored reply whose edits applied nowhere: it landed after the person left its thread (US-15 AC76). */
+export const REPLY_LEFT_NOT_SAVED = 'Not saved: you opened another conversation before this reply arrived.';
+
 /** Memoized message bubble — avoids re-parsing markdown on every render */
 /** `approach`: the articles read and the model's summary for this answer, this session only (US-15 AC17/AC22), folded above it. */
 export const ChatMessageBubble = React.memo(function ChatMessageBubble({ msg, approach }: { msg: ChatMessage; approach?: ChatApproach }) {
@@ -34,6 +39,9 @@ export const ChatMessageBubble = React.memo(function ChatMessageBubble({ msg, ap
         <div className="chat-message-content" dangerouslySetInnerHTML={{ __html: html }} />
       ) : (
         <div className="chat-message-content">{msg.content}</div>
+      )}
+      {msg.role === 'assistant' && (msg.notSaved === 'history' || msg.notSaved === 'left') && (
+        <p className="chat-message-unsaved">{msg.notSaved === 'history' ? REPLY_NOT_SAVED : REPLY_LEFT_NOT_SAVED}</p>
       )}
     </div>
   );

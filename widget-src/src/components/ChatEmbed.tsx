@@ -69,6 +69,7 @@ export function ChatEmbed({ isLoggedIn, guestInputs, muted, onProposeEdit, cardR
   const threadList = (
     <ChatThreadList
       conversations={state.conversations}
+      list={state.list}
       activeConversationId={state.activeConversationId}
       className="chat-embed-thread-list"
       onSelect={handleSelectConversation}

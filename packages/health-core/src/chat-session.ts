@@ -205,7 +205,10 @@ export class ChatSession {
    * Persist one chat exchange (the shared tail of both transports): mints the
    * message ids and timestamps, applies the title rule (first user message,
    * truncated, only when the conversation is new), creates the conversation if
-   * needed, and saves; the save's merge enforces the cap.
+   * needed, and saves; the save's merge enforces the cap. Answers whether the
+   * turn is in the file written (US-15 AC76): 'written'; 'not-written' (its
+   * conversation was erased or deleted, here or in the merge); 'closed' (a page
+   * that may not write the device's files wrote nothing, US-09 AC2c).
    */
   async recordExchange(opts: {
     conversationId: string;
@@ -217,6 +220,8 @@ export class ChatSession {
     assistantMessageId?: string | null;
     /** A fallback or refusal line: stored so the dedup never re-serves it after a reload. */
     isFallback?: boolean;
+    /** 'left': the reply's edits applied nowhere, since the person left its thread (US-15 AC76). */
+    notSaved?: 'left';
     /** eraseMarks() when the question was asked. A conversation the stored
      *  file does not hold is then saved only if the file it is written into
      *  holds no other marker: an erase that began after the question, on any
@@ -225,9 +230,9 @@ export class ChatSession {
     /** The record's erase identity when the question was asked: a new
      *  conversation records it, a reply never changes it (US-11 AC11). */
     askedUnder?: string;
-  }): Promise<void> {
+  }): Promise<'written' | 'not-written' | 'closed'> {
     this.refreshAfterDeviceErase();
-    if (this.erasedIds.has(opts.conversationId)) return; // erased while the answer was in flight
+    if (this.erasedIds.has(opts.conversationId)) return 'not-written'; // erased while the answer was in flight
     const at = this.host.clock.now();
     const now = new Date(at).toISOString();
     const messages: ChatFileMessage[] = [
@@ -238,11 +243,12 @@ export class ChatSession {
         content: opts.assistantText,
         createdAt: now,
         ...(opts.isFallback ? { isFallback: true as const } : {}),
+        ...(opts.notSaved ? { notSaved: opts.notSaved } : {}),
       },
     ];
 
     const existing = this.file.conversations.find((c) => c.id === opts.conversationId);
-    if (existing?.deleted) return; // tombstoned on another device — don't resurrect
+    if (existing?.deleted) return 'not-written'; // tombstoned (another device, or a delete whose save failed): don't resurrect
     if (existing) {
       existing.messages = mergeMessages(existing.messages, messages);
       existing.updatedAt = now;
@@ -257,7 +263,11 @@ export class ChatSession {
         messages,
       });
     }
-    await this.persist();
+    const written = await this.persist();
+    if (!written) return 'closed';
+    const conv = written.conversations.find((c) => c.id === opts.conversationId);
+    const answerId = messages[1].id;
+    return conv && !conv.deleted && conv.messages.some((m) => m.id === answerId) ? 'written' : 'not-written';
   }
 
   /** Every save's check of the pending conversations, in each attempt's
@@ -343,7 +353,8 @@ export class ChatSession {
     this.fenceSeen = fence;
   }
 
-  private async persist(deleted = false, own?: MergeStep): Promise<void> {
+  /** The file written, or null when the device may not be written (nothing was). */
+  private async persist(deleted = false, own?: MergeStep): Promise<ChatHistoryFile | null> {
     let held: string[] = [];
     const step: MergeStep = (merged, remote) => {
       own?.(merged, remote);
@@ -362,10 +373,10 @@ export class ChatSession {
       // the air lives only in the working copy (US-11 AC2b).
       const ctx = contextOf(this.host);
       this.file = mergeChatHistoryFiles(this.file, result.file, ctx);
-      return;
+      return result.file;
     }
     const { sync, closed } = this.device!;
-    if (closed()) return; // neither read nor written: the turn stays on this page only
+    if (closed()) return null; // neither read nor written: the turn stays on this page only
     // Not SyncManager.save: its read and write are awaited, and an erase that
     // lands between them would let this pre-erase snapshot be written back.
     // No await between checking the erase fence, merging and writing.
@@ -378,11 +389,12 @@ export class ChatSession {
         sync.writeSync(CHAT_HISTORY_DOC.fileName, merged, version);
         for (const id of held) this.pending.delete(id);
         this.file = merged;
-        return;
+        return merged;
       } catch (error) {
         if (!(error instanceof ConflictError) || attempt === 4) throw error;
       }
     }
+    throw new Error('unreachable: the fifth conflict throws'); // for the type checker
   }
 }
 
