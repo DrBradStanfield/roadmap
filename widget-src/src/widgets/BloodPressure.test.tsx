@@ -13,12 +13,12 @@ import type { SuggestionInputs } from '@roadmap/health-core/types';
 import { computePlan } from '@roadmap/health-core/plan';
 import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { PRESSURE_ORDER } from '@roadmap/health-core/validation';
-import { RoadmapStore } from '../storage/roadmap-store';
+import { REMOTE_CHANGED_EVENT, RoadmapStore } from '../storage/roadmap-store';
 import * as data from '../lib/roadmap-data';
 import { formatShortDate } from '../lib/constants';
 import { trackProductEvent } from '../lib/server-api';
 import { BloodPressureWidget, WIDTH, spelledOut } from './BloodPressure';
-import { savePair } from './blood-pressure';
+import { NO_SAVES, savePair, transition, type SavesEvent, type Saves } from './blood-pressure';
 import { bpTier } from '@roadmap/health-core/bp-tier';
 /** Whether a pair's tier has a plan card (Stage 1 and above). */
 const bpTierOf = (sys: number, dia: number) => !['normal', 'elevated'].includes(bpTier(sys, dia));
@@ -554,5 +554,80 @@ describe('US-16 AC2a: the blood pressure save writes under the erase it was aske
     await erasedSinceAsked();
     expect(await savePair({ sys: 128, dia: 82 }, day, NONE, data.getShownErase())).toMatchObject({ kind: 'kept' });
     expect(active('systolic_bp')).toEqual([128]);
+  });
+});
+
+// US-75 AC8 (lead H404): a reading belongs to the erase the page showed as its first digit was typed, as the full
+// app's fields; a save that runs under a newer erase writes nothing, as a changed row (AC5).
+describe('US-75 AC8: a reading is saved under the erase shown as it was typed', () => {
+  /** Another tab erased the record; the page's mark shows the erased one (as another block's root moves it), and
+   *  this widget's tree has not yet followed. */
+  async function erasedElsewhere() {
+    expect((await data.deleteUserData()).success).toBe(true);
+    data.markEraseShown(data.getEraseIdentity());
+    await data.flushRoadmapStore();
+  }
+  const follow = async () => {
+    fireEvent.click(screen.getByRole('link'));
+    await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
+  };
+
+  it('typed before an erase, saved after it: nothing written, and the next step stays', async () => {
+    const navigate = vi.fn();
+    render(<BloodPressureWidget nextUrl="/next" navigate={navigate} />);
+    enterPair(1, '128', '82');
+    await erasedElsewhere();
+    const before = JSON.stringify(data.recordFileSync());
+    await leave();
+    await follow();
+    expect(JSON.stringify(data.recordFileSync())).toBe(before);
+    expect(active('systolic_bp')).toEqual([]);
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('control: with no erase between typing and saving, the same save lands and the next step goes', async () => {
+    const navigate = vi.fn();
+    render(<BloodPressureWidget nextUrl="/next" navigate={navigate} />);
+    enterPair(1, '128', '82');
+    await leave();
+    await follow();
+    expect(active('systolic_bp')).toEqual([128]);
+    expect(navigate).toHaveBeenCalledWith('/next');
+  });
+
+  it('typed again after the refused save, once the widget has followed the erase: kept', async () => {
+    render(<BloodPressureWidget />);
+    enterPair(1, '128', '82');
+    await erasedElsewhere();
+    await leave();
+    expect(active('systolic_bp')).toEqual([]);
+    // The re-read's news reaches the widget: it starts over under the erase shown now (FollowErase).
+    act(() => { window.dispatchEvent(new CustomEvent(REMOTE_CHANGED_EVENT, { detail: { erase: data.getEraseIdentity() } })); });
+    expect(box(1, 'top').value).toBe('');
+    enterPair(1, '130', '84');
+    await leave();
+    expect(active('systolic_bp')).toEqual([130]);
+  });
+});
+
+describe('US-75 AC5: the saves state, event by event', () => {
+  const typing = (edits: number, kept: number, dropped: number): Saves => ({ kind: 'typing', edits, kept, dropped });
+  const settled = (edits: number, kept: number, dropped: number): Saves => ({ kind: 'settled', edits, kept, dropped });
+  const table: Array<[string, Saves, SavesEvent, Saves]> = [
+    ['the first keystroke: typing', NO_SAVES, { type: 'typed' }, typing(1, 0, 0)],
+    ['a later keystroke: still typing', typing(1, 0, 0), { type: 'typed' }, typing(2, 0, 0)],
+    ['the newest edit kept: settled', typing(2, 0, 0), { type: 'kept', seq: 2 }, settled(2, 2, 0)],
+    ['an older edit kept, a newer waiting: still typing', typing(3, 0, 0), { type: 'kept', seq: 2 }, typing(3, 2, 0)],
+    ['the newest edit dropped: settled, nothing kept', typing(2, 0, 0), { type: 'dropped', seq: 2 }, settled(2, 0, 2)],
+    ['an older edit dropped, a newer waiting: still typing', typing(3, 1, 0), { type: 'dropped', seq: 2 }, typing(3, 1, 2)],
+    ['typing after a drop', settled(2, 0, 2), { type: 'typed' }, typing(3, 0, 2)],
+    ['typing after a keep', settled(2, 2, 0), { type: 'typed' }, typing(3, 2, 0)],
+    ['a late answer never moves a count back', settled(4, 4, 3), { type: 'kept', seq: 2 }, settled(4, 4, 3)],
+    ['a drop answered while settled stays settled', settled(3, 1, 0), { type: 'dropped', seq: 3 }, settled(3, 1, 3)],
+    ['an older edit kept once a newer one is dropped: settled', settled(3, 0, 3), { type: 'kept', seq: 2 }, settled(3, 2, 3)],
+    ['typing after a drop, with an earlier edit kept', settled(3, 1, 3), { type: 'typed' }, typing(4, 1, 3)],
+  ];
+  it.each(table)('%s', (_, from, event, to) => {
+    expect(transition(from, event)).toEqual(to);
   });
 });

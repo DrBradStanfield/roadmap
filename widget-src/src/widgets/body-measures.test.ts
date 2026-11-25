@@ -151,7 +151,7 @@ describe('US-74 AC4: the save merges into the record through RoadmapStore', () =
   it('writes height to the profile and today\'s weight and waist, leaving everything else as it was', async () => {
     await seedFullRecord();
     const before = persisted();
-    const outcome = await saveMeasured({ heightCm: 180, weightKg: 80, waistCm: 87 }, entries('height', 'weight', 'waist'), seenNow(), 'si');
+    const outcome = await saveMeasured({ heightCm: 180, weightKg: 80, waistCm: 87 }, entries('height', 'weight', 'waist'), seenNow(), 'si', data.getShownErase());
     expect(outcome).toEqual({ kind: 'stored', saved: ['height', 'weight', 'waist'], changed: [], refused: [] });
     const after = persisted(); // saveMeasured waits for the store's write (review A3)
     expect(after.profile).toMatchObject({ sex: 'male', birthYear: 1980, birthMonth: 6, heightCm: 180 });
@@ -169,14 +169,14 @@ describe('US-74 AC4: the save merges into the record through RoadmapStore', () =
     await seedFullRecord();
     const before = persisted();
     const { values, entered } = readBoxes(boxesFor(recordMeasured(), 'si'), 'si');
-    expect(await saveMeasured(values, entered, seenNow(), 'si')).toEqual({ kind: 'stored', saved: [], changed: [], refused: [] });
+    expect(await saveMeasured(values, entered, seenNow(), 'si', data.getShownErase())).toEqual({ kind: 'stored', saved: [], changed: [], refused: [] });
     expect(persisted().measurements).toEqual(before.measurements);
     expect(persisted().profile).toEqual(before.profile);
   });
 
   it('a second save the same day corrects today\'s row: one active row, the first entered-in-error', async () => {
-    await saveMeasured({ heightCm: 178, waistCm: 90 }, entries('height', 'waist'), seenNow(), 'si');
-    const second = await saveMeasured({ heightCm: 178, waistCm: 88 }, entries('waist'), seenNow(), 'si');
+    await saveMeasured({ heightCm: 178, waistCm: 90 }, entries('height', 'waist'), seenNow(), 'si', data.getShownErase());
+    const second = await saveMeasured({ heightCm: 178, waistCm: 88 }, entries('waist'), seenNow(), 'si', data.getShownErase());
     expect(second).toMatchObject({ kind: 'stored', saved: ['waist'] });
     const waists = persisted().measurements.filter((m) => m.metricType === 'waist');
     const active = waists.filter((m) => m.status === 'active');
@@ -191,7 +191,7 @@ describe('US-74 AC4: the save merges into the record through RoadmapStore', () =
     const seen = seenNow();
     await data.addMeasurement('waist', 95, undefined, data.getShownErase()); // another device, after the page read the record
     await data.saveChangedMeasurements({ heightCm: 180 }, { heightCm: 178 }, data.getShownErase());
-    const outcome = await saveMeasured({ heightCm: 175, waistCm: 88 }, entries('height', 'waist'), seen, 'si');
+    const outcome = await saveMeasured({ heightCm: 175, waistCm: 88 }, entries('height', 'waist'), seen, 'si', data.getShownErase());
     expect(outcome).toEqual({ kind: 'stored', saved: [], changed: ['height', 'waist'], refused: [] });
     expect(persisted().measurements.filter((m) => m.status === 'active').map((m) => m.value)).toEqual([95]);
     expect(persisted().profile.heightCm).toBe(180);
@@ -202,7 +202,7 @@ describe('US-74 AC4: the save merges into the record through RoadmapStore', () =
     await data.initRoadmapStore(failing);
     vi.spyOn(failing, 'write').mockRejectedValue(new Error('disk full'));
     vi.spyOn(localStorage, 'setItem').mockImplementation(() => { throw new DOMException('full', 'QuotaExceededError'); });
-    const outcome = await saveMeasured({ heightCm: 178, waistCm: 90 }, entries('height', 'waist'), seenNow(), 'si');
+    const outcome = await saveMeasured({ heightCm: 178, waistCm: 90 }, entries('height', 'waist'), seenNow(), 'si', data.getShownErase());
     expect(outcome).toMatchObject({ kind: 'failed' });
   });
 
@@ -213,7 +213,7 @@ describe('US-74 AC4: the save merges into the record through RoadmapStore', () =
       weightKg: toCanonicalValue('weight', 180, 'conventional'),
       waistCm: toCanonicalValue('waist', 35, 'conventional'),
     });
-    await saveMeasured(read.values, read.entered, seenNow(), 'conventional');
+    await saveMeasured(read.values, read.entered, seenNow(), 'conventional', data.getShownErase());
     const file = persisted();
     expect(file.profile.heightCm).toBeCloseTo(177.8, 6);
     expect(file.measurements.find((m) => m.metricType === 'weight')!.value).toBeCloseTo(81.65, 2);
@@ -311,14 +311,14 @@ describe('US-74 second review round', () => {
   it('C5: a waist typed in inches is judged in inches: 50 in over today\'s 127.4 cm (shown 50.2) is written', async () => {
     await data.addMeasurement('waist', 127.4, undefined, data.getShownErase());
     const read = readBoxes(typeInto(boxesFor({ heightCm: 178, waistCm: 127.4 }, 'conventional'), { waist: '50' }), 'conventional');
-    const outcome = await saveMeasured(read.values, read.entered, seenNow(), 'conventional');
+    const outcome = await saveMeasured(read.values, read.entered, seenNow(), 'conventional', data.getShownErase());
     expect(outcome).toMatchObject({ kind: 'stored', saved: ['waist'] });
     expect(activeWaists()).toEqual([toCanonicalValue('waist', 50, 'conventional')]);
   });
 
   it('C5: an entry the same as today\'s row writes nothing and is not counted as saved', async () => {
     await data.addMeasurement('waist', 88, undefined, data.getShownErase());
-    const outcome = await saveMeasured({ heightCm: 178, waistCm: 88 }, entries('waist'), seenNow(), 'si');
+    const outcome = await saveMeasured({ heightCm: 178, waistCm: 88 }, entries('waist'), seenNow(), 'si', data.getShownErase());
     expect(outcome).toEqual({ kind: 'stored', saved: [], changed: [], refused: [] });
     expect(activeWaists()).toEqual([88]);
   });
@@ -330,12 +330,12 @@ describe('US-74 second review round', () => {
     await data.initRoadmapStore(failing);
     vi.spyOn(failing, 'write').mockRejectedValue(new Error('disk full'));
     vi.spyOn(localStorage, 'setItem').mockImplementation(() => { throw new DOMException('full', 'QuotaExceededError'); });
-    expect(await saveMeasured({ heightCm: 178, waistCm: 90 }, entries('waist'), seenNow(), 'si')).toMatchObject({ kind: 'failed' });
+    expect(await saveMeasured({ heightCm: 178, waistCm: 90 }, entries('waist'), seenNow(), 'si', data.getShownErase())).toMatchObject({ kind: 'failed' });
     expect(vi.mocked(trackProductEvent)).not.toHaveBeenCalledWith('measurement_added', expect.anything());
     vi.restoreAllMocks();
     vi.spyOn(RoadmapStore.prototype, 'startLiveRefresh').mockReturnValue(() => {});
     await data.initRoadmapStore(new MemoryAdapter(cloud));
-    await saveMeasured({ heightCm: 178, waistCm: 91 }, entries('waist'), seenNow(), 'si');
+    await saveMeasured({ heightCm: 178, waistCm: 91 }, entries('waist'), seenNow(), 'si', data.getShownErase());
     expect(vi.mocked(trackProductEvent)).toHaveBeenCalledWith('measurement_added', { measure: 'waist' });
   });
 
@@ -347,7 +347,7 @@ describe('US-74 second review round', () => {
       const seen = seenNow();
       expect(seen.rows.waist.id).not.toBeNull();
       vi.setSystemTime(new Date(2026, 10, 18, 7, 0));
-      const outcome = await saveMeasured({ heightCm: 178, waistCm: 88 }, entries('waist'), seen, 'si');
+      const outcome = await saveMeasured({ heightCm: 178, waistCm: 88 }, entries('waist'), seen, 'si', data.getShownErase());
       expect(outcome).toMatchObject({ kind: 'stored', saved: ['waist'], changed: [] });
       expect(persisted().measurements.filter((m) => m.metricType === 'waist' && m.status === 'active').map((m) => [m.recordedAt.slice(0, 10), m.value]).sort())
         .toEqual([['2026-11-17', 90], ['2026-11-18', 88]]);
