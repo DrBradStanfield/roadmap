@@ -23,7 +23,7 @@ interface UploadModalProps {
   onComplete: () => void | Promise<void>;
   onStart?: () => Promise<void>;
   onClose: () => void;
-  /** The plan's age, for a letter's screening box (US-06 AC5, US-13 AC6). */
+  /** The cards' screening age, for a letter's screening box (US-06 AC5, US-13 AC6, US-23 AC6c). */
   age?: number;
   sex?: 'male' | 'female';
   /** Visibility does not end the session or discard review drafts. */
