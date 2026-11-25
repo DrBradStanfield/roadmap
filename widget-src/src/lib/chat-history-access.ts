@@ -13,45 +13,89 @@
  * interaction (users who never open chat never pay the cloud read — on Drive
  * an absent chat-history.json would otherwise cost a files.list probe every
  * boot), and a failed create resolves to null (chat still answers, history
- * just doesn't persist) — consumers never need their own catch.
+ * just doesn't persist) — consumers never need their own catch. A failed open
+ * is not kept: the next caller (a turn, a list or thread read) opens again,
+ * never a timer (US-15 AC66).
  */
 import * as Sentry from '@sentry/react';
 import type { ChatHistoryStore } from '../storage/chat-history-store';
 import { recordFailure } from './error-diagnostics';
 
-let factory: (() => Promise<ChatHistoryStore>) | null = null;
 /**
- * The page's one session: its open, in flight or done (rejecting if it
- * failed). Set before any await and replaced only once it has failed, so the
- * page never holds two sessions (US-11 AC2g): a second one would not wait
- * for the first one's saves.
+ * The page's one open of the chat-history file (US-15 AC66). `attempt` only
+ * grows, so a result names the attempt it began under and a late one from an
+ * older attempt changes nothing. One open is in flight at a time and an open
+ * session is replaced only by a reset, so the page never holds two sessions
+ * (US-11 AC2g): a second one would not wait for the first one's saves.
+ * `opening.at` and `open.readAt`: the erase identity the session's copy was
+ * read at, for what a send takes at once (AC2h).
  */
-let session: Promise<ChatHistoryStore> | null = null;
-/** The session once its open has resolved, for what a send takes at once. */
-let ready: ChatHistoryStore | null = null;
+export type ChatHistoryOpen =
+  | { phase: 'closed'; attempt: number }
+  | { phase: 'opening'; attempt: number; pending: Promise<ChatHistoryStore>; at: string }
+  | { phase: 'open'; attempt: number; pending: Promise<ChatHistoryStore>; store: ChatHistoryStore; readAt: string }
+  | { phase: 'failed'; attempt: number };
+
+export type ChatHistoryOpenEvent =
+  | { type: 'open-began'; pending: Promise<ChatHistoryStore>; at: string }
+  | { type: 'opened'; attempt: number; store: ChatHistoryStore }
+  | { type: 'open-failed'; attempt: number }
+  | { type: 'reread'; attempt: number; at: string }
+  | { type: 'reset' };
+
+export function transition(s: ChatHistoryOpen, e: ChatHistoryOpenEvent): ChatHistoryOpen {
+  switch (e.type) {
+    case 'reset':
+      return { phase: 'closed', attempt: s.attempt + 1 };
+    case 'open-began':
+      return s.phase === 'closed' || s.phase === 'failed' ? { phase: 'opening', attempt: s.attempt + 1, pending: e.pending, at: e.at } : s;
+    case 'opened':
+      return s.phase === 'opening' && s.attempt === e.attempt
+        ? { phase: 'open', attempt: s.attempt, pending: s.pending, store: e.store, readAt: s.at }
+        : s;
+    case 'open-failed':
+      return s.phase === 'opening' && s.attempt === e.attempt ? { phase: 'failed', attempt: s.attempt } : s;
+    case 'reread':
+      return s.phase === 'open' && s.attempt === e.attempt ? { ...s, readAt: e.at } : s;
+  }
+}
+
+let factory: (() => Promise<ChatHistoryStore>) | null = null;
+let state: ChatHistoryOpen = { phase: 'closed', attempt: 0 };
+const send = (e: ChatHistoryOpenEvent): void => { state = transition(state, e); };
 /** What callers are served: the session, or its re-read (null: it failed). */
 let store: Promise<ChatHistoryStore | null> | null = null;
 /** The record's erase identity, and the one the store was read at (null: read again). */
 let eraseIdentity = (): string => '';
 let readAt: string | null = '';
-/** The erase identity the ready session's copy was read at, once that read is done. */
-let readyAt: string | null = null;
 
 export function setChatHistoryFactory(f: (() => Promise<ChatHistoryStore>) | null, identity = (): string => ''): void {
   factory = f;
-  session = store = ready = null;
+  send({ type: 'reset' });
+  store = null;
   eraseIdentity = identity;
 }
 
-function open(): Promise<ChatHistoryStore> {
-  const opening = factory!();
-  session = opening;
-  ready = null;
+/** Whether a history layer is registered: then chat never reads the server's history (US-15 AC66). */
+export function hasChatHistoryLayer(): boolean {
+  return factory !== null;
+}
+
+type Session = { attempt: number; pending: Promise<ChatHistoryStore> };
+const live = (): Session | null => (state.phase === 'opening' || state.phase === 'open' ? state : null);
+
+/** The open in flight or done, or a new one when there is none (closed, or the last one failed). */
+function session(): Session {
+  const held = live();
+  if (held) return held;
+  const pending = factory!();
   const at = eraseIdentity();
-  opening.then((s) => { if (session === opening) { ready = s; readyAt = at; } }, () => {});
-  store = opening.catch(() => null);
+  send({ type: 'open-began', pending, at });
+  const { attempt } = state;
+  pending.then((s) => send({ type: 'opened', attempt, store: s }), () => send({ type: 'open-failed', attempt }));
+  store = pending.catch(() => null);
   readAt = at;
-  return opening;
+  return { attempt, pending };
 }
 
 /**
@@ -61,14 +105,14 @@ function open(): Promise<ChatHistoryStore> {
  * from before the erase is served, but it is not kept: the next caller reads
  * again.
  */
-function cached(opened: Promise<ChatHistoryStore>): Promise<ChatHistoryStore | null> {
+function cached({ attempt, pending }: Session): Promise<ChatHistoryStore | null> {
   const now = eraseIdentity();
   if (now !== readAt) {
-    store = opened.then((s) => s.reload().then(() => {
-      if (session === opened) readyAt = now;
+    store = pending.then((s) => s.reload().then(() => {
+      send({ type: 'reread', attempt, at: now });
       return s;
     }, () => {
-      if (session === opened) readAt = null;
+      if (live()?.attempt === attempt) readAt = null;
       return null;
     }), () => null);
   }
@@ -77,10 +121,10 @@ function cached(opened: Promise<ChatHistoryStore>): Promise<ChatHistoryStore | n
 }
 
 /** The cloud chat-history store, or null (production build, no data layer, or
- *  the cloud read failed). Never rejects. */
+ *  the cloud read failed; the next call opens again). Never rejects. */
 export function getChatHistory(): Promise<ChatHistoryStore | null> {
   if (!factory) return Promise.resolve(null);
-  return cached(session ?? open());
+  return cached(session());
 }
 
 /**
@@ -92,7 +136,7 @@ export function getChatHistory(): Promise<ChatHistoryStore | null> {
  */
 export function askChatHistory(): Promise<{ store: ChatHistoryStore | null; askedMarks?: string[] }> {
   try {
-    const askedMarks = ready && readyAt === eraseIdentity() ? ready.eraseMarks() : undefined;
+    const askedMarks = state.phase === 'open' && state.readAt === eraseIdentity() ? state.store.eraseMarks() : undefined;
     return getChatHistory()
       .then((s) => ({ store: s, askedMarks: askedMarks ?? s?.eraseMarks() }))
       .catch(unavailable);
@@ -119,11 +163,12 @@ function unavailable(error: unknown): { store: null } {
  */
 export async function openChatHistory(): Promise<ChatHistoryStore | null> {
   if (!factory) return null;
-  const earlier = session;
-  const opened = earlier ?? open();
+  const found = live() !== null;
+  const opened = session();
   const served = await cached(opened);
   if (served) return served;
-  const held = await opened.catch(() => null);
+  const held = await opened.pending.catch(() => null);
   if (held) return held.reload().then(() => held, (e: unknown) => held.eraseAll().then(() => held, () => { throw e; }));
-  return session === earlier ? open() : session;
+  // An open this call began rejects; one it found in flight is tried once more.
+  return found ? session().pending : opened.pending;
 }

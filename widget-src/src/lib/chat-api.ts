@@ -8,7 +8,7 @@ import { readProposedEdits, type ProposedEdit } from '@roadmap/health-core/chat-
 import { refuseUnreadableEdits, type ChatEditRefusal } from '@roadmap/health-core/chat-edit-refusals';
 import { PROXY_PATH, parseJsonResponse } from './server-api';
 import { chatBodyParts, chatQueryParts, fetchWithTransientRetry, getGuestSessionToken, guestThreadGone, setGuestSessionToken, threadNotFound, tokenOf } from './chat-request';
-import { askChatHistory, getChatHistory } from './chat-history-access';
+import { askChatHistory, getChatHistory, hasChatHistoryLayer } from './chat-history-access';
 import { chatAskedUnder } from './chat-erase';
 import { recordFailure } from './error-diagnostics';
 import { readSubscriptionCard, type SubscriptionCard } from './subscription-card';
@@ -138,19 +138,23 @@ export function getChatGate(): ChatGate | null {
 /**
  * Cloud chat-history store on local-first builds (Phase 6): conversations live
  * in the user's OWN cloud (chat-history.json), not Brad's DB. Resolves null
- * when there's no store (never rejects — see chat-history-access.ts), and
- * callers fall back to the server CRUD path. The LOCAL_FIRST check is
- * redundant defense — the registry is only ever populated on local-first
- * builds — kept as a one-line belt against future registry callers.
+ * when there's no history layer (never rejects — see chat-history-access.ts),
+ * and only then do callers use the server CRUD path. 'unavailable': a layer
+ * exists but its file could not be opened, so the call fails as a failed read
+ * and the next one opens again, never the server path (US-15 AC66). The
+ * LOCAL_FIRST check is redundant defense — the registry is only ever populated
+ * on local-first builds — kept as a one-line belt against future registry callers.
  */
-function cloudHistory(): Promise<ChatHistoryStore | null> {
-  return LOCAL_FIRST ? getChatHistory() : Promise.resolve(null);
+function cloudHistory(): Promise<ChatHistoryStore | 'unavailable' | null> {
+  if (!LOCAL_FIRST || !hasChatHistoryLayer()) return Promise.resolve(null);
+  return getChatHistory().then((s) => s ?? 'unavailable');
 }
 
 export async function listConversations(): Promise<ChatListResult | null> {
   let kind: 'store' | 'fetch' = 'store';
   try {
     const store = await cloudHistory();
+    if (store === 'unavailable') return null;
     if (store) return { conversations: store.listConversations(), isGuest: false };
     kind = 'fetch';
     const qs = chatQueryParts();
@@ -199,7 +203,7 @@ export async function loadConversation(conversationId: string, signal?: AbortSig
   let kind: 'store' | 'fetch' = 'store';
   try {
     const store = await Promise.race([cloudHistory(), untilAborted(signal)]);
-    if (store === 'failed') return 'failed';
+    if (store === 'failed' || store === 'unavailable') return 'failed';
     if (store) return store.getMessages(conversationId);
     kind = 'fetch';
     const params = [`conversationId=${encodeURIComponent(conversationId)}`, ...chatQueryParts()].join('&');
@@ -373,6 +377,7 @@ export async function sendMessage(
 
 export async function deleteConversation(conversationId: string): Promise<boolean> {
   const store = await cloudHistory();
+  if (store === 'unavailable') return false;
   if (store) {
     // Tombstone in the user's cloud. The server holds no copy (US-15 AC7).
     try {
