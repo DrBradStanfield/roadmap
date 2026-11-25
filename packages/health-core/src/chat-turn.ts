@@ -14,8 +14,8 @@ export const MAX_CHARS = 8000;
 export const OFFLINE_ERROR = "You're offline. Check your connection and try again.";
 
 // Minimal shapes; the widget's chat-api types are wider and assign to these.
-/** `notSaved` (US-15 AC76): 'history', this reply was not saved to the chat-history file (this page only); 'left', it
- *  carried edits and landed after the person left its thread, so they were applied nowhere (stored with the turn). */
+/** `notSaved` (US-15 AC76): 'left', the reply carried edits and landed after the person left its thread, so they
+ *  applied nowhere (stored with the turn); 'history', drawn only by `shownMessages`, never held in `messages`. */
 export interface Msg { id: string; role: 'user' | 'assistant'; content: string; createdAt: string; isFallback?: boolean; notSaved?: 'history' | 'left' }
 export interface Conv { id: string; title: string; updatedAt?: string; createdAt?: string }
 export interface Approach { thinking: string; sources: string[] }
@@ -54,6 +54,10 @@ export interface ChatState {
   shown: Shown; messages: Msg[]; conversations: Conv[];
   turn: Turn; list: List; load: Load;
   erase: { shown: Erase; moving: Moving };
+  /** Replies on screen the chat-history file did not take (US-15 AC76), by message id, so a restore of `messages`
+   *  never drops one: the session whose working copy still holds the turn (its next save writes it), or null when
+   *  no file opened (never written). */
+  unsaved: Record<string, number | null>;
   notice: 'none' | 'remote-erase'; error: string | null;
   seq: { key: number; opening: number; turn: number; read: number };
 }
@@ -74,7 +78,8 @@ export type ChatEvent =
   | { type: 'list-landed'; read: number; conversations: Conv[] | null }
   | { type: 'load-landed'; opening: number; id: string; turns: Msg[] | null }
   | { type: 'load-failed'; opening: number; id: string } // a read that threw, timed out, or answered with no turns (not a 404)
-  | { type: 'reply-unsaved'; id: string } // the reply's save to the chat-history file did not happen (US-15 AC76)
+  | { type: 'reply-unsaved'; id: string; session: number | null } // the reply's save did not happen (US-15 AC76)
+  | { type: 'history-saved'; session: number } // a save of that session got through (US-15 AC76)
   | { type: 'dismiss' };
 
 export type Effect =
@@ -101,7 +106,7 @@ export function initialChatState(opts: { erase: Erase; moving: Moving; conversat
     shown: opened ? { key: `thread:${opened.id}`, id: opened.id, opening: 0 } : { key: 'new:0', id: null, opening: 0 },
     messages: opened?.messages ?? [], conversations: opts.conversations ?? [],
     turn: { phase: 'idle' }, list: opts.conversations ? { phase: 'read' } : { phase: 'unread' }, load: { phase: 'none' },
-    erase: { shown: opts.erase, moving: opts.moving },
+    erase: { shown: opts.erase, moving: opts.moving }, unsaved: {},
     notice: 'none', error: null,
     seq: { key: 0, opening: 0, turn: 0, read: 0 },
   };
@@ -128,7 +133,12 @@ export const answerId = (r: SendResult, nonce: string): string => r.messageId ??
 /** Turn `turn`'s reply, landing now, carries edits for a thread the person left: they apply nowhere, so the reply is
  *  stored marked (C22 option B, US-15 AC76). The rule `done` takes the left branch by, read before it runs. */
 export function repliesLeft(s: ChatState, turn: number, r: SendResult): boolean {
-  return inFlight(s.turn) && s.turn.turn === turn && s.turn.asked.key !== s.shown.key && carriesEdits(r);
+  return inFlight(s.turn) && s.turn.turn === turn && s.turn.asked.key !== s.shown.key && Boolean(r.proposedEdits?.length);
+}
+
+/** The turns as drawn: a reply the history file did not take says so, unless it is stored 'left' (its own line). */
+export function shownMessages(messages: Msg[], unsaved: ChatState['unsaved']): Msg[] {
+  return messages.map((m) => (m.id in unsaved && m.role === 'assistant' && m.notSaved !== 'left' ? { ...m, notSaved: 'history' } : m));
 }
 
 // --- transition -------------------------------------------------------------
@@ -166,10 +176,8 @@ function applyDelta(p: Pending, d: Delta): Pending {
   return { ...p, [d.type]: p[d.type] + d.text };
 }
 
-const carriesEdits = (r: SendResult): boolean => Boolean(r.proposedEdits?.length || r.editRefusals?.length);
-
 function takeEdits(r: SendResult, erase: Erase, stayed: boolean): Effect[] {
-  if (!carriesEdits(r)) return [];
+  if (!r.proposedEdits?.length && !r.editRefusals?.length) return [];
   return [{ type: 'take-edits', edits: r.proposedEdits ?? [], refusals: r.editRefusals ?? [], erase, stayed }];
 }
 
@@ -245,7 +253,7 @@ function eraseShown(s: ChatState, e: Extract<ChatEvent, { type: 'erase-shown' }>
   const turn: Turn = inFlight(s.turn) ? { phase: 'orphaned', turn: s.turn.turn, asked: s.turn.asked, by: e.by } : s.turn;
   const next: ChatState = {
     ...s, seq, turn, erase: { ...s.erase, shown: e.erase },
-    shown: { ...s.shown, id: null, opening: seq.opening }, messages: [], conversations: [], error: null,
+    shown: { ...s.shown, id: null, opening: seq.opening }, messages: [], conversations: [], error: null, unsaved: {},
     notice: e.by === 'own' ? 'none' : 'remote-erase', load: { phase: 'none' },
   };
   const effects: Effect[] = [{ type: 'clear-extras' }, ...(e.by === 'remote' ? [{ type: 'edits-leave' } as const] : [])];
@@ -256,7 +264,7 @@ function eraseShown(s: ChatState, e: Extract<ChatEvent, { type: 'erase-shown' }>
 
 function listLanded(s: ChatState, e: Extract<ChatEvent, { type: 'list-landed' }>): Step {
   if (s.list.phase !== 'reading' || s.list.read !== e.read) return same(s);
-  if (!e.conversations) return same({ ...s, list: { phase: 'failed' } }); // the old titles stay
+  if (!e.conversations) return same({ ...s, list: { phase: 'failed' } }); // History says it is unavailable (AC76)
   const next: ChatState = { ...s, list: { phase: 'read' }, conversations: e.conversations };
   const latest = e.conversations[0];
   if (!s.list.autoOpen || !latest) return same(next);
@@ -267,11 +275,18 @@ function listLanded(s: ChatState, e: Extract<ChatEvent, { type: 'list-landed' }>
 /** The landing is for the load in flight; any other is stale. */
 const loadsNow = (s: ChatState, e: { opening: number; id: string }): boolean => s.load.phase === 'loading' && s.load.opening === e.opening && s.load.id === e.id;
 
+/** A failed list is read again once the history answers (a save or a thread read got through, US-15 AC76). */
+function relist(s: ChatState): Step {
+  if (s.list.phase !== 'failed') return same(s);
+  return s.erase.moving !== 'none' ? same({ ...s, list: { phase: 'waiting', autoOpen: false } }) : readList(s, false);
+}
+
 function loadLanded(s: ChatState, e: Extract<ChatEvent, { type: 'load-landed' }>): Step {
   const current = loadsNow(s, e);
   if (e.turns) {
     if (!current) return same(s);
-    return { state: { ...s, messages: e.turns, load: { phase: 'none' } }, effects: [{ type: 'post-state' }] };
+    const loaded = relist({ ...s, messages: e.turns, load: { phase: 'none' } }); // a thread read: the history works
+    return { state: loaded.state, effects: [{ type: 'post-state' }, ...loaded.effects] };
   }
   // A 404 at any opening: the thread is gone (AC6a). R8: emptying the shown chat also ends its load.
   const dropped: ChatState = { ...s, conversations: s.conversations.filter((c) => c.id !== e.id) };
@@ -330,10 +345,11 @@ export function transition(s: ChatState, e: ChatEvent): Step {
     case 'list-landed': return listLanded(s, e);
     case 'load-landed': return loadLanded(s, e);
     case 'load-failed': return same(loadsNow(s, e) ? { ...s, load: { phase: 'failed', opening: e.opening, id: e.id } } : s);
-    case 'reply-unsaved': {
+    case 'reply-unsaved':
       if (!s.messages.some((m) => m.id === e.id && m.role === 'assistant')) return same(s); // not on screen: nothing to say
-      return { state: { ...s, messages: s.messages.map((m) => (m.id === e.id ? { ...m, notSaved: 'history' } : m)) }, effects: [{ type: 'post-state' }] };
-    }
+      return same({ ...s, unsaved: { ...s.unsaved, [e.id]: e.session } });
+    case 'history-saved': // that save wrote the session's earlier turns too
+      return relist({ ...s, unsaved: Object.fromEntries(Object.entries(s.unsaved).filter(([, session]) => session !== e.session)) });
     case 'dismiss': return same({ ...s, notice: 'none' });
   }
 }

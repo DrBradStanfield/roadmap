@@ -649,7 +649,8 @@ describe('§3 Shown chat, list and load', () => {
       expect(effects).toEqual([{ type: 'edits-leave' }]);
     });
     loadCells('load-landed null, shown, current', id, { ...E, turns: null }, { none: [NONE, [{ type: 'edits-leave' }]], loading: [NONE, [{ type: 'edits-leave' }]], failed: [NONE, [{ type: 'edits-leave' }]] });
-    listCells('load-landed current', loading, E, all4([{ type: 'post-state' }]));
+    // A thread read means the history answers: a failed list is read again (US-15 AC76).
+    listCells('load-landed current', loading, E, { ...all4([{ type: 'post-state' }]), failed: [reading(4), [{ type: 'post-state' }, { type: 'read-list', read: 4 }]] });
     loadCells('load-landed', id, E, { none: [SAME, []], loading: [NONE, [{ type: 'post-state' }]], failed: [SAME, []] });
     loadCells('load-landed stale', id, { ...E, opening: 1 }, both([]));
     loadCells('load-landed null, shown', id, { ...E, opening: 1, turns: null }, { none: [NONE, [{ type: 'edits-leave' }]], loading: [NONE, [{ type: 'edits-leave' }]], failed: [NONE, [{ type: 'edits-leave' }]] });
@@ -699,7 +700,7 @@ describe('§1 initial state and the derived view', () => {
     expect(initialChatState({ erase: 'E5', moving: 'remote' })).toEqual({
       shown: { key: 'new:0', id: null, opening: 0 }, messages: [], conversations: [],
       turn: { phase: 'idle' }, list: { phase: 'unread' }, load: { phase: 'none' },
-      erase: { shown: 'E5', moving: 'remote' }, notice: 'none', error: null, seq: { key: 0, opening: 0, turn: 0, read: 0 },
+      erase: { shown: 'E5', moving: 'remote' }, unsaved: {}, notice: 'none', error: null, seq: { key: 0, opening: 0, turn: 0, read: 0 },
     });
   });
   it('initialChatState with a prefetched thread: that thread shown at opening 0, its turns, the list read', () => {

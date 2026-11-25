@@ -50,26 +50,29 @@ describe.each([
   ['website chat (chat-api)', sendWebsite],
   ['Pages chat (byok-chat)', sendPages],
 ])('US-15 AC76: %s', (_name, send) => {
-  it('a saved turn answers saved', async () => {
-    expect(await (await send('hello', null, null)).saved).toBe('saved');
-    expect(store.recordExchange).toHaveBeenCalledOnce();
+  it('a saved turn answers saved, with the same session each time for one store', async () => {
+    const first = await (await send('hello', null, null)).saved;
+    expect(first).toEqual({ outcome: 'saved', session: expect.any(Number) });
+    expect(await (await send('again', null, null)).saved).toEqual(first);
+    expect(store.recordExchange).toHaveBeenCalledTimes(2);
   });
 
-  it('a save that fails answers unsaved, and is still reported (AC47)', async () => {
+  it('a save that fails answers unsaved in that session (its copy keeps the turn), and is still reported (AC47)', async () => {
+    const saved = await (await send('first', null, null)).saved;
     store.recordExchange.mockRejectedValueOnce(new Error('synthetic refusal'));
-    expect(await (await send('hello', null, null)).saved).toBe('unsaved');
+    expect(await (await send('hello', null, null)).saved).toEqual({ outcome: 'unsaved', session: (saved as { session: number }).session });
     expect(sentry.captureException).toHaveBeenCalledOnce();
   });
 
-  it('a history file that could not be opened answers unsaved', async () => {
+  it('a history file that could not be opened answers unsaved in no session: the turn is never written', async () => {
     access.store = false;
-    expect(await (await send('hello', null, null)).saved).toBe('unsaved');
+    expect(await (await send('hello', null, null)).saved).toEqual({ outcome: 'unsaved', session: null });
   });
 
   it('no history layer answers skipped: nothing to say', async () => {
     access.store = false;
     access.layer = false;
-    expect(await (await send('hello', null, null)).saved).toBe('skipped');
+    expect(await (await send('hello', null, null)).saved).toEqual({ outcome: 'skipped' });
   });
 
   it('a reply the hook marks left is stored with notSaved left; unmarked, with none', async () => {

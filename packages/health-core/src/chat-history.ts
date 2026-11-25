@@ -124,7 +124,9 @@ export function migrateChatHistoryFile(
       messages: asArray<unknown>(c.messages).filter((m): m is ChatFileMessage =>
         isObject(m) && typeof m.id === 'string' && m.id.length > 0 &&
         (m.role === 'user' || m.role === 'assistant') &&
-        typeof m.content === 'string' && typeof m.createdAt === 'string'),
+        typeof m.content === 'string' && typeof m.createdAt === 'string')
+        // A marker is read only as the word this build writes (US-15 AC76).
+        .map(({ notSaved, ...m }) => (notSaved === 'left' ? { ...m, notSaved } : m)),
     }));
 
   return {

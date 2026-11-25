@@ -8,7 +8,7 @@
  */
 
 import { Sentry } from '../lib/sentry';
-import { useState, useEffect, useLayoutEffect, useRef, useCallback, useSyncExternalStore } from 'react';
+import { useState, useEffect, useLayoutEffect, useMemo, useRef, useCallback, useSyncExternalStore } from 'react';
 import {
   listConversations,
   sendMessage,
@@ -27,7 +27,7 @@ import { useOffline } from './useOffline';
 import { createChatStore, joinChats } from './chatStore';
 import { readThread } from './chatReads';
 import { cutText } from '@roadmap/health-core/chat-history';
-import { answerId, busy, initialChatState, isLocalSender, MAX_CHARS, repliesLeft, showsPending, type ChatEvent, type Effect } from '@roadmap/health-core/chat-turn';
+import { answerId, busy, initialChatState, isLocalSender, MAX_CHARS, repliesLeft, shownMessages, showsPending, type ChatEvent, type Effect } from '@roadmap/health-core/chat-turn';
 import type { ChatContextPayload } from '@roadmap/health-core/chat-context';
 import type { ProposedEdit } from '@roadmap/health-core/chat-edits';
 import type { ChatEditRefusal } from '@roadmap/health-core/chat-edit-refusals';
@@ -124,6 +124,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     (effect) => run(effect),
   ));
   const chat = useSyncExternalStore(store.subscribe, store.getSnapshot);
+  const messages = useMemo(() => shownMessages(chat.messages, chat.unsaved), [chat.messages, chat.unsaved]);
   useLayoutEffect(() => joinChats(store), [store]);
   useEffect(() => () => { reads.forEach((stop) => stop()); cancelAnimationFrame(streamRef.current.frame); }, [reads]);
 
@@ -177,7 +178,10 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     flushDeltas(); // the approach the reply keeps is everything streamed
     if (result && !error) {
       await store.dispatch({ type: 'done', turn, result, now: new Date().toISOString() });
-      void saved?.then((outcome) => { if (outcome === 'unsaved') void store.dispatch({ type: 'reply-unsaved', id: answerId(result, nonce) }); });
+      void saved?.then((s) => {
+        if (s.outcome === 'unsaved') void store.dispatch({ type: 'reply-unsaved', id: answerId(result, nonce), session: s.session });
+        else if (s.outcome === 'saved') void store.dispatch({ type: 'history-saved', session: s.session });
+      });
     } else await store.dispatch({ type: 'failed', turn, message: error?.error ?? SEND_FAILED, boxEmpty: !inputTextRef.current });
   };
 
@@ -295,7 +299,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
     state: {
       conversations: chat.conversations,
       activeConversationId: chat.shown.id,
-      messages: chat.messages,
+      messages,
       inputText,
       // Send and the box are locked while any request is open or the shown thread is not read (busy).
       isLoading: busy(chat, othersBusy),

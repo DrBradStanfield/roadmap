@@ -34,7 +34,7 @@ import { REPLY_LEFT_NOT_SAVED, REPLY_NOT_SAVED } from './ChatMessageBubble';
 
 const conversations: ChatConversation[] = [{ id: 'A', title: 'Thread A', updatedAt: 'x', createdAt: 'x' }];
 const turn = (id: string, role: 'user' | 'assistant', content: string, extra: Partial<ChatMessage> = {}): ChatMessage => ({ id, role, content, createdAt: 'x', ...extra });
-const EDITS = [{ kind: 'field', field: 'weightKg', value: '80', unit: 'kg', date: '2026-11-26' }] as SendMessageResult['proposedEdits'];
+const EDITS: SendMessageResult['proposedEdits'] = [{ kind: 'field', field: 'weightKg', displayValue: 80, unitSystem: 'si', date: null }];
 const settle = () => act(async () => { await new Promise((r) => setTimeout(r, 0)); });
 const historyText = () => document.querySelector('.chat-embed-thread-list')!.textContent;
 
@@ -43,7 +43,7 @@ async function ask(text: string) {
   await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Send' })); });
 }
 /** The last send lands with `result`; `saved` is its history save's outcome. */
-async function land(result: SendMessageResult, saved?: Promise<'saved' | 'unsaved' | 'skipped'>) {
+async function land(result: SendMessageResult, saved?: ChatSent['saved']) {
   const sent: ChatSent = { result, error: null, ...(saved ? { saved } : {}) };
   await act(async () => { sends.at(-1)!.resolve(sent); });
   await settle();
@@ -75,6 +75,16 @@ describe('US-15 AC76: History after a failed list read', () => {
     expect(historyText()).toContain(HISTORY_UNAVAILABLE);
   });
 
+  it('a later save that gets through reads the list again, so a history that works is listed', async () => {
+    vi.mocked(listConversations).mockResolvedValueOnce(null as never);
+    render(<ChatEmbed isLoggedIn />);
+    await settle();
+    await ask('A question');
+    await land({ conversationId: 'N', messageId: 'r1', content: 'An answer' }, Promise.resolve({ outcome: 'saved', session: 1 }));
+    expect(historyText()).toContain('Thread A');
+    expect(historyText()).not.toContain(HISTORY_UNAVAILABLE);
+  });
+
   it('control: a list that reads shows its titles and no such line', async () => {
     render(<ChatEmbed isLoggedIn />);
     await settle();
@@ -88,20 +98,47 @@ describe('US-15 AC76: a reply the history file did not take', () => {
     render(<ChatEmbed isLoggedIn />);
     await settle();
     await ask('First');
-    await land({ conversationId: 'N', messageId: 'r1', content: 'Saved answer' }, Promise.resolve('saved'));
+    await land({ conversationId: 'N', messageId: 'r1', content: 'Saved answer' }, Promise.resolve({ outcome: 'saved', session: 1 }));
     await ask('Second');
-    await land({ conversationId: 'N', messageId: 'r2', content: 'Lost answer' }, Promise.resolve('unsaved'));
+    await land({ conversationId: 'N', messageId: 'r2', content: 'Lost answer' }, Promise.resolve({ outcome: 'unsaved', session: null }));
     const lines = [...document.querySelectorAll('.chat-message--assistant')].map((b) => b.textContent);
     expect(REPLY_NOT_SAVED).toBe('This reply was not saved to your chat history.');
     expect(lines[0]).not.toContain(REPLY_NOT_SAVED);
     expect(lines[1]).toContain(`Lost answer${REPLY_NOT_SAVED}`);
   });
 
+  const replies = () => [...document.querySelectorAll('.chat-message--assistant')].map((b) => b.textContent?.includes(REPLY_NOT_SAVED));
+
+  it('a failed save is said until a later save of the same session gets through, which writes that turn too', async () => {
+    render(<ChatEmbed isLoggedIn />);
+    await settle();
+    await ask('First');
+    await land({ conversationId: 'N', messageId: 'r1', content: 'A1' }, Promise.resolve({ outcome: 'unsaved', session: 7 }));
+    await ask('Second');
+    await land({ conversationId: 'N', messageId: 'r2', content: 'A2' }, Promise.resolve({ outcome: 'unsaved', session: null }));
+    expect(replies()).toEqual([true, true]);
+    await ask('Third');
+    await land({ conversationId: 'N', messageId: 'r3', content: 'A3' }, Promise.resolve({ outcome: 'saved', session: 7 }));
+    expect(replies()).toEqual([false, true, false]); // the unopened one was never in the copy: still said
+  });
+
+  it('a mark that lands while the next question is out survives that turn landing', async () => {
+    render(<ChatEmbed isLoggedIn />);
+    await settle();
+    let failA!: (v: NonNullable<Awaited<ChatSent['saved']>>) => void;
+    await ask('First');
+    await land({ conversationId: 'N', messageId: 'r1', content: 'A1' }, new Promise((r) => { failA = r; }));
+    await ask('Second');
+    await act(async () => { failA({ outcome: 'unsaved', session: null }); });
+    await land({ conversationId: 'N', messageId: 'r2', content: 'A2' }, Promise.resolve({ outcome: 'skipped' }));
+    expect(replies()).toEqual([true, false]);
+  });
+
   it('says nothing for a save that was skipped (an erase began, or there is no history file)', async () => {
     render(<ChatEmbed isLoggedIn />);
     await settle();
     await ask('First');
-    await land({ conversationId: 'N', messageId: 'r1', content: 'Answer' }, Promise.resolve('skipped'));
+    await land({ conversationId: 'N', messageId: 'r1', content: 'Answer' }, Promise.resolve({ outcome: 'skipped' }));
     expect(document.body.textContent).not.toContain(REPLY_NOT_SAVED);
   });
 });
