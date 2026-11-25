@@ -22,6 +22,7 @@ import {
 } from 'discord.js';
 import * as Sentry from '@sentry/react-router';
 import { platformChatCompletion } from './platform-chat.server';
+import { routerTurn } from './chat-router-stage.server';
 import { claimChatTurn } from './chat-dedup.server';
 import { sleep } from './cron-helpers.server';
 import { reportChatFallback } from './chat.server';
@@ -361,6 +362,7 @@ async function handleMessage(message: GuildMessage): Promise<void> {
     // 'store' covers building the stored text (sentText, the history find and
     // filter) as well as the write.
     stage = 'store';
+    const routerInput = routerTurn(truncatedInput, history);
     persistConversation({
       conversationId,
       authorId,
@@ -380,8 +382,9 @@ async function handleMessage(message: GuildMessage): Promise<void> {
         classification: result.classifier.classification,
         routerSkipped: result.classifier.routerSkipped,
       },
-      contextFirst: history.find(m => m.role === 'user')?.content,
-      contextRecent: history.filter(m => m.role === 'user').slice(-3).map(m => m.content),
+      // The router's input, by the rule platformChatCompletion used (US-15 AC75).
+      contextFirst: routerInput.first,
+      contextRecent: routerInput.recent,
     }).catch((err) => {
       console.error('Discord: persistConversation failed:', safeErrorFields(err));
       Sentry.captureException(err, {
