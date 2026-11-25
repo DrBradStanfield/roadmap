@@ -89,9 +89,6 @@ issue, and nothing private.
   upload; the iPhone saves the rest and refuses that row. Options: the web refuses per row, like the iPhone; the
   iPhone blocks like the web; leave. Recommendation: per-row refusal in the shared engine for both, with the refused
   row shown.
-- **"Sync now" inside the five-second pause.** Issue: pressed within five seconds of the last read, Sync now reads
-  nothing and still says "Synced". Options: Sync now skips the pause; it says nothing new; leave. Recommendation:
-  skip the pause; no new words.
 - **One copy of the plan-page wording.** Issue: the iPhone's alcohol question adds a sentence the web does not, and
   the plan page's order, colours and urgent banner are hand copies on each app. Options: one wording in the shared
   engine, chosen by you; leave two copies. Recommendation: one wording, with you choosing it; the display rules move
@@ -209,6 +206,9 @@ issue, and nothing private.
 ## Decided
 
 2026-11-26, Brad's words in quotes:
+- "Sync now" inside the five-second pause: Sync now skips the pause, with no new words; the pause stays for
+  automatic re-reads (option (a): shared engine rule plus the iPhone engine's Sync now door, which reaches phones
+  with the next engine release).
 - Screen-reader names for the medicine dose boxes end in a lower-case "dose", as the supplement rows do (PR 1796),
   so the whole form uses one casing: "this" (option 2). PR 1888 now names them "Statin dose", "GLP-1 Medication
   dose" and "SGLT2 Inhibitor dose", through labelled-by references (US-09 AC7l). "Email for your PDF" is approved for PR 1800.
