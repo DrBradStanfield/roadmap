@@ -8,6 +8,7 @@ import { supabaseAdmin } from './supabase-client.server';
 import { logAudit } from './supabase-identity.server';
 import { safeErrorFields } from './safe-error-fields.server';
 import { createRateLimiter } from './rate-limiter';
+import { hashedKey, ipBucket, type IpKey } from './ip-key.server';
 
 // ---------------------------------------------------------------------------
 // Guest chat session management
@@ -39,7 +40,8 @@ export function hashClientIp(ip: string): string {
 // (US-15 AC67): a live entry is evicted only once MAX_TRACKED_KEYS other hashes
 // are live within the hour, and a caller holding that many addresses already
 // gets 10 per address.
-const takeGuestSession = createRateLimiter(10, 60 * 60_000, 10 * 60_000, { name: 'guest sessions per IP' });
+// The limit keys on the hashed bucket (IPv6 /64, US-52 AC4k); the session itself stays bound to the address.
+const takeGuestSession = createRateLimiter<IpKey>(10, 60 * 60_000, 10 * 60_000, { name: 'guest sessions per IP' });
 
 export interface GuestSessionResult {
   sessionId: string;
@@ -83,9 +85,10 @@ export async function getOrCreateGuestSession(
 ): Promise<GuestSessionResult> {
   if (!supabaseAdmin) throw new Error('Supabase admin client not configured');
 
-  // Nothing below this line touches `ip` again (US-15 AC7): the session row,
-  // the rate-limit bucket and the audit entry all key on the hash.
+  // Nothing below this line touches `ip` again (US-15 AC7): the session row
+  // and the audit entry key on the address's hash, the limit on its bucket's.
   const ipHash = hashClientIp(ip);
+  const limitKey = hashedKey(ipBucket(ip), hashClientIp);
 
   // Existing session — validate token + IP (checked BEFORE rate limit to avoid penalizing returning guests)
   if (sessionToken) {
@@ -102,7 +105,7 @@ export async function getOrCreateGuestSession(
   }
 
   // In-memory IP rate limit (only for new session creation, not returning sessions)
-  if (!takeGuestSession(ipHash)) throw new GuestRateLimitError('Too many requests');
+  if (!takeGuestSession(limitKey)) throw new GuestRateLimitError('Too many requests');
 
   // Create ghost auth user + profile + session
   const guestEmail = `guest-${crypto.randomUUID()}@guest.internal`;

@@ -5,10 +5,8 @@
  * the body is read, so a script with no key never makes us buffer its upload.
  * Fails closed: no config or no key store is a 503, never a pass.
  */
-import { isIP } from 'node:net';
 import { readCappedBytes } from './capped-body.server';
-import { parseIpv6 } from './ip-groups.server';
-import { getClientIp } from './local-first-route.server';
+import { clientKey, type IpKey } from './ip-key.server';
 import { createQuotaCounter, dailyFileCap, DAY_MS, envCap, machineFiles } from './rate-limiter';
 import { supabaseAdmin } from './supabase-client.server';
 import {
@@ -58,38 +56,6 @@ export const supabaseKeyStore: KeyStore = {
   },
 };
 
-/**
- * The per-IP bucket. IPv6 is keyed on its /64, which one subscriber holds
- * whole (adversary R4); IPv4 on the address, so many phones behind one
- * carrier NAT share a bucket, the price of having one at all.
- *
- * Total (US-52 AC4g): every spelling of one address is one key. Brackets, a
- * port and an IPv6 zone are dropped; IPv4-mapped IPv6, dotted or hex, is its
- * IPv4 address. Anything `isIP` does not take (IPv4 with leading zeros
- * included) is the one key `unknown`, `getClientIp`'s own fallback, so no
- * value becomes its own key. Never through `new URL`: it rewrites the dotted
- * mapped form to hex.
- */
-export function ipBucket(raw: string | undefined): string {
-  let ip = (raw ?? '').trim();
-  if (ip.length > 64) return UNKNOWN_IP;
-  const hostPort = /^\[([^\]]+)\](?::(\d{1,5}))?$/.exec(ip) ?? /^(\d+\.\d+\.\d+\.\d+):(\d{1,5})$/.exec(ip);
-  if (hostPort && Number(hostPort[2] ?? 0) > 65535) return UNKNOWN_IP;
-  if (hostPort) ip = hostPort[1];
-  const zone = ip.indexOf('%');
-  if (zone >= 0 && isIP(ip.slice(0, zone)) === 6) ip = ip.slice(0, zone);
-  const family = isIP(ip);
-  if (family === 4) return hostPort?.[0].startsWith('[') ? UNKNOWN_IP : ip;
-  const g = family === 6 ? parseIpv6(ip) : null;
-  if (!g) return UNKNOWN_IP;
-  if (g.slice(0, 5).every((x) => x === 0) && g[5] === 0xffff) {
-    return [g[6] >> 8, g[6] & 255, g[7] >> 8, g[7] & 255].join('.');
-  }
-  return g.slice(0, 4).map((x) => x.toString(16)).join(':') + '::/64';
-}
-
-const UNKNOWN_IP = 'unknown';
-
 /** The app's routes run on the education app only: on the brand surface they answer 503 (AC2, adversary R13). */
 export function appRoutesOff(env: NodeJS.ProcessEnv = process.env): boolean {
   return env.CHAT_SURFACE === 'brand';
@@ -97,20 +63,20 @@ export function appRoutesOff(env: NodeJS.ProcessEnv = process.env): boolean {
 
 /** Per IP per day, and per machine per day: in memory (D8 says why). */
 export const appLimits = {
-  ip: { chat: createQuotaCounter(200, DAY_MS, 30 * 60_000, { name: 'app chat per IP' }), lab: createQuotaCounter(200, DAY_MS, 30 * 60_000, { name: 'app lab per IP' }) },
+  ip: { chat: createQuotaCounter<IpKey>(200, DAY_MS, 30 * 60_000, { name: 'app chat per IP' }), lab: createQuotaCounter<IpKey>(200, DAY_MS, 30 * 60_000, { name: 'app lab per IP' }) },
   machine: {
     chat: createQuotaCounter(envCap('APP_CHAT_DAILY_CAP', process.env.APP_CHAT_DAILY_CAP, 500), DAY_MS, 30 * 60_000, { name: 'app chat per machine' }),
     // Never more than 15% of the web's shared file cap, whatever the env says (AC4, Codex R7).
     lab: createQuotaCounter(Math.min(envCap('APP_LAB_DAILY_CAP', process.env.APP_LAB_DAILY_CAP, 300), Math.floor(0.15 * dailyFileCap(process.env.AI_DAILY_FILE_CAP))), DAY_MS, 30 * 60_000, { name: 'app lab per machine' }),
   },
   /** Signed requests refused before their signature verified, per IP per day; past it, no key lookup or body read (adversary code R3). A backstop: a verified key's failures are its own (AC4c). */
-  failures: createQuotaCounter(200, DAY_MS, 30 * 60_000, { name: 'app failures per IP' }),
+  failures: createQuotaCounter<IpKey>(200, DAY_MS, 30 * 60_000, { name: 'app failures per IP' }),
   /** A verified key's refused requests (stale counter, key gone) per day, so one broken device stops only itself (US-52 AC4c). */
   keyFailures: createQuotaCounter(20, DAY_MS, 30 * 60_000, { name: 'app failures per key' }),
   /** Registration attempts per IP per day, counted before verifying (R11); a success hands its attempt back (AC1b). */
-  register: createQuotaCounter(10, DAY_MS, 30 * 60_000, { name: 'app registration attempts per IP' }),
+  register: createQuotaCounter<IpKey>(10, DAY_MS, 30 * 60_000, { name: 'app registration attempts per IP' }),
   /** Successful registrations per IP per day (US-52 AC1b). */
-  registered: createQuotaCounter(50, DAY_MS, 30 * 60_000, { name: 'app registrations per IP' }),
+  registered: createQuotaCounter<IpKey>(50, DAY_MS, 30 * 60_000, { name: 'app registrations per IP' }),
   /** Challenges used, each once, success or failure (US-52 AC1a). A minute longer than a challenge lives, for clock skew between machines.
    *  One-use must hold for a challenge's whole life, so this set never evicts and never refuses; its 6-minute life bounds it. */
   challenges: createQuotaCounter(1, CHALLENGE_TTL_MS + 60_000, 60_000, { name: 'app spent challenges', maxKeys: Infinity }),
@@ -154,7 +120,7 @@ export async function appGate(request: Request, opts: GateOptions): Promise<{ bo
   const env = opts.env ?? process.env;
   const store = opts.store ?? supabaseKeyStore;
   if (request.method !== 'POST') return refuse(405, 'method', 'POST only');
-  const ip = ipBucket(getClientIp(request, 'fly'));
+  const ip = clientKey(request, 'fly');
   const path = new URL(request.url).pathname;
 
   const dev = request.headers.get('x-app-attest-dev');
@@ -255,7 +221,7 @@ export async function appGate(request: Request, opts: GateOptions): Promise<{ bo
  * The per-IP and per-machine counts, and for a lab file the web's shared file
  * cap (US-35 AC10), all or nothing: their refund, or null when any is full (US-52 AC4d).
  */
-function reserveShared(kind: AppUseKind, ip: string): (() => void) | null {
+function reserveShared(kind: AppUseKind, ip: IpKey): (() => void) | null {
   const ipBack = appLimits.ip[kind].reserve(ip, 1);
   if (!ipBack) { logRefusal(kind, 'ip_limit'); return null; }
   const machineBack = appLimits.machine[kind].reserve('machine', 1);

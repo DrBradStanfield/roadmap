@@ -4,14 +4,15 @@ import { authenticate } from '../shopify.server';
 import { getActiveABTests, recordABEvent, type ABEventType } from '../lib/supabase.server';
 import { createRateLimiter } from '../lib/rate-limiter';
 import { isBotUA } from '../lib/bot-detect';
-import { BODY_TOO_LARGE, getClientIp, parseSimpleRequestJson } from '../lib/local-first-route.server';
+import { BODY_TOO_LARGE, parseSimpleRequestJson } from '../lib/local-first-route.server';
+import { clientKey, type IpKey } from '../lib/ip-key.server';
 
 // 10 events per minute per visitor (generous, prevents abuse)
 const checkABRateLimit = createRateLimiter(10, 60_000, 5 * 60_000, { name: 'ab per visitor' });
 // The visitor id is in the body, so a script that rotates it has no limit at
 // all. The IP is the one key the caller cannot choose. Loose enough that a
 // whole CGNAT range of real shoppers never notices.
-const checkABIpRateLimit = createRateLimiter(600, 60 * 60_000, 10 * 60_000, { name: 'ab per IP' });
+const checkABIpRateLimit = createRateLimiter<IpKey>(600, 60 * 60_000, 10 * 60_000, { name: 'ab per IP' });
 
 const abEventSchema = z.object({
   testId: z.guid(),
@@ -44,7 +45,7 @@ export async function action({ request }: ActionFunctionArgs) {
     return Response.json({ success: false, error: 'Invalid event data' }, { status: 400 });
   }
 
-  if (!checkABIpRateLimit(getClientIp(request, 'shopify')) || !checkABRateLimit(parsed.data.visitorId)) {
+  if (!checkABIpRateLimit(clientKey(request, 'shopify')) || !checkABRateLimit(parsed.data.visitorId)) {
     return Response.json({ success: false, error: 'Rate limited' }, { status: 429 });
   }
 

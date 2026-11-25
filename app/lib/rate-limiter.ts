@@ -1,6 +1,7 @@
 // In-memory rate limiter factory
 // Shared across routes (api.measurements, api.ab, etc.)
 import * as Sentry from '@sentry/react-router';
+import type { IpKey } from './ip-key.server';
 
 export const DAY_MS = 24 * 60 * 60_000;
 const HOUR_MS = 60 * 60_000;
@@ -68,14 +69,15 @@ export function boundedMap<V>(map: Map<string, V>, expiresAt: (entry: V) => numb
 
 const resetAtOf = (entry: { resetAt: number }) => entry.resetAt;
 
-export function createRateLimiter(max: number, windowMs: number, cleanupMs: number, options: LimitMapOptions) {
+/** `K` is the key's type: a per-IP limiter is `createRateLimiter<IpKey>`, so it takes only the one bucket (US-52 AC4k). */
+export function createRateLimiter<K extends string = string>(max: number, windowMs: number, cleanupMs: number, options: LimitMapOptions) {
   const map = new Map<string, { count: number; resetAt: number }>();
   sweepExpired(map, resetAtOf, cleanupMs);
   const room = boundedMap(map, resetAtOf, options);
   // `reset` is a test seam: the map is process-global and would otherwise leak
   // between cases in a suite that drives a limited route many times.
   return Object.assign(
-    (key: string): boolean => {
+    (key: K): boolean => {
       const now = Date.now();
       const entry = map.get(key);
       if (!entry || !isLive(entry.resetAt, now)) {
@@ -95,15 +97,15 @@ export function createRateLimiter(max: number, windowMs: number, cleanupMs: numb
  * day"). Same Map+sweep machinery as createRateLimiter, but consumption has a
  * weight and callers can read the remainder without consuming.
  */
-export function createQuotaCounter(limit: number, windowMs: number, cleanupMs: number, options: LimitMapOptions) {
+export function createQuotaCounter<K extends string = string>(limit: number, windowMs: number, cleanupMs: number, options: LimitMapOptions) {
   const map = new Map<string, { count: number; resetAt: number }>();
   sweepExpired(map, resetAtOf, cleanupMs);
   const room = boundedMap(map, resetAtOf, options);
-  const live = (key: string) => {
+  const live = (key: K) => {
     const entry = map.get(key);
     return entry && isLive(entry.resetAt, Date.now()) ? entry : null;
   };
-  const charge = (key: string, n: number) => {
+  const charge = (key: K, n: number) => {
     if (n > limit) return null; // refused before it takes a place (US-52 AC4i)
     let entry = live(key);
     if (!entry) {
@@ -119,22 +121,22 @@ export function createQuotaCounter(limit: number, windowMs: number, cleanupMs: n
     /** Test seam — the map is process-global. */
     reset: () => map.clear(),
     /** Consume `n` units; false (and nothing consumed) when it would exceed the limit. */
-    take: (key: string, n: number): boolean => charge(key, n) !== null,
+    take: (key: K, n: number): boolean => charge(key, n) !== null,
     /**
      * Like take, but returns the refund for this charge alone, or null when refused.
      * The refund is bound to the window it charged: once that window has expired
      * it does nothing, so a request pending across the expiry cannot reopen the next (US-52 AC4a).
      */
-    reserve(key: string, n: number): (() => void) | null {
+    reserve(key: K, n: number): (() => void) | null {
       const entry = charge(key, n);
       return entry && (() => { if (live(key) === entry) entry.count = Math.max(0, entry.count - n); });
     },
     /** Hand `n` units back — a file charged before a model call that never got to run (US-35 AC10). */
-    refund(key: string, n: number): void {
+    refund(key: K, n: number): void {
       const entry = live(key);
       if (entry) entry.count = Math.max(0, entry.count - n);
     },
-    remaining(key: string): number {
+    remaining(key: K): number {
       const entry = live(key);
       return Math.max(0, limit - (entry?.count ?? 0));
     },
@@ -186,7 +188,7 @@ export function envCap(name: string, raw: string | undefined, fallback: number, 
  * as a test seam.
  */
 export const webChatTurns = {
-  ip: createQuotaCounter(200, DAY_MS, 30 * 60_000, { name: 'web chat turns per IP' }),
+  ip: createQuotaCounter<IpKey>(200, DAY_MS, 30 * 60_000, { name: 'web chat turns per IP' }),
   machine: createQuotaCounter(envCap('WEB_CHAT_DAILY_CAP', process.env.WEB_CHAT_DAILY_CAP, 10_000), DAY_MS, 30 * 60_000, { name: 'web chat turns per machine' }),
 };
 
@@ -196,7 +198,7 @@ export const webChatTurns = {
  * A refund would hand back the count but not the clock, so a refused turn would start the IP's 24 hours and let it
  * spend 200 when the machine resets and 200 more when that early window ends. Synchronous, so the check holds.
  */
-export function takeWebChatTurn(ipBucket: string): boolean {
+export function takeWebChatTurn(ipBucket: IpKey): boolean {
   if (webChatTurns.ip.remaining(ipBucket) < 1) return false;
   if (!webChatTurns.machine.take('machine', 1)) return false;
   if (webChatTurns.machine.remaining('machine') === 0) reportWebChatCapReached();

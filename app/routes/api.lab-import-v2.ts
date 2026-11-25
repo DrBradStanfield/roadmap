@@ -3,7 +3,8 @@ import { labImportRequestSchema } from '../../packages/health-core/src/validatio
 import { extractOneFile, forWidget, reportLabImportError } from '../lib/lab-extract-one.server';
 import { IMPORT_LIMITS } from '../../packages/health-core/src/import-hints';
 import { createQuotaCounter, DAY_MS, machineFiles } from '../lib/rate-limiter';
-import { BODY_TOO_LARGE, getClientIp, parseSimpleRequestJson, verifyAppProxySignature } from '../lib/local-first-route.server';
+import { BODY_TOO_LARGE, parseSimpleRequestJson, verifyAppProxySignature } from '../lib/local-first-route.server';
+import { clientKey, type IpKey } from '../lib/ip-key.server';
 import { SMALL_BODY_CAP } from '../lib/capped-body.server';
 
 /**
@@ -32,10 +33,10 @@ const PER_IP_DAILY_LIMIT = IMPORT_LIMITS.websiteFiles;
 
 // Per-IP daily file quota — same shared counter machinery the sibling
 // local-first routes use (rate-limiter.ts), weighted by file count.
-const ipQuota = createQuotaCounter(PER_IP_DAILY_LIMIT, DAY_MS, 30 * 60_000, { name: 'lab upload files per IP' });
+const ipQuota = createQuotaCounter<IpKey>(PER_IP_DAILY_LIMIT, DAY_MS, 30 * 60_000, { name: 'lab upload files per IP' });
 
 /** Consume one file against the per-IP quota AND the machine $-cap; all or nothing. */
-function consumeQuota(ip: string): boolean {
+function consumeQuota(ip: IpKey): boolean {
   if (!ipQuota.take(ip, 1)) return false;
   if (machineFiles.take('machine', 1)) return true;
   ipQuota.refund(ip, 1);
@@ -48,13 +49,13 @@ const dailyLimit = () => Response.json(
   { status: 429 },
 );
 
-const daySpent = (ip: string) => ipQuota.remaining(ip) === 0 || machineFiles.remaining('machine') === 0;
+const daySpent = (ip: IpKey) => ipQuota.remaining(ip) === 0 || machineFiles.remaining('machine') === 0;
 /**
  * US-12 AC17b: with no file left today for this IP or the machine, no read can
  * succeed, so no more than a small body is read, and a larger one gets the
  * daily-limit answer.
  */
-function bodyLimit(ip: string): { cap: number; tooLarge: () => Response } {
+function bodyLimit(ip: IpKey): { cap: number; tooLarge: () => Response } {
   if (daySpent(ip)) return { cap: SMALL_BODY_CAP, tooLarge: dailyLimit };
   return { cap: 200 * 1024 * 1024, tooLarge: () => Response.json({ success: false, error: 'Request too large' }, { status: 413 }) };
 }
@@ -64,7 +65,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   if (!verifyAppProxySignature(request)) {
     return Response.json({ error: 'Forbidden' }, { status: 403 });
   }
-  const ip = getClientIp(request, 'shopify');
+  const ip = clientKey(request, 'shopify');
   return Response.json({ allowed: !daySpent(ip), remaining: ipQuota.remaining(ip) });
 }
 
@@ -74,7 +75,7 @@ export async function action({ request }: ActionFunctionArgs) {
   if (!verifyAppProxySignature(request)) {
     return Response.json({ success: false, error: 'Forbidden' }, { status: 403 });
   }
-  const ip = getClientIp(request, 'shopify');
+  const ip = clientKey(request, 'shopify');
   const limit = bodyLimit(ip);
 
   try {

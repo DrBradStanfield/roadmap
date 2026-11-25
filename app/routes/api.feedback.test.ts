@@ -29,6 +29,7 @@ import { action } from './api.feedback';
 import { SMALL_BODY_CAP } from '../lib/capped-body.server';
 import { streamingPost } from '../lib/capped-body.test-helpers';
 import { forgedQuery, proxyPairs, signedQuery, TEST_PROXY_SECRET } from '../lib/app-proxy.test-helpers';
+import { ipKeyedLimitCases } from '../lib/ip-key.test-helpers';
 
 let n = 0;
 function submit(headers: Record<string, string>, body?: Record<string, unknown>, query = '') {
@@ -132,5 +133,12 @@ describe('api.feedback body cap (US-09 AC25)', () => {
     expect(res.status).toBe(413);
     expect(pulled.bytes).toBeLessThanOrEqual(SMALL_BODY_CAP + 2 * 16 * 1024);
     expect(recordFeedbackSubmission.mock.calls.length).toBe(before);
+  });
+});
+
+describe('US-52 AC4k: the feedback limit keys on the one per-IP bucket', () => {
+  ipKeyedLimitCases({
+    limit: 3, windowMs: 60 * 60_000, v6: '2001:db8:f1', v4: '100.71',
+    allowed: async (ip) => (await submit(proxied(ip, '6.6.6.1'))).status !== 429,
   });
 });

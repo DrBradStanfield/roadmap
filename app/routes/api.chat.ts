@@ -11,7 +11,7 @@ import { getAuthenticatedUser, getCustomerId } from '../lib/route-helpers.server
 import { getClientIp } from '../lib/local-first-route.server';
 import { cappedBody } from '../lib/capped-body.server';
 import { takeWebChatTurn } from '../lib/rate-limiter';
-import { ipBucket } from '../lib/app-gate.server';
+import { clientKey } from '../lib/ip-key.server';
 import { authenticate, type AdminApiContext } from '../shopify.server';
 import { createUserClient, type SupabaseClient } from '../lib/supabase-client.server';
 import { logAudit } from '../lib/supabase-identity.server';
@@ -249,7 +249,7 @@ function refuseTurn(message: unknown, request: Request, app: boolean): Response 
   }
   // US-15 AC45: a web turn counts against its IP's day and the machine's,
   // whatever session it carries. The app's turn was counted by its gate.
-  if (!app && !takeWebChatTurn(ipBucket(getClientIp(request, 'shopify')))) {
+  if (!app && !takeWebChatTurn(clientKey(request, 'shopify'))) {
     return Response.json({ success: false, error: 'rate_limited' }, { status: 429 });
   }
   return null;

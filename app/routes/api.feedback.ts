@@ -4,13 +4,14 @@ import * as z from '../../packages/health-core/src/zod';
 import { authenticate } from '../shopify.server';
 import { sendFeedbackEmail } from '../lib/email.server';
 import { recordFeedbackSubmission } from '../lib/product-events.server';
-import { BODY_TOO_LARGE, getClientIp, parseSimpleRequestJson } from '../lib/local-first-route.server';
+import { BODY_TOO_LARGE, parseSimpleRequestJson } from '../lib/local-first-route.server';
+import { clientKey, type IpKey } from '../lib/ip-key.server';
 import { getCustomerId } from '../lib/route-helpers.server';
 import { createRateLimiter } from '../lib/rate-limiter';
 import { safeErrorFields } from '../lib/safe-error-fields.server';
 
 // 3 submissions per hour per IP — the same limiter every other route uses.
-const checkFeedbackRateLimit = createRateLimiter(3, 60 * 60_000, 10 * 60_000, { name: 'feedback per IP' });
+const checkFeedbackRateLimit = createRateLimiter<IpKey>(3, 60 * 60_000, 10 * 60_000, { name: 'feedback per IP' });
 
 const feedbackSchema = z.object({
   email: z.email().max(200),
@@ -30,7 +31,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
   // Counted as it is checked, before anything can throw: a Resend outage used
   // to throw past the counter and hand an attacker unlimited inserts.
-  if (!checkFeedbackRateLimit(getClientIp(request, 'shopify'))) {
+  if (!checkFeedbackRateLimit(clientKey(request, 'shopify'))) {
     return Response.json({ success: false, error: 'Too many requests. Please try again later.' }, { status: 429 });
   }
 

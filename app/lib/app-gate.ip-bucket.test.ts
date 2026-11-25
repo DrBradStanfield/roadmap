@@ -4,7 +4,7 @@
  * normal client.
  */
 import { describe, expect, it } from 'vitest';
-import { ipBucket } from './app-gate.server';
+import { ipBucket } from './ip-key.server';
 
 describe('ipBucket: canonical inputs key as before (US-52 AC4g pin)', () => {
   it.each([

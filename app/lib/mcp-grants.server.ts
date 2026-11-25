@@ -7,6 +7,8 @@
 import crypto from 'node:crypto';
 import * as Sentry from '@sentry/react-router';
 import { createQuotaCounter, createRateLimiter, DAY_MS } from './rate-limiter';
+import type { IpKey } from './ip-key.server';
+import { getClientIp } from './local-first-route.server';
 import { claimSingleUse, type ClaimOutcome } from './single-use-claims.server';
 import { MCP_SCOPES, resetMcpWarnings } from './mcp-config.server';
 import { resetCimdCache } from './mcp-clients.server';
@@ -263,7 +265,7 @@ export function resetMcpMemory(): void {
 
 /** Per-IP, before any CIMD fetch — the fetch is the expensive, abusable half. */
 export const AUTHORIZE_PER_WINDOW = 20;
-export const allowAuthorize = createRateLimiter(AUTHORIZE_PER_WINDOW, 60_000, 10 * 60_000, { name: 'mcp authorize' });
+export const allowAuthorize = createRateLimiter<IpKey>(AUTHORIZE_PER_WINDOW, 60_000, 10 * 60_000, { name: 'mcp authorize' });
 
 /**
  * The brake's own counter, braked. A flood is exactly when the row is written
@@ -281,7 +283,9 @@ export const allowRateLimitEvent = createRateLimiter(1, 60_000, 10 * 60_000, { n
  * it locks out the honest ones. The per-connection one also bounds how often
  * one connection can make us refresh a Dropbox access token.
  */
-export const allowToken = createRateLimiter(300, 60_000, 10 * 60_000, { name: 'mcp token' });
+const allowToken = createRateLimiter(300, 60_000, 10 * 60_000, { name: 'mcp token' });
+/** `/token` keys on the address, not its /64: a /64 could fold a vendor's thousands into one count (untangle S-21, owner ruling 1b). */
+export const allowTokenFrom = (request: Request): boolean => allowToken(getClientIp(request, 'fly'));
 export const allowToolCall = createRateLimiter(120, 60_000, 10 * 60_000, { name: 'mcp tool calls per connection' });
 /** search_knowledge and get_article on top of that (US-41 AC11): reads of public text, so a tighter brake on bulk copying. */
 export const allowKnowledgeCall = createRateLimiter(30, 60_000, 10 * 60_000, { name: 'mcp knowledge calls per connection' });

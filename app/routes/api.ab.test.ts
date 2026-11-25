@@ -26,6 +26,7 @@ vi.mock('../lib/supabase.server', () => ({
 import { action } from './api.ab';
 import { SMALL_BODY_CAP } from '../lib/capped-body.server';
 import { streamingPost } from '../lib/capped-body.test-helpers';
+import { ipKeyedLimitCases } from '../lib/ip-key.test-helpers';
 
 const SHOPIFY_EGRESS = '35.1.2.3';
 const proxied = (shopper: string) => ({
@@ -85,5 +86,12 @@ describe('api.ab body cap (US-09 AC25)', () => {
     expect(res.status).toBe(413);
     expect(pulled.bytes).toBeLessThanOrEqual(SMALL_BODY_CAP + 2 * 16 * 1024);
     expect(recordABEvent).not.toHaveBeenCalled();
+  });
+});
+
+describe('US-52 AC4k: the A/B limit per IP keys on the one per-IP bucket', () => {
+  ipKeyedLimitCases({
+    limit: 600, windowMs: 60 * 60_000, v6: '2001:db8:ab', v4: '100.73',
+    allowed: async (ip) => (await impression(ip)).status !== 429,
   });
 });
