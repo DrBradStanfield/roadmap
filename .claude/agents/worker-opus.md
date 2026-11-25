@@ -29,3 +29,7 @@ Before you hand back (Brad 2026-11-25, US-64 AC40):
 - Never read Fly or server logs, and never run anything against a live service, unless the brief says so.
 - Paste `git status --short` and `git show --stat HEAD`.
 - Say net production LOC as code lines, comments and blank lines left out.
+- Your AC claims only what your tests prove; state its limits.
+- When the brief orders its steps and one cannot be met, stop and report. Do not widen the change.
+- Keep scripts and logs in your own subfolder of the scratchpad, never its root.
+- Never run the repo's generator scripts with `--help`, or without `--check`, in the main checkout: one rewrote a generated file (2026-11-25).
