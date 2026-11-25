@@ -281,18 +281,18 @@ function stampIsNewer(a: SyncStamp, b: SyncStamp): boolean {
   return order !== 0 ? order > 0 : stableStringify(a) > stableStringify(b);
 }
 
-/** Per-key last-write-wins for current-state lists (medications, supplements, prefs). */
+/** Per-key last-write-wins for current-state lists (medications, supplements,
+ *  prefs): of every row for a key, on either side or the same one, the newest
+ *  by `stampIsNewer` stays and the others are not kept (US-10 AC15). */
 function mergeByKey<T extends SyncStamp>(
   local: T[],
   remote: T[],
   keyOf: (row: T) => string,
 ): T[] {
   const map = new Map<string, T>();
-  for (const row of remote) map.set(keyOf(row), row);
-  for (const row of local) {
-    const key = keyOf(row);
-    const existing = map.get(key);
-    if (!existing || stampIsNewer(row, existing)) map.set(key, row);
+  for (const row of [...remote, ...local]) {
+    const existing = map.get(keyOf(row));
+    if (!existing || stampIsNewer(row, existing)) map.set(keyOf(row), row);
   }
   return [...map.values()].sort((a, b) => cmpStr(keyOf(a), keyOf(b)));
 }
@@ -320,14 +320,14 @@ function mergeDocuments(local: FileDocument[], remote: FileDocument[]): FileDocu
   }).sort((a, b) => cmpStr(a.id, b.id));
 }
 
-/** Dedup recommendation snapshots by date; on collision keep the richer one. */
+/** Dedup recommendation snapshots by date, within a side as across: on a
+ *  collision keep the richer one (US-10 AC15). */
 function mergeSnapshots(
   local: RecommendationSnapshot[],
   remote: RecommendationSnapshot[],
 ): RecommendationSnapshot[] {
   const map = new Map<string, RecommendationSnapshot>();
-  for (const snap of remote) map.set(snap.date, snap);
-  for (const snap of local) {
+  for (const snap of [...remote, ...local]) {
     const existing = map.get(snap.date);
     if (!existing) {
       map.set(snap.date, snap);
