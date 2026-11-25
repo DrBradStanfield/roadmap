@@ -233,6 +233,6 @@ export function labSeriesRows(rows: (LabValueRow & { referenceLow?: number | nul
 /** The lab tests beyond the core ones, as My health lists them (moved from the iPhone engine's
  *  `labTestRows`, lead I-4): a core row is a blood test's own row, never a lab test here (US-66 AC7),
  *  and a limit is no point on the trend (US-12 AC20). */
-export function labTestSeries(rows: Parameters<typeof labSeriesRows>[0], now: Date): LabSeriesRow[] {
+export function labTestSeries(rows: ReadonlyArray<Parameters<typeof labSeriesRows>[0][number]>, now: Date): LabSeriesRow[] {
   return labSeriesRows(rows.filter((row) => !isCoreRow(row)), now, true);
 }
