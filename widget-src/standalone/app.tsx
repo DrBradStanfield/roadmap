@@ -13,8 +13,7 @@ import { registerPageDeparture } from './page-departure';
 import { createRoot } from 'react-dom/client';
 import { HealthTool } from '../src/components/HealthTool';
 import { GuestContext } from '../src/lib/storage-notice';
-import { ErrorBoundary } from '../src/components/ErrorBoundary';
-import { CrashScreen } from './crash-screen';
+import { CrashBoundary } from './crash-screen';
 import { initRoadmapStore, setPreEraseHook } from '../src/lib/roadmap-data';
 import { resolveAssistantName, setAssistantName, resolveSkipEmailGate, setSkipEmailGate } from '../src/lib/assistant-config';
 import { resolveMarketCountry, setMarketCountry } from '../src/lib/market-country';
@@ -54,7 +53,7 @@ async function main() {
   // synced" line was) via the syncControl prop — not as a separate top banner.
   createRoot(container).render(
     <React.StrictMode>
-      <ErrorBoundary fallback={<CrashScreen backend={backend} />}>
+      <CrashBoundary backend={backend}>
         {/* US-17: the default-on enrolment notice sits ABOVE the widget, not in
             the plan panel — the plan is slide 2 of the mobile tab layout and
             every connect path reloads onto slide 1, so a notice inside it would
@@ -72,7 +71,7 @@ async function main() {
           />
         </GuestContext.Provider>
         <HistoryLightboxHost />
-      </ErrorBoundary>
+      </CrashBoundary>
     </React.StrictMode>,
   );
 

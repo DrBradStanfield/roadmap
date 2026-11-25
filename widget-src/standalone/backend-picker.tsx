@@ -117,11 +117,14 @@ const OPTIONS: Option[] = [
 export const PICKER_GUEST_LEAD =
   'Saved your record to Dropbox, Google Drive or GitHub before? Open it here. If not, it is in this browser, and you can choose a home for it now.';
 
-/** "Log off this device?" and its button: the picker's step, and the crash screen's (US-11 AC14). One move at a time (AC45). */
-export function LogOffConfirm({ current }: { current: Exclude<Backend, 'local'> }) {
-  const busy = useSwitchFlow().kind !== 'idle';
+/** "Log off this device?", its Back and its button: the picker's step, and the crash screen's (US-11 AC14).
+ *  Each caller runs the move (one at a time, AC45) and says when it is its own (`busy`). */
+export function LogOffConfirm({ current, busy, disabled, onBack, onLogOff }: {
+  current: Exclude<Backend, 'local'>; busy: boolean; disabled: boolean; onBack: () => void; onLogOff: () => void;
+}) {
   return (
     <>
+      <button className="hr-modal-back" onClick={onBack}>← Back</button>
       <h2>Log off this device?</h2>
       <p className="hr-modal-sub">
         Your data stays safe in your {PROVIDERS[current].label}. This just signs you out and
@@ -129,7 +132,7 @@ export function LogOffConfirm({ current }: { current: Exclude<Backend, 'local'> 
         restore everything.
       </p>
       <div className="hr-sync-form">
-        <button className="hr-sync-btn" disabled={busy} onClick={() => void runMove({ type: 'logOff' }, () => logOff(current))}>
+        <button className="hr-sync-btn" disabled={disabled} onClick={onLogOff}>
           {busy ? 'Logging off…' : 'Log off'}
         </button>
       </div>
@@ -264,10 +267,7 @@ export function BackendPickerModal({ current, unreachable = false, onClose }: {
         )}
 
         {step === 'log-off' && current !== 'local' && (
-          <>
-            <button className="hr-modal-back" onClick={() => setStep('list')}>← Back</button>
-            <LogOffConfirm current={current} />
-          </>
+          <LogOffConfirm current={current} busy={busy} disabled={busy} onBack={() => setStep('list')} onLogOff={() => void runMove({ type: 'logOff' }, () => logOff(current))} />
         )}
 
         {step === 'github' && (
