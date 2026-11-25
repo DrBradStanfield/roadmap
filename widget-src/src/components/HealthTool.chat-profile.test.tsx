@@ -58,7 +58,7 @@ vi.mock('./UploadModal', () => ({ UploadModal: ({ onComplete }: { onComplete: ()
 } }));
 
 import { HealthTool } from './HealthTool';
-import { ERASE_DONE_CHAT_UNREAD, WRITE_REFUSED } from '../lib/erase-copy';
+import { eraseDone, WRITE_REFUSED } from '../lib/erase-copy';
 import { deleteButton } from '../testing/settings';
 import { seedOpenDocuments, seedOpenLabValues } from '../testing/seed-record';
 
@@ -477,7 +477,7 @@ describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its ro
     vi.stubGlobal('alert', alert);
     fireEvent.click(await waitFor(() => deleteButton()));
     await waitFor(() => expect(alert).toHaveBeenCalledOnce());
-    expect(alert.mock.calls[0][0]).toBe(ERASE_DONE_CHAT_UNREAD);
+    expect(alert.mock.calls[0][0]).toBe(eraseDone('unread'));
   });
 
   it('an erase refused while a remote erase is held back leaves the form, the unsaved edit and the banner as they were (Codex final R2)', async () => {
@@ -787,7 +787,7 @@ describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its ro
     erase.release();
     await waitFor(() => expect(alert).toHaveBeenCalled());
     adapter.open();
-    expect(alert.mock.calls[0][0]).not.toMatch(/deleted/i);
+    expect(alert.mock.calls[0][0]).not.toMatch(/record (is|was) deleted|data (is|was) deleted/i); // only the chat step is said deleted (US-11 AC13)
     expect(view.container.querySelector<HTMLInputElement>('#heightCm')?.value ?? '').toBe('');
     expect(localStorage.getItem(MIRROR_KEY) ?? '').not.toContain('rosuvastatin');
     act(() => chat.proposeEdit!([atorvastatin, parseProposedEdit('propose_profile_edit', { sex: 'female' })!]));

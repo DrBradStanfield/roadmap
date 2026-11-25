@@ -43,7 +43,7 @@ import { BT_TIMELINE_DRAFT_KEY, DRAFTS_CLEARED_EVENT, MIRROR_CHANGED_EVENT } fro
 import { ERASE_STALE_TAB } from '@roadmap/health-core/record-session';
 import { BACKEND_KEY } from '../storage/web-record-host';
 import { trackProductEvent } from '../lib/server-api';
-import { ERASE_DONE, ERASE_FAILED, WRITE_REFUSED } from '../lib/erase-copy';
+import { eraseDone, ERASE_FAILED, WRITE_REFUSED } from '../lib/erase-copy';
 import { Sentry } from '../lib/sentry';
 import { openAboutYou, seedGuest, showTables, useHealthToolLifecycle, trackLiveRefresh, stopLiveRefresh } from '../testing/health-tool-harness';
 import { deleteButton } from '../testing/settings';
@@ -368,7 +368,7 @@ describe('US-16 AC2a, US-11 AC6: this tab\'s erase whose write fails (useErase e
     await settle(50);
     expect(cleared).toHaveBeenCalledTimes(1);
     // record-session's flush error (SAVE_FAILED, not exported), as said today: not ERASE_FAILED, and no word that the erase is kept to retry.
-    expect(alerts).toEqual(['Cloud sync failed — your latest changes are still on this device.']);
+    expect(alerts).toEqual(['Cloud sync failed — your latest changes are still on this device. Your chat history was deleted.']); // US-11 AC13: and what the chat step did
     expect(getEraseIdentity()).not.toBe(before); // the store holds the erased copy and retries it
     expect(getShownErase()).toBe(getEraseIdentity());
     expect(banners()).toHaveLength(0);
@@ -439,7 +439,7 @@ describe('US-16 AC2a, US-11 AC6: this tab\'s erase whose write fails (useErase e
     }
     const clearReports = vi.mocked(Sentry.captureException).mock.calls.filter(([, ctx]) => (ctx as { tags?: { op?: string } } | undefined)?.tags?.op === 'clear-off-file');
     expect(clearReports).toHaveLength(1);
-    expect(alerts).toEqual([ERASE_DONE]);
+    expect(alerts).toEqual([eraseDone('erased')]);
   });
 });
 

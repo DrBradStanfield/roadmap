@@ -15,6 +15,7 @@ import { announce, clearedAtOpen, clearOffFile, keepCleared, laterChange, liftMi
 import { contentOf, visibleContentOf } from './record-session-content';
 import { deleteAllDataSession, eraseSession, replaceUnreadableSession, type EraseResult, type EraseSteps } from './record-session-erase';
 import { coveredCopySession, deviceCopyHoldsErase, deviceCopyRevision, mirrorNowSession, releaseErasedCopySession, releaseMarkerSession } from './record-session-mirror';
+import { refreshDue, type RefreshReason } from './refresh-pause';
 import { recordSync, ROADMAP_DOC } from './roadmap-doc';
 import { changesOf, retryOwed, SAVE_START, saveFailureCause, saveStatus, transition, unsaved, writePending, writtenNowhere, type SaveEvent, type SaveState, type SaveStatus } from './save-state';
 import type { RoadmapFile } from './roadmap-file';
@@ -31,12 +32,11 @@ export const PERSIST_DEBOUNCE_MS = 800;
  * The provider says so when it can — the adapter's `watch` — and the two
  * moments a user comes back to the page catch whatever a watch missed. The
  * slow poll is the fallback for backends with no change signal at all; a
- * watch-capable one never runs it. The throttle stops two return signals that
- * fire together (focus and visibilitychange on the web) from making two round
- * trips out of one return.
+ * watch-capable one never runs it. The pause between automatic re-reads is
+ * refresh-pause.ts's.
  */
 export const REMOTE_POLL_MS = 60_000;
-export const REMOTE_THROTTLE_MS = 5_000;
+export { REMOTE_THROTTLE_MS } from './refresh-pause'; // the pause; a pressed Sync now skips it (H31)
 
 export { ERASE_BUSY, ERASE_STALE_TAB, ERASE_UNREACHABLE, type EraseResult, type EraseSteps } from './record-session-erase';
 
@@ -70,7 +70,7 @@ export class RecordSession {
    *  open() — persist success must then LEAVE the marker so the mirror is
    *  retried next load (e.g. once updated assets can parse its newer schema). */
   private mirrorSkipped = false;
-  /** Leading-edge throttle for refreshFromRemote(), in epoch millis. */
+  /** When the last re-read started, in epoch millis: the pause's mark (refresh-pause.ts). */
   private lastRefresh = 0;
   private lastReport: SaveReportKey | null = null; // the last failed save's report key, until a save lands (US-09 AC58)
   private saveLanded(): void { this.lastReport = null; } // both landing paths: a failure that returns reports again
@@ -243,10 +243,10 @@ export class RecordSession {
    * the same way (US-34 AC6). A re-read never writes, so a removed record is
    * not put back here.
    */
-  async refreshFromRemote(): Promise<boolean> {
+  async refreshFromRemote(reason: RefreshReason = 'automatic'): Promise<boolean> {
     if (writePending(this.mode) || this.deviceClosed()) return false;
     const at = this.host.clock.now();
-    if (at - this.lastRefresh < REMOTE_THROTTLE_MS) return false;
+    if (!refreshDue(reason, at, this.lastRefresh)) return false;
     this.lastRefresh = at;
 
     const before = contentOf(this.current);

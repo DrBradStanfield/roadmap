@@ -9,7 +9,7 @@ import type { ListRow } from '@roadmap/health-core/upload-list';
 import type { LpaUnit, MetricType } from '@roadmap/health-core/units';
 import { REVIEW_CELL_TEXT } from '@roadmap/health-core/upload-text';
 import { describedBy } from '../lib/aria';
-import { rowName } from '../lib/upload-list-names';
+import { rowLabelledBy, type ListNameIds } from '../lib/upload-list-names';
 import { LpaUnitControl } from './LpaUnitControl';
 import { insertedText } from './NumericInputCell';
 import { UnitChip } from './UnitChip';
@@ -59,17 +59,16 @@ function usePress(checked: boolean, act: (on: boolean) => void) {
   };
 }
 
-export function UploadListRow({ row, value, draftLabel, hidden, editable, on }: {
-  row: ListRow; value: string; draftLabel: string | null; hidden: boolean; editable: boolean; on: RowEvents;
+export function UploadListRow({ row, value, draftLabel, hidden, editable, on, names }: {
+  row: ListRow; value: string; draftLabel: string | null; hidden: boolean; editable: boolean; on: RowEvents; names: ListNameIds;
 }) {
   const id = useId();
-  const [unitId, captionId, reasonsId, errorId, labelId, heldId, proposedId, printedId, nameId, replaceId] = ['unit', 'caption', 'reasons', 'error', 'label', 'held', 'proposed', 'printed', 'name', 'replace'].map((p) => `${id}${p}`);
+  const [unitId, captionId, reasonsId, errorId, labelId, heldId, proposedId, printedId, replaceId] = ['unit', 'caption', 'reasons', 'error', 'label', 'held', 'proposed', 'printed', 'replace'].map((p) => `${id}${p}`);
   // A blocking row's caption is its error: said once.
   const caption = row.caption !== row.error ? row.caption : null;
   const held = row.replaces !== null ? row.held : null;
   // A test's name can be the person's own: each control is named from text on the page, never an attribute (US-09 AC7l).
-  const name = rowName(row);
-  const namedBy = name === row.label ? labelId : nameId;
+  const namedBy = rowLabelledBy(row, labelId, names);
   const type = (text: string) => on.type(row.key, text, row.unit.typeIn, row.unit.label);
   const metric = row.shown.cell?.metric;
   // An open draft draws the unit it was typed under, and no control: a press could not change what it writes (Codex R1).
@@ -89,7 +88,6 @@ export function UploadListRow({ row, value, draftLabel, hidden, editable, on }: 
           {...tick.box}
         />
         <span id={labelId} className="upload-list-label">{row.label}</span>
-        {namedBy === nameId && <span id={nameId} hidden>{name}</span>}
       </label>
       <span className={`upload-list-value${row.reasons.length ? ' bt-cell-low-confidence' : ''}`}>
         {row.input === 'number' ? (
