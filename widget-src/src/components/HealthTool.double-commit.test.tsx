@@ -45,6 +45,7 @@ vi.mock('./UploadModal', () => ({
   UploadModal: ({ onStart }: { onStart: () => Promise<void> }) => { upload.onStart = onStart; return null; },
 }));
 
+import { SAVE_ERRORS } from '../lib/value-cell-state';
 import { HealthTool } from './HealthTool';
 
 useHealthToolLifecycle();
@@ -281,6 +282,21 @@ describe('US-03 AC2, AC2a (double commit): the value page\'s Add pressed twice i
     expect(value.value).toBe('');
     expect(said).toEqual([]);
     expect(await rowsOf('weight')).toEqual([[82, SAVED_DAY, 'active'], [84, today(), 'active']]);
+  }));
+
+  // Codex on the review fix: a refused write whose re-read then throws is not saved. The typed value
+  // stays, and the refusal's own line shows, never the saved-but-unread outcome.
+  it('a refused write whose re-read throws: the refusal\'s line, the typed value kept, nothing saved', () => catchingRejections(async (caught) => {
+    const { inserts, value, form, page } = await weightPage(SAVED_DAY);
+    inserts.mockImplementationOnce(() => ({ status: 'duplicate' }) as ReturnType<RoadmapStore['addMeasurement']>);
+    vi.spyOn(RoadmapStore.prototype, 'loadLatestMeasurements').mockImplementationOnce(() => { throw new Error('test read failed'); });
+    fireEvent.change(value, { target: { value: '84' } });
+    fireEvent.submit(form);
+    await settled();
+    expect(caught).toHaveLength(1);
+    expect(within(page).getByRole('alert').textContent).toBe(SAVE_ERRORS.changed);
+    expect(value.value).toBe('84');
+    expect(await rowsOf('weight')).toEqual([[82, SAVED_DAY, 'active']]);
   }));
 
   // A blood pressure saves in two parts. One landed and the next threw: the page never says
