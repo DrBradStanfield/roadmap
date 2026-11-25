@@ -12,6 +12,7 @@ import { trendWindow } from './recent-trend';
 import { rowTarget } from './row-target';
 import { comparatorOf, limitText, type Comparator } from './lab-limits';
 import { compareReadings } from './measurement-history';
+import { isCoreRow } from './core-rows';
 
 /** A lab test's name for display: its catalogue label, else the snake_case name title-cased. */
 export function labValueLabel(metricName: string): string {
@@ -227,4 +228,11 @@ export function labSeriesRows(rows: (LabValueRow & { referenceLow?: number | nul
       ...(sameUnit ? trendOf(s.points) : { trend: [] }),
     };
   });
+}
+
+/** The lab tests beyond the core ones, as My health lists them (moved from the iPhone engine's
+ *  `labTestRows`, lead I-4): a core row is a blood test's own row, never a lab test here (US-66 AC7),
+ *  and a limit is no point on the trend (US-12 AC20). */
+export function labTestSeries(rows: Parameters<typeof labSeriesRows>[0], now: Date): LabSeriesRow[] {
+  return labSeriesRows(rows.filter((row) => !isCoreRow(row)), now, true);
 }
