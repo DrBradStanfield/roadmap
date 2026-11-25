@@ -3,8 +3,8 @@
  * failed save to the local file (FileAdapter, the CLI and the stdio MCP).
  * Pins only: no production change. Real FileAdapter under SyncManager on a
  * temp folder; read through public behaviour, never hint words. Both
- * failures come before the replace, and SyncManager marks every failure but
- * a definite refusal (H127), so both read as may-have-landed today.
+ * failures come before the replace, but the file adapter names no outcome,
+ * so SyncManager marks them may-have-landed (H127, write-refusal.ts afterWrite).
  */
 import { chmodSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -15,7 +15,7 @@ import { FileAdapter } from './file-adapter';
 import { ROADMAP_DOC } from './roadmap-doc';
 import { saveFailureCause } from './save-state';
 import { SyncManager } from './sync-manager';
-import { isDefiniteRefusal, mayHaveLanded } from './write-refusal';
+import { mayHaveLanded } from './write-refusal';
 
 const NOW = '2026-11-25T10:00:00.000Z';
 const ctx = { deviceId: 'cli', now: NOW };
@@ -32,7 +32,7 @@ async function outcomeOf(path: string) {
   const sync = new SyncManager(new FileAdapter(path), 'cli', ROADMAP_DOC, { now: () => NOW });
   const error = await sync.save(ROADMAP_DOC.migrate(null, ctx)).then(() => null, (e: unknown) => e);
   expect(error).toBeInstanceOf(StorageError);
-  return { landed: mayHaveLanded(error), refused: isDefiniteRefusal(error), cause: saveFailureCause(error) };
+  return { landed: mayHaveLanded(error), refused: (error as StorageError).outcome === 'refused', cause: saveFailureCause(error) };
 }
 
 afterEach(() => {

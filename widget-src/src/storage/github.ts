@@ -16,7 +16,7 @@
  * dev/privacy audience can live with that; the Git Data blob API would lift the
  * cap later if needed. See the implementation build log.
  */
-import { ConflictError, StorageError, fetchOrFail, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
+import { answerOutcome, ConflictError, StorageError, fetchOrFail, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
 import { TRANSFER_DEADLINE_MS, timeoutDeadline } from '@roadmap/health-core/transfer-deadline';
 import { getSignIn, logOffId, setSignIn, safeRemoveItem, type LogOffId } from '../lib/storage';
 import { encodeStoragePath, legacyDocumentUrl } from './storage-path';
@@ -141,10 +141,10 @@ export class GitHubAdapter implements StorageAdapter {
     if (res.status === 409 || res.status === 422) {
       throw new ConflictError(`GitHub write conflict: ${await res.text()}`);
     }
-    if (!res.ok) throw new StorageError(`GitHub write failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status);
+    if (!res.ok) throw new StorageError(`GitHub write failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status, undefined, answerOutcome(res.status, true));
     const json = (await res.json()) as { content?: { sha?: string } };
     const sha = json.content?.sha;
-    if (!sha) throw new StorageError('GitHub write returned no sha.');
+    if (!sha) throw new StorageError('GitHub write returned no sha.', undefined, undefined, undefined, undefined, 'may-have-landed');
     return { version: sha };
   }
 

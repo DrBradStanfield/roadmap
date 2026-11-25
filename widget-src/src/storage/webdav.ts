@@ -17,7 +17,7 @@
  *     writes degrade to last-write-wins — see the implementation build log.
  * iOS note: WebDAV is the only self-host path on iOS (no File System Access API).
  */
-import { ConflictError, StorageError, fetchOrFail, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
+import { answerOutcome, ConflictError, StorageError, fetchOrFail, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
 import { TRANSFER_DEADLINE_MS } from '@roadmap/health-core/transfer-deadline';
 import { getSignIn, logOffId, setSignIn, safeRemoveItem, type LogOffId } from '../lib/storage';
 import { encodeStoragePath, legacyDocumentUrl } from './storage-path';
@@ -110,7 +110,7 @@ export class WebDavAdapter implements StorageAdapter {
     if (res.status === 412) {
       throw new ConflictError('Self-host write conflict: the file changed since last read.');
     }
-    if (!res.ok) throw new StorageError(`Self-host write failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status);
+    if (!res.ok) throw new StorageError(`Self-host write failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status, undefined, answerOutcome(res.status, true));
     // Prefer the ETag from the PUT response; fall back to a HEAD if the server
     // didn't include it. '' = the server exposes no ETag → next write is LWW.
     let etag = res.headers.get('etag');

@@ -160,7 +160,7 @@ export class DriveAdapter implements StorageAdapter {
       if (expectedVersion !== null) throw new ConflictError(`${PROVIDER} no longer holds that file`);
       const parentId = await this.folderId(signal);
       const res = await driveCreateFile(this.accessToken, fileName, 'application/json', json, parentId, signal);
-      if (!res.ok) await fail('create', res);
+      if (!res.ok) await fail('create', res, true);
       const created = await jsonBody<{ id?: string; version?: string }>(res);
       if (!created.id) throw new StorageError(`${PROVIDER} create returned no file id.`);
       this.fileIds.set(fileName, created.id);

@@ -6,17 +6,18 @@
  * (and an erase under RecordSession) against synthetic HTTP, and reads the
  * outcome through public behaviour, never through hint words:
  * - landed: `mayHaveLanded` (the save state's landed mark, record-session.ts),
- * - refused: `isDefiniteRefusal` (write-refusal.ts),
+ * - refused: a conflict, or a failure raised with outcome `refused` (US-10 AC16),
  * - cause: whether a session's save failing so owes a retry (`retryDue`; 'auth' stops it),
- * - told: which `describeStorageFailure` branch answers (sync-manager.ts),
+ * - told: which `describeStorageFailure` sentence the user is shown (sync-manager.ts),
  * - erase: an erase whose cloud write fails this way, the device copy refused
  *   too, is put back or kept in memory (record-session-erase.ts).
  * Rows marked S62b are PR 1's (US-10 AC12); this file sits on that branch.
- * The next R6 PRs move these readers to a typed outcome field; every row here
- * must keep its answer through them unless a ruling changes it.
+ * R6 PR 3 (US-10 AC16) moved these readers to the typed outcome field; rows
+ * marked AC16 changed on purpose, for the owner's rulings of 2026-11-25. The
+ * field itself, per adapter: storage-outcome-field.test.ts.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ConflictError, StorageError, type StorageAdapter } from '@roadmap/health-core/adapter';
+import { ConflictError, LostUpdateError, StorageError, type StorageAdapter } from '@roadmap/health-core/adapter';
 import { DriveAdapter } from '@roadmap/health-core/drive-rest';
 import { DropboxAdapter } from '@roadmap/health-core/dropbox-rest';
 import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
@@ -25,7 +26,7 @@ import type { RecordHost } from '@roadmap/health-core/record-host';
 import { ROADMAP_DOC } from '@roadmap/health-core/roadmap-doc';
 import { createMeasurement } from '@roadmap/health-core/roadmap-file';
 import { describeStorageFailure, SyncManager } from '@roadmap/health-core/sync-manager';
-import { isDefiniteRefusal, mayHaveLanded } from '@roadmap/health-core/write-refusal';
+import { mayHaveLanded } from '@roadmap/health-core/write-refusal';
 import { GitHubAdapter } from './github';
 import { LocalStorageAdapter } from './local-storage-adapter';
 import { WebDavAdapter } from './webdav';
@@ -103,13 +104,21 @@ function adapterOf(kind: Kind): StorageAdapter {
   return new DriveAdapter('test-token-good');
 }
 
-/** Which describeStorageFailure branch answered, by the error's type and status, not its words. */
+/** Which describeStorageFailure sentence the user is shown. */
 function toldOf(error: unknown): string {
   const told = describeStorageFailure(error, 'The record');
   if (error instanceof ConflictError) return 'conflict';
-  if (error instanceof StorageError && (error.status === 401 || error.status === 403)) return mayHaveLanded(error) ? 'access, may have landed' : 'access, nothing written';
-  if (error instanceof StorageError && error.hint) return told.hint === error.hint ? 'its own hint' : 'other';
-  return 'did not answer';
+  if (told.message.endsWith('after a change was sent')) return MAYBE;
+  if (told.message.endsWith('Nothing was read and nothing was written')) return NOTHING;
+  if (error instanceof StorageError && error.hint) return told.hint === error.hint ? OWN : 'other';
+  if (told.message === 'The record did not answer' && /may have landed/.test(told.hint)) return LANDED;
+  return told.message === 'The record did not answer. Nothing was written' ? SILENT : 'other';
+}
+
+/** A conflict the provider refused, or a failure raised `refused`: nothing stored. */
+function refusedOf(error: unknown): boolean {
+  if (error instanceof ConflictError) return !(error instanceof LostUpdateError);
+  return error instanceof StorageError && error.outcome === 'refused';
 }
 
 interface Outcome { landed: boolean; refused: boolean; cause: string; told: string; erase: 'put back' | 'kept' }
@@ -149,7 +158,7 @@ async function outcomeOf(kind: Kind, failure: Failure): Promise<Outcome> {
   const sync = new SyncManager(adapterOf(kind), 'phone', ROADMAP_DOC, { now: () => NOW });
   const error = await sync.save(ROADMAP_DOC.migrate(JSON.parse(recordJson()), ctx)).then(() => null, (e: unknown) => e);
   expect(error).not.toBeNull();
-  const outcome = { landed: mayHaveLanded(error), refused: isDefiniteRefusal(error), cause: await saveCauseOf(error), told: toldOf(error) };
+  const outcome = { landed: mayHaveLanded(error), refused: refusedOf(error), cause: await saveCauseOf(error), told: toldOf(error) };
   vi.unstubAllGlobals();
   return { ...outcome, erase: await eraseOutcome(kind, failure) };
 }
@@ -163,7 +172,9 @@ const SHAPES: Record<string, Failure> = {
 const NOTHING = 'access, nothing written';
 const MAYBE = 'access, may have landed';
 const OWN = 'its own hint';
-const SILENT = 'did not answer';
+const SILENT = 'did not answer, nothing written';
+/** "did not answer", and the change may have landed (US-10 AC16). */
+const LANDED = 'did not answer, may have landed';
 
 /** [adapter, shape, landed, refused, cause, told]. The erase column follows `landed`: kept when it may have landed, else put back. */
 type Row = [Kind, string, boolean, boolean, 'auth' | 'other', string];
@@ -177,10 +188,10 @@ const ROWS: Row[] = [
   ['dropbox', '409', false, false, 'other', OWN],
   ['dropbox', '412', false, true, 'other', SILENT],
   ['dropbox', '422', false, true, 'other', SILENT],
-  ['dropbox', '408', true, false, 'other', SILENT],
-  ['dropbox', '429', true, false, 'other', SILENT],
-  ['dropbox', '500', true, false, 'other', SILENT],
-  ['dropbox', '503', true, false, 'other', SILENT],
+  ['dropbox', '408', true, false, 'other', LANDED], // AC16: was SILENT
+  ['dropbox', '429', true, false, 'other', LANDED], // AC16: was SILENT
+  ['dropbox', '500', true, false, 'other', LANDED], // AC16: was SILENT
+  ['dropbox', '503', true, false, 'other', LANDED], // AC16: was SILENT
   ['dropbox', 'drop', true, false, 'other', OWN],
   ['dropbox', 'timeout', true, false, 'other', OWN],
   // Google Drive, first create (POST). The 4xx rows but 408 and 429 are PR 1's (S62b, US-10 AC12).
@@ -197,11 +208,11 @@ const ROWS: Row[] = [
   ['drive-create', '503', true, false, 'other', OWN],
   ['drive-create', 'drop', true, false, 'other', OWN],
   ['drive-create', 'timeout', true, false, 'other', OWN],
-  // Google Drive, update (PATCH): every failure may have landed (US-10 AC4a).
-  ['drive-update', '400', true, false, 'other', OWN],
+  // Google Drive, update (PATCH): every failure may have landed (US-10 AC4a) but its 400, 403 and 404 (AC16).
+  ['drive-update', '400', false, true, 'other', OWN], // AC16: was landed
   ['drive-update', '401', true, false, 'auth', MAYBE],
-  ['drive-update', '403', true, false, 'other', MAYBE],
-  ['drive-update', '404', true, false, 'other', OWN],
+  ['drive-update', '403', false, true, 'other', NOTHING], // AC16: was landed, MAYBE
+  ['drive-update', '404', false, true, 'other', OWN], // AC16: was landed
   ['drive-update', '409', true, false, 'other', OWN],
   ['drive-update', '412', true, false, 'other', OWN],
   ['drive-update', '422', true, false, 'other', OWN],
@@ -213,7 +224,7 @@ const ROWS: Row[] = [
   ['drive-update', 'timeout', true, false, 'other', OWN],
   // Google Drive, the version check before the PATCH. Every row but 404, drop and timeout is PR 1's
   // (S62b): the 4xx ones now refuse, and the 408/429/5xx ones lost the create-path hint. A 404 reads
-  // as a vanished file, a conflict each attempt: a storm. SyncManager marks the rest (H127).
+  // as a vanished file, a conflict each attempt: a storm. The check sent no write, so the rest got no answer (AC16).
   ['drive-check', '400', false, true, 'other', SILENT],
   ['drive-check', '401', false, true, 'auth', NOTHING],
   ['drive-check', '403', false, true, 'other', NOTHING],
@@ -221,12 +232,12 @@ const ROWS: Row[] = [
   ['drive-check', '409', false, true, 'other', SILENT],
   ['drive-check', '412', false, true, 'other', SILENT],
   ['drive-check', '422', false, true, 'other', SILENT],
-  ['drive-check', '408', true, false, 'other', SILENT],
-  ['drive-check', '429', true, false, 'other', SILENT],
-  ['drive-check', '500', true, false, 'other', SILENT],
-  ['drive-check', '503', true, false, 'other', SILENT],
-  ['drive-check', 'drop', true, false, 'other', OWN],
-  ['drive-check', 'timeout', true, false, 'other', OWN],
+  ['drive-check', '408', false, false, 'other', SILENT], // AC16: was landed
+  ['drive-check', '429', false, false, 'other', SILENT], // AC16: was landed
+  ['drive-check', '500', false, false, 'other', SILENT], // AC16: was landed
+  ['drive-check', '503', false, false, 'other', SILENT], // AC16: was landed
+  ['drive-check', 'drop', false, false, 'other', OWN], // AC16: was landed
+  ['drive-check', 'timeout', false, false, 'other', OWN], // AC16: was landed
   // GitHub: 409 and 422 are ConflictErrors, so a storm.
   ['github', '400', false, true, 'other', SILENT],
   ['github', '401', false, true, 'auth', NOTHING],
@@ -235,10 +246,10 @@ const ROWS: Row[] = [
   ['github', '409', false, false, 'other', OWN],
   ['github', '412', false, true, 'other', SILENT],
   ['github', '422', false, false, 'other', OWN],
-  ['github', '408', true, false, 'other', SILENT],
-  ['github', '429', true, false, 'other', SILENT],
-  ['github', '500', true, false, 'other', SILENT],
-  ['github', '503', true, false, 'other', SILENT],
+  ['github', '408', true, false, 'other', LANDED], // AC16: was SILENT
+  ['github', '429', true, false, 'other', LANDED], // AC16: was SILENT
+  ['github', '500', true, false, 'other', LANDED], // AC16: was SILENT
+  ['github', '503', true, false, 'other', LANDED], // AC16: was SILENT
   ['github', 'drop', true, false, 'other', OWN],
   ['github', 'timeout', true, false, 'other', OWN],
   // WebDAV: 412 is a ConflictError, so a storm.
@@ -249,10 +260,10 @@ const ROWS: Row[] = [
   ['webdav', '409', false, true, 'other', SILENT],
   ['webdav', '412', false, false, 'other', OWN],
   ['webdav', '422', false, true, 'other', SILENT],
-  ['webdav', '408', true, false, 'other', SILENT],
-  ['webdav', '429', true, false, 'other', SILENT],
-  ['webdav', '500', true, false, 'other', SILENT],
-  ['webdav', '503', true, false, 'other', SILENT],
+  ['webdav', '408', true, false, 'other', LANDED], // AC16: was SILENT
+  ['webdav', '429', true, false, 'other', LANDED], // AC16: was SILENT
+  ['webdav', '500', true, false, 'other', LANDED], // AC16: was SILENT
+  ['webdav', '503', true, false, 'other', LANDED], // AC16: was SILENT
   ['webdav', 'drop', true, false, 'other', OWN],
   ['webdav', 'timeout', true, false, 'other', OWN],
 ];
@@ -280,7 +291,7 @@ describe('US-10 AC13: the device tier (LocalStorageAdapter) when the browser sto
     });
     const error = await sync.save(ROADMAP_DOC.migrate(JSON.parse(recordJson()), ctx)).then(() => null, (e: unknown) => e);
     localStorage.clear();
-    return { landed: mayHaveLanded(error), refused: isDefiniteRefusal(error), cause: await saveCauseOf(error), told: toldOf(error) };
+    return { landed: mayHaveLanded(error), refused: refusedOf(error), cause: await saveCauseOf(error), told: toldOf(error) };
   }
   it('the record write refused: nothing stored', async () => {
     expect(await localOutcome((key) => key === 'health_roadmap_file_v2')).toEqual({ landed: false, refused: true, cause: 'other', told: SILENT });

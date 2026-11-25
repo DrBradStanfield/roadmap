@@ -5,10 +5,12 @@
  * drive-rest.ts re-exports the public names, so callers import from there.
  */
 import {
+  answerOutcome,
   ConflictError,
   fetchOrFail,
   jsonBody,
   StorageError,
+  type StorageFailureReason,
   type StoredFile,
 } from './adapter';
 import { documentUploadMs, TRANSFER_DEADLINE_MS } from './transfer-deadline';
@@ -47,8 +49,27 @@ export const PROVIDER = 'Google Drive';
  *  hand `fetchOrFail` the wrong one. Reach for this, never the bare global. */
 export const request = (url: string | URL, init?: Parameters<typeof fetchOrFail>[2]): Promise<Response> => fetchOrFail(PROVIDER, url, init);
 
-export async function fail(what: string, res: Response): Promise<never> {
-  throw new StorageError(`${PROVIDER} ${what} failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status);
+/** Drive's own reasons for a rate or daily limit (the error body's `errors[].reason`). A
+ *  limit passes, so it is retried and never called an access refusal. Not
+ *  `dailyLimitExceededUnreg`: that is a call with no valid credentials. */
+const LIMITS: ReadonlySet<string> = new Set(['rateLimitExceeded', 'userRateLimitExceeded', 'dailyLimitExceeded']);
+
+/** `rate-limited` for a 403 whose body names a limit; else none, so the status sets it. */
+function limitOf(status: number, text: string): StorageFailureReason | undefined {
+  if (status !== 403) return undefined;
+  try {
+    const errors = (JSON.parse(text) as { error?: { errors?: unknown } } | null)?.error?.errors;
+    return Array.isArray(errors) && errors.some((e) => LIMITS.has(String((e as { reason?: unknown } | null)?.reason))) ? 'rate-limited' : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** A non-ok answer, as a typed failure. `wrote`: the call sent a write (an
+ *  upload, a create, a delete), so an answer that is not a refusal may have landed. */
+export async function fail(what: string, res: Response, wrote = false): Promise<never> {
+  const text = await res.text();
+  throw new StorageError(`${PROVIDER} ${what} failed (${res.status}): ${text}`, undefined, undefined, res.status, limitOf(res.status, text), answerOutcome(res.status, wrote));
 }
 
 /** Find one file by name, optionally inside one parent. Undefined = not there.
@@ -103,7 +124,7 @@ export async function driveCreateFolder(accessToken: string, name: string, paren
     body: JSON.stringify({ name, mimeType: DRIVE_FOLDER_MIME, ...(parentId ? { parents: [parentId] } : null) }),
     signal,
   });
-  if (!res.ok) await fail('folder create', res);
+  if (!res.ok) await fail('folder create', res, true);
   const id = (await jsonBody<{ id?: string }>(res)).id;
   if (!id) throw new StorageError(`${PROVIDER} folder create returned no id.`);
   return id;
@@ -132,7 +153,7 @@ export async function driveListByPrefix(accessToken: string, prefix: string, sig
 /** Delete one file by id. Already gone (404) is not a failure. */
 export async function driveDelete(accessToken: string, fileId: string, signal?: AbortSignal): Promise<void> {
   const res = await request(`${DRIVE_API}/files/${encodeURIComponent(fileId)}`, { method: 'DELETE', headers: auth(accessToken), signal });
-  if (!res.ok && res.status !== 404) await fail('delete', res);
+  if (!res.ok && res.status !== 404) await fail('delete', res, true);
 }
 
 /** Create a file inside `parentId` — metadata and content in one multipart POST. */
@@ -195,7 +216,7 @@ export async function driveUpdateFile(accessToken: string, fileId: string, json:
     body: json,
     signal, mayHaveWritten: true,
   });
-  if (!res.ok) await fail('write', res);
+  if (!res.ok) await fail('write', res, true);
   return JSON.stringify([fileId, String((await jsonBody<{ version?: string }>(res)).version ?? '')]);
 }
 

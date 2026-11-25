@@ -30,7 +30,7 @@ import { counterOf, MAX_COUNTER, RecordShapeError, SchemaTooNewError } from './m
 import { ROADMAP_DOC } from './roadmap-doc';
 import { CURRENT_SCHEMA_VERSION, type RoadmapFile } from './roadmap-file';
 import { verifyPersistedFile } from './sync-manager';
-import { isDefiniteRefusal, uncertainWrite } from './write-refusal';
+import { uncertainWrite } from './write-refusal';
 
 // --- The health record (US-10 AC4a) -------------------------------------------
 // Drive allows two files with one name, and two first saves can race to make
@@ -46,15 +46,30 @@ const DAMAGED_HINT = 'Your plan loaded from the other copies. Nothing was writte
 
 /** A write that may have landed: keep the provider status, so a 401 still
  *  refreshes the token (iOS) and still reads as "reconnect" (the page), and
- *  mark it, so no status on it reads as a refusal (write-refusal.ts). */
-const uncertain = (message: string, error: unknown): StorageError => uncertainWrite(new StorageError(message, LANDED_HINT, error, error instanceof StorageError ? error.status : undefined));
+ *  its reason; its outcome is may-have-landed whatever the status (write-refusal.ts). */
+const uncertain = (message: string, error: unknown): StorageError =>
+  uncertainWrite(new StorageError(message, LANDED_HINT, error, error instanceof StorageError ? error.status : undefined, error instanceof StorageError ? error.reason : undefined));
 
-/** A failure of the record's create POST (lead S62b). Drive's answer with a
- *  status write-refusal.ts calls a refusal stored nothing, so it stays a
- *  refusal; anything else (a 5xx, a 408 or 429, a timeout, no answer) may have landed. */
+/** A refusal of one of the record's uploads: nothing stored, status and reason kept. */
+const refused = (message: string, error: StorageError): StorageError =>
+  new StorageError(message, UNREACHABLE_HINT, error, error.status, error.reason, 'refused');
+
+/** A failure of the record's create POST (lead S62b). Drive's answer raised
+ *  refused stored nothing, so it stays a refusal; anything else (a 5xx, a 408
+ *  or 429, a timeout, no answer) may have landed. */
 const createFailed = (message: string, error: unknown): StorageError =>
-  error instanceof StorageError && error.status !== undefined && isDefiniteRefusal(error)
-    ? new StorageError(message, UNREACHABLE_HINT, error, error.status)
+  error instanceof StorageError && error.outcome === 'refused' ? refused(message, error) : uncertain(message, error);
+
+/** The PATCH statuses that stored nothing (owner, 2026-11-25): a malformed
+ *  request, access refused (not a limit), a file id that is not there. A 401
+ *  may have landed (its retry after a token refresh is lead S57c), and so may
+ *  any other answer or none. */
+const PATCH_REFUSED: ReadonlySet<number> = new Set([400, 403, 404]);
+
+/** A failure of the record's update PATCH: refused only for PATCH_REFUSED. */
+const updateFailed = (message: string, error: unknown): StorageError =>
+  error instanceof StorageError && error.status !== undefined && PATCH_REFUSED.has(error.status) && error.reason !== 'rate-limited'
+    ? refused(message, error)
     : uncertain(message, error);
 
 /**
@@ -240,7 +255,7 @@ export async function writeDriveRecord(token: string, body: object, expected: st
     let res: Response;
     try {
       res = await driveCreateFile(token, ROADMAP_FILE_NAME, 'application/json', json, parent, signal);
-      if (!res.ok) throw new StorageError(`${PROVIDER} record create failed (${res.status}).`, undefined, undefined, res.status);
+      if (!res.ok) await fail('record create', res, true);
     } catch (error) {
       throw createFailed(`${PROVIDER} record create failed.`, error);
     }
@@ -271,9 +286,9 @@ export async function writeDriveRecord(token: string, body: object, expected: st
     try {
       version = await driveUpdateFile(token, id, json, signal);
     } catch (error) {
-      // Any failure of the PATCH may be a lost PATCH response: do not claim
-      // nothing was written (a 401 or 403 answer included, US-10 AC4a).
-      throw uncertain(`${PROVIDER} record update failed.`, error);
+      // A failure of the PATCH may be a lost PATCH response: only Drive's
+      // 400, 403 (not a limit) and 404 stored nothing (US-10 AC4a, AC16).
+      throw updateFailed(`${PROVIDER} record update failed.`, error);
     }
   }
   try {
