@@ -82,10 +82,11 @@ describe('US-06 AC23: roadmap_text.html, the prostate section', () => {
   it('the prostate section cites no reference number, so none can dangle', () => {
     expect(strip(prostate)).not.toMatch(/\[\d+\]/);
   });
-  it('the Changelog opens with one 13 November prostate entry', () => {
-    const [entry] = quotes(specLine('**Page, the PSA bullet**', '- Changelog, 13th November 2026:'));
+  it('the Changelog opens with the new 26 November entry; the 13 November one stays', () => {
+    const [entry] = quotes(specLine('**Page, the PSA bullet**', '- New changelog entry, 26th November 2026'));
     const log = HTML.slice(HTML.indexOf('<h2 id="changelog">'));
-    expect(log).toContain(`<ul>\n<li>13<sup>th</sup> November 2026: ${entry}</li>\n`);
+    expect(log).toContain(`<ul>\n<li>26<sup>th</sup> November 2026: ${entry}</li>\n`);
+    expect(log.split('<li>26<sup>th</sup> November 2026: Prostate').length - 1).toBe(1);
     expect(log.split('<li>13<sup>th</sup> November 2026: Prostate').length - 1).toBe(1);
   });
 });

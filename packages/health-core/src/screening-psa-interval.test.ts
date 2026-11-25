@@ -262,11 +262,8 @@ describe('US-06 AC21: the three files (spec lines 150-171)', () => {
     const log = HTML.slice(HTML.indexOf('<h2 id="changelog">'));
     expect(log).not.toContain(oldLine);
     expect(log).toContain(`\n<li>12<sup>th</sup> November 2026: ${line}</li>\n`);
-    // US-06 AC23: the ACS 2026 amendment folds this entry into one 13 November prostate entry.
-    const merged = quotes(specLine('**Page, the PSA bullet**', '- Changelog, 13th November 2026:', ACS_2026))[0];
-    expect(merged.startsWith(added.replace(' The intervals are unchanged.', ''))).toBe(true);
-    expect(log).toContain(`<ul>\n<li>13<sup>th</sup> November 2026: ${merged}</li>\n`);
-    expect(log).not.toContain(added);
+    // Second since the ACS 2026 entry (US-06 AC23, dated 26 November) went above it.
+    expect(log).toContain(`</li>\n<li>13<sup>th</sup> November 2026: ${added}</li>\n`);
     // After the existing same-date lines, before the 5 November one.
     expect(log.indexOf(line)).toBeLessThan(log.indexOf('<li>5<sup>th</sup> November 2026'));
     expect(log.indexOf(line)).toBeGreaterThan(log.indexOf('Colorectal follow-up: after a positive test'));
