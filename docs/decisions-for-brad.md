@@ -56,15 +56,6 @@ issue, and nothing private.
   The owner proposed "Chat history unavailable" for the first; no line exists for the second. Options: (1) approve
   "Chat history unavailable", and have a line drafted for an unsaved turn; (2) leave both silent. Recommendation:
   option 1, because a person who returns to a conversation that was never saved has no way to know why it is missing.
-- **When a cloud save fails after it may have landed.** Issue: PR 2108 (open) gives each storage failure a typed
-  outcome. For Dropbox, GitHub and WebDAV, a timeout, a "too many requests" or a server error now says the provider
-  "did not answer" and then "The change may have landed. Read the record again before trying it a second time.",
-  where today it says nothing was written, which may be untrue. Drive's wording also shifts for a few cases. Three
-  smaller gaps stay, with no words yet: (a) a plain refusal with no words of its own says "did not answer", which is
-  untrue for a refusal; (b) "Nothing was read" in the access sentence is untrue after a save's own read; (c) "did not
-  answer" is said for a server error, which is an answer. Options: (1) approve the new sentence, and let new lines be
-  drafted for the three gaps; (2) keep today's words. Recommendation: option 1, because today's sentence can tell a
-  person nothing was written when it was.
 - **Web sync lines.** Issue: three web cases say too little: a sign-in that did not finish opens as a guest with no
   message; a cloud page whose sign-in ended after a log-off in another tab says only "Not synced yet." and loses edits
   on reload; switching clouds does not say the old cloud keeps its copy, which the iPhone does say. Options: approve
@@ -208,6 +199,16 @@ issue, and nothing private.
 - Screen-reader names for the medicine dose boxes end in a lower-case "dose", as the supplement rows do (PR 1796),
   so the whole form uses one casing: "this" (option 2). PR 1888 now names them "Statin dose", "GLP-1 Medication
   dose" and "SGLT2 Inhibitor dose", through labelled-by references (US-09 AC7l). "Email for your PDF" is approved for PR 1800.
+- When a cloud save fails after it may have landed: "do it, and use your judement for the sentences. must be succinct,
+  and I approve whatever sentences you suggest". One table words every storage failure that has no words of its own
+  (US-10 AC20): "<provider> refused the change. Nothing was written." (or "refused the request" for a call that is not
+  the save's write), "<provider> returned an error." then "The change may have landed. Read the record again before
+  trying it a second time.", or "Nothing was written."; "<provider> returned an answer that could not be used.";
+  "<provider> needs to be reconnected. Nothing was written."; after a save's own read, an access refusal says only
+  "Nothing was written."
+- A YouTube follow-up's classifier and router see the parent comment and the author's own earlier replies, by the
+  same rule as web and Discord (H415, US-15 AC75): "the router should see the earlier comments. youtube, web, and discord should behave the same here, and so
+  probably use the same code". No new words.
 - An erase message says what each step did, from one table in the shared engine (US-11 AC13): "this. and use your
   judement for the sentences. must be succinct, and I approve whatever sentences you suggest". The web uses it now; the
   iPhone with its next engine release. A record not erased: "Your health record was not deleted: the erase could not be

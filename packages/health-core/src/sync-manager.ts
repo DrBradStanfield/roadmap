@@ -143,6 +143,8 @@ export class SyncManager<T extends SyncedFile> {
           // its outcome; one it did not name is marked, never rewrapped, so its words stay (lead S57).
           else afterWrite(error);
           if (error instanceof ConflictError) continue; // remote moved — re-read & re-merge
+          // This save's read answered before its write failed, so its words cannot say nothing was read (US-10 AC20).
+          if (!mayHaveWritten && error instanceof StorageError) error.afterRead = true;
           throw error;
         }
       } catch (error) {
@@ -275,17 +277,18 @@ export function describeStorageFailure(error: unknown, provider: string): Storag
         message: `${provider} refused this connection’s access after a change was sent`,
         hint: error.earlierLanded && error.hint
           ? error.hint
-          : 'Reconnect the provider, which grants access again. The change may have landed: read the record again before retrying.',
+          : `${RECONNECT_HINT} The change may have landed: read the record again before retrying.`,
       };
     }
     return {
-      message: `${provider} refused this connection’s access. Nothing was read and nothing was written`,
-      hint: 'Reconnect the provider, which grants access again.',
+      message: `${provider} refused this connection’s access. ${untouched(error)}`,
+      hint: RECONNECT_HINT,
     };
   }
   if (error instanceof StorageError && error.hint) {
     return { message: error.message, hint: error.hint };
   }
+  if (error instanceof StorageError) return unworded(error, provider);
   // A failure after a write went out, with no words of its own: it may have landed.
   if (typeof error === 'object' && error !== null && mayHaveLanded(error)) {
     return { message: `${provider} did not answer`, hint: LANDED_HINT };
@@ -294,6 +297,32 @@ export function describeStorageFailure(error: unknown, provider: string): Storag
     message: `${provider} did not answer. Nothing was written`,
     hint: UNREACHABLE_HINT,
   };
+}
+
+const RECONNECT_HINT = 'Reconnect the provider, which grants access again.';
+
+/** What a refusal that stored nothing left alone: a save's write fails after its own read answered (US-10 AC20). */
+export function untouched(error: StorageError): string {
+  return error.afterRead ? 'Nothing was written' : 'Nothing was read and nothing was written';
+}
+
+/**
+ * The one table for a storage failure with no words of its own (US-10 AC20, lead A34), keyed by
+ * its outcome and, where the words differ, its reason. A failure with a status got an answer: an
+ * error. One that is not a refusal and has no status came with an answer that could not be used:
+ * `fetchOrFail`'s no-answer always carries words of its own.
+ */
+function unworded(error: StorageError, provider: string): StorageFailure {
+  if (error.outcome === 'refused') {
+    if (error.reason === 'writes-stopped') return { message: 'Saving has stopped here. Nothing was written', hint: 'Sign in again to save here.' };
+    // A revoked grant is only mended by a new sign-in, so "try once more" would not help (US-09 AC30).
+    if (error.reason === 'reconnect') return { message: `${provider} needs to be reconnected. Nothing was written`, hint: RECONNECT_HINT };
+    return { message: `${provider} refused the ${error.afterRead ? 'change' : 'request'}. Nothing was written`, hint: UNREACHABLE_HINT };
+  }
+  const answer = error.status !== undefined ? `${provider} returned an error` : `${provider} returned an answer that could not be used`;
+  return error.outcome === 'may-have-landed'
+    ? { message: answer, hint: LANDED_HINT }
+    : { message: `${answer}. Nothing was written`, hint: UNREACHABLE_HINT };
 }
 
 /** The failures storage is allowed to have. Anything else is a bug in us, and
