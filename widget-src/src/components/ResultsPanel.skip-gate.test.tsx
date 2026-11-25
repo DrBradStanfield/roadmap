@@ -256,7 +256,8 @@ describe('US-18 AC6 — a refused print window is never silent', () => {
     expect(blockedEvents()).toHaveLength(2); // trackProductEvent itself sends once per tab session
   });
 
-  it('a refusal on a capture that then fails to send shows beside that error', async () => {
+  // Lead P10 (Brad 2026-11-26): the note names Save as PDF, so it waits until that button is on screen.
+  it('a refusal on a capture that then fails to send: the send\'s error shows, the note waits for Save as PDF', async () => {
     mocks.skip.value = false;
     mocks.sendGuestReport.mockResolvedValue({ success: false, error: 'Please retry' });
     refuseWindow();
@@ -265,7 +266,9 @@ describe('US-18 AC6 — a refused print window is never silent', () => {
     fireEvent.click(view.getAllByRole('button', { name: GUEST_CAPTURE_BUTTON_LABEL })[0]);
     await waitFor(() => expect(view.getAllByText('Please retry').length).toBeGreaterThan(0));
     const box = view.getAllByText('Please retry')[0].closest('.email-capture')!;
-    expect(box.textContent).toContain(BLOCKED);
+    expect(view.queryByRole('button', { name: 'Save as PDF' })).toBeNull();
+    expect(view.queryByText(BLOCKED)).toBeNull();
+    expect(box.textContent).toContain('Please retry');
     expect(mocks.markReportEmailCaptured).not.toHaveBeenCalled();
     expect(blockedEvents()).toEqual([['pdf_window_blocked']]);
   });

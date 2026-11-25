@@ -294,11 +294,9 @@ function ReminderSignup({ hook }: { hook: GuestEmailHook }) {
   );
 }
 
-export function GuestEmailCapture({ hook, formStage, pdfBlocked }: {
+export function GuestEmailCapture({ hook, formStage }: {
   hook: GuestEmailHook;
   formStage?: number;
-  /** US-18 AC6: this capture's print window was refused. */
-  pdfBlocked?: boolean;
 }) {
   const { email, setEmail, emailError, setEmailError, state, helperText, handleSubmit } = hook;
   const box = emailBox(state, !!hook.gateSkipped);
@@ -333,7 +331,6 @@ export function GuestEmailCapture({ hook, formStage, pdfBlocked }: {
         </button>
       </div>
       {emailError && <span className="email-capture-error">{emailError}</span>}
-      <PdfNote show={!!pdfBlocked && (!!emailError || state === 'sending')} />
     </div>
   );
 }
@@ -348,7 +345,7 @@ export function PlanPdf({ mode, formStage, capture, print, onPrint, onCapturePri
   const saving = print.phase !== 'idle' && print.at === 'bottom';
   const pdfBlocked = print.phase === 'idle' ? print.blocked : null;
   const printLabel = saving ? 'Loading...' : 'Save as PDF';
-  const box = mode.email && <GuestEmailCapture hook={guestEmailHook} formStage={formStage} pdfBlocked={pdfBlocked === 'capture'} />;
+  const box = mode.email && <GuestEmailCapture hook={guestEmailHook} formStage={formStage} />;
   if (!box && !mode.save) return null;
   return (
     <div className="mh-pdf">
@@ -358,6 +355,7 @@ export function PlanPdf({ mode, formStage, capture, print, onPrint, onCapturePri
           <button type="button" className="action-btn" onClick={() => onPrint('bottom')} disabled={saving} title="Save your plan as a PDF">
             {printLabel}
           </button>
+          {/* The note names Save as PDF, so it shows only here, beside it, a refused capture's too (lead P10). */}
           <PdfNote show={pdfBlocked === 'bottom' || pdfBlocked === 'capture'} />
         </div>
       )}

@@ -2,7 +2,8 @@
 /**
  * Save as PDF's print state as the screen shows it (US-18 AC6, US-09 AC19): idle,
  * preparing, a refused window, an opened window, and the capture's send after a
- * refused window (lead P8). Pinned on main before the four flags became one state.
+ * refused window (leads P8, P10). Pinned on main before the four flags became one state.
+ * The note names Save as PDF, so it shows only beside that button (lead P10, Brad 2026-11-26).
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/react';
@@ -116,10 +117,10 @@ describe('US-18 AC6: what Save as PDF shows in each print state', () => {
   });
 });
 
-describe('US-18 AC6 (lead P8): the capture\'s send after a refused window', () => {
+describe('US-18 AC6 (leads P8, P10): the capture\'s send after a refused window', () => {
   beforeEach(() => { mocks.skip.value = false; });
 
-  it('while the send runs, the box says Sending... and that the window did not open', async () => {
+  it('while the send runs, the box says Sending... and no note; once captured, the note shows beside Save as PDF', async () => {
     refuseWindow();
     let settle: (r: { success: boolean }) => void = () => {};
     mocks.sendGuestReport.mockImplementation(() => new Promise((r) => { settle = r; }));
@@ -130,10 +131,12 @@ describe('US-18 AC6 (lead P8): the capture\'s send after a refused window', () =
     await waitFor(() => expect(mocks.sendGuestReport).toHaveBeenCalledOnce());
     const box = input.closest('.email-capture')!;
     expect(box.querySelector('button')!.textContent).toBe('Sending...');
-    await waitFor(() => expect(box.querySelector('.hr-pdf-blocked')!.textContent).toBe(PDF_WINDOW_BLOCKED));
+    expect(saveButton(view)).toBeNull(); // Save as PDF is not on screen, so the note naming it is not either (P10)
+    expect(note(view)).toHaveLength(0);
     settle({ success: true });
     await waitFor(() => expect(view.container.querySelector('#guestEmail')).toBeNull());
-    expect(note(view)[0].textContent).toBe(PDF_WINDOW_BLOCKED);
+    expect(saveButton(view).textContent).toBe('Save as PDF');
+    expect([...note(view)].map((n) => n.textContent)).toEqual([PDF_WINDOW_BLOCKED]);
   });
 
   it('a send after an opened window shows no note', async () => {
@@ -146,7 +149,7 @@ describe('US-18 AC6 (lead P8): the capture\'s send after a refused window', () =
     await waitFor(() => expect(mocks.sendGuestReport).toHaveBeenCalledOnce());
     const box = input.closest('.email-capture')!;
     expect(box.querySelector('button')!.textContent).toBe('Sending...');
-    expect(box.querySelector('.hr-pdf-blocked')!.textContent).toBe('');
+    expect(note(view)).toHaveLength(0);
     settle({ success: true });
     await waitFor(() => expect(view.container.querySelector('#guestEmail')).toBeNull());
   });
@@ -200,7 +203,7 @@ describe('US-18 AC6: a throw while printing ends the try', () => {
     expect(mocks.markReportEmailCaptured).not.toHaveBeenCalled();
     const box = input.closest('.email-capture')!;
     expect(box.querySelector('button')!.textContent).toBe('Sending...');
-    expect(box.querySelector('.hr-pdf-blocked')!.textContent).toBe(PDF_WINDOW_BLOCKED);
+    expect(note(view)).toHaveLength(0); // no Save as PDF on screen, so no note naming it (P10)
     openWindow();
     fireEvent.keyDown(input, { key: 'Enter' });
     await waitFor(() => expect(view.container.querySelector('#guestEmail')).toBeNull());

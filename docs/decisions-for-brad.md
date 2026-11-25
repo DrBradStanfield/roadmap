@@ -90,10 +90,6 @@ issue, and nothing private.
   value page's Add that fails); "Your history could not be shown. Reload the page to try again." (a failed history
   read); and a "cannot reach your record" line for a second refused save that now loses the typed text silently.
   Options: approve all three; some; none. Recommendation: all three.
-- **Cues for a value not yet saved.** Issue: the Waist row says "Add" while a typed value waits in the grid; the
-  "Unsaved values: review" cue does not name the value; and the PDF box's note about a blocked window names a button
-  not on screen. Options: new words for each; or close the first two and hide the note until its button shows.
-  Recommendation: the second, which needs no new words.
 - **One bad value blocks the whole web upload.** Issue: on the web, one out-of-range value blocks Save for the whole
   upload; the iPhone saves the rest and refuses that row. Options: the web refuses per row, like the iPhone; the
   iPhone blocks like the web; leave. Recommendation: per-row refusal in the shared engine for both, with the refused
@@ -216,6 +212,10 @@ issue, and nothing private.
   while the App Store review is open.
 
 ## Decided
+
+2026-11-26, Brad's words in quotes:
+- Cues for a value not yet saved, "the second, which needs no new words": the Waist row's "Add" and the "Unsaved
+  values: review" cue stay as they are; the PDF box's blocked-window note shows only beside the Save as PDF it names.
 
 2026-11-23, Brad's words in quotes:
 - Original files are stored in the background after Save, with no action from the person at Save and at every
