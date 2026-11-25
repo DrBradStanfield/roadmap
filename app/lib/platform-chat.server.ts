@@ -16,7 +16,8 @@ import {
 } from './chat.server';
 import type { ChatFailureMode } from './chat.server';
 import { DISCORD_SAVED_CHAT, savedChatBlock } from './chat-save-answers';
-import { routeQuery, sanitizeForRouter, type RouterResult } from './chat-router.server';
+import { reportRouterFailure, sanitizeForRouter, type RouterResult } from './chat-router.server';
+import { runRouter } from './chat-router-stage.server';
 import { classifyMessage, shouldFireRouter } from './chat-classifier.server';
 import { loadBlogIndex } from './blog-index.server';
 import { preferMasters } from './router-view';
@@ -101,7 +102,7 @@ export async function platformChatCompletion(params: {
 
   // Stage 2: router fires only when the classifier didn't bypass it (ROUTE/ERROR → fire).
   const routerResult: RouterResult | null = shouldFireRouter(classifierResult)
-    ? await routeQuery(sanitizedCurrent, sanitizedFirst, sanitizedRecent, purpose)
+    ? await runRouter(sanitizedCurrent, sanitizedFirst, sanitizedRecent, purpose, (r) => reportRouterFailure(r, 'discord'))
     : null;
 
   // US-50 AC14: an older post gives way to its topic masters unless the message gives its URL or handle.

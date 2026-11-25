@@ -129,7 +129,7 @@ export function startYouTubeBot(): void {
   }
 
   if (CHAT_PROMPT.kind === 'missing') {
-    console.warn('YouTube bot: chat system prompt missing — bot disabled');
+    console.warn(`YouTube bot: chat docs missing (${CHAT_PROMPT.files.join(', ')}) — bot disabled`);
     return;
   }
 

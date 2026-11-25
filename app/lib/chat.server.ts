@@ -440,8 +440,8 @@ export async function getChatCompletion(
   onEvent: ((event: ChatStreamEvent) => void) | undefined,
   opts: { purpose: ChatPurpose; subscriptionTool?: boolean; guestInputs?: unknown; profileEdits?: boolean; app?: boolean },
 ): Promise<ChatCompletionResult> {
-  // Backstop for any caller that skipped its own guard (US-15 AC65).
-  if (CHAT_PROMPT.kind === 'missing') throw new Error('Chat system prompt missing; no model call');
+  // Backstop for any caller that skipped its own guard (US-15 AC65); file names only (AC74).
+  if (CHAT_PROMPT.kind === 'missing') throw new Error(`Chat docs missing (${CHAT_PROMPT.files.join(', ')}); no model call`);
   const profileEdits = opts?.profileEdits === true;
   const app = opts?.app === true;
   const tools = [...(canApplyEdits ? chatToolsFor(messages, profileEdits, app) : []), ...(opts?.subscriptionTool ? [PROPOSE_SUBSCRIPTION_CHANGE_TOOL] : [])];
