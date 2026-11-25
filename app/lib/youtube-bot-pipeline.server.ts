@@ -280,11 +280,11 @@ export async function runPipeline(
   body: string,
   history: Array<{ role: 'user' | 'assistant'; content: string }> = [],
 ): Promise<PipelineOutcome> {
-  // The follow-up's earlier comments reach the router as on web and Discord (US-15 AC75).
+  // The follow-up's earlier comments reach the classifier and router as on web and Discord (US-15 AC75).
   const routerInput = routerTurn(thread.text, history);
   const isFollowUp = history.length > 0;
 
-  const classifierResult = await classifyMessage(routerInput.current, undefined, undefined, 'YOUTUBE');
+  const classifierResult = await classifyMessage(routerInput.current, routerInput.first, routerInput.recent, 'YOUTUBE');
   const { classification } = classifierResult;
   const unreadable = isUnreadableAnswer(classifierResult);
   if (SILENT_ON_YOUTUBE.has(classification) || unreadable) {
