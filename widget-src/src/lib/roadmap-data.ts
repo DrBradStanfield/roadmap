@@ -116,11 +116,7 @@ export function eraseRunsHere(): boolean {
  *  session's one rule, which spares the originals of documents that outlive
  *  the erase (US-11 AC6). The page never clears stored originals itself. */
 export function clearOffFileAfterErase(): void {
-  try {
-    store?.clearOffFileData();
-  } catch {
-    /* owed: the erase kept is not moved, and the next load clears again (US-11 AC6) */
-  }
+  store?.clearOffFileData(); // a failed clear stays owed: the next load clears again (US-11 AC6)
 }
 export function markEraseShown(identity: string): void {
   store?.showErase(identity);

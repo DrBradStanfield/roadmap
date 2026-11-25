@@ -326,7 +326,7 @@ export class RecordSession {
     if (clearOwed(this.eraseIdentity, this.clearedFor)) this.tryClear();
   }
   /** Clear, reporting a failure once per erase per session; the kept erase then stays, so the next load clears again. */
-  /** @internal */ tryClear(): void {
+  tryClear(): void {
     try { this.clearOffFileData(); } catch (error) {
       this.host.report(error, { op: 'clear-off-file', repeat: this.clearReportedFor === this.eraseIdentity });
       this.clearReportedFor = this.eraseIdentity;
