@@ -26,7 +26,11 @@
  *   K3i no row that was visible becomes hidden on a step that is not a press of Show all, and Show all's state changes
  *       only on its press (S4: a latch); it starts closed and stays closed until that press (T11);
  *   K3j the list's announcement changes only on a person's step where a row has an error text it did not have (from the
- *       engine's rows), never on an engine step; a step of one choice says each such text; no row is an alert (S7, T2, T3).
+ *       engine's rows), never on an engine step; a step of one choice says each such text; no row is an alert (S7, T2, T3);
+ *   K3k each row's input and tick, and each day control's button, is named the engine's `name` (US-13 AC28), read from the
+ *       accessibility tree, each comma after a space as the name algorithm joins references. Mutations: a row's day
+ *       referred to while it has none fails it on the first undated report; a day named on a row under no day control (a
+ *       column printed on a day still to come) fails it on seed 1.
  * Mutations it was shown failing on (PR body): M1 commit skipped on focus moving to another row; M2 the input's value
  * read from a stale local copy; M3 day groups keyed by index; M4 a letter's title draft never sent; M5 the draft's unit
  * re-read from the row at commit; M6 a row hidden whatever its draft or focus; M7 held text labelled by the row's unit now;
@@ -37,7 +41,7 @@
  * blur's commit, not as drawn when pressed (the code before T8); M18 Show all opening by itself when nothing needs
  * checking (the withdrawn ruling); M19 a press's claim kept after a cancelled press (the code before T12). (The promise path of Save, restored, fails the typecheck: `choose` returns void.) Synthetic values only.
  */
-import { act, cleanup, fireEvent, render } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, within } from '@testing-library/react';
 import { typedCommit } from '@roadmap/health-core/cell-input';
 import { core, DAY, EMPTY, extra, NOW } from '@roadmap/health-core/import-review.test-helpers';
 import { valueAt } from '@roadmap/health-core/import-review';
@@ -68,8 +72,10 @@ type File = Open['files'][number];
 const COLUMN = '2026-09-15';
 const X0: UnifiedExtractionResult = {
   classification: 'lab_report', reportDate: DAY, unrecognized: [], document: null,
-  // Lp(a) out of range: f0 lands with an error, an engine step that must say nothing (T3).
-  values: [core({}), core({ metric: 'hba1c', valueSI: 40, displayValue: 40, displayUnit: 'mmol/mol', question: 'Is this HbA1c?', unitGuessed: true }), core({ metric: 'lpa', valueSI: 9000, displayValue: 9000, displayUnit: 'nmol/L' })], additionalValues: [extra()],
+  // Lp(a) out of range: f0 lands with an error, an engine step that must say nothing (T3). A previous column printed on a
+  // day still to come has no day control, so its row is named with no day (K3k, PR 2161 review).
+  values: [core({}), core({ metric: 'hba1c', valueSI: 40, displayValue: 40, displayUnit: 'mmol/mol', question: 'Is this HbA1c?', unitGuessed: true }), core({ metric: 'lpa', valueSI: 9000, displayValue: 9000, displayUnit: 'nmol/L' }),
+    core({ metric: 'hba1c', valueSI: 41, displayValue: 41, displayUnit: 'mmol/mol', recordedAt: '2026-12-01' })], additionalValues: [extra()],
 };
 const X1: UnifiedExtractionResult = {
   classification: 'lab_report', reportDate: null, unrecognized: [], document: null,
@@ -458,7 +464,19 @@ export function runSequence(seed: number, steps: number) {
       const seen = nodes.get(row.key);
       if (seen && (seen.li !== li || seen.input !== input)) fail('K3e', `${row.key} was remounted (${trace[trace.length - 1]})`);
       nodes.set(row.key, { li, input });
+      // K3k
+      for (const role of [...(input ? ['textbox'] : []), 'checkbox']) {
+        const named = within(li).queryAllByRole(role, { hidden: true, name: spokenAs(row.name) });
+        if (!named.includes(role === 'textbox' ? input! : li.querySelector<HTMLElement>('.upload-list-tick')!)) fail('K3k', `${row.key}'s ${role} is not named "${row.name}"`);
+      }
+    }
+    for (const d of after.view.done ? [] : after.list.days) {
+      const button = document.querySelector<HTMLElement>(`[data-at="${d.key}"] .upload-list-picker-button`)!;
+      if (!within(button.parentElement!).queryAllByRole('button', { hidden: true, name: spokenAs(d.name) }).includes(button)) fail('K3k', `day ${d.key} is not named "${d.name}"`);
     }
   }
   cleanup();
 }
+
+/** K3k: an accessible name that is `name` as the screen reader says it, each reference joined by a space (" ,"). */
+const spokenAs = (name: string) => (said: string) => said.replace(/ ,/g, ',') === name;
