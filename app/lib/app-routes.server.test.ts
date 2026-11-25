@@ -581,16 +581,26 @@ describe('US-52 AC4f: the gate with its limit maps full of other callers', () =>
     expect(mocks.getChatCompletion).not.toHaveBeenCalled();
   });
 
-  it('a spent challenge stays spent however many are spent after it in its life (US-52 AC1a)', async () => {
-    const spent = await fresh();
-    expect((await reg(spent, 'AA==', '198.51.100.30')).status).toBe(401); // spends it
-    fill(appLimits.challenges, MAX_TRACKED_KEYS + 1); // more than any bounded map holds
-    const again = await reg(spent, device.attest(spent).toString('base64'), '198.51.100.32');
-    expect(again.status).toBe(401);
-    expect((await again.json()).reason).toBe('bad_challenge');
-    expect(store.rows.size).toBe(0);
-    const challenge = await fresh(); // a new challenge still registers
-    expect((await reg(challenge, device.attest(challenge).toString('base64'), '198.51.100.33')).status).toBe(200);
+  it('a spent challenge stays spent however many are spent after it in its life (US-52 AC1a, AC16)', async () => {
+    vi.useFakeTimers({ toFake: ['Date'], now: Date.now() });
+    try {
+      const spent = await fresh();
+      expect((await reg(spent, 'AA==', '198.51.100.30')).status).toBe(401); // spends it
+      fill(appLimits.challenges, MAX_TRACKED_KEYS + 1); // more than the set holds
+      const again = await reg(spent, device.attest(spent).toString('base64'), '198.51.100.32');
+      expect(again.status).toBe(401);
+      expect((await again.json()).reason).toBe('bad_challenge');
+      const challenge = await fresh(); // full of live challenges: a new one is refused, as a spent one is (AC16)
+      const refused = await reg(challenge, device.attest(challenge).toString('base64'), '198.51.100.33');
+      expect(refused.status).toBe(401);
+      expect((await refused.json()).reason).toBe('bad_challenge');
+      expect(store.rows.size).toBe(0);
+      vi.setSystemTime(Date.now() + 6 * 60_000); // a challenge's life and its minute: the spent ones expire
+      const later = await fresh();
+      expect((await reg(later, device.attest(later).toString('base64'), '198.51.100.34')).status).toBe(200);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

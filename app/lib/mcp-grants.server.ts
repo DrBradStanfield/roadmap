@@ -145,8 +145,12 @@ export function issueTokens(clientId: string, provider: McpProvider, from: Grant
  * Redemption still needs the PKCE `code_verifier`, which never leaves the
  * client, so a passive interceptor gains nothing. Documented in §4, not
  * papered over.
+ *
+ * Each code id is held for a code's lifetime from its redemption, which outlasts the code: its `exp`
+ * is at most that lifetime after it was issued. The set is bounded (US-52 AC16): room comes only from
+ * expired ids, so a set full of live ones refuses the redemption.
  */
-const spentCodes = new Map<string, number>();
+const spentCodes = createQuotaCounter(1, CODE_LIFETIME_SECONDS * 1000, 60_000, { name: 'mcp spent codes', oneUse: true });
 
 /**
  * Proposal receipts already confirmed on this machine (US-36 AC9): the fast
@@ -164,7 +168,7 @@ function claimOnce(spent: Map<string, number>, key: string, lifetimeMs: number, 
   return true;
 }
 
-export const claimCode = (jti: string, nowMs = Date.now()): boolean => claimOnce(spentCodes, jti, CODE_LIFETIME_SECONDS * 1000, nowMs);
+export const claimCode = (jti: string): boolean => spentCodes.take(jti, 1);
 
 /**
  * A confirm receipt works once, across machines and restarts (US-36 AC9): this
@@ -246,7 +250,7 @@ export const importFiles = createQuotaCounter(IMPORT_FILES_PER_DAY, DAY_MS, 30 *
 
 /** Test seam — the maps are process-global and would leak between cases. */
 export function resetMcpMemory(): void {
-  spentCodes.clear();
+  spentCodes.reset();
   spentProposals.clear();
   spentWrites.clear();
   importFiles.reset();

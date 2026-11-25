@@ -34,35 +34,39 @@ export function sweepExpired<V>(map: Map<string, V>, expiresAt: (entry: V) => nu
 }
 
 /**
- * A bounded map's name (the only thing its full-map warning says) and its bound. `maxKeys: Infinity`
- * leaves a map unbounded, for a set whose entries must hold for their whole life (the spent challenges).
+ * A bounded map's name (the only thing its full-map warning says) and its bound. `oneUse` marks a set
+ * of spent ids, whose entries must hold for their whole life: it never drops a live one (US-52 AC16).
  */
-export interface LimitMapOptions { name: string; maxKeys?: number }
+export interface LimitMapOptions { name: string; maxKeys?: number; oneUse?: true }
 
 /**
- * The bound on one TTL map: `room(key, now)` clears `key` and makes room for it. Each map has one
- * TTL and every write goes through here before its set, so insertion order is expiry order: expired
- * entries leave from the front first, then the oldest live entry. A caller who can make many keys
- * already gets a fresh count per key, the machine-wide caps still bind, and refusing would lock real
- * new callers out. A map that has to evict a live entry warns once an hour, by its name alone.
+ * The bound on one TTL map: `room(key, now)` clears `key`, makes room for it, and says whether `key`
+ * may now be set. Each map has one TTL and every write goes through here before its set, so insertion
+ * order is expiry order: expired entries leave from the front first, then the oldest live entry. A
+ * caller who can make many keys already gets a fresh count per key, the machine-wide caps still bind,
+ * and refusing would lock real new callers out. A one-use set is the exception: dropping a live spent
+ * id would let it be spent again, so when every entry is live it answers false and its caller refuses
+ * (US-52 AC16). A map full of live entries warns once an hour, by its name alone.
  */
 export function boundedMap<V>(map: Map<string, V>, expiresAt: (entry: V) => number, options: LimitMapOptions) {
   const maxKeys = options.maxKeys ?? MAX_TRACKED_KEYS;
   let warnedAt = -Infinity;
-  return (key: string, now: number): void => {
+  return (key: string, now: number): boolean => {
     map.delete(key);
     for (const [oldest, entry] of map) {
       if (map.size < maxKeys || isLive(expiresAt(entry), now)) break;
       map.delete(oldest);
     }
-    if (map.size < maxKeys) return;
+    if (map.size < maxKeys) return true;
     if (now - warnedAt >= HOUR_MS) {
       warnedAt = now;
       // Fixed text and the map's name only: never a key, an IP or anyone's count.
       console.error(`In-memory limit map full: ${options.name}`);
       Sentry.captureMessage('In-memory limit map full', { level: 'warning', tags: { feature: 'rate_limit', map: options.name } });
     }
+    if (options.oneUse) return false;
     map.delete(map.keys().next().value!);
+    return true;
   };
 }
 
@@ -79,7 +83,7 @@ export function createRateLimiter(max: number, windowMs: number, cleanupMs: numb
       const now = Date.now();
       const entry = map.get(key);
       if (!entry || !isLive(entry.resetAt, now)) {
-        room(key, now);
+        if (!room(key, now)) return false;
         map.set(key, { count: 1, resetAt: now + windowMs });
         return true;
       }
@@ -107,7 +111,7 @@ export function createQuotaCounter(limit: number, windowMs: number, cleanupMs: n
     if (n > limit) return null; // refused before it takes a place (US-52 AC4i)
     let entry = live(key);
     if (!entry) {
-      room(key, Date.now());
+      if (!room(key, Date.now())) return null;
       entry = { count: 0, resetAt: Date.now() + windowMs };
       map.set(key, entry);
     }
