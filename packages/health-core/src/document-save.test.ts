@@ -3,10 +3,12 @@
 // the phone. Synthetic bytes only.
 import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
-import { createEmptyFile, type FileDocument, type RoadmapFile } from './roadmap-file';
+import { createEmptyFile, createLabValue, type FileDocument, type RoadmapFile } from './roadmap-file';
+import { knownAs, knownIndex } from './upload-known';
 import { LAB_ARCHIVE_TITLE } from './document-path';
 import { documentView, isLabArchiveDocument, labArchivePayload, pendingRowsFor, saveDocuments, type DocumentPayload, type DocumentSaveIO } from './document-save';
-import { LAB_ARCHIVE_FLAG } from './document-rows';
+import { LAB_ARCHIVE_FLAG, LAB_ARCHIVE_ROWS, labRowsByFile, listedRows, writtenLabRows } from './document-rows';
+import { bulkAppendValues } from './record-edits';
 
 const bytes = (text: string) => new TextEncoder().encode(text);
 const hashOf = (b: Uint8Array) => `sha256-${createHash('sha256').update(b).digest('hex')}`;
@@ -23,7 +25,7 @@ function io(opts: { fail?: boolean } = {}) {
   const errors: unknown[] = [];
   let n = 0;
   const value: DocumentSaveIO<Uint8Array> = {
-    hash: async (b) => hashOf(b),
+    stopped: () => false, hash: async (b) => hashOf(b),
     write: async (ref, b) => {
       if (opts.fail) throw new Error('synthetic quota refusal');
       written.set(ref, b);
@@ -146,11 +148,11 @@ describe('saveDocuments: a held metadata-only row (US-14 AC4, US-35 AC8)', () =>
 });
 
 describe('saveDocuments: a failed blob write without a held row', () => {
-  it('degrades to a metadata-only row that keeps the hash, and reports the error', async () => {
+  it('degrades to a metadata-only row that keeps the hash, reports the error and counts it unstored (US-14 AC12)', async () => {
     const file = fresh();
     const { plan, errors } = await save(file, [letter()], { fail: true });
     expect(errors).toHaveLength(1);
-    expect(plan.unstored).toBe(0);
+    expect(plan.unstored).toBe(1);
     expect(plan.saved).toEqual([expect.objectContaining({ fileRef: '', mimeType: '', contentHash: hashOf(bytes('letter bytes')) })]);
     expect(file.documents).toHaveLength(1);
   });
@@ -262,3 +264,227 @@ describe('isLabArchiveDocument', () => {
   });
 });
 
+
+// US-14 AC10: a save with no cloud keeps the file's hash; a lab archive row
+// lists the value rows its import wrote, and a re-read of a report whose
+// listed values are all gone files a copy listing the new ones.
+describe('saveDocuments: the hash without the bytes, and lab archive row lists (US-14 AC10)', () => {
+  const hash = hashOf(bytes('letter bytes'));
+  const offCloud = (over: Partial<DocumentPayload<Uint8Array>> = {}) => letter({ file: undefined, contentHash: hash, ...over });
+  const labRow = (id: string, status: 'active' | 'entered-in-error' = 'active') => createLabValue({
+    id, metricName: 'ferritin', value: 1, unit: 'µg/L', recordedAt: '2026-01-01T00:00:00.000Z', createdAt: '2026-01-01T00:00:00.000Z', source: 'lab_import', status,
+  });
+
+  it('no bytes, a hash: a metadata-only row carrying it, nothing written, nothing unstored; the record then knows the file', async () => {
+    const file = fresh();
+    const { plan, written } = await save(file, [offCloud()]);
+    expect(written.size).toBe(0);
+    expect(plan.unstored).toBe(0);
+    expect(file.documents).toEqual([expect.objectContaining({ contentHash: hash, fileRef: '', mimeType: '', extractedText: 'Synthetic note' })]);
+    expect(knownAs(knownIndex(file), hash)).toEqual({ as: 'document', archiveOnly: true });
+  });
+
+  it('the same file again, as held: nothing new; edited (title, type or date): it replaces the held row, as a cloud upload does (adversary F3)', async () => {
+    const file = fresh();
+    await save(file, [offCloud()]);
+    expect((await save(file, [offCloud()])).plan.saved).toEqual([]);
+    for (const edit of [{ title: 'Renamed' }, { documentType: 'discharge_summary' }, { documentDate: '2026-01-05' }]) {
+      const current = file.documents.find((d) => !d.deleted)!;
+      const next = { title: current.title, documentType: current.type, documentDate: current.date, ...edit };
+      expect((await save(file, [offCloud(next)])).plan.saved).toHaveLength(1);
+      expect(file.documents.filter((d) => !d.deleted)).toEqual([expect.objectContaining({ ...('title' in edit ? { title: 'Renamed' } : null), contentHash: hash, fileRef: '' })]);
+    }
+    expect(file.documents.filter((d) => !d.deleted)[0]).toMatchObject({ title: 'Renamed', type: 'discharge_summary', date: '2026-01-05' });
+    expect(file.documents.filter((d) => d.deleted)).toHaveLength(3);
+    // With a cloud the same edit lands the original and replaces the held row: the two paths agree.
+    const cloud = fresh();
+    await save(cloud, [offCloud()]);
+    await save(cloud, [letter({ title: 'Renamed' })]);
+    expect(cloud.documents.filter((d) => !d.deleted)).toEqual([expect.objectContaining({ title: 'Renamed', contentHash: hash, fileRef: expect.stringMatching(/^Clinic letters\//) })]);
+  });
+
+  it('later, with a cloud: the original is filed behind the metadata-only row (US-14 AC4)', async () => {
+    const file = fresh();
+    await save(file, [offCloud()]);
+    const { written } = await save(file, [letter()]);
+    expect(written.size).toBe(1);
+    expect(file.documents.filter((d) => !d.deleted)).toEqual([expect.objectContaining({ contentHash: hash, fileRef: expect.stringMatching(/^Clinic letters\//) })]);
+  });
+
+  it('a lab archive row lists its rows; with none written, no list', () => {
+    expect(labArchivePayload('a.pdf', '2026-01-01', undefined, { rows: ['lv-1', 'lv-2'] }).metadata).toEqual({ [LAB_ARCHIVE_FLAG]: true, [LAB_ARCHIVE_ROWS]: ['lv-1', 'lv-2'] });
+    expect(labArchivePayload('a.pdf', '2026-01-01', undefined, { rows: [] }).metadata).toEqual({ [LAB_ARCHIVE_FLAG]: true });
+  });
+
+  it('a report whose listed values are all gone, read again: a copy with the same original and the new list, the old row tombstoned, no second blob', async () => {
+    const file = fresh();
+    file.labValues = [labRow('lv-1', 'entered-in-error'), labRow('lv-2')];
+    file.documents = [row({ id: 'dead', type: 'pathology_report', title: LAB_ARCHIVE_TITLE, extractedText: '', fileRef: 'Lab results/a.pdf', mimeType: 'application/pdf', metadata: { [LAB_ARCHIVE_FLAG]: true, [LAB_ARCHIVE_ROWS]: ['lv-1'] } })];
+    expect(knownAs(knownIndex(file), hash)).toBeNull();
+    const { plan, written } = await save(file, [labArchive({ metadata: { [LAB_ARCHIVE_FLAG]: true, [LAB_ARCHIVE_ROWS]: ['lv-2'] } })]);
+    expect(written.size).toBe(0);
+    expect(plan.saved).toEqual([expect.objectContaining({ fileRef: 'Lab results/a.pdf', mimeType: 'application/pdf', contentHash: hash, metadata: { [LAB_ARCHIVE_FLAG]: true, [LAB_ARCHIVE_ROWS]: ['lv-1', 'lv-2'] } })]);
+    expect(file.documents.find((d) => d.id === 'dead')?.deleted).toBe(true);
+    expect(knownAs(knownIndex(file), hash)).toEqual({ as: 'labReport', archiveOnly: false });
+  });
+
+  it('a dead lab archive row beside a metadata-only letter of the same bytes: the letter is filed behind its row, and the record and the save agree', async () => {
+    const file = fresh();
+    file.labValues = [labRow('lv-1', 'entered-in-error')];
+    file.documents = [
+      row({ id: 'dead', type: 'pathology_report', title: LAB_ARCHIVE_TITLE, extractedText: '', fileRef: 'Lab results/a.pdf', metadata: { [LAB_ARCHIVE_FLAG]: true, [LAB_ARCHIVE_ROWS]: ['lv-1'] } }),
+      row({ id: 'held' }),
+    ];
+    expect(knownAs(knownIndex(file), hash)).toEqual({ as: 'document', archiveOnly: true });
+    const { written } = await save(file, [letter()]);
+    expect(written.size).toBe(1);
+    expect(file.documents.find((d) => d.id === 'held')?.deleted).toBe(true);
+    expect(knownAs(knownIndex(file), hash)).toEqual({ as: 'document', archiveOnly: false });
+  });
+});
+
+describe('writtenLabRows / labRowsByFile: what each file wrote (US-14 AC10)', () => {
+  it('a written lab row by its root id; a vital, a skip or a refusal is null; grouped by file', () => {
+    const write = {
+      saved: [{ id: 'm-1', metricType: 'weight' }, { id: 'l-1#si', metricName: 'ferritin' }, { id: 'l-2', metricName: 'hba1c' }],
+      outcomes: ['written', 'skipped', 'written', 'refused', 'written'] as const,
+    };
+    const rows = writtenLabRows({ saved: write.saved, outcomes: [...write.outcomes] });
+    expect(rows).toEqual([null, null, 'l-1', null, 'l-2']);
+    expect(labRowsByFile(rows, ['a.pdf', 'a.pdf', 'a.pdf', 'b.pdf', undefined])).toEqual(new Map([['a.pdf', ['l-1']]]));
+    expect(labRowsByFile(rows, ['a.pdf', 'a.pdf', 'b.pdf', 'b.pdf', 'b.pdf'])).toEqual(new Map([['b.pdf', ['l-1', 'l-2']]]));
+  });
+});
+
+// Codex R2, adversary F1: a live lab archive row's list is kept and extended, never lost.
+describe('saveDocuments: a lab archive row\'s list is kept and extended (US-14 AC10)', () => {
+  const hash = hashOf(bytes('letter bytes'));
+  const labRow = (id: string, status: 'active' | 'entered-in-error' = 'active') => createLabValue({
+    id, metricName: 'ferritin', value: 1, unit: 'µg/L', recordedAt: '2026-01-01T00:00:00.000Z', createdAt: '2026-01-01T00:00:00.000Z', source: 'lab_import', status,
+  });
+  const listing = (rows: string[] | null, over: Partial<FileDocument> = {}) => row({
+    id: 'held', type: 'pathology_report', title: LAB_ARCHIVE_TITLE, extractedText: '', metadata: { [LAB_ARCHIVE_FLAG]: true, ...(rows ? { [LAB_ARCHIVE_ROWS]: rows } : null) }, ...over,
+  });
+  const offCloudLab = (rows: string[]) => labArchivePayload<Uint8Array>('a.pdf', '2026-01-01', undefined, { rows, contentHash: hash });
+  const live = (file: RoadmapFile) => file.documents.filter((d) => !d.deleted);
+
+  it('off-cloud: core values saved, the rest failed, the row lists the core; the retry saves the rest: one live row lists both; the core deleted, still known', async () => {
+    const file = fresh();
+    file.labValues = [labRow('core-1')];
+    await save(file, [offCloudLab(['core-1'])]);
+    expect(live(file)).toEqual([expect.objectContaining({ metadata: { [LAB_ARCHIVE_FLAG]: true, [LAB_ARCHIVE_ROWS]: ['core-1'] } })]);
+    file.labValues.push(labRow('add-1'));
+    // The retry's own write lists only what it wrote: the save keeps the held list and adds it.
+    await save(file, [offCloudLab(['add-1'])]);
+    expect(live(file)).toEqual([expect.objectContaining({ fileRef: '', contentHash: hash, metadata: { [LAB_ARCHIVE_FLAG]: true, [LAB_ARCHIVE_ROWS]: ['core-1', 'add-1'] } })]);
+    file.labValues[0] = { ...file.labValues[0], status: 'entered-in-error' };
+    expect(knownAs(knownIndex(file), hash)).toEqual({ as: 'labReport', archiveOnly: true });
+  });
+
+  it('nothing new to list and no original to file: nothing written', async () => {
+    const file = fresh();
+    file.labValues = [labRow('lv-1')];
+    file.documents = [listing(['lv-1'])];
+    expect((await save(file, [offCloudLab(['lv-1'])])).plan.saved).toEqual([]);
+    expect((await save(file, [offCloudLab([])])).plan.saved).toEqual([]);
+    file.documents = [listing(['lv-1'], { fileRef: 'Lab results/a.pdf' })];
+    const { plan, written } = await save(file, [labArchive({ metadata: { [LAB_ARCHIVE_FLAG]: true, [LAB_ARCHIVE_ROWS]: ['lv-1'] } })]);
+    expect([plan.saved, written.size]).toEqual([[], 0]);
+  });
+
+  it('a lab report saved off-cloud, then uploaded with a cloud (US-14 AC4 for a lab report): the original is filed behind, the list kept', async () => {
+    const file = fresh();
+    file.labValues = [labRow('lv-1')];
+    file.documents = [listing(['lv-1'])];
+    // The phone lists no rows: the held list stays.
+    const { written } = await save(file, [labArchive()]);
+    expect(written.size).toBe(1);
+    expect(live(file)).toEqual([expect.objectContaining({ fileRef: expect.stringMatching(/^Lab results\//), contentHash: hash, metadata: { [LAB_ARCHIVE_FLAG]: true, [LAB_ARCHIVE_ROWS]: ['lv-1'] } })]);
+    expect(file.documents.find((d) => d.id === 'held')?.deleted).toBe(true);
+  });
+
+  it('a stored, known row and new rows to list: a copy with the same original and the union, no blob', async () => {
+    const file = fresh();
+    file.labValues = [labRow('lv-1'), labRow('lv-2')];
+    file.documents = [listing(['lv-1'], { fileRef: 'Lab results/a.pdf', mimeType: 'application/pdf' })];
+    const { written } = await save(file, [labArchive({ metadata: { [LAB_ARCHIVE_FLAG]: true, [LAB_ARCHIVE_ROWS]: ['lv-2'] } })]);
+    expect(written.size).toBe(0);
+    expect(live(file)).toEqual([expect.objectContaining({ fileRef: 'Lab results/a.pdf', metadata: { [LAB_ARCHIVE_FLAG]: true, [LAB_ARCHIVE_ROWS]: ['lv-1', 'lv-2'] } })]);
+  });
+
+  it('two different files under one name (different bytes, different days): each row lists only its own; one report\'s values deleted, only that one is not known', async () => {
+    const file = fresh();
+    const write = bulkAppendValues(file, [
+      { kind: 'lab', metricName: 'Ferritin', value: 90, unit: 'µg/L', recordedAt: '2026-01-01', source: 'lab_import' },
+      { kind: 'lab', metricName: 'Ferritin', value: 70, unit: 'µg/L', recordedAt: '2026-02-01', source: 'lab_import' },
+    ], '2026-02-02T00:00:00.000Z');
+    // Keyed by each file's identity (its hash), never the shared name.
+    const rows = labRowsByFile(writtenLabRows(write), ['hash-first', 'hash-second']);
+    await save(write.file, [
+      labArchivePayload<Uint8Array>('Results.pdf', '2026-01-01', undefined, { rows: rows.get('hash-first'), contentHash: 'hash-first' }),
+      labArchivePayload<Uint8Array>('Results.pdf', '2026-02-01', undefined, { rows: rows.get('hash-second'), contentHash: 'hash-second' }),
+    ]);
+    const [first, second] = write.file.labValues.map((r) => r.id);
+    expect(live(write.file).map((d) => [d.contentHash, listedRows(d)])).toEqual([['hash-first', [first]], ['hash-second', [second]]]);
+    write.file.labValues[0] = { ...write.file.labValues[0], status: 'entered-in-error' };
+    const index = knownIndex(write.file);
+    expect([knownAs(index, 'hash-first'), knownAs(index, 'hash-second')]).toEqual([null, { as: 'labReport', archiveOnly: true }]);
+  });
+
+  it('a replacement never loses a stored original: the blob write fails while another device\'s stored archive (listing B) merges in', async () => {
+    const current = fresh();
+    current.labValues = [labRow('A'), labRow('B')];
+    // Nothing held here: this save's own row lists A.
+    const plan = await saveDocuments(current, [labArchive({ metadata: { [LAB_ARCHIVE_FLAG]: true, [LAB_ARCHIVE_ROWS]: ['A'] } })], io({ fail: true }).io);
+    const atCommit = structuredClone(current);
+    atCommit.documents.push(listing(['B'], { id: 'other-device', fileRef: 'Lab results/other.pdf', mimeType: 'application/pdf' }));
+    plan.commit(atCommit);
+    // The replaced rows' list first, then this save's own.
+    expect(live(atCommit)).toEqual([expect.objectContaining({ fileRef: 'Lab results/other.pdf', mimeType: 'application/pdf', metadata: { [LAB_ARCHIVE_FLAG]: true, [LAB_ARCHIVE_ROWS]: ['B', 'A'] } })]);
+  });
+
+  it('a replacement never loses a stored original: an off-cloud save meets a stored archive merged in', async () => {
+    const current = fresh();
+    current.labValues = [labRow('A'), labRow('B')];
+    current.documents = [listing(['A'])];
+    const plan = await saveDocuments(current, [labArchivePayload<Uint8Array>('a.pdf', '2026-01-01', undefined, { rows: ['A', 'C'], contentHash: hash })], io().io);
+    const atCommit = structuredClone(current);
+    atCommit.documents.push(listing(['B'], { id: 'other-device', fileRef: 'Lab results/other.pdf', mimeType: 'application/pdf' }));
+    plan.commit(atCommit);
+    expect(live(atCommit)).toEqual([expect.objectContaining({ fileRef: 'Lab results/other.pdf', mimeType: 'application/pdf', metadata: { [LAB_ARCHIVE_FLAG]: true, [LAB_ARCHIVE_ROWS]: ['A', 'B', 'C'] } })]);
+  });
+
+  it('Codex re-check 1: the list is built at commit, from the rows the commit tombstones: a second device\'s row that arrived during the blob write keeps its value', async () => {
+    const current = fresh();
+    current.labValues = [labRow('A'), labRow('B')];
+    current.documents = [listing(['A'])];
+    const t = io();
+    const plan = await saveDocuments(current, [labArchive()], t.io);
+    // Merged in from another device while the original uploaded: the same bytes, listing B.
+    const atCommit = structuredClone(current);
+    atCommit.documents.push(listing(['B'], { id: 'other-device' }));
+    plan.commit(atCommit);
+    expect(live(atCommit)).toEqual([expect.objectContaining({ fileRef: expect.stringMatching(/^Lab results\//), metadata: { [LAB_ARCHIVE_FLAG]: true, [LAB_ARCHIVE_ROWS]: ['A', 'B'] } })]);
+    atCommit.labValues[0] = { ...atCommit.labValues[0], status: 'entered-in-error' };
+    expect(knownAs(knownIndex(atCommit), hash)).toEqual({ as: 'labReport', archiveOnly: false });
+  });
+});
+
+// Codex re-check 3, US-65 AC3: an unreadable stored row never throws and is never touched.
+describe('isLabArchiveDocument and the save are total over stored shapes (US-65 AC3)', () => {
+  it('never throws; what it cannot read is not a lab archive row', () => {
+    const shapes: unknown[] = [null, 3, 'x', {}, { documentType: 'pathology_report', title: LAB_ARCHIVE_TITLE, contentMd: 3, metadata: {} },
+      { documentType: 3, title: { a: 1 }, contentMd: null, metadata: 'x' }, { documentType: 'pathology_report', title: LAB_ARCHIVE_TITLE, contentMd: {}, metadata: null }];
+    for (const shape of shapes) expect(isLabArchiveDocument(shape as Parameters<typeof isLabArchiveDocument>[0])).toBe(false);
+  });
+
+  it('a stored row with the archive signature, a row list and extractedText 3: knownIndex and saveDocuments do not throw and leave it as it was', async () => {
+    const file = fresh();
+    const odd = { ...row({ id: 'odd', type: 'pathology_report', title: LAB_ARCHIVE_TITLE, metadata: { [LAB_ARCHIVE_ROWS]: ['x'] } }), extractedText: 3 } as unknown as FileDocument;
+    file.documents = [odd];
+    expect(() => knownIndex(file)).not.toThrow();
+    const before = structuredClone(odd);
+    await save(file, [labArchive()]);
+    expect(file.documents[0]).toEqual(before);
+  });
+});

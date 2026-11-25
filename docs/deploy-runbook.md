@@ -43,12 +43,12 @@ inrel() { [ -f .git ] && [ -n "${D:-}" ] && [ "$(pwd -P)" = "$D" ] || { echo "ST
 
 # 1. Build the live v2 widget bundle (from project root). build:shopify-prod
 #    emits health-plan-v2.js + the upload bundle into the extension assets.
-#    (build:widget only builds the side bundles: upload, site-chat, chatbot.)
+#    (build:widget only builds the side bundles: upload, site-chat, chatbot, widgets.)
 inrel && npm run build:shopify-prod
 
 # 2. Upload WIDGET sourcemaps to Sentry (requires SENTRY_AUTH_TOKEN in .env — local only).
 #    sentry:sourcemaps uploads from extensions/health-tool-widget/assets, which holds the
-#    main v2 bundle (step 1) PLUS the side bundles (site-chat, chatbot). build:shopify-prod
+#    main v2 bundle (step 1) PLUS the side bundles (site-chat, chatbot, widgets). build:shopify-prod
 #    only emits the main v2 + upload bundles, so run build:widget first to refresh the
 #    side bundles' maps too, or their Sentry maps go stale.
 inrel && npm run build:widget
@@ -242,12 +242,11 @@ to both — deploy twice, see "Shopify app configs".**)
   2. `shopify app config use shopify.app.edu.toml` → `shopify app deploy --allow-updates` (no rebuild — same
      assets) → verify banner **`health-roadmap-edu-<N>`** (edu / drstanfield).
   3. `shopify app config use shopify.app.toml` → **RESTORE prod active** (config drifts!).
-  (Reality check 2026-08-07, live verification: `microvitamin.com/pages/roadmap` **404s** — the
-  commerce store no longer has a roadmap tool page. Its `/pages/health-plan` page embeds ONLY the
-  site-chat bundle (`health-chat-root`), no `health-tool-root` app-block. So the education-only
-  split is effectively complete for the tool itself; the commerce app deploys still matter for the
-  chat bundles. Open decision for Brad: leave `/pages/roadmap` 404ing on commerce, or redirect it
-  to drstanfield.com/pages/roadmap.)
+  (Both stores run the tool (Brad, 2026-11-18): `microvitamin.com/pages/health-plan` mounts the full
+  roadmap (`health-tool-root`, `health-plan-v2.js`) in brand posture, the hero photo hidden by CSS;
+  `microvitamin.com/pages/roadmap` still 404s. The 2026-08-07 note that the commerce store had no
+  tool page is out of date. The single-topic widget blocks (US-74) on the same store share its
+  record, as browser storage is per site.)
 - **Chatbot runs identically on both domains, name differs per store.** Storefront → Shopify app
   proxy `/apps/health-tool-1/api/chat` → the store's Fly app (`drstanfield.com`→`health-tool-edu`,
   `microvitamin.com`→`health-tool-app`) → Anthropic (shared key). Both Fly apps share the same
@@ -292,12 +291,27 @@ Moved out of CLAUDE.md 2026-09-24 (entropy pass). `.env` has all of them.
   URL; production refuses to start without a TLS mode, US-09 AC31), SENTRY_*, RESEND_*,
   ANTHROPIC_API_KEY, SHOPIFY_*, KLAVIYO_API_KEY/KLAVIYO_LIST_ID (the same
   MicroVitamin pair on both apps, by decision 2026-09-28).
+- **Anthropic key per purpose** (optional; an unset or empty one falls back to ANTHROPIC_API_KEY), so the
+  Console shows spend by feature (`anthropicKey` in `app/lib/anthropic.server.ts`):
+  - `ANTHROPIC_API_KEY_CHAT`: web chat on both storefronts and the iPhone app's chat (classifier, router, answer). Both apps.
+  - `ANTHROPIC_API_KEY_YOUTUBE`: the YouTube comment bot's classifier, router and answer. health-tool-app.
+  - `ANTHROPIC_API_KEY_DISCORD`: the Discord bot's classifier, router and answer. health-tool-app.
+  - `ANTHROPIC_API_KEY_PURGE`: the chat-purge cron's question scrub (`RUN_SHARED_CRONS`). health-tool-app.
+  - `ANTHROPIC_API_KEY_LABS`: lab file reads from the website and the iPhone app. Both apps.
+  - `ANTHROPIC_API_KEY_CONNECTOR`: the hosted MCP's `import_documents`. health-tool-edu.
+  Keep them in one Console workspace: prompt caches are not shared across workspaces. A purpose key that is
+  set but wrong breaks that surface (no fallback), so check the surface after setting it. Console key names,
+  all in the Default workspace, follow `roadmap-<commerce|edu>-<purpose>`: roadmap-commerce-chat,
+  roadmap-commerce-youtube, roadmap-commerce-discord, roadmap-commerce-purge, roadmap-commerce-labs,
+  roadmap-edu-chat, roadmap-edu-labs, roadmap-edu-connector. Spend by key: `tools/anthropic-spend.mjs`
+  ([docs/ops/anthropic-spend.md](ops/anthropic-spend.md)). Story: US-76.
 - **Fly-only**: MCP_ISSUER, MCP_SEAL_KEYS, MCP_CLIENT_HMAC_KEY,
   GITHUB_ISSUES_TOKEN (edu; the connector files bug
   reports with it, and without it hands the user a link), DROPBOX_APP_KEY/SECRET,
   GOOGLE_DRIVE_CLIENT_ID/SECRET (BOTH Fly apps: `health-tool-app` for the
   widget's Google exchange, edu for the MCP's Drive leg). Setup and rotation:
   [deploy-runbook-mcp.md](deploy-runbook-mcp.md).
+- **`MCP_GEMINI` (edu app, the hosted MCP; not a secret):** exactly `on` accepts Gemini's custom connector as the pinned `gemini` client (US-32 AC59-AC65). Anything else, unset included, is off: Gemini registrations are refused, the `gemini` client is unknown, and every Gemini code and token stops opening. Off by default; Brad sets it himself, only after the cross-account check in [agent-access.md](agent-access.md) § The hosted path.
 - **Per-app secrets diverge post-split**: each app has its own SHOPIFY_ pair;
   KLAVIYO_ is shared (every sign-up joins the MicroVitamin list; the drstanfield
   Klaviyo account is shut down, Brad 2026-09-28); edu omits the Discord and

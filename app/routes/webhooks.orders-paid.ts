@@ -15,6 +15,17 @@ import { VARIANT_CREDIT_MAP } from '../lib/message-packs';
 import { cappedRequest, WEBHOOK_BODY_CAP } from '../lib/capped-body.server';
 import { safeErrorFields } from '../lib/safe-error-fields.server';
 
+/** The orders/paid payload fields this handler reads. */
+interface PaidOrderLineItem {
+  variant_id?: number | string | null;
+  quantity?: number | null;
+}
+interface PaidOrderPayload {
+  id?: number | string | null;
+  customer?: { id?: number | string | null } | null;
+  line_items?: PaidOrderLineItem[] | null;
+}
+
 export const action = async ({ request }: ActionFunctionArgs) => {
   // The library reads the whole body before its HMAC check (US-09 AC25).
   const capped = await cappedRequest(request, WEBHOOK_BODY_CAP);
@@ -24,8 +35,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   console.log(`Received ${topic} webhook for ${shop}`);
 
   try {
-    const order = payload as any;
-    const lineItems: any[] = order?.line_items ?? [];
+    const order = payload as PaidOrderPayload;
+    const lineItems: PaidOrderLineItem[] = order?.line_items ?? [];
     const customerId = order?.customer?.id?.toString();
 
     if (!customerId || !lineItems.length || !order.id) {
@@ -33,7 +44,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     }
 
     // Check if any line items are message packs (skip non-pack orders early)
-    const packItems = lineItems.filter((item: any) => {
+    const packItems = lineItems.filter((item: PaidOrderLineItem) => {
       const vid = item.variant_id?.toString();
       return vid && VARIANT_CREDIT_MAP[vid];
     });

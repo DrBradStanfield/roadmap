@@ -39,7 +39,16 @@ needs, then fix the design so most of them go.
 - Brad's yes first on clinical items and on workflow changes.
 - Announce a section lock in the agent channel (docs/agent-channel.md) before
   work starts there. No repo-wide freeze.
-- Low-risk PRs merge in batches of 8-10. High-risk ones merge one at a time.
+- A PR may be batched (reviewed together, released together) only if BOTH
+  hold: (1) it touches no guarded path: packages/health-core, ios/engine,
+  ios/scripts, the clinical files (health_roadmap_algorithm.md, evidence*.ts,
+  roadmap_text.html), merge and record-edit code, auth and server routes
+  (app/), .github/workflows, tools/merge-gated.sh; (2) it provably changes
+  nothing a person sees: docs or tests only, or a pure move or type-only
+  change whose built output is byte-identical before and after (the PR body
+  shows the check). Anything else passes its own gate, however small.
+  Batching never skips a PR's own CI and review (docs/git-workflow.md).
+  (Brad 2026-11-23)
 
 ## Per area: the steps
 
@@ -96,22 +105,66 @@ Examples in this repo:
   exported `transition`; the hook sends events and runs the timers the phase asks
   for. `useHighlights.test.tsx` has the table (US-07 AC3).
 - `widget-src/src/lib/remote-replay.ts`: one named state
-  (`loading | loading-held | idle | held`), each event a method;
-  `remote-replay.test.ts` drives it through its states and events (US-34 AC4).
+  (`loading | loading-held | idle | held`), changed only by its exported pure
+  `transition`, which returns the read to run; each method sends one event.
+  `remote-replay.test.ts` has the table (US-34 AC4).
 - `widget-src/src/hooks/useErase.ts`: runs on the erase machine
   (`widget-src/src/lib/erase-machine.ts`, fix 4): one `EraseState` union
   (`loading | idle | erasing`, with the erase shown and heard), a pure
   `transition` with a table test, and effects run through doors. The
   `erasing` boolean and `erasingNow` ref are gone.
 
-None of these yet has a separate pure `transition` function. The first PR that
-writes one sets the pattern; keep it small.
+All three now have a separate pure `transition` (remote-replay's since R13
+PR 1). A new machine follows the same shape; keep it small.
 
 ### Composition
 
 Hooks talk to each other: one hook's event drives another's transition. Survey
 that protocol too. Write it as a table of events x machines (who sends, who
 reacts, in what order) and test the pairs that can race.
+
+## Completeness by type
+
+Some rules must hold at every call or raise site: every store write carries
+its erase; every storage failure names its outcome. Review cannot prove
+"every". The compiler can. Make the argument or field required in the type
+and delete the default, so a site that forgets it does not compile.
+
+Do it in three PRs, so each one is reviewable:
+
+1. Tests pass the value explicitly while it is still optional (tests only).
+2. Make it required.
+3. Remove the fallback.
+
+Evidence: the erase-by-type series (PRs 2070, 2081, 2096, 2104, 2105, 2106).
+In the storage-outcome series (PRs 2063, 2085, 2086, 2108), each review found
+one more raise site, until the plan became "make it required".
+
+## When a rewrite keeps failing review
+
+If two reviews in a row each find one more case the replacement misses, stop.
+The old code and the new are different kinds of thing. Keep the old detector
+and combine: a union that refuses what either one finds is correct by
+construction. Gate it with a generated test whose oracle is the old code on
+main: a frozen corpus of what main refused, plus a property. Evidence: the
+feedback check (PR 2071 closed after two refutations; PR 2090 merged).
+
+A pure move or "no visible change" proved by snapshots needs snapshots
+written on today's main, in their own commit, first. A proof made against an
+older base is void once main moves (PR 2088 closed, PR 2092 merged).
+
+## Properties before the screen
+
+Brad 2026-11-21. A screen that saves health data is built in two PRs, in order:
+
+1. The engine rule and its generated (property) test land first, in their own PR.
+2. The screen PR then only draws what the engine exposes. It adds no rule of its own.
+
+Each property has an oracle that does not read the value under test. Show each
+property failing against a named mutation: the PR body says what you broke and
+how the property failed.
+
+Why: the web upload grid failed ten reviews because the UI was built first.
 
 ## Split by what changes together
 

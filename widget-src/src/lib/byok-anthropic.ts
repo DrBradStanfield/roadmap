@@ -61,10 +61,12 @@ function extractResponseText(data: unknown): string {
 export async function callAnthropicDirectRaw(
   apiKey: string,
   body: Record<string, unknown>,
+  signal?: AbortSignal, // the upload's Cancel (US-12 AC28)
 ): Promise<{ text: string; blocks: AnthropicContentBlock[]; stopReason?: string }> {
   let response: Response;
   try {
     response = await fetch(ANTHROPIC_MESSAGES_URL, {
+      signal,
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

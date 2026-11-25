@@ -599,7 +599,7 @@ describe('US-35 AC7 — a consumed pending file is deleted at once, and a delete
     adapter.write = async (...args) => {
       order.push('write');
       await tick(5);
-      if (deleting > 0) throw new StorageError(`Dropbox write failed (429): ${args[0]}`, undefined, undefined, 429);
+      if (deleting > 0) throw new StorageError(`Dropbox write failed (429): ${args[0]}`, undefined, undefined, 429, undefined, 'may-have-landed');
       return write(...args);
     };
     const surface = hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'rt', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90 });
@@ -611,7 +611,7 @@ describe('US-35 AC7 — a consumed pending file is deleted at once, and a delete
 
     // A park the provider refuses: the refusal stands, and Sentry hears status and class only.
     vi.mocked(Sentry.captureMessage).mockClear();
-    adapter.write = async (...args) => { throw new StorageError(`Dropbox write failed (429): ${args[0]}`, undefined, undefined, 429); };
+    adapter.write = async (...args) => { throw new StorageError(`Dropbox write failed (429): ${args[0]}`, undefined, undefined, 429, undefined, 'may-have-landed'); };
     order.length = 0;
     expect(await surface.stash(PAYLOAD, deadline())).toEqual({ refusal: expect.stringMatching(/could not be parked/) });
     expect(order).toEqual([]); // no sweep after a refused park
@@ -837,7 +837,7 @@ describe('US-35 AC13 / AC9 — what the surface answers when a file cannot be re
     const cloud = new MemoryCloud();
     cloud.docs.set('labs.pdf', new Blob([PDF]));
     const adapter = new MemoryAdapter(cloud);
-    adapter.readDocument = async () => { throw new StorageError('Dropbox download failed (401)', undefined, undefined, 401); };
+    adapter.readDocument = async () => { throw new StorageError('Dropbox download failed (401)', undefined, undefined, 401, undefined, 'refused'); };
     await expect(surfaceOver(adapter).extract({}, file, NOW, deadline())).rejects.toMatchObject({ name: 'StorageError', status: 401 });
     // Any other download failure is that file's own problem, not the connection's.
     adapter.readDocument = async () => { throw new Error('socket hang up'); };

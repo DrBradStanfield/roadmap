@@ -628,7 +628,7 @@ describe('US-67 AC1: the app asks for the form tools with edits: 1', () => {
     expect(out.at(-1)).toMatchObject({ type: 'done', success: true, proposedEdits: [proposal] });
     const [, , canApplyEdits, , opts] = mocks.getChatCompletion.mock.calls[0];
     expect(canApplyEdits).toBe(true);
-    expect(opts).toEqual({ subscriptionTool: false, guestInputs: chatBody.guestInputs, profileEdits: true, app: true });
+    expect(opts).toEqual({ purpose: 'CHAT', subscriptionTool: false, guestInputs: chatBody.guestInputs, profileEdits: true, app: true });
     // D9: no guest session, no row, no audit, and no run_roadmap usage row (product_events).
     expect(mocks.guest).not.toHaveBeenCalled();
     expect(mocks.from).not.toHaveBeenCalled();
@@ -647,7 +647,7 @@ describe('US-67 AC1: the app asks for the form tools with edits: 1', () => {
     await lines(await appChat(signed('/api/app/v1/chat', { ...chatBody, ...flags }), store));
     const [, , canApplyEdits, , opts] = mocks.getChatCompletion.mock.calls[0];
     expect(canApplyEdits).toBe(false);
-    expect(opts).toBeUndefined();
+    expect(opts).toEqual({ purpose: 'CHAT' });
   });
 });
 
@@ -662,7 +662,7 @@ describe('US-52 AC7: lab import', () => {
     expect(json.success).toBe(true);
     expect(json.data.values.map((v: { metric: string }) => v.metric)).toEqual(['ldl', 'hba1c']);
     expect(json.data.refusedValues).toHaveLength(1);
-    expect(mocks.extract).toHaveBeenCalledWith(body.pages, { timeoutMs: 90_000, oneDeadline: true, onRetry: expect.any(Function) });
+    expect(mocks.extract).toHaveBeenCalledWith(body.pages, { purpose: 'LABS', timeoutMs: 90_000, retryRateLimit: true, oneDeadline: true, onRetry: expect.any(Function) });
   });
 
   // US-52 AC7c: the phone gives up after 120 s idle; the web's retry of a

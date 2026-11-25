@@ -44,10 +44,10 @@ export interface CloudNatives {
 
 declare const __native: CloudNatives;
 
-/** The provider refused the token, or the user must sign in again. */
+/** The provider refused the token, or the user must sign in again. Raised before its call, so nothing was sent. */
 class SignInError extends StorageError {
   constructor(message: string) {
-    super(message, undefined, undefined, 401);
+    super(message, undefined, undefined, 401, undefined, 'refused');
     this.name = 'SignInError';
   }
 }
@@ -58,7 +58,7 @@ function accessToken(provider: Provider, force: boolean): Promise<string> {
       if (token) resolve(token);
       else if (signIn) reject(new SignInError(error ?? `${LABELS[provider]} needs you to sign in again.`));
       else {
-        const failure = new StorageError(error ?? `${LABELS[provider]} did not answer`, UNREACHABLE_HINT);
+        const failure = new StorageError(error ?? `${LABELS[provider]} did not answer`, UNREACHABLE_HINT, undefined, undefined, undefined, 'no-answer');
         // Only Swift's words say the token endpoint never answered (OAuthClient.post's catch):
         // a Keychain that will not save, or another status, is no outage (S50b; lead H134).
         if (error !== null && / did not answer\./.test(error)) NO_ANSWER.add(failure);
@@ -206,7 +206,7 @@ export class PhoneFileAdapter implements StorageAdapter {
   /** The raw text, or null when there is no file. Throws when it cannot be read. */
   private text(): string | null {
     const answer = JSON.parse(__native.phoneRead()) as { text?: string | null; error?: string };
-    if (answer.error !== undefined) throw new StorageError(answer.error);
+    if (answer.error !== undefined) throw new StorageError(answer.error, undefined, undefined, undefined, undefined, 'refused');
     return answer.text ?? null;
   }
 
@@ -217,7 +217,7 @@ export class PhoneFileAdapter implements StorageAdapter {
     try {
       return JSON.parse(text);
     } catch (error) {
-      throw new StorageError('The record on this iPhone is not valid JSON.', undefined, error);
+      throw new StorageError('The record on this iPhone is not valid JSON.', undefined, error, undefined, undefined, 'no-answer');
     }
   }
 
@@ -228,7 +228,7 @@ export class PhoneFileAdapter implements StorageAdapter {
   }
 
   async write(fileName: string, body: object, expectedVersion: string | null): Promise<WriteResult> {
-    if (fileName !== ROADMAP_FILE_NAME) throw new StorageError(`This iPhone keeps only ${ROADMAP_FILE_NAME}.`);
+    if (fileName !== ROADMAP_FILE_NAME) throw new StorageError(`This iPhone keeps only ${ROADMAP_FILE_NAME}.`, undefined, undefined, undefined, undefined, 'refused');
     const now = this.text();
     if ((now === null ? null : fingerprint(now)) !== expectedVersion) throw new ConflictError();
     return { version: this.writeText(JSON.stringify(body)) };
@@ -237,7 +237,7 @@ export class PhoneFileAdapter implements StorageAdapter {
   /** Writes the file now; answers its version, throws when the phone refused. */
   private writeText(text: string): string {
     const error = __native.phoneWrite(text);
-    if (error) throw new StorageError(error);
+    if (error) throw new StorageError(error, undefined, undefined, undefined, undefined, 'refused'); // Swift writes atomically: a failure left the file as it was
     return fingerprint(text);
   }
 
@@ -250,10 +250,10 @@ export class PhoneFileAdapter implements StorageAdapter {
   }
 
   async readDocument(): Promise<Blob> {
-    throw new StorageError('The iPhone keeps no documents yet.');
+    throw new StorageError('The iPhone keeps no documents yet.', undefined, undefined, undefined, undefined, 'refused');
   }
   async writeDocument(): Promise<void> {
-    throw new StorageError('The iPhone keeps no documents yet.');
+    throw new StorageError('The iPhone keeps no documents yet.', undefined, undefined, undefined, undefined, 'refused');
   }
 }
 
@@ -285,7 +285,7 @@ function failureKind(error: unknown): 'sign-in' | 'too-new' | 'storage-full' | '
  * an abort), 408, 429, a 5xx, or Google's rate or daily limit. 'definite': the provider refused
  * (sign in, storage full, a newer schema, any other status). 'unknown': anything else, a 401 whose
  * refresh was skipped included (its write may have landed). Only 'transient' holds a Disconnect,
- * so a failure nobody recognised never traps the person. Not isDefiniteRefusal, which asks
+ * so a failure nobody recognised never traps the person. Not the error's outcome, which says
  * whether a write certainly did not land (write-refusal.ts).
  */
 export function eraseFailure(error: unknown): 'transient' | 'definite' | 'unknown' {

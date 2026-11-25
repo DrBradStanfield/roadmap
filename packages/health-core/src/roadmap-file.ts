@@ -302,6 +302,36 @@ export interface RoadmapFile {
   erasedRows?: ErasedRows;
 }
 
+type RecordArray = { [K in keyof RoadmapFile]-?: RoadmapFile[K] extends readonly unknown[] ? K : never }[keyof RoadmapFile];
+
+/**
+ * Every array in the record, and how its rows are kept (lead A1-3): the one
+ * list the shape gate, the readers' row tests, the merge's row stamps and the
+ * verify-after-write derive theirs from. A new array is classified here or the
+ * typecheck fails. `appended`: rows are only ever added, each with an id;
+ * `current`: id-carrying rows of current state, keyed and replaced; `whole`:
+ * no ids, taken whole by the merge. Key order is the shape gate's check order.
+ */
+const RECORD_ARRAYS = {
+  measurements: 'appended',
+  labValues: 'appended',
+  medications: 'current',
+  supplements: 'current',
+  documents: 'appended',
+  medicationHistory: 'appended',
+  supplementHistory: 'appended',
+  reminderPreferences: 'whole',
+  recommendationSnapshots: 'whole',
+} as const satisfies Record<RecordArray, 'appended' | 'current' | 'whole'>;
+
+/** The arrays a record keeps id-carrying rows in. */
+export type RowArray = { [K in RecordArray]: (typeof RECORD_ARRAYS)[K] extends 'whole' ? never : K }[RecordArray];
+const arraysOf = (kinds: readonly string[]) =>
+  (Object.keys(RECORD_ARRAYS) as RecordArray[]).filter((key) => kinds.includes(RECORD_ARRAYS[key])) as RowArray[];
+export const ROW_ARRAYS: readonly RowArray[] = arraysOf(['appended', 'current']);
+/** The row arrays whose rows are never removed or rewritten. */
+export const APPEND_ONLY_ARRAYS: readonly RowArray[] = arraysOf(['appended']);
+
 /** Create a brand-new, empty record for a first-time user. */
 export function createEmptyFile(opts: { deviceId: string; now: string }): RoadmapFile {
   return {

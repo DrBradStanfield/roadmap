@@ -2,24 +2,33 @@ import SwiftUI
 
 /// My health's title row, jump pills and urgent banner. Split out of MyDataView.swift.
 extension MyDataView {
-    /// The title with the person button, lab upload and Sync, as a row so nothing holds space
-    /// under it; then the urgent banner, only when a card is urgent.
+    /// The title with the person button and Sync, as a row so nothing holds space under it; then
+    /// the urgent banner, only when a card is urgent. Lab upload is on the headings (US-73 AC14).
     @ViewBuilder
     func top(_ page: HealthPage, proxy: ScrollViewProxy) -> some View {
         Section {
             let title = Text("My health").font(.largeTitle.bold()).accessibilityAddTraits(.isHeader)
             let buttons = HStack(spacing: 14) {
                 settingsButton
-                recordButtons
+                syncButton
             }
             .buttonStyle(.borderless)
             .labelStyle(.iconOnly)
             .font(.title3)
             // The buttons go under the title when both do not fit: beside them at the largest
             // sizes, the title broke mid-word ("heal th", TextSizeLayoutTests, US-25 AC26).
-            ViewThatFits(in: .horizontal) {
-                HStack(spacing: 14) { title.fixedSize(); Spacer(); buttons }
-                VStack(alignment: .leading, spacing: 8) { title; buttons }
+            VStack(alignment: .leading, spacing: 2) {
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 14) { title.fixedSize(); Spacer(); buttons }
+                    VStack(alignment: .leading, spacing: 8) { title; buttons }
+                }
+                // App Review 1.4.1 (US-73 AC13): one line on an SE at the default size, shrunk a
+                // little rather than cut; it wraps at larger sizes. The foot's disclaimer stays.
+                Text(EducationNote.myHealth)
+                    .font(.footnote)
+                    .foregroundStyle(Color.status(nil))
+                    .lineLimit(typeSize <= .large ? 1 : nil)
+                    .minimumScaleFactor(0.85)
             }
             .listRowBackground(Color.clear)
             .listRowInsets(EdgeInsets(top: 8, leading: 4, bottom: 0, trailing: 4))
@@ -62,16 +71,6 @@ extension MyDataView {
             }
         }
         .listSectionSpacing(.compact)
-    }
-
-    /// Lab upload and Sync: on the title line and on the Blood tests heading.
-    @ViewBuilder
-    var recordButtons: some View {
-        Button { addingLabs = true } label: {
-            Label("Add medical records", systemImage: "plus")
-        }
-        .accessibilityHint("Upload a lab report or clinic letter")
-        syncButton
     }
 
     /// The person button: the settings sheet. Also on the page for a record that cannot be drawn (UndrawnRecord.swift).

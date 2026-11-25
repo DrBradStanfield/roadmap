@@ -29,13 +29,13 @@ class TestStore extends MemoryAdapter {
   writes = 0;
   onWrite?: () => void;
   async read(fileName: string) {
-    if (this.failReads) throw new StorageError('unreachable');
+    if (this.failReads) throw new StorageError('unreachable', undefined, undefined, undefined, undefined, 'no-answer');
     return super.read(fileName);
   }
   async write(fileName: string, body: object, expected: string | null) {
     this.writes += 1;
     this.onWrite?.();
-    if (this.failWrites) throw new StorageError('refused', undefined, Object.assign(new Error('full'), { name: 'QuotaExceededError' }));
+    if (this.failWrites) throw new StorageError('refused', undefined, Object.assign(new Error('full'), { name: 'QuotaExceededError' }), undefined, undefined, 'refused');
     return super.write(fileName, body, expected);
   }
   // The synchronous face a device tier needs, as localStorage has on the web.
@@ -45,7 +45,7 @@ class TestStore extends MemoryAdapter {
   }
   writeSync(fileName: string, body: object, expected: string | null): WriteResult {
     this.writes += 1;
-    if (this.failWrites) throw new StorageError('refused', undefined, Object.assign(new Error('full'), { name: 'QuotaExceededError' }));
+    if (this.failWrites) throw new StorageError('refused', undefined, Object.assign(new Error('full'), { name: 'QuotaExceededError' }), undefined, undefined, 'refused');
     const entry = this.cloud.files.get(fileName);
     if ((entry ? String(entry.version) : null) !== expected) throw new ConflictError('moved');
     const version = (entry?.version ?? 0) + 1;
@@ -121,7 +121,7 @@ function fakeHost(store: TestStore, tier: 'device' | 'cloud' = 'cloud'): Fake {
 const weight = (id: string, value: number, day: string) =>
   createMeasurement({ id, metricType: 'weight', value, recordedAt: day, createdAt: new Date(clock).toISOString() });
 const add = (session: RecordSession, id: string, value = 80, day = '2026-10-01', erase?: string) =>
-  session.edit((file) => void file.measurements.push(weight(id, value, day)), erase);
+  session.edit((file) => void file.measurements.push(weight(id, value, day)), erase ?? session.shownErase);
 const stored = (cloud: MemoryCloud): RoadmapFile => JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json);
 const doc = (id: string, fileRef: string): FileDocument => ({
   id, title: id, type: 'pathology_report', date: '2026-10-20', fileRef, contentHash: 'sha256-x', mimeType: 'application/pdf',
@@ -310,6 +310,87 @@ describe('RecordSession: a cloud page goes away before its save lands (US-06 AC1
   });
 });
 
+describe('RecordSession: a departure write the device refuses is reported (US-06 AC13a)', () => {
+  it('reports a refused device copy write once, with the op and no other field, and still starts the cloud save', async () => {
+    const store = new StalledStore();
+    const fake = fakeHost(store);
+    const { host, device } = withDeviceSync(fake);
+    const seen: Array<{ error: unknown; at: object }> = [];
+    const session = await RecordSession.open({ ...host, report: (error, at) => void seen.push({ error, at }) });
+    add(session, 'late');
+    device.failWrites = true; // the browser's storage is full
+    const saves = store.writes;
+    session.flushSync();
+    expect(seen).toHaveLength(1);
+    expect(seen[0].at).toEqual({ op: 'mirror-write', repeat: false });
+    expect(seen[0].error).toBeInstanceOf(StorageError);
+    expect(fake.mirrorCloud.files.has(ROADMAP_FILE_NAME)).toBe(false);
+    await vi.waitFor(() => expect(store.writes).toBe(saves + 1)); // the async save is all that is left
+  });
+
+  it('a second departure meeting the same refusal is a repeat; a new session reports afresh', async () => {
+    const fake = fakeHost(new StalledStore());
+    const { host, device } = withDeviceSync(fake);
+    device.failWrites = true;
+    const session = await RecordSession.open(host);
+    add(session, 'a');
+    session.flushSync(); // hidden
+    add(session, 'b');
+    session.flushSync(); // hidden again, or closed
+    const next = await RecordSession.open(host);
+    add(next, 'c');
+    next.flushSync();
+    expect(fake.reports).toEqual([
+      { op: 'mirror-write', repeat: false },
+      { op: 'mirror-write', repeat: true },
+      { op: 'mirror-write', repeat: false },
+    ]);
+  });
+
+  it('an unreadable device copy is reported as well', async () => {
+    const fake = fakeHost(new StalledStore());
+    const { host } = withDeviceSync(fake);
+    const session = await RecordSession.open(host);
+    fake.mirrorCloud.files.set(ROADMAP_FILE_NAME, { json: '{not json', version: 1 });
+    add(session, 'late');
+    session.flushSync();
+    expect(fake.reports).toEqual([{ op: 'mirror-write', repeat: false }]);
+  });
+
+  it('a departure write that lands, one after log-off, or one with nothing unsaved, reports nothing', async () => {
+    const landed = fakeHost(new StalledStore());
+    const session = await RecordSession.open(withDeviceSync(landed).host);
+    add(session, 'late');
+    session.flushSync();
+    expect(ids(stored(landed.mirrorCloud))).toEqual(['late']);
+    const loggedOff = fakeHost(new StalledStore());
+    const { host, device } = withDeviceSync(loggedOff, true);
+    device.failWrites = true;
+    const after = await RecordSession.open(host);
+    add(after, 'late');
+    after.flushSync();
+    const idle = fakeHost(new TestStore());
+    const quiet = withDeviceSync(idle);
+    const saved = await RecordSession.open(quiet.host);
+    add(saved, 'a');
+    await saved.flush();
+    quiet.device.failWrites = true;
+    saved.flushSync();
+    expect([...landed.reports, ...loggedOff.reports, ...idle.reports]).toEqual([]);
+  });
+
+  it('a report that throws never stops the cloud save', async () => {
+    const store = new StalledStore();
+    const { host, device } = withDeviceSync(fakeHost(store));
+    const session = await RecordSession.open({ ...host, report: () => { throw new Error('reporter down'); } });
+    add(session, 'late');
+    device.failWrites = true;
+    const saves = store.writes;
+    expect(() => session.flushSync()).not.toThrow();
+    await vi.waitFor(() => expect(store.writes).toBe(saves + 1));
+  });
+});
+
 /** A cloud whose save waits until the test lets it land. */
 class HeldStore extends TestStore {
   private held: Array<() => void> = [];
@@ -492,7 +573,7 @@ describe('RecordSession: the device copy a cloud page leaves behind (US-06 AC13,
     const copy = structuredClone(session.file);
     copy.measurements.push(weight('guest', 70, '2026-09-01'));
     fake.mirrorCloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(copy), version: 1 });
-    session.edit((file) => void file.measurements.push(weight('guest', 70, '2026-09-01')));
+    session.edit((file) => void file.measurements.push(weight('guest', 70, '2026-09-01')), session.shownErase);
     await session.flush();
     expect(ids(stored(fake.mirrorCloud))).toEqual(['guest']);
   });
@@ -881,7 +962,7 @@ describe('RecordSession: an erase made elsewhere (US-11 AC6, O5)', () => {
     const store = new TestStore();
     const fake = fakeHost(store);
     const session = await RecordSession.open(fake.host);
-    session.edit((file) => void file.documents.push(doc('before', 'Lab results/before.pdf')));
+    session.edit((file) => void file.documents.push(doc('before', 'Lab results/before.pdf')), session.shownErase);
     await session.flush();
     const other = await RecordSession.open(fakeHost(new TestStore(store.cloud)).host);
     clock += 60_000;
@@ -902,7 +983,7 @@ describe("RecordSession: the device's own record copy (US-11 AC6, US-09 AC23)", 
     const store = new TestStore();
     const fake = fakeHost(store);
     const session = await RecordSession.open(fake.host);
-    session.edit((file) => void file.documents.push(doc('listed', 'Lab results/listed.pdf')));
+    session.edit((file) => void file.documents.push(doc('listed', 'Lab results/listed.pdf')), session.shownErase);
     await session.flush();
     // The device copy: the listed document, and one no erase saw.
     const device = structuredClone(session.file);
@@ -1229,15 +1310,15 @@ describe('RecordSession: the save mode as a caller sees it today (lead A1)', () 
     const session = await RecordSession.open(fakeHost(store).host);
     add(session, 'a');
     await session.flush();
-    expect(session.refuses()).toBe(false);
+    expect(session.refuses(session.shownErase)).toBe(false);
     const held = holdNext(store, 'write');
     const erasing = session.erase();
     await held.reached;
-    expect(session.refuses()).toBe(true);
+    expect(session.refuses(session.shownErase)).toBe(true);
     expect(add(session, 'late')).toBe(false);
     held.release();
     expect((await erasing).success).toBe(true);
-    expect(session.refuses()).toBe(false);
+    expect(session.refuses(session.shownErase)).toBe(false);
     expect(add(session, 'after')).toBe(true);
   });
 
@@ -1248,7 +1329,7 @@ describe('RecordSession: the save mode as a caller sees it today (lead A1)', () 
     await session.flush();
     store.failWrites = true;
     expect((await session.erase()).success).toBe(false);
-    expect(session.refuses()).toBe(false);
+    expect(session.refuses(session.shownErase)).toBe(false);
     expect(add(session, 'after')).toBe(true);
   });
 
@@ -1259,7 +1340,7 @@ describe('RecordSession: the save mode as a caller sees it today (lead A1)', () 
     await session.flush();
     vi.mocked(buildErasedFile).mockImplementationOnce(() => { throw new Error('build failed'); });
     expect(await session.erase()).toEqual({ success: false, error: 'build failed' });
-    expect(session.refuses()).toBe(false);
+    expect(session.refuses(session.shownErase)).toBe(false);
     expect(add(session, 'after')).toBe(true);
   });
 
@@ -1273,7 +1354,7 @@ describe('RecordSession: the save mode as a caller sees it today (lead A1)', () 
     const held = holdNext(store, 'read');
     const erasing = session.erase();
     await held.reached;
-    expect(session.refuses()).toBe(true);
+    expect(session.refuses(session.shownErase)).toBe(true);
     expect(add(session, 'during-read')).toBe(false);
     expect(add(session, 'store-write', 80, '2026-10-01', shown)).toBe(false);
     held.release();
@@ -1308,7 +1389,7 @@ describe('RecordSession: the save mode as a caller sees it today (lead A1)', () 
         // The same save state: no phantom change counted, the debounce armed again.
         expect(modeOf(session)).toEqual(before);
         expect(fake.timers).toHaveLength(1);
-        expect(session.refuses()).toBe(false);
+        expect(session.refuses(session.shownErase)).toBe(false);
         expect(store.writes).toBe(writes);
         fake.timers.splice(0).forEach((t) => t.run());
         await session.flush();
@@ -1335,7 +1416,7 @@ describe('RecordSession: the save mode as a caller sees it today (lead A1)', () 
       expect(beforeErase).not.toHaveBeenCalled();
       expect(JSON.stringify(session.file)).toBe(file);
       expect(JSON.stringify((session as unknown as { mode: SaveState }).mode)).toBe(mode);
-      expect(session.refuses()).toBe(true);
+      expect(session.refuses(session.shownErase)).toBe(true);
       held.release();
       expect((await first).success).toBe(true);
       expect(stored(store.cloud).meta.eraseEpoch).toBe(1);
@@ -1361,12 +1442,12 @@ describe("RecordSession: two erases on one session (US-16 AC2a)", () => {
     const held = hold(store, "write");
     const first = session.erase();
     await held.reached;
-    expect(session.refuses()).toBe(true);
+    expect(session.refuses(session.shownErase)).toBe(true);
     store.failReads = true;
     const second = await session.erase();
     expect(second.success).toBe(false);
     store.failReads = false;
-    expect(session.refuses()).toBe(true);
+    expect(session.refuses(session.shownErase)).toBe(true);
     held.release();
     await first;
   });

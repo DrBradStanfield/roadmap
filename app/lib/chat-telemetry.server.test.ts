@@ -3,7 +3,7 @@ import * as Sentry from '@sentry/react-router';
 import { classifyChatError, getChatCompletion, reportChatFallback, type ChatErrorKind } from './chat.server';
 import { routeQuery, reportRouterFailure } from './chat-router.server';
 import { classifyMessage } from './chat-classifier.server';
-import { createBatch, pollBatch } from './anthropic.server';
+import { extractOrClassify } from './anthropic.server';
 
 // US-15 AC4: inspect complete SDK transport envelopes, including exception
 // values and extra context. No request ever reaches Sentry or Anthropic.
@@ -67,7 +67,7 @@ describe('chat failure telemetry', () => {
   it('does not log a provider error body in the lower-level chat request', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(secret, { status: 400 })));
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-    const completion = await getChatCompletion([], [{ role: 'user', content: secret }], false);
+    const completion = await getChatCompletion([], [{ role: 'user', content: secret }], false, undefined, { purpose: 'CHAT' });
     reportChatFallback({ completion, platform: 'discord', latencyMs: 10 });
     await Sentry.flush();
     expect(completion.isFallback).toBe(true);
@@ -81,7 +81,7 @@ describe('chat failure telemetry', () => {
       content: [{ type: 'text', text: secret }], usage: {},
     });
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(body)));
-    const result = await routeQuery(secret);
+    const result = await routeQuery(secret, undefined, undefined, 'CHAT');
     expect(result.error).toBeTruthy();
     reportRouterFailure(result);
     await Sentry.flush();
@@ -93,7 +93,7 @@ describe('chat failure telemetry', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
       content: [{ type: 'text', text: secret }], usage: {},
     }))));
-    const result = await classifyMessage(secret);
+    const result = await classifyMessage(secret, undefined, undefined, 'CHAT');
     expect(result.raw).toBe(secret); // conversation/audit storage policy is unchanged
     await Sentry.flush();
     expect(eventEnvelopes()).toHaveLength(1);
@@ -133,8 +133,7 @@ describe('chat failure telemetry', () => {
   });
 
   it.each([
-    ['createBatch', () => createBatch([{ pages: [] } as never])],
-    ['pollBatch', () => pollBatch('batch_synthetic')],
+    ['extractOrClassify', () => extractOrClassify([{ type: 'text', content: 'doc' }], { purpose: 'LABS' })],
   ])('%s discards a provider 400 body instead of logging it', async (_name, call) => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(secret, { status: 400 })));
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -146,8 +145,7 @@ describe('chat failure telemetry', () => {
   });
 
   it.each([
-    ['createBatch', () => createBatch([{ pages: [] } as never])],
-    ['pollBatch', () => pollBatch('batch_synthetic')],
+    ['extractOrClassify', () => extractOrClassify([{ type: 'text', content: 'doc' }], { purpose: 'LABS' })],
   ])('%s throws a fixed parse error when a 200 body is not JSON, quoting nothing', async (_name, call) => {
     // JSON.parse would put a fragment of this body in its message, and that
     // error reaches console.error + Sentry in api.lab-import-v2.

@@ -28,7 +28,7 @@
 import fs from 'fs';
 import path from 'path';
 import * as Sentry from '@sentry/react-router';
-import { callAnthropicWithUsage, type AnthropicUsage } from './anthropic.server';
+import { callAnthropicWithUsage, type AnthropicUsage, type ChatPurpose } from './anthropic.server';
 import { sanitizeForRouter } from './chat-router.server';
 import { CLASSIFIER_MAX_TOKENS, CLASSIFIER_MODEL, Classification, PROMPT_CACHE, modelParams, parseClassification } from '../../packages/health-core/src/models';
 
@@ -107,8 +107,9 @@ function getClassifierPrompt(): string {
 
 export async function classifyMessage(
   currentMessage: string,
-  firstMessage?: string,
-  recentUserMessages?: string[],
+  firstMessage: string | undefined,
+  recentUserMessages: string[] | undefined,
+  purpose: ChatPurpose,
 ): Promise<ClassificationResult> {
   const t0 = Date.now();
 
@@ -166,7 +167,7 @@ export async function classifyMessage(
   let raw = '';
 
   try {
-    const result = await callAnthropicWithUsage(body, CLASSIFIER_TIMEOUT_MS);
+    const result = await callAnthropicWithUsage(body, purpose, CLASSIFIER_TIMEOUT_MS);
     raw = result.content;
     const classification = parseClassification(raw);
     const latencyMs = Date.now() - t0;

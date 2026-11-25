@@ -32,13 +32,12 @@ import { BACKEND_KEY } from '../storage/web-record-host';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import {
   addMeasurement,
-  bulkSaveLabValues,
   correctValue,
   flushRoadmapStore,
   initRoadmapStore,
   loadAllHistory,
   saveChangedMeasurements,
-  setPreEraseHook,
+  setPreEraseHook, getShownErase,
 } from '../lib/roadmap-data';
 import { BT_TIMELINE_DRAFT_KEY, VITALS_DRAFT_KEY } from '../lib/storage';
 import { trackProductEvent } from '../lib/server-api';
@@ -93,6 +92,7 @@ vi.mock('./UploadModal', () => ({
 import { HealthTool } from './HealthTool';
 import { ERASE_DONE } from '../lib/erase-copy';
 import { deleteButton, openSettings } from '../testing/settings';
+import { seedOpenLabValues } from '../testing/seed-record';
 
 // Read at assertion time, not module load: a run that crosses local midnight stamps rows with the new day.
 const localToday = () => localDay(new Date());
@@ -109,8 +109,8 @@ const activeOn = async (metric: string) => active(await rowsOf(metric)).map((m) 
  *  onboarding, a weight: US-62 AC13). */
 async function guest({ weight, born = true }: { weight?: number; born?: boolean } = {}) {
   await initRoadmapStore(new LocalStorageAdapter());
-  await saveChangedMeasurements({ sex: 'male', heightCm: 178, ...(born && { birthYear: 1980, birthMonth: 1 }) }, {});
-  if (weight) await addMeasurement('weight', weight, '2026-09-01');
+  await saveChangedMeasurements({ sex: 'male', heightCm: 178, ...(born && { birthYear: 1980, birthMonth: 1 }) }, {}, getShownErase());
+  if (weight) await addMeasurement('weight', weight, '2026-09-01', getShownErase());
 }
 
 /** The same guest on a second visit, when the vitals show as a matrix. */
@@ -238,7 +238,7 @@ function ldlInChat() {
 /** A guest at stage 3 with one LDL in the record, and the page showing it. */
 async function ldlOnRecord(value: number, day: string): Promise<RenderResult> {
   await guest({ weight: 82 });
-  await addMeasurement('ldl', value, day);
+  await addMeasurement('ldl', value, day, getShownErase());
   const view = render(<HealthTool />);
   await waitFor(() => expect(ldlTile(view.container)).toBe(`${value.toFixed(1)} mmol/L`));
   return view;
@@ -372,8 +372,8 @@ describe('the 2026-09-22 feedback: blood tests on the wrong day', () => {
 
   it('US-04: a correction reaches the plan, which re-reads the record', async () => {
     await guest({ weight: 82 });
-    await addMeasurement('ldl', 3.9, '2026-01-10');
-    await addMeasurement('ldl', 2.1, '2026-08-15'); // the latest, and mistyped
+    await addMeasurement('ldl', 3.9, '2026-01-10', getShownErase());
+    await addMeasurement('ldl', 2.1, '2026-08-15', getShownErase()); // the latest, and mistyped
     const view = render(<HealthTool />);
     await waitFor(() => expect(ldlTile(view.container)).toBe('2.1 mmol/L'));
 
@@ -388,8 +388,8 @@ describe('the 2026-09-22 feedback: blood tests on the wrong day', () => {
 
   it('US-04 AC5: a test moved to the day it was drawn changes the plan\'s latest value', async () => {
     await guest({ weight: 82 });
-    await addMeasurement('ldl', 3.9, '2026-01-10');
-    await addMeasurement('ldl', 2.1, '2026-08-15'); // the latest, but drawn last December
+    await addMeasurement('ldl', 3.9, '2026-01-10', getShownErase());
+    await addMeasurement('ldl', 2.1, '2026-08-15', getShownErase()); // the latest, but drawn last December
     const view = render(<HealthTool />);
     await waitFor(() => expect(ldlTile(view.container)).toBe('2.1 mmol/L'));
     showTables(view.container); // the grids sit under the rows (US-62 AC11)
@@ -434,8 +434,8 @@ describe('the 2026-09-22 feedback: blood tests on the wrong day', () => {
 
   it('US-04 AC5b: a value typed on the day a test moves to is kept, and nothing moves', async () => {
     await guest({ weight: 82 });
-    await addMeasurement('hdl', 1.4, '2026-01-10'); // that day's LDL cell is empty
-    await addMeasurement('ldl', 2.1, RIGHT_DAY);
+    await addMeasurement('hdl', 1.4, '2026-01-10', getShownErase()); // that day's LDL cell is empty
+    await addMeasurement('ldl', 2.1, RIGHT_DAY, getShownErase());
     const view = render(<HealthTool />);
     await shown(view.container, '.bt-timeline-title');
     showTables(view.container);
@@ -464,7 +464,7 @@ describe('the 2026-09-22 feedback: blood tests on the wrong day', () => {
 
     // The connector corrects the value; the store takes it in and the page re-reads.
     const [saved] = (await loadAllHistory()).filter((m) => m.metricType === 'ldl');
-    expect(await correctValue(saved.id, 2.1)).toBe('ok');
+    expect(await correctValue(saved.id, 2.1, getShownErase())).toBe('ok');
     remoteChange();
 
     await waitFor(() => expect(ldlTile(view.container)).toBe('2.1 mmol/L'));
@@ -480,7 +480,7 @@ describe('the 2026-09-22 feedback: blood tests on the wrong day', () => {
 describe('US-03 AC3: two cells for one test on one day are an error, never a pick', () => {
   it('in the blood-test matrix', async () => {
     await guest({ weight: 82 });
-    await addMeasurement('hdl', 1.4, RIGHT_DAY); // the column's LDL cell is empty
+    await addMeasurement('hdl', 1.4, RIGHT_DAY, getShownErase()); // the column's LDL cell is empty
     const view = render(<HealthTool />);
     await shown(view.container, '.bt-timeline-title');
     const matrix = bloodMatrix(view.container);
@@ -565,7 +565,7 @@ describe('the 2026-09-22 feedback: a mistyped "add a blood test"', () => {
   // closing the group unmounted it first, taking the correction with it.
   it('US-21 AC5: a correction clicked away onto its group\'s header, which closes the group, is written', async () => {
     await guest({ weight: 82 });
-    await bulkSaveLabValues([{ metricName: 'Feritin', value: 45, unit: 'ug/L', recordedAt: `${localToday()}T00:00:00.000Z`, source: 'manual' }]);
+    await seedOpenLabValues([{ metricName: 'Feritin', value: 45, unit: 'ug/L', recordedAt: `${localToday()}T00:00:00.000Z`, source: 'manual' }]);
     const view = render(<HealthTool />);
     const wrap = await shown<HTMLElement>(view.container, '.alr-wrap');
     showTables(view.container);
@@ -584,7 +584,7 @@ describe('the 2026-09-22 feedback: a mistyped "add a blood test"', () => {
 
   it('US-21 AC13: the same test twice on one day offers Replace, and Replace is a correction', async () => {
     await guest({ weight: 82 });
-    await bulkSaveLabValues([{ metricName: 'ferritin', value: 45, unit: 'µg/L', recordedAt: `${localToday()}T00:00:00.000Z`, source: 'manual' }]);
+    await seedOpenLabValues([{ metricName: 'ferritin', value: 45, unit: 'µg/L', recordedAt: `${localToday()}T00:00:00.000Z`, source: 'manual' }]);
     const view = render(<HealthTool />);
     const wrap = await shown<HTMLElement>(view.container, '.alr-wrap');
     showTables(view.container);
@@ -701,12 +701,12 @@ describe('the 2026-09-22 feedback: edits that added new things instead', () => {
   // plan reads 98/100 from two days and keeps its blood pressure card.
   it('US-02 AC8: halves from different days are not judged: 98 then 100 from the day before still gives the BP card', async () => {
     await guest();
-    await addMeasurement('systolic_bp', 150, '2026-10-26');
-    await addMeasurement('diastolic_bp', 100, '2026-10-26');
-    await addMeasurement('systolic_bp', 98, '2026-10-27');
+    await addMeasurement('systolic_bp', 150, '2026-10-26', getShownErase());
+    await addMeasurement('diastolic_bp', 100, '2026-10-26', getShownErase());
+    await addMeasurement('systolic_bp', 98, '2026-10-27', getShownErase());
     expect(await activeOn('systolic_bp')).toEqual([[150, '2026-10-26'], [98, '2026-10-27']]);
     const view = render(<HealthTool />);
-    await waitFor(() => expect(view.container.textContent).toContain('Stage 2 hypertension'));
+    await waitFor(() => expect(view.container.textContent).toContain('Blood pressure in the stage 2 range'));
     expect(view.container.textContent).not.toContain('The top number (systolic) must be higher than the bottom number (diastolic).');
   });
 
@@ -768,7 +768,7 @@ describe('the 2026-09-22 feedback: edits that added new things instead', () => {
     const view = render(<HealthTool />);
     await shown(view.container, '.bt-timeline-title');
     editHeight(view.container);
-    await addMeasurement('hdl', 1.4, RIGHT_DAY); // another writer, while the height is unsaved
+    await addMeasurement('hdl', 1.4, RIGHT_DAY, getShownErase()); // another writer, while the height is unsaved
     remoteChange(); // held
     const ldl = draftInput(bloodMatrix(view.container), 'LDL Cholesterol');
     for (const typed of ['3', '3.1', '3.2', '3.3', '3.4']) { // a keystroke every 300 ms
@@ -843,8 +843,8 @@ describe('US-03 AC6, US-16 AC1 (Brad 2026-11-13): only a saved value drives the 
 
   it('US-03 AC6: half a blood pressure in the vitals grid drives nothing; the record\'s pair stays in the plan and the chat', async () => {
     await guest({ weight: 82 });
-    await addMeasurement('systolic_bp', 130, '2026-09-01');
-    await addMeasurement('diastolic_bp', 85, '2026-09-01');
+    await addMeasurement('systolic_bp', 130, '2026-09-01', getShownErase());
+    await addMeasurement('diastolic_bp', 85, '2026-09-01', getShownErase());
     const view = await secondVisit();
     await waitFor(() => expect([chat.context?.systolicBp, chat.context?.diastolicBp]).toEqual([130, 85]));
     typeInto(bpHalf(vitalsMatrix(view.container), 'Systolic'), '150');
@@ -904,7 +904,7 @@ describe('US-03 AC6, US-16 AC1 (Brad 2026-11-13): only a saved value drives the 
     await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
     propose({ waistCm: 90, systolicBp: 120, diastolicBp: 80 });
 
-    await addMeasurement('ldl', 3.0, '2026-09-01'); // another device's write; the page re-reads the whole record
+    await addMeasurement('ldl', 3.0, '2026-09-01', getShownErase()); // another device's write; the page re-reads the whole record
     await flushRoadmapStore();
     remoteChange();
     await waitFor(() => expect(ldlInChat()).toEqual([3, 3]));
@@ -996,8 +996,8 @@ describe('US-03 AC5: a matrix commits what is typed when you leave it; the page 
     localStorage.setItem(BACKEND_KEY, 'memory'); // a cloud page runs with its backend remembered: its drafts are its own
     await adapter.connect();
     await initRoadmapStore(adapter);
-    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 1 }, {});
-    await addMeasurement('weight', 82, '2026-09-01');
+    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 1 }, {}, getShownErase());
+    await addMeasurement('weight', 82, '2026-09-01', getShownErase());
     await flushRoadmapStore();
     const view = render(<HealthTool />);
     await shown(view.container, '.bt-timeline-title');
@@ -1028,7 +1028,7 @@ describe('US-03 AC5: a matrix commits what is typed when you leave it; the page 
     hidePage();
     await wait(1000);
     showPage();
-    await addMeasurement('waist', 88, '2026-09-01'); // a connector, meanwhile
+    await addMeasurement('waist', 88, '2026-09-01', getShownErase()); // a connector, meanwhile
     remoteChange();
     await waitFor(() => expect(backfillInput(vitalsMatrix(view.container), 'Waist Circumference')).toBeNull());
 
@@ -1099,7 +1099,7 @@ describe('US-03 AC5: a matrix commits what is typed when you leave it; the page 
 
   it('a backfill typed in kg and switched to lb is saved as the kilograms typed', async () => {
     await guest({ weight: 82 });
-    await addMeasurement('waist', 90, '2026-08-20'); // the 20 Aug column has an empty weight cell
+    await addMeasurement('waist', 90, '2026-08-20', getShownErase()); // the 20 Aug column has an empty weight cell
     const view = await secondVisit();
     typeInto(backfillInput(vitalsMatrix(view.container), 'Weight'), '80');
     toggleChip(vitalsMatrix(view.container), 'Weight'); // kg → lb
@@ -1201,7 +1201,7 @@ describe('leftover form state never writes a value', () => {
 
   it('a vitals draft dated 20 Aug is saved on 20 Aug only; its invalid cell stays; Save as PDF writes nothing', async () => {
     await guest({ weight: 82 });
-    await addMeasurement('waist', 90, localToday());
+    await addMeasurement('waist', 90, localToday(), getShownErase());
     const view = await secondVisit();
     pickDraftDate(vitalsMatrix(view.container), '2026-08-20');
     typeInto(draftInput(vitalsMatrix(view.container), 'Waist Circumference'), '95');
@@ -1243,7 +1243,7 @@ describe('leftover form state never writes a value', () => {
  *  device's blood test opens the whole form: the box stays for the visit. */
 async function boxWithWholeForm(): Promise<RenderResult> {
   const view = await firstWeight('82', { born: false });
-  await addMeasurement('ldl', 3.0, RIGHT_DAY);
+  await addMeasurement('ldl', 3.0, RIGHT_DAY, getShownErase());
   remoteChange();
   await shown(view.container, '.bt-timeline-title');
   return view;
@@ -1294,14 +1294,14 @@ describe('another writer changes a value the user is working on', () => {
 
   it('US-04: an editor left open on a value corrected elsewhere writes nothing on the click away, and says so', async () => {
     await guest({ weight: 82 });
-    await addMeasurement('ldl', 3.0, RIGHT_DAY);
+    await addMeasurement('ldl', 3.0, RIGHT_DAY, getShownErase());
     const view = render(<HealthTool />);
     await shown(view.container, '.bt-timeline-title');
     const editor = openEditor(row(bloodMatrix(view.container), 'LDL Cholesterol'));
     expect(editor.value).toBe('3.0');
 
     const [saved] = (await loadAllHistory()).filter((m) => m.metricType === 'ldl');
-    expect(await correctValue(saved.id, 2.5)).toBe('ok'); // a connector, meanwhile
+    expect(await correctValue(saved.id, 2.5, getShownErase())).toBe('ok'); // a connector, meanwhile
     remoteChange();
     await wait(500);
     act(() => editor.blur()); // the user clicks away
@@ -1315,7 +1315,7 @@ describe('another writer changes a value the user is working on', () => {
 
   it('US-21 AC5: a lab value typed into an editor while another device corrects it is not saved over the correction', async () => {
     await guest({ weight: 82 });
-    await bulkSaveLabValues([{ metricName: 'ferritin', value: 45, unit: 'µg/L', recordedAt: `${RIGHT_DAY}T00:00:00.000Z`, source: 'manual' }]);
+    await seedOpenLabValues([{ metricName: 'ferritin', value: 45, unit: 'µg/L', recordedAt: `${RIGHT_DAY}T00:00:00.000Z`, source: 'manual' }]);
     const view = render(<HealthTool />);
     const wrap = await shown<HTMLElement>(view.container, '.alr-wrap');
     showTables(view.container);
@@ -1324,7 +1324,7 @@ describe('another writer changes a value the user is working on', () => {
     fireEvent.change(editor, { target: { value: '50' } });
 
     const held = (await recordOnDisk()).labValues.find((l) => l.metricName === 'ferritin')!;
-    expect(await correctValue(held.id, 60)).toBe('ok'); // another device, meanwhile
+    expect(await correctValue(held.id, 60, getShownErase())).toBe('ok'); // another device, meanwhile
     remoteChange();
     await wait(500);
     fireEvent.keyDown(editor, { key: 'Enter' });
@@ -1345,7 +1345,7 @@ describe('another writer changes a value the user is working on', () => {
     hidePage(); // the phone put the page away: the draft waits on the device
     await wait(1000);
     showPage();
-    await addMeasurement('ldl', 3.0, `${localToday()}T00:00:00.000Z`); // a connector, meanwhile
+    await addMeasurement('ldl', 3.0, `${localToday()}T00:00:00.000Z`, getShownErase()); // a connector, meanwhile
     remoteChange();
     await waitFor(() => expect(within(row(bloodMatrix(view.container), 'LDL Cholesterol')).getByText(SAME_SLOT)).toBeTruthy());
 
@@ -1388,7 +1388,7 @@ describe('another writer changes a value the user is working on', () => {
     hidePage(); // the phone put the page away: the draft waits on the device
     await wait(300);
     showPage();
-    await addMeasurement(metric, value, '2026-09-01T00:00:00.000Z'); // a connector, meanwhile
+    await addMeasurement(metric, value, '2026-09-01T00:00:00.000Z', getShownErase()); // a connector, meanwhile
     remoteChange();
     await waitFor(() => expect(within(bp()).getByText(half)).toBeTruthy());
     expect(bp().querySelector('.bt-cell-backfill input')).toBeNull();
@@ -1410,7 +1410,7 @@ describe('another writer changes a value the user is working on', () => {
     const ldl = () => draftInput(bloodMatrix(view.container), 'LDL Cholesterol');
     typeInto(ldl(), '3.2');
     editHeight(view.container);
-    await addMeasurement('ldl', 3.0, `${localToday()}T00:00:00.000Z`); // a connector, meanwhile
+    await addMeasurement('ldl', 3.0, `${localToday()}T00:00:00.000Z`, getShownErase()); // a connector, meanwhile
     remoteChange();
     expect(row(bloodMatrix(view.container), 'LDL Cholesterol').querySelector('.bt-cell-clickable')).toBeNull(); // not on the page
 
@@ -1428,7 +1428,7 @@ describe('another writer changes a value the user is working on', () => {
     typeInto(ldl(), '3.2');
     editHeight(view.container);
     const [shownRow] = (await loadAllHistory()).filter((m) => m.metricType === 'ldl');
-    expect(await correctValue(shownRow.id, 2.8)).toBe('ok'); // a connector, meanwhile
+    expect(await correctValue(shownRow.id, 2.8, getShownErase())).toBe('ok'); // a connector, meanwhile
     remoteChange();
     typeInto(ldl(), '');
     typeInto(ldl(), '3.4'); // the page still shows 3.0
@@ -1445,7 +1445,7 @@ describe('another writer changes a value the user is working on', () => {
     typeInto(bpHalf(vitalsMatrix(view.container), 'Systolic'), '120');
     typeInto(bpHalf(vitalsMatrix(view.container), 'Diastolic'), '80');
     editHeight(view.container);
-    await addMeasurement('systolic_bp', 130, `${localToday()}T00:00:00.000Z`); // a connector, meanwhile
+    await addMeasurement('systolic_bp', 130, `${localToday()}T00:00:00.000Z`, getShownErase()); // a connector, meanwhile
     remoteChange();
 
     leaveVitals(view.container);
@@ -1459,7 +1459,7 @@ describe('another writer changes a value the user is working on', () => {
   // empty pair to type into, and the half already there was corrected unseen.
   it('US-03 AC2: a saved column holding half a blood pressure shows that half, and offers nothing to type over it', async () => {
     await guest({ weight: 82 });
-    await addMeasurement('systolic_bp', 130, '2026-09-01');
+    await addMeasurement('systolic_bp', 130, '2026-09-01', getShownErase());
     const view = await secondVisit();
     const bp = row(vitalsMatrix(view.container), 'Blood Pressure');
     expect(within(bp).getByText('130/—')).toBeTruthy();
@@ -1473,7 +1473,7 @@ describe('another writer changes a value the user is working on', () => {
 describe('US-03 AC1: the New column\'s day', () => {
   it('an unpicked New column is today on every load, though other values waited overnight in both matrices', async () => {
     await guest({ weight: 82 });
-    await addMeasurement('hdl', 1.4, RIGHT_DAY); // a saved column with an empty LDL cell
+    await addMeasurement('hdl', 1.4, RIGHT_DAY, getShownErase()); // a saved column with an empty LDL cell
     const first = await secondVisit(); // 1 Sep holds a weight; its waist cell is empty
     typeInto(backfillInput(vitalsMatrix(first.container), 'Waist Circumference'), '91');
     typeInto(backfillInput(bloodMatrix(first.container), 'LDL Cholesterol'), '3.1');
@@ -1518,7 +1518,7 @@ describe('US-03 AC1: the New column\'s day', () => {
 describe('US-03 AC4: a commit that partly lands', () => {
   it('keeps only the refused cell, with its reason; what landed leaves the draft and the form', async () => {
     await guest({ weight: 82 });
-    await addMeasurement('ldl', 3.0, `${localToday()}T00:00:00.000Z`);
+    await addMeasurement('ldl', 3.0, `${localToday()}T00:00:00.000Z`, getShownErase());
     const view = render(<HealthTool />);
     await shown(view.container, '.bt-timeline-title');
     typeInto(draftInput(bloodMatrix(view.container), 'LDL Cholesterol'), '2.5'); // corrects the 3.0 the page shows
@@ -1592,7 +1592,7 @@ describe('US-03: what the plan and the chat read of a draft', () => {
   it('a blood-test draft restored as the page loads, and typed into, leaves the plan, the chat and the PDF to the record; a phone turned keeps the draft on screen', async () => {
     const turnPhone = rotatablePhone();
     await guest({ weight: 82 });
-    await addMeasurement('ldl', 3.9, '2026-09-10');
+    await addMeasurement('ldl', 3.9, '2026-09-10', getShownErase());
     localStorage.setItem(BT_TIMELINE_DRAFT_KEY, JSON.stringify({ draft: { values: { ldl: '2.0' } }, backfills: {} })); // left by an earlier load
     const view = render(<HealthTool />);
     await waitFor(() => expect(draftInput(bloodMatrix(view.container), 'LDL Cholesterol').value).toBe('2.0'));
@@ -1635,7 +1635,7 @@ describe('US-03: what the plan and the chat read of a draft', () => {
     const view = await ldlOnRecord(4.0, RIGHT_DAY);
     const ldl = () => draftInput(bloodMatrix(view.container), 'LDL Cholesterol');
     typeInto(ldl(), '3');
-    await addMeasurement('hdl', 1.4, RIGHT_DAY); // another writer's value, for another test
+    await addMeasurement('hdl', 1.4, RIGHT_DAY, getShownErase()); // another writer's value, for another test
     remoteChange();
     await waitFor(() => expect(chat.context?.hdlC).toBe(1.4)); // the page has read the record again
     expect(ldl().value).toBe('3');
@@ -1651,7 +1651,7 @@ describe('US-03: what the plan and the chat read of a draft', () => {
 
     await uploadStarts();
     expect(await activeOn('ldl')).toEqual([[3, localToday()], [4, RIGHT_DAY]]);
-    await addMeasurement('hdl', 1.4, RIGHT_DAY); // what the upload saved
+    await addMeasurement('hdl', 1.4, RIGHT_DAY, getShownErase()); // what the upload saved
     await uploadEnds();
     await waitFor(() => expect(chat.context?.hdlC).toBe(1.4));
     expect(ldlTile(view.container)).toBe('3.0 mmol/L');
@@ -1669,7 +1669,7 @@ describe('US-03: what the plan and the chat read of a draft', () => {
     const weight = () => draftInput(vitalsMatrix(view.container), 'Weight');
     typeInto(weight(), '84');
 
-    await addMeasurement('hdl', 1.4, RIGHT_DAY); // what the upload saved
+    await addMeasurement('hdl', 1.4, RIGHT_DAY, getShownErase()); // what the upload saved
     await uploadEnds();
     await waitFor(() => expect(chat.context?.hdlC).toBe(1.4));
     expect(chat.context?.weightKg).toBe(82);
@@ -1715,8 +1715,8 @@ describe('US-11: an erase made here', () => {
     await adapter.connect();
     localStorage.setItem(BACKEND_KEY, 'memory'); // a cloud page runs with its backend remembered
     await initRoadmapStore(adapter);
-    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 1 }, {});
-    await addMeasurement('weight', 82, '2026-09-01');
+    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 1 }, {}, getShownErase());
+    await addMeasurement('weight', 82, '2026-09-01', getShownErase());
     await flushRoadmapStore();
     const view = await secondVisit();
     const release = adapter.hold();
@@ -1777,8 +1777,8 @@ describe('US-11: an erase made on another device', () => {
     await adapter.connect();
     localStorage.setItem(BACKEND_KEY, 'memory'); // a cloud page runs with its backend remembered: it owns the off-file clear
     await initRoadmapStore(adapter);
-    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 1 }, {});
-    await addMeasurement('weight', 82, '2026-09-01');
+    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 1 }, {}, getShownErase());
+    await addMeasurement('weight', 82, '2026-09-01', getShownErase());
     await flushRoadmapStore();
     const view = render(<HealthTool />);
     await shown(view.container, '.bt-timeline-title');
@@ -1799,8 +1799,8 @@ describe('US-11: an erase made on another device', () => {
     expect(localStorage.getItem(BT_TIMELINE_DRAFT_KEY)).toBeNull();
 
     // The user starts again here, and the page loads again.
-    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 1 }, {});
-    await addMeasurement('weight', 80, localToday());
+    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 1 }, {}, getShownErase());
+    await addMeasurement('weight', 80, localToday(), getShownErase());
     view.unmount();
     const again = render(<HealthTool />);
     await shown(again.container, '.bt-timeline-title');
@@ -1817,8 +1817,8 @@ describe('US-11: an erase made on another device', () => {
     await adapter.connect();
     localStorage.setItem(BACKEND_KEY, 'memory'); // a cloud page runs with its backend remembered: it owns the off-file clear
     await initRoadmapStore(adapter);
-    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 1 }, {});
-    await addMeasurement('weight', 82, '2026-09-01');
+    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 1 }, {}, getShownErase());
+    await addMeasurement('weight', 82, '2026-09-01', getShownErase());
     await flushRoadmapStore();
     const view = render(<HealthTool />);
     await shown(view.container, '.bt-timeline-title');
@@ -1832,8 +1832,8 @@ describe('US-11: an erase made on another device', () => {
     const other = await RoadmapStore.create(new MemoryAdapter(cloud));
     await other.deleteAllData();
     localStorage.setItem(BT_TIMELINE_DRAFT_KEY, kept); // one localStorage for both devices
-    other.saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 1 }, {});
-    other.addMeasurement('weight', 80, `${localToday()}T00:00:00.000Z`);
+    other.saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 1 }, {}, other.shownErase);
+    other.addMeasurement('weight', 80, `${localToday()}T00:00:00.000Z`, other.shownErase);
     await other.flush();
     await wait(6000);
     act(() => { window.dispatchEvent(new Event('focus')); }); // this page comes back, and re-reads
@@ -1869,7 +1869,7 @@ describe('US-34 AC6: another tab of this browser saves', () => {
     const rev = parseInt(localStorage.getItem('health_roadmap_file_v2_rev')!, 10);
 
     const otherTab = await RoadmapStore.create(new LocalStorageAdapter());
-    otherTab.addMeasurement('ldl', 2.1, '2026-09-01T00:00:00.000Z');
+    otherTab.addMeasurement('ldl', 2.1, '2026-09-01T00:00:00.000Z', otherTab.shownErase);
     await otherTab.flush();
     // The browser tells this tab: jsdom fires no storage event at the window
     // that wrote, and both tabs share this one.
@@ -1888,14 +1888,14 @@ describe('US-34 AC6: another tab of this browser saves', () => {
     const adapter = new MemoryAdapter(cloud);
     await adapter.connect();
     await initRoadmapStore(adapter);
-    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 1 }, {});
-    await addMeasurement('weight', 82, '2026-09-01');
+    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 1 }, {}, getShownErase());
+    await addMeasurement('weight', 82, '2026-09-01', getShownErase());
     await flushRoadmapStore();
     const view = render(<HealthTool />);
     await shown(view.container, '.bt-timeline-title');
 
     const other = await RoadmapStore.create(new MemoryAdapter(cloud));
-    other.addMeasurement('ldl', 2.1, '2026-09-01T00:00:00.000Z');
+    other.addMeasurement('ldl', 2.1, '2026-09-01T00:00:00.000Z', other.shownErase);
     await other.flush();
     await wait(6000);
     act(() => { window.dispatchEvent(new Event('focus')); }); // this page comes back, and re-reads
@@ -1925,7 +1925,7 @@ describe('US-03 AC3, US-04 AC1, US-07 AC5: the number a matrix shows, typed agai
   /** The guest's one saved value on RIGHT_DAY, its matrix in the unit to view. */
   async function savedBesideItsLine(metric: string, label: string, value: number, unit: 'si' | 'conventional') {
     await guest({ weight: 82 });
-    await addMeasurement(metric, value, RIGHT_DAY);
+    await addMeasurement(metric, value, RIGHT_DAY, getShownErase());
     const view = await secondVisit();
     const matrix = () => (metric === 'waist' ? vitalsMatrix : bloodMatrix)(view.container);
     if (unit === 'conventional') { toggleChip(matrix(), label); await wait(50); }
@@ -1985,7 +1985,7 @@ describe('US-05 AC3: the Lp(a) check, over the real record', () => {
     localStorage.setItem('health_roadmap_unit_system', 'conventional');
     vi.setSystemTime(new Date('2026-09-20T04:00:00.000Z')); // typed into the mislabelled field
     await guest({ weight: 82 });
-    await addMeasurement('lpa', 37.44, '2026-09-18T00:00:00.000Z');
+    await addMeasurement('lpa', 37.44, '2026-09-18T00:00:00.000Z', getShownErase());
     vi.setSystemTime(new Date('2026-10-14T00:00:00.000Z')); // the fixed page
     const view = render(<HealthTool />);
     const notice = await shown(view.container, '.lpa-check');
@@ -2055,7 +2055,7 @@ describe('US-04 AC1 / US-05 AC2: the Units pill held while a value is being corr
 
   it('3.5 typed over a blood test\'s LDL in mmol/L, the pill held 1200 ms in Safari: nothing written, and the cell says to choose the unit first', async () => {
     await guest({ weight: 82 });
-    await addMeasurement('ldl', 3.2, '2026-08-15');
+    await addMeasurement('ldl', 3.2, '2026-08-15', getShownErase());
     const view = await secondVisit();
     const editor = openEditor(row(bloodMatrix(view.container), 'LDL Cholesterol'), 'last');
     fireEvent.change(editor, { target: { value: '3.5' } });

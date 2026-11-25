@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H404,web blood pressure,"The blood-pressure widget reads its erase when the save is asked, not when the reading is typed",lead,not started,"Found 2026-11-25 in PR 2081's review: widget-src/src/widgets/BloodPressure.tsx reads the shown erase when the save is asked. Carrying the erase per reading (typedOn) was tried and taken out: a reading still on screen from before an erase kept its old erase, so every later reading was refused silently.",,no

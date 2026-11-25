@@ -13,10 +13,8 @@
  * in the public bundle was Brad's call 2026-06-10: it is mechanical value
  * extraction, not clinical IP.
  *
- * Batches: the server path uses Anthropic's Batch API; here the user is
- * present and pays for themselves, so a "batch" is just a client-side queue
- * of direct calls (concurrency 2 — gentle on entry-tier key rate limits)
- * behind the same labImportBatch/pollBatchStatus interface.
+ * Each file is one direct call; the upload sends 5 at a time (health-core
+ * UPLOAD_LIMITS), and Cancel aborts the calls in flight (US-12 AC28).
  */
 import {
   EXTRACTION_MAX_TOKENS,
@@ -29,10 +27,11 @@ import {
 import { EXTRACTION_MODEL, extractionStopCode, modelParams } from '@roadmap/health-core/models';
 import { getAnthropicKey } from './byok-chat';
 import { ByokAnthropicError, callAnthropicDirectRaw, type ByokErrorCode } from './byok-anthropic';
-import type { BatchPollResponse, LabImportResult, PageContent, QuotaCheck, UploadErrorCode } from './api-types';
+import type { RequestFlags } from '@roadmap/health-core/upload-rules';
+import { KEY_TEXT } from '@roadmap/health-core/upload-text';
+import type { LabImportResult, PageContent, QuotaCheck, UploadErrorCode } from './api-types';
 
-const NO_KEY_MESSAGE =
-  'Connect your Anthropic API key (in the "Ask about your plan" panel) to process documents on this page.';
+const NO_KEY_MESSAGE = KEY_TEXT.missing;
 
 export async function checkLabImportQuota(): Promise<QuotaCheck> {
   if (!getAnthropicKey()) return { allowed: false, remaining: 0, reason: 'no-key', message: NO_KEY_MESSAGE };
@@ -43,7 +42,7 @@ export async function checkLabImportQuota(): Promise<QuotaCheck> {
 /** Map the shared transport's error code → the upload modal's UploadErrorCode. */
 const UPLOAD_ERROR_CODE: Record<ByokErrorCode, UploadErrorCode> = {
   network: 'network',
-  rate_limit: 'rate_limit',
+  rate_limit: 'key_rate_limit', // the person's own key's minute limit, never our daily limit (US-12 AC9)
   unauthorized: 'key_refused',
   bad_request: 'server_error',
   empty: 'server_error',
@@ -69,14 +68,14 @@ function errorKind(error: unknown): string {
  *  `{` prefill this used to send, US-15 AC34). An answer cut off at
  *  max_tokens is never a set of values and is cut off again, so it is not
  *  re-sent; the transport already throws on a refusal. */
-async function extractDirect(apiKey: string, pages: PageContent[]): Promise<LabImportResult> {
+async function extractDirect(apiKey: string, pages: PageContent[], signal?: AbortSignal): Promise<LabImportResult> {
   const body = {
     ...modelParams(EXTRACTION_MODEL, EXTRACTION_MAX_TOKENS),
     system: UNIFIED_SYSTEM_PROMPT,
     messages: [{ role: 'user', content: pagesToContentBlocks(pages) }],
   };
   const send = async () => {
-    const { text, stopReason } = await callAnthropicDirectRaw(apiKey, body);
+    const { text, stopReason } = await callAnthropicDirectRaw(apiKey, body, signal);
     if (extractionStopCode(stopReason) === 'too_long') throw new ByokAnthropicError('too_long', 'The file is too long to read in one go.');
     return text;
   };
@@ -101,11 +100,13 @@ function toResult(responseText: string): LabImportResult {
 export async function labImport(
   pages: PageContent[],
   _unitSystem: 'si' | 'conventional',
+  // The flags ask the server's prompt for its day rules; the person's own key reads with the shared prompt.
+  { signal }: { signal?: AbortSignal; flags?: RequestFlags } = {},
 ): Promise<{ result: LabImportResult | null; remaining?: number; error?: string; errorCode?: UploadErrorCode }> {
   const apiKey = getAnthropicKey();
   if (!apiKey) return { result: null, error: NO_KEY_MESSAGE, errorCode: 'server_error' };
   try {
-    return { result: await extractDirect(apiKey, pages) };
+    return { result: await extractDirect(apiKey, pages, signal) };
   } catch (error) {
     if (error instanceof ByokAnthropicError) {
       return { result: null, error: error.message, errorCode: uploadErrorCode(error) };
@@ -114,80 +115,4 @@ export async function labImport(
     console.warn('BYOK extraction error:', errorKind(error));
     return { result: null, error: 'Could not read this document. Try again.', errorCode: 'server_error' };
   }
-}
-
-// --- client-side "batch": a queue of direct calls behind the batch interface ---
-
-interface ByokBatch {
-  total: number;
-  completed: number;
-  done: boolean;
-  results: NonNullable<BatchPollResponse['results']>;
-}
-
-const activeBatches = new Map<string, ByokBatch>();
-const BATCH_CONCURRENCY = 2;
-
-export async function labImportBatch(
-  files: Array<{ pages: PageContent[] }>,
-  // The modal's Cancel (US-12 AC5a): a file not yet sent is never sent.
-  signal?: AbortSignal,
-): Promise<{ batchId: string | null; error?: string; errorCode?: UploadErrorCode }> {
-  const apiKey = getAnthropicKey();
-  if (!apiKey) return { batchId: null, error: NO_KEY_MESSAGE, errorCode: 'server_error' };
-
-  const batchId = `byok-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-  const batch: ByokBatch = { total: files.length, completed: 0, done: false, results: [] };
-  activeBatches.set(batchId, batch);
-  // Nothing polls a cancelled batch again, so its results are not kept.
-  onCancel(signal, () => activeBatches.delete(batchId));
-
-  void runBatch(apiKey, files, batch, signal);
-  return { batchId };
-}
-
-/** Runs `stop` on the upload modal's Cancel (US-12 AC5a). */
-function onCancel(signal: AbortSignal | undefined, stop: () => void): void {
-  signal?.addEventListener('abort', stop, { once: true });
-}
-
-async function runBatch(
-  apiKey: string,
-  files: Array<{ pages: PageContent[] }>,
-  batch: ByokBatch,
-  signal?: AbortSignal,
-): Promise<void> {
-  const results: ByokBatch['results'] = new Array(files.length);
-  let next = 0;
-  onCancel(signal, () => { next = files.length; });
-
-  async function worker(): Promise<void> {
-    while (next < files.length) {
-      const index = next++;
-      try {
-        results[index] = { ...await extractDirect(apiKey, files[index].pages), index };
-      } catch (error) {
-        // Marked by position, like the server batch path (pollBatch in
-        // anthropic.server.ts), so the modal names the file and why (US-12 AC9).
-        // By index and kind: a file name can hold a patient's name, an error message the report.
-        console.warn(`BYOK batch: file ${index} failed:`, errorKind(error));
-        results[index] = { index, errorCode: error instanceof ByokAnthropicError ? uploadErrorCode(error) : 'server_error' };
-      }
-      batch.completed += 1;
-    }
-  }
-
-  await Promise.all(Array.from({ length: Math.min(BATCH_CONCURRENCY, files.length) }, () => worker()));
-  batch.results = results;
-  batch.done = true;
-}
-
-export async function pollBatchStatus(batchId: string): Promise<BatchPollResponse> {
-  const batch = activeBatches.get(batchId);
-  if (!batch) {
-    return { status: 'ended', completed: 0, total: 0, error: 'Batch not found.', errorCode: 'server_restart' };
-  }
-  if (!batch.done) return { status: 'processing', completed: batch.completed, total: batch.total };
-  activeBatches.delete(batchId);
-  return { status: 'ended', completed: batch.completed, total: batch.total, results: batch.results };
 }

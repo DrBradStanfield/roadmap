@@ -141,9 +141,9 @@ describe('US-52 AC4f: one policy, and a named list of unbounded maps', () => {
   const prod = appFiles(app).filter((file) => !/\.test(-helpers)?\.tsx?$/.test(file));
 
   /** In-memory maps with an expiry that are not size-bounded, on purpose (lead S-24). */
-  const UNBOUNDED_TTL = ['activeBatches', 'guestIpRateMap', 'orderCache', 'spentCodes', 'spentProposals', 'spentWrites', 'undeletedBatches'];
+  const UNBOUNDED_TTL = ['spentCodes', 'spentProposals', 'spentWrites'];
   /** Module maps with no expiry: lookups, in-flight work and content caches. */
-  const NOT_TTL = ['DECODERS', 'KNOWN_CLIENTS', 'NUDGED', 'TWO_PHASE', 'WRITE_COSTS', 'articleCache', 'creatingBatches', 'formsCache', 'handleCache', 'inFlight'];
+  const NOT_TTL = ['DECODERS', 'KNOWN_CLIENTS', 'NUDGED', 'TWO_PHASE', 'WRITE_COSTS', 'articleCache', 'formsCache', 'handleCache', 'inFlight'];
 
   it('names no other policy anywhere in app/', () => {
     const banned = new RegExp(['when' + 'Full', "'re" + "fuse'"].join('|'));
@@ -161,7 +161,8 @@ describe('US-52 AC4f: one policy, and a named list of unbounded maps', () => {
         sites.push(`${name}${/maxKeys: Infinity/.test(site) ? ': unbounded' : ''}`);
       }
     }
-    expect(sites).toHaveLength(36);
+    expect(sites).toHaveLength(37);
+    expect(sites).toContain('guest sessions per IP'); // US-15 AC67: bounded, at the default
     expect(sites.filter((s) => s.startsWith('UNNAMED'))).toEqual([]);
     expect(sites.filter((s) => s.endsWith(': unbounded'))).toEqual(['app spent challenges: unbounded']);
   });
@@ -175,6 +176,28 @@ describe('US-52 AC4f: one policy, and a named list of unbounded maps', () => {
       }
     }
     expect(unbounded.sort()).toEqual([...UNBOUNDED_TTL, ...NOT_TTL].sort());
+  });
+});
+
+describe('US-15 AC67: the order summary cache holds at most 10,000 customers', () => {
+  it('drops the oldest summary for a new customer, and fetches it again when asked', async () => {
+    vi.resetModules();
+    const getCustomerOrders = vi.fn(async () => 'one order');
+    vi.doMock('./route-helpers.server', () => ({ getCustomerOrders, checkSubscriptionFromTags: vi.fn() }));
+    vi.doMock('./supabase-account.server', () => ({ updateSubscriptionPlan: vi.fn() }));
+    vi.doMock('./chat-turn-io.server', () => ({ reportChatError: vi.fn() }));
+    const { getCachedOrders } = await import('./chat-customer-cache.server');
+    const admin = {} as Parameters<typeof getCachedOrders>[0];
+    for (let i = 0; i < 10_000; i++) await getCachedOrders(admin, `c-${i}`);
+    expect(getCustomerOrders).toHaveBeenCalledTimes(10_000);
+    await getCachedOrders(admin, 'c-new'); // the cache is full: c-0 goes
+    await getCachedOrders(admin, 'c-1'); // still cached
+    expect(getCustomerOrders).toHaveBeenCalledTimes(10_001);
+    await getCachedOrders(admin, 'c-0'); // fetched again
+    expect(getCustomerOrders).toHaveBeenCalledTimes(10_002);
+    vi.doUnmock('./route-helpers.server');
+    vi.doUnmock('./supabase-account.server');
+    vi.doUnmock('./chat-turn-io.server');
   });
 });
 

@@ -103,7 +103,7 @@ Whey protein is rich in the building blocks of glutathione, and in animal studie
 Several nutrients help maintain glutathione levels by reducing its consumption or supporting its recycling:
 
 - **Vitamin C (ascorbic acid):** In 48 adults with low vitamin C, taking 500 or 1,000 mg a day for 13 weeks raised lymphocyte glutathione by 18%; levels fell back after placebo [24]. Dr Brad Stanfield's [MicroVitamin](https://drstanfield.com/products/microvitamin) includes 45 mg of vitamin C as calcium ascorbate, which may contribute to glutathione sparing alongside dietary intake.
-- **Alpha-lipoic acid (ALA):** In old rats, lipoic acid restored the activity of GCL, the enzyme that limits glutathione synthesis, which had declined with age [25]. Human data are limited.
+- **Alpha-lipoic acid (ALA):** In old rats, [lipoic acid](/blogs/articles/alpha-lipoic-acid-benefits-forms-dosing-and-side-effects) restored the activity of GCL, the enzyme that limits glutathione synthesis, which had declined with age [25]. Human data are limited.
 - **Selenium:** Selenium is built into selenoproteins, including the glutathione peroxidases, which have antioxidant effects [26]. MicroVitamin provides 27.5 mcg of selenium as selenium glycinate, supporting glutathione peroxidase activity.
 - **Sulforaphane (from broccoli sprouts):** Young broccoli sprouts contain 10 to 100 times more glucoraphanin, the precursor of sulforaphane, than mature plants [27]. In a small human trial, broccoli sprout sulforaphane raised the expression of phase II enzymes, including glutathione S-transferases, in nasal cells [28].
 

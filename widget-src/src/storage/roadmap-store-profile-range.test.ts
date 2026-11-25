@@ -29,7 +29,7 @@ it.each([
 ] as const)('US-02 AC5: %s %s is refused, never written, and says why; the sex in the same save writes', async (field, value, message) => {
   const cloud = new MemoryCloud();
   const store = await RoadmapStore.create(new MemoryAdapter(cloud));
-  const result = store.saveChangedMeasurements({ sex: 'male', [field]: value }, {});
+  const result = store.saveChangedMeasurements({ sex: 'male', [field]: value }, {}, store.shownErase);
   expect(result).toEqual({ ok: true, birthRefused: null, added: [], refused: { [field]: message } });
   await store.flush();
   const file = onDisk(cloud);
@@ -40,10 +40,10 @@ it.each([
 it('US-02 AC5: a refused height leaves the saved one in place', async () => {
   const cloud = new MemoryCloud();
   const store = await RoadmapStore.create(new MemoryAdapter(cloud));
-  store.saveChangedMeasurements({ heightCm: 178 }, {});
+  store.saveChangedMeasurements({ heightCm: 178 }, {}, store.shownErase);
   await store.flush();
   vi.advanceTimersByTime(1000);
-  expect(store.saveChangedMeasurements({ heightCm: 17 }, { heightCm: 178 })).toMatchObject({ ok: true, refused: { heightCm: 'Height must be at least 50 cm' } });
+  expect(store.saveChangedMeasurements({ heightCm: 17 }, { heightCm: 178 }, store.shownErase)).toMatchObject({ ok: true, refused: { heightCm: 'Height must be at least 50 cm' } });
   await store.flush();
   expect(onDisk(cloud).profile.heightCm).toBe(178);
 });

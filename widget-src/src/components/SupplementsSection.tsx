@@ -2,7 +2,7 @@
 // unit, and "+ Add another supplement", whose search adds a preset or a custom
 // name. Split from InputPanel.tsx (2026-11-09) when the touch fix grew it.
 
-import { Fragment, useEffect, useReducer, useRef, useState } from 'react';
+import { Fragment, useEffect, useId, useReducer, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { SUPPLEMENT_OPTIONS } from '@roadmap/health-core/types';
 import { parseLocalisedNumber } from '@roadmap/health-core/parseNumber';
@@ -19,6 +19,9 @@ export function SupplementsSection({ supplements, onSupplementChange, onSuppleme
 }) {
 
 const [supplementDoseDrafts, setSupplementDoseDrafts] = useState<Record<string, string | undefined>>({});
+// A row's element ids come from its place, never its key (US-09 AC7k).
+const idPrefix = useId();
+const doseErrorId = (row: number) => `${idPrefix}dose-error-${row}`;
 // "+ Add another supplement" opens the search in its place (Brad 2026-11-09, as Add a blood test).
 // Its mode is one named state (lib/supplement-add.ts); events queue in order, so a blur sees the press before it.
 const [add, send] = useReducer(transition, CLOSED);
@@ -84,7 +87,7 @@ useEffect(() => {
     <div className="section-card">
       <section className="health-section" aria-label={SUPPLEMENT_TEXT.title}>
         {/* Active supplements list */}
-        {activeSupplements.map(s => (
+        {activeSupplements.map((s, row) => (
           <Fragment key={s.supplementKey}>
             <div className="supplement-row">
               <span className="supplement-name">{s.supplementName}</span>
@@ -99,7 +102,7 @@ useEffect(() => {
                 onKeyDown={blockBadNumericKeys}
                 value={supplementDoseDrafts[s.supplementKey] ?? s.doseValue ?? ''}
                 aria-invalid={supplementDoseDrafts[s.supplementKey] !== undefined || undefined}
-                aria-describedby={supplementDoseDrafts[s.supplementKey] !== undefined ? `supplement-dose-error-${s.supplementKey}` : undefined}
+                aria-describedby={supplementDoseDrafts[s.supplementKey] !== undefined ? doseErrorId(row) : undefined}
                 onChange={e => {
                   const raw = e.target.value;
                   const val = raw ? parseLocalisedNumber(raw) ?? null : null;
@@ -131,7 +134,7 @@ useEffect(() => {
               </button>
             </div>
             {supplementDoseDrafts[s.supplementKey] !== undefined && (
-              <span className="error-message" id={`supplement-dose-error-${s.supplementKey}`} role="alert">Enter a dose greater than 0 and no more than 99999. This dose was not saved.</span>
+              <span className="error-message" id={doseErrorId(row)} role="alert">Enter a dose greater than 0 and no more than 99999. This dose was not saved.</span>
             )}
           </Fragment>
         ))}
