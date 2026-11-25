@@ -11,7 +11,7 @@ import { createRemoteChangeRelay } from '../lib/remote-replay';
 import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
 import type { RemoteChange } from '@roadmap/health-core/record-host';
 import type { useRecordState } from './useRecordState';
-import type { ShownProfile } from './useRecordReads';
+import type { ShownCopy } from './useRecordReads';
 import type { useUnits } from './useUnits';
 import type { EraseStore } from '../lib/erase-machine';
 
@@ -100,8 +100,10 @@ const reportReadFailure = (error: unknown) => { Sentry.captureException(error, {
 
 export function useRecordApply(args: {
   setInputs: Dispatch<SetStateAction<Partial<HealthInputs>>>;
-  reloadValues: (shown?: ShownProfile) => Promise<LatestMeasurementsResult | null>;
+  reloadValues: (shown?: ShownCopy) => Promise<LatestMeasurementsResult | null>;
   applyLists: ReturnType<typeof useRecordState>['applyLists'];
+  /** The medications and screenings the page shows. */
+  lists: Pick<LatestMeasurementsResult, 'medications' | 'screenings'>;
   units: ReturnType<typeof useUnits>['record'];
   /** The erase machine (hooks/useErase): each whole re-read dispatches `read` to it. */
   erase: Pick<EraseStore, 'getSnapshot' | 'dispatch'>;
@@ -184,8 +186,15 @@ export function useRecordApply(args: {
     const { later } = latest.current;
     const policy = READ_POLICY[reason];
     // The page's own save: the values, lab rows, both matrices and the chat mirror, nothing else (US-34 AC4a).
-    // While a change is held, the mirror keeps the profile the page shows, asked as it is written (AC9, H15).
-    if (policy.read === 'values') return latest.current.reloadValues(() => (relay.holding() ? later().savedProfile() : undefined)).then(() => {});
+    // Asked as each is written. Under an erase the page does not show, nothing: the erase's own signal reads it (H16).
+    // While a change is held, the mirror keeps the profile and lists the page shows (AC9, AC10).
+    if (policy.read === 'values') {
+      const erase = getEraseIdentity(); // read with the record, in one turn
+      return latest.current.reloadValues(() => {
+        if (getEraseIdentity() !== erase || erase !== latest.current.erase.getSnapshot().shown) return null;
+        return relay.holding() ? { inputs: later().savedProfile(), ...latest.current.lists } : undefined;
+      }).then(() => {});
+    }
     // Not while the user is mid-typing: the re-read replaces the form's
     // inputs, and a remote change landing on a half-entered height would take
     // those keystrokes with it. The relay HOLDS it: the next profile save to

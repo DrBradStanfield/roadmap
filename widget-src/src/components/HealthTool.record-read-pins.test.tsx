@@ -1146,6 +1146,36 @@ describe('US-34 AC4a: the page\'s own save re-reads the values, and a held chang
     }
   });
 
+  it('US-34 AC10 (H16b): under a hold, an own save\'s read writes the medication and screening lists the page shows beside its profile; the hold\'s read writes the record\'s', async () => {
+    await recordWithLdl();
+    const view = await open();
+    await heightOutOfRange(view);
+    const shown = mirrorContext();
+    // Another device changes the birth year and adds a statin and a colonoscopy: all held behind the dirty profile.
+    await anotherWriter(async () => {
+      await saveChangedMeasurements({ birthYear: 1981 }, { birthYear: 1980 }, getShownErase());
+      await saveMedication('statin', 'atorvastatin', 20, 'mg', getShownErase());
+      await saveScreening('colorectal_method', 'colonoscopy_10yr', getShownErase());
+    });
+    await settle(50);
+    expect(field(view, 'birthYear')).toBe('1980');
+    expect(q(view, '#statin-dose')).toBeNull(); // the page shows no statin
+    await OWN_SAVES[1][1](view); // a correction's save and its values read, under the hold
+    await settle(50);
+    // One copy of what the page shows: its profile and its lists; only the corrected LDL moved.
+    expect(mirror()?.medications).toEqual([]);
+    expect(mirror()?.screenings).toEqual([]);
+    expect(differ(shown, mirrorContext())).toEqual(['ldlC', 'measurementHistory']);
+    // The hold ends at the next profile save: its record read writes the record's lists.
+    type(q(view, '#heightCm'), '171');
+    leave(q(view, '#heightCm'));
+    await waitFor(() => expect(field(view, 'birthYear')).toBe('1981'), { timeout: 3000 });
+    await settle(800);
+    expect(mirror()?.medications.map((m) => m.medicationKey)).toEqual(['statin']);
+    expect(mirror()?.screenings.map((s) => s.screeningKey)).toEqual(['colorectal_method']);
+    expect(calls('remote_change_applied')).toHaveLength(1);
+  });
+
   // New in AC9: the mirror's sex. Pinned, unchanged: the page's own chat context (planInputs) and the banner (the form).
   it('US-34 AC9 (H15), US-16 AC2: under a hold, the mirror sends the sex the page shows; the proposal is checked against, and saved to, the profile on screen, as before', async () => {
     await recordWithLdl(); // female, 170 cm

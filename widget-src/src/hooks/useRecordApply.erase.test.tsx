@@ -81,7 +81,7 @@ function setup(loaded = true) {
       spend: () => fx.later.clearAnswered(true),
     } as Parameters<typeof useErase>[0]);
     const page = useRecordApply({
-      setInputs: fx.setInputs, reloadValues: fx.reloadValues, applyLists: fx.applyLists,
+      setInputs: fx.setInputs, reloadValues: fx.reloadValues, applyLists: fx.applyLists, lists: { medications: [], screenings: [] },
       units: fx.units as unknown as Parameters<typeof useRecordApply>[0]['units'],
       erase: erase.store, later: () => fx.later,
     });
