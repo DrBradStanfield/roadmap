@@ -17,7 +17,7 @@ vi.mock('./supabase-client.server', async (actual) => {
 import { resetClaimsState } from './single-use-claims.test-helpers';
 import { claimProposal, resetMcpMemory } from './mcp-grants.server';
 import { typeKey } from './mcp-seal.server';
-import { issueProposal, openProposal, openStep, signStep, STEP_WINDOWS, stepKey } from './mcp-step.server';
+import { earlyRefusal, issueProposal, openProposal, openStep, PERMANENT_WRITE_PAUSE_SECONDS, signStep, STEP_WINDOWS, stepKey } from './mcp-step.server';
 
 const KEY_A = Buffer.alloc(32, 1).toString('base64');
 const KEY_B = Buffer.alloc(32, 2).toString('base64');
@@ -110,19 +110,30 @@ describe('US-36 AC9 — the window: early before 10 s, expired after 15 min, a t
     expect(open(issueProposal(SUBJECT, CONN, AUDIENCE, NOW + 30_000).receipt, { now: NOW })).toBe('early');
   });
 
-  it('one table: an import has no pause, an hour of life, and the same skew rule (US-35 AC7)', () => {
-    expect(STEP_WINDOWS.import).toEqual({ nbfSeconds: 0, ttlSeconds: 60 * 60, macHex: 32 });
+  it('one table: an import has the permanent-write pause, an hour of life, and the same skew rule (US-35 AC7, AC19)', () => {
+    expect(STEP_WINDOWS.import).toEqual({ nbfSeconds: PERMANENT_WRITE_PAUSE_SECONDS, ttlSeconds: 60 * 60, macHex: 32 });
+    expect(STEP_WINDOWS.proposal.nbfSeconds).toBe(PERMANENT_WRITE_PAUSE_SECONDS);
+    expect(PERMANENT_WRITE_PAUSE_SECONDS).toBe(10);
     const fields = ['payload-id', 'payload-hash'];
     /** An import step signed at `issuedMs`, opened at `nowMs`. */
     const importAt = (issuedMs: number, nowMs: number) => {
       const { mac, issued } = signStep('import', fields, CONN, AUDIENCE, issuedMs);
-      return openStep('import', fields, CONN, mac, issued, AUDIENCE, nowMs).status;
+      return openStep('import', fields, CONN, mac, issued, AUDIENCE, nowMs);
     };
-    expect(importAt(NOW, NOW)).toBe('ok');
-    expect(importAt(NOW + 30_000, NOW)).toBe('ok');
-    expect(importAt(NOW + 61_000, NOW)).toBe('invalid');
-    expect(importAt(NOW, NOW + 3600_000)).toBe('ok');
-    expect(importAt(NOW, NOW + 3601_000)).toBe('expired');
+    const notBefore = new Date(NOW + 10_000).toISOString();
+    expect(importAt(NOW, NOW)).toEqual({ status: 'early', notBefore });
+    expect(importAt(NOW, NOW + 9_999)).toEqual({ status: 'early', notBefore });
+    expect(importAt(NOW, NOW + 10_000)).toEqual({ status: 'ok', notBefore });
+    expect(importAt(NOW + 30_000, NOW).status).toBe('early');
+    expect(importAt(NOW + 61_000, NOW).status).toBe('invalid');
+    expect(importAt(NOW, NOW + 3600_000).status).toBe('ok');
+    expect(importAt(NOW, NOW + 3601_000).status).toBe('expired');
+  });
+
+  it('a step opened early is refused in the one sentence every permanent write uses (US-35 AC19)', () => {
+    expect(earlyRefusal('2026-10-07T01:07:50.000Z')).toBe(
+      'That confirm receipt is not valid yet: it can be used from 2026-10-07T01:07:50.000Z, after the user has answered. Do not retry before then; end your turn. Nothing was written.',
+    );
   });
 });
 

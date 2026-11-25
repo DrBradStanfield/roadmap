@@ -14,14 +14,24 @@ import { RECEIPT_LIFETIME_SECONDS } from '../../packages/health-core/src/mcp-too
 export type StepKind = 'import' | 'proposal';
 
 /**
- * One table: issue and verify both read it. An import has no pause. `macHex`
- * is the MAC's length in lowercase hex: 128 bits in an import's pending file,
- * 80 in a proposal receipt.
+ * The pause before any permanent write: a correction, a profile change, a
+ * feedback issue, or an import commit, which can replace a held value (US-35
+ * AC19). One number, so the two kinds cannot drift apart.
+ */
+export const PERMANENT_WRITE_PAUSE_SECONDS = 10;
+
+/**
+ * One table: issue and verify both read it. `macHex` is the MAC's length in
+ * lowercase hex: 128 bits in an import's pending file, 80 in a proposal receipt.
  */
 export const STEP_WINDOWS: Record<StepKind, { nbfSeconds: number; ttlSeconds: number; macHex: number }> = {
-  import: { nbfSeconds: 0, ttlSeconds: RECEIPT_LIFETIME_SECONDS, macHex: 32 },
-  proposal: { nbfSeconds: 10, ttlSeconds: 15 * 60, macHex: 20 },
+  import: { nbfSeconds: PERMANENT_WRITE_PAUSE_SECONDS, ttlSeconds: RECEIPT_LIFETIME_SECONDS, macHex: 32 },
+  proposal: { nbfSeconds: PERMANENT_WRITE_PAUSE_SECONDS, ttlSeconds: 15 * 60, macHex: 20 },
 };
+
+/** The one refusal for a step used inside its pause, whichever kind. */
+export const earlyRefusal = (notBefore: string): string =>
+  `That confirm receipt is not valid yet: it can be used from ${notBefore}, after the user has answered. Do not retry before then; end your turn. Nothing was written.`;
 
 /** Each kind's MAC exactly as it must arrive, built once from `macHex`. */
 const MAC_SHAPE = Object.fromEntries(
@@ -74,8 +84,8 @@ export type OpenedStep = { status: 'invalid' } | { status: 'ok' | 'early' | 'exp
  * length of lowercase hex, and it is compared as those characters, with
  * `timingSafeEqual`: nothing is decoded. Every configured key is tried; a key
  * since removed opens nothing. An issue time more than a minute in the future
- * is not a time we issued; inside that minute it is clock skew, which a
- * proposal's pause covers and an import ignores.
+ * is not a time we issued; inside that minute it is clock skew, which the
+ * pause covers: such a step is early.
  */
 export function openStep(kind: StepKind, fields: readonly string[], conn: string, mac: string, issued: number, audience: SealAudience, nowMs: number): OpenedStep {
   if (!MAC_SHAPE[kind].test(mac)) return { status: 'invalid' };
@@ -89,7 +99,7 @@ export function openStep(kind: StepKind, fields: readonly string[], conn: string
   if (issued * 1000 > nowMs + STEP_SKEW_SECONDS * 1000) return { status: 'invalid' };
   const notBefore = notBeforeOf(kind, issued);
   if (nowMs > (issued + ttlSeconds) * 1000) return { status: 'expired', notBefore };
-  if (nbfSeconds > 0 && nowMs < (issued + nbfSeconds) * 1000) return { status: 'early', notBefore };
+  if (nowMs < (issued + nbfSeconds) * 1000) return { status: 'early', notBefore };
   return { status: 'ok', notBefore };
 }
 

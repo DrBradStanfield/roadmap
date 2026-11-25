@@ -28,7 +28,7 @@ import { extractOrClassify, ExtractionStopError, isNetworkOrTimeoutError, report
 import { type McpClientLabel } from './mcp-clients.server';
 import { type AccessPayload, chargeWrites, connectionKey, importFiles, WRITE_COST } from './mcp-grants.server';
 import { audienceFor, hash } from './mcp-seal.server';
-import { openStep, signStep, UUID } from './mcp-step.server';
+import { earlyRefusal, openStep, signStep, UUID } from './mcp-step.server';
 import { recordServerEvent } from './product-events.server';
 import { machineFiles } from './rate-limiter';
 import { deadlineSignal, StorageError, type StorageAdapter, type StoredFile } from '../../packages/health-core/src/adapter';
@@ -570,11 +570,11 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
       } catch {
         return { refusal: PENDING_UNREADABLE };
       }
-      const { status } = openStep('import', fields, conn, pending.mac, pending.issued as number, audience, Date.parse(now));
-      if (status === 'expired') {
+      const opened = openStep('import', fields, conn, pending.mac, pending.issued as number, audience, Date.parse(now));
+      if (opened.status === 'expired') {
         return { refusal: `That receipt has expired: a pending import waits ${RECEIPT_LIFETIME_SECONDS / 60} minutes. Nothing was written. Extract again and show the user the fresh candidates.` };
       }
-      if (status !== 'ok') return { refusal: RECEIPT_INVALID };
+      if (opened.status !== 'ok') return { refusal: opened.status === 'early' ? earlyRefusal(opened.notBefore) : RECEIPT_INVALID };
       const payload = pending.payload as ImportPayload;
       // Ids checked before the charge: a replace list of invented ids must not spend the hour.
       const ids = new Set(payload.candidates.map((c) => c.id));

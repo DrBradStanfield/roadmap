@@ -39,7 +39,7 @@ import { type AccessPayload, allowKnowledgeCall, allowToolCall, chargeWrites, cl
 import { type McpProvider, providerAccessToken, providerLabel } from './mcp-providers.server';
 import { checkCorrection, checkProfileUpdate, MAX_CORRECTION_AGE_DAYS } from './mcp-corrections.server';
 import { audienceFor, hash, unpackSealed } from './mcp-seal.server';
-import { issueProposal, openProposal, STEP_WINDOWS, UUID } from './mcp-step.server';
+import { earlyRefusal, issueProposal, openProposal, STEP_WINDOWS, UUID } from './mcp-step.server';
 
 /** One JSON-RPC message. A lab panel of 50 rows is a few KB; this is slack. */
 const RPC_BODY_CAP = 1024 * 1024;
@@ -336,9 +336,7 @@ async function checkConfirm(token: AccessPayload, name: string, args: Record<str
   if (opened.status === 'expired') {
     return { confirmReason: 'confirm-expired', text: `That confirm receipt has expired (${ttlSeconds / 60} minutes). Nothing was written. Call ${name} again without confirm to propose afresh.` };
   }
-  if (opened.status === 'early') {
-    return { confirmReason: 'confirm-early', text: `That confirm receipt is not valid yet: it can be used from ${opened.notBefore}, after the user has answered. Do not retry before then; end your turn. Nothing was written.` };
-  }
+  if (opened.status === 'early') return { confirmReason: 'confirm-early', text: earlyRefusal(opened.notBefore) };
   // ChatGPT's safety layer judges the call, not the chat (2026-10-07), so the call carries the user's words.
   // After the window checks, so a chained call is told to wait rather than to quote; before the claim, so a
   // missing quote spends no receipt and, like every refusal here, costs nothing.
