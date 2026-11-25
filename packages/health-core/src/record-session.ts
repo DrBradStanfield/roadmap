@@ -72,8 +72,8 @@ export class RecordSession {
   private mirrorSkipped = false;
   /** Leading-edge throttle for refreshFromRemote(), in epoch millis. */
   private lastRefresh = 0;
-  /** The key the last failed save was reported under, until a save lands (once per cause: US-09 AC58). */
-  private lastReport: SaveReportKey | null = null;
+  private lastReport: SaveReportKey | null = null; // the last failed save's report key, until a save lands (US-09 AC58)
+  private saveLanded(): void { this.lastReport = null; } // both landing paths: a failure that returns reports again
   /** Device tier: the stored revision this session last took in, by a load,
    *  a re-read or its own write. Never a read it did not merge in, such as a
    *  save's verify-after-write (US-34 AC6). */
@@ -297,12 +297,12 @@ export class RecordSession {
         const merged = ROADMAP_DOC.merge(this.current, ROADMAP_DOC.migrate(body, ctx), ctx);
         this.revisionSeen = store.writeSync(ROADMAP_DOC.fileName, merged, version).version;
         this.dispatch({ type: 'synced' });
+        this.saveLanded();
         announce(this.host, this.adopt(merged));
         return;
       } catch {
-        // Another page's write in between: the async save re-reads, merges
-        // and lands it. A newer app's record, unreadable bytes or a full disk:
-        // it meets the same refusal, and reports it (US-10 AC5).
+        // Another page's write in between: the async save re-reads, merges and lands it. A newer app's
+        // record, unreadable bytes or a full disk: it meets the same refusal, and reports it (US-10 AC5).
       }
     } else if (this.host.tier === 'cloud') {
       this.mirrorNow(this.host.mirror);
@@ -442,7 +442,7 @@ export class RecordSession {
         pass = next;
       }
       announce(this.host, remoteFolded);
-      this.lastReport = null; // landed: a failure that returns is reported again
+      this.saveLanded();
       // A skipped (unreadable) mirror holds data this save did NOT include —
       // keep its marker so the next load retries it.
       if (this.host.tier === 'cloud' && !this.mirrorSkipped) this.releaseMarker(this.host.mirror);

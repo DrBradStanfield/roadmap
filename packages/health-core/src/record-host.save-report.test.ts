@@ -57,6 +57,17 @@ describe('US-09 AC58: reportSaveFailure reports under that key', () => {
     ]);
   });
 
+  const refused = (status: number) => new StorageError('refused', undefined, undefined, status, undefined, 'refused');
+  it.each([
+    { name: 'a different status (409, then 404) reports', first: 409, second: 404, repeat: false },
+    { name: 'the same status (409, then 409) is a repeat', first: 409, second: 409, repeat: true },
+    { name: 'two statuses the closed list pools (400, then 413: 4xx) are a repeat', first: 400, second: 413, repeat: true },
+  ])('cloud: same name, reason and outcome; $name', ({ first, second, repeat }) => {
+    const { h, seen } = host('cloud');
+    reportSaveFailure(h, refused(second), reportSaveFailure(h, refused(first), null, 'dropbox'), 'dropbox');
+    expect(seen.map((s) => s.repeat)).toEqual([false, repeat]);
+  });
+
   it('the device tier still tags its refusal, and repeats the same refusal', () => {
     const { h, seen } = host('device');
     const full = () => new StorageError('full', undefined, new DOMException('q', 'QuotaExceededError'), undefined, undefined, 'refused');

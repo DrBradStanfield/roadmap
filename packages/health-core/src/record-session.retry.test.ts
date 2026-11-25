@@ -266,4 +266,21 @@ describe('US-09 AC58: once per cause until a save lands', () => {
     await expect(session.flush()).rejects.toThrow();
     expect(repeats).toEqual([false, true, false]);
   });
+
+  it('device tier: fail, a hide\'s synchronous write lands, the same failure: both report', async () => {
+    const store = new DeviceStore(new MemoryCloud());
+    const repeats: boolean[] = [];
+    const session = await RecordSession.open({ ...deviceHost(store, { value: true }), report: (_e, at) => void repeats.push(at.repeat) });
+    const full = () => new StorageError('full', undefined, undefined, undefined, undefined, 'refused');
+    store.fail = full();
+    add(session, 'a');
+    await expect(session.flush()).rejects.toThrow();
+    add(session, 'b');
+    session.flushSync(); // lands through writeSync
+    expect(session.saveStatus).toBe('saved');
+    store.fail = full();
+    add(session, 'c');
+    await expect(session.flush()).rejects.toThrow();
+    expect(repeats).toEqual([false, false]);
+  });
 });

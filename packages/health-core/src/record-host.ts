@@ -5,7 +5,7 @@
  * (widget-src/src/storage/web-record-host.ts); the iPhone app will build one
  * from its container file and Dropbox or Drive. No DOM and no Node here.
  */
-import { StorageError, type ReadResult, type StorageAdapter, type WriteResult } from './adapter';
+import { httpStatusTag, StorageError, type ReadResult, type StorageAdapter, type WriteResult } from './adapter';
 import { eraseIdentityOf, eraseLater, readErase } from './erase-identity';
 import { mergeFiles } from './merge';
 import { ROADMAP_DOC } from './roadmap-doc';
@@ -64,13 +64,13 @@ export function shouldReport(previous: SaveReportKey | null, now: SaveReportKey)
  *  reconnect opens a new page); answer the key it was reported under. Only the
  *  device tier names its refusal as a tag (6M): a cloud failure's cause is the
  *  transport, which the host's report already classifies, and its key reads the
- *  typed reason and outcome. A device kind includes what the error wrapped:
+ *  typed reason and outcome and the status's closed-list tag. A device kind includes what the error wrapped:
  *  `other` pools refusals the browser did not name, and the host tells them
  *  apart by it. */
 export function reportSaveFailure(host: RecordHost, error: unknown, previous: SaveReportKey | null, grant: string): SaveReportKey {
   const tag = host.tier === 'device' ? host.failureCause(error) : undefined;
   const wrapped = error instanceof Error ? (error as { cause?: unknown }).cause : undefined;
-  const typed = error instanceof StorageError ? `${error.reason ?? ''}/${error.outcome}` : '';
+  const typed = error instanceof StorageError ? `${error.reason ?? ''}/${error.outcome}/${httpStatusTag(error)}` : '';
   const key = { cause: `${error instanceof Error ? error.name : ''}/${tag ?? typed}/${wrapped instanceof Error ? wrapped.name : ''}`, grant };
   host.report(error, { op: 'persist', cause: tag, repeat: !shouldReport(previous, key) });
   return key;

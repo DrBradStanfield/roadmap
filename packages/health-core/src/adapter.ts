@@ -128,6 +128,18 @@ export class StorageError extends Error {
   }
 }
 
+/** A failure's HTTP status as one tag from a closed list, never the body (US-09 AC6c): the
+ *  status a StorageError carries, else `none`. */
+export const HTTP_STATUS_TAGS = ['401', '403', '404', '409', '429', '4xx', '5xx', 'none'];
+export function httpStatusTag(error: unknown): string {
+  const status = error instanceof StorageError ? error.status : undefined;
+  return status === undefined ? 'none'
+    : HTTP_STATUS_TAGS.includes(String(status)) ? String(status)
+    : status >= 400 && status < 500 ? '4xx'
+    : status >= 500 && status < 600 ? '5xx'
+    : 'none';
+}
+
 /** A document write the provider refused as busy (Dropbox: another write held the folder's lock, or too many
  *  requests): a later try may land (US-14 AC5). `retryAfterMs`: the wait the provider named, 0 for none. Its
  *  outcome is the upload's by the table: a 409 refused, a 429 may have landed (no provider promise says otherwise). */
