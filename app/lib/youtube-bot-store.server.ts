@@ -61,6 +61,42 @@ export async function unclaimComment(commentId: string, claimRowId: number): Pro
   }
 }
 
+/** A follow-up's claim as the scan sees it (US-15 AC66): `running` = claimed with no decision recorded yet
+ *  (a machine may be running it now); `done` = ended without a post, its decision recorded by finishClaim;
+ *  `posted` = marked posting or posted. */
+export type FollowUpClaim = 'running' | 'done' | 'posted';
+
+/** The bot's claims on these reply ids. Throws when unreadable, so the scan skips the thread this tick. */
+export async function readFollowUpClaims(ids: string[]): Promise<Map<string, FollowUpClaim>> {
+  const out = new Map<string, FollowUpClaim>();
+  if (!supabaseAdmin || ids.length === 0) return out;
+  const { data, error } = await supabaseAdmin
+    .from('youtube_bot_log')
+    .select('youtube_comment_id, posted, classification')
+    .in('youtube_comment_id', ids);
+  if (error) throw error;
+  for (const r of data ?? []) {
+    out.set(r.youtube_comment_id, r.posted ? 'posted' : typeof r.classification === 'string' ? 'done' : 'running');
+  }
+  return out;
+}
+
+/** Records the decision on a kept claim that ended without a post, so the follow-up scan passes over it
+ *  (US-15 AC66). Only this claim's row, and only while unposted. A failed write leaves it `running`, which
+ *  holds the thread as before. */
+export async function finishClaim(commentId: string, claimRowId: number, classification: string): Promise<void> {
+  if (!supabaseAdmin) return;
+  const { error } = await supabaseAdmin
+    .from('youtube_bot_log')
+    .update({ classification })
+    .eq('id', claimRowId)
+    .eq('youtube_comment_id', commentId)
+    .eq('posted', false);
+  if (error) {
+    Sentry.captureException(error, { tags: { feature: 'youtube-bot', subsystem: 'finish-claim' }, extra: { commentId } });
+  }
+}
+
 /** The posting mark (US-27 AC5): `verified` = this machine marked the comment and may post; `lost` =
  *  another machine marked it, or its claim is gone, so the row is not ours to touch; `failed` = the mark
  *  or its read-back errored. The token is the mark's posted_at, to the microsecond; the mark, its read-back

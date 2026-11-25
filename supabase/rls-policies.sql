@@ -578,7 +578,8 @@ NOTIFY pgrst, 'reload schema';
 
 -- ===== youtube_bot_log (YouTube comment auto-poster, 2026-05-20) =====
 -- One table holds both: (a) posted replies — full audit data, kept forever;
--- (b) skipped comments — just the comment_id for dedup, deleted 8 days after the
+-- (b) skipped comments — the comment_id for dedup (a finished follow-up also
+--     its classification, US-15 AC66), deleted 8 days after the
 --     claim (app/lib/youtube-bot-store.server.ts cleanupSkippedRows, US-15 AC66).
 --
 -- Race-safe via UNIQUE on youtube_comment_id: the bot INSERTs a claim row

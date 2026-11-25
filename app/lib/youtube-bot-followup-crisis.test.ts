@@ -23,7 +23,7 @@ const viewer = (id: string, text: string, publishedAt: string): YouTubeReply =>
   ({ id, authorDisplayName: 'Viewer', authorChannelId: 'UC_viewer', text, publishedAt });
 const decide = (...after: YouTubeReply[]) => assessThreadFollowUp({
   replies: [bot, ...after], botPostedIds: new Set(['bot1']), channelId: CHANNEL,
-  originalAuthor: 'Viewer', channelHandle: '@drbradstanfield',
+  originalAuthor: 'Viewer', channelHandle: '@drbradstanfield', claims: new Map(),
 });
 
 describe('US-15 AC56: a short crisis follow-up reaches the pipeline', () => {
@@ -38,6 +38,17 @@ describe('US-15 AC56: a short crisis follow-up reaches the pipeline', () => {
     expect(d).toEqual({ candidate: expect.objectContaining({ id: 'r2' }) });
   });
 
+  it('US-15 AC66: a crisis after a reply the bot already handled is seen; one still running holds the thread', () => {
+    const replies = [bot, viewer('r1', 'thanks doc, really useful video', minutesAgo(90)), viewer('r2', 'now I have chest pain', minutesAgo(30))];
+    const at = (claims: Map<string, 'running' | 'done' | 'posted'>) => assessThreadFollowUp({
+      replies, botPostedIds: new Set(['bot1']), channelId: CHANNEL, originalAuthor: 'Viewer', channelHandle: null, claims,
+    });
+    expect(at(new Map([['r1', 'done']]))).toEqual({ candidate: expect.objectContaining({ id: 'r2' }) });
+    expect(at(new Map([['r1', 'running']]))).toEqual({ skip: 'claim-running' });
+    expect(at(new Map([['r1', 'posted']]))).toEqual({ skip: 'thread-cap' }); // its answer is not listed yet
+    expect(at(new Map([['r1', 'done'], ['r2', 'done']]))).toEqual({ skip: 'followups-handled' });
+  });
+
   it('a short follow-up that is not a crisis is skipped as too short', () => {
     expect(decide(viewer('r1', 'thanks doc', minutesAgo(60)))).toEqual({ skip: 'too-short' });
   });
@@ -46,7 +57,7 @@ describe('US-15 AC56: a short crisis follow-up reaches the pipeline', () => {
     const oldBot = { ...bot, publishedAt: minutesAgo(9 * 24 * 60) };
     const d = assessThreadFollowUp({
       replies: [oldBot, viewer('r1', 'chest pain', minutesAgo(8 * 24 * 60))], botPostedIds: new Set(['bot1']),
-      channelId: CHANNEL, originalAuthor: 'Viewer', channelHandle: null,
+      channelId: CHANNEL, originalAuthor: 'Viewer', channelHandle: null, claims: new Map(),
     });
     expect(d).toEqual({ skip: 'stale' });
   });

@@ -32,6 +32,7 @@ import {
   MAX_CHANNEL_REPLIES_PER_THREAD,
 } from './youtube-bot-config.server';
 import type { YouTubeThread, YouTubeReply } from './youtube-bot-api.server';
+import type { FollowUpClaim } from './youtube-bot-store.server';
 
 // ---------------------------------------------------------------------------
 // Filters
@@ -117,12 +118,15 @@ export function assessThreadFollowUp(p: {
   channelId: string;
   originalAuthor: string;        // display name of the thread's top-level author
   channelHandle: string | null;  // "@handle", or null when unknown
+  claims: ReadonlyMap<string, FollowUpClaim>; // the bot's claims on these replies (readFollowUpClaims)
 }): FollowUpDecision {
   const channelReplies = p.replies.filter(r => r.authorChannelId === p.channelId);
 
   if (channelReplies.some(r => !p.botPostedIds.has(r.id))) return { skip: 'brad-engaged' };
   if (channelReplies.length === 0) return { skip: 'no-bot-reply-visible' };
-  if (channelReplies.length >= MAX_CHANNEL_REPLIES_PER_THREAD) return { skip: 'thread-cap' };
+  // A follow-up the bot answered counts toward the cap even before its reply shows in the list.
+  const answered = p.replies.filter(r => p.claims.get(r.id) === 'posted').length;
+  if (Math.max(channelReplies.length, 1 + answered) >= MAX_CHANNEL_REPLIES_PER_THREAD) return { skip: 'thread-cap' };
 
   const lastBotTime = channelReplies[channelReplies.length - 1].publishedAt;
   const handle = p.channelHandle?.toLowerCase();
@@ -134,10 +138,18 @@ export function assessThreadFollowUp(p: {
   );
   if (candidates.length === 0) return { skip: 'no-addressed-followup' };
 
-  // The oldest that passes the hygiene gates, one follow-up per thread per tick. A short
-  // or stale reply is passed over, so a later crisis reply in the thread is still seen (AC56).
-  const passing = candidates.find(r => followUpHygiene(r) === null);
-  return passing ? { candidate: passing } : { skip: followUpHygiene(candidates[0])! };
+  // The oldest not yet handled that passes the hygiene gates, one follow-up per thread per tick. A short or
+  // stale reply is passed over, and so is one the bot already handled, whatever the outcome, so a later
+  // crisis reply in the thread is still seen (AC56, AC66). A claim with no decision yet holds the thread:
+  // the machine running it may be about to post there.
+  const passing = candidates.filter(r => followUpHygiene(r) === null);
+  if (passing.length === 0) return { skip: followUpHygiene(candidates[0])! };
+  for (const r of passing) {
+    const claim = p.claims.get(r.id);
+    if (claim === undefined) return { candidate: r };
+    if (claim === 'running') return { skip: 'claim-running' };
+  }
+  return { skip: 'followups-handled' };
 }
 
 /** Rebuild the thread as chat history for the main LLM: top-level comment,
