@@ -17,63 +17,62 @@ issue, and nothing private.
 
 ## Open
 
-### Words that need your yes
+### Clinical decisions
 
-- **One copy of the plan-page wording.** Issue: the iPhone's alcohol question adds a sentence the web does not, and
-  the plan page's order, colours and urgent banner are hand copies on each app. Options: one wording in the shared
-  engine, with you choosing the sentence; leave two copies. Recommendation: one wording, once you choose the
-  sentence; the display rules move only after your yes.
-- **The algorithm document's sentence about the cancer section from 86.** Issue: health_roadmap_algorithm.md says
-  that from 86 the cancer section shows only when one of its groups does. Both apps now show the section with a
-  short note when sex is missing (US-62 AC41). Options: reword that sentence to match the apps (a clinical file, so
-  your yes is needed, with the three-file check); leave it. Recommendation: reword, so the document says what the
-  apps do.
+- **A lung pack-years answer over 200.** Issue: the plan reads the pack-years answer with no upper bound, while the
+  chat's copy of the plan checks it against 0 to 200, so an answer over 200 counts in one and not the other (lead
+  H87, raised in the review of PR 1604). Options: check the range in the plan too, so an answer over 200 stops
+  counting; or lift the chat's check, so it counts in both. Either changes a clinical gate. Recommendation: none
+  yet; the lead and PR 1604 leave the choice to you.
+- **The 45 to 49 prostate card.** Issue: you kept this card ("KEEP the 45-49 card", 14 Nov) and asked to look again
+  before it is built. What to look at: its sentence, drafted in
+  [drafts/screening-words-2026-11-12.md](drafts/screening-words-2026-11-12.md) (Change 5), and when it shows: men
+  aged 45 to 49, with the card from 50 unchanged
+  ([drafts/prostate-stop-age-and-flag-line-design.md](drafts/prostate-stop-age-and-flag-line-design.md), section 10,
+  item 6). PR 1610 marks Change 5's older words as superseded in part. Options: approve the sentence as drafted;
+  edit it; drop the card. Recommendation: none until you have looked, as you asked.
 
 ### Product and code decisions
 
-- **Message packs that nothing reads.** Issue: a paid order still adds chat message credits to an account, but
-  nothing reads those credits any more. Options: remove the step and its order webhook (a deploy of the app's
-  settings); keep it. Recommendation: remove it, once you confirm no message pack is still on sale.
-- **An Apple Health lab result with a malformed date.** Issue: a result imported from Apple Health Records whose
-  drawn date cannot be read is dated by the day the report was issued instead
-  ([drafts/h35-malformed-observation-dates-design.md](drafts/h35-malformed-observation-dates-design.md)). Options:
-  (A) skip it silently: no wrong date enters the record, but the result is missing and the person is not told;
-  (B) keep today's fall-back: every result lands, some on the issue day rather than the draw day; (C) hold A until a
-  "some results could not be read" line is approved for the iPhone. Recommendation: none; the note leaves the choice
-  open, since it turns on which harm you would rather risk.
-- **Should a brand store's tool page and chat embed read the brand words?** Issue: PR 2163 gave the chat panel the
-  pop-up's words by one rule, but kept the doctor words on the tool page and the chat embed on both stores, because
-  the brand words were written for pages with no plan. Options: keep the doctor words there; write brand words that
-  fit a page with a plan. Recommendation: keep them until such words are written.
 - **A place label on the chat panel count.** Issue: `chat_panel_shown` counts the panel coming into view, with no
   word for where it was placed. Options: add a closed placement key; leave it. Recommendation: leave it until the
   count is used, since a key nobody reads is surplus.
 
 ### Waiting on your own yes
 
-- **Two contributor workflow PRs, 1805 and 1806.** 1805 rewords the review prompt that still calls its verdict
-  advisory; 1806 pins two GitHub actions by commit in the deploy and review workflows. The pinned commits match the
-  upstream tags. Workflow files merge only on your word.
-- **Prostate text, three held PRs.** PR 1610 is a draft of the exact sentences for the directions you chose on
-  13 Nov (no rectal exam; the American Cancer Society's November 2026 position on ages 45 to 49, in the words only):
-  answer (a) or (b) for each row, or edit a row. PR 1607 is a design note for a stop age of 75 and a PSA flag line of
-  3.0 under 70 and 6.5 from 70: it asks nine clinical questions and needs your words before anything is built.
-  PR 1604 builds the old-PSA-answer rules you decided on 13 Nov; it proposes six sentences for the algorithm
-  document and wrote none: each needs your yes.
-- **Per-address limits (PR 2082).** Every per-address limit builds its key one way, so devices on one IPv6 network
-  share a count, as IPv4 networks already do ([drafts/s-21-ip-key-design.md](drafts/s-21-ip-key-design.md)). The
-  review of 26 Nov asked two more questions before it merges: whether networks that share one IPv6 /64 beyond homes
-  and offices (carrier and relay egress) should share the feedback limit (3 an hour) and the new-guest-chat limit
-  (10 an hour); and it noted that the one helper's guard also covers the MCP log brake. Options: merge with the
-  limits unchanged; raise those two limits for IPv6 buckets; leave the keys as they are. Recommendation: raise the
-  two limits for IPv6 buckets before merging, so people behind one shared address are not held to one person's
-  allowance.
 - **An iPhone engine release waits at its signing step.** Today's deploy started it. It was left unsigned on purpose
   while the App Store review is open.
 
 ## Decided
 
 2026-11-26, Brad's words in quotes:
+- Per-address limits (PR 2082, open): "Recommendation: raise the two, then merge." "do it". For a key that is an
+  IPv6 /64, feedback allows 10 an hour and new guest chats 30 an hour; every other limit and every IPv4 key is
+  unchanged. The guard now requires every limiter to state its key type. For later: many phones behind one carrier
+  IPv4 address share the IPv4 numbers, as they did before.
+- Workflow PRs 1805 and 1806: merged on Brad's word ("do it"). Still on tags, for a later PR of his: the checkout and
+  setup-node uses in ci.yml, pages.yml and workflow-integrity.yml, the Pages actions, and github-script in three
+  watch workflows.
+- The algorithm document's sentence about the cancer section from 86: reworded ("do it", PR 2173, merged).
+- Brand words on a brand store's tool page and chat embed: the doctor words stay ("agreed").
+- One copy of the plan-page wording ("do your recommendations. you own the code, so own the consequences"): the
+  alcohol question's words are one shared copy (PR 2175, merged). Now said on the web: "Your answer is kept in your
+  record." (a record kept in this browser) or "Your answer is kept in your record, so your plan follows it on every
+  device." (a cloud connected), with " You can change it in About you." when the page has that row; "Tell us if
+  this has changed." for a drinker. The iPhone keeps its own copy until its next build. The plan page's order,
+  colours and urgent banner are still copied on each app: not started.
+- Message packs that nothing reads (same words): the credit step and the orders/paid webhook subscription are
+  removed (PR 2176, merged). The table and scopes stay. Three unused `MESSAGE_PACK_*_VARIANT_ID` secrets can be
+  deleted from both Fly apps by Brad.
+- An Apple Health lab result with a malformed date (same words): skip the result and tell the person, with "Some
+  results could not be read."; iPhone only; not built. It ships with the next iPhone build; until then such a
+  result is still dated by its report's issue day.
+- Prostate (same words): PR 1610 (open), the words for no rectal exam and the Society's position on 45 to 49,
+  option (a); the 45 to 49 card is a later change that waits for Brad's look. PR 1604 (open), old PSA answers by the
+  rules decided on 13 Nov, with six sentences in the algorithm document. PR 1607 (merged), the design note for the
+  stop age and the flag line, complete: routine cards to 79, everything ends at 80, the line 3.0 under 70 and 6.5
+  from 70, graded by age on the test day. PR 1601 closed as superseded. Not built yet: the stop age, the flag line,
+  the 45 to 49 card, and the blog section rewrite (kept in another repository).
 - Screen-reader names on the web upload list: option 1, on (PR 2161, US-13 AC28). "LDL Cholesterol value from
   report.pdf, 1 Nov 2026", with ", another reading" for a second reading there. Brad asked why two reports with the
   same result on the same day are both drawn: the second saves nothing ("another reading of this test is on the same
