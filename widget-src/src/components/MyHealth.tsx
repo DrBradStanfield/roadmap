@@ -9,6 +9,8 @@ import { createPortal } from 'react-dom';
 import { byNewestDocument, DOCUMENT_TYPE_LABELS } from '@roadmap/health-core/document-path';
 import { isLabArchiveDocument } from '@roadmap/health-core/document-save';
 import { TOPICS, type TopicId } from '@roadmap/health-core/plan-sections';
+import { planTopics, type PlanTopic, type TopicQuestions } from '@roadmap/health-core/plan-topics';
+import type { UsSuggestion } from '@roadmap/health-core/us-products';
 import { UPLOAD_LABS_PLACEMENTS } from '@roadmap/health-core/product-events';
 import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import type { StatTile } from '@roadmap/health-core/stat-tiles';
@@ -18,7 +20,7 @@ import type { ApiDocument, ApiLabValue } from '../lib/api-types';
 import { revealAndFocus, stickyTop } from '../lib/reveal';
 import { trackProductEvent } from '../lib/server-api';
 import { observeVisibility } from '../lib/observe-visibility';
-import { BLOOD_ROWS, MetricRows, TopicHeading, coreRow, egfrRow, isLabEgfr, labRows, nonHdlRow, pressureRow, weightRow, whtrRow, type RowContext, type RowModel, type ValueSubject } from './MyDataRows';
+import { MetricRows, TopicHeading, rowModels, type RowContext, type RowModel, type ValueSubject } from './MyDataRows';
 import { PlanCardList, PlanEmptyPreview, QuickStats, RowSuggestions } from './PlanCards';
 import type { PlanView } from './ResultsPanel';
 import { SettingsSheet } from './SettingsSheet';
@@ -108,8 +110,13 @@ export interface MyHealthProps {
   readyTitleRef?: RefObject<HTMLHeadingElement>;
 }
 
-/** A topic's parts beyond its cards: rows, what follows (its medicines), its heading's action. */
-interface TopicParts { rows?: ReactNode; after?: ReactNode; always?: boolean; sectionRef?: RefObject<HTMLElement> }
+// Where the web draws less than `planTopics` hands it, kept as today until Brad rules (US-62 AC40); true draws the rule.
+/** D3a: Cancer screening with only its note (no screening question applies, no screening card): no topic on the web today. */
+const WEB_DRAWS_NOTE_ONLY_SCREENING_TOPIC = false;
+/** D3b: the note as Cancer screening's questions where none applies; its words are the iPhone's (ios/engine/my-data-forms.ts:228), not yet the web's. */
+const WEB_DRAWS_SCREENING_NOTE = false;
+/** D9: before the form is full, every card in one list, Other, urgent first. The web shows no card until then (US-07 AC3). */
+const WEB_DRAWS_WAITING_OTHER = false;
 
 /** The phone's jump pills (US-62 AC17): ids only, their words TOPICS'. */
 const PILLS: readonly TopicId[] = ['bloodTests', 'cholesterol', 'supplements'];
@@ -136,28 +143,22 @@ export function MyHealth({ form, plan, tiles, series, egfrCurrent, storageBar, p
   const onOpen = useCallback((s: ValueSubject, from?: Element) => openRef.current(s, from), []);
 
   const { ctx, vitals, blood, labs: labValues, withoutWeight } = form.rows;
+  // What My health draws is health-core's (US-62 AC39, AC40); the web has no device health source.
+  const screeningNote = plan.forms.screenings.length === 0;
+  const layout = useMemo(() => planTopics(plan.sections, plan.forms, {
+    formFull: form.fullForm, derived: { whtr: series.whtr.length > 0, nonHdl: tiles.some(t => t.key === 'nonHdl'), egfr: tiles.some(t => t.key === 'egfr') && !!egfrCurrent },
+    weightAskedWithHeight: withoutWeight, labValues, deviceHealth: false, screeningNote,
+  }), [plan.sections, plan.forms, form.fullForm, series, tiles, egfrCurrent, withoutWeight, labValues, screeningNote]);
+  const topics = useMemo(() => (layout.kind === 'topics' ? layout.topics : []).flatMap((t): PlanTopic<UsSuggestion>[] => (t.topic !== 'screening' || !screeningNote ? [t]
+    : !WEB_DRAWS_NOTE_ONLY_SCREENING_TOPIC && t.urgent.length + t.cards.length === 0 ? [] : [WEB_DRAWS_SCREENING_NOTE ? t : { ...t, questions: null }])), [layout, screeningNote]);
   // Rows (US-62 AC21), worked out only when their data changes (one long page, 40+ labs).
-  const rows = useMemo(() => {
-    const tileOf = (key: string) => tiles.find(t => t.key === key);
-    const row = (metric: Parameters<typeof coreRow>[0]) => coreRow(metric, blood, ctx);
-    const labs = labRows(labValues);
-    const egfr = egfrRow(series.egfr, tileOf('egfr'), egfrCurrent, labs.some(r => isLabEgfr(r.subject)));
-    const creatinine = row('creatinine');
-    const total = row('total_cholesterol');
-    return {
-      weight: [whtrRow(series.whtr, tileOf('whtr')) ?? coreRow('waist', vitals, ctx),
-        !withoutWeight ? weightRow(vitals, ctx, tileOf('bmi')) : null, row('hba1c')],
-      pressure: [pressureRow(vitals, ctx), creatinine, egfr],
-      lipids: (['apob', 'ldl', 'total_cholesterol', 'hdl', 'triglycerides', 'lpa'] as const)
-        .flatMap(m => (m === 'total_cholesterol' ? [total] : m === 'hdl' ? [row('hdl'), nonHdlRow(tileOf('nonHdl'), total)] : [row(m)])),
-      // The lab's own eGFR row leaves Blood tests while the eGFR row stands for it (US-73 AC7).
-      blood: [...BLOOD_ROWS.flatMap(m => (m === 'creatinine' ? [creatinine, egfr] : [row(m)])),
-        ...(egfr ? labs.filter(r => !isLabEgfr(r.subject)) : labs)],
-    };
-  }, [tiles, blood, vitals, labValues, ctx, series, egfrCurrent, withoutWeight]);
+  const rowsOf = useMemo(() => {
+    const model = rowModels({ ctx, vitals, blood, labs: labValues, tiles, series, egfrCurrent });
+    return new Map(topics.map(t => [t.topic, t.rows.map(model)]));
+  }, [topics, ctx, vitals, blood, labValues, tiles, series, egfrCurrent]);
 
-  const placedMedicines = useMemo(() => new Map(plan.layout.medicines.map(m => [m.key, m.suggestions])), [plan.layout]);
-  const placedScreenings = useMemo(() => new Map(plan.layout.screenings.map(g => [g.group, g.suggestions])), [plan.layout]);
+  const placedMedicines = useMemo(() => new Map(topics.flatMap(t => t.medicines).map(m => [m.key, m.suggestions])), [topics]);
+  const placedScreenings = useMemo(() => new Map(topics.flatMap(t => t.screenings).map(g => [g.group, g.suggestions])), [topics]);
   const place: Placement = {
     on: (...keys) => {
       const suggestions = keys.flatMap(key => placedMedicines.get(key) ?? []);
@@ -173,22 +174,26 @@ export function MyHealth({ form, plan, tiles, series, egfrCurrent, storageBar, p
   const jump = (id: string) => revealAndFocus(document.getElementById(`mh-topic-${id}`), 'start');
   const toUrgent = () => revealAndFocus(plan.urgent && document.getElementById(plan.urgent.cardId), 'center');
 
-  // Each topic's parts; every topic in TOPICS' order is drawn by `topicSection`.
-  const parts: Partial<Record<TopicId, TopicParts>> = !form.fullForm ? {} : (() => {
-    const screening = form.screening(place);
-    const bone = form.boneDensity(place);
-    return {
-      weight: { rows: <RowsCard rows={rows.weight} onOpen={onOpen} extra={form.vitalsCue}/>, after: form.weightMedications(place) },
-      bloodPressure: { rows: <RowsCard rows={rows.pressure} onOpen={onOpen}/> },
-      cholesterol: { rows: <RowsCard rows={rows.lipids} onOpen={onOpen}/>, after: form.lipidMedications(place) },
-      screening: { rows: (screening || bone) ? <>{screening}{bone}</> : undefined },
-      bloodTests: {
-        always: true,
-        rows: (
+  const questionsOf = (q: TopicQuestions | null) => (q === 'weight-medications' ? form.weightMedications(place) : q === 'lipid-medications' ? form.lipidMedications(place)
+    : q === 'supplements' ? form.supplements() : q === 'cancer-screening' ? <>{form.screening(place)}{form.boneDensity(place)}</> : null);
+  /** A topic: its heading, its urgent cards over its rows, its rows (Cancer screening's are its questions), its other cards, then its questions. */
+  const topicSection = ({ topic: id, ...t }: PlanTopic<UsSuggestion>) => {
+    const rows = rowsOf.get(id) ?? [];
+    const questions = questionsOf(t.questions);
+    // "Upload labs" on the right of three headings (US-73 AC14, Brad's words 2026-11-23), naming its heading.
+    const placement = UPLOAD_LABS_PLACEMENTS.find(word => word === id);
+    const upload = placement && setShowUploadModal && (
+      <button type="button" className="mh-head-text-btn" onClick={() => { trackProductEvent('upload_labs_opened', { placement }); setShowUploadModal(true); }}>Upload labs</button>
+    );
+    return (
+      <section key={id} className="mh-topic" data-topic={id} aria-labelledby={`mh-topic-${id}`} ref={id === 'supplements' ? plan.supplementsRef : undefined}>
+        <TopicHeading title={t.title} icon={id} id={`mh-topic-${id}`} action={upload}/>
+        {t.urgent.length > 0 && <PlanCardList cards={t.urgent} plan={plan}/>}
+        {id === 'bloodTests' ? (
           <div className="section-card section-card--bt mh-rows-card">
             {!form.tableShown && (
               <div className="md-section">
-                <MetricRows rows={rows.blood.filter((r): r is RowModel => r !== null)} onOpen={onOpen}/>
+                <MetricRows rows={rows.filter((r): r is RowModel => r !== null)} onOpen={onOpen}/>
                 {form.bloodCue}
                 {form.addTest && <div className="mh-add-test">{form.addTest}</div>}
                 <div className="md-foot">
@@ -198,37 +203,16 @@ export function MyHealth({ form, plan, tiles, series, egfrCurrent, storageBar, p
             )}
             {form.table}
           </div>
-        ),
-      },
-      supplements: { always: true, after: form.supplements(), sectionRef: plan.supplementsRef },
-    };
-  })();
-
-  /** A topic: its heading, its urgent cards over its rows, its rows, its other cards, then what follows. Null when empty. */
-  const topicSection = (id: TopicId) => {
-    const p = parts[id] ?? {};
-    const cards = plan.topics.get(id);
-    if (!p.always && !p.rows && !p.after && !cards) return null;
-    // "Upload labs" on the right of three headings (US-73 AC14, Brad's words 2026-11-23), naming its heading.
-    const placement = UPLOAD_LABS_PLACEMENTS.find(word => word === id);
-    const upload = placement && setShowUploadModal && (
-      <button type="button" className="mh-head-text-btn" onClick={() => { trackProductEvent('upload_labs_opened', { placement }); setShowUploadModal(true); }}>Upload labs</button>
-    );
-    return (
-      <section key={id} className="mh-topic" data-topic={id} aria-labelledby={`mh-topic-${id}`} ref={p.sectionRef}>
-        <TopicHeading title={titleOf(id)} icon={id} id={`mh-topic-${id}`} action={upload}/>
-        {cards && cards.urgent.length > 0 && <PlanCardList cards={cards.urgent} plan={plan}/>}
-        {p.rows}
-        {cards && cards.others.length > 0 && <PlanCardList cards={cards.others} plan={plan}/>}
-        {cards?.ownershipLine && <p className="us-ownership no-print">{cards.ownershipLine}</p>}
-        {p.after}
+        ) : t.questions === 'cancer-screening' ? questions : rows.length > 0 && <RowsCard rows={rows} onOpen={onOpen} extra={id === 'weight' ? form.vitalsCue : undefined}/>}
+        {t.cards.length > 0 && <PlanCardList cards={t.cards} plan={plan}/>}
+        {t.ownershipLine && <p className="us-ownership no-print">{t.ownershipLine}</p>}
+        {t.questions !== 'cancer-screening' && questions}
       </section>
     );
   };
-  const shown = form.fullForm ? TOPICS.flatMap(({ topic }) => { const node = topicSection(topic); return node ? [{ id: topic, node }] : []; }) : [];
   // Scan results and letters; blood-test reports are left out, their values are the rows (US-62 AC33).
   const documents = (healthDocuments ?? []).filter(d => !isLabArchiveDocument(d));
-  const navTopics = [...shown.map(({ id }) => ({ id: id as string, title: titleOf(id), urgent: (plan.topics.get(id)?.urgent.length ?? 0) > 0 })),
+  const navTopics = [...topics.map(t => ({ id: t.topic as string, title: t.title, urgent: t.urgent.length > 0 })),
     ...(documents.length > 0 ? [{ id: 'documents', title: 'Documents', urgent: false }] : [])];
 
   const inTab = settingsHost !== undefined;
@@ -309,12 +293,13 @@ export function MyHealth({ form, plan, tiles, series, egfrCurrent, storageBar, p
                 Needs attention: {plan.urgent.title}
               </button>
             )}
-            {shown.map(({ node }) => node)}
+            {topics.map(topicSection)}
             {/* In the topics' column, so the desktop list beside it reaches it (US-62 AC33). */}
             {documents.length > 0 && <HealthRecordsSection documents={documents} onDeleted={onDocumentDeleted} />}
           </div>
         </div>
       )}
+      {layout.kind === 'waiting' && WEB_DRAWS_WAITING_OTHER && <PlanCardList cards={[...layout.urgent, ...layout.other]} plan={plan}/>}
       {!form.fullForm && documents.length > 0 && <HealthRecordsSection documents={documents} onDeleted={onDocumentDeleted} />}
       {!settingsOpen && storageCard && <div className="mh-foot-storage" hidden={!storageAtFoot}>{storageCard}</div>}
       {!form.fullForm && plan.pdf}

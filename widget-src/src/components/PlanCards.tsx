@@ -261,13 +261,16 @@ const highlightClass = (id: string, { highlighted, fadingOut }: Highlights) =>
   fadingOut.has(id) ? ' suggestion-highlight suggestion-fade-out' : highlighted.has(id) ? ' suggestion-highlight' : '';
 export const NO_HIGHLIGHTS: Set<string> = new Set();
 
+/** A card's key, its suggestions' ids (one card each): a card `planTopics` rebuilds finds its DOM id. */
+export const cardKey = (card: TopicCard) => card.suggestions.map(s => s.id).join(' ');
+
 /** One topic's cards, each with its DOM id; a grouped card as one card (US-62 AC18). */
 export function PlanCardList({ cards, plan }: { cards: ReadonlyArray<TopicCard<UsSuggestion>>; plan: PlanView }) {
   const { highlighted, fadingOut } = plan.highlights;
   return (
     <>
       {cards.map((card) => {
-        const id = plan.cardIds.get(card)!;
+        const id = plan.cardIds.get(cardKey(card))!;
         const s = card.suggestions[0];
         return (
           <div key={id} id={id} tabIndex={-1} className="mh-card">
