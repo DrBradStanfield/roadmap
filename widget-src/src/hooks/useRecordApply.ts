@@ -2,6 +2,7 @@ import { useCallback, useLayoutEffect, useRef, useState, type Dispatch, type Set
 import type { HealthInputs } from '@roadmap/health-core/types';
 import { LONGITUDINAL_FIELDS } from '@roadmap/health-core/mappings';
 import { inputRangeFault } from '@roadmap/health-core/validation';
+import { eraseLater } from '@roadmap/health-core/erase-identity';
 import { VITALS_INPUT_FIELDS } from '@roadmap/health-core/chat-edits';
 import type { LatestMeasurementsResult } from '../lib/api-types';
 import { getBackendKind, getEraseIdentity } from '../lib/roadmap-data';
@@ -186,12 +187,15 @@ export function useRecordApply(args: {
     const { later } = latest.current;
     const policy = READ_POLICY[reason];
     // The page's own save: the values, lab rows, both matrices and the chat mirror, nothing else (US-34 AC4a).
-    // Asked as each is written. Under an erase the page does not show, nothing: the erase's own signal reads it (H16).
-    // While a change is held, the mirror keeps the profile and lists the page shows (AC9, AC10).
+    // Asked as each is written. The store moved during the read, or it read an erase older than the one shown:
+    // nothing. It read a later erase than the one shown (its read failed, L1): the record read, never the earlier
+    // copy (H16). While a change is held, the mirror keeps the profile and lists on screen (AC9, AC10).
     if (policy.read === 'values') {
       const erase = getEraseIdentity(); // read with the record, in one turn
       return latest.current.reloadValues(() => {
-        if (getEraseIdentity() !== erase || erase !== latest.current.erase.getSnapshot().shown) return null;
+        const shown = latest.current.erase.getSnapshot().shown;
+        if (getEraseIdentity() !== erase) return null;
+        if (erase !== shown) return eraseLater(erase, shown) ? undefined : null;
         return relay.holding() ? { inputs: later().savedProfile(), ...latest.current.lists } : undefined;
       }).then(() => {});
     }

@@ -251,22 +251,23 @@ describe('US-34 AC4, AC4a: the re-read policy, by reason', () => {
     expect(counted()).toBe(1);
   });
 
-  it('US-34 AC10 (H16): another device erased between the save and its re-read: the read writes nothing, and the old form stays; the erase\'s own signal reads it', async () => {
+  it('US-34 AC10 (H16): a read under an earlier erase than the page shows, or one the store moved away from, writes nothing, and the form stays', async () => {
     const { fx, hook } = setup();
-    erase.now = 'erase-2'; // the store holds the other device's erase; the screen still shows erase-1
+    const at = (epoch: number) => JSON.stringify([epoch, `2026-11-0${epoch}T10:00:00.000Z`]);
+    fx.erase.getSnapshot = () => ({ shown: at(2) }) as EraseState; // the page shows a later erase than the store's read
+    erase.now = at(1);
     await act(async () => { await hook.result.current.signal('own-save'); });
     await settle();
-    // One values read, told to write nothing: no values, lab rows, matrices or chat mirror from the erased record
-    // (useRecordReads: a null copy replaces and writes nothing).
+    // One values read, told to write nothing (useRecordReads: a null copy replaces and writes nothing).
     expect(fx.reloadValues).toHaveBeenCalledTimes(1);
     const shown = fx.reloadValues.mock.calls[0][0]!;
     expect(shown()).toBeNull();
     // A read of the erase shown writes the record's (nothing held); the store moves while it is on its way: nothing.
-    erase.now = 'erase-1';
+    erase.now = at(2);
     await act(async () => { await hook.result.current.signal('own-save'); });
     const moved = fx.reloadValues.mock.calls[1][0]!;
     expect(moved()).toBeUndefined();
-    erase.now = 'erase-2';
+    erase.now = at(3);
     expect(moved()).toBeNull();
     // The form, its saved copy and the units stay the old record's, and the erase is not shown here.
     expect(fx.setInputs).not.toHaveBeenCalled();
