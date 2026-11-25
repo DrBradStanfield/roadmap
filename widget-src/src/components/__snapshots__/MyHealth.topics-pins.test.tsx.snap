@@ -4309,7 +4309,7 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
         <div class="report-actions no-print">
           <button type="button" class="action-btn" title="Save your plan as a PDF">
             "Save as PDF"
-          <span class="hr-pdf-blocked no-print" role="status">
+        <span class="hr-pdf-blocked no-print" role="status">
       <div class="mh-pills no-print">
         <button type="button" class="mh-pill">
           "Blood tests"
@@ -4799,7 +4799,7 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
         <div class="report-actions no-print">
           <button type="button" class="action-btn" title="Save your plan as a PDF">
             "Save as PDF"
-          <span class="hr-pdf-blocked no-print" role="status">
+        <span class="hr-pdf-blocked no-print" role="status">
       <div class="mh-pills no-print">
         <button type="button" class="mh-pill">
           "Blood tests"
@@ -5232,7 +5232,7 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
         <div class="report-actions no-print">
           <button type="button" class="action-btn" title="Save your plan as a PDF">
             "Save as PDF"
-          <span class="hr-pdf-blocked no-print" role="status">
+        <span class="hr-pdf-blocked no-print" role="status">
       <div class="mh-pills no-print">
         <button type="button" class="mh-pill">
           "Blood tests"
@@ -5711,7 +5711,7 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
         <div class="report-actions no-print">
           <button type="button" class="action-btn" title="Save your plan as a PDF">
             "Save as PDF"
-          <span class="hr-pdf-blocked no-print" role="status">
+        <span class="hr-pdf-blocked no-print" role="status">
       <div class="mh-pills no-print">
         <button type="button" class="mh-pill">
           "Blood tests"
@@ -6125,7 +6125,7 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
         <div class="report-actions no-print">
           <button type="button" class="action-btn" title="Save your plan as a PDF">
             "Save as PDF"
-          <span class="hr-pdf-blocked no-print" role="status">
+        <span class="hr-pdf-blocked no-print" role="status">
       <div class="mh-pills no-print">
         <button type="button" class="mh-pill">
           "Blood tests"
@@ -6564,7 +6564,7 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
         <div class="report-actions no-print">
           <button type="button" class="action-btn" title="Save your plan as a PDF">
             "Save as PDF"
-          <span class="hr-pdf-blocked no-print" role="status">
+        <span class="hr-pdf-blocked no-print" role="status">
       <div class="mh-pills no-print">
         <button type="button" class="mh-pill">
           "Blood tests"
@@ -7014,7 +7014,7 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
     <div class="report-actions no-print">
       <button type="button" class="action-btn" title="Save your plan as a PDF">
         "Save as PDF"
-      <span class="hr-pdf-blocked no-print" role="status">
+    <span class="hr-pdf-blocked no-print" role="status">
   <div class="mh-foot">
     <div class="health-disclaimer">
       <strong>
@@ -7074,7 +7074,7 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
         <div class="report-actions no-print">
           <button type="button" class="action-btn" title="Save your plan as a PDF">
             "Save as PDF"
-          <span class="hr-pdf-blocked no-print" role="status">
+        <span class="hr-pdf-blocked no-print" role="status">
       <div class="mh-pills no-print">
         <button type="button" class="mh-pill">
           "Blood tests"
@@ -7499,7 +7499,7 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
         <div class="report-actions no-print">
           <button type="button" class="action-btn" title="Save your plan as a PDF">
             "Save as PDF"
-          <span class="hr-pdf-blocked no-print" role="status">
+        <span class="hr-pdf-blocked no-print" role="status">
       <div class="mh-pills no-print">
         <button type="button" class="mh-pill">
           "Blood tests"
@@ -7965,7 +7965,7 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
         <div class="report-actions no-print">
           <button type="button" class="action-btn" title="Save your plan as a PDF">
             "Save as PDF"
-          <span class="hr-pdf-blocked no-print" role="status">
+        <span class="hr-pdf-blocked no-print" role="status">
       <div class="mh-pills no-print">
         <button type="button" class="mh-pill">
           "Blood tests"
@@ -8848,7 +8848,7 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
         <div class="report-actions no-print">
           <button type="button" class="action-btn" title="Save your plan as a PDF">
             "Save as PDF"
-          <span class="hr-pdf-blocked no-print" role="status">
+        <span class="hr-pdf-blocked no-print" role="status">
       <div class="mh-pills no-print">
         <button type="button" class="mh-pill">
           "Blood tests"
@@ -9721,7 +9721,7 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
         <div class="report-actions no-print">
           <button type="button" class="action-btn" title="Save your plan as a PDF">
             "Save as PDF"
-          <span class="hr-pdf-blocked no-print" role="status">
+        <span class="hr-pdf-blocked no-print" role="status">
       <div class="mh-pills no-print">
         <button type="button" class="mh-pill">
           "Blood tests"
@@ -10788,7 +10788,7 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
         <div class="report-actions no-print">
           <button type="button" class="action-btn" title="Save your plan as a PDF">
             "Save as PDF"
-          <span class="hr-pdf-blocked no-print" role="status">
+        <span class="hr-pdf-blocked no-print" role="status">
       <div class="mh-pills no-print">
         <button type="button" class="mh-pill">
           "Blood tests"
