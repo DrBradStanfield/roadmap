@@ -335,7 +335,7 @@ async function checkConfirm(token: AccessPayload, name: string, args: Record<str
   const opened = openProposal(confirm, subject, conn, audienceFor(token.clientId), nowMs);
   if (opened.status === 'invalid') return invalid;
   if (opened.status === 'expired') return { confirmReason: 'confirm-expired', text: `That confirm receipt has expired (${ttlSeconds / 60} minutes). Nothing was written. Call ${name} again without confirm to propose afresh.` };
-  if (opened.status === 'early') return { confirmReason: 'confirm-early', text: earlyRefusal(opened.notBefore) };
+  if (opened.status === 'early') return { confirmReason: 'confirm-early', text: earlyRefusal(opened.notBefore, nowMs) };
   // ChatGPT's safety layer judges the call, not the chat (2026-10-07), so the call carries the user's words.
   // After the window checks, so a chained call is told to wait rather than to quote; before the claim, so a
   // missing quote spends no receipt and, like every refusal here, costs nothing.

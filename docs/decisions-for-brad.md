@@ -105,10 +105,6 @@ issue, and nothing private.
   the plan page's order, colours and urgent banner are hand copies on each app. Options: one wording in the shared
   engine, chosen by you; leave two copies. Recommendation: one wording, with you choosing it; the display rules move
   only after your yes.
-- **The pause before an agent files feedback.** Issue: report_feedback, the agent tool that files feedback, makes
-  the agent wait 10 seconds before the second, confirming call. The one session last week that tried it filed nothing
-  after four tries. Options: keep the pause; say how many seconds are left; reword the line when the time runs out.
-  Recommendation: keep the pause and say the seconds left.
 - **Two server items to close.** Issue: slow lab-import warnings cannot be tied to a deploy, and a server image
   without the chat prompt file could still deploy. Both need workflow or setting changes. Options: build both; close
   both. Recommendation: close both, because the chat already refuses and alerts when the prompt is missing.
@@ -216,6 +212,11 @@ issue, and nothing private.
   while the App Store review is open.
 
 ## Decided
+
+2026-11-26, Brad's words in quotes:
+- The pause before an agent files feedback stays, and an early confirm now says the seconds left ("go with your
+  recommendations"): "That confirm receipt is not valid yet: it can be used in 7 seconds (from <time>), after the user
+  has answered. Do not retry before then; end your turn. Nothing was written." (US-36 AC14).
 
 2026-11-23, Brad's words in quotes:
 - Original files are stored in the background after Save, with no action from the person at Save and at every
