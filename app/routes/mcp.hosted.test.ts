@@ -932,7 +932,7 @@ describe('the four mandatory corrections mitigations (US-32, design §3)', () =>
       expect(confirmFrom).toBe(at(25));
       makeAdapter = () => new MemoryAdapter(cloud);
       const early = await callTool(access, 'correct_value', { ...args, confirm, approval: APPROVED }, at(15));
-      expect(early.text).toBe(`That confirm receipt is not valid yet: it can be used from ${at(25)}, after the user has answered. Do not retry before then; end your turn. Nothing was written.`);
+      expect(early.text).toBe(`That confirm receipt is not valid yet: it can be used in 10 seconds (from ${at(25)}), after the user has answered. Do not retry before then; end your turn. Nothing was written.`);
       expect((await callTool(access, 'correct_value', { ...args, confirm, approval: APPROVED }, at(25))).isError).toBe(false);
     } finally {
       vi.useRealTimers();
@@ -1667,7 +1667,7 @@ describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, A
       // Committed the moment the receipt came back: early, measured from the hand-back at 15 s.
       const early = await commit(15);
       expect(early.isError).toBe(true);
-      expect(early.text).toBe(`That confirm receipt is not valid yet: it can be used from ${at(25)}, after the user has answered. Do not retry before then; end your turn. Nothing was written.`);
+      expect(early.text).toBe(`That confirm receipt is not valid yet: it can be used in 10 seconds (from ${at(25)}), after the user has answered. Do not retry before then; end your turn. Nothing was written.`);
       expect(pendingFiles()).toHaveLength(1);
       expect((await commit(25)).isError).toBe(false);
     } finally {

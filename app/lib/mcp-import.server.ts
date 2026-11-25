@@ -574,7 +574,7 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
       }
       const opened = openStep('import', fields, conn, pending.mac, pending.issued as number, audience, Date.parse(now));
       if (opened.status === 'expired') return { refusal: `That receipt has expired: a pending import waits ${RECEIPT_LIFETIME_SECONDS / 60} minutes. Nothing was written. Extract again and show the user the fresh candidates.` };
-      if (opened.status !== 'ok') return { refusal: opened.status === 'early' ? earlyRefusal(opened.notBefore) : RECEIPT_INVALID };
+      if (opened.status !== 'ok') return { refusal: opened.status === 'early' ? earlyRefusal(opened.notBefore, Date.parse(now)) : RECEIPT_INVALID };
       const payload = pending.payload as ImportPayload;
       // Ids checked before the charge: a replace list of invented ids must not spend the hour.
       const ids = new Set(payload.candidates.map((c) => c.id));
