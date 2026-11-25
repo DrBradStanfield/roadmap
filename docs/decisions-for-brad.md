@@ -208,11 +208,11 @@ issue, and nothing private.
 
 2026-11-26, Brad's words in quotes:
 - Two chat history lines: "this" (option 1). History after a failed read says "Chat history unavailable"; a reply
-  the history file did not take says "This reply was not saved to your chat history." (web; US-15 AC75).
+  the history file did not take says "This reply was not saved to your chat history." (web; US-15 AC76).
 - A "Not saved" marker on chat replies with edits: "go with the recommendation" (option B). Only a reply that carried
   edits and landed after the person left its thread is stored marked; its reopened thread says "Not saved: you
   opened another conversation before this reply arrived." The banner's own sentence ("your record changed since you
-  asked") would be untrue here, so this one is new, under your 26 Nov approval of drafted sentences (web; US-15 AC75).
+  asked") would be untrue here, so this one is new, under your 26 Nov approval of drafted sentences (web; US-15 AC76).
 
 2026-11-23, Brad's words in quotes:
 - Original files are stored in the background after Save, with no action from the person at Save and at every

@@ -4,9 +4,9 @@ import { trackProductEvent } from '../lib/server-api';
 import { renderMarkdown } from '../lib/markdown';
 import { getAssistantName } from '../lib/assistant-config';
 
-/** By a reply the chat-history file did not take (US-15 AC75). */
+/** By a reply the chat-history file did not take (US-15 AC76). */
 export const REPLY_NOT_SAVED = 'This reply was not saved to your chat history.';
-/** By a stored reply whose edits applied nowhere: it landed after the person left its thread (US-15 AC75). */
+/** By a stored reply whose edits applied nowhere: it landed after the person left its thread (US-15 AC76). */
 export const REPLY_LEFT_NOT_SAVED = 'Not saved: you opened another conversation before this reply arrived.';
 
 /** Memoized message bubble — avoids re-parsing markdown on every render */

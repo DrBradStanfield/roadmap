@@ -159,7 +159,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
   // A throw before the request (reading the plan for context) is a failed
   // send like any other: the chat frees and the question goes back (US-15 AC17b).
   // A reply that landed after its thread was left, carrying edits, is stored marked; one the history file did not
-  // take says so by the reply, once it shows (US-15 AC75).
+  // take says so by the reply, once it shows (US-15 AC76).
   const request = async ({ turn, nonce, question, convId, history }: Extract<Effect, { type: 'request' }>) => {
     const onDelta = (delta: ChatDelta) => {
       const stream = streamRef.current;
@@ -303,7 +303,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       replying: isLocalSender(chat) || othersReplyIn(chat.shown.key),
       isLocalSender: isLocalSender(chat),
       load: chat.load.phase,
-      // History says "Chat history unavailable" after a failed list read (US-15 AC75).
+      // History says "Chat history unavailable" after a failed list read (US-15 AC76).
       list: chat.list.phase,
       // Words beside a Send this tab's own request locks (R3): one an erase emptied, or one for a chat not on screen.
       wait: chat.turn.phase === 'orphaned' ? 'orphaned' as const : chat.turn.phase !== 'idle' && chat.turn.asked.key !== chat.shown.key ? 'other-chat' as const : null,

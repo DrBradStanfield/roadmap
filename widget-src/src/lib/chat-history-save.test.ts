@@ -1,5 +1,5 @@
 /**
- * US-15 AC75: both transports hand back their reply's save to the chat-history
+ * US-15 AC76: both transports hand back their reply's save to the chat-history
  * file, and store a reply's "left" marker. 'unsaved' only where a history file
  * exists and the turn is not in it; 'skipped' with no history layer (the
  * production widget). Synthetic store and replies; no network, no provider.
@@ -49,7 +49,7 @@ afterEach(() => { vi.unstubAllGlobals(); vi.clearAllMocks(); });
 describe.each([
   ['website chat (chat-api)', sendWebsite],
   ['Pages chat (byok-chat)', sendPages],
-])('US-15 AC75: %s', (_name, send) => {
+])('US-15 AC76: %s', (_name, send) => {
   it('a saved turn answers saved', async () => {
     expect(await (await send('hello', null, null)).saved).toBe('saved');
     expect(store.recordExchange).toHaveBeenCalledOnce();

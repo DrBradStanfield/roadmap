@@ -14,7 +14,7 @@ export const MAX_CHARS = 8000;
 export const OFFLINE_ERROR = "You're offline. Check your connection and try again.";
 
 // Minimal shapes; the widget's chat-api types are wider and assign to these.
-/** `notSaved` (US-15 AC75): 'history', this reply was not saved to the chat-history file (this page only); 'left', it
+/** `notSaved` (US-15 AC76): 'history', this reply was not saved to the chat-history file (this page only); 'left', it
  *  carried edits and landed after the person left its thread, so they were applied nowhere (stored with the turn). */
 export interface Msg { id: string; role: 'user' | 'assistant'; content: string; createdAt: string; isFallback?: boolean; notSaved?: 'history' | 'left' }
 export interface Conv { id: string; title: string; updatedAt?: string; createdAt?: string }
@@ -74,7 +74,7 @@ export type ChatEvent =
   | { type: 'list-landed'; read: number; conversations: Conv[] | null }
   | { type: 'load-landed'; opening: number; id: string; turns: Msg[] | null }
   | { type: 'load-failed'; opening: number; id: string } // a read that threw, timed out, or answered with no turns (not a 404)
-  | { type: 'reply-unsaved'; id: string } // the reply's save to the chat-history file did not happen (US-15 AC75)
+  | { type: 'reply-unsaved'; id: string } // the reply's save to the chat-history file did not happen (US-15 AC76)
   | { type: 'dismiss' };
 
 export type Effect =
@@ -126,7 +126,7 @@ export function busy(s: ChatState, othersBusy: boolean): boolean {
 export const answerId = (r: SendResult, nonce: string): string => r.messageId ?? `assistant-${nonce}`;
 
 /** Turn `turn`'s reply, landing now, carries edits for a thread the person left: they apply nowhere, so the reply is
- *  stored marked (C22 option B, US-15 AC75). The rule `done` takes the left branch by, read before it runs. */
+ *  stored marked (C22 option B, US-15 AC76). The rule `done` takes the left branch by, read before it runs. */
 export function repliesLeft(s: ChatState, turn: number, r: SendResult): boolean {
   return inFlight(s.turn) && s.turn.turn === turn && s.turn.asked.key !== s.shown.key && carriesEdits(r);
 }

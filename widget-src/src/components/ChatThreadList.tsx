@@ -3,7 +3,7 @@ import type { ChatConversation } from '../lib/chat-api';
 import type { List } from '@roadmap/health-core/chat-turn';
 import { opensRow } from '../lib/opens-row';
 
-/** History after the list could not be read (US-15 AC75): said instead of the old titles. */
+/** History after the list could not be read (US-15 AC76): said instead of the old titles. */
 export const HISTORY_UNAVAILABLE = 'Chat history unavailable';
 
 interface ChatThreadListProps {

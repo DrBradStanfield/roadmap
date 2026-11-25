@@ -1,5 +1,5 @@
 /**
- * US-15 AC75: the chat's "not saved" lines, engine side. The reducer marks a
+ * US-15 AC76: the chat's "not saved" lines, engine side. The reducer marks a
  * reply on screen that the history file did not take, and tells the transport
  * when a reply with edits lands after its thread was left; the history file
  * stores that second marker on the reply, at schema version 1.
@@ -23,7 +23,7 @@ const sending = (key: Key): ChatState => ({
   turn: { phase: 'sending', turn: 1, nonce: 'n1', asked: { key, erase: 'E0' }, convId: 'A', question: q, before: [] },
 });
 
-describe('US-15 AC75: reply-unsaved', () => {
+describe('US-15 AC76: reply-unsaved', () => {
   it('marks the reply on screen as not saved to the history, and tells the other tabs', () => {
     const { state, effects } = transition(S, { type: 'reply-unsaved', id: 'r1' });
     expect(state.messages).toEqual([q, { ...ans, notSaved: 'history' }]);
@@ -40,7 +40,7 @@ describe('US-15 AC75: reply-unsaved', () => {
   });
 });
 
-describe('US-15 AC75: repliesLeft, the left branch of done read before it runs', () => {
+describe('US-15 AC76: repliesLeft, the left branch of done read before it runs', () => {
   it.each([
     ['edits, thread left', sending('thread:B'), 1, EDITS, true],
     ['refused edits, thread left', sending('thread:B'), 1, REFUSED, true],
@@ -58,7 +58,7 @@ describe('US-15 AC75: repliesLeft, the left branch of done read before it runs',
   });
 });
 
-describe('US-15 AC75: the stored marker', () => {
+describe('US-15 AC76: the stored marker', () => {
   const cloudHost = (store: MemoryAdapter) => ({
     store, deviceId: () => 'phone', clock: { now: () => Date.parse(T0) }, timers: { set: () => 0, clear: () => {} },
     remoteChanged: () => {}, failureCause: () => 'other', report: () => {}, clearOffFileData: () => {},

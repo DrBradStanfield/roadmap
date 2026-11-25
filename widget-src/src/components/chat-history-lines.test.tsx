@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * US-15 AC75: what the chat panel shows when its history file fails it.
+ * US-15 AC76: what the chat panel shows when its history file fails it.
  * - History after a failed list read says "Chat history unavailable", never the old titles or "No conversations yet".
  * - A reply the history file did not take says so by the reply.
  * - A reply with edits that landed after the person left its thread is stored marked, and its reopened thread says
@@ -56,7 +56,7 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
-describe('US-15 AC75: History after a failed list read', () => {
+describe('US-15 AC76: History after a failed list read', () => {
   it('says exactly "Chat history unavailable", not "No conversations yet"', async () => {
     vi.mocked(listConversations).mockResolvedValueOnce(null as never);
     render(<ChatEmbed isLoggedIn />);
@@ -83,7 +83,7 @@ describe('US-15 AC75: History after a failed list read', () => {
   });
 });
 
-describe('US-15 AC75: a reply the history file did not take', () => {
+describe('US-15 AC76: a reply the history file did not take', () => {
   it('shows "This reply was not saved to your chat history." by that reply only', async () => {
     render(<ChatEmbed isLoggedIn />);
     await settle();
@@ -106,7 +106,7 @@ describe('US-15 AC75: a reply the history file did not take', () => {
   });
 });
 
-describe('US-15 AC75: a reply with edits that landed after its thread was left', () => {
+describe('US-15 AC76: a reply with edits that landed after its thread was left', () => {
   async function askThenLeave() {
     vi.mocked(loadConversation).mockResolvedValue([turn('a1', 'user', 'old q'), turn('a2', 'assistant', 'old a')]);
     render(<ChatEmbed isLoggedIn />);

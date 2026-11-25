@@ -40,7 +40,7 @@ export interface ChatMessage {
   createdAt: string;
   /** Assistant turns only: the server substituted its own text (a fallback or a refusal line), never re-served. */
   isFallback?: boolean;
-  /** Assistant turns only: why the chat says by this reply that it was not saved (US-15 AC75; chat-turn.ts Msg). */
+  /** Assistant turns only: why the chat says by this reply that it was not saved (US-15 AC76; chat-turn.ts Msg). */
   notSaved?: 'history' | 'left';
 }
 
@@ -111,10 +111,10 @@ export interface ChatError {
   error: string;
 }
 
-/** A sent turn: the reply or the error, and the reply's save to the chat-history file (US-15 AC75). */
+/** A sent turn: the reply or the error, and the reply's save to the chat-history file (US-15 AC76). */
 export interface ChatSent { result: SendMessageResult | null; error: ChatError | null; saved?: Promise<ExchangeSave> }
 
-/** Asked as the reply lands, before anything else runs: 'left' when its edits apply nowhere (US-15 AC75). */
+/** Asked as the reply lands, before anything else runs: 'left' when its edits apply nowhere (US-15 AC76). */
 export type ReplyMark = (result: SendMessageResult) => 'left' | undefined;
 
 // ---------------------------------------------------------------------------

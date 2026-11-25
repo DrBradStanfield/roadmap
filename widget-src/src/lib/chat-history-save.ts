@@ -20,7 +20,7 @@ export type ExchangeSave = 'saved' | 'unsaved' | 'skipped';
  * Saves the exchange under the erase marks taken as its question was asked,
  * unless an erase began since (US-11 AC2h). A failed save is reported with
  * fixed words (US-15 AC47) and resolves 'unsaved', so the chat can say so
- * by the reply (US-15 AC75). Never rejects.
+ * by the reply (US-15 AC76). Never rejects.
  */
 export function saveExchange(opened: ReturnType<typeof askChatHistory>, asked: string, exchange: Exchange): Promise<ExchangeSave> {
   return opened

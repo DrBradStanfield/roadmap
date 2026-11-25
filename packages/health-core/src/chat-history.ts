@@ -48,7 +48,7 @@ export interface ChatFileMessage {
    *  set once at write: messages are immutable per id, so merge needs no rule. */
   isFallback?: true;
   /** Assistant turns: the reply carried edits and landed after the person left
-   *  its thread, so none applied (US-15 AC75). Set once at write, like
+   *  its thread, so none applied (US-15 AC76). Set once at write, like
    *  `isFallback`; an older client keeps it, as it keeps every turn whole. */
   notSaved?: 'left';
 }
