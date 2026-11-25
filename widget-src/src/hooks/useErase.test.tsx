@@ -29,7 +29,7 @@ import { useErase } from './useErase';
 import { ERASE_DONE, ERASE_FAILED, WRITE_REFUSED } from '../lib/erase-copy';
 import { trackProductEvent } from '../lib/server-api';
 import { Sentry } from '../lib/sentry';
-import { WritesStoppedError } from '../lib/error-diagnostics';
+import { WRITES_STOPPED_CASES } from '../testing/writes-stopped-cases';
 
 const id = (epoch: number) => JSON.stringify([epoch, `2026-11-0${epoch}T10:00:00.000Z`]);
 
@@ -321,9 +321,9 @@ describe('US-16 AC2a: this tab\'s erase', () => {
   });
 
   it.each([
-    { name: 'a log-off refusal', error: () => new WritesStoppedError(), reports: 0 },
+    ...WRITES_STOPPED_CASES,
     { name: 'any other throw', error: () => new Error('network'), reports: 1 },
-  ])('US-09 AC2c, lead A19: an erase whose write throws $name reports $reports time(s) and says the same', async ({ error, reports }) => {
+  ])('US-09 AC2c, AC59, lead A19: an erase whose write throws $name reports $reports time(s) and says the same', async ({ error, reports }) => {
     const { doors, result } = setup();
     store.next = () => Promise.reject(error());
     vi.mocked(Sentry.captureException).mockClear();

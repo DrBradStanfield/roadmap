@@ -8,7 +8,7 @@
 import type { UploadEvent } from '@roadmap/health-core/upload-flow';
 import type { ScreeningPerson } from '@roadmap/health-core/upload-screening';
 import { SAVE_FAILED, type UploadEngine, type WebSaving } from '../storage/upload-save-store';
-import { recordFailure, WritesStoppedError } from './error-diagnostics';
+import { recordFailure, writesStopped } from './error-diagnostics';
 import { saveUpload } from './roadmap-data';
 import { Sentry } from './sentry';
 import { webUploadIO } from './upload-save-io';
@@ -16,7 +16,7 @@ import type { Held } from './upload-read';
 
 /** A re-read that fails, at once or later, is only reported, as today's Save reports it: what saved stays saved. */
 const reportReread = (err: unknown) => {
-  if (!(err instanceof WritesStoppedError)) Sentry.captureException(recordFailure(err, 'Upload save failed'), { tags: { area: 'upload-save', branch: 'reread' } });
+  if (!writesStopped(err)) Sentry.captureException(recordFailure(err, 'Upload save failed'), { tags: { area: 'upload-save', branch: 'reread' } });
 };
 
 /** `engine`: the upload bundle the flow already loaded for the read. `complete`: the page's re-read (HealthTool's
@@ -27,7 +27,7 @@ export async function sharedSave(engine: UploadEngine, s: WebSaving, held: Held,
   try {
     answer = await saveUpload(engine, s, new Date().toISOString(), webUploadIO(held), person);
   } catch (err) {
-    if (!(err instanceof WritesStoppedError)) Sentry.captureException(recordFailure(err, 'Upload save failed'), { tags: { area: 'upload-save', branch: 'commit' } });
+    if (!writesStopped(err)) Sentry.captureException(recordFailure(err, 'Upload save failed'), { tags: { area: 'upload-save', branch: 'commit' } });
     return { type: 'saveFailed', run, attempt, message: SAVE_FAILED };
   }
   // A refusal says the page's own words for a failed Save: the engine's are for developers (owner ruling 5, 2026-11-22).
