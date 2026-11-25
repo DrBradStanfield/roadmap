@@ -7,10 +7,10 @@ import React, { useCallback, useState, useRef, useEffect, useMemo } from 'react'
 import type { HealthResults } from '@roadmap/health-core/types';
 import type { StatTile } from '@roadmap/health-core/stat-tiles';
 import { planSections, topicSections, type TopicId } from '@roadmap/health-core/plan-sections';
-import type { FormSection } from '@roadmap/health-core/input-form';
 // US-61 AC5: called only under SHOPIFY_SURFACE, so the Pages build drops the module.
 import { usProductSections, type UsPlanSection, type UsProduct } from '@roadmap/health-core/us-products';
 import { trackProductEvent } from '../lib/server-api';
+import type { PlanForms } from '../lib/plan-forms';
 import { SHOPIFY_SURFACE } from '../lib/build-flags';
 import { GuideLink } from './GuideLink';
 import { FeedbackForm } from './FeedbackForm';
@@ -28,7 +28,7 @@ import { useHighlights } from '../hooks/useHighlights';
 export interface PlanView {
   /** The plan's sections and the form's questions: what My health hands `planTopics` (US-62 AC40). */
   sections: UsPlanSection[];
-  forms: { medications: readonly FormSection[]; screenings: readonly FormSection[] };
+  forms: PlanForms;
   /** A valid plan is on hand. */
   planned: boolean;
   highlights: Highlights;
@@ -103,7 +103,7 @@ interface PlanViewOptions {
   /** The plan's tiles, for the PDF. */
   tiles: StatTile[];
   /** The form's questions, so a medicine or screening suggestion sits on the row that asks it. */
-  forms: { medications: readonly FormSection[]; screenings: readonly FormSection[] };
+  forms: PlanForms;
   hasUnsavedLongitudinal?: boolean;
   onSaveLongitudinal?: () => Promise<unknown>;
   showEmailCapture?: boolean;

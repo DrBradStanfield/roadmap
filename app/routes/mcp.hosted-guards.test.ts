@@ -343,7 +343,7 @@ describe('US-36 AC9 — a permanent write takes two calls, identical arguments, 
     // 2. Chained straight after: not yet, and told not to spin.
     const early = await callToolAt(access, 'correct_value', { ...FIX, confirm: receipt, approval: APPROVED }, at(2));
     expect(early.isError).toBe(true);
-    expect(early.text).toContain(`can be used from ${at(PROPOSAL_NBF_SECONDS)}`);
+    expect(early.text).toContain(`(from ${at(PROPOSAL_NBF_SECONDS)})`);
     expect(early.text).toContain('end your turn');
 
     // 3. After the pause, but with the number changed under the user's yes.
@@ -411,7 +411,7 @@ describe('US-36 AC9 — a permanent write takes two calls, identical arguments, 
     expect(notText.text).toBe(QUOTE_APPROVAL('correct_value'));
     // "Not valid yet", not "not ours": the MAC matched with these words, so they are outside the identity.
     const early = await callToolAt(access, 'correct_value', { ...FIX, confirm: receipt, approval: 'OK do it' }, at(2));
-    expect(early.text).toContain(`can be used from ${at(PROPOSAL_NBF_SECONDS)}`);
+    expect(early.text).toContain(`(from ${at(PROPOSAL_NBF_SECONDS)})`);
     expect(storedRecord().labValues).toHaveLength(1);
     // Different words again, and the same receipt writes: none of the refusals above spent it.
     const words = 'Yes, correct it zq7-approval-marker';
@@ -430,7 +430,7 @@ describe('US-36 AC9 — a permanent write takes two calls, identical arguments, 
     // The window is checked before the words: an assistant chaining the second call is sent back to the user.
     const chained = await callToolAt(access, 'correct_value', { ...FIX, confirm: receipt }, at(2));
     expect(chained.isError).toBe(true);
-    expect(chained.text).toBe(`That confirm receipt is not valid yet: it can be used from ${at(PROPOSAL_NBF_SECONDS)}, after the user has answered. Do not retry before then; end your turn. Nothing was written.`);
+    expect(chained.text).toBe(`That confirm receipt is not valid yet: it can be used in ${PROPOSAL_NBF_SECONDS - 2} seconds (from ${at(PROPOSAL_NBF_SECONDS)}), after the user has answered. Do not retry before then; end your turn. Nothing was written.`);
     expect(storedRecord().labValues).toHaveLength(1);
     const written = await callToolAt(access, 'correct_value', { ...FIX, confirm: receipt, approval: APPROVED }, at(11));
     expect(written.isError).toBe(false);
@@ -723,7 +723,7 @@ describe('US-36 AC9 (H59) — a refused confirm names its kind on the counter ro
     const confirm = (args: Record<string, unknown>, now: string) => callToolAt(access, 'correct_value', { ...FIX, confirm: receipt, ...args }, now);
 
     const early = await confirm({ approval: APPROVED }, at(2));
-    expect(early.text).toBe(`That confirm receipt is not valid yet: it can be used from ${at(PROPOSAL_NBF_SECONDS)}, after the user has answered. Do not retry before then; end your turn. Nothing was written.`);
+    expect(early.text).toBe(`That confirm receipt is not valid yet: it can be used in ${PROPOSAL_NBF_SECONDS - 2} seconds (from ${at(PROPOSAL_NBF_SECONDS)}), after the user has answered. Do not retry before then; end your turn. Nothing was written.`);
     const invalid = await confirm({ newValue: 0.8, approval: APPROVED }, at(11));
     expect(invalid.text).toBe('That confirm receipt does not match these arguments on this connection, or is not ours. Nothing was written. Call correct_value again without confirm, with exactly what the user approved, to propose afresh.');
     expect((await confirm({}, at(11))).text).toBe(QUOTE_APPROVAL('correct_value'));

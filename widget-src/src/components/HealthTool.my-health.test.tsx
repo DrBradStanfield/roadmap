@@ -164,21 +164,28 @@ describe('US-62 AC17: the sections, in the iPhone\'s order', () => {
     expect(view.container.querySelector('.health-tool-content > p')).toBeNull();
   });
 
-  it('a 25-year-old, too young for any screening, has no Cancer screening section', async () => {
+  /** Cancer screening's parts: its questions (the screening form) and its note (US-62 AC41). */
+  const screening = (view: RenderResult) => {
+    const section = view.container.querySelector('.mh-topic[data-topic="screening"]');
+    return section && { questions: section.querySelector('.screening-cascade') !== null, note: section.querySelector('.mh-screening-note')?.textContent ?? null };
+  };
+
+  // US-62 AC41 (Brad 2026-11-26): where no screening question applies, Cancer screening shows the iPhone's note, no questions.
+  it('a 25-year-old, too young for any screening, has Cancer screening with its note and no questions', async () => {
     const view = await show(() => seedGuest({ sex: 'male', heightCm: 180, birthYear: new Date().getFullYear() - 25, birthMonth: 1, unitSystem: 'si' }, [['weight', 80]], [], DAY));
     expect(topics(view).length).toBeGreaterThan(0); // the plan is drawn
-    expect(topics(view)).not.toContain('screening');
+    expect(screening(view)).toEqual({ questions: false, note: 'No screening questions apply at your age and sex yet.' });
   });
 
-  // US-07 AC1k (Brad 2026-11-12, D9): from 86 with no sex no cancer group applies, so no section; at 85 colorectal's still does.
-  // The LDL opens the whole form with no sex recorded (opensFullForm), as a returning record does.
-  it('an 86-year-old with no sex recorded has no Cancer screening section, and an 85-year-old has one', async () => {
+  // US-07 AC1k (Brad 2026-11-12, D9): from 86 with no sex no cancer group applies, so no questions; at 85 colorectal's still does.
+  // Since US-62 AC41 the section holds the note instead. The LDL opens the whole form with no sex recorded (opensFullForm), as a returning record does.
+  it('an 86-year-old with no sex recorded has the note and no screening questions, and an 85-year-old has questions', async () => {
     const at = (age: number) => show(() => seedGuest({ heightCm: 170, birthYear: new Date().getFullYear() - age, birthMonth: 1, unitSystem: 'si' }, [['weight', 70], ['ldl', 2.8]], [], DAY));
     const old = await at(86);
     expect(topics(old).length).toBeGreaterThan(0); // the plan is drawn
-    expect(topics(old)).not.toContain('screening');
+    expect(screening(old)).toEqual({ questions: false, note: 'Some screening questions depend on your sex. Add it in About you.' });
     old.unmount();
-    expect(topics(await at(85))).toContain('screening');
+    expect(screening(await at(85))).toEqual({ questions: true, note: null });
   });
 
   it('with no lipid value and nothing elevated, no cholesterol medicine questions (US-06 AC5 hidden mode)', async () => {
