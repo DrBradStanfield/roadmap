@@ -27,6 +27,7 @@ const host = (store: MemoryAdapter) => ({
 /** Erase identities as `eraseIdentityOf` writes them: [epoch, erasedAt]. */
 const FIRST = JSON.stringify([1, '2026-11-01T00:00:00.000Z']);
 const SECOND = JSON.stringify([2, '2026-11-10T00:00:00.000Z']);
+const FIRST_LATER = JSON.stringify([1, '2026-11-05T00:00:00.000Z']);
 
 const stored = async (store: MemoryAdapter): Promise<ChatHistoryFile> => (await store.read('chat-history.json')).body as ChatHistoryFile;
 const storedConv = async (store: MemoryAdapter, id: string) => (await stored(store)).conversations.find((c) => c.id === id);
@@ -80,6 +81,7 @@ describe('US-11 AC11: the merge keeps the stamp', () => {
     ['only the newer side stamped', conv('c', OLD), conv('c', NEW, { under: SECOND }), SECOND],
     ['both stamped, equal', conv('c', OLD, { under: FIRST }), conv('c', NEW, { under: FIRST }), FIRST],
     ['both stamped, different: the earlier erase', conv('c', OLD, { under: FIRST }), conv('c', NEW, { under: SECOND }), FIRST],
+    ['same epoch, different erasedAt: the earlier erasedAt', conv('c', OLD, { under: FIRST }), conv('c', NEW, { under: FIRST_LATER }), FIRST],
     ['a tombstone keeps its stamp', conv('c', OLD, { under: FIRST }), conv('c', NEW, { deleted: true, title: '' }), FIRST],
     ['an unreadable stamp is the earlier one', conv('c', OLD, { under: 'garbled' }), conv('c', NEW, { under: FIRST }), 'garbled'],
   ];
