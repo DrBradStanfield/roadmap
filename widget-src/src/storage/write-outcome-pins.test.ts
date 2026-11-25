@@ -7,7 +7,7 @@
  * outcome through public behaviour, never through hint words:
  * - landed: `mayHaveLanded` (the save state's landed mark, record-session.ts),
  * - refused: `isDefiniteRefusal` (write-refusal.ts),
- * - cause: `saveFailureCause` (save-state.ts: 'auth' stops the retry),
+ * - cause: whether a session's save failing so owes a retry (`retryDue`; 'auth' stops it),
  * - told: which `describeStorageFailure` branch answers (sync-manager.ts),
  * - erase: an erase whose cloud write fails this way, the device copy refused
  *   too, is put back or kept in memory (record-session-erase.ts).
@@ -24,12 +24,12 @@ import { RecordSession } from '@roadmap/health-core/record-session';
 import type { RecordHost } from '@roadmap/health-core/record-host';
 import { ROADMAP_DOC } from '@roadmap/health-core/roadmap-doc';
 import { createMeasurement } from '@roadmap/health-core/roadmap-file';
-import { saveFailureCause } from '@roadmap/health-core/save-state';
 import { describeStorageFailure, SyncManager } from '@roadmap/health-core/sync-manager';
 import { isDefiniteRefusal, mayHaveLanded } from '@roadmap/health-core/write-refusal';
 import { GitHubAdapter } from './github';
 import { LocalStorageAdapter } from './local-storage-adapter';
 import { WebDavAdapter } from './webdav';
+import { saveCauseOf } from '../testing/save-cause';
 
 const NOW = '2026-11-25T10:00:00.000Z';
 const ctx = { deviceId: 'phone', now: NOW };
@@ -149,7 +149,7 @@ async function outcomeOf(kind: Kind, failure: Failure): Promise<Outcome> {
   const sync = new SyncManager(adapterOf(kind), 'phone', ROADMAP_DOC, { now: () => NOW });
   const error = await sync.save(ROADMAP_DOC.migrate(JSON.parse(recordJson()), ctx)).then(() => null, (e: unknown) => e);
   expect(error).not.toBeNull();
-  const outcome = { landed: mayHaveLanded(error), refused: isDefiniteRefusal(error), cause: saveFailureCause(error), told: toldOf(error) };
+  const outcome = { landed: mayHaveLanded(error), refused: isDefiniteRefusal(error), cause: await saveCauseOf(error), told: toldOf(error) };
   vi.unstubAllGlobals();
   return { ...outcome, erase: await eraseOutcome(kind, failure) };
 }
@@ -280,7 +280,7 @@ describe('US-10 AC13: the device tier (LocalStorageAdapter) when the browser sto
     });
     const error = await sync.save(ROADMAP_DOC.migrate(JSON.parse(recordJson()), ctx)).then(() => null, (e: unknown) => e);
     localStorage.clear();
-    return { landed: mayHaveLanded(error), refused: isDefiniteRefusal(error), cause: saveFailureCause(error), told: toldOf(error) };
+    return { landed: mayHaveLanded(error), refused: isDefiniteRefusal(error), cause: await saveCauseOf(error), told: toldOf(error) };
   }
   it('the record write refused: nothing stored', async () => {
     expect(await localOutcome((key) => key === 'health_roadmap_file_v2')).toEqual({ landed: false, refused: true, cause: 'other', told: SILENT });

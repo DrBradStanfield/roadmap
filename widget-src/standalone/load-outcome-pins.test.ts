@@ -2,8 +2,8 @@
 /**
  * US-10 AC13 (root fix R6, PR 2): what the page concludes today when the
  * remembered cloud's record read fails at load (connect.ts `lostAtLoad`,
- * through `startOnBackend`), and the save state's cause for the same failure
- * (`saveFailureCause`). Pins only: no production change. Real adapters over
+ * through `startOnBackend`), and whether a session's save failing the same way
+ * owes a retry (`retryDue`: 'auth' when it does not). Pins only: no production change. Real adapters over
  * synthetic HTTP; read through public behaviour, never hint words.
  * Includes the M8 pin: a Dropbox token refresh answered 5xx is no sign-in
  * refusal, so the save cause is 'other' and the page offers a retry, not a
@@ -12,12 +12,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DriveAdapter } from '@roadmap/health-core/drive-rest';
 import { ROADMAP_FILE_NAME, type StorageAdapter } from '@roadmap/health-core/adapter';
-import { saveFailureCause } from '@roadmap/health-core/save-state';
 import { DropboxAdapter, TOKEN_KEY } from '../src/storage/dropbox';
 import { GitHubAdapter } from '../src/storage/github';
 import { WebDavAdapter } from '../src/storage/webdav';
 import { logOffId, setSignIn } from '../src/lib/storage';
 import { startOnBackend } from './connect';
+import { saveCauseOf } from '../src/testing/save-cause';
 
 vi.mock('../src/lib/sentry', () => ({ Sentry: { captureException: () => {} } }));
 
@@ -55,7 +55,7 @@ async function atLoad(provider: Provider, adapter: StorageAdapter): Promise<[str
     if (used !== adapter) return; // the on-device fallback opens
     await adapter.read(ROADMAP_FILE_NAME).catch((error: unknown) => { failure = error; throw error; });
   });
-  return [started.reconnect?.kind ?? 'none', saveFailureCause(failure)];
+  return [started.reconnect?.kind ?? 'none', await saveCauseOf(failure)];
 }
 
 beforeEach(() => {
@@ -67,7 +67,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('US-10 AC13: a record read that fails at load, per provider and shape (lostAtLoad, saveFailureCause)', () => {
+describe('US-10 AC13: a record read that fails at load, per provider and shape (lostAtLoad, retryDue)', () => {
   const rows: Array<[Provider, Failure, string, string]> = [
     ['dropbox', 401, 'signedOut', 'auth'],
     ['dropbox', 403, 'unreachable', 'other'],
