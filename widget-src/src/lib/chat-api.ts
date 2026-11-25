@@ -9,7 +9,7 @@ import { refuseUnreadableEdits, type ChatEditRefusal } from '@roadmap/health-cor
 import { PROXY_PATH, parseJsonResponse } from './server-api';
 import { chatBodyParts, chatQueryParts, fetchWithTransientRetry, getGuestSessionToken, guestThreadGone, setGuestSessionToken, threadNotFound, tokenOf } from './chat-request';
 import { askChatHistory, getChatHistory, hasChatHistoryLayer } from './chat-history-access';
-import { chatAskedUnder } from './chat-erase';
+import { chatAskedUnder, recordEraseIn } from './chat-erase';
 import { recordFailure } from './error-diagnostics';
 import { readSubscriptionCard, type SubscriptionCard } from './subscription-card';
 import type { ChatHistoryStore } from '../storage/chat-history-store';
@@ -331,6 +331,7 @@ export async function sendMessage(
       .then(({ store, askedMarks }) =>
         chatAskedUnder() !== asked ? undefined : store?.recordExchange({
           askedMarks,
+          askedUnder: recordEraseIn(asked),
           conversationId: data.conversationId,
           isNew: !conversationId,
           userText: message,
