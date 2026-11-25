@@ -115,6 +115,13 @@ export function ValuePage({ subject, history, labValues, ctx, tiles, onSave, onC
 
   // Correct on a pressure fills the Add form with its day: a pressure is one reading, corrected whole.
   const [correcting, setCorrecting] = useState<DayReading | null>(null);
+  // Once it saves, the focus goes back to that day's Correct button, kept by day across the
+  // record's new rows, or to the title if the day is gone (US-03 AC10, H302).
+  const correctButtons = useRef(new Map<string, HTMLButtonElement>());
+  const corrected = () => {
+    if (correcting) (correctButtons.current.get(correcting.day) ?? titleRef.current)?.focus();
+    setCorrecting(null);
+  };
 
   // The page leads with the latest value, the iPhone's metric page (design review 2026-11-06).
   const unitOfPoint = (id: string) => (lab?.mixedUnits ? lab.points.find(p => p.id === id)?.unit : lab?.unit);
@@ -165,7 +172,7 @@ export function ValuePage({ subject, history, labValues, ctx, tiles, onSave, onC
         ? latestLab && <AddLabTest onAdded={onLabAdded ?? (() => {})} labValues={labValues} coreValues={history} onCorrect={onCorrect}
                                    preset={{ metricName: latestLab.metricName, unit: lab!.unit }} dirtyRef={dirtyRef}/>
         : <AddValue key={correcting?.id ?? 'new'} metric={metric} history={history} unit={unit} start={correcting}
-                    onSave={onSave} say={say} onDone={() => setCorrecting(null)} dirtyRef={dirtyRef} onWeightAnswered={onWeightAnswered}/>}
+                    onSave={onSave} say={say} onDone={corrected} dirtyRef={dirtyRef} onWeightAnswered={onWeightAnswered}/>}
 
       <h4 className="md-page-subtitle">History</h4>
       {/* A reading's day is named from the text that shows it, never an attribute (US-09 AC7l). */}
@@ -173,12 +180,13 @@ export function ValuePage({ subject, history, labValues, ctx, tiles, onSave, onC
       {readings.length === 0 ? <p className="md-page-empty">No values yet.</p> : (
         <ul className="md-history">
           {readings.map((r, i) => (
-            <li key={r.id} className="md-history-row">
+            <li key={subject.kind === 'bp' ? r.day : r.id} className="md-history-row">
               <span id={`${titleId}day${i}`} className="md-history-day">{formatShortDate(r.day)}</span>
               {subject.kind === 'bp' ? (
                 <span className="md-history-bp">
                   <PressureValue reading={r} ctx={ctx}/>
                   <button type="button" className="md-history-correct" onClick={() => setCorrecting(r)}
+                          ref={el => { if (el) correctButtons.current.set(r.day, el); else correctButtons.current.delete(r.day); }}
                           aria-labelledby={`${titleId}correct ${titleId}day${i}`}>Correct</button>
                 </span>
               ) : metric ? (
