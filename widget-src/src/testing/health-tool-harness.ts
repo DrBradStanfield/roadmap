@@ -16,7 +16,7 @@ import {
   flushRoadmapStore,
   initRoadmapStore,
   saveChangedMeasurements,
-  saveMedication,
+  saveMedication, getShownErase,
 } from '../lib/roadmap-data';
 
 /**
@@ -123,9 +123,9 @@ export async function seedGuest(
   day = '2026-09-01',
 ): Promise<void> {
   await initRoadmapStore(new LocalStorageAdapter());
-  await saveChangedMeasurements(profile, {});
-  for (const [metric, value] of measurements) await addMeasurement(metric, value, day);
-  for (const [key, drug, dose] of meds) await saveMedication(key, drug, dose ?? null, dose ? 'mg' : null);
+  await saveChangedMeasurements(profile, {}, getShownErase());
+  for (const [metric, value] of measurements) await addMeasurement(metric, value, day, getShownErase());
+  for (const [key, drug, dose] of meds) await saveMedication(key, drug, dose ?? null, dose ? 'mg' : null, getShownErase());
   await flushRoadmapStore();
 }
 

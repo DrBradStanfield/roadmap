@@ -22,11 +22,11 @@ describe('RoadmapStore.bulkSaveMeasurements with correctsId (US-32)', () => {
   it('flips the occupied row to entered-in-error and appends the upload value with correctsId', async () => {
     const cloud = new MemoryCloud();
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
-    const oldId = insertedRow(store.addMeasurement('ldl', 4.5, '2024-06-01T00:00:00.000Z')).id;
+    const oldId = insertedRow(store.addMeasurement('ldl', 4.5, '2024-06-01T00:00:00.000Z', store.shownErase)).id;
 
     const result = store.bulkSaveMeasurements([
       { metricType: 'ldl', value: 3.2, recordedAt: '2024-06-01T00:00:00.000Z', source: 'lab_import', correctsId: oldId },
-    ]);
+    ], store.shownErase);
     expect(result.saved).toHaveLength(1);
     expect(result.skippedDuplicates).toBe(0);
     await store.flush();
@@ -44,22 +44,22 @@ describe('RoadmapStore.bulkSaveMeasurements with correctsId (US-32)', () => {
 
   it('without correctsId an occupied slot is still skipped (US-32)', async () => {
     const store = await RoadmapStore.create(new MemoryAdapter(new MemoryCloud()));
-    insertedRow(store.addMeasurement('ldl', 4.5, '2024-06-01T00:00:00.000Z'));
+    insertedRow(store.addMeasurement('ldl', 4.5, '2024-06-01T00:00:00.000Z', store.shownErase));
     const result = store.bulkSaveMeasurements([
       { metricType: 'ldl', value: 3.2, recordedAt: '2024-06-01T00:00:00.000Z', source: 'lab_import' },
-    ]);
+    ], store.shownErase);
     expect(result.saved).toHaveLength(0);
     expect(result.skippedDuplicates).toBe(1);
   });
 
   it('a stale correctsId (row already superseded elsewhere) is skipped, never duplicated (US-32)', async () => {
     const store = await RoadmapStore.create(new MemoryAdapter(new MemoryCloud()));
-    const oldId = insertedRow(store.addMeasurement('ldl', 4.5, '2024-06-01T00:00:00.000Z')).id;
-    store.correctValue(oldId, 4.0);
+    const oldId = insertedRow(store.addMeasurement('ldl', 4.5, '2024-06-01T00:00:00.000Z', store.shownErase)).id;
+    store.correctValue(oldId, 4.0, store.shownErase);
 
     const result = store.bulkSaveMeasurements([
       { metricType: 'ldl', value: 3.2, recordedAt: '2024-06-01T00:00:00.000Z', source: 'lab_import', correctsId: oldId },
-    ]);
+    ], store.shownErase);
     expect(result.saved).toHaveLength(0);
     expect(result.skippedDuplicates).toBe(1);
     expect(store.loadAllHistory().filter((m) => m.metricType === 'ldl' && m.status === 'active')).toHaveLength(1);
@@ -67,11 +67,11 @@ describe('RoadmapStore.bulkSaveMeasurements with correctsId (US-32)', () => {
 
   it('two batch rows naming the same correctsId leave ONE active row — the second is stale (US-32)', async () => {
     const store = await RoadmapStore.create(new MemoryAdapter(new MemoryCloud()));
-    const oldId = insertedRow(store.addMeasurement('ldl', 4.5, '2024-06-01T00:00:00.000Z')).id;
+    const oldId = insertedRow(store.addMeasurement('ldl', 4.5, '2024-06-01T00:00:00.000Z', store.shownErase)).id;
     const result = store.bulkSaveMeasurements([
       { metricType: 'ldl', value: 3.2, recordedAt: '2024-06-01T00:00:00.000Z', source: 'lab_import', correctsId: oldId },
       { metricType: 'ldl', value: 3.3, recordedAt: '2024-06-01T00:00:00.000Z', source: 'lab_import', correctsId: oldId },
-    ]);
+    ], store.shownErase);
     expect(result.saved).toHaveLength(1);
     expect(result.skippedDuplicates).toBe(1);
     expect(store.loadAllHistory().filter((m) => m.metricType === 'ldl' && m.status === 'active')).toHaveLength(1);

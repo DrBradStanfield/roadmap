@@ -63,9 +63,9 @@ afterEach(async () => {
 
 describe('US-74 waist-to-height and BMI widget', () => {
   it('AC2: prefills height, weight and waist from the record, an older day\'s with the day it comes from (review X2)', async () => {
-    await data.saveChangedMeasurements({ heightCm: 178 }, {});
-    await data.addMeasurement('weight', 82, OLD);
-    await data.addMeasurement('waist', 90);
+    await data.saveChangedMeasurements({ heightCm: 178 }, {}, data.getShownErase());
+    await data.addMeasurement('weight', 82, OLD, data.getShownErase());
+    await data.addMeasurement('waist', 90, undefined, data.getShownErase());
     render(<WaistToHeightWidget />);
     expect([box(/^Height/).value, box(/^Weight/).value, box(/^Waist/).value]).toEqual(['178', '82', '90']);
     expect(screen.getByText(`from ${formatShortDate('2026-01-10')}`)).toBeTruthy();
@@ -117,7 +117,7 @@ describe('US-74 waist-to-height and BMI widget', () => {
   });
 
   it('AC4: weight and waist save when their boxes are left, as the vitals grid commits, not while typed', async () => {
-    await data.saveChangedMeasurements({ heightCm: 178 }, {});
+    await data.saveChangedMeasurements({ heightCm: 178 }, {}, data.getShownErase());
     render(<WaistToHeightWidget />);
     type(/^Waist/, '9');
     type(/^Waist/, '90');
@@ -238,9 +238,9 @@ describe('US-74 review fixes', () => {
   const today = () => new Date().toISOString().slice(0, 10);
 
   it('A1: Enter over values only filled from the record writes nothing and dates nothing today', async () => {
-    await data.saveChangedMeasurements({ heightCm: 178 }, {});
-    await data.addMeasurement('weight', 82, OLD);
-    await data.addMeasurement('waist', 90, OLD);
+    await data.saveChangedMeasurements({ heightCm: 178 }, {}, data.getShownErase());
+    await data.addMeasurement('weight', 82, OLD, data.getShownErase());
+    await data.addMeasurement('waist', 90, OLD, data.getShownErase());
     await data.flushRoadmapStore();
     const before = persisted();
     render(<WaistToHeightWidget />);
@@ -255,7 +255,7 @@ describe('US-74 review fixes', () => {
   });
 
   it('A1: a record height of 178 cm, with a waist saved in the US view, stays exactly 178', async () => {
-    await data.saveChangedMeasurements({ heightCm: 178 }, {});
+    await data.saveChangedMeasurements({ heightCm: 178 }, {}, data.getShownErase());
     render(<WaistToHeightWidget />);
     toUS();
     type(/^Waist/, '35');
@@ -268,8 +268,8 @@ describe('US-74 review fixes', () => {
     [88.1, 'Healthy'], // 0.4949 rounds to 0.49
     [88.2, 'Elevated'], // 0.4955 rounds to 0.50: both boxes show "88"
   ])('A2: today\'s unchanged waist of %s cm at 178 cm reads %s, as the plan reads the record', async (waist, grade) => {
-    await data.saveChangedMeasurements({ heightCm: 178 }, {});
-    await data.addMeasurement('waist', waist);
+    await data.saveChangedMeasurements({ heightCm: 178 }, {}, data.getShownErase());
+    await data.addMeasurement('waist', waist, undefined, data.getShownErase());
     render(<WaistToHeightWidget />);
     expect(box(/^Waist/).value).toBe('88');
     expect(shown(grade)).toBeTruthy();
@@ -298,11 +298,11 @@ describe('US-74 review fixes', () => {
   });
 
   it('A4, A5, X1: a waist changed elsewhere is kept; the box shows it, nothing is said, and only a new value typed replaces it', async () => {
-    await data.saveChangedMeasurements({ heightCm: 178 }, {});
-    const first = await data.addMeasurement('waist', 90);
+    await data.saveChangedMeasurements({ heightCm: 178 }, {}, data.getShownErase());
+    const first = await data.addMeasurement('waist', 90, undefined, data.getShownErase());
     render(<WaistToHeightWidget />);
     if (first.status !== 'inserted') throw new Error('seed');
-    await data.correctValue(first.row.id, 92); // another tab, unseen by this page
+    await data.correctValue(first.row.id, 92, data.getShownErase()); // another tab, unseen by this page
     type(/^Height/, '175');
     type(/^Waist/, '88');
     enter();
@@ -322,9 +322,9 @@ describe('US-74 review fixes', () => {
   });
 
   it('A4: a height changed elsewhere is not overwritten; its box shows the record\'s', async () => {
-    await data.saveChangedMeasurements({ heightCm: 178 }, {});
+    await data.saveChangedMeasurements({ heightCm: 178 }, {}, data.getShownErase());
     render(<WaistToHeightWidget />);
-    await data.saveChangedMeasurements({ heightCm: 180 }, { heightCm: 178 });
+    await data.saveChangedMeasurements({ heightCm: 180 }, { heightCm: 178 }, data.getShownErase());
     type(/^Height/, '175');
     enter();
     await waitFor(() => expect(box(/^Height/).value).toBe('180'));
@@ -347,8 +347,8 @@ describe('US-74 review fixes', () => {
   });
 
   it('C4: "88.0" typed over a waist filled with 88 is no entry: no row, no saved event', async () => {
-    await data.saveChangedMeasurements({ heightCm: 178 }, {});
-    await data.addMeasurement('waist', 88, OLD);
+    await data.saveChangedMeasurements({ heightCm: 178 }, {}, data.getShownErase());
+    await data.addMeasurement('waist', 88, OLD, data.getShownErase());
     render(<WaistToHeightWidget />);
     type(/^Waist/, '88.0');
     enter();
@@ -359,8 +359,8 @@ describe('US-74 review fixes', () => {
   });
 
   it('C5: 50 in typed over today\'s 127.4 cm (shown as 50.2 in) is written, and counted', async () => {
-    await data.saveChangedMeasurements({ heightCm: 178 }, {});
-    await data.addMeasurement('waist', 127.4);
+    await data.saveChangedMeasurements({ heightCm: 178 }, {}, data.getShownErase());
+    await data.addMeasurement('waist', 127.4, undefined, data.getShownErase());
     render(<WaistToHeightWidget />);
     toUS();
     expect(box(/^Waist/).value).toBe('50.2');
@@ -372,7 +372,7 @@ describe('US-74 review fixes', () => {
   });
 
   it('C6: a box typed in while its save is on its way keeps the new text, and the next leave saves it', async () => {
-    await data.saveChangedMeasurements({ heightCm: 178 }, {});
+    await data.saveChangedMeasurements({ heightCm: 178 }, {}, data.getShownErase());
     await data.flushRoadmapStore();
     const slow = new MemoryAdapter(cloud);
     await data.initRoadmapStore(slow);
@@ -700,11 +700,11 @@ describe('US-74 third review round', () => {
   });
 
   it('R2: a save asked for before a conflict was found does not write over the row that conflict showed', async () => {
-    await data.saveChangedMeasurements({ heightCm: 178 }, {});
-    const first = await data.addMeasurement('waist', 90);
+    await data.saveChangedMeasurements({ heightCm: 178 }, {}, data.getShownErase());
+    const first = await data.addMeasurement('waist', 90, undefined, data.getShownErase());
     render(<WaistToHeightWidget />);
     if (first.status !== 'inserted') throw new Error('seed');
-    await data.correctValue(first.row.id, 92); // another tab, unseen
+    await data.correctValue(first.row.id, 92, data.getShownErase()); // another tab, unseen
     type(/^Waist/, '88');
     enter(/^Waist/); // save 1
     leaveDays(); // save 2, asked before save 1 found the conflict
@@ -718,7 +718,7 @@ describe('US-74 third review round', () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     try {
       vi.setSystemTime(new Date(2026, 10, 17, 22, 0));
-      await data.addMeasurement('weight', 80);
+      await data.addMeasurement('weight', 80, undefined, data.getShownErase());
       render(<WaistToHeightWidget />);
       vi.setSystemTime(new Date(2026, 10, 18, 7, 0));
       type(/^Height/, '178');
@@ -736,7 +736,7 @@ describe('US-74 third review round', () => {
   });
 
   it('R6: the next-step link saves a height typed a moment ago before it leaves', async () => {
-    await data.addMeasurement('waist', 90);
+    await data.addMeasurement('waist', 90, undefined, data.getShownErase());
     const navigate = vi.fn(() => { heightAtNavigate = cloud.files.has(ROADMAP_FILE_NAME) ? persisted().profile.heightCm : undefined; });
     let heightAtNavigate: number | undefined;
     render(<WaistToHeightWidget nextUrl="/pages/health-plan" nextLabel="Next" navigate={navigate} />);
@@ -757,12 +757,12 @@ describe('US-74 third review round', () => {
   });
 
   it('B2 (Brad 2026-11-18): nothing in the block talks about saving, before, during or after a save, or after a conflict', async () => {
-    await data.saveChangedMeasurements({ heightCm: 178 }, {});
-    const first = await data.addMeasurement('waist', 90);
+    await data.saveChangedMeasurements({ heightCm: 178 }, {}, data.getShownErase());
+    const first = await data.addMeasurement('waist', 90, undefined, data.getShownErase());
     const { container } = render(<WaistToHeightWidget nextUrl="/pages/health-plan" />);
     quiet(container);
     if (first.status !== 'inserted') throw new Error('seed');
-    await data.correctValue(first.row.id, 92); // another tab: this save finds a conflict
+    await data.correctValue(first.row.id, 92, data.getShownErase()); // another tab: this save finds a conflict
     type(/^Weight/, '80');
     type(/^Waist/, '88');
     leaveDays();
@@ -773,7 +773,7 @@ describe('US-74 third review round', () => {
   });
 
   it('R6: a link whose save fails does not leave, and says nothing', async () => {
-    await data.addMeasurement('waist', 90);
+    await data.addMeasurement('waist', 90, undefined, data.getShownErase());
     vi.spyOn(RoadmapStore.prototype, 'saveChangedMeasurements').mockRejectedValue(new Error('storage down'));
     const navigate = vi.fn();
     render(<WaistToHeightWidget nextUrl="/pages/health-plan" nextLabel="Next" navigate={navigate} />);

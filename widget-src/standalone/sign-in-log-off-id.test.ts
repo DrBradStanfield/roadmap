@@ -150,7 +150,7 @@ describe('US-09 AC45: the log-off id', () => {
     const { RoadmapStore } = await import('../src/storage/roadmap-store');
     const { LocalStorageAdapter } = await import('../src/storage/local-storage-adapter');
     const store = await RoadmapStore.create(new LocalStorageAdapter());
-    store.addMeasurement('weight', 80, '2026-01-01');
+    store.addMeasurement('weight', 80, '2026-01-01', store.shownErase);
     await store.flush();
     expect((await store.deleteAllData()).success).toBe(true);
     expect(localStorage.getItem('health_roadmap_local_erase_generation')).not.toBeNull(); // the erase ran its device wipe

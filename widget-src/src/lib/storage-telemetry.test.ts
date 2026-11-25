@@ -88,7 +88,7 @@ describe('cloud-storage telemetry boundary', () => {
     });
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     const store = await RoadmapStore.create(new LocalStorageAdapter());
-    store.addMeasurement('ldl', 4.5, '2024-06-01T09:00:00.000Z');
+    store.addMeasurement('ldl', 4.5, '2024-06-01T09:00:00.000Z', store.shownErase);
     await expect(store.flush()).rejects.toThrow('still on this device');
     await Sentry.flush();
     const [, items] = envelopes[0] as [unknown, Array<[unknown, { tags: Record<string, string> }]>];
@@ -104,7 +104,7 @@ describe('cloud-storage telemetry boundary', () => {
     }
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     const store = await RoadmapStore.create(new DeadCloud());
-    store.addMeasurement('ldl', 4.5, '2024-06-01T09:00:00.000Z');
+    store.addMeasurement('ldl', 4.5, '2024-06-01T09:00:00.000Z', store.shownErase);
     await expect(store.flush()).rejects.toThrow('still on this device');
     await Sentry.flush();
     const [, items] = envelopes[0] as [unknown, Array<[unknown, { tags: Record<string, string> }]>];
@@ -153,7 +153,7 @@ describe('cloud-storage telemetry boundary', () => {
     }
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     const store = await RoadmapStore.create(new RefusingCloud());
-    store.addMeasurement('ldl', 4.5, '2024-06-01T09:00:00.000Z');
+    store.addMeasurement('ldl', 4.5, '2024-06-01T09:00:00.000Z', store.shownErase);
     await expect(store.flush()).rejects.toThrow('still on this device');
     await Sentry.flush();
     const [, items] = envelopes[0] as [unknown, Array<[unknown, { tags: Record<string, string> }]>];
@@ -174,10 +174,10 @@ describe('cloud-storage telemetry boundary', () => {
       localStorage.clear();
       vi.spyOn(console, 'warn').mockImplementation(() => {});
       const store = await RoadmapStore.create(new LocalStorageAdapter());
-      store.addMeasurement('weight', 82, '2024-06-01T09:00:00.000Z');
+      store.addMeasurement('weight', 82, '2024-06-01T09:00:00.000Z', store.shownErase);
       await store.flush();
       await arrange(store);
-      store.addMeasurement('ldl', 4.5, '2024-06-02T09:00:00.000Z');
+      store.addMeasurement('ldl', 4.5, '2024-06-02T09:00:00.000Z', store.shownErase);
       await expect(store.flush()).rejects.toThrow();
       await Sentry.flush();
       expect(envelopes).toHaveLength(1);
@@ -237,11 +237,11 @@ describe('cloud-storage telemetry boundary', () => {
       localStorage.clear();
       vi.spyOn(console, 'warn').mockImplementation(() => {});
       const store = await RoadmapStore.create(new LocalStorageAdapter());
-      store.addMeasurement('weight', 82, '2024-06-01T09:00:00.000Z');
+      store.addMeasurement('weight', 82, '2024-06-01T09:00:00.000Z', store.shownErase);
       await store.flush();
       stopRoadmapLocalWrites();
       const writeSync = vi.spyOn(LocalStorageAdapter.prototype, 'writeSync');
-      store.addMeasurement('ldl', 4.5, '2024-06-02T09:00:00.000Z');
+      store.addMeasurement('ldl', 4.5, '2024-06-02T09:00:00.000Z', store.shownErase);
       await expect(store.flush()).rejects.toThrow();
       expect(writeSync).not.toHaveBeenCalled(); // the page is closed: the save stops before the write (US-09 AC2c)
       await Sentry.flush();
