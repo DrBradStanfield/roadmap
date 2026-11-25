@@ -34,7 +34,7 @@ import { driveWatchLoop } from './drive-watch';
 import { gis, gisReady, loadGis } from './drive-gis';
 export { gisReady, preloadGis } from './drive-gis';
 import { getSignIn, logOffId, setSignIn, setSignIns, safeRemoveItem, type LogOffId } from '../lib/storage';
-import { claimRedirectCancel, claimRedirectCode, deriveCodeChallenge, generateCodeVerifier, generateState, pkceEntry } from './pkce';
+import { claimRedirectCancel, claimRedirectCode, deriveCodeChallenge, generateCodeVerifier, generateState, pkceEntry, signInUnfinished } from './pkce';
 
 export interface GoogleDriveConfig {
   clientId: string;
@@ -237,7 +237,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
     }, claimed.gen);
     // Strip ?code/&state so a refresh doesn't re-trigger.
     window.history.replaceState({}, '', config.redirectUri);
-    return saved ? new GoogleDriveAdapter(config, claimed.gen) : null;
+    return saved ? new GoogleDriveAdapter(config, claimed.gen) : claimed.gen !== logOffId() ? signInUnfinished() : null; // a log-off during the exchange; else as before
   }
 
   /**
