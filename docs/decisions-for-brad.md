@@ -60,10 +60,6 @@ issue, and nothing private.
   wrong reason, and the web says nothing about the chat step. Draft lines exist for each case. Options: approve the
   drafts as one set; approve some; keep today's words. Recommendation: approve the set, because today's words can be
   wrong about what was deleted.
-- **Web sync lines.** Issue: three web cases say too little: a sign-in that did not finish opens as a guest with no
-  message; a cloud page whose sign-in ended after a log-off in another tab says only "Not synced yet." and loses edits
-  on reload; switching clouds does not say the old cloud keeps its copy, which the iPhone does say. Options: approve
-  lines for all three; for some; leave. Recommendation: the second first, since edits are lost there.
 - **A screen that still offers Delete and Log off after a crash.** Issue: when the web page crashes, or the iPhone
   app cannot start, the fallback screen hides "Delete all my data" and "Log off". A fallback with those two buttons
   needs one sentence. Options: approve a sentence and build it; leave. Recommendation: yes, because deleting your data
@@ -132,9 +128,6 @@ issue, and nothing private.
   script written inline in the deploy workflow; and the test shard split could be weighted. Workflow files are yours
   to change. Options: one PR with a shared typecheck script, the smoke check moved into tools, and the shard weights;
   leave. Recommendation: one PR, so you review one workflow change.
-- **Retire one parity test.** Issue: a test checks that the server's error-report scrubber gives the same output as
-  its hand copy. That copy is now generated from the shared source, so the test checks one thing twice. Options:
-  retire it; keep it. Recommendation: retire it.
 - **A stated age near New Year.** Issue: contributor PR 1899 makes every screening gate read age at the UTC month.
   A person who states an age (not a birth date) to the command-line plan tool or the self-hosted chat gets a January
   birth year from the local year, so in the hours between the local and the UTC New Year the screening cards read
@@ -200,6 +193,13 @@ issue, and nothing private.
 - A YouTube follow-up's classifier and router see the parent comment and the author's own earlier replies, by the
   same rule as web and Discord (H415, US-15 AC75): "the router should see the earlier comments. youtube, web, and discord should behave the same here, and so
   probably use the same code". No new words.
+- Web sync lines, all three: "use your judgement for the sentences. must be succinct, and I approve whatever sentences
+  you suggest". Now said: "Sign-in did not finish because this browser was logged off. Please try again." (a sign-in a log-off cut short);
+  "This browser was logged off in another tab. Your latest changes show here but are not saved." (a cloud page whose
+  save failed after that log-off); "Your record in <provider> stays there as it is." and, for a self-hosted record, "Your record on your own server stays there as it is." (the picker, from a cloud).
+- The server scrubber's parity test is retired ("go with your recommendations"): its output-parity comparison is
+  deleted, since the copy is generated and the test that it is up to date stays; its four shape checks (imports, the
+  export list, the request-header allow-list) move to `sentry-scrub-shape.test.ts`. No new words.
 - The web's My health and the iPhone, three differences: "go with the recommendations". Where no screening question
   applies, the web shows Cancer screening with the iPhone's note, in the iPhone's place (urgent cards above it, others
   below); before the form is complete the web still shows no card. The note's words, one shared copy: "Screening questions appear once your sex,
