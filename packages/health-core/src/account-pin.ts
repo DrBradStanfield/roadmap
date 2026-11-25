@@ -1,11 +1,9 @@
 /**
- * A cloud sign-in stays with the account this browser connected (US-09 AC55).
- * The check runs in one of two modes: 'observe' decides and counts while the
- * sign-in proceeds; 'enforce' refuses another account. The pin names the
- * owner of this device's copy of the record: the provider and an opaque account id the provider names
- * at sign-in, never an email. The host keeps it on the device only; it is
- * never logged, sent in an event or put in a URL. The iPhone keeps the same
- * rule in Swift (CloudSync.swift); this is the engine's copy.
+ * The account pin and the account check of a returning cloud sign-in (US-09
+ * AC55). The pin names the owner of this device's copy of the record: the
+ * provider and an opaque account id the provider names at sign-in, never an
+ * email. The host keeps it on the device only; it is never logged, sent in an
+ * event or put in a URL. The iPhone has its own account check in Swift.
  */
 import { rowRootIds } from './merge';
 import type { CloudCheckOutcome } from './product-events';
@@ -101,12 +99,12 @@ export function reconnectOutcome(pinned: AccountPin | null, signedIn: AccountPin
   return proofVerdict(signedIn.account, proof) === 'keep' ? 'no_pin_same_record' : 'no_pin_unproven';
 }
 
-/** 'observe': the check decides and counts, and every sign-in proceeds. 'enforce': an outcome that does not keep it refuses. */
+/** The check's mode. observe: the outcome is counted; the sign-in is not affected. */
 export type AccountCheckMode = 'observe' | 'enforce';
 
 const KEEPS: readonly CloudCheckOutcome[] = ['same_account', 'no_pin_empty_copy', 'no_pin_same_record'];
 
-/** Whether a check's outcome refuses the sign-in: only when the check enforces. */
+/** Whether a check's outcome refuses the sign-in in this mode. */
 export function checkRefuses(mode: AccountCheckMode, outcome: CloudCheckOutcome): boolean {
   return mode === 'enforce' && !KEEPS.includes(outcome);
 }

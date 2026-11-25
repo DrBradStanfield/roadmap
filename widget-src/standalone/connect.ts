@@ -64,12 +64,11 @@ function lostAtLoad(provider: CloudBackend, error?: unknown): LostSignIn {
   return { kind: 'unreachable', provider };
 }
 
-/** A Google grant refused at connect (US-09 AC15), or a sign-in that is not
- *  this browser's account (AC55), is the user's move, not a defect: counted
- *  here, once, wherever it is caught, with the provider only, and never sent to
- *  Sentry. An account the provider could not name is refused the same way but
- *  is a fault: also reported once, with the provider only. The message is what
- *  to show; null for any other error. */
+/** A Google grant refused at connect (US-09 AC15), or a sign-in the account
+ *  check did not keep (AC55), is counted here, once, wherever it is caught,
+ *  with the provider only, and not sent to Sentry; an account the provider
+ *  did not name is also reported once, with the provider only. The message is
+ *  what to show; null for any other error. */
 export function connectRefusal(error: unknown): string | null {
   const provider = error instanceof DriveGrantRefusedError ? 'google-drive' : error instanceof AccountRefusedError ? providerOf(error.provider)?.event : undefined;
   if (!provider) return null;
@@ -184,8 +183,8 @@ export function reportConnectFailure(error: unknown, backend: 'dropbox' | 'googl
  * the choice, lift on-device data up, then reload so app.tsx re-initialises
  * on the new backend. Dropbox/Google use an OAuth redirect instead (handled in
  * resolve-backend.ts on return), so they don't go through here. `gen` is the
- * log-off id the move began under; the adapter was built with it too. A
- * refused account is counted (and reported) here, once (US-09 AC55).
+ * log-off id the move began under; the adapter was built with it too. An
+ * AccountRefusedError is counted (and reported) here, once (US-09 AC55).
  */
 export async function finishFormConnect(adapter: GitHubAdapter | WebDavAdapter, backend: CloudBackend, gen: LogOffId): Promise<void> {
   const saved = await adapter.signIn().catch((error: unknown) => { connectRefusal(error); throw error; });

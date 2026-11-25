@@ -71,8 +71,8 @@ function takePkce(pkceKey: string): Pkce | null {
  * state doesn't match (stale/forged — declining to exchange IS the CSRF
  * defense; the entry is cleared so it can't go stale-positive later), or the
  * device has logged off since the sign-in began (US-09 AC45). The
- * entry is consumed either way; on success the caller exchanges the code and
- * then strips ?code/&state from the URL itself. `scope` is the space-delimited
+ * entry is consumed either way; on success the caller strips ?code/&state
+ * from the URL itself, before it exchanges the code. `scope` is the space-delimited
  * list of scopes the user actually approved, when the provider appends it
  * (Google does; Dropbox does not). `gen` is the log-off id the sign-in began
  * under, which its saves carry.

@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H425,web storage,Drive popup empty-copy check: one named state for decided-not-yet-counted,lead,not started,"Filed 2026-11-26 from the PR 2099 review: widget-src/src/storage/drive-popup-grant.ts savePopupGrant holds a local handedOn flag beside the decision, and the outcome is counted either by the kept grant's settle or in a finally. Build: one named state for a decision not yet counted. (H425)",,yes

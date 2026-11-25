@@ -1,17 +1,16 @@
 /**
- * The web's door to the account pin (US-09 AC55): a cloud sign-in stays with
- * the account this browser connected. The rule is health-core's
- * (account-pin.ts); the mode is ACCOUNT_CHECK_MODE's. This keeps the one pin in
- * localStorage as a sign-in entry (AC45), so log-off and the load sweep remove
- * it with the rest.
+ * The web's door to the account pin (US-09 AC55). The rule is health-core's
+ * (account-pin.ts); the mode is ACCOUNT_CHECK_MODE's, read only by `checkMode`.
+ * This keeps the one pin in localStorage as a sign-in entry (AC45), so log-off
+ * and the load sweep remove it with the rest.
  *
- * Set by every fresh connect that is kept, in the same write as its tokens,
- * and adopted at a good load by a browser that has none. Released by log-off,
- * by "Use this browser only" and by a switch once its copy-down succeeded.
- * Checked only when a sign-in comes back to the backend this browser still
- * remembers, each check counted once. Never logged, sent in an event or put in a URL.
+ * Set by every fresh connect that is kept, and adopted at a good load by a
+ * browser that has none. Released by log-off, by "Use this browser only" and by
+ * a switch once its copy-down succeeded. Each check of a sign-in coming back to
+ * the backend this browser remembers is counted once. Never logged, sent in an
+ * event or put in a URL.
  */
-import { checkRefuses, deviceCopyEmpty, parsePin, reconnectOutcome, recordRowIds, type AccountPin, type OwnerProof } from '@roadmap/health-core/account-pin';
+import { checkRefuses, deviceCopyEmpty, parsePin, reconnectOutcome, recordRowIds, type AccountCheckMode, type AccountPin, type OwnerProof } from '@roadmap/health-core/account-pin';
 import { ROADMAP_FILE_NAME, StorageError, type StorageAdapter } from '@roadmap/health-core/adapter';
 import type { CloudCheckOutcome } from '@roadmap/health-core/product-events';
 import { getSignIn, logOffId, safeRemoveItem, setSignIn, setSignIns, type LogOffId } from '../lib/storage';
@@ -23,12 +22,12 @@ import { LocalStorageAdapter } from './local-storage-adapter';
 
 export const ACCOUNT_PIN_KEY = 'health_roadmap_account_pin';
 
-/** The words for a connect that did not complete (US-09 AC1a): true of a refused sign-in too, as nothing was kept. */
+/** The words for a connect that did not complete (US-09 AC1a). */
 export function notConnected(label: string): string {
   return `${label} did not connect, so nothing changed. Please try again.`;
 }
 
-/** A sign-in that is not this browser's account, or whose account could not be read (`unread`: a fault to report). */
+/** A sign-in the account check did not keep (`unread`: its account was not named, a fault to report). */
 export class AccountRefusedError extends StorageError {
   constructor(readonly provider: string, label: string, readonly unread = false) {
     super(notConnected(label), undefined, undefined, undefined, undefined, 'refused');
@@ -43,39 +42,39 @@ export function releasePin(): void {
   safeRemoveItem(ACCOUNT_PIN_KEY);
 }
 
-const enforcing = (): boolean => ACCOUNT_CHECK_MODE === 'enforce';
+/** The one reader of the check's mode. observe: the outcome is counted; the sign-in is not affected. */
+const checkMode = (): AccountCheckMode => ACCOUNT_CHECK_MODE;
 
 /** A sign-in whose account the provider did not name is a fault: reported once, with the provider only. */
 export function reportUnnamed(error: AccountRefusedError): void {
   Sentry.captureException(recordFailure(error, 'Cloud connect failed'), { tags: { area: 'cloud-connect', backend: error.provider } });
 }
 
-/** Count a check's outcome, once (US-09 AC55). When the check enforces, an outcome that does not keep the
- *  sign-in throws AccountRefusedError; when it observes, nothing is refused and an unnamed account is reported here. */
+/** Count a check's outcome, once (US-09 AC55), and apply it in the check's mode. An unnamed account is reported once. */
 export function settleCheck(provider: 'google-drive' | 'dropbox', label: string, outcome: CloudCheckOutcome): void {
   trackProductEvent('cloud_connect_checked', { provider, outcome });
   const unnamed = outcome === 'account_not_named';
-  if (checkRefuses(ACCOUNT_CHECK_MODE, outcome)) throw new AccountRefusedError(provider, label, unnamed);
+  if (checkRefuses(checkMode(), outcome)) throw new AccountRefusedError(provider, label, unnamed);
   if (unnamed) reportUnnamed(new AccountRefusedError(provider, label, true));
 }
 
-/** The pin a kept sign-in writes (null: none, its account unnamed), and the pin it was decided against (absent for a fresh connect). */
+/** The pin a kept sign-in writes (null: none, its account not named), and the pin it was decided against (absent for a fresh connect). */
 export interface PinDecision {
   readonly provider: string;
   readonly pin: AccountPin | null;
   readonly label: string;
   readonly against?: AccountPin | null;
-  /** Kept with no pin only because this device's copy was empty: its lift must find it still empty. */
+  /** The outcome was `no_pin_empty_copy`: the copy is read again before the lift. */
   readonly onEmpty?: boolean;
 }
 
-/** A fresh connect: the account it signed in with. One the provider did not name is refused when the check
- *  enforces; when it observes, the connect is kept with no pin and the fault reported. */
+/** A fresh connect: the account it signed in with. One the provider did not name is reported once, and in
+ *  observe the connect is kept with no pin. */
 export async function freshDecision(provider: StorageAdapter['id'], label: string, account: () => Promise<string>): Promise<PinDecision> {
   const id = await account().catch(() => '');
   if (id) return { provider, pin: { provider, account: id }, label };
   const unnamed = new AccountRefusedError(provider, label, true);
-  if (enforcing()) throw unnamed;
+  if (checkMode() === 'enforce') throw unnamed;
   reportUnnamed(unnamed);
   return { provider, pin: null, label };
 }
@@ -93,7 +92,7 @@ export interface ReconnectCheck {
   cloudRecord(): Promise<unknown>;
   /** The working record open on this page, if any: a later save mirrors it to the device and the lift sends it, so it is judged too. */
   live?: () => unknown;
-  /** The Drive popup: an empty-copy outcome is settled by the caller, once the copy is read again before its lift. */
+  /** The Drive popup: a `no_pin_empty_copy` outcome is counted by the caller, once the copy is read again before its lift. */
   settlesEmptyLater?: boolean;
 }
 
@@ -106,9 +105,9 @@ async function proofFor(check: ReconnectCheck, copies: unknown[]): Promise<Owner
   return { sharesRow: await check.cloudRecord().then((cloud) => recordRowIds(cloud).some((id) => here.has(id)), () => false) };
 }
 
-/** A sign-in coming back to the remembered backend: kept for the pinned account, or with no pin on proof; any other
- *  outcome refuses when the check enforces (settleCheck). Without a pin, the copy is empty only when both the
- *  stored body and the page's open record are. The pin written is the account that signed in, or none when unnamed. */
+/** The check of a sign-in coming back to the remembered backend, counted by settleCheck. Without a pin, the copy is
+ *  empty only when both the stored body and the page's open record are. The pin written is the account that signed
+ *  in, or none when it is not named. */
 export async function reconnectDecision(check: ReconnectCheck): Promise<PinDecision> {
   const id = await check.account().catch(() => '');
   const pin = id ? { provider: check.provider, account: id } : null;
@@ -131,10 +130,16 @@ export async function storedCopyEmpty(): Promise<boolean> {
 
 const samePin = (a: AccountPin | null, b: AccountPin | null): boolean => a?.provider === b?.provider && a?.account === b?.account;
 
-/** Keep a sign-in's entries with its pin, in one write; with no pin, the entries and then the pin removed. A reconnect
- *  whose pin changed since it was decided (another tab) is refused when the check enforces. */
+/** Keep a sign-in's entries and its pin. observe: the entries are written alone, then the old pin is removed
+ *  and the new one written, a write whose failure is ignored. enforce: one write, and the pin read again first. */
 export function keepWithPin(entries: Record<string, object>, decision: PinDecision, gen: LogOffId): boolean {
-  if (enforcing() && decision.against !== undefined && !samePin(readPin(), decision.against)) throw new AccountRefusedError(decision.provider, decision.label);
+  if (checkMode() === 'observe') {
+    if (!setSignIns(entries, gen)) return false;
+    releasePin();
+    if (decision.pin) setSignIn(ACCOUNT_PIN_KEY, decision.pin, gen);
+    return true;
+  }
+  if (decision.against !== undefined && !samePin(readPin(), decision.against)) throw new AccountRefusedError(decision.provider, decision.label);
   if (!decision.pin) {
     const saved = setSignIns(entries, gen);
     if (saved) releasePin();

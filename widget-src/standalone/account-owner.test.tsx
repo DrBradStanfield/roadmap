@@ -532,6 +532,40 @@ describe('US-09 AC55: the Dropbox reconnect return, each outcome in each mode', 
     });
 });
 
+describe('US-09 AC55: observe mode, a pin entry the storage will not take', () => {
+  const refusePinWrites = () => {
+    const setItem = Storage.prototype.setItem;
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key: string, value: string) {
+      if (key === PIN_KEY) throw new DOMException('quota', 'QuotaExceededError');
+      setItem.call(this, key, value);
+    });
+  };
+
+  it('a Dropbox first connect keeps its tokens and lifts', async () => {
+    mode.current = 'observe';
+    refusePinWrites();
+    returnedFrom('dropbox');
+    const { resolved, refused } = await (await page()).resolve.resolveBackend();
+    expect(refused).toBeUndefined();
+    expect(resolved.backend).toBe('dropbox');
+    expect(localStorage.getItem(DROPBOX_TOKENS)).toContain('test-token-new');
+    expect(lift).toHaveBeenCalledTimes(1);
+    expect(pinned()).toBeNull();
+  });
+
+  it('a Drive popup reconnect keeps its tokens, lifts and reloads', async () => {
+    mode.current = 'observe';
+    pin('google-drive', ID.driveA);
+    refusePinWrites();
+    await popupReconnectAs(ID.driveB);
+    expect(localStorage.getItem(DRIVE_TOKENS)).toContain('test-token-popup');
+    expect(lift).toHaveBeenCalledTimes(1);
+    expect(reload).toHaveBeenCalledTimes(1);
+    expect(pinned()).toBeNull();
+    expect(checked()).toEqual([['cloud_connect_checked', { provider: 'google-drive', outcome: 'other_account' }]]);
+  });
+});
+
 describe('US-09 AC55: a fresh connect whose account the provider cannot name, in observe mode', () => {
   it('a Dropbox first connect is kept with no pin, reported once, and counts no check or refusal', async () => {
     mode.current = 'observe';

@@ -7,8 +7,7 @@
  * longer Google Drive (another tab moved it): the reconnect then reloads onto
  * that choice. Nothing is saved either once `current` says the reconnect
  * stopped during the account check. `live` hands in the record open on the
- * page, judged with the device copy before anything is kept. When the account check enforces, a
- * sign-in that is not this browser's account throws AccountRefusedError before anything is kept (US-09 AC55).
+ * page, judged with the device copy before anything is kept (US-09 AC55).
  */
 import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import { driveAccountOf, driveFileVersion, readDriveRecord } from '@roadmap/health-core/drive-rest';
@@ -18,9 +17,8 @@ import { CONFIG_KEY, TOKENS_KEY } from './drive';
 
 type Token = { accessToken: string; expiresAt: number };
 
-/** A kept grant. `onEmpty`: kept only because this device's copy was empty (US-09 AC55); its check is
- *  counted by `settle` once the copy was read again before the lift, which throws AccountRefusedError when the
- *  copy was filled meanwhile and the check enforces. `takeBack` removes it and its pin and puts back the tokens it replaced. */
+/** A kept grant. `onEmpty`: the outcome was `no_pin_empty_copy` (US-09 AC55); `settle` counts it once the
+ *  copy was read again before the lift. `takeBack` removes it and its pin and puts back the tokens it replaced. */
 export interface PopupGrant {
   readonly onEmpty: boolean;
   settle(stillEmpty: boolean): void;
