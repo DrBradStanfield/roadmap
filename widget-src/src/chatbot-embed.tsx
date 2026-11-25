@@ -12,7 +12,7 @@ import { ChatEmbed } from './components/ChatEmbed';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { computeFormStage, type FormStage } from '@roadmap/health-core/mappings';
 import { loadFromLocalStorage, loadGuestInputs, MIRROR_CHANGED_EVENT, MIRROR_KEY } from './lib/storage';
-import { resolveAssistantName, resolveChatSurface, setAssistantName, setChatSurface } from './lib/assistant-config';
+import { resolveAssistantName, setAssistantName } from './lib/assistant-config';
 import { initSentry } from './lib/sentry';
 import './styles.css';
 
@@ -53,7 +53,6 @@ function mount() {
   if (!container) return;
 
   setAssistantName(resolveAssistantName(container));
-  setChatSurface(resolveChatSurface(container)); // US-15 AC77: the store's chat words, by the site chat's rule
 
   const isLoggedIn = container.dataset.loggedIn === 'true';
 

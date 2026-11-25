@@ -30,7 +30,6 @@ function liquidValue(expr: string, s: BlockSettings): string | null {
   if (e === "'health-upload.js' | asset_url") return s.uploadUrl;
   if (e === "'health-plan-v2.js' | asset_url") return s.entry;
   if (e.startsWith('shop.metafields.health_roadmap.chat_assistant_name')) return 'Brad AI';
-  if (e.startsWith('shop.metafields.health_roadmap.chat_surface')) return 'doctor'; // US-15 AC77: the unset metafield's default
   if (e === 'block.settings.skip_email_gate') return String(s.skipEmailGate);
   if (e === 'localization.country.iso_code | escape') return s.country.replace(/[^A-Z]/g, '');
   return null;
