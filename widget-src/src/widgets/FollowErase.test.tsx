@@ -17,6 +17,12 @@ import { BloodPressureWidget } from './BloodPressure';
 import { WaistToHeightWidget } from './WaistToHeight';
 import { FollowErase } from './FollowErase';
 
+/** While `gate` is set, the widgets' wait for the store's flush is held: a save stays in flight, the next one queued. */
+const flush = vi.hoisted(() => ({ gate: null as null | Promise<void> }));
+vi.mock('../lib/roadmap-data', async (importOriginal) => {
+  const real = await importOriginal<typeof import('../lib/roadmap-data')>();
+  return { ...real, flushRoadmapStore: async () => { if (flush.gate) await flush.gate; return real.flushRoadmapStore(); } };
+});
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../lib/server-api', async (importOriginal) => ({
   ...await importOriginal<typeof import('../lib/server-api')>(),
@@ -62,6 +68,7 @@ async function anotherDeviceErases() {
 const reread = async () => { await act(async () => { await store.refreshFromRemote(); }); await pause(0); };
 
 beforeEach(async () => {
+  flush.gate = null;
   vi.spyOn(RoadmapStore.prototype, 'startLiveRefresh').mockImplementation(function (this: RoadmapStore) { store = this; return () => {}; });
   vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('no HTTP')));
   localStorage.clear();
@@ -129,5 +136,31 @@ describe('US-75 AC8: the widgets page follows a newer erase by starting over', (
     await reread();
     expect((screen.getByLabelText(/^Waist/, { selector: 'input' }) as HTMLInputElement).value).toBe('');
     expect(bpBox(1, 'top').value).toBe('');
+  });
+
+  it('a waist save asked under the old erase, still queued when the page follows a newer one, writes nothing', async () => {
+    render(<FollowErase><WaistToHeightWidget /></FollowErase>);
+    const box = (label: RegExp) => screen.getByLabelText(label, { selector: 'input' }) as HTMLInputElement;
+    const enter = () => fireEvent.keyDown(box(/^Waist/), { key: 'Enter' });
+    fireEvent.input(box(/^Height/), { target: { value: '178' } });
+    await anotherDeviceErases(); // in the cloud; this page has not heard
+    let release!: () => void;
+    flush.gate = new Promise<void>((r) => { release = r; });
+    fireEvent.input(box(/^Waist/), { target: { value: '88' } });
+    enter(); // the first save: in flight, waiting on its flush
+    await pause(20);
+    fireEvent.input(box(/^Waist/), { target: { value: '91' } });
+    enter(); // the second: asked under the old erase, queued behind the first
+    await pause(20);
+    const before = data.getEraseIdentity();
+    await pause(1500); // the store's own write of the first save merges with the cloud, bringing the erase in
+    await reread();
+    expect(data.getEraseIdentity()).not.toBe(before);
+    expect(data.getShownErase()).toBe(data.getEraseIdentity()); // the page now follows the newer erase
+    flush.gate = null;
+    release();
+    await pause(50);
+    await act(() => data.flushRoadmapStore());
+    expect(active('waist')).not.toContain(91);
   });
 });

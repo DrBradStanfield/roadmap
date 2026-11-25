@@ -8,6 +8,7 @@
 // a save resolves true only once every pending entry is kept, which the next-step link waits for.
 import { useRef, type Dispatch, type MutableRefObject, type SetStateAction } from 'react';
 import type { UnitSystem } from '@roadmap/health-core/units';
+import { getShownErase } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 import { recordDays, recordMeasured, resultsFor, saveMeasured, seenAfterFailure, seenNow, seenWith, type Seen } from './body-measures';
 import { INPUT_OF, readBoxes, settle, type Boxes, type Field } from './boxes';
@@ -46,6 +47,7 @@ export function useWidgetSave(args: {
     if (chosen.size === 0) return queue.current.then(() => unsaved.current.size === 0);
     const number = ++asked.current;
     const baseline = seen.current!;
+    const erase = getShownErase(); // as the save is asked: a queued save keeps it, however late it runs (US-75 AC8)
     const run = async (): Promise<boolean> => {
       // A field a conflict refilled after this was asked is not this save's to write.
       for (const f of [...chosen]) if ((conflictAfter.current[f] ?? 0) > number) chosen.delete(f);
@@ -54,7 +56,7 @@ export function useWidgetSave(args: {
       const own = new Set([...chosen].filter((f) => (ownAfter.current[f] ?? 0) > number));
       const base: Seen = { ...seenWith(baseline, own), pending: seen.current!.pending };
       // A save that throws ends as one the store could not keep.
-      const outcome = await saveMeasured(values, chosen, base, unit).catch(() => ({ kind: 'failed' as const, staged: { saved: [], inserted: [] } }));
+      const outcome = await saveMeasured(values, chosen, base, unit, erase).catch(() => ({ kind: 'failed' as const, staged: { saved: [], inserted: [] } }));
       if (outcome.kind === 'failed') {
         // The drafts stay for the next save; only the person's own entries count as seen (A3, A4).
         seen.current = seenAfterFailure(seen.current!, values, chosen, outcome.staged);
