@@ -28,7 +28,7 @@ import {
   type StorageBackendId,
 } from './adapter';
 import { RecordShapeError, SchemaTooNewError } from './migrate';
-import { isDefiniteRefusal, uncertainWrite } from './write-refusal';
+import { isDefiniteRefusal, mayHaveLanded, uncertainWrite } from './write-refusal';
 
 const MAX_SAVE_ATTEMPTS = 5;
 
@@ -253,10 +253,10 @@ export function describeStorageFailure(error: unknown, provider: string): Storag
   // check a folder that is fine never gets them anywhere; reconnecting does.
   if (error instanceof StorageError && (error.status === 401 || error.status === 403)) {
     // A refusal after a write went out cannot say nothing was written: say both.
-    if (error.hint?.includes('landed')) {
+    if (mayHaveLanded(error)) {
       return {
         message: `${provider} refused this connection’s access after a change was sent`,
-        hint: error.hint.startsWith(EARLIER)
+        hint: error.hint?.startsWith(EARLIER)
           ? error.hint
           : 'Reconnect the provider, which grants access again. The change may have landed: read the record again before retrying.',
       };
