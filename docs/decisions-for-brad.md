@@ -125,9 +125,6 @@ issue, and nothing private.
   script written inline in the deploy workflow; and the test shard split could be weighted. Workflow files are yours
   to change. Options: one PR with a shared typecheck script, the smoke check moved into tools, and the shard weights;
   leave. Recommendation: one PR, so you review one workflow change.
-- **Retire one parity test.** Issue: a test checks that the server's error-report scrubber gives the same output as
-  its hand copy. That copy is now generated from the shared source, so the test checks one thing twice. Options:
-  retire it; keep it. Recommendation: retire it.
 - **A stated age near New Year.** Issue: contributor PR 1899 makes every screening gate read age at the UTC month.
   A person who states an age (not a birth date) to the command-line plan tool or the self-hosted chat gets a January
   birth year from the local year, so in the hours between the local and the UTC New Year the screening cards read
@@ -196,6 +193,9 @@ issue, and nothing private.
 - A YouTube follow-up's classifier and router see the parent comment and the author's own earlier replies, by the
   same rule as web and Discord (H415, US-15 AC75): "the router should see the earlier comments. youtube, web, and discord should behave the same here, and so
   probably use the same code". No new words.
+- The server scrubber's parity test is retired ("go with your recommendations"): its output-parity comparison is
+  deleted, since the copy is generated and the test that it is up to date stays; its four shape checks (imports, the
+  export list, the request-header allow-list) move to `sentry-scrub-shape.test.ts`. No new words.
 - The web's My health and the iPhone, three differences: "go with the recommendations". Where no screening question
   applies, the web shows Cancer screening with the iPhone's note, in the iPhone's place (urgent cards above it, others
   below); before the form is complete the web still shows no card. The note's words, one shared copy: "Screening questions appear once your sex,
