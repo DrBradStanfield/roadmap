@@ -63,6 +63,9 @@ import {
   persistYouTubeTurn,
   cleanupSkippedRows,
   fetchRecentPostedThreads,
+  readFollowUpClaims,
+  finishClaim,
+  type FollowUpClaim,
 } from './youtube-bot-store.server';
 import {
   loadVideoBody,
@@ -217,12 +220,21 @@ async function processFollowUps(
       continue;
     }
 
+    let claims: Map<string, FollowUpClaim>;
+    try {
+      claims = await readFollowUpClaims(replies.filter(r => r.authorChannelId !== CHANNEL_ID).map(r => r.id));
+    } catch (err) {
+      logTickError(err);
+      continue;
+    }
+
     const decision = assessThreadFollowUp({
       replies,
       botPostedIds: recent.botPostedIds,
       channelId: CHANNEL_ID!,
       originalAuthor: meta.originalAuthor,
       channelHandle,
+      claims,
     });
     if ('skip' in decision) {
       gate(decision.skip);
@@ -243,6 +255,7 @@ async function processFollowUps(
 
     const video = loadVideoBody(meta.videoId);
     if (!video) {
+      await finishClaim(reply.id, claimRowId, 'NO_VIDEO'); // internal marker: done, so it does not hold the thread
       tally.skipped++;
       continue;
     }
@@ -275,6 +288,7 @@ async function processFollowUps(
     if (!outcome.posted) {
       await persistYouTubeTurn({ thread: pseudoThread, outcome, postedYoutubeId: null, followUpCommentId: reply.id });
       if (shouldUnclaim(outcome)) await unclaimComment(reply.id, claimRowId);
+      else await finishClaim(reply.id, claimRowId, outcome.classification ?? 'ERROR');
       tally.skipped++;
       continue;
     }
