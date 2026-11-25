@@ -14,6 +14,7 @@ import { Sentry } from '../lib/sentry';
 import { WritesStoppedError } from '../lib/error-diagnostics';
 import { StorageError } from '@roadmap/health-core/adapter';
 import { ENGINE, pickOf, stamped, uploadThrough } from '../testing/upload-save-kit';
+import { WRITES_STOPPED_CASES } from '../testing/writes-stopped-cases';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 
@@ -132,6 +133,12 @@ it('A15: a document write the device refuses after log-off is not reported', asy
   expect(saved).toHaveLength(1);
   expect(saved[0].fileRef).toBe(''); // metadata kept, file not stored
   expect(Sentry.captureException).not.toHaveBeenCalled();
+});
+
+it.each(WRITES_STOPPED_CASES)('US-09 AC59: a document write refused with $name reports $reports time(s)', async ({ error, reports }) => {
+  const page = await RoadmapStore.create(new RefusingBlobs(error()));
+  expect(await uploadThrough(page, [doc('Lipids')])).toMatchObject({ ok: true, outcome: { documents: 1, unstored: 1 } });
+  expect(Sentry.captureException).toHaveBeenCalledTimes(reports);
 });
 
 it('A15: a real document write failure (storage full) is still reported once', async () => {

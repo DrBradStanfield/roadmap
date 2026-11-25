@@ -12,7 +12,7 @@ import type { RecordSession } from '@roadmap/health-core/record-session';
 import type { UploadState } from '@roadmap/health-core/upload-flow';
 import type { SavedOutcome, UploadSaveIO } from '@roadmap/health-core/upload-save';
 import type { ScreeningPerson } from '@roadmap/health-core/upload-screening';
-import { recordFailure, WritesStoppedError } from '../lib/error-diagnostics';
+import { recordFailure, writesStopped } from '../lib/error-diagnostics';
 import { Sentry } from '../lib/sentry';
 // Type only: the engine comes from the upload bundle, so a page that never uploads never loads it.
 import type { HealthUploadAPI } from '../upload-entry';
@@ -41,7 +41,7 @@ const ERASED = { ok: false, reason: 'erased', message: SAVE_FAILED } as const;
 /** A failed original write, reported as the store reports one: tags only, never a name, a value or the bytes. A
  *  log-off refusal is not reported (US-09 AC2c). */
 function reportUnstored(error: unknown, backend: string): void {
-  if (error instanceof WritesStoppedError) return;
+  if (writesStopped(error)) return;
   console.warn('Document file not stored');
   Sentry.captureException(recordFailure(error, 'Document file not stored'), { tags: { area: 'cloud-sync', op: 'write-document', backend } });
 }
