@@ -4,9 +4,10 @@
 // every sample state x event pair.
 import { describe, expect, it } from 'vitest';
 import {
-  debounceArmed, retryOwed, saveStatus, transition, unsaved, uploadPromised, writePending,
-  type SaveBase, type SaveEffect, type SaveEvent, type SaveState,
+  debounceArmed, retryMends, retryOwed, saveFailureOf, saveStatus, transition, unsaved, uploadPromised, writePending, writtenNowhere,
+  type SaveBase, type SaveEffect, type SaveEvent, type SaveFailure, type SaveState,
 } from './save-state';
+import { LostUpdateError, StorageError, type StorageFailureReason } from './adapter';
 
 const clean = (changes: number): SaveBase => ({ mode: 'clean', changes });
 const waiting = (changes: number, saved: number): SaveBase => ({ mode: 'waiting', changes, saved });
@@ -333,26 +334,84 @@ describe('any order is safe where two events race', () => {
   });
 });
 
-// US-09 AC61 (owner ruling 2026-11-26): Settings says "It will upload automatically." only while a retry is owed
-// and the last failure was not a refusal: a full or forbidden account does not mend by retrying.
-describe('uploadPromised (US-09 AC61): a retry owed, and the last failure not a refusal', () => {
-  it.each<[string, SaveEvent, boolean, boolean]>([
-    ['no answer', { type: 'passFailed', cause: 'other' }, true, true],
-    ['may have landed', { type: 'passFailed', cause: 'other', landed: true }, true, true],
-    ['refused (a full or forbidden account)', { type: 'passFailed', cause: 'other', refused: true }, true, false],
-    ['a refused sign-in', { type: 'passFailed', cause: 'auth', refused: true }, false, false],
-  ])('%s: retry owed %s, upload promised %s', (_name, event, owed, promised) => {
+// US-09 AC61 (owner rulings 2026-11-13 and 2026-11-26): Settings says "It will upload automatically." only while
+// a retry is owed and retrying can mend the last failure, decided by its reason first.
+const F = (outcome: SaveFailure['outcome'], reason?: StorageFailureReason): SaveFailure => ({ outcome, ...(reason ? { reason } : {}) });
+
+describe('retryMends (US-09 AC61): every reason the adapters raise, and none', () => {
+  const OUTCOMES: SaveFailure['outcome'][] = ['refused', 'may-have-landed', 'no-answer', 'conflict', 'unknown'];
+  // [reason, the outcomes that mend]
+  const TABLE: Array<[StorageFailureReason | undefined, SaveFailure['outcome'][]]> = [
+    [undefined, ['may-have-landed', 'no-answer', 'conflict']],
+    ['rate-limited', OUTCOMES],
+    ['auth', ['may-have-landed']],
+    ['storage-full', []],
+    ['forbidden', []],
+    ['not-found', []],
+    ['reconnect', []],
+    ['writes-stopped', []],
+  ];
+  for (const [reason, mends] of TABLE) {
+    for (const outcome of OUTCOMES) {
+      it(`${reason ?? 'no reason'}, ${outcome}: ${mends.includes(outcome) ? 'mends' : 'does not mend'}`, () => {
+        expect(retryMends(F(outcome, reason))).toBe(mends.includes(outcome));
+      });
+    }
+  }
+  it('a reason the table does not name gives no promise', () => {
+    expect(retryMends({ outcome: 'no-answer', reason: 'later-reason' as StorageFailureReason })).toBe(false);
+  });
+});
+
+describe('saveFailureOf: the error read once, outcome and reason in one field', () => {
+  it.each<[string, unknown, SaveFailure]>([
+    ['no answer', new StorageError('x', undefined, undefined, undefined, undefined, 'no-answer'), F('no-answer')],
+    ['a full store, refused', new StorageError('x', undefined, undefined, 507, 'storage-full', 'refused'), F('refused', 'storage-full')],
+    ['a conflict given up on', new LostUpdateError('x'), F('conflict')],
+    ['an error with no outcome', new Error('x'), F('unknown')],
+    ['a thrown string', 'x', F('may-have-landed')],
+  ])('%s', (_name, error, failure) => {
+    expect(saveFailureOf(error)).toEqual(failure);
+  });
+});
+
+describe('uploadPromised and writtenNowhere read the one failure field (US-09 AC61, lead S57)', () => {
+  // [failure, retry owed, upload promised, written nowhere]: writtenNowhere answers as it did with `landed`.
+  it.each<[string, SaveEvent, boolean, boolean, boolean]>([
+    ['no failure read', { type: 'passFailed', cause: 'other' }, true, true, true],
+    ['no answer', { type: 'passFailed', cause: 'other', failure: F('no-answer') }, true, true, true],
+    ['may have landed', { type: 'passFailed', cause: 'other', failure: F('may-have-landed') }, true, true, false],
+    ['a rate limit', { type: 'passFailed', cause: 'other', failure: F('refused', 'rate-limited') }, true, true, true],
+    ['a full store', { type: 'passFailed', cause: 'other', failure: F('refused', 'storage-full') }, true, false, true],
+    ['access refused', { type: 'passFailed', cause: 'other', failure: F('refused', 'forbidden') }, true, false, true],
+    ['a refused sign-in', { type: 'passFailed', cause: 'auth', failure: F('refused', 'auth') }, false, false, true],
+  ])('%s', (_name, event, owed, promised, nowhere) => {
     const state = transition(saving(6, 4, 6), event).state;
     expect(retryOwed(state)).toBe(owed);
     expect(uploadPromised(state)).toBe(promised);
+    expect(writtenNowhere(state)).toBe(nowhere);
   });
 
-  it('a refused failure keeps its mark, and a later no-answer failure clears it', () => {
-    const refused = transition(saving(6, 4, 6), { type: 'passFailed', cause: 'other', refused: true }).state;
-    expect(refused).toEqual({ ...failed(6, 4), refused: true });
-    const again = run(refused, [EVENTS.save, EVENTS.failed]).state;
-    expect(again).toEqual(failed(6, 4));
+  it('a later failure replaces the field whole: "landed and refused" cannot be held', () => {
+    const full = transition(saving(6, 4, 6), { type: 'passFailed', cause: 'other', failure: F('refused', 'storage-full') }).state;
+    expect(full).toEqual({ ...failed(6, 4), failure: F('refused', 'storage-full') });
+    const again = run(full, [EVENTS.save, { type: 'passFailed', cause: 'other', failure: F('may-have-landed') }]).state;
+    expect(again).toEqual({ ...failed(6, 4), failure: F('may-have-landed') });
     expect(uploadPromised(again)).toBe(true);
     expect(uploadPromised(clean(5))).toBe(false);
+  });
+
+  it('the erase\'s swap keeps a failure retrying does not mend, so a refused account promises nothing; never may-have-landed', () => {
+    const full = { ...failed(6, 4), failure: F('refused', 'storage-full') } as SaveBase;
+    const swappedFull = run(full, [EVENTS.began, EVENTS.swapped, EVENTS.ended]).state;
+    expect(swappedFull).toEqual({ ...failed(7, 4), failure: F('refused', 'storage-full') });
+    expect(uploadPromised(swappedFull)).toBe(false);
+    const landed = { ...failed(6, 4), failure: F('may-have-landed') } as SaveBase;
+    const swappedLanded = run(landed, [EVENTS.began, EVENTS.swapped, EVENTS.ended]).state;
+    expect(swappedLanded).toEqual(failed(7, 4)); // as before: the swap's change was never written
+    expect(writtenNowhere(swappedLanded)).toBe(true);
+    // the erase's own write refused: under the erase, the failure lands on `under`
+    const refusedErase = run(clean(5), [EVENTS.began, EVENTS.swapped, EVENTS.save, { type: 'passFailed', cause: 'other', failure: F('refused', 'forbidden') }, EVENTS.ended]).state;
+    expect(uploadPromised(refusedErase)).toBe(false);
   });
 });

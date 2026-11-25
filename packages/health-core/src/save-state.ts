@@ -27,11 +27,11 @@
  *   this says the device holds them. False until the write lands. `cause`:
  *   'auth' when the provider refused the sign-in (`saveFailureCause`), which
  *   only a new sign-in mends, so no retry is owed; 'other' for the rest, an
- *   erase's failed write included. `landed`: the pass may have written before
- *   it failed (write-refusal.ts `mayHaveLanded`: the failure's outcome says
- *   so), so the stored copy may hold its changes. `refused`: the provider
- *   answered and stored nothing (`refusedWrite`), such as a full or forbidden
- *   account; a retry is still owed, but no upload is promised (`uploadPromised`).
+ *   erase's failed write included. `failure`: the failure's typed result,
+ *   read once from the error (`saveFailureOf`): its outcome (`may-have-landed`:
+ *   the pass may have written, so the stored copy may hold its changes) and its
+ *   reason. `uploadPromised` reads it (US-09 AC61). Absent on a failed state no
+ *   error made: the erase's swap over a clean or waiting save.
  * - erasing: an erase, from its confirm to the end of its write, over the save
  *   state `under` it (lead A6). An edit is refused throughout;
  *   RecordSession.refuses() gives the caller that answer. `reading`: the erase
@@ -59,7 +59,11 @@
  *   save back; `eraseEnded` in a finally around the write.
  */
 
-import { StorageError } from './adapter';
+import { ConflictError, StorageError, type StorageFailureReason, type StorageOutcome } from './adapter';
+
+/** A failed pass's error, read once where it is caught: the typed outcome the adapter set, a
+ *  conflict SyncManager gave up on (nothing went out), or `unknown`; and the reason, if any. */
+export type SaveFailure = { outcome: StorageOutcome | 'conflict' | 'unknown'; reason?: StorageFailureReason };
 
 /** Why a pass failed: a refused grant, or anything else. */
 export type SaveCause = 'auth' | 'other';
@@ -67,14 +71,14 @@ export type SaveBase =
   | { mode: 'clean'; changes: number }
   | { mode: 'waiting'; changes: number; saved: number }
   | { mode: 'saving'; changes: number; saved: number; from: number; armed: boolean }
-  | { mode: 'failed'; changes: number; saved: number; mirrored: boolean; cause: SaveCause; landed?: true; refused?: true };
+  | { mode: 'failed'; changes: number; saved: number; mirrored: boolean; cause: SaveCause; failure?: SaveFailure };
 export type SaveState = SaveBase | { mode: 'erasing'; phase: 'reading' | 'writing'; under: SaveBase };
 
 export type SaveEvent =
   | { type: 'edited' } // touch(): one more change
   | { type: 'save' } // the debounce fired, flush(), or a page hide's fallback; joins a pass that runs
   | { type: 'passLanded'; from: number } // the pass that started from change `from` wrote
-  | { type: 'passFailed'; cause: SaveCause; landed?: true; refused?: true }
+  | { type: 'passFailed'; cause: SaveCause; failure?: SaveFailure }
   | { type: 'synced' } // a synchronous write landed the whole working copy
   | { type: 'eraseBegan' } // the erase's first line: every write is refused from here
   | { type: 'eraseSwapped' } // the erased copy swapped in: one more change
@@ -121,10 +125,34 @@ export function retryOwed(s: SaveState): boolean {
   return s.mode === 'failed' && s.cause === 'other';
 }
 
-/** Settings may say "It will upload automatically." (US-09 AC61): a retry is owed and the last
- *  failure was not a refusal, which retrying does not mend. */
+/** Settings may say "It will upload automatically." (US-09 AC61): a retry is owed and retrying
+ *  can mend the last failure. A failed state no error made (the erase's swap) promises it. */
 export function uploadPromised(s: SaveState): boolean {
-  return retryOwed(s) && s.mode === 'failed' && !s.refused;
+  return retryOwed(s) && s.mode === 'failed' && (s.failure === undefined || retryMends(s.failure));
+}
+
+/** Whether a retry can mend a failure, by its reason first (US-09 AC61; owner rulings 2026-11-13 and
+ *  2026-11-26). A full store, refused access, a target gone or made public (not-found), a revoked
+ *  grant and stopped writes never mend by retrying. A rate or daily limit passes. A 401 met after a
+ *  write was tried with no fresh token, so its retry may mend. With no reason, no answer, a write that
+ *  may have landed and a conflict where nothing went out mend; a bare refusal (a file too large, a
+ *  malformed request) and an unknown failure do not. Any reason not named here gives no promise. */
+export function retryMends(failure: SaveFailure): boolean {
+  switch (failure.reason) {
+    case undefined: return failure.outcome === 'no-answer' || failure.outcome === 'may-have-landed' || failure.outcome === 'conflict';
+    case 'rate-limited': return true;
+    case 'auth': return failure.outcome === 'may-have-landed';
+    default: return false; // storage-full, forbidden, not-found, reconnect, writes-stopped, and any later reason
+  }
+}
+
+/** A failed pass's error as the save state keeps it (`SaveFailure`). A thrown value that is not an
+ *  object may have landed, as write-refusal.ts `mayHaveLanded` reads it. */
+export function saveFailureOf(error: unknown): SaveFailure {
+  if (typeof error !== 'object' || error === null) return { outcome: 'may-have-landed' };
+  const outcome = (error as { outcome?: StorageOutcome }).outcome;
+  const reason = error instanceof StorageError ? error.reason : undefined;
+  return { outcome: outcome ?? (error instanceof ConflictError ? 'conflict' : 'unknown'), ...(reason ? { reason } : {}) };
 }
 
 /** Why a pass failed, from its error's typed reason and outcome alone: 'auth'
@@ -149,7 +177,7 @@ export type SaveStatus = 'saved' | 'saving' | 'not-saved' | 'not-saved-on-device
 
 /** A failed pass that neither wrote nor reached the device copy: its changes live only in memory (lead S57). */
 export function writtenNowhere(s: SaveState): boolean {
-  return s.mode === 'failed' && !s.mirrored && !s.landed;
+  return s.mode === 'failed' && !s.mirrored && s.failure?.outcome !== 'may-have-landed';
 }
 
 /** What a status line shows. Step (d) words it. */
@@ -191,8 +219,7 @@ function base(s: SaveBase, e: BaseEvent): { state: SaveBase; effects: SaveEffect
     case 'passFailed': {
       if (s.mode !== 'saving') return same;
       const failed = settle(s.changes, s.saved, s.armed, e.cause);
-      const outcome = { ...(e.landed ? { landed: true as const } : {}), ...(e.refused ? { refused: true as const } : {}) };
-      return { state: failed.mode === 'failed' ? { ...failed, ...outcome } : failed, effects: [] };
+      return { state: failed.mode === 'failed' && e.failure ? { ...failed, failure: e.failure } : failed, effects: [] };
     }
     case 'synced':
       return { state: s.mode === 'saving' ? { ...s, saved: s.changes, armed: false } : { mode: 'clean', changes: s.changes }, effects: cancel };
@@ -203,9 +230,14 @@ function base(s: SaveBase, e: BaseEvent): { state: SaveBase; effects: SaveEffect
 
 /** The erased copy swapped in: one more change. A pass that runs goes on and
  *  carries it; anything else waits for the erase's write as failed, with
- *  cause 'other': a write that fails is retried once the erase ends. */
+ *  cause 'other': a write that fails is retried once the erase ends. A failed
+ *  save's failure rides on, so a refusal that retrying does not mend still
+ *  promises nothing (US-09 AC61); never `may-have-landed`, since no write
+ *  carried the swap. */
 function swapped(s: SaveBase): SaveBase {
-  return s.mode === 'saving' ? { ...s, changes: s.changes + 1, armed: false } : { mode: 'failed', changes: s.changes + 1, saved: savedOf(s), mirrored: false, cause: 'other' };
+  if (s.mode === 'saving') return { ...s, changes: s.changes + 1, armed: false };
+  const kept = s.mode === 'failed' && s.failure && s.failure.outcome !== 'may-have-landed' ? { failure: s.failure } : {};
+  return { mode: 'failed', changes: s.changes + 1, saved: savedOf(s), mirrored: false, cause: 'other', ...kept };
 }
 
 /** The only way the save state changes. */
@@ -231,7 +263,7 @@ export function transition(s: SaveState, e: SaveEvent): SaveStep {
       // A pass that started before the swap never carried the erase: whether it
       // landed says nothing of the erase (edits are refused while erasing, so
       // `changes` is still the swap's count; lead S57 N1).
-      const step = base(s.under, e.type === 'passFailed' && e.landed && s.under.mode === 'saving' && s.under.from < s.under.changes ? { type: 'passFailed', cause: e.cause } : e);
+      const step = base(s.under, e.type === 'passFailed' && e.failure?.outcome === 'may-have-landed' && s.under.mode === 'saving' && s.under.from < s.under.changes ? { type: 'passFailed', cause: e.cause } : e);
       return { state: { ...s, under: step.state }, effects: step.effects };
     }
   }

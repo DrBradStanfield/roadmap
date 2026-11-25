@@ -16,10 +16,9 @@ import { contentOf, visibleContentOf } from './record-session-content';
 import { deleteAllDataSession, eraseSession, replaceUnreadableSession, type EraseResult, type EraseSteps } from './record-session-erase';
 import { coveredCopySession, deviceCopyHoldsErase, deviceCopyRevision, mirrorNowSession, releaseErasedCopySession, releaseMarkerSession } from './record-session-mirror';
 import { recordSync, ROADMAP_DOC } from './roadmap-doc';
-import { changesOf, retryOwed, SAVE_START, saveFailureCause, saveStatus, transition, unsaved, uploadPromised, writePending, writtenNowhere, type SaveEvent, type SaveState, type SaveStatus } from './save-state';
+import { changesOf, retryOwed, SAVE_START, saveFailureCause, saveFailureOf, saveStatus, transition, unsaved, uploadPromised, writePending, writtenNowhere, type SaveEvent, type SaveState, type SaveStatus } from './save-state';
 import type { RoadmapFile } from './roadmap-file';
 import type { SyncContext, SyncManager } from './sync-manager';
-import { mayHaveLanded, refusedWrite } from './write-refusal';
 
 export { eraseIdentityOf } from './erase-identity';
 
@@ -455,7 +454,7 @@ export class RecordSession {
         this.host.report(error, { op: 'after-save', repeat: false });
         return true;
       }
-      this.dispatch({ type: 'passFailed', cause: saveFailureCause(error), ...(mayHaveLanded(error) ? { landed: true } : refusedWrite(error) ? { refused: true } : {}) });
+      this.dispatch({ type: 'passFailed', cause: saveFailureCause(error), failure: saveFailureOf(error) });
       this.running = null;
       // A pass that landed before this one failed may have folded a remote
       // change in: the page must still hear of it (adversary R3).
