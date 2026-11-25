@@ -52,15 +52,17 @@ const answered = (value: unknown): boolean =>
  * A device copy with nothing in it: no stored body, or a record with no row,
  * no erase history (no erase epoch, no erase list, even an empty one: lifted,
  * it would erase there) and no answer kept (profile, screenings, reminder
- * choices, the reminder opt-in, plan snapshots). Anything else, a body this
- * cannot read included, is not empty.
+ * choices, the reminder opt-in, plan snapshots). Rows are judged by the row
+ * lists' lengths, not their ids, so a row without an id counts. Anything else,
+ * a body this cannot read included, is not empty.
  */
 export function deviceCopyEmpty(body: unknown): boolean {
   if (body === null || body === undefined) return true;
   if (typeof body !== 'object') return false;
   const record = body as Record<string, unknown>;
   const epoch = (record.meta as { eraseEpoch?: unknown } | undefined)?.eraseEpoch;
-  return recordRowIds(body).length === 0 && !record.erasedRows && !(typeof epoch === 'number' && epoch > 0)
+  const noRows = ROW_ARRAYS.every((key) => { const rows = record[key]; return rows === undefined || (Array.isArray(rows) && rows.length === 0); });
+  return noRows && !record.erasedRows && !(typeof epoch === 'number' && epoch > 0)
     && !answered(record.profile) && !answered(record.screenings) && !record.reminderOptIn
     && listOf(body, 'reminderPreferences').length === 0 && listOf(body, 'recommendationSnapshots').length === 0;
 }

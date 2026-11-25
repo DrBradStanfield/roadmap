@@ -42,6 +42,8 @@ export interface PinDecision {
   readonly pin: AccountPin;
   readonly label: string;
   readonly against?: AccountPin | null;
+  /** Kept with no pin only because this device's copy was empty: its lift must find it still empty. */
+  readonly onEmpty?: boolean;
 }
 
 /** A fresh connect: the account it signed in with, or refused when that cannot be read. */
@@ -80,12 +82,19 @@ async function proofFor(check: ReconnectCheck, copies: unknown[]): Promise<Owner
 export async function reconnectDecision(check: ReconnectCheck): Promise<PinDecision> {
   const { pin } = await freshDecision(check.provider, check.label, () => check.account());
   const against = readPin();
-  const device = await new LocalStorageAdapter().read(ROADMAP_FILE_NAME).then((r) => r.body, () => 'unreadable');
-  const copies = [device, check.live?.() ?? null];
+  const copies = [await storedCopy(), check.live?.() ?? null];
   const empty = copies.every(deviceCopyEmpty);
   const proof = against || empty ? {} : await proofFor(check, copies);
   if (reconnectVerdict(against, pin, empty, proof) === 'refuse') throw new AccountRefusedError(check.provider, check.label);
-  return { pin, label: check.label, against };
+  return { pin, label: check.label, against, onEmpty: !against && empty };
+}
+
+/** This device's stored copy; one that cannot be read is not empty. */
+const storedCopy = (): Promise<unknown> => new LocalStorageAdapter().read(ROADMAP_FILE_NAME).then((r) => r.body, () => 'unreadable');
+
+/** Read again just before a lift: true while this device's stored copy is still empty. */
+export async function storedCopyEmpty(): Promise<boolean> {
+  return deviceCopyEmpty(await storedCopy());
 }
 
 const samePin = (a: AccountPin | null, b: AccountPin | null): boolean => a?.provider === b?.provider && a?.account === b?.account;

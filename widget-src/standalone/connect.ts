@@ -186,10 +186,12 @@ export function reportConnectFailure(error: unknown, backend: 'dropbox' | 'googl
  * the choice, lift on-device data up, then reload so app.tsx re-initialises
  * on the new backend. Dropbox/Google use an OAuth redirect instead (handled in
  * resolve-backend.ts on return), so they don't go through here. `gen` is the
- * log-off id the move began under; the adapter was built with it too.
+ * log-off id the move began under; the adapter was built with it too. A
+ * refused account is counted (and reported) here, once (US-09 AC55).
  */
 export async function finishFormConnect(adapter: GitHubAdapter | WebDavAdapter, backend: CloudBackend, gen: LogOffId): Promise<void> {
-  if (rememberSignIn(await adapter.signIn(), backend, gen)) {
+  const saved = await adapter.signIn().catch((error: unknown) => { connectRefusal(error); throw error; });
+  if (rememberSignIn(saved, backend, gen)) {
     markSyncPending();
     await liftLocalInto(adapter, backend);
     trackProductEvent('cloud_connect_success', { provider: PROVIDERS[backend].event });

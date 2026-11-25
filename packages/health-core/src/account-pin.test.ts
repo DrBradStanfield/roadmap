@@ -5,7 +5,7 @@
 import { describe, expect, it } from 'vitest';
 import { deviceCopyEmpty, parsePin, pinVerdict, proofVerdict, reconnectVerdict, recordRowIds, type AccountPin, type OwnerProof, type PinVerdict } from './account-pin';
 import { buildErasedFile } from './erase';
-import { createEmptyFile, type RoadmapFile } from './roadmap-file';
+import { createEmptyFile, ROW_ARRAYS, type RoadmapFile } from './roadmap-file';
 
 const A: AccountPin = { provider: 'google-drive', account: 'id-a' };
 const B: AccountPin = { provider: 'google-drive', account: 'id-b' };
@@ -92,8 +92,15 @@ describe('US-09 AC55: deviceCopyEmpty', () => {
     ['a profile-only record once erased', erasedProfileOnly(), false],
     ['one row', { ...empty, measurements: [{ id: 'm1' }] }, false],
     ['a body that is not a record', 'unreadable', false],
+    ['a row with no id', { ...empty, measurements: [{ metricType: 'weight' }] }, false],
+    ['a row whose id is not a string', { ...empty, measurements: [{ id: 7 }] }, false],
+    ['a row that is not an object', { ...empty, measurements: ['m1'] }, false],
+    ['a row list that is not a list', { ...empty, measurements: { id: 'm1' } }, false],
   ];
   it.each(table)('%s', (_name, body, verdict) => {
     expect(deviceCopyEmpty(body)).toBe(verdict);
+  });
+  it.each(ROW_ARRAYS.map((key) => [key]))('one entry in %s, even without an id, is not empty', (key) => {
+    expect(deviceCopyEmpty({ ...empty, [key]: [{}] })).toBe(false);
   });
 });

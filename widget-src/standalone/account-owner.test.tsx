@@ -18,12 +18,15 @@ const lift = vi.hoisted(() => vi.fn(async () => {}));
 const capture = vi.hoisted(() => vi.fn());
 const track = vi.hoisted(() => vi.fn());
 /** The working record open on the page (null: none), and what a failed save of it does: mirror it to this device. */
-const session = vi.hoisted(() => ({ live: null as object | null }));
+const session = vi.hoisted(() => ({ live: null as object | null, otherWriter: null as string | null }));
 vi.mock('../src/lib/sentry', () => ({ Sentry: { captureException: capture } }));
 vi.mock('../src/lib/server-api', () => ({ trackProductEvent: track }));
 vi.mock('../src/lib/roadmap-data', () => ({
   currentSaveStatus: () => 'saved',
-  flushRoadmapStore: async () => { if (session.live) localStorage.setItem('health_roadmap_file_v2', JSON.stringify(session.live)); },
+  flushRoadmapStore: async () => {
+    if (session.live) localStorage.setItem('health_roadmap_file_v2', JSON.stringify(session.live));
+    if (session.otherWriter) localStorage.setItem('health_roadmap_file_v2', session.otherWriter); // another tab's save lands meanwhile
+  },
   copyRecordToDevice: async () => undefined,
   getBackendKind: () => 'cloud',
   recordFileSync: () => session.live,
@@ -108,6 +111,7 @@ beforeEach(() => {
   calls = [];
   meanwhile = null;
   session.live = null;
+  session.otherWriter = null;
   gisAnswer = null;
   gisOverrides = [];
   lift.mockClear();
@@ -258,6 +262,67 @@ describe('US-09 AC55: the Drive popup reconnect', () => {
     await popupReconnectAs(ID.driveA);
     expectNothingKept([DRIVE_TOKENS]);
     expect(pinned()).toEqual({ provider: 'google-drive', account: ID.driveB });
+  });
+
+  it('no pin and an empty copy that stays empty: kept and lifted', async () => {
+    localStorage.removeItem(DEVICE_KEY);
+    cloud.driveFiles = { 'file-b': record('row-b1') };
+    await popupReconnectAs(ID.driveB);
+    expect(pinned()).toEqual({ provider: 'google-drive', account: ID.driveB });
+    expect(lift).toHaveBeenCalledTimes(1);
+    expect(reload).toHaveBeenCalledTimes(1);
+  });
+
+  it('no pin and an empty copy another writer fills before the lift: refused, the earlier sign-in put back, nothing lifted', async () => {
+    localStorage.removeItem(DEVICE_KEY);
+    const earlier = JSON.stringify({ accessToken: 'test-token-old', expiresAt: 1, gen: null });
+    localStorage.setItem(DRIVE_TOKENS, earlier);
+    cloud.driveFiles = { 'file-b': record('row-b1') };
+    session.otherWriter = DEVICE_COPY;
+    await popupReconnectAs(ID.driveB);
+    expect(localStorage.getItem(DRIVE_TOKENS)).toBe(earlier);
+    expect(localStorage.getItem(PIN_KEY)).toBeNull();
+    expect(localStorage.getItem(BACKEND_KEY)).toBe('google-drive');
+    expectNothingKept([PIN_KEY]);
+    expect(reload).not.toHaveBeenCalled();
+    expect(document.querySelector('.hr-sync-error')?.textContent).toBe(REFUSED('Google Drive'));
+    expect(track.mock.calls.filter(([name]) => name === 'cloud_connect_refused')).toEqual([['cloud_connect_refused', { provider: 'google-drive' }]]);
+  });
+});
+
+describe('US-09 AC55: a form connect', () => {
+  const DAV = 'https://dav.example.test/health/';
+  it.each([
+    ['github', 'GitHub', 'github'],
+    ['self-host', 'Self-host (WebDAV)', 'webdav'],
+  ] as const)('%s: credentials that validate and an account the provider cannot name: refused, counted once, reported once with the provider only', async (backend, label, event) => {
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      calls.push({ method: init?.method ?? 'GET', url });
+      if (url === 'https://api.github.com/repos/someone/health') return Response.json({ private: true });
+      if (url === 'https://api.github.com/user') return new Response('', { status: 401 });
+      if (init?.method === 'PROPFIND') return new Response('', { status: 207 });
+      throw new TypeError('Failed to fetch');
+    }));
+    vi.spyOn(crypto.subtle, 'digest').mockRejectedValue(new Error('digest unavailable'));
+    const { connect } = await page();
+    const { GitHubAdapter, WebDavAdapter } = await import('../src/storage');
+    const { logOffId } = await import('../src/lib/storage');
+    const gen = logOffId();
+    const adapter = backend === 'github'
+      ? new GitHubAdapter({ token: 'test-token-good', owner: 'someone', repo: 'health' }, gen)
+      : new WebDavAdapter({ url: DAV, username: 'someone', password: 'test-pass-this' }, gen);
+    await expect(connect.finishFormConnect(adapter, backend, gen)).rejects.toThrow(REFUSED(label));
+    expect(track.mock.calls).toEqual([['cloud_connect_refused', { provider: event }]]);
+    expect(capture).toHaveBeenCalledTimes(1);
+    const [error, context] = capture.mock.calls[0] as [Error, { tags: object }];
+    expect(error.message).toBe('Cloud connect failed');
+    expect(context).toEqual({ tags: { area: 'cloud-connect', backend } });
+    expect(localStorage.getItem(PIN_KEY)).toBeNull();
+    expect(lift).not.toHaveBeenCalled();
+    expect(reload).not.toHaveBeenCalled();
+    const said = JSON.stringify([...logSpies.map((spy) => spy.mock.calls), capture.mock.calls, track.mock.calls], (_k, v: unknown) => v instanceof Error ? `${v.name}: ${v.message}` : v);
+    for (const secret of ['test-token-good', 'test-pass-this', 'someone', 'api.github.com', 'dav.example.test']) expect(said).not.toContain(secret);
   });
 });
 

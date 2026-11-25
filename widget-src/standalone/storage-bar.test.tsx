@@ -14,7 +14,7 @@ const sync = vi.hoisted(() => ({ pending: false, status: 'saved' as 'saved' | 's
 vi.mock('../src/lib/roadmap-data', () => ({ currentSaveStatus: () => sync.status, currentRetryDue: () => false }));
 vi.mock('../src/storage', () => ({
   GoogleDriveAdapter: class { acquireViaPopup = sync.popup; },
-  savePopupGrant: () => true,
+  savePopupGrant: () => ({ onEmpty: false, takeBack: () => undefined }),
   GitHubAdapter: class {},
   WebDavAdapter: class {},
   isSyncPending: () => sync.pending,

@@ -109,7 +109,7 @@ describe('GoogleDriveAdapter — a grant without drive.file is refused at connec
     expect(localStorage.getItem(TOKENS_KEY)).toBeNull(); // the acquire step writes nothing (US-09 AC45)
     expect(localStorage.getItem(CONFIG_KEY)).toBeNull();
     localStorage.setItem(BACKEND_KEY, 'google-drive'); // the reconnect session's chosen home
-    expect(await savePopupGrant(token, null)).toBe(true);
+    expect(await savePopupGrant(token, null)).not.toBeNull();
     const adapter = new GoogleDriveAdapter(CONFIG);
     expect(adapter.isConnected()).toBe(true);
     expect(adapter.hasValidToken()).toBe(true);
@@ -118,15 +118,15 @@ describe('GoogleDriveAdapter — a grant without drive.file is refused at connec
   it('popup: the save keeps the stored account', async () => {
     localStorage.setItem(BACKEND_KEY, 'google-drive');
     localStorage.setItem(CONFIG_KEY, JSON.stringify({ accountEmail: 'person@example.test' }));
-    expect(await savePopupGrant({ accessToken: 't', expiresAt: Date.now() + 3_600_000 }, null)).toBe(true);
+    expect(await savePopupGrant({ accessToken: 't', expiresAt: Date.now() + 3_600_000 }, null)).not.toBeNull();
     expect(JSON.parse(localStorage.getItem(CONFIG_KEY)!)).toMatchObject({ accountEmail: 'person@example.test' });
   });
 
   it('popup: once this device is no longer on Google Drive (another tab moved it), the save keeps nothing (US-09 AC45)', async () => {
     localStorage.setItem(BACKEND_KEY, 'dropbox');
-    expect(await savePopupGrant({ accessToken: 't', expiresAt: Date.now() + 3_600_000 }, null)).toBe(false);
+    expect(await savePopupGrant({ accessToken: 't', expiresAt: Date.now() + 3_600_000 }, null)).toBeNull();
     localStorage.removeItem(BACKEND_KEY);
-    expect(await savePopupGrant({ accessToken: 't', expiresAt: Date.now() + 3_600_000 }, null)).toBe(false);
+    expect(await savePopupGrant({ accessToken: 't', expiresAt: Date.now() + 3_600_000 }, null)).toBeNull();
     expect(localStorage.getItem(TOKENS_KEY)).toBeNull();
     expect(localStorage.getItem(CONFIG_KEY)).toBeNull();
   });
