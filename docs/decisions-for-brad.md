@@ -59,12 +59,6 @@ issue, and nothing private.
   casings on one form; (2) lower-case "dose" in both: one casing, at the cost of a new string or a lower-case call.
   Recommendation: option 2, so the whole form uses one casing. Note: PR 1796 builds its names from the supplement's name, which the new rule above
   (US-09 AC7l) says must use a labelled-by reference instead; it needs that change before it merges.
-- **Two chat history lines.** Issue: PR 2078 (on main) makes a failed open of the chat history file retry on the
-  next turn, but adds no words. Two places say nothing today: the History list after the file could not be opened
-  (it shows old titles, or "No conversations yet"), and a turn that was not saved to the file (nothing on screen).
-  The owner proposed "Chat history unavailable" for the first; no line exists for the second. Options: (1) approve
-  "Chat history unavailable", and have a line drafted for an unsaved turn; (2) leave both silent. Recommendation:
-  option 1, because a person who returns to a conversation that was never saved has no way to know why it is missing.
 - **When a cloud save fails after it may have landed.** Issue: PR 2108 (open) gives each storage failure a typed
   outcome. For Dropbox, GitHub and WebDAV, a timeout, a "too many requests" or a server error now says the provider
   "did not answer" and then "The change may have landed. Read the record again before trying it a second time.",
@@ -115,11 +109,6 @@ issue, and nothing private.
 - **Files lost when a lab batch times out (self-hosted build).** Issue: on the GitHub Pages build, a batch that times
   out throws away files already read on the person's own key. Options: keep them; close. Recommendation: close: it
   touches only that build, and it is rare.
-- **A "Not saved" marker on chat replies with edits.** Issue: a reply that lands after the person left its thread
-  saves nothing, but reads as saved when they reopen the thread (design: [drafts/c22-c26-design.md](drafts/c22-c26-design.md)).
-  Options: (A) store a "Not saved" marker on every such reply (new words, a new stored field, iPhone too); (B) only on
-  replies that carried edits; (C) wait for the iPhone chat work. Recommendation: B, reusing the existing banner
-  words, since a reply with no edits had nothing to lose.
 - **The reminders switch when iPhone permission was already decided.** Issue: if the person already answered iOS's
   notification question, the reminders switch does nothing and says nothing. Options: show the existing Settings row
   then; new words; leave. Recommendation: show the existing row (no new words), if you accept its line in this case.
@@ -216,6 +205,14 @@ issue, and nothing private.
   while the App Store review is open.
 
 ## Decided
+
+2026-11-26, Brad's words in quotes:
+- Two chat history lines: "this" (option 1). History after a failed read says "Chat history unavailable"; a reply
+  the history file did not take says "This reply was not saved to your chat history." (web; US-15 AC75).
+- A "Not saved" marker on chat replies with edits: "go with the recommendation" (option B). Only a reply that carried
+  edits and landed after the person left its thread is stored marked; its reopened thread says "Not saved: you
+  opened another conversation before this reply arrived." The banner's own sentence ("your record changed since you
+  asked") would be untrue here, so this one is new, under your 26 Nov approval of drafted sentences (web; US-15 AC75).
 
 2026-11-23, Brad's words in quotes:
 - Original files are stored in the background after Save, with no action from the person at Save and at every

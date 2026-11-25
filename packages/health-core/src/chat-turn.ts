@@ -14,7 +14,9 @@ export const MAX_CHARS = 8000;
 export const OFFLINE_ERROR = "You're offline. Check your connection and try again.";
 
 // Minimal shapes; the widget's chat-api types are wider and assign to these.
-export interface Msg { id: string; role: 'user' | 'assistant'; content: string; createdAt: string; isFallback?: boolean }
+/** `notSaved` (US-15 AC75): 'history', this reply was not saved to the chat-history file (this page only); 'left', it
+ *  carried edits and landed after the person left its thread, so they were applied nowhere (stored with the turn). */
+export interface Msg { id: string; role: 'user' | 'assistant'; content: string; createdAt: string; isFallback?: boolean; notSaved?: 'history' | 'left' }
 export interface Conv { id: string; title: string; updatedAt?: string; createdAt?: string }
 export interface Approach { thinking: string; sources: string[] }
 export interface Pending extends Approach { text: string; status: string }
@@ -72,10 +74,11 @@ export type ChatEvent =
   | { type: 'list-landed'; read: number; conversations: Conv[] | null }
   | { type: 'load-landed'; opening: number; id: string; turns: Msg[] | null }
   | { type: 'load-failed'; opening: number; id: string } // a read that threw, timed out, or answered with no turns (not a 404)
+  | { type: 'reply-unsaved'; id: string } // the reply's save to the chat-history file did not happen (US-15 AC75)
   | { type: 'dismiss' };
 
 export type Effect =
-  | { type: 'request'; turn: number; question: string; convId: string | null; history: Msg[] }
+  | { type: 'request'; turn: number; nonce: string; question: string; convId: string | null; history: Msg[] }
   | { type: 'read-list'; read: number }
   | { type: 'read-turns'; opening: number; id: string }
   | { type: 'take-edits'; edits: ProposedEdit[]; refusals: ChatEditRefusal[]; erase: Erase; stayed: boolean }
@@ -119,6 +122,15 @@ export function busy(s: ChatState, othersBusy: boolean): boolean {
   return s.turn.phase !== 'idle' || s.load.phase !== 'none' || othersBusy;
 }
 
+/** The id a landed reply takes in `messages`. */
+export const answerId = (r: SendResult, nonce: string): string => r.messageId ?? `assistant-${nonce}`;
+
+/** Turn `turn`'s reply, landing now, carries edits for a thread the person left: they apply nowhere, so the reply is
+ *  stored marked (C22 option B, US-15 AC75). The rule `done` takes the left branch by, read before it runs. */
+export function repliesLeft(s: ChatState, turn: number, r: SendResult): boolean {
+  return inFlight(s.turn) && s.turn.turn === turn && s.turn.asked.key !== s.shown.key && carriesEdits(r);
+}
+
 // --- transition -------------------------------------------------------------
 
 const same = (state: ChatState): Step => ({ state, effects: [] });
@@ -154,8 +166,10 @@ function applyDelta(p: Pending, d: Delta): Pending {
   return { ...p, [d.type]: p[d.type] + d.text };
 }
 
+const carriesEdits = (r: SendResult): boolean => Boolean(r.proposedEdits?.length || r.editRefusals?.length);
+
 function takeEdits(r: SendResult, erase: Erase, stayed: boolean): Effect[] {
-  if (!r.proposedEdits?.length && !r.editRefusals?.length) return [];
+  if (!carriesEdits(r)) return [];
   return [{ type: 'take-edits', edits: r.proposedEdits ?? [], refusals: r.editRefusals ?? [], erase, stayed }];
 }
 
@@ -174,7 +188,7 @@ function send(s: ChatState, e: Extract<ChatEvent, { type: 'send' }>): Step {
     },
     effects: [
       { type: 'set-input', text: '' }, { type: 'edits-ask' }, { type: 'post-state' },
-      { type: 'request', turn, question: text, convId: s.shown.id, history: s.messages },
+      { type: 'request', turn, nonce: e.nonce, question: text, convId: s.shown.id, history: s.messages },
     ],
   };
 }
@@ -191,7 +205,7 @@ function done(s: ChatState, t: Extract<Turn, { phase: 'sending' | 'streaming' }>
   if (t.asked.key !== s.shown.key) { // left: the reply stays with the thread it was sent from (AC7a)
     return { state: { ...idle, conversations }, effects: [...takeEdits(r, t.asked.erase, false), ...ended] };
   }
-  const answer: Msg = { id: r.messageId ?? `assistant-${t.nonce}`, role: 'assistant', content: r.content, createdAt: now, ...(r.isFallback ? { isFallback: true } : {}) };
+  const answer: Msg = { id: answerId(r, t.nonce), role: 'assistant', content: r.content, createdAt: now, ...(r.isFallback ? { isFallback: true } : {}) };
   let state: ChatState = {
     ...idle, conversations, load: { phase: 'none' }, // a reply is newer than any load (AC7a)
     messages: [...(restarted ? [] : t.before), t.question, answer],
@@ -316,6 +330,10 @@ export function transition(s: ChatState, e: ChatEvent): Step {
     case 'list-landed': return listLanded(s, e);
     case 'load-landed': return loadLanded(s, e);
     case 'load-failed': return same(loadsNow(s, e) ? { ...s, load: { phase: 'failed', opening: e.opening, id: e.id } } : s);
+    case 'reply-unsaved': {
+      if (!s.messages.some((m) => m.id === e.id && m.role === 'assistant')) return same(s); // not on screen: nothing to say
+      return { state: { ...s, messages: s.messages.map((m) => (m.id === e.id ? { ...m, notSaved: 'history' } : m)) }, effects: [{ type: 'post-state' }] };
+    }
     case 'dismiss': return same({ ...s, notice: 'none' });
   }
 }

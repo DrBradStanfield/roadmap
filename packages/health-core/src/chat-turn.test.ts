@@ -48,7 +48,7 @@ const PHASES: Record<Turn['phase'], ChatState> = {
 const SEND: ChatEvent = { type: 'send', text: ' hi ', online: true, othersBusy: false, now: T0, nonce: 'n1' };
 const SEND_FX: Effect[] = [
   { type: 'set-input', text: '' }, { type: 'edits-ask' }, { type: 'post-state' },
-  { type: 'request', turn: 1, question: 'hi', convId: 'A', history: [m1] },
+  { type: 'request', turn: 1, nonce: 'n1', question: 'hi', convId: 'A', history: [m1] },
 ];
 const ENDED: Effect[] = [{ type: 'own-ended' }, { type: 'post-state' }];
 const step = (s: ChatState, ...events: ChatEvent[]) => events.reduce((acc, e) => transition(acc.state, e), { state: s, effects: [] as Effect[] });
@@ -458,7 +458,7 @@ describe('§3 Shown chat, list and load', () => {
       const opened = transition(S, UNREAD).state;
       expect(transition(opened, SEND).effects).toEqual([]);
       const read = transition(opened, { type: 'load-landed', opening: 3, id: 'B', turns: [m1, m2] }).state;
-      expect(transition(read, SEND).effects).toContainEqual({ type: 'request', turn: 1, question: 'hi', convId: 'B', history: [m1, m2] });
+      expect(transition(read, SEND).effects).toContainEqual({ type: 'request', turn: 1, nonce: 'n1', question: 'hi', convId: 'B', history: [m1, m2] });
     });
     const B3: Load = { phase: 'loading', opening: 3, id: 'B' };
     loadCells('mirror-state loaded false, a new id', id, UNREAD, { none: [B3, READ_OUT(3)], loading: [B3, READ_OUT(3)], failed: [B3, READ_OUT(3)] });
@@ -887,7 +887,7 @@ describe('PR 1349 review round', () => {
     s = transition(s, { type: 'load-landed', opening: 3, id: 'B', turns: [m2] }).state;
     expect(busy(s, false)).toBe(false);
     const sent = transition(s, send);
-    expect(sent.effects).toContainEqual({ type: 'request', turn: 1, question: 'hi', convId: 'B', history: [m2] });
+    expect(sent.effects).toContainEqual({ type: 'request', turn: 1, nonce: 'n1', question: 'hi', convId: 'B', history: [m2] });
     const done = transition(sent.state, { type: 'done', turn: 1, now: T1, result: { ...RES, conversationId: 'B' } });
     expect(done.state.messages).toEqual([m2, q, ans]);
   });

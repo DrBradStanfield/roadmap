@@ -217,6 +217,8 @@ export class ChatSession {
     assistantMessageId?: string | null;
     /** A fallback or refusal line: stored so the dedup never re-serves it after a reload. */
     isFallback?: boolean;
+    /** 'left': the reply's edits applied nowhere, since the person left its thread (US-15 AC75). */
+    notSaved?: 'left';
     /** eraseMarks() when the question was asked. A conversation the stored
      *  file does not hold is then saved only if the file it is written into
      *  holds no other marker: an erase that began after the question, on any
@@ -238,6 +240,7 @@ export class ChatSession {
         content: opts.assistantText,
         createdAt: now,
         ...(opts.isFallback ? { isFallback: true as const } : {}),
+        ...(opts.notSaved ? { notSaved: opts.notSaved } : {}),
       },
     ];
 

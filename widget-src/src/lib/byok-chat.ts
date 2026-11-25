@@ -25,12 +25,13 @@ import { modelParams } from '@roadmap/health-core/models';
 import { safeGetItem, safeSetItem, safeRemoveItem } from './storage';
 import * as Sentry from '@sentry/react';
 import { askChatHistory, getChatHistory } from './chat-history-access';
-import { chatAskedUnder, recordEraseIn } from './chat-erase';
+import { chatAskedUnder } from './chat-erase';
+import { saveExchange } from './chat-history-save';
 import { recordFailure } from './error-diagnostics';
 import { ByokAnthropicError, callAnthropicDirectRaw } from './byok-anthropic';
 // Types come from chat-api.ts, the one home callers compile against. `import
 // type` is erased, so the Shopify transport never enters the Pages bundle.
-import type { ChatDelta, ChatError, ChatGate, ChatListResult, ChatMessage, SendMessageResult } from './chat-api';
+import type { ChatDelta, ChatGate, ChatListResult, ChatMessage, ChatSent, ReplyMark, SendMessageResult } from './chat-api';
 
 // ---------------------------------------------------------------------------
 // API key (this device only)
@@ -146,7 +147,8 @@ export async function sendMessage(
   shownHistory: ChatMessage[] = [],
   _onDelta?: (delta: ChatDelta) => void,
   _canApplyEdits?: boolean,
-): Promise<{ result: SendMessageResult | null; error: ChatError | null }> {
+  markReply: ReplyMark = () => undefined,
+): Promise<ChatSent> {
   const apiKey = getAnthropicKey();
   if (!apiKey) {
     return { result: null, error: { error: 'Connect your Anthropic API key to use chat.' } };
@@ -208,35 +210,24 @@ export async function sendMessage(
     return { result: null, error: { error: 'Network error reaching Anthropic. Check your connection.' } };
   }
 
-  // Persist to the user's cloud, unless an erase began since the question
-  // (US-11 AC2h) — fire-and-forget, history is best-effort.
   const convId = conversationId ?? `conv-${Date.now()}`;
   const assistantId = `a-${Date.now()}`;
-  void opened
-    .then(({ store, askedMarks }) =>
-      chatAskedUnder() !== asked ? undefined : store?.recordExchange({
-        askedMarks,
-        askedUnder: recordEraseIn(asked),
-        conversationId: convId,
-        isNew: !conversationId,
-        userText: message,
-        assistantText: content,
-        assistantMessageId: assistantId,
-      }),
-    )
-    .catch((error) => {
-      // A turn missing from the history file is reported, not only dropped (US-15 AC47).
-      Sentry.captureException(recordFailure(error, 'Chat-history save failed'), { tags: { area: 'chat-history', op: 'save' } });
-    });
-
-  return {
-    result: {
-      conversationId: convId,
-      messageId: assistantId,
-      content,
-      isGuest: false,
-      ...(proposedEdits.length > 0 ? { proposedEdits } : {}),
-    },
-    error: null,
+  const result: SendMessageResult = {
+    conversationId: convId,
+    messageId: assistantId,
+    content,
+    isGuest: false,
+    ...(proposedEdits.length > 0 ? { proposedEdits } : {}),
   };
+  const notSaved = markReply(result);
+  // Persist to the user's cloud (best-effort, never awaited).
+  const saved = saveExchange(opened, asked, {
+    conversationId: convId,
+    isNew: !conversationId,
+    userText: message,
+    assistantText: content,
+    assistantMessageId: assistantId,
+    ...(notSaved ? { notSaved } : {}),
+  });
+  return { result, error: null, saved };
 }

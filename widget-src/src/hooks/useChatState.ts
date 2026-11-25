@@ -18,6 +18,7 @@ import {
   type ChatDelta,
   type ChatMessage,
   type ChatPending,
+  type SendMessageResult,
 } from '../lib/chat-api';
 import { postSync, postInputSync, subscribeSync, generateInstanceId } from '../lib/chat-sync';
 import { getShownErase } from '../lib/roadmap-data';
@@ -26,7 +27,7 @@ import { useOffline } from './useOffline';
 import { createChatStore, joinChats } from './chatStore';
 import { readThread } from './chatReads';
 import { cutText } from '@roadmap/health-core/chat-history';
-import { busy, initialChatState, isLocalSender, MAX_CHARS, showsPending, type ChatEvent, type Effect } from '@roadmap/health-core/chat-turn';
+import { answerId, busy, initialChatState, isLocalSender, MAX_CHARS, repliesLeft, showsPending, type ChatEvent, type Effect } from '@roadmap/health-core/chat-turn';
 import type { ChatContextPayload } from '@roadmap/health-core/chat-context';
 import type { ProposedEdit } from '@roadmap/health-core/chat-edits';
 import type { ChatEditRefusal } from '@roadmap/health-core/chat-edit-refusals';
@@ -157,22 +158,27 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
   // made after the page loaded (US-15 AC10). None degrades to the empty context.
   // A throw before the request (reading the plan for context) is a failed
   // send like any other: the chat frees and the question goes back (US-15 AC17b).
-  const request = async ({ turn, question, convId, history }: Extract<Effect, { type: 'request' }>) => {
+  // A reply that landed after its thread was left, carrying edits, is stored marked; one the history file did not
+  // take says so by the reply, once it shows (US-15 AC75).
+  const request = async ({ turn, nonce, question, convId, history }: Extract<Effect, { type: 'request' }>) => {
     const onDelta = (delta: ChatDelta) => {
       const stream = streamRef.current;
       stream.deltas.push({ type: 'delta', turn, delta });
       if (!stream.frame) stream.frame = requestAnimationFrame(flushDeltas);
     };
     const p = latest.current;
-    const { result, error } = await (async () => sendMessage(question, convId, p.guestInputs?.() ?? null, history, onDelta, Boolean(p.onProposeEdit)))()
+    const markReply = (r: SendMessageResult) => (repliesLeft(store.getSnapshot(), turn, r) ? 'left' as const : undefined);
+    const { result, error, saved } = await (async () => sendMessage(question, convId, p.guestInputs?.() ?? null, history, onDelta, Boolean(p.onProposeEdit), markReply))()
       .catch(() => {
         // A fixed message: the thrown error can quote the saved plan, which holds health values.
         Sentry.captureMessage('Chat context read failed', { tags: { feature: 'chat' } });
-        return { result: null, error: { error: SEND_FAILED } };
+        return { result: null, error: { error: SEND_FAILED }, saved: undefined };
       });
     flushDeltas(); // the approach the reply keeps is everything streamed
-    if (result && !error) await store.dispatch({ type: 'done', turn, result, now: new Date().toISOString() });
-    else await store.dispatch({ type: 'failed', turn, message: error?.error ?? SEND_FAILED, boxEmpty: !inputTextRef.current });
+    if (result && !error) {
+      await store.dispatch({ type: 'done', turn, result, now: new Date().toISOString() });
+      void saved?.then((outcome) => { if (outcome === 'unsaved') void store.dispatch({ type: 'reply-unsaved', id: answerId(result, nonce) }); });
+    } else await store.dispatch({ type: 'failed', turn, message: error?.error ?? SEND_FAILED, boxEmpty: !inputTextRef.current });
   };
 
   const readList = async (read: number) => {
@@ -297,6 +303,8 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       replying: isLocalSender(chat) || othersReplyIn(chat.shown.key),
       isLocalSender: isLocalSender(chat),
       load: chat.load.phase,
+      // History says "Chat history unavailable" after a failed list read (US-15 AC75).
+      list: chat.list.phase,
       // Words beside a Send this tab's own request locks (R3): one an erase emptied, or one for a chat not on screen.
       wait: chat.turn.phase === 'orphaned' ? 'orphaned' as const : chat.turn.phase !== 'idle' && chat.turn.asked.key !== chat.shown.key ? 'other-chat' as const : null,
       error: cut ? CUT_NOTICE : chat.error,

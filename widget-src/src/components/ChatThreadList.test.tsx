@@ -19,7 +19,7 @@ function list() {
   const onSelect = vi.fn();
   const onDelete = vi.fn();
   const view = render(
-    <ChatThreadList conversations={conversations} activeConversationId={null} className="t" onSelect={onSelect} onNew={() => {}} onDelete={onDelete} />,
+    <ChatThreadList conversations={conversations} list="read" activeConversationId={null} className="t" onSelect={onSelect} onNew={() => {}} onDelete={onDelete} />,
   );
   return { view, onSelect, onDelete };
 }

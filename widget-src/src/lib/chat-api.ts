@@ -9,7 +9,8 @@ import { refuseUnreadableEdits, type ChatEditRefusal } from '@roadmap/health-cor
 import { PROXY_PATH, parseJsonResponse } from './server-api';
 import { chatBodyParts, chatQueryParts, fetchWithTransientRetry, getGuestSessionToken, guestThreadGone, setGuestSessionToken, threadNotFound, tokenOf } from './chat-request';
 import { askChatHistory, getChatHistory, hasChatHistoryLayer } from './chat-history-access';
-import { chatAskedUnder, recordEraseIn } from './chat-erase';
+import { chatAskedUnder } from './chat-erase';
+import { saveExchange, type ExchangeSave } from './chat-history-save';
 import { recordFailure } from './error-diagnostics';
 import { readSubscriptionCard, type SubscriptionCard } from './subscription-card';
 import type { ChatHistoryStore } from '../storage/chat-history-store';
@@ -39,6 +40,8 @@ export interface ChatMessage {
   createdAt: string;
   /** Assistant turns only: the server substituted its own text (a fallback or a refusal line), never re-served. */
   isFallback?: boolean;
+  /** Assistant turns only: why the chat says by this reply that it was not saved (US-15 AC75; chat-turn.ts Msg). */
+  notSaved?: 'history' | 'left';
 }
 
 export interface SendMessageResult {
@@ -107,6 +110,12 @@ export interface ChatReply {
 export interface ChatError {
   error: string;
 }
+
+/** A sent turn: the reply or the error, and the reply's save to the chat-history file (US-15 AC75). */
+export interface ChatSent { result: SendMessageResult | null; error: ChatError | null; saved?: Promise<ExchangeSave> }
+
+/** Asked as the reply lands, before anything else runs: 'left' when its edits apply nowhere (US-15 AC75). */
+export type ReplyMark = (result: SendMessageResult) => 'left' | undefined;
 
 // ---------------------------------------------------------------------------
 // Chat gate — BYOK hook point
@@ -247,12 +256,13 @@ export async function sendMessage(
   onDelta: (delta: ChatDelta) => void = () => {},
   // Only the widget's own chat applies form edits, so only it asks for the tools (US-15 AC19).
   canApplyEdits = false,
+  markReply: ReplyMark = () => undefined,
   sessionToken = getGuestSessionToken(),
   asked = chatAskedUnder(), // the erase the question is asked under (US-11 AC2h)
   // The reply is saved only under the erase marks taken as the question is
   // asked, without the send waiting (US-11 AC2h).
   opened: ReturnType<typeof askChatHistory> = LOCAL_FIRST ? askChatHistory() : Promise.resolve({ store: null }),
-): Promise<{ result: SendMessageResult | null; error: ChatError | null }> {
+): Promise<ChatSent> {
   if (LOCAL_FIRST && conversationId) {
     const [prevUser, prevAssistant] = history.slice(-2);
     if (prevUser?.role === 'user' && prevUser.content === message && prevAssistant?.role === 'assistant'
@@ -300,7 +310,7 @@ export async function sendMessage(
     // once into a new conversation on it, passed directly in case storage
     // refused the save above. A customer's 404 is shown.
     if (conversationId && guestThreadGone(response.status, data)) {
-      return sendMessage(message, null, guestInputs, [], onDelta, canApplyEdits, newToken ?? sessionToken, asked, opened);
+      return sendMessage(message, null, guestInputs, [], onDelta, canApplyEdits, markReply, newToken ?? sessionToken, asked, opened);
     }
 
     if (response.status === 429) return { result: null, error: { error: CHAT_LIMIT_MESSAGE } };
@@ -323,28 +333,6 @@ export async function sendMessage(
       };
     }
 
-    // Local-first: mirror the exchange into the user's cloud history file,
-    // keyed by the server's canonical conversation id, unless an erase began
-    // since the question (US-11 AC2h). Fire-and-forget — history must never
-    // block or fail the chat itself.
-    void opened
-      .then(({ store, askedMarks }) =>
-        chatAskedUnder() !== asked ? undefined : store?.recordExchange({
-          askedMarks,
-          askedUnder: recordEraseIn(asked),
-          conversationId: data.conversationId,
-          isNew: !conversationId,
-          userText: message,
-          assistantText: data.content,
-          assistantMessageId: data.messageId,
-          ...(data.isFallback === true ? { isFallback: true } : {}),
-        }),
-      )
-      .catch((error) => {
-        // A turn missing from the history file is reported, not only dropped (US-15 AC47).
-        Sentry.captureException(recordFailure(error, 'Chat-history save failed'), { tags: { area: 'chat-history', op: 'save' } });
-      });
-
     // The reply's edits are read once, here, as the phone reads them (US-67 AC2): an unknown kind is
     // left out, and an entry of a known kind that is not its shape refuses every edit of its part.
     // A missing or non-list `proposedEdits` is no edits, as the iPhone takes it.
@@ -354,20 +342,30 @@ export async function sendMessage(
       Sentry.captureMessage('Chat edits unreadable', { level: 'warning', tags: { feature: 'chat-edits', invalid: [...new Set(read.invalid)].join(',') } });
     }
     const { edits, refusals } = refuseUnreadableEdits(read);
-    return {
-      result: {
-        conversationId: data.conversationId,
-        messageId: data.messageId,
-        content: data.content,
-        sessionToken: newToken,
-        isGuest: data.isGuest,
-        ...(data.isFallback === true ? { isFallback: true } : {}),
-        ...(edits.length > 0 ? { proposedEdits: edits } : {}),
-        ...(refusals.length > 0 ? { editRefusals: refusals } : {}),
-        ...(readSubscriptionCard(data.subscriptionCard) ? { subscriptionCard: readSubscriptionCard(data.subscriptionCard)! } : {}),
-      },
-      error: null,
+    const result: SendMessageResult = {
+      conversationId: data.conversationId,
+      messageId: data.messageId,
+      content: data.content,
+      sessionToken: newToken,
+      isGuest: data.isGuest,
+      ...(data.isFallback === true ? { isFallback: true } : {}),
+      ...(edits.length > 0 ? { proposedEdits: edits } : {}),
+      ...(refusals.length > 0 ? { editRefusals: refusals } : {}),
+      ...(readSubscriptionCard(data.subscriptionCard) ? { subscriptionCard: readSubscriptionCard(data.subscriptionCard)! } : {}),
     };
+    const notSaved = markReply(result);
+    // Local-first: the exchange goes into the user's cloud history file, keyed
+    // by the server's canonical conversation id (production: no file, skipped).
+    const saved = saveExchange(opened, asked, {
+      conversationId: data.conversationId,
+      isNew: !conversationId,
+      userText: message,
+      assistantText: data.content,
+      assistantMessageId: data.messageId,
+      ...(data.isFallback === true ? { isFallback: true } : {}),
+      ...(notSaved ? { notSaved } : {}),
+    });
+    return { result, error: null, saved };
   } catch (error) {
     // Fixed words only: the error can quote the chat (US-15 AC47).
     console.warn('Chat send failed');

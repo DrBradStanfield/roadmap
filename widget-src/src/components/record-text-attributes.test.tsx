@@ -114,7 +114,7 @@ describe('US-09 AC7l: a chart of a test the catalogue does not know', () => {
 describe('US-09 AC7l: the chat History list', () => {
   it('names each Delete after its thread, with the title in no attribute', () => {
     const { container } = render(
-      <ChatThreadList conversations={[{ id: 'c1', title: CHAT, updatedAt: 'x', createdAt: 'x' }, { id: 'c2', title: '', updatedAt: 'x', createdAt: 'x' }]}
+      <ChatThreadList list="read" conversations={[{ id: 'c1', title: CHAT, updatedAt: 'x', createdAt: 'x' }, { id: 'c2', title: '', updatedAt: 'x', createdAt: 'x' }]}
         activeConversationId={null} className="t" onSelect={() => {}} onNew={() => {}} onDelete={() => {}}/>,
     );
     expect(screen.getByRole('button', { name: `Delete conversation ${CHAT}` })).toBeTruthy();
