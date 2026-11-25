@@ -208,6 +208,9 @@ issue, and nothing private.
 - Screen-reader names for the medicine dose boxes end in a lower-case "dose", as the supplement rows do (PR 1796),
   so the whole form uses one casing: "this" (option 2). PR 1888 now names them "Statin dose", "GLP-1 Medication
   dose" and "SGLT2 Inhibitor dose", through labelled-by references (US-09 AC7l). "Email for your PDF" is approved for PR 1800.
+- A YouTube follow-up's classifier and router see the parent comment and the author's own earlier replies, by the
+  same rule as web and Discord (H415, US-15 AC75): "the router should see the earlier comments. youtube, web, and discord should behave the same here, and so
+  probably use the same code". No new words.
 - Web sync lines, all three: "use your judgement for the sentences. must be succinct, and I approve whatever sentences
   you suggest". Now said: "Sign-in did not finish because this browser was logged off. Please try again." (a sign-in a log-off cut short);
   "This browser was logged off in another tab. Your latest changes show here but are not saved." (a cloud page whose
