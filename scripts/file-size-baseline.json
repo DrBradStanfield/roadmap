@@ -16,7 +16,7 @@
     "widget-src/src/components/HealthTool.tsx": 723,
     "packages/health-core/src/validation.ts": 700,
     "app/routes/api.chat.ts": 687,
-    "packages/health-core/src/types.ts": 656,
+    "packages/health-core/src/types.ts": 644,
     "widget-src/src/storage/drive.ts": 631,
     "app/lib/chat.server.ts": 610,
     "app/lib/mcp-import.server.ts": 599,
