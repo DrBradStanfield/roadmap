@@ -36,7 +36,10 @@ export function RemindersControl({ backend }: { backend: Backend }) {
   // unsubscribed from an email link (404), and another device's choice is
   // merged in (US-17 AC17) — re-render when either happens.
   useEffect(() => {
-    const onChange = () => setVersion((v) => v + 1);
+    const onChange = () => {
+      setVersion((v) => v + 1);
+      if (getReminderOptIn()?.status === 'active') send({ type: 'recordOn' });
+    };
     window.addEventListener('hr:reminders-changed', onChange);
     window.addEventListener(REMOTE_CHANGED_EVENT, onChange);
     return () => {
@@ -86,7 +89,7 @@ export function RemindersControl({ backend }: { backend: Backend }) {
         <>
           <span className="hr-sync-status">✓ Email health reminders on → {optIn!.email}</span>
           <button className="hr-sync-link" disabled={busy} onClick={() => void turnOff()}>
-            {busy ? 'Turning off…' : 'Turn off'}
+            {step.phase === 'turningOn' ? 'Setting up…' : busy ? 'Turning off…' : 'Turn off'}
           </button>
           {/* US-17 AC1/AC5: default-on must never be silent. Wherever the
               control renders, it states exactly what leaves the device. */}
@@ -107,6 +110,7 @@ export function RemindersControl({ backend }: { backend: Backend }) {
               placeholder="Email for your reminders"
               aria-label="Email for your reminders"
               value={view.form.reminderEmail}
+              readOnly={busy}
               onChange={(e) => edit({ reminderEmail: e.target.value })}
             />
           )}
@@ -124,6 +128,7 @@ export function RemindersControl({ backend }: { backend: Backend }) {
               placeholder="Your email for the MicroVitamin list"
               aria-label="Email for the MicroVitamin mailing list"
               value={view.form.typedEmail}
+              readOnly={busy}
               onChange={(e) => edit({ typedEmail: e.target.value })}
             />
           )}

@@ -6,11 +6,12 @@
  *
  * Steps:
  * - idle: the off line (or nothing to do while the record is on).
- * - asking: the step that asks to turn on, with what has been typed.
+ * - asking: the step that asks to turn on, with what has been typed. The
+ *   record turning on elsewhere closes it (Q2).
  * - refreshed: the address was already enrolled (AC8), so this device cannot
- *   show "on"; it says so. Kept until the page goes (Q1, pinned as found).
- * - turningOn: the opt-in call runs; the form stays editable (Q4).
- * - turningOff: the cancel runs; `prior` is the step it returns to (Q2).
+ *   show "on"; it says so. A Turn off here drops it (Q1).
+ * - turningOn: the opt-in call runs; the form is read-only (Q4).
+ * - turningOff: the cancel runs; `prior` is the step it returns to.
  * The resting steps carry the last failure's words; the running steps none.
  */
 
@@ -45,7 +46,9 @@ export type ToggleEvent =
   | { type: 'onFailed'; message: string; needsEmail: boolean }
   | { type: 'off' }
   | { type: 'offDone' }
-  | { type: 'offFailed'; message: string };
+  | { type: 'offFailed'; message: string }
+  /** The record's opt-in is on, written by another tab or device. */
+  | { type: 'recordOn' };
 
 export const EMPTY_FORM: ToggleForm = { wantsUpdates: false, typedEmail: '', needsEmail: false, reminderEmail: '' };
 export const INITIAL_STEP: ToggleStep = { phase: 'idle', error: null };
@@ -58,28 +61,14 @@ export function shown(state: ToggleStep): Resting {
 }
 export const busy = (state: ToggleStep): boolean => state.phase === 'turningOn' || state.phase === 'turningOff';
 
-/** Typing lands on the form wherever it shows, a running step included. */
-function edited(state: ToggleStep, edit: FormEdit): ToggleStep {
-  switch (state.phase) {
-    case 'asking':
-    case 'turningOn':
-      return { ...state, form: { ...state.form, ...edit } };
-    case 'turningOff':
-      return state.prior.phase === 'asking'
-        ? { phase: 'turningOff', prior: { ...state.prior, form: { ...state.prior.form, ...edit } } }
-        : state;
-    default:
-      return state;
-  }
-}
-
 export function transition(state: ToggleStep, event: ToggleEvent): ToggleStep {
   switch (event.type) {
     case 'open':
       // The words of the last failure stay (the old error state outlived the open).
       return state.phase === 'idle' ? { phase: 'asking', form: EMPTY_FORM, error: state.error } : state;
     case 'edit':
-      return edited(state, event.edit);
+      // Only the open step takes typing: while Turn on runs it sends what was submitted (Q4).
+      return state.phase === 'asking' ? { ...state, form: { ...state.form, ...event.edit } } : state;
     case 'submit':
       return state.phase === 'asking' ? { phase: 'turningOn', form: state.form } : state;
     case 'dismiss':
@@ -96,8 +85,13 @@ export function transition(state: ToggleStep, event: ToggleEvent): ToggleStep {
       if (state.phase === 'turningOn' || state.phase === 'turningOff') return state;
       return { phase: 'turningOff', prior: { ...state, error: null } };
     case 'offDone':
-      return state.phase === 'turningOff' ? state.prior : state;
+      // "Already set up" is no longer true once reminders are off (Q1).
+      if (state.phase !== 'turningOff') return state;
+      return state.prior.phase === 'refreshed' ? INITIAL_STEP : state.prior;
     case 'offFailed':
       return state.phase === 'turningOff' ? { ...state.prior, error: event.message } : state;
+    case 'recordOn':
+      // A step left open would come back after a Turn off, stale (Q2).
+      return state.phase === 'asking' ? INITIAL_STEP : state;
   }
 }

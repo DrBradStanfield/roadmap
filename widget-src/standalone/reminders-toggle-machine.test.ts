@@ -31,19 +31,20 @@ const events = {
   off: { type: 'off' },
   offDone: { type: 'offDone' },
   offFailed: { type: 'offFailed', message: FAIL },
+  recordOn: { type: 'recordOn' },
 } satisfies Record<string, ToggleEvent>;
 type Name = keyof typeof events;
 
 const EDITED: ToggleForm = { ...FORM, typedEmail: 'edited@example.com' };
 const quiet = <T extends Resting>(r: T): T => ({ ...r, error: null });
 
-/** [step, what follows each event]: all ten events in every row. */
+/** [step, what follows each event]: all eleven events in every row. */
 const table: Array<[string, ToggleStep, Record<Name, ToggleStep | 'same'>]> = [
   ['idle (with an earlier failure)', idle, {
     open: { phase: 'asking', form: EMPTY_FORM, error: OLD },
     edit: 'same', submit: 'same', dismiss: 'same', onDone: 'same', onRefreshed: 'same', onFailed: 'same',
     off: off(idle),
-    offDone: 'same', offFailed: 'same',
+    offDone: 'same', offFailed: 'same', recordOn: 'same',
   }],
   ['asking', asking, {
     open: 'same',
@@ -53,37 +54,37 @@ const table: Array<[string, ToggleStep, Record<Name, ToggleStep | 'same'>]> = [
     onDone: 'same', onRefreshed: 'same', onFailed: 'same',
     off: off(asking),
     offDone: 'same', offFailed: 'same',
+    recordOn: INITIAL_STEP,
   }],
   ['refreshed', refreshed, {
     open: 'same', edit: 'same', submit: 'same', dismiss: 'same', onDone: 'same', onRefreshed: 'same', onFailed: 'same',
     off: off(refreshed),
-    offDone: 'same', offFailed: 'same',
+    offDone: 'same', offFailed: 'same', recordOn: 'same',
   }],
   ['turningOn', turningOn, {
-    open: 'same',
-    edit: { phase: 'turningOn', form: EDITED },
-    submit: 'same', dismiss: 'same',
+    open: 'same', edit: 'same', submit: 'same', dismiss: 'same',
     onDone: INITIAL_STEP,
     onRefreshed: { phase: 'refreshed', email: ADDRESS, error: null },
     onFailed: { phase: 'asking', form: { ...FORM, needsEmail: true }, error: FAIL },
-    off: 'same', offDone: 'same', offFailed: 'same',
+    off: 'same', offDone: 'same', offFailed: 'same', recordOn: 'same',
   }],
   ['turningOff from idle', off(idle), {
     open: 'same', edit: 'same', submit: 'same', dismiss: 'same', onDone: 'same', onRefreshed: 'same', onFailed: 'same', off: 'same',
     offDone: quiet(idle),
     offFailed: { phase: 'idle', error: FAIL },
+    recordOn: 'same',
   }],
   ['turningOff from asking', off(asking), {
-    open: 'same',
-    edit: { phase: 'turningOff', prior: { phase: 'asking', form: EDITED, error: null } },
-    submit: 'same', dismiss: 'same', onDone: 'same', onRefreshed: 'same', onFailed: 'same', off: 'same',
+    open: 'same', edit: 'same', submit: 'same', dismiss: 'same', onDone: 'same', onRefreshed: 'same', onFailed: 'same', off: 'same',
     offDone: quiet(asking),
     offFailed: { ...asking, error: FAIL },
+    recordOn: 'same',
   }],
   ['turningOff from refreshed', off(refreshed), {
     open: 'same', edit: 'same', submit: 'same', dismiss: 'same', onDone: 'same', onRefreshed: 'same', onFailed: 'same', off: 'same',
-    offDone: quiet(refreshed),
+    offDone: INITIAL_STEP,
     offFailed: { ...refreshed, error: FAIL },
+    recordOn: 'same',
   }],
 ];
 

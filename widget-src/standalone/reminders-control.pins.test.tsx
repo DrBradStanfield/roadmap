@@ -3,8 +3,8 @@
  * US-17 AC18 (lead H116): what the person sees in the reminders control, flow
  * by flow, pinned through the rendered control before its five useStates
  * became one ToggleStep. Every word here is today's; the conversion changes
- * none of them. The last block pins oddities the old state allowed, kept as
- * they are and raised as questions, never silently fixed.
+ * none of them. The last block pins four oddities the old state allowed, as
+ * the owner ruled on them (2026-11-25).
  * Synthetic addresses only.
  */
 import { describe, it, expect, vi, afterEach } from 'vitest';
@@ -204,8 +204,8 @@ describe('US-17 AC18: turn off', () => {
   });
 });
 
-describe('US-17 AC18: what the old state allowed, pinned as it is (questions for the owner)', () => {
-  it('Q1: the refreshed line is never cleared: after the record turns on elsewhere and is turned off here, it shows again', async () => {
+describe('US-17 AC18: what the old state allowed, as the owner ruled (2026-11-25)', () => {
+  it('Q1: the refreshed line goes once reminders are turned off here, after the record turned on elsewhere', async () => {
     optInToReminders.mockResolvedValue({ email: ADDRESS, refreshed: true });
     const view = open();
     fireEvent.click(button(view, 'Turn on reminders'));
@@ -215,10 +215,12 @@ describe('US-17 AC18: what the old state allowed, pinned as it is (questions for
     expect(text(view)).toContain(ON_LINE);
     cancelReminders.mockImplementation(async () => { recordOptIn = { ...ACTIVE, status: 'cancelled', lamport: 2 }; });
     fireEvent.click(button(view, 'Turn off'));
-    await waitFor(() => expect(text(view)).toContain(REFRESHED));
+    await waitFor(() => expect(text(view)).toContain(OFF_LINE));
+    expect(text(view)).not.toContain(REFRESHED);
+    expect(button(view, 'Turn on email health reminders').disabled).toBe(false);
   });
 
-  it('Q2: a step left open when the record turns on elsewhere comes back, as typed, after Turn off', async () => {
+  it('Q2: a step left open when the record turns on elsewhere closes; after Turn off it is the off line', async () => {
     const view = open();
     fireEvent.click(view.getByRole('checkbox'));
     fireEvent.change(view.getByRole('textbox'), { target: { value: 'typed@example.com' } });
@@ -227,11 +229,13 @@ describe('US-17 AC18: what the old state allowed, pinned as it is (questions for
     expect(text(view)).toContain(ON_LINE);
     cancelReminders.mockImplementation(async () => { recordOptIn = { ...ACTIVE, status: 'cancelled', lamport: 2 }; });
     fireEvent.click(button(view, 'Turn off'));
-    await waitFor(() => expect(button(view, 'Turn on reminders')).toBeTruthy());
-    expect((view.getByRole('textbox') as HTMLInputElement).value).toBe('typed@example.com');
+    await waitFor(() => expect(text(view)).toContain(OFF_LINE));
+    expect(view.queryByRole('textbox')).toBeNull();
+    fireEvent.click(button(view, 'Turn on email health reminders'));
+    expect((view.getByRole('checkbox') as HTMLInputElement).checked).toBe(false);
   });
 
-  it('Q3: the record turning on while Turn on still runs shows the on line with "Turning off…", off', async () => {
+  it('Q3: the record turning on while Turn on still runs shows the on line with "Setting up…", off', async () => {
     const call = deferred<{ email: string; refreshed: boolean }>();
     optInToReminders.mockReturnValue(call.promise);
     const view = open();
@@ -239,12 +243,14 @@ describe('US-17 AC18: what the old state allowed, pinned as it is (questions for
     await waitFor(() => expect(button(view, 'Setting up…')).toBeTruthy());
     recordOptIn = ACTIVE;
     changed();
-    expect(button(view, 'Turning off…').disabled).toBe(true);
+    expect(text(view)).toContain(ON_LINE);
+    expect(button(view, 'Setting up…').disabled).toBe(true);
+    expect(view.queryByRole('button', { name: 'Turning off…' })).toBeNull();
     await act(async () => { call.resolve({ email: ADDRESS, refreshed: false }); });
     expect(button(view, 'Turn off').disabled).toBe(false);
   });
 
-  it('Q4: the form stays editable while Turn on runs; a failure keeps what was typed meanwhile', async () => {
+  it('Q4: the form is read-only while Turn on runs; a failure keeps what was submitted', async () => {
     const call = deferred<{ email: string; refreshed: boolean }>();
     optInToReminders.mockReturnValue(call.promise);
     const view = open();
@@ -252,9 +258,14 @@ describe('US-17 AC18: what the old state allowed, pinned as it is (questions for
     fireEvent.change(view.getByRole('textbox'), { target: { value: 'list-person@example.com' } });
     fireEvent.click(button(view, 'Turn on reminders'));
     await waitFor(() => expect(button(view, 'Setting up…')).toBeTruthy());
-    fireEvent.change(view.getByRole('textbox'), { target: { value: 'edited@example.com' } });
+    const field = view.getByRole('textbox') as HTMLInputElement;
+    expect(field.readOnly).toBe(true);
+    fireEvent.change(field, { target: { value: 'edited@example.com' } });
+    fireEvent.click(view.getByRole('checkbox'));
+    expect((view.getByRole('checkbox') as HTMLInputElement).checked).toBe(true);
     await act(async () => { call.reject(new Error('Could not set up reminders (503).')); });
-    expect((view.getByRole('textbox') as HTMLInputElement).value).toBe('edited@example.com');
+    expect((view.getByRole('textbox') as HTMLInputElement).value).toBe('list-person@example.com');
+    expect((view.getByRole('textbox') as HTMLInputElement).readOnly).toBe(false);
     expect(text(view)).toContain('Could not set up reminders (503).');
   });
 });
