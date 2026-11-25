@@ -372,9 +372,11 @@ describe('free-text scrub parity', () => {
         ['Ferritin pending, B12 300', 'Ferritin pending, B12 [value]'], ['Vitamin D pending, B12 300', 'Vitamin D pending, B12 [value]'],
         ['LDL n/a, HbA1c 6.1', 'LDL n/a, HbA1c [value]'], ['Ferritin unknown; Vitamin B12 300 pmol/L', 'Ferritin unknown; Vitamin B12 [value]'],
         ['Ferritin B12 300', 'Ferritin B12 [value]'], ['LDL HbA1c 6.1', 'LDL HbA1c [value]'], ['LDL 25(oh)d 80', 'LDL 25(oh)d [value]'],
+        // A two-letter name ending in a digit is a name (US-32 AC9b): the value after it goes.
+        ['TSH: -, T4 15', 'TSH: -, T4 [value]'], ['LDL D3 45', 'LDL D3 [value]'], ['ldl T3 4.1', 'ldl T3 [value]'],
+        ['ldl b6 40', 'ldl b6 [value]'],
         // A name the vocabulary does not hold, ending in digits: a number after it is the value, and both go.
-        ['TSH: -, T4 15', 'TSH: -, T[value]'], ['LDL D3 45', 'LDL D[value]'], ['ldl T3 4.1', 'ldl T[value]'],
-        ['ldl b6 40', 'ldl b[value]'], ['ferritin CA-125 30', 'ferritin CA-[value]'], ['LDL Omega-3 8', 'LDL Omega-[value]'],
+        ['ferritin CA-125 30', 'ferritin CA-[value]'], ['LDL Omega-3 8', 'LDL Omega-[value]'],
         ['ldl140 160', 'ldl[value]'],
       ]) {
         expect(impl.scrubText(text), text).toBe(scrubbed);
@@ -386,7 +388,7 @@ describe('free-text scrub parity', () => {
     for (const impl of [source, copy]) {
       for (const [text, scrubbed] of [
         ['Vit D 45', 'Vit D [value]'], ['vit. d 45', 'vit. d [value]'], ['Vit B12 300', 'Vit B12 [value]'],
-        ['Vit. B12 300', 'Vit. B12 [value]'], ['Vit D pending, B12 300', 'Vit D pending, B12 [value]'], ['vit d3 45', 'vit d[value]'],
+        ['Vit. B12 300', 'Vit. B12 [value]'], ['Vit D pending, B12 300', 'Vit D pending, B12 [value]'], ['vit d3 45', 'vit d3 [value]'],
         // "vit" inside a longer word is not the name.
         ['vitals ok', 'vitals ok'], ['vitals 3', 'vitals 3'], ['multivit 2 daily', 'multivit 2 daily'],
         ['vital signs 3 of 4', 'vital signs 3 of 4'],
@@ -510,6 +512,48 @@ describe('free-text scrub parity', () => {
       }
     }
   }, 60_000);
+
+  // US-32 AC9b widened the rule: two-letter names, a three-word reach and a
+  // unit straight after a letter. The worst runs for each, timed the same way.
+  it('US-09 AC7f, US-32 AC9b — digit names and long word runs scrub in linear time, on both copies', () => {
+    const SIZES = [12_500, 50_000, 200_000];
+    const GROWTH_LIMIT = 10;
+    const FLOOR_MS = 1;
+    const HANG_MS = 10_000;
+    const ROWS: ReadonlyArray<readonly [string, (n: number) => string]> = [
+      ['b12 glued', (n) => 'b12'.repeat(Math.floor(n / 3))],
+      ['b12 spaced', (n) => 'b12 '.repeat(n / 4)],
+      ['t4 spaced', (n) => 't4 '.repeat(Math.floor(n / 3))],
+      ['igf1 glued', (n) => 'igf1'.repeat(n / 4)],
+      ['a1 glued', (n) => 'a1'.repeat(n / 2)],
+      ['words before a number', (n) => 'word '.repeat(n / 5) + '1'],
+      ['a name, then words', (n) => 'ldl abc def ghi '.repeat(n / 16)],
+      ['a number, then words', (n) => '1 abc def ghi '.repeat(n / 16)],
+      ['a name, then spaces', (n) => 'ldl' + ' '.repeat(n) + 'x'],
+    ];
+    for (const impl of [source, copy]) {
+      for (const [row, make] of ROWS) {
+        const name = `${impl === copy ? 'copy' : 'source'} ${row}`;
+        const fastest = (run: string) => {
+          let best = Infinity;
+          for (let attempt = 0; attempt < 3; attempt += 1) {
+            const start = performance.now();
+            impl.scrubText(run);
+            best = Math.min(best, performance.now() - start);
+          }
+          return best;
+        };
+        let previous = fastest(make(SIZES[0]));
+        for (const size of SIZES.slice(1)) {
+          const took = fastest(make(size));
+          expect(took, `${name} at ${size}`).toBeLessThan(HANG_MS);
+          expect(took / Math.max(previous, FLOOR_MS), `${name}: growth from ${size / 4} to ${size} characters`)
+            .toBeLessThan(GROWTH_LIMIT);
+          previous = took;
+        }
+      }
+    }
+  }, 120_000);
 
   it('US-09 AC7f — the server hook scrubs the value from the message and the exception value', () => {
     const event = copy.scrubServerEvent({

@@ -88,6 +88,7 @@ var UNITS = [
   '"'
 ];
 var METRIC_WORDS = [
+  "a1",
   "acr",
   "acth",
   "adrenocorticotropic",
@@ -112,7 +113,9 @@ var METRIC_WORDS = [
   "ascorbic",
   "aspartate",
   "ast",
+  "b1",
   "b12",
+  "b6",
   "baso",
   "basophil",
   "basophils",
@@ -120,7 +123,9 @@ var METRIC_WORDS = [
   "bilirubin",
   "bioavailable",
   "bnp",
+  "bp",
   "bun",
+  "ca",
   "caeruloplasmin",
   "calcium",
   "ccp",
@@ -131,7 +136,9 @@ var METRIC_WORDS = [
   "cholesterol",
   "chorionic",
   "citrullinated",
+  "ck",
   "ckd",
+  "cl",
   "co2",
   "cobalamin",
   "concentration",
@@ -139,14 +146,17 @@ var METRIC_WORDS = [
   "corticotropin",
   "cortisol",
   "cpk",
+  "cr",
   "creatine",
   "creatinine",
   "crp",
   "ctni",
   "ctnt",
+  "cv",
   "cyclic",
   "cys",
   "cystatin",
+  "d3",
   "dehydroepiandrosterone",
   "dehydrogenase",
   "dhea",
@@ -155,6 +165,8 @@ var METRIC_WORDS = [
   "diastolic",
   "dihydrotestosterone",
   "dimer",
+  "e1",
+  "e2",
   "eag",
   "egfr",
   "egfrcr",
@@ -185,6 +197,7 @@ var METRIC_WORDS = [
   "gfr",
   "ggt",
   "ggtp",
+  "gh",
   "globulin",
   "glomerular",
   "glucose",
@@ -195,6 +208,7 @@ var METRIC_WORDS = [
   "granulocytes",
   "haematocrit",
   "haemoglobin",
+  "hb",
   "hba1c",
   "hcg",
   "hco3",
@@ -221,10 +235,12 @@ var METRIC_WORDS = [
   "kinase",
   "lactate",
   "lactic",
+  "ld",
   "ldh",
   "ldl",
   "leucocytes",
   "leukocytes",
+  "lh",
   "lipase",
   "llerian",
   "lpa",
@@ -238,6 +254,7 @@ var METRIC_WORDS = [
   "mchc",
   "mcv",
   "methylmalonic",
+  "mg",
   "microalbumin",
   "mma",
   "monocyte",
@@ -250,6 +267,7 @@ var METRIC_WORDS = [
   "neutrophils",
   "nitrogen",
   "nrbc",
+  "nt",
   "ntprobnp",
   "oestradiol",
   "oestrone",
@@ -288,6 +306,7 @@ var METRIC_WORDS = [
   "reticulocyte",
   "reticulocytes",
   "retinol",
+  "rf",
   "rheumatoid",
   "rt3",
   "sedimentation",
@@ -302,8 +321,12 @@ var METRIC_WORDS = [
   "sulfate",
   "sulphate",
   "systolic",
+  "t3",
   "t3u",
+  "t4",
+  "tc",
   "testosterone",
+  "tg",
   "tgab",
   "thiamin",
   "thiamine",
@@ -344,7 +367,6 @@ var METRIC_WORDS = [
   "na+",
   "k",
   "k+",
-  "cl",
   "cl-",
   "total co2",
   "carbon dioxide, total",
@@ -413,7 +435,6 @@ var METRIC_WORDS = [
   "conjugated bilirubin",
   "bilirubin, direct",
   "lactate dehydrogenase",
-  "ld",
   "total_protein",
   "total protein",
   "protein total",
@@ -427,7 +448,6 @@ var METRIC_WORDS = [
   "bilirubin, indirect",
   "serum lipase",
   "serum amylase",
-  "hb",
   "haemoglobin (hb)",
   "packed cell volume",
   "haematocrit (hct)",
@@ -588,7 +608,6 @@ var METRIC_WORDS = [
   "calculated free t",
   "sex hormone binding globulin",
   "shbg (sex hormone binding globulin)",
-  "e2",
   "cortisol_am",
   "cortisol (morning)",
   "am cortisol",
@@ -617,7 +636,6 @@ var METRIC_WORDS = [
   "psa (free)",
   "free psa",
   "psa, free",
-  "lh",
   "luteinising hormone",
   "luteinizing hormone",
   "follicle stimulating hormone",
@@ -647,14 +665,12 @@ var METRIC_WORDS = [
   "percent free psa",
   "free psa %",
   "psa % free",
-  "e1",
   "oh_progesterone_17",
   "17-oh progesterone",
   "17-hydroxyprogesterone",
   "17 hydroxyprogesterone",
   "17-ohp",
   "adrenocorticotropic hormone",
-  "gh",
   "growth hormone",
   "human growth hormone",
   "beta hcg",
@@ -689,7 +705,6 @@ var METRIC_WORDS = [
   "transferrin saturation",
   "iron saturation",
   "transferrin saturation %",
-  "mg",
   "calcium_corrected",
   "calcium (corrected)",
   "corrected calcium",
@@ -698,7 +713,6 @@ var METRIC_WORDS = [
   "calcium (total)",
   "total calcium",
   "serum calcium",
-  "ca",
   "inorganic phosphate",
   "red_cell_folate",
   "red cell folate",
@@ -750,7 +764,6 @@ var METRIC_WORDS = [
   "total ige",
   "immunoglobulin e",
   "serum ige",
-  "rf",
   "rheumatoid factor",
   "anti_ccp",
   "anti-ccp",
@@ -788,7 +801,6 @@ var METRIC_WORDS = [
   "apoa-i",
   "total homocysteine",
   "plasma homocysteine",
-  "ck",
   "creatine kinase",
   "creatine phosphokinase",
   "nt_probnp",
@@ -830,7 +842,6 @@ var METRIC_WORDS = [
   "apo b",
   "lp(a)",
   "a1c",
-  "bp",
   "bmi",
   "height",
   "vit"
@@ -866,7 +877,7 @@ var CATALOG_UNITS = standIn("CATALOG_UNITS", /* @__PURE__ */ new Map([[Symbol.it
 var LAB_CATALOG = standIn("LAB_CATALOG", /* @__PURE__ */ new Map([["flatMap", { left: 2, value: () => [] }]]));
 var metricNameWordsCalls = 0;
 function metricNameWords(minLength) {
-  if (minLength !== 3 || metricNameWordsCalls++ > 0) refuse(`metricNameWords(${minLength})`);
+  if (minLength !== 2 || metricNameWordsCalls++ > 0) refuse(`metricNameWords(${minLength})`);
   return METRIC_WORDS;
 }
 
@@ -1063,10 +1074,10 @@ var SCRUB_UNITS = caselessUnique([
 ]);
 var EXTRA_METRIC_NAMES = ["blood pressure", "apo b", "lp(a)", "a1c", "bp", "bmi", "height", "vit"];
 var SCRUB_METRIC_WORDS = [.../* @__PURE__ */ new Set([
-  // Every word a metric or catalogued test is known by. 3 is the floor for a
-  // word split out of a name: "mg" and "na" are a unit and a word long before
-  // they are magnesium and sodium.
-  ...metricNameWords(3),
+  // Every word a metric or catalogued test is known by, down to two letters:
+  // "t4", "b6", "tg" and "cr" are names (US-32 AC9b). The English and markup
+  // ones ("na", "gt", "am") are left out where the words are read off.
+  ...metricNameWords(2),
   // Every name a catalogued test is known by, whole: a whole name is that test
   // however short ("Na 140", "Ca 2.4"), and a name ending in a digit keeps the
   // digit while the value goes ("IGF 1 200", "Free T4 15").
@@ -1075,7 +1086,7 @@ var SCRUB_METRIC_WORDS = [.../* @__PURE__ */ new Set([
 ])];
 var escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 var NAME_DIGIT = SCRUB_METRIC_WORDS.flatMap((name) => [...name].flatMap((char, i) => /\d/.test(char) ? [`(?<=(?<![a-z0-9])${escapeRe(name.slice(0, i))})(?=${escapeRe(name.slice(i))}(?![a-z0-9]))`] : [])).join("|");
-var NUMBER = `(?!${NAME_DIGIT})\\d+(?:[.,]\\d+)?(?:/\\d+(?:[.,]\\d+)?)?`;
+var NUMBER = `(?=\\d)(?!${NAME_DIGIT})\\d+(?:[.,]\\d+)?(?:/\\d+(?:[.,]\\d+)?)?`;
 var alternation = (words, pattern = escapeRe) => words.map(pattern).sort((a, b) => b.length - a.length).join("|");
 var NORMALISER_SPELLINGS = {
   "×10": "(?:[x×]\\s*)?10\\s*(?:(?:e|\\^|\\*{1,2})\\s*\\d+|(?:\\^|\\*{1,2})?\\(\\s*\\d+\\s*\\)|[⁰¹²³⁴⁵⁶⁷⁸⁹]+)",
@@ -1095,17 +1106,19 @@ var SCRUB_UNIT_PATTERN = alternation(PLAIN_UNITS, unitPattern);
 var EMAIL_SOURCE = String.raw`[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]{1,255}\.[A-Za-z]{2,}`;
 var EMAIL_RE = new RegExp(EMAIL_SOURCE, "g");
 var UNIT_VALUE_RE = new RegExp(
-  `\\b${NUMBER}\\s*(?:(?:${SCRUB_UNIT_PATTERN})(?![A-Za-z])|${INCH_UNIT})`,
+  `(?:\\b|(?<=[a-z]))${NUMBER}\\s*(?:(?:${SCRUB_UNIT_PATTERN})(?![A-Za-z])|${INCH_UNIT})`,
   "gi"
 );
-var METRIC_NAME = `(?<![a-z0-9])(?:${alternation(SCRUB_METRIC_WORDS)})(?![a-z])`;
+var METRIC_NAME = `(?<![a-z0-9])(?:${alternation(SCRUB_METRIC_WORDS)})(?![a-z]|(?<=\\d)\\d)`;
 var NAME_GAP = `(?:(?!${METRIC_NAME})[^\\d\\n]){0,20}?`;
+var WORDS_TO_VALUE = `(?:[^a-z0-9]+(?!${METRIC_NAME})[a-z]+){0,2}?[^a-z0-9]+`;
+var WORDS_TO_NAME = "(?:[^a-z0-9]+[a-z]+){0,2}?[^a-z0-9]+";
 var METRIC_THEN_VALUE_RE = new RegExp(
-  `(?<![a-z0-9])(${alternation(SCRUB_METRIC_WORDS)})(?![a-z])(${NAME_GAP})(?!(?<=[a-z])\\d+(?:[.,]\\d+)?[a-z]|${METRIC_NAME})((?<=[a-z]-?)${NUMBER}(?:[ \\t:=]+|${NAME_GAP})(?!${METRIC_NAME})${NUMBER}|${NUMBER})`,
+  `(?<![a-z0-9])(${alternation(SCRUB_METRIC_WORDS)})(?![a-z])(${NAME_GAP}|${WORDS_TO_VALUE})(?!(?<=[a-z])\\d+(?:[.,]\\d+)?[a-z]|${METRIC_NAME})((?<=[a-z]-?)${NUMBER}(?:[ \\t:=]+|${NAME_GAP})(?!${METRIC_NAME})${NUMBER}|${NUMBER})`,
   "gi"
 );
 var VALUE_THEN_METRIC_RE = new RegExp(
-  `(?<!\\d)(${NUMBER})([^\\d\\n]{0,20}?)(?:(?<![a-z])|(?![a-z0-9]))(${alternation(SCRUB_METRIC_WORDS)})(?:(?<![a-z0-9])|(?![a-z0-9]))`,
+  `(?<!\\d)(${NUMBER})([^\\d\\n]{0,20}?|${WORDS_TO_NAME})(?:(?<![a-z])|(?![a-z0-9]))(${alternation(SCRUB_METRIC_WORDS)})(?:(?<![a-z0-9])|(?![a-z0-9]))`,
   "gi"
 );
 

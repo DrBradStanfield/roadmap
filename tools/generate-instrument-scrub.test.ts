@@ -197,8 +197,8 @@ describe('US-09 AC7j: the stand-in catalogue fails closed', () => {
   };
   const LABEL_READ = '...LAB_CATALOG.flatMap((entry) => [entry.key';
   it.each([
-    ['metricNameWords(2)', edit('...metricNameWords(3),', '...metricNameWords(2),'), /metricNameWords\(2\)/],
-    ['metricNameWords(3) twice', edit('...metricNameWords(3),', '...metricNameWords(3), ...metricNameWords(3),'), /metricNameWords\(3\)/],
+    ['metricNameWords(3)', edit('...metricNameWords(2),', '...metricNameWords(3),'), /metricNameWords\(3\)/],
+    ['metricNameWords(2) twice', edit('...metricNameWords(2),', '...metricNameWords(2), ...metricNameWords(2),'), /metricNameWords\(2\)/],
     ['LAB_CATALOG read once more', edit(LABEL_READ, `...LAB_CATALOG.flatMap((entry) => entry.aliases), ${LABEL_READ}`), /LAB_CATALOG\[flatMap\] \(once more\)/],
     ['LAB_CATALOG read another way', edit(LABEL_READ, `...LAB_CATALOG.map((entry) => entry.key), ${LABEL_READ}`), /LAB_CATALOG\[map\]/],
     ['CATALOG_UNITS spread twice', edit('  ...CATALOG_UNITS,', '  ...CATALOG_UNITS,\n  ...CATALOG_UNITS,'), /CATALOG_UNITS\[Symbol\(Symbol\.iterator\)\] \(once more\)/],

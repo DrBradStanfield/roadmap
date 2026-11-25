@@ -775,7 +775,7 @@ function foldLpa(text: string): string {
  * mirror of the list is stable. Pure digits go ("25" of 25-OH vitamin D is a
  * number in any sentence) and so do the two sets above. `minLength` is how
  * short a name a caller can afford: the Sentry scrub, which the feedback guard
- * also reads (US-32 AC9b), takes 3 so "mg" stays a unit and not a name.
+ * also reads (US-32 AC9b), takes 2 and over-refuses on purpose.
  */
 export function metricNameWords(minLength: number): string[] {
   return [...new Set(

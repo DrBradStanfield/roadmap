@@ -496,6 +496,27 @@ describe('US-32 AC9b — a test name\'s own digit is not a value', () => {
     }
   });
 
+  // The feedback guard's strengths, now the scrub's too: two-letter names, a
+  // value three words off, and a number glued to a name with a unit after it.
+  it('redacts a short name\'s value, a value three words off, and a number glued to a name with a unit', () => {
+    for (const [text, scrubbed] of [
+      ['my T4 is 15', 'my T4 is [value]'], ['T3 was 2.1', 'T3 was [value]'], ['B6 50', 'B6 [value]'], ['free T4 15', 'free T4 [value]'],
+      ['the t32 column is blank', 'the t3[value] column is blank'], ['my cr 90 is wrong', 'my cr [value] is wrong'], ['tg 1.2', 'tg [value]'],
+      ['Ferritin unexpectedly skyrocketed 210', 'Ferritin unexpectedly skyrocketed [value]'],
+      ['210 then later my ferritin', '[value] then later my ferritin'], ['ferritin\n\n210', 'ferritin\n\n[value]'],
+      ['weight81kg', 'weight[value]'], ['ldl140mg/dL', 'ldl[value]'], ['hba1c48mmol/mol', 'hba1c[value]'],
+      // A digit name glued to more digits does not stop the reach of the name before it.
+      ['sodium a140', 'sodium a[value]'],
+    ]) {
+      expect(scrubText(text), text).toBe(scrubbed);
+    }
+    // A name's own digit alone, and three words of reach that end in no number, stay as written.
+    for (const text of ['the a1c row', 'igf1', 'b12', 'omega3', 'the t3 and t4 rows are swapped', 'the cr and tg rows are swapped',
+      'the line-height on the plan is too tight']) {
+      expect(scrubText(text), text).toBe(text);
+    }
+  });
+
   it('still redacts every real value the scrub redacted before', () => {
     for (const text of [
       'My LDL is 3.2 mmol/L', 'weighed 96.4kg this morning', 'BP 140/90', 'cholesterol 200', 'an ApoB of 0.9 was reported',

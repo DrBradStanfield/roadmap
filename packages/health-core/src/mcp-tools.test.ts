@@ -1355,8 +1355,10 @@ describe('US-32 AC9 — report_feedback prepares an issue the user submits', () 
       'ldl,140 is wrong',
       'ldl.140 is wrong',
       'ft4,15 is missing',
-      // The cost: digits glued to a word that is no name are a number too.
+      // The cost: digits glued to a word that is no name are a number too, and
+      // a name that ends in a digit gives up the digits after it (t3 and 2).
       'ldl in tab2 is blank',
+      'the t32 column is blank',
       // US-32 AC9b: the scrub's rule. "pyridoxal5 phosphate" is not the
       // catalogue's name written whole, so its 5 is a number near a name.
       'the pyridoxal5 phosphate row is missing',
@@ -1369,9 +1371,9 @@ describe('US-32 AC9 — report_feedback prepares an issue the user submits', () 
     // A whole name keeps its digits; a number inside a longer name is that name;
     // a glued number with no name near it files.
     const filed = [
-      // US-32 AC9b: t3 then 2 is no value to the scrub, so it files.
-      'the t32 column is blank',
       'the igf1 row is missing',
+      'the t4 row is missing',
+      'the b6 row is blank',
       'the b12 row is blank',
       'the ft4 row is missing',
       'tab2 has 3 rows',
@@ -1431,10 +1433,31 @@ describe('US-32 AC9 — report_feedback prepares an issue the user submits', () 
     }
   });
 
+  // US-32 AC9b: the one rule reads two-letter names, reaches three words, and
+  // takes a unit straight after a letter.
+  it('US-32 AC9b — refuses a short name\'s value, a value three words off, and a number glued to a name with a unit', () => {
+    for (const detail of [
+      'my T4 is 15', 'T3 was 2.1', 'B6 50', 'free T4 15', 'the t32 column is blank', 'my cr 90 is wrong', 'tg 1.2',
+      'Ferritin unexpectedly skyrocketed 210', '210 then later my ferritin', 'ferritin\n\n210',
+      'weight81kg', 'ldl140mg/dL', 'hba1c48mmol/mol',
+    ]) {
+      expect(reportFeedback({ ...GOOD, detail }, NOW), detail).toMatchObject({ status: 'rejected', reason: 'health-value' });
+    }
+    // A name's own digit alone is still no value.
+    for (const detail of ['the a1c row', 'igf1', 'b12', 'omega3', 'the t3 and t4 rows are swapped', 'the cr and tg rows are swapped']) {
+      expect(reportFeedback({ ...GOOD, detail }, NOW).status, detail).toBe('ok');
+    }
+  });
+
   // US-32 AC9b: the feedback check and the error-report scrub share one rule; a
   // test name's own digit is not a value.
   it('US-32 AC9b — refuses a report as a health value exactly when the error-report scrub would redact one', () => {
     for (const detail of [
+      'my T4 is 15', 'T3 was 2.1', 'B6 50', 'free T4 15', 'the t32 column is blank', 'Ferritin unexpectedly skyrocketed 210',
+      '210 then later my ferritin', 'ferritin\n\n210', 'weight81kg', 'ldl140mg/dL', 'hba1c48mmol/mol', 'the a1c row', 'igf1', 'b12',
+      'omega3', 'b12300', 'the t4 row is missing', 'the b6 row is blank', 'the pyridoxal5 phosphate row is missing',
+      'the line-height on the plan is too tight', 'on ios18 the plan is blank', 'version 2 of the ferritin chart',
+      'the t3 and t4 rows are swapped', 'the cr and tg rows are swapped', 'the ldl,hdl rows are swapped', 'my cr 90 is wrong', 'tg 1.2',
       'My LDL is 3.2', 'weight shows 81 kg twice', 'BP 140/90 went in the wrong column', 'metformin 500mg daily', 'take 25 mcg and 2 units',
       'aspirin 81mg', '1000 IU', 'Na 140', '33 γ-GT', '68" tall', 'my ldl on the panel read 4.2 today', 'my ldl is 140ldl',
       'my 140ldl reads like my bmi', 'igf1 140', 'a1c 6.1', '140 a1c', 'igf1200 is missing', 'b12300 is missing', 'the b122 row is blank',
@@ -1503,7 +1526,7 @@ describe('US-32 AC9 — report_feedback prepares an issue the user submits', () 
       }
       return best;
     };
-    for (const [name, make] of [
+    for (const [name, make, reason] of [
       ['plain letters', (n) => 'a'.repeat(n)],
       ['email', (n) => 'a'.repeat(n / 2) + '@' + 'a'.repeat(n / 2)],
       ['file name', (n) => 'a.'.repeat(n / 2)],
@@ -1511,7 +1534,18 @@ describe('US-32 AC9 — report_feedback prepares an issue the user submits', () 
       ['value with unit, decimal', (n) => '1.' + '2'.repeat(n - 2)],
       ['url with query', (n) => 'http://'.repeat(Math.ceil(n / 7))],
       ['phone', (n) => '1' + ' '.repeat(n - 2) + 'x'],
-    ] as const satisfies ReadonlyArray<readonly [string, (n: number) => string]>) {
+      // US-32 AC9b: two-letter names, the three-word reach, a unit after a letter.
+      ['b12 spaced', (n) => 'b12 '.repeat(n / 4)],
+      ['t4 spaced', (n) => 't4 '.repeat(Math.floor(n / 3))],
+      ['words before a number', (n) => 'word '.repeat(n / 5) + '1'],
+      ['a name, then words', (n) => 'ldl abc def ghi '.repeat(n / 16)],
+      ['a number, then words', (n) => '1 abc def ghi '.repeat(n / 16)],
+      ['a name, then spaces', (n) => 'ldl' + ' '.repeat(n) + 'x'],
+      // Glued digit names: the only value is at the very end, so every rule reads the whole run first.
+      ['b12 glued', (n) => 'x' + 'b12'.repeat(Math.floor(n / 3)), 'health-value'],
+      ['igf1 glued', (n) => 'x' + 'igf1'.repeat(n / 4), 'health-value'],
+      ['a1 glued', (n) => 'x' + 'a1'.repeat(n / 2), 'health-value'],
+    ] as const satisfies ReadonlyArray<readonly [string, (n: number) => string, string?]>) {
       let previous = fastest(make(SIZES[0]));
       for (const size of SIZES.slice(1)) {
         const took = fastest(make(size));
@@ -1522,6 +1556,10 @@ describe('US-32 AC9 — report_feedback prepares an issue the user submits', () 
       }
       const outcome = reportFeedback({ ...GOOD, detail: make(SIZES[SIZES.length - 1]) }, NOW);
       expect(outcome, name).toMatchObject({ status: 'rejected' });
+      if (reason) {
+        expect(outcome, name).toMatchObject({ reason });
+        continue;
+      }
       expect(outcome, name).not.toHaveProperty('reason');
       expect(outcome.text, name).toContain('too long');
     }

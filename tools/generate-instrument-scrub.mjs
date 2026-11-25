@@ -69,7 +69,7 @@ const list = (words) => `[\n${words.map((w) => `  ${JSON.stringify(w)},`).join('
 /** ./lab-catalog as scrub-vocabulary.ts reads it, holding the finished lists. Its
  *  own additions are already in them, so the vocabulary returns them unchanged.
  *  It allows exactly the reads the vocabulary makes today: one spread of
- *  CATALOG_UNITS, two LAB_CATALOG.flatMap calls, one metricNameWords(3). Any
+ *  CATALOG_UNITS, two LAB_CATALOG.flatMap calls, one metricNameWords(2). Any
  *  other read throws, and the generator runs the output, so a vocabulary that
  *  derives something new fails generation by name instead of reading the
  *  finished lists as if they were the catalogue. */
@@ -100,7 +100,7 @@ export const CATALOG_UNITS = standIn("CATALOG_UNITS", new Map([[Symbol.iterator,
 export const LAB_CATALOG = standIn("LAB_CATALOG", new Map([["flatMap", { left: 2, value: () => [] }]]));
 let metricNameWordsCalls = 0;
 export function metricNameWords(minLength) {
-  if (minLength !== 3 || metricNameWordsCalls++ > 0) refuse(\`metricNameWords(\${minLength})\`);
+  if (minLength !== 2 || metricNameWordsCalls++ > 0) refuse(\`metricNameWords(\${minLength})\`);
   return METRIC_WORDS;
 }
 `;

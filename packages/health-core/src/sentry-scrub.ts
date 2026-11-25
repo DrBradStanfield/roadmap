@@ -125,7 +125,9 @@ export function scrubText(text: string): string {
 /**
  * The first health value `scrubText` would redact, as written, or null. The
  * feedback guard refuses on it, so the guard and the scrub read one rule
- * (US-32 AC9b). Each rule sees the text `scrubText` would hand it.
+ * (US-32 AC9b). All three rules read the same text, emails taken out first:
+ * one finds a value exactly when `scrubText` redacts one, since a rule that
+ * finds none leaves the text the next one reads unchanged.
  */
 export function firstScrubbedValue(text: string): string | null {
   const unemailed = text.replace(EMAIL_RE, '[email]');
