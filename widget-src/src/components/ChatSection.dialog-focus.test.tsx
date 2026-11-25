@@ -88,6 +88,6 @@ describe('US-15 AC12a: the pop-up chat takes the focus, closes on Escape and giv
   });
 
   it('a chat title drawn without a ref (the chat beside the plan) is not made focusable', () => {
-    expect(render(<ChatHeaderTitle subtitle="Synthetic subtitle" />).container.querySelector('h3')!.hasAttribute('tabindex')).toBe(false);
+    expect(render(<ChatHeaderTitle title="Synthetic title" subtitle="Synthetic subtitle" />).container.querySelector('h3')!.hasAttribute('tabindex')).toBe(false);
   });
 });
