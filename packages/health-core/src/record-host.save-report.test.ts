@@ -1,5 +1,5 @@
 /**
- * US-09 AC57: a failed save is reported once per cause and grant. The pure
+ * US-09 AC58: a failed save is reported once per cause and grant. The pure
  * rule (`shouldReport`) as a table, then the key `reportSaveFailure` builds
  * from the error's typed fields on each tier.
  */
@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
 import { StorageError } from './adapter';
 import { reportSaveFailure, shouldReport, type RecordHost, type SaveReportKey } from './record-host';
 
-describe('US-09 AC57: shouldReport, once per cause and grant', () => {
+describe('US-09 AC58: shouldReport, once per cause and grant', () => {
   const a: SaveReportKey = { cause: 'StorageError/reconnect/refused/', grant: 'dropbox' };
   it.each<[string, SaveReportKey | null, SaveReportKey, boolean]>([
     ['the first failure', null, a, true],
@@ -20,7 +20,7 @@ describe('US-09 AC57: shouldReport, once per cause and grant', () => {
   });
 });
 
-describe('US-09 AC57: reportSaveFailure reports under that key', () => {
+describe('US-09 AC58: reportSaveFailure reports under that key', () => {
   function host(tier: 'device' | 'cloud') {
     const seen: Array<{ cause?: string; repeat: boolean }> = [];
     const h = { tier, failureCause: () => 'QuotaExceededError', report: (_e: unknown, at: { cause?: string; repeat: boolean }) => void seen.push({ cause: at.cause, repeat: at.repeat }) } as unknown as RecordHost;

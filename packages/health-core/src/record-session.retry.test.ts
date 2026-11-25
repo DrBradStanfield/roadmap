@@ -247,11 +247,11 @@ describe('the session tells the host when a retry becomes owed or stops being ow
   });
 });
 
-// US-09 AC57 (lead A25, the web's half): a page hide's last-ditch save starts
+// US-09 AC58 (lead A25, the web's half): a page hide's last-ditch save starts
 // no cloud save the grant refused (`flushSync('hold')`, the web's page-hide
 // path); a failed save still owed a retry is tried, and the default still
 // tries both, as the iPhone's callers do today.
-describe('US-09 AC57: a hide starts no save the grant refused', () => {
+describe('US-09 AC58: a hide starts no save the grant refused', () => {
   it.each([
     { name: 'a refused grant, held', error: REVOKED, refused: 'hold' as const, writes: 1 },
     { name: 'a refused grant, by default', error: REVOKED, refused: undefined, writes: 2 },

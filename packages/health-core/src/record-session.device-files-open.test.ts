@@ -135,7 +135,7 @@ describe('US-09 AC2c: a device page that may not write this device\'s record rea
   });
 });
 
-describe('US-09 AC57: a save past the gate that fails on a page closed meanwhile', () => {
+describe('US-09 AC58: a save past the gate that fails on a page closed meanwhile', () => {
   const full = () => new StorageError('full', undefined, new DOMException('q', 'QuotaExceededError'), undefined, undefined, 'refused');
   const stopped = () => new StorageError('stopped', undefined, undefined, undefined, 'writes-stopped', 'refused');
   it.each([

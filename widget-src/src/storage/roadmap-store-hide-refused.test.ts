@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 /**
- * US-09 AC57 (lead A25, the web's half): after a cloud save is refused for the
+ * US-09 AC58 (lead A25, the web's half): after a cloud save is refused for the
  * grant, a page hide starts no cloud save of it, and the same refusal is sent
  * to Sentry once, however many later saves meet it. The cloud is a memory
  * store whose writes refuse with the adapter's revoked-grant reason; no network.
@@ -27,7 +27,7 @@ class RevokedCloud extends MemoryAdapter {
 const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 afterEach(() => { vi.mocked(Sentry.captureException).mockClear(); localStorage.clear(); });
 
-describe('US-09 AC57: a refused grant is not retried on hide, and is reported once', () => {
+describe('US-09 AC58: a refused grant is not retried on hide, and is reported once', () => {
   it('hides start no cloud save; a later edit meets the same refusal and sends no second report', async () => {
     const cloud = new RevokedCloud(new MemoryCloud());
     const store = await RoadmapStore.create(cloud);
