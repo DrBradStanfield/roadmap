@@ -137,10 +137,10 @@ export function rowsOn(day: string): Ids {
  *  whose save met a changed row or a newer erase, so it and every save asked before it go. Typing while an edit
  *  waits on neither; settled otherwise. */
 export type Saves = { kind: 'settled' | 'typing'; edits: number; kept: number; dropped: number };
-export type SaveEvent = { type: 'typed' } | { type: 'kept'; seq: number } | { type: 'dropped'; seq: number };
+export type SavesEvent = { type: 'typed' } | { type: 'kept'; seq: number } | { type: 'dropped'; seq: number };
 export const NO_SAVES: Saves = { kind: 'settled', edits: 0, kept: 0, dropped: 0 };
 
-export function transition(s: Saves, e: SaveEvent): Saves {
+export function transition(s: Saves, e: SavesEvent): Saves {
   if (e.type === 'typed') return { kind: 'typing', edits: s.edits + 1, kept: s.kept, dropped: s.dropped };
   const counts = { edits: s.edits, kept: e.type === 'kept' ? Math.max(s.kept, e.seq) : s.kept, dropped: e.type === 'dropped' ? Math.max(s.dropped, e.seq) : s.dropped };
   return { ...counts, kind: counts.edits > Math.max(counts.kept, counts.dropped) ? 'typing' : 'settled' };

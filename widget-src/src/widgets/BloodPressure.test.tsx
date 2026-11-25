@@ -18,7 +18,7 @@ import * as data from '../lib/roadmap-data';
 import { formatShortDate } from '../lib/constants';
 import { trackProductEvent } from '../lib/server-api';
 import { BloodPressureWidget, WIDTH, spelledOut } from './BloodPressure';
-import { NO_SAVES, savePair, transition, type SaveEvent, type Saves } from './blood-pressure';
+import { NO_SAVES, savePair, transition, type SavesEvent, type Saves } from './blood-pressure';
 import { bpTier } from '@roadmap/health-core/bp-tier';
 /** Whether a pair's tier has a plan card (Stage 1 and above). */
 const bpTierOf = (sys: number, dia: number) => !['normal', 'elevated'].includes(bpTier(sys, dia));
@@ -613,7 +613,7 @@ describe('US-75 AC8: a reading is saved under the erase shown as it was typed', 
 describe('US-75 AC5: the saves state, event by event', () => {
   const typing = (edits: number, kept: number, dropped: number): Saves => ({ kind: 'typing', edits, kept, dropped });
   const settled = (edits: number, kept: number, dropped: number): Saves => ({ kind: 'settled', edits, kept, dropped });
-  const table: Array<[string, Saves, SaveEvent, Saves]> = [
+  const table: Array<[string, Saves, SavesEvent, Saves]> = [
     ['the first keystroke: typing', NO_SAVES, { type: 'typed' }, typing(1, 0, 0)],
     ['a later keystroke: still typing', typing(1, 0, 0), { type: 'typed' }, typing(2, 0, 0)],
     ['the newest edit kept: settled', typing(2, 0, 0), { type: 'kept', seq: 2 }, settled(2, 2, 0)],

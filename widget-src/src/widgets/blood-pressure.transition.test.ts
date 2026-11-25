@@ -11,7 +11,7 @@
  *   property failed on 196 of 200 seeds (`expected 'typing' to be 'settled'`).
  */
 import { describe, expect, it } from 'vitest';
-import { NO_SAVES, transition, type SaveEvent } from './blood-pressure';
+import { NO_SAVES, transition, type SavesEvent } from './blood-pressure';
 
 /** mulberry32: a small seeded generator, so a failure names its seed and replays. */
 function random(seed: number): () => number {
@@ -26,7 +26,7 @@ function random(seed: number): () => number {
 }
 
 /** One event, as the widget can send it: a save answers only an edit already typed. */
-function nextEvent(rand: () => number, typed: number): SaveEvent {
+function nextEvent(rand: () => number, typed: number): SavesEvent {
   const pick = rand();
   if (typed === 0 || pick < 0.5) return { type: 'typed' };
   const seq = 1 + Math.floor(rand() * typed);
@@ -35,7 +35,7 @@ function nextEvent(rand: () => number, typed: number): SaveEvent {
 
 /** The oracle: counts from the events alone. */
 interface Model { edits: number; kept: number; dropped: number }
-function step(m: Model, e: SaveEvent): Model {
+function step(m: Model, e: SavesEvent): Model {
   if (e.type === 'typed') return { ...m, edits: m.edits + 1 };
   return e.type === 'kept' ? { ...m, kept: Math.max(m.kept, e.seq) } : { ...m, dropped: Math.max(m.dropped, e.seq) };
 }
