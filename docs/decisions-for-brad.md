@@ -139,12 +139,6 @@ issue, and nothing private.
   (onboarding hides them). Options for each: adopt the iPhone's behaviour, or keep the web's. Recommendation (the
   PR's): (1) yes, once the note's words are on the web, since a heading alone would look broken; (2) yes, with the
   iPhone's approved words; (3) keep the web's: the onboarding is short and the cards come at its end.
-- **Chat wording and counting differ between the chat panel and the pop-up.** Issue: PR 2093 (on main) found that
-  the pop-up chat picks doctor or brand wording by store, but the panel beside the tool always uses the doctor
-  wording ("Health by Dr Brad Chat"). Also, "chat opened" is counted for the pop-up only, so the count misses the
-  panel, the phone's Chat tab and the storefront embed. Options: give the panel the pop-up's wording rule, or keep
-  it; count a panel shown, or keep counting the pop-up only. Recommendation: the same wording rule for both, so one
-  store reads one way; count a panel shown under its own event name, so the pop-up's trend stays comparable.
 - **The storefront chat embed's one event.** Issue: PR 2079 (held) turns on product events for the chat embed
   block on the storefronts. Its only event is "thinking opened", sent when someone opens a reply's reasoning. Today
   the embed sends nothing; an older test comment called counting it an open product decision. Options: merge, so the
@@ -216,6 +210,11 @@ issue, and nothing private.
   while the App Store review is open.
 
 ## Decided
+
+2026-11-26, Brad's words in quotes:
+- Chat wording and counting differ between the chat panel and the pop-up: the recommendation. The panel takes the
+  pop-up's words by the same rule, from one table; a panel shown is counted as `chat_panel_shown`, and the pop-up's
+  `chat_opened` is unchanged. No new sentences (US-15 AC77).
 
 2026-11-23, Brad's words in quotes:
 - Original files are stored in the background after Save, with no action from the person at Save and at every
