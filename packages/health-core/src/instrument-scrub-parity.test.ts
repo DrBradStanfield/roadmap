@@ -370,7 +370,7 @@ describe('free-text scrub parity', () => {
       for (const [text, scrubbed] of [
         // A first name with no value: the value after the second name goes.
         ['Ferritin pending, B12 300', 'Ferritin pending, B12 [value]'], ['Vitamin D pending, B12 300', 'Vitamin D pending, B12 [value]'],
-        ['LDL n/a, HbA1c 6.1', 'LDL n/a, HbA1c [value]'], ['Ferritin unknown; Vitamin B12 300 pmol/L', 'Ferritin unknown; Vitamin B1[value] [value]'],
+        ['LDL n/a, HbA1c 6.1', 'LDL n/a, HbA1c [value]'], ['Ferritin unknown; Vitamin B12 300 pmol/L', 'Ferritin unknown; Vitamin B12 [value]'],
         ['Ferritin B12 300', 'Ferritin B12 [value]'], ['LDL HbA1c 6.1', 'LDL HbA1c [value]'], ['LDL 25(oh)d 80', 'LDL 25(oh)d [value]'],
         // A name the vocabulary does not hold, ending in digits: a number after it is the value, and both go.
         ['TSH: -, T4 15', 'TSH: -, T[value]'], ['LDL D3 45', 'LDL D[value]'], ['ldl T3 4.1', 'ldl T[value]'],
@@ -431,7 +431,8 @@ describe('free-text scrub parity', () => {
         // A name ending in a symbol ends there, whatever follows, as with \b.
         ['120 lp(a)s', '[value] lp(a)s'], ['120 lp(a)x', '[value] lp(a)x'],
         // A name starting with a symbol starts there, whatever precedes it, as with \b.
-        ['33 xγ-GT', '[value] xγ-GT'], ['1xγ-gt', '[value]xγ-gt'], [')25(oh)dγ-gt', ')[value](oh)dγ-gt'],
+        // The 25 of a whole "25(oh)d" is that name's own digit, not a value (US-32 AC9b).
+        ['33 xγ-GT', '[value] xγ-GT'], ['1xγ-gt', '[value]xγ-gt'], [')25(oh)dγ-gt', ')25(oh)dγ-gt'],
         // Controls that already behaved: either order, a unit between, a symbol name.
         ['41 GGT', '[value] GGT'], ['Lp(a) 120', 'Lp(a) [value]'], ['γ-GT 33', 'γ-GT [value]'],
         ['120 nmol/L Lp(a)', '[value] Lp(a)'], ['4.2 k+', '[value] k+'], ['7.1 a1c', '[value] a1c'],

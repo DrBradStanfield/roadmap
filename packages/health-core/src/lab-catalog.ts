@@ -766,7 +766,7 @@ const GENERIC_NAME_WORDS = new Set([
 const SHORT_NAME_WORDS = new Set(['na', 'gt', 'hs', 'am', 'pm', 'oh', 'sat', 'ab', 'sd']);
 
 /** "Lp(a)" is one name, not "lp" and "a" — folded before either side is read. */
-export function foldLpa(text: string): string {
+function foldLpa(text: string): string {
   return text.toLowerCase().replace(/lp\s*\(\s*a\s*\)/g, 'lpa');
 }
 
@@ -774,8 +774,8 @@ export function foldLpa(text: string): string {
  * Every word this record knows a metric or a lab test by, sorted so a literal
  * mirror of the list is stable. Pure digits go ("25" of 25-OH vitamin D is a
  * number in any sentence) and so do the two sets above. `minLength` is how
- * short a name a caller can afford: the feedback guard takes 2 and over-refuses
- * on purpose, the Sentry scrub takes 3 so "mg" stays a unit and not a name.
+ * short a name a caller can afford: the Sentry scrub, which the feedback guard
+ * also reads (US-32 AC9b), takes 3 so "mg" stays a unit and not a name.
  */
 export function metricNameWords(minLength: number): string[] {
   return [...new Set(

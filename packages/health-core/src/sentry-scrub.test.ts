@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { type TextScrubbableEvent, scrubSensitiveData, scrubUrl, scrubBreadcrumbData, scrubText, scrubEventText, dropLongStrings } from './sentry-scrub';
+import {
+  type TextScrubbableEvent, SCRUB_METRIC_WORDS, scrubSensitiveData, scrubUrl, scrubBreadcrumbData, scrubText, scrubEventText, dropLongStrings,
+} from './sentry-scrub';
 
 describe('scrubSensitiveData', () => {
   describe('health measurement fields', () => {
@@ -451,6 +453,59 @@ describe('a typed short name (US-09 AC7, US-73 AC8)', () => {
     expect(scrubText('Vit B12 300')).toBe('Vit B12 [value]');
     expect(scrubText('multivit 2 daily')).toBe('multivit 2 daily');
     expect(scrubText('vital signs 3 of 4')).toBe('vital signs 3 of 4');
+  });
+});
+
+// US-32 AC9b: the feedback check and the error-report scrub share one rule; a
+// test name's own digit is not a value. A number apart from the name still is.
+describe('US-32 AC9b — a test name\'s own digit is not a value', () => {
+  const DIGIT_NAMES = SCRUB_METRIC_WORDS.filter((name) => /\d/.test(name));
+
+  it('reads the digit names off the scrub\'s own name list', () => {
+    expect(DIGIT_NAMES).toEqual(expect.arrayContaining(['igf1', 'igf-1', 'a1c', 'hba1c', 'omega3', 'b12', 'insulin-like growth factor 1']));
+  });
+
+  it('leaves a digit name alone, in any sentence, with or without another name near it', () => {
+    for (const name of DIGIT_NAMES) {
+      for (const text of [name, `the ${name} row is missing`, `the ${name} and bmi rows are in the wrong order`, `ldl and ${name} swapped`]) {
+        expect(scrubText(text), text).toBe(text);
+      }
+    }
+    for (const text of ['the a1c and bmi rows are in the wrong order', 'the igf1 row is missing', 'the omega3 row is missing',
+      'the insulin-like growth factor 1 row is missing', 'the IGF-1 row is missing', 'Ferritin unknown; Vitamin B12 pending']) {
+      expect(scrubText(text), text).toBe(text);
+    }
+  });
+
+  it('still redacts any number beside a digit name, before it or after it', () => {
+    for (const name of DIGIT_NAMES) {
+      for (const value of ['140', '6.1', '3,2', '140/90']) {
+        for (const text of [`${name} ${value}`, `${name}: ${value}`, `my ${name} is ${value}`, `${value} ${name}`, `${value} was my ${name}`]) {
+          expect(scrubText(text), text).not.toContain(value);
+        }
+      }
+    }
+    for (const [text, scrubbed] of [
+      ['igf1 140', 'igf1 [value]'], ['a1c 6.1', 'a1c [value]'], ['140 a1c', '[value] a1c'], ['igf1200 is missing', 'igf1[value] is missing'],
+      ['b12300 is missing', 'b12[value] is missing'], ['Ferritin unknown; Vitamin B12 300 pmol/L', 'Ferritin unknown; Vitamin B12 [value]'],
+      ['the b122 row is blank', 'the b12[value] row is blank'], ['my 140ldl reads like my bmi', 'my [value]ldl reads like my bmi'],
+      // A number typed straight onto the front of a name is that name's value.
+      ['my 140ldl is wrong', 'my [value]ldl is wrong'], ['my 3.2ldl is wrong', 'my [value]ldl is wrong'], ['140a1c', '[value]a1c'],
+    ]) {
+      expect(scrubText(text), text).toBe(scrubbed);
+    }
+  });
+
+  it('still redacts every real value the scrub redacted before', () => {
+    for (const text of [
+      'My LDL is 3.2 mmol/L', 'weighed 96.4kg this morning', 'BP 140/90', 'cholesterol 200', 'an ApoB of 0.9 was reported',
+      '42 is my hba1c', '120 Lp(a)', '33 γ-GT', 'Na 140', 'blood pressure 138/88', 'metformin 500mg daily', 'take 25 mcg and 2 units',
+      'aspirin 81mg', '1000 IU', 'height 68 in.', '68" tall', 'my ldl on the panel read 4.2 today', 'Vit D 45', 'Vit B12 300',
+      'my ldl is 140ldl', 'ldl140', 'hba1c7.2 shows', 'ft415 is missing', 'free T4 15', 'IGF-1 200', 'IGF 1 200', 'Hb A1c 7.2',
+      '5 17-ohp', '12 25(oh)d', 'LDL 25(oh)d 80', 'TSH: -, T4 15', 'ferritin CA-125 30', 'ldl T3 4.1',
+    ]) {
+      expect(scrubText(text), text).toContain('[value]');
+    }
   });
 });
 

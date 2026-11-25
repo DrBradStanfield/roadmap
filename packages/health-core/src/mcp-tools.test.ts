@@ -1355,21 +1355,22 @@ describe('US-32 AC9 — report_feedback prepares an issue the user submits', () 
       'ldl,140 is wrong',
       'ldl.140 is wrong',
       'ft4,15 is missing',
-      // The cost: digits glued to a word that is no name are a number too, and
-      // a name that ends in a digit gives up the digits after it (t3 and 2).
+      // The cost: digits glued to a word that is no name are a number too.
       'ldl in tab2 is blank',
-      'the t32 column is blank',
+      // US-32 AC9b: the scrub's rule. "pyridoxal5 phosphate" is not the
+      // catalogue's name written whole, so its 5 is a number near a name.
+      'the pyridoxal5 phosphate row is missing',
     ];
     expect(Object.fromEntries(refused.map((d) => [d, outcome(d)])))
       .toEqual(Object.fromEntries(refused.map((d) => [d, 'health-value'])));
-    // The split comes after the longest name: b12 and 300, not b1 and 2300.
-    expect(reportFeedback({ ...GOOD, detail: 'b12300 is missing' }, NOW).text).toContain('“b12 300”');
-    // A word with no letter is a number already, and stays whole.
-    expect(reportFeedback({ ...GOOD, detail: 'My LDL is 3.2' }, NOW).text).toContain('“ldl 3.2”');
+    // The refusal quotes what the scrub would redact, name and value together (US-32 AC9b).
+    expect(reportFeedback({ ...GOOD, detail: 'b12300 is missing' }, NOW).text).toContain('“b12300”');
+    expect(reportFeedback({ ...GOOD, detail: 'My LDL is 3.2' }, NOW).text).toContain('“LDL is 3.2”');
     // A whole name keeps its digits; a number inside a longer name is that name;
     // a glued number with no name near it files.
     const filed = [
-      'the pyridoxal5 phosphate row is missing',
+      // US-32 AC9b: t3 then 2 is no value to the scrub, so it files.
+      'the t32 column is blank',
       'the igf1 row is missing',
       'the b12 row is blank',
       'the ft4 row is missing',
@@ -1401,39 +1402,54 @@ describe('US-32 AC9 — report_feedback prepares an issue the user submits', () 
     ]) {
       expect(reportFeedback({ ...GOOD, detail }, NOW).status, detail).toBe('ok');
     }
-    // "Beside" reaches three words: one word off the name is still refused, four words off files.
+    // "Beside" reaches as far as the scrub's gap (US-32 AC9b): one word off the
+    // name is refused, and so is four words off.
     expect(reportFeedback({ ...GOOD, detail: 'the line-height is 1.5' }, NOW).status).toBe('rejected');
-    expect(reportFeedback({ ...GOOD, detail: 'the line-height is set to 1.5' }, NOW).status).toBe('ok');
+    expect(reportFeedback({ ...GOOD, detail: 'the line-height is set to 1.5' }, NOW).status).toBe('rejected');
   });
 
-  // US-32 AC9a names this gap: the guard reads ASCII digits only, and a whole
-  // number typed onto the front of a name is one word. These still file; the
-  // Sentry scrub leaves most of them as written, and the two below with another
-  // name near them are redacted.
-  it('still files a number in non-ASCII digits, or a whole number glued in front of a name', () => {
+  // US-32 AC9a names this gap: the guard and the scrub read ASCII digits only.
+  // These still file, and the scrub leaves them as written.
+  it('still files a number in non-ASCII digits; a number glued in front of a name is refused', () => {
     for (const detail of [
       'my ldl １４０ is wrong', // full-width digits
       'my ldl is ３.２ mmol/L',
       'my bmi ٣١ is wrong', // Arabic-Indic digits
-      'my 140ldl is wrong',
-      'my 31bmi is wrong',
-      'my .5ldl is wrong', // starts with its point: read as "5ldl"
-      'my 1.4.2ldl is wrong', // a second point: read as "1.4" and "2ldl"
-      'my ,5ldl is wrong', // starts with its comma: read as "5ldl"
-      'my 1,4,2ldl is wrong', // a second comma: read as "1,4" and "2ldl"
     ]) {
       expect(reportFeedback({ ...GOOD, detail }, NOW).status, detail).toBe('ok');
       expect(scrubText(detail), detail).toBe(detail);
     }
-    // The scrub redacts some glued numbers (these two); the guard still files them.
-    expect(reportFeedback({ ...GOOD, detail: 'my ldl is 140ldl' }, NOW).status).toBe('ok');
-    expect(scrubText('my ldl is 140ldl')).toBe('my ldl is [value]ldl');
-    expect(reportFeedback({ ...GOOD, detail: 'my 140ldl reads like my bmi' }, NOW).status).toBe('ok');
-    expect(scrubText('my 140ldl reads like my bmi')).toBe('my [value]ldl reads like my bmi');
-    // One point or comma between digits, or a dot or comma right after a whole number, ends the word first.
-    for (const detail of ['my 3.2ldl is wrong', 'my 3,2ldl is wrong', 'my 140.ldl is wrong', 'my 140,ldl is wrong']) {
+    // US-32 AC9b: a number typed straight onto the front of a name is a value
+    // to the scrub, so the guard refuses it, however its points and commas fall.
+    for (const detail of [
+      'my 140ldl is wrong', 'my 31bmi is wrong', 'my .5ldl is wrong', 'my 1.4.2ldl is wrong', 'my ,5ldl is wrong',
+      'my 1,4,2ldl is wrong', 'my ldl is 140ldl', 'my 140ldl reads like my bmi',
+      'my 3.2ldl is wrong', 'my 3,2ldl is wrong', 'my 140.ldl is wrong', 'my 140,ldl is wrong',
+    ]) {
       expect(reportFeedback({ ...GOOD, detail }, NOW), detail).toMatchObject({ status: 'rejected', reason: 'health-value' });
+      expect(scrubText(detail), detail).toContain('[value]');
     }
+  });
+
+  // US-32 AC9b: the feedback check and the error-report scrub share one rule; a
+  // test name's own digit is not a value.
+  it('US-32 AC9b — refuses a report as a health value exactly when the error-report scrub would redact one', () => {
+    for (const detail of [
+      'My LDL is 3.2', 'weight shows 81 kg twice', 'BP 140/90 went in the wrong column', 'metformin 500mg daily', 'take 25 mcg and 2 units',
+      'aspirin 81mg', '1000 IU', 'Na 140', '33 γ-GT', '68" tall', 'my ldl on the panel read 4.2 today', 'my ldl is 140ldl',
+      'my 140ldl reads like my bmi', 'igf1 140', 'a1c 6.1', '140 a1c', 'igf1200 is missing', 'b12300 is missing', 'the b122 row is blank',
+      'Vit D 45', 'my Lp(a) is 90 and it shows nothing', 'insulin-like growth factor 1 was 200', 'the line-height is set to 1.5',
+      'the igf1 row is missing', 'the a1c and bmi rows are in the wrong order', 'the omega3 row is missing', 'the IGF-1 row is missing',
+      'the insulin-like growth factor 1 row is missing', 'the blood pressure chart is missing', 'tab2 has 3 rows', 'See page 2 of the guide',
+      'the reminder email arrived at 3 pm instead of the morning',
+    ]) {
+      const outcome = reportFeedback({ ...GOOD, detail }, NOW);
+      const refused = outcome.status === 'rejected' && outcome.reason === 'health-value';
+      expect(refused, detail).toBe(scrubText(detail) !== detail);
+    }
+    // The refusal quotes what the scrub would redact, in the same words as before.
+    expect(reportFeedback({ ...GOOD, detail: 'take 25 mcg daily' }, NOW).text)
+      .toContain('“25 mcg” reads as a health value, so nothing was prepared.');
   });
 
   it('refuses an email address, a phone number and a link carrying a query string — a public issue names nobody', () => {

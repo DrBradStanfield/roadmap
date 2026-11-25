@@ -122,6 +122,20 @@ export function scrubText(text: string): string {
     .replace(VALUE_THEN_METRIC_RE, '[value]$2$3');
 }
 
+/**
+ * The first health value `scrubText` would redact, as written, or null. The
+ * feedback guard refuses on it, so the guard and the scrub read one rule
+ * (US-32 AC9b). Each rule sees the text `scrubText` would hand it.
+ */
+export function firstScrubbedValue(text: string): string | null {
+  const unemailed = text.replace(EMAIL_RE, '[email]');
+  for (const rule of [UNIT_VALUE_RE, METRIC_THEN_VALUE_RE, VALUE_THEN_METRIC_RE]) {
+    const found = unemailed.match(rule)?.[0];
+    if (found) return found;
+  }
+  return null;
+}
+
 /** Apply `scrubText` to every string anywhere in a value. */
 export function scrubStrings(input: unknown, maxDepth = 10, currentDepth = 0): unknown {
   if (typeof input === 'string') return scrubText(input);

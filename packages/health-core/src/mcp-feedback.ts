@@ -3,13 +3,10 @@
  * Split out of `mcp-tools.ts`, which re-exports it (issue #429).
  */
 import { dayOf } from './merge';
-import { foldLpa, LAB_CATALOG, metricNameWords } from './lab-catalog';
 import { MAX_NAME_LENGTH } from './lab-extraction';
 import { oneLine, printable, REPO_PUBLIC } from './plan';
-import { UNIT_DEFS } from './units';
 import { type McpRefusalReason } from './product-events';
-import { EXTRA_METRIC_NAMES } from './scrub-vocabulary';
-import { EMAIL_SOURCE } from './sentry-scrub';
+import { EMAIL_SOURCE, firstScrubbedValue } from './sentry-scrub';
 import * as z from './zod';
 import {
   FEEDBACK_REPO,
@@ -19,111 +16,6 @@ import {
   TOOL_LAYER_VERSION,
   type ToolOutcome,
 } from './mcp-tool-contract';
-
-/**
- * Unit tokens a number can be wearing, longest first so "mmol/mol" is not
- * matched as "mmol/". Read off the unit definitions rather than written out
- * again, so a new metric's unit joins the guard for free. `in` is dropped: it
- * is an English preposition long before it is inches, and "3 in a row" in a bug
- * report is not a health value.
- */
-const UNIT_TOKENS = [...new Set(
-  Object.values(UNIT_DEFS).flatMap((def) => [def.canonical, def.label.si, def.label.conventional]),
-)].filter((unit) => unit !== 'in').sort((a, b) => b.length - a.length);
-
-/** A number wearing one of those units — "2.1 mmol/L", "81 kg", "140 mmHg". It starts at the head of a digit run,
- *  where the first match always starts anyway: same matches, linear on a long run (US-32 AC58). */
-const VALUE_WITH_UNIT = new RegExp(
-  `(?<!\\d)\\d+(?:[.,]\\d+)?\\s*(?:${UNIT_TOKENS.map((u) => u.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})(?![A-Za-z0-9])`,
-  'i',
-);
-
-/** Words as the guard reads them; a number keeps its decimal ("3.2", "hba1c"). */
-const FEEDBACK_WORD = /[a-z0-9]+(?:[.,]\d+)?/g;
-
-/** The Sentry scrub's names that no metric or catalogue name spells, as the guard splits each one. */
-const EXTRA_NAMES = EXTRA_METRIC_NAMES.map((name) => foldLpa(name).match(FEEDBACK_WORD) ?? []);
-
-/**
- * Every word a metric or catalogued test is known by; 2 over-refuses on purpose.
- * The one-word names the Sentry scrub adds join them, so "vit" (typed for
- * vitamin, US-73 AC8), "a1c", "bmi" and "height" are names here too (US-32 AC9a).
- */
-const METRIC_WORDS = new Set([...metricNameWords(2), ...EXTRA_NAMES.filter((name) => name.length === 1).flat()]);
-/** The number a word ends in, with any comma or dot just before it ("140", ",140", "3.2"). */
-const TRAILING_NUMBER = /^[.,]?(\d+(?:[.,]\d+)?)$/;
-/** The longest name the guard reads, so a cut is looked for only that far into a word. */
-const LONGEST_NAME = Math.max(...[...METRIC_WORDS].map((name) => name.length));
-
-/**
- * A word that is not itself a name and ends in a number, read as two words:
- * split after the longest name it starts with that leaves only a number after
- * it ("b12300" is "b12 300", "ldl,140" is "ldl 140"), or else after its last
- * letter ("pressure140" is "pressure 140", "tab2" is "tab 2"), with a comma or
- * dot at the split dropped (US-32 AC9a). A name keeps its digits ("igf1",
- * "b12"). The scan looks no further than the longest name, so a long run stays
- * linear (US-32 AC58).
- */
-function splitTrailingNumber(word: string): string[] {
-  // A word holds only a-z, digits and a comma or dot, so a letter is anything from "a" up.
-  let end = word.length;
-  while (end > 0 && word[end - 1] < 'a') end--;
-  const number = end > 0 && TRAILING_NUMBER.exec(word.slice(end));
-  if (!number || METRIC_WORDS.has(word)) return [word];
-  for (let cut = LONGEST_NAME; cut > end; cut--) {
-    const value = METRIC_WORDS.has(word.slice(0, cut)) && TRAILING_NUMBER.exec(word.slice(cut));
-    if (value) return [word.slice(0, cut), value[1]];
-  }
-  return [word.slice(0, end), number[1]];
-}
-
-/**
- * The words of `text`, with the number a word ends in split off as its own
- * word (US-32 AC9a, `splitTrailingNumber`).
- */
-function feedbackWords(text: string): string[] {
-  return (foldLpa(text).match(FEEDBACK_WORD) ?? []).flatMap(splitTrailingNumber);
-}
-/** A number and nothing else — what a metric name next to it turns into a value. */
-const BARE_NUMBER = /^\d+(?:[.,]\d+)?$/;
-/** How many words from a metric name a number still reads as that metric's value. */
-const METRIC_DISTANCE = 3;
-
-/**
- * Every catalogue name of two or more words, as the guard splits it. A phrase
- * is one name, so the distance runs from its ends: in "insulin-like growth
- * factor 1 was 200" the generic words inside it cannot carry the value out of
- * reach of "insulin", and the 1 inside it is the name, not a value.
- */
-const METRIC_PHRASES = [...new Set(LAB_CATALOG.flatMap((entry) => [entry.label, ...entry.aliases]).map(foldLpa))]
-  .map((name) => name.match(FEEDBACK_WORD) ?? [])
-  .concat(EXTRA_NAMES)
-  .filter((phrase) => phrase.length > 1);
-
-/** "My LDL is 3.2" — a bare number a few words from a name this record knows. */
-function valueNearMetric(text: string): string | null {
-  const words = feedbackWords(text);
-  // Where a name sits: one word, or a whole phrase from its first word to its last.
-  const names: Array<[number, number]> = [];
-  for (const [i, word] of words.entries()) {
-    if (METRIC_WORDS.has(word)) names.push([i, i]);
-    for (const phrase of METRIC_PHRASES) {
-      if (phrase.every((w, k) => words[i + k] === w)) names.push([i, i + phrase.length - 1]);
-    }
-  }
-  // A name inside a longer one is that longer name: "igf" in "IGF-1" goes, so
-  // the 1 is never read as a value.
-  const longest = names.filter(([first, last]) =>
-    !names.some(([f, l]) => f <= first && l >= last && l - f > last - first));
-  for (const [i, word] of words.entries()) {
-    if (!BARE_NUMBER.test(word)) continue;
-    for (const [first, last] of longest) {
-      const inside = i >= first && i <= last;
-      if (!inside && i >= first - METRIC_DISTANCE && i <= last + METRIC_DISTANCE) return `${words.slice(first, last + 1).join(' ')} ${word}`;
-    }
-  }
-  return null;
-}
 
 /** An email address, as the Sentry scrubber finds one. No `g` flag, so `.test` keeps no state (US-32 AC58). */
 const EMAIL = new RegExp(EMAIL_SOURCE);
@@ -158,14 +50,14 @@ function phoneShaped(text: string): boolean {
  * The mechanical backstop on a report that becomes a PUBLIC issue nobody
  * reviews first. The tool's description is the control — it tells the model
  * what not to write — and this is what stands when the model writes it anyway:
- * a value (wearing a unit, or bare beside a name this record knows) and the
+ * a value, wherever the error-report scrub would redact one (US-32 AC9b), and the
  * three ways a person is identified in a sentence about a bug (an email
  * address, a phone number, a link carrying a token). It is deliberately not a
  * diagnosis word list: that cannot be mechanical and pretending otherwise
  * would sell a promise this cannot keep.
  */
 function unsafeFeedback(text: string): { reason: McpRefusalReason; text: string } | null {
-  const value = VALUE_WITH_UNIT.exec(text)?.[0] ?? valueNearMetric(text);
+  const value = firstScrubbedValue(text);
   if (value) {
     return {
       reason: 'health-value',

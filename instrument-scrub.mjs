@@ -1073,8 +1073,9 @@ var SCRUB_METRIC_WORDS = [.../* @__PURE__ */ new Set([
   ...LAB_CATALOG.flatMap((entry) => [entry.key, entry.label, ...entry.aliases]).map((name) => name.toLowerCase()),
   ...EXTRA_METRIC_NAMES
 ])];
-var NUMBER = "\\d+(?:[.,]\\d+)?(?:/\\d+(?:[.,]\\d+)?)?";
 var escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+var NAME_DIGIT = SCRUB_METRIC_WORDS.flatMap((name) => [...name].flatMap((char, i) => /\d/.test(char) ? [`(?<=(?<![a-z0-9])${escapeRe(name.slice(0, i))})(?=${escapeRe(name.slice(i))}(?![a-z0-9]))`] : [])).join("|");
+var NUMBER = `(?!${NAME_DIGIT})\\d+(?:[.,]\\d+)?(?:/\\d+(?:[.,]\\d+)?)?`;
 var alternation = (words, pattern = escapeRe) => words.map(pattern).sort((a, b) => b.length - a.length).join("|");
 var NORMALISER_SPELLINGS = {
   "×10": "(?:[x×]\\s*)?10\\s*(?:(?:e|\\^|\\*{1,2})\\s*\\d+|(?:\\^|\\*{1,2})?\\(\\s*\\d+\\s*\\)|[⁰¹²³⁴⁵⁶⁷⁸⁹]+)",
@@ -1104,7 +1105,7 @@ var METRIC_THEN_VALUE_RE = new RegExp(
   "gi"
 );
 var VALUE_THEN_METRIC_RE = new RegExp(
-  `(?<!\\d)(${NUMBER})([^\\d\\n]{0,20}?)(?:(?<![a-z0-9])|(?![a-z0-9]))(${alternation(SCRUB_METRIC_WORDS)})(?:(?<![a-z0-9])|(?![a-z0-9]))`,
+  `(?<!\\d)(${NUMBER})([^\\d\\n]{0,20}?)(?:(?<![a-z])|(?![a-z0-9]))(${alternation(SCRUB_METRIC_WORDS)})(?:(?<![a-z0-9])|(?![a-z0-9]))`,
   "gi"
 );
 

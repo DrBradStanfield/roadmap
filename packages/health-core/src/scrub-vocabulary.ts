@@ -146,10 +146,9 @@ export const SCRUB_UNITS: readonly string[] = caselessUnique([
 /**
  * What no name in either list spells: the phrases a person writes, and the
  * metrics that live in the calculator rather than the catalogue. "vit" is the
- * typed short form of vitamin ("Vit D 45", US-09 AC7g). The feedback guard
- * reads the same list (US-32 AC9a).
+ * typed short form of vitamin ("Vit D 45", US-09 AC7g).
  */
-export const EXTRA_METRIC_NAMES: readonly string[] = ['blood pressure', 'apo b', 'lp(a)', 'a1c', 'bp', 'bmi', 'height', 'vit'];
+const EXTRA_METRIC_NAMES: readonly string[] =['blood pressure', 'apo b', 'lp(a)', 'a1c', 'bp', 'bmi', 'height', 'vit'];
 
 /** Metric and lab names that make an adjacent number a health value. */
 export const SCRUB_METRIC_WORDS: readonly string[] = [...new Set([
@@ -164,9 +163,18 @@ export const SCRUB_METRIC_WORDS: readonly string[] = [...new Set([
   ...EXTRA_METRIC_NAMES,
 ])];
 
-/** A number, or a blood-pressure pair ("140/90"). */
-const NUMBER = '\\d+(?:[.,]\\d+)?(?:/\\d+(?:[.,]\\d+)?)?';
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+/**
+ * A digit inside a name written whole is the name, not a value (US-32 AC9b):
+ * "igf1", "a1c", "omega3", "IGF-1", "insulin-like growth factor 1". One
+ * alternative per digit of each name above that holds one: the name's text up to
+ * the digit just behind, the rest of it ahead, and no letter or digit on either
+ * side. A number apart from the name is still a value ("igf1 140", "140 a1c").
+ */
+const NAME_DIGIT = SCRUB_METRIC_WORDS.flatMap((name) => [...name].flatMap((char, i) => (/\d/.test(char)
+  ? [`(?<=(?<![a-z0-9])${escapeRe(name.slice(0, i))})(?=${escapeRe(name.slice(i))}(?![a-z0-9]))`] : []))).join('|');
+/** A number, or a blood-pressure pair ("140/90"), that is no name's own digit. */
+const NUMBER = `(?!${NAME_DIGIT})\\d+(?:[.,]\\d+)?(?:/\\d+(?:[.,]\\d+)?)?`;
 /** Longest pattern first so "mmol/L" wins over "mol", "ldl cholesterol" over
  *  "ldl", and "Units/L" (a U/L) over the dose word "units". */
 const alternation = (words: readonly string[], pattern = escapeRe) =>
@@ -220,10 +228,11 @@ const NAME_GAP = `(?:(?!${METRIC_NAME})[^\\d\\n]){0,20}?`;
 export const METRIC_THEN_VALUE_RE = new RegExp(
   `(?<![a-z0-9])(${alternation(SCRUB_METRIC_WORDS)})(?![a-z])(${NAME_GAP})(?!(?<=[a-z])\\d+(?:[.,]\\d+)?[a-z]|${METRIC_NAME})((?<=[a-z]-?)${NUMBER}(?:[ \\t:=]+|${NAME_GAP})(?!${METRIC_NAME})${NUMBER}|${NUMBER})`, 'gi');
 // Name edges, not \b: "Lp(a)" ends and "γ-GT" starts with no word character,
-// so \b never matched there. A name starts where no letter or digit runs into
-// it, or at its own first character when that is a symbol ("xγ-GT"), and ends
+// so \b never matched there. A name starts where no letter runs into it (the
+// value's own digits may: "140ldl", US-32 AC9b), or at its own first character
+// when that is a symbol ("xγ-GT"), and ends
 // the same way ("lp(a)s"), so nothing \b scrubbed is lost. A value starts at
 // the head of its digit run, never inside it: same matches, linear on a long
 // run (US-09 AC7f).
 export const VALUE_THEN_METRIC_RE = new RegExp(
-  `(?<!\\d)(${NUMBER})([^\\d\\n]{0,20}?)(?:(?<![a-z0-9])|(?![a-z0-9]))(${alternation(SCRUB_METRIC_WORDS)})(?:(?<![a-z0-9])|(?![a-z0-9]))`, 'gi');
+  `(?<!\\d)(${NUMBER})([^\\d\\n]{0,20}?)(?:(?<![a-z])|(?![a-z0-9]))(${alternation(SCRUB_METRIC_WORDS)})(?:(?<![a-z0-9])|(?![a-z0-9]))`, 'gi');
