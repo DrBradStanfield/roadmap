@@ -5,7 +5,7 @@
  * Split by concern (issue #429): supabase-client.server.ts (env, admin and
  * user clients), supabase-identity.server.ts (customer mapping, audit),
  * supabase-guest.server.ts (guest sessions), supabase-account.server.ts
- * (profile, credits, plan), supabase-cron-lock.server.ts,
+ * (profile, plan), supabase-cron-lock.server.ts,
  * supabase-dashboard.server.ts and supabase-ab.server.ts. Import client,
  * identity, guest, account and cron-lock names from their own module (S-14).
  * Only the dashboard and A/B names are re-exported here.

@@ -114,7 +114,7 @@ Compact inventory. Tests sit beside their file (`*.test.ts`) and are not listed.
 | `roadmap.open.tsx` | public | both email buttons: counts the click (`?src=reminder` picks `reminder_email_clicked` over `report_email_clicked`), redirects to one hardcoded URL carrying `from=email` |
 | `mcp.$.tsx` | bearer (sealed token) on `POST /mcp`; OAuth flow on the rest | `POST /mcp` JSON-RPC, `GET+POST /mcp/authorize`, `GET /mcp/callback`, `POST /mcp/token`, `POST /mcp/register` (DCR); off unless `isMcpEnabled()` |
 | `[.]well-known.$.tsx` | public | `oauth-protected-resource` and `oauth-authorization-server` (also at `/mcp`-suffixed paths; the latter also at `openid-configuration`) |
-| `webhooks.orders-paid.ts` · `webhooks.app.{uninstalled,scopes_update}.tsx` | Shopify webhook HMAC | message credits on Appstle purchase (idempotent per `order_id`) · session housekeeping |
+| `webhooks.app.{uninstalled,scopes_update}.tsx` | Shopify webhook HMAC | session housekeeping |
 | `app.tsx` · `app._index.tsx` · `app.ab-testing.tsx` · `app.*-test.tsx` | `authenticateAdmin` (embedded admin; refuses app-proxy requests, then `authenticate.admin`) | admin shell, A/B dashboard (Polaris), manual cron trigger (trending) |
 | `auth.$.tsx` · `auth.login/` · `_index/` · `healthz.ts` | Shopify OAuth · public | install/login · landing · Fly health check |
 
@@ -267,7 +267,7 @@ Pulsing `.field-attention` CSS class highlights the next field to fill. Once ope
 
 **Other public:** `POST api/resend-webhook` (Svix signature, not app-proxy HMAC; permanent bounce or complaint = unsubscribe + suppress in Klaviyo) · `GET roadmap.open` (both email buttons: counts the click, no address, no query echo; `?src=reminder` only picks the counter; redirects to one hardcoded URL carrying `from=email`) · `GET healthz`.
 
-**Webhooks (Shopify HMAC):** `orders/paid` (message credits), `app/uninstalled`, `app/scopes_update`. **Admin (`authenticateAdmin` in `app/lib/admin-shop.server.ts`, the only caller of `authenticate.admin`):** `/app`, `/app/ab-testing`, `/app/*-test` cron triggers, `/auth/*`.
+**Webhooks (Shopify HMAC):** `app/uninstalled`, `app/scopes_update`. **Admin (`authenticateAdmin` in `app/lib/admin-shop.server.ts`, the only caller of `authenticate.admin`):** `/app`, `/app/ab-testing`, `/app/*-test` cron triggers, `/auth/*`.
 ## Backend Features
 
 **Email (Resend)**: `email.server.ts` sends welcome + reminder emails. The v1 welcome triggers (sync-embed / first server measurement save) are retired with the CRUD API; welcome/transactional email in v2 is tied to the reminder-opt-in path. Env: `RESEND_API_KEY`, `RESEND_FROM_EMAIL`. (HIPAA-aware: no health *values* in emails.)
