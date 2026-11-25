@@ -180,7 +180,9 @@ const unselected = (review: UploadReview, v: ClassifiedValue) =>
  * L4 one quantity. For every row, sent or not, dated or not: the fault is the held text, else `rangeFault` of the candidate
  * (`edits[ref]` else the read SI number) in the units table, else the review's refusal of a sent value its own number does
  * not show (a blood pressure half, a lab filed as a core value). The error is non-null exactly then; a range error is `rangeMessage` in the person's unit; held text
- * reads the cells' guidance. A blocker sits at the row exactly when it holds text, or is a ticked, selected, faulty core value.
+ * reads the cells' guidance. A blocker sits at the row exactly when it holds text; a ticked, selected, faulty core value
+ * is `refused` and blocks nothing (US-13 AC27). Mutation: the old whole-review block (`blocks = !!typed || refused`)
+ * fails it on the first out-of-range read.
  * Mutation: the unsent preview built without the edit (D3) fails it on an out-of-range value corrected while its report
  * waits; `rangeMessage(metric, 'si', ...)` fails it on the first conventional seed.
  */
@@ -206,9 +208,11 @@ export function checkOneQuantity(s: UploadState, review: UploadReview, view: Upl
       if (range && row.error !== rangeMessage(metric!, unitOf(metric!), range)) fail('L4', `${key} says ${row.error}, not the range in ${unitOf(metric!)}`);
       if (typed && ![NUMERIC_SYNTAX_GUIDANCE, ENTER_A_NUMBER, commaQuestion(typed.text.trim())].includes(row.error)) fail('L4', `${key} holds "${typed.text}" and says ${row.error}`);
       const ticked = st.choices.ticks[at.ref] ?? true;
-      const blocks = !!typed || (ticked && fault && !unselected(review, v) && at.kind === 'core');
+      const blocks = !!typed;
+      const refused = !typed && ticked && fault && !unselected(review, v) && at.kind === 'core';
       if (open && blocked.has(key) !== blocks) fail('L4', `${key} blocker ${blocked.has(key)}, expected ${blocks} (status ${row.status.kind})`);
       if ((row.status.kind === 'error') !== blocks) fail('L4', `${key} status ${row.status.kind}, blocks ${blocks}`);
+      if ((row.status.kind === 'refused') !== refused) fail('L4', `${key} status ${row.status.kind}, refused ${refused}`);
     }
   }
 }

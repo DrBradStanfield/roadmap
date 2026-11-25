@@ -182,6 +182,8 @@ export function runSequence(seed: number, steps: number) {
 
   for (let step = 0; step < steps; step++) {
     const before = h.state();
+    // The done screen draws no list: a run that saved has nothing more to step through.
+    if (before.phase === 'done') break;
     const record = h.record();
     const { list } = see(before, record);
     const rows = list.rows;
@@ -304,7 +306,7 @@ export function runSequence(seed: number, steps: number) {
       expected = transition(before, e).state;
     } else if (r < 0.91) {
       const doc = docEl('f2');
-      if (!doc || before.phase === 'saving' || before.phase === 'done') continue;
+      if (!doc || before.phase === 'saving') continue;
       const which = rand();
       if (which < 0.4) {
         const select = doc.querySelector('select')!;
@@ -395,7 +397,8 @@ export function runSequence(seed: number, steps: number) {
     // never a row alert; and a step that sent one choice and no unit press says every error text it made.
     if (document.querySelector('.upload-list [role="alert"]')) fail('K3j', 'a row is an alert');
     const nowSaid = document.querySelector('.upload-list [aria-live]')?.textContent ?? null;
-    if (engineStep && nowSaid !== wasSaid) fail('K3j', `announced "${nowSaid}" on the engine's step "${trace[trace.length - 1]}"`);
+    // The done screen has no list, so no announcement: a Save past a refused row's error now reaches it (US-13 AC27).
+    if (engineStep && !after.view.done && nowSaid !== wasSaid) fail('K3j', `announced "${nowSaid}" on the engine's step "${trace[trace.length - 1]}"`);
     const errorsAfter = errorsOf(after.list.rows);
     const made = after.view.done ? [] : newErrorsIn(errorsAfter, stepStart);
     const oneChoice = h.sent.slice(sentBefore).filter((e) => e.type === 'chose').length === 1 && h.presses.length === pressesBefore;
@@ -415,7 +418,7 @@ export function runSequence(seed: number, steps: number) {
     const focusedRow = (document.activeElement as HTMLElement | null)?.closest<HTMLElement>('li[data-key]');
     if (draft && !letters.includes(draft.key) && rowEl(draft.key)?.hidden) fail('K3f', `${draft.key} holds the draft and is hidden`);
     if (focusedRow?.hidden) fail('K3f', `${focusedRow.dataset.key} holds the focus and is hidden`);
-    for (const d of after.view.documents?.rows ?? []) {
+    for (const d of after.view.done ? [] : after.view.documents?.rows ?? []) {
       const want = draft?.key === `title:${d.fileId}` ? draft.text : d.title;
       if (textInput(docEl(d.fileId))?.value !== want) fail('K3d', `letter ${d.fileId} title shows "${textInput(docEl(d.fileId))?.value}", want "${want}"`);
     }

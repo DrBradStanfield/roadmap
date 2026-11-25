@@ -13,7 +13,7 @@
  *
  * A repeat on the record it saved writes nothing (commit answers the same file): saved values are
  * classified saved, and saveDocuments skips bytes the record already holds. It refuses, writing
- * nothing, while the view would: a selected value the write refuses, or a report waiting for its day
+ * nothing, while the view would: a value holding typed text, or a report waiting for its day
  * (`saveBlocked`). Pure but for `io`: the bytes and the cloud writes are the caller's.
  *
  * A letter's ticked, dated screening box (web only, `person` given; upload-screening.ts, US-13 AC6) writes its

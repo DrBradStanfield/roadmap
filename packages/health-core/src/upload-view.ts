@@ -261,18 +261,17 @@ const rowOf = (review: UploadReview, v: ClassifiedValue) => ({
   ticked: review.labFiles[v.file].ticked.includes(v.ref),
   replaces: review.held.get(`${v.file}:${v.ref}`) ?? null,
   replacing: replacingOf(review, v),
-  error: blocks(review)(v) && v.refusal && 'measurement' in v.refusal ? v.refusal.measurement.message : null,
+  error: refusedRow(review)(v) && v.refusal && 'measurement' in v.refusal ? v.refusal.measurement.message : null,
 });
 
 /** A copy is never written, so its Replace, if one was chosen, does nothing (`copy`). */
 const replacingOf = (review: UploadReview, v: ClassifiedValue) => !v.copy && review.labFiles[v.file].replacing.includes(v.ref);
 
 /**
- * A selected core value the write would refuse blocks Save, as the web's old review blocked it
- * (ReviewTable `refusedKept` over import-review-view `blocked`, US-13 AC5): sent, not written, and
- * out of its range or otherwise refused (a same-day loser is not an error).
+ * A selected core value the write refuses shows the write's words on its row: sent, not written, and out of its range or
+ * otherwise refused (a same-day loser is not an error). It blocks nothing: Save refuses it alone (US-13 AC27).
  */
-const blocks = (review: UploadReview) => (v: ClassifiedValue) => isCoreRef(v.ref) && v.sent && !v.writes
+const refusedRow = (review: UploadReview) => (v: ClassifiedValue) => isCoreRef(v.ref) && v.sent && !v.writes
   && (v.group === 'unsure' ? v.reasons.includes('outOfRange') && (!v.reasons.includes('conflict') || replacingOf(review, v)) : v.group === 'notSaved' && v.reason !== 'sameDay');
 
 /** Each reason once, naming its tests, as "Not saved" names them in the review (NOT_SAVED_TEXT); then each own line once. */
@@ -321,7 +320,7 @@ function save(s: UploadState, plan: UploadSavePlan, review: UploadReview): Uploa
 
 /**
  * What Save waits on, each once with the control that removes it: a value that blocks (upload-candidates.ts: held typed
- * text, or selected with a fault) at its row, a report still waiting for a day at that day's control (no report is ever
+ * text; a refused value never waits, US-13 AC27) at its row, a report still waiting for a day at that day's control (no report is ever
  * skipped by Save). A dated previous column waits by the day it printed (`printed:<day>`), for each ticked value of it in
  * `waits` the write could take (US-13 AC24). Sent rows first, then days, then rows not sent: the first says `why`.
  */

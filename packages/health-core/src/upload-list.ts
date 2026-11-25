@@ -21,7 +21,8 @@ import { readFiles, type UploadReview } from './upload-review';
 import { DAY_CONTROL_TEXT, longDate, REVIEW_CELL_TEXT, UPLOAD_TEXT } from './upload-text';
 import { dayKey, heldText, savesOn } from './upload-view';
 
-/** What Save does with a row, one at a time. `error`: it blocks Save (held text, or selected with a fault). */
+/** What Save does with a row, one at a time. `error`: it blocks Save (held text). `refused`: selected with a fault, Save
+ *  refuses it alone and writes the rest (US-13 AC27). */
 export type ListStatus =
   | { kind: 'saves' }
   | { kind: 'check'; reasons: UnsureReason[] }
@@ -32,6 +33,7 @@ export type ListStatus =
   | { kind: 'notSaved'; reason: NotSavedReason }
   | { kind: 'waits' }
   | { kind: 'cleared' }
+  | { kind: 'refused' }
   | { kind: 'error' };
 
 /**
@@ -121,6 +123,7 @@ const errorWords = (fault: RowFault | null, unitOf: (metric: MetricType) => Cell
 function statusOf(c: Candidate, replacing: boolean): ListStatus {
   const { v } = c;
   if (c.blocks) return { kind: 'error' };
+  if (c.refused) return { kind: 'refused' };
   if (!c.ticked) return { kind: 'cleared' };
   if (v.group === 'notSaved') return v.reason === 'sameDay' ? { kind: 'sameDay' } : { kind: 'notSaved', reason: v.reason };
   if (v.copy || ('duplicate' in v && v.duplicate)) return { kind: 'copy' };
@@ -132,7 +135,7 @@ function statusOf(c: Candidate, replacing: boolean): ListStatus {
 
 function captionOf(status: ListStatus, error: string | null): string | null {
   switch (status.kind) {
-    case 'error': return error;
+    case 'error': case 'refused': return error;
     case 'sameDay': case 'copy': return NOT_SAVED_TEXT.sameDay;
     case 'notSaved': return NOT_SAVED_TEXT[status.reason];
     case 'alreadyInRecord': return REVIEW_CELL_TEXT.alreadyInRecord;

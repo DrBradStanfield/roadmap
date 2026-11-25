@@ -34,10 +34,11 @@ describe('uploadSaveJson on the phone\'s record (US-52 AC8c)', () => {
     expect(JSON.parse(again.record)).toEqual(record);
   });
 
-  it('refuses, writing nothing, a report waiting for its day, an out-of-range value, a state not saving, and unreadable input', async () => {
+  it('refuses, writing nothing, a report waiting for its day, a state not saving, and unreadable input', async () => {
     const refused = async (state: string, originals = ORIGINALS) => JSON.parse(await uploadSaveJson(state, '', '', NOW, 'phone', originals, bytesOf)) as Answer;
     expect(await refused(saving([read('lab', lab(null))]))).toMatchObject({ ok: false, reason: 'not-ready', message: 'Choose the day of the test' });
-    expect(await refused(saving([read('lab', lab('2026-10-01', 500))]))).toMatchObject({ ok: false, reason: 'not-ready' });
+    // US-13 AC27: an out-of-range value is refused alone; the rest of the report saves.
+    expect(await refused(saving([read('lab', lab('2026-10-01', 500))]))).toMatchObject({ ok: true, outcome: { values: 1 } });
     expect(await refused(MIXED.replace('"saving"', '"open"').replace(',"attempt":1,"files"', ',"files"'))).toMatchObject({ ok: false, reason: 'not-saving' });
     expect(await refused('{', ORIGINALS)).toMatchObject({ ok: false, reason: 'invalid-state' });
     expect(await refused(MIXED, '[1]')).toMatchObject({ ok: false, reason: 'invalid-originals' });

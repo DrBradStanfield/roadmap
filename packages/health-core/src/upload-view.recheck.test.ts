@@ -26,11 +26,11 @@ const both = (s: UploadState, record: RoadmapFile = EMPTY) => {
 const rows = (s: UploadState, record: RoadmapFile): ValueRow[] => both(s, record).view.sections.flatMap((x) => (x.kind === 'unsure' ? x.rows : []));
 const chose = (s: UploadState, change: ChoiceChange) => transition(s, { type: 'chose', id: 'a', change, now: NOW }).state;
 
-describe('US-13 AC5: a selected core value out of its range blocks Save', () => {
-  it('LDL edited to 999 blocks Save with the web\'s words and names the row; correcting or unticking it frees Save', () => {
+describe('US-13 AC27: a selected core value out of its range is refused alone (it replaced AC5\'s block)', () => {
+  it('LDL edited to 999 blocks nothing and keeps the write\'s words on its row; corrected, it saves', () => {
     const wild = open([read('a', { edits: { v0: 999 } })]);
     const { view } = both(wild);
-    expect(view.save).toMatchObject({ enabled: false, why: FIX_ERRORS_TEXT });
+    expect(view.save).toMatchObject({ label: 'Save 1 original', enabled: true, why: null });
     expect(rows(wild, EMPTY).find((r) => r.ref === 'v0')?.error).toEqual(expect.any(String));
     expect(both(chose(wild, { edit: 'v0', value: 3.5 })).view.save).toMatchObject({ enabled: true, why: null });
     // Unticked with a cloud, Save keeps the report's original alone (US-14 AC11, Brad 2026-11-21).
