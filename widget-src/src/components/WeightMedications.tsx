@@ -41,7 +41,9 @@ export function WeightMedications(props: WeightMedicationsProps) {
 
   const glp1Dropdown = (
     <div className="health-field">
-      <label htmlFor="glp1-name">{MEDICATION_TEXT.glp1Label}</label>
+      <label htmlFor="glp1-name" id="glp1-label">{MEDICATION_TEXT.glp1Label}</label>
+      {/* The dose select is named by this label and the fixed word "dose" (US-06 AC7a) */}
+      <span hidden id="glp1-dose-word">dose</span>
       {weightCascadeMode && <p className="med-step-hint">{cascade.suggest.includes('glp1-dose') ? MEDICATION_TEXT.doseHint : MEDICATION_TEXT.glp1Hint}</p>}
       <div className="statin-selection-row">
         <select
@@ -51,6 +53,7 @@ export function WeightMedications(props: WeightMedicationsProps) {
         {availableGlp1Doses.length > 0 && (
           <select
             id="glp1-dose"
+            aria-labelledby="glp1-label glp1-dose-word"
             {...recordedChoice(doseOptions(availableGlp1Doses), glp1Dose === null ? '' : String(glp1Dose), (value) => writeMedication(medInputs, weightCascadeMode, 'glp1_dose', value), 'Add dose')}
           />
         )}
@@ -61,7 +64,8 @@ export function WeightMedications(props: WeightMedicationsProps) {
 
   const sglt2iDropdown = (
     <div className="health-field">
-      <label htmlFor="sglt2i-name">{MEDICATION_TEXT.sglt2iLabel}</label>
+      <label htmlFor="sglt2i-name" id="sglt2i-label">{MEDICATION_TEXT.sglt2iLabel}</label>
+      <span hidden id="sglt2i-dose-word">dose</span>
       {weightCascadeMode && <p className="med-step-hint">{MEDICATION_TEXT.sglt2iHint}</p>}
       <div className="statin-selection-row">
         <select
@@ -71,6 +75,7 @@ export function WeightMedications(props: WeightMedicationsProps) {
         {availableSglt2iDoses.length > 0 && (
           <select
             id="sglt2i-dose"
+            aria-labelledby="sglt2i-label sglt2i-dose-word"
             {...recordedChoice(doseOptions(availableSglt2iDoses), sglt2iDose === null ? '' : String(sglt2iDose), (value) => writeMedication(medInputs, weightCascadeMode, 'sglt2i_dose', value), 'Add dose')}
           />
         )}
