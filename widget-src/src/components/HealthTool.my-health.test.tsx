@@ -9,8 +9,6 @@ import { act, render, waitFor, fireEvent, within, type RenderResult } from '@tes
 import type { Suggestion } from '@roadmap/health-core/types';
 import {
   addMeasurement,
-  bulkSaveDocuments,
-  bulkSaveLabValues,
   deleteUserData,
   flushRoadmapStore,
   saveChangedMeasurements,
@@ -46,6 +44,7 @@ vi.mock('./ResultsPanel', async (importOriginal) => {
 });
 
 import { HealthTool } from './HealthTool';
+import { bulkSaveDocuments, bulkSaveLabValues } from '../testing/bulk-save';
 
 useHealthToolLifecycle();
 

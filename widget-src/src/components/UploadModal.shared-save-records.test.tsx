@@ -14,6 +14,7 @@ import { addMeasurement } from '../lib/roadmap-data';
 import { Sentry } from '../lib/sentry';
 import { RoadmapStore } from '../storage/roadmap-store';
 import { adapterSave, eraseHere, parityBundle, readFor, type Probes, type Seed, type Side } from '../testing/upload-save-parity-kit';
+import { storeBulkSaveDocuments } from '../testing/bulk-save';
 
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn() }));
 const probes = vi.hoisted(() => ({ tracked: [], failNext: { shared: false } }) as unknown as Omit<Probes, 'sentryCalls'>);
@@ -137,7 +138,7 @@ const CASES: Case[] = [
     // cloud too: the shared Save files its original unread under the held row's details and tombstones that row
     // (upload-plan.ts `archiveOnly`). Before, the web read it again and saved the reader's title and date.
     name: 'ruled: a file the record holds without its original is filed unread, under its held details', cloud: true, files: [pdf('letterA')],
-    record: async (store) => { await store.bulkSaveDocuments([{ documentType: 'clinic_letter', title: 'Synthetic connector title', documentDate: '2025-01-01', contentMd: 'Synthetic', metadata: {}, sourceFileName: 'letterA.pdf', contentHash: 'hash-read:letterA' }]); },
+    record: async (store) => { await storeBulkSaveDocuments(store, [{ documentType: 'clinic_letter', title: 'Synthetic connector title', documentDate: '2025-01-01', contentMd: 'Synthetic', metadata: {}, sourceFileName: 'letterA.pdf', contentHash: 'hash-read:letterA' }]); },
     holds: (s) => {
       expect(labImport).not.toHaveBeenCalled();
       expect(documents(s).filter((d) => d.deleted).map((d) => d.fileRef)).toEqual(['']);
@@ -148,7 +149,7 @@ const CASES: Case[] = [
   {
     // Ruled: every read letter saves, none unticked (US-13 AC14); its new bytes are a new row.
     name: 'ruled: every letter saves, none unticked', cloud: true, files: [pdf('letterA')],
-    record: async (store) => { await store.bulkSaveDocuments([{ documentType: 'clinic_letter', title: 'Synthetic earlier letter', documentDate: '2025-01-01', contentMd: 'Synthetic', metadata: {}, sourceFileName: 'letterA.pdf', contentHash: 'hash-other-bytes' }]); },
+    record: async (store) => { await storeBulkSaveDocuments(store, [{ documentType: 'clinic_letter', title: 'Synthetic earlier letter', documentDate: '2025-01-01', contentMd: 'Synthetic', metadata: {}, sourceFileName: 'letterA.pdf', contentHash: 'hash-other-bytes' }]); },
     holds: (s) => { expect(s.done).toBe(true); expect(s.record.documents).toContain(letterRow('Synthetic letter A', '2025-08-01')); expect(s.counts).toEqual({ values: 0, documents: 1, skipped: 0, refused: 0 }); },
   },
   // US-12 AC20 (moved from UploadModal.lab-limits.test.tsx): a printed limit saves as a limit; an edit is exact.

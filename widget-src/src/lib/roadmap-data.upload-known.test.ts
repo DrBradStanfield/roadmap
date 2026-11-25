@@ -4,8 +4,9 @@
 // deleted document's bytes were still skipped on the next upload. Synthetic rows only.
 import { beforeEach, describe, expect, it } from 'vitest';
 import { knownAs } from '@roadmap/health-core/upload-known';
-import { bulkSaveDocuments, deleteDocument, initRoadmapStore, uploadKnownIndex } from './roadmap-data';
+import { deleteDocument, initRoadmapStore, uploadKnownIndex } from './roadmap-data';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
+import { bulkSaveDocuments } from '../testing/bulk-save';
 
 const HASH = 'sha256-synthetic-letter';
 const letter = { documentType: 'clinic_letter', title: 'Synthetic letter', documentDate: '2024-06-01', contentMd: 'letter', metadata: {}, sourceFileName: 'letter.pdf', contentHash: HASH };

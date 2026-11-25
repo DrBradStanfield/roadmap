@@ -37,7 +37,7 @@ const ERASED = { ok: false, reason: 'erased', message: SAVE_FAILED } as const;
 
 /** A failed original write, reported as the store reports one: tags only, never a name, a value or the bytes. A
  *  log-off refusal is not reported (US-09 AC2c). */
-export function reportUnstored(error: unknown, backend: string): void {
+function reportUnstored(error: unknown, backend: string): void {
   if (error instanceof WritesStoppedError) return;
   console.warn('Document file not stored');
   Sentry.captureException(recordFailure(error, 'Document file not stored'), { tags: { area: 'cloud-sync', op: 'write-document', backend } });
@@ -49,9 +49,11 @@ export interface OriginalsCloud { write(ref: string, blob: Blob): Promise<void>;
 export async function saveUploadThrough(
   session: RecordSession, cloud: OriginalsCloud, engine: UploadEngine, s: UploadState, now: string, cloudConnected: boolean, io: WebUploadIO, person?: ScreeningPerson,
 ): Promise<UploadSaveAnswer> {
-  // The Save stands for the erase the page showed as it began: refused before any write, before each original and at
-  // the commit, since an erase can land while the originals upload (US-16 AC2a, US-11 AC1a).
-  const erase = session.shownErase;
+  // The Save stands for the erase the page showed at the press on Save, which the flow's saving state carries (read by
+  // useUploadFlow's `save`, never after an await): refused before any write, before each original and at the commit,
+  // since an erase can land while the originals upload (US-16 AC2a, US-11 AC1a). A state without one stands for the
+  // session's mark.
+  const erase = s.phase === 'saving' && s.erase !== undefined ? s.erase : session.shownErase;
   if (session.refuses(erase)) return ERASED;
   /** An original a busy refusal will retry: its bytes kept, so a retry does not inflate them again, until it settles. */
   const retrying = new Map<string, Blob>();

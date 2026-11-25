@@ -13,7 +13,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, configure, fireEvent, render, waitFor, within } from '@testing-library/react';
 import { toOldShape } from '@roadmap/health-core/blood-tests';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
-import { addMeasurement, bulkSaveLabValues, correctValue, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
+import { addMeasurement, correctValue, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
 
 vi.mock('chart.js', () => {
   class Chart { static register() {} destroy() {} update() {} }
@@ -34,6 +34,7 @@ import { HealthTool } from './HealthTool';
 import { trackProductEvent } from '../lib/server-api';
 import { openSettings } from '../testing/settings';
 import { trackLiveRefresh, stopLiveRefresh } from '../testing/health-tool-harness';
+import { bulkSaveLabValues } from '../testing/bulk-save';
 
 // Adversary R7 (2026-11-02): each Add waits on the store's real async save. Under a
 // loaded full run that took longer than waitFor's default 1 s, so two AC10 tests

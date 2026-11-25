@@ -12,7 +12,7 @@ import { knownMinorOf } from '@roadmap/health-core/calculations';
 import { readableView } from '@roadmap/health-core/readable-rows';
 import { knownIndex, readIsLegacy, type KnownIndex } from '@roadmap/health-core/upload-known';
 import type { UnifiedExtractionResult } from '@roadmap/health-core/lab-extraction';
-import { RoadmapStore, type DerivedSeries, type BulkLabValueInput, type BulkMeasurementInput, type CorrectStatus, type MoveOutcome, type ProfileSave } from '../storage/roadmap-store';
+import { RoadmapStore, type DerivedSeries, type BulkMeasurementInput, type CorrectStatus, type MoveOutcome, type ProfileSave } from '../storage/roadmap-store';
 import { ChatHistoryStore } from '../storage/chat-history-store';
 import { getChatHistory, openChatHistory, setChatHistoryFactory } from './chat-history-access';
 import { eraseBegan, setChatEraseReader } from './chat-erase';
@@ -25,10 +25,8 @@ import type { ScreeningPerson } from '@roadmap/health-core/upload-screening';
 import { SAVE_FAILED, type UploadEngine, type UploadSaveAnswer, type WebUploadIO } from '../storage/upload-save-store';
 import type {
   AddMeasurementResult,
-  ApiDocument,
   ApiLabValue,
   ApiMedicationHistory,
-  BulkLabValuesResult,
   BulkSaveResult,
   LatestMeasurementsResult,
 } from './api-types';
@@ -305,17 +303,11 @@ function countMeasurementRefused(reason: MeasurementRefusal['reason'], metricTyp
   else if (reason === 'out-of-range') trackProductEvent('measurement_refused', { refusal: reason }, metricType);
   else trackProductEvent('measurement_refused', { refusal: reason });
 }
-export async function bulkSaveMeasurements(measurements: BulkMeasurementInput[]): Promise<BulkSaveResult> {
+export async function bulkSaveMeasurements(measurements: BulkMeasurementInput[], erase?: string): Promise<BulkSaveResult> {
   if (!store) return { saved: [], skippedDuplicates: 0, errorCount: measurements.length, refused: [] };
-  const result = store.bulkSaveMeasurements(measurements);
+  const result = store.bulkSaveMeasurements(measurements, erase);
   for (const row of result.refused) countMeasurementRefused(row.reason, row.metricType);
   countMeasuresAdded(result.saved.filter((row) => !row.correctsId));
-  return result;
-}
-export async function bulkSaveLabValues(values: BulkLabValueInput[]): Promise<BulkLabValuesResult> {
-  if (!store) return { saved: [], skippedDuplicates: 0, errorCount: values.length, refused: [] };
-  const result = store.bulkSaveLabValues(values);
-  countRefusedSpellings(result.refused);
   return result;
 }
 /** A lab value a person adds (US-21 AC2, US-25 AC25), by health-core's one lab add; null when nothing could be written. */
@@ -323,11 +315,6 @@ export async function addLabValue(input: AddLabValueRequest, erase?: string): Pr
   const result = store ? store.addLabValue(input, erase) : null;
   if (result && !result.ok && result.refused) countRefusedSpellings([result.refused]);
   return result;
-}
-export async function bulkSaveDocuments(
-  documents: Array<{ documentType: string; title: string; documentDate: string | null; contentMd: string; metadata: Record<string, unknown>; sourceFileName: string | null; file?: Blob; contentHash?: string }>,
-): Promise<{ saved: ApiDocument[]; errorCount: number; unstored?: number }> {
-  return store ? store.bulkSaveDocuments(documents) : { saved: [], errorCount: documents.length };
 }
 /** The shared upload's one Save (storage/upload-save-store.ts), and the counts today's writers send for it: each lab
  *  the review did not send for its unit or number, by its own refusal (`lab_unit_refused`, US-21 AC15, as the grid's

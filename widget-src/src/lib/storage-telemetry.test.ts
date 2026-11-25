@@ -11,6 +11,7 @@ import { stopRoadmapLocalWrites } from '../storage/local-storage-adapter';
 import { Sentry, scrubEvent } from './sentry';
 import { EXPECTED_NETWORK_ERRORS, recordFailure, storageCauseClass, storageFailureClass } from './error-diagnostics';
 import { numberPaths } from '@roadmap/health-core/number-leak.test-helpers';
+import { storeBulkSaveDocuments } from '../testing/bulk-save';
 
 // US-09 AC6: provider errors and request breadcrumbs may contain document
 // titles or results. Inspect complete outgoing SDK envelopes, not just extras.
@@ -51,7 +52,7 @@ describe('cloud-storage telemetry boundary', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const store = await RoadmapStore.create(new FailingArchive());
     Sentry.addBreadcrumb({ category: 'fetch', data: { url: `https://storage.example/${marker}.pdf` } });
-    await store.bulkSaveDocuments([{
+    await storeBulkSaveDocuments(store, [{
       documentType: 'clinic_letter', title: marker, documentDate: '2026-01-01',
       contentMd: marker, metadata: {}, sourceFileName: `${marker}.pdf`,
       file: new NodeBlob(['synthetic pdf'], { type: 'application/pdf' }) as unknown as Blob,

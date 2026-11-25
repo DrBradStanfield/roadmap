@@ -11,10 +11,11 @@ import { ValueCell } from './MatrixSavedCells';
 import { hidePage, showPage } from '../testing/matrix-gestures';
 
 const flush = vi.hoisted(() => vi.fn());
-vi.mock('../lib/roadmap-data', () => ({ flushRoadmapStoreSync: flush, getShownErase: () => 'erase-shown' }));
+const shown = vi.hoisted(() => ({ erase: 'erase-shown' }));
+vi.mock('../lib/roadmap-data', () => ({ flushRoadmapStoreSync: flush, getShownErase: () => shown.erase }));
 
 beforeEach(() => { vi.useFakeTimers(); });
-afterEach(() => { showPage(); cleanup(); vi.useRealTimers(); });
+afterEach(() => { showPage(); cleanup(); vi.useRealTimers(); shown.erase = 'erase-shown'; });
 
 const wait = (ms: number) => act(async () => { await vi.advanceTimersByTimeAsync(ms); });
 
@@ -37,6 +38,18 @@ describe('US-04 AC1 — the page going away during a click-away save', () => {
     expect(onCorrect).toHaveBeenCalledWith('r1', 3.4, 'erase-shown');
     await wait(2000);
     expect(onCorrect).toHaveBeenCalledTimes(1);
+  });
+
+  // US-16 AC2a (PR 1 review, lead L1): the save names the erase shown when the editor opened, not the one shown when
+  // its click-away timer or the page hide runs it.
+  it('a save that runs after the page shows another erase names the erase the editor opened at', async () => {
+    const { onCorrect, input } = editor();
+    shown.erase = 'erase-shown-later';
+    fireEvent.change(input, { target: { value: '3.4' } });
+    fireEvent.blur(input);
+    await wait(50);
+    hidePage();
+    expect(onCorrect).toHaveBeenCalledWith('r1', 3.4, 'erase-shown');
   });
 
   // Codex R1: the page's own flush listener ran before the cell's, so the

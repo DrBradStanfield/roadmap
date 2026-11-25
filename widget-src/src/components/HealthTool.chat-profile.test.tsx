@@ -22,7 +22,7 @@ import { rowRootIds } from '@roadmap/health-core/merge';
 import { ERASE_UNREACHABLE, REMOTE_CHANGED_EVENT, RoadmapStore } from '../storage/roadmap-store';
 import { BACKEND_KEY } from '../storage/web-record-host';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
-import { addMeasurement, bulkSaveDocuments, bulkSaveLabValues, deleteUserData, flushRoadmapStore, initRoadmapStore, loadLatestMeasurements, recordFileSync, saveChangedMeasurements, saveMedication, saveSupplement } from '../lib/roadmap-data';
+import { addMeasurement, deleteUserData, flushRoadmapStore, initRoadmapStore, loadLatestMeasurements, recordFileSync, saveChangedMeasurements, saveMedication, saveSupplement } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 import { openAboutYou, recordOnDisk } from '../testing/health-tool-harness';
 import { BT_TIMELINE_DRAFT_KEY, MIRROR_CHANGED_EVENT, MIRROR_KEY } from '../lib/storage';
@@ -62,6 +62,7 @@ vi.mock('./UploadModal', () => ({ UploadModal: ({ onComplete }: { onComplete: ()
 import { HealthTool } from './HealthTool';
 import { ERASE_DONE_CHAT_UNREAD, WRITE_REFUSED } from '../lib/erase-copy';
 import { deleteButton } from '../testing/settings';
+import { bulkSaveDocuments, bulkSaveLabValues } from '../testing/bulk-save';
 
 /** The guest's record as this browser holds it, after every pending save. */
 const wait = (ms: number) => act(async () => { await vi.advanceTimersByTimeAsync(ms); });

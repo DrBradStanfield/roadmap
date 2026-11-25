@@ -14,7 +14,7 @@ import type { HealthResults } from '@roadmap/health-core/types';
 import { useHealthToolLifecycle } from '../testing/health-tool-harness';
 import { pickDraftDate, typeInto } from '../testing/matrix-gestures';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
-import { addMeasurement, bulkSaveLabValues, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
+import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../lib/server-api', async (importOriginal) => ({
@@ -40,6 +40,7 @@ vi.mock('./ResultsPanel', async (importOriginal) => {
 });
 
 import { HealthTool } from './HealthTool';
+import { bulkSaveLabValues } from '../testing/bulk-save';
 
 const EGFR_UNIT = 'mL/min/1.73m²';
 

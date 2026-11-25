@@ -8,6 +8,7 @@ import { RoadmapStore } from './roadmap-store';
 import { createEmptyFile } from '@roadmap/health-core/roadmap-file';
 import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
 import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
+import { storeBulkSaveDocuments } from '../testing/bulk-save';
 
 const DAY = '2026-09-01T00:00:00.000Z';
 
@@ -20,7 +21,7 @@ describe('RoadmapStore — US-65 readers view', () => {
     expect(store.loadLatestMeasurements().documents).toEqual([]);
     expect(store.unreadableCount).toBe(1);
 
-    await store.bulkSaveDocuments([{
+    await storeBulkSaveDocuments(store, [{
       documentType: 'clinic_letter', title: 'Heart clinic', documentDate: null,
       contentMd: '# Letter', metadata: {}, sourceFileName: 'letter.pdf',
       file: new Blob(['letter'], { type: 'application/pdf' }),

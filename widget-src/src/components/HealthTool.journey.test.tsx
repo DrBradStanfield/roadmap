@@ -32,7 +32,6 @@ import { BACKEND_KEY } from '../storage/web-record-host';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import {
   addMeasurement,
-  bulkSaveLabValues,
   correctValue,
   flushRoadmapStore,
   initRoadmapStore,
@@ -93,6 +92,7 @@ vi.mock('./UploadModal', () => ({
 import { HealthTool } from './HealthTool';
 import { ERASE_DONE } from '../lib/erase-copy';
 import { deleteButton, openSettings } from '../testing/settings';
+import { bulkSaveLabValues } from '../testing/bulk-save';
 
 // Read at assertion time, not module load: a run that crosses local midnight stamps rows with the new day.
 const localToday = () => localDay(new Date());

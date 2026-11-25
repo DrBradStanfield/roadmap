@@ -6,9 +6,10 @@ import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter'
 import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import { RoadmapStore } from '../storage/roadmap-store';
 import { UploadModal } from './UploadModal';
-import { initRoadmapStore, addMeasurement, bulkSaveLabValues, correctValue, flushRoadmapStore } from '../lib/roadmap-data';
+import { initRoadmapStore, addMeasurement, correctValue, flushRoadmapStore } from '../lib/roadmap-data';
 import { checkLabImportQuota, labImport } from '../lib/upload-api';
 import { trackLiveRefresh, stopLiveRefresh } from '../testing/health-tool-harness';
+import { bulkSaveLabValues } from '../testing/bulk-save';
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn() }));
 vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
 // Extraction and original-file archival are outside this value-save witness.
