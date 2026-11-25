@@ -35,10 +35,8 @@ function dexa(json: string, now: string) {
 
 describe('the iPhone engine\'s screening cards, questions and reminders read one age (US-23 AC6c)', () => {
   it.each([
-    ['New York at 20:00 on 30 Nov (1 Dec in UTC), born Dec 1976: card, questions and reminder', 'America/New_York', '2026-11-30T20:00:00.000', 12,
-      { age: 49, cards: ['screening-dexa-overdue'], reminder: true, questions: true }],
-    ['Auckland at 01:00 on 1 Oct (30 Sep in UTC), born Oct 1976: none of them', 'Pacific/Auckland', '2026-10-01T01:00:00.000', 10,
-      { age: 50, cards: [], reminder: false, questions: false }],
+    ['New York at 20:00 on 30 Nov (1 Dec in UTC), born Dec 1976: card, questions and reminder', 'America/New_York', '2026-11-30T20:00:00.000', 12, { age: 49, cards: ['screening-dexa-overdue'], reminder: true, questions: true }],
+    ['Auckland at 01:00 on 1 Oct (30 Sep in UTC), born Oct 1976: none of them', 'Pacific/Auckland', '2026-10-01T01:00:00.000', 10, { age: 50, cards: [], reminder: false, questions: false }],
   ])('a phone in %s', (_name, tz, now, birthMonth, expected) => {
     process.env.TZ = tz;
     expect(dexa(record(now, birthMonth), now)).toEqual(expected);

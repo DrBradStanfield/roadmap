@@ -26,7 +26,6 @@ vi.mock('./ResultsPanel', async (importOriginal) => {
 });
 
 import { HealthTool } from './HealthTool';
-
 useHealthToolLifecycle();
 afterEach(() => { vi.useRealTimers(); process.env.TZ = 'UTC'; seen.suggestions = []; seen.uploadAge = undefined; });
 
@@ -52,7 +51,6 @@ async function pageAt(tz: string, now: string, profile: Partial<HealthInputs>, a
   };
 }
 type Probe = { card: string; asked: (root: HTMLElement) => Element | undefined | null; upload: string; reminder?: string };
-
 /** A woman born in 1976, a normal DEXA scan in 2019: the DEXA card, the Bone Density questions, the reminder. */
 const DEXA: [Partial<HealthInputs>, string[][], Probe] = [{ sex: 'female', birthYear: 1976 },
   [['dexa_screening', 'dexa_scan'], ['dexa_last_date', '2019-01'], ['dexa_result', 'normal']],

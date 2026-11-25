@@ -10,14 +10,12 @@ import { generateSuggestions } from './suggestions';
 import { createEmptyFile, type RoadmapFile } from './roadmap-file';
 
 afterEach(() => { process.env.TZ = 'UTC'; });
-
 const DEXA = { dexaScreening: 'dexa_scan', dexaLastDate: '2019-01', dexaResult: 'normal' } as const;
 const LUNG = { lungSmokingHistory: 'former_smoker', lungPackYears: 30, lungScreening: 'annual_ldct', lungLastDate: '2024-01', lungResult: 'normal' };
 function record(profile: Partial<RoadmapFile['profile']>, screenings: Record<string, unknown> = DEXA): RoadmapFile {
   const f = createEmptyFile({ deviceId: 'age_clock', now: '2026-01-01T00:00:00Z' });
   return { ...f, profile: { ...f.profile, heightCm: 165, ...profile }, screenings: { ...f.screenings, ...screenings, updatedAt: '2026-01-01T00:00:00Z' } as RoadmapFile['screenings'] };
 }
-
 /** The plan's age, its cards for one screening, and whether the schedule has that screening, at one instant. */
 function view(file: RoadmapFile, now: Date, id: 'dexa' | 'lung') {
   const plan = computePlan(file, now);
@@ -46,7 +44,6 @@ describe('the plan\'s screening cards and the reminders read one age (US-23 AC6c
     process.env.TZ = tz;
     expect(view(record({ birthYear: 1976, ...profile }, lung ? LUNG : DEXA), new Date(at), lung ? 'lung' : 'dexa')).toEqual(expected);
   });
-
   it('with no birth year the schedule has no age, so nothing but the annual floor, as before', () => {
     const f = record({ sex: 'female' });
     const withLdl = { ...f, measurements: [{ id: 'm1', metricType: 'ldl', value: 3, recordedAt: '2026-01-15T00:00:00.000Z', createdAt: '2026-01-15T00:00:00.000Z', status: 'active' }] } as RoadmapFile;
@@ -54,7 +51,6 @@ describe('the plan\'s screening cards and the reminders read one age (US-23 AC6c
     expect(items(withLdl)).toEqual(['annual_checkin']);
     expect(items({ ...withLdl, profile: { ...withLdl.profile, birthYear: 1976, birthMonth: 12 } })).not.toEqual(['annual_checkin']); // control
   });
-
   it('a caller that gives an age and no birth year (generateSuggestions alone) is read at that age', () => {
     process.env.TZ = 'America/New_York';
     const cards = (age: number) => generateSuggestions({ heightCm: 165, sex: 'female' }, { heightCm: 165, age, suggestions: [] },
