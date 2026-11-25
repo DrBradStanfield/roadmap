@@ -246,3 +246,66 @@ describe('the session tells the host when a retry becomes owed or stops being ow
     expect(calls.at(-1)).toEqual(['saved', false]);
   });
 });
+
+// US-09 AC58: the report key clears when a save lands, so a failure that
+// comes back after a recovery is reported again; one that repeats before is not.
+describe('US-09 AC58: once per cause until a save lands', () => {
+  it('fail, fail, land, fail: the second is a repeat, the third reports again', async () => {
+    const store = new TestCloud(new MemoryCloud());
+    const repeats: boolean[] = [];
+    const session = await RecordSession.open({ ...cloudHost(store), report: (_e, at) => void repeats.push(at.repeat) });
+    store.fail = OFFLINE();
+    add(session, 'a');
+    await expect(session.flush()).rejects.toThrow();
+    add(session, 'b');
+    await expect(session.flush()).rejects.toThrow();
+    store.fail = null;
+    await session.flush();
+    store.fail = OFFLINE();
+    add(session, 'c');
+    await expect(session.flush()).rejects.toThrow();
+    expect(repeats).toEqual([false, true, false]);
+  });
+
+  it('a save that lands while the host\'s remoteChanged throws still clears the key', async () => {
+    const cloud = new MemoryCloud();
+    const store = new TestCloud(cloud);
+    const repeats: boolean[] = [];
+    const host: RecordHost = {
+      ...cloudHost(store),
+      remoteChanged: () => { throw new Error('listener failed'); },
+      report: (_e, at) => { if (at.op === 'persist') repeats.push(at.repeat); },
+    };
+    const session = await RecordSession.open(host);
+    store.fail = OFFLINE();
+    add(session, 'a');
+    await expect(session.flush()).rejects.toThrow();
+    const other = await RecordSession.open({ ...cloudHost(new TestCloud(cloud)), deviceId: () => 'phone' });
+    add(other, 'phone-row');
+    await other.flush();
+    store.fail = null;
+    await session.flush(); // lands, folds the phone's row in, and the listener throws
+    expect(session.file.measurements.map((m) => m.id).sort()).toEqual(['a', 'phone-row']);
+    store.fail = OFFLINE();
+    add(session, 'c');
+    await expect(session.flush()).rejects.toThrow();
+    expect(repeats).toEqual([false, false]);
+  });
+
+  it('device tier: fail, a hide\'s synchronous write lands, the same failure: both report', async () => {
+    const store = new DeviceStore(new MemoryCloud());
+    const repeats: boolean[] = [];
+    const session = await RecordSession.open({ ...deviceHost(store, { value: true }), report: (_e, at) => void repeats.push(at.repeat) });
+    const full = () => new StorageError('full', undefined, undefined, undefined, undefined, 'refused');
+    store.fail = full();
+    add(session, 'a');
+    await expect(session.flush()).rejects.toThrow();
+    add(session, 'b');
+    session.flushSync(); // lands through writeSync
+    expect(session.saveStatus).toBe('saved');
+    store.fail = full();
+    add(session, 'c');
+    await expect(session.flush()).rejects.toThrow();
+    expect(repeats).toEqual([false, false]);
+  });
+});
