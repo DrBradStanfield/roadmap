@@ -108,4 +108,4 @@ PR 1 lands first; PR 2's pins land before the moves in PRs 3 and 4.
 - Waiting on Brad (wording, raised by PR 3): (1) a full Drive on the hosted MCP keeps the access-refusal text
   ("reconnect") until it has words of its own; what should it say? (2) a failure that may have landed with no words
   of its own reads "{provider} did not answer", though for a 408, 429 or 5xx the provider did answer, with an error;
-  keep it, or word it as an error answer?
+  keep it, or word it as an error answer? Item (2) decided 2026-11-26: worded as an error answer (US-10 AC20).
