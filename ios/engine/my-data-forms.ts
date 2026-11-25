@@ -30,6 +30,7 @@ import { groupLabValues, labValueLabel, mixedUnitsNote, savedLabText } from '../
 import { displayLabUnit, labSlotKey, resolveLabCatalogEntry } from '../../packages/health-core/src/lab-catalog';
 import { limitUngraded, pressureStatus, valueStatus, type GradeContext, type PressureReading } from '../../packages/health-core/src/row-grade';
 import { knownMinorOf } from '../../packages/health-core/src/calculations';
+import { screeningAge } from '../../packages/health-core/src/screening-rules';
 import { medicationAnnotations, medicationChanges } from '../../packages/health-core/src/medication-annotations';
 
 /** A supplement as the tab lists it. */
@@ -135,8 +136,8 @@ export function planOf(file: RoadmapFile, now: string, choices: UnitChoices): Pl
   }
 }
 
-/** What the medication and screening questions read: the plan's age, BMI, trigger and lipid marker, as the web's PlanBasis.
- *  `plan`: the record's plan (`planOf`); null gives no age and no cascades (the web's planBasis null). */
+/** What the medication and screening questions read: the age the screening cards read (US-23 AC6c), the plan's BMI,
+ *  trigger and lipid marker, as the web's PlanBasis. `plan`: the record's plan (`planOf`); null gives no age and no cascades. */
 function basisOf(file: RoadmapFile, choices: UnitChoices, plan: Plan | null) {
   const derived = derivePlanInputs(file);
   const raw = derived.inputs;
@@ -145,7 +146,7 @@ function basisOf(file: RoadmapFile, choices: UnitChoices, plan: Plan | null) {
   const results = plan?.results;
   const medicines = !!results && medicinesShown(results);
   return {
-    derived, age: results?.age, sex: raw.sex,
+    derived, age: plan ? screeningAge(plan.inputs, new Date(plan.generatedAt)) : undefined, sex: raw.sex,
     medication: {
       lipidMarker: medicines ? lipidMarkerFor(plan!.inputs as HealthInputs, results!) : null,
       weightMedTrigger: medicines ? weightMedicationTrigger(plan!.inputs as HealthInputs, results!) : { on: false, reasons: [] },
