@@ -212,8 +212,9 @@ issue, and nothing private.
 - A YouTube follow-up's classifier and router see the parent comment and the author's own earlier replies, by the
   same rule as web and Discord (H415, US-15 AC75): "the router should see the earlier comments. youtube, web, and discord should behave the same here, and so
   probably use the same code". No new words.
-- The server scrubber's parity test is retired ("go with your recommendations"): its copy is generated, and the test
-  that the generated copy is up to date stays. No new words.
+- The server scrubber's parity test is retired ("go with your recommendations"): its output-parity comparison is
+  deleted, since the copy is generated and the test that it is up to date stays; its four shape checks (imports, the
+  export list, the request-header allow-list) move to `sentry-scrub-shape.test.ts`. No new words.
 
 2026-11-23, Brad's words in quotes:
 - Original files are stored in the background after Save, with no action from the person at Save and at every
