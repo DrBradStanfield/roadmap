@@ -105,12 +105,14 @@ function adapterOf(c: Case): StorageAdapter {
   return new DriveAdapter('test-token-good');
 }
 
-const SILENT = 'did not answer, nothing written';
+/** US-10 AC20: an error status, or an answer that could not be used; never "did not answer" (lead A34). */
+const ERROR = 'returned an error, nothing written';
+const UNUSABLE = 'unusable answer, nothing written';
 function toldOf(error: unknown): string {
   const told = describeStorageFailure(error, 'The record');
   if (error instanceof StorageError && error.hint) return 'its own hint';
-  if (told.message === 'The record did not answer' && /may have landed/.test(told.hint)) return 'did not answer, may have landed';
-  return told.message === 'The record did not answer. Nothing was written' ? SILENT : 'other';
+  if (told.message === 'The record returned an error. Nothing was written') return ERROR;
+  return told.message === 'The record returned an answer that could not be used. Nothing was written' ? UNUSABLE : 'other';
 }
 
 /** A device copy whose every write is refused (a full store). */
@@ -165,8 +167,9 @@ afterEach(() => {
   localStorage.clear();
 });
 
-/** [case, outcome]. Every row: not landed, the save cause 'other' (retried), the erase put back; Drive's rows told SILENT. Was: landed, kept, Drive told LANDED. */
-const ROWS: Array<[Case, 'no-answer' | 'refused']> = [
+/** [case, outcome, told]. Every row: not landed, the save cause 'other' (retried), the erase put back. Was: landed, kept,
+ *  Drive told LANDED; then (AC17) Drive told "did not answer, nothing written", now (AC20) ERROR or UNUSABLE. */
+const ROWS: Array<[Case, 'no-answer' | 'refused', string?]> = [
   // GitHub's private-repository check before the first write (github.ts assertPrivate).
   ['github repo check 500', 'no-answer'],
   ['github repo check 503', 'no-answer'],
@@ -174,19 +177,19 @@ const ROWS: Array<[Case, 'no-answer' | 'refused']> = [
   ['github repo check 429', 'no-answer'],
   ['github public repo', 'refused'],
   // Google Drive's record lookup before the upload (drive-rest-record.ts discoverRecord).
-  ['drive lookup incomplete', 'no-answer'],
-  ['drive lookup invalid metadata', 'no-answer'],
-  ['drive lookup repeated page token', 'no-answer'],
+  ['drive lookup incomplete', 'no-answer', UNUSABLE],
+  ['drive lookup invalid metadata', 'no-answer', UNUSABLE],
+  ['drive lookup repeated page token', 'no-answer', UNUSABLE],
   // Google Drive's app-folder create before the record's first create (drive-rest-files.ts driveCreateFolder).
-  ['drive folder create 500', 'no-answer'],
-  ['drive folder create no id', 'no-answer'],
+  ['drive folder create 500', 'no-answer', ERROR],
+  ['drive folder create no id', 'no-answer', UNUSABLE],
   // The web Dropbox adapter's token refresh before the upload (dropbox.ts refresh).
   ['dropbox token refresh 500', 'no-answer'],
 ];
 
 describe('US-10 AC17: a record save that fails before its upload stored nothing', () => {
-  it.each(ROWS)('%s: %s, not landed, retried, the erase put back', async (c, outcome) => {
-    expect(await outcomeOf(c)).toEqual({ landed: false, outcome, cause: 'other', ...(c.startsWith('drive') ? { told: SILENT } : {}), erase: 'put back' });
+  it.each(ROWS)('%s: %s, not landed, retried, the erase put back', async (c, outcome, told) => {
+    expect(await outcomeOf(c)).toEqual({ landed: false, outcome, cause: 'other', ...(told ? { told } : {}), erase: 'put back' });
   });
 });
 
