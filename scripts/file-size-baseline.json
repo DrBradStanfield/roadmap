@@ -12,7 +12,7 @@
     "ios/scripts/app-store-video-compose.swift": 882,
     "packages/health-core/src/units.ts": 813,
     "packages/health-core/src/lab-catalog.ts": 802,
-    "packages/health-core/src/merge.ts": 770,
+    "packages/health-core/src/merge.ts": 766,
     "widget-src/src/components/HealthTool.tsx": 731,
     "packages/health-core/src/validation.ts": 700,
     "app/routes/api.chat.ts": 698,
@@ -30,7 +30,6 @@
     "app/lib/mcp.server.ts": 533,
     "packages/health-core/src/plan.ts": 518,
     "packages/health-core/src/mcp-tool-contract.ts": 515,
-    "widget-src/src/components/BloodTestTimeline.tsx": 515,
     "packages/health-core/src/run-roadmap.ts": 505
   }
 }
