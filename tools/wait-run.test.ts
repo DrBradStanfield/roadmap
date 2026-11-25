@@ -35,7 +35,6 @@ case "$*" in *rate_limit*graphql=*) if [ -n "\${BLOCK_END_BUDGET:-}" ]; then
   else : > "$STATE.budget1"; fi; fi ;; esac
 case "$*" in
   *rate_limit*) [ -n "\${RL_FAIL:-}" ] && exit 1; json "{\\"resources\\":{\\"core\\":{\\"remaining\\":\${RL_CORE:-4000},\\"reset\\":\${RL_RESET:-0}},\\"graphql\\":{\\"remaining\\":\${RL_GQL:-4000},\\"reset\\":\${RL_RESET:-0}}}}" ;;
-  *actions/runs/*) if poll_n; then json '{"status":"completed"}'; else json "{\\"status\\":\\"\${RUN_STATUS:-in_progress}\\"}"; fi ;;
   *"conclusion,headSha,jobs"*) [ -n "\${JOBS_FAIL:-}" ] && exit 1; [ -n "\${JOBS:-}" ] && { json "$JOBS"; exit; }; printf 'conclusion=%b\\n' "$CONCLUSION"; echo "head=abc123"; echo "job deploy=$CONCLUSION" ;;
   *statusCheckRollup*) pend='[{"__typename":"CheckRun","name":"t","workflowName":"CI","status":"IN_PROGRESS","conclusion":""}]'
     [ -n "\${ROLLUP:-}" ] && pend=$ROLLUP
@@ -45,9 +44,14 @@ case "$*" in
     [ -n "\${MERGE:-}" ] && { poll_n; json "{$MERGE,\\"statusCheckRollup\\":$pend}"; exit; }
     if poll_n; then json '{"statusCheckRollup":[{"__typename":"CheckRun","name":"t","workflowName":"CI","status":"COMPLETED","conclusion":"SUCCESS"}]}'
     else json "{\\"statusCheckRollup\\":$pend}"; fi ;;
+  # After the rollup case: its filter names the runs path too.
+  *actions/runs/*) if poll_n; then json "{\\"status\\":\\"completed\\",\\"conclusion\\":\\"\${RUN_CONCLUSION:-success}\\"}"; else json "{\\"status\\":\\"\${RUN_STATUS:-in_progress}\\"}"; fi ;;
   *"pass="*) [ -n "\${CHECKS_FAIL:-}" ] && exit 1
     c='{"name":"checks","bucket":"pass"},{"name":"test","bucket":"pass"},{"name":"unit (1, UTC)","bucket":"pass"}'
     [ "$FAILS" = 0 ] || c="$c,{\\"name\\":\\"\${FAILNAME:-test}\\",\\"bucket\\":\\"fail\\"}"
+    # CHECKS_UNTIL: the first that many checks reads answer CHECKS, later ones the default (a check appears).
+    k=$(cat "$STATE.ck" 2>/dev/null || echo 0); k=$((k+1)); echo $k > "$STATE.ck"
+    [ -n "\${CHECKS_UNTIL:-}" ] && [ $k -gt "$CHECKS_UNTIL" ] && CHECKS=
     json "\${CHECKS:-[$c]}" ;;
   *headRefOid*) [ -n "\${VIEW_FAIL:-}" ] && exit 1; echo "head=abc123"; echo "state=OPEN mergeable=MERGEABLE mergeState=CLEAN" ;;
 esac
@@ -348,6 +352,79 @@ describe('wait-run.sh (US-64 AC26)', () => {
     ]);
     expect(pollsTwice(['pr', '42'], { ROLLUP: twoNames })).toBe(true);
   });
+  const NO_TEST = JSON.stringify([{ name: 'checks', bucket: 'pass' }, { name: 'review', bucket: 'skipping' }]);
+  const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0);
+  describe('US-64 AC41: pr: checks that have not appeared yet are waited for, a few minutes', () => {
+    it('no `test` check yet waits WAIT_RUN_NO_CHECKS_MIN (default 5) from the start, then is untested', () => {
+      const r = run(['pr', '42'], { CHECKS: NO_TEST });
+      expect(r.status).toBe(1);
+      expect(status(r.stdout)).toMatchObject({ wait_run: 'untested', sha: 'abc123', detail: 'no test check appeared within 5 min (a draft PR?)' });
+      expect(sum(r.sleeps)).toBe(300);
+      expect(sum(run(['pr', '42'], { CHECKS: NO_TEST, WAIT_RUN_NO_CHECKS_MIN: '2' }).sleeps)).toBe(120);
+    });
+    it('a `test` check that appears inside the limit is waited for and counted', () => {
+      const r = run(['pr', '42'], { CHECKS: NO_TEST, CHECKS_UNTIL: '2' });
+      expect(r.status).toBe(0);
+      expect(status(r.stdout).wait_run).toBe('success');
+      expect(r.stdout).toContain('pass=3 fail=0');
+      expect(r.sleeps).toEqual([60, 60, 60]);
+    });
+    it('a draft PR (its `test` check SKIPPED) is still untested at once, with no extra wait', () => {
+      const skipped = JSON.stringify(['review', 'test'].map((name) => ({ name, bucket: 'skipping' })));
+      const r = run(['pr', '42'], { CHECKS: skipped });
+      expect(r.sleeps).toEqual([60]); // the one pending poll before the stub's checks finish
+      expect(status(r.stdout).detail).toBe('no successful test check (a draft PR?)');
+    });
+    it('an empty rollup past the limit is untested, not a wait to the time limit', () => {
+      const r = run(['pr', '42'], { MERGE: M, ROLLUP: '[]' });
+      expect(r.status).toBe(1);
+      expect(status(r.stdout)).toMatchObject({ wait_run: 'untested', sha: 'abc123', detail: 'no checks appeared within 5 min (a draft PR?)' });
+      expect(sum(r.sleeps)).toBe(300);
+      const now = run(['pr', '42'], { MERGE: M, ROLLUP: '[]', WAIT_RUN_NO_CHECKS_MIN: '0' });
+      expect(now.sleeps).toEqual([]);
+      expect(status(now.stdout).wait_run).toBe('untested');
+    });
+    it('a bad WAIT_RUN_NO_CHECKS_MIN is a usage error before any gh call', () => {
+      for (const v of ['x', '1.5', '1441']) {
+        const r = run(['pr', '42'], { WAIT_RUN_NO_CHECKS_MIN: v });
+        expect({ v, code: r.status }).toEqual({ v, code: 2 });
+        expect(r.calls).toEqual([]);
+      }
+    });
+  });
+  describe('US-64 AC41: pr: a check stuck "in progress" though its conclusion is in', () => {
+    const stuck = (extra: Record<string, string> = {}) => ({ __typename: 'CheckRun', name: 'test', workflowName: 'CI',
+      status: 'IN_PROGRESS', conclusion: 'SUCCESS', detailsUrl: 'https://github.com/o/r/actions/runs/777/job/9', ...extra });
+    const R = (...checks: object[]) => JSON.stringify(checks);
+    const runReads = (calls: string[]) => calls.filter((c) => c.includes('actions/runs/777')).length;
+    it('ends once its CI run completes, from the run conclusion, and says so', () => {
+      const r = run(['pr', '42'], { MERGE: M, ROLLUP: R(stuck()), DONE_AT: '4' });
+      expect(r.status).toBe(0);
+      expect(status(r.stdout)).toMatchObject({ wait_run: 'success', sha: 'abc123',
+        detail: 'a check read in progress after its conclusion; CI run 777 completed: success' });
+      expect(r.sleeps).toEqual([60]);
+      expect(runReads(r.calls)).toBe(2);
+    });
+    it('a run that did not succeed is checks_failed', () => {
+      const r = run(['pr', '42'], { MERGE: M, ROLLUP: R(stuck()), RUN_CONCLUSION: 'failure' });
+      expect(r.status).toBe(1);
+      expect(status(r.stdout)).toMatchObject({ wait_run: 'checks_failed',
+        detail: 'a check read in progress after its conclusion; CI run 777 completed: failure' });
+    });
+    it('a green run with no `test` check that succeeded is untested', () => {
+      const r = run(['pr', '42'], { MERGE: M, ROLLUP: R(stuck({ name: 'build' })) });
+      expect(r.status).toBe(1);
+      expect(status(r.stdout).wait_run).toBe('untested');
+    });
+    it('beside a check still queued, or with no run link, it waits as before and reads no run', () => {
+      const queued = { __typename: 'CheckRun', name: 'unit', workflowName: 'CI', status: 'QUEUED', conclusion: '' };
+      for (const ROLLUP of [R(stuck(), queued), R(stuck({ detailsUrl: 'https://example.test/x' }))]) {
+        const r = run(['pr', '42'], { MERGE: M, ROLLUP, WAIT_RUN_MAX_MIN: '2' });
+        expect(r.status).toBe(3);
+        expect(runReads(r.calls)).toBe(0);
+      }
+    });
+  });
   it('US-64 AC26: every exit path prints one JSON status line, last on stdout, and keeps its exit code', () => {
     const skipped = JSON.stringify(['review', 'test'].map((name) => ({ name, bucket: 'skipping' })));
     const cases: [string[], Record<string, string>, string, number][] = [
@@ -360,6 +437,8 @@ describe('wait-run.sh (US-64 AC26)', () => {
       [['pr', '42'], {}, 'success', 0],
       [['pr', '42'], { FAILS: '1' }, 'checks_failed', 1],
       [['pr', '42'], { CHECKS: skipped }, 'untested', 1],
+      [['pr', '42'], { CHECKS: NO_TEST }, 'untested', 1],
+      [['pr', '42'], { MERGE: M, ROLLUP: '[]' }, 'untested', 1],
       [['pr', '42'], { VIEW_FAIL: '1' }, 'head_unreadable', 1],
       [['pr', '42'], { MERGE: C, ROLLUP: '[]' }, 'conflict', 1],
       [['pr', '42'], { CHECKS_FAIL: '1', WAIT_RUN_MAX_MIN: '0' }, 'timeout', 3],

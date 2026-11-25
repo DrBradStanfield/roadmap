@@ -10,6 +10,13 @@
 #                                          it says so and exits 1; no successful check named `test` (a draft
 #                                          PR, every check skipped) is not a pass: it says so and exits 1
 #
+# Right after a push a PR may show no checks yet, or only quick ones with no `test` check yet: that waits up to
+# WAIT_RUN_NO_CHECKS_MIN minutes from the start (default 5, a whole number up to 1440) for them to appear, then is
+# untested (US-64 AC41). A `test` check that is there but SKIPPED (a draft) is untested at once, as before. A check
+# GitHub still reads in progress though its conclusion is in does not hang the wait: once every other check is
+# finished, the script reads that check's Actions run, and when the run has completed it concludes from the run's
+# conclusion and says so in detail.
+#
 # Exit: 0 success; 1 the run or a check failed, no `test` check passed, a final read failed, or healthz is not
 # 200; 2 usage; 3 gave up
 # (WAIT_RUN_MAX_MIN of wall-clock time, default 90, at most 1440, or 10 gh errors in a row; each gh call is killed at 60 s,
@@ -41,6 +48,12 @@ case "$max_min" in *[!0-9]*) mode=bad; max_min=0 ;; esac
 max_min=${max_min#"${max_min%%[!0]*}"}
 [ ${#max_min} -le 4 ] && [ "${max_min:-0}" -le 1440 ] || { mode=bad; max_min=0; }
 max_s=$(( ${max_min:-0} * 60 ))
+# The same rules for the wait on checks that have not appeared yet.
+nc_min=${WAIT_RUN_NO_CHECKS_MIN:-5}
+case "$nc_min" in *[!0-9]*) mode=bad; nc_min=0 ;; esac
+nc_min=${nc_min#"${nc_min%%[!0]*}"}
+[ ${#nc_min} -le 4 ] && [ "${nc_min:-0}" -le 1440 ] || { mode=bad; nc_min=0; }
+nc_min=${nc_min:-0}; nc_s=$(( nc_min * 60 ))
 healthz=${WAIT_RUN_HEALTHZ:-https://health-tool-app.fly.dev/healthz}
 case "$id" in ''|*[!0-9]*) mode=bad ;; esac
 case "$interval$max_s" in *[!0-9]*) mode=bad ;; esac
@@ -129,10 +142,11 @@ poll() {
   while :; do
     if state=$("$@" 2>/dev/null); then
       errors=0
-      [ "$state" = done ] && { conflicts=0; return 0; }
+      case "$state" in done|"runs "*) conflicts=0; return 0 ;; esac
       if [ "$state" = conflict ]; then conflicts=$((conflicts + 1)); else conflicts=0; fi
       if [ "$conflicts" -ge 2 ]; then echo "PR conflicts with main; merge main in (no new CI runs on a conflicting head)"
         finish conflict 1 "PR conflicts with main; merge main in"; fi
+      [ "$state" = nochecks ] && [ $(( $(date +%s) - start )) -ge "$nc_s" ] && return 0
     else
       errors=$((errors + 1))
       if [ "$errors" -ge 10 ]; then echo "gave up: 10 gh errors in a row" >&2; finish gh_errors 3 "10 gh errors in a row"; fi
@@ -151,12 +165,30 @@ run_state() { gh api "repos/{owner}/{repo}/actions/runs/$id" --jq 'if .status ==
 # The same query reads mergeability. Finished checks are judged first, so they print their counts even if main
 # moved since; unfinished checks on a PR in conflict with main get no new CI run, so waiting on them never ends.
 # The advisory check ios-compile (exact name) is left out, so it is never waited on.
+# No checks at all prints "nochecks", which poll waits on for WAIT_RUN_NO_CHECKS_MIN. A check run whose status is
+# not COMPLETED though its conclusion is a finished one is stuck: when every check is finished or stuck, and each
+# stuck one links its Actions run, it prints "stuck <tested yes|no> <run ids>". The function then reads each run
+# (one REST call, only in that state) and prints "runs <tested> <conclusion> <run ids>" once all have completed.
 pr_state() {
-  gh pr view "$id" --json statusCheckRollup,mergeable,mergeStateStatus --jq '(.mergeable == "CONFLICTING" or .mergeStateStatus == "DIRTY") as $c
-    | [.statusCheckRollup // [] | .[] | select((.name // .context) != "ios-compile")] | [group_by(.context // "\(.name)/\(.workflowName)")
-    | .[] | max_by(.startedAt) | if (.state // "") != "" then .state elif .status == "COMPLETED" then .conclusion else .status end]
-    | if length > 0 and all(IN("SUCCESS", "SKIPPED", "NEUTRAL", "ERROR", "FAILURE", "TIMED_OUT", "ACTION_REQUIRED", "CANCELLED"))
-      then "done" elif $c then "conflict" else "pending" end'
+  s=$(gh pr view "$id" --json statusCheckRollup,mergeable,mergeStateStatus --jq 'def fin: IN("SUCCESS", "SKIPPED", "NEUTRAL", "ERROR", "FAILURE", "TIMED_OUT", "ACTION_REQUIRED", "CANCELLED");
+    (.mergeable == "CONFLICTING" or .mergeStateStatus == "DIRTY") as $c
+    | [.statusCheckRollup // [] | .[] | select((.name // .context) != "ios-compile")] | [group_by(.context // "\(.name)/\(.workflowName)") | .[] | max_by(.startedAt)]
+    | [.[] | select((.state // "") == "" and .status != "COMPLETED")] as $open
+    | [$open[] | select((.conclusion // "") | fin) | (.detailsUrl // "") | split("/actions/runs/") | select(length > 1) | .[1] | split("/")[0] | select(test("^[0-9]+$"))] as $runs
+    | [.[] | if (.state // "") != "" then .state elif .status == "COMPLETED" then .conclusion else .status end] as $s
+    | if ($s | length) > 0 and ($s | all(fin)) then "done"
+      elif ($open | length) > 0 and ($runs | length) == ($open | length) and ([$s[] | select(fin | not)] | length) == ($open | length)
+      then "stuck \(if any(.[]; .name == "test" and .conclusion == "SUCCESS") then "yes" else "no" end) \($runs | unique | join(" "))"
+      elif $c then "conflict" elif ($s | length) == 0 then "nochecks" else "pending" end') || return 1
+  case "$s" in "stuck "*) ;; *) echo "$s"; return 0 ;; esac
+  set -- $s; tested=$2; shift 2; verdict=success
+  for rid in "$@"; do
+    case "$rid" in ''|*[!0-9]*) echo pending; return 0 ;; esac
+    r=$(gh api "repos/{owner}/{repo}/actions/runs/$rid" --jq '"\(.status) \(.conclusion)"') || return 1
+    case "$r" in "completed success") ;; "completed "*) verdict=${r#completed } ;; *) echo pending; return 0 ;; esac
+  done
+  case "$verdict" in ''|*[!a-z_]*) verdict=unknown ;; esac
+  echo "runs $tested $verdict $*"
 }
 
 if [ "$mode" = deploy ]; then
@@ -176,29 +208,46 @@ fi
 
 # One read gives the counts and the verdict. A check that went back to pending (a re-run or new push between the
 # poll and this read) sends the wait back to polling, within the same time limit.
+checks=; summary=
 while :; do
   poll pr_state
+  case "$state" in nochecks|"runs "*) break ;; esac
   # ios-compile is advisory (exact name, Brad 2026-11-13; tools/merge-gated.sh lists it too): never waited on,
   # never a failure; pending or red, it gets one note line after the others.
   checks=$(gh pr checks "$id" --json name,bucket --jq '
     [.[] | select(.name == "ios-compile" and .bucket != "pass" and .bucket != "skipping")
       | "note: advisory check ios-compile is \(.bucket); not counted"] as $notes | [.[] | select(.name != "ios-compile")] |
-    "pass=\([.[] | select(.bucket == "pass")] | length) fail=\([.[] | select(.bucket == "fail" or .bucket == "cancel")] | length) skipped=\([.[] | select(.bucket == "skipping")] | length) tested=\(if any(.[]; .name == "test" and .bucket == "pass") then "yes" else "no" end) pending=\([.[] | select(.bucket == "pending")] | length)",
+    "pass=\([.[] | select(.bucket == "pass")] | length) fail=\([.[] | select(.bucket == "fail" or .bucket == "cancel")] | length) skipped=\([.[] | select(.bucket == "skipping")] | length) tested=\(if any(.[]; .name == "test" and .bucket == "pass") then "yes" elif any(.[]; .name == "test") then "no" else "absent" end) pending=\([.[] | select(.bucket == "pending")] | length)",
     (.[] | select(.bucket == "fail" or .bucket == "cancel") | "failed: \(.name | gsub("[[:cntrl:]]"; " "))"), $notes[]' 2>/dev/null)
   # Verdicts come only from line 1, the fixed-format summary. A check name (outside text) cannot forge it: the
   # names go only into the `failed:` lines, and the one name that counts, tested=, is an exact match on `test`.
   summary=$(printf '%s\n' "$checks" | sed -n '1p')
-  case "$summary" in pass=*" pending=0") break ;; esac
+  # No `test` check yet (it may not have started): wait for it until WAIT_RUN_NO_CHECKS_MIN is up.
+  case "$summary" in
+    pass=*" tested=absent pending=0") [ $(( $(date +%s) - start )) -ge "$nc_s" ] && break ;;
+    pass=*" pending=0") break ;;
+  esac
   # Pending again, or the read failed: wait again, still inside the same time limit.
   give_up_if_late
   nap
 done
-echo "$checks"
+[ -n "$checks" ] && echo "$checks"
 view=$(gh pr view "$id" --json headRefOid,state,mergeable,mergeStateStatus \
   --jq '"head=\(.headRefOid)", "state=\(.state) mergeable=\(.mergeable) mergeState=\(.mergeStateStatus)"') \
   || { echo "could not read the PR's head and mergeability" >&2; finish head_unreadable 1 "could not read the PR's head and mergeability"; }
 echo "$view"
 sha=$(echo "$view" | sed -n 's/^head=//p')
+case "$state" in
+  nochecks) echo "no checks appeared within $nc_min min"
+    finish untested 1 "no checks appeared within $nc_min min (a draft PR?)" ;;
+  "runs "*) set -- $state; ran_tested=$2; ran=$3; shift 3
+    d="a check read in progress after its conclusion; CI run $* completed: $ran"; echo "$d"
+    [ "$ran" = success ] || finish checks_failed 1 "$d"
+    [ "$ran_tested" = yes ] || finish untested 1 "$d; no successful test check"
+    finish success 0 "$d" ;;
+esac
+case "$summary" in *" fail=0 skipped="*" tested=absent "*) echo "no test check appeared within $nc_min min"
+  finish untested 1 "no test check appeared within $nc_min min (a draft PR?)" ;; esac
 # All skipped (a draft PR: CI skips every job) is finished but tested nothing, so it is not a pass.
 case "$summary" in
   *" fail=0 skipped="*" tested=yes "*) finish success 0 "$summary" ;;
