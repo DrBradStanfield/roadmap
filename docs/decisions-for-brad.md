@@ -40,10 +40,6 @@ issue, and nothing private.
   The owner proposed "Chat history unavailable" for the first; no line exists for the second. Options: (1) approve
   "Chat history unavailable", and have a line drafted for an unsaved turn; (2) leave both silent. Recommendation:
   option 1, because a person who returns to a conversation that was never saved has no way to know why it is missing.
-- **A screen that still offers Delete and Log off after a crash.** Issue: when the web page crashes, or the iPhone
-  app cannot start, the fallback screen hides "Delete all my data" and "Log off". A fallback with those two buttons
-  needs one sentence. Options: approve a sentence and build it; leave. Recommendation: yes, because deleting your data
-  should always be within reach.
 - **Three failure lines.** Issue: three failures say nothing. Drafts: "Your value could not be saved. Try again." (a
   value page's Add that fails); "Your history could not be shown. Reload the page to try again." (a failed history
   read); and a "cannot reach your record" line for a second refused save that now loses the typed text silently.
@@ -184,6 +180,10 @@ issue, and nothing private.
   judement for the sentences. must be succinct, and I approve whatever sentences you suggest". The web uses it now; the
   iPhone with its next engine release. A record not erased: "Your health record was not deleted: the erase could not be
   saved.", then "Your chat history was deleted." or "Your chat history could not be reached just now.", then "Try again."
+- After a web page crash, the fallback keeps "Delete all my data" and "Log off this device" (US-11 AC14; Brad
+  took the recommendation: "yes"), above them: "Something went wrong. Reload the page to try again. You can still delete your
+  data or log off." Where the picker offers no log-off (a guest, or a sign-in that ended), the sentence ends "You can still delete your data."
+  The iPhone's cannot-start screen follows after App Store review.
 
 2026-11-23, Brad's words in quotes:
 - Original files are stored in the background after Save, with no action from the person at Save and at every

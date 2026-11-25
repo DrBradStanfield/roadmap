@@ -19,6 +19,7 @@ import { openChatHistory, setChatHistoryFactory } from './chat-history-access';
 import { eraseBegan, setChatEraseReader } from './chat-erase';
 import { PROXY_PATH, parseJsonResponse, trackProductEvent } from './server-api';
 import { countRefusedSpellings } from './refused-spellings';
+import { clearLocalStorage } from './storage';
 import { SHOPIFY_SURFACE } from './build-flags';
 import type { StorageAdapter } from '@roadmap/health-core/adapter';
 import type { ScreeningPerson } from '@roadmap/health-core/upload-screening';
@@ -115,8 +116,10 @@ export function eraseRunsHere(): boolean {
 }
 /** After an erase: clear this device's off-file health data by the record
  *  session's one rule, which spares the originals of documents that outlive
- *  the erase (US-11 AC6). The page never clears stored originals itself. */
+ *  the erase (US-11 AC6). The page never clears stored originals itself. The
+ *  legacy v1 blob goes first. The page's forget door and the crash screen's (US-11 AC14). */
 export function clearOffFileAfterErase(): void {
+  clearLocalStorage();
   store?.clearOffFileData(); // a failed clear stays owed: the next load clears again (US-11 AC6)
 }
 export function markEraseShown(identity: string): void {
