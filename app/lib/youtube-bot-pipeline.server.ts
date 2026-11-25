@@ -6,8 +6,8 @@
  */
 import * as Sentry from '@sentry/react-router';
 import { classifyMessage, isUnreadableAnswer, shouldFireRouter } from './chat-classifier.server';
-import { sanitizeForRouter, type RouterResult } from './chat-router.server';
-import { runRouter } from './chat-router-stage.server';
+import type { RouterResult } from './chat-router.server';
+import { routerTurn, runRouter } from './chat-router-stage.server';
 import { SILENT_ON_YOUTUBE } from '../../packages/health-core/src/models';
 import { findBlogByVideoId, loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
 import { preferMasters } from './router-view';
@@ -280,10 +280,11 @@ export async function runPipeline(
   body: string,
   history: Array<{ role: 'user' | 'assistant'; content: string }> = [],
 ): Promise<PipelineOutcome> {
-  const sanitized = sanitizeForRouter(thread.text);
+  // The follow-up's earlier comments reach the router as on web and Discord (US-15 AC75).
+  const routerInput = routerTurn(thread.text, history);
   const isFollowUp = history.length > 0;
 
-  const classifierResult = await classifyMessage(sanitized, undefined, undefined, 'YOUTUBE');
+  const classifierResult = await classifyMessage(routerInput.current, undefined, undefined, 'YOUTUBE');
   const { classification } = classifierResult;
   const unreadable = isUnreadableAnswer(classifierResult);
   if (SILENT_ON_YOUTUBE.has(classification) || unreadable) {
@@ -302,7 +303,7 @@ export async function runPipeline(
   let routerResult: RouterResult | null = null;
   const routerSkipped = !shouldFireRouter(classifierResult);
   if (!routerSkipped) {
-    routerResult = await runRouter(sanitized, undefined, undefined, 'YOUTUBE', countTickRouterFailure);
+    routerResult = await runRouter(routerInput, 'YOUTUBE', countTickRouterFailure);
     routerHandles = routerResult.handles;
   }
 

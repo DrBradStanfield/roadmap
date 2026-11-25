@@ -9472,5 +9472,28 @@
     "category": "medications",
     "source": "chat-health-2026-W47",
     "notes": "2026-W47 chat-health: YouTube comment on the cancer-treatment video, paraphrased. Production router error 2026-11-19: the reply opened with prose reasoning, then its JSON was cut at the output cap (third shape, W43). Replay of the original 2026-11-22: strict JSON 3/3, the video's post plus a cancer article each time. Regression case for the prose-before-JSON shape."
+  },
+  {
+    "query": "Which form is best for that, and when should I take it?",
+    "expected": [
+      "magnesium-benefits-best-forms-dosing",
+      "best-worst-forms-magnesium",
+      "what-is-the-best-magnesium-dose-form-14-studies-later",
+      "magnesium-l-threonate-effects-sleep"
+    ],
+    "category": "conversation-context",
+    "source": "us-15-ac75-2026-11-26",
+    "history": [
+      {
+        "role": "user",
+        "content": "Viewer: Does magnesium actually help with sleep? I wake up at 3am most nights."
+      },
+      {
+        "role": "assistant",
+        "content": "Some trials suggest magnesium may help sleep a little, mostly in people who run low. It is worth checking with your doctor first if you take other medicines."
+      }
+    ],
+    "pending": "The router harness sends the query alone; this case waits until it sends the earlier turns, as production now does on every surface (US-15 AC75).",
+    "notes": "US-15 AC75, 2026-11-26: a YouTube follow-up whose topic is only in the earlier comment. Production now gives the router the parent comment on YouTube, as on web and Discord. Not measured (no paid run). Pass: a magnesium entry. Fail: nothing routed, or an unrelated entry."
   }
 ]

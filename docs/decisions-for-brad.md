@@ -217,6 +217,11 @@ issue, and nothing private.
 
 ## Decided
 
+2026-11-26, Brad's words in quotes:
+- A YouTube follow-up's router sees the thread's earlier comments, by the same rule as web and Discord (H415, US-15
+  AC75): "the router should see the earlier comments. youtube, web, and discord should behave the same here, and so
+  probably use the same code". No new words.
+
 2026-11-23, Brad's words in quotes:
 - Original files are stored in the background after Save, with no action from the person at Save and at every
   launch; the person acts only on a final failure, with one "Try again" (Brad's requirement).
