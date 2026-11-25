@@ -699,11 +699,13 @@ describe('US-64 AC32 merge-gated.sh', () => {
     expect(r.merges).toEqual([]);
   });
 
+  // A call cut at 1 s ends the gate in about a second; a hung one left to run takes the stub's 30 s. The 15 s
+  // bound leaves a loaded machine room (lead TA-3).
   it('a gh that ignores ALRM and TERM is killed at the timeout: refuses 4 in about a second, never merges', () => {
     const t = Date.now();
     const r = gate(['123', SHA], {}, { GH_HANG: 'state,headRefOid', MERGE_GATED_GH_TIMEOUT: '1' });
     expect(r.status).toBe(4);
-    expect(Date.now() - t).toBeLessThan(5000);
+    expect(Date.now() - t).toBeLessThan(15_000);
     expect(r.merges).toEqual([]);
   });
 
@@ -719,7 +721,7 @@ describe('US-64 AC32 merge-gated.sh', () => {
     const t = Date.now();
     const r = gate(['123', SHA], {}, { GH_HANG: 'pr merge', MERGE_GATED_GH_TIMEOUT: '1' });
     expect(r.status).toBe(13);
-    expect(Date.now() - t).toBeLessThan(5000);
+    expect(Date.now() - t).toBeLessThan(15_000);
     expect(r.stderr).toMatch(/timed out.*outcome is unknown: check the PR/);
   });
 

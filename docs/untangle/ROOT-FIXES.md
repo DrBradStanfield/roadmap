@@ -92,3 +92,21 @@ an engine release, so it cannot land on CI alone.
 - All iPhone erase work (R6 phone half, R7, R8, R10, R11, R12) shares `DataEraser.swift`, `CloudSync.swift`,
   `RecordStore` and `ios/engine/cloud.ts`, and one simulator: run them in series.
 - Independent of all the above: R2, R14, R15, R22, R24, R25, R26, R28, R31, R32.
+
+## Status, 26 Nov 2026
+
+Checked against `main` at `b2548fe3d` and each PR's state.
+
+- **R25** closed: PR 1846 removed the batch poll it named before the triage; lead C18 closed (PR 2121).
+- **R24** chat docs load as one state (PR 2124); lead T28 partial.
+- **R31** done (PR 2123). The erase test pins H107 and H109 are done (PR 2128).
+- **R26** merged (PR 2126).
+- **R20** web half merged (PR 2130); the phone half is left.
+- **S-24** one-use sets are bounded (PR 2131).
+- **H302** merged (PR 2133).
+- **R3** step 1a merged (PR 2134); steps 1b, 2 and 3 are left.
+- **R6** PR 5 (S57c) merged (PR 2136).
+- **S-1** step 1 merged (PR 2135).
+- **H406** chat mirror with one writer: open (PR 2132).
+- **H404** widgets follow an erase: open (PR 2127).
+- **R18** the cause state is built in PR 2122 (open); its wording awaits Brad.

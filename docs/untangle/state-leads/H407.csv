@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H407,chat server,"The server's last-line guard names every missing chat doc in its error, not only the prompt",lead,not started,"Filed 2026-11-26 from the day's reviews: app/lib/chat.server.ts, the backstop throw. Build: the error lists each doc the chat state found missing. (H407)",,no

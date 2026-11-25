@@ -160,6 +160,7 @@ describe('11. cost', () => {
       values: [core(), core({ metric: 'hdl', valueSI: 1.2 }), core({ metric: 'triglycerides', valueSI: 1.5 }), core({ metric: 'hba1c', valueSI: 39 }), core({ metric: 'creatinine', valueSI: 80 })],
       additionalValues: [extra(), extra({ name: 'Vitamin B12', value: 400, unit: 'pmol/L' }), extra({ name: 'Folate', value: 20, unit: 'nmol/L' }), extra({ name: 'TSH', value: 2, unit: 'mIU/L' }), extra({ name: 'Sodium', value: 140, unit: 'mmol/L' })],
     })));
+    // A "not catastrophic" bound, not a speed claim: the whole test took 36 ms on 2026-11-26 (lead TA-3).
     const start = performance.now();
     both(open(many));
     expect(performance.now() - start).toBeLessThan(2000);

@@ -78,13 +78,16 @@ describe('a provider that never answers is bounded, not eternal (US-32 AC17)', (
     vi.stubGlobal('fetch', vi.fn((_url: unknown, init?: RequestInit) => new Promise<Response>((_resolve, reject) => {
       init?.signal?.addEventListener('abort', () => reject(init.signal!.reason));
     })));
-    const started = Date.now();
+    // The deadline asked for is the one armed: an exact check, where a wall-clock bound flakes under load (lead TA-3).
+    const deadlines = vi.spyOn(AbortSignal, 'timeout');
     const failure = await fetchOrFail('Dropbox', 'https://example.test/x', { timeoutMs: 20 })
       .catch((error: unknown) => error);
+    const armed = [...deadlines.mock.calls];
+    deadlines.mockRestore();
     expect(failure).toBeInstanceOf(StorageError);
     expect((failure as StorageError).message).toBe('Dropbox did not answer');
     expect((failure as StorageError).hint).toContain('Try once more');
-    expect(Date.now() - started).toBeLessThan(2000);
+    expect(armed).toEqual([[20]]);
   });
 
   it('leaves a fast answer alone', async () => {
