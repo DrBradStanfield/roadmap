@@ -14,7 +14,6 @@ const mocks = vi.hoisted(() => ({
   sendGuestReport: vi.fn(),
   getReportEmailCaptured: vi.fn(),
   markReportEmailCaptured: vi.fn(),
-  trackABConversion: vi.fn(),
   trackProductEvent: vi.fn(),
   skip: { value: false },
   shopify: { value: true },
@@ -26,7 +25,7 @@ vi.mock('../lib/roadmap-data', () => ({
   markReportEmailCaptured: mocks.markReportEmailCaptured,
   getShownErase: () => 'erase-1',
 }));
-vi.mock('../lib/server-api', () => ({ trackABConversion: mocks.trackABConversion, trackProductEvent: mocks.trackProductEvent }));
+vi.mock('../lib/server-api', () => ({ trackProductEvent: mocks.trackProductEvent }));
 vi.mock('../lib/build-flags', () => ({ get SHOPIFY_SURFACE() { return mocks.shopify.value; } }));
 vi.mock('../lib/assistant-config', () => ({ getSkipEmailGate: () => mocks.skip.value }));
 vi.mock('./FeedbackForm', () => ({ FeedbackForm: () => null }));
@@ -97,7 +96,6 @@ describe('US-18 AC7: the email box sends once per press', () => {
     settle({ success: true });
     await waitFor(() => expect(view.container.querySelector('#guestEmail')).toBeNull());
     expect(mocks.markReportEmailCaptured).toHaveBeenCalledTimes(1);
-    expect(mocks.trackABConversion).toHaveBeenCalledTimes(1);
   });
 
   it('Enter then a click in the same moment still sends once', async () => {

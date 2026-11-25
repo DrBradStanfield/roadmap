@@ -31,7 +31,6 @@ vi.mock('../lib/server-api', async original => {
   const real = await original<typeof import('../lib/server-api')>();
   return {
     ...real,
-    trackABImpression: vi.fn(), trackABConversion: vi.fn(),
     trackProductEvent: (...args: Parameters<typeof real.trackProductEvent>) => {
       tracked.calls.push([args[0], args[1] as Record<string, unknown> | undefined]);
       real.trackProductEvent(...args);
