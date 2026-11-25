@@ -85,7 +85,7 @@ async function observe(reason: ReadReason, held: boolean): Promise<Seen> {
   };
   // The save that cleans the profile: a change still held applies now, read and counted once.
   vi.clearAllMocks();
-  await act(async () => { hook.result.current.saved(); });
+  await act(async () => { hook.result.current.settled(); });
   await settle();
   return { ...seen, holdLeft: counted() === 1 && fx.reloadValues.mock.calls.length === 1 };
 }
@@ -181,7 +181,7 @@ describe('US-34 AC4, AC4a: the re-read policy, by reason', () => {
     expect(fx.later.clearAnswered.mock.calls).toEqual([[]]);
     expect(counted()).toBe(0); // the machine counts the erase
     // The hold is over: the save that cleans the profile reads nothing more.
-    await act(async () => { hook.result.current.saved(); });
+    await act(async () => { hook.result.current.settled(); });
     await settle();
     expect(fx.reloadValues).toHaveBeenCalledTimes(1);
     expect(counted()).toBe(0);

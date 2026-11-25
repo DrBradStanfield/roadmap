@@ -147,7 +147,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     shows: id => showErase(id), spend: () => clearAnswered(true),
   });
   // The record shown, at load and on every whole re-read, and another writer's change held behind an edit (hooks/useRecordApply).
-  const { showRecord, signal: rereadRecord, ownSave, shows: showErase, saved: profileClean, firstReadShown, firstReadFailed } = useRecordApply({
+  const { showRecord, signal: rereadRecord, ownSave, shows: showErase, settled: profileSettled, firstReadShown, firstReadFailed } = useRecordApply({
     setInputs, reloadValues, applyLists, units, erase: eraseStore,
     later: () => ({ markSaved, flushPendingSave, flushListSaves, profileDirty, clearAnswered }), // declared below
   });
@@ -271,7 +271,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
 
   // The profile's save: height, sex, the birth date, the unit system (hooks/useProfileSave).
   const { flushProfile, profileTimer, markSaved, profileDirty, birthRefused, clearBirthRefused } = useProfileSave({
-    inputs, inputsRef, setInputs, loaded, onClean: profileClean, writeRefused, units,
+    inputs, inputsRef, setInputs, loaded, onSettled: profileSettled, writeRefused, units,
   });
 
   // The saved-value editor's correction, core or lab (US-04, US-21 AC5),

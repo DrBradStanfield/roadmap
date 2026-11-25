@@ -73,4 +73,4 @@ after that.
 ## Owner rulings (2026-11-25)
 
 - Option A: keep the hold. The relay union is the one hold state, behind a pure `transition`.
-- Status: PR 1 in flight.
+- Status: PR 1 merged (#2084); PR 2 (H14) in flight.

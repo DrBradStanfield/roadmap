@@ -264,7 +264,7 @@ async function appliedRemote() {
 }
 
 it.each(['1975', '1976', ''])(
-  'US-34 AC4: partial save holds remote replay until the year is corrected or cleared (%s)', async correction => {
+  'US-34 AC4, AC8 (H14): a partial year\'s save settles, refused: the held remote month shows at once, 197 stays; then the correction (%s) saves', async correction => {
     await data.saveChangedMeasurements({ birthYear: 1975 }, {}, data.getShownErase());
     const { view, year } = await form();
     fireEvent.change(view.container.querySelector('#heightCm')!, { target: { value: '180' } });
@@ -276,7 +276,8 @@ it.each(['1975', '1976', ''])(
     expect(saved().profile.birthYear).toBe(1975);
     const liveYear = view.container.querySelector<HTMLInputElement>('#birthYear')!;
     expect(liveYear.value).toBe('197');
-    expect(await appliedRemote()).toBe(0);
+    expect(view.container.querySelector<HTMLSelectElement>('#birthMonth')!.value).toBe('6');
+    expect(await appliedRemote()).toBe(1);
     fireEvent.change(liveYear, { target: { value: correction } });
     await act(async () => { await vi.advanceTimersByTimeAsync(1500); });
     expect(saved().profile.birthYear).toBe(correction ? Number(correction) : null);
@@ -286,13 +287,14 @@ it.each(['1975', '1976', ''])(
   },
 );
 
-it('US-34 AC4: clearing an unsaved refused year releases a held update even with no profile write', async () => {
+it('US-34 AC8 (H14): a refused year\'s save settles and releases a held update; clearing the year then reads nothing more', async () => {
   const { year } = await form();
   fireEvent.change(year, { target: { value: '197' } });
   await remoteMonth();
+  expect(await appliedRemote()).toBe(0);
   await act(async () => { await vi.advanceTimersByTimeAsync(1500); });
   expect(year.value).toBe('197');
-  expect(await appliedRemote()).toBe(0);
+  expect(await appliedRemote()).toBe(1);
   fireEvent.change(year, { target: { value: '' } });
   await act(async () => { await vi.advanceTimersByTimeAsync(1500); });
   expect(year.value).toBe('');

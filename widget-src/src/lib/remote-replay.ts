@@ -3,15 +3,16 @@
  *
  * Re-running the load path replaces the demographics form's inputs, so a
  * change arriving on a half-entered height would take those keystrokes with
- * it. The change is held instead and applied on the save that carries the
- * edit up, so the page still catches up without a reload.
+ * it. The change is held instead and applied when the next profile save
+ * settles, landed or refused, so the page still catches up without a reload
+ * (AC8: a refused value rides through the re-read with its error).
  *
  * States:
  * - loading: the page has not shown its first read yet; a change arriving now
  *   would be overwritten by that read, so it waits (loading-held) and applies
  *   once the read is shown (`loaded`, survey R2);
  * - idle: nothing waits;
- * - held: a remote change waits for a clean form.
+ * - held: a remote change waits for the next profile save to settle.
  * Every whole re-read of the record goes through here, so a held change is applied
  * once (survey R8). `apply(remote, counts)`: `remote` says the re-read takes in
  * another writer's change; `counts` (by default, `remote`) that it counts.
@@ -31,8 +32,9 @@ export type HoldEvent =
   | { type: 'arrived'; formDirty: boolean; counts: boolean }
   /** The page has shown its first read: a change that arrived before it applies now. */
   | { type: 'loaded' }
-  /** A profile save landed. Applies a change held back by a dirty form. */
-  | { type: 'saved' }
+  /** A profile save settled: landed, had a value refused, or found nothing to save (US-34 AC8). Applies a change
+   *  held back by a dirty form; a refused value rides through the re-read. */
+  | { type: 'settled' }
   /** The page re-reads the record for itself (an upload, a refused save): the re-read shows a held change too.
    *  Not before the first read is shown: that read would overwrite this one, so a waiting change waits for it. */
   | { type: 'reread' }
@@ -61,7 +63,7 @@ export function transition(state: HoldState, event: HoldEvent): HoldStep {
     case 'loaded':
       if (state.phase === 'loading-held') return { state: IDLE, read: remoteRead(state.counts) };
       return { state: state.phase === 'loading' ? IDLE : state, read: null };
-    case 'saved':
+    case 'settled':
       return state.phase === 'held' ? { state: IDLE, read: remoteRead(state.counts) } : { state, read: null };
     case 'reread':
       if (isLoading(state)) return { state, read: 'own' };
@@ -90,7 +92,7 @@ export function createRemoteChangeRelay<T>(apply: (remote: boolean, counts?: boo
   return {
     arrived(formDirty: boolean, counts = true): void { sendAndRun({ type: 'arrived', formDirty, counts }); },
     loaded(): void { sendAndRun({ type: 'loaded' }); },
-    saved(): void { sendAndRun({ type: 'saved' }); },
+    settled(): void { sendAndRun({ type: 'settled' }); },
     // reread and shows always ask for a read (the table test pins it).
     reread(): T { return run(send({ type: 'reread' }) ?? 'own'); },
     shows(): T { return run(send({ type: 'shows' }) ?? 'own'); },
