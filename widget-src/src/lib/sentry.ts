@@ -1,6 +1,6 @@
 import * as Sentry from '@sentry/react';
 import { CAUSE_CLASS_TAGS, ERROR_CLASS_TAGS, EXPECTED_NETWORK_ERRORS, HTTP_STATUS_TAGS } from './error-diagnostics';
-import { scrubSensitiveData, scrubBreadcrumbData, scrubUrl, scrubEventText, dropLongStrings } from '@roadmap/health-core/sentry-scrub';
+import { scrubSensitiveData, scrubBreadcrumbData, scrubUrl, scrubEventText, scrubText, dropLongStrings } from '@roadmap/health-core/sentry-scrub';
 import { isSelfReportBreadcrumb, selfReportIntegration, selfReportTransport } from '../../../instrument-self-report.mjs';
 
 declare const __SENTRY_RELEASE__: string;
@@ -267,6 +267,14 @@ export function initSentry() {
     beforeSend: failClosed(scrubEvent),
     beforeBreadcrumb: failClosed(scrubBreadcrumb),
   });
+  // The free-text scrub's first use compiles its patterns, about 0.3 s on the
+  // main thread (H401). Pay it while the page is idle, not on the first report
+  // from a failing page. Same patterns, so the same strings are scrubbed (US-09 AC57).
+  if (!local) {
+    const warm = () => { scrubText('x'); };
+    if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(warm, { timeout: 10_000 });
+    else setTimeout(warm, 3_000);
+  }
 }
 
 export { Sentry };
