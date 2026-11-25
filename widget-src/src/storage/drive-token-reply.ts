@@ -3,7 +3,8 @@
  * status. A 2xx reply is used only when whole (US-09 AC37,
  * issue #924), as Dropbox's is (AC1a): a non-empty access token and a finite
  * expiry. Anything else, a 200 whose body is not JSON included, fails as a
- * StorageError and the caller keeps nothing. The refresh grant's call lives
+ * StorageError and the caller keeps nothing. The refresh grant's call, and the
+ * email read from the ID token the exchange returns, live
  * here too.
  */
 import * as z from '@roadmap/health-core/zod';
@@ -56,5 +57,21 @@ export async function postRefreshGrant(url: string, refreshToken: string): Promi
     return null;
   } finally {
     deadline.clear();
+  }
+}
+
+/**
+ * The verified email inside a Google ID token, or null. No signature check:
+ * this runs in the user's own browser on a token Google just handed it, and
+ * the only consumer is a prefill. The server verifies the token itself.
+ */
+export function decodeIdTokenEmail(idToken: string): string | null {
+  try {
+    const payload = idToken.split('.')[1] ?? '';
+    const bytes = Uint8Array.from(atob(payload.replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0));
+    const claims = JSON.parse(new TextDecoder().decode(bytes)) as { email?: string; email_verified?: boolean };
+    return claims.email_verified === true && claims.email ? claims.email.toLowerCase() : null;
+  } catch {
+    return null;
   }
 }

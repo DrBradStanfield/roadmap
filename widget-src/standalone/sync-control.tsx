@@ -176,7 +176,9 @@ function useReconnect(lost?: LostSignIn) {
       const token = await new GoogleDriveAdapter(googleDriveConfig(), gen).acquireViaPopup()
         .catch((error: unknown) => { if (isCurrentRun(run)) connectRefusal(error); throw error; });
       if (!isCurrentRun(run)) return; // a popup answer after the reconnect stopped saves nothing
-      if (rememberSignIn(savePopupGrant(token, gen), 'google-drive', gen)) {
+      const saved = await savePopupGrant(token, gen, () => isCurrentRun(run))
+        .catch((error: unknown) => { if (isCurrentRun(run)) connectRefusal(error); throw error; }); // another account keeps nothing (US-09 AC54)
+      if (rememberSignIn(saved, 'google-drive', gen)) {
         dispatch({ type: 'saved', run }); // from here it runs to the reload: Stop is gone
         markSyncPending();
         await flushBeforeExit();

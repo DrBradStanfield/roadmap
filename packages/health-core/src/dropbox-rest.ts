@@ -23,6 +23,7 @@ const UPLOAD_URL = 'https://content.dropboxapi.com/2/files/upload';
 const LIST_URL = 'https://api.dropboxapi.com/2/files/list_folder';
 const LIST_CONTINUE_URL = 'https://api.dropboxapi.com/2/files/list_folder/continue';
 const DELETE_URL = 'https://api.dropboxapi.com/2/files/delete_v2';
+const ACCOUNT_URL = 'https://api.dropboxapi.com/2/users/get_current_account';
 
 /** The provider's user-facing name. One copy: the adapter's `label` and every
  *  message below read it from here. */
@@ -31,6 +32,23 @@ const PROVIDER = 'Dropbox';
 /** `fetch` with this module's provider name already bound, so no call site can
  *  hand `fetchOrFail` the wrong one. Reach for this, never the bare global. */
 const request = (url: string | URL, init?: Parameters<typeof fetchOrFail>[2]): Promise<Response> => fetchOrFail(PROVIDER, url, init);
+
+/** The account a sign-in names, its stable `account_id` (US-09 AC54): read
+ *  from the token reply at connect, or from `users/get_current_account` with a
+ *  kept token. An opaque id, never the email; failure text carries none. */
+export function dropboxReplyAccount(reply: unknown): string {
+  const id = (reply as { account_id?: unknown } | null)?.account_id;
+  if (typeof id !== 'string' || !id) throw new StorageError(`${PROVIDER} did not say which account signed in.`);
+  return id;
+}
+export async function dropboxAccountOf(accessToken: string): Promise<string> {
+  const res = await request(ACCOUNT_URL, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    body: 'null',
+  });
+  return dropboxReplyAccount(res.ok ? await jsonBody(res) : null);
+}
 
 /** Parse the `dropbox-api-result` response header (file metadata incl. rev). */
 function parseApiResult(res: Response): Record<string, unknown> | null {

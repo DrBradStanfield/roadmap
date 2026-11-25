@@ -17,13 +17,14 @@
  *
  * Brad supplies the app key (client id) via DropboxConfig; there is no secret.
  */
-import { dropboxDownload, dropboxListFolder, dropboxRead, dropboxUploadDocument, dropboxWrite, DROPBOX_TOKEN_URL } from '@roadmap/health-core/dropbox-rest';
+import { dropboxAccountOf, dropboxDownload, dropboxListFolder, dropboxRead, dropboxReplyAccount, dropboxUploadDocument, dropboxWrite, DROPBOX_TOKEN_URL } from '@roadmap/health-core/dropbox-rest';
 import { fetchOrFail, ROADMAP_FILE_NAME, sleepUntilAborted, catchUpAfterFailure, StorageError, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
 import { TRANSFER_DEADLINE_MS, timeoutDeadline } from '@roadmap/health-core/transfer-deadline';
 import { getSignIn, logOffId, setSignIn, setSignIns, safeRemoveItem, type LogOffId } from '../lib/storage';
 import { claimRedirectCancel, claimRedirectCode, deriveCodeChallenge, generateCodeVerifier, generateState, pkceEntry } from './pkce';
 import { refreshOnce } from './token-flight';
 import { isSignedOut, signInEnded } from './sign-in-state';
+import { admitAccount } from './account-gate';
 
 export const TOKEN_KEY = 'health_roadmap_dropbox_tokens';
 /** Dropbox was chosen and signed in to, as Drive's config says it (US-09 AC48): an empty object, kept
@@ -163,7 +164,10 @@ export class DropboxAdapter implements StorageAdapter {
       throw new StorageError(`Dropbox token exchange failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status);
     }
     // A body that is not JSON (a wifi sign-in page) is an incomplete reply too.
-    const json = tokenReply(await res.json().catch(() => null), true);
+    const reply: unknown = await res.json().catch(() => null);
+    const json = tokenReply(reply, true);
+    // Another account than this browser's is refused before anything is kept (US-09 AC54).
+    await admitAccount('dropbox', 'Dropbox', async () => dropboxReplyAccount(reply), claimed.gen);
     const saved = setSignIns({
       [TOKEN_KEY]: { accessToken: json.access_token, refreshToken: json.refresh_token, expiresAt: Date.now() + json.expires_in * 1000 } satisfies DropboxTokens,
       [CONFIG_KEY]: {},
@@ -171,6 +175,11 @@ export class DropboxAdapter implements StorageAdapter {
     // Strip ?code/&state from the URL so a refresh doesn't re-trigger.
     window.history.replaceState({}, '', config.redirectUri);
     return saved ? new DropboxAdapter(config, claimed.gen) : null;
+  }
+
+  /** The signed-in account's opaque id, for the pin a load adopts (US-09 AC54). */
+  async account(): Promise<string> {
+    return dropboxAccountOf(await this.accessToken());
   }
 
   async disconnect(): Promise<void> {

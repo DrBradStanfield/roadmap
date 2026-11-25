@@ -445,8 +445,8 @@ describe('US-09 AC45: a form connect is remembered only when it saved its own si
     [DRIVE_TOKENS]: { accessToken: 'at-other', refreshToken: 'rt-other', expiresAt: later() },
     [DRIVE_CONFIG]: { accountEmail: 'other@example.test' },
   });
-  /** Every write a connect could make to a cloud: Dropbox, self-host or any Drive call. */
-  const cloudWrites = () => [...uploads, ...davPuts, ...calls.filter((url) => url.includes('googleapis.com'))];
+  /** Every write a connect could make to a cloud: Dropbox, self-host or any Drive call but the account read, which writes nothing (US-09 AC54). */
+  const cloudWrites = () => [...uploads, ...davPuts, ...calls.filter((url) => url.includes('googleapis.com') && !url.includes('/drive/v3/about?'))];
 
   it.each([
     ['a self-host form connect', SELFHOST_CONFIG, connectWebDav],

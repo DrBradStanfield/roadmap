@@ -56,6 +56,14 @@ export class WebDavAdapter implements StorageAdapter {
     return !!(this.config?.url && this.config.username);
   }
 
+  /** Which server folder and user this sign-in names, as an opaque digest, so
+   *  the pin holds neither (US-09 AC54). The server names no account of its own. */
+  async account(): Promise<string> {
+    if (!this.config?.url || !this.config.username) throw new StorageError('Self-host is not connected.');
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`${this.urlFor('')}\n${this.config.username}`));
+    return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+  }
+
   /** Validate reachability + credentials with a PROPFIND, then persist. */
   async connect(): Promise<void> {
     await this.signIn();

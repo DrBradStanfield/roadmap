@@ -77,6 +77,16 @@ export class GitHubAdapter implements StorageAdapter {
     }
   }
 
+  /** Which account and record this sign-in names: the token's user id with the
+   *  repository, opaque, never the email (US-09 AC54). Read before it is kept. */
+  async account(): Promise<string> {
+    if (!this.config?.token) throw new StorageError('GitHub is not connected.');
+    const res = await fetchOrFail('GitHub', `${API}/user`, { headers: this.headers() });
+    const id = res.ok ? ((await res.json().catch(() => null)) as { id?: unknown } | null)?.id : undefined;
+    if (typeof id !== 'number') throw new StorageError('GitHub did not say which account signed in.', undefined, undefined, res.status);
+    return `${id}:${this.config.owner}/${this.config.repo}`.toLowerCase();
+  }
+
   /**
    * Validate the pasted token + repo against the repo endpoint, then persist.
    * No redirect — the credential is user-supplied, not OAuth.

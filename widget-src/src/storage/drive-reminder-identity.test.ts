@@ -8,7 +8,8 @@
  * client in scope, no path here may reach it.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { GoogleDriveAdapter, decodeIdTokenEmail } from './drive';
+import { GoogleDriveAdapter } from './drive';
+import { decodeIdTokenEmail } from './drive-token-reply';
 
 const CONFIG = {
   clientId: 'test-client-id',

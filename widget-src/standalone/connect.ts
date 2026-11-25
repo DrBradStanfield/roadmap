@@ -19,6 +19,7 @@ import {
   type WebDavAdapter,
 } from '../src/storage';
 import { beginRoadmapLogOff } from '../src/storage/roadmap-store';
+import { accountPinStore, AccountRefusedError, admitAccount, adoptPinAtLoad, notConnected } from '../src/storage/account-gate';
 import { currentSignIn, lostSignIn, type LostSignIn, type SignIn } from '../src/storage/sign-in-state';
 import { BACKEND_KEY, webRecordHost } from '../src/storage/web-record-host';
 import { clearAutoEnrolBlock } from './reminders';
@@ -63,13 +64,15 @@ function lostAtLoad(provider: CloudBackend, error?: unknown): LostSignIn {
   return { kind: 'unreachable', provider };
 }
 
-/** A Google grant refused at connect (US-09 AC15) is the user's move, not a
- *  defect: counted here, once, wherever it is caught, and never sent to
- *  Sentry. The message is what to show; null for any other error. */
+/** A Google grant refused at connect (US-09 AC15), or a sign-in to another
+ *  account than this browser's (AC54), is the user's move, not a defect:
+ *  counted here, once, wherever it is caught, with the provider only, and never
+ *  sent to Sentry. The message is what to show; null for any other error. */
 export function connectRefusal(error: unknown): string | null {
-  if (!(error instanceof DriveGrantRefusedError)) return null;
-  trackProductEvent('cloud_connect_refused', { provider: 'google-drive' });
-  return error.message;
+  const provider = error instanceof DriveGrantRefusedError ? 'google-drive' : error instanceof AccountRefusedError ? providerOf(error.provider)?.event : undefined;
+  if (!provider) return null;
+  trackProductEvent('cloud_connect_refused', { provider });
+  return (error as Error).message;
 }
 
 /** The on-device session a cloud backend falls back to. The marker makes the
@@ -94,6 +97,8 @@ export async function startOnBackend(
 ): Promise<ResolvedBackend> {
   try {
     await init(resolved.adapter, resolved.reconnect !== undefined);
+    // A browser that connected before the account pin adopts it now (US-09 AC54); a failed read waits for the next load.
+    if (resolved.backend !== 'local') void adoptPinAtLoad(resolved.adapter).catch(() => undefined);
     return resolved;
   } catch (error) {
     if (resolved.backend === 'local' || !isStorageFailure(error)) throw error;
@@ -166,7 +171,7 @@ export function reportConnectFailure(error: unknown, backend: 'dropbox' | 'googl
   Sentry.captureException(recordFailure(error, 'Cloud connect failed'), {
     tags: { area: 'cloud-connect', backend, ...failureTags(error) },
   });
-  return `${PROVIDERS[backend].label} did not connect, so nothing changed. Please try again.`;
+  return notConnected(PROVIDERS[backend].label);
 }
 
 /**
@@ -175,9 +180,16 @@ export function reportConnectFailure(error: unknown, backend: 'dropbox' | 'googl
  * the choice, lift on-device data up, then reload so app.tsx re-initialises
  * on the new backend. Dropbox/Google use an OAuth redirect instead (handled in
  * resolve-backend.ts on return), so they don't go through here. `gen` is the
- * log-off id the move began under; the adapter was built with it too.
+ * log-off id the move began under; the adapter was built with it too. Another
+ * account than this browser's is refused before the sign-in is kept (US-09 AC54).
  */
 export async function finishFormConnect(adapter: GitHubAdapter | WebDavAdapter, backend: CloudBackend, gen: LogOffId): Promise<void> {
+  try {
+    await admitAccount(adapter.id, PROVIDERS[backend].label, () => adapter.account(), gen);
+  } catch (error) {
+    connectRefusal(error);
+    throw error;
+  }
   if (rememberSignIn(await adapter.signIn(), backend, gen)) {
     markSyncPending();
     await liftLocalInto(adapter, backend);
@@ -246,7 +258,7 @@ export async function resolveRemembered(): Promise<ResolvedBackend> {
  *  - the active provider's auth tokens/credentials (adapter.disconnect() —
  *    each adapter only does safeRemoveItem on its OWN local token/config keys,
  *    no network delete is issued against the remote file), then every other
- *    provider's sign-in entries (SIGN_IN_KEYS)
+ *    provider's sign-in entries and the account pin (SIGN_IN_KEYS)
  *  - the local RoadmapFile cache (health_roadmap_file_v2 + _rev), any named
  *    record files (chat-history.json, …) and stored documents
  *    (LocalStorageAdapter.disconnect())
@@ -320,6 +332,7 @@ export async function prepareSwitch(current: Backend): Promise<void> {
     );
   }
   await adapter.disconnect();
+  accountPinStore().clear(); // a move of this record: the next connect pins its own account (US-09 AC54)
   preparedFrom = current;
 }
 

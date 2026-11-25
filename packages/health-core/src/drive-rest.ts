@@ -71,6 +71,7 @@ export {
   DRIVE_FOLDER_MIME,
   DRIVE_FOLDER_NAME,
   DRIVE_LEGACY_FOLDER_NAME,
+  driveAccountOf,
   driveCreateFile,
   driveCreateFolder,
   driveDownloadDocument,
