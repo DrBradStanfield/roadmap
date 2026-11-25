@@ -295,13 +295,15 @@ export interface HostedImporterOptions {
   maxCorrectionAgeDays: number;
   /** Server-side wiring only, never from a request; absent means the real model call. */
   extract?: Extractor;
+  /** Read when the receipt is signed, at the hand-back, so a slow extract cannot use up the pause (US-35 AC19). */
+  clock: () => number;
 }
 /** What the endpoint passes down to the importer: test wiring only; the routes pass none. */
 export type HostedWiring = Pick<HostedImporterOptions, 'extract'>;
 
 /** The `ImportSurface` for one hosted call. Built per call, like the adapter; holds nothing after. */
 export function hostedImporter(options: HostedImporterOptions): ImportSurface {
-  const { token, adapter, client, extract = extractOrClassify } = options;
+  const { token, adapter, client, clock, extract = extractOrClassify } = options;
   const connection = connectionKey(token);
   const audience = audienceFor(token.clientId);
   const conn = hash(connection);
@@ -524,7 +526,7 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
       // `extract`, which `file_results` and every Drive user never call, so
       // their abandoned pending files were never swept at all.
       // The receipt is the payload's own id; the MAC that makes it ours lives in the file it names (AC7).
-      const { mac, issued } = signStep('import', macFields(payload.id, payload), conn, audience, Date.parse(payload.createdAt));
+      const { mac, issued } = signStep('import', macFields(payload.id, payload), conn, audience, clock());
       const pending: PendingFile = { v: 2, payload, issued, mac };
       // Park first, sweep after: deletes racing the park drew a Dropbox 429 that refused it (AC18).
       // A refused park skips the sweep: the provider just pushed back, and the next stash sweeps.
@@ -571,9 +573,7 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
         return { refusal: PENDING_UNREADABLE };
       }
       const opened = openStep('import', fields, conn, pending.mac, pending.issued as number, audience, Date.parse(now));
-      if (opened.status === 'expired') {
-        return { refusal: `That receipt has expired: a pending import waits ${RECEIPT_LIFETIME_SECONDS / 60} minutes. Nothing was written. Extract again and show the user the fresh candidates.` };
-      }
+      if (opened.status === 'expired') return { refusal: `That receipt has expired: a pending import waits ${RECEIPT_LIFETIME_SECONDS / 60} minutes. Nothing was written. Extract again and show the user the fresh candidates.` };
       if (opened.status !== 'ok') return { refusal: opened.status === 'early' ? earlyRefusal(opened.notBefore) : RECEIPT_INVALID };
       const payload = pending.payload as ImportPayload;
       // Ids checked before the charge: a replace list of invented ids must not spend the hour.

@@ -401,7 +401,7 @@ Three tools are permanent — `correct_value`, `update_profile`, `report_feedbac
 the hosted server they take two calls: a proposal with a `confirm` receipt, then the same
 call with it after your yes, carrying your words as `approval`, quoted. An import's
 `commit` carries `approval` the same way. Both wait 10 seconds: a confirm or a commit sent
-sooner after its receipt is refused, says when it can be used, and writes nothing. The server holds those words for one request
+less than 10 seconds after its receipt was handed back is refused, says when it can be used, and writes nothing. The server holds those words for one request
 and never stores or logs them (the mechanism and its limits: docs/mcp-architecture.md §3).
 A catalogued lab test past its plausible range (`LAB_PLAUSIBLE_RANGES`, US-21 AC26:
 glucose 5.5 mg/dL is 0.31 mmol/L) is refused as a typing or unit slip on every write:

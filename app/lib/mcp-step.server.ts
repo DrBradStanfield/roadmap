@@ -29,6 +29,16 @@ export const STEP_WINDOWS: Record<StepKind, { nbfSeconds: number; ttlSeconds: nu
   proposal: { nbfSeconds: PERMANENT_WRITE_PAUSE_SECONDS, ttlSeconds: 15 * 60, macHex: 20 },
 };
 
+/**
+ * The clock a step is signed by: the request's `now`, moved on by the real
+ * time since this was made, so an issue time is the moment the receipt is
+ * handed back, however long the call's work took (US-35 AC19).
+ */
+export function clockFrom(now: string): () => number {
+  const startedMs = Date.now();
+  return () => Date.parse(now) + Date.now() - startedMs;
+}
+
 /** The one refusal for a step used inside its pause, whichever kind. */
 export const earlyRefusal = (notBefore: string): string =>
   `That confirm receipt is not valid yet: it can be used from ${notBefore}, after the user has answered. Do not retry before then; end your turn. Nothing was written.`;

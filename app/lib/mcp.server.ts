@@ -39,7 +39,7 @@ import { type AccessPayload, allowKnowledgeCall, allowToolCall, chargeWrites, cl
 import { type McpProvider, providerAccessToken, providerLabel } from './mcp-providers.server';
 import { checkCorrection, checkProfileUpdate, MAX_CORRECTION_AGE_DAYS } from './mcp-corrections.server';
 import { audienceFor, hash, unpackSealed } from './mcp-seal.server';
-import { earlyRefusal, issueProposal, openProposal, STEP_WINDOWS, UUID } from './mcp-step.server';
+import { clockFrom, earlyRefusal, issueProposal, openProposal, STEP_WINDOWS, UUID } from './mcp-step.server';
 
 /** One JSON-RPC message. A lab panel of 50 rows is a few KB; this is slack. */
 const RPC_BODY_CAP = 1024 * 1024;
@@ -89,8 +89,9 @@ export type AdapterFactory = (provider: McpProvider, accessToken: string) => Sto
 const REAL_ADAPTER: AdapterFactory = (provider, token) =>
   provider === 'google' ? new DriveAdapter(token) : new DropboxAdapter(token);
 
-/** What the endpoint takes from tests: their own folder and model call. The routes pass none. */
-type EndpointWiring = HostedWiring & { makeAdapter?: AdapterFactory };
+/** What the endpoint takes from tests: their own folder, model call and clock (the routes pass none). Inside a call the clock is always set. */
+type EndpointWiring = HostedWiring & { makeAdapter?: AdapterFactory; clock?: () => number };
+type CallWiring = EndpointWiring & { clock: () => number };
 
 // ---------------------------------------------------------------------------
 // One tool call
@@ -152,7 +153,7 @@ function chargeTool(token: AccessPayload, name: string): GuardRefusal | null {
  * resurrecting a record the user erased (design §7).
  */
 async function callHostedTool(
-  token: AccessPayload, name: string, args: unknown, now: string, wiring: EndpointWiring,
+  token: AccessPayload, name: string, args: unknown, now: string, wiring: CallWiring,
 ): Promise<ToolAnswer & { confirmReason?: McpConfirmReason }> {
   if (!isToolName(name)) return refuse(`No tool named ${name}.`, 'malformed');
   /** The record as the loop opened it, kept for the nudge so the folder check costs no second read. */
@@ -216,9 +217,9 @@ async function callHostedTool(
       // The import reads files through the user's own folder and parks its
       // candidates there (US-35). Built per call and holding nothing, so it
       // is built for every call; which tool uses it is the tool's declaration.
-      importer: hostedImporter({ token, adapter, client: mcpClientLabel(token.clientId), maxCorrectionAgeDays: MAX_CORRECTION_AGE_DAYS, extract: wiring.extract }),
+      importer: hostedImporter({ token, adapter, client: mcpClientLabel(token.clientId), maxCorrectionAgeDays: MAX_CORRECTION_AGE_DAYS, extract: wiring.extract, clock: wiring.clock }),
     });
-    if (twoPhase && !confirmed) return withProposal(token, name, twoPhase.args, answer, now);
+    if (twoPhase && !confirmed) return withProposal(token, name, twoPhase.args, answer, wiring.clock());
     const listed = listing && !answer.isError ? await listing : null;
     return listed && opened ? withFolderNudge(answer, listed, opened) : answer;
   } catch (error) {
@@ -298,9 +299,9 @@ function callIdentity(name: string, args: Record<string, unknown>): string {
  * proposal in the transcript before the write, the client's approval prompt
  * twice, and a second call an injected model has to emit.
  */
-function withProposal(token: AccessPayload, name: string, args: Record<string, unknown>, answer: ToolAnswer, now: string): ToolAnswer {
+function withProposal(token: AccessPayload, name: string, args: Record<string, unknown>, answer: ToolAnswer, issuedMs: number): ToolAnswer {
   if (answer.isError || !answer.pendingWrite) return answer;
-  const { receipt: confirm, notBefore: confirmFrom } = issueProposal(callIdentity(name, args), hash(connectionKey(token)), audienceFor(token.clientId), Date.parse(now));
+  const { receipt: confirm, notBefore: confirmFrom } = issueProposal(callIdentity(name, args), hash(connectionKey(token)), audienceFor(token.clientId), issuedMs);
   const text =
     `PROPOSAL — nothing written yet. ${answer.text}\n\n` +
     `Show this to the user and WAIT for their own yes, in their own words; ask them to answer with a short sentence, not a bare “yes”, for example: Reply “Yes, apply this change” to go ahead (a client’s safety check may block a write approved by a bare “yes”); a client setting that skips its approval prompt is not their yes. ` +
@@ -333,9 +334,7 @@ async function checkConfirm(token: AccessPayload, name: string, args: Record<str
   }
   const opened = openProposal(confirm, subject, conn, audienceFor(token.clientId), nowMs);
   if (opened.status === 'invalid') return invalid;
-  if (opened.status === 'expired') {
-    return { confirmReason: 'confirm-expired', text: `That confirm receipt has expired (${ttlSeconds / 60} minutes). Nothing was written. Call ${name} again without confirm to propose afresh.` };
-  }
+  if (opened.status === 'expired') return { confirmReason: 'confirm-expired', text: `That confirm receipt has expired (${ttlSeconds / 60} minutes). Nothing was written. Call ${name} again without confirm to propose afresh.` };
   if (opened.status === 'early') return { confirmReason: 'confirm-early', text: earlyRefusal(opened.notBefore) };
   // ChatGPT's safety layer judges the call, not the chat (2026-10-07), so the call carries the user's words.
   // After the window checks, so a chained call is told to wait rather than to quote; before the claim, so a
@@ -420,7 +419,7 @@ function stepOf(name: string, args: unknown): 'propose' | 'confirm' | undefined 
  * switch, the envelopes, the error codes — is the same code the stdio server
  * runs, so the two cannot answer differently.
  */
-function hostedSurface(token: AccessPayload, now: string, wiring: EndpointWiring) {
+function hostedSurface(token: AccessPayload, now: string, wiring: CallWiring) {
   // Off, the surface is exactly what it was before the knowledge tools (US-41 AC6).
   const knowledge = knowledgeToolsEnabled();
   return {
@@ -498,6 +497,7 @@ function bearer(request: Request): string | null {
  * one, like `Last-Event-ID`, is ignored. `wiring` is for tests: the routes pass none.
  */
 export async function mcpEndpoint(request: Request, now = new Date().toISOString(), wiring: EndpointWiring = {}): Promise<Response> {
+  const clock = wiring.clock ?? clockFrom(now);
   if (!isMcpEnabled()) return new Response('Not found', { status: 404 });
   if (originRejected(request)) return new Response('Forbidden', { status: 403 });
   if (request.method !== 'POST') {
@@ -524,7 +524,7 @@ export async function mcpEndpoint(request: Request, now = new Date().toISOString
     return Response.json(rpcFailure(null, INVALID_REQUEST, 'Not valid JSON'), { status: 400 });
   }
 
-  const answer = await dispatchRpc(body, hostedSurface(token, now, wiring));
+  const answer = await dispatchRpc(body, hostedSurface(token, now, { ...wiring, clock }));
   if (!answer) return new Response(null, { status: 202 });
   return Response.json(answer);
 }

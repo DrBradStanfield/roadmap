@@ -905,6 +905,36 @@ describe('the four mandatory corrections mitigations (US-32, design §3)', () =>
     }));
   }
 
+  it('US-35 AC19 / US-36 AC9: a proposal receipt is issued when it is handed back, so a slow read cannot use up the pause', async () => {
+    const at = (s: number) => new Date(Date.parse(NOW) + s * 1000).toISOString();
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      vi.setSystemTime(Date.parse(NOW));
+      seedWithLdl('2026-08-30');
+      const { access } = await connect();
+      // The record read takes 15 s, longer than the pause.
+      makeAdapter = () => {
+        const adapter = new MemoryAdapter(cloud);
+        const read = adapter.read.bind(adapter);
+        adapter.read = async (...args) => {
+          vi.setSystemTime(Date.parse(at(15)));
+          return read(...args);
+        };
+        return adapter;
+      };
+      const args = { id: LDL_ID, newValue: 2.8, expectedValue: 3.2 };
+      const proposed = await callTool(access, 'correct_value', args, at(0));
+      const { confirm, confirmFrom } = proposed.structured as { confirm: string; confirmFrom: string };
+      expect(confirmFrom).toBe(at(25));
+      makeAdapter = () => new MemoryAdapter(cloud);
+      const early = await callTool(access, 'correct_value', { ...args, confirm, approval: APPROVED }, at(15));
+      expect(early.text).toBe(`That confirm receipt is not valid yet: it can be used from ${at(25)}, after the user has answered. Do not retry before then; end your turn. Nothing was written.`);
+      expect((await callTool(access, 'correct_value', { ...args, confirm, approval: APPROVED }, at(25))).isError).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('1 — refuses a correction that does not state expectedValue', async () => {
     seedWithLdl('2026-08-30');
     const { access } = await connect();
@@ -1592,6 +1622,31 @@ describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, A
       { route: 'dropbox', phase: 'commit', files: '1' },
     ]);
     expect(JSON.stringify(events)).not.toContain('labs.pdf');
+  });
+
+  it('US-35 AC19: the pause runs from the hand-back, so an extract slower than the pause hands back a receipt that is still early', async () => {
+    const at = (s: number) => new Date(Date.parse(NOW) + s * 1000).toISOString();
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      vi.setSystemTime(Date.parse(NOW));
+      seedRecord();
+      const { access } = await connect();
+      // The model call takes 15 s, longer than the pause.
+      stubImport({ 'labs.pdf': PDF_BYTES }, () => {
+        vi.setSystemTime(Date.parse(at(15)));
+        return labReport();
+      });
+      const data = OUTPUTS.import_documents.parse((await callTool(access, 'import_documents', {}, at(0))).structured);
+      const commit = (s: number) => callTool(access, 'import_documents', { commit: { receipt: data.receipt, accept: ['c1'], replace: [], approval: APPROVED } }, at(s));
+      // Committed the moment the receipt came back: early, measured from the hand-back at 15 s.
+      const early = await commit(15);
+      expect(early.isError).toBe(true);
+      expect(early.text).toBe(`That confirm receipt is not valid yet: it can be used from ${at(25)}, after the user has answered. Do not retry before then; end your turn. Nothing was written.`);
+      expect(pendingFiles()).toHaveLength(1);
+      expect((await commit(25)).isError).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('a second commit of a spent receipt, a tampered one, and a name not in the folder all refuse and write nothing', async () => {

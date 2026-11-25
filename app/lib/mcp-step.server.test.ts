@@ -17,7 +17,7 @@ vi.mock('./supabase-client.server', async (actual) => {
 import { resetClaimsState } from './single-use-claims.test-helpers';
 import { claimProposal, resetMcpMemory } from './mcp-grants.server';
 import { typeKey } from './mcp-seal.server';
-import { earlyRefusal, issueProposal, openProposal, openStep, PERMANENT_WRITE_PAUSE_SECONDS, signStep, STEP_WINDOWS, stepKey } from './mcp-step.server';
+import { clockFrom, earlyRefusal, issueProposal, openProposal, openStep, PERMANENT_WRITE_PAUSE_SECONDS, signStep, STEP_WINDOWS, stepKey } from './mcp-step.server';
 
 const KEY_A = Buffer.alloc(32, 1).toString('base64');
 const KEY_B = Buffer.alloc(32, 2).toString('base64');
@@ -128,6 +128,19 @@ describe('US-36 AC9 — the window: early before 10 s, expired after 15 min, a t
     expect(importAt(NOW + 61_000, NOW).status).toBe('invalid');
     expect(importAt(NOW, NOW + 3600_000).status).toBe('ok');
     expect(importAt(NOW, NOW + 3601_000).status).toBe('expired');
+  });
+
+  it('clockFrom reads the request time moved on by the real time since, so a step is signed when it is handed back (US-35 AC19)', () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      vi.setSystemTime(Date.parse('2030-01-01T00:00:00.000Z'));
+      const clock = clockFrom(new Date(NOW).toISOString());
+      expect(clock()).toBe(NOW);
+      vi.setSystemTime(Date.parse('2030-01-01T00:00:15.000Z'));
+      expect(clock()).toBe(NOW + 15_000);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('a step opened early is refused in the one sentence every permanent write uses (US-35 AC19)', () => {
