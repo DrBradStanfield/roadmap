@@ -8,6 +8,7 @@ import type { LatestMeasurementsResult } from '../lib/api-types';
 import { getBackendKind, getEraseIdentity } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 import { Sentry } from '../lib/sentry';
+import { loadFromLocalStorage } from '../lib/storage';
 import { createRemoteChangeRelay } from '../lib/remote-replay';
 import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
 import type { RemoteChange } from '@roadmap/health-core/record-host';
@@ -103,8 +104,6 @@ export function useRecordApply(args: {
   setInputs: Dispatch<SetStateAction<Partial<HealthInputs>>>;
   reloadValues: (shown?: ShownCopy) => Promise<LatestMeasurementsResult | null>;
   applyLists: ReturnType<typeof useRecordState>['applyLists'];
-  /** The medications and screenings the page shows. */
-  lists: Pick<LatestMeasurementsResult, 'medications' | 'screenings'>;
   units: ReturnType<typeof useUnits>['record'];
   /** The erase machine (hooks/useErase): each whole re-read dispatches `read` to it. */
   erase: Pick<EraseStore, 'getSnapshot' | 'dispatch'>;
@@ -189,14 +188,17 @@ export function useRecordApply(args: {
     // The page's own save: the values, lab rows, both matrices and the chat mirror, nothing else (US-34 AC4a).
     // Asked as each is written. The store moved during the read, or it read an erase older than the one shown:
     // nothing. It read a later erase than the one shown (its read failed, L1): the record read, never the earlier
-    // copy (H16). While a change is held, the mirror keeps the profile and lists on screen (AC9, AC10).
+    // copy (H16). While a change is held, the mirror keeps the saved profile and its own lists (AC9, AC10): every
+    // writer of its lists writes saved ones, never a list edit still waiting on its save (US-15 AC10).
     if (policy.read === 'values') {
       const erase = getEraseIdentity(); // read with the record, in one turn
       return latest.current.reloadValues(() => {
         const shown = latest.current.erase.getSnapshot().shown;
         if (getEraseIdentity() !== erase) return null;
         if (erase !== shown) return eraseLater(erase, shown) ? undefined : null;
-        return relay.holding() ? { inputs: later().savedProfile(), ...latest.current.lists } : undefined;
+        if (!relay.holding()) return undefined;
+        const kept = loadFromLocalStorage();
+        return { inputs: later().savedProfile(), medications: kept?.medications ?? [], screenings: kept?.screenings ?? [] };
       }).then(() => {});
     }
     // Not while the user is mid-typing: the re-read replaces the form's

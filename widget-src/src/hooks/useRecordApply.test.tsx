@@ -27,6 +27,9 @@ vi.mock('../lib/roadmap-data', () => ({
 vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../storage/roadmap-store', () => ({ REMOTE_CHANGED_EVENT: 'hr:remote-changed' }));
+// The chat mirror's saved lists: a statin at 10 mg (US-15 AC10).
+const MIRRORED = vi.hoisted(() => ({ medications: [{ medicationKey: 'statin', doseValue: 10 }], screenings: [{ screeningKey: 'psa_last_date' }] }));
+vi.mock('../lib/storage', async (original) => ({ ...(await original<typeof import('../lib/storage')>()), loadFromLocalStorage: () => MIRRORED }));
 
 import { trackProductEvent } from '../lib/server-api';
 import * as recordApply from './useRecordApply';
@@ -41,8 +44,6 @@ function setup(loaded = true) {
     setInputs: vi.fn(),
     reloadValues: vi.fn(async (_shown?: ShownCopy) => RESULT),
     applyLists: vi.fn(),
-    // The lists the page shows: an older statin than the record read's (none).
-    lists: { medications: [{ medicationKey: 'statin', doseValue: 20 }], screenings: [] } as unknown as Pick<LatestMeasurementsResult, 'medications' | 'screenings'>,
     units: { shown: vi.fn(), offered: vi.fn(), pending: vi.fn((): undefined => undefined) },
     // The erase machine as apply sees it: the screen shows 'erase-1'; `dispatch` records each read's erase.
     erase: { getSnapshot: () => ({ shown: 'erase-1' }) as EraseState, dispatch: vi.fn((): EraseEffect[] => []) },
@@ -52,7 +53,7 @@ function setup(loaded = true) {
     },
   };
   const hook = renderHook(() => useRecordApply({
-    setInputs: fx.setInputs, reloadValues: fx.reloadValues, applyLists: fx.applyLists, lists: fx.lists,
+    setInputs: fx.setInputs, reloadValues: fx.reloadValues, applyLists: fx.applyLists,
     units: fx.units as unknown as Parameters<typeof useRecordApply>[0]['units'],
     erase: fx.erase, later: () => fx.later,
   }));
@@ -145,7 +146,7 @@ describe('US-34 AC4, AC4a: the re-read policy, by reason', () => {
     expect(done).toBe(true);
   });
 
-  it('US-34 AC9 (H15), AC10 (H16b): an own save\'s read mirrors the profile and lists the page shows while a change is held, the record\'s otherwise; the read that ends the hold mirrors the record', async () => {
+  it('US-34 AC9 (H15), AC10 (H16b), US-15 AC10: an own save\'s read mirrors the saved profile and the mirror\'s saved lists (never the page\'s) while a change is held, the record\'s otherwise; the read that ends the hold mirrors the record', async () => {
     const { fx, hook } = setup();
     /** The profile each read hands the chat mirror, asked now (useRecordReads asks it as the mirror is written). */
     const mirrored = () => fx.reloadValues.mock.calls.map(([shown]) => shown?.());
@@ -155,7 +156,7 @@ describe('US-34 AC4, AC4a: the re-read policy, by reason', () => {
     await act(async () => { await hook.result.current.signal('remote'); }); // held
     fx.reloadValues.mockClear();
     await act(async () => { await hook.result.current.ownSave(); });
-    expect(mirrored()).toEqual([{ inputs: { heightCm: 170, birthYear: 1980 }, ...fx.lists }]);
+    expect(mirrored()).toEqual([{ inputs: { heightCm: 170, birthYear: 1980 }, ...MIRRORED }]); // never the page's lists, which can hold an unsaved edit
     fx.reloadValues.mockClear();
     await act(async () => { hook.result.current.settled(); });
     await settle();

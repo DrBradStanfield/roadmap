@@ -22,8 +22,8 @@ export async function mirrorRecord(result: LatestMeasurementsResult, shown?: Sho
     labEgfr, planPsa(loadAllHistorySync(), new Date(), screeningsToInputs(screenings)));
 }
 
-/** What a read writes beside its values, decided as it writes: undefined, the record read; the page's profile and
- *  lists while they differ from it (a held change, US-34 AC9, AC10); null, nothing (a read the page does not show). */
+/** What a read writes beside its values, decided as it writes: undefined, the record read; the page's saved profile
+ *  and the mirror's saved lists while a change is held (US-34 AC9, AC10); null, nothing (a read the page does not show). */
 export type ShownCopy = () => Pick<LatestMeasurementsResult, 'inputs' | 'medications' | 'screenings'> | null | undefined;
 
 /**
@@ -37,10 +37,10 @@ export function useRecordReads({ setPreviousMeasurements, setHistory, setLabValu
   // A generation count: an older lab read that answers after a newer one is dropped.
   const labReads = useRef(0);
   /** The lab rows (US-21). A failed read keeps the rows shown. */
-  const refreshLabValues = useCallback(() => {
+  const readLabs = useCallback((moved: () => boolean) => {
     const read = ++labReads.current;
     return loadLabValues().then(rows => {
-      if (rows && read === labReads.current) {
+      if (rows && read === labReads.current && !moved()) {
         setLabValueHistory(rows);
         // A lab eGFR added by hand reaches the other chats too (US-07 AC7).
         const labEgfr = labEgfrOf(rows);
@@ -49,6 +49,7 @@ export function useRecordReads({ setPreviousMeasurements, setHistory, setLabValu
       }
     }).catch(() => {});
   }, [setLabValueHistory]);
+  const refreshLabValues = useCallback(() => readLabs(() => false), [readLabs]);
 
   /** Every measurement, for both matrices. */
   const loadHistory = useCallback(() => loadAllHistory().then(setHistory), [setHistory]);
@@ -56,14 +57,16 @@ export function useRecordReads({ setPreviousMeasurements, setHistory, setLabValu
   /** Re-read every value the page shows. Hands back what it read. `shown`: see mirrorRecord. */
   const reloadValues = useCallback(async (shown?: ShownCopy) => {
     const result = await loadLatestMeasurements();
-    if (shown?.() === null) return result; // a read the page does not show: nothing replaced or written (H16)
+    // Asked before each write: a read the page does not show, or stops showing, writes nothing from then on (H16).
+    const moved = () => shown?.() === null;
+    if (moved()) return result;
     if (result) {
       setPreviousMeasurements(result.previousMeasurements);
       await mirrorRecord(result, shown);
     }
-    await Promise.all([refreshLabValues(), loadHistory()]);
+    await Promise.all([readLabs(moved), loadAllHistory().then(rows => { if (!moved()) setHistory(rows); })]);
     return result;
-  }, [refreshLabValues, loadHistory, setPreviousMeasurements]);
+  }, [readLabs, setHistory, setPreviousMeasurements]);
 
   return { reloadValues, refreshLabValues, loadHistory };
 }
