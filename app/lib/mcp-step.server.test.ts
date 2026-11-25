@@ -168,10 +168,15 @@ describe('US-36 AC9 — the window: early before 10 s, expired after 15 min, a t
     }
   });
 
-  it('a step opened early is refused in the one sentence every permanent write uses (US-35 AC19)', () => {
-    expect(earlyRefusal('2026-10-07T01:07:50.000Z')).toBe(
-      'That confirm receipt is not valid yet: it can be used from 2026-10-07T01:07:50.000Z, after the user has answered. Do not retry before then; end your turn. Nothing was written.',
+  it('a step opened early is refused in the one sentence every permanent write uses, with the whole seconds left rounded up (US-35 AC19, US-36 AC14)', () => {
+    const at = '2026-10-07T01:07:50.000Z';
+    const before = (ms: number) => Date.parse(at) - ms;
+    expect(earlyRefusal(at, before(2_500))).toBe(
+      'That confirm receipt is not valid yet: it can be used in 3 seconds (from 2026-10-07T01:07:50.000Z), after the user has answered. Do not retry before then; end your turn. Nothing was written.',
     );
+    expect(earlyRefusal(at, before(10_000))).toContain('it can be used in 10 seconds (from ');
+    expect(earlyRefusal(at, before(1_000))).toContain('it can be used in 1 second (from ');
+    expect(earlyRefusal(at, before(1))).toContain('it can be used in 1 second (from ');
   });
 });
 

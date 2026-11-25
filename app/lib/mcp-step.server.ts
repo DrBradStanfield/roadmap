@@ -40,9 +40,11 @@ export function clockFrom(now: string): () => number {
   return () => Date.parse(now) + performance.now() - startedMs;
 }
 
-/** The one refusal for a step used inside its pause, whichever kind. */
-export const earlyRefusal = (notBefore: string): string =>
-  `That confirm receipt is not valid yet: it can be used from ${notBefore}, after the user has answered. Do not retry before then; end your turn. Nothing was written.`;
+/** The one refusal for a step used inside its pause, whichever kind: the whole seconds left at `nowMs`, rounded up (US-36 AC14). */
+export function earlyRefusal(notBefore: string, nowMs: number): string {
+  const left = Math.max(1, Math.ceil((Date.parse(notBefore) - nowMs) / 1000));
+  return `That confirm receipt is not valid yet: it can be used in ${left} second${left === 1 ? '' : 's'} (from ${notBefore}), after the user has answered. Do not retry before then; end your turn. Nothing was written.`;
+}
 
 /** Each kind's MAC exactly as it must arrive, built once from `macHex`. */
 const MAC_SHAPE = Object.fromEntries(

@@ -1846,3 +1846,21 @@ describe('RecordSession: a pass and its claim end together (lead A1)', () => {
     expect(session.saveStatus).toBe('saved');
   });
 });
+
+describe('RecordSession: a pressed Sync now skips the five-second pause (lead H31, Brad 2026-11-26)', () => {
+  it('inside the pause an automatic re-read reads nothing; a pressed one reads and takes the change in', async () => {
+    const store = new TestStore();
+    const session = await RecordSession.open(fakeHost(store).host);
+    clock += 60_000;
+    expect(await session.refreshFromRemote()).toBe(false); // nothing new; the pause starts here
+    const other = await RecordSession.open(fakeHost(new TestStore(store.cloud)).host);
+    add(other, 'theirs');
+    await other.flush();
+    clock += 1_000; // inside the pause
+    expect(await session.refreshFromRemote()).toBe(false);
+    expect(await session.refreshFromRemote('automatic')).toBe(false);
+    expect(ids(session.file)).toEqual([]);
+    expect(await session.refreshFromRemote('pressed')).toBe(true);
+    expect(ids(session.file)).toEqual(['theirs']);
+  });
+});
