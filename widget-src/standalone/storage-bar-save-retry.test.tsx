@@ -17,7 +17,7 @@ import { ROADMAP_FILE_NAME, StorageError } from '@roadmap/health-core/adapter';
 vi.mock('./google-config', () => ({ googleDriveConfig: () => ({}) }));
 vi.mock('../src/lib/server-api', async (original) => ({
   ...(await original<typeof import('../src/lib/server-api')>()),
-  trackProductEvent: vi.fn(), trackABImpression: vi.fn(), trackABConversion: vi.fn(),
+  trackProductEvent: vi.fn(),
 }));
 vi.mock('./reminders', () => ({ remindersSupported: () => false }));
 vi.mock('./reminders-control', () => ({ RemindersControl: () => null }));

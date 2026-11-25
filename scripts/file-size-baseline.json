@@ -13,7 +13,7 @@
     "packages/health-core/src/units.ts": 813,
     "packages/health-core/src/lab-catalog.ts": 802,
     "packages/health-core/src/merge.ts": 766,
-    "widget-src/src/components/HealthTool.tsx": 729,
+    "widget-src/src/components/HealthTool.tsx": 725,
     "packages/health-core/src/validation.ts": 700,
     "app/routes/api.chat.ts": 693,
     "packages/health-core/src/types.ts": 656,

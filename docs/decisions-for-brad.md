@@ -153,9 +153,6 @@ issue, and nothing private.
 - **Message packs that nothing reads.** Issue: a paid order still adds chat message credits to an account, but
   nothing reads those credits any more. Options: remove the step and its order webhook (a deploy of the app's
   settings); keep it. Recommendation: remove it, once you confirm no message pack is still on sale.
-- **Old A/B tracking calls.** Issue: the web still sends A/B events, but only from assignments stored in a browser
-  long ago; nothing assigns new ones, and an event alone does not prove a variant was shown. Options: delete the
-  calls (retire the feature); restore experiment delivery. Recommendation: delete them, since no experiment runs.
 - **Built storefront bundles in git.** Issue: the built widget files are tracked in git, though the deploy builds
   them anyway. Options: stop tracking them (smaller diffs, fewer merge conflicts; a hand deploy must build first);
   keep them. Recommendation: stop tracking them.
@@ -216,6 +213,10 @@ issue, and nothing private.
   while the App Store review is open.
 
 ## Decided
+
+2026-11-26, Brad's words in quotes:
+- Old A/B tracking calls are deleted ("go with your recommendations"): the web sends no A/B event, and the `/api/ab`
+  route, which nothing else called, is gone. The admin dashboard and the tables stay (US-09 AC60). No new words.
 
 2026-11-23, Brad's words in quotes:
 - Original files are stored in the background after Save, with no action from the person at Save and at every

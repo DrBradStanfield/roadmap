@@ -31,7 +31,7 @@ const settle = async (ms = 0) => { await act(async () => { await vi.advanceTimer
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn(), captureMessage: vi.fn() } }));
 vi.mock('../lib/server-api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../lib/server-api')>()),
-  trackProductEvent: vi.fn(), trackABImpression: vi.fn(), trackABConversion: vi.fn(),
+  trackProductEvent: vi.fn(),
 }));
 vi.mock('../lib/chat-api', () => ({ listConversations: () => Promise.resolve(null), getChatGate: () => null }));
 vi.mock('./ChatEmbed', () => ({ ChatEmbed: () => null }));

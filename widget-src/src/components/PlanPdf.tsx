@@ -4,7 +4,7 @@
 import React, { useState, useRef, useReducer } from 'react';
 import { flushSync } from 'react-dom';
 import { getReportHtml, sendGuestReport, getReportEmailCaptured, markReportEmailCaptured, getShownErase } from '../lib/roadmap-data';
-import { trackABConversion, trackProductEvent } from '../lib/server-api';
+import { trackProductEvent } from '../lib/server-api';
 import { EMAIL_REGEX } from '../lib/email';
 import { getSkipEmailGate } from '../lib/assistant-config';
 import { transition, PRINT_START, type PdfButton, type PrintState } from '../lib/plan-print-machine';
@@ -238,7 +238,6 @@ function useGuestEmailCapture(printReport: () => Promise<void>, { state, setStat
     const result = await sendGuestReport(trimmed);
 
     if (result.success) {
-      trackABConversion();
       // Local-first: the PDF window already opened (the delivery). Persist the
       // captured flag to the user's own cloud and switch to the "Save as PDF"
       // view — no email box on return, nothing extra (no articles screen).
