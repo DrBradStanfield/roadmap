@@ -18,6 +18,20 @@ describe('US-09 AC58: shouldReport, once per cause and grant', () => {
   ])('%s', (_name, previous, now, reports) => {
     expect(shouldReport(previous, now)).toBe(reports);
   });
+
+  it.each<[string, Array<SaveReportKey | 'landed'>, boolean[]]>([
+    ['A, A: once', [a, a], [true, false]],
+    ['A, landed, A: twice (a landed save clears the key)', [a, 'landed', a], [true, true]],
+  ])('%s', (_name, events, reports) => {
+    let previous: SaveReportKey | null = null;
+    const seen: boolean[] = [];
+    for (const e of events) {
+      if (e === 'landed') { previous = null; continue; }
+      seen.push(shouldReport(previous, e));
+      previous = e;
+    }
+    expect(seen).toEqual(reports);
+  });
 });
 
 describe('US-09 AC58: reportSaveFailure reports under that key', () => {

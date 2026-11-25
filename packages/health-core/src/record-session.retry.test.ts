@@ -247,27 +247,23 @@ describe('the session tells the host when a retry becomes owed or stops being ow
   });
 });
 
-// US-09 AC58 (lead A25, the web's half): a page hide's last-ditch save starts
-// no cloud save the grant refused (`flushSync('hold')`, the web's page-hide
-// path); a failed save still owed a retry is tried, and the default still
-// tries both, as the iPhone's callers do today.
-describe('US-09 AC58: a hide starts no save the grant refused', () => {
-  it.each([
-    { name: 'a refused grant, held', error: REVOKED, refused: 'hold' as const, writes: 1 },
-    { name: 'a refused grant, by default', error: REVOKED, refused: undefined, writes: 2 },
-    { name: 'a passing failure, held', error: OFFLINE, refused: 'hold' as const, writes: 2 },
-  ])('$name', async ({ error, refused, writes }) => {
-    const { store, session } = await failedSession(error());
-    session.flushSync(refused);
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    expect(store.writes).toBe(writes);
-  });
-
-  it('an edit after the refusal still starts a save on the next hide', async () => {
-    const { store, session } = await failedSession(REVOKED());
+// US-09 AC58: the report key clears when a save lands, so a failure that
+// comes back after a recovery is reported again; one that repeats before is not.
+describe('US-09 AC58: once per cause until a save lands', () => {
+  it('fail, fail, land, fail: the second is a repeat, the third reports again', async () => {
+    const store = new TestCloud(new MemoryCloud());
+    const repeats: boolean[] = [];
+    const session = await RecordSession.open({ ...cloudHost(store), report: (_e, at) => void repeats.push(at.repeat) });
+    store.fail = OFFLINE();
+    add(session, 'a');
+    await expect(session.flush()).rejects.toThrow();
     add(session, 'b');
-    session.flushSync('hold');
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    expect(store.writes).toBe(2);
+    await expect(session.flush()).rejects.toThrow();
+    store.fail = null;
+    await session.flush();
+    store.fail = OFFLINE();
+    add(session, 'c');
+    await expect(session.flush()).rejects.toThrow();
+    expect(repeats).toEqual([false, true, false]);
   });
 });

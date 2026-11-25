@@ -51,9 +51,10 @@ export function tellSaveStatus(host: RecordHost, told: SaveTold, now: SaveTold):
 /** What a failed save is reported under: its cause, and the grant it met. */
 export interface SaveReportKey { cause: string; grant: string }
 
-/** A failed save is reported once per cause and grant (US-09 AC58): the same
- *  cause under the same grant as the last report repeats it; a new cause or a
- *  new grant reports again. Every retry, hide and edit after a refusal meets
+/** A failed save is reported once per cause and grant until a save lands
+ *  (US-09 AC58): the same cause under the same grant as the last report repeats
+ *  it; a new cause or a new grant reports again, and a landed save clears
+ *  `previous` (the session's). Every retry, hide and edit after a refusal meets
  *  the same refusal, so without this each one would report. */
 export function shouldReport(previous: SaveReportKey | null, now: SaveReportKey): boolean {
   return previous === null || previous.cause !== now.cause || previous.grant !== now.grant;

@@ -72,8 +72,7 @@ export class RecordSession {
   private mirrorSkipped = false;
   /** Leading-edge throttle for refreshFromRemote(), in epoch millis. */
   private lastRefresh = 0;
-  /** The key the last failed save was reported under: every hide and retry
-   *  meets the same failure, reported once per cause and grant (US-10 AC5). */
+  /** The key the last failed save was reported under, until a save lands (once per cause: US-09 AC58). */
   private lastReport: SaveReportKey | null = null;
   /** Device tier: the stored revision this session last took in, by a load,
    *  a re-read or its own write. Never a read it did not merge in, such as a
@@ -285,10 +284,10 @@ export class RecordSession {
    * synchronous path merges into the one file every page shares, so the
    * write has landed when this returns, whatever the async save may come to
    * await; then it takes the merge in, as a save does. Any other store, and a
-   * refused synchronous write, fall back to the async save; on a cloud the device copy holds the changes
-   * meanwhile (mirrorNow). `refused: 'hold'` starts no save the grant refused (no retry owed, US-09 AC30).
+   * refused synchronous write, fall back to the async save; on a cloud the
+   * device copy holds the changes meanwhile (mirrorNow).
    */
-  flushSync(refused: 'retry' | 'hold' = 'retry'): void {
+  flushSync(): void {
     if (!unsaved(this.mode)) return;
     const store = this.host.sync;
     if (store && !this.deviceClosed()) {
@@ -308,7 +307,7 @@ export class RecordSession {
     } else if (this.host.tier === 'cloud') {
       this.mirrorNow(this.host.mirror);
     }
-    if (refused === 'retry' || this.mode.mode !== 'failed' || retryOwed(this.mode)) void this.persist();
+    void this.persist();
   }
 
   /** The departure write: `mirrorNowSession` (record-session-mirror.ts, US-06 AC13). */
@@ -443,6 +442,7 @@ export class RecordSession {
         pass = next;
       }
       announce(this.host, remoteFolded);
+      this.lastReport = null; // landed: a failure that returns is reported again
       // A skipped (unreadable) mirror holds data this save did NOT include —
       // keep its marker so the next load retries it.
       if (this.host.tier === 'cloud' && !this.mirrorSkipped) this.releaseMarker(this.host.mirror);
