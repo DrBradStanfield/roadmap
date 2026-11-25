@@ -64,7 +64,7 @@ afterEach(() => {
 describe('Fix 4 transport (US-16 AC2a, US-34): REMOTE_CHANGED says which erase a merge brought in', () => {
   it('US-34 AC6: another tab\'s erase, through the storage event: { erase: the identity adopted }', async () => {
     const store = await RoadmapStore.create(new LocalStorageAdapter());
-    store.addMeasurement('weight', 82, '2026-09-01');
+    store.addMeasurement('weight', 82, '2026-09-01', store.shownErase);
     await store.flush();
     stops.push(store.startLiveRefresh());
     const before = store.eraseIdentity;
@@ -77,7 +77,7 @@ describe('Fix 4 transport (US-16 AC2a, US-34): REMOTE_CHANGED says which erase a
 
   it('US-34 AC6: another tab\'s row, no erase: { erase: null }', async () => {
     const store = await RoadmapStore.create(new LocalStorageAdapter());
-    store.addMeasurement('weight', 82, '2026-09-01');
+    store.addMeasurement('weight', 82, '2026-09-01', store.shownErase);
     await store.flush();
     stops.push(store.startLiveRefresh());
     const before = store.eraseIdentity;
@@ -92,11 +92,11 @@ describe('Fix 4 transport (US-16 AC2a, US-34): REMOTE_CHANGED says which erase a
   it('US-34 AC1: a save that folds another device\'s erase in: { erase: the identity adopted }', async () => {
     const cloud = new MemoryCloud();
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
-    store.addMeasurement('weight', 82, '2026-09-01');
+    store.addMeasurement('weight', 82, '2026-09-01', store.shownErase);
     await store.flush();
     const before = store.eraseIdentity;
     await anotherWriterErases(new MemoryAdapter(cloud));
-    store.addMeasurement('waist', 90, '2026-09-02');
+    store.addMeasurement('waist', 90, '2026-09-02', store.shownErase);
     await store.flush();
     expect(store.eraseIdentity).not.toBe(before);
     expect(details).toEqual([{ erase: store.eraseIdentity }]);
@@ -105,7 +105,7 @@ describe('Fix 4 transport (US-16 AC2a, US-34): REMOTE_CHANGED says which erase a
   it('US-34 AC1: a save loop whose later pass brings a row and no erase keeps the erase an earlier pass brought', async () => {
     const cloud = new MemoryCloud();
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
-    store.addMeasurement('weight', 82, '2026-09-01');
+    store.addMeasurement('weight', 82, '2026-09-01', store.shownErase);
     await store.flush();
     const before = store.eraseIdentity;
     await anotherWriterErases(new MemoryAdapter(cloud));
@@ -114,7 +114,7 @@ describe('Fix 4 transport (US-16 AC2a, US-34): REMOTE_CHANGED says which erase a
     vi.spyOn(MemoryAdapter.prototype, 'write').mockImplementation(async function (this: MemoryAdapter, ...args: Parameters<StorageAdapter['write']>) {
       if (args[0] === ROADMAP_FILE_NAME && this.constructor === MemoryAdapter) {
         n += 1;
-        if (n === 1) store.addMeasurement('ldl', 3.1, '2026-09-03'); // sends the loop round again
+        if (n === 1) store.addMeasurement('ldl', 3.1, '2026-09-03', store.shownErase); // sends the loop round again
         if (n === 2) { // another device's row lands first: the second pass folds it in
           const other = new MemoryAdapter(cloud);
           await write.call(other, ...(await rowWrite(other, 'other-weight-2')));
@@ -122,7 +122,7 @@ describe('Fix 4 transport (US-16 AC2a, US-34): REMOTE_CHANGED says which erase a
       }
       return write.apply(this, args);
     });
-    store.addMeasurement('waist', 90, '2026-09-02');
+    store.addMeasurement('waist', 90, '2026-09-02', store.shownErase);
     await store.flush();
     expect(n).toBeGreaterThan(1);
     expect(store.eraseIdentity).not.toBe(before);

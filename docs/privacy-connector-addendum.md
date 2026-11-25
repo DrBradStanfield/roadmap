@@ -352,7 +352,7 @@ conversation row after the words are blanked.
 The YouTube bot reads public comments on Brad's videos and replies to some. It keeps
 every comment it reads, and every reply, in `chat_messages`. A second log holds the
 commenter's channel name, the comment and the reply. These rows have no deletion date;
-the only cleanup trims comments the bot skipped from that log, down to the latest 200.
+the only cleanup deletes a skipped comment's row from that log 8 days after the bot read it.
 Its question rows are blanked after 30 days, like every other surface's, and none is
 copied. The bot's replies carry no tag.
 

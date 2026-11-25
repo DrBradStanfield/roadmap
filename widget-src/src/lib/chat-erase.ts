@@ -22,3 +22,9 @@ export function eraseBegan(): void {
 export function chatAskedUnder(): string {
   return `${erasesBegun}:${recordErase()}`;
 }
+
+/** The record's erase identity inside a `chatAskedUnder()` value, for the
+ *  conversation's stamp (US-11 AC11); undefined with no record read. */
+export function recordEraseIn(asked: string): string | undefined {
+  return asked.slice(asked.indexOf(':') + 1) || undefined;
+}

@@ -5,7 +5,7 @@ import type { ChatHistoryFile } from '@roadmap/health-core/chat-history';
 import { ChatHistoryStore } from './chat-history-store';
 import { LocalStorageAdapter, NAMED_FILE_PREFIX } from './local-storage-adapter';
 import { RoadmapStore } from './roadmap-store';
-import { initRoadmapStore, deleteUserData, flushRoadmapStore, addMeasurement } from '../lib/roadmap-data';
+import { initRoadmapStore, deleteUserData, flushRoadmapStore, addMeasurement, getShownErase } from '../lib/roadmap-data';
 import { getChatHistory, setChatHistoryFactory } from '../lib/chat-history-access';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
@@ -161,7 +161,7 @@ describe('US-11 local erase: a stale chat tab must not restore erased history', 
       const adapter = () => (mode === 'local' ? new LocalStorageAdapter() : new MemoryAdapter(cloud));
       if (mode === 'cloud') localStorage.setItem('health_roadmap_backend', 'memory'); // a cloud page remembers its backend (US-11 AC6)
       await initRoadmapStore(adapter());
-      await addMeasurement('weight', 70, '2026-01-01');
+      await addMeasurement('weight', 70, '2026-01-01', getShownErase());
       const chat = (await getChatHistory())!;
       await exchange(chat, 'old', OLD_TEXT);
       const DOC_KEY = 'health_roadmap_doc_v2:synthetic-ref';
@@ -212,7 +212,7 @@ describe('US-11 local erase: a stale chat tab must not restore erased history', 
     it('cloud read unreachable (ERASE_UNREACHABLE)', async () => {
       const adapter = new MemoryAdapter(new MemoryCloud());
       await initRoadmapStore(adapter);
-      await addMeasurement('weight', 70, '2026-01-01');
+      await addMeasurement('weight', 70, '2026-01-01', getShownErase());
       await flushRoadmapStore();
       localStorage.setItem(GENERATION_KEY, 'g0');
       vi.spyOn(adapter, 'read').mockRejectedValueOnce(new Error('synthetic offline'));
@@ -223,7 +223,7 @@ describe('US-11 local erase: a stale chat tab must not restore erased history', 
       it(`${mode}: the erase's flush fails`, async () => {
         const adapter = mode === 'local' ? new LocalStorageAdapter() : new MemoryAdapter(new MemoryCloud());
         await initRoadmapStore(adapter);
-        await addMeasurement('weight', 70, '2026-01-01');
+        await addMeasurement('weight', 70, '2026-01-01', getShownErase());
         await flushRoadmapStore();
         localStorage.setItem(GENERATION_KEY, 'g0');
         localStorage.setItem(CHAT_KEY, '{}');

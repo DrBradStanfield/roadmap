@@ -2,8 +2,8 @@
  * S-19 (b): the limiter maps and the subscription summary cache hold a bounded number of entries
  * (US-52 AC4f, US-59 AC12). When a new key meets a full map, expired entries go first, then the
  * oldest live entry, and the new key is admitted. A full map says so once an hour, by its name
- * alone. The in-memory maps left unbounded on purpose are a named list below; the spent-challenge
- * set is one of them, unchanged, so one-use holds for a challenge's whole life (US-52 AC1a).
+ * alone. The in-memory maps left unbounded on purpose are a named list below. The spent-code and
+ * confirm-receipt sets are bounded but never drop a live id (US-52 AC16, one-use-bound.test.ts).
  */
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
@@ -141,7 +141,7 @@ describe('US-52 AC4f: one policy, and a named list of unbounded maps', () => {
   const prod = appFiles(app).filter((file) => !/\.test(-helpers)?\.tsx?$/.test(file));
 
   /** In-memory maps with an expiry that are not size-bounded, on purpose (lead S-24). */
-  const UNBOUNDED_TTL = ['spentCodes', 'spentProposals', 'spentWrites'];
+  const UNBOUNDED_TTL = ['spentWrites'];
   /** Module maps with no expiry: lookups, in-flight work and content caches. */
   const NOT_TTL = ['DECODERS', 'KNOWN_CLIENTS', 'NUDGED', 'TWO_PHASE', 'WRITE_COSTS', 'articleCache', 'formsCache', 'handleCache', 'inFlight'];
 
@@ -150,7 +150,7 @@ describe('US-52 AC4f: one policy, and a named list of unbounded maps', () => {
     expect(appFiles(app).filter((file) => banned.test(readFileSync(file, 'utf8')))).toEqual([]);
   });
 
-  it('names every limit map, and only the spent-challenge set is unbounded', () => {
+  it('names every limit map; none is unbounded, and only the spent codes are one-use', () => {
     const sites: string[] = [];
     for (const file of prod) {
       const text = readFileSync(file, 'utf8');
@@ -158,13 +158,14 @@ describe('US-52 AC4f: one policy, and a named list of unbounded maps', () => {
         // The call through its options object, which closes with `})`.
         const site = text.slice(call.index, text.indexOf('})', call.index) + 2);
         const name = /name: '([^']+)'/.exec(site)?.[1] ?? `UNNAMED in ${file}`;
-        sites.push(`${name}${/maxKeys: Infinity/.test(site) ? ': unbounded' : ''}`);
+        sites.push(`${name}${/maxKeys: Infinity/.test(site) ? ': unbounded' : ''}${/oneUse: true/.test(site) ? ': one-use' : ''}`);
       }
     }
-    expect(sites).toHaveLength(37);
+    expect(sites).toHaveLength(38);
     expect(sites).toContain('guest sessions per IP'); // US-15 AC67: bounded, at the default
     expect(sites.filter((s) => s.startsWith('UNNAMED'))).toEqual([]);
-    expect(sites.filter((s) => s.endsWith(': unbounded'))).toEqual(['app spent challenges: unbounded']);
+    expect(sites.filter((s) => s.includes(': unbounded'))).toEqual([]);
+    expect(sites.filter((s) => s.endsWith(': one-use'))).toEqual(['mcp spent codes: one-use']);
   });
 
   it('every other module-level Map is bounded or on a named list', () => {

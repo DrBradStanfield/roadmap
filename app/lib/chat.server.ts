@@ -48,33 +48,10 @@ import { CHAT_PROMPT } from './chat-system-prompt.server';
 const MAX_MESSAGE_LENGTH = 8000;
 const HISTORY_TOKEN_BUDGET = 8000;
 
-// ---------------------------------------------------------------------------
-// Algorithm document — read once at module load from project root
-// ---------------------------------------------------------------------------
-
-let ALGORITHM_DOC: string;
-try {
-  ALGORITHM_DOC = fs.readFileSync(
-    path.join(process.cwd(), 'health_roadmap_algorithm.md'), 'utf-8',
-  );
-} catch {
-  console.warn('health_roadmap_algorithm.md not found — chat will have limited context');
-  ALGORITHM_DOC = '';
-}
-
-// ---------------------------------------------------------------------------
-// Products document — read once at module load
-// ---------------------------------------------------------------------------
-
-let PRODUCTS_DOC: string;
-try {
-  PRODUCTS_DOC = fs.readFileSync(
-    path.join(process.cwd(), PRODUCTS_BLOCK_FILES.products), 'utf-8',
-  );
-} catch {
-  console.warn('docs/products.md not found — chat will not have product knowledge');
-  PRODUCTS_DOC = '';
-}
+// The system prompt, algorithm, products doc and postures: one state read at
+// import by chat-system-prompt.server.ts (US-15 AC65, AC72). 'missing' has no
+// text; every chat entry refuses before any model call.
+const DOCS = CHAT_PROMPT.kind === 'loaded' ? CHAT_PROMPT : null;
 
 // ---------------------------------------------------------------------------
 // Writing style + answer bank — read once at module load, synced or generated
@@ -94,7 +71,7 @@ function loadSharedDoc(file: string): string {
 
 // Every surface (both websites, YouTube, Discord) gets the same block (US-15 AC29).
 const PRODUCTS_BLOCK = productsBlockText({
-  products: PRODUCTS_DOC,
+  products: DOCS?.products ?? '',
   writingStyle: loadSharedDoc(PRODUCTS_BLOCK_FILES.writingStyle),
   answerBank: loadSharedDoc(PRODUCTS_BLOCK_FILES.answerBank),
 });
@@ -157,13 +134,8 @@ function serializeEvidence(): string {
 
 const EVIDENCE_DOC = serializeEvidence();
 
-// ---------------------------------------------------------------------------
-// System prompt — read once at import by chat-system-prompt.server.ts (US-15 AC65)
-// ---------------------------------------------------------------------------
-
 // Pre-concatenate at module level to avoid per-request string allocation.
-// 'missing' has no text; getChatCompletion refuses before any model call.
-const SYSTEM_PROMPT_WITH_ALGORITHM = CHAT_PROMPT.kind === 'loaded' ? CHAT_PROMPT.text + ALGORITHM_DOC : '';
+const SYSTEM_PROMPT_WITH_ALGORITHM = DOCS ? DOCS.text + DOCS.algorithm : '';
 
 // ---------------------------------------------------------------------------
 // Surface posture blocks — the per-surface override layer (identity, voice, and
@@ -174,17 +146,8 @@ const SYSTEM_PROMPT_WITH_ALGORITHM = CHAT_PROMPT.kind === 'loaded' ? CHAT_PROMPT
 // microvitamin.com store. See claude_business docs/chat-architecture.md → "Surface posture".
 // ---------------------------------------------------------------------------
 
-function loadPosture(file: string): string {
-  try {
-    return fs.readFileSync(path.join(process.cwd(), 'app/lib', file), 'utf-8');
-  } catch {
-    console.warn(`Chat: ${file} not found — surface posture missing`);
-    return '';
-  }
-}
-
-export const DOCTOR_POSTURE = loadPosture('chat-posture-doctor.md');
-export const BRAND_POSTURE = loadPosture('chat-posture-brand.md');
+export const DOCTOR_POSTURE = DOCS?.doctorPosture ?? '';
+export const BRAND_POSTURE = DOCS?.brandPosture ?? '';
 
 // ---------------------------------------------------------------------------
 // Context assembly — always from the client-supplied plan (local-first v2)
@@ -477,8 +440,8 @@ export async function getChatCompletion(
   onEvent: ((event: ChatStreamEvent) => void) | undefined,
   opts: { purpose: ChatPurpose; subscriptionTool?: boolean; guestInputs?: unknown; profileEdits?: boolean; app?: boolean },
 ): Promise<ChatCompletionResult> {
-  // Backstop for any caller that skipped its own guard (US-15 AC65).
-  if (CHAT_PROMPT.kind === 'missing') throw new Error('Chat system prompt missing; no model call');
+  // Backstop for any caller that skipped its own guard (US-15 AC65); file names only (AC74).
+  if (CHAT_PROMPT.kind === 'missing') throw new Error(`Chat docs missing (${CHAT_PROMPT.files.join(', ')}); no model call`);
   const profileEdits = opts?.profileEdits === true;
   const app = opts?.app === true;
   const tools = [...(canApplyEdits ? chatToolsFor(messages, profileEdits, app) : []), ...(opts?.subscriptionTool ? [PROPOSE_SUBSCRIPTION_CHANGE_TOOL] : [])];

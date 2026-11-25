@@ -26,7 +26,7 @@ import { APPLE_LOW_FROM_60, FRIEND_2022_TREADMILL, type Vo2MaxCutPoints } from '
 import { calculateAge } from '../../packages/health-core/src/calculations';
 import { type RowTarget, rowTarget } from '../../packages/health-core/src/row-target';
 import { gradeWords, limitUngraded, pressureStatus, valueStatus, type GradeContext, type GradeStatus, type PressureReading } from '../../packages/health-core/src/row-grade';
-import { labSeriesRows } from '../../packages/health-core/src/lab-series';
+import { labTestSeries } from '../../packages/health-core/src/lab-series';
 import { displayLabUnit, labSlotKey, resolveLabCatalogEntry } from '../../packages/health-core/src/lab-catalog';
 import { trendWindow } from '../../packages/health-core/src/recent-trend';
 import { isAlcoholAnswer, type AlcoholAnswer } from '../../packages/health-core/src/types';
@@ -516,12 +516,10 @@ function gradeOf(status: GradeStatus, metric: string): Pick<MyDataRow, 'status' 
   return { status, gradeWords: gradeWords(status, metric) };
 }
 
-/** The lab tests beyond the core ones: health-core's rows (`labSeriesRows`), as the web's phone rows
- *  build them (MyDataRows.tsx labRows), in this row's shape; never graded. A limit reads with its
- *  symbol and, as on the core rows, is no point on the trend (US-12 AC20). */
+/** The lab tests beyond the core ones: health-core's `labTestSeries`, in this row's shape; never
+ *  graded. A limit reads with its symbol. */
 function labTestRows(file: RoadmapFile, now: string): MyDataRow[] {
-  // A core row is a blood test's own row above, never a lab test here (US-66 AC7).
-  return labSeriesRows(file.labValues.filter((row) => !isCoreRow(row)), new Date(now), true).map(({ seriesKey, label, unit, latest, previous, target, trend }) => ({
+  return labTestSeries(file.labValues, new Date(now)).map(({ seriesKey, label, unit, latest, previous, target, trend }) => ({
     metric: seriesKey, series: 'lab', label, unit, latest, trend, switchable: false, target, previous, ...gradeOf(null, seriesKey), note: null,
   }));
 }

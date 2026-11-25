@@ -47,7 +47,8 @@ describe('scrubEvent — a busy original write (op write-document-busy)', () => 
 // 'erase'. A cloud adapter's error text can quote the record, so it takes the
 // strict branch, as 'cloud-sync' does. Synthetic text.
 describe('scrubEvent — the erase capture (area erase)', () => {
-  it.each([['erase', 'delete-all'], ['cloud-sync', 'load']])('area %s: message, exception text, breadcrumbs and extras go; the stack frames, the area and op %s stay', (area, op) => {
+  // US-10 AC14: 'page-hide', a save stage that throws as the page hides, takes the same branch.
+  it.each([['erase', 'delete-all'], ['cloud-sync', 'load'], ['page-hide', 'persist']])('area %s: message, exception text, breadcrumbs and extras go; the stack frames, the area and op %s stay', (area, op) => {
     const marker = 'zinc-report.pdf weird';
     const frames = { frames: [{ filename: 'useErase.ts', function: 'eraseAll', lineno: 9 }] };
     const scrubbed = scrubEvent(makeEvent({

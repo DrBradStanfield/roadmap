@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H407,chat server,"The server's last-line guard names every missing chat doc in its error, not only the prompt",lead,done,"getChatCompletion's backstop (app/lib/chat.server.ts) throws 'Chat docs missing (<files>); no model call', file names only, from the CHAT_PROMPT state. Test: app/lib/chat.server.prompt-backstop.test.ts (US-15 AC74). (H407)",2141,no

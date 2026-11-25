@@ -10,7 +10,7 @@ import { act, cleanup, fireEvent, render, waitFor, within } from '@testing-libra
 import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
-import { flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
+import { flushRoadmapStore, initRoadmapStore, saveChangedMeasurements, getShownErase } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 
 // Only off-device boundaries are mocked; the plan, form, autosave and store are real.
@@ -44,7 +44,7 @@ beforeEach(async () => {
   trackLiveRefresh();
   await initRoadmapStore(new LocalStorageAdapter());
   // BMI 31.6: the plan shows "Reduce alcohol intake".
-  await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 5, unitSystem: 'si', weightKg: 100 }, {});
+  await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 5, unitSystem: 'si', weightKg: 100 }, {}, getShownErase());
   await flushRoadmapStore();
 });
 afterEach(async () => {
@@ -101,7 +101,7 @@ it('US-60 AC3 (C4): "I drink" saves the answer and the card stays; Cancel saves 
 });
 
 it('US-60 AC3 (Brad 2026-11-01): a drinker\'s Dismiss asks "Do you still drink alcohol?"; "I still drink" saves nothing and says why the card stays', async () => {
-  await saveChangedMeasurements({ alcohol: 'drinks' }, {});
+  await saveChangedMeasurements({ alcohol: 'drinks' }, {}, getShownErase());
   await flushRoadmapStore();
   const view = render(<HealthTool />);
   expect(view.container.querySelectorAll('.suggestion-dismiss')).toHaveLength(1);
@@ -136,7 +136,7 @@ it('US-60 AC3 (Brad 2026-11-01): on a phone with sex and height in, the "I still
   vi.stubGlobal('matchMedia', (q: string) => ({
     matches: q.includes('max-width'), media: q, addEventListener() {}, removeEventListener() {},
   }));
-  await saveChangedMeasurements({ alcohol: 'drinks' }, {});
+  await saveChangedMeasurements({ alcohol: 'drinks' }, {}, getShownErase());
   await flushRoadmapStore();
   const view = render(<HealthTool />);
   await waitFor(() => openSettings(view.container)); // About you sits in Settings (US-62 AC24)
@@ -149,7 +149,7 @@ it('US-60 AC3 (Brad 2026-11-01): on a phone with sex and height in, the "I still
 });
 
 it('US-60 AC3 (Brad 2026-11-01): a drinker\'s "I\'ve stopped" saves \'none\' through the profile autosave and the card leaves; the event carries no answer', async () => {
-  await saveChangedMeasurements({ alcohol: 'drinks' }, {});
+  await saveChangedMeasurements({ alcohol: 'drinks' }, {}, getShownErase());
   await flushRoadmapStore();
   const view = render(<HealthTool />);
   await dismiss(view.container, 'Do you still drink alcohol?');
@@ -170,7 +170,7 @@ it('US-60 AC4 (Brad 2026-11-02): mid-onboarding there is no Alcohol row, and "I 
   // blood test opens the whole form (opensFullForm), where the plan's cards show (US-62 AC25).
   localStorage.clear();
   await initRoadmapStore(new LocalStorageAdapter());
-  await saveChangedMeasurements({ sex: 'male', heightCm: 178, unitSystem: 'si', weightKg: 100, alcohol: 'drinks', hba1c: 35 }, {});
+  await saveChangedMeasurements({ sex: 'male', heightCm: 178, unitSystem: 'si', weightKg: 100, alcohol: 'drinks', hba1c: 35 }, {}, getShownErase());
   await flushRoadmapStore();
   for (const phone of [false, true]) {
     stub(phone);
@@ -190,7 +190,7 @@ it('US-60 AC4 with US-62 AC12: once the birth date finishes the onboarding and i
   for (const phone of [false, true]) {
     localStorage.clear();
     await initRoadmapStore(new LocalStorageAdapter());
-    await saveChangedMeasurements({ sex: 'male', heightCm: 178, unitSystem: 'si', weightKg: 100, alcohol: 'drinks', hba1c: 35 }, {});
+    await saveChangedMeasurements({ sex: 'male', heightCm: 178, unitSystem: 'si', weightKg: 100, alcohol: 'drinks', hba1c: 35 }, {}, getShownErase());
     await flushRoadmapStore();
     stub(phone);
     const view = render(<HealthTool />);
@@ -254,7 +254,7 @@ it('US-60 AC4, AC4b (Brad 2026-11-02): About you\'s rows hold an Alcohol row tha
 // Since US-62 AC18 the triglycerides advice sits under Cholesterol and the alcohol card under
 // Weight & diabetes, so the two no longer share a grouped card; the answer still reaches both.
 it('US-60 AC3 (C2): the Dismiss sits on the alcohol card, and "I don\'t drink" also drops "limit alcohol" from the triglycerides card', async () => {
-  await saveChangedMeasurements({ triglycerides: 2.0 }, {});
+  await saveChangedMeasurements({ triglycerides: 2.0 }, {}, getShownErase());
   await flushRoadmapStore();
   const view = render(<HealthTool />);
   await dismiss(view.container);
@@ -332,7 +332,7 @@ it('US-60 AC3a: Cancel, Escape, a click on the backdrop and "I drink" give the f
 });
 
 it('US-60 AC3a: after "I still drink", the line\'s OK keeps the focus while shown and gives it back to Dismiss', async () => {
-  await saveChangedMeasurements({ alcohol: 'drinks' }, {});
+  await saveChangedMeasurements({ alcohol: 'drinks' }, {}, getShownErase());
   await flushRoadmapStore();
   const view = render(<HealthTool />);
   await dismiss(view.container, 'Do you still drink alcohol?');

@@ -17,7 +17,7 @@ import { localDay } from '@roadmap/health-core/merge';
 import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import { toOldShape } from '@roadmap/health-core/blood-tests';
 import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
-import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveScreening } from '../lib/roadmap-data';
+import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveScreening, getShownErase } from '../lib/roadmap-data';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { seedGuest, useHealthToolLifecycle, wait } from '../testing/health-tool-harness';
 
@@ -68,8 +68,8 @@ async function shownWithPsa(view: ReturnType<typeof render>) {
  */
 async function page(psaRows: Array<[number, string]> = []) {
   await seedGuest(MAN, [['hba1c', 40]]);
-  await saveScreening('prostate_discussion', 'will_screen');
-  for (const [value, day] of psaRows) await addMeasurement('psa', value, `${day}T00:00:00.000Z`);
+  await saveScreening('prostate_discussion', 'will_screen', getShownErase());
+  for (const [value, day] of psaRows) await addMeasurement('psa', value, `${day}T00:00:00.000Z`, getShownErase());
   await flushRoadmapStore();
   return shownWithPsa(render(<HealthTool />));
 }

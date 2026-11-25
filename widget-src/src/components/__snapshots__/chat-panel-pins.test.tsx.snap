@@ -1,0 +1,4663 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`US-64 W1-7 pins: ChatEmbed DOM in each state > a connected key (Pages) 1`] = `
+<DocumentFragment>
+  <div
+    class="chat-embed-root no-print"
+    data-clarity-mask="true"
+  >
+    <div
+      class="hr-col-header"
+    >
+      <div
+        class="hr-col-title"
+      >
+        Ask about your plan
+      </div>
+    </div>
+    <div
+      aria-label="Health by Dr Brad Chat"
+      class="chat-embed"
+      role="region"
+    >
+      <div
+        class="chat-embed-drawer "
+      >
+        <div
+          class="chat-embed-drawer-header"
+        >
+          <span
+            class="chat-embed-drawer-title"
+          >
+            Conversations
+          </span>
+          <button
+            aria-label="Close conversations"
+            class="chat-close-btn"
+          >
+            ✕
+          </button>
+        </div>
+        <div
+          class="chat-embed-thread-list"
+        >
+          <span
+            hidden=""
+            id=":id0:delete"
+          >
+            Delete conversation
+          </span>
+          <button
+            class="chat-new-btn"
+          >
+            + New Chat
+          </button>
+          <div
+            class="chat-thread-item active"
+            role="button"
+            tabindex="0"
+          >
+            <span
+              class="chat-thread-title"
+              id=":id0:0"
+            >
+              LDL targets
+            </span>
+            <button
+              aria-labelledby=":id0:delete :id0:0"
+              class="chat-thread-delete"
+              title="Delete conversation"
+            >
+              ✕
+            </button>
+          </div>
+          <div
+            class="chat-thread-item "
+            role="button"
+            tabindex="0"
+          >
+            <span
+              class="chat-thread-title"
+              id=":id0:1"
+            >
+              Vitamin D
+            </span>
+            <button
+              aria-labelledby=":id0:delete :id0:1"
+              class="chat-thread-delete"
+              title="Delete conversation"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      </div>
+      <div
+        class="chat-embed-main"
+      >
+        <div
+          class="chat-embed-main-header"
+        >
+          <button
+            aria-label="Show conversations"
+            class="chat-embed-threads-btn"
+          >
+            <svg
+              aria-hidden="true"
+              focusable="false"
+              height="14"
+              viewBox="0 0 16 16"
+              width="14"
+            >
+              <path
+                d="M2.5 4h11M2.5 8h11M2.5 12h11"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-width="1.6"
+              />
+            </svg>
+            History
+          </button>
+          <div
+            class="chat-header-title-block"
+          >
+            <h3>
+              Discuss your health
+            </h3>
+            <p
+              class="chat-header-sub"
+            >
+              Answers cite your plan & the guidelines above
+            </p>
+          </div>
+        </div>
+        <div
+          class="chat-messages chat-embed-messages"
+        >
+          <div
+            class="chat-message chat-message--user"
+          >
+            <div
+              class="chat-message-content"
+            >
+              What is a good LDL?
+            </div>
+          </div>
+          <div
+            class="chat-message chat-message--assistant"
+          >
+            <div
+              class="chat-message-name"
+            >
+              Brad AI
+            </div>
+            <div
+              class="chat-message-content"
+            >
+              <p>
+                Under 
+                <strong>
+                  1.8
+                </strong>
+                 mmol/L for most people at high risk.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div
+          class="chat-input-bar chat-embed-input-bar"
+        >
+          <div
+            class="chat-input-shell"
+          >
+            <textarea
+              class="chat-input"
+              placeholder="Ask a follow-up…"
+              rows="1"
+            />
+            <button
+              aria-label="Send"
+              class="chat-send-btn"
+              disabled=""
+            >
+              ↑
+            </button>
+          </div>
+          <div
+            class="chat-input-meta"
+          >
+            <span
+              class="chat-doctor-note"
+            >
+              Always discuss with your doctor
+            </span>
+            <button
+              class="chat-key-disconnect"
+              type="button"
+            >
+              Disconnect AI key
+            </button>
+            <span
+              class="chat-char-count"
+            >
+              0/8000
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`US-64 W1-7 pins: ChatEmbed DOM in each state > a conversation that failed to load 1`] = `
+<DocumentFragment>
+  <div
+    class="chat-embed-root no-print"
+    data-clarity-mask="true"
+  >
+    <div
+      class="hr-col-header"
+    >
+      <div
+        class="hr-col-title"
+      >
+        Ask about your plan
+      </div>
+    </div>
+    <div
+      aria-label="Health by Dr Brad Chat"
+      class="chat-embed"
+      role="region"
+    >
+      <div
+        class="chat-embed-drawer "
+      >
+        <div
+          class="chat-embed-drawer-header"
+        >
+          <span
+            class="chat-embed-drawer-title"
+          >
+            Conversations
+          </span>
+          <button
+            aria-label="Close conversations"
+            class="chat-close-btn"
+          >
+            ✕
+          </button>
+        </div>
+        <div
+          class="chat-embed-thread-list"
+        >
+          <span
+            hidden=""
+            id=":id0:delete"
+          >
+            Delete conversation
+          </span>
+          <button
+            class="chat-new-btn"
+          >
+            + New Chat
+          </button>
+          <div
+            class="chat-thread-item active"
+            role="button"
+            tabindex="0"
+          >
+            <span
+              class="chat-thread-title"
+              id=":id0:0"
+            >
+              LDL targets
+            </span>
+            <button
+              aria-labelledby=":id0:delete :id0:0"
+              class="chat-thread-delete"
+              title="Delete conversation"
+            >
+              ✕
+            </button>
+          </div>
+          <div
+            class="chat-thread-item "
+            role="button"
+            tabindex="0"
+          >
+            <span
+              class="chat-thread-title"
+              id=":id0:1"
+            >
+              Vitamin D
+            </span>
+            <button
+              aria-labelledby=":id0:delete :id0:1"
+              class="chat-thread-delete"
+              title="Delete conversation"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      </div>
+      <div
+        class="chat-embed-main"
+      >
+        <div
+          class="chat-embed-main-header"
+        >
+          <button
+            aria-label="Show conversations"
+            class="chat-embed-threads-btn"
+          >
+            <svg
+              aria-hidden="true"
+              focusable="false"
+              height="14"
+              viewBox="0 0 16 16"
+              width="14"
+            >
+              <path
+                d="M2.5 4h11M2.5 8h11M2.5 12h11"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-width="1.6"
+              />
+            </svg>
+            History
+          </button>
+          <div
+            class="chat-header-title-block"
+          >
+            <h3>
+              Discuss your health
+            </h3>
+            <p
+              class="chat-header-sub"
+            >
+              Answers cite your plan & the guidelines above
+            </p>
+          </div>
+        </div>
+        <div
+          class="chat-messages chat-embed-messages"
+        >
+          <p
+            class="chat-load-line"
+            role="status"
+          >
+            Waiting for your other reply…
+          </p>
+          <div
+            class="chat-load-line"
+            role="alert"
+          >
+            <p>
+              Couldn't open this conversation.
+            </p>
+            <div
+              class="chat-load-actions"
+            >
+              <button
+                class="chat-new-btn"
+                type="button"
+              >
+                Try again
+              </button>
+              <button
+                class="chat-new-btn"
+                type="button"
+              >
+                + New Chat
+              </button>
+            </div>
+          </div>
+        </div>
+        <div
+          class="chat-input-bar chat-embed-input-bar"
+        >
+          <div
+            class="chat-input-shell"
+          >
+            <textarea
+              class="chat-input"
+              disabled=""
+              placeholder="Ask a question"
+              rows="1"
+            />
+            <button
+              aria-label="Send"
+              class="chat-send-btn"
+              disabled=""
+            >
+              ↑
+            </button>
+          </div>
+          <div
+            class="chat-input-meta"
+          >
+            <span
+              class="chat-doctor-note"
+            >
+              Always discuss with your doctor
+            </span>
+            <span
+              class="chat-char-count"
+            >
+              0/8000
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`US-64 W1-7 pins: ChatEmbed DOM in each state > a subscription change card 1`] = `
+<DocumentFragment>
+  <div
+    class="chat-embed-root no-print"
+    data-clarity-mask="true"
+  >
+    <div
+      class="hr-col-header"
+    >
+      <div
+        class="hr-col-title"
+      >
+        Ask about your plan
+      </div>
+    </div>
+    <div
+      aria-label="Health by Dr Brad Chat"
+      class="chat-embed"
+      role="region"
+    >
+      <div
+        class="chat-embed-drawer "
+      >
+        <div
+          class="chat-embed-drawer-header"
+        >
+          <span
+            class="chat-embed-drawer-title"
+          >
+            Conversations
+          </span>
+          <button
+            aria-label="Close conversations"
+            class="chat-close-btn"
+          >
+            ✕
+          </button>
+        </div>
+        <div
+          class="chat-embed-thread-list"
+        >
+          <span
+            hidden=""
+            id=":id0:delete"
+          >
+            Delete conversation
+          </span>
+          <button
+            class="chat-new-btn"
+          >
+            + New Chat
+          </button>
+          <div
+            class="chat-thread-item active"
+            role="button"
+            tabindex="0"
+          >
+            <span
+              class="chat-thread-title"
+              id=":id0:0"
+            >
+              LDL targets
+            </span>
+            <button
+              aria-labelledby=":id0:delete :id0:0"
+              class="chat-thread-delete"
+              title="Delete conversation"
+            >
+              ✕
+            </button>
+          </div>
+          <div
+            class="chat-thread-item "
+            role="button"
+            tabindex="0"
+          >
+            <span
+              class="chat-thread-title"
+              id=":id0:1"
+            >
+              Vitamin D
+            </span>
+            <button
+              aria-labelledby=":id0:delete :id0:1"
+              class="chat-thread-delete"
+              title="Delete conversation"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      </div>
+      <div
+        class="chat-embed-main"
+      >
+        <div
+          class="chat-embed-main-header"
+        >
+          <button
+            aria-label="Show conversations"
+            class="chat-embed-threads-btn"
+          >
+            <svg
+              aria-hidden="true"
+              focusable="false"
+              height="14"
+              viewBox="0 0 16 16"
+              width="14"
+            >
+              <path
+                d="M2.5 4h11M2.5 8h11M2.5 12h11"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-width="1.6"
+              />
+            </svg>
+            History
+          </button>
+          <div
+            class="chat-header-title-block"
+          >
+            <h3>
+              Discuss your health
+            </h3>
+            <p
+              class="chat-header-sub"
+            >
+              Answers cite your plan & the guidelines above
+            </p>
+          </div>
+        </div>
+        <div
+          class="chat-messages chat-embed-messages"
+        >
+          <div
+            class="chat-message chat-message--user"
+          >
+            <div
+              class="chat-message-content"
+            >
+              What is a good LDL?
+            </div>
+          </div>
+          <div
+            class="chat-message chat-message--assistant"
+          >
+            <div
+              class="chat-message-name"
+            >
+              Brad AI
+            </div>
+            <div
+              class="chat-message-content"
+            >
+              <p>
+                Under 
+                <strong>
+                  1.8
+                </strong>
+                 mmol/L for most people at high risk.
+              </p>
+            </div>
+          </div>
+          <div
+            aria-label="Pause this subscription?"
+            class="chat-sub-card"
+            role="group"
+          >
+            <p
+              class="chat-sub-card-title"
+            >
+              Pause this subscription?
+            </p>
+            <p
+              class="chat-sub-card-line"
+            >
+              Omega-3, every 30 days
+            </p>
+            <p
+              class="chat-sub-card-line"
+            >
+              Next order: 2026-12-01
+            </p>
+            <div
+              class="chat-sub-card-buttons"
+            >
+              <button
+                class="chat-sub-card-confirm"
+                type="button"
+              >
+                Confirm
+              </button>
+              <button
+                class="chat-sub-card-dismiss"
+                type="button"
+              >
+                Not now
+              </button>
+            </div>
+          </div>
+        </div>
+        <div
+          class="chat-input-bar chat-embed-input-bar"
+        >
+          <div
+            class="chat-input-shell"
+          >
+            <textarea
+              class="chat-input"
+              placeholder="Ask a follow-up…"
+              rows="1"
+            />
+            <button
+              aria-label="Send"
+              class="chat-send-btn"
+              disabled=""
+            >
+              ↑
+            </button>
+          </div>
+          <div
+            class="chat-input-meta"
+          >
+            <span
+              class="chat-doctor-note"
+            >
+              Always discuss with your doctor
+            </span>
+            <span
+              class="chat-char-count"
+            >
+              0/8000
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`US-64 W1-7 pins: ChatEmbed DOM in each state > a thread with an answer 1`] = `
+<DocumentFragment>
+  <div
+    class="chat-embed-root no-print"
+    data-clarity-mask="true"
+  >
+    <div
+      class="hr-col-header"
+    >
+      <div
+        class="hr-col-title"
+      >
+        Ask about your plan
+      </div>
+    </div>
+    <div
+      aria-label="Health by Dr Brad Chat"
+      class="chat-embed"
+      role="region"
+    >
+      <div
+        class="chat-embed-drawer "
+      >
+        <div
+          class="chat-embed-drawer-header"
+        >
+          <span
+            class="chat-embed-drawer-title"
+          >
+            Conversations
+          </span>
+          <button
+            aria-label="Close conversations"
+            class="chat-close-btn"
+          >
+            ✕
+          </button>
+        </div>
+        <div
+          class="chat-embed-thread-list"
+        >
+          <span
+            hidden=""
+            id=":id0:delete"
+          >
+            Delete conversation
+          </span>
+          <button
+            class="chat-new-btn"
+          >
+            + New Chat
+          </button>
+          <div
+            class="chat-thread-item active"
+            role="button"
+            tabindex="0"
+          >
+            <span
+              class="chat-thread-title"
+              id=":id0:0"
+            >
+              LDL targets
+            </span>
+            <button
+              aria-labelledby=":id0:delete :id0:0"
+              class="chat-thread-delete"
+              title="Delete conversation"
+            >
+              ✕
+            </button>
+          </div>
+          <div
+            class="chat-thread-item "
+            role="button"
+            tabindex="0"
+          >
+            <span
+              class="chat-thread-title"
+              id=":id0:1"
+            >
+              Vitamin D
+            </span>
+            <button
+              aria-labelledby=":id0:delete :id0:1"
+              class="chat-thread-delete"
+              title="Delete conversation"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      </div>
+      <div
+        class="chat-embed-main"
+      >
+        <div
+          class="chat-embed-main-header"
+        >
+          <button
+            aria-label="Show conversations"
+            class="chat-embed-threads-btn"
+          >
+            <svg
+              aria-hidden="true"
+              focusable="false"
+              height="14"
+              viewBox="0 0 16 16"
+              width="14"
+            >
+              <path
+                d="M2.5 4h11M2.5 8h11M2.5 12h11"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-width="1.6"
+              />
+            </svg>
+            History
+          </button>
+          <div
+            class="chat-header-title-block"
+          >
+            <h3>
+              Discuss your health
+            </h3>
+            <p
+              class="chat-header-sub"
+            >
+              Answers cite your plan & the guidelines above
+            </p>
+          </div>
+        </div>
+        <div
+          class="chat-messages chat-embed-messages"
+        >
+          <div
+            class="chat-message chat-message--user"
+          >
+            <div
+              class="chat-message-content"
+            >
+              What is a good LDL?
+            </div>
+          </div>
+          <div
+            class="chat-message chat-message--assistant"
+          >
+            <div
+              class="chat-message-name"
+            >
+              Brad AI
+            </div>
+            <details
+              class="chat-thinking-toggle"
+            >
+              <summary>
+                Show how I approached this
+              </summary>
+              <p
+                class="chat-sources"
+              >
+                Articles read: LDL
+              </p>
+              <p
+                class="chat-thinking-summary"
+              >
+                Weighed the guideline
+              </p>
+            </details>
+            <div
+              class="chat-message-content"
+            >
+              <p>
+                Under 
+                <strong>
+                  1.8
+                </strong>
+                 mmol/L for most people at high risk.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div
+          class="chat-input-bar chat-embed-input-bar"
+        >
+          <div
+            class="chat-input-shell"
+          >
+            <textarea
+              class="chat-input"
+              placeholder="Ask a follow-up…"
+              rows="1"
+            >
+              and HDL?
+            </textarea>
+            <button
+              aria-label="Send"
+              class="chat-send-btn"
+            >
+              ↑
+            </button>
+          </div>
+          <div
+            class="chat-input-meta"
+          >
+            <span
+              class="chat-doctor-note"
+            >
+              Always discuss with your doctor
+            </span>
+            <span
+              class="chat-char-count"
+            >
+              8/8000
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`US-64 W1-7 pins: ChatEmbed DOM in each state > an error 1`] = `
+<DocumentFragment>
+  <div
+    class="chat-embed-root no-print"
+    data-clarity-mask="true"
+  >
+    <div
+      class="hr-col-header"
+    >
+      <div
+        class="hr-col-title"
+      >
+        Ask about your plan
+      </div>
+    </div>
+    <div
+      aria-label="Health by Dr Brad Chat"
+      class="chat-embed"
+      role="region"
+    >
+      <div
+        class="chat-embed-drawer "
+      >
+        <div
+          class="chat-embed-drawer-header"
+        >
+          <span
+            class="chat-embed-drawer-title"
+          >
+            Conversations
+          </span>
+          <button
+            aria-label="Close conversations"
+            class="chat-close-btn"
+          >
+            ✕
+          </button>
+        </div>
+        <div
+          class="chat-embed-thread-list"
+        >
+          <span
+            hidden=""
+            id=":id0:delete"
+          >
+            Delete conversation
+          </span>
+          <button
+            class="chat-new-btn"
+          >
+            + New Chat
+          </button>
+          <div
+            class="chat-thread-item active"
+            role="button"
+            tabindex="0"
+          >
+            <span
+              class="chat-thread-title"
+              id=":id0:0"
+            >
+              LDL targets
+            </span>
+            <button
+              aria-labelledby=":id0:delete :id0:0"
+              class="chat-thread-delete"
+              title="Delete conversation"
+            >
+              ✕
+            </button>
+          </div>
+          <div
+            class="chat-thread-item "
+            role="button"
+            tabindex="0"
+          >
+            <span
+              class="chat-thread-title"
+              id=":id0:1"
+            >
+              Vitamin D
+            </span>
+            <button
+              aria-labelledby=":id0:delete :id0:1"
+              class="chat-thread-delete"
+              title="Delete conversation"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      </div>
+      <div
+        class="chat-embed-main"
+      >
+        <div
+          class="chat-embed-main-header"
+        >
+          <button
+            aria-label="Show conversations"
+            class="chat-embed-threads-btn"
+          >
+            <svg
+              aria-hidden="true"
+              focusable="false"
+              height="14"
+              viewBox="0 0 16 16"
+              width="14"
+            >
+              <path
+                d="M2.5 4h11M2.5 8h11M2.5 12h11"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-width="1.6"
+              />
+            </svg>
+            History
+          </button>
+          <div
+            class="chat-header-title-block"
+          >
+            <h3>
+              Discuss your health
+            </h3>
+            <p
+              class="chat-header-sub"
+            >
+              Answers cite your plan & the guidelines above
+            </p>
+          </div>
+        </div>
+        <div
+          class="chat-messages chat-embed-messages"
+        >
+          <div
+            class="chat-message chat-message--user"
+          >
+            <div
+              class="chat-message-content"
+            >
+              What is a good LDL?
+            </div>
+          </div>
+          <div
+            class="chat-error"
+            role="alert"
+          >
+            Something went wrong. Please try again.
+          </div>
+        </div>
+        <div
+          class="chat-input-bar chat-embed-input-bar"
+        >
+          <div
+            class="chat-input-shell"
+          >
+            <textarea
+              class="chat-input"
+              placeholder="Ask a follow-up…"
+              rows="1"
+            />
+            <button
+              aria-label="Send"
+              class="chat-send-btn"
+              disabled=""
+            >
+              ↑
+            </button>
+          </div>
+          <div
+            class="chat-input-meta"
+          >
+            <span
+              class="chat-doctor-note"
+            >
+              Always discuss with your doctor
+            </span>
+            <span
+              class="chat-char-count"
+            >
+              0/8000
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`US-64 W1-7 pins: ChatEmbed DOM in each state > another tab is replying 1`] = `
+<DocumentFragment>
+  <div
+    class="chat-embed-root no-print"
+    data-clarity-mask="true"
+  >
+    <div
+      class="hr-col-header"
+    >
+      <div
+        class="hr-col-title"
+      >
+        Ask about your plan
+      </div>
+    </div>
+    <div
+      aria-label="Health by Dr Brad Chat"
+      class="chat-embed"
+      role="region"
+    >
+      <div
+        class="chat-embed-drawer "
+      >
+        <div
+          class="chat-embed-drawer-header"
+        >
+          <span
+            class="chat-embed-drawer-title"
+          >
+            Conversations
+          </span>
+          <button
+            aria-label="Close conversations"
+            class="chat-close-btn"
+          >
+            ✕
+          </button>
+        </div>
+        <div
+          class="chat-embed-thread-list"
+        >
+          <span
+            hidden=""
+            id=":id0:delete"
+          >
+            Delete conversation
+          </span>
+          <button
+            class="chat-new-btn"
+          >
+            + New Chat
+          </button>
+          <div
+            class="chat-thread-item active"
+            role="button"
+            tabindex="0"
+          >
+            <span
+              class="chat-thread-title"
+              id=":id0:0"
+            >
+              LDL targets
+            </span>
+            <button
+              aria-labelledby=":id0:delete :id0:0"
+              class="chat-thread-delete"
+              title="Delete conversation"
+            >
+              ✕
+            </button>
+          </div>
+          <div
+            class="chat-thread-item "
+            role="button"
+            tabindex="0"
+          >
+            <span
+              class="chat-thread-title"
+              id=":id0:1"
+            >
+              Vitamin D
+            </span>
+            <button
+              aria-labelledby=":id0:delete :id0:1"
+              class="chat-thread-delete"
+              title="Delete conversation"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      </div>
+      <div
+        class="chat-embed-main"
+      >
+        <div
+          class="chat-embed-main-header"
+        >
+          <button
+            aria-label="Show conversations"
+            class="chat-embed-threads-btn"
+          >
+            <svg
+              aria-hidden="true"
+              focusable="false"
+              height="14"
+              viewBox="0 0 16 16"
+              width="14"
+            >
+              <path
+                d="M2.5 4h11M2.5 8h11M2.5 12h11"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-width="1.6"
+              />
+            </svg>
+            History
+          </button>
+          <div
+            class="chat-header-title-block"
+          >
+            <h3>
+              Discuss your health
+            </h3>
+            <p
+              class="chat-header-sub"
+            >
+              Answers cite your plan & the guidelines above
+            </p>
+          </div>
+        </div>
+        <div
+          class="chat-messages chat-embed-messages"
+        >
+          <div
+            class="chat-message chat-message--user"
+          >
+            <div
+              class="chat-message-content"
+            >
+              What is a good LDL?
+            </div>
+          </div>
+          <div
+            class="chat-message chat-message--assistant"
+          >
+            <div
+              class="chat-loading"
+            >
+              <span
+                class="chat-thinking-dots"
+              />
+            </div>
+          </div>
+        </div>
+        <div
+          class="chat-input-bar chat-embed-input-bar"
+        >
+          <div
+            class="chat-input-shell"
+          >
+            <textarea
+              class="chat-input"
+              disabled=""
+              placeholder="Ask a follow-up…"
+              rows="1"
+            />
+            <button
+              aria-label="Send"
+              class="chat-send-btn"
+              disabled=""
+            >
+              ↑
+            </button>
+          </div>
+          <div
+            class="chat-input-meta"
+          >
+            <span
+              class="chat-doctor-note"
+            >
+              Always discuss with your doctor
+            </span>
+            <span
+              class="chat-char-count"
+            >
+              0/8000
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`US-64 W1-7 pins: ChatEmbed DOM in each state > empty 1`] = `
+<DocumentFragment>
+  <div
+    class="chat-embed-root no-print"
+    data-clarity-mask="true"
+  >
+    <div
+      class="hr-col-header"
+    >
+      <div
+        class="hr-col-title"
+      >
+        Ask about your plan
+      </div>
+    </div>
+    <div
+      aria-label="Health by Dr Brad Chat"
+      class="chat-embed"
+      role="region"
+    >
+      <div
+        class="chat-embed-drawer "
+      >
+        <div
+          class="chat-embed-drawer-header"
+        >
+          <span
+            class="chat-embed-drawer-title"
+          >
+            Conversations
+          </span>
+          <button
+            aria-label="Close conversations"
+            class="chat-close-btn"
+          >
+            ✕
+          </button>
+        </div>
+        <div
+          class="chat-embed-thread-list"
+        >
+          <span
+            hidden=""
+            id=":id0:delete"
+          >
+            Delete conversation
+          </span>
+          <button
+            class="chat-new-btn"
+          >
+            + New Chat
+          </button>
+          <div
+            class="chat-thread-item active"
+            role="button"
+            tabindex="0"
+          >
+            <span
+              class="chat-thread-title"
+              id=":id0:0"
+            >
+              LDL targets
+            </span>
+            <button
+              aria-labelledby=":id0:delete :id0:0"
+              class="chat-thread-delete"
+              title="Delete conversation"
+            >
+              ✕
+            </button>
+          </div>
+          <div
+            class="chat-thread-item "
+            role="button"
+            tabindex="0"
+          >
+            <span
+              class="chat-thread-title"
+              id=":id0:1"
+            >
+              Vitamin D
+            </span>
+            <button
+              aria-labelledby=":id0:delete :id0:1"
+              class="chat-thread-delete"
+              title="Delete conversation"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      </div>
+      <div
+        class="chat-embed-main"
+      >
+        <div
+          class="chat-embed-main-header"
+        >
+          <button
+            aria-label="Show conversations"
+            class="chat-embed-threads-btn"
+          >
+            <svg
+              aria-hidden="true"
+              focusable="false"
+              height="14"
+              viewBox="0 0 16 16"
+              width="14"
+            >
+              <path
+                d="M2.5 4h11M2.5 8h11M2.5 12h11"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-width="1.6"
+              />
+            </svg>
+            History
+          </button>
+          <div
+            class="chat-header-title-block"
+          >
+            <h3>
+              Discuss your health
+            </h3>
+            <p
+              class="chat-header-sub"
+            >
+              Answers cite your plan & the guidelines above
+            </p>
+          </div>
+        </div>
+        <div
+          class="chat-messages chat-embed-messages"
+        >
+          <div
+            class="chat-empty"
+          >
+            <p>
+              Ask about your personalized suggestions based on your health data, clinical research, and the preventative care algorithm.
+            </p>
+          </div>
+        </div>
+        <div
+          class="chat-input-bar chat-embed-input-bar"
+        >
+          <div
+            class="chat-input-shell"
+          >
+            <textarea
+              class="chat-input"
+              placeholder="Ask a question"
+              rows="1"
+            />
+            <button
+              aria-label="Send"
+              class="chat-send-btn"
+              disabled=""
+            >
+              ↑
+            </button>
+          </div>
+          <div
+            class="chat-input-meta"
+          >
+            <span
+              class="chat-doctor-note"
+            >
+              Always discuss with your doctor
+            </span>
+            <span
+              class="chat-char-count"
+            >
+              0/8000
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`US-64 W1-7 pins: ChatEmbed DOM in each state > history open 1`] = `
+<DocumentFragment>
+  <div
+    class="chat-embed-root no-print"
+    data-clarity-mask="true"
+  >
+    <div
+      class="hr-col-header"
+    >
+      <div
+        class="hr-col-title"
+      >
+        Ask about your plan
+      </div>
+    </div>
+    <div
+      aria-label="Health by Dr Brad Chat"
+      class="chat-embed"
+      role="region"
+    >
+      <div
+        class="chat-embed-drawer-overlay"
+      />
+      <div
+        class="chat-embed-drawer chat-embed-drawer--open"
+      >
+        <div
+          class="chat-embed-drawer-header"
+        >
+          <span
+            class="chat-embed-drawer-title"
+          >
+            Conversations
+          </span>
+          <button
+            aria-label="Close conversations"
+            class="chat-close-btn"
+          >
+            ✕
+          </button>
+        </div>
+        <div
+          class="chat-embed-thread-list"
+        >
+          <span
+            hidden=""
+            id=":id0:delete"
+          >
+            Delete conversation
+          </span>
+          <button
+            class="chat-new-btn"
+          >
+            + New Chat
+          </button>
+          <div
+            class="chat-thread-item active"
+            role="button"
+            tabindex="0"
+          >
+            <span
+              class="chat-thread-title"
+              id=":id0:0"
+            >
+              LDL targets
+            </span>
+            <button
+              aria-labelledby=":id0:delete :id0:0"
+              class="chat-thread-delete"
+              title="Delete conversation"
+            >
+              ✕
+            </button>
+          </div>
+          <div
+            class="chat-thread-item "
+            role="button"
+            tabindex="0"
+          >
+            <span
+              class="chat-thread-title"
+              id=":id0:1"
+            >
+              Vitamin D
+            </span>
+            <button
+              aria-labelledby=":id0:delete :id0:1"
+              class="chat-thread-delete"
+              title="Delete conversation"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      </div>
+      <div
+        class="chat-embed-main"
+      >
+        <div
+          class="chat-embed-main-header"
+        >
+          <button
+            aria-label="Show conversations"
+            class="chat-embed-threads-btn"
+          >
+            <svg
+              aria-hidden="true"
+              focusable="false"
+              height="14"
+              viewBox="0 0 16 16"
+              width="14"
+            >
+              <path
+                d="M2.5 4h11M2.5 8h11M2.5 12h11"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-width="1.6"
+              />
+            </svg>
+            History
+          </button>
+          <div
+            class="chat-header-title-block"
+          >
+            <h3>
+              Discuss your health
+            </h3>
+            <p
+              class="chat-header-sub"
+            >
+              Answers cite your plan & the guidelines above
+            </p>
+          </div>
+        </div>
+        <div
+          class="chat-messages chat-embed-messages"
+        >
+          <div
+            class="chat-message chat-message--user"
+          >
+            <div
+              class="chat-message-content"
+            >
+              What is a good LDL?
+            </div>
+          </div>
+          <div
+            class="chat-message chat-message--assistant"
+          >
+            <div
+              class="chat-message-name"
+            >
+              Brad AI
+            </div>
+            <div
+              class="chat-message-content"
+            >
+              <p>
+                Under 
+                <strong>
+                  1.8
+                </strong>
+                 mmol/L for most people at high risk.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div
+          class="chat-input-bar chat-embed-input-bar"
+        >
+          <div
+            class="chat-input-shell"
+          >
+            <textarea
+              class="chat-input"
+              placeholder="Ask a follow-up…"
+              rows="1"
+            />
+            <button
+              aria-label="Send"
+              class="chat-send-btn"
+              disabled=""
+            >
+              ↑
+            </button>
+          </div>
+          <div
+            class="chat-input-meta"
+          >
+            <span
+              class="chat-doctor-note"
+            >
+              Always discuss with your doctor
+            </span>
+            <span
+              class="chat-char-count"
+            >
+              0/8000
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`US-64 W1-7 pins: ChatEmbed DOM in each state > loading a conversation 1`] = `
+<DocumentFragment>
+  <div
+    class="chat-embed-root no-print"
+    data-clarity-mask="true"
+  >
+    <div
+      class="hr-col-header"
+    >
+      <div
+        class="hr-col-title"
+      >
+        Ask about your plan
+      </div>
+    </div>
+    <div
+      aria-label="Health by Dr Brad Chat"
+      class="chat-embed"
+      role="region"
+    >
+      <div
+        class="chat-embed-drawer "
+      >
+        <div
+          class="chat-embed-drawer-header"
+        >
+          <span
+            class="chat-embed-drawer-title"
+          >
+            Conversations
+          </span>
+          <button
+            aria-label="Close conversations"
+            class="chat-close-btn"
+          >
+            ✕
+          </button>
+        </div>
+        <div
+          class="chat-embed-thread-list"
+        >
+          <span
+            hidden=""
+            id=":id0:delete"
+          >
+            Delete conversation
+          </span>
+          <button
+            class="chat-new-btn"
+          >
+            + New Chat
+          </button>
+          <div
+            class="chat-thread-item active"
+            role="button"
+            tabindex="0"
+          >
+            <span
+              class="chat-thread-title"
+              id=":id0:0"
+            >
+              LDL targets
+            </span>
+            <button
+              aria-labelledby=":id0:delete :id0:0"
+              class="chat-thread-delete"
+              title="Delete conversation"
+            >
+              ✕
+            </button>
+          </div>
+          <div
+            class="chat-thread-item "
+            role="button"
+            tabindex="0"
+          >
+            <span
+              class="chat-thread-title"
+              id=":id0:1"
+            >
+              Vitamin D
+            </span>
+            <button
+              aria-labelledby=":id0:delete :id0:1"
+              class="chat-thread-delete"
+              title="Delete conversation"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      </div>
+      <div
+        class="chat-embed-main"
+      >
+        <div
+          class="chat-embed-main-header"
+        >
+          <button
+            aria-label="Show conversations"
+            class="chat-embed-threads-btn"
+          >
+            <svg
+              aria-hidden="true"
+              focusable="false"
+              height="14"
+              viewBox="0 0 16 16"
+              width="14"
+            >
+              <path
+                d="M2.5 4h11M2.5 8h11M2.5 12h11"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-width="1.6"
+              />
+            </svg>
+            History
+          </button>
+          <div
+            class="chat-header-title-block"
+          >
+            <h3>
+              Discuss your health
+            </h3>
+            <p
+              class="chat-header-sub"
+            >
+              Answers cite your plan & the guidelines above
+            </p>
+          </div>
+        </div>
+        <div
+          class="chat-messages chat-embed-messages"
+        >
+          <p
+            class="chat-load-line"
+            role="status"
+          >
+            Loading conversation…
+          </p>
+        </div>
+        <div
+          class="chat-input-bar chat-embed-input-bar"
+        >
+          <div
+            class="chat-input-shell"
+          >
+            <textarea
+              class="chat-input"
+              disabled=""
+              placeholder="Ask a question"
+              rows="1"
+            />
+            <button
+              aria-label="Send"
+              class="chat-send-btn"
+              disabled=""
+            >
+              ↑
+            </button>
+          </div>
+          <div
+            class="chat-input-meta"
+          >
+            <span
+              class="chat-doctor-note"
+            >
+              Always discuss with your doctor
+            </span>
+            <span
+              class="chat-char-count"
+            >
+              0/8000
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`US-64 W1-7 pins: ChatEmbed DOM in each state > muted (before the onboarding is done) 1`] = `
+<DocumentFragment>
+  <div
+    class="chat-embed-root no-print"
+    data-clarity-mask="true"
+  >
+    <div
+      class="hr-col-header hr-col-header--muted"
+    >
+      <div
+        class="hr-col-title"
+      >
+        Ask about your plan
+      </div>
+    </div>
+    <div
+      aria-label="Health by Dr Brad Chat"
+      class="chat-embed"
+      role="region"
+    >
+      <div
+        class="chat-embed-drawer "
+      >
+        <div
+          class="chat-embed-drawer-header"
+        >
+          <span
+            class="chat-embed-drawer-title"
+          >
+            Conversations
+          </span>
+          <button
+            aria-label="Close conversations"
+            class="chat-close-btn"
+          >
+            ✕
+          </button>
+        </div>
+        <div
+          class="chat-embed-thread-list"
+        >
+          <span
+            hidden=""
+            id=":id0:delete"
+          >
+            Delete conversation
+          </span>
+          <button
+            class="chat-new-btn"
+          >
+            + New Chat
+          </button>
+          <div
+            class="chat-thread-item active"
+            role="button"
+            tabindex="0"
+          >
+            <span
+              class="chat-thread-title"
+              id=":id0:0"
+            >
+              LDL targets
+            </span>
+            <button
+              aria-labelledby=":id0:delete :id0:0"
+              class="chat-thread-delete"
+              title="Delete conversation"
+            >
+              ✕
+            </button>
+          </div>
+          <div
+            class="chat-thread-item "
+            role="button"
+            tabindex="0"
+          >
+            <span
+              class="chat-thread-title"
+              id=":id0:1"
+            >
+              Vitamin D
+            </span>
+            <button
+              aria-labelledby=":id0:delete :id0:1"
+              class="chat-thread-delete"
+              title="Delete conversation"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      </div>
+      <div
+        class="chat-embed-main"
+      >
+        <div
+          class="chat-embed-main-header"
+        >
+          <button
+            aria-label="Show conversations"
+            class="chat-embed-threads-btn"
+          >
+            <svg
+              aria-hidden="true"
+              focusable="false"
+              height="14"
+              viewBox="0 0 16 16"
+              width="14"
+            >
+              <path
+                d="M2.5 4h11M2.5 8h11M2.5 12h11"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-width="1.6"
+              />
+            </svg>
+            History
+          </button>
+          <div
+            class="chat-header-title-block"
+          >
+            <h3>
+              Discuss your health
+            </h3>
+            <p
+              class="chat-header-sub"
+            >
+              Ask anything about preventative care
+            </p>
+          </div>
+        </div>
+        <div
+          class="chat-messages chat-embed-messages"
+        >
+          <div
+            class="chat-empty"
+          >
+            <p>
+              Fill in your details and the answers will be tailored to your numbers.
+            </p>
+          </div>
+        </div>
+        <div
+          class="chat-input-bar chat-embed-input-bar"
+        >
+          <div
+            class="chat-input-shell"
+          >
+            <textarea
+              class="chat-input"
+              placeholder="Ask a question"
+              rows="1"
+            />
+            <button
+              aria-label="Send"
+              class="chat-send-btn"
+              disabled=""
+            >
+              ↑
+            </button>
+          </div>
+          <div
+            class="chat-input-meta"
+          >
+            <span
+              class="chat-doctor-note"
+            >
+              Always discuss with your doctor
+            </span>
+            <span
+              class="chat-char-count"
+            >
+              0/8000
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`US-64 W1-7 pins: ChatEmbed DOM in each state > offline 1`] = `
+<DocumentFragment>
+  <div
+    class="chat-embed-root no-print"
+    data-clarity-mask="true"
+  >
+    <div
+      class="hr-col-header"
+    >
+      <div
+        class="hr-col-title"
+      >
+        Ask about your plan
+      </div>
+    </div>
+    <div
+      aria-label="Health by Dr Brad Chat"
+      class="chat-embed"
+      role="region"
+    >
+      <div
+        class="chat-embed-drawer "
+      >
+        <div
+          class="chat-embed-drawer-header"
+        >
+          <span
+            class="chat-embed-drawer-title"
+          >
+            Conversations
+          </span>
+          <button
+            aria-label="Close conversations"
+            class="chat-close-btn"
+          >
+            ✕
+          </button>
+        </div>
+        <div
+          class="chat-embed-thread-list"
+        >
+          <span
+            hidden=""
+            id=":id0:delete"
+          >
+            Delete conversation
+          </span>
+          <button
+            class="chat-new-btn"
+          >
+            + New Chat
+          </button>
+          <div
+            class="chat-thread-item active"
+            role="button"
+            tabindex="0"
+          >
+            <span
+              class="chat-thread-title"
+              id=":id0:0"
+            >
+              LDL targets
+            </span>
+            <button
+              aria-labelledby=":id0:delete :id0:0"
+              class="chat-thread-delete"
+              title="Delete conversation"
+            >
+              ✕
+            </button>
+          </div>
+          <div
+            class="chat-thread-item "
+            role="button"
+            tabindex="0"
+          >
+            <span
+              class="chat-thread-title"
+              id=":id0:1"
+            >
+              Vitamin D
+            </span>
+            <button
+              aria-labelledby=":id0:delete :id0:1"
+              class="chat-thread-delete"
+              title="Delete conversation"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      </div>
+      <div
+        class="chat-embed-main"
+      >
+        <div
+          class="chat-embed-main-header"
+        >
+          <button
+            aria-label="Show conversations"
+            class="chat-embed-threads-btn"
+          >
+            <svg
+              aria-hidden="true"
+              focusable="false"
+              height="14"
+              viewBox="0 0 16 16"
+              width="14"
+            >
+              <path
+                d="M2.5 4h11M2.5 8h11M2.5 12h11"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-width="1.6"
+              />
+            </svg>
+            History
+          </button>
+          <div
+            class="chat-header-title-block"
+          >
+            <h3>
+              Discuss your health
+            </h3>
+            <p
+              class="chat-header-sub"
+            >
+              Answers cite your plan & the guidelines above
+            </p>
+          </div>
+        </div>
+        <div
+          class="chat-messages chat-embed-messages"
+        >
+          <div
+            class="chat-empty"
+          >
+            <p>
+              Ask about your personalized suggestions based on your health data, clinical research, and the preventative care algorithm.
+            </p>
+          </div>
+        </div>
+        <div
+          class="chat-input-bar chat-embed-input-bar"
+        >
+          <div
+            class="chat-offline"
+          >
+            You're offline
+          </div>
+          <div
+            class="chat-input-shell"
+          >
+            <textarea
+              class="chat-input"
+              placeholder="Ask a question"
+              rows="1"
+            />
+            <button
+              aria-label="Send"
+              class="chat-send-btn"
+              disabled=""
+            >
+              ↑
+            </button>
+          </div>
+          <div
+            class="chat-input-meta"
+          >
+            <span
+              class="chat-doctor-note"
+            >
+              Always discuss with your doctor
+            </span>
+            <span
+              class="chat-char-count"
+            >
+              0/8000
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`US-64 W1-7 pins: ChatEmbed DOM in each state > streaming the answer 1`] = `
+<DocumentFragment>
+  <div
+    class="chat-embed-root no-print"
+    data-clarity-mask="true"
+  >
+    <div
+      class="hr-col-header"
+    >
+      <div
+        class="hr-col-title"
+      >
+        Ask about your plan
+      </div>
+    </div>
+    <div
+      aria-label="Health by Dr Brad Chat"
+      class="chat-embed"
+      role="region"
+    >
+      <div
+        class="chat-embed-drawer "
+      >
+        <div
+          class="chat-embed-drawer-header"
+        >
+          <span
+            class="chat-embed-drawer-title"
+          >
+            Conversations
+          </span>
+          <button
+            aria-label="Close conversations"
+            class="chat-close-btn"
+          >
+            ✕
+          </button>
+        </div>
+        <div
+          class="chat-embed-thread-list"
+        >
+          <span
+            hidden=""
+            id=":id0:delete"
+          >
+            Delete conversation
+          </span>
+          <button
+            class="chat-new-btn"
+          >
+            + New Chat
+          </button>
+          <div
+            class="chat-thread-item active"
+            role="button"
+            tabindex="0"
+          >
+            <span
+              class="chat-thread-title"
+              id=":id0:0"
+            >
+              LDL targets
+            </span>
+            <button
+              aria-labelledby=":id0:delete :id0:0"
+              class="chat-thread-delete"
+              title="Delete conversation"
+            >
+              ✕
+            </button>
+          </div>
+          <div
+            class="chat-thread-item "
+            role="button"
+            tabindex="0"
+          >
+            <span
+              class="chat-thread-title"
+              id=":id0:1"
+            >
+              Vitamin D
+            </span>
+            <button
+              aria-labelledby=":id0:delete :id0:1"
+              class="chat-thread-delete"
+              title="Delete conversation"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      </div>
+      <div
+        class="chat-embed-main"
+      >
+        <div
+          class="chat-embed-main-header"
+        >
+          <button
+            aria-label="Show conversations"
+            class="chat-embed-threads-btn"
+          >
+            <svg
+              aria-hidden="true"
+              focusable="false"
+              height="14"
+              viewBox="0 0 16 16"
+              width="14"
+            >
+              <path
+                d="M2.5 4h11M2.5 8h11M2.5 12h11"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-width="1.6"
+              />
+            </svg>
+            History
+          </button>
+          <div
+            class="chat-header-title-block"
+          >
+            <h3>
+              Discuss your health
+            </h3>
+            <p
+              class="chat-header-sub"
+            >
+              Answers cite your plan & the guidelines above
+            </p>
+          </div>
+        </div>
+        <div
+          class="chat-messages chat-embed-messages"
+        >
+          <div
+            class="chat-message chat-message--user"
+          >
+            <div
+              class="chat-message-content"
+            >
+              What is a good LDL?
+            </div>
+          </div>
+          <p
+            aria-live="polite"
+            class="chat-pending-status"
+          >
+            Answering…
+          </p>
+          <div
+            class="chat-message chat-message--assistant"
+          >
+            <div
+              class="chat-message-name"
+            >
+              Brad AI
+            </div>
+            <div
+              class="chat-message-content"
+            >
+              <p>
+                Under 1.8
+              </p>
+            </div>
+          </div>
+        </div>
+        <div
+          class="chat-input-bar chat-embed-input-bar"
+        >
+          <div
+            class="chat-input-shell"
+          >
+            <textarea
+              class="chat-input"
+              disabled=""
+              placeholder="Ask a follow-up…"
+              rows="1"
+            />
+            <button
+              aria-label="Send"
+              class="chat-send-btn"
+              disabled=""
+            >
+              ↑
+            </button>
+          </div>
+          <div
+            class="chat-input-meta"
+          >
+            <span
+              class="chat-doctor-note"
+            >
+              Always discuss with your doctor
+            </span>
+            <span
+              class="chat-char-count"
+            >
+              0/8000
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`US-64 W1-7 pins: ChatEmbed DOM in each state > the key gate (Pages) 1`] = `
+<DocumentFragment>
+  <div
+    class="chat-embed-root no-print"
+    data-clarity-mask="true"
+  >
+    <div
+      class="hr-col-header"
+    >
+      <div
+        class="hr-col-title"
+      >
+        Ask about your plan
+      </div>
+    </div>
+    <div
+      aria-label="Health by Dr Brad Chat"
+      class="chat-embed"
+      role="region"
+    >
+      <div
+        class="chat-embed-drawer "
+      >
+        <div
+          class="chat-embed-drawer-header"
+        >
+          <span
+            class="chat-embed-drawer-title"
+          >
+            Conversations
+          </span>
+          <button
+            aria-label="Close conversations"
+            class="chat-close-btn"
+          >
+            ✕
+          </button>
+        </div>
+        <div
+          class="chat-embed-thread-list"
+        >
+          <span
+            hidden=""
+            id=":id0:delete"
+          >
+            Delete conversation
+          </span>
+          <button
+            class="chat-new-btn"
+          >
+            + New Chat
+          </button>
+          <div
+            class="chat-thread-item active"
+            role="button"
+            tabindex="0"
+          >
+            <span
+              class="chat-thread-title"
+              id=":id0:0"
+            >
+              LDL targets
+            </span>
+            <button
+              aria-labelledby=":id0:delete :id0:0"
+              class="chat-thread-delete"
+              title="Delete conversation"
+            >
+              ✕
+            </button>
+          </div>
+          <div
+            class="chat-thread-item "
+            role="button"
+            tabindex="0"
+          >
+            <span
+              class="chat-thread-title"
+              id=":id0:1"
+            >
+              Vitamin D
+            </span>
+            <button
+              aria-labelledby=":id0:delete :id0:1"
+              class="chat-thread-delete"
+              title="Delete conversation"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      </div>
+      <div
+        class="chat-embed-main"
+      >
+        <div
+          class="chat-embed-main-header"
+        >
+          <button
+            aria-label="Show conversations"
+            class="chat-embed-threads-btn"
+          >
+            <svg
+              aria-hidden="true"
+              focusable="false"
+              height="14"
+              viewBox="0 0 16 16"
+              width="14"
+            >
+              <path
+                d="M2.5 4h11M2.5 8h11M2.5 12h11"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-width="1.6"
+              />
+            </svg>
+            History
+          </button>
+          <div
+            class="chat-header-title-block"
+          >
+            <h3>
+              Discuss your health
+            </h3>
+            <p
+              class="chat-header-sub"
+            >
+              Answers cite your plan & the guidelines above
+            </p>
+          </div>
+        </div>
+        <div
+          class="chat-key-gate"
+        >
+          <p
+            class="chat-key-gate-title"
+          >
+            This chat runs on Claude (Anthropic)
+          </p>
+          <p
+            class="chat-key-gate-copy"
+          >
+            On this page, chat uses 
+            <strong>
+              your own Anthropic API key
+            </strong>
+            . The key is stored only on this device — it is never sent to our servers, and your messages go directly from your browser to Anthropic. Usage is billed to your Anthropic account (typically well under a cent per question).
+          </p>
+          <p
+            class="chat-key-gate-copy"
+          >
+            Prefer not to set one up? Chat is free at 
+            <a
+              href="https://drstanfield.com/pages/roadmap"
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              drstanfield.com
+            </a>
+            .
+          </p>
+          <div
+            class="chat-key-gate-form"
+          >
+            <input
+              aria-label="Anthropic API key"
+              autocomplete="off"
+              placeholder="sk-ant-…"
+              type="password"
+              value=""
+            />
+            <button
+              disabled=""
+              type="button"
+            >
+              Connect
+            </button>
+          </div>
+          <p
+            class="chat-key-gate-fineprint"
+          >
+            <a
+              href="https://console.anthropic.com/settings/keys"
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              Get an API key from Anthropic →
+            </a>
+             Tip: create a dedicated key and set a low monthly spend limit on it.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`US-64 W1-7 pins: ChatEmbed DOM in each state > the rate limit 1`] = `
+<DocumentFragment>
+  <div
+    class="chat-embed-root no-print"
+    data-clarity-mask="true"
+  >
+    <div
+      class="hr-col-header"
+    >
+      <div
+        class="hr-col-title"
+      >
+        Ask about your plan
+      </div>
+    </div>
+    <div
+      aria-label="Health by Dr Brad Chat"
+      class="chat-embed"
+      role="region"
+    >
+      <div
+        class="chat-embed-drawer "
+      >
+        <div
+          class="chat-embed-drawer-header"
+        >
+          <span
+            class="chat-embed-drawer-title"
+          >
+            Conversations
+          </span>
+          <button
+            aria-label="Close conversations"
+            class="chat-close-btn"
+          >
+            ✕
+          </button>
+        </div>
+        <div
+          class="chat-embed-thread-list"
+        >
+          <span
+            hidden=""
+            id=":id0:delete"
+          >
+            Delete conversation
+          </span>
+          <button
+            class="chat-new-btn"
+          >
+            + New Chat
+          </button>
+          <div
+            class="chat-thread-item active"
+            role="button"
+            tabindex="0"
+          >
+            <span
+              class="chat-thread-title"
+              id=":id0:0"
+            >
+              LDL targets
+            </span>
+            <button
+              aria-labelledby=":id0:delete :id0:0"
+              class="chat-thread-delete"
+              title="Delete conversation"
+            >
+              ✕
+            </button>
+          </div>
+          <div
+            class="chat-thread-item "
+            role="button"
+            tabindex="0"
+          >
+            <span
+              class="chat-thread-title"
+              id=":id0:1"
+            >
+              Vitamin D
+            </span>
+            <button
+              aria-labelledby=":id0:delete :id0:1"
+              class="chat-thread-delete"
+              title="Delete conversation"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      </div>
+      <div
+        class="chat-embed-main"
+      >
+        <div
+          class="chat-embed-main-header"
+        >
+          <button
+            aria-label="Show conversations"
+            class="chat-embed-threads-btn"
+          >
+            <svg
+              aria-hidden="true"
+              focusable="false"
+              height="14"
+              viewBox="0 0 16 16"
+              width="14"
+            >
+              <path
+                d="M2.5 4h11M2.5 8h11M2.5 12h11"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-width="1.6"
+              />
+            </svg>
+            History
+          </button>
+          <div
+            class="chat-header-title-block"
+          >
+            <h3>
+              Discuss your health
+            </h3>
+            <p
+              class="chat-header-sub"
+            >
+              Answers cite your plan & the guidelines above
+            </p>
+          </div>
+        </div>
+        <div
+          class="chat-messages chat-embed-messages"
+        >
+          <div
+            class="chat-message chat-message--user"
+          >
+            <div
+              class="chat-message-content"
+            >
+              What is a good LDL?
+            </div>
+          </div>
+          <div
+            class="chat-error"
+            role="alert"
+          >
+            Chat limit reached. Please try again later.
+          </div>
+        </div>
+        <div
+          class="chat-input-bar chat-embed-input-bar"
+        >
+          <div
+            class="chat-input-shell"
+          >
+            <textarea
+              class="chat-input"
+              placeholder="Ask a follow-up…"
+              rows="1"
+            />
+            <button
+              aria-label="Send"
+              class="chat-send-btn"
+              disabled=""
+            >
+              ↑
+            </button>
+          </div>
+          <div
+            class="chat-input-meta"
+          >
+            <span
+              class="chat-doctor-note"
+            >
+              Always discuss with your doctor
+            </span>
+            <span
+              class="chat-char-count"
+            >
+              0/8000
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`US-64 W1-7 pins: ChatEmbed DOM in each state > thinking (this tab asked) 1`] = `
+<DocumentFragment>
+  <div
+    class="chat-embed-root no-print"
+    data-clarity-mask="true"
+  >
+    <div
+      class="hr-col-header"
+    >
+      <div
+        class="hr-col-title"
+      >
+        Ask about your plan
+      </div>
+    </div>
+    <div
+      aria-label="Health by Dr Brad Chat"
+      class="chat-embed"
+      role="region"
+    >
+      <div
+        class="chat-embed-drawer "
+      >
+        <div
+          class="chat-embed-drawer-header"
+        >
+          <span
+            class="chat-embed-drawer-title"
+          >
+            Conversations
+          </span>
+          <button
+            aria-label="Close conversations"
+            class="chat-close-btn"
+          >
+            ✕
+          </button>
+        </div>
+        <div
+          class="chat-embed-thread-list"
+        >
+          <span
+            hidden=""
+            id=":id0:delete"
+          >
+            Delete conversation
+          </span>
+          <button
+            class="chat-new-btn"
+          >
+            + New Chat
+          </button>
+          <div
+            class="chat-thread-item active"
+            role="button"
+            tabindex="0"
+          >
+            <span
+              class="chat-thread-title"
+              id=":id0:0"
+            >
+              LDL targets
+            </span>
+            <button
+              aria-labelledby=":id0:delete :id0:0"
+              class="chat-thread-delete"
+              title="Delete conversation"
+            >
+              ✕
+            </button>
+          </div>
+          <div
+            class="chat-thread-item "
+            role="button"
+            tabindex="0"
+          >
+            <span
+              class="chat-thread-title"
+              id=":id0:1"
+            >
+              Vitamin D
+            </span>
+            <button
+              aria-labelledby=":id0:delete :id0:1"
+              class="chat-thread-delete"
+              title="Delete conversation"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      </div>
+      <div
+        class="chat-embed-main"
+      >
+        <div
+          class="chat-embed-main-header"
+        >
+          <button
+            aria-label="Show conversations"
+            class="chat-embed-threads-btn"
+          >
+            <svg
+              aria-hidden="true"
+              focusable="false"
+              height="14"
+              viewBox="0 0 16 16"
+              width="14"
+            >
+              <path
+                d="M2.5 4h11M2.5 8h11M2.5 12h11"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-width="1.6"
+              />
+            </svg>
+            History
+          </button>
+          <div
+            class="chat-header-title-block"
+          >
+            <h3>
+              Discuss your health
+            </h3>
+            <p
+              class="chat-header-sub"
+            >
+              Answers cite your plan & the guidelines above
+            </p>
+          </div>
+        </div>
+        <div
+          class="chat-messages chat-embed-messages"
+        >
+          <div
+            class="chat-message chat-message--user"
+          >
+            <div
+              class="chat-message-content"
+            >
+              What is a good LDL?
+            </div>
+          </div>
+          <p
+            aria-live="polite"
+            class="chat-pending-status"
+          >
+            Searching…
+          </p>
+          <div
+            class="chat-message chat-message--assistant"
+          >
+            <div
+              class="chat-loading chat-thinking-panel"
+            >
+              <span
+                class="chat-thinking-label"
+              >
+                Thinking (draft notes, not the answer)
+              </span>
+              <p
+                class="chat-sources"
+              >
+                Reading: LDL
+              </p>
+              <p
+                class="chat-thinking-summary"
+              >
+                Reading the guideline
+              </p>
+            </div>
+          </div>
+        </div>
+        <div
+          class="chat-input-bar chat-embed-input-bar"
+        >
+          <div
+            class="chat-input-shell"
+          >
+            <textarea
+              class="chat-input"
+              disabled=""
+              placeholder="Ask a follow-up…"
+              rows="1"
+            />
+            <button
+              aria-label="Send"
+              class="chat-send-btn"
+              disabled=""
+            >
+              ↑
+            </button>
+          </div>
+          <div
+            class="chat-input-meta"
+          >
+            <span
+              class="chat-doctor-note"
+            >
+              Always discuss with your doctor
+            </span>
+            <span
+              class="chat-char-count"
+            >
+              0/8000
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`US-64 W1-7 pins: ChatSection DOM in each state > a connected key (Pages) 1`] = `
+<DocumentFragment>
+  <div
+    aria-label="Health by Dr Brad Chat"
+    class="chat-section chat-expanded no-print"
+    data-clarity-mask="true"
+    role="dialog"
+  >
+    <div
+      class="chat-header"
+    >
+      <button
+        class="chat-threads-btn"
+      >
+        History
+      </button>
+      <div
+        class="chat-header-title-block"
+      >
+        <h3
+          tabindex="-1"
+        >
+          Discuss your health
+        </h3>
+        <p
+          class="chat-header-sub"
+        >
+          Answers cite your plan & the guidelines above
+        </p>
+      </div>
+      <button
+        aria-label="Close chat"
+        class="chat-close-btn"
+      >
+        ✕
+      </button>
+    </div>
+    <div
+      class="chat-body"
+    >
+      <div
+        class="chat-messages"
+      >
+        <div
+          class="chat-message chat-message--user"
+        >
+          <div
+            class="chat-message-content"
+          >
+            What is a good LDL?
+          </div>
+        </div>
+        <div
+          class="chat-message chat-message--assistant"
+        >
+          <div
+            class="chat-message-name"
+          >
+            Brad AI
+          </div>
+          <div
+            class="chat-message-content"
+          >
+            <p>
+              Under 
+              <strong>
+                1.8
+              </strong>
+               mmol/L for most people at high risk.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      class="chat-input-bar"
+    >
+      <div
+        class="chat-input-shell"
+      >
+        <textarea
+          class="chat-input"
+          placeholder="Ask a follow-up…"
+          rows="1"
+        />
+        <button
+          aria-label="Send"
+          class="chat-send-btn"
+          disabled=""
+        >
+          ↑
+        </button>
+      </div>
+      <div
+        class="chat-input-meta"
+      >
+        <span
+          class="chat-doctor-note"
+        >
+          Always discuss with your doctor
+        </span>
+        <button
+          class="chat-key-disconnect"
+          type="button"
+        >
+          Disconnect AI key
+        </button>
+        <span
+          class="chat-char-count"
+        >
+          0/8000
+        </span>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`US-64 W1-7 pins: ChatSection DOM in each state > a conversation that failed to load 1`] = `
+<DocumentFragment>
+  <div
+    aria-label="Health by Dr Brad Chat"
+    class="chat-section chat-expanded no-print"
+    data-clarity-mask="true"
+    role="dialog"
+  >
+    <div
+      class="chat-header"
+    >
+      <button
+        class="chat-threads-btn"
+      >
+        History
+      </button>
+      <div
+        class="chat-header-title-block"
+      >
+        <h3
+          tabindex="-1"
+        >
+          Discuss your health
+        </h3>
+        <p
+          class="chat-header-sub"
+        >
+          Answers cite your plan & the guidelines above
+        </p>
+      </div>
+      <button
+        aria-label="Close chat"
+        class="chat-close-btn"
+      >
+        ✕
+      </button>
+    </div>
+    <div
+      class="chat-body"
+    >
+      <div
+        class="chat-messages"
+      >
+        <p
+          class="chat-load-line"
+          role="status"
+        >
+          Waiting for your other reply…
+        </p>
+        <div
+          class="chat-load-line"
+          role="alert"
+        >
+          <p>
+            Couldn't open this conversation.
+          </p>
+          <div
+            class="chat-load-actions"
+          >
+            <button
+              class="chat-new-btn"
+              type="button"
+            >
+              Try again
+            </button>
+            <button
+              class="chat-new-btn"
+              type="button"
+            >
+              + New Chat
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      class="chat-input-bar"
+    >
+      <div
+        class="chat-input-shell"
+      >
+        <textarea
+          class="chat-input"
+          disabled=""
+          placeholder="Ask a question"
+          rows="1"
+        />
+        <button
+          aria-label="Send"
+          class="chat-send-btn"
+          disabled=""
+        >
+          ↑
+        </button>
+      </div>
+      <div
+        class="chat-input-meta"
+      >
+        <span
+          class="chat-doctor-note"
+        >
+          Always discuss with your doctor
+        </span>
+        <span
+          class="chat-char-count"
+        >
+          0/8000
+        </span>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`US-64 W1-7 pins: ChatSection DOM in each state > a subscription change card 1`] = `
+<DocumentFragment>
+  <div
+    aria-label="Health by Dr Brad Chat"
+    class="chat-section chat-expanded no-print"
+    data-clarity-mask="true"
+    role="dialog"
+  >
+    <div
+      class="chat-header"
+    >
+      <button
+        class="chat-threads-btn"
+      >
+        History
+      </button>
+      <div
+        class="chat-header-title-block"
+      >
+        <h3
+          tabindex="-1"
+        >
+          Discuss your health
+        </h3>
+        <p
+          class="chat-header-sub"
+        >
+          Answers cite your plan & the guidelines above
+        </p>
+      </div>
+      <button
+        aria-label="Close chat"
+        class="chat-close-btn"
+      >
+        ✕
+      </button>
+    </div>
+    <div
+      class="chat-body"
+    >
+      <div
+        class="chat-messages"
+      >
+        <div
+          class="chat-message chat-message--user"
+        >
+          <div
+            class="chat-message-content"
+          >
+            What is a good LDL?
+          </div>
+        </div>
+        <div
+          class="chat-message chat-message--assistant"
+        >
+          <div
+            class="chat-message-name"
+          >
+            Brad AI
+          </div>
+          <div
+            class="chat-message-content"
+          >
+            <p>
+              Under 
+              <strong>
+                1.8
+              </strong>
+               mmol/L for most people at high risk.
+            </p>
+          </div>
+        </div>
+        <div
+          aria-label="Pause this subscription?"
+          class="chat-sub-card"
+          role="group"
+        >
+          <p
+            class="chat-sub-card-title"
+          >
+            Pause this subscription?
+          </p>
+          <p
+            class="chat-sub-card-line"
+          >
+            Omega-3, every 30 days
+          </p>
+          <p
+            class="chat-sub-card-line"
+          >
+            Next order: 2026-12-01
+          </p>
+          <div
+            class="chat-sub-card-buttons"
+          >
+            <button
+              class="chat-sub-card-confirm"
+              type="button"
+            >
+              Confirm
+            </button>
+            <button
+              class="chat-sub-card-dismiss"
+              type="button"
+            >
+              Not now
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      class="chat-input-bar"
+    >
+      <div
+        class="chat-input-shell"
+      >
+        <textarea
+          class="chat-input"
+          placeholder="Ask a follow-up…"
+          rows="1"
+        />
+        <button
+          aria-label="Send"
+          class="chat-send-btn"
+          disabled=""
+        >
+          ↑
+        </button>
+      </div>
+      <div
+        class="chat-input-meta"
+      >
+        <span
+          class="chat-doctor-note"
+        >
+          Always discuss with your doctor
+        </span>
+        <span
+          class="chat-char-count"
+        >
+          0/8000
+        </span>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`US-64 W1-7 pins: ChatSection DOM in each state > a thread with an answer 1`] = `
+<DocumentFragment>
+  <div
+    aria-label="Health by Dr Brad Chat"
+    class="chat-section chat-expanded no-print"
+    data-clarity-mask="true"
+    role="dialog"
+  >
+    <div
+      class="chat-header"
+    >
+      <button
+        class="chat-threads-btn"
+      >
+        History
+      </button>
+      <div
+        class="chat-header-title-block"
+      >
+        <h3
+          tabindex="-1"
+        >
+          Discuss your health
+        </h3>
+        <p
+          class="chat-header-sub"
+        >
+          Answers cite your plan & the guidelines above
+        </p>
+      </div>
+      <button
+        aria-label="Close chat"
+        class="chat-close-btn"
+      >
+        ✕
+      </button>
+    </div>
+    <div
+      class="chat-body"
+    >
+      <div
+        class="chat-messages"
+      >
+        <div
+          class="chat-message chat-message--user"
+        >
+          <div
+            class="chat-message-content"
+          >
+            What is a good LDL?
+          </div>
+        </div>
+        <div
+          class="chat-message chat-message--assistant"
+        >
+          <div
+            class="chat-message-name"
+          >
+            Brad AI
+          </div>
+          <details
+            class="chat-thinking-toggle"
+          >
+            <summary>
+              Show how I approached this
+            </summary>
+            <p
+              class="chat-sources"
+            >
+              Articles read: LDL
+            </p>
+            <p
+              class="chat-thinking-summary"
+            >
+              Weighed the guideline
+            </p>
+          </details>
+          <div
+            class="chat-message-content"
+          >
+            <p>
+              Under 
+              <strong>
+                1.8
+              </strong>
+               mmol/L for most people at high risk.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      class="chat-input-bar"
+    >
+      <div
+        class="chat-input-shell"
+      >
+        <textarea
+          class="chat-input"
+          placeholder="Ask a follow-up…"
+          rows="1"
+        >
+          and HDL?
+        </textarea>
+        <button
+          aria-label="Send"
+          class="chat-send-btn"
+        >
+          ↑
+        </button>
+      </div>
+      <div
+        class="chat-input-meta"
+      >
+        <span
+          class="chat-doctor-note"
+        >
+          Always discuss with your doctor
+        </span>
+        <span
+          class="chat-char-count"
+        >
+          8/8000
+        </span>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`US-64 W1-7 pins: ChatSection DOM in each state > an error 1`] = `
+<DocumentFragment>
+  <div
+    aria-label="Health by Dr Brad Chat"
+    class="chat-section chat-expanded no-print"
+    data-clarity-mask="true"
+    role="dialog"
+  >
+    <div
+      class="chat-header"
+    >
+      <button
+        class="chat-threads-btn"
+      >
+        History
+      </button>
+      <div
+        class="chat-header-title-block"
+      >
+        <h3
+          tabindex="-1"
+        >
+          Discuss your health
+        </h3>
+        <p
+          class="chat-header-sub"
+        >
+          Answers cite your plan & the guidelines above
+        </p>
+      </div>
+      <button
+        aria-label="Close chat"
+        class="chat-close-btn"
+      >
+        ✕
+      </button>
+    </div>
+    <div
+      class="chat-body"
+    >
+      <div
+        class="chat-messages"
+      >
+        <div
+          class="chat-message chat-message--user"
+        >
+          <div
+            class="chat-message-content"
+          >
+            What is a good LDL?
+          </div>
+        </div>
+        <div
+          class="chat-error"
+          role="alert"
+        >
+          Something went wrong. Please try again.
+        </div>
+      </div>
+    </div>
+    <div
+      class="chat-input-bar"
+    >
+      <div
+        class="chat-input-shell"
+      >
+        <textarea
+          class="chat-input"
+          placeholder="Ask a follow-up…"
+          rows="1"
+        />
+        <button
+          aria-label="Send"
+          class="chat-send-btn"
+          disabled=""
+        >
+          ↑
+        </button>
+      </div>
+      <div
+        class="chat-input-meta"
+      >
+        <span
+          class="chat-doctor-note"
+        >
+          Always discuss with your doctor
+        </span>
+        <span
+          class="chat-char-count"
+        >
+          0/8000
+        </span>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`US-64 W1-7 pins: ChatSection DOM in each state > another tab is replying 1`] = `
+<DocumentFragment>
+  <div
+    aria-label="Health by Dr Brad Chat"
+    class="chat-section chat-expanded no-print"
+    data-clarity-mask="true"
+    role="dialog"
+  >
+    <div
+      class="chat-header"
+    >
+      <button
+        class="chat-threads-btn"
+      >
+        History
+      </button>
+      <div
+        class="chat-header-title-block"
+      >
+        <h3
+          tabindex="-1"
+        >
+          Discuss your health
+        </h3>
+        <p
+          class="chat-header-sub"
+        >
+          Answers cite your plan & the guidelines above
+        </p>
+      </div>
+      <button
+        aria-label="Close chat"
+        class="chat-close-btn"
+      >
+        ✕
+      </button>
+    </div>
+    <div
+      class="chat-body"
+    >
+      <div
+        class="chat-messages"
+      >
+        <div
+          class="chat-message chat-message--user"
+        >
+          <div
+            class="chat-message-content"
+          >
+            What is a good LDL?
+          </div>
+        </div>
+        <div
+          class="chat-message chat-message--assistant"
+        >
+          <div
+            class="chat-loading"
+          >
+            <span
+              class="chat-thinking-dots"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      class="chat-input-bar"
+    >
+      <div
+        class="chat-input-shell"
+      >
+        <textarea
+          class="chat-input"
+          disabled=""
+          placeholder="Ask a follow-up…"
+          rows="1"
+        />
+        <button
+          aria-label="Send"
+          class="chat-send-btn"
+          disabled=""
+        >
+          ↑
+        </button>
+      </div>
+      <div
+        class="chat-input-meta"
+      >
+        <span
+          class="chat-doctor-note"
+        >
+          Always discuss with your doctor
+        </span>
+        <span
+          class="chat-char-count"
+        >
+          0/8000
+        </span>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`US-64 W1-7 pins: ChatSection DOM in each state > collapsed (guest, with feedback open) 1`] = `
+<DocumentFragment>
+  <div
+    class="chat-section no-print"
+    data-clarity-mask="true"
+  >
+    <div
+      class="chat-collapsed-row"
+    >
+      <div
+        class="chat-collapsed"
+        role="button"
+        tabindex="0"
+      >
+        <span
+          class="chat-icon"
+        >
+          💬
+        </span>
+        <span
+          class="chat-placeholder"
+        >
+          Ask about your health suggestions
+        </span>
+      </div>
+      <button
+        class="chat-feedback-link"
+        type="button"
+      >
+        Send feedback
+      </button>
+    </div>
+    <div
+      class="feedback-form-stub"
+    />
+  </div>
+</DocumentFragment>
+`;
+
+exports[`US-64 W1-7 pins: ChatSection DOM in each state > empty 1`] = `
+<DocumentFragment>
+  <div
+    aria-label="Health by Dr Brad Chat"
+    class="chat-section chat-expanded no-print"
+    data-clarity-mask="true"
+    role="dialog"
+  >
+    <div
+      class="chat-header"
+    >
+      <button
+        class="chat-threads-btn"
+      >
+        History
+      </button>
+      <div
+        class="chat-header-title-block"
+      >
+        <h3
+          tabindex="-1"
+        >
+          Discuss your health
+        </h3>
+        <p
+          class="chat-header-sub"
+        >
+          Answers cite your plan & the guidelines above
+        </p>
+      </div>
+      <button
+        aria-label="Close chat"
+        class="chat-close-btn"
+      >
+        ✕
+      </button>
+    </div>
+    <div
+      class="chat-body"
+    >
+      <div
+        class="chat-messages"
+      >
+        <div
+          class="chat-empty"
+        >
+          <p>
+            Ask about your personalized suggestions based on your health data, clinical research, and the preventative care algorithm.
+          </p>
+        </div>
+      </div>
+    </div>
+    <div
+      class="chat-input-bar"
+    >
+      <div
+        class="chat-input-shell"
+      >
+        <textarea
+          class="chat-input"
+          placeholder="Ask a question"
+          rows="1"
+        />
+        <button
+          aria-label="Send"
+          class="chat-send-btn"
+          disabled=""
+        >
+          ↑
+        </button>
+      </div>
+      <div
+        class="chat-input-meta"
+      >
+        <span
+          class="chat-doctor-note"
+        >
+          Always discuss with your doctor
+        </span>
+        <span
+          class="chat-char-count"
+        >
+          0/8000
+        </span>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`US-64 W1-7 pins: ChatSection DOM in each state > history open 1`] = `
+<DocumentFragment>
+  <div
+    aria-label="Health by Dr Brad Chat"
+    class="chat-section chat-expanded no-print"
+    data-clarity-mask="true"
+    role="dialog"
+  >
+    <div
+      class="chat-header"
+    >
+      <button
+        class="chat-threads-btn"
+      >
+        Back
+      </button>
+      <div
+        class="chat-header-title-block"
+      >
+        <h3
+          tabindex="-1"
+        >
+          Discuss your health
+        </h3>
+        <p
+          class="chat-header-sub"
+        >
+          Answers cite your plan & the guidelines above
+        </p>
+      </div>
+      <button
+        aria-label="Close chat"
+        class="chat-close-btn"
+      >
+        ✕
+      </button>
+    </div>
+    <div
+      class="chat-body"
+    >
+      <div
+        class="chat-thread-list"
+      >
+        <span
+          hidden=""
+          id=":id0:delete"
+        >
+          Delete conversation
+        </span>
+        <button
+          class="chat-new-btn"
+        >
+          + New Chat
+        </button>
+        <div
+          class="chat-thread-item active"
+          role="button"
+          tabindex="0"
+        >
+          <span
+            class="chat-thread-title"
+            id=":id0:0"
+          >
+            LDL targets
+          </span>
+          <button
+            aria-labelledby=":id0:delete :id0:0"
+            class="chat-thread-delete"
+            title="Delete conversation"
+          >
+            ✕
+          </button>
+        </div>
+        <div
+          class="chat-thread-item "
+          role="button"
+          tabindex="0"
+        >
+          <span
+            class="chat-thread-title"
+            id=":id0:1"
+          >
+            Vitamin D
+          </span>
+          <button
+            aria-labelledby=":id0:delete :id0:1"
+            class="chat-thread-delete"
+            title="Delete conversation"
+          >
+            ✕
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`US-64 W1-7 pins: ChatSection DOM in each state > inline and muted 1`] = `
+<DocumentFragment>
+  <div
+    aria-label="Health by Dr Brad Chat"
+    class="chat-section chat-expanded chat-expanded--inline no-print"
+    data-clarity-mask="true"
+    role="dialog"
+  >
+    <div
+      class="chat-header"
+    >
+      <button
+        class="chat-threads-btn"
+      >
+        History
+      </button>
+      <div
+        class="chat-header-title-block"
+      >
+        <h3
+          tabindex="-1"
+        >
+          Discuss your health
+        </h3>
+        <p
+          class="chat-header-sub"
+        >
+          Ask anything about preventative care
+        </p>
+      </div>
+    </div>
+    <div
+      class="chat-body"
+    >
+      <div
+        class="chat-messages"
+      >
+        <div
+          class="chat-empty"
+        >
+          <p>
+            Fill in your details and the answers will be tailored to your numbers.
+          </p>
+        </div>
+      </div>
+    </div>
+    <div
+      class="chat-input-bar"
+    >
+      <div
+        class="chat-input-shell"
+      >
+        <textarea
+          class="chat-input"
+          placeholder="Ask a question"
+          rows="1"
+        />
+        <button
+          aria-label="Send"
+          class="chat-send-btn"
+          disabled=""
+        >
+          ↑
+        </button>
+      </div>
+      <div
+        class="chat-input-meta"
+      >
+        <span
+          class="chat-doctor-note"
+        >
+          Always discuss with your doctor
+        </span>
+        <span
+          class="chat-char-count"
+        >
+          0/8000
+        </span>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`US-64 W1-7 pins: ChatSection DOM in each state > loading a conversation 1`] = `
+<DocumentFragment>
+  <div
+    aria-label="Health by Dr Brad Chat"
+    class="chat-section chat-expanded no-print"
+    data-clarity-mask="true"
+    role="dialog"
+  >
+    <div
+      class="chat-header"
+    >
+      <button
+        class="chat-threads-btn"
+      >
+        History
+      </button>
+      <div
+        class="chat-header-title-block"
+      >
+        <h3
+          tabindex="-1"
+        >
+          Discuss your health
+        </h3>
+        <p
+          class="chat-header-sub"
+        >
+          Answers cite your plan & the guidelines above
+        </p>
+      </div>
+      <button
+        aria-label="Close chat"
+        class="chat-close-btn"
+      >
+        ✕
+      </button>
+    </div>
+    <div
+      class="chat-body"
+    >
+      <div
+        class="chat-messages"
+      >
+        <p
+          class="chat-load-line"
+          role="status"
+        >
+          Loading conversation…
+        </p>
+      </div>
+    </div>
+    <div
+      class="chat-input-bar"
+    >
+      <div
+        class="chat-input-shell"
+      >
+        <textarea
+          class="chat-input"
+          disabled=""
+          placeholder="Ask a question"
+          rows="1"
+        />
+        <button
+          aria-label="Send"
+          class="chat-send-btn"
+          disabled=""
+        >
+          ↑
+        </button>
+      </div>
+      <div
+        class="chat-input-meta"
+      >
+        <span
+          class="chat-doctor-note"
+        >
+          Always discuss with your doctor
+        </span>
+        <span
+          class="chat-char-count"
+        >
+          0/8000
+        </span>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`US-64 W1-7 pins: ChatSection DOM in each state > offline 1`] = `
+<DocumentFragment>
+  <div
+    aria-label="Health by Dr Brad Chat"
+    class="chat-section chat-expanded no-print"
+    data-clarity-mask="true"
+    role="dialog"
+  >
+    <div
+      class="chat-header"
+    >
+      <button
+        class="chat-threads-btn"
+      >
+        History
+      </button>
+      <div
+        class="chat-header-title-block"
+      >
+        <h3
+          tabindex="-1"
+        >
+          Discuss your health
+        </h3>
+        <p
+          class="chat-header-sub"
+        >
+          Answers cite your plan & the guidelines above
+        </p>
+      </div>
+      <button
+        aria-label="Close chat"
+        class="chat-close-btn"
+      >
+        ✕
+      </button>
+    </div>
+    <div
+      class="chat-body"
+    >
+      <div
+        class="chat-messages"
+      >
+        <div
+          class="chat-empty"
+        >
+          <p>
+            Ask about your personalized suggestions based on your health data, clinical research, and the preventative care algorithm.
+          </p>
+        </div>
+      </div>
+    </div>
+    <div
+      class="chat-input-bar"
+    >
+      <div
+        class="chat-offline"
+      >
+        You're offline
+      </div>
+      <div
+        class="chat-input-shell"
+      >
+        <textarea
+          class="chat-input"
+          placeholder="Ask a question"
+          rows="1"
+        />
+        <button
+          aria-label="Send"
+          class="chat-send-btn"
+          disabled=""
+        >
+          ↑
+        </button>
+      </div>
+      <div
+        class="chat-input-meta"
+      >
+        <span
+          class="chat-doctor-note"
+        >
+          Always discuss with your doctor
+        </span>
+        <span
+          class="chat-char-count"
+        >
+          0/8000
+        </span>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`US-64 W1-7 pins: ChatSection DOM in each state > streaming the answer 1`] = `
+<DocumentFragment>
+  <div
+    aria-label="Health by Dr Brad Chat"
+    class="chat-section chat-expanded no-print"
+    data-clarity-mask="true"
+    role="dialog"
+  >
+    <div
+      class="chat-header"
+    >
+      <button
+        class="chat-threads-btn"
+      >
+        History
+      </button>
+      <div
+        class="chat-header-title-block"
+      >
+        <h3
+          tabindex="-1"
+        >
+          Discuss your health
+        </h3>
+        <p
+          class="chat-header-sub"
+        >
+          Answers cite your plan & the guidelines above
+        </p>
+      </div>
+      <button
+        aria-label="Close chat"
+        class="chat-close-btn"
+      >
+        ✕
+      </button>
+    </div>
+    <div
+      class="chat-body"
+    >
+      <div
+        class="chat-messages"
+      >
+        <div
+          class="chat-message chat-message--user"
+        >
+          <div
+            class="chat-message-content"
+          >
+            What is a good LDL?
+          </div>
+        </div>
+        <p
+          aria-live="polite"
+          class="chat-pending-status"
+        >
+          Answering…
+        </p>
+        <div
+          class="chat-message chat-message--assistant"
+        >
+          <div
+            class="chat-message-name"
+          >
+            Brad AI
+          </div>
+          <div
+            class="chat-message-content"
+          >
+            <p>
+              Under 1.8
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      class="chat-input-bar"
+    >
+      <div
+        class="chat-input-shell"
+      >
+        <textarea
+          class="chat-input"
+          disabled=""
+          placeholder="Ask a follow-up…"
+          rows="1"
+        />
+        <button
+          aria-label="Send"
+          class="chat-send-btn"
+          disabled=""
+        >
+          ↑
+        </button>
+      </div>
+      <div
+        class="chat-input-meta"
+      >
+        <span
+          class="chat-doctor-note"
+        >
+          Always discuss with your doctor
+        </span>
+        <span
+          class="chat-char-count"
+        >
+          0/8000
+        </span>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`US-64 W1-7 pins: ChatSection DOM in each state > the key gate (Pages) 1`] = `
+<DocumentFragment>
+  <div
+    aria-label="Health by Dr Brad Chat"
+    class="chat-section chat-expanded no-print"
+    data-clarity-mask="true"
+    role="dialog"
+  >
+    <div
+      class="chat-header"
+    >
+      <button
+        class="chat-threads-btn"
+      >
+        History
+      </button>
+      <div
+        class="chat-header-title-block"
+      >
+        <h3
+          tabindex="-1"
+        >
+          Discuss your health
+        </h3>
+        <p
+          class="chat-header-sub"
+        >
+          Answers cite your plan & the guidelines above
+        </p>
+      </div>
+      <button
+        aria-label="Close chat"
+        class="chat-close-btn"
+      >
+        ✕
+      </button>
+    </div>
+    <div
+      class="chat-body"
+    >
+      <div
+        class="chat-key-gate"
+      >
+        <p
+          class="chat-key-gate-title"
+        >
+          This chat runs on Claude (Anthropic)
+        </p>
+        <p
+          class="chat-key-gate-copy"
+        >
+          On this page, chat uses 
+          <strong>
+            your own Anthropic API key
+          </strong>
+          . The key is stored only on this device — it is never sent to our servers, and your messages go directly from your browser to Anthropic. Usage is billed to your Anthropic account (typically well under a cent per question).
+        </p>
+        <p
+          class="chat-key-gate-copy"
+        >
+          Prefer not to set one up? Chat is free at 
+          <a
+            href="https://drstanfield.com/pages/roadmap"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            drstanfield.com
+          </a>
+          .
+        </p>
+        <div
+          class="chat-key-gate-form"
+        >
+          <input
+            aria-label="Anthropic API key"
+            autocomplete="off"
+            placeholder="sk-ant-…"
+            type="password"
+            value=""
+          />
+          <button
+            disabled=""
+            type="button"
+          >
+            Connect
+          </button>
+        </div>
+        <p
+          class="chat-key-gate-fineprint"
+        >
+          <a
+            href="https://console.anthropic.com/settings/keys"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            Get an API key from Anthropic →
+          </a>
+           Tip: create a dedicated key and set a low monthly spend limit on it.
+        </p>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`US-64 W1-7 pins: ChatSection DOM in each state > the rate limit 1`] = `
+<DocumentFragment>
+  <div
+    aria-label="Health by Dr Brad Chat"
+    class="chat-section chat-expanded no-print"
+    data-clarity-mask="true"
+    role="dialog"
+  >
+    <div
+      class="chat-header"
+    >
+      <button
+        class="chat-threads-btn"
+      >
+        History
+      </button>
+      <div
+        class="chat-header-title-block"
+      >
+        <h3
+          tabindex="-1"
+        >
+          Discuss your health
+        </h3>
+        <p
+          class="chat-header-sub"
+        >
+          Answers cite your plan & the guidelines above
+        </p>
+      </div>
+      <button
+        aria-label="Close chat"
+        class="chat-close-btn"
+      >
+        ✕
+      </button>
+    </div>
+    <div
+      class="chat-body"
+    >
+      <div
+        class="chat-messages"
+      >
+        <div
+          class="chat-message chat-message--user"
+        >
+          <div
+            class="chat-message-content"
+          >
+            What is a good LDL?
+          </div>
+        </div>
+        <div
+          class="chat-error"
+          role="alert"
+        >
+          Chat limit reached. Please try again later.
+        </div>
+      </div>
+    </div>
+    <div
+      class="chat-input-bar"
+    >
+      <div
+        class="chat-input-shell"
+      >
+        <textarea
+          class="chat-input"
+          placeholder="Ask a follow-up…"
+          rows="1"
+        />
+        <button
+          aria-label="Send"
+          class="chat-send-btn"
+          disabled=""
+        >
+          ↑
+        </button>
+      </div>
+      <div
+        class="chat-input-meta"
+      >
+        <span
+          class="chat-doctor-note"
+        >
+          Always discuss with your doctor
+        </span>
+        <span
+          class="chat-char-count"
+        >
+          0/8000
+        </span>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`US-64 W1-7 pins: ChatSection DOM in each state > thinking (this tab asked) 1`] = `
+<DocumentFragment>
+  <div
+    aria-label="Health by Dr Brad Chat"
+    class="chat-section chat-expanded no-print"
+    data-clarity-mask="true"
+    role="dialog"
+  >
+    <div
+      class="chat-header"
+    >
+      <button
+        class="chat-threads-btn"
+      >
+        History
+      </button>
+      <div
+        class="chat-header-title-block"
+      >
+        <h3
+          tabindex="-1"
+        >
+          Discuss your health
+        </h3>
+        <p
+          class="chat-header-sub"
+        >
+          Answers cite your plan & the guidelines above
+        </p>
+      </div>
+      <button
+        aria-label="Close chat"
+        class="chat-close-btn"
+      >
+        ✕
+      </button>
+    </div>
+    <div
+      class="chat-body"
+    >
+      <div
+        class="chat-messages"
+      >
+        <div
+          class="chat-message chat-message--user"
+        >
+          <div
+            class="chat-message-content"
+          >
+            What is a good LDL?
+          </div>
+        </div>
+        <p
+          aria-live="polite"
+          class="chat-pending-status"
+        >
+          Searching…
+        </p>
+        <div
+          class="chat-message chat-message--assistant"
+        >
+          <div
+            class="chat-loading chat-thinking-panel"
+          >
+            <span
+              class="chat-thinking-label"
+            >
+              Thinking (draft notes, not the answer)
+            </span>
+            <p
+              class="chat-sources"
+            >
+              Reading: LDL
+            </p>
+            <p
+              class="chat-thinking-summary"
+            >
+              Reading the guideline
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      class="chat-input-bar"
+    >
+      <div
+        class="chat-input-shell"
+      >
+        <textarea
+          class="chat-input"
+          disabled=""
+          placeholder="Ask a follow-up…"
+          rows="1"
+        />
+        <button
+          aria-label="Send"
+          class="chat-send-btn"
+          disabled=""
+        >
+          ↑
+        </button>
+      </div>
+      <div
+        class="chat-input-meta"
+      >
+        <span
+          class="chat-doctor-note"
+        >
+          Always discuss with your doctor
+        </span>
+        <span
+          class="chat-char-count"
+        >
+          0/8000
+        </span>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;

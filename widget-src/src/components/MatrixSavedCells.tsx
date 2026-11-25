@@ -9,7 +9,8 @@ import { formatLabValue, savedLabText } from '@roadmap/health-core/lab-series';
 import { type GradeStatus, limitUngraded } from '@roadmap/health-core/row-grade';
 import { MONTHS_SHORT } from '../lib/constants';
 import type { CorrectFn } from '../lib/matrix-save';
-import { flushRoadmapStoreSync, getShownErase } from '../lib/roadmap-data';
+import { getShownErase } from '../lib/roadmap-data';
+import { onPageHide } from '../lib/page-hide';
 import { CLOSED, WAIT_MS, type ValueCellEvent, type ValueCellState, type Verdict, isOpen, messageOf, transition } from '../lib/value-cell-state';
 import {
   type CellUnit,
@@ -21,6 +22,7 @@ import {
   readNumericCell,
   sameAsSaved,
   savedCellText,
+  trendGeometry,
   validateTypedValue,
 } from '../lib/blood-test-cell';
 import { NumericInputCell } from './NumericInputCell';
@@ -150,8 +152,8 @@ export function ValueCell({
       window.clearTimeout(timer.current);
       if (next.kind === 'blurPending') timer.current = window.setTimeout(() => sendLeave(next.wait), WAIT_MS[next.wait]);
     }
-    for (const { row, value: corrected } of effects) {
-      void latest.current?.onCorrect?.(row, corrected, getShownErase()).then(result => send({ type: 'result', status: result }));
+    for (const { row, value: corrected, erase } of effects) {
+      void latest.current?.onCorrect?.(row, corrected, erase).then(result => send({ type: 'result', status: result }));
     }
   }, []);
   /** A click-away wait ran out, or the page is going away: sent with what the text would save now. */
@@ -180,21 +182,15 @@ export function ValueCell({
       if (down.size === 0) send({ type: 'released' });
     };
     // A click-away save already asked for runs as the page goes away (it
-    // never comes due in a hidden tab), and is written at once: the page's
-    // own flush ran before this listener (Codex R1). Text left in an open
-    // editor is not saved (US-04 AC1).
-    // An ordering patch until one hide path stages every cell, then flushes once (H92).
-    const hidden = () => { sendLeave('hidden'); flushRoadmapStoreSync(); };
-    const onHide = () => { if (document.visibilityState === 'hidden') hidden(); };
-    const onPageHide = hidden;
+    // never comes due in a hidden tab): a stage on the one hide path, which
+    // writes once after every stage (H92). Text left in an open editor is not
+    // saved (US-04 AC1).
+    const leaveHidePath = onPageHide(() => sendLeave('hidden'));
     const listeners = [['pointerdown', onDown], ['pointerup', onUp], ['pointercancel', onUp]] as const;
     for (const [type, listener] of listeners) document.addEventListener(type, listener, true);
-    document.addEventListener('visibilitychange', onHide);
-    window.addEventListener('pagehide', onPageHide);
     return () => {
       for (const [type, listener] of listeners) document.removeEventListener(type, listener, true);
-      document.removeEventListener('visibilitychange', onHide);
-      window.removeEventListener('pagehide', onPageHide);
+      leaveHidePath();
       onDeactivate?.();
     };
   }, [open]);
@@ -324,10 +320,35 @@ export function ValueCell({
         if (el && state.kind === 'closed' && state.refocus) { el.focus(); send({ type: 'refocused' }); }
       }}
       className={`bt-cell-value bt-cell-clickable${pinned ? ' bt-cell-pinned' : ''}`}
-      onClick={() => send({ type: 'opened', row: rowId!, unit: display, text: initialDisplay })}
+      onClick={() => send({ type: 'opened', row: rowId!, unit: display, openAt: getShownErase(), text: initialDisplay })}
       title={ungraded ? `${LIMIT_NOT_GRADED} Click to correct this value` : 'Click to correct this value'}
     >
       {shown}
     </button>
+  );
+}
+
+/** A small trend line. A point printed as a limit (`limits[i]`) is a hollow
+ *  dot at its bound, left out of the line (US-12 AC20). */
+export function Sparkline({ points, limits, width = 44, height = 18 }: { points: number[]; limits?: boolean[]; width?: number; height?: number }) {
+  if (points.length < 2) {
+    return (
+      <svg width={width} height={height} style={{ display: 'block' }}>
+        <line x1="0" y1={height / 2} x2={width} y2={height / 2}
+              stroke="var(--bt-ink-200)" strokeDasharray="2 3" strokeWidth="1"/>
+      </svg>
+    );
+  }
+  // Area path: line + drop down to baseline + back to its start, closed.
+  const { coords, exact, line: d, area: areaD } = trendGeometry(points, limits, width, height, height - 2);
+  return (
+    <svg width={width} height={height} style={{ display: 'block' }}>
+      {areaD && <path d={areaD} fill="var(--bt-ink-100)" opacity="0.7"/>}
+      {areaD && <path d={d} fill="none" stroke="var(--bt-ink-700)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>}
+      {exact.length === 1 && <circle cx={exact[0][0]} cy={exact[0][1]} r="1.75" fill="var(--bt-ink-700)"/>}
+      {coords.map(([x, y], i) => limits?.[i] && (
+        <circle key={i} className="bt-spark-limit" cx={x} cy={y} r="1.75" fill="none" stroke="var(--bt-ink-700)" strokeWidth="1"/>
+      ))}
+    </svg>
   );
 }

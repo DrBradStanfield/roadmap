@@ -14,7 +14,7 @@ import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
-import { flushRoadmapStore, saveScreening } from '../lib/roadmap-data';
+import { flushRoadmapStore, saveScreening, getShownErase } from '../lib/roadmap-data';
 import { seedGuest, useHealthToolLifecycle, wait } from '../testing/health-tool-harness';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
@@ -37,7 +37,7 @@ useHealthToolLifecycle({ fakeTimers: true });
 /** A 66-year-old woman with a weight on record: every screening shows. */
 async function pageWith(screenings: Array<[string, string]>, selector: string) {
   await seedGuest({ sex: 'female', heightCm: 165, birthYear: 1960, birthMonth: 1 }, [['weight', 70]]);
-  for (const [key, value] of screenings) await saveScreening(key, value);
+  for (const [key, value] of screenings) await saveScreening(key, value, getShownErase());
   await flushRoadmapStore();
   const view = render(<HealthTool />);
   await waitFor(() => expect(view.container.querySelector(selector)).not.toBeNull());
@@ -118,7 +118,7 @@ describe('US-06 AC16: a screening date picker shows the saved date, not an old p
     const c = view.container;
     fireEvent.change(date(c, 'colorectal_last_date')!, { target: { value: '' } }); // "Month and year": the date is cleared
     expect(await saved('colorectal_last_date')).toBe('');
-    await saveScreening('colorectal_last_date', '2021-05'); // another device
+    await saveScreening('colorectal_last_date', '2021-05', getShownErase()); // another device
     await flushRoadmapStore();
     await act(async () => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
     expect(await saved('colorectal_last_date')).toBe('2021-05');

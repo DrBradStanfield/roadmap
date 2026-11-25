@@ -641,7 +641,7 @@ describe('US-32 AC38 — the two-phase tools work on a reviewer bearer (one shar
     });
     expect(proposed.isError, proposed.text).toBe(false);
     const receipt = proposed.structured.receipt as string;
-    const committed = await callTool(access, 'file_results', { commit: { receipt, accept: ['c1'], replace: [], approval: APPROVED } });
+    const committed = await callTool(access, 'file_results', { commit: { receipt, accept: ['c1'], replace: [], approval: APPROVED } }, LATER);
     expect(committed.isError, committed.text).toBe(false);
     expect(storedRecord().labValues.some((row) => row.metricName === 'Ferritin')).toBe(true);
   });

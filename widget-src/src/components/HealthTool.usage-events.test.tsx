@@ -12,7 +12,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
-import { flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
+import { flushRoadmapStore, initRoadmapStore, saveChangedMeasurements, getShownErase } from '../lib/roadmap-data';
 
 const surface = vi.hoisted(() => ({ shopify: true }));
 vi.mock('../lib/build-flags', () => ({
@@ -74,7 +74,7 @@ beforeEach(async () => {
   trackLiveRefresh();
   await initRoadmapStore(new LocalStorageAdapter());
   // Enough for a plan with suggestions.
-  await saveChangedMeasurements({ sex: 'female', heightCm: 165, birthYear: 1975, birthMonth: 5, unitSystem: 'si', weightKg: 64 }, {});
+  await saveChangedMeasurements({ sex: 'female', heightCm: 165, birthYear: 1975, birthMonth: 5, unitSystem: 'si', weightKg: 64 }, {}, getShownErase());
   await flushRoadmapStore();
 });
 afterEach(async () => {
@@ -124,7 +124,7 @@ describe('US-62 AC5: results_viewed when the plan is on screen', () => {
     phone = true;
     localStorage.clear(); sessionStorage.clear();
     await initRoadmapStore(new LocalStorageAdapter());
-    await saveChangedMeasurements({ sex: 'female', heightCm: 165, unitSystem: 'si', weightKg: 64 }, {}); // no birth date yet
+    await saveChangedMeasurements({ sex: 'female', heightCm: 165, unitSystem: 'si', weightKg: 64 }, {}, getShownErase()); // no birth date yet
     await flushRoadmapStore();
     const view = render(<HealthTool />);
     await waitFor(() => expect(view.container.querySelector('.quick-stats .stat-card')).not.toBeNull());

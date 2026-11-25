@@ -54,7 +54,7 @@ async function savedRecord(cloud = new MemoryCloud()) {
   const session = await RecordSession.open(webRecordHost(new MemoryAdapter(cloud)));
   session.edit((file) => void file.measurements.push(createMeasurement({
     id: 'a', metricType: 'weight', value: 80, recordedAt: '2026-10-01', createdAt: '2026-10-21T10:00:00.000Z',
-  })));
+  })), session.shownErase);
   await session.flush();
   return { cloud, session };
 }
@@ -277,7 +277,7 @@ describe('US-11 AC6: an erase made on this device whose clear does not read back
     const session = await RecordSession.open(webRecordHost(new LocalStorageAdapter()));
     session.edit((file) => void file.measurements.push(createMeasurement({
       id: 'a', metricType: 'weight', value: 80, recordedAt: '2026-10-01', createdAt: '2026-10-21T10:00:00.000Z',
-    })));
+    })), session.shownErase);
     await session.flush();
     expect(stored()).toEqual({ lineage: 'local', erase: '[0,null]' });
     const fence = localStorage.getItem(ERASE_FENCE_KEY);

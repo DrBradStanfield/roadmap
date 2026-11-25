@@ -7,7 +7,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { RecordSession } from '@roadmap/health-core/record-session';
 import type { UploadState } from '@roadmap/health-core/upload-flow';
 import type { UploadSaveIO } from '@roadmap/health-core/upload-save';
-import { saveUploadThrough, type Original, type UploadEngine } from './upload-save-store';
+import { saveUploadThrough, type Original, type UploadEngine, type WebSaving } from './upload-save-store';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 
@@ -21,7 +21,7 @@ async function ioFor(backend: string): Promise<UploadSaveIO<Original>> {
   } as unknown as UploadEngine;
   const session = { shownErase: 'e', refuses: () => false, file: {} } as unknown as RecordSession;
   const io = { holds: () => false, original: () => null, mimeType: () => '' };
-  await saveUploadThrough(session, { write: async () => {}, backend }, engine, {} as UploadState, '2026-02-01T00:00:00.000Z', true, io);
+  await saveUploadThrough(session, { write: async () => {}, backend }, engine, { erase: session.shownErase } as WebSaving, '2026-02-01T00:00:00.000Z', true, io);
   return seen!;
 }
 

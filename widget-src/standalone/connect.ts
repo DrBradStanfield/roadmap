@@ -54,11 +54,11 @@ export function signInAtBoot({ backend, reconnect }: ResolvedBackend): SignIn {
 }
 
 /** Why the remembered cloud is unusable at load (US-09 AC48). Google Drive's panel always offers its
- *  sign-in, as before; Dropbox's only when Dropbox refused the sign-in or its token, named by the error
- *  itself (a 401, or a sign-in only a new one mends). Any other failure, and every GitHub and WebDAV one,
- *  is retried by a reload (AC13). */
+ *  sign-in, as before; Dropbox's only when Dropbox refused the sign-in or its token, named by the error's
+ *  typed reason (`auth`, a refused token; `reconnect`, a sign-in only a new one mends; US-10 AC18). Any
+ *  other failure, and every GitHub and WebDAV one, is retried by a reload (AC13). */
 function lostAtLoad(provider: CloudBackend, error?: unknown): LostSignIn {
-  const refused = error instanceof StorageError && (error.status === 401 || error.reason === 'reconnect');
+  const refused = error instanceof StorageError && (error.reason === 'auth' || error.reason === 'reconnect');
   if (provider === 'google-drive' || (provider === 'dropbox' && refused)) return { kind: 'signedOut', provider };
   return { kind: 'unreachable', provider };
 }
