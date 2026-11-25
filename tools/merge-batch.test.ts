@@ -459,16 +459,25 @@ describe('merge-batch.mjs --skip and pre-flight (US-64 AC15)', () => {
     expect(r.err).not.toContain('abcd');
   });
 
+  // Times growth, not speed (an absolute budget fails on a loaded machine, docs/gotchas.md 2026-11-13, lead TA-3):
+  // 8x the lines must take under 8x the time, each size the fastest of three batches. Linear is well under 8x with the
+  // batch's fixed cost (0.65 s for 150,000 lines, 2026-11-26); the old per-match search took about 9x the
+  // 50,000-line case's 5 s.
   it('pre-flight scans a 150,000-line hunk of credential shapes in linear time', () => {
-    const lines = Array.from({ length: 150000 }, (_, i) => `v${i} ${pat}`).join('\n');
-    const sha = pr(95, baseSha, (d) => write(d, 'src/big.txt', `${lines}\n`));
-    const r = runBatch([`95 ${sha}`]);
-    expect(r.code).toBe(5);
-    expect(r.err).toContain('src/big.txt:1 github_pat');
-    expect(r.err).toContain('src/big.txt:150000 github_pat'); // the whole report, not cut short at exit
-    expect(r.err).not.toContain(pat);
-    // Linear takes about a second here; the old per-match search took about 9x the 50,000-line case's 5 s.
-    expect(r.ms).toBeLessThan(4000);
+    const ms: number[] = [];
+    for (const [n, size] of [[96, 18_750], [95, 150_000]]) {
+      const lines = Array.from({ length: size }, (_, i) => `v${i} ${pat}`).join('\n');
+      const sha = pr(n, baseSha, (d) => write(d, 'src/big.txt', `${lines}\n`));
+      ms.push(Math.min(...[0, 1, 2].map(() => {
+        const r = runBatch([`${n} ${sha}`]);
+        expect(r.code).toBe(5);
+        expect(r.err).toContain('src/big.txt:1 github_pat');
+        expect(r.err).toContain(`src/big.txt:${size} github_pat`); // the whole report, not cut short at exit
+        expect(r.err).not.toContain(pat);
+        return r.ms;
+      })));
+    }
+    expect(ms[1] / ms[0]).toBeLessThan(8);
   }, 120000);
 
   /** The batch as a linked worktree of a main clone whose own hook is `hook`; main has two package folders. */

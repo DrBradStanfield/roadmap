@@ -11,7 +11,7 @@ import { DocumentLightbox, deleteTransition, originalTransition, type DeleteStep
 import { deleteDocument, readDocumentFile } from '../lib/roadmap-data';
 import type { ApiDocument } from '../lib/api-types';
 
-vi.mock('../lib/roadmap-data', () => ({ readDocumentFile: vi.fn(), deleteDocument: vi.fn() }));
+vi.mock('../lib/roadmap-data', () => ({ readDocumentFile: vi.fn(), deleteDocument: vi.fn(), getShownErase: () => 'erase-shown' }));
 vi.mock('../lib/useIsMobile', () => ({ useIsMobile: () => false }));
 
 const doc = (fileRef: string): ApiDocument => ({
@@ -99,6 +99,7 @@ describe('US-14 AC9: delete and view original never stick', () => {
     fireEvent.click(button('Confirm Delete'));
     await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
     expect(onDeleted).toHaveBeenCalledWith('d1');
+    expect(deleteDocument).toHaveBeenCalledWith('d1', 'erase-shown'); // the erase shown at the press (H20)
   });
 
   it('a delete the record refuses goes back to the first press', async () => {

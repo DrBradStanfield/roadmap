@@ -13,15 +13,15 @@ const kindOf = (error: unknown) => (JSON.parse(failed('dropbox', error)) as { ki
 
 describe('US-09 AC38 (#979): a full Dropbox is read by its reason', () => {
   it('a StorageError with reason storage-full is storage-full, whatever it says', () => {
-    expect(kindOf(new StorageError('Dropbox has no room left', undefined, undefined, 409, 'storage-full'))).toBe('storage-full');
+    expect(kindOf(new StorageError('Dropbox has no room left', undefined, undefined, 409, 'storage-full', 'refused'))).toBe('storage-full');
   });
 
   it('the save’s rewrap of a full Dropbox, after an earlier write may have landed, is storage-full', () => {
-    const full = new StorageError('Dropbox has no room left', undefined, undefined, 409, 'storage-full');
-    expect(kindOf(new StorageError(full.message, 'Read the record again.', full, 409))).toBe('storage-full');
+    const full = new StorageError('Dropbox has no room left', undefined, undefined, 409, 'storage-full', 'refused');
+    expect(kindOf(new StorageError(full.message, 'Read the record again.', full, 409, undefined, 'may-have-landed'))).toBe('storage-full');
   });
 
   it('the words alone, with no reason, are not a full Dropbox', () => {
-    expect(kindOf(new StorageError('Dropbox is full', undefined, undefined, 409))).toBe('unreachable');
+    expect(kindOf(new StorageError('Dropbox is full', undefined, undefined, 409, undefined, 'refused'))).toBe('unreachable');
   });
 });

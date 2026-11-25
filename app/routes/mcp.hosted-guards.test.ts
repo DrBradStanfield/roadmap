@@ -146,7 +146,7 @@ async function rpc(access: string, method: string, params: unknown = {}) {
     method: 'POST',
     headers: { Authorization: `Bearer ${access}`, 'content-type': 'application/json' },
     body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
-  }), NOW, { makeAdapter });
+  }), NOW, { makeAdapter, clock: () => Date.parse(NOW) });
   expect(res.status).toBe(200);
   return (await res.json()) as { result?: { content?: Array<{ text: string }>; isError?: boolean; tools?: Array<{ name: string }> } };
 }
@@ -285,7 +285,7 @@ async function callToolAt(access: string, name: string, args: unknown, now: stri
     method: 'POST',
     headers: { Authorization: `Bearer ${access}`, 'content-type': 'application/json' },
     body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name, arguments: args } }),
-  }), now, { makeAdapter });
+  }), now, { makeAdapter, clock: () => Date.parse(now) });
   expect(res.status).toBe(200);
   const answer = (await res.json()) as { result: { content: Array<{ text: string }>; structuredContent?: Record<string, unknown>; isError?: boolean } };
   return { text: answer.result.content[0].text, structured: answer.result.structuredContent, isError: answer.result.isError === true };

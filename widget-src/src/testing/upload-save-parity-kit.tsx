@@ -10,7 +10,7 @@ import type { ChoiceChange } from '@roadmap/health-core/upload-choices';
 import { reviewedWrites, uploadReview, type UploadReview } from '@roadmap/health-core/upload-review';
 import { uploadSave } from '@roadmap/health-core/upload-save';
 import type { ScreeningPerson } from '@roadmap/health-core/upload-screening';
-import { deleteUserData, flushRoadmapStore, initRoadmapStore, recordFileSync } from '../lib/roadmap-data';
+import { deleteUserData, flushRoadmapStore, getShownErase, initRoadmapStore, recordFileSync } from '../lib/roadmap-data';
 import { sharedSave } from '../lib/upload-shared-save';
 import { uploadScreens } from '../lib/upload-screens';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
@@ -19,6 +19,7 @@ import { RoadmapStore } from '../storage/roadmap-store';
 import type { labImport } from '../lib/upload-api';
 import { UNDATED_PREVIOUS } from '@roadmap/health-core/lab-extraction';
 import { drive } from './upload-driver';
+import { stamped } from './upload-save-kit';
 import type { HealthUploadAPI } from '../upload-entry';
 
 /** One picked file: its name, and the key its reader answers to (a ZIP: its members). */
@@ -111,7 +112,7 @@ export async function adapterSave(seed: Seed, upload: HealthUploadAPI, probes: P
       run.send({ type: 'saveStarted', reviewed: reviewedWrites(review) });
       const s = run.state();
       if (s.phase !== 'saving') break;
-      const event = await sharedSave(upload, s, run.held, seed.person, () => {});
+      const event = await sharedSave(upload, stamped(s, getShownErase()), run.held, seed.person, () => {});
       run.send(event);
       if (event.type === 'saved') outcome = event.outcome;
       else if (!seed.failFirst) break;

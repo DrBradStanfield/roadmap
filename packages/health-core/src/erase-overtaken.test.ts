@@ -45,7 +45,7 @@ describe('RecordSession.erase: another writer\'s erase taken in during the flush
     const session = await RecordSession.open(host(cloud, heard));
     session.edit((file) => void file.measurements.push(createMeasurement({
       id: 'a', metricType: 'weight', value: 80, recordedAt: '2026-11-01', createdAt: new Date(clock).toISOString(),
-    })));
+    })), session.shownErase);
     await session.flush();
     heard.length = 0;
     const other = await RecordSession.open(host(cloud, []));

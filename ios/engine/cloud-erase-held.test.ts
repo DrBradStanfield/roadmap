@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
-import { ConflictError, StorageError, UNREACHABLE_HINT } from '../../packages/health-core/src/adapter';
+import { answerOutcome, ConflictError, StorageError, UNREACHABLE_HINT } from '../../packages/health-core/src/adapter';
 import { SchemaTooNewError } from '../../packages/health-core/src/migrate';
 import { eraseFailure } from './cloud-adapters';
 import { HOLD_MS, holdsStill } from './cloud';
@@ -268,20 +268,20 @@ describe('the bridge keeps its id with the new door (S50b)', () => {
 // (fetch never answered, a timeout, an abort), 408, 429, 5xx, Google's rate or daily limit.
 // 'definite' for a provider's refusal; 'unknown' for anything else. Only 'transient' holds.
 type Word = 'transient' | 'definite' | 'unknown';
-const status = (provider: string, code: number, body = '') => new StorageError(`${provider} write failed (${code}): ${body}`, undefined, undefined, code);
+const status = (provider: string, code: number, body = '') => new StorageError(`${provider} write failed (${code}): ${body}`, undefined, undefined, code, undefined, answerOutcome(code, true));
 const named = (name: string, message: string) => Object.assign(new Error(message), { name });
 const noAnswer = (provider: string, cause: unknown = new TypeError('The Internet connection appears to be offline.')) =>
-  new StorageError(`${provider} did not answer`, UNREACHABLE_HINT, cause);
+  new StorageError(`${provider} did not answer`, UNREACHABLE_HINT, cause, undefined, undefined, 'no-answer');
 const transport = (provider: string): Array<[string, unknown, Word]> => [
   [`${provider}: no network`, noAnswer(provider), 'transient'],
   [`${provider}: a timeout`, noAnswer(provider, named('TimeoutError', 'The operation timed out.')), 'transient'],
   [`${provider}: an abort`, noAnswer(provider, named('AbortError', 'This operation was aborted')), 'transient'],
-  [`${provider}: a write with no answer, which may have landed`, new StorageError(`${provider} did not answer`, 'The change may have landed.', new TypeError('offline')), 'transient'],
-  [`${provider}: no answer, rewrapped by the save after an earlier write`, new StorageError(`${provider} did not answer`, 'check what landed', noAnswer(provider)), 'transient'],
+  [`${provider}: a write with no answer, which may have landed`, new StorageError(`${provider} did not answer`, 'The change may have landed.', new TypeError('offline'), undefined, undefined, 'may-have-landed'), 'transient'],
+  [`${provider}: no answer, rewrapped by the save after an earlier write`, new StorageError(`${provider} did not answer`, 'check what landed', noAnswer(provider), undefined, undefined, 'may-have-landed'), 'transient'],
   [`${provider}: (i) the app's allow-list refusal, a TypeError like a network failure`, noAnswer(provider, new TypeError('This app does not send that request.')), 'unknown'],
   [`${provider}: no token for the request`, noAnswer(provider, new TypeError('Not signed in.')), 'unknown'],
-  [`${provider}: (ii) a token failure Swift did not call an outage (a Keychain that will not save)`, new StorageError('The operation couldn’t be completed.', UNREACHABLE_HINT), 'unknown'],
-  [`${provider}: (iii) a token endpoint answering 503`, new StorageError(`${provider} sign-in failed (503). Try again.`, UNREACHABLE_HINT), 'unknown'],
+  [`${provider}: (ii) a token failure Swift did not call an outage (a Keychain that will not save)`, new StorageError('The operation couldn’t be completed.', UNREACHABLE_HINT, undefined, undefined, undefined, 'no-answer'), 'unknown'],
+  [`${provider}: (iii) a token endpoint answering 503`, new StorageError(`${provider} sign-in failed (503). Try again.`, UNREACHABLE_HINT, undefined, undefined, undefined, 'no-answer'), 'unknown'],
   [`${provider}: 408`, status(provider, 408), 'transient'],
   [`${provider}: 429`, status(provider, 429), 'transient'],
   [`${provider}: 500`, status(provider, 500), 'transient'],
@@ -290,8 +290,8 @@ const transport = (provider: string): Array<[string, unknown, Word]> => [
   [`${provider}: 400`, status(provider, 400), 'definite'],
   [`${provider}: 404`, status(provider, 404), 'definite'],
   [`${provider}: 413`, status(provider, 413), 'definite'],
-  [`${provider}: a conflict storm`, new StorageError('Save failed after 5 attempts — a sync conflict storm', 'Try again.', new ConflictError()), 'unknown'],
-  [`${provider}: a file that is not JSON`, new StorageError(`${provider} read failed: file is not valid JSON (possible corruption).`, undefined, new SyntaxError('bad')), 'unknown'],
+  [`${provider}: a conflict storm`, new StorageError('Save failed after 5 attempts — a sync conflict storm', 'Try again.', new ConflictError(), undefined, undefined, 'refused'), 'unknown'],
+  [`${provider}: a file that is not JSON`, new StorageError(`${provider} read failed: file is not valid JSON (possible corruption).`, undefined, new SyntaxError('bad'), undefined, undefined, 'no-answer'), 'unknown'],
   [`${provider}: a newer schema`, new SchemaTooNewError(9, 3), 'definite'],
   [`${provider}: a bug of ours`, new TypeError('x is undefined'), 'unknown'],
 ];
@@ -299,43 +299,43 @@ const transport = (provider: string): Array<[string, unknown, Word]> => [
 describe.each<[string, Array<[string, unknown, Word]>]>([
   ['Dropbox', [
     ...transport('Dropbox'),
-    ['Dropbox: a revoked or signed-out grant is definite', new StorageError('Dropbox refused the sign-in.', undefined, undefined, 401), 'definite'],
-    ['Dropbox: a signed-out web session (reason reconnect) is definite', new StorageError('Dropbox session expired — please reconnect.', undefined, undefined, undefined, 'reconnect'), 'definite'],
-    ['Dropbox: full (409 insufficient_space)', new StorageError('Dropbox is full', 'Free up space', undefined, 409, 'storage-full'), 'definite'],
+    ['Dropbox: a revoked or signed-out grant is definite', new StorageError('Dropbox refused the sign-in.', undefined, undefined, 401, undefined, 'refused'), 'definite'],
+    ['Dropbox: a signed-out web session (reason reconnect) is definite', new StorageError('Dropbox session expired — please reconnect.', undefined, undefined, undefined, 'reconnect', 'refused'), 'definite'],
+    ['Dropbox: full (409 insufficient_space)', new StorageError('Dropbox is full', 'Free up space', undefined, 409, 'storage-full', 'refused'), 'definite'],
     ['Dropbox: another 409', status('Dropbox', 409, 'path/malformed_path/'), 'definite'],
     ['Dropbox: 403', status('Dropbox', 403), 'definite'],
-    ['Dropbox: a write that returned no rev', new StorageError('Dropbox write returned no rev.'), 'unknown'],
+    ['Dropbox: a write that returned no rev', new StorageError('Dropbox write returned no rev.', undefined, undefined, undefined, undefined, 'may-have-landed'), 'unknown'],
   ]],
   ['Google Drive', [
     ...transport('Google Drive'),
-    ['Google Drive: a revoked or signed-out grant is definite', new StorageError('Google Drive needs you to sign in again.', undefined, undefined, 401), 'definite'],
-    ['Google Drive: a web grant gone (reason reconnect) is definite', new StorageError('Google Drive needs to be reconnected.', undefined, undefined, undefined, 'reconnect'), 'definite'],
+    ['Google Drive: a revoked or signed-out grant is definite', new StorageError('Google Drive needs you to sign in again.', undefined, undefined, 401, undefined, 'refused'), 'definite'],
+    ['Google Drive: a web grant gone (reason reconnect) is definite', new StorageError('Google Drive needs to be reconnected.', undefined, undefined, undefined, 'reconnect', 'refused'), 'definite'],
     ['Google Drive: 403 rateLimitExceeded', status('Google Drive', 403, '{"error":{"errors":[{"reason":"rateLimitExceeded"}]}}'), 'transient'],
     ['Google Drive: 403 userRateLimitExceeded', status('Google Drive', 403, '{"error":{"errors":[{"reason":"userRateLimitExceeded"}]}}'), 'transient'],
     ['Google Drive: 403 dailyLimitExceeded', status('Google Drive', 403, '{"error":{"errors":[{"reason":"dailyLimitExceeded"}]}}'), 'transient'],
     ['Google Drive: 403 dailyLimitExceededUnreg (no valid credentials) is definite', status('Google Drive', 403, '{"error":{"errors":[{"reason":"dailyLimitExceededUnreg"}]}}'), 'definite'],
     ['Google Drive: 403 storageQuotaExceeded (full)', status('Google Drive', 403, '{"error":{"errors":[{"reason":"storageQuotaExceeded"}]}}'), 'definite'],
     ['Google Drive: 403 insufficientPermissions', status('Google Drive', 403, '{"error":{"errors":[{"reason":"insufficientPermissions"}]}}'), 'definite'],
-    ['Google Drive: a damaged copy pauses saving', new StorageError('A copy of the record in Google Drive could not be read, so saving is paused.', 'Saving resumes once it is repaired.'), 'unknown'],
-    ['Google Drive: an incomplete record enumeration', new StorageError('Google Drive record enumeration is incomplete.'), 'unknown'],
+    ['Google Drive: a damaged copy pauses saving', new StorageError('A copy of the record in Google Drive could not be read, so saving is paused.', 'Saving resumes once it is repaired.', undefined, undefined, undefined, 'refused'), 'unknown'],
+    ['Google Drive: an incomplete record enumeration', new StorageError('Google Drive record enumeration is incomplete.', undefined, undefined, undefined, undefined, 'no-answer'), 'unknown'],
   ]],
   ['GitHub', [
     ...transport('GitHub'),
-    ['GitHub: a revoked or signed-out grant is definite', new StorageError('GitHub rejected the token — check it has Contents read+write on this repo.', undefined, undefined, 401), 'definite'],
-    ['GitHub: a token without access (403), its rate limit included, is definite', new StorageError('GitHub rejected the token', undefined, undefined, 403), 'definite'],
-    ['GitHub: the repo not found (404)', new StorageError('GitHub repo not found', undefined, undefined, 404), 'definite'],
+    ['GitHub: a revoked or signed-out grant is definite', new StorageError('GitHub rejected the token — check it has Contents read+write on this repo.', undefined, undefined, 401, undefined, 'refused'), 'definite'],
+    ['GitHub: a token without access (403), its rate limit included, is definite', new StorageError('GitHub rejected the token', undefined, undefined, 403, undefined, 'refused'), 'definite'],
+    ['GitHub: the repo not found (404)', new StorageError('GitHub repo not found', undefined, undefined, 404, undefined, 'refused'), 'definite'],
     ['GitHub: 422', status('GitHub', 422), 'definite'],
-    ['GitHub: not connected', new StorageError('GitHub is not connected.'), 'unknown'],
-    ['GitHub: a file over 1 MB', new StorageError('GitHub read failed: the file is larger than the 1 MB the Contents API returns inline.'), 'unknown'],
+    ['GitHub: not connected', new StorageError('GitHub is not connected.', undefined, undefined, undefined, undefined, 'refused'), 'unknown'],
+    ['GitHub: a file over 1 MB', new StorageError('GitHub read failed: the file is larger than the 1 MB the Contents API returns inline.', undefined, undefined, undefined, undefined, 'no-answer'), 'unknown'],
   ]],
   ['Self-host (WebDAV)', [
     ...transport('Self-host'),
-    ['Self-host: a revoked or signed-out grant is definite', new StorageError('Self-host rejected the credentials.', undefined, undefined, 401), 'definite'],
+    ['Self-host: a revoked or signed-out grant is definite', new StorageError('Self-host rejected the credentials.', undefined, undefined, 401, undefined, 'refused'), 'definite'],
     ['Self-host: 403', status('Self-host', 403), 'definite'],
     ['Self-host: 405', status('Self-host', 405), 'definite'],
     ['Self-host: 409 (no parent folder)', status('Self-host', 409), 'definite'],
     ['Self-host: 507 Insufficient Storage reads as a 5xx', status('Self-host', 507), 'transient'],
-    ['Self-host: not connected', new StorageError('Self-host is not connected.'), 'unknown'],
+    ['Self-host: not connected', new StorageError('Self-host is not connected.', undefined, undefined, undefined, undefined, 'refused'), 'unknown'],
   ]],
 ])('the erase-failure rule: %s', (_provider, rows) => {
   it.each(rows)('%s', (_name, error, word) => {

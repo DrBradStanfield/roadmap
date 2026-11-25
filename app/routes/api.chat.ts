@@ -29,8 +29,9 @@ import {
   generateTitle,
   MAX_MESSAGE_LENGTH,
 } from '../lib/chat.server';
-import { routeQuery, reportRouterFailure, sanitizeForRouter, redactForWidget } from '../lib/chat-router.server';
-import { routerColumns, matchEventText, answerColumns } from '../lib/chat-persist.server';
+import { reportRouterFailure, sanitizeForRouter, redactForWidget } from '../lib/chat-router.server';
+import { runRouter } from '../lib/chat-router-stage.server';
+import { matchEventRow, matchEventText, answerColumns } from '../lib/chat-persist.server';
 import { loadBlogIndex } from '../lib/blog-index.server';
 import { openArticle, preferMasters } from '../lib/router-view';
 import { reportChatError, validConversationId, readClientHistory, streamTurn, type Turn } from '../lib/chat-turn-io.server';
@@ -427,7 +428,7 @@ async function chatAction(request: Request, app: boolean) {
       const fireRouter = shouldFireRouter(classifierResult);
       if (fireRouter) write({ type: 'status', text: 'Finding relevant articles' });
       const routerResult = fireRouter
-        ? await routeQuery(sanitizedCurrent, sanitizedFirst, sanitizedRecent, 'CHAT')
+        ? await runRouter(sanitizedCurrent, sanitizedFirst, sanitizedRecent, 'CHAT', (r) => reportRouterFailure(r, 'shopify'))
         : null;
 
       const tAfterContext = Date.now();
@@ -442,8 +443,6 @@ async function chatAction(request: Request, app: boolean) {
       const routed = routerResult
         ? preferMasters(effectiveHandles, index, message, { open: openArticle(index, body.articleHandle) })
         : { handles: [], replaced: [] };
-
-      reportRouterFailure(routerResult);
 
       // Create or validate conversation. A widget conversation exists only in the
       // user's file; the id here is a grouping key for its telemetry rows.
@@ -545,26 +544,22 @@ async function chatAction(request: Request, app: boolean) {
       // row, trimmed to its whitelist in one place (redactForWidget).
       // The row holds question text, which may carry health details: at most its
       // first 500 chars (matchEventText), blanked by the 30-day purge (US-15 AC7/AC26).
-      const matchEvent = {
-        message_id: assistantMessageId,
-        conversation_id: activeConversationId,
-        user_id: auth.userId,
-        message: matchEventText(sanitizedCurrent),
-        router_context: {
-          platform: 'shopify',
-          first: sanitizedFirst ? matchEventText(sanitizedFirst) : null,
-          recent: sanitizedRecent.map(matchEventText),
-          // US-50 AC14 usage signal: index handles only, never user text.
-          ...(routed.replaced.length ? { replaced: routed.replaced } : {}),
-          ...(articles?.reduced.length ? { reduced: articles.reduced } : {}),
-        },
-        matched_handles: effectiveHandles,
-        ...routerColumns(routerResult),
+      // US-50 AC14 usage signal (replaced, reduced): index handles only, never user text.
+      const matchEvent = matchEventRow({
+        messageId: assistantMessageId,
+        conversationId: activeConversationId,
+        userId: auth.userId,
+        question: sanitizedCurrent,
+        platform: 'shopify',
+        context: { first: sanitizedFirst ? matchEventText(sanitizedFirst) : null, recent: sanitizedRecent.map(matchEventText) },
+        replaced: routed.replaced,
+        reduced: articles?.reduced,
+        routerResult,
         classification: classifierResult.classification,
-        router_skipped: routerSkipped,
-        is_fallback: completion.isFallback,
-        failure_mode: completion.failureMode ?? null,
-      };
+        routerSkipped,
+        isFallback: completion.isFallback,
+        failureMode: completion.failureMode,
+      });
       const logMatchEvent = () => Promise.resolve(auth.client!
         .from('chat_match_events')
         .insert(retention !== 'transcript' ? redactForWidget(matchEvent) : matchEvent)

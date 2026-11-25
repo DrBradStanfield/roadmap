@@ -63,11 +63,13 @@ export function UploadListRow({ row, value, draftLabel, hidden, editable, on }: 
   row: ListRow; value: string; draftLabel: string | null; hidden: boolean; editable: boolean; on: RowEvents;
 }) {
   const id = useId();
-  const [unitId, captionId, reasonsId, errorId, labelId, heldId, proposedId, printedId] = ['unit', 'caption', 'reasons', 'error', 'label', 'held', 'proposed', 'printed'].map((p) => `${id}${p}`);
+  const [unitId, captionId, reasonsId, errorId, labelId, heldId, proposedId, printedId, nameId, replaceId] = ['unit', 'caption', 'reasons', 'error', 'label', 'held', 'proposed', 'printed', 'name', 'replace'].map((p) => `${id}${p}`);
   // A blocking row's caption is its error: said once.
   const caption = row.caption !== row.error ? row.caption : null;
   const held = row.replaces !== null ? row.held : null;
+  // A test's name can be the person's own: each control is named from text on the page, never an attribute (US-09 AC7l).
   const name = rowName(row);
+  const namedBy = name === row.label ? labelId : nameId;
   const type = (text: string) => on.type(row.key, text, row.unit.typeIn, row.unit.label);
   const metric = row.shown.cell?.metric;
   // An open draft draws the unit it was typed under, and no control: a press could not change what it writes (Codex R1).
@@ -83,16 +85,17 @@ export function UploadListRow({ row, value, draftLabel, hidden, editable, on }: 
       <label className="upload-list-check" {...tick.label}>
         <input
           type="checkbox" className="upload-list-tick" disabled={!editable}
-          aria-label={name} data-at={row.input === 'none' ? row.key : undefined}
+          aria-labelledby={namedBy} data-at={row.input === 'none' ? row.key : undefined}
           {...tick.box}
         />
         <span id={labelId} className="upload-list-label">{row.label}</span>
+        {namedBy === nameId && <span id={nameId} hidden>{name}</span>}
       </label>
       <span className={`upload-list-value${row.reasons.length ? ' bt-cell-low-confidence' : ''}`}>
         {row.input === 'number' ? (
           <input
             type="text" inputMode="decimal" size={1} className="bt-input upload-list-input" value={value} disabled={!editable}
-            aria-label={name} aria-invalid={row.error !== null}
+            aria-labelledby={namedBy} aria-invalid={row.error !== null}
             aria-describedby={describedBy(unitId, row.printed && printedId, caption && captionId, row.reasons.length > 0 && reasonsId, row.error && errorId)}
             data-at={row.key}
             onChange={(e) => type(e.target.value)}
@@ -124,11 +127,12 @@ export function UploadListRow({ row, value, draftLabel, hidden, editable, on }: 
         <label className="upload-list-replace" {...replace.label}>
           <input
             type="checkbox" disabled={!editable} {...replace.box}
-            aria-label={row.replaceLabel ?? undefined}
+            aria-labelledby={row.replaceLabel ? replaceId : undefined}
             // Replace's label is not unique on its own: the row's label, the saved value and the proposed one tie it to its row.
             aria-describedby={describedBy(labelId, held && heldId, proposing && proposedId)}
           />
           {REVIEW_CELL_TEXT.replace}
+          {row.replaceLabel && <span id={replaceId} hidden>{row.replaceLabel}</span>}
         </label>
       )}
       {/* The value Replace would write, as the engine shows it: a description names text, never an input (US-13 AC10).

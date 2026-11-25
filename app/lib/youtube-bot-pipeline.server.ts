@@ -6,7 +6,8 @@
  */
 import * as Sentry from '@sentry/react-router';
 import { classifyMessage, isUnreadableAnswer, shouldFireRouter } from './chat-classifier.server';
-import { routeQuery, sanitizeForRouter, type RouterResult } from './chat-router.server';
+import { sanitizeForRouter, type RouterResult } from './chat-router.server';
+import { runRouter } from './chat-router-stage.server';
 import { SILENT_ON_YOUTUBE } from '../../packages/health-core/src/models';
 import { findBlogByVideoId, loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
 import { preferMasters } from './router-view';
@@ -30,8 +31,10 @@ import {
   FOLLOWUP_MIN_WORDS,
   CRISIS,
   MAX_CHANNEL_REPLIES_PER_THREAD,
+  MAX_FOLLOWUP_EVALUATIONS_PER_THREAD,
 } from './youtube-bot-config.server';
 import type { YouTubeThread, YouTubeReply } from './youtube-bot-api.server';
+import type { FollowUpClaim } from './youtube-bot-store.server';
 
 // ---------------------------------------------------------------------------
 // Filters
@@ -117,12 +120,17 @@ export function assessThreadFollowUp(p: {
   channelId: string;
   originalAuthor: string;        // display name of the thread's top-level author
   channelHandle: string | null;  // "@handle", or null when unknown
+  claims: ReadonlyMap<string, FollowUpClaim>; // the bot's claims on these replies (readFollowUpClaims)
 }): FollowUpDecision {
   const channelReplies = p.replies.filter(r => r.authorChannelId === p.channelId);
 
   if (channelReplies.some(r => !p.botPostedIds.has(r.id))) return { skip: 'brad-engaged' };
   if (channelReplies.length === 0) return { skip: 'no-bot-reply-visible' };
-  if (channelReplies.length >= MAX_CHANNEL_REPLIES_PER_THREAD) return { skip: 'thread-cap' };
+  // A follow-up the bot answered counts toward the cap even before its reply shows in the list.
+  const answered = p.replies.filter(r => p.claims.get(r.id) === 'posted').length;
+  if (Math.max(channelReplies.length, 1 + answered) >= MAX_CHANNEL_REPLIES_PER_THREAD) return { skip: 'thread-cap' };
+  // Every claim on a reply is one model run, finished or running, so one viewer cannot buy unlimited runs.
+  if (p.claims.size >= MAX_FOLLOWUP_EVALUATIONS_PER_THREAD) return { skip: 'thread-evaluations-cap' };
 
   const lastBotTime = channelReplies[channelReplies.length - 1].publishedAt;
   const handle = p.channelHandle?.toLowerCase();
@@ -134,10 +142,18 @@ export function assessThreadFollowUp(p: {
   );
   if (candidates.length === 0) return { skip: 'no-addressed-followup' };
 
-  // The oldest that passes the hygiene gates, one follow-up per thread per tick. A short
-  // or stale reply is passed over, so a later crisis reply in the thread is still seen (AC56).
-  const passing = candidates.find(r => followUpHygiene(r) === null);
-  return passing ? { candidate: passing } : { skip: followUpHygiene(candidates[0])! };
+  // The oldest not yet handled that passes the hygiene gates, one follow-up per thread per tick. A short or
+  // stale reply is passed over, and so is one the bot already handled, whatever the outcome, so a later
+  // crisis reply in the thread is still seen (AC56, AC68). A claim with no decision yet holds the thread:
+  // the machine running it may be about to post there.
+  const passing = candidates.filter(r => followUpHygiene(r) === null);
+  if (passing.length === 0) return { skip: followUpHygiene(candidates[0])! };
+  for (const r of passing) {
+    const claim = p.claims.get(r.id);
+    if (claim === undefined) return { candidate: r };
+    if (claim === 'running') return { skip: 'claim-running' };
+  }
+  return { skip: 'followups-handled' };
 }
 
 /** Rebuild the thread as chat history for the main LLM: top-level comment,
@@ -221,15 +237,28 @@ export function completionOutcome(completion: ChatCompletionResult, latencyMs: n
 
 /** Main-LLM fallbacks this tick, by failure mode (US-15 AC58). Ticks never overlap within a process (runTick). */
 const tickFallbacks = new Map<string, number>();
+/** Failed router calls this tick (US-15 AC74): runRouter's report policy for YouTube. */
+let tickRouterFailures = 0;
+
+function countTickRouterFailure(result: RouterResult): void {
+  if (result.error) tickRouterFailures += 1;
+}
 
 /**
- * One bounded Sentry warning for the tick's main-LLM fallbacks, then a fresh
- * count (US-15 AC58). A fallback is unclaimed and retried every tick, so an
- * alert per comment, as the web chat sends per question, would repeat for each
- * failing comment every 30 minutes; one per tick is at most 48 a day per machine. Counts
- * and failure modes only, never a comment or a reply.
+ * One bounded Sentry warning for the tick's main-LLM fallbacks, and one for
+ * its router failures, then fresh counts (US-15 AC58, AC74). A failed comment
+ * is retried every tick, so an alert per comment, as the web chat sends per
+ * question, would repeat for each failing comment every 30 minutes; one per
+ * tick is at most 48 a day per machine. Counts and failure modes only, never a
+ * comment, a reply or an error text.
  */
 export function reportTickFallbacks(): void {
+  if (tickRouterFailures > 0) {
+    Sentry.captureMessage('Router: request or output failure', {
+      level: 'warning', tags: { feature: 'chat', subsystem: 'router', platform: 'youtube' }, extra: { count: tickRouterFailures },
+    });
+    tickRouterFailures = 0;
+  }
   if (tickFallbacks.size === 0) return;
   const byMode = Object.fromEntries(tickFallbacks);
   tickFallbacks.clear();
@@ -273,7 +302,7 @@ export async function runPipeline(
   let routerResult: RouterResult | null = null;
   const routerSkipped = !shouldFireRouter(classifierResult);
   if (!routerSkipped) {
-    routerResult = await routeQuery(sanitized, undefined, undefined, 'YOUTUBE');
+    routerResult = await runRouter(sanitized, undefined, undefined, 'YOUTUBE', countTickRouterFailure);
     routerHandles = routerResult.handles;
   }
 

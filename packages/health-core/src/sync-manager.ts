@@ -21,6 +21,7 @@
  */
 import {
   ConflictError,
+  LANDED_HINT,
   LostUpdateError,
   StorageError,
   UNREACHABLE_HINT,
@@ -28,7 +29,7 @@ import {
   type StorageBackendId,
 } from './adapter';
 import { RecordShapeError, SchemaTooNewError } from './migrate';
-import { isDefiniteRefusal, mayHaveLanded, uncertainWrite } from './write-refusal';
+import { afterWrite, mayHaveLanded } from './write-refusal';
 
 const MAX_SAVE_ATTEMPTS = 5;
 
@@ -138,9 +139,9 @@ export class SyncManager<T extends SyncedFile> {
         } catch (error) {
           lastError = error;
           if (error instanceof LostUpdateError) mayHaveWritten = true;
-          // A write that threw may still have landed (a lost answer, a 5xx): only a definite
-          // refusal stored nothing. Marked, never rewrapped, so its words stay (lead S57).
-          else if (typeof error === 'object' && error !== null && !isDefiniteRefusal(error)) uncertainWrite(error);
+          // A write that threw may still have landed (a lost answer, a 5xx): its adapter says so in
+          // its outcome; one it did not name is marked, never rewrapped, so its words stay (lead S57).
+          else afterWrite(error);
           if (error instanceof ConflictError) continue; // remote moved — re-read & re-merge
           throw error;
         }
@@ -157,11 +158,14 @@ export class SyncManager<T extends SyncedFile> {
         if (!mayHaveWritten) throw error;
         // The status stays, so a 401 still refreshes the token (iOS).
         const status = error instanceof StorageError ? error.status : undefined;
-        const hint = !landedWarning ? VERIFY_HINT : afterLanded(landedWarning, status === 401 || status === 403
+        const reason = error instanceof StorageError ? error.reason : undefined;
+        const hint = !landedWarning ? VERIFY_HINT : afterLanded(landedWarning, accessRefused(reason)
           ? 'the provider refused this connection’s access. Reconnect the provider, which grants access again, then read the record again to check what landed before retrying.'
           : 'a later step failed, so check what landed: read the record again before trying it a second time.');
         // The reason stays too, so a revoked grant met after the write is still a reconnect (US-09 AC30).
-        throw uncertainWrite(new StorageError(error instanceof Error ? error.message : 'Save failed after a write.', hint, error, status, error instanceof StorageError ? error.reason : undefined));
+        const wrapped = new StorageError(error instanceof Error ? error.message : 'Save failed after a write.', hint, error, status, reason, 'may-have-landed');
+        if (landedWarning) wrapped.earlierLanded = true;
+        throw wrapped;
       }
     }
     const storm = new StorageError(
@@ -174,8 +178,12 @@ export class SyncManager<T extends SyncedFile> {
           ? 'Some of it may have landed. Read the record again before retrying.'
           : 'Your data is unharmed and nothing was written. Try again.',
       lastError,
+      undefined,
+      undefined,
+      // Every attempt's write was refused as a conflict, unless one went out first.
+      mayHaveWritten ? 'may-have-landed' : 'refused',
     );
-    throw mayHaveWritten ? uncertainWrite(storm) : storm;
+    throw storm;
   }
 
   /**
@@ -189,13 +197,17 @@ export class SyncManager<T extends SyncedFile> {
       throw new StorageError(
         'Verify-after-write failed: the file is missing after a successful write',
         VERIFY_HINT,
+        undefined,
+        undefined,
+        undefined,
+        'may-have-landed',
       );
     }
     let parsed: T;
     try {
       parsed = this.doc.migrate(body, this.ctx());
     } catch (error) {
-      throw new StorageError('Verify-after-write failed: the written file did not parse', VERIFY_HINT, error);
+      throw new StorageError('Verify-after-write failed: the written file did not parse', VERIFY_HINT, error, undefined, undefined, 'may-have-landed');
     }
     verifyPersistedFile(this.doc, expected, parsed, this.ctx());
   }
@@ -214,6 +226,11 @@ export interface StorageFailure {
   message: string;
   /** What to do about it. */
   hint: string;
+}
+
+/** A token or a grant the provider refused (a 401 or a 403 that is not a limit). */
+export function accessRefused(reason: StorageError['reason']): boolean {
+  return reason === 'auth' || reason === 'forbidden';
 }
 
 export function describeStorageFailure(error: unknown, provider: string): StorageFailure {
@@ -251,12 +268,12 @@ export function describeStorageFailure(error: unknown, provider: string): Storag
   // A rejected token is not an unreachable folder: the connection is alive but
   // buys nothing — a scope change, or the folder removed. Sending the user to
   // check a folder that is fine never gets them anywhere; reconnecting does.
-  if (error instanceof StorageError && (error.status === 401 || error.status === 403)) {
+  if (error instanceof StorageError && accessRefused(error.reason)) {
     // A refusal after a write went out cannot say nothing was written: say both.
     if (mayHaveLanded(error)) {
       return {
         message: `${provider} refused this connection’s access after a change was sent`,
-        hint: error.hint?.startsWith(EARLIER)
+        hint: error.earlierLanded && error.hint
           ? error.hint
           : 'Reconnect the provider, which grants access again. The change may have landed: read the record again before retrying.',
       };
@@ -268,6 +285,10 @@ export function describeStorageFailure(error: unknown, provider: string): Storag
   }
   if (error instanceof StorageError && error.hint) {
     return { message: error.message, hint: error.hint };
+  }
+  // A failure after a write went out, with no words of its own: it may have landed.
+  if (typeof error === 'object' && error !== null && mayHaveLanded(error)) {
+    return { message: `${provider} did not answer`, hint: LANDED_HINT };
   }
   return {
     message: `${provider} did not answer. Nothing was written`,

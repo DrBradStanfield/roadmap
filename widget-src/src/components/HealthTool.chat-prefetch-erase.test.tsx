@@ -20,7 +20,7 @@ import { localDay, rowRootIds } from '@roadmap/health-core/merge';
 import { migrateFile } from '@roadmap/health-core/migrate';
 import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
-import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
+import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements, getShownErase } from '../lib/roadmap-data';
 import type { ChatListResult } from '../lib/chat-api';
 
 vi.mock('../lib/build-flags', () => ({ LOCAL_FIRST: true, SHOPIFY_SURFACE: true }));
@@ -79,8 +79,8 @@ beforeEach(async () => {
   trackLiveRefresh();
   await initRoadmapStore(new LocalStorageAdapter());
   // A synthetic returning user with all four answers: the chat is open to them.
-  await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, {});
-  await addMeasurement('weight', 70, '2026-09-01');
+  await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, {}, getShownErase());
+  await addMeasurement('weight', 70, '2026-09-01', getShownErase());
   await flushRoadmapStore();
 });
 afterEach(async () => {

@@ -9,17 +9,16 @@ import { act, render, waitFor, fireEvent, within, type RenderResult } from '@tes
 import type { Suggestion } from '@roadmap/health-core/types';
 import {
   addMeasurement,
-  bulkSaveDocuments,
-  bulkSaveLabValues,
   deleteUserData,
   flushRoadmapStore,
   saveChangedMeasurements,
   saveMedication,
   saveScreening,
-  saveSupplement,
+  saveSupplement, getShownErase,
 } from '../lib/roadmap-data';
 import { seedGuest, useHealthToolLifecycle } from '../testing/health-tool-harness';
 import { deleteButton, openSettings } from '../testing/settings';
+import { rowTitle } from '../testing/plan-on-page';
 import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
 import { trackProductEvent } from '../lib/server-api';
 
@@ -46,6 +45,7 @@ vi.mock('./ResultsPanel', async (importOriginal) => {
 });
 
 import { HealthTool } from './HealthTool';
+import { seedOpenDocuments, seedOpenLabValues } from '../testing/seed-record';
 
 useHealthToolLifecycle();
 
@@ -60,25 +60,25 @@ const RECORDS: Record<string, () => Promise<void>> = {
       [['weight', 95], ['waist', 104], ['systolic_bp', 158], ['diastolic_bp', 98], ['hba1c', 44], ['ldl', 4.1], ['creatinine', 92]], [], EARLIER);
     for (const [metric, value] of [['weight', 92], ['waist', 101], ['systolic_bp', 162], ['diastolic_bp', 101], ['hba1c', 50], ['ldl', 4.4],
       ['apob', 1.25], ['total_cholesterol', 6.6], ['hdl', 1.0], ['triglycerides', 2.3], ['lpa', 140], ['creatinine', 98]] as const) {
-      await addMeasurement(metric, value, DAY);
+      await addMeasurement(metric, value, DAY, getShownErase());
     }
-    await saveMedication('statin', 'atorvastatin', 20);
-    await saveSupplement('magnesium', 'Magnesium', 300, 'mg');
-    await saveScreening('colorectal_method', 'fit_annual');
-    await saveScreening('prostate_discussion', 'not_yet');
+    await saveMedication('statin', 'atorvastatin', 20, undefined, getShownErase());
+    await saveSupplement('magnesium', 'Magnesium', 300, 'mg', undefined, undefined, getShownErase());
+    await saveScreening('colorectal_method', 'fit_annual', getShownErase());
+    await saveScreening('prostate_discussion', 'not_yet', getShownErase());
   },
   'a woman of 52 with her screenings answered': async () => {
     await seedGuest({ sex: 'female', heightCm: 165, birthYear: 1974, birthMonth: 3, unitSystem: 'si' }, [['weight', 70], ['ldl', 2.8]], [], DAY);
-    await saveScreening('breast_frequency', 'biennial');
-    await saveScreening('cervical_method', 'hpv_every_5yr');
-    await saveScreening('colorectal_method', 'not_yet_started');
-    await saveScreening('endometrial_abnormal_bleeding', 'yes_need_to_report');
+    await saveScreening('breast_frequency', 'biennial', getShownErase());
+    await saveScreening('cervical_method', 'hpv_every_5yr', getShownErase());
+    await saveScreening('colorectal_method', 'not_yet_started', getShownErase());
+    await saveScreening('endometrial_abnormal_bleeding', 'yes_need_to_report', getShownErase());
   },
   'a man of 66 who will screen, PSA 6.5, a former smoker': async () => {
     await seedGuest({ sex: 'male', heightCm: 180, birthYear: 1960, birthMonth: 1, unitSystem: 'si' }, [['weight', 85], ['psa', 6.5]], [], DAY);
-    await saveScreening('prostate_discussion', 'will_screen');
-    await saveScreening('lung_smoking_history', 'former_smoker');
-    await saveScreening('lung_pack_years', '30');
+    await saveScreening('prostate_discussion', 'will_screen', getShownErase());
+    await saveScreening('lung_smoking_history', 'former_smoker', getShownErase());
+    await saveScreening('lung_pack_years', '30', getShownErase());
   },
   'a known minor': async () => {
     await seedGuest({ sex: 'female', heightCm: 150, birthYear: new Date().getFullYear() - 12, birthMonth: 1, unitSystem: 'si' }, [['weight', 45], ['ldl', 4.9]], [], DAY);
@@ -88,7 +88,7 @@ const RECORDS: Record<string, () => Promise<void>> = {
   },
   'a low lab eGFR': async () => {
     await seedGuest({ sex: 'female', heightCm: 165, birthYear: 1950, birthMonth: 1, unitSystem: 'si' }, [['weight', 70], ['creatinine', 140]], [], DAY);
-    await bulkSaveLabValues([{ metricName: 'eGFR', value: 38, unit: 'mL/min/1.73m²', recordedAt: `${DAY}T00:00:00.000Z` }]);
+    await seedOpenLabValues([{ metricName: 'eGFR', value: 38, unit: 'mL/min/1.73m²', recordedAt: `${DAY}T00:00:00.000Z` }]);
   },
 };
 
@@ -111,7 +111,7 @@ function titled(title: string) {
 /** The suggestions a card draws, by their titles. */
 const cardSuggestions = (card: Element) => [...card.querySelectorAll('.suggestion-title')].map(t => titled(t.textContent!));
 /** The suggestion a row draws, by its info button's name. */
-const rowSuggestion = (row: Element) => titled(row.querySelector('.mh-info-btn')!.getAttribute('aria-label')!.replace(/^About: /, ''));
+const rowSuggestion = (row: Element) => titled(rowTitle(row));
 /** Each suggestion id drawn as a card, and on a row. */
 function drawn(view: RenderResult) {
   const cards = [...view.container.querySelectorAll('.mh-sections .mh-card')].flatMap(c => cardSuggestions(c).map(s => s.id));
@@ -656,8 +656,8 @@ describe('US-09 AC19, US-62 AC28: any erase the screen shows closes the reasons 
   /** The same record again, written after the erase and re-read as from another device. */
   async function refill(view: RenderResult) {
     await act(async () => {
-      await saveChangedMeasurements(record, {});
-      for (const [metric, value] of values) await addMeasurement(metric, value, DAY);
+      await saveChangedMeasurements(record, {}, getShownErase());
+      for (const [metric, value] of values) await addMeasurement(metric, value, DAY, getShownErase());
       await flushRoadmapStore();
       window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT));
     });
@@ -806,7 +806,7 @@ describe('US-62 AC27: the desktop section list', () => {
   // US-62 AC33 (Brad 2026-11-09): Documents in the desktop list, only when the area shows; never on a phone.
   const withLetter = async () => {
     await RECORDS['urgent results, both cascades, a supplement']();
-    await bulkSaveDocuments([{ documentType: 'clinic_letter', title: 'Clinic letter', documentDate: '2026-09-01', contentMd: 'A letter.', metadata: {}, sourceFileName: 'letter.pdf' }]);
+    await seedOpenDocuments([{ documentType: 'clinic_letter', title: 'Clinic letter', documentDate: '2026-09-01', contentMd: 'A letter.', metadata: {}, sourceFileName: 'letter.pdf' }]);
   };
   const navTitles = (view: RenderResult) => [...view.container.querySelectorAll('.mh-nav .mh-nav-title')].map(t => t.textContent);
 
@@ -829,7 +829,7 @@ describe('US-62 AC27: the desktop section list', () => {
   it('AC33: with no documents (a blood-test report alone is not one), no entry and no area', async () => {
     const view = await show(async () => {
       await RECORDS['urgent results, both cascades, a supplement']();
-      await bulkSaveDocuments([{ documentType: 'pathology_report', title: 'Labs', documentDate: '2026-09-01', contentMd: '', metadata: { labArchive: true }, sourceFileName: 'labs.pdf' }]);
+      await seedOpenDocuments([{ documentType: 'pathology_report', title: 'Labs', documentDate: '2026-09-01', contentMd: '', metadata: { labArchive: true }, sourceFileName: 'labs.pdf' }]);
     });
     expect(navTitles(view).length).toBeGreaterThan(0);
     expect(navTitles(view)).not.toContain('Documents');

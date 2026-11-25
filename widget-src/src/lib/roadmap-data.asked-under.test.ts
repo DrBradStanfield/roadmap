@@ -12,7 +12,7 @@ import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter'
 import { migrateFile } from '@roadmap/health-core/migrate';
 import { rowRootIds } from '@roadmap/health-core/merge';
 import { RoadmapStore } from '../storage/roadmap-store';
-import { addMeasurement, askedUnder, flushRoadmapStore, getEraseIdentity, initRoadmapStore, markEraseShown, stillShown } from './roadmap-data';
+import { addMeasurement, askedUnder, flushRoadmapStore, getEraseIdentity, initRoadmapStore, markEraseShown, stillShown, getShownErase } from './roadmap-data';
 
 vi.mock('./sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 
@@ -45,7 +45,7 @@ describe('US-16 AC2a: askedUnder and stillShown compare the whole erase identity
     const cloud = new MemoryCloud();
     vi.spyOn(RoadmapStore, 'create');
     await initRoadmapStore(new MemoryAdapter(cloud));
-    await addMeasurement('weight', 82, '2026-09-01');
+    await addMeasurement('weight', 82, '2026-09-01', getShownErase());
     await flushRoadmapStore();
     const store: RoadmapStore = await vi.mocked(RoadmapStore.create).mock.results.at(-1)!.value;
 
