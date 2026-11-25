@@ -50,30 +50,6 @@ issue, and nothing private.
 
 ### Words that need your yes (raised 2026-11-25)
 
-- **Two chat history lines.** Issue: PR 2078 (on main) makes a failed open of the chat history file retry on the
-  next turn, but adds no words. Two places say nothing today: the History list after the file could not be opened
-  (it shows old titles, or "No conversations yet"), and a turn that was not saved to the file (nothing on screen).
-  The owner proposed "Chat history unavailable" for the first; no line exists for the second. Options: (1) approve
-  "Chat history unavailable", and have a line drafted for an unsaved turn; (2) leave both silent. Recommendation:
-  option 1, because a person who returns to a conversation that was never saved has no way to know why it is missing.
-- **Screen-reader names for the medicine dose boxes and the PDF email box.** Issue: on the web, the dose box beside
-  a statin, GLP-1 or SGLT2 inhibitor has no name, so a screen reader cannot say which medicine it belongs to; the
-  PDF email box is named only by its "Email" placeholder. Contributor PRs 1888 and 1800 add the names "Statin Dose",
-  "GLP-1 Medication Dose", "SGLT2 Inhibitor Dose" and "Email for your PDF". The dose names join two labels the form
-  already has, so they follow any change to those labels. PR 1796 names supplement rows with a lower-case "dose"
-  ("Vitamin D dose"), so the two differ in case. Options: (1) keep "Dose" as submitted: no new string, but two
-  casings on one form; (2) lower-case "dose" in both: one casing, at the cost of a new string or a lower-case call.
-  Recommendation: option 2, so the whole form uses one casing. Note: PR 1796 builds its names from the supplement's name, which the new rule above
-  (US-09 AC7l) says must use a labelled-by reference instead; it needs that change before it merges.
-- **When a cloud save fails after it may have landed.** Issue: PR 2108 (open) gives each storage failure a typed
-  outcome. For Dropbox, GitHub and WebDAV, a timeout, a "too many requests" or a server error now says the provider
-  "did not answer" and then "The change may have landed. Read the record again before trying it a second time.",
-  where today it says nothing was written, which may be untrue. Drive's wording also shifts for a few cases. Three
-  smaller gaps stay, with no words yet: (a) a plain refusal with no words of its own says "did not answer", which is
-  untrue for a refusal; (b) "Nothing was read" in the access sentence is untrue after a save's own read; (c) "did not
-  answer" is said for a server error, which is an answer. Options: (1) approve the new sentence, and let new lines be
-  drafted for the three gaps; (2) keep today's words. Recommendation: option 1, because today's sentence can tell a
-  person nothing was written when it was.
 - **An erase message needs a truer sentence.** Issue: when an erase partly fails, the iPhone can show an empty or
   wrong reason, and the web says nothing about the chat step. Draft lines exist for each case. Options: approve the
   drafts as one set; approve some; keep today's words. Recommendation: approve the set, because today's words can be
@@ -125,15 +101,6 @@ issue, and nothing private.
 
 ### Product and code decisions (raised 2026-11-25)
 
-- **Three places the web's My health page differs from the iPhone.** Issue: PR 2092 (on main) made the web page draw
-  from the same shared rule as the iPhone. Three differences are held off, so the web looks as it did:
-  (1) when no screening question applies yet (no age, or nothing eligible) and there is no screening card, the
-  iPhone shows a Cancer screening section with a short note; the web shows no section. (2) In the same case with a
-  screening card, the iPhone puts the note under the card; the web has no words for it. (3) Before the form is
-  complete, the rule hands the web every card in one list, urgent first; the web shows no card until then
-  (onboarding hides them). Options for each: adopt the iPhone's behaviour, or keep the web's. Recommendation (the
-  PR's): (1) yes, once the note's words are on the web, since a heading alone would look broken; (2) yes, with the
-  iPhone's approved words; (3) keep the web's: the onboarding is short and the cards come at its end.
 - **Chat wording and counting differ between the chat panel and the pop-up.** Issue: PR 2093 (on main) found that
   the pop-up chat picks doctor or brand wording by store, but the panel beside the tool always uses the doctor
   wording ("Health by Dr Brad Chat"). Also, "chat opened" is counted for the pop-up only, so the count misses the
@@ -216,9 +183,21 @@ issue, and nothing private.
 - Screen-reader names for the medicine dose boxes end in a lower-case "dose", as the supplement rows do (PR 1796),
   so the whole form uses one casing: "this" (option 2). PR 1888 now names them "Statin dose", "GLP-1 Medication
   dose" and "SGLT2 Inhibitor dose", through labelled-by references (US-09 AC7l). "Email for your PDF" is approved for PR 1800.
+- When a cloud save fails after it may have landed: "do it, and use your judement for the sentences. must be succinct,
+  and I approve whatever sentences you suggest". One table words every storage failure that has no words of its own
+  (US-10 AC20): "<provider> refused the change. Nothing was written." (or "refused the request" for a call that is not
+  the save's write), "<provider> returned an error." then "The change may have landed. Read the record again before
+  trying it a second time.", or "Nothing was written."; "<provider> returned an answer that could not be used.";
+  "<provider> needs to be reconnected. Nothing was written."; after a save's own read, an access refusal says only
+  "Nothing was written."
 - A YouTube follow-up's classifier and router see the parent comment and the author's own earlier replies, by the
   same rule as web and Discord (H415, US-15 AC75): "the router should see the earlier comments. youtube, web, and discord should behave the same here, and so
   probably use the same code". No new words.
+- The web's My health and the iPhone, three differences: "go with the recommendations". Where no screening question
+  applies, the web shows Cancer screening with the iPhone's note, in the iPhone's place (urgent cards above it, others
+  below); before the form is complete the web still shows no card. The note's words, one shared copy: "Screening questions appear once your sex,
+  birth year and height are in About you.", "Some screening questions depend on your sex. Add it in About you.", "No
+  screening questions apply at your age and sex yet." (US-62 AC41).
 - Two chat history lines: "this" (option 1). History after a failed read says "Chat history unavailable"; a reply
   the history file did not take says "This reply was not saved to your chat history." (web; US-15 AC76).
 - A "Not saved" marker on chat replies with edits: "go with the recommendation" (option B). Only a reply that carried
