@@ -10,16 +10,18 @@ import {
   ROADMAP_FILE_NAME,
   jsonBody,
   StorageError,
+  UNREACHABLE_HINT,
   type ReadResult,
   type WriteResult,
 } from './adapter';
 import {
   auth,
   DRIVE_API,
+  driveCheckVersion,
   driveCreateFile,
   driveDownloadJson,
   driveFileVersion,
-  driveUpdateIfVersion,
+  driveUpdateFile,
   fail,
   PROVIDER,
   request,
@@ -28,7 +30,7 @@ import { counterOf, MAX_COUNTER, RecordShapeError, SchemaTooNewError } from './m
 import { ROADMAP_DOC } from './roadmap-doc';
 import { CURRENT_SCHEMA_VERSION, type RoadmapFile } from './roadmap-file';
 import { verifyPersistedFile } from './sync-manager';
-import { uncertainWrite } from './write-refusal';
+import { isDefiniteRefusal, uncertainWrite } from './write-refusal';
 
 // --- The health record (US-10 AC4a) -------------------------------------------
 // Drive allows two files with one name, and two first saves can race to make
@@ -46,6 +48,14 @@ const DAMAGED_HINT = 'Your plan loaded from the other copies. Nothing was writte
  *  refreshes the token (iOS) and still reads as "reconnect" (the page), and
  *  mark it, so no status on it reads as a refusal (write-refusal.ts). */
 const uncertain = (message: string, error: unknown): StorageError => uncertainWrite(new StorageError(message, LANDED_HINT, error, error instanceof StorageError ? error.status : undefined));
+
+/** A failure of the record's create POST (lead S62b). Drive's answer with a
+ *  status write-refusal.ts calls a refusal stored nothing, so it stays a
+ *  refusal; anything else (a 5xx, a 408 or 429, a timeout, no answer) may have landed. */
+const createFailed = (message: string, error: unknown): StorageError =>
+  error instanceof StorageError && error.status !== undefined && isDefiniteRefusal(error)
+    ? new StorageError(message, UNREACHABLE_HINT, error, error.status)
+    : uncertain(message, error);
 
 /**
  * Every copy of the record, winner first. Search lags a create, so an id in
@@ -227,9 +237,14 @@ export async function writeDriveRecord(token: string, body: object, expected: st
   if (!id) {
     const parent = await folder();
     signal?.throwIfAborted();
+    let res: Response;
     try {
-      const res = await driveCreateFile(token, ROADMAP_FILE_NAME, 'application/json', json, parent, signal);
-      if (!res.ok) throw new StorageError(`${PROVIDER} record create failed (${res.status}).`, LANDED_HINT, undefined, res.status);
+      res = await driveCreateFile(token, ROADMAP_FILE_NAME, 'application/json', json, parent, signal);
+      if (!res.ok) throw new StorageError(`${PROVIDER} record create failed (${res.status}).`, undefined, undefined, res.status);
+    } catch (error) {
+      throw createFailed(`${PROVIDER} record create failed.`, error);
+    }
+    try {
       const created = await jsonBody<{ id?: string }>(res);
       if (!created.id) throw new Error('Create returned no ID');
       id = created.id;
@@ -250,13 +265,14 @@ export async function writeDriveRecord(token: string, body: object, expected: st
     }
   } else {
     // Every contributing version was checked above, and the winner gets one
-    // final check before upload. There is still no atomic CAS.
+    // final check before upload. There is still no atomic CAS. The check sends
+    // no upload, so its own failure (a conflict, a 4xx) stored nothing (S62b).
+    await driveCheckVersion(token, id, state.versions[at], signal);
     try {
-      version = await driveUpdateIfVersion(token, id, json, state.versions[at], signal);
+      version = await driveUpdateFile(token, id, json, signal);
     } catch (error) {
-      // A rejected precondition did not upload. Any other failure may be a
-      // lost PATCH response: do not claim nothing was written.
-      if (error instanceof ConflictError) throw error;
+      // Any failure of the PATCH may be a lost PATCH response: do not claim
+      // nothing was written (a 401 or 403 answer included, US-10 AC4a).
       throw uncertain(`${PROVIDER} record update failed.`, error);
     }
   }
