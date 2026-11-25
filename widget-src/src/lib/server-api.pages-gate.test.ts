@@ -43,7 +43,7 @@ describe('sendFeedback', () => {
   });
 });
 
-describe('A/B tracking, retired (US-09 AC60)', () => {
+describe('A/B tracking, retired (US-09 AC62)', () => {
   // Brad, 2026-11-26: the old A/B event calls are deleted. Nothing assigns a variant, so the
   // calls, their stored-assignment reader and the endpoint that took them go together.
   const root = fileURLToPath(new URL('../../../', import.meta.url));

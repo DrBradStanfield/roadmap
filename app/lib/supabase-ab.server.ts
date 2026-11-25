@@ -1,6 +1,6 @@
 /**
  * A/B tests: CRUD and per-variant counts of the events recorded before the
- * event endpoint was retired (2026-11-26, US-09 AC60).
+ * event endpoint was retired (2026-11-26, US-09 AC62).
  * Split out of supabase.server.ts (issue #429).
  */
 import { supabaseAdmin } from './supabase-client.server';

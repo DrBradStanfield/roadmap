@@ -284,7 +284,7 @@ Pulsing `.field-attention` CSS class highlights the next field to fill. Once ope
 
 ## A/B Testing
 
-**Event tracking retired 2026-11-26 (Brad, US-09 AC60).** Nothing assigned a
+**Event tracking retired 2026-11-26 (Brad, US-09 AC62).** Nothing assigned a
 variant: this repo's `app-block.liquid` renders a fixed heading and subheading
 and never read `health_roadmap.ab_config`. The web still sent A/B events from
 assignments stored in a browser long ago, so an event did not prove a variant

@@ -210,7 +210,7 @@ issue, and nothing private.
   so the whole form uses one casing: "this" (option 2). PR 1888 now names them "Statin dose", "GLP-1 Medication
   dose" and "SGLT2 Inhibitor dose", through labelled-by references (US-09 AC7l). "Email for your PDF" is approved for PR 1800.
 - Old A/B tracking calls are deleted ("go with your recommendations"): the web sends no A/B event, and the `/api/ab`
-  route, which nothing else called, is gone. The admin dashboard and the tables stay (US-09 AC60). No new words.
+  route, which nothing else called, is gone. The admin dashboard and the tables stay (US-09 AC62). No new words.
 
 2026-11-23, Brad's words in quotes:
 - Original files are stored in the background after Save, with no action from the person at Save and at every
