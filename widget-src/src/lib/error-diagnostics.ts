@@ -38,7 +38,7 @@ type RecordFailure =
  *  a page is never attempted (A15, A19). */
 export class WritesStoppedError extends StorageError {
   constructor() {
-    super('On-device roadmap persistence stopped for logout.', undefined, undefined, undefined, undefined, 'refused');
+    super('On-device roadmap persistence stopped for logout.', undefined, undefined, undefined, 'writes-stopped', 'refused');
     this.name = 'WritesStoppedError';
   }
 }

@@ -67,6 +67,8 @@ export class LostUpdateError extends ConflictError {
  * (`reconnect`: only a new sign-in mends it, so a failed save is not retried, US-09 AC30),
  * a token refused (`auth`, a 401), access refused (`forbidden`, a 403 that is not a limit),
  * or a provider's rate or daily limit (`rate-limited`: it passes, so it is retried).
+ * `writes-stopped`: a device write refused because this page may no longer write
+ * health files here (a log-off, US-09 AC2c); it is expected, and not reported.
  *
  * `outcome` (root fix R6, US-10 AC16) is what the failure says about a write, set where
  * it is raised, so no reader decides from a status, a name or the words:
@@ -78,7 +80,7 @@ export class LostUpdateError extends ConflictError {
  * `answerOutcome`, which the raise site calls on purpose. A 401 or 403 sets its
  * reason unless the raiser names its own.
  */
-export type StorageFailureReason = 'storage-full' | 'not-found' | 'reconnect' | 'auth' | 'forbidden' | 'rate-limited';
+export type StorageFailureReason = 'storage-full' | 'not-found' | 'reconnect' | 'auth' | 'forbidden' | 'rate-limited' | 'writes-stopped';
 export type StorageOutcome = 'refused' | 'may-have-landed' | 'no-answer';
 
 /**

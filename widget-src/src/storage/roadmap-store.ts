@@ -457,9 +457,10 @@ export class RoadmapStore {
     try { this.session.clearOffFileData(); } catch (error) { this.host.report(error, { op: 'clear-off-file', repeat: false }); }
   }
 
-  /** Last-ditch save for tab close and hide (US-10 AC5); see the session. */
+  /** Last-ditch save for tab close and hide (US-10 AC5); see the session. A save the grant refused
+   *  waits for a new sign-in, not the next hide (US-09 AC30). */
   flushSync(): void {
-    this.session.flushSync();
+    this.session.flushSync('hold');
   }
 
   // =================================================================== private

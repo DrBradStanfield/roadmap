@@ -246,3 +246,28 @@ describe('the session tells the host when a retry becomes owed or stops being ow
     expect(calls.at(-1)).toEqual(['saved', false]);
   });
 });
+
+// US-09 AC57 (lead A25, the web's half): a page hide's last-ditch save starts
+// no cloud save the grant refused (`flushSync('hold')`, the web's page-hide
+// path); a failed save still owed a retry is tried, and the default still
+// tries both, as the iPhone's callers do today.
+describe('US-09 AC57: a hide starts no save the grant refused', () => {
+  it.each([
+    { name: 'a refused grant, held', error: REVOKED, refused: 'hold' as const, writes: 1 },
+    { name: 'a refused grant, by default', error: REVOKED, refused: undefined, writes: 2 },
+    { name: 'a passing failure, held', error: OFFLINE, refused: 'hold' as const, writes: 2 },
+  ])('$name', async ({ error, refused, writes }) => {
+    const { store, session } = await failedSession(error());
+    session.flushSync(refused);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(store.writes).toBe(writes);
+  });
+
+  it('an edit after the refusal still starts a save on the next hide', async () => {
+    const { store, session } = await failedSession(REVOKED());
+    add(session, 'b');
+    session.flushSync('hold');
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(store.writes).toBe(2);
+  });
+});

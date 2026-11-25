@@ -7,11 +7,11 @@
  * a RecordHost.
  * No DOM and no Node: engine-portability.test.ts checks.
  */
-import { ROADMAP_FILE_NAME, type StorageAdapter } from './adapter';
+import { ROADMAP_FILE_NAME, StorageError, type StorageAdapter } from './adapter';
 import { clearOwed, eraseIdentityOf } from './erase-identity';
 import { mergeFiles } from './merge';
 import { SchemaTooNewError } from './migrate';
-import { announce, clearedAtOpen, clearOffFile, keepCleared, laterChange, liftMissed, reportSaveFailure, tellSaveStatus, type DeviceMirror, type RecordHost, type RemoteChange, type SaveTold, type SyncStorage } from './record-host';
+import { announce, clearedAtOpen, clearOffFile, keepCleared, laterChange, liftMissed, reportSaveFailure, tellSaveStatus, type DeviceMirror, type SaveReportKey, type RecordHost, type RemoteChange, type SaveTold, type SyncStorage } from './record-host';
 import { contentOf, visibleContentOf } from './record-session-content';
 import { deleteAllDataSession, eraseSession, replaceUnreadableSession, type EraseResult, type EraseSteps } from './record-session-erase';
 import { coveredCopySession, deviceCopyHoldsErase, deviceCopyRevision, mirrorNowSession, releaseErasedCopySession, releaseMarkerSession } from './record-session-mirror';
@@ -72,9 +72,9 @@ export class RecordSession {
   private mirrorSkipped = false;
   /** Leading-edge throttle for refreshFromRemote(), in epoch millis. */
   private lastRefresh = 0;
-  /** The kinds of device refusal reported this session: every hide retries
-   *  a refused save, and meets the same refusal (US-10 AC5). */
-  private readonly refusalsReported = new Set<string>();
+  /** The key the last failed save was reported under: every hide and retry
+   *  meets the same failure, reported once per cause and grant (US-10 AC5). */
+  private lastReport: SaveReportKey | null = null;
   /** Device tier: the stored revision this session last took in, by a load,
    *  a re-read or its own write. Never a read it did not merge in, such as a
    *  save's verify-after-write (US-34 AC6). */
@@ -285,10 +285,10 @@ export class RecordSession {
    * synchronous path merges into the one file every page shares, so the
    * write has landed when this returns, whatever the async save may come to
    * await; then it takes the merge in, as a save does. Any other store, and a
-   * refused synchronous write, fall back to the async save; on a cloud the
-   * device copy holds the changes meanwhile (mirrorNow).
+   * refused synchronous write, fall back to the async save; on a cloud the device copy holds the changes
+   * meanwhile (mirrorNow). `refused: 'hold'` starts no save the grant refused (no retry owed, US-09 AC30).
    */
-  flushSync(): void {
+  flushSync(refused: 'retry' | 'hold' = 'retry'): void {
     if (!unsaved(this.mode)) return;
     const store = this.host.sync;
     if (store && !this.deviceClosed()) {
@@ -308,7 +308,7 @@ export class RecordSession {
     } else if (this.host.tier === 'cloud') {
       this.mirrorNow(this.host.mirror);
     }
-    void this.persist();
+    if (refused === 'retry' || this.mode.mode !== 'failed' || retryOwed(this.mode)) void this.persist();
   }
 
   /** The departure write: `mirrorNowSession` (record-session-mirror.ts, US-06 AC13). */
@@ -430,7 +430,7 @@ export class RecordSession {
     try {
       while (pass !== null) {
         // A closed device page fails the pass before its read, once awaited: the claim is set by then.
-        const result = await (this.deviceClosed() ? Promise.reject(new Error('Device files closed')) : this.sync.save(this.current));
+        const result = await (this.deviceClosed() ? Promise.reject(new StorageError('Device files closed', undefined, undefined, undefined, 'writes-stopped', 'refused')) : this.sync.save(this.current));
         this.revisionSeen = result.version; // what it wrote, never what its verify read
         if (result.warning) this.saveWarning = result.warning;
         const next = this.dispatch({ type: 'passLanded', from: pass });
@@ -460,7 +460,7 @@ export class RecordSession {
       // A pass that landed before this one failed may have folded a remote
       // change in: the page must still hear of it (adversary R3).
       announce(this.host, remoteFolded);
-      if (this.deviceClosed()) return false; // nothing to report: the page may not save here
+      if (this.deviceClosed() && error instanceof StorageError && error.reason === 'writes-stopped') return false; // expected: a real cause reports
       // The background cloud save failed — this MUST be observable (unreported, it's silent data-at-risk),
       // and the changes must NOT stay memory-only: mirror the working copy on-device so a page close can't
       // lose it, and leave the marker so the next cloud session merges it back up (US-09 AC4; Sentry
@@ -492,7 +492,7 @@ export class RecordSession {
           if (this.mode.mode === 'erasing' && this.mode.phase === 'writing' && deviceCopyHoldsErase(this)) this.dispatch({ type: 'mirrored', changes: held });
         }
       }
-      reportSaveFailure(this.host, error, this.refusalsReported);
+      this.lastReport = reportSaveFailure(this.host, error, this.lastReport, this.host.store.id);
       return false;
     }
   }

@@ -7,7 +7,7 @@
  * widget-src/src/storage/web-record-host.device-files-open.test.ts.
  */
 import { describe, expect, it, vi } from 'vitest';
-import { ROADMAP_FILE_NAME, type ReadResult, type WriteResult } from './adapter';
+import { ROADMAP_FILE_NAME, StorageError, type ReadResult, type WriteResult } from './adapter';
 import { MemoryAdapter, MemoryCloud } from './memory-adapter';
 import { clearOffFile, type RecordHost, type SyncStorage } from './record-host';
 import { RecordSession } from './record-session';
@@ -132,6 +132,28 @@ describe('US-09 AC2c: a device page that may not write this device\'s record rea
     await session.flush();
     expect(stored(store)).toEqual(['guest', 'later', 'mine']);
     expect(session.saveStatus).toBe('saved');
+  });
+});
+
+describe('US-09 AC57: a save past the gate that fails on a page closed meanwhile', () => {
+  const full = () => new StorageError('full', undefined, new DOMException('q', 'QuotaExceededError'), undefined, undefined, 'refused');
+  const stopped = () => new StorageError('stopped', undefined, undefined, undefined, 'writes-stopped', 'refused');
+  it.each([
+    { name: 'a real cause (a full disk) is reported, once', error: full, repeats: [false, true] },
+    { name: 'the closing cutoff (writes-stopped) is not reported', error: stopped, repeats: [] },
+  ])('$name', async ({ error, repeats }) => {
+    const store = new DeviceStore();
+    const page = devicePage(store, true);
+    const seen: boolean[] = [];
+    page.host.report = (_e, at) => void seen.push(at.repeat);
+    const session = await RecordSession.open(page.host);
+    vi.spyOn(store, 'write').mockImplementation(async () => { page.state.open = false; throw error(); });
+    add(session, 'mine');
+    await expect(session.flush()).rejects.toThrow();
+    page.state.open = true; // the gate lets the next save past; its write fails the same way
+    add(session, 'more');
+    await expect(session.flush()).rejects.toThrow();
+    expect(seen).toEqual(repeats);
   });
 });
 
