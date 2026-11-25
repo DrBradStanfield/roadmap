@@ -250,9 +250,10 @@ describe('US-11 AC4c: an erase cancels every active reminders token it sees (lea
   // D3 (b): a save that began before Delete folds token B in during the proof
   // wait (its first pass meets B's write), but announces only when its last
   // pass lands, after the swap, when the working copy holds the erased opt-in.
-  // Nothing here hears B: it is US-11 AC4c's Limit, lead H126. This pins the
-  // limit as it stands; a fix turns the last line into [A, B].
-  it('Limit (H126): a token a running save folds in during the proof wait, announced only after the swap, is not cancelled', async () => {
+  // Nothing on this page hears B: the page that enrolled B settles its own row
+  // once it takes the erase in (lead H126, reminders-own-enrolment.test.ts).
+  // This pins this page's side as it stands.
+  it('a token a running save folds in during the proof wait, announced only after the swap, is left to the page that enrolled it (H126)', async () => {
     const t = await eraseSetUp();
     const before = t.data.getEraseIdentity();
     let foldedSilently = false;

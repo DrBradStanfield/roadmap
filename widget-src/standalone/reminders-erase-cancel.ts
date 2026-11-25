@@ -15,6 +15,7 @@
  */
 import { eraseRunsHere, getEraseIdentity, getReminderOptIn } from '../src/lib/roadmap-data';
 import { REMOTE_CHANGED_EVENT } from '../src/storage/roadmap-store';
+import { stepOwnEnrolment } from './reminders-own-enrolment';
 import type { FileReminderOptIn } from '@roadmap/health-core/roadmap-file';
 
 /** `watching`: the erase began at `at`, and `cancels` holds each distinct
@@ -83,6 +84,8 @@ export function eraseCancelState(): EraseCancel {
   return eraseCancel;
 }
 export function stepEraseCancel(event: EraseCancelEvent): void {
+  // The commit cancels these, this device's own row among them: nothing of it is owed later (lead H126).
+  if (event.type === 'committed') stepOwnEnrolment({ type: 'erased-here', tokens: toCancel(eraseCancel, getReminderOptIn()).map((c) => c.token) });
   const { state, effects } = eraseCancelTransition(eraseCancel, event);
   eraseCancel = state;
   for (const effect of effects) {

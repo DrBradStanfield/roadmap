@@ -38,6 +38,7 @@ import {
 } from '../src/lib/roadmap-data';
 import { DropboxAdapter, GitHubAdapter, GoogleDriveAdapter } from '../src/storage';
 import { eraseCancelState, stepEraseCancel, toCancel } from './reminders-erase-cancel';
+import { stepOwnEnrolment } from './reminders-own-enrolment';
 import { ERASE_IN_PROGRESS, RECORD_CHANGED_SINCE_ASKED } from '@roadmap/health-core/erase';
 import { trackProductEvent } from '../src/lib/server-api';
 import { SHOPIFY_SURFACE } from '../src/lib/build-flags';
@@ -168,7 +169,7 @@ async function cancelProofFor(backend: ReminderBackend): Promise<string | null> 
 
 /** A cancel, with the ID token only when there is one: the route's zod
  *  `.optional()` takes a missing key but answers null with a 400 (US-17 AC1b). */
-function postCancel(token: string, idToken: string | null, keepalive = false): Promise<Response> {
+export function postCancel(token: string, idToken: string | null, keepalive = false): Promise<Response> {
   return post({ op: 'cancel', token, ...(idToken ? { idToken } : {}) }, keepalive);
 }
 
@@ -250,6 +251,7 @@ export async function optInToReminders(
     }
     throw new Error('Reminder enrolment superseded by a decision made meanwhile.');
   }
+  stepOwnEnrolment({ type: 'enrolled', token: reply.token, erase }); // settled by a later erase (US-11 AC4c)
   await flushRoadmapStore(); // the token must reach the cloud file
   // reminder_optin is counted by the SERVER when the row lands (every lane) —
   // only it knows the enrolment happened, and abuse enrolments count too.
@@ -431,6 +433,7 @@ export async function cancelReminders({ count = true, keepalive = false } = {}):
   if (!stillShown(erase)) throw new Error(refusedWhy(erase));
   const res = await postCancel(optIn.token, idToken, keepalive);
   if (!res.ok) throw new Error(`Could not turn reminders off (${res.status}). Please retry.`);
+  stepOwnEnrolment({ type: 'turned-off', token: optIn.token });
   // The opt-in changed while the cancel was out (another device's Turn on or
   // off, an erase): that later decision stands, and nothing is counted (US-17 AC17).
   if (!sameOptIn(getReminderOptIn(), optIn)) return;

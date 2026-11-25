@@ -17,7 +17,8 @@ import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { initRoadmapStore, setPreEraseHook } from '../src/lib/roadmap-data';
 import { resolveAssistantName, setAssistantName, resolveSkipEmailGate, setSkipEmailGate } from '../src/lib/assistant-config';
 import { resolveMarketCountry, setMarketCountry } from '../src/lib/market-country';
-import { autoEnrolReminders, cancelRemindersForErase, pushReminderSchedule } from './reminders';
+import { autoEnrolReminders, cancelRemindersForErase, postCancel, pushReminderSchedule } from './reminders';
+import { startOwnEnrolment } from './reminders-own-enrolment';
 import { RemindersEnrolledNotice } from './reminders-control';
 import { LocalSaveAlert, StorageBar, SyncControl, RemindersSection } from './sync-control';
 import { ConnectRefusedNotice } from './connect-refused';
@@ -37,6 +38,8 @@ async function main() {
   // The token dies with the file, so it is read inside the erase; the cancel
   // follows only an erase that stands (US-11 AC4c).
   setPreEraseHook(cancelRemindersForErase);
+  // A row this device turned on is settled by a later erase made elsewhere (US-11 AC4c, lead H126).
+  startOwnEnrolment((token) => postCancel(token, null, true));
 
   const container = document.getElementById('health-tool-root');
   if (!container) {
