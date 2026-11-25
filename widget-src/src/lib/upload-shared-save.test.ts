@@ -4,7 +4,7 @@
  * with tags only; what saved stays saved.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { UploadState } from '@roadmap/health-core/upload-flow';
+import type { WebSaving } from '../storage/upload-save-store';
 import { saveUpload } from './roadmap-data';
 import { Sentry } from './sentry';
 import { emptyHeld } from './upload-read';
@@ -13,7 +13,7 @@ import { sharedSave } from './upload-shared-save';
 vi.mock('./roadmap-data', () => ({ saveUpload: vi.fn() }));
 vi.mock('./sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 
-const saving: Extract<UploadState, { phase: 'saving' }> = { phase: 'saving', platform: 'web', run: 3, files: [], started: '', firstRead: null, attempt: 2 };
+const saving: WebSaving = { phase: 'saving', platform: 'web', run: 3, files: [], started: '', firstRead: null, attempt: 2, erase: 'e1' };
 const ENGINE = { uploadSave: vi.fn(), uploadReview: vi.fn() };
 const OUTCOME = { values: 2, documents: 1, archived: 0, unstored: 0 };
 type Answer = Awaited<ReturnType<typeof saveUpload>>;

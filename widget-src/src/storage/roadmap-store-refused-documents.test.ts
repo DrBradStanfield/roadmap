@@ -13,7 +13,7 @@ import { LocalStorageAdapter } from './local-storage-adapter';
 import { Sentry } from '../lib/sentry';
 import { WritesStoppedError } from '../lib/error-diagnostics';
 import { StorageError } from '@roadmap/health-core/adapter';
-import { ENGINE, pickOf, uploadThrough } from '../testing/upload-save-kit';
+import { ENGINE, pickOf, stamped, uploadThrough } from '../testing/upload-save-kit';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 
@@ -57,7 +57,7 @@ afterEach(() => {
 /** Two tabs on the device tier with a record; `page` uploads through a held adapter. */
 async function twoTabs() {
   const other = await RoadmapStore.create(new LocalStorageAdapter());
-  other.addMeasurement('weight', 80, '2024-01-01T00:00:00.000Z');
+  other.addMeasurement('weight', 80, '2024-01-01T00:00:00.000Z', other.shownErase);
   await other.flush();
   const adapter = new HeldBlobs();
   const page = await RoadmapStore.create(adapter);
@@ -82,7 +82,7 @@ it('a document save whose erase has already moved writes no copy on the device (
   const engine: typeof ENGINE = { ...ENGINE, uploadSave: async (...args) => { reached(); await gate; return ENGINE.uploadSave(...args); } };
   const now = new Date().toISOString();
   const { s, io } = await pickOf(page.file, [doc('Lipids')], { now });
-  const pending = page.saveUpload(engine, s, now, true, io);
+  const pending = page.saveUpload(engine, stamped(s, page.shownErase), now, true, io);
   await began;
   await eraseLands(other, page);
   release();

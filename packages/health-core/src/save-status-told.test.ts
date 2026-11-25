@@ -46,7 +46,7 @@ function cloudHost(store: FailingStore, told: SaveStatus[]): { host: RecordHost;
 
 const add = (session: RecordSession, id: string) => session.edit((file) => void file.measurements.push(
   createMeasurement({ id, metricType: 'weight', value: 80, recordedAt: '2026-11-01', createdAt: '2026-11-12T10:00:00.000Z' }),
-));
+), session.shownErase);
 
 describe('RecordSession tells the host its save status (US-09 AC30)', () => {
   it('edit: saving; land: saved; fail: not-saved; never the same status twice in a row', async () => {

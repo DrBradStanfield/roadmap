@@ -42,8 +42,8 @@ beforeEach(async () => {
   stops.push(registerPageDeparture(vi.fn()));
   ({ HealthTool } = await import('./HealthTool'));
   await data.initRoadmapStore(new LocalStorageAdapter());
-  await data.saveChangedMeasurements({ sex: 'male', heightCm: 178, birthMonth: 5, unitSystem: 'si' }, {});
-  await data.addMeasurement('weight', 80, '2026-10-01'); // the onboarding's first steps done: the birth year shows (US-62 AC13)
+  await data.saveChangedMeasurements({ sex: 'male', heightCm: 178, birthMonth: 5, unitSystem: 'si' }, {}, data.getShownErase());
+  await data.addMeasurement('weight', 80, '2026-10-01', data.getShownErase()); // the onboarding's first steps done: the birth year shows (US-62 AC13)
   await data.flushRoadmapStore();
 });
 afterEach(() => {
@@ -197,7 +197,7 @@ it.each([false, true])('US-09 AC2c: log-off followed by lifecycle events cannot 
 // US-01 AC4: app switching need not blur the focused field (notably WebKit).
 it.each(['19', '197', '1800'])(
   'US-01 AC4: hiding without blur refuses partial year %s while retaining valid edits', async value => {
-    await data.saveChangedMeasurements({ birthYear: 1975 }, {});
+    await data.saveChangedMeasurements({ birthYear: 1975 }, {}, data.getShownErase());
     await data.flushRoadmapStore();
     const { view, year } = await form();
     fireEvent.change(year, { target: { value } });
@@ -221,8 +221,8 @@ it.each(['departure', 'debounce'] as const)(
   'US-09 AC2c: another tab log-off stops only local copies, not cloud profile saves via %s', async mode => {
     const cloud = new MemoryAdapter();
     await data.initRoadmapStore(cloud);
-    await data.saveChangedMeasurements({ sex: 'male', heightCm: 178, birthMonth: 5, unitSystem: 'si' }, {});
-    await data.addMeasurement('weight', 80, '2026-10-01');
+    await data.saveChangedMeasurements({ sex: 'male', heightCm: 178, birthMonth: 5, unitSystem: 'si' }, {}, data.getShownErase());
+    await data.addMeasurement('weight', 80, '2026-10-01', data.getShownErase());
     await data.flushRoadmapStore();
     const { year } = await form();
     // The cloud tab receives the real content-free cross-tab signal.
@@ -254,7 +254,7 @@ it('US-01 AC4: a refused no-blur draft remains editable and the completed year s
 async function remoteMonth() {
   const { REMOTE_CHANGED_EVENT } = await import('../storage/roadmap-store');
   await act(async () => {
-    await data.saveChangedMeasurements({ birthMonth: 6 }, { birthMonth: 5 });
+    await data.saveChangedMeasurements({ birthMonth: 6 }, { birthMonth: 5 }, data.getShownErase());
     window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT));
   });
 }
@@ -265,7 +265,7 @@ async function appliedRemote() {
 
 it.each(['1975', '1976', ''])(
   'US-34 AC4: partial save holds remote replay until the year is corrected or cleared (%s)', async correction => {
-    await data.saveChangedMeasurements({ birthYear: 1975 }, {});
+    await data.saveChangedMeasurements({ birthYear: 1975 }, {}, data.getShownErase());
     const { view, year } = await form();
     fireEvent.change(view.container.querySelector('#heightCm')!, { target: { value: '180' } });
     fireEvent.change(year, { target: { value: '197' } });
@@ -302,7 +302,7 @@ it('US-34 AC4: clearing an unsaved refused year releases a held update even with
 // '197' is refused and rides through a re-read (US-02 AC5); '1976' is valid
 // and would be replaced by it, so only the latest-form check keeps it.
 it.each(['197', '1976'])('US-34 AC4: an edit (%s) arriving while a valid save awaits also holds remote replay', async typed => {
-  await data.saveChangedMeasurements({ birthYear: 1975 }, {});
+  await data.saveChangedMeasurements({ birthYear: 1975 }, {}, data.getShownErase());
   const { view, year } = await form();
   const save = data.saveChangedMeasurements;
   let release!: () => void;
@@ -331,7 +331,7 @@ it.each(['197', '1976'])('US-34 AC4: an edit (%s) arriving while a valid save aw
 // the refusal is not a clear.
 it.each(['beforeunload', 'visibilitychange', 'pagehide', 'debounce'] as const)(
   'US-01 AC4: a refused year blurred before %s keeps the saved year through reload', async mode => {
-    await data.saveChangedMeasurements({ birthYear: 1975 }, {});
+    await data.saveChangedMeasurements({ birthYear: 1975 }, {}, data.getShownErase());
     await data.flushRoadmapStore();
     const { view, year, live } = await form();
     fireEvent.change(year, { target: { value: '197' } });
@@ -350,8 +350,8 @@ it.each(['beforeunload', 'visibilitychange', 'pagehide', 'debounce'] as const)(
 it('US-09 AC2c: a held remote update released after another tab logs off does not rewrite the device copy', async () => {
   const cloud = new MemoryAdapter();
   await data.initRoadmapStore(cloud);
-  await data.saveChangedMeasurements({ sex: 'male', heightCm: 178, birthMonth: 5, unitSystem: 'si' }, {});
-  await data.addMeasurement('weight', 80, '2026-10-01');
+  await data.saveChangedMeasurements({ sex: 'male', heightCm: 178, birthMonth: 5, unitSystem: 'si' }, {}, data.getShownErase());
+  await data.addMeasurement('weight', 80, '2026-10-01', data.getShownErase());
   await data.flushRoadmapStore();
   const { year } = await form();
   fireEvent.change(year, { target: { value: '1975' } });

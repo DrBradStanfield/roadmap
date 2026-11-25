@@ -52,7 +52,7 @@ describe('connect helpers lift/copy real data (US-09 AC2/AC3)', () => {
   it('migrateLocalInto lifts on-device guest data into a freshly-connected cloud (AC3)', async () => {
     // Guest session: data entered on the local tier before any cloud existed.
     const local = await RoadmapStore.create(new LocalStorageAdapter());
-    local.addMeasurement('weight', 80, '2024-01-01T00:00:00.000Z');
+    local.addMeasurement('weight', 80, '2024-01-01T00:00:00.000Z', local.shownErase);
     await local.flush();
 
     const cloud = new MemoryCloud();
@@ -65,11 +65,11 @@ describe('connect helpers lift/copy real data (US-09 AC2/AC3)', () => {
   it('migrateLocalInto merges with existing cloud data, never overwrites (AC3)', async () => {
     const cloud = new MemoryCloud();
     const seeded = await RoadmapStore.create(new MemoryAdapter(cloud));
-    seeded.addMeasurement('ldl', 3.2, '2024-02-01T00:00:00.000Z');
+    seeded.addMeasurement('ldl', 3.2, '2024-02-01T00:00:00.000Z', seeded.shownErase);
     await seeded.flush();
 
     const local = await RoadmapStore.create(new LocalStorageAdapter());
-    local.addMeasurement('weight', 80, '2024-01-01T00:00:00.000Z');
+    local.addMeasurement('weight', 80, '2024-01-01T00:00:00.000Z', local.shownErase);
     await local.flush();
 
     await migrateLocalInto(new MemoryAdapter(cloud));
@@ -93,7 +93,7 @@ describe('connect helpers lift/copy real data (US-09 AC2/AC3)', () => {
 
   it('a failed lift sets the pending-mirror marker, so the store recovery path retries it (US-09 AC4 wiring)', async () => {
     const local = await RoadmapStore.create(new LocalStorageAdapter());
-    local.addMeasurement('weight', 80, '2024-01-01T00:00:00.000Z');
+    local.addMeasurement('weight', 80, '2024-01-01T00:00:00.000Z', local.shownErase);
     await local.flush();
 
     class WriteFailsAdapter extends MemoryAdapter {
@@ -115,11 +115,11 @@ describe('connect helpers lift/copy real data (US-09 AC2/AC3)', () => {
   it('copyDownFrom copies the cloud file down to this device, merged (AC2)', async () => {
     const cloud = new MemoryCloud();
     const seeded = await RoadmapStore.create(new MemoryAdapter(cloud));
-    seeded.addMeasurement('ldl', 3.2, '2024-02-01T00:00:00.000Z');
+    seeded.addMeasurement('ldl', 3.2, '2024-02-01T00:00:00.000Z', seeded.shownErase);
     await seeded.flush();
 
     const local = await RoadmapStore.create(new LocalStorageAdapter());
-    local.addMeasurement('weight', 80, '2024-01-01T00:00:00.000Z');
+    local.addMeasurement('weight', 80, '2024-01-01T00:00:00.000Z', local.shownErase);
     await local.flush();
 
     await copyDownFrom(new MemoryAdapter(cloud));
@@ -131,8 +131,8 @@ describe('connect helpers lift/copy real data (US-09 AC2/AC3)', () => {
 
   it('US-09 AC23: a guest\'s rows survive connecting to an erased cloud', async () => {
     const local = await RoadmapStore.create(new LocalStorageAdapter());
-    local.addMeasurement('weight', 80, '2024-01-01T00:00:00.000Z');
-    local.saveMedication('statin', 'atorvastatin', 20, 'mg');
+    local.addMeasurement('weight', 80, '2024-01-01T00:00:00.000Z', local.shownErase);
+    local.saveMedication('statin', 'atorvastatin', 20, 'mg', local.shownErase);
     await local.flush();
 
     const cloud = await erasedCloud();
@@ -173,7 +173,7 @@ describe('connect helpers lift/copy real data (US-09 AC2/AC3)', () => {
     // Another device erased the record; this one has been on its own copy since.
     const cloud = await erasedCloud();
     const local = await RoadmapStore.create(new LocalStorageAdapter());
-    local.addMeasurement('weight', 80, '2026-05-11T00:00:00.000Z');
+    local.addMeasurement('weight', 80, '2026-05-11T00:00:00.000Z', local.shownErase);
     await local.flush();
 
     // The user opens the picker to switch away: the copy-down runs first.

@@ -96,7 +96,7 @@ describe('US-09 AC2c: a cloud page loaded before a log-off writes no health data
 
   it("a switch's copy to this device writes no record", async () => {
     const store = await cloudPage();
-    store.addMeasurement('weight', 80, '2026-10-01T00:00:00.000Z');
+    store.addMeasurement('weight', 80, '2026-10-01T00:00:00.000Z', store.shownErase);
     await store.flush();
     logOffElsewhere();
     await store.copyToDevice().catch(() => {});
@@ -151,7 +151,7 @@ describe('US-09 AC2c controls', () => {
     patchMirror({ medications: [med] });
     keepLpaAsIs('lpa-row-1');
     await typeWeight('80');
-    store.addMeasurement('weight', 80, '2026-10-01T00:00:00.000Z');
+    store.addMeasurement('weight', 80, '2026-10-01T00:00:00.000Z', store.shownErase);
     await store.flush();
     expect(localStorage.getItem(MIRROR_KEY)).not.toBeNull();
     // A page whose log-off id changed since load is off the chosen record, so it writes no draft and no

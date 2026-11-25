@@ -145,7 +145,7 @@ export type SaveOutcome = { kind: 'kept'; ids: Ids } | { kind: 'changed' } | { k
  * A half the record already holds exactly is not written again: compared exactly, never by display.
  * `erase`: the erase the page showed when the save was asked; a record at another one takes nothing (US-16 AC2a).
  */
-export async function savePair(pair: Pair, day: string, expected: Ids, erase?: string): Promise<SaveOutcome> {
+export async function savePair(pair: Pair, day: string, expected: Ids, erase: string): Promise<SaveOutcome> {
   if (getBackendKind() === 'local' && !healthWritesAllowed()) return { kind: 'failed' };
   const file = recordFileSync();
   if (!file) return { kind: 'failed' };

@@ -36,12 +36,12 @@ async function reopen() {
 }
 /** A record with a profile, a lab test, a supplement, a blood test and an older weight and waist. */
 async function seedFullRecord() {
-  await data.saveChangedMeasurements({ sex: 'male', birthYear: 1980, birthMonth: 6, heightCm: 178 }, {});
-  await data.addLabValue({ metricName: 'TSH', unit: 'mIU/L', value: 2.1, day: '2026-01-10' });
-  await data.saveSupplement('vitamin_d', 'Vitamin D', 2000, 'IU');
-  await data.addMeasurement('ldl', 2.4, OLD_DAY);
-  await data.addMeasurement('weight', 82, OLD_DAY);
-  await data.addMeasurement('waist', 90, OLD_DAY);
+  await data.saveChangedMeasurements({ sex: 'male', birthYear: 1980, birthMonth: 6, heightCm: 178 }, {}, data.getShownErase());
+  await data.addLabValue({ metricName: 'TSH', unit: 'mIU/L', value: 2.1, day: '2026-01-10' }, data.getShownErase());
+  await data.saveSupplement('vitamin_d', 'Vitamin D', 2000, 'IU', undefined, undefined, data.getShownErase());
+  await data.addMeasurement('ldl', 2.4, OLD_DAY, data.getShownErase());
+  await data.addMeasurement('weight', 82, OLD_DAY, data.getShownErase());
+  await data.addMeasurement('waist', 90, OLD_DAY, data.getShownErase());
   await reopen();
 }
 
@@ -80,7 +80,7 @@ const entries = (...fields: Field[]) => new Set<Field>(fields);
 describe('US-74 AC2: the boxes start from the record', () => {
   it('prefills the height and the latest active weight and waist, in cm and in US units', async () => {
     await seedFullRecord();
-    await data.addMeasurement('waist', 88, '2026-02-01T00:00:00.000Z');
+    await data.addMeasurement('waist', 88, '2026-02-01T00:00:00.000Z', data.getShownErase());
     expect(recordMeasured()).toEqual({ heightCm: 178, weightKg: 82, waistCm: 88 });
     const text = (b: Boxes) => [b.height.text, b.height.inches, b.weight.text, b.waist.text];
     expect(text(boxesFor(recordMeasured(), 'si'))).toEqual(['178', '', '82', '88']);
@@ -92,7 +92,7 @@ describe('US-74 AC2: the boxes start from the record', () => {
     expect(readBoxes(empty(), 'si')).toEqual({ values: {}, entered: new Set(), errors: { heightCm: 'Required' }, parts: { height: 'text' } });
     localStorage.setItem('health_roadmap_unit_system', 'conventional');
     expect(startingUnits()).toBe('conventional');
-    await data.saveChangedMeasurements({ unitSystem: 'si' }, {});
+    await data.saveChangedMeasurements({ unitSystem: 'si' }, {}, data.getShownErase());
     expect(startingUnits()).toBe('si');
   });
 
@@ -187,10 +187,10 @@ describe('US-74 AC4: the save merges into the record through RoadmapStore', () =
   });
 
   it('review A4: a row or height the person did not see writes nothing, and is reported as changed', async () => {
-    await data.saveChangedMeasurements({ heightCm: 178 }, {});
+    await data.saveChangedMeasurements({ heightCm: 178 }, {}, data.getShownErase());
     const seen = seenNow();
-    await data.addMeasurement('waist', 95); // another device, after the page read the record
-    await data.saveChangedMeasurements({ heightCm: 180 }, { heightCm: 178 });
+    await data.addMeasurement('waist', 95, undefined, data.getShownErase()); // another device, after the page read the record
+    await data.saveChangedMeasurements({ heightCm: 180 }, { heightCm: 178 }, data.getShownErase());
     const outcome = await saveMeasured({ heightCm: 175, waistCm: 88 }, entries('height', 'waist'), seen, 'si');
     expect(outcome).toEqual({ kind: 'stored', saved: [], changed: ['height', 'waist'], refused: [] });
     expect(persisted().measurements.filter((m) => m.status === 'active').map((m) => m.value)).toEqual([95]);
@@ -269,7 +269,7 @@ describe('US-74 AC3: the results are the plan\'s own', () => {
   });
 
   it('a known minor on record gets the plan\'s minor reading: BMI with no grade', async () => {
-    await data.saveChangedMeasurements({ birthYear: new Date().getFullYear() - 12, birthMonth: 1 }, {});
+    await data.saveChangedMeasurements({ birthYear: new Date().getFullYear() - 12, birthMonth: 1 }, {}, data.getShownErase());
     expect(resultsFor({ heightCm: 150, weightKg: 60 }, 'si')!.bmi!.status).toBeUndefined();
   });
 });
@@ -288,7 +288,7 @@ describe('US-74 second review round', () => {
   });
 
   it('C3: a stored out-of-range waist (205 cm) is left out of the results, as the plan leaves it out, and kept in the record', async () => {
-    await data.saveChangedMeasurements({ heightCm: 178 }, {});
+    await data.saveChangedMeasurements({ heightCm: 178 }, {}, data.getShownErase());
     await data.flushRoadmapStore();
     const file = persisted();
     file.measurements.push(createMeasurement({ id: 'w205', metricType: 'waist', value: 205, recordedAt: OLD_DAY, createdAt: OLD_DAY }));
@@ -309,7 +309,7 @@ describe('US-74 second review round', () => {
   });
 
   it('C5: a waist typed in inches is judged in inches: 50 in over today\'s 127.4 cm (shown 50.2) is written', async () => {
-    await data.addMeasurement('waist', 127.4);
+    await data.addMeasurement('waist', 127.4, undefined, data.getShownErase());
     const read = readBoxes(typeInto(boxesFor({ heightCm: 178, waistCm: 127.4 }, 'conventional'), { waist: '50' }), 'conventional');
     const outcome = await saveMeasured(read.values, read.entered, seenNow(), 'conventional');
     expect(outcome).toMatchObject({ kind: 'stored', saved: ['waist'] });
@@ -317,7 +317,7 @@ describe('US-74 second review round', () => {
   });
 
   it('C5: an entry the same as today\'s row writes nothing and is not counted as saved', async () => {
-    await data.addMeasurement('waist', 88);
+    await data.addMeasurement('waist', 88, undefined, data.getShownErase());
     const outcome = await saveMeasured({ heightCm: 178, waistCm: 88 }, entries('waist'), seenNow(), 'si');
     expect(outcome).toEqual({ kind: 'stored', saved: [], changed: [], refused: [] });
     expect(activeWaists()).toEqual([88]);
@@ -343,7 +343,7 @@ describe('US-74 second review round', () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     try {
       vi.setSystemTime(new Date(2026, 10, 17, 22, 0));
-      await data.addMeasurement('waist', 90);
+      await data.addMeasurement('waist', 90, undefined, data.getShownErase());
       const seen = seenNow();
       expect(seen.rows.waist.id).not.toBeNull();
       vi.setSystemTime(new Date(2026, 10, 18, 7, 0));

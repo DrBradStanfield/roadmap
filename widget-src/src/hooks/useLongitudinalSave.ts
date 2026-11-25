@@ -19,7 +19,7 @@ import { ensureIsoDatetime } from '../lib/recordedAt';
 import { useDebouncedSave } from '../lib/useDebouncedSave';
 
 /** A correction the store answered; a success is counted (name only). */
-export const countedCorrection = async (id: string, newValue: number, erase?: string) => {
+export const countedCorrection = async (id: string, newValue: number, erase: string) => {
   const status = await correctValue(id, newValue, erase);
   if (status === 'ok') trackProductEvent('correction_made');
   return status;
@@ -30,7 +30,7 @@ export const countedCorrection = async (id: string, newValue: number, erase?: st
  *  corrected by `onCorrect`. The store is synchronous, so every write is staged
  *  before this returns; only the answers wait. The single-topic widgets save here too (US-74 AC4),
  *  `counted` false: they count an added measure once the store has kept it (review C8). */
-export function saveTasksToStore(tasks: SaveTask[], erase: string | undefined, onCorrect: CorrectFn, counted = true): Promise<Refused> {
+export function saveTasksToStore(tasks: SaveTask[], erase: string, onCorrect: CorrectFn, counted = true): Promise<Refused> {
   return routeTasksToSaves(
     tasks,
     loadAllHistorySync(),
@@ -49,7 +49,7 @@ interface LongitudinalSaveDeps {
   unitOverrides: Record<string, UnitSystem>;
   unitSystem: UnitSystem;
   reread: () => Promise<unknown>;
-  flushPendingProfileSave: (erase?: string) => Promise<boolean>;
+  flushPendingProfileSave: (erase: string) => Promise<boolean>;
   /** The unit each first-time weight or waist was typed in (US-03 AC3). */
   typedIn: MutableRefObject<Partial<Record<keyof HealthInputs, { value: unknown; unit: UnitSystem }>>>;
   /** The record held no measurement as the page loaded: read once (US-01 AC7). */

@@ -22,7 +22,7 @@ import { toOldShape } from '@roadmap/health-core/blood-tests';
 import { formatDisplayValue, toCanonicalValue } from '@roadmap/health-core/units';
 import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
-import { addMeasurement, flushRoadmapStore, initRoadmapStore, loadLatestMeasurements, saveChangedMeasurements, saveMedication, saveScreening } from '../lib/roadmap-data';
+import { addMeasurement, flushRoadmapStore, initRoadmapStore, loadLatestMeasurements, saveChangedMeasurements, saveMedication, saveScreening, getShownErase } from '../lib/roadmap-data';
 import { BT_TIMELINE_DRAFT_KEY, VITALS_DRAFT_KEY, loadFromLocalStorage } from '../lib/storage';
 import { trackABConversion } from '../lib/server-api';
 import { openAboutYou, showTables, trackLiveRefresh, stopLiveRefresh, recordOnDisk, useHealthToolLifecycle, wait } from '../testing/health-tool-harness';
@@ -190,8 +190,8 @@ async function anotherWriter(write: () => Promise<unknown>) {
 }
 /** A complete record: About you answered, one weight. */
 async function completeRecord() {
-  await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, {});
-  await addMeasurement('weight', 70, '2026-09-01');
+  await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, {}, getShownErase());
+  await addMeasurement('weight', 70, '2026-09-01', getShownErase());
   await flushRoadmapStore();
 }
 const mirror = () => loadFromLocalStorage();
@@ -242,7 +242,7 @@ describe('US-34 AC4: a change announced before the page has shown its first read
   }
   const announceWeight = () => {
     atMount.run = () => {
-      void addMeasurement('weight', 82, localToday()); // the store takes it at once
+      void addMeasurement('weight', 82, localToday(), getShownErase()); // the store takes it at once
       window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT));
     };
   };
@@ -264,7 +264,7 @@ describe('US-34 AC4: a change announced before the page has shown its first read
   });
 
   it('US-34 AC4: a record with no profile, only a weight: the weight announced in the gap is not overwritten by the first read', async () => {
-    await addMeasurement('weight', 80, '2026-09-01');
+    await addMeasurement('weight', 80, '2026-09-01', getShownErase());
     await flushRoadmapStore();
     announceWeight();
     await endsOn82(await openUnacted());
@@ -290,8 +290,8 @@ describe('US-01 AC7: the measurement-save conversion counts a new visitor\'s fir
   });
 
   it('US-01 AC7: a returning user whose record holds a measurement at mount sends no conversion on a save', async () => {
-    await saveChangedMeasurements({ heightCm: 170 }, {});
-    await addMeasurement('weight', 70, '2026-09-01');
+    await saveChangedMeasurements({ heightCm: 170 }, {}, getShownErase());
+    await addMeasurement('weight', 70, '2026-09-01', getShownErase());
     await flushRoadmapStore();
     const view = await open();
     await saveWeight(view, '72');
@@ -335,7 +335,7 @@ describe('US-15 AC10, US-34: another writer\'s change reaches the chat mirror', 
     await completeRecord();
     await open();
     await waitFor(() => expect(mirror()?.previousMeasurements.find((m) => m.metricType === 'weight')?.value).toBe(70));
-    await anotherWriter(() => addMeasurement('weight', 82, localToday()));
+    await anotherWriter(() => addMeasurement('weight', 82, localToday(), getShownErase()));
     await waitFor(() => expect(calls('remote_change_applied')).toHaveLength(1));
     await waitFor(() => expect(mirror()?.previousMeasurements.find((m) => m.metricType === 'weight')?.value).toBe(82));
   });
@@ -353,7 +353,7 @@ describe('US-34 AC4: a change held behind an unsaved profile edit, then a refuse
     const view = await open();
     // An unsaved profile edit: the height typed, still focused, its save on the timer.
     type(q(view, '#heightCm'), '171');
-    await anotherWriter(() => saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1981, birthMonth: 3 }, { heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }));
+    await anotherWriter(() => saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1981, birthMonth: 3 }, { heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, getShownErase()));
     expect((q(view, '#birthYear') as HTMLInputElement).value).toBe('1980'); // held
     expect(calls('remote_change_applied')).toEqual([]);
     refuse.next = true;
@@ -372,16 +372,16 @@ describe('US-34 AC4, US-62 AC13: an upload finishes while a change is held', () 
   // PR 1155 review R2: the upload's re-read takes the held change in, so the record is read
   // once and the change counted once; the upload still answers the step it completes.
   it('US-34 AC4, US-62 AC13: one re-read, remote_change_applied once, and onboarding_step for the measurements the upload saved', async () => {
-    await saveChangedMeasurements({ heightCm: 170 }, {});
+    await saveChangedMeasurements({ heightCm: 170 }, {}, getShownErase());
     await flushRoadmapStore();
     const view = await open();
     await waitFor(() => expect(upload.complete).toBeTruthy());
     type(q(view, '#heightCm'), '171'); // an unsaved profile edit, still focused
-    await anotherWriter(() => saveChangedMeasurements({ heightCm: 170, sex: 'female' }, { heightCm: 170 }));
+    await anotherWriter(() => saveChangedMeasurements({ heightCm: 170, sex: 'female' }, { heightCm: 170 }, getShownErase()));
     expect(calls('remote_change_applied')).toEqual([]); // held
     reads.count = 0;
     await act(async () => {
-      await addMeasurement('weight', 80, localToday()); // the upload's save
+      await addMeasurement('weight', 80, localToday(), getShownErase()); // the upload's save
       await upload.complete!();
     });
     await waitFor(() => expect(calls('onboarding_step')).toEqual([{ step: 'measurements' }]));
@@ -397,13 +397,13 @@ describe('US-34 AC7: a unit system another device chose shows here at once', () 
   // page applied it at load but not on a remote change, so the form held the
   // new system while every value still showed in the old one.
   it('US-34 AC7: the phone switches the record to US units; this page shows the weight in lb without a reload', async () => {
-    await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3, unitSystem: 'si' }, {});
-    await addMeasurement('weight', 70, '2026-09-01');
+    await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3, unitSystem: 'si' }, {}, getShownErase());
+    await addMeasurement('weight', 70, '2026-09-01', getShownErase());
     await flushRoadmapStore();
     const view = await open();
     const weightRow = () => q(view, '.bt-vitals-card [data-metric="weight"]')?.textContent ?? '';
     await waitFor(() => expect(weightRow()).toContain(formatDisplayValue('weight', 70, 'si')));
-    await anotherWriter(() => saveChangedMeasurements({ unitSystem: 'conventional' }, { unitSystem: 'si' }));
+    await anotherWriter(() => saveChangedMeasurements({ unitSystem: 'conventional' }, { unitSystem: 'si' }, getShownErase()));
     await waitFor(() => expect(weightRow()).toContain(formatDisplayValue('weight', 70, 'conventional')), { timeout: 3000 });
   });
 });
@@ -417,12 +417,12 @@ describe('US-04 AC1, US-34 AC7: a unit switch from another device never changes 
   const lb180 = () => toCanonicalValue('weight', 180, 'conventional');
   /** Scenario A: a first-time weight typed in lb; the phone switches the record to SI mid-number. */
   async function weightTypedAcrossASwitch(): Promise<RenderResult> {
-    await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3, unitSystem: 'conventional' }, {});
+    await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3, unitSystem: 'conventional' }, {}, getShownErase());
     await flushRoadmapStore();
     const view = render(<HealthTool />); // the onboarding's weight box, beside the height (US-62 AC13)
     await waitFor(() => expect(q(view, '#weightKg')).toBeTruthy());
     type(q(view, '#weightKg'), '18');
-    await anotherWriter(() => saveChangedMeasurements({ unitSystem: 'si' }, { unitSystem: 'conventional' }));
+    await anotherWriter(() => saveChangedMeasurements({ unitSystem: 'si' }, { unitSystem: 'conventional' }, getShownErase()));
     await settle(50);
     type(q(view, '#weightKg'), '180');
     leave(q(view, '#weightKg'));
@@ -454,10 +454,10 @@ describe('US-04 AC1, US-34 AC7: a unit switch from another device never changes 
   /** A complete record in SI units. */
   async function siRecord() {
     await completeRecord();
-    await saveChangedMeasurements({ unitSystem: 'si' }, {});
+    await saveChangedMeasurements({ unitSystem: 'si' }, {}, getShownErase());
     await flushRoadmapStore();
   }
-  const toConventional = () => anotherWriter(() => saveChangedMeasurements({ unitSystem: 'conventional' }, { unitSystem: 'si' }));
+  const toConventional = () => anotherWriter(() => saveChangedMeasurements({ unitSystem: 'conventional' }, { unitSystem: 'si' }, getShownErase()));
 
   it('US-04 AC1, US-34 AC7: an LDL drafted in mmol/L across a remote switch to US units saves as mmol/L (scenario B)', async () => {
     await siRecord();
@@ -570,7 +570,7 @@ describe('US-04 AC1, US-34 AC7: a unit switch from another device never changes 
     }));
     async function loadAndCommit(preference: 'si' | 'conventional', recorded: 'si' | 'conventional') {
       await completeRecord();
-      await saveChangedMeasurements({ unitSystem: recorded }, {});
+      await saveChangedMeasurements({ unitSystem: recorded }, {}, getShownErase());
       await flushRoadmapStore();
       keptDraft();
       localStorage.setItem('health_roadmap_unit_system', preference);
@@ -599,7 +599,7 @@ describe('US-04 AC1, US-34 AC7: a unit switch from another device never changes 
     // the record's, which the matrix may mount after.
     it('kept with no unit, this device in SI, the record in US units: it saves 3.5 mmol/L', async () => {
       await completeRecord();
-      await saveChangedMeasurements({ unitSystem: 'conventional' }, {});
+      await saveChangedMeasurements({ unitSystem: 'conventional' }, {}, getShownErase());
       await flushRoadmapStore();
       localStorage.setItem(BT_TIMELINE_DRAFT_KEY, JSON.stringify({ draft: { values: { ldl: '3.5' } }, backfills: {}, meta: {} }));
       localStorage.setItem('health_roadmap_unit_system', 'si');
@@ -613,7 +613,7 @@ describe('US-04 AC1, US-34 AC7: a unit switch from another device never changes 
     // Adversary R3 (PR 1147): the vitals too. A weight kept before 2026-09-24 has no unit.
     it('a weight kept with no unit, this device in US units, the record in SI: 180 saves as 180 lb', async () => {
       await completeRecord();
-      await saveChangedMeasurements({ unitSystem: 'si' }, {});
+      await saveChangedMeasurements({ unitSystem: 'si' }, {}, getShownErase());
       await flushRoadmapStore();
       localStorage.setItem(VITALS_DRAFT_KEY, JSON.stringify({ draft: { values: { weight: '180' } }, backfills: {}, meta: {} }));
       localStorage.setItem('health_roadmap_unit_system', 'conventional');
@@ -687,7 +687,7 @@ describe('US-04 AC1, US-34 AC7: a unit switch from another device never changes 
     failMirror.always = true; // every mirror of the record fails: the first read's, and each re-read's
     const view = await open();
     await waitFor(() => expect(vi.mocked(Sentry.captureException)).toHaveBeenCalledTimes(1));
-    await anotherWriter(() => saveChangedMeasurements({ birthYear: 1975 }, { birthYear: 1980 }));
+    await anotherWriter(() => saveChangedMeasurements({ birthYear: 1975 }, { birthYear: 1980 }, getShownErase()));
     await waitFor(() => expect(vi.mocked(Sentry.captureException)).toHaveBeenCalledTimes(2));
     expect(vi.mocked(Sentry.captureException).mock.calls.map(([e, hint]) => [(e as Error).message, hint])).toEqual([
       ['Synthetic test: lab read failed', { tags: { area: 'cloud-sync', op: 'load' } }],
@@ -837,7 +837,7 @@ describe('US-04 AC1, US-34 AC7: a unit switch from another device never changes 
 
     it('US-34 AC4, AC7a (H2): another writer adds a weight inside the switch\'s 500 ms: US units stay and save, and the weight shows, counted once', async () => {
       const view = await switchedToUs();
-      await anotherWriter(() => addMeasurement('weight', 72, '2026-10-01'));
+      await anotherWriter(() => addMeasurement('weight', 72, '2026-10-01', getShownErase()));
       await settle(800);
       expect(await pillSays(view)).toBe(US);
       expect(await recordUnits()).toBe('conventional');
@@ -847,7 +847,7 @@ describe('US-04 AC1, US-34 AC7: a unit switch from another device never changes 
 
     it('US-34 AC4, AC7a (H2, Q1): the other device sets SI units inside the window: this tab\'s later US units stay and save', async () => {
       const view = await switchedToUs();
-      await anotherWriter(() => saveChangedMeasurements({ unitSystem: 'si' }, { unitSystem: 'conventional' }));
+      await anotherWriter(() => saveChangedMeasurements({ unitSystem: 'si' }, { unitSystem: 'conventional' }, getShownErase()));
       await settle(800);
       expect(await pillSays(view)).toBe(US);
       expect(await recordUnits()).toBe('conventional');
@@ -855,7 +855,7 @@ describe('US-04 AC1, US-34 AC7: a unit switch from another device never changes 
 
     it('US-34 AC4, AC7a: switched to US units, the other device writes US, then the pill back to SI before the save: the record and the page read SI', async () => {
       const view = await switchedToUs();
-      await anotherWriter(() => saveChangedMeasurements({ unitSystem: 'conventional' }, { unitSystem: 'si' }));
+      await anotherWriter(() => saveChangedMeasurements({ unitSystem: 'conventional' }, { unitSystem: 'si' }, getShownErase()));
       const pill = await unitPill(view);
       pressMouse(pill); releaseMouse(pill);
       expect(await pillSays(view)).toBe(METRIC);
@@ -886,7 +886,7 @@ describe('US-04 AC1, US-34 AC7: a unit switch from another device never changes 
     // PR 1204 review (Codex R1): the first-time weight box's own pill was no unit control,
     // so the press released the held units and the click toggled from them.
     it('US-34 AC7a: 60 typed in the weight box in lb, SI held, then the box\'s lbs pill: kg chosen, and 60 lb kept', async () => {
-      await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3, unitSystem: 'conventional' }, {});
+      await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3, unitSystem: 'conventional' }, {}, getShownErase());
       await flushRoadmapStore();
       const view = render(<HealthTool />);
       await waitFor(() => expect(q(view, '#weightKg')).toBeTruthy());
@@ -894,7 +894,7 @@ describe('US-04 AC1, US-34 AC7: a unit switch from another device never changes 
       // Two digits that could still grow ("60" toward 600 lb): the landing waits 800 ms
       // (useAutoAdvance), so the box keeps the focus; "180" lands at once and moves it.
       type(q(view, '#weightKg'), '60');
-      await anotherWriter(() => saveChangedMeasurements({ unitSystem: 'si' }, { unitSystem: 'conventional' }));
+      await anotherWriter(() => saveChangedMeasurements({ unitSystem: 'si' }, { unitSystem: 'conventional' }, getShownErase()));
       await settle(50);
       expect(document.activeElement?.id).toBe('weightKg');
       const pill = () => q(view, 'label[for="weightKg"] .unit-toggle-pill') as HTMLElement;
@@ -931,7 +931,7 @@ describe('US-04 AC1, US-34 AC7: a unit switch from another device never changes 
       await settle(50);
       const pill = await unitPill(view);
       pressMouse(pill); releaseMouse(pill);
-      await anotherWriter(() => saveChangedMeasurements({ birthYear: 1975 }, { birthYear: 1980 }));
+      await anotherWriter(() => saveChangedMeasurements({ birthYear: 1975 }, { birthYear: 1980 }, getShownErase()));
       await waitFor(() => expect((q(view, '#birthYear') as HTMLInputElement).value).toBe('1975'), { timeout: 3000 });
     });
 
@@ -946,7 +946,7 @@ describe('US-04 AC1, US-34 AC7: a unit switch from another device never changes 
       const pill = await unitPill(view);
       pressMouse(pill); releaseMouse(pill);
       expect(await pillSays(view)).toBe(US);
-      await anotherWriter(() => saveChangedMeasurements({ unitSystem: 'si', birthYear: 1975 }, { unitSystem: 'conventional', birthYear: 1980 }));
+      await anotherWriter(() => saveChangedMeasurements({ unitSystem: 'si', birthYear: 1975 }, { unitSystem: 'conventional', birthYear: 1980 }, getShownErase()));
       await waitFor(() => expect((q(view, '#birthYear') as HTMLInputElement).value).toBe('1975'), { timeout: 3000 });
       expect(await pillSays(view)).toBe(METRIC);
     });
@@ -960,9 +960,9 @@ describe('US-34 AC4a: the page\'s own save re-reads the values, and a held chang
   // cleans the profile applies it, read once more and counted once.
   /** About you answered, two LDL tests, no weight: the first-time weight field shows (US-62 AC13). */
   async function recordWithLdl() {
-    await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, {});
-    await addMeasurement('ldl', 3.9, '2026-01-10');
-    await addMeasurement('ldl', 2.1, '2026-08-15'); // the latest
+    await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, {}, getShownErase());
+    await addMeasurement('ldl', 3.9, '2026-01-10', getShownErase());
+    await addMeasurement('ldl', 2.1, '2026-08-15', getShownErase()); // the latest
     await flushRoadmapStore();
   }
   /** A field of About you; its rows opened again when a save closed them (US-62 AC12). */
@@ -980,7 +980,7 @@ describe('US-34 AC4a: the page\'s own save re-reads the values, and a held chang
   }
   /** Another writer changes the birth year: held behind the dirty profile. */
   async function heldBirthYear(view: RenderResult) {
-    await anotherWriter(() => saveChangedMeasurements({ birthYear: 1981 }, { birthYear: 1980 }));
+    await anotherWriter(() => saveChangedMeasurements({ birthYear: 1981 }, { birthYear: 1980 }, getShownErase()));
     await settle(50);
     expect(field(view, 'birthYear')).toBe('1980');
     expect(calls('remote_change_applied')).toEqual([]);
@@ -1082,15 +1082,15 @@ describe('US-34 AC4, US-16 AC2a (H52): a re-read inside a list save\'s 300 ms sh
   const select = (view: RenderResult, sel: string) => q(view, sel) as HTMLSelectElement;
 
   it('US-34 AC4, US-16 AC2a (H52): a medication changed, then another writer\'s change re-reads inside 300 ms; after the save lands, the screen shows the change and the record holds it', async () => {
-    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 1 }, {});
-    await addMeasurement('weight', 80, '2026-09-01');
-    await addMeasurement('ldl', 3, '2026-09-01');
-    await saveMedication('statin', 'atorvastatin', 20, 'mg');
+    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 1 }, {}, getShownErase());
+    await addMeasurement('weight', 80, '2026-09-01', getShownErase());
+    await addMeasurement('ldl', 3, '2026-09-01', getShownErase());
+    await saveMedication('statin', 'atorvastatin', 20, 'mg', getShownErase());
     await flushRoadmapStore();
     const view = render(<HealthTool />);
     await waitFor(() => expect(q(view, '#statin-dose')).toBeTruthy());
     fireEvent.change(select(view, '#statin-dose'), { target: { value: '40' } });
-    await anotherWriter(() => addMeasurement('weight', 81, localToday())); // inside the dose's 300 ms
+    await anotherWriter(() => addMeasurement('weight', 81, localToday(), getShownErase())); // inside the dose's 300 ms
     await waitFor(() => expect(calls('remote_change_applied')).toHaveLength(1));
     await settle(400);
     await act(async () => { await flushRoadmapStore(); });
@@ -1099,10 +1099,10 @@ describe('US-34 AC4, US-16 AC2a (H52): a re-read inside a list save\'s 300 ms sh
   });
 
   it('US-34 AC4, US-13 AC6 (mount 3a): through the shared Save, a letter\'s screening date written in its commit shows after the adapter\'s re-read', async () => {
-    await saveChangedMeasurements({ sex: 'female', heightCm: 165, birthYear: 1960, birthMonth: 1 }, {});
-    await addMeasurement('weight', 70, '2026-09-01');
-    await saveScreening('colorectal_method', 'colonoscopy_10yr');
-    await saveScreening('colorectal_last_date', '2024-03');
+    await saveChangedMeasurements({ sex: 'female', heightCm: 165, birthYear: 1960, birthMonth: 1 }, {}, getShownErase());
+    await addMeasurement('weight', 70, '2026-09-01', getShownErase());
+    await saveScreening('colorectal_method', 'colonoscopy_10yr', getShownErase());
+    await saveScreening('colorectal_last_date', '2024-03', getShownErase());
     await flushRoadmapStore();
     const view = render(<HealthTool />);
     await waitFor(() => expect(q(view, 'select#colorectal_last_date')).toBeTruthy());
@@ -1114,7 +1114,7 @@ describe('US-34 AC4, US-16 AC2a (H52): a re-read inside a list save\'s 300 ms sh
       classification: 'clinic_letter', reportDate: null, values: [], additionalValues: [], unrecognized: [],
       document: { classification: 'clinic_letter', title: 'Synthetic colonoscopy', documentDate: '2025-06', contentMarkdown: 'Synthetic', metadata: { screeningType: 'colorectal' } },
     } } };
-    const saving: Extract<UploadState, { phase: 'saving' }> = { phase: 'saving', platform: 'web', run: 1, files: [letter], started: now, firstRead: now, attempt: 1 };
+    const saving: Extract<UploadState, { phase: 'saving' }> & { erase: string } = { phase: 'saving', platform: 'web', run: 1, files: [letter], started: now, firstRead: now, attempt: 1, erase: getShownErase() };
     let answer: Awaited<ReturnType<typeof sharedSave>> | undefined;
     await act(async () => { answer = await sharedSave({ uploadSave, uploadReview }, saving, emptyHeld(1), { age: 66, sex: 'female' }, upload.complete!); });
     expect(answer).toMatchObject({ type: 'saved', outcome: { documents: 1, screenings: 1 } });
@@ -1127,10 +1127,10 @@ describe('US-34 AC4, US-16 AC2a (H52): a re-read inside a list save\'s 300 ms sh
   // H102 (Option A, no gate): a list save does not wait for the load gate. A first read that fails
   // part-way has shown the record, and a list save is a keyed upsert that merges, so it saves.
   it('US-34 AC4 (H102): the first read fails part-way; a medication change still saves and shows', async () => {
-    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 1 }, {});
-    await addMeasurement('weight', 80, '2026-09-01');
-    await addMeasurement('ldl', 3, '2026-09-01');
-    await saveMedication('statin', 'atorvastatin', 20, 'mg');
+    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 1 }, {}, getShownErase());
+    await addMeasurement('weight', 80, '2026-09-01', getShownErase());
+    await addMeasurement('ldl', 3, '2026-09-01', getShownErase());
+    await saveMedication('statin', 'atorvastatin', 20, 'mg', getShownErase());
     await flushRoadmapStore();
     failMirror.next = true; // the first read throws after it has shown the record
     const view = render(<HealthTool />);

@@ -16,7 +16,7 @@ import { act, cleanup, fireEvent, render, waitFor, type RenderResult } from '@te
 import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import { toOldShape } from '@roadmap/health-core/blood-tests';
 import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
-import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
+import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements, getShownErase } from '../lib/roadmap-data';
 import { VITALS_DRAFT_KEY } from '../lib/storage';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { registerPageDeparture } from '../../standalone/page-departure';
@@ -98,9 +98,9 @@ afterEach(async () => {
 /** A man with his profile, a weight and one LDL on record. */
 async function guest() {
   await initRoadmapStore(new LocalStorageAdapter());
-  await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 1, unitSystem: 'si' }, {});
-  await addMeasurement('weight', 82, '2026-09-01');
-  await addMeasurement('ldl', 3.0, DAY);
+  await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 1, unitSystem: 'si' }, {}, getShownErase());
+  await addMeasurement('weight', 82, '2026-09-01', getShownErase());
+  await addMeasurement('ldl', 3.0, DAY, getShownErase());
   await flushRoadmapStore();
 }
 /** The page once both matrices show (the vitals show as one from the second visit). */

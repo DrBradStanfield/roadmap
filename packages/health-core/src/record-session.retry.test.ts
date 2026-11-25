@@ -75,7 +75,7 @@ function deviceHost(store: DeviceStore, open: { value: boolean }): RecordHost {
 }
 
 const add = (session: RecordSession, id: string) =>
-  session.edit((file) => void file.measurements.push(createMeasurement({ id, metricType: 'weight', value: 80, recordedAt: '2026-11-01', createdAt: new Date(clock).toISOString() })));
+  session.edit((file) => void file.measurements.push(createMeasurement({ id, metricType: 'weight', value: 80, recordedAt: '2026-11-01', createdAt: new Date(clock).toISOString() })), session.shownErase);
 const stored = (store: TestCloud): RoadmapFile => JSON.parse(store.cloud.files.get(ROADMAP_FILE_NAME)!.json);
 
 /** A session whose one save has failed with `error`. */

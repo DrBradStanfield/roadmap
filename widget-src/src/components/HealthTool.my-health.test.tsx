@@ -14,7 +14,7 @@ import {
   saveChangedMeasurements,
   saveMedication,
   saveScreening,
-  saveSupplement,
+  saveSupplement, getShownErase,
 } from '../lib/roadmap-data';
 import { seedGuest, useHealthToolLifecycle } from '../testing/health-tool-harness';
 import { deleteButton, openSettings } from '../testing/settings';
@@ -60,25 +60,25 @@ const RECORDS: Record<string, () => Promise<void>> = {
       [['weight', 95], ['waist', 104], ['systolic_bp', 158], ['diastolic_bp', 98], ['hba1c', 44], ['ldl', 4.1], ['creatinine', 92]], [], EARLIER);
     for (const [metric, value] of [['weight', 92], ['waist', 101], ['systolic_bp', 162], ['diastolic_bp', 101], ['hba1c', 50], ['ldl', 4.4],
       ['apob', 1.25], ['total_cholesterol', 6.6], ['hdl', 1.0], ['triglycerides', 2.3], ['lpa', 140], ['creatinine', 98]] as const) {
-      await addMeasurement(metric, value, DAY);
+      await addMeasurement(metric, value, DAY, getShownErase());
     }
-    await saveMedication('statin', 'atorvastatin', 20);
-    await saveSupplement('magnesium', 'Magnesium', 300, 'mg');
-    await saveScreening('colorectal_method', 'fit_annual');
-    await saveScreening('prostate_discussion', 'not_yet');
+    await saveMedication('statin', 'atorvastatin', 20, undefined, getShownErase());
+    await saveSupplement('magnesium', 'Magnesium', 300, 'mg', undefined, undefined, getShownErase());
+    await saveScreening('colorectal_method', 'fit_annual', getShownErase());
+    await saveScreening('prostate_discussion', 'not_yet', getShownErase());
   },
   'a woman of 52 with her screenings answered': async () => {
     await seedGuest({ sex: 'female', heightCm: 165, birthYear: 1974, birthMonth: 3, unitSystem: 'si' }, [['weight', 70], ['ldl', 2.8]], [], DAY);
-    await saveScreening('breast_frequency', 'biennial');
-    await saveScreening('cervical_method', 'hpv_every_5yr');
-    await saveScreening('colorectal_method', 'not_yet_started');
-    await saveScreening('endometrial_abnormal_bleeding', 'yes_need_to_report');
+    await saveScreening('breast_frequency', 'biennial', getShownErase());
+    await saveScreening('cervical_method', 'hpv_every_5yr', getShownErase());
+    await saveScreening('colorectal_method', 'not_yet_started', getShownErase());
+    await saveScreening('endometrial_abnormal_bleeding', 'yes_need_to_report', getShownErase());
   },
   'a man of 66 who will screen, PSA 6.5, a former smoker': async () => {
     await seedGuest({ sex: 'male', heightCm: 180, birthYear: 1960, birthMonth: 1, unitSystem: 'si' }, [['weight', 85], ['psa', 6.5]], [], DAY);
-    await saveScreening('prostate_discussion', 'will_screen');
-    await saveScreening('lung_smoking_history', 'former_smoker');
-    await saveScreening('lung_pack_years', '30');
+    await saveScreening('prostate_discussion', 'will_screen', getShownErase());
+    await saveScreening('lung_smoking_history', 'former_smoker', getShownErase());
+    await saveScreening('lung_pack_years', '30', getShownErase());
   },
   'a known minor': async () => {
     await seedGuest({ sex: 'female', heightCm: 150, birthYear: new Date().getFullYear() - 12, birthMonth: 1, unitSystem: 'si' }, [['weight', 45], ['ldl', 4.9]], [], DAY);
@@ -656,8 +656,8 @@ describe('US-09 AC19, US-62 AC28: any erase the screen shows closes the reasons 
   /** The same record again, written after the erase and re-read as from another device. */
   async function refill(view: RenderResult) {
     await act(async () => {
-      await saveChangedMeasurements(record, {});
-      for (const [metric, value] of values) await addMeasurement(metric, value, DAY);
+      await saveChangedMeasurements(record, {}, getShownErase());
+      for (const [metric, value] of values) await addMeasurement(metric, value, DAY, getShownErase());
       await flushRoadmapStore();
       window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT));
     });
