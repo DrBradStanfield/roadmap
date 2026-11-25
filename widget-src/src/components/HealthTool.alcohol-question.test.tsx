@@ -10,6 +10,7 @@ import { act, cleanup, fireEvent, render, waitFor, within } from '@testing-libra
 import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
+import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
 import { flushRoadmapStore, initRoadmapStore, saveChangedMeasurements, getShownErase } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 
@@ -70,13 +71,16 @@ const message = () => {
   expect(id).toBe('alcohol-dialog-message');
   return dialog()!.querySelector(`#${id}`)!.textContent;
 };
-const KEPT = 'Your answer is kept in your record, so your plan follows it on every device.';
+// A record in this browser alone reaches no other device; one in a cloud does (US-60 AC6).
+const KEPT = 'Your answer is kept in your record.';
+const KEPT_IN_CLOUD = 'Your answer is kept in your record, so your plan follows it on every device.';
 const still = (section: string) => `This stays on your plan because the advice applies to anyone who drinks. You can change your answer in ${section}.`;
 
 it('US-60 AC3: "I don\'t drink" takes the card off the plan and saves the answer; the event carries no answer', async () => {
   const view = render(<HealthTool />);
   await dismiss(view.container);
-  // A complete record shows About you's rows, so the line under the question names it (US-60 AC4).
+  // A complete record in this browser alone: About you's rows show, so the line names them (US-60 AC4),
+  // and it claims no other device (US-60 AC6).
   expect(message()).toBe(`${KEPT} You can change it in About you.`);
   // Only this card has a Dismiss.
   expect(view.container.querySelectorAll('.suggestion-dismiss')).toHaveLength(1);
@@ -196,6 +200,15 @@ it('US-60 AC4 (Brad 2026-11-02): mid-onboarding there is no Alcohol row, and "I 
     fireEvent.click(within(dialog()!).getByText('OK'));
     view.unmount();
   }
+});
+
+it('US-60 AC6: with a cloud connected, the line says the plan follows the answer on every device', async () => {
+  await initRoadmapStore(new MemoryAdapter(new MemoryCloud()));
+  await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 5, unitSystem: 'si', weightKg: 100 }, {}, getShownErase());
+  await flushRoadmapStore();
+  const view = render(<HealthTool />);
+  await dismiss(view.container);
+  expect(message()).toBe(`${KEPT_IN_CLOUD} You can change it in About you.`);
 });
 
 it('US-60 AC4 (lead M10): mid-onboarding, unanswered, the line under the question names no section, on desktop and a phone', async () => {

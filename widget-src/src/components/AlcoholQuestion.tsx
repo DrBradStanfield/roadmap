@@ -10,6 +10,7 @@ import { createPortal } from 'react-dom';
 import { REDUCE_ALCOHOL_ID } from '@roadmap/health-core/suggestions';
 import { alcoholQuestionMessage, alcoholQuestionTitle, stillDrinkLine } from '@roadmap/health-core/alcohol-question-words';
 import type { AlcoholAnswer, Suggestion } from '@roadmap/health-core/types';
+import { getBackendKind } from '../lib/roadmap-data';
 
 /** The two answers, for About you's row and the card's first question. */
 export const ALCOHOL_OPTIONS: ReadonlyArray<{ value: AlcoholAnswer; label: string }> = [
@@ -101,7 +102,7 @@ function AlcoholDismiss({ drinks, onChoose, aboutYouRow }: { drinks: boolean; on
             ) : (
               <>
                 <h3 id="alcohol-dialog-title" className="alcohol-dialog-title">{alcoholQuestionTitle(drinks)}</h3>
-                <p id="alcohol-dialog-message" className="alcohol-dialog-note">{alcoholQuestionMessage(drinks, aboutYouRow)}</p>
+                <p id="alcohol-dialog-message" className="alcohol-dialog-note">{alcoholQuestionMessage(drinks, { inCloud: getBackendKind() === 'cloud', aboutYouRow })}</p>
                 <div className="alcohol-dialog-actions">
                   {choices.map(({ label, answer }, i) => (
                     <button key={label} ref={i === 0 ? firstRef : undefined} type="button" className="upload-btn-primary"
