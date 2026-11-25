@@ -4,13 +4,14 @@
  * failure where it raises it, a typed field on StorageError, and its reason
  * where it can tell. Each row calls the real adapter's record write straight
  * (no SyncManager, so no reader fills a field in) against synthetic HTTP.
- * Then: the field survives SyncManager's rewrap and a field-by-field copy, as
- * a second bundle builds; the WeakSet mark it replaced survived neither.
+ * Then: the field travels with the error, through SyncManager's rewrap and a
+ * field-by-field copy (no production path copies errors; the iPhone bridge
+ * sends strings). Document uploads name their outcome too.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { StorageError, type StorageAdapter } from '@roadmap/health-core/adapter';
-import { DriveAdapter } from '@roadmap/health-core/drive-rest';
-import { DropboxAdapter } from '@roadmap/health-core/dropbox-rest';
+import { DriveAdapter, driveUploadDocument } from '@roadmap/health-core/drive-rest';
+import { DropboxAdapter, dropboxUploadDocument } from '@roadmap/health-core/dropbox-rest';
 import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
 import { ROADMAP_DOC } from '@roadmap/health-core/roadmap-doc';
 import { SyncManager } from '@roadmap/health-core/sync-manager';
@@ -99,6 +100,31 @@ describe('US-10 AC16: each adapter names its failure\'s outcome and reason', () 
     try { adapter.writeSync('health-roadmap.json', { meta: { lamport: 1 } }, null); } catch (e) { error = e; }
     spy.mockRestore();
     expect((error as StorageError).outcome).toBe('refused');
+  });
+});
+
+describe('US-10 AC16: a document upload names its outcome: a definite 4xx refused, any other answer may have landed', () => {
+  type DocKind = 'dropbox' | 'github' | 'webdav' | 'drive';
+  /** The upload answers `status`; every other call (GitHub's private-repo check) answers. */
+  async function uploadFailure(kind: DocKind, status: number): Promise<string | undefined> {
+    vi.stubGlobal('fetch', vi.fn(async (_input: string | URL, init: RequestInit = {}) =>
+      (init.method ?? 'GET') === 'GET' ? Response.json({ private: true }) : new Response('{"error":"synthetic"}', { status })));
+    const bytes = new Blob(['%PDF synthetic']);
+    const upload = kind === 'dropbox' ? dropboxUploadDocument('test-token-good', 'Letters/a.pdf', bytes)
+      : kind === 'drive' ? driveUploadDocument('test-token-good', 'a.pdf', bytes, 'folder1')
+        : (kind === 'github' ? adapterOf('github') : adapterOf('webdav')).writeDocument!('Letters/a.pdf', bytes);
+    const error = await upload.then(() => null, (e: unknown) => e);
+    expect(error).toBeInstanceOf(StorageError);
+    return (error as StorageError).outcome;
+  }
+  const rows: Array<[DocKind, number, string]> = (['dropbox', 'github', 'webdav', 'drive'] as DocKind[]).flatMap((kind): Array<[DocKind, number, string]> => [
+    [kind, 500, 'may-have-landed'],
+    [kind, 503, 'may-have-landed'],
+    [kind, 408, 'may-have-landed'],
+    [kind, 403, 'refused'],
+  ]);
+  it.each(rows)('%s, %s: %s', async (kind, status, outcome) => {
+    expect(await uploadFailure(kind, status)).toBe(outcome);
   });
 });
 

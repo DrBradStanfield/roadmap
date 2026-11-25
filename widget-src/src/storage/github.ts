@@ -178,7 +178,7 @@ export class GitHubAdapter implements StorageAdapter {
       const sha = head.ok ? ((await head.json()) as { sha?: string }).sha : undefined;
       res = await put(sha);
     }
-    if (!res.ok) throw new StorageError(`GitHub document write failed (${res.status}).`, undefined, undefined, res.status);
+    if (!res.ok) throw new StorageError(`GitHub document write failed (${res.status}).`, undefined, undefined, res.status, undefined, answerOutcome(res.status, true));
   }
 
   // --- helpers --------------------------------------------------------------

@@ -143,7 +143,7 @@ export class WebDavAdapter implements StorageAdapter {
       await this.ensureCollection(ref);
       res = await put();
     }
-    if (!res.ok) throw new StorageError(`Self-host document write failed (${res.status}).`, undefined, undefined, res.status);
+    if (!res.ok) throw new StorageError(`Self-host document write failed (${res.status}).`, undefined, undefined, res.status, undefined, answerOutcome(res.status, true));
   }
 
   // --- helpers --------------------------------------------------------------

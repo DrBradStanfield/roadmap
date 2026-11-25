@@ -1286,6 +1286,37 @@ describe('US-10 AC4a: a 401 or 403 after the upload is not "nothing was written"
     });
   }
 
+  // US-10 AC16: chosen by the typed reason. A Drive rate limit (a 403) passes: it is never refused access.
+  it('a typed rate limit on a read is not told as refused access, nor "reconnect"', async () => {
+    seedRecord();
+    const { access } = await connect();
+    makeAdapter = () => {
+      const adapter = new MemoryAdapter(cloud);
+      adapter.read = async () => { throw new StorageError('Google Drive read failed (403)', undefined, undefined, 403, 'rate-limited', 'refused'); };
+      return adapter;
+    };
+    const answer = await callTool(access, 'read_record', {});
+    expect(answer.isError).toBe(true);
+    expect(answer.text).not.toMatch(/refused this connection|reconnect/i);
+    expect(answer.text).toBe('The record in Dropbox did not answer. Nothing was written. Try once more; if it keeps failing, check that the record is reachable.');
+  });
+
+  // A full Drive (a 403) has no true sentence of its own yet: it keeps today's text (listed for the owner).
+  it('a typed full Drive on a read keeps today\'s access text', async () => {
+    seedRecord();
+    const { access } = await connect();
+    makeAdapter = () => {
+      const adapter = new MemoryAdapter(cloud);
+      adapter.read = async () => { throw new StorageError('Google Drive read failed (403)', undefined, undefined, 403, 'storage-full', 'refused'); };
+      return adapter;
+    };
+    const answer = await callTool(access, 'read_record', {});
+    expect(answer.text).toBe(
+      'Dropbox refused this connection’s access to the record. Nothing was read and nothing was written. ' +
+        'Ask the user to reconnect the connector, which grants it again.',
+    );
+  });
+
   // US-10 AC11: the typed mark decides, never the hint's words. A Drive-style
   // adapter marks a 401 after its upload with a hint that never says "landed".
   for (const status of [401, 403] as const) {

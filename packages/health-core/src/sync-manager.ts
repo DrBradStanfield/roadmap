@@ -221,7 +221,7 @@ export interface StorageFailure {
 }
 
 /** A token or a grant the provider refused (a 401 or a 403 that is not a limit). */
-function accessRefused(reason: StorageError['reason']): boolean {
+export function accessRefused(reason: StorageError['reason']): boolean {
   return reason === 'auth' || reason === 'forbidden';
 }
 

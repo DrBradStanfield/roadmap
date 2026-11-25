@@ -54,12 +54,14 @@ export const request = (url: string | URL, init?: Parameters<typeof fetchOrFail>
  *  `dailyLimitExceededUnreg`: that is a call with no valid credentials. */
 const LIMITS: ReadonlySet<string> = new Set(['rateLimitExceeded', 'userRateLimitExceeded', 'dailyLimitExceeded']);
 
-/** `rate-limited` for a 403 whose body names a limit; else none, so the status sets it. */
+/** `rate-limited` for a 403 whose body names a limit, `storage-full` for one that names a full
+ *  Drive (`storageQuotaExceeded`); else none, so the status sets it. */
 function limitOf(status: number, text: string): StorageFailureReason | undefined {
   if (status !== 403) return undefined;
   try {
     const errors = (JSON.parse(text) as { error?: { errors?: unknown } } | null)?.error?.errors;
-    return Array.isArray(errors) && errors.some((e) => LIMITS.has(String((e as { reason?: unknown } | null)?.reason))) ? 'rate-limited' : undefined;
+    const said = Array.isArray(errors) ? errors.map((e) => String((e as { reason?: unknown } | null)?.reason)) : [];
+    return said.some((reason) => LIMITS.has(reason)) ? 'rate-limited' : said.includes('storageQuotaExceeded') ? 'storage-full' : undefined;
   } catch {
     return undefined;
   }
@@ -195,7 +197,7 @@ export function driveCreateFile(
  */
 export async function driveUploadDocument(accessToken: string, name: string, bytes: Blob, parentId: string): Promise<void> {
   const res = await driveCreateFile(accessToken, name, bytes.type || 'application/octet-stream', bytes, parentId);
-  if (!res.ok) throw new StorageError(`${PROVIDER} document create failed (${res.status}).`, undefined, undefined, res.status);
+  if (!res.ok) throw new StorageError(`${PROVIDER} document create failed (${res.status}).`, undefined, undefined, res.status, undefined, answerOutcome(res.status, true));
 }
 
 /** The bytes of the document named `name` inside `parentId`, under the document deadline and

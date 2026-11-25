@@ -172,7 +172,7 @@ export async function dropboxUploadDocument(accessToken: string, ref: string, by
   if (!res.ok) {
     const busy = res.status === 429 || (res.status === 409 && /^path\/too_many_write_operations\b/.test(errorSummary(await res.text()) ?? ''));
     if (busy) throw new BusyError(`${PROVIDER} document write refused as busy (${res.status}).`, retryAfterMs(res.headers.get('Retry-After')), res.status);
-    throw new StorageError(`${PROVIDER} document write failed (${res.status}).`, undefined, undefined, res.status);
+    throw new StorageError(`${PROVIDER} document write failed (${res.status}).`, undefined, undefined, res.status, undefined, answerOutcome(res.status, true));
   }
 }
 

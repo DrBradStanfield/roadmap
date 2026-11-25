@@ -21,13 +21,14 @@ import { RecordSession } from './record-session';
 import type { RecordHost } from './record-host';
 import { ROADMAP_DOC } from './roadmap-doc';
 import { createMeasurement } from './roadmap-file';
+import { saveFailureCause } from './save-state';
 import { describeStorageFailure, SyncManager } from './sync-manager';
 import { mayHaveLanded } from './write-refusal';
 
 /** How one scripted call fails: an HTTP answer, a 403 naming a Drive limit, a dropped socket, or a timeout. */
-type Failure = number | 'drop' | 'timeout' | 'rateLimitExceeded' | 'userRateLimitExceeded';
-/** Which call fails: the pre-upload version check, the create POST, the update PATCH, or the verify read after it. */
-type Step = 'check' | 'create' | 'update' | 'verify';
+type Failure = number | 'drop' | 'timeout' | 'rateLimitExceeded' | 'userRateLimitExceeded' | 'storageQuotaExceeded';
+/** Which call fails: the write's record lookup (its search), the pre-upload version check, the create POST, the update PATCH, or the verify read after it. */
+type Step = 'lookup' | 'check' | 'create' | 'update' | 'verify';
 
 const NOW = '2026-11-25T10:00:00.000Z';
 const ctx = { deviceId: 'phone', now: NOW };
@@ -50,10 +51,11 @@ function failWith(failure: Failure): Response {
  * The pre-upload check is the second version read after a record search: the
  * first belongs to the snapshot, the second to driveUpdateIfVersion.
  */
-function drive(step: Step, failure: Failure, opts: { armed?: () => boolean } = {}) {
+function drive(step: Step, failure: Failure, opts: { armed?: () => boolean; lookup?: number } = {}) {
   const exists = step !== 'create';
   let json = recordJson();
   let versionReads = 0;
+  let searches = 0;
   let uploaded = false;
   const armed = opts.armed ?? (() => true);
   vi.stubGlobal('fetch', vi.fn(async (input: string | URL, init: RequestInit = {}) => {
@@ -69,6 +71,8 @@ function drive(step: Step, failure: Failure, opts: { armed?: () => boolean } = {
     if (url.includes('mimeType')) return Response.json({ files: [{ id: 'folder1', name: 'Health Roadmap' }] });
     if (url.includes('/files?q=')) {
       versionReads = 0;
+      // The save's read searches first; the write's own lookup is the next armed search (`lookup`, default 2).
+      if (step === 'lookup' && armed() && ++searches === (opts.lookup ?? 2)) return failWith(failure);
       return Response.json({ files: exists ? [{ id: 'r1', createdTime: '2026-01-01T00:00:00.000Z' }] : [] });
     }
     if (url.includes('fields=version')) {
@@ -92,6 +96,10 @@ afterEach(() => vi.unstubAllGlobals());
 
 describe('US-10 AC12 (S62b): what a failed Drive record save tells its caller', () => {
   const rows: Array<[string, Step, Failure, StorageOutcome, StorageFailureReason?]> = [
+    // The write's record lookup sends no write: its failure got no answer, or was refused (US-10 AC16).
+    ['a 500 on the write\'s record lookup', 'lookup', 500, 'no-answer'],
+    ['a rate limit (403) on the write\'s record lookup', 'lookup', 'rateLimitExceeded', 'refused', 'rate-limited'],
+    ['a 403 on the write\'s record lookup', 'lookup', 403, 'refused', 'forbidden'],
     ['a 403 on the pre-upload version check', 'check', 403, 'refused', 'forbidden'],
     ['a 400 on the pre-upload version check', 'check', 400, 'refused'],
     ['a 401 on the pre-upload version check', 'check', 401, 'refused', 'auth'],
@@ -107,6 +115,9 @@ describe('US-10 AC12 (S62b): what a failed Drive record save tells its caller', 
     ['a 403 answer to the create POST', 'create', 403, 'refused', 'forbidden'],
     ['a 404 answer to the create POST (folder gone)', 'create', 404, 'refused'],
     ['a user rate limit (403) on the create POST', 'create', 'userRateLimitExceeded', 'refused', 'rate-limited'],
+    // A full Drive stored nothing, and is not an access refusal.
+    ['a full Drive (403) on the create POST', 'create', 'storageQuotaExceeded', 'refused', 'storage-full'],
+    ['a full Drive (403) on the update PATCH', 'update', 'storageQuotaExceeded', 'refused', 'storage-full'],
     // An update PATCH's 400, 403 and 404 stored nothing; its 401 and every other failure may have landed (owner, 2026-11-25).
     ['a 403 answer to the update PATCH', 'update', 403, 'refused', 'forbidden'],
     ['a 400 answer to the update PATCH', 'update', 400, 'refused'],
@@ -134,8 +145,9 @@ describe('US-10 AC12 (S62b): what a failed Drive record save tells its caller', 
     // A refusal never says the change may have landed; a may-have-landed failure always does.
     const told = describeStorageFailure(error, 'The record in Google Drive');
     expect(/landed/i.test(told.hint)).toBe(outcome === 'may-have-landed');
-    // A rate limit passes: it is never worded as an access refusal.
+    // A rate limit passes: it is never worded as an access refusal, and the save is retried.
     expect(/refused this connection/.test(told.message)).toBe(reason === 'auth' || reason === 'forbidden');
+    if (reason === 'rate-limited') expect(saveFailureCause(error)).toBe('other');
   });
 });
 
@@ -147,10 +159,11 @@ class RefusingDevice extends MemoryAdapter {
 }
 
 describe('US-10 AC12 (S62b): an erase that Drive refuses before its upload is put back', () => {
-  // 500: the check got no answer, so nothing was written (US-10 AC16, owner 2026-11-25).
-  it.each([403, 500])('a %s on the pre-upload version check, the device refusing too: the erase answers not erased and the record is as before', async (status) => {
+  // 500: the check, or the write's record lookup, got no answer, so nothing was written (US-10 AC16, owner 2026-11-25).
+  it.each([['check', 403], ['check', 500], ['lookup', 500]] as Array<[Step, number]>)('a %s %s before the upload, the device refusing too: the erase answers not erased and the record is as before', async (step, status) => {
     let erasing = false;
-    drive('check', status, { armed: () => erasing });
+    // An erase reads the record, then saves (a read, then the write's lookup): its lookup is the third search.
+    drive(step, status, { armed: () => erasing, lookup: 3 });
     const device = new RefusingDevice(new MemoryCloud());
     const host: RecordHost = {
       tier: 'cloud',

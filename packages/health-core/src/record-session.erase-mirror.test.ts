@@ -11,7 +11,7 @@ import { describe, expect, it } from 'vitest';
 import { MemoryAdapter, MemoryCloud } from './memory-adapter';
 import { RecordSession } from './record-session';
 import type { RecordHost } from './record-host';
-import { ConflictError, ROADMAP_FILE_NAME, StorageError } from './adapter';
+import { ConflictError, LostUpdateError, ROADMAP_FILE_NAME, StorageError } from './adapter';
 import { createMeasurement, type RoadmapFile } from './roadmap-file';
 import { ROADMAP_DOC } from './roadmap-doc';
 import { transition, writtenNowhere, type SaveState } from './save-state';
@@ -311,6 +311,25 @@ describe('US-10 AC16: the outcome a failure is raised with (owner ruling A)', ()
     expect(mayHaveLanded(thrown)).toBe(true);
     store.failure = () => status(403);
     expect(mayHaveLanded(await sync.save(file).catch((e: unknown) => e))).toBe(false);
+  });
+
+  // What a write throws, read through SyncManager as the erase reads it: only a refused
+  // precondition stored nothing; anything its raiser did not name may have landed.
+  const thrownByWrite: Array<[string, () => unknown, boolean]> = [
+    ['a refused precondition (ConflictError)', () => new ConflictError(), false],
+    ['a write that landed then vanished (LostUpdateError)', () => new LostUpdateError('lost'), true],
+    ['an abort (AbortError)', () => new DOMException('aborted', 'AbortError'), true],
+    ['a plain error', () => new Error('network'), true],
+    ['not an error at all', () => 'oops', true],
+  ];
+  it.each(thrownByWrite)('a write that threw %s: may have landed is %s', async (_name, failure, landed) => {
+    const ctx = { deviceId: 'phone', now: new Date(clock).toISOString() };
+    const store = new FailingStore();
+    const sync = new SyncManager(store, 'phone', ROADMAP_DOC, { now: () => ctx.now });
+    store.failWrites = true;
+    store.failure = failure as () => Error;
+    const thrown = await sync.save(ROADMAP_DOC.migrate(null, ctx)).catch((e: unknown) => e);
+    expect(mayHaveLanded(thrown)).toBe(landed);
   });
 });
 

@@ -88,7 +88,7 @@ async function discoverRecord(token: string, known: Set<string>, signal?: AbortS
       + '&spaces=drive&fields=files(id%2CcreatedTime)%2CnextPageToken%2CincompleteSearch&pageSize=1000'
       + (page ? `&pageToken=${encodeURIComponent(page)}` : '');
     const res = await request(`${DRIVE_API}/files?${query}`, { headers: auth(token), signal });
-    if (!res.ok) throw new StorageError(`${PROVIDER} record lookup failed (${res.status}).`, undefined, undefined, res.status);
+    if (!res.ok) await fail('record lookup', res); // sends no write: refused, or no answer (US-10 AC16)
     const result = await jsonBody<{ files?: RecordCopy[]; nextPageToken?: string; incompleteSearch?: boolean }>(res);
     signal?.throwIfAborted();
     if (result.incompleteSearch || !Array.isArray(result.files)) throw new StorageError(`${PROVIDER} record enumeration is incomplete.`);
