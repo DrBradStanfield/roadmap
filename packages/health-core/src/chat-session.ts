@@ -314,7 +314,9 @@ export class ChatSession {
       // (US-11 AC2h). Cloud only; the device tier's erase removes the file.
       this.file.conversations.push({ id: `${ERASE_MARK}${crypto.randomUUID()}`, title: '', createdAt: now, updatedAt: now, deleted: true, messages: [] });
     }
-    if (this.file.conversations.length === 0) return; // nothing to tombstone
+    // Nothing to tombstone in the cloud. On this device the write below still runs: its read takes in what
+    // another tab saved since this copy was read, and its merge step erases that too (US-11 AC13).
+    if (this.file.conversations.length === 0 && !this.device) return;
     for (const conv of this.file.conversations) tombstone(conv, now);
     // Every attempt's merge erases what it read too: a conversation another
     // device saved after the read above, or wrote over this one.

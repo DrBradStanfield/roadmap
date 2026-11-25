@@ -95,6 +95,19 @@ describe('US-11 AC13 on the device: an erase the browser could not store is put 
     ]);
   });
 
+  it('two tabs on one browser: a conversation the other tab saved after this tab\'s chat copy was read is erased too, before the chat step answers erased', async () => {
+    await initRoadmapStore(new LocalStorageAdapter());
+    expect((await getChatHistory())!.listConversations()).toEqual([]); // this tab's copy, read while empty
+    await exchange(await ChatHistoryStore.create(new LocalStorageAdapter()), 'other', OLD_TEXT); // the other tab
+    await addMeasurement('weight', 80, '2026-09-01', getShownErase());
+    await flushRoadmapStore();
+    recordWriteFull();
+
+    expect(await deleteUserData()).toEqual({ success: false, chat: 'erased' });
+    expect(localStorage.getItem(CHAT_KEY) ?? '').not.toContain(OLD_TEXT);
+    expect(localFile().conversations.filter(c => !c.deleted)).toEqual([]);
+  });
+
   it('a chat file it could open: its tombstones are saved, and the page says the record was not deleted and the chat history was', async () => {
     await initRoadmapStore(new LocalStorageAdapter());
     await exchange((await getChatHistory())!, 'old', OLD_TEXT);
