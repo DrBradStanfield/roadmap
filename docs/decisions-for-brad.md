@@ -208,10 +208,11 @@ issue, and nothing private.
 - Screen-reader names for the medicine dose boxes end in a lower-case "dose", as the supplement rows do (PR 1796),
   so the whole form uses one casing: "this" (option 2). PR 1888 now names them "Statin dose", "GLP-1 Medication
   dose" and "SGLT2 Inhibitor dose", through labelled-by references (US-09 AC7l). "Email for your PDF" is approved for PR 1800.
-- Three failure lines, "approve all": a value page's Add that fails says "Your value could not be saved. Try again.";
-  a failed history read says "Your history could not be shown. Reload the page to try again."; a repeat refused save
-  while the record cannot be read keeps the typed value and says "Your record cannot be reached. Your value was not
-  saved."
+- Three failure lines, "approve all": a value page's Add whose write fails says "Your value could not be saved. Try
+  again." (a write that landed but could not be re-read says the history line instead); a failed history read says
+  "Your history could not be shown. Reload the page to try again."; a repeat refused save while the page's own read
+  of the record fails keeps the typed value and says "Your record could not be shown. Your value was not saved."
+  (the owner's wording after review: the failing read is the page's, not the cloud's).
 
 2026-11-23, Brad's words in quotes:
 - Original files are stored in the background after Save, with no action from the person at Save and at every

@@ -21,6 +21,7 @@ import { Sentry } from '../lib/sentry';
 import { loadUnitPreference } from '../lib/storage';
 import { groupLabHistory } from '../lib/lab-rows';
 import { initialHistoryRead, transition, type HistoryRead } from '../lib/history-read';
+import { HISTORY_UNSHOWN } from '../lib/value-cell-state';
 import { chartTimestamp, formatShortDate } from '../lib/constants';
 import { mixedUnitsNote, savedLabText } from '@roadmap/health-core/lab-series';
 
@@ -348,7 +349,7 @@ export function HistoryPanel({ initialMetric }: HistoryPanelProps) {
       {read.phase === 'loading' ? (
         <p className="history-loading">Loading history...</p>
       ) : read.phase === 'failed' ? (
-        <p className="history-empty">Your history could not be shown. Reload the page to try again.</p>
+        <p className="history-empty">{HISTORY_UNSHOWN}</p>
       ) : metricTypes.length === 0 && labMetricNames.length === 0 ? (
         <p className="history-empty">No measurements recorded yet.</p>
       ) : (

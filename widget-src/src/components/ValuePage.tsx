@@ -17,7 +17,7 @@ import { limitText, LIMIT_NOT_GRADED } from '@roadmap/health-core/lab-limits';
 import { limitUngraded, pressureStatus, valueStatus } from '@roadmap/health-core/row-grade';
 import { rowTarget } from '@roadmap/health-core/row-target';
 import { blockBadNumericKeys, blockNonIntegerKeys, bpSysAdvance, readTypedValue, sameAsSaved, savedCellText, validateTypedValue } from '../lib/blood-test-cell';
-import { activeRowIndex, slotOf, type CorrectFn, type Refused, type SaveTask } from '../lib/matrix-save';
+import { activeRowIndex, SavedUnread, slotOf, type CorrectFn, type Refused, type SaveTask } from '../lib/matrix-save';
 import { pressureReadings, readingsOf, type DayReading } from '../lib/my-data-rows';
 import { chartTimestamp, formatShortDate } from '../lib/constants';
 import { getShownErase } from '../lib/roadmap-data';
@@ -320,8 +320,12 @@ function AddValue({ metric, history, unit, start, onSave, say, onDone, dirtyRef,
       if (metric === 'weight') onWeightAnswered?.();
       refused = await onSave([{ date, values, expected, unit }], seen?.erase ?? getShownErase());
     } catch (e) {
-      // A throw anywhere gives the Add button back, says the value was not saved (lead H128), and still escapes.
-      send({ type: 'threw' });
+      // A throw gives the Add button back and still escapes. Only a failed write says "not saved" (lead H128);
+      // a write that landed, re-read in vain, is saved, so the form clears. A blood pressure's
+      // second part may fail after its first landed, so its throw never says "not saved" (US-03 AC11).
+      const written = e instanceof SavedUnread;
+      send({ type: written || !metric ? 'unread' : 'threw' });
+      if (written) { setText(''); setDia(''); setSeen(null); setTypedIn(null); }
       throw e;
     }
     const [why] = refused.values();

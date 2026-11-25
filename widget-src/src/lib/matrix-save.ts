@@ -100,3 +100,12 @@ export async function routeTasksToSaves(
   }));
   return refused;
 }
+
+/** A save whose writes landed, then the page's re-read of them threw (US-03 AC11): the values are saved.
+ *  `read` is the re-read's own error. */
+export class SavedUnread extends Error {
+  constructor(readonly read: unknown) {
+    super(read instanceof Error ? read.message : String(read));
+    this.name = 'SavedUnread';
+  }
+}

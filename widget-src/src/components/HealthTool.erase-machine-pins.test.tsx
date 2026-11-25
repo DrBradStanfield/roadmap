@@ -135,7 +135,8 @@ describe('fix 4 (2b-2, Fable): a re-read never asks a save (US-34 AC4, US-16 AC2
 });
 
 describe('US-16 (H39 PR 2, Brad 2026-11-26): a repeat refused save while the record cannot be read', () => {
-  it('keeps the typed value and says "Your record cannot be reached. Your value was not saved."', async () => {
+  it('keeps the typed value and says "Your record could not be shown. Your value was not saved."', async () => {
+    expect(RECORD_UNREACHABLE).toBe('Your record could not be shown. Your value was not saved.');
     const view = await openPage();
     openAboutYou(view.container);
     const line = () => [...view.container.querySelectorAll('[role="status"]')].map(n => n.textContent).filter(t => t === RECORD_UNREACHABLE);

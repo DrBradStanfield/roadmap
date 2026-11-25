@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { ADD_READY, ADD_SAVE_FAILED, ADD_UNIT_CHANGED, transition, type AddEvent, type AddForm } from './value-add-machine';
-import { SAVE_ERRORS } from './value-cell-state';
+import { HISTORY_UNSHOWN, SAVE_ERRORS } from './value-cell-state';
 
 // US-62 AC10, US-03 AC2a, US-05 AC2: every (state, event) pair names the state that follows.
 const ready: AddForm = ADD_READY;
@@ -17,6 +17,7 @@ const invalid: AddEvent = { type: 'settled', why: 'invalid' };
 const error: AddEvent = { type: 'settled', why: 'error' };
 const engine: AddEvent = { type: 'settled', why: { refused: 'The engine says no.' } };
 const threw: AddEvent = { type: 'threw' };
+const unread: AddEvent = { type: 'unread' };
 const unitChanged: AddEvent = { type: 'unitChanged' };
 
 const SAME = 'same';
@@ -30,6 +31,7 @@ const rows: [string, AddForm, AddEvent, AddForm | typeof SAME][] = [
   ['ready, settled ok: stale', ready, ok, SAME],
   ['ready, settled changed: stale', faulted, changed, SAME],
   ['ready, threw: stale', faulted, threw, SAME],
+  ['ready, unread: stale', faulted, unread, SAME],
   ['ready, unitChanged: says so', ready, unitChanged, { kind: 'ready', message: ADD_UNIT_CHANGED }],
   ['ready with a message, unitChanged: the unit line replaces it', faulted, unitChanged, { kind: 'ready', message: ADD_UNIT_CHANGED }],
 
@@ -42,6 +44,7 @@ const rows: [string, AddForm, AddEvent, AddForm | typeof SAME][] = [
   ['saving, settled error: ready, says so', saving, error, { kind: 'ready', message: SAVE_ERRORS.error }],
   ['saving, settled with the engine\'s words: ready, in its words', saving, engine, { kind: 'ready', message: 'The engine says no.' }],
   ['saving, threw: ready, says the value was not saved (H128)', saving, threw, { kind: 'ready', message: ADD_SAVE_FAILED }],
+  ['saving, unread: written (or a part may be), its re-read threw: the reload line (H128 review)', saving, unread, { kind: 'ready', message: HISTORY_UNSHOWN }],
   ['saving, unitChanged: noted, the line waits for the result', saving, unitChanged, savingMoved],
 
   ['saving moved, edited: text typed since is in the new unit', savingMoved, edited, saving],
@@ -53,6 +56,7 @@ const rows: [string, AddForm, AddEvent, AddForm | typeof SAME][] = [
   ['saving moved, settled error: the unit line (D2)', savingMoved, error, { kind: 'ready', message: ADD_UNIT_CHANGED }],
   ['saving moved, settled with the engine\'s words: the unit line (D2)', savingMoved, engine, { kind: 'ready', message: ADD_UNIT_CHANGED }],
   ['saving moved, threw: the unit line (D2)', savingMoved, threw, { kind: 'ready', message: ADD_UNIT_CHANGED }],
+  ['saving moved, unread: the reload line, never "not saved" (H128 review)', savingMoved, unread, { kind: 'ready', message: HISTORY_UNSHOWN }],
   ['saving moved, unitChanged: already noted', savingMoved, unitChanged, SAME],
 ];
 
@@ -69,5 +73,9 @@ describe('value-add-machine transition', () => {
 
   it('US-03: a save that threw says the value was not saved (Brad 2026-11-26, lead H128)', () => {
     expect(ADD_SAVE_FAILED).toBe('Your value could not be saved. Try again.');
+  });
+
+  it('US-03: a save whose re-read threw says the history line, the history panel\'s own words', () => {
+    expect(HISTORY_UNSHOWN).toBe('Your history could not be shown. Reload the page to try again.');
   });
 });

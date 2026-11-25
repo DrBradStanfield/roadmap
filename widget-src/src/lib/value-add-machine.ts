@@ -9,12 +9,13 @@
  *   under the typed text while it ran, so the text is gone and a refusal or a
  *   throw says so; an ok save says only its own words. Text typed since is in
  *   the new unit, so an edit clears it.
- * A throw ends the save with ADD_SAVE_FAILED; the typed value stays (lead H128).
+ * A throw ends the save: `threw`, nothing written, ADD_SAVE_FAILED, the typed value stays (lead H128);
+ * `unread`, written (or, for a blood pressure, a part may be) and its re-read threw, HISTORY_UNSHOWN.
  * The synchronous claim (lib/sync-claim) stays beside it: a second submit in the
  * same render sees no state set by the first.
  */
 import type { CorrectStatus } from '../storage/roadmap-store';
-import { saveErrorText } from './value-cell-state';
+import { HISTORY_UNSHOWN, saveErrorText } from './value-cell-state';
 
 /** What the Add form says when the unit changed under typed text (US-05 AC2). Not the grid editor's line. */
 export const ADD_UNIT_CHANGED = 'The unit changed, so your value was not saved. Type it again in the new unit.';
@@ -31,7 +32,8 @@ export type AddEvent =
   | { type: 'faulted'; message: string } // the form's own check refused it; nothing sent
   | { type: 'sent' }
   | { type: 'settled'; why: Exclude<CorrectStatus, 'ok'> | null } // the first refusal, or none
-  | { type: 'threw' } // the save, or the weight answer before it, threw
+  | { type: 'threw' } // the write, or the weight answer before it, threw: nothing written
+  | { type: 'unread' } // written, or a part may be, then the re-read threw (US-03 AC11)
   | { type: 'unitChanged' };
 
 export const ADD_READY: AddForm = { kind: 'ready', message: null };
@@ -52,6 +54,7 @@ export function transition(state: AddForm, event: AddEvent): AddForm {
       if (event.why === null) return ADD_READY;
       return { kind: 'ready', message: state.unitChanged ? ADD_UNIT_CHANGED : saveErrorText(event.why) };
     case 'threw': return { kind: 'ready', message: state.unitChanged ? ADD_UNIT_CHANGED : ADD_SAVE_FAILED };
+    case 'unread': return { kind: 'ready', message: HISTORY_UNSHOWN }; // never "not saved": it may be
     case 'unitChanged': return state.unitChanged ? state : { kind: 'saving', unitChanged: true };
     case 'edited': return state.unitChanged ? { kind: 'saving', unitChanged: false } : state;
     default: return state;

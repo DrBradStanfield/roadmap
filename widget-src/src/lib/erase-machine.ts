@@ -50,7 +50,8 @@
  * comes at loaded or the end), so it waits on the last id minted.
  * `unreachable`: idle, the first read shown, failed. `heard.lost` (H39 PR 2): a
  * save refused under the heard erase after its alert was said, so nothing said
- * it; it rides with the heard erase, to a newer one too, until a read lands.
+ * it; it rides with the heard erase, to a newer one too, until a read lands or
+ * this tab's own erase ends (which throws the value away).
  * `saveLost` (unreachable and lost) is the page's line, RECORD_UNREACHABLE; the
  * typed value stays where it was typed. A failed first read (L2) keeps its own note.
  * Assumed: the machine's read is in memory. `shows` -> relay.shows() ->
@@ -248,7 +249,8 @@ function ownEnd(state: Erasing, identity: EraseIdentity, message: string): Step 
     ...ended(state),
     shown: shows ? identity : state.shown,
     shownBy: shows ? (theirs ? 'remote' : 'own') : state.shownBy,
-    heard: above ? state.heard : null,
+    // Kept without `lost`: this tab's own erase threw any refused value away (H39 PR 2 review).
+    heard: above && state.heard ? { identity: state.heard.identity, reach: state.heard.reach } : null,
     // A refusal of a save asked before the erase is not news (adversary R3).
     said: add(state.said, state.shown),
     pending: counts ? identity : shows ? null : state.pending,

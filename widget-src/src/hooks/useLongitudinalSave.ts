@@ -11,7 +11,7 @@ import { METRIC_TO_FIELD, type ApiMeasurement } from '@roadmap/health-core/mappi
 import { inputRangeFault } from '@roadmap/health-core/validation';
 import { localDay } from '@roadmap/health-core/merge';
 import type { UnitSystem } from '@roadmap/health-core/units';
-import { activeRowIndex, routeTasksToSaves, slotOf, type CorrectFn, type Refused, type SaveTask } from '../lib/matrix-save';
+import { activeRowIndex, routeTasksToSaves, SavedUnread, slotOf, type CorrectFn, type Refused, type SaveTask } from '../lib/matrix-save';
 import { addMeasurement, correctValue, getBackendKind, getShownErase, loadAllHistorySync } from '../lib/roadmap-data';
 import { healthWritesAllowed } from '../lib/storage';
 import { trackABConversion, trackProductEvent } from '../lib/server-api';
@@ -126,7 +126,8 @@ export function useLongitudinalSave({
       setSavesRunning(n => n + 1);
       try {
         const refused = await staged;
-        await reread();
+        // Written: a re-read that throws now says so, apart from a failed write (US-03 AC11).
+        await reread().catch((error: unknown) => { throw new SavedUnread(error); });
 
         // What the fields saved leaves the form, in one update. A copy left in
         // `inputs` outranked the saved row in the plan and the chat, and the

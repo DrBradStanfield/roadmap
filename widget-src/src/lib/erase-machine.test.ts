@@ -185,6 +185,7 @@ const rows: Array<[string, string, EraseState, EraseEvent, EraseState | 'same', 
   ['H39', 'loading, failed: loaded: reading read 2', loading(W, X, { reach: 'failed', reads: 1 }), LOADED, idle(W, { heard: X, reads: 2 }), [READ(2)]],
   ['H39', 'erasing, failed: own-failed: reading read 2, the failure said', erasing(W, X, { reach: 'failed', reads: 1 }), FAILED, idle(W, { heard: X, reads: 2 }), [READ(2), SAY_FAILED]],
   ['H39', 'erasing, failed, heard above the end: own-end keeps it, reading read 2', erasing(W, O, { reach: 'failed', reads: 1 }), end(Z), idle(Z, { heard: O, reads: 2, said: set(W) }), [FORGET, CLEAR, READ(2), SAY]],
+  ['H39 PR 2 review', 'erasing, lost, heard above the end: own-end keeps it but drops lost (this tab\'s erase discarded the value)', erasing(W, O, { reach: 'failed', lost: true, reads: 1 }), end(Z), idle(Z, { heard: O, reads: 2, said: set(W) }), [FORGET, CLEAR, READ(2), SAY]],
   ['H39', 'erasing, failed: another erase arrives: heard, reading the last id minted (its first read comes at the end)', erasing(W, X, { reach: 'failed', reads: 1 }), { type: 'arrived', identity: Z }, erasing(W, Z, { reads: 1 }), []],
   // F4: a settled read clears heard, failed or not; loading keeps it for loaded.
   ['H39 F4', 'idle, a same-epoch erase heard and failed: a read of the shown erase lands: heard cleared, nothing else', idle(X, { heard: E, reach: 'failed', reads: 1 }), { type: 'read', identity: X }, idle(X, { reads: 1 }), []],
