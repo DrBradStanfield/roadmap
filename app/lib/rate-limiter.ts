@@ -1,5 +1,5 @@
 // In-memory rate limiter factory
-// Shared across routes (api.measurements, api.ab, etc.)
+// Shared across routes (api.measurements, api.events, etc.)
 import * as Sentry from '@sentry/react-router';
 import type { IpKey } from './ip-key.server';
 

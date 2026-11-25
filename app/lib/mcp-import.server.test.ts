@@ -273,9 +273,10 @@ describe('US-35 AC7 — the receipt is the pending file’s own UUID, and the MA
     const cloud = new MemoryCloud();
     const surface = surfaceFor('connection-a', cloud);
     const { receipt } = await stashed(surface);
-    const early = 'That confirm receipt is not valid yet: it can be used from 2026-09-02T10:00:10.000Z, after the user has answered. Do not retry before then; end your turn. Nothing was written.';
-    expect(await refusalOf(surface, receipt, NOW)).toBe(early);
-    expect(await refusalOf(surface, receipt, '2026-09-02T10:00:09.999Z')).toBe(early);
+    const early = (left: string) => `That confirm receipt is not valid yet: it can be used in ${left} (from 2026-09-02T10:00:10.000Z), after the user has answered. Do not retry before then; end your turn. Nothing was written.`;
+    expect(await refusalOf(surface, receipt, NOW)).toBe(early('10 seconds'));
+    // US-36 AC14: the seconds left are whole and rounded up, so a thousandth of a second left reads as one.
+    expect(await refusalOf(surface, receipt, '2026-09-02T10:00:09.999Z')).toBe(early('1 second'));
     expect(cloud.files.has(PENDING)).toBe(true);
     unchargedOn('connection-a');
     resetMcpMemory();

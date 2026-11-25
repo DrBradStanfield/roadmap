@@ -161,7 +161,7 @@ describe('US-52 AC4f: one policy, and a named list of unbounded maps', () => {
         sites.push(`${name}${/maxKeys: Infinity/.test(site) ? ': unbounded' : ''}${/oneUse: true/.test(site) ? ': one-use' : ''}`);
       }
     }
-    expect(sites).toHaveLength(38);
+    expect(sites).toHaveLength(36); // 38 until the A/B route and its two limiters were retired (US-09 AC62)
     expect(sites).toContain('guest sessions per IP'); // US-15 AC67: bounded, at the default
     expect(sites.filter((s) => s.startsWith('UNNAMED'))).toEqual([]);
     expect(sites.filter((s) => s.includes(': unbounded'))).toEqual([]);

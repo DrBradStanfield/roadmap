@@ -4,6 +4,7 @@
 // same sections; InputPanel.plan-forms.test.tsx pins the two together, both ways.
 import { medicationForm, screeningForm, type FormSection } from '@roadmap/health-core/input-form';
 import { medicationsToInputs, METRIC_TO_FIELD, screeningsToInputs, type ApiMedication, type ApiScreening } from '@roadmap/health-core/mappings';
+import { screeningNote } from '@roadmap/health-core/screening-note';
 import type { HealthInputs } from '@roadmap/health-core/types';
 import type { UnitSystem } from '@roadmap/health-core/units';
 import type { PlanBasis } from '../components/InputPanel';
@@ -19,13 +20,23 @@ export function medicineInputs(e: Partial<HealthInputs>): { hasLipidInput: boole
 export interface PlanFormsInput extends ReturnType<typeof medicineInputs> {
   medications: ApiMedication[];
   screenings: ApiScreening[];
-  planBasis: Partial<Pick<PlanBasis, 'age' | 'bmi' | 'lipidMarker' | 'weightMedTrigger'>> | null;
+  planBasis: Partial<Pick<PlanBasis, 'screeningAge' | 'bmi' | 'lipidMarker' | 'weightMedTrigger'>> | null;
   sex: HealthInputs['sex'];
   unitOverrides: Partial<Record<string, UnitSystem>>;
   unitSystem: UnitSystem;
 }
 
-export function planForms({ medications, screenings, planBasis, sex, unitOverrides, unitSystem, hasLipidInput, hasWeightInput }: PlanFormsInput): { medications: FormSection[]; screenings: FormSection[] } {
+/** The form's questions, and Cancer screening's note where none of its questions applies (US-62 AC41). */
+export interface PlanForms {
+  medications: readonly FormSection[];
+  screenings: readonly FormSection[];
+  screeningNote: string | null;
+}
+
+export function planForms({ medications, screenings, planBasis, sex, unitOverrides, unitSystem, hasLipidInput, hasWeightInput }: PlanFormsInput): PlanForms {
+  // One age for the form and its note, so the note shows exactly when the form has no question.
+  const age = planBasis?.screeningAge;
+  const screeningSections = screeningForm(age, sex, screeningsToInputs(screenings));
   return {
     medications: medicationForm(medicationsToInputs(medications), {
       lipidMarker: planBasis?.lipidMarker ?? null,
@@ -35,6 +46,7 @@ export function planForms({ medications, screenings, planBasis, sex, unitOverrid
       hasWeightInput,
       unitFor: (metric) => unitOverrides[METRIC_TO_FIELD[metric]] ?? unitSystem,
     }),
-    screenings: screeningForm(planBasis?.age, sex, screeningsToInputs(screenings)),
+    screenings: screeningSections,
+    screeningNote: screeningNote(age, sex, screeningSections),
   };
 }

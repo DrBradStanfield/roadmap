@@ -29,8 +29,8 @@ import {
   generateTitle,
   MAX_MESSAGE_LENGTH,
 } from '../lib/chat.server';
-import { reportRouterFailure, sanitizeForRouter, redactForWidget } from '../lib/chat-router.server';
-import { runRouter } from '../lib/chat-router-stage.server';
+import { reportRouterFailure, redactForWidget } from '../lib/chat-router.server';
+import { routerTurn, runRouter } from '../lib/chat-router-stage.server';
 import { matchEventRow, matchEventText, answerColumns } from '../lib/chat-persist.server';
 import { loadBlogIndex } from '../lib/blog-index.server';
 import { openArticle, preferMasters } from '../lib/router-view';
@@ -330,9 +330,6 @@ async function chatAction(request: Request, app: boolean) {
     const refused = refuseTurn(message, request, app);
     if (refused) return refused;
 
-    // Sanitize message for router (strips control chars, caps at 2000 chars)
-    const sanitizedCurrent = sanitizeForRouter(message);
-
     // What this turn leaves on our server (chat-retention.ts); every storage branch reads it. The app and
     // the widget send their history in the body (US-15 AC7); the transcript surfaces load theirs here.
     const retention = retentionOf({ app, widget: body.localFirst === true });
@@ -396,10 +393,7 @@ async function chatAction(request: Request, app: boolean) {
     const runTurn = async (write: (line: object) => void): Promise<{ status?: number; reply: object }> => {
       write({ type: 'status', text: 'Reading your question' });
 
-      const firstUserMsg = history.find(m => m.role === 'user')?.content;
-      const recentUserMsgs = history.filter(m => m.role === 'user').slice(-3).map(m => m.content);
-      const sanitizedFirst = firstUserMsg ? sanitizeForRouter(firstUserMsg) : undefined;
-      const sanitizedRecent = recentUserMsgs.map(sanitizeForRouter);
+      const routerInput = routerTurn(message, history);
 
       // Stage 1: classifier + (logged-in) orders fetch dispatch first so their
       // network round-trips overlap the synchronous context assembly below.
@@ -417,7 +411,7 @@ async function chatAction(request: Request, app: boolean) {
       const subscriptionsPromise = subscriptionsOn && !auth.isGuest && auth.customerId
         ? getCachedSubscriptions(request, auth.customerId)
         : Promise.resolve(null);
-      const classifierPromise = classifyMessage(sanitizedCurrent, sanitizedFirst, sanitizedRecent, 'CHAT');
+      const classifierPromise = classifyMessage(routerInput.current, routerInput.first, routerInput.recent, 'CHAT');
       const context = resolveChatContext(body.guestInputs);
       const [orderSummary, classifierResult, subscriptions] = await Promise.all([ordersPromise, classifierPromise, subscriptionsPromise]);
 
@@ -428,7 +422,7 @@ async function chatAction(request: Request, app: boolean) {
       const fireRouter = shouldFireRouter(classifierResult);
       if (fireRouter) write({ type: 'status', text: 'Finding relevant articles' });
       const routerResult = fireRouter
-        ? await runRouter(sanitizedCurrent, sanitizedFirst, sanitizedRecent, 'CHAT', (r) => reportRouterFailure(r, 'shopify'))
+        ? await runRouter(routerInput, 'CHAT', (r) => reportRouterFailure(r, 'shopify'))
         : null;
 
       const tAfterContext = Date.now();
@@ -549,9 +543,9 @@ async function chatAction(request: Request, app: boolean) {
         messageId: assistantMessageId,
         conversationId: activeConversationId,
         userId: auth.userId,
-        question: sanitizedCurrent,
+        question: routerInput.current,
         platform: 'shopify',
-        context: { first: sanitizedFirst ? matchEventText(sanitizedFirst) : null, recent: sanitizedRecent.map(matchEventText) },
+        context: { first: routerInput.first ? matchEventText(routerInput.first) : null, recent: routerInput.recent.map(matchEventText) },
         replaced: routed.replaced,
         reduced: articles?.reduced,
         routerResult,

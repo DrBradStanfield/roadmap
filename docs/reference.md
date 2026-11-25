@@ -107,7 +107,7 @@ Compact inventory. Tests sit beside their file (`*.test.ts`) and are not listed.
 | `api.app.v1.*` (`app-routes.server.ts`) | App Attest (no HMAC: the iPhone app has none), per-key/IP/machine caps, 503 on the brand surface (US-52, ios/architecture.md D8) | attest challenge + register; chat (the widget's turn, nothing stored); lab-import (one file, proposed values, nothing stored) |
 | `api.measurements.ts` | app-proxy HMAC | Klaviyo guest email capture ONLY (`{ klaviyoCapture: { email } }`, 5/day/email); v1 CRUD torn down, no deletion endpoint |
 | `api.feedback.ts` | app-proxy HMAC, honeypot, 3/hour/IP | feedback form to email |
-| `api.ab.ts` · `api.events.ts` | app-proxy HMAC, rate-limited (events 20/min/visitor, bot-filtered) | A/B impressions/conversions · product-events sink |
+| `api.events.ts` | app-proxy HMAC, rate-limited (20/min/visitor, bot-filtered) | product-events sink |
 | `api.google-token.ts` | CORS allow-list, rate limit, no HMAC | stateless Google OAuth code/refresh to token exchange (GET is 405) |
 | `api.reminders-v2.ts` · `reminders-v2.unsubscribe.tsx` | CORS allow-list + hashed-IP/email rate limits, Google ID token or browser-read email (never a cloud token) · capability token | reminder opt-in/update/cancel · one-click unsubscribe page |
 | `api.resend-webhook.ts` | Svix signature | Resend bounce/complaint: unsubscribe + suppress in Klaviyo |
@@ -252,7 +252,7 @@ Pulsing `.field-attention` CSS class highlights the next field to fill. Once ope
 - `GET api/lab-import-v2` quota preflight · `POST api/lab-import-v2` extract from page text or page images sent by the browser (pdf.js runs client-side; Claude Haiku 5.5 server-side; returns values, stores nothing; 200 files/day/IP + per-machine cap; one file per request, no batch path since 2026-11-15).
 **iPhone app (direct to the edu Fly app, App Attest, US-52):** `POST api/app/v1/attest/challenge` · `POST api/app/v1/attest/register` · `POST api/app/v1/chat` (the widget's NDJSON turn) · `POST api/app/v1/lab-import` (one file) · `POST api/app/v1/lab-read` (one file, same gate; NDJSON once the counter is spent, the last line holding `/lab-import`'s status and body, US-52 AC7e). Every request after registration carries `X-App-Attest-Key` + `X-App-Attest-Assertion`; table `app_attest_keys` (the App Attest section of `supabase/rls-policies.sql`).
 - `POST api/measurements`: `{ klaviyoCapture: { email } }` only (guest report-email capture, 5/day/email).
-- `POST api/feedback` (honeypot, 3/hour/IP) · `POST api/ab` (A/B events) · `POST api/events` (product events, bot-filtered, 20/min/visitor).
+- `POST api/feedback` (honeypot, 3/hour/IP) · `POST api/events` (product events, bot-filtered, 20/min/visitor).
 
 **Cross-origin (CORS allow-list, no HMAC; localhost never approved):**
 - `POST api/google-token`: stateless Google OAuth code/refresh to token exchange (GET returns 405).
@@ -284,41 +284,19 @@ Pulsing `.field-attention` CSS class highlights the next field to fill. Once ope
 
 ## A/B Testing
 
-**Current wiring, checked 2026-09-07:** the admin dashboard and event backend
-remain, but this repo's `app-block.liquid` renders a fixed heading and subheading.
-It neither reads `health_roadmap.ab_config` nor assigns variants. Activating a
-test in admin therefore does not change the current block's copy. This describes
-checked-in source; separately configured store themes need their own inspection.
+**Event tracking retired 2026-11-26 (Brad, US-09 AC62).** Nothing assigned a
+variant: this repo's `app-block.liquid` renders a fixed heading and subheading
+and never read `health_roadmap.ab_config`. The web still sent A/B events from
+assignments stored in a browser long ago, so an event did not prove a variant
+was shown. The widget's calls (`trackABImpression`, `trackABConversion`), the
+stored-assignment reader (`getABAssignments`, `hr_ab`), the `/api/ab` route and
+`recordABEvent` are deleted. `hr_vid` stays: product events use it.
 
-The dashboard at `/app/ab-testing` accepts `heading`, `subheading` and
-`email-guest-helper` targets, with at most one active test **per target**. It
-writes active tests to the shop metafield. Pausing/completing refreshes that
-metafield, or deletes it when none remain. Supabase stores deduplicated events;
-`ab-stats.ts` computes two-proportion z-test statistics.
-
-**Retained historical rationale:** the original Liquid design rendered variants
-outside React and selected one before first paint, avoiding a fetch or extension
-deploy for copy changes. Per-event database inserts avoided concurrent counter
-updates and loss of in-memory counts on Fly restarts. These explain the backend's
-shape; they are not evidence that storefront variant delivery still operates.
-
-**Key files:**
-- `app/routes/app.ab-testing.tsx`: admin forms, status changes and metafield writes.
-- `app/routes/api.ab.ts`: HMAC-verified, rate-limited impression/conversion endpoint.
-- `app/lib/supabase-ab.server.ts` (re-exported by `supabase.server.ts`): test and event helpers, including event deduplication.
-- `app/lib/ab-stats.ts`: conversion-rate significance calculations.
-- `extensions/health-tool-widget/blocks/app-block.liquid`: fixed hero; no variant writer.
-- `widget-src/src/lib/server-api.ts`: `getABAssignments()`, `trackABImpression()`,
-  `trackABConversion()`, `getVisitorId()`; event tracking reads existing assignments.
-- `widget-src/src/components/HealthTool.tsx` + `PlanPdf.tsx`: call
-  `trackABImpression()` / `trackABConversion()` only. No widget code reads a
-  variant for any target, including `email-guest-helper`.
-
-**Existing localStorage readers:** `hr_ab` accepts `{ tests: { testId: variantId } }`
-and the older `{ t: testId, v: variantId }`; `hr_vid` identifies a visitor;
-`hr_ab_imp_<testId>` suppresses repeat impression calls. Old stored assignments
-can still be read, so an event alone does not prove that a variant was displayed.
-Restoring or retiring the experiment delivery path is separate behavior work.
+What remains: the admin dashboard at `/app/ab-testing` (`app/routes/app.ab-testing.tsx`)
+still creates, pauses and completes tests, writes the shop metafield, and shows the
+counts of events recorded before the retirement (`app/lib/supabase-ab.server.ts`,
+`app/lib/ab-stats.ts`). The `ab_tests` and `ab_events` tables are kept. An old
+`hr_ab` key may still sit in a browser; nothing reads it, and an erase leaves it.
 
 ## Dangerous Gotchas — archive moved
 

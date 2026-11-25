@@ -22,6 +22,9 @@ const [supplementDoseDrafts, setSupplementDoseDrafts] = useState<Record<string, 
 // A row's element ids come from its place, never its key (US-09 AC7k).
 const idPrefix = useId();
 const doseErrorId = (row: number) => `${idPrefix}dose-error-${row}`;
+// US-06 AC1c: each row control is named by its row's name span and a fixed word, never an attribute holding the name.
+const nameId = (row: number) => `${idPrefix}name-${row}`;
+const wordId = (word: 'dose' | 'unit' | 'remove') => `${idPrefix}word-${word}`;
 // "+ Add another supplement" opens the search in its place (Brad 2026-11-09, as Add a blood test).
 // Its mode is one named state (lib/supplement-add.ts); events queue in order, so a blur sees the press before it.
 const [add, send] = useReducer(transition, CLOSED);
@@ -86,14 +89,18 @@ useEffect(() => {
   return (
     <div className="section-card">
       <section className="health-section" aria-label={SUPPLEMENT_TEXT.title}>
-        {/* Active supplements list */}
+        {/* Active supplements list; the fixed words that name each row's controls (US-06 AC1c) */}
+        <span hidden id={wordId('dose')}>dose</span>
+        <span hidden id={wordId('unit')}>dose unit</span>
+        <span hidden id={wordId('remove')}>Remove</span>
         {activeSupplements.map((s, row) => (
           <Fragment key={s.supplementKey}>
             <div className="supplement-row">
-              <span className="supplement-name">{s.supplementName}</span>
+              <span className="supplement-name" id={nameId(row)}>{s.supplementName}</span>
               <input
                 type="number"
                 className="supplement-dose"
+                aria-labelledby={`${nameId(row)} ${wordId('dose')}`}
                 placeholder="Dose"
                 min={Number.MIN_VALUE}
                 max={99999}
@@ -115,6 +122,7 @@ useEffect(() => {
               />
               <select
                 className="supplement-unit"
+                aria-labelledby={`${nameId(row)} ${wordId('unit')}`}
                 value={s.doseUnit ?? ''}
                 onChange={e => onSupplementChange(s.supplementKey, s.supplementName, s.doseValue, e.target.value || null)}
               >
@@ -124,6 +132,7 @@ useEffect(() => {
               <button
                 type="button"
                 className="supplement-remove"
+                aria-labelledby={`${wordId('remove')} ${nameId(row)}`}
                 onClick={() => onSupplementDelete(s.supplementKey)}
                 title="Remove"
               >

@@ -238,6 +238,7 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
   ],
   [
     "screening: Cancer screening",
+    "p.mh-screening-note: No screening questions apply at your age and sex yet.",
     "card mh-card-8: screening-breast-due",
     "card mh-card-9: screening-lung-overdue",
   ],
@@ -284,6 +285,7 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
   ],
   [
     "screening: Cancer screening",
+    "p.mh-screening-note: No screening questions apply at your age and sex yet.",
     "card mh-card-7: screening-lung-overdue",
     "card mh-card-8: screening-cervical-due",
   ],
@@ -680,6 +682,10 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
     "card mh-card-7: hdl-low",
   ],
   [
+    "screening: Cancer screening",
+    "p.mh-screening-note: No screening questions apply at your age and sex yet.",
+  ],
+  [
     "skin: Skin",
     "card mh-card-8: skin-sunscreen",
   ],
@@ -768,6 +774,7 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
   ],
   [
     "screening: Cancer screening",
+    "p.mh-screening-note: No screening questions apply at your age and sex yet.",
     "card mh-card-8: screening-colorectal-due",
   ],
   [
@@ -977,6 +984,7 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
   ],
   [
     "screening: Cancer screening",
+    "p.mh-screening-note: No screening questions apply at your age and sex yet.",
     "card mh-card-7: screening-cervical-due",
   ],
   [
@@ -1725,6 +1733,7 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
   ],
   [
     "screening: Cancer screening",
+    "p.mh-screening-note: No screening questions apply at your age and sex yet.",
     "card mh-card-9: screening-breast-due",
   ],
   [
@@ -1899,6 +1908,7 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
   ],
   [
     "screening: Cancer screening",
+    "p.mh-screening-note: No screening questions apply at your age and sex yet.",
     "card mh-card-10: screening-lung-overdue",
     "card mh-card-11: screening-breast-due",
   ],
@@ -1942,6 +1952,7 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
   ],
   [
     "screening: Cancer screening",
+    "p.mh-screening-note: No screening questions apply at your age and sex yet.",
     "card mh-card-6: screening-breast-due",
   ],
   [
@@ -2107,6 +2118,8 @@ rows: Blood Pressure Add | Creatinine Add",
   "cholesterol: Cholesterol
 rows: ApoB Add | LDL Cholesterol Add | Total Cholesterol Add | HDL Cholesterol Add | Triglycerides Add | Lp(a) Add
 card mh-card-12: apob-high",
+  "screening: Cancer screening
+p.mh-screening-note: No screening questions apply at your age and sex yet.",
   "skin: Skin
 card mh-card-13: skin-sunscreen
 card mh-card-14: skin-sunscreen",
@@ -2406,6 +2419,7 @@ card mh-card-6: med-ezetimibe
 rows: ApoBOptimal <50 · Jan 2026100 (110)100, high, previous 110mg/dL | LDL CholesterolOptimal <55 · Jan 2026120 (131)120, above optimal, previous 131mg/dL | Total CholesterolOptimal <135 · Jan 2026201 (217)201, above optimal, previous 217mg/dL | HDL CholesterolOptimal >50 · Jan 202650 (46)50, previous 46mg/dL | Non-HDLJan 2026 3.13.1mmol/L | TriglyceridesNormal <150 · Jan 2026142 (168)142, previous 168mg/dL | Lp(a)Jan 202624.0 (24.8)24.0, previous 24.8mg/dL
 card mh-card-7: med-statin-dose",
   "screening: Cancer screening
+p.mh-screening-note: No screening questions apply at your age and sex yet.
 card mh-card-8: screening-lung-overdue
 card mh-card-9: screening-cervical-due",
   "skin: Skin
@@ -4295,7 +4309,7 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
         <div class="report-actions no-print">
           <button type="button" class="action-btn" title="Save your plan as a PDF">
             "Save as PDF"
-          <span class="hr-pdf-blocked no-print" role="status">
+        <span class="hr-pdf-blocked no-print" role="status">
       <div class="mh-pills no-print">
         <button type="button" class="mh-pill">
           "Blood tests"
@@ -4785,7 +4799,7 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
         <div class="report-actions no-print">
           <button type="button" class="action-btn" title="Save your plan as a PDF">
             "Save as PDF"
-          <span class="hr-pdf-blocked no-print" role="status">
+        <span class="hr-pdf-blocked no-print" role="status">
       <div class="mh-pills no-print">
         <button type="button" class="mh-pill">
           "Blood tests"
@@ -5218,7 +5232,7 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
         <div class="report-actions no-print">
           <button type="button" class="action-btn" title="Save your plan as a PDF">
             "Save as PDF"
-          <span class="hr-pdf-blocked no-print" role="status">
+        <span class="hr-pdf-blocked no-print" role="status">
       <div class="mh-pills no-print">
         <button type="button" class="mh-pill">
           "Blood tests"
@@ -5697,7 +5711,7 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
         <div class="report-actions no-print">
           <button type="button" class="action-btn" title="Save your plan as a PDF">
             "Save as PDF"
-          <span class="hr-pdf-blocked no-print" role="status">
+        <span class="hr-pdf-blocked no-print" role="status">
       <div class="mh-pills no-print">
         <button type="button" class="mh-pill">
           "Blood tests"
@@ -6111,7 +6125,7 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
         <div class="report-actions no-print">
           <button type="button" class="action-btn" title="Save your plan as a PDF">
             "Save as PDF"
-          <span class="hr-pdf-blocked no-print" role="status">
+        <span class="hr-pdf-blocked no-print" role="status">
       <div class="mh-pills no-print">
         <button type="button" class="mh-pill">
           "Blood tests"
@@ -6550,7 +6564,7 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
         <div class="report-actions no-print">
           <button type="button" class="action-btn" title="Save your plan as a PDF">
             "Save as PDF"
-          <span class="hr-pdf-blocked no-print" role="status">
+        <span class="hr-pdf-blocked no-print" role="status">
       <div class="mh-pills no-print">
         <button type="button" class="mh-pill">
           "Blood tests"
@@ -7000,7 +7014,7 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
     <div class="report-actions no-print">
       <button type="button" class="action-btn" title="Save your plan as a PDF">
         "Save as PDF"
-      <span class="hr-pdf-blocked no-print" role="status">
+    <span class="hr-pdf-blocked no-print" role="status">
   <div class="mh-foot">
     <div class="health-disclaimer">
       <strong>
@@ -7060,7 +7074,7 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
         <div class="report-actions no-print">
           <button type="button" class="action-btn" title="Save your plan as a PDF">
             "Save as PDF"
-          <span class="hr-pdf-blocked no-print" role="status">
+        <span class="hr-pdf-blocked no-print" role="status">
       <div class="mh-pills no-print">
         <button type="button" class="mh-pill">
           "Blood tests"
@@ -7280,6 +7294,8 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
                   <path d="M9 12v2.5a5 5 0 0 0 10 0V12">
                   <circle cx="19" cy="10" r="2">
             "Cancer screening"
+        <p class="mh-screening-note">
+          "No screening questions apply at your age and sex yet."
         <div id="mh-card-8" tabindex="-1" class="mh-card">
           <div class="suggestion-card suggestion-attention suggestion-card--calm">
             <div class="suggestion-header">
@@ -7463,6 +7479,10 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
               <span class="hr-sr-only">
                 ", needs attention"
         <li>
+          <a href="#mh-topic-screening" class="mh-nav-link">
+            <span class="mh-nav-title">
+              "Cancer screening"
+        <li>
           <a href="#mh-topic-skin" class="mh-nav-link">
             <span class="mh-nav-title">
               "Skin"
@@ -7479,7 +7499,7 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
         <div class="report-actions no-print">
           <button type="button" class="action-btn" title="Save your plan as a PDF">
             "Save as PDF"
-          <span class="hr-pdf-blocked no-print" role="status">
+        <span class="hr-pdf-blocked no-print" role="status">
       <div class="mh-pills no-print">
         <button type="button" class="mh-pill">
           "Blood tests"
@@ -7702,6 +7722,18 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
               <h4 class="suggestion-title">
                 "hdl-low"
               <p class="suggestion-desc">
+      <section class="mh-topic" data-topic="screening" aria-labelledby="mh-topic-screening">
+        <div class="md-section-head mh-topic-head">
+          <h3 class="health-section-title md-section-title" id="mh-topic-screening" tabindex="-1">
+            <span class="section-icon" data-icon="stethoscope" aria-hidden="true" style="color: rgb(88, 86, 214);">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true" focusable="false">
+                <g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M5 3v5a4 4 0 0 0 8 0V3">
+                  <path d="M9 12v2.5a5 5 0 0 0 10 0V12">
+                  <circle cx="19" cy="10" r="2">
+            "Cancer screening"
+        <p class="mh-screening-note">
+          "No screening questions apply at your age and sex yet."
       <section class="mh-topic" data-topic="skin" aria-labelledby="mh-topic-skin">
         <div class="md-section-head mh-topic-head">
           <h3 class="health-section-title md-section-title" id="mh-topic-skin" tabindex="-1">
@@ -7933,7 +7965,7 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
         <div class="report-actions no-print">
           <button type="button" class="action-btn" title="Save your plan as a PDF">
             "Save as PDF"
-          <span class="hr-pdf-blocked no-print" role="status">
+        <span class="hr-pdf-blocked no-print" role="status">
       <div class="mh-pills no-print">
         <button type="button" class="mh-pill">
           "Blood tests"
@@ -8816,7 +8848,7 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
         <div class="report-actions no-print">
           <button type="button" class="action-btn" title="Save your plan as a PDF">
             "Save as PDF"
-          <span class="hr-pdf-blocked no-print" role="status">
+        <span class="hr-pdf-blocked no-print" role="status">
       <div class="mh-pills no-print">
         <button type="button" class="mh-pill">
           "Blood tests"
@@ -9689,7 +9721,7 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
         <div class="report-actions no-print">
           <button type="button" class="action-btn" title="Save your plan as a PDF">
             "Save as PDF"
-          <span class="hr-pdf-blocked no-print" role="status">
+        <span class="hr-pdf-blocked no-print" role="status">
       <div class="mh-pills no-print">
         <button type="button" class="mh-pill">
           "Blood tests"
@@ -10756,7 +10788,7 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
         <div class="report-actions no-print">
           <button type="button" class="action-btn" title="Save your plan as a PDF">
             "Save as PDF"
-          <span class="hr-pdf-blocked no-print" role="status">
+        <span class="hr-pdf-blocked no-print" role="status">
       <div class="mh-pills no-print">
         <button type="button" class="mh-pill">
           "Blood tests"
@@ -11026,6 +11058,8 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
                   <path d="M9 12v2.5a5 5 0 0 0 10 0V12">
                   <circle cx="19" cy="10" r="2">
             "Cancer screening"
+        <p class="mh-screening-note">
+          "No screening questions apply at your age and sex yet."
         <div id="mh-card-8" tabindex="-1" class="mh-card">
           <div class="suggestion-card suggestion-info suggestion-card--calm">
             <div class="suggestion-body">
