@@ -156,11 +156,13 @@ interface Named {
 const named = (adapter: StorageAdapter): adapter is StorageAdapter & Named =>
   typeof (adapter as Partial<Named>).account === 'function' && 'gen' in adapter;
 
-/** After a good load: a browser with a working sign-in and no pin adopts its account. Bound to the
- *  adapter's own log-off id and re-checked after the read, so a log-off, a switch or a pin set meanwhile keeps nothing. */
-export async function adoptPinAtLoad(adapter: StorageAdapter, stillSignedIn: () => boolean): Promise<void> {
+/** After a good load: a browser with a working sign-in and no pin adopts its account. `entries` is the stored
+ *  sign-in entries, the pin's included, as one text. Read again just before the write, in the same step: the pin is
+ *  written only while they are still the ones the lookup was made with and there is still no pin. */
+export async function adoptPinAtLoad(adapter: StorageAdapter, stillSignedIn: () => boolean, entries: () => string): Promise<void> {
   if (!named(adapter) || readPin() || adapter.gen !== logOffId()) return;
+  const before = entries();
   const account = await adapter.account().catch(() => '');
-  if (!account || readPin() || adapter.gen !== logOffId() || !stillSignedIn()) return;
+  if (!account || entries() !== before || readPin() || adapter.gen !== logOffId() || !stillSignedIn()) return;
   setSignIn(ACCOUNT_PIN_KEY, { provider: adapter.id, account }, adapter.gen);
 }

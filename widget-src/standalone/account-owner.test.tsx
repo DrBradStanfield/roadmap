@@ -436,6 +436,31 @@ describe('US-09 AC55: the pin\'s life', () => {
     await connect.startOnBackend(await connect.resolveRemembered(), async () => undefined);
     await vi.waitFor(() => expect(pinned()).toEqual({ provider: 'google-drive', account: ID.driveA }));
   });
+
+  it.each(['observe', 'enforce'] as const)('%s: a sign-in another tab keeps while the load reads its account is left with no pin', async (m) => {
+    mode.current = m;
+    localStorage.setItem(BACKEND_KEY, 'google-drive');
+    localStorage.setItem(DRIVE_CONFIG, A_CONFIG);
+    localStorage.setItem(DRIVE_TOKENS, JSON.stringify({ accessToken: 'test-token-old', refreshToken: 'test-refresh-old', expiresAt: Date.now() + 3_600_000, gen: null }));
+    // Tab 2, its own modules: a popup reconnect whose account Google does not name keeps its tokens with no pin.
+    vi.resetModules();
+    const tab2 = await import('../src/storage/account-gate');
+    const keptByTab2 = { accessToken: 'test-token-tab2', expiresAt: Date.now() + 3_600_000 };
+    let tab2Kept = false;
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input) === `${DRIVE}/about?fields=user(permissionId)` && !tab2Kept) {
+        tab2Kept = true; // tab 1's lookup is in flight
+        tab2.keepWithPin({ [DRIVE_TOKENS]: keptByTab2, [DRIVE_CONFIG]: JSON.parse(A_CONFIG) as object }, { provider: 'google-drive', pin: null, label: 'Google Drive', against: null }, null);
+      }
+      return fakeFetch(input, init);
+    }));
+    const { connect } = await page(); // tab 1
+    await connect.startOnBackend(await connect.resolveRemembered(), async () => undefined);
+    await vi.waitFor(() => expect(tab2Kept).toBe(true));
+    await new Promise((done) => setTimeout(done, 20));
+    expect(localStorage.getItem(DRIVE_TOKENS)).toContain('test-token-tab2');
+    expect(localStorage.getItem(PIN_KEY)).toBeNull();
+  });
 });
 
 /**

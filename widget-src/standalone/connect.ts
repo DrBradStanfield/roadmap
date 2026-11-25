@@ -86,6 +86,9 @@ function onDeviceFallback(reconnect: LostSignIn): ResolvedBackend {
   return { adapter: new LocalStorageAdapter(), backend: 'local', reconnect };
 }
 
+/** Every stored sign-in entry, the pin's included, as one text (US-09 AC55). */
+const signInEntries = (): string => JSON.stringify(SIGN_IN_KEYS.map((key) => safeGetItem(key)));
+
 /**
  * Start the data layer on the resolved backend. A cloud record that cannot be
  * read at load — a token the provider now refuses (a Drive grant without the
@@ -101,7 +104,7 @@ export async function startOnBackend(
     await init(resolved.adapter, resolved.reconnect !== undefined);
     // A browser with no account pin adopts this load's account (US-09 AC55); a failed read waits for the next load.
     const backend = resolved.backend;
-    if (backend !== 'local') void adoptPinAtLoad(resolved.adapter, () => rememberedBackend() === backend && !!adapterFor(backend)?.isConnected()).catch(() => undefined);
+    if (backend !== 'local') void adoptPinAtLoad(resolved.adapter, () => rememberedBackend() === backend && !!adapterFor(backend)?.isConnected(), signInEntries).catch(() => undefined);
     return resolved;
   } catch (error) {
     if (resolved.backend === 'local' || !isStorageFailure(error)) throw error;
