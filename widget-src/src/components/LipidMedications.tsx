@@ -41,7 +41,9 @@ export function LipidMedications(props: LipidMedicationsProps) {
 
   const statinDropdown = (
     <div className="health-field">
-      <label htmlFor="statin-name">{MEDICATION_TEXT.statinLabel}</label>
+      <label htmlFor="statin-name" id="statin-label">{MEDICATION_TEXT.statinLabel}</label>
+      {/* The dose select is named by this label and the fixed word "dose" (US-06 AC7a) */}
+      <span hidden id="statin-dose-word">dose</span>
       {cascadeMode && <p className="med-step-hint">{cascade.suggest.includes('statin-dose') ? MEDICATION_TEXT.doseHint : MEDICATION_TEXT.statinHint}</p>}
       <div className="statin-selection-row">
         <select
@@ -51,7 +53,7 @@ export function LipidMedications(props: LipidMedicationsProps) {
         {availableDoses.length > 0 && (
           <select
             id="statin-dose"
-            aria-label={`${MEDICATION_TEXT.statinLabel} ${MEDICATION_TEXT.doseLabel}`}
+            aria-labelledby="statin-label statin-dose-word"
             {...recordedChoice(doseOptions(availableDoses), statinDose === null ? '' : String(statinDose), (value) => writeMedication(medInputs, cascadeMode, 'statin_dose', value), 'Add dose')}
           />
         )}

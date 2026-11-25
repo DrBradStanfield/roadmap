@@ -34,47 +34,54 @@ const select = (name: string) => screen.getByRole('combobox', { name }) as HTMLS
 const taken = [med('glp1', 'tirzepatide', 5), med('sglt2i', 'empagliflozin', 10)];
 
 describe('US-06 AC7a: a medicine dose select is named after its medicine', () => {
-  it('the statin dose select is named "Statin Dose"; the name select keeps the visible label as its name', () => {
+  it('the statin dose select is named "Statin dose"; the name select keeps the visible label as its name', () => {
     lipid([med('statin', 'atorvastatin', 20)]);
-    expect(select('Statin Dose').id).toBe('statin-dose');
-    expect(select('Statin Dose').value).toBe('20');
+    expect(select('Statin dose').id).toBe('statin-dose');
+    expect(select('Statin dose').value).toBe('20');
     expect(select('Statin').id).toBe('statin-name');
   });
 
   it('the GLP-1 and SGLT2 inhibitor dose selects each carry their own medicine name', () => {
     weight(taken);
-    expect(select('GLP-1 Medication Dose').id).toBe('glp1-dose');
-    expect(select('GLP-1 Medication Dose').value).toBe('5');
-    expect(select('SGLT2 Inhibitor Dose').id).toBe('sglt2i-dose');
-    expect(select('SGLT2 Inhibitor Dose').value).toBe('10');
+    expect(select('GLP-1 Medication dose').id).toBe('glp1-dose');
+    expect(select('GLP-1 Medication dose').value).toBe('5');
+    expect(select('SGLT2 Inhibitor dose').id).toBe('sglt2i-dose');
+    expect(select('SGLT2 Inhibitor dose').value).toBe('10');
     expect(select('GLP-1 Medication').id).toBe('glp1-name');
     expect(select('SGLT2 Inhibitor').id).toBe('sglt2i-name');
   });
 
-  it('each name is an aria-label joined from the medicine label and the Dose label in MEDICATION_TEXT', () => {
+  it('each name comes from aria-labelledby: the visible medicine label, then a hidden fixed word "dose"', () => {
     lipid([med('statin', 'atorvastatin', 20)]);
     weight(taken);
-    const label = (id: string) => document.getElementById(id)!.getAttribute('aria-label');
-    expect(label('statin-dose')).toBe(`${MEDICATION_TEXT.statinLabel} ${MEDICATION_TEXT.doseLabel}`);
-    expect(label('glp1-dose')).toBe(`${MEDICATION_TEXT.glp1Label} ${MEDICATION_TEXT.doseLabel}`);
-    expect(label('sglt2i-dose')).toBe(`${MEDICATION_TEXT.sglt2iLabel} ${MEDICATION_TEXT.doseLabel}`);
-    for (const id of ['statin-name', 'glp1-name', 'sglt2i-name']) expect(label(id)).toBeNull();
+    const shown = { statin: MEDICATION_TEXT.statinLabel, glp1: MEDICATION_TEXT.glp1Label, sglt2i: MEDICATION_TEXT.sglt2iLabel };
+    for (const [medicine, text] of Object.entries(shown)) {
+      const dose = document.getElementById(`${medicine}-dose`)!;
+      const [labelRef, wordRef] = dose.getAttribute('aria-labelledby')!.split(' ').map(id => document.getElementById(id)!);
+      expect(labelRef.tagName).toBe('LABEL');
+      expect(labelRef.textContent).toBe(text);
+      expect(labelRef.hidden).toBe(false);
+      expect(wordRef.textContent).toBe('dose');
+      expect(wordRef.hidden).toBe(true);
+      expect(dose.hasAttribute('aria-label')).toBe(false);
+      expect(document.getElementById(`${medicine}-name`)!.hasAttribute('aria-label')).toBe(false);
+    }
   });
 
   it('a change made through the named select is sent for that medicine dose', () => {
     const lipidWrite = lipid([med('statin', 'atorvastatin', 20)]);
-    fireEvent.change(select('Statin Dose'), { target: { value: '40' } });
+    fireEvent.change(select('Statin dose'), { target: { value: '40' } });
     expect(lipidWrite.mock.calls.map(c => c.slice(2))).toEqual([['statin_dose', '40']]);
     const weightWrite = weight(taken);
-    fireEvent.change(select('SGLT2 Inhibitor Dose'), { target: { value: '25' } });
-    fireEvent.change(select('GLP-1 Medication Dose'), { target: { value: '7.5' } });
+    fireEvent.change(select('SGLT2 Inhibitor dose'), { target: { value: '25' } });
+    fireEvent.change(select('GLP-1 Medication dose'), { target: { value: '7.5' } });
     expect(weightWrite.mock.calls.map(c => c.slice(2))).toEqual([['sglt2i_dose', '25'], ['glp1_dose', '7.5']]);
   });
 
   it('a dose not yet recorded has the same name', () => {
     lipid([med('statin', 'rosuvastatin', null)]);
     weight([med('glp1', 'dulaglutide', null), med('sglt2i', 'dapagliflozin', null)]);
-    for (const name of ['Statin Dose', 'GLP-1 Medication Dose', 'SGLT2 Inhibitor Dose']) {
+    for (const name of ['Statin dose', 'GLP-1 Medication dose', 'SGLT2 Inhibitor dose']) {
       expect(select(name).value).toBe('');
       expect(select(name).selectedOptions[0].textContent).toBe('Add dose');
     }
@@ -83,15 +90,15 @@ describe('US-06 AC7a: a medicine dose select is named after its medicine', () =>
   it('the names are the same while the plan steps through the medicines', () => {
     lipid([med('statin', 'atorvastatin', 20)], elevated);
     weight(taken, weightOn);
-    expect(select('Statin Dose').id).toBe('statin-dose');
-    expect(select('GLP-1 Medication Dose').id).toBe('glp1-dose');
-    expect(select('SGLT2 Inhibitor Dose').id).toBe('sglt2i-dose');
+    expect(select('Statin dose').id).toBe('statin-dose');
+    expect(select('GLP-1 Medication dose').id).toBe('glp1-dose');
+    expect(select('SGLT2 Inhibitor dose').id).toBe('sglt2i-dose');
   });
 
   it('a medicine with no dose list draws no dose select', () => {
     lipid([med('statin', 'not_tolerated', null)]);
     weight([med('glp1', 'other', null)]);
-    expect(screen.queryByRole('combobox', { name: /Dose$/ })).toBeNull();
+    expect(screen.queryByRole('combobox', { name: /dose$/i })).toBeNull();
     expect(document.querySelector('#statin-dose, #glp1-dose, #sglt2i-dose')).toBeNull();
   });
 });
