@@ -16,13 +16,13 @@ import { createMeasurement, type RoadmapFile } from './roadmap-file';
 import { ROADMAP_DOC } from './roadmap-doc';
 import { transition, writtenNowhere, type SaveState } from './save-state';
 import { SyncManager } from './sync-manager';
-import { isDefiniteRefusal, mayHaveLanded, uncertainWrite } from './write-refusal';
+import { mayHaveLanded, refusedWrite, uncertainWrite } from './write-refusal';
 
 /** A memory store whose writes can be made to fail, or land and then fail the re-read after them. */
 class FailingStore extends MemoryAdapter {
   failWrites = false;
-  /** What a failing write throws: by default a definite refusal (a full store). */
-  failure: () => Error = () => new StorageError('refused', undefined, Object.assign(new Error('full'), { name: 'QuotaExceededError' }));
+  /** What a failing write throws: by default a definite refusal (a full store, raised refused). */
+  failure: () => Error = () => new StorageError('refused', undefined, Object.assign(new Error('full'), { name: 'QuotaExceededError' }), undefined, undefined, 'refused');
   private failReadAfterWrite = false;
   private wrote = false;
   /** From now on: reads work until a write lands, then fail. */
@@ -278,27 +278,19 @@ describe('what says a failed pass wrote nowhere (lead S57)', () => {
   });
 });
 
-describe('isDefiniteRefusal: only a failure that certainly stored nothing (owner ruling A)', () => {
+describe('US-10 AC16: the outcome a failure is raised with (owner ruling A)', () => {
   const status = (n: number) => new StorageError(`write failed (${n})`, undefined, undefined, n);
-  const quota = Object.assign(new Error('full'), { name: 'QuotaExceededError' });
-  const stopped = Object.assign(new StorageError('stopped'), { name: 'WritesStoppedError' });
-  const rows: Array<[string, unknown, boolean]> = [
-    ['a refused precondition (ConflictError)', new ConflictError(), true],
-    ['a write that landed then vanished (LostUpdateError)', new LostUpdateError('lost'), false],
-    ['a full provider (reason storage-full)', new StorageError('Dropbox is full', 'Nothing was written.', undefined, 409, 'storage-full'), true],
-    ['a full device store (QuotaExceededError)', quota, true],
-    ['a storage error caused by a full store', new StorageError('refused', undefined, quota), true],
-    ['a page whose device writes stopped (WritesStoppedError)', stopped, true],
-    ...[400, 401, 403, 404, 409, 412, 413, 422].map((n): [string, unknown, boolean] => [`HTTP ${n}`, status(n), true]),
-    ...[408, 429, 500, 502, 503, 504, 507].map((n): [string, unknown, boolean] => [`HTTP ${n}`, status(n), false]),
-    ['no answer (fetchOrFail: no status)', new StorageError('Dropbox did not answer', 'The change may have landed.'), false],
-    ['an abort', new DOMException('aborted', 'AbortError'), false],
-    ['a plain error', new Error('network'), false],
-    ['not an error at all', 'oops', false],
-    ['a 403 an adapter marked as after its upload (Drive verify)', uncertainWrite(status(403)), false],
+  const rows: Array<[string, unknown, string | undefined]> = [
+    ['a full provider (reason storage-full)', new StorageError('Dropbox is full', 'Nothing was written.', undefined, 409, 'storage-full'), 'refused'],
+    ['a page whose device writes stopped (refusedWrite)', refusedWrite(Object.assign(new StorageError('stopped'), { name: 'WritesStoppedError' })), 'refused'],
+    ...[400, 401, 403, 404, 409, 412, 413, 422].map((n): [string, unknown, string | undefined] => [`HTTP ${n}`, status(n), 'refused']),
+    ...[408, 429, 500, 502, 503, 504, 507].map((n): [string, unknown, string | undefined] => [`HTTP ${n}, raiser silent`, status(n), undefined]),
+    ['a cause named QuotaExceededError, raiser silent: no name is read', new StorageError('full', undefined, Object.assign(new Error('full'), { name: 'QuotaExceededError' })), undefined],
+    ['a 403 an adapter marked as after its upload (Drive verify)', uncertainWrite(status(403)), 'may-have-landed'],
   ];
-  it.each(rows)('%s', (_name, error, refused) => {
-    expect(isDefiniteRefusal(error)).toBe(refused);
+  it.each(rows)('%s', (_name, error, outcome) => {
+    expect((error as StorageError).outcome).toBe(outcome);
+    expect(mayHaveLanded(error)).toBe(outcome === 'may-have-landed');
   });
 
   it('a thrown value that is not an object cannot carry the mark, so it counts as may have landed', () => {
@@ -319,6 +311,25 @@ describe('isDefiniteRefusal: only a failure that certainly stored nothing (owner
     expect(mayHaveLanded(thrown)).toBe(true);
     store.failure = () => status(403);
     expect(mayHaveLanded(await sync.save(file).catch((e: unknown) => e))).toBe(false);
+  });
+
+  // What a write throws, read through SyncManager as the erase reads it: only a refused
+  // precondition stored nothing; anything its raiser did not name may have landed.
+  const thrownByWrite: Array<[string, () => unknown, boolean]> = [
+    ['a refused precondition (ConflictError)', () => new ConflictError(), false],
+    ['a write that landed then vanished (LostUpdateError)', () => new LostUpdateError('lost'), true],
+    ['an abort (AbortError)', () => new DOMException('aborted', 'AbortError'), true],
+    ['a plain error', () => new Error('network'), true],
+    ['not an error at all', () => 'oops', true],
+  ];
+  it.each(thrownByWrite)('a write that threw %s: may have landed is %s', async (_name, failure, landed) => {
+    const ctx = { deviceId: 'phone', now: new Date(clock).toISOString() };
+    const store = new FailingStore();
+    const sync = new SyncManager(store, 'phone', ROADMAP_DOC, { now: () => ctx.now });
+    store.failWrites = true;
+    store.failure = failure as () => Error;
+    const thrown = await sync.save(ROADMAP_DOC.migrate(null, ctx)).catch((e: unknown) => e);
+    expect(mayHaveLanded(thrown)).toBe(landed);
   });
 });
 
@@ -362,8 +373,8 @@ function deviceSetup() {
 const quota = () => Object.assign(new Error('full'), { name: 'QuotaExceededError' });
 const FULL = 'Could not save on this device (local storage may be full).';
 const deviceFailures: Array<[string, () => Error]> = [
-  ['the record write is full (nothing stored)', () => new StorageError(FULL, undefined, quota())],
-  ['writes stopped by a log-off (WritesStoppedError)', () => Object.assign(new Error('stopped'), { name: 'WritesStoppedError' })],
+  ['the record write is full (nothing stored)', () => new StorageError(FULL, undefined, quota(), undefined, undefined, 'refused')],
+  ['writes stopped by a log-off (WritesStoppedError)', () => refusedWrite(Object.assign(new Error('stopped'), { name: 'WritesStoppedError' }))],
 ];
 
 describe('S69, US-11 AC4c: an erase the device tier refused outright is put back', () => {

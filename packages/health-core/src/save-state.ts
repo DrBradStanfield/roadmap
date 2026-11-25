@@ -28,8 +28,8 @@
  *   'auth' when the provider refused the sign-in (`saveFailureCause`), which
  *   only a new sign-in mends, so no retry is owed; 'other' for the rest, an
  *   erase's failed write included. `landed`: the pass may have written before
- *   it failed (write-refusal.ts `mayHaveLanded`: anything but a definite
- *   refusal), so the stored copy may hold its changes.
+ *   it failed (write-refusal.ts `mayHaveLanded`: the failure's outcome says
+ *   so), so the stored copy may hold its changes.
  * - erasing: an erase, from its confirm to the end of its write, over the save
  *   state `under` it (lead A6). An edit is refused throughout;
  *   RecordSession.refuses() gives the caller that answer. `reading`: the erase
@@ -119,13 +119,14 @@ export function retryOwed(s: SaveState): boolean {
   return s.mode === 'failed' && s.cause === 'other';
 }
 
-/** Why a pass failed, from its error alone: 'auth' for a refused grant (a
- *  provider's 401, or a revoked grant the adapter names `reconnect`), 'other'
- *  for anything else. A 403 is 'other': a rate or daily limit passes, so it is
- *  retried, a true refusal included (owner, 2026-11-13). Never the message. */
+/** Why a pass failed, from its error's typed reason alone: 'auth' for a refused
+ *  grant (`auth`, a provider's 401, or a revoked grant the adapter names
+ *  `reconnect`), 'other' for anything else. A 403 (`forbidden`, `rate-limited`)
+ *  is 'other': a rate or daily limit passes, so it is retried, a true refusal
+ *  included (owner, 2026-11-13). Never the status or the message. */
 export function saveFailureCause(error: unknown): SaveCause {
   if (!(error instanceof StorageError)) return 'other';
-  return error.status === 401 || error.reason === 'reconnect' ? 'auth' : 'other';
+  return error.reason === 'auth' || error.reason === 'reconnect' ? 'auth' : 'other';
 }
 
 /** not-saved-on-device: not saved, and the device copy holds the changes. */

@@ -19,7 +19,7 @@ import { DropboxAdapter } from '../../packages/health-core/src/dropbox-rest';
 import { DriveAdapter } from '../../packages/health-core/src/drive-rest';
 import { recordSync } from '../../packages/health-core/src/roadmap-doc';
 import { StorageError, type StorageAdapter, type StoredFile } from '../../packages/health-core/src/adapter';
-import { describeStorageFailure, isStorageFailure } from '../../packages/health-core/src/sync-manager';
+import { accessRefused, describeStorageFailure, isStorageFailure } from '../../packages/health-core/src/sync-manager';
 import { mayHaveLanded } from '../../packages/health-core/src/write-refusal';
 import { type GuardRefusal, isToolName, RECORD_FREE_TOOLS, runToolOverSync, type ToolAnswer } from '../../packages/health-core/src/mcp-tools';
 import { DOCUMENT_TEXT_NOTE, MAX_APPROVAL_LENGTH, OPEN_SOURCE_NOTE, SI_NOTE } from '../../packages/health-core/src/mcp-tool-contract';
@@ -230,11 +230,11 @@ async function callHostedTool(
     // failure is counted there, as `outcome: 'error'`; nothing is logged,
     // because health data never enters a log.
     if (!isStorageFailure(error)) throw error;
-    // A rejected access token is not an unreachable folder: the refresh
-    // worked, so the grant is alive, but this token buys nothing — a scope
-    // change, or the app folder removed. Read off the status the adapter kept,
-    // never the message text.
-    if (error instanceof StorageError && (error.status === 401 || error.status === 403)) {
+    // A rejected access token is not an unreachable folder: the refresh worked,
+    // so the grant is alive, but this token buys nothing. Read off the typed
+    // reason, never the words: a rate limit passes, so it is not refused access.
+    // A full Drive (a 403) keeps this text until it has words of its own.
+    if (error instanceof StorageError && (accessRefused(error.reason) || (error.reason === 'storage-full' && error.status === 403))) {
       return refuse(accessRefusedText(error, provider), 'no-record');
     }
     const failed = describeStorageFailure(error, `The record in ${provider}`);

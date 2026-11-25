@@ -14,7 +14,7 @@
  * browser refreshes with PKCE and the server refreshes as a confidential
  * client.
  */
-import { BusyError, ConflictError, fetchOrFail, jsonBody, StorageError, type DocumentAccess, type ReadResult, type StorageAdapter, type StoredFile, type WriteResult } from './adapter';
+import { answerOutcome, BusyError, ConflictError, fetchOrFail, jsonBody, StorageError, type DocumentAccess, type ReadResult, type StorageAdapter, type StoredFile, type WriteResult } from './adapter';
 import { TRANSFER_DEADLINE_MS } from './transfer-deadline';
 
 export const DROPBOX_TOKEN_URL = 'https://api.dropboxapi.com/oauth2/token';
@@ -125,7 +125,7 @@ export async function dropboxRead(accessToken: string, fileName: string, signal?
     await expectNotFound(res, 'read');
     return { body: null, version: null };
   }
-  if (!res.ok) throw new StorageError(`${PROVIDER} read failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status);
+  if (!res.ok) throw new StorageError(`${PROVIDER} read failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status, undefined, answerOutcome(res.status));
   const meta = parseApiResult(res);
   const text = await res.text();
   let body: unknown;
@@ -172,7 +172,7 @@ export async function dropboxUploadDocument(accessToken: string, ref: string, by
   if (!res.ok) {
     const busy = res.status === 429 || (res.status === 409 && /^path\/too_many_write_operations\b/.test(errorSummary(await res.text()) ?? ''));
     if (busy) throw new BusyError(`${PROVIDER} document write refused as busy (${res.status}).`, retryAfterMs(res.headers.get('Retry-After')), res.status);
-    throw new StorageError(`${PROVIDER} document write failed (${res.status}).`, undefined, undefined, res.status);
+    throw new StorageError(`${PROVIDER} document write failed (${res.status}).`, undefined, undefined, res.status, undefined, answerOutcome(res.status, true));
   }
 }
 
@@ -285,9 +285,9 @@ export async function dropboxWrite(
     mayHaveWritten: true,
   });
   if (res.status === 409) throw uploadRefusal(await res.text());
-  if (!res.ok) throw new StorageError(`${PROVIDER} write failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status);
+  if (!res.ok) throw new StorageError(`${PROVIDER} write failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status, undefined, answerOutcome(res.status, true));
   const meta = await jsonBody<{ rev?: string }>(res);
-  if (!meta.rev) throw new StorageError(`${PROVIDER} write returned no rev.`);
+  if (!meta.rev) throw new StorageError(`${PROVIDER} write returned no rev.`, undefined, undefined, undefined, undefined, 'may-have-landed');
   return { version: meta.rev };
 }
 

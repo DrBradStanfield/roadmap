@@ -285,7 +285,7 @@ function failureKind(error: unknown): 'sign-in' | 'too-new' | 'storage-full' | '
  * an abort), 408, 429, a 5xx, or Google's rate or daily limit. 'definite': the provider refused
  * (sign in, storage full, a newer schema, any other status). 'unknown': anything else, a 401 whose
  * refresh was skipped included (its write may have landed). Only 'transient' holds a Disconnect,
- * so a failure nobody recognised never traps the person. Not isDefiniteRefusal, which asks
+ * so a failure nobody recognised never traps the person. Not the error's outcome, which says
  * whether a write certainly did not land (write-refusal.ts).
  */
 export function eraseFailure(error: unknown): 'transient' | 'definite' | 'unknown' {
