@@ -177,6 +177,8 @@ async function redeem(form: Record<string, string>) {
 let extractor: Extractor | undefined;
 /** The folder every case's endpoint opens: the in-memory cloud, set before each case (this file's own state). */
 let makeAdapter: AdapterFactory;
+/** True in the cases that run the endpoint's own clock under fake timers (this file's own state). */
+let ownClock = false;
 
 async function rpc(access: string, method: string, params: unknown = {}, now = NOW) {
   const res = await mcpEndpoint(
@@ -186,7 +188,8 @@ async function rpc(access: string, method: string, params: unknown = {}, now = N
       body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
     }),
     now,
-    { extract: extractor, makeAdapter },
+    // A receipt is signed at `now` unless a case runs the endpoint's own clock (US-35 AC19).
+    { extract: extractor, makeAdapter, clock: ownClock ? undefined : () => Date.parse(now) },
   );
   expect(res.status).toBe(200);
   return (await res.json()) as {
@@ -907,7 +910,8 @@ describe('the four mandatory corrections mitigations (US-32, design §3)', () =>
 
   it('US-35 AC19 / US-36 AC9: a proposal receipt is issued when it is handed back, so a slow read cannot use up the pause', async () => {
     const at = (s: number) => new Date(Date.parse(NOW) + s * 1000).toISOString();
-    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.useFakeTimers({ toFake: ['Date', 'performance'] });
+    ownClock = true;
     try {
       vi.setSystemTime(Date.parse(NOW));
       seedWithLdl('2026-08-30');
@@ -917,7 +921,7 @@ describe('the four mandatory corrections mitigations (US-32, design §3)', () =>
         const adapter = new MemoryAdapter(cloud);
         const read = adapter.read.bind(adapter);
         adapter.read = async (...args) => {
-          vi.setSystemTime(Date.parse(at(15)));
+          vi.advanceTimersByTime(15_000);
           return read(...args);
         };
         return adapter;
@@ -932,6 +936,7 @@ describe('the four mandatory corrections mitigations (US-32, design §3)', () =>
       expect((await callTool(access, 'correct_value', { ...args, confirm, approval: APPROVED }, at(25))).isError).toBe(false);
     } finally {
       vi.useRealTimers();
+      ownClock = false;
     }
   });
 
@@ -1626,14 +1631,15 @@ describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, A
 
   it('US-35 AC19: the pause runs from the hand-back, so an extract slower than the pause hands back a receipt that is still early', async () => {
     const at = (s: number) => new Date(Date.parse(NOW) + s * 1000).toISOString();
-    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.useFakeTimers({ toFake: ['Date', 'performance'] });
+    ownClock = true;
     try {
       vi.setSystemTime(Date.parse(NOW));
       seedRecord();
       const { access } = await connect();
       // The model call takes 15 s, longer than the pause.
       stubImport({ 'labs.pdf': PDF_BYTES }, () => {
-        vi.setSystemTime(Date.parse(at(15)));
+        vi.advanceTimersByTime(15_000);
         return labReport();
       });
       const data = OUTPUTS.import_documents.parse((await callTool(access, 'import_documents', {}, at(0))).structured);
@@ -1646,6 +1652,7 @@ describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, A
       expect((await commit(25)).isError).toBe(false);
     } finally {
       vi.useRealTimers();
+      ownClock = false;
     }
   });
 

@@ -31,12 +31,13 @@ export const STEP_WINDOWS: Record<StepKind, { nbfSeconds: number; ttlSeconds: nu
 
 /**
  * The clock a step is signed by: the request's `now`, moved on by the real
- * time since this was made, so an issue time is the moment the receipt is
- * handed back, however long the call's work took (US-35 AC19).
+ * time since this was made (monotonic, `performance.now`), so an issue time
+ * is the moment the receipt is handed back, however long the call's work
+ * took (US-35 AC19).
  */
 export function clockFrom(now: string): () => number {
-  const startedMs = Date.now();
-  return () => Date.parse(now) + Date.now() - startedMs;
+  const startedMs = performance.now();
+  return () => Date.parse(now) + performance.now() - startedMs;
 }
 
 /** The one refusal for a step used inside its pause, whichever kind. */
@@ -78,11 +79,17 @@ function stepMac(key: Buffer, kind: StepKind, issued: number, fields: readonly s
 /** When a step issued at `issued` (epoch seconds) may first be used. */
 const notBeforeOf = (kind: StepKind, issued: number): string => new Date((issued + STEP_WINDOWS[kind].nbfSeconds) * 1000).toISOString();
 
+/**
+ * A step's issue time: whole epoch seconds, rounded UP, so the pause counted
+ * from it never starts before the true signing time (US-35 AC19).
+ */
+const issuedAt = (nowMs: number): number => Math.ceil(nowMs / 1000);
+
 /** Sign at `nowMs` with the newest key. The issue time is in every MAC, so a window only ever reads a time we signed. */
 export function signStep(kind: StepKind, fields: readonly string[], conn: string, audience: SealAudience, nowMs: number): { mac: string; issued: number } {
   const keys = sealKeys();
   if (keys.length === 0) throw new Error('MCP_SEAL_KEYS is not configured');
-  const issued = Math.floor(nowMs / 1000);
+  const issued = issuedAt(nowMs);
   return { mac: stepMac(keys[0], kind, issued, fields, conn, audience), issued };
 }
 
@@ -120,7 +127,7 @@ export function openStep(kind: StepKind, fields: readonly string[], conn: string
  * `m` 80 bits of MAC over `i` and `j` as written, the call and the connection.
  */
 export function issueProposal(subject: string, conn: string, audience: SealAudience, nowMs: number): { receipt: string; notBefore: string } {
-  const i = Math.floor(nowMs / 1000).toString(16).padStart(8, '0');
+  const i = issuedAt(nowMs).toString(16).padStart(8, '0');
   const j = crypto.randomBytes(2).toString('hex');
   const { mac, issued } = signStep('proposal', [i + j, subject], conn, audience, nowMs);
   return { receipt: `${i}-${j}-${mac.slice(0, 4)}-${mac.slice(4, 8)}-${mac.slice(8)}`, notBefore: notBeforeOf('proposal', issued) };

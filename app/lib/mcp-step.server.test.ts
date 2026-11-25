@@ -26,6 +26,7 @@ const SUBJECT = 'subject-hash';
 const CONN = 'connection-hash';
 const NOW = Date.parse('2026-10-07T01:07:40.000Z');
 const { nbfSeconds, ttlSeconds } = STEP_WINDOWS.proposal;
+const ttlImport = STEP_WINDOWS.import.ttlSeconds;
 /** After the pause, inside the window. */
 const LATER = NOW + (nbfSeconds + 1) * 1000;
 
@@ -131,15 +132,39 @@ describe('US-36 AC9 — the window: early before 10 s, expired after 15 min, a t
   });
 
   it('clockFrom reads the request time moved on by the real time since, so a step is signed when it is handed back (US-35 AC19)', () => {
-    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.useFakeTimers({ toFake: ['Date', 'performance'] });
     try {
-      vi.setSystemTime(Date.parse('2030-01-01T00:00:00.000Z'));
       const clock = clockFrom(new Date(NOW).toISOString());
       expect(clock()).toBe(NOW);
-      vi.setSystemTime(Date.parse('2030-01-01T00:00:15.000Z'));
+      vi.advanceTimersByTime(15_000);
+      expect(clock()).toBe(NOW + 15_000);
+      // The elapsed part is monotonic: a wall clock set back does not move it.
+      vi.setSystemTime(Date.parse('2001-01-01T00:00:00.000Z'));
       expect(clock()).toBe(NOW + 15_000);
     } finally {
       vi.useRealTimers();
+    }
+  });
+
+  it('an issue time is rounded up to the second, so a step signed at x.001 or x.999 waits at least the full pause (US-35 AC19)', () => {
+    const fields = ['payload-id', 'payload-hash'];
+    for (const ms of [1, 999]) {
+      const signedAt = NOW + ms;
+      const { mac, issued } = signStep('import', fields, CONN, AUDIENCE, signedAt);
+      expect(issued).toBe(NOW / 1000 + 1);
+      const status = (nowMs: number) => openStep('import', fields, CONN, mac, issued, AUDIENCE, nowMs).status;
+      expect(status(signedAt + 9_999), `import +${ms}`).toBe('early');
+      expect(status(NOW + 10_999), `import +${ms}`).toBe('early');
+      expect(status(NOW + 11_000), `import +${ms}`).toBe('ok');
+      // The hour is not shortened: it runs from the rounded-up second.
+      expect(status(NOW + 1_000 + ttlImport * 1000), `import +${ms}`).toBe('ok');
+
+      const { receipt, notBefore } = issueProposal(SUBJECT, CONN, AUDIENCE, signedAt);
+      expect(notBefore).toBe(new Date(NOW + 11_000).toISOString());
+      expect(open(receipt, { now: signedAt + 9_999 }), `proposal +${ms}`).toBe('early');
+      expect(open(receipt, { now: NOW + 10_999 }), `proposal +${ms}`).toBe('early');
+      expect(open(receipt, { now: NOW + 11_000 }), `proposal +${ms}`).toBe('ok');
+      expect(open(receipt, { now: NOW + 1_000 + ttlSeconds * 1000 }), `proposal +${ms}`).toBe('ok');
     }
   });
 
