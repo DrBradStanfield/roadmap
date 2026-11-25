@@ -5,7 +5,7 @@
 import * as Sentry from '@sentry/react-router';
 import { generateTitle } from './chat.server';
 import type { RouterResult } from './chat-router.server';
-import { routerColumns, matchEventText, answerColumns } from './chat-persist.server';
+import { matchEventRow, matchEventText, answerColumns } from './chat-persist.server';
 import { supabaseAdmin } from './supabase-client.server';
 import { DISCORD_BOT_PROFILE_ID, PLATFORM_DISCORD } from './discord-bot-config.server';
 
@@ -119,28 +119,26 @@ export async function persistConversation(p: PersistParams): Promise<void> {
 
   // Router event (analytics / QA). Written only after the assistant row it points to.
   // All router_* metric columns are null on SKIP turns (router never ran).
-  const r = p.routerResult;
   const { error: evtErr } = await supabaseAdmin
     .from('chat_match_events')
-    .insert({
-      message_id: assistantMessageId,
-      conversation_id: conversationId,
-      user_id: DISCORD_BOT_PROFILE_ID,
-      message: matchEventText(p.userMessage),
-      router_context: {
-        platform: PLATFORM_DISCORD,
+    .insert(matchEventRow({
+      messageId: assistantMessageId,
+      conversationId,
+      userId: DISCORD_BOT_PROFILE_ID,
+      question: p.userMessage,
+      platform: PLATFORM_DISCORD,
+      context: {
         first: p.contextFirst != null ? matchEventText(p.contextFirst) : null,
         recent: p.contextRecent.map(matchEventText),
-        ...(p.replaced?.length ? { replaced: p.replaced } : {}),
-        ...(p.reduced?.length ? { reduced: p.reduced } : {}),
       },
-      matched_handles: r?.handles ?? [],
-      ...routerColumns(r),
+      replaced: p.replaced,
+      reduced: p.reduced,
+      routerResult: p.routerResult,
       classification: p.classifier.classification,
-      router_skipped: p.classifier.routerSkipped,
-      is_fallback: p.isFallback,
-      failure_mode: p.failureMode ?? null,
-    });
+      routerSkipped: p.classifier.routerSkipped,
+      isFallback: p.isFallback,
+      failureMode: p.failureMode,
+    }));
   if (evtErr) {
     Sentry.captureException(new Error('Discord: match-event insert failed'), {
       tags: { platform: PLATFORM_DISCORD },
