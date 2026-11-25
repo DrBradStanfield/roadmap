@@ -1,6 +1,6 @@
 import type { HealthInputs, HealthResults, MedicationInputs, SuggestionInputs, ScreeningInputs } from './types';
 import type { UnitSystem, MetricType } from './units';
-import { EGFR_THRESHOLDS, LPA_THRESHOLDS, HBA1C_THRESHOLDS, waistToHeightRatio, isWaistToHeightElevated } from './units';
+import { CREATININE_FACTOR, EGFR_THRESHOLDS, LPA_THRESHOLDS, HBA1C_THRESHOLDS, waistToHeightRatio, isWaistToHeightElevated } from './units';
 import { generateSuggestions } from './suggestions';
 import { validateInputValue } from './validation';
 import { limitOf } from './lab-limits';
@@ -98,7 +98,7 @@ export function knownMinorOf(birth: { birthYear?: number; birthMonth?: number },
  * Returns eGFR in mL/min/1.73m².
  */
 export function calculateEGFR(creatinineUmolL: number, age: number, sex: 'male' | 'female'): number {
-  const cr = creatinineUmolL / 88.4; // convert to mg/dL
+  const cr = creatinineUmolL / CREATININE_FACTOR; // convert to mg/dL
 
   if (sex === 'female') {
     const kappa = 0.7;
