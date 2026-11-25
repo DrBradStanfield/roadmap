@@ -9,7 +9,7 @@ import { lazy, Suspense, useEffect, useId, useMemo, useReducer, useRef, useState
 import { type ApiMeasurement, METRIC_LABELS } from '@roadmap/health-core/mappings';
 import { type CellUnit, cellFromSI, cellLabel, cellText, cellToSI } from '@roadmap/health-core/cell-unit';
 import type { MetricType } from '@roadmap/health-core/units';
-import type { StatTile } from '@roadmap/health-core/stat-tiles';
+import { RANGE_NOT_DIAGNOSIS, rangeShown, type StatTile } from '@roadmap/health-core/stat-tiles';
 import { PRESSURE_ORDER, pressureInverted } from '@roadmap/health-core/validation';
 import { localDay } from '@roadmap/health-core/merge';
 import { groupLabValues, savedLabText } from '@roadmap/health-core/lab-series';
@@ -27,7 +27,7 @@ import { ErrorBoundary } from './ErrorBoundary';
 import { scrollToTop } from '../lib/reveal';
 import { useIsMobile } from '../lib/useIsMobile';
 import { useAutoAdvance } from '../lib/useAutoAdvance';
-import { ValueCell, useLiveRegion } from './BloodTestTimeline';
+import { ValueCell, useLiveRegion } from './MatrixSavedCells';
 import { AddLabTest } from './AddLabTest';
 import { LAB_EGFR, isLabEgfr, pressureText, subjectKey, tintOf, type RowContext, type ValueSubject } from './MyDataRows';
 import { PlanTile } from './PlanCards';
@@ -115,6 +115,14 @@ export function ValuePage({ subject, history, labValues, ctx, tiles, onSave, onC
 
   // Correct on a pressure fills the Add form with its day: a pressure is one reading, corrected whole.
   const [correcting, setCorrecting] = useState<DayReading | null>(null);
+  // Once it saves, a focus still in its form goes to the saved day's Correct button, kept by day
+  // across the record's new rows, or to the title if that day is not on the page (US-03 AC10, H302).
+  // Another day's Correct pressed meanwhile keeps its own form.
+  const correctButtons = useRef(new Map<string, HTMLButtonElement>());
+  const corrected = (day: string, focusInForm: boolean) => {
+    if (correcting && focusInForm) (correctButtons.current.get(day) ?? titleRef.current)?.focus();
+    setCorrecting(now => (now === correcting ? null : now));
+  };
 
   // The page leads with the latest value, the iPhone's metric page (design review 2026-11-06).
   const unitOfPoint = (id: string) => (lab?.mixedUnits ? lab.points.find(p => p.id === id)?.unit : lab?.unit);
@@ -140,6 +148,7 @@ export function ValuePage({ subject, history, labValues, ctx, tiles, onSave, onC
       )}
       {targetShown && <p className="md-page-target">{target.full}</p>}
       {pageTiles.length > 0 && <div className="stats-grid md-page-tiles">{pageTiles.map(tile => <PlanTile key={tile.key} tile={tile}/>)}</div>}
+      {pageTiles.some(rangeShown) && <p className="md-page-range">{RANGE_NOT_DIAGNOSIS}</p>}
       {pageKey === 'creatinine' && labEgfrHeld && (
         <button type="button" className="md-foot-btn md-page-link" onClick={() => onOpen({ kind: 'lab', seriesKey: LAB_EGFR })}>Lab eGFR results</button>
       )}
@@ -164,19 +173,22 @@ export function ValuePage({ subject, history, labValues, ctx, tiles, onSave, onC
         ? latestLab && <AddLabTest onAdded={onLabAdded ?? (() => {})} labValues={labValues} coreValues={history} onCorrect={onCorrect}
                                    preset={{ metricName: latestLab.metricName, unit: lab!.unit }} dirtyRef={dirtyRef}/>
         : <AddValue key={correcting?.id ?? 'new'} metric={metric} history={history} unit={unit} start={correcting}
-                    onSave={onSave} say={say} onDone={() => setCorrecting(null)} dirtyRef={dirtyRef} onWeightAnswered={onWeightAnswered}/>}
+                    onSave={onSave} say={say} onDone={corrected} dirtyRef={dirtyRef} onWeightAnswered={onWeightAnswered}/>}
 
       <h4 className="md-page-subtitle">History</h4>
+      {/* A reading's day is named from the text that shows it, never an attribute (US-09 AC7l). */}
+      {subject.kind === 'bp' && <span id={`${titleId}correct`} hidden>Correct the reading of</span>}
       {readings.length === 0 ? <p className="md-page-empty">No values yet.</p> : (
         <ul className="md-history">
-          {readings.map(r => (
-            <li key={r.id} className="md-history-row">
-              <span className="md-history-day">{formatShortDate(r.day)}</span>
+          {readings.map((r, i) => (
+            <li key={subject.kind === 'bp' ? r.day : r.id} className="md-history-row">
+              <span id={`${titleId}day${i}`} className="md-history-day">{formatShortDate(r.day)}</span>
               {subject.kind === 'bp' ? (
                 <span className="md-history-bp">
                   <PressureValue reading={r} ctx={ctx}/>
                   <button type="button" className="md-history-correct" onClick={() => setCorrecting(r)}
-                          aria-label={`Correct the reading of ${formatShortDate(r.day)}`}>Correct</button>
+                          ref={el => { if (el) correctButtons.current.set(r.day, el); else correctButtons.current.delete(r.day); }}
+                          aria-labelledby={`${titleId}correct ${titleId}day${i}`}>Correct</button>
                 </span>
               ) : metric ? (
                 <CoreValue metric={metric} unit={unit} reading={r} ctx={ctx} onCorrect={onCorrect} say={say}/>
@@ -222,11 +234,14 @@ function PressureValue({ reading, ctx }: { reading: DayReading; ctx: RowContext 
  *  changed meanwhile on another device is refused (`changed`). */
 function AddValue({ metric, history, unit, start, onSave, say, onDone, dirtyRef, onWeightAnswered }: {
   metric: MetricType | null; history: ApiMeasurement[]; unit: ReturnType<RowContext['unitOf']>; start: DayReading | null;
-  onSave: (tasks: SaveTask[], erase?: string) => Promise<Refused>; say: (message: string) => void; onDone: () => void;
+  onSave: (tasks: SaveTask[], erase?: string) => Promise<Refused>; say: (message: string) => void;
+  /** An ok save of `day`; `focusInForm`: the focus was in the form, or on the body, which a control of its own can leave it on. */
+  onDone: (day: string, focusInForm: boolean) => void;
   /** True while the form holds text the person typed and has not saved. */
   dirtyRef: MutableRefObject<boolean>;
   onWeightAnswered?: () => void;
 }) {
+  const formRef = useRef<HTMLFormElement>(null);
   const today = localDay(new Date());
   const [date, setDate] = useState(start?.day ?? today);
   const [text, setText] = useState(start ? String(Math.round(start.value)) : '');
@@ -317,21 +332,26 @@ function AddValue({ metric, history, unit, start, onSave, say, onDone, dirtyRef,
       return;
     }
     say(unchanged ? 'No change.' : taken ? 'Corrected.' : 'Added.');
+    const focused = document.activeElement;
+    const focusInForm = !!formRef.current && (formRef.current.contains(focused) || focused === document.body);
     setText(''); setDia(''); setDate(today); setSeen(null); setTypedIn(null);
-    onDone();
+    onDone(date, focusInForm);
   });
 
+  // Read-only, not disabled, while the save runs: the focus and the keyboard stay, and the
+  // clear on ok wipes nothing typed after the press (H301, US-03 AC2b).
+  const saving = form.kind === 'saving';
   return (
-    <form className="md-add" noValidate onSubmit={e => { e.preventDefault(); void add(); }}>
+    <form ref={formRef} className="md-add" noValidate onSubmit={e => { e.preventDefault(); void add(); }}>
       <label className="md-add-field">
         <span>Date</span>
-        <input type="date" value={date} max={today} onChange={e => { setDate(e.target.value); freeze(e.target.value); send({ type: 'edited' }); }}/>
+        <input type="date" value={date} max={today} readOnly={saving} onChange={e => { setDate(e.target.value); freeze(e.target.value); send({ type: 'edited' }); }}/>
       </label>
       {metric ? (
         <label className="md-add-field">
           <span>Value</span>
           <span className="md-add-input">
-            <input type="text" inputMode="decimal" value={text} onKeyDown={blockBadNumericKeys} onChange={typed(setText)}/>
+            <input type="text" inputMode="decimal" value={text} readOnly={saving} onKeyDown={blockBadNumericKeys} onChange={typed(setText)}/>
             <span className="md-add-unit">{cellLabel(metric, unit)}</span>
           </span>
         </label>
@@ -339,14 +359,14 @@ function AddValue({ metric, history, unit, start, onSave, say, onDone, dirtyRef,
         <div className="md-add-field">
           <span>Reading</span>
           <span className="md-add-input">
-            <input ref={firstRef} type="text" inputMode="numeric" aria-label="Systolic (top number)" value={text} onKeyDown={blockNonIntegerKeys}
+            <input ref={firstRef} type="text" inputMode="numeric" aria-label="Systolic (top number)" value={text} readOnly={saving} onKeyDown={blockNonIntegerKeys}
                    onChange={e => {
                      typed(setText)(e);
                      const adv = bpSysAdvance(e.target.value);
                      advanceToDia(dia === '' && adv !== 'stay' ? { ambiguous: adv === 'defer', advance: () => diaRef.current?.focus() } : null);
                    }}/>
             <span aria-hidden="true">/</span>
-            <input ref={diaRef} type="text" inputMode="numeric" aria-label="Diastolic (bottom number)" value={dia} onKeyDown={blockNonIntegerKeys}
+            <input ref={diaRef} type="text" inputMode="numeric" aria-label="Diastolic (bottom number)" value={dia} readOnly={saving} onKeyDown={blockNonIntegerKeys}
                    onChange={typed(setDia)}/>
             <span className="md-add-unit">mmHg</span>
           </span>
@@ -354,7 +374,7 @@ function AddValue({ metric, history, unit, start, onSave, say, onDone, dirtyRef,
       )}
       {taken && <p className="md-add-note">This day has {takenText} already. Saving corrects it.</p>}
       {form.kind === 'ready' && form.message && <p className="error-message" role="alert">{form.message}</p>}
-      <button type="submit" className="md-add-save" disabled={form.kind === 'saving'}>{taken ? 'Save correction' : 'Add'}</button>
+      <button type="submit" className="md-add-save" disabled={saving}>{taken ? 'Save correction' : 'Add'}</button>
     </form>
   );
 }

@@ -1,0 +1,28 @@
+{
+  "files": [
+    {
+      "file": "widget-src/src/widgets/WaistToHeight.test.tsx",
+      "durationMs": 29895,
+      "tests": [{ "name": "WaistToHeight > renders", "durationMs": 900, "timeoutMs": 60000 }]
+    },
+    {
+      "file": "tools/codex-review.test.ts",
+      "durationMs": 54747,
+      "tests": [{ "name": "codex-review > a long run", "durationMs": 12000, "timeoutMs": 60000 }]
+    },
+    {
+      "file": "packages/health-core/src/upload-view.property.test.ts",
+      "durationMs": 45689,
+      "tests": [{ "name": "upload view > any rows, any order", "durationMs": 45600, "timeoutMs": 60000 }]
+    },
+    {
+      "file": "packages/health-core/src/record-edits.test.ts",
+      "durationMs": 69,
+      "tests": [
+        { "name": "edits > a quick one", "durationMs": 2, "timeoutMs": 60000 },
+        { "name": "edits, a tight one: 100%\nnext", "durationMs": 3000, "timeoutMs": 5000 },
+        { "name": "edits > no timeout", "durationMs": 9000, "timeoutMs": 0 }
+      ]
+    }
+  ]
+}

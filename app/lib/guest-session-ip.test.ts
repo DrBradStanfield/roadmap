@@ -93,6 +93,39 @@ describe('guest session IP hashing (US-15 AC7)', () => {
     expect(audit?.row.metadata).toBeNull();
   });
 
+  // US-15 AC67: the per-IP limit holds on the shared bounded limiter.
+  it('creates 10 sessions per address per hour, refuses the 11th, and serves another address', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      const ip = '192.0.2.10';
+      for (let i = 0; i < 10; i++) await getOrCreateGuestSession(ip);
+      await expect(getOrCreateGuestSession(ip)).rejects.toThrow('Too many requests');
+      await expect(getOrCreateGuestSession('192.0.2.11')).resolves.toMatchObject({ sessionId: 'guest-uuid' });
+      vi.setSystemTime(Date.now() + 60 * 60_000 - 1);
+      await expect(getOrCreateGuestSession(ip)).rejects.toThrow('Too many requests'); // a refusal does not stretch the hour
+      vi.setSystemTime(Date.now() + 1);
+      await expect(getOrCreateGuestSession(ip)).resolves.toMatchObject({ sessionId: 'guest-uuid' });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('keeps an address at its limit until 50,000 other addresses are live in the hour', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      const ip = '192.0.2.20';
+      for (let i = 0; i < 10; i++) await getOrCreateGuestSession(ip);
+      // The map already holds the earlier cases' addresses, so fewer than 50,000 new ones fill it.
+      for (let i = 0; i < 49_990; i++) await getOrCreateGuestSession(`10.${i >> 16}.${(i >> 8) & 255}.${i & 255}`);
+      await expect(getOrCreateGuestSession(ip)).rejects.toThrow('Too many requests'); // still held
+      for (let i = 0; i < 20; i++) await getOrCreateGuestSession(`10.200.0.${i}`);
+      // Only now, with 50,000 newer live addresses, has the oldest entry made room.
+      await expect(getOrCreateGuestSession(ip)).resolves.toMatchObject({ sessionId: 'guest-uuid' });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('matches a returning guest against the stored hash, not the raw IP', async () => {
     db.session = { id: 'guest-uuid', session_token: 'tok', ip_address: hashClientIp(IP) };
     const result = await getOrCreateGuestSession(IP, 'tok');

@@ -93,6 +93,49 @@ export function readPrintedLimit(text: string): { comparator: Comparator; rest: 
   return m && m[2].trim() ? { comparator: PRINTED[m[1]], rest: m[2] } : null;
 }
 
+/**
+ * A result printed before the lab's target on one line ("3.1 < 4.0", spaced or
+ * not): the result's text, so the target is never read as the result (US-12
+ * AC20b, Brad 2026-11-23). Else null. The symbol splits the two numbers either
+ * way; the first takes no exponent and the second no sign, so "1e3 < 4.0" and
+ * "3.1 < -4.0" stay unreadable.
+ */
+export function resultBeforeLimit(text: string): string | null {
+  return /^\s*([+-]?\d[\d.,]*)\s*[<>≤≥]\s*\d[\d.,]*\s*$/.exec(text)?.[1] ?? null;
+}
+
+/**
+ * A model row as the schema reads it: a value printed as a limit ("> 60",
+ * "<5") becomes its number and its code (US-12 AC20); any `comparator` the
+ * model sent itself is dropped, so only the printed symbol sets one. A result
+ * printed before its target ("3.1 < 4.0") becomes the result (AC20b).
+ */
+export function withPrintedLimit(row: unknown): unknown {
+  if (row === null || typeof row !== 'object' || Array.isArray(row)) return row;
+  const { comparator: _sent, ...rest } = row as Record<string, unknown>;
+  const text = typeof rest.value === 'string' ? rest.value : '';
+  const limit = readPrintedLimit(text);
+  return limit ? { ...rest, value: limit.rest, comparator: limit.comparator } : { ...rest, value: resultBeforeLimit(text) ?? rest.value };
+}
+
+/** A value `withPrintedLimit` took from before a target is at most medium confidence: the reader
+ *  mixed two numbers, so the review offers it for checking (US-12 AC20b). `read`: the row as parsed. */
+export function recoveredConfidence(raw: unknown, read: unknown): { confidence?: 'medium' | 'low' } {
+  const value = (raw as { value?: unknown } | null)?.value;
+  const low = (read as { confidence?: unknown } | null)?.confidence === 'low';
+  return typeof value === 'string' && resultBeforeLimit(value) !== null ? { confidence: low ? 'low' : 'medium' } : {};
+}
+
+/**
+ * A limit equal to its own row's printed bound on the same side ("< 0.9"
+ * beside a range "< 0.9") may be that target read as the result: low
+ * confidence, so the review asks the person to check it (US-12 AC20b).
+ */
+export function limitAtItsBound(row: { value: number; comparator?: Comparator; referenceLow?: number | null; referenceHigh?: number | null }): { confidence?: 'low' } {
+  const bound = row.comparator === '<' || row.comparator === '<=' ? row.referenceHigh : row.comparator ? row.referenceLow : undefined;
+  return typeof bound === 'number' && bound === row.value ? { confidence: 'low' } : {};
+}
+
 /** The inputs a lab limit can land in: the graded blood tests and the lab's printed eGFR. */
 export type LimitField = 'hba1c' | 'ldlC' | 'totalCholesterol' | 'hdlC' | 'triglycerides' | 'apoB' | 'creatinine'
   | 'psa' | 'lpa' | 'systolicBp' | 'diastolicBp' | 'labEgfr';

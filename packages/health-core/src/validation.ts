@@ -539,18 +539,6 @@ export const labImportRequestSchema = z.object({
 
 export type LabImportRequest = z.infer<typeof labImportRequestSchema>;
 
-/** Batch import — multiple files in a single request */
-export const batchImportRequestSchema = z.object({
-  batch: z.literal(true),
-  files: z.array(z.object({
-    pages: z.array(labImportPageSchema).min(1).max(100),
-  })).min(1).max(IMPORT_LIMITS.websiteFiles),
-  /** As on a single file (US-12 AC12, AC14, AC15). */
-  ownDates: z.literal(true).optional(),
-  undatedPrev: z.literal(true).optional(),
-  refusedRows: z.literal(true).optional(),
-});
-
 /** Bulk measurement save — array variant of measurementSchema */
 export const bulkMeasurementSchema = z.object({
   bulkMeasurements: z.array(measurementSchema).min(1).max(50),

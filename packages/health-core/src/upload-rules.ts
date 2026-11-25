@@ -1,8 +1,8 @@
 /**
  * The upload's limits and its verdict on each file (US-12, US-52 AC7): one home for
  * both clients. The web imports these; the iPhone app asks them through the optional
- * engine door `uploadVerdictsJson` (ios/engine/entry.ts), keeping its Swift copy for
- * an older engine. Today's values and rules per platform, where the two still differ
+ * engine door `uploadVerdictsJson` (ios/engine/entry.ts) and keeps nothing without an
+ * answer (UploadRules.swift `Rules.none`, lead U14). Today's values and rules per platform, where the two still differ
  * (survey D8, D9, D10: later decisions; pinned in __fixtures__/upload-decisions.json).
  * The shared numbers come from IMPORT_LIMITS, which the connector's hints name.
  */
@@ -12,35 +12,62 @@ import { isImportableEntryName } from './lab-extraction';
 const MB = 1024 * 1024;
 
 export type UploadPlatform = 'web' | 'phone';
+/** Who reads a file: our server, or the web's GitHub Pages build's own Anthropic key (US-12 AC9). Absent: the server. */
+export const UPLOAD_READERS = ['server', 'ownKey'] as const;
+export type UploadReader = (typeof UPLOAD_READERS)[number];
+
+/** Files read by the server at once, turned into pages at once, and ZIPs opened at once, on both clients (upload-flow.ts, US-12 AC26). */
+const IN_FLIGHT = { sendsInFlight: 5, convertsInFlight: 3, listsInFlight: 2 } as const;
+
+/** The caps both clients share, in this key order on each. */
+const SHARED = {
+  fileBytes: IMPORT_LIMITS.websiteFileMb * MB,
+  /** One ZIP cap on both clients (owner ruling Q7, US-12 AC29). */
+  zipBytes: IMPORT_LIMITS.zipMb * MB,
+  filesPerPick: IMPORT_LIMITS.websiteFiles,
+  zipMembers: IMPORT_LIMITS.websiteFiles,
+  pdfPages: IMPORT_LIMITS.websitePdfPages,
+  textPageChars: IMPORT_LIMITS.websiteTextPageChars,
+} as const;
 
 export const UPLOAD_LIMITS = {
   web: {
-    fileBytes: IMPORT_LIMITS.websiteFileMb * MB,
-    /** D8: the web reads a ZIP under the file cap. */
-    zipBytes: IMPORT_LIMITS.websiteFileMb * MB,
-    filesPerPick: IMPORT_LIMITS.websiteFiles,
-    zipMembers: IMPORT_LIMITS.websiteFiles,
-    pdfPages: IMPORT_LIMITS.websitePdfPages,
-    textPageChars: IMPORT_LIMITS.websiteTextPageChars,
-    /** From this many files, one server batch instead of a file at a time. */
-    batchFrom: 20,
+    ...SHARED,
     /** D10: a picked photo's long side as sent. */
     photoPx: 1200,
+    ...IN_FLIGHT,
   },
   phone: {
-    fileBytes: IMPORT_LIMITS.websiteFileMb * MB,
-    /** D8: the phone reads a ZIP up to the connector's ZIP cap. */
-    zipBytes: IMPORT_LIMITS.zipMb * MB,
-    filesPerPick: IMPORT_LIMITS.websiteFiles,
-    zipMembers: IMPORT_LIMITS.websiteFiles,
-    pdfPages: IMPORT_LIMITS.websitePdfPages,
-    textPageChars: IMPORT_LIMITS.websiteTextPageChars,
+    ...SHARED,
     /** The most a ZIP's members, or a folder's reports, may hold in all. */
     folderBytes: 200 * MB,
     /** D10: a picture or a scanned page's long side as sent. */
     photoPx: 2000,
+    ...IN_FLIGHT,
   },
 } as const;
+
+/**
+ * What a lab read asks the server for (US-12 AC12, AC14, AC15), as each client sends it today.
+ * `ownDates`: file a value on its own printed day. `undatedPrev`: send a previous column with no
+ * full day and ask its day (the web's matrix asks it; widget-src upload-api.ts). `refusedRows`:
+ * list refused rows under "Not saved". The phone sends no `undatedPrev`, so the server leaves
+ * those values out (ios LabUploadClient.swift): a known platform difference, to unify later.
+ */
+export interface RequestFlags { ownDates: boolean; undatedPrev: boolean; refusedRows: boolean }
+export function requestFlags(platform: UploadPlatform): RequestFlags {
+  return { ownDates: true, undatedPrev: platform === 'web', refusedRows: true };
+}
+
+/**
+ * What each platform's review does with the person's choices (owner ruling 2026-11-21, web list PR 1b): `previewEdits`, a
+ * value not sent is previewed with its edit (`ImportFile.options`). The web's list edits any row; the phone's page has no
+ * value-edit control, so its preview stays on the number read (KNOWN phoneEditPreview: when it gets one, this turns on).
+ */
+export interface ReviewFlags { previewEdits: boolean }
+export function reviewFlags(platform: UploadPlatform): ReviewFlags {
+  return { previewEdits: platform === 'web' };
+}
 
 /** keep: read it. tooLarge: over its cap. unsupported: no reader for its kind. hidden: archive junk or a dotfile. */
 export type FileVerdict = 'keep' | 'tooLarge' | 'unsupported' | 'hidden';

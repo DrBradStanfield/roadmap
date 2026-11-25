@@ -92,7 +92,7 @@ struct MyDataView: View {
             .sheet(isPresented: $showSync) { SyncView(sync: sync) }
             // Here, not on the header's "+": a sheet declared in a section header took
             // its grey text, large font and icon-only labels (seen 2026-10-22).
-            .sheet(isPresented: $addingLabs) { LabUploadSheet(engine: engine, store: store) }.labSaveAllDemo($addingLabs)
+            .sheet(isPresented: $addingLabs) { LabUploadSheet(engine: engine, store: store) }
             .sheet(isPresented: $addingTest, onDismiss: {
                 if let pickedTest { entry = Self.entry(for: pickedTest, now: store.screen, data: store.myData) }
                 pickedTest = nil
@@ -179,7 +179,7 @@ struct MyDataView: View {
                 })
             }
             if !page[.skin].isEmpty { topicSection(.skin, page) }
-            topicSection(.bloodTests, page, controls: { recordButtons }, rows: { bloodTestRows(page) })
+            topicSection(.bloodTests, page, rows: { bloodTestRows(page) })
             topicSection(.supplements, page, footer: page.ownershipLine, after: {
                 SupplementsSection(store: store, supplements: data.supplements, saved: saved)
             })

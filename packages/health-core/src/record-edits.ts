@@ -32,9 +32,10 @@
  */
 import {
   canonicalLabRow, canonicalLabValue, correctionOffScale, type CountFault, displayLabUnit, foldName, labCountFault, type LabCatalogEntry, LAB_PLAUSIBLE_RANGES, labPlausibleBound,
-  labSlotKey, looseFold, labUnitRefusal, normalizeLabUnit, resolveLabCatalogEntry, type StoredLabRow,
+  labNameForUnit, labSlotKey, looseFold, labUnitRefusal, normalizeLabUnit, resolveLabCatalogEntry, type StoredLabRow,
 } from './lab-catalog';
 import { bloodTestKeyOf, coreStored, createCoreRow, isActive, isBloodTestKey, isCoreRow, labRowSlot } from './blood-tests';
+import { bulkRowTarget, outcomeLog, type BulkRowOutcome } from './bulk-row-target';
 import { METRIC_TO_FIELD } from './mappings';
 import { resolveCoreMetricName } from './lab-extraction';
 import { dayOf, latestStamp, localDay, rootIdOf } from './merge';
@@ -42,7 +43,7 @@ import { isCalendarDay, isClinicalDay } from './measurement-history';
 import { CORE_BLOOD_UNITS, createLabValue, createMeasurement, recordSchemaVersion, type FileLabValue, type FileMeasurement, type RoadmapFile } from './roadmap-file';
 import { canonicalToReported, reportedToCanonical, UNIT_DEFS, type MetricType } from './units';
 import { comparatorOf, type Comparator } from './lab-limits';
-import { formatLabValue, labNumberText, labUnitRefusalLine, savedLabText } from './lab-series';
+import { formatLabValue, LAB_DAY_REFUSAL, labNumberText, labUnitRefusalLine, savedLabText } from './lab-series';
 import { withEffectiveComparator } from './readable-rows';
 import { healthInputSchema, type MeasurementSource, METRIC_TYPES, PRESSURE_ORDER, pressureInverted } from './validation';
 import type { MEASUREMENT_REFUSAL_REASONS } from './product-events';
@@ -389,7 +390,7 @@ export type LabQuantity = { name: string; value: number; unit: string; comparato
  */
 export function sameLabQuantity(held: LabQuantity, offered: LabQuantity): boolean {
   const canonical = (q: LabQuantity) => {
-    const entry = resolveLabCatalogEntry(q.name);
+    const entry = resolveLabCatalogEntry(labNameForUnit(q.name, q.unit)); // a count's name in % is its share (US-21 AC28)
     return entry ? canonicalLabValue(entry, q.value, q.unit) : { value: q.value, unit: normalizeLabUnit(q.unit) };
   };
   const a = canonical(held);
@@ -456,8 +457,8 @@ export function placeMeasurement(
  */
 export function appendLabValue(file: RoadmapFile, request: AppendLabValueRequest): EditResult<FileLabValue> {
   const { value, now } = request;
-  // Resolved once: the entry decides both the slot key and the conversion.
-  const entry = resolveLabCatalogEntry(request.metricName);
+  // Resolved once: the entry decides both the slot key and the conversion (a count's name in % is its share's, US-21 AC28).
+  const entry = resolveLabCatalogEntry(labNameForUnit(request.metricName, request.unit));
   const metricName = entry?.key ?? foldName(request.metricName);
   if (!metricName) return reject('invalid-value', 'A lab value needs a test name');
   const bloodTest = bloodTestKeyOf(request.metricName);
@@ -536,11 +537,11 @@ function labPlausibleFault(entry: LabCatalogEntry, typed: number, unit: string):
  * (`correctValue`, in the held row's unit) would correct. Never negative, never after today.
  */
 export function addLabValue(file: RoadmapFile, request: AddLabValueRequest, now: string): AddLabValueResult {
-  const name = request.metricName.trim();
   const given = request.unit.trim();
+  const name = labNameForUnit(request.metricName.trim(), given);
   if (!name) return { ok: false, reason: 'invalid-value', message: 'A lab value needs a test name.' };
-  // The flag is a series' own page: it never starts a series, so never a new vital-named or unit-less one.
-  const series = labSlotKey(name);
+  // The flag is a series' own page: never a new vital-named or unit-less series, but a count page whose old rows are in % adds under the share (US-21 AC28).
+  const series = labSlotKey(request.metricName.trim());
   if (request.existingSeries && !file.labValues.some((row) => isActive(row) && !isCoreRow(row) && labSlotKey(row.metricName) === series)) {
     return { ok: false, reason: 'not-found', message: 'There is no such lab test in your record.' };
   }
@@ -552,7 +553,7 @@ export function addLabValue(file: RoadmapFile, request: AddLabValueRequest, now:
   if (vital) return { ok: false, reason: 'core-metric', message: `"${name}" is not a lab test: add it from its own row.` };
   if (!Number.isFinite(request.value) || request.value < 0) return { ok: false, reason: 'invalid-value', message: 'A lab value is a number, 0 or more.' };
   const day = resolveRecordedAt(request.day, { now });
-  if (typeof day !== 'string') return { ok: false, reason: 'invalid-date', message: 'A lab value is for a real day, today or before.' };
+  if (typeof day !== 'string') return { ok: false, reason: 'invalid-date', message: LAB_DAY_REFUSAL };
   const entry = resolveLabCatalogEntry(name);
   if (!given && !entry && !bloodTestKeyOf(name) && !request.existingSeries) return { ok: false, reason: 'invalid-value', message: NEEDS_UNIT };
   // Checked here in the unit typed, which the write below may already have converted from (US-21 AC26).
@@ -904,6 +905,7 @@ export interface BulkAppendResult {
   refused: LabUnitRefusal[];
   /** Invalid core rows, distinct from occupied slots and lab-unit refusals. */
   measurementRefusals: MeasurementRefusal[];
+  outcomes: BulkRowOutcome[]; // each submitted row's outcome, by its index (US-13 AC13)
 }
 
 /**
@@ -931,26 +933,23 @@ export function bulkAppendValues(file: RoadmapFile, rows: BulkRow[], now: string
   const refused: BulkAppendResult['refused'] = [];
   const measurementRefusals: MeasurementRefusal[] = [];
   const inverted = invertedPressureDays(file, rows);
+  const { outcomes, settle } = outcomeLog(() => ({ saved: saved.length, skipped: skippedDuplicates }));
 
   for (const [index, input] of rows.entries()) {
     // A lab row is CONVERTED before its slot is touched: a refused row must
     // not flip the active row it was going to replace.
     let makeRow: (recordedAt: string, correctsId: string | null) => FileMeasurement | FileLabValue;
-    // Brad D5 (US-66 AC6): an extra value named like a core test is that core
-    // value, converted. An imported creatinine never, since it may be urine
-    // (US-12 AC11); one the person typed is their blood value.
-    const named = input.kind === 'lab' ? bloodTestKeyOf(input.metricName) : null;
-    const asLab = input.kind === 'lab' && (!named || (named === 'creatinine' && input.source !== 'manual'));
-    const metric = input.kind === 'measurement' ? input.metricType : asLab ? input.metricName : named!;
+    if (index > 0) settle();
+    const { named, asLab, metric, slot: slotKind } = bulkRowTarget(input); // Brad D5 (US-66 AC6)
     if (input.kind === 'lab' && asLab) {
-      const entry = resolveLabCatalogEntry(input.metricName);
+      const entry = resolveLabCatalogEntry(metric);
       const stored = toStoredLab(entry, input.value, input.unit, input.referenceLow, input.referenceHigh);
       if ('ok' in stored) {
-        refused.push({ key: entry?.key ?? foldName(input.metricName), unit: input.unit, message: stored.message, ...(stored.fault ? { fault: stored.fault } : null), ...(stored.bound ? { bound: stored.bound } : null) });
+        refused.push({ key: entry?.key ?? foldName(metric), unit: input.unit, message: stored.message, ...(stored.fault ? { fault: stored.fault } : null), ...(stored.bound ? { bound: stored.bound } : null) });
         continue;
       }
       makeRow = (recordedAt, correctsId) => createLabValue({
-        id: newId(), metricName: input.metricName, ...stored,
+        id: newId(), metricName: metric, ...stored,
         recordedAt, createdAt: now, source: input.source, correctsId, ...comparatorOf(input),
       });
     } else {
@@ -979,7 +978,7 @@ export function bulkAppendValues(file: RoadmapFile, rows: BulkRow[], now: string
         ? createCoreRow({ id: newId(), metric, value, ...(core ? { referenceLow: core.referenceLow, referenceHigh: core.referenceHigh } : null), recordedAt, createdAt: now, source: input.source, correctsId, ...comparatorOf(input) })
         : createMeasurement({ id: newId(), metricType: metric, value, recordedAt, createdAt: now, source: input.source, correctsId, ...comparatorOf(input) }));
     }
-    const slot = slotKey(asLab ? 'lab' : 'measurement', metric, input.recordedAt);
+    const slot = slotKey(slotKind, metric, input.recordedAt);
     const inLabs = asLab || isBloodTestKey(metric);
     const list: Array<FileMeasurement | FileLabValue> = inLabs ? labValues : measurements;
     if (input.correctsId) {
@@ -998,8 +997,9 @@ export function bulkAppendValues(file: RoadmapFile, rows: BulkRow[], now: string
     list.push(row);
     saved.push(row);
   }
+  if (rows.length) settle();
   const next = saved.length ? stampUpdatedAt({ ...file, measurements, labValues }, now) : file;
-  return { file: next, saved, skippedDuplicates, refused, measurementRefusals };
+  return { file: next, saved, skippedDuplicates, refused, measurementRefusals, outcomes };
 }
 
 /**

@@ -15,6 +15,8 @@ export const PRODUCT_EVENT_NAMES = [
   // US-12 AC10: one per upload run, how many files ended each way. Metadata is
   // the UPLOAD_OUTCOME_KEYS counts below and nothing else: never a file name.
   'upload_outcome',
+  // US-13 AC13: one per import review end, UPLOAD_REVIEW_KEYS counts only.
+  'upload_review',
   'cloud_connect_started',
   'cloud_connect_success',
   'cloud_connect_refused',
@@ -37,6 +39,10 @@ export const PRODUCT_EVENT_NAMES = [
   // were invisible until the first real one (2026-08-28) surfaced the gap.
   'reminder_sent',
   'chat_opened',
+  // US-15 AC77: the inline chat panel came into view (beside the tool, the
+  // phone's Chat tab, the storefront embed). Its own name, so chat_opened stays
+  // the pop-up's alone and its trend comparable. Name only.
+  'chat_panel_shown',
   // US-15 AC17: the "Show how I approached this" toggle was opened. Name only,
   // fired once per answer (the client throttle then keeps one per tab session).
   'chat_thinking_opened',
@@ -50,8 +56,7 @@ export const PRODUCT_EVENT_NAMES = [
   // only, `local` (another tab of this browser) or `cloud` — never what changed.
   'remote_change_applied',
   // US-21 additional blood tests: phase-1 surfacing + phase-2 manual add.
-  'lab_rows_viewed',
-  'lab_row_added',
+  'lab_rows_viewed', 'lab_row_added',
   // US-21 phase 3: a lab row was refused for its unit, so nothing was written.
   // Metadata is the catalogue KEY and the unit spelling — never the value.
   'lab_unit_refused',
@@ -139,8 +144,7 @@ export const PRODUCT_EVENT_NAMES = [
   'signin_opened',
   // US-62 AC31: the "Your plan is ready." card showed after the onboarding, and
   // its Got it was pressed. The names alone, never what the plan holds.
-  'plan_ready_shown',
-  'plan_ready_dismissed',
+  'plan_ready_shown', 'plan_ready_dismissed',
   // US-65 AC6: the record opened with entries this build could not read, so
   // the page showed the kept-unchanged line. Metadata `{ count }` only, capped
   // at 1000: never a row, a field name or a value. Once per tab session.
@@ -152,7 +156,9 @@ export const PRODUCT_EVENT_NAMES = [
   // US-07 AC11: a waist or blood pressure was saved, the plan's two prompts.
   // Metadata `{ measure }` (MEASURES) only: never the value or another metric.
   'measurement_added',
+  'waist_widget_viewed', 'waist_widget_saved', 'bp_widget_viewed', 'bp_widget_saved', // US-74, US-75: a widget block mounted / saved; the names alone, never a value, grade or unit
   'save_retry', // US-09 AC30: a retry of a failed cloud save; metadata { trigger, outcome } (save-retry-words.ts) only
+  'upload_labs_opened', // US-73 AC14: an "Upload labs" heading button pressed; metadata { placement } (UPLOAD_LABS_PLACEMENTS) only
 ] as const;
 
 /** The `measurement_added` counter's words (US-07 AC11): which prompted measure was saved. */
@@ -209,7 +215,7 @@ export const SERVER_ONLY_EVENT_NAMES = [
  * a distinct user action whose count is the signal (US-12 AC10, one per upload
  * run). The events route's per-visitor and per-IP limits still bound them.
  */
-export const PER_ACTION_EVENT_NAMES = ['upload_outcome', 'save_retry'] as const satisfies readonly ProductEventName[];
+export const PER_ACTION_EVENT_NAMES = ['upload_outcome', 'upload_review', 'save_retry', 'waist_widget_viewed', 'waist_widget_saved', 'bp_widget_viewed', 'bp_widget_saved'] as const satisfies readonly ProductEventName[]; // US-74: once per page view, which the widget itself ensures
 
 /**
  * The hosted connector's tool names, as a counter may name them. They live in
@@ -246,24 +252,7 @@ export const SIGNIN_PLACEMENTS = ['top_bar', 'plan_panel'] as const;
 export const TOOL_DEVICES = ['phone', 'desktop'] as const;
 /** The `onboarding_step` counter's step names (US-62 AC1): which question, never its answer. */
 export const ONBOARDING_STEPS = ['measurements', 'sex', 'birth'] as const;
-/** The `upload_outcome` counter's integer counts (US-12 AC10): files seen, then
- *  how each ended. `truncated` overlaps the rest and `valuesDropped` counts value
- *  rows the parse refused, not files; the others sum to `picked`. `refused` and
- *  `tooLong` are files Claude declined or stopped short on (US-15 AC34). `docx`
- *  counts the picked .docx files, a kind that overlaps the rest; `picturesOnly`
- *  is a .docx of pictures and no text (US-12 AC13). `undatedPrevious` counts
- *  value rows read from an undated previous column, not files (AC14).
- *  `unitsGuessed` counts values whose unit was guessed (AC16) and `unitsRefused`
- *  creatinine rows refused rather than guessed (AC15): values, not files.
- *  `valuesLimit` counts the values printed as a limit, such as "> 60": since
- *  US-12 AC20 they are saved, so no longer part of `valuesDropped` (AC19 counted
- *  them there). `valuesLimitUngraded` is how many of them the grading rule
- *  leaves undecided. Counts only; the tests behind that count ride in their own
- *  closed list, `limitUngradedTests` (AC20). `cancelled`: 1 for a run Cancel stopped mid-read. */
-export const UPLOAD_OUTCOME_KEYS = ['picked', 'withValues', 'documentOnly', 'noValues', 'openFailed', 'tooLarge', 'truncated', 'serverError', 'limitError', 'refused', 'tooLong', 'valuesDropped', 'docx', 'picturesOnly', 'undatedPrevious', 'unitsGuessed', 'unitsRefused', 'valuesLimit', 'valuesLimitUngraded', 'cancelled'] as const;
-export type UploadOutcomeKey = (typeof UPLOAD_OUTCOME_KEYS)[number];
-/** The most one count may say; the server refuses more, so the client clamps. */
-export const UPLOAD_OUTCOME_MAX = 1000;
+export { UPLOAD_LABS_PLACEMENTS, UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, UPLOAD_REVIEW_KEYS, UPLOAD_REVIEW_FLAGS, type UploadOutcomeKey, type UploadReviewKey } from './upload-events';
 /** The `remote_change_applied` counter's tiers (US-34): another tab, or a cloud. */
 export const REMOTE_CHANGE_BACKENDS = ['local', 'cloud'] as const;
 /** `nudge`: a read found folder files not in the record and said so (US-37). */
@@ -317,104 +306,8 @@ export const MCP_REFUSAL_REASONS = [
 
 export type McpRefusalReason = (typeof MCP_REFUSAL_REASONS)[number];
 
-/**
- * Why an OAuth connection ended where it did (US-32 AC34). Closed for the same
- * reason the list above is: the words a refusal knows are a `redirect_uri`, a
- * `client_id` and a `state`, and every one of them is caller-chosen text. Only
- * the NAME of the check that failed reaches a row.
- *
- * The first six are `checkAuthorize`'s own branches, which it now returns
- * rather than the route re-deriving them from an English description.
- */
-export const MCP_OAUTH_REASONS = [
-  /** The redirect the client asked for is not one it published, or not allow-listed. */
-  'redirect-uri',
-  /** Anything but `response_type=code`. */
-  'response-type',
-  /** PKCE missing or not S256. */
-  'pkce',
-  /** A `code_challenge` that is not 43–128 unreserved characters. */
-  'code-challenge',
-  /** A `state` longer than the cookie budget, which we bound rather than truncate. */
-  'state-too-long',
-  /** RFC 8707 `resource` naming a server that is not us. */
-  'resource',
-  /** No client document we would accept — the refusal OpenAI's reviewer met. */
-  'unknown-client',
-  /** The per-IP authorize brake. */
-  'rate-limited',
-  /** No storage provider is configured on this deployment. */
-  'no-provider',
-  /** The sealed state was dead, expired or absent when the user pressed Connect. */
-  'state-expired',
-  /** The provider the sealed state names is not offered any more. */
-  'provider-unavailable',
-  /** The callback arrived without the `__Host-mcp-state` cookie. */
-  'no-cookie',
-  /** The provider echoed a `state` that is not the nonce we minted. */
-  'nonce-mismatch',
-  /** The user said no at the provider, or it sent back no code. */
-  'provider-denied',
-  /** The provider would not trade its code for a refresh token. */
-  'exchange-failed',
-  // `/token` answers `invalid_grant` on every dead grant, deliberately: a
-  // specific error tells an attacker which check they failed. The COUNTER may
-  // say, because nobody outside reads it — these are the words for the last
-  // door, where a connection that got a code still never becomes a token.
-  // One word for both malformed bodies on purpose: neither has a grant to name,
-  // and the pair below shares `token-client` the same way, across both grants.
-  /** The body was not form-encoded, or was over the 64 KB cap. */
-  'token-bad-request',
-  /** Neither `authorization_code` nor `refresh_token`. */
-  'token-grant-type',
-  /** The authorization code was dead, expired or tampered with. */
-  'token-dead-code',
-  /** A grant redeemed by a client that is not the one it was minted for. */
-  'token-client',
-  /** The `redirect_uri` does not match the one the code was minted with. */
-  'token-redirect',
-  /** The `code_verifier` does not answer the PKCE challenge. */
-  'token-pkce',
-  /** A code redeemed twice — on this machine, which is all stateless can see. */
-  'token-replayed',
-  /** The refresh token was dead, expired or tampered with. */
-  'token-dead-refresh',
-  // US-32 AC38, AC49, the app reviewer sign-in on our own consent page.
-  /** A wrong reviewer username or password. */
-  'reviewer-credentials',
-  /** A reviewer sign-in refused by the failures-only limiter. */
-  'reviewer-rate-limited',
-  /** A reviewer grant whose secrets were unset or rotated since it was minted. */
-  'reviewer-generation',
-] as const;
-
-export type McpOAuthReason = (typeof MCP_OAUTH_REASONS)[number];
-
-/**
- * Which branch of a refusal fired (US-32 AC48): one closed word per reason,
- * named only where the code already knows the branch. Three organic refusals
- * in 2026-10 could not be diagnosed from `reason` alone. Never a URL, host,
- * client id or any other caller-chosen text.
- */
-export const MCP_OAUTH_DETAILS = {
-  /** `resource` names another host, or this host with another path. */
-  resource: ['other-host', 'other-path'],
-  /** No `redirect_uri`; a host none of the client's redirects uses; or a
-   *  known host differing in anything else, loopback when the registered
-   *  redirect on that host is a loopback one. */
-  'redirect-uri': ['missing', 'unknown-host', 'known-host-other-path', 'loopback-other-path'],
-  /** Neither a DCR id nor an https URL; a DCR id that fails its HMAC or
-   *  metadata; a CIMD URL refused before fetching; a fetch that failed; a
-   *  document that is not ours to accept; one whose redirects we refuse. */
-  'unknown-client': ['malformed', 'dcr-invalid', 'cimd-refused-url', 'cimd-fetch-failed', 'cimd-invalid', 'cimd-redirect-refused'],
-  /** Nothing was sent, or what was sent would not unseal (expired or tampered). */
-  'no-cookie': ['missing', 'unseal-failed'],
-  'token-dead-code': ['missing', 'unseal-failed'],
-  'token-dead-refresh': ['missing', 'unseal-failed'],
-} as const satisfies Partial<Record<McpOAuthReason, readonly string[]>>;
-
-export type McpOAuthDetail<R extends keyof typeof MCP_OAUTH_DETAILS = keyof typeof MCP_OAUTH_DETAILS> =
-  (typeof MCP_OAUTH_DETAILS)[R][number];
+import { MCP_OAUTH_REASONS } from './mcp-oauth-events';
+export { MCP_OAUTH_REASONS, MCP_OAUTH_DETAILS, type McpOAuthReason, type McpOAuthDetail } from './mcp-oauth-events';
 
 /**
  * Which events may carry which `reason` words. The two vocabularies share one

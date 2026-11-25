@@ -10,10 +10,9 @@ const mocks = vi.hoisted(() => ({
   getReportEmailCaptured: vi.fn(),
   markReportEmailCaptured: vi.fn(),
   getShownErase: vi.fn(),
-  trackABConversion: vi.fn(),
 }));
 vi.mock('../lib/roadmap-data', () => mocks);
-vi.mock('../lib/server-api', () => ({ trackABConversion: mocks.trackABConversion, trackProductEvent: vi.fn() }));
+vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
 vi.mock('../lib/build-flags', () => ({ SHOPIFY_SURFACE: true }));
 vi.mock('./FeedbackForm', () => ({ FeedbackForm: () => null }));
 import { PlanHost as ResultsPanel } from '../testing/plan-host';

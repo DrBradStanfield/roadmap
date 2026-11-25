@@ -10,7 +10,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('@sentry/react-router', () => ({ captureException: vi.fn(), captureMessage: vi.fn() }));
 vi.mock('../lib/anthropic.server', async (importOriginal) => ({
   ...(await importOriginal<object>()),
-  createBatch: vi.fn(async () => ({ batchId: 'batch_abc' })),
+  extractOrClassify: vi.fn(async () => ({ classification: 'other' })),
 }));
 vi.mock('../lib/local-first-route.server', async (importOriginal) => ({
   ...(await importOriginal<object>()),
@@ -24,11 +24,11 @@ vi.mock('../lib/rate-limiter', async (importOriginal) => {
 import { machineFiles } from '../lib/rate-limiter';
 import { action } from './api.lab-import-v2';
 
-const FILES = [{ fileName: 'a.pdf', pages: [{ type: 'image', content: 'AAAA', mimeType: 'image/png' }] }];
+const PAGES = [{ type: 'image', content: 'AAAA', mimeType: 'image/png' }];
 
 const upload = (ip: string) => action({
   request: new Request('https://health-tool-app.fly.dev/api/lab-import-v2', {
-    method: 'POST', headers: { 'fly-client-ip': ip }, body: JSON.stringify({ batch: true, files: FILES }),
+    method: 'POST', headers: { 'fly-client-ip': ip }, body: JSON.stringify({ pages: PAGES }),
   }),
 } as never);
 

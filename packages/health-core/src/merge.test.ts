@@ -1538,3 +1538,30 @@ describe('US-05 AC2 — profile.lpaUnit merges as an ordinary profile field', ()
     expect(mergeFiles(read, emptyFile(), OPTS).profile.lpaUnit).toBeUndefined();
   });
 });
+
+// Mount 3a (US-29 AC4a, US-07 AC4): a value's day is written as a bare day ("2025-09-02": the shared upload, the iPhone,
+// MCP, the CLI) or as ISO midnight ("2025-09-02T00:00:00.000Z": the web's grid and addLabValue). Both name one slot:
+// merging two copies that hold the same test on that day in the two forms leaves exactly one active row.
+describe('mergeFiles: a bare day and ISO midnight are one slot', () => {
+  const ISO = '2025-09-02T00:00:00.000Z';
+  const DAY = '2025-09-02';
+  const core = (id: string, value: number, recordedAt: string, createdAt: string): FileLabValue =>
+    ({ id, metricName: 'ldl', value, unit: 'mmol/L', referenceLow: null, referenceHigh: null, recordedAt, createdAt, source: 'lab_import', status: 'active', correctsId: null, core: true });
+  const plain = (id: string, value: number, recordedAt: string, createdAt: string): FileLabValue =>
+    ({ id, metricName: 'ferritin', value, unit: 'µg/L', referenceLow: null, referenceHigh: null, recordedAt, createdAt, source: 'lab_import', status: 'active', correctsId: null });
+  it.each([
+    ['a core lab row, same value', core, 2.8, 2.8],
+    ['a core lab row, different values', core, 2.8, 3.1],
+    ['a plain lab row, same value', plain, 90, 90],
+    ['a plain lab row, different values', plain, 90, 70],
+  ] as const)('%s: one active row, whichever copy merges into which', (_case, row, isoValue, dayValue) => {
+    const a = emptyFile();
+    const b = emptyFile();
+    a.labValues = [row('l_iso', isoValue, ISO, '2026-05-01T08:00:00Z')];
+    b.labValues = [row('l_day', dayValue, DAY, '2026-05-01T10:00:00Z')];
+    for (const merged of [mergeFiles(a, b, OPTS), mergeFiles(b, a, OPTS)]) {
+      expect(merged.labValues).toHaveLength(2);
+      expect(merged.labValues.filter((l) => l.status === 'active')).toHaveLength(1);
+    }
+  });
+});

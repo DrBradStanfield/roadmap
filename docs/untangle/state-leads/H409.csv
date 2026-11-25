@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H409,tests,"The US-16 AC1 journey checks for a chat waist or pressure each get a positive control, as US-03 AC6's did",lead,not started,"Filed 2026-11-26 from the day's reviews: widget-src/src/components/HealthTool.journey.test.tsx: ""a chat waist sent before the form opens"", ""(F1) … survive another device's change"", ""(R1) a weight-box save before the form opens"". Build: each check also fails when the value never arrives. (H409)",,no

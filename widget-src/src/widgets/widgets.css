@@ -1,0 +1,152 @@
+/* The single-topic widgets (US-74). Scoped under .hr-widget, phone first: no
+   width wider than the block, so no sideways scroll at 390 px (AC7). The look
+   follows the page's calculator mock (Brad 2026-11-18). No class or style here
+   depends on a result, since a Clarity replay records class and style
+   attributes; the grade's colours are drawn on canvases (WidgetResults.tsx,
+   review P1). The fonts are the theme's. */
+.hr-widget-block {
+  --hrw-green: #0B6B54;
+  --hrw-ink: #141c19;
+  --hrw-mid: #5c6b66;
+  --hrw-line: #e0e7e4;
+  --hrw-field: #d3ddd9;
+  --hrw-tint: #eef5f2;
+  --hrw-error: #b91c1c;
+  box-sizing: border-box;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 16px 16px 0;
+}
+.hr-widget-block *, .hr-widget-block *::before, .hr-widget-block *::after { box-sizing: border-box; }
+.hr-widget-heading { margin: 0 auto 20px; max-width: none; text-align: center; color: var(--hrw-ink); line-height: 1.15; }
+.hr-widget-layout { display: flex; flex-direction: column; gap: 28px; align-items: stretch; }
+.hr-widget-aside { max-width: 560px; margin: 0 auto; width: 100%; color: var(--hrw-ink); overflow-wrap: anywhere; }
+.hr-widget-aside > :first-child { margin-top: 0; }
+.hr-widget-aside > :last-child { margin-bottom: 0; }
+/* Brad 2026-11-18: heading, card and text stacked down the middle at every width. */
+
+/* The card */
+.hr-widget {
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  background: #fff;
+  border: 1px solid var(--hrw-line);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 1px 2px rgba(20, 28, 25, .05), 0 18px 40px -18px rgba(11, 107, 84, .28);
+  font-size: 16px;
+  line-height: 1.4;
+  letter-spacing: 0;
+  color: var(--hrw-ink);
+}
+@media (max-width: 420px) { .hr-widget { padding: 20px 16px; } }
+/* Room for the calculator before its script mounts (Brad 2026-11-18: the page jumped on load). The
+   stylesheet loads in the head, the script later, so the card reserves the calculator's height: empty,
+   or, with a saved height and a saved waist or weight on this device (hr-widget--saved, set by the
+   block's inline script), with its results. Measured in WebKit on the live theme with this bundle
+   swapped in, 2026-11-18: empty 199.2, 210.8, 230.4 px and with results 400.8, 429.2, 499.2 px at
+   1280, 390 and 320 (no next-step link; a link adds its own height). Re-measure if the card changes. */
+.hr-widget-block .hr-widget { min-height: 200px; }
+.hr-widget-block .hr-widget.hr-widget--saved { min-height: 401px; }
+@media (max-width: 420px) {
+  .hr-widget-block .hr-widget { min-height: 211px; }
+  .hr-widget-block .hr-widget.hr-widget--saved { min-height: 430px; }
+}
+@media (max-width: 340px) {
+  .hr-widget-block .hr-widget { min-height: 231px; }
+  .hr-widget-block .hr-widget.hr-widget--saved { min-height: 500px; }
+}
+.hr-widget-form { display: flex; flex-direction: column; gap: 14px; }
+
+/* The boxes are the full app's (components/fields.css, scoped to this block
+   by the bundle), in this card's colours. */
+.hr-widget {
+  --color-brand: var(--hrw-green);
+  --color-brand-text: var(--hrw-green);
+  --color-gray-border: var(--hrw-field);
+  --color-gray-dark: var(--hrw-ink);
+  --color-gray-medium: var(--hrw-mid);
+  --color-error: var(--hrw-error);
+}
+/* Height and the Metric / US switch share the first line (Brad 2026-11-18); the switch sits level with
+   the box, below the label (label 20 px + 6 px gap, box 42 px, switch 38 px). */
+.hr-widget-top { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px; align-items: start; }
+.hr-widget-top > .hr-widget-units { margin-top: 28px; }
+.hr-widget-units { display: inline-flex; padding: 3px; gap: 2px; background: var(--hrw-tint); border-radius: 999px; }
+.hr-widget-unit {
+  min-height: 32px; min-width: 64px; padding: 0 14px; border: 0; border-radius: 999px;
+  background: transparent; color: var(--hrw-mid); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+}
+.hr-widget-unit--active { background: #fff; color: var(--hrw-ink); box-shadow: 0 1px 3px rgba(20, 28, 25, .15); }
+.hr-widget-unit:focus-visible { outline: 2px solid var(--hrw-green); outline-offset: 2px; }
+.hr-widget-form .health-field { margin-bottom: 0; display: flex; flex-direction: column; min-width: 0; }
+.hr-widget-form .health-field label small { font-weight: 400; color: var(--hrw-mid); font-size: 13px; }
+/* Waist and weight side by side; a label that wraps to two lines still leaves both boxes level. */
+.hr-widget-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.hr-widget-row .health-field label { flex: 1 0 auto; display: flex; flex-wrap: wrap; align-items: flex-end; column-gap: 4px; }
+.hr-widget-row .health-field input { flex: none; }
+.hr-widget-day { font-size: 13px; color: var(--hrw-mid); margin-top: 4px; }
+/* A box at fault: by its aria-invalid, never a class, so no class in the block varies with an entry (AC5). */
+.hr-widget .health-field input[aria-invalid='true'] { border-color: var(--color-error); }
+/* The store theme rings every focused element (Dawn base.css *:focus-visible); the switch and the link keep their own outline. The boxes' reset is fields.css's focus rule. */
+.hr-widget-block .hr-widget-unit:focus-visible, .hr-widget-block .hr-widget-next:focus-visible { box-shadow: none; }
+
+/* Results: the markup is the same whatever the grade; colour is drawn on canvases */
+/* The live region stays on the page while empty (WaistToHeight.tsx): take back the form's gap. */
+.hr-widget-results:empty { margin-top: -14px; }
+.hr-widget-results { display: block; }
+.hr-widget-res { border-radius: 14px; background: var(--hrw-tint); padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+.hr-widget-ratio { display: flex; flex-direction: column; gap: 10px; }
+.hr-widget-ratio-top { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; }
+/* Canvases: their size never depends on the result (review P1, Brad 2026-11-18). */
+.hr-widget-pill { display: block; flex: none; width: 92px; height: 30px; }
+.hr-widget-scale { display: block; width: 100%; height: 22px; }
+.hr-widget-sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.hr-widget-k { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--hrw-mid); }
+.hr-widget-v { font-family: var(--font-heading-family, inherit); font-size: 40px; font-weight: 700; line-height: 1.1; color: var(--hrw-ink); }
+.hr-widget-s { font-size: 20px; font-weight: 700; }
+.hr-widget-s .hr-widget-status { font-size: 20px; }
+.hr-widget-bmi-cat { white-space: nowrap; } /* "– Overweight" moves down whole on a narrow phone */
+.hr-widget-status { display: inline-block; font-size: 15px; font-weight: 700; color: var(--hrw-ink); }
+.hr-widget-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.hr-widget-grid > div { min-width: 0; overflow-wrap: anywhere; }
+.hr-widget-next {
+  display: block; text-align: center; padding: 13px 16px; border: 1.5px solid var(--hrw-green); border-radius: 10px;
+  color: var(--hrw-green); font-weight: 700; text-decoration: none; overflow-wrap: anywhere;
+}
+.hr-widget-loading, .hr-widget-failure { font-size: 15px; color: var(--hrw-mid); margin: 0; }
+.hr-widget-failure h3 { margin: 0 0 6px; font-size: 17px; color: var(--hrw-ink); }
+.hr-widget-failure p { margin: 0 0 4px; }
+
+/* US-75 blood pressure: two readings, each a fieldset of two of the app's boxes, then the average, its stage and the plan's card. */
+.hr-widget-reading { border: 0; margin: 0; padding: 0; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.hr-widget-reading legend { display: block; padding: 0; margin: 0 0 8px; font-weight: 700; font-size: 15px; color: var(--hrw-ink); }
+.hr-widget-reading legend small { font-weight: 400; color: var(--hrw-mid); font-size: 13px; }
+/* Label, box and error on shared rows (subgrid): an error under one box never moves the other box, and a
+   label wrapped to two lines still leaves both boxes level. */
+.hr-widget-reading .hr-widget-row { grid-template-rows: auto auto auto; row-gap: 0; }
+.hr-widget-reading .health-field { display: grid; grid-row: span 3; grid-template-rows: subgrid; }
+.hr-widget-reading .health-field label { align-self: end; }
+.hr-widget-bp { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.hr-widget-mmhg { font-size: 20px; font-weight: 700; }
+@media (max-width: 340px) { .hr-widget-bp .hr-widget-v { font-size: 28px; } .hr-widget-bp .hr-widget-mmhg { font-size: 16px; } }
+.hr-widget-bp-pill { width: 200px; max-width: 100%; }
+/* The card's paragraphs are line breaks in one element (no paragraph count in the page). It fits its
+   text (Brad 2026-11-19): the result's height varies by stage, an accepted gap (US-75). */
+.hr-widget-advice { white-space: pre-line; font-size: 15px; line-height: 1.5; overflow-wrap: anywhere; }
+/* Room before the script mounts (AC6), as the waist card's: the empty checker, or, with a saved blood
+   pressure on this device (hr-widget--saved, the block's inline script), the prefilled checker up to its
+   result row, without an advice card (Brad 2026-11-19: a card grows the page below it, accepted). Measured
+   in WebKit on the live theme (microvitamin.com, this bundle swapped in), 2026-11-19: empty 257.2, 249.2,
+   249.2 px and prefilled with a Normal reading 438.2, 430.2, 417.0 px at 1280, 390 and 320. The first edit
+   removes the class (BloodPressure.tsx), so the typed card fits what it holds. */
+.hr-widget-block .hr-widget[data-widget='blood-pressure'] { min-height: 258px; }
+.hr-widget-block .hr-widget[data-widget='blood-pressure'].hr-widget--saved { min-height: 439px; }
+@media (max-width: 420px) {
+  .hr-widget-block .hr-widget[data-widget='blood-pressure'] { min-height: 250px; }
+  .hr-widget-block .hr-widget[data-widget='blood-pressure'].hr-widget--saved { min-height: 431px; }
+}
+@media (max-width: 340px) {
+  .hr-widget-block .hr-widget[data-widget='blood-pressure'].hr-widget--saved { min-height: 417px; }
+}

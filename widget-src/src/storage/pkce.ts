@@ -61,16 +61,28 @@ function takePkce(pkceKey: string): Pkce | null {
   return stored;
 }
 
+/** A sign-in that began before a log-off on this device (US-09 AC45): it ends here, with nothing saved. */
+export class SignInUnfinishedError extends Error {
+  constructor() {
+    super('Sign-in did not finish.');
+    this.name = 'SignInUnfinishedError';
+  }
+}
+export function signInUnfinished(): never {
+  throw new SignInUnfinishedError();
+}
+
 /**
  * Claim the OAuth `?code` on a redirect-return page — but only if THIS flow
  * (identified by its sessionStorage PKCE entry) initiated it. Multiple OAuth
  * backends share one redirect page, so each adapter calls this with its own
  * key and gets null when the return isn't from its flow.
  *
- * Returns null when: no ?code in the URL, no PKCE entry under `pkceKey`, the
+ * Returns null when: no ?code in the URL, no PKCE entry under `pkceKey`, or the
  * state doesn't match (stale/forged — declining to exchange IS the CSRF
- * defense; the entry is cleared so it can't go stale-positive later), or the
- * device has logged off since the sign-in began (US-09 AC45). The
+ * defense; the entry is cleared so it can't go stale-positive later). Throws
+ * SignInUnfinishedError when the device has logged off since the sign-in began
+ * (US-09 AC45): nothing is exchanged, and the page says so (lead C29). The
  * entry is consumed either way; on success the caller exchanges the code and
  * then strips ?code/&state from the URL itself. `scope` is the space-delimited
  * list of scopes the user actually approved, when the provider appends it
@@ -87,7 +99,7 @@ export function claimRedirectCode(pkceKey: string): { code: string; verifier: st
   const gen = stored.gen ?? null;
   if (gen !== logOffId()) { // a log-off since it began
     stripParams(params, ['code', 'state', 'scope']);
-    return null;
+    signInUnfinished();
   }
   return { code, verifier: stored.verifier, scope: params.get('scope') ?? undefined, gen };
 }

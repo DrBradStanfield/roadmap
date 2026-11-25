@@ -4,7 +4,8 @@
 // HealthTool mirror writer checked the latch: the profile save and the mirror
 // helpers the other save paths use (HealthTool.tsx:197, :319, :364) did not.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { LPA_CHECK_KEPT_KEY, MIRROR_KEY, noteCloudPage, patchMirror, saveToLocalStorage } from './storage';
+import { LPA_CHECK_KEPT_KEY, MIRROR_KEY, noteCloudPage, saveToLocalStorage } from './storage';
+import { writeMirror } from './chat-mirror';
 import { keepLpaAsIs } from './lpa-unit';
 import { listenForOtherTabsLogOff, roadmapLocalWritesStopped } from '../storage/local-storage-adapter';
 
@@ -32,7 +33,7 @@ describe('US-09 AC2e: the device mirror after another tab logs off', () => {
     noteCloudPage('memory');
     // Negative control: before any log-off the mirror is written (passes today and after the fix).
     expect(roadmapLocalWritesStopped()).toBe(false);
-    patchMirror({ medications: [med] });
+    writeMirror({ medications: [med] });
     expect(localStorage.getItem(MIRROR_KEY)).not.toBeNull();
 
     // Another tab logs off: its content-free signal reaches this tab, and its wipe clears the mirror.
@@ -41,7 +42,7 @@ describe('US-09 AC2e: the device mirror after another tab logs off', () => {
     expect(roadmapLocalWritesStopped()).toBe(true);
 
     // mirrorSavedLists / the lab eGFR patch (HealthTool.tsx:197, :319).
-    patchMirror({ medications: [med] });
+    writeMirror({ medications: [med] });
     expect(localStorage.getItem(MIRROR_KEY)).toBeNull();
     // reloadValues after any save or correction (HealthTool.tsx:364).
     saveToLocalStorage({ heightCm: 175, sex: 'female' } as never, [], [med], []);

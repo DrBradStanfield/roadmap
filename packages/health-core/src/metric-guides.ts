@@ -45,7 +45,7 @@ const WORKS = 'How it works and side effects';
 const READ = 'How to read it';
 const NO_FASTING = 'Most labs no longer require fasting for a cholesterol panel.';
 const FAST_REPEAT = 'If your triglycerides come back high, your doctor may repeat the test after a fast.';
-const TALK = 'If you notice side effects, talk to your doctor.';
+const TALK = 'Whether it suits you is worth discussing with your doctor, as is any side effect you notice.';
 
 export const METRIC_GUIDES: Record<string, MetricGuide> = {
   // ── Vitals ──────────────────────────────────────────────────
@@ -190,11 +190,11 @@ export const METRIC_GUIDES: Record<string, MetricGuide> = {
   statin: {
     title: 'Statins',
     whatItIs: 'Daily tablets that lower LDL cholesterol and ApoB. The app lists atorvastatin, rosuvastatin, pravastatin, simvastatin and pitavastatin.',
-    whyItMatters: 'Large trials show statins reduce heart attacks, strokes and deaths from heart disease. Guidelines name them the first medicine to try when cholesterol stays above target.',
+    whyItMatters: 'Large trials show statins reduce heart attacks, strokes and deaths from heart disease. Guidelines name them the first medicine to consider when cholesterol stays above target.',
     howTo: { heading: WORKS, points: [
       'Statins slow cholesterol production in the liver, which then pulls more LDL out of the blood.',
       'Strength depends on both the drug and the dose.',
-      'Muscle aches are the side effect people report most. A lower dose or a different statin often helps.',
+      'Muscle aches are the side effect people report most. Your doctor may suggest a lower dose or a different statin, which often helps.',
       'Statins can raise blood sugar slightly, and some doctors check liver tests.',
       TALK,
     ] },
@@ -215,11 +215,11 @@ export const METRIC_GUIDES: Record<string, MetricGuide> = {
   bempedoic_acid: {
     title: 'Bempedoic acid',
     whatItIs: 'A daily 180 mg tablet (Nexletol) that lowers LDL cholesterol. It also comes combined with ezetimibe (Nexlizet).',
-    whyItMatters: 'In the CLEAR Outcomes trial, people who could not take statins had 13% fewer major heart and blood vessel events on bempedoic acid. It can be taken with a statin, but this plan suggests it only to people who cannot take a statin.',
+    whyItMatters: 'In the CLEAR Outcomes trial, people who could not take statins had 13% fewer major heart and blood vessel events on bempedoic acid. It can be taken with a statin, but this plan suggests discussing it only when a statin cannot be taken.',
     howTo: { heading: WORKS, points: [
       'It lowers the cholesterol your liver makes, working at a different step from statins.',
       'It is activated in the liver but not in muscle, which may explain why muscle aches seem less common than with statins.',
-      'It can raise uric acid, so mention it if you have had gout.',
+      'It can raise uric acid, so tell your doctor if you have had gout.',
       TALK,
     ] },
     sources: [ref('Nissen 2023')],
@@ -239,7 +239,7 @@ export const METRIC_GUIDES: Record<string, MetricGuide> = {
   glp1: {
     title: 'GLP-1 medications',
     whatItIs: 'Medicines that copy gut hormones, taken as a weekly injection or a daily tablet. The app lists semaglutide (Ozempic, Wegovy, Rybelsus), dulaglutide (Trulicity) and tirzepatide (Mounjaro, Zepbound), which acts on two hormones, GLP-1 and GIP.',
-    whyItMatters: 'In large trials, semaglutide and tirzepatide led to substantial weight loss, with better blood sugar, blood pressure and triglycerides. Weight tends to return after stopping, so most people need them long term.',
+    whyItMatters: 'In large trials, semaglutide and tirzepatide led to substantial weight loss, with better blood sugar, blood pressure and triglycerides. Weight tends to return after stopping, so they are usually taken long term.',
     howTo: { heading: WORKS, points: [
       'They reduce appetite, slow stomach emptying and help release insulin after meals.',
       'Nausea, vomiting, diarrhoea and constipation are common, and usually ease over time.',
