@@ -6,8 +6,8 @@
  */
 import * as Sentry from '@sentry/react-router';
 import { classifyMessage, isUnreadableAnswer, shouldFireRouter } from './chat-classifier.server';
-import { sanitizeForRouter, type RouterResult } from './chat-router.server';
-import { runRouter } from './chat-router-stage.server';
+import type { RouterResult } from './chat-router.server';
+import { routerTurn, runRouter } from './chat-router-stage.server';
 import { SILENT_ON_YOUTUBE } from '../../packages/health-core/src/models';
 import { findBlogByVideoId, loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
 import { preferMasters } from './router-view';
@@ -186,6 +186,25 @@ export function buildThreadHistory(
   }, []);
 }
 
+/** The thread as the classifier and router read it (US-15 AC75): the parent
+ *  comment, whoever wrote it, then the follow-up author's own earlier replies,
+ *  matched by channel id, oldest first. A YouTube thread is public, so other
+ *  viewers' replies and the bot's are left out; the main LLM still gets the
+ *  whole thread (buildThreadHistory). No name prefix: every turn here is the
+ *  parent or the author, so there are no speakers to tell apart. */
+export function buildRouterThreadHistory(
+  originalText: string,
+  replies: YouTubeReply[],
+  candidate: Pick<YouTubeReply, 'id' | 'authorChannelId'>,
+): Array<{ role: 'user'; content: string }> {
+  const turns = [{ role: 'user' as const, content: originalText }];
+  for (const r of replies) {
+    if (r.id === candidate.id) break;
+    if (candidate.authorChannelId && r.authorChannelId === candidate.authorChannelId) turns.push({ role: 'user', content: r.text });
+  }
+  return turns;
+}
+
 // ---------------------------------------------------------------------------
 // Pipeline — classifier → conditional router → main LLM
 // ---------------------------------------------------------------------------
@@ -279,11 +298,14 @@ export async function runPipeline(
   entry: BlogIndexEntry,
   body: string,
   history: Array<{ role: 'user' | 'assistant'; content: string }> = [],
+  routerHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [],
 ): Promise<PipelineOutcome> {
-  const sanitized = sanitizeForRouter(thread.text);
+  // A follow-up's parent comment and its author's earlier replies (buildRouterThreadHistory)
+  // reach the classifier and router by the rule web and Discord use (US-15 AC75).
+  const routerInput = routerTurn(thread.text, routerHistory);
   const isFollowUp = history.length > 0;
 
-  const classifierResult = await classifyMessage(sanitized, undefined, undefined, 'YOUTUBE');
+  const classifierResult = await classifyMessage(routerInput.current, routerInput.first, routerInput.recent, 'YOUTUBE');
   const { classification } = classifierResult;
   const unreadable = isUnreadableAnswer(classifierResult);
   if (SILENT_ON_YOUTUBE.has(classification) || unreadable) {
@@ -302,7 +324,7 @@ export async function runPipeline(
   let routerResult: RouterResult | null = null;
   const routerSkipped = !shouldFireRouter(classifierResult);
   if (!routerSkipped) {
-    routerResult = await runRouter(sanitized, undefined, undefined, 'YOUTUBE', countTickRouterFailure);
+    routerResult = await runRouter(routerInput, 'YOUTUBE', countTickRouterFailure);
     routerHandles = routerResult.handles;
   }
 

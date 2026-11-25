@@ -120,6 +120,8 @@ export class StorageError extends Error {
   /** SyncManager's rewrap after a write that landed with a warning: its hint
    *  says what landed first (US-31 AC8a), so it is shown as it is. */
   earlierLanded?: true;
+  /** SyncManager's mark on a failure of its write: that save's own read had answered first. */
+  afterRead?: true;
   constructor(message: string, readonly hint: string | undefined, readonly cause: unknown, readonly status: number | undefined, reason: StorageFailureReason | undefined, outcome: StorageOutcome) {
     super(message);
     this.name = 'StorageError';
