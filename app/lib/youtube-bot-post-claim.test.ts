@@ -677,6 +677,22 @@ describe('(c) the second unreadable 400 in one tick ends its posting', () => {
     expect(row('T1.r2')).toMatchObject({ posted: true, posted_youtube_id: expect.any(String) });
   });
 
+  // US-15 AC70 (lead H49): an account-wide refusal ends this tick's posting, follow-ups included; the next tick posts.
+  it('an account-wide refusal skips this tick\'s follow-ups only', async () => {
+    seedFollowUp('T1');
+    g.threads = ['c1'];
+    g.plan = [{ status: 403, reason: 'quotaExceeded' }];
+    await bootMachine();
+    await tickTo(FIRST_TICK_MS, 1);
+
+    expect(g.calls.filter((c) => c === 'GET /youtube/v3/comments')).toHaveLength(0);
+    expect(tickLogs()[0]).toMatchObject({ followUpsPosted: 0, halted: 'accountWide' });
+
+    await tickTo(TICK_MS, 2);
+    expect(row('T1.r2')).toMatchObject({ posted: true, posted_youtube_id: expect.any(String) });
+    expect(tickLogs()[1]).not.toHaveProperty('halted');
+  });
+
   it('one, then a success: the tick goes on, follow-ups included', async () => {
     seedFollowUp('T1');
     g.threads = ['c1', 'c2'];
