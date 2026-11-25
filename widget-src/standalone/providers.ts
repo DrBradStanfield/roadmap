@@ -41,6 +41,12 @@ export function safeWhere(backend: CloudBackend): string {
   return backend === 'self-host' ? 'on your own server' : `in your ${PROVIDERS[backend].label}`;
 }
 
+/** Said where a switch starts: a switch copies the record down and never touches the old cloud's file
+ *  (US-09 AC13). The iPhone's words (SyncStatusText.switchMessage, US-25 AC11n), lead A12. */
+export function recordStays(backend: CloudBackend): string {
+  return `Your record in ${PROVIDERS[backend].label} stays there as it is.`;
+}
+
 /** US-09 AC49: asked before "Use this browser only" starts an empty record. */
 export function noCopyQuestion(backend: CloudBackend): string {
   return `This browser has no copy of your record yet. It stays safe ${safeWhere(backend)}. Start empty in this browser?`;

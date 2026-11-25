@@ -78,10 +78,6 @@ issue, and nothing private.
   wrong reason, and the web says nothing about the chat step. Draft lines exist for each case. Options: approve the
   drafts as one set; approve some; keep today's words. Recommendation: approve the set, because today's words can be
   wrong about what was deleted.
-- **Web sync lines.** Issue: three web cases say too little: a sign-in that did not finish opens as a guest with no
-  message; a cloud page whose sign-in ended after a log-off in another tab says only "Not synced yet." and loses edits
-  on reload; switching clouds does not say the old cloud keeps its copy, which the iPhone does say. Options: approve
-  lines for all three; for some; leave. Recommendation: the second first, since edits are lost there.
 - **A screen that still offers Delete and Log off after a crash.** Issue: when the web page crashes, or the iPhone
   app cannot start, the fallback screen hides "Delete all my data" and "Log off". A fallback with those two buttons
   needs one sentence. Options: approve a sentence and build it; leave. Recommendation: yes, because deleting your data
@@ -216,6 +212,12 @@ issue, and nothing private.
   while the App Store review is open.
 
 ## Decided
+
+2026-11-26, Brad's words in quotes:
+- Web sync lines, all three: "use your judgement for the sentences. must be succinct, and I approve whatever sentences
+  you suggest". Now said: "Sign-in did not finish. Your data stays in this browser." (a sign-in a log-off cut short);
+  "This browser was logged off in another tab. Your latest changes show here but are not saved." (a cloud page whose
+  save failed after that log-off); "Your record in <provider> stays there as it is." (the picker, from a cloud).
 
 2026-11-23, Brad's words in quotes:
 - Original files are stored in the background after Save, with no action from the person at Save and at every
